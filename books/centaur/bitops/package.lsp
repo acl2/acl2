@@ -51,8 +51,8 @@
     ihs-ext-disabled-rules
 
     ;; basic arith equiv stuff we want to import
-    lnfix lifix lbfix
-    int-equiv nat-equiv bit-equiv
+    lnfix lifix lbfix lposfix pos-fix
+    int-equiv nat-equiv bit-equiv pos-equiv
     bit->bool bool->bit
     negp zbp
     arith-equiv-forwarding

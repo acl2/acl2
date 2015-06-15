@@ -184,6 +184,22 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
     (logcons (sv::bool->bit (sv::aig-eval (car x) env))
              (sv::aig-list->u (cdr x) env))))
 
+(define sv::aig-i2v ((x integerp))
+  :returns (aig)
+  :short "Like @(see gl::i2v) but for AIGs only."
+  :measure (integer-length x)
+  :prepwork ((local (in-theory (enable acl2::integer-length**))))
+  (cond ((zip x) nil)
+        ((eql x -1) '(t))
+        (t (sv::aig-scons (logbitp 0 x)
+                          (sv::aig-i2v (logcdr x)))))
+  ///
+  (defthm aig-i2v-correct
+    (equal (sv::aig-list->s (sv::aig-i2v x) env)
+           (ifix x))
+    :hints(("Goal" :in-theory (enable gl::bfr-snorm)))))
+
+
 (defun defsymbolic-formals-pair-with-evals-aig (x)
   (if (atom x)
       nil

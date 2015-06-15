@@ -31,6 +31,7 @@
 (in-package "SV")
 (include-book "eval")
 (include-book "aig-arith")
+;(include-book "4vmask")
 (include-book "rewrite")
 (include-book "centaur/gl/gl-mbe" :dir :system)
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
@@ -146,11 +147,6 @@
          :hints(("Goal" :in-theory (enable aig-list->s)))))
 
 
-(local (defthm aig-list->s-of-i2v
-         (equal (aig-list->s (gl::i2v x) env)
-                (ifix x))
-         :hints(("Goal" :in-theory (enable aig-list->s gl::i2v)))))
-
 
 ;; now in gl/bvec already anyway
 ;; (defthm true-listp-of-bfr-scons
@@ -169,99 +165,14 @@
 (defxdoc bit-blasting
   :parents (expressions)
   :short "We implement an efficient translation from @(see svex) expressions
-into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
+into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl)."
+
+  :long "<p>There is a lot of code here but most of it is straightforward.
+</p>"
+  )
 
 (local (xdoc::set-default-parents bit-blasting))
 
-(defsection svex-envs-mask-equiv
-  ;; this is only used in symbolic.lisp so could be moved there
-  (defquant svex-envs-mask-equiv (masks env1 env2)
-    (forall var
-            (equal (equal (4vec-mask (svex-mask-lookup (svex-var var) masks)
-                                     (svex-env-lookup var env1))
-                          (4vec-mask (svex-mask-lookup (svex-var var) masks)
-                                     (svex-env-lookup var env2)))
-                   t)))
-
-  (defexample svex-envs-mask-equiv-mask-look-example
-    :pattern (svex-mask-lookup (svex-var var) masks)
-    :templates (var)
-    :instance-rulename svex-envs-mask-equiv-instancing)
-
-  (defexample svex-envs-mask-equiv-env-look-example
-    :pattern (svex-env-lookup var env)
-    :templates (var)
-    :instance-rulename svex-envs-mask-equiv-instancing)
-
-  (local (acl2::def-witness-ruleset svex-envs-mask-equiv-reasoning
-           '(svex-envs-mask-equiv-instancing
-             svex-envs-mask-equiv-witnessing
-             svex-envs-mask-equiv-instancing
-             svex-envs-mask-equiv-env-look-example
-             svex-envs-mask-equiv-mask-look-example)))
-
-  (deffixequiv svex-envs-mask-equiv
-    :args ((masks svex-mask-alist-p)
-           (env1 svex-env-p)
-           (env2 svex-env-p))
-    :hints (("goal" :cases ((svex-envs-mask-equiv masks env1 env2)))
-            (witness :ruleset svex-envs-mask-equiv-reasoning)))
-
-  (local (defexample svex-argmasks-okp-example
-           :pattern (equal (4vec-mask mask (svex-apply fn (svexlist-eval args env1)))
-                           (4vec-mask mask (svex-apply fn (svexlist-eval args env2))))
-           :templates (env1 (svexlist-eval args env2))
-           :instance-rulename svex-argmasks-okp-instancing))
-
-  (local (acl2::def-witness-ruleset svex-mask-alist-reasoning
-           '(svex-mask-alist-complete-witnessing
-             svex-mask-alist-complete-instancing
-             svex-mask-alist-complete-example
-             svex-mask-alist-partly-complete-witnessing
-             svex-mask-alist-partly-complete-instancing
-             svex-mask-alist-partly-complete-example)))
-
-  (local (acl2::def-witness-ruleset svex-env-reasoning
-           '(svex-envs-mask-equiv-reasoning
-             svex-mask-alist-reasoning
-             SVEX-ARGMASKS-OKP-WITNESSING
-             SVEX-ARGMASKS-OKP-INSTANCING
-             SVEX-ARGMASKS-OKP-EXAMPLE
-             )))
-
-  (defthm-svex-eval-flag
-    (defthm svex-eval-of-mask-equiv-envs
-      (implies (and (svex-mask-alist-complete masks)
-                    (svex-envs-mask-equiv masks env1 env2))
-               (equal (equal (4vec-mask (svex-mask-lookup x masks)
-                                        (svex-eval x env1))
-                             (4vec-mask (svex-mask-lookup x masks)
-                                        (svex-eval x env2)))
-                      t))
-      :hints ('(:expand ((:free (env) (svex-eval x env)))
-                :do-not-induct t)
-              (witness :ruleset svex-env-reasoning)
-              (witness :ruleset svex-env-reasoning)
-              ;; (and stable-under-simplificationp
-              ;;      '(:use ((:instance svex-argmasks-okp-necc
-              ;;               (mask (svex-mask-lookup x masks))
-              ;;               (argmasks (svex-argmasks-lookup
-              ;;                          (svex-call->args x) masks))
-              ;;               (env env1)
-              ;;               (vals (svexlist-eval (svex-call->args x) env2))))))
-              )
-      :flag expr)
-    (defthm svexlist-eval-of-mask-equiv-envs
-      (implies (and (svex-mask-alist-complete masks)
-                    (svex-envs-mask-equiv masks env1 env2))
-               (equal (equal (4veclist-mask (svex-argmasks-lookup x masks)
-                                            (svexlist-eval x env1))
-                             (4veclist-mask (svex-argmasks-lookup x masks)
-                                            (svexlist-eval x env2)))
-                      t))
-      :hints ('(:expand ((:free (env) (svexlist-eval x env))
-                         (svex-argmasks-lookup x masks))))
-      :flag list)))
 
 (defprod a4vec
   :short "A symbolic 4vec, with lists of AIGs for the upper and lower bits."
@@ -271,11 +182,17 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   :long "<p>See @(see a4vec-eval); the semantics are given by @(see
 aig-list->s).</p>")
 
+
+(deflist a4veclist
+  :elt-type a4vec
+  :true-listp t)
+
+
 (define a4vec-eval ((x   a4vec-p "Symbolic 4vec to evaluate.")
                     (env         "Environment for @(see aig-eval)."))
   :returns (res 4vec-p "Value of @('x') as a @(see 4vec).")
   :short "Semantics of @(see a4vec)s."
-  (b* (((a4vec x) x))
+  (b* (((a4vec x)))
     (4vec (aig-list->s x.upper env)
           (aig-list->s x.lower env)))
   ///
@@ -298,32 +215,41 @@ aig-list->s).</p>")
                           (aig-list->s (a4vec->lower x) env))))))
 
 
-;; (define a4vec-bit-index ((n natp) (x a4vec-p))
-;;   :returns (res a4vec-p)
-;;   (b* (((a4vec x) x))
-;;     (a4vec (aig-scons (nth n x.upper) (aig-sterm nil))
-;;            (aig-scons (nth n x.lower) (aig-sterm nil))))
-;;   ///
-;;   (defthm a4vec-bit-index-correct
-;;     (equal (a4vec-eval (a4vec-bit-index n x) env)
-;;            (4vec-bit-index n (a4vec-eval x env)))
-;;     :hints(("Goal" :in-theory (enable a4vec-eval 4vec-bit-index aig-list->s)))))
-
-(define a2vec-p ((x a4vec-p))
-  :returns (aig)
-  :short "Construct an AIG that captures: when does an @(see a4vec) evaluate to
-  a @(see 2vec-p)?"
-  (b* (((a4vec x) x))
-    ;; Could perhaps go scanning through to try to short-circuit...
-    (aig-=-ss x.upper x.lower))
+(define a4veclist-eval ((x a4veclist-p) env)
+  :short "Evaluate a list of @(see a4vec)s."
+  :returns (vals 4veclist-p)
+  (if (atom x)
+      nil
+    (cons (a4vec-eval (car x) env)
+          (a4veclist-eval (cdr x) env)))
   ///
-  (defthm a2vec-p-correct
-    (equal (aig-eval (a2vec-p x) env)
-           (2vec-p (a4vec-eval x env)))))
+  (defthm len-of-a4veclist-eval
+    (equal (len (a4veclist-eval x env))
+           (len x))
+    :hints(("Goal" :in-theory (enable a4veclist-eval)))))
+
+
+
+
+
+
+; -----------------------------------------------------------------------------
+;
+;                        SYMBOLIC 4VEC OPERATIONS
+;
+; -----------------------------------------------------------------------------
+
+(defsection a4vec-operations
+  :parents (bit-blasting)
+  :short "Symbolic versions of the SV @(see functions) that operate on @(see
+a4vec)s instead of @(see 4vec)s.")
+
+(local (xdoc::set-default-parents a4vec-operations))
+
 
 (defsection a4vec-x
   :short "@(call a4vec-x) return an @(see a4vec) that evaluates to @(see
-  4vec-x) under every environment."
+4vec-x) under every environment."
   :long "@(def a4vec-x)"
 
   (defmacro a4vec-x ()
@@ -333,6 +259,21 @@ aig-list->s).</p>")
   (defthm a4vec-x-correct
     (equal (a4vec-eval (a4vec-x) env)
            (4vec-x))))
+
+
+(defsection a4vec-0
+  :short "@(call a4vec-0) return an @(see a4vec) that evaluates to @(see
+4vec-0) under every environment."
+  :long "@(def a4vec-0)"
+
+  (defmacro a4vec-0 ()
+    (list 'quote (a4vec (aig-sterm nil)
+                        (aig-sterm nil))))
+
+  (defthm a4vec-0-correct
+    (equal (a4vec-eval (a4vec-0) env)
+           (4vec 0 0))))
+
 
 (defsection a4vec-1x
   :short "@(call a4vec-1x) returns an @(see a4vec) that evaluates to @(see
@@ -348,6 +289,38 @@ aig-list->s).</p>")
            (4vec-1x))))
 
 
+(define 4vec->a4vec ((x 4vec-p))
+  :short "Convert a plain @(see 4vec) into a symbolic @(see a4vec)."
+  :returns (res a4vec-p)
+  :long "<p>This is used, e.g., to create the initial @(see a4vec)s for any
+quoted constants in the svex we are bit-blasting.</p>"
+  (b* (((4vec x)))
+    (a4vec (aig-i2v x.upper)
+           (aig-i2v x.lower)))
+  ///
+  (defthm 4vec->a4vec-correct
+    (equal (a4vec-eval (4vec->a4vec x) env)
+           (4vec-fix x))))
+
+
+(define a2vec-p ((x a4vec-p))
+  :returns (aig)
+  :short "Construct an AIG that captures: when does an @(see a4vec) evaluate to
+a @(see 2vec-p)?"
+
+  :long "<p>This is a supporting function that is widely used by many of our
+@(see a4vec-operations).  For instance, operations like @(see 4vec-plus) return
+all Xes when there are any X/Z bits.</p>"
+
+  (b* (((a4vec x)))
+    ;; The laziness of aig-and means that this properly short-circuits.
+    (aig-=-ss x.upper x.lower))
+  ///
+  (defthm a2vec-p-correct
+    (equal (aig-eval (a2vec-p x) env)
+           (2vec-p (a4vec-eval x env)))))
+
+
 (define a4vec-ite-fn ((test "Test AIG (not a 4vec!).")
                       (then a4vec-p)
                       (else a4vec-p))
@@ -356,8 +329,8 @@ aig-list->s).</p>")
   :short "Basic if-then-else for symbolic 4vecs."
   (cond ((eq test t)   (a4vec-fix then))
         ((eq test nil) (a4vec-fix else))
-        (t (b* (((a4vec then) then)
-                ((a4vec else) else))
+        (t (b* (((a4vec then))
+                ((a4vec else)))
              ;; BOZO It looks like this is going to call aig-ite on each pair
              ;; of bits, which is going to be checking over and over again
              ;; whether the test is known to be T or NIL.  That probably isn't
@@ -379,7 +352,16 @@ aig-list->s).</p>")
 
 (defsection a4vec-ite
   :short "Lazy macro for if-then-else of symbolic 4vecs."
-  :long "<p>This is similar to @(see acl2::q-ite); we try to avoid evaluating
+  :long "@({ (a4vec-ite test then else) --> ans })
+
+<ul>
+<li>@('test') is a single AIG, not an @(see a4vec).</li>
+<li>@('then') and @('else') are @(see a4vec)s.</li>
+<li>@('ans') is also an @(see a4vec).</li>
+</ul>
+
+<p>This is widely used in the implementation of our @(see a4vec-operations).
+It is similar in spirit to @(see acl2::q-ite); we try to avoid evaluating
 @('then') or @('else') if we can resolve @('test').</p>"
 
   (defmacro a4vec-ite (test then else)
@@ -404,22 +386,23 @@ aig-list->s).</p>")
                                  (a4vec-ite-fn a4vec-ite-test a4vec-ite-then ,else)))
                            ,else)))))))
 
+
 (define a4vec-bit-extract ((n a4vec-p) (x a4vec-p))
   :short "Symbolic version of @(see 4vec-bit-extract)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x)
-       ((a4vec n) n))
-    (a4vec-ite
-     ;; Condition: AIG for when N is a natural number.
-     (aig-andc2 (a2vec-p n)
-                (aig-sign-s n.upper))
-     ;; Then: Extract the Nth bit and zero extend it
-     (b* ((ubit (aig-logbitp-n2v 1 n.upper x.upper))
-          (lbit (aig-logbitp-n2v 1 n.upper x.lower)))
-       (a4vec (aig-scons ubit (aig-sterm nil))
-              (aig-scons lbit (aig-sterm nil))))
-     ;; Else: 4vec-bit-extract returns a single X bit.
-     (a4vec-1x)))
+  (b* (((a4vec x))
+       ((a4vec n)))
+    (a4vec-ite (aig-andc2 (a2vec-p n)            ;; Is N properly two-valued?
+                          (aig-sign-s n.upper)   ;; Is N non-negative?
+                          )
+               ;; N is properly two-valued and natural, so extract
+               ;; the Nth bit of X and return it as a one-bit a4vec.
+               (b* ((ubit (aig-logbitp-n2v 1 n.upper x.upper))
+                    (lbit (aig-logbitp-n2v 1 n.upper x.lower)))
+                 (a4vec (aig-scons ubit (aig-sterm nil))
+                        (aig-scons lbit (aig-sterm nil))))
+               ;; N is bad, so just return a single X bit.
+               (a4vec-1x)))
   ///
   (defthm a4vec-bit-extract-correct
     (equal (a4vec-eval (a4vec-bit-extract n x) env)
@@ -428,10 +411,11 @@ aig-list->s).</p>")
     :hints(("Goal" :in-theory (enable 4vec-bit-extract
                                       4vec-bit-index)))))
 
+
 (define a4vec-syntactic-3vec-p-rec ((x true-listp) (y true-listp))
+  :short "Make sure there is no pair of bits with Xi == 0 while Yi == 1."
   :returns bool
   :parents (a4vec-syntactic-3vec-p)
-  :short "Make sure there is no pair of bits with Xi == 0 while Yi == 1."
   :measure (+ (len x) (len y))
   (b* (((mv xf xr xe) (gl::first/rest/end x))
        ((mv yf yr ye) (gl::first/rest/end y)))
@@ -457,9 +441,10 @@ aig-list->s).</p>")
 (define a4vec-syntactic-3vec-p ((x a4vec-p))
   :short "Try to cheaply, statically determine whether an @(see a4vec) always
 evaluates to a @(see 3vec), i.e., whether it has no Z bits."
+
   :long "<p>This is used mainly in @(see a3vec-fix): when we know that there
 are no Z bits, we can avoid building AIGs to do unfloating.</p>"
-  (b* (((a4vec x) x))
+  (b* (((a4vec x)))
     (a4vec-syntactic-3vec-p-rec x.upper x.lower))
   ///
   (defthm a4vec-syntactic-3vec-p-correct
@@ -467,16 +452,17 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
              (3vec-p (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 3vec-p)))))
 
+
 (define a3vec-fix ((x a4vec-p))
   :short "Symbolic version of @(see 3vec-fix)."
   :returns (x-fix a4vec-p)
-  (if (a4vec-syntactic-3vec-p x)
-      ;; We don't have to do anything because we can determine, cheaply and
-      ;; statically, that there are no Z bits at all.
-      (a4vec-fix x)
-    (b* (((a4vec x) x))
-      (a4vec (aig-logior-ss x.upper x.lower)
-             (aig-logand-ss x.upper x.lower))))
+  (b* (((when (a4vec-syntactic-3vec-p x))
+        ;; We don't have to do anything because we can determine, cheaply and
+        ;; statically, that there are no Z bits at all.
+        (a4vec-fix x))
+       ((a4vec x)))
+    (a4vec (aig-logior-ss x.upper x.lower)
+           (aig-logand-ss x.upper x.lower)))
   ///
   (defthm a3vec-fix-correct
     (equal (a4vec-eval (a3vec-fix x) env)
@@ -485,10 +471,11 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
             (and stable-under-simplificationp
                  '(:in-theory (enable 3vec-fix a4vec-eval-of-var))))))
 
+
 (define a3vec-bitnot ((x a4vec-p))
   :short "Symbolic version of @(see 3vec-bitnot)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x))
+  (b* (((a4vec x)))
     (a4vec (aig-lognot-s x.lower)
            (aig-lognot-s x.upper)))
   ///
@@ -497,10 +484,11 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (3vec-bitnot (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 3vec-bitnot)))))
 
+
 (define a4vec-onset ((x a4vec-p))
   :short "Symbolic version of @(see 4vec-onset)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x))
+  (b* (((a4vec x)))
     (a4vec x.upper (aig-logand-ss x.upper x.lower)))
   ///
   (defthm a4vec-onset-correct
@@ -508,10 +496,11 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (4vec-onset (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-onset)))))
 
+
 (define a4vec-offset ((x a4vec-p))
   :short "Symbolic version of @(see 4vec-offset)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x))
+  (b* (((a4vec x)))
     (a4vec (aig-lognot-s x.lower)
            (aig-lognor-ss x.upper x.lower)))
   ///
@@ -520,11 +509,12 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (4vec-offset (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-offset)))))
 
+
 (define a3vec-bitand ((x a4vec-p) (y a4vec-p))
   :short "Symbolic version of @(see 3vec-bitand)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x)
-       ((a4vec y) y))
+  (b* (((a4vec x))
+       ((a4vec y)))
     (a4vec (aig-logand-ss x.upper y.upper)
            (aig-logand-ss x.lower y.lower)))
   ///
@@ -534,11 +524,12 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                         (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 3vec-bitand)))))
 
+
 (define a3vec-bitor ((x a4vec-p) (y a4vec-p))
   :short "Symbolic version of @(see 3vec-bitor)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x)
-       ((a4vec y) y))
+  (b* (((a4vec x))
+       ((a4vec y)))
     (a4vec (aig-logior-ss x.upper y.upper)
            (aig-logior-ss x.lower y.lower)))
   ///
@@ -548,14 +539,14 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                        (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 3vec-bitor)))))
 
+
 (define a3vec-bitxor ((x a4vec-p) (y a4vec-p))
   :short "Symbolic version of @(see 3vec-bitxor)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x)
-       ((a4vec y) y)
-       (xmask (aig-logior-ss
-               (aig-logandc2-ss x.upper x.lower)
-               (aig-logandc2-ss y.upper y.lower))))
+  (b* (((a4vec x))
+       ((a4vec y))
+       (xmask (aig-logior-ss (aig-logandc2-ss x.upper x.lower)
+                             (aig-logandc2-ss y.upper y.lower))))
     (a4vec (aig-logior-ss xmask (aig-logxor-ss x.upper y.upper))
            (aig-logandc1-ss xmask (aig-logxor-ss x.lower y.lower))))
   ///
@@ -565,11 +556,12 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                         (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 3vec-bitxor)))))
 
+
 (define a4vec-res ((a a4vec-p) (b a4vec-p))
   :short "Symbolic version of @(see 4vec-res)."
   :returns (res a4vec-p)
-  (b* (((a4vec a) a)
-       ((a4vec b) b))
+  (b* (((a4vec a))
+       ((a4vec b)))
     (a4vec (aig-logior-ss a.upper b.upper)
            (aig-logand-ss a.lower b.lower)))
   ///
@@ -579,11 +571,12 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                      (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 4vec-res)))))
 
+
 (define a4vec-resand ((a a4vec-p) (b a4vec-p))
   :short "Symbolic version of @(see 4vec-resand)."
   :returns (res a4vec-p)
-  (b* (((a4vec a) a)
-       ((a4vec b) b))
+  (b* (((a4vec a))
+       ((a4vec b)))
     (a4vec (aig-logand-sss (aig-logior-ss a.upper a.lower)  ;; a not 0
                            (aig-logior-ss b.upper b.lower)  ;; b not 0
                            (aig-logior-ss a.upper b.upper))
@@ -595,11 +588,12 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                         (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 4vec-resand)))))
 
+
 (define a4vec-resor ((a a4vec-p) (b a4vec-p))
   :short "Symbolic version of @(see 4vec-resor)."
   :returns (res a4vec-p)
-  (b* (((a4vec a) a)
-       ((a4vec b) b))
+  (b* (((a4vec a))
+       ((a4vec b)))
     (a4vec (aig-logior-ss a.upper b.upper)
            (aig-logior-sss (aig-logand-ss a.upper a.lower)  ;; a not 0
                            (aig-logand-ss b.upper b.lower)  ;; b not 0
@@ -611,13 +605,15 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                        (a4vec-eval y env)))
     :hints(("Goal" :in-theory (enable 4vec-resor)))))
 
-(define a4vec-override ((a a4vec-p) (b a4vec-p))
+
+(define a4vec-override ((stronger a4vec-p)
+                        (weaker a4vec-p))
   :short "Symbolic version of @(see 4vec-override)."
   :returns (res a4vec-p)
-  (b* (((a4vec a) a)
-       ((a4vec b) b))
-    (a4vec (aig-logior-ss (aig-logand-ss a.lower b.upper) a.upper)
-           (aig-logand-ss (aig-logior-ss a.upper b.lower) a.lower)))
+  (b* (((a4vec stronger))
+       ((a4vec weaker)))
+    (a4vec (aig-logior-ss (aig-logand-ss stronger.lower weaker.upper) stronger.upper)
+           (aig-logand-ss (aig-logior-ss stronger.upper weaker.lower) stronger.lower)))
   ///
   (defthm a4vec-override-correct
     (equal (a4vec-eval (a4vec-override x y) env)
@@ -626,10 +622,11 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 4vec-override))
            (bitops::logbitp-reasoning))))
 
+
 (define a3vec-reduction-and ((x a4vec-p))
   :short "Symbolic version of @(see 3vec-reduction-and)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x))
+  (b* (((a4vec x)))
     (a4vec (aig-sterm (aig-=-ss x.upper (aig-sterm t)))
            (aig-sterm (aig-=-ss x.lower (aig-sterm t)))))
   ///
@@ -638,10 +635,11 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (3vec-reduction-and (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 3vec-reduction-and)))))
 
+
 (define a3vec-reduction-or ((x a4vec-p))
   :short "Symbolic version of @(see 3vec-reduction-or)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x))
+  (b* (((a4vec x)))
     (a4vec (aig-sterm (aig-not (aig-=-ss x.upper (aig-sterm nil))))
            (aig-sterm (aig-not (aig-=-ss x.lower (aig-sterm nil))))))
   ///
@@ -650,74 +648,475 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (3vec-reduction-or (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 3vec-reduction-or)))))
 
-(define a4vec-zero-ext ((n a4vec-p) (x a4vec-p))
-  :short "Symbolic version of @(see 4vec-zero-ext)."
+
+(define a4vec-xdet ((x a4vec-p))
+  :short "Symbolic version of @(see 4vec-xdet)."
   :returns (res a4vec-p)
-  (b* (((a4vec n) n)
-       ((a4vec x) x))
-  (a4vec-ite
-   (aig-and (a2vec-p n)
-            (aig-not (aig-sign-s n.upper)))
-   (b* ((mask (aig-lognot-s (aig-ash-ss 1 (aig-sterm t) n.upper))))
-     (a4vec (aig-logand-ss x.upper mask)
-            (aig-logand-ss x.lower mask)))
-   (a4vec-x)))
+  (a4vec-ite (a2vec-p x)
+             ;; No X/Z bits, so return the input unchanged (modulo fixing)
+             (a4vec-fix x)
+             ;; X/Z bit somewhere, so just return all Xes.
+             (a4vec-x))
   ///
-  (local (defthm logand-of-lognot-ash-minus1
-           (implies (natp n)
-                    (equal (logand x (lognot (ash -1 n)))
-                           (loghead n x)))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
-                                              bitops::ihsext-inductions)))))
+  (defthm a4vec-xdet-correct
+    (equal (a4vec-eval (a4vec-xdet x) env)
+           (4vec-xdet (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-xdet lognot)))))
 
-  (defthm a4vec-zero-ext-correct
-    (equal (a4vec-eval (a4vec-zero-ext n x) env)
-           (4vec-zero-ext (a4vec-eval n env)
-                          (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-zero-ext)))))
 
-(define a4vec-sign-ext ((n a4vec-p) (x a4vec-p))
-  :short "Symbolic version of @(see 4vec-sign-ext)."
+(define a4vec-mask ((mask 4vmask-p)
+                    (x a4vec-p))
+  :short "Symbolic version of @(see 4vec-mask)."
+  :returns (masked-a4vec a4vec-p)
+  ;; We need to set any irrelevant bits to X (upper=1, lower=0).
+  (b* (((a4vec x))
+       (care     (4vmask-fix mask))
+       (dontcare (lognot care))
+       (dc-aigs  (aig-i2v dontcare)))
+    (a4vec (aig-logior-ss dc-aigs x.upper)
+           (aig-logandc1-ss dc-aigs x.lower)))
+  ///
+  (defthm a4vec-mask-correct
+    (equal (a4vec-eval (a4vec-mask mask x) env)
+           (4vec-mask mask (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-mask)))))
+
+
+(define a4vec-uminus ((x a4vec-p))
+  :short "Symbolic version of @(see 4vec-uminus)."
   :returns (res a4vec-p)
-  (b* (((a4vec n) n)
-       ((a4vec x) x))
-  (a4vec-ite
-   ;; The result is all Xes unless the index is a positive number.
-   (aig-and (a2vec-p n) ;; Checks for X/Z bits
-            (aig-nor (aig-sign-s n.upper) ;; Checks for negative index
-                     (aig-=-ss n.upper (aig-sterm nil)) ;; Checks for zero index
-                     ))
-   ;; Valid index, compute the sign extension.
-   ;; In this case, the value of the index is just n.upper.
-   (b* ((smask   (aig-ash-ss 1 (aig-sterm t) n.upper))
-        (bmask   (aig-lognot-s smask))
-        (signpos (aig-+-ss nil (aig-sterm t) n.upper))
-        (uext    (aig-sterm (aig-logbitp-n2v 1 signpos x.upper)))
-        (lext    (aig-sterm (aig-logbitp-n2v 1 signpos x.lower))))
-     (a4vec
-      ;; BOZO could these be better written as ITEs?
-      (aig-logior-ss (aig-logand-ss bmask x.upper)
-                     (aig-logand-ss smask uext))
-      (aig-logior-ss (aig-logand-ss bmask x.lower)
-                     (aig-logand-ss smask lext))))
-   ;; Invalid index, just return all Xes
-   (a4vec-x)))
+  (a4vec-ite (a2vec-p x)
+             ;; The input is properly two-valued, so we can negate it.
+             (b* (((a4vec x))
+                  (res (aig-+-ss t nil (aig-lognot-s x.upper))))
+               (a4vec res res))
+             ;; Some X/Z bit somewhere, so just return all Xes.
+             (a4vec-x))
   ///
-  (local (defthm logext-formulation
-           (implies (natp n)
-                    (equal (logior (logand x (lognot (ash -1 n)))
-                                   (logand (ash -1 n)
-                                           (bool->vec (logbitp (+ -1 n) x))))
-                           (logext n x)))
-           :hints((bitops::logbitp-reasoning))))
+  (defthm a4vec-uminus-correct
+    (equal (a4vec-eval (a4vec-uminus x) env)
+           (4vec-uminus (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-uminus lognot)))))
 
-  (defthm a4vec-sign-ext-correct
-    (equal (a4vec-eval (a4vec-sign-ext n x) env)
-           (4vec-sign-ext (a4vec-eval n env)
-                          (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-sign-ext)
-            :do-not-induct t))
-    :otf-flg t))
+
+(define a4vec-minus ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 4vec-minus)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p x) (a2vec-p y))
+             ;; Both inputs are properly two-valued, so we can do the subtract:
+             (b* (((a4vec x))
+                  ((a4vec y))
+                  (res (aig-+-ss t x.upper (aig-lognot-s y.upper))))
+               (a4vec res res))
+             ;; Some X/Z bit somewhere, so just return all Xes.
+             (a4vec-x))
+  ///
+  (defthm a4vec-minus-correct
+    (equal (a4vec-eval (a4vec-minus x y) env)
+           (4vec-minus (a4vec-eval x env)
+                       (a4vec-eval y env)))
+    :hints(("Goal" :in-theory (enable 4vec-minus lognot)))))
+
+
+(define a4vec-plus ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 4vec-plus)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p x) (a2vec-p y))
+             ;; Both inputs are properly two-valued, so we can do the sum:
+             (b* (((a4vec x))
+                  ((a4vec y))
+                  (res (aig-+-ss nil x.upper y.upper)))
+               (a4vec res res))
+             ;; Some X/Z bit somewhere, so just return all Xes.
+             (a4vec-x))
+  ///
+  (defthm a4vec-plus-correct
+    (equal (a4vec-eval (a4vec-plus x y) env)
+           (4vec-plus (a4vec-eval x env)
+                      (a4vec-eval y env)))
+    :hints(("Goal" :in-theory (enable 4vec-plus)))))
+
+
+(define a4vec-times ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 4vec-times)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p x) (a2vec-p y))
+             ;; Both inputs are properly two-valued, so we can do the multiply:
+             (b* (((a4vec x))
+                  ((a4vec y))
+                  (res (aig-*-ss x.upper y.upper)))
+               (a4vec res res))
+             ;; Some X/Z bit somewhere, so just return all Xes.
+             (a4vec-x))
+  ///
+  (defthm a4vec-times-correct
+    (equal (a4vec-eval (a4vec-times x y) env)
+           (4vec-times (a4vec-eval x env)
+                       (a4vec-eval y env)))
+    :hints(("Goal" :in-theory (enable 4vec-times lognot)))))
+
+
+(define a4vec-quotient ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 4vec-quotient)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p x)  ;; Is X properly two-valued?
+                      (a2vec-p y)  ;; Is Y properly two-valued?
+                      (aig-not (aig-=-ss (a4vec->upper y) (aig-sterm nil))) ;; Is Y nonzero?
+                      )
+             ;; Good inputs, do the divide
+             (b* (((a4vec x))
+                  ((a4vec y))
+                  (res (aig-truncate-ss x.upper y.upper)))
+               (a4vec res res))
+             ;; Some X/Z bit somewhere or divide by zero, so just return all Xes.
+             (a4vec-x))
+  ///
+  (defthm a4vec-quotient-correct
+    (equal (a4vec-eval (a4vec-quotient x y) env)
+           (4vec-quotient (a4vec-eval x env)
+                          (a4vec-eval y env)))
+    :hints(("Goal" :in-theory (enable 4vec-quotient lognot)))))
+
+
+(define a4vec-remainder ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 4vec-remainder)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p x) ;; Is X properly two-valued?
+                      (a2vec-p y) ;; Is Y properly two-valued?
+                      (aig-not (aig-=-ss (a4vec->upper y) (aig-sterm nil))) ;; Is Y nonzero?
+                      )
+             ;; Good inputs, do the remainder.
+             (b* (((a4vec x))
+                  ((a4vec y))
+                  (res (aig-rem-ss x.upper y.upper)))
+               (a4vec res res))
+             ;; Some X/Z bit somewhere or divide by zero, so just return all Xes.
+             (a4vec-x))
+  ///
+  (defthm a4vec-remainder-correct
+    (equal (a4vec-eval (a4vec-remainder x y) env)
+           (4vec-remainder (a4vec-eval x env)
+                           (a4vec-eval y env)))
+    :hints(("Goal" :in-theory (enable 4vec-remainder lognot)))))
+
+
+(define a4vec-< ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 4vec-<)."
+  :returns (res a4vec-p)
+  (a4vec-ite (aig-and (a2vec-p x) (a2vec-p y))
+             ;; Both inputs are properly two-valued, so we can do the comparison
+             (b* (((a4vec x))
+                  ((a4vec y))
+                  (res (aig-sterm (aig-<-ss x.upper y.upper))))
+               (a4vec res res))
+             ;; Some X/Z bit somewhere, so just return all Xes.
+             (a4vec-x))
+  ///
+  (defthm a4vec-<-correct
+    (equal (a4vec-eval (a4vec-< x y) env)
+           (4vec-< (a4vec-eval x env)
+                   (a4vec-eval y env)))
+    :hints(("Goal" :in-theory (enable 4vec-< lognot)))))
+
+
+(define a4vec-clog2 ((x a4vec-p))
+  :short "Symbolic version of @(see 4vec-clog2)."
+  :returns (res a4vec-p)
+  (b* (((a4vec x)))
+    (a4vec-ite (aig-and (a2vec-p x)                    ;; Is X properly two-valued?
+                        (aig-not (aig-sign-s x.upper)) ;; Is X positive?
+                        )
+               ;; Proper input, compute ceiling log2.
+               (b* ((res (aig-integer-length-s (aig-+-ss nil '(t) x.upper))))
+                 (a4vec res res))
+               ;; Some X/Z bit somewhere or negative, so just return all Xes.
+               (a4vec-x)))
+  ///
+  (defthm a4vec-clog2-correct
+    (equal (a4vec-eval (a4vec-clog2 x) env)
+           (4vec-clog2 (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-clog2)))))
+
+
+(define a3vec-== ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 3vec-==)."
+  :returns (res a4vec-p)
+  ;; Could probably do this in one pass and lazily
+  (a3vec-reduction-and (a3vec-bitnot (a3vec-bitxor x y)))
+  ///
+  (defthm a3vec-==-correct
+    (equal (a4vec-eval (a3vec-== x y) env)
+           (3vec-== (a4vec-eval x env)
+                    (a4vec-eval y env)))
+    :hints(("Goal" :in-theory (enable 4vec-== 3vec-==)))))
+
+
+(define a4vec-=== ((x a4vec-p) (y a4vec-p))
+  :short "Symbolic version of @(see 4vec-===)."
+  :returns (res a4vec-p)
+  (b* (((a4vec x))
+       ((a4vec y))
+       ;; The laziness of aig-and means that this is as lazy as possible.
+       (val (aig-sterm (aig-and (aig-=-ss x.upper y.upper)
+                                (aig-=-ss x.lower y.lower)))))
+    (a4vec val val))
+  ///
+  (defthm a4vec-===-correct
+    (equal (a4vec-eval (a4vec-=== x y) env)
+           (4vec-=== (a4vec-eval x env)
+                     (a4vec-eval y env)))
+    :hints(("Goal" :in-theory (enable 4vec-=== bool->vec)))))
+
+
+(define a4vec-wildeq ((a a4vec-p) (b a4vec-p))
+  :short "Symbolic version of @(see 4vec-wildeq)."
+  :returns (res a4vec-p)
+  ;; BOZO we could probably benefit from a fused version of this that could
+  ;; better exploit laziness.
+  (b* (((a4vec a))
+       ((a4vec b))
+       (eq    (a3vec-bitnot (a3vec-bitxor (a3vec-fix a) (a3vec-fix b))))
+       (zmask (aig-logandc1-ss b.upper b.lower)))
+    (a3vec-reduction-and (a3vec-bitor eq (a4vec zmask zmask))))
+  ///
+  (defthm a4vec-wildeq-correct
+    (equal (a4vec-eval (a4vec-wildeq a b) env)
+           (4vec-wildeq (a4vec-eval a env)
+                        (a4vec-eval b env)))
+    :hints(("Goal" :in-theory (enable 4vec-wildeq 4vec-bitxor-redef 2vec)))))
+
+
+(define a4vec-symwildeq ((a a4vec-p) (b a4vec-p))
+  :short "Symbolic version of @(see 4vec-symwildeq)."
+  :returns (res a4vec-p)
+  ;; BOZO we could probably benefit from a fused version of this that could
+  ;; better exploit laziness.
+  (b* (((a4vec a))
+       ((a4vec b))
+       (eq (a3vec-bitnot (a3vec-bitxor (a3vec-fix a) (a3vec-fix b))))
+       (zmask (aig-logior-ss (aig-logandc1-ss b.upper b.lower)
+                             (aig-logandc1-ss a.upper a.lower))))
+    (a3vec-reduction-and (a3vec-bitor eq (a4vec zmask zmask))))
+  ///
+  (defthm a4vec-symwildeq-correct
+    (equal (a4vec-eval (a4vec-symwildeq a b) env)
+           (4vec-symwildeq (a4vec-eval a env)
+                           (a4vec-eval b env)))
+    :hints(("Goal" :in-theory (enable 4vec-symwildeq 4vec-bitxor-redef 2vec)))))
+
+
+(define aig-parity-s ((x true-listp))
+  :parents (a4vec-parity)
+  (b* (((mv xf xr xe) (gl::first/rest/end x)))
+    (if xe
+        nil
+      (aig-xor xf (aig-parity-s xr))))
+  ///
+  (local (defthm logxor-of-bits
+           (implies (and (bitp a) (bitp b))
+                    (equal (logxor a b)
+                           (bitops::b-xor a b)))))
+
+  (defthm aig-parity-s-correct
+    (let ((xv (aig-list->s x env)))
+      (implies (<= 0 xv)
+               (equal (aig-eval (aig-parity-s x) env)
+                      (bitops::bit->bool (parity (+ 1 (integer-length xv)) xv)))))
+    :hints(("Goal" :in-theory (enable parity
+                                      bitops::loghead** bitops::logtail**)
+            :induct (aig-parity-s x)
+            :expand ((aig-list->s x env)
+                     (:free (n x) (parity (+ 2 n) x))
+                     (:free (a b) (integer-length (bitops::logcons a b))))))))
+
+(define a4vec-parity ((x a4vec-p))
+  :short "Symbolic version of @(see 4vec-parity)."
+  :returns (res a4vec-p)
+  (b* (((a4vec x)))
+    (a4vec-ite (aig-and (a2vec-p x)                    ;; Is X properly two-valued?
+                        (aig-not (aig-sign-s x.upper)) ;; Is it non-negative?
+                        )
+               ;; Legitimate input, compute the parity
+               (let* ((bit (aig-parity-s x.upper))
+                      (vec (aig-sterm bit)))
+                 (a4vec vec vec))
+               ;; Bad input, just return all Xes.
+               (a4vec-x)))
+  ///
+  (defthm a4vec-parity-correct
+    (equal (a4vec-eval (a4vec-parity x) env)
+           (4vec-parity (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-parity bool->vec)))))
+
+
+(define a3vec-? ((x a4vec-p)
+                 (y a4vec-p)
+                 y3p
+                 (z a4vec-p)
+                 z3p)
+  :short "Symbolic version of @(see 3vec-?)."
+  :long "<p><b>BOZO</b> we will probably need to update this when we fix Bug 384.</p>"
+  :returns (res a4vec-p)
+
+;; (~a.1 &  c.1) |
+;; ( a.0 &  b.1) |
+;; ( (a.1 & ~a.0) & (   ( b.1 | c.1 )
+;;                    | (   ~( b.0 &  c.0)
+;;                         & ( b.0 | c.0 ) ) ) ) ) )
+
+;; (~a.1 &  c.0) |
+;; ( a.0 &  b.0) |
+;; ( (a.1 & ~a.0) & (   ( b.0 & c.0 )
+;;                    & (   ~( b.1 |  c.1)
+;;                         | ( b.1 & c.1 ) ) ) ) ) )
+
+;; This reduces nicely when a is known and when known Boolean.
+
+;; When b and c are both known 3vec, then the a=x portion reduces to:
+;; ( (a.1 & ~a.0) & ( b.1 | c.1 )
+;; ( (a.1 & ~a.0) & ( b.0 & c.0 )
+
+;; when e.g. just b is known Boolean, it reduces to:
+;; ( (a.1 & ~a.0) & ( ( b.1 | c.1 ) | c.0 )
+;; ( (a.1 & ~a.0) & ( ( b.0 & c.0 ) & c.1 )
+
+  (b* (((a4vec a) x)
+       ((a4vec b) y)
+       ((a4vec c) z)
+       ;; common subexpressions between the two
+       (a=1 (aig-not (aig-=-ss a.lower nil)))
+       (a=0 (aig-=-ss a.upper nil))
+       (a=x (aig-nor a=1 a=0))
+       (b1vc1 (aig-logior-ss b.upper c.upper))
+       (b0^c0 (aig-logand-ss b.lower c.lower))
+
+       ;; upper
+       (boolcase (aig-logior-ss (aig-ite-bss-fn a=1 b.upper nil)
+                                (aig-ite-bss-fn a=0 c.upper nil)))
+       (xcase (cond ((and y3p z3p) b1vc1)
+                    (y3p (aig-logior-ss b1vc1 c.lower))
+                    (z3p (aig-logior-ss b1vc1 b.lower))
+                    (t (aig-logior-ss b1vc1
+                                      (aig-logandc1-ss b0^c0
+                                                       (aig-logior-ss b.lower c.lower))))))
+       (upper (aig-logior-ss boolcase
+                             (aig-ite-bss-fn a=x xcase nil)))
+
+       ;; lower
+       (boolcase (aig-logior-ss (aig-ite-bss-fn a=1 b.lower nil)
+                                (aig-ite-bss-fn a=0 c.lower nil)))
+       (xcase (cond ((and y3p z3p) b0^c0)
+                    (y3p (aig-logand-ss b0^c0 c.upper))
+                    (z3p (aig-logand-ss b0^c0 b.upper))
+                    (t (aig-logand-ss b0^c0
+                                      (aig-logior-ss
+                                       (aig-lognot-s b1vc1)
+                                       (aig-logand-ss b.upper c.upper))))))
+       (lower (aig-logior-ss boolcase
+                             (aig-ite-bss-fn a=x xcase nil))))
+    (a4vec upper lower))
+  ///
+  (local (in-theory (disable iff not acl2::zip-open)))
+  (local (in-theory (disable bitops::logand-natp-type-2
+                             bitops::logand-natp-type-1
+                             bitops::logior-natp-type
+                             bitops::logand->=-0-linear-2
+                             bitops::logand->=-0-linear-1
+                             bitops::upper-bound-of-logand
+                             aig-list->s
+                             bitops::logbitp-when-bit
+                             bitops::logbitp-nonzero-of-bit
+                             bitops::logbitp-when-bitmaskp
+                             bitops::lognot-negp
+                             bitops::lognot-natp
+                             bitops::logior-<-0-linear-2
+                             bitops::logior-<-0-linear-1
+                             bitops::lognot-<-const
+                             acl2::aig-env-lookup)))
+  (defthm a3vec-?-correct
+    (implies (and (case-split (implies y3p (3vec-p (a4vec-eval y env))))
+                  (case-split (implies z3p (3vec-p (a4vec-eval z env))))
+                  (3vec-p (a4vec-eval x env)))
+             (equal (a4vec-eval (a3vec-? x y y3p z z3p) env)
+                    (3vec-? (a4vec-eval x env)
+                            (a4vec-eval y env)
+                            (a4vec-eval z env))))
+    :hints(("Goal" :in-theory (enable 3vec-? 3vec-p))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil))))))
+
+(define a3vec-bit? ((x a4vec-p)
+                    (y a4vec-p)
+                    y3p
+                    (z a4vec-p)
+                    z3p)
+  :short "Symbolic version of @(see a3vec-bit?)."
+  :long "<p><b>BOZO</b> we will probably need to update this when we fix Bug 384.</p>"
+  :returns (res a4vec-p)
+  (b* (((a4vec a) x)
+       ((a4vec b) y)
+       ((a4vec c) z)
+       ;; common subexpressions between the two
+       (b1vc1 (aig-logior-ss b.upper c.upper))
+       (b0^c0 (aig-logand-ss b.lower c.lower))
+       (a=x   (aig-logandc2-ss a.upper a.lower))
+       ;; upper
+       (boolcase (aig-logior-ss (aig-logand-ss a.lower b.upper)
+                                (aig-logandc1-ss a.upper c.upper)))
+       (xcase (cond ((and y3p z3p) b1vc1)
+                    (y3p (aig-logior-ss b1vc1 c.lower))
+                    (z3p (aig-logior-ss b1vc1 b.lower))
+                    (t (aig-logior-ss b1vc1
+                                      (aig-logandc1-ss b0^c0
+                                                       (aig-logior-ss b.lower c.lower))))))
+       (upper (aig-logior-ss boolcase
+                             (aig-logand-ss a=x xcase)))
+
+       ;; lower
+       (boolcase (aig-logior-ss (aig-logand-ss a.lower b.lower)
+                                (aig-logandc1-ss a.upper c.lower)))
+       (xcase (cond ((and y3p z3p) b0^c0)
+                    (y3p (aig-logand-ss b0^c0 c.upper))
+                    (z3p (aig-logand-ss b0^c0 b.upper))
+                    (t (aig-logand-ss b0^c0
+                                      (aig-logior-ss
+                                       (aig-lognot-s b1vc1)
+                                       (aig-logand-ss b.upper c.upper))))))
+       (lower (aig-logior-ss boolcase
+                             (aig-logand-ss a=x xcase))))
+    (a4vec upper lower))
+  ///
+  (local (in-theory (disable iff not acl2::zip-open)))
+  (local (in-theory (disable bitops::logand-natp-type-2
+                             bitops::logand-natp-type-1
+                             bitops::logior-natp-type
+                             bitops::logand->=-0-linear-2
+                             bitops::logand->=-0-linear-1
+                             bitops::upper-bound-of-logand
+                             aig-list->s
+                             bitops::logbitp-when-bit
+                             bitops::logbitp-nonzero-of-bit
+                             bitops::logbitp-when-bitmaskp
+                             bitops::lognot-negp
+                             bitops::lognot-natp
+                             bitops::logior-<-0-linear-2
+                             bitops::logior-<-0-linear-1
+                             bitops::lognot-<-const
+                             acl2::aig-env-lookup)))
+  (defthm a3vec-bit?-correct
+    (implies (and (case-split (implies y3p (3vec-p (a4vec-eval y env))))
+                  (case-split (implies z3p (3vec-p (a4vec-eval z env))))
+                  (3vec-p (a4vec-eval x env)))
+             (equal (a4vec-eval (a3vec-bit? x y y3p z z3p) env)
+                    (3vec-bit? (a4vec-eval x env)
+                               (a4vec-eval y env)
+                               (a4vec-eval z env))))
+    :hints(("Goal" :in-theory (enable 3vec-bit? 3vec-p))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil))))))
+
 
 (define logcollapse ((position natp)
                      (x integerp))
@@ -734,11 +1133,9 @@ longer than we care about.</p>
 function.  It may help to start with the fact that @('(logcollapse 0 x)')
 collapses all bits of x into a single bit.  In general, @('(logcollapse n x)')
 results in at most n+1 bits.</p>"
-  (b* ((position (lnfix position))
-       (x (lifix x)))
+  (b* ((position (lnfix position)))
     (logior (loghead position x)
             (ash (b-not (bool->bit (eql 0 (logtail position x)))) position))))
-
 
 (local
  (defsection masked-shifts
@@ -879,8 +1276,7 @@ results in at most n+1 bits.</p>"
 
    ))
 
-(define aig-logcollapse-ns ((n natp)
-                            x)
+(define aig-logcollapse-ns ((n natp) x)
   :parents (logcollapse)
   (b* ((n (lnfix n)))
     (aig-logior-ss (aig-loghead-ns n x)
@@ -894,49 +1290,41 @@ results in at most n+1 bits.</p>"
     :hints(("Goal" :in-theory (enable logcollapse)))))
 
 
-;; BOZO this is only used in a4vec-concat when the mask is 0.  We may as well
-;; use X then, right?
-;; (defsection a4vec-0
-;;   :short "@(call a4vec-0) returns an @(see a4vec) that evaluates to @(see
-;; 4vec-0) every environment."
-;;   :long "@(def a4vec-0)"
-
-;;   (defmacro a4vec-0 ()
-;;     (list 'quote (a4vec (aig-sterm nil)
-;;                         (aig-sterm nil))))
-
-;;   ;; (defthm a4vec-0-correct
-;;   ;;   (equal (a4vec-eval (a4vec-0) env)
-;;   ;;          (4vec-0)))
-;;   )
-
-(define a4vec-concat ((w a4vec-p) (x a4vec-p) (y a4vec-p) (mask 4vmask-p))
+(define a4vec-concat ((w    a4vec-p  "Width argument to the concat.")
+                      (x    a4vec-p  "Low bits to concatenate.")
+                      (y    a4vec-p  "High bits to concatenate.")
+                      (mask 4vmask-p "Care mask for the result."))
   :short "Symbolic version of @(see 4vec-concat)."
+  :long "<p>As a special consideration, we use the care mask to try to avoid
+creating enormous vectors when given a huge @('width') argument.</p>"
   :returns (res a4vec-p)
-  (b* (((a4vec w) w)
-       ((a4vec x) x)
-       ((a4vec y) y))
-  (a4vec-ite
-   (aig-and (a2vec-p w)
-            (aig-not (aig-sign-s w.upper)))
-   (b* ((mask (4vmask-fix mask))
-        ((when (eql mask 0))
-         ;; [Jared] this was previously using 4vec-0.  I think it's probably
-         ;; better to use 4vec-x, in general, since for instance many
-         ;; arithmetic operations check a2vec-p and then do something really
-         ;; simple in the "nope, not a 2vec, may as well just return all xes."
-         (a4vec-x))
-        (shift (if (< 0 mask)
-                   ;; Collapse the upper bits of the shift
-                   (aig-logcollapse-ns (integer-length (integer-length mask))
-                                       w.upper)
-                 w.upper))
-        (xmask (aig-lognot-s (aig-ash-ss 1 (aig-sterm t) shift)))
-        (yshu (aig-ash-ss 1 y.upper shift))
-        (yshl (aig-ash-ss 1 y.lower shift)))
-     (a4vec (aig-logior-ss (aig-logand-ss xmask x.upper) yshu)
-            (aig-logior-ss (aig-logand-ss xmask x.lower) yshl)))
-   (a4vec-x)))
+  (b* (((a4vec w))
+       ((a4vec x))
+       ((a4vec y))
+       (mask (4vmask-fix mask))
+       ((when (eql mask 0))
+        ;; [Jared] this was previously using 4vec-0.  I think it's probably
+        ;; better to use 4vec-x, in general, since for instance many
+        ;; arithmetic operations check a2vec-p and then do something really
+        ;; simple in the "nope, not a 2vec, may as well just return all xes."
+        (a4vec-x)))
+    (a4vec-ite (aig-and (a2vec-p w) ;; Is the width properly two-valued?
+                        (aig-not (aig-sign-s w.upper)) ;; Is it natural?
+                        )
+               ;; Proper concatenation width.  But, take special care here to
+               ;; avoid catastrophic shifts.
+               (b* ((shift (if (< 0 mask)
+                               ;; Collapse the upper bits of the shift
+                               (aig-logcollapse-ns (integer-length (integer-length mask))
+                                                   w.upper)
+                             w.upper))
+                    (xmask (aig-lognot-s (aig-ash-ss 1 (aig-sterm t) shift)))
+                    (yshu  (aig-ash-ss 1 y.upper shift))
+                    (yshl  (aig-ash-ss 1 y.lower shift)))
+                 (a4vec (aig-logior-ss (aig-logand-ss xmask x.upper) yshu)
+                        (aig-logior-ss (aig-logand-ss xmask x.lower) yshl)))
+               ;; Nonsensical concatenation width.  Just return all Xes.
+               (a4vec-x)))
   ///
   (local (defthm logapp-formulation
            (implies (natp n)
@@ -944,13 +1332,6 @@ results in at most n+1 bits.</p>"
                                    (logand x (lognot (ash -1 n))))
                            (logapp n x y)))
            :hints((bitops::logbitp-reasoning))))
-
-  ;; (local (defthm logapp-of-loghead-under-mask
-  ;;          (implies (and (integerp mask)
-  ;;                        (<= 0 mask))
-  ;;                   (equal (logand mask
-  ;;                                  (logapp (loghead (integer-length mask) bits)
-
 
   (defthm a4vec-concat-correct
     (equal (4vec-mask mask (a4vec-eval (a4vec-concat n x y mask) env))
@@ -962,10 +1343,74 @@ results in at most n+1 bits.</p>"
     :otf-flg t))
 
 
+(define a4vec-zero-ext ((n    a4vec-p  "Place to zero extend or truncate.")
+                        (x    a4vec-p  "Vector to zero extend at this place.")
+                        (mask 4vmask-p "Care mask for the result."))
+  :short "Symbolic version of @(see 4vec-zero-ext)."
+  :long "<p>We just reuse @(see a4vec-concat) since it already provides special
+optimization to avoid problems due to large masks.</p>"
+  :returns (res a4vec-p)
+  (a4vec-concat n x (a4vec-0) mask)
+  ///
+  (defthm a4vec-zero-ext-correct
+    (equal (4vec-mask mask (a4vec-eval (a4vec-zero-ext n x mask) env))
+           (4vec-mask mask (4vec-zero-ext (a4vec-eval n env)
+                                          (a4vec-eval x env))))
+    :hints(("Goal" :in-theory (enable 4vec-zero-ext
+                                      4vec-concat)))))
+
+
+(define a4vec-sign-ext ((n a4vec-p)
+                        (x a4vec-p)
+                        (mask 4vmask-p))
+  :short "Symbolic version of @(see 4vec-sign-ext)."
+  :long "<p>We essentially just extract the sign bit, sign extend it, and then
+use @(see a4vec-concat) to carry out the concatenation, since it already
+provides special optimization to avoid problems due to large masks.</p>"
+  :returns (res a4vec-p)
+  (b* (((a4vec n) n)
+       ((a4vec x) x))
+    (a4vec-ite (aig-and (a2vec-p n) ;; X/Z free?
+                        (aig-nor (aig-sign-s n.upper) ;; Negative index?
+                                 (aig-=-ss n.upper (aig-sterm nil)) ;; Zero index?
+                                 ))
+
+               ;; Index is properly X/Z free and positive.
+               (b* (;; Subtract one from the index to get the sign position.
+                    (signpos (aig-+-ss nil (aig-sterm t) n.upper))
+                    ;; Extract the sign bit from upper and lower, and sign
+                    ;; extend them to infinity, creating a new high vector to
+                    ;; concatenate onto the low bits of X.
+                    (high-bits (a4vec (aig-sterm (aig-logbitp-n2v 1 signpos x.upper))
+                                      (aig-sterm (aig-logbitp-n2v 1 signpos x.lower)))))
+                 ;; Concatenate these new high bits onto the low bits.
+                 (a4vec-concat n x high-bits mask))
+
+               ;; Invalid index, just return all Xes
+               (a4vec-x)))
+  ///
+  (local (in-theory (enable a4vec-sign-ext)))
+
+  (local (defthm logext-formulation
+           (implies (and (posp n)
+                         (integerp x))
+                    (equal (logapp n
+                                   x
+                                   (bool->vec (logbitp (+ -1 n) x)))
+                           (logext n x)))
+           :hints((bitops::logbitp-reasoning))))
+
+  (defthm a4vec-sign-ext-correct
+    (equal (4vec-mask mask (a4vec-eval (a4vec-sign-ext n x mask) env))
+           (4vec-mask mask (4vec-sign-ext (a4vec-eval n env)
+                                          (a4vec-eval x env))))
+    :hints(("Goal" :in-theory (enable 4vec-sign-ext 4vec-concat)))))
+
+
 (define aig-right-shift-ss ((place posp) n shamt)
   :parents (a4vec-rsh)
   (b* (((mv shdig shrst shend) (gl::first/rest/end shamt))
-       (place (acl2::lposfix place))
+       (place (lposfix place))
        ((when shend)
         (aig-logtail-ns 1 n))
        (rst (aig-right-shift-ss (* 2 place) n shrst)))
@@ -989,43 +1434,48 @@ results in at most n+1 bits.</p>"
     (implies (< (aig-list->s shamt env) 0)
              (equal (aig-list->s (aig-right-shift-ss place n shamt) env)
                     (ash (aig-list->s n env)
-                         (+ -1 (acl2::pos-fix place)
-                            (* (acl2::pos-fix place)
+                         (+ -1 (pos-fix place)
+                            (* (pos-fix place)
                                (aig-list->s shamt env))))))
     :hints (("goal" :induct t
              :in-theory (enable acl2::logcons)
              :expand ((aig-list->s shamt env))))))
 
-(define a4vec-rsh ((amt a4vec-p) (x a4vec-p) (mask 4vmask-p))
+
+(define a4vec-rsh ((amt  a4vec-p  "Right-shift amount.")
+                   (x    a4vec-p  "Vector to shift.")
+                   (mask 4vmask-p "Care mask for the result."))
   :short "Symbolic version of @(see 4vec-rsh)."
+  :long "<p>As a special consideration, we use the care mask to try to avoid
+creating enormous vectors when given a huge shift amount.</p>"
   :returns (res a4vec-p)
-  (b* (((a4vec amt) amt)
-       ((a4vec x) x))
-    (a4vec-ite
-     (a2vec-p amt)
-     ;; Valid shift amount.
-     (b* ((shamt (aig-unary-minus-s amt.upper))
-          (sign (aig-sign-s shamt))
-          (mask (4vmask-fix mask))
-          ((mv upper-left lower-left)
-           (if (eq sign t)
-               (mv nil nil)
-             (b* ((lsh-amt (if (<= 0 mask)
-                               (aig-logcollapse-ns
-                                (integer-length (integer-length mask))
-                                shamt)
-                             shamt)))
-               (mv (aig-ash-ss 1 x.upper lsh-amt)
-                   (aig-ash-ss 1 x.lower lsh-amt)))))
-          ((mv upper-right lower-right)
-           (if (not sign)
-               (mv nil nil)
-             (mv (aig-right-shift-ss 1 x.upper shamt)
-                 (aig-right-shift-ss 1 x.lower shamt)))))
-       (a4vec (aig-ite-bss-fn sign upper-right upper-left)
-              (aig-ite-bss-fn sign lower-right lower-left)))
-     ;; X/Z bits in shift amount, just return all Xes.
-     (a4vec-x)))
+  (b* (((a4vec amt))
+       ((a4vec x))
+       (mask (4vmask-fix mask)))
+    ;; BOZO we probably can rework this to avoid doing a unary minus on the shift amount.
+    (a4vec-ite (a2vec-p amt)
+               ;; Valid shift amount.
+               (b* ((shamt (aig-unary-minus-s amt.upper))
+                    (sign  (aig-sign-s shamt))
+                    ((mv upper-left lower-left)
+                     (if (eq sign t)
+                         (mv nil nil)
+                       (b* ((lsh-amt (if (<= 0 mask)
+                                         (aig-logcollapse-ns
+                                          (integer-length (integer-length mask))
+                                          shamt)
+                                       shamt)))
+                         (mv (aig-ash-ss 1 x.upper lsh-amt)
+                             (aig-ash-ss 1 x.lower lsh-amt)))))
+                    ((mv upper-right lower-right)
+                     (if (not sign)
+                         (mv nil nil)
+                       (mv (aig-right-shift-ss 1 x.upper shamt)
+                           (aig-right-shift-ss 1 x.lower shamt)))))
+                 (a4vec (aig-ite-bss-fn sign upper-right upper-left)
+                        (aig-ite-bss-fn sign lower-right lower-left)))
+               ;; X/Z bits in shift amount, just return all Xes.
+               (a4vec-x)))
   ///
   (defthm a4vec-rsh-correct
     (equal (4vec-mask mask (a4vec-eval (a4vec-rsh amt x mask) env))
@@ -1039,475 +1489,293 @@ results in at most n+1 bits.</p>"
                    (gl::env env)))))
     :otf-flg t))
 
-(define a4vec-lsh ((amt a4vec-p) (x a4vec-p))
+(define a4vec-lsh ((amt a4vec-p)
+                   (x a4vec-p)
+                   (mask 4vmask-p))
   :short "Symbolic version of @(see 4vec-lhs)."
   :returns (res a4vec-p)
-  (b* (((a4vec amt) amt)
-       ((a4vec x) x))
-    (a4vec-ite
-     (a2vec-p amt)
-     (a4vec (aig-ash-ss 1 x.upper amt.upper)
-            (aig-ash-ss 1 x.lower amt.upper))
-     (a4vec-x)))
+  (b* (((a4vec amt))
+       ((a4vec x))
+       (mask (4vmask-fix mask)))
+    (a4vec-ite (a2vec-p amt)
+               ;; Valid shift amount.  In our semantics, left-shifting by a
+               ;; negative is right-shifting, so we care about the sign.
+               (b* ((shamt amt.upper)
+                    (sign  (aig-sign-s shamt))
+
+                    ((mv upper-left lower-left)
+                     ;; Compute the upper/lower answer vectors in the left-shift case.
+                     (b* (((when (eq sign t))
+                           ;; We're definitely right-shifting, so left-shift answers
+                           ;; don't matter, don't bother doing anything.
+                           (mv nil nil))
+                          (lsh-amt
+                           ;; Try to defend against catastrophically large
+                           ;; shift amounts by reducing the shift amount by
+                           ;; the mask.
+                           (if (<= 0 mask)
+                               (aig-logcollapse-ns (integer-length (integer-length mask))
+                                                   shamt)
+                             shamt)))
+                       (mv (aig-ash-ss 1 x.upper lsh-amt)
+                           (aig-ash-ss 1 x.lower lsh-amt))))
+
+                    ((mv upper-right lower-right)
+                     ;; Compute the upper/lower answer vectors in the right-shift case.
+                     ;; Since we're right-shifting, we don't have to worry about shifting
+                     ;; by too much, so this is pretty simple.
+                     (if (not sign)
+                         (mv nil nil)
+                       (mv (aig-right-shift-ss 1 x.upper shamt)
+                           (aig-right-shift-ss 1 x.lower shamt))))
+
+                    (upper (aig-ite-bss-fn sign upper-right upper-left))
+                    (lower (aig-ite-bss-fn sign lower-right lower-left)))
+
+                 (a4vec upper lower))
+
+               ;; X/Z bits in shift amount, just return all Xes.
+               (a4vec-x)))
   ///
   (defthm a4vec-lsh-correct
-    (equal (a4vec-eval (a4vec-lsh amt x) env)
-           (4vec-lsh (a4vec-eval amt env)
-                     (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-lsh)))))
+    (equal (4vec-mask mask (a4vec-eval (a4vec-lsh amt x mask) env))
+           (4vec-mask mask
+                      (4vec-lsh (a4vec-eval amt env)
+                                (a4vec-eval x env))))
+    :hints(("Goal" :in-theory (e/d (4vec-lsh 4vec-mask)
+                                   (aig-sign-s-correct))
+            :use ((:instance aig-sign-s-correct
+                   (x (a4vec->upper amt))
+                   (gl::env env)))))
+    :otf-flg t))
 
 
-(local (defthm parity-of-greater
-         (implies (and (< (+ 1 (integer-length x)) (nfix n))
-                       (natp x))
-                  (equal (parity n x)
-                         (parity (+ 1 (integer-length x)) x)))
-         :hints(("Goal" :in-theory (enable parity)
-                 :induct (parity n x)
-                 :expand ((integer-length x)
-                          (:free (n) (parity n x)))))))
 
-(define aig-parity-s ((x true-listp))
-  (b* (((mv xf xr xe) (gl::first/rest/end x)))
-    (if xe
-        nil
-      (aig-xor xf (aig-parity-s xr))))
+(define aig-rev-blocks-nns ((nbits natp)
+                            (blocksz posp)
+                            x)
+  :parents (a4vec-rev-blocks)
+  (b* ((nbits   (lnfix nbits))
+       (blocksz (lposfix blocksz))
+       ((when (< nbits blocksz))
+        (aig-loghead-ns nbits x))
+       (next-nbits (- nbits blocksz))
+       (rest (aig-rev-blocks-nns next-nbits blocksz (aig-logtail-ns blocksz x))))
+    (aig-logapp-nss next-nbits rest (aig-loghead-ns blocksz x)))
   ///
+  (defthm aig-rev-blocks-nns-correct
+    (equal (aig-list->s (aig-rev-blocks-nns nbits blocksz x) env)
+           (rev-blocks nbits blocksz (aig-list->s x env)))
+    :hints (("goal" :induct (aig-rev-blocks-nns nbits blocksz x)
+             :expand ((:free (x) (rev-blocks nbits blocksz x)))))))
 
-  (local (defthm logxor-of-bits
-           (implies (and (bitp a) (bitp b))
-                    (equal (logxor a b)
-                           (bitops::b-xor a b)))))
+(define aig-rev-blocks-nss ((nbits natp)
+                            (blocksz-lowbits natp)
+                            (blocksz-bitidx natp)
+                            blocksz
+                            x)
+  :parents (a4vec-rev-blocks)
+  :prepwork ((local (in-theory (disable unsigned-byte-p))))
+  :guard (unsigned-byte-p blocksz-bitidx blocksz-lowbits)
+  (b* (((mv head tail end) (gl::first/rest/end blocksz))
+       (lowbits (mbe :logic (loghead blocksz-bitidx (nfix blocksz-lowbits))
+                     :exec blocksz-lowbits))
+       ((when end)
+        (aig-ite-bss head
+                     ;; negative: revert to 1
+                     (aig-rev-blocks-nns nbits 1 x)
+                     ;; nonnegative
+                     (aig-rev-blocks-nns nbits (pos-fix lowbits) x))))
+    (aig-ite-bss head
+                 (aig-rev-blocks-nss nbits
+                                     (logior (ash 1 (lnfix blocksz-bitidx))
+                                             lowbits)
+                                     (+ 1 (lnfix blocksz-bitidx))
+                                     tail
+                                     x)
+                 (aig-rev-blocks-nss nbits
+                                     lowbits
+                                     (+ 1 (lnfix blocksz-bitidx))
+                                     tail
+                                     x)))
+  ///
+  (local (defthm ash-of-logcons
+           (implies (natp n)
+                    (equal (ash (bitops::logcons b x) n)
+                           (logior (ash (bitops::bfix b) n)
+                                   (bitops::logcons 0 (ash x n)))))
+           :hints(("Goal" :in-theory (enable* bitops::ash**
+                                              bitops::ihsext-inductions)))))
 
-  (defthm aig-parity-s-correct
-    (let ((xv (aig-list->s x env)))
-      (implies (<= 0 xv)
-               (equal (aig-eval (aig-parity-s x) env)
-                      (bitops::bit->bool (parity (+ 1 (integer-length xv)) xv)))))
-    :hints(("Goal" :in-theory (enable parity
-                                      bitops::loghead** bitops::logtail**)
-            :induct (aig-parity-s x)
-            :expand ((aig-list->s x env)
-                     (:free (n x) (parity (+ 2 n) x))
-                     (:free (a b) (integer-length (bitops::logcons a b))))))))
+  (local (defthm pos-fix-nfix
+           (equal (acl2::pos-fix (nfix x))
+                  (acl2::pos-fix x))
+           :hints(("Goal" :in-theory (enable acl2::pos-fix)))))
 
-(define a4vec-parity ((x a4vec-p))
+  (local (defthm rev-blocks-of-nfix-blocksz
+           (equal (rev-blocks nbits (nfix blocksz) x)
+                  (rev-blocks nbits blocksz x))
+           :hints(("Goal" :in-theory (enable (:i rev-blocks))
+                   :induct (rev-blocks nbits blocksz x)
+                   :expand ((:free (blocksz) (rev-blocks nbits blocksz x)))))))
+
+  (local (defthm rev-blocks-of-nonpositive
+           (implies (not (posp blocksz))
+                    (equal (rev-blocks nbits blocksz x)
+                           (rev-blocks nbits 1 x)))
+           :hints(("Goal" :in-theory (enable (:i rev-blocks) acl2::pos-fix)
+                   :induct (rev-blocks nbits blocksz x)
+                   :expand ((:free (blocksz) (rev-blocks nbits blocksz x)))))))
+
+  (local (defthm not-posp-when-negative
+           (implies (< x 0)
+                    (not (posp x)))))
+
+  (defthm aig-rev-blocks-nss-correct
+    (equal (aig-list->s (aig-rev-blocks-nss nbits
+                                            blocksz-lowbits
+                                            blocksz-bitidx
+                                            blocksz
+                                            x)
+                        env)
+           (rev-blocks nbits (logior (loghead blocksz-bitidx (nfix blocksz-lowbits))
+                                     (ash (aig-list->s blocksz env)
+                                          (nfix blocksz-bitidx)))
+                       (aig-list->s x env)))
+    :hints (("goal" :induct (aig-rev-blocks-nss nbits
+                                                blocksz-lowbits
+                                                blocksz-bitidx
+                                                blocksz
+                                                x
+                                                )
+             :in-theory (enable bitops::ash-<-0-linear))
+            (and stable-under-simplificationp
+                 '(:expand ((aig-list->s blocksz env)
+                            (:free (x n) (ash x (+ 1 n)))
+                            (:free (x n) (loghead (+ 1 n) x))))))))
+
+
+(define aig-rev-blocks-sss ((nbits-lowbits natp)
+                            (nbits-bitidx natp)
+                            nbits
+                            blocksz
+                            x)
+  :prepwork ((local (in-theory (disable unsigned-byte-p))))
+  :guard (unsigned-byte-p nbits-bitidx nbits-lowbits)
+  (b* (((mv head tail end) (gl::first/rest/end nbits))
+       (lowbits (mbe :logic (loghead nbits-bitidx (nfix nbits-lowbits))
+                     :exec nbits-lowbits))
+       ((when end)
+        (aig-ite-bss head
+                     ;; negative: revert to 0
+                     (aig-rev-blocks-nss 0 0 0 blocksz x)
+                     ;; nonnegative
+                     (aig-rev-blocks-nss lowbits 0 0 blocksz x))))
+    (aig-ite-bss head
+                 (aig-rev-blocks-sss (logior
+                                      (ash 1 (lnfix nbits-bitidx))
+                                      lowbits)
+                                     (+ 1 (lnfix nbits-bitidx))
+                                     tail
+                                     blocksz
+                                     x)
+                 (aig-rev-blocks-sss lowbits
+                                     (+ 1 (lnfix nbits-bitidx))
+                                     tail
+                                     blocksz
+                                     x)))
+  ///
+  (local (defthm ash-of-logcons
+           (implies (natp n)
+                    (equal (ash (bitops::logcons b x) n)
+                           (logior (ash (bitops::bfix b) n)
+                                   (bitops::logcons 0 (ash x n)))))
+           :hints(("Goal" :in-theory (enable* bitops::ash**
+                                              bitops::ihsext-inductions)))))
+
+  (local (defthm pos-fix-nfix
+           (equal (acl2::pos-fix (nfix x))
+                  (acl2::pos-fix x))
+           :hints(("Goal" :in-theory (enable acl2::pos-fix)))))
+
+  (local (defthm rev-blocks-of-nfix-nbits
+           (equal (rev-blocks (nfix nbits) blocksz x)
+                  (rev-blocks nbits blocksz x))
+           :hints(("Goal" :in-theory (enable (:i rev-blocks))
+                   :induct (rev-blocks nbits blocksz x)
+                   :expand ((:free (nbits blocksz) (rev-blocks nbits blocksz x)))))))
+
+  (local (defthm rev-blocks-of-nonnat
+           (implies (not (natp nbits))
+                    (equal (rev-blocks nbits blocksz x)
+                           (rev-blocks 0 blocksz x)))
+           :hints(("Goal" :in-theory (enable (:i rev-blocks) acl2::pos-fix)
+                   :induct (rev-blocks nbits blocksz x)
+                   :expand ((:free (nbits blocksz) (rev-blocks nbits blocksz x)))))))
+
+  (local (defthm not-posp-when-negative
+           (implies (< x 0)
+                    (not (posp x)))))
+
+  (defthm aig-rev-blocks-sss-correct
+    (equal (aig-list->s (aig-rev-blocks-sss nbits-lowbits
+                                            nbits-bitidx
+                                            nbits
+                                            blocksz
+                                            x)
+                        env)
+           (rev-blocks (logior (loghead nbits-bitidx (nfix nbits-lowbits))
+                               (ash (aig-list->s nbits env)
+                                    (nfix nbits-bitidx)))
+                       (aig-list->s blocksz env)
+                       (aig-list->s x env)))
+    :hints (("goal" :induct (aig-rev-blocks-sss nbits-lowbits
+                                                nbits-bitidx
+                                                nbits
+                                                blocksz
+                                                x)
+             :in-theory (enable bitops::ash-<-0-linear))
+            (and stable-under-simplificationp
+                 '(:expand ((aig-list->s nbits env)
+                            (:free (x n) (ash x (+ 1 n)))
+                            (:free (x n) (loghead (+ 1 n) x))))))))
+
+(define a4vec-rev-blocks ((w a4vec-p)
+                          (b a4vec-p)
+                          (x a4vec-p))
+  :short "Symbolic version of @(see 4vec-rev-blocks)."
   :returns (res a4vec-p)
-  (b* (((a4vec x) x))
-    (a4vec-ite
-     (aig-and (a2vec-p x)
-              (aig-not (aig-sign-s x.upper)))
-     (let* ((bit (aig-parity-s x.upper))
-            (vec (aig-sterm bit)))
-       (a4vec vec vec))
-     (a4vec-x)))
+  (b* (((a4vec w) w)
+       ((a4vec b) b)
+       ((a4vec x) x))
+    (a4vec-ite (aig-and (a2vec-p w)
+                        (aig-not (aig-sign-s w.upper))
+                        (a2vec-p b)
+                        (aig-not (aig-sign-s b.upper))
+                        (aig-not (aig-=-ss b.upper nil)))
+               (a4vec (aig-rev-blocks-sss 0 0 w.upper b.upper x.upper)
+                      (aig-rev-blocks-sss 0 0 w.upper b.upper x.lower))
+               (a4vec-x)))
   ///
-  (defthm a4vec-parity-correct
-    (equal (a4vec-eval (a4vec-parity x) env)
-           (4vec-parity (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-parity bool->vec)))))
-
-
-(define a4vec-plus ((x a4vec-p) (y a4vec-p))
-  :returns (res a4vec-p)
-  (a4vec-ite
-   (aig-and (a2vec-p x)
-            (a2vec-p y))
-   (b* (((a4vec x) x)
-        ((a4vec y) y)
-        (res (aig-+-ss nil x.upper y.upper)))
-     (a4vec res res))
-   (a4vec-x))
-  ///
-  (defthm a4vec-plus-correct
-    (equal (a4vec-eval (a4vec-plus x y) env)
-           (4vec-plus (a4vec-eval x env)
-                      (a4vec-eval y env)))
-    :hints(("Goal" :in-theory (enable 4vec-plus)))))
+  (defthm a4vec-rev-blocks-correct
+    (equal (a4vec-eval (a4vec-rev-blocks w b x) env)
+           (4vec-rev-blocks (a4vec-eval w env)
+                            (a4vec-eval b env)
+                            (a4vec-eval x env)))
+    :hints(("Goal" :in-theory (enable 4vec-rev-blocks)))))
 
 
 
-(define a4vec-minus ((x a4vec-p) (y a4vec-p))
-  :returns (res a4vec-p)
-  (a4vec-ite
-   (aig-and (a2vec-p x)
-            (a2vec-p y))
-   (b* (((a4vec x) x)
-        ((a4vec y) y)
-        (res (aig-+-ss t x.upper (aig-lognot-s y.upper))))
-     (a4vec res res))
-   (a4vec-x))
-  ///
-  (defthm a4vec-minus-correct
-    (equal (a4vec-eval (a4vec-minus x y) env)
-           (4vec-minus (a4vec-eval x env)
-                      (a4vec-eval y env)))
-    :hints(("Goal" :in-theory (enable 4vec-minus lognot)))))
 
-(define a4vec-uminus ((x a4vec-p))
-  :returns (res a4vec-p)
-  (a4vec-ite
-   (a2vec-p x)
-   (b* (((a4vec x) x)
-        (res (aig-+-ss t nil (aig-lognot-s x.upper))))
-     (a4vec res res))
-   (a4vec-x))
-  ///
-  (defthm a4vec-uminus-correct
-    (equal (a4vec-eval (a4vec-uminus x) env)
-           (4vec-uminus (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-uminus lognot)))))
-
-(define a4vec-xdet ((x a4vec-p))
-  :returns (res a4vec-p)
-  (a4vec-ite
-   (a2vec-p x)
-   (a4vec-fix x)
-   (a4vec-x))
-  ///
-  (defthm a4vec-xdet-correct
-    (equal (a4vec-eval (a4vec-xdet x) env)
-           (4vec-xdet (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-xdet lognot)))))
-
-(define a4vec-clog2 ((x a4vec-p))
-  :returns (res a4vec-p)
-   (b* (((a4vec x) x))
-     (a4vec-ite
-      (aig-and (a2vec-p x)
-               (aig-not (aig-sign-s x.upper)))
-      (b* ((res (aig-integer-length-s (aig-+-ss nil '(t) x.upper))))
-        (a4vec res res))
-      (a4vec-x)))
-  ///
-  (defthm a4vec-clog2-correct
-    (equal (a4vec-eval (a4vec-clog2 x) env)
-           (4vec-clog2 (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-clog2)))))
-
-(define a4vec-times ((x a4vec-p) (y a4vec-p))
-  :returns (res a4vec-p)
-  (a4vec-ite
-   (aig-and (a2vec-p x)
-            (a2vec-p y))
-   (b* (((a4vec x) x)
-        ((a4vec y) y)
-        (res (aig-*-ss x.upper y.upper)))
-     (a4vec res res))
-   (a4vec-x))
-  ///
-  (defthm a4vec-times-correct
-    (equal (a4vec-eval (a4vec-times x y) env)
-           (4vec-times (a4vec-eval x env)
-                      (a4vec-eval y env)))
-    :hints(("Goal" :in-theory (enable 4vec-times lognot)))))
-
-(define a4vec-quotient ((x a4vec-p) (y a4vec-p))
-  :returns (res a4vec-p)
-  (a4vec-ite
-   (aig-and (a2vec-p x)
-            (a2vec-p y)
-            (aig-not (aig-=-ss (a4vec->upper y) (aig-sterm nil))))
-   (b* (((a4vec x) x)
-        ((a4vec y) y)
-        (res (aig-truncate-ss x.upper y.upper)))
-     (a4vec res res))
-   (a4vec-x))
-  ///
-  (defthm a4vec-quotient-correct
-    (equal (a4vec-eval (a4vec-quotient x y) env)
-           (4vec-quotient (a4vec-eval x env)
-                      (a4vec-eval y env)))
-    :hints(("Goal" :in-theory (enable 4vec-quotient lognot)))))
-
-(define a4vec-remainder ((x a4vec-p) (y a4vec-p))
-  :returns (res a4vec-p)
-  (a4vec-ite
-   (aig-and (a2vec-p x)
-            (a2vec-p y)
-            (aig-not (aig-=-ss (a4vec->upper y) (aig-sterm nil))))
-   (b* (((a4vec x) x)
-        ((a4vec y) y)
-        (res (aig-rem-ss x.upper y.upper)))
-     (a4vec res res))
-   (a4vec-x))
-  ///
-  (defthm a4vec-remainder-correct
-    (equal (a4vec-eval (a4vec-remainder x y) env)
-           (4vec-remainder (a4vec-eval x env)
-                      (a4vec-eval y env)))
-    :hints(("Goal" :in-theory (enable 4vec-remainder lognot)))))
-
-(define a4vec-< ((x a4vec-p) (y a4vec-p))
-  :returns (res a4vec-p)
-  (a4vec-ite
-   (aig-and (a2vec-p x)
-            (a2vec-p y))
-   (b* (((a4vec x) x)
-        ((a4vec y) y)
-        (res (aig-sterm (aig-<-ss x.upper y.upper))))
-     (a4vec res res))
-   (a4vec-x))
-  ///
-  (defthm a4vec-<-correct
-    (equal (a4vec-eval (a4vec-< x y) env)
-           (4vec-< (a4vec-eval x env)
-                   (a4vec-eval y env)))
-    :hints(("Goal" :in-theory (enable 4vec-< lognot)))))
-
-(define a3vec-== ((x a4vec-p) (y a4vec-p))
-  :returns (res a4vec-p)
-  ;; Could probably do this in one pass and lazily
-  (a3vec-reduction-and (a3vec-bitnot (a3vec-bitxor x y)))
-  ///
-  (defthm a3vec-==-correct
-    (equal (a4vec-eval (a3vec-== x y) env)
-           (3vec-== (a4vec-eval x env)
-                    (a4vec-eval y env)))
-    :hints(("Goal" :in-theory (enable 4vec-== 3vec-==)))))
-
-(define a4vec-=== ((x a4vec-p) (y a4vec-p))
-  :returns (res a4vec-p)
-  (b* (((a4vec x))
-       ((a4vec y))
-       ;; The laziness of aig-and means that this is as lazy as possible.
-       (val (aig-sterm (aig-and (aig-=-ss x.upper y.upper)
-                                (aig-=-ss x.lower y.lower)))))
-    (a4vec val val))
-  ///
-  (defthm a4vec-===-correct
-    (equal (a4vec-eval (a4vec-=== x y) env)
-           (4vec-=== (a4vec-eval x env)
-                    (a4vec-eval y env)))
-    :hints(("Goal" :in-theory (enable 4vec-=== bool->vec)))))
-
-(defun aig-neg/abs (x)
-  (b* (((when (or (atom x) (cdr x)))
-        (mv nil x))
-       ((mv neg1 abs1) (aig-neg/abs (car x))))
-    (mv (not neg1) abs1)))
-
-;; (~a.1 &  c.1) |
-;; ( a.0 &  b.1) |
-;; ( (a.1 & ~a.0) & (   ( b.1 | c.1 )
-;;                    | (   ~( b.0 &  c.0)
-;;                         & ( b.0 | c.0 ) ) ) ) ) )
-
-;; (~a.1 &  c.0) |
-;; ( a.0 &  b.0) |
-;; ( (a.1 & ~a.0) & (   ( b.0 & c.0 )
-;;                    & (   ~( b.1 |  c.1)
-;;                         | ( b.1 & c.1 ) ) ) ) ) )
-
-;; This reduces nicely when a is known and when known Boolean.
-
-;; When b and c are both known 3vec, then the a=x portion reduces to:
-;; ( (a.1 & ~a.0) & ( b.1 | c.1 )
-;; ( (a.1 & ~a.0) & ( b.0 & c.0 )
-
-;; when e.g. just b is known Boolean, it reduces to:
-;; ( (a.1 & ~a.0) & ( ( b.1 | c.1 ) | c.0 )
-;; ( (a.1 & ~a.0) & ( ( b.0 & c.0 ) & c.1 )
-
-
-;; (define aig-logand-is ((mask integerp)
-;;                        x)
-;;   :returns (new-x)
-;;   :prepwork ((local (in-theory (enable acl2::integer-length**))))
-;;   :measure (integer-length mask)
-;;   (b* (((when (zip mask)) nil)
-;;        ((when (eql mask -1)) x)
-;;        ((mv first rest ?end) (gl::first/rest/end x)))
-;;     (aig-scons (if (logbitp 0 mask) first nil)
-;;                (aig-logand-is (logcdr mask) rest)))
-;;   ///
-
-;;   ;; (local (defthm logcar/logcdr-of-bool->sign
-;;   ;;          (and (equal (logcar (gl::bool->sign x))
-;;   ;;                      (acl2::bool->bit x))
-;;   ;;               (equal (logcdr (gl::bool->sign x))
-;;   ;;                      (gl::bool->sign x)))
-;;   ;;          :hints(("Goal" :in-theory (enable gl::bool->sign acl2::bool->bit)))))
-
-;;   (defthm aig-logand-is-correct
-;;     (equal (aig-list->s (aig-logand-is mask x) env)
-;;            (logand mask (aig-list->s x env)))
-;;     :hints(("Goal" :in-theory (e/d (acl2::logand** aig-list->s)
-;;                                    (GL::SCDR-WHEN-S-ENDP))))))
-
-(define aig-i2v ((x integerp))
-  :measure (integer-length x)
-  :prepwork ((local (in-theory (enable acl2::integer-length**))))
-  (cond ((zip x) nil)
-        ((eql x -1) '(t))
-        (t (aig-scons (logbitp 0 x) (aig-i2v (logcdr x)))))
-  ///
-  (defthm aig-i2v-correct
-    (equal (aig-list->s (aig-i2v x) env)
-           (ifix x))))
+;; I AM HERE
 
 
 
-(define a4vec-mask ((mask 4vmask-p)
-                    (x a4vec-p))
-  :returns (masked-a4vec a4vec-p)
-  (b* (((a4vec x))
-       (mask (4vmask-fix mask)))
-    (a4vec (aig-logior-ss (aig-i2v (lognot mask)) x.upper)
-           (aig-logand-ss (aig-i2v mask) x.lower)))
-  ///
-  (defthm a4vec-mask-correct
-    (equal (a4vec-eval (a4vec-mask mask x) env)
-           (4vec-mask mask (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-mask)))))
 
 
-(define a3vec-? ((x a4vec-p) (y a4vec-p) y3p (z a4vec-p) z3p)
-  :returns (res a4vec-p)
-  (b* (((a4vec a) x)
-       ((a4vec b) y)
-       ((a4vec c) z)
-       ;; common subexpressions between the two
-       (a=1 (aig-not (aig-=-ss a.lower nil)))
-       (a=0 (aig-=-ss a.upper nil))
-       (a=x (aig-nor a=1 a=0))
-       (b1vc1 (aig-logior-ss b.upper c.upper))
-       (b0^c0 (aig-logand-ss b.lower c.lower))
-
-       ;; upper
-       (boolcase (aig-logior-ss (aig-ite-bss-fn a=1 b.upper nil)
-                                (aig-ite-bss-fn a=0 c.upper nil)))
-       (xcase (cond ((and y3p z3p) b1vc1)
-                    (y3p (aig-logior-ss b1vc1 c.lower))
-                    (z3p (aig-logior-ss b1vc1 b.lower))
-                    (t (aig-logior-ss b1vc1
-                                      (aig-logandc1-ss b0^c0
-                                                       (aig-logior-ss b.lower c.lower))))))
-       (upper (aig-logior-ss boolcase
-                             (aig-ite-bss-fn a=x xcase nil)))
-
-       ;; lower
-       (boolcase (aig-logior-ss (aig-ite-bss-fn a=1 b.lower nil)
-                                (aig-ite-bss-fn a=0 c.lower nil)))
-       (xcase (cond ((and y3p z3p) b0^c0)
-                    (y3p (aig-logand-ss b0^c0 c.upper))
-                    (z3p (aig-logand-ss b0^c0 b.upper))
-                    (t (aig-logand-ss b0^c0
-                                      (aig-logior-ss
-                                       (aig-lognot-s b1vc1)
-                                       (aig-logand-ss b.upper c.upper))))))
-       (lower (aig-logior-ss boolcase
-                             (aig-ite-bss-fn a=x xcase nil))))
-    (a4vec upper lower))
-  ///
-  (local (in-theory (disable iff not acl2::zip-open)))
-  (local (in-theory (disable bitops::logand-natp-type-2
-                             bitops::logand-natp-type-1
-                             bitops::logior-natp-type
-                             bitops::logand->=-0-linear-2
-                             bitops::logand->=-0-linear-1
-                             bitops::upper-bound-of-logand
-                             aig-list->s
-                             bitops::logbitp-when-bit
-                             bitops::logbitp-nonzero-of-bit
-                             bitops::logbitp-when-bitmaskp
-                             bitops::lognot-negp
-                             bitops::lognot-natp
-                             bitops::logior-<-0-linear-2
-                             bitops::logior-<-0-linear-1
-                             bitops::lognot-<-const
-                             acl2::aig-env-lookup)))
-  (defthm a3vec-?-correct
-    (implies (and (case-split (implies y3p (3vec-p (a4vec-eval y env))))
-                  (case-split (implies z3p (3vec-p (a4vec-eval z env))))
-                  (3vec-p (a4vec-eval x env)))
-             (equal (a4vec-eval (a3vec-? x y y3p z z3p) env)
-                    (3vec-? (a4vec-eval x env)
-                            (a4vec-eval y env)
-                            (a4vec-eval z env))))
-    :hints(("Goal" :in-theory (enable 3vec-? 3vec-p))
-           (bitops::logbitp-reasoning)
-           (and stable-under-simplificationp
-                '(:bdd (:vars nil))))))
-
-(define a3vec-bit? ((x a4vec-p) (y a4vec-p) y3p (z a4vec-p) z3p)
-  :returns (res a4vec-p)
-  (b* (((a4vec a) x)
-       ((a4vec b) y)
-       ((a4vec c) z)
-       ;; common subexpressions between the two
-       (b1vc1 (aig-logior-ss b.upper c.upper))
-       (b0^c0 (aig-logand-ss b.lower c.lower))
-       (a=x   (aig-logandc2-ss a.upper a.lower))
-       ;; upper
-       (boolcase (aig-logior-ss (aig-logand-ss a.lower b.upper)
-                                (aig-logandc1-ss a.upper c.upper)))
-       (xcase (cond ((and y3p z3p) b1vc1)
-                    (y3p (aig-logior-ss b1vc1 c.lower))
-                    (z3p (aig-logior-ss b1vc1 b.lower))
-                    (t (aig-logior-ss b1vc1
-                                      (aig-logandc1-ss b0^c0
-                                                       (aig-logior-ss b.lower c.lower))))))
-       (upper (aig-logior-ss boolcase
-                             (aig-logand-ss a=x xcase)))
-
-       ;; lower
-       (boolcase (aig-logior-ss (aig-logand-ss a.lower b.lower)
-                                (aig-logandc1-ss a.upper c.lower)))
-       (xcase (cond ((and y3p z3p) b0^c0)
-                    (y3p (aig-logand-ss b0^c0 c.upper))
-                    (z3p (aig-logand-ss b0^c0 b.upper))
-                    (t (aig-logand-ss b0^c0
-                                      (aig-logior-ss
-                                       (aig-lognot-s b1vc1)
-                                       (aig-logand-ss b.upper c.upper))))))
-       (lower (aig-logior-ss boolcase
-                             (aig-logand-ss a=x xcase))))
-    (a4vec upper lower))
-  ///
-  (local (in-theory (disable iff not acl2::zip-open)))
-  (local (in-theory (disable bitops::logand-natp-type-2
-                             bitops::logand-natp-type-1
-                             bitops::logior-natp-type
-                             bitops::logand->=-0-linear-2
-                             bitops::logand->=-0-linear-1
-                             bitops::upper-bound-of-logand
-                             aig-list->s
-                             bitops::logbitp-when-bit
-                             bitops::logbitp-nonzero-of-bit
-                             bitops::logbitp-when-bitmaskp
-                             bitops::lognot-negp
-                             bitops::lognot-natp
-                             bitops::logior-<-0-linear-2
-                             bitops::logior-<-0-linear-1
-                             bitops::lognot-<-const
-                             acl2::aig-env-lookup)))
-  (defthm a3vec-bit?-correct
-    (implies (and (case-split (implies y3p (3vec-p (a4vec-eval y env))))
-                  (case-split (implies z3p (3vec-p (a4vec-eval z env))))
-                  (3vec-p (a4vec-eval x env)))
-             (equal (a4vec-eval (a3vec-bit? x y y3p z z3p) env)
-                    (3vec-bit? (a4vec-eval x env)
-                               (a4vec-eval y env)
-                               (a4vec-eval z env))))
-    :hints(("Goal" :in-theory (enable 3vec-bit? 3vec-p))
-           (bitops::logbitp-reasoning)
-           (and stable-under-simplificationp
-                '(:bdd (:vars nil))))))
-
-
-
-(define 4vec->a4vec ((x 4vec-p))
-  :returns (res a4vec-p)
-  (b* (((4vec x) x))
-    (a4vec (gl::i2v x.upper)
-           (gl::i2v x.lower)))
-  ///
-  (defthm 4vec->a4vec-correct
-    (equal (a4vec-eval (4vec->a4vec x) env)
-           (4vec-fix x))))
-
-(defalist svex-a4vec-env :key-type svar :val-type a4vec)
+(defalist svex-a4vec-env
+  :key-type svar
+  :val-type a4vec)
 
 (define svex-a4vec-env-eval ((x svex-a4vec-env-p) env)
   :returns (xx svex-env-p)
@@ -1519,14 +1787,6 @@ results in at most n+1 bits.</p>"
                   (a4vec-eval (cdar x) env))
             (svex-a4vec-env-eval (cdr x) env)))))
 
-(deflist a4veclist :elt-type a4vec :true-listp t)
-
-(define a4veclist-eval ((x a4veclist-p) env)
-  :returns (vals 4veclist-p)
-  (if (atom x)
-      nil
-    (cons (a4vec-eval (car x) env)
-          (a4veclist-eval (cdr x) env))))
 
 
 
@@ -1615,261 +1875,21 @@ results in at most n+1 bits.</p>"
                     (a4vec-fix v)))
     :hints(("Goal" :in-theory (enable a3vec-fix)))))
 
-(define aig-rev-blocks-nns ((nbits natp)
-                            (blocksz posp)
-                            x)
-  (b* ((nbits (lnfix nbits))
-       (blocksz (mbe :logic (acl2::pos-fix blocksz) :exec blocksz))
-       ((when (< nbits blocksz))
-        (aig-loghead-ns nbits x))
-       (next-nbits (- nbits blocksz))
-       (rest (aig-rev-blocks-nns
-              next-nbits blocksz (aig-logtail-ns blocksz x))))
-    (aig-logapp-nss next-nbits rest (aig-loghead-ns blocksz x)))
-  ///
-  (defthm aig-rev-blocks-nns-correct
-    (equal (aig-list->s (aig-rev-blocks-nns nbits blocksz x) env)
-           (rev-blocks nbits blocksz (aig-list->s x env)))
-    :hints (("goal" :induct (aig-rev-blocks-nns nbits blocksz x)
-             :expand ((:free (x) (rev-blocks nbits blocksz x)))))))
-
-
-(define aig-rev-blocks-nss ((nbits natp)
-                            (blocksz-lowbits natp)
-                            (blocksz-bitidx natp)
-                            blocksz
-                            x)
-  :prepwork ((local (in-theory (disable unsigned-byte-p))))
-  :guard (unsigned-byte-p blocksz-bitidx blocksz-lowbits)
-
-  :guard-debug t
-  (b* (((mv head tail end) (gl::first/rest/end blocksz))
-       (lowbits (mbe :logic (loghead blocksz-bitidx (nfix blocksz-lowbits))
-                     :exec blocksz-lowbits))
-       ((when end)
-        (aig-ite-bss head
-                     ;; negative: revert to 1
-                     (aig-rev-blocks-nns nbits 1 x)
-                     ;; nonnegative
-                     (aig-rev-blocks-nns nbits (acl2::pos-fix lowbits) x))))
-    (aig-ite-bss head
-                 (aig-rev-blocks-nss nbits
-                                     (logior
-                                      (ash 1 (lnfix blocksz-bitidx))
-                                      lowbits)
-                                     (+ 1 (lnfix blocksz-bitidx))
-                                     tail
-                                     x)
-                 (aig-rev-blocks-nss nbits
-                                     lowbits
-                                     (+ 1 (lnfix blocksz-bitidx))
-                                     tail
-                                     x)))
-  ///
-  (local (defthm ash-of-logcons
-           (implies (natp n)
-                    (equal (ash (bitops::logcons b x) n)
-                           (logior (ash (bitops::bfix b) n)
-                                   (bitops::logcons 0 (ash x n)))))
-           :hints(("Goal" :in-theory (enable* bitops::ash**
-                                              bitops::ihsext-inductions)))))
-
-  (local (defthm pos-fix-nfix
-           (equal (acl2::pos-fix (nfix x))
-                  (acl2::pos-fix x))
-           :hints(("Goal" :in-theory (enable acl2::pos-fix)))))
-
-  (local (defthm rev-blocks-of-nfix-blocksz
-           (equal (rev-blocks nbits (nfix blocksz) x)
-                  (rev-blocks nbits blocksz x))
-           :hints(("Goal" :in-theory (enable (:i rev-blocks))
-                   :induct (rev-blocks nbits blocksz x)
-                   :expand ((:free (blocksz) (rev-blocks nbits blocksz x)))))))
-
-  (local (defthm rev-blocks-of-nonpositive
-           (implies (not (posp blocksz))
-                    (equal (rev-blocks nbits blocksz x)
-                           (rev-blocks nbits 1 x)))
-           :hints(("Goal" :in-theory (enable (:i rev-blocks) acl2::pos-fix)
-                   :induct (rev-blocks nbits blocksz x)
-                   :expand ((:free (blocksz) (rev-blocks nbits blocksz x)))))))
-
-  (local (defthm not-posp-when-negative
-           (implies (< x 0)
-                    (not (posp x)))))
-
-  (defthm aig-rev-blocks-nss-correct
-    (equal (aig-list->s (aig-rev-blocks-nss nbits
-                                            blocksz-lowbits
-                                            blocksz-bitidx
-                                            blocksz
-                                            x)
-                        env)
-           (rev-blocks nbits (logior (loghead blocksz-bitidx (nfix blocksz-lowbits))
-                                     (ash (aig-list->s blocksz env)
-                                          (nfix blocksz-bitidx)))
-                       (aig-list->s x env)))
-    :hints (("goal" :induct (aig-rev-blocks-nss nbits
-                                                blocksz-lowbits
-                                                blocksz-bitidx
-                                                blocksz
-                                                x)
-             :in-theory (enable bitops::ash-<-0-linear))
-            (and stable-under-simplificationp
-                 '(:expand ((aig-list->s blocksz env)
-                            (:free (x n) (ash x (+ 1 n)))
-                            (:free (x n) (loghead (+ 1 n) x))))))))
 
 
 
-(define aig-rev-blocks-sss ((nbits-lowbits natp)
-                            (nbits-bitidx natp)
-                            nbits
-                            blocksz
-                            x)
-  :prepwork ((local (in-theory (disable unsigned-byte-p))))
-  :guard (unsigned-byte-p nbits-bitidx nbits-lowbits)
-
-  :guard-debug t
-  (b* (((mv head tail end) (gl::first/rest/end nbits))
-       (lowbits (mbe :logic (loghead nbits-bitidx (nfix nbits-lowbits))
-                     :exec nbits-lowbits))
-       ((when end)
-        (aig-ite-bss head
-                     ;; negative: revert to 0
-                     (aig-rev-blocks-nss 0 0 0 blocksz x)
-                     ;; nonnegative
-                     (aig-rev-blocks-nss lowbits 0 0 blocksz x))))
-    (aig-ite-bss head
-                 (aig-rev-blocks-sss (logior
-                                      (ash 1 (lnfix nbits-bitidx))
-                                      lowbits)
-                                     (+ 1 (lnfix nbits-bitidx))
-                                     tail
-                                     blocksz
-                                     x)
-                 (aig-rev-blocks-sss lowbits
-                                     (+ 1 (lnfix nbits-bitidx))
-                                     tail
-                                     blocksz
-                                     x)))
-  ///
-  (local (defthm ash-of-logcons
-           (implies (natp n)
-                    (equal (ash (bitops::logcons b x) n)
-                           (logior (ash (bitops::bfix b) n)
-                                   (bitops::logcons 0 (ash x n)))))
-           :hints(("Goal" :in-theory (enable* bitops::ash**
-                                              bitops::ihsext-inductions)))))
-
-  (local (defthm pos-fix-nfix
-           (equal (acl2::pos-fix (nfix x))
-                  (acl2::pos-fix x))
-           :hints(("Goal" :in-theory (enable acl2::pos-fix)))))
-
-  (local (defthm rev-blocks-of-nfix-nbits
-           (equal (rev-blocks (nfix nbits) blocksz x)
-                  (rev-blocks nbits blocksz x))
-           :hints(("Goal" :in-theory (enable (:i rev-blocks))
-                   :induct (rev-blocks nbits blocksz x)
-                   :expand ((:free (nbits blocksz) (rev-blocks nbits blocksz x)))))))
-
-  (local (defthm rev-blocks-of-nonnat
-           (implies (not (natp nbits))
-                    (equal (rev-blocks nbits blocksz x)
-                           (rev-blocks 0 blocksz x)))
-           :hints(("Goal" :in-theory (enable (:i rev-blocks) acl2::pos-fix)
-                   :induct (rev-blocks nbits blocksz x)
-                   :expand ((:free (nbits blocksz) (rev-blocks nbits blocksz x)))))))
-
-  (local (defthm not-natp-when-negative
-           (implies (< x 0)
-                    (not (natp x)))))
-
-  (defthm aig-rev-blocks-sss-correct
-    (equal (aig-list->s (aig-rev-blocks-sss nbits-lowbits
-                                            nbits-bitidx
-                                            nbits
-                                            blocksz
-                                            x)
-                        env)
-           (rev-blocks (logior (loghead nbits-bitidx (nfix nbits-lowbits))
-                               (ash (aig-list->s nbits env)
-                                    (nfix nbits-bitidx)))
-                       (aig-list->s blocksz env)
-                       (aig-list->s x env)))
-    :hints (("goal" :induct (aig-rev-blocks-sss nbits-lowbits
-                                                nbits-bitidx
-                                                nbits
-                                                blocksz
-                                                x)
-             :in-theory (enable bitops::ash-<-0-linear))
-            (and stable-under-simplificationp
-                 '(:expand ((aig-list->s nbits env)
-                            (:free (x n) (ash x (+ 1 n)))
-                            (:free (x n) (loghead (+ 1 n) x))))))))
 
 
-(define a4vec-rev-blocks ((w a4vec-p)
-                          (b a4vec-p)
-                          (x a4vec-p))
-  :returns (res a4vec-p)
-  (b* (((a4vec w) w)
-       ((a4vec b) b)
-       ((a4vec x) x))
-    (a4vec-ite
-     (aig-and (a2vec-p w)
-              (aig-not (aig-sign-s w.upper))
-              (a2vec-p b)
-              (aig-not (aig-sign-s b.upper))
-              (aig-not (aig-=-ss b.upper nil)))
-     (a4vec (aig-rev-blocks-sss 0 0 w.upper b.upper x.upper)
-            (aig-rev-blocks-sss 0 0 w.upper b.upper x.lower))
-     (a4vec-x)))
-  ///
-  (defthm a4vec-rev-blocks-correct
-    (equal (a4vec-eval (a4vec-rev-blocks w b x) env)
-           (4vec-rev-blocks (a4vec-eval w env)
-                            (a4vec-eval b env)
-                            (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-rev-blocks)))))
-
-(define a4vec-wildeq ((a a4vec-p) (b a4vec-p))
-  :returns (res a4vec-p)
-  (b* ((eq (a3vec-bitnot (a3vec-bitxor (a3vec-fix a) (a3vec-fix b))))
-       ((a4vec a)) ((a4vec b))
-       (zmask (aig-logand-ss (aig-lognot-s b.upper) b.lower)))
-    (a3vec-reduction-and (a3vec-bitor eq (a4vec zmask zmask))))
-  ///
-  (defthm a4vec-wildeq-correct
-    (equal (a4vec-eval (a4vec-wildeq a b) env)
-           (4vec-wildeq (a4vec-eval a env)
-                        (a4vec-eval b env)))
-    :hints(("Goal" :in-theory (enable 4vec-wildeq 4vec-bitxor-redef 2vec)))))
 
 
-(define a4vec-symwildeq ((a a4vec-p) (b a4vec-p))
-  :returns (res a4vec-p)
-  (b* ((eq (a3vec-bitnot (a3vec-bitxor (a3vec-fix a) (a3vec-fix b))))
-       ((a4vec a)) ((a4vec b))
-       (zmask (aig-logior-ss
-               (aig-logand-ss (aig-lognot-s b.upper) b.lower)
-               (aig-logand-ss (aig-lognot-s a.upper) a.lower))))
-    (a3vec-reduction-and (a3vec-bitor eq (a4vec zmask zmask))))
-  ///
-  (defthm a4vec-symwildeq-correct
-    (equal (a4vec-eval (a4vec-symwildeq a b) env)
-           (4vec-symwildeq (a4vec-eval a env)
-                        (a4vec-eval b env)))
-    :hints(("Goal" :in-theory (enable 4vec-symwildeq 4vec-bitxor-redef 2vec)))))
 
 
-(define 4vmask-nth ((n natp) (x 4vmasklist-p))
-  :returns (mask 4vmask-p :rule-classes (:rewrite :type-prescription))
-  (b* ((x (4vmasklist-fix x)))
-    (if (< (lnfix n) (len x))
-        (4vmask-fix (nth n x))
-      -1)))
+;; (define 4vmask-nth ((n natp) (x 4vmasklist-p))
+;;   :returns (mask 4vmask-p :rule-classes (:rewrite :type-prescription))
+;;   (b* ((x (4vmasklist-fix x)))
+;;     (if (< (lnfix n) (len x))
+;;         (4vmask-fix (nth n x))
+;;       -1)))
 
 
 ;; (define maybe-a4vec-fix ((v (or (a4vec-p v) (not v))))
@@ -1894,12 +1914,12 @@ results in at most n+1 bits.</p>"
     (uand      a3vec-reduction-and  ((3v x))                "unary (reduction) AND")
     (uor       a3vec-reduction-or   ((3v x))                "unary (reduction) OR")
     (uxor      a4vec-parity         (x)                     "reduction XOR, i.e. parity")
-    (zerox     a4vec-zero-ext       (width x)               "zero extend")
-    (signx     a4vec-sign-ext       (width x)               "sign extend")
+    (zerox     a4vec-zero-ext       (width x (mask m))      "zero extend")
+    (signx     a4vec-sign-ext       (width x (mask m))      "sign extend")
     (concat    a4vec-concat         (width x y (mask m))    "concatenate at a given bit width")
     (blkrev    a4vec-rev-blocks     (width blksz x)         "reverse block order")
     (rsh       a4vec-rsh            (shift x (mask m))      "right shift")
-    (lsh       a4vec-lsh            (shift x)               "left shift")
+    (lsh       a4vec-lsh            (shift x (mask m))      "left shift")
     (+         a4vec-plus           (x y)                   "addition")
     (b-        a4vec-minus          (x y)                   "subtraction")
     (u-        a4vec-uminus         (x)                     "unary minus")
@@ -1990,10 +2010,6 @@ results in at most n+1 bits.</p>"
 
 (local (in-theory (disable nth)))
 
-(defthm len-of-a4veclist-eval
-  (equal (len (a4veclist-eval x env))
-         (len x))
-  :hints(("Goal" :in-theory (enable a4veclist-eval))))
 
 
 
@@ -2033,14 +2049,15 @@ results in at most n+1 bits.</p>"
                                    (list masks vals x)
                                  (ind2 (1- n) (cdr masks) (cdr vals) (cdr x)))))
 
-                      (defthm 4vmask-of-nths
-                        (implies (equal (len masks) (len vecs))
-                                 (equal (4vec-mask (4vmask-nth n masks)
-                                                   (4veclist-nth-safe n vecs))
-                                        (4veclist-nth-safe n (4veclist-mask masks vecs))))
-                        :hints(("Goal" :in-theory (enable 4vmask-nth 4veclist-nth-safe 4veclist-mask nth
-                                                          4vmasklist-fix)
-                                :induct (ind2 n masks vecs nil))))
+                      ;; BOZO do we need this?
+                      ;; (defthm 4vmask-of-nths
+                      ;;   (implies (equal (len masks) (len vecs))
+                      ;;            (equal (4vec-mask (4vmask-nth n masks)
+                      ;;                              (4veclist-nth-safe n vecs))
+                      ;;                   (4veclist-nth-safe n (4veclist-mask masks vecs))))
+                      ;;   :hints(("Goal" :in-theory (enable 4vmask-nth 4veclist-nth-safe 4veclist-mask nth
+                      ;;                                     4vmasklist-fix)
+                      ;;           :induct (ind2 n masks vecs nil))))
 
                       (defthm svex-eval-of-nth-rev
                         (equal (svex-eval (nth n x) env)
@@ -3200,9 +3217,95 @@ results in at most n+1 bits.</p>"
 
 
 
+(defsection svex-envs-mask-equiv
+  ;; this is only used in symbolic.lisp so could be moved there
+  (defquant svex-envs-mask-equiv (masks env1 env2)
+    (forall var
+            (equal (equal (4vec-mask (svex-mask-lookup (svex-var var) masks)
+                                     (svex-env-lookup var env1))
+                          (4vec-mask (svex-mask-lookup (svex-var var) masks)
+                                     (svex-env-lookup var env2)))
+                   t)))
 
+  (defexample svex-envs-mask-equiv-mask-look-example
+    :pattern (svex-mask-lookup (svex-var var) masks)
+    :templates (var)
+    :instance-rulename svex-envs-mask-equiv-instancing)
 
+  (defexample svex-envs-mask-equiv-env-look-example
+    :pattern (svex-env-lookup var env)
+    :templates (var)
+    :instance-rulename svex-envs-mask-equiv-instancing)
 
+  (local (acl2::def-witness-ruleset svex-envs-mask-equiv-reasoning
+           '(svex-envs-mask-equiv-instancing
+             svex-envs-mask-equiv-witnessing
+             svex-envs-mask-equiv-instancing
+             svex-envs-mask-equiv-env-look-example
+             svex-envs-mask-equiv-mask-look-example)))
+
+  (deffixequiv svex-envs-mask-equiv
+    :args ((masks svex-mask-alist-p)
+           (env1 svex-env-p)
+           (env2 svex-env-p))
+    :hints (("goal" :cases ((svex-envs-mask-equiv masks env1 env2)))
+            (witness :ruleset svex-envs-mask-equiv-reasoning)))
+
+  (local (defexample svex-argmasks-okp-example
+           :pattern (equal (4vec-mask mask (svex-apply fn (svexlist-eval args env1)))
+                           (4vec-mask mask (svex-apply fn (svexlist-eval args env2))))
+           :templates (env1 (svexlist-eval args env2))
+           :instance-rulename svex-argmasks-okp-instancing))
+
+  (local (acl2::def-witness-ruleset svex-mask-alist-reasoning
+           '(svex-mask-alist-complete-witnessing
+             svex-mask-alist-complete-instancing
+             svex-mask-alist-complete-example
+             svex-mask-alist-partly-complete-witnessing
+             svex-mask-alist-partly-complete-instancing
+             svex-mask-alist-partly-complete-example)))
+
+  (local (acl2::def-witness-ruleset svex-env-reasoning
+           '(svex-envs-mask-equiv-reasoning
+             svex-mask-alist-reasoning
+             SVEX-ARGMASKS-OKP-WITNESSING
+             SVEX-ARGMASKS-OKP-INSTANCING
+             SVEX-ARGMASKS-OKP-EXAMPLE
+             )))
+
+  (defthm-svex-eval-flag
+    (defthm svex-eval-of-mask-equiv-envs
+      (implies (and (svex-mask-alist-complete masks)
+                    (svex-envs-mask-equiv masks env1 env2))
+               (equal (equal (4vec-mask (svex-mask-lookup x masks)
+                                        (svex-eval x env1))
+                             (4vec-mask (svex-mask-lookup x masks)
+                                        (svex-eval x env2)))
+                      t))
+      :hints ('(:expand ((:free (env) (svex-eval x env)))
+                :do-not-induct t)
+              (witness :ruleset svex-env-reasoning)
+              (witness :ruleset svex-env-reasoning)
+              ;; (and stable-under-simplificationp
+              ;;      '(:use ((:instance svex-argmasks-okp-necc
+              ;;               (mask (svex-mask-lookup x masks))
+              ;;               (argmasks (svex-argmasks-lookup
+              ;;                          (svex-call->args x) masks))
+              ;;               (env env1)
+              ;;               (vals (svexlist-eval (svex-call->args x) env2))))))
+              )
+      :flag expr)
+    (defthm svexlist-eval-of-mask-equiv-envs
+      (implies (and (svex-mask-alist-complete masks)
+                    (svex-envs-mask-equiv masks env1 env2))
+               (equal (equal (4veclist-mask (svex-argmasks-lookup x masks)
+                                            (svexlist-eval x env1))
+                             (4veclist-mask (svex-argmasks-lookup x masks)
+                                            (svexlist-eval x env2)))
+                      t))
+      :hints ('(:expand ((:free (env) (svexlist-eval x env))
+                         (svex-argmasks-lookup x masks))))
+      :flag list)))
 
 (define svex-varmasks/env->aig-env-rec ((vars svarlist-p)
                                         (masks svex-mask-alist-p)
@@ -3724,9 +3827,9 @@ obviously 2-vectors.</p>"
 (define a4veclist-eval-gl ((x a4veclist-p) (env))
   :returns (res 4veclist-p)
   (b* ((aiglist (time$ (a4veclist->aiglist x)
-                       :msg "; a4vecs->aigs: ~st sec, ~sa bytes.~%"))
+                       :msg "; SV bit-blasting: a4veclist->aiglist: ~st sec, ~sa bytes.~%"))
        (bitlist (time$ (aig-eval-list aiglist env)
-                       :msg "; aig eval: ~st sec, ~sa bytes.~%")))
+                       :msg "; SV bit-blasting: aig-eval-list: ~st sec, ~sa bytes.~%")))
     (time$ (4veclist-from-bitlist x bitlist)
            :msg "; bits->4vecs: ~st sec, ~sa bytes.~%"))
   ///
@@ -3737,6 +3840,7 @@ obviously 2-vectors.</p>"
   (gl::def-gl-rewrite a4veclist-eval-redef
     (equal (a4veclist-eval x env)
            (a4veclist-eval-gl x env))))
+
 
 
 
