@@ -198,6 +198,7 @@ evaluate several related AIGs.)</p>"
   ///
   (memoize 'aig-eval :condition '(and (consp x) (cdr x))))
 
+
 (define aig-eval-list
   :parents (aig-semantics)
   :short "@(call aig-eval-list) evaluates a list of AIGs."
@@ -210,7 +211,21 @@ evaluate several related AIGs.)</p>"
   (if (atom x)
       nil
     (cons (aig-eval (car x) env)
-          (aig-eval-list (cdr x) env))))
+          (aig-eval-list (cdr x) env)))
+  ///
+  (defthm consp-of-aig-eval-list
+    (equal (consp (aig-eval-list x env))
+           (consp x)))
+
+  (defthm len-of-aig-eval-list
+    (equal (len (aig-eval-list x env))
+           (len x)))
+
+  (defthm aig-eval-list-of-append
+    (equal (aig-eval-list (append x y) env)
+           (append (aig-eval-list x env)
+                   (aig-eval-list y env)))))
+
 
 (define aig-eval-alist
   :parents (aig-semantics)
@@ -883,7 +898,6 @@ succeded or not.</p>"
                   (equal arg1 x)
                   (equal arg2 y)))))
 
-
 (define aig-and-main (x y)
   :short "And-Node, Main Optimizations, Non-Recursive."
   :returns (mv status arg1 arg2)
@@ -964,12 +978,67 @@ succeded or not.</p>"
              arg2)
     :hints(("Goal" :in-theory (enable aig-and-pass1)))))
 
-(local (xdoc::set-default-parents nil))
+(define aig-binary-and (x y)
+  :short "@(call aig-binary-and) constructs an AIG representing @('(and x y)')."
+  :measure (+ (and-count x) (and-count y))
+  (b* (((mv status arg1 arg2) (aig-and-main x y))
+       ((when (eq status :subterm))
+        arg1)
+       ((when (eq status :reduced))
+        (aig-binary-and arg1 arg2)))
+    ;; Else, status is fail.
+    (hons arg1 arg2))
 
-(define aig-and (x y)
+  :hints(("Goal" :use ((:instance aig-and-main-reduces-count))))
+  ///
+  (local (in-theory (enable aig-binary-and)))
+
+  (defthm aig-and-constants
+    (and (equal (aig-binary-and nil x) nil)
+         (equal (aig-binary-and x nil) nil)
+         (equal (aig-binary-and x t) x)
+         (equal (aig-binary-and t x) x)))
+
+  (defthm aig-eval-and
+    (equal (aig-eval (aig-binary-and x y) env)
+           (and (aig-eval x env)
+                (aig-eval y env)))
+    :hints(("Goal"
+            :induct (aig-binary-and x y)
+            :do-not '(generalize fertilize))
+           (and stable-under-simplificationp
+                '(:use ((:instance aig-and-main-correct)))))))
+
+(define aig-and-macro-logic-part (args)
+  :short "Generates the :logic part for a aig-and MBE call."
+  :mode :program
+  (cond ((atom args)
+         t)
+        ((atom (cdr args))
+         (car args))
+        (t
+         `(aig-binary-and ,(car args)
+                          ,(aig-and-macro-logic-part (cdr args))))))
+
+(define aig-and-macro-exec-part (args)
+  :short "Generates the :exec part for a aig-and MBE call."
+  :mode :program
+  (cond ((atom args)
+         t)
+        ((atom (cdr args))
+         (car args))
+        (t
+         `(let ((aig-and-x-do-not-use-elsewhere ,(car args)))
+            (and aig-and-x-do-not-use-elsewhere
+                 (aig-binary-and aig-and-x-do-not-use-elsewhere
+                                 ,(aig-and-macro-exec-part (cdr args))))))))
+
+(defsection aig-and
   :parents (aig-constructors)
-  :short "@(call aig-and) constructs an AIG representing @('(and x y)')."
-  :long "<p>This implements something like the algorithm described in:</p>
+  :short "@(aig-and x1 x2 ...) constructs an AIG representing @('(and x1 x2 ...)')."
+
+  :long "<p>The main function is @(see aig-binary-and).  It implements
+something like the algorithm described in:</p>
 
 <ul>
 
@@ -1009,6 +1078,11 @@ so we want to recursively rewrite them.</li>
 
 </ul>
 
+<p>@('aig-and') itself is a macro which extends @('aig-binary-and') across many
+arguments.  As one last special optimization, when there is more than one
+argument we try to \"short-circuit\" the computation and avoid evaluating some
+arguments.</p>
+
 <p>See also @(see aig-and-dumb), which is much less sophisticated but may be
 easier to reason about in certain cases where you really care about the
 structure of the resulting AIGs.</p>
@@ -1016,59 +1090,118 @@ structure of the resulting AIGs.</p>
 <p>A June 2015 experiment suggests that, for a particular 80-bit floating point
 addition problem, this fancier algorithm improves the size of AIGs produced by
 @(see SV) by about 3% when measured either by unique AND nodes or by unique
-conses.</p>"
+conses.</p>
 
-  :measure (+ (and-count x) (and-count y))
-  (b* (((mv status arg1 arg2) (aig-and-main x y))
-       ((when (eq status :subterm))
-        arg1)
-       ((when (eq status :reduced))
-        (aig-and arg1 arg2)))
-    ;; Else, status is fail.
-    (hons arg1 arg2))
+@(def aig-and)"
 
-  :hints(("Goal" :use ((:instance aig-and-main-reduces-count))))
-  ///
-  (local (in-theory (enable aig-and)))
+  (defmacro aig-and (&rest args)
+    ;; BOZO consider doing something like the cheap-and-expensive-arguments
+    ;; optimization that is done in q-and.
+    `(mbe :logic ,(aig-and-macro-logic-part args)
+          :exec  ,(aig-and-macro-exec-part  args)))
 
-  (defthm aig-and-constants
-    (and (equal (aig-and nil x) nil)
-         (equal (aig-and x nil) nil)
-         (equal (aig-and x t) x)
-         (equal (aig-and t x) x)))
+  (add-binop aig-and aig-binary-and)
 
-  (defthm aig-eval-and
-    (equal (aig-eval (aig-and x y) env)
-           (and (aig-eval x env)
-                (aig-eval y env)))
-    :hints(("Goal"
-            :induct (aig-and x y)
-            :do-not '(generalize fertilize))
-           (and stable-under-simplificationp
-                '(:use ((:instance aig-and-main-correct)))))))
+  (local (defthm aig-and-sanity-check
+           (and (equal (aig-and) t)
+                (equal (aig-and x) x)
+                (equal (aig-and x y) (aig-binary-and x y))
+                (equal (aig-and x y z) (aig-binary-and x (aig-binary-and y z))))
+           :rule-classes nil)))
 
-(define aig-or (x y)
-  :parents (aig-constructors)
-  :short "@(call aig-or) constructs an AIG representing @('(or x y)')."
+(local (xdoc::set-default-parents nil))
+
+
+(define aig-binary-or (x y)
+  :parents (aig-or)
+  :short "@(call aig-binary-or) constructs an AIG representing @('(or x y)')."
   :returns aig
-  (aig-not (aig-and (aig-not x) (aig-not y)))
+  ;; We check for the NIL cases explicitly only in order to get the
+  ;; aig-or-constants theorem to go through.  Without these check, we end up
+  ;; trying to prove that (aig-not (aig-not x)) == x, which is not true if we
+  ;; have a "malformed" AIG where like ((a . nil) . nil).
+  (cond ((eq x nil) y)
+        ((eq y nil) x)
+        (t
+         (aig-not (aig-and (aig-not x) (aig-not y)))))
   ///
   (defthm aig-eval-or
-    (equal (aig-eval (aig-or x y) env)
+    (equal (aig-eval (aig-binary-or x y) env)
            (or (aig-eval x env)
-               (aig-eval y env)))))
+               (aig-eval y env))))
+
+  (defthm aig-or-constants
+    ;; Important for the aig-or MBE to work.
+    (and (equal (aig-binary-or nil x) x)
+         (equal (aig-binary-or x nil) x)
+         (equal (aig-binary-or x t) t)
+         (equal (aig-binary-or t x) t))))
+
+(define aig-or-macro-logic-part (args)
+  :parents (aig-or)
+  :mode :program
+  (cond ((atom args)
+         nil)
+        ((atom (cdr args))
+         (car args))
+        (t
+         `(aig-binary-or ,(car args)
+                         ,(aig-or-macro-logic-part (cdr args))))))
+
+(define aig-or-macro-exec-part (args)
+  :parents (aig-or)
+  :mode :program
+  (cond ((atom args)
+         nil)
+        ((atom (cdr args))
+         (car args))
+        (t
+         `(let ((aig-or-x-do-not-use-elsewhere ,(car args)))
+            (if (eq t aig-or-x-do-not-use-elsewhere)
+                t
+              (aig-binary-or aig-or-x-do-not-use-elsewhere
+                             (check-vars-not-free
+                              (aig-or-x-do-not-use-elsewhere)
+                              ,(aig-or-macro-exec-part (cdr args)))))))))
+
+
+(defsection aig-or
+  :parents (aig-constructors)
+  :short "@('(aig-or x1 x2 ...)') constructs an AIG representing @('(or x1 x2
+  ...)')."
+  :long "<p>Like @(see aig-and), we attempt to lazily avoid computing later
+terms in the expression.</p>
+
+@(def aig-or)"
+
+  (defmacro aig-or (&rest args)
+    ;; BOZO consider doing something like the cheap-and-expensive-arguments
+    ;; optimization that is done in q-and.
+    `(mbe :logic ,(aig-or-macro-logic-part args)
+          :exec  ,(aig-or-macro-exec-part  args)))
+
+  (add-binop aig-or aig-binary-or)
+
+  (local (defthm aig-or-sanity-check
+           (or (equal (aig-or) nil)
+               (equal (aig-or x) x)
+               (equal (aig-or x y) (aig-binary-or x y))
+               (equal (aig-or x y z) (aig-binary-or x (aig-binary-or y z))))
+           :rule-classes nil)))
+
 
 (define aig-xor (x y)
   :parents (aig-constructors)
   :short "@(call aig-xor) constructs an AIG representing @('(xor x y)')."
   :returns aig
   (aig-or (aig-and x (aig-not y))
-          (aig-and (aig-not x) y))
+          (aig-and y (aig-not x)))
   ///
   (defthm aig-eval-xor
     (equal (aig-eval (aig-xor x y) env)
            (xor (aig-eval x env)
                 (aig-eval y env)))))
+
 
 (define aig-iff (x y)
   :parents (aig-constructors)
@@ -1082,90 +1215,98 @@ conses.</p>"
            (iff (aig-eval x env)
                 (aig-eval y env)))))
 
-(define aig-implies (x y)
-  :parents (aig-constructors)
-  :short "@(call aig-implies) constructs an AIG representing @('(implies x
-  y)')."
+
+(define aig-implies-fn (x y)
+  :parents (aig-implies)
   :returns aig
   (aig-not (aig-and x (aig-not y)))
   ///
   (defthm aig-eval-implies
-    (equal (aig-eval (aig-implies x y) env)
+    (equal (aig-eval (aig-implies-fn x y) env)
            (implies (aig-eval x env)
-                    (aig-eval y env)))))
+                    (aig-eval y env))))
 
-(define aig-nand (x y)
+  (defthm aig-eval-implies-nil
+    (equal (aig-implies-fn nil x) t)))
+
+
+(defsection aig-implies
+  :parents (aig-constructors)
+  :short "@(call aig-implies) constructs an AIG representing @('(implies x
+  y)')."
+  :long "<p>We try to lazily avoid evaluating @('y').</p>
+@(def aig-implies)"
+
+  (defmacro aig-implies (x y)
+    `(mbe :logic (aig-implies-fn ,x ,y)
+          :exec (let ((aig-implies-x-do-not-use-elsewhere ,x))
+                  (if (eq nil aig-implies-x-do-not-use-elsewhere)
+                      t
+                    (aig-implies-fn aig-implies-x-do-not-use-elsewhere
+                                    (check-vars-not-free
+                                     (aig-implies-x-do-not-use-elsewhere)
+                                     ,y))))))
+
+  (add-macro-alias aig-implies aig-implies-fn)
+
+  (local (defthm aig-implies-sanity-check
+           (equal (aig-implies x y)
+                  (aig-implies-fn x y))
+           :rule-classes nil)))
+
+
+(defsection aig-nand
   :parents (aig-constructors)
   :short "@(call aig-nand) constructs an AIG representing @('(not (and x y))')."
-  :returns aig
-  :inline t
-  (aig-not (aig-and x y))
-  ///
-  (defthm aig-eval-nand
-    (equal (aig-eval (aig-nand x y) env)
-           (not (and (aig-eval x env)
-                     (aig-eval y env))))))
+  :long "@(def aig-nand)"
 
-(define aig-nor (x y)
+  (defmacro aig-nand (x y)
+    `(aig-not (aig-and ,x ,y))))
+
+
+(defsection aig-nor
   :parents (aig-constructors)
   :short "@(call aig-nor) constructs an AIG representing @('(not (or x y))')."
-  :returns aig
-  :inline t
-  (aig-and (aig-not x) (aig-not y))
-  ///
-  (defthm aig-eval-nor
-    (equal (aig-eval (aig-nor x y) env)
-           (not (or (aig-eval x env)
-                    (aig-eval y env))))))
 
-(define aig-andc1 (x y)
+  (defmacro aig-nor (x y)
+    `(aig-and (aig-not ,x) (aig-not ,y))))
+
+
+(defsection aig-andc1
   :parents (aig-constructors)
   :short "@(call aig-andc1) constructs an AIG representing @('(and (not x) y)')."
-  :returns aig
-  :inline t
-  (aig-and (aig-not x) y)
-  ///
-  (defthm aig-eval-andc1
-    (equal (aig-eval (aig-andc1 x y) env)
-           (and (not (aig-eval x env))
-                (aig-eval y env)))))
 
-(define aig-andc2 (x y)
+  (defmacro aig-andc1 (x y)
+    `(aig-and (aig-not ,x) ,y)))
+
+
+(defsection aig-andc2
   :parents (aig-constructors)
   :short "@(call aig-andc2) constructs an AIG representing @('(and x (not y))')."
-  :returns aig
-  :inline t
-  (aig-and x (aig-not y))
-  ///
-  (defthm aig-eval-andc2
-    (equal (aig-eval (aig-andc2 x y) env)
-           (and (aig-eval x env)
-                (not (aig-eval y env))))))
+
+  (defmacro aig-andc2 (x y)
+    `(aig-and ,x (aig-not ,y))))
+
 
 (defsection aig-orc1
+  :parents (aig-constructors)
   :short "@(call aig-orc1) is identical to @(see aig-implies)."
   :long "@(def aig-orc1)"
 
   (defmacro aig-orc1 (x y)
     `(aig-implies ,x ,y)))
 
-(define aig-orc2 (x y)
+
+(defsection aig-orc2
   :parents (aig-constructors)
   :short "@(call aig-orc2) constructs an AIG representing @('(or x (not y))')."
-  :returns aig
-  :inline t
-  (aig-not (aig-and (aig-not x) y))
-  ///
-  (defthm aig-eval-orc2
-    (equal (aig-eval (aig-orc2 x y) env)
-           (or (aig-eval x env)
-               (not (aig-eval y env))))))
 
-(define aig-ite (a b c)
-  :parents (aig-constructors)
-  :short "@(call aig-ite) constructs an AIG representing @('(if a b c)')."
-  ;; BOZO consider a macro in the style of q-ite that tries to lazily avoid
-  ;; evaluating B and C.
+  (defmacro aig-orc2 (x y)
+    `(aig-not (aig-and (aig-not ,x) ,y))))
+
+
+(define aig-ite-fn (a b c)
+  :parents (aig-ite)
   :returns aig
   (cond ((eq a t) b)
         ((eq a nil) c)
@@ -1178,10 +1319,34 @@ conses.</p>"
                  (aig-and (aig-not a) c))))
   ///
   (defthm aig-eval-ite
-    (iff (aig-eval (aig-ite a b c) env)
+    (iff (aig-eval (aig-ite-fn a b c) env)
          (if (aig-eval a env)
              (aig-eval b env)
-           (aig-eval c env)))))
+           (aig-eval c env))))
+
+  (defthm aig-ite-of-constants
+    ;; Important for MBE substitutions in the AIG-ITE macro.
+    (and (equal (aig-ite-fn t b c) b)
+         (equal (aig-ite-fn nil b c) c))))
+
+
+(defsection aig-ite
+  :parents (aig-constructors)
+  :short "@(call aig-ite) constructs an AIG representing @('(if a b c)')."
+  :long "<p>This is logically just @(see aig-ite-fn), but we try to lazily
+avoid computing @('b') or @('c') when the value of @('a') is known.</p>"
+
+  (defmacro aig-ite (a b c)
+    `(mbe :logic (aig-ite-fn ,a ,b ,c)
+          :exec (let ((aig-ite-x-do-not-use-elsewhere ,a))
+                  (cond
+                   ((eq aig-ite-x-do-not-use-elsewhere t)   ,b)
+                   ((eq aig-ite-x-do-not-use-elsewhere nil) ,c)
+                   (t
+                    (aig-ite-fn aig-ite-x-do-not-use-elsewhere ,b ,c))))))
+
+  (add-macro-alias aig-ite aig-ite-fn))
+
 
 (define aig-not-list (x)
   :parents (aig-constructors)
@@ -1192,6 +1357,7 @@ conses.</p>"
       nil
     (cons (aig-not (car X))
           (aig-not-list (cdr x)))))
+
 
 (define member-eql-without-truelistp ((a eqlablep) x)
   :parents (aig-and-list aig-or-list)
@@ -1290,7 +1456,7 @@ lists @('x') and @('y')."
   :enabled t
   (if (or (atom x) (atom y))
       nil
-    (cons (aig-and (car x) (car y))
+    (cons (aig-binary-and (car x) (car y))
           (aig-and-lists (cdr x) (cdr y)))))
 
 (define aig-or-lists (x y)
@@ -1301,7 +1467,7 @@ lists @('x') and @('y')."
   :enabled t
   (if (or (atom x) (atom y))
       nil
-    (cons (aig-or (car x) (car y))
+    (cons (aig-binary-or (car x) (car y))
           (aig-or-lists (cdr x) (cdr y)))))
 
 (define aig-xor-lists (x y)
@@ -1334,7 +1500,7 @@ from the lists @('x') and @('y')."
   :enabled t
   (if (or (atom x) (atom y))
       nil
-    (cons (aig-implies (car x) (car y))
+    (cons (aig-implies-fn (car x) (car y))
           (aig-implies-lists (cdr x) (cdr y)))))
 
 (define aig-nand-lists (x y)
@@ -1406,12 +1572,7 @@ lists @('x') or @('y')."
     aig-or
     aig-xor
     aig-iff
-    aig-nand
-    aig-nor
     aig-implies
-    aig-andc1
-    aig-andc2
-    aig-orc2
     aig-ite
 
     aig-not-list

@@ -34,9 +34,19 @@
 (include-book "bvecs")
 (include-book "bfr-reasoning")
 (local (include-book "clause-processors/find-subterms" :dir :system))
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arith-lemmas"))
+
+(local (defthm equal-complexes-rw
+         (implies (and (acl2-numberp x)
+                       (rationalp a)
+                       (rationalp b))
+                  (equal (equal (complex a b) x)
+                         (and (equal a (realpart x))
+                              (equal b (imagpart x)))))
+         :hints (("goal" :use ((:instance realpart-imagpart-elim))))))
+
 
 (defsection symbolic-arithmetic
   :parents (reference)
@@ -60,15 +70,6 @@ for computing:</p>
 (local (xdoc::set-default-parents symbolic-arithmetic))
 
 ;;---------------- Misc function definitions and lemmas -------------------
-
-(defthm equal-complexes-rw
-  (implies (and (acl2-numberp x)
-                (rationalp a)
-                (rationalp b))
-           (equal (equal (complex a b) x)
-                  (and (equal a (realpart x))
-                       (equal b (imagpart x)))))
-  :hints (("goal" :use ((:instance realpart-imagpart-elim)))))
 
 (define int-set-sign ((negp "True if we should set the sign bit to 1.")
                       (i    integerp "The integer to modify."))
@@ -95,8 +96,6 @@ for computing:</p>
              (equal (non-int-fix x) x))
     :hints(("Goal" :in-theory (enable non-int-fix)))
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
-
 
 (define maybe-integer ((i integerp) x intp)
   (if intp
@@ -365,13 +364,13 @@ for computing:</p>
   :returns (vv u (if c v1 v0))
   :abstract nil
   :measure (+ (acl2-count v1) (acl2-count v0))
-  (if (and (atom v1) (atom v0))
-      nil
-    (b* (((mv v11 v1r) (car/cdr v1))
-         ((mv v01 v0r) (car/cdr v0))
-         (tail (bfr-ite-bvv-fn c v1r v0r))
-         (head (bfr-ite c v11 v01)))
-      (bfr-ucons head tail))))
+  (b* (((when (and (atom v1) (atom v0)))
+        nil)
+       ((mv v11 v1r) (car/cdr v1))
+       ((mv v01 v0r) (car/cdr v0))
+       (tail (bfr-ite-bvv-fn c v1r v0r))
+       (head (bfr-ite c v11 v01)))
+    (bfr-ucons head tail)))
 
 (defmacro bfr-ite-bvv (c v1 v0)
   `(let ((bfr-ite-bvv-test ,c))
@@ -383,19 +382,19 @@ for computing:</p>
 
 (add-macro-alias bfr-ite-bvv bfr-ite-bvv-fn)
 
-(defsymbolic bfr-ite-bss-fn ((c b) ;; name c, type b (boolean)
+(defsymbolic bfr-ite-bss-fn ((c  b) ;; name c, type b (boolean)
                              (v1 s) ;; signed
                              (v0 s))
   :returns (vv s (if c v1 v0))
   :abstract nil
   :measure (+ (acl2-count v1) (acl2-count v0))
   (b* (((mv head1 tail1 end1) (first/rest/end v1))
-       ((mv head0 tail0 end0) (first/rest/end v0)))
-    (if (and end1 end0)
-        (bfr-sterm (bfr-ite-fn c head1 head0))
-      (let ((rst (bfr-ite-bss-fn c tail1 tail0))
-            (head (bfr-ite c head1 head0)))
-        (bfr-scons head rst)))))
+       ((mv head0 tail0 end0) (first/rest/end v0))
+       ((when (and end1 end0))
+        (bfr-sterm (bfr-ite-fn c head1 head0)))
+       (rst (bfr-ite-bss-fn c tail1 tail0))
+       (head (bfr-ite c head1 head0)))
+    (bfr-scons head rst)))
 
 (defmacro bfr-ite-bss (c v1 v0)
   `(let ((bfr-ite-bss-test ,c))
@@ -410,7 +409,8 @@ for computing:</p>
 (defsymbolic bfr-loghead-ns ((n n)  ;; name n, type n (natp)
                              (x s)) ;; name x, type s (signed bvec)
   :returns (xx s (loghead n x))     ;; return name, type (signed bvec), spec
-  (b* (((when (zp n)) (bfr-sterm nil))
+  (b* (((when (zp n))
+        (bfr-sterm nil))
        ((mv head tail ?end) (first/rest/end x)))
     (bfr-scons head (bfr-loghead-ns (1- n) tail))))
 
@@ -418,14 +418,14 @@ for computing:</p>
                             (x s)) ;; name x, type s (signed bvec)
   :returns (xx s (acl2::logext n x))     ;; return name, type (signed bvec), spec
   :measure (acl2::pos-fix n)
-  (b* ((n (mbe :logic (acl2::pos-fix n) :exec n))
+  (b* ((n (lposfix n))
        ((mv head tail ?end) (first/rest/end x))
        ((when end) (list-fix x))
        ((when (eql n 1)) (bfr-sterm head)))
     (bfr-scons head (bfr-logext-ns (1- n) tail)))
   :correct-hints (("goal" :induct (bfr-logext-ns n x))
                   (And stable-under-simplificationp
-                       '(:expand ((:free (x) (acl2::logext (acl2::pos-fix n) x)))))))
+                       '(:expand ((:free (x) (logext (pos-fix n) x)))))))
 
 (defsymbolic bfr-logtail-ns ((place n)
                              (x s))
@@ -442,23 +442,35 @@ for computing:</p>
   (b* (((mv head1 tail1 end1) (first/rest/end v1))
        ((mv head2 tail2 end2) (first/rest/end v2))
        (axorb (bfr-xor head1 head2))
-       (s (bfr-xor c axorb)))
-    (if (and end1 end2)
+       (s     (bfr-xor c axorb))
+       ((when (and end1 end2))
         (let ((last (bfr-ite axorb (bfr-not c) head1)))
-          (bfr-scons s (bfr-sterm last)))
-      (let* ((c (bfr-or (bfr-and c axorb)
-                        (bfr-and head1 head2)))
-             (rst (bfr-+-ss c tail1 tail2)))
-        (bfr-scons s rst))))
+          (bfr-scons s (bfr-sterm last))))
+       ;; BOZO think about this.  Using axorb here seems like a good idea since
+       ;; we're already computing it anyway in order to compute S.  However, we
+       ;; could instead do something like:
+       ;;    (c   (bfr-or  (bfr-and c head1)
+       ;;                  (bfr-and c head2)
+       ;;                  (bfr-and head1 head2)))
+       ;; This wouldn't share the same structure but might result in a simpler
+       ;; carry in being delivered to the rest of the sum, which might be a win.
+       ;; It's hard to guess whether this would be better or worse, so for now
+       ;; we'll just leave it alone...
+       (c (bfr-or (bfr-and c axorb)
+                  (bfr-and head1 head2)))
+       (rst (bfr-+-ss c tail1 tail2)))
+    (bfr-scons s rst))
   :correct-hints ('(:in-theory (enable logcons))))
+
+
 
 (defsymbolic bfr-lognot-s ((x s))
   :returns (nx s (lognot x))
-  (b* (((mv head tail end) (first/rest/end x)))
-    (if end
-        (bfr-sterm (bfr-not head))
-      (bfr-scons (bfr-not head)
-                 (bfr-lognot-s tail)))))
+  (b* (((mv head tail end) (first/rest/end x))
+       ((when end)
+        (bfr-sterm (bfr-not head))))
+    (bfr-scons (bfr-not head)
+               (bfr-lognot-s tail))))
 
 (defsymbolic bfr-unary-minus-s ((x s))
   :returns (ms s (- x))
@@ -470,25 +482,19 @@ for computing:</p>
   :returns (xab s (logxor a b))
   :measure (+ (len a) (len b))
   (b* (((mv af ar aend) (first/rest/end a))
-       ((mv bf br bend) (first/rest/end b)))
-    (if (and aend bend)
-        (bfr-sterm (bfr-xor af bf))
-      (b* ((c (bfr-xor af bf))
-           (r (bfr-logxor-ss ar br)))
-        (bfr-scons c r)))))
+       ((mv bf br bend) (first/rest/end b))
+       (c (bfr-xor af bf))
+       ((when (and aend bend))
+        (bfr-sterm c))
+       (r (bfr-logxor-ss ar br)))
+    (bfr-scons c r)))
 
 (defsymbolic bfr-sign-s ((x s))
   :returns (sign b (< x 0))
-  (b* (((mv first rest endp) (first/rest/end x)))
-    (if endp
-        first
-      (bfr-sign-s rest))))
-
-(defthm not-s-endp-compound-recognizer
-  (implies (not (s-endp x))
-           (consp x))
-  :hints(("Goal" :in-theory (enable s-endp)))
-  :rule-classes :compound-recognizer)
+  (b* (((mv first rest endp) (first/rest/end x))
+       ((when endp)
+        first))
+    (bfr-sign-s rest)))
 
 (defsymbolic bfr-integer-length-s1 ((offset p)
                                     (x s))
@@ -505,27 +511,23 @@ for computing:</p>
                                (equal (bfr-eval (car x) env)
                                       (equal 1 (logcar c)))))))
   (b* (((mv first rest end) (first/rest/end x))
-       (offset (mbe :logic (acl2::pos-fix offset) :exec offset)))
-    (if end
-        (mv nil nil)
-      (mv-let (changed res)
-        (bfr-integer-length-s1 (1+ offset) rest)
-        (if (eq changed t)
-            (mv t res)
-          (let ((change (bfr-xor first (car rest))))
-            (mv (bfr-or changed change)
-                (bfr-ite-bss changed
-                             res
-                             (bfr-ite-bss change
-                                          (i2v offset)
-                                          nil))))))))
+       (offset (lposfix offset))
+       ((when end)
+        (mv nil nil))
+       ((mv changed res)
+        (bfr-integer-length-s1 (1+ offset) rest))
+       ((when (eq changed t))
+        (mv t res))
+       (change (bfr-xor first (car rest))))
+    (mv (bfr-or changed change)
+        (bfr-ite-bss changed
+                     res
+                     (bfr-ite-bss change (i2v offset) nil))))
   :correct-hints ((bfr-reasoning)))
 
 (defsymbolic bfr-integer-length-s ((x s))
   :returns (ilen s (integer-length x))
-  (mv-let (ign res)
-    (bfr-integer-length-s1 1 x)
-    (declare (ignore ign))
+  (b* (((mv ?changed res) (bfr-integer-length-s1 1 x)))
     res))
 
 (define integer-length-bound-s (x)
@@ -568,22 +570,24 @@ for computing:</p>
 (defsymbolic bfr-=-uu ((a u) (b u))
   :returns (a=b b (equal a b))
   :measure (+ (len a) (len b))
-  (if (and (atom a) (atom b))
-      t
-    (b* (((mv head1 tail1) (car/cdr a))
-         ((mv head2 tail2) (car/cdr b)))
-      (bfr-and (bfr-iff head1 head2)
-               (bfr-=-uu tail1 tail2)))))
+  (b* (((when (and (atom a) (atom b)))
+        t)
+       ((mv head1 tail1) (car/cdr a))
+       ((mv head2 tail2) (car/cdr b))
+       (first-eq (bfr-iff head1 head2)))
+    (bfr-and first-eq
+             (bfr-=-uu tail1 tail2))))
 
 (defsymbolic bfr-=-ss ((a s) (b s))
   :returns (a=b b (equal a b))
   :measure (+ (len a) (len b))
   (b* (((mv head1 tail1 end1) (first/rest/end a))
-       ((mv head2 tail2 end2) (first/rest/end b)))
-    (if (and end1 end2)
-        (bfr-iff head1 head2)
-      (bfr-and (bfr-iff head1 head2)
-               (bfr-=-ss tail1 tail2)))))
+       ((mv head2 tail2 end2) (first/rest/end b))
+       ((when (and end1 end2))
+        (bfr-iff head1 head2))
+       (first-eq (bfr-iff head1 head2)))
+    (bfr-and first-eq
+             (bfr-=-ss tail1 tail2))))
 
 (local (add-bfr-pat (bfr-sign-s . &)))
 (local (add-bfr-pat (bfr-=-ss . &)))
@@ -592,15 +596,15 @@ for computing:</p>
 (defsymbolic bfr-*-ss ((v1 s) (v2 s))
   :measure (+ (len v1) (len v2))
   :returns (prod s (* v1 v2))
-  (b* (((mv dig1 rest end1) (first/rest/end v1)))
-    (if end1
+  (b* (((mv dig1 rest end1) (first/rest/end v1))
+       ((when end1)
         (bfr-ite-bss dig1
                      (bfr-unary-minus-s v2)
-                     nil)
-      (let ((rest (bfr-*-ss rest v2)))
-        (bfr-+-ss nil
+                     nil))
+       (rest (bfr-*-ss rest v2)))
+    (bfr-+-ss nil
               (bfr-ite-bss dig1 v2 nil)
-              (bfr-scons nil rest)))))
+              (bfr-scons nil rest)))
   :correct-hints ('(:in-theory (enable logcons))))
 
 (defsymbolic bfr-<-=-ss ((a s) (b s))
@@ -608,42 +612,41 @@ for computing:</p>
   :returns (mv (a<b b (< a b))
                (a=b b (= a b)))
   (b* (((mv head1 tail1 end1) (first/rest/end a))
-       ((mv head2 tail2 end2) (first/rest/end b)))
-    (if (and end1 end2)
+       ((mv head2 tail2 end2) (first/rest/end b))
+       ((when (and end1 end2))
         (mv (bfr-and head1 (bfr-not head2))
-            (bfr-iff head1 head2))
-      (mv-let (rst< rst=)
-        (bfr-<-=-ss tail1 tail2)
-        (mv (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))
-            (bfr-and rst= (bfr-iff head1 head2)))))))
+            (bfr-iff head1 head2)))
+       ((mv rst< rst=)
+        (bfr-<-=-ss tail1 tail2)))
+    (mv (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))
+        (bfr-and rst= (bfr-iff head1 head2)))))
 
 (defsymbolic bfr-<-ss ((a s) (b s))
   :returns (a<b b (< a b))
   (b* (((mv head1 tail1 end1) (first/rest/end a))
-       ((mv head2 tail2 end2) (first/rest/end b)))
-    (if (and end1 end2)
-        (bfr-and head1 (bfr-not head2))
-      (mv-let (rst< rst=)
-        (bfr-<-=-ss tail1 tail2)
-        (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))))))
+       ((mv head2 tail2 end2) (first/rest/end b))
+       ((when (and end1 end2))
+        (bfr-and head1 (bfr-not head2)))
+       ((mv rst< rst=) (bfr-<-=-ss tail1 tail2)))
+    (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))))
 
 (defsymbolic bfr-logapp-nss ((n n)
                              (a s)
                              (b s))
   :returns (a-app-b s (logapp n a b))
-  (if (zp n)
-      (list-fix b)
-    (b* (((mv first rest &) (first/rest/end a)))
-      (bfr-scons first (bfr-logapp-nss (1- n) rest b)))))
+  (b* (((when (zp n))
+        (list-fix b))
+       ((mv first rest &) (first/rest/end a)))
+    (bfr-scons first (bfr-logapp-nss (1- n) rest b))))
 
 (defsymbolic bfr-logapp-nus ((n n)
-                        (a u)
-                        (b s))
+                             (a u)
+                             (b s))
   :returns (a-app-b s (logapp n a b))
-  (if (zp n)
-      (list-fix b)
-    (b* (((mv first rest) (car/cdr a)))
-      (bfr-scons first (bfr-logapp-nus (1- n) rest b)))))
+  (b* (((when (zp n))
+        (list-fix b))
+       ((mv first rest) (car/cdr a)))
+    (bfr-scons first (bfr-logapp-nus (1- n) rest b))))
 
 (defsymbolic bfr-ash-ss ((place p)
                     (n s)
@@ -669,15 +672,15 @@ for computing:</p>
                      (equal (+ n (- (* 2 n)) m)
                             (+ (- n) m))))))
   (b* (((mv shdig shrst shend) (first/rest/end shamt))
-       (place (mbe :logic (acl2::pos-fix place) :exec place)))
-    (if shend
+       (place (lposfix place))
+       ((when shend)
         (bfr-ite-bss shdig
                      (bfr-logtail-ns 1 n)
-                     (bfr-logapp-nss (1- place) nil n))
-      (let ((rst (bfr-ash-ss (* 2 place) n shrst)))
-        (bfr-ite-bss shdig
-                     rst
-                     (bfr-logtail-ns place rst)))))
+                     (bfr-logapp-nss (1- place) nil n)))
+       (rst (bfr-ash-ss (* 2 place) n shrst)))
+    (bfr-ite-bss shdig
+                 rst
+                 (bfr-logtail-ns place rst)))
   :correct-hints ('(:expand ((:free (b) (logcons b (bfr-list->s (scdr shamt) env)))
                              (bfr-ash-ss place n shamt))
                     :in-theory (disable acl2::logtail-identity
@@ -689,12 +692,12 @@ for computing:</p>
   :returns (bit b (logbitp (* place digit) n))
   :measure (len digit)
   (b* (((mv first & end) (first/rest/end n))
-       (place (mbe :logic (acl2::pos-fix place) :exec place)))
-    (if (or (atom digit) end)
-        first
-      (bfr-ite (car digit)
-               (bfr-logbitp-n2v (* 2 place) (cdr digit) (bfr-logtail-ns place n))
-               (bfr-logbitp-n2v (* 2 place) (cdr digit) n))))
+       (place (lposfix place))
+       ((when (or (atom digit) end))
+        first))
+    (bfr-ite (car digit)
+             (bfr-logbitp-n2v (* 2 place) (cdr digit) (bfr-logtail-ns place n))
+             (bfr-logbitp-n2v (* 2 place) (cdr digit) n)))
   :correct-hints ((and stable-under-simplificationp
                        '(:in-theory (enable logcons acl2::bool->bit)))))
 
@@ -703,36 +706,36 @@ for computing:</p>
   :returns (a&b s (logand a b))
   :measure (+ (len a) (len b))
   (b* (((mv af ar aend) (first/rest/end a))
-       ((mv bf br bend) (first/rest/end b)))
-    (if (and aend bend)
-        (bfr-sterm (bfr-and af bf))
-      (b* ((c (bfr-and af bf))
-           (r (bfr-logand-ss ar br)))
-        (bfr-scons c r)))))
+       ((mv bf br bend) (first/rest/end b))
+       (c (bfr-and af bf))
+       ((when (and aend bend))
+        (bfr-sterm c))
+       (r (bfr-logand-ss ar br)))
+    (bfr-scons c r)))
 
 (defsymbolic bfr-logior-ss ((a s)
                             (b s))
   :returns (avb s (logior a b))
   :measure (+ (len a) (len b))
   (b* (((mv af ar aend) (first/rest/end a))
-       ((mv bf br bend) (first/rest/end b)))
-    (if (and aend bend)
-        (bfr-sterm (bfr-or af bf))
-      (b* ((c (bfr-or af bf))
-           (r (bfr-logior-ss ar br)))
-        (bfr-scons c r)))))
+       ((mv bf br bend) (first/rest/end b))
+       (c (bfr-or af bf))
+       ((when (and aend bend))
+        (bfr-sterm c))
+       (r (bfr-logior-ss ar br)))
+    (bfr-scons c r)))
 
 (defsymbolic bfr-logeqv-ss ((a s)
                             (b s))
   :returns (a=b s (logeqv a b))
   :measure (+ (len a) (len b))
   (b* (((mv af ar aend) (first/rest/end a))
-       ((mv bf br bend) (first/rest/end b)))
-    (if (and aend bend)
-        (bfr-sterm (bfr-not (bfr-xor af bf)))
-      (b* ((c (bfr-not (bfr-xor af bf)))
-           (r (bfr-logeqv-ss ar br)))
-        (bfr-scons c r)))))
+       ((mv bf br bend) (first/rest/end b))
+       (c (bfr-iff af bf))
+       ((when (and aend bend))
+        (bfr-sterm c))
+       (r (bfr-logeqv-ss ar br)))
+    (bfr-scons c r)))
 
 (defsymbolic bfr-floor-ss-aux ((a s)
                              (b s)
@@ -966,19 +969,19 @@ for computing:</p>
   :guard-hints ('(:expand ((:free (not-b) (bfr-floor-ss-aux a b not-b)))))
   (mbe :logic (non-exec (mv-nth 1 (bfr-floor-ss-aux a b not-b)))
        :exec (b* (((mv first rest endp) (first/rest/end a))
-                  (not-b (mbe :logic (bfr-lognot-s b) :exec not-b)))
-               (if endp
+                  (not-b (mbe :logic (bfr-lognot-s b) :exec not-b))
+                  ((when endp)
                    (bfr-ite-bss
                     first
                     (bfr-+-ss nil '(t) b) ;; (mod -1 b) = b-1 with b > 0
-                    '(nil)) ;; (mod  0  b) = 0
-                 (b* ((rm (bfr-mod-ss-aux rest b not-b))
-                      (rm (bfr-scons first rm))
-                      (less (bfr-<-ss rm b)))
-                   (bfr-ite-bss
-                    less rm
-                    (bfr-loghead-ns (integer-length-bound-s b)
-                                    (bfr-+-ss t not-b rm))))))))
+                    '(nil)))               ;; (mod  0  b) = 0
+                  (rm (bfr-mod-ss-aux rest b not-b))
+                  (rm (bfr-scons first rm))
+                  (less (bfr-<-ss rm b)))
+               (bfr-ite-bss
+                less rm
+                (bfr-loghead-ns (integer-length-bound-s b)
+                                (bfr-+-ss t not-b rm))))))
 
 (defsymbolic bfr-sign-abs-not-s ((x s))
   :returns (mv (s b (< x 0))
@@ -1033,7 +1036,6 @@ for computing:</p>
   :prepwork ((local (in-theory (disable integer-length-of-between-abs-and-minus-abs
                                         logext-of-integer-length-bound
                                         rem
-                                        bitops::logbitp-upper-bound
                                         acl2::integer-length**)))
              (local (in-theory (enable bfr-sign-abs-not-s))))
   (bfr-ite-bss (bfr-=-ss b nil)
@@ -1051,3 +1053,4 @@ for computing:</p>
                          :in-theory (e/d (logext-of-integer-length-bound)
                                          (integer-length-of-rem
                                           integer-length-of-mod))))))
+
