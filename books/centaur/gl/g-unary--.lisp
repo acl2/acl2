@@ -97,8 +97,7 @@
    :hints (("goal" :use ((:instance complex-definition
                                     (x a) (y b))
                          (:instance complex-definition
-                                    (x (- a)) (y (- b))))
-            :in-theory (disable equal-complexes-rw)))))
+                                    (x (- a)) (y (- b))))))))
 
 ;; (local (defthm eval-g-base-atom
 ;;          (implies (and (not (consp x)) (gobjectp x))

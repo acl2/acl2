@@ -92,8 +92,7 @@
                            (:instance complex-definition (x c) (y d))
                            (:instance complex-definition
                                       (x (- (* a c) (* b d)))
-                                      (y (+ (* a d) (* b c)))))
-              :in-theory (disable equal-complexes-rw))))
+                                      (y (+ (* a d) (* b c))))))))
 
    (defthm g-binary-*-of-numbers-correct
      (implies (and (general-numberp x)

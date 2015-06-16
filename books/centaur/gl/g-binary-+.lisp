@@ -42,6 +42,15 @@
 
 ;; (include-book "univ-gl-eval")
 
+(local (defthm equal-complexes-rw
+         (implies (and (acl2-numberp x)
+                       (rationalp a)
+                       (rationalp b))
+                  (equal (equal (complex a b) x)
+                         (and (equal a (realpart x))
+                              (equal b (imagpart x)))))
+         :hints (("goal" :use ((:instance realpart-imagpart-elim))))))
+
 (defun g-binary-+-of-numbers (x y)
   (declare (xargs :guard (and (general-numberp x)
                               (general-numberp y))))
