@@ -34,12 +34,11 @@
 (include-book "bvecs")
 (include-book "bfr-reasoning")
 (local (include-book "clause-processors/find-subterms" :dir :system))
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arith-lemmas"))
 
 (local (defthm equal-complexes-rw
-         ;; BOZO should almost surely localize this
          (implies (and (acl2-numberp x)
                        (rationalp a)
                        (rationalp b))
@@ -1037,7 +1036,6 @@ for computing:</p>
   :prepwork ((local (in-theory (disable integer-length-of-between-abs-and-minus-abs
                                         logext-of-integer-length-bound
                                         rem
-                                        bitops::logbitp-upper-bound
                                         acl2::integer-length**)))
              (local (in-theory (enable bfr-sign-abs-not-s))))
   (bfr-ite-bss (bfr-=-ss b nil)

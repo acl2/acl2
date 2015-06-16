@@ -29,13 +29,17 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "centaur/gl/symbolic-arithmetic" :dir :system)
+(include-book "a4vec")
 (include-book "tools/templates" :dir :system)
 (include-book "xdoc/alter" :dir :system)
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/gl/arith-lemmas" :dir :system))
+
+(defmacro sv::aig-sterm (x)   `(gl::bfr-sterm ,x))
+(defmacro sv::aig-scons (x y) `(gl::bfr-scons ,x ,y))
+(defmacro sv::aig-ucons (x y) `(gl::bfr-ucons ,x ,y))
 
 
 ;; Some additional function that will be useful for avoiding intermediate
@@ -157,32 +161,7 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
 ; events here, basically replacing occurrences of "BFR-" with "AIG-".  Very
 ; ugly, but, we hope, effective.
 
-(defmacro sv::aig-sterm (x) `(gl::bfr-sterm ,x))
-(defmacro sv::aig-scons (x y) `(gl::bfr-scons ,x ,y))
-(defmacro sv::aig-ucons (x y) `(gl::bfr-ucons ,x ,y))
 
-(define sv::aig-list->s ((x   "AIG list to evaluate.")
-                         (env "AIG environment to evaluate it under."))
-  :returns (ans integerp :rule-classes :type-prescription)
-  :short "Evaluate an AIG list and interpret the resulting bits as a signed
-  integer, as in @(see gl::bfr-list->s)."
-  :enabled t
-  (b* (((mv first rest end) (first/rest/end x)))
-    (if end
-        (bool->sign (sv::aig-eval first env))
-      (logcons (sv::bool->bit (sv::aig-eval first env))
-               (sv::aig-list->s rest env)))))
-
-(define sv::aig-list->u ((x   "AIG list to evaluate.")
-                         (env "AIG environment to evaluate it under."))
-  :returns (ans natp :rule-classes :type-prescription)
-  :short "Evaluate an AIG list and interpret the resulting bits as an unsigned
-  integer, as in @(see gl::bfr-list->u)."
-  :enabled t
-  (if (atom x)
-      0
-    (logcons (sv::bool->bit (sv::aig-eval (car x) env))
-             (sv::aig-list->u (cdr x) env))))
 
 (define sv::aig-i2v ((x integerp))
   :returns (aig)

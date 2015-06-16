@@ -198,6 +198,7 @@ evaluate several related AIGs.)</p>"
   ///
   (memoize 'aig-eval :condition '(and (consp x) (cdr x))))
 
+
 (define aig-eval-list
   :parents (aig-semantics)
   :short "@(call aig-eval-list) evaluates a list of AIGs."
@@ -210,7 +211,21 @@ evaluate several related AIGs.)</p>"
   (if (atom x)
       nil
     (cons (aig-eval (car x) env)
-          (aig-eval-list (cdr x) env))))
+          (aig-eval-list (cdr x) env)))
+  ///
+  (defthm consp-of-aig-eval-list
+    (equal (consp (aig-eval-list x env))
+           (consp x)))
+
+  (defthm len-of-aig-eval-list
+    (equal (len (aig-eval-list x env))
+           (len x)))
+
+  (defthm aig-eval-list-of-append
+    (equal (aig-eval-list (append x y) env)
+           (append (aig-eval-list x env)
+                   (aig-eval-list y env)))))
+
 
 (define aig-eval-alist
   :parents (aig-semantics)
