@@ -450,8 +450,10 @@ events, and is mainly meant as a tool for macro developers.</dd>
                                                   world)))
                     `(with-output :stack :pop (progn . ,events))))))
         (local (set-define-current-function ,guts.name))
-        (with-output :stack :pop (progn . ,guts.rest-events))
-        (with-output :on (error) ,(add-signature-from-guts guts))))))
+        (with-output :stack :pop (progn . ,guts.rest-events)))
+      ;; Make sure the section gets processed first.  Once it's done,
+      ;; we can add the signature block.
+      (with-output :on (error) ,(add-signature-from-guts guts)))))
 
 (defun collect-fn-defsections (gutslist cliquename process-returns)
   (if (atom gutslist)
