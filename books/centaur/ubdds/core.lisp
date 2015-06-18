@@ -303,7 +303,7 @@ sometimes avoid evaluating @('y') or @('z').</p>
 })
 
 <p>The advantage of this over a raw call of @(see q-ite-fn) is that when the
-expression for @('x') evaluates to an atom, then we can avoid evaluating @('y)
+expression for @('x') evaluates to an atom, then we can avoid evaluating @('y')
 or @('z').  Hence, when @('y') or @('z') is expensive to evaluate (e.g.,
 perhaps they are terms involving calls to UBDD-building operations like @(see
 q-not)), we can save some time.</p>
