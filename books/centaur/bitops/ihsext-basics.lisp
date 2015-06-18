@@ -2531,7 +2531,13 @@ off looking at the source code.</p>")
       :hints(("Goal"
               :induct (my-induct n x y)
               :in-theory (enable acl2::logxor**
-                                 acl2::unsigned-byte-p**))))))
+                                 acl2::unsigned-byte-p**)))))
+
+  (defthmd unsigned-byte-p-implies-natp-width
+    (implies (unsigned-byte-p n x)
+             (natp n))
+    :hints(("Goal" :in-theory (enable unsigned-byte-p)))
+    :rule-classes :forward-chaining))
 
 
 (defsection logsquash**
@@ -2888,7 +2894,7 @@ off looking at the source code.</p>")
 
 
 (defsection logapp**
-
+  (local (include-book "ihs/logops-lemmas" :dir :system))
   (local (in-theory (enable* ihsext-recursive-redefs
                              ihsext-inductions
                              ihsext-bounds-thms
@@ -3103,6 +3109,13 @@ off looking at the source code.</p>")
     :hints (("goal" :induct (ind size1 size i j)
              :in-theory (disable signed-byte-p
                                  minus-to-lognot))))
+
+  (defthm integer-length-of-logapp-when-j
+    (implies (<= 1 (integer-length j))
+             (equal (integer-length (logapp size i j))
+                    (+ (nfix size) (integer-length j))))
+    :hints (("goal" :induct (logapp size i j)
+             :in-theory (disable (force)))))
 
   (defthm logapp-sign
     (equal (< (logapp size i j) 0)
@@ -3470,12 +3483,17 @@ off looking at the source code.</p>")
 
   (local (in-theory (disable logmask)))
 
+  (defun count-down (n)
+    (if (zp n)
+        n
+      (count-down (1- n))))
+
   (defthmd logmask-induct
     t
     :rule-classes ((:induction
                     :pattern (logmask i)
-                    :scheme (integer-length-ind i))))
-
+                    :scheme (count-down i))))
+  
   (add-to-ruleset ihsext-redefs logmask**)
   (add-to-ruleset ihsext-recursive-redefs logmask**)
   (add-to-ruleset ihsext-inductions logmask-induct)
@@ -3490,7 +3508,20 @@ off looking at the source code.</p>")
   (defthm integer-length-of-logmask
     (equal (integer-length (logmask width))
            (nfix width))
-    :hints (("goal" :in-theory (enable logmask expt-2-is-ash)))))
+    :hints (("goal" :in-theory (enable logmask expt-2-is-ash))))
+
+  (defthm unsigned-byte-p-of-logmask
+    (implies (posp width)
+             (unsigned-byte-p width (logmask width)))
+    :hints(("Goal" :in-theory (e/d (unsigned-byte-p**)
+                                   (unsigned-byte-p))
+            :induct (logmask width))))
+
+  (defthmd ash-minus-1-is-logmask
+    (implies (natp n)
+             (equal (+ -1 (ash 1 n))
+                    (logmask n)))
+    :hints (("goal" ::in-theory (enable expt-2-is-ash logmask)))))
 
 
 
