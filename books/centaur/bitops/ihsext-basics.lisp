@@ -3521,7 +3521,7 @@ off looking at the source code.</p>")
     (implies (natp n)
              (equal (+ -1 (ash 1 n))
                     (logmask n)))
-    :hints (("goal" ::in-theory (enable expt-2-is-ash logmask)))))
+    :hints (("goal" :in-theory (enable expt-2-is-ash logmask)))))
 
 
 
