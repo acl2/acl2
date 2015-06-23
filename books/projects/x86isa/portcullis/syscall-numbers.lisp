@@ -10,13 +10,13 @@
 ;; systems and maybe another on darwin systems:
 
 (defmacro OS (l d)
-  #+(and linux (not darwin))
+  #+(and linux (not (or darwin bsd)))
   (declare (ignore d))
-  #+(and linux (not darwin))
+  #+(and linux (not (or darwin bsd)))
   l
-  #+(and darwin (not linux))
+  #+(and (or darwin bsd) (not linux))
   (declare (ignore l))
-  #+(and darwin (not linux))
+  #+(and (or darwin bsd) (not linux))
   d
   )
 
