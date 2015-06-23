@@ -349,7 +349,7 @@ new-gateinsts nf')').</p>
 <p>The @('new-gateinsts') we return should be used to replace @('x') in the
 module.</p>"
 
-  (b* ((args  (redundant-list-fix (vl-gateinst->args x)))
+  (b* ((args  (list-fix (vl-gateinst->args x)))
        (nargs (length args))
 
        ((when (< nargs 2))
@@ -515,7 +515,7 @@ gate(out,   tempN-2, iN);
   :prepwork ((local (in-theory (enable len))))
 
   (b* ((type     (vl-gateinst->type x))
-       (args     (redundant-list-fix (vl-gateinst->args x)))
+       (args     (list-fix (vl-gateinst->args x)))
        (nargs    (length args))
        (range    (vl-gateinst->range x))
        (loc      (vl-gateinst->loc x))
@@ -622,7 +622,7 @@ we need to add a \"not\" gate at the end.</p>"
 
   :prepwork ((local (in-theory (enable len acl2::member-of-cons))))
 
-  (b* ((args     (redundant-list-fix (vl-gateinst->args x)))
+  (b* ((args     (list-fix (vl-gateinst->args x)))
        (nargs    (length args))
        (range    (vl-gateinst->range x))
        (loc      (vl-gateinst->loc x))

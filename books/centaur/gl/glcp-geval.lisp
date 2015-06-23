@@ -71,7 +71,7 @@
       mod
       truncate
       rem
-      acl2::boolfix
+      acl2::bool-fix$inline
 
       ;; these are from the constant *expandable-boot-strap-non-rec-fns*.
       NOT IMPLIES

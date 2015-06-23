@@ -254,6 +254,7 @@
     len
     length
     len-of-list-fix
+    llist-fix
     (:type-prescription list-fix)
     (:type-prescription len)
     list-fix-when-true-listp))
@@ -386,7 +387,7 @@
          (mbe :logic
               (update-nth-nx ,index (list-fix a) ,stobj)
               :exec
-              (b* ((a (mbe :logic (list-fix a) :exec a))
+              (b* ((a (llist-fix a))
                    (,stobj (,resize-arr (length a) ,stobj)))
                 (,load-main 0 a ,stobj))))
 

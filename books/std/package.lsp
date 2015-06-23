@@ -303,6 +303,7 @@
       repeat
       replicate
       list-fix
+      llist-fix
       rev
       rcons
       revappend-without-guard

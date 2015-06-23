@@ -36,9 +36,9 @@
 (include-book "std/util/defmvtypes" :dir :system)
 (include-book "../misc/defapply")
 
-(defun acl2::boolfix (x)
-  (declare (xargs :guard t))
-  (if x t nil))
+;; (defun acl2::boolfix (x)
+;;   (declare (xargs :guard t))
+;;   (if x t nil))
 
 
 ;; Pulls apart a number into its components.  They are stored in order of how
@@ -59,10 +59,10 @@
                               (mv (car x) (cdr x))
                             (mv nil nil)))
        (imag-denom (if (consp x) (car x) '(t))))
-    ;; (mv (rlist-fix real-numer)
-    ;;     (rlist-fix real-denom)
-    ;;     (rlist-fix imag-numer)
-    ;;     (rlist-fix imag-denom))
+    ;; (mv (list-fix real-numer)
+    ;;     (list-fix real-denom)
+    ;;     (list-fix imag-numer)
+    ;;     (list-fix imag-denom))
     (mv real-numer
         real-denom
         imag-numer
@@ -787,7 +787,7 @@
       mod
       truncate
       rem
-      acl2::boolfix
+;      acl2::boolfix
 
       ;; these are from the constant *expandable-boot-strap-non-rec-fns*.
       NOT IMPLIES

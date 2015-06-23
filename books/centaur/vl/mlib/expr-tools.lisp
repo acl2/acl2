@@ -1759,13 +1759,13 @@ expression, with repetition.</p>"
                          (x   vl-expr-p))
   :enabled t
   (mbe :logic (intersectp-equal (vl-oplist-fix ops) (vl-expr-ops x))
-       :exec (vl-expr-has-ops-aux (redundant-list-fix ops) x)))
+       :exec (vl-expr-has-ops-aux (list-fix ops) x)))
 
 (define vl-exprlist-has-ops ((ops vl-oplist-p)
                              (x   vl-exprlist-p))
   :enabled t
   (mbe :logic (intersectp-equal (vl-oplist-fix ops) (vl-exprlist-ops x))
-       :exec (vl-exprlist-has-ops-aux (redundant-list-fix ops) x)))
+       :exec (vl-exprlist-has-ops-aux (list-fix ops) x)))
 
 
 (define vl-zbitlist-p ((x vl-bitlist-p))

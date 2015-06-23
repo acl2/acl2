@@ -33,7 +33,7 @@
 (include-book "g-primitives-help")
 (include-book "symbolic-arithmetic")
 (include-book "eval-g-base")
-
+(local (include-book "bfr-reasoning"))
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -51,7 +51,7 @@
                        (bfr-=-uu xid nil)) t)
              (eq (bfr-or (bfr-=-ss yin nil)
                        (bfr-=-uu yid nil)) t))
-        (mk-g-number (rlist-fix (bfr-truncate-ss xrn yrn)))
+        (mk-g-number (list-fix (bfr-truncate-ss xrn yrn)))
       (g-apply 'truncate (gl-list x y)))))
 
 (in-theory (disable (g-truncate-of-numbers)))

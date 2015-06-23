@@ -127,6 +127,44 @@ because... (BOZO)</p>
 (define svex-resolve-single-assignment ((lhs svex-p)
                                         (rhs svex-p)
                                         (wholevar svex-p))
+  ;; This function tries to take assignments such as
+  ;;   my_arr[idx] = foo
+  ;; and transform them into
+  ;;   my_arr = { my_arr[max_idx:idx+1], foo, my_arr[idx-1:0] }.
+  ;; But in actuality, the VL expression->svex transform turns dynamic indices
+  ;; into horrible things, e.g., if we have
+  ;;    logic [15:0] e;
+  ;;    logic [3:0] a;
+  ;; then e[a] becomes (after rewriting!)
+  ;; (CONCAT 1
+  ;;         (? (< (* 1 (CONCAT 4 "a" 0)) 0)
+  ;;            (CONCAT (U- (* 1 (CONCAT 4 "a" 0)))
+  ;;                    '(-1 . 0)
+  ;;                    (CONCAT 16 "e" '(-1 . 0)))
+  ;;            (RSH (* 1 (CONCAT 4 "a" 0))
+  ;;                 (CONCAT 16 "e" '(-1 . 0))))
+  ;;         '(0 . -1))
+  ;; This is because we have to check the case where a is below the lowest
+  ;; index of e -- in this case that's impossible, but in general it could be.
+
+  ;; Fortunately, even in this mess there is some order.  We can recursively
+  ;; descend through it until we get to the occurrences of e, transforming
+  ;; things as follows (where here capital Z signifies X or Z, i.e. '(0 . -1)
+  ;; or '(-1 . 0)):
+
+  ;; (concat w a Z) = rhs --> a = (concat w rhs (rsh w a))
+  ;; (concat w Z b) = rhs --> b = (rsh w rhs)
+  ;; (zerox w a) = rhs --> a = (concat w rhs (rsh w a))
+  ;; (signx w a) = rhs --> a = (concat w rhs (rsh w a))
+  ;; (rsh w v) = rhs --> v = (concat w v rhs)
+
+  ;; (? test then else) = rhs
+  ;; is more complicated.  Resolve
+  ;; then = rhs -->  var = then-val
+  ;; else = rhs -->  var = else-val
+  ;; and if both are successful, then result is
+  ;; var = (? test then-val else-val).
+
   :measure (svex-count lhs)
   :returns (mv (err (iff (vl::vl-msg-p err) err))
                (final-rhs (implies (not err) (svex-p final-rhs))))
@@ -198,102 +236,139 @@ because... (BOZO)</p>
   (verify-guards svex-resolve-single-assignment))
 
 
-  ;;            ((unless (svex-equiv v wholevar))
-  ;;             (mv (vl::vmsg "Variables mismatched: ~x0, ~x1" lhs wholevar) nil))
-  ;;            ((unless (svex-case w :quote))
-  ;;             (mv (vl::vmsg "Variable width select in LHS: ~x0" lhs) nil)))
-  ;;         (mv nil
-  ;;             (svcall concat w rhs
-  ;;                     (svcall rsh w wholevar)))))
+;; (define vl-single-procedural-assign->svstmts ((lhs sv::svex-p)
+;;                                               (lhssize natp)
+;;                                               (wholevar sv::svex-p)
+;;                                               (varsize natp)
+;;                                               (rhs sv::svex-p)
+;;                                               (blockingp booleanp))
+;;   :prepwork ((local (defthm consp-cdr-by-len
+;;                       (implies (< 1 (len x))
+;;                                (consp (cdr x)))
+;;                       :hints(("Goal" :in-theory (enable len)))))
+;;              (local (defthm consp-by-len
+;;                       (implies (< 0 (len x))
+;;                                (consp x))
+;;                       :hints(("Goal" :in-theory (enable len))))))
+;;   :returns (mv (ok)
+;;                (warnings vl-warninglist-p)
+;;                (res sv::svstmtlist-p))
+;;   (b* ((warnings nil)
+;;        (lhs-simp1 (sv::svex-concat lhssize (sv::svex-lhsrewrite lhs 0 lhssize)
+;;                                      (sv::svex-z)))
+;;        ((when (sv::lhssvex-p lhs-simp1))
+;;         (mv t (ok)
+;;             (list (sv::make-svstmt-assign
+;;                    :lhs (sv::svex->lhs lhs-simp1)
+;;                    :rhs rhs
+;;                    :blockingp blockingp))))
+;;        ;; Above covers the case where we have static indices.  Now try and deal
+;;        ;; with dynamic indices.
+;;        ;; BOZO This makes it important that svex rewriting normalize select
+;;        ;; operations to concats and right shifts.  It does this now, and it
+;;        ;; seems unlikely we'll want to change that.
+;;        ;; First make sure we can process wholevar into an LHS.
+;;        (wholevar (sv::svex-lhsrewrite wholevar 0 varsize))
+;;        (varsvex (sv::svex-concat varsize wholevar (sv::svex-z)))
+;;        ((unless (sv::lhssvex-p varsvex))
+;;         (mv nil
+;;             (fatal :type :vl-assignstmt-fail
+;;                    :msg "Failed to process whole variable as svex LHS -- ~
+;;                          dynamic instance select or something? ~x0"
+;;                    :args (list (sv::svex-fix wholevar)))
+;;             nil))
+;;        (var-lhs (sv::svex->lhs varsvex))
+
+;;        ((list simp-lhs wholevar) (sv::svexlist-rewrite-top (list lhs-simp1 wholevar)))
+
+;;        ((mv err final-rhs)
+;;         (sv::svex-resolve-single-assignment simp-lhs rhs wholevar))
+
+;;        ((when err)
+;;         (mv nil
+;;             (fatal :type :vl-assignstmt-fail
+;;                    :msg "Failed to process LHS for dynamic select assignment: ~@0"
+;;                    :args (list err))
+;;             nil)))
+;;     (mv t nil
+;;         (list
+;;          (sv::make-svstmt-assign :lhs var-lhs :rhs final-rhs :blockingp blockingp))))
+;;   ///
+;;   (local #!sv (defthm svex-vars-of-car
+;;                 (implies (not (member v (svexlist-vars x)))
+;;                          (not (member v (svex-vars (car x)))))))
+;;   (local #!sv (defthm svexlist-vars-of-cdr
+;;                 (implies (not (member v (svexlist-vars x)))
+;;                          (not (member v (svexlist-vars (cdr x)))))))
+
+;;   (fty::defret vars-of-vl-single-procedural-assign->svstmts
+;;     (implies (and (not (member v (sv::svex-vars lhs)))
+;;                   (not (member v (sv::svex-vars rhs)))
+;;                   (not (member v (sv::svex-vars wholevar))))
+;;              (not (member v (sv::svstmtlist-vars res))))))
+
+
+
              
-  ;; (svex-case lhs
-  ;;   :quote (mv (vl::vmsg "Unexpectedly encountered constant: ~x0" lhs.val) nil) 
-  ;;   :var (if (svex-equiv lhs wholevar)
-  ;;            (mv nil rhs)
-  ;;          (mv (vl::vmsg "Variables mismatched: ~x0, ~x1" lhs wholevar) nil))
-  ;;   :call
-  ;;   (case lhs.fn
-  ;;     (rsh (b* (((unless (eql (len lhs.args) 2))
-  ;;                (mv (vl::msg "Malformed: ~x0" lhs) nil)))
-  ;;            (svex-resolve-single-assignment
-  ;;             (second lhs.args)
-  ;;             (svcall concat (first lhs.args) wholevar rhs)
-                
+
+             
+             
+
+;;         (b* (((wmv ok warnings lhssvex ?type size)
+;;               (vl-index-expr-svex/size/type lhs conf))
+;;              ((unless ok)
+;;               (mv nil warnings nil nil))
+;;              ((vl-svexconf conf))
+;;              ((mv err opinfo) (vl-index-expr-typetrace lhs conf.ss conf.typeov))
+;;              ((when err)
+;;               (mv nil
+;;                   (fatal :type :vl-assignstmt-fail
+;;                          :msg "Failed to get type of LHS ~a0: ~@1"
+;;                          :args (list lhs err))
+;;                   nil nil))
+;;              ((vl-operandinfo opinfo))
 
 
-(define vl-single-procedural-assign->svstmts ((lhs sv::svex-p)
-                                              (lhssize natp)
-                                              (wholevar sv::svex-p)
-                                              (varsize natp)
-                                              (rhs sv::svex-p)
-                                              (blockingp booleanp))
-  :prepwork ((local (defthm consp-cdr-by-len
-                      (implies (< 1 (len x))
-                               (consp (cdr x)))
-                      :hints(("Goal" :in-theory (enable len)))))
-             (local (defthm consp-by-len
-                      (implies (< 0 (len x))
-                               (consp x))
-                      :hints(("Goal" :in-theory (enable len))))))
-  :returns (mv (ok)
-               (warnings vl-warninglist-p)
-               (res sv::svstmtlist-p))
-  (b* ((warnings nil)
-       (lhs-simp1 (sv::svex-concat lhssize (sv::svex-lhsrewrite lhs 0 lhssize)
-                                     (sv::svex-z)))
-       ((when (sv::lhssvex-p lhs-simp1))
-        (mv t (ok)
-            (list (sv::make-svstmt-assign
-                   :lhs (sv::svex->lhs lhs-simp1)
-                   :rhs rhs
-                   :blockingp blockingp))))
-       ;; Above covers the case where we have static indices.  Now try and deal
-       ;; with dynamic indices.
-       ;; BOZO This makes it important that svex rewriting normalize select
-       ;; operations to concats and right shifts.  It does this now, and it
-       ;; seems unlikely we'll want to change that.
-       ;; First make sure we can process wholevar into an LHS.
-       (wholevar (sv::svex-lhsrewrite wholevar 0 varsize))
-       (varsvex (sv::svex-concat varsize wholevar (sv::svex-z)))
-       ((unless (sv::lhssvex-p varsvex))
-        (mv nil
-            (fatal :type :vl-assignstmt-fail
-                   :msg "Failed to process whole variable as svex LHS -- ~
-                         dynamic instance select or something? ~x0"
-                   :args (list (sv::svex-fix wholevar)))
-            nil))
-       (var-lhs (sv::svex->lhs varsvex))
+;;              ;; This isn't quite right.  This is resulting in us writing to the
+;;              ;; whole variable, where we really want the longest static prefix.
+;;              ((wmv ok warnings wholesvex ?wholetype wholesize)
+;;               (vl-index-expr-svex/size/type
+;;                (make-vl-index :scope opinfo.prefixname) conf))
+;;              ((unless ok) (mv nil warnings nil nil))
+;;              ((wmv ok warnings svstmts)
+;;               (vl-single-procedural-assign->svstmts
+;;                lhssvex size wholesvex wholesize rhssvex blockingp)))
+;;           (mv ok warnings svstmts (and ok size)))
 
-       ((list simp-lhs wholevar) (sv::svexlist-rewrite-top (list lhs-simp1 wholevar)))
-
-       ((mv err final-rhs)
-        (sv::svex-resolve-single-assignment simp-lhs rhs wholevar))
-
-       ((when err)
-        (mv nil
-            (fatal :type :vl-assignstmt-fail
-                   :msg "Failed to process LHS for dynamic select assignment: ~@0"
-                   :args (list err))
-            nil)))
-    (mv t nil
-        (list
-         (sv::make-svstmt-assign :lhs var-lhs :rhs final-rhs :blockingp blockingp))))
-  ///
-  (local #!sv (defthm svex-vars-of-car
-                (implies (not (member v (svexlist-vars x)))
-                         (not (member v (svex-vars (car x)))))))
-  (local #!sv (defthm svexlist-vars-of-cdr
-                (implies (not (member v (svexlist-vars x)))
-                         (not (member v (svexlist-vars (cdr x)))))))
-
-  (fty::defret vars-of-vl-single-procedural-assign->svstmts
-    (implies (and (not (member v (sv::svex-vars lhs)))
-                  (not (member v (sv::svex-vars rhs)))
-                  (not (member v (sv::svex-vars wholevar))))
-             (not (member v (sv::svstmtlist-vars res))))))
 
 
 (defines vl-procedural-assign->svstmts
+;; (trace$
+;;  #!vl (vl-procedural-assign->svstmts
+;;        :entry (list 'vl-procedural-assign->svstmts
+;;                     (with-local-ps (vl-pp-expr lhs))
+;;                     rhssvex)
+;;        :exit (b* (((list ?ok ?warnings ?svstmts ?shift) values)
+;;                   (end (and warnings
+;;                             (list (with-local-ps (vl-print-warnings warnings))))))
+;;                (list* 'vl-procedural-assign->svstmts
+;;                       svstmts shift end))))
+                   
+
+;; (trace$
+;;  #!vl (vl-operandinfo-to-svex-longest-static-prefix
+;;        :entry (list 'vl-operandinfo-to-svex-longest-static-prefix
+;;                     (with-local-ps (vl-pp-expr (vl-operandinfo->orig-expr x)))
+;;                     indices)
+;;        :exit (b* (((list err lsp-expr lsp-type full-expr) values))
+;;                (if err
+;;                    (list 'vl-operandinfo-to-svex-longest-static-prefix
+;;                          (with-local-ps (vl-cw "~@0" err)))
+;;                  (list 'vl-operandinfo-to-svex-longest-static-prefix
+;;                        lsp-expr
+;;                        (with-local-ps (vl-pp-datatype lsp-type))
+;;                        full-expr)))))
+
   (define vl-procedural-assign->svstmts ((lhs vl-expr-p)
                                          (rhssvex sv::svex-p)
                                          (blockingp booleanp)
@@ -304,15 +379,14 @@ because... (BOZO)</p>
                  (warnings vl-warninglist-p)
                  (svstmts sv::svstmtlist-p)
                  (shift (implies ok (natp shift)) :rule-classes :type-prescription))
+    :prepwork ((local (Defthmd consp-by-len
+                        (implies (posp (len x))
+                                 (consp x)))))
     (b* ((warnings nil)
          (lhs (vl-expr-fix lhs)))
       (vl-expr-case lhs
         :vl-index
-        (b* (((wmv ok warnings lhssvex ?type size)
-              (vl-index-expr-svex/size/type lhs conf))
-             ((unless ok)
-              (mv nil warnings nil nil))
-             ((vl-svexconf conf))
+        (b* (((vl-svexconf conf))
              ((mv err opinfo) (vl-index-expr-typetrace lhs conf.ss conf.typeov))
              ((when err)
               (mv nil
@@ -321,14 +395,73 @@ because... (BOZO)</p>
                          :args (list lhs err))
                   nil nil))
              ((vl-operandinfo opinfo))
-             ((wmv ok warnings wholesvex ?wholetype wholesize)
-              (vl-index-expr-svex/size/type
-               (make-vl-index :scope opinfo.prefixname) conf))
-             ((unless ok) (mv nil warnings nil nil))
-             ((wmv ok warnings svstmts)
-              (vl-single-procedural-assign->svstmts
-               lhssvex size wholesvex wholesize rhssvex blockingp)))
-          (mv ok warnings svstmts (and ok size)))
+             ((wmv warnings indices ?sizes)
+              (vl-exprlist-to-svex-selfdet (vl-operandinfo->indices opinfo) conf))
+
+             ((mv err dyn-size) (vl-datatype-size opinfo.type))
+             ((unless (and (not err) dyn-size))
+              (mv nil
+                  (fatal :type :vl-assignstmt-fail
+                         :msg "Failed to size the dynamic part of LHS ~a0: ~@1"
+                         :args (list lhs (or err "")))
+                  nil nil))
+
+             
+             ;; Dynselect-expr is in terms of the special variable
+             ;; *svex-longest-static-prefix-var*.
+             ((mv err longest-static-prefix-svex lsp-type dynselect-expr)
+              (vl-operandinfo-to-svex-longest-static-prefix
+               opinfo indices conf.ss conf.params))
+             (dynselect-trunc (sv::svcall sv::concat (svex-int dyn-size) dynselect-expr (svex-x)))
+             ((when err)
+              (mv nil
+                  (fatal :type :vl-assignstmt-fail
+                         :msg "Failed to process LHS ~a0: ~@1"
+                         :args (list lhs err))
+                  nil nil))
+
+             ((list dynselect-final) (sv::svexlist-rewrite-top (list dynselect-trunc)))
+
+             ((mv err dyn-rhs)
+              (sv::svex-resolve-single-assignment
+               dynselect-final rhssvex *svex-longest-static-prefix-var*))
+             ((when err)
+              (mv nil
+                  (fatal :type :vl-assignstmt-fail
+                         :msg "Failed to process dynamic select expression ~a0: ~@1"
+                         :args (list lhs err))
+                  nil nil))
+
+             (final-rhs (sv::svex-replace-var dyn-rhs *svex-longest-static-prefix-var*
+                                              longest-static-prefix-svex))
+             (- (clear-memoize-table 'sv::svex-replace-var))
+
+             ((mv err lsp-size) (vl-datatype-size lsp-type))
+             ((unless (and (not err) lsp-size))
+              (mv nil
+                  (fatal :type :vl-assignstmt-fail
+                         :msg "Failed to size the static part of LHS ~a0: ~@1"
+                         :args (list lhs (or err "")))
+                  nil nil))
+             
+             (lsp-simp (sv::svex-concat
+                        lsp-size (sv::svex-lhsrewrite longest-static-prefix-svex 0 lsp-size)
+                        (sv::svex-z)))
+             
+             ((unless (sv::lhssvex-p lsp-simp))
+              (mv nil
+                  (fatal :type :vl-assignstmt-fail
+                         :msg "Programming error -- the static portion of LHS ~
+                               ~a0 couldn't be turned into a proper LHS ~
+                               expression."
+                         :args (list lhs))
+                  nil nil)))
+          (mv t warnings
+              (list (sv::make-svstmt-assign
+                     :lhs (sv::svex->lhs lsp-simp)
+                     :rhs final-rhs
+                     :blockingp blockingp))
+              dyn-size))
         :vl-concat
         (vl-procedural-assign-concat->svstmts lhs.parts rhssvex blockingp conf)
         :otherwise
@@ -358,7 +491,42 @@ because... (BOZO)</p>
       (mv t warnings (append-without-guard svstmts1 svstmts2)
           (+ shift1 shift2))))
   ///
-  (verify-guards vl-procedural-assign->svstmts)
+  (verify-guards vl-procedural-assign->svstmts
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable consp-by-len)))))
+
+  ;; BOZO move these somewhere, seem like fine rules
+  (local (defthm member-svex-vars-of-car
+           (implies (not (member v (sv::svexlist-vars x)))
+                    (not (member v (sv::svex-vars (car x)))))
+           :hints(("Goal" :in-theory (enable sv::svexlist-vars)))))
+
+  (local (defthm member-svex-vars-of-cadr
+           (implies (not (member v (sv::svexlist-vars x)))
+                    (not (member v (sv::svex-vars (cadr x)))))
+           :hints(("Goal" :in-theory (enable sv::svexlist-vars)))))
+
+  (local (defthm member-svex-vars-of-cdr
+           (implies (not (member v (sv::svexlist-vars x)))
+                    (not (member v (sv::svexlist-vars (cdr x)))))
+           :hints(("Goal" :in-theory (enable sv::svexlist-vars)))))
+
+
+  (local (defthm svex-alist-vars-of-single
+           #!sv (equal (svex-alist-vars (list (cons a b)))
+                       (svex-vars b))
+           :hints(("Goal" :in-theory (enable sv::svex-alist-vars)))))
+
+  (local (defthm svex-alist-keys-of-single
+           #!sv (equal (svex-alist-keys (list (cons a b)))
+                       (list (svar-fix a)))
+           :hints(("Goal" :in-theory (enable sv::svex-alist-keys)))))
+
+  (local (defthm member-single
+           (iff (member a (list b))
+                (equal a b))
+           :hints(("Goal" :in-theory (enable member)))))
+
 
   (defthm-vl-procedural-assign->svstmts-flag
     (defthm vars-of-vl-procedural-assign->svstmts
@@ -367,6 +535,8 @@ because... (BOZO)</p>
         (implies (sv::svarlist-addr-p (sv::svex-vars rhssvex))
                  (sv::svarlist-addr-p
                   (sv::svstmtlist-vars svstmts))))
+      :hints ((and stable-under-simplificationp
+                   '(:in-theory (enable sv::vars-of-svex-compose-strong))))
       :flag vl-procedural-assign->svstmts)
 
     (defthm vars-of-vl-procedural-assign-concat->svstmts
@@ -380,7 +550,6 @@ because... (BOZO)</p>
              'vl-procedural-assign->svstmts id t world)))
 
   (deffixequiv-mutual vl-procedural-assign->svstmts))
-         
           
 
 
@@ -627,7 +796,7 @@ because... (BOZO)</p>
              ((vl-svexconf conf))
              ((wmv warnings sizes)
               (vl-exprlist-selfsize caseexprs conf.ss conf.typeov))
-             ((when (member nil (redundant-list-fix sizes)))
+             ((when (member nil (list-fix sizes)))
               ;; already warned
               (fail (warn :type :vl-stmt->svstmts-failed
                           :msg "Failed to size some case expression: ~a0"

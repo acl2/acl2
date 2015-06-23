@@ -99,6 +99,26 @@
                              (get-xdoc-table world))))
 
 
+(defun change-base-pkg-fn (name pkg all-topics)
+  (declare (xargs :mode :program))
+  (b* (((when (atom all-topics))
+        (er hard? 'change-base-pkg-fn "Topic ~x0 was not found." name))
+       (topic (car all-topics))
+       ((unless (equal (cdr (assoc :name topic)) name))
+        (cons (car all-topics)
+              (change-base-pkg-fn name pkg (cdr all-topics))))
+       (topic (cons (cons :base-pkg (acl2::pkg-witness pkg))
+                    (delete-assoc-equal :base-pkg topic))))
+    (cons topic (cdr all-topics))))
+
+(defmacro change-base-pkg (name pkg)
+  `(table xdoc 'doc
+          (change-base-pkg-fn ',name ',pkg
+                              (get-xdoc-table world))))
+
+
+
+
 ;; Idea:
 ;;   (without-xdoc (defun foo ...)
 ;;                 (defxdoc bar...)

@@ -299,10 +299,108 @@ some kind of separator!</p>
 ")
 
 
+; -------------- Xargs Extraction ---------------------------------------------
+
+(defun extract-xargs-from-xguts
+  (ctx         ; Context for error messages
+   xargs-guts  ; Guts from an (xargs ...) form, i.e., (:verify-guards ... :hints ... :guard ...)
+   )
+  (b* (((when (atom xargs-guts))
+        nil)
+       ((unless (member (car xargs-guts) acl2::*xargs-keywords*))
+        (er hard? ctx "Malformed xargs: expected a valid xargs keyword but found ~x0.~%" (car xargs-guts)))
+       ((when (atom (cdr xargs-guts)))
+        (er hard? ctx "Malformed xargs: no value for ~x0?~%" (car xargs-guts))))
+    (cons (cons (first xargs-guts)
+                (second xargs-guts))
+          (extract-xargs-from-xguts ctx (cddr xargs-guts)))))
+
+#||
+ (extract-xargs-from-xguts 'foo '(:verify-guards t :guard-debug t))
+||#
+
+(defun extract-xargs-from-declguts
+  (ctx        ; Context for error messages
+   declguts   ; Guts from a single (declare ...) form, i.e., ((xargs :verify-guards ...) (ignore ...) ...)
+   )
+  (b* (((when (atom declguts))
+        nil)
+       (decl1 (car declguts))
+       ((unless (and (consp decl1)
+                     (eq (car decl1) 'xargs)))
+        (extract-xargs-from-declguts ctx (cdr declguts)))
+       (xguts (cdr decl1)))
+    (append (extract-xargs-from-xguts ctx xguts)
+            (extract-xargs-from-declguts ctx (cdr declguts)))))
+
+#||
+ (extract-xargs-from-declguts 'foo
+                              '((xargs :verify-guards t)
+                                (ignore foo)
+                                (type integer foo)
+                                (xargs :guard-debug t :measure-debug t)
+                                (ignorable bar)))
+||#
+
+(defun extract-xargs-from-traditional-decls/docs
+  (ctx   ; Context for error messages
+   decls ; List of traditional (declare ...) forms or doc strings
+   )
+  ;; Returns (mv xargs-alist other-decls)
+  (b* (((when (atom decls))
+        nil)
+       (decl1 (car decls))
+       ((unless (and (consp decl1)
+                     (eq (car decl1) 'declare)))
+        (extract-xargs-from-traditional-decls/docs ctx (cdr decls)))
+       (declguts (cdr decl1)))
+    (append (extract-xargs-from-declguts ctx declguts)
+            (extract-xargs-from-traditional-decls/docs ctx (cdr decls)))))
+
+#||
+ (extract-xargs-from-traditional-decls/docs 'foo
+                                            '("traditional doc string"
+                                              (declare (xargs :guard t :hints 5))
+                                              (declare)
+                                              (declare (ignore x))
+                                              (declare (xargs :verify-guards t)
+                                                       (type integer x)
+                                                       (xargs :measure-debug t))))
+||#
+
+(defun append-hints-from-xargs-alist (xargs-alist)
+  ;; This is an unusual function that is to support using either top-level
+  ;; :hints or (declare (xargs :hints ...)) forms when using the t-proof
+  ;; option.
+  ;;
+  ;; To understand what we are doing, note that ACL2 permits you to write
+  ;; crazy looking things like this:
+  ;;
+  ;; (defun f1 (x)
+  ;;   (declare (xargs :measure (consp x))
+  ;;            (xargs :hints(("Goal" :in-theory (cw "HINT 1~%"))))
+  ;;            (xargs :hints(("Goal" :in-theory (cw "HINT 2~%")))))
+  ;;   (if (zp x)
+  ;;       0
+  ;;     (+ 1 (f (cdr x)))))
+  ;;
+  ;; Which seem to have the same effect as just appending all the different
+  ;; hints together.  The idea here is to try to support this madness as
+  ;; transparently as possible by collecting the xargs and then appending them
+  ;; together.
+  (b* (((when (atom xargs-alist))
+        nil)
+       ((cons key value) (car xargs-alist))
+       ((when (eq key :hints))
+        (append value (append-hints-from-xargs-alist (cdr xargs-alist)))))
+    (append-hints-from-xargs-alist (cdr xargs-alist))))
+
+
 ; -------------- Main Stuff Parsing -------------------------------------------
 
+
 (defun get-xargs-from-kwd-alist (kwd-alist)
-  ;; Munges the xargs stuff together into a form suitable for a declare.
+  ;; Munges the top-level xargs stuff together into a form suitable for a declare.
   (declare (xargs :guard (alistp kwd-alist)))
   (b* (((when (atom kwd-alist))
         nil)
@@ -830,17 +928,26 @@ some kind of separator!</p>
         (raise "Error in ~x0: expected :prepwork to be a true-listp, but found ~x1."
                name prepwork))
 
-       (t-proof    (getarg :t-proof        nil kwd-alist))
-       ; If you can think of a good extension for t-proof, you may relax the
-       ; requirement of booleanp while preserving the old behavior for t and
-       ; nil. It would be nice if you would invent a syntactically generalisable
-       ; extension (s.t. some syntax remains invalid)
+       (t-proof (getarg :t-proof nil kwd-alist))
        ((unless (booleanp t-proof))
         (raise "Error in ~x0: expected :t-proof to be a booleanp, but found ~x1."
                name prepwork))
        ((unless (member inline '(:default t nil)))
         (raise "Error in ~x0: expected :inline to be T, NIL, or :DEFAULT, but found ~x1."
                name inline))
+       (t-hints (and t-proof
+                     ;; This order of this append is meant to match the order
+                     ;; of the hints given to define in the case of no t-proof,
+                     ;; but where both :hints and (xargs :hints ...) are given
+                     ;; simultaneously.  The top-level :hints get processed
+                     ;; LAST in that case, as described below.
+                     (append
+                      ;; All :hints found anywhere in (declare (xargs ...)) forms
+                      (append-hints-from-xargs-alist
+                       (extract-xargs-from-traditional-decls/docs (list 'define name)
+                                                                  traditional-decls/docs))
+                      ;; Any top-level :hints
+                      (getarg :hints nil kwd-alist))))
 
        (need-macrop (or (not (eq inline :default))
                         (has-macro-args raw-formals)))
@@ -886,11 +993,10 @@ some kind of separator!</p>
                                    ,extended-body)
                         extended-body))
 
-       (xargs         (get-xargs-from-kwd-alist (remove-from-alist ':hints kwd-alist)))
-       (t-hints       (getarg :hints nil kwd-alist))
+       (xargs         (get-xargs-from-kwd-alist kwd-alist))
+
+       ;; BOZO packn??  Probably should use the function's package instead.
        (t-proof-name  (if t-proof (ACL2::packn (LIST name-fn '|-| t-proof)) nil))
-       (new-hint      (if t-proof `('(:by ,t-proof-name)) t-hints))
-       (xargs         (if new-hint (LIST* ':hints new-hint xargs) xargs))
 
        (returnspecs   (parse-returnspecs name returns world))
        (defun-sym     (if enabled-p 'defun 'defund))
@@ -901,6 +1007,12 @@ some kind of separator!</p>
 ; where, e.g., traditional type declarations weren't coming before the guards
 ; from formals, and therefore the guards wouldn't verify.  We now try to use an
 ; order that seems like it is most probably the one you want.
+
+; 0. If using t-proof, put its :by hint here to try to make sure it happens
+; first.
+
+           ,@(and t-proof
+                  `((declare (xargs :hints ('(:by ,t-proof-name))))))
 
 ; 1. Stobj names, since they give us stobj-p guards, which may be useful and
 ; probably can't depend on anything else

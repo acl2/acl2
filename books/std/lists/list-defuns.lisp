@@ -53,12 +53,43 @@
          (equal (- (+ x y)) (+ (- x) (- y)))))
 
 
-(defund list-fix (x)
+(defund list-fix-exec (x)
   (declare (xargs :guard t))
   (if (consp x)
       (cons (car x)
-            (list-fix (cdr x)))
+            (list-fix-exec (cdr x)))
     nil))
+
+(defund list-fix (x)
+  (declare (xargs :guard t :verify-guards nil))
+  (mbe :logic
+       (if (consp x)
+           (cons (car x)
+                 (list-fix (cdr x)))
+         nil)
+       :exec
+       (if (true-listp x)
+           x
+         (list-fix-exec x))))
+
+(encapsulate
+  ()
+  (local (in-theory (enable list-fix list-fix-exec)))
+
+  (defthm list-fix-exec-removal
+    (equal (list-fix-exec x)
+           (list-fix x)))
+
+  (local (defthm list-fix-when-true-listp
+           (implies (true-listp x)
+                    (equal (list-fix x) x))))
+
+  (verify-guards list-fix)
+
+  (defun-inline llist-fix (x)
+    (declare (xargs :guard (true-listp x)))
+    (mbe :logic (list-fix x)
+         :exec x)))
 
 (defund fast-list-equiv (x y)
   (declare (xargs :guard t))

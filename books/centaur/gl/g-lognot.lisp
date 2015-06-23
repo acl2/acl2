@@ -65,7 +65,7 @@
                   (mv nil nil))))
             (gret
              (if intp-known
-                 (mk-g-number (rlist-fix (bfr-lognot-s (bfr-ite-bss-fn intp rn nil))))
+                 (mk-g-number (list-fix (bfr-lognot-s (bfr-ite-bss-fn intp rn nil))))
                (g-apply 'lognot (gl-list x))))))
          (& (gret -1))))))
 

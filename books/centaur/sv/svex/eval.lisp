@@ -224,9 +224,21 @@ expect or preserve @(see fast-alists)."
   (local (defun optable-to-xdoc ()
            (declare (xargs :mode :program))
            (str::fast-string-append-lst
-            `("<p>SVEX has a fixed language of known functions.
-The following table shows the function symbols (all in the
-SV package) and their meanings.</p>
+            `("<p>SVEX has a fixed language of known functions.  The following
+table shows the function symbols (all in the SV package) and their
+meanings.</p>
+
+<p>We make no attempt to have a minimal set of functions.  Generally speaking,
+the incremental cost in complexity of supporting more functions is relatively
+low.  Our tools for rewriting and symbolically evaluating expressions can be
+proven correct, so there is little risk that adding new operations to the
+backend could cause any problems.</p>
+
+<p>On the other hand, the correct translation from languages like Verilog into
+SV expressions is a serious concern, and we have no way to prove it is correct.
+Where possible, then, it seems best to add new operators to the backend to make
+the translation from Verilog as simple as possible.</p>
+
 <table>
 <tr><th>SVEX form</th><th>4vec function</th><th>Description</th></tr>
 "

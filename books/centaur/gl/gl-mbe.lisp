@@ -29,17 +29,17 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "xdoc/top" :dir :system)
 (include-book "gl-util")
-
+(include-book "std/util/define" :dir :system)
 
 ;; This is turning into a dumping ground for logically-simple functions that
 ;; have a special meaning under symbolic execution.  Maybe we should rename
 ;; this file.
 
-(defsection acl2::always-equal
+(define acl2::always-equal (x y)
   :parents (reference)
-  :short "Alias for @(see equal) that has a special meaning in @(see gl-bdd-mode)."
+  :short "Alias for @(see equal) that has a special meaning in @(see
+gl-bdd-mode)."
 
   :long "<p>Logically this is just @(see equal), but @(see GL) treats
 @('always-equal') in a special way.</p>
@@ -58,19 +58,21 @@ indeterminate in all other cases.</p>
 
 <p>Note that there is not really any reason to use @('always-equal') if you are
 using an AIG-based GL mode, such as @(see gl-satlink-mode).</p>"
+  :enabled t
+  ;; BOZO could inline this (but will probably need to adjust its special
+  ;; handling if we do that)
+  (equal x y))
 
-  (defun acl2::always-equal (x y)
-    (declare (Xargs :guard t))
-    (equal x y)))
 
 (defsection gl-assert
   :parents (reference)
-  :short "During GL symbolic execution, check that a condition holds and produce an error if not."
-  :long "<p>@('(GL-ASSERT X)'), logically speaking, just returns @('(IF X T
-NIL)').  In concrete execution, it causes an error if @('X') is false, and in
-symbolic execution, it forces a check that @('X') is true and produces a
-counterexample if not.</p>"
+  :short "During GL symbolic execution, check that a condition holds, causing
+an error if it does not."
 
+  :long "<p>@('(gl-assert x)'), logically speaking, just returns @('(if x t
+nil)').  In concrete execution, it causes an error if @('x') is false, and in
+symbolic execution, it forces a check that @('x') is true and produces a
+counterexample if not.</p>"
 
   (defun-inline gl-assert-fn (x msg gmsg)
     (declare (xargs :guard t)
@@ -92,18 +94,17 @@ counterexample if not.</p>"
       `(gl-assert-fn ,x ,msg ,gmsg))))
 
 
-(defsection gl-concretize
+(define gl-concretize (x)
   :parents (reference)
-  :short "During GL symbolic execution, try to reduce a symbolic object to a concrete one."
-  :long "<p>@('(GL-CONCRETIZE X)'), logically speaking, just returns @('X').
-However, during symbolic simulation (in AIG mode), it tries to reduce @('X') to
+  :short "During GL symbolic execution, try to reduce a symbolic object to a
+concrete one."
+  :long "<p>@('(gl-concretize x)'), logically speaking, just returns @('x').
+However, during symbolic simulation (in AIG mode), it tries to reduce @('x') to
 a concrete object by finding one object it could represent and trying to prove
 that it is always equal to that object.</p>"
-
-
-  (defun-inline gl-concretize (x)
-    (declare (xargs :guard t))
-    x))
+  :inline t
+  :enabled t
+  x)
 
 
 (defsection gl-mbe
@@ -112,11 +113,13 @@ that it is always equal to that object.</p>"
 form, and use the second in place of the first."
 
   :long "<p>@(call gl-mbe) is defined to simply check whether its two arguments
-SPEC and IMPL are equal, throwing an error if not, and return SPEC.</p>
+@('spec') and @('impl') are equal, throwing an error if not, and return
+@('spec').</p>
 
-<p>However, when GL-MBE is symbolically executed, the equality of the two
-arguments is checked symbolically.  If it can be proved that they are always
-equal, then IMPL is returned instead of SPEC, otherwise an error is produced.</p>
+<p>However, when @('gl-mbe') is symbolically executed, the equality of the two
+arguments is checked symbolically.  If it can be proved (e.g., via a BDD
+equality or SAT check) that they are always equal, then @('impl') is returned
+instead of @('spec'), otherwise an error is produced.</p>
 
 <p>This is most useful when symbolically executing in AIG mode.  For example,
 suppose that through a series of shifting operations, the symbolic
@@ -126,16 +129,18 @@ following form may speed up the rest of the computation involving X by cutting
 off all the upper bits, which are known to be zero:</p>
 
 @({
- (let ((x (gl-mbe x (logand (1- (ash 1 25)) x))))
+ (let ((x-chop (gl-mbe x (logand (1- (ash 1 25)) x))))
     ...)
 })
 
-<p>Here GL-MBE tries to prove that X and the LOGAND expression are equivalent,
-that is, their symbolic representations evaluate to the same concrete values
-under all environments.  If this can be proved, X is bound to the LOGAND
-result, which cuts off the upper bits of X, improving symbolic execution
-performance.  However, because logically GL-MBE just returns X, the meaning of
-the specification is unaffected.</p>"
+<p>When GL symbolically executes this, it tries to prove that @('x') and the
+@(see logand) expression are equivalent, that is, their symbolic
+representations evaluate to the same concrete values under all environments.
+If this can be proved, @('x-chop') is bound to the @(see logand) result, which
+cuts off the upper bits of @('x'), which may improve symbolic execution
+performance.  However, logically @('gl-mbe') just binds @('x-chop') to @('x'),
+so this @('logand') term does not complicate reasoning about the
+specification.</p>"
 
   (defun gl-mbe-fn (spec impl spec-form impl-form)
     (declare (xargs :guard t))
@@ -157,12 +162,11 @@ the specification is unaffected.</p>"
 
   (set-preferred-def gl-mbe-fn gl-mbe-gl-def)
 
-  (defmacro gl-mbe (spec impl &optional other-info)
-    (declare (ignorable other-info))
-    (prog2$ (and other-info
-                 (cw "NOTE: The third argument of gl-mbe is deprecated.  Sorry for the confusion.~%"))
-            `(gl-mbe-fn ,spec ,impl ',spec ',impl))))
+  (defmacro gl-mbe (spec impl)
+    `(gl-mbe-fn ,spec ,impl ',spec ',impl)))
 
+
+;; BOZO document these
 
 (defun gl-force-check-fn (x strong direction)
   (declare (xargs :guard t)
@@ -192,13 +196,201 @@ the specification is unaffected.</p>"
 
 
 
+(define gl-aside (form)
+  :parents (reference)
+  :short "A debugging facility that is typically used for printing messages
+during GL symbolic execution."
+
+  :long #{"""<p>In the logic and during ordinary execution, @(call gl-aside) is
+just an ordinary function that ignores its argument and returns @('nil').
+However, during GL symbolic execution it has a special meaning which is useful
+for printing debugging messages and doing other kinds of low-level hacking.</p>
+
+<p><b>Note:</b> @('gl-aside') is fairly flexible but it can be <b>tricky to
+use</b> correctly.  You should probably read this documentation carefully and
+also see the ``Tricks and Pitfalls'' section below!</p>
 
 
+<h3>Basic Example</h3>
 
-(defun gl-aside (x)
-  (declare (xargs :guard t)
-           (ignore x))
+<p>Here is a typical usage of gl-aside:</p>
+
+@({
+    (defun spec1 (x y)
+      (b* ((sum (+ x y))
+           (?msg (gl-aside (cw "Note: X is ~x0 and Y is ~x1.~%" x y))))
+        sum))
+})
+
+<p>During the normal execution of @('spec1'), this Note will (of course) be
+printed: @('gl-aside') is just an ordinary function, so ACL2 will (eagerly)
+evaluate the @('cw') call before even invoking @('gl-aside').</p>
+
+<p>What happens during symbolic execution?  If we try to prove the following,
+simple GL theorem, e.g.,:</p>
+
+@({
+    (def-gl-thm spec1-correct
+      :hyp (and (unsigned-byte-p 3 x)
+                (unsigned-byte-p 3 y))
+      :concl (equal (spec1 x y)
+                    (+ x y))
+      :g-bindings
+      (auto-bindings (:nat x 3) (:nat y 3)))
+})
+
+<p>then our Note will still be printed <b>even though X and Y are @(see
+symbolic-objects)</b> when @('spec1') is being executed!  In particular, we
+will see, in @(see gl-satlink-mode):</p>
+
+@({
+     Note: X is (:G-NUMBER (0 1 2 NIL) (T) NIL) and Y is
+     (:G-NUMBER (4 5 6 NIL) (T) NIL).
+})
+
+<p>The numbers 0-6 here are AIG variables.  If we were instead in @(see
+gl-bdd-mode), we would see large BDD variables (trees of T and NIL) here
+instead of these numbers.</p>
+
+<p>The technical explanation of how this works is: when GL's symbolic
+interpreter encounters a call of @('(gl-aside form')), it executes @('form')
+inside a @(see wormhole), with the variables bound to their symbolic
+versions.</p>
+
+
+<h3>Why do we even need this?</h3>
+
+<p>Couldn't we just write our spec without @('gl-aside')?  If we just
+wrote:</p>
+
+@({
+    (defun spec2 (x y)
+      (b* ((sum (+ x y))
+           (?msg (cw "Note: X is ~x0 and Y is ~x1.~%" x y)))
+        sum))
+})
+
+<p>Then our Note would still get printed during normal execution.  It would
+also get printed during <i>some</i> symbolic executions.  In particular, if
+we know that X and Y are particular concrete values, then we will still see
+our note.  For example, if we heavily constrain @('X') and @('Y') so to be
+constants:</p>
+
+@({
+    (def-gl-thm spec2-correct-for-3-and-4
+      :hyp (and (equal x 3)
+                (equal y 4))
+      :concl (equal (spec2 x y)
+                    (+ x y))
+      :g-bindings
+      (auto-bindings (:nat x 3) (:nat y 3)))
+})
+
+<p>then we will indeed see our Note printed:</p>
+
+@({
+     Note: X is 3 and Y is 4.
+})
+
+<p>here, the @(see cw) form is being applied to all-constant arguments, so GL
+can simply evaluate it, causing the message to be printed.  However, if we
+instead submit something more like our original theorem:</p>
+
+@({
+    (def-gl-thm spec2-correct
+      :hyp (and (unsigned-byte-p 3 x)
+                (unsigned-byte-p 3 y))
+      :concl (equal (spec2 x y)
+                    (+ x y))
+      :g-bindings
+      (auto-bindings (:nat x 3) (:nat y 3)))
+})
+
+<p>then the Note is not printed.  Why not?  In this case, when GL's interpreter
+reaches the @('cw') form, @('x') and @('y') are still symbolic objects, so it
+cannot simply concretely execute @('cw').  Instead, GL symbolically executes
+the logical definition of @('cw')&mdash;really @(see fmt-to-comment-window).
+But in the logic, this function (of course) does not print anything, but
+instead just returns @('nil').  At any rate, GL ends up binding @('msg') to
+@('nil') and nothing gets printed.</p>
+
+
+<h3>Tricks and Pitfalls</h3>
+
+<h5>Pitfall: @(see progn$) and its ilk</h5>
+
+<p>You probably <b>never</b> want to use @(see prog2$) or @(see progn$) to
+invoke a @('gl-aside').  For instance, you do NOT want to do this:</p>
+
+@({
+      (progn$ (gl-aside ...)      ;; WRONG
+              sum)
+})
+
+<p>Why not?  During symbolic execution, GL just completely skips directly to
+the last form in the @('progn$'), so it will never even see your
+@('gl-aside')!</p>
+
+<p>For similar reasons, you should also generally not use @(see b*) binders
+like @('-'), @('&'), and @('?!'), or the implicit @('progn$') forms that @('b*')
+permits.  For example:</p>
+
+@({
+      (b* ((ans   (f x y ...))
+           (?msg  (gl-aside ...))  ;; GOOD, bind to an ignored variable
+           (?!msg (gl-aside ...))  ;; BAD, won't get evaluated
+           (-     (gl-aside ...))  ;; BAD, won't get evaluated
+
+           ((when condition)
+            ;; implicit b* progn$:
+            (gl-aside ...)         ;; BAD, won't get evaluated
+            ans))
+
+         ;; implicit b* progn$:
+         (gl-aside ...)            ;; BAD, won't get evaluated
+         ans)
+})
+
+<h5>Trick: print only during symbolic execution</h5>
+
+<p>The above @('spec1') function will print its Note during <b>both</b> regular
+execution and symbolic execution.  It is also possible to use @(see mbe) to get
+a message that only prints during symbolic execution.</p>
+
+@({
+    (defmacro gl-aside-symbolic (form)
+      `(mbe :logic (gl-aside ,form)
+            :exec nil))
+
+    (defun spec3 (x y)
+      (declare (xargs :guard (and (natp x) (natp y))))
+      (b* ((sum (+ x y))
+           (?msg (gl-aside-symbolic (cw "Note: X is ~x0 and Y is ~x1.~%" x y))))
+        sum))
+
+    (spec3 3 4)      ;; No Note is printed
+    7
+
+    (def-gl-thm spec3-correct ...) ;; Note is printed
+})
+
+<p>Of course, this only works for guard-verified functions.</p>"""}
+
+  :enabled t
+  (declare (ignore form))
   nil)
+
+(defsection gl-aside-symbolic
+  :parents (gl-aside)
+  :short "Alternative to @(see gl-aside) that is only evaluated during GL
+symbolic execution."
+  :long "@(def gl-aside-symbolic)"
+
+  (defmacro gl-aside-symbolic (form)
+    `(mbe :logic (gl-aside ,form)
+          :exec nil)))
+
+
 
 (defun gl-ignore (x)
   (declare (xargs :guard t)

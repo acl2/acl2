@@ -61,7 +61,7 @@
       (let ((context (cat "  Near: \""
                           (vl-tokenlist->string-with-spaces
                            (take (min 4 (len tokens))
-                                 (redundant-list-fix tokens)))
+                                 (list-fix tokens)))
                           (if (> (len tokens) 4) "..." "")
                           "\"")))
         (vl-actually-report-parse-error

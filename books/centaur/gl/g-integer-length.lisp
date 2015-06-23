@@ -72,7 +72,7 @@
             (g-if (gret (mk-g-boolean (hyp-fix (bfr-or (bfr-=-uu aid nil)
                                                        (bfr-=-ss ain nil)) hyp)))
                   (g-if (gret (equal ard '(t)))
-                        (let ((res (rlist-fix (bfr-integer-length-s arn))))
+                        (let ((res (list-fix (bfr-integer-length-s arn))))
                           (gret (mk-g-number res 1 0 1)))
                         (gret (g-apply 'integer-length (gl-list x))))
                   (gret 0))))

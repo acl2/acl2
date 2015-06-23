@@ -1053,7 +1053,7 @@ integer atom."
        ((when (eq finaltype :vl-unsigned))
         ;; Just do a zero-extension.
         (b* ((new-bits (append (replicate (- finalwidth guts.origwidth) :vl-0val)
-                               (redundant-list-fix guts.bits)))
+                               (list-fix guts.bits)))
              (new-guts (change-vl-weirdint guts
                                            :bits new-bits
                                            :origwidth finalwidth
@@ -1067,7 +1067,7 @@ integer atom."
        ;; Else, we want a sign-extension.
        (sign-bit  (car guts.bits))
        (new-bits  (append (replicate (- finalwidth guts.origwidth) sign-bit)
-                          (redundant-list-fix guts.bits)))
+                          (list-fix guts.bits)))
        (new-guts  (change-vl-weirdint guts
                                       :bits new-bits
                                       :origwidth finalwidth))
@@ -3709,7 +3709,7 @@ replace a positional assignment pattern."
                               assignment pattern ~a1"
                         :args (list (vl-context-fix ctx) (vl-expr-fix orig-x))))))
           (mv t (pairlis$ (vl-structmemberlist->types lhs-type.members)
-                          (redundant-list-fix (vl-exprlist-fix fields)))
+                          (list-fix (vl-exprlist-fix fields)))
               (ok))))
        (dim (if (consp udims) (car udims) (car pdims)))
        ((unless (and (not (eq dim :vl-unsized-dimension))
@@ -3729,7 +3729,7 @@ replace a positional assignment pattern."
                          (vl-datatype-update-dims pdims (cdr udims) lhs-type)
                        (vl-datatype-update-dims (cdr pdims) nil lhs-type))))
     (mv t (pairlis$ (repeat (len fields) new-datatype)
-                    (redundant-list-fix (vl-exprlist-fix fields)))
+                    (list-fix (vl-exprlist-fix fields)))
         (ok)))
   ///
   (defthm vl-exprlist-max-count-of-vl-assignpattern-positional-replacement

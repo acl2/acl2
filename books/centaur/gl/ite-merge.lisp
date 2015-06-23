@@ -35,6 +35,7 @@
 (include-book "split-args")
 (include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
+(local (include-book "bfr-reasoning"))
 (local (include-book "misc/invariants" :dir :system))
 (local (include-book "general-object-thms"))
 (local (include-book "hyp-fix"))

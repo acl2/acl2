@@ -483,3 +483,166 @@ included by default to avoid trust tags.)</p>
     nil)
 
   (defattach svex-rewrite-trace svex-rewrite-trace-default))
+
+
+
+
+(defines svex-compose
+  :flag-local nil
+  :parents (svex-composition)
+  :short "Compose an svex with a substitution alist.  Variables not in the
+substitution are left in place."
+  (define svex-compose ((x svex-p) (a svex-alist-p))
+    :verify-guards nil
+    :measure (svex-count x)
+    :returns (xa svex-p "x composed with a, unbound variables preserved")
+    (svex-case x
+      :var (or (svex-fastlookup x.name a)
+               (mbe :logic (svex-fix x) :exec x))
+      :quote (mbe :logic (svex-fix x) :exec x)
+      :call (svex-call x.fn
+                       (svexlist-compose x.args a))))
+  (define svexlist-compose ((x svexlist-p) (a svex-alist-p))
+    :measure (svexlist-count x)
+    :returns (xa svexlist-p)
+    (if (atom x)
+        nil
+      (cons (svex-compose (car x) a)
+            (svexlist-compose (cdr x) a))))
+  ///
+  (verify-guards svex-compose)
+  (fty::deffixequiv-mutual svex-compose
+    :hints (("goal" :expand ((svexlist-fix x)))))
+
+  (defthm len-of-svexlist-compose
+    (equal (len (svexlist-compose x a))
+           (len x)))
+
+  (local (defthm svex-env-lookup-of-append-svex-alist-eval-not-present
+           (equal (svex-env-lookup v (append (svex-alist-eval a e) env))
+                  (if (svex-lookup v a)
+                      (svex-eval (svex-lookup v a) e)
+                    (svex-env-lookup v env)))
+           :hints(("Goal" :in-theory (enable svex-alist-eval svex-env-lookup
+                                             svex-env-fix
+                                             svex-alist-fix
+                                             svex-lookup)))))
+
+  (defthm-svex-compose-flag
+    (defthm svex-eval-of-svex-compose
+      (equal (svex-eval (svex-compose x a) env)
+             (svex-eval x (append (svex-alist-eval a env) env)))
+      :hints ('(:expand ((:free (env) (svex-eval x env)))))
+      :flag svex-compose)
+    (defthm svexlist-eval-of-svexlist-compose
+      (equal (svexlist-eval (svexlist-compose x a) env)
+             (svexlist-eval x (append (svex-alist-eval a env) env)))
+      :flag svexlist-compose))
+
+  (defthm-svex-compose-flag
+    (defthm vars-of-svex-compose
+      (implies (and (not (member v (svex-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svex-vars (svex-compose x a)))))
+      :flag svex-compose)
+    (defthm vars-of-svexlist-compose
+      (implies (and (not (member v (svexlist-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svexlist-vars (svexlist-compose x a)))))
+      :hints('(:in-theory (enable svexlist-vars)))
+      :flag svexlist-compose))
+
+  (defthm-svex-compose-flag
+    ;; Note: The order of the disjuncts is important because sometimes you can
+    ;; prove one given not the other but not vice versa.
+    (defthm vars-of-svex-compose-strong
+      (implies (and (not (member v (svex-alist-vars a)))
+                    (or (member v (svex-alist-keys a))
+                        (not (member v (svex-vars x)))))
+               (not (member v (svex-vars (svex-compose x a)))))
+      :flag svex-compose)
+    (defthm vars-of-svexlist-compose-strong
+      (implies (and (not (member v (svex-alist-vars a)))
+                    (or (member v (svex-alist-keys a))
+                        (not (member v (svexlist-vars x)))))
+               (not (member v (svexlist-vars (svexlist-compose x a)))))
+      :hints('(:in-theory (enable svexlist-vars)))
+      :flag svexlist-compose))
+
+  (in-theory (disable vars-of-svex-compose-strong
+                      vars-of-svexlist-compose-strong))
+
+  (memoize 'svex-compose :condition '(eq (svex-kind x) :call)))
+
+
+
+(defines svex-replace-var
+  :flag-local nil
+  :parents (svex-composition)
+  :short "Replace occurrences of a variable within an svex with an svex."
+  (define svex-replace-var ((x svex-p) (var svar-p) (repl svex-p))
+    :verify-guards nil
+    :measure (svex-count x)
+    :returns (xa (equal xa (svex-compose x (list (cons var repl))))
+                 :hints ('(:expand ((svex-compose x (list (cons var repl))))
+                           :in-theory (enable svex-lookup))))
+    (svex-case x
+      :var (if (svar-equiv x.name var)
+               (svex-fix repl)
+             (svex-fix x))
+      :quote (svex-fix x)
+      :call (svex-call x.fn
+                       (svexlist-replace-var x.args var repl))))
+  (define svexlist-replace-var ((x svexlist-p) (var svar-p) (repl svex-p))
+    :measure (svexlist-count x)
+    :returns (xa (equal xa (svexlist-compose x (list (cons var repl))))
+                 :hints ('(:expand ((svexlist-compose x (list (cons var repl)))))))
+    (if (atom x)
+        nil
+      (cons (svex-replace-var (car x) var repl)
+            (svexlist-replace-var (cdr x) var repl))))
+  ///
+  (verify-guards svexlist-replace-var)
+  (memoize 'svex-replace-var :condition '(svex-case x :call)))
+
+(define svex-alist-compose ((x svex-alist-p) (a svex-alist-p))
+  :prepwork ((local (in-theory (enable svex-alist-p))))
+  :returns (xx svex-alist-p)
+  (if (atom x)
+      nil
+    (if (consp (car x))
+        (svex-acons (caar x) (svex-compose (cdar x) a)
+                    (svex-alist-compose (cdr x) a))
+      (svex-alist-compose (cdr x) a)))
+  ///
+  (fty::deffixequiv svex-alist-compose
+    :hints(("Goal" :in-theory (enable svex-alist-fix))))
+
+  (defthm svex-alist-eval-of-svex-compose
+    (equal (svex-alist-eval (svex-alist-compose x subst) env)
+           (svex-alist-eval x (append (svex-alist-eval subst env) env)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-acons
+                                      svex-alist-compose
+                                      svex-env-acons))))
+
+  (defthm vars-of-svex-alist-compose
+      (implies (and (not (member v (svex-alist-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svex-alist-vars (svex-alist-compose x a)))))
+      :hints(("goal" :in-theory (enable svex-alist-vars))))
+
+  (local (defthm svex-compose-under-iff
+           (svex-compose x a)
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-COMPOSE.XA
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-COMPOSE.XA)))))
+
+  (local (defthm svex-fix-under-iff
+           (svex-fix x)
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX$INLINE.NEW-X)))))
+
+  (defthm svex-lookup-of-svex-alist-compose
+    (iff (svex-lookup v (svex-alist-compose x a))
+         (svex-lookup v x))
+    :hints(("Goal" :in-theory (e/d (svex-lookup svex-alist-fix svex-acons)
+                                   (svex-alist-p))))))

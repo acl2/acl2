@@ -293,7 +293,7 @@ fatal warnings instead of non-fatal warnings.</p>"
   :returns (ans vl-warninglist-p)
   (ACL2::remove-adjacent-duplicates
    (vl-warning-sort
-    (redundant-list-fix
+    (list-fix
      (vl-warninglist-fix x))))
   ///
   (defthm vl-clearn-warnings-under-iff

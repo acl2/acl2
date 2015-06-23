@@ -76,10 +76,7 @@ Lisps with smaller fixnum ranges.</p>")
   :short "Create a fast alist binding each variable to a random 60-bit natural."
   (vars state)
   :returns (mv fal state)
-  (b* ((vars (mbe :logic (list-fix vars)
-                  :exec (if (true-listp vars)
-                            vars
-                          (list-fix vars))))
+  (b* ((vars (list-fix vars))
        ((mv nums state)
         (n-random-60-bit-nats (length vars) state)))
     (mv (make-fast-alist (pairlis$ vars nums))

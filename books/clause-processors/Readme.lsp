@@ -108,42 +108,4 @@ existing theorems.
 
 Book unify-subst introduces functions for term unification and substitution,
 and proves theorems about them that may be useful in defining clause
-processors.")
- (:PERMISSION
-  "Clause processor examples
-Copyright (C) 2007 by University of Texas at Austin:
- Jared Davis <jared@cs.utexas.edu>       (equality.lisp)
- Matt Kaufmann <kaufmann@cs.utexas.edu>  (basic-examples.lisp)
- Erik Reeber <reeber@cs.utexas.edu>      (bv-add*.lisp)
- Sol Swords <sswords@cs.utexas.edu>      (generalize.lisp,
-                                          multi-env-trick.lisp,
-                                          replace-defined-const.lisp,
-                                          use-by-hint.lisp)
-
-Copyright 2010 by Centaur Technology:    (autohide.lisp,
-                                          unify-subst.lisp)
-
-Copyright (C) 2012 by University of Texas at Austin:
- Matt Kaufmann <kaufmann@cs.utexas.edu>  (meta-extract-simple-test.lisp)
-
-Copyright 2012 by Centaur Technology:
- Sol Swords <sswords@centtech.com>       (meta-extract-user.lisp)
- which includes a few small modifications from the
- original meta-cheat-user.lisp,
- Copyright 2012 by University of Texas at Austin:
- Matt Kaufmann <kaufmann@cs.utexas.edu>
-
-This program is free software; you can redistribute it and/or 
-modify it under the terms of the GNU General Public License as 
-published by the Free Software Foundation; either version 2 of 
-the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful, 
-but WITHOUT ANY WARRANTY; without even the implied warranty of 
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public 
-License along with this program; if not, write to the Free 
-Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-Boston, MA 02110-1301, USA."))
+processors."))

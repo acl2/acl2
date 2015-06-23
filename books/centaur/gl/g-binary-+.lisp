@@ -42,6 +42,15 @@
 
 ;; (include-book "univ-gl-eval")
 
+(local (defthm equal-complexes-rw
+         (implies (and (acl2-numberp x)
+                       (rationalp a)
+                       (rationalp b))
+                  (equal (equal (complex a b) x)
+                         (and (equal a (realpart x))
+                              (equal b (imagpart x)))))
+         :hints (("goal" :use ((:instance realpart-imagpart-elim))))))
+
 (defun g-binary-+-of-numbers (x y)
   (declare (xargs :guard (and (general-numberp x)
                               (general-numberp y))))
@@ -55,9 +64,9 @@
              (equal yid '(t)))
         (let* ((rsum (bfr-+-ss nil xrn yrn))
                (isum (bfr-+-ss nil xin yin)))
-          (mk-g-number (rlist-fix rsum)
+          (mk-g-number (list-fix rsum)
                        1
-                       (rlist-fix isum)))
+                       (list-fix isum)))
       (g-apply 'binary-+ (gl-list x y)))))
 
 (in-theory (disable (g-binary-+-of-numbers)))
@@ -196,9 +205,9 @@
              (equal yid '(t)))
         (let* ((rsum (bfr-+-ss t xrn (bfr-lognot-s yrn)))
                (isum (bfr-+-ss t xin (bfr-lognot-s yin))))
-          (mk-g-number (rlist-fix rsum)
+          (mk-g-number (list-fix rsum)
                        1
-                       (rlist-fix isum)))
+                       (list-fix isum)))
       (g-apply 'binary-minus-for-gl (gl-list x y)))))
 
 (in-theory (disable (g-binary---of-numbers)))

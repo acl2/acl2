@@ -56,7 +56,7 @@
           (mv nil nil))))
     (if (and xintp-known yintp-known)
         (mk-g-number
-         (rlist-fix
+         (list-fix
           (bfr-logand-ss (bfr-ite-bss-fn xintp xrn nil)
                          (bfr-ite-bss-fn yintp yrn nil))))
       (g-apply 'binary-logand (gl-list x y)))))

@@ -530,3 +530,34 @@
 
 
 
+;; Alessandro Coglio reported a bug to do with giving hints when using :t-proof.
+;; The following is a modified version of his example.  Previously, ac-g2 failed
+;; basically because it ended up generating multiple hints xargs:
+;;
+;;      (DEFUND AC-G2 (X)
+;;        (DECLARE (XARGS :HINTS (("Goal" :IN-THEORY (ENABLE AC-F)))))
+;;        (DECLARE (XARGS :HINTS ('(:BY ACL2::AC-G2-T))
+;;                                 :VERIFY-GUARDS NIL))
+;;         ...
+;;
+;; Now we work harder to try to sensibly extract :hints from the xargs and the
+;; top-level keywords for use in the t-proof.
+
+(defund ac-f (x) (- x 1))
+
+(define ac-g1 (x)
+  :verify-guards nil
+  :t-proof t
+  :hints (("Goal" :in-theory (enable ac-f)))
+  (if (zp x)
+      nil
+    (ac-g1 (ac-f x))))
+
+(define ac-g2 (x)
+  :verify-guards nil
+  :t-proof t
+  :verbosep t
+  (declare (xargs :hints (("Goal" :in-theory (enable ac-f)))))
+  (if (zp x)
+      nil
+    (ac-g2 (ac-f x))))

@@ -76,9 +76,6 @@ site for instructions.
 
 Files
 
-  Sources/COPYING
-    -- Obligatory copy of the GNU General Public License
-
   Sources/milawa.lsp
     -- The core proof checker (complete and stand-alone), as of my
        dissertation

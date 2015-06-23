@@ -44,12 +44,98 @@
   (defthm aig-vars-cons
     (equal (aig-vars (cons x y))
            (set::union (aig-vars x)
-                        (aig-vars y))))
+                       (aig-vars y))))
 
   (defthm member-aig-vars-alist-vals
     (implies (not (set::in v (aig-vars (alist-vals al))))
              (not (set::in v (aig-vars (cdr (hons-assoc-equal x al))))))
     :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+
+
+  (defthm aig-vars-aig-not
+    (equal (aig-vars (aig-not x))
+           (aig-vars x))
+    :hints(("Goal" :in-theory (enable aig-not))))
+
+
+  (local (defthm l1
+           (b* (((mv ?hit ans) (aig-and-pass1 x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars ans))))))
+           :hints(("Goal" :in-theory (enable aig-and-pass1)))))
+
+  (local (defthm l2a
+           (b* (((mv ?status arg1 arg2) (aig-and-pass2a x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars arg1)))
+                           (not (set::in v (aig-vars arg2))))))
+           :hints(("Goal" :in-theory (enable aig-and-pass2a)))))
+
+  (local (defthm l2
+           (b* (((mv ?status arg1 arg2) (aig-and-pass2 x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars arg1)))
+                           (not (set::in v (aig-vars arg2))))))
+           :hints(("Goal" :in-theory (enable aig-and-pass2)))))
+
+  (local (defthm l3
+           (b* (((mv ?status arg1 arg2) (aig-and-pass3 x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars arg1)))
+                           (not (set::in v (aig-vars arg2))))))
+           :hints(("Goal" :in-theory (enable aig-and-pass3)))))
+
+  (local (defthm l4a
+           (b* (((mv ?status arg1 arg2) (aig-and-pass4a x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars arg1)))
+                           (not (set::in v (aig-vars arg2))))))
+           :hints(("Goal" :in-theory (enable aig-and-pass4a)))))
+
+  (local (defthm l4
+           (b* (((mv ?status arg1 arg2) (aig-and-pass4 x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars arg1)))
+                           (not (set::in v (aig-vars arg2))))))
+           :hints(("Goal" :in-theory (enable aig-and-pass4)))))
+
+  (local (defthm l5
+           (b* (((mv ?status arg1 arg2) (aig-and-pass5 x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars arg1)))
+                           (not (set::in v (aig-vars arg2))))))
+           :hints(("Goal" :in-theory (enable aig-and-pass5)))))
+
+  (local (defthm l6a
+           (b* (((mv ?status arg1 arg2) (aig-and-pass6a x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars arg1)))
+                           (not (set::in v (aig-vars arg2))))))
+           :hints(("Goal" :in-theory (enable aig-and-pass6a)))))
+
+  (local (defthm l6
+           (b* (((mv ?status arg1 arg2) (aig-and-pass6 x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars arg1)))
+                           (not (set::in v (aig-vars arg2))))))
+           :hints(("Goal" :in-theory (enable aig-and-pass6)))))
+
+  (local (defthm member-aig-vars-aig-and-main
+           (b* (((mv ?status arg1 arg2) (aig-and-main x y)))
+             (implies (and (not (set::in v (aig-vars x)))
+                           (not (set::in v (aig-vars y))))
+                      (and (not (set::in v (aig-vars arg1)))
+                           (not (set::in v (aig-vars arg2))))))
+           :hints(("Goal" :in-theory (enable aig-and-main)))))
 
   (defthm member-aig-vars-aig-and
     (implies (and (not (set::in v (aig-vars x)))
@@ -57,10 +143,11 @@
              (not (set::in v (aig-vars (aig-and x y)))))
     :hints(("Goal" :in-theory (enable aig-and))))
 
-  (defthm aig-vars-aig-not
-    (equal (aig-vars (aig-not x))
-           (aig-vars x))
-    :hints(("Goal" :in-theory (enable aig-not))))
+  (defthm member-aig-vars-aig-and-dumb
+    (implies (and (not (set::in v (aig-vars x)))
+                  (not (set::in v (aig-vars y))))
+             (not (set::in v (aig-vars (aig-and-dumb x y)))))
+    :hints(("Goal" :in-theory (enable aig-and-dumb))))
 
   (defthm member-aig-vars-aig-restrict
     (implies (and (not (and (set::in v (aig-vars x))

@@ -1,28 +1,38 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#|===========================================================================|#
-(in-package "ACL2")
+; Fully Ordered Finite Sets
+; Copyright (C) 2003-2012 Kookamara LLC
+;
+; Contact:
+;
+;   Kookamara LLC
+;   11410 Windermere Meadows
+;   Austin, TX 78759, USA
+;   http://www.kookamara.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 
-; (ld "Makefile.acl2")
+;; COI version, modified by Jared Davis, 2014-10, to include std/osets books
+;; and only add the new functions and theorems that had been in COI.
+
+(in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
 (ld "../lists/list-defpkg.lsp")
-
-;; (ld "computed-hints-defpkg.lsp")
-
-;; (defpkg "SET"
-;;   (set-difference-equal 
-;; ;;   (remove-duplicates-eql   ;no longer necessary due to change in ACL2
-;;     `(lexorder << a b c d e f g h i j k l m n o p
-;;                q r s u v w x y z
-;;                COMPUTED-HINTS::rewriting-goal-lit
-;;                COMPUTED-HINTS::rewriting-conc-lit
-;; ; The following four rule names were added by Matt K. after Jared D.'s
-;; ; modification in svn 1015 of distributed book misc/total-order (see
-;; ; e.g. comments about svn 1015 in primitives.lisp).
-;;                <<-irreflexive <<-transitive <<-asymmetric <<-trichotomy
-;;                ,@*acl2-exports*
-;;                ,@*common-lisp-symbols-from-main-lisp-package*)
-;;     ;)
-;;     '(union delete find map)))
 

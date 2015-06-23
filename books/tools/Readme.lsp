@@ -132,33 +132,4 @@ timing and garbage collection information.
 with-quoted-forms.lisp provides a macro that may be useful for
 computing complicated :USE hints where the terms used in the
 substitutions result from deeply nested variable bindings.
-")
- (:PERMISSION
-  "{bstar,cws,defined-const,defsum,deftuple,pack,theory-tools,types-misc}.lisp
- copyright (C) 2009 by Sol Swords <sswords@cs.utexas.edu>.
-
-{define-keyed-function,time-dollar-with-gc}.lisp copyright (C) 2010, 2011 by
-David L. Rager <ragerdl@cs.utexas.edu>.
-
-{plev,plev-ccl}.* were originally in misc/hons-help and are presumably
-copyright (C) Bob Boyer and Warren Hunt.
-
-{def-functional-instance,defconsts,defmacfun,flag,oracle-eval,safe-case,include-raw,
- fake-event}.lisp
-copyright
-2008-2012 by Centaur Technology
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License as
-published by the Free Software Foundation; either version 2 of
-the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public
-License along with this program; if not, write to the Free
-Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-Boston, MA 02110-1301, USA."))
+"))

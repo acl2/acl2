@@ -745,7 +745,8 @@ top-level hierarchical identifiers.</p>"
   
 
 (defprod vl-operandinfo
-  ((context  vl-scopecontext-p  "The context in which the HID base was found")
+  ((orig-expr  vl-expr-p         "The original index expression, for error messages etc")
+   (context  vl-scopecontext-p  "The context in which the HID base was found")
    (prefixname vl-scopeexpr-p    "The scopeexpr, not including the possible data selects.")
    (hidtrace vl-hidtrace-p      "The follow-hids trace, i.e. the trace of instances/blocks
                                  in which the base variable is located")
@@ -2578,8 +2579,8 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;                 1 0))
 ;;   (b* ((x (vl-datatype-fix x))
 ;;        (ss (vl-scopestack-fix ss))
-;;        (udims (redundant-list-fix (vl-datatype->udims x)))
-;;        (pdims (redundant-list-fix (vl-datatype->pdims x)))
+;;        (udims (list-fix (vl-datatype->udims x)))
+;;        (pdims (list-fix (vl-datatype->pdims x)))
 ;;        (nu (len udims))
 ;;        (n (lnfix n))
 ;;        ((when (<= n nu))
@@ -2853,7 +2854,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;        (nunpacked (len unpacked-dims))
 ;;        ((when (<= idxcount nunpacked))
 ;;         (mv nil (vl-datatype-update-udims
-;;                  (nthcdr idxcount (redundant-list-fix unpacked-dims)) type)))
+;;                  (nthcdr idxcount (list-fix unpacked-dims)) type)))
 ;;        (remaining-idxcount (- idxcount nunpacked))
 ;;        ((unless (<= remaining-idxcount (len packed-dims)))
 ;;         (mv (make-vl-warning :type :vl-too-many-indices
@@ -2863,7 +2864,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;                              :fn __function__)
 ;;             nil))
 ;;        (type (vl-datatype-update-dims
-;;               (nthcdr remaining-idxcount (redundant-list-fix packed-dims))
+;;               (nthcdr remaining-idxcount (list-fix packed-dims))
 ;;               nil ;; udims
 ;;               type)))
 ;;     (mv nil type)))
@@ -3464,13 +3465,14 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        ((when err) (mv err nil)))
 
     (mv nil (make-vl-operandinfo
+             :orig-expr x
              :context context
              :prefixname prefix-name
              :hidtrace hidtrace
              :hidtype type
              :seltrace seltrace
              :part x.part
-             :type final-type)))
+             :type final-type))) 
 
 
 

@@ -87,9 +87,7 @@ correctness of a heuristic, Boyer-Moore style theorem prover, all the way down
 to the x86 machine code that runs it.</p>
 
 <p>Milawa is <a href='http://www.gnu.org/philosophy/free-sw.html'>free
-software</a> released under the <a
-href='http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt'>GNU General Public
-License</a>, \"version 2 or later.\"</p>
+software</a> released under an MIT/X11 style license.</p>
 
 <p>See @(see build) for information about how to obtain and build Milawa.</p>
 

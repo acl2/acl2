@@ -60,10 +60,10 @@
         (mv-let (rn rd in id)
           (break-g-number num)
           (gret
-           (mk-g-number (rlist-fix (bfr-unary-minus-s rn))
-                        (rlist-fix rd)
-                        (rlist-fix (bfr-unary-minus-s in))
-                        (rlist-fix id)))))
+           (mk-g-number (list-fix (bfr-unary-minus-s rn))
+                        (list-fix rd)
+                        (list-fix (bfr-unary-minus-s in))
+                        (list-fix id)))))
        (& (gret 0)))))
 
 ;; (def-gobjectp-thm unary--
@@ -97,8 +97,7 @@
    :hints (("goal" :use ((:instance complex-definition
                                     (x a) (y b))
                          (:instance complex-definition
-                                    (x (- a)) (y (- b))))
-            :in-theory (disable equal-complexes-rw)))))
+                                    (x (- a)) (y (- b))))))))
 
 ;; (local (defthm eval-g-base-atom
 ;;          (implies (and (not (consp x)) (gobjectp x))

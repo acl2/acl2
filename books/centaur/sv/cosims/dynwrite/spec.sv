@@ -35,7 +35,7 @@ module spec (input logic [127:0] in,
 
    assign {a, b, c, d} = in;
 
-  logic [15:0] e;
+  logic [18:3] e;
 
    always_comb begin
      e = 16'b0;

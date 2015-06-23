@@ -56,9 +56,9 @@
                (iprod (bfr-+-ss nil (bfr-*-ss xrn yin)
                             (bfr-*-ss xin yrn))))
           (mk-g-number
-           (rlist-fix rprod)
+           (list-fix rprod)
            1
-           (rlist-fix iprod)))
+           (list-fix iprod)))
       (g-apply 'binary-* (gl-list x y)))))
 
 (in-theory (disable (g-binary-*-of-numbers)))
@@ -92,8 +92,7 @@
                            (:instance complex-definition (x c) (y d))
                            (:instance complex-definition
                                       (x (- (* a c) (* b d)))
-                                      (y (+ (* a d) (* b c)))))
-              :in-theory (disable equal-complexes-rw))))
+                                      (y (+ (* a d) (* b c))))))))
 
    (defthm g-binary-*-of-numbers-correct
      (implies (and (general-numberp x)

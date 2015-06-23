@@ -156,10 +156,15 @@ any global @('other-events').</p>
 
 <dl>
 
+<dt>:verbosep bool</dt>
+
+<dd>Normally most output is suppressed, but this can make it hard to understand
+failures.  You can enable @(':verbosep t') for better debugging.</dd>
+
+
 <dt>:mode</dt>
 <dt>:guard-hints, :guard-debug, :verify-guards</dt>
-<dt>:well-founded-relation, :hints</dt>
-<dt>:otf-flg</dt>
+<dt>:well-founded-relation, :measure-debug, :hints, :otf-flg</dt>
 <dt>:ruler-extenders</dt>
 
 <dd>In an ordinary @(see mutual-recursion), each of these @(see xargs) style
@@ -180,6 +185,14 @@ be explicitly made @(see local).</dd>
 <dd>Note that each individual @('define') may have its own @(':prepwork')
 section.  All of these sections will be appended together in order, with the
 global @(':prepwork') coming first, and submitted before the definitions.</dd>
+
+
+<dt>:returns-hints hints</dt>
+<dt>:returns-no-induct bool</dt>
+
+<dd>You can give hints for the inductive @(':returns') theorem.  Alternately,
+if you know you don't need to prove the returns theorems inductively, you can
+set @(':returns-no-induct t'), which may improve performance.</dd>
 
 
 <dt>:parents, :short, :long</dt>
@@ -206,26 +219,48 @@ we cause an error if documentation is provided in both places.</dd>
 options are @(see local) to the definitions; they do not affect the
 @('other-events') or any later events.</dd>
 
-</dl>
+
+<dt>:flag name</dt>
+
+<dd>You can also use @(':flag nil') to suppress the creation of a flag
+function.  Alternately, you can use this option to customize the name of the
+flag function.  The default is inferred from the @('clique-name'), i.e., it
+will look like @('<clique-name>-flag').</dd>
+
+<dt>:flag-var var</dt>
+<dt>:flag-defthm-macro name</dt>
+<dt>:flag-hints hints</dt>
+
+<dd>Control the flag variable name, flag macro name, and hints for @(see
+make-flag).</dd>
 
 
+<dt>:flag-local bool</dt>
 
-<p>Global Options</p>
+<dd>By default the flag function is created locally.  This generally improves
+performance when later including your book, and is appropriate when all of your
+flag-based reasoning about the function is done in @(':returns') specifiers and
+in the @('///') section.  If you need the flag function and its macros to exist
+beyond the @('defines') form, set @(':flag-local nil').</dd>
 
-@({
-     :flag nil   - don't create a flag function
-     :flag name  - override the name of the flag function
-                   (default is clique-name-flag)
-     :flag-var var - use VAR instead of FLAG as the name for the
-                     flag variable
-     :flag-defthm-macro name - override name of the flag macro
-     :flag-hints hints - hints for make-flag
-     :returns-no-induct - prove return type theorems without induction
-     :returns-hints - hints for inductive return type theorems
-})
 
-<p>Each define can also have a :flag option, which governs the name for
-its flag in the flag-function.</p>")
+<dt>:progn bool</dt>
+
+<dd>By default everything is submitted in an @('(encapsulate nil ...)').  If
+you set @(':progn t'), then we will instead submit everything in a @('progn').
+This mainly affects what @('local') means within the @('///') section.  This
+may slightly improve performance by avoiding the overhead of @(see
+encapsulate), and is mainly meant as a tool for macro developers.</dd>
+
+
+<dt>:locally-enable bool</dt>
+
+<dd>By default the functions in the clique are enabled for the processing of
+the @('///') section.  You can set @(':locally-enable nil') to avoid this.
+This may slightly improve performance by avoiding the overhead of theory
+events, and is mainly meant as a tool for macro developers.</dd>
+
+</dl>")
 
 
 
@@ -415,8 +450,10 @@ its flag in the flag-function.</p>")
                                                   world)))
                     `(with-output :stack :pop (progn . ,events))))))
         (local (set-define-current-function ,guts.name))
-        (with-output :stack :pop (progn . ,guts.rest-events))
-        (with-output :on (error) ,(add-signature-from-guts guts))))))
+        (with-output :stack :pop (progn . ,guts.rest-events)))
+      ;; Make sure the section gets processed first.  Once it's done,
+      ;; we can add the signature block.
+      (with-output :on (error) ,(add-signature-from-guts guts)))))
 
 (defun collect-fn-defsections (gutslist cliquename process-returns)
   (if (atom gutslist)
