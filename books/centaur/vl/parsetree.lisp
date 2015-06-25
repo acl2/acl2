@@ -87,7 +87,7 @@ annotated with a @('version') field that must match exactly this string.</p>")
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2115-02-05")
+  "VL Syntax 2015-02-05")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
