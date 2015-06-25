@@ -67,6 +67,7 @@ esac
 
 case "$ACL2_REAL" in
   ""|no_r|no-r|none|NONE)
+    ACL2_REAL=""
     ;;
   *)
     ACL2_SUFFIX="${ACL2_SUFFIX}r"
