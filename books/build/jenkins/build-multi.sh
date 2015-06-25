@@ -53,7 +53,7 @@ if [[ "$ACL2_HONS" == "" || "$ACL2_HONS" == "no_h" || "$ACL2_HONS" == "no-h" || 
     ACL2_SUFFIX="${ACL2_SUFFIX}c"
 fi
 
-if [[ "$ACL2_PAR" != "" && "$ACL2_PAR" != "no_p" && "$ACL2_PAR" != "no-p" && "$ACL2_PAR" != "none" && "$ACL2_PAR" != "NONE"]]; then
+if [[ "$ACL2_PAR" != "" && "$ACL2_PAR" != "no_p" && "$ACL2_PAR" != "no-p" && "$ACL2_PAR" != "none" && "$ACL2_PAR" != "NONE" ]]; then
     ACL2_SUFFIX="${ACL2_SUFFIX}p"
 fi
 
