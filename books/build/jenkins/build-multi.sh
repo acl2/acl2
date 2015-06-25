@@ -49,15 +49,15 @@ else
 fi
 
 set ACL2_SUFFIX=""
-if [ "$ACL2_HONS" == "" || "$ACL2_HONS" == "no_h" || "$ACL2_HONS" == "no-h" || "$ACL2_HONS" == "none" || "$ACL2_HONS" == "NONE" ]; then
+if [[ "$ACL2_HONS" == "" || "$ACL2_HONS" == "no_h" || "$ACL2_HONS" == "no-h" || "$ACL2_HONS" == "none" || "$ACL2_HONS" == "NONE" ]]; then
     ACL2_SUFFIX="${ACL2_SUFFIX}c"
 fi
 
-if [ "$ACL2_PAR" != "" && "$ACL2_PAR" != "no_p" && "$ACL2_PAR" != "no-p" && "$ACL2_PAR" != "none" && "$ACL2_PAR" != "NONE"]; then
+if [[ "$ACL2_PAR" != "" && "$ACL2_PAR" != "no_p" && "$ACL2_PAR" != "no-p" && "$ACL2_PAR" != "none" && "$ACL2_PAR" != "NONE"]]; then
     ACL2_SUFFIX="${ACL2_SUFFIX}p"
 fi
 
-if [ "$ACL2_REAL" != "" && "$ACL2_REAL" != "no_r" && "$ACL2_REAL" != "no-r" && "$ACL2_REAL" != "none" && "$ACL2_REAL" != "NONE" ]; then
+if [[ "$ACL2_REAL" != "" && "$ACL2_REAL" != "no_r" && "$ACL2_REAL" != "no-r" && "$ACL2_REAL" != "none" && "$ACL2_REAL" != "NONE" ]]; then
     ACL2_SUFFIX="${ACL2_SUFFIX}r"
 fi
 
