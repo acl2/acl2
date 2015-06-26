@@ -796,10 +796,9 @@ the sake of efficiency.</p>"
     reasoning and execution"
    (mv-let (pos size)
            (field-pos-width flg layout-constant)
-           (let* ((mask (1- (expt 2 size)))
-                  (fixed-mask (logand (1- (expt 2 reg-size))
-                                      (lognot (ash mask pos))))
-                  (size+pos (+ pos size)))
+           (let* ((mask (lognot (ash (logmask size) pos)))
+                  (size+pos (+ pos size))
+                  (mask-size (+ 1 size+pos)))
              `(let ((reg-for-!slice-do-not-use
                      (the (unsigned-byte ,reg-size) ,reg)))
                 (declare (type (unsigned-byte ,reg-size)
@@ -812,10 +811,12 @@ the sake of efficiency.</p>"
                                 (logand
                                  (the (unsigned-byte ,reg-size)
                                    reg-for-!slice-do-not-use)
-                                 (the (unsigned-byte ,reg-size) ,fixed-mask)))
+                                 (the (signed-byte ,mask-size) ,mask)))
                               (the (unsigned-byte ,size+pos)
                                 (ash (the (unsigned-byte ,size) ,val)
-                                     ,pos))))))))))
+                                     ,pos)))))))))
+
+ ) ;; End of encapsulate
 
 ;; ======================================================================
 
