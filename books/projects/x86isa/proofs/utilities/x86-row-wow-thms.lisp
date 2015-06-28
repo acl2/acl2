@@ -1948,7 +1948,7 @@ theorems:</p>
     :hints (("Goal" :use (unsigned-byte-p-logbitp-and-logand-helper-1
 			  unsigned-byte-p-logbitp-and-logand-helper-2)))))
 
- (defthm !flgi-flgi
+ (defthmd !flgi-flgi
    (implies (and (equal x (flgi i x86))
 		 (member i *flg-names*)
 		 (x86p x86))
