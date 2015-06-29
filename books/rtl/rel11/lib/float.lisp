@@ -93,6 +93,14 @@
         (* x (expt 2 (- (expo x)))))
     0))
 
+(defthm expo-minus
+  (implies (rationalp x)
+           (equal (expo (- x)) (expo x))))
+
+(defthm sig-minus
+  (implies (rationalp x)
+           (equal (sig (- x)) (sig x))))
+
 (defthmd expo-lower-bound
     (implies (and (rationalp x)
 		  (not (equal x 0)))
@@ -169,6 +177,10 @@
 (defthmd sig-upper-bound
   (< (sig x) 2)
   :rule-classes (:rewrite :linear))
+
+(defthm expo-sig
+  (implies (rationalp x)
+           (equal (expo (sig x)) 0)))
 
 (defthmd sig-self
   (implies (and (rationalp x)
@@ -463,8 +475,7 @@
                 (integerp n)
                 (> n 0)
                 (exactp x n))
-           (exactp (fp- x n) n))
-  :hints (("Goal" :use (fp-1))))
+           (exactp (fp- x n) n)))
 
 (defthm fp+-
   (implies (and (rationalp x)

@@ -150,507 +150,365 @@
 
 
 ;;;***************************************************************
-;;;          Representations With Explicit Leading One
+;;;               Classification of Formats
 ;;;***************************************************************
 
-(defsection-rtl |Representations with Explicit Leading One| |Floating-Point Formats|
+;(defsection-rtl |Classification of Formats| |Floating-Point Formats|
 
-;;Bit vectors of length p+q+1, consisting of 1-bit sign field, q-bit 
-;;exponent field (bias = 2**(q-1)-1), and p-bit significand field, 
-;;where p > 1.
+;;Format parameters:
+
+(defund formatp (f)
+  (and (natp (cadr f))
+       (> (cadr f) 1)
+       (natp (caddr f))
+       (> (caddr f) 1)))
+
+(defund explicitp (f) (car f))
+
+(defund prec (f) (cadr f))
+
+(defund expw (f) (caddr f))
+
+(defund sigw (f)
+  (if (explicitp f)
+      (prec f)
+    (1- (prec f))))
+
+(defund encodingp (x f)
+  (bvecp x (+ 1 (expw f) (sigw f))))
+
+;;Examples:
+
+(defund sp () '(nil 24 8))
+
+(defund dp () '(nil 53 11))
+
+(defund ep () '(t 64 15)) 
 
 ;;Field extractors:
 
-(defund esgnf  (x p q) (bitn x (+ p q)))
-(defund eexpof (x p q) (bits x (1- (+ p q)) p)) 
-(defund esigf  (x p)   (bits x (1- p) 0))
+(defund sgnf (x f)
+  (bitn x (+ (expw f) (sigw f))))
 
-(defund bias (q) (- (expt 2 (- q 1)) 1) )
+(defund expf (x f)
+  (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
 
-(defthm bias-non-negative-integerp-type-prescription
-  (implies (and (case-split (integerp q))
-                (case-split (< 0 q)))
-           (and (integerp (bias q))
-                (>= (bias q) 0)))
-  :rule-classes :type-prescription)
+(defund sigf (x f)
+  (bits x (1- (sigw f)) 0))
 
-(defund eencodingp (x p q)
-  (and (bvecp x (+ p q 1))
-       (= (bitn x (- p 1)) 1)))
+(defund manf (x f)
+  (bits x (- (prec f) 2) 0))
 
-(defund edecode (x p q)
-  (* (if (= (esgnf x p q) 0) 1 -1)
-     (esigf x p)
-     (expt 2 (+ 1 (- p) (eexpof x p q) (- (bias q))))))
+;;Exponent bias:
 
-(defthm eencodingp-not-zero
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (not (equal (edecode x p q) 0))))
+(defund bias (f) (- (expt 2 (- (expw f) 1)) 1))
 
-(defthm sgn-edecode
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sgn (edecode  x p q))
-		    (if (= (esgnf x p q) 0) 1 -1))))
-
-(defthm expo-edecode
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))  
-	     (equal (expo (edecode x p q))
-		    (- (eexpof x p q) (bias q)))))
-
-(defthm sig-edecode
-    (implies (and (eencodingp  x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sig (edecode  x p q))
-		    (/ (esigf x p) (expt 2 (- p 1))))))
-
-(defund erepp (x p q)
-  (and (rationalp x)
-       (not (= x 0))
-       (bvecp (+ (expo x) (bias q)) q)
-       (exactp x p)))
-
-(defund eencode (x p q)
-  (cat (cat (if (= (sgn x) 1) 0 1)
-	    1
-	    (+ (expo x) (bias q))
-	    q)
-       (1+ q)
-       (* (sig x) (expt 2 (- p 1)))
-       p) )
-
-(defthm erepp-edecode
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (erepp (edecode x p q) p q)))
-
-(defthm eencode-edecode
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (>= p 0)
-		  (integerp q)
-		  (> q 0))
-	     (equal (eencode (edecode x p q) p q)
-		    x)))
-
-(defthm eencodingp-eencode
-    (implies (and (erepp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (eencodingp (eencode x p q) p q) ))
-
-(defthm edecode-eencode
-    (implies (and (erepp x p q)
-		  (integerp p)
-		  (integerp q))
-	     (equal (edecode (eencode x p q) p q)
-		    x)))
-)
-
+;)
 ;;;***************************************************************
-;;;          Representations With Implicit Leading One
+;;;                    Normal Encodings
 ;;;***************************************************************
 
-(defsection-rtl |Representations with Implicit Leading One| |Floating-Point Formats|
+;(defsection-rtl |Normal Encodings| |Floating-Point Formats|
 
-;;Bit vectors of length p+q, consisting of 1-bit sign field, q-bit 
-;;exponent field (bias = 2**(q-1)-1), and (p-1)-bit significand field, 
-;;where p > 1.
+(defund normp (x f)
+  (and (encodingp x f)
+       (< 0 (expf x f))
+       (< (expf x f) (1- (expt 2 (expw f))))
+       (implies (explicitp f) (= (bitn x (1- (prec f))) 1))))
 
-;;Field extractors:
-
-(defund isgnf (x p q) (bitn x (1- (+ p q))))
-(defund iexpof (x p q) (bits x (- (+ p q) 2) (1- p)))
-(defund isigf (x p) (bits x (- p 2) 0))
-
-;;Valid encodings:
-
-(defund nencodingp (x p q)
-  (and (bvecp x (+ p q))
-       (< 0 (iexpof x p q))
-       (< (iexpof x p q) (- (expt 2 q) 1))))
+(defund unsupp (x f)
+  (and (explicitp f)
+       (encodingp x f)
+       (< 0 (expf x f))
+       (= (bitn x (1- (prec f))) 0)))
 
 ;;Decoding function:
 
-(defund ndecode (x p q)
-  (* (if (= (isgnf x p q) 0) 1 -1)
-     (+ (expt 2 (- (iexpof x p q) (bias q)))
-        (* (isigf x p)
-           (expt 2 (+ 1 (iexpof x p q) (- (bias q)) (- p)))))))
+(defund ndecode (x f)
+  (* (if (= (sgnf x f) 0) 1 -1)
+     (expt 2 (- (expf x f) (bias f)))
+     (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
 
-;;Field extraction:
+(defthmd sgn-ndecode
+    (implies (and (formatp f)
+                  (normp x f))
+	     (equal (sgn (ndecode x f))
+		    (if (= (sgnf x f) 0) 1 -1))))
 
-(defthm sgn-ndecode
-    (implies (and (rationalp x)
-		  (>= x 0)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sgn (ndecode x p q))
-		    (if (= (isgnf x p q) 0) 1 -1))))
+(defthmd expo-ndecode
+    (implies (and (formatp f)
+		  (normp x f))
+	     (equal (expo (ndecode x f))
+		    (- (expf x f) (bias f)))))
 
-(defthm expo-ndecode
-    (implies (and (nencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))  
-	     (equal (expo (ndecode x p q))
-		    (- (iexpof x p q) (bias q)))))
+(defthmd sig-ndecode
+    (implies (and (formatp f)
+		  (normp x f))
+	     (equal (sig (ndecode x f))
+		    (+ 1 (/ (manf x f) (expt 2 (1- (prec f))))))))
 
-(defthm sig-ndecode
-    (implies (and (nencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sig (ndecode x p q))
-		    (+ 1 (/ (isigf x p) (expt 2 (- p 1)))))))
 
 ;;Representable normals:
 
-(defund nrepp (x p q)
+(defund nrepp (x f)
   (and (rationalp x)
        (not (= x 0))
-       (< 0 (+ (expo x) (bias q)))
-       (< (+ (expo x) (bias q)) (- (expt 2 q) 1))
-       (exactp x p)))
+       (< 0 (+ (expo x) (bias f)))
+       (< (+ (expo x) (bias f)) (1- (expt 2 (expw f))))
+       (exactp x (prec f))))
 
 ;;Encoding function:
 
-(defund nencode (x p q)
-  (cat (cat (if (= (sgn x) 1) 0 1)
-	    1
-            (+ (expo x) (bias q))
-            q)
-       (1+ q)
-       (* (- (sig x) 1) (expt 2 (- p 1)))
-       (- p 1)))
+(defund nencode (x f)
+  (cat (if (= (sgn x) 1) 0 1)
+       1
+       (+ (expo x) (bias f))
+       (expw f)
+       (* (sig x) (expt 2 (1- (prec f))))
+       (sigw f)))
 
 ;;Inversions:
 
 (defthm nrepp-ndecode
-    (implies (and (nencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (nrepp (ndecode x p q) p q)))
+    (implies (and (formatp f)
+                  (normp x f))
+	     (nrepp (ndecode x f) f)))
 
 (defthm nencode-ndecode
-    (implies (and (nencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (nencode (ndecode x p q) p q)
+    (implies (and (formatp f)
+                  (normp x f))
+	     (equal (nencode (ndecode x f) f)
 		    x)))
 
-(defthm nencodingp-nencode
-    (implies (and (nrepp x p q)
-                  (integerp p)
-                  (> p 1)
-                  (integerp q)
-                  (> q 0))
-             (nencodingp (nencode x p q) p q)))
+(defthm normp-nencode
+    (implies (and (formatp f)
+                  (nrepp x f))
+             (normp (nencode x f) f)))
 
 (defthm ndecode-nencode
-    (implies (and (nrepp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (ndecode (nencode x p q) p q)
+    (implies (and (formatp f)
+                  (nrepp x f))
+	     (equal (ndecode (nencode x f) f)
 		    x)))
 
 ;; Smallest positive normal:
 
-(defund spn (q)
-  (expt 2 (- 1 (bias q))))
+(defund spn (f)
+  (expt 2 (- 1 (bias f))))
 
 (defthmd positive-spn
-  (> (spn q) 0)
+  (> (spn f) 0)
   :rule-classes ( :linear))
 
 (defthmd nrepp-spn
-  (implies (and (integerp p)
-                (> p 0)
-                (integerp q)
-                (> q 1))
-           (nrepp (spn q) p q)))
+  (implies (formatp f)
+           (nrepp (spn f) f)))
 
 (defthmd smallest-spn
-  (implies (and (nrepp x p q)
-                (integerp p)
-                (> p 0)
-                (integerp q)
-                (> q 1))
-           (>= (abs x) (spn q)))
+  (implies (and (formatp f)
+                (nrepp x f))
+           (>= (abs x) (spn f)))
   :rule-classes
   ((:rewrite :match-free :once)))
-)
+
+;; Largest positive normal:
+
+(defund lpn (f)
+  (* (expt 2 (- (expt 2 (expw f)) (+ 2 (bias f))))
+     (- 2 (expt 2 (- 1 (prec f))))))
+
+(defthmd positive-lpn
+  (implies (formatp f)
+           (> (lpn f) 0))
+  :rule-classes ( :linear))
+
+(defthmd expo-lpn
+  (implies (formatp f)
+           (equal (expo (lpn f))
+                  (- (expt 2 (expw f)) (+ 2 (bias f))))))
+
+(defthmd sig-lpn
+  (implies (formatp f)
+           (equal (sig (lpn f))
+                  (- 2 (expt 2 (- 1 (prec f)))))))
+
+(defthmd nrepp-lpn
+  (implies (formatp f)
+           (nrepp (lpn f) f)))
+
+(defthmd largest-lpn
+  (implies (and (formatp f)
+                (nrepp x f))
+           (<= x (lpn f)))
+  :rule-classes
+  ((:rewrite :match-free :once)))
+;)
 
 ;;;***************************************************************
-;;;                Denormal Representations
+;;;               Denormals and Zeroes
 ;;;***************************************************************
 
-(defsection-rtl |Denormal Representations| |Floating-Point Formats|
+;(defsection-rtl |Denormals and Zeroes| |Floating-Point Formats|
 
-(defund dencodingp (x p q)
-  (and (bvecp x (+ p q))
-       (= (iexpof x p q) 0)
-       (not (= (isigf x p) 0))))
+(defund zerp (x f)
+  (and (encodingp x f)
+       (= (expf x f) 0)
+       (= (sigf x f) 0)))
 
-(defund iencodingp (x p q)
-  (or (nencodingp x p q)
-      (dencodingp x p q)))
+(defund zencode (sgn f) (cat sgn 1 0 (+ (sigw f) (expw f))))
 
-(defthm not-both-nencodingp-and-dencodingp
-    (implies (iencodingp x p q)
-	     (iff (nencodingp x p q) (not (dencodingp x p q))))
-  :rule-classes ())
+(defund denormp (x f)
+  (and (encodingp x f)
+       (= (expf x f) 0)
+       (not (= (sigf x f) 0))
+       (implies (explicitp f) (= (bitn x (1- (prec f))) 0))))
 
-(defund ddecode (x p q)
-  (* (if (= (isgnf x p q) 0) 1 -1)
-     (isigf x p)
-     (expt 2 (+ 2 (- (bias q)) (- p)))))
+(defund pseudop (x f)
+  (and (explicitp f)
+       (encodingp x f)
+       (= (expf x f) 0)
+       (= (bitn x (1- (prec f))) 1)))
+
+(defund ddecode (x f)
+  (* (if (= (sgnf x f) 0) 1 -1)
+     (sigf x f)
+     (expt 2 (+ 2 (- (bias f)) (- (prec f))))))
+
+(defund decode (x f)
+  (if (= (expf x f) 0)
+      (ddecode x f)
+    (ndecode x f)))
 
 (defthm sgn-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sgn (ddecode x p q))
-		    (if (= (isgnf x p q) 0) 1 -1))))
+  (implies (and (formatp f)
+                (or (denormp x f) (pseudop x f)))
+           (equal (sgn (ddecode x f))
+                  (if (= (sgnf x f) 0) 1 -1))))
 
 (defthm expo-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (expo (ddecode x p q))
-		    (+ 2 (- p) (- (bias q)) (expo (isigf x p))))))
+  (implies (and (formatp f)
+                (or (denormp x f) (pseudop x f)))
+	   (equal (expo (ddecode x f))
+	          (+ 2 (- (prec f)) (- (bias f)) (expo (sigf x f))))))
 
 (defthm sig-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sig (ddecode x p q))
-		    (sig (isigf x p)))))
+  (implies (and (formatp f)
+                (or (denormp x f) (pseudop x f)))
+           (equal (sig (ddecode x f))
+                  (sig (sigf x f)))))
 
-(defund idecode (x p q)
-  (cond ((nencodingp x p q)
-	 (ndecode x p q))
-	((dencodingp x p q)
-	 (ddecode x p q))))
-
-(defthm sgn-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal
-	      (sgn (idecode x p q))
-	      (if (= (isgnf x p q) 0) 1 -1))))
-
-(defthm expo-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal
-	      (expo (idecode x p q))
-	      (cond ((nencodingp x p q)
-		     (- (iexpof x p q) (bias q)))         
-		    ((dencodingp x p q)
-		     (+ 2 (- p) (- (bias q)) (expo (isigf x p))))))))
-
-(defund drepp (x p q)
+(defund drepp (x f)
   (and (rationalp x)
        (not (= x 0))
-       (<= (- 2 p) (+ (expo x) (bias q)))
-       (<= (+ (expo x) (bias q)) 0)
-       ;number of bits available in the sig field is p - 1 - ( - bias - expo(x))
-       (exactp x (+ -2 p (expt 2 (- q 1)) (expo x)))))
+       (<= (- 2 (prec f)) (+ (expo x) (bias f)))
+       (<= (+ (expo x) (bias f)) 0)
+       (exactp x (+ (1- (prec f)) (bias f) (expo x)))))
 
-(defund irepp (x p q)
-  (or (nrepp x p q)
-      (drepp x p q)))
-
-(defthm not-both-nrepp-and-drepp
-    (implies (irepp x p q)
-	     (iff (nrepp x p q) (not (drepp x p q))))
-  :rule-classes ())
-
-(defund dencode (x p q)
-  (cat (cat (if (= (sgn x) 1) 0 1)
-	    1
-            0
-            q)
-       (1+ q)
-       (* (sig x) (expt 2 (+ -2 p (expo x) (bias q))))
-       (- p 1)))
-
-(defund iencode (x p q)
-  (cond ((nrepp x p q)
-	 (nencode x p q))
-	((drepp x p q)
-	 (dencode x p q))))
-
-(defthm sig-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sig (idecode x p q))
-		    (cond ((nencodingp x p q)
-			   (+ 1 (/ (isigf x p) (expt 2 (- p 1)))))
-			  ((dencodingp x p q)
-			   (sig (isigf x p)))))))
-
-(defthm dencodingp-dencode
-    (implies (and (drepp x p q)
-		  (integerp p)
-		  (integerp q)
-		  (> q 0))
-	     (dencodingp (dencode x p q) p q)))
-
-(defthm iencodingp-iencode
-    (implies (and (irepp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (iencodingp (iencode x p q) p q)))
-
-(defthm drepp-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (drepp (ddecode x p q) p q)))
-
-(defthm irepp-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (irepp (idecode x p q) p q)))
+(defund dencode (x f)
+  (cat (if (= (sgn x) 1) 0 1)
+       1
+       0
+       (expw f)
+       (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f))))
+       (sigw f)))
 
 (defthm dencode-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (dencode (ddecode x p q) p q)
-		    x)))
+  (implies (and (formatp f)
+                (denormp x f))
+           (equal (dencode (ddecode x f) f)
+                  x)))
 
-(defthm iencode-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (iencode (idecode x p q) p q)
-		    x)))
+(defthm denormp-dencode
+  (implies (and (formatp f)
+                (drepp x f))
+           (denormp (dencode x f) f)))
 
 (defthm ddecode-dencode
-    (implies (and (drepp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (ddecode (dencode x p q) p q)
-		    x)))
-
-(defthm idecode-iencode
-    (implies (and (irepp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (idecode (iencode x p q) p q)
-		    x)))
+  (implies (and (formatp f)
+                (drepp x f))
+           (equal (ddecode (dencode x f) f)
+                  x)))
 
 ;; Smallest positive denormal:
 
-(defund spd (p q)
-     (expt 2 (+ 2 (- (bias q)) (- p))))
+(defund spd (f)
+     (expt 2 (+ 2 (- (bias f)) (- (prec f)))))
 
 (defthm positive-spd
-  (implies (and (integerp p)
-                (> p 1)
-                (> q 0))
-           (> (spd p q) 0))
+  (implies (formatp f)
+           (> (spd f) 0))
   :rule-classes :linear)
 
 (defthmd drepp-spd
-  (implies (and (integerp p)
-                (> p 1)
-                (integerp q)
-                (> q 0))
-           (drepp (spd p q) p q)))
+  (implies (formatp f)
+           (drepp (spd f) f)))
 
 (defthmd smallest-spd
-  (implies (and (integerp p)
-                (> p 1)
-                (integerp q)
-                (> q 0)
-                (drepp r p q))
-           (>= (abs r) (spd p q)))) 
+  (implies (and (formatp f)
+                (drepp r f))
+           (>= (abs r) (spd f))))
 
 (defthmd spd-mult
-  (implies (and (integerp p)
-                (> p 1)
-                (integerp q)
-                (> q 0)
-                (> r 0)
+  (implies (and (formatp f)
 		(rationalp r)
-		(= m (/ r (spd p q))))
-	   (iff (drepp r p q)
+                (> r 0)
+		(= m (/ r (spd f))))
+	   (iff (drepp r f)
 		(and (natp m)
 		     (<= 1 m)
-		     (< m (expt 2 (1- p)))))))
-)
+		     (< m (expt 2 (1- (prec f))))))))
 
+;)
+;;;***************************************************************
+;;;                 Infinities and NaNs
+;;;***************************************************************
+
+;(defsection-rtl |Infinities and NaNs| |Floating-Point Formats|
+
+(defund infp (x f)
+  (and (= (expf x f) (1- (expt 2 (expw f))))
+       (not (unsupp x f))
+       (= (manf x f) 0)))
+
+(defun iencode (sgn f)
+  (if (explicitp f)
+      (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 1 1 0 (1- (sigw f)))
+    (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 0 (sigw f))))
+
+(defund nanp (x f)
+  (and (= (expf x f) (1- (expt 2 (expw f))))
+       (not (unsupp x f))
+       (not (= (manf x f) 0))))
+
+(defund qnanp (x f)
+  (and (nanp x f) (= (bitn x (- (prec f) 2)) 1)))
+
+(defund snanp (x f)
+  (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
+
+(defund qnanize (x f) 
+  (logior x (expt 2 (- (prec f) 2))))
+
+(defund indef (f)
+  (if (explicitp f)
+      (cat (1- (expt 2 (+ (expw f) 3))) 
+           (+ (expw f) 3)
+           0
+           (- (sigw f) 2))
+    (cat (1- (expt 2 (+ (expw f) 2))) 
+         (+ (expw f) 2)
+         0
+         (1- (sigw f)))))
+
+;)
 ;;;***************************************************************
 ;;;                Rebiasing Exponents
 ;;;***************************************************************
 
 (defsection-rtl |Rebiasing Exponents| |Floating-Point Formats|
 
-(defund rebias-expo (expo old new)
-  (+ expo (- (bias new) (bias old))))
+(defund rebias (expo old new)
+  (+ expo (- (expt 2 (1- new)) (expt 2 (1- old)))))
 
 (defthm natp-rebias-up
     (implies (and (natp n)
@@ -658,7 +516,7 @@
 		  (< 0 m)
 		  (<= m n)
 		  (bvecp x m))
-	     (natp (rebias-expo x m n))))
+	     (natp (rebias x m n))))
 
 (defthm natp-rebias-down
     (implies (and (natp n)
@@ -668,7 +526,7 @@
 		  (bvecp x n)
 		  (< x (+ (expt 2 (1- n)) (expt 2 (1- m))))
 		  (>= x (- (expt 2 (1- n)) (expt 2 (1- m)))))
-	     (natp (rebias-expo x n m))))
+	     (natp (rebias x n m))))
 
 (defthm bvecp-rebias-up
     (implies (and (natp n)
@@ -676,7 +534,7 @@
 		  (< 0 m)
 		  (<= m n)
 		  (bvecp x m))
-	     (bvecp (rebias-expo x m n) n)))
+	     (bvecp (rebias x m n) n)))
 
 (defthm bvecp-rebias-down
     (implies (and (natp n)
@@ -686,7 +544,7 @@
 		  (bvecp x n)
 		  (< x (+ (expt 2 (1- n)) (expt 2 (1- m))))
 		  (>= x (- (expt 2 (1- n)) (expt 2 (1- m)))))
-	     (bvecp (rebias-expo x n m) m)))
+	     (bvecp (rebias x n m) m)))
 
 (defthmd rebias-lower
     (implies (and (natp n)
@@ -696,7 +554,7 @@
 		  (bvecp x n)
 		  (< x (+ (expt 2 (1- n)) (expt 2 (1- m))))
 		  (>= x (- (expt 2 (1- n)) (expt 2 (1- m)))))
-	     (equal (rebias-expo x n m)
+	     (equal (rebias x n m)
 		    (cat (bitn x (1- n))
 			 1
 			 (bits x (- m 2) 0)
@@ -708,7 +566,7 @@
 		  (> n m)
 		  (> m 1)
 		  (bvecp x m))
-	     (equal (rebias-expo x m n)
+	     (equal (rebias x m n)
 		    (cat (cat (bitn x (1- m))
 			      1
 			      (mulcat 1 (- n m) (bitn (lognot x) (1- m)))

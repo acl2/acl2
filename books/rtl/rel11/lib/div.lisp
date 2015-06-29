@@ -131,26 +131,45 @@
 
 ;; From reps.lisp:
 
-(defund bias (q) (- (expt 2 (- q 1)) 1) )
+(defund explicitp (f) (car f))
 
-(defun isgnf (x p q) (bitn x (1- (+ p q))))
-(defun iexpof (x p q) (bits x (- (+ p q) 2) (1- p)))
-(defun isigf (x p) (bits x (- p 2) 0))
+(defund prec (f) (cadr f))
 
-(defund ndecode (x p q)
-  (* (if (= (isgnf x p q) 0) 1 -1)
-     (+ (expt 2 (- (iexpof x p q) (bias q)))
-        (* (isigf x p)
-           (expt 2 (+ 1 (iexpof x p q) (- (bias q)) (- p)))))))
+(defund expw (f) (caddr f))
 
-(defund nencode (x p q)
-  (cat (cat (if (= (sgn x) 1) 0 1)
-	    1
-            (+ (expo x) (bias q))
-            q)
-       (1+ q)
-       (* (- (sig x) 1) (expt 2 (- p 1)))
-       (- p 1)))
+(defund sigw (f)
+  (if (explicitp f)
+      (prec f)
+    (1- (prec f))))
+
+(defund sgnf (x f)
+  (bitn x (+ (expw f) (sigw f))))
+
+(defund expf (x f)
+  (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
+
+(defund sigf (x f)
+  (bits x (1- (sigw f)) 0))
+
+(defund manf (x f)
+  (bits x (- (prec f) 2) 0))
+
+(defund bias (f) (- (expt 2 (- (expw f) 1)) 1))
+
+(defund sp () '(nil 24 8))
+
+(defund ndecode (x f)
+  (* (if (= (sgnf x f) 0) 1 -1)
+     (expt 2 (- (expf x f) (bias f)))
+     (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
+
+(defund nencode (x f)
+  (cat (if (= (sgn x) 1) 0 1)
+       1
+       (+ (expo x) (bias f))
+       (expw f)
+       (* (sig x) (expt 2 (1- (prec f))))
+       (sigw f)))
 
 ;; From round.lisp:
 
@@ -398,7 +417,7 @@
 (defsection-rtl |Examples| |FMA-Based Division|
 
 (defund rcp24 (b)
-  (ndecode (frcp (nencode b 24 8)) 24 8))
+  (ndecode (frcp (nencode b (sp))) (sp)))
 
 (defthm rcp24-spec
   (implies (and (rationalp b)
