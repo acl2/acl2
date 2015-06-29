@@ -2,7 +2,7 @@
 
 (include-book "centaur/gl/gl" :dir :system)
 
-(include-book "../lib2/basic") ;; no change from rel8
+(include-book "../lib2/basic") ;; no change from rel8 
 
 (local (include-book "../lib2.delta1/bits-new"))
 
@@ -87,9 +87,9 @@
                                                (MOD X (EXPT 2 (+ 1 I)))))
                                         0)))
 
-                      (encapsulate ()
+                      (encapsulate () 
 
-                                   (local (encapsulate ()
+                                   (local (encapsulate () 
 
                                                        (encapsulate ()
                                                                     (local (include-book "../lib2.delta1/log-new"))
@@ -103,7 +103,7 @@
 
 
                                                                     )
-
+   
 
                                                        (encapsulate ()
                                                                     (local (include-book "../lib2.delta1/log-new"))
@@ -113,11 +113,11 @@
                                                                                (equal (logand 1 x) x)))
 
                                                                     )
+   
 
 
 
-
-                                                       (encapsulate ()
+                                                       (encapsulate () 
                                                                     (local (include-book "../lib2.delta1/../support/logand"))
 
                                                                     (defthm logand-bnd
@@ -130,7 +130,7 @@
                                                                     (defthm logand-commutative
                                                                       (equal (logand j i)
                                                                              (logand i j)))
-
+             
                                                                     ;;
 
 
@@ -158,8 +158,8 @@
                                                        (defund bvequal (v1 v2 n)
                                                          (equal (sumbits_alt v1 n)
                                                                 (sumbits_alt v2 n)))
-
-
+                                 
+                                 
                                                        (defthm bvequal-then-equal
                                                          (implies (and (bvequal x y n)
                                                                        (bvecp x n)
@@ -173,7 +173,7 @@
                                                                   :in-theory (enable bvequal)))
                                                          :rule-classes nil)
 
-
+                                 
 
                                                        (encapsulate ()
                                                                     (local (include-book "../lib2.delta1/bits-new"))
@@ -234,11 +234,11 @@
                                                          (implies (and (integerp x)
                                                                        (natp n))
                                                                   (bvecp (logand x (+ -1 (expt 2 n))) n))
-                                                         :hints (("Goal"
+                                                         :hints (("Goal" 
                                                                   :cases ((equal (logand x (+ -1 (expt 2 n)))
                                                                                  (logand (+ -1 (expt 2 n)) x))))
-                                                                 ("Subgoal 1"
-                                                                  :in-theory (e/d (bvecp)
+                                                                 ("Subgoal 1" 
+                                                                  :in-theory (e/d (bvecp) 
                                                                                   (logand-bnd
                                                                                    logand-commutative
                                                                                    logand-non-negative))
@@ -271,12 +271,12 @@
                                                                             (y (mod i (expt 2 n)))
                                                                             (n n))))
                                              ("Subgoal 1.1" :in-theory (enable acl2::binary-logand))))
-
+                            
 
                                    )
 
 
-                      (local
+                      (local 
                        (defthmd bits-mbe-lemma-subgoal-1-lemma-1
                          (IMPLIES (AND (INTEGERP J)
                                        (INTEGERP I)
@@ -287,13 +287,13 @@
                                          (mod (FL (* X (EXPT 2 (* -1 J))))
                                               (EXPT 2 (+ 1 I (* -1 J))))))
                          :hints (("Goal" :in-theory (e/d (mod
-                                                          expt-minus)
+                                                          expt-minus) 
                                                          ())))))
 
 
 
 
-                      (local
+                      (local 
                        (defthmd bits-mbe-lemma-subgoal-1-lemma-2
                          (IMPLIES (AND (INTEGERP J)
                                        (INTEGERP I)
@@ -341,8 +341,8 @@
          :exec  (if (< i j)
                     0
                   (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-
-(local
+  
+(local 
  (defthm bits_alt-is-bits
    (equal (bits_alt x i j)
           (bits x i j))
@@ -392,21 +392,21 @@
 
 
 
- (local (encapsulate ()
-                     (local
+ (local (encapsulate () 
+                     (local 
                       (defthmd evenp-sum
                         (implies (and (evenp x)
                                       (evenp y))
                                  (evenp (- x y)))
                         :hints (("Goal" :in-theory (e/d (evenp) ())))))
 
-                     (local
+                     (local 
                       (defthmd evenp-2-factor
                         (implies (integerp x)
                                  (evenp (* 2 x)))
                         :hints (("Goal" :in-theory (e/d (evenp) ())))))
 
-                     (local
+                     (local 
                       (defthmd bitn-mbe-subgoal-2-lemma
                         (IMPLIES (AND (INTEGERP N)
                                       (INTEGERP X)
@@ -424,7 +424,7 @@
                                                   (x (fl (* x (/ (expt 2 n)))))
                                                   (y (* 2 (fl (* x (/ (expt 2 (+ 1 n)))))))))))))
 
-
+  
                      (defthmd bitn-mbe-subgoal-2
                        (IMPLIES (AND (INTEGERP N)
                                      (INTEGERP X)
@@ -438,22 +438,22 @@
 
                      ))
 
- (local (encapsulate ()
-                     (local
+ (local (encapsulate () 
+                     (local 
                       (defthmd not-evenp-sum
                         (implies (and (not (evenp x))
                                       (evenp y))
                                  (not (evenp (- x y))))
                         :hints (("Goal" :in-theory (e/d (evenp) ())))))
 
-                     (local
+                     (local 
                       (defthmd evenp-2-factor
                         (implies (integerp x)
                                  (evenp (* 2 x)))
                         :hints (("Goal" :in-theory (e/d (evenp) ())))))
 
 
-                     (local
+                     (local 
                       (defthmd bitn-mbe-subgoal-1-lemma
                         (IMPLIES (AND (INTEGERP N)
                                       (INTEGERP X)
@@ -522,7 +522,7 @@
   (local (include-book "centaur/bitops/defaults" :dir :system))
   (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
-  (defthm nicer-version-of-my-bitn
+  (defthm nicer-version-of-my-bitn                
            ;; This is maybe nicer because it avoids ASH, which could perhaps
            ;; shift the wrong way and create a huge number, in degenerate cases
            (implies (integerp n)

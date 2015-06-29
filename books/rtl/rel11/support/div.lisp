@@ -114,19 +114,19 @@
 
 ;; From reps.lisp:
 
-(defund bias (q) (- (expt 2 (- q 1)) 1) )
+(local-defund bias (q) (- (expt 2 (- q 1)) 1) )
 
-(defun isgnf (x p q) (bitn x (1- (+ p q))))
-(defun iexpof (x p q) (bits x (- (+ p q) 2) (1- p)))
-(defun isigf (x p) (bits x (- p 2) 0))
+(local-defun isgnf (x p q) (bitn x (1- (+ p q))))
+(local-defun iexpof (x p q) (bits x (- (+ p q) 2) (1- p)))
+(local-defun isigf (x p) (bits x (- p 2) 0))
 
-(defund ndecode (x p q)
+(local-defund ndecode (x p q)
   (* (if (= (isgnf x p q) 0) 1 -1)
      (+ (expt 2 (- (iexpof x p q) (bias q)))
         (* (isigf x p)
            (expt 2 (+ 1 (iexpof x p q) (- (bias q)) (- p)))))))
 
-(defund nencode (x p q)
+(local-defund nencode (x p q)
   (cat (cat (if (= (sgn x) 1) 0 1)
 	    1
             (+ (expo x) (bias q))
@@ -134,6 +134,60 @@
        (1+ q)
        (* (- (sig x) 1) (expt 2 (- p 1)))
        (- p 1)))
+
+(defun explicitp (f) (car f))
+
+(defun prec (f) (cadr f))
+
+(defun expw (f) (caddr f))
+
+(defun sigw (f)
+  (if (explicitp f)
+      (prec f)
+    (1- (prec f))))
+
+(defun sgnf (x f)
+  (bitn x (+ (expw f) (sigw f))))
+
+(defun expf (x f)
+  (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
+
+(defun sigf (x f)
+  (bits x (1- (sigw f)) 0))
+
+(defun manf (x f)
+  (bits x (- (prec f) 2) 0))
+
+(defun bias$ (f) (- (expt 2 (- (expw f) 1)) 1))
+
+(defund sp () '(nil 24 8))
+
+(defund ndecode$ (x f)
+  (* (if (= (sgnf x f) 0) 1 -1)
+     (expt 2 (- (expf x f) (bias$ f)))
+     (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
+
+(defund nencode$ (x f)
+  (cat (if (= (sgn x) 1) 0 1)
+       1
+       (+ (expo x) (bias$ f))
+       (expw f)
+       (* (sig x) (expt 2 (1- (prec f))))
+       (sigw f)))
+
+(local-defthm ndecode$-ndecode
+  (equal (ndecode$ x (sp))
+         (ndecode x 24 8))
+  :hints (("Goal" :in-theory (enable ndecode$ sp ndecode bias isgnf iexpof isigf)))) 
+
+(local-defthm nencode$-nencode
+  (equal (nencode$ x (sp))
+         (nencode x 24 8))
+  :hints (("Goal" :in-theory (enable nencode$ sp nencode bias isgnf iexpof isigf))
+          ("Subgoal 1" :in-theory (enable cat)
+                       :use ((:instance bits-plus-mult-2 (x (* 8388608 (SIG X))) (y -1) (k 23) (n 22) (m 0))))
+          ("Subgoal 2" :in-theory (enable cat)
+                       :use ((:instance bits-plus-mult-2 (x (* 8388608 (SIG X))) (y -1) (k 23) (n 22) (m 0))))))
 
 ;; From round.lisp:
 
@@ -419,22 +473,30 @@
   :rule-classes ()
   :hints (("Goal" :use harrison)))
 
-(defund rcp24 (b)
+(local-defund rcp24 (b)
   (ndecode (frcp (nencode b 24 8)) 24 8))
 
-(defthm rcp24-spec
+(defund rcp24$ (b)
+  (ndecode$ (frcp (nencode$ b (sp))) (sp)))
+
+(local-defthm rcp24$-rcp24
+  (equal (rcp24$ b) (rcp24 b))
+  :hints (("Goal" :in-theory (e/d (rcp24 rcp24$) ((sp) frcp)))))
+
+(defthm rcp24$-spec
   (implies (and (rationalp b)
                 (exactp b 24)
                 (<= 1 b)
                 (< b 2))
-           (and (exactp (rcp24 b) 24)
-                (<= 1/2 (rcp24 b))
-                (<= (rcp24 b) 1)
-                (< (abs (- 1 (* b (rcp24 b)))) (expt 2 -23))))
-  :rule-classes ())
+           (and (exactp (rcp24$ b) 24)
+                (<= 1/2 (rcp24$ b))
+                (<= (rcp24$ b) 1)
+                (< (abs (- 1 (* b (rcp24$ b)))) (expt 2 -23))))
+  :rule-classes ()
+  :hints (("Goal" :use (rcp24-spec))))
 
 (defund divide-sp$ (a b mode)
-  (let* ((y0 (rcp24 b))
+  (let* ((y0 (rcp24$ b))
          (q0 (rne (* a y0) 24))
          (e0 (rne (- 1 (* b y0)) 24))
          (r0 (rne (- a (* b q0)) 24))
@@ -458,16 +520,16 @@
   :hints (("Goal" :in-theory (enable sp-divide divide-sp$)
                   :use (:instance sp-divide-correct (mode (old-mode mode))))))
 
-(defthm rcp24-rtz-error
+(defthm rcp24$-rtz-error
   (implies (and (rationalp b)
                 (<= 1 b)
                 (< b 2))
-           (<= (abs (- 1 (* b (rcp24 (rtz b 24))))) (expt 2 -22)))
+           (<= (abs (- 1 (* b (rcp24$ (rtz b 24))))) (expt 2 -22)))
   :rule-classes ()
   :hints (("Goal" :use rcp24-trunc-error)))
 
 (defund divide-dp$ (a b mode)
-  (let* ((y0 (rcp24 (rtz b 24)))
+  (let* ((y0 (rcp24$ (rtz b 24)))
          (q0 (rne (* a y0) 53))
          (e0 (rne (- 1 (* b y0)) 53))
          (r0 (rne (- a (* b q0)) 53))
@@ -493,7 +555,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (enable dp-divide divide-dp$)
                   :use (:instance dp-divide-correct (mode (old-mode mode))))))
-))
+
+));; (local (encapsulate
 
 ;;-------------------------------------------------------------------------
 
@@ -597,26 +660,45 @@
 
 ;; From reps.lisp:
 
-(defund bias (q) (- (expt 2 (- q 1)) 1) )
+(defun explicitp (f) (car f))
 
-(defun isgnf (x p q) (bitn x (1- (+ p q))))
-(defun iexpof (x p q) (bits x (- (+ p q) 2) (1- p)))
-(defun isigf (x p) (bits x (- p 2) 0))
+(defun prec (f) (cadr f))
 
-(defund ndecode (x p q)
-  (* (if (= (isgnf x p q) 0) 1 -1)
-     (+ (expt 2 (- (iexpof x p q) (bias q)))
-        (* (isigf x p)
-           (expt 2 (+ 1 (iexpof x p q) (- (bias q)) (- p)))))))
+(defun expw (f) (caddr f))
 
-(defund nencode (x p q)
-  (cat (cat (if (= (sgn x) 1) 0 1)
-	    1
-            (+ (expo x) (bias q))
-            q)
-       (1+ q)
-       (* (- (sig x) 1) (expt 2 (- p 1)))
-       (- p 1)))
+(defun sigw (f)
+  (if (explicitp f)
+      (prec f)
+    (1- (prec f))))
+
+(defun sgnf (x f)
+  (bitn x (+ (expw f) (sigw f))))
+
+(defun expf (x f)
+  (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
+
+(defun sigf (x f)
+  (bits x (1- (sigw f)) 0))
+
+(defun manf (x f)
+  (bits x (- (prec f) 2) 0))
+
+(defun bias (f) (- (expt 2 (- (expw f) 1)) 1))
+
+(defund sp () '(nil 24 8))
+
+(defun ndecode (x f)
+  (* (if (= (sgnf x f) 0) 1 -1)
+     (expt 2 (- (expf x f) (bias f)))
+     (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
+
+(defun nencode (x f)
+  (cat (if (= (sgn x) 1) 0 1)
+       1
+       (+ (expo x) (bias f))
+       (expw f)
+       (* (sig x) (expt 2 (1- (prec f))))
+       (sigw f)))
 
 ;; From round.lisp:
 
@@ -855,7 +937,13 @@
   :hints (("Goal" :use harrison)))
 
 (defund rcp24 (b)
-  (ndecode (frcp (nencode b 24 8)) 24 8))
+  (ndecode (frcp (nencode b (sp))) (sp)))
+
+(in-theory (disable frcp))
+
+(local-defthm rcp24$-rcp24
+  (equal (rcp24$ b) (rcp24 b))
+  :hints (("Goal" :in-theory (enable rcp24 rcp24$ nencode$ ndecode$))))
 
 (defthm rcp24-spec
   (implies (and (rationalp b)
@@ -866,7 +954,8 @@
                 (<= 1/2 (rcp24 b))
                 (<= (rcp24 b) 1)
                 (< (abs (- 1 (* b (rcp24 b)))) (expt 2 -23))))
-  :rule-classes ())
+  :rule-classes ()
+  :hints (("Goal" :use rcp24$-spec)))
 
 (defund divsp (a b mode)
   (let* ((y0 (rcp24 b))
@@ -898,7 +987,7 @@
                 (< b 2))
            (<= (abs (- 1 (* b (rcp24 (rtz b 24))))) (expt 2 -22)))
   :rule-classes ()
-  :hints (("Goal" :use rcp24-trunc-error)))
+  :hints (("Goal" :use rcp24$-rtz-error)))
 
 (defund divdp (a b mode)
   (let* ((y0 (rcp24 (rtz b 24)))
