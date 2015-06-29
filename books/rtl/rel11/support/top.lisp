@@ -34,7 +34,7 @@
 
 (include-book "../rel9-rtl-pkg/lib/gl")
 
-(include-book "../rel9-rtl-pkg/lib/masc")
+(include-book "./masc")
 
 (include-book "./basic")
 
@@ -52,3 +52,4 @@
 
 (include-book "./div")
 
+(include-book "./excps")

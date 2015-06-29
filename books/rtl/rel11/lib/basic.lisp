@@ -1,5 +1,4 @@
 ; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
 ;
 ; Contact:
 ;   David Russinoff
@@ -453,3 +452,58 @@
   (implies (integerp m)
            (equal (mod (1+ (* 2 m)) 2) 1)))
 )
+
+;;;**********************************************************************
+;;;                         CHOP
+;;;**********************************************************************
+
+(defund chop (x k)
+  (/ (fl (* (expt 2 k) x)) (expt 2 k)))
+
+(defthmd chop-mod
+  (implies (and (rationalp x)
+                (integerp k))
+           (equal (chop x k)
+                  (-  x (mod x (expt 2 (- k)))))))
+
+(defthmd chop-chop
+  (implies (and (rationalp x)
+                (integerp k)
+                (integerp m)
+                (<= k m))
+           (and (equal (chop (chop x m) k)
+                       (chop x k))
+                (equal (chop (chop x k) m)
+                       (chop x k)))))
+
+(defthmd chop-shift
+  (implies (and (rationalp x)
+                (integerp k)
+                (integerp m))
+           (equal (chop (* (expt 2 k) x) m)
+                  (* (expt 2 k) (chop x (+ k m))))))
+
+
+
+(defthm chop-bound
+  (implies (and (rationalp x)
+                (integerp n)
+                (natp m))
+           (iff (<= n x) (<= n (chop x m))))
+  :rule-classes ())
+
+(defthmd chop-small
+  (implies (and (rationalp x)
+                (integerp m)
+                (< x (expt 2 (- m)))
+                (<= (- (expt 2 (- m))) x))
+           (equal (chop x m)
+                  (if (>= x 0)
+                      0
+                    (- (expt 2 (- m)))))))
+
+(defthm chop-0
+  (implies (and (rationalp x)
+                (integerp m)
+                (< (abs (chop x m)) (expt 2 (- m))))
+           (equal (chop x m) 0)))

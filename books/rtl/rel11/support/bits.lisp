@@ -287,6 +287,23 @@
                         (fl (/ x (expt 2 i)))))))
   :rule-classes ())
 
+(local (in-theory (disable fl/int-rewrite fl/int-rewrite-alt)))
+
+(defthm bits-mod-fl
+  (implies (and (integerp x)
+                (integerp i)
+                (integerp j)
+                (>= i j))
+           (equal (bits x (1- i) j)
+                  (mod (fl (/ x (expt 2 j)))
+                       (expt 2 (- i j)))))
+  :hints (("Goal" :use (bits-fl-diff
+                        (:instance mod-def (x (fl (/ x (expt 2 j)))) (y (expt 2 (- i j))))
+                        (:instance fl/int-rewrite (x (/ x (expt 2 j))) (n (expt 2 (- i j)))))))
+  :rule-classes ())
+
+
+
 (defthm bits-neg-indices
   (implies (and (< i 0)
                 (integerp x))
@@ -1003,3 +1020,40 @@
 		  (bvecp x m))
 	     (equal (intval n (sign-extend n m x))
 		    (intval m x))))
+
+(defund si (r n)
+  (if (= (bitn r (1- n)) 1)
+      (- r (expt 2 n))
+    r))
+
+(local-defthm si-rewrite
+  (equal (si r n) (intval n r))
+  :hints (("Goal" :in-theory (enable si))))
+
+(defthm si-bits
+    (implies (and (integerp x)
+		  (natp n)
+		  (< x (expt 2 (1- n)))
+		  (>= x (- (expt 2 (1- n)))))
+	     (= (si (bits x (1- n) 0) n)
+                x))
+    :rule-classes ()
+  :hints (("Goal" :use ((:instance intval-bits (w n))))))
+
+(defund sextend (m n r)
+  (bits (si r n) (1- m) 0))
+
+(in-theory (disable intval))
+
+(local-defthm sextend-rewrite
+  (equal (sextend m n r) (sign-extend m n r))
+  :hints (("Goal" :in-theory (enable sextend))))
+
+(defthmd si-sextend
+    (implies (and (natp n)
+		  (natp m)
+		  (<= n m)
+		  (bvecp r n))
+	     (equal (si (sextend m n r) m)
+		    (si r n)))
+  :hints (("Goal" :use ((:instance intval-sign-extend (x r) (n m) (m n))))))
