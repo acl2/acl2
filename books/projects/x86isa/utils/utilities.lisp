@@ -403,26 +403,6 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
 (defmacro forced-and (&rest x)
   `(and ,@(formal-force-list x)))
 
-;; Some useful include-book macros from Ben Selfridge:
-
-(defmacro arithmetic ()
-  `(include-book "arithmetic/top-with-meta" :dir :system))
-
-(defmacro arithmetic-5 ()
-  `(include-book "arithmetic-5/top" :dir :system))
-
-(defmacro arithmetic-5-nonlinear ()
-  `(progn
-     (arithmetic-5)
-     (set-default-hints '((nonlinearp-default-hint++
-                           id stable-under-simplificationp hist nil)))))
-
-(defmacro arithmetic-5-nonlinear-weak ()
-  `(progn
-     (arithmetic-5)
-     (set-default-hints '((nonlinearp-default-hint
-                           stable-under-simplificationp hist pspv)))))
-
 ;; ======================================================================
 
 (defsection constants-conversions-and-bounds
