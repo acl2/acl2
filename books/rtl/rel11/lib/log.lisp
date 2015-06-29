@@ -330,8 +330,7 @@
                 (integerp i)
                 (integerp j))
            (equal (bits (logxor x y) i j)
-                  (logxor (bits x i j) (bits y i j))))
-  :hints (("Goal" :use bits-logxor$)))
+                  (logxor (bits x i j) (bits y i j)))))
 
 (defthmd bitn-logand
     (implies (and (integerp x)
@@ -469,10 +468,8 @@
 	     (equal (logior x x) x)))
 
 (defthm logxor-self
-  (equal (logxor x x) 0)
-  :hints (("Goal" :use logxor-self$)))
+  (equal (logxor x x) 0))
 
-; Matt K. edit: changed variable x to i to match ihs/logops-lemmas.lisp.
 (defthm lognot-lognot
     (implies (case-split (integerp i))
 	     (equal (lognot (lognot i))

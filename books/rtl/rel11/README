@@ -34,13 +34,14 @@ the following:
 (in-theory (disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| 
                     |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)| cancel-mod-+
                     mod-cancel-*-const simplify-products-gather-exponents-equal 
+                    simplify-products-gather-exponents-<
                     cancel-mod-+ reduce-additive-constant-< |(floor x 2)|
                     |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 
 The library files contain virtually no documentation.  A detailed companion
 document is available online as follows, and can also be accessed through
-the documentation topic, RTL, in the acl2+books combined manual.
+the documentation topic RTL in the acl2+books combined manual.
 
     D.M. Russinoff, A formal theory of register-transfer logic and computer
     arithmetic, 2006.
@@ -210,4 +211,56 @@ If there already exists some "rel8.3/support/i/round.lisp", and we feel that
 replacing foo with the new version may affect other existing lemmas, then we 
 should move to "rel9".
 
+=========================================================================
+David Rager's Notes
+=========================================================================
 
+(1) Setting up packages:
+
+For every subdirectory in which you have internal proof scripts (to my
+knowledge you have one such subdirectory) {
+
+-- create a file called cert.acl2 in the directory that includes the
+following line:
+
+(include-book "rtl/rel11/portcullis" :dir :system)
+
+For every file in that subdirectory {
+
+-- replace (in-package "ACL2") with (in-package "RTL")
+
+} }
+
+For my own reference, we call the above approach the "Matt approach,"
+and we choose this approach because you don't want to need to prefix
+primitives like BITS with RTL::.
+
+For every symbol that you want imported from the ACL2 package into the
+RTL package (this only makes sense for primitives that are defined in
+the ACL2 package;  for example, importing "defthmd" would make sense
+[if it's not already imported], but importing "bits" would defeat most
+of the purpose of our efforts) {
+
+-- add the symbol to the list that begins on line 14 of rtl/rel11/package.lsp.
+
+}
+Email the new version of rtl/rel11/package.lsp to Rager, and he can
+synchronize it with the community books for the medium-term.
+
+
+(2) The "proper" way to contribute to the community books repository
+is via the instructions found at the following :doc topic, but for
+now, just email changes to Rager:
+
+http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____GITHUB-COMMIT-CODE-USING-PULL-REQUESTS
+
+
+(3) So long as no changes are made to the "lib" directory of rel11,
+Dmitry has permission to cleanup the "support" directory.  Dmitry may
+also make a parallel lib directory, which would be called something
+more appropriate than "lib-dmitry".
+
+Was that it?  I forget....  Let me know if you have any questions.
+
+Thanks,
+David

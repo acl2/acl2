@@ -1,5 +1,4 @@
 ; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
 ;
 ; Contact:
 ;   David Russinoff
@@ -261,6 +260,16 @@
                   (- (fl (/ x (expt 2 j)))
                      (* (expt 2 (- i j))
                         (fl (/ x (expt 2 i)))))))
+  :rule-classes ())
+
+(defthm bits-mod-fl
+  (implies (and (integerp x)
+                (integerp i)
+                (integerp j)
+                (>= i j))
+           (equal (bits x (1- i) j)
+                  (mod (fl (/ x (expt 2 j)))
+                       (expt 2 (- i j)))))
   :rule-classes ())
 
 (defthm bits-neg-indices
@@ -961,28 +970,29 @@
 
 (defsection-rtl |Signed Integer Formats| |Bit Vectors|
 
-(defun intval (w x)
-  (if (= (bitn x (1- w)) 1)
-      (- x (expt 2 w))
-    x))
+(defund si (r n)
+  (if (= (bitn r (1- n)) 1)
+      (- r (expt 2 n))
+    r))
 
-(defthm intval-bits
+(defthm si-bits
     (implies (and (integerp x)
-		  (natp w)
-		  (< x (expt 2 (1- w)))
-		  (>= x (- (expt 2 (1- w)))))
-	     (= (intval w (bits x (1- w) 0))
+		  (natp n)
+		  (< x (expt 2 (1- n)))
+		  (>= x (- (expt 2 (1- n)))))
+	     (= (si (bits x (1- n) 0) n)
                 x))
-    :rule-classes nil)
+    :rule-classes ())
 
-(defun sign-extend (n m x)
-  (bits (intval m x) (1- n) 0))
+(defund sextend (m n r)
+  (bits (si r n) (1- m) 0))
 
-(defthmd intval-sign-extend
+(defthmd si-sextend
     (implies (and (natp n)
 		  (natp m)
-		  (<= m n)
-		  (bvecp x m))
-	     (equal (intval n (sign-extend n m x))
-		    (intval m x))))
+		  (<= n m)
+		  (bvecp r n))
+	     (equal (si (sextend m n r) m)
+		    (si r n))))
+
 )
