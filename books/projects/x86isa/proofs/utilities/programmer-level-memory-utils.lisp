@@ -6,6 +6,7 @@
 (include-book "x86-row-wow-thms"
               :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
 (include-book "general-memory-utils" :ttags :all :dir :proof-utils)
+(include-book "clause-processors/find-subterms" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
@@ -69,42 +70,6 @@ programmer-level mode.</p>" )
 
 ;; ======================================================================
 
-;; create-canonical-address-list:
-
-(define create-canonical-address-list (count addr)
-  :guard (and (natp count)
-              (canonical-address-p addr)
-              (canonical-address-p (+ addr count)))
-
-  :parents (programmer-level-memory-utils)
-
-  :long "<p>Given a canonical address @('addr'),
-  @('create-canonical-address-list') creates a list of canonical
-  addresses where the first address is @('addr') and the last address
-  is the last canonical address in the range @('addr') to @('addr +
-  count').</p>"
-  :enabled t
-
-  (if (or (zp count)
-          (not (canonical-address-p addr)))
-      nil
-    (cons addr (create-canonical-address-list (1- count)
-                                              (1+ addr))))
-  ///
-
-  (defthm canonical-address-listp-create-canonical-address-list
-    (canonical-address-listp
-     (create-canonical-address-list count addr))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defthm create-canonical-address-list-1
-    (implies (canonical-address-p x)
-             (equal (create-canonical-address-list 1 x)
-                    (list x)))
-    :hints (("Goal" :expand (create-canonical-address-list 1 x)))))
-
-;; ======================================================================
-
 ;; Remove duplicate keys:
 
 (define remove-duplicate-keys
@@ -148,10 +113,32 @@ programmer-level mode.</p>" )
            (canonical-address-p e))
   :rule-classes (:type-prescription :forward-chaining))
 
+(defthm car-create-canonical-address-list
+  (implies (and (canonical-address-p addr)
+                (posp count))
+           (equal (car (create-canonical-address-list count addr))
+                  addr)))
+
+(defthm cdr-create-canonical-address-list
+  (implies (and (canonical-address-p addr)
+                (posp count))
+           (equal (cdr (create-canonical-address-list count addr))
+                  (create-canonical-address-list (1- count) (1+ addr)))))
+
+(defthm consp-of-create-canonical-address-list
+  (implies (and (canonical-address-p addr)
+                (natp count)
+                (< 0 count))
+           (consp (create-canonical-address-list count addr)))
+  :hints (("Goal" :in-theory (e/d (create-canonical-address-list
+                                   canonical-address-p
+                                   signed-byte-p)
+                                  ()))))
+
 (defthm member-p-canonical-address-p-canonical-address-listp
   (implies (member-p e (create-canonical-address-list n prog-addr))
            (canonical-address-p e))
-  :rule-classes (:type-prescription :forward-chaining))
+  :rule-classes :forward-chaining)
 
 (defthm subset-p-canonical-address-listp
   (implies (and (canonical-address-listp y)
@@ -264,6 +251,24 @@ programmer-level mode.</p>" )
                        (create-canonical-address-list j y)))
   :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
 
+(defthm disjoint-p-create-canonical-address-list-and-append
+  (implies (and (canonical-address-p x)
+                (canonical-address-p y)
+                (canonical-address-p z)
+                (natp i)
+                (natp j)
+                (natp k))
+           (equal (disjoint-p (create-canonical-address-list i x)
+                              (append (create-canonical-address-list j y)
+                                      (create-canonical-address-list k z)))
+                  (and (disjoint-p (create-canonical-address-list i x)
+                                   (create-canonical-address-list j y))
+                       (disjoint-p (create-canonical-address-list i x)
+                                   (create-canonical-address-list k z)))))
+  :hints (("Goal" :in-theory (e/d (disjoint-p
+                                   create-canonical-address-list)
+                                  ()))))
+
 (defthm canonical-address-p-limits-thm-0
   ;; i is positive, k is positive, k < i
   (implies (and (canonical-address-p (+ i addr))
@@ -299,36 +304,36 @@ programmer-level mode.</p>" )
 
  ;; The following rules come in useful when we know that a canonical
  ;; memory address is stored in a register.  These rules establish
- ;; that the value being written to a register is i64p, a fact we need
+ ;; that the value being written to a register is signed-byte-p 64, a fact we need
  ;; to know to relieve the hypotheses of rules like x86p-!rgfi.
 
- (defthm canonical-address-p-and-i64p-limits-0
+ (defthm canonical-address-p-and-signed-byte-p-64-limits-0
    (implies (and (syntaxp (and (consp x)
                                (eq (car x) 'rgfi)))
                  (canonical-address-p x))
-            (i64p x))
+            (signed-byte-p 64 x))
    :rule-classes :forward-chaining
    :hints (("Goal" :in-theory (e/d (canonical-address-p) ()))))
 
- (defthm canonical-address-p-and-i64pp-limits-1
+ (defthm canonical-address-p-and-signed-byte-p-64p-limits-1
    (implies (and (syntaxp (and (consp x)
                                (eq (car x) 'rgfi)))
                  (canonical-address-p (+ a x)))
-            (i64p (+ a x)))
+            (signed-byte-p 64 (+ a x)))
    :hints (("Goal" :in-theory (e/d (canonical-address-p) ()))))
 
- (defthm canonical-address-p-+-i16p-is-i64p
+ (defthm canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64
    (implies (and (canonical-address-p y)
-                 (i16p x))
-            (i64p (+ x y)))
-   :hints (("Goal" :in-theory (e/d (i64p canonical-address-p) ()))))
+                 (signed-byte-p 16 x))
+            (signed-byte-p 64 (+ x y)))
+   :hints (("Goal" :in-theory (e/d (canonical-address-p) ()))))
 
  (local (include-book "centaur/gl/gl" :dir :system))
 
  (local
-  (def-gl-thm canonical-address-p-+-i16p-with-loghead-and-n64-to-i64-helper
+  (def-gl-thm canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64-helper
     :hyp (and (canonical-address-p y)
-              (i16p x))
+              (signed-byte-p 16 x))
     :concl (equal (n64-to-i64
                    (part-select
                     (+ x (part-select
@@ -341,9 +346,9 @@ programmer-level mode.</p>" )
     `((x   (:g-number ,(gl-int 0 2 64)))
       (y   (:g-number ,(gl-int 1 2 64))))))
 
- (defthm canonical-address-p-+-i16p-with-loghead-and-n64-to-i64
+ (defthm canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64
    (implies (and (canonical-address-p y)
-                 (i16p x))
+                 (signed-byte-p 16 x))
             (equal (n64-to-i64
                     (part-select
                      (+ x (part-select
@@ -353,7 +358,7 @@ programmer-level mode.</p>" )
                      :low 0 :width 64))
                    (+ x y)))
    :hints (("Goal" :use
-            canonical-address-p-+-i16p-with-loghead-and-n64-to-i64-helper)))
+            canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64-helper)))
 
  (defthm loghead-64-n64-to-i64-canonical-address
    (implies (canonical-address-p x)
@@ -362,7 +367,7 @@ programmer-level mode.</p>" )
    :hints (("Goal" :in-theory (e/d (canonical-address-p n64-to-i64) ()))))
 
  (defthm n64-to-i64-logead-64-x
-   (implies (i64p x)
+   (implies (signed-byte-p 64 x)
             (equal (n64-to-i64 (loghead 64 x))
                    x))
    :hints (("Goal" :in-theory (e/d (canonical-address-p n64-to-i64) ()))))
@@ -687,7 +692,11 @@ programmer-level mode.</p>" )
                              (addr-list (cdr addr-list))))))))
 
 (defthm wb-remove-duplicate-writes
-  (implies (and (addr-byte-alistp addr-list)
+  (implies (and (syntaxp
+                 (not
+                  (and (consp addr-list)
+                       (eq (car addr-list) 'remove-duplicate-keys))))
+                (addr-byte-alistp addr-list)
                 (programmer-level-mode x86))
            (equal (wb addr-list x86)
                   (wb (remove-duplicate-keys addr-list) x86)))
@@ -701,6 +710,7 @@ programmer-level mode.</p>" )
 (defthmd create-addr-bytes-alist-acons
   (implies
    (and (< 0 (len bytes))
+        (canonical-address-p (+ lin-addr (len bytes)))
         (canonical-address-p lin-addr))
    (equal
     (create-addr-bytes-alist (create-canonical-address-list (len bytes) lin-addr) bytes)
@@ -761,15 +771,36 @@ programmer-level mode.</p>" )
            (equal (mv-nth 1 (rm08 addr r-w-x x86))
                   (car (mv-nth 1 (rb (list addr) r-w-x x86))))))
 
+(defun find-info-from-program-at-term (thm mfc state)
+  (declare (xargs :stobjs (state) :mode :program)
+           (ignorable state))
+  (b* ((call (acl2::find-call 'program-at (acl2::mfc-clause mfc)))
+       ((when (not call))
+        (cw "~%~p0: Program-At term not encountered.~%" thm)
+        `((n . n)
+          (prog-addr . prog-addr)
+          (bytes . bytes)))
+       (addresses (cadr call))
+       ((when (not (equal (car addresses)
+                          'create-canonical-address-list)))
+        (cw "~%~p0: Program-At without Create-Canonical-Address-List ~
+  encountered.~%" thm)
+        `((n . n)
+          (prog-addr . prog-addr)
+          (bytes . bytes)))
+       (n (cadr addresses))
+       (prog-addr (caddr addresses))
+       (bytes (caddr call)))
+      `((n . ,n)
+        (prog-addr . ,prog-addr)
+        (bytes . ,bytes))))
+
 (defthm rb-in-terms-of-nth-and-pos
-  ;; [Shilpi]: If I switch the order of the first two hyps (i.e.,
-  ;; program-at ... and member-p ...), then I'd not need to provide
-  ;; the :use hint for
-  ;; member-p-canonical-address-p-canonical-address-listp.  I prefer
-  ;; to keep the program-at hyp as the first one since it would help
-  ;; ACL2 more when trying to find proper bindings for the free
-  ;; variables (n, prog-addr, and free) in this theorem.
-  (implies (and (program-at (create-canonical-address-list n prog-addr) bytes x86)
+  (implies (and (bind-free (find-info-from-program-at-term
+                            'rb-in-terms-of-nth-and-pos
+                            mfc state)
+                           (n prog-addr bytes))
+                (program-at (create-canonical-address-list n prog-addr) bytes x86)
                 (member-p addr (create-canonical-address-list n prog-addr))
                 (syntaxp (quotep n))
                 (programmer-level-mode x86))
@@ -816,7 +847,11 @@ programmer-level mode.</p>" )
 
 (defthm rb-in-terms-of-rb-subset-p
   (implies
-   (and (program-at (create-canonical-address-list n prog-addr) bytes x86)
+   (and (bind-free (find-info-from-program-at-term
+                    'rb-in-terms-of-rb-subset-p
+                    mfc state)
+                   (n prog-addr bytes))
+        (program-at (create-canonical-address-list n prog-addr) bytes x86)
         (subset-p addresses (create-canonical-address-list n prog-addr))
         (consp addresses)
         (syntaxp (quotep n))
@@ -840,7 +875,11 @@ programmer-level mode.</p>" )
 
 (defthm combine-bytes-rb-in-terms-of-rb-subset-p
   (implies
-   (and (program-at (create-canonical-address-list n prog-addr) bytes x86)
+   (and (bind-free (find-info-from-program-at-term
+                    'combine-bytes-rb-in-terms-of-rb-subset-p
+                    mfc state)
+                   (n prog-addr bytes))
+        (program-at (create-canonical-address-list n prog-addr) bytes x86)
         (subset-p addresses (create-canonical-address-list n prog-addr))
         (consp addresses)
         (syntaxp (quotep n))

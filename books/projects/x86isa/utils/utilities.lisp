@@ -403,26 +403,6 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
 (defmacro forced-and (&rest x)
   `(and ,@(formal-force-list x)))
 
-;; Some useful include-book macros from Ben Selfridge:
-
-(defmacro arithmetic ()
-  `(include-book "arithmetic/top-with-meta" :dir :system))
-
-(defmacro arithmetic-5 ()
-  `(include-book "arithmetic-5/top" :dir :system))
-
-(defmacro arithmetic-5-nonlinear ()
-  `(progn
-     (arithmetic-5)
-     (set-default-hints '((nonlinearp-default-hint++
-                           id stable-under-simplificationp hist nil)))))
-
-(defmacro arithmetic-5-nonlinear-weak ()
-  `(progn
-     (arithmetic-5)
-     (set-default-hints '((nonlinearp-default-hint
-                           stable-under-simplificationp hist pspv)))))
-
 ;; ======================================================================
 
 (defsection constants-conversions-and-bounds
@@ -796,10 +776,9 @@ the sake of efficiency.</p>"
     reasoning and execution"
    (mv-let (pos size)
            (field-pos-width flg layout-constant)
-           (let* ((mask (1- (expt 2 size)))
-                  (fixed-mask (logand (1- (expt 2 reg-size))
-                                      (lognot (ash mask pos))))
-                  (size+pos (+ pos size)))
+           (let* ((mask (lognot (ash (logmask size) pos)))
+                  (size+pos (+ pos size))
+                  (mask-size (+ 1 size+pos)))
              `(let ((reg-for-!slice-do-not-use
                      (the (unsigned-byte ,reg-size) ,reg)))
                 (declare (type (unsigned-byte ,reg-size)
@@ -812,10 +791,12 @@ the sake of efficiency.</p>"
                                 (logand
                                  (the (unsigned-byte ,reg-size)
                                    reg-for-!slice-do-not-use)
-                                 (the (unsigned-byte ,reg-size) ,fixed-mask)))
+                                 (the (signed-byte ,mask-size) ,mask)))
                               (the (unsigned-byte ,size+pos)
                                 (ash (the (unsigned-byte ,size) ,val)
-                                     ,pos))))))))))
+                                     ,pos)))))))))
+
+ ) ;; End of encapsulate
 
 ;; ======================================================================
 

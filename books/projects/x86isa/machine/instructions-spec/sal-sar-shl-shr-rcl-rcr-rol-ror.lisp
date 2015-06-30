@@ -3,8 +3,9 @@
 
 (in-package "X86ISA")
 
-(include-book "misc-rflags-arith-thms"
+(include-book "../x86-decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+
 (include-book "centaur/bitops/fast-rotate" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

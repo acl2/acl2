@@ -498,7 +498,6 @@ memory.</li>
     (local (include-book "arithmetic-5/top" :dir :system))
 
     (defthm logtail-<-val-for-n-8
-      ;; Used in byte-ify-fn
       (implies (and (integerp val)
                     (equal n 8)
                     (natp n)
@@ -517,57 +516,42 @@ memory.</li>
                (< (combine-bytes bytes) (expt 2 (ash l 3))))
       :rule-classes :linear))
 
-  (define byte-ify-fn (val acc)
-    :enabled t
-    (if (natp val)
+  (define byte-ify-general
+    ((n   natp)
+     (val natp)
+     (acc byte-listp))
 
-        (if (n08p val)
-            (cons val acc)
-          (byte-ify-fn (logtail 8 val)
-                       (cons (n08 val) acc)))
+    :short "@('byte-ify-general') takes a positive value @('val') and
+  converts it into a list of @('n') bytes."
+
+    :long "<p>The list produced by @('byte-ify-general') has the least
+  significant byte as its the first element. Some clarifying examples
+  are as follows:</p>
+
+  <ul>
+  <li><code>(byte-ify-general 6 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA)</code></li>
+  <li><code>(byte-ify-general 4 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC)</code><li>
+  <li><code>(byte-ify-general 8 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA #x0 #x0)</code></li>
+  </ul>"
+
+
+    (if (mbt (and (natp n)
+                  (natp val)
+                  (byte-listp acc)))
+
+        (if (zp n)
+            (reverse acc)
+          (b* ((acc (cons (loghead 8 val) acc))
+               (val (logtail 8 val)))
+              (byte-ify-general (1- n) val acc)))
+
       nil)
 
     ///
 
-    (defthm consp-byte-ify-fn
-      (implies (natp val)
-               (consp (byte-ify-fn val acc)))
-      :rule-classes :type-prescription)
-
-    (defthm true-listp-byte-ify-fn
-      (implies (true-listp acc)
-               (true-listp (byte-ify-fn val acc)))
-      :rule-classes :type-prescription)
-
-    (defthm byte-listp-byte-ify-fn
-      (implies (byte-listp acc)
-               (byte-listp (byte-ify-fn val acc)))
-      :hints (("Goal" :in-theory (e/d () (force (force)))))))
-
-  (define byte-ify-general ((n natp) (val integerp))
-
-    :short "@('byte-ify-general') takes a positive value @('val') and
-  converts it into a list of at least @('n') bytes."
-
-    :long "<p>The list produced by @('byte-ify-general') has the least
-  significant byte as its the first element. A couple of clairifying
-  examples are as follows:</p>
-
-  <ul>
-  <li><code>(byte-ify-general 6 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA)</code></li>
-  <li><code>(byte-ify-general 8 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #x0 #x0 #x0)</code></li>
-  </ul>"
-
-    (let* ((bytes (byte-ify-fn val nil))
-           (len-of-bytes (len bytes)))
-      (reverse (make-list-ac (nfix (- n len-of-bytes))
-                             0
-                             (byte-ify-fn val nil))))
-
-    ///
-
     (defthm byte-listp-byte-ify-general
-      (byte-listp (byte-ify-general n val))
+      (implies (byte-listp acc)
+               (byte-listp (byte-ify-general n val acc)))
       :hints (("Goal" :in-theory
                (e/d ()
                     (force acl2::reverse-removal
@@ -575,33 +559,42 @@ memory.</li>
 
     (defthm len-of-byte-ify-general
       (implies (and (natp n)
-                    (< 0 n))
-               (<= n (len (byte-ify-general n val))))
-      :hints (("Goal" :in-theory (e/d (byte-ify-general nfix) ())))
-      :rule-classes :linear)
+                    (natp val)
+                    (byte-listp acc))
+               (equal (len (byte-ify-general n val acc))
+                      (+ n (len acc)))))
 
     (defthm consp-byte-ify-general
       (implies (and (natp n)
-                    (< 0 n))
-               (consp (byte-ify-general n val))))
+                    (natp val)
+                    (byte-listp acc)
+                    (or (consp acc)
+                        (< 0 n)))
+               (consp (byte-ify-general n val acc))))
 
     (local (include-book "std/lists/nthcdr" :dir :system))
 
     (defthm consp-nthcdr-of-byte-ify-general
-      (implies (and (natp n) (natp m) (< m n))
-               (consp (nthcdr m (byte-ify-general n val))))
-      :hints (("Goal" :in-theory (e/d (nfix) ())))
+      (implies (and (natp val)
+                    (natp n)
+                    (natp m)
+                    (< m n)
+                    (byte-listp acc))
+               (consp (nthcdr m (byte-ify-general n val acc))))
       :rule-classes :type-prescription)
 
     (defthm len-of-nthcdr-of-byte-ify-general
       (implies (and (natp n)
-                    (natp m))
-               (<= (- n m)
-                   (len (nthcdr m (byte-ify-general n val)))))
+                    (natp m)
+                    (< m n)
+                    (natp val)
+                    (byte-listp acc))
+               (equal (len (nthcdr m (byte-ify-general n val acc)))
+                      (- (+ n (len acc)) m)))
       :hints (("Goal" :in-theory (e/d (nfix) ())))
       :rule-classes :linear))
 
-  (define byte-ify ((n natp) (val integerp))
+  (define byte-ify ((n natp) (val natp))
     :short "@('byte-ify') takes a positive value @('val') and converts
   it into a list of at least @('n') bytes."
 
@@ -647,26 +640,21 @@ memory.</li>
                 (part-select val :low 104 :width 8)
                 (part-select val :low 112 :width 8)
                 (part-select val :low 120 :width 8)))
-      (otherwise (byte-ify-general n val)))
+      (otherwise (byte-ify-general n val nil)))
 
     ///
 
     (defthm byte-listp-byte-ify
-      (byte-listp (byte-ify n val))
-      :hints (("Goal" :in-theory
-               (e/d ()
-                    (force acl2::reverse-removal
-                           reverse (force))))))
+      (byte-listp (byte-ify n val)))
 
     (defthm len-of-byte-ify
       (implies (and (natp n)
-                    (< 0 n))
-               (<= n (len (byte-ify n val))))
-      :hints (("Goal" :in-theory (e/d (byte-ify nfix) ())))
-      :rule-classes :linear)
+                    (natp val))
+               (equal (len (byte-ify n val)) n)))
 
     (defthm consp-byte-ify
       (implies (and (natp n)
+                    (natp val)
                     (< 0 n))
                (consp (byte-ify n val)))
       :hints (("Goal" :in-theory (e/d (byte-ify) ()))))
@@ -674,18 +662,22 @@ memory.</li>
     (local (include-book "std/lists/nthcdr" :dir :system))
 
     (defthm consp-nthcdr-of-byte-ify
-      (implies (and (natp n) (natp m) (< m n))
-               (consp (nthcdr m (byte-ify n val))))
+      (implies  (and (natp val)
+                     (natp n)
+                     (natp m)
+                     (< m n))
+                (consp (nthcdr m (byte-ify n val))))
       :hints (("Goal" :in-theory (e/d (nfix) ())))
       :rule-classes :type-prescription)
 
     (defthm len-of-nthcdr-of-byte-ify
       (implies (and (natp n)
-                    (natp m))
-               (<= (- n m)
-                   (len (nthcdr m (byte-ify n val)))))
-      :hints (("Goal" :in-theory (e/d (nfix) ())))
-      :rule-classes :linear))
+                    (natp m)
+                    (< m n)
+                    (natp val))
+               (equal (len (nthcdr m (byte-ify n val)))
+                      (- n m)))
+      :hints (("Goal" :in-theory (e/d (nfix) ())))))
 
   ;; Definition of RB and other related events:
 
@@ -864,6 +856,7 @@ memory.</li>
   (define create-addr-bytes-alist
     ((addr-list (canonical-address-listp addr-list))
      (byte-list (byte-listp byte-list)))
+    :guard (equal (len addr-list) (len byte-list))
 
     :long "<p>Given a true list of canonical addresses @('addr-list')
   and a true list of bytes @('byte-list'),
@@ -873,15 +866,19 @@ memory.</li>
 
     :enabled t
 
-    (if (or (endp addr-list)
-            (endp byte-list))
-        nil
-      (acons (nth 0 addr-list) (nth 0 byte-list)
-             (create-addr-bytes-alist (nthcdr 1 addr-list)
-                                      (nthcdr 1 byte-list))))
+    :prepwork
+    ((local (include-book "std/lists/nthcdr" :dir :system))
+     (local (include-book "std/lists/nth" :dir :system)))
+
+    (if (mbt (equal (len addr-list) (len byte-list)))
+        (if (endp addr-list)
+            nil
+          (acons (nth 0 addr-list) (nth 0 byte-list)
+                 (create-addr-bytes-alist (nthcdr 1 addr-list)
+                                          (nthcdr 1 byte-list))))
+      nil)
 
     ///
-
 
     (local (include-book "std/lists/nthcdr" :dir :system))
     (local (include-book "std/lists/nth" :dir :system))
@@ -890,7 +887,78 @@ memory.</li>
       (implies (and (canonical-address-listp addrs)
                     (byte-listp bytes))
                (addr-byte-alistp (create-addr-bytes-alist addrs bytes)))
-      :rule-classes (:type-prescription :rewrite)))
+      :rule-classes (:type-prescription :rewrite))
+
+    (defthm strip-cars-of-create-addr-bytes-alist
+      (implies (and (canonical-address-listp addrs)
+                    (equal (len addrs) (len bytes)))
+               (equal (strip-cars (create-addr-bytes-alist addrs bytes))
+                      addrs)))
+
+    (defthm strip-cdrs-of-create-addr-bytes-alist
+      (implies (and (byte-listp bytes)
+                    (equal (len addrs) (len bytes)))
+               (equal (strip-cdrs (create-addr-bytes-alist addrs bytes))
+                      bytes)))
+
+    (defthm strip-cars-of-append-of-create-addr-bytes-alist
+      (implies (and (equal (len addrs1) (len bytes1))
+                    (canonical-address-listp addrs2)
+                    (equal (len addrs2) (len bytes2)))
+               (equal (strip-cars
+                       (append (create-addr-bytes-alist addrs1 bytes1)
+                               (create-addr-bytes-alist addrs2 bytes2)))
+                      (append addrs1 addrs2))))
+
+    (defthm strip-cdrs-of-append-of-create-addr-bytes-alist
+      (implies (and (equal (len addrs1) (len bytes1))
+                    (byte-listp bytes2)
+                    (equal (len addrs2) (len bytes2)))
+               (equal (strip-cdrs
+                       (append (create-addr-bytes-alist addrs1 bytes1)
+                               (create-addr-bytes-alist addrs2 bytes2)))
+                      (append bytes1 bytes2)))))
+
+
+  (define create-canonical-address-list (count addr)
+    :guard (and (natp count)
+                (canonical-address-p addr)
+                (canonical-address-p (+ addr count)))
+
+    :parents (programmer-level-memory-utils)
+
+    :long "<p>Given a canonical address @('addr'),
+  @('create-canonical-address-list') creates a list of canonical
+  addresses where the first address is @('addr') and the last address
+  is the last canonical address in the range @('addr') to @('addr +
+  count').</p>"
+    :enabled t
+
+    (if (or (zp count)
+            (not (canonical-address-p addr)))
+        nil
+      (cons addr (create-canonical-address-list (1- count)
+                                                (1+ addr))))
+    ///
+
+    (defthm canonical-address-listp-create-canonical-address-list
+      (canonical-address-listp
+       (create-canonical-address-list count addr))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defthm create-canonical-address-list-1
+      (implies (canonical-address-p x)
+               (equal (create-canonical-address-list 1 x)
+                      (list x)))
+      :hints (("Goal" :expand (create-canonical-address-list 1 x))))
+
+    (defthm len-of-create-canonical-address-list
+      (implies (and (natp count)
+                    (canonical-address-p addr)
+                    (canonical-address-p (+ -1 addr count)))
+               (equal (len (create-canonical-address-list count addr))
+                      count))))
+
 
 
   (define addr-range (count addr)
@@ -959,7 +1027,7 @@ memory.</li>
                    (canonical-address-p (1+ lin-addr)))
               (equal (rvm16 lin-addr x86)
                      (b* (((mv flg bytes x86)
-                           (rb (addr-range 2 lin-addr) r-w-x x86))
+                           (rb (create-canonical-address-list 2 lin-addr) r-w-x x86))
                           (result (combine-bytes bytes)))
                          (mv flg result x86))))
      :hints (("Goal" :in-theory (e/d (rm08 rvm08 rvm16) (force (force)))))))
@@ -980,7 +1048,7 @@ memory.</li>
 
                 (mbe
                  :logic (b* (((mv flg bytes x86)
-                              (rb (addr-range 2 lin-addr) r-w-x x86))
+                              (rb (create-canonical-address-list 2 lin-addr) r-w-x x86))
                              (result (combine-bytes bytes)))
                             (mv flg result x86))
                  :exec
@@ -1104,7 +1172,7 @@ memory.</li>
                    (canonical-address-p (1+ lin-addr)))
               (equal (wvm16 lin-addr val x86)
                      (wb (create-addr-bytes-alist
-                          (addr-range 2 lin-addr)
+                          (create-canonical-address-list 2 lin-addr)
                           (byte-ify 2 val))
                          x86)))
      :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm16 byte-ify)
@@ -1130,7 +1198,7 @@ memory.</li>
                 (mbe
                  :logic
                  (wb (create-addr-bytes-alist
-                      (addr-range 2 lin-addr)
+                      (create-canonical-address-list 2 lin-addr)
                       (byte-ify 2 val))
                      x86)
                  :exec
@@ -1261,11 +1329,11 @@ memory.</li>
                    (canonical-address-p (+ 3 lin-addr)))
               (equal (rvm32 lin-addr x86)
                      (b* (((mv flg bytes x86)
-                           (rb (addr-range 4 lin-addr)
+                           (rb (create-canonical-address-list 4 lin-addr)
                                r-w-x x86))
                           (result (combine-bytes bytes)))
                          (mv flg result x86))))
-     :hints (("Goal" :expand (addr-range 4 lin-addr)
+     :hints (("Goal" :expand (create-canonical-address-list 4 lin-addr)
               :in-theory (e/d (rm08 rvm08 rvm32) (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -1283,7 +1351,7 @@ memory.</li>
             (if (programmer-level-mode x86)
 
                 (mbe :logic (b* (((mv flg bytes x86)
-                                  (rb (addr-range 4 lin-addr)
+                                  (rb (create-canonical-address-list 4 lin-addr)
                                       r-w-x x86))
                                  (result (combine-bytes bytes)))
                                 (mv flg result x86))
@@ -1499,7 +1567,7 @@ memory.</li>
                    (canonical-address-p (+ 3 lin-addr)))
               (equal (wvm32 lin-addr val x86)
                      (wb (create-addr-bytes-alist
-                          (addr-range 4 lin-addr)
+                          (create-canonical-address-list 4 lin-addr)
                           (byte-ify 4 val))
                          x86)))
      :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 byte-ify) (force (force)))))))
@@ -1521,7 +1589,7 @@ memory.</li>
                 (mbe
                  :logic
                  (wb (create-addr-bytes-alist
-                      (addr-range 4 lin-addr)
+                      (create-canonical-address-list 4 lin-addr)
                       (byte-ify 4 val))
                      x86)
                  :exec
@@ -1763,11 +1831,11 @@ memory.</li>
                     (canonical-address-p (+ 7 lin-addr)))
                (equal (rvm64 lin-addr x86)
                       (b* (((mv flg bytes x86)
-                            (rb (addr-range 8 lin-addr)
+                            (rb (create-canonical-address-list 8 lin-addr)
                                 r-w-x x86))
                            (result (combine-bytes bytes)))
                           (mv flg result x86))))
-      :hints (("Goal" :expand (addr-range 8 lin-addr)
+      :hints (("Goal" :expand (create-canonical-address-list 8 lin-addr)
                :in-theory (e/d (rm08 rvm08 rvm32 rvm64 ifix)
                                (logior-expt-to-plus-quotep
                                 signed-byte-p
@@ -1903,7 +1971,7 @@ memory.</li>
            (signed-byte-p 48 (+ 7 lin-addr)))
       (< (combine-bytes
           (mv-nth 1
-                  (rb (addr-range 8 lin-addr) r-w-x x86)))
+                  (rb (create-canonical-address-list 8 lin-addr) r-w-x x86)))
          *2^64*))
      :rule-classes :linear))
 
@@ -1923,7 +1991,7 @@ memory.</li>
 
                 (mbe :logic
                      (b* (((mv flg bytes x86)
-                           (rb (addr-range 8 lin-addr)
+                           (rb (create-canonical-address-list 8 lin-addr)
                                r-w-x x86))
                           (result (combine-bytes bytes)))
                          (mv flg result x86))
@@ -2442,7 +2510,7 @@ memory.</li>
                    (canonical-address-p (+ 7 lin-addr)))
               (equal (wvm64 lin-addr val x86)
                      (wb (create-addr-bytes-alist
-                          (addr-range 8 lin-addr)
+                          (create-canonical-address-list 8 lin-addr)
                           (byte-ify 8 val))
                          x86)))
      :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 wvm64 byte-ify) (force (force)))))))
@@ -2464,7 +2532,7 @@ memory.</li>
                 (mbe
                  :logic
                  (wb (create-addr-bytes-alist
-                      (addr-range 8 lin-addr)
+                      (create-canonical-address-list 8 lin-addr)
                       (byte-ify 8 val))
                      x86)
                  :exec
@@ -3099,11 +3167,11 @@ memory.</li>
                     (canonical-address-p (+ 15 lin-addr)))
                (equal (rvm128 lin-addr x86)
                       (b* (((mv flg bytes x86)
-                            (rb (addr-range 16 lin-addr)
+                            (rb (create-canonical-address-list 16 lin-addr)
                                 r-w-x x86))
                            (result (combine-bytes bytes)))
                           (mv flg result x86))))
-      :hints (("Goal" :expand (addr-range 16 lin-addr)
+      :hints (("Goal" :expand (create-canonical-address-list 16 lin-addr)
                :in-theory (e/d (rm08 rvm08 rvm32 rvm64 rvm128)
                                (force (force))))))
 
@@ -3113,7 +3181,7 @@ memory.</li>
                     (programmer-level-mode x86)
                     (signed-byte-p 48 (+ 15 lin-addr)))
                (< (combine-bytes (mv-nth 1
-                                         (rb (addr-range 16 lin-addr)
+                                         (rb (create-canonical-address-list 16 lin-addr)
                                              r-w-x x86)))
                   *2^128*))
       :rule-classes :linear)
@@ -3139,7 +3207,7 @@ memory.</li>
             (if (programmer-level-mode x86)
 
                 (mbe :logic (b* (((mv flg bytes x86)
-                                  (rb (addr-range 16 lin-addr)
+                                  (rb (create-canonical-address-list 16 lin-addr)
                                       r-w-x x86))
                                  (result (combine-bytes bytes)))
                                 (mv flg result x86))
@@ -3237,7 +3305,7 @@ memory.</li>
                    (canonical-address-p (+ 15 lin-addr)))
               (equal (wvm128 lin-addr val x86)
                      (wb (create-addr-bytes-alist
-                          (addr-range 16 lin-addr)
+                          (create-canonical-address-list 16 lin-addr)
                           (byte-ify 16 val))
                          x86)))
      :hints (("Goal" :in-theory (e/d (wm08 wvm08 wvm32 wvm64 wvm128 byte-ify)
@@ -3260,7 +3328,7 @@ memory.</li>
                 (mbe
                  :logic
                  (wb (create-addr-bytes-alist
-                      (addr-range 16 lin-addr)
+                      (create-canonical-address-list 16 lin-addr)
                       (byte-ify 16 val))
                      x86)
                  :exec
@@ -3690,7 +3758,7 @@ memory.</li>
            (equal (write-canonical-address-to-memory-user-exec
                    lin-addr canonical-address x86)
                   (wb (create-addr-bytes-alist
-                       (addr-range 8 lin-addr)
+                       (create-canonical-address-list 8 lin-addr)
                        (byte-ify 8 canonical-address))
                       x86)))
   :hints (("Goal" :in-theory (e/d
@@ -3722,7 +3790,7 @@ memory.</li>
 
             (mbe :logic
                  (wb (create-addr-bytes-alist
-                      (addr-range 8 lin-addr)
+                      (create-canonical-address-list 8 lin-addr)
                       (byte-ify 8 canonical-address))
                      x86)
                  :exec
