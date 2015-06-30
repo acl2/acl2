@@ -71,7 +71,7 @@ an optimization, @('list-fix') tries to avoid any consing by first checking
 whether its argument is a @(see true-listp), and, in that case, it simply
 returns its argument unchanged.</p>
 
-<p>See also @(see llist-fix'), a \"logical list fix\" that is guarded with
+<p>See also @(see llist-fix), a \"logical list fix\" that is guarded with
 @(see true-listp) for greater efficiency.</p>"
 
   (defund list-fix-exec (x)

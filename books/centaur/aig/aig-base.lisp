@@ -1035,7 +1035,8 @@ succeded or not.</p>"
 
 (defsection aig-and
   :parents (aig-constructors)
-  :short "@(aig-and x1 x2 ...) constructs an AIG representing @('(and x1 x2 ...)')."
+  :short "@('(aig-and x1 x2 ...)') constructs an AIG representing @('(and x1 x2
+...)')."
 
   :long "<p>The main function is @(see aig-binary-and).  It implements
 something like the algorithm described in:</p>
