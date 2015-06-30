@@ -221,7 +221,9 @@ into a call of a specialized, inlined function.</p>
 
 ;; Timing tests:
 
-(include-book "centaur/misc/memory-mgmt" :dir :system)
+(include-book 
+ "centaur/misc/memory-mgmt" 
+ :dir :system)
 (acl2::set-max-mem (* 10 (expt 2 30)))
 (gc$)
 
