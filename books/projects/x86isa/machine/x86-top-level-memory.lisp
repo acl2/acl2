@@ -530,7 +530,7 @@ memory.</li>
 
   <ul>
   <li><code>(byte-ify-general 6 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA)</code></li>
-  <li><code>(byte-ify-general 4 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC)</code><li>
+  <li><code>(byte-ify-general 4 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC)</code></li>
   <li><code>(byte-ify-general 8 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA #x0 #x0)</code></li>
   </ul>"
 
