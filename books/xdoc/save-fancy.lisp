@@ -475,15 +475,17 @@
        (xdoc/fancy     (oslib::catpath xdoc-dir "fancy"))
 
        (- (cw "; Preparing directory ~s0.~%" dir))
-       (state          (oslib::rmtree! dir))
+       (state          (time$ (oslib::rmtree! dir)
+                              :msg ";; Removing old directory: ~st sec, ~sa bytes.~%"))
 
-       (- (cw "; Copying fancy viewer files.~%"))
-       (state          (oslib::copy! xdoc/fancy dir :recursive t))
+       (state          (time$ (oslib::copy! xdoc/fancy dir :recursive t)
+                              :msg ";; Copying xdoc/fancy files: ~st sec, ~sa bytes.~%"))
 
        (- (cw "; Copying resource directories.~%"))
        (resdir              (oslib::catpath dir "res"))
        (resource-dirs-alist (cdr (assoc 'resource-dirs (table-alist 'xdoc (w state)))))
-       (state               (copy-resource-dirs resdir resource-dirs-alist state)))
+       (state               (time$ (copy-resource-dirs resdir resource-dirs-alist state)
+                                   :msg ";; Copying resource directories: ~st sec, ~sa bytes.~%")))
 
     state))
 
