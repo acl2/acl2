@@ -1121,7 +1121,7 @@ baz
              kind (str::pretty sexpr))
         acc state)))
 
-(defun preprocess-eval (str topics-fal context base-pkg kpa state acc)
+(defun preprocess-eval (str context topics-fal base-pkg kpa state acc)
   "Returns (MV ACC STATE)"
   (b* (((mv errmsg sexpr state) (preprocess-eval-parse str base-pkg state))
        ((when errmsg)
