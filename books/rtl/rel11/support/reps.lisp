@@ -24,12 +24,19 @@
 
 (in-package "RTL")
 
-(set-enforce-redundancy t)
+(include-book "../rel9-rtl-pkg/lib/util")
 
-(local (include-book "../rel9-rtl-pkg/lib/top"))
+(local (include-book "../rel9-rtl-pkg/lib/basic"))
+(local (include-book "../rel9-rtl-pkg/lib/bits"))
+(local (include-book "float"))
 
-(set-inhibit-warnings "theory") ; avoid warning in the next event
-(local (in-theory nil))
+(local (include-book "arithmetic-5/top" :dir :system))
+
+;; The following lemmas from arithmetic-5 have given me trouble:
+
+(local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 ;; From basic.lisp:
 
@@ -150,123 +157,886 @@
 
 
 ;;;***************************************************************
-;;;          REPRESENTATIONS WITH EXPLICIT MSB
+;;;               Classification of Formats
 ;;;***************************************************************
 
-;;Bit vectors of length p+q+1, consisting of 1-bit sign field, q-bit 
-;;exponent field (bias = 2**(q-1)-1), and p-bit significand field, 
-;;where p > 1.
+;;Format parameters:
 
-(defund bias (q) (- (expt 2 (- q 1)) 1) )
+(defund formatp (f)
+  (and (natp (cadr f))
+       (> (cadr f) 1)
+       (natp (caddr f))
+       (> (caddr f) 1)))
 
-(defthm bias-non-negative-integerp-type-prescription
-  (implies (and (case-split (integerp q))
-                (case-split (< 0 q)))
-           (and (integerp (bias q))
-                (>= (bias q) 0)))
-  :rule-classes :type-prescription)
+(defund explicitp (f) (car f))
+
+(defund prec (f) (cadr f))
+
+(defund expw (f) (caddr f))
+
+(defund sigw (f)
+  (if (explicitp f)
+      (prec f)
+    (1- (prec f))))
+
+(defthm natp-prec
+  (implies (formatp f)
+           (natp (prec f)))
+  :hints (("Goal" :in-theory (enable formatp prec)))
+  :rule-classes (:rewrite :type-prescription))
+
+(defthm natp-expw
+  (implies (formatp f)
+           (natp (expw f)))
+  :hints (("Goal" :in-theory (enable formatp expw)))
+  :rule-classes (:rewrite :type-prescription))
+
+(defthm natp-sigw
+  (implies (formatp f)
+           (natp (sigw f)))
+  :hints (("Goal" :in-theory (enable formatp prec sigw)))
+  :rule-classes (:rewrite :type-prescription))
+
+(defund encodingp (x f)
+  (bvecp x (+ 1 (expw f) (sigw f))))
+
+;;Examples:
+
+(defund sp () '(nil 24 8))
+
+(defund dp () '(nil 53 11))
+
+(defund ep () '(t 64 15)) 
 
 ;;Field extractors:
 
-(defund esgnf  (x p q) (bitn x (+ p q)))
-(defund eexpof (x p q) (bits x (1- (+ p q)) p)) 
-(defund esigf  (x p)   (bits x (1- p) 0))
+(defund sgnf (x f)
+  (bitn x (+ (expw f) (sigw f))))
 
-;; Representable numbers:
+(defund expf (x f)
+  (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
 
-(defund erepp (x p q)
+(defund sigf (x f)
+  (bits x (1- (sigw f)) 0))
+
+(defund manf (x f)
+  (bits x (- (prec f) 2) 0))
+
+;;Exponent bias:
+
+(defund bias (f) (- (expt 2 (- (expw f) 1)) 1))
+
+(defthm natp-bias
+  (implies (formatp f)
+           (natp (bias f)))
+  :hints (("Goal" :in-theory (enable expw formatp bias)))
+  :rule-classes (:rewrite :type-prescription))
+
+
+;;;***************************************************************
+;;;                    Normal Encodings
+;;;***************************************************************
+
+(defund normp (x f)
+  (and (encodingp x f)
+       (< 0 (expf x f))
+       (< (expf x f) (1- (expt 2 (expw f))))
+       (implies (explicitp f) (= (bitn x (1- (prec f))) 1))))
+
+(defund unsupp (x f)
+  (and (explicitp f)
+       (encodingp x f)
+       (< 0 (expf x f))
+       (= (bitn x (1- (prec f))) 0)))
+
+;;Decoding function:
+
+(defund ndecode (x f)
+  (* (if (= (sgnf x f) 0) 1 -1)
+     (expt 2 (- (expf x f) (bias f)))
+     (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
+
+(defthmd sgn-ndecode
+    (implies (and (formatp f)
+                  (normp x f))
+	     (equal (sgn (ndecode x f))
+		    (if (= (sgnf x f) 0) 1 -1)))
+  :hints (("Goal" :in-theory (enable sgn normp ndecode))))
+
+(local-defthmd expo-ndecode-1
+    (implies (and (formatp f)
+		  (normp x f))
+             (equal (abs (ndecode x f))
+                    (* (+ 1 (/ (manf x f) (expt 2 (1- (prec f)))))
+                       (expt 2 (- (expf x f) (bias f))))))
+  :hints (("Goal" :in-theory (enable ndecode))))
+
+(local-defthm hack-1
+  (implies (and (rationalp x)
+                (rationalp y)
+                (> y 0)
+                (< x y))
+           (< (* x (/ y)) 1))
+  :rule-classes ())
+
+(local-defthm hack-2
+  (implies (and (rationalp x)
+                (integerp n)
+                (< x (expt 2 n)))
+           (< (* x (expt 2 (- n))) 1))
+  :rule-classes ()
+  :hints (("Goal" :use ((:instance hack-1 (y (expt 2 n)))))))
+
+(local-defthmd expo-ndecode-2
+    (implies (and (formatp f)
+		  (normp x f))
+             (and  (<= 0 (/ (manf x f) (expt 2 (1- (prec f)))))
+                   (< (/ (manf x f) (expt 2 (1- (prec f)))) 1)))
+  :hints (("Goal" :in-theory (enable manf)
+                  :use ((:instance hack-2 (x (manf x f)) (n (1- (prec f))))
+                        (:instance bits-bounds (i (- (prec f) 2)) (j 0))))))
+
+(defthmd expo-ndecode
+    (implies (and (formatp f)
+		  (normp x f))
+	     (equal (expo (ndecode x f))
+		    (- (expf x f) (bias f))))
+  :hints (("Goal" :in-theory (e/d (expo-ndecode-1 bias expw formatp prec) (abs)) 
+                  :use (expo-ndecode-2
+                        (:instance fp-rep-unique (x (ndecode x f)) (e (- (expf x f) (bias f))) (m (+ 1 (/ (manf x f) (expt 2 (1- (prec f)))))))))))
+
+(defthmd sig-ndecode
+    (implies (and (formatp f)
+		  (normp x f))
+	     (equal (sig (ndecode x f))
+		    (+ 1 (/ (manf x f) (expt 2 (1- (prec f)))))))
+  :hints (("Goal" :in-theory (e/d (expo-ndecode-1 bias expw formatp prec) (abs)) 
+                  :use (expo-ndecode-2
+                        (:instance fp-rep-unique (x (ndecode x f)) (e (- (expf x f) (bias f))) (m (+ 1 (/ (manf x f) (expt 2 (1- (prec f)))))))))))
+
+;;Representable normals:
+
+(defund nrepp (x f)
   (and (rationalp x)
        (not (= x 0))
-       (bvecp (+ (expo x) (bias q)) q)
-       (exactp x p)))
+       (< 0 (+ (expo x) (bias f)))
+       (< (+ (expo x) (bias f)) (1- (expt 2 (expw f))))
+       (exactp x (prec f))))
 
-(defund eencodingp (x p q)
-  (and (bvecp x (+ p q 1))
-       (= (bitn x (- p 1)) 1)))
+;;Encoding function:
 
-(defund eencode (x p q)
-  (cat (cat (if (= (sgn x) 1) 0 1)
-	    1
-	    (+ (expo x) (bias q))
-	    q)
-       (1+ q)
-       (* (sig x) (expt 2 (- p 1)))
-       p) )
+(defund nencode (x f)
+  (cat (if (= (sgn x) 1) 0 1)
+       1
+       (+ (expo x) (bias f))
+       (expw f)
+       (* (sig x) (expt 2 (1- (prec f))))
+       (sigw f)))
 
-(defund edecode (x p q)
-  (* (if (= (esgnf x p q) 0) 1 -1)
-     (esigf x p)
-     (expt 2 (+ 1 (- p) (eexpof x p q) (- (bias q))))))
+;;Inversions:
 
-(defthm eencodingp-not-zero
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (not (equal (edecode x p q) 0))))
+(defthm nrepp-ndecode
+  (implies (and (formatp f)
+                (normp x f))
+           (nrepp (ndecode x f) f))
+  :hints (("Goal" :in-theory (enable formatp prec normp nrepp expo-ndecode sig-ndecode exactp))))
+                  
 
-(defthm erepp-edecode
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (erepp (edecode x p q) p q)))
+(local-defthmd nencode-ndecode-1
+    (implies (and (formatp f)
+                  (normp x f))
+	     (equal (bitn (nencode (ndecode x f) f) (+ (expw f) (sigw f)))
+		    (bitn x (+ (expw f) (sigw f)))))
+  :hints (("Goal" :in-theory (enable bitn-cat sgnf nencode)
+                  :use (sgn-ndecode))))
 
-(defthm eencodingp-eencode
-    (implies (and (erepp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (eencodingp (eencode x p q) p q) ))
+(local-defthmd nencode-ndecode-2
+    (implies (and (formatp f)
+                  (normp x f))
+	     (equal (bits (nencode (ndecode x f) f) (1- (+ (expw f) (sigw f))) (sigw f))
+		    (bits x (1- (+ (expw f) (sigw f))) (sigw f))))
+  :hints (("Goal" :in-theory (enable bits-cat expf nencode)
+                  :use (expo-ndecode))))
 
-(defthm edecode-eencode
-    (implies (and (erepp x p q)
-		  (integerp p)
-		  (integerp q))
-	     (equal (edecode (eencode x p q) p q)
-		    x)))
+(local-defthmd nencode-ndecode-3
+    (implies (and (formatp f)
+                  (normp x f))
+	     (equal (bits (nencode (ndecode x f) f) (1- (sigw f)) 0)
+		    (bits (+ (expt 2 (1- (prec f))) (manf x f)) (1- (sigw f)) 0)))
+  :hints (("Goal" :in-theory (enable bits-cat nencode)
+                  :use (sig-ndecode))))
 
-(defthm eencode-edecode
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (>= p 0)
-		  (integerp q)
-		  (> q 0))
-	     (equal (eencode (edecode x p q) p q)
-		    x)))
+(local-defthmd nencode-ndecode-4
+    (implies (and (formatp f)
+                  (explicitp f)
+                  (normp x f))
+	     (equal (bits x (1- (sigw f)) 0)
+		    (bits (+ (expt 2 (1- (prec f))) (manf x f)) (1- (sigw f)) 0)))
+  :hints (("Goal" :in-theory (enable formatp sigw prec normp manf)
+                  :use ((:instance bitn-plus-bits (n (1- (prec f))) (m 0))))))
 
-(defthm expo-edecode
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))  
-	     (equal (expo (edecode x p q))
-		    (- (eexpof x p q) (bias q)))))
+(local-defthmd nencode-ndecode-5
+    (implies (and (formatp f)
+                  (not (explicitp f))
+                  (normp x f))
+	     (equal (bits x (1- (sigw f)) 0)
+		    (bits (+ (expt 2 (1- (prec f))) (manf x f)) (1- (sigw f)) 0)))
+  :hints (("Goal" :in-theory (enable formatp sigw prec normp manf)
+                  :use ((:instance bits-plus-mult-2 (x (manf x f)) (n (- (prec f) 2)) (m 0) (k (1- (prec f))) (y 1))))))
 
-(defthm sgn-edecode
-    (implies (and (eencodingp x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sgn (edecode  x p q))
-		    (if (= (esgnf x p q) 0) 1 -1))))
+(local-defthmd nencode-ndecode-6
+    (implies (and (formatp f)
+                  (normp x f))
+	     (equal (bits (nencode (ndecode x f) f) (1- (sigw f)) 0)
+		    (bits x (1- (sigw f)) 0)))
+  :hints (("Goal" :use (nencode-ndecode-3 nencode-ndecode-4 nencode-ndecode-5))))
 
-(defthm sig-edecode
-    (implies (and (eencodingp  x p q)
-		  (integerp p)
-		  (> p 0)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sig (edecode  x p q))
-		    (/ (esigf x p) (expt 2 (- p 1))))))
+(local-defthmd nencode-ndecode-7
+    (implies (and (formatp f)
+                  (normp x f))
+	     (equal (bits (nencode (ndecode x f) f) (+ (expw f) (sigw f)) 0)
+		    (bits x (+ (expw f) (sigw f)) 0)))
+  :hints (("Goal" :use (nencode-ndecode-1 nencode-ndecode-2 nencode-ndecode-6
+                        (:instance bitn-plus-bits (n (+ (expw f) (sigw f))) (m 0))
+                        (:instance bitn-plus-bits (x (nencode (ndecode x f) f)) (n (+ (expw f) (sigw f))) (m 0))
+                        (:instance bits-plus-bits (n (1- (+ (expw f) (sigw f)))) (p (sigw f)) (m 0))
+                        (:instance bits-plus-bits (x (nencode (ndecode x f) f)) (n (1- (+ (expw f) (sigw f)))) (p (sigw f)) (m 0))))))
 
-(defund rebias-expo (expo old new)
-  (+ expo (- (bias new) (bias old))))
+(local-defthmd nencode-ndecode-8
+    (implies (and (formatp f)
+                  (normp x f))
+	     (and (bvecp (nencode (ndecode x f) f) (1+ (+ (expw f) (sigw f))))
+		  (bvecp x (1+ (+ (expw f) (sigw f))))))
+  :hints (("Goal" :in-theory (enable normp encodingp nencode))))
+
+(defthm nencode-ndecode
+    (implies (and (formatp f)
+                  (normp x f))
+	     (equal (nencode (ndecode x f) f)
+		    x))
+  :hints (("Goal" :use (nencode-ndecode-7 nencode-ndecode-8))))
+
+(local-defthmd normp-nencode-1
+    (implies (and (formatp f)
+                  (nrepp x f))
+             (bvecp (+ (bias f) (expo x)) (expw f)))
+  :hints (("Goal" :in-theory (enable bvecp encodingp formatp bias expw nrepp))))
+
+(local-defthm normp-nencode-2
+    (implies (and (formatp f)
+                  (nrepp x f))
+             (encodingp (nencode x f) f))
+  :hints (("Goal" :in-theory (enable encodingp formatp nencode expw sigw prec nrepp))))
+
+(local-defthm normp-nencode-3
+    (implies (and (formatp f)
+                  (nrepp x f))
+             (equal (expf (nencode x f) f)
+                    (+ (bias f) (expo x))))
+  :hints (("Goal" :use (normp-nencode-1)
+                  :in-theory (enable bits-cat expf formatp nencode expw sigw prec nrepp))))
+
+(local-defthmd normp-nencode-4
+    (implies (and (formatp f)
+                  (explicitp f)
+                  (nrepp x f))
+             (equal (bitn (nencode x f) (1- (prec f)))
+                    (bitn (* (sig x) (expt 2 (1- (prec f)))) (1- (prec f)))))
+  :hints (("Goal" :in-theory (enable bitn-cat expf sigf formatp nencode expw sigw prec nrepp))))
+
+(local-defthmd normp-nencode-5
+    (implies (and (formatp f)
+                  ;(explicitp f)
+                  (nrepp x f))
+             (>= (* (sig x) (expt 2 (1- (prec f)))) (expt 2 (1- (prec f)))))
+  :hints (("Goal" :use (sig-lower-bound)
+                  :in-theory (enable formatp prec nrepp))))
+
+(local-defthmd normp-nencode-6
+    (implies (and (formatp f)
+                  ;(explicitp f)
+                  (nrepp x f))
+             (< (* (sig x) (expt 2 (1- (prec f)))) (expt 2 (prec f))))
+  :hints (("Goal" :use (sig-upper-bound)
+                  :in-theory (enable formatp prec nrepp))))
+
+(local-defthmd normp-nencode-7
+    (implies (and (formatp f)
+                  ;(explicitp f)
+                  (nrepp x f))
+             (equal (bitn (* (sig x) (expt 2 (1- (prec f)))) (1- (prec f))) 1))
+  :hints (("Goal" :use (normp-nencode-5 normp-nencode-6
+                        (:instance bvecp-bitn-1 (x (* (sig x) (expt 2 (1- (prec f))))) (n (1- (prec f)))))
+                  :in-theory (enable exactp bvecp formatp prec nrepp))))
+
+(defthm normp-nencode
+    (implies (and (formatp f)
+                  (nrepp x f))
+             (normp (nencode x f) f))
+  :hints (("Goal" :in-theory (enable nrepp normp)
+                  :use (normp-nencode-2 normp-nencode-3 normp-nencode-4 normp-nencode-7))))
+
+(local-defthmd ndecode-nencode-1
+    (implies (and (formatp f)
+                  (nrepp x f))
+	     (equal (sgn (ndecode (nencode x f) f))
+		    (sgn x)))
+  :hints (("Goal" :in-theory (enable sgn nrepp bitn-cat sgnf nencode)
+                  :use (normp-nencode
+                        (:instance sgn-ndecode (x (nencode x f)))))))
+
+(local-defthmd ndecode-nencode-2
+    (implies (and (formatp f)
+                  (nrepp x f))
+	     (equal (expo (ndecode (nencode x f) f))
+		    (expo x)))
+  :hints (("Goal" :in-theory (enable nrepp bits-cat expf expo-ndecode)
+                  :use (normp-nencode))))
+
+(local-defthmd ndecode-nencode-3
+    (implies (and (formatp f)
+                  (nrepp x f))
+             (bvecp (* (sig x) (expt 2 (1- (prec f)))) (prec f)))
+  :hints (("Goal" :in-theory (enable exactp nrepp bvecp)
+                  :use (normp-nencode-5 normp-nencode-6 normp-nencode))))
+
+(local-defthmd ndecode-nencode-4
+    (implies (and (formatp f)
+                  (nrepp x f))
+             (equal (bits (* (sig x) (expt 2 (+ -1 (prec f)))) (+ -2 (prec f)) 0)
+                    (- (* (sig x) (expt 2 (1- (prec f))))
+                       (expt 2 (1- (prec f))))))
+  :hints (("Goal" :use (ndecode-nencode-3 normp-nencode-7
+                        (:instance bitn-plus-bits (x (* (sig x) (expt 2 (1- (prec f))))) (n (1- (prec f))) (m 0))))))
+
+(local-defthmd ndecode-nencode-5
+    (implies (and (formatp f)
+                  (nrepp x f))
+	     (equal (manf (nencode x f) f)
+		    (bits (* (sig x) (expt 2 (1- (prec f)))) (- (prec f) 2) 0)))
+  :hints (("Goal" :in-theory (enable formatp sigw prec nrepp bits-cat manf nencode))))
+
+(local-defthmd ndecode-nencode-6
+    (implies (and (formatp f)
+                  (nrepp x f))
+	     (equal (sig (ndecode (nencode x f) f))
+		    (sig x)))
+  :hints (("Goal" :in-theory (enable ndecode-nencode-4 ndecode-nencode-5)
+                  :use (normp-nencode
+                        (:instance sig-ndecode (x (nencode x f)))))))
+
+(defthm ndecode-nencode
+    (implies (and (formatp f)
+                  (nrepp x f))
+	     (equal (ndecode (nencode x f) f)
+		    x))
+  :hints (("Goal" :use (fp-rep (:instance fp-rep (x (ndecode (nencode x f) f))))
+                  :in-theory (enable nrepp ndecode-nencode-1 ndecode-nencode-2 ndecode-nencode-6))))
+
+;; Smallest positive normal:
+
+(defund spn (f)
+  (expt 2 (- 1 (bias f))))
+
+(defthmd positive-spn
+  (> (spn f) 0)
+  :rule-classes (:linear)
+  :hints (("Goal" :in-theory (enable spn))))
+
+(defthmd nrepp-spn
+  (implies (formatp f)
+           (nrepp (spn f) f))
+  :hints (("Goal" :in-theory (enable bias exactp-2**n formatp expw prec nrepp spn))))
+
+(defthmd smallest-spn
+  (implies (and (formatp f)
+                (nrepp x f))
+           (>= (abs x) (spn f)))
+  :rule-classes ((:rewrite :match-free :once))
+  :hints (("Goal" :use ((:instance expo<= (x (abs x)) (n (- (bias f)))))
+                  :in-theory (enable expo spn nrepp))))
+
+;; Largest positive normal:
+
+(defund lpn (f)
+  (* (expt 2 (- (expt 2 (expw f)) (+ 2 (bias f))))
+     (- 2 (expt 2 (- 1 (prec f))))))
+
+(defthmd positive-lpn
+  (implies (formatp f)
+           (> (lpn f) 0))
+  :rule-classes (:linear)
+  :hints (("Goal" :in-theory (enable formatp prec lpn))))
+
+(defthmd expo-lpn
+  (implies (formatp f)
+           (equal (expo (lpn f))
+                  (- (expt 2 (expw f)) (+ 2 (bias f)))))
+  :hints (("Goal" :in-theory (enable formatp lpn prec expw bias)
+                  :use ((:instance fp-rep-unique (x (lpn f)) (m (- 2 (expt 2 (- 1 (prec f))))) (e (- (expt 2 (expw f)) (+ 2 (bias f)))))))))
+
+(defthmd sig-lpn
+  (implies (formatp f)
+           (equal (sig (lpn f))
+                  (- 2 (expt 2 (- 1 (prec f))))))
+  :hints (("Goal" :in-theory (enable formatp lpn prec expw bias)
+                  :use ((:instance fp-rep-unique (x (lpn f)) (m (- 2 (expt 2 (- 1 (prec f))))) (e (- (expt 2 (expw f)) (+ 2 (bias f)))))))))
+
+(defthmd nrepp-lpn
+  (implies (formatp f)
+           (nrepp (lpn f) f))
+  :hints (("Goal" :in-theory (enable nrepp expo-lpn sig-lpn exactp)
+                  :use (positive-lpn))
+          ("Goal'4'" :in-theory (enable formatp expw))))
+
+(local-defthmd largest-lpn-1
+  (implies (and (formatp f)
+                (> x 0)
+                (nrepp x f))
+           (<= x (lpn f)))
+  :rule-classes ((:rewrite :match-free :once))
+  :hints (("Goal" :in-theory (enable exactp-2**n lpn fp- nrepp)
+                  :use (positive-lpn
+                        (:instance expo>= (n (- (expt 2 (expw f)) (1+ (bias f)))))
+                        (:instance fp-2 (n (prec f)) (x (expt 2 (- (expt 2 (expw f)) (1+ (bias f))))) (y x))))))
+
+(defthmd largest-lpn
+  (implies (and (formatp f)
+                (nrepp x f))
+           (<= x (lpn f)))
+  :rule-classes ((:rewrite :match-free :once))
+  :hints (("Goal" :use (largest-lpn-1 positive-lpn))))
+
+
+;;;***************************************************************
+;;;               Denormals and Zeroes
+;;;***************************************************************
+
+(defund zerp (x f)
+  (and (encodingp x f)
+       (= (expf x f) 0)
+       (= (sigf x f) 0)))
+
+(defund zencode (sgn f) (cat sgn 1 0 (+ (sigw f) (expw f))))
+
+(defund denormp (x f)
+  (and (encodingp x f)
+       (= (expf x f) 0)
+       (not (= (sigf x f) 0))
+       (implies (explicitp f) (= (bitn x (1- (prec f))) 0))))
+
+(defund pseudop (x f)
+  (and (explicitp f)
+       (encodingp x f)
+       (= (expf x f) 0)
+       (= (bitn x (1- (prec f))) 1)))
+
+(defund ddecode (x f)
+  (* (if (= (sgnf x f) 0) 1 -1)
+     (sigf x f)
+     (expt 2 (+ 2 (- (bias f)) (- (prec f))))))
+
+(defund decode (x f)
+  (if (= (expf x f) 0)
+      (ddecode x f)
+    (ndecode x f)))
+
+(local-defthm sgn-ddecode-1
+  (implies (and (formatp f)
+                (pseudop x f))
+           (not (= (sigf x f) 0)))
+  :hints (("Goal" :in-theory (enable formatp prec sigw sigf pseudop)
+                  :use (:instance bitn-bits (i (1- (prec f))) (j 0) (k (1- (prec f)))))))
+
+(defthm sgn-ddecode
+  (implies (and (formatp f)
+                (or (denormp x f) (pseudop x f)))
+           (equal (sgn (ddecode x f))
+                  (if (= (sgnf x f) 0) 1 -1)))
+  :hints (("Goal" :in-theory (enable sgn sigw sigf denormp pseudop ddecode)
+                  :use (sgn-ddecode-1))))
+
+(defthm expo-ddecode
+  (implies (and (formatp f)
+                (or (denormp x f) (pseudop x f)))
+	   (equal (expo (ddecode x f))
+	          (+ 2 (- (prec f)) (- (bias f)) (expo (sigf x f)))))
+  :hints (("Goal" :in-theory (enable ddecode denormp)
+                  :use (sgn-ddecode-1
+                        (:instance expo-shift (x (sigf x f)) (n (+ 2 (- (bias f)) (- (prec f)))))))))
+
+(defthm sig-ddecode
+  (implies (and (formatp f)
+                (or (denormp x f) (pseudop x f)))
+           (equal (sig (ddecode x f))
+                  (sig (sigf x f))))
+  :hints (("Goal" :in-theory (enable ddecode denormp)
+                  :use ((:instance sig-shift (x (sigf x f)) (n (+ 2 (- (bias f)) (- (prec f)))))))))
+
+(defund drepp (x f)
+  (and (rationalp x)
+       (not (= x 0))
+       (<= (- 2 (prec f)) (+ (expo x) (bias f)))
+       (<= (+ (expo x) (bias f)) 0)
+       ;number of bits available in the sig field is p - 1 - ( - bias - expo(x))
+       (exactp x (+ (1- (prec f)) (bias f) (expo x)))))
+
+(defund dencode (x f)
+  (cat (if (= (sgn x) 1) 0 1)
+       1
+       0
+       (expw f)
+       (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f))))
+       (sigw f)))
+
+(local-defthmd drepp-dencode-1
+  (implies (and (formatp f)
+                (denormp x f))
+           (not (zerop (ddecode x f))))
+  :hints (("Goal" :in-theory (enable sgn)
+                  :use (sgn-ddecode))))
+
+(local-defthm drepp-dencode-2
+  (implies (and (formatp f)
+                (denormp x f))
+           (and (< 0 (sigf x f))
+                (< (sigf x f) (expt 2 (1- (prec f))))))
+  :hints (("Goal" :in-theory (enable sigf denormp sigw)
+                  :use ((:instance bits-bounds (i (- (prec f) 2)) (j 0))
+                        (:instance bitn-plus-bits (n (1- (prec f))) (m 0))))))
+
+(local-defthmd drepp-dencode-3
+  (implies (and (formatp f)
+                (denormp x f))
+           (and (<= 0 (expo (sigf x f)))
+                (< (expo (sigf x f)) (1- (prec f)))))
+  :hints (("Goal" :use (drepp-dencode-2
+                        (:instance expo<= (x (sigf x f)) (n (- (prec f) 2)))
+                        (:instance expo>= (x (sigf x f)) (n 0))))))
+
+(local-defthmd drepp-dencode-4
+  (implies (and (formatp f)
+                (denormp x f))
+           (exactp (sigf x f) (1+ (expo (sigf x f)))))
+  :hints (("Goal" :in-theory (enable exactp2))))
+
+(local-defthmd drepp-dencode-5
+  (implies (and (formatp f)
+                (denormp x f))
+           (exactp (ddecode x f) (+ (1- (prec f)) (bias f) (expo (ddecode x f)))))
+  :hints (("Goal" :in-theory (enable exactp sig-ddecode expo-ddecode)
+                  :use (drepp-dencode-4))))
+
+(defthm drepp-dencode
+  (implies (and (formatp f)
+                (denormp x f))
+           (drepp (ddecode x f) f))
+  :hints (("Goal" :in-theory (enable drepp)
+                  :use (drepp-dencode-1 drepp-dencode-3 drepp-dencode-5))))
+
+(local-defthmd dencode-ddecode-1
+    (implies (and (formatp f)
+                  (denormp x f))
+	     (equal (bitn (dencode (ddecode x f) f) (+ (expw f) (sigw f)))
+		    (bitn x (+ (expw f) (sigw f)))))
+  :hints (("Goal" :in-theory (enable bitn-cat sgnf dencode)
+                  :use (sgn-ddecode))))
+
+(local-defthmd dencode-ddecode-2
+    (implies (and (formatp f)
+                  (denormp x f))
+	     (equal (bits (dencode (ddecode x f) f) (1- (+ (expw f) (sigw f))) (sigw f))
+		    (bits x (1- (+ (expw f) (sigw f))) (sigw f))))
+  :hints (("Goal" :in-theory (enable bits-cat expf expw sigw prec formatp denormp dencode)
+                  :use (expo-ddecode))))
+
+(local-defthmd dencode-ddecode-3
+    (implies (and (formatp f)
+                  (denormp x f))
+	     (equal (bits (dencode (ddecode x f) f) (1- (sigw f)) 0)
+		    (bits (* (sig (sigf x f)) (expt 2 (expo (sigf x f)))) (1- (sigw f)) 0)))
+  :hints (("Goal" :in-theory (enable bits-cat dencode sig-ddecode expo-ddecode))))
+
+(local-defthmd dencode-ddecode-4
+    (implies (and (formatp f)
+                  (denormp x f))
+	     (equal (bits (dencode (ddecode x f) f) (1- (sigw f)) 0)
+		    (bits (sigf x f) (1- (sigw f)) 0)))
+  :hints (("Goal" :in-theory (enable sgn)
+                  :use (dencode-ddecode-3 (:instance fp-rep (x (sigf x f)))))))
+
+(local-defthmd dencode-ddecode-5
+    (implies (and (formatp f)
+                  (denormp x f))
+	     (equal (bits (dencode (ddecode x f) f) (1- (sigw f)) 0)
+		    (bits x (1- (sigw f)) 0)))
+  :hints (("Goal" :in-theory (enable bits-bits sigf)
+                  :use (dencode-ddecode-4 (:instance fp-rep (x (sigf x f)))))))
+
+(local-defthmd dencode-ddecode-6
+    (implies (and (formatp f)
+                  (denormp x f))
+	     (equal (bits (dencode (ddecode x f) f) (+ (expw f) (sigw f)) 0)
+		    (bits x (+ (expw f) (sigw f)) 0)))
+  :hints (("Goal" :use (dencode-ddecode-1 dencode-ddecode-2 dencode-ddecode-5
+                        (:instance bitn-plus-bits (n (+ (expw f) (sigw f))) (m 0))
+                        (:instance bitn-plus-bits (x (dencode (ddecode x f) f)) (n (+ (expw f) (sigw f))) (m 0))
+                        (:instance bits-plus-bits (n (1- (+ (expw f) (sigw f)))) (p (sigw f)) (m 0))
+                        (:instance bits-plus-bits (x (dencode (ddecode x f) f)) (n (1- (+ (expw f) (sigw f)))) (p (sigw f)) (m 0))))))
+
+(local-defthmd dencode-ddecode-7
+    (implies (and (formatp f)
+                  (denormp x f))
+	     (and (bvecp (dencode (ddecode x f) f) (1+ (+ (expw f) (sigw f))))
+		  (bvecp x (1+ (+ (expw f) (sigw f))))))
+  :hints (("Goal" :in-theory (enable denormp encodingp dencode))))
+
+(defthm dencode-ddecode
+    (implies (and (formatp f)
+                  (denormp x f))
+	     (equal (dencode (ddecode x f) f)
+		    x))
+  :hints (("Goal" :use (dencode-ddecode-7 dencode-ddecode-6))))
+
+(local-defthm denormp-dencode-1
+    (implies (and (formatp f)
+                  (drepp x f))
+             (encodingp (dencode x f) f))
+  :hints (("Goal" :in-theory (enable encodingp formatp dencode expw sigw prec nrepp))))
+
+(local-defthm denormp-dencode-2
+    (implies (and (formatp f)
+                  (drepp x f))
+             (equal (expf (dencode x f) f) 0))
+  :hints (("Goal" :in-theory (enable bits-cat expf formatp dencode expw sigw prec drepp))))
+
+(local-defthmd denormp-dencode-3
+    (implies (and (formatp f)
+                  (explicitp f)
+                  (drepp x f))
+             (equal (bitn (dencode x f) (1- (prec f)))
+                    (bitn (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f)))) (1- (prec f)))))
+  :hints (("Goal" :in-theory (enable bitn-cat expf sigf formatp dencode expw sigw prec drepp))))
+
+(local-defthm hack-3
+  (implies (and (rationalp x)
+                (integerp n)
+                (< x (expt 2 m))
+                (integerp m)
+                (<= m n))
+           (< (* x (expt 2 (- n))) 1))
+  :rule-classes ()
+  :hints (("Goal" :use (hack-2))))
+
+(local-defthmd denormp-dencode-4
+    (implies (and (formatp f)
+                  (drepp x f))
+             (< (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f)))) (expt 2 (1- (prec f)))))
+  :hints (("Goal" :use (sig-upper-bound
+                        (:instance hack-3 (x (sig x)) (m 1) (n (- 1 (+ (expo x) (bias f))))))
+                  :in-theory (enable formatp prec drepp))))
+
+(local-defthmd denormp-dencode-5
+    (implies (and (formatp f)
+                  (drepp x f))
+             (equal (bitn (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f)))) (1- (prec f))) 0))
+  :hints (("Goal" :use (denormp-dencode-4
+                        (:instance bvecp-bitn-0 (x (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f))))) (n (1- (prec f)))))
+                   :in-theory (enable exactp bvecp formatp prec drepp))))
+
+(local-defthmd denormp-dencode-6
+    (implies (and (formatp f)
+                  (drepp x f))
+             (bvecp (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f)))) (1- (prec f))))
+  :hints (("Goal" :use (denormp-dencode-4)
+                   :in-theory (enable exactp bvecp formatp prec drepp))))
+
+(local-defthmd denormp-dencode-7
+    (implies (and (formatp f)
+                  (drepp x f))
+             (equal (manf (dencode x f) f) (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f))))))
+  :hints (("Goal" :use (denormp-dencode-6)
+                   :in-theory (enable manf bits-bits sigw bits-cat dencode))))
+
+(local-defthmd denormp-dencode-8
+    (implies (and (formatp f)
+                  (drepp x f))
+             (< 0 (manf (dencode x f) f)))
+  :hints (("Goal" :use (denormp-dencode-7 sig-lower-bound)
+                   :in-theory (enable drepp))))
+
+(local-defthmd denormp-dencode-9
+    (implies (and (formatp f)
+                  (drepp x f))
+             (not (= (sigf (dencode x f) f) 0)))
+  :hints (("Goal" :use (denormp-dencode-8
+                        (:instance bitn-plus-bits (x (dencode x f)) (n (1- (prec f))) (m 0)))
+                   :in-theory (enable manf sigf sigw drepp))))
+
+(defthm denormp-dencode
+  (implies (and (formatp f)
+                (drepp x f))
+           (denormp (dencode x f) f))
+  :hints (("Goal" :use (denormp-dencode-1 denormp-dencode-2 denormp-dencode-3 denormp-dencode-5 denormp-dencode-9)
+                  :in-theory (enable denormp))))
+
+(local-defthmd ddecode-dencode-1
+    (implies (and (formatp f)
+                  (drepp x f))
+	     (equal (sgn (ddecode (dencode x f) f))
+		    (sgn x)))
+  :hints (("Goal" :in-theory (enable sgn drepp bitn-cat sgnf dencode)
+                  :use (denormp-dencode
+                        (:instance sgn-ddecode (x (dencode x f)))))))
+
+(local-defthmd ddecode-dencode-2
+  (implies (formatp f)
+           (>= (sigw f) 1))
+  :hints (("Goal" :in-theory (enable formatp sigw prec))))
+
+(local-defthmd ddecode-dencode-3
+    (implies (and (formatp f)
+                  (drepp x f))
+             (equal (sigf (dencode x f) f) (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f))))))
+  :hints (("Goal" :use (denormp-dencode-7 denormp-dencode
+                        (:instance bitn-plus-bits (x (dencode x f)) (n (1- (prec f))) (m 0))) 
+                   :in-theory (e/d (formatp prec expw sigw manf sigf denormp) (denormp-dencode)))))
+
+(local-defthmd ddecode-dencode-4
+    (implies (and (formatp f)
+                  (drepp x f))
+             (equal (expo (sigf (dencode x f) f))
+                    (+ -2 (prec f) (expo x) (bias f))))
+  :hints (("Goal" :use (sig-lower-bound (:instance expo-shift (x (sig x)) (n (+ -2 (prec f) (expo x) (bias f)))))
+                   :in-theory (enable ddecode-dencode-3 drepp))))
+
+(local-defthmd ddecode-dencode-5
+    (implies (and (formatp f)
+                  (drepp x f))
+	     (equal (expo (ddecode (dencode x f) f))
+		    (expo x)))
+  :hints (("Goal" :in-theory (enable ddecode-dencode-4 expo-ddecode))))
+
+(local-defthmd ddecode-dencode-6
+    (implies (and (formatp f)
+                  (drepp x f))
+	     (equal (sig (ddecode (dencode x f) f))
+		    (sig x)))
+  :hints (("Goal" :in-theory (enable ddecode-dencode-3 sig-ddecode)
+                  :use (denormp-dencode
+                        (:instance sig-shift (x (sig x)) (n (+ -2 (prec f) (expo x) (bias f))))))))
+
+(defthm ddecode-dencode
+  (implies (and (formatp f)
+                (drepp x f))
+           (equal (ddecode (dencode x f) f)
+                  x))
+  :hints (("Goal" :use (fp-rep (:instance fp-rep (x (ddecode (dencode x f) f))))
+                  :in-theory (enable drepp ddecode-dencode-1 ddecode-dencode-5 ddecode-dencode-6))))
+
+
+;; Smallest positive denormal:
+
+(defund spd (f)
+  (expt 2 (+ 2 (- (bias f)) (- (prec f)))))
+
+(defthm positive-spd
+  (implies (formatp f)
+           (> (spd f) 0))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable spd))))
+
+(defthmd drepp-spd
+  (implies (formatp f)
+           (drepp (spd f) f))
+  :hints (("Goal" :in-theory (enable bias exactp-2**n formatp expw prec drepp spd))))
+
+(defthmd smallest-spd
+  (implies (and (formatp f)
+                (drepp r f))
+           (>= (abs r) (spd f)))
+  :hints (("Goal" :use ((:instance expo<= (x (abs r)) (n (- 1 (+ (prec f) (bias f))))))
+                  :in-theory (enable spd drepp))))
+
+(local (include-book "spd-mult"))
+
+(local-defthm bias-rewrite
+  (equal (bias f) (bias$ (expw f)))
+  :hints (("Goal" :in-theory (enable bias bias$))))
+
+(local-defthm spd-rewrite
+  (equal (spd f) (spd$ (prec f) (expw f)))
+  :hints (("Goal" :in-theory (enable spd$ spd))))
+
+(local-defthm drepp-rewrite
+  (implies (formatp f)
+           (equal (drepp r f) (drepp$ r (prec f) (expw f))))
+  :hints (("Goal" :in-theory (enable bias$ formatp prec expw drepp drepp$))))
+
+(defthmd spd-mult
+  (implies (and (formatp f)
+		(rationalp r)
+                (> r 0)
+		(= m (/ r (spd f))))
+	   (iff (drepp r f)
+		(and (natp m)
+		     (<= 1 m)
+		     (< m (expt 2 (1- (prec f)))))))
+  :hints (("Goal" :in-theory (enable formatp prec expw)
+                  :use ((:instance spd-mult$ (p (prec f)) (q (expw f)))))))
+
+
+;;;***************************************************************
+;;;                 Infinities and NaNs
+;;;***************************************************************
+
+(defund infp (x f)
+  (and (= (expf x f) (1- (expt 2 (expw f))))
+       (not (unsupp x f))
+       (= (manf x f) 0)))
+
+(defun iencode (sgn f)
+  (if (explicitp f)
+      (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 1 1 0 (1- (sigw f)))
+    (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 0 (sigw f))))
+
+(defund nanp (x f)
+  (and (= (expf x f) (1- (expt 2 (expw f))))
+       (not (unsupp x f))
+       (not (= (manf x f) 0))))
+
+(defund qnanp (x f)
+  (and (nanp x f) (= (bitn x (- (prec f) 2)) 1)))
+
+(defund snanp (x f)
+  (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
+
+(defund qnanize (x f) 
+  (logior x (expt 2 (- (prec f) 2))))
+
+(defund indef (f)
+  (if (explicitp f)
+      (cat (1- (expt 2 (+ (expw f) 3))) 
+           (+ (expw f) 3)
+           0
+           (- (sigw f) 2))
+    (cat (1- (expt 2 (+ (expw f) 2))) 
+         (+ (expw f) 2)
+         0
+         (1- (sigw f)))))
+
+
+;;;***************************************************************
+;;;                Rebiasing Exponents
+;;;***************************************************************
+
+(defund rebias (expo old new)
+  (+ expo (- (expt 2 (1- new)) (expt 2 (1- old)))))
+
+(local-defthm rebias-rewrite
+  (implies (and (natp old) (natp new) (bvecp expo old))
+           (equal (rebias expo old new) (rebias$ expo old new)))
+  :hints (("Goal" :in-theory (enable bias$ rebias rebias$))))
 
 (defthm natp-rebias-up
     (implies (and (natp n)
@@ -274,7 +1044,8 @@
 		  (< 0 m)
 		  (<= m n)
 		  (bvecp x m))
-	     (natp (rebias-expo x m n))))
+	     (natp (rebias x m n)))
+  :hints (("Goal" :use natp-rebias-up$)))
 
 (defthm natp-rebias-down
     (implies (and (natp n)
@@ -284,7 +1055,8 @@
 		  (bvecp x n)
 		  (< x (+ (expt 2 (1- n)) (expt 2 (1- m))))
 		  (>= x (- (expt 2 (1- n)) (expt 2 (1- m)))))
-	     (natp (rebias-expo x n m))))
+	     (natp (rebias x n m)))
+  :hints (("Goal" :use natp-rebias-down$)))
 
 (defthm bvecp-rebias-up
     (implies (and (natp n)
@@ -292,7 +1064,8 @@
 		  (< 0 m)
 		  (<= m n)
 		  (bvecp x m))
-	     (bvecp (rebias-expo x m n) n)))
+	     (bvecp (rebias x m n) n))
+  :hints (("Goal" :use bvecp-rebias-up$)))
 
 (defthm bvecp-rebias-down
     (implies (and (natp n)
@@ -302,7 +1075,8 @@
 		  (bvecp x n)
 		  (< x (+ (expt 2 (1- n)) (expt 2 (1- m))))
 		  (>= x (- (expt 2 (1- n)) (expt 2 (1- m)))))
-	     (bvecp (rebias-expo x n m) m)))
+	     (bvecp (rebias x n m) m))
+  :hints (("Goal" :use bvecp-rebias-down$)))
 
 (defthmd rebias-lower
     (implies (and (natp n)
@@ -312,11 +1086,12 @@
 		  (bvecp x n)
 		  (< x (+ (expt 2 (1- n)) (expt 2 (1- m))))
 		  (>= x (- (expt 2 (1- n)) (expt 2 (1- m)))))
-	     (equal (rebias-expo x n m)
+	     (equal (rebias x n m)
 		    (cat (bitn x (1- n))
 			 1
 			 (bits x (- m 2) 0)
-			 (1- m)))))
+			 (1- m))))
+  :hints (("Goal" :use rebias-lower$)))
 
 (defthmd rebias-higher
     (implies (and (natp n)
@@ -324,385 +1099,12 @@
 		  (> n m)
 		  (> m 1)
 		  (bvecp x m))
-	     (equal (rebias-expo x m n)
+	     (equal (rebias x m n)
 		    (cat (cat (bitn x (1- m))
 			      1
 			      (mulcat 1 (- n m) (bitn (lognot x) (1- m)))
 			      (- n m))
 			 (1+ (- n m))
 			 (bits x (- m 2) 0)
-			 (1- m)))))
-
-
-;;;***************************************************************
-;;;          REPRESENTATIONS WITH IMPLICIT MSB
-;;;***************************************************************
-
-;;Bit vectors of length p+q, consisting of 1-bit sign field, q-bit 
-;;exponent field (bias = 2**(q-1)-1), and (p-1)-bit significand field, 
-;;where p > 1.
-
-;;Field extractors:
-
-(defund isgnf (x p q) (bitn x (1- (+ p q))))
-(defund iexpof (x p q) (bits x (- (+ p q) 2) (1- p)))
-(defund isigf (x p) (bits x (- p 2) 0))
-
-
-;;Representable numbers (normals and denormal):
-
-(defund nrepp (x p q)
-  (and (rationalp x)
-       (not (= x 0))
-       (< 0 (+ (expo x) (bias q)))
-       (< (+ (expo x) (bias q)) (- (expt 2 q) 1))
-       (exactp x p)))
-
-(defund drepp (x p q)
-  (and (rationalp x)
-       (not (= x 0))
-       (<= (- 2 p) (+ (expo x) (bias q)))
-       (<= (+ (expo x) (bias q)) 0)
-       ;number of bits available in the sig field is p - 1 - ( - bias - expo(x))
-       (exactp x (+ -2 p (expt 2 (- q 1)) (expo x)))))
-
-(defund irepp (x p q)
-  (or (nrepp x p q)
-      (drepp x p q)))
-
-
-;;Valid encodings:
-
-(defund nencodingp (x p q)
-  (and (bvecp x (+ p q))
-       (< 0 (iexpof x p q))
-       (< (iexpof x p q) (- (expt 2 q) 1))))
-
-(defund dencodingp (x p q)
-  (and (bvecp x (+ p q))
-       (= (iexpof x p q) 0)
-       (not (= (isigf x p) 0))))
-
-(defund iencodingp (x p q)
-  (or (nencodingp x p q)
-      (dencodingp x p q)))
-
-(defthm not-both-nrepp-and-drepp
-    (implies (irepp x p q)
-	     (iff (nrepp x p q) (not (drepp x p q))))
-  :rule-classes ())
-
-(defthm not-both-nencodingp-and-dencodingp
-    (implies (iencodingp x p q)
-	     (iff (nencodingp x p q) (not (dencodingp x p q))))
-  :rule-classes ())
-
-
-;;Encoding functions:
-
-(defund nencode (x p q)
-  (cat (cat (if (= (sgn x) 1) 0 1)
-	    1
-            (+ (expo x) (bias q))
-            q)
-       (1+ q)
-       (* (- (sig x) 1) (expt 2 (- p 1)))
-       (- p 1)))
-
-(defund dencode (x p q)
-  (cat (cat (if (= (sgn x) 1) 0 1)
-	    1
-            0
-            q)
-       (1+ q)
-       (* (sig x) (expt 2 (+ -2 p (expo x) (bias q))))
-       (- p 1)))
-
-(defund iencode (x p q)
-  (cond ((nrepp x p q)
-	 (nencode x p q))
-	((drepp x p q)
-	 (dencode x p q))))
-
-
-;;Decoding functions:
-
-(defund ndecode (x p q)
-  (* (if (= (isgnf x p q) 0) 1 -1)
-     (+ (expt 2 (- (iexpof x p q) (bias q)))
-        (* (isigf x p)
-           (expt 2 (+ 1 (iexpof x p q) (- (bias q)) (- p)))))))
-
-(defund ddecode (x p q)
-  (* (if (= (isgnf x p q) 0) 1 -1)
-     (isigf x p)
-     (expt 2 (+ 2 (- (bias q)) (- p)))))
-
-(defund idecode (x p q)
-  (cond ((nencodingp x p q)
-	 (ndecode x p q))
-	((dencodingp x p q)
-	 (ddecode x p q))))
-
-
-;;Field extraction:
-
-(defthm sgn-ndecode
-    (implies (and (rationalp x)
-		  (>= x 0)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sgn (ndecode x p q))
-		    (if (= (isgnf x p q) 0) 1 -1))))
-
-(defthm expo-ndecode
-    (implies (and (nencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))  
-	     (equal (expo (ndecode x p q))
-		    (- (iexpof x p q) (bias q)))))
-
-(defthm sig-ndecode
-    (implies (and (nencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sig (ndecode x p q))
-		    (+ 1 (/ (isigf x p) (expt 2 (- p 1)))))))
-
-(defthm sgn-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sgn (ddecode x p q))
-		    (if (= (isgnf x p q) 0) 1 -1))))
-
-(defthm expo-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (expo (ddecode x p q))
-		    (+ 2 (- p) (- (bias q)) (expo (isigf x p))))))
-
-(defthm sig-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sig (ddecode x p q))
-		    (sig (isigf x p)))))
-
-(defthm sgn-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal
-	      (sgn (idecode x p q))
-	      (if (= (isgnf x p q) 0) 1 -1))))
-
-(defthm expo-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal
-	      (expo (idecode x p q))
-	      (cond ((nencodingp x p q)
-		     (- (iexpof x p q) (bias q)))         
-		    ((dencodingp x p q)
-		     (+ 2 (- p) (- (bias q)) (expo (isigf x p))))))))
-
-(defthm sig-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (sig (idecode x p q))
-		    (cond ((nencodingp x p q)
-			   (+ 1 (/ (isigf x p) (expt 2 (- p 1)))))
-			  ((dencodingp x p q)
-			   (sig (isigf x p)))))))
-
-;;Inversions:
-
-(defthm dencodingp-dencode
-    (implies (and (drepp x p q)
-		  (integerp p)
-		  (integerp q)
-		  (> q 0))
-	     (dencodingp (dencode x p q) p q)))
-
-(defthm iencodingp-iencode
-    (implies (and (irepp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (iencodingp (iencode x p q) p q)))
-
-(defthm nrepp-ndecode
-    (implies (and (nencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (nrepp (ndecode x p q) p q)))
-
-(defthm drepp-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (drepp (ddecode x p q) p q)))
-
-(defthm irepp-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (irepp (idecode x p q) p q)))
-
-(defthm nencodingp-nencode
-    (implies (and (nrepp x p q)
-                  (integerp p)
-                  (> p 1)
-                  (integerp q)
-                  (> q 0))
-             (nencodingp (nencode x p q) p q)))
-
-(defthm ndecode-nencode
-    (implies (and (nrepp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (ndecode (nencode x p q) p q)
-		    x)))
-
-(defthm ddecode-dencode
-    (implies (and (drepp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (ddecode (dencode x p q) p q)
-		    x)))
-
-(defthm idecode-iencode
-    (implies (and (irepp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (idecode (iencode x p q) p q)
-		    x)))
-
-(defthm nencode-ndecode
-    (implies (and (nencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (nencode (ndecode x p q) p q)
-		    x)))
-
-(defthm dencode-ddecode
-    (implies (and (dencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (dencode (ddecode x p q) p q)
-		    x)))
-
-(defthm iencode-idecode
-    (implies (and (iencodingp x p q)
-		  (integerp p)
-		  (> p 1)
-		  (integerp q)
-		  (> q 0))
-	     (equal (iencode (idecode x p q) p q)
-		    x)))
-
-;; Smallest positive normal:
-
-(defund spn (q)
-  (expt 2 (- 1 (bias q))))
-
-(defthmd positive-spn
-  (> (spn q) 0)
-  :rule-classes ( :linear))
-
-(defthmd nrepp-spn
-  (implies (and (integerp p)
-                (> p 0)
-                (integerp q)
-                (> q 1))
-           (nrepp (spn q) p q)))
-
-(defthmd smallest-spn
-  (implies (and (nrepp x p q)
-                (integerp p)
-                (> p 0)
-                (integerp q)
-                (> q 1))
-           (>= (abs x) (spn q)))
-  :rule-classes
-  ((:rewrite :match-free :once)))
-
-;; Smallest positive denormal:
-
-(defund spd (p q)
-     (expt 2 (+ 2 (- (bias q)) (- p))))
-
-(defthm positive-spd
-  (implies (and (integerp p)
-                (> p 1)
-                (> q 0))
-           (> (spd p q) 0))
-  :rule-classes :linear)
-
-(defthmd drepp-spd
-  (implies (and (integerp p)
-                (> p 1)
-                (integerp q)
-                (> q 0))
-           (drepp (spd p q) p q)))
-
-(defthmd smallest-spd
-  (implies (and (integerp p)
-                (> p 1)
-                (integerp q)
-                (> q 0)
-                (drepp r p q))
-           (>= (abs r) (spd p q)))) 
-
-(defthmd spd-mult
-  (implies (and (integerp p)
-                (> p 1)
-                (integerp q)
-                (> q 0)
-                (> r 0)
-		(rationalp r)
-		(= m (/ r (spd p q))))
-	   (iff (drepp r p q)
-		(and (natp m)
-		     (<= 1 m)
-		     (< m (expt 2 (1- p)))))))
-
+			 (1- m))))
+  :hints (("Goal" :use rebias-higher$)))

@@ -336,6 +336,22 @@ y < 2^p, and hence x and y are p-exact.
     (equal (sig (sig x)) 
 	   (sig x)))
 
+(defthm expo-minus
+  (implies (rationalp x)
+           (equal (expo (- x)) (expo x)))
+  :hints (("Goal" :in-theory (enable expo))))
+
+(defthm sig-minus
+  (implies (rationalp x)
+           (equal (sig (- x)) (sig x)))
+  :hints (("Goal" :in-theory (enable sig))))
+
+(defthm expo-sig
+  (implies (rationalp x)
+           (equal (expo (sig x)) 0))
+  :hints (("Goal" :in-theory (enable expo)
+                  :use (sig-upper-bound sig-lower-bound))))
+
 (defthm fp-rep-unique
     (implies (and (rationalp x)
 		  (rationalp m)

@@ -50,23 +50,25 @@
 
 ;; Special-purpose theories:
 
-;;(include-book "add") ;support for reasoning about addition
+(include-book "add") ;support for reasoning about addition
 
-;;(include-book "mult") ;integer multiplication
+(include-book "mult") ;integer multiplication
 
-;;(include-book "div") ;Newton-Raphson division
+(include-book "div") ;Newton-Raphson division
 
-;;(include-book "srt") ;SRT division and square root
+(include-book "srt") ;SRT division and square root
 
-;;(include-book "sqrt") ;approximation to square root
+(include-book "sqrt") ;approximation to square root
+
+(include-book "excps")
 
 ;; This is relevant to code derived from SystemC:
 
-;;(include-book "masc")
+(include-book "masc")
 
 ;; This must be included to use GL with this library:
 
-;;(include-book "gl")
+(include-book "gl")
 
 
 
