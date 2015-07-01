@@ -151,7 +151,7 @@
  of this pseudo-event.</p>")
 
 (defxdoc hacker
-  :parents (hacker)
+  :parents (interfacing-tools)
   :short "Functions for extending ACL2 in ways that are potentially unsound."
   :long "<p>The @('books/hacking') library.</p>
 

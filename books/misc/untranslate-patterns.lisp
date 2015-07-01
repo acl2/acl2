@@ -54,7 +54,7 @@
 ;; loading this file for usage examples.
 
 (defxdoc untranslate-patterns
-  :parents (macros)
+  :parents (macros user-defined-functions-table)
   :short "A database used to extend @('untranslate'), ACL2's function for
 displaying terms during proofs, with pattern-based rules."
 

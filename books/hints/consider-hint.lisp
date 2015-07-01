@@ -247,7 +247,7 @@
          (t (translate-consider-hint1 lst ctx wrld state)))))))
 
 (defxdoc consideration
-  :parents (miscellaneous)
+  :parents (hints)
   :short "An object indicating that some instantiation is relevant."
 
   :long "<p>Considerations are the objects one provides as part of

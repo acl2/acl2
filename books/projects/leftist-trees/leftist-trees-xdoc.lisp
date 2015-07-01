@@ -56,7 +56,7 @@ Copyright (C) 2012 by Ben Selfridge <benself@cs.utexas.edu>
  question is PROPER-LT, this is just the root of the tree.</p>")
 
 (defxdoc how-many-lt
-  :parents (how-many-lt)
+  :parents (leftist-trees)
   :short "Returns the number of times an object occurs in a leftist tree"
   :long "<p>Counts the number of occurrences of a given object in a leftist
  tree. This function takes advantage of the heap-ordering property, and returns
@@ -167,7 +167,7 @@ Copyright (C) 2012 by Ben Selfridge <benself@cs.utexas.edu>
   :long "")
 
 (defxdoc leftist-trees
-  :parents (leftist-trees)
+  :parents (projects)
   :short "An implementation of Leftist Trees."
   :long "<p>Leftist trees are an efficient implementation of binary
   heaps. Regular
@@ -242,7 +242,7 @@ Copyright (C) 2012 by Ben Selfridge <benself@cs.utexas.edu>
   :long "<p>(length-to-nil-lt tree) ==&gt; (rank-lt tree)</p>")
 
 (defxdoc ltree-sort
-  :parents (ltree-sort)
+  :parents (leftist-trees)
   :short "Sort an input list using leftist tree-based heapsort"
   :long "<p>Sorts an input list by first INSERT-LTing each element of the list
  into a leftist tree, then DELETE-MIN-LTing the min element from the tree one
