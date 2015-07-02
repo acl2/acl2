@@ -2,18 +2,14 @@
 
 (include-book "std/util/defrule" :dir :system)
 
-(local (include-book "../rel9-rtl-pkg/lib/top"))
-
-(include-book "../rel9-rtl-pkg/lib/util")
-
 (local (include-book "arithmetic-5/top" :dir :system))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
-
+#|
 (local (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
-
+|#
 
 ;;;**********************************************************************
 ;;;                       FLOOR and CEILING
@@ -23,12 +19,12 @@
   (declare (xargs :guard (real/rationalp x)))
   (floor x 1))
 
-(std::defruled fl-default
+(defruled fl-default
   (implies (not (real/rationalp x))
            (equal (fl x) 0))
   :enable (fl))
 
-(std::defrule fl-def
+(defrule fl-def
   (and (integerp (fl x))    
        (implies (case-split (real/rationalp x))
 	        (and (<= (fl x) x)
@@ -493,7 +489,7 @@
   (/ (fl (* (expt 2 k) x)) (expt 2 k)))
 
 (defthmd chop-mod
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
                 (integerp k))
            (equal (chop x k)
                   (-  x (mod x (expt 2 (- k))))))
@@ -501,7 +497,7 @@
                   :use ((:instance mod-def (y (expt 2 (- k))))))))
 
 (defthmd chop-chop
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
                 (integerp k)
                 (integerp m)
                 (<= k m))
@@ -513,62 +509,62 @@
                   :use ((:instance fl/int-rewrite (x (* (expt 2 m) x)) (n (expt 2 (- m k))))))))
 
 (defthmd chop-shift
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
                 (integerp k)
                 (integerp m))
            (equal (chop (* (expt 2 k) x) m)
                   (* (expt 2 k) (chop x (+ k m)))))
   :hints (("Goal" :in-theory (enable chop))))
 
-(local-defthm chop-bound-1
-  (implies (and (rationalp x)
+(local (defthm chop-bound-1
+  (implies (and (real/rationalp x)
                 (integerp n)
                 (rationalp h)
                 (natp m))
            (iff (and (<= n x) (<= x h))
                 (and (<= (* (expt 2 m) n) (* (expt 2 m) x))
                      (<= (* (expt 2 m) x) (* (expt 2 m) h)))))
-  :rule-classes ())
+  :rule-classes ()))
 
-(local-defthm chop-bound-2
-  (implies (and (rationalp x)
+(local (defthm chop-bound-2
+  (implies (and (real/rationalp x)
                 (integerp n)
                 (natp m))
            (iff (<= n x) (<= (* (expt 2 m) n) (* (expt 2 m) x))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance chop-bound-1 (h x))))))
+  :hints (("Goal" :use ((:instance chop-bound-1 (h x)))))))
 
-(local-defthm chop-bound-3
-  (implies (and (rationalp x)
+(local (defthm chop-bound-3
+  (implies (and (real/rationalp x)
                 (integerp n)
                 (natp m))
            (iff (<= (* (expt 2 m) n) (* (expt 2 m) x))
                 (<= (* (expt 2 m) n) (fl (* (expt 2 m) x)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable acl2::simplify-products-gather-exponents-<))))
+  :hints (("Goal" :in-theory (disable acl2::simplify-products-gather-exponents-<)))))
 
-(local-defthm chop-bound-4
-  (implies (and (rationalp x)
+(local (defthm chop-bound-4
+  (implies (and (real/rationalp x)
                 (integerp n)
                 (natp m))
            (iff (<= n x)
                 (<= (* (expt 2 m) n) (fl (* (expt 2 m) x)))))
   :hints (("Goal" :in-theory (enable chop)
                   :use (chop-bound-2 chop-bound-3)))
-  :rule-classes ())
+  :rule-classes ()))
 
-(local-defthm chop-bound-5
-  (implies (and (rationalp x)
+(local (defthm chop-bound-5
+  (implies (and (real/rationalp x)
                 (integerp n)
                 (natp m))
            (iff (<= n (* (expt 2 (- m)) (fl (* (expt 2 m) x))))
                 (<= (* (expt 2 m) n) (fl (* (expt 2 m) x)))))
   :hints (("Goal" :in-theory (enable chop)
                   :use ((:instance chop-bound-2 (x (* (expt 2 (- m)) (fl (* (expt 2 m) x))))))))
-  :rule-classes ())
+  :rule-classes ()))
 
 (defthm chop-bound
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
                 (integerp n)
                 (natp m))
            (iff (<= n x) (<= n (chop x m))))
@@ -576,50 +572,50 @@
                   :use (chop-bound-4 chop-bound-5)))
   :rule-classes ())
 
-(local-defthm chop-small-1
-  (implies (and (rationalp x)
-                (rationalp y)
-                (rationalp z)
+(local (defthm chop-small-1
+  (implies (and (real/rationalp x)
+                (real/rationalp y)
+                (real/rationalp z)
                 (> z 0)
                 (> y 0)
                 (< x y)
                 (<= (- y) x))
            (and (< (* x z) (* y z))
                 (<= (* (- y) z) (* x z))))
-  :rule-classes ())
+  :rule-classes ()))
 
-(local-defthm chop-small-2
-  (implies (and (rationalp x)
+(local (defthm chop-small-2
+  (implies (and (real/rationalp x)
                 (integerp m)
                 (< x (expt 2 (- m)))
                 (<= (- (expt 2 (- m))) x))
            (and (< (* (expt 2 m) x) 1)
                 (<= -1 (* (expt 2 m) x))))
   :rule-classes ()
- :hints (("Goal" :use ((:instance chop-small-1 (y (expt 2 (- m))) (z (expt 2 m)))))))
+ :hints (("Goal" :use ((:instance chop-small-1 (y (expt 2 (- m))) (z (expt 2 m))))))))
 
-(local-defthm chop-small-3
-  (implies (and (rationalp x)
+(local (defthm chop-small-3
+  (implies (and (real/rationalp x)
                 (integerp m)
                 (< x (expt 2 (- m)))
                 (<= (- (expt 2 (- m))) x))
            (and (< (fl (* (expt 2 m) x)) 1)
                 (<= -1 (fl (* (expt 2 m) x)))))
   :rule-classes ()
- :hints (("Goal" :use (chop-small-2))))
+ :hints (("Goal" :use (chop-small-2)))))
 
-(local-defthm chop-small-4
-  (implies (and (rationalp x)
+(local (defthm chop-small-4
+  (implies (and (real/rationalp x)
                 (integerp m)
                 (< x (expt 2 (- m)))
                 (<= (- (expt 2 (- m))) x))
            (equal (fl (* (expt 2 m) x))
                   (if (>= x 0) 0 -1)))
   :rule-classes ()
- :hints (("Goal" :use (chop-small-3))))
+ :hints (("Goal" :use (chop-small-3)))))
 
 (defthmd chop-small
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
                 (integerp m)
                 (< x (expt 2 (- m)))
                 (<= (- (expt 2 (- m))) x))
@@ -630,24 +626,24 @@
  :hints (("Goal" :use (chop-small-4)
                  :in-theory (enable chop))))
 
-(local-defthm chop-0-1
-  (implies (and (rationalp x)
+(local (defthm chop-0-1
+  (implies (and (real/rationalp x)
                 (integerp m)
                 (< (abs (chop x m)) (expt 2 (- m))))
            (< (abs (fl (* (expt 2 m) x))) 1))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable chop))))
+  :hints (("Goal" :in-theory (enable chop)))))
 
-(local-defthm chop-0-2
-  (implies (and (rationalp x)
+(local (defthm chop-0-2
+  (implies (and (real/rationalp x)
                 (integerp m)
                 (< (abs (chop x m)) (expt 2 (- m))))
            (equal (fl (* (expt 2 m) x)) 0))
   :rule-classes ()
-  :hints (("Goal" :use (chop-0-1))))
+  :hints (("Goal" :use (chop-0-1)))))
 
 (defthm chop-0
-  (implies (and (rationalp x)
+  (implies (and (real/rationalp x)
                 (integerp m)
                 (< (abs (chop x m)) (expt 2 (- m))))
            (equal (chop x m) 0))
