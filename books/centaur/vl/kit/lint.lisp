@@ -51,6 +51,7 @@
 (include-book "../lint/qmarksize-check")
 (include-book "../lint/selfassigns")
 (include-book "../lint/skip-detect")
+(include-book "../lint/logicassign")
 
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
@@ -493,6 +494,7 @@ shown.</p>"
        (design (cwtime (vl-design-leftright-check design)))
        (design (cwtime (vl-design-dupeinst-check design)))
        (design (cwtime (vl-centaur-seqcheck-hook design)))
+       (design (cwtime (vl-design-logicassign design)))
 
 
 
@@ -772,7 +774,9 @@ shown.</p>"
         :vl-warn-instances-same
         :vl-warn-case-sensitive-names
         :vl-warn-same-rhs
-        :vl-const-expr))
+        :vl-const-expr
+        :vl-warn-vardecl-assign
+        ))
 
 (defconst *smell-minor-warnings*
   (list :vl-warn-partselect-same
