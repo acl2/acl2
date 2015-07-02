@@ -98,11 +98,22 @@
                   (fl (/ x n))))
   :enable (fl))
 
-(defthm fl-half-int
+(defrule fl-int-div-radix
+  (implies (and (integerp n)
+                (not (= n 0))
+                (not (= n -1))
+                (integerp radix)
+                (>= radix 2))
+           (< (abs (fl (/ n radix))) (abs n)))
+  :enable (fl)
+  :rule-classes ())
+
+(defrule fl-half-int
   (implies (and (integerp n)
                 (not (= n 0))
                 (not (= n -1)))
            (< (abs (fl (/ n 2))) (abs n)))
+  :use (:instance fl-int-div-radix (radix 2))
   :rule-classes ())
 
 (defthmd fl-minus
@@ -472,11 +483,20 @@
                (equal (mod m 2) 1)))
   :rule-classes ())
 
-(defthm mod-plus-mod-2
+(defrule mod-plus-mod-radix
+  (implies (and (real/rationalp a)
+                (real/rationalp b)
+                (real/rationalp radix))
+           (iff (= (mod (+ a b) radix) (mod a radix))
+                (= (mod b radix) 0)))
+  :rule-classes ())
+
+(defrule mod-plus-mod-2
   (implies (and (integerp a)
                 (integerp b))
            (iff (= (mod (+ a b) 2) (mod a 2))
                 (= (mod b 2) 0)))
+  :use (:instance mod-plus-mod-radix (radix 2))
   :rule-classes ())
 
 (defthm mod-mod-2-not-equal
