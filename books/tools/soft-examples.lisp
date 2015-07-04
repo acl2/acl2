@@ -1,7 +1,6 @@
 (in-package "ACL2")
 
 (include-book "soft")
-(include-book "misc/defpun" :dir :system)
 
 ; This file contains examples of use of (current and future features of) SOFT.
 
