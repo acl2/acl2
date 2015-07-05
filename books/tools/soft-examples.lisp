@@ -1,8 +1,37 @@
 (in-package "ACL2")
 
-(include-book "soft")
+; SOFT (Second-Order Functions and Theorems) Examples
+;
+; Copyright (C) 2015 Kestrel Institute (http://www.kestrel.edu)
+;
+; License (an MIT license):
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Alessandro Coglio (coglio@kestrel.edu)
 
-; This file contains examples of use of (current and future features of) SOFT.
+; Overview:
+;
+;   This file contains examples of use of SOFT
+;   (Second-Order Functions and Theorems).
+
+(include-book "soft")
 
 ; Two unary function variables.
 ; Starting function variable names with ? provides a visual cue
