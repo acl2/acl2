@@ -677,7 +677,7 @@
 
 (define svtv-autoins ((x svtv-p))
   :hooks nil
-  `(list . ,(svtv-autoins-aux (svtv->inmasks x))))
+  `(list . ,(reverse (svtv-autoins-aux (svtv->inmasks x)))))
 
 (define svtv-autobinds-aux ((x svar-boolmasks-p))
   :hooks nil
