@@ -371,7 +371,49 @@ svex-eval).</p>"
     (svex-case x
       :quote x.val
       :var   (svex-env-fastlookup x.name env)
-      :call  (svex-apply x.fn (svexlist-eval x.args env))))
+      :call  (mbe :logic
+                  (svex-apply x.fn (svexlist-eval x.args env))
+                  :exec
+                  ;; Shortcuts for ?, bit?, bitand, bitor
+                  (case x.fn
+                    (? (b* (((unless (eql (len x.args) 3))
+                             (svex-apply x.fn (svexlist-eval x.args env)))
+                            (test (3vec-fix (svex-eval (first x.args) env)))
+                            ((4vec test))
+                            ((when (eql test.upper 0))
+                             (svex-eval (third x.args) env))
+                            ((when (not (eql test.lower 0)))
+                             (svex-eval (second x.args) env)))
+                         (4vec-? test
+                                 (svex-eval (second x.args) env)
+                                 (svex-eval (third x.args) env))))
+                    (bit?
+                     (b* (((unless (eql (len x.args) 3))
+                           (svex-apply x.fn (svexlist-eval x.args env)))
+                          (test (svex-eval (first x.args) env))
+                          ((when (eql test 0))
+                           (svex-eval (third x.args) env))
+                          ((when (eql test -1))
+                           (svex-eval (second x.args) env)))
+                       (4vec-bit? test
+                                  (svex-eval (second x.args) env)
+                                  (svex-eval (third x.args) env))))
+                    (bitand
+                     (b* (((unless (eql (len x.args) 2))
+                           (svex-apply x.fn (svexlist-eval x.args env)))
+                          (test (svex-eval (first x.args) env))
+                          ((when (eql test 0)) 0))
+                       (4vec-bitand test
+                                    (svex-eval (second x.args) env))))
+                    (bitor
+                     (b* (((unless (eql (len x.args) 2))
+                           (svex-apply x.fn (svexlist-eval x.args env)))
+                          (test (svex-eval (first x.args) env))
+                          ((when (eql test -1)) -1))
+                       (4vec-bitor test
+                                   (svex-eval (second x.args) env))))
+                    (otherwise 
+                     (svex-apply x.fn (svexlist-eval x.args env)))))))
 
   (define svexlist-eval
     :parents (evaluation)
@@ -388,7 +430,55 @@ svex-eval).</p>"
             (svexlist-eval (cdr x) env))))
   ///
 
-  (verify-guards svex-eval)
+  (local (defthm consp-of-svexlist-eval
+           (equal (consp (svexlist-eval x env))
+                  (consp x))
+           :hints (("goal" :expand ((svexlist-eval x env))))))
+
+  (local (defthm upper-lower-of-3vec-fix
+           (implies (and (3vec-p x)
+                         (not (equal (4vec->lower x) 0)))
+                    (not (equal (4vec->upper x) 0)))
+           :hints(("Goal" :in-theory (enable 3vec-p)))))
+
+  (local (defthm 4vec-?-cases
+           (and (implies (equal (4vec->upper (3vec-fix test)) 0)
+                         (equal (4vec-? test then else)
+                                (4vec-fix else)))
+                (implies (not (equal (4vec->lower (3vec-fix test)) 0))
+                         (equal (4vec-? test then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-? 3vec-?)))))
+
+  (local (defthm 4vec-bit?-cases
+           (and (implies (equal test 0)
+                         (equal (4vec-bit? test then else)
+                                (4vec-fix else)))
+                (implies (equal test -1)
+                         (equal (4vec-bit? test then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit?)))))
+
+  (local (defthm 4vec-bitand-case
+           (implies (equal test 0)
+                    (equal (4vec-bitand test x)
+                           0))
+           :hints(("Goal" :in-theory (enable 4vec-bitand 3vec-bitand)))))
+
+  (local (defthm 4vec-bitor-case
+           (implies (equal test -1)
+                    (equal (4vec-bitor test x)
+                           -1))
+           :hints(("Goal" :in-theory (enable 4vec-bitor 3vec-bitor)))))
+
+  (verify-guards svex-eval
+    :hints((and stable-under-simplificationp
+                '(:in-theory (e/d (svex-apply len 4veclist-nth-safe nth)
+                                  (svex-eval))
+                  :expand ((svexlist-eval (svex-call->args x) env)
+                           (svexlist-eval (cdr (svex-call->args x)) env)
+                           (svexlist-eval (cddr (svex-call->args x)) env))))))
+
   (memoize 'svex-eval :condition '(eq (svex-kind x) :call)))
 
 (defsection svexlist-eval-basics
