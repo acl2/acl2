@@ -23,7 +23,8 @@
   '((|Register-Transfer Logic|
      (|Basic Arithmetic Functions| ; basic.lisp
       |Floor and Ceiling|
-      |Modulus|)
+      |Modulus|
+      |Chop|)
      (|Bit Vectors| ; bits.lisp
       |Recognizing Bit Vectors|
       |Bit Slices|
