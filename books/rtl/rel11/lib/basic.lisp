@@ -458,6 +458,8 @@
 ;;;                         CHOP
 ;;;**********************************************************************
 
+(defsection-rtl |Chop| |Basic Arithmetic Functions|
+
 (defund chop (x k)
   (/ (fl (* (expt 2 k) x)) (expt 2 k)))
 
@@ -508,3 +510,4 @@
                 (integerp m)
                 (< (abs (chop x m)) (expt 2 (- m))))
            (equal (chop x m) 0)))
+)
