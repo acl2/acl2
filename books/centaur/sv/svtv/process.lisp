@@ -1248,7 +1248,15 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
     (equal (4vec-p (cdr (assoc key (svtv-run svtv inalist :skip skip :boolvars boolvars :quiet quiet))))
            (and (member key (svtv->outs svtv))
                 (not (member key skip))))
-    :hints(("Goal" :in-theory (enable svtv->outs)))))
+    :hints(("Goal" :in-theory (enable svtv->outs))))
+
+  (defthm lookup-in-svtv-run-with-skips
+    (implies (and (syntaxp (and (quotep skips)
+                                (not (equal skips ''nil))))
+                  (not (member signal skips)))
+             (equal (assoc signal (svtv-run svtv inalist :skip skips))
+                    (assoc signal (svtv-run svtv inalist))))
+ :hints(("Goal" :in-theory (enable svtv-run)))))
 
 (defthm svex-env-p-of-pairlis
   (implies (and (svarlist-p a)
