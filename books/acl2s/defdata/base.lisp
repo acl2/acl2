@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 (include-book ;; Newline to fool ACL2/cert.pl dependency scanner
  "../portcullis")
-(acl2::begin-book t);$ACL2s-Preamble$|#
+(acl2::begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 ;; [Jared] Marking this book as non-acl2(r) because it attempts to prove:
 ;;
@@ -37,7 +37,7 @@
 
 (include-book "tools/rulesets" :dir :system)
 
-(include-book "var-book")
+(include-book "var-book" :ttags :all)
 
 ;; (make-event ;TODO make sure to get this working
 ;;  (er-progn
@@ -240,14 +240,16 @@
 ;;booleans
 
 (defconst *boolean-values* '(t nil))
-(defun nth-boolean (n) (nth (mod n 2) *boolean-values*))
+(defun nth-boolean-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (nth (mod n 2) *boolean-values*))
 ;(define-enumeration-type boolean '(t nil))
 
 
 
 ;-------- define some enumerators --------;
 
-(defun nth-nat (n)
+(defun nth-nat-builtin (n)
   (declare (xargs :guard (natp n)))
   n)
 
@@ -255,6 +257,7 @@
   (declare (xargs :guard (natp n)))
   n)
 
+#|
 (defthm nth-nat-index
   (equal (nat-index (nth-nat n))
          n))
@@ -262,9 +265,9 @@
 (defthm nat-index-nth
   (equal (nth-nat (nat-index n))
          n))
+|#
 
-
-(defexec nth-pos (n)
+(defexec nth-pos-builtin (n)
   (declare (xargs :guard (natp n)))
   (mbe :logic
        (if (natp n)
@@ -272,10 +275,9 @@
          n)
        :exec (1+ n)))
 
-(defthm nth-pos-is-posp
+(defthm nth-pos-builtin-is-posp
   (implies (natp x)
-           (posp (nth-pos x)))
-  :hints (("goal" :in-theory (enable nth-pos)))
+           (posp (nth-pos-builtin x)))
   :rule-classes (:rewrite :type-prescription))
 
 (defexec pos-index (i)
@@ -286,6 +288,7 @@
          i)
        :exec (1- i)))
 
+#|
 (defthm nth-pos-index
   (equal (pos-index (nth-pos n))
          n))
@@ -296,11 +299,14 @@
            (equal (nth-pos (pos-index i))
                   i)))
 
+|#
 
+#|
 (defun pos-multiple-of-threep (v)
   (if (posp v)
     (equal 0 (mod v 3))
     nil)) 
+
 (defun nth-pos-multiple-of-three (n)
  (if (natp n) 
    (* 3 (1+ n))
@@ -311,8 +317,10 @@
          (1- (floor i 3))
          i))
 
+|#
+
 ;;integers
-(defun nth-integer (n)
+(defun nth-integer-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* (;(n (mod n 1000))
          (mag (floor n 2))
@@ -367,7 +375,7 @@
 ||#
 
 ;;only strings upto len 1 to 8
-(defun nth-string (n)
+(defun nth-string-builtin (n)
   (declare (xargs :guard (natp n)))
                   ;:verify-guards nil))
   (let* ((str-len (1+ (mod n 7)))
@@ -375,12 +383,20 @@
          (charlist (get-character-list-from-positions char-pos-list)))
     (coerce charlist 'string)))
 
+(defthm nth-string-is-stringp
+  (implies (natp n)
+           (stringp (nth-string-builtin n)))
+  :rule-classes (:rewrite :type-prescription))
+
+           
+  
+
 (defun standard-stringp (x)
   (declare (xargs :guard t))
   (and (stringp x)
        (standard-char-listp (coerce x 'list))))
 
-(defun nth-standard-string (n)
+(defun nth-standard-string-builtin (n)
   (declare (xargs :guard (natp n)))
                   ;:verify-guards nil))
   (let* ((str-len (1+ (mod n 7)))
@@ -388,32 +404,32 @@
          (charlist (get-standard-char-list-from-positions char-pos-list)))
     (coerce charlist 'string)))
 
-(encapsulate 
- ((nth-symbol (n) t :guard (natp n)))
- (local (defun nth-symbol (n)
-          (declare (xargs :guard (natp n)))
-          (declare (ignore n))
-          'a)))
+;; (encapsulate 
+;;  ((nth-symbol (n) t :guard (natp n)))
+;;  (local (defun nth-symbol (n)
+;;           (declare (xargs :guard (natp n)))
+;;           (declare (ignore n))
+;;           'a)))
 
 (defun nth-symbol-builtin (n)
   (declare (xargs :guard (natp n)))
                  ;:verify-guards nil)) 
-  (intern$ (nth-string n) "ACL2"))
+  (intern$ (nth-string-builtin n) "ACL2"))
 
-(defattach nth-symbol nth-symbol-builtin)
+;; (defattach nth-symbol nth-symbol-builtin)
 
-(encapsulate 
- ((nth-character (n) t :guard (natp n)))
- (local (defun nth-character (n)
-          (declare (xargs :guard (natp n)))
-          (declare (ignore n))
-          '#\A)))
+;; (encapsulate 
+;;  ((nth-character (n) t :guard (natp n)))
+;;  (local (defun nth-character (n)
+;;           (declare (xargs :guard (natp n)))
+;;           (declare (ignore n))
+;;           '#\A)))
 
 (defun nth-character-builtin (n)
   (declare (xargs :guard (natp n)))
   (nth (mod n *len-character-values*) *character-values*))
 
-(defattach nth-character nth-character-builtin)
+;; (defattach nth-character nth-character-builtin)
 
 (defun nth-alpha-num-character (n)
   (declare (xargs :guard (natp n)))
@@ -427,7 +443,7 @@
        (> x 0)
        ))
 
-(defun nth-positive-ratio (n)
+(defun nth-positive-ratio-builtin (n)
   (declare (xargs :guard (natp n)))
   (mbe :logic (if (natp n)
                  (let* ((two-n-list (defdata::split-nat 2 n))
@@ -454,7 +470,7 @@
        ))
 
 
-(defun nth-negative-ratio (n)
+(defun nth-negative-ratio-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* ((two-n-list (defdata::split-nat 2 n))
          (alpha  (car two-n-list))
@@ -476,7 +492,8 @@
   (and (integerp x) 
        (< x 0)
        ))
-(defun nth-neg (n)
+
+(defun nth-neg-builtin (n)
   (declare (xargs :guard (natp n)))
   (- -1 n))
  
@@ -485,19 +502,20 @@
 (thm (iff (integerp x) (intp x)))
 |#
 
-(defun nth-positive-rational (n)
+(defun nth-positive-rational-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* ((two-n-list (defdata::split-nat 2 n))
-         (num (nth-pos (car two-n-list)))
-         (den (nth-pos (cadr two-n-list))))
+         (num (nth-pos-builtin (car two-n-list)))
+         (den (nth-pos-builtin (cadr two-n-list))))
     (/ num den)))
 
-(defun nth-negative-rational (n)
+(defun nth-negative-rational-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* ((two-n-list (defdata::split-nat 2 n))
-         (num (nth-neg (car two-n-list)))
-         (den (nth-pos (cadr two-n-list))))
+         (num (nth-neg-builtin (car two-n-list)))
+         (den (nth-pos-builtin (cadr two-n-list))))
     (/ num den)))
+
 (defun positive-rationalp (x)
   (declare (xargs :guard t))
   (and (rationalp x) 
@@ -510,18 +528,18 @@
        ))
 
 ;(defdata rational (oneof 0 positive-rational negative-rational))
-(defun nth-rational (n)
+(defun nth-rational-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* ((two-n-list (defdata::split-nat 2 n))
-         (num (nth-integer (car two-n-list)))
-         (den (nth-pos (cadr two-n-list))))
+         (num (nth-integer-builtin (car two-n-list)))
+         (den (nth-pos-builtin (cadr two-n-list))))
     (/ num den)))
 
 
 
 (defthm nth-rat-is-ratp
   (implies (natp x)
-           (rationalp (nth-rational x)))
+           (rationalp (nth-rational-builtin x)))
   :rule-classes (:rewrite :type-prescription))
 
  ;lo included, hi included
@@ -533,20 +551,21 @@
                               (rationalp hi))))
 
   (let* ((two-n-list (defdata::split-nat 2 n))
-         (den (nth-pos (car two-n-list)))
+         (den (nth-pos-builtin (car two-n-list)))
          (num (nth-integer-between (cadr two-n-list) 0 (1+ den)))
          (range (- hi lo)))
     (+ lo (* (/ num den) range))))       
 
 
-(defun nth-complex-rational (n)
+(defun nth-complex-rational-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* ((two-n-list (defdata::split-nat 2 n))
-         (rpart (nth-rational (defdata::nfixg (car two-n-list))))
-         (ipart (nth-rational (defdata::nfixg (cadr two-n-list)))))
+         (rpart (nth-rational-builtin (defdata::nfixg (car two-n-list))))
+         (ipart (nth-rational-builtin (defdata::nfixg (cadr two-n-list)))))
     (complex rpart ipart)))
 
 (defun nth-complex-rational-between (n lo hi)
+  (declare (xargs :guard (and (natp n) (complex/complex-rationalp lo) (complex/complex-rationalp hi))))
   (b* ((rlo (realpart lo))
        (rhi (realpart hi))
        (ilo (imagpart lo))
@@ -555,24 +574,24 @@
     (complex (nth-rational-between n1 rlo rhi) (nth-rational-between n2 ilo ihi))))
 
 
-(encapsulate 
- ((nth-acl2-number (n) t :guard (natp n)))
- (local (defun nth-acl2-number (n)
-          (declare (xargs :guard (natp n)))
-          (declare (ignore n))
-          0)))
+;; (encapsulate 
+;;  ((nth-acl2-number (n) t :guard (natp n)))
+;;  (local (defun nth-acl2-number (n)
+;;           (declare (xargs :guard (natp n)))
+;;           (declare (ignore n))
+;;           0)))
 
 (defun nth-acl2-number-builtin (n)
   (declare (xargs :guard (natp n)))
   (b* (((mv choice seed)
         (defdata::switch-nat 4 n)))
     (case choice
-          (0 (nth-nat seed))
-          (1 (nth-integer seed))
-          (2 (nth-rational seed))
-          (t (nth-complex-rational seed)))))
+          (0 (nth-nat-builtin seed))
+          (1 (nth-integer-builtin seed))
+          (2 (nth-rational-builtin seed))
+          (t (nth-complex-rational-builtin seed)))))
 
-(defattach nth-acl2-number nth-acl2-number-builtin)
+;; (defattach nth-acl2-number nth-acl2-number-builtin)
 
 (defun nth-acl2-number-between (n lo hi)
   (b* (((mv choice seed)
@@ -595,7 +614,7 @@
 
 ;(defdata character-list (listof character))
 ;;only strings upto len 1 to 8
-(defun nth-character-list (n)
+(defun nth-character-list-builtin (n)
   (declare (xargs :guard (natp n)))
                   ;:verify-guards nil))
   (let* ((str-len (1+ (mod n 7)))
@@ -603,7 +622,7 @@
          (charlist (get-character-list-from-positions char-pos-list)))
     charlist))
 
-(defun nth-standard-char-list (n)
+(defun nth-standard-char-list-builtin (n)
   (declare (xargs :guard (natp n)))
                   ;:verify-guards nil))
   (let* ((str-len (1+ (mod n 7)))
@@ -644,56 +663,139 @@
 (defun nth-nat-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-nat n-small)))
+    (nth-nat-builtin n-small)))
+
 (defun nth-pos-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-pos n-small)))
+    (nth-pos-builtin n-small)))
+
 (defun nth-neg-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-neg n-small)))
+    (nth-neg-builtin n-small)))
 
 (defun nth-integer-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-integer n-small)))
+    (nth-integer-builtin n-small)))
 
 (defun nth-positive-ratio-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-positive-ratio n-small)))
+    (nth-positive-ratio-builtin n-small)))
+
 (defun nth-negative-ratio-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-negative-ratio n-small)))
+    (nth-negative-ratio-builtin n-small)))
+
 (defun nth-rational-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-rational n-small)))
+    (nth-rational-builtin n-small)))
+
 (defun nth-positive-rational-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-positive-rational n-small)))
+    (nth-positive-rational-builtin n-small)))
+
 (defun nth-negative-rational-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-negative-rational n-small)))
+    (nth-negative-rational-builtin n-small)))
+
 (defun nth-acl2-number-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-acl2-number n-small)))
+    (nth-acl2-number-builtin n-small)))
+
 (defun nth-complex-rational-testing (n)
   (declare (xargs :guard (natp n)))
   (let ((n-small (mod n *number-testing-limit*)))
-    (nth-complex-rational n-small)))
+    (nth-complex-rational-builtin n-small)))
+
+
+
+; register-type ought to also test if not prove the following:
+; TODO:Note it does not prove that type is sound neither that is is complete
+; By Type Soundness i mean (thm (implies (natp n) (Tp (nth-T n)))
+; By Type Completeness i mean (thm (implies (Tp x)
+;                                          (equal x (nth-T (T-index x)))) 
+;                                   where (nth-T (T-index x)) = x
+
+(defmacro register-custom-type  (typename typesize enum pred &key verbose)
+  `(defdata::register-type ,typename :size ,typesize :predicate ,pred :enumerator ,enum :verbose ,verbose))
+
+(register-custom-type nat t nth-nat-builtin natp)
+
+(register-custom-type pos t nth-pos-builtin posp)
+
+(register-custom-type neg t nth-neg-builtin negp )
+(register-custom-type integer t nth-integer-builtin integerp )
+(register-custom-type positive-ratio t nth-positive-ratio-builtin  positive-ratiop)
+(register-custom-type negative-ratio t nth-negative-ratio-builtin  negative-ratiop )
+(register-custom-type positive-rational t nth-positive-rational-builtin  positive-rationalp )
+(register-custom-type negative-rational t nth-negative-rational-builtin  negative-rationalp )
+(register-custom-type rational t nth-rational-builtin  rationalp )
+(register-custom-type complex-rational t nth-complex-rational-builtin  complex-rationalp )
+(register-custom-type acl2-number t nth-acl2-number-builtin  acl2-numberp )
+(register-custom-type boolean 2 nth-boolean-builtin  booleanp );taken care of by define-enumeration-type
+(register-custom-type symbol t nth-symbol-builtin  symbolp)
+
+(verify-termination acl2::legal-constantp)
+(verify-guards acl2::legal-constantp)
+
+(defun proper-symbolp (x)
+  (declare (xargs :guard t))
+  (and (symbolp x)
+       (not (or (keywordp x);a keyword
+                (booleanp x);t or nil
+                (acl2::legal-constantp x)))))
+
+(in-theory (disable acl2::legal-constantp))
+
+(defconst *nice-symbol-names*
+  '(x y z a b c i j k p q r s u v w l d e f g h m n))
+
+(defun nth-proper-symbol-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (let ((psym (nth-symbol n)))
+    (if (proper-symbolp psym)
+        psym
+      (nth (mod n (len *nice-symbol-names*)) *nice-symbol-names*))))
+
+(register-custom-type proper-symbol t nth-proper-symbol-builtin proper-symbolp)
+
+(defun nth-character-uniform-builtin (m seed)
+    (declare (ignorable m))
+     (declare (type (unsigned-byte 31) seed))
+     (declare (xargs :guard (and (natp m)
+                                 (unsigned-byte-p 31 seed))))
+     (mv-let (n seed)
+             (defdata::random-natural-seed seed)
+             (mv (nth-character-builtin n) (the (unsigned-byte 31) seed))))
+   
+(defdata::register-type character :size 62 :enumerator nth-character-builtin :predicate characterp :enum/acc nth-character-uniform-builtin)
+
+
+
+
+;(define-enumeration-type standard-char *standard-chars*)
+(defun nth-standard-char-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (nth (mod n 96) *standard-chars*))
+
+(register-custom-type standard-char 96 nth-standard-char-builtin standard-char-p)
+(register-custom-type string t nth-string-builtin stringp)
+(register-custom-type standard-string t nth-standard-string-builtin standard-stringp)
 
 
 ;; (defun atomp (v)
 ;;   (declare (xargs :guard t))
 ;;   (atom v))
 
-(defun nth-atom (n)
+(defun nth-atom-builtin (n)
   (declare (xargs :guard (natp n)))
   (b* (((mv choice seed) 
         (defdata::weighted-switch-nat 
@@ -713,109 +815,39 @@
     (case choice
           (0 'nil)
           (1 't)
-          (2 (nth-nat-testing seed));smaller numbers
+          (2 (nth-nat seed));smaller numbers
           (3 (nth-symbol seed))
           (4 (nth-string seed))
           (5 (nth-alpha-num-character seed)) ;(nth-character seed))
           (6 (nth-acl2-number seed))
           (7 (nth-rational seed))
-          (8 (nth-pos-testing seed))
+          (8 (nth-pos seed))
           (9 0)
-          (t (nth-integer-testing seed)))))
+          (t (nth-integer seed)))))
 
 ;(defdata atom (oneof acl2-number character symbol string))
 
 
-;atoms
 
-; register-type ought to also test if not prove the following:
-; TODO:Note it does not prove that type is sound neither that is is complete
-; By Type Soundness i mean (thm (implies (natp n) (Tp (nth-T n)))
-; By Type Completeness i mean (thm (implies (Tp x)
-;                                          (equal x (nth-T (T-index x)))) 
-;                                   where (nth-T (T-index x)) = x
-
-(defmacro register-custom-type  (typename typesize enum pred &key verbose)
-  `(defdata::register-type ,typename :size ,typesize :predicate ,pred :enumerator ,enum :verbose ,verbose))
-
-(register-custom-type nat t nth-nat natp)
-
-(register-custom-type pos t nth-pos posp)
-
-(register-custom-type neg t nth-neg negp )
-(register-custom-type integer t nth-integer integerp )
-(register-custom-type positive-ratio t nth-positive-ratio  positive-ratiop)
-(register-custom-type negative-ratio t nth-negative-ratio  negative-ratiop )
-(register-custom-type positive-rational t nth-positive-rational  positive-rationalp )
-(register-custom-type negative-rational t nth-negative-rational  negative-rationalp )
-(register-custom-type rational t nth-rational  rationalp )
-(register-custom-type complex-rational t nth-complex-rational  complex-rationalp )
-(register-custom-type acl2-number t nth-acl2-number  acl2-numberp )
-(register-custom-type boolean 2 nth-boolean  booleanp );taken care of by define-enumeration-type
-(register-custom-type symbol t nth-symbol  symbolp)
-
-(verify-termination acl2::legal-constantp)
-(verify-guards acl2::legal-constantp)
-(defun proper-symbolp (x)
-  (declare (xargs :guard t))
-  (and (symbolp x)
-       (not (or (keywordp x);a keyword
-                (booleanp x);t or nil
-                (acl2::legal-constantp x)))))
-
-(in-theory (disable acl2::legal-constantp))
-
-(defconst *nice-symbol-names*
-  '(x y z a b c i j k p q r s u v w l d e f g h m n))
-
-(defun nth-proper-symbol (n)
-  (declare (xargs :guard (natp n)))
-  (let ((psym (nth-symbol n)))
-    (if (proper-symbolp psym)
-        psym
-      (nth (mod n (len *nice-symbol-names*)) *nice-symbol-names*))))
-
-(register-custom-type proper-symbol t nth-proper-symbol proper-symbolp)
-
-(defun nth-character-uniform (m seed)
-    (declare (ignorable m))
-     (declare (type (unsigned-byte 31) seed))
-     (declare (xargs :guard (and (natp m)
-                                 (unsigned-byte-p 31 seed))))
-     (mv-let (n seed)
-             (defdata::random-natural-seed seed)
-             (mv (nth-character n) (the (unsigned-byte 31) seed))))
-   
-(defdata::register-type character :size 62 :enumerator nth-character :predicate characterp :enum/acc nth-character-uniform)
-
-
-
-
-;(define-enumeration-type standard-char *standard-chars*)
-(defun nth-standard-char (n)
-  (declare (xargs :guard (natp n)))
-  (nth (mod n 96) *standard-chars*))
-(register-custom-type standard-char 96 nth-standard-char standard-char-p)
-(register-custom-type string t nth-string stringp)
-(register-custom-type standard-string t nth-standard-string standard-stringp)
-(register-custom-type atom t nth-atom atom);instead of atomp Exception
+(register-custom-type atom t nth-atom-builtin atom);instead of atomp Exception
 
 ;added the above atom primitive types in the data-type graph using register-custom-type
 
 ;custom type
 (defconst *z-values* '(0 -1 "a" 1/3 :a)) ;for zp
-(defun nth-z (n)
+(defun nth-z-builtin (n)
   (declare (xargs :guard (natp n)))
   (nth (mod n 5) *z-values*))
-(defun nth-z-uniform (m seed)
+
+(defun nth-z-uniform-builtin (m seed)
     (declare (ignorable m))
      (declare (type (unsigned-byte 31) seed))
      (declare (xargs :guard (and (natp m)
                                  (unsigned-byte-p 31 seed))))
      (mv-let (n seed)
              (defdata::random-natural-seed seed)
-             (mv (nth-z n) (the (unsigned-byte 31) seed))))
-(defdata::register-type z :size t :enumerator nth-z :predicate zp :enum/acc nth-z-uniform)
+             (mv (nth-z-builtin n) (the (unsigned-byte 31) seed))))
+(defdata::register-type z :size t :enumerator nth-z-builtin :predicate zp :enum/acc nth-z-uniform-builtin)
 
 
 ;Subtype relations betweem the above
@@ -919,7 +951,7 @@
 
 
 ;MAJOR CHANGE June 6th 2010, now we have no guards in any enumerators
-(defun nth-proper-cons (n)
+(defun nth-proper-cons-builtin (n)
 ;  (declare (xargs :guard (natp n)))
   (declare (xargs :mode :program))
   (b* (((mv choice seed)
@@ -958,7 +990,51 @@
            (list (nth-atom i1) (nth-atom i2) (nth-atom i3) (nth-atom i4) (nth-atom i5))))
       (t '(1  2)))))
 
-(register-custom-type proper-cons t nth-proper-cons  proper-consp)
+
+(defun nth-proper-cons-uniform-builtin (m seed.)
+  (declare (xargs :mode :program))
+  (declare (ignorable m) (type (unsigned-byte 31) seed.))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed.))))
+
+  (b* (((mv n seed.) (defdata::random-natural-seed seed.))
+       ((mv choice n)
+        (defdata::weighted-switch-nat 
+          '(
+            1  ;list-a
+            1  ;list-aa
+            1  ;list-aaa
+            1  ;list-a-ca
+            1  ;list-aa-ca 
+            1  ;list-aa-cca
+            1  ;list-aaaa-cccca
+            1  ;list-ca-cca
+            1  ;list-ca-cccca
+            ) n))
+       ((mv (list i1 i2 i3 i4 i5 i6) seed.) (defdata::random-natural-list-seed 6 seed.)))
+       
+
+       
+
+    (case choice
+      (0 (mv (list (nth-atom n)) seed.))
+      (1 (mv (list (nth-atom i1) (nth-atom i2)) seed.))
+      (2 (mv (list (nth-atom i1) (nth-atom i2) (nth-atom i3)) seed.))
+      (3 (mv (list (nth-atom i1) (cons (nth-atom i2) (nth-atom i3))) seed.))
+      (4 (mv (list (nth-atom i1) (nth-atom i2) (nth-atom i3) (cons (nth-atom i4) (nth-atom i5))) seed.))
+      (5 (mv (list (nth-atom i1) (nth-atom i2) (cons (cons (nth-atom i3) (nth-atom i4)) 
+                                                     (cons (nth-atom i5) (nth-atom i6)))) seed.))
+      (6 (mv (list (nth-cons-atom i1) (cons (cons (nth-cons-atom i2) (nth-cons-atom i3)) 
+                                            (cons (nth-cons-atom i4) (nth-cons-atom i5)))) seed.))
+      (7 (mv (list (nth-cons-atom i1) (cons (cons (nth-atom i2) (nth-atom i3)) 
+                                          (cons (nth-atom i4) (nth-atom i5)))) seed.))
+      (8 (mv (list (nth-atom i1) (nth-atom i2) (nth-atom i3) (nth-atom i4) (nth-atom i5)) seed.))
+      (t (mv '(1  2) seed.)))))
+
+(register-type proper-cons
+               :size t
+               :enumerator nth-proper-cons-builtin
+               :enum/acc nth-proper-cons-uniform-builtin
+               :predicate proper-consp)
 
 
 
@@ -980,13 +1056,13 @@
 (defdata::register-type character-list 
                :size t 
                :predicate character-listp
-               :enumerator nth-character-list  
+               :enumerator nth-character-list-builtin  
                :prettyified-def (listof character))
                
 (defdata::register-type standard-char-list 
                :size t 
                :predicate  standard-char-listp
-               :enumerator nth-standard-char-list 
+               :enumerator nth-standard-char-list-builtin
                :prettyified-def (listof standard-char))
 
 ; TAU characterization of standard-char-list (copied and string/replaced from def=>String-list)
@@ -1042,13 +1118,71 @@
 ;; (verify-guards  NTH-STRING-LIST)
 ;; (verify-guards NTH-ATOM-LIST)
 
-(defun nth-all (n)
+(defun nth-all-builtin (n)
   (declare (xargs :mode :program))
   (declare (xargs :guard (natp n)))
  
            
                   ;;:verify-guards nil))
   (b* (((mv choice seed)
+        (defdata::weighted-switch-nat 
+          '(1  ;nil
+            1  ;0
+            1 ;t
+            1 ;integer
+            1 ;rational
+            1  ;nat-list
+            1  ;sym
+            1  ;string
+            2  ;char
+            1  ;acl2-num
+            1  ;atom
+            5 ;list-aa
+            5 ;integer-list
+            5  ;rational-list
+            2  ;sym-list
+            20 ;cons-atom
+            5  ;charlist
+            10  ;cons-cons-atom
+            1  ;stringlist
+            10  ;atom-list
+            5   ;list-la-la
+            ) n)))
+      
+    (case choice
+          (0 'nil)
+          (1 0)
+          (2 't)
+          (3 (nth-integer seed))
+          (4 (nth-rational seed))
+          (5 (nth-nat-list seed))
+          (6 (nth-symbol seed))
+          (7 (nth-string seed))
+          (8 (nth-alpha-num-character seed)) ;(nth-character seed))
+          (9 (nth-acl2-number seed))
+          (10 (nth-atom seed))
+          (11 (b* (((list i1 i2) (defdata::split-nat 2 seed))) (list (nth-atom i1) (nth-atom i2)))) ;(nth-list-aa seed))
+          (12 (nth-integer-list seed))
+          (13 (nth-rational-list seed))
+          (14 (nth-symbol-list seed))
+          (15 (nth-cons-atom seed))
+          (16 (nth-character-list seed))
+          (17 (b* (((list i1 i2) (defdata::split-nat 2 seed))) 
+                (cons (nth-cons-atom i1) (nth-cons-atom i2)))) ;(cons-ca-ca seed))
+          (18 (nth-string-list seed))
+          (19 (nth-atom-list seed))
+          (20 (b* (((list i1 i2 i3 i4) (defdata::split-nat 4 seed))) 
+                (list (list (nth-atom i1) (nth-atom i2)) 
+                      (list (nth-atom i3) (nth-atom i4))))) ;(list-la-la seed))
+          (t 'nil)))) ;this case should not come up
+
+(defun nth-all-uniform-builtin (m seed)
+  (declare (xargs :mode :program))
+  (declare (type (unsigned-byte 31) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+
+  (b* (((mv n seed) (defdata::random-natural-seed seed))
+       ((mv choice ?rest)
         (defdata::weighted-switch-nat 
           '(1  ;nil
             1  ;0
@@ -1073,31 +1207,34 @@
             ) n)))
       
     (case choice
-          (0 'nil)
-          (1 0)
-          (2 't)
-          (3 (nth-integer-testing seed))
-          (4 (nth-rational seed))
-          (5 (nth-nat-list seed))
-          (6 (nth-symbol seed))
-          (7 (nth-string seed))
-          (8 (nth-alpha-num-character seed)) ;(nth-character seed))
-          (9 (nth-acl2-number seed))
-          (10 (nth (mod seed 2) *boolean-values*))
-          (11 (nth-nat-testing seed))
-          (12 (nth-pos-testing seed))
-          (13 (nth-rational-list seed))
-          (14 (nth-symbol-list seed))
-          (15 (nth-cons-atom seed))
-          (16 (nth-character-list seed))
-          (17 (b* (((list i1 i2) (defdata::split-nat 2 seed))) 
-                (cons (nth-cons-atom i1) (nth-cons-atom i2)))) ;(cons-ca-ca seed))
-          (18 (nth-string-list seed))
-          (19 (nth-atom-list seed))
-          (t 'nil)))) ;this case should not come up
+          (0 (mv 'nil seed))
+          (1 (mv 0 seed))
+          (2 (mv 't seed))
+          (3 (nth-integer/acc m seed))
+          (4 (nth-rational/acc m seed))
+          (5 (nth-nat-list/acc m seed))
+          (6 (nth-symbol/acc m seed))
+          (7 (nth-string/acc m seed))
+          (8 (mv (nth-alpha-num-character rest) seed)) ;(nth-character seed))
+          (9 (nth-acl2-number/acc m seed))
+          (10 (mv (nth (mod rest 2) *boolean-values*) seed))
+          (11 (nth-nat/acc m seed))
+          (12 (nth-pos/acc m seed))
+          (13 (nth-rational-list/acc m seed))
+          (14 (nth-symbol-list/acc m seed))
+          (15 (nth-cons-atom/acc m seed))
+          (16 (nth-character-list/acc m seed))
+          (17 (nth-cons-ca-ca/acc m seed))
+          (18 (nth-string-list/acc m seed))
+          (19 (nth-atom-list/acc m seed))
+          (t (mv 'nil seed)))))
 
-
-(register-custom-type all t nth-all  allp)
+(defdata::register-type all
+  :predicate allp
+  :size t
+  :enumerator nth-all-builtin
+  :enum/acc nth-all-uniform-builtin)
+  
 
 
 ;We will also name a special type, the empty type, which has no elements in its typeset.
@@ -1105,6 +1242,9 @@
 (defun nth-empty (x)
   (declare (ignore x) (xargs :guard (natp x)))
   (er hard? 'nth-empty "~| Empty enumerator~%"))
+(defun nth-empty/acc (m seed)
+  (declare (ignorable m seed))
+  (mv (er hard? 'nth-empty "~| Empty enumerator~%") seed))
 ;TODO - if type is already registered, then we should be able to pick the predicate
 ;from the table instead of syntactically from the type.
 (defun emptyp (x)
@@ -1115,7 +1255,14 @@
     (booleanp (emptyp x))
   :rule-classes :tau-system)
 
-(register-custom-type empty 0 nth-empty emptyp)
+;(register-custom-type empty 0 nth-empty-builtin emptyp)
+(TABLE DEFDATA::TYPE-METADATA-TABLE 'EMPTY
+        '((:PREDICATE . EMPTYP)
+          (:ENUMERATOR . NTH-EMPTY)
+          (:SIZE . 0)
+          (:ENUM/ACC . NTH-EMPTY/ACC)
+          ))
+
 ;NOTE: empty is a special type, so we treat it specially and seperately, rather than the
 ;usual way of going through the data type graph, and it might lead to inconsistency
 ;with the ACL2 axioms about datatypes.
@@ -1158,7 +1305,7 @@
 
 (defdata list (oneof cons nil))
 
-(DEFUNS (NTH-TRUE-LIST
+(DEFUNS (NTH-TRUE-LIST-builtin
                (X)
                (declare (xargs :mode :program))
                (DECLARE (XARGS :guard (natp x) :verify-guards nil
@@ -1169,12 +1316,27 @@
                         (LET ((INFXLST (DEFDATA::SPLIT-NAT 2 X)))
                              (CONS (LET ((X (NTH 0 INFXLST))) (NTH-ALL X))
                                    (LET ((X (NTH 1 INFXLST)))
-                                        (NTH-TRUE-LIST X))))))))
+                                        (NTH-TRUE-LIST-builtin X))))))))
+
+(defun nth-tl/acc-builtin (i1 seed.)
+  (declare (type (unsigned-byte 31) seed.))
+  (declare (xargs :mode :program
+                  :guard (and (natp i1)
+                              (unsigned-byte-p 31 seed.))))
+  (b* (((mv _choice i1) (switch 2 i1)))
+    (case _choice
+      (0 (mv 'nil seed.))
+      (1 (b* (((mv (list i1 i2) seed.) (defdata::random-index-list-seed 2 i1 seed.))
+              ((mv _v1 seed.) (nth-all/acc i1 seed.))
+              ((mv _v2 seed.) (nth-tl/acc-builtin i2 seed.)))
+           (mv (cons _v1 _v2) seed.)))
+      (otherwise (mv nil seed.)))))
 
 (defdata::register-type true-list 
                :size t 
                :predicate true-listp
-               :enumerator nth-true-list 
+               :enumerator nth-true-list-builtin
+               :enum/acc nth-tl/acc-builtin
                :prettyified-def (listof all))
 
 ;some alists
@@ -1211,7 +1373,7 @@
        (not (equal x 't))
        (not (equal x 'nil))))
             
-(defun nth-all-but-zero-nil-t (n)
+(defun nth-all-but-zero-nil-t-builtin (n)
   (declare (xargs :mode :program))
   (declare (xargs :guard (natp n)))
 
@@ -1236,12 +1398,12 @@
               ) n)))
     
     (case choice
-          (0 (nth-integer-testing seed))
+          (0 (nth-integer seed))
           (1 (nth-character-list seed))
           (2 (nth-symbol seed))
           (3 (nth-string seed))
           (4 (nth-character seed))
-          (5 (nth-pos-testing seed))
+          (5 (nth-pos seed))
           (6 (nth-positive-ratio seed))
           (7 (nth-negative-ratio seed))
           (8 (nth-complex-rational seed))
@@ -1255,15 +1417,30 @@
           (15 (nth-atom-list seed))
           (t 1))))
 
-(register-custom-type all-but-zero-nil-t t nth-all-but-zero-nil-t  all-but-zero-nil-tp)
+(defun nth-all-but-zero-nil-t-uniform-builtin (m seed.)
+  (declare (xargs :mode :program))
+  (declare (type (unsigned-byte 31) seed.))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed.))))
+  (b* (((mv ans seed.) (nth-all-uniform-builtin m seed.)))
+    (if (or (booleanp ans)
+            (equal ans 0))
+        (b* (((mv n seed.) (defdata::random-natural-seed seed.)))
+          (mv (nth-all-but-zero-nil-t-builtin n) seed.))
+      (mv ans seed.))))
+             
+(register-type all-but-zero-nil-t
+               :size t
+               :enum/acc nth-all-but-zero-nil-t-uniform-builtin
+               :enumerator nth-all-but-zero-nil-t-builtin
+               :predicate all-but-zero-nil-tp)
 
             
-(defun nth-wf-key (n) ;;since nth-all-but-zero-nil-t has strings of length less than 8, it cannot include the ill-formed-key
+(defun nth-wf-key-builtin (n) ;;since nth-all-but-zero-nil-t has strings of length less than 8, it cannot include the ill-formed-key
   (declare (xargs :guard (natp n)))
   (declare (xargs :mode :program))
   (nth-all-but-zero-nil-t n))
 
-(register-custom-type wf-key t nth-wf-key wf-keyp)
+(register-custom-type wf-key t nth-wf-key-builtin wf-keyp)
 
 ;; Same problem as in sets. A nil is also a good-map!
 ;; 3 April 2014
@@ -1288,14 +1465,14 @@
                            :hints (("Goal" :in-theory (enable good-map)))
                            :proper nil)
 
-(defun nth-all-but-nil (n)
+(defun nth-all-but-nil-builtin (n)
   (declare (xargs :mode :program))
   (declare (xargs :guard (natp n)))
   (cond ((eql n 0) 0)
         ((eql n 12) t)
         (t (nth-all-but-zero-nil-t n))))
 
-(register-custom-type all-but-nil t nth-all-but-nil  all-but-nilp)
+(register-custom-type all-but-nil t nth-all-but-nil-builtin  all-but-nilp)
 
 (defdata-subtype all-but-zero-nil-t all)
 (defdata-subtype all-but-nil all) ;make this the pseudo top type!
@@ -1321,7 +1498,7 @@
 ;(verify-guards allp)
 (defdata cons-all-all-but-zero-nil-t (cons all all-but-zero-nil-t) )
 
-(defun nth-improper-cons (n)
+(defun nth-improper-cons-builtin (n)
 ;  (declare (xargs :guard (natp n)))
   (declare (xargs  :mode :program))
   (b* (((mv choice seed)
@@ -1348,7 +1525,41 @@
       (7 (nth-cons-ca-cccca seed))
       (t '(1 . 2)))))
 
-(register-custom-type improper-cons t nth-improper-cons  improper-consp)
+(defun nth-improper-cons-uniform-builtin (m seed)
+  (declare (xargs :mode :program))
+  (declare (type (unsigned-byte 31) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+
+  (b* (((mv n seed) (defdata::random-natural-seed seed))
+       ((mv choice ?rest)
+        (defdata::weighted-switch-nat 
+          '(
+            1  ;cons-all-all-but-zero-nil-t
+            1  ;cons-ca-ca
+            1  ;cons-a-ca
+            1  ;cons-a-cca
+            1  ;cons-a-cccca
+            1  ;cons-cccca-cccca
+            1  ;cons-ca-cca
+            1  ;cons-ca-cccca
+            ) n)))
+    
+    (case choice
+      (0 (nth-cons-all-all-but-zero-nil-t/acc m seed))
+      (1 (nth-cons-ca-ca/acc m seed))
+      (2 (nth-cons-a-ca/acc m seed))
+      (3 (nth-cons-a-cca/acc m seed))
+      (4 (nth-cons-a-cccca/acc m seed))
+      (5 (nth-cons-cccca-cccca/acc m seed))
+      (6 (nth-cons-ca-cca/acc m seed))
+      (7 (nth-cons-ca-cccca/acc m seed))
+      (t (mv '(1 . 2) seed)))))
+
+(register-type improper-cons
+               :size t
+               :enumerator nth-improper-cons-builtin
+               :enum/acc nth-improper-cons-uniform-builtin
+               :predicate improper-consp)
 
 (defdata-subtype improper-cons cons)
 
@@ -1428,15 +1639,15 @@
 
 ; TODO 29 March 2014
 ; - add oddp and evenp (but do this consistently, these definitions are only valid when we additionally know that v is a integer.
-(defun nth-even (n) 
-  (declare (xargs :guard (natp n)))
+(defun nth-even-builtin (n) 
+  (declare (xargs :verify-guards nil :guard (natp n)))
   (* 2 (nth-integer n)))
 
 (defdata::register-type even 
                :predicate evenp 
-               :enumerator nth-even)
+               :enumerator nth-even-builtin)
 
-(defun nth-odd (n) 
+(defun nth-odd-builtin (n) 
   (declare (xargs :guard (natp n)))
   (if (evenp n)
       (1+ n)
@@ -1445,7 +1656,7 @@
 ;(defun nth-odd (n) (1+ (* 2 (nth-integer))))
 (defdata::register-type odd 
                :predicate oddp 
-               :enumerator nth-odd)
+               :enumerator nth-odd-builtin)
 
 (defdata-subtype var symbol)
 

@@ -300,11 +300,6 @@ B is the builtin combinator table."
 ;;   (for ((p in ps)) (append (user-combinator-theory-ev p kwd-alist wrld))))
 
 
-(defun print-summary-events ( D kwd-alist wrld)
-  (declare (ignorable D kwd-alist wrld))
-  '())
- 
-
 
 
 
@@ -342,18 +337,20 @@ B is the builtin combinator table."
 (defun defdata-events (a1 wrld)
   (b* (((list D kwd-alist) a1)) ;a1 is the result of parse-defdata
 
-    `(with-output :on (summary) :off (prove event observation)
-       :summary (acl2::form acl2::time)
-       (encapsulate nil
-         (logic)
-         (with-output :summary (acl2::form) :on (error)
-           (progn
+    `(WITH-OUTPUT
+      :ON (SUMMARY ERROR) :OFF (PROVE EVENT OBSERVATION)
+      :SUMMARY (ACL2::FORM ACL2::TIME)
+      (PROGN
+       (ENCAPSULATE nil
+         (LOGIC)
+         (WITH-OUTPUT :SUMMARY (ACL2::FORM) :ON (ERROR)
+           (PROGN
              ,@(collect-events :pre-events D kwd-alist)
              ,@(funcalls-append (get1 :pre-hook-fns kwd-alist) (list D kwd-alist wrld) wrld)
 ;             (acl2::acl2s-defaults :set acl2::testing-enabled ,(get1 :testing-enabled kwd-alist))
-             (set-bogus-defun-hints-ok t)
-             (set-ignore-ok t)
-             (set-irrelevant-formals-ok t)
+             (SET-BOGUS-DEFUN-HINTS-OK T)
+             (SET-IGNORE-OK T)
+             (SET-IRRELEVANT-FORMALS-OK t)
              ;(local (in-theory (disable . ,disable-rules)))
              ;(local (in-theory (enable . ,enable-rules)))
 
@@ -374,9 +371,8 @@ B is the builtin combinator table."
              ,@(funcalls-append (get1 :cgen-hook-fns kwd-alist) (list D kwd-alist wrld) wrld)
 
 
-             ,@(register-type-events D kwd-alist wrld)
-             
-             . ,(print-summary-events D kwd-alist wrld)))))))
+             )))
+       ,@(register-type-events D kwd-alist wrld)))))
        
 
 ; PARSING
@@ -655,9 +651,13 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
 
 (defun type-metadata-basis (tname curr-pkg)
   (declare (xargs :guard (symbolp tname)))
-  (b* ((minimal-vals (list (make-predicate-symbol tname curr-pkg) 
-                           (make-enumerator-symbol tname curr-pkg) 
-                           (make-uniform-enumerator-symbol tname curr-pkg)))
+  (b* ((minimal-vals (list (make-predicate-symbol tname curr-pkg)
+                           ;; [2015-06-17 Wed] enumerators are defattachable 
+                           (s+ "NTH-" tname "-BUILTIN" :pkg curr-pkg)
+                           ;;(make-enumerator-symbol tname curr-pkg)
+                           (s+ "NTH-" tname "/ACC-BUILTIN" :pkg curr-pkg)
+                           ;;(make-uniform-enumerator-symbol tname curr-pkg)
+                           ))
        (minimal-keys '(:predicate :enumerator :enum/acc)))
     (cons tname (pairlis$ minimal-keys minimal-vals))))
 
@@ -668,7 +668,7 @@ Please use intermediate definitions. If you think you cannot avoid nested naming
 
 
 
-(defconst *per-def-keywords* '(:satisfies :satisfies-fixer :equiv :equiv-fixer))
+(defconst *per-def-keywords* '(:satisfies :satisfies-fixer))
 
 
 
@@ -1039,26 +1039,26 @@ tables capture their form:
 
 ** Builtin combinators
 [2014-04-23 Wed 14:09]
-| property name   | kind of value        | default  |
-|-----------------+----------------------+----------|
-| :aliases        | listof names         | '(_key_) |
-|-----------------+----------------------+----------|
-| :arity          | pos or t (variadic)  |          |
-|-----------------+----------------------+----------|
-| :pred-I         | \x s. pred-expr or nil       |          |
-|-----------------+----------------------+----------|
+| property name   | kind of value               | default  |
+|-----------------+-----------------------------+----------|
+| :aliases        | listof names                | '(_key_) |
+|-----------------+-----------------------------+----------|
+| :arity          | pos or t (variadic)         |          |
+|-----------------+-----------------------------+----------|
+| :pred-I         | \x s. pred-expr or nil      |          |
+|-----------------+-----------------------------+----------|
 | :pred-inverse-I | \e. core-defdata exp or nil |          |
-|-----------------+----------------------+----------|
-| :enum-I         | \n s. enum-expr        |          |
-|-----------------+----------------------+----------|
+|-----------------+-----------------------------+----------|
+| :enum-I         | \n s. enum-expr             |          |
+|-----------------+-----------------------------+----------|
 | :enum/acc-I     | \m seed s. enum2-expr       |          |
-|-----------------+----------------------+----------|
-| :gen-I          | \s. generator-expr   |          |
-|-----------------+----------------------+----------|
-| :fixer-I        | \s dom. fixer-expr   |          |
-|-----------------+----------------------+----------|
-| :type-class     | type-class           |          |
-|-----------------+----------------------+----------|
+|-----------------+-----------------------------+----------|
+| :gen-I          | \s. generator-expr          |          |
+|-----------------+-----------------------------+----------|
+| :fixer-I        | \s dom. fixer-expr          |          |
+|-----------------+-----------------------------+----------|
+| :type-class     | type-class                  |          |
+|-----------------+-----------------------------+----------|
 
 Notes: meta-variable s ranges over core defdata expressions.
 meta-variable e ranges over ACL2 expressions I above is short for
@@ -1073,26 +1073,26 @@ have the responsibility of handling these.
 
 The following accomodates both primitive and user-defined
 constructors.
-| property name          | kind of value       | default         | notes                           |
-|------------------------+---------------------+-----------------+---------------------------------|
-| :proper                | boolean             | t               | uniquely decomposable           |
-|------------------------+---------------------+-----------------+---------------------------------|
-| :arity                 | natp                |                 |                                 |
-|------------------------+---------------------+-----------------+---------------------------------|
-| :recog                 | fn name             | '_key_p         |                                 |
-|------------------------+---------------------+-----------------+---------------------------------|
-| :dest-pred-alist     | symbol-alist        |                 | pred is a pred fn name
-|------------------------+---------------------+-----------------+---------------------------------|
-| :local-events          | listof events       | '()             | supporting events               |
-|------------------------+---------------------+-----------------+---------------------------------|
-| :export-defthms        | listof events       | '()             |                                 |
-|------------------------+---------------------+-----------------+---------------------------------|
-| :polymorphic-events    | listof template     | '()             | poly func inst                  |
-|------------------------+---------------------+-----------------+---------------------------------|
-| :polymorphic-type-form | texp with type vars | nil             | e.g. (cons :a :b)               |
-|------------------------+---------------------+-----------------+---------------------------------|
-| :theory-name           | symbol              | '_key_-THEORY   | name of deftheory               |
-|------------------------+---------------------+-----------------+---------------------------------|
+| property name          | kind of value       | default       | notes                  |
+|------------------------+---------------------+---------------+------------------------|
+| :proper                | boolean             | t             | uniquely decomposable  |
+|------------------------+---------------------+---------------+------------------------|
+| :arity                 | natp                |               |                        |
+|------------------------+---------------------+---------------+------------------------|
+| :recog                 | fn name             | '_key_p       |                        |
+|------------------------+---------------------+---------------+------------------------|
+| :dest-pred-alist       | symbol-alist        |               | pred is a pred fn name |
+|------------------------+---------------------+---------------+------------------------|
+| :local-events          | listof events       | '()           | supporting events      |
+|------------------------+---------------------+---------------+------------------------|
+| :export-defthms        | listof events       | '()           |                        |
+|------------------------+---------------------+---------------+------------------------|
+| :polymorphic-events    | listof template     | '()           | poly func inst         |
+|------------------------+---------------------+---------------+------------------------|
+| :polymorphic-type-form | texp with type vars | nil           | e.g. (cons :a :b)      |
+|------------------------+---------------------+---------------+------------------------|
+| :theory-name           | symbol              | '_key_-THEORY | name of deftheory      |
+|------------------------+---------------------+---------------+------------------------|
 
 Notes: 
 
