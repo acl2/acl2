@@ -1310,7 +1310,7 @@ the form is a list of keyword arguments:</p>
 <ul>
 
 <li>@(':cond') describes how to tell whether an object is of this product type.
-To determine the kind of an SUM object, the SUM kind function checks each of
+To determine the kind of a SUM object, the SUM kind function checks each of
 the product conditions in turn, returning the name of the first matching
 condition.  So the condition for a given product assumes the negations of the
 conditions of the previous listed products.  The @(':cond') field defaults to
