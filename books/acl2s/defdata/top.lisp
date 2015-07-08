@@ -183,9 +183,9 @@ is the given by its macroexpansion.
       nil
       (cons (1- n) (make-descending-addresses (- n 1)))))
   
-  (defun nth-imem-custom (n)
+  (defun imem-custom-enum (n)
     (declare (xargs :mode :program))
-    (let* ((m (nth-imem n))
+    (let* ((m (nth-imem-builtin n))
            (vals (strip-cdrs m))
            (keys (make-descending-addresses (len m))))
       (pairlis$ keys vals)))
@@ -203,10 +203,10 @@ is the given by its macroexpansion.
   
   (register-type imem-custom
                  :predicate imem-customp
-                 :enumerator nth-imem-custom)
+                 :enumerator imem-custom-enum)
   
   
-  (defdata-attach imem :test-enumerator nth-imem-custom)
+  (defdata-attach imem :test-enumerator imem-custom-enum)
 })
 
 
@@ -247,13 +247,13 @@ is the given by its macroexpansion.
 
 <h4>Registering a type</h4>
 @({
-  (defun nth-even (n) 
+  (defun nth-even-builtin (n) 
     (declare (xargs :guard (natp n)))
     (* 2 (nth-integer n)))
   
   (register-type even 
                  :predicate evenp 
-                 :enumerator nth-even)
+                 :enumerator nth-even-builtin)
 })
 
 <h4>Registering user-defined combinators</h4>
@@ -298,14 +298,14 @@ package.</p>
 "
 <h3>Example</h3>
 @({
-  (defun nth-odd (n) 
+  (defun nth-odd-builtin (n) 
     (if (evenp n)
         (1+ n)
       (- n)))
   
   (register-type odd
                  :predicate oddp 
-                 :enumerator nth-odd)
+                 :enumerator nth-odd-builtin)
 })
 
 <h3>Introduction</h3>
@@ -511,9 +511,9 @@ Here is how we added <i>alistof</i> to the defdata language:
 "
 <h3>Examples:</h3>
 @({
-  (defdata-attach pos :enum/test nth-small-pos-testing)
+  (defdata-attach pos :enumerator nth-small-pos-testing)
   
-  (defdata-attach imem :enumerator nth-imem-custom :override-ok t)
+  (defdata-attach imem :enum/acc imem-custom-enum2)
 })
 
 <h3>General Form:</h3>

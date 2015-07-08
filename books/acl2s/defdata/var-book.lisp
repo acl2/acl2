@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 (include-book ;; Newline to fool ACL2/cert.pl dependency scanner
  "../portcullis")
-(begin-book t);$ACL2s-Preamble$|#
+(begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 #|           
 Sat May 10  EDT 2014
@@ -99,14 +99,14 @@ is accepted by ACL2s, but this is not
  (local
   (include-book "arithmetic-5/top" :dir :system))
 
-  (verify-termination nth-var-char))
+  (verify-termination nth-var-char-builtin))
 
 ; generate a char-list-aux from a list of nats
 (defun get-var-char-list-aux-from-positions (l)
   (declare (xargs :guard (nat-listp l)))
   (if (endp l)
     nil
-    (cons (nth-var-char (car l))
+    (cons (nth-var-char-builtin (car l))
           (get-var-char-list-aux-from-positions (cdr l)))))
 
 ; fixing a var-char-list-aux so that it is a var-char-list
@@ -173,7 +173,7 @@ is accepted by ACL2s, but this is not
        (clist (fix-char-list charlist)))
       (coerce clist 'string)))
 
-(defun nth-var (n)
+(defun nth-var-builtin (n)
 ;  (declare (xargs :guard (natp n)))
   (intern-in-package-of-symbol (nth-var-string n) 'acl2::acl2-pkg-witness))
 
@@ -186,7 +186,7 @@ is accepted by ACL2s, but this is not
        (clist (coerce name 'list)))
       (var-char-listp clist)))
         
-(register-type var :predicate varp :enumerator nth-var) 
+(register-type var :predicate varp :enumerator nth-var-builtin) 
 
 (defthm var-symbolp
   (implies (varp x)
