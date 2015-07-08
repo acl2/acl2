@@ -80,10 +80,10 @@ data last modified: [2015-06-09 Tue]
 (logic)
 
 (defconst *defdata-attach-need-override-permission-keywords* 
-  '(:enum/acc :size :prettyified-def)) ;add more later
+  '(:size :prettyified-def)) ;add more later
 
 (defconst *defdata-attach-keywords* (append '(:test-enumerator ;aliased to :enumerator
-                                              :enumerator
+                                              :enumerator :enum/acc
                                               :equiv :equiv-fixer
                                               :sampling
                                               :fixer :fixer-domain)

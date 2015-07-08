@@ -513,7 +513,7 @@ Here is how we added <i>alistof</i> to the defdata language:
 @({
   (defdata-attach pos :enumerator nth-small-pos-testing)
   
-  (defdata-attach imem :enum/acc imem-custom-enum2 :override-ok t)
+  (defdata-attach imem :enum/acc imem-custom-enum2)
 })
 
 <h3>General Form:</h3>
