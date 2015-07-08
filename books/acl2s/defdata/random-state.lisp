@@ -152,6 +152,16 @@
          ((mv n1 seed.)   (if (zp max) (mv 0 seed.) (random-index-seed max seed.))))
       (mv (cons n1 rest) seed.))))
 
+(defun random-natural-list-seed (k seed.)
+  (declare (type (unsigned-byte 31) seed.))
+  (declare (xargs :verify-guards nil
+                  :guard (unsigned-byte-p 31 seed.)))
+  (if (zp k)
+      (mv '() seed.)
+    (b* (((mv rest seed.) (random-natural-list-seed (1- k) seed.))
+         ((mv n1 seed.)   (random-natural-seed seed.)))
+      (mv (cons n1 rest) seed.))))
+
 ; pseudo-uniform rational between 0 and 1 (inclusive)
 ;optimize later (copied from below but simplified)
 (defun random-probability-seed (seed.)

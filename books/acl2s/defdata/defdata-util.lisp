@@ -869,3 +869,43 @@
       (and ;(equal (get1 key A1) (get1 key A2))
        (equal (assoc-equal key A1) (assoc-equal key A2))
        (alist-equiv (delete-assoc-all key A1) (delete-assoc-all key A2))))))
+
+
+(defloop collect-declares (xs)
+  (for ((x in xs)) (append (and (consp x) (equal 'ACL2::DECLARE (car x))
+                                (true-listp x) (cdr x)))))
+
+(defun extract-guard-from-edecls (edecls)
+  "edecls is list of forms which can occur inside a declare form i.e. the di in (declare d1 ... dn)"
+  (declare (xargs :guard (true-listp edecls)))
+  (if (endp edecls)
+      t
+    (if (and (consp (car edecls))
+             (eq (caar edecls) 'ACL2::XARGS)
+             (keyword-value-listp (cdar edecls))
+             (assoc-keyword :guard (cdar edecls)))
+        (or (cadr (assoc-keyword :guard (cdar edecls))) 't)
+      (extract-guard-from-edecls (cdr edecls)))))
+                  
+(defmacro acl2s::defun-attach (&rest args)
+  "generate a defun with suffix -builtin and attach it to name"
+  (b* ((name (car args))
+       ((unless (proper-symbolp name))
+        (er hard 'defun-attach "~| ~x0 should be a proper name symbol.~%" name))
+       (b-name (s+ name "-BUILTIN"))
+       (formals (cadr args))
+       ;(formal-stars (make-list (len formals) :initial-element 'ACL2::*))
+       (guard (extract-guard-from-edecls (collect-declares args))))
+
+    `(PROGN
+      (DEFUN ,b-name . ,(cdr args))
+      (VERIFY-GUARDS ,b-name)
+      (encapsulate 
+       ((,name ,formals t :guard ,guard))
+       (local (defun ,name ,formals
+                (declare (xargs :guard ,guard))
+                (declare (ignorable . ,formals))
+                (,b-name . ,formals))))
+      (DEFATTACH ,name ,b-name))))
+
+    

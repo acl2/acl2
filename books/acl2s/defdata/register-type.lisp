@@ -13,86 +13,11 @@ data last modified: [2014-08-06]
 
 (in-package "DEFDATA")
 
-(include-book "defdata-util")
-
-
-(defun make-enum-uniform-defun-ev (name enum)
-  (declare (xargs :guard (symbolp enum)))
-  `((defund ,name (m seed)
-     (declare (ignorable m))
-     (declare (type (unsigned-byte 31) seed))
-     (declare (xargs :verify-guards nil ;todo
-                     :mode :program ;todo
-                     :guard (and (natp m)
-                                 (unsigned-byte-p 31 seed))))
-; 12 July 2013 - adding uniform random seed distribution to cgen enum
-; we will take advantage of the recent addition for an uniform
-; interface to both infinite and finite enum (defconsts)
-     (mv-let (n seed)
-             (random-natural-seed seed)
-             (mv (,enum n) (the (unsigned-byte 31) seed))))))
+(include-book "defdata-attach")
 
 
 
 
-
-
-(defun well-formed-metadata-entry-p (key val wrld)
-  (case key
-    (:predicate  (allows-arity val 1 wrld))
-    (:enumerator (allows-arity val 1 wrld)) 
-    (:enum/acc   (allows-arity val 2 wrld))
-    (:enum/test  (allows-arity val 1 wrld))
-    (:enum/test/acc (allows-arity val 2 wrld))
-    (:equiv (allows-arity val 2 wrld))
-    (:equiv-fixer (allows-arity val 1 wrld))
-    (:lub (predicate-name val))
-    (:glb (predicate-name val)) 
-    (:sampling (possible-constant-values-p val))
-    (:size (or (eq 't val) (natp val)))
-    (:verbose (booleanp val))
-    (:theory-name (proper-symbolp val))
-    (otherwise t) ;dont be strict.
-    ))
-
-(defun ill-formed-metadata-entry-msg1 (key val)
-  (declare (ignorable val))
-  (case key
-    (:predicate        "~x0 should be a 1-arity fn")
-    (:enumerator       "~x0 should be a 1-arity fn") 
-    (:enum/acc         "~x0 should be a 2-arity fn")
-    (:enum/test        "~x0 should be a 1-arity fn")
-    (:enum/test/acc    "~x0 should be a 2-arity fn")
-    (:equiv            "~x0 should be a 2-arity fn")
-    (:equiv-fixer      "~x0 should be a 1-arity fn")
-    (:lub              "~x0 should be a type name")
-    (:glb              "~x0 should be a type name") 
-    (:sampling         "~x0 should be a list of constants" )
-    (:size             "~x0 should be either 't or a natural")
-    (:verbose         "~x0 should be a boolean")
-    (:theory-name      "~x0 should be a symbol")
-    (otherwise         "Unhandled case!")
-    ))
-
-
-(defloop well-formed-type-metadata-p (al wrld)
-  (for ((p in al)) (always (well-formed-metadata-entry-p (car p) (cdr p) wrld))))
-
-; TYPE METADATA TABLE
-
-(table type-metadata-table nil nil :clear)
-
-
-(program)
-(defun ill-formed-metadata-entry-msg (key val wrld)
-  (and (not (well-formed-metadata-entry-p key val wrld))
-       (b* ((x0-str (ill-formed-metadata-entry-msg1 key val))
-            ((mv & msg) (acl2::fmt1!-to-string x0-str (acons #\0 val '()) 0)))
-         msg)))
-
-
-(defloop ill-formed-type-metadata-msg (al wrld)
-  (for ((p in al)) (thereis (ill-formed-metadata-entry-msg (car p) (cdr p) wrld))))
 
 ;TODO
 ; Q: howto to generate an enumerator or fixer from a predicate def
@@ -112,7 +37,9 @@ data last modified: [2014-08-06]
 
 (defconst *register-type-keywords*
   '(:predicate :enumerator ;mandatory names
-               :enum/acc :enum/test :enum/test/acc :equiv :equiv-fixer ;names
+               :enum/acc
+               :equiv :equiv-fixer
+               :fixer :fixer-domain
                :lub :glb
                :sampling
                :size
@@ -121,7 +48,10 @@ data last modified: [2014-08-06]
                :clique :def :normalized-def :prettyified-def ;defdata
                ))
 
-(defun register-type-fn (name args ctx wrld)
+; [2015-07-01 Wed] enumerator and enum/acc are attachable functions
+
+(defun register-type-fn (name args ctx pkg wrld)
+  (declare (xargs :mode :program))
   (b* (((mv kwd-alist rest) (extract-keywords ctx *register-type-keywords* args nil))
        ((when rest) (er hard? ctx "~| Extra args: ~x0~%" rest))
        ((unless (proper-symbolp name)) (er hard? ctx "~| ~x0 should be a proper symbol.~%" name))
@@ -130,29 +60,65 @@ data last modified: [2014-08-06]
        ((unless (well-formed-type-metadata-p kwd-alist wrld))
         (er hard? ctx "~| ~s0~%" (ill-formed-type-metadata-msg kwd-alist wrld)))
         
-       (enum (get1 :enumerator  kwd-alist))
-       (enum/acc (get1 :enum/acc  kwd-alist))
-       (enum/test (get1 :enum/test  kwd-alist))
-       (enum/test/acc (get1 :enum/test/acc  kwd-alist))
-       (enum/acc-default (s+ enum '|/ACC|))
-       (enum/test/acc-default (s+ enum/test '|/ACC|))
-       (kwd-alist (if enum/test
-                      (put-assoc-eq :enum/test/acc (or enum/test/acc enum/test/acc-default) kwd-alist)
-                  kwd-alist))
-       (kwd-alist (put-assoc-eq :enum/acc (or enum/acc enum/acc-default) kwd-alist))
+       (enum (get1 :enumerator kwd-alist))
+       (enum/acc (get1 :enum/acc kwd-alist))
+       (enum-formals (acl2::formals enum wrld))
+       (enum-guard (acl2::guard enum nil wrld))
+       (enum/acc-formals (or (and enum/acc (acl2::formals enum/acc wrld))
+                             '(M SEED)))
+       (enum/acc-guard (or (and enum/acc (acl2::guard enum/acc nil wrld))
+                           '(AND (NATP M) (UNSIGNED-BYTE-P 31 SEED))))
+
+       ;; these two names are constant, but attachable names. TODO: Revisit this decision!
+       (enum-name (make-enumerator-symbol name pkg))
+       (enum/acc-name (make-uniform-enumerator-symbol name pkg))
+
+       ((when (eq enum enum-name))
+        (er hard? ctx "~| Please rename the enumerator ~x0 to be different from ~x1, to which it will be attached.~%" enum enum-name))
+       ((when (eq enum/acc enum/acc-name))
+        (er hard? ctx "~| Please rename the enumerator ~x0 to be different from ~x1, to which it will be attached.~%" enum/acc enum/acc-name))
+       
+       (enum/acc-default (s+ enum/acc-name '|-BUILTIN|))
+       (kwd-alist (put-assoc-eq :enumerator enum-name kwd-alist))
+       (kwd-alist (put-assoc-eq :enum/acc enum/acc-name kwd-alist))
+       
        (kwd-alist (put-assoc-eq :size (or (get1 :size kwd-alist) 't) kwd-alist))
        (kwd-alist (put-assoc-eq :theory-name (or (get1 :theory-name kwd-alist) (s+ name 'theory)) kwd-alist))
 
        (existing-entry (assoc-eq name (table-alist 'type-metadata-table wrld)))
-       ((when (and existing-entry (not (equal kwd-alist (cdr existing-entry)))))        
-        (er hard? ctx "~| ~x0 is already a registered defdata type.~%" name))
+       ((when existing-entry)
+        (if (not (equal kwd-alist (cdr existing-entry)))
+            (er hard? ctx "~| ~x0 is already a registered defdata type.~%" name)
+          '())) ;redundant event
+
+       (default-val (funcall-w enum (list 0) ctx wrld))
+       (- (cw "** default value of ~x0 is ~x1" enum default-val))
 
        )
     
        
   `( ;(IN-THEORY (DISABLE ,enum))
-    ,@(and (not enum/acc) (make-enum-uniform-defun-ev enum/acc-default enum))
-    ,@(and enum/test (not enum/test/acc) (make-enum-uniform-defun-ev enum/test/acc-default enum/test))
+    ;;(defstub ,enum-name (*) => *)
+    (encapsulate 
+       (((,enum-name *) => * :formals ,enum-formals :guard ,enum-guard))
+       (local (defun ,enum-name ,enum-formals
+                (declare (xargs :guard ,enum-guard))
+                (declare (ignorable . ,enum-formals))
+                ',default-val)))
+    
+    ;;(defstub ,enum/acc-name (* *) => (mv * *))
+    ,@(and (not enum/acc) (make-enum-uniform-defun-ev enum/acc-default enum-name))
+    (encapsulate 
+       (((,enum/acc-name * *) => (mv * *) :formals ,enum/acc-formals :guard ,enum/acc-guard))
+       (local (defun ,enum/acc-name ,enum/acc-formals
+                (declare (xargs :guard ,enum/acc-guard))
+                (declare (ignorable . ,enum/acc-formals))
+                (mv ',default-val 0))))
+
+    (DEFTTAG :defdata-attach)
+    (DEFATTACH (,enum-name ,enum) :skip-checks t)
+    (DEFATTACH (,enum/acc-name ,(or enum/acc enum/acc-default)) :skip-checks t)
+    (DEFTTAG nil)
     (TABLE TYPE-METADATA-TABLE ',name ',kwd-alist))))
 
 (defmacro register-type (name &rest keys) 
@@ -161,72 +127,11 @@ data last modified: [2014-08-06]
        (ctx 'register-type)
        ((unless (and (member :predicate keys) (member :enumerator keys)))
         (er hard ctx "~| Keyword args predicate, enumerator are mandatory.~%")))
-    `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
+    `(with-output ,@(if verbosep '(:on :all) '(:on error)) :stack :push
        (make-event
         (cons 'progn
-              (register-type-fn ',name ',keys ',ctx (w state)))))))
+              (register-type-fn ',name ',keys ',ctx (current-package state) (w state)))))))
 
 
 
 
-
-(defconst *defdata-attach-overridable-keywords* 
-  '(:predicate :enumerator :size :clique :def :normalized-def :prettyified-def)) ;add more later
-
-(defconst *defdata-attach-keywords* (append '(:test-enumerator ;alias afor :enum/test
-                                              :enum/test 
-                                              :equiv :equiv-fixer :sampling)
-                                            *defdata-attach-overridable-keywords*))
-
-
-;TODO: The following form is currently quite limited. Extend it later to be more general.
-(defmacro defdata-attach  (name &rest keys)
-  (b* ((verbosep (let ((lst (member :verbose keys)))
-                   (and lst (cadr lst))))
-       (override-ok-p (let ((lst (member :override-ok keys)))
-                        (and lst (cadr lst))))
-       (keys (remove-keywords-from-args '(:verbose :override-ok) keys)))
-   
-  `(with-output 
-    ,@(and (not verbosep) '(:off :all)) :stack :push
-    (make-event
-        (cons 'progn
-              (defdata-attach-fn ',name ',keys ',verbosep ',override-ok-p (w state)))))))
-
-         
-(defun defdata-attach-fn (name keys verbosep override-ok-p wrld)
-  (b* ((ctx 'defdata-attach)
-       ((unless (assoc-eq name (table-alist 'type-metadata-table wrld)))
-        (er hard? ctx "~x0 is not a recognized type. Use register-type to register it.~%" name))
-       
-       ((mv kwd-alist rest) (extract-keywords ctx *defdata-attach-keywords* keys nil))
-       ((when rest) (er hard? ctx "~| Extra args: ~x0~%" rest))
-       ((unless (= 1 (len kwd-alist)))
-        (er hard? ctx "~| Exactly one keyword argument is allowed at a time. You have provided multiple: ~x0~%" keys))
-       
-       ;;support the alias to enum/test -- legacy issue
-       (test-enumerator (get1 :test-enumerator kwd-alist))
-       (kwd-alist (if test-enumerator
-                      (put-assoc-eq :enum/test test-enumerator (delete-assoc-eq :test-enumerator kwd-alist))
-                    kwd-alist))
-       (- (cw? verbosep "~|Got kwd-alist: ~x0~%" kwd-alist))
-       ((unless (well-formed-type-metadata-p kwd-alist wrld))
-        (er hard? ctx "~| ~s0~%" (ill-formed-type-metadata-msg kwd-alist wrld)))
-
-       ;;check if key is overridable
-       ((when (and (subsetp (strip-cars kwd-alist) *defdata-attach-overridable-keywords*)
-                   (not override-ok-p)))
-        (er hard? ctx "~| ~x0 can only be overrriden if :override-ok t is provided.~%" keys))
-       
-       (existing-kwd-alist (cdr (assoc-eq name (table-alist 'type-metadata-table wrld))))
-       (kwd-alist (union-alist2 kwd-alist existing-kwd-alist))
-       ;(- (cw? verbosep "~|After union: kwd-alist: ~x0~%" kwd-alist))
-       (enum/test (get1 :enum/test  kwd-alist))
-       (enum/test/acc (get1 :enum/test/acc  kwd-alist))
-       (enum/test/acc-default (s+ enum/test '|/ACC|))
-       (kwd-alist (put-assoc-eq :enum/test/acc (or enum/test/acc enum/test/acc-default) kwd-alist))
-       )
-    
-       
-    `(,@(and enum/test (not enum/test/acc) (make-enum-uniform-defun-ev enum/test/acc-default enum/test))
-      (TABLE TYPE-METADATA-TABLE ',name ',kwd-alist :put))))
