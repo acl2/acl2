@@ -28,6 +28,8 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
+; cert_param: (non-acl2r)
+
 #|
 
 ;; def::un : A stand-in for defun when the going gets rough.
