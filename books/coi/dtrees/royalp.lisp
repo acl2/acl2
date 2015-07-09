@@ -125,25 +125,25 @@
 
 (defthm royalp-when-dominated-by-royalp-one
   (implies (and (royalp a dtree)
-                (path::dominates a b))
+                (cpath::dominates a b))
            (equal (royalp b dtree)
                   (list::equiv a b)))
-  :hints(("goal" :in-theory (enable royalp path::dominates))))
+  :hints(("goal" :in-theory (enable royalp cpath::dominates))))
 
 (defthm royalp-when-dominated-by-royalp-two
-  (implies (and (path::dominates a b)
+  (implies (and (cpath::dominates a b)
                 (royalp a dtree))
            (equal (royalp b dtree)
                   (list::equiv a b))))
 
 (defthm royalp-when-strictly-dominated-by-royalp-one
   (implies (and (royalp a dtree)
-                (path::strictly-dominates a b))
+                (cpath::strictly-dominates a b))
            (equal (royalp b dtree)
                   nil)))
 
 (defthm royalp-when-strictly-dominated-by-royalp-two
-  (implies (and (path::strictly-dominates a b)
+  (implies (and (cpath::strictly-dominates a b)
                 (royalp a dtree))
            (equal (royalp b dtree)
                   nil)))
@@ -170,7 +170,7 @@
   (defthmd royalp-constraint-domination
     (implies (and (royalp-hyps)
                   (in royalp-member (royalp-dtree))
-                  (path::strictly-dominates royalp-member (royalp-path)))
+                  (cpath::strictly-dominates royalp-member (royalp-path)))
              (set::empty (localdeps (get royalp-member (royalp-dtree)))))))
 
  ;; Suppose that (royalp-hyps) is true, that our constraints are true, and
@@ -242,7 +242,7 @@
 
  ;; We observe that find-royal always returns a path that dominates its input
  (local (defthm dominates-of-find-royal-with-input
-          (path::dominates (find-royal path dtree) path)
+          (cpath::dominates (find-royal path dtree) path)
           :hints(("Goal" :in-theory (enable find-royal)))))
 
  ;; We chain together these last observations to show that, if a path is not
@@ -250,16 +250,16 @@
  ;; its input is void.
  (local (defthm strictly-dominates-of-find-royal-with-input-when-not-royal
           (implies (not (royalp path dtree))
-                   (equal (path::strictly-dominates (find-royal path dtree)
+                   (equal (cpath::strictly-dominates (find-royal path dtree)
                                                     path)
                           (not (voidp path dtree))))
-          :hints(("Goal" :in-theory (enable path::strictly-dominates)
+          :hints(("Goal" :in-theory (enable cpath::strictly-dominates)
                   :use find-royal-does-nothing))))
 
  ;; Here is how we argue that the final hypothesis is true.  Since we assumed
  ;; (towards contradiction) that (not (royalp (royalp-path) (royalp-dtree))),
  ;; then we know that
- ;;  (path::strictly-dominates (find-royal (royalp-path) (royalp-dtree))
+ ;;  (cpath::strictly-dominates (find-royal (royalp-path) (royalp-dtree))
  ;;                            (royalp-path))
  ;; exactly when (not (voidp (royalp-path) (royalp-dtree))).  But by our
  ;; localdeps constraint, we know that:

@@ -31,7 +31,7 @@
 ;; diverge.lisp
 ;; Divergence relations for lists
 
-(in-package "PATH")
+(in-package "CPATH")
 (include-book "dominates")
 (include-book "../bags/basic")
 (local (include-book "../util/iff"))

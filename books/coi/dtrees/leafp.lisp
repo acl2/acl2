@@ -157,28 +157,28 @@
 (defthm dominates-when-leafp-one
   (implies (and (leafp a dtree) ;; dtree is free
                 (in b dtree))
-           (equal (path::dominates a b)
+           (equal (cpath::dominates a b)
                   (list::equiv a b)))
-  :hints(("Goal" :in-theory (enable leafp in path::dominates))))
+  :hints(("Goal" :in-theory (enable leafp in cpath::dominates))))
 
 (defthm dominates-when-leafp-two
   (implies (and (in b dtree)    ;; dtree is free
                 (leafp a dtree))
-           (equal (path::dominates a b)
+           (equal (cpath::dominates a b)
                   (list::equiv a b))))
 
 (defthm diverge-when-leafp-one
   (implies (and (leafp a dtree)  ;; dtree is free
                 (in b dtree))
-           (equal (path::diverge a b)
-                  (not (path::dominates b a))))
-  :hints(("Goal" :in-theory (enable path::diverge))))
+           (equal (cpath::diverge a b)
+                  (not (cpath::dominates b a))))
+  :hints(("Goal" :in-theory (enable cpath::diverge))))
 
 (defthm diverge-when-leafp-two
   (implies (and (in b dtree)     ;; dtree is free
                 (leafp a dtree))
-           (equal (path::diverge a b)
-                  (not (path::dominates b a)))))
+           (equal (cpath::diverge a b)
+                  (not (cpath::dominates b a)))))
 
 
 
@@ -190,17 +190,17 @@
 (defthm strictly-dominates-when-leafp-one
   (implies (and (leafp a dtree) ;; dtree is free
                 (in b dtree))
-           (equal (path::strictly-dominates a b)
+           (equal (cpath::strictly-dominates a b)
                   nil))
   :hints(("Goal"
-          :in-theory (e/d (path::strictly-dominates)
+          :in-theory (e/d (cpath::strictly-dominates)
                           (dominates-when-leafp-one))
           :use (:instance dominates-when-leafp-one))))
 
 (defthm strictly-dominates-when-leafp-two
   (implies (and (in b dtree)    ;; dtree is free
                 (leafp a dtree))
-           (equal (path::strictly-dominates a b)
+           (equal (cpath::strictly-dominates a b)
                   nil)))
 
 
@@ -235,19 +235,19 @@
 ;;                                         (children-empty-when-in-dtree))))))
 
  (local (defthm lemma3
-          (implies (and (not (path::strictly-dominates-some path (domain dtree)))
+          (implies (and (not (cpath::strictly-dominates-some path (domain dtree)))
                         (in path dtree))
                    (leafp path dtree))
           :hints(("Goal"
                   :in-theory (e/d (leafp-redefinition-in)
-                                  (path::strictly-dominates-some-by-membership))
-                  :use ((:instance path::strictly-dominates-some-by-membership
-                                   (path::b (append path (list (map::head (children (get path dtree))))))
-                                   (path::a path)
-                                   (path::x (domain dtree))))))))
+                                  (cpath::strictly-dominates-some-by-membership))
+                  :use ((:instance cpath::strictly-dominates-some-by-membership
+                                   (cpath::b (append path (list (map::head (children (get path dtree))))))
+                                   (cpath::a path)
+                                   (cpath::x (domain dtree))))))))
 
  (defthm leafp-when-not-strictly-dominates-some-of-domain
-   (implies (not (path::strictly-dominates-some path (domain dtree)))
+   (implies (not (cpath::strictly-dominates-some path (domain dtree)))
             (equal (leafp path dtree)
                    (in path dtree))))
 
@@ -255,13 +255,13 @@
 
 (defthm strictly-dominates-some-when-leafp
   (implies (leafp a dtree)
-           (equal (path::strictly-dominates-some a (domain dtree))
+           (equal (cpath::strictly-dominates-some a (domain dtree))
                   nil)))
 
 (defthmd leafp-redefinition-dominates
   (equal (leafp path dtree)
          (and (in path dtree)
-              (not (path::strictly-dominates-some path (domain dtree)))))
+              (not (cpath::strictly-dominates-some path (domain dtree)))))
   :rule-classes :definition)
 
 (defthm deps-of-get-when-leafp

@@ -39,6 +39,8 @@
 ;; John D. Powell
 ;(in-package "PATHS")
 
+(error "Is anyone using this?  If so please remove this error.")
+
 ;;
 ;; This file isolates paths definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the paths book:
@@ -490,32 +492,32 @@
 (defun clrp-set-equal (set x y)
   (if (set::empty set) (equal x y)
     (clrp-set-equal (set::tail set)
-                    (path::clrp (set::head set) x)
-                    (path::clrp (set::head set) y))))
+                    (cpath::clrp (set::head set) x)
+                    (cpath::clrp (set::head set) y))))
 
 (defthm clrp-set-equal-of-clrp
   (implies
    (set::in a set)
-   (equal (clrp-set-equal set (path::clrp a x) (path::clrp a y))
+   (equal (clrp-set-equal set (cpath::clrp a x) (cpath::clrp a y))
           (clrp-set-equal set x y))))
 
 (defthmd clrp-set-equal-implies-1
   (implies
    (clrp-set-equal set x y)
-   (equal (path::clrp-set set x)
-          (path::clrp-set set y)))
-  :hints (("goal" :in-theory (enable path::clrp-set))))
+   (equal (cpath::clrp-set set x)
+          (cpath::clrp-set set y)))
+  :hints (("goal" :in-theory (enable cpath::clrp-set))))
 
 (defthmd clrp-set-equal-implies-2
   (implies
    (not (clrp-set-equal set x y))
-   (not (equal (path::clrp-set set x)
-               (path::clrp-set set y))))
-  :hints (("goal" :in-theory (enable path::clrp-set))))
+   (not (equal (cpath::clrp-set set x)
+               (cpath::clrp-set set y))))
+  :hints (("goal" :in-theory (enable cpath::clrp-set))))
 
 (defthmd equal-clrp-set-to-clrp-set-equal
-  (iff (equal (path::clrp-set set x)
-              (path::clrp-set set y))
+  (iff (equal (cpath::clrp-set set x)
+              (cpath::clrp-set set y))
        (clrp-set-equal set x y))
   :hints (("Goal" :in-theory (enable
                               clrp-set-equal-implies-1
@@ -534,10 +536,10 @@
   (implies
    (and
     (set::subset set1 set2)
-    (equal (path::clrp-set set1 x)
-           (path::clrp-set set1 y)))
-   (iff (equal (path::clrp-set set2 x)
-               (path::clrp-set set2 y)) t))
+    (equal (cpath::clrp-set set1 x)
+           (cpath::clrp-set set1 y)))
+   (iff (equal (cpath::clrp-set set2 x)
+               (cpath::clrp-set set2 y)) t))
   :hints (("goal" :in-theory (enable equal-clrp-set-to-clrp-set-equal))))
 
 (defund dominates (x y)
@@ -2675,7 +2677,7 @@
 
 (defund buddepequiv (x y)
   (and (consequiv x y)
-       (path::setequiv (car x) (car y))))
+       (cpath::setequiv (car x) (car y))))
 
 (defthmd budequiv-definition
   (equal (budequiv x y)
@@ -2860,7 +2862,7 @@
 (defthm treequiv-aux-implies-setequiv-depset-aux
   (implies
    (treequiv-aux x y)
-   (path::setequiv (depset-aux x)
+   (cpath::setequiv (depset-aux x)
                    (depset-aux y)))
   :rule-classes (:forward-chaining)
   :hints (("Goal" :in-theory (e/d (consp-implies-memberp-caar
@@ -2875,7 +2877,7 @@
 (defthm treequiv-implies-setequiv-depset
   (implies
    (treequiv x y)
-   (path::setequiv (depset x) (depset y)))
+   (cpath::setequiv (depset x) (depset y)))
   :rule-classes (:forward-chaining)
   :hints (("Goal" :in-theory (enable TREEQUIV-DEFINITION
                                      depset))))
@@ -2885,7 +2887,7 @@
 ;; prove, rather than use, depequiv and we will do so by proving treequiv.
 
 (defund depequiv (x y)
-  (path::setequiv (depset x) (depset y)))
+  (cpath::setequiv (depset x) (depset y)))
 
 ;; We use the following fact to create a pick-a-point strategy to replaces
 ;; questions of "setequiv depset" with treequiv.
@@ -2898,7 +2900,7 @@
   :rule-classes (:forward-chaining))
 
 (defthm setequiv-depset-to-depequiv
-  (equal (path::setequiv (depset x) (depset y))
+  (equal (cpath::setequiv (depset x) (depset y))
          (depequiv x y))
   :hints (("Goal" :in-theory (enable depequiv))))
 
@@ -2911,7 +2913,7 @@
   (depset (gg path g)))
 
 (defthm sub-deps-sg
-  (path::setequiv (sub-deps path1 (sg path2 g r))
+  (cpath::setequiv (sub-deps path1 (sg path2 g r))
                   (if (diverge path1 path2)
                       (sub-deps path1 r)
                     (if (dominates path2 path1)
@@ -3071,7 +3073,7 @@
 (defthm treequiv-aux-implies-setequiv-dkeys-aux
   (implies
    (treequiv-aux x y)
-   (path::setequiv (dkeys-aux x)
+   (cpath::setequiv (dkeys-aux x)
                    (dkeys-aux y)))
   :rule-classes (:forward-chaining)
   :hints (("Goal" :in-theory (e/d (consp-implies-memberp-caar
@@ -3086,13 +3088,13 @@
 (defthm treequiv-implies-setequiv-dkeys
   (implies
    (treequiv x y)
-   (path::setequiv (dkeys x) (dkeys y)))
+   (cpath::setequiv (dkeys x) (dkeys y)))
   :rule-classes (:forward-chaining)
   :hints (("Goal" :in-theory (enable TREEQUIV-DEFINITION
                                      dkeys))))
 
 (defund dkeyquiv (x y)
-  (path::setequiv (dkeys x) (dkeys y)))
+  (cpath::setequiv (dkeys x) (dkeys y)))
 
 (defthm treequiv-implies-dkeyquiv
   (implies
@@ -3102,7 +3104,7 @@
   :rule-classes (:forward-chaining))
 
 (defthm setequiv-dkeys-to-dkeyquiv
-  (equal (path::setequiv (dkeys x) (dkeys y))
+  (equal (cpath::setequiv (dkeys x) (dkeys y))
          (dkeyquiv x y))
   :hints (("Goal" :in-theory (enable dkeyquiv))))
 
@@ -3273,7 +3275,7 @@
     (and
      (memberp key list)
      (memberp key (alist::keys alist)))
-    (path::setequiv (dkeys-aux alist)
+    (cpath::setequiv (dkeys-aux alist)
                     (let ((r (alist::getv key alist)))
                       (append (list::map-cons key (dkeys r))
                               (dkeys-aux (alist::clr key alist)))))))
@@ -3708,14 +3710,14 @@ DAG
         (let ((ra (alist::getv key alist))
               (rz (alist::getv key zlist)))
           (and (equal (consp (car ra)) (consp (car rz)))
-               (path::setequiv (caar ra) (caar rz))
+               (cpath::setequiv (caar ra) (caar rz))
                (subdep-aux (cdr ra) (cdr rz))
                (subdep-aux (alist::clr key alist) zlist))))
     t))
 
 (defund subdep (ra rz)
   (and (equal (consp (car ra)) (consp (car rz)))
-       (path::setequiv (caar ra) (caar rz))
+       (cpath::setequiv (caar ra) (caar rz))
        (subdep-aux (cdr ra) (cdr rz))))
 
 (defun subdep-aux-definition
@@ -3738,8 +3740,8 @@ DAG
 
 (defthm
   (implies
-   (path::setequiv (caar (gp path a1)) (caar (gp path a2)))
-   (path::setequiv (depset-aux a1) (depset-aux a2))))
+   (cpath::setequiv (caar (gp path a1)) (caar (gp path a2)))
+   (cpath::setequiv (depset-aux a1) (depset-aux a2))))
 
 (defthm depset-aux-definition
   (equal (depset-aux alist)
@@ -3840,7 +3842,7 @@ DAG
 (defthmd depset-keyed-aux-to-depset-aux
   (implies
    (bag::disjoint def (alist::keys alist))
-   (path::setequiv (depset-keyed-aux def (alist::keys alist) alist)
+   (cpath::setequiv (depset-keyed-aux def (alist::keys alist) alist)
                    (depset-aux alist)))
   :hints (("Goal" :in-theory (enable depset-keyed-aux-clr depset-keyed-aux-remove BAG::DISJOINT ALIST::KEYS)
            :expand ((ALIST::KEYS ALIST) (DEPSET-AUX ALIST))
@@ -3852,7 +3854,7 @@ DAG
 (defthm open-depset-on-consp
   (implies
    (consp r)
-   (path::setequiv (depset r)
+   (cpath::setequiv (depset r)
                    (append (caar r) (depset-keyed-aux nil (alist::keys (cdr r)) (cdr r)))))
   :hints (("Goal" :in-theory (e/d
                               (bag::disjoint
@@ -3870,7 +3872,7 @@ DAG
     (memberp a (alist::keys r))
     (not (memberp a def))
     (memberp a use))
-   (path::setequiv (depset-keyed-aux def use r)
+   (cpath::setequiv (depset-keyed-aux def use r)
                    (append (depset (alist::getv a r))
                            (depset-keyed-aux (cons a def) use r))))
   :hints (("Goal" :induct (depset-keyed-aux def use r)
@@ -4260,7 +4262,7 @@ DAG
          (append (car s) (treeset-aux a))))
 
 (defthm treeset-aux-setv
-  (path::setequiv (treeset-aux (alist::setv a g r))
+  (cpath::setequiv (treeset-aux (alist::setv a g r))
                   (append (treeset g)
                           (treeset-aux (alist::clr a r))))
   :hints (("Goal" :in-theory (enable alist::setv))))
@@ -4274,11 +4276,11 @@ DAG
 
 
 (defthm treeset-sg
-  (path::setequiv (treeset (sg path g r))
+  (cpath::setequiv (treeset (sg path g r))
                   (append (treeset g)
                           (treeset (tree-remove path r))))
   :hints (("Goal" :in-theory (disable unsetp treeset) :induct (sg path g r))
-          (acl2::rewrite-equiv-hint path::setequiv)))
+          (acl2::rewrite-equiv-hint cpath::setequiv)))
 
 
 ;; We now need an equivalence relation over graphs
@@ -4288,7 +4290,7 @@ DAG
    DAG
 
 (defthm dom-deps-sg
-  (path::setequiv (dom-deps path1 d (sg path2 g r))
+  (cpath::setequiv (dom-deps path1 d (sg path2 g r))
                   (if (diverge path1 path2)
                       (dom-deps path1 d r)
                     (if (dominates path2 path1)
@@ -4962,17 +4964,17 @@ DAG
 
 (defun dom (x)
   (if (consp x)
-      (if (path::strictly-dominated-by-some (car x) (cdr x))
+      (if (cpath::strictly-dominated-by-some (car x) (cdr x))
           (dom (cdr x))
         (cons (car x)
-              (dom (path::remove-dominators (cdr x))))
+              (dom (cpath::remove-dominators (cdr x))))
     nil))
 
 (defun path-subdom (x y)
   (if (consp x)
-      (if (path::strictly-dominated-by-some (car x) (cdr x))
+      (if (cpath::strictly-dominated-by-some (car x) (cdr x))
           (path-subdom (cdr x) y)
-        (and (not (path::strictly-dominated-by-some (car x) y))
+        (and (not (cpath::strictly-dominated-by-some (car x) y))
              (path-subdom (cdr x) y)))
     t))
 
@@ -4980,10 +4982,10 @@ DAG
   (implies
    (and
     (path-subdom sub sup)
-    (not (path::strictly-dominated-by-some x sup))
+    (not (cpath::strictly-dominated-by-some x sup))
     (dominates-some x sup))
    (and
-    (not (path::strictly-dominated-by-some x sub))
+    (not (cpath::strictly-dominated-by-some x sub))
     (dominates-some x sub))))
 
 (defthm path-subdom-subset
@@ -4993,85 +4995,85 @@ DAG
     (path-subdom x sub))
    (path-subdom x sup)))
 
-(defun path::domequiv (x y)
-  (and (path::subdom x y)
-       (path::subdom y x)))
+(defun cpath::domequiv (x y)
+  (and (cpath::subdom x y)
+       (cpath::subdom y x)))
 |#
 
 ;; Just not the right direction
 (in-theory
  (disable
-  path::clrp-of-nil-two
-  PATH::CLRP-OF-SP
-  PATH::SP-TO-CLRP
-  PATH::SP-OF-SP
-  PATH::SP-DOES-NOTHING
-  PATH::SP-OF-SP-DIVERGE
-  PATH::GP-OF-SP
-  PATH::GP-OF-NON-CONSP
+  cpath::clrp-of-nil-two
+  CPATH::CLRP-OF-SP
+  CPATH::SP-TO-CLRP
+  CPATH::SP-OF-SP
+  CPATH::SP-DOES-NOTHING
+  CPATH::SP-OF-SP-DIVERGE
+  CPATH::GP-OF-SP
+  CPATH::GP-OF-NON-CONSP
   ))
 
-;; Introduce PATH::EFFECT-ON-SPOT
+;; Introduce CPATH::EFFECT-ON-SPOT
 (in-theory
  (disable
-  path::gp-of-mp-better
-  path::mp-of-sp-when-not-dominated-by-some
-  path::mp-of-sp
+  cpath::gp-of-mp-better
+  cpath::mp-of-sp-when-not-dominated-by-some
+  cpath::mp-of-sp
   ))
 
 ;; Expensive disjointness
 ;; jcd Cheapened with a backchain limit, trying to leave enabled
 ;; (in-theory
 ;;  (disable
-;;   PATH::DOMINATES-WHEN-NOT-DIVERGE-AND-NOT-DOMINATES
+;;   CPATH::DOMINATES-WHEN-NOT-DIVERGE-AND-NOT-DOMINATES
 ;;   ))
 
 ;; Introduces nthcdr
 (in-theory
  (disable
-  ;path::gp-of-sp-subpath-case-one
-  ;path::gp-of-sp-subpath-case-two
-  path::sp-of-sp-dominating-case-two
-  path::gp-of-mp-when-dominated-by-some-all-diverge
-  path::gp-of-mp-all-diverge
-  path::gp-of-mp-when-dominated-by-some
-  path::gp-of-mp
-  PATH::DOMINATES-MEANS-NOT-DIVERGE-ALT
-  PATH::GP-OF-MP-WHEN-P-DOMINATES
+  ;cpath::gp-of-sp-subpath-case-one
+  ;cpath::gp-of-sp-subpath-case-two
+  cpath::sp-of-sp-dominating-case-two
+  cpath::gp-of-mp-when-dominated-by-some-all-diverge
+  cpath::gp-of-mp-all-diverge
+  cpath::gp-of-mp-when-dominated-by-some
+  cpath::gp-of-mp
+  CPATH::DOMINATES-MEANS-NOT-DIVERGE-ALT
+  CPATH::GP-OF-MP-WHEN-P-DOMINATES
   LIST::MEMBERP-OF-CONS-IRREL
   LIST::MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP
-  PATH::NOT-DIVERGES-FROM-ALL-WHEN-MEMBERP
+  CPATH::NOT-DIVERGES-FROM-ALL-WHEN-MEMBERP
 
-  PATH::DIVERGE-WHEN-FIRSTNS-DIVERGE
-  PATH::DIVERGE-FROM-ALL-DIVERGE-AND-UNIQUE-MEMBERPS
-  PATH::DIVERGE-WHEN-ALL-DIVERGE-FROM-ALL-AND-MEMBERP-AND-MEMBERP-ALT
-  PATH::DIVERGE-WHEN-ALL-DIVERGE-FROM-ALL-AND-MEMBERP-AND-MEMBERP
+  CPATH::DIVERGE-WHEN-FIRSTNS-DIVERGE
+  CPATH::DIVERGE-FROM-ALL-DIVERGE-AND-UNIQUE-MEMBERPS
+  CPATH::DIVERGE-WHEN-ALL-DIVERGE-FROM-ALL-AND-MEMBERP-AND-MEMBERP-ALT
+  CPATH::DIVERGE-WHEN-ALL-DIVERGE-FROM-ALL-AND-MEMBERP-AND-MEMBERP
 
 ;; jcd these got renamed
-;  PATH::DIVERGE-FROM-MEMBERP-AND-DIVERGES-FROM-ALL-FOUR
-;  PATH::DIVERGE-FROM-MEMBERP-AND-DIVERGES-FROM-ALL-THREE
-;  PATH::DIVERGE-FROM-MEMBERP-AND-DIVERGES-FROM-ALL-TWO
-  PATH::DIVERGE-WHEN-MEMBERP-AND-DIVERGES-FROM-ALL-FOUR
-  PATH::DIVERGE-WHEN-MEMBERP-AND-DIVERGES-FROM-ALL-THREE
-  PATH::DIVERGE-WHEN-MEMBERP-AND-DIVERGES-FROM-ALL-TWO
+;  CPATH::DIVERGE-FROM-MEMBERP-AND-DIVERGES-FROM-ALL-FOUR
+;  CPATH::DIVERGE-FROM-MEMBERP-AND-DIVERGES-FROM-ALL-THREE
+;  CPATH::DIVERGE-FROM-MEMBERP-AND-DIVERGES-FROM-ALL-TWO
+  CPATH::DIVERGE-WHEN-MEMBERP-AND-DIVERGES-FROM-ALL-FOUR
+  CPATH::DIVERGE-WHEN-MEMBERP-AND-DIVERGES-FROM-ALL-THREE
+  CPATH::DIVERGE-WHEN-MEMBERP-AND-DIVERGES-FROM-ALL-TWO
 
-  PATH::DIVERGE-WHEN-MEMBERP-AND-DIVERGES-FROM-ALL-ONE
-;jcd removed this  PATH::DIVEREG-WHEN-DOMINATE-DIVERGENT
+  CPATH::DIVERGE-WHEN-MEMBERP-AND-DIVERGES-FROM-ALL-ONE
+;jcd removed this  CPATH::DIVEREG-WHEN-DOMINATE-DIVERGENT
 
-;; jcd this got renamed  PATH::DIVERGE-WHEN-DIVERGE-WITH-DOMINATOR-ALT
+;; jcd this got renamed  CPATH::DIVERGE-WHEN-DIVERGE-WITH-DOMINATOR-ALT
 ;; why are we disabling this but not the other rules?  maybe it should
 ;; just be left enabled?
-  PATH::DIVERGE-WHEN-DIVERGE-WITH-DOMINATOR-ONE-ALT
+  CPATH::DIVERGE-WHEN-DIVERGE-WITH-DOMINATOR-ONE-ALT
 
-  PATH::DIVERGE-OF-NON-CONSP-TWO
-  PATH::DIVERGE-OF-NON-CONSP-ONE
-  PATH::TWO-DOMINATORS-CANNOT-DIVERGE
+  CPATH::DIVERGE-OF-NON-CONSP-TWO
+  CPATH::DIVERGE-OF-NON-CONSP-ONE
+  CPATH::TWO-DOMINATORS-CANNOT-DIVERGE
 
-  PATH::SP-OF-SP-DOMINATING-CASE-ONE
+  CPATH::SP-OF-SP-DOMINATING-CASE-ONE
 ;;  LIST::EQUAL-OF-IF-HACK
-;;  PATH::FIRST-DOMINATOR-WHEN-P-DOMINATES-IT-YUCK
-  PATH::DIVERGES-FROM-WHEN-NOT-STRICTLY-DOMINATED-BY-SOME-AND-NOT-DOMINATES-SOME
-  ;PATH::SP-OF-NON-CONSP
+;;  CPATH::FIRST-DOMINATOR-WHEN-P-DOMINATES-IT-YUCK
+  CPATH::DIVERGES-FROM-WHEN-NOT-STRICTLY-DOMINATED-BY-SOME-AND-NOT-DOMINATES-SOME
+  ;CPATH::SP-OF-NON-CONSP
   ))
 
 
@@ -5082,48 +5084,48 @@ DAG
 
 (in-theory
  (disable
-  PATH::DIVERGES-FROM-ALL-WHEN-NO-DOMINATION-ALT
-  PATH::NOT-STRICTLY-DOMINATED-BY-SOME-WHEN-DIVERGES-FROM-ALL
-  PATH::DIVERGES-FROM-ALL-WHEN-NO-DOMINATION
-  PATH::NOT-DOMINATED-BY-SOME-WHEN-DIVERGES-FROM-ALL
+  CPATH::DIVERGES-FROM-ALL-WHEN-NO-DOMINATION-ALT
+  CPATH::NOT-STRICTLY-DOMINATED-BY-SOME-WHEN-DIVERGES-FROM-ALL
+  CPATH::DIVERGES-FROM-ALL-WHEN-NO-DOMINATION
+  CPATH::NOT-DOMINATED-BY-SOME-WHEN-DIVERGES-FROM-ALL
 
-;; jcd renamed this  PATH::DIVERGE-WHEN-DIVERGE-WITH-DOMINATOR
-  PATH::DIVERGE-WHEN-DIVERGE-WITH-DOMINATOR-ONE
+;; jcd renamed this  CPATH::DIVERGE-WHEN-DIVERGE-WITH-DOMINATOR
+  CPATH::DIVERGE-WHEN-DIVERGE-WITH-DOMINATOR-ONE
   ))
 
 (in-theory
- (e/d (path::keys)
-      (path::keys-of-cdr)))
+ (e/d (cpath::keys)
+      (cpath::keys-of-cdr)))
 
 (in-theory
  (disable
-  PATH::DIVERGES-FROM-ALL-WHEN-DOMINATED
-  PATH::DIVERGES-FROM-ALL-OF-NON-CONSP-ONE
+  CPATH::DIVERGES-FROM-ALL-WHEN-DOMINATED
+  CPATH::DIVERGES-FROM-ALL-OF-NON-CONSP-ONE
 
 ;jcd these got renamed
-;  PATH::DIVERGES-FROM-ALL-WHEN-DIVERGES-FROM-ALL-AND-SUBBAGP
-;  PATH::DIVERGES-FROM-ALL-WHEN-DIVERGES-FROM-ALL-AND-SUBBAGP-ALT
-  PATH::diverges-from-all-by-subbagp-one
-  PATH::diverges-from-all-by-subbagp-two
+;  CPATH::DIVERGES-FROM-ALL-WHEN-DIVERGES-FROM-ALL-AND-SUBBAGP
+;  CPATH::DIVERGES-FROM-ALL-WHEN-DIVERGES-FROM-ALL-AND-SUBBAGP-ALT
+  CPATH::diverges-from-all-by-subbagp-one
+  CPATH::diverges-from-all-by-subbagp-two
 
-  PATH::DIVERGES-FROM-ALL-OF-NON-CONSP-TWO
-  PATH::MP-OF-NON-CONSP
-  PATH::ALL-DIVERGE-WHEN-MEMBERP-NIL
-;; jcd this got renamed  PATH::ALL-DIVERGE-WHEN-ALL-DIVERGE-AND-SUBBAGP
-  PATH::all-diverge-when-subbag
+  CPATH::DIVERGES-FROM-ALL-OF-NON-CONSP-TWO
+  CPATH::MP-OF-NON-CONSP
+  CPATH::ALL-DIVERGE-WHEN-MEMBERP-NIL
+;; jcd this got renamed  CPATH::ALL-DIVERGE-WHEN-ALL-DIVERGE-AND-SUBBAGP
+  CPATH::all-diverge-when-subbag
   ))
 
 ;; jcd removed this entirely
 ;; (in-theory
 ;;  (disable
-;;   PATH::DIVERGE-OF-CONS-AND-CONS
+;;   CPATH::DIVERGE-OF-CONS-AND-CONS
 ;;   ))
 
 (in-theory
  (disable
-  PATH::ALL-DIVERGE-FROM-ALL-CONTAINS-UNIQUE-PREFIXED-TAIL-DOMINATORS-IMPLIES-DIVERGE
-  PATH::CONTAINS-UNIQUE-PREFIXED-TAIL-DOMINATORS
-  PATH::CONTAINS-UNIQUE-PREFIXED-TAIL-DOMINATORS-APPEND-1
+  CPATH::ALL-DIVERGE-FROM-ALL-CONTAINS-UNIQUE-PREFIXED-TAIL-DOMINATORS-IMPLIES-DIVERGE
+  CPATH::CONTAINS-UNIQUE-PREFIXED-TAIL-DOMINATORS
+  CPATH::CONTAINS-UNIQUE-PREFIXED-TAIL-DOMINATORS-APPEND-1
 ;;  LIST::LEN-FW-TO-CONSP
   LIST::LEN-OF-NON-CONSP
   LIST::APPEND-OF-NON-CONSP-ONE
@@ -5132,60 +5134,60 @@ DAG
 
 (in-theory
  (disable
-  PATH::DOMINATES-OF-NON-CONSP-TWO
-  PATH::DOMINATES-OF-NON-CONSP-ONE
-;; jcd removed this  PATH::DOMINATES-OF-CONS-AND-CONS
-  PATH::DOMINATES-OF-APPEND-TWO-ONE
-  PATH::DOMINATES-OF-SINGLETON-TWO
-  PATH::DOMINATES-OF-APPEND-AND-APPEND
-  PATH::DOMINATES-TRANSITIVE-ONE
-  PATH::EQUAL-PRUNE-LEN-IMPLIES-DOMINATION
-;; jcd renamed this PATH::TWO-DOMINATORS-HACK
-  PATH::linear-domination-hierarchy
+  CPATH::DOMINATES-OF-NON-CONSP-TWO
+  CPATH::DOMINATES-OF-NON-CONSP-ONE
+;; jcd removed this  CPATH::DOMINATES-OF-CONS-AND-CONS
+  CPATH::DOMINATES-OF-APPEND-TWO-ONE
+  CPATH::DOMINATES-OF-SINGLETON-TWO
+  CPATH::DOMINATES-OF-APPEND-AND-APPEND
+  CPATH::DOMINATES-TRANSITIVE-ONE
+  CPATH::EQUAL-PRUNE-LEN-IMPLIES-DOMINATION
+;; jcd renamed this CPATH::TWO-DOMINATORS-HACK
+  CPATH::linear-domination-hierarchy
 
-  PATH::DOMINATES-TRANSITIVE-THREE
-  PATH::DOMINATES-FROM-DOMINATES-OF-NTHCDR-ETC
+  CPATH::DOMINATES-TRANSITIVE-THREE
+  CPATH::DOMINATES-FROM-DOMINATES-OF-NTHCDR-ETC
   ))
 
 (in-theory
  (disable
-  PATH::DIVERGE-TAIL-DOMINATOR-BODY-BODY-REC-IMPLIES-DIVERGE
-;; jcd renamed this  PATH::DIVERGE-COMMUTATIVE
-  PATH::DIVERGE-SYMMETRIC
-  PATH::ALL-DIVERGE-FROM-ALL-TAIL-DOMINATOR-BODY-IMPLIES-DIVERGE
+  CPATH::DIVERGE-TAIL-DOMINATOR-BODY-BODY-REC-IMPLIES-DIVERGE
+;; jcd renamed this  CPATH::DIVERGE-COMMUTATIVE
+  CPATH::DIVERGE-SYMMETRIC
+  CPATH::ALL-DIVERGE-FROM-ALL-TAIL-DOMINATOR-BODY-IMPLIES-DIVERGE
   ))
 
 #+joe
 (in-theory
  (disable
-  PATH::GP-OF-USE
+  CPATH::GP-OF-USE
   ))
 
 (in-theory
  (disable
-  PATH::GP-OF-SP-SUBPATH-CASE-ONE
-  PATH::GP-OF-SP-SUBPATH-CASE-TWO
-  ;PATH::GP-OF-DEF
+  CPATH::GP-OF-SP-SUBPATH-CASE-ONE
+  CPATH::GP-OF-SP-SUBPATH-CASE-TWO
+  ;CPATH::GP-OF-DEF
   ))
 
 (in-theory
  (disable
-  ;jcd - removed this theorem entirely - PATH::OPEN-DIVERGES-FROM-ALL
+  ;jcd - removed this theorem entirely - CPATH::OPEN-DIVERGES-FROM-ALL
   DIVERGES-FROM-ALL
-  PATH::DIVERGE-OF-APPEND-FROM-DIVERGE-ONE
-  PATH::DIVERGE-OF-APPEND-FROM-DIVERGE-TWO
-  PATH::DIVERGE-OF-APPEND-AND-APPEND
-  path::sp-of-non-consp
-  ;PATH::OPEN-USE
-  ;PATH::OPEN-DEFS
+  CPATH::DIVERGE-OF-APPEND-FROM-DIVERGE-ONE
+  CPATH::DIVERGE-OF-APPEND-FROM-DIVERGE-TWO
+  CPATH::DIVERGE-OF-APPEND-AND-APPEND
+  cpath::sp-of-non-consp
+  ;CPATH::OPEN-USE
+  ;CPATH::OPEN-DEFS
   ))
 
 ;; We don't yet have the cp infrastructure ..
 
 (in-theory
  (disable
-  PATH::MP-OF-SP-WHEN-DIVERGES-FROM-ALL
-  PATH::GP-OF-MP-DIVERGES-FROM-ALL-CASE
+  CPATH::MP-OF-SP-WHEN-DIVERGES-FROM-ALL
+  CPATH::GP-OF-MP-DIVERGES-FROM-ALL-CASE
   ))
 
 (in-theory
@@ -5395,7 +5397,7 @@ DAG
 ;; (thm
 ;;  (equal (LIST-TO-RECORD (UPDATE-NTH n val lst) key-names)
 ;;         (if (< (nfix n) (len key-names))
-;;             (path::s (nth n key-names) val (LIST-TO-RECORD lst key-names))
+;;             (cpath::s (nth n key-names) val (LIST-TO-RECORD lst key-names))
 ;;           (LIST-TO-RECORD lst key-names)))
 ;;  :hints (("Goal" :in-theory (enable LIST-TO-RECORD))))
 
@@ -5568,22 +5570,22 @@ DAG
 
 (defthm clrp-singleton-of-list-to-record
   (implies (bag::unique key-names)
-           (equal (path::clrp (list key) (list-to-record lst key-names))
+           (equal (cpath::clrp (list key) (list-to-record lst key-names))
                   (list-to-record
                    (update-nth (list::find-index key key-names)
                                nil lst)
                    key-names)))
-  :hints (("Goal" :in-theory (e/d (path::clrp path::sp s-becomes-clr)
-                                  (path::sp==r path::s-to-sp s==r PATH::SP-TO-CLRP)))))
+  :hints (("Goal" :in-theory (e/d (cpath::clrp cpath::sp s-becomes-clr)
+                                  (cpath::sp==r cpath::s-to-sp s==r CPATH::SP-TO-CLRP)))))
 
 ;gen to non singletons?
 (defthm gp-singleton-of-list-to-record
   (implies (list::memberp key key-names)
-           (equal (path::gp (list key)
+           (equal (cpath::gp (list key)
                             (list-to-record lst key-names))
                   (nth (list::find-index key key-names)
                        lst)))
-  :hints (("Goal" :in-theory (enable path::gp))))
+  :hints (("Goal" :in-theory (enable cpath::gp))))
 
 
 
@@ -5593,7 +5595,7 @@ DAG
                 (bag::unique key-names)
                 )
            (equal (list-to-record (update-nth n val lst) key-names)
-                  (path::s (nth n key-names) val (list-to-record lst key-names))))
+                  (cpath::s (nth n key-names) val (list-to-record lst key-names))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (cdr-cdr-minus1-induct lst key-names n)
            :expand ((list-to-record (update-nth 0 nil (update-nth n nil lst))
@@ -12321,7 +12323,7 @@ DAG
 ;;
 ;; = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-;bzo swithing these to use acl2::clr instead of path::clr
+;bzo swithing these to use acl2::clr instead of cpath::clr
 (defthmd atom-record-reduction
   (implies
    (syntaxp (and (symbolp r1)
@@ -12718,7 +12720,7 @@ DAG
 
 (defthm sp-of-nil
   (equal (sp nil val r) val)
-  :hints (("goal" :in-theory '(path::sp-of-non-consp))))
+  :hints (("goal" :in-theory '(cpath::sp-of-non-consp))))
 
 (defun shared-prefix (p1 p2)
   (declare (type t p1 p2))
@@ -12825,10 +12827,10 @@ DAG
   (equal (gp p1 (sp p2 v (gp r0 st)))
          (gp (append r0 p1) (sp (append r0 p2) v st)))
   :hints (("goal" :in-theory (e/d (append
-                                   ;path::open-gp  ;looped
+                                   ;cpath::open-gp  ;looped
                                    gp
                                    sp)
-                                  (path::g-to-gp)))))
+                                  (cpath::g-to-gp)))))
 
 ;; Trigger theorem .. we use bind-shared-prefix instead
 ;; of triggering a meta-evaluation of shared-prefix

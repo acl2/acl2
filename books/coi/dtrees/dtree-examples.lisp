@@ -344,7 +344,7 @@
 #| In the context of book GRAPH the following theorem can be proved.
 
 (defthm gkeys=leafdomain
- (equal (path::gkeys (d-composed))
+ (equal (cpath::gkeys (d-composed))
 	(dtree::leafdomain (d-composed))))
  |#
 

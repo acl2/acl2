@@ -38,7 +38,7 @@
 (ld "../syntax/syn-defpkg.lsp")
 (ld "../util/util-exports.lsp")
 
-(defpkg "PATH" ;(remove-duplicates-eql ;no longer necessary
+(defpkg "CPATH" ;(remove-duplicates-eql ;no longer necessary
 		`(,@*acl2-exports*
 		  ,@*common-lisp-symbols-from-main-lisp-package*
 	          ,@LIST::*exports*

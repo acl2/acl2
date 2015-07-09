@@ -151,14 +151,14 @@
 ;; hypotheses about domination.
 
 (defthm in-set-when-inpath-dominates
-  (implies (path::dominates ipath spath)
+  (implies (cpath::dominates ipath spath)
            (in ipath (set spath value dtree)))
   :hints(("Goal"
           :in-theory (enable in set)
           :induct (two-path-induction ipath spath dtree))))
 
 (defthm in-set-when-diverge
-  (implies (path::diverge ipath spath)
+  (implies (cpath::diverge ipath spath)
            (equal (in ipath (set spath value dtree))
                   (in ipath dtree)))
   :hints(("Goal"
@@ -166,8 +166,8 @@
           :induct (two-path-induction ipath spath dtree))))
 
 (defthm in-set-when-neither-dominates
-  (implies (and (not (path::dominates ipath spath))
-                (not (path::dominates spath ipath)))
+  (implies (and (not (cpath::dominates ipath spath))
+                (not (cpath::dominates spath ipath)))
            (equal (in ipath (set spath value dtree))
                   (in ipath dtree)))
   :hints(("Goal"
@@ -175,7 +175,7 @@
           :use (:instance in-set-when-diverge))))
 
 (defthm in-set-when-setpath-dominates
-  (implies (path::dominates spath ipath)
+  (implies (cpath::dominates spath ipath)
            (equal (in ipath (set spath value dtree))
                   (in (nthcdr (len spath) ipath)
                       value)))
@@ -198,9 +198,9 @@
 
 (defthm in-set-with-aggressive-case-splitting
   (equal (in ipath (set spath value dtree))
-         (if (path::dominates ipath spath)
+         (if (cpath::dominates ipath spath)
              t
-           (if (path::dominates spath ipath)
+           (if (cpath::dominates spath ipath)
                (in (nthcdr (len spath) ipath) value)
              (in ipath dtree)))))
 
@@ -213,7 +213,7 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-set-when-getpath-dominates
-  (implies (path::dominates gpath spath)
+  (implies (cpath::dominates gpath spath)
            (equal (get gpath (set spath value dtree))
                   (set (nthcdr (len gpath) spath)
                        value
@@ -224,7 +224,7 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-set-when-diverge
-  (implies (path::diverge gpath spath)
+  (implies (cpath::diverge gpath spath)
            (equal (get gpath (set spath value dtree))
                   (get gpath dtree)))
   :hints(("Goal"
@@ -233,8 +233,8 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-set-when-neither-dominates
-  (implies (and (not (path::dominates gpath spath))
-                (not (path::dominates spath gpath)))
+  (implies (and (not (cpath::dominates gpath spath))
+                (not (cpath::dominates spath gpath)))
            (equal (get gpath (set spath value dtree))
                   (get gpath dtree)))
   :hints(("Goal"
@@ -243,7 +243,7 @@
 
 ;; note: they are only equiv in this case, not truly equal!
 (defthm get-of-set-when-setpath-dominates
-  (implies (path::dominates spath gpath)
+  (implies (cpath::dominates spath gpath)
            (equiv (get gpath (set spath value dtree))
                   (get (nthcdr (len spath) gpath)
                        value)))
@@ -253,9 +253,9 @@
 
 (defthm get-of-set-with-aggressive-case-splitting
   (equiv (get gpath (set spath value dtree))
-         (if (path::dominates gpath spath)
+         (if (cpath::dominates gpath spath)
              (set (nthcdr (len gpath) spath) value (get gpath dtree))
-           (if (path::dominates spath gpath)
+           (if (cpath::dominates spath gpath)
                (get (nthcdr (len spath) gpath) value)
              (get gpath dtree)))))
 
@@ -268,8 +268,8 @@
 ;; DAG -- ok, why doesn't the subsequent theorem prove without these
 ;; helper lemmas?  In my effort, I saw a failed subgoal of the form:
 #|
-(IMPLIES (AND (PATH::DOMINATES P1 P2)
-              (PATH::DOMINATES SUBTREE-PATH P1)
+(IMPLIES (AND (CPATH::DOMINATES P1 P2)
+              (CPATH::DOMINATES SUBTREE-PATH P1)
               (NOT (EQUAL (LEN SUBTREE-PATH) (LEN P1)))
               (EQUAL (LEN SUBTREE-PATH) (LEN P2)))
          (SET::SUBSET (LOCALDEPS V2)
@@ -279,7 +279,7 @@
 
 (defthm dominates-implies-<=-fwd
   (implies
-   (path::dominates x y)
+   (cpath::dominates x y)
    (<= (len x) (len y)))
   :rule-classes (:forward-chaining))
 
@@ -310,21 +310,21 @@
 ))
 
 (defthm set-of-set-when-first-dominates
-  (implies (path::dominates p1 p2)
+  (implies (cpath::dominates p1 p2)
            (equiv (set p1 v1 (set p2 v2 dtree))
                   (set p1 v1 dtree)))
   :hints(("Goal" :in-theory (enable equiv))))
 
 (defthm set-of-set-when-neither-dominates
-   (implies (and (not (path::dominates p1 p2))
-                 (not (path::dominates p2 p1)))
+   (implies (and (not (cpath::dominates p1 p2))
+                 (not (cpath::dominates p2 p1)))
             (equiv (set p1 v1 (set p2 v2 dtree))
                    (set p2 v2 (set p1 v1 dtree))))
    :rule-classes ((:rewrite :loop-stopper ((p1 p2 set))))
    :hints(("Goal" :in-theory (enable equiv))))
 
 (defthm set-of-set-when-diverge
-   (implies (path::diverge p1 p2)
+   (implies (cpath::diverge p1 p2)
             (equiv (set p1 v1 (set p2 v2 dtree))
                    (set p2 v2 (set p1 v1 dtree))))
    :rule-classes ((:rewrite :loop-stopper ((p1 p2 set)))))
@@ -333,20 +333,20 @@
  ()
 
  (local (defthm in-set-of-set-when-dominated-forward
-          (implies (and (path::dominates p2 p1)
+          (implies (and (cpath::dominates p2 p1)
                         (in path (set p1 v1 (set p2 v2 dtree))))
                    (in path (set p2 (set (nthcdr (len p2) p1) v1 v2)
                                     dtree)))))
 
  (local (defthm in-setd-of-set-when-dominated-backward
-          (implies (and (path::dominates p2 p1)
+          (implies (and (cpath::dominates p2 p1)
                         (in path (set p2 (set (nthcdr (len p2) p1) v1 v2)
                                          dtree)))
                    (in path (set p1 v1 (set p2 v2 dtree))))))
 
  (local (in-theory (enable acl2::iff-reduction)))
  (local (defthm in-set-of-set-when-dominated
-          (implies (path::dominates p2 p1)
+          (implies (cpath::dominates p2 p1)
                    (equal (in path (set p1 v1 (set p2 v2 dtree)))
                           (in path (set p2 (set (nthcdr (len p2) p1) v1 v2)
                                            dtree))))
@@ -354,7 +354,7 @@
                   :in-theory (disable in-set-with-aggressive-case-splitting)))))
 
  (local (defthm in-localdeps-get-set-of-set-dominated-forward
-          (implies (and (path::dominates p2 p1)
+          (implies (and (cpath::dominates p2 p1)
                         (set::in elem
                                  (localdeps (get path
                                                  (set p1 v1
@@ -367,7 +367,7 @@
                                        dtree)))))))
 
  (local (defthm in-localdeps-get-set-of-set-dominated-backward
-          (implies (and (path::dominates p2 p1)
+          (implies (and (cpath::dominates p2 p1)
                         (set::in elem
                                  (localdeps
                                   (get path
@@ -380,7 +380,7 @@
                                             (set p2 v2 dtree))))))))
 
  (local (defthm in-localdeps-get-set-of-set-dominated
-          (implies (path::dominates p2 p1)
+          (implies (cpath::dominates p2 p1)
                    (equal (set::in elem
                                    (localdeps (get path
                                                    (set p1 v1
@@ -393,7 +393,7 @@
                                               dtree))))))))
 
  (local (defthm localdeps-get-set-of-set-dominated
-          (implies (path::dominates p2 p1)
+          (implies (cpath::dominates p2 p1)
                    (equal (localdeps (get path (set p1 v1
                                                     (set p2 v2 dtree))))
                           (localdeps (get path
@@ -402,18 +402,18 @@
                                                dtree)))))))
 
  (local (defthm subtree-set-of-set-dominated-forward
-          (implies (path::dominates p2 p1)
+          (implies (cpath::dominates p2 p1)
                    (subtree (set p1 v1 (set p2 v2 dtree))
                             (set p2 (set (nthcdr (len p2) p1) v1 v2)
                                  dtree)))))
 
  (local (defthm subtree-set-of-set-dominated-backward
-          (implies (path::dominates p2 p1)
+          (implies (cpath::dominates p2 p1)
                    (subtree (set p2 (set (nthcdr (len p2) p1) v1 v2) dtree)
                             (set p1 v1 (set p2 v2 dtree))))))
 
  (defthm set-of-set-when-second-dominates
-   (implies (path::dominates p2 p1)
+   (implies (cpath::dominates p2 p1)
             (equiv (set p1 v1 (set p2 v2 dtree))
                    (set p2 (set (nthcdr (len p2) p1) v1 v2) dtree)))
    :hints(("Goal" :in-theory (enable equiv))))

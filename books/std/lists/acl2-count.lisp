@@ -50,7 +50,9 @@
            (< 0 (acl2-count x)))
   :rule-classes (:type-prescription :linear))
 
-(defthm acl2-count-of-cons
+(defthm acl2-count-of-cons-greater
+  ;; [Jared] renamed this form acl2-count-of-cons for compatibility with
+  ;; coi/lists/acl2-count
   (> (acl2-count (cons a b))
      (+ (acl2-count a) (acl2-count b)))
   :rule-classes :linear)

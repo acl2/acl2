@@ -88,7 +88,7 @@
     acl2::acl2-count-of-car
     acl2::acl2-count-of-cdr
     acl2::acl2-count-of-consp-positive
-    acl2::acl2-count-of-cons
+    acl2::acl2-count-of-cons-greater
     o< o-finp
     (natp) acl2::natp-compound-recognizer
     hons

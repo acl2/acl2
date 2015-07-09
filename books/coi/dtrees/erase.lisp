@@ -147,11 +147,11 @@
 
 (defthm in-erase
   (equal (in ipath (erase epath dtree))
-         (and (or (not (PATH::dominates epath ipath))
-                  (PATH::dominates ipath epath))
+         (and (or (not (CPATH::dominates epath ipath))
+                  (CPATH::dominates ipath epath))
               (in ipath dtree)))
   :hints(("Goal"
-          :in-theory (enable path::dominates in erase)
+          :in-theory (enable cpath::dominates in erase)
           :induct (erase-induction ipath epath dtree))))
 
 (defthm in-of-erase-same
@@ -206,15 +206,15 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-erase-when-epath-dominates
-  (implies (PATH::dominates epath gpath)
+  (implies (CPATH::dominates epath gpath)
            (equal (get gpath (erase epath dtree))
                   *default*))
-  :hints(("Goal" :in-theory (enable erase PATH::DOMINATES get)
+  :hints(("Goal" :in-theory (enable erase CPATH::DOMINATES get)
           :induct (erase-induction gpath epath dtree))))
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-erase-when-diverge
-  (implies (PATH::diverge gpath epath)
+  (implies (CPATH::diverge gpath epath)
            (equal (get gpath (erase epath dtree))
                   (get gpath dtree)))
   :hints(("Goal" :in-theory (enable get erase)
@@ -222,8 +222,8 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-erase-when-neither-dominates
-  (implies (and (not (PATH::dominates gpath epath))
-                (not (PATH::dominates epath gpath)))
+  (implies (and (not (CPATH::dominates gpath epath))
+                (not (CPATH::dominates epath gpath)))
            (equal (get gpath (erase epath dtree))
                   (get gpath dtree)))
   :hints(("Goal"
@@ -232,7 +232,7 @@
 
 ;; note: they are not truly equal in this case, only equiv!
 (defthm get-of-erase-when-gpath-dominates
-  (implies (PATH::dominates gpath epath)
+  (implies (CPATH::dominates gpath epath)
            (equiv (get gpath (erase epath dtree))
                   (erase (nthcdr (len gpath) epath)
                          (get gpath dtree))))
@@ -253,9 +253,9 @@
 
 (defthm get-of-erase-with-aggressive-case-splitting
   (equiv (get gpath (erase epath dtree))
-         (if (PATH::dominates gpath epath)
+         (if (CPATH::dominates gpath epath)
              (erase (nthcdr (len gpath) epath) (get gpath dtree))
-           (if (PATH::dominates epath gpath)
+           (if (CPATH::dominates epath gpath)
                *default*
              (get gpath dtree)))))
 
@@ -434,13 +434,13 @@
 
 (defthm open-dominates
   (implies
-   (consp path::x)
-   (equal (PATH::DOMINATES PATH::X PATH::Y)
-          (OR (NOT (CONSP PATH::X))
-                (AND (CONSP PATH::Y)
-                     (EQUAL (CAR PATH::X) (CAR PATH::Y))
-                     (PATH::DOMINATES (CDR PATH::X)
-                                      (CDR PATH::Y)))))))
+   (consp cpath::x)
+   (equal (CPATH::DOMINATES CPATH::X CPATH::Y)
+          (OR (NOT (CONSP CPATH::X))
+                (AND (CONSP CPATH::Y)
+                     (EQUAL (CAR CPATH::X) (CAR CPATH::Y))
+                     (CPATH::DOMINATES (CDR CPATH::X)
+                                      (CDR CPATH::Y)))))))
 
 (defthm remove-induction-is-remove
   (equal (remove-induction ipath epath dtree)
@@ -465,7 +465,7 @@
 ;;      than can be taken away by removing the tail of epath.
 
 (defund hooey (ipath epath dtree)
-  (if (path::dominates epath ipath)
+  (if (cpath::dominates epath ipath)
       ;; 1. and therefore (not (consp epath))
       (not (consp ipath))
     (or
@@ -491,33 +491,33 @@
   (implies
    (and
     (in ipath dtree)
-    (not (path::diverge epath ipath)))
+    (not (cpath::diverge epath ipath)))
    (equal (in ipath (remove epath dtree))
           (hooey ipath epath dtree)))
   :hints(("Goal"
           :do-not '(generalize eliminate-destructors)
-          :in-theory (enable hooey get nthcdr path::diverge path::dominates in remove)
+          :in-theory (enable hooey get nthcdr cpath::diverge cpath::dominates in remove)
           :induct (remove-induction ipath epath dtree))
          (and acl2::stable-under-simplificationp
-              '(:in-theory (enable open-nthcdr path::diverge path::dominates in remove)))))
+              '(:in-theory (enable open-nthcdr cpath::diverge cpath::dominates in remove)))))
 
 (defthmd in-remove-1
   (equal (in ipath (remove epath dtree))
          (if (in ipath dtree)
-             (if (path::diverge epath ipath) t
+             (if (cpath::diverge epath ipath) t
                (in ipath (remove epath dtree)))
            nil))
   :hints(("Goal"
           :do-not '(generalize eliminate-destructors)
-          :in-theory (enable get nthcdr path::diverge path::dominates in remove)
+          :in-theory (enable get nthcdr cpath::diverge cpath::dominates in remove)
           :induct (remove-induction ipath epath dtree))
          (and acl2::stable-under-simplificationp
-              '(:in-theory (enable nthcdr hooey path::diverge path::dominates in remove)))))
+              '(:in-theory (enable nthcdr hooey cpath::diverge cpath::dominates in remove)))))
 
 (defthm in-remove
   (equal (in ipath (remove epath dtree))
          (if (in ipath dtree)
-             (if (path::diverge epath ipath) t
+             (if (cpath::diverge epath ipath) t
                (hooey ipath epath dtree))
            nil))
   :hints (("goal" :in-theory (enable in-to-hooey)

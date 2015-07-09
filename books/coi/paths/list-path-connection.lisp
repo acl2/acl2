@@ -231,7 +231,7 @@
 ;; (thm
 ;;  (equal (LIST-TO-RECORD (UPDATE-NTH n val lst) key-names)
 ;;         (if (< (nfix n) (len key-names))
-;;             (path::s (nth n key-names) val (LIST-TO-RECORD lst key-names))
+;;             (cpath::s (nth n key-names) val (LIST-TO-RECORD lst key-names))
 ;;           (LIST-TO-RECORD lst key-names)))
 ;;  :hints (("Goal" :in-theory (enable LIST-TO-RECORD))))
 
@@ -420,22 +420,22 @@
 
 (defthm clrp-singleton-of-list-to-record
   (implies (bag::unique key-names)
-           (equal (path::clrp (list key) (list-to-record lst key-names))
+           (equal (cpath::clrp (list key) (list-to-record lst key-names))
                   (list-to-record
                    (update-nth (list::find-index key key-names)
                                nil lst)
                    key-names)))
-  :hints (("Goal" :in-theory (e/d (path::clrp path::sp s-becomes-clr)
-                                  (path::sp==r path::s-to-sp s==r PATH::SP-TO-CLRP)))))
+  :hints (("Goal" :in-theory (e/d (cpath::clrp cpath::sp s-becomes-clr)
+                                  (cpath::sp==r cpath::s-to-sp s==r CPATH::SP-TO-CLRP)))))
 
 ;gen to non singletons?
 (defthm gp-singleton-of-list-to-record
   (implies (list::memberp key key-names)
-           (equal (path::gp (list key)
+           (equal (cpath::gp (list key)
                             (list-to-record lst key-names))
                   (nth (list::find-index key key-names)
                        lst)))
-  :hints (("Goal" :in-theory (enable path::gp))))
+  :hints (("Goal" :in-theory (enable cpath::gp))))
 
 
 
@@ -445,7 +445,7 @@
                 (bag::unique key-names)
                 )
            (equal (list-to-record (update-nth n val lst) key-names)
-                  (path::s (nth n key-names) val (list-to-record lst key-names))))
+                  (cpath::s (nth n key-names) val (list-to-record lst key-names))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (cdr-cdr-minus1-induct lst key-names n)
            :expand ((list-to-record (update-nth 0 nil (update-nth n nil lst))

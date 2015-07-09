@@ -249,7 +249,7 @@
                            :in-theory (e/d** ((:rules-of-class :executable-counterpart :here)
                                               acl2::open-nat-list-<
                                               len nfix fix
-                                              acl2::acl2-count-of-cons
+                                              acl2::acl2-count-of-cons-greater
                                               acl2::acl2-count-of-sum
                                               acl2-count-of-general-consp-car
                                               acl2-count-of-general-consp-cdr

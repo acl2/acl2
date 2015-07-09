@@ -41,8 +41,8 @@
 ;hung on cons, so every time we're reasoning about a call to cons, these rules
 ;go looking for calls to all-conses and no-conses.) -ews
 
-(in-theory (disable path::consp-when-member-of-all-conses))
-(in-theory (disable path::not-consp-when-member-of-no-conses))
+(in-theory (disable cpath::consp-when-member-of-all-conses))
+(in-theory (disable cpath::not-consp-when-member-of-no-conses))
 
 
 

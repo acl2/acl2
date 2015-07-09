@@ -34,7 +34,7 @@
 ;; bzo (jcd) - we want to eventually remove this file and switch to using the
 ;; standard names.
 
-(in-package "PATH")
+(in-package "CPATH")
 (include-book "../alists/top")
 
 (defmacro keys (x)

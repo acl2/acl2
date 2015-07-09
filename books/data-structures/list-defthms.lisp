@@ -1524,12 +1524,18 @@
              (append (update-nth n v a) b)
              (append a (update-nth (- n (len a)) v b)))))
 
+;; [Jared] strengthening this rule to agree with coi/nary/nth-rules.lisp
 (defthm update-nth-nth
-  (implies (and (integerp n)
-                (<= 0 n)
-                (< n (len l)))
-           (equal (update-nth n (nth n l) l)
-                  l)))
+  (implies
+   (< (nfix n) (len x))
+   (equal (update-nth n (nth n x) x) x)))
+
+;; (defthm update-nth-nth
+;;   (implies (and (integerp n)
+;;                 (<= 0 n)
+;;                 (< n (len l)))
+;;            (equal (update-nth n (nth n l) l)
+;;                   l)))
 
 (defthm update-nth-update-nth
   (equal (update-nth j b (update-nth i a l))

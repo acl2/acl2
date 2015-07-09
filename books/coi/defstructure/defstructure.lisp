@@ -1261,13 +1261,13 @@ http://www.cs.utexas.edu/users/moore/acl2"
   (if (and (consp f)
            (consp f1)
            (consp f2))
-      (cons `(path::tag-location ,(enkey (car f)) (equal ,(car f1) ,(car f2)))
+      (cons `(cpath::tag-location ,(enkey (car f)) (equal ,(car f1) ,(car f2)))
             (existential-fields (cdr f) (cdr f1) (cdr f2)))
     nil))
 
 (defun strong-existential-fields (fn f x y)
   (if (consp f)
-      (cons `(path::tag-location ,(enkey (car f)) (equal (,@fn ,(car f) ,x) 
+      (cons `(cpath::tag-location ,(enkey (car f)) (equal (,@fn ,(car f) ,x) 
                                                    (,@fn ,(car f) ,y)))
             (strong-existential-fields fn (cdr f) x y))
     nil))
@@ -1324,7 +1324,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
                    (iff
                     (equal x y)
                     (and ,@(strong-existential-fields nil fields `x `y)))))
-                ; :hints (("goal" :in-theory (disable path::sp==r))))
+                ; :hints (("goal" :in-theory (disable cpath::sp==r))))
                 
                 (in-theory (disable ,(join-symbols name name '-extensionality! '-helper)))))
           
@@ -1438,7 +1438,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 
 (defun weak-predicate-body (keyword-slot-names structure-name)
   `(and (wfr ,structure-name)
-        (equal (path::clrp-list ,(weak-predicate-body-aux keyword-slot-names)
+        (equal (cpath::clrp-list ,(weak-predicate-body-aux keyword-slot-names)
                                 ,structure-name)
                nil)))
                
@@ -3131,42 +3131,42 @@ For debugging.
             '(IFF CAR-CONS CDR-CONS CAR-CDR-ELIM EQLABLEP MV-NTH ZP TRUE-LISTP
                   OPEN-MV-NTH O< ACL2-COUNT
 
-                  (path::clrp-list)
-                  path::path-list-record-reduction-2-bool
-                  PATH::CLRP-LIST-EQUAL-CLRP-LIST-REWRITE
-                  PATH::CLRP-LIST-OF-SP-WHEN-DOMINATED-BY-SOME
-                  (path::dominated-by-some)
-                  (path::diverges-from-all)
+                  (cpath::clrp-list)
+                  cpath::path-list-record-reduction-2-bool
+                  CPATH::CLRP-LIST-EQUAL-CLRP-LIST-REWRITE
+                  CPATH::CLRP-LIST-OF-SP-WHEN-DOMINATED-BY-SOME
+                  (cpath::dominated-by-some)
+                  (cpath::diverges-from-all)
                   acl2::TAG-LOCATION-elimination
-                  path::acl2-count-gp-decreasing
-                  path::acl2-count-gp-decreases
+                  cpath::acl2-count-gp-decreasing
+                  cpath::acl2-count-gp-decreases
                   acl2::wfkey
-                  (path::diverge)
-                  (path::dominates)
+                  (cpath::diverge)
+                  (cpath::dominates)
                   acl2::car-cons
                   acl2::cdr-cons
-                  (path::wfpath)
+                  (cpath::wfpath)
                   (acl2::wfr)
-                  path::WFR-SP
-                  path::psort-clrp-list
-                  (path::psort)
-                  path::gp-of-nil
-                  path::path-list-record-reduction-1
-                  path::path-list-record-reduction-2
-                  path::gp-list
-                  path::sp==r
+                  cpath::WFR-SP
+                  cpath::psort-clrp-list
+                  (cpath::psort)
+                  cpath::gp-of-nil
+                  cpath::path-list-record-reduction-1
+                  cpath::path-list-record-reduction-2
+                  cpath::gp-list
+                  cpath::sp==r
                   acl2::not-failed-location
                   acl2::tag-location-elimination
 
                   acl2::append
                   acl2::len
                   acl2::nthcdr
-                  path::dominated-by-some
-                  path::diverges-from-all
-                  path::dominates
-                  path::diverge
-                  path::gp-of-sp
-                  PATH::clrp-list-of-sp-when-dominated-by-some
+                  cpath::dominated-by-some
+                  cpath::diverges-from-all
+                  cpath::dominates
+                  cpath::diverge
+                  cpath::gp-of-sp
+                  CPATH::clrp-list-of-sp-when-dominated-by-some
 
                   (:TYPE-PRESCRIPTION ACL2-COUNT) INTEGER-ABS))))
 

@@ -268,9 +268,9 @@
 
 ;for dave
 (defthm mypush-of-sp
-  (equal (mypush (path::sp (list a) v r))
+  (equal (mypush (cpath::sp (list a) v r))
          (gacc::wr a v (mypush r)))
-  :hints (("Goal" :in-theory (enable path::sp))))
+  :hints (("Goal" :in-theory (enable cpath::sp))))
 
 ;need a way to get the keys of a typed record...  -can it be rkeys?
 ;then prove keys of wr = blah...
@@ -728,8 +728,8 @@
 (defthm mylift-of-wr-sp-version
   (implies (wf-tr tr)
            (equal (mylift (gacc::wr a v tr))
-                  (path::sp (list a) (val-fix v) (mylift tr))))
-  :hints (("Goal" :in-theory (e/d ( PATH::SP) (MYLIFT WF-TR val-fix)))))
+                  (cpath::sp (list a) (val-fix v) (mylift tr))))
+  :hints (("Goal" :in-theory (e/d ( CPATH::SP) (MYLIFT WF-TR val-fix)))))
 
 (defun non-nil (x)
   (declare (xargs :guard t))
