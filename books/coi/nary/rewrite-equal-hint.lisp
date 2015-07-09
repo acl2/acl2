@@ -78,68 +78,74 @@
 ;; There may be some advantage to doing this slowly (one at a time).
 ;; Perhaps a hint to that effect ..
 
-(defun rewrite-equiv-hint (once cases equivs clause)
+;; [Jared] renamed rewrite-equiv-hint to nary-require-equiv-hint for name
+;; compatibility with coi/util/rewrite-equiv.lisp
+
+(defun nary-rewrite-equiv-hint (once cases equivs clause)
   (declare (type (satisfies true-listp) cases))
   (if (consp clause)
       (let ((term (car clause)))
         (let ((term (equiv-term equivs term)))
           (if term
-              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
+              (nary-rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
                                              cases) equivs (cdr clause))
-            (rewrite-equiv-hint once cases equivs (cdr clause)))))
+            (nary-rewrite-equiv-hint once cases equivs (cdr clause)))))
     (if cases
         (if once nil
-          `(:computed-hint-replacement ((rewrite-equiv-hint 't 'nil ',equivs clause)) :cases (,@cases)))
+          `(:computed-hint-replacement ((nary-rewrite-equiv-hint 't 'nil ',equivs clause)) :cases (,@cases)))
       (if once
           ;; When the following is tried:
-          ;; `(:computed-hint-replacement  ((rewrite-equiv-hint 'nil 'nil clause)))
+          ;; `(:computed-hint-replacement  ((nary-rewrite-equiv-hint 'nil 'nil clause)))
           ;;
           ;; ACL2 produces the following error:
 #|
 
-ACL2 Error in a computed hint: The computed hint (REWRITE-EQUIV-HINT T NIL
+ACL2 Error in a computed hint: The computed hint (NARY-REWRITE-EQUIV-HINT T NIL
 CLAUSE) produced the non-nil result
- (:COMPUTED-HINT-REPLACEMENT ((REWRITE-EQUIV-HINT 'NIL 'NIL CLAUSE))).
+ (:COMPUTED-HINT-REPLACEMENT ((NARY-REWRITE-EQUIV-HINT 'NIL 'NIL CLAUSE))).
 But this is an illegal value:  There is no point in attaching the empty
 list of hints to "Subgoal 1'".  We suspect that you have made a mistake
 in presenting your hints.  See :DOC hints.
 
 |#
 
-          `(:computed-hint-replacement  ((rewrite-equiv-hint 'nil 'nil ',equivs clause)) :cases (t))
+          `(:computed-hint-replacement  ((nary-rewrite-equiv-hint 'nil 'nil ',equivs clause)) :cases (t))
         nil))))
 
 (defmacro rewrite-with-equality ()
-  `(rewrite-equiv-hint nil nil '(equal) clause))
+  `(nary-rewrite-equiv-hint nil nil '(equal) clause))
 
 (defmacro rewrite-with-equiv (&rest args)
-  `(rewrite-equiv-hint nil nil '(,@args) clause))
+  `(nary-rewrite-equiv-hint nil nil '(,@args) clause))
 
-(defun step-rewrite-equiv-hint (stable once cases equivs clause)
+(defun step-nary-rewrite-equiv-hint (stable once cases equivs clause)
   (declare (type (satisfies true-listp) cases))
   (if (and stable (consp clause))
       (let ((term (car clause)))
         (let ((term (equiv-term equivs term)))
           (if term
-              (rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
+              (nary-rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
                                              cases) equivs (cdr clause))
-            (rewrite-equiv-hint once cases equivs (cdr clause)))))
+            (nary-rewrite-equiv-hint once cases equivs (cdr clause)))))
     (if (and stable cases)
         (if once nil
-          `(:computed-hint-replacement ((step-rewrite-equiv-hint stable-under-simplificationp
+          `(:computed-hint-replacement ((step-nary-rewrite-equiv-hint stable-under-simplificationp
                                                             't 'nil ',equivs clause)) :cases (,@cases)))
       (if (and stable once)
-          `(:computed-hint-replacement  ((step-rewrite-equiv-hint stable-under-simplificationp
+          `(:computed-hint-replacement  ((step-nary-rewrite-equiv-hint stable-under-simplificationp
                                                              'nil 'nil ',equivs clause)) :cases (t))
         nil))))
 
 (defmacro step-rewrite-with-equality ()
-  `(step-rewrite-equiv-hint stable-under-simplificationp nil nil '(equal) clause))
+  `(step-nary-rewrite-equiv-hint stable-under-simplificationp nil nil '(equal) clause))
 
 (defmacro step-rewrite-with-equiv (&rest args)
-  `(step-rewrite-equiv-hint stable-under-simplificationp nil nil '(,@args) clause))
+  `(step-nary-rewrite-equiv-hint stable-under-simplificationp nil nil '(,@args) clause))
 
-(defun equiv-var-term (equivs term)
+
+;; [Jared] renamed equiv-var-term to nary-equiv-var-term for name compatibility
+;; with coi/rewrite-equiv.lisp
+(defun nary-equiv-var-term (equivs term)
   (declare (type t term))
   (and (consp term)
        (equal (car term) 'not)
@@ -157,52 +163,54 @@ in presenting your hints.  See :DOC hints.
               (not (equal (cadr term) (caddr term)))
               term))))
 
-(defun find-equiv (equivs clause)
+;; [Jared] renamed find-equiv to nary-find-equiv for name compatibility with
+;; coi/rewrite-equiv.lisp
+(defun nary-find-equiv (equivs clause)
   (declare (type t clause))
   (if (consp clause)
       (let ((term (car clause)))
-        (let ((term (equiv-var-term equivs term)))
-          (or term (find-equiv equivs (cdr clause)))))
+        (let ((term (nary-equiv-var-term equivs term)))
+          (or term (nary-find-equiv equivs (cdr clause)))))
     nil))
 
 #+joe
-(defun slow-rewrite-equiv-hint (once cases equivs clause)
+(defun slow-nary-rewrite-equiv-hint (once cases equivs clause)
   (declare (type (satisfies true-listp) cases))
   (if (consp clause)
       (let ((term (car clause)))
-        (let ((term (equiv-var-term equivs term)))
+        (let ((term (nary-equiv-var-term equivs term)))
           (if term
-              (slow-rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
+              (slow-nary-rewrite-equiv-hint once (cons `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))
                                              cases) equivs (cdr clause))
-            (slow-rewrite-equiv-hint once cases equivs (cdr clause)))))
+            (slow-nary-rewrite-equiv-hint once cases equivs (cdr clause)))))
     (if cases
         (if once nil
-          `(:computed-hint-replacement ((slow-rewrite-equiv-hint 't 'nil ',equivs clause)) :cases (,@cases)))
+          `(:computed-hint-replacement ((slow-nary-rewrite-equiv-hint 't 'nil ',equivs clause)) :cases (,@cases)))
       (if once
-          `(:computed-hint-replacement  ((slow-rewrite-equiv-hint 'nil 'nil ',equivs clause)) :cases (t))
+          `(:computed-hint-replacement  ((slow-nary-rewrite-equiv-hint 'nil 'nil ',equivs clause)) :cases (t))
         nil))))
 
-(defun slow-rewrite-equiv-hint (stbl once equivs clause)
+(defun slow-nary-rewrite-equiv-hint (stbl once equivs clause)
   (declare (type t clause))
   (if stbl
-      (let ((term (find-equiv equivs clause)))
+      (let ((term (nary-find-equiv equivs clause)))
         (if term
             (if once nil
               (let ((term `(not (hide (rewrite-equiv ,(optimize-equiv-term term))))))
                 `(:computed-hint-replacement
-                  ((slow-rewrite-equiv-hint stable-under-simplificationp 't ',equivs clause))
+                  ((slow-nary-rewrite-equiv-hint stable-under-simplificationp 't ',equivs clause))
                   :cases (,term))))
           (if once
               `(:computed-hint-replacement
-                ((slow-rewrite-equiv-hint stable-under-simplificationp 'nil ',equivs clause)) :cases (t))
+                ((slow-nary-rewrite-equiv-hint stable-under-simplificationp 'nil ',equivs clause)) :cases (t))
             nil)))
     nil))
 
 (defmacro slow-rewrite-with-equiv (&rest args)
-  `(slow-rewrite-equiv-hint stable-under-simplificationp nil '(,@args) clause))
+  `(slow-nary-rewrite-equiv-hint stable-under-simplificationp nil '(,@args) clause))
 
 (defmacro slow-rewrite-with-equality ()
-  `(slow-rewrite-equiv-hint stable-under-simplificationp nil '(equal) clause))
+  `(slow-nary-rewrite-equiv-hint stable-under-simplificationp nil '(equal) clause))
 
 (local
  (encapsulate

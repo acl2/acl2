@@ -30,7 +30,7 @@
 
 
 (in-package "ACL2")
-
+(include-book "ihs/basic-definitions" :dir :system)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate
@@ -102,42 +102,46 @@
 ;;; Here are the logop definitions from the IHS library we will be
 ;;; using.
 
- (defun ifloor (i j)
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (not (= 0 j)))))
-   (floor (ifix i) (ifix j)))
+;; [Jared]: removing these definitions by including ihs/basic-definitions
+;; instead These ones are incompatible because the ihs definition are now
+;; $inline.
 
- (defun imod (i j)
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (not (= 0 j)))))
-   (mod (ifix i) (ifix j)))
+ ;; (defun ifloor (i j)
+ ;;  (declare (xargs :guard (and (integerp i)
+ ;;                              (integerp j)
+ ;;                              (not (= 0 j)))))
+ ;;   (floor (ifix i) (ifix j)))
 
- (defun expt2 (n)
-  (declare (xargs :guard (and (integerp n)
-                              (<= 0 n))))
-   (expt 2 (nfix n)))
+ ;; (defun imod (i j)
+ ;;  (declare (xargs :guard (and (integerp i)
+ ;;                              (integerp j)
+ ;;                              (not (= 0 j)))))
+ ;;   (mod (ifix i) (ifix j)))
 
- (defun loghead (size i)
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i))))
-   (imod i (expt2 size)))
+ ;; (defun expt2 (n)
+ ;;  (declare (xargs :guard (and (integerp n)
+ ;;                              (<= 0 n))))
+ ;;   (expt 2 (nfix n)))
 
- (defun logtail (pos i)
-  (declare (xargs :guard (and (integerp pos)
-                              (>= pos 0)
-                              (integerp i))))
-   (ifloor i (expt2 pos)))
+ ;; (defun loghead (size i)
+ ;;  (declare (xargs :guard (and (integerp size)
+ ;;                              (>= size 0)
+ ;;                              (integerp i))))
+ ;;   (imod i (expt2 size)))
 
- (defun logapp (size i j)
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i)
-                              (integerp j))))
-   (let ((j (ifix j)))
-     (+ (loghead size i) (* j (expt2 size)))))
+ ;; (defun logtail (pos i)
+ ;;  (declare (xargs :guard (and (integerp pos)
+ ;;                              (>= pos 0)
+ ;;                              (integerp i))))
+ ;;   (ifloor i (expt2 pos)))
+
+ ;; (defun logapp (size i j)
+ ;;  (declare (xargs :guard (and (integerp size)
+ ;;                              (>= size 0)
+ ;;                              (integerp i)
+ ;;                              (integerp j))))
+ ;;   (let ((j (ifix j)))
+ ;;     (+ (loghead size i) (* j (expt2 size)))))
 
  (defun carry (n x y)
    (logtail n (+ (loghead n x) (loghead n y))))
