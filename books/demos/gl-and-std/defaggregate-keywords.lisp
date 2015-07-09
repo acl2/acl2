@@ -28,23 +28,8 @@
 (include-book "std/top" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
-(include-book "centaur/gl/bfr-satlink" :dir :system)
 
 (def-gl-clause-processor my-glcp)
-
-(make-event (prog2$ (tshell-ensure)
-                    '(value-triple :invisible))
-            :check-expansion t)
-
-(defun verbose-glucose-config ()
-  (declare (xargs :guard t))
-  (satlink::make-config :cmdline "glucose-cert"
-                        :verbose t
-                        :mintime 1/2
-                        :remove-temps t))
-
-(defattach gl::gl-satlink-config verbose-glucose-config)
-(gl::gl-satlink-mode)
 
 (std::defenum player-count-p
               (:zero :one :two :three))
