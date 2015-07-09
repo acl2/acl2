@@ -1,5 +1,5 @@
-; Memories: Array-like Records for ACL2
-; Copyright (C) 2005-2006 Kookamara LLC
+; Computational Object Inference
+; Copyright (C) 2005-2014 Kookamara LLC
 ;
 ; Contact:
 ;
@@ -27,17 +27,25 @@
 ;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
-;
-; Original author: Jared Davis <jared@kookamara.com>
-;
-; COI Version.  See books/data-structures/memories/ for the original version.
 
-(defpkg "MEM"
-  (union-eq '(signed-byte-p the-fixnum 
-              a b c d e f g h i j k l m n o p q r s t u v w x y z)
-            (set-difference-eq
-             (union-eq *acl2-exports*	
-                       *common-lisp-symbols-from-main-lisp-package*)
-             '(load debug))))
-	    
-	
+;; COI version, modified by Jared Davis, 2014-10, to include std/osets books
+;; and only add the new functions and theorems that had been in COI.
+
+
+; listsets-base.lisp
+;
+; This whole file basically exists to resolve an incompatibility between
+;
+;    coi/osets/listsets.lisp
+;    coi/records/mem-domain.lisp
+;
+; Both of which want to use (quantify-predicate (true-listp x)).  Unfortunately
+; because it uses DEFTHEORY forms, this isn't redundant!  We could obviously
+; switch this to rulesets, but then who knows how many in-theory forms we'd have
+; to update.
+
+(in-package "SET")
+(include-book "quantify")
+
+(quantify-predicate (true-listp x))
+

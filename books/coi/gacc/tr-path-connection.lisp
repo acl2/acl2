@@ -44,8 +44,14 @@
 (include-book "../osets/conversions")
 (include-book "../osets/quantify")
 
-(defun set::rkeys (r)
-  (list::2set (rkeys r)))
+;; [Jared] reworking this to be redundant with coi/records/set-domain.lisp
+;; (defun set::rkeys (r)
+;;   (list::2set (rkeys r)))
+#!SET
+(defun rkeys (r)
+  (declare (type t r))
+  (list::2set (acl2::rkeys r)))
+
 
 ;;
 ;; mypush (turn a record into a typed-record)

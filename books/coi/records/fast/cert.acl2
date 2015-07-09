@@ -32,5 +32,5 @@
 ;
 ; COI Version.  See books/data-structures/memories/ for the original version.
 
-(ld "mem-defpkg.lsp")
+(ld "data-structures/memories/package.lsp" :dir :system)
 

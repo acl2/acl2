@@ -309,12 +309,15 @@
 
 (set-state-ok t)
 
-(defun ith (i list)
-  (declare (type (integer 0 *) i))
-  (if (consp list)
-      (if (zp i) (car list)
-        (ith (1- i) (cdr list)))
-    nil))
+;; [Jared] there is a conflicting version of Ith in the util directory.
+;; Trying to use its definition now.
+(include-book "../util/ith")
+;; (defun ith (i list)
+;;   (declare (type (integer 0 *) i))
+;;   (if (consp list)
+;;       (if (zp i) (car list)
+;;         (ith (1- i) (cdr list)))
+;;     nil))
 
 (defun remove-ith (i list)
   (declare (type (integer 0 *) i))
