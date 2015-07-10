@@ -8498,6 +8498,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro deftheory-static (name theory)
   `(make-event
     (let ((world (w state)))
+      (declare (ignorable world))
       (list 'deftheory ',name
          (list 'quote ,theory)))))
 
