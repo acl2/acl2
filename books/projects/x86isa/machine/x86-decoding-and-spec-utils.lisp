@@ -659,6 +659,9 @@ field conveying useful information. </li>
 (defmacro def-inst
   (name &key (operation 'nil)
 	(sp/dp 'nil)
+        (dp-to-sp 'nil)
+        (high/low 'nil)
+        (trunc 'nil)
 	;; Will raise an error as a part of calling
 	;; add-to-implemented-opcodes-table when def-inst is expanded
 	;; and "implemented" is not an embedded event form.
@@ -670,8 +673,11 @@ field conveying useful information. </li>
 
   (if body
       `(define ,name
-	 (,@(and operation `((operation :type (integer 0 8))))
+	 (,@(and operation `((operation :type (integer 0 36))))
 	  ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
+          ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
+          ,@(and high/low  `((high/low  :type (integer 0 1))))
+          ,@(and trunc     `((trunc     booleanp)))
 	  (start-rip :type (signed-byte   #.*max-linear-address-size*))
 	  (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
 	  (prefixes  :type (unsigned-byte 43))

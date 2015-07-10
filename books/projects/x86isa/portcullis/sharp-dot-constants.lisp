@@ -158,6 +158,16 @@
 (defconst *OP-SP* 0)
 (defconst *OP-DP* 1)
 
+;; Single/Double FP conversions:
+
+(defconst *SP-TO-DP* 0)
+(defconst *DP-TO-SP* 1)
+
+;; SIMD packs:
+
+(defconst *LOW-PACK*  0)
+(defconst *HIGH-PACK* 1)
+
 ;; IDs: Comparison Instructions
 
 (defconst *OP-CMPEQ*      0)
