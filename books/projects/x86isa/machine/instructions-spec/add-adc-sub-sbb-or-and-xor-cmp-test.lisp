@@ -719,9 +719,11 @@
        (?gpr-test-spec-fn (mk-name "gpr-test-spec-"  operand-size)))
 
       `(define ,fn-name
-         ((operation :type (member #.*OP-ADD* #.*OP-ADC* #.*OP-SUB*
-                                   #.*OP-SBB* #.*OP-CMP* #.*OP-OR*
-                                   #.*OP-AND* #.*OP-XOR* #.*OP-TEST*))
+         ((operation :type (integer 0 36)
+                     ;; (member #.*OP-ADD* #.*OP-ADC* #.*OP-SUB*
+                     ;;               #.*OP-SBB* #.*OP-CMP* #.*OP-OR*
+                     ;;               #.*OP-AND* #.*OP-XOR* #.*OP-TEST*)
+                     )
           (dst          :type (unsigned-byte ,(ash operand-size 3)))
           (src          :type (unsigned-byte ,(ash operand-size 3)))
           (input-rflags :type (unsigned-byte 32)))
