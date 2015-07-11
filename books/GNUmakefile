@@ -483,7 +483,6 @@ endif
 
 ADDED_BOOKS := \
   coi/defung/defung-stress-long.cert \
-  coi/termination/assuming/complex.cert \
   models/jvm/m5/apprentice.cert \
   system/parallel/proofs/ideal-speedup.cert \
   workshops/2009/sumners/support/examples.cert \
@@ -1373,14 +1372,13 @@ manual:
 # Here is what can be expected to find (based on having done this
 # experiment on 5/10/2013).
 
-# There were two .cert files from the legacy run that were not from
-# the new run, as follows, and both are 0-length files that were
-# written by their directories' Makefiles in order to avoid
-# certification of these slow books.  That avoidance is handled
+# There was one .cert file from the legacy run that was not from
+# the new run, as follows, and it is 0-length file that was
+# written by its directory's Makefile in order to avoid
+# certification of this slow book.  That avoidance is handled
 # differently by the new books/Makefile, without creating a .cert
 # file.
 
-# coi/termination/assuming/complex.cert
 # models/jvm/m5/apprentice.cert
 
 # There were six .cert files in the new run that were not in the
