@@ -727,7 +727,7 @@
   :hints (("Goal" :in-theory (enable exactp sig-ddecode expo-ddecode)
                   :use (drepp-dencode-4))))
 
-(defthm drepp-dencode
+(defthm drepp-ddecode
   (implies (and (formatp f)
                 (denormp x f))
            (drepp (ddecode x f) f))
@@ -991,7 +991,8 @@
 ;;;***************************************************************
 
 (defund infp (x f)
-  (and (= (expf x f) (1- (expt 2 (expw f))))
+  (and (encodingp x f)
+       (= (expf x f) (1- (expt 2 (expw f))))
        (not (unsupp x f))
        (= (manf x f) 0)))
 
@@ -1001,7 +1002,8 @@
     (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 0 (sigw f))))
 
 (defund nanp (x f)
-  (and (= (expf x f) (1- (expt 2 (expw f))))
+  (and (encodingp x f)
+       (= (expf x f) (1- (expt 2 (expw f))))
        (not (unsupp x f))
        (not (= (manf x f) 0))))
 

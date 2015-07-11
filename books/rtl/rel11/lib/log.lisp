@@ -294,6 +294,14 @@
 	     (equal (logior (* (expt 2 n) x) y)
 		    (+ (* (expt 2 n) x) y))))
 
+(defthmd logior-2**n
+  (implies (and (natp n)
+                (integerp x))
+           (equal (logior (expt 2 n) x)
+                  (if (= (bitn x n) 1)
+                      x
+                    (+ x (expt 2 n))))))
+
 (defthmd logand-bits
     (implies (and (integerp x)
 		  (natp n)
