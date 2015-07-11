@@ -280,8 +280,8 @@
   (equal (exactp (sig x) n)
          (exactp x n)))
 
-(defthm exactp-minus
-  (equal (exactp (* -1 x) n)
+(defthm minus-exactp
+  (equal (exactp (- x) n)
          (exactp x n)))
 
 (defthm exactp-abs

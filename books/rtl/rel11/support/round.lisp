@@ -191,7 +191,7 @@
   :hints (("Goal" :use (trunc-rewrite))))
 
 (defthmd rtz-minus
-  (equal (rtz (* -1 x) n) (* -1 (rtz x n)))
+  (equal (rtz (- x) n) (- (rtz x n)))
   :hints (("Goal" :use trunc-minus)))
 
 (defthmd abs-rtz
@@ -443,7 +443,7 @@
   :hints (("Goal" :use (away-rewrite))))
 
 (defthmd raz-minus
-  (equal (raz (* -1 x) n) (* -1 (raz x n)))
+  (equal (raz (- x) n) (- (raz x n)))
   :hints (("Goal" :use away-minus)))
 
 (defthmd abs-raz
@@ -669,7 +669,7 @@
                   (integerp k)
                   (> k 0)
                   (= k1 (+ k (- (expo x) (expo y))))
-                  (= k2 (+ k (expo (+ x y)) (* -1 (expo y))))
+                  (= k2 (+ k (expo (+ x y)) (- (expo y))))
                   (exactp x k1)
                   (> k2 0))
              (= (+ x (rtz y k))
@@ -723,7 +723,7 @@
   :hints (("Goal" :use near-choice)))
 
 (defthmd rne-minus
-  (equal (rne (* -1 x) n) (* -1 (rne x n)))
+  (equal (rne (- x) n) (- (rne x n)))
   :hints (("Goal" :use near-minus)))
 
 (defthmd sgn-rne
@@ -1052,7 +1052,7 @@
   :hints (("Goal" :use near+-choice)))
 
 (defthmd rna-minus
-  (equal (rna (* -1 x) n) (* -1 (rna x n)))
+  (equal (rna (- x) n) (- (rna x n)))
   :hints (("Goal" :use near+-minus)))
 
 (defthm rna<=raz
@@ -1292,7 +1292,7 @@
   :hints (("Goal" :use sgn-sticky)))
 
 (defthmd rto-minus
-  (equal (rto (* -1 x) n) (* -1 (rto x n)))
+  (equal (rto (- x) n) (- (rto x n)))
   :hints (("Goal" :use sticky-minus)))
 
 (defthmd rto-positive
@@ -1318,7 +1318,7 @@
   :hints (("Goal" :use sticky-0)))
 
 (defthmd rto-minus
-  (equal (rto (* -1 x) n) (* -1 (rto x n)))
+  (equal (rto (- x) n) (- (rto x n)))
   :hints (("Goal" :use sticky-minus)))
 
 (defthm rto-shift
@@ -1586,8 +1586,8 @@
   :hints (("Goal" :in-theory (enable common-mode-p ieee-rounding-mode-p flip-mode))))
 
 (defthmd rnd$-minus
-  (equal (rnd$ (* -1 x) mode n)
-         (* -1 (rnd$ x (flip-mode mode) n)))
+  (equal (rnd$ (- x) mode n)
+         (- (rnd$ x (flip-mode mode) n)))
   :hints (("Goal" :use ((:instance rnd-minus (mode (old-mode mode)))))))
 
 (defthm rnd$-exactp-a
@@ -1858,8 +1858,8 @@
   :hints (("Goal" :in-theory (enable drnd$ drnd))))
 
 (defthmd drnd$-minus
-  (equal (drnd$ (* -1 x) mode p q)
-         (* -1 (drnd$ x (flip-mode mode) p q)))
+  (equal (drnd$ (- x) mode p q)
+         (- (drnd$ x (flip-mode mode) p q)))
   :hints (("Goal" :use ((:instance drnd-minus (mode (old-mode mode)))))))
 
 (defthm drnd$-exactp-a
@@ -2200,7 +2200,7 @@
   :hints (("Goal" :use (trunc-rewrite))))
 
 (defthmd rtz-minus
-  (equal (rtz (* -1 x) n) (* -1 (rtz x n)))
+  (equal (rtz (- x) n) (- (rtz x n)))
   :hints (("Goal" :use trunc-minus)))
 
 (defthmd abs-rtz
@@ -2448,7 +2448,7 @@
   :hints (("Goal" :use (away-rewrite))))
 
 (defthmd raz-minus
-  (equal (raz (* -1 x) n) (* -1 (raz x n)))
+  (equal (raz (- x) n) (- (raz x n)))
   :hints (("Goal" :use away-minus)))
 
 (defthmd abs-raz
@@ -2674,7 +2674,7 @@
                   (integerp k)
                   (> k 0)
                   (= k1 (+ k (- (expo x) (expo y))))
-                  (= k2 (+ k (expo (+ x y)) (* -1 (expo y))))
+                  (= k2 (+ k (expo (+ x y)) (- (expo y))))
                   (exactp x k1)
                   (> k2 0))
              (= (+ x (rtz y k))
@@ -2724,7 +2724,7 @@
   :hints (("Goal" :use near-choice)))
 
 (defthmd rne-minus
-  (equal (rne (* -1 x) n) (* -1 (rne x n)))
+  (equal (rne (- x) n) (- (rne x n)))
   :hints (("Goal" :use near-minus)))
 
 (defthmd sgn-rne
@@ -2893,19 +2893,254 @@
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
 		 (* (abs x) (expt 2 (- n)))))
-  :rule-classes ()
-  :hints (("Goal" :use (ne-12))))
-#|
-(defthm rne-force
+  :rule-classes ())
+
+(defthm rf-1
     (implies (and (exactp y n)
                   (rationalp x)
 		  (rationalp y)
 		  (integerp n)
 		  (> n 0)
+                  (> x 0)
                   (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((e (expo x)) (z (rne x n)))
+               (>= (expo z) e)))
+  :rule-classes ()
+  :hints (("Goal" :use (expo-rne))))
+
+(defthm rf-2
+    (implies (and (rationalp x)
+		  (integerp n)
+		  (> n 0))
+             (> (expt 2 (expo x)) (expt 2 (- (expo x) n))))
+  :rule-classes ()
+  :hints (("Goal" :use (expo-lower-bound))))
+
+(defthm rf-3
+    (implies (and (rationalp x)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0))
+             (> x (expt 2 (- (expo x) n))))
+  :rule-classes ()
+  :hints (("Goal" :use (rf-2 expo-lower-bound)
+                  :in-theory (disable ACL2::EXPT-IS-INCREASING-FOR-BASE->-1 ACL2::|(< (expt x n) (expt x m))| 
+                                      ACL2::|(* (expt x m) (expt x n))| ACL2::|(* (expt c m) (expt d n))|
+                                      ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS ACL2::SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
+
+(defthm rf-4
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (> y 0))
+  :rule-classes ()
+  :hints (("Goal" :use (rf-3))))
+
+(defthm rf-5
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((e (expo x)))
+               (>= (expo y) e)))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (enable exactp-2**n fp-)
+                  :use (rf-4 expo-lower-bound
+                        (:instance expo>= (x y) (n (expo x)))
+                        (:instance fp-2 (x (expt 2 (expo x))))))))
+
+(defthm rf-6
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((e (expo x)) (z (rne x n)))
+               (< (+ (abs (- x y)) (abs (- x z))) (+ (expt 2 (- e n)) (expt 2 (- e n))))))
+  :rule-classes ()
+  :hints (("Goal" :use (rne-diff)
+                  :in-theory (disable abs ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS))))
+
+(defthm rf-7
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((e (expo x)) (z (rne x n)))
+               (< (abs (- y z)) (expt 2 (1+ (- e n))))))
+  :rule-classes ()
+  :hints (("Goal" :use (rf-6))))
+
+(defthm rf-8
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((e (expo x)))
+               (<= (+ y (expt 2 (1+ (- e n))))
+                   (fp+ y n))))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (enable fp+) :use (rf-5))))
+
+(defthm rf-9
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((e (expo x)) (z (rne x n)))
+               (< z (+ y (expt 2 (1+ (- e n)))))))
+  :rule-classes ()
+  :hints (("Goal" :use (rf-7))))
+
+(defthm rf-10
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((z (rne x n)))
+               (< z (fp+ y n))))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (disable ACL2::|(+ (+ x y) z)| ACL2::|(+ 0 x)|
+ACL2::|(+ x (- x))| ACL2::|(+ y (+ x z))| ACL2::|(+ y x)| 
+ACL2::|(- (+ x y))| ACL2::|(- (- x))| ACL2::|(< (expt x n) (expt x m))|
+ACL2::|(< (if a b c) x)| ACL2::BUBBLE-DOWN-+-MATCH-1 
+ACL2::BUBBLE-DOWN-+-MATCH-3 ACL2::NORMALIZE-ADDENDS 
+ACL2::PREFER-POSITIVE-ADDENDS-< ACL2::REMOVE-STRICT-INEQUALITIES
+ACL2::SIMPLIFY-SUMS-<)
+                  :use (rf-9 rf-8))))
+
+(defthm rf-11
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((z (rne x n)))
+               (>= y z)))
+  :rule-classes ()
+  :hints (("Goal" :use (rf-4 rf-10 (:instance fp+2 (y (rne x n)) (x y))))))
+
+(defthm rf-12
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((e (expo x)) (z (rne x n)))
+               (<= (+ z (expt 2 (1+ (- e n))))
+                   (fp+ z n))))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (enable fp+) :use (rf-1))))
+
+(defthm rf-13
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((e (expo x)) (z (rne x n)))
+               (< y (+ z (expt 2 (1+ (- e n)))))))
+  :rule-classes ()
+  :hints (("Goal" :use (rf-7))))
+
+(defthm rf-14
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((z (rne x n)))
+               (< y (fp+ z n))))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (disable ACL2::|(+ (+ x y) z)| ACL2::|(+ 0 x)|
+ACL2::|(+ x (- x))| ACL2::|(+ y (+ x z))| ACL2::|(+ y x)| 
+ACL2::|(- (+ x y))| ACL2::|(- (- x))| ACL2::|(< (expt x n) (expt x m))|
+ACL2::|(< (if a b c) x)| ACL2::BUBBLE-DOWN-+-MATCH-1 
+ACL2::BUBBLE-DOWN-+-MATCH-3 ACL2::NORMALIZE-ADDENDS 
+ACL2::PREFER-POSITIVE-ADDENDS-< ACL2::REMOVE-STRICT-INEQUALITIES
+ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
+                  :use (rf-12 rf-13))))
+
+(defthm rf-15
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (let ((z (rne x n)))
+               (<= y z)))
+  :rule-classes ()
+  :hints (("Goal" :use (rf-4 rf-14 (:instance fp+2 (x (rne x n)))))))
+
+(defthm rf-16
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (> x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (= y (rne x n)))
+  :rule-classes ()
+  :hints (("Goal" :use (rf-11 rf-15))))
+
+(defthm rf-17
+    (implies (and (exactp y n)
+                  (rationalp x)
+		  (rationalp y)
+		  (integerp n)
+		  (> n 0)
+                  (< x 0)
+                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+             (= y (rne x n)))
+  :rule-classes ()
+  :hints (("Goal" :use (rne-minus 
+                       (:instance exactp-minus (x y))
+                       (:instance rf-16 (x (- x)) (y (- y)))))))
+
+(defthm rne-force
+    (implies (and (integerp n)
+		  (> n 0)
+                  (rationalp x)
+                  (not (= x 0))
+		  (rationalp y)
+                  (exactp y n)
+		  (< (abs (- x y)) (expt 2 (- (expo x) n))))
 	     (= y (rne x n)))
   :rule-classes ()
-|#
+  :hints (("Goal" :use (rf-16 rf-17))))
+
 (defthm rne-monotone
     (implies (and (<= x y)
                   (rationalp x)
@@ -3014,7 +3249,7 @@
   :hints (("Goal" :use near+-choice)))
 
 (defthmd rna-minus
-  (equal (rna (* -1 x) n) (* -1 (rna x n)))
+  (equal (rna (- x) n) (- (rna x n)))
   :hints (("Goal" :use near+-minus)))
 
 (defthm rna<=raz
@@ -3530,7 +3765,7 @@
   :hints (("Goal" :use sgn-sticky)))
 
 (defthmd rto-minus
-  (equal (rto (* -1 x) n) (* -1 (rto x n)))
+  (equal (rto (- x) n) (- (rto x n)))
   :hints (("Goal" :use sticky-minus)))
 
 (defthmd rto-positive
@@ -3556,7 +3791,7 @@
   :hints (("Goal" :use sticky-0)))
 
 (defthmd rto-minus
-  (equal (rto (* -1 x) n) (* -1 (rto x n)))
+  (equal (rto (- x) n) (- (rto x n)))
   :hints (("Goal" :use sticky-minus)))
 
 (defthm rto-shift
@@ -3795,8 +4030,8 @@
 	     (common-mode-p (flip-mode m))))
 
 (defthmd rnd-minus
-  (equal (rnd (* -1 x) mode n)
-         (* -1 (rnd x (flip-mode mode) n)))
+  (equal (rnd (- x) mode n)
+         (- (rnd x (flip-mode mode) n)))
   :hints (("Goal" :use rnd$-minus)))
 
 (defthm rnd-exactp-a
@@ -5721,7 +5956,7 @@
   :hints (("Goal" :in-theory (enable drnd$ drnd))))
 
 (defthmd drnd-minus
-  (equal (drnd (* -1 x) mode f)
+  (equal (drnd (- x) mode f)
          (- (drnd x (flip-mode mode) f)))
   :hints (("Goal" :use (:instance drnd$-minus (p (prec f)) (q (expw f))))))
 
