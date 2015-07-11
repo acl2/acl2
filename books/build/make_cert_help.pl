@@ -594,41 +594,41 @@ write_whole_file($lisptmp, $instrs);
 #     $shinsts .= "echo prereq: $prereq >> $outfile\n";
 #     $shinsts .= "ls -l $startdir/$prereq >> $outfile 2>&1 \n";
 # }
-    $shinsts .= "echo >> $outfile\n";
-    $shinsts .= "pwd >> $outfile\n";
-    $shinsts .= "hostname >> $outfile\n";
-    $shinsts .= "echo >> $outfile\n";
+    $shinsts .= "echo >> '$outfile'\n";
+    $shinsts .= "pwd >> '$outfile'\n";
+    $shinsts .= "hostname >> '$outfile'\n";
+    $shinsts .= "echo >> '$outfile'\n";
 
-    $shinsts .= "echo Environment variables: >> $outfile\n";
+    $shinsts .= "echo Environment variables: >> '$outfile'\n";
     my @relevant_env_vars = ("ACL2_CUSTOMIZATION", "ACL2_SYSTEM_BOOKS", "ACL2");
     foreach my $var (@relevant_env_vars) {
 	if (exists $ENV{$var}) {
-	    $shinsts .= "echo $var=$ENV{$var} >> $outfile\n";
+	    $shinsts .= "echo $var=$ENV{$var} >> '$outfile'\n";
 	}
     }
-    $shinsts .= "echo >> $outfile\n";
+    $shinsts .= "echo >> '$outfile'\n";
 
-    $shinsts .= "echo Temp lisp file: >> $outfile\n";
-    $shinsts .= "cat $lisptmp >> $outfile\n";
-    $shinsts .= "echo --- End temp lisp file --- >> $outfile\n";
-    $shinsts .= "echo >> $outfile\n";
+    $shinsts .= "echo Temp lisp file: >> '$outfile'\n";
+    $shinsts .= "cat '$lisptmp' >> '$outfile'\n";
+    $shinsts .= "echo --- End temp lisp file --- >> '$outfile'\n";
+    $shinsts .= "echo >> '$outfile'\n";
 
-    $shinsts .= "echo TARGET: $TARGET >> $outfile\n";
-    $shinsts .= "echo STEP: $STEP >> $outfile\n";
-    $shinsts .= "echo Start of output: >> $outfile\n";
-    $shinsts .= "echo >> $outfile\n";
+    $shinsts .= "echo TARGET: $TARGET >> '$outfile'\n";
+    $shinsts .= "echo STEP: $STEP >> '$outfile'\n";
+    $shinsts .= "echo Start of output: >> '$outfile'\n";
+    $shinsts .= "echo >> '$outfile'\n";
 
     $shinsts .= "export ACL2_WRITE_PORT=t\n";
     if ($TIME_CERT) {
-	$shinsts .= "(time (($acl2 < $lisptmp 2>&1) >> $outfile)) 2> $timefile\n";
+	$shinsts .= "(time (($acl2 < '$lisptmp' 2>&1) >> '$outfile')) 2> '$timefile'\n";
     }
     else {
-	$shinsts .= "($acl2 < $lisptmp 2>&1) >> $outfile\n";
+	$shinsts .= "($acl2 < '$lisptmp' 2>&1) >> '$outfile'\n";
     }
 
     $shinsts .= "EXITCODE=\$?\n";
-    $shinsts .= "echo Exit code from ACL2 is \$EXITCODE >> $outfile\n";
-    $shinsts .= "ls -l $goal >> $outfile || echo $goal seems to be missing >> $outfile\n";
+    $shinsts .= "echo Exit code from ACL2 is \$EXITCODE >> '$outfile'\n";
+    $shinsts .= "ls -l '$goal' >> '$outfile' || echo '$goal' seems to be missing >> '$outfile'\n";
     $shinsts .= "exit \$EXITCODE\n";
 
 
@@ -643,7 +643,8 @@ write_whole_file($lisptmp, $instrs);
 
 # Run it!  ------------------------------------------------
 
-    system("$STARTJOB $shtmp");
+    # Single quotes to try to protect against file names with dollar signs and similar.
+    system("$STARTJOB '$shtmp'");
     $status = $? >> 8;
 
     unlink($lisptmp) if !$DEBUG;
