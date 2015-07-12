@@ -74,15 +74,15 @@
   (if arg (pseudo-term-listp term)
     (pseudo-termp term)))
 
-(defun beta-reduce-term (arg term keys vals)
+(defun nary-beta-reduce (arg term keys vals)
   (declare (type (satisfies true-listp) keys vals))
   (declare (xargs :guard (pseudo-termp-key arg term)))
   (cond
    (arg
     (cond
      ((endp term) nil)
-     (t (cons (beta-reduce-term nil (car term) keys vals)
-              (beta-reduce-term arg (cdr term) keys vals)))))
+     (t (cons (nary-beta-reduce nil (car term) keys vals)
+              (nary-beta-reduce arg (cdr term) keys vals)))))
    (t
     (cond
      ((and (symbolp term) term)
@@ -92,13 +92,13 @@
      ((atom term) term)
      ((eq (car term) 'quote) term)
      ((consp (car term))
-      (cons (car term) (beta-reduce-term t (CDR term) keys vals)))
+      (cons (car term) (nary-beta-reduce t (CDR term) keys vals)))
      ((equal (car term) 'hide)
-      (list 'hide (beta-reduce-term nil (cadr term) keys vals)))
+      (list 'hide (nary-beta-reduce nil (cadr term) keys vals)))
      ((equal (car term) 'unhide)
-      (list 'unhide (beta-reduce-term nil (cadr term) keys vals)))
+      (list 'unhide (nary-beta-reduce nil (cadr term) keys vals)))
      (t
-      (cons (car term) (beta-reduce-term t (cdr term) keys vals)))))))
+      (cons (car term) (nary-beta-reduce t (cdr term) keys vals)))))))
 
 (defun unhide-eval-key (arg term alist)
   (cond
@@ -173,17 +173,17 @@
   (iff (consp (unhide-eval-list term a))
        (consp term)))
 
-(defthmd unhide-eval-key-beta-reduce-term
+(defthmd unhide-eval-key-nary-beta-reduce
   (implies
    (and
     (wf-beta-term arg term)
     (equal (len keys) (len vals)))
-   (equal (unhide-eval-key arg (beta-reduce-term arg term keys vals) a1)
+   (equal (unhide-eval-key arg (nary-beta-reduce arg term keys vals) a1)
           (unhide-eval-key arg term (pairlis$ keys
                                               (unhide-eval-key t vals a1)))))
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :do-not-induct t
-            :induct (beta-reduce-term arg term keys vals)
+            :induct (nary-beta-reduce arg term keys vals)
             :expand (:free (x) (hide x))
             :in-theory (e/d (unhide-eval-constraint-0 unhide-eval-key-reduction)
                             nil))))
@@ -257,32 +257,32 @@
    (wf-beta-term arg term))
   :hints (("Goal" :induct (wf-beta-term arg term))))
 
-(defthm unhide-eval-beta-reduce-term
+(defthm unhide-eval-nary-beta-reduce
   (implies
    (and
     (wf-beta-term nil term)
     (equal (len keys) (len vals)))
-   (equal (unhide-eval (beta-reduce-term nil term keys vals) a1)
+   (equal (unhide-eval (nary-beta-reduce nil term keys vals) a1)
           (unhide-eval term (pairlis$ keys (unhide-eval-list vals a1)))))
-  :hints (("Goal" :use (:instance unhide-eval-key-beta-reduce-term
+  :hints (("Goal" :use (:instance unhide-eval-key-nary-beta-reduce
                                   (arg nil))
            :in-theory (enable unhide-eval-key-reduction))))
 
-(defthm unide-eval-to-beta-reduce-term
+(defthm unide-eval-to-nary-beta-reduce
   (implies
    (and
     (lambda-expr-p term)
     (pseudo-termp term))
    (equal (unhide-eval term a1)
-          (unhide-eval (beta-reduce-term nil (CAR (CDR (CDR (CAR term))))
+          (unhide-eval (nary-beta-reduce nil (CAR (CDR (CDR (CAR term))))
                                          (CAR (CDR (CAR term)))
                                          (cdr term)) a1))))
 
-(defun beta-reduce-lambda-expr (term)
+(defun nary-beta-reduce-lambda (term)
   (declare (type (satisfies lambda-expr-p) term)
            (type (satisfies pseudo-termp) term)
            (xargs :guard-hints (("Goal" :in-theory (enable lambda-expr-p)))))
-  (beta-reduce-term nil (CAR (CDR (CDR (CAR term))))
+  (nary-beta-reduce nil (CAR (CDR (CDR (CAR term))))
                     (CAR (CDR (CAR term)))
                     (cdr term)))
 
@@ -300,32 +300,32 @@
        (consp (cdr term))
        (null (cddr term))))
 
-(defun beta-reduce-hide-wrapper (term)
+(defun nary-beta-reduce-hide-wrapper (term)
   (declare (type (satisfies pseudo-termp) term))
   (if (hide-p term)
       (let ((arg (cadr term)))
         (if (lambda-expr-p arg)
-            `(hide ,(beta-reduce-lambda-expr arg))
+            `(hide ,(nary-beta-reduce-lambda arg))
           term))
     term))
 
-(defthmd *meta*-beta-reduce-hide
+(defthmd nary-*meta*-beta-reduce-hide
   (implies
    (pseudo-termp term)
    (equal (unhide-eval term a)
-          (unhide-eval (beta-reduce-hide-wrapper term) a)))
+          (unhide-eval (nary-beta-reduce-hide-wrapper term) a)))
   :hints (("Goal" :expand (:Free (x) (hide x))))
   :rule-classes ((:meta :trigger-fns (hide))))
 
 
-(defun unhide-hide-wrapper (term)
+(defun nary-unhide-hide-wrapper (term)
   (declare (type (satisfies pseudo-termp) term))
   (if (unhide-p term)
       (let ((arg (cadr term)))
         (if (hide-p arg)
             (let ((arg (cadr arg)))
               (if (lambda-expr-p arg)
-                  `(unhide (hide ,(beta-reduce-lambda-expr arg)))
+                  `(unhide (hide ,(nary-beta-reduce-lambda arg)))
                 term))
           term))
     term))
@@ -334,14 +334,14 @@
 ;; additional evaluator constraints.
 ;;
 ;; But we can at least try it out:
-;;   (unhide-hide-wrapper '(unhide (hide ((lambda (x y z) (+ x y)) (foo a) (goo b) (foo (quote 3))))))
+;;   (nary-unhide-hide-wrapper '(unhide (hide ((lambda (x y z) (+ x y)) (foo a) (goo b) (foo (quote 3))))))
 ;;     => '(+ (FOO A) (GOO B))
 ;;
-(defthm *meta*-unhide-hide
+(defthm nary-*meta*-unhide-hide
   (implies
    (pseudo-termp term)
    (equal (unhide-eval term a)
-          (unhide-eval (unhide-hide-wrapper term) a)))
+          (unhide-eval (nary-unhide-hide-wrapper term) a)))
   :hints (("Goal" :expand (:Free (x) (hide x))))
   :rule-classes ((:meta :trigger-fns (unhide))))
 
@@ -357,7 +357,7 @@
     ()
 
   ;; You can see these rules "doing their job" if you
-  ;; watch this proof (and monitor unhide-hide-wrapper)
+  ;; watch this proof (and monitor nary-unhide-hide-wrapper)
 
   (defun foo (x) (if (zp x) 2 (foo (1- x))))
 
@@ -373,7 +373,7 @@
 
   (in-theory (disable foo (foo)))
 
-  ;;(trace$ unhide-hide-wrapper)
+  ;;(trace$ nary-unhide-hide-wrapper)
 
   (defthm foo-10
     (equal (foo 10) 2))
@@ -496,7 +496,7 @@
   (implies
    (pseudo-termp term)
    (equal (unhide-eval2 term a)
-          (unhide-eval2 (unhide-hide-wrapper term) a)))
+          (unhide-eval2 (nary-unhide-hide-wrapper term) a)))
   :hints (("Goal" :use (:functional-instance *meta*-unhide-hide
                                              (UNHIDE-EVAL UNHIDE-EVAL2)
                                              (UNHIDE-EVAL-LIST UNHIDE-EVAL2-LIST))

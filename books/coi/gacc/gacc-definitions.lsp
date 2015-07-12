@@ -30,7 +30,7 @@
 
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
-
+(error "is anyone using this?  If so please remove this message.")
 #|-*-Lisp-*-=================================================================|#
 #|                                                                           |#
 #|===========================================================================|#
@@ -48,6 +48,8 @@
 ;; - defthm
 ;; - in-theory
 ;;
+
+(error "Is anyone using this?  If so please remove this message.")
 
 ;bzo
 (defthm append-nil
@@ -3614,9 +3616,9 @@
 
 ;for dave
 (defthm mypush-of-sp
-  (equal (mypush (path::sp (list a) v r) size)
+  (equal (mypush (cpath::sp (list a) v r) size)
          (gacc::wr a v (mypush r size)))
-  :hints (("Goal" :in-theory (enable path::sp))))
+  :hints (("Goal" :in-theory (enable cpath::sp))))
 
 ;need a way to get the keys of a typed record...  -can it be rkeys?
 ;then prove keys of wr = blah...
@@ -4261,8 +4263,8 @@
 (defthm mylift-of-wr-sp-version
   (implies (wf-fr tr)
            (equal (mylift (gacc::wr a v tr))
-                  (path::sp (list a) (val-fix v) (mylift tr))))
-  :hints (("Goal" :in-theory (e/d ( PATH::SP) (MYLIFT WF-FR val-fix)))))
+                  (cpath::sp (list a) (val-fix v) (mylift tr))))
+  :hints (("Goal" :in-theory (e/d ( CPATH::SP) (MYLIFT WF-FR val-fix)))))
 
 
 
@@ -4959,27 +4961,27 @@
 
 ;bzo or put this elsewhere and don't include paths for this book (there's not much pathy stuff here?)
 (defthm gp-of-mylift-singleton
-  (equal (path::gp (list a) (acl2::mylift tr))
+  (equal (cpath::gp (list a) (acl2::mylift tr))
          (if (set::in a (mem::domain tr))
              (acl2::loghead 8 (gacc::rd a tr))
            nil))
-  :hints (("Goal" :in-theory (enable path::gp))))
+  :hints (("Goal" :in-theory (enable cpath::gp))))
 
 ;bzo same for sp?
 (defthm well-typed-record-of-clrp-singleton
   (implies (acl2::well-typed-record m)
-           (acl2::well-typed-record (path::clrp (list key) m)))
-  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr)
-                                  (path::clr-becomes-clrp-singleton
+           (acl2::well-typed-record (cpath::clrp (list key) m)))
+  :hints (("Goal" :in-theory (e/d (cpath::clrp-singleton-becomes-clr)
+                                  (cpath::clr-becomes-clrp-singleton
                                    )))))
 
 (defthm clrp-of-mylift-singleton
   (implies (acl2::good-memoryp m)
-           (equal (path::clrp (list key) (acl2::mylift m))
+           (equal (cpath::clrp (list key) (acl2::mylift m))
                   (acl2::mylift (mem::clear key m))))
-  :hints (("Goal" :in-theory (e/d (path::clrp-singleton-becomes-clr)
-                                  (path::SP==R ;bzo looped
-                                   path::clr-becomes-clrp-singleton)))))
+  :hints (("Goal" :in-theory (e/d (cpath::clrp-singleton-becomes-clr)
+                                  (cpath::SP==R ;bzo looped
+                                   cpath::clr-becomes-clrp-singleton)))))
 
 (defthm use-check-fr-keys-8
   (implies (and (acl2::check-fr-keys keys tr)
@@ -6380,8 +6382,8 @@
 ;hung on cons, so every time we're reasoning about a call to cons, these rules
 ;go looking for calls to all-conses and no-conses.) -ews
 
-(in-theory (disable path::consp-when-member-of-all-conses))
-(in-theory (disable path::not-consp-when-member-of-no-conses))
+(in-theory (disable cpath::consp-when-member-of-all-conses))
+(in-theory (disable cpath::not-consp-when-member-of-no-conses))
 
 ;(in-theory (disable WFIXN-REWRITE-TO-LOGHEAD))
 
@@ -22225,9 +22227,9 @@
 
 ;for dave
 (defthm mypush-of-sp
-  (equal (mypush (path::sp (list a) v r))
+  (equal (mypush (cpath::sp (list a) v r))
          (gacc::wr a v (mypush r)))
-  :hints (("Goal" :in-theory (enable path::sp))))
+  :hints (("Goal" :in-theory (enable cpath::sp))))
 
 ;need a way to get the keys of a typed record...  -can it be rkeys?
 ;then prove keys of wr = blah...
@@ -22683,8 +22685,8 @@
 (defthm mylift-of-wr-sp-version
   (implies (wf-tr tr)
            (equal (mylift (gacc::wr a v tr))
-                  (path::sp (list a) (val-fix v) (mylift tr))))
-  :hints (("Goal" :in-theory (e/d ( PATH::SP) (MYLIFT WF-TR val-fix)))))
+                  (cpath::sp (list a) (val-fix v) (mylift tr))))
+  :hints (("Goal" :in-theory (e/d ( CPATH::SP) (MYLIFT WF-TR val-fix)))))
 
 (defun non-nil (x)
   (declare (xargs :guard t))

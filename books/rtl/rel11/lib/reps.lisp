@@ -191,6 +191,8 @@
 
 (defund ep () (declare (xargs :guard t)) '(t 64 15)) 
 
+(in-theory (disable (sp) (dp) (ep)))
+
 ;;Field extractors:
 
 (defund sgnf (x f)
@@ -431,6 +433,13 @@
        (expw f)
        (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f))))
        (sigw f)))
+
+(defthm drepp-ddecode
+  (implies (and (formatp f)
+                (denormp x f))
+           (drepp (ddecode x f) f))
+  :hints (("Goal" :in-theory (enable drepp)
+                  :use (drepp-dencode-1 drepp-dencode-3 drepp-dencode-5))))
 
 (defthm dencode-ddecode
   (implies (and (formatp f)

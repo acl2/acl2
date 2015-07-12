@@ -1,6 +1,7 @@
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
 
+(error "is anyone using this?  If so please remove this message.")
 #|-*-Lisp-*-=================================================================|#
 #|                                                                           |#
 #|                                                                           |#

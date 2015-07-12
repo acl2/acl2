@@ -28,7 +28,7 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(in-package "PATH")
+(in-package "CPATH")
 (local (include-book "../util/iff"))
 
 ;;
@@ -784,7 +784,7 @@ Just checking setequiv reduction.
            (NOT (STRICTLY-DOMINATED-BY-SOME A sub)))
   :hints (("goal" :in-theory (enable STRICTLY-DOMINATED-BY-SOME))))
 
-(defcong path-equiv equal (path::strictly-dominated-by-some a x) 2
+(defcong path-equiv equal (cpath::strictly-dominated-by-some a x) 2
   :hints (("goal" :in-theory (enable path-equiv))))
 
 (defthm path-subset-dominates-some
@@ -940,17 +940,17 @@ DAG
 
 (defun dom (x)
   (if (consp x)
-      (if (path::strictly-dominated-by-some (car x) (cdr x))
+      (if (cpath::strictly-dominated-by-some (car x) (cdr x))
           (dom (cdr x))
         (cons (car x)
-              (dom (path::remove-dominators (cdr x))))
+              (dom (cpath::remove-dominators (cdr x))))
     nil))
 
 (defun path-subdom (x y)
   (if (consp x)
-      (if (path::strictly-dominated-by-some (car x) (cdr x))
+      (if (cpath::strictly-dominated-by-some (car x) (cdr x))
           (path-subdom (cdr x) y)
-        (and (not (path::strictly-dominated-by-some (car x) y))
+        (and (not (cpath::strictly-dominated-by-some (car x) y))
              (path-subdom (cdr x) y)))
     t))
 
@@ -960,10 +960,10 @@ DAG
   (implies
    (and
     (path-subdom sub sup)
-    (not (path::strictly-dominated-by-some x sup))
+    (not (cpath::strictly-dominated-by-some x sup))
     (dominates-some x sup))
    (and
-    (not (path::strictly-dominated-by-some x sub))
+    (not (cpath::strictly-dominated-by-some x sub))
     (dominates-some x sub))))
 
 (defthm path-subdom-subset
@@ -979,9 +979,9 @@ DAG
 
   :hints (("goal" :induct (list::len-len-induction a list::a-equiv))))
 
-(defun path::domequiv (x y)
-  (and (path::subdom x y)
-       (path::subdom y x)))
+(defun cpath::domequiv (x y)
+  (and (cpath::subdom x y)
+       (cpath::subdom y x)))
 
-(defrefinement path-equiv path::subdom)
+(defrefinement path-equiv cpath::subdom)
 |#

@@ -90,7 +90,7 @@
          (and (natp size)
               (natp depth)
               (booleanp fast)
-              (implies fast (signed-byte-p 30 depth))
+              (implies fast (signed-byte-p 29 depth))
               (<= size (expt 2 depth))
               (_memtree-p mtree depth)))))
 
@@ -148,7 +148,7 @@
 
 (defthm _memory-depth-signed-byte
   (implies (_memory-fast mem)
-           (signed-byte-p 30 (_memory-depth mem))))
+           (signed-byte-p 29 (_memory-depth mem))))
 
 (defthm _memory-mtree-length/depth
   (<= (_memory-size mem) 
@@ -396,7 +396,7 @@
                 1)
        :exec (cadr mem)))
 
-(defthm size-is-positive
+(defthm size-positive
   (and (integerp (size m))
        (< 0 (size m)))
   :rule-classes :type-prescription)
@@ -432,7 +432,7 @@
       (cons (cons nil t) (cons 1 (cons 1 nil)))
     (let ((depth (_log2 (1- size))))
       (cons 
-       (cons nil (signed-byte-p 30 depth))
+       (cons nil (signed-byte-p 29 depth))
        (cons size 
              (cons depth nil))))))
 

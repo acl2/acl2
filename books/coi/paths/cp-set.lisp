@@ -28,7 +28,7 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(in-package "PATH")
+(in-package "CPATH")
 
 (include-book "../osets/multicons")
 (include-book "hints")
@@ -487,32 +487,32 @@
 (defun clrp-set-equal (set x y)
   (if (set::empty set) (equal x y)
     (clrp-set-equal (set::tail set)
-		    (path::clrp (set::head set) x)
-		    (path::clrp (set::head set) y))))
+		    (cpath::clrp (set::head set) x)
+		    (cpath::clrp (set::head set) y))))
 
 (defthm clrp-set-equal-of-clrp
   (implies
    (set::in a set)
-   (equal (clrp-set-equal set (path::clrp a x) (path::clrp a y))
+   (equal (clrp-set-equal set (cpath::clrp a x) (cpath::clrp a y))
 	  (clrp-set-equal set x y))))
 
 (defthmd clrp-set-equal-implies-1
   (implies
    (clrp-set-equal set x y)
-   (equal (path::clrp-set set x)
-	  (path::clrp-set set y)))
-  :hints (("goal" :in-theory (enable path::clrp-set))))
+   (equal (cpath::clrp-set set x)
+	  (cpath::clrp-set set y)))
+  :hints (("goal" :in-theory (enable cpath::clrp-set))))
 
 (defthmd clrp-set-equal-implies-2
   (implies
    (not (clrp-set-equal set x y))
-   (not (equal (path::clrp-set set x)
-	       (path::clrp-set set y))))
-  :hints (("goal" :in-theory (enable path::clrp-set))))
+   (not (equal (cpath::clrp-set set x)
+	       (cpath::clrp-set set y))))
+  :hints (("goal" :in-theory (enable cpath::clrp-set))))
 
 (defthmd equal-clrp-set-to-clrp-set-equal
-  (iff (equal (path::clrp-set set x)
-	      (path::clrp-set set y))
+  (iff (equal (cpath::clrp-set set x)
+	      (cpath::clrp-set set y))
        (clrp-set-equal set x y))
   :hints (("Goal" :in-theory (enable
 			      clrp-set-equal-implies-1
@@ -531,8 +531,8 @@
   (implies
    (and
     (set::subset set1 set2)
-    (equal (path::clrp-set set1 x)
-	   (path::clrp-set set1 y)))
-   (iff (equal (path::clrp-set set2 x)
-	       (path::clrp-set set2 y)) t))
+    (equal (cpath::clrp-set set1 x)
+	   (cpath::clrp-set set1 y)))
+   (iff (equal (cpath::clrp-set set2 x)
+	       (cpath::clrp-set set2 y)) t))
   :hints (("goal" :in-theory (enable equal-clrp-set-to-clrp-set-equal))))

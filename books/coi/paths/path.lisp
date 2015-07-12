@@ -28,7 +28,7 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(in-package "PATH")
+(in-package "CPATH")
 (include-book "../lists/repeat")
 (include-book "../bags/top")
 (include-book "../alists/top")
@@ -6631,7 +6631,7 @@
 ;;
 ;; = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-;bzo swithing these to use acl2::clr instead of path::clr
+;bzo swithing these to use acl2::clr instead of cpath::clr
 (defthmd atom-record-reduction
   (implies
    (syntaxp (and (symbolp r1)

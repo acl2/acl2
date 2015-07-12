@@ -1,5 +1,6 @@
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
+(error "Is anyone using this?  If so please remove this error.")
 
 #|-*-Lisp-*-=================================================================|#
 #|                                                                           |#
@@ -336,13 +337,13 @@
   (if (and (consp f)
            (consp f1)
            (consp f2))
-      (cons `(path::tag-location ,(enkey (car f)) (equal ,(car f1) ,(car f2)))
+      (cons `(cpath::tag-location ,(enkey (car f)) (equal ,(car f1) ,(car f2)))
             (existential-fields (cdr f) (cdr f1) (cdr f2)))
     nil))
 
 (defun strong-existential-fields (fn f x y)
   (if (consp f)
-      (cons `(path::tag-location ,(enkey (car f)) (equal (,@fn ,(car f) ,x) 
+      (cons `(cpath::tag-location ,(enkey (car f)) (equal (,@fn ,(car f) ,x) 
                                                    (,@fn ,(car f) ,y)))
             (strong-existential-fields fn (cdr f) x y))
     nil))
@@ -393,7 +394,7 @@
                    (iff
                     (equal x y)
                     (and ,@(strong-existential-fields nil fields `x `y)))))
-                ; :hints (("goal" :in-theory (disable path::sp==r))))
+                ; :hints (("goal" :in-theory (disable cpath::sp==r))))
                 
                 (in-theory (disable ,(join-symbols name name '-extensionality! '-helper)))))
           
@@ -503,7 +504,7 @@
 
 (defun weak-predicate-body (keyword-slot-names structure-name)
   `(and (wfr ,structure-name)
-        (equal (path::clrp-list ,(weak-predicate-body-aux keyword-slot-names)
+        (equal (cpath::clrp-list ,(weak-predicate-body-aux keyword-slot-names)
                                 ,structure-name)
                nil)))
                

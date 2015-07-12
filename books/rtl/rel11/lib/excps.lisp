@@ -525,7 +525,7 @@
          (a (dazify a daz f))
          (b (dazify b daz f)))
     (mv a b (sse-binary-pre-comp-val op a b f) (sse-binary-pre-comp-excp op a b f))))
-          
+
 (defun sse-round (u mxcsr f)
   (let* ((rmode (mxcsr-rc mxcsr))
          (r (rnd u rmode (prec f)))
@@ -533,7 +533,7 @@
          (flags (if (= r u) 0 (set-flag (pbit) 0))))
     (if (> (abs r) (lpn f))
         (let* ((flags (set-flag (obit) flags)))
-          (if (= (bitn (omsk) mxcsr) 1)
+          (if (= (bitn mxcsr (omsk)) 1)
               (let ((flags (set-flag (pbit) flags)))
                 (if (or (and (= rmode 'rdn) (> r 0))
                         (and (= rmode 'rup) (< r 0))
@@ -543,7 +543,7 @@
                   (mv (iencode rsgn f) flags)))
             (mv () flags)))
       (if (< (abs r) (spn f))
-          (if (= (bitn (umsk) mxcsr) 1)
+          (if (= (bitn mxcsr (umsk)) 1)
               (if (= (bitn mxcsr (ftz)) 1)
                   (mv (zencode rsgn f) (set-flag (pbit) (set-flag (ubit) flags)))
                 (let ((d (drnd u rmode f)))
@@ -590,14 +590,15 @@
           (sse-round u mxcsr f)))))
 
 (defun sse-binary-spec (op a b mxcsr f)
-  (mv-let (a b result flags) (sse-binary-pre-comp op a b mxcsr f)
-    (if (unmasked-excp-p flags (mxcsr-masks mxcsr))
-        (mv () (logior mxcsr flags))
+  (mv-let (adaz bdaz result pre-flags) (sse-binary-pre-comp op a b mxcsr f)
+    (if (unmasked-excp-p pre-flags (mxcsr-masks mxcsr))
+        (mv () (logior mxcsr pre-flags))
       (if result
-          (mv result (logior mxcsr flags))        
-        (mv-let (result flags) (sse-binary-post-comp op a b mxcsr f)
-          (mv (and result (not (unmasked-excp-p flags (mxcsr-masks mxcsr))))
-              (logior mxcsr flags)))))))
+          (mv result (logior mxcsr pre-flags))        
+        (mv-let (result post-flags) (sse-binary-post-comp op adaz bdaz mxcsr f)
+          (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
+                   result)
+              (logior (logior mxcsr pre-flags) post-flags)))))))
 
 
 ;;--------------------------------------------------------------------------------
@@ -627,21 +628,22 @@
 (defun sse-sqrt-pre-comp (a mxcsr f)
   (let ((a (dazify a (bitn mxcsr (daz)) f)))
     (mv a (sse-sqrt-pre-comp-val a f) (sse-sqrt-pre-comp-excp a f))))
-          
+
 (defun sse-sqrt-post-comp (a mxcsr f)
   (if (or (infp a f) (zerp a f))
       (mv a 0)
     (sse-round (qsqrt (decode a f) (+ (prec f) 2)) mxcsr f)))
 
 (defun sse-sqrt-spec (a mxcsr f)
-  (mv-let (a result flags) (sse-sqrt-pre-comp a mxcsr f)
-    (if (unmasked-excp-p flags (mxcsr-masks mxcsr))
-        (mv () (logior mxcsr flags))
+  (mv-let (adaz result pre-flags) (sse-sqrt-pre-comp a mxcsr f)
+    (if (unmasked-excp-p pre-flags (mxcsr-masks mxcsr))
+        (mv () (logior mxcsr pre-flags))
       (if result
-          (mv result (logior mxcsr flags))        
-        (mv-let (result flags) (sse-sqrt-post-comp a mxcsr f)
-          (mv (and result (not (unmasked-excp-p flags (mxcsr-masks mxcsr))))
-              (logior mxcsr flags)))))))
+          (mv result (logior mxcsr pre-flags))        
+        (mv-let (result post-flags) (sse-sqrt-post-comp adaz mxcsr f)
+          (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
+                   result)
+              (logior (logior mxcsr pre-flags) post-flags)))))))
 
 
 ;;--------------------------------------------------------------------------------
@@ -686,7 +688,7 @@
          (b (dazify b daz f))
          (c (dazify c daz f)))
     (mv a b c (fma-pre-comp-val a b c f) (fma-pre-comp-excp a b c f))))
-          
+
 (defun fma-post-comp (a b c mxcsr f)
   (let* ((asgn (sgnf a f))
          (bsgn (sgnf b f))
@@ -708,14 +710,15 @@
           (sse-round u mxcsr f))))))
 
 (defun fma-spec (a b c mxcsr f)
-  (mv-let (a b c result flags) (fma-pre-comp a b c mxcsr f)
-    (if (unmasked-excp-p flags (mxcsr-masks mxcsr))
-        (mv () (logior mxcsr flags))
+  (mv-let (adaz bdaz cdaz result pre-flags) (fma-pre-comp a b c mxcsr f)
+    (if (unmasked-excp-p pre-flags (mxcsr-masks mxcsr))
+        (mv () (logior mxcsr pre-flags))
       (if result
-          (mv result (logior mxcsr flags))        
-        (mv-let (result flags) (fma-post-comp a b c mxcsr f)
-          (mv (and result (not (unmasked-excp-p flags (mxcsr-masks mxcsr))))
-              (logior mxcsr flags)))))))
+          (mv result (logior mxcsr pre-flags))        
+        (mv-let (result post-flags) (fma-post-comp adaz bdaz cdaz mxcsr f)
+          (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
+                   result)
+              (logior (logior mxcsr pre-flags) post-flags)))))))
 
 
 ;;;***************************************************************
@@ -801,7 +804,7 @@
 
 (defun x87-binary-pre-comp (op a af b bf)
     (mv (x87-binary-pre-comp-val op a af b bf) (x87-binary-pre-comp-excp op a af b bf)))
-          
+
 (defun x87-round (u fcw)
   (let* ((rmode (fcw-rc fcw))
          (r (rnd u rmode (fcw-pc fcw)))
@@ -809,7 +812,7 @@
          (flags (if (= r u) 0 (set-flag (pbit) 0))))
     (if (> (abs r) (lpn (ep)))
         (let ((flags (set-flag (obit) flags)))
-          (if (= (bitn (obit) fcw) 1)
+          (if (= (bitn fcw (obit)) 1)
               (let ((flags (set-flag (pbit) flags)))
                 (if (or (and (= rmode 'rdn) (> r 0))
                         (and (= rmode 'rup) (< r 0))
@@ -823,7 +826,7 @@
                 (mv (nencode s (ep)) 
                     (if (> (abs r) (abs u)) (set-flag (c1) flags) flags))))))
       (if (< (abs r) (spn (ep)))
-          (if (= (bitn (ubit) fcw) 1)
+          (if (= (bitn fcw (ubit)) 1)
               (let ((d (drnd u rmode (ep))))
                 (if (= d u)
                     (mv (dencode d (ep)) flags)
@@ -854,16 +857,17 @@
 
 (defun x87-binary-spec (op a af b bf fcw fsw)
   (let ((fsw (clear-c1 fsw)))
-    (mv-let (result flags) (x87-binary-pre-comp op a af b bf)
-      (if (unmasked-excp-p flags fcw)
-          (mv () (set-es (logior fsw flags)))
+    (mv-let (result pre-flags) (x87-binary-pre-comp op a af b bf)
+      (if (unmasked-excp-p pre-flags fcw)
+          (mv () (set-es (logior fsw pre-flags)))
         (if result
-            (mv result (logior fsw flags))        
-          (mv-let (result flags) (x87-binary-post-comp op a af b bf fcw)
+            (mv result (logior fsw pre-flags))        
+          (mv-let (result post-flags) (x87-binary-post-comp op a af b bf fcw)
             (mv result
-                (if (unmasked-excp-p flags fcw)
-                    (set-es (logior fsw flags))
-                  (logior fsw flags)))))))))
+                (if (unmasked-excp-p post-flags fcw)
+                    (set-es (logior (logior fsw pre-flags) post-flags))
+                  (logior (logior fsw pre-flags) post-flags)))))))))
+
 
 ;;--------------------------------------------------------------------------------
 
@@ -899,13 +903,13 @@
 
 (defun x87-sqrt-spec (a f fcw fsw)
   (let ((fsw (clear-c1 fsw)))
-    (mv-let (result flags) (x87-sqrt-pre-comp a f)
-      (if (unmasked-excp-p flags fcw)
-          (mv () (set-es (logior fsw flags)))
+    (mv-let (result pre-flags) (x87-sqrt-pre-comp a f)
+      (if (unmasked-excp-p pre-flags fcw)
+          (mv () (set-es (logior fsw pre-flags)))
         (if result
-            (mv result (logior fsw flags))        
-          (mv-let (result flags) (x87-sqrt-post-comp a f fcw)
+            (mv result (logior fsw pre-flags))        
+          (mv-let (result post-flags) (x87-sqrt-post-comp a f fcw)
             (mv result
-                (if (unmasked-excp-p flags fcw)
-                    (set-es (logior fsw flags))
-                  (logior fsw flags)))))))))
+                (if (unmasked-excp-p post-flags fcw)
+                    (set-es (logior (logior fsw pre-flags) post-flags))
+                  (logior (logior fsw pre-flags) post-flags)))))))))

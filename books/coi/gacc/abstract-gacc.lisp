@@ -560,7 +560,7 @@ spec: (
         (equal x y)))
   :hints (("goal" :in-theory (enable g-int s-int))))
 
-(defun fix-list (list)
+(defun fix-whole-list (list)
   (declare (type t list))
   (if (true-listp list) list nil))
 
@@ -568,7 +568,7 @@ spec: (
   :rd g-list
   :wr s-list
   :default nil
-  :fix fix-list
+  :fix fix-whole-list
   :typep true-listp
   )
 
@@ -604,7 +604,7 @@ spec: (
   `nil)
 
 (defmacro k2-fix (v)
-  `(fix-list ,v))
+  `(fix-whole-list ,v))
 
 
 ;; This is how we generalize the typed record stuff to

@@ -51,7 +51,7 @@
 ;; include the whole, improved theory about paths.  We just don't have time to
 ;; make it all work with records/path.lisp yet.
 
-(in-package "PATH")
+(in-package "CPATH")
 (include-book "../lists/basic")
 
 (defund dominates (x y)

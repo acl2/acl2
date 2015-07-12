@@ -42,103 +42,109 @@
 
 (in-package "MEM")
 
-(include-book "xdoc/top" :dir :system)
-(defmacro defxdoc (&rest args)
-  `(acl2::defxdoc ,@args))
+;; [Jared] this is now identical to the data-structures/memories version so just
+;; include that, instead.
+; cert_param: (reloc_stub)
+(include-book "data-structures/memories/private" :dir :system)
 
-;;; The following legacy doc string was replaced Nov. 2014 by the
-;;; auto-generated defxdoc form just below.
-; (defdoc private
-;   ":Doc-Section private
-;   redundantly define, then serverely restrict the usage of some function~/
-;   ~bv[]
-;   Example:
-;      (private foo (x y) 
-;         (if (atom x) 
-;             ...))
-;   ~ev[]
-;   ~c[private] is a macro which may be useful for authors of libraries, or
-;   to users who want to enforce severe discipline upon themselves.~/
-; 
-;   The macro is similar to defund (~l[defund]) in that it first introduces
-;   a defun and then immediately disables its definition.  However, ~c[private]
-;   goes further -- it also disables the resulting type-prescription rule and 
-;   sets up theory invariants that prohibit the user from ever enabling the 
-;   definition or the type prescription.
-; 
-;   Why would we want such a thing?  A nice way to develop libraries is to use
-;   redundant definitions (~l[set-enforce-redundancy]) in an interface file, 
-;   so that users never even see the local lemmas and so forth that you used
-;   to get the proofs to go through.  This gives you the freedom to change 
-;   and remove those definitions at will.
-; 
-;   Unfortunately, you cannot do the same for functions, because ACL2 needs
-;   the functions available in the interface book if they are ever used.  With
-;   ~c[private], you can identify functions that you want to keep control over
-;   and that the user should either (1) not be using at all, or (2) only be
-;   reasoning about using the theorems your have provided.
-; 
-;   To use private, simply copy your ~c[(defun foo ...)] form into your interface
-;   file, then replace ~c[defun] with ~c[private].")
 
-(defxdoc mem::private
-  :parents (mem::private)
-  :short "Redundantly define, then serverely restrict the usage of some function"
-  :long "@({
-  Example:
-     (private foo (x y)
-        (if (atom x)
-            ...))
- })
+;; (include-book "xdoc/top" :dir :system)
 
- <p>@('private') is a macro which may be useful for authors of libraries, or to
- users who want to enforce severe discipline upon themselves.</p>
 
- <p>The macro is similar to defund (See @(see defund)) in that it first
- introduces a defun and then immediately disables its definition.  However,
- @('private') goes further -- it also disables the resulting type-prescription
- rule and sets up theory invariants that prohibit the user from ever enabling
- the definition or the type prescription.</p>
 
- <p>Why would we want such a thing?  A nice way to develop libraries is to use
- redundant definitions (See @(see set-enforce-redundancy)) in an interface
- file, so that users never even see the local lemmas and so forth that you used
- to get the proofs to go through.  This gives you the freedom to change and
- remove those definitions at will.</p>
+;; ;;; The following legacy doc string was replaced Nov. 2014 by the
+;; ;;; auto-generated defxdoc form just below.
+;; ; (defdoc private
+;; ;   ":Doc-Section private
+;; ;   redundantly define, then serverely restrict the usage of some function~/
+;; ;   ~bv[]
+;; ;   Example:
+;; ;      (private foo (x y)
+;; ;         (if (atom x)
+;; ;             ...))
+;; ;   ~ev[]
+;; ;   ~c[private] is a macro which may be useful for authors of libraries, or
+;; ;   to users who want to enforce severe discipline upon themselves.~/
+;; ;
+;; ;   The macro is similar to defund (~l[defund]) in that it first introduces
+;; ;   a defun and then immediately disables its definition.  However, ~c[private]
+;; ;   goes further -- it also disables the resulting type-prescription rule and
+;; ;   sets up theory invariants that prohibit the user from ever enabling the
+;; ;   definition or the type prescription.
+;; ;
+;; ;   Why would we want such a thing?  A nice way to develop libraries is to use
+;; ;   redundant definitions (~l[set-enforce-redundancy]) in an interface file,
+;; ;   so that users never even see the local lemmas and so forth that you used
+;; ;   to get the proofs to go through.  This gives you the freedom to change
+;; ;   and remove those definitions at will.
+;; ;
+;; ;   Unfortunately, you cannot do the same for functions, because ACL2 needs
+;; ;   the functions available in the interface book if they are ever used.  With
+;; ;   ~c[private], you can identify functions that you want to keep control over
+;; ;   and that the user should either (1) not be using at all, or (2) only be
+;; ;   reasoning about using the theorems your have provided.
+;; ;
+;; ;   To use private, simply copy your ~c[(defun foo ...)] form into your interface
+;; ;   file, then replace ~c[defun] with ~c[private].")
 
- <p>Unfortunately, you cannot do the same for functions, because ACL2 needs the
- functions available in the interface book if they are ever used.  With
- @('private'), you can identify functions that you want to keep control over
- and that the user should either (1) not be using at all, or (2) only be
- reasoning about using the theorems your have provided.</p>
+;; (defxdoc mem::private
+;;   :parents (mem::private)
+;;   :short "Redundantly define, then serverely restrict the usage of some function"
+;;   :long "@({
+;;   Example:
+;;      (private foo (x y)
+;;         (if (atom x)
+;;             ...))
+;;  })
 
- <p>To use private, simply copy your @('(defun foo ...)') form into your
- interface file, then replace @('defun') with @('private').</p>")
+;;  <p>@('private') is a macro which may be useful for authors of libraries, or to
+;;  users who want to enforce severe discipline upon themselves.</p>
 
-(defmacro private (&rest def)
-  (declare (xargs :guard (and (true-listp def)
-                              (symbolp (car def))
-                              (symbol-listp (cadr def)))))
-  `(progn 
+;;  <p>The macro is similar to defund (See @(see defund)) in that it first
+;;  introduces a defun and then immediately disables its definition.  However,
+;;  @('private') goes further -- it also disables the resulting type-prescription
+;;  rule and sets up theory invariants that prohibit the user from ever enabling
+;;  the definition or the type prescription.</p>
 
-     ;; First introduce the function itself
-     (defun ,@def)
+;;  <p>Why would we want such a thing?  A nice way to develop libraries is to use
+;;  redundant definitions (See @(see set-enforce-redundancy)) in an interface
+;;  file, so that users never even see the local lemmas and so forth that you used
+;;  to get the proofs to go through.  This gives you the freedom to change and
+;;  remove those definitions at will.</p>
 
-     ;; Now disable the :definition and :type-prescription rules
-     (with-output :off summary 
-                  (in-theory (disable (:definition ,(car def))
-                                      (:type-prescription ,(car def)))))
+;;  <p>Unfortunately, you cannot do the same for functions, because ACL2 needs the
+;;  functions available in the interface book if they are ever used.  With
+;;  @('private'), you can identify functions that you want to keep control over
+;;  and that the user should either (1) not be using at all, or (2) only be
+;;  reasoning about using the theorems your have provided.</p>
 
-     ;; Now create a theory invariant named foo-is-private, which will cause an
-     ;; error if the user ever tries to enable these rules
-     (with-output :off summary
-                  (theory-invariant 
-                   (and (not (active-runep '(:definition ,(car def))))
-			(not (active-runep '(:type-prescription ,(car def)))))
-                   :key ,(intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name (car def))
-                                       "-IS-PRIVATE")
-                          (car def))))
+;;  <p>To use private, simply copy your @('(defun foo ...)') form into your
+;;  interface file, then replace @('defun') with @('private').</p>")
 
-     ;; And finally just use the name of the function as our return value
-     (ACL2::value-triple ',(car def))))
+;; (defmacro private (&rest def)
+;;   (declare (xargs :guard (and (true-listp def)
+;;                               (symbolp (car def))
+;;                               (symbol-listp (cadr def)))))
+;;   `(progn
+
+;;      ;; First introduce the function itself
+;;      (defun ,@def)
+
+;;      ;; Now disable the :definition and :type-prescription rules
+;;      (with-output :off summary
+;;                   (in-theory (disable (:definition ,(car def))
+;;                                       (:type-prescription ,(car def)))))
+
+;;      ;; Now create a theory invariant named foo-is-private, which will cause an
+;;      ;; error if the user ever tries to enable these rules
+;;      (with-output :off summary
+;;                   (theory-invariant
+;;                    (and (not (active-runep '(:definition ,(car def))))
+;;                         (not (active-runep '(:type-prescription ,(car def)))))
+;;                    :key ,(intern-in-package-of-symbol
+;;                           (concatenate 'string (symbol-name (car def))
+;;                                        "-IS-PRIVATE")
+;;                           (car def))))
+
+;;      ;; And finally just use the name of the function as our return value
+;;      (ACL2::value-triple ',(car def))))

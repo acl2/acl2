@@ -757,7 +757,7 @@
   :hints (("Goal" :in-theory (enable exactp sig-ddecode expo-ddecode)
                   :use (drepp-dencode-4))))
 
-(defthm drepp-dencode
+(defthm drepp-ddecode
   (implies (and (formatp f)
                 (denormp x f))
            (drepp (ddecode x f) f))

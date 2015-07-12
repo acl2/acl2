@@ -28,7 +28,7 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(in-package "PATH")
+(in-package "CPATH")
 (include-book "../lists/basic")
 (include-book "../lists/map-cons")
 (include-book "../syntax/syntax")
@@ -2662,9 +2662,9 @@
    (consp x)
    (cons x y)
    (equal x y)
-   (path::diverge a b)
-   (path::all-diverge x)
-   (path::all-diverge-from-all x y)
+   (cpath::diverge a b)
+   (cpath::all-diverge x)
+   (cpath::all-diverge-from-all x y)
    (car x)
    ;(cadr x)
    (syn::car x)

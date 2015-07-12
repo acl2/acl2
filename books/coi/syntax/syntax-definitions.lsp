@@ -38,6 +38,8 @@
 ;; John D. Powell
 ;(in-package "SYN")
 
+(error "Is anyone using this?  If so please remove this error.")
+
 ;;
 ;; This file isolates syntax definitions and types. The file currently
 ;; contains the following ACL2 constructs as they occur in the syntax book:

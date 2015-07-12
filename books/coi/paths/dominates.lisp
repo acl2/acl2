@@ -31,7 +31,7 @@
 ;; dominates.lisp
 ;; Domination relations for lists
 
-(in-package "PATH")
+(in-package "CPATH")
 (include-book "../lists/basic")
 (include-book "../lists/memberp")
 (include-book "../bags/basic")

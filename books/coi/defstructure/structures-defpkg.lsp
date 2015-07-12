@@ -44,10 +44,10 @@
 
 	acl2::wfr
 
-	path::sp
-	path::gp
-	path::gp-list
-	path::psort
+	cpath::sp
+	cpath::gp
+	cpath::gp-list
+	cpath::psort
 
 	ACCESS ARGLISTP *BUILT-IN-EXECUTABLE-COUNTERPARTS*
         CHANGE CONSTANT DEFREC ER *EXPANDABLE-BOOT-STRAP-NON-REC-FNS*

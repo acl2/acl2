@@ -30,6 +30,7 @@
 
 ; Jared: what's this file for?  It's not certifiable, so I'm
 ; renaming it to a .lsp extension for Make compatibility
+(error "is anyone using this?  If so please remove this message.")
 
 #|-*-Lisp-*-=================================================================|#
 #|                                                                           |#
@@ -1425,7 +1426,7 @@
 #| In the context of book GRAPH the following theorem can be proved.
 
 (defthm gkeys=leafdomain
- (equal (path::gkeys (d-composed))
+ (equal (cpath::gkeys (d-composed))
         (dtree::leafdomain (d-composed))))
  |#
 
@@ -2219,11 +2220,11 @@
 
 (defthm in-erase
   (equal (in ipath (erase epath dtree))
-         (and (or (not (PATH::dominates epath ipath))
-                  (PATH::dominates ipath epath))
+         (and (or (not (CPATH::dominates epath ipath))
+                  (CPATH::dominates ipath epath))
               (in ipath dtree)))
   :hints(("Goal"
-          :in-theory (enable path::dominates in erase)
+          :in-theory (enable cpath::dominates in erase)
           :induct (erase-induction ipath epath dtree))))
 
 (defthm in-of-erase-same
@@ -2278,15 +2279,15 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-erase-when-epath-dominates
-  (implies (PATH::dominates epath gpath)
+  (implies (CPATH::dominates epath gpath)
            (equal (get gpath (erase epath dtree))
                   *default*))
-  :hints(("Goal" :in-theory (enable erase PATH::DOMINATES get)
+  :hints(("Goal" :in-theory (enable erase CPATH::DOMINATES get)
           :induct (erase-induction gpath epath dtree))))
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-erase-when-diverge
-  (implies (PATH::diverge gpath epath)
+  (implies (CPATH::diverge gpath epath)
            (equal (get gpath (erase epath dtree))
                   (get gpath dtree)))
   :hints(("Goal" :in-theory (enable get erase)
@@ -2294,8 +2295,8 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-erase-when-neither-dominates
-  (implies (and (not (PATH::dominates gpath epath))
-                (not (PATH::dominates epath gpath)))
+  (implies (and (not (CPATH::dominates gpath epath))
+                (not (CPATH::dominates epath gpath)))
            (equal (get gpath (erase epath dtree))
                   (get gpath dtree)))
   :hints(("Goal"
@@ -2304,7 +2305,7 @@
 
 ;; note: they are not truly equal in this case, only equiv!
 (defthm get-of-erase-when-gpath-dominates
-  (implies (PATH::dominates gpath epath)
+  (implies (CPATH::dominates gpath epath)
            (equiv (get gpath (erase epath dtree))
                   (erase (nthcdr (len gpath) epath)
                          (get gpath dtree))))
@@ -2325,9 +2326,9 @@
 
 (defthm get-of-erase-with-aggressive-case-splitting
   (equiv (get gpath (erase epath dtree))
-         (if (PATH::dominates gpath epath)
+         (if (CPATH::dominates gpath epath)
              (erase (nthcdr (len gpath) epath) (get gpath dtree))
-           (if (PATH::dominates epath gpath)
+           (if (CPATH::dominates epath gpath)
                *default*
              (get gpath dtree)))))
 
@@ -2454,13 +2455,13 @@
 
 (defthm open-dominates
   (implies
-   (consp path::x)
-   (equal (PATH::DOMINATES PATH::X PATH::Y)
-          (OR (NOT (CONSP PATH::X))
-                (AND (CONSP PATH::Y)
-                     (EQUAL (CAR PATH::X) (CAR PATH::Y))
-                     (PATH::DOMINATES (CDR PATH::X)
-                                      (CDR PATH::Y)))))))
+   (consp cpath::x)
+   (equal (CPATH::DOMINATES CPATH::X CPATH::Y)
+          (OR (NOT (CONSP CPATH::X))
+                (AND (CONSP CPATH::Y)
+                     (EQUAL (CAR CPATH::X) (CAR CPATH::Y))
+                     (CPATH::DOMINATES (CDR CPATH::X)
+                                      (CDR CPATH::Y)))))))
 
 (defthm remove-induction-is-remove
   (equal (remove-induction ipath epath dtree)
@@ -2485,7 +2486,7 @@
 ;;      than can be taken away by removing the tail of epath.
 
 (defund hooey (ipath epath dtree)
-  (if (path::dominates epath ipath)
+  (if (cpath::dominates epath ipath)
       ;; 1. and therefore (not (consp epath))
       (not (consp ipath))
     (or
@@ -2511,33 +2512,33 @@
   (implies
    (and
     (in ipath dtree)
-    (not (path::diverge epath ipath)))
+    (not (cpath::diverge epath ipath)))
    (equal (in ipath (remove epath dtree))
           (hooey ipath epath dtree)))
   :hints(("Goal"
           :do-not '(generalize eliminate-destructors)
-          :in-theory (enable hooey get nthcdr path::diverge path::dominates in remove)
+          :in-theory (enable hooey get nthcdr cpath::diverge cpath::dominates in remove)
           :induct (remove-induction ipath epath dtree))
          (and acl2::stable-under-simplificationp
-              '(:in-theory (enable open-nthcdr path::diverge path::dominates in remove)))))
+              '(:in-theory (enable open-nthcdr cpath::diverge cpath::dominates in remove)))))
 
 (defthmd in-remove-1
   (equal (in ipath (remove epath dtree))
          (if (in ipath dtree)
-             (if (path::diverge epath ipath) t
+             (if (cpath::diverge epath ipath) t
                (in ipath (remove epath dtree)))
            nil))
   :hints(("Goal"
           :do-not '(generalize eliminate-destructors)
-          :in-theory (enable get nthcdr path::diverge path::dominates in remove)
+          :in-theory (enable get nthcdr cpath::diverge cpath::dominates in remove)
           :induct (remove-induction ipath epath dtree))
          (and acl2::stable-under-simplificationp
-              '(:in-theory (enable nthcdr hooey path::diverge path::dominates in remove)))))
+              '(:in-theory (enable nthcdr hooey cpath::diverge cpath::dominates in remove)))))
 
 (defthm in-remove
   (equal (in ipath (remove epath dtree))
          (if (in ipath dtree)
-             (if (path::diverge epath ipath) t
+             (if (cpath::diverge epath ipath) t
                (hooey ipath epath dtree))
            nil))
   :hints (("goal" :in-theory (enable in-to-hooey)
@@ -2669,28 +2670,28 @@
 (defthm dominates-when-leafp-one
   (implies (and (leafp a dtree) ;; dtree is free
                 (in b dtree))
-           (equal (path::dominates a b)
+           (equal (cpath::dominates a b)
                   (list::equiv a b)))
-  :hints(("Goal" :in-theory (enable leafp in path::dominates))))
+  :hints(("Goal" :in-theory (enable leafp in cpath::dominates))))
 
 (defthm dominates-when-leafp-two
   (implies (and (in b dtree)    ;; dtree is free
                 (leafp a dtree))
-           (equal (path::dominates a b)
+           (equal (cpath::dominates a b)
                   (list::equiv a b))))
 
 (defthm diverge-when-leafp-one
   (implies (and (leafp a dtree)  ;; dtree is free
                 (in b dtree))
-           (equal (path::diverge a b)
-                  (not (path::dominates b a))))
-  :hints(("Goal" :in-theory (enable path::diverge))))
+           (equal (cpath::diverge a b)
+                  (not (cpath::dominates b a))))
+  :hints(("Goal" :in-theory (enable cpath::diverge))))
 
 (defthm diverge-when-leafp-two
   (implies (and (in b dtree)     ;; dtree is free
                 (leafp a dtree))
-           (equal (path::diverge a b)
-                  (not (path::dominates b a)))))
+           (equal (cpath::diverge a b)
+                  (not (cpath::dominates b a)))))
 
 
 
@@ -2702,29 +2703,29 @@
 (defthm strictly-dominates-when-leafp-one
   (implies (and (leafp a dtree) ;; dtree is free
                 (in b dtree))
-           (equal (path::strictly-dominates a b)
+           (equal (cpath::strictly-dominates a b)
                   nil))
   :hints(("Goal"
-          :in-theory (e/d (path::strictly-dominates)
+          :in-theory (e/d (cpath::strictly-dominates)
                           (dominates-when-leafp-one))
           :use (:instance dominates-when-leafp-one))))
 
 (defthm strictly-dominates-when-leafp-two
   (implies (and (in b dtree)    ;; dtree is free
                 (leafp a dtree))
-           (equal (path::strictly-dominates a b)
+           (equal (cpath::strictly-dominates a b)
                   nil)))
 
 
 (defthm strictly-dominates-some-when-leafp
   (implies (leafp a dtree)
-           (equal (path::strictly-dominates-some a (domain dtree))
+           (equal (cpath::strictly-dominates-some a (domain dtree))
                   nil)))
 
 (defthmd leafp-redefinition-dominates
   (equal (leafp path dtree)
          (and (in path dtree)
-              (not (path::strictly-dominates-some path (domain dtree)))))
+              (not (cpath::strictly-dominates-some path (domain dtree)))))
   :rule-classes :definition)
 
 (defthm deps-of-get-when-leafp
@@ -2948,25 +2949,25 @@
 
 (defthm royalp-when-dominated-by-royalp-one
   (implies (and (royalp a dtree)
-                (path::dominates a b))
+                (cpath::dominates a b))
            (equal (royalp b dtree)
                   (list::equiv a b)))
-  :hints(("goal" :in-theory (enable royalp path::dominates))))
+  :hints(("goal" :in-theory (enable royalp cpath::dominates))))
 
 (defthm royalp-when-dominated-by-royalp-two
-  (implies (and (path::dominates a b)
+  (implies (and (cpath::dominates a b)
                 (royalp a dtree))
            (equal (royalp b dtree)
                   (list::equiv a b))))
 
 (defthm royalp-when-strictly-dominated-by-royalp-one
   (implies (and (royalp a dtree)
-                (path::strictly-dominates a b))
+                (cpath::strictly-dominates a b))
            (equal (royalp b dtree)
                   nil)))
 
 (defthm royalp-when-strictly-dominated-by-royalp-two
-  (implies (and (path::strictly-dominates a b)
+  (implies (and (cpath::strictly-dominates a b)
                 (royalp a dtree))
            (equal (royalp b dtree)
                   nil)))
@@ -3043,7 +3044,7 @@
 
  ;; We observe that find-royal always returns a path that dominates its input
  (local (defthm dominates-of-find-royal-with-input
-          (path::dominates (find-royal path dtree) path)
+          (cpath::dominates (find-royal path dtree) path)
           :hints(("Goal" :in-theory (enable find-royal)))))
 
  ;; We chain together these last observations to show that, if a path is not
@@ -3051,16 +3052,16 @@
  ;; its input is void.
  (local (defthm strictly-dominates-of-find-royal-with-input-when-not-royal
           (implies (not (royalp path dtree))
-                   (equal (path::strictly-dominates (find-royal path dtree)
+                   (equal (cpath::strictly-dominates (find-royal path dtree)
                                                     path)
                           (not (voidp path dtree))))
-          :hints(("Goal" :in-theory (enable path::strictly-dominates)
+          :hints(("Goal" :in-theory (enable cpath::strictly-dominates)
                   :use find-royal-does-nothing))))
 
  ;; Here is how we argue that the final hypothesis is true.  Since we assumed
  ;; (towards contradiction) that (not (royalp (royalp-path) (royalp-dtree))),
  ;; then we know that
- ;;  (path::strictly-dominates (find-royal (royalp-path) (royalp-dtree))
+ ;;  (cpath::strictly-dominates (find-royal (royalp-path) (royalp-dtree))
  ;;                            (royalp-path))
  ;; exactly when (not (voidp (royalp-path) (royalp-dtree))).  But by our
  ;; localdeps constraint, we know that:
@@ -3224,14 +3225,14 @@
 ;; hypotheses about domination.
 
 (defthm in-set-when-inpath-dominates
-  (implies (path::dominates ipath spath)
+  (implies (cpath::dominates ipath spath)
            (in ipath (set spath value dtree)))
   :hints(("Goal"
           :in-theory (enable in set)
           :induct (two-path-induction ipath spath dtree))))
 
 (defthm in-set-when-diverge
-  (implies (path::diverge ipath spath)
+  (implies (cpath::diverge ipath spath)
            (equal (in ipath (set spath value dtree))
                   (in ipath dtree)))
   :hints(("Goal"
@@ -3239,8 +3240,8 @@
           :induct (two-path-induction ipath spath dtree))))
 
 (defthm in-set-when-neither-dominates
-  (implies (and (not (path::dominates ipath spath))
-                (not (path::dominates spath ipath)))
+  (implies (and (not (cpath::dominates ipath spath))
+                (not (cpath::dominates spath ipath)))
            (equal (in ipath (set spath value dtree))
                   (in ipath dtree)))
   :hints(("Goal"
@@ -3248,7 +3249,7 @@
           :use (:instance in-set-when-diverge))))
 
 (defthm in-set-when-setpath-dominates
-  (implies (path::dominates spath ipath)
+  (implies (cpath::dominates spath ipath)
            (equal (in ipath (set spath value dtree))
                   (in (nthcdr (len spath) ipath)
                       value)))
@@ -3271,9 +3272,9 @@
 
 (defthm in-set-with-aggressive-case-splitting
   (equal (in ipath (set spath value dtree))
-         (if (path::dominates ipath spath)
+         (if (cpath::dominates ipath spath)
              t
-           (if (path::dominates spath ipath)
+           (if (cpath::dominates spath ipath)
                (in (nthcdr (len spath) ipath) value)
              (in ipath dtree)))))
 
@@ -3286,7 +3287,7 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-set-when-getpath-dominates
-  (implies (path::dominates gpath spath)
+  (implies (cpath::dominates gpath spath)
            (equal (get gpath (set spath value dtree))
                   (set (nthcdr (len gpath) spath)
                        value
@@ -3297,7 +3298,7 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-set-when-diverge
-  (implies (path::diverge gpath spath)
+  (implies (cpath::diverge gpath spath)
            (equal (get gpath (set spath value dtree))
                   (get gpath dtree)))
   :hints(("Goal"
@@ -3306,8 +3307,8 @@
 
 ;; note: they are truly equal in this case, not just equiv!
 (defthm get-of-set-when-neither-dominates
-  (implies (and (not (path::dominates gpath spath))
-                (not (path::dominates spath gpath)))
+  (implies (and (not (cpath::dominates gpath spath))
+                (not (cpath::dominates spath gpath)))
            (equal (get gpath (set spath value dtree))
                   (get gpath dtree)))
   :hints(("Goal"
@@ -3316,7 +3317,7 @@
 
 ;; note: they are only equiv in this case, not truly equal!
 (defthm get-of-set-when-setpath-dominates
-  (implies (path::dominates spath gpath)
+  (implies (cpath::dominates spath gpath)
            (equiv (get gpath (set spath value dtree))
                   (get (nthcdr (len spath) gpath)
                        value)))
@@ -3326,30 +3327,30 @@
 
 (defthm get-of-set-with-aggressive-case-splitting
   (equiv (get gpath (set spath value dtree))
-         (if (path::dominates gpath spath)
+         (if (cpath::dominates gpath spath)
              (set (nthcdr (len gpath) spath) value (get gpath dtree))
-           (if (path::dominates spath gpath)
+           (if (cpath::dominates spath gpath)
                (get (nthcdr (len spath) gpath) value)
              (get gpath dtree)))))
 
 ;; Set after Set
 
 (defthm set-of-set-when-first-dominates
-  (implies (path::dominates p1 p2)
+  (implies (cpath::dominates p1 p2)
            (equiv (set p1 v1 (set p2 v2 dtree))
                   (set p1 v1 dtree)))
   :hints(("Goal" :in-theory (enable equiv))))
 
 (defthm set-of-set-when-neither-dominates
-   (implies (and (not (path::dominates p1 p2))
-                 (not (path::dominates p2 p1)))
+   (implies (and (not (cpath::dominates p1 p2))
+                 (not (cpath::dominates p2 p1)))
             (equiv (set p1 v1 (set p2 v2 dtree))
                    (set p2 v2 (set p1 v1 dtree))))
    :rule-classes ((:rewrite :loop-stopper ((p1 p2 set))))
    :hints(("Goal" :in-theory (enable equiv))))
 
 (defthm set-of-set-when-diverge
-   (implies (path::diverge p1 p2)
+   (implies (cpath::diverge p1 p2)
             (equiv (set p1 v1 (set p2 v2 dtree))
                    (set p2 v2 (set p1 v1 dtree))))
    :rule-classes ((:rewrite :loop-stopper ((p1 p2 set)))))

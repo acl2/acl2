@@ -49,7 +49,7 @@ Things to do:
 |#
 
 
-(in-package "PATH")
+(in-package "CPATH")
 ;jcd - removed this (include-book "graph")
 (include-book "meta")
 
@@ -150,7 +150,7 @@ Things to do:
 
 (defthm sp-of-nil
   (equal (sp nil val r) val)
-  :hints (("goal" :in-theory '(path::sp-of-non-consp))))
+  :hints (("goal" :in-theory '(cpath::sp-of-non-consp))))
 
 (defun shared-prefix (p1 p2)
   (declare (type t p1 p2))
@@ -272,10 +272,10 @@ Things to do:
   (equal (gp p1 (sp p2 v (gp r0 st)))
 	 (gp (append r0 p1) (sp (append r0 p2) v st)))
   :hints (("goal" :in-theory (e/d (append
-				   ;path::open-gp  ;looped
+				   ;cpath::open-gp  ;looped
                                    gp
                                    sp)
-				  (path::g-to-gp)))))
+				  (cpath::g-to-gp)))))
 
 ;; Trigger theorem .. we use bind-shared-prefix instead
 ;; of triggering a meta-evaluation of shared-prefix
