@@ -118,12 +118,12 @@
            (< (abs (fl (/ n 2))) (abs n)))
   :rule-classes ())
 
-(defthmd fl-minus
+(defthmd minus-fl
   (implies (rationalp x)
-           (equal (fl (* -1 x))
+           (equal (fl (- x))
                   (if (integerp x)
-                      (* -1 x)
-                    (1- (* -1 (fl x)))))))
+                      (- x)
+                    (1- (- (fl x)))))))
 
 (defthm fl-m-n
   (implies (and (< 0 n)

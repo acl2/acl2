@@ -185,6 +185,8 @@
 
 (defund ep () '(t 64 15)) 
 
+(in-theory (disable (sp) (dp) (ep)))
+
 ;;Field extractors:
 
 (defund sgnf (x f)
@@ -412,6 +414,13 @@
        (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f))))
        (sigw f)))
 
+(defthm drepp-ddecode
+  (implies (and (formatp f)
+                (denormp x f))
+           (drepp (ddecode x f) f))
+  :hints (("Goal" :in-theory (enable drepp)
+                  :use (drepp-dencode-1 drepp-dencode-3 drepp-dencode-5))))
+
 (defthm dencode-ddecode
   (implies (and (formatp f)
                 (denormp x f))
@@ -466,7 +475,8 @@
 ;(defsection-rtl |Infinities and NaNs| |Floating-Point Formats|
 
 (defund infp (x f)
-  (and (= (expf x f) (1- (expt 2 (expw f))))
+  (and (encodingp x f)
+       (= (expf x f) (1- (expt 2 (expw f))))
        (not (unsupp x f))
        (= (manf x f) 0)))
 
@@ -476,7 +486,8 @@
     (cat sgn 1 (1- (expt 2 (expw f))) (expw f) 0 (sigw f))))
 
 (defund nanp (x f)
-  (and (= (expf x f) (1- (expt 2 (expw f))))
+  (and (encodingp x f)
+       (= (expf x f) (1- (expt 2 (expw f))))
        (not (unsupp x f))
        (not (= (manf x f) 0))))
 
