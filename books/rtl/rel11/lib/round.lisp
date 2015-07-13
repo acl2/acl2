@@ -95,21 +95,27 @@
 ;; From reps.lisp:
 
 (defund formatp (f)
-  (and (natp (cadr f))
+  (declare (xargs :guard t))
+  (and (consp f)
+       (consp (cdr f))
+       (consp (cddr f))
+       (natp (cadr f))
        (> (cadr f) 1)
        (natp (caddr f))
        (> (caddr f) 1)))
 
-(defund prec (f) (cadr f))
+(defund prec (f) (declare (xargs :guard (formatp f))) (cadr f))
 
-(defund expw (f) (caddr f))
+(defund expw (f) (declare (xargs :guard (formatp f))) (caddr f))
 
-(defund bias (f) (- (expt 2 (- (expw f) 1)) 1))
+(defund bias (f) (declare (xargs :guard (formatp f))) (- (expt 2 (- (expw f) 1)) 1))
 
 (defund spn (f)
+  (declare (xargs :guard (formatp f)))
   (expt 2 (- 1 (bias f))))
 
 (defund spd (f)
+     (declare (xargs :guard (formatp f)))
      (expt 2 (+ 2 (- (bias f)) (- (prec f)))))
 
 (defund drepp (x f)

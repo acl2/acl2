@@ -131,34 +131,50 @@
 
 ;; From reps.lisp:
 
-(defund explicitp (f) (car f))
+(defund formatp (f)
+  (declare (xargs :guard t))
+  (and (consp f)
+       (consp (cdr f))
+       (consp (cddr f))
+       (natp (cadr f))
+       (> (cadr f) 1)
+       (natp (caddr f))
+       (> (caddr f) 1)))
 
-(defund prec (f) (cadr f))
+(defund explicitp (f) (declare (xargs :guard (formatp f))) (car f))
 
-(defund expw (f) (caddr f))
+(defund prec (f) (declare (xargs :guard (formatp f))) (cadr f))
+
+(defund expw (f) (declare (xargs :guard (formatp f))) (caddr f))
 
 (defund sigw (f)
+  (declare (xargs :guard (formatp f)))
   (if (explicitp f)
       (prec f)
     (1- (prec f))))
 
 (defund sgnf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bitn x (+ (expw f) (sigw f))))
 
 (defund expf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
 
 (defund sigf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bits x (1- (sigw f)) 0))
 
 (defund manf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bits x (- (prec f) 2) 0))
 
-(defund bias (f) (- (expt 2 (- (expw f) 1)) 1))
+(defund bias (f) (declare (xargs :guard (formatp f))) (- (expt 2 (- (expw f) 1)) 1))
 
-(defund sp () '(nil 24 8))
+(defund sp () (declare (xargs :guard t)) '(nil 24 8))
 
 (defund ndecode (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (* (if (= (sgnf x f) 0) 1 -1)
      (expt 2 (- (expf x f) (bias f)))
      (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
