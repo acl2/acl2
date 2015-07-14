@@ -38,11 +38,92 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
 |#
 (in-package "ACL2")
 
+(include-book "std/util/defrule" :dir :system)
+
+;; This function is similar to RTL::fl.
+;; Its domain is extended, so there are no hyps in fl-ext-t-def
+
+(defund fl-ext (x)
+  (if (and (integerp (realpart x)) (< (imagpart x) 0))
+      (1- (realpart x))
+      (floor (realpart x) 1)))
+
+(local (defrule fl-ext-def
+  (and
+    (<= (fl-ext x) x)
+    (< x (1+ (fl-ext x))))
+  :prep-lemmas (
+    (defrule lemma
+      (implies (real/rationalp x) (equal (realpart x) x))))
+  :prep-books ((include-book "arithmetic-5/top" :dir :system))
+  :enable (fl-ext)
+  :use ((:instance completion-of-<
+          (x x)
+          (y (fl-ext x)))
+        (:instance completion-of-<
+          (x x)
+          (y (1+ (fl-ext x)))))
+  :rule-classes :linear))
+
+(include-book "compiler")
+(include-book "ordinals/lexicographic-ordering" :dir :system)
+
+;; This tarai-measure is similar to tarai-measure from zero.lisp .
+;; However, it permits to prove tarai-always-terminate in ACL2(r)
+
+(defun m1 (x y z)
+  (declare (ignore z))
+  (if (<= x y) 0 1))
+
+(defun m2 (x y z)
+  (fl-ext (- (max (max x y) z) (min (min x y) z))))
+
+(defun m3 (x y z)
+  (fl-ext (- x (min (min x y) z))))
+
+(defun m4 (x y z)
+  (declare (ignore x))
+  (if (<= y z) 0 1))
+
+(defun tarai-measure (x y z)
+  (acl2::llist (m1 x y z) (m2 x y z) (m3 x y z) (m4 x y z)))
+
 (defun tarai-open (x y z)
   (if (<= x y) y
     (if (<= y z) z
       x)))
 
+(defun tarai-induction (x y z)
+  (declare (xargs :measure (tarai-measure x y z)
+		  :well-founded-relation acl2::l<))
+  (cond
+   ((> x y)
+    (list
+     (tarai-induction (tarai-open (1- x) y z)
+		      (tarai-open (1- y) z x)
+		      (tarai-open (1- z) x y))
+     (tarai-induction (1- x) y z)
+     (tarai-induction (1- y) z x)
+     (tarai-induction (1- z) x y)))
+   (t y)))
+
+(defthm open-tarai_terminates_closed
+  (equal (tarai_terminates-closed x y z)
+	 (tarai_terminates x y z))
+  :hints (("Goal" :in-theory (enable
+			      tarai_terminates-closed
+			      tarai_terminates
+			      tarai-5_terminates-call
+			      ))))
+
+(defrule tarai-always-terminates
+  (tarai_terminates x y z)
+  :induct (tarai-induction x y z))
+
+;; It is problematic to extend the proof of tarai-always-terminate below to
+;; real arguments in ACL2(r),
+;; because it considers numerator/denominator of arguments. 
+#|
 (encapsulate
     (
      ((tarai * * *) => *)
@@ -453,3 +534,4 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
   :hints (("Goal" :in-theory '(d-check-d-witness)
 	   :use (:instance tarai_terminates_helper
 			   (d (d-witness x y z))))))
+|#

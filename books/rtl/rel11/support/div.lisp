@@ -135,32 +135,47 @@
        (* (- (sig x) 1) (expt 2 (- p 1)))
        (- p 1)))
 
-(defun explicitp (f) (car f))
+(defun formatp (f)
+  (declare (xargs :guard t))
+  (and (consp f)
+       (consp (cdr f))
+       (consp (cddr f))
+       (natp (cadr f))
+       (> (cadr f) 1)
+       (natp (caddr f))
+       (> (caddr f) 1)))
 
-(defun prec (f) (cadr f))
+(defun explicitp (f) (declare (xargs :guard (formatp f))) (car f))
 
-(defun expw (f) (caddr f))
+(defun prec (f) (declare (xargs :guard (formatp f))) (cadr f))
+
+(defun expw (f) (declare (xargs :guard (formatp f))) (caddr f))
 
 (defun sigw (f)
+  (declare (xargs :guard (formatp f)))
   (if (explicitp f)
       (prec f)
     (1- (prec f))))
 
 (defun sgnf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bitn x (+ (expw f) (sigw f))))
 
 (defun expf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
 
 (defun sigf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bits x (1- (sigw f)) 0))
 
 (defun manf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bits x (- (prec f) 2) 0))
 
 (defun bias$ (f) (- (expt 2 (- (expw f) 1)) 1))
 
-(defund sp () '(nil 24 8))
+(defund sp () (declare (xargs :guard t)) '(nil 24 8))
 
 (defund ndecode$ (x f)
   (* (if (= (sgnf x f) 0) 1 -1)
@@ -660,34 +675,62 @@
 
 ;; From reps.lisp:
 
-(defun explicitp (f) (car f))
+(defund formatp (f)
+  (declare (xargs :guard t))
+  (and (consp f)
+       (consp (cdr f))
+       (consp (cddr f))
+       (natp (cadr f))
+       (> (cadr f) 1)
+       (natp (caddr f))
+       (> (caddr f) 1)))
 
-(defun prec (f) (cadr f))
+(defun explicitp (f) (declare (xargs :guard (formatp f))) (car f))
 
-(defun expw (f) (caddr f))
+(defun prec (f) (declare (xargs :guard (formatp f))) (cadr f))
+
+(defun expw (f) (declare (xargs :guard (formatp f))) (caddr f))
 
 (defun sigw (f)
+  (declare (xargs :guard (formatp f)))
   (if (explicitp f)
       (prec f)
     (1- (prec f))))
 
 (defun sgnf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bitn x (+ (expw f) (sigw f))))
 
 (defun expf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bits x (1- (+ (expw f) (sigw f))) (sigw f)))
 
 (defun sigf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bits x (1- (sigw f)) 0))
 
 (defun manf (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))))
   (bits x (- (prec f) 2) 0))
 
-(defun bias (f) (- (expt 2 (- (expw f) 1)) 1))
+(defun bias (f)
+  (declare (xargs :guard (formatp f)
+                  :guard-hints (("goal" :in-theory (enable formatp)))))
+  (- (expt 2 (- (expw f) 1)) 1))
 
-(defund sp () '(nil 24 8))
+(local (encapsulate ()
+  (local (include-book "arithmetic-5/top" :dir :system))
+  (defthm natp-bias
+    (implies (formatp f)
+             (natp (bias f)))
+    :hints (("Goal" :in-theory (enable expw formatp bias)))
+    :rule-classes (:rewrite :type-prescription))))
+
+(defund sp () (declare (xargs :guard t)) '(nil 24 8))
 
 (defun ndecode (x f)
+  (declare (xargs :guard (and (integerp x) (formatp f))
+                  :guard-hints (("goal" :in-theory (enable formatp)))))
   (* (if (= (sgnf x f) 0) 1 -1)
      (expt 2 (- (expf x f) (bias f)))
      (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))

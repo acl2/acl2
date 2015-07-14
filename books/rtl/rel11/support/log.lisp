@@ -366,6 +366,38 @@
   :rule-classes ()
   :hints (("Goal" :use logior-expt)))
 
+(local-defthm logior-2**n-1
+  (implies (and (natp n)
+                (integerp x))
+           (= (mod (logior (expt 2 n) x) (expt 2 (1+ n)))
+              (if (= (bitn x n) 1)
+                  (mod x (expt 2 (1+ n)))
+                (+ (mod x (expt 2 (1+ n))) (expt 2 n)))))
+  :rule-classes ()
+  :hints (("Goal" :use (bitn-0-1
+                        (:instance bitn-plus-bits (m 0))
+                        (:instance logior-cat (x1 (bitn x n)) (y1 (bits x (1- n) 0)) (x2 1) (y2 0) (m 1)))
+                  :in-theory (enable logior-mod bits binary-cat))))
+
+(local-defthm logior-2**n-2
+  (implies (and (natp n)
+                (integerp x))
+           (= (fl (/ (logior (expt 2 n) x) (expt 2 (1+ n))))
+              (fl (/ x (expt 2 (1+ n))))))
+  :rule-classes ()
+  :hints (("Goal" :use (:instance fl-logior$ (x (expt 2 n)) (y x) (n (1+ n))))))
+
+(defthmd logior-2**n
+  (implies (and (natp n)
+                (integerp x))
+           (equal (logior (expt 2 n) x)
+                  (if (= (bitn x n) 1)
+                      x
+                    (+ x (expt 2 n)))))
+  :hints (("Goal" :use (logior-2**n-1 logior-2**n-2
+                        (:instance mod-def (y (expt 2 (1+ n))))
+                        (:instance mod-def (x (logior (expt 2 n) x)) (y (expt 2 (1+ n))))))))
+
 (defthmd logand-bits
     (implies (and (integerp x)
 		  (natp n)
@@ -980,6 +1012,14 @@
 	     (equal (logior (* (expt 2 n) x) y)
 	   	    (+ (* (expt 2 n) x) y)))
   :hints (("Goal" :use logior-expt-cor$)))
+
+(defthmd logior-2**n
+  (implies (and (natp n)
+                (integerp x))
+           (equal (logior (expt 2 n) x)
+                  (if (= (bitn x n) 1)
+                      x
+                    (+ x (expt 2 n))))))
 
 (defthmd logand-bits
     (implies (and (integerp x)

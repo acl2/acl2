@@ -95,21 +95,27 @@
 ;; From reps.lisp:
 
 (defund formatp (f)
-  (and (natp (cadr f))
+  (declare (xargs :guard t))
+  (and (consp f)
+       (consp (cdr f))
+       (consp (cddr f))
+       (natp (cadr f))
        (> (cadr f) 1)
        (natp (caddr f))
        (> (caddr f) 1)))
 
-(defund prec (f) (cadr f))
+(defund prec (f) (declare (xargs :guard (formatp f))) (cadr f))
 
-(defund expw (f) (caddr f))
+(defund expw (f) (declare (xargs :guard (formatp f))) (caddr f))
 
-(defund bias (f) (- (expt 2 (- (expw f) 1)) 1))
+(defund bias (f) (declare (xargs :guard (formatp f))) (- (expt 2 (- (expw f) 1)) 1))
 
 (defund spn (f)
+  (declare (xargs :guard (formatp f)))
   (expt 2 (- 1 (bias f))))
 
 (defund spd (f)
+     (declare (xargs :guard (formatp f)))
      (expt 2 (+ 2 (- (bias f)) (- (prec f)))))
 
 (defund drepp (x f)
@@ -184,7 +190,7 @@
          (* (fl (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n)))))
 
 (defthmd rtz-minus
-  (equal (rtz (* -1 x) n) (* -1 (rtz x n))))
+  (equal (rtz (- x) n) (- (rtz x n))))
 
 (defthmd rtz-shift
   (implies (integerp n)
@@ -397,7 +403,7 @@
   (equal (raz 0 n) 0))
 
 (defthmd raz-minus
-  (equal (raz (* -1 x) n) (* -1 (raz x n))))
+  (equal (raz (- x) n) (- (raz x n))))
 
 (defthm raz-shift
     (implies (integerp n)
@@ -565,7 +571,7 @@
                   (integerp k)
                   (> k 0)
                   (= k1 (+ k (- (expo x) (expo y))))
-                  (= k2 (+ k (expo (+ x y)) (* -1 (expo y))))
+                  (= k2 (+ k (expo (+ x y)) (- (expo y))))
                   (exactp x k1)
                   (> k2 0))
              (= (+ x (rtz y k))
@@ -704,7 +710,7 @@
   :rule-classes ())
 
 (defthmd rne-minus
-  (equal (rne (* -1 x) n) (* -1 (rne x n))))
+  (equal (rne (- x) n) (- (rne x n))))
 
 (defthmd rne-rtz
     (implies (and (< (abs (- x (rtz x n)))
@@ -766,17 +772,18 @@
 	     (<= (abs (- x (rne x n)))
 		 (* (abs x) (expt 2 (- n)))))
   :rule-classes ())
-#|
+
 (defthm rne-force
-    (implies (and (exactp y n)
-                  (rationalp x)
-		  (rationalp y)
-		  (integerp n)
+    (implies (and (integerp n)
 		  (> n 0)
-                  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+                  (rationalp x)
+                  (not (= x 0))
+		  (rationalp y)
+                  (exactp y n)
+		  (< (abs (- x y)) (expt 2 (- (expo x) n))))
 	     (= y (rne x n)))
-  :rule-classes ()
-|#
+  :rule-classes ())
+
 (defthm rne-monotone
     (implies (and (<= x y)
                   (rationalp x)
@@ -943,7 +950,7 @@
   :rule-classes ())
 
 (defthmd rna-minus
-  (equal (rna (* -1 x) n) (* -1 (rna x n))))
+  (equal (rna (- x) n) (- (rna x n))))
 
 (defthmd rna-rtz
     (implies (and (rationalp x)
@@ -1141,7 +1148,7 @@
   (equal (rto 0 n) 0))
 
 (defthmd rto-minus
-  (equal (rto (* -1 x) n) (* -1 (rto x n))))
+  (equal (rto (- x) n) (- (rto x n))))
 
 (defthm rto-shift
     (implies (and (rationalp x)
@@ -1353,8 +1360,8 @@
 	     (common-mode-p (flip-mode m))))
 
 (defthmd rnd-minus
-  (equal (rnd (* -1 x) mode n)
-         (* -1 (rnd x (flip-mode mode) n))))
+  (equal (rnd (- x) mode n)
+         (- (rnd x (flip-mode mode) n))))
 
 (defthm rnd-exactp-a
     (implies (< 0 n)
@@ -1597,7 +1604,7 @@
   (rnd x mode (+ (prec f) (expo x) (- (expo (spn f))))))
 
 (defthmd drnd-minus
-  (equal (drnd (* -1 x) mode f)
+  (equal (drnd (- x) mode f)
          (- (drnd x (flip-mode mode) f))))
 
 (defthm drnd-exactp-a

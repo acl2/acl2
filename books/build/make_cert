@@ -97,17 +97,23 @@ export MAKE_CERT_PL ?= $(ACL2_SYSTEM_BOOKS)/build/make_cert_help.pl
 # "two-pass certification".
 
 %.cert : %.lisp
-	@$(MAKE_CERT_PL) "$*" \
+# Bug fix 2015-07-11: Previously we were using "$*" here.  That caused problems
+# for file names like foo$bar.lisp, because the command we would give to the
+# shell would look like make_cert_help.pl "foo$bar.lisp", and the $bar would
+# then be subject to shell expansion.  Putting it in single quotes should help
+# to defend against this, although it of course won't work for file names with
+# single quotes.
+	@$(MAKE_CERT_PL) '$*' \
                          $(if $(findstring 1,$(pcert)),"complete","certify") \
                          $(if $(findstring 1,$(pcert)),"no_acl2x",$(if $(findstring 1,$(acl2x)),"yes","no")) \
                          $^
 
 %.pcert1 : %.lisp
-	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(pcert)),"convert","pcertifyplus") \
+	@$(MAKE_CERT_PL) '$*' $(if $(findstring 1,$(pcert)),"convert","pcertifyplus") \
                           $(if $(findstring 1,$(acl2x)),"yes","no") $^
 
 %.pcert0 : %.lisp
-	@$(MAKE_CERT_PL) "$*" "pcertify" $(if $(findstring 1,$(acl2x)),"yes","no") $^
+	@$(MAKE_CERT_PL) '$*' "pcertify" $(if $(findstring 1,$(acl2x)),"yes","no") $^
 
 %.acl2x : %.lisp
-	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(acl2xskip)),"acl2xskip","acl2x") "yes" $^
+	@$(MAKE_CERT_PL) '$*' $(if $(findstring 1,$(acl2xskip)),"acl2xskip","acl2x") "yes" $^

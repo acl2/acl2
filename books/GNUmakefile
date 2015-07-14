@@ -257,6 +257,7 @@ ACL2_FEATURES := $(shell \
      "$(ACL2) < cert_features.lsp &> Makefile-features.out" ;\
   ls -l $(BUILD_DIR)/Makefile-features)
 
+
 $(info Determining whether Glucose is installed)
 # If glucose doesn't exist, then the error message saying it can't be
 # found is redirected to /dev/null, resulting in an empty value for
@@ -278,6 +279,29 @@ $(info ACL2_HOST_LISP    := $(ACL2_HOST_LISP))
 $(info OS_HAS_GLUCOSE    := $(OS_HAS_GLUCOSE))
 $(info USE_QUICKLISP     := $(USE_QUICKLISP))
 $(info Done with features.)
+
+
+ifdef ACL2_FEATURES_DETECTED
+# This sanity check tries to make sure that the copy of ACL2 you are using
+# thinks that this is the right books directory.  We can only do this check if
+# we have successfully included Makefile-features, which may not be the case if
+# we're doing something like a make clean in an already-clean directory, or if
+# ACL2 isn't successfully found in the path and Makefile-features doesn't
+# exist.
+SANITY_CHECK_ACTUAL_DIR   := $(shell pwd -P)
+SANITY_CHECK_EXPECTED_DIR := $(shell cd $(ACL2_THINKS_BOOK_DIR_IS); pwd -P)
+ifneq ($(SANITY_CHECK_ACTUAL_DIR), $(SANITY_CHECK_EXPECTED_DIR))
+$(info Books Sanity Check Failed)
+$(info - Using ACL2 from                 $(ACL2))
+$(info - ACL2 thinks system books are in $(ACL2_THINKS_BOOK_DIR_IS))
+$(info - This resolves to                $(SANITY_CHECK_EXPECTED_DIR))
+$(info - But we are currently in         $(SANITY_CHECK_ACTUAL_DIR))
+$(error Books Sanity Check Failed)
+endif
+
+endif # ACL2_FEATURES_DETECTED
+
+
 
 # Cause error for illegal certification attempts:
 
@@ -483,7 +507,6 @@ endif
 
 ADDED_BOOKS := \
   coi/defung/defung-stress-long.cert \
-  coi/termination/assuming/complex.cert \
   models/jvm/m5/apprentice.cert \
   system/parallel/proofs/ideal-speedup.cert \
   workshops/2009/sumners/support/examples.cert \
@@ -1373,14 +1396,13 @@ manual:
 # Here is what can be expected to find (based on having done this
 # experiment on 5/10/2013).
 
-# There were two .cert files from the legacy run that were not from
-# the new run, as follows, and both are 0-length files that were
-# written by their directories' Makefiles in order to avoid
-# certification of these slow books.  That avoidance is handled
+# There was one .cert file from the legacy run that was not from
+# the new run, as follows, and it is 0-length file that was
+# written by its directory's Makefile in order to avoid
+# certification of this slow book.  That avoidance is handled
 # differently by the new books/Makefile, without creating a .cert
 # file.
 
-# coi/termination/assuming/complex.cert
 # models/jvm/m5/apprentice.cert
 
 # There were six .cert files in the new run that were not in the

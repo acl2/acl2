@@ -123,6 +123,14 @@
                       (* -1 x)
                     (1- (* -1 (fl x)))))))
 
+(defthmd minus-fl
+  (implies (real/rationalp x)
+           (equal (fl (- x))
+                  (if (integerp x)
+                      (- x)
+                    (1- (- (fl x))))))
+  :hints (("Goal" :use (fl-minus))))
+
 (defrule fl-m-n
   (implies (and (< 0 n)
                 (integerp m)

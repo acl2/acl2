@@ -41,7 +41,9 @@
       (progn$
        (er hard? '|Makefile-features| "Error opening Makefile-features?")
        state)
-    (let* ((state (princ$ #+hons "ACL2_HAS_HONS := 1"
+    (let* ((state (princ$ "ACL2_FEATURES_DETECTED := 1" channel state))
+           (state (newline channel state))
+           (state (princ$ #+hons "ACL2_HAS_HONS := 1"
                           #-hons "ACL2_HAS_HONS := "
                           channel state))
            (state (newline channel state))
@@ -62,6 +64,9 @@
            (state (newline channel state))
            (state (princ$ "ACL2_HOST_LISP := " channel state))
            (state (princ$ (symbol-name (@ host-lisp)) channel state))
+           (state (newline channel state))
+           (state (princ$ "ACL2_THINKS_BOOK_DIR_IS := " channel state))
+           (state (princ$ (f-get-global 'system-books-dir state) channel state))
            (state (newline channel state))
            (state (close-output-channel channel state)))
       state)))

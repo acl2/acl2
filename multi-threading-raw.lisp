@@ -814,9 +814,10 @@
     (if timeout received-signal t))
   #+(and sb-thread sbcl-sno-patch)
   (if timeout
-      (sb-thread:wait-on-semaphore semaphore
-                                   :timeout timeout
-                                   :notification notification)
+      (and (sb-thread:wait-on-semaphore semaphore
+                                        :timeout timeout
+                                        :notification notification)
+           t)
     (progn (sb-thread:wait-on-semaphore semaphore
                                         :timeout timeout
                                         :notification notification)

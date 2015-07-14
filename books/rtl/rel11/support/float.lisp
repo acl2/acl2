@@ -442,6 +442,11 @@ y < 2^p, and hence x and y are p-exact.
   (equal (exactp (* -1 x) n)
          (exactp x n)))
 
+(defthm minus-exactp
+  (equal (exactp (- x) n)
+         (exactp x n))
+  :hints (("Goal" :use (exactp-minus))))
+
 (defthm exactp-abs
   (equal (exactp (abs x) n)
          (exactp x n)))
