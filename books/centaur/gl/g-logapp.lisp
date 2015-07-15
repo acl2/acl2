@@ -39,23 +39,6 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(defun s-take (n x)
-  (declare (xargs :guard (natp n)))
-  (b* (((when (zp n)) (bfr-sterm nil))
-       ((mv first rest &) (first/rest/end x)))
-    (bfr-ucons first (s-take (1- n) rest))))
-
-(defthm deps-of-s-take
-  (implies (not (pbfr-list-depends-on k p x))
-           (not (pbfr-list-depends-on k p (s-take n x)))))
-
-
-(defthm s-take-correct
-  (equal (bfr-list->u (s-take n x) env)
-         (loghead n (bfr-list->s x env)))
-  :hints (("goal" :induct (s-take n x)
-           :in-theory (enable* acl2::ihsext-recursive-redefs))))
-
 
 
 ;; (local (defthm v2i-of-append
@@ -89,109 +72,6 @@
 ;;                  (bfr-list->s y env)))
 ;;   :hints(("Goal" :in-theory (enable append-us))))
 
-
-(defun logapp-uss (w n x y)
-  (declare (xargs :measure (len n)
-                  :guard (natp w)))
-  (if (atom n)
-      y
-    (bfr-ite-bss
-     (car n)
-     (bfr-logapp-nus (lnfix w) (s-take w x)
-                 (logapp-uss (ash (lnfix w) 1) (cdr n) (bfr-logtail-ns w x)
-                             y))
-     (logapp-uss (ash (lnfix w) 1) (cdr n) x y))))
-
-(defthm deps-of-logapp-uss
-  (implies (and (not (pbfr-list-depends-on k p n))
-                (not (pbfr-list-depends-on k p x))
-                (not (pbfr-list-depends-on k p y)))
-           (not (pbfr-list-depends-on k p (logapp-uss w n x y)))))
-
-(local
- (progn
-   (defthm logapp-of-logapp
-     (implies (equal w (logapp m y z))
-              (equal (logapp n x w)
-                     (logapp (+ (nfix n) (nfix m)) (logapp n x y) z)))
-     :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
-                                        acl2::ihsext-recursive-redefs)
-             :induct (loghead n x))))
-
-   (defthm logcar-non-integer
-     (implies (not (integerp x))
-              (equal (logcar x) 0))
-     :hints(("Goal" :in-theory (enable logcar)))
-     :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-   (defthm logcdr-non-integer
-     (implies (not (integerp x))
-              (equal (logcdr x) 0))
-     :hints(("Goal" :in-theory (enable logcdr)))
-     :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-   (defthm remake-*-n-w
-     (and (implies (equal (logcar n) 1)
-                   (equal (+ (nfix w) (* 2 (logcdr n) (nfix w)))
-                          (* (ifix n) (nfix w))))
-          (implies (equal (logcar n) 0)
-                   (equal (* 2 (logcdr n) (nfix w))
-                          (* (ifix n) (nfix w)))))
-     :hints(("Goal" :in-theory (e/d (logcons)
-                                    (bitops::logcons-destruct))
-             :use ((:instance acl2::logcar-logcdr-elim
-                    (i n))))))
-
-
-   (defthm logapp-loghead-logtail
-     (equal (logapp n (loghead n x) (logtail n x))
-            (ifix x))
-     :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
-                                        acl2::ihsext-recursive-redefs)
-             :induct (loghead n x))))))
-
-;; (defthm true-listp-append-us
-;;   (implies (true-listp y)
-;;            (true-listp (append-us x y)))
-;;   :hints(("Goal" :in-theory (enable append-us)))
-;;   :rule-classes :type-prescription)
-
-;; (defthm true-listp-logapp-uss
-;;   (implies (true-listp y)
-;;            (true-listp (logapp-uss w n x y)))
-;;   :rule-classes :type-prescription)
-
-;; (defun logapp-uss-conc (w n x y)
-;;   (if (zp n)
-;;       (ifix y)
-;;     (if (equal (logcar n) 1)
-;;         (logapp w (loghead w x)
-;;                 (logapp-uss-conc (* 2 (nfix w)) (logcdr n)
-;;                                  (logtail w x) y))
-;;       (logapp-uss-conc (* 2 (nfix w)) (logcdr n) x y))))
-
-;; (defthm logapp-uss-conc-correct
-;;   (equal (logapp-uss-conc w n x y)
-;;          (logapp (* (nfix w) (nfix n)) x y)))
-
-
-
-
-
-
-;; (local (in-theory (disable append-us)))
-
-
-
-(defthm logapp-uss-correct
-  (equal (bfr-list->s (logapp-uss w n x y) env)
-         (logapp (* (bfr-list->u n env)
-                    (nfix w))
-                 (bfr-list->s x env)
-                 (bfr-list->s y env)))
-  :hints(("Goal" :in-theory (enable acl2::ash** logcons))))
-
-(local (in-theory (disable logapp-uss)))
 
 
 
@@ -228,7 +108,7 @@
        ;; ifix
        (xbits (bfr-ite-bss-fn xintp xrn nil))
        (ybits (bfr-ite-bss-fn yintp yrn nil))
-       (resbits (logapp-uss 1 nbits xbits ybits)))
+       (resbits (bfr-logapp-uss 1 nbits xbits ybits)))
     (mk-g-number (list-fix resbits))))
 
 
@@ -412,7 +292,7 @@
         (gret (g-apply 'int-set-sign (gl-list negp y))))
        (ybits (bfr-ite-bss-fn yintp yrn nil))
        (ylen (bfr-integer-length-s ybits))
-       (resbits (logapp-uss 1 ylen ybits (bfr-ite-bss-fn negbfr '(t) '(nil)))))
+       (resbits (bfr-logapp-uss 1 ylen ybits (bfr-ite-bss-fn negbfr '(t) '(nil)))))
     (gret (mk-g-number (list-fix resbits))))
   ///
   (def-hyp-congruence g-int-set-sign-of-number)

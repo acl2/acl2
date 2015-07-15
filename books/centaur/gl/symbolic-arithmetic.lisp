@@ -1054,3 +1054,50 @@ for computing:</p>
                                          (integer-length-of-rem
                                           integer-length-of-mod))))))
 
+
+(defun s-take (n x)
+  (declare (xargs :guard (natp n)))
+  (b* (((when (zp n)) (bfr-sterm nil))
+       ((mv first rest &) (first/rest/end x)))
+    (bfr-ucons first (s-take (1- n) rest))))
+
+(defthm deps-of-s-take
+  (implies (not (pbfr-list-depends-on k p x))
+           (not (pbfr-list-depends-on k p (s-take n x)))))
+
+
+(defthm s-take-correct
+  (equal (bfr-list->u (s-take n x) env)
+         (loghead n (bfr-list->s x env)))
+  :hints (("goal" :induct (s-take n x)
+           :in-theory (enable* acl2::ihsext-recursive-redefs))))
+
+
+
+(defsymbolic bfr-logapp-uss ((w n)
+                             (n u)
+                             (x s)
+                             (y s))
+  :returns (app s (logapp (* n w) x y))
+  :prepwork ((local (in-theory (enable logcons)))
+             (local (defthm logapp-loghead-logtail
+                      (implies (equal z (logapp w1 (logtail w x) y))
+                               (equal (logapp w (loghead w x) z)
+                                      (logapp (+ (nfix w) (nfix w1)) x y)))
+                      :hints(("Goal" :in-theory (enable* bitops::ihsext-recursive-redefs
+                                                         bitops::ihsext-inductions))))))
+  (if (atom n)
+      (list-fix y)
+    (if (b* (((mv x1 & xend) (first/rest/end x))
+             ((mv y1 & yend) (first/rest/end y)))
+          (and xend
+               yend
+               (equal x1 y1)))
+        (list-fix x)
+      (bfr-ite-bss
+       (car n)
+       (bfr-logapp-nus (lnfix w) (s-take w x)
+                       (bfr-logapp-uss
+                        (ash (lnfix w) 1) (cdr n) (bfr-logtail-ns w x)
+                        y))
+       (bfr-logapp-uss (ash (lnfix w) 1) (cdr n) x y)))))
