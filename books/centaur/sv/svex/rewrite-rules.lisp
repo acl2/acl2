@@ -1133,16 +1133,6 @@
 
 
 
-(define svex-quoted-index-p ((x svex-p))
-  :enabled t
-  (and (eq (svex-kind x) :quote)
-       (4vec-index-p (svex-quote->val x))))
-
-(define svex-quoted-int-p ((x svex-p))
-  :enabled t
-  (and (eq (svex-kind x) :quote)
-       (2vec-p (svex-quote->val x))))
-
 
 ;; (define concat-under-mask-meta-aux ((mask 4vmask-p)
 ;;                                     (xwidth natp)

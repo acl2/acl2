@@ -428,3 +428,17 @@ typically be @(see memoize)d in some way or another.</p>"
            (len (svex-alist-keys x)))
     :hints(("Goal" :in-theory (enable svex-alist-keys)))))
 
+
+
+
+;; Commonly used dumb little functions
+(define svex-quoted-index-p ((x svex-p))
+  :enabled t
+  (and (eq (svex-kind x) :quote)
+       (4vec-index-p (svex-quote->val x))))
+
+(define svex-quoted-int-p ((x svex-p))
+  :enabled t
+  (and (eq (svex-kind x) :quote)
+       (2vec-p (svex-quote->val x))))
+

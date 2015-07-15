@@ -1157,9 +1157,10 @@
   :returns (xx svexlist-p)
   (b* ((- (and verbosep (cw "orig opcount: ~x0~%" (svexlist-opcount x))))
        (masks (svexlist-mask-alist x))
-       (x (cwtime (svexlist-rewrite x masks) :mintime 1)))
-    (clear-memoize-table 'svex-rewrite)
-    (fast-alist-free masks)
+       (x (cwtime (svexlist-rewrite x masks) :mintime 1))
+       (- (clear-memoize-table 'svex-rewrite)
+          (fast-alist-free masks))
+       (x (cwtime (svexlist-normalize-concats x))))
     (and verbosep (cw "new opcount: ~x0~%" (svexlist-opcount x)))
     x)
   ///
