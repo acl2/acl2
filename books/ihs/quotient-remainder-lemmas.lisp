@@ -1632,13 +1632,13 @@ property of @('(/ x y)').</p>"
   :rule-classes (:rewrite :type-prescription))
 
 #+non-standard-analysis
-(defthm realp-mod
-  ;; [Jared] bozo: arithmetic-5 proves a conflicting, better rule with no hyp
-  ;; about Y.  I haven't yet spent the time to improve these rules to match.
-  (implies (and (realp x)
-		(realp y))
-	   (realp (mod x y)))
-  :hints (("Goal" :in-theory (enable mod realp-+))))
+(defrule realp-mod
+  (implies (real/rationalp x)
+	   (real/rationalp (mod x y)))
+  :cases ((not (acl2-numberp y))
+          (real/rationalp y))
+  :enable (mod floor realp-+)
+  :rule-classes (:rewrite :type-prescription))
 
 (encapsulate ()
 
