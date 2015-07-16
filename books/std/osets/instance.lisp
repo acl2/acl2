@@ -403,12 +403,13 @@
 	      (subs-repl-functions (cdr subs))))))
 
 ; Given the above, we could then convert the list of function symbols into a
-; list of (:definition f)'s with the following function.
+; list of (:definition f)'s with the following function.  We now use :d instead
+; of :definition to better support macro aliases.
 
 (defun function-list-to-definitions (funcs)
   (if (endp funcs)
       nil
-    (cons `(:definition ,(car funcs))
+    (cons `(:d ,(car funcs))
 	  (function-list-to-definitions (cdr funcs)))))
 
 ; And finally, here is a function that does "all of the work", calling

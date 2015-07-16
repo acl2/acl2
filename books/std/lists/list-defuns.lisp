@@ -100,6 +100,9 @@
     (atom y)))
 
 (defund list-equiv (x y)
+  (declare (xargs :guard t
+                  :guard-hints(("Goal" :in-theory (enable fast-list-equiv
+                                                          list-fix)))))
   (mbe :logic (equal (list-fix x) (list-fix y))
        :exec (fast-list-equiv x y)))
 

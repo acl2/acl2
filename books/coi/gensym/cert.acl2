@@ -30,5 +30,5 @@
 
 (ld "coi/bags/bag-defpkg.lsp" :dir :system)
 (ld "coi/util/gensym-defpkg.lsp" :dir :system)
-(ld "coi/lists/list-defpkg.lsp" :dir :system)
+(include-book "../lists/portcullis")
 (ld "coi/symbol-fns/symbol-fns-defpkg.lsp" :dir :system)

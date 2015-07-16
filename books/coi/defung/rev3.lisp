@@ -67,32 +67,26 @@
 ;; but it is easier here.
 (def::signature rev3 (t) true-listp)
 
-(def::un rev (x)
+;; [Jared] renamed this from rev to rev1 for compatibility with std/lists/rev
+;; which is now being included.
+
+(def::un rev1 (x)
   (declare (xargs :signature ((true-listp) true-listp)))
   (if (endp x) nil
-    (append (rev (cdr x)) (list (car x)))))
+    (append (rev1 (cdr x)) (list (car x)))))
 
-(def::signature rev (t) true-listp)
+(def::signature rev1 (t) true-listp)
 
-(defun list-fix (x)
-  (if (atom x) nil
-    (cons (car x) (list-fix (cdr x)))))
-
-(defthm list-fix-of-true-listp
-  (implies
-   (true-listp x)
-   (equal (list-fix x) x)))
-
-(defthm rev-rev
-  (equal (rev (rev x))
+(defthm rev1-rev1
+  (equal (rev1 (rev1 x))
 	 (list-fix x)))
 
-(defthm consp-rev
-  (equal (consp (rev x))
+(defthm consp-rev1
+  (equal (consp (rev1 x))
 	 (consp x)))
 
 (def::signature cdr (true-listp) true-listp)
 
 (defthm rev3-reduction
-  (equal (rev3 x) (rev x))
+  (equal (rev3 x) (rev1 x))
   :hints (("Goal" :induct (rev3 x))))

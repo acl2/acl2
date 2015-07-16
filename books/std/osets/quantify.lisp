@@ -812,7 +812,7 @@
 	  :hints(("Goal"
 		  :in-theory (union-theories
 			      (theory 'minimal-theory)
-			      '((:definition ,all-trigger<p>))))))
+			      '((:d ,all-trigger<p>))))))
 
 	(defthm ,all-strategy<not-p>
 	  (implies (and (syntaxp (rewriting-goal-lit mfc state))
@@ -823,7 +823,7 @@
 	  :hints(("Goal"
 		  :in-theory (union-theories
 			      (theory 'minimal-theory)
-			      '((:definition ,all-trigger<not-p>))))))
+			      '((:d ,all-trigger<not-p>))))))
 
 	(defthm ,all-list-strategy<p>
 	  (implies (and (syntaxp (rewriting-goal-lit mfc state))
@@ -834,7 +834,7 @@
 	  :hints(("Goal"
 		  :in-theory (union-theories
 			      (theory 'minimal-theory)
-			      '((:definition ,all-list-trigger<p>))))))
+			      '((:d ,all-list-trigger<p>))))))
 
 	(defthm ,all-list-strategy<not-p>
 	  (implies (and (syntaxp (rewriting-goal-lit mfc state))
@@ -845,7 +845,7 @@
 	  :hints(("Goal"
 		  :in-theory (union-theories
 			      (theory 'minimal-theory)
-			      '((:definition ,all-list-trigger<not-p>))))))
+			      '((:d ,all-list-trigger<not-p>))))))
 
 
 	;; And then we call upon our computed hints routines to generate a

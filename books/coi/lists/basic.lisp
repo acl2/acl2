@@ -32,6 +32,7 @@
 ;; Basic Lists Reasoning
 
 (in-package "LIST")
+(include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (include-book "../util/debug")
 (include-book "acl2-count")
@@ -312,12 +313,18 @@
 ;; on lists (like the bags functions?) don't access those final cdrs and so are
 ;; unaffected if we call fix on their arguments.
 
-(defund fix (x)
-  (declare (type t x))
-  (if (consp x)
-      (cons (car x)
-            (fix (cdr x)))
-    nil))
+; [Jared] unifying this with std/lists/list-fix
+
+;; (defund fix (x)
+;;   (declare (type t x))
+;;   (if (consp x)
+;;       (cons (car x)
+;;             (fix (cdr x)))
+;;     nil))
+
+(defmacro fix (x) `(acl2::list-fix ,x))
+(add-macro-alias fix acl2::list-fix)
+
 
 (defthm fix-iff-consp
   (iff (fix x)
@@ -358,13 +365,19 @@
 ;; fix's are the same, i.e., if they differ only in their final cdrs.  jcd
 ;; thinks this should be renamed to equiv, but maybe it's too much work now.
 
-(defund equiv (x y)
-  (declare (type t x y))
-  (equal (fix x)
-         (fix y)))
+;; [Jared] unifying this with std/acl2::list-equiv
+;;
+;; (defund equiv (x y)
+;;   (declare (type t x y))
+;;   (equal (fix x)
+;;          (fix y)))
 
-(defequiv equiv
-  :hints (("Goal" :in-theory (enable equiv))))
+(defmacro equiv (x y) `(acl2::list-equiv ,x ,y))
+(add-macro-alias equiv acl2::list-equiv)
+
+;; [Jared] this is now already known
+;; (defequiv equiv
+;;   :hints (("Goal" :in-theory (enable equiv))))
 
 (local
  (defthmd open-equal-on-consp
@@ -1406,6 +1419,10 @@
 ;; (most useful in the "path" library)
 ;;
 ;; ======================================================
+
+; [Jared] BOZO this is NOT the same as acl2::list-fix defined
+; in the std library--it applies list::fix to a list of lists.
+; We should really rename this.
 
 (defun list::list-fix (list)
   (declare (type t list))

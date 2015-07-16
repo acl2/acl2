@@ -34,5 +34,6 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
-(ld "../lists/list-defpkg.lsp")
+(include-book "../lists/portcullis")
+
 

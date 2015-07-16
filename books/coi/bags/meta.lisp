@@ -90,7 +90,7 @@ Without the :meta rule, this fails:
    (binary-append x y)
    (cons x y)
 ;   (quote x)
-   (list::fix x)
+   (acl2::list-fix x)
    ))
 
 ;TERM is a nest of conses and appends
@@ -124,7 +124,7 @@ Without the :meta rule, this fails:
                    )
               (or (syntax-memberp x (cadr term))
                   (syntax-memberp x (caddr term)))
-;            (if (and (equal (car term) 'list::fix)   ;; '(list::fix arg1)
+;            (if (and (equal (car term) 'acl2::list-fix)   ;; '(acl2::list-fix arg1)
   ;                   (null (cddr term)) ;consider inlining this?
    ;                  )
 ;                (syntax-memberp x (cadr term))
@@ -209,7 +209,7 @@ Without the :meta rule, this fails:
   (declare (type t a x))
   (if (consp x)
       (if (equal a (car x))
-          (mv t (list::fix (cdr x))) ;we removed (car x)
+          (mv t (acl2::list-fix (cdr x))) ;we removed (car x)
           (met ((hit result) (run-remove-1 a (cdr x)))
                (mv hit (cons (car x) result))))
       (mv nil nil)))
@@ -248,7 +248,7 @@ Without the :meta rule, this fails:
             (met ((hit newarg1) (syntax-remove-1 elem arg1))
                  (if hit
                      (mv t `(binary-append ,newarg1 ,arg2)) ; jcd - change
-                       ; to... (binary-append ,newarg1 (list::fix ,arg2))) ??
+                       ; to... (binary-append ,newarg1 (acl2::list-fix ,arg2))) ??
                    (met ((hit newarg2) (syntax-remove-1 elem arg2))
                         (if hit
                             (mv t `(binary-append ,arg1 ,newarg2))
@@ -260,7 +260,7 @@ Without the :meta rule, this fails:
               (if (equal elem arg1) ;if arg1 is equal to elem
                   (mv t arg2)       ;then just return arg2 (we just drop
                   ;arg1, since it matches elem)
-                  ; jcd - change to ... (mv t `(list::fix ,arg2)) ?
+                  ; jcd - change to ... (mv t `(acl2::list-fix ,arg2)) ?
                 (met ((hit newarg2) (syntax-remove-1 elem arg2)) ;otherwise, try to remove elem from arg2
                      (if hit ;if we succeeded in removing it
                          (mv t `(cons ,arg1 ,newarg2))  ;the return the result of removing it, with arg1 tacked onto the front
@@ -276,13 +276,13 @@ Without the :meta rule, this fails:
                    (if hit
                        (mv t `(quote ,result))
                      (mv nil term)))
-;;             (if (and (equal (car term) 'list::fix) ;; '(list::fix arg1)
+;;             (if (and (equal (car term) 'acl2::list-fix) ;; '(acl2::list-fix arg1)
 ;;                      (consp (cdr term))
 ;;                      (null  (cddr term)))
 ;;                 (let ((arg1 (cadr term)))
 ;;                   (met ((hit newarg1) (syntax-remove-1 elem arg1))
 ;;                        (if hit ;if we succeeded in removing it
-;;                            (mv t `(list::fix ,newarg1))  ;should we not re-add the list::fix call around the result?
+;;                            (mv t `(acl2::list-fix ,newarg1))  ;should we not re-add the acl2::list-fix call around the result?
 ;;                          (mv nil term) ;otherwise, we failed to remove elem from term
 ;;                          )))
               (mv nil term)
@@ -304,7 +304,7 @@ Without the :meta rule, this fails:
 ;shouldn't be a cons or append, for example.  can X be a quoted
 ;constant bag?  what about nil?  only removes one copy of X.  bzo
 ;handle quoted stuff? or not?  can x ever be a quoted thing?  bzo
-;handle list::fix?
+;handle acl2::list-fix?
 
 (defignore syntax-remove-bag-1 a (x term)
   (declare (type t x term)
@@ -437,11 +437,11 @@ Without the :meta rule, this fails:
                     (mv t ''nil term2))
                   ))
 
-;;           (if (and (equal (car term1) 'list::fix) ;; '(list::fix arg1)
+;;           (if (and (equal (car term1) 'acl2::list-fix) ;; '(acl2::list-fix arg1)
 ;;                    (null (cddr term1))
 ;;                    )
 ;;               (let ((arg1 (cadr term1)))
-;;                 (met ((hit newarg1 newterm2) (syntax-remove-bag arg1 term2)) ;we drop the list::fix; is that the right thing to do?
+;;                 (met ((hit newarg1 newterm2) (syntax-remove-bag arg1 term2)) ;we drop the acl2::list-fix; is that the right thing to do?
 ;;                      (declare (ignore hit))
 ;;                      (mv t newarg1 newterm2)))
 
@@ -759,7 +759,7 @@ old version:
    (meta-memberp x list)
    (any-subbagp x list) ;remove this?
    (finalcdr x)
-   (list::fix x)
+   (acl2::list-fix x)
    (subbagp x y) ;added by eric
    (list::memberp a x) ;added by eric
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
@@ -1043,7 +1043,7 @@ old version:
                        (list 'cons arg1 (syntax-intersection arg2 newterm2))
                      (syntax-intersection arg2 term2))))
 
-;;           (if (and (equal (car term1) 'list::fix) ;; '(list::fix arg1)
+;;           (if (and (equal (car term1) 'acl2::list-fix) ;; '(acl2::list-fix arg1)
 ;;                    (null (cddr term1))
 ;;                    )
 ;;               (syntax-intersection (cadr term1) term2)
@@ -1062,7 +1062,7 @@ old version:
                   ''nil
                   ))
 
-;term1 isn't a call to binary-append or cons or list::fix:
+;term1 isn't a call to binary-append or cons or acl2::list-fix:
             (met ((hit newterm2) (syntax-remove-bag-1 term1 term2))
                  (declare (ignore newterm2))
                  (if hit
