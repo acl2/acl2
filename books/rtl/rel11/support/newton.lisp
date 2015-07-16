@@ -1,6 +1,13 @@
 (in-package "RTL")
 
 (include-book "harrison")
+(local (include-book "arithmetic-5/top" :dir :system))
+
+;; The following lemmas from arithmetic-5 have given me trouble:
+
+(local (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
 
 (local-defthm ne-1
   (implies (and (rationalp x)
@@ -23,11 +30,11 @@
 		  (> n 0)
 		  (rationalp x)
                   (not (zerop x)))
-	     (<= (abs (/ (- x (near x n)) x))
+	     (<= (abs (/ (- x (rne x n)) x))
 		 (/ (expt 2 (- (expo x) n)) (abs x))))
   :rule-classes ()
-  :hints (("Goal" :use (near-est
-                        (:instance ne-2 (x (abs x)) (y (- x (near x n))) (z (expt 2 (- (expo x) n))))))))
+  :hints (("Goal" :use (rne-diff
+                        (:instance ne-2 (x (abs x)) (y (- x (rne x n))) (z (expt 2 (- (expo x) n))))))))
 
 (local-defthm ne-4
   (implies (and (integerp n)
@@ -52,7 +59,7 @@
 		  (> n 0)
 		  (rationalp x)
                   (not (zerop x)))
-	     (<= (abs (/ (- x (near x n)) x))
+	     (<= (abs (/ (- x (rne x n)) x))
 		 (expt 2 (- n))))
   :rule-classes ()
   :hints (("Goal" :use (ne-3 ne-5)
@@ -63,7 +70,7 @@
 		  (> n 0)
 		  (rationalp x)
                   (not (zerop x)))
-	     (<= (abs (/ (- (near x n) x) x))
+	     (<= (abs (/ (- (rne x n) x) x))
 		 (expt 2 (- n))))
   :rule-classes ()
   :hints (("Goal" :use (ne-6))))
@@ -72,18 +79,18 @@
     (implies (and (integerp n) 
 		  (> n 0)
 		  (rationalp x))
-	     (<= (abs (/ (- (near x n) x) x))
+	     (<= (abs (/ (- (rne x n) x) x))
 		 (expt 2 (- n))))
   :rule-classes ()
   :hints (("Goal" :use (ne-7))))
 
 (local-defund uu (b y) (- 1 (* b y)))
 
-(local-defund v (u p) (/ (- (near u p) u) u))
+(local-defund v (u p) (/ (- (rne u p) u) u))
 
 (local-defthmd rr-1
   (implies (rationalp u)
-           (equal (near u p)
+           (equal (rne u p)
                   (* u (1+ (v u p)))))
   :hints (("Goal" :in-theory (enable v))))
 
@@ -97,7 +104,7 @@
                   :use ((:instance ne-8 (n p) (x u))))))
 
 (local-defthm rr-3
-  (let* ((e1 (near (uu b y1) p))
+  (let* ((e1 (rne (uu b y1) p))
          (y3p (+ y1 (* e1 y2))))
     (implies (and (rationalp y1)
                   (rationalp y2)
@@ -336,7 +343,7 @@
                   :in-theory (enable ep3p))))
 
 (local-defthm rr-19
-  (let* ((e1 (near (uu b y1) p))
+  (let* ((e1 (rne (uu b y1) p))
          (y3p (+ y1 (* e1 y2))))
     (implies (and (rationalp y1)
                   (rationalp y2)
@@ -353,7 +360,7 @@
   :hints (("Goal" :use (rr-3 rr-18))))
 
 (local-defthm rr-19-a
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2))))
     (implies (and (rationalp y1)
                   (rationalp y2)
@@ -370,8 +377,8 @@
   :hints (("Goal" :use (rr-19)
                   :in-theory (enable uu))))
 
-(defthm recip-refine-1
-  (let* ((e1 (near (- 1 (* b y1)) p))
+(defthm recip-refinement-1
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2)))
          (ep3p (* ep1 (+ ep2 (* (expt 2 (- p)) (1+ ep2))))))
     (implies (and (rationalp y1)
@@ -429,17 +436,17 @@
 		  (> n 0)
                   (not (= x 0))
 		  (rationalp x))
-	     (<= (abs (- x (near x n)))
+	     (<= (abs (- x (rne x n)))
 		 (* (abs x) (expt 2 (- n)))))
   :rule-classes ()
-  :hints (("Goal" :use (near-est ne-11)
+  :hints (("Goal" :use (rne-diff ne-11)
                   :in-theory (theory 'minimal-theory))))
 
-(local-defthm near-est-2
+(local-defthm rne-diff-2
     (implies (and (integerp n) 
 		  (> n 0)
 		  (rationalp x))
-	     (<= (abs (- x (near x n)))
+	     (<= (abs (- x (rne x n)))
 		 (* (abs x) (expt 2 (- n)))))
   :rule-classes ()
   :hints (("Goal" :use (ne-12))))
@@ -452,7 +459,7 @@
   :rule-classes ())
 
 (local-defthm rr-21
-  (let ((y3 (near y3p p)))
+  (let ((y3 (rne y3p p)))
     (implies (and (rationalp b)
                   (rationalp y3p)
                   (integerp p)
@@ -460,10 +467,10 @@
              (<= (abs (- 1 (* b y3)))
                  (+ (abs (- 1 (* b y3p))) (abs (* b (- y3p y3)))))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance rr-20 (x (- 1 (* b y3p))) (y (- y3p (near y3p p))))))))
+  :hints (("Goal" :use ((:instance rr-20 (x (- 1 (* b y3p))) (y (- y3p (rne y3p p))))))))
 
 (local-defthm rr-22
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2))))
     (implies (and (rationalp y1)
                   (rationalp y2)
@@ -480,7 +487,7 @@
   :hints (("Goal" :use (rr-19-a))))
 
 (local-defthm rr-23
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2))))
     (implies (and (rationalp y1)
                   (rationalp y2)
@@ -497,9 +504,9 @@
   :hints (("Goal" :use (rr-22))))
 
 (local-defthm rr-24
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2)))
-         (y3 (near y3p p)))
+         (y3 (rne y3p p)))
     (implies (and (rationalp y1)
                   (rationalp y2)
                   (rationalp b)
@@ -510,12 +517,12 @@
              (<= (abs (- y3p y3))
                  (* (abs y3p) (expt 2 (- p))))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance near-est-2 (x (+ y1 (* (near (- 1 (* b y1)) p) y2))) (n p))))))
+  :hints (("Goal" :use ((:instance rne-diff-2 (x (+ y1 (* (rne (- 1 (* b y1)) p) y2))) (n p))))))
 
 (local-defthm rr-25-a
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2)))
-         (y3 (near y3p p)))
+         (y3 (rne y3p p)))
     (implies (and (rationalp y1)
                   (rationalp y2)
                   (rationalp b)
@@ -537,15 +544,15 @@
 
 
 (local-defthm rr-25-c
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2)))
-         (y3 (near y3p p)))
+         (y3 (rne y3p p)))
     (implies (and (rationalp y1)
                   (rationalp y2)
                   (rationalp b)
                   (rationalp ep1)
                   (rationalp ep2)
-                  (rationalp (- (+ y1 (* e1 y2)) (near (+ y1 (* e1 y2)) p)))
+                  (rationalp (- (+ y1 (* e1 y2)) (rne (+ y1 (* e1 y2)) p)))
                   (rationalp (+ y1 (* e1 y2)))
                   (integerp p)
                   (> p 0))
@@ -554,13 +561,13 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (theory 'minimal-theory)
                   :use (rr-25-a
-                        (:instance rr-25-b (x (- (+ y1 (* (near (- 1 (* b y1)) p) y2)) (near (+ y1 (* (near (- 1 (* b y1)) p) y2)) p))))
-                        (:instance rr-25-b (x (+ y1 (* (near (- 1 (* b y1)) p) y2))))))))
+                        (:instance rr-25-b (x (- (+ y1 (* (rne (- 1 (* b y1)) p) y2)) (rne (+ y1 (* (rne (- 1 (* b y1)) p) y2)) p))))
+                        (:instance rr-25-b (x (+ y1 (* (rne (- 1 (* b y1)) p) y2))))))))
 
 (local-defthm rr-25
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2)))
-         (y3 (near y3p p)))
+         (y3 (rne y3p p)))
     (implies (and (rationalp y1)
                   (rationalp y2)
                   (rationalp b)
@@ -574,9 +581,9 @@
   :hints (("Goal" :use (rr-25-c))))
 
 (local-defthm rr-26
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2)))
-         (y3 (near y3p p)))
+         (y3 (rne y3p p)))
     (implies (and (rationalp y1)
                   (rationalp y2)
                   (rationalp b)
@@ -605,9 +612,9 @@
   :rule-classes ())
 
 (local-defthm rr-28
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2)))
-         (y3 (near y3p p)))
+         (y3 (rne y3p p)))
     (implies (and (rationalp y1)
                   (rationalp y2)
                   (rationalp b)
@@ -627,19 +634,19 @@
                  (+ (ep3p ep1 ep2 p) (* (1+ (ep3p ep1 ep2 p)) (expt 2 (- p)))))))
   :rule-classes ()
   :hints (("Goal" :use (rr-26 rr-19-a
-                        (:instance rr-21 (y3p (+ y1 (* (near (- 1 (* b y1)) p) y2))))
-                        (:instance rr-27 (x (abs (- 1 (* b (near (+ y1 (* (near (- 1 (* b y1)) p) y2)) p)))))
-                                         (y1 (abs (- 1 (* b (+ y1 (* (near (- 1 (* b y1)) p) y2))))))
-                                         (z1 (abs (* b (- (+ y1 (* (near (- 1 (* b y1)) p) y2))
-                                                          (near (+ y1 (* (near (- 1 (* b y1)) p) y2)) p)))))
+                        (:instance rr-21 (y3p (+ y1 (* (rne (- 1 (* b y1)) p) y2))))
+                        (:instance rr-27 (x (abs (- 1 (* b (rne (+ y1 (* (rne (- 1 (* b y1)) p) y2)) p)))))
+                                         (y1 (abs (- 1 (* b (+ y1 (* (rne (- 1 (* b y1)) p) y2))))))
+                                         (z1 (abs (* b (- (+ y1 (* (rne (- 1 (* b y1)) p) y2))
+                                                          (rne (+ y1 (* (rne (- 1 (* b y1)) p) y2)) p)))))
                                          (y2 (ep3p ep1 ep2 p))
                                          (z2 (* (1+ (ep3p ep1 ep2 p)) (expt 2 (- p))))))
                   :in-theory (theory 'minimal-theory))))
 
 (local-defthm rr-29
-  (let* ((e1 (near (- 1 (* b y1)) p))
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2)))
-         (y3 (near y3p p)))
+         (y3 (rne y3p p)))
     (implies (and (rationalp y1)
                   (rationalp y2)
                   (rationalp b)
@@ -655,10 +662,10 @@
   :hints (("Goal" :use (rr-28)
                   :in-theory (enable ep3p))))
 
-(defthm recip-refine-2
-  (let* ((e1 (near (- 1 (* b y1)) p))
+(defthm recip-refinement-2
+  (let* ((e1 (rne (- 1 (* b y1)) p))
          (y3p (+ y1 (* e1 y2)))
-         (y3 (near y3p p))
+         (y3 (rne y3p p))
          (ep3p (* ep1 (+ ep2 (* (expt 2 (- p)) (1+ ep2)))))
          (ep3 (+ ep3p (* (expt 2 (- p)) (1+ ep3p)))))
     (implies (and (rationalp y1)
@@ -769,10 +776,10 @@
                 (> a 0)
                 (> b 0)
                 (<= (abs (- 1 (* b y))) ep))
-           (<= (abs (- (* a y) (near (* a y) p)))
+           (<= (abs (- (* a y) (rne (* a y) p)))
                (* (expt 2 (- p)) (abs (* a y))))) 
   :rule-classes ()
-  :hints (("Goal" :use ((:instance near-est-2 (x (* a y)) (n p))))))
+  :hints (("Goal" :use ((:instance rne-diff-2 (x (* a y)) (n p))))))
 
 (local-defthm ia-9
   (implies (and (rationalp a)
@@ -783,7 +790,7 @@
                 (> a 0)
                 (> b 0)
                 (<= (abs (- 1 (* b y))) ep))
-           (<= (abs (- (* a y) (near (* a y) p)))
+           (<= (abs (- (* a y) (rne (* a y) p)))
                (* (expt 2 (- p)) a (/ (1+ ep) b))))
   :rule-classes ()
   :hints (("Goal" :use (ia-7 ia-8)
@@ -791,12 +798,12 @@
 
 (local-defthm ia-10
   (implies (and (rationalp (- 1 (* b y)))
-                (rationalp (- (near (* a y) p) (* a y)))
+                (rationalp (- (rne (* a y) p) (* a y)))
                 (rationalp (/ b a)))
-           (<= (abs (+ (- 1 (* b y)) (* (/ b a) (- (* a y) (near (* a y) p)))))
-               (+ (abs (- 1 (* b y))) (abs (* (/ b a) (- (* a y) (near (* a y) p)))))))
+           (<= (abs (+ (- 1 (* b y)) (* (/ b a) (- (* a y) (rne (* a y) p)))))
+               (+ (abs (- 1 (* b y))) (abs (* (/ b a) (- (* a y) (rne (* a y) p)))))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance rr-20 (x (- 1 (* b y))) (y (- (* a y) (near (* a y) p))) (b (/ b a)))))))
+  :hints (("Goal" :use ((:instance rr-20 (x (- 1 (* b y))) (y (- (* a y) (rne (* a y) p))) (b (/ b a)))))))
 
 (local-defthm ia-11
   (implies (and (rationalp a)
@@ -805,8 +812,8 @@
                 (not (zp p))
                 (> a 0)
                 (> b 0))
-           (<= (abs (- 1 (* (/ b a) (near (* a y) p))))
-               (+ (abs (- 1 (* b y))) (abs (* (/ b a) (- (* a y) (near (* a y) p)))))))
+           (<= (abs (- 1 (* (/ b a) (rne (* a y) p))))
+               (+ (abs (- 1 (* b y))) (abs (* (/ b a) (- (* a y) (rne (* a y) p)))))))
   :rule-classes ()
   :hints (("Goal" :use (ia-10)
                   :in-theory (disable abs))))
@@ -830,14 +837,14 @@
                 (> b 0)
                 (rationalp (/ b a))
                 (> (/ b a) 0)
-                (rationalp (abs (- (* a y) (near (* a y) p))))
+                (rationalp (abs (- (* a y) (rne (* a y) p))))
                 (rationalp (* (expt 2 (- p)) a (/ (1+ ep) b)))
                 (<= (abs (- 1 (* b y))) ep))
-           (<= (* (/ b a) (abs (- (* a y) (near (* a y) p))))
+           (<= (* (/ b a) (abs (- (* a y) (rne (* a y) p))))
                (* (/ b a) (* (expt 2 (- p)) a (/ (1+ ep) b)))))
   :rule-classes ()
   :hints (("Goal" :use (ia-9
-                        (:instance ia-12 (x (/ b a)) (y (abs (- (* a y) (near (* a y) p)))) (z (* (expt 2 (- p)) a (/ (1+ ep) b))))))))
+                        (:instance ia-12 (x (/ b a)) (y (abs (- (* a y) (rne (* a y) p)))) (z (* (expt 2 (- p)) a (/ (1+ ep) b))))))))
 
 (local-defthm ia-14
   (implies (and (rationalp a)
@@ -848,7 +855,7 @@
                 (> a 0)
                 (> b 0)
                 (<= (abs (- 1 (* b y))) ep))
-           (<= (* (/ b a) (abs (- (* a y) (near (* a y) p))))
+           (<= (* (/ b a) (abs (- (* a y) (rne (* a y) p))))
                (* (expt 2 (- p)) (1+ ep))))
   :rule-classes ()
   :hints (("Goal" :use (ia-13))))
@@ -867,10 +874,10 @@
                 (not (zp p))
                 (> a 0)
                 (> b 0))
-           (= (* (/ b a) (abs (- (* a y) (near (* a y) p))))
-              (abs (* (/ b a) (- (* a y) (near (* a y) p))))))
+           (= (* (/ b a) (abs (- (* a y) (rne (* a y) p))))
+              (abs (* (/ b a) (- (* a y) (rne (* a y) p))))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance ia-15 (x (/ b a)) (y (- (* a y) (near (* a y) p))))))))
+  :hints (("Goal" :use ((:instance ia-15 (x (/ b a)) (y (- (* a y) (rne (* a y) p))))))))
 
 (local-defthm ia-17
   (implies (and (rationalp a)
@@ -881,8 +888,8 @@
                 (> a 0)
                 (> b 0)
                 (<= (abs (- 1 (* b y))) ep))
-           (<= (abs (- 1 (* (/ b a) (near (* a y) p))))
-               (+ ep (abs (* (/ b a) (- (* a y) (near (* a y) p)))))))
+           (<= (abs (- 1 (* (/ b a) (rne (* a y) p))))
+               (+ ep (abs (* (/ b a) (- (* a y) (rne (* a y) p)))))))
   :rule-classes ()
   :hints (("Goal" :use (ia-11))))
 
@@ -891,7 +898,7 @@
            (rationalp (abs x)))
   :rule-classes (:type-prescription :rewrite))
 
-(defthm initial-approximation
+(defthm init-approx
   (implies (and (rationalp a)
                 (rationalp b)
                 (rationalp y)
@@ -900,7 +907,7 @@
                 (> a 0)
                 (> b 0)
                 (<= (abs (- 1 (* b y))) ep))
-           (<= (abs (- 1 (* (/ b a) (near (* a y) p))))
+           (<= (abs (- 1 (* (/ b a) (rne (* a y) p))))
                (+ ep (* (expt 2 (- p)) (1+ ep)))))
   :rule-classes ()
   :hints (("Goal" :use (ia-14 ia-17 ia-16))))
@@ -965,7 +972,7 @@
             (let* ((u (u0 b y))
                    (v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y))))
               (= qp (+ (* (/ a b) (- 1 (* u v))) (* (- r rp) y)))))
   :rule-classes ()
@@ -987,10 +994,10 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p)))
+                   (r (rne rp p)))
               (<= (abs (- r rp)) (* (expt 2 (- p)) (abs rp)))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance near-est-2 (x (* a (v0 a b q0))) (n p))))))
+  :hints (("Goal" :use ((:instance rne-diff-2 (x (* a (v0 a b q0))) (n p))))))
 
 (local-defthm rq-4
   (implies (and (rationalp a)
@@ -1048,7 +1055,7 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p)))
+                   (r (rne rp p)))
               (<= (abs (- r rp)) (* (expt 2 (- p)) a de))))
   :rule-classes ()
   :hints (("Goal" :use (rq-3 rq-5)
@@ -1070,7 +1077,7 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p)))
+                   (r (rne rp p)))
               (<= (abs (* (- r rp) y)) (* (expt 2 (- p)) a de (abs y)))))
   :rule-classes ()
   :hints (("Goal" :use (rq-6))))
@@ -1110,7 +1117,7 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p)))
+                   (r (rne rp p)))
               (<= (abs (* (- r rp) y)) (* (expt 2 (- p)) a de (/ (1+ ep) b)))))
   :rule-classes ()
   :hints (("Goal" :use (rq-7 rq-8)
@@ -1246,7 +1253,7 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y))))
               (<= (abs qp)
                   (+ (* (/ a b) (1+ (* ep de)))
@@ -1254,7 +1261,7 @@
   :rule-classes ()
   :hints (("Goal" :use (rq-2 rq-13 rq-9
                         (:instance rq-15 (x (* (/ a b) (- 1 (* (u0 b y) (v0 a b q0)))))
-                                         (y (* (- (near (* a (v0 a b q0)) p) (* a (v0 a b q0))) y))))
+                                         (y (* (- (rne (* a (v0 a b q0)) p) (* a (v0 a b q0))) y))))
                   :in-theory (disable abs))))
 
 (local-defthm rq-17
@@ -1274,7 +1281,7 @@
             (let* ((u (u0 b y))
                    (v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y))))
               (= (- qp (/ a b))
                  (- (* (- r rp) y) (* (/ a b) (* u v))))))
@@ -1302,7 +1309,7 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y))))
               (<= (abs (- qp (/ a b)))
                   (+ (* (/ a b) ep de)
@@ -1310,7 +1317,7 @@
   :rule-classes ()
   :hints (("Goal" :use (rq-17 rq-14 rq-9
                         (:instance rq-18 (y (* (/ a b) (u0 b y) (v0 a b q0)))
-                                         (x (* (- (near (* a (v0 a b q0)) p) (* a (v0 a b q0))) y))))
+                                         (x (* (- (rne (* a (v0 a b q0)) p) (* a (v0 a b q0))) y))))
                   :in-theory (disable abs))))
 
 (local-defthm rq-20
@@ -1329,12 +1336,12 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
-                   (q (near qp p)))
+                   (q (rne qp p)))
               (<= (abs (- q qp)) (* (expt 2 (- p)) (abs qp)))))
   :rule-classes ()
-  :hints (("Goal" :use (:instance near-est-2 (x (+ q0 (* (near (* a (v0 a b q0)) p) y))) (n p)))))
+  :hints (("Goal" :use (:instance rne-diff-2 (x (+ q0 (* (rne (* a (v0 a b q0)) p) y))) (n p)))))
 
 (local-defthm rq-21
   (implies (and (rationalp a)
@@ -1352,7 +1359,7 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y))))
               (<= (* (expt 2 (- p)) (abs qp))
                   (* (expt 2 (- p))
@@ -1377,9 +1384,9 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
-                   (q (near qp p)))
+                   (q (rne qp p)))
               (<= (abs (- q qp))
                   (* (expt 2 (- p))
                      (+ (* (/ a b) (1+ (* ep de)))
@@ -1398,7 +1405,7 @@
            (<= (abs (+ x y)) (+ a b)))
   :rule-classes ())
 
-(defthm refine-quotient-1
+(defthm quotient-refinement-1
   (implies (and (rationalp a)
                 (rationalp b)
                 (rationalp y)
@@ -1412,8 +1419,8 @@
                 (< b 2)
                 (<= (abs (- 1 (* b y))) ep)
                 (<= (abs (- 1 (* (/ b a) q0))) de))
-            (let* ((r (near (- a (* b q0)) p))
-                   (q (near (+ q0 (* r y)) p)))
+            (let* ((r (rne (- a (* b q0)) p))
+                   (q (rne (+ q0 (* r y)) p)))
               (<= (abs (- q (/ a b)))
                   (* (/ a b)
                      (+ (expt 2 (- p))
@@ -1422,8 +1429,8 @@
                         (* (expt 2 (- (* 2 p))) de (1+ ep)))))))
   :rule-classes ()
   :hints (("Goal" :use (rq-19 rq-22
-                        (:instance rq-23 (x (- (near (+ q0 (* (near (* a (v0 a b q0)) p) y)) p) (+ q0 (* (near (* a (v0 a b q0)) p) y))))
-                                         (y (- (+ q0 (* (near (* a (v0 a b q0)) p) y)) (/ a b)))
+                        (:instance rq-23 (x (- (rne (+ q0 (* (rne (* a (v0 a b q0)) p) y)) p) (+ q0 (* (rne (* a (v0 a b q0)) p) y))))
+                                         (y (- (+ q0 (* (rne (* a (v0 a b q0)) p) y)) (/ a b)))
                                          (a (* (expt 2 (- p)) (+ (* (/ a b) (1+ (* ep de))) (* (expt 2 (- p)) a de (/ (1+ ep) b)))))
                                          (b (+ (* (/ a b) ep de) (* (expt 2 (- p)) a de (/ (1+ ep) b))))))
                   :in-theory (e/d (v0) (abs)))))
@@ -1457,7 +1464,7 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y))))
               (<= (abs (- qp (/ a b)))
                   (* (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (/ a b)))))
@@ -1503,7 +1510,7 @@
                 (<= (abs (- 1 (* (/ b a) q0))) de))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (<= (abs (- qp (/ a b)))
@@ -1547,7 +1554,7 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (< (abs (- qp (/ a b)))
@@ -1573,7 +1580,7 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (< (abs (- qp (/ a b)))
@@ -1598,12 +1605,12 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
-                   (q (near qp p)))
+                   (q (rne qp p)))
               (<= (abs (- q qp)) (expt 2 (- (expo qp) p)))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance near-est (x (+ q0 (* (near (* a (v0 a b q0)) p) y))) (n p))))))
+  :hints (("Goal" :use ((:instance rne-diff (x (+ q0 (* (rne (* a (v0 a b q0)) p) y))) (n p))))))
 
 (local-defthm rq-32
   (implies (and (rationalp a)
@@ -1622,9 +1629,9 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
-                   (q (near qp p))
+                   (q (rne qp p))
                    (e (if (> a b) 0 -1)))
               (< (abs (- q (/ a b)))
                  (+ (expt 2 (- (expo qp) p))
@@ -1649,7 +1656,7 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (implies (<= (expt 2 (- (expo qp) p)) (expt 2 (- e p)))
@@ -1677,9 +1684,9 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
-                   (q (near qp p))
+                   (q (rne qp p))
                    (e (if (> a b) 0 -1)))
               (implies (<= (expt 2 (- (expo qp) p)) (expt 2 (- e p)))
                        (< (abs (- q (/ a b)))
@@ -1706,9 +1713,9 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
-                   (q (near qp p))
+                   (q (rne qp p))
                    (e (if (> a b) 0 -1)))
               (implies (<= (expt 2 (- (expo qp) p)) (expt 2 (- e p)))
                        (< (abs (- q (/ a b)))
@@ -1733,9 +1740,9 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
-                   (q (near qp p))
+                   (q (rne qp p))
                    (e (if (> a b) 0 -1)))
               (implies (<= (expo qp) e)
                        (< (abs (- q (/ a b)))
@@ -1761,7 +1768,7 @@
             (let* ((e (if (> a b) 0 -1)))
               (<= (expt 2 (- e p)) 1/2)))
   :rule-classes ()
-  :hints (("Goal" :use (:instance expo<= (x (+ q0 (* (near (* a (v0 a b q0)) p) y))) (n (if (> a b) 0 -1))))))
+  :hints (("Goal" :use (:instance expo<= (x (+ q0 (* (rne (* a (v0 a b q0)) p) y))) (n (if (> a b) 0 -1))))))
 
 (local-defthm rq-38
   (implies (and (rationalp x)
@@ -1779,7 +1786,7 @@
                 (rationalp ep)
                 (rationalp de)
                 (rationalp (/ a b))
-                (rationalp (+ q0 (* (near (* a (v0 a b q0)) p) y)))
+                (rationalp (+ q0 (* (rne (* a (v0 a b q0)) p) y)))
                 (not (zp p))
                 (<= 1 a)
                 (< a 2)
@@ -1790,12 +1797,12 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y))))
               (> qp 0)))
   :rule-classes ()
   :hints (("Goal" :use (r-exactp-3 rq-37 rq-30
-                        (:instance rq-38 (x (/ a b)) (y (+ q0 (* (near (* a (v0 a b q0)) p) y)))))
+                        (:instance rq-38 (x (/ a b)) (y (+ q0 (* (rne (* a (v0 a b q0)) p) y)))))
                   :in-theory (theory 'minimal-theory))))
 
 (local-defthm rq-40
@@ -1815,7 +1822,7 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y))))
               (> qp 0)))
   :rule-classes ()
@@ -1838,14 +1845,14 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (implies (> (expo qp) e)
                        (>= qp (expt 2 (1+ e))))))
   :rule-classes ()
   :hints (("Goal" :use (rq-40
-                        (:instance expo<= (x (+ q0 (* (near (* a (v0 a b q0)) p) y))) (n (if (> a b) 0 -1)))))))
+                        (:instance expo<= (x (+ q0 (* (rne (* a (v0 a b q0)) p) y))) (n (if (> a b) 0 -1)))))))
 
 (local-defthm rq-42
   (implies (and (rationalp a)
@@ -1864,7 +1871,7 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (implies (> (expo qp) e)
@@ -1898,7 +1905,7 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (implies (and (rationalp (abs (/ a b)))
@@ -1910,7 +1917,7 @@
   :rule-classes ()
   :hints (("Goal" :use (rq-24 rq-30
                         (:instance rq-43 (a (abs (/ a b)))
-                                         (b (abs (- (+ q0 (* (near (* a (v0 a b q0)) p) y)) (/ a b))))
+                                         (b (abs (- (+ q0 (* (rne (* a (v0 a b q0)) p) y)) (/ a b))))
                                          (x (expt 2 (1+ (if (> a b) 0 -1))))
                                          (y (expt 2 (- (if (> a b) 0 -1) p)))))
                   :in-theory (theory 'minimal-theory))))
@@ -1932,7 +1939,7 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (<= (+ (abs (/ a b)) (abs (- qp (/ a b))))
@@ -1957,7 +1964,7 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (implies (> (expo qp) e)
@@ -2025,7 +2032,7 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (implies (> (expo qp) e)
@@ -2050,16 +2057,16 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (implies (> (expo qp) e)
-                       (= (near qp p) (expt 2 (1+ e))))))
+                       (= (rne qp p) (expt 2 (1+ e))))))
   :rule-classes ()
   :hints (("Goal" :use (rq-49 rq-41
                         (:instance exactp-2**n (n (if (> a b) 1 0)) (m p))
-                        (:instance near-down (a (expt 2 (1+ (if (> a b) 0 -1))))
-                                             (x (+ q0 (* (near (* a (v0 a b q0)) p) y)))
+                        (:instance rne-down (a (expt 2 (1+ (if (> a b) 0 -1))))
+                                             (x (+ q0 (* (rne (* a (v0 a b q0)) p) y)))
                                              (n p))))))
 
 (local-defthm rq-51
@@ -2079,11 +2086,11 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (implies (> (expo qp) e)
-                       (<= (abs (- (near qp p) (/ a b)))
+                       (<= (abs (- (rne qp p) (/ a b)))
                            (abs (- qp (/ a b)))))))
   :rule-classes ()
   :hints (("Goal" :use (rq-50 rq-41 rq-24))))
@@ -2105,11 +2112,11 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
                    (e (if (> a b) 0 -1)))
               (implies (> (expo qp) e)
-                       (< (abs (- (near qp p) (/ a b)))
+                       (< (abs (- (rne qp p) (/ a b)))
                           (expt 2 (- (1+ e) p))))))
   :rule-classes ()
   :hints (("Goal" :use (rq-51 rq-30 rq-47)
@@ -2132,9 +2139,9 @@
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
             (let* ((v (v0 a b q0))
                    (rp (* a v))
-                   (r (near rp p))
+                   (r (rne rp p))
                    (qp (+ q0 (* r y)))
-                   (q (near qp p))
+                   (q (rne qp p))
                    (e (if (> a b) 0 -1)))
               (< (abs (- q (/ a b)))
                  (expt 2 (- (1+ e) p)))))
@@ -2142,7 +2149,7 @@
   :hints (("Goal" :use (rq-52 rq-36)
                   :in-theory (theory 'minimal-theory))))
 
-(defthm refine-quotient-2
+(defthm quotient-refinement-2
   (implies (and (rationalp a)
                 (rationalp b)
                 (rationalp y)
@@ -2157,8 +2164,8 @@
                 (<= (abs (- 1 (* b y))) ep)
                 (<= (abs (- 1 (* (/ b a) q0))) de)
                 (< (+ (* ep de) (* (expt 2 (- p)) de (1+ ep))) (expt 2 (- (1+ p)))))
-            (let* ((r (near (- a (* b q0)) p))
-                   (q (near (+ q0 (* r y)) p))
+            (let* ((r (rne (- a (* b q0)) p))
+                   (q (rne (+ q0 (* r y)) p))
                    (e (if (> a b) 0 -1)))
               (< (abs (- q (/ a b)))
                  (expt 2 (- (1+ e) p)))))

@@ -1,276 +1,22 @@
 (in-package "RTL")
 
-(include-book "../rel9-rtl-pkg/lib/top")
-
-(include-book "arithmetic-5/top" :dir :system)
+(include-book "util")
+(local (include-book "basic"))
+(include-book "float")
+(include-book "round")
+(local (include-book "arithmetic-5/top" :dir :system))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
-
-(in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
-                    |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
-
 #|
-Lemma(exactp-factors): Assume that x and y are k-exact for some k.  If xy is non-zero and p-exact, then so are x and y.
-
-Proof: Let m and n be the smallest integers such that x' = 2^n*x and y' = 2^m*y are integers.  Thus, x' and y' are odd.
-Since x, y, or x*y, respectively, is p-exact iff x', y', or x'*y' is p-exact, we may replace x and y with
-x' and y'.  That is, we may assume without loss of generality that x and y are odd integers.
-
-An odd integer z is p-exact iff |z| < 2^p.  Thus, since xy is p-exact, xy < 2^p, which implies x < 2^p and
-y < 2^p, and hence x and y are p-exact.
+(local (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
 |#
-
-(local-defun pow2 (n)
-  (if (or (zp n) (oddp n))
-      0
-    (1+ (pow2 (/ n 2)))))
-
-(local-defthmd pow2-oddp-1
-  (implies (integerp n)
-           (equal (expt 2 (1- n))
-                  (* 1/2 (expt 2 n))))
-  :hints (("Goal" :use ((:instance expt (r 2) (i n))
-                        (:instance expt (r 2) (i (1- n)))))))
-
-(local-defthm pow2-oddp
-  (implies (not (zp n))
-           (and (integerp (/ n (expt 2 (pow2 n))))
-                (oddp (/ n (expt 2 (pow2 n))))))
-  :rule-classes ()
-  :hints (("Subgoal *1/3" :use ((:instance pow2-oddp-1 (n (- (pow2 (/ n 2)))))))
-          ("Subgoal *1/2" :use ((:instance pow2-oddp-1 (n (- (pow2 (/ n 2)))))))))
-
-(local-defthm exactp-factors-1
-  (implies (and (integerp x) (integerp y))
-           (integerp (* x y)))
-  :rule-classes ())
-
-(local-defthm exactp-factors-2
-  (implies (and (integerp n) 
-                (oddp n)
-                (not (zp k)))
-           (not (integerp (/ n (expt 2 k)))))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance pow2-oddp-1 (n k))
-                        (:instance exactp-factors-1 (x (/ n (expt 2 k))) (y (expt 2 (1- k))))))))
-
-(local-defthm exactp-factors-3
-  (implies (and (integerp n)
-                (integerp k) 
-                (oddp n))
-           (iff (integerp (* (expt 2 k) n))
-                (>= k 0)))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance exactp-factors-2 (k (- k)))))))
-
-(local-defthm exactp-factors-4
-  (implies (and (integerp n)
-                (integerp k) 
-                (oddp n))
-           (iff (exactp n k)
-                (> k (expo n))))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance exactp-factors-3 (k (- (1- k) (expo n)))))
-                  :in-theory (enable exactp2))))
-
-(local-defthm exactp-factors-5
-  (implies (and (integerp x)
-                (integerp y) 
-                (oddp x)
-                (oddp y))
-           (>= (expo (* x y)) (expo x)))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance expo-monotone (y (* x y)))))))
-
-(local-defthm exactp-factors-6
-  (implies (integerp x)
-           (iff (oddp x) (= (mod x 2) 1)))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance fl-integerp (x (/ x 2)))
-                        (:instance mod-def (y 2))
-                        (:instance mod012 (m x)))
-                  :in-theory (disable fl-integerp))))
-
-(local-defthm exactp-factors-7
-  (implies (and (integerp x)
-                (integerp y) 
-                (oddp x)
-                (oddp y))
-           (oddp (* x y)))
-  :hints (("Goal" :use (exactp-factors-6
-                        (:instance exactp-factors-6 (x y))
-                        (:instance exactp-factors-6 (x (* x y)))
-                        (:instance mod-mod-times (n 2) (a x) (b y))))))
-
-(local-defthm exactp-factors-8
-  (implies (and (integerp x)
-                (integerp y) 
-                (oddp x)
-                (oddp y)
-                (integerp k)
-                (exactp (* x y) k))
-           (exactp x k))
-  :rule-classes ()
-  :hints (("Goal" :use (exactp-factors-5
-                        exactp-factors-7
-                        (:instance exactp-factors-4 (n (* x y)))
-                        (:instance exactp-factors-4 (n x))))))
-
-(local-defthm exactp-factors-9
-  (implies (and (rationalp x)
-                (rationalp y)
-                (integerp k)
-                (integerp n)
-                (not (zerop x))
-                (not (zerop y))
-                (exactp x k)
-                (exactp y k))
-           (let ((xp (/ (abs (* (expt 2 (- (1- k) (expo x))) x))
-                        (expt 2 (pow2 (abs (* (expt 2 (- (1- k) (expo x))) x))))))
-                 (yp (/ (abs (* (expt 2 (- (1- k) (expo y))) y))
-                        (expt 2 (pow2 (abs (* (expt 2 (- (1- k) (expo y))) y)))))))
-             (and (integerp xp)
-                  (oddp xp)
-                  (iff (exactp x n) (exactp xp n))
-                  (integerp yp)
-                  (oddp yp)
-                  (iff (exactp x n) (exactp xp n))
-                  (iff (exactp y n) (exactp yp n))
-                  (iff (exactp (* x y) n) (exactp (* xp yp) n)))))                  
-  :rule-classes ()
-  :hints (("Goal" :in-theory (enable exactp2)
-                  :use (exactp-minus
-                        (:instance exactp-minus (x y))
-                        (:instance exactp-minus (x (* x y)))
-                        (:instance exactp-shift (x (abs x)) (k (- (1- k) (+ (expo x) (pow2 (abs (* (expt 2 (- (1- k) (expo x))) x)))))))
-                        (:instance exactp-shift (x (abs y)) (k (- (1- k) (+ (expo y) (pow2 (abs (* (expt 2 (- (1- k) (expo y))) y)))))))
-                        (:instance exactp-shift (x (abs (* x y)))
-                                                (k (+ (- (1- k) (+ (expo x) (pow2 (abs (* (expt 2 (- (1- k) (expo x))) x)))))
-                                                   (- (1- k) (+ (expo y) (pow2 (abs (* (expt 2 (- (1- k) (expo y))) y))))))))
-                        (:instance pow2-oddp (n (abs (* (expt 2 (- (1- k) (expo x))) x))))
-                        (:instance pow2-oddp (n (abs (* (expt 2 (- (1- k) (expo y))) y))))))))
-
-(defthm exactp-factors
-  (implies (and (rationalp x)
-                (rationalp y)
-                (integerp k)
-                (integerp n)
-                (not (zerop x))
-                (not (zerop y))
-                (exactp x k)
-                (exactp y k)
-                (exactp (* x y) n))
-           (exactp x n))
-  :rule-classes ()
-  :hints (("Goal" :use (exactp-factors-9
-                        (:instance exactp-factors-8 (k n)
-                                                    (x (/ (abs (* (expt 2 (- (1- k) (expo x))) x))
-                                                          (expt 2 (pow2 (abs (* (expt 2 (- (1- k) (expo x))) x))))))
-                                                    (y (/ (abs (* (expt 2 (- (1- k) (expo y))) y))
-                                                          (expt 2 (pow2 (abs (* (expt 2 (- (1- k) (expo y))) y)))))))))))
-
-(defthmd trunc-squeeze
-  (implies (and (rationalp x)
-                (rationalp a)
-                (>= x a)
-                (> a 0)
-                (not (zp n))
-                (exactp a n)
-                (< x (fp+ a n)))
-           (equal (trunc x n) a))
-  :hints (("Goal" :use (trunc-exactp-c
-                        trunc-upper-pos
-                        (:instance fp+2 (x a) (y (trunc x n)))))))
-
-(defthmd away-squeeze
-  (implies (and (rationalp x)
-                (rationalp a)
-                (> x a)
-                (> a 0)
-                (not (zp n))
-                (exactp a n)
-                (<= x (fp+ a n)))
-           (equal (away x n) (fp+ a n)))
-  :hints (("Goal" :use (away-lower-pos
-                        (:instance fp+1 (x a))
-                        (:instance away-exactp-c (a (fp+ a n)))
-                        (:instance fp+2 (x a) (y (away x n)))))))
 
 (local-defthmd near-down-1
   (implies (and (integerp n) (integerp m))
            (= (expt 2 (+ 1 m n)) (* 2 (expt 2 (+ m n))))))
 
-(local-defthm near-down-2
-  (implies (and (rationalp x)
-                (rationalp a)
-                (>= x a)
-                (> a 0)
-                (not (zp n))
-                (exactp a n)
-                (< x (+ a (expt 2 (- (expo a) n)))))
-           (< (abs (- x a)) (abs (- x (+ a (expt 2 (- (1+ (expo a)) n)))))))
-  :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents)))))
-
-(defthmd near-down
-  (implies (and (rationalp x)
-                (rationalp a)
-                (>= x a)
-                (> a 0)
-                (not (zp n))
-                (exactp a n)
-                (< x (+ a (expt 2 (- (expo a) n)))))
-           (equal (near x n) a))
-  :hints (("Goal" :in-theory (disable acl2::EXPT-IS-INCREASING-FOR-BASE->-1)
-                  :use (near-down-2
-                        trunc-squeeze
-                        away-squeeze
-                        near-choice
-                        near1-a))))
-
-(local-defthm near-up-2
-  (implies (and (rationalp x)
-                (rationalp a)
-                (>= x a)
-                (> a 0)
-                (not (zp n))
-                (exactp a n)
-                (> x (+ a (expt 2 (- (expo a) n)))))
-           (> (abs (- x a)) (abs (- x (+ a (expt 2 (- (1+ (expo a)) n)))))))
-  :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents)))))
-
-(defthmd near-up
-  (implies (and (rationalp x)
-                (rationalp a)
-                (> a 0)
-                (not (zp n))
-                (exactp a n)
-                (< x (fp+ a n))
-                (> x (+ a (expt 2 (- (expo a) n)))))
-           (equal (near x n) (fp+ a n)))
-  :hints (("Goal" :in-theory (disable acl2::EXPT-IS-INCREASING-FOR-BASE->-1)
-                  :use (near-up-2
-                        trunc-squeeze
-                        away-squeeze
-                        near-choice
-                        near1-b))))
-
-(defthmd expo-fp-
-  (implies (and (rationalp x)
-                (> x 0)
-                (not (= x (expt 2 (expo x))))
-                (integerp n)
-                (> n 0)
-                (exactp x n))
-           (equal (expo (fp- x n)) (expo x)))
-  :hints (("Goal" :use (expo-lower-bound expo-upper-bound
-                        (:instance fp-2 (y (expt 2 (expo x))))
-                        (:instance exactp-2**n (n (expo x)) (m n))
-                        (:instance expo<= (x (fp- x n)) (n (expo x)))
-                        (:instance expo>= (x (fp- x n)) (n (expo x)))))))
-  
 (local-defthm r-exactp-1
   (implies (and (rationalp a)
                 (rationalp r)
@@ -2526,18 +2272,18 @@ y < 2^p, and hence x and y are p-exact.
                 (exactp q p)
                 (> (/ a b) q)
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p))))
-           (and (= (trunc (+ q (* (- a (* b q)) y)) p)
-                   (trunc (/ a b) p))
-                (= (inf (+ q (* (- a (* b q)) y)) p)
-                   (inf (/ a b) p))
-                (= (minf (+ q (* (- a (* b q)) y)) p)
-                   (minf (/ a b) p))))
+           (and (= (rtz (+ q (* (- a (* b q)) y)) p)
+                   (rtz (/ a b) p))
+                (= (rup (+ q (* (- a (* b q)) y)) p)
+                   (rup (/ a b) p))
+                (= (rdn (+ q (* (- a (* b q)) y)) p)
+                   (rdn (/ a b) p))))
   :rule-classes ()
   :hints (("Goal" :use (expo-q-10 r-pos-19 r-pos-34
-                        (:instance trunc-squeeze (x (/ a b)) (a q) (n p))
-                        (:instance trunc-squeeze (x (+ q (* (- a (* b q)) y))) (a q) (n p))
-                        (:instance away-squeeze (x (/ a b)) (a q) (n p))
-                        (:instance away-squeeze (x (+ q (* (- a (* b q)) y))) (a q) (n p))))))
+                        (:instance rtz-squeeze (x (/ a b)) (a q) (n p))
+                        (:instance rtz-squeeze (x (+ q (* (- a (* b q)) y))) (a q) (n p))
+                        (:instance raz-squeeze (x (/ a b)) (a q) (n p))
+                        (:instance raz-squeeze (x (+ q (* (- a (* b q)) y))) (a q) (n p))))))
 
 (local-defthm not-midpoint-1
   (implies (and (rationalp a)
@@ -3045,12 +2791,12 @@ y < 2^p, and hence x and y are p-exact.
                 (> (/ a b) q)
                 (< (/ a b) (+ q (expt 2 (- (expo q) p))))
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p))))
-           (= (near (+ q (* (- a (* b q)) y)) p)
-              (near (/ a b) p)))
+           (= (rne (+ q (* (- a (* b q)) y)) p)
+              (rne (/ a b) p)))
   :rule-classes ()
   :hints (("Goal" :use (expo-q-10 r-pos-19 r-pos-rne-34
-                        (:instance near-down (x (/ a b)) (a q) (n p))
-                        (:instance near-down (x (+ q (* (- a (* b q)) y))) (a q) (n p))))))
+                        (:instance rne-down (x (/ a b)) (a q) (n p))
+                        (:instance rne-down (x (+ q (* (- a (* b q)) y))) (a q) (n p))))))
 
 (local-defthm r-pos-rne-up-4
   (implies (and (rationalp a)
@@ -3525,12 +3271,12 @@ y < 2^p, and hence x and y are p-exact.
                 (> (/ a b) q)
                 (> (/ a b) (+ q (expt 2 (- (expo q) p))))
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p))))
-           (= (near (+ q (* (- a (* b q)) y)) p)
-              (near (/ a b) p)))
+           (= (rne (+ q (* (- a (* b q)) y)) p)
+              (rne (/ a b) p)))
   :rule-classes ()
   :hints (("Goal" :use (expo-q-10 r-pos-19 r-pos-rne-up-34
-                        (:instance near-up (x (/ a b)) (a q) (n p))
-                        (:instance near-up (x (+ q (* (- a (* b q)) y))) (a q) (n p))))))
+                        (:instance rne-up (x (/ a b)) (a q) (n p))
+                        (:instance rne-up (x (+ q (* (- a (* b q)) y))) (a q) (n p))))))
 
 (local-defthm r-pos-rnd
   (implies (and (rationalp a)
@@ -3550,11 +3296,11 @@ y < 2^p, and hence x and y are p-exact.
                 (exactp q p)
                 (> (/ a b) q)
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p)))
-                (ieee-mode-p mode))
+                (ieee-rounding-mode-p mode))
            (= (rnd (+ q (* (- a (* b q)) y)) mode p)
               (rnd (/ a b) mode p)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable rnd ieee-mode-p)
+  :hints (("Goal" :in-theory (enable rnd ieee-rounding-mode-p)
                   :use (not-midpoint r-pos-rne-down r-pos-rne-up r-pos-directed))))
 
 (local-defthm q-not-expo-q
@@ -4051,21 +3797,21 @@ y < 2^p, and hence x and y are p-exact.
                 (exactp q p)
                 (< (/ a b) q)
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p))))
-           (and (= (trunc (+ q (* (- a (* b q)) y)) p)
-                   (trunc (/ a b) p))
-                (= (inf (+ q (* (- a (* b q)) y)) p)
-                   (inf (/ a b) p))
-                (= (minf (+ q (* (- a (* b q)) y)) p)
-                   (minf (/ a b) p))))
+           (and (= (rtz (+ q (* (- a (* b q)) y)) p)
+                   (rtz (/ a b) p))
+                (= (rup (+ q (* (- a (* b q)) y)) p)
+                   (rup (/ a b) p))
+                (= (rdn (+ q (* (- a (* b q)) y)) p)
+                   (rdn (/ a b) p))))
   :rule-classes ()
   :hints (("Goal" :use (expo-q-10 r-neg-19 r-neg-34 q-not-expo-q
                         (:instance exactp-fp- (x q) (n p))
                         (:instance fp--non-negative (x q) (n p))
                         (:instance expo-fp- (x q) (n p)) 
-                        (:instance trunc-squeeze (x (/ a b)) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))
-                        (:instance trunc-squeeze (x (+ q (* (- a (* b q)) y))) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))
-                        (:instance away-squeeze (x (/ a b)) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))
-                        (:instance away-squeeze (x (+ q (* (- a (* b q)) y))) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))))))
+                        (:instance rtz-squeeze (x (/ a b)) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))
+                        (:instance rtz-squeeze (x (+ q (* (- a (* b q)) y))) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))
+                        (:instance raz-squeeze (x (/ a b)) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))
+                        (:instance raz-squeeze (x (+ q (* (- a (* b q)) y))) (a (- q (expt 2 (- (1+ (expo q)) p)))) (n p))))))
 
 (local-defthm not-midpoint-down-1
   (implies (and (rationalp a)
@@ -4596,16 +4342,16 @@ y < 2^p, and hence x and y are p-exact.
                 (< (/ a b) q)
                 (> (/ a b) (- q (expt 2 (- (expo q) p))))
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p))))
-           (= (near (+ q (* (- a (* b q)) y)) p)
-              (near (/ a b) p)))
+           (= (rne (+ q (* (- a (* b q)) y)) p)
+              (rne (/ a b) p)))
   :rule-classes ()
   :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents))
                   :use (expo-q-10 r-neg-19 r-neg-rne-34 q-not-expo-q
                         (:instance fp--non-negative (x q) (n p))
                         (:instance exactp-fp- (x q) (n p))
                         (:instance expo-fp- (x q) (n p))
-                        (:instance near-up (x (/ a b)) (a (fp- q p)) (n p))
-                        (:instance near-up (x (+ q (* (- a (* b q)) y))) (a (fp- q p)) (n p))))))
+                        (:instance rne-up (x (/ a b)) (a (fp- q p)) (n p))
+                        (:instance rne-up (x (+ q (* (- a (* b q)) y))) (a (fp- q p)) (n p))))))
 
 (local-defthm r-neg-rne-up-4
   (implies (and (rationalp a)
@@ -5064,16 +4810,16 @@ y < 2^p, and hence x and y are p-exact.
                 (exactp q p)
                 (< (/ a b) (- q (expt 2 (- (expo q) p))))
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p))))
-           (= (near (+ q (* (- a (* b q)) y)) p)
-              (near (/ a b) p)))
+           (= (rne (+ q (* (- a (* b q)) y)) p)
+              (rne (/ a b) p)))
   :rule-classes ()
   :hints (("Goal" :in-theory (e/d (near-down-1) (acl2::normalize-factors-gather-exponents))
                   :use (expo-q-10 r-neg-19 r-neg-rne-up-34 q-not-expo-q
                         (:instance fp--non-negative (x q) (n p))
                         (:instance exactp-fp- (x q) (n p))
                         (:instance expo-fp- (x q) (n p))
-                        (:instance near-down (x (/ a b)) (a (fp- q p)) (n p))
-                        (:instance near-down (x (+ q (* (- a (* b q)) y))) (a (fp- q p)) (n p))))))
+                        (:instance rne-down (x (/ a b)) (a (fp- q p)) (n p))
+                        (:instance rne-down (x (+ q (* (- a (* b q)) y))) (a (fp- q p)) (n p))))))
 
 (local-defthm r-neg-rnd
   (implies (and (rationalp a)
@@ -5093,11 +4839,11 @@ y < 2^p, and hence x and y are p-exact.
                 (exactp q p)
                 (< (/ a b) q)
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p)))
-                (ieee-mode-p mode))
+                (ieee-rounding-mode-p mode))
            (= (rnd (+ q (* (- a (* b q)) y)) mode p)
               (rnd (/ a b) mode p)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable rnd ieee-mode-p)
+  :hints (("Goal" :in-theory (enable rnd ieee-rounding-mode-p)
                   :use (not-midpoint-down r-neg-rne-down r-neg-rne-up r-neg-directed))))
 
 (local-defthm r-rnd-1
@@ -5117,7 +4863,7 @@ y < 2^p, and hence x and y are p-exact.
                 (rationalp q)
                 (exactp q p)
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p)))
-                (ieee-mode-p mode))
+                (ieee-rounding-mode-p mode))
            (= (rnd (+ q (* (- a (* b q)) y)) mode p)
               (rnd (/ a b) mode p)))
   :rule-classes ()
@@ -5142,7 +4888,7 @@ y < 2^p, and hence x and y are p-exact.
                   (rationalp q)
                   (exactp q p)
                   (< (abs (- (/ a b) q)) (expt 2 (- (1+ e) p)))
-                  (ieee-mode-p mode))
+                  (ieee-rounding-mode-p mode))
              (= (rnd (+ q (* r y)) mode p)
                 (rnd (/ a b) mode p))))
   :rule-classes ()
@@ -5165,7 +4911,7 @@ y < 2^p, and hence x and y are p-exact.
                 (rationalp q)
                 (exactp q p)
                 (< (abs (- (/ a b) q)) (expt 2 (- (1+ (expo (/ a b))) p)))
-                (ieee-mode-p mode))
+                (ieee-rounding-mode-p mode))
            (= (rnd (+ q (* (- a (* b q)) y)) mode p)
               (rnd (/ a b) mode p)))
   :rule-classes ()
@@ -5190,7 +4936,7 @@ y < 2^p, and hence x and y are p-exact.
   :hints (("Goal" :use  ((:instance r-rnd-3 (s 1))
                          (:instance r-rnd-3 (s q) (q 1))))))
 
-(defthm markstein
+(defthm markstein-lemma
   (let ((e (if (> a b) 0 -1))
         (r (- a (* b q))))
     (implies (and (rationalp a)
@@ -5208,7 +4954,7 @@ y < 2^p, and hence x and y are p-exact.
                   (exactp q p)
                   (< (abs (- 1 (* b y))) (/ (expt 2 p)))            
                   (< (abs (- (/ a b) q)) (expt 2 (- (1+ e) p)))
-                  (ieee-mode-p mode))
+                  (ieee-rounding-mode-p mode))
              (= (rnd (+ q (* r y)) mode p)
                 (rnd (/ a b) mode p))))
   :rule-classes ()
