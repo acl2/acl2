@@ -49,7 +49,7 @@ shape-specs) in an easy way.  Here is an example:</p>
                 (:nat opcode 8)             ; g-number with indices 0-8
                 (:int multiplier 16)        ; g-number with indices 9-25
                 (:bool enable)              ; g-boolean with index 26
-                (:mix (:nat a-bus 128)      ; }  g-numbers whose indicies
+                (:mix (:nat a-bus 128)      ; }  g-numbers whose indices
                       (:nat b-bus 128)      ; }  are interleaved, 27 to 414
                       (:nat c-bus 128))     ; }
                 (:nat fixup-bits 4)         ; g-number with indices 415-420
@@ -63,7 +63,7 @@ shape-specs) in an easy way.  Here is an example:</p>
 <li>you don't have to think about sign bits and do a bunch of stupid arithmetic
 to figure out the next free index, and</li>
 
-<li>you can painlessly etend the bindings when you want to add a new variable
+<li>you can painlessly extend the bindings when you want to add a new variable
 without having to update a bunch of indices.</li>
 
 </ul>
