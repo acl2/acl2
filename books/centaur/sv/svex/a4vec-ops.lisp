@@ -529,6 +529,63 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (4vec-xdet (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-xdet lognot)))))
 
+(define a4vec-mask-check ((mask 4vmask-p)
+                          (idx natp)
+                          (vec "aig list")
+                          (upperp booleanp))
+  :returns (already-maskedp booleanp)
+  :measure (len vec)
+  (b* (((mv first rest endp) (gl::first/rest/end vec))
+       ((when endp)
+        (or (equal (4vmask-fix mask) -1)
+            (equal first (mbe :logic (acl2::bool-fix upperp) :exec upperp)))))
+    (and (or (logbitp idx (4vmask-fix mask))
+             (equal first (mbe :logic (acl2::bool-fix upperp) :exec upperp)))
+         (a4vec-mask-check mask (1+ (lnfix idx)) rest upperp)))
+  ///
+  (local (in-theory (disable bitops::logcdr-natp acl2::logtail-identity
+                             bitops::logbitp-when-bitmaskp
+                             bitops::logand-with-negated-bitmask
+                             bitops::logtail-natp)))
+
+  (local (defthmd logtail-in-terms-of-logbitp
+           (equal (logtail idx x)
+                  (logcons (bool->bit (logbitp idx x)) (logtail idx (logcdr x))))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))
+           :rule-classes ((:definition :controller-alist ((acl2::logtail$inline t t))
+                           :clique acl2::logtail$inline))))
+  (local
+   (defthm a4vec-mask-check-correct-lemma
+     (implies (a4vec-mask-check mask idx vec upperp)
+              (and (implies upperp
+                            (equal (logior (lognot (logtail idx (4vmask-fix mask)))
+                                           (aig-list->s vec env))
+                                   (aig-list->s vec env)))
+                   (implies (not upperp)
+                            (equal (logand (logtail idx (4vmask-fix mask))
+                                           (aig-list->s vec env))
+                                   (aig-list->s vec env)))))
+     :hints(("Goal" :in-theory (enable* aig-list->s aig-logior-ss aig-i2v
+                                        bitops::ihsext-recursive-redefs)
+             :induct (a4vec-mask-check mask idx vec upperp)
+             :expand ((:with logtail-in-terms-of-logbitp
+                       (LOGTAIL IDX (4VMASK-FIX mask))))
+             ))
+     :rule-classes nil))
+
+  (defthmd a4vec-mask-check-correct
+    (and (implies (a4vec-mask-check mask 0 vec t)
+                  (equal (logior (lognot (4vmask-fix mask)) (aig-list->s vec env))
+                         (aig-list->s vec env)))
+         (implies (a4vec-mask-check mask 0 vec nil)
+                  (equal (logand (4vmask-fix mask) (aig-list->s vec env))
+                         (aig-list->s vec env))))
+    :hints (("goal" :use ((:instance a4vec-mask-check-correct-lemma
+                           (idx 0) (upperp t))
+                          (:instance a4vec-mask-check-correct-lemma
+                           (idx 0) (upperp nil)))))))
+
 
 (define a4vec-mask ((mask 4vmask-p)
                     (x a4vec-p))
@@ -536,16 +593,24 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
   :returns (masked-a4vec a4vec-p)
   ;; We need to set any irrelevant bits to X (upper=1, lower=0).
   (b* (((a4vec x))
-       (care     (4vmask-fix mask))
-       (dontcare (lognot care))
-       (dc-aigs  (aig-i2v dontcare)))
-    (a4vec (aig-logior-ss dc-aigs x.upper)
-           (aig-logandc1-ss dc-aigs x.lower)))
+       (mask     (4vmask-fix mask))
+       ((when (and (a4vec-mask-check mask 0 x.upper t)
+                   (a4vec-mask-check mask 0 x.lower nil)))
+        (a4vec-fix x))
+       (dontcare (lognot mask))
+       (dc-aigs  (aig-i2v dontcare))
+       (ans (a4vec (aig-logior-ss dc-aigs x.upper)
+                   (aig-logandc1-ss dc-aigs x.lower)))
+       ;; (- (if (equal ans x)
+       ;;        (acl2::sneaky-incf 'same 1)
+       ;;      (acl2::sneaky-incf 'diff 1)))
+       )
+    ans)
   ///
   (defthm a4vec-mask-correct
     (equal (a4vec-eval (a4vec-mask mask x) env)
            (4vec-mask mask (a4vec-eval x env)))
-    :hints(("Goal" :in-theory (enable 4vec-mask)))))
+    :hints(("Goal" :in-theory (enable 4vec-mask a4vec-mask-check-correct)))))
 
 
 (define a4vec-uminus ((x a4vec-p))
