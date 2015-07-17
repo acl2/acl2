@@ -306,8 +306,7 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
                               (bfr-mode (lambda () t))
                               . ,subst))))
                    (and stable-under-simplificationp
-                        '(:in-theory (enable* defsymbolic-aig-functions
-                                              sv::aig-list->s
+                        '(:in-theory (enable* sv::aig-list->s
                                               sv::aig-list->u))))))
        (local (in-theory (disable ,exec-name)))
        (local (add-to-ruleset defsymbolic-aig-functions ,exec-name)))))
@@ -321,20 +320,24 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
       subst)))
 
 (defmacro sv::aig-ite-bvv (c v1 v0)
-  `(let ((sv::aig-ite-bvv-test ,c))
-     (if sv::aig-ite-bvv-test
-         (if (eq sv::aig-ite-bvv-test t)
-             ,v1
-           (sv::aig-ite-bvv-fn sv::aig-ite-bvv-test ,v1 ,v0))
-       ,v0)))
+  `(mbe :logic (sv::aig-ite-bvv-fn ,c ,v1 ,v0)
+        :exec
+        (let ((sv::aig-ite-bvv-test ,c))
+          (if sv::aig-ite-bvv-test
+              (if (eq sv::aig-ite-bvv-test t)
+                  (list-fix ,v1)
+                (sv::aig-ite-bvv-fn-aux sv::aig-ite-bvv-test ,v1 ,v0))
+            (list-fix ,v0)))))
 
 (defmacro sv::aig-ite-bss (c v1 v0)
-  `(let ((sv::aig-ite-bss-test ,c))
-     (if sv::aig-ite-bss-test
-         (if (eq sv::aig-ite-bss-test t)
-             ,v1
-           (sv::aig-ite-bss-fn sv::aig-ite-bss-test ,v1 ,v0))
-       ,v0)))
+  `(mbe :logic (sv::aig-ite-bss-fn ,c ,v1 ,v0)
+        :exec
+        (let ((sv::aig-ite-bss-test ,c))
+          (if sv::aig-ite-bss-test
+              (if (eq sv::aig-ite-bss-test t)
+                  (list-fix ,v1)
+                (sv::aig-ite-bss-fn sv::aig-ite-bss-test ,v1 ,v0))
+            (list-fix ,v0)))))
 
 
 (local (defmacro no-op-event (&rest args)
@@ -371,25 +374,61 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
                          (sv::aig-ite sv::aig-ite-x-do-not-use-elsewhere
                                         ,y ,z))))))))
 
+(defconst *defsymbolic-aig-subst*
+  '((bfr-list->u    . sv::aig-list->u)
+    (bfr-list->s    . sv::aig-list->s)
+    (bfr-ite-fn     . acl2::aig-ite-fn)
+    (bfr-ite        . acl2::aig-ite)
+    (bfr-eval       . acl2::aig-eval)
+    (bfr-binary-and . acl2::aig-and)
+    (bfr-binary-or  . acl2::aig-or)
+    (bfr-and        . acl2::aig-and)
+    (bfr-or         . acl2::aig-or)
+    (bfr-not        . acl2::aig-not)
+    (bfr-xor        . acl2::aig-xor)
+    (bfr-iff        . acl2::aig-iff)
+    (bfr-nor        . acl2::aig-nor)
+    (bfr-nand       . acl2::aig-nand)
+    (bfr-andc1      . acl2::aig-andc1)
+    (bfr-andc2      . acl2::aig-andc2)
+    (add-bfr-pat    . no-op-event)))
+
 (encapsulate nil
   (make-event
-   (cons 'progn
+   (b* ((table (table-alist 'defsymbolic-forms (w state)))
+        (tail-after-bfr-ite-bss
+         (member-equal (assoc 'bfr-ite-bss-fn table) table))
+        (events1 
          (defsymbolic-aig-table-events
-           (table-alist 'defsymbolic-forms (w state)) nil
-           '((bfr-list->u    . sv::aig-list->u)
-             (bfr-list->s    . sv::aig-list->s)
-             (bfr-ite-fn     . acl2::aig-ite-fn)
-             (bfr-ite        . acl2::aig-ite)
-             (bfr-eval       . acl2::aig-eval)
-             (bfr-binary-and . acl2::aig-and)
-             (bfr-binary-or  . acl2::aig-or)
-             (bfr-and        . acl2::aig-and)
-             (bfr-or         . acl2::aig-or)
-             (bfr-not        . acl2::aig-not)
-             (bfr-xor        . acl2::aig-xor)
-             (bfr-iff        . acl2::aig-iff)
-             (bfr-nor        . acl2::aig-nor)
-             (bfr-nand       . acl2::aig-nand)
-             (bfr-andc1      . acl2::aig-andc1)
-             (bfr-andc2      . acl2::aig-andc2)
-             (add-bfr-pat    . no-op-event))))))
+           tail-after-bfr-ite-bss
+           nil
+           *defsymbolic-aig-subst*))
+        (events2 
+         '((defthm aig-ite-bss-fn-of-const-tests
+             (and (equal (sv::aig-ite-bss-fn t v1 v0) (list-fix v1))
+                  (equal (sv::aig-ite-bss-fn nil v1 v0) (list-fix v0)))
+             :hints(("Goal" :in-theory (enable sv::aig-ite-bss-fn))))
+
+           (defthm aig-ite-bss-fn-aux-elim
+             (implies (and (not (equal c t))
+                           c)
+                      (equal (sv::aig-ite-bss-fn-aux c v1 v0)
+                             (sv::aig-ite-bss-fn c v1 v0)))
+             :hints(("Goal" :in-theory (enable sv::aig-ite-bss-fn))))
+           (defthm aig-ite-bvv-fn-of-const-tests
+             (and (equal (sv::aig-ite-bvv-fn t v1 v0) (list-fix v1))
+                  (equal (sv::aig-ite-bvv-fn nil v1 v0) (list-fix v0)))
+             :hints(("Goal" :in-theory (enable sv::aig-ite-bvv-fn))))
+
+           (defthm aig-ite-bvv-fn-aux-elim
+             (implies (and (not (equal c t))
+                           c)
+                      (equal (sv::aig-ite-bvv-fn-aux c v1 v0)
+                             (sv::aig-ite-bvv-fn c v1 v0)))
+             :hints(("Goal" :in-theory (enable sv::aig-ite-bvv-fn))))))
+        (head-before-bfr-ite-bss (take (- (len table) (len tail-after-bfr-ite-bss)) table))
+        (events3
+         (defsymbolic-aig-table-events
+           head-before-bfr-ite-bss
+           nil *defsymbolic-aig-subst*)))
+     (cons 'progn (append events1 events2 events3)))))

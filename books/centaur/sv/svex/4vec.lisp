@@ -1259,11 +1259,19 @@ unfloat then/else values."
         (4vec-fix then))
        ;; otherwise, test is X
        ((4vec then))
-       ((4vec else))
-       (same-bits (logand (logeqv then.upper else.upper)
-                          (logeqv then.lower else.lower))))
-    (4vec (logior (lognot same-bits) then.upper)
-          (logand same-bits then.lower)))
+       ((4vec else)))
+    ;; Truth table for case where test is X:
+    ;; e\t   1  0  X  Z --> upper:     lower:
+    ;; 1     1  X  X  X     1 1 1 1    1 0 0 0
+    ;; 0     X  0  X  X     1 0 1 1    0 0 0 0
+    ;; X     X  X  X  X     1 1 1 1    0 0 0 0
+    ;; Z     X  X  X  X     1 1 1 1    0 0 0 0
+    (4vec ;; upper is set if then and else are true, or if either is Z or X -- meaning,
+     ;; if they're not both false.
+     (logior then.upper else.upper then.lower else.lower)
+     ;; lower is set if then and else are true, otherwise not -- 
+     (logand then.upper else.upper then.lower else.lower)))
+
   ///
   (deffixequiv 3vec-?))
 
@@ -1289,14 +1297,9 @@ implementations behave in hardware, e.g., and/or style muxes.</p>
 @('then') and @('else'), setting each bit of the result to:</p>
 
 <ul>
-  <li>Xes in bit positions where @('then') and @('else') are unequal, or</li>
-  <li>The agreed upon value, otherwise.</li>
-</ul>
-
-<p><b>BUG (issue 384)</b>.  To agree with the Verilog and SystemVerilog
-semantics, this merging should unfloat any Z values in @('then') and @('else')
-into Xes.  We don't currently do this.  BOZO update the docs when this issue
-gets fixed.</p>"
+  <li>Xes in bit positions where @('then') and @('else') are unequal or both Z, or</li>
+  <li>The agreed upon Boolean value, otherwise.</li>
+</ul>"
 
   (3vec-? (3vec-fix test) then else)
   ///
@@ -1322,21 +1325,36 @@ test vector; doesn't unfloat then/else values."
 
   :long "<p>See @(see 4vec-bit?).  This is identical except that we assume
 @('tests') has no Z bits.</p>"
-  ;; (~tests.upper & elses.upper) | (tests.lower & thens.upper) | (elses!=thens | thens.upper)
-  ;; (~tests.upper & elses.lower) | (tests.lower & thens.lower) | (elses==thens & thens.lower)
+  ;; ~test.upper --> false
+  ;; test.lower --> true
+  ;; otherwise x.
+  ;;
+  ;; ans upper:
+  ;; (~tests.upper & elses.upper)       ;; test is false --> else
+  ;;   | (tests.lower & thens.upper)    ;; test is true --> then
+  ;;   | ( (tests.upper & ~tests.lower)   ;; test is X --> merge
+  ;;        & (elses.upper | thens.upper | elses.lower | thens.lower)
+  ;;        )
+  ;;
+  ;; ans lower:
+  ;; (~tests.upper & elses.lower)       ;; test is false --> else
+  ;;   | (tests.lower & thens.lower)    ;; test is true --> then
+  ;;   | ( (tests.upper & ~tests.lower)   ;; test is X --> merge
+  ;;        & elses.upper & thens.upper & elses.lower & thens.lower )
   (b* (((4vec tests))
        ((4vec thens))
        ((4vec elses))
-       (same (logand (logeqv thens.upper elses.upper)
-                     (logeqv thens.lower elses.lower))))
+       (test-x (logand tests.upper (lognot tests.lower))))
     (4vec (logior (logand (lognot tests.upper) elses.upper)
                   (logand tests.lower thens.upper)
-                  (logand tests.upper (lognot tests.lower)
-                          (logior (lognot same) thens.upper)))
+                  (logand test-x
+                          (logior (logior thens.upper thens.lower)
+                                  (logior elses.upper elses.lower))))
           (logior (logand (lognot tests.upper) elses.lower)
                   (logand tests.lower thens.lower)
-                  (logand tests.upper (lognot tests.lower)
-                          (logand same thens.lower)))))
+                  (logand test-x
+                          (logand thens.upper thens.lower)
+                          (logand elses.upper elses.lower)))))
   ///
   (defthm 3vec-?-in-terms-of-3vec-bit?
     (implies (3vec-p tests)
@@ -1399,18 +1417,6 @@ affect this operation and update the docs accordingly once it's fixed.</p>"
 
 ;; ---------- BOZO could generally use better documentation below here ---------
 
-;; BOZO maybe should become a type like 2vecnatp?
-;; BOZO document me
-(define 4vec-index-p ((x 4vec-p))
-  (and (2vec-p x)
-       (<= 0 (2vec->val x)))
-  ///
-  (defthm 4vec-index-p-implies
-    (implies (4vec-index-p x)
-             (and (equal (4vec->lower x) (4vec->upper x))
-                  (<= 0 (4vec->lower x))))
-    :rule-classes :forward-chaining)
-  (deffixequiv 4vec-index-p))
 
 
 (define 4vec-override ((stronger 4vec-p)

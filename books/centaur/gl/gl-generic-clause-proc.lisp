@@ -42,6 +42,7 @@
 (include-book "clause-processors/decomp-hint" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
 (include-book "constraint-db-deps")
+(include-book "defsort/duplicated-members" :dir :system)
 (local (include-book "gl-generic-interp"))
 (local (include-book "general-object-thms"))
 (local (include-book "hyp-fix"))

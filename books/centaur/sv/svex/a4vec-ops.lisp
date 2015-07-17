@@ -734,6 +734,232 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
     :hints(("Goal" :in-theory (enable 4vec-=== bool->vec)))))
 
 
+(define a4vec-wildeq-bit ((au "aig")
+                          (al)
+                          (bu)
+                          (bl))
+  :returns (mv (wildeq-p-upper "aig")
+               (wildeq-p-lower "aig"))
+  (b* ((bz (aig-and (aig-not bu) bl))
+       ((when (eq bz t))
+        ;; If B is definitely Z then we return true.
+        (mv t t))
+       (bx (aig-and bu (aig-not bl)))
+       ((when (eq bx t))
+        ;; If B is definitely X, then we return X (and that means B is not Z,
+        ;; so we don't need to consider that.)
+        (mv t nil))
+       (axz (aig-xor au al))
+       ((when (eq axz t))
+        ;; If A is definitely X or Z:
+        ;;  if B is Z, then we still return true
+        ;;  otherwise we return X.
+        (mv t bz))
+       (a=b (aig-iff au bu)))
+    (mv (aig-or
+         ;; We're taking care of the cases where A or B are X or Z
+         ;; elsewhere, so it suffices to just compare the uppers.
+         a=b
+         
+         (aig-or bz  ;; Ans is T, so upper set.
+                 bx  ;; Ans it X, so upper set
+                 )
+         axz ;; Ans is X, so upper set
+         )
+        (aig-or
+         (aig-and
+          ;; We're taking care of the cases where A or B are X or Z
+          ;; elsewhere, so it suffices to just compare the uppers.
+          a=b
+          (aig-not bx)  ;; Don't set lower if Ans X.
+          (aig-not axz) ;; Don't set lower if Ans X.
+          )
+         bz ;; Ans is T, so lower set
+         )))
+  ///
+  (defthmd a4vec-wildeq-bit-eval
+    (b* (((mv upper lower) (a4vec-wildeq-bit a.upper a.lower b.upper b.lower)))
+      (and (equal (aig-eval upper env)
+                  (or (iff (aig-eval a.upper env)
+                           (aig-eval b.upper env))
+                      (and (not (aig-eval b.upper env))
+                           (aig-eval b.lower env))
+                      (and (aig-eval b.upper env)
+                           (not (aig-eval b.lower env)))
+                      (xor (aig-eval a.upper env)
+                           (aig-eval a.lower env))))
+           (equal (aig-eval lower env)
+                  (or (and (iff (aig-eval a.upper env)
+                                (aig-eval b.upper env))
+                           (not (and (aig-eval b.upper env)
+                                     (not (aig-eval b.lower env))))
+                           (iff (aig-eval a.upper env)
+                                (aig-eval a.lower env)))
+                      (and (not (aig-eval b.upper env))
+                           (aig-eval b.lower env))))))
+    :hints ((and stable-under-simplificationp
+                 '(:use ((:instance acl2::aig-eval-and
+                           (x (aig-not b.upper))
+                           (y b.lower) (env env))
+                         (:instance acl2::aig-eval-and
+                           (x b.upper)
+                           (y (aig-not b.lower)) (env env))
+                         (:instance acl2::aig-eval-xor
+                          (x a.upper) (y a.lower) (env env)))
+                   :in-theory (disable acl2::aig-eval-and
+                                       acl2::aig-eval-xor))))))
+           
+         
+       
+    
+    
+       
+(define and4 (a b c d)
+  (and a b c d)
+  ///
+  (defthm and4-forward
+    (implies (and4 a b c d)
+             (and a b c d))
+    :rule-classes :forward-chaining))
+
+
+(define a4vec-wildeq-aux ((a.upper "aig list")
+                          (a.lower "aig list")
+                          (b.upper "aig list")
+                          (b.lower "aig list"))
+  :measure (+ (len b.upper) (len b.lower) (len a.upper) (len a.lower))
+  :returns (mv (wildeq-p-upper "aig")
+               (wildeq-p-lower "aig"))
+  :hints(("Goal" :in-theory (enable and4)))
+  :guard-hints (("goal" :in-theory (enable and4)))
+  (b* (((mv buf bur buend) (gl::first/rest/end b.upper))
+       ((mv blf blr blend) (gl::first/rest/end b.lower))
+       ;; ((when (and buend blend (eq buf nil) (eq blf t)))
+       ;;  ;; Ends in Zs out to infinity.
+       ;;  (mv t t))
+       ((mv auf aur auend) (gl::first/rest/end a.upper))
+       ((mv alf alr alend) (gl::first/rest/end a.lower))
+
+       ((mv upper1 lower1) (a4vec-wildeq-bit auf alf buf blf))
+       ((when (mbe :logic (and4 buend blend auend alend)
+                   :exec (and buend blend auend alend)))
+        (mv upper1 lower1)))
+    (mbe :logic
+         (b* (((mv upper-rest lower-rest)
+               (a4vec-wildeq-aux aur alr bur blr)))
+           (mv (aig-and upper1 upper-rest)
+               (aig-and lower1 lower-rest)))
+         :exec
+         (b* (((when (and (eq upper1 nil) (eq lower1 nil)))
+               ;; short circuit
+               (mv nil nil))
+              ((mv upper-rest lower-rest)
+               (a4vec-wildeq-aux aur alr bur blr)))
+           (mv (aig-and upper1 upper-rest)
+               (aig-and lower1 lower-rest)))))
+
+  ///
+  ;; (local (defthm 4vec-wildeq-expand
+  ;;          (equal (4vec-wildeq (4vec (aig-list->s a.upper env)
+  ;;                                    (aig-list->s a.lower env))
+  ;;                              (4vec (aig-list->s b.upper env)
+  ;;                                    (aig-list->s b.lower env)))
+  ;;                 (
+
+  (local (defthm aig-list->s-when-endp
+           (implies (gl::s-endp x)
+                    (equal (aig-list->s x env)
+                           (bool->vec (aig-eval (car x) env))))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defthm s-endp-when-singleton
+           (gl::s-endp (list x))
+           :hints(("Goal" :in-theory (enable gl::s-endp)))))
+
+  (local (defthm a4vec-wildeq-bit-correct
+           (b* (((mv upper lower) (a4vec-wildeq-bit a b c d)))
+             (and (iff (aig-eval upper env)
+                       (equal -1 (4vec->upper
+                                  (4vec-wildeq (4vec (bool->vec (aig-eval a env))
+                                                     (bool->vec (aig-eval b env)))
+                                               (4vec (bool->vec (aig-eval c env))
+                                                     (bool->vec (aig-eval d env)))))))
+                  (iff (aig-eval lower env)
+                       (equal -1 (4vec->lower
+                                  (4vec-wildeq (4vec (bool->vec (aig-eval a env))
+                                                     (bool->vec (aig-eval b env)))
+                                               (4vec (bool->vec (aig-eval c env))
+                                                     (bool->vec (aig-eval d env)))))))))
+           :hints(("Goal" :in-theory (e/d (4vec-wildeq
+                                           4vec-bitxor 3vec-bitnot
+                                           3vec-bitor 3vec-reduction-and
+                                           a4vec-wildeq-bit-eval bool->vec)
+                                          (not xor iff))))))
+
+
+                              
+
+  (local (defthmd 4vec-wildeq-expand
+           (equal (4vec-wildeq (4vec a b) (4vec c d))
+                  (4vec (bool->vec
+                         (and (equal -1 (4vec->upper (4vec-wildeq (4vec (bool->vec (logbitp 0 a))
+                                                                        (bool->vec (logbitp 0 b)))
+                                                                  (4vec (bool->vec (logbitp 0 c))
+                                                                        (bool->vec (logbitp 0 d))))))
+                              (equal -1 (4vec->upper (4vec-wildeq (4vec (logcdr a)
+                                                                        (logcdr b))
+                                                                  (4vec (logcdr c)
+                                                                        (logcdr d)))))))
+                        (bool->vec
+                         (and (equal -1 (4vec->lower (4vec-wildeq (4vec (bool->vec (logbitp 0 a))
+                                                                        (bool->vec (logbitp 0 b)))
+                                                                  (4vec (bool->vec (logbitp 0 c))
+                                                                        (bool->vec (logbitp 0 d))))))
+                              (equal -1 (4vec->lower (4vec-wildeq (4vec (logcdr a)
+                                                                        (logcdr b))
+                                                                  (4vec (logcdr c)
+                                                                        (logcdr d)))))))))
+           :hints(("Goal" :in-theory (enable 4vec-wildeq 3vec-bitnot 4vec-bitxor
+                                             3vec-bitor 3vec-reduction-and bool->vec
+                                             bitops::logand**
+                                             bitops::logxor**
+                                             bitops::logior**
+                                             bitops::lognot**
+                                             bitops::logbitp**)))))
+                         
+  (local (defthm logbitp-0-of-aig-list->s
+           (equal (logbitp 0 (aig-list->s x env))
+                  (aig-eval (car x) env))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defthm logcdr-of-aig-list->s
+           (equal (logcdr (aig-list->s x env))
+                  (aig-list->s (gl::scdr x) env))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defcong iff equal (bool->vec x) 1))
+
+  (local (defthm bool->vec-equal-neg-1
+           (iff (equal -1 (bool->vec a))
+                a)))
+
+  (defthm a4vec-wildeq-aux-correct
+    (b* (((mv ans.upper ans.lower) (a4vec-wildeq-aux a.upper a.lower b.upper b.lower)))
+      (equal (a4vec-eval (a4vec (list ans.upper) (list ans.lower)) env)
+             (4vec-wildeq (4vec (aig-list->s a.upper env)
+                                (aig-list->s a.lower env))
+                          (4vec (aig-list->s b.upper env)
+                                (aig-list->s b.lower env)))))
+    :hints (("Goal" :induct (a4vec-wildeq-aux a.upper a.lower b.upper b.lower)
+             :do-not '(generalize fertilize eliminate-destructors))
+            (and stable-under-simplificationp
+                 '(:use ((:instance 4vec-wildeq-expand
+                          (a (aig-list->s a.upper env))
+                          (b (aig-list->s a.lower env))
+                          (c (aig-list->s b.upper env))
+                          (d (aig-list->s b.lower env)))))))))
+
+
 (define a4vec-wildeq ((a a4vec-p) (b a4vec-p))
   :short "Symbolic version of @(see 4vec-wildeq)."
   :returns (res a4vec-p)
@@ -741,9 +967,9 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
   ;; better exploit laziness.
   (b* (((a4vec a))
        ((a4vec b))
-       (eq    (a3vec-bitnot (a3vec-bitxor (a3vec-fix a) (a3vec-fix b))))
-       (zmask (aig-logandc1-ss b.upper b.lower)))
-    (a3vec-reduction-and (a3vec-bitor eq (a4vec zmask zmask))))
+       ((mv ans.upper ans.lower)
+        (a4vec-wildeq-aux a.upper a.lower b.upper b.lower)))
+    (a4vec (list ans.upper) (list ans.lower)))
   ///
   (defthm a4vec-wildeq-correct
     (equal (a4vec-eval (a4vec-wildeq a b) env)
@@ -814,6 +1040,19 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (4vec-parity (a4vec-eval x env)))
     :hints(("Goal" :in-theory (enable 4vec-parity bool->vec)))))
 
+(define aig-iszero-s (a)
+  :short "Determines whether a signed vector of AIGs is equal to 0."
+  :returns (res "aig")
+  (b* (((mv first rest end) (gl::first/rest/end a))
+       ((when end) (aig-not first)))
+    (aig-and (aig-not first)
+             (aig-iszero-s rest)))
+  ///
+  (defthm aig-iszero-s-correct
+    (equal (aig-eval (aig-iszero-s a) env)
+           (equal (aig-list->s a env) 0))
+    :hints(("Goal" :in-theory (enable aig-list->s)))))
+
 
 (define a3vec-? ((x a4vec-p)
                  (y a4vec-p)
@@ -821,65 +1060,61 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                  (z a4vec-p)
                  z3p)
   :short "Symbolic version of @(see 3vec-?)."
-  :long "<p><b>BOZO</b> we will probably need to update this when we fix Bug 384.</p>"
   :returns (res a4vec-p)
 
-;; (~a.1 &  c.1) |
-;; ( a.0 &  b.1) |
-;; ( (a.1 & ~a.0) & (   ( b.1 | c.1 )
-;;                    | (   ~( b.0 &  c.0)
-;;                         & ( b.0 | c.0 ) ) ) ) ) )
+  ;; ~test.upper --> false
+  ;; test.lower --> true
+  ;; otherwise x.
+  ;;
+  ;; ans upper:
+  ;; ( ( testfalse & elses.upper)       ;; test is false --> else
+  ;;   | ( testtrue & thens.upper) )    ;; test is true --> then
+  ;; | ( (~testfalse & ~testtrue)
+  ;;      & (elses.upper | thens.upper | elses.lower | thens.lower)
+  ;;      )
+  ;;
+  ;; ans lower:
+  ;; ( testfalse & elses.lower)       ;; test is false --> else
+  ;;   | ( testtrue & thens.lower)    ;; test is true --> then
+  ;;   | ( (~testfalse & ~testtrue)
+  ;;        & elses.upper & thens.upper & elses.lower & thens.lower )
 
-;; (~a.1 &  c.0) |
-;; ( a.0 &  b.0) |
-;; ( (a.1 & ~a.0) & (   ( b.0 & c.0 )
-;;                    & (   ~( b.1 |  c.1)
-;;                         | ( b.1 & c.1 ) ) ) ) ) )
-
-;; This reduces nicely when a is known and when known Boolean.
-
-;; When b and c are both known 3vec, then the a=x portion reduces to:
-;; ( (a.1 & ~a.0) & ( b.1 | c.1 )
-;; ( (a.1 & ~a.0) & ( b.0 & c.0 )
-
-;; when e.g. just b is known Boolean, it reduces to:
-;; ( (a.1 & ~a.0) & ( ( b.1 | c.1 ) | c.0 )
-;; ( (a.1 & ~a.0) & ( ( b.0 & c.0 ) & c.1 )
 
   (b* (((a4vec a) x)
        ((a4vec b) y)
        ((a4vec c) z)
        ;; common subexpressions between the two
-       (a=1 (aig-not (aig-=-ss a.lower nil)))
-       (a=0 (aig-=-ss a.upper nil))
+       (a=1 (aig-not (aig-iszero-s a.lower)))
+       (a=0 (aig-iszero-s a.upper))
        (a=x (aig-nor a=1 a=0))
-       (b1vc1 (aig-logior-ss b.upper c.upper))
-       (b0^c0 (aig-logand-ss b.lower c.lower))
 
        ;; upper
        (boolcase (aig-logior-ss (aig-ite-bss-fn a=1 b.upper nil)
                                 (aig-ite-bss-fn a=0 c.upper nil)))
-       (xcase (cond ((and y3p z3p) b1vc1)
-                    (y3p (aig-logior-ss b1vc1 c.lower))
-                    (z3p (aig-logior-ss b1vc1 b.lower))
-                    (t (aig-logior-ss b1vc1
-                                      (aig-logandc1-ss b0^c0
-                                                       (aig-logior-ss b.lower c.lower))))))
-       (upper (aig-logior-ss boolcase
-                             (aig-ite-bss-fn a=x xcase nil)))
+       (upper (aig-logior-ss
+               boolcase
+               (aig-ite-bss a=x
+                            (aig-logior-ss (if z3p
+                                               c.upper ;; implied by c.lower
+                                             (aig-logior-ss c.upper c.lower))
+                                           (if y3p
+                                               b.upper ;; implied by b.lower
+                                             (aig-logior-ss b.upper b.lower)))
+                            nil)))
 
        ;; lower
        (boolcase (aig-logior-ss (aig-ite-bss-fn a=1 b.lower nil)
                                 (aig-ite-bss-fn a=0 c.lower nil)))
-       (xcase (cond ((and y3p z3p) b0^c0)
-                    (y3p (aig-logand-ss b0^c0 c.upper))
-                    (z3p (aig-logand-ss b0^c0 b.upper))
-                    (t (aig-logand-ss b0^c0
-                                      (aig-logior-ss
-                                       (aig-lognot-s b1vc1)
-                                       (aig-logand-ss b.upper c.upper))))))
-       (lower (aig-logior-ss boolcase
-                             (aig-ite-bss-fn a=x xcase nil))))
+       (lower (aig-logior-ss
+               boolcase
+               (aig-ite-bss a=x
+                            (aig-logand-ss (if z3p
+                                               c.lower ;; implies c.upper
+                                             (aig-logand-ss c.upper c.lower))
+                                           (if y3p
+                                               b.lower ;; implies b.upper
+                                             (aig-logand-ss b.upper b.lower)))
+                            nil))))
     (a4vec upper lower))
   ///
   (local (in-theory (disable iff not acl2::zip-open)))
@@ -899,6 +1134,8 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                              bitops::logior-<-0-linear-1
                              bitops::lognot-<-const
                              acl2::aig-env-lookup)))
+
+
   (defthm a3vec-?-correct
     (implies (and (case-split (implies y3p (3vec-p (a4vec-eval y env))))
                   (case-split (implies z3p (3vec-p (a4vec-eval z env))))
@@ -908,47 +1145,41 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                             (a4vec-eval y env)
                             (a4vec-eval z env))))
     :hints(("Goal" :in-theory (enable 3vec-? 3vec-p))
-           (bitops::logbitp-reasoning)
-           (and stable-under-simplificationp
-                '(:bdd (:vars nil))))))
+           (bitops::logbitp-reasoning))))
 
 (define a3vec-bit? ((x a4vec-p)
                     (y a4vec-p)
                     y3p
                     (z a4vec-p)
                     z3p)
+  :ignore-ok t :irrelevant-formals-ok t
   :short "Symbolic version of @(see a3vec-bit?)."
-  :long "<p><b>BOZO</b> we will probably need to update this when we fix Bug 384.</p>"
   :returns (res a4vec-p)
   (b* (((a4vec a) x)
        ((a4vec b) y)
        ((a4vec c) z)
-       ;; common subexpressions between the two
-       (b1vc1 (aig-logior-ss b.upper c.upper))
-       (b0^c0 (aig-logand-ss b.lower c.lower))
        (a=x   (aig-logandc2-ss a.upper a.lower))
        ;; upper
        (boolcase (aig-logior-ss (aig-logand-ss a.lower b.upper)
                                 (aig-logandc1-ss a.upper c.upper)))
-       (xcase (cond ((and y3p z3p) b1vc1)
-                    (y3p (aig-logior-ss b1vc1 c.lower))
-                    (z3p (aig-logior-ss b1vc1 b.lower))
-                    (t (aig-logior-ss b1vc1
-                                      (aig-logandc1-ss b0^c0
-                                                       (aig-logior-ss b.lower c.lower))))))
+       (xcase (aig-logior-ss (if z3p
+                                 c.upper ;; implied by c.lower
+                               (aig-logior-ss c.upper c.lower))
+                             (if y3p
+                                 b.upper ;; implied by b.lower
+                               (aig-logior-ss b.upper b.lower))))
        (upper (aig-logior-ss boolcase
                              (aig-logand-ss a=x xcase)))
 
        ;; lower
        (boolcase (aig-logior-ss (aig-logand-ss a.lower b.lower)
                                 (aig-logandc1-ss a.upper c.lower)))
-       (xcase (cond ((and y3p z3p) b0^c0)
-                    (y3p (aig-logand-ss b0^c0 c.upper))
-                    (z3p (aig-logand-ss b0^c0 b.upper))
-                    (t (aig-logand-ss b0^c0
-                                      (aig-logior-ss
-                                       (aig-lognot-s b1vc1)
-                                       (aig-logand-ss b.upper c.upper))))))
+       (xcase (aig-logand-ss (if z3p
+                                 c.lower ;; implies c.upper
+                               (aig-logand-ss c.upper c.lower))
+                             (if y3p
+                                 b.lower ;; implies b.upper
+                               (aig-logand-ss b.upper b.lower))))
        (lower (aig-logior-ss boolcase
                              (aig-logand-ss a=x xcase))))
     (a4vec upper lower))
