@@ -2079,7 +2079,7 @@ obviously 2-vectors.</p>"
        (vars (hons-copy (ec-call (svarlist-fix (cdr (assoc :vars symbolic-params))))))
        (x (if (cdr (assoc :simplify symbolic-params))
               (svexlist-rewrite-fixpoint-memo x)
-            x))
+            (hons-copy x)))
        ;; Syntax checking...
        (keys (alist-keys env))
        (keys (mbe :logic (set::mergesort keys)
@@ -2087,12 +2087,13 @@ obviously 2-vectors.</p>"
        (svars (mbe :logic (set::mergesort vars)
                    :exec (if (set::setp vars) vars (set::mergesort vars))))
        (env (make-fast-alist env))
-       (svars (mbe :logic (union keys svars)
-                   :exec (if (set::subset keys svars)
-                             svars
-                           (if (eq svars nil)
-                               keys
-                             (union keys svars)))))
+       (svars (hons-copy
+               (mbe :logic (union keys svars)
+                    :exec (if (set::subset keys svars)
+                              svars
+                            (if (eq svars nil)
+                                keys
+                              (union keys svars))))))
        (boolmasks (make-fast-alist
                    (hons-copy
                     (ec-call
