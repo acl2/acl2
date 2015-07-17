@@ -31,12 +31,16 @@
 (in-package "SV")
 (include-book "context-alist")
 (include-book "rsh-concat")
+(include-book "eval")
+(include-book "vars")
 (defxdoc concat-rw.lisp :parents (svex-rewriting))
 (local (xdoc::set-default-parents svex-rewrite.lisp))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
+(local (include-book "std/lists/sets" :dir :system))
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
 
-(std::add-default-post-define-hook :fix)
+(local (std::add-default-post-define-hook :fix))
 
 (local (defthm 2vec-of-4vec->lower
            (implies (2vec-p x)
@@ -158,6 +162,12 @@
                       (svexlist-count (cddr (svex-call->args x))))))
     :rule-classes :linear)
   
+  (defret vars-of-svex-normalize-concatenation
+    (implies (and (not (member v (svex-vars first)))
+                  (not (member v (svex-vars rest))))
+             (not (member v (svex-vars new-concat))))
+    :hints(("Goal" :in-theory (enable svexlist-vars))))
+
   (verify-guards svex-normalize-concatenation))
 
 (defines svex-normalize-concats-aux
@@ -201,7 +211,8 @@
                            (svex-eval x env)))
            :hints(("Goal" :in-theory (enable svex-eval)))))
 
-  (local (in-theory (disable svex-eval-when-fncall)))
+  (local (in-theory (disable svex-eval-when-fncall
+                             svex-vars-when-call)))
 
   (defthm-svex-normalize-concats-aux-flag
     (defthm svex-normalize-concats-aux-correct
@@ -220,6 +231,30 @@
       :hints ('(:expand ((svexlist-normalize-concats-aux x ctxalist))))
       :flag svexlist-normalize-concats-aux))
 
+  (local (defthm svexlist-vars-of-svex-call->args
+           (implies (And (not (member v (svex-vars x)))
+                         (svex-case x :call))
+                    (not (member v (svexlist-vars (svex-call->args x)))))
+           :hints(("Goal" :in-theory (enable svex-vars-when-call)))))
+
+  (local (acl2::use-trivial-ancestors-check))
+
+  (defthm-svex-normalize-concats-aux-flag
+    (defthm vars-of-svex-normalize-concats-aux
+      (implies (not (member v (svex-vars x)))
+               (not (member v (svex-vars (svex-normalize-concats-aux x ctxalist)))))
+      :hints ('(:expand ((svex-normalize-concats-aux x ctxalist)
+                         (svex-vars x)
+                         (svexlist-vars (svex-call->args x))
+                         (svexlist-vars (cdr (svex-call->args x)))
+                         (svexlist-vars (cddr (svex-call->args x))))))
+      :flag svex-normalize-concats-aux)
+    (defthm vars-of-svexlist-normalize-concats-aux
+      (implies (not (member v (svexlist-vars x)))
+               (not (member v (svexlist-vars (svexlist-normalize-concats-aux x ctxalist)))))
+      :hints ('(:expand ((svexlist-normalize-concats-aux x ctxalist))))
+      :flag svexlist-normalize-concats-aux))
+
   (memoize 'svex-normalize-concats-aux))
 
 (define svex-normalize-concats ((x svex-p))
@@ -231,18 +266,92 @@
     res)
   ///
   (defret svex-normalize-concats-correct
-    (equal (svex-eval new-x env) (svex-eval x env))))
+    (equal (svex-eval new-x env) (svex-eval x env)))
 
-(define svexlist-normalize-concats ((x svexlist-p))
+  (defret vars-of-svex-normalize-concats
+    (implies (not (member v (svex-vars x)))
+             (not (member v (svex-vars new-x))))))
+
+(define svexlist-normalize-concats ((x svexlist-p) &key (verbosep 'nil))
   :returns (new-x (and (svexlist-p new-x) (equal (len new-x) (len x))))
-  (b* ((ctxalist (svexlist-make-top-context-alist x nil))
-       (res (svexlist-normalize-concats-aux x ctxalist)))
+  (b* ((- (and verbosep (cw "opcount before norm-concats: ~x0~%" (svexlist-opcount x))))
+       (ctxalist (time$ (svexlist-make-top-context-alist x nil)
+                        :mintime 1
+                        :msg "; norm-concats: context alist: ~st sec, ~sa bytes~%"))
+       (res (time$ (svexlist-normalize-concats-aux x ctxalist)
+                   :mintime 1
+                   :msg "; norm-concats main: ~st sec, ~sa bytes~%")))
     (clear-memoize-table 'svex-normalize-concats-aux)
     (fast-alist-free ctxalist)
+    (and verbosep (cw "opcount after norm-concats: ~x0~%" (svexlist-opcount x)))
     res)
   ///
   (defret svexlist-normalize-concats-correct
-    (equal (svexlist-eval new-x env) (svexlist-eval x env))))
+    (equal (svexlist-eval new-x env) (svexlist-eval x env)))
+
+  (defret vars-of-svexlist-normalize-concats
+    (implies (not (member v (svexlist-vars x)))
+             (not (member v (svexlist-vars new-x))))))
+
+(define svex-alist-normalize-concats ((x svex-alist-p) &key (verbosep 'nil))
+  :returns (new-x svex-alist-p)
+  (pairlis$ (svex-alist-keys x)
+            (svexlist-normalize-concats (svex-alist-vals x) :verbosep verbosep))
+  ///
+  (fty::deffixequiv svex-alist-normalize-concats)
+
+  (local (defthm svex-alist-eval-redef
+           (equal (svex-alist-eval x env)
+                  (pairlis$ (svex-alist-keys x)
+                            (svexlist-eval (svex-alist-vals x) env)))
+           :hints(("Goal" :in-theory (enable svexlist-eval
+                                             svex-alist-keys
+                                             svex-alist-vals
+                                             svex-alist-eval
+                                             pairlis$)))))
+
+  (defthm svex-alist-normalize-concats-correct
+    (equal (svex-alist-eval (svex-alist-normalize-concats x :verbosep verbosep) env)
+           (svex-alist-eval x env))
+    :hints (("goal" :use ((:instance svexlist-normalize-concats-correct
+                           (x (svex-alist-vals x))))
+             :in-theory (disable svexlist-normalize-concats-correct))
+            (acl2::witness)))
+
+  (local (defthm len-of-pairlis$
+           (equal (len (pairlis$ x y))
+                  (len x))))
+
+  (local (defthm len-of-svex-alist-keys
+           (Equal (len (svex-alist-keys x))
+                  (len (svex-alist-fix x)))
+           :hints(("Goal" :in-theory (enable svex-alist-fix
+                                             svex-alist-keys)))))
+
+  (defthm len-of-svex-alist-normalize-concats
+    (equal (len (svex-alist-normalize-concats x :Verbosep verbosep))
+           (len (svex-alist-fix x))))
+
+  (local (defthm svex-alist-vars-in-terms-of-vals
+           (equal (svex-alist-vars x)
+                  (svexlist-vars (svex-alist-vals x)))
+           :hints(("Goal" :in-theory (enable svex-alist-vars
+                                             svexlist-vars
+                                             svex-alist-vals)))))
+  (defthm svex-lookup-in-pairlis$
+    (implies (equal (len x) (len y))
+             (iff (svex-lookup v (pairlis$ x y))
+                  (member (svar-fix v) (svarlist-fix x))))
+    :hints(("Goal" :in-theory (enable svex-lookup svarlist-fix pairlis$))))
+
+  (defthm vars-of-svex-alist-normalize-concats
+    (implies (not (member v (svex-alist-vars x)))
+             (not (member v (svex-alist-vars (svex-alist-normalize-concats x :verbosep verbosep))))))
+
+  (defthm keys-of-svex-alist-normalize-concats
+    (iff (svex-lookup v (svex-alist-normalize-concats x :verbosep verbosep))
+         (svex-lookup v x))))
+
 
 
       

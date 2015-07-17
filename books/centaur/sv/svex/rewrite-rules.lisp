@@ -3240,6 +3240,12 @@
 (make-event `(defconst *svex-rewrite-table*
                ',(table-alist 'svex-rewrite (w state))))
 
+#||
+(loop for pair in sv::*svex-rewrite-table* do
+      (loop for fn in (cdr pair) do
+            (unless (memoizedp-raw fn) (profile-fn fn))))
+||#
+
 (defmacro svex-rewrite-cases (mask fn args localp)
   `(case ,fn
      . ,(svex-rewrite-fn-cases *svex-rewrite-table* mask args localp)))

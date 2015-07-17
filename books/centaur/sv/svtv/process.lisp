@@ -522,7 +522,10 @@
                   :mintime 1))
 
        (outexprs (if simplify
-                     (svex-alist-rewrite-fixpoint outexprs)
+                     (svex-alist-normalize-concats
+                      (svex-alist-rewrite-fixpoint
+                       outexprs :verbosep t)
+                      :verbosep t)
                    outexprs))
 
        ;; Compute the masks for the input/output varaiables.
@@ -969,7 +972,7 @@ defined with @(see sv::defsvtv).</p>"
                         parents
                         short
                         long
-                        simplify) ;; should this be t by default?
+                        (simplify 't)) ;; should this be t by default?
   (b* (((unless (xor design mod))
         (er hard? 'defsvtv "DEFSVTV: Must provide either :design or :mod (interchangeable), but not both.~%")))
     `(make-event (defsvtv-fn ',name ,inputs ,overrides ,outputs ,internals
@@ -1123,6 +1126,39 @@ then additional xdoc will also be generated to show a timing diagram.
                 25 (str::hexify (4vec->lower (cdar al))))))
      (svtv-print-alist (cdr al)))))
 
+(define svtv-print-alist-readable-aux ((al svex-env-p) firstp)
+  (if (atom al)
+      nil
+    (progn$
+     (and (mbt (consp (car al)))
+          (progn$
+           (if firstp
+               (cw " ((")
+             (cw "  ("))
+           (if (2vec-p (cdar al))
+               (fmt-to-comment-window
+                "~x0 ~t1. ~s2)"
+                (pairlis2 '(#\0 #\1 #\2 #\3 #\4
+                            #\5 #\6 #\7 #\8 #\9)
+                          (list (caar al) 23 (str::hexify (2vec->val (cdar al)))))
+                3 nil)
+             (progn$
+              (fmt-to-comment-window
+               "~x0   ~t1~s2         ;; non-Boolean mask: ~s3~%"
+               (pairlis2 '(#\0 #\1 #\2 #\3 #\4
+                           #\5 #\6 #\7 #\8 #\9)
+                         (list (caar al) 25 (str::hexify (4vec->upper (cdar al)))
+                               (str::hexify (logxor (4vec->upper (cdar al))
+                                                    (4vec->lower (cdar al))))))
+               3 nil)
+              (cw "       ~t0. ~s1)" 23 (str::hexify (4vec->lower (cdar al))))))
+           (if (consp (cdr al))
+               (cw "~%")
+             (cw ")~%"))))
+     (svtv-print-alist-readable-aux (cdr al) nil))))
+
+(define svtv-print-alist-readable ((al svex-env-p))
+  (svtv-print-alist-readable-aux al t))
 
 
 
@@ -1132,7 +1168,9 @@ then additional xdoc will also be generated to show a timing diagram.
                   &key
                   ((skip "List of output names that should NOT be computed")   'nil)
                   ((boolvars "For symbolic execution, assume inputs are Boolean-valued") 't)
-                  ((quiet "Don't print inputs/outputs")  'nil))
+                  ((simplify "For symbolic execution, apply svex rewriting to the SVTV") 'nil)
+                  ((quiet "Don't print inputs/outputs")  'nil)
+                  ((readable "Print input/output alists readably") 't))
   :parents (svex-stvs)
   :short "Run an SVTV and get the outputs."
   :long "
@@ -1177,15 +1215,22 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                                        (mergesort skip))))
                (acl2::fal-extract outkeys svtv.outexprs)))
        (res
-        (svex-alist-eval-with-vars outs (alist-keys svtv.inmasks)
-                                   boolmasks
-                                   inalist)))
+        (mbe :logic (svex-alist-eval-for-symbolic outs
+                                                  inalist
+                                                  `((:vars . ,(alist-keys svtv.inmasks))
+                                                    (:boolmasks . ,boolmasks)
+                                                    (:simplify . ,simplify)))
+             :exec (svex-alist-eval outs inalist))))
     (clear-memoize-table 'svex-eval)
     (and (not quiet)
          (progn$ (cw "~%SVTV Inputs:~%")
-                 (svtv-print-alist inalist)
+                 (if readable
+                     (svtv-print-alist-readable inalist)
+                   (svtv-print-alist inalist))
                  (cw "~%STV Outputs:~%")
-                 (svtv-print-alist res)
+                 (if readable
+                     (svtv-print-alist-readable res)
+                   (svtv-print-alist res))
                  (cw "~%")))
     res)
   ///
@@ -1194,12 +1239,19 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
   (defmacro stv-run-fn (&rest args) (cons 'acl2::svtv-run-fn args))
   (add-macro-alias stv-run-fn acl2::svtv-run-fn)
 
-  (defthm svtv-run-normalize-boolvars/quiet
+  (defthm svtv-run-normalize-irrelevant-inputs
     (implies (syntaxp (not (and (equal boolvars ''t)
-                                (equal quiet ''nil))))
-             (equal (svtv-run svtv inalist :skip skip :boolvars boolvars :quiet quiet)
+                                (equal quiet ''nil)
+                                (equal simplify ''nil)
+                                (equal readable ''t))))
+             (equal (svtv-run svtv inalist
+                              :skip skip
+                              :boolvars boolvars
+                              :simplify simplify
+                              :quiet quiet
+                              :readable readable)
                     (svtv-run svtv inalist :skip skip)))
-    :hints(("Goal" :in-theory (enable svex-alist-eval-with-vars))))
+    :hints(("Goal" :in-theory (enable svex-alist-eval-for-symbolic))))
 
   (local (defthm alistp-of-svex-alist-eval
            (alistp (Svex-alist-eval x env))
@@ -1272,7 +1324,8 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                                    &key
                                    (boolvars 't)
                                    (skip 'nil)
-                                   (quiet 'nil))
+                                   (quiet 'nil)
+                                   (simplify 'nil))
   :prepwork ((local (in-theory (enable svarlist-fix))))
   (b* (((svtv svtv) svtv)
        (inalist (ec-call (svex-env-fix$inline inalist)))
@@ -1289,9 +1342,13 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
        (othervars (svexlist-collect-vars (svex-alist-vals outs)))
        (othervars-env (pairlis$ othervars (replicate (len othervars) 0)))
        (othervars-boolmasks (pairlis$ othervars (replicate (len othervars) -1)))
-       (res (svex-alist-eval-with-vars outs (append (alist-keys svtv.inmasks) othervars)
-                               (append boolmasks othervars-boolmasks)
-                               (append (svex-env-fix inalist) othervars-env))))
+       (res (mbe :logic (svex-alist-eval-for-symbolic
+                         outs
+                         (append (svex-env-fix inalist) othervars-env)
+                         `((:vars .  ,(append (alist-keys svtv.inmasks) othervars))
+                           (:boolmasks . ,(append boolmasks othervars-boolmasks))
+                           (:simplify . ,simplify)))
+                 :exec (svex-alist-eval outs (append (svex-env-fix inalist) othervars-env)))))
     (and (not quiet)
          (progn$ (cw "~%SVTV Inputs:~%")
                  (svtv-print-alist inalist)

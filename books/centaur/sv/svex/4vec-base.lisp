@@ -413,3 +413,15 @@ fast), if so executes @('2vec-body'), and otherwise executes
 
 
 
+;; BOZO maybe should become a type like 2vecnatp?
+;; BOZO document me
+(define 4vec-index-p ((x 4vec-p))
+  (and (2vec-p x)
+       (<= 0 (2vec->val x)))
+  ///
+  (defthm 4vec-index-p-implies
+    (implies (4vec-index-p x)
+             (and (equal (4vec->lower x) (4vec->upper x))
+                  (<= 0 (4vec->lower x))))
+    :rule-classes :forward-chaining)
+  (deffixequiv 4vec-index-p))

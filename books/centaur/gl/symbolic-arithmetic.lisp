@@ -358,9 +358,9 @@ for computing:</p>
      (mbe :logic (mv (car a) (cdr a))
           :exec (if (atom a) (mv nil nil) (mv (car a) (cdr a))))))
 
-(defsymbolic bfr-ite-bvv-fn ((c b) ;; name c, type b (boolean)
-                             (v1 u) ;; unsigned
-                             (v0 u))
+(defsymbolic bfr-ite-bvv-fn-aux ((c b) ;; name c, type b (boolean)
+                                 (v1 u) ;; unsigned
+                                 (v0 u))
   :returns (vv u (if c v1 v0))
   :abstract nil
   :measure (+ (acl2-count v1) (acl2-count v0))
@@ -368,23 +368,47 @@ for computing:</p>
         nil)
        ((mv v11 v1r) (car/cdr v1))
        ((mv v01 v0r) (car/cdr v0))
-       (tail (bfr-ite-bvv-fn c v1r v0r))
+       (tail (bfr-ite-bvv-fn-aux c v1r v0r))
        (head (bfr-ite c v11 v01)))
     (bfr-ucons head tail)))
 
+(defsymbolic bfr-ite-bvv-fn ((c b) ;; name c, type b (boolean)
+                             (v1 u) ;; unsigned
+                             (v0 u))
+  :returns (vv u (if c v1 v0))
+  :abstract nil
+  (if c
+      (if (eq c t)
+          (list-fix v1)
+        (bfr-ite-bvv-fn-aux c v1 v0))
+    (list-fix v0)))
+
+(defthm bfr-ite-bvv-fn-of-const-tests
+  (and (equal (bfr-ite-bvv-fn t v1 v0) (list-fix v1))
+       (equal (bfr-ite-bvv-fn nil v1 v0) (list-fix v0)))
+  :hints(("Goal" :in-theory (enable bfr-ite-bvv-fn))))
+
+(defthm bfr-ite-bvv-fn-aux-elim
+  (implies (and (not (equal c t))
+                c)
+           (equal (bfr-ite-bvv-fn-aux c v1 v0)
+                  (bfr-ite-bvv-fn c v1 v0)))
+  :hints(("Goal" :in-theory (enable bfr-ite-bvv-fn))))
+
 (defmacro bfr-ite-bvv (c v1 v0)
-  `(let ((bfr-ite-bvv-test ,c))
-     (if bfr-ite-bvv-test
-         (if (eq bfr-ite-bvv-test t)
-             ,v1
-           (bfr-ite-bvv-fn bfr-ite-bvv-test ,v1 ,v0))
-       ,v0)))
+  `(mbe :logic (bfr-ite-bvv-fn ,c ,v1 ,v0)
+        :exec (let ((bfr-ite-bvv-test ,c))
+                (if bfr-ite-bvv-test
+                    (if (eq bfr-ite-bvv-test t)
+                        (list-fix ,v1)
+                      (bfr-ite-bvv-fn-aux bfr-ite-bvv-test ,v1 ,v0))
+                  (list-fix ,v0)))))
 
 (add-macro-alias bfr-ite-bvv bfr-ite-bvv-fn)
 
-(defsymbolic bfr-ite-bss-fn ((c  b) ;; name c, type b (boolean)
-                             (v1 s) ;; signed
-                             (v0 s))
+(defsymbolic bfr-ite-bss-fn-aux ((c  b) ;; name c, type b (boolean)
+                                 (v1 s) ;; signed
+                                 (v0 s))
   :returns (vv s (if c v1 v0))
   :abstract nil
   :measure (+ (acl2-count v1) (acl2-count v0))
@@ -392,17 +416,41 @@ for computing:</p>
        ((mv head0 tail0 end0) (first/rest/end v0))
        ((when (and end1 end0))
         (bfr-sterm (bfr-ite-fn c head1 head0)))
-       (rst (bfr-ite-bss-fn c tail1 tail0))
+       (rst (bfr-ite-bss-fn-aux c tail1 tail0))
        (head (bfr-ite c head1 head0)))
     (bfr-scons head rst)))
 
+(defsymbolic bfr-ite-bss-fn ((c  b) ;; name c, type b (boolean)
+                             (v1 s) ;; signed
+                             (v0 s))
+  :returns (vv s (if c v1 v0))
+  :abstract nil
+  (if c
+      (if (eq c t)
+          (list-fix v1)
+        (bfr-ite-bss-fn-aux c v1 v0))
+    (list-fix v0)))
+
+(defthm bfr-ite-bss-fn-of-const-tests
+  (and (equal (bfr-ite-bss-fn t v1 v0) (list-fix v1))
+       (equal (bfr-ite-bss-fn nil v1 v0) (list-fix v0)))
+  :hints(("Goal" :in-theory (enable bfr-ite-bss-fn))))
+
+(defthm bfr-ite-bss-fn-aux-elim
+  (implies (and (not (equal c t))
+                c)
+           (equal (bfr-ite-bss-fn-aux c v1 v0)
+                  (bfr-ite-bss-fn c v1 v0)))
+  :hints(("Goal" :in-theory (enable bfr-ite-bss-fn))))
+
 (defmacro bfr-ite-bss (c v1 v0)
-  `(let ((bfr-ite-bss-test ,c))
-     (if bfr-ite-bss-test
-         (if (eq bfr-ite-bss-test t)
-             ,v1
-           (bfr-ite-bss-fn bfr-ite-bss-test ,v1 ,v0))
-       ,v0)))
+  `(mbe :logic (bfr-ite-bss-fn ,c ,v1 ,v0)
+        :exec (let ((bfr-ite-bss-test ,c))
+                (if bfr-ite-bss-test
+                    (if (eq bfr-ite-bss-test t)
+                        (list-fix ,v1)
+                      (bfr-ite-bss-fn-aux bfr-ite-bss-test ,v1 ,v0))
+                  (list-fix ,v0)))))
 
 (add-macro-alias bfr-ite-bss bfr-ite-bss-fn)
 

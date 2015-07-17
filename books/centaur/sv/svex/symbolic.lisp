@@ -288,6 +288,11 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     (?         a3vec-?              ((3v test) (3vp then) (3vp else)) "if-then-else")
     (bit?      a3vec-bit?           ((3v test) (3vp then) (3vp else)) "bitwise if-then-else")))
 
+#||
+(loop for lst in sv::*svex-aig-op-table* do
+      (let ((fn (cadr lst)))
+        (unless (eq fn 'sv::a4vec-fix) (profile-fn fn))))
+||#
 
 
 (defun svex-apply-aig-collect-args (n restargs argsvar svvar maskvar ;; argmasks-var
@@ -1973,17 +1978,22 @@ to the svexes.</p>"
 
 (define svexlist-rewrite-fixpoint-memo ((x svexlist-p))
   :enabled t
-  (svexlist-rewrite-fixpoint x :verbosep t)
+  (time$ (svexlist-rewrite-fixpoint x :verbosep t)
+         :msg "; svex rewriting: ~st sec, ~sa bytes.~%")
   ///
   (memoize 'svexlist-rewrite-fixpoint-memo))
 
-(define svexlist-eval-gl-with-var-superset
+
+(local (defthm svarlist-p-of-alist-keys-when-svex-env-p
+         (implies (svex-env-p env)
+                  (svarlist-p (alist-keys env)))
+         :hints(("Goal" :in-theory (enable svex-env-p svarlist-p alist-keys)))))
+
+(define svexlist-eval-gl
   ((x svexlist-p     "Svex expressions to evaluate.")
-   (vars svarlist-p  "List of variables; should be a superset of the names bound in @('env').")
-   (boolmasks svar-boolmasks-p "Mapping from variables to bitmasks on which those
-                                variables' bindings in @('env') should be
-                                Boolean-valued.")
-   (env svex-env-p   "Bindings of variables to @(see 4vec) values."))
+   (env svex-env-p   "Bindings of variables to @(see 4vec) values.")
+   (symbolic-params alistp
+                    "Alist giving symbolic execution parameters; see below."))
   :short "Equivalent of svexlist-eval intended to work well under GL symbolic execution."
   :long "
 
@@ -1992,28 +2002,32 @@ tailored to perform well under symbolic execution.  For symbolic execution, we
 assume that the inputs to this function other than @('env') are fully concrete,
 and that @('env') is symbolic only in its values, not its keys or its shape.</p>
 
-<p>The extra variables @('vars') and @('boolmasks') are logically irrelevant,
-but offer important optimizations for symbolic execution performance; we
-discuss them further below.  It is safe (but not necessarily fast) to call this
-function with @('vars') set to @('(svar-alist-keys env)') and @('boolmasks')
-set to @('NIL').</p>
+
+<p>The @('symbolic-params') input is logically irrelevant, but allows important
+optimizations for symbolic execution performance, discussed further below.  It
+is safe (but not necessarily optimal) to call this with symbolic-params equal
+@('NIL').</p>
 
 <h4>Behavior under Symbolic Execution</h4>
 
 <ol>
 
-<li>Applies rewriting to the supplied svex expressions -- see @(see
+<li>Applies rewriting to the supplied svex expressions, if @(':SIMPLIFY') is
+bound to a non-nil value in the @('symbolic-params') input -- see @(see
 svexlist-rewrite-fixpoint).</li>
 
-<li>Compares the given @('env') and @('boolmasks').  If there is a pair
-@('(name . mask)') in boolmasks for which the binding for @('name') in env is
-not Boolean-valued on the bits set to 1 in @('mask'), then fail out of symbolic
-simulation.  (In AIG mode, the masked bits must be <i>syntactically</i>
-Boolean-valued -- practically speaking, this means the upper/lower parts should
-result from the same computation.)</li>
+<li>If @(':boolmasks') is bound in the symbolic-params, compares the given
+@('env') with the bound value, which should be an alist.  If there is a pair
+@('(name . mask)') in the boolmasks alist for which the binding for @('name')
+in env is not Boolean-valued on the bits set to 1 in @('mask'), then fail out
+of symbolic simulation.  (In AIG mode, the masked bits must be
+<i>syntactically</i> Boolean-valued -- practically speaking, this means the
+upper/lower parts should result from the same computation.)</li>
 
-<li>Ensures that the variables bound in @('env') are indeed a subset of
-@('vars').</li>
+<li>If @(':VARS') is bound in symbolic-params, it should be bound to a list of
+input variables of the SVTV.  Unions this list with the variables bound in
+@('env') to obtain the full list of variables to bind as inputs to the
+SVTV.</li>
 
 <li>Compiles the svex list @('x') into @(see a4vec) objects, a symbolic
 analogue of @(see 4vec) but with each bit an AIG -- see @(see
@@ -2059,9 +2073,13 @@ separately.</p>
 execution performance to bind every variable in @('vars') to -1, but this may
 fail if the @('env') is not constructed in such a way that the values are
 obviously 2-vectors.</p>"
+  :guard-hints (("goal" :in-theory (e/d (SET::UNION-WITH-SUBSET-LEFT)
+                                        (SUBSET-OF-MERGESORTS-IS-SUBSETP))))
   (b* ((env (svex-env-fix env))
-       (vars (hons-copy (svarlist-fix vars)))
-       (x (svexlist-rewrite-fixpoint-memo x))
+       (vars (hons-copy (ec-call (svarlist-fix (cdr (assoc :vars symbolic-params))))))
+       (x (if (cdr (assoc :simplify symbolic-params))
+              (svexlist-rewrite-fixpoint-memo x)
+            x))
        ;; Syntax checking...
        (keys (alist-keys env))
        (keys (mbe :logic (set::mergesort keys)
@@ -2069,13 +2087,16 @@ obviously 2-vectors.</p>"
        (svars (mbe :logic (set::mergesort vars)
                    :exec (if (set::setp vars) vars (set::mergesort vars))))
        (env (make-fast-alist env))
-       ((unless (set::subset keys svars))
-        (b* ((?ign (cw "ERROR! Expected environment variables to be a subset ~
-                        of the given list.  Missing: ~x0~%"
-                       (set::difference keys svars)))
-             (?ign (gl::gl-error 'subset-check-failed)))
-          (gl::gl-hide (svexlist-eval x env))))
-       (boolmasks (make-fast-alist (hons-copy (svar-boolmasks-fix boolmasks))))
+       (svars (mbe :logic (union keys svars)
+                   :exec (if (set::subset keys svars)
+                             svars
+                           (if (eq svars nil)
+                               keys
+                             (union keys svars)))))
+       (boolmasks (make-fast-alist
+                   (hons-copy
+                    (ec-call
+                     (svar-boolmasks-fix (cdr (assoc :boolmasks symbolic-params)))))))
        ((unless (svex-env-check-boolmasks boolmasks env))
         (b* ((?ign (cw "ERROR: some bits assumed to be Boolean were not~%"))
              (?ign (gl::gl-error 'boolcheck-failed)))
@@ -2084,7 +2105,7 @@ obviously 2-vectors.</p>"
        ;; (?ign (bitops::sneaky-push 'boolmasks boolmasks))
        ;; (?ign (bitops::sneaky-push 'vars vars))
        ;; (?ign (bitops::sneaky-push 'x x))
-       ((mv err a4vecs) (time$ (svexlist->a4vecs-for-varlist x vars boolmasks)
+       ((mv err a4vecs) (time$ (svexlist->a4vecs-for-varlist x svars boolmasks)
                                :msg "; svex->aigs: ~st sec, ~sa bytes.~%"))
        ((when err)
         (b* ((?ign (cw "ERROR gathering AIG bits for variables: ~@0~%" err))
@@ -2092,23 +2113,28 @@ obviously 2-vectors.</p>"
           (gl::gl-hide (svexlist-eval x env))))
        ((mv ?err aig-env)
         ;; ignore the error; it can't exist if the above doesn't
-        (time$ (svexlist->a4vec-aig-env-for-varlist x vars boolmasks env)
+        (time$ (svexlist->a4vec-aig-env-for-varlist x svars boolmasks env)
                :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
        (?ign (fast-alist-free env)))
     (a4veclist-eval a4vecs aig-env))
   ///
-  (defthm svexlist-eval-gl-with-var-superset-is-svexlist-eval
-    (equal (svexlist-eval-gl-with-var-superset x vars boolmasks env)
+  (defthm svexlist-eval-gl-is-svexlist-eval
+    (equal (svexlist-eval-gl x env symbolic-params)
            (svexlist-eval x env))
     :hints (("goal" :use ((:instance svexlist->a4vec-for-varlist-correct
-                           (boolmasks (svar-boolmasks-fix boolmasks))
-                           (x (svexlist-rewrite-fixpoint-memo x))
+                           (boolmasks
+                            (svar-boolmasks-fix (cdr (assoc :boolmasks symbolic-params))))
+                           (vars (union (set::mergesort (alist-keys (svex-env-fix env)))
+                                        (set::mergesort (svarlist-fix (cdr (assoc :vars symbolic-params))))))
+                           (x (if (cdr (assoc :simplify symbolic-params))
+                                  (svexlist-rewrite-fixpoint-memo x)
+                                x))
                            (env (svex-env-fix env))))
              :in-theory (disable svexlist->a4vec-for-varlist-correct))))
 
-  (gl::def-gl-rewrite svexlist-eval-with-vars-redef
-    (equal (svexlist-eval-with-vars x vars boolmasks env)
-           (svexlist-eval-gl-with-var-superset x vars boolmasks env))))
+  (gl::def-gl-rewrite svexlist-eval-for-symbolic-redef
+    (equal (svexlist-eval-for-symbolic x env symbolic-params)
+           (svexlist-eval-gl x env symbolic-params))))
 
 
 
@@ -2200,11 +2226,11 @@ obviously 2-vectors.</p>"
 (gl::def-gl-rewrite svex-alist-eval-gl-rewrite
     (equal (svex-alist-eval x env)
            (pairlis$ (svex-alist-keys x)
-                     (svexlist-eval-with-vars
-                      (svex-alist-vals x) (alist-keys env) nil env)))
+                     (svexlist-eval-for-symbolic
+                      (svex-alist-vals x) env nil)))
     :hints(("Goal" :in-theory (enable svex-alist-eval pairlis$ svex-alist-keys
                                       svex-alist-vals svexlist-eval))))
 
 (gl::def-gl-rewrite svex-eval-gl-rewrite
   (equal (svex-eval x env)
-         (car (svexlist-eval-with-vars (list x) (alist-keys env) nil env))))
+         (car (svexlist-eval-for-symbolic (list x) env nil))))
