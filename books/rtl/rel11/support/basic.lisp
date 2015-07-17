@@ -124,7 +124,7 @@
                     (1- (* -1 (fl x)))))))
 
 (defthmd minus-fl
-  (implies (rationalp x)
+  (implies (real/rationalp x)
            (equal (fl (- x))
                   (if (integerp x)
                       (- x)

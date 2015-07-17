@@ -2870,11 +2870,22 @@
                                        wrld))))
 
 #+:non-standard-analysis
-(defun remove-adjacent-duplicates (lst)
-  (cond ((or (null lst) (null (cdr lst))) lst)
-        ((equal (car lst) (car (cdr lst)))
-         (remove-adjacent-duplicates (cdr lst)))
-        (t (cons (car lst) (remove-adjacent-duplicates (cdr lst))))))
+(defun remove-adjacent-duplicates (x)
+
+; We have slightly modified the original definition so as to match the
+; definition (quite likely adapted from the original one here) in community
+; book books/defsort/remove-dups.lisp.
+
+  (declare (xargs :guard t))
+  (cond ((atom x)
+         nil)
+        ((atom (cdr x))
+         (list (car x)))
+        ((equal (car x) (cadr x))
+         (remove-adjacent-duplicates (cdr x)))
+        (t
+         (cons (car x)
+               (remove-adjacent-duplicates (cdr x))))))
 
 #+:non-standard-analysis
 (defun non-standard-induction-vars (candidate wrld)
