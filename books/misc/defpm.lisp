@@ -13,6 +13,8 @@
 ; independently.  Our approach seems considerably simpler than Greve's
 ; development, but for example, his utility handles reflexive functions --
 ; recursive calls like (mc91 (mc91 (+ n 11))) -- while ours probably does not.
+; Another potentially related utility may be found in
+; books/workshops/2004/matthews-vroon/.
 
 ; Examples are towards the end of this file.
 
