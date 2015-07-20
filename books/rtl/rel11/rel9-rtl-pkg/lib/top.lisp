@@ -52,8 +52,6 @@
 
 ;;(include-book "mult") ;integer multiplication
 
-;;(include-book "sqrt") ;approximation to square root
-
 ;;(include-book "srt") ;SRT division and square root
 
 ;; This must be included to use GL with this library:
