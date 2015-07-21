@@ -35,7 +35,6 @@
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (local (include-book "signed-byte-p"))
 (local (include-book "ihsext-basics"))
-(local (include-book "centaur/gl/gl" :dir :system))
 (local (include-book "equal-by-logbitp"))
 (local (include-book "arithmetic/top" :dir :system))
 
@@ -93,7 +92,7 @@ is a fixnum on CCL and probably most other 64-bit Lisps.  In contrast, the
                      (the (unsigned-byte 32) #x22110)))
             ((the (unsigned-byte 32) t2)
              (logand (the (unsigned-byte 32) (* (the (unsigned-byte 16) x)
-                                           (the (unsigned-byte 16) #x8020)))
+                                                (the (unsigned-byte 16) #x8020)))
                      (the (unsigned-byte 32) #x88440)))
             ((the (unsigned-byte 32) t3)
              (logior (the (unsigned-byte 32) t1)
@@ -104,9 +103,11 @@ is a fixnum on CCL and probably most other 64-bit Lisps.  In contrast, the
             ((the (unsigned-byte 33) t5)
              (ash t4 -16)))
          (the (unsigned-byte 8)
-           (logand t5 #xFF))))
+              (logand t5 #xFF))))
 
   ///
+  (local (in-theory (enable fast-logrev-u8)))
+
   (local (defthm crock
            ;; Unfortunately, the signed-byte-p book's lemmas for bounding * don't
            ;; handle mixed sizes very well.
@@ -115,19 +116,46 @@ is a fixnum on CCL and probably most other 64-bit Lisps.  In contrast, the
                     (and (unsigned-byte-p 49 (* a b))
                          (unsigned-byte-p 49 (* b a))))
            :hints(("goal" :use ((:instance lousy-unsigned-byte-p-of-*-mixed
-                                           (n1 32)
-                                           (n2 17)))))))
+                                 (n1 32)
+                                 (n2 17)))))))
 
-  (local (def-gl-thm crock2
-           :hyp (unsigned-byte-p 8 x)
-           :concl
-           (EQUAL (LOGREV 8 X)
-                  (LOGHEAD 8
-                           (LOGTAIL 16
-                                    (* 65793
-                                       (LOGIOR (LOGAND 139536 (* 2050 X))
-                                               (LOGAND 558144 (* 32800 X)))))))
-           :g-bindings (gl::auto-bindings (:nat x 8))))
+; I originally did the proof with GL, but that required quite a lot of dependencies.
+; Since this is only an 8-bit operation, it's perfectly easy to exhaustively test it.
+
+  (local (defund test (n)
+           (or (zp n)
+               (let ((n (- n 1)))
+                 (and (equal (logrev 8 n)
+                             (loghead 8
+                                      (logtail 16
+                                               (* 65793
+                                                  (logior (logand 139536 (* 2050 n))
+                                                          (logand 558144 (* 32800 n)))))))
+                      (test n))))))
+
+  (local (defthmd consequence
+           (implies (and (test n)
+                         (natp n)
+                         (natp i)
+                         (< i n))
+                    (equal (logrev 8 i)
+                           (loghead 8
+                                    (logtail 16
+                                             (* 65793
+                                                (logior (logand 139536 (* 2050 i))
+                                                        (logand 558144 (* 32800 i))))))))
+           :hints(("Goal" :in-theory (enable test)))))
+
+  (local (defthm crock2
+           (implies (unsigned-byte-p 8 x)
+                    (equal (logrev 8 x)
+                           (loghead 8
+                                    (logtail 16
+                                             (* 65793
+                                                (logior (logand 139536 (* 2050 x))
+                                                        (logand 558144 (* 32800 x))))))))
+           :hints(("Goal"
+                   :use ((:instance consequence (n 256) (i x)))))))
 
   (verify-guards+ fast-logrev-u8))
 
