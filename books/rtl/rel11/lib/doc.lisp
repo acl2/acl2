@@ -40,10 +40,11 @@
       |Floating-Point Decomposition|
       |Exactness|)
      (|Floating-Point Formats| ; reps.lisp
-      |Representations with Explicit Leading One|
-      |Representations with Implicit Leading One|
-      |Denormal Representations|
-      |Rebiasing Exponents|)
+       |Classification of Formats|
+       |Normal Encodings|
+       |Denormals and Zeroes|
+       |Infinities and NaNs|
+       |Rebiasing Exponents|)
      (|Rounding| ; round.lisp
       |Truncation|
       |Rounding Away from Zero|
@@ -51,6 +52,18 @@
       |Odd Rounding|
       |IEEE Rounding|
       |Denormal Rounding|))
+     (|Floating-Point Exceptions and Specification of x86 Elementary Arithmetic Instructions| ; exps.lisp
+      (|SSE Floating-Point Instructions|
+       |The SSE Control and Status Register|
+       |Overview of SSE Floating-Point Exceptions|
+       |SSE Pre-Computation Exceptions|
+       |SSE Post-Computation Exceptions|) 
+      (|x87 Instructions|
+       |x87 Control Word|
+       |x87 Status Word|
+       |Overview of x87 Exceptions|
+       |x87 Pre-Computation Exceptions|
+       |x87 Post-Computation Exceptions|))
     (|Implementation of Elementary Operations|
      (|Addition| ; add.lisp
       |Bit Vector Addition|
@@ -73,6 +86,17 @@
       |Truncation {Square Root}|
       |Odd Rounding {Square Root}|
       |IEEE Rounding {Square Root}|))
+    (|Modeling Algorithms in SystemC and ACL2| ; masc.lisp
+     (|MASC: The Formal Language|
+      |Language Overview|
+      |Arithmetic|
+      |Control Restrictions|
+      |Mapping SystemC to MASC|
+      |Mapping MASC to ACL2|)
+     (|Applications|
+      |Integer Multiplication|
+      |Vector Compression|
+      |Fused Multiply-Accumulate|))
     |Bibliography|))
 
 (defun rtl-node-name-basic (sym)
@@ -211,7 +235,9 @@
 
 (rtl-order-subtopics rtl (|Register-Transfer Logic|
                           |Floating-Point Arithmetic|
+                          |Floating-Point Exceptions and Specification of x86 Elementary Arithmetic Instructions|
                           |Implementation of Elementary Operations|
+                          |Modeling Algorithms in SystemC and ACL2|
                           |Bibliography|))
 
 (defun defsection-rtl-list-for-tree (parent trees)
