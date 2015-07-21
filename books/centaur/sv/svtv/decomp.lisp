@@ -2654,8 +2654,8 @@ trigger on any of the following:</p>
                   alistp-of-acons
                   car-cons
                   cdr-cons
-                  return-type-of-svex-alist-eval-with-vars
-                  svexlist-eval-with-vars
+                  return-type-of-svex-alist-eval-for-symbolic
+                  svexlist-eval-for-symbolic
                   fal-extract-of-svex-alist-eval
                   ;; fal-extract-open-cons
                   ;; fal-extract-done

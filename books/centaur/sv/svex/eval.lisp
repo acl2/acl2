@@ -655,27 +655,27 @@ svex-eval).</p>"
   (deffixequiv svar-boolmasks-lookup))
 
 
-
 ;; Placeholder: this is used by svtvs, b/c it is advantageous in symbolic
 ;; evaluation to hold constant a set of variables that are expected to possibly
 ;; be bound in the environment.  Logically, these are irrelevant.
-(define svexlist-eval-with-vars ((x svexlist-p)
-                                 (vars svarlist-p)
-                                 (boolmasks svar-boolmasks-p)
-                                 (env svex-env-p))
+(define svexlist-eval-for-symbolic ((x svexlist-p)
+                                    (env svex-env-p)
+                                    (symbolic-params alistp))
   :ignore-ok t
   :enabled t
   (svexlist-eval x env))
 
-(define svex-alist-eval-with-vars ((x svex-alist-p)
-                                   (vars svarlist-p)
-                                   (boolmasks svar-boolmasks-p)
-                                   (env svex-env-p))
+(define svex-alist-eval-for-symbolic ((x svex-alist-p)
+                                      (env svex-env-p)
+                                      (symbolic-params alistp))
   :returns (res (equal res (svex-alist-eval x env))
                 :hints(("Goal" :in-theory (enable svex-alist-eval pairlis$ svex-alist-keys
                                                   svex-alist-vals svexlist-eval))))
   (pairlis$ (svex-alist-keys x)
-            (svexlist-eval-with-vars (hons-copy (svex-alist-vals x)) vars boolmasks env)))
+            (svexlist-eval-for-symbolic
+             (hons-copy (svex-alist-vals x))
+             env
+             symbolic-params)))
 
 
 

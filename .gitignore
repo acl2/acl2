@@ -17,7 +17,6 @@ temp-emacs-file.lsp
 *.64ufasl
 *.axpf
 *.bin
-*.c
 *.d64fsl
 *.data
 *.dfsl
@@ -25,7 +24,6 @@ temp-emacs-file.lsp
 *.dx64fsl
 *.fas
 *.fasl
-*.h
 *.lbin
 *.lib
 *.lx32fsl

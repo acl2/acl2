@@ -311,7 +311,18 @@ typically be @(see memoize)d in some way or another.</p>"
   :val-type svex
   :true-listp t
   :parents (svex)
-  :short "Alist binding variables (@(see svar)s) to expressions @(see svex)es.")
+  :short "Alist binding variables (@(see svar)s) to expressions @(see svex)es."
+  ///
+  (defthm svex-alist-p-of-pairlis$
+    (implies (and (svarlist-p x)
+                  (svexlist-p y)
+                  (equal (len x) (len y)))
+             (svex-alist-p (pairlis$ x y)))
+    :hints(("Goal" :in-theory (enable svex-alist-p
+                                      svarlist-p
+                                      svexlist-p)))))
+
+
 
 
 (define svex-acons ((var svar-p) (v svex-p) (a svex-alist-p))
@@ -394,7 +405,12 @@ typically be @(see memoize)d in some way or another.</p>"
   (defthm svex-alist-keys-of-svex-acons
     (equal (svex-alist-keys (svex-acons k v x))
            (cons (svar-fix k) (svex-alist-keys x)))
-    :hints(("Goal" :in-theory (enable svex-acons)))))
+    :hints(("Goal" :in-theory (enable svex-acons))))
+
+    (defthm svex-alist-keys-of-pairlis$
+    (equal (svex-alist-keys (pairlis$ x y))
+           (svarlist-fix x))
+    :hints(("Goal" :in-theory (enable svarlist-fix pairlis$ svex-alist-keys)))))
 
 
 (define svex-alist-vals ((x svex-alist-p))
@@ -426,5 +442,25 @@ typically be @(see memoize)d in some way or another.</p>"
   (defthm len-of-svex-alist-vals
     (equal (len (svex-alist-vals x))
            (len (svex-alist-keys x)))
-    :hints(("Goal" :in-theory (enable svex-alist-keys)))))
+    :hints(("Goal" :in-theory (enable svex-alist-keys))))
+
+  (defthm svex-alist-vals-of-pairlis$
+    (implies (equal (len x) (len y))
+             (equal (svex-alist-vals (pairlis$ x y))
+                    (svexlist-fix y)))
+    :hints(("Goal" :in-theory (enable svexlist-fix pairlis$ svex-alist-vals)))))
+
+
+
+
+;; Commonly used dumb little functions
+(define svex-quoted-index-p ((x svex-p))
+  :enabled t
+  (and (eq (svex-kind x) :quote)
+       (4vec-index-p (svex-quote->val x))))
+
+(define svex-quoted-int-p ((x svex-p))
+  :enabled t
+  (and (eq (svex-kind x) :quote)
+       (2vec-p (svex-quote->val x))))
 

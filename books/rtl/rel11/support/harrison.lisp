@@ -1,6 +1,14 @@
 (in-package "RTL")
 
+(local (include-book "basic"))
 (include-book "markstein")
+(local (include-book "arithmetic-5/top" :dir :system))
+
+;; The following lemmas from arithmetic-5 have given me trouble:
+
+(local (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
 
 (defund h-excps (d p)
   (if (zp d)
@@ -153,11 +161,11 @@
                 (> p 1)
                 (>= yp 1)
                 (< yp (1+ (expt 2 (- (1+ p))))))
-           (= (near yp p) 1))
+           (= (rne yp p) 1))
   :rule-classes ()
   :hints (("Goal" :use (h-10
                         (:instance exactp-2**n (n 0) (m p))
-                        (:instance near-down (x yp) (a 1) (n p))))))
+                        (:instance rne-down (x yp) (a 1) (n p))))))
 
 (local-defthm h-14
   (implies (and (integerp p)
@@ -193,22 +201,22 @@
                 (> p 1)
                 (< yp 1)
                 (> yp (- 1 (expt 2 (- (1+ p))))))
-           (= (near yp p) 1))
+           (= (rne yp p) 1))
   :rule-classes ()
   :hints (("goal" :use (h-15
-                        (:instance near-up (x yp) (a (fp- 1 p)) (n p))))))
+                        (:instance rne-up (x yp) (a (fp- 1 p)) (n p))))))
 
 (local-defthm h-17
   (implies (and (rationalp yp)
                 (integerp p)
                 (> p 1)
                 (< (abs (- 1 yp)) (expt 2 (- (1+ p)))))
-           (= (near yp p) 1))
+           (= (rne yp p) 1))
   :rule-classes ()
   :hints (("goal" :use (h-16 h-12))))
 
 (local-defthm h-18
-  (let ((y (near yp p)))
+  (let ((y (rne yp p)))
     (implies (and (rationalp yp)
                   (rationalp ep)
                   (integerp p)
@@ -359,11 +367,11 @@
                 (> b 1)
                 (< ep (expt 2 (- (1+ p))))
                 (<= (abs (- 1 (* b yp))) ep))
-           (<= (abs (- yp (near yp p)))
+           (<= (abs (- yp (rne yp p)))
                (expt 2 (- (1+ p)))))
   :rule-classes ()
   :hints (("Goal" :use (h-29
-                        (:instance near-est (x yp) (n p)))
+                        (:instance rne-diff (x yp) (n p)))
                   :in-theory (theory 'minimal-theory))))
 
 (local-defthm h-31
@@ -467,7 +475,7 @@
                         (:instance n>=cg-linear (n (expt 2 (1- p))) (x (* (expt 2 (* 2 p)) ep)))))))
 
 (local-defthm h-42
-  (let ((y (near yp p))
+  (let ((y (rne yp p))
         (d (cg (* (expt 2 (* 2 p)) ep))))
     (implies (and (rationalp b)
                   (rationalp yp)
@@ -485,7 +493,7 @@
   :rule-classes ()
   :hints (("Goal" :use (h-30 h-41 
                         (:instance h-8 (d (cg (* (expt 2 (* 2 p)) ep))))
-                        (:instance h-36 (a (abs (- yp (near yp p))))
+                        (:instance h-36 (a (abs (- yp (rne yp p))))
                                         (c (expt 2 (- (1+ p))))
                                         (d (- 2 (* (expt 2 (- 1 p)) (cg (* (expt 2 (* 2 p)) ep))))))))))
 
@@ -498,7 +506,7 @@
   :rule-classes ())
 
 (local-defthm h-44
-(let ((y (near yp p)))
+(let ((y (rne yp p)))
     (implies (and (rationalp b)
                   (< 1 b)
                   (rationalp yp)
@@ -507,10 +515,10 @@
              (<= (abs (- 1 (* b y)))
                  (+ (abs (- 1 (* b yp))) (* b (abs (- yp y)))))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance h-43 (x (- 1 (* b yp))) (y (- yp (near yp p))))))))
+  :hints (("Goal" :use ((:instance h-43 (x (- 1 (* b yp))) (y (- yp (rne yp p))))))))
 
 (local-defthm h-45
-  (let ((y (near yp p))
+  (let ((y (rne yp p))
         (d (cg (* (expt 2 (* 2 p)) ep))))
     (implies (and (rationalp b)
                   (rationalp yp)
@@ -527,8 +535,8 @@
   :rule-classes ()
   :hints (("Goal" :use (h-33 h-42 h-44))))
 
-(defthm harrison
-  (let ((y (near yp p))
+(defthm harrison-lemma
+  (let ((y (rne yp p))
         (d (cg (* (expt 2 (* 2 p)) ep))))
     (implies (and (rationalp b)
                   (rationalp yp)

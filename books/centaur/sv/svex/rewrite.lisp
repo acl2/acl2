@@ -31,6 +31,7 @@
 (in-package "SV")
 (include-book "argmasks")
 (include-book "rewrite-rules")
+(include-book "concat-rw")
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (include-book "lattice")
 (local (include-book "std/lists/acl2-count" :dir :system))
@@ -1078,54 +1079,6 @@
 ;; (define svexlist-mask-alist-for-given-masks ((x svexlist-p) (masks svex-mask-alist-p))
 ;;   (b* (((mv toposort al
 
-(defines svex-opcount1
-  :verify-guards nil
-  (define svex-opcount1 ((x svex-p) (seen) (count natp))
-    :returns (mv seen1 (count1 natp :rule-classes :type-prescription))
-    :measure (svex-count x)
-    (b* ((x (svex-fix x))
-         (count (lnfix count)))
-      (svex-case x
-        :quote (mv seen count)
-        :var (mv seen count)
-        :call (if (hons-get x seen)
-                  (mv seen count)
-                (b* ((seen (hons-acons x t seen)))
-                  (svexlist-opcount1 x.args seen (1+ count)))))))
-  (define svexlist-opcount1 ((x svexlist-p) (seen) (count natp))
-    :returns (mv seen1 (count1 natp :rule-classes :type-prescription))
-    :measure (svexlist-count x)
-    (if (atom x)
-        (mv seen (lnfix count))
-      (b* (((mv seen count) (svex-opcount1 (car x) seen count)))
-        (svexlist-opcount1 (cdr x) seen count))))
-  ///
-  (verify-guards svex-opcount1)
-  (deffixequiv-mutual svex-opcount1
-    :hints ((and stable-under-simplificationp
-                 (equal (car id) '(0 1))
-                 (b* ((lit (car (last clause))))
-                   `(:expand (,(cadr lit)
-                              ,(caddr lit))))))))
-
-
-(define svex-opcount ((x svex-p))
-  :returns (count natp :rule-classes :type-prescription)
-  (b* (((mv seen vars) (svex-opcount1 x nil 0)))
-    (fast-alist-free seen)
-    vars)
-  ///
-  (deffixequiv svex-opcount))
-
-(define svexlist-opcount ((x svexlist-p))
-  :returns (count natp :rule-classes :type-prescription)
-  (b* (((mv seen vars) (svexlist-opcount1 x nil 0)))
-    (fast-alist-free seen)
-    vars)
-  ///
-  (deffixequiv svexlist-opcount))
-
-
 
 (define svex-rewrite-top ((x svex-p))
   :returns (xx svex-p)
@@ -1155,12 +1108,16 @@
 
 (define svexlist-rewrite-top ((x svexlist-p) &key (verbosep 'nil))
   :returns (xx svexlist-p)
-  (b* ((- (and verbosep (cw "orig opcount: ~x0~%" (svexlist-opcount x))))
+  (b* ((- (and verbosep (cw "opcount before rewrite: ~x0~%" (svexlist-opcount x))))
        (masks (svexlist-mask-alist x))
-       (x (cwtime (svexlist-rewrite x masks) :mintime 1)))
-    (clear-memoize-table 'svex-rewrite)
-    (fast-alist-free masks)
-    (and verbosep (cw "new opcount: ~x0~%" (svexlist-opcount x)))
+       (x (cwtime (svexlist-rewrite x masks) :mintime 1))
+       (- (clear-memoize-table 'svex-rewrite)
+          (fast-alist-free masks)
+          (and verbosep (cw "opcount after rewrite: ~x0~%" (time$ (svexlist-opcount x)
+                                                                  :msg "; svexlist-opcount: ~st sec, ~sa bytes.~%"))))
+       ;; (x (cwtime (svexlist-normalize-concats x)))
+       )
+    ;; (and verbosep (cw "opcount after norm-concats: ~x0~%" (svexlist-opcount x)))
     x)
   ///
   (fty::deffixequiv svexlist-rewrite-top)
@@ -1181,14 +1138,6 @@
     (implies (not (member v (svexlist-vars x)))
              (not (member v (svexlist-vars (svexlist-rewrite-top x :verbosep verbosep)))))))
 
-(defthm svex-alist-p-of-pairlis$
-  (implies (and (svarlist-p x)
-                (svexlist-p y)
-                (equal (len x) (len y)))
-           (svex-alist-p (pairlis$ x y)))
-  :hints(("Goal" :in-theory (enable svex-alist-p
-                                    svarlist-p
-                                    svexlist-p))))
 
 (define svex-alist-rewrite-top ((x svex-alist-p) &key (verbosep 'nil))
   :returns (xx svex-alist-p)

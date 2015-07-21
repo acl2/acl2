@@ -26567,8 +26567,7 @@ Lisp definition."
            #+(and ccl (not acl2-loop-only))
            (special *gc-strategy*)
            (ignorable threshold))
-  #-acl2-loop-only
-  #+ccl
+  #+(and ccl (not acl2-loop-only))
   (let* ((op (if (eq op :current) *gc-strategy* op))
          (fn (cdr (assoc-eq op *gc-strategy-alist*))))
     (ccl-initialize-gc-strategy threshold)
@@ -26576,7 +26575,7 @@ Lisp definition."
                  (fboundp fn)))
     (funcall fn op)
     (setq *gc-strategy* op))
-  #-ccl
+  #+(and (not ccl) (not acl2-loop-only))
   (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|")
   op)
 

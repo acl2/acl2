@@ -77,10 +77,16 @@
 ;;                (ash x (* -32 slice)))))
 
 ; We just won't do anything at all for SBCL.
-#-sbcl
+
+; Added by Matt K., 7/20/2015: LispWorks 7.0.0 also can cause an error for a
+; non-fixnum second argument of byte, e.g., (byte 32 72057594037927936).  So
+; essentially following Jared's suggestion (github Issue #460), I'm excluding
+; LispWorks just as SBCL is excluded.
+
+#-(or sbcl lispworks)
 (declaim (inline bignum-extract))
 
-#-sbcl
+#-(or sbcl lispworks)
 (defun bignum-extract (x slice)
 
   ;; Simple Lisp version for most Lisps.
