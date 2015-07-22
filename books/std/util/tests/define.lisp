@@ -30,14 +30,20 @@
 
 (in-package "STD")
 (include-book "../define")
+(include-book "utils")
 (include-book "misc/assert" :dir :system)
 
 (define foo ()
   :returns (ans integerp)
   3)
 
+(assert-disabled foo)
+
 (define foo2 ()
+  :enabled t
   (mv 3 "hi"))
+
+(assert-enabled foo2)
 
 (define foo3 ()
   (mv 3 "hi"))
