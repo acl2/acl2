@@ -990,14 +990,14 @@ declarations."
            :hints(("Goal" :use ((:instance m3a)
                                 (:instance m3b))))))
 
-  (defun m4-induction-hint (n width)
-; Added by Matt K. to accommodate tau soundness bug fix 7/23/2014.
-    (declare (xargs :measure (nfix n)))
-    (cond ((zp n) width)
-          (t (m4-induction-hint (1- n) (1- width)))))
+  (local (defun m4-induction-hint (n width)
+           ;; Added by Matt K. to accommodate tau soundness bug fix 7/23/2014.
+           (declare (xargs :measure (nfix n)))
+           (cond ((zp n) width)
+                 (t (m4-induction-hint (1- n) (1- width))))))
 
   (local (defthm equal-0-ash-reduction
-; Added by Matt K. to accommodate tau soundness bug fix 7/23/2014.
+           ;; Added by Matt K. to accommodate tau soundness bug fix 7/23/2014.
            (implies (and (<= 0 n)
                          (integerp x))
                     (equal (equal 0 (ash x n))
@@ -1016,7 +1016,7 @@ declarations."
                                 (equal x 0))))
            :hints(("Goal"
                    :induct
-; Modified by Matt K. to accommodate tau soundness bug fix 7/23/2014.
+                   ;; Modified by Matt K. to accommodate tau soundness bug fix 7/23/2014.
                    (m4-induction-hint n width)
                    :in-theory (enable* ihsext-recursive-redefs
                                        ihsext-inductions)))))

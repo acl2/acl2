@@ -862,3 +862,5 @@ explicitly in terms of 0 and 1 to simplify reasoning.</p>")
      (:type-prescription :corollary (natp (b-orc2 i j))))))
 
 
+(defmacro loglist* (&rest args)
+  (xxxjoin 'logcons args))

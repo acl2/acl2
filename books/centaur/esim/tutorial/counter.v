@@ -40,7 +40,7 @@ module counter (
   input clk
 );
 
-wire [3:0] outPlus = (out == 9) ? 4'b0 : out + 4'b1;
+wire [3:0] outPlus = (out == 4'd9) ? 4'b0 : out + 4'b1;
 
 wire [3:0] nextState = reset ? 4'b0
            	     : inc   ? outPlus

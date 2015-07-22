@@ -1404,6 +1404,48 @@ using the @(see undef-read) function.</p>"
 		(!flgi #.*of* (rflags-slice :of flgs) x86))))
 	x86)))
 
+(define write-user-rflags-for-x86-comis?/ucomis?
+  ((compare-result natp)
+   x86)
+
+  :inline t
+  :parents (x86-register-readers-and-writers)
+
+  :short "Set ZF, PF, CF flags according to the comis?/ucomis? result"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  (case compare-result
+    (7 (let* ((x86 (!flgi #.*cf* 1 x86))
+              (x86 (!flgi #.*pf* 1 x86))
+              (x86 (!flgi #.*zf* 1 x86))
+              (x86 (!flgi #.*af* 0 x86))
+              (x86 (!flgi #.*sf* 0 x86))
+              (x86 (!flgi #.*of* 0 x86)))
+         x86))
+    (0 (let* ((x86 (!flgi #.*cf* 0 x86))
+              (x86 (!flgi #.*pf* 0 x86))
+              (x86 (!flgi #.*zf* 0 x86))
+              (x86 (!flgi #.*af* 0 x86))
+              (x86 (!flgi #.*sf* 0 x86))
+              (x86 (!flgi #.*of* 0 x86)))
+         x86))
+    (1 (let* ((x86 (!flgi #.*cf* 1 x86))
+              (x86 (!flgi #.*pf* 0 x86))
+              (x86 (!flgi #.*zf* 0 x86))
+              (x86 (!flgi #.*af* 0 x86))
+              (x86 (!flgi #.*sf* 0 x86))
+              (x86 (!flgi #.*of* 0 x86)))
+         x86))
+    (otherwise ;; Must only be 4.
+     (let* ((x86 (!flgi #.*cf* 0 x86))
+            (x86 (!flgi #.*pf* 0 x86))
+            (x86 (!flgi #.*zf* 1 x86))
+            (x86 (!flgi #.*af* 0 x86))
+            (x86 (!flgi #.*sf* 0 x86))
+            (x86 (!flgi #.*of* 0 x86)))
+       x86))))
+
 (include-book "tools/include-raw" :dir :system)
 (defttag :undef-flg)
 (include-raw "x86-register-readers-and-writers-raw.lsp")

@@ -183,11 +183,6 @@ circuits, etc.")
  functions with type signatures, and automating other common tasks.")
 
 (defxdoc proof-automation
-  :parents (top
-
-; Including acl2 as a parent so that all ACL2 system topics can be found under
-; the graph rooted at the acl2 node.
-
-            acl2)
+  :parents (top)
   :short "Tools, utilities, and strategies for dealing with particular kinds
 of proofs.")

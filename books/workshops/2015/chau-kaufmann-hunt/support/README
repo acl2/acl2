@@ -1,0 +1,35 @@
+----------------------------------------------------------------------
+Book Certification
+----------------------------------------------------------------------
+
+To certify books, execute the following:
+
+make ACL2r=<Path of the ACL2r image>
+
+To remove certificate files, etc., execute the following:
+
+make clean ACL2r=<Path of the ACL2r image>
+
+See Makefile file for the detail.
+
+----------------------------------------------------------------------
+Book Organization
+----------------------------------------------------------------------
+
+The orthogonality relations of trigonometric functions (5.1), (5.2),
+and (5.3) described in the paper are formalized in sines-orthog.lisp,
+cosines-orthog.lisp, and sine-cosine-orthog.lisp respectively.
+
+The sum rule for integration of indexed sums is formalized in
+int-sum.lisp.
+
+The Fourier coefficient formulas is formalized in
+fourier-coefficients.lisp.
+
+The uniqueness of Fourier sums is formalized in fourier-sums.lisp.
+
+The sum rule for integration of infinite series is formalized in
+int-infinite-sum-1.lisp and int-infinite-sum-2.lisp, corresponding to
+two conditions described in Section 8 of the paper respectively.
+
+

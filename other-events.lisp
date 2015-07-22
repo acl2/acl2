@@ -6320,7 +6320,10 @@
                            "For the following function~#0~[~/s~] introduced ~
                             by this encapsulate event, guard verification may ~
                             depend on local properties that are not exported ~
-                            from that encapsulate event: ~&0."
+                            from the encapsulate event: ~&0.  Consider ~
+                            delaying guard verification until after the ~
+                            encapsulate event, for example by using ~
+                            :verify-guards nil."
                            bogus-exported-compliants))
                       (t (value (if only-pass-p
                                     expansion-alist

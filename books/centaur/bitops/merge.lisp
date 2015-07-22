@@ -44,7 +44,12 @@
          :hints((acl2::equal-by-logbitp-hammer))))
 
 ;; Speed hint
-(local (in-theory (disable LOGIOR-<-0-LINEAR-2)))
+(local (in-theory (disable LOGIOR-<-0-LINEAR-2
+                           LOGIOR-<-0-LINEAR-1
+                           logior-fold-consts
+                           logior-natp-type
+                           ash-natp-type
+                           )))
 
 (defxdoc bitops/merge
   :parents (bitops)
@@ -92,16 +97,158 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 
 (local (xdoc::set-default-parents bitops/merge))
 
-(defun congruences-for-merge-fn (form n)
+(defun congruences-for-merge-fn (form n equiv)
   (declare (xargs :mode :program))
   (if (zp n)
       nil
     (cons
-     `(defcong nat-equiv equal ,form ,n)
-     (congruences-for-merge-fn form (- n 1)))))
+     `(defcong ,equiv equal ,form ,n)
+     (congruences-for-merge-fn form (- n 1) equiv))))
 
-(defmacro congruences-for-merge (form n)
-  `(progn . ,(congruences-for-merge-fn form n)))
+(defmacro congruences-for-merge (form n &key (equiv 'nat-equiv))
+  `(progn . ,(congruences-for-merge-fn form n equiv)))
+
+
+;; Merging Bits ---------------------------------------------------------------
+
+(define merge-4-bits ((a3 bitp)
+                      (a2 bitp)
+                      (a1 bitp)
+                      (a0 bitp))
+  (declare (type bit a3 a2 a1 a0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate four bits together to form an 4-bit natural."
+  :split-types t
+  :inline t
+  (mbe :logic (logior (ash (lbfix a3) 3)
+                      (ash (lbfix a2) 2)
+                      (ash (lbfix a1) 1)
+                      (lbfix a0))
+       :exec
+       (b* ((ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a1 1))
+                              (the (unsigned-byte 8) a0))))
+            (ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a2 2))
+                              (the (unsigned-byte 8) ans)))))
+         (the (unsigned-byte 8)
+              (logior (the (unsigned-byte 8) (ash a3 3))
+                      (the (unsigned-byte 8) ans)))))
+  ///
+  (defthm unsigned-byte-p-4-of-merge-4-bits
+    (unsigned-byte-p 4 (merge-4-bits a3 a2 a1 a0)))
+  "<h5>Basic @(see bit-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-4-bits a3 a2 a1 a0) 4
+                         :equiv bit-equiv))
+
+
+(define merge-8-bits ((a7 bitp)
+                      (a6 bitp)
+                      (a5 bitp)
+                      (a4 bitp)
+                      (a3 bitp)
+                      (a2 bitp)
+                      (a1 bitp)
+                      (a0 bitp))
+  (declare (type bit a7 a6 a5 a4 a3 a2 a1 a0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate eight bits together to form an 8-bit natural."
+  :split-types t
+  :inline t
+  (mbe :logic (logior (ash (lbfix a7) 7)
+                      (ash (lbfix a6) 6)
+                      (ash (lbfix a5) 5)
+                      (ash (lbfix a4) 4)
+                      (ash (lbfix a3) 3)
+                      (ash (lbfix a2) 2)
+                      (ash (lbfix a1) 1)
+                      (lbfix a0))
+       :exec
+       (b* ((ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a1 1))
+                              (the (unsigned-byte 8) a0))))
+            (ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a2 2))
+                              (the (unsigned-byte 8) ans))))
+            (ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a3 3))
+                              (the (unsigned-byte 8) ans))))
+            (ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a4 4))
+                              (the (unsigned-byte 8) ans))))
+            (ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a5 5))
+                              (the (unsigned-byte 8) ans))))
+            (ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a6 6))
+                              (the (unsigned-byte 8) ans)))))
+         (the (unsigned-byte 8)
+              (logior (the (unsigned-byte 8) (ash a7 7))
+                      (the (unsigned-byte 8) ans)))))
+  ///
+  (defthm unsigned-byte-p-8-of-merge-8-bits
+    (unsigned-byte-p 8 (merge-8-bits a7 a6 a5 a4 a3 a2 a1 a0)))
+  "<h5>Basic @(see bit-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-8-bits a7 a6 a5 a4 a3 a2 a1 a0) 8
+                         :equiv bit-equiv))
+
+
+(define merge-16-bits ((h7 bitp)  ;; bits for the more significant byte
+                       (h6 bitp)
+                       (h5 bitp)
+                       (h4 bitp)
+                       (h3 bitp)
+                       (h2 bitp)
+                       (h1 bitp)
+                       (h0 bitp)
+                       (l7 bitp)  ;; bits for the less significant byte
+                       (l6 bitp)
+                       (l5 bitp)
+                       (l4 bitp)
+                       (l3 bitp)
+                       (l2 bitp)
+                       (l1 bitp)
+                       (l0 bitp))
+  (declare (type bit
+                 h7 h6 h5 h4 h3 h2 h1 h0
+                 l7 l6 l5 l4 l3 l2 l1 l0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate sixteen bits together to form an 16-bit natural."
+  :guard-hints(("Goal" :in-theory (enable merge-8-bits)))
+  :split-types t
+  :inline t
+  (mbe :logic (logior (ash (lbfix h7) 15)
+                      (ash (lbfix h6) 14)
+                      (ash (lbfix h5) 13)
+                      (ash (lbfix h4) 12)
+                      (ash (lbfix h3) 11)
+                      (ash (lbfix h2) 10)
+                      (ash (lbfix h1) 9)
+                      (ash (lbfix h0) 8)
+                      (ash (lbfix l7) 7)
+                      (ash (lbfix l6) 6)
+                      (ash (lbfix l5) 5)
+                      (ash (lbfix l4) 4)
+                      (ash (lbfix l3) 3)
+                      (ash (lbfix l2) 2)
+                      (ash (lbfix l1) 1)
+                      (lbfix l0))
+       :exec
+       (b* ((high (merge-8-bits h7 h6 h5 h4 h3 h2 h1 h0))
+            (low  (merge-8-bits l7 l6 l5 l4 l3 l2 l1 l0)))
+         (the (unsigned-byte 16)
+              (logior (ash (the (unsigned-byte 8) high) 8)
+                      (the (unsigned-byte 8) low)))))
+  ///
+  (defthm unsigned-byte-p-16-of-merge-16-bits
+    (unsigned-byte-p 16 (merge-16-bits h7 h6 h5 h4 h3 h2 h1 h0
+                                       l7 l6 l5 l4 l3 l2 l1 l0)))
+  "<h5>Basic @(see bit-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-16-bits h7 h6 h5 h4 h3 h2 h1 h0
+                                       l7 l6 l5 l4 l3 l2 l1 l0)
+                         16
+                         :equiv bit-equiv))
+
 
 
 ;; Merging U2s ----------------------------------------------------------------

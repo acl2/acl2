@@ -16,6 +16,8 @@
 ;;  Implements All-Pairs Shortest Path (APSP) for Weighted Graphs
 ;;
 
+; cert_param: (non-acl2r)
+
 (local (include-book "integer-listp-theorems"))
 
 (defconst *MAX_VERTICES* 1000000)

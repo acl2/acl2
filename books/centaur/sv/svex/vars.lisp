@@ -976,3 +976,52 @@ Correctness is stated in terms of @(see svexlist-vars):</p>
                (svexlist-vars x))
     :hints(("Goal" :in-theory (enable svexlist-collect-vars))
            (acl2::set-reasoning))))
+
+
+
+(defines svex-opcount1
+  :verify-guards nil
+  (define svex-opcount1 ((x svex-p) (seen) (count natp))
+    :returns (mv seen1 (count1 natp :rule-classes :type-prescription))
+    :measure (svex-count x)
+    (b* ((x (svex-fix x))
+         (count (lnfix count)))
+      (svex-case x
+        :quote (mv seen count)
+        :var (mv seen count)
+        :call (if (hons-get x seen)
+                  (mv seen count)
+                (b* ((seen (hons-acons x t seen)))
+                  (svexlist-opcount1 x.args seen (1+ count)))))))
+  (define svexlist-opcount1 ((x svexlist-p) (seen) (count natp))
+    :returns (mv seen1 (count1 natp :rule-classes :type-prescription))
+    :measure (svexlist-count x)
+    (if (atom x)
+        (mv seen (lnfix count))
+      (b* (((mv seen count) (svex-opcount1 (car x) seen count)))
+        (svexlist-opcount1 (cdr x) seen count))))
+  ///
+  (verify-guards svex-opcount1)
+  (deffixequiv-mutual svex-opcount1
+    :hints ((and stable-under-simplificationp
+                 (equal (car id) '(0 1))
+                 (b* ((lit (car (last clause))))
+                   `(:expand (,(cadr lit)
+                              ,(caddr lit))))))))
+
+
+(define svex-opcount ((x svex-p))
+  :returns (count natp :rule-classes :type-prescription)
+  (b* (((mv seen vars) (svex-opcount1 x nil 0)))
+    (fast-alist-free seen)
+    vars)
+  ///
+  (deffixequiv svex-opcount))
+
+(define svexlist-opcount ((x svexlist-p))
+  :returns (count natp :rule-classes :type-prescription)
+  (b* (((mv seen vars) (svexlist-opcount1 x nil 0)))
+    (fast-alist-free seen)
+    vars)
+  ///
+  (deffixequiv svexlist-opcount))

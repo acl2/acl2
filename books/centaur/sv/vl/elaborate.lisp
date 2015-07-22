@@ -71,6 +71,9 @@
                (vl-arrayrange-index (expr vl-index-resolve-if-constant-fn))
                (vl-valuerange-single (expr vl-index-resolve-if-constant-fn))
                (vl-patternkey-expr   (key vl-index-resolve-if-constant-fn)) ;; BOZO this will break struct field names
+               (vl-casttype-size (size vl-index-resolve-if-constant-fn))
+               (vl-slicesize-expr (expr vl-index-resolve-if-constant-fn))
+               (vl-arrayrange-index (expr vl-index-resolve-if-constant-fn))
                ;; skip these fields because they won't be done right automatically
                )
     :field-fns ((atts :skip)
@@ -644,6 +647,23 @@ expression with @(see vl-expr-to-svex).</p>
                     :typeov (hons-acons prefix-name type conf.typeov))))
           (and (not same-scope) (vl-svexconf-free declconf))
           (mv t warnings conf)))))
+
+
+#||
+(trace$ #!vl
+        (vl-expr-elaborate-fn
+         :entry (list 'vl-expr-elaborate
+                      (with-local-ps (vl-pp-expr x)))
+         :exit (b* (((list ok warnings new-x) values))
+                 (list* 'vl-expr-elaborate
+                        ok (with-local-ps (vl-pp-expr new-x))
+                        (and warnings (with-local-ps (vl-print-warnings warnings)))))))
+                      
+                      
+                      
+
+||#
+
 
 
   (define vl-expr-elaborate ((x vl-expr-p)

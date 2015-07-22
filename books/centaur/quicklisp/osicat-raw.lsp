@@ -29,5 +29,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(asdf:load-system "osicat")
+
+; Awful binding of *error-output* to suppress a bunch of OSICAT/CFFI deprecated
+; warnings.
+(let ((*error-output* (make-string-output-stream)))
+  (asdf:load-system "osicat"))
 

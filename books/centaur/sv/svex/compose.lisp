@@ -39,7 +39,7 @@
 (include-book "centaur/misc/hons-extra" :dir :system) ;; with-fast
 (local (include-book "centaur/misc/dfs-measure" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
-
+(local (std::add-default-post-define-hook :fix))
 ;; Suppose we have a module with a lot of assignment statements. We want to
 ;; compose together the RHS expressions in order to get the update formula for
 ;; each wire, in terms of the PIs and registers.
@@ -268,7 +268,7 @@ variables depend on themselves."
     (b* ((mask (svex-mask-lookup (svex-var (car x)) al)))
       (if (eql 0 mask)
           (svarlist-pair-with-masks (cdr x) al)
-        (cons (cons (car x) (str::binify mask))
+        (cons (cons (svar-fix (car x)) (str::binify mask))
               (svarlist-pair-with-masks (cdr x) al))))))
 
 
