@@ -28,20 +28,7 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-(in-package "ACL2")
-
+#!ACL2 (in-package "ACL2")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (ld "package.lsp")
-
 (in-package "LIST")
-
-;; This list should be considered a rough draft.  We might want to include
-;; other things, particularly:
-;;
-;;   - names of theorems that often should be enabled or disabled?
-;;   - names of new functions as we add them?
-;;   - names of variables used throughout our theorems?
-
-(defconst *exports*
-  '(finalcdr memberp firstn repeat
-    cdddddr cddddddr caddddddr cadddddr caddddr
-    ))

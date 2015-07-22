@@ -28,8 +28,6 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
-; (ld "Makefile.acl2")
-(ld "../adviser/adviser-defpkg.lsp")
-(ld "list-defpkg.lsp")
-(ld "../util/debug-defpkg.lsp")
-(ld "../util/def-defpkg.lsp")
+#!ACL2
+(include-book "portcullis")
+

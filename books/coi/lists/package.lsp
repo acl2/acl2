@@ -28,20 +28,35 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
+#!ACL2
 (in-package "ACL2")
 
-(ld "package.lsp")
+;; BOZO switch these to include-books of suitable portculli
+(ld "../adviser/adviser-defpkg.lsp")
+(ld "../util/debug-defpkg.lsp")
+(ld "../util/def-defpkg.lsp")
 
-(in-package "LIST")
 
-;; This list should be considered a rough draft.  We might want to include
-;; other things, particularly:
-;;
-;;   - names of theorems that often should be enabled or disabled?
-;;   - names of new functions as we add them?
-;;   - names of variables used throughout our theorems?
+(defpkg "LIST"
+  (set-difference-eq
+;;   (remove-duplicates-eql ;no longer necessary due to change in ACL2
+    `(,@*acl2-exports*
+      ,@*common-lisp-symbols-from-main-lisp-package*
 
-(defconst *exports*
-  '(finalcdr memberp firstn repeat
-    cdddddr cddddddr caddddddr cadddddr caddddr
-    ))
+      a b c d e f g h i j k l m n o p q r s u v w x y z
+
+      ;; Leave this here, becuase we want our version of firstn to be
+      ;; the same one as used in some of the books, e.g.,
+      ;; data-structures.
+      firstn
+
+      ;; bzo - this was originally in the ACL2 package and some code
+      ;; may still rely on that.  But, we should remove this eventually.
+      repeat
+
+      ;; bzo - remove me eventually if Matt adds me to *acl2-exports*
+      update-nth-array
+
+      )
+    ;)
+    '(fix)))
