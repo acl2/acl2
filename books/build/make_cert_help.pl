@@ -643,9 +643,13 @@ write_whole_file($lisptmp, $instrs);
 
 # Run it!  ------------------------------------------------
 
+my $START_TIME = time();
+
     # Single quotes to try to protect against file names with dollar signs and similar.
     system("$STARTJOB '$shtmp'");
     $status = $? >> 8;
+
+my $END_TIME = time();
 
     unlink($lisptmp) if !$DEBUG;
     unlink($shtmp) if !$DEBUG;
@@ -674,7 +678,34 @@ if ($status == 43) {
 }
 
 if ($success) {
-    print "Successfully built $printgoal\n";
+
+    my $black = chr(27) . "[0m";
+
+    my $boldred = chr(27) . "[31;1m";
+    my $red = chr(27) . "[31m";
+
+    my $boldyellow = chr(27) . "[33;1m";
+    my $yellow = chr(27) . "[33m";
+
+    my $green = chr(27) . "[32m";
+    my $boldgreen = chr(27) . "[32;1m";
+
+    my $ELAPSED = $END_TIME - $START_TIME;
+
+    my $color = ($ELAPSED > 300) ? $boldred
+	      : ($ELAPSED > 60) ? $red
+	      : ($ELAPSED > 40) ? $boldyellow
+              : ($ELAPSED > 20) ? $yellow
+	      : ($ELAPSED > 10) ? $green
+	      : $boldgreen;
+
+    if ($ENV{"CERT_PL_NO_COLOR"}) {
+	$color = "";
+	$black = "";
+    }
+
+    printf("%sSuccessfully built %s (%ds)%s\n", $color, $printgoal, $ELAPSED, $black);
+
 } else {
     my $taskname = ($STEP eq "acl2x" || $STEP eq "acl2xskip") ? "ACL2X GENERATION" :
 	($STEP eq "certify")  ? "CERTIFICATION" :
