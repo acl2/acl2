@@ -47,6 +47,24 @@
 
 (local (in-theory (enable list::memberp-when-not-memberp-of-cdr-cheap)))
 
+
+;; [Jared] dumb speed hacking
+(local (in-theory (disable acl2::UNSIGNED-BYTE-P-+-EASY
+                           acl2::UNSIGNED-BYTE-P--OF-MINUS
+                           acl2::LOGBITP-OF-ONE-LESS
+                           acl2::LOGHEAD-LOWER-BOUND-WHEN-TOP-BIT-ONE
+                           acl2::LOGHEAD-UPPER-BOUND-WHEN-TOP-BIT-ONE
+
+                           ;; new rules
+                           ACL2::|x < y  =>  0 < -x+y|
+                           ;ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT
+                           ;ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP
+                           ;ACL2::EXPT-2-POSITIVE-RATIONAL-TYPE
+                           default-+-2
+                           
+                           )))
+                           
+
 ;;
 ;; OFFSET-RANGE-WRAP
 ;;
@@ -218,6 +236,9 @@
                 (list::memberp offset3 (offset-range-wrap width offset1 size1))
                 (list::memberp offset4 bag))
            (not (equal offset3 offset4))))
+
+;; [Jared] dumb speed hacking
+(local (in-theory (disable use-disjoint-of-offset-range-wraps-hack-better)))
 
 (defthm use-disjoint-of-offset-range-wraps-hack-better-alt
   (implies (and (bag::disjoint bag
@@ -641,6 +662,20 @@
                (list x y)
              (induct4 (cdr x) (cdr y)))))
 
+  ;; [Jared] dumb speed hacking
+  (local (in-theory (disable ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP
+                             ACL2::EXPT-2-POSITIVE-RATIONAL-TYPE
+                             ACL2::EXPT-TYPE-PRESCRIPTION-NONZERO
+                             ACL2::EXPT-TYPE-PRESCRIPTION-RATIONALP
+                             ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE
+                             ACL2::|x < y  =>  0 < y-x|
+                             (:t expt)
+                             (:t loghead)
+                             (:TYPE-PRESCRIPTION ACL2::LOGHEAD-TYPE)
+                             ACL2::LOGHEAD-COMPARE-HACK
+                             ACL2::LOGHEAD-UPPER-BOUND
+                             ACL2::LOGHEAD-NONNEGATIVE-LINEAR)))
+
   (defthmd hard-way
     (implies (and (offset-rangep width x)
                   (offset-rangep width y)
@@ -666,7 +701,8 @@
                               subbagp-cdr-when-memberp-car)))
             ("Goal" :do-not '(generalize eliminate-destructors)
              :induct (induct4 x y)
-             )))))
+             )
+            ))))
 
 ;; (thm
 ;;  (implies (and (offset-rangep width x)
