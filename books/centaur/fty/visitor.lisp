@@ -503,7 +503,8 @@
 (defun visitor-mutual (type-name types x other-fns)
   (b* (((visitorspec x)))
   `(defines ,(visitor-macroname x type-name)
-     :locally-enable nil
+     ;; [Jared] no longer necessary since we now always use DEFUN
+     ;; :locally-enable nil
      ,@x.defines-args
      ,@other-fns
      ,@(visitor-mutual-aux types x)
@@ -531,7 +532,8 @@
 (defun visitor-multi (multicfg  types-templates)
   (b* (((visitormulti multicfg)))
     `(defines ,multicfg.name
-       :locally-enable nil
+       ;; [Jared] no longer necessary since we now always use DEFUN
+       ;; :locally-enable nil
        ,@multicfg.defines-args
        ,@multicfg.other-fns
        ,@(visitor-multi-aux types-templates)

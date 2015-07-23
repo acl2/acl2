@@ -704,7 +704,7 @@ if ($success) {
 	$black = "";
     }
 
-    printf("%sSuccessfully built %s (%ds)%s\n", $color, $printgoal, $ELAPSED, $black);
+    printf("%sBuilt %s (%ds)%s\n", $color, $printgoal, $ELAPSED, $black);
 
 } else {
     my $taskname = ($STEP eq "acl2x" || $STEP eq "acl2xskip") ? "ACL2X GENERATION" :

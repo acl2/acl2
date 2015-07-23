@@ -1160,6 +1160,28 @@ some kind of separator!</p>
                 `((make-event
                    (make-define-ret-patbinder ',guts (w state)))))
 
+         (local
+          ;; [Jared] Previously, when we sometimes used DEFUND and DEFUN, this
+          ;; was a sensible way to ensure that the function was always enabled
+          ;; during the processing of the /// section.  You might think (and I
+          ;; originally DID think) that, now that we always use DEFUN, that
+          ;; this would be unnecessary.  However, in rare cases, for instance,
+          ;; if we are redundantly DEFINEing a function that was originally
+          ;; DEFINEd before now, the function may NOT be enabled even though we
+          ;; have introduced it with DEFUN, because you can do something like
+          ;;
+          ;;    (defun foo ...)
+          ;;    (in-theory (disable foo))
+          ;;    (defun foo ...) ;; redundantly
+          ;;
+          ;; And at this point FOO is still disabled.  So, this is a bummer
+          ;; because enabling/disabling is expensive, but at least we can keep
+          ;; this local...
+          (make-event
+           (if (logic-mode-p ',guts.name-fn (w state))
+               '(in-theory (enable ,guts.name))
+             '(value-triple :invisible))))
+
          (make-event
           (let* ((world (w state))
                  (events (returnspec-thms ',guts.name ',guts.name-fn ',guts.returnspecs world)))
