@@ -1197,22 +1197,23 @@ some kind of separator!</p>
          ,@(and hook-specs
                 `((value-triple (cw "; Running post-define hooks.~%"))
                   .
-                  ,(post-hook-make-events hook-specs hooks-alist guts))))
+                  ,(post-hook-make-events hook-specs hooks-alist guts)))
+
+         ,@(if prognp
+               `((set-define-current-function nil))
+             nil)
+
+         ,@(if enabled-p
+               nil
+             `((make-event
+                (if (logic-mode-p ',guts.name-fn (w state))
+                    '(in-theory (disable ,guts.name))
+                  '(value-triple :invisible))))))
+
 
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
        ,(add-signature-from-guts guts)
-
-       ,@(if prognp
-             `((set-define-current-function nil))
-           nil)
-
-       ,@(if enabled-p
-             nil
-           `((make-event
-              (if (logic-mode-p ',guts.name-fn (w state))
-                  '(in-theory (disable ,guts.name))
-                '(value-triple :invisible)))))
 
        (make-event (list 'value-triple
                          (if (eql ,start-max-absolute-event-number
