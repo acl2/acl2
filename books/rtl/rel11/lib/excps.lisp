@@ -419,6 +419,8 @@
 ;;;                   SSE Operations
 ;;;***************************************************************
 
+(defsection-rtl |The SSE Control and Status Register| |SSE Floating-Point Instructions|
+
 ;; Exception flag bits (indices shared by SSE and x87):
 
 (defun ibit () 0)
@@ -448,8 +450,11 @@
     (1 'rdn)
     (2 'rup)
     (3 'rtz)))
+)
 
 ;;--------------------------------------------------------------------------------
+
+(defsection-rtl |Overview of SSE Floating-Point Exceptions| |SSE Floating-Point Instructions|
 
 ;; The arguments of SSE-BINARY-SPEC are an operation (add, sub, mul, or div), 2 data 
 ;; inputs, the initial MXCSR register, and the significand and exponent widths. It 
@@ -719,11 +724,14 @@
           (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
                    result)
               (logior (logior mxcsr pre-flags) post-flags)))))))
+)
 
 
 ;;;***************************************************************
 ;;;                   x87 Operations
 ;;;***************************************************************
+
+(defsection-rtl |x87 Control Word| |x87 Instructions|
 
 ;; Rounding and precision control in FCW
 
@@ -739,6 +747,9 @@
     ((0 1) 24)
     (2 53)
     (3 64)))
+)
+
+(defsection-rtl |x87 Status Word| |x87 Instructions|
 
 ;; Additional FSW status bits that are set by x87 instructions:
 
@@ -755,6 +766,9 @@
 
 (defun clear-c1 (fsw)
   (logand fsw #xfdff))
+)
+
+(defsection-rtl |Overview of x87 Exceptions| |x87 Instructions|
 
 ;; The arguments of X87-BINARY-SPEC are two data inputs, their formats, and the initial 
 ;; FCW and FSW registers. It returns a data result, which is NIL in the event of an  
@@ -913,3 +927,4 @@
                 (if (unmasked-excp-p post-flags fcw)
                     (set-es (logior (logior fsw pre-flags) post-flags))
                   (logior (logior fsw pre-flags) post-flags)))))))))
+)

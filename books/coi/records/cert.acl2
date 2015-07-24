@@ -32,5 +32,5 @@
 (ld "../symbol-fns/symbol-fns-defpkg.lsp")
 (ld "../osets/set-defpkg.lsp")
 (ld "../bags/bag-defpkg.lsp")
-(ld "../lists/list-defpkg.lsp")
+(include-book "../lists/portcullis")
 (ld "data-structures/memories/package.lsp" :dir :system)

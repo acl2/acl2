@@ -346,7 +346,7 @@ some kind of separator!</p>
   (ctx   ; Context for error messages
    decls ; List of traditional (declare ...) forms or doc strings
    )
-  ;; Returns (mv xargs-alist other-decls)
+  ;; Returns extracted xargs-alist
   (b* (((when (atom decls))
         nil)
        (decl1 (car decls))
@@ -920,7 +920,6 @@ some kind of separator!</p>
 
        (non-exec   (getarg :non-executable nil      kwd-alist))
        (returns    (getarg :returns        nil      kwd-alist))
-       (enabled-p  (getarg :enabled        nil      kwd-alist))
        (inline     (getarg :inline         :default kwd-alist))
        (prepwork   (getarg :prepwork       nil      kwd-alist))
 
@@ -935,6 +934,9 @@ some kind of separator!</p>
        ((unless (member inline '(:default t nil)))
         (raise "Error in ~x0: expected :inline to be T, NIL, or :DEFAULT, but found ~x1."
                name inline))
+
+       (embedded-xargs-alist (extract-xargs-from-traditional-decls/docs (list 'define name)
+                                                                        traditional-decls/docs))
        (t-hints (and t-proof
                      ;; This order of this append is meant to match the order
                      ;; of the hints given to define in the case of no t-proof,
@@ -943,9 +945,7 @@ some kind of separator!</p>
                      ;; LAST in that case, as described below.
                      (append
                       ;; All :hints found anywhere in (declare (xargs ...)) forms
-                      (append-hints-from-xargs-alist
-                       (extract-xargs-from-traditional-decls/docs (list 'define name)
-                                                                  traditional-decls/docs))
+                      (append-hints-from-xargs-alist embedded-xargs-alist)
                       ;; Any top-level :hints
                       (getarg :hints nil kwd-alist))))
 
@@ -999,9 +999,14 @@ some kind of separator!</p>
        (t-proof-name  (if t-proof (ACL2::packn (LIST name-fn '|-| t-proof)) nil))
 
        (returnspecs   (parse-returnspecs name returns world))
-       (defun-sym     (if enabled-p 'defun 'defund))
        (main-def
-        `(,defun-sym ,name-fn ,formal-names
+        `(;; Historically we used defund unless the function was enabled-p.
+          ;; But this ran afoul of Issue 464 for DEFINE forms that were
+          ;; embedded in DEFINES.  It seems simpler and easier to just handle
+          ;; the enabling or disabling later, since DEFUND isn't really
+          ;; anything special.  So, we now just always use DEFUN instead.
+          defun
+          ,name-fn ,formal-names
 
 ; Subtle: this order isn't what we always used, but Sol ran into some problems
 ; where, e.g., traditional type declarations weren't coming before the guards
@@ -1102,7 +1107,7 @@ some kind of separator!</p>
 
 (defun events-from-guts (guts world)
   (b* (((defguts guts) guts)
-
+       (enabled-p  (getarg :enabled        nil guts.kwd-alist))
        (prepwork   (getarg :prepwork       nil guts.kwd-alist))
        (short      (getarg :short          nil guts.kwd-alist))
        (long       (getarg :long           nil guts.kwd-alist))
@@ -1156,6 +1161,22 @@ some kind of separator!</p>
                    (make-define-ret-patbinder ',guts (w state)))))
 
          (local
+          ;; [Jared] Previously, when we sometimes used DEFUND and DEFUN, this
+          ;; was a sensible way to ensure that the function was always enabled
+          ;; during the processing of the /// section.  You might think (and I
+          ;; originally DID think) that, now that we always use DEFUN, that
+          ;; this would be unnecessary.  However, in rare cases, for instance,
+          ;; if we are redundantly DEFINEing a function that was originally
+          ;; DEFINEd before now, the function may NOT be enabled even though we
+          ;; have introduced it with DEFUN, because you can do something like
+          ;;
+          ;;    (defun foo ...)
+          ;;    (in-theory (disable foo))
+          ;;    (defun foo ...) ;; redundantly
+          ;;
+          ;; And at this point FOO is still disabled.  So, this is a bummer
+          ;; because enabling/disabling is expensive, but at least we can keep
+          ;; this local...
           (make-event
            (if (logic-mode-p ',guts.name-fn (w state))
                '(in-theory (enable ,guts.name))
@@ -1176,15 +1197,23 @@ some kind of separator!</p>
          ,@(and hook-specs
                 `((value-triple (cw "; Running post-define hooks.~%"))
                   .
-                  ,(post-hook-make-events hook-specs hooks-alist guts))))
+                  ,(post-hook-make-events hook-specs hooks-alist guts)))
+
+         ,@(if prognp
+               `((set-define-current-function nil))
+             nil)
+
+         ,@(if enabled-p
+               nil
+             `((make-event
+                (if (logic-mode-p ',guts.name-fn (w state))
+                    '(in-theory (disable ,guts.name))
+                  '(value-triple :invisible))))))
+
 
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
        ,(add-signature-from-guts guts)
-
-       ,@(if prognp
-             `((set-define-current-function nil))
-           nil)
 
        (make-event (list 'value-triple
                          (if (eql ,start-max-absolute-event-number

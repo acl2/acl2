@@ -203,12 +203,10 @@ implode).</p>
 
   (defthm coerce-to-list-removal
     (equal (coerce x 'list)
-           (explode x)))
+           (explode x))))
 
-  (local (in-theory (disable acl2::explode)))
-
-  (theory-invariant (incompatible (:definition acl2::explode$inline)
-                                  (:rewrite coerce-to-list-removal))))
+(theory-invariant (incompatible (:definition acl2::explode$inline)
+                                (:rewrite coerce-to-list-removal)))
 
 
 
@@ -264,12 +262,10 @@ explode).</p>"
 
   (defthm coerce-to-string-removal
     (equal (coerce x 'string)
-           (implode x)))
+           (implode x))))
 
-  (local (in-theory (disable acl2::implode$inline)))
-
-  (theory-invariant (incompatible (:definition acl2::implode$inline)
-                                  (:rewrite coerce-to-string-removal))))
+(theory-invariant (incompatible (:definition acl2::implode$inline)
+                                (:rewrite coerce-to-string-removal)))
 
 
 

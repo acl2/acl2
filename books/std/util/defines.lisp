@@ -146,7 +146,7 @@ specifiers (see below).</p>
 <p>The @('other-events') are a structuring device that allow you to associate
 any arbitrary events.  These events are submitted after the definitions, flag
 function, etc., have been processed.  All of the functions in the clique are
-enabled before we processing these events.</p>
+left enabled while processing these events.</p>
 
 <p>Note that individual @('define')s can have their own other-events.  All of
 these individual sections are processed (with their own local scopes) before
@@ -253,13 +253,6 @@ may slightly improve performance by avoiding the overhead of @(see
 encapsulate), and is mainly meant as a tool for macro developers.</dd>
 
 
-<dt>:locally-enable bool</dt>
-
-<dd>By default the functions in the clique are enabled for the processing of
-the @('///') section.  You can set @(':locally-enable nil') to avoid this.
-This may slightly improve performance by avoiding the overhead of theory
-events, and is mainly meant as a tool for macro developers.</dd>
-
 </dl>")
 
 
@@ -312,7 +305,6 @@ events, and is mainly meant as a tool for macro developers.</dd>
 
      :verbosep
      :progn
-     :locally-enable ;; set to nil to skip locally enabling the functions
      )
    *defines-xargs-keywords*))
 
@@ -413,6 +405,17 @@ events, and is mainly meant as a tool for macro developers.</dd>
       nil
     (cons (defguts->name (car gutslist))
           (collect-names-from-guts (cdr gutslist)))))
+
+(defun collect-defines-to-disable (gutslist)
+  (b* (((when (atom gutslist))
+        nil)
+       ((defguts guts1) (car gutslist))
+       (enabled-p (getarg :enabled nil guts1.kwd-alist))
+       ((when enabled-p)
+        ;; The function is supposed to be ENABLED, so don't collect its name
+        (collect-defines-to-disable (cdr gutslist))))
+    (cons guts1.name-fn
+          (collect-defines-to-disable (cdr gutslist)))))
 
 ;; (defun collect-all-returnspec-thms (gutslist world)
 ;;   (if (atom gutslist)
@@ -793,6 +796,8 @@ events, and is mainly meant as a tool for macro developers.</dd>
                                             (and want-xdoc-p name)
                                             (not returns-induct)))
 
+       (fns-to-disable (collect-defines-to-disable gutslist))
+
        (defines-guts
          (make-defines-guts
           :name name
@@ -820,26 +825,26 @@ events, and is mainly meant as a tool for macro developers.</dd>
          (with-output :on (error)
            ,(extend-defines-alist defines-guts)))
 
+       ;; Introduce a suitable flag function, but only if this is a logic mode function.
        ,@(and flag-name
               `((with-output :on (error)
-                  (flag::make-flag ,flag-name ,(defguts->name-fn (car gutslist))
-                                   :flag-mapping ,flag-mapping
-                                   ,@(and flag-defthm-macro
-                                          `(:defthm-macro-name ,flag-defthm-macro))
-                                   ,@(and flag-var `(:flag-var ,flag-var))
-                                   ,@(and flag-local `(:local t))
-                                   ,@(and ruler-extenders `(:ruler-extenders ,ruler-extenders))
-                                   :hints ,flag-hints))))
-
-       ,@(and (getarg :locally-enable t kwd-alist)
-              `((local
-                 (make-event
-                  (if (logic-mode-p ',(defguts->name-fn (car gutslist)) (w state))
-                      '(in-theory (enable . ,fnnames))
-                    '(value-triple :invisible))))))
+                  (make-event
+                   (if (logic-mode-p ',(defguts->name-fn (car gutslist)) (w state))
+                       ;; 
+                       (value '(flag::make-flag ,flag-name ,(defguts->name-fn (car gutslist))
+                                                :flag-mapping ,flag-mapping
+                                                ,@(and flag-defthm-macro
+                                                       `(:defthm-macro-name ,flag-defthm-macro))
+                                                ,@(and flag-var `(:flag-var ,flag-var))
+                                                ,@(and flag-local `(:local t))
+                                                ,@(and ruler-extenders `(:ruler-extenders ,ruler-extenders))
+                                                :hints ,flag-hints))
+                     (value '(value-triple :invisible)))))))
 
        (defsection rest-events-1
          ,@(and want-xdoc-p `(:extension ,name))
+         ;; It seems OK to do this even if we're in program mode, because in that
+         ;; case you shouldn't be trying to provide return-value theorems, right?
          ,@(and returns-induct
                 `((make-event
                    (let ((event (returnspec-flag-thm
@@ -847,7 +852,16 @@ events, and is mainly meant as a tool for macro developers.</dd>
                      `(with-output :stack :pop ,event)))))
          (with-output :stack :pop (progn . ,rest-events1))
          ,@fn-sections
-         (with-output :stack :pop (progn . ,rest-events2))))))
+         (with-output :stack :pop (progn . ,rest-events2)))
+
+       ;; Disable any functions that aren't marked as :enable
+       ,@(and (consp fns-to-disable)
+              `((make-event
+                 (if (logic-mode-p ',(defguts->name-fn (car gutslist)) (w state))
+                     '(in-theory (disable . ,fns-to-disable))
+                   '(value-triple :invisible)))))
+
+       )))
 
 
 (defmacro defines (name &rest args)

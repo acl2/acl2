@@ -153,7 +153,7 @@
 ;;;               Classification of Formats
 ;;;***************************************************************
 
-;(defsection-rtl |Classification of Formats| |Floating-Point Formats|
+(defsection-rtl |Classification of Formats| |Floating-Point Formats|
 
 ;;Format parameters:
 
@@ -215,12 +215,12 @@
 
 (defund bias (f) (declare (xargs :guard (formatp f))) (- (expt 2 (- (expw f) 1)) 1))
 
-;)
+)
 ;;;***************************************************************
 ;;;                    Normal Encodings
 ;;;***************************************************************
 
-;(defsection-rtl |Normal Encodings| |Floating-Point Formats|
+(defsection-rtl |Normal Encodings| |Floating-Point Formats|
 
 (defund normp (x f)
   (declare (xargs :guard (formatp f)))
@@ -359,13 +359,13 @@
            (<= x (lpn f)))
   :rule-classes
   ((:rewrite :match-free :once)))
-;)
+)
 
 ;;;***************************************************************
 ;;;               Denormals and Zeroes
 ;;;***************************************************************
 
-;(defsection-rtl |Denormals and Zeroes| |Floating-Point Formats|
+(defsection-rtl |Denormals and Zeroes| |Floating-Point Formats|
 
 (defund zerp (x f)
   (declare (xargs :guard (formatp f)))
@@ -488,12 +488,12 @@
 		     (<= 1 m)
 		     (< m (expt 2 (1- (prec f))))))))
 
-;)
+)
 ;;;***************************************************************
 ;;;                 Infinities and NaNs
 ;;;***************************************************************
 
-;(defsection-rtl |Infinities and NaNs| |Floating-Point Formats|
+(defsection-rtl |Infinities and NaNs| |Floating-Point Formats|
 
 (defund infp (x f)
   (declare (xargs :guard (formatp f)))
@@ -537,7 +537,7 @@
          0
          (1- (sigw f)))))
 
-;)
+)
 ;;;***************************************************************
 ;;;                Rebiasing Exponents
 ;;;***************************************************************
