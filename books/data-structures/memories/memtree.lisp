@@ -81,7 +81,35 @@
 (local (in-theory (disable logand ash)))
 (local (in-theory (disable (:executable-counterpart expt))))
 
-                 
+; [Jared] dumb speed hacking
+(local (in-theory (disable acl2::floor-bounds-1
+                           acl2::floor-zero
+                           acl2::mod-zero
+                           acl2::mod-x-y-=-x
+                           acl2::floor-positive
+                           acl2::floor-negative
+                           acl2::mod-positive
+                           acl2::mod-negative
+                           acl2::not-integerp-4a
+                           acl2::not-integerp-2a
+                           acl2::not-integerp-1a
+                           acl2::mod-bounds-3
+                           acl2::mod-nonpositive
+                           acl2::floor-nonpositive-1
+                           acl2::floor-nonpositive-2
+                           acl2::floor-nonnegative-1
+                           acl2::floor-nonnegative-2
+                           default-*-2
+                           default-*-1
+                           default-<-2
+                           default-<-1
+                           acl2::mod-completion
+                           acl2::mod-cancel-*
+                           acl2::mod-neg
+                           acl2::mod-minus-2
+                           acl2::mod-bounds-2
+
+                           )))
 
 
 
@@ -1049,10 +1077,10 @@
 ; And now we do the analagous thing for storing nil
 
  (local (defthm odd-lemma-2
-          (implies (and (not (zp depth))
+          (implies (and (equal (mod addr 2) 1)
+                        (not (zp depth))
                         (_address-p addr depth)
-                        (_memtree-p mtree depth)
-                        (equal (mod addr 2) 1))
+                        (_memtree-p mtree depth))
                    (equal (_memtree-store-nil addr mtree depth)
                           (if (atom mtree)
                               nil
@@ -1067,10 +1095,10 @@
           :hints(("Goal" :use (:instance _memtree-store-nil)))))
 
  (local (defthm even-lemma-2
-          (implies (and (not (zp depth))
+          (implies (and (equal (mod addr 2) 0)
+                        (not (zp depth))
                         (_address-p addr depth)
-                        (_memtree-p mtree depth)
-                        (equal (mod addr 2) 0))
+                        (_memtree-p mtree depth))
                    (equal (_memtree-store-nil addr mtree depth)
                           (if (atom mtree)
                               nil
@@ -1086,11 +1114,11 @@
 
 
  (local (defthmd main-lemma-2
-          (implies (and (natp depth)
+          (implies (and (not (equal a b))
+                        (natp depth)
                         (_address-p a depth)
                         (_address-p b depth)
-                        (_memtree-p mtree depth)
-                        (not (equal a b)))
+                        (_memtree-p mtree depth))
                    (equal (_memtree-store-nil a
                                               (_memtree-store-nil b mtree depth) 
                                               depth)
