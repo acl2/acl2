@@ -26,9 +26,9 @@
 
 (include-book "../rel9-rtl-pkg/lib/add")
 
-(include-book "../rel9-rtl-pkg/lib/mult")
+(include-book "./mult")
 
-(include-book "../rel9-rtl-pkg/lib/util")
+(include-book "./util")
 
 (include-book "../rel9-rtl-pkg/lib/srt")
 

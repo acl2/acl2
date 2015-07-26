@@ -50,8 +50,6 @@
 
 ;;(include-book "add") ;support for reasoning about addition
 
-;;(include-book "mult") ;integer multiplication
-
 ;;(include-book "srt") ;SRT division and square root
 
 ;; This must be included to use GL with this library:

@@ -52,8 +52,6 @@
 ; Users may prefer to replace the (include-book "arith") below with:
 ; (include-book "../arithmetic/top")
 
-(include-book "mult")  ; integerp multiplier
-
 ;; (include-book "arith") ;general arithmetic package
 
 (include-book "bvecp-raw-helpers") 
