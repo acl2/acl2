@@ -1478,6 +1478,21 @@ there may well be mismatches left.</p>"
                   actual1)))
     (mv t (cons (cons formal1.name value1) rest-subst))))
 
+
+#||
+(trace$ (vl-substitute-into-macro-text
+         :entry
+         (list 'vl-substitute-into-macro-text
+               :body (vl-echarlist->string body)
+               :subst subst
+               :name name
+               :reversed-acc (reverse (vl-echarlist->string acc)))
+         :exit
+         (list 'vl-substitute-into-macro-text
+               :successp     (car acl2::values)
+               :reversed-acc (reverse (vl-echarlist->string (second acl2::values))))))
+||#
+
 (define vl-substitute-into-macro-text
   ((body   vl-echarlist-p
            "Characters in the macro's body, which we recur through.")
@@ -1540,15 +1555,33 @@ sensible.</p>"
                                acc)))
                 (vl-substitute-into-macro-text (cddddr body) subst name loc config acc)))
 
-             ((mv name prefix remainder) (vl-read-identifier (cdr body)))
-             ((unless name)
-              ;; Should be ruled out by vl-read-until-end-of-define
-              (mv (cw "Preprocessor error (~s0): bad grave character in macro ~
-                       text for ~s1.~%"
-                      (vl-location-string loc) name)
-                  acc))
-             (acc (revappend prefix (cons (car body) acc))))
-          (vl-substitute-into-macro-text remainder subst name loc config acc)))
+             ;; We previously read an identifier here and then just stuck it
+             ;; into the accumulator.  However, it appears that NCVerilog and
+             ;; VCS both support things like the following:
+             ;;
+             ;;    `define blah mywire
+             ;;    `define mac(arg) wire `arg = 1;
+             ;;    `mac(blah)                         // results in wire mywire = 1;
+             ;;
+             ;; Which means that it is NOT correct to just put `arg into the
+             ;; accumulator.  Instead, we need to do things like argument
+             ;; substitution here.  So, now don't try to read anything and just
+             ;; keep going past the grave.
+
+             ;; Old code was:
+             ;;
+             ;;    ((mv name prefix remainder) (vl-read-identifier (cdr body)))
+             ;;    ((unless name)
+             ;;     ;; Should be ruled out by vl-read-until-end-of-define
+             ;;     (mv (cw "Preprocessor error (~s0): bad grave character in macro ~
+             ;;              text for ~s1.~%"
+             ;;             (vl-location-string loc) name)
+             ;;         acc))
+             ;;    (acc (revappend prefix (cons (car body) acc))))
+             ;; (vl-substitute-into-macro-text remainder subst name loc config acc)))
+
+             )
+          (vl-substitute-into-macro-text (cdr body) subst name loc config (cons (car body) acc))))
 
        ((when (eql char1 #\"))
         (b* (((mv string prefix remainder)
@@ -1566,16 +1599,64 @@ sensible.</p>"
         ;; See vl-read-until-end-of-define.  Line continuations should already
         ;; have been eaten and replaced by spaces here.  The only reason we
         ;; should see a backslash, then, is for escaped identifiers.
-        (b* (((mv name prefix remainder)
-              (vl-read-escaped-identifier body))
-             ((unless name)
-              ;; Should be ruled out by vl-read-until-end-of-define.
-              (mv (cw "Preprocessor error (~s0): stray backslash in macro ~
-                       text for ~s1.~%"
-                      (vl-location-string loc) name)
-                  acc))
-             (acc (revappend prefix acc)))
-          (vl-substitute-into-macro-text remainder subst name loc config acc)))
+
+        ;; We used to do a lot here to try to properly parse escaped
+        ;; identifiers, and it appears that in some cases (see for instance
+        ;; tests.lisp, corner8 and corner9).  NCVerilog is doing something
+        ;; different than we are for escaped identifiers.  However, this very
+        ;; simple behavior seems to agree with VCS so far, so I think it is
+        ;; perhaps an improvement...
+        (vl-substitute-into-macro-text (cdr body) subst name loc config
+                                       (cons (car body) acc)))
+
+       ;; Old code for \...
+       ;;
+       ;; (b* (((mv name prefix remainder)
+       ;;       (vl-read-escaped-identifier body))
+       ;;      ((unless name)
+       ;;       ;; Should be ruled out by vl-read-until-end-of-define.
+       ;;       (mv (cw "Preprocessor error (~s0): stray backslash in macro ~
+       ;;                text for ~s1.~%"
+       ;;               (vl-location-string loc) name)
+       ;;           acc))
+       ;;
+       ;;      ;; No---Gods, why?  There are horrible corner cases here.
+       ;;      ;; Consider something like this:
+       ;;      ;;
+       ;;      ;;    `define mac(name) wire \mac_``name ;
+       ;;      ;;
+       ;;      ;; VCS and NCVerilog agree that `mac(foo) should result in a wire
+       ;;      ;; named \mac_foo being defined.  But that is horrible.  It means
+       ;;      ;; that the ` is no longer part of the escaped identifier but is
+       ;;      ;; instead some special thing.
+       ;;      ;;
+       ;;      ;;
+       ;;      ;; In contrast, a macro like this:
+       ;;      ;;
+       ;;      ;;    `define mac(name) wire \``name``_mac ;
+       ;;      ;;
+       ;;      ;; Seems to mean that `mac(foo) produces:
+       ;;      ;;
+       ;;      ;;    On VCS: a wire named \foo_foo
+       ;;      ;;    On NCV: a wire named \``foo_mac
+       ;;      ;;
+       ;;      ;; I am sure there is plenty of other esoterica.  As a horrible
+       ;;      ;; hack that is hopefully sufficient, I will treat grave
+       ;;      ;; characters in a special way and just try to stop reading once
+       ;;      ;; any grave character is encountered.
+       ;;      ((unless (str::substrp "`" name))
+       ;;       (b* ((acc (revappend prefix acc)))
+       ;;         (vl-substitute-into-macro-text remainder subst name loc config acc)))
+       ;;
+       ;;      ;; Found grave, so do some awful thing...
+       ;;      (acc (cons (car body) acc))
+       ;;      ((mv okp prefix remainder) (vl-read-until-literal "`" (cdr body)))
+       ;;      ((unless okp)
+       ;;       (mv (raise "Impossibly failed to find grave character after already ~
+       ;;                   finding it earlier.  Jared thinks this is impossible.")
+       ;;           acc))
+       ;;      (acc (revappend prefix acc)))
+       ;;   (vl-substitute-into-macro-text remainder subst name loc config acc)))
 
        ((when (eql char1 #\/))
         (b* (((when (vl-matches-string-p "//" body))
