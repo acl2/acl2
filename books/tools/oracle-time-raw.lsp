@@ -29,6 +29,13 @@
   ;; Holds (elapsed-time . total-alloc) pairs for computations.
   nil)
 
+(defun fudge-heap-bytes-allocated ()
+  ;; BOZO copied and pasted in oracle-timelimit-raw.lsp
+  #+(or ccl sbcl)
+  (heap-bytes-allocated)
+  #+(or ccl sbcl) ;; BOZO why doesn't ACL2 do it this way?
+  0)
+
 (defmacro oracle-time-exec-raw (ignored-arg1 form)
   (declare (ignorable ignored-arg1))
   (let ((start-time  (gensym))
@@ -36,11 +43,11 @@
         (ans         (gensym))
         (end-time    (gensym))
         (end-alloc   (gensym)))
-    `(let ((,start-alloc (heap-bytes-allocated))
+    `(let ((,start-alloc (fudge-heap-bytes-allocated))
            (,start-time  (get-internal-real-time))
            (,ans         (multiple-value-list ,form))
            (,end-time    (get-internal-real-time))
-           (,end-alloc   (heap-bytes-allocated)))
+           (,end-alloc   (fudge-heap-bytes-allocated)))
        ;; Record these times so we can extract them later.
        (push (cons (/ (coerce (- ,end-time ,start-time) 'rational)
                       internal-time-units-per-second)
