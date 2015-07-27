@@ -34,7 +34,7 @@
 
 (include-book "../rel9-rtl-pkg/lib/srt")
 
-(include-book "../rel9-rtl-pkg/lib/gl")
+(include-book "./gl")
 
 (include-book "./masc")
 
