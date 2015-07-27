@@ -1,12 +1,11 @@
 (in-package "RTL")
 
-(include-book "std/util/defrule" :dir :system)
-(local (include-book "basic"))
-(include-book "bits")
+(include-book "definitions")
+(local (include-book "bits"))
 (local (include-book "log"))
 
 (include-book "tools/with-arith5-help" :dir :system)
-(acl2::allow-arith5-help)
+(local (acl2::allow-arith5-help))
 (local (in-theory (acl2::enable-arith5)))
 
 ; binary-cat lemmas

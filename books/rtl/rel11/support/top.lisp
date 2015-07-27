@@ -24,6 +24,8 @@
 
 (in-package "RTL")
 
+(include-book "definitions")
+
 (include-book "../rel9-rtl-pkg/lib/add")
 
 (include-book "./mult")

@@ -24,10 +24,10 @@
 
 (in-package "RTL")
 
-(include-book "util")
-(include-book "basic")
-(include-book "float")
-(include-book "round")
+(include-book "definitions")
+(local (include-book "basic"))
+(local (include-book "float"))
+(local (include-book "round"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
