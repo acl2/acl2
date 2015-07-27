@@ -57,11 +57,3 @@
 ;;(include-book "rtl") ;semantics of the basic RTL primitives
 
 ;;(include-book "rtlarr") ;semantics of RTL array primitives
-
-;; This is relevant to code derived from SystemC and is inconsistent with the last two above:
-
-;;(include-book "masc")
-
-
-
-
