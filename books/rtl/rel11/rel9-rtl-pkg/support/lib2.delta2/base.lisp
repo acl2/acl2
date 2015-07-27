@@ -57,8 +57,6 @@
 ; Users may prefer to replace the (include-book "arith") below with:
 ; (include-book "../arithmetic/top")
 
-(include-book "../lib2.delta1/mult")  ; integerp multiplier
-
 ;(include-book "../lib2.delta1/arith") ;general arithmetic package
 
 ;
