@@ -49,6 +49,18 @@
 (local (in-theory (enable set::weak-insert-induction-helper-2)))
 (local (in-theory (enable set::weak-insert-induction-helper-3)))
 
+;; [Jared] dumb accumulated persistence hacking
+(local (in-theory (disable SET::MAP-SUBSET-HELPER-2
+                           SET::IN-TAIL-OR-HEAD
+                           SET::ALL-IN-2-NOT<TRUE-LISTP>
+                           SET::ALL-IN-2<TRUE-LISTP>
+                           SET::ALL<NOT-TRUE-LISTP>
+                           SET::ALL<TRUE-LISTP>
+                           SET::ALL-TAIL-NOT<TRUE-LISTP>
+                           SET::ALL-TAIL<TRUE-LISTP>
+                           SET::ALL-SUBSET-NOT<TRUE-LISTP>
+                           SET::ALL-SUBSET<TRUE-LISTP>)))
+
 ;; We implement dtrees as triples of the form (:dtree deps children) where
 ;; :dtree is just the literal keyword symbol :dtree, deps is the set of local
 ;; dependences, and children is a map whose range consists entirely of other

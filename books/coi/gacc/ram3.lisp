@@ -30,7 +30,20 @@
 
 (in-package "GACC")
 
+;; [Jared] reordered include-books so non-local includes come first
+(include-book "../lists/repeat")
+(include-book "list-ops-fast")
+;;(include-book "list-ops")
+(include-book "wrap")
+(include-book "../super-ihs/fast")
+(include-book "../lists/mixed")
+
 (local (include-book "../util/iff"))
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+(local (include-book "rtl/rel9/arithmetic/fl" :dir :system))
+
+;(local (include-book "../super-ihs/loglist")) ;bzo
+(local (include-book "../super-ihs/super-ihs")) ;bzo
 
 ;; This books includes support for reading and writing to a memory with the following characteristics:
 ;; Addresses are 32-bit signed integers.
@@ -55,20 +68,22 @@
 ;; book on May 15th 2007.  These should be integrated properly with the
 ;; rest of the book and put in the proper place.
 
-(include-book "list-ops-fast")
-;;(include-book "list-ops")
-(include-book "wrap")
+;; [Jared] dumb speed hacking
+(local (in-theory (disable list::memberp
+                           acl2::ash-0
+                           (:t acl2::loghead-type)
+                           acl2::zip-open
+                           acl2::BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P
+                           gacc::wr-list-of-what-was-already-there
+                           acl2::loghead-identity
+                           gacc::wr-list-of-cons-one
+                           RD-OF-WR-LIST-DIFF
+                           ACL2::LOGHEAD-SUM-SPLIT-INTO-2-CASES
+                           )))
 
-; (Matt K., 10/2013: Changed rel8 to rel9.)
-(local (include-book "rtl/rel9/arithmetic/fl" :dir :system))
 
-;(local (include-book "../super-ihs/loglist")) ;bzo
-(local (include-book "../super-ihs/super-ihs")) ;bzo
-(include-book "../super-ihs/fast")
-(include-book "../lists/mixed")
-
-
-(local (in-theory (enable list::memberp)))
+(local (in-theory (disable list::memberp-of-cons
+                           bag::subbagp-of-cons)))
 
 
 ;bbzo move this stuff:
@@ -161,19 +176,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 ;bzo allow denvrs to differ everywhere appropriate?
 
 
@@ -184,6 +186,9 @@
   (implies (equal val (rd ad ram))
            (equal (wr ad val ram)
                   ram)))
+
+;; [Jared] speed hack
+(local (in-theory (disable wr-same-rd-non-cheap)))
 
 ;bzo can loop
 (defthm wr-of-0-becomes-clr
@@ -277,7 +282,11 @@
          (and (integerp b)
               (equal (ifix a) (acl2::logcdr b))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable word-ad-to-byte-ads))))
+           :in-theory (enable word-ad-to-byte-ads
+                              list::memberp-of-cons))))
+
+;; [Jared] dumb speed hack
+(local (in-theory (disable gacc::memberp-of-word-ad-to-byte-ads)))
 
 (defthm integerp-of-cadr-of-word-ad-to-byte-ads
   (integerp (car (cdr (word-ad-to-byte-ads word-ad))))
@@ -291,7 +300,8 @@
   (equal (disjoint (word-ad-to-byte-ads ad1)
                    (word-ad-to-byte-ads ad2))
          (not (equal (ifix ad1) (ifix ad2))))
-  :hints (("Goal" :in-theory (enable word-ad-to-byte-ads))))
+  :hints (("Goal" :in-theory (enable word-ad-to-byte-ads
+                                     list::memberp-of-cons))))
 
 (defthm logext-list-32-of-word-ad-to-byte-ads
   (equal (logext-list 32 (word-ad-to-byte-ads word-ad))
@@ -303,7 +313,7 @@
            (equal (DISJOINT X (WORD-AD-TO-BYTE-ADS a))
                   (not (memberp (ifix a) (logcdr-list x)))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable WORD-AD-TO-BYTE-ADS))))
+           :in-theory (enable list::memberp WORD-AD-TO-BYTE-ADS))))
 
 (defthm cdr-cdr-word-ad-to-byte-ads
   (equal (cdr (cdr (word-ad-to-byte-ads word-ad)))
@@ -498,6 +508,7 @@
            (type (unsigned-byte 16) offset)
            (xargs :guard (aamp-ramp ram)
                   :guard-hints (("Goal" :in-theory (e/d (acl2::logext-logapp
+                                                         acl2::loghead-identity
                                                          read-data-word-exec
                                                          acl2::ash-as-logapp
                                                          word-ad-to-byte-ads
@@ -698,7 +709,10 @@
                       (write-data-word denvr1 offset1 val1 ram)
                     (write-data-word denvr2 offset2 val2 (write-data-word denvr1 offset1 val1 ram)))))
   :rule-classes ((:rewrite :loop-stopper nil))
-  :hints (("Goal" :in-theory (e/d (write-data-word) (disjoint-of-two-word-ad-to-byte-ads)))))
+  :hints (("Goal" :in-theory (e/d (write-data-word
+                                   gacc::wr-list-of-cons-one
+                                   )
+                                  (disjoint-of-two-word-ad-to-byte-ads)))))
 
 ;improve?
 (defthm write-data-word-of-write-data-word-diff-bag-phrasing
@@ -732,7 +746,9 @@
 (defthm write-data-word-of-logext-16
   (equal (write-data-word denvr (acl2::logext 16 offset) value ram)
          (write-data-word denvr offset value ram))
-  :hints (("Goal" :in-theory (enable write-data-word WORD-AD-TO-BYTE-ADS))))
+  :hints (("Goal" :in-theory (enable write-data-word
+                                     gacc::wr-list-of-cons-one
+                                     WORD-AD-TO-BYTE-ADS))))
 
 (defthm write-data-word-subst-in-offset-alt
   (implies (and (equal (loghead 16 free) (loghead 16 offset))
@@ -880,7 +896,10 @@
              (loghead 16 val)
            (read-data-word denvr1 offset1 ram)))
   :hints (("Goal" :in-theory
-           (enable read-data-word write-data-word))))
+           (enable read-data-word
+                   write-data-word
+                   gacc::wr-list-of-cons-one
+                   ))))
 
 ;Subsumed by read-data-word-of-write-data-word-all-cases, but this should be a "simple" rule.
 (defthm read-data-word-of-write-data-word-same-simple
@@ -939,7 +958,9 @@
                           (addresses-of-data-word denvr2 offset2))
            (equal (read-data-word denvr1 offset1 (clear-data-word denvr2 offset2 ram))
                   (read-data-word denvr1 offset1 ram)))
-  :hints (("Goal" :in-theory (e/d (clear-data-word) (write-data-word-equal-rewrite)))))
+  :hints (("Goal" :in-theory (e/d (clear-data-word
+                                   list::memberp-of-cons)
+                                  (write-data-word-equal-rewrite)))))
 
 (defthm clear-data-word-of-clear-data-word-same-simple
   (equal (clear-data-word denvr offset (clear-data-word denvr offset ram))
@@ -1153,14 +1174,19 @@
            (equal (list::memberp (logapp 17 (logapp 1 b offset) denvr) (word-ads-to-byte-ads word-ads))
                   (list::memberp (logapp 16 offset denvr) word-ads)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable word-ads-to-byte-ads WORD-AD-TO-BYTE-ADS ACL2::EQUAL-LOGAPP-X-Y-Z))))
+           :in-theory (enable list::memberp
+                              word-ads-to-byte-ads
+                              WORD-AD-TO-BYTE-ADS
+                              ACL2::EQUAL-LOGAPP-X-Y-Z))))
 
 (defthm memberp-of-word-ads-to-byte-ads
   (equal (memberp ad (word-ads-to-byte-ads ads))
          (and (integerp ad)
               (memberp (acl2::logcdr ad) (ifix-list ads))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (word-ads-to-byte-ads) ()))))
+           :in-theory (e/d (word-ads-to-byte-ads
+                            list::memberp-of-cons)
+                           ()))))
 
 (defthm word-ads-to-byte-ads-of-loghead-list
   (implies (and (integerp size)
@@ -1225,7 +1251,8 @@
   (implies (and (bag::unique (loghead-list 16 word-ads))
                 (integer-listp word-ads) ;bzo
                 )
-           (bag::unique (word-ads-to-byte-ads word-ads))))
+           (bag::unique (word-ads-to-byte-ads word-ads)))
+  :hints(("Goal" :in-theory (enable list::memberp-of-cons))))
 
 
 (defthm unique-of-word-ads-to-byte-ads-better
@@ -1233,7 +1260,7 @@
            (equal (unique (word-ads-to-byte-ads word-ads))
                   (unique word-ads)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (disable)
+           :in-theory (enable list::memberp-of-cons)
            :expand ((unique word-ads)
                     (word-ads-to-byte-ads word-ads)))))
 
@@ -1333,7 +1360,9 @@
                                                    read-data-word-exec
                                                    acl2::logext-logapp
                                                    acl2::ash-as-logapp
-                                                   read-data-words-exec)
+                                                   read-data-words-exec
+                                                   acl2::loghead-identity
+                                                   )
                                                   (acl2::logapp-0-part-2-better
                                                    acl2::loghead-sum-split-into-2-when-i-is-a-constant))))))
   (mbe :exec (read-data-words-exec numwords denvr offset ram)
@@ -1546,7 +1575,8 @@
                                                   OFFSET-RANGE-WRAP-CONST-OPENER
                                                   WRITE-DATA-WORD-EXEC
                                                   ACL2::LOGEXT-LOGAPP
-                                                  write-data-words-exec)
+                                                  write-data-words-exec
+                                                  gacc::wr-list-of-cons-one)
                                                  (ACL2::LOGHEAD-SUM-SPLIT-INTO-2-WHEN-I-IS-A-CONSTANT))))))
   (mbe :exec (write-data-words-exec numwords denvr offset value ram)
        :logic (wr-list (addresses-of-data-words numwords denvr offset)
@@ -1585,6 +1615,7 @@
   :hints (("Goal" :expand ((OFFSET-RANGE-WRAP 16 OFFSET NUMWORDS))
            :in-theory (e/d (write-data-words write-data-word
                                              acl2::logext-logapp
+                                             gacc::wr-list-of-cons-one
                                              WORD-AD-TO-BYTE-ADS)
                            ()))))
 
@@ -1889,6 +1920,8 @@
                             write-data-word
                             acl2::logext-logapp
                             ACL2::ASH-AS-LOGAPP
+                            list::memberp-of-cons
+                            RD-OF-WR-LIST-DIFF
                             )
                            (LOGAPP-LIST-OF-LOGHEAD
                             ;ACL2::EQUAL-LOGAPP-X-Y-Z-CONSTANTS
@@ -3889,7 +3922,9 @@
            (equal (fetch-code-byte cenvr offset (write-data-word ;write-data-word
                                                 denvr offset2 val ram))
                   (fetch-code-byte cenvr offset ram)))
-  :hints (("Goal" :in-theory (enable write-data-word
+  :hints (("Goal" :in-theory (enable RD-OF-WR-LIST-DIFF
+                                     list::memberp-of-cons
+                                     write-data-word
 ;                                     rx-to-rd
                                      make-code-addr
                                      WORD-AD-TO-BYTE-ADS
@@ -3916,7 +3951,8 @@
                                                  2 ;numwords
                                                  denvr offset2 val ram))
                   (fetch-code-byte cenvr offset ram)))
-  :hints (("Goal" :in-theory (e/d (write-data-words
+  :hints (("Goal" :in-theory (e/d (RD-OF-WR-LIST-DIFF
+                                   write-data-words
                                    acl2::logext-logapp
                                    WORD-AD-TO-BYTE-ADS
                                    make-code-addr
@@ -3924,6 +3960,7 @@
 ;                                     rx-to-rd
                                    OFFSET-RANGE-WRAP-CONST-OPENER
                                    NO-CODE-DATA-CLASH
+                                   list::memberp-of-cons
                                    )
                                   (WRITE-DATA-WORDS-OPENER)))))
 
@@ -3981,7 +4018,7 @@
 
 
 
-(include-book "../lists/repeat")
+
 
 
 
@@ -4077,6 +4114,7 @@
                   (fetch-code-byte cenvr offset ram)))
   :hints (("Goal" :in-theory (e/d (write-data-word
                                    fetch-code-byte
+                                   RD-OF-WR-LIST-DIFF
                                    )
                                   (ADDRESSES-OF-DATA-WORD)))))
 
@@ -4521,9 +4559,10 @@
                                   (ram ram)
                                   (numwords n)
                                   )
-           :in-theory (disable loghead-16-of-read-data-words
+           :in-theory (e/d (acl2::loghead-identity)
+                           (loghead-16-of-read-data-words
 ;                               loghead-times-16-of-read-data-words
-                               read-data-words-alt-def))))
+                               read-data-words-alt-def)))))
 
 (defthm read-data-words-when-high-word-is-zero-cheap
   (implies (and (equal 0 (read-data-word denvr (+ 1 offset) ram))
@@ -4959,6 +4998,7 @@
     :in-theory
     (e/d (gacc::write-data-words
           gacc::write-data-word
+          gacc::wr-list-of-cons-one
           acl2::logext-logapp gacc::word-ad-to-byte-ads)
          nil))))
 
@@ -5004,7 +5044,9 @@
                 (integerp n))
            (equal (GACC::NTHWORD n (GACC::READ-DATA-WORDS numwords denvr offset ram))
                   0))
- :hints (("Goal" :in-theory (e/d (GACC::NTHWORD-rewrite) (gacc::LOGTAIL-16-LOGHEAD-32)))))
+ :hints (("Goal" :in-theory (e/d (GACC::NTHWORD-rewrite
+                                  acl2::loghead-identity)
+                                 (gacc::LOGTAIL-16-LOGHEAD-32)))))
 
 (defthm loghead-times-16-of-read-data-words-special
   (implies (and (integerp numwords1)
@@ -5205,7 +5247,8 @@
   (("Goal" :do-not '(generalize eliminate-destructors)
                :induct (2-list-induct ads1 ads2)
     :in-theory (e/d (len gacc::word-ads-to-byte-ads
-                         WORD-AD-TO-BYTE-ADS)
+                         WORD-AD-TO-BYTE-ADS
+                         bag::subbagp-of-cons)
                     (list::len-cdr-equal-len-cdr-rewrite
                      BAG::SUBBAG-BY-MULTIPLICITY
                      ;GACC::WORD-AD-TO-BYTE-ADS
@@ -5323,7 +5366,9 @@
                 )
            (equal (gacc::rd ad (gacc::write-data-word denvr offset value ram))
                   (gacc::rd ad ram)))
-  :hints (("Goal" :in-theory (enable gacc::write-data-word))))
+  :hints (("Goal" :in-theory (enable RD-OF-WR-LIST-DIFF
+                                     gacc::write-data-word
+                                     gacc::memberp-of-word-ad-to-byte-ads))))
 
 (defthm rd-of-write-data-word-diff-offset
   (implies (and (not (equal (acl2::loghead 16 offset) (acl2::loghead 16 (acl2::logtail 1 ad))))
@@ -5331,7 +5376,9 @@
                 )
            (equal (gacc::rd ad (gacc::write-data-word denvr offset value ram))
                   (gacc::rd ad ram)))
-  :hints (("Goal" :in-theory (enable gacc::write-data-word))))
+  :hints (("Goal" :in-theory (enable RD-OF-WR-LIST-DIFF
+                                     gacc::write-data-word
+                                     gacc::memberp-of-word-ad-to-byte-ads))))
 
 (defthm rd-of-write-data-word-same
   (implies (and (equal (acl2::loghead 15 denvr) (acl2::logtail 17 ad))
@@ -5347,6 +5394,7 @@
   :hints (("Goal" :in-theory (enable gacc::write-data-word
                                      WORD-AD-TO-BYTE-ADS
                                      GACC::ADDRESSES-OF-DATA-WORD
+                                     gacc::wr-list-of-cons-one
                                      ACL2::EQUAL-LOGAPP-X-Y-Z))))
 
 (defthm rd-of-write-data-words-diff-denvr
@@ -5356,7 +5404,8 @@
                 )
            (equal (gacc::rd ad (gacc::write-data-words numwords denvr offset value ram))
                   (gacc::rd ad ram)))
-  :hints (("Goal" :in-theory (enable gacc::write-data-words))))
+  :hints (("Goal" :in-theory (enable gacc::write-data-words
+                                     RD-OF-WR-LIST-DIFF))))
 
 (defthm rd-of-write-data-words-diff-offset
   (implies (and (not (< (acl2::loghead 16 (- (acl2::loghead 16 (acl2::logtail 1 ad)) offset)) numwords))
@@ -5368,6 +5417,7 @@
                   (gacc::rd ad ram)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable gacc::write-data-words
+                              RD-OF-WR-LIST-DIFF
                               MEMBERP-OF-OFFSET-RANGE))))
 
 (defthm find-index-of-word-ads-to-byte-ads

@@ -1086,6 +1086,9 @@ cowles: $(filter cowles/%, $(OK_CERTS))
 .PHONY: data-structures
 data-structures: $(filter-out data-structures/memories/%, $(filter data-structures/%, $(OK_CERTS)))
 
+.PHONY: defexec
+defexec: $(filter defexec/%, $(OK_CERTS))
+
 .PHONY: defsort
 defsort: $(filter defsort/%, $(OK_CERTS))
 
