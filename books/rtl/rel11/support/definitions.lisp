@@ -4,9 +4,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "ordinals/e0-ordinal" :dir :system)
 
-(include-book "tools/with-arith5-help" :dir :system)
-(local (acl2::allow-arith5-help))
-(local (in-theory (acl2::enable-arith5)))
+(local (include-book "arithmetic-5/top" :dir :system))
 
 ;; From basic.lisp:
 
@@ -623,3 +621,30 @@
   (rnd x mode (+ (prec f) (expo x) (- (expo (spn f))))))
 
 )
+
+;; from sqrt.lisp:
+
+(defund rtz-sqrt (x n)
+  (if (zp n)
+      0
+    (let* ((lower (rtz-sqrt x (1- n)))
+           (upper (+ lower (expt 2 (- n)))))
+      (if (<= (* upper upper) x)
+          upper
+        lower))))
+; ACL2 derives this type-prescription rule from the above definition, but it
+; doesn't export it properly.
+(defrule nonnegative-rtz-sqrt
+  (>= (rtz-sqrt x n) 0)
+  :rule-classes :type-prescription)
+
+(defund rto-sqrt (x n)
+  (let ((trunc (rtz-sqrt x (1- n))))
+    (if (< (* trunc trunc) x)
+        (+ trunc (expt 2 (- n)))
+      trunc)))
+
+(defund qsqrt (x n)
+  (let ((e (1+ (fl (/ (expo x) 2)))))
+    (* (expt 2 e)
+       (rto-sqrt (/ x (expt 2 (* 2 e))) n))))

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -112,7 +112,7 @@
   :rule-classes ()
   :hints (("Subgoal *1/2" :use (rtz-sqrt-bounds-1
                                 (:instance rtz-sqrt-bounds-4 (x (rtz-sqrt x (1- n))))))))
-                                
+
 
 (defthm expo-rtz-sqrt
   (implies (and (rationalp x)
@@ -180,7 +180,7 @@
                         (:instance rtz-upper-pos (x (rtz-sqrt x n)) (n (1- n)))
                         (:instance rtz-exactp-a (x (rtz-sqrt x n)) (n (1- n)))
                         (:instance rtz-exactp-c (a (rtz-sqrt x (1- n))) (x (rtz-sqrt x n)) (n (1- n)))
-                        (:instance fp+2 (n (1- n)) (x (rtz-sqrt x (1- n))) (y (rtz (rtz-sqrt x n) (1- n))))))))  
+                        (:instance fp+2 (n (1- n)) (x (rtz-sqrt x (1- n))) (y (rtz (rtz-sqrt x n) (1- n))))))))
 
 (local-defun natp-induct (n)
   (if (zp n)
@@ -218,7 +218,7 @@
   (implies (and (not (zp n))
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1))                
+                (< x 1))
            (and (<= (* (rtz-sqrt x n)
                        (rtz-sqrt x n))
                     x)
@@ -378,7 +378,7 @@
   :rule-classes ()
   :hints (("Goal" :use (rto-sqrt-lower-4
                         (:instance square-leq  (x l) (y (rto-sqrt x n)))))))
-  
+
 (local-defthm rto-sqrt-lower-6
   (implies (and (natp n)
                 (>= n 2)
@@ -426,7 +426,7 @@
            (< l (fp+ (rtz-sqrt x (1- n)) (1- n))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance rtz-sqrt-square-bounds (n (1- n)))
-                        (:instance rto-sqrt-lower-8 (x l) 
+                        (:instance rto-sqrt-lower-8 (x l)
                                                    (y (+ (rtz-sqrt x (1- n)) (expt 2 (- 1 n)))))))))
 
 (local-defthm rto-sqrt-lower-10
@@ -588,14 +588,14 @@
 
 #|
 Proof: Let a = rtz-sqrt(n-2, x) and r = rto-sqrt(x, n).
-Suppose a^2 = x.  Then r = a, l^2 <= x = a^2 = r^2, and l <= r.  
+Suppose a^2 = x.  Then r = a, l^2 <= x = a^2 = r^2, and l <= r.
 By rto-monotone, rto-exactp-b, and exactp-rtz-sqrt,
 
   rto(l, n) <= rto(r, n) = r.
 
-Thus, we may assume a^2 < x and r = a + 2^(1-n).  By rtz-sqrt-square-bounds, 
-l^2 <= x < (a + 2^(2-n))^2, and hence l < a + 2^(2-n) = fp+(a, n-1).  
-It follows from rtz-upper-pos, rtz-exactp-a, and fp+2 that 
+Thus, we may assume a^2 < x and r = a + 2^(1-n).  By rtz-sqrt-square-bounds,
+l^2 <= x < (a + 2^(2-n))^2, and hence l < a + 2^(2-n) = fp+(a, n-1).
+It follows from rtz-upper-pos, rtz-exactp-a, and fp+2 that
 rtz(l, n-1) <= a.  Thus,
 
   rto(l, n) <= rtz(l, n-1) + 2^(1+expo(l)-n)
@@ -762,14 +762,14 @@ rtz(l, n-1) <= a.  Thus,
 
 #|
 Proof: Let a = rtz-sqrt(x, n-1) and r = rto-sqrt(x, n).
-We may assume that h < r; otherwise, by rto-monotone, 
+We may assume that h < r; otherwise, by rto-monotone,
 rto-exactp-b, and exactp-rtz-sqrt,
 
   rto(h, n) >= rto(r, n) = r.
 
-If a^2 = x, then r = a, h^2 >= x = a^2 = r^2, and h >= r.  
+If a^2 = x, then r = a, h^2 >= x = a^2 = r^2, and h >= r.
 Thus, by rtz-sqrt-square-bounds, a^2 < x and r = a + 2^(1-n) = fp+(a, n).
-Since h^2 >= x > a^2, h > a.  It follows from rtz-exactp-c that 
+Since h^2 >= x > a^2, h > a.  It follows from rtz-exactp-c that
 rtz(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
 
   rto(h, n) = rtz(h, n-1) + 2^(1-n)
@@ -830,7 +830,7 @@ rtz(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
                 (<= 1/4 x)
                 (< x 1)
                 (not (= (rtz-sqrt x (- n 2)) (rtz-sqrt x (1- n))))
-                (= x (* (rtz-sqrt x (1- n)) (rtz-sqrt x (1- n)))))                
+                (= x (* (rtz-sqrt x (1- n)) (rtz-sqrt x (1- n)))))
            (= (rto-sqrt x n)
               (+ (rtz-sqrt x (- n 2)) (expt 2 (- 1 n)))))
   :rule-classes ()
@@ -845,7 +845,7 @@ rtz(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
                 (<= 1/4 x)
                 (< x 1)
                 (not (= (rtz-sqrt x (- n 2)) (rtz-sqrt x (1- n))))
-                (= x (* (rtz-sqrt x (1- n)) (rtz-sqrt x (1- n)))))                
+                (= x (* (rtz-sqrt x (1- n)) (rtz-sqrt x (1- n)))))
            (= (rto (rto-sqrt x n) (1- n))
               (rto-sqrt x (1- n))))
   :rule-classes ()
@@ -1314,7 +1314,7 @@ rto(r2, n-1) = rtz(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
                 (>= m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1) 
+                (< x 1)
                 (= (* (rtz-sqrt x n) (rtz-sqrt x n)) x))
             (equal (rtz-sqrt x m)
                    (rtz-sqrt x n)))
@@ -1328,7 +1328,7 @@ rto(r2, n-1) = rtz(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1) 
+                (< x 1)
                 (= (* (rtz-sqrt x n) (rtz-sqrt x n)) x))
             (equal (rto-sqrt x m)
                    (rtz-sqrt x n)))
@@ -1373,7 +1373,7 @@ rto(r2, n-1) = rtz(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1)) 
+                (< x 1))
            (iff (= (* (rtz-sqrt x n) (rtz-sqrt x n)) x)
                 (= (rto-sqrt x m) (rtz-sqrt x n))))
   :rule-classes ()
@@ -1427,7 +1427,7 @@ rto(r2, n-1) = rtz(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
                 (< x0 1)))
   :rule-classes ()
   :hints (("Goal" :use (sig-upper-bound
-                        sig-lower-bound))))  
+                        sig-lower-bound))))
 
 (defthm x0-bounds
   (let* ((e (1+ (fl (/ (expo x) 2))))
@@ -1521,9 +1521,9 @@ rto(r2, n-1) = rtz(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
 #|
 Proof: Let e = fl(expo(x)/2), x0 = x/2^(2*e), and l0 = l/2^e.
 Then 1 <= x0 < 4 and l0^2 = l^2/2^(2*e) <= x/2^(2*e) = x0.
-By rto-shift and rto-sqrt-lower, 
+By rto-shift and rto-sqrt-lower,
 
-  rto(l, 66) = 2^e * rto(l0, n) 
+  rto(l, 66) = 2^e * rto(l0, n)
                <= 2^e * rto-sqrt(x0, n)
                 = sqrt(x, n).
 
@@ -1636,7 +1636,7 @@ By rnd-rto and rnd-monotone,
               (rto-sqrt x n)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable rto-sqrt)
-                  :use ((:instance exactp-cmp-rto-sqrt-2 (k (- 1 n))))))) 
+                  :use ((:instance exactp-cmp-rto-sqrt-2 (k (- 1 n)))))))
 
 (local-defthm exactp-cmp-rto-sqrt-4
   (implies (and (rationalp x) (>= x 1/4) (< x 1)
@@ -1664,7 +1664,7 @@ By rnd-rto and rnd-monotone,
   :rule-classes ()
   :hints (("Goal" :cases ((< q (rtz-sqrt x (1- n))) (> q (rtz-sqrt x (1- n))))
                   :in-theory (enable rto-sqrt)
-                  :use ((:instance exactp-cmp-rto-sqrt-1 (y q)) 
+                  :use ((:instance exactp-cmp-rto-sqrt-1 (y q))
                         (:instance exactp-cmp-rto-sqrt-4 (y q))
                         (:instance rtz-sqrt-square-bounds (n (1- n)))))))
 
@@ -1805,11 +1805,11 @@ By rnd-rto and rnd-monotone,
                 (integerp n) (> n 1)
                 (exactp y (1- n)))
            (let ((e (1+ (fl (/ (expo x) 2)))))
-             (and (iff (< (/ (* y y) (expt 2 (* 2 e))) 
+             (and (iff (< (/ (* y y) (expt 2 (* 2 e)))
                           (/ x (expt 2 (* 2 e))))
                        (< (/ y (expt 2 e))
                           (/ (qsqrt x n) (expt 2 e))))
-                  (iff (> (/ (* y y) (expt 2 (* 2 e))) 
+                  (iff (> (/ (* y y) (expt 2 (* 2 e)))
                           (/ x (expt 2 (* 2 e))))
                        (> (/ y (expt 2 e))
                           (/ (qsqrt x n) (expt 2 e)))))))

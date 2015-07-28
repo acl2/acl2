@@ -4,9 +4,7 @@
 (local (include-book "basic"))
 (local (include-book "bits"))
 
-(include-book "tools/with-arith5-help" :dir :system)
-(local (acl2::allow-arith5-help))
-(local (in-theory (acl2::enable-arith5)))
+(local (include-book "arithmetic-5/top" :dir :system))
 
 ;Allows things like (in-theory (disable cat)) to refer to binary-cat.
 (add-macro-alias cat binary-cat)
