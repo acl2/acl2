@@ -31,7 +31,7 @@
   ;; BOZO copied and pasted in oracle-time-raw.lsp
   #+(or ccl sbcl)
   (heap-bytes-allocated)
-  #+(or ccl sbcl) ;; BOZO why doesn't ACL2 do it this way?
+  #-(or ccl sbcl) ;; BOZO why doesn't ACL2 do it this way?
   0)
 
 (defvar *oracle-timelimit-debug*
