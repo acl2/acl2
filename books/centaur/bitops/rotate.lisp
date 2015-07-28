@@ -212,6 +212,7 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
            (equal-by-logbitp-hint))))
 
 
+
 (define rotate-left-1
   ((x      integerp "The bit vector to be rotated left.")
    (width  posp     "The width of @('x')."))
@@ -235,7 +236,14 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
              (cond ((>= n width) nil)
                    ((equal n 0)  (logbitp (+ -1 width) x))
                    (t            (logbitp (+ -1 n) x)))))
-    :hints(("Goal" :in-theory (enable logbitp-of-loghead-split)))))
+    :hints(("Goal" :in-theory (enable logbitp-of-loghead-split))))
+
+  (defthm unsigned-byte-p-of-rotate-left-1
+    (implies (posp width)
+             (unsigned-byte-p width (rotate-left-1 x width)))
+    :hints(("Goal"
+            :in-theory (e/d* (ihsext-recursive-redefs)
+                             (unsigned-byte-p))))))
 
 
 
@@ -335,6 +343,24 @@ enabled when you want to use them.</p>"
            (and stable-under-simplificationp
                 '(:in-theory (e/d (logbitp-of-rotate-left-1-split
                                    logbitp-of-rotate-left-split)))))))
+
+
+(defsection rotate-left-extra
+  :extension (rotate-left)
+
+  (local (defun my-induct (places)
+           (if (zp places)
+               0
+             (my-induct (- places 1)))))
+
+  (defthm unsigned-byte-p-of-rotate-left
+    (implies (posp width)
+             (unsigned-byte-p width (rotate-left x width places)))
+    :hints(("Goal"
+            :induct (my-induct places)
+            :in-theory (e/d* (rotate-left**)
+                             (unsigned-byte-p))))))
+
 
 
 (define rotate-right
@@ -507,7 +533,15 @@ since rotating @('width')-many times is the same as not rotating at all.</p>"
              (cond ((>= n width)          nil)
                    ((equal n (- width 1)) (logbitp 0 x))
                    (t                     (logbitp (+ 1 n) x)))))
-    :hints(("Goal" :in-theory (enable logbitp-of-loghead-split)))))
+    :hints(("Goal" :in-theory (enable logbitp-of-loghead-split))))
+
+  (defthm unsigned-byte-p-of-rotate-right-1
+    (implies (posp width)
+             (unsigned-byte-p width (rotate-right-1 x width)))
+    :hints(("Goal"
+            :in-theory (e/d* (ihsext-recursive-redefs)
+                             (unsigned-byte-p))))))
+
 
 
 (defsection rotate-right**
@@ -564,3 +598,19 @@ explicitly enabled when you want to use them.</p>"
                                     logbitp-of-rotate-right-1-split
                                     logbitp-of-rotate-right-split)))))))
 
+
+(defsection rotate-right-extra
+  :extension (rotate-right)
+
+  (local (defun my-induct (places)
+           (if (zp places)
+               0
+             (my-induct (- places 1)))))
+
+  (defthm unsigned-byte-p-of-rotate-right
+    (implies (posp width)
+             (unsigned-byte-p width (rotate-right x width places)))
+    :hints(("Goal"
+            :induct (my-induct places)
+            :in-theory (e/d* (rotate-right**)
+                             (unsigned-byte-p))))))
