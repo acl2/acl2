@@ -897,6 +897,35 @@ some kind of separator!</p>
     (cons event1
           (post-hook-make-events (cdr hook-specs) hooks-alist guts))))
 
+(defun sort-formal-guards-aux (guards wrld state-vars)
+  ;; Returns two lists: simple and complex.  Simple is any guards that we can
+  ;; translate and that have at most 1 variable.  Complex is everything else.
+  ;; Both simple and complex are in the order they were encountered.
+  (b* (((when (atom guards))
+        (mv nil nil))
+       (guard1 (car guards))
+       ((mv err transguard)
+        (acl2::translate-cmp guard1
+                             '(nil) ;; returns single non-stobj
+                             nil    ;; execution, not logic-modep
+                             nil    ;; known-stobjs -- probably don't need them?
+                             'sort-formal-guards
+                             wrld state-vars))
+       ((mv rest-simple rest-complex)
+        (sort-formal-guards-aux (cdr guards) wrld state-vars))
+       ((when (or err
+                  (consp (cdr (all-vars transguard)))))
+        (mv rest-simple
+            (cons guard1 rest-complex))))
+    (mv (cons guard1 rest-simple)
+        rest-complex)))
+
+(defun sort-formal-guards (guards wrld)
+  (b* (((mv simple complex)
+        (sort-formal-guards-aux guards wrld (acl2::default-state-vars nil))))
+    (append simple complex)))
+    
+
 
 (defun parse-define
   (name            ; User-level name, e.g., FOO
@@ -1043,7 +1072,10 @@ some kind of separator!</p>
                    ((atom (cdr formal-guards))
                     `((declare (xargs :guard ,(car formal-guards)))))
                    (t
-                    `((declare (xargs :guard (and . ,formal-guards))))))
+                    ;; Sort the guards by putting those that we can determine
+                    ;; to be dependent on only 1 variable first.
+                    (b* ((sorted-formal-guards (sort-formal-guards formal-guards world)))
+                      `((declare (xargs :guard (and . ,sorted-formal-guards)))))))
 
 ; 4. This is kind of arbitrary.  We put the traditional decls before the top-level
 ; xargs because it seems rather unlikely that someone would write

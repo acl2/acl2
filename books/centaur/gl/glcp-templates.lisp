@@ -1159,13 +1159,16 @@ In ~@0: The hyp contains the following unbound variables: ~x1~%"
 In ~@0: the bindings don't satisfy shape-spec-bindingsp: ~x1"
                          id bindings)))
             (obj (strip-cadrs bindings))
-            ((unless (and (acl2::fast-no-duplicatesp (shape-spec-list-indices obj))
-                          (acl2::fast-no-duplicatesp-equal (shape-spec-list-vars obj))))
-             (flush-hons-get-hash-table-link obligs)
+            ((unless (acl2::fast-no-duplicatesp (shape-spec-list-indices obj)))
              (glcp-error
               (acl2::msg "~
-In ~@0: the indices or variables contain duplicates in bindings ~x1"
-                         id bindings)))
+In ~@0: the shape spec indices contain duplicates: ~x0"
+                         id (acl2::duplicated-members (shape-spec-list-indices obj)))))
+            ((unless (acl2::fast-no-duplicatesp (shape-spec-list-vars obj)))
+             (glcp-error
+              (acl2::msg "~
+In ~@0: the shape spec vars contain duplicates: ~x0"
+                         id (acl2::duplicated-members (shape-spec-list-vars obj)))))
             ((unless (subsetp-equal vars bound-vars))
              (flush-hons-get-hash-table-link obligs)
              (glcp-error

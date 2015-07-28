@@ -53,8 +53,6 @@
 
 (include-book "add") ;support for reasoning about addition
 
-(include-book "mult")  ; integerp multiplier
-
 ; Users may prefer to replace the (include-book "arith") below with:
 ; (include-book "../arithmetic/top")
 
