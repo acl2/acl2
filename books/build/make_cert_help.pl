@@ -275,6 +275,29 @@ sub parse_max_mem_arg
     return $ret;
 }
 
+sub extract_pbs_from_acl2file
+{
+    # PBS directives placed in .acl2 files are extracted and used. An
+    # example of a PBS directive is:
+    #   
+    #    ;PBS -l host=<my-host-name>
+
+    my $filename = shift;
+    my @pbs = ();
+    open(my $fd, "<", $filename) or die("Can't open $filename: $!\n");
+    while(<$fd>) {
+	my $line = $_;
+	chomp($line);
+	if ($line =~ m/^;PBS (.*)$/)
+	{
+	    push(@pbs, $1);
+	}
+    }
+    close($fd);
+
+    return \@pbs;
+}
+
 sub scan_source_file
 {
     my $filename = shift;
@@ -522,6 +545,7 @@ my $acl2file = (-f "$file.acl2") ? "$file.acl2"
     : "";
 
 my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
+my $extra_pbs = $acl2file ? extract_pbs_from_acl2file($acl2file) : [];
 
 # Don't hideously underapproximate timings in event summaries
 $instrs .= "(acl2::assign acl2::get-internal-time-as-realtime acl2::t)\n";
@@ -587,6 +611,10 @@ write_whole_file($lisptmp, $instrs);
 
     $shinsts .= "#PBS -l pmem=${max_mem}gb\n";
     $shinsts .= "#PBS -l walltime=${max_time}:00\n\n";
+
+    foreach my $directive (@$extra_pbs) {
+	$shinsts .= "#PBS $directive\n";
+    }
 
 # $shinsts .= "echo List directories of prereqs >> $outfile\n";
 # $shinsts .= "time ( ls @$prereq_dirs > /dev/null ) 2> $outfile\n";

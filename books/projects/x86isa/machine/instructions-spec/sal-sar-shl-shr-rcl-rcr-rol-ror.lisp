@@ -76,7 +76,8 @@
                                       (logior (the (unsigned-byte ,size+1)
                                                 (ash old-cf ,size))
                                               dst))))
-            (raw-result  (the (unsigned-byte ,size+1) (fast-rotate-left ,size+1 new-dst src)))
+            (raw-result  (the (unsigned-byte ,size+1)
+                                                   (fast-rotate-left new-dst ,size+1 src)))
             (result      (the (unsigned-byte ,size) (n-size ,size raw-result)))
 
             ((mv (the (unsigned-byte 32) output-rflags)
@@ -240,9 +241,9 @@ the most-significant bit of the result.</p>"
                                :exec input-rflags))
 
             (result  (mbe :logic
-                          (n-size ,size (the (unsigned-byte ,size+1) (fast-rotate-left ,size dst src)))
+                          (n-size ,size (the (unsigned-byte ,size+1) (fast-rotate-left dst ,size src)))
                           :exec
-                          (the (unsigned-byte ,size) (fast-rotate-left ,size dst src))))
+                          (the (unsigned-byte ,size) (fast-rotate-left dst ,size src))))
 
             ((mv (the (unsigned-byte 32) output-rflags)
                  (the (unsigned-byte 32) undefined-flags))
@@ -252,7 +253,7 @@ the most-significant bit of the result.</p>"
                 ;; No flags, except OF, affected. OF is undefined.
                 (b* ((undefined-flags (the (unsigned-byte 32)
                                         (!rflags-slice :of 1 0))))
-                    (mv input-rflags undefined-flags)))
+                  (mv input-rflags undefined-flags)))
                (1
                 ;; CF and OF are the only affected flags.
                 (b* ((cf
@@ -277,7 +278,7 @@ the most-significant bit of the result.</p>"
                                        :cf cf
                                        (!rflags-slice
                                         :of of input-rflags)))))
-                    (mv output-rflags 0)))
+                  (mv output-rflags 0)))
 
                (otherwise
                 ;; CF is affected, OF is undefined.
@@ -297,14 +298,16 @@ the most-significant bit of the result.</p>"
                      (undefined-flags
                       (the (unsigned-byte 32)
                         (!rflags-slice :of 1 0))))
-                    (mv output-rflags undefined-flags)))))
+                  (mv output-rflags undefined-flags)))))
 
             (output-rflags (mbe :logic (n32 output-rflags)
                                 :exec output-rflags)))
 
-           (mv result output-rflags undefined-flags))
+         (mv result output-rflags undefined-flags))
 
        ///
+
+       (local (in-theory (e/d () (unsigned-byte-p))))
 
        (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
          :bound ,size
@@ -422,7 +425,7 @@ most-significant bit of the result.</p>"
                                       (logior (the (unsigned-byte ,size+1)
                                                 (ash input-cf ,size))
                                               dst))))
-            (raw-result  (the (unsigned-byte ,size+1) (fast-rotate-right ,size+1 new-dst src)))
+            (raw-result  (the (unsigned-byte ,size+1) (fast-rotate-right new-dst ,size+1 src)))
             (result      (the (unsigned-byte ,size) (n-size ,size raw-result)))
 
             ((mv (the (unsigned-byte 32) output-rflags)
@@ -465,7 +468,7 @@ most-significant bit of the result.</p>"
                                        :cf cf
                                        (!rflags-slice
                                         :of of input-rflags)))))
-                    (mv output-rflags 0)))
+                  (mv output-rflags 0)))
 
                (otherwise
                 ;; CF is affected, OF is undefined.
@@ -486,11 +489,13 @@ most-significant bit of the result.</p>"
 
                      (undefined-flags (the (unsigned-byte 32)
                                         (!rflags-slice :of 1 0))))
-                    (mv output-rflags undefined-flags))))))
+                  (mv output-rflags undefined-flags))))))
 
-           (mv result output-rflags undefined-flags))
+         (mv result output-rflags undefined-flags))
 
        ///
+
+       (local (in-theory (e/d () (unsigned-byte-p))))
 
        (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
          :bound ,size
@@ -581,116 +586,118 @@ the result.</p>"
        (fn-name (mk-name "ROR-SPEC-" size))
        (str-nbits (if (eql size 8) "08" size)))
 
-      `(define ,fn-name
-         ((dst    :type (unsigned-byte ,size))
-          (src    :type (unsigned-byte 6)
-                  "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
-          (input-rflags :type (unsigned-byte 32)))
+    `(define ,fn-name
+       ((dst    :type (unsigned-byte ,size))
+        (src    :type (unsigned-byte 6)
+                "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
+        (input-rflags :type (unsigned-byte 32)))
 
-         :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-         :parents (ror-spec)
+       :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+       :parents (ror-spec)
 
-         (b* ((dst (mbe :logic (n-size ,size dst)
-                        :exec dst))
-              (src (mbe :logic (n-size 6 src)
-                        :exec src))
-              (input-rflags (mbe :logic (n32 input-rflags)
-                                 :exec input-rflags))
+       (b* ((dst (mbe :logic (n-size ,size dst)
+                      :exec dst))
+            (src (mbe :logic (n-size 6 src)
+                      :exec src))
+            (input-rflags (mbe :logic (n32 input-rflags)
+                               :exec input-rflags))
 
-              (result  (mbe :logic
-                            (n-size ,size (the (unsigned-byte ,size) (fast-rotate-right ,size dst src)))
-                            :exec
-                            (the (unsigned-byte ,size) (fast-rotate-right ,size dst src))))
+            (result  (mbe :logic
+                          (n-size ,size (the (unsigned-byte ,size) (fast-rotate-right dst ,size src)))
+                          :exec
+                          (the (unsigned-byte ,size) (fast-rotate-right dst ,size src))))
 
-              ((mv (the (unsigned-byte 32) output-rflags)
-                   (the (unsigned-byte 32) undefined-flags))
+            ((mv (the (unsigned-byte 32) output-rflags)
+                 (the (unsigned-byte 32) undefined-flags))
 
-               (case src
-                 (0
-                  ;; No flags, except OF, affected.
-                  (b* ((undefined-flags (the (unsigned-byte 32)
-                                          (!rflags-slice :of 1 0))))
+             (case src
+               (0
+                ;; No flags, except OF, affected.
+                (b* ((undefined-flags (the (unsigned-byte 32)
+                                        (!rflags-slice :of 1 0))))
 
-                      (mv input-rflags undefined-flags)))
+                  (mv input-rflags undefined-flags)))
 
-                 (1
-                  ;; CF and OF are the only affected flags.
-                  (b* ((cf
-                        ;; CF = MSB of the  result.
-                        (mbe :logic (logbit ,size-1 result)
-                             :exec (logand 1
-                                           (the (unsigned-byte 1)
-                                             (ash (the (unsigned-byte ,size)
-                                                    result)
-                                                  ,neg-size-1)))))
-                       (of
-                        ;; OF = XOR of the two most significant bits of
-                        ;; the result.
-                        (b-xor (mbe :logic (logbit ,size-1 result)
-                                    :exec (logand 1
-                                                  (the (unsigned-byte 1)
-                                                    (ash (the (unsigned-byte ,size)
-                                                           result)
-                                                         ,neg-size-1))))
-                               (mbe :logic ;; (logbit ,size-2 result)
-                                    (part-select result :low ,size-2 :width 1)
-                                    :exec (logand 1
-                                                  (the (unsigned-byte 2)
-                                                    (ash (the (unsigned-byte ,size)
-                                                           result)
-                                                         ,neg-size-2))))))
-                       (output-rflags (the (unsigned-byte 32)
-                                        (!rflags-slice
-                                         :cf cf
-                                         (!rflags-slice
-                                          :of of
-                                          input-rflags)))))
-                      (mv output-rflags 0)))
+               (1
+                ;; CF and OF are the only affected flags.
+                (b* ((cf
+                      ;; CF = MSB of the  result.
+                      (mbe :logic (logbit ,size-1 result)
+                           :exec (logand 1
+                                         (the (unsigned-byte 1)
+                                           (ash (the (unsigned-byte ,size)
+                                                  result)
+                                                ,neg-size-1)))))
+                     (of
+                      ;; OF = XOR of the two most significant bits of
+                      ;; the result.
+                      (b-xor (mbe :logic (logbit ,size-1 result)
+                                  :exec (logand 1
+                                                (the (unsigned-byte 1)
+                                                  (ash (the (unsigned-byte ,size)
+                                                         result)
+                                                       ,neg-size-1))))
+                             (mbe :logic ;; (logbit ,size-2 result)
+                                  (part-select result :low ,size-2 :width 1)
+                                  :exec (logand 1
+                                                (the (unsigned-byte 2)
+                                                  (ash (the (unsigned-byte ,size)
+                                                         result)
+                                                       ,neg-size-2))))))
+                     (output-rflags (the (unsigned-byte 32)
+                                      (!rflags-slice
+                                       :cf cf
+                                       (!rflags-slice
+                                        :of of
+                                        input-rflags)))))
+                  (mv output-rflags 0)))
 
-                 (otherwise
-                  ;; CF is affected, OF is undefined.
-                  ;; All other flags are unaffected.
-                  (b* ((cf ;; CF = MSB of the result.
-                        (mbe :logic
-                             (part-select result :low 0 :width 1)
-                             :exec
-                             (the (unsigned-byte 1)
-                               (logand 1 (the (unsigned-byte ,size)
-                                           result)))))
-                       (output-rflags (the (unsigned-byte 32)
-                                        (!rflags-slice
-                                         :cf cf
-                                         input-rflags)))
+               (otherwise
+                ;; CF is affected, OF is undefined.
+                ;; All other flags are unaffected.
+                (b* ((cf ;; CF = MSB of the result.
+                      (mbe :logic
+                           (part-select result :low 0 :width 1)
+                           :exec
+                           (the (unsigned-byte 1)
+                             (logand 1 (the (unsigned-byte ,size)
+                                         result)))))
+                     (output-rflags (the (unsigned-byte 32)
+                                      (!rflags-slice
+                                       :cf cf
+                                       input-rflags)))
 
-                       (undefined-flags (the (unsigned-byte 32)
-                                          (!rflags-slice :of 1 0))))
-                      (mv output-rflags undefined-flags)))))
+                     (undefined-flags (the (unsigned-byte 32)
+                                        (!rflags-slice :of 1 0))))
+                  (mv output-rflags undefined-flags)))))
 
-              (output-rflags (mbe :logic (n32 output-rflags)
-                                  :exec output-rflags)))
+            (output-rflags (mbe :logic (n32 output-rflags)
+                                :exec output-rflags)))
 
-             (mv result output-rflags undefined-flags))
+         (mv result output-rflags undefined-flags))
 
-         ///
+       ///
 
-         (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
-           :bound ,size
-           :concl (mv-nth 0 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t)
+       (local (in-theory (e/d () (unsigned-byte-p))))
 
-         (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
-           :bound 32
-           :concl (mv-nth 1 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t)
+       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+         :bound ,size
+         :concl (mv-nth 0 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t)
 
-         (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
-           :bound 32
-           :concl (mv-nth 2 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t))
-      ))
+       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+         :bound 32
+         :concl (mv-nth 1 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t)
+
+       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+         :bound 32
+         :concl (mv-nth 2 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t))
+    ))
 
 (make-event (ror-spec-gen  8))
 (make-event (ror-spec-gen 16))
