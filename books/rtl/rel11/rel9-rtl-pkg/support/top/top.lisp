@@ -85,5 +85,3 @@
 (include-book "../lib3.delta1/srt")
 
 (include-book "../lib3.delta3/round")
-
-(include-book "../lib3.delta3/gl")

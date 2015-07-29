@@ -39,6 +39,3 @@
 (include-book "round") ;floating-point rounding
 
 (include-book "add") ;support for reasoning about integer addition
-
-(include-book "masc") ;SystemC
-

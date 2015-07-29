@@ -217,6 +217,8 @@
 
 (defund ep () (declare (xargs :guard t)) '(t 64 15)) 
 
+(in-theory (disable (sp) (dp) (ep)))
+
 ;;Field extractors:
 
 (defund sgnf (x f)
