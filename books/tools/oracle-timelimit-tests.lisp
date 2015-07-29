@@ -230,3 +230,82 @@ BOZO what is going on here?
     (value '(value-triple :success))))
 
 ||#
+
+
+
+; Test of a form that should cause an error.  This might not cause an error on
+; all Lisps and may need some conditionals...
+(defun test5 (state)
+  (declare (xargs :mode :program))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (car 3)
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ (let ((state (test5 state)))
+   (value '(value-triple :success))))
+
+(defun test6 (state)
+  (declare (xargs :mode :program))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (ash 1 (ash 1 10000))
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ (let ((state (test6 state)))
+   (value '(value-triple :success))))
+
+
+
+(defun stack-overflow (x)
+  (declare (xargs :mode :program))
+  (if (atom x)
+      nil
+    (append x
+            (stack-overflow x))))
+
+(defun test7 (state)
+  (declare (xargs :mode :program))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (stack-overflow '(3))
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ (let ((state (test7 state)))
+   (value '(value-triple :success))))
