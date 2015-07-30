@@ -145,7 +145,26 @@
 
   (defthm mv-nth-1-page-fault-exception
     (equal (mv-nth 1 (page-fault-exception addr err-no x86))
-           0)))
+           0))
+
+  (defthm xr-page-fault-exception
+    (implies (not (equal fld :fault))
+             (equal (xr fld index (mv-nth 2 (page-fault-exception addr err-no x86)))
+                    (xr fld index x86))))
+
+  (defthm page-fault-exception-xw-values
+    (implies (not (equal fld :fault))
+             (and (equal (mv-nth 0 (page-fault-exception addr err-no (xw fld index value x86)))
+                         (mv-nth 0 (page-fault-exception addr err-no x86)))
+                  (equal (mv-nth 1 (page-fault-exception addr err-no (xw fld index value x86)))
+                         0))))
+
+  (defthm page-fault-exception-xw-state
+    (implies (not (equal fld :fault))
+             (equal (mv-nth 2 (page-fault-exception addr err-no (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (page-fault-exception addr err-no x86))))))
+
+  )
 
 ;; ======================================================================
 
@@ -684,7 +703,51 @@
               (mv-nth 2
                       (ia32e-la-to-pa-page-table
                        lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl
-                       x86))))))
+                       x86)))))
+
+  (defthm xr-ia32e-la-to-pa-page-table
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-page-table
+                                 lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl
+                                 x86)))
+                    (xr fld index x86))))
+
+  (defthm ia32e-la-to-pa-page-table-xw-values
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (and (equal (mv-nth 0
+                                 (ia32e-la-to-pa-page-table
+                                  lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (ia32e-la-to-pa-page-table
+                                  lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl
+                                  x86)))
+                  (equal (mv-nth 1
+                                 (ia32e-la-to-pa-page-table
+                                  lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (ia32e-la-to-pa-page-table
+                                  lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl
+                                  x86))))))
+
+  (defthm ia32e-la-to-pa-page-table-xw-state
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (mv-nth 2
+                            (ia32e-la-to-pa-page-table
+                             lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (ia32e-la-to-pa-page-table
+                                 lin-addr base-addr u-s-acc wp smep nxe r-w-x cpl
+                                 x86)))))))
+
 
 (define ia32e-la-to-pa-page-directory
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -763,24 +826,24 @@
                        0)
              :exec  (if (or (and (equal page-size 1)
                                  (not (equal (the (unsigned-byte 8)
-                                                  (logand 255
-                                                          (the (unsigned-byte 51)
-                                                               (ash entry (- 13)))))
+                                               (logand 255
+                                                       (the (unsigned-byte 51)
+                                                         (ash entry (- 13)))))
                                              0)))
                             (not (equal
                                   (the
-                                   (unsigned-byte 12)
-                                   (logand (the (unsigned-byte 11)
-                                                (1- (the (unsigned-byte 12)
-                                                         (ash 1 (- 63
-                                                                   #.*physical-address-size*)))))
-                                           (the (unsigned-byte 12)
-                                                (ash entry (- #.*physical-address-size*)))))
+                                      (unsigned-byte 12)
+                                    (logand (the (unsigned-byte 11)
+                                              (1- (the (unsigned-byte 12)
+                                                    (ash 1 (- 63
+                                                              #.*physical-address-size*)))))
+                                            (the (unsigned-byte 12)
+                                              (ash entry (- #.*physical-address-size*)))))
                                   0))
-                             (and (equal nxe 0)
-                                  (not (equal (ia32e-page-tables-slice :xd entry) 0))))
-                         1
-                       0))
+                            (and (equal nxe 0)
+                                 (not (equal (ia32e-page-tables-slice :xd entry) 0))))
+                        1
+                      0))
         )
        ((when (equal rsvd 1))
         ;; Reserved bits fault.
@@ -904,19 +967,19 @@
                     :low 0 :high 20)
                    :exec
                    (the
-                    (unsigned-byte 52)
-                    (logior
-                     (the
-                      (unsigned-byte 52)
-                      (logand (the
-                               (unsigned-byte 52)
-                               (ash (the (unsigned-byte 31)
+                       (unsigned-byte 52)
+                     (logior
+                      (the
+                          (unsigned-byte 52)
+                        (logand (the
+                                    (unsigned-byte 52)
+                                  (ash (the (unsigned-byte 31)
                                          (ia32e-pde-2mb-page-slice :pde-page entry))
-                                    21))
-                              (lognot (1- (ash 1 21)))))
-                     (the
-                      (unsigned-byte 21)
-                      (logand (1- (ash 1 21)) lin-addr)))))
+                                       21))
+                                (lognot (1- (ash 1 21)))))
+                      (the
+                          (unsigned-byte 21)
+                        (logand (1- (ash 1 21)) lin-addr)))))
                   x86))
         ;; Go to the next level of page table structure (PT, which
         ;; references a 4KB page)
@@ -967,7 +1030,51 @@
               (mv-nth 2
                       (ia32e-la-to-pa-page-directory
                        lin-addr base-addr wp smep nxe r-w-x cpl
-                       x86))))))
+                       x86)))))
+
+  (defthm xr-ia32e-la-to-pa-page-directory
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-page-directory
+                                 lin-addr base-addr wp smep nxe r-w-x cpl
+                                 x86)))
+                    (xr fld index x86))))
+
+  (defthm ia32e-la-to-pa-page-directory-xw-values
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (and (equal (mv-nth 0
+                                 (ia32e-la-to-pa-page-directory
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (ia32e-la-to-pa-page-directory
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  x86)))
+                  (equal (mv-nth 1
+                                 (ia32e-la-to-pa-page-directory
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (ia32e-la-to-pa-page-directory
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  x86))))))
+
+  (defthm ia32e-la-to-pa-page-directory-xw-state
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (mv-nth 2
+                            (ia32e-la-to-pa-page-directory
+                             lin-addr base-addr wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (ia32e-la-to-pa-page-directory
+                                 lin-addr base-addr wp smep nxe r-w-x cpl
+                                 x86)))))))
+
 
 (define ia32e-la-to-pa-page-dir-ptr-table
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -1236,7 +1343,50 @@
               (mv-nth 2
                       (ia32e-la-to-pa-page-dir-ptr-table
                        lin-addr base-addr wp smep nxe r-w-x cpl
-                       x86))))))
+                       x86)))))
+
+  (defthm xr-ia32e-la-to-pa-page-dir-ptr-table
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-page-dir-ptr-table
+                                 lin-addr base-addr wp smep nxe r-w-x cpl
+                                 x86)))
+                    (xr fld index x86))))
+
+  (defthm ia32e-la-to-pa-page-dir-ptr-table-xw-values
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (and (equal (mv-nth 0
+                                 (ia32e-la-to-pa-page-dir-ptr-table
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (ia32e-la-to-pa-page-dir-ptr-table
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  x86)))
+                  (equal (mv-nth 1
+                                 (ia32e-la-to-pa-page-dir-ptr-table
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (ia32e-la-to-pa-page-dir-ptr-table
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  x86))))))
+
+  (defthm ia32e-la-to-pa-page-dir-ptr-table-xw-state
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (mv-nth 2
+                            (ia32e-la-to-pa-page-dir-ptr-table
+                             lin-addr base-addr wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (ia32e-la-to-pa-page-dir-ptr-table
+                                 lin-addr base-addr wp smep nxe r-w-x cpl
+                                 x86)))))))
 
 
 (define ia32e-la-to-pa-pml4-table
@@ -1446,7 +1596,50 @@
               (mv-nth 2
                       (ia32e-la-to-pa-pml4-table
                        lin-addr base-addr wp smep nxe r-w-x cpl
-                       x86))))))
+                       x86)))))
+
+  (defthm xr-ia32e-la-to-pa-pml4-table
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (ia32e-la-to-pa-pml4-table
+                                 lin-addr base-addr wp smep nxe r-w-x cpl
+                                 x86)))
+                    (xr fld index x86))))
+
+  (defthm ia32e-la-to-pa-pml4-table-xw-values
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (and (equal (mv-nth 0
+                                 (ia32e-la-to-pa-pml4-table
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 0
+                                 (ia32e-la-to-pa-pml4-table
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  x86)))
+                  (equal (mv-nth 1
+                                 (ia32e-la-to-pa-pml4-table
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  (xw fld index value x86)))
+                         (mv-nth 1
+                                 (ia32e-la-to-pa-pml4-table
+                                  lin-addr base-addr wp smep nxe r-w-x cpl
+                                  x86))))))
+
+  (defthm ia32e-la-to-pa-pml4-table-xw-state
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (mv-nth 2
+                            (ia32e-la-to-pa-pml4-table
+                             lin-addr base-addr wp smep nxe r-w-x cpl
+                             (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (ia32e-la-to-pa-pml4-table
+                                 lin-addr base-addr wp smep nxe r-w-x cpl
+                                 x86)))))))
 
 
 (define ia32e-la-to-pa
@@ -1512,7 +1705,50 @@
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa
     (implies (x86p x86)
-             (x86p (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))))
+             (x86p (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+
+  (defthm xr-ia32e-la-to-pa
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index
+                        (mv-nth 2
+                                (ia32e-la-to-pa
+                                 lin-addr r-w-x cpl x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm ia32e-la-to-pa-xw-values
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (not (equal fld :msr)))
+             (and (equal (mv-nth 0
+                                 (ia32e-la-to-pa lin-addr r-w-x cpl
+                                                 (xw fld index value
+                                                     x86)))
+                         (mv-nth 0
+                                 (ia32e-la-to-pa lin-addr r-w-x cpl
+                                                 x86)))
+                  (equal (mv-nth 1
+                                 (ia32e-la-to-pa lin-addr r-w-x cpl
+                                                 (xw fld index value x86)))
+                         (mv-nth 1
+                                 (ia32e-la-to-pa lin-addr r-w-x cpl
+                                                 x86))))))
+
+  (defthm ia32e-la-to-pa-xw-state
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :ctr))
+                  (not (equal fld :msr)))
+             (equal (mv-nth 2
+                            (ia32e-la-to-pa lin-addr r-w-x cpl
+                                            (xw fld index value x86)))
+                    (xw fld index value
+                        (mv-nth 2
+                                (ia32e-la-to-pa lin-addr r-w-x cpl
+                                                x86)))))
+    :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
 
 (local

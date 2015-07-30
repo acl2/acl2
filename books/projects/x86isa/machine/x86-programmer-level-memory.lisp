@@ -125,7 +125,18 @@ memory.</p>" )
 
   (defthm x86p-mv-nth-2-rvm08-unchanged
     (equal (mv-nth 2 (rvm08 addr x86))
-           x86)))
+           x86))
+
+  (defthm xr-rvm08
+    (equal (xr fld index (mv-nth 2 (rvm08 addr x86)))
+           (xr fld index x86)))
+
+  (defthm rvm08-xw-values
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (rvm08 addr (xw fld index value x86)))
+                         (mv-nth 0 (rvm08 addr x86)))
+                  (equal (mv-nth 1 (rvm08 addr (xw fld index value x86)))
+                         (mv-nth 1 (rvm08 addr x86)))))))
 
 (define rvm16
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -175,7 +186,19 @@ memory.</p>" )
   (defthm x86p-mv-nth-2-rvm16-unchanged
     (equal (mv-nth 2 (rvm16 addr x86))
            x86)
-    :hints (("Goal" :in-theory (e/d () (force (force)))))))
+    :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+  (defthm xr-rvm16
+    (equal (xr fld index (mv-nth 2 (rvm16 addr x86)))
+           (xr fld index x86)))
+
+  (defthm rvm16-xw-values
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (rvm16 addr (xw fld index value x86)))
+                         (mv-nth 0 (rvm16 addr x86)))
+                  (equal (mv-nth 1 (rvm16 addr (xw fld index value x86)))
+                         (mv-nth 1 (rvm16 addr x86)))))))
+
 
 (define rvm32
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -240,7 +263,18 @@ memory.</p>" )
   (defthm x86p-mv-nth-2-rvm32-unchanged
     (equal (mv-nth 2 (rvm32 addr x86))
            x86)
-    :hints (("Goal" :in-theory (e/d () (force (force)))))))
+    :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+  (defthm xr-rvm32
+    (equal (xr fld index (mv-nth 2 (rvm32 addr x86)))
+           (xr fld index x86)))
+
+  (defthm rvm32-xw-values
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (rvm32 addr (xw fld index value x86)))
+                         (mv-nth 0 (rvm32 addr x86)))
+                  (equal (mv-nth 1 (rvm32 addr (xw fld index value x86)))
+                         (mv-nth 1 (rvm32 addr x86)))))))
 
 (define rvm64
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -283,6 +317,8 @@ memory.</p>" )
 
   ///
 
+  (local (in-theory (e/d () (rvm32))))
+
   (defthm rvm64-no-error
     (implies (and (canonical-address-p addr)
                   (canonical-address-p (+ 7 addr)))
@@ -301,7 +337,18 @@ memory.</p>" )
   (defthm x86p-mv-nth-2-rvm64-unchanged
     (equal (mv-nth 2 (rvm64 addr x86))
            x86)
-    :hints (("Goal" :in-theory (e/d () (force (force)))))))
+    :hints (("Goal" :in-theory (e/d () (force (force))))))
+
+  (defthm xr-rvm64
+    (equal (xr fld index (mv-nth 2 (rvm64 addr x86)))
+           (xr fld index x86)))
+
+  (defthm rvm64-xw-values
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (rvm64 addr (xw fld index value x86)))
+                         (mv-nth 0 (rvm64 addr x86)))
+                  (equal (mv-nth 1 (rvm64 addr (xw fld index value x86)))
+                         (mv-nth 1 (rvm64 addr x86)))))))
 
 (define rvm128
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -344,6 +391,8 @@ memory.</p>" )
 
   ///
 
+  (local (in-theory (e/d () (rvm64))))
+
   (defthm rvm128-no-error
     (implies (and (canonical-address-p addr)
                   (canonical-address-p (+ 15 addr)))
@@ -362,7 +411,18 @@ memory.</p>" )
   (defthm x86p-mv-nth-2-rvm128-unchanged
     (equal (mv-nth 2 (rvm128 addr x86))
            x86)
-    :hints (("Goal" :in-theory (e/d () (force (force) rvm64))))))
+    :hints (("Goal" :in-theory (e/d () (force (force) rvm64)))))
+
+  (defthm xr-rvm128
+    (equal (xr fld index (mv-nth 2 (rvm128 addr x86)))
+           (xr fld index x86)))
+
+  (defthm rvm128-xw-values
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (rvm128 addr (xw fld index value x86)))
+                         (mv-nth 0 (rvm128 addr x86)))
+                  (equal (mv-nth 1 (rvm128 addr (xw fld index value x86)))
+                         (mv-nth 1 (rvm128 addr x86)))))))
 
 ;; ======================================================================
 
@@ -395,7 +455,21 @@ memory.</p>" )
   (defthm x86p-mv-nth-1-wvm08
     (implies (x86p x86)
              (x86p (mv-nth 1 (wvm08 addr val x86))))
-    :rule-classes (:rewrite :type-prescription)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm xr-wmv08-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (equal (xr fld index (mv-nth 1 (wvm08 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wvm08) ()))))
+
+  (defthm wvm08-xw-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (wvm08 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wvm08 addr val x86)))
+                  (equal (mv-nth 1 (wvm08 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wvm08 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wvm08 wvm08) ())))))
 
 (define wvm16
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -442,7 +516,21 @@ memory.</p>" )
   (defthm x86p-mv-nth-1-wvm16
     (implies (x86p x86)
              (x86p (mv-nth 1 (wvm16 addr val x86))))
-    :rule-classes (:rewrite :type-prescription)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm xr-wmv16-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (equal (xr fld index (mv-nth 1 (wvm16 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wvm16) ()))))
+
+  (defthm wvm16-xw-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (wvm16 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wvm16 addr val x86)))
+                  (equal (mv-nth 1 (wvm16 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wvm16 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wvm16 wvm16) ())))))
 
 (define wvm32
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -499,7 +587,21 @@ memory.</p>" )
   (defthm x86p-mv-nth-1-wvm32
     (implies (x86p x86)
              (x86p (mv-nth 1 (wvm32 addr val x86))))
-    :rule-classes (:rewrite :type-prescription)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm xr-wmv32-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (equal (xr fld index (mv-nth 1 (wvm32 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wvm32) ()))))
+
+  (defthm wvm32-xw-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (wvm32 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wvm32 addr val x86)))
+                  (equal (mv-nth 1 (wvm32 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wvm32 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wvm32 wvm32) ())))))
 
 (define wvm64
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -547,7 +649,21 @@ memory.</p>" )
   (defthm x86p-mv-nth-1-wvm64
     (implies (x86p x86)
              (x86p (mv-nth 1 (wvm64 addr val x86))))
-    :rule-classes (:type-prescription :rewrite)))
+    :rule-classes (:type-prescription :rewrite))
+
+  (defthm xr-wmv64-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (equal (xr fld index (mv-nth 1 (wvm64 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wvm64) ()))))
+
+  (defthm wvm64-xw-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (wvm64 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wvm64 addr val x86)))
+                  (equal (mv-nth 1 (wvm64 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wvm64 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wvm64 wvm64) ())))))
 
 (define wvm128
   ((addr :type (signed-byte #.*max-linear-address-size*))
@@ -557,7 +673,7 @@ memory.</p>" )
   :guard-hints (("Goal" :in-theory (e/d (logtail) ())))
   :inline t
   :parents (x86-linear-memory)
-
+  :prepwork ((local (in-theory (e/d () (wvm64)))))
   (if (mbt (canonical-address-p addr))
 
       (let* ((8+addr (the (signed-byte #.*max-linear-address-size+1*)
@@ -595,7 +711,21 @@ memory.</p>" )
   (defthm x86p-mv-nth-1-wvm128
     (implies (x86p x86)
              (x86p (mv-nth 1 (wvm128 addr val x86))))
-    :rule-classes (:type-prescription :rewrite)))
+    :rule-classes (:type-prescription :rewrite))
+
+  (defthm xr-wmv128-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (equal (xr fld index (mv-nth 1 (wvm128 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wvm128) ()))))
+
+  (defthm wvm128-xw-programmer-level-mode
+    (implies (not (equal fld :mem))
+             (and (equal (mv-nth 0 (wvm128 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wvm128 addr val x86)))
+                  (equal (mv-nth 1 (wvm128 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wvm128 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wvm128 wvm128) ())))))
 
 ;; ======================================================================
 

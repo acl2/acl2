@@ -8,6 +8,7 @@
 (set-irrelevant-formals-ok t)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 ;; ======================================================================
 
@@ -21,6 +22,109 @@
     #x0f #xaf #xc7                        ;;  imul %edi,%eax
     #x83 #xef #x01                        ;;  sub $0x1,%edi
     #x75 #xf8))                           ;;  jne <factorial_recursive+0x10>
+
+;; ======================================================================
+
+;; (0.1) But first, some misc. arithmetic/bitops-like lemmas --- maybe
+;; should generalize enough so that I can move them to
+;; proofs/utilities/basics.lisp?
+
+(local
+ (defthm logcons-and-+-bit-1
+   (implies (or (and (equal b1 -1)
+                     (equal b2 1))
+                (and (equal b1 1)
+                     (equal b2 0)))
+            (equal (+ b1 (logcons b2 x))
+                   (logcons (+ b1 b2) x)))
+   :hints (("Goal" :in-theory (e/d* (logcons) ())))))
+
+(local
+ (defthm logext-n-x-1-<-x-helper-1
+   (implies (and (integerp x)
+                 (<= (logext (+ -1 n) (logcdr x))
+                     (logcdr x)))
+            (< (+ -1 (logcons 0 (logext (+ -1 n) (logcdr x))))
+               x))
+   :hints (("Goal" :in-theory (e/d* (logcons) ())))))
+
+
+(local
+ (defthm logext-n-x-1-<-x-helper-2
+   (implies (and (integerp x)
+                 (< (+ -1 (logext (+ -1 n) (logcdr x)))
+                    (logcdr x)))
+            (< (+ -1
+                  (logcons (logcar x)
+                           (logext (+ -1 n) (logcdr x))))
+               x))
+   :hints (("Goal"
+            :cases ((equal (logcar x) 0))
+            :in-theory (e/d* (bitops::ihsext-inductions
+                              bitops::ihsext-recursive-redefs)
+                             ())))))
+
+(defthm logext-n-x-1-<-x
+  (implies (natp x)
+           (< (+ -1 (logext n x)) x))
+  :hints (("Goal"
+           :in-theory (e/d* (bitops::ihsext-inductions
+                             bitops::ihsext-recursive-redefs)
+                            ())))
+  :rule-classes :linear)
+
+(local
+ (defthm pull-out-logcons-from-loghead
+   (implies (posp n)
+            (equal (loghead n (logcons 0 x))
+                   (logcons 0 (loghead (1- n) x))))
+   :hints (("Goal"
+            :in-theory (e/d* (bitops::ihsext-inductions
+                              bitops::ihsext-recursive-redefs)
+                             ())))))
+
+(defthm loghead-n-x-<-x
+  (implies (natp x)
+           (<= (loghead n x) x))
+  :hints (("Goal"
+           :in-theory (e/d* (bitops::ihsext-inductions
+                             bitops::ihsext-recursive-redefs)
+                            ())))
+  :rule-classes :linear)
+
+(defthm loghead-n-1-logext-n-x-<-x
+  (implies (and (posp x)
+                (posp n))
+           (< (loghead n (+ -1 (logext n x))) x))
+  :hints (("Goal"
+           :cases ((equal (logcar x) 0))
+           :in-theory (e/d* (bitops::ihsext-inductions
+                             bitops::ihsext-recursive-redefs)
+                            ())))
+  :rule-classes :linear)
+
+(defthm bool->bit-logbitp-m-x-where-m->=integer-length-x
+  (implies (and (natp x)
+                (equal n (integer-length x))
+                (natp m)
+                (<= n m))
+           (equal (bool->bit (logbitp m x)) 0))
+  :hints (("Goal" :in-theory
+           (e/d* (acl2::logbitp**
+                  acl2::integer-length**
+                  acl2::ihsext-inductions)
+                 ()))))
+
+(defthm loghead-<=0-of-x
+  (implies (and (< i 0)
+                (integerp i))
+           (equal (loghead i x) 0))
+  :hints (("Goal" :in-theory (e/d () ()))))
+
+(defthm logand-n-n-equal-n
+  (implies (and (integerp n)
+                (<= 0 n))
+           (equal (logand n n) n)))
 
 ;; ======================================================================
 
@@ -60,6 +164,7 @@
 (defthm fact-init-x86-state-forward-chaining
   (implies (fact-init-x86-state n addr x86)
            (and (x86p x86)
+                (natp n)
                 (n32p n)
                 (equal (ms x86) nil)
                 (equal (fault x86) nil)
@@ -87,19 +192,6 @@
             (fact-algorithm-simple n a)
           a))
     1))
-
-(encapsulate
- ()
-
- (local (include-book "arithmetic-5/top" :dir :system))
-
- (local (in-theory (e/d (loghead logbitp logapp n32-to-i32 logext) ())))
-
- (defthm loghead-and-n32-to-i32-lemma
-   (implies (and (integerp n)
-                 (< 0 n))
-            (< (loghead 32 (+ -1 (n32-to-i32 n)))
-               n))))
 
 (defun fact-algorithm (n a)
   (if (posp n)
@@ -175,7 +267,7 @@
                 (canonical-address-p addr)
                 (canonical-address-p (+ addr (len *factorial_recursive*)))
                 (x86p x86))
-           (equal (rgfi *rax* (loop-all-induction n a addr x86))
+           (equal (xr :rgf *rax* (loop-all-induction n a addr x86))
                   (fact-algorithm n a)))
   :hints (("Goal" :in-theory (e/d (signed-byte-p) ()))))
 
@@ -237,41 +329,6 @@
 ;; (5) Prove that the code (*factorial_recursive*) implements the
 ;; algorithm:
 
-(defthm loghead--1-is-zero
-  (equal (loghead -1 x) 0))
-
-(defthm bool->bit-logbitp-m-x-where-m->=integer-length-x
-  (implies (and (natp x)
-                (equal n (integer-length x))
-                (natp m)
-                (<= n m))
-           (equal (bool->bit (logbitp m x)) 0))
-  :hints (("Goal" :in-theory
-           (e/d* (acl2::logbitp**
-                  acl2::integer-length**
-                  acl2::ihsext-inductions)
-                 ()))))
-
-(defthm-usb n01p-of-bool->bit
-  :bound 1
-  :concl (bool->bit x)
-  :gen-type t
-  :gen-linear t)
-
-(set-non-linearp t)
-
-(encapsulate
- ()
-
- (local (include-book "arithmetic-5/top" :dir :system))
-
- (defthm loghead-<=0-of-x
-   (implies (< i 0)
-            (equal (loghead i x) 0))
-   :hints (("Goal" :in-theory (e/d (loghead ifix) ()))))
- )
-
-(set-non-linearp nil)
 
 (encapsulate
 
@@ -280,7 +337,7 @@
  (local (include-book "centaur/gl/gl" :dir :system))
 
  (local
-  (def-gl-thm loop-effects-helper
+  (def-gl-thm loop-effects-helper-1
     :hyp (and (not (equal rdi 1))
               (unsigned-byte-p 32 rdi))
     :concl (equal (equal (loghead 32 (+ -1 (logext 32 rdi))) 0)
@@ -288,116 +345,71 @@
     :g-bindings
     `((rdi   (:g-number ,(gl-int 0 2 33))))))
 
+ (defthm loop-effects-helper
+   (implies (and (not (equal rdi 1))
+                 (unsigned-byte-p 32 rdi))
+            (equal (equal (loghead 32 (+ -1 (logext 32 rdi))) 0)
+                   nil))))
 
- (defthm loop-effects
-   ;; imul %edi,%eax
-   ;; sub $0x1,%edi
-   ;; jne 400600
-   (implies (and (equal addr (- (rip x86) #x10))
-                 (fact-init-x86-state n addr x86)
-                 (equal loop-addr (+ #x10 addr))
-                 (n32p a)
-                 (posp n)
-                 (equal a (rgfi *rax* x86)))
-            (equal (x86-run (loop-clk n a) x86)
-                   (let* ((x86 (loop-all-induction n a loop-addr x86))
-                          (x86 (!rip (+ #x18 addr) x86)))
-                     x86)))
-   :hints (("Goal"
-            :induct (loop-all-induction n a loop-addr x86)
-            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                              imul-spec             ;; IMUL
-                              imul-spec-32          ;; IMUL
-                              gpr-sub-spec-4        ;; SUB
-                              jcc/cmovcc/setcc-spec ;; JNE
-                              opcode-execute
-                              !rgfi-size
-                              x86-operand-to-reg/mem
-                              x86-operand-from-modr/m-and-sib-bytes
-                              write-user-rflags
-                              !flgi-undefined
-                              rim-size
-                              rim08
-                              two-byte-opcode-decode-and-execute
-                              x86-effective-addr
-                              n32-to-i32
-                              ;; Flags:
-                              flgi
-                              !flgi
-                              zf-spec
-                              ;; Registers:
-                              rr32
-                              wr32
-                              signed-byte-p
-                              fact-init-x86-state)
-                             (bitops::logior-equal-0
-                              negative-logand-to-positive-logand-with-integerp-x
-                              not)))))
- ) ;; End of encapsulate
+(defthm loop-effects
+  ;; imul %edi,%eax
+  ;; sub $0x1,%edi
+  ;; jne 400600
+  (implies (and (equal addr (- (rip x86) #x10))
+                (fact-init-x86-state n addr x86)
+                (equal loop-addr (+ #x10 addr))
+                (n32p a)
+                (posp n)
+                (equal a (rgfi *rax* x86)))
+           (equal (x86-run (loop-clk n a) x86)
+                  (let* ((x86 (loop-all-induction n a loop-addr x86))
+                         (x86 (xw :rip 0 (+ #x18 addr) x86)))
+                    x86)))
+  :hints (("Goal"
+           :induct (loop-all-induction n a loop-addr x86)
+           :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             imul-spec             ;; IMUL
+                             imul-spec-32          ;; IMUL
+                             gpr-sub-spec-4        ;; SUB
+                             jcc/cmovcc/setcc-spec ;; JNE
+                             opcode-execute
+                             !rgfi-size
+                             x86-operand-to-reg/mem
+                             x86-operand-from-modr/m-and-sib-bytes
+                             write-user-rflags
+                             !flgi-undefined
+                             rim-size
+                             rim08
+                             two-byte-opcode-decode-and-execute
+                             x86-effective-addr
+                             n32-to-i32
+                             ;; Flags:
+                             flgi
+                             !flgi
+                             zf-spec
+                             ;; Registers:
+                             rr32
+                             wr32
+                             signed-byte-p
+                             fact-init-x86-state)
+                            (bitops::logior-equal-0
+                             negative-logand-to-positive-logand-with-integerp-x
+                             not)))))
 
 (in-theory (e/d (subset-p) (loop-clk)))
 
-(encapsulate
- ()
-
- (local (include-book "arithmetic-5/top" :dir :system))
-
- (defthm logand-n-n-equal-n
-   (implies (and (integerp n)
-                 (<= 0 n))
-            (equal (logand n n) n))))
-
 (defthm factorial-preamble-n=0-post-cond
-
-  (implies (and (fact-init-x86-state 0 (rip x86) x86)
-                (equal n 0)
-                (equal addr (rip x86)))
-
-           (and (fact-init-x86-state n addr (x86-run (fact-preamble-n=0) x86))
-                (equal (rgfi *rax* (x86-run (fact-preamble-n=0) x86)) 1)
-                (equal (rip (x86-run (fact-preamble-n=0) x86)) (+ #x18 addr))
-                (equal (ms (x86-run (fact-preamble-n=0) x86)) nil)
-                (equal (fault (x86-run (fact-preamble-n=0) x86)) nil)
-                (equal (programmer-level-mode (x86-run (fact-preamble-n=0) x86))
-                       (programmer-level-mode x86))))
-
-  :hints (("Goal"
-           :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             opcode-execute
-                             !rgfi-size
-                             x86-operand-to-reg/mem
-                             x86-operand-from-modr/m-and-sib-bytes
-                             write-user-rflags
-                             !flgi-undefined
-                             rim-size
-                             rim08
-                             two-byte-opcode-decode-and-execute
-                             x86-effective-addr
-                             n32-to-i32
-                             ;; Flags:
-                             flgi
-                             !flgi
-                             zf-spec
-                             ;; Spec functions:
-                             gpr-and-spec-4
-                             jcc/cmovcc/setcc-spec
-                             rm32
-                             rim32
-                             rr32
-                             wr32
-                             signed-byte-p
-                             fact-init-x86-state)
-                            (bitops::logior-equal-0
-                             not
-                             loop-effects)))))
-
-(defthm factorial-preamble-n=0-rip-fluff-1
 
   (implies (fact-init-x86-state 0 (rip x86) x86)
 
-           (equal (!rip (+ 24 (rip x86))
-                        (x86-run (fact-preamble-n=0) x86))
-                  (x86-run (fact-preamble-n=0) x86)))
+           (and (fact-init-x86-state 0 (xr :rip 0 x86) (x86-run (fact-preamble-n=0) x86))
+
+                (equal (xr :rgf *rax* (x86-run (fact-preamble-n=0) x86)) 1)
+                (equal (xr :rip    0  (x86-run (fact-preamble-n=0) x86)) (+ #x18 (xr :rip 0 x86)))
+                (equal (xr :ms     0  (x86-run (fact-preamble-n=0) x86)) nil)
+                (equal (xr :fault  0  (x86-run (fact-preamble-n=0) x86)) nil)
+                (equal (xr :programmer-level-mode 0 (x86-run (fact-preamble-n=0) x86))
+                       (xr :programmer-level-mode 0 x86))))
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -429,13 +441,10 @@
                              not
                              loop-effects)))))
 
-(defthm factorial-preamble-n=0-rip-fluff-2
-
-  (implies (and (<= n 0)
-                (fact-init-x86-state n (rip x86) x86)
-                (not (equal n 0)))
-           (equal (!rip (+ 24 (rip x86))
-                        (x86-run (fact-preamble-n!=0) x86))
+(defthm factorial-preamble-n=0-rip-fluff
+  (implies (fact-init-x86-state 0 (rip x86) x86)
+           (equal (xw :rip 0 (+ 24 (xr :rip 0 x86))
+                      (x86-run (fact-preamble-n=0) x86))
                   (x86-run (fact-preamble-n=0) x86)))
 
   :hints (("Goal"
@@ -469,19 +478,55 @@
                              loop-effects)))))
 
 (defthm factorial-preamble-n!=0-post-cond
+  (implies (and (fact-init-x86-state n (xr :rip 0 x86) x86)
+                (not (equal (rgfi *rdi* x86) 0)))
 
-  (implies (and (fact-init-x86-state n (rip x86) x86)
-                (equal n (rgfi *rdi* x86))
-                (not (equal (rgfi *rdi* x86) 0))
-                (equal addr (rip x86)))
+           (and (fact-init-x86-state n (xr :rip 0 x86) (x86-run (fact-preamble-n!=0) x86))
 
-           (and (fact-init-x86-state n addr (x86-run (fact-preamble-n!=0) x86))
-                (equal (rgfi *rax* (x86-run (fact-preamble-n!=0) x86)) 1)
-                (equal (rip (x86-run (fact-preamble-n!=0) x86)) (+ #x10 addr))
-                (equal (ms (x86-run (fact-preamble-n!=0) x86)) nil)
-                (equal (fault (x86-run (fact-preamble-n!=0) x86)) nil)
-                (equal (programmer-level-mode (x86-run (fact-preamble-n!=0) x86))
-                       (programmer-level-mode x86))))
+                (equal (xr :rgf *rax* (x86-run (fact-preamble-n!=0) x86)) 1)
+                (equal (xr :rip    0  (x86-run (fact-preamble-n!=0) x86)) (+ #x10 (xr :rip 0 x86)))
+                (equal (xr :ms     0  (x86-run (fact-preamble-n!=0) x86)) nil)
+                (equal (xr :fault  0  (x86-run (fact-preamble-n!=0) x86)) nil)
+                (equal (xr :programmer-level-mode 0 (x86-run (fact-preamble-n!=0) x86))
+                       (xr :programmer-level-mode 0 x86))))
+
+  :hints (("Goal"
+           :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             opcode-execute
+                             !rgfi-size
+                             x86-operand-to-reg/mem
+                             x86-operand-from-modr/m-and-sib-bytes
+                             write-user-rflags
+                             !flgi-undefined
+                             rim-size
+                             rim08
+                             two-byte-opcode-decode-and-execute
+                             x86-effective-addr
+                             n32-to-i32
+                             ;; Flags:
+                             flgi
+                             !flgi
+                             zf-spec
+                             ;; Spec functions:
+                             gpr-and-spec-4
+                             jcc/cmovcc/setcc-spec
+                             rm32
+                             rim32
+                             rr32
+                             wr32
+                             signed-byte-p
+                             fact-init-x86-state)
+                            (bitops::logior-equal-0
+                             not
+                             loop-effects)))))
+
+(defthm factorial-preamble-n!=0-rip-fluff
+  (implies (and (<= n 0)
+                (fact-init-x86-state n (rip x86) x86)
+                (not (equal n 0)))
+           (equal (xw :rip 0 (+ 24 (xr :rip 0 x86))
+                      (x86-run (fact-preamble-n!=0) x86))
+                  (x86-run (fact-preamble-n=0) x86)))
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
@@ -517,8 +562,6 @@
                  fact-preamble-n!=0
                  (fact-preamble-n=0)
                  (fact-preamble-n!=0))))
-
-(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defthm factorial-effects
   (implies (and (fact-init-x86-state n addr x86)
@@ -556,17 +599,20 @@
                              wr32
                              signed-byte-p)
                             (bitops::logior-equal-0
-                             not
-                             loop-effects))
+                             not)))
+          ("Subgoal 1"
+           :in-theory (e/d ()
+                           (loop-effects
+                            x86-run-plus))
            :use ((:instance loop-effects
                             (x86 (x86-run (fact-preamble-n!=0) x86))
                             (a 1)
-                            (n (rgfi *rdi* x86))
                             (addr (rip x86))
-                            (loop-addr (+ #x10 (rip x86))))))
-          ("Subgoal 1"
-           :in-theory (e/d (fact-preamble-n!=0)
-                           (x86-run-opener-not-ms-not-zp-n)))))
+                            (loop-addr (+ #x10 (rip x86))))
+                 (:instance x86-run-plus
+                            (n1 (fact-preamble-n!=0))
+                            (n2 (loop-clk n 1))
+                            (x86 x86))))))
 
 (in-theory (e/d () (clk)))
 
@@ -622,7 +668,7 @@
                         x86-run-plus-1
                         x86-run-plus
                         canonical-address-p
-                        factorial-preamble-n=0-rip-fluff-1))
+                        factorial-preamble-n=0-rip-fluff))
            :use ((:instance factorial-effects)))
           ("Subgoal 2"
            :in-theory (e/d
@@ -635,7 +681,7 @@
                         x86-run-plus-1
                         x86-run-plus
                         canonical-address-p
-                        factorial-preamble-n=0-rip-fluff-1))
+                        factorial-preamble-n=0-rip-fluff))
            :use ((:instance rgfi-rax-loop-all-induction-fluff
                             (addr (+ #x10 (rip x86)))
                             (a 1)

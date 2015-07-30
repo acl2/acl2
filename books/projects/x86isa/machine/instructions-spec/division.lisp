@@ -1,6 +1,9 @@
 ;; AUTHOR:
 ;; Shilpi Goel <shigoel@cs.utexas.edu>
 
+;; This book contains the specification of the following instructions:
+;; div  idiv
+
 (in-package "X86ISA")
 
 (include-book "../x86-decoding-and-spec-utils"

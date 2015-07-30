@@ -7,7 +7,6 @@
 (in-package "X86ISA")
 
 (include-book "decoding-utilities")
-(include-book "std/util/defconsts" :dir :system)
 
 ;; ======================================================================
 
@@ -117,29 +116,6 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 
 ;; ======================================================================
 
-(defun define-general-purpose-registers ()
-
-  ;; GPRs have overlapping indices.  This is because of the way
-  ;; decoding works in IA-32e.  E.g., depending on the presence of the
-  ;; REX byte, index 0 might refer to RAX or R0.
-
-
-  `(defconsts (*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
-                     *R0*  *R1*  *R2*  *R3*  *R4*  *R5*  *R6*  *R7*
-                     *R8*  *R9*  *R10* *R11* *R12* *R13* *R14* *R15*
-                     *64-bit-general-purpose-registers-len*)
-     ,(b* ((lst (append (gl-int 0 1 8) (gl-int 0 1 16)))
-           (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
-
-(defun define-segment-registers ()
-
-  `(defconsts (*ES* *CS* *SS* *DS* *FS* *GS*
-               *segment-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 6))
-           (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
-
 (defconst *hidden-segment-register-layout*
   '((:base-addr  0  64) ;; Segment Base Address
     (:limit     64  32) ;; Segment Limit
@@ -159,48 +135,6 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
 (defthm segment-selector-ok
   (layout-constant-alistp *segment-selector-layout* 0 16)
   :rule-classes nil)
-
-(defun define-gdtr/idtr-registers ()
-
-  `(defconsts (*GDTR* *IDTR* *gdtr-idtr-names-len*)
-     ,(b* ((lst (gl-int 0 1 2))
-           (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
-
-(defun define-ldtr/tr-registers ()
-
-  `(defconsts (*LDTR* *TR* *ldtr-tr-names-len*)
-     ,(b* ((lst (gl-int 0 1 2))
-           (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
-
-;; Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5
-
-(defun define-control-registers ()
-
-  `(defconsts (*MSW* ;; Control status register: msw is only 32 bits
-                     ;; even in 64 bit mode?
-               *CR0* ;; cr0 controls operating mode and states of
-                     ;; processor
-               *CR1* ;; cr1 is reserved
-               *CR2* ;; cr2 holds the page fault linear address (the
-                     ;; one that caused the page fault)
-               *CR3* ;; cr3 is associated with paging
-               *CR4* ;; cr4 enables or indicates support for processor
-                     ;; extensions
-               *CR5* ;; cr5 is reserved
-               *CR6* ;; cr6 is reserved
-               *CR7* ;; cr7 is reserved
-               *CR8* ;; cr8 provides read/write access to the TPR.
-                     ;; (Task Priority Register) available only in 64
-                     ;; bit mode
-               ;; cr9 thru cr15 are not implemented in our model yet.
-               *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
-               *XCR0*
-               *control-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 18))
-           (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
 
 (defconst *cr0-layout*
   '((:cr0-pe    0  1) ;; Protection Enable
@@ -313,128 +247,7 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (layout-constant-alistp *xcr0-layout* 0 64)
   :rule-classes nil)
 
-(defun define-debug-registers ()
-
-  `(defconsts (*DR0* ;; dr0 holds breakpoint 0 virtual address, 64/32 bit
-               *DR1* ;; dr1 holds breakpoint 1 virtual address, 64/32 bit
-               *DR2* ;; dr2 holds breakpoint 2 virtual address, 64/32 bit
-               *DR3* ;; dr3 holds breakpoint 3 virtual address, 64/32 bit
-               *DR4* ;; dr4 is reserved
-               *DR5* ;; dr5 is reserved
-               *DR6* ;; dr6
-               *DR7* ;; dr7
-               *debug-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 8))
-           (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
-
-(defun define-fp-registers ()
-  ;; 80-bit registers
-
-  ;; Note: The Intel manual refers to these registers as R0, R1, ... ,
-  ;; R7, but in our model, we will refer to them as FP0, FP1, ...,
-  ;; FP7.
-
-  `(defconsts (*FP0* *FP1* *FP2* *FP3* *FP4* *FP5* *FP6* *FP7*
-                     *fp-data-register-names-len*)
-
-     ,(b* ((lst (gl-int 0 1 8))
-           (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
-
-(defun define-mmx-registers ()
-  ;; 64-bit registers
-
-  ;; The MM registers (MM0 through MM7) are aliased to the low 64-bits
-  ;; of the FPU data registers.
-
-  `(defconsts (*MM0* *MM1* *MM2* *MM3* *MM4* *MM5* *MM6* *MM7*
-                     *mmx-register-names-len*)
-
-     ,(b* ((lst (gl-int 0 1 8))
-           (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
-
-(defun define-xmm-registers ()
-  ;; 128-bit registers
-
-  `(defconsts (*XMM0* *XMM1* *XMM2* *XMM3* *XMM4* *XMM5* *XMM6* *XMM7*
-                      *XMM8* *XMM9* *XMM10* *XMM11*
-                      *XMM12* *XMM13* *XMM14* *XMM15*
-                      *xmm-register-names-len*)
-
-     ,(b* ((lst (gl-int 0 1 16))
-           (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
-
-(defun define-model-specific-registers ()
-  ;; At this point, we only model the MSRs that we need.  Remember,
-  ;; these are Intel-specific registers, and may or may not be
-  ;; available on AMD machines.
-
-  ;; The constants ending with IDX are used to index into the STOBJ
-  ;; field for model-specific registers.
-
-
-  `(defconsts (
-               ;; extended features enables --- If
-               ;; CPUID.80000001.EDX.[bit 20] or
-               ;; CPUID.80000001.EDX.[bit 29]
-               *IA32_EFER*
-               *IA32_EFER-IDX*
-
-               ;; Map of BASE Address of FS (R/W) --- If
-               ;; CPUID.80000001.EDX.[bit 29] = 1
-               *IA32_FS_BASE*
-               *IA32_FS_BASE-IDX*
-
-               ;; Map of BASE Address of GB (R/W) --- If
-               ;; CPUID.80000001.EDX.[bit 29] = 1
-               *IA32_GS_BASE*
-               *IA32_GS_BASE-IDX*
-
-               ;; Swap Target of BASE Address of GS (R/W) --- If
-               ;; CPUID.80000001.EDX.[bit 29] = 1
-               *IA32_KERNEL_GS_BASE*
-               *IA32_KERNEL_GS_BASE-IDX*
-
-               ;; System Call Target Address (R/W) --- If
-               ;; CPUID.80000001.EDX.[bit 29] = 1
-               *IA32_STAR*
-               *IA32_STAR-IDX*
-
-               ;; IA-32e Mode System Call Target Address (R/W) --- If
-               ;; CPUID.80000001.EDX.[bit 29] = 1
-               *IA32_LSTAR*
-               *IA32_LSTAR-IDX*
-
-               ;; System Call Flag Mask (R/W) --- If
-               ;; CPUID.80000001.EDX.[bit 29] = 1
-               *IA32_FMASK*
-               *IA32_FMASK-IDX*
-
-               *model-specific-register-names-len*)
-
-     ,(b* ((lst (list #uxC000_0080 ;; ia32_efer and idx
-                      0
-                      #uxC000_0100 ;; ia32_fs_base and idx
-                      1
-                      #uxC000_0101 ;; ia32_gs_base and idx
-                      2
-                      #uxC000_0102 ;; ia32_kernel_gs_base and idx
-                      3
-                      #uxC000_0081 ;; ia32_star and idx
-                      4
-                      #uxC000_0082 ;; ia32_lstar and idx
-                      5
-                      #uxC000_0084 ;; ia32_fmask and idx
-                      6
-                      ))
-           (len  (/ (len lst) 2)))
-          (cons 'mv (append lst (list len))))))
-
 ;; IA32_EFER (Intel Manual, Feb-14, Vol. 3A, Section 2.2.1):
-
 (defconst *ia32_efer-layout*
   '((:ia32_efer-sce   0  1) ;; Syscall Enable (R/W) (enables SYSCALL/SYSRET)
     (0                1  7) ;; Reserved?
@@ -539,24 +352,12 @@ accessor and updater macros for @('*cr0-layout*') below.</p>
   (layout-constant-alistp *mxcsr-layout* 0 16)
   :rule-classes nil)
 
-(make-event (define-general-purpose-registers))
-(make-event (define-segment-registers))
-(make-event (define-gdtr/idtr-registers))
-(make-event (define-ldtr/tr-registers))
-(make-event (define-control-registers))
-(make-event (define-debug-registers))
-(make-event (define-fp-registers))
-(make-event (define-mmx-registers))
-(make-event (define-xmm-registers))
-(make-event (define-model-specific-registers))
-
-
 ;; The constants defined by the following events (and NOT the events
 ;; themselves) will be redundant (in most cases) with those defined in
 ;; portcullis/sharp-dot-constants.  In that book, these constants have
-;; been defined manually, as opposed to the table-driven method here.
-;; This should assure us just a bit more that our constant definitions
-;; are okay.
+;; been defined manually (mostly), as opposed to the table-driven
+;; method here.  This should assure us just a bit more that our
+;; constant definitions are okay.
 (make-event (define-layout-constants *rflags-layout*))
 (make-event (layout-names 'flg-names *rflags-layout*))
 (make-event (define-layout-constants *fp-status-layout*))

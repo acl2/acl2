@@ -926,7 +926,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   0
 		   (ia32e-la-to-pa-page-table
 		    lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-table)
@@ -1000,7 +1000,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   1
 		   (ia32e-la-to-pa-page-table
 		    lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  (mv-nth
 		   1
 		   (ia32e-la-to-pa-page-table
@@ -1161,8 +1161,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 	    (mv-nth 2 (ia32e-la-to-pa-page-table
 		       lin-addr page-table-base-addr u-s-acc wp smep
 		       nxe r-w-x cpl
-		       (!memi addr val x86)))
-	    (!memi addr val
+		       (xw :mem addr val x86)))
+	    (xw :mem addr val
 		   (mv-nth 2 (ia32e-la-to-pa-page-table
 			      lin-addr page-table-base-addr u-s-acc wp smep
 			      nxe r-w-x cpl x86)))))
@@ -1185,11 +1185,11 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		(disjoint-p (addr-range 1 addr)
 			    (addr-range 8 page-table-entry-addr)))
 	   (equal
-	    (memi
+	    (xr :mem
 	     addr
 	     (mv-nth 2 (ia32e-la-to-pa-page-table
 			lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-table)
 		  (not
@@ -1251,7 +1251,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (addr-range 8 page-table-entry-addr)))
 	   (ia32e-la-to-pa-page-table-entry-validp
 	    lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl
-	    (!memi addr val x86)))
+	    (xw :mem addr val x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-table)
 		  (not addr-range-1
@@ -1871,7 +1871,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   0
 		   (ia32e-la-to-pa-page-directory
 		    lin-addr page-directory-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-directory)
@@ -1937,7 +1937,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   1
 		   (ia32e-la-to-pa-page-directory
 		    lin-addr page-directory-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  (mv-nth
 		   1
 		   (ia32e-la-to-pa-page-directory
@@ -2037,7 +2037,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   0
 		   (ia32e-la-to-pa-page-directory
 		    lin-addr page-directory-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-directory)
@@ -2128,7 +2128,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   1
 		   (ia32e-la-to-pa-page-directory
 		    lin-addr page-directory-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  (mv-nth
 		   1
 		   (ia32e-la-to-pa-page-directory
@@ -2366,8 +2366,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 	     2
 	     (ia32e-la-to-pa-page-directory
 	      lin-addr page-directory-base-addr wp smep nxe r-w-x cpl
-	      (!memi addr val x86)))
-	    (!memi
+	      (xw :mem addr val x86)))
+	    (xw :mem
 	     addr val
 	     (mv-nth
 	      2
@@ -2410,8 +2410,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 	     2
 	     (ia32e-la-to-pa-page-directory
 	      lin-addr page-directory-base-addr wp smep nxe r-w-x cpl
-	      (!memi addr val x86)))
-	    (!memi
+	      (xw :mem addr val x86)))
+	    (xw :mem
 	     addr val
 	     (mv-nth
 	      2
@@ -2447,13 +2447,13 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (addr-range 1 addr)
 		 (addr-range 8 page-directory-entry-addr)))
 	   (equal
-	    (memi
+	    (xr :mem
 	     addr
 	     (mv-nth
 	      2
 	      (ia32e-la-to-pa-page-directory
 	       lin-addr page-directory-base-addr wp smep nxe r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-directory)
 		  (not
@@ -2532,13 +2532,13 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (translation-governing-addresses-for-page-directory
 		  lin-addr page-directory-base-addr x86)))
 	   (equal
-	    (memi
+	    (xr :mem
 	     addr
 	     (mv-nth
 	      2
 	      (ia32e-la-to-pa-page-directory
 	       lin-addr page-directory-base-addr wp smep nxe r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-directory
 		   wm-low-64 wm-low-32)
@@ -2650,7 +2650,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 
 	   (ia32e-la-to-pa-page-directory-entry-validp
 	    lin-addr page-directory-base-addr wp smep nxe r-w-x cpl
-	    (!memi addr val x86)))
+	    (xw :mem addr val x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-directory)
 		  (not
@@ -2908,7 +2908,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 
 	   (ia32e-la-to-pa-page-directory-entry-validp
 	    lin-addr page-directory-base-addr wp smep nxe r-w-x cpl
-	    (!memi addr val x86)))
+	    (xw :mem addr val x86)))
   :hints (("Goal" :do-not '(preprocess)
 	   :in-theory (e/d ()
 			   (ia32e-la-to-pa-page-table-entry-validp
@@ -4509,7 +4509,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   0
 		   (ia32e-la-to-pa-page-dir-ptr-table
 		    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
@@ -4572,7 +4572,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   1
 		   (ia32e-la-to-pa-page-dir-ptr-table
 		    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  (mv-nth
 		   1
 		   (ia32e-la-to-pa-page-dir-ptr-table
@@ -4667,7 +4667,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   0
 		   (ia32e-la-to-pa-page-dir-ptr-table
 		    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
@@ -4750,7 +4750,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   1
 		   (ia32e-la-to-pa-page-dir-ptr-table
 		    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  (mv-nth
 		   1
 		   (ia32e-la-to-pa-page-dir-ptr-table
@@ -4860,7 +4860,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   0
 		   (ia32e-la-to-pa-page-dir-ptr-table
 		    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
@@ -4932,7 +4932,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   1
 		   (ia32e-la-to-pa-page-dir-ptr-table
 		    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  (mv-nth
 		   1
 		   (ia32e-la-to-pa-page-dir-ptr-table
@@ -5194,8 +5194,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 	     2
 	     (ia32e-la-to-pa-page-dir-ptr-table
 	      lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-	      (!memi addr val x86)))
-	    (!memi addr val
+	      (xw :mem addr val x86)))
+	    (xw :mem addr val
 		   (mv-nth
 		    2
 		    (ia32e-la-to-pa-page-dir-ptr-table
@@ -5237,8 +5237,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 	     2
 	     (ia32e-la-to-pa-page-dir-ptr-table
 	      lin-addr ptr-table-base-addr wp smep nxe
-	      r-w-x cpl (!memi addr val x86)))
-	    (!memi addr val
+	      r-w-x cpl (xw :mem addr val x86)))
+	    (xw :mem addr val
 		   (mv-nth
 		    2
 		    (ia32e-la-to-pa-page-dir-ptr-table
@@ -5288,8 +5288,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 	     2
 	     (ia32e-la-to-pa-page-dir-ptr-table
 	      lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-	      (!memi addr val x86)))
-	    (!memi
+	      (xw :mem addr val x86)))
+	    (xw :mem
 	     addr val
 	     (mv-nth
 	      2
@@ -5322,12 +5322,12 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (addr-range 1 addr)
 		 (addr-range 8 ptr-table-entry-addr)))
 	   (equal
-	    (memi addr
+	    (xr :mem addr
 		  (mv-nth
 		   2
 		   (ia32e-la-to-pa-page-dir-ptr-table
 		    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
 		  (not
@@ -5413,12 +5413,12 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		(equal page-directory-entry (rm-low-64 page-directory-entry-addr x86))
 		(equal (ia32e-page-tables-slice :ps page-directory-entry) 1))
 	   (equal
-	    (memi addr
+	    (xr :mem addr
 		  (mv-nth
 		   2
 		   (ia32e-la-to-pa-page-dir-ptr-table
 		    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
 		  (not
@@ -5535,13 +5535,13 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (translation-governing-addresses-for-page-dir-ptr-table
 		  lin-addr ptr-table-base-addr x86)))
 	   (equal
-	    (memi
+	    (xr :mem
 	     addr
 	     (mv-nth
 	      2
 	      (ia32e-la-to-pa-page-dir-ptr-table
 	       lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table
 		   wm-low-64 wm-low-32 ifix)
@@ -5660,7 +5660,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		(x86p x86))
 	   (ia32e-la-to-pa-page-dir-ptr-table-entry-validp
 	    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-	    (!memi addr val x86)))
+	    (xw :mem addr val x86)))
   :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
 		  (not
 		   mv-nth-1-no-error-ia32e-la-to-pa-page-directory-4K-pages
@@ -5807,7 +5807,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		(x86p x86))
 	   (ia32e-la-to-pa-page-dir-ptr-table-entry-validp
 	    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-	    (!memi addr val x86)))
+	    (xw :mem addr val x86)))
   :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
 		  (mv-nth-1-no-error-ia32e-la-to-pa-page-directory-4K-pages
 		   mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
@@ -6012,7 +6012,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		(x86p x86))
 	   (ia32e-la-to-pa-page-dir-ptr-table-entry-validp
 	    lin-addr ptr-table-base-addr wp smep nxe r-w-x cpl
-	    (!memi addr val x86)))
+	    (xw :mem addr val x86)))
   :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table)
 		  (mv-nth-1-no-error-ia32e-la-to-pa-page-directory-4K-pages
 		   mv-nth-2-no-error-ia32e-la-to-pa-page-directory-4K-pages
@@ -8894,7 +8894,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   0
 		   (ia32e-la-to-pa-pml4-table
 		    lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-pml4-table)
@@ -8958,7 +8958,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   1
 		   (ia32e-la-to-pa-pml4-table
 		    lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  (mv-nth
 		   1
 		   (ia32e-la-to-pa-pml4-table
@@ -9038,7 +9038,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   0
 		   (ia32e-la-to-pa-pml4-table
 		    lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-pml4-table)
@@ -9117,7 +9117,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   1
 		   (ia32e-la-to-pa-pml4-table
 		    lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  (mv-nth
 		   1
 		   (ia32e-la-to-pa-pml4-table
@@ -9213,7 +9213,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   0
 		   (ia32e-la-to-pa-pml4-table
 		    lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-pml4-table)
@@ -9302,7 +9302,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		   1
 		   (ia32e-la-to-pa-pml4-table
 		    lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-		    (!memi addr val x86)))
+		    (xw :mem addr val x86)))
 		  (mv-nth
 		   1
 		   (ia32e-la-to-pa-pml4-table
@@ -9565,8 +9565,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 	     2
 	     (ia32e-la-to-pa-pml4-table
 	      lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-	      (!memi addr val x86)))
-	    (!memi addr val
+	      (xw :mem addr val x86)))
+	    (xw :mem addr val
 		   (mv-nth
 		    2
 		    (ia32e-la-to-pa-pml4-table
@@ -9612,8 +9612,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 	     2
 	     (ia32e-la-to-pa-pml4-table
 	      lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-	      (!memi addr val x86)))
-	    (!memi addr val
+	      (xw :mem addr val x86)))
+	    (xw :mem addr val
 		   (mv-nth
 		    2
 		    (ia32e-la-to-pa-pml4-table
@@ -9666,8 +9666,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 	     2
 	     (ia32e-la-to-pa-pml4-table
 	      lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-	      (!memi addr val x86)))
-	    (!memi
+	      (xw :mem addr val x86)))
+	    (xw :mem
 	     addr val
 	     (mv-nth
 	      2
@@ -9711,12 +9711,12 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (translation-governing-addresses-for-pml4-table
 		  lin-addr pml4-base-addr x86)))
 	   (equal
-	    (memi addr
+	    (xr :mem addr
 		  (mv-nth
 		   2
 		   (ia32e-la-to-pa-pml4-table
 		    lin-addr pml4-base-addr wp smep nxe r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-pml4-table
 		   wm-low-64 wm-low-32)
@@ -9821,12 +9821,12 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (translation-governing-addresses-for-pml4-table
 		  lin-addr pml4-base-addr x86)))
 	   (equal
-	    (memi addr
+	    (xr :mem addr
 		  (mv-nth
 		   2
 		   (ia32e-la-to-pa-pml4-table
 		    lin-addr pml4-base-addr wp smep nxe r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-pml4-table)
 		  (not
@@ -9949,13 +9949,13 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (translation-governing-addresses-for-pml4-table
 		  lin-addr pml4-base-addr x86)))
 	   (equal
-	    (memi
+	    (xr :mem
 	     addr
 	     (mv-nth
 	      2
 	      (ia32e-la-to-pa-pml4-table
 	       lin-addr pml4-base-addr wp smep nxe r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-pml4-table
 		   wm-low-64 wm-low-32)
@@ -10090,7 +10090,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		(x86p x86))
 	   (ia32e-la-to-pa-pml4-table-entry-validp
 	    lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-	    (!memi addr val x86)))
+	    (xw :mem addr val x86)))
   :in-theory (e/d (ia32e-la-to-pa-pml4-table)
 		  (mv-nth-2-no-error-ia32e-la-to-pa-page-dir-ptr-table-1G-pages
 		   mv-nth-2-no-error-ia32e-la-to-pa-page-dir-ptr-table-4k-or-2m-pages
@@ -10208,7 +10208,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		(x86p x86))
 	   (ia32e-la-to-pa-pml4-table-entry-validp
 	    lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-	    (!memi addr val x86)))
+	    (xw :mem addr val x86)))
   :in-theory (e/d ()
 		  (mv-nth-1-no-error-ia32e-la-to-pa-page-dir-ptr-table-4k-or-2m-pages
 		   mv-nth-2-no-error-ia32e-la-to-pa-page-dir-ptr-table-4K-or-2M-pages
@@ -10344,7 +10344,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		(x86p x86))
 	   (ia32e-la-to-pa-pml4-table-entry-validp
 	    lin-addr pml4-base-addr wp smep nxe r-w-x cpl
-	    (!memi addr val x86)))
+	    (xw :mem addr val x86)))
   :in-theory (e/d ()
 		  (mv-nth-2-no-error-ia32e-la-to-pa-page-dir-ptr-table-4k-or-2m-pages
 		   mv-nth-2-no-error-ia32e-la-to-pa-pml4-table
@@ -13275,7 +13275,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		(pairwise-disjoint-p-aux
 		 (addr-range 1 addr)
 		 (translation-governing-addresses lin-addr x86)))
-	   (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (!memi addr val x86)))
+	   (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem addr val x86)))
 		  nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa)
@@ -13307,7 +13307,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (addr-range 1 addr)
 		 (translation-governing-addresses lin-addr x86))
 		(integerp addr))
-	   (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (!memi addr val x86)))
+	   (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem addr val x86)))
 		  (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86))))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa)
@@ -13347,8 +13347,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (translation-governing-addresses lin-addr x86))
 		(integerp addr))
 	   (equal
-	    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl (!memi addr val x86)))
-	    (!memi addr val (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
+	    (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl (xw :mem addr val x86)))
+	    (xw :mem addr val (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa)
 		  (not
@@ -13367,8 +13367,8 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (addr-range 1 addr)
 		 (translation-governing-addresses lin-addr x86)))
 	   (equal
-	    (memi addr (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
-	    (memi addr x86)))
+	    (xr :mem addr (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+	    (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa)
 		  (not
@@ -13418,7 +13418,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 		 (addr-range 1 addr)
 		 (translation-governing-addresses lin-addr x86)))
 	   (ia32e-la-to-pa-validp
-	    lin-addr r-w-x cpl (!memi addr val x86)))
+	    lin-addr r-w-x cpl (xw :mem addr val x86)))
   :in-theory (e/d (ia32e-la-to-pa)
 		  (not
 		   addr-range-1

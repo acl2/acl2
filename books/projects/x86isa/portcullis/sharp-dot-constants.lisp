@@ -2,26 +2,35 @@
 
 (in-package "X86ISA")
 (include-book "syscall-numbers")
+(include-book "std/util/defconsts" :dir :system)
 
 ;; ======================================================================
 
-(local
- (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(defun power-of-2p-measure (x)
+(defun power-of-2-measure (x)
   (cond ((or (not (natp x))
              (<= x 1))
          0)
         (t (floor x 1))))
 
-(defn power-of-2p (x count)
-  (declare (xargs :measure (power-of-2p-measure x)
+(defn power-of-2 (x count)
+  (declare (xargs :measure (power-of-2-measure x)
                   :guard (natp count)))
   (if (natp x)
       (if (<= x 1)
           count
-        (power-of-2p (* 1/2 x) (1+ count)))
+        (power-of-2 (* 1/2 x) (1+ count)))
     count))
+
+(defun gl-int (start by count)
+  (declare (xargs :guard (and (natp start)
+                              (natp by)
+                              (natp count))))
+  (if (zp count)
+      nil
+    (cons start
+          (gl-int (+ by start) by (1- count)))))
 
 ;; ======================================================================
 ;; Some expt constants:
@@ -157,16 +166,6 @@
 
 (defconst *OP-SP* 0)
 (defconst *OP-DP* 1)
-
-;; Single/Double FP conversions:
-
-(defconst *SP-TO-DP* 0)
-(defconst *DP-TO-SP* 1)
-
-;; SIMD packs:
-
-(defconst *LOW-PACK*  0)
-(defconst *HIGH-PACK* 1)
 
 ;; IDs: Comparison Instructions
 
@@ -426,7 +425,7 @@
          *pseudo-page-size-in-bytes*))
 
 (defconst *mem-table-size-bits*
-  (power-of-2p *mem-table-size* 0))
+  (power-of-2 *mem-table-size* 0))
 
 (defconst *mem-table-size-bits+1*
   (+ 1 *mem-table-size-bits*))
@@ -447,5 +446,205 @@
 
 (defconst *unchanged* 2)
 (defconst *undefined* 3)
+
+;; ======================================================================
+
+;; Indices and length of fields in the x86 state (see
+;; machine/x86-state-concrete.lisp):
+
+(defun define-general-purpose-registers ()
+
+  ;; GPRs have overlapping indices.  This is because of the way
+  ;; decoding works in IA-32e.  E.g., depending on the presence of the
+  ;; REX byte, index 0 might refer to RAX or R0.
+
+
+  `(defconsts (*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
+                     *R0*  *R1*  *R2*  *R3*  *R4*  *R5*  *R6*  *R7*
+                     *R8*  *R9*  *R10* *R11* *R12* *R13* *R14* *R15*
+                     *64-bit-general-purpose-registers-len*)
+     ,(b* ((lst (append (gl-int 0 1 8) (gl-int 0 1 16)))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
+
+(defun define-segment-registers ()
+
+  `(defconsts (*ES* *CS* *SS* *DS* *FS* *GS*
+                    *segment-register-names-len*)
+     ,(b* ((lst (gl-int 0 1 6))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
+
+(defun define-gdtr/idtr-registers ()
+
+  `(defconsts (*GDTR* *IDTR* *gdtr-idtr-names-len*)
+     ,(b* ((lst (gl-int 0 1 2))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
+
+(defun define-ldtr/tr-registers ()
+
+  `(defconsts (*LDTR* *TR* *ldtr-tr-names-len*)
+     ,(b* ((lst (gl-int 0 1 2))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
+
+;; Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5
+(defun define-control-registers ()
+
+  `(defconsts (*MSW* ;; Control status register: msw is only 32 bits
+                     ;; even in 64 bit mode?
+               *CR0* ;; cr0 controls operating mode and states of
+                     ;; processor
+               *CR1* ;; cr1 is reserved
+               *CR2* ;; cr2 holds the page fault linear address (the
+                     ;; one that caused the page fault)
+               *CR3* ;; cr3 is associated with paging
+               *CR4* ;; cr4 enables or indicates support for processor
+                     ;; extensions
+               *CR5* ;; cr5 is reserved
+               *CR6* ;; cr6 is reserved
+               *CR7* ;; cr7 is reserved
+               *CR8* ;; cr8 provides read/write access to the TPR.
+                     ;; (Task Priority Register) available only in 64
+                     ;; bit mode
+               ;; cr9 thru cr15 are not implemented in our model yet.
+               *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
+               *XCR0*
+               *control-register-names-len*)
+     ,(b* ((lst (gl-int 0 1 18))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
+
+(defun define-debug-registers ()
+
+  `(defconsts (*DR0* ;; dr0 holds breakpoint 0 virtual address, 64/32 bit
+               *DR1* ;; dr1 holds breakpoint 1 virtual address, 64/32 bit
+               *DR2* ;; dr2 holds breakpoint 2 virtual address, 64/32 bit
+               *DR3* ;; dr3 holds breakpoint 3 virtual address, 64/32 bit
+               *DR4* ;; dr4 is reserved
+               *DR5* ;; dr5 is reserved
+               *DR6* ;; dr6
+               *DR7* ;; dr7
+               *debug-register-names-len*)
+     ,(b* ((lst (gl-int 0 1 8))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
+
+(defun define-fp-registers ()
+  ;; 80-bit registers
+
+  ;; Note: The Intel manual refers to these registers as R0, R1, ... ,
+  ;; R7, but in our model, we will refer to them as FP0, FP1, ...,
+  ;; FP7.
+
+  `(defconsts (*FP0* *FP1* *FP2* *FP3* *FP4* *FP5* *FP6* *FP7*
+                     *fp-data-register-names-len*)
+
+     ,(b* ((lst (gl-int 0 1 8))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
+
+(defun define-mmx-registers ()
+  ;; 64-bit registers
+
+  ;; The MM registers (MM0 through MM7) are aliased to the low 64-bits
+  ;; of the FPU data registers.
+
+  `(defconsts (*MM0* *MM1* *MM2* *MM3* *MM4* *MM5* *MM6* *MM7*
+                     *mmx-register-names-len*)
+
+     ,(b* ((lst (gl-int 0 1 8))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
+
+(defun define-xmm-registers ()
+  ;; 128-bit registers
+
+  `(defconsts (*XMM0* *XMM1* *XMM2* *XMM3* *XMM4* *XMM5* *XMM6* *XMM7*
+                      *XMM8* *XMM9* *XMM10* *XMM11*
+                      *XMM12* *XMM13* *XMM14* *XMM15*
+                      *xmm-register-names-len*)
+
+     ,(b* ((lst (gl-int 0 1 16))
+           (len  (len lst)))
+          (cons 'mv (append lst (list len))))))
+
+(defun define-model-specific-registers ()
+  ;; At this point, we only model the MSRs that we need.  Remember,
+  ;; these are Intel-specific registers, and may or may not be
+  ;; available on AMD machines.
+
+  ;; The constants ending with IDX are used to index into the STOBJ
+  ;; field for model-specific registers.
+
+
+  `(defconsts (
+               ;; extended features enables --- If
+               ;; CPUID.80000001.EDX.[bit 20] or
+               ;; CPUID.80000001.EDX.[bit 29]
+               *IA32_EFER*
+               *IA32_EFER-IDX*
+
+               ;; Map of BASE Address of FS (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_FS_BASE*
+               *IA32_FS_BASE-IDX*
+
+               ;; Map of BASE Address of GB (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_GS_BASE*
+               *IA32_GS_BASE-IDX*
+
+               ;; Swap Target of BASE Address of GS (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_KERNEL_GS_BASE*
+               *IA32_KERNEL_GS_BASE-IDX*
+
+               ;; System Call Target Address (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_STAR*
+               *IA32_STAR-IDX*
+
+               ;; IA-32e Mode System Call Target Address (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_LSTAR*
+               *IA32_LSTAR-IDX*
+
+               ;; System Call Flag Mask (R/W) --- If
+               ;; CPUID.80000001.EDX.[bit 29] = 1
+               *IA32_FMASK*
+               *IA32_FMASK-IDX*
+
+               *model-specific-register-names-len*)
+
+     ,(b* ((lst (list #uxC000_0080 ;; ia32_efer and idx
+                      0
+                      #uxC000_0100 ;; ia32_fs_base and idx
+                      1
+                      #uxC000_0101 ;; ia32_gs_base and idx
+                      2
+                      #uxC000_0102 ;; ia32_kernel_gs_base and idx
+                      3
+                      #uxC000_0081 ;; ia32_star and idx
+                      4
+                      #uxC000_0082 ;; ia32_lstar and idx
+                      5
+                      #uxC000_0084 ;; ia32_fmask and idx
+                      6
+                      ))
+           (len  (/ (len lst) 2)))
+          (cons 'mv (append lst (list len))))))
+
+(make-event (define-general-purpose-registers))
+(make-event (define-segment-registers))
+(make-event (define-gdtr/idtr-registers))
+(make-event (define-ldtr/tr-registers))
+(make-event (define-control-registers))
+(make-event (define-debug-registers))
+(make-event (define-fp-registers))
+(make-event (define-mmx-registers))
+(make-event (define-xmm-registers))
+(make-event (define-model-specific-registers))
 
 ;; ======================================================================

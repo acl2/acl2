@@ -89,7 +89,8 @@ memory.</li>
 
   (defthm rm08-does-not-affect-state-in-programmer-level-mode
     (implies (programmer-level-mode x86)
-             (equal (mv-nth 2 (rm08 start-rip :x x86)) x86))
+             (equal (mv-nth 2 (rm08 start-rip :x x86))
+                    x86))
     :hints (("Goal" :in-theory (e/d (rvm08) ()))))
 
   (defthm programmer-level-mode-rm08-no-error
@@ -101,7 +102,50 @@ memory.</li>
                          (memi (loghead 48 addr) x86))
                   (equal (mv-nth 2 (rm08 addr r-w-x x86))
                          x86)))
-    :hints (("Goal" :in-theory (e/d (rvm08) ())))))
+    :hints (("Goal" :in-theory (e/d (rvm08) ()))))
+
+  (defthm xr-rm08-state-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem)))
+             (equal (xr fld index (mv-nth 2 (rm08 addr r-w-x x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm xr-rm08-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (rm08 addr r-w-x x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm rm08-xw-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (rm08 addr r-w-x (xw fld index value x86)))
+                         (mv-nth 0 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 1 (rm08 addr r-w-x (xw fld index value x86)))
+                         (mv-nth 1 (rm08 addr r-w-x x86)))
+                  ;; No need for the conclusion about the state because
+                  ;; "rm08-does-not-affect-state-in-programmer-level-mode".
+                  ))
+    :hints (("Goal" :in-theory (e/d* (rvm08) ()))))
+
+  (defthm rm08-xw-system-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :fault))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :msr))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (rm08 addr r-w-x (xw fld index value x86)))
+                         (mv-nth 0 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 1 (rm08 addr r-w-x (xw fld index value x86)))
+                         (mv-nth 1 (rm08 addr r-w-x x86)))
+                  (equal (mv-nth 2 (rm08 addr r-w-x (xw fld index value x86)))
+                         (xw fld index value (mv-nth 2 (rm08 addr r-w-x x86))))))))
 
 (define rim08
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -169,7 +213,46 @@ memory.</li>
                   (canonical-address-p addr))
              (equal (mv-nth 0 (wm08 addr val x86))
                     nil))
-    :hints (("Goal" :in-theory (e/d (wm08 wvm08) ())))))
+    :hints (("Goal" :in-theory (e/d (wm08 wvm08) ()))))
+
+  (defthm xr-wm08-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem)))
+             (equal (xr fld index (mv-nth 1 (wm08 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wvm08) ()))))
+
+  (defthm xr-wm08-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 1 (wm08 addr val x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm wm08-xw-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (wm08 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wm08 addr val x86)))
+                  (equal (mv-nth 1 (wm08 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wm08 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* (wm08 wvm08) ()))))
+
+  (defthm wm08-xw-system-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :fault))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :msr))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (wm08 addr val (xw fld index value x86)))
+                         (mv-nth 0 (wm08 addr val x86)))
+                  (equal (mv-nth 1 (wm08 addr val (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wm08 addr val x86))))))
+    :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
 (define wim08
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -359,12 +442,6 @@ memory.</li>
 ;; ======================================================================
 ;; Events related to RB and WB:
 
-(local
- (defthm programmer-level-mode-!memi
-   (equal (programmer-level-mode (!memi i v x86))
-          (programmer-level-mode x86))
-   :hints (("Goal" :in-theory (e/d (programmer-level-mode !memi) ())))))
-
 (defsection reasoning-about-memory-reads-and-writes
   :parents (x86-top-level-memory)
   :short "Definitions of @(see rb) and @(see wb)"
@@ -416,7 +493,6 @@ memory.</li>
     ///
 
     (defthm byte-listp-implies-true-listp
-      ;; [Shilpi:] Make this a compound-recognizer rule?
       (implies (byte-listp x)
                (true-listp x))
       :rule-classes :forward-chaining)
@@ -722,8 +798,7 @@ memory.</li>
                (x86p (mv-nth 2 (rb-1 addresses r-w-x x86 acc)))))
 
     (defthm rb-1-returns-x86-programmer-level-mode
-      (implies (and (programmer-level-mode x86)
-                    (x86p x86))
+      (implies (programmer-level-mode x86)
                (equal (mv-nth 2 (rb-1 addresses r-w-x x86 acc))
                       x86))
       :hints (("Goal" :in-theory (e/d (rm08) ()))))
@@ -833,7 +908,7 @@ memory.</li>
 
   ;; Relating rb and rm08:
 
-  (defthmd rb-and-rm08
+  (defthmd rb-and-rm08-in-programmer-level-mode
     (implies (and (programmer-level-mode x86)
                   (canonical-address-p addr)
                   (x86p x86))
@@ -842,6 +917,108 @@ memory.</li>
                         (combine-bytes (mv-nth 1 (rb (list addr) r-w-x x86)))
                         x86)))
     :hints (("Goal" :in-theory (e/d (rm08 rvm08) ()))))
+
+  ;; Relating rb and xr/xw in the programmer-level mode:
+
+  (defthm xr-rb-state-in-programmer-level-mode
+    (implies (programmer-level-mode x86)
+             (equal (xr fld index (mv-nth 2 (rb addr r-w-x x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ()))))
+
+  (defthm rb-xw-values-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (rb addr r-w-x (xw fld index value x86)))
+                         (mv-nth 0 (rb addr r-w-x x86)))
+                  (equal (mv-nth 1 (rb addr r-w-x (xw fld index value x86)))
+                         (mv-nth 1 (rb addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+             :induct (rb-1 addr r-w-x x86 nil))))
+
+  (defthm rb-xw-state-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :programmer-level-mode)))
+             (equal (mv-nth 2 (rb addr r-w-x (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (rb addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ()))))
+
+  ;; Relating rb and xr/xw in the system-level mode:
+
+  (local
+   (defthm xr-rb-1-state-in-system-level-mode
+     (implies (and (not (programmer-level-mode x86))
+                   (not (equal fld :mem))
+                   (not (equal fld :fault)))
+              (equal (xr fld index (mv-nth 2 (rb-1 addr r-w-x x86 acc)))
+                     (xr fld index x86)))
+     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+              :induct (rb-1 addr r-w-x x86 acc)))))
+
+  (defthm xr-rb-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (rb addr r-w-x x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+  (local
+   (defthm rb-1-xw-values-in-system-level-mode
+     (implies (and (not (programmer-level-mode x86))
+                   (not (equal fld :mem))
+                   (not (equal fld :ctr))
+                   (not (equal fld :seg-visible))
+                   (not (equal fld :msr))
+                   (not (equal fld :fault))
+                   (not (equal fld :programmer-level-mode)))
+              (and (equal (mv-nth 0 (rb-1 addr r-w-x (xw fld index value x86) acc))
+                          (mv-nth 0 (rb-1 addr r-w-x x86 acc)))
+                   (equal (mv-nth 1 (rb-1 addr r-w-x (xw fld index value x86) acc))
+                          (mv-nth 1 (rb-1 addr r-w-x x86 acc)))))
+     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+              :induct (rb-1 addr r-w-x x86 acc)))))
+
+  (defthm rb-xw-values-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (rb addr r-w-x (xw fld index value x86)))
+                         (mv-nth 0 (rb addr r-w-x x86)))
+                  (equal (mv-nth 1 (rb addr r-w-x (xw fld index value x86)))
+                         (mv-nth 1 (rb addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb) ()))))
+
+  (local
+   (defthm rb-1-xw-state-in-system-level-mode
+     (implies (and (not (programmer-level-mode x86))
+                   (not (equal fld :mem))
+                   (not (equal fld :ctr))
+                   (not (equal fld :seg-visible))
+                   (not (equal fld :msr))
+                   (not (equal fld :fault))
+                   (not (equal fld :programmer-level-mode)))
+              (equal (mv-nth 2 (rb-1 addr r-w-x (xw fld index value x86) acc))
+                     (xw fld index value (mv-nth 2 (rb-1 addr r-w-x x86 acc)))))
+     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+              :induct (rb-1 addr r-w-x x86 acc)))))
+
+  (defthm rb-xw-state-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode)))
+             (equal (mv-nth 2 (rb addr r-w-x (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (rb addr r-w-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
   ;; Relating wb and wm08:
 
@@ -852,6 +1029,50 @@ memory.</li>
                     (wb (acons addr val nil) x86)))
     :hints (("Goal" :in-theory (e/d (wm08 wvm08) (force (force))))))
 
+  ;; Relating wb and xr/xw in the programmer-level mode:
+
+  (defthm xr-wb-in-programmer-level-mode
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem)))
+             (equal (xr fld index (mv-nth 1 (wb addr-lst x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
+
+  (defthm wb-xw-in-programmer-level-mode
+    ;; Keep the state updated by wb inside all other nests of writes.
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (wb addr-lst (xw fld index value x86)))
+                         (mv-nth 0 (wb addr-lst x86)))
+                  (equal (mv-nth 1 (wb addr-lst (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
+
+  ;; Relating wb and xr/xw in the system-level mode.
+
+  (defthm xr-wb-in-system-level-mode
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 1 (wb addr-lst x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
+
+  (defthm wb-xw-in-system-level-mode
+    ;; Keep the state updated by wb inside all other nests of writes.
+    (implies (and (not (programmer-level-mode x86))
+                  (not (equal fld :mem))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :programmer-level-mode)))
+             (and (equal (mv-nth 0 (wb addr-lst (xw fld index value x86)))
+                         (mv-nth 0 (wb addr-lst x86)))
+                  (equal (mv-nth 1 (wb addr-lst (xw fld index value x86)))
+                         (xw fld index value (mv-nth 1 (wb addr-lst x86))))))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
   (define create-addr-bytes-alist
     ((addr-list (canonical-address-listp addr-list))
@@ -1263,8 +1484,7 @@ memory.</li>
     (implies (force (x86p x86))
              (x86p (mv-nth 1 (wm16 lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (force (force)))))
-    :rule-classes (:rewrite :type-prescription))
-  )
+    :rule-classes (:rewrite :type-prescription)))
 
 (define wim16
   ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -1288,7 +1508,7 @@ memory.</li>
 
   :parents (x86-top-level-memory)
   :guard (canonical-address-p lin-addr)
-  :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm32 rm08) ())))
+  :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm32 rm08) (rb))))
 
   :prepwork
 
@@ -1327,12 +1547,14 @@ memory.</li>
                    (x86p x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (+ 3 lin-addr)))
-              (equal (rvm32 lin-addr x86)
-                     (b* (((mv flg bytes x86)
-                           (rb (create-canonical-address-list 4 lin-addr)
-                               r-w-x x86))
-                          (result (combine-bytes bytes)))
-                         (mv flg result x86))))
+              (equal
+               (list
+                nil
+                (combine-bytes
+                 (mv-nth 1 (rb (create-canonical-address-list 4 lin-addr)
+                               r-w-x x86)))
+                x86)
+               (rvm32 lin-addr x86)))
      :hints (("Goal" :expand (create-canonical-address-list 4 lin-addr)
               :in-theory (e/d (rm08 rvm08 rvm32) (force (force)))))))
 
@@ -4385,6 +4607,16 @@ memory.</li>
         (rb addresses :x x86))
        ((when flg)
         nil))
-      (equal bytes bytes-read)))
+      (equal bytes bytes-read))
+
+  ///
+
+  (defthm program-at-xw
+    (implies (and (programmer-level-mode x86)
+                  (not (equal fld :mem))
+                  (not (equal fld :programmer-level-mode)))
+             (equal (program-at addresses bytes (xw fld index value x86))
+                    (program-at addresses bytes x86)))
+    :hints (("Goal" :in-theory (e/d* () (rb))))))
 
 ;; ======================================================================
