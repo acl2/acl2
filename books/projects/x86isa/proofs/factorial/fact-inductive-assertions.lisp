@@ -34,13 +34,13 @@
 
 (defun fact-algorithm-simple (n a)
   (declare (xargs :guard (and (natp n)
-			      (natp a))))
+                              (natp a))))
   (if (posp n)
       (let* ((a (* a n))
-	     (n (- n 1)))
-	(if (not (equal n 0))
-	    (fact-algorithm-simple n a)
-	  a))
+             (n (- n 1)))
+        (if (not (equal n 0))
+            (fact-algorithm-simple n a)
+          a))
     1))
 
 (encapsulate
@@ -48,30 +48,30 @@
 
  (local (include-book "arithmetic-5/top" :dir :system))
 
- (local (in-theory (e/d (loghead logbitp logapp n32-to-i32 logext) ())))
+ (local (in-theory (e/d (loghead logbitp logapp logext) ())))
 
  (defthm loghead-and-n32-to-i32-lemma
    (implies (and (integerp n)
-		 (< 0 n))
-	    (< (loghead 32 (+ -1 (n32-to-i32 n)))
-	       n)))
+                 (< 0 n))
+            (< (loghead 32 (+ -1 (logext 32 n)))
+               n)))
  )
 
 (defun fact-algorithm (n a)
   (declare (xargs :guard (and (n32p n) (n32p a))))
   (if (posp n)
       (let* ((a (n32 (* (n32-to-i32 a) (n32-to-i32 n))))
-	     (n (n32 (- (n32-to-i32 n) 1))))
-	(if (not (equal n 0))
-	    (fact-algorithm n a)
-	  a))
+             (n (n32 (- (n32-to-i32 n) 1))))
+        (if (not (equal n 0))
+            (fact-algorithm n a)
+          a))
     1))
 
 (deflabel DEFN_fact-algorithm)
 
 (defthm-usb n32p-fact-algorithm
   :hyp (and (n32p n)
-	    (n32p a))
+            (n32p a))
   :bound 32
   :concl (fact-algorithm n a)
   :gen-linear t
@@ -79,22 +79,22 @@
 
 (defthmd fact-algorithm-and-fact-algorithm-simple
   (implies (and (natp n)
-		(< n 13))
-	   (equal (fact-algorithm n 1)
-		  (fact-algorithm-simple n 1)))
+                (< n 13))
+           (equal (fact-algorithm n 1)
+                  (fact-algorithm-simple n 1)))
   :hints (("Goal" :cases ((equal n 0)
-			  (equal n 1)
-			  (equal n 2)
-			  (equal n 3)
-			  (equal n 4)
-			  (equal n 5)
-			  (equal n 6)
-			  (equal n 7)
-			  (equal n 8)
-			  (equal n 9)
-			  (equal n 10)
-			  (equal n 11)
-			  (equal n 12)))))
+                          (equal n 1)
+                          (equal n 2)
+                          (equal n 3)
+                          (equal n 4)
+                          (equal n 5)
+                          (equal n 6)
+                          (equal n 7)
+                          (equal n 8)
+                          (equal n 9)
+                          (equal n 10)
+                          (equal n 11)
+                          (equal n 12)))))
 
 ;; ======================================================================
 
@@ -104,26 +104,26 @@
 
 (defthm fact-algorithm-simple-and-f-1
  (implies (and (natp n)
-		(posp n)
-		(natp a))
-	   (equal (fact-algorithm-simple n a)
-		  (* a (f n)))))
+                (posp n)
+                (natp a))
+           (equal (fact-algorithm-simple n a)
+                  (* a (f n)))))
 
 (defthm fact-algorithm-simple-and-f
   (implies (natp n)
-	   (equal (fact-algorithm-simple n 1)
-		  (f n))))
+           (equal (fact-algorithm-simple n 1)
+                  (f n))))
 
 (defthm fact-algorithm-and-f
   (implies (and (natp n)
-		(< n 13))
-	   (equal (fact-algorithm n 1)
-		  (f n)))
+                (< n 13))
+           (equal (fact-algorithm n 1)
+                  (f n)))
   :hints (("Goal" :use ((:instance fact-algorithm-and-fact-algorithm-simple)))))
 
 (in-theory (disable fact-algorithm-simple-and-f-1
-		    fact-algorithm-simple-and-f
-		    fact-algorithm-and-f))
+                    fact-algorithm-simple-and-f
+                    fact-algorithm-and-f))
 
 ;; ======================================================================
 
@@ -202,9 +202,9 @@
 
 (defun loop-inv (n0 n a0 a)
   (declare (xargs :guard (and (n32p n0)
-			      (n32p n)
-			      (n32p a0)
-			      (n32p a))))
+                              (n32p n)
+                              (n32p a0)
+                              (n32p a))))
   ;; Loop Invariant
   ;; See: (loop-inv 4 1 1 24) and (loop-inv 4 1 1 6)
   (and (n32p n0)
@@ -215,17 +215,17 @@
        (n32p a)
        (< 0 n0)
        (equal
-	(fact-algorithm n0 a0)
-	(if (equal (n32 (- (n32-to-i32 n) 1)) 0)
-	    (n32 (* (n32-to-i32 a) (n32-to-i32 n)))
-	  (fact-algorithm (n32 (- (n32-to-i32 n) 1))
-			  (n32 (* (n32-to-i32 a) (n32-to-i32 n))))))))
+        (fact-algorithm n0 a0)
+        (if (equal (n32 (- (n32-to-i32 n) 1)) 0)
+            (n32 (* (n32-to-i32 a) (n32-to-i32 n)))
+          (fact-algorithm (n32 (- (n32-to-i32 n) 1))
+                          (n32 (* (n32-to-i32 a) (n32-to-i32 n))))))))
 
 (deflabel DEFN_loop-inv)
 
 (defun halt (n0 a)
   (declare (xargs :guard (and (n32p n0)
-			      (n32p a))))
+                              (n32p a))))
   ;; Post-Condition
   ;; a is the value of eax just before the halt instruction.
   (and (n32p n0)
@@ -233,20 +233,20 @@
 
 (defund halt-spec (n0 a)
   (declare (xargs :guard (and (n32p n0)
-			      (n32p a))))
+                              (n32p a))))
   ;; Post-Condition
   ;; a is the value of eax just before the halt instruction.
   (equal (f n0) a))
 
 (defthmd halt-and-halt-spec
   (implies (and (natp n0)
-		(< n0 13)
-		(n32p a))
-	   (equal (halt n0 a)
-		  (halt-spec n0 a)))
+                (< n0 13)
+                (n32p a))
+           (equal (halt n0 a)
+                  (halt-spec n0 a)))
   :hints (("Goal" :in-theory (e/d (fact-algorithm-and-f
-				   halt-spec)
-				  ()))))
+                                   halt-spec)
+                                  ()))))
 
 ;; ======================================================================
 
@@ -254,22 +254,22 @@
 
 (defthm Begin-To-Halt
   (implies (and (begin n0 n)
-		(equal n0 0))
-	   (halt n0 1)))
+                (equal n0 0))
+           (halt n0 1)))
 
 (defthm Begin-To-Loop-Inv
   (implies (and (begin n0 n)
-		(not (equal n 0)))
-	   (loop-inv n0 n 1 1)))
+                (not (equal n 0)))
+           (loop-inv n0 n 1 1)))
 
 (defthm Loop-Inv-To-Loop-Inv
   (implies (and (loop-inv n0 n a0 a)
-		(< 0 n0)
-		(not (equal (n32 (- (n32-to-i32 n) 1)) 0)))
-	   (loop-inv n0
-		     (n32 (- (n32-to-i32 n) 1))
-		     a0
-		     (n32 (* (n32-to-i32 a) (n32-to-i32 n))))))
+                (< 0 n0)
+                (not (equal (n32 (- (n32-to-i32 n) 1)) 0)))
+           (loop-inv n0
+                     (n32 (- (n32-to-i32 n) 1))
+                     a0
+                     (n32 (* (n32-to-i32 a) (n32-to-i32 n))))))
 
 
 (local
@@ -285,13 +285,13 @@
 
 (defthm Loop-Inv-To-Halt
   (implies (and (loop-inv n0 n a0 a)
-		(equal a0 1)
-		(equal (n32 (- (n32-to-i32 n) 1)) 0))
-	   (halt n0 a))
+                (equal a0 1)
+                (equal (n32 (- (n32-to-i32 n) 1)) 0))
+           (halt n0 a))
   :hints (("Goal"
-	   :in-theory (e/d ()
-			   (Loop-Inv-to-Halt-helper))
-	   :use ((:instance Loop-Inv-to-Halt-helper)))))
+           :in-theory (e/d ()
+                           (Loop-Inv-to-Halt-helper))
+           :use ((:instance Loop-Inv-to-Halt-helper)))))
 
 (deflabel THM_Loop-Inv-To-Halt)
 
@@ -301,50 +301,50 @@
 
 (defun assertions (n0 addr x86)
   (declare (xargs :stobjs (x86)
-		  :guard (and (n32p n0)
-			      (canonical-address-p addr))
-		  :guard-hints (("Goal" :in-theory
-				 (e/d
-				  (canonical-address-p) ())))))
+                  :guard (and (n32p n0)
+                              (canonical-address-p addr))
+                  :guard-hints (("Goal" :in-theory
+                                 (e/d
+                                  (canonical-address-p) ())))))
   (let* ((n (rr32 *rdi* x86))
-	 (a (rr32 *rax* x86)))
+         (a (rr32 *rax* x86)))
     (if (equal (rip x86) addr)
-	(and (begin n0 n)
-	     (not (ms x86))
-	     (not (fault x86))
-	     (programmer-level-mode x86)
-	     ;; Program is in the memory
-	     (canonical-address-p addr)
-	     (canonical-address-p (+ addr (len *factorial_recursive*)))
-	     (program-at (create-canonical-address-list
-			  (len *factorial_recursive*) addr)
-			 *factorial_recursive*
-			 x86))
+        (and (begin n0 n)
+             (not (ms x86))
+             (not (fault x86))
+             (programmer-level-mode x86)
+             ;; Program is in the memory
+             (canonical-address-p addr)
+             (canonical-address-p (+ addr (len *factorial_recursive*)))
+             (program-at (create-canonical-address-list
+                          (len *factorial_recursive*) addr)
+                         *factorial_recursive*
+                         x86))
       (if (equal (rip x86) (+ 16 addr))
-	  (and (loop-inv n0 n 1 a)
-	       (not (ms x86))
-	       (not (fault x86))
-	       (programmer-level-mode x86)
-	       ;; Program is in the memory
-	       (canonical-address-p addr)
-	       (canonical-address-p (+ addr (len *factorial_recursive*)))
-	       (program-at (create-canonical-address-list
-			    (len *factorial_recursive*) addr)
-			   *factorial_recursive*
-			   x86))
-	(if (equal (rip x86) (+ 25 addr))
-	    (and (halt n0 a)
-		 (programmer-level-mode x86)
-		 (not (fault x86))
-		 (ms x86)
-		 ;; Program is in the memory
-		 (canonical-address-p addr)
-		 (canonical-address-p (+ addr (len *factorial_recursive*)))
-		 (program-at (create-canonical-address-list
-			      (len *factorial_recursive*) addr)
-			     *factorial_recursive*
-			     x86))
-	  nil)))))
+          (and (loop-inv n0 n 1 a)
+               (not (ms x86))
+               (not (fault x86))
+               (programmer-level-mode x86)
+               ;; Program is in the memory
+               (canonical-address-p addr)
+               (canonical-address-p (+ addr (len *factorial_recursive*)))
+               (program-at (create-canonical-address-list
+                            (len *factorial_recursive*) addr)
+                           *factorial_recursive*
+                           x86))
+        (if (equal (rip x86) (+ 25 addr))
+            (and (halt n0 a)
+                 (programmer-level-mode x86)
+                 (not (fault x86))
+                 (ms x86)
+                 ;; Program is in the memory
+                 (canonical-address-p addr)
+                 (canonical-address-p (+ addr (len *factorial_recursive*)))
+                 (program-at (create-canonical-address-list
+                              (len *factorial_recursive*) addr)
+                             *factorial_recursive*
+                             x86))
+          nil)))))
 
 ;; ======================================================================
 
@@ -355,8 +355,8 @@
 (ACL2::defpun Inv (n0 addr x86)
   ;; Do not use a :stobjs declaration in a defpun.
   (if (or (equal (rip x86) addr)
-	  (equal (rip x86) (+ 16 addr))
-	  (equal (rip x86) (+ 25 addr)))
+          (equal (rip x86) (+ 16 addr))
+          (equal (rip x86) (+ 25 addr)))
       (assertions n0 addr x86)
     (Inv n0 addr (x86-fetch-decode-execute x86))))
 
@@ -366,10 +366,10 @@
 
 (defthm Inv-opener
   (implies (not (or (equal (rip x86) addr)
-		    (equal (rip x86) (+ 16 addr))
-		    (equal (rip x86) (+ 25 addr))))
-	   (equal (Inv n0 addr x86)
-		  (Inv n0 addr (x86-fetch-decode-execute x86)))))
+                    (equal (rip x86) (+ 16 addr))
+                    (equal (rip x86) (+ 25 addr))))
+           (equal (Inv n0 addr x86)
+                  (Inv n0 addr (x86-fetch-decode-execute x86)))))
 
 (in-theory (e/d () (begin loop-inv halt)))
 
@@ -383,13 +383,13 @@
 
  (defthm logand-n-n=0->n=0
    (implies (natp n)
-	    (equal (logand n n) n))))
+            (equal (logand n n) n))))
 
 (defthm val-of-n0-when-loop-inv
   (implies (loop-inv n0 n a0 a)
-	   (< 0 n0))
+           (< 0 n0))
   :hints (("Goal" :in-theory (e/d (loop-inv)
-				  ())))
+                                  ())))
   :rule-classes :forward-chaining)
 
 (defthm loghead--1-is-zero
@@ -398,7 +398,7 @@
 (local
  (defthm begin-crock
    (implies (begin n0 0)
-	    (equal n0 0))
+            (equal n0 0))
    :hints (("Goal" :in-theory (e/d (begin) ())))
    :rule-classes :forward-chaining))
 
@@ -406,197 +406,189 @@
 
 (defthm canonical-address-p-fwd-chain
   (implies (canonical-address-p addr)
-	   (signed-byte-p 48 addr))
+           (signed-byte-p 48 addr))
   :hints (("Goal" :in-theory (e/d (canonical-address-p)
-				  ())))
+                                  ())))
   :rule-classes :forward-chaining)
-
-;; (defthm loghead-!=0->loghead->-0
-;;   (implies (natp n)
-;;            (equal (not (equal (loghead n x) 0))
-;;                   (< 0 (loghead n x)))))
 
 (defthm loop-inv-to-loop-inv-or-halt
   (implies (and (x86p x86)
-		(not (equal (rip x86) addr))
-		;; The following hyp hinders the opening of
-		;; x86-fetch-decode-execute.
-		;; (equal (rip x86) (+ 16 addr))
-		(equal addr (- (rip x86) 16))
-		(loop-inv n0
-			  (loghead 32 (rgfi *rdi* x86))
-			  1
-			  (loghead 32 (rgfi *rax* x86)))
-		(not (ms x86))
-		(not (fault x86))
-		(programmer-level-mode x86)
-		(canonical-address-p addr)
-		(canonical-address-p (+ 25 addr))
-		(program-at (create-canonical-address-list 25 addr)
-			    '(133 255 184 1 0 0 0 116 15 15 31 128 0
-				  0 0 0 15 175 199 131 239 1 117 248 244)
-			    x86))
-	   (inv n0 addr (x86-fetch-decode-execute x86)))
+                (not (equal (rip x86) addr))
+                (equal addr (- (rip x86) 16))
+                (loop-inv n0
+                          (loghead 32 (rgfi *rdi* x86))
+                          1
+                          (loghead 32 (rgfi *rax* x86)))
+                (not (ms x86))
+                (not (fault x86))
+                (programmer-level-mode x86)
+                (canonical-address-p addr)
+                (canonical-address-p (+ 25 addr))
+                (program-at (create-canonical-address-list 25 addr)
+                            '(133 255 184 1 0 0 0 116 15 15 31 128 0
+                                  0 0 0 15 175 199 131 239 1 117 248 244)
+                            x86))
+           (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
-	   :cases ((equal (n32 (- (n32-to-i32 (n32 (rgfi *rdi* x86))) 1)) 0)))
-	  ("Subgoal 2"
-	   :in-theory (e/d*
-		       (instruction-decoding-and-spec-rules
+           :cases ((equal (n32 (- (n32-to-i32 (n32 (rgfi *rdi* x86))) 1)) 0)))
+          ("Subgoal 2"
+           :in-theory (e/d*
+                       (instruction-decoding-and-spec-rules
 
-			gpr-and-spec-4
-			jcc/cmovcc/setcc-spec
-			imul-spec
-			imul-spec-32
-			gpr-sub-spec-4
+                        gpr-and-spec-4
+                        jcc/cmovcc/setcc-spec
+                        imul-spec
+                        imul-spec-32
+                        gpr-sub-spec-4
 
-			opcode-execute
-			!rgfi-size
-			x86-operand-to-reg/mem
-			wr64
-			wr32
-			rr32
-			rr64
-			rm32
-			rm64
-			wm32
-			x86-operand-from-modr/m-and-sib-bytes
-			rim-size
-			rim32
-			rim08
-			two-byte-opcode-decode-and-execute
-			x86-effective-addr
-			subset-p
-			;; Flags
-			write-user-rflags
-			!flgi-undefined
-			!flgi
-			flgi
-			zf-spec
-			pf-spec32
-			sub-af-spec32
-			n32-to-i32
-			rim08
-			rr32)
-		       (create-canonical-address-list
-			(create-canonical-address-list)
-			Loop-Inv-To-Loop-Inv))
-	   :use ((:instance Loop-Inv-To-Loop-Inv
-			    (n0 n0)
-			    (n (loghead 32 (rgfi *rdi* x86)))
-			    (a0 1)
-			    (a (loghead 32 (rgfi *rax* x86))))))
-	  ("Subgoal 1"
-	   :in-theory (e/d*
-		       (instruction-decoding-and-spec-rules
+                        opcode-execute
+                        !rgfi-size
+                        x86-operand-to-reg/mem
+                        wr64
+                        wr32
+                        rr32
+                        rr64
+                        rm32
+                        rm64
+                        wm32
+                        x86-operand-from-modr/m-and-sib-bytes
+                        rim-size
+                        rim32
+                        rim08
+                        two-byte-opcode-decode-and-execute
+                        x86-effective-addr
+                        subset-p
+                        ;; Flags
+                        write-user-rflags
+                        !flgi-undefined
+                        !flgi
+                        flgi
+                        zf-spec
+                        pf-spec32
+                        sub-af-spec32
+                        n32-to-i32
+                        rim08
+                        rr32)
+                       (create-canonical-address-list
+                        (create-canonical-address-list)
+                        Loop-Inv-To-Loop-Inv))
+           :use ((:instance Loop-Inv-To-Loop-Inv
+                            (n0 n0)
+                            (n (loghead 32 (rgfi *rdi* x86)))
+                            (a0 1)
+                            (a (loghead 32 (rgfi *rax* x86))))))
+          ("Subgoal 1"
+           :in-theory (e/d*
+                       (instruction-decoding-and-spec-rules
 
-			gpr-and-spec-4
-			jcc/cmovcc/setcc-spec
-			imul-spec
-			imul-spec-32
-			gpr-sub-spec-4
+                        gpr-and-spec-4
+                        jcc/cmovcc/setcc-spec
+                        imul-spec
+                        imul-spec-32
+                        gpr-sub-spec-4
 
-			opcode-execute
-			!rgfi-size
-			x86-operand-to-reg/mem
-			wr64
-			wr32
-			rr32
-			rr64
-			rm32
-			rm64
-			wm32
-			x86-operand-from-modr/m-and-sib-bytes
-			rim-size
-			rim32
-			rim08
-			two-byte-opcode-decode-and-execute
-			x86-effective-addr
-			subset-p
-			;; Flags
-			write-user-rflags
-			!flgi-undefined
-			!flgi
-			flgi
-			zf-spec
-			pf-spec32
-			sub-af-spec32
-			n32-to-i32
-			rr32)
-		       (create-canonical-address-list
-			(create-canonical-address-list)
-			Loop-Inv-To-Halt
-			Loop-Inv-to-Halt-helper))
-	   :use ((:instance Loop-Inv-to-Halt-helper
-			    (n (loghead 32 (rgfi *rdi* x86)))
-			    (a (loghead 32 (rgfi *rax* x86))))
-		 (:instance Loop-Inv-To-Halt
-			    (n0 n0)
-			    (n (loghead 32 (rgfi *rdi* x86)))
-			    (a0 1)
-			    (a (loghead 32 (rgfi *rax* x86))))))))
+                        opcode-execute
+                        !rgfi-size
+                        x86-operand-to-reg/mem
+                        wr64
+                        wr32
+                        rr32
+                        rr64
+                        rm32
+                        rm64
+                        wm32
+                        x86-operand-from-modr/m-and-sib-bytes
+                        rim-size
+                        rim32
+                        rim08
+                        two-byte-opcode-decode-and-execute
+                        x86-effective-addr
+                        subset-p
+                        ;; Flags
+                        write-user-rflags
+                        !flgi-undefined
+                        !flgi
+                        flgi
+                        zf-spec
+                        pf-spec32
+                        sub-af-spec32
+                        n32-to-i32
+                        rr32)
+                       (create-canonical-address-list
+                        (create-canonical-address-list)
+                        Loop-Inv-To-Halt
+                        Loop-Inv-to-Halt-helper))
+           :use ((:instance Loop-Inv-to-Halt-helper
+                            (n (loghead 32 (rgfi *rdi* x86)))
+                            (a (loghead 32 (rgfi *rax* x86))))
+                 (:instance Loop-Inv-To-Halt
+                            (n0 n0)
+                            (n (loghead 32 (rgfi *rdi* x86)))
+                            (a0 1)
+                            (a (loghead 32 (rgfi *rax* x86))))))))
 
 (defthm Inv-Inv-x86-Fetch-Decode-Execute
   (implies (and (x86p x86)
-		(Inv n0 addr x86))
-	   (Inv n0 addr (x86-fetch-decode-execute x86)))
+                (Inv n0 addr x86))
+           (Inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal" :in-theory
-	   (e/d*
-	    (instruction-decoding-and-spec-rules
+           (e/d*
+            (instruction-decoding-and-spec-rules
 
-	     gpr-and-spec-4
-	     jcc/cmovcc/setcc-spec
+             gpr-and-spec-4
+             jcc/cmovcc/setcc-spec
 
-	     opcode-execute
-	     !rgfi-size
-	     x86-operand-to-reg/mem
-	     wr64
-	     wr32
-	     rr32
-	     rr64
-	     rm32
-	     rm64
-	     wm32
-	     x86-operand-from-modr/m-and-sib-bytes
-	     rim-size
-	     rim32
-	     rim08
-	     two-byte-opcode-decode-and-execute
-	     x86-effective-addr
-	     subset-p
-	     ;; Flags
-	     write-user-rflags
-	     !flgi-undefined
-	     !flgi
-	     flgi
-	     zf-spec
-	     pf-spec32)
-	    (create-canonical-address-list
-	     (create-canonical-address-list))))
-	  ("Subgoal 2"
-	   :in-theory (e/d (x86-fetch-decode-execute
-			    rr32)
-			   ()))))
+             opcode-execute
+             !rgfi-size
+             x86-operand-to-reg/mem
+             wr64
+             wr32
+             rr32
+             rr64
+             rm32
+             rm64
+             wm32
+             x86-operand-from-modr/m-and-sib-bytes
+             rim-size
+             rim32
+             rim08
+             two-byte-opcode-decode-and-execute
+             x86-effective-addr
+             subset-p
+             ;; Flags
+             write-user-rflags
+             !flgi-undefined
+             !flgi
+             flgi
+             zf-spec
+             pf-spec32)
+            (create-canonical-address-list
+             (create-canonical-address-list))))
+          ("Subgoal 2"
+           :in-theory (e/d (x86-fetch-decode-execute
+                            rr32)
+                           ()))))
 
 (deflabel THM_Inv-Inv-x86-Fetch-Decode-Execute)
 
 (defthmd inv-x86-run-and-x86-fetch-decode-and-execute-commutative
   (implies (and (natp k)
-		(x86p x86)
-		(not (ms x86))
-		(not (fault x86)))
-	   (equal (inv n0 addr (x86-run k (x86-fetch-decode-execute x86)))
-		  (inv n0 addr (x86-fetch-decode-execute (x86-run k x86)))))
+                (x86p x86)
+                (not (ms x86))
+                (not (fault x86)))
+           (equal (inv n0 addr (x86-run k (x86-fetch-decode-execute x86)))
+                  (inv n0 addr (x86-fetch-decode-execute (x86-run k x86)))))
   :hints (("Goal" :in-theory (e/d (x86-run-and-x86-fetch-decode-and-execute-commutative)
-				  ()))))
+                                  ()))))
 
 (defthm Inv-Inv-x86-run
   (implies (and (x86p x86)
-		(Inv n0 addr x86))
-	   (Inv n0 addr (x86-run k x86)))
+                (Inv n0 addr x86))
+           (Inv n0 addr (x86-run k x86)))
   :hints (("Goal" :induct (x86-run k x86)
-	   :in-theory (e/d (x86-run
-			    inv-x86-run-and-x86-fetch-decode-and-execute-commutative)
-			   (assertions)))))
+           :in-theory (e/d (x86-run
+                            inv-x86-run-and-x86-fetch-decode-and-execute-commutative)
+                           (assertions)))))
 
 ;; ======================================================================
 
@@ -609,71 +601,71 @@
 
 (defthmd partial-correctness-of-fact-recursive-effects-helper
   (implies (and (x86p x86)
-		(equal (rip x86) addr)
-		(assertions n0 addr x86) ;; (Begin n0 n)
-		(equal (rip (x86-run k x86)) (+ 25 addr)))
-	   (assertions n0 addr (x86-run k x86)) ;; (Halt n0 a)
-	   )
+                (equal (rip x86) addr)
+                (assertions n0 addr x86) ;; (Begin n0 n)
+                (equal (rip (x86-run k x86)) (+ 25 addr)))
+           (assertions n0 addr (x86-run k x86)) ;; (Halt n0 a)
+           )
   :hints (("Goal" :in-theory (e/d ()
-				  (assertions
-				   Inv-Inv-x86-run))
-	   :use ((:instance Inv-Inv-x86-run)))))
+                                  (assertions
+                                   Inv-Inv-x86-run))
+           :use ((:instance Inv-Inv-x86-run)))))
 
 (defthm partial-correctness-of-fact-recursive-effects
   (implies (and (x86p x86)
-		(programmer-level-mode x86)
-		(equal (rip x86) addr)
-		(and (begin n0 (rr32 *rdi* x86))
-		     (not (ms x86))
-		     (not (fault x86))
-		     (canonical-address-p addr)
-		     (canonical-address-p
-		      (+ addr (len
-			       *factorial_recursive*))))
-		(program-at (create-canonical-address-list
-			     (len *factorial_recursive*)
-			     addr)
-			    *factorial_recursive* x86)
-		(equal x86-after-run (x86-run k x86))
-		(equal (rip x86-after-run) (+ 25 addr)))
-	   (and (halt n0 (rr32 *rax* x86-after-run))
-		(not (fault x86-after-run))
-		(ms x86-after-run)
-		(program-at (create-canonical-address-list
-			     (len *factorial_recursive*)
-			     addr)
-			    *factorial_recursive* x86-after-run)))
+                (programmer-level-mode x86)
+                (equal (rip x86) addr)
+                (and (begin n0 (rr32 *rdi* x86))
+                     (not (ms x86))
+                     (not (fault x86))
+                     (canonical-address-p addr)
+                     (canonical-address-p
+                      (+ addr (len
+                               *factorial_recursive*))))
+                (program-at (create-canonical-address-list
+                             (len *factorial_recursive*)
+                             addr)
+                            *factorial_recursive* x86)
+                (equal x86-after-run (x86-run k x86))
+                (equal (rip x86-after-run) (+ 25 addr)))
+           (and (halt n0 (rr32 *rax* x86-after-run))
+                (not (fault x86-after-run))
+                (ms x86-after-run)
+                (program-at (create-canonical-address-list
+                             (len *factorial_recursive*)
+                             addr)
+                            *factorial_recursive* x86-after-run)))
   :hints (("Goal"
-	   :use ((:instance
-		  partial-correctness-of-fact-recursive-effects-helper)))))
+           :use ((:instance
+                  partial-correctness-of-fact-recursive-effects-helper)))))
 
 (defthm partial-correctness-of-fact-recursive
   (implies (and (ok-inputs n0 x86)
-		(programmer-level-mode x86)
-		(equal (rip x86) addr)
-		(and (begin n0 (rr32 *rdi* x86))
-		     (not (ms x86))
-		     (not (fault x86))
-		     (canonical-address-p addr)
-		     (canonical-address-p
-		      (+ addr (len
-			       *factorial_recursive*)))
-		     (program-at (create-canonical-address-list
-				  (len *factorial_recursive*)
-				  addr)
-				 *factorial_recursive* x86))
-		(equal x86-after-run (x86-run k x86))
-		(equal (rip x86-after-run) (+ 25 addr)))
-	   (and (halt-spec n0 (rr32 *rax* x86-after-run))
-		(not (fault x86-after-run))
-		(ms x86-after-run)
-		(program-at (create-canonical-address-list
-			     (len *factorial_recursive*)
-			     addr)
-			    *factorial_recursive* x86-after-run)))
+                (programmer-level-mode x86)
+                (equal (rip x86) addr)
+                (and (begin n0 (rr32 *rdi* x86))
+                     (not (ms x86))
+                     (not (fault x86))
+                     (canonical-address-p addr)
+                     (canonical-address-p
+                      (+ addr (len
+                               *factorial_recursive*)))
+                     (program-at (create-canonical-address-list
+                                  (len *factorial_recursive*)
+                                  addr)
+                                 *factorial_recursive* x86))
+                (equal x86-after-run (x86-run k x86))
+                (equal (rip x86-after-run) (+ 25 addr)))
+           (and (halt-spec n0 (rr32 *rax* x86-after-run))
+                (not (fault x86-after-run))
+                (ms x86-after-run)
+                (program-at (create-canonical-address-list
+                             (len *factorial_recursive*)
+                             addr)
+                            *factorial_recursive* x86-after-run)))
   :hints (("Goal"
-	   :in-theory (e/d (halt-and-halt-spec) ())
-	   :use ((:instance
-		  partial-correctness-of-fact-recursive-effects)))))
+           :in-theory (e/d (halt-and-halt-spec) ())
+           :use ((:instance
+                  partial-correctness-of-fact-recursive-effects)))))
 
 ;; ======================================================================

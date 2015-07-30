@@ -9,13 +9,6 @@
 ;; Misc. tools
 (include-book "tools/execution/top" :ttags :all)
 
-;; Proof utilities
-(include-book "proofs/utilities/programmer-level-memory-utils" :ttags :all)
-(include-book "proofs/utilities/physical-memory-utils" :ttags :all)
-(include-book "proofs/utilities/system-level-memory-utils" :ttags :all)
-(include-book "proofs/utilities/paging-utils" :ttags :all)
-(include-book "proofs/utilities/environment-utils" :ttags :all)
-
 ;; Proof books
 (include-book "proofs/top" :ttags :all)
 
@@ -41,16 +34,10 @@
   program-execution
   model-validation
   proof-utilities
-  program-proofs
+  code-proofs
   Contributors
   Publications
   TO-DO))
-
-(defxdoc program-proofs
-  :parents (X86ISA)
-  :short "Verification of various x86 programs"
-  :long "<p>Documentation topic coming soon!</p>"
-  )
 
 (defsection Introduction
   :parents (x86isa)

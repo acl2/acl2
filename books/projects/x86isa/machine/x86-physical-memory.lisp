@@ -27,6 +27,8 @@ these functions at the top-level.</p>"
 
   )
 
+(local (xdoc::set-default-parents x86-physical-memory))
+
 ;; ======================================================================
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -163,6 +165,18 @@ these functions at the top-level.</p>"
     :gen-type t)
   )
 
+(defthm rm-low-32-xw
+  (implies (not (equal fld :mem))
+           (equal (rm-low-32 addr (xw fld index val x86))
+                  (rm-low-32 addr x86)))
+  :hints (("Goal" :in-theory (e/d* (rm-low-32) (force (force))))))
+
+(defthm rm-low-64-xw
+  (implies (not (equal fld :mem))
+           (equal (rm-low-64 addr (xw fld index val x86))
+                  (rm-low-64 addr x86)))
+  :hints (("Goal" :in-theory (e/d* (rm-low-64) (force (force))))))
+
 ;; ======================================================================
 
 ;; Memory write functions:
@@ -170,8 +184,7 @@ these functions at the top-level.</p>"
 ;; These functions are very similar to wvm32 and wvm64 --- they
 ;; differs in the guards and the number of return values.
 
-(local
- (in-theory (e/d () (ACL2::logand-constant-mask))))
+(local (in-theory (e/d () (ACL2::logand-constant-mask))))
 
 (define wm-low-32
   ;; This function is very similar to wm-low-32 --- it differs in the
@@ -239,6 +252,30 @@ these functions at the top-level.</p>"
                   (integerp addr))
              (x86p (wm-low-64 addr val x86)))
     :rule-classes (:rewrite :type-prescription)))
+
+(defthm xr-wm-low-32
+  (implies (not (equal fld :mem))
+           (equal (xr fld index (wm-low-32 addr val x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (wm-low-32) (force (force))))))
+
+(defthm wm-low-32-xw
+  (implies (not (equal fld :mem))
+           (equal (wm-low-32 addr val (xw fld index value x86))
+                  (xw fld index value (wm-low-32 addr val x86))))
+  :hints (("Goal" :in-theory (e/d* (wm-low-32) (force (force))))))
+
+(defthm xr-wm-low-64
+  (implies (not (equal fld :mem))
+           (equal (xr fld index (wm-low-64 addr val x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (wm-low-64) (force (force))))))
+
+(defthm wm-low-64-xw
+  (implies (not (equal fld :mem))
+           (equal (wm-low-64 addr val (xw fld index value x86))
+                  (xw fld index value (wm-low-64 addr val x86))))
+  :hints (("Goal" :in-theory (e/d* (wm-low-64) (force (force))))))
 
 ;; ======================================================================
 
