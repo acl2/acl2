@@ -622,6 +622,22 @@ introduced.</p>"
         (mv ok warnings siglist new-x)))
 
 
+#||
+(trace$
+ #!vl (vl-generate-resolve
+       :entry (list 'vl-generate-resolve
+                    (with-local-ps (vl-pp-genelement x))
+                    :conf conf)
+       :exit (b* (((list ok warnings1 ?sigalist new-x) values)
+                  (warnings (take (- (len warnings1) (len warnings)) warnings1)))
+               (list 'vl-generate-resolve
+                     ok
+                     (with-local-ps (vl-print-warnings warnings))
+                     (with-local-ps (vl-pp-genelement new-x))))))
+                     
+
+||#
+
     ;; For consistency with svex, we need to be very careful about exactly when
     ;; we push frames onto the scopestack.  The svex scheme is that any
     ;; generate construct produces a nested module, and loops/arrays produce a
