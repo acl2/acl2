@@ -183,7 +183,7 @@ timeout.  This may have any number of unsound consequences!</p>")
   (<= 0 (mv-nth 1 (oracle-timelimit-extract state)))
   :rule-classes :linear)
 
-(defthm state-p1-of-oracle-time-extract.state
+(defthm state-p1-of-oracle-timelimit-extract.state
   (implies (state-p1 state)
            (state-p1 (mv-nth 2 (oracle-timelimit-extract state)))))
 
