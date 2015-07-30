@@ -47,7 +47,7 @@
 (defmacro oracle-timelimit-debug (&rest args)
   `(and *oracle-timelimit-debug* (format t . ,args)))
 
-(defmacro oracle-timelimit-exec-raw (limit-and-number-of-return-vals form)
+(defmacro oracle-timelimit-exec-raw (extra-args form)
   (let* ((main-thread          (gensym))
          (lock                 (gensym))
          (main-thread-state    (gensym))
@@ -59,7 +59,9 @@
          (ans                  (gensym))
          (limit                (gensym))
          (num-returns          (gensym))
-         (lafv-eval            (gensym)))
+         (suppress-lisp-errors (gensym))
+         (extra-args-eval      (gensym))
+         (suppressed-error     (gensym)))
     ;; (format t "Main-thread: ~s~%" main-thread)
     ;; (format t "lock: ~s~%" lock)
     ;; (format t "main-thread-state: ~s~%" main-thread-state)
@@ -72,9 +74,10 @@
     ;; (format t "limit: ~s~%" limit)
     ;; (format t "num-returns: ~s~%" num-returns)
     ;; (format t "lafv-eval: ~s~%" lafv-eval)
-    `(let* ((,lafv-eval   ,limit-and-number-of-return-vals)
-            (,limit       (car ,lafv-eval))
-            (,num-returns (cdr ,lafv-eval))
+    `(let* ((,extra-args-eval ,extra-args)
+            (,limit                (first ,extra-args-eval))
+            (,num-returns          (second ,extra-args-eval))
+            (,suppress-lisp-errors (third ,extra-args-eval))
             ;; We want the computation to run in the main thread to ensure that
             ;; any special variables (e.g., the hons space, stobjs, etc.)  are
             ;; all still bound to their current values.
@@ -92,6 +95,7 @@
             (,lock              (bt:make-lock))
             (,main-thread-state :starting)
             (,ans nil)
+            (,suppressed-error nil)
             (,start-alloc (heap-bytes-allocated))
             (,start-time  (get-internal-real-time)))
 
@@ -156,20 +160,33 @@
          ;; ** In parallel: (2) do the computation.
          (oracle-timelimit-debug "OTL: Running the form.~%")
          (unwind-protect
-             (progn
-               (setq ,ans (multiple-value-list ,form))
-               (bt:with-lock-held (,lock)
-                  (oracle-timelimit-debug
-                   "OTL: Finished running the form, status is ~s~%" ,main-thread-state)
-                  (when (eq ,main-thread-state :starting)
-                    ;; The timeout thread doesn't want to kill us yet.  Mark
-                    ;; that we've finished on time so that it won't try to kill
-                    ;; us.  It will notice that we've finished and exit itself.
-                    (oracle-timelimit-debug
-                     "OTL: Marking successful finish.~%")
-                    (setq ,main-thread-state :finished-on-time))))
-           ;; In case of a raw Lisp error, we want to make sure that the
-           ;; timeout thread doesn't try to interrupt us!
+
+             (handler-case
+               (progn
+                 (setq ,ans (multiple-value-list ,form))
+                 (bt:with-lock-held (,lock)
+                                    (oracle-timelimit-debug
+                                     "OTL: Finished running the form, status is ~s~%" ,main-thread-state)
+                                    (when (eq ,main-thread-state :starting)
+                                      ;; The timeout thread doesn't want to kill us yet.  Mark
+                                      ;; that we've finished on time so that it won't try to kill
+                                      ;; us.  It will notice that we've finished and exit itself.
+                                      (oracle-timelimit-debug
+                                       "OTL: Marking successful finish.~%")
+                                      (setq ,main-thread-state :finished-on-time))))
+               ,@(and suppress-lisp-errors
+                      `((error (condition)
+                               (progn
+                                 (format t "oracle-timelimit: suppressing error ~s~%" condition)
+                                 (setq ,suppressed-error t)))
+                        (storage-condition (condition)
+                                           (progn
+                                             (format t "oracle-timelimit: suppressing error ~s~%" condition)
+                                             (setq ,suppressed-error t))))))
+
+           ;; In case of any exit, whether we are suppressing errors or not, we
+           ;; want to make sure that the timeout thread doesn't try to
+           ;; interrupt us!
            (progn
              (oracle-timelimit-debug
               "OTL: Protect: Main computation done, state is ~s~%" ,main-thread-state)

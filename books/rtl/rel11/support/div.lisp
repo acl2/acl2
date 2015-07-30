@@ -1,10 +1,6 @@
 (in-package "RTL")
 
-(local (include-book "bits"))
-(local (include-book "float"))
-(include-book "round")
-(local (include-book "reps"))
-
+(include-book "definitions")
 (include-book "rcp")
 (local (include-book "example"))
 

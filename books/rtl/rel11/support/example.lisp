@@ -1,9 +1,11 @@
 (in-package "RTL")
 
-(local (include-book "bits"))
 (include-book "newton")
-
 (include-book "rcp")
+(local (include-book "bits"))
+(local (include-book "float"))
+(local (include-book "round"))
+(local (include-book "reps"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
@@ -13,6 +15,11 @@
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
 |#
+
+(local-defthm formatp-sp
+  (formatp (sp))
+  :hints (("Goal" :in-theory (enable sp))))
+
 (defun rcp24 (b)
   (ndecode (frcp (nencode b (sp))) (sp)))
 
@@ -74,7 +81,7 @@
                 (< b 2))
            (equal (nencode b (sp))
                   (cat 0 1 #x7F 8 (+ #x800000 (mant b)) 23)))
-  :hints (("Goal" :in-theory (enable sig sgn nencode)
+  :hints (("Goal" :in-theory (enable sig sgn nencode sp)
                   :use ((:instance expo<= (x b) (n 0))
                         (:instance expo>= (x b) (n 0))))))
 
@@ -84,12 +91,9 @@
                 (<= 1 b)
                 (< b 2))
            (nrepp b (sp)))
-  :hints (("Goal" :in-theory (enable nrepp)
+  :hints (("Goal" :in-theory (enable nrepp sp)
                   :use ((:instance expo<= (x b) (n 0))
                         (:instance expo>= (x b) (n 0))))))
-
-(local-defthm me-4a
-  (formatp (sp)))
 
 (local-defthmd me-5
   (implies (and (rationalp b)
@@ -101,7 +105,7 @@
                 (<= 1/2 (rcp24 b))
                 (<= (rcp24 b) 1)
                 (< (abs (- 1 (* b (rcp24 b)))) (expt 2 -23))))
-  :hints (("Goal" :in-theory (e/d (me-3 check-mant) (mant ndecode-nencode (sp)))
+  :hints (("Goal" :in-theory (e/d (me-3 check-mant) (mant ndecode-nencode))
                   :use ((:instance ndecode-nencode (x b) (f (sp)))))))
 
 (local-in-theory (disable mant (mant) rcp24 (rcp24)))

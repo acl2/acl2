@@ -1,6 +1,9 @@
 (in-package "RTL")
 
 (include-book "harrison")
+(local (include-book "float"))
+(local (include-book "round"))
+
 (local (include-book "arithmetic-5/top" :dir :system))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:

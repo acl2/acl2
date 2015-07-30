@@ -202,6 +202,9 @@ makes things more concise and better looking, e.g., compare:</p>
    ...)
 })
 
+<p>See @(see define-guards) for discussion of the various ways guards can be
+given, additionally.</p>
+
 <p>Some additional minor options include:</p>
 
 <dl>
@@ -297,6 +300,70 @@ some kind of separator!</p>
 
 
 ")
+
+(defxdoc define-guards
+  :parents (define)
+  :short "Discussion of how guards are given in @(see define)."
+  :long "<p>@(csee define) allows several different ways to specify the guards
+of a function.  The ordering of these in the final guards provided to the
+generated defun is sometimes significant (when the guards themselves have
+guards) and define's behavior in trying to address this can be quirky.</p>
+
+<p>The following example shows all (?) the ways in which guards can be specified:</p>
+
+@({
+  (define foo ((a natp)                   ;; formal guard
+               (b :type unsigned-byte)    ;; formal type
+               c d$ e f$ g
+               state)                     ;; implicit stobj
+     :guard (consp c)                     ;; guard keyword
+     :stobjs (d$)                         ;; stobjs keyword
+     (declare (xargs :guard (stringp e))) ;; guard in declare form
+     (declare (xargs :stobjs (f$)))       ;; stobjs in declare form
+     (declare (type symbol g))            ;; type in declare form
+   ...)
+ })
+
+<p>This define generates the following declarations:</p>
+
+@({
+  (DECLARE (XARGS :STOBJS (D$ F$ STATE)))         ;; implicit stobjs
+  (DECLARE (TYPE UNSIGNED-BYTE B))                ;; formal types
+  (DECLARE (XARGS :GUARD (NATP A)))               ;; formal guards
+  (DECLARE (XARGS :GUARD (STRINGP E)))            ;; declare forms
+  (DECLARE (XARGS :STOBJS (F$)))
+  (DECLARE (TYPE SYMBOL G))
+  (DECLARE (XARGS :STOBJS (D$) :GUARD (CONSP C))) ;; guard and stobj keywords
+ })
+
+<p>The reasons for this ordering are somewhat heuristic: stobj declarations
+shouldn't have any dependencies and type declarations are also unlikely to.
+Formal guards usually occur first in the define form and are also usually used
+for simple unary type constraints, so we put them next.  Declare forms may also
+include stobj and type declarations, which the guard keywords might depend on.
+Finally, the guards specified by the guard keyword come last.</p>
+
+<p>One further quirk is that we reorder the formal guards, putting those that
+only refer to one variable first.  This is because we have encountered
+situations where we want to put main formals first and auxiliary parameters
+later, but the main formals' guards depend on the auxiliary parameters.  For
+example,</p>
+
+@({
+ (define fp-add ((x1 (fp-vec-p x1 size))
+                 (x2 (fp-vec-p x2 size))
+                 (size fp-size-p))
+   ...)
+ )}
+
+<p>Since size has a unary guard @('(fp-size-p size)'), we put that first, which
+is good if @('fp-vec-p') has that as a guard on its size argument.</p>
+
+<p>It is possible to construct define forms that look like they should succeed
+but actually fail due to the heuristic reordering of guards.  If you encounter
+one of these in the wild and have a suggestion to improve the heuristic, please
+mention it.  In any case, explicitly stating your guards in order in a declare
+form is usually an adequate work-around.</p>")
 
 
 ; -------------- Xargs Extraction ---------------------------------------------

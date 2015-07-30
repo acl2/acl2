@@ -99,6 +99,9 @@ additional tests and working examples.</p>
        form                 ; what to execute
        [:ret    retspec]    ; return signature for form
        [:onfail failspec]   ; return values for timeout case
+
+       ;; Special option to catch Lisp errors that arise during form
+       [:suppress-lisp-errors bool]
        )
 })
 
@@ -130,7 +133,14 @@ is going to macroexpand to something like the following:</p>
 results of executing the form.  It is also, essentially, spliced into the
 return values for the success and failure cases.  The only twist is that if
 @('retspec') mentions @('state'), then we don't add an extra @('state') onto
-the end of the form.</p>")
+the end of the form.</p>
+
+<p>By default, if @('form') causes a raw Lisp error such as a type error, stack
+overflow, or causes some other non-local exit such as throwing to a tag, the
+error will propagate through the @('oracle-timelimit') call.  However, if you
+set @(':suppress-lisp-errors t'), then any such error will be treated as a
+timeout.  This may have any number of unsound consequences!</p>")
+
 
 (defund oracle-timelimit-extract (state)
   "Has an under-the-hood definition."
@@ -183,7 +193,7 @@ the end of the form.</p>")
 
 
 
-(defun oracle-timelimit-fn (limit form ret fail)
+(defun oracle-timelimit-fn (limit form ret fail suppress-lisp-errors)
   (b* (((mv ret-list fail-vals)
         ;; Normalize :ret and :fail forms so they are always lists of
         ;; corresponding name/values
@@ -215,7 +225,7 @@ the end of the form.</p>")
 
        ((when (eql (len ret-list) 1))
         ;; Single-valued case.
-        `(let ((,(car ret-list) (oracle-timelimit-exec (cons ,limit 1) ,form)))
+        `(let ((,(car ret-list) (oracle-timelimit-exec (list ,limit 1 ,suppress-lisp-errors) ,form)))
            (mv-let (time bytes state)
              (oracle-timelimit-extract state)
              (if time
@@ -224,12 +234,12 @@ the end of the form.</p>")
 
     ;; Multiple-valued case.
     `(mv-let ,ret-list
-       (oracle-timelimit-exec (cons ,limit ,(len ret-list)) ,form)
+       (oracle-timelimit-exec (list ,limit ,(len ret-list) ,suppress-lisp-errors) ,form)
        (mv-let (time bytes state)
          (oracle-timelimit-extract state)
          (if time
              (mv time bytes . ,success-splice)
            (mv nil nil . ,fail-splice))))))
 
-(defmacro oracle-timelimit (limit form &key (ret 'ret) (onfail 'nil))
-  (oracle-timelimit-fn limit form ret onfail))
+(defmacro oracle-timelimit (limit form &key (ret 'ret) (onfail 'nil) (suppress-lisp-errors 'nil))
+  (oracle-timelimit-fn limit form ret onfail suppress-lisp-errors))
