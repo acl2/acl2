@@ -1631,7 +1631,7 @@ the @(':pre-bind') argument accepts a list of @(see b*) bindings that occur
 before the binding of the return values.  You may also just want to not share
 names between your formals and returns.</p>")
 
-(defun defret-fn (name args world)
+(defun defret-fn (name args disablep world)
   (b* ((__function__ 'defret)
        ((mv kwd-alist args)
         (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind)
@@ -1667,14 +1667,17 @@ names between your formals and returns.</p>")
        (thm (if hyp?
                 `(implies ,hyp ,concl)
               concl)))
-    `(defthm ,name
+    `(,(if disablep 'defthmd 'defthm) ,name
        ,thm
        ,@(and hints?        `(:hints ,(cdr hints?)))
        ,@(and rule-classes? `(:rule-classes ,(cdr rule-classes?))))))
 
 
 (defmacro defret (name &rest args)
-  `(make-event (defret-fn ',name ',args (w state))))
+  `(make-event (defret-fn ',name ',args nil (w state))))
+
+(defmacro defretd (name &rest args)
+  `(make-event (defret-fn ',name ',args t (w state))))
 
 
 

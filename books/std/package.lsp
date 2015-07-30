@@ -376,6 +376,8 @@
     defruledl
     defrulel
     defval
+    defret
+    defretd
     defconsts
     raise
     __function__
