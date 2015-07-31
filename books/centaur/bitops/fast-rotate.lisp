@@ -201,16 +201,14 @@ expand into a call of a specialized, inlined function.</p>
                                    (coerce (explode-nonnegative-integer
                                             n 10 '())
                                            'string)))
-         (fn-name (intern$ fn-name-string "BITOPS"))
-         (bound-rule-name (intern$
-                           (str::cat "UNSIGNED-BYTE-P-OF-" fn-name-string)
-                           "ACL2")))
+         (fn-name (intern$ fn-name-string "BITOPS")))
 
     `(define ,fn-name
        ((x      :type (unsigned-byte ,n) "The bit vector to be rotated left.")
         (places :type (unsigned-byte ,n) "The number of places to rotate left."))
 
        :parents (fast-rotate)
+       :enabled t
        :inline t
        :prepwork ((local (in-theory (e/d (rotate-left) (unsigned-byte-p)))))
 
@@ -236,14 +234,7 @@ expand into a call of a specialized, inlined function.</p>
                (xl-shift   (the (unsigned-byte ,n) (ash (the (unsigned-byte ,n) xl)
                                                         (the (integer 0 ,n) places))))
                (ans        (the (unsigned-byte ,n) (logior xl-shift xh-shift))))
-          ans))
-
-       ///
-
-       (defthm ,bound-rule-name
-         (implies (and (unsigned-byte-p ,n x)
-                       (unsigned-byte-p ,n places))
-                  (unsigned-byte-p ,n (,fn-name x places)))))))
+          ans)))))
 
 ;; Feel free to create different versions of fast-rotate-left-<n> as
 ;; required.
@@ -350,16 +341,14 @@ expand into a call of a specialized, inlined function.</p>
                                    (coerce (explode-nonnegative-integer
                                             n 10 '())
                                            'string)))
-         (fn-name (intern$ fn-name-string "BITOPS"))
-         (bound-rule-name (intern$
-                           (str::cat "UNSIGNED-BYTE-P-OF-" fn-name-string)
-                           "ACL2")))
+         (fn-name (intern$ fn-name-string "BITOPS")))
 
     `(define ,fn-name
        ((x      :type (unsigned-byte ,n) "The bit vector to be rotated right.")
         (places :type (unsigned-byte ,n) "The number of places to rotate right."))
 
        :parents (fast-rotate)
+       :enabled t
        :inline t
        :prepwork ((local (in-theory (e/d (rotate-right) (unsigned-byte-p)))))
 
@@ -384,14 +373,7 @@ expand into a call of a specialized, inlined function.</p>
                (xl-shift   (the (unsigned-byte ,n) (ash xl high-num)))
                (ans        (the (unsigned-byte ,n)
                              (logior xl-shift xh-shift))))
-          ans))
-
-       ///
-
-       (defthm ,bound-rule-name
-         (implies (and (unsigned-byte-p ,n x)
-                       (unsigned-byte-p ,n places))
-                  (unsigned-byte-p ,n (,fn-name x places)))))))
+          ans)))))
 
 ;; Feel free to create different versions of fast-rotate-right-<n> as
 ;; required.
