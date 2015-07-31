@@ -105,6 +105,9 @@
 #  option below.  If you want to get rid of the metering in the
 #  compiled code, do make full.
 
+# Avoid escape characters in regression log:
+export CERT_PL_NO_COLOR ?= t
+
 LISP = ccl
 DIR = /tmp
 
