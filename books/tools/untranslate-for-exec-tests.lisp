@@ -147,16 +147,91 @@
 
 (rebuild-function f12)
 
-;; this doesn't work yet.
 
-;; (defun f13 (x)
-;;   (let ((y (f2 x)))
-;;     (mv-let (y z)
-;;       (f4 y)
-;;       (mv-let (a b c)
-;;         (mv z y x)
-;;         (mv-let (w x y z)
-;;           (f12 a)
-;;           (mv a b c w x y z))))))
+(defun f13 (x y)
+  (mv-let (a b)
+    (mv y x)
+    (mv a b x)))
 
-;; (rebuild-function f13)
+(rebuild-function f13)
+
+(defun f13 (x y)
+  (mv-let (a b)
+    (mv y x)
+    (mv a b x)))
+
+(rebuild-function f13)
+
+
+(defun f14 (x y)
+  (mv (mv-let (a b)
+        (mv x y)
+        (+ a b))
+      y))
+
+(rebuild-function f14)
+
+(defun f14 (x y)
+  (mv (mv-let (a b)
+        (mv x y)
+        (+ a b))
+      y))
+
+(rebuild-function f14)
+
+
+(defun f15 (x y)
+  (mv (mv-let (a b)
+        (mv x y)
+        (+ a b x))
+      y))
+
+(rebuild-function f15)
+
+
+(defun f16 (x y)
+  (let ((a (+ x y)))
+    (mv-let (b c)
+      (mv y x)
+      (+ a b c))))
+
+(rebuild-function f16)
+
+
+(defun f17 (x y)
+  (let ((a (+ x y)))
+    (mv-let (a c)
+      (mv y a)
+      (+ a x c))))
+
+(rebuild-function f17)
+
+
+(defun f18 (x)
+  ;; This one is special and has a different expansion: we end up with
+  ;;   ((LAMBDA (MV X)
+  ;;            ((LAMBDA (Y Z X) (CONS X (CONS Y 'NIL)))
+  ;;             (MV-NTH '0 MV)
+  ;;             (MV-NTH '1 MV)
+  ;;             X))
+  ;;    (F4 X)
+  ;;  X)
+  (mv-let (y z)
+    (f4 x)
+    (mv x y)))
+
+(rebuild-function f18)
+
+(defun f19 (x)
+  (let ((y (f2 x)))
+    (mv-let (y z)
+      (f4 y)
+      (mv-let (a b c)
+        (mv z y x)
+        (mv-let (w x y z)
+          (f12 a)
+          (mv a b c w x y z))))))
+
+(rebuild-function f19)
+
+

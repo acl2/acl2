@@ -214,27 +214,28 @@ support @(see mv-let) and @(see mv) forms.</p>"
   ((x   ute-termlist-p "Possibly a list of MV-NTHs.")
    (n   natp           "Current index we expect to match, e.g., starts with 0.")
    (rhs ute-term-p     "RHS we expect to match, e.g., 'mv."))
-  :returns (matchp booleanp :rule-classes :type-prescription)
+  :returns (rest ute-termlist-p :hyp (ute-termlist-p x)
+                 "Whatever comes after the (mv-nth ...) list.")
   (b* (((when (atom x))
-        t)
+        x)
        (term1 (car x))
        ((unless (and (equal (len term1) 3)
                      (equal (first term1) 'mv-nth)
                      (equal (second term1) (list 'quote n))
                      (equal (third term1) rhs)))
-        nil))
+        x))
     (match-ascending-mv-nth-list-aux (cdr x) (+ n 1) rhs)))
 
 (define match-ascending-mv-nth-list
   ((x   ute-termlist-p "Possibly a list of MV-NTHs.")
    (rhs ute-term-p     "RHS we expect to match."))
-  :returns (matchp booleanp :rule-classes :type-prescription)
+  :returns (rest ute-termlist-p :hyp (ute-termlist-p x))
   (match-ascending-mv-nth-list-aux x 0 rhs))
 
 ;; (match-ascending-mv-nth-list '((MV-NTH '0 MV) (MV-NTH '1 MV)) 'mv)
-;;   --> T, good, this is what we want to match
+;;   --> NIL
 ;; (match-ascending-mv-nth-list '((MV-NTH '0 MV) (MV-NTH '2 MV)) 'mv)
-;;   --> NIL because the indices are wrong
+;;   --> ((MV-NTH '2 MV)), because the 2 doesn't immediately follow 0.
 
 
 ;; A matcher for (CONS (F '1) (CONS (F '2) 'NIL)):
@@ -293,6 +294,7 @@ support @(see mv-let) and @(see mv) forms.</p>"
                        (implies (and matchp
                                      (ute-term-p x))
                                 (ute-term-p body))))
+
   ;; The goal here is to match something like this:
   ;;
   ;; ((LAMBDA (MV)             ;; Always seems to be named MV
@@ -304,11 +306,26 @@ support @(see mv-let) and @(see mv) forms.</p>"
   ;;           (MV-NTH '1 MV)))
   ;;  ;; The multiple-valued expression to bind to these variables.
   ;;  (CONS (F '1) (CONS (F '2) 'NIL)))
+  ;;
+  ;; In certain cases it looks like we can also end up with more variables after
+  ;; the MV.  For instance:
+  ;;
+  ;; (defun f4 (x) (mv x x))
+  ;; (trans '(mv-let (y z) (f4 x) (mv x y))
+  ;;   -->
+  ;; ((LAMBDA (MV X)
+  ;;          ((LAMBDA (Y Z X) (CONS X (CONS Y 'NIL)))
+  ;;           (MV-NTH '0 MV)
+  ;;           (MV-NTH '1 MV)
+  ;;           X))
+  ;;  (F4 X)
+  ;;  X)
 
   (b* (((list & top-formals top-body) (car x))
 
        ;; Deconstruct the top-level/outer lambda.
-       ((unless (and (equal top-formals '(mv))
+       ((unless (and (consp top-formals)
+                     (eq (car top-formals) 'mv)
                      (consp top-body)
                      (consp (car top-body))))
         (mv nil nil nil nil))
@@ -316,15 +333,37 @@ support @(see mv-let) and @(see mv) forms.</p>"
        ;; TOP-BODY is itself a lambda, so deconstruct it.
        ((list & inner-formals inner-body) (car top-body))
        (inner-args (cdr top-body))
-       ((unless (match-ascending-mv-nth-list inner-args 'mv))
-        ;; Inner args don't look like (mv-nth 0 mv) ..., so this doesn't
-        ;; seem like an MV-LET lambda.
-        (mv nil nil nil nil)))
+
+       ;; We know the variable list for top is (mv ...).  If there are any
+       ;; variables in the ... part, try make sure they're bound to themselves,
+       ;; i.e., this is just plain old variable capture going through the
+       ;; mv-let.
+       (post-mv         (cdr top-formals))
+       (post-inner-args (match-ascending-mv-nth-list inner-args 'mv))
+
+       ((unless (equal post-mv post-inner-args))
+        ;; Inner args don't look like
+        ;;   ((mv-nth 0 mv)
+        ;;    (mv-nth 1 mv)
+        ;;    ... exact variables bound after mv ...)
+        ;; so this doesn't seem like an MV-LET lambda.
+        (mv nil nil nil nil))
+
+       ;; I think we can rely on implicit capture, so we can strip the post-mv
+       ;; arguments.
+       (mv-vars (butlast inner-formals (len post-mv))))
 
     (mv t
-        inner-formals
+        mv-vars
         (second x)
         inner-body))
+
+  :prepwork
+  ((local (defthm symbol-listp-of-butlast
+         (implies (symbol-listp x)
+                  (symbol-listp (butlast x n)))
+         :hints(("Goal" :in-theory (enable butlast))))))
+
   ///
   (defret acl2-count-of-patmatch-mv-style-lambda-new-body
     (implies matchp
