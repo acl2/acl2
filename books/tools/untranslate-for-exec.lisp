@@ -28,97 +28,9 @@
 (include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "std/lists/top" :dir :system))
 
-(defxdoc untranslate-for-execution
-  :parents (macros)
-  :short "Attempt to do a kind of untranslation of a @(see pseudo-termp) in
-order to restore any @(see mv-let) and @(see mv) forms, ideally so that the
-term can be executed."
-
-  :long "<p>When @(see term)s are translated into pseudo-terms, information
-about their @(see mv) and @(see stobj) nature can be lost.  For instance,
-suppose we start with a simple definition, @('f'):</p>
-
-@({
-     (defun f (a b) (mv a b))
-})
-
-<p>Since @(see mv) is logically just @(see list), the logical definition of
-@('f') ends up being @('(list a b)').  Suppose we want to use this logical
-definition to derive some new function, @('g'),</p>
-
-@({
-     (defun g (a b) (list a b))
-})
-
-<p>Now, although @('f') and @('g') are logically identical, they are
-practically incompatible since @('f') returns two values and @('g') only
-returns one.  This kind of mismatch can sometimes cause problems when you are
-writing code that modifies existing ACL2 functions.</p>
-
-<p>The @('untranslate-for-execution') tool tries to allow you to recover
-something like the true original definition.  For example,</p>
-
-@({
-     (untranslate-for-execution
-
-})
-
-
-
-@({
-    (list (+ a b) (+ the @(see normalize)d definition of 
-
-<p>then translating this term yields</p>
-
-@({
- (defun f ()
-    ((LAMBDA (MV)
-             ((LAMBDA (A B) (BINARY-+ A B))
-              (MV-NTH '0 MV)
-              (MV-NTH '1 MV)))
-     (CONS '1 (CONS '2 'NIL))))
-})
-
-<p>but this translated term cannot be executed at the top-level ACL2 loop and
-it cannot be put inside of function definitions, 
-
-and this term cannot be executed because it includes calls of 
-
-
-
-(translate '(mv-let (a b) (mv '1 '2) (+ a b)) t t t 'foo (w state) state)
-           
-           
-
-
-  
-
-
-
-untranslate a pseudo-termp in a format that will allow it
-to be executed.")
-
-
-
-(local (defthm pseudo-term-listp-of-append
-         (equal (pseudo-term-listp (append x y))
-                (and (pseudo-term-listp (list-fix x))
-                     (pseudo-term-listp y)))
-         :hints(("Goal" :induct (len x)))))
-
-(local (defthm pseudo-term-listp-of-rev
-         (equal (pseudo-term-listp (rev x))
-                (pseudo-term-listp (list-fix x)))
-         :hints(("Goal" :induct (len x)))))
-
-(local (defthm true-listp-when-pseudo-term-listp
-         (implies (pseudo-term-listp x)
-                  (true-listp x))
-         :rule-classes :compound-recognizer))
-
-
-;; Goal: rewrite a pseudo-termp so that it can call functions with multiple
-;; values.  Some examples to help understand the goal...
+;; Note: Docs for untranslate-for-exec are at the end of the file.
+;;
+;; These comments are just for understanding how it is implemented...
 
 #||
 
@@ -191,15 +103,117 @@ to be executed.")
 ||#
 
 
+; I originally thought we were going to be working with pseudo-termps, but
+; that doesn't quite work because the only notion of binding in a pseudo-termp
+; is a lambda, and we really need sort of first-class support for MV-LET forms
+; here.
+;
+; So, I'll introduce a new term structure, which I'll call UTE-TERMs.  This is
+; short for "untranslate-for-execution terms," which seems like a very clever
+; and creative name. :)
+;
+; Note that there are pseudo-termps that are not well-formed UTE terms!  For
+; instance, (mv-let x) is a perfectly valid pseudo-termp, even though it
+; doesn't make any sense.  Hopefully such terms cannot be created through any
+; sensible ACL2 process...
+
+(defines ute-term-p
+  :parents (untranslate-for-execution)
+  :short "Recognize the kinds of terms that can be processed by @(see
+untranslate-for-execution)."
+  :long "<p>These are similar to @(see psuedo-termp)s, but we also explicitly
+support @(see mv-let) and @(see mv) forms.</p>"
+  :flag-local nil
+
+  (define ute-term-p (x)
+    :flag :term
+    (cond ((atom x)
+           ;; BOZO should we be more permissive here?  Maybe allow things like
+           ;; T, NIL, keywords, and numbers to be used without quotes?
+           (symbolp x))
+          ((eq (car x) 'quote)
+           (and (consp (cdr x))
+                (null (cdr (cdr x)))))
+          ((not (true-listp x)) nil)
+          ((eq (car x) 'if)
+           ;; (if a b c)
+           (and (eql (len (cdr x)) 3)
+                (ute-termlist-p (cdr x))))
+          ((eq (car x) 'mv-let)
+           ;; (mv-let vars expr body)
+           (and (eql (len (cdr x)) 3)
+                (b* (((list vars expr body) (cdr x)))
+                  (and (symbol-listp vars)
+                       (ute-term-p expr)
+                       (ute-term-p body)))))
+          ((not (ute-termlist-p (cdr x)))
+           nil)
+          (t
+           (or (symbolp (car x))
+               (and (true-listp (car x))
+                    (eql (len (car x)) 3)
+                    (b* (((list lambda vars body) (car x)))
+                      (and (eq lambda 'lambda)
+                           (symbol-listp vars)
+                           (ute-term-p body)
+                           (equal (len vars) (len (cdr x))))))))))
+  (define ute-termlist-p (x)
+    :flag :list
+    (if (atom x)
+        (not x)
+      (and (ute-term-p (car x))
+           (ute-termlist-p (cdr x)))))
+
+  ///
+  (defthm ute-termlist-p-when-atom
+    (implies (atom x)
+             (equal (ute-termlist-p x)
+                    (not x)))
+    :hints(("Goal" :expand ((ute-termlist-p x)))))
+
+  (defthm ute-termlist-p-of-cons
+    (equal (ute-termlist-p (cons a x))
+           (and (ute-term-p a)
+                (ute-termlist-p x)))
+    :hints(("Goal" :expand ((ute-termlist-p (cons a x))))))
+
+  (defthm true-listp-when-ute-termlist-p
+    (implies (ute-termlist-p x)
+             (true-listp x))
+    :rule-classes :compound-recognizer
+    :hints(("Goal" :induct (len x))))
+
+  (defthm ute-term-p-of-car-when-ute-termlist-p
+    (implies (ute-termlist-p x)
+             (ute-term-p (car x))))
+
+  (defthm ute-termlist-p-of-cdr-when-ute-termlist-p
+    (implies (ute-termlist-p x)
+             (ute-termlist-p (cdr x))))
+
+  (defthm ute-termlist-p-of-append
+    (equal (ute-termlist-p (append x y))
+           (and (ute-termlist-p (list-fix x))
+                (ute-termlist-p y)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm ute-termlist-p-of-rev
+    (equal (ute-termlist-p (rev x))
+           (ute-termlist-p (list-fix x)))
+    :hints(("Goal" :induct (len x)))))
+
+
+(local (in-theory (enable ute-term-p)))
+
 ;; Some building blocks...
 
 
 ;; A matcher for ((MV-NTH '0 MV) (MV-NTH '1 MV) ...):
 
 (define match-ascending-mv-nth-list-aux
-  ((x   pseudo-term-listp "Possibly a list of MV-NTHs.")
-   (n   natp              "Current index we expect to match, e.g., starts with 0.")
-   (rhs pseudo-termp      "RHS we expect to match, e.g., 'mv."))
+  ((x   ute-termlist-p "Possibly a list of MV-NTHs.")
+   (n   natp           "Current index we expect to match, e.g., starts with 0.")
+   (rhs ute-term-p     "RHS we expect to match, e.g., 'mv."))
   :returns (matchp booleanp :rule-classes :type-prescription)
   (b* (((when (atom x))
         t)
@@ -212,8 +226,8 @@ to be executed.")
     (match-ascending-mv-nth-list-aux (cdr x) (+ n 1) rhs)))
 
 (define match-ascending-mv-nth-list
-  ((x   pseudo-term-listp "Possibly a list of MV-NTHs.")
-   (rhs pseudo-termp      "RHS we expect to match."))
+  ((x   ute-termlist-p "Possibly a list of MV-NTHs.")
+   (rhs ute-term-p     "RHS we expect to match."))
   :returns (matchp booleanp :rule-classes :type-prescription)
   (match-ascending-mv-nth-list-aux x 0 rhs))
 
@@ -225,11 +239,11 @@ to be executed.")
 
 ;; A matcher for (CONS (F '1) (CONS (F '2) 'NIL)):
 
-(define match-cons-nest-aux ((x   pseudo-termp)
-                             (acc pseudo-term-listp))
+(define match-cons-nest-aux ((x   ute-term-p)
+                             (acc ute-termlist-p))
   :parents (match-cons-nest)
   :returns (mv (matchp booleanp :rule-classes :type-prescription)
-               (acc    pseudo-term-listp :hyp :guard))
+               (acc    ute-termlist-p :hyp :guard))
   (cond ((atom x)
          (mv nil acc))
         ((equal x ''nil)
@@ -244,10 +258,10 @@ to be executed.")
     (implies (true-listp acc)
              (true-listp (mv-nth 1 (match-cons-nest-aux x acc))))))
 
-(define match-cons-nest ((x pseudo-termp))
+(define match-cons-nest ((x ute-term-p))
   :short "Matches @('(cons x1 (cons ... (cons xn 'nil)))')."
   :returns (mv (matchp booleanp :rule-classes :type-prescription)
-               (args   pseudo-term-listp :hyp :guard))
+               (args   ute-termlist-p :hyp :guard))
   (if (and (consp x)
            (eq (car x) 'cons))
       (mv-let (matchp acc)
@@ -261,24 +275,24 @@ to be executed.")
 ;;   --> (mv nil nil)
 
 
-(define patmatch-mv-style-lambda ((x pseudo-termp "Should be a lambda."))
+(define patmatch-mv-style-lambda ((x ute-term-p "Should be a lambda."))
   :guard (and (consp x) (consp (car x)))
   :returns (mv (matchp booleanp
                        :rule-classes :type-prescription
                        "True if this looks like an MV-LET lambda, NIL
                         if it looks like some other kind of lambda.")
                (vars   "On match, the variables bound in this mv-let."
-                       (implies (pseudo-termp x)
+                       (implies (ute-term-p x)
                                 (symbol-listp vars)))
                (expr   "On match, the multiply valued expression to bind
                         to these variables.  MVs not yet reincarnated."
                        (implies (and match
-                                     (pseudo-termp x))
-                                (pseudo-termp expr)))
+                                     (ute-term-p x))
+                                (ute-term-p expr)))
                (body   "On match, the inner body of this mv-let."
                        (implies (and matchp
-                                     (pseudo-termp x))
-                                (pseudo-termp body))))
+                                     (ute-term-p x))
+                                (ute-term-p body))))
   ;; The goal here is to match something like this:
   ;;
   ;; ((LAMBDA (MV)             ;; Always seems to be named MV
@@ -316,32 +330,7 @@ to be executed.")
     (implies matchp
              (< (acl2-count body)
                 (acl2-count x)))
-    :rule-classes ((:rewrite) (:linear)))
-
-  (local (defthm horrible-awful-hack
-           ;; Consider a term like (MV-NTH (X Y) (MV A B) (binary-+ X Y)).
-           ;; Is this a pseudo-termp?
-           ;;
-           ;; Well, yes, but sort of only by accident: the variable list
-           ;; (X Y) happens to look like a function call, even though it
-           ;; really isn't.
-           ;;
-           ;; We probably shouldn't be exploiting this, but if we don't do
-           ;; something like this, we don't have any good predicate laying around
-           ;; to explain what kind of a term we're creating, and that's a yak we
-           ;; probably don't want to try to shave yet...
-           (implies (and (symbol-listp x)
-                         (not (equal (car x) 'quote)))
-                    (pseudo-termp x))))
-
-  (defret pseudo-termp-of-patmatch-mv-style-lambda-mv-vars
-    ;; Awful exploitation of pseudo-termp...
-    (b* (((mv matchp vars ?expr ?body) (patmatch-mv-style-lambda x)))
-      (implies (and matchp
-                    (pseudo-termp x)
-                    (not (equal (car vars) 'quote)))
-               (pseudo-termp vars)))))
-
+    :rule-classes ((:rewrite) (:linear))))
 
 ;; (patmatch-mv-style-lambda '((LAMBDA (MV)
 ;;                                     ((LAMBDA (X Y) (H X Y))
@@ -356,11 +345,11 @@ to be executed.")
   :short "Rewrite an expression that occurs a multiply valued context to make
           its multiple returns explicit."
   ((n     natp         "Number of return values this expression has.")
-   (x     pseudo-termp "The expression to rewrite.")
+   (x     ute-term-p "The expression to rewrite.")
    (world plist-worldp "World, for return-value checking."))
   :guard (<= 2 n)
   :returns (mv (errmsg "NIL on success, or an error @(see msg) on failure.")
-               (new-x pseudo-termp :hyp (pseudo-termp x)))
+               (new-x ute-term-p :hyp (ute-term-p x)))
 
   (b* (((when (atom x))
         ;; Lone variable where expecting a multiply valued form.
@@ -382,19 +371,30 @@ to be executed.")
           (mv nil new-x)))
        ((when (eq fn 'if))
         ;; If expression -- try to convert its then/else branch to return MVs.
-        (b* (((unless (equal (len args) 3))
-              (mv (msg "Malformed IF: ~x0~%" x)
-                  x))
-             ((list test then else) args)
+        (b* (((list test then else) args)
              ((mv err1 then) (convert-subexpression-to-mv n then world))
              ((when err1)
               (mv (msg "> In then branch of ~x0:~%~@1~%" test err1)
-                  then))
+                  x))
              ((mv err2 else) (convert-subexpression-to-mv n else world))
              ((when err2)
               (mv (msg "> In else branch of ~x0:~%~@1~%" else err2)
-                  else))
+                  x))
              (new-x (list 'if test then else)))
+          (mv nil new-x)))
+       ((when (eq fn 'mv-let))
+        ;; Existing MV-LET expression.  This could happen if someone writes
+        ;; something like
+        ;;    (mv-let (a b c)
+        ;;            (mv-let (x y) (fn1 arg) (mv x y arg2))
+        ;;            ...)
+        ;; We need to convert the body, but not the vars or expr.
+        (b* (((list vars expr body) args)
+             ((mv err1 body) (convert-subexpression-to-mv n body world))
+             ((when err1)
+              (mv (msg "> In body of mv-let binding ~x0:~%~@1~%" vars err1)
+                  x))
+             (new-x (list 'mv-let vars expr body)))
           (mv nil new-x)))
        ((when (eq fn 'cons))
         ;; Cons nest where expecting multiple values.  See if it has the right
@@ -451,14 +451,14 @@ to be executed.")
 
 (defines reincarnate-mvs
   :short "Try to convert translated MV forms back into their MV-LET/MV form."
-
+  :returns-hints (("Goal" :expand ((ute-term-p x))))
   (define reincarnate-mvs
-    ((x     pseudo-termp "The term to try to untranslate.")
+    ((x     ute-term-p "The term to try to untranslate.")
      (world plist-worldp "The world, needed for stobjs-out lookups."))
     :returns (mv (errmsg "NIL on success or an error @(see msg) on failure.")
                  (new-x  "New version of @('x') with MVs restored."
-                         pseudo-termp :hyp (pseudo-termp x)))
-    :guard-debug t
+                         (implies (ute-term-p x)
+                                  (ute-term-p new-x))))
     (b* (((when (atom x))
           ;; Variable, no way this has any MVs, totally fine, nothing to do.
           (mv nil x))
@@ -466,6 +466,18 @@ to be executed.")
           ;; Constant, no way this has any MVs, totally fine, nothing to do.
           (mv nil x))
          ((cons fn args) x)
+         ((when (eq fn 'mv-let))
+          ;; We still want to reincarnate MVs within the expr and body.
+          (b* (((list vars expr body) args)
+               ((mv err expr) (reincarnate-mvs expr world))
+               ((when err)
+                (mv err x))
+               ((mv err body) (reincarnate-mvs body world))
+               ((when err)
+                (mv err x))
+               (new-x (list 'mv-let vars expr body)))
+            (mv nil new-x)))
+         ;; IF doesn't need any special handling.
          ((when (symbolp fn))
           ;; We need to rewrite the arguments because, for instance, someone
           ;; can write an MV-LET within an argument to a function, e.g., say
@@ -501,10 +513,6 @@ to be executed.")
          ((unless (<= 2 num-vars))
           (mv (msg "MV-LET style lambda has only one variable? ~x0~%" x)
               x))
-         ((when (eq (car mv-vars) 'quote))
-          ;; See horrible-awful-hack above; this could ruin pseudo-termp...
-          (mv (msg "MV-LET style lambda has a variable named quote? ~x0~%" x)
-              x))
          ((mv err mv-expr)
           (convert-subexpression-to-mv num-vars mv-expr world))
          ((when err)
@@ -514,16 +522,16 @@ to be executed.")
          ((mv err mv-body) (reincarnate-mvs mv-body world))
          ((when err)
           (mv err x))
-         (new-expr (list 'mv-nth mv-vars mv-expr mv-body)))
+         (new-expr (list 'mv-let mv-vars mv-expr mv-body)))
     (mv nil new-expr)))
 
   (define reincarnate-mvs-list
-    ((x     pseudo-term-listp "The terms to try to untranslate.")
+    ((x     ute-termlist-p "The terms to try to untranslate.")
      (world plist-worldp      "The world, needed for stobjs-out lookups."))
     :returns (mv (errmsg "NIL on success or an error @(see msg) on failure.")
                  (new-x  "New version of @('x') with MVs restored."
-                         (and (implies (pseudo-term-listp x)
-                                       (pseudo-term-listp new-x))
+                         (and (implies (ute-termlist-p x)
+                                       (ute-termlist-p new-x))
                               (equal (len new-x)
                                      (len x)))))
     (b* (((when (atom x))
@@ -536,13 +544,61 @@ to be executed.")
           (mv err2 x)))
       (mv nil (cons car cdr)))))
 
+
 (define untranslate-for-execution
-  ((x          pseudo-termp)
-   (stobjs-out (and (symbol-listp stobjs-out)
+  :parents (macros)
+  :short "Attempt to do a kind of untranslation of a @(see ute-term-p) in
+order to restore any @(see mv-let) and @(see mv) forms, ideally so that the
+term can be executed."
+
+  ((x          "The term to untranslate." ute-term-p)
+   (stobjs-out "The expected stobjs-out for this term."
+               (and (symbol-listp stobjs-out)
                     (consp stobjs-out)))
-   (world      plist-worldp))
+   (world      "The current ACL2 world, needed for signature lookups."
+               plist-worldp))
+
   :returns (mv (errmsg "NIL on success or an error @(see msg) on failure.")
                (new-x  "New version of @('x'), with MVs restored."))
+
+  :long "<p>When @(see term)s are translated into @(see ute-term-p)s,
+information about their @(see mv) and @(see stobj) nature can be lost.  For
+instance, suppose we start with a simple definition, @('f'):</p>
+
+@({
+     (defun f (a b) (mv a b))
+})
+
+<p>Since @(see mv) is logically just @(see list), the logical definition of
+@('f') ends up being @('(cons a (cons b 'nil))').  Suppose we want to use this
+logical definition to derive some new function, @('g'),</p>
+
+@({
+     (defun g (a b) (cons a (cons b 'nil)))
+})
+
+<p>Although @('f') and @('g') are logically identical, they are practically
+incompatible: @('f') returns two values but @('g') only returns one.  This kind
+of mismatch can sometimes cause problems when you are writing code that
+modifies existing ACL2 functions.</p>
+
+<p>The @('untranslate-for-execution') tool tries to allow you to recover
+something like the true original definition.  For example, if we run:</p>
+
+@({
+     (untranslate-for-execution
+      '(cons a (cons b 'nil))   ;; unnormalized-body property of F
+      '(nil nil)                ;; stobjs-out property of F
+      (w state))
+})
+
+<p>Then we get back @('(mv a b)'), i.e., the @('cons') nest has been
+``properly'' converted back into an @(see mv) form.</p>
+
+<p>In general, we try to ``smartly'' walk through the term and restore @(see
+mv) and @(see mv-let) forms throughout it.  However, note that this is an
+experimental tool and it may not yet be particularly robust.</p>"
+
   (b* (((mv err x-fix1)
         (reincarnate-mvs x world))
        ((when err)
@@ -559,3 +615,4 @@ to be executed.")
        ((when err)
         (mv err x)))
     (mv nil new-x)))
+

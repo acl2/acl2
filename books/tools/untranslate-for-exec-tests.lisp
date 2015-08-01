@@ -1,3 +1,28 @@
+; Untranslate for Execution
+; Copyright (C) 2015 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: (An MIT license):
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original authors: Jared Davis <jared@kookamara.com>
+
 (in-package "ACL2")
 (include-book "untranslate-for-exec")
 (include-book "misc/assert" :dir :system)
@@ -91,198 +116,47 @@
 
 ;; ;; BOZO want to insert ignorable declarations as appropriate...
 
-;; BOZO blah, we need to extend the convert-subexpressions-to-mv stuff to know
-;; about calls of MV that we've already converted...
+(set-ignore-ok t)
 
-;; (set-ignore-ok t)
-;; (defun f10 (x)  ;; IFs with Lambdas.
-;;   (cond
-;;    ((equal x 1)
-;;     (let ((x 1))
-;;       (f4 x)))
-;;    ((equal x 2)
-;;     (mv-let (x y)
-;;       (f4 6)
-;;       (mv 1 2)))
-;;    (t
-;;     (mv x 3))))
-;; (rebuild-function f10)
+(defun f10 (x)  ;; IFs with Lambdas and MVs within MV-Lets.
+  (cond
+   ((equal x 1)
+    (let ((x 1))
+      (f4 x)))
+   ((equal x 2)
+    (mv-let (x y)
+      (f4 6)
+      (mv 1 2)))
+   (t
+    (mv x 3))))
 
+(rebuild-function f10)
 
 
+(defun f11 (x)
+  (mv-let (a b c)
+    (mv 1 2 x)
+    (mv (+ a b c) x)))
 
-
-;; (defun f5 (x)
-;;   (mv-let (a b)
-;;     (f4 x)
-;;     (+ a b)))
-
-
-;; (translate '(mv-let (a b)
-;;               (f4 x)
-;;               (+ a b))
-
-;; (defmacro test-reincarnate (form)
-;;   `(make-event
-;;     (b* ((form ',form)
-;;          (- (cw "Original:    ~x0~%" form))
-;;          ((mv trans-er val state)
-;;           )
-;;          ((when trans-er)
-;;           (mv trans-er val state))
-;;          (- (cw "Translation: ~x0~%" val))
-;;          ((mv errmsg recovered-form) (reincarnate-mvs val (w state)))
-;;          (- (cw "Recovered:   ~x0~%" recovered-form))
-;;          ((when errmsg)
-;;           (er soft "Error message trying to rebuild form ~x0: ~@1.~%" form errmsg))
-;;          ((when (equal recovered-form form))
-;;           (value '(value-triple :success))))
-;;       (er soft 'test-reincarnate-mvs
-;;           "Failed to reincarnate ~x0: got ~x1 instead.~%" form recovered-form))))
-
-;; (test-reincarnate 'x)
-;; (test-reincarnate '(quote 1))
-;; (test-reincarnate '(let ((x 1)) x))
-;; (test-reincarnate '(let ((x 1)) x))
-
-
-;; (defmacro test-reincarnate-mvs (form)
-
-      
-;;   (equal val 
-     
-;;   (
-;;      (
-  
+(rebuild-function f11)
 
 
 
-;; zz
+(defun f12 (x)
+  (mv 1 2 x 3))
 
-;; (reincarnate-mvs '((LAMBDA (MV)
-;;                            ((LAMBDA (X Y) (H X Y))
-;;                             (MV-NTH '0 MV)
-;;                             (MV-NTH '1 MV)))
-;;                    (CONS (F '1) (CONS (F '2) 'NIL)))
-;;                  (w state))
+(rebuild-function f12)
 
-;; (reincarnate-mvs '((LAMBDA (MV)
-;;                            ((LAMBDA (X Y) (H X Y))
-;;                             (MV-NTH '0 MV)
-;;                             (MV-NTH '1 MV)))
-;;                    (MV2 (F '1) (F '2)))
-;;                  (w state))
+;; this doesn't work yet.
 
-
-;; #||
-
-;; ))))))))))
-
-
-
-
-  
-       
-
-
-;; (define match-cons-nest ((x pseudo-termp))
-;;   :short "Matches @('(cons x1 (cons ... (cons xn 'nil)))')."
-;;   :returns (mv (matchp booleanp :rule-classes :type-prescription)
-;;                (args   pseudo-term-listp :hyp :guard))
-
-
-;;        ((unless (and (consp body)
-;;                      (consp (car body))))
-;;         ;; Don't seem to have the right outer lambda structure.
-;;         (mv nil nil nil nil))
-
-;;        (
-
-       
-;;     (defun f (x) x)
-;;     (defun g (x) x)
-;;     (trans '(mv-let (x y) (mv (f 1) (f 2)) (list (g x) (g y))))
-
-;;       -->
-
-;;     ((LAMBDA (MV)
-;;              ((LAMBDA (X Y)
-;;                       (CONS (G X) (CONS (G Y) 'NIL)))
-;;               (MV-NTH '0 MV)
-;;               (MV-NTH '1 MV)))
-;;      (CONS (F '1) (CONS (F '2) 'NIL)))
-
-       
-
-
-  
-
-  
-;;           (and (pseudo-termp x)
-;;                (consp x)
-;;                (consp (car x))))
-;;    (world "ACL2 world for MV lookups."))
-;;   :returns (mv (matchp booleanp :rule-classes :type-prescription)
-;;                (vars   
-;;   (if (and (pseudo-termp x)
-;;            (
-
-
-
-;; (define fix-mvs ((x pseudo-termp "A pseudo-term to rewrite.")
-;;                  state)
-;;   :returns (new-x "Rewritten copy of @('x') with @(see mv-let) terms
-;;                    restored.")
-;;   (b* (((when (atom x))
-;;         ;; Just a variable, can't have any MVs involved.
-;;         x)
-;;        ((when (fquotep x))
-;;         ;; Quoted constants, can't have any MVs involved.
-;;         x)
-;;        ((when (consp (car x)))
-;;         ;; Lambda abbreviation.  Try to match the usual MV form.
-;;         (
-       
-;;   (
-
-;;  (defun fix-mvs (term state)
-
-
-
-
-  
-
-
-
-;; ; Tests -----------------------------------------------------------------------
-
-;; (defun f1 (x) x)
-;; (defun f2 (x) (mv x x))
-;; (defun f3 (x) (mv x x x))
-;; (defun f4 (x) (mv x x x x))
-
-;; (defun t1 (x)
-;;   (mv-let (a b)
-;;     (f2 x)
-;;     (list a b)))
-
-;; (trans '(mv-let (a b)
-;;           (f2 x)
-;;           (list a b)))
-
-
-
-
-
-
-;; (defun t1 (x)
-;;   (let ((y (f1 x)))
+;; (defun f13 (x)
+;;   (let ((y (f2 x)))
 ;;     (mv-let (y z)
-;;       (f2 y)
+;;       (f4 y)
 ;;       (mv-let (a b c)
-;;         (f3 z)
+;;         (mv z y x)
 ;;         (mv-let (w x y z)
-;;           (f4 a)
+;;           (f12 a)
 ;;           (mv a b c w x y z))))))
 
-;; ||#
+;; (rebuild-function f13)
