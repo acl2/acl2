@@ -4997,8 +4997,7 @@
 ; Now we establish that merge-sort-term-order just permutes its arguments and
 ; prove a few congruence rules allowing us to rewrite with that fact.
 
-(local (include-book "sorting/convert-perm-to-how-many"
-                     :dir :system))
+(local (include-book "sorting/convert-perm-to-how-many" :dir :system))
 
 (local
  (defthm how-many-merge-term-order
@@ -5066,8 +5065,7 @@
  (local
   (encapsulate
    nil
-   (local (include-book "arithmetic-5/top"
-                        :dir :system))
+   (local (include-book "arithmetic-5/top" :dir :system))
    (defthm ash-+
      (implies (and (integerp a) (integerp b) (natp k))
               (equal (ash (+ a b) k)
