@@ -6,6 +6,8 @@
 ; (ld "stateman22.lisp" :ld-pre-eval-print t)
 ; (certify-book "stateman22")
 
+;; cert_param: (non-acl2r)
+
 (in-package "ACL2")
 
 (set-state-ok t)
