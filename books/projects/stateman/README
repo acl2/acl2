@@ -1,0 +1,32 @@
+This directory contains the Stateman book described by the paper:
+
+Stateman:  Using Metafunctions to Manage Large Terms Representing Machine States
+by J Strother Moore
+June 9, 2015
+
+The actual name of the book is stateman22.lisp and it has a supporting book
+named byte-addressed-state.lisp, both of which are here.  In addition, there is
+a file named simple-examples.lsp, which is NOT a certifiable book, that will
+help the user who wants to run some of the examples shown in the paper.
+
+The two books must be certified in a version of ACL2 supporting well-formedness
+guarantees.  That would be ACL2 Version 7.2 (which is not yet released as of
+the date above).  However, any development snapshot obtained from github as by
+
+mkdir <new-dir>
+cd <new-dir>
+git clone https://github.com/acl2/acl2 .
+
+after May 26, 2015, should suffice.
+
+Given such an ACL2, the two books can be certified by firing up a fresh ACL2 and
+doing
+
+(certify-book "byte-addressed-state")
+(u)
+(certify-book "stateman22")
+
+The user wishing to run a few simple examples, to understand better the
+input/output conventions and capabilities of some of the functions defined in
+stateman22.lisp, should then execute the forms in simple-examples.lsp one by
+one at the top-level of an ACL2 session.
