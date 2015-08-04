@@ -111,6 +111,27 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 
 ;; Merging Bits ---------------------------------------------------------------
 
+(define merge-2-bits ((a1 bitp)
+                      (a0 bitp))
+  (declare (type bit a1 a0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate two bits together to form an 2-bit natural."
+  :split-types t
+  :inline t
+  (mbe :logic (logior (ash (lbfix a1) 1)
+                      (lbfix a0))
+       :exec
+       (the (unsigned-byte 2)
+            (logior (the (unsigned-byte 2) (ash a1 1))
+                    (the (unsigned-byte 2) a0))))
+  ///
+  (defthm unsigned-byte-p-2-of-merge-2-bits
+    (unsigned-byte-p 2 (merge-2-bits a1 a0)))
+  "<h5>Basic @(see bit-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-bits a1 a0) 2
+                         :equiv bit-equiv))
+
+
 (define merge-4-bits ((a3 bitp)
                       (a2 bitp)
                       (a1 bitp)
@@ -253,6 +274,56 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 
 ;; Merging U2s ----------------------------------------------------------------
 
+(define merge-2-u2s (a1 a0)
+  (declare (type (unsigned-byte 2) a1 a0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate two 2-bit numbers together to form a 4-bit result."
+  :inline t
+  (mbe :logic (logior (ash (lnfix a1) 2)
+                      (lnfix a0))
+       :exec
+       (the (unsigned-byte 4)
+            (logior (the (unsigned-byte 4) (ash a1 2))
+                    a0)))
+  ///
+  (defthm unsigned-byte-p-4-of-merge-2-u2s
+    (implies (and (unsigned-byte-p 2 a1)
+                  (unsigned-byte-p 2 a0))
+             (unsigned-byte-p 4 (merge-2-u2s a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u2s a1 a0) 2))
+
+
+(define merge-4-u2s (a3 a2 a1 a0)
+  (declare (type (unsigned-byte 2) a3 a2 a1 a0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate four 2-bit numbers together to form an 8-bit result."
+  :inline t
+  (mbe :logic (logior (ash (lnfix a3) 6)
+                      (ash (lnfix a2) 4)
+                      (ash (lnfix a1) 2)
+                      (lnfix a0))
+       :exec
+       (b* ((ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a1 2))
+                              a0)))
+            (ans (the (unsigned-byte 8)
+                      (logior (the (unsigned-byte 8) (ash a2 4))
+                              (the (unsigned-byte 8) ans)))))
+         (the (unsigned-byte 8)
+              (logior (the (unsigned-byte 8) (ash a3 6))
+                      (the (unsigned-byte 8) ans)))))
+  ///
+  (defthm unsigned-byte-p-8-of-merge-4-u2s
+    (implies (and (unsigned-byte-p 2 a3)
+                  (unsigned-byte-p 2 a2)
+                  (unsigned-byte-p 2 a1)
+                  (unsigned-byte-p 2 a0))
+             (unsigned-byte-p 8 (merge-4-u2s a3 a2 a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-4-u2s a3 a2 a1 a0) 4))
+
+
 (define merge-8-u2s (a7 a6 a5 a4 a3 a2 a1 a0)
   (declare (type (unsigned-byte 2) a7 a6 a5 a4 a3 a2 a1 a0))
   :returns (result natp :rule-classes :type-prescription)
@@ -303,6 +374,59 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
   "<h5>Basic @(see nat-equiv) congruences.</h5>"
   (congruences-for-merge (merge-8-u2s a7 a6 a5 a4 a3 a2 a1 a0) 8))
 
+
+;; Merging Nibbles ------------------------------------------------------------
+
+(define merge-2-u4s (a1 a0)
+  (declare (type (unsigned-byte 4) a1 a0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate two nibbles together to form a single 8-bit result."
+  :inline t
+  (mbe :logic
+       (logior (ash (nfix a1) (* 1 4))
+               (nfix a0))
+       :exec
+       (the (unsigned-byte 8)
+         (logior (the (unsigned-byte 8) (ash a1 4))
+                 (the (unsigned-byte 8) a0))))
+  ///
+  (defthm unsigned-byte-p-8-of-merge-2-u4s
+    (implies (and (unsigned-byte-p 4 a1)
+                  (unsigned-byte-p 4 a0))
+             (unsigned-byte-p 8 (merge-2-u4s a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-2-u4s a1 a0) 2))
+
+
+(define merge-4-u4s (a3 a2 a1 a0)
+  (declare (type (unsigned-byte 4) a3 a2 a1 a0))
+  :returns (result natp :rule-classes :type-prescription)
+  :short "Concatenate four nibbles together to form a single 16-bit result."
+  :inline t
+  (mbe :logic
+       (logior (ash (nfix a3) (* 3 4))
+               (ash (nfix a2) (* 2 4))
+               (ash (nfix a1) (* 1 4))
+               (nfix a0))
+       :exec
+       (b* ((ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a1 4))
+                              a0)))
+            (ans (the (unsigned-byte 16)
+                      (logior (the (unsigned-byte 16) (ash a2 8))
+                              (the (unsigned-byte 16) ans)))))
+         (the (unsigned-byte 16)
+              (logior (the (unsigned-byte 16) (ash a3 12))
+                      (the (unsigned-byte 16) ans)))))
+  ///
+  (defthm unsigned-byte-p-16-of-merge-4-u4s
+    (implies (and (unsigned-byte-p 4 a3)
+                  (unsigned-byte-p 4 a2)
+                  (unsigned-byte-p 4 a1)
+                  (unsigned-byte-p 4 a0))
+             (unsigned-byte-p 16 (merge-4-u4s a3 a2 a1 a0))))
+  "<h5>Basic @(see nat-equiv) congruences.</h5>"
+  (congruences-for-merge (merge-4-u4s a3 a2 a1 a0) 4))
 
 
 ;; Merging Bytes --------------------------------------------------------------
