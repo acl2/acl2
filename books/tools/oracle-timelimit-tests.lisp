@@ -309,3 +309,53 @@ BOZO what is going on here?
 (make-event
  (let ((state (test7 state)))
    (value '(value-triple :success))))
+
+
+
+
+(defun test8 (state)
+  (declare (xargs :mode :program))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (er hard? 'test8 "causing an acl2-style ER")
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ (let ((state (test8 state)))
+   (value '(value-triple :success))))
+
+
+(defun test9 (x state)
+  (declare (xargs :mode :logic :verify-guards nil))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (car x) ;; guard violation
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error, but got ~x0" time)
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ ;; BOZO too bad this doesn't explain what the error was.
+ (let ((state
+        (with-guard-checking :all (test9 5 state))))
+   (value '(value-triple :success))))

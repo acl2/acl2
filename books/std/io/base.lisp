@@ -50,8 +50,9 @@
 
   (defun bytep (x)
     (declare (xargs :guard t))
-    (and (natp x)
-         (< x 256)))
+    (mbe :logic (unsigned-byte-p 8 x)
+         :exec (and (natp x)
+                    (< x 256))))
 
   (defthm bytep-compound-recognizer
     (implies (bytep x)

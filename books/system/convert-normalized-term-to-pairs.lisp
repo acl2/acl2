@@ -56,16 +56,21 @@
    (equal (revappend x y)
           (append (rev x) y))))
 
-(local
- (defthm cntp-evl-conjoin-rev
-   (iff (cntp-evl (conjoin (rev x)) alist)
-        (cntp-evl (conjoin x) alist))))
+
+;; [Jared] reordered these lemmas so the rev proof can make use of the append proof.
 
 (local
  (defthm cntp-evl-conjoin-append
    (iff (cntp-evl (conjoin (append x y)) alist)
         (and (cntp-evl (conjoin x) alist)
              (cntp-evl (conjoin y) alist)))))
+
+(local
+ (defthm cntp-evl-conjoin-rev
+   (iff (cntp-evl (conjoin (rev x)) alist)
+        (cntp-evl (conjoin x) alist))))
+
+
 
 (verify-termination dumb-negate-lit)
 
@@ -112,6 +117,34 @@
         ans)))))
    (t (cons (cons (revappend rhyps nil) term) ans))))
 
+
+;; [Jared] dumb speed hacking... mostly just trying to not do so much case splitting
+
+(local (defthm cntp-evl-conjoin-cons
+         (iff (cntp-evl (conjoin (cons x y)) alist)
+              (and (cntp-evl x alist)
+                   (cntp-evl (conjoin y) alist)))))
+
+(local (defthm cntp-evl-of-dumb-negate-lit
+         (implies (pseudo-termp x)
+                  (iff (cntp-evl (dumb-negate-lit x) alist)
+                       (not (cntp-evl x alist))))))
+
+(local (defthm pseudo-termp-of-dumb-negate-lit
+         (implies (pseudo-termp x)
+                  (pseudo-termp (dumb-negate-lit x)))))
+
+(local (in-theory (disable conjoin
+                           true-listp
+                           dumb-negate-lit
+                           rev
+                           default-car
+                           default-cdr
+                           (:t cntp-m)
+                           length
+                           len
+                           )))
+
 (defthm convert-normalized-term-to-pairs-correct
   (implies (and (pseudo-termp term)
                 (normalizedp term)
@@ -122,8 +155,14 @@
                 (and (cntp-evl (fcons-term* 'IF (conjoin rhyps) term *t*)
                                alist)
                      (cntp-evl (cntp-M ans)
-                               alist)))))
+                               alist))))
+  :hints(("Goal"
+          :induct (convert-normalized-term-to-pairs rhyps term ans)
+          :expand ((pseudo-termp term)
+                   (normalizedp term)))))
 
 ; The inductive proof breaks down into about 6,600 Subgoals and takes about 93
 ; seconds on a 2011 Macbook Pro.
+
+; [Jared] down to just a couple of seconds now...
 

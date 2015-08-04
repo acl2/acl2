@@ -436,6 +436,21 @@ COMMAND LINE OPTIONS
           of some book with \'-p\', the target extension used is \'cert\'.
           This option allows you to specify this default extension as (say)
           \'pcert0\' instead.
+
+
+USEFUL ENVIRONMENT VARIABLES
+
+    TIME_CERT (default: "")
+         Can be set to 1 to enable .cert.time files, which can be used by tools
+         such as critpath.pl for build profiling.
+
+    CERT_PL_NO_COLOR (default: "")
+         Can be set to disable ANSI color coded output.
+
+    ACL2_BOOKS_DEBUG (default: "")
+         Can be set to 1 to enable extra debugging information and to preserve
+         temporary files.
+
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;

@@ -163,7 +163,30 @@
 
              (handler-case
                (progn
-                 (setq ,ans (multiple-value-list ,form))
+
+                 ;; Main execution step.
+                 ,(if suppress-lisp-errors
+                      ;; Ugh.  ACL2 signals hard errors by throwing to
+                      ;; 'raw-ev-fncall instead of calling error.  The
+                      ;; handler-case form won't catch these.  Instead, we have
+                      ;; to catch them explicitly.
+                      ;;
+                      ;; BOZO it'd be nice to be able to print the error that
+                      ;; we are suppressing.  However, even when I try to bind
+                      ;; *error-output* here to (make-string-output-stream), it
+                      ;; still just prints it to the terminal instead.  Looking
+                      ;; at ACL2's code for printing errors, I'm not sure why
+                      ;; this doesn't work.  At any rate, it doesn't work, so
+                      ;; I guess for now we'll just let ACL2 print the error and
+                      ;; then say that we've suppressed an error.
+                      `(unless (eq :did-not-catch-acl2-error
+                                   (catch 'raw-ev-fncall
+                                     (setq ,ans (multiple-value-list ,form))
+                                     :did-not-catch-acl2-error))
+                         (error "ACL2 Error"))
+                    ;; Not suppressing lisp errors, so just try to evaluate the form.
+                    `(setq ,ans (multiple-value-list ,form)))
+
                  (bt:with-lock-held (,lock)
                                     (oracle-timelimit-debug
                                      "OTL: Finished running the form, status is ~s~%" ,main-thread-state)
@@ -177,11 +200,11 @@
                ,@(and suppress-lisp-errors
                       `((error (condition)
                                (progn
-                                 (format t "oracle-timelimit: suppressing error ~s~%" condition)
+                                 (format t "oracle-timelimit: suppressing error ~a~%" condition)
                                  (setq ,suppressed-error t)))
                         (storage-condition (condition)
                                            (progn
-                                             (format t "oracle-timelimit: suppressing error ~s~%" condition)
+                                             (format t "oracle-timelimit: suppressing error ~a~%" condition)
                                              (setq ,suppressed-error t))))))
 
            ;; In case of any exit, whether we are suppressing errors or not, we
@@ -224,7 +247,7 @@
              ;; Return the answer from the computation.
              (values-list ,ans))
 
-         ;; Else, we ran out of time.
+         ;; Else, we ran out of time or there was an error that we suppressed.
          (progn
            (oracle-timelimit-debug
             "OTL: ran out of time.  Exiting with ~s failure values~%" ,num-returns)

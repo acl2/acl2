@@ -122,7 +122,15 @@
 (table acl2-xdoc)
 
 (defmacro acl2-xdoc-fragment (msg)
-  `(table acl2-xdoc :fragment ,msg))
+  `(progn
+     ;; Originally I didn't have this extra setting of :fragment to NIL, but
+     ;; that can lead to doc fragments being redundant with one another.  This
+     ;; was really confusing when dong the bitops/merge documentation where the
+     ;; fragments were copied and pasted from one function to the next.
+     ;; Anyway, setting the fragment to NIL makes sure that the next message
+     ;; won't be redundant.
+     (table acl2-xdoc :fragment nil)
+     (table acl2-xdoc :fragment ,msg)))
 
 
 
