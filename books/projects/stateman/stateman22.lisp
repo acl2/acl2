@@ -6,8 +6,6 @@
 ; (ld "stateman22.lisp" :ld-pre-eval-print t)
 ; (certify-book "stateman22")
 
-;; cert_param: (non-acl2r)
-
 (in-package "ACL2")
 
 (set-state-ok t)
@@ -2847,6 +2845,11 @@
 ; -----------------------------------------------------------------
 ; Term Constructor:  MOD
 ; Metafunction for:  MOD
+
+#+non-standard-analysis
+(defthm rewrite-hack-for-acl2r
+  (implies (rationalp x)
+           (realp x)))
 
 (defun meta-mod1-ainni (x k type-alist)
 
