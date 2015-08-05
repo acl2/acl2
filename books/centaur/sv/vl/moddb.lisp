@@ -1998,7 +1998,7 @@ how VL module instances are translated.</p>"
         (mv (vl-warninglist-add-ctx warnings x)
             wires assigns aliases
             (list (sv::make-modinst :instname x.name :modname gate-modname))
-            nil))
+            modalist))
 
        (array-modname (list :arraymod context-mod x.name))
 
