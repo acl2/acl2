@@ -65,6 +65,7 @@
     b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
     b-not b-and b-ior b-xor bfix bitp
     binary-logand binary-logior binary-logxor binary--
+    maybe-bitp maybe-bit-fix
 
     ;; induction schemes to import
     logcdr-induction-1
