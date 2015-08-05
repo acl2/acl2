@@ -33,6 +33,69 @@
 
 (local (xdoc::set-default-parents std/basic))
 
+(defsection bitp
+  :parents (std/basic logops-definitions)
+  :short "Bit recognizer.  @('(bitp b)') recognizes 0 and 1."
+  :long "<p>This is a predicate form of the @(see type-spec) declaration
+@('(TYPE BIT b)').</p>"
+
+  (defun-inline bitp (b)  
+    (declare (xargs :guard t))
+    (or (eql b 0)
+        (eql b 1)))
+  )
+
+(defsection bfix
+  :parents (std/basic logops-definitions bitp)
+  :short "Bit fix.  @('(bfix b)') is a fixing function for @(see bitp)s.  It
+ coerces any object to a bit (0 or 1) by coercing non-1 objects to 0."
+  :long "<p>See also @(see lbfix).</p>"
+
+  (defun-inline bfix (b)
+    (declare (xargs :guard t))
+    (if (eql b 1)
+        1
+      0)))
+
+(defsection lbfix
+  :parents (std/basic logops-definitions bitp)
+  :short "Logical bit fix.  @('(lbfix b)') is logically identical to @('(bfix
+b)') but executes as the identity.  It requires @('(bitp b)') as a guard, and
+expands to just @('b')."
+  :long "@(def lbfix)"
+
+  (defmacro lbfix (x)
+    `(mbe :logic (bfix ,x) :exec ,x)))
+
+(defsection bitp-basics
+  :extension bitp
+
+  (defthm bitp-bfix
+    (bitp (bfix b)))
+
+  (defthm bfix-bitp
+    (implies (bitp b)
+             (equal (bfix b) b))))
+
+(defsection maybe-bitp
+  :parents (std/basic bitp) 
+  :short "Recognizer for bits and @('nil')."
+  :long "<p>This is like an <a
+href='https://en.wikipedia.org/wiki/Option_type'>option type</a>; when @('x')
+satisfies @('maybe-bitp'), then either it is a @(see bitp) or nothing.</p>"
+
+  (defund-inline maybe-bitp (x)
+    (declare (xargs :guard t))
+    (or (not x)
+        (bitp x)))
+
+  (local (in-theory (enable maybe-bitp)))
+
+  (defthm maybe-bitp-compound-recognizer
+    (implies (maybe-bitp x)
+             (or (not x)
+                 (natp x)))
+    :rule-classes :compound-recognizer))
 
 (defsection lnfix
   :short "@(call lnfix) is logically identical to @('(nfix x)'), but its guard

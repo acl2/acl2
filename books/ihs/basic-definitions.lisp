@@ -36,6 +36,7 @@
 
 (in-package "ACL2")
 (include-book "std/util/define" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "math-lemmas"))
 (local (include-book "quotient-remainder-lemmas"))
 
@@ -141,40 +142,6 @@ Motorola MC68020.</p>")
      :hints(("Goal" :induct (my-induct i size))))))
 
 
-(define bitp (b)
-  :short "Bit recognizer.  @('(bitp b)') recognizes 0 and 1."
-  :long "<p>This is a predicate form of the @(see type-spec) declaration
-@('(TYPE BIT b)').</p>"
-  :returns bool
-  :inline t
-  :enabled t
-  :no-function t ;; Sigh, switching to :abbreviation breaks various proofs
-  (or (eql b 0)
-      (eql b 1)))
-
-(define bfix (b)
-  :parents (logops-definitions bitp)
-  :short "Bit fix.  @('(bfix b)') is a fixing function for @(see bitp)s.  It
- coerces any object to a bit (0 or 1) by coercing non-1 objects to 0."
-  :long "<p>See also @(see lbfix).</p>"
-  :inline t
-  :returns bit
-  :enabled t
-  :no-function t ;; Sigh, switching to :abbreviation breaks various proofs
-  (if (eql b 1)
-      1
-    0))
-
-(defsection lbfix
-  :parents (logops-definitions bitp)
-  :short "Logical bit fix.  @('(lbfix b)') is logically identical to @('(bfix
-b)') but executes as the identity.  It requires @('(bitp b)') as a guard, and
-expands to just @('b')."
-  :long "@(def lbfix)"
-
-  (defmacro lbfix (x)
-    `(mbe :logic (bfix ,x) :exec ,x)))
-
 (define zbp
   :parents (logops-definitions bitp)
   :short "Zero bit recognizer.  @('(zbp x)') tests for zero bits.  Any object
@@ -185,17 +152,6 @@ other than @('1') is considered to be a zero bit."
   :inline t
   (mbe :logic (equal (bfix x) 0)
        :exec (/= (the (unsigned-byte 1) x) 1)))
-
-(defsection bitp-basics
-  :extension bitp
-
-  (defthm bitp-bfix
-    (bitp (bfix b)))
-
-  (defthm bfix-bitp
-    (implies (bitp b)
-             (equal (bfix b) b))))
-
 
 (define ifloor
   :short "@('(ifloor i j)') is the same as @(see floor), except that it coerces
