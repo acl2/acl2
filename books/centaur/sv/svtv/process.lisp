@@ -1545,7 +1545,7 @@ an error like:</p>
 
 @({ ERROR: some bits assumed to be Boolean were not. })
 
-<p>If you see such an error, you should set @(':boolmasks nil').</p>
+<p>If you see such an error, you should set @(':boolvars nil').</p>
 
 <h3>Decomposition Proofs</h3>
 
