@@ -10,6 +10,7 @@
               std::find-calls-of-fns-term
               std::find-calls-of-fns-list
               defxdoc defsection
+              b*
               )
     (union-eq *acl2-exports*
               *common-lisp-symbols-from-main-lisp-package*))

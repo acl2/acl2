@@ -1,2 +1,2 @@
 (include-book "std/portcullis" :dir :system)
-(certify-book "flag" ? t)
+; cert-flags: ? t

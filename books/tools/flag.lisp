@@ -32,12 +32,13 @@
 #||  for interactive development, you'll need to ld the package first:
 
 (ld ;; fool dependency scanner
- "flag-package.lsp")
+ "flag.acl2")
 
 ||#
 
 (in-package "FLAG")
 (include-book "xdoc/top" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defxdoc make-flag
   :parents (mutual-recursion)
@@ -333,13 +334,7 @@ one such form may affect what you might think of as the proof of another.</p>
            :do-not-induct t))
   :rule-classes :clause-processor)
 
-
-
-
 (program)
-
-
-
 
 
 (defmacro id (form) form)
@@ -551,31 +546,40 @@ one such form may affect what you might think of as the proof of another.</p>
 
 
 
+; Definition: thmpart.
+;
+; Each thmpart is an thing like _either_
+;
+; For backwards compatibility with a very old version of make-flag.  Please
+; don't use this in new developments.  Maybe some day we can get rid of this.
+;
+;   (flag <thm-body> :name ... :rule-classes ... :doc ...)
+;
+;  -or-
+;
+;   (defthm[d] <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
 
 (defun flag-from-thmpart (thmpart)
-  (if (eq (car thmpart) 'defthm)
+  (if (member (car thmpart) '(defthm defthmd))
       (extract-keyword-from-args :flag thmpart)
     (car thmpart)))
 
 (defun body-from-thmpart (thmpart)
   (cond ((not thmpart) t)
-        ((eq (car thmpart) 'defthm)
-         ;; (defthm name body ...)
+        ((member (car thmpart) '(defthm defthmd))
+         ;; (defthm[d] name body ...)
          (caddr thmpart))
         (t ;; (flag body ...)
          (cadr thmpart))))
 
-
-
 (defun collect-thmparts-for-flag (flag thmparts)
-  (if (atom thmparts)
-      nil
-    (if (eq (flag-from-thmpart (car thmparts)) flag)
-        (cons (car thmparts)
-              (collect-thmparts-for-flag flag (cdr thmparts)))
-      (collect-thmparts-for-flag flag (cdr thmparts)))))
-
-
+  (cond ((atom thmparts)
+         nil)
+        ((eq (flag-from-thmpart (car thmparts)) flag)
+         (cons (car thmparts)
+               (collect-thmparts-for-flag flag (cdr thmparts))))
+        (t
+         (collect-thmparts-for-flag flag (cdr thmparts)))))
 
 (defun thmparts-collect-bodies (thmparts)
   (if (atom thmparts)
@@ -589,54 +593,42 @@ one such form may affect what you might think of as the proof of another.</p>
     (append (extract-keyword-from-args :hints (car thmparts))
             (thmparts-collect-hints (cdr thmparts)))))
 
-
-
 (defun pair-up-cases-with-thmparts (flag-var alist thmparts skip-ok)
-  ;; Each thmpart is an thing like
-  ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
-  ;;;    (for backwards compatibility)
-  ;; _or_  (defthm <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
-
-  (if (consp alist)
-      (let* ((flag   (cdar alist))
-             (flag-thmparts (collect-thmparts-for-flag flag thmparts)))
-        (if (and (not flag-thmparts) (not skip-ok))
-            (er hard 'pair-up-cases-with-thmparts
-                "Expected there to be a case for the flag ~s0.~%" flag)
-          (let* ((bodies (thmparts-collect-bodies flag-thmparts))
-                 (body (if (eql (len bodies) 1)
-                           (car bodies)
-                         `(and . ,bodies))))
-            (if (consp (cdr alist))
-                (cons `((equal ,flag-var ',flag) ,body)
-                      (pair-up-cases-with-thmparts flag-var (cdr alist) thmparts skip-ok))
-              (list `(t ,body))))))
-    (er hard 'pair-up-cases-with-thmparts
-        "Never get here.")))
-
+  (b* (((when (atom alist))
+        (er hard 'pair-up-cases-with-thmparts
+            "Never get here."))
+       (flag          (cdar alist))
+       (flag-thmparts (collect-thmparts-for-flag flag thmparts))
+       ((when (and (not flag-thmparts)
+                   (not skip-ok)))
+        (er hard 'pair-up-cases-with-thmparts
+            "Expected there to be a case for the flag ~s0.~%" flag))
+       (bodies (thmparts-collect-bodies flag-thmparts))
+       (body (if (eql (len bodies) 1)
+                 (car bodies)
+               `(and . ,bodies)))
+       ((when (consp (cdr alist)))
+        (cons `((equal ,flag-var ',flag) ,body)
+              (pair-up-cases-with-thmparts flag-var (cdr alist) thmparts skip-ok))))
+    (list `(t ,body))))
 
 (defun pair-up-cases-with-hints (alist thmparts skip-ok)
-  ;; Each thmpart is an thing like
-  ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
-  ;;;    (for backwards compatibility)
-  ;; _or_  (defthm <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
-
-  (if (consp alist)
-      (let* ((flag   (cdar alist))
-             (flag-thmparts (collect-thmparts-for-flag flag thmparts)))
-        (if (not flag-thmparts)
-            (if skip-ok
-                (cons (cons flag nil)
-                      (pair-up-cases-with-hints (cdr alist) thmparts skip-ok))
-              (er hard 'pair-up-cases-with-hints
-                  "Expected there to be a case for the flag ~s0.~%" flag))
-          (let ((hints (thmparts-collect-hints flag-thmparts)))
-            (cons (cons flag hints)
-                  (pair-up-cases-with-hints (cdr alist) thmparts skip-ok)))))
-    nil))
+  (b* (((when (atom alist))
+        nil)
+       (flag   (cdar alist))
+       (flag-thmparts (collect-thmparts-for-flag flag thmparts))
+       ((unless flag-thmparts)
+        (if skip-ok
+            (cons (cons flag nil)
+                  (pair-up-cases-with-hints (cdr alist) thmparts skip-ok))
+          (er hard 'pair-up-cases-with-hints
+              "Expected there to be a case for the flag ~s0.~%" flag)))
+       (hints (thmparts-collect-hints flag-thmparts)))
+    (cons (cons flag hints)
+          (pair-up-cases-with-hints (cdr alist) thmparts skip-ok))))
 
 (defun flag-thm-entry-thmname (explicit-name flag entry)
-  (if (eq (car entry) 'defthm)
+  (if (member (car entry) '(defthm defthmd))
       (cadr entry)
     (or (extract-keyword-from-args :name (cddr entry))
         (if explicit-name
@@ -647,35 +639,36 @@ one such form may affect what you might think of as the proof of another.</p>
                           (symbol-name flag))
              explicit-name)
           (er hard 'flag-thm-entry-thmname
-              "~
-Expected an explicit name for each theorem, since no general name was
-given.  The following theorem does not have a name: ~x0~%" entry)))))
-
+              "Expected an explicit name for each theorem, since no general ~
+               name was given.  The following theorem does not have a name: ~
+               ~x0~%" entry)))))
 
 (defun flag-defthm-corollaries (lemma-name explicit-name flag-var thmparts)
-  (if (atom thmparts)
-      nil
-    (if (extract-keyword-from-args :skip (car thmparts))
-        (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts))
-      (let* ((thmpart (car thmparts))
-             (flag    (flag-from-thmpart thmpart))
-             ;; note: this can sometimes cause name conflicts when names are
-             ;; generated from the flags
-             (thmname (flag-thm-entry-thmname explicit-name flag thmpart))
-             (body (body-from-thmpart thmpart))
-             (rule-classes-look (member :rule-classes thmpart))
-             (doc (extract-keyword-from-args :doc thmpart)))
-        (cons `(with-output :stack :pop
-                 (defthm ,thmname
-                   ,body
-                   ,@(and rule-classes-look
-                          `(:rule-classes ,(cadr rule-classes-look)))
-                   :doc ,doc
-                   :hints(("Goal"
-                           :in-theory (theory 'minimal-theory)
-                           :use ((:instance ,lemma-name (,flag-var ',flag)))))))
-              (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts)))))))
-
+  (b* (((when (atom thmparts))
+        nil)
+       ((when (extract-keyword-from-args :skip (car thmparts)))
+        (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts)))
+       (thmpart (car thmparts))
+       (flag    (flag-from-thmpart thmpart))
+       ;; note: this can sometimes cause name conflicts when names are
+       ;; generated from the flags
+       (defthm[d]         (if (eq (car thmpart) 'defthmd)
+                              'defthmd
+                            'defthm))
+       (thmname           (flag-thm-entry-thmname explicit-name flag thmpart))
+       (body              (body-from-thmpart thmpart))
+       (rule-classes-look (member :rule-classes thmpart))
+       (doc               (extract-keyword-from-args :doc thmpart)))
+    (cons `(with-output :stack :pop
+             (,defthm[d] ,thmname
+               ,body
+               ,@(and rule-classes-look
+                      `(:rule-classes ,(cadr rule-classes-look)))
+               :doc ,doc
+               :hints(("Goal"
+                       :in-theory (theory 'minimal-theory)
+                       :use ((:instance ,lemma-name (,flag-var ',flag)))))))
+          (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts)))))
 
 (defun find-first-thm-name (thmparts)
   (if (atom thmparts)

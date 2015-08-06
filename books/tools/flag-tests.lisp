@@ -204,6 +204,29 @@
                  :flag-mapping ((my-evenp . :even)
                                 (my-oddp  . :odd)))
 
+(encapsulate
+  ()
+  (defthm-flag-my-evenp defthmd-test
+    (defthmd my-evenp-of-increment
+      (implies (natp x)
+               (equal (my-evenp (+ 1 x))
+                      (my-oddp x)))
+      :flag :even)
+    (defthm my-oddp-of-increment
+      (implies (natp x)
+               (equal (my-oddp (+ 1 x))
+                      (my-evenp x)))
+      :flag :odd)))
+
+(make-event
+ (b* ((acl2::ens (acl2::ens state))
+      ((when (active-runep '(:rewrite my-evenp-of-increment)))
+       (er soft 'defthmd-test "Expected my-evenp-of-increment to be disabled."))
+      ((unless (active-runep '(:rewrite my-oddp-of-increment)))
+       (er soft 'defthmd-test "Expected my-oddp-of-increment to be enabled.")))
+   (value '(value-triple :success))))
+
+
 (local (in-theory (disable my-evenp my-oddp evenp oddp)))
 
 (encapsulate
@@ -254,6 +277,7 @@
                       (my-oddp x)
                       (evenp x)
                       (oddp x)))))))
+
 
 
 (local
@@ -323,6 +347,4 @@
               (equal (sum-pairs-list x) (sum-pairs-list y)))
      :rule-classes :congruence
      :hints (("goal" :induct (sum-pairs-list-double x y))))))
-
-
 
