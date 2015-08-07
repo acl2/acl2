@@ -70,6 +70,7 @@
 (defmacro fty::defbasetype (equiv pred &rest keys)
   (fty::defbasetype-fn equiv pred keys))
 
+(fty::defbasetype bit-equiv bitp :fix bfix)
 
 (fty::defbasetype nat-equiv natp :fix nfix)
 
@@ -374,6 +375,66 @@ non-@('nil') symbol to @('t')."
     :pred maybe-posp
     :fix maybe-posp-fix
     :equiv maybe-pos-equiv
+    :define t
+    :inline t
+    :equal eql))
+
+(defthm maybe-bitp-when-bitp
+  ;; BOZO non-local, move to std/defs instead?
+  (implies (bitp x)
+           (maybe-bitp x)))
+
+(defthmd bitp-when-maybe-bitp
+  ;; BOZO non-local, move to std/defs instead?
+  (implies (and (maybe-bitp x)
+                (double-rewrite x))
+           (bitp x))
+  :hints (("Goal" :in-theory (e/d (maybe-bitp) ()))))
+
+
+(defsection maybe-bit-fix
+  :parents (fty::basetypes maybe-bitp)
+  :short "@(call maybe-bit-fix) is the identity for @(see maybe-bitp)s, or
+  coerces any non-@(see bitp) to @('nil')."
+  :long "<p>Performance note.  In the execution this is just an inlined
+  identity function, i.e., it should have zero runtime cost.</p>"
+
+  (defund-inline maybe-bit-fix (x)
+    (declare (xargs :guard (maybe-bitp x)
+                    :guard-hints (("Goal" :in-theory (e/d (maybe-bitp)
+                                                          ())))))
+    (mbe :logic (if x (bfix x) nil)
+         :exec x))
+
+  (local (in-theory (enable maybe-bitp maybe-bit-fix)))
+
+  (defthm maybe-bitp-of-maybe-bit-fix
+    (maybe-bitp (maybe-bit-fix x))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm maybe-bit-fix-when-maybe-bitp
+    (implies (maybe-bitp x)
+             (equal (maybe-bit-fix x) x)))
+
+  (defthm maybe-bit-fix-under-iff
+    (iff (maybe-bit-fix x) x))
+
+  (defthm maybe-bit-fix-under-bit-equiv
+    (acl2::bit-equiv (maybe-bit-fix x) x)
+    :hints(("Goal" :in-theory (enable maybe-bit-fix)))))
+
+
+(defsection maybe-bit-equiv
+  :parents (fty::basetypes maybe-bitp)
+  :short "@('(maybe-bitp-equiv x y)') is an equivalence relation for @(see
+  maybe-bitp)s, i.e., equality up to @(see maybe-bit-fix)."
+  :long "<p>Performance note.  In the execution, this is just an inlined call
+  of @(see eql).</p>"
+
+  (fty::deffixtype maybe-bit
+    :pred maybe-bitp
+    :fix maybe-bit-fix
+    :equiv maybe-bit-equiv
     :define t
     :inline t
     :equal eql))

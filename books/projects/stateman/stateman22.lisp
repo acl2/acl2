@@ -2846,6 +2846,11 @@
 ; Term Constructor:  MOD
 ; Metafunction for:  MOD
 
+#+non-standard-analysis
+(defthm rewrite-hack-for-acl2r
+  (implies (rationalp x)
+           (realp x)))
+
 (defun meta-mod1-ainni (x k type-alist)
 
 ; X is a term, k is a natp, and we use ainni to return a term' equivalent to

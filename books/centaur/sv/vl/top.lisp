@@ -223,6 +223,57 @@
                      :name xf-clean-warnings)))
     x))
 
+(define vl-to-svex-main ((topmods string-listp)
+                         (x vl-design-p)
+                         (config vl-simpconfig-p))
+  :parents (svex)
+  :short "Turn a VL design into an SVEX hierarchical design, with a list of top modules."
+  :guard-debug t
+  :returns (mv err
+               (modalist sv::modalist-p)
+               (good vl-design-p)
+               (bad vl-design-p))
+  :prepwork ((local (in-theory (enable sv::modname-p))))
+  (b* ((x (vl-design-fix x))
+       ;; Annotate and simplify the design, to some extent.  This does
+       ;; unparametrization and expr sizing, but not e.g. expr splitting or
+       ;; occforming.
+
+       (x (vl-annotate-svex x))
+
+       (x (vl-remove-unnecessary-elements topmods x))
+
+       ((mv good bad)
+        (vl::xf-cwtime (vl-simplify-svex x config)))
+       ((vl-design good) good)
+       (bad-mods (difference (mergesort topmods)
+                             (mergesort (vl-modulelist->names good.mods))))
+       ((when bad-mods)
+        (cw "Reportcard for good mods:~%")
+        (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard good)))
+        (cw "Reportcard for bad mods:~%")
+        (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard bad)))
+        (mv (msg "The following modules were not among the good simplified modules.~%" bad-mods)
+            nil
+            good bad))
+       (good.mods (redundant-mergesort good.mods))
+       ((unless (uniquep (vl-modulelist->names good.mods)))
+        (mv (msg "Name clash -- duplicated module names: ~&0."
+                 (duplicated-members (vl-modulelist->names good.mods)))
+            nil
+            good bad))
+       (good1 (vl-remove-unnecessary-elements topmods
+                                              (change-vl-design good :mods good.mods)))
+
+       ;; Translate the VL module hierarchy into an isomorphic SVEX module hierarchy.
+       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1))))
+    (cw-unformatted (vl-reportcard-to-string reportcard))
+    (mv nil
+        modalist good bad))
+  ///
+  (defret modalist-addr-p-of-vl-to-svex-main
+    (sv::svarlist-addr-p (sv::modalist-vars modalist))))
+
 
 (define vl-design->svex-design ((topmod stringp)
                                 (x vl-design-p)
@@ -235,44 +286,11 @@
                (good vl-design-p)
                (bad vl-design-p))
   :prepwork ((local (in-theory (enable sv::modname-p))))
-  (b* ((x (vl-design-fix x))
-       (topmod (str::str-fix topmod))
-       ;; Annotate and simplify the design, to some extent.  This does
-       ;; unparametrization and expr sizing, but not e.g. expr splitting or
-       ;; occforming.
-
-       (x (vl-annotate-svex x))
-
-       (x (vl-remove-unnecessary-elements (list topmod) x))
-
-       ((mv good bad)
-        (vl::xf-cwtime (vl-simplify-svex x config)))
-       ((vl-design good) good)
-       ((unless (vl-find-module topmod good.mods))
-        (cw "Reportcard for good mods:~%")
-        (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard good)))
-        (cw "Reportcard for bad mods:~%")
-        (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard bad)))
-        (mv (msg "Top module ~s0 was not among the good simplified modules.~%" topmod)
-            (sv::make-design :top topmod :modalist nil)
-            good bad))
-       (good.mods (redundant-mergesort good.mods))
-       ((unless (uniquep (vl-modulelist->names good.mods)))
-        (mv (msg "Name clash -- duplicated module names: ~&0."
-                 (duplicated-members (vl-modulelist->names good.mods)))
-            (sv::make-design :top topmod :modalist nil)
-            good bad))
-       (good1 (vl-remove-unnecessary-elements (list topmod)
-                                              (change-vl-design good :mods good.mods)))
-
-       ;; Translate the VL module hierarchy into an isomorphic SVEX module hierarchy.
-       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1))))
-    (cw-unformatted (vl-reportcard-to-string reportcard))
-    (mv nil
-        (sv::make-design :modalist modalist :top topmod)
-        good bad))
+  (b* (((mv err modalist good bad)
+        (vl-to-svex-main (list topmod) x config))
+       (design (sv::make-design :modalist modalist :top topmod)))
+    (mv err design good bad))
   ///
-  (more-returns
-   (design :name modalist-addr-p-of-vl-design->svex-design
-           (sv::svarlist-addr-p
-            (sv::modalist-vars (sv::design->modalist design))))))
+  (defret modalist-addr-p-of-vl-design->svex-design
+    (sv::svarlist-addr-p
+     (sv::modalist-vars (sv::design->modalist design)))))

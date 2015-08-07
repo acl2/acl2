@@ -1227,7 +1227,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                  (if readable
                      (svtv-print-alist-readable inalist)
                    (svtv-print-alist inalist))
-                 (cw "~%STV Outputs:~%")
+                 (cw "~%SVTV Outputs:~%")
                  (if readable
                      (svtv-print-alist-readable res)
                    (svtv-print-alist res))
@@ -1352,7 +1352,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
     (and (not quiet)
          (progn$ (cw "~%SVTV Inputs:~%")
                  (svtv-print-alist inalist)
-                 (cw "~%STV Outputs:~%")
+                 (cw "~%SVTV Outputs:~%")
                  (svtv-print-alist res)
                  (cw "~%")))
     res))
@@ -1545,7 +1545,7 @@ an error like:</p>
 
 @({ ERROR: some bits assumed to be Boolean were not. })
 
-<p>If you see such an error, you should set @(':boolmasks nil').</p>
+<p>If you see such an error, you should set @(':boolvars nil').</p>
 
 <h3>Decomposition Proofs</h3>
 

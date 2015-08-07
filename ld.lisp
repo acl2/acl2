@@ -942,14 +942,15 @@
              (evisc-tuple (ld-evisc-tuple state))
              (evisc-alist (world-evisceration-alist state (car evisc-tuple)))
              (print-level (cadr evisc-tuple))
-             (print-length (caddr evisc-tuple)))
+             (print-length (caddr evisc-tuple))
+	     (hiding-cars (cadddr evisc-tuple)))
         (mv-let
          (eviscerated-valx state)
          (eviscerate-stobjs-top (evisceration-stobj-marks stobjs-out nil)
                                 valx
                                 print-level print-length evisc-alist
                                 (table-alist 'evisc-table (w state))
-                                nil
+                                hiding-cars
                                 state)
          (cond
           ((and (eq flg :command-conventions)
