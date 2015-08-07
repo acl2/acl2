@@ -72,6 +72,10 @@
 
   ///
 
+  (defthm disjoint-p-x-x
+    (implies (consp x)
+             (equal (disjoint-p x x) nil)))
+
   (defthm disjoint-p-nil-1
     (equal (disjoint-p nil y) t)
     :hints (("Goal" :in-theory (e/d (disjoint-p) ()))))
@@ -301,7 +305,20 @@
 
   (defthm subset-p-reflexive
     (implies (true-listp x)
-             (equal (subset-p x x) t))))
+             (equal (subset-p x x) t)))
+
+  (defthm subset-p-of-append
+    (implies (or (subset-p a x)
+                 (subset-p a y))
+             (subset-p a (append x y))))
+
+  (defthm subset-p-of-nil
+    (equal (subset-p x nil)
+           (equal x nil)))
+
+  (defthm subset-p-cons-2
+    (implies (subset-p x y)
+             (subset-p x (cons e y)))))
 
 ;; ======================================================================
 
@@ -338,6 +355,11 @@
                 (subset-p b y))
            (disjoint-p a b))
   :rule-classes (:rewrite :forward-chaining))
+
+(defthm subset-p-cons-member-p-lemma
+  (implies (and (subset-p x (cons e y))
+                (not (subset-p x y)))
+           (not (member-p e y))))
 
 ;; ======================================================================
 

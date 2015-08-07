@@ -78,6 +78,22 @@
                                    write-x86-file-contents-logic)
                                   ()))))
 
+(defthm read-x86-file-des-wb
+  (equal (read-x86-file-des id (mv-nth 1 (wb addr-bytes-alist x86)))
+         (read-x86-file-des id x86))
+  :hints (("Goal" :cases ((programmer-level-mode x86))
+           :in-theory (e/d* (read-x86-file-des
+                             read-x86-file-des-logic)
+                            ()))))
+
+(defthm read-x86-file-contents-wb
+  (equal (read-x86-file-contents id (mv-nth 1 (wb addr-bytes-alist x86)))
+         (read-x86-file-contents id x86))
+  :hints (("Goal" :cases ((programmer-level-mode x86))
+           :in-theory (e/d* (read-x86-file-contents
+                             read-x86-file-contents-logic)
+                            ()))))
+
 ;; ======================================================================
 
 ;; Some rules about flgi and !flgi:
