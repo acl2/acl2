@@ -8,3 +8,53 @@ you will likely be using pull requests if you contribute books using
 git.  See:
 
 http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____GIT-QUICK-START
+
+============================================================
+
+Information about workshop contributions (full papers) is below.
+
+----------
+
+Cuong Chau, Matt Kaufmann and Warren Hunt
+Fourier Series Formalization in ACL2(r)
+
+See subdirectory chau-kaufmann-hunt/.
+
+----------
+
+Alessandro Coglio
+Second-Order Functions and Theorems in ACL2
+
+----------
+
+John Cowles and Ruben Gamboa
+Perfect Numbers in ACL2
+
+----------
+
+David Hardin
+Reasoning about LLVM code using Codewalker
+
+----------
+
+Panagiotis Manolios and Mitesh Jain
+Proving Skipping Refinement with ACL2s
+
+----------
+
+J Strother Moore
+Stateman: Using Metafunctions to Manage Large Terms Representing Machine States
+
+See directory books/projects/stateman/.
+
+----------
+
+Yan Peng and Mark Greenstreet
+Extending ACL2 with SMT Solvers
+
+----------
+
+Sol Swords and Jared Davis
+Fix Your Types: A Datatype Definition Library for Unconditional Type Reasoning
+
+----------

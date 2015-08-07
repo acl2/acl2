@@ -171,7 +171,8 @@
 
   (declare (xargs :guard (and (true-listp slst)
                               (alistp blst))))
-  (if (endp slst)
+  (if (or (endp slst)
+          (endp blst))
       nil
     (cons (cdr (assoc-equal (car slst) blst))
           (assoc-list (cdr slst) blst))))

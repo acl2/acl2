@@ -35,17 +35,16 @@ re-arrange these nests of updates.</p>
   the @(':RGF') field in a well-formed x86 state gives a well-formed
   x86 state.</li>
 
-<li>@(see x86-Writing-the-Read-Theorem): <p>See theorem @(see xw-xr) ---
-  informally, it states that if we write the same value to a field
-  that was there before the write, it is as though the write did not
-  occur at all.</p></li>
+<li>@(see x86-Writing-the-Read-Theorem): <p>Informally, this kind of a
+  theorem states that a write operation that writes the same value to
+  a field that was already there, is superfluous, and can be
+  eliminated.</p></li>
 
-<li>@(see x86-RoW-Theorems): <p>There are two types of
-  Read-Over-Write (RoW) theorems.  The first describes the
-  independence or non-interference of different components of the x86
-  state.  The second asserts that reading a component after it is
-  modified returns the value that was written to it during the
-  modification.</p></li>
+<li>@(see x86-RoW-Theorems): <p>There are two types of Read-Over-Write
+  (RoW) theorems.  The first describes the independence or
+  non-interference of different components of the x86 state.  The
+  second asserts that reading a component after it is modified returns
+  the value that was written to it during the modification.</p></li>
 
 <li>@(see x86-WoW-Theorems): <p>Like the RoW theorems, there are two types
   of Write-over-Write (WoW) theorems.  The first asserts that
