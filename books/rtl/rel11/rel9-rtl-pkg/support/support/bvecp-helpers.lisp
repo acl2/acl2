@@ -70,17 +70,6 @@
   :rule-classes
   (:rewrite (:linear :trigger-terms ((unknown key size n)))))
 
-(defthm bv-arrp-implies-nonnegative-integerp
-  (implies (bv-arrp obj size)
-           (and (INTEGERP (ag index obj))
-                (<= 0 (ag index obj))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :use (:instance
-                        ag-maps-bv-arr-to-bvecp (a index) (r obj) (k size))
-           :in-theory (set-difference-theories
-                       (enable bvecp)
-                       '(ag-maps-bv-arr-to-bvecp)))))
-
 ;(local (in-theory (enable floor-fl)))
 
 ;These next two are for the bus unit bvecp lemmas:
@@ -142,10 +131,6 @@
 (defthm bvecp-if1
   (equal (bvecp (if1 x y z) n)
          (if1 x (bvecp y n) (bvecp z n))))
-
-(defthm bv-arrp-if1
-  (equal (bv-arrp (if1 x y z) n)
-         (if1 x (bv-arrp y n) (bv-arrp z n))))
 
 ;remove these?
 

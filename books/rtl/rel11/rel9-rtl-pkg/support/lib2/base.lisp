@@ -34,8 +34,6 @@
 
 (include-book "../lib1/rtl") ;semantics of the basic RTL primitives
 
-(include-book "../lib1/rtlarr") ;semantics RTL array primitives
-
 (include-book "../lib1.delta1/basic") ;properties of basic arithmetic functions: floor, ceiling, 
 ;                       exponential, and remainder;;  Mon Mar  5 13:46:31 2007
 
@@ -66,5 +64,3 @@
 
 (include-book "../lib1.delta1/bvecp-raw-helpers")  
 ; better bvecp-raw-helpers.lisp, Fri Jun 29 10:13:32 2007
-
-(include-book "../lib1.delta1/simple-loop-helpers")  

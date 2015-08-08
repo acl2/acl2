@@ -34,8 +34,6 @@
 
 (include-book "rtl") ;semantics of the basic RTL primitives
 
-(include-book "rtlarr") ;semantics RTL array primitives
-
 (include-book "bits") ;bit vectors
 
 (include-book "log") ;logical operations
@@ -55,9 +53,6 @@
 ;; (include-book "arith") ;general arithmetic package
 
 (include-book "bvecp-raw-helpers") 
-
-
-(include-book "simple-loop-helpers") 
 
 
 (include-book "arith")

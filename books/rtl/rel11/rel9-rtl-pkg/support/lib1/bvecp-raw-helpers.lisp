@@ -30,7 +30,6 @@
 ;Also contains type lemmas (non-negative integer, natp, etc.)
 
 (include-book "rtl")
-(include-book "rtlarr")
 ;(include-book "util") ?
 (local (include-book "../support/bvecp-helpers"))
 (local (include-book "../support/bits"))
@@ -501,15 +500,6 @@
   :RULE-CLASSES
   (:REWRITE (:linear :trigger-terms ((UNKNOWN KEY SIZE N)))))
 
-;BOZO dup?
-(defthm bv-arrp-implies-nonnegative-integerp
-  (implies (bv-arrp obj size)
-           (and (INTEGERP (ag index obj))
-                (<= 0 (ag index obj))))
-  :rule-classes (:rewrite :type-prescription)
-  )
-
-
 ; land
 
 (defthm land-nonnegative-integer-type
@@ -623,12 +613,6 @@
   (< (unknown key size n) (expt 2 size))
   :rule-classes
   (:rewrite (:linear :trigger-terms ((unknown key size n)))))
-
-(defthm bv-arrp-implies-nonnegative-integerp
-  (implies (bv-arrp obj size)
-           (and (INTEGERP (ag index obj))
-                (<= 0 (ag index obj))))
-  :rule-classes (:rewrite :type-prescription))
 
 ;(local (in-theory (enable floor-fl)))
 

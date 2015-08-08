@@ -38,7 +38,6 @@ Most of the functions introduced are disabled.
 |#
 
 (include-book "ground-zero")
-(include-book "rtlarr") ;includes the defn of bvecp
 (include-book "cat-def")
 
 ;;Definitions of the ACL2 functions that are used in the
@@ -53,6 +52,12 @@ Most of the functions introduced are disabled.
 
 
 ;; 1. bit-vector constants
+
+(defund bvecp (x k)
+  (declare (xargs :guard (integerp k)))
+  (and (integerp x)
+       (<= 0 x)
+       (< x (expt 2 k))))
 
 (defmacro n! (i n)
   (declare (ignore n)
@@ -590,28 +595,6 @@ get rid of the bits call.
                              (>= (unknown key size n) 0))
                         :hints
                         (("Goal" :in-theory '(implies bvecp)))))))
-
-(encapsulate 
- ((reset2 (key size) t))
- (local (defun reset2 (key size) (declare (ignore key size)) nil))
- 
-;do we need rule-classes on this thm?
- (defthm bv-arrp-reset2
-   (bv-arrp (reset2 key size) size)
-   :hints
-   (("goal" :in-theory (enable bv-arrp)))
-   ))
-
-(encapsulate 
- ((unknown2 (key size n) t))
- (local (defun unknown2 (key size n) (declare (ignore key size n)) nil))
- 
-;do we need rule-classes on this thm?
- (defthm bv-arrp-unknown2
-   (bv-arrp (unknown2 key size n) size)
-   :hints
-   (("goal" :in-theory (enable bv-arrp)))
-   ))
 
 
 

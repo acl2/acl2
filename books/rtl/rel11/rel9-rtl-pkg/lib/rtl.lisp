@@ -534,7 +534,7 @@ get rid of the bits call.
   (equal (bvecp (if1 x y z) n)
          (if1 x (bvecp y n) (bvecp z n))))
 
-; The following are analogous to mk-bvarr etc. in rtlarr.lisp.
+; The following are analogous to mk-bvarr etc.
 
 (defun mk-bvec (r k)
   (declare (xargs :guard (integerp k)))

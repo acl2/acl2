@@ -34,8 +34,6 @@
 
 (include-book "rtl") ;semantics of the basic RTL primitives
 
-(include-book "rtlarr") ;semantics RTL array primitives
-
 (include-book "basic") ;properties of basic arithmetic functions: floor, ceiling, 
 ;                       exponential, and remainder
 
