@@ -43,7 +43,7 @@
            (integerp (+ x y))))
 
 (defthm x-or-x/2
-  (implies (integerp x) 
+  (implies (integerp x)
            (or (integerp (/ x 2)) (integerp (/ (1+ x) 2))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable integerp-+)
@@ -88,7 +88,7 @@
 (defthm integerp-sum-of-odds-over-2-leading-constant
   (implies (and (syntaxp (and (quotep x)
                               (integerp (* 2 x)) ;;these two hyps say x is of the form (odd)/2
-                              (not (integerp x)) ;; 
+                              (not (integerp x)) ;;
                               ))
                 (rationalp x)
                 (rationalp y)
@@ -144,7 +144,7 @@
 ;floor of odd/2 is odd/2 -1/2
 
 
- ;; :hints (("Goal" :use ( (:instance  fl-unique 
+ ;; :hints (("Goal" :use ( (:instance  fl-unique
    ;                                  (x (* 1/2 x))
     ;                                 (n (- (* 1/2 x) 1/2)))))))
 

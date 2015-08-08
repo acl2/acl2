@@ -494,7 +494,7 @@ shown.</p>"
        (design (cwtime (vl-design-dupeinst-check design)))
        (design (cwtime (vl-centaur-seqcheck-hook design)))
 
-     
+
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually
@@ -531,7 +531,7 @@ shown.</p>"
 
        ;; BOZO do we even need to do this?
        ;; BOZO not exactly sure where this should go, maybe this will work.
-       
+
 
        ;; (design
        ;;  ;; Bug fixed 2014-12-19: don't do this until after argresolve, because

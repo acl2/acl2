@@ -23,7 +23,7 @@
     (duplicatesp (1- row-n) (cdr x)))))
 
 (defun good-rowsp (row-num x)
-  (cond 
+  (cond
    ((zp row-num)
     t)
    ((duplicatesp 9 (car x))
@@ -40,7 +40,7 @@
           (make-column col-num (1- n) (cdr x))))))
 
 (defun good-columnsp (col-num x)
-  (cond 
+  (cond
    ((zp col-num)
     t)
    ((duplicatesp 9 (make-column (1- col-num) 9 x))
@@ -49,19 +49,19 @@
     (good-columnsp (1- col-num) x))))
 
 (defun make-cell (cell-num element-num x)
-  (cond 
+  (cond
    ((zp element-num)
     nil)
    (t
     (cons (nth (+ (mod (1- element-num) 3)
                   (* 3 (mod cell-num 3)))
-               (nth (+ (floor (1- element-num) 3) 
+               (nth (+ (floor (1- element-num) 3)
                        (* 3 (floor cell-num 3)))
                     x))
           (make-cell cell-num (1- element-num) x)))))
 
 (defun good-cellsp (cell-num x)
-  (cond 
+  (cond
    ((zp cell-num)
     t)
    ((duplicatesp 9 (make-cell (1- cell-num) 9 x))
@@ -83,7 +83,7 @@
              (equal (car x) 8)
              (equal (car x) 9)))
     nil)
-   (t 
+   (t
     (valid-numbers-rowp (1- n) (cdr x)))))
 
 (defun valid-numbersp (row-n x)
@@ -110,7 +110,7 @@
 (defun good-solutionp (x)
   (and (valid-numbersp 9 x)
        (good-rowsp 9 x)
-       (good-columnsp 9 x)       
+       (good-columnsp 9 x)
        (good-cellsp 9 x)))
 
 (defun satisfies-constraints-rowp (constraints x)
@@ -125,12 +125,12 @@
     (satisfies-constraints-rowp (cdr constraints) (cdr x)))))
 
 (defun satisfies-constraintsp (constraints x)
-  (cond 
+  (cond
    ((endp constraints)
     t)
    ((not (satisfies-constraints-rowp (car constraints) (car x)))
     nil)
-   (t 
+   (t
     (satisfies-constraintsp (cdr constraints) (cdr x)))))
 
 (defconst *puzzle-X*
@@ -168,7 +168,7 @@
 
 ;; Note: thm-sat-invalid is a simple make-event macro defined
 ;; in test-help, which allows the book to certify as long as
-;; the conjecture is NOT a theorem when given to the 
+;; the conjecture is NOT a theorem when given to the
 ;; sat solver.
 (thm-sat-invalid
  (implies (satisfies-constraintsp *puzzle-X* x)

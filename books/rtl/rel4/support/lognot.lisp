@@ -18,7 +18,7 @@
            (equal (lognot (lognot i))
                   i))
   :hints (("Goal" :in-theory (enable lognot))))
-                  
+
 (defthm lognot-integerp
   (integerp (lognot i))
     :hints (("Goal" :in-theory (enable lognot))))

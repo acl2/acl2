@@ -13,7 +13,7 @@
 ; (set-print-base 16 state)
 
 ;
-; This table specifies the input permutation on a 64-bit block. 
+; This table specifies the input permutation on a 64-bit block.
 ; The meaning is as follows: the first bit of the output is taken from the 58th
 ; bit of the input the second bit from the 50th bit, and so on, with the last
 ; bit of the output taken from the 7th bit of the input.
@@ -22,7 +22,7 @@
 (defconst *IP-table*
   '(58 50 42 34 26 18 10 2 60 52 44 36 28 20 12 4
       62 54 46 38 30 22	14 6 64	56 48 40 32 24 16 8
-      57 49 41 33 25 17	9 1 59 51 43 35	27 19 11 3 
+      57 49 41 33 25 17	9 1 59 51 43 35	27 19 11 3
       61 53 45 37 29 21	13 5 63	55 47 39 31 23 15 7))
 
 ;
@@ -45,7 +45,7 @@
 
 (defconst *expand-table*
   '(32 1 2 3 4 5 4 5 6 7 8 9 8 9 10 11 12 13 12 13 14
-       15 16 17 16 17 18 19 20 21 20 21 22 23 24 25 24 
+       15 16 17 16 17 18 19 20 21 20 21 22 23 24 25 24
        25 26 27 28 29 28 29 30 31 32 1))
 
 ;
@@ -53,13 +53,13 @@
 ;
 
 (defconst *permute-table*
-  '(16 7 20 21 29 12 28 17 1 15 23 26 5 18 31 10 
+  '(16 7 20 21 29 12 28 17 1 15 23 26 5 18 31 10
        2 8 24 14 32 27 3 9 19 13 30 6 22 11 4 25))
 
 ;
 ; The Left and Right halves of the table show which bits from the input key
-; form the left and right sections of the key schedule state. Note that only 
-; 56 bits of the 64 bits of the input are selected; the remaining eight were 
+; form the left and right sections of the key schedule state. Note that only
+; 56 bits of the 64 bits of the input are selected; the remaining eight were
 ; specified for use as parity bits.
 ;
 
@@ -68,7 +68,7 @@
        10 2 59 51 43 35 27 19 11 3 60 52 44 36))
 
 (defconst *permuted-choice-1-right-table*
-  '(63 55 47 39 31 23 15 7 62 54 46 38 30 22 
+  '(63 55 47 39 31 23 15 7 62 54 46 38 30 22
        14 6 61 53 45 37 29 21 13 5 28 20 12 4))
 
 ;
@@ -82,13 +82,13 @@
        51 45 33 48 44 49 39 56 34 53 46 42 50 36 29 32))
 
 ;
-; This table lists the eight S-boxes used in DES. Each S-box replaces 
-; a 6-bit input with a 4-bit output. Given a 6-bit input, the 4-bit 
-; output is found by selecting the row using the outer two bits, and 
-; the column using the inner four bits. For example, an input 011011 
-; has outer bits 01 and inner bits 11011; noting that the first row 
-; is "00" and the first column is 0000, the corresponding output for 
-; S-box S5 would be 1001 (=9), the value in the second row, 14th column. 
+; This table lists the eight S-boxes used in DES. Each S-box replaces
+; a 6-bit input with a 4-bit output. Given a 6-bit input, the 4-bit
+; output is found by selecting the row using the outer two bits, and
+; the column using the inner four bits. For example, an input 011011
+; has outer bits 01 and inner bits 11011; noting that the first row
+; is "00" and the first column is 0000, the corresponding output for
+; S-box S5 would be 1001 (=9), the value in the second row, 14th column.
 ;
 
 (defconst *S1-table*
@@ -146,18 +146,18 @@
 ;
 
 (defconst *S-boxes*
-  (cons *S1-table* 
-        (cons *S2-table* 
-              (cons *S3-table* 
+  (cons *S1-table*
+        (cons *S2-table*
+              (cons *S3-table*
                     (cons *S4-table*
-                          (cons *S5-table* 
-                                (cons *S6-table* 
-                                      (cons *S7-table* 
+                          (cons *S5-table*
+                                (cons *S6-table*
+                                      (cons *S7-table*
                                             (cons *S8-table* nil)))))))))
-               
+
 ;
-; Before the round subkey is selected, each half of the key schedule state is 
-; rotated left by a number of places. This table specifies the number of places 
+; Before the round subkey is selected, each half of the key schedule state is
+; rotated left by a number of places. This table specifies the number of places
 ; rotated.
 ;
 
@@ -167,7 +167,7 @@
 ;
 ; A generic method that applies a generic table to a bit-list.
 ; This method reads each member of the table and chooses the corresponding bit
-; from the input x-bits to construct a new list of bits. 
+; from the input x-bits to construct a new list of bits.
 ;
 
 (defun apply-table (x-bits table)
@@ -206,7 +206,7 @@
     (if (equal e (car x))
 	(cdr x)
       (cons (car x)
-	    (del e 
+	    (del e
 		 (cdr x))))))
 
 (defun perm (x y)
@@ -218,10 +218,10 @@
 		    y)))))
 
 ;
-; This theorem tries to prove that the result of IP on a list of 64 
+; This theorem tries to prove that the result of IP on a list of 64
 ; bits is a permutation of the same list.
 ; NOT PROVEN
- 
+
 ;(defthm IP-is-a-permutation
 ;  (implies (64-bitp x-bits)
 ;	   (perm x-bits
@@ -236,14 +236,14 @@
 
 ;
 ; Wrapper over the apply-table method that works on a 64-bit input and a 64-bit
-; table (*IP-inverse-table*) that performs the inverse initial permutation of a 
+; table (*IP-inverse-table*) that performs the inverse initial permutation of a
 ; message block.
 ;
 
 (defun IP-inverse(x-bits)
   (if (not (64-bitp x-bits))
       nil
-    (apply-table x-bits 
+    (apply-table x-bits
                    *IP-inverse-table*)))
 
 ;
@@ -265,7 +265,7 @@
 ;
 ; Theorem that states that IP-inverse inverts the permutation of IP
 ; and returns the original list
-; 
+;
 
 (defun gen (n)
   (declare (xargs :guard (natp n)
@@ -273,11 +273,11 @@
   (cond ((zp n)
          nil)
         (t
-         (cons (GL::g-number (list (list (- 128 (* 2 n)) 
+         (cons (GL::g-number (list (list (- 128 (* 2 n))
                                          (- 128 (- (* 2 n) 1)))))
                (gen (- n 1))))))
 
-(defconst *gl-const* 
+(defconst *gl-const*
   (gen 64))
 
 (def-gl-thm IP-inverse-inverts-IP-gl
@@ -362,7 +362,7 @@
 (defun permuted-choice-2(key-bits)
   (if (not (56-bitp key-bits))
       nil
-    (apply-table key-bits 
+    (apply-table key-bits
                  *permuted-choice-2-table*)))
 
 ;
@@ -392,10 +392,10 @@
 (defun apply-subst-table(x-bits table)
   (if (not (6-bitp x-bits))
       nil
-    (number-to-4bits-msb (Nth (get-yyyy x-bits) 
-                              (Nth (get-xx x-bits) 
+    (number-to-4bits-msb (Nth (get-yyyy x-bits)
+                              (Nth (get-xx x-bits)
                                    table)))))
-  
+
 ;
 ; Code to shift a bit-list based on whether it is encryption or decryption
 ; In case of encryption this method should left shift a bit-list by num places
@@ -443,7 +443,7 @@
 
 ;
 ; This method applies the 8 S-boxes in sequence to the 8 6-bit groups.
-; The constant *S-boxes* that is passed in as subst-tables is arranged in such 
+; The constant *S-boxes* that is passed in as subst-tables is arranged in such
 ; a way that its structure matches the order of the 6-bit groups exactly.
 ;
 
@@ -505,17 +505,17 @@
 ;
 ; In the following two functions, the 64bit block is arranged as following:
 ; (LeftBlock . RightBlock). Thus the left block is the car and the right block
-; is the cdr of 64bit-block. 
+; is the cdr of 64bit-block.
 
 ; key-bits is the 56 bit representation of the 64 bit key from which every 8th bit
 ; has already been discarded.
 
-; Initially the block is passed through an initial permutation. Then for 
+; Initially the block is passed through an initial permutation. Then for
 ; 16 rounds, the left half the block is XORed with the output of the
 ; feistel function (with the round key for that round) on the right half of the
 ; block and this becomes the next right half for the next round. The right half
 ; of this round becomes the left half of the next round. At the end, the output
-; is passed through a final permutation (which is the inverse of the intial 
+; is passed through a final permutation (which is the inverse of the intial
 ; permutation) ad then output as the ciphertext.
 ;
 
@@ -525,7 +525,7 @@
           (not (booleanp encrypt)))
       nil
     (if (< iteration 16)
-        (let* ((shifted-key-bits (get-round-key key-bits 
+        (let* ((shifted-key-bits (get-round-key key-bits
                                                 iteration
                                                 encrypt))
                (subkey-iter (permuted-choice-2 shifted-key-bits))
@@ -549,12 +549,12 @@
           (not (booleanp encrypt)))
       nil
     (let* ((initial-permuted-bits (IP 64bit-block))
-           (block-bits-proper (cons (prefix-nth initial-permuted-bits 
+           (block-bits-proper (cons (prefix-nth initial-permuted-bits
                                                 32)
-                                    (get-nth initial-permuted-bits 
+                                    (get-nth initial-permuted-bits
                                              32)))
            (encrypted-before-final (encrypt-decrypt-64bit-block1 block-bits-proper
-                                                                 key-bits 
+                                                                 key-bits
                                                                  0
                                                                  encrypt)))
       (IP-inverse (append (car encrypted-before-final)
@@ -594,8 +594,8 @@
           nil
         (let* ((message-64bit-blocks (bits-to-64bit-blocks message-bits))
                (key-56bit (permuted-choice-1 key-bits)))
-	  (bits-to-bytes (DES-encrypt-decrypt message-64bit-blocks 
-							 key-56bit 
+	  (bits-to-bytes (DES-encrypt-decrypt message-64bit-blocks
+							 key-56bit
 							 encrypt)))))))
 
 ;
@@ -620,7 +620,7 @@
 
 ;
 ; 3-DES is just DES applied 3 times to the same block of data using a key of
-; length thrice the key length of DES (i.e 128 bits). 
+; length thrice the key length of DES (i.e 128 bits).
 ; (3-DES-enc m K) = (DES-enc (DES-dec (DES-enc m k1) k2) k3)
 ; (3-DES-dec m K) = (DES-dec (DES-enc (DES-dec m k1) k2) k3)
 ; when K = k1 | k2 | k3
@@ -630,7 +630,7 @@
   (if (or (not (booleanp encrypt))
           (not (equal (len key-bytes) 24)))
       nil
-    (DES (DES (DES message-bytes 
+    (DES (DES (DES message-bytes
                    (prefix-nth key-bytes 8)
                    encrypt)
               (prefix-nth (get-nth key-bytes 8)
@@ -638,7 +638,7 @@
               (not encrypt))
          (get-nth key-bytes 16)
          encrypt)))
-                         
+
 ;
 ; 3-DES encryption of a message with k1 = k2 = k3 is the same as
 ; DES encryption of the message
@@ -654,6 +654,6 @@
                (DES *message-1* *key-1* t))
         (equal (3-DES *cipher-1* *3-DES-key-1* nil)
                (DES *cipher-1* *key-1* nil)))))
-           
-               
+
+
 

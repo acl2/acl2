@@ -51,7 +51,7 @@
   :hints (("Goal" :in-theory (disable esci depi update-marksi update-esci nodes-length update-depi neighborsi dests-of-edge neighbors->destsi update-esci marksi nodesi))))
 (defthm update-marksi-2-preserves-invariant-3marks
   (let* ((marks-after (update-marksi i 2 marks)))
-    (implies (and (valid-graph (nodes-length nodeset) graph nodeset) 
+    (implies (and (valid-graph (nodes-length nodeset) graph nodeset)
                   (<= n (nodes-length nodeset))
                   (natp i)
                   (natp n)
@@ -60,7 +60,7 @@
   :hints (("Goal" :in-theory (disable marksi update-marksi neighborsi))))
 (defthm update-marksi-4-preserves-invariant-3marks
   (let* ((marks-after (update-marksi i 4 marks)))
-    (implies (and (valid-graph (nodes-length nodeset) graph nodeset) 
+    (implies (and (valid-graph (nodes-length nodeset) graph nodeset)
                   (<= n (nodes-length nodeset))
                   (natp i)
                   (natp n)
@@ -709,7 +709,7 @@
    (implies (stack-contains-validated-edges stack marks graph nodeset)
             (stack-contains-validated-edges stack (append-to-esc node data marks) graph nodeset))
    :hints (("Goal" :in-theory (disable esci update-marksi append-to-esc))))
- 
+
  (defthm temp24.11
    (implies (natp i)
             (equal (A-natp (keys (append-to-data i data alist)))
@@ -722,7 +722,7 @@
                                             graph nodeset))
    :hints (("Goal" :in-theory (disable marksi append-to-esc update-marksi esci))))
 
- 
+
  (defthm temp24.12
    (implies (stack-contains-validated-edges stack marks graph nodeset)
             (subsetp (A-dests-of node (st-filter-2marked-nodes (cdr (assoc node stack)) marks) graph nodeset)
@@ -797,7 +797,7 @@
          (filter-3marked-nodes n marks nodeset)))
 (defthm temp10.11
   (equal (st-filter-34marked-nodes (filter-4marked-nodes n marks nodeset) marks)
-         (filter-4marked-nodes n marks nodeset)))  
+         (filter-4marked-nodes n marks nodeset)))
 (defthm step2-ensures-invariant-escs-total
   (let ((marks-after (process-escs-eff (append (filter-3marked-nodes (nodes-length st-nodeset) marks nodeset)
                                                (filter-4marked-nodes (nodes-length st-nodeset) marks nodeset))
@@ -1012,7 +1012,7 @@
                                  (nodes (cdr nodes))
                                  (marks (append-to-dep prev (dests-of-edge prev (car nodes) graph nodeset) (update-marksi (car nodes) 4
                                                                                                                           (st-escapable-inv (neighborsi (car nodes) graph) (car nodes) graph (update-marksi (car nodes) 1 marks) nodeset)))))))
-          
+
           ("Subgoal *1/5" :use ((:instance algo-preserves-2marking
                                  (node (car nodes))
                                  (nodes (cdr nodes))

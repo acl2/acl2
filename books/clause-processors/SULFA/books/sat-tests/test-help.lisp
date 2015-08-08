@@ -9,8 +9,8 @@
   (declare (xargs :stobjs $sat :mode :program))
   (mv-let
    (erp val state)
-   (thm-fn property 
-           state 
+   (thm-fn property
+           state
            `(("Goal" :clause-processor (:function sat :hint ,hint-arg)))
            NIL
            NIL)
@@ -27,15 +27,15 @@
        (mv (msg (concat-str "ERROR: The following property was not "
                              "proven valid by the SAT system:~%~x0 ~%")
                 property)
-           nil 
+           nil
            state)))))
 
 (defun sat-status-invalid (name property hint-arg $sat state)
   (declare (xargs :stobjs $sat :mode :program))
   (mv-let
    (erp val state)
-   (thm-fn property 
-           state 
+   (thm-fn property
+           state
            `(("Goal" :clause-processor (:function sat :hint ,hint-arg)))
            NIL
            NIL)
@@ -59,8 +59,8 @@
   (declare (xargs :stobjs $sat :mode :program))
   (mv-let
    (erp val state)
-   (thm-fn property 
-           state 
+   (thm-fn property
+           state
            `(("Goal" :clause-processor (:function sat :hint ,hint-arg)))
            NIL
            NIL)
@@ -84,15 +84,15 @@
 ;; the top level.
 
 (defmacro thm-sat-valid (property &key name hint-arg)
-  `(make-event 
-    (sat-status-valid (quote ,name) (quote ,property) (quote ,hint-arg) 
+  `(make-event
+    (sat-status-valid (quote ,name) (quote ,property) (quote ,hint-arg)
                       $sat state)))
 
 (defmacro thm-sat-invalid (property &key name hint-arg)
-  `(make-event (sat-status-invalid (quote ,name) (quote ,property) 
+  `(make-event (sat-status-invalid (quote ,name) (quote ,property)
                                    (quote ,hint-arg) $sat state)))
 
 (defmacro thm-sat-unknown (property &key name hint-arg)
-  `(make-event (sat-status-unknown (quote ,name) (quote ,property) 
+  `(make-event (sat-status-unknown (quote ,name) (quote ,property)
                                    (quote ,hint-arg) $sat state)))
 

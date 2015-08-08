@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -38,16 +38,16 @@
            (equal (first_travel_step msg route_pair N)
                   msg))
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-;   :hints (("GOAL" 
+;   :hints (("GOAL"
 ;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
   )
 
-(local 
+(local
  (include-book "../../../../arithmetic-3/bind-free/top"))
 
 (set-non-linearp t)
 
-(local 
+(local
  (include-book "../../../../arithmetic-3/floor-mod/floor-mod"))
 
 (local
@@ -59,7 +59,7 @@
            (null (cddr x))))
  )
 
-(local 
+(local
  (defthm lemma_avail1
    (implies (and (equal (car route_pair) 0)
                  (equal (len route_pair) 2)
@@ -77,7 +77,7 @@
 
 
 
-(local 
+(local
  (defthm lemma_avail2
    (implies (and (equal (car route_pair) 0)
                  (equal (len route_pair) 2)
@@ -94,7 +94,7 @@
             :do-not '(eliminate-destructors generalize fertilize))))
 )
 
-(local 
+(local
  (defthm lemma_avail3
    (implies (and (equal (car route_pair) 0)
                  (equal (len route_pair) 2)
@@ -112,7 +112,7 @@
 )
 
 
-(local 
+(local
  (defthm lemma_avail4
    (implies (and (equal (car route_pair) (+ -1 (* 4 N)))
                  (equal (len route_pair) 2)
@@ -129,7 +129,7 @@
             :do-not '(eliminate-destructors generalize fertilize))))
 )
 
-(local 
+(local
  (defthm lemma_avail5
    (implies (and (equal (car route_pair) (+ -1 (* 4 N)))
                  (equal (len route_pair) 2)
@@ -148,7 +148,7 @@
 
 
 
-(local 
+(local
  (defthm lemma_avail6
    (implies (and (equal (car route_pair) (+ -1 (* 4 N)))
                  (equal (len route_pair) 2)
@@ -166,7 +166,7 @@
 )
 
 
-(local 
+(local
  (defthm lemma_avail7
    (implies (and (integerp (car route_pair))
                  (equal (len route_pair) 2)
@@ -184,7 +184,7 @@
 )
 
 
-(local 
+(local
  (defthm lemma_avail8
    (implies (and (integerp (car route_pair))
                  (equal (len route_pair) 2)
@@ -202,7 +202,7 @@
 )
 
 
-(local 
+(local
  (defthm lemma_avail9
    (implies (and (integerp (car route_pair))
                  (equal (len route_pair) 2)
@@ -220,7 +220,7 @@
 )
 
 
-(local 
+(local
  (defthm lemma_avail10
    (implies (and (integerp (car route_pair))
                  (equal (len route_pair) 2)
@@ -239,7 +239,7 @@
 
 
 (defthm first_travel_=_msg_not
-  ;; we prove that we lose the message if the route is not made of 
+  ;; we prove that we lose the message if the route is not made of
   ;; available moves
   ;; the lemmas are local so that we only export the main theorems
   (implies (and (no-duplicatesp route_pair)
@@ -252,7 +252,7 @@
                 (not (availableMovep route_pair N)))
            (not (first_travel_step msg route_pair N)))
   :otf-flg t
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :do-not-induct t
            :expand (not (availableMovep route_pair (* 4 N)))
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
@@ -279,7 +279,7 @@
                  (integerp N) (< 0 N)
                  (all_inf_np route_triple (* 4 N))
                  (equal (nth 1 route_triple) (+ -1 (* 4 N)))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ -1 (nth 1 route_triple))))
                  (not (equal (nth 2 route_triple) (+ -1 (* 2 N))))
                  (not (equal (nth 2 route_triple) 0)))
@@ -302,7 +302,7 @@
                  (all_inf_np route_triple (* 4 N))
                  (equal (car route_triple) (+ -1 (nth 1 route_triple)))
                  (equal (nth 1 route_triple) (+ -1 (* 4 N)))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ -1 (nth 1 route_triple))))
                  (not (equal (nth 2 route_triple) (+ -1 (* 2 N))))
                  (not (equal (nth 2 route_triple) 0)))
@@ -325,9 +325,9 @@
                  (all_inf_np route_triple (* 4 N))
                  (equal (car route_triple) (+ 1 (nth 1 route_triple)))
                  (<= (* 2 N) (nth 1 route_triple))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ -1 (nth 1 route_triple))))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ (nth 1 route_triple) (* -2 N))))
                  (not (equal (nth 2 route_triple)
                              (+ 1 (nth 1 route_triple)))))
@@ -354,9 +354,9 @@
                  (< (nth 1 route_triple) (* 2 N))
                  (not (equal (nth 1 route_triple) 0))
                  (not (equal (nth 1 route_triple) (+ -1 (* 4 N))))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ -1 (nth 1 route_triple))))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ (nth 1 route_triple) (* 2 N))))
                  (not (equal (nth 2 route_triple)
                              (+ 1 (nth 1 route_triple)))))
@@ -383,9 +383,9 @@
                  (< (nth 1 route_triple) (* 2 N))
                  (not (equal (nth 1 route_triple) 0))
                  (not (equal (nth 1 route_triple) (+ -1 (* 4 N))))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ -1 (nth 1 route_triple))))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ (nth 1 route_triple) (* 2 N))))
                  (not (equal (nth 2 route_triple)
                              (+ 1 (nth 1 route_triple)))))
@@ -412,9 +412,9 @@
                  (<= (* 2 N) (nth 1 route_triple))
                  (not (equal (nth 1 route_triple) 0))
                  (not (equal (nth 1 route_triple) (+ -1 (* 4 N))))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ -1 (nth 1 route_triple))))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ (nth 1 route_triple) (* -2 N))))
                  (not (equal (nth 2 route_triple)
                              (+ 1 (nth 1 route_triple)))))
@@ -441,7 +441,7 @@
                  (equal (nth 1 route_triple) 0)
                  (not (equal (car route_triple) 1))
                  (not (equal (car route_triple) (+ -1 (* 4 N))))
-                 (not (equal (nth 2 route_triple) 1))                            
+                 (not (equal (nth 2 route_triple) 1))
                  (not (equal (nth 2 route_triple) (+ -1 (* 4 N)))))
             (not (availableMovep route_triple N)))
    :hints (("GOAL"
@@ -558,10 +558,10 @@
                  (no-duplicatesp route_triple)
                  (equal (nth 1 route_triple) (+ -1 (* 4 N)))
                  (not (equal (nth 2 route_triple) 0))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ -1 (nth 1 route_triple))))
                  (not (equal (car route_triple) 0))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ -1 (nth 1 route_triple)))))
             (not (availableMovep route_triple N)))
    :hints (("GOAL"
@@ -586,7 +586,7 @@
                  (equal (nth 2 route_triple) 0)
                  (not (equal (car route_triple) 0))
                  (not (equal (car route_triple) (+ -1 (* 2 N))))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ -1 (nth 1 route_triple)))))
             (not (availableMovep route_triple N)))
    :hints (("GOAL"
@@ -610,13 +610,13 @@
                  (no-duplicatesp route_triple)
                  (not (equal (nth 1 route_triple) 0))
                  (not (equal (nth 1 route_triple) (+ -1 (* 4 N))))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ 1 (nth 1 route_triple))))
-                 (not (equal (nth 2 route_triple) 
+                 (not (equal (nth 2 route_triple)
                              (+ -1 (nth 1 route_triple))))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ -1 (nth 1 route_triple))))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ 1 (nth 1 route_triple)))))
             (not (availableMovep route_triple N)))
    :hints (("GOAL"
@@ -640,12 +640,12 @@
                  (no-duplicatesp route_triple)
                  (not (equal (nth 1 route_triple) 0))
                  (not (equal (nth 1 route_triple) (+ -1 (* 4 N))))
-                 (equal (nth 2 route_triple) 
+                 (equal (nth 2 route_triple)
                         (+ -1 (nth 1 route_triple)))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ (nth 1 route_triple) (* 2 N))))
                  (< (nth 1 route_triple) (* 2 N))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ 1 (nth 1 route_triple)))))
             (not (availableMovep route_triple N)))
    :hints (("GOAL"
@@ -669,12 +669,12 @@
                  (no-duplicatesp route_triple)
                  (not (equal (nth 1 route_triple) 0))
                  (not (equal (nth 1 route_triple) (+ -1 (* 4 N))))
-                 (equal (nth 2 route_triple) 
+                 (equal (nth 2 route_triple)
                         (+ -1 (nth 1 route_triple)))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ (nth 1 route_triple) (* -2 N))))
                  (<= (* 2 N) (nth 1 route_triple))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ 1 (nth 1 route_triple)))))
             (not (availableMovep route_triple N)))
    :hints (("GOAL"
@@ -698,12 +698,12 @@
                  (no-duplicatesp route_triple)
                  (not (equal (nth 1 route_triple) 0))
                  (not (equal (nth 1 route_triple) (+ -1 (* 4 N))))
-                 (equal (nth 2 route_triple) 
+                 (equal (nth 2 route_triple)
                         (+ 1 (nth 1 route_triple)))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ (nth 1 route_triple) (* -2 N))))
                  (<= (* 2 N) (nth 1 route_triple))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ -1 (nth 1 route_triple)))))
             (not (availableMovep route_triple N)))
    :hints (("GOAL"
@@ -727,12 +727,12 @@
                  (no-duplicatesp route_triple)
                  (not (equal (nth 1 route_triple) 0))
                  (not (equal (nth 1 route_triple) (+ -1 (* 4 N))))
-                 (equal (nth 2 route_triple) 
+                 (equal (nth 2 route_triple)
                         (+ 1 (nth 1 route_triple)))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ (nth 1 route_triple) (* 2 N))))
                  (< (nth 1 route_triple) (* 2 N))
-                 (not (equal (car route_triple) 
+                 (not (equal (car route_triple)
                              (+ -1 (nth 1 route_triple)))))
             (not (availableMovep route_triple N)))
    :hints (("GOAL"
@@ -758,7 +758,7 @@
            (equal (nth_travel_step msg route_triple N)
                   msg))
   :otf-flg t
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :do-not-induct t
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
 ;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)

@@ -187,22 +187,22 @@
    (b-lte 'x t)
    (b-lte 'x nil)
    (b-lte 'x 'top)
-   
+
    (not (b-lte t 'x))
         (b-lte t t)
    (not (b-lte t nil))
         (b-lte t 'top)
-   
+
    (not (b-lte nil 'x))
    (not (b-lte nil t))
         (b-lte nil nil)
         (b-lte nil 'top)
-   
+
    (not (b-lte 'top 'x))
    (not (b-lte 'top t))
    (not (b-lte 'top nil))
         (b-lte 'top 'top)
-   
+
    (implies (b-p x) (b-lte x x))
    (implies (and (b-lte x y) (b-lte y z)) (b-lte x z))
 
@@ -253,12 +253,12 @@
 ;;;
 ;;;
 
-(defuntyped b-if ((b-p x) (b-p y) (b-p z)) t 
-  b-p nil 
+(defuntyped b-if ((b-p x) (b-p y) (b-p z)) t
+  b-p nil
   (b-or (b-and x y) (b-and (b-not x) z)))
 
 
-(defthm drop-if 
+(defthm drop-if
   (implies (and (booleanp x)
 		(booleanp y)
 		(booleanp z))

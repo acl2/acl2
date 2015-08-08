@@ -358,7 +358,7 @@ QED!
          (t (+ (chk-input-output-arity (car expr-lst) amodules)
                (chk-input-output-arity-lst (cdr expr-lst) amodules))))))
 
-       
+
 
 ; A module is a program name, fn, followed by a keyword alist containing, at
 ; most, the keys
@@ -462,7 +462,7 @@ QED!
                or a :ghost-decr, you must supply both of them and a ~
                :ghost-base-value as well.  You did not in ~x0."
               fn))
-                   
+
          ((and (and (assoc-keyword :ghost-formals (cdr module))
                     (assoc-keyword :ghost-base-value (cdr module)))
                (not (and (or (equal (car (cadr (assoc-keyword :ghost-base-value (cdr module)))) 'mv)
@@ -562,13 +562,13 @@ QED!
                  (append (ISTORE-series 0 (len vars))
                          `((GOTO ,loop)))
                  `((CALL ,(car expr) ,(cadr expr))))))))
-        
+
  (defun compile-expr-lst (fn loop vars expr-lst max-a-regs)
    (declare (xargs :mode :program))
    (cond ((endp expr-lst) nil)
          (t (append (compile-expr fn loop vars (car expr-lst) max-a-regs)
                     (compile-expr-lst fn loop vars (cdr expr-lst) max-a-regs))))))
-  
+
 (defun compile-module (module max-a-regs)
   (let* ((fn (car module))
          (vars (cadr (assoc-keyword :formals (cdr module))))
@@ -724,8 +724,8 @@ QED!
         ((endp (cdr targets))
          (rev1 `((GOTO ,(car targets)))
                rcode))
-        (t (expand-ret-lst 
-            (cdr targets) 
+        (t (expand-ret-lst
+            (cdr targets)
             (rev1 `((ILOAD ,(* 2 max-a-regs))
                     (ICONST ,(car targets))
                     (ISUB)
@@ -861,7 +861,7 @@ QED!
 ; clock for (if b c d) is not because we would add a TICK -- but that TICK
 ; is not needed on every path through the code, just some paths.  We handle
 ; this by putting the keyword :STOP into the clock when we see a
-; tail-recursive GOTO.  Then, we generate clocks like (clk+ (clk+ 
+; tail-recursive GOTO.  Then, we generate clocks like (clk+ (clk+
 ; 11 (clk+ (foo-clock x) :STOP)) 1) like: (clk+ 11
 ; (clk+ (foo-clock x) (clk+ :STOP 1))) which we just truncate at the
 ; :STOP.  Thus, the extra TICK is added only on those branches not ending in a
@@ -1024,7 +1024,7 @@ QED!
                   ,@(algorithm-expr-lst fn (cdr (cdr expr)) amodule-lst)
                   ,@(cadr (assoc-keyword :ghost-formals
                                          (cdr (assoc-equal (car expr) amodule-lst))))))))))))
-        
+
  (defun compile-clock-expr-lst (fn loop vars expr-lst amodule-lst)
    (declare (xargs :mode :program))
    (cond ((endp expr-lst) nil)
@@ -1082,7 +1082,7 @@ QED!
 (defun make-push-nest (lst stack)
   (cond ((endp lst) stack)
         (t (make-push-nest (cdr lst) `(push ,(car lst) ,stack)))))
-  
+
 
 (defun make-acl2-body (ghost-base-test ghost-base-value hyps body)
   (let ((body1 (if (eq hyps t)
@@ -1092,7 +1092,7 @@ QED!
         `(if ,ghost-base-test
              ,ghost-base-value
              ,body1)
-        body1)))        
+        body1)))
 
 ; The following function generates two or three functions depending on whether
 ; the module is iterative.  If it has a loop in it, we generate three
@@ -1128,15 +1128,15 @@ QED!
                          `(if (equal (mv-nth 0 (mv-list ,output-arity
                                                         (,(algorithm-name fn) ,@vars-and-ghosts)))
                                      0)
-                              (clk+ ,(len (save-regs (len vars) max-a-regs)) 
+                              (clk+ ,(len (save-regs (len vars) max-a-regs))
                                     (,loop-clock ,@vars-and-ghosts))
-                              (clk+ ,(len (save-regs (len vars) max-a-regs)) 
+                              (clk+ ,(len (save-regs (len vars) max-a-regs))
                                     (clk+ (,loop-clock ,@vars-and-ghosts)
                                           (clk+ ,(len (restore-regs output-arity
                                                                     (len vars)
                                                                     max-a-regs))
                                                 (exit-clock ',fn ret-pc)))))
-                         `(clk+ ,(len (save-regs (len vars) max-a-regs)) 
+                         `(clk+ ,(len (save-regs (len vars) max-a-regs))
                                 (clk+ (,loop-clock ,@vars-and-ghosts)
                                       (clk+ ,(len (restore-regs output-arity
                                                                 (len vars)
@@ -1316,7 +1316,7 @@ QED!
          (defthm ,(pack (list fn '-loop-is- (algorithm-name fn)))
            (implies
             (and (ready-at ,(pack (list '* fn '-loop*)) (list ,@vars) 0 s)
-                 ,@(if (equal hyps t) nil (list hyps))) 
+                 ,@(if (equal hyps t) nil (list hyps)))
             (equal
              (m1 s (,(pack (list fn '-loop-clock)) ,@vars-and-ghosts))
              ,(let ((terminal-state
@@ -1338,7 +1338,7 @@ QED!
                 (if ghost-formals
                     (if (and (eq fn 'MAIN)
                              ghost-calls)
-                        
+
                         `(if (equal (mv-nth 0 (mv-list ,output-arity (!MAIN ,@vars-and-ghosts))) 0)
 
 ; Note that if MAIN hangs, it hangs at ghost-call's loop, not *MAIN-LOOP*.
@@ -1455,7 +1455,7 @@ QED!
                                          (psi))
                              ,terminal-state))
                     terminal-state))))
-                         
+
            :hints (("Goal" :do-not-induct t)))
 
          (in-theory (disable ,(pack (list fn '-clock))
@@ -1492,7 +1492,7 @@ QED!
 ; commands.  We do not expand macros in the event list, nor do we look inside
 ; of encapsulates.  Each edit command is of the form (ev-type ev-name place x),
 ; where
-          
+
 ; ev-type = DEFTHM, place = :before, :after, :hints, or :rule-classes
 ; ev-type = DEFUN, place =  :before, :after, or :xargs
 
@@ -1542,7 +1542,7 @@ QED!
     (relevant-edit-commands ev-type ev-name (cdr commands)
                             relevant-cmds
                             (cons (car commands) leftover-cmds)))))
-         
+
 (defun replace-keyword-arg (key val lst)
   (cond ((endp lst)
          (list :key val))
@@ -1587,7 +1587,7 @@ QED!
     `(DEFUN ,name ,vars
        ,@(replace-xargs dcls x)
        ,body)))
-               
+
 (defun do-edit-command (cmd event before-events after-events)
   (let ((ev-type (nth 0 cmd))
         (place (nth 2 cmd))
@@ -1664,7 +1664,7 @@ QED!
             (relevant-edit-commands (car (car events))
                                     (cadr (car events))
                                     commands nil nil)
-             
+
             (mv-let (before-events new-event after-events)
                     (do-edit-commands relevant-cmds (car events) nil nil)
                     (append before-events
@@ -1733,7 +1733,7 @@ QED!
 
 ; This is used in the code correctness theorems and returns the final pc given
 ; the called routine and the id of the call.
- 
+
               (defun final-pc (fn id)
                 (cond ((assoc-equal id *id-to-label-table*)
                        (let* ((label (cdr (assoc-equal id *id-to-label-table*))))

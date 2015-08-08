@@ -19,16 +19,16 @@
 ; recursive calls contained within the body.  Those recursive calls will be
 ; fixed in the function that calls this one.
 
-  (declare (xargs :measure (+ (acl2-count non-keyed-args) 
+  (declare (xargs :measure (+ (acl2-count non-keyed-args)
                               (acl2-count keyed-args))))
   (cond ((consp non-keyed-args)
          (cons (car body)
-               (fix-args-order-and-remove-keys (cdr non-keyed-args) 
+               (fix-args-order-and-remove-keys (cdr non-keyed-args)
                                                keyed-args
                                                (cdr body))))
         ((consp keyed-args)
          (let* ((keyword (car keyed-args))
-                (keyword-value (cadr (member-equal 
+                (keyword-value (cadr (member-equal
                                       (intern (symbol-name keyword) "KEYWORD")
                                       body))))
            (cons keyword-value
@@ -36,7 +36,7 @@
                                                  (cdr keyed-args)
                                                  body))))
         (t nil)))
-      
+
 (mutual-recursion
  (defun fix-defkun-recursive-call-args (original-name fname non-keyed-args keyed-args body)
    (declare (xargs :mode :program))
@@ -45,7 +45,7 @@
      (cons (fix-defkun-recursive-call original-name fname non-keyed-args keyed-args (car body))
            (fix-defkun-recursive-call-args original-name fname non-keyed-args keyed-args
                                            (cdr body)))))
- 
+
  (defun fix-defkun-recursive-call (original-name fname non-keyed-args keyed-args body)
    (declare (xargs :mode :program))
    (cond ((atom body)
@@ -55,25 +55,25 @@
                                                       keyed-args
                                                       (cdr body))))
             (cons fname
-                  (fix-defkun-recursive-call-args original-name 
+                  (fix-defkun-recursive-call-args original-name
                                                   fname
                                                   non-keyed-args
-                                                  keyed-args 
+                                                  keyed-args
 ; We do not need to take the cdr of body because fix-args-order-and-remove-keys
 ; did that for us.
                                                   body))))
          (t (cons (car body)
-                  (fix-defkun-recursive-call-args original-name 
+                  (fix-defkun-recursive-call-args original-name
                                                   fname
                                                   non-keyed-args
-                                                  keyed-args 
+                                                  keyed-args
                                                   (cdr body))))))
  )
 
 (defmacro defkun (name args body)
 
 ; The use of this macro defines a macro and function pair that allow a
-; programming style of passing keyword arguments to function calls.  
+; programming style of passing keyword arguments to function calls.
 
 ; Defkun works for recursive functions, but if you forget to use the :keyword
 ; to specify a particular keyword's value in the recursive call, the function
@@ -85,16 +85,16 @@
     (parse-keyed-arguments args)
     (let* ((fname (packn (list name "-fn")))
            (args-list (append non-keyed-args keyed-args))
-           (new-body (fix-defkun-recursive-call name 
-                                                fname 
+           (new-body (fix-defkun-recursive-call name
+                                                fname
                                                 non-keyed-args
                                                 keyed-args
                                                 body))
            )
-      `(progn 
-         (defun ,fname ,(append non-keyed-args keyed-args) 
+      `(progn
+         (defun ,fname ,(append non-keyed-args keyed-args)
            ,new-body)
-         (defmacro ,name ,args 
+         (defmacro ,name ,args
            (list (quote ,fname) ,@args-list))
          (add-macro-alias ,name ,fname)))))
 

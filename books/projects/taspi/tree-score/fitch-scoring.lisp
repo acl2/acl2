@@ -1,5 +1,5 @@
-;; Parsimony tree scoring 
-;; Separate (more efficient) algorithm for the case where all transitions 
+;; Parsimony tree scoring
+;; Separate (more efficient) algorithm for the case where all transitions
 ;; cost 1.  Written in most part by Sol Swords.
 
 (in-package "ACL2")
@@ -14,7 +14,7 @@
 ;; contribution.
 
 (defmacro mv2-cons (call1 call2)
-  `(mv-let 
+  `(mv-let
     (car1 car2) ,call1
     (mv-let
      (cdr1 cdr2) ,call2
@@ -29,10 +29,10 @@
                   :verify-guards nil))
   (if (atom first-states)
       (mv nil nil)
-    (mv-let 
+    (mv-let
      (cdr-score cdr-states)
      (fitch-combine-scores1 first-score (cdr first-states) (cdr rest-states))
-     (let ((car-score (plus-nil-inf (min-nil-inf (car first-states) 
+     (let ((car-score (plus-nil-inf (min-nil-inf (car first-states)
                                                  (plus-nil-inf 1 first-score))
                                     (car rest-states))))
        (mv (min-nil-inf car-score cdr-score)
@@ -58,7 +58,7 @@
                 (rational-or-nil-listp rest-states)
                 (or (rationalp first-score) (not first-score))
                 (equal (len first-states) (len rest-states)))
-           (rational-or-nil-listp 
+           (rational-or-nil-listp
             (mv-nth 1 (fitch-combine-scores1 first-score first-states rest-states)))))
 
 (local
@@ -67,7 +67,7 @@
             (not (equal (len x) 0)))))
 
 (verify-guards fitch-combine-scores1)
-           
+
 
 (defun fitch-combine-scores (first-scores first-states rest-states alpha-len)
   (declare (xargs :guard (and (rational-or-nil-listp first-scores)
@@ -78,7 +78,7 @@
                               (equal (len first-scores) (len rest-states)))))
   (if (atom first-scores)
       (mv nil nil)
-    (mv2-cons (fitch-combine-scores1 (car first-scores) (car first-states) 
+    (mv2-cons (fitch-combine-scores1 (car first-scores) (car first-states)
                                      (car rest-states))
               (fitch-combine-scores (cdr first-scores) (cdr first-states)
                                     (cdr rest-states) alpha-len))))
@@ -189,11 +189,11 @@
                     (fitch-score-subtree t (car tree) sequences cssl-map
                                          alpha-len)
                     (mv scores (fitch-initial-scorelist scores state-scores alpha-len)))
-          (mv-let 
+          (mv-let
            (rest-scores rest-states)
            (fitch-score-subtree nil (cdr tree) sequences cssl-map
                                 alpha-len)
-           (declare (ignore rest-scores))       
+           (declare (ignore rest-scores))
            (mv-let
             (first-scores first-states)
             (fitch-score-subtree t (car tree) sequences cssl-map alpha-len)
@@ -202,7 +202,7 @@
             (fitch-combine-scores first-scores first-states rest-states
                                   alpha-len))))
       (mv nil nil))))
-                
+
 (defthm fitch-score-subtree-len
   (implies (and (or flg (consp tree))
                 (valid-sequences-same-length sequences)

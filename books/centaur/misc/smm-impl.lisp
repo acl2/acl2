@@ -70,7 +70,7 @@
            (smme-blocksizes-length smme))
        (<= (lnfix (smme-blockstartsi (smme-nblocks smme) smme))
            (smme-mem-length smme))))
-       
+
 
 (definline smme-block-start (n smme)
   (declare (xargs :guard (and (natp n)
@@ -201,7 +201,7 @@
            :in-theory (disable smme-addr))))
 
 (in-theory (disable smme-addr))
-                         
+
 
 (definline smme-read (n i smme)
   (declare (xargs :guard (and (natp n)
@@ -642,7 +642,7 @@
 (local (defthm equal-nfix-plus-one
          (not (equal (+ 1 (nfix x)) x))
          :hints(("Goal" :in-theory (enable nfix)))))
-                
+
 
 (defthm smme-wfp-of-smme-addblock
   (implies (smme-wfp smme)
@@ -1038,7 +1038,7 @@
              (smml-fast-read a1 smm)))
     :hints (("goal" :induct (ind a1 a2 smm)
              :in-theory (disable smml-block-start-alt)))))
-                       
+
 
 (defthm true-list-listp-smml-fast-write
   (implies (true-list-listp smm)
@@ -1064,7 +1064,7 @@
   :hints (("goal" :in-theory (disable smml-smme-blocksizes-ok)
            :expand ((smml-smme-blocksizes-ok (smml-fast-write a v smm) smme))
            :do-not-induct t)))
- 
+
 
 (defthm smml-read-is-smme-read
   (implies (and (smml-smme-blocksizes-ok smm smme)
@@ -1105,7 +1105,7 @@
                                   smme-wfp))
           :do-not-induct t)))
 
-    
+
 
 (defthm smml-block-start-of-smml-fast-write
   (equal (smml-block-start n (smml-fast-write a v smm))
@@ -1256,7 +1256,7 @@
 (encapsulate nil
   (local
    (progn
-     
+
 
      (defun-nx smme-corr (smme smm)
        (and (true-list-listp smm)
@@ -1298,7 +1298,7 @@
                                    '(:in-theory (enable smme-addblock
                                                         smml-block-start-when-smme-wfp)))
                               )))
-                    
+
 
   (defabsstobj-events smm
     :concrete smme
@@ -1357,12 +1357,12 @@
               (smm3-fast-read :logic smml-fast-read :exec smme-memi)
               (smm3-fast-write :logic smml-fast-write :exec update-smme-memi))
     :congruent-to smm))
-       
-  
-  
-       
-  
-       
-       
-              
-      
+
+
+
+
+
+
+
+
+

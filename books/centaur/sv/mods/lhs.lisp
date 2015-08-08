@@ -762,7 +762,7 @@ the order given (LSBs-first).</p>")
     :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
   (deffixequiv lhs-vars)
-  
+
   (defthm vars-of-lhs-cons
     (iff (member v (lhs-vars (lhs-cons a b)))
          (or (member v (lhs-vars b))
@@ -1776,7 +1776,7 @@ bits of @('foo'):</p>
   (local (defthm len-of-driverlist-rest-after-strength-weak
            (<= (len (driverlist-rest-after-strength x strength)) (len x))
            :rule-classes :linear))
-  
+
   (defthm len-of-driverlist-rest-after-strength
     (implies (consp x)
              (< (len (driverlist-rest-after-strength x (driver->strength (car x))))
@@ -1806,8 +1806,8 @@ bits of @('foo'):</p>
   (defthm vars-of-driverlist->svex
     (implies (not (member v (driverlist-vars x)))
              (not (member v (svex-vars (driverlist->svex x)))))))
-        
-  
+
+
 
 
 

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -45,7 +45,7 @@
 (local (include-book "rationalp"))
 
 
-#| 
+#|
 
 Todo: We could probably prove REM analogs for most of the rules in this book (since REM and MOD agree on a
 certain range of inputs), but we don't use REM much at all in the library (for good reason, thinks Eric), so
@@ -82,7 +82,7 @@ perhaps this isn't worth spending time on.
                     (if (not (rationalp (/ x y)))
                         x
                       (if (integerp (/ x y))
-                          0 
+                          0
                         (+ X (* -1 Y (FLOOR (* X (/ Y)) 1))) ;this case is gross (basically the defn of mod)
                         )))))
   :otf-flg t
@@ -97,7 +97,7 @@ perhaps this isn't worth spending time on.
   :hints (("Goal" :in-theory (enable mod))))
 
 
-;we probably get this when mod is defined.  perhaps we should disable mod's t-p rule since this duplicates it. 
+;we probably get this when mod is defined.  perhaps we should disable mod's t-p rule since this duplicates it.
 (defthm mod-acl2-numberp-type-prescription
   (acl2-numberp (mod x y))
   :rule-classes (:type-prescription))
@@ -126,9 +126,9 @@ perhaps this isn't worth spending time on.
            :in-theory (enable mod))))
 
 (defthm mod-non-negative-rationalp-type-prescription
-  (implies (and (case-split (< 0 y))                     
-                (case-split (not (complex-rationalp x))) 
-                (case-split (not (complex-rationalp y))) 
+  (implies (and (case-split (< 0 y))
+                (case-split (not (complex-rationalp x)))
+                (case-split (not (complex-rationalp y)))
                 )
            (and (<= 0 (mod x y))
                 (rationalp (mod x y)) ;we might as well include this
@@ -292,7 +292,7 @@ perhaps this isn't worth spending time on.
 ;I don't think we can drop either hyp.
 (defthm mod-sum-elim-second
   (implies (and (case-split (not (complex-rationalp x1)))
-                (case-split (not (complex-rationalp x2))) 
+                (case-split (not (complex-rationalp x2)))
                 )
            (equal (mod (+ x1 (mod x2 y)) y)
                   (mod (+ x1 x2) y)))
@@ -309,7 +309,7 @@ perhaps this isn't worth spending time on.
 (defthm mod-sum-elim-second-gen
   (implies (and (integerp (/ y2 y))
                 (case-split (not (complex-rationalp x1)))
-                (case-split (not (complex-rationalp x2))) 
+                (case-split (not (complex-rationalp x2)))
                 (case-split (not (equal y 0)))
                 (case-split (rationalp y))
                 )
@@ -338,7 +338,7 @@ perhaps this isn't worth spending time on.
 (defthm mod-sum-elim-first-gen
   (implies (and (integerp (/ y2 y))
                 (case-split (not (complex-rationalp x1)))
-                (case-split (not (complex-rationalp x2))) 
+                (case-split (not (complex-rationalp x2)))
                 (case-split (not (equal y 0)))
                 (case-split (rationalp y))
                 )
@@ -379,7 +379,7 @@ perhaps this isn't worth spending time on.
 
 ;I'm going to try keeping this disabled, since relieving the first hyp may be expensive.
 ;rename: no more n!
-;(integerp (* x (/ y))) basically says that x is a multiple of y, which is 
+;(integerp (* x (/ y))) basically says that x is a multiple of y, which is
 ;basicially what (equal (mod x y) 0) says too.
 (defthmd mod-mult-of-n
   (implies (and (integerp (* x (/ y)))
@@ -535,7 +535,7 @@ perhaps this isn't worth spending time on.
                 )
            (equal (equal (mod x y) 0)
                   (integerp (* (/ y) x))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable mod))))
 
 (defthmd mod-minus-case-non-integerp
@@ -580,7 +580,7 @@ perhaps this isn't worth spending time on.
   :hints (("Goal" :in-theory (e/d ( mod-minus-case-integerp-better
                                     mod-minus-case-non-integerp)
                                   ())
-           :cases ((integerp (/ x y))))))  
+           :cases ((integerp (/ x y))))))
 
 (defthm mod-minus-alt
   (implies (and (syntaxp (negative-syntaxp x))
@@ -720,7 +720,7 @@ ex:   (INTEGERP (* (/ (EXPT 2 J))
   :hints (("Goal" :in-theory (enable mod))))
 
 (defthm fl-mod-x-1
-  (equal (fl (mod x 1)) 
+  (equal (fl (mod x 1))
          0))
 
 (defthmd mod-by-2
@@ -920,7 +920,7 @@ not done
            (equal (equal (mod (+ x k) y) (mod k y))
                   (equal 0 (mod x y))))
   :hints (("Goal" :use (:instance mod-sums-cancel-4 (x1 0) (x2 x)))))
-  
+
 
 
 
@@ -1023,7 +1023,7 @@ not done
 		  (integerp n))
 	     (integerp (mod m n)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable mod))))  
+  :hints (("Goal" :in-theory (enable mod))))
 
 ; Matt K., November 2006:
 ; We prefer to export (to lib) a version of the following rule that does not
@@ -1122,7 +1122,7 @@ not done
    (implies (and (<= 0 m)
                  (case-split (rationalp m))
                  )
-            (<= (mod m n) m))  
+            (<= (mod m n) m))
    :rule-classes :linear)
 
  )
@@ -1177,7 +1177,7 @@ not done
            (natp (mod m n)))
   :rule-classes ((:type-prescription :typed-term (mod m n)))
   :hints (("Goal" :use (:instance mod-non-negative (x m) (y n)))))
-           
+
 (defthm natp-mod-rewrite
   (implies (and (natp m)
                 (natp n))
@@ -1541,8 +1541,8 @@ not done
                 (rationalp x)
                 )
            (equal (mod (+ x z) y)
-                  (mod (+ x k) y)))) 
-                        
+                  (mod (+ x k) y))))
+
 
 (defthm mod-split-around-zero
   (implies (and (< x y)
@@ -1550,7 +1550,7 @@ not done
                 (case-split (rationalp x))
                 (case-split (rationalp y)))
            (equal (mod x y)
-                  (if (< x 0) 
+                  (if (< x 0)
                       (+ x y)
                       x)))
   :hints (("Goal" :in-theory (enable mod-does-nothing  mod-force-chosen-a-neg)))

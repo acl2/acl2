@@ -930,9 +930,9 @@
 ; a theorem into a non-theorem, from which we could easily prove nil.  Hence
 ; the defthm just below should produce the following error:
 
-;   ACL2 Error in ( DEFTHM EQUIV-IMPLIES-EQUAL-EQUAL-2 ...):  
+;   ACL2 Error in ( DEFTHM EQUIV-IMPLIES-EQUAL-EQUAL-2 ...):
 ;   EQUIV-IMPLIES-EQUAL-EQUAL-2 is an unacceptable :CONGRUENCE rule because
-;   the variable X-EQUIV occurs more than once in 
+;   the variable X-EQUIV occurs more than once in
 ;   (EQUAL (IDENTITY X-EQUIV) X-EQUIV).  See :DOC congruence.
 
 (must-fail

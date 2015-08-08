@@ -147,7 +147,7 @@
 
             :measure (if (quartet-guard M i j k l)
                                (let ((n (len M)))
-                                 (make-ord 
+                                 (make-ord
                                   4 (- n i)
                                   (make-ord
                                    3 (- n j)
@@ -160,7 +160,7 @@
         (let ((maxidx (1- (len M)))
               (q (get-quartet M i j k l)))
           (if (mbt (quartet-guard M i j k l))
-              
+
               (cond ((< l maxidx)
                      (cons q (get-quartets M i j k (1+ l))))
                     ((< k (1- l))
@@ -176,7 +176,7 @@
   (implies (and (quartet-guard M i j k l)
                 (< i j) (< j k) (< k l))
            (quartet-list-p (get-quartets M i j k l))))
-   
+
 (defun quartet-member (i quartet)
   (declare (xargs :guard (quartet-p quartet)))
   (or (member i (car quartet))
@@ -188,7 +188,7 @@
       nil
     (or (quartet-member i (car quartets))
         (quartets-member i (cdr quartets)))))
-               
+
 (defun check-sibling (pair quartet)
   (declare (xargs :guard (and (pair-p pair)
                               (quartet-p quartet))))
@@ -214,7 +214,7 @@
            (or (quartet-p (car x))
                (let ((carx (car x)))
                  (case-match carx
-                   (((a b)) 
+                   (((a b))
                     (and (natp a) (natp b))))))
            (quartet-list-p (cdr x)))))
 
@@ -223,7 +223,7 @@
            (maybe-pair-and-quartet-listp x)))
 
 (defun find-siblings (quartets rest)
-  (declare (xargs :measure (make-ord 
+  (declare (xargs :measure (make-ord
                             2 (1+ (len rest))
                             (make-ord
                              1 (1+ (len (car rest)))
@@ -261,7 +261,7 @@
 (defthm find-siblings-eqlablep
   (implies (and (quartet-list-p quartets)
                 (maybe-pair-and-quartet-listp rest)
-                (find-siblings quartets rest)) 
+                (find-siblings quartets rest))
            (and (eqlablep (car (find-siblings quartets rest)))
                 (eqlablep (cadr (find-siblings quartets rest))))))
 
@@ -318,7 +318,7 @@
             taxa))
       nil)))
 
-      
+
 
 (defun list-up-to-n-helper (n)
   (declare (xargs :guard (natp n)))
@@ -344,7 +344,7 @@
     (naive-quartet-recursion taxa quartets)))
 
 
-;; 0             2 
+;; 0             2
 ;;  \3         1/
 ;;   \  2   3  /
 ;;    x---+---x
@@ -372,9 +372,9 @@
 ;;                  |\
 ;;                  | \
 ;;                  1  0
-           
-      
-;; 0      5          2 
+
+
+;; 0      5          2
 ;;  \3    |3       1/
 ;;   \  2 | 4   3  /
 ;;    x---+---+---x
@@ -403,4 +403,3 @@
 ;;         3   2 5   x
 ;;                  / \
 ;;                 1   0
-      

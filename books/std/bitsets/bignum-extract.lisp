@@ -38,7 +38,7 @@
   ((x integerp "Integer to extract from")
    (slice natp "Which 32 bit slice to extract"))
   :returns
-  (extracted natp :rule-classes :type-prescription) 
+  (extracted natp :rule-classes :type-prescription)
   :long "<p>Logically, @(call bignum-extract) is essentially:</p>
 
 @({

@@ -96,7 +96,7 @@
   (implies (no-duplicatesp-equal (append x y))
            (no-duplicatesp-equal y)))
 
-;member append subset 
+;member append subset
 (defthm member-difference-member
   (implies (member-equal x (difference p q))
            (member-equal x p)))
@@ -171,11 +171,11 @@
 
 
 ;; subset-list
-(defthm subset-list-gives-append-1  
+(defthm subset-list-gives-append-1
   (implies (subset-list x y)
            (subset-list x (append y z))))
 
-(defthm subset-list-gives-append-2  
+(defthm subset-list-gives-append-2
   (implies (subset-list x y)
            (subset-list x (append z y))))
 

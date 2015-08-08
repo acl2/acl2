@@ -156,7 +156,7 @@
                 (integerp n)
                 (> n 0)
                 )
-           (equal (near x n) 
+           (equal (near x n)
                   (away x n)))
   :rule-classes ())
 
@@ -214,7 +214,7 @@
 
 (defthm near-exactp-a
   (implies (and (rationalp x)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (iff (= x (near x n))
                 (exactp x n)))
@@ -306,7 +306,7 @@
                 (integerp n)
                 (integerp k)
                 (> k 0)
-                (>= n k)		  
+                (>= n k)
                 (< 0 a)
                 (< a x)
                 (< 0 y)

@@ -21,7 +21,7 @@
 
 	(send fd expression)      ;; what if FD doesn't exist?
 	(select variable)         ;; returns list of active FDs
-	(receive fd variable)   
+	(receive fd variable)
   	(fdasgn variable fdexpression)  ;; for socket primitives
 	(fork variable)
 	(exec program-name arguments)
@@ -90,7 +90,7 @@
 
 ;;--------------------------------
 ;; pstate -- process state
-		 
+
 (defun codep (code)
   (declare (xargs :guard t))
   (cond ((atom code) (null code))
@@ -167,7 +167,7 @@
   (implies (and (pstate-listp pss)
 		(consp (assoc-equal hpid pss)))
 	   (pstatep (assoc-equal hpid pss))))
-	   
+
 ;;---------------
 
 (defun make-pstate (hpid code cc xstack memory)

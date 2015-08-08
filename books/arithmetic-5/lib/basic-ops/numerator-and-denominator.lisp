@@ -29,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local 
+(local
  (include-book "../../support/top"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -41,7 +41,7 @@
   (implies (rationalp x)
            (equal (* (/ (denominator x)) (numerator x)) x)))
 
-(local 
+(local
  (in-theory (enable rewrite-linear-equalities-to-iff)))
 
 (defthm numerator-zero
@@ -129,11 +129,11 @@
   (and
    (implies
     (equal (numerator r) 1)
-    (equal (/ r) 
+    (equal (/ r)
 	   (denominator r)))
    (implies
     (equal (numerator r) -1)
-    (equal (/ r) 
+    (equal (/ r)
 	   (- (denominator r)))))
   :hints (("Goal" :use ((:instance rational-implies2 (x r)))
            :in-theory (disable rational-implies2))))
@@ -202,25 +202,25 @@
    (implies (and (integerp x)
                  (integerp y)
                  (< 0 y))
-            (<= (denominator (* x (/ y))) 
+            (<= (denominator (* x (/ y)))
 		y))
    :rule-classes ((:linear
 		  :corollary
 		  (implies (and (integerp x)
 				(integerp y)
 				(< 0 y))
-			   (<= (denominator (* x (/ y))) 
+			   (<= (denominator (* x (/ y)))
 			       y)))
 		  (:linear
 		  :corollary
 		  (implies (and (integerp x)
 				(integerp y)
 				(< 0 y))
-			   (<= (denominator (* (/ y) x)) 
+			   (<= (denominator (* (/ y) x))
 			       y)))))
 
 (defthm |(denominator (+ x r))|
-  (and 
+  (and
    (implies (and (rationalp r)
 		 (integerp x))
 	    (equal (denominator (+ x r))

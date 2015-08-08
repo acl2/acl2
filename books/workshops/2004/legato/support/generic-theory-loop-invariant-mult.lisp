@@ -246,7 +246,7 @@
 
 ;;; Instantiate the generic loop invariant theory.
 
-(defthm wp-zcoef-loop-invariant 
+(defthm wp-zcoef-loop-invariant
   (implies (wp-zcoef-g-invariant f1 x c low a result f2 i)
 	   (wp-zcoef-g f1 x c low a result f2 i))
  :hints

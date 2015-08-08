@@ -200,7 +200,7 @@
 
 (defun used-definition (name defs)
   (declare (xargs :guard (and (symbolp name) (definition-listp defs))))
-  (list 'defun name (get-vars name (construct-genv defs)) 
+  (list 'defun name (get-vars name (construct-genv defs))
 	(get-body name (construct-genv defs))))
 
 (in-theory (disable get-definition within used-definition))
@@ -255,7 +255,7 @@
 (defun evlop (op args genv env n)
   (declare (ignore genv env n)
 	   (xargs :guard (true-listp args)))
-  (cond 
+  (cond
    ((equal op 'CAR) (list (MCAR (car args))))
    ((equal op 'CDR) (list (MCDR (car args))))
    ((equal op 'CADR) (list (MCADR (car args))))
@@ -288,20 +288,20 @@
 (mutual-recursion
 
 (defun evl (form genv env n)
-  (declare (xargs :guard (and (formp form) (genvp genv) 
+  (declare (xargs :guard (and (formp form) (genvp genv)
 			      (alistp env) (natp n))
 		  :measure (cons (1+ (acl2-count n)) (acl2-count form))))
-  (cond 
+  (cond
    ((zp n) (undefined))
    ((equal form 'nil) (list nil))
    ((equal form 't) (list t))
    ((symbolp form) (list (cdr (assoc form env))))
    ((atom form) (list form))
    ((equal (car form) 'QUOTE) (list (cadr form)))
-   ((equal (car form) 'IF) 
+   ((equal (car form) 'IF)
     (let ((cond (evl (cadr form) genv env n)))
       (if (defined cond)
-	  (if (car cond) 
+	  (if (car cond)
 	      (evl (caddr form) genv env n)
 	    (evl (cadddr form) genv env n))
 	(undefined))))
@@ -316,7 +316,7 @@
 	  (undefined))))))
 
 (defun evlist (forms genv env n)
-  (declare (xargs :guard (and (form-listp forms) (genvp genv) 
+  (declare (xargs :guard (and (form-listp forms) (genvp genv)
 			      (alistp env) (natp n))
 		  :measure (cons (1+ (acl2-count n)) (acl2-count forms))))
   (cond ((zp n) (undefined))
@@ -325,7 +325,7 @@
 		 (r (evlist (cdr forms) genv env n)))
 	     (if (and (defined f) (defined r))
 		 (cons (car f) r)
-	       (undefined)))))) 
+	       (undefined))))))
 )
 
 ;;---------------------------------------------------------------------------
@@ -349,14 +349,14 @@
 ;;---------------------------------------------------------------------------
 
 (defthm first-test
-  (equal 
+  (equal
    (evaluate '((defun f (n) (* n n))) '(n) '(f (f n)) '(10) 1000000)
    '(10000))
   :rule-classes nil)
 
 (defthm second-test
   (equal
-   (evaluate '((defun fac (n) (if (equal n 0) 1 (* n (fac (1- n)))))) 
+   (evaluate '((defun fac (n) (if (equal n 0) 1 (* n (fac (1- n))))))
 	     '(n) '(fac n) '(5) 1000000)
    '(120))
   :rule-classes nil)
@@ -367,8 +367,8 @@
 
 (defthm compiler-semantics-for-factorial
   (equal
-   (evaluate (compiler-source) 
-	     '(defs vars main) '(compile-program defs vars main) 
+   (evaluate (compiler-source)
+	     '(defs vars main) '(compile-program defs vars main)
 	     '(((defun fac (n) (if (equal n 0) 1 (* n (fac (1- n)))))) (n) (f n))
 	     1000000)
    '(((DEFCODE FAC
@@ -392,14 +392,14 @@
 ;;
 (defthm compiler-and-semantics
   (equal
-   (compile-program 
-    '((defun fac (n) (if (equal n 0) 1 (* n (fac (1- n)))))) 
-    '(n) 
+   (compile-program
+    '((defun fac (n) (if (equal n 0) 1 (* n (fac (1- n))))))
+    '(n)
     '(fac n))
    (car (evaluate
-	 (compiler-source) 
-	 '(defs vars main) 
-	 '(compile-program defs vars main) 
+	 (compiler-source)
+	 '(defs vars main)
+	 '(compile-program defs vars main)
 	 '(((defun fac (n) (if (equal n 0) 1 (* n (fac (1- n)))))) (n) (fac n))
 	 1000000)))
   :rule-classes nil)
@@ -421,17 +421,17 @@
 (defthm correct-compilation-on-factorial
   (equal
    (car (evaluate
-	 (compiler-source) 
-	 '(defs vars main) 
-	 '(compile-program defs vars main) 
-	 '(((defun fac (n) 
+	 (compiler-source)
+	 '(defs vars main)
+	 '(compile-program defs vars main)
+	 '(((defun fac (n)
 	      (if (equal n 0) 1 (* n (fac (1- n)))))) (n) (fac n))
 	 1000000))
-   (car (execute 
-	 (compile-program (compiler-source) 
-			  '(defs vars main) 
+   (car (execute
+	 (compile-program (compiler-source)
+			  '(defs vars main)
 			  '(compile-program defs vars main))
-	 (rev '(((defun fac (n) 
+	 (rev '(((defun fac (n)
 		   (if (equal n 0) 1 (* n (fac (1- n)))))) (n) (fac n)))
 	 1000000)))
   :rule-classes nil)
@@ -440,7 +440,7 @@
 
 
 ;;===========================================================================
-;; Well-formed programs: 
+;; Well-formed programs:
 ;; ~~~~~~~~~~~~~~~~~~~~~
 ;; We don't need this here, so the definition is just for information. The
 ;; compiler correctness proof will depend on the well-formedness of forms to
@@ -450,13 +450,13 @@
 ;; First, the program has to be syntactically correct. Then, variables have to
 ;; be bound, functions have to be defined and applied to the correct number of
 ;; arguments. Operators have to have the correct number of arguments as well.
-;; 
+;;
 ;;===========================================================================
 
 (mutual-recursion
 (defun wellformed-form (form genv env)
   (declare (xargs :guard (and (genvp genv) (symbol-listp env))))
-  (and 
+  (and
    ;; form is syntactically correct, and
    ;; ----------------------------------
    (formp form)
@@ -482,7 +482,7 @@
    ;; wellformed argument forms
    ;; --------------------------------------------------
    (if (operatorp (car form))
-       (or 
+       (or
         ;; unary
         ;; -----
         (and (member (car form) '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 1- 1+
@@ -521,7 +521,7 @@
   ;; A definition is well-formed, it its body is well-formed
   ;; w.r.t. the global environment and the formals parameter list
   ;; ------------------------------------------------------------
-  (and (definitionp def) 
+  (and (definitionp def)
        (wellformed-form (cadddr def) genv (caddr def))))
 
 (defun wellformed-defs (defs genv)
@@ -549,7 +549,7 @@
 
 (defthm wellformed-form-eqn
   (equal (wellformed-form form genv env)
-  (and 
+  (and
    (formp form)
    (if (equal form 'nil) t
    (if (equal form 't) t
@@ -558,7 +558,7 @@
    (if (equal (car form) 'QUOTE) t
    (if (equal (car form) 'IF) (wellformed-forms (cdr form) genv env)
    (if (operatorp (car form))
-       (or 
+       (or
         (and (member (car form) '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 1- 1+
 				      LEN SYMBOLP CONSP ATOM LIST1))
 	     (consp (cdr form))
@@ -573,9 +573,9 @@
        (and (assoc (car form) genv)
 	    (equal (len (cdr form)) (len (cadr (assoc (car form) genv))))
 	    (wellformed-forms (cdr form) genv env)))))))))))
-  :rule-classes ((:definition 
-		  :clique (wellformed-form wellformed-forms) 
-		  :controller-alist 
+  :rule-classes ((:definition
+		  :clique (wellformed-form wellformed-forms)
+		  :controller-alist
 		  ((wellformed-forms t nil nil) (wellformed-form t nil nil))))
   :hints (("Goal" :in-theory (disable operatorp member))))
 
@@ -587,9 +587,9 @@
 	   (and (wellformed-form (car flist) genv env)
 		(wellformed-forms (cdr flist) genv env))
 	 (null flist))))
-  :rule-classes ((:definition 
-		  :clique (wellformed-form wellformed-forms) 
-		  :controller-alist 
+  :rule-classes ((:definition
+		  :clique (wellformed-form wellformed-forms)
+		  :controller-alist
 		  ((wellformed-forms t nil nil) (wellformed-form t nil nil))))
   :hints (("Goal" :in-theory (disable wellformed-form))))
 

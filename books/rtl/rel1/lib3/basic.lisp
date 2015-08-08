@@ -10,7 +10,7 @@
 (in-package "ACL2")
 
 (local (include-book "../support/merge"))
- 
+
 (deflabel rtl-lib3-basic-start)
 
 (defun fl (x) (floor x 1))
@@ -470,7 +470,7 @@
   :rule-classes ())
 
 (defthm x-or-x/2
-    (implies (integerp x) 
+    (implies (integerp x)
 	     (or (integerp (/ x 2)) (integerp (/ (1+ x) 2))))
   :rule-classes ())
 

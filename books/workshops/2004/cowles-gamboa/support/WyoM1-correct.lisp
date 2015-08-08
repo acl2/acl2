@@ -1,7 +1,7 @@
 ; WyoM1 Correctness Without a Clock book
 ; Copyright (C) 2004 John R. Cowles, University of Wyoming
 
-; This program is free software; you can redistribute it and/or 
+; This program is free software; you can redistribute it and/or
 ; modify it under the terms of the GNU General Public License as
 ; published by the Free Software Foundation; either version 2 of
 ; the License, or (at your option) any later version.
@@ -12,7 +12,7 @@
 ; GNU General Public License for more details.
 
 ; You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free 
+; License along with this program; if not, write to the Free
 ; Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
 ; USA.
 
@@ -50,16 +50,16 @@
 
 ;;  (DEFUN RUN (S N)
 ;;    (IF (ZP N)
-;;        S 
+;;        S
 ;;        (RUN (STEP S) (- N 1))))
 
 ;; An interpreter without a clock for WyoM1 is given below by run-w.
 
 ;; (run-w s) runs state s to termination, if a halted state can be
-;; reached by repeated steps of WyoM1. The value of (run-w s) on 
+;; reached by repeated steps of WyoM1. The value of (run-w s) on
 ;; states that do not terminate is not specified.
 
-(defun haltedp (s) 
+(defun haltedp (s)
   (equal s (step s)))
 
 (defpun run-w (s)
@@ -87,10 +87,10 @@
   :rule-classes nil)
 
 (defthm ==-stepper
-  (implies (and (consp (next-inst 
+  (implies (and (consp (next-inst
 			(make-state call-stack defs)))
-		(not (equal 
-		      (op-code (next-inst 
+		(not (equal
+		      (op-code (next-inst
 				(make-state call-stack defs)))
 		      'call)))
 	   (== (make-state call-stack defs)
@@ -106,8 +106,8 @@
   :hints (("Goal"
 	   :in-theory (enable run))))
 
-;; The next theorem implies that if the execution paths from s1 
-;; s2  intersect, then (== s1 s2). 
+;; The next theorem implies that if the execution paths from s1
+;; s2  intersect, then (== s1 s2).
 (defthm ==-Y
   (implies (== (run s1 n)
                (run s2 m))
@@ -154,7 +154,7 @@
 ;; The WyoM1 program for the function sq behaves as expected:
 
 (defthm ==-sq
-  (implies (equal (bound? 'sq (defs s)) 
+  (implies (equal (bound? 'sq (defs s))
 		  *sq-def*)
 	   (== (do-inst '(call sq) s)
 	       (execute-sq s))))
@@ -183,7 +183,7 @@
 ;; The WyoM1 program for the function max behaves as expected:
 
 (defthm ==-max
-  (implies (equal (bound? 'max (defs s)) 
+  (implies (equal (bound? 'max (defs s))
 		  *max-def*)
 	   (== (do-inst '(call max) s)
 	       (execute-max s))))
@@ -218,27 +218,27 @@
 
 (in-theory (disable (:EXECUTABLE-COUNTERPART MAKE-FRAME)))
 
-;; This induction-hint was created from the failed proof 
+;; This induction-hint was created from the failed proof
 ;; of ==-fact-lemma without the induction hint.
 
 (defun ==-fact-hint (call-stack defs n)
   (if (zp n)
       (list call-stack defs)
       (==-fact-hint
-       (push (make-frame 8 
-			 (list (cons 'n 
-				     (top (stack 
-					   (make-state call-stack 
+       (push (make-frame 8
+			 (list (cons 'n
+				     (top (stack
+					   (make-state call-stack
 						       defs)))))
-			 (push (+ -1 (top (stack 
+			 (push (+ -1 (top (stack
 					   (make-state call-stack
 						       defs))))
-			       (push (top (stack 
-					   (make-state call-stack 
-						       defs))) 
+			       (push (top (stack
+					   (make-state call-stack
+						       defs)))
 				     nil))
 			  (cddr *fact-def*))
-	      (push (make-frame (+ 1 (pc (make-state call-stack 
+	      (push (make-frame (+ 1 (pc (make-state call-stack
 						     defs)))
 				(locals (make-state call-stack
 						    defs))
@@ -257,12 +257,12 @@
 ;; Look under HINTS.
 
 (defthm ==-fact-lemma
- (implies (and (equal (bound? 'fact defs) 
+ (implies (and (equal (bound? 'fact defs)
 		      *fact-def*)
-	       (equal (next-inst (make-state call-stack 
+	       (equal (next-inst (make-state call-stack
 					     defs))
 		      '(call fact))
-	       (equal n (top (stack (make-state call-stack 
+	       (equal n (top (stack (make-state call-stack
 						defs))))
 	       (integerp n)
 	       (>= n 0))
@@ -278,7 +278,7 @@
 ;; The WyoM1 program for the function fact behaves as expected:
 
 (defthm ==-fact
- (implies (and (equal (bound? 'fact (defs s)) 
+ (implies (and (equal (bound? 'fact (defs s))
 		      *fact-def*)
 	       (integerp (top (stack s)))
 	       (>= (top (stack s)) 0))
@@ -308,7 +308,7 @@
 ;; 		    (call max)    ;; 6
 ;; 		    (store y)     ;; 7
 ;; 		    (halt))       ;; 8
-;; 	 :defs (list *sq-def* 
+;; 	 :defs (list *sq-def*
 ;; 		     *max-def*
 ;; 		     *fact-def*)).
 
@@ -323,7 +323,7 @@
 ;; 				 (sq (! x)))
 ;; 			 (locals s)))
 
-;; First  we show that the initial state above is related 
+;; First  we show that the initial state above is related
 ;; by == to the final state above.
 
 (defthm ==-s-halt-state
@@ -340,7 +340,7 @@
 			       (call max)    ;; 6
 			       (store y)     ;; 7
 			       (halt))       ;; 8
-		    :defs (list *sq-def* 
+		    :defs (list *sq-def*
 				*max-def*
 				*fact-def*)))
 	 (x (binding 'x (locals s))))
@@ -372,7 +372,7 @@
 			       (call max)    ;; 6
 			       (store y)     ;; 7
 			       (halt))       ;; 8
-		    :defs (list *sq-def* 
+		    :defs (list *sq-def*
 				*max-def*
 				*fact-def*)))
 	 (x (binding 'x (locals s))))
@@ -402,7 +402,7 @@
 			       (call max)    ;; 6
 			       (store y)     ;; 7
 			       (halt))       ;; 8
-		    :defs (list *sq-def* 
+		    :defs (list *sq-def*
 				*max-def*
 				*fact-def*)))
 	 (x (binding 'x (locals s))))
@@ -413,11 +413,11 @@
 				   (locals s))))))
 
 ;; ==================================================================
-;; We now illustrate the meta-theorem that says if ACL2 can prove 
+;; We now illustrate the meta-theorem that says if ACL2 can prove
 ;; prog-is-correct-with-run-w, then ACL2 can also prove that there
 ;; is a nonnegative integer n such that the statement of the
 ;; prog-is-correct-with-run-w remains true when (run-w s) is replaced
-;; by (run s n). 
+;; by (run s n).
 
 ;; Let s be the state (modify nil
 ;; 			   :pc 0
@@ -432,12 +432,12 @@
 ;; 				      (call max)    ;; 6
 ;; 				      (store y)     ;; 7
 ;; 				      (halt))       ;; 8
-;; 			   :defs (list *sq-def* 
+;; 			   :defs (list *sq-def*
 ;; 				       *max-def*
 ;; 				       *fact-def*))
 ;; and let x be the (binding 'x (locals s)).
 
-;; We now show that there is an nonnegative integer n such that 
+;; We now show that there is an nonnegative integer n such that
 ;;  (run s n) =  (modify s
 ;; 		      :pc 8
 ;; 		      :locals (bind 'y (max (! (sq x))
@@ -464,7 +464,7 @@
 ;;                                                       (call max)    ;; 6
 ;;                                                       (store y)     ;; 7
 ;;                                                       (halt))       ;; 8
-;;                                            :defs (list *sq-def* 
+;;                                            :defs (list *sq-def*
 ;;                                                        *max-def*
 ;;                                                        *fact-def*))
 ;;       (b)    --------------- (modify s
@@ -481,7 +481,7 @@
   nbr-steps-to-halt (n)(s)
   (haltedp (run s n)))
 
-;; (defun 
+;; (defun
 ;;   f4n (x n)
 ;;   (declare (xargs :measure (nfix n)))
 ;;   (if (or (zp n) (test4 x))
@@ -517,7 +517,7 @@
  (local (in-theory (disable step haltedp run-opener)))
  (local (in-theory (enable run)))
 
-;;  (local 
+;;  (local
 ;;   (defthm
 ;;     test4-nbr-step4
 ;;     (implies (test4 x)
@@ -528,7 +528,7 @@
 ;;                    (n 0))))))
 
  (local
-  (defthm 
+  (defthm
     haltedp-nbr-steps-to-halt
     (implies (haltedp s)
 	     (haltedp (run s (nbr-steps-to-halt s))))
@@ -543,8 +543,8 @@
 ;;     (implies (test4 x)
 ;;              (equal (f4a x)(base4 x)))))
 
- (local 
-  (defthm 
+ (local
+  (defthm
     haltedp-run-w1-def
     (implies (haltedp s)
 	     (equal (run-w1 s) s))))
@@ -557,8 +557,8 @@
 ;;              (equal (step4n x n)
 ;;                     (step4n (step4 x)(- n 1))))))
 
-;;  (local 
-;;   (defthm +1-1 
+;;  (local
+;;   (defthm +1-1
 ;;     (equal (+ -1 +1 x) (fix x))))
 
 ;;  (local
@@ -573,16 +573,16 @@
 ;;     :rule-classes :forward-chaining))
 
  (local (defthm step-stepn-nbr-steps-to-halt
-          (implies (haltedp (run (step s)(nbr-steps-to-halt 
+          (implies (haltedp (run (step s)(nbr-steps-to-halt
 					  (step s))))
                    (haltedp (run s (nbr-steps-to-halt s))))
           :hints
-          (("goal" 
-	    :use ((:instance 
-		   nbr-steps-to-halt 
+          (("goal"
+	    :use ((:instance
+		   nbr-steps-to-halt
 		   (n (+ 1 (nfix (nbr-steps-to-halt (step s))))))
-		  (:instance 
-		   nbr-steps-to-halt 
+		  (:instance
+		   nbr-steps-to-halt
 		   (n 1)))))
           :rule-classes :forward-chaining))
 
@@ -593,26 +593,26 @@
 ;;              (iff (test4 (step4n (step4 x)(nbr-step4 (step4 x))))
 ;;                   (test4 (step4n x (nbr-step4 x)))))
 ;;     :hints (("Subgoal 2"
-;;              :use (:instance 
+;;              :use (:instance
 ;;                    nbr-step4
 ;;                    (x (step4 x))
 ;;                    (n (+ -1 (nbr-step4 x))))))))
 
  (local (defthm haltedp-nil-nbr-steps-to-halt
           (implies (not (haltedp s))
-                   (iff (haltedp 
-			 (run (step s) 
+                   (iff (haltedp
+			 (run (step s)
 			      (nbr-steps-to-halt (step s))))
-                        (haltedp 
+                        (haltedp
 			 (run s (nbr-steps-to-halt s)))))
           :hints
-          (("subgoal 2" 
+          (("subgoal 2"
 	    :expand (run s (nbr-steps-to-halt s))
             :use
-            ((:instance 
+            ((:instance
 	      nbr-steps-to-halt (s (step s))
 	      (n (+ -1 (nbr-steps-to-halt s)))))))))
- 
+
 ;;  (local
 ;;   (defthm
 ;;     f4n-step4
@@ -622,9 +622,9 @@
 ;;     :rule-classes nil))
 
  (local (defthm clocked-run-w1-step
-          (implies (and (haltedp (run s n)) 
+          (implies (and (haltedp (run s n))
 			(haltedp (run s m)))
-                   (equal (clocked-run-w1 s n) 
+                   (equal (clocked-run-w1 s n)
 			  (clocked-run-w1 s m)))
           :rule-classes nil))
 
@@ -649,9 +649,9 @@
           (if (haltedp s) s (run-w1 (step s))))
    :hints
    (("subgoal 1" :expand (clocked-run-w1 s (nbr-steps-to-halt s)))
-    ("subgoal 1.2'" 
-     :use ((:instance 
-	    clocked-run-w1-step 
+    ("subgoal 1.2'"
+     :use ((:instance
+	    clocked-run-w1-step
 	    (s (step s))
 	    (n (+ -1 (nbr-steps-to-halt s)))
 	    (m (nbr-steps-to-halt (step s)))))))
@@ -684,7 +684,7 @@
 			       (call max)    ;; 6
 			       (store y)     ;; 7
 			       (halt))       ;; 8
-		    :defs (list *sq-def* 
+		    :defs (list *sq-def*
 				*max-def*
 				*fact-def*)))
 	 (x (binding 'x (locals s))))
@@ -722,7 +722,7 @@
 			       (call max)    ;; 6
 			       (store y)     ;; 7
 			       (halt))       ;; 8
-		    :defs (list *sq-def* 
+		    :defs (list *sq-def*
 				*max-def*
 				*fact-def*)))
 	 (x (binding 'x (locals s)))
@@ -750,7 +750,7 @@
 			       (call max)    ;; 6
 			       (store y)     ;; 7
 			       (halt))       ;; 8
-		    :defs (list *sq-def* 
+		    :defs (list *sq-def*
 				*max-def*
 				*fact-def*)))
 	 (x (binding 'x (locals s)))
@@ -783,7 +783,7 @@
 					(call max)    ;; 6
 					(store y)     ;; 7
 					(halt))       ;; 8
-			     :defs (list *sq-def* 
+			     :defs (list *sq-def*
 					 *max-def*
 					 *fact-def*)))
 		  (n (nfix (nbr-steps-to-halt (modify nil
@@ -799,7 +799,7 @@
 								 (call max)    ;; 6
 								 (store y)     ;; 7
 								 (halt))       ;; 8
-						      :defs (list *sq-def* 
+						      :defs (list *sq-def*
 								  *max-def*
 								  *fact-def*)))))
 		  )))))

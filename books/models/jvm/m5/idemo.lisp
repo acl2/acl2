@@ -26,7 +26,7 @@
 
 J Moore
 
-Here is the Java for an iterative factorial method.  
+Here is the Java for an iterative factorial method.
 
 class IDemo {
 
@@ -199,7 +199,7 @@ Method int ifact(int)
        (ILOAD\_1)
        (IRETURN)))
      (REF 5))))
-  
+
 (defconst *IDemo-state*
   (make-state *IDemo-thread-table*
               *IDemo-heap*
@@ -227,7 +227,7 @@ Method int ifact(int)
       (repeat th 3)
     (append (repeat th 10)
             (ifact-loop-sched th (- n 1)))))
-            
+
 (defun ifact-sched (th n)
   (append (repeat th 4)
           (ifact-loop-sched th n)

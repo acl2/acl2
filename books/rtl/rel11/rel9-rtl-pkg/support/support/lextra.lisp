@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -586,8 +586,8 @@
            (equal (bits (+ 1 x y) i j)
                   (bits (+ (bits x i j)
                            (bits y i j)
-                           (lior (prop x y (1- j) 0) 
-                                 (gen x y (1- j) 0) 
+                           (lior (prop x y (1- j) 0)
+                                 (gen x y (1- j) 0)
                                  1))
                         (- i j) 0)))
   :hints (("Goal" :use bits-sum-plus-1-with-prop-gen-original))
@@ -681,10 +681,10 @@
                 (< k n)
                 (or (equal c 0) (equal c 1)))
            (equal (equal (bits (+ a b c) k 0) 0)
-                  (equal (bits (lxor (lxor a b n) 
+                  (equal (bits (lxor (lxor a b n)
                                      (cat (lior a b n) n c 1)
-                                     (1+ n)) 
-                               k 0) 
+                                     (1+ n))
+                               k 0)
                          0)))
   :hints (("Goal" :use top-thm-2-original))
   :rule-classes nil)
@@ -696,11 +696,11 @@
                 (natp k)
                 (< k n))
            (equal (equal (bits (+ a b 1) k 0) 0)
-		  (equal (bits (lnot (lxor (lxor a b n) 
+		  (equal (bits (lnot (lxor (lxor a b n)
 				           (cat (land a b n) n 0 1)
 					   (1+ n))
 				     (1+ n))
-			       k 0) 
+			       k 0)
 			 0)))
   :hints (("Goal" :use top-thm-3-original))
   :rule-classes ())
@@ -731,7 +731,7 @@
   (lnot (lior a (lnot b (1+ e)) (1+ e)) (1+ e)))
 
 (defun lam1 (a b e)
-  (land (bits (lamt a b e) e 2) 
+  (land (bits (lamt a b e) e 2)
 	(land (bits (lamg a b e) (1- e) 1)
 	      (lnot (bits (lamz a b e) (- e 2) 0) (1- e))
 	      (1- e))
@@ -745,7 +745,7 @@
 	(1- e)))
 
 (defun lam3 (a b e)
-  (land (bits (lamt a b e) e 2) 
+  (land (bits (lamt a b e) e 2)
 	(land (bits (lamz a b e) (1- e) 1)
 	      (lnot (bits (lamg a b e) (- e 2) 0) (1- e))
 	      (1- e))
@@ -857,7 +857,7 @@
    :hints (("Goal"
             :use ((:instance bits-upper-bound-2 (z (expt 2 (1+ (- i j))))))))
    :rule-classes nil)
-                                   
+
  (local-defthm gen-plus-1
    (implies (and (natp x)
                  (natp y)
@@ -909,10 +909,10 @@
                 (natp x)
                 (natp y)
                 (bvecp z (1+ j))
-                (= (land y z (1+ j)) 0))		  
+                (= (land y z (1+ j)) 0))
            (equal (gen (+ x y) z i 0)
                   (land (prop (+ x y) z i (1+ j))
-                        (gen (+ x y) z j 0)			  
+                        (gen (+ x y) z j 0)
                         1)))
   :hints (("Goal" :use ((:instance gen-extend
                                    (x (+ x y))
@@ -957,7 +957,7 @@
                 (natp y)
                 (bvecp z (1+ j))
                 (= (land y z (1+ j)) 0)
-                (equal (gen (+ x y) z j 0) 1))		  
+                (equal (gen (+ x y) z j 0) 1))
            (equal (bits (+ x y) i (1+ j))
                   (bits (+ (bits x i (1+ j))
                            (bits y i (1+ j)))
@@ -975,7 +975,7 @@
                 (natp y)
                 (bvecp z (1+ j))
                 (equal (gen (+ x y) z j 0) 1)
-                (= (land y z (1+ j)) 0))		  
+                (= (land y z (1+ j)) 0))
            (iff (equal (prop (+ x y) z i (1+ j))
                        1)
                 (equal (bits (+ (bits x i (1+ j))
@@ -1187,10 +1187,10 @@
                 (natp x)
                 (natp y)
                 (bvecp z (1+ j))
-                (= (land y z (1+ j)) 0))		  
+                (= (land y z (1+ j)) 0))
            (equal (gen (+ x y) z i 0)
                   (land (prop x y i (1+ j))
-                        (gen (+ x y) z j 0)			  
+                        (gen (+ x y) z j 0)
                         1)))
   :hints (("Goal" :use (gen-extend-3-a
                         gen-extend-3-b

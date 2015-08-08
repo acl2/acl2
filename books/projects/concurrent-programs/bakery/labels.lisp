@@ -5,7 +5,7 @@
   labels.lisp
   ~~~~~~~~~~~
 
-In this book, we prove that theorem labels-equal->>. 
+In this book, we prove that theorem labels-equal->>.
 
 |#
 

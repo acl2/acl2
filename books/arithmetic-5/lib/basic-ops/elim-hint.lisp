@@ -29,7 +29,7 @@
 ;;; well, and I do not feel like undertaking the task now.
 ;;;
 ;;; Here is the theorem that led me to try this.  Depending on the
-;;; ordering of the LHS and RHS of the concl, different choices are 
+;;; ordering of the LHS and RHS of the concl, different choices are
 ;;; made about what to eliminate.  One is good, and one is bad.
 #||
 (thm
@@ -66,7 +66,7 @@
   (term eliminables type-alist clause fns-to-elim ens wrld votes nominations)
   (declare (xargs :mode :program))
   (cond
-   ((flambda-applicationp term) 
+   ((flambda-applicationp term)
     nominations)
    ((not (member-equal (ffn-symb term) fns-to-elim))
     nominations)
@@ -217,7 +217,7 @@
           (pick-highest-sum-level-nos-hint (cdr nominations) wrld
 					   (list (caar nominations)) score))
 	 ((equal score max-score)
-	  (pick-highest-sum-level-nos-hint (cdr nominations) 
+	  (pick-highest-sum-level-nos-hint (cdr nominations)
 					   wrld
 					   (cons (caar nominations) ans)
 					   score))
@@ -257,7 +257,7 @@
 				 (access elim-rule rule :destructor-terms)))))
 	  (if (duplicate-inst-rule inst-rule ans)
 	      (select-instantiated-elim-rules-hint1 (cdr dterms) wrld ans)
-	    (select-instantiated-elim-rules-hint1 (cdr dterms) wrld 
+	    (select-instantiated-elim-rules-hint1 (cdr dterms) wrld
 						 (cons inst-rule ans)))))))
 
 (defun select-instantiated-elim-rules-hint (clause type-alist eliminables fns-to-elim ens wrld ans)
@@ -322,8 +322,8 @@
               (t (mv-let (clauses-list elim-vars-list elim-seq-list)
 		   ;; We gather the clause sets from the rest of the instantiated
 		   ;; elim rules.
-		   (eliminate-destructors-hint11 cl 
-						       avoid-vars 
+		   (eliminate-destructors-hint11 cl
+						       avoid-vars
 						       (cdr rules) type-alist
 						       fns-to-elim ens wrld)
 		   (let ((rule (car rules)))
@@ -402,7 +402,7 @@
 				 wrld)
     (cond (elim-seq-list
            (mv clauses-list elim-vars-list))
-          (t 
+          (t
            (mv nil nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -489,7 +489,7 @@
 			(:REWRITE normalize-factors-scatter-exponents)
 			(:REWRITE simplify-products-scatter-exponents-equal)
 			(:REWRITE simplify-products-scatter-exponents-<)))))
-	    `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
+	    `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause
 								     stable-under-simplificationp
 								     hist pspv
 								     world
@@ -515,7 +515,7 @@
 	    (observation-cw
              'arithmetic-default-hint-11
              "Recycle.")
-	    `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
+	    `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause
 								     stable-under-simplificationp
 								     hist pspv
 								     world
@@ -530,7 +530,7 @@
 	    (mv-let (clauses-list elim-vars-list)
 		    (eliminate-destructors-hint clause elim-vars '(floor mod) pspv world)
 		    (if clauses-list
-			`(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
+			`(:computed-hint-replacement ((arithmetic-default-hint-11 id clause
 										  stable-under-simplificationp
 										  hist pspv
 										  world
@@ -544,7 +544,7 @@
 										  ;; differ?
 										  ',(union-equal
 										     elim-vars
-										     (crush-elim-vars 
+										     (crush-elim-vars
 										      elim-vars-list))))
 						     :or ,(generate-elim-hint clauses-list))
 		      nil))))
@@ -557,7 +557,7 @@
 	      (observation-cw
                'arithmetic-default-hint-11
                "Check-branch-taken prefer-positive-exponents.")
-	      `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
+	      `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause
 								       stable-under-simplificationp
 								       hist pspv
 								       world
@@ -569,7 +569,7 @@
 	      (observation-cw
                'arithmetic-default-hint-11
                "Check-branch-taken non-linear-arithmetic.")
-	      `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
+	      `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause
 								       stable-under-simplificationp
 								       hist pspv
 								       world
@@ -590,7 +590,7 @@
      (observation-cw
       'arithmetic-default-hint-11
       "Non-linear-arithmetic.")
-     `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause 
+     `(:computed-hint-replacement ((arithmetic-default-hint-11 id clause
 							      stable-under-simplificationp
 							      hist pspv
 							      world

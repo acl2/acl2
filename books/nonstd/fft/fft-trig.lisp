@@ -1,6 +1,6 @@
 #|
 
-This is in an ACL2 "book" with definitions and theorems about a concrete 
+This is in an ACL2 "book" with definitions and theorems about a concrete
 correctness proof of the Fast Fourier Transform.  The proof uses the abstract
 proof in fft-omega.lisp.  In that ACL2 book, it is shown that the FFT algorithm
 works correctly, provided the vector of omegas has the property w = < u || -u >
@@ -78,7 +78,7 @@ appropriate certify-book command.  Something like the following will work:
  ;; The next constraint defines sine(pi) = 0 and cosine(pi) = -1.
 
  (local (in-theory (disable (acl2-pi) (acl2-sine) (acl2-cosine))))
-  
+
  (defthm values-at-pi
    (and (equal (acl2-sine (acl2-pi)) 0)
 	(equal (acl2-cosine (acl2-pi)) -1)))
@@ -139,7 +139,7 @@ appropriate certify-book command.  Something like the following will work:
 (defun p-complex-expt (x)
   "Returns the complex-expt of all elements of a powerlist."
   (if (powerlist-p x)
-      (p-tie (p-complex-expt (p-untie-l x)) 
+      (p-tie (p-complex-expt (p-untie-l x))
 	     (p-complex-expt (p-untie-r x)))
     (complex-expt x)))
 
@@ -161,7 +161,7 @@ appropriate certify-book command.  Something like the following will work:
 
 (encapsulate
  ()
- 
+
  ;; To prove the rewrite rule for complex squares, we start with the algebraic
  ;; rewriting using the constant \#c(0 1), better known in complex arithmetic as
  ;; i=sqrt(-1).  In fact, the key part of the proof, which ACL2 finds by
@@ -174,7 +174,7 @@ appropriate certify-book command.  Something like the following will work:
 	   (+ (- (* x x) (* y y))
 	      (* #c(0 1) (+ (* x y) (* x y)))))
     :rule-classes nil))
-	  
+
  ;; Now that we have the basic result using the constant i, we convert the
  ;; conclusion of the theorem into the more natural (complex x y) notation.
 
@@ -192,7 +192,7 @@ appropriate certify-book command.  Something like the following will work:
 			      (acl2::x (- (* x x) (* y y)))
 			      (acl2::y (+ (* x y) (* x y)))))))
     :rule-classes nil))
-	  
+
  ;; Finally, we can prove our intended theorem, with both the conclusion and
  ;; hypothesis using the function (complex x y) instead of the constant i.
 
@@ -220,7 +220,7 @@ appropriate certify-book command.  Something like the following will work:
 ;; equal to e^x.
 (defthm complex-expt-/-2
   (implies (realp x)
-	   (equal (* (complex-expt (* 1/2 x)) 
+	   (equal (* (complex-expt (* 1/2 x))
 		     (complex-expt (* 1/2 x)))
 		  (complex-expt x)))
   :hints (("Goal"
@@ -287,7 +287,7 @@ appropriate certify-book command.  Something like the following will work:
 (defthm numberp-expt-omega-0
   (realp (p-expt-omega 0))
   :rule-classes (:type-prescription :rewrite))
-  
+
 ;; We are trying to prove that p-expt-omega can be written as < u || -u >.
 ;; First, we require a simple fact about unary minus in complex arithmetic.
 
@@ -328,7 +328,7 @@ appropriate certify-book command.  Something like the following will work:
   (implies (not (zp n))
 	   (equal (p-expt-omega n)
 		  (p-tie (p-expt-omega-sqrt (1- n))
-			 (p-unary-- 
+			 (p-unary--
 			  (p-expt-omega-sqrt
 			   (1- n))))))
   :rule-classes nil)
@@ -345,12 +345,12 @@ appropriate certify-book command.  Something like the following will work:
       (p-tie (p-+ (p-fft-expt-omega (p-unzip-l x))
 		  (p-* (p-expt-omega-sqrt
 			(1- (p-depth x)))
-		       (p-fft-expt-omega 
+		       (p-fft-expt-omega
 			(p-unzip-r x))))
 	     (p-- (p-fft-expt-omega (p-unzip-l x))
 		  (p-* (p-expt-omega-sqrt
 			(1- (p-depth x)))
-		       (p-fft-expt-omega 
+		       (p-fft-expt-omega
 			(p-unzip-r x)))))
     (fix x)))
 

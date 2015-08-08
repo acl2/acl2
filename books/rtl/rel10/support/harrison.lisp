@@ -58,7 +58,7 @@
            (= (expo (- 2 (* (expt 2 (- 1 p)) d))) 0))
   :rule-classes ()
   :hints (("Goal" :use (h-1 h-4
-                        (:instance expo-unique (x (- 2 (* (expt 2 (- 1 p)) d))) (n 0)))))) 
+                        (:instance expo-unique (x (- 2 (* (expt 2 (- 1 p)) d))) (n 0))))))
 
 (local-defthm h-6
   (implies (and (integerp p)
@@ -80,7 +80,7 @@
                 (< b 2)
                 (> d 0)
                 (<= d (expt 2 (1- p)))
-                (exactp b p)                
+                (exactp b p)
                 (> b (- 2 (* (expt 2 (- 1 p)) d))))
            (>= b (- 2 (* (expt 2 (- 1 p)) (1- d)))))
   :rule-classes ()
@@ -101,7 +101,7 @@
                 (< b 2)
                 (>= d 0)
                 (<= d (expt 2 (1- p)))
-                (exactp b p)                
+                (exactp b p)
                 (not (member b (h-excps d p))))
            (< b (- 2 (* (expt 2 (- 1 p)) d))))
   :rule-classes ()
@@ -129,7 +129,7 @@
   :hints (("Goal" :use h-9
                   :in-theory
                   #!acl2(disable normalize-factors-gather-exponents
-                                 simplify-products-gather-exponents-< 
+                                 simplify-products-gather-exponents-<
                                  |(< (expt x n) (expt x m))|
                                  expt-is-increasing-for-base->-1))))
 
@@ -143,7 +143,7 @@
   :hints (("goal" :use h-9
                   :in-theory
                   #!acl2(disable normalize-factors-gather-exponents
-                                 simplify-products-gather-exponents-< 
+                                 simplify-products-gather-exponents-<
                                  |(< (expt x n) (expt x m))|
                                  expt-is-increasing-for-base->-1))))
 
@@ -183,7 +183,7 @@
                         (:instance expo-unique (x (fp- 1 p)) (n -1)))
                   :in-theory
                   #!acl2(disable normalize-factors-gather-exponents
-                                 simplify-products-gather-exponents-< 
+                                 simplify-products-gather-exponents-<
                                  |(< (expt x n) (expt x m))|
                                  expt-is-increasing-for-base->-1))))
 
@@ -251,7 +251,7 @@
                 (>= (/ (* b yp) b) (/ (- 1 ep) b))))
   :rule-classes ()
   :hints (("Goal" :use (h-19
-                        (:instance h-20 (x b) (y (* b yp)) (z (+ 1 ep))) 
+                        (:instance h-20 (x b) (y (* b yp)) (z (+ 1 ep)))
                         (:instance h-20 (x b) (z (* b yp)) (y (- 1 ep))))
                   :in-theory (theory 'minimal-theory))))
 
@@ -291,7 +291,7 @@
                 (exactp b p)
                 (> b 1)
                 (< ep (expt 2 (- (1+ p)))))
-           (> b (+ 1 ep))) 
+           (> b (+ 1 ep)))
   :rule-classes ()
   :hints (("Goal" :use (h-23 h-24)
                   :in-theory (theory 'minimal-theory))))
@@ -483,7 +483,7 @@
              (< (* b (abs (- yp y)))
                 (* (expt 2 (- (1+ p))) (- 2 (* (expt 2 (- 1 p)) d))))))
   :rule-classes ()
-  :hints (("Goal" :use (h-30 h-41 
+  :hints (("Goal" :use (h-30 h-41
                         (:instance h-8 (d (cg (* (expt 2 (* 2 p)) ep))))
                         (:instance h-36 (a (abs (- yp (near yp p))))
                                         (c (expt 2 (- (1+ p))))

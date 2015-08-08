@@ -18,8 +18,8 @@
 (defun concat-str-macro (lst)
   (if (consp lst)
       (if (consp (cdr lst))
-	  (cons 'concatenate 
-		(cons ''string (cons (car lst) 
+	  (cons 'concatenate
+		(cons ''string (cons (car lst)
 				     (cons (concat-str-macro (cdr lst))
 					   'nil))))
 	(car lst))
@@ -191,13 +191,13 @@
 ;;;     :hints (("Goal"
 ;;;              :clause-processor (:function bv-add-sort-cp)))
 ;;;     :rule-classes nil)
-;;;   
+;;;
 ;;;   (defthm cl-proc-example-problem-1000-f
 ;;;     (f-macro-problem 1000)
 ;;;     :hints (("Goal"
 ;;;              :clause-processor (:function bv-add-sort-cp)))
 ;;;     :rule-classes nil)
-;;;   
+;;;
 ;;;   ;Time:  0.05 seconds (prove: 0.02, print: 0.00, other: 0.03)
 ;;;   (defthm cl-proc-example-problem-1000
 ;;;     (macro-problem 1000)

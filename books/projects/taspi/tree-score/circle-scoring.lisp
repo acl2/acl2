@@ -12,7 +12,7 @@
   (declare (xargs :guard (alistp-gen numberfied-seqs)))
   (if (consp ordering)
       (if (consp (cdr ordering))
-          (get-pairings-from-ordering 
+          (get-pairings-from-ordering
            (cdr ordering)
            numberfied-seqs
            (cons (cons (cdr (assoc-hqual (car ordering) numberfied-seqs))
@@ -25,9 +25,9 @@
   (declare (xargs :guard (alistp-gen numberfied-seqs)))
   (let ((ordering (get-ordering-from-tree tree)))
     (get-pairings-from-ordering ordering numberfied-seqs nil)))
-        
 
-(defun circle-score-numberfied-seqs 
+
+(defun circle-score-numberfied-seqs
   (tree numberfied-seqs gap-char gap-cost gap-extend-cost transition-matrix)
   (declare (xargs :guard (and (alistp-gen numberfied-seqs)
                               (rationalp gap-cost)
@@ -55,7 +55,7 @@
   (if (consp sequences)
       (make-numberfied-seqs (cdr sequences) mapping
                             (cons (cons (caar sequences)
-                                        (numberfy-seq (cdar sequences) 
+                                        (numberfy-seq (cdar sequences)
                                                       mapping))
                                   ans))
     ans))
@@ -90,7 +90,7 @@
                                transition-matrix))))
   (circle-score-numberfied-seqs tree
                            (make-numberfied-seqs sequences
-                                                 (mapping-from-matrix 
+                                                 (mapping-from-matrix
                                                   transition-matrix 0) nil)
                            gap-char gap-cost gap-extend-cost
                            transition-matrix))

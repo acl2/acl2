@@ -113,7 +113,7 @@ code.  For example:</p>
  })
 <p>(Notice that the names of the bound variables are listed only once instead
 of three times each.)</p>"
- 
+
   :decls
   ((declare (xargs :guard (and (symbol-listp args)
                                (consp forms)
@@ -4197,7 +4197,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
          (local (in-theory (disable nrec-list)))
          (local (in-theory (enable nrec-list-mods)))
 
-         
+
          (defthm nrec-list-mods-of-update-mods-of-nrec-list
            (equal (nrec-list-mods keys (update-nth *moddb->modsi* (nrec-list keys mods) moddb))
                   (nrec-list-mods keys (update-nth *moddb->modsi* mods moddb))))
@@ -4410,7 +4410,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
              (+ 1 (len b)))
       :hints(("Goal" :in-theory (enable len))))
 
-    
+
 
     (deffixequiv moddb-add-modinst-to-last)
 
@@ -5936,7 +5936,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
             :wire (and (natp path.subpath.name) path.subpath.name)
             :scope nil))
          ((stobj-get ;; We either have a bitselect, an index into a submod, or
-                     ;; it might be that both work.  
+                     ;; it might be that both work.
            wireidx wire  ;; bitselect case
            offset submod     ;; submod case
            err)              ;; neither
@@ -6462,7 +6462,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
       :rule-classes (:rewrite :forward-chaining)))
 
   (local (include-book "std/osets/element-list" :dir :system))
-  (local (include-book "std/lists/sets" :dir :system))  
+  (local (include-book "std/lists/sets" :dir :system))
 
   (std::deflist svarlist-idxaddr-okp (x bound)
     :guard (and (svarlist-p x)

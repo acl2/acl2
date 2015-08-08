@@ -168,7 +168,7 @@
 		   dom2
 		   (list* (domain i)
 			  (relations i)
-			  (cons (cons fsym 
+			  (cons (cons fsym
 				      (step-sk-arity f5 (+ 1 (len vals))))
 				(append (build-sk-d (list 'all f3 f5)
 						    vals dom1 i)
@@ -179,7 +179,7 @@
 		   dom2
 		   (list* (domain i)
 			  (relations i)
-			  (cons (cons fsym 
+			  (cons (cons fsym
 				      (step-sk-arity f5 (+ 1 (len vals))))
 				(build-sk-d (list 'all f3 f5)
 					    vals dom2 i))
@@ -345,7 +345,7 @@
 	   :use ((:instance step-sk-without-exists-2
 			    (n (len vals))
 			    (vars vals))))))
-		
+
 (defthm step-sk-fsound-vals
   (implies (and (setp (quantified-vars f))
 		(function-symbol fsym)
@@ -358,7 +358,7 @@
   :hints (("Goal"
 	   :use ((:instance step-sk-e-fsound-vals)
 		 (:instance step-sk-x-fsound-vals)))))
-	   
+
 (defthm step-sk-fsound
   (implies (and (setp (quantified-vars f))
 		(function-symbol fsym)

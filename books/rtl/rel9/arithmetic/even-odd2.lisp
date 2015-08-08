@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -72,7 +72,7 @@
   (implies (even x)
            (integerp x))
   :rule-classes (;:compound-recognizer
-                 :forward-chaining)) 
+                 :forward-chaining))
 
 ;not currently a rewrite rule
 (defthm odd-means-integerp
@@ -157,7 +157,7 @@ there are plenty more nice even-odd theorems
                       (and (odd x) (odd y)))))
   :hints (("Goal" :in-theory (enable odd))))
 
-plus rules to rewrite oddp and evenp   
+plus rules to rewrite oddp and evenp
 
 (defthm oddp-sum
   (implies (and (integerp x)
@@ -184,4 +184,3 @@ plus rules to rewrite oddp and evenp
                  (:instance even-reduce (n (+ -3 n)))))))
 |#
 
-   

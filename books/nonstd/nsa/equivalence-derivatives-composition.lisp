@@ -565,7 +565,7 @@
  ( ((differential-dcc-fn1+fn2 * *) => *)
    ((derivative-dcc-fn1+fn2 *) => *)
    )
-   
+
  (defun dcc-fn1+fn2 (x)
    (+ (dcc-fn1 x) (dcc-fn2 x)))
 
@@ -604,7 +604,7 @@
 	    (and (i-limited  (/ (- (dcc-fn1+fn2 x) (dcc-fn1+fn2 y1)) (- x y1)))
 		 (i-close (/ (- (dcc-fn1+fn2 x) (dcc-fn1+fn2 y1)) (- x y1))
 			  (/ (- (dcc-fn1+fn2 x) (dcc-fn1+fn2 y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :by (:functional-instance dc-fn1+fn2-differentiable
 				     (dc-fn1 dcc-fn1)
 				     (dc-fn2 dcc-fn2)
@@ -648,7 +648,7 @@
 			(forall-x-eps-delta-in-range-deriv-dcc-fn1+fn2-works x eps delta)))))
 
 (defthmd differential-dcc-fn1+fn2-close
-   (implies (and (inside-interval-p x (dcc-fn-domain)) 
+   (implies (and (inside-interval-p x (dcc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dcc-fn-domain)))
@@ -687,9 +687,9 @@
 				     (rdfn-domain dcc-fn-domain)
 				     (derivative-rdfn derivative-dcc-fn1+fn2)
 				     (differential-rdfn differential-dcc-fn1+fn2)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-dcc-fn1+fn2-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-dcc-fn1+fn2-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-dcc-fn1+fn2-works)
@@ -722,9 +722,9 @@
 				     (rdfn-domain dcc-fn-domain)
 				     (derivative-rdfn derivative-dcc-fn1+fn2)
 				     (differential-rdfn differential-dcc-fn1+fn2)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-dcc-fn1+fn2-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-dcc-fn1+fn2-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-dcc-fn1+fn2-works)
@@ -737,7 +737,7 @@
  ( ((differential-dcc-minus-fn1 * *) => *)
    ((derivative-dcc-minus-fn1 *) => *)
    )
-   
+
  (defun dcc-minus-fn1 (x)
    (- (dcc-fn1 x)))
 
@@ -772,7 +772,7 @@
 	    (and (i-limited  (/ (- (dcc-minus-fn1 x) (dcc-minus-fn1 y1)) (- x y1)))
 		 (i-close (/ (- (dcc-minus-fn1 x) (dcc-minus-fn1 y1)) (- x y1))
 			  (/ (- (dcc-minus-fn1 x) (dcc-minus-fn1 y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :by (:functional-instance dc-minus-fn1-differentiable
 				     (dc-fn1 dcc-fn1)
 				     (dc-fn2 dcc-fn2)
@@ -806,7 +806,7 @@
 			(forall-x-eps-delta-in-range-deriv-dcc-minus-fn1-works x eps delta)))))
 
 (defthmd differential-dcc-minus-fn1-close
-   (implies (and (inside-interval-p x (dcc-fn-domain)) 
+   (implies (and (inside-interval-p x (dcc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dcc-fn-domain)))
@@ -841,9 +841,9 @@
 				     (rdfn-domain dcc-fn-domain)
 				     (derivative-rdfn derivative-dcc-minus-fn1)
 				     (differential-rdfn differential-dcc-minus-fn1)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-dcc-minus-fn1-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-dcc-minus-fn1-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-dcc-minus-fn1-works)
@@ -874,9 +874,9 @@
 				     (rdfn-domain dcc-fn-domain)
 				     (derivative-rdfn derivative-dcc-minus-fn1)
 				     (differential-rdfn differential-dcc-minus-fn1)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-dcc-minus-fn1-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-dcc-minus-fn1-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-dcc-minus-fn1-works)
@@ -889,7 +889,7 @@
  ( ((differential-dcc-fn1*fn2 * *) => *)
    ((derivative-dcc-fn1*fn2 *) => *)
    )
-   
+
   (defun dcc-fn1*fn2 (x)
     (* (dcc-fn1 x) (dcc-fn2 x)))
 
@@ -935,7 +935,7 @@
 	    (and (i-limited  (/ (- (dcc-fn1*fn2 x) (dcc-fn1*fn2 y1)) (- x y1)))
 		 (i-close (/ (- (dcc-fn1*fn2 x) (dcc-fn1*fn2 y1)) (- x y1))
 			  (/ (- (dcc-fn1*fn2 x) (dcc-fn1*fn2 y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :by (:functional-instance dc-fn1*fn2-differentiable
 				     (dc-fn1 dcc-fn1)
 				     (dc-fn2 dcc-fn2)
@@ -969,7 +969,7 @@
 			(forall-x-eps-delta-in-range-deriv-dcc-fn1*fn2-works x eps delta)))))
 
 (defthmd differential-dcc-fn1*fn2-close
-   (implies (and (inside-interval-p x (dcc-fn-domain)) 
+   (implies (and (inside-interval-p x (dcc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dcc-fn-domain)))
@@ -1024,9 +1024,9 @@
 				     (rdfn-domain dcc-fn-domain)
 				     (derivative-rdfn derivative-dcc-fn1*fn2)
 				     (differential-rdfn differential-dcc-fn1*fn2)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-dcc-fn1*fn2-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-dcc-fn1*fn2-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-dcc-fn1*fn2-works)
@@ -1068,9 +1068,9 @@
 				     (rdfn-domain dcc-fn-domain)
 				     (derivative-rdfn derivative-dcc-fn1*fn2)
 				     (differential-rdfn differential-dcc-fn1*fn2)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-dcc-fn1*fn2-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-dcc-fn1*fn2-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-dcc-fn1*fn2-works)
@@ -1129,7 +1129,7 @@
 	    (and (i-limited  (/ (- (dcc-/-fnz x) (dcc-/-fnz y1)) (- x y1)))
 		 (i-close (/ (- (dcc-/-fnz x) (dcc-/-fnz y1)) (- x y1))
 			  (/ (- (dcc-/-fnz x) (dcc-/-fnz y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :by (:functional-instance dc-/-fnz-differentiable
 				     (dc-fn1 dcc-fn1)
 				     (dc-fn2 dcc-fn2)
@@ -1163,7 +1163,7 @@
 			(forall-x-eps-delta-in-range-deriv-dcc-/-fnz-works x eps delta)))))
 
 (defthmd differential-dcc-/-fnz-close
-   (implies (and (inside-interval-p x (dcc-fn-domain)) 
+   (implies (and (inside-interval-p x (dcc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dcc-fn-domain)))
@@ -1217,9 +1217,9 @@
 				     (rdfn-domain dcc-fn-domain)
 				     (derivative-rdfn derivative-dcc-/-fnz)
 				     (differential-rdfn differential-dcc-/-fnz)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-dcc-/-fnz-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-dcc-/-fnz-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-dcc-/-fnz-works)
@@ -1261,9 +1261,9 @@
 				     (rdfn-domain dcc-fn-domain)
 				     (derivative-rdfn derivative-dcc-/-fnz)
 				     (differential-rdfn differential-dcc-/-fnz)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-dcc-/-fnz-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-dcc-/-fnz-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-dcc-/-fnz-works)
@@ -1526,7 +1526,7 @@
 	    (and (i-limited  (/ (- (ccr-fn1-o-fn2 x) (ccr-fn1-o-fn2 y1)) (- x y1)))
 		 (i-close (/ (- (ccr-fn1-o-fn2 x) (ccr-fn1-o-fn2 y1)) (- x y1))
 			  (/ (- (ccr-fn1-o-fn2 x) (ccr-fn1-o-fn2 y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :by (:functional-instance cr-fn1-o-fn2-differentiable
 				     (cr-fn1 ccr-fn1)
 				     (cr-fn2 ccr-fn2)
@@ -1626,7 +1626,7 @@
            (standardp (derivative-ccr-fn2 x))))
 
 (defthmd differential-ccr-fn1-close
-  (implies (and (inside-interval-p x (ccr-fn2-range)) 
+  (implies (and (inside-interval-p x (ccr-fn2-range))
                 (standardp x)
                 (realp eps) (i-small eps) (not (= eps 0))
                 (inside-interval-p (+ x eps) (ccr-fn2-range)))
@@ -1651,7 +1651,7 @@
           ))
 
 (defthmd differential-ccr-fn2-close
-  (implies (and (inside-interval-p x (ccr-fn2-domain)) 
+  (implies (and (inside-interval-p x (ccr-fn2-domain))
                 (standardp x)
                 (realp eps) (i-small eps) (not (= eps 0))
                 (inside-interval-p (+ x eps) (ccr-fn2-domain)))
@@ -1674,7 +1674,7 @@
                                standard-part-of-uminus)
            )
           ))
-                                       
+
 (local
  (defthm-std standard-ccr-fn2-domain
    (standardp (ccr-fn2-domain))))
@@ -1712,7 +1712,7 @@
    :rule-classes nil))
 
 (defthmd differential-ccr-fn1-o-fn2-close
-   (implies (and (inside-interval-p x (ccr-fn2-domain)) 
+   (implies (and (inside-interval-p x (ccr-fn2-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (ccr-fn2-domain)))
@@ -1788,9 +1788,9 @@
 				     (rdfn-domain ccr-fn2-domain)
 				     (derivative-rdfn derivative-ccr-fn1-o-fn2)
 				     (differential-rdfn differential-ccr-fn1-o-fn2)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-ccr-fn1-o-fn2-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-ccr-fn1-o-fn2-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-ccr-fn1-o-fn2-works)
@@ -1834,9 +1834,9 @@
 				     (rdfn-domain ccr-fn2-domain)
 				     (derivative-rdfn derivative-ccr-fn1-o-fn2)
 				     (differential-rdfn differential-ccr-fn1-o-fn2)
-				     (forall-x-eps-delta-in-range-deriv-works 
+				     (forall-x-eps-delta-in-range-deriv-works
 				      forall-x-eps-delta-in-range-deriv-ccr-fn1-o-fn2-works)
-				     (forall-x-eps-delta-in-range-deriv-works-witness 
+				     (forall-x-eps-delta-in-range-deriv-works-witness
 				      forall-x-eps-delta-in-range-deriv-ccr-fn1-o-fn2-works-witness)
 				     (exists-delta-for-x-and-eps-so-deriv-works
 				      exists-delta-for-x-and-eps-so-deriv-ccr-fn1-o-fn2-works)

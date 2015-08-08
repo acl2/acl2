@@ -3,7 +3,7 @@
 (include-book "land")
 (include-book "lior")
 (include-book "lxor")
-(include-book "lnot") ;BOZO 
+(include-book "lnot") ;BOZO
 
 (local (include-book "../support/stick"))
 

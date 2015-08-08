@@ -41,7 +41,7 @@
   (implies (and (permp x y)
                 (permp y z))
            (permp x z)))
-  
+
 (in-theory (disable permp-implies-member-iff))
 (defthm cons-del-permutation-of-original
   (implies (and (member-equal a y)

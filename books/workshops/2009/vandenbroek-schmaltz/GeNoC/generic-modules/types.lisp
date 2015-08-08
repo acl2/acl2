@@ -33,7 +33,7 @@
   ;; In this case the nil represants the tx signal
   (list nil))
 
-(defun PortStatusLocal () 
+(defun PortStatusLocal ()
   ;; Construct the structure of an local flags and registers of a port
   ;; In this case this is just the id of the output port this current input buffer is routed to
   (list nil))
@@ -42,7 +42,7 @@
   ;; update the local status of the status
   ;;
   ;; Arguments:
-  ;; - status : status of a port 
+  ;; - status : status of a port
   ;; - local : the local status of a status
   (update-nth 2 local status))
 
@@ -78,7 +78,7 @@
   ;; Get the status of the port.
   (mv-nth 1 port))
 
-(defun port-statuslocal (port) 
+(defun port-statuslocal (port)
   ;; Get the local status of a port status
   (mv-nth 2 (port-status port)))
 
@@ -86,7 +86,7 @@
   ;; Get the data of the port.
   (mv-nth 2 port))
 
-(defun port-buffer (port) 
+(defun port-buffer (port)
   ;; Get the buffer of the port.
   (mv-nth 3 port))
 
@@ -95,12 +95,12 @@
   (list (port-id port) (port-portname port)))
 
 
-(defun port-updateStatus (port status) 
+(defun port-updateStatus (port status)
   ;; replace the status of a port with a new status
   ;;
   ;; Arguments:
   ;; - port : a port
-  ;; - status : a Status 
+  ;; - status : a Status
   (update-nth 1 status port))
 
 (defun port-updateData (port data)
@@ -108,7 +108,7 @@
   ;;
   ;; Arguments:
   ;; - port : a port
-  ;; - data : Data of a port 
+  ;; - data : Data of a port
   (update-nth 2 data port))
 
 (defun port-updateBuffer (port buffer)
@@ -120,7 +120,7 @@
   (update-nth 3 buffer port))
 
 (defun port-updatestatusremote (port)
-  ;; Update the second statusof a the status construct of and port. This is the status of the port this port is connected to. 
+  ;; Update the second statusof a the status construct of and port. This is the status of the port this port is connected to.
   ;; It should be noted that a node can/should "never" update the status of another node and thus this function should only be used
   ;; When updating the connections after a simulation step in the model. For example in the function updateNeighbours.
   (port-updateStatus port (update-nth 1 (list t) (port-status port))))
@@ -135,7 +135,7 @@
 
 (defun port-popBuffer (port)
   ;; This function removes the head of the buffer
-  (port-updateBuffer port (cdr (port-buffer port)))) 
+  (port-updateBuffer port (cdr (port-buffer port))))
 
 (defun port-bufferMsg (port msg)
   ;; This function adds msg to the end of a buffer
@@ -198,13 +198,13 @@
   (ports-getDirection ports 'out))
 
 (defun Ports  (topo)
-  ;; Construct the list of ports of a node. 
-  ;; The order statuses of the input and output ports are different. A node is only able to change the first status and the local status. 
-  ;; The second status is the state of the port it is connected to an thus should be considered read-only from the perspective of the node.   
+  ;; Construct the list of ports of a node.
+  ;; The order statuses of the input and output ports are different. A node is only able to change the first status and the local status.
+  ;; The second status is the state of the port it is connected to an thus should be considered read-only from the perspective of the node.
   ;;
   ;; Arguments:
   ;; - topo : a topology
-  (list  (port (append topo '(in)) (list (portstatusIn) (portstatusOut) (portstatusLocal)) nil nil) 
+  (list  (port (append topo '(in)) (list (portstatusIn) (portstatusOut) (portstatusLocal)) nil nil)
          (port (append topo '(out)) (list (portstatusOut) (portstatusIn) (portstatusLocal)) nil nil)))
 
 
@@ -212,13 +212,13 @@
 ;; Nodes
 ;;
 
-(defun nodes (topo) 
+(defun nodes (topo)
   ;; Build a list of nodes  in the range [x, max]
   ;;
   ;; Arguments:
-  ;; - x : start of range  
+  ;; - x : start of range
   ;; - max : max of ids
-  (if (endp topo) 
+  (if (endp topo)
     nil
     (append  (ports (caar topo))  (Nodes (cdr topo)))))
 
@@ -227,8 +227,8 @@
   ;; Replace the node in nodes with the node when the id of the node matches
   ;;
   ;; Arguments:
-  ;; - nodes : a list of nodes   
-  ;; - node : node 
+  ;; - nodes : a list of nodes
+  ;; - node : node
   (if (or (endp ports)
           (endp node))
     ports
@@ -241,7 +241,7 @@
   ;; The node variable should be nil in the original call.
   ;;
   ;; Arguments:
-  ;; - nodes : a list of nodes   
+  ;; - nodes : a list of nodes
   ;; - node : The current node accumulator
   (if (endp ports)
     nil
@@ -272,24 +272,24 @@
       (ntkst-arrive (cdr ntkst)))))
 
 (defun ntkst-depart (ntkst msg)
-  ;; inserts the transaction into the  input port if the origin of the transaction matches the port 
+  ;; inserts the transaction into the  input port if the origin of the transaction matches the port
   ;;
   ;; Arguments:
-  ;; - ntkst : a list ports 
+  ;; - ntkst : a list ports
   ;; - msg : the transaction
   (if (endp ntkst)
     nil
     (if (and (equal (port-id (car ntkst)) (orgT msg))
              (equal (port-portname (car ntkst)) 'loc)
              (equal (port-dir (car ntkst)) 'in))
-      (cons (port-updatestatusremote (port-updatedata (car ntkst) msg)) (ntkst-depart (cdr ntkst) msg)) 
+      (cons (port-updatestatusremote (port-updatedata (car ntkst) msg)) (ntkst-depart (cdr ntkst) msg))
       (cons (car ntkst) (ntkst-depart (cdr ntkst) msg)))))
 
 (defun ntkst-canDepart (ntkst msg)
-  ;; This function tests if a msg can depart. A msg can depart if the correct port is data line is empty. 
+  ;; This function tests if a msg can depart. A msg can depart if the correct port is data line is empty.
   ;;
   ;; Arguments:
-  ;; - ntkst : a list ports 
+  ;; - ntkst : a list ports
   ;; - msg : the transaction
   (if (endp ntkst)
     nil
@@ -297,14 +297,14 @@
              (equal (port-portname (car ntkst)) 'loc)
              (equal (port-dir (car ntkst)) 'in)
              (equal (port-data (car ntkst)) nil))
-      t 
+      t
       (ntkst-canDepart (cdr ntkst) msg))))
 
 (defun ntkst-clearlocaloutputs (ntkst)
   ;; Updates the local output port of the node with "clean" port provides by the function port-clean
   ;;
   ;; Arguments:
-  ;; - ntkst : a list of ntkst. 
+  ;; - ntkst : a list of ntkst.
   (if (endp ntkst)
     nil
     (if (and (equal (port-portname (car ntkst)) 'loc)

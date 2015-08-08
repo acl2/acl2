@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -43,7 +43,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -73,13 +73,13 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defun re (x)
@@ -157,7 +157,7 @@
            (and (<= 1/2 (rtz-sqrt x n))
                 (<= (rtz-sqrt x n) (- 1 (expt 2 (- n))))))
   :rule-classes ())
-                                
+
 
 (defthm expo-rtz-sqrt
   (implies (and (rationalp x)
@@ -178,7 +178,7 @@
   (implies (and (not (zp n))
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1))                
+                (< x 1))
            (and (<= (* (rtz-sqrt x n)
                        (rtz-sqrt x n))
                     x)
@@ -289,7 +289,7 @@
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1)) 
+                (< x 1))
            (iff (= (* (rtz-sqrt x n) (rtz-sqrt x n)) x)
                 (= (rto-sqrt x m) (rtz-sqrt x n))))
   :rule-classes ())

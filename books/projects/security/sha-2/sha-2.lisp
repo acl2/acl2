@@ -14,7 +14,7 @@
   '(#x6a09e667 #xbb67ae85 #x3c6ef372 #xa54ff53a #x510e527f #x9b05688c #x1f83d9ab #x5be0cd19))
 
 ;
-; Constants that are used in the main loop. These are the first 32 bits of the 
+; Constants that are used in the main loop. These are the first 32 bits of the
 ; fractional parts of the cube roots of the first 64 primes 2..311
 ;
 
@@ -37,11 +37,11 @@
 (defun append-one-and-k-zeros-and-len (message-bytes)
   (let* ((len (len message-bytes))
          (bitlen (+ 64                                ; 64 bit for the length
-                    (+ 1                              ; 1 bit for the '1' that is appended   
+                    (+ 1                              ; 1 bit for the '1' that is appended
                        (* len 8))))                   ; length in bits
          (k (- (* (ceiling bitlen 512) 512) bitlen))  ; number of 0's to follow the '1'
          (num-to-append (expt 2 k))                   ; append '1' followed by k zeros
-         (bytes-to-append (reverse (make-bytes num-to-append)))         
+         (bytes-to-append (reverse (make-bytes num-to-append)))
          (message-bytes-appended (append message-bytes bytes-to-append))
          (len-bytes (reverse (make-bytes (* len 8))))
          (zero-padding (make-list-n 0 (- 8 (len len-bytes)))))
@@ -56,7 +56,7 @@
 ; Theorem stating that in case of the empty string, the appended message
 ; length would be 64 bytes.
 ;
- 
+
 (defthm append-message-0bytes
   (implies (and (consp message-bytes)
 		(equal (len message-bytes)
@@ -65,13 +65,13 @@
 		  64)))
 
 ;
-; Theorem that states that all appended messages would have a length that is 
+; Theorem that states that all appended messages would have a length that is
 ; a multiple of 64 bytes.
 ; NOT PROVEN
 
 ;(defthm append-message-multiple-64
 ;  (implies (consp message-bytes)
-;	   (equal (mod (len (append-one-and-k-zeros-and-len message-bytes)) 
+;	   (equal (mod (len (append-one-and-k-zeros-and-len message-bytes))
 ;		       64)
 ;		  0)))
 
@@ -87,7 +87,7 @@
 		  (+ n1 n2 n3))))
 
 ;
-; A hint to help us admit the following theorems, provided by 
+; A hint to help us admit the following theorems, provided by
 ; David Rager.
 ;
 
@@ -97,10 +97,10 @@
 	   (equal (len (append (append message-bytes '(128))
 			       '(0 0 0 0 0 0 1 184)))
 		  64))
-  :hints (("Goal" 
-	   :use ((:instance new-temp-lemma 
-				   (x message-bytes) 
-				   (y '(128)) 
+  :hints (("Goal"
+	   :use ((:instance new-temp-lemma
+				   (x message-bytes)
+				   (y '(128))
 				   (z '(0 0 0 0 0 0 1 184))
 				   (n1 (len message-bytes))
 				   (n2 (len '(128)))
@@ -110,7 +110,7 @@
 ;
 ; Theorem stating that a message of 55 bytes would also have an appended length
 ; of 64 bytes.
-; 
+;
 
 (defthm append-message-55bytes
   (implies (and (consp message-bytes)
@@ -132,13 +132,13 @@
                                       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
 			       '(0 0 0 0 0 0 1 192)))
 		  128))
-  :hints (("Goal" 
-	   :use ((:instance new-temp-lemma 
-				   (x message-bytes) 
+  :hints (("Goal"
+	   :use ((:instance new-temp-lemma
+				   (x message-bytes)
 				   (y '(128 0 0 0 0
                                       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
                                       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-                                      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)) 
+                                      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
 				   (z '(0 0 0 0 0 0 1 192))
 				   (n1 (len message-bytes))
 				   (n2 (len '(128 0 0 0 0
@@ -163,7 +163,7 @@
 
 ;
 ; A hint to help us admit the following theorem
-; 
+;
 
 (defthm help-lemma-for-append-119
   (implies (and (consp message-bytes)
@@ -171,10 +171,10 @@
 	   (equal (len (append (append message-bytes '(128))
 			       '(0 0 0 0 0 0 3 184)))
 		  128))
-  :hints (("Goal" 
-	   :use ((:instance new-temp-lemma 
-				   (x message-bytes) 
-				   (y '(128)) 
+  :hints (("Goal"
+	   :use ((:instance new-temp-lemma
+				   (x message-bytes)
+				   (y '(128))
 				   (z '(0 0 0 0 0 0 3 184))
 				   (n1 (len message-bytes))
 				   (n2 (len '(128)))
@@ -206,7 +206,7 @@
 ;;                 (<= (len message-bytes) 55))
 ;;            (equal (len (append-one-and-k-zeros-and-len message-bytes))
 ;;                   64)))
-          
+
 ;; (defthm append-message-correct-128
 ;;   (implies (and (consp message-bytes)
 ;;                 (>= (len message-byte) 56)
@@ -226,15 +226,15 @@
 (defun sha-expand-loop (message-blocks index end)
   (declare (xargs :measure (nfix (- end index))))
   (if (or (not (natp end))
-	  (not (natp index))	       
+	  (not (natp index))
           (> index end)
           (atom message-blocks))
       nil
       (let* ((s0 (xor-number (xor-number (rightrotate (Nth (- index 15)
-                                                          message-blocks) 
+                                                          message-blocks)
                                                      7)
                                         (rightrotate (Nth (- index 15)
-                                                          message-blocks) 
+                                                          message-blocks)
                                                      18))
                             (ash (Nth (- index 15)
                                       message-blocks)
@@ -255,14 +255,14 @@
                                                                          message-blocks))
                                                          (add-32bit s0 s1))
                                               nil))))
-        (if (equal index end)              
+        (if (equal index end)
             new-message-blocks
-          (sha-expand-loop new-message-blocks 
+          (sha-expand-loop new-message-blocks
                            (+ index 1)
                            end)))))
 
 ;
-; Theorem that sha-expand-loop expands an array of 16 bytes to an 
+; Theorem that sha-expand-loop expands an array of 16 bytes to an
 ; array of 64 bytes.
 ; NOT PROVEN
 
@@ -270,11 +270,11 @@
 ;  (implies (and (consp message-blocks)
 ;		(equal (len message-blocks)
 ;		       16))
-;	   (equal (len (sha-expand-loop message-blocks 
-;					 16 
+;	   (equal (len (sha-expand-loop message-blocks
+;					 16
 ;					 63))
 ;		  64)))
-		
+
 ; The implementation of the Main loop of Sha. Works based on the following algorithm:
 
 ;    Initialize hash value for this chunk:
@@ -292,12 +292,12 @@
 ;        h := g g := f f := e e := d + t1 d := c c := b b := a a := t1 + t2
 
 ;    Add this chunk's hash to result so far:
-;    h0 := h0 + a h1 := h1 + b h2 := h2 + c h3 := h3 + d h4 := h4 + e 
+;    h0 := h0 + a h1 := h1 + b h2 := h2 + c h3 := h3 + d h4 := h4 + e
 ;    h5 := h5 + f h6 := h6 + g h7 := h7 + h
 
 
 (defun sha-main-loop1(message-blocks-32 index a b c d e f g h h_arr)
-  (if (atom message-blocks-32)      
+  (if (atom message-blocks-32)
       nil
       (let* ((S0 (xor-number (xor-number (rightrotate a 2)
 					 (rightrotate a 13))
@@ -312,9 +312,9 @@
 	     (ch (xor-number (and-number e f)
 			     (and-number g
 					 (not-number e))))
-	     (t1 (add-32bit (add-32bit h S1) 
-                            (add-32bit ch 
-                                       (add-32bit (Nth index *k*) 
+	     (t1 (add-32bit (add-32bit h S1)
+                            (add-32bit ch
+                                       (add-32bit (Nth index *k*)
                                                   (car message-blocks-32))))))
 	(let* ((new_h g)
 	       (new_g f)
@@ -325,7 +325,7 @@
 	       (new_b a)
 	       (new_a (add-32bit t1 t2)))
 	  (if (null (cdr message-blocks-32))
-	      (let* ((new_h_arr (update-nth 0 
+	      (let* ((new_h_arr (update-nth 0
 					    (add-32bit (Nth 0 h_arr)
                                                        new_a)
 					    h_arr))
@@ -358,7 +358,7 @@
                                                        new_h)
 					    new_h_arr)))
 		new_h_arr)
-	    (sha-main-loop1 (cdr message-blocks-32) 
+	    (sha-main-loop1 (cdr message-blocks-32)
                             (+ index 1)
                             new_a new_b new_c new_d new_e new_f new_g new_h h_arr))))))
 
@@ -378,20 +378,20 @@
 	    (f (Nth 5 h_arr))
 	    (g (Nth 6 h_arr))
 	    (h (Nth 7 h_arr)))
-	(sha-main-loop1 message-blocks-32 0 a b c d e f g h h_arr)))) 
+	(sha-main-loop1 message-blocks-32 0 a b c d e f g h h_arr))))
 
 ;
 ; This is the function which is called to expand the 16x32 bit blocks into
 ; 64x32 bit blocks and then it calls the main loop on the 64x32 bit list
-;                              
-                        
+;
+
 (defun sha-loop (message-bytes h_arr)
   (sha-main-loop (sha-expand-loop (bytes-to-32bit-blocks message-bytes)      ;; Expands the bytes to blocks of 4 bytes
                                   16 63)                                      ;; Iterates from 16 to 63
-                 h_arr))                                     
+                 h_arr))
 
 ;
-; This method iterates over a list of lists of 64 bytes 
+; This method iterates over a list of lists of 64 bytes
 ; and calls sha-expand-loop.
 ;
 
@@ -400,13 +400,13 @@
       nil
       (if (null (cdr multiple-64-byte-blocks))
           (sha-loop (car multiple-64-byte-blocks) h_arr)
-          (let ((new_h_arr (sha-loop (car multiple-64-byte-blocks) 
+          (let ((new_h_arr (sha-loop (car multiple-64-byte-blocks)
                                             h_arr)))
             (sha-encrypt1 (cdr multiple-64-byte-blocks)
                           new_h_arr)))))
 
 ;
-; This method initializes the h_arr to the 
+; This method initializes the h_arr to the
 ; const *h* array and calls sha-encrypt1
 ;
 
@@ -415,7 +415,7 @@
     (sha-encrypt1 multiple-64-byte-blocks h_arr)))
 
 ;
-; The top level Sha-2 method that works on a string S. It converts the string 
+; The top level Sha-2 method that works on a string S. It converts the string
 ; to bytes, appends 1 and k zeros and the 64-bit length to the message (makes
 ; it multiple of 512 bits). Then it splits the resulting list of bytes into a
 ; list of 64 byte (512 bits) lists.
@@ -428,14 +428,14 @@
              (appended-bytes (append-one-and-k-zeros-and-len message-bytes))
              (multiple-64-byte-blocks (bytes-to-multiple-64-byte-blocks appended-bytes)))
         (sha-encrypt multiple-64-byte-blocks))))
-          
+
 ;
 ; A few test cases from known Sha-256 values (source: wikipedia article on Sha-2)
 ;
 
 (defthm sha-256-test-case-1
   (equal (sha-2 "")
-	 '(#xe3b0c442 #x98fc1c14 #x9afbf4c8 #x996fb924 
+	 '(#xe3b0c442 #x98fc1c14 #x9afbf4c8 #x996fb924
 		      #x27ae41e4 #x649b934c #xa495991b #x7852b855)))
 
 (defthm sha-256-test-case-2
@@ -445,7 +445,7 @@
 
 (defthm sha-256-test-case-3
   (equal (sha-2 "The quick brown fox jumps over the lazy dog.")
-	 '(#xef537f25 #xc895bfa7 #x82526529 #xa9b63d97 
+	 '(#xef537f25 #xc895bfa7 #x82526529 #xa9b63d97
 		      #xaa631564 #xd5d789c2 #xb765448c #x8635fb6c)))
 
 

@@ -29,7 +29,7 @@
       (o< (nfix a) (nfix b))))
 
   ;;; Ordinal embedding.
-  
+
   (local
     (defun term->o-p (a)
       (+ (nfix a) 1)))

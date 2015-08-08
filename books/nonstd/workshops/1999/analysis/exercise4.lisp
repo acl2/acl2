@@ -9,7 +9,7 @@ closed interval.
 
 (include-book "continuity")
 
-#| 
+#|
 
 ;; This doesn't belong here.  It should be moved over to nsa.lisp, and
 ;; probably written as (equal (equal (stdpt x) (stdpt y)) t) instead.
@@ -23,7 +23,7 @@ closed interval.
    (implies (and (i-close x y)
 		 (i-limited x))
 	    (equal (standard-part x) (standard-part y)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance i-close-limited))
 	    :in-theory (enable-disable (i-close i-small)
 				       (i-close-limited))))))
@@ -49,7 +49,7 @@ closed interval.
 
 ;; Since the function above takes in a "max-so-far" argument, it is
 ;; important to note that the initial value of max-so-far is a lower
-;; bound for the maximum. 
+;; bound for the maximum.
 
 (defthm find-max-rcfn-x-n-is-monotone
   (<= (rcfn max-x) (rcfn (find-max-rcfn-x-n a max-x i n eps))))
@@ -124,9 +124,9 @@ closed interval.
 ;; is simple, since we know it's in the range [a,b] and b is limited.
 
 (defthm find-max-rcfn-x-n-limited
-  (implies (and (realp a) 
+  (implies (and (realp a)
 		(i-limited a)
-		(realp b) 
+		(realp b)
 		(i-limited b)
 		(< a b))
 	   (i-limited (find-max-rcfn-x-n a a
@@ -155,13 +155,13 @@ closed interval.
                                            (* (/ (i-large-integer))
                                               b)))))))
 	  ("Subgoal 1"
-	   :use ((:instance large-if->-large 
+	   :use ((:instance large-if->-large
 			    (x x)
 			    (y (if (< (abs a) (abs b))
 				   (abs b)
 				 (abs a)))))
 	   :in-theory (disable large-if->-large))))
-	     
+
 ;; And now we can introduce the function find-max-rcfn-x which (we
 ;; claim) finds the point x in [a,b] at which (rcfn x) achieves a
 ;; maximum.
@@ -172,7 +172,7 @@ closed interval.
 	   (< a b))
       (standard-part (find-max-rcfn-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))))
     0))
@@ -186,11 +186,11 @@ closed interval.
 		(< a b))
 	   (<= a (find-max-rcfn-x a b)))
   :hints (("Goal'"
-	   :use ((:instance standard-part-<= 
+	   :use ((:instance standard-part-<=
 			    (x a)
 			    (y (find-max-rcfn-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))))))
 	   :in-theory (disable standard-part-<=))))
@@ -204,10 +204,10 @@ closed interval.
 	   (<= (find-max-rcfn-x a b) b))
 ; Matt K. v7-1 mod for ACL2 mod on 2/13/2015: "Goal''" changed to "Goal'".
   :hints (("Goal'"
-	   :use ((:instance standard-part-<= 
+	   :use ((:instance standard-part-<=
 			    (x (find-max-rcfn-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))))
 			    (y b))
@@ -216,7 +216,7 @@ closed interval.
 			    (i 0)
 			    (n (i-large-integer))
 			    (eps (/ (- b a) (i-large-integer))))
-			    
+
 		 )
 	   :in-theory (disable standard-part-<=)))
 )
@@ -243,7 +243,7 @@ closed interval.
 	   :use ((:instance standard-part-<=
 			    (x (rcfn (+ a (* k (/ (- b a)
 						  (i-large-integer))))))
-			    (y (rcfn 
+			    (y (rcfn
 				      (find-max-rcfn-x-n a a 0
 						    (i-large-integer)
 						    (/ (- b a)
@@ -351,7 +351,7 @@ closed interval.
 		 (:instance x-in-upper-bound-of-grid))
 	   :in-theory (disable small-if-<-small
 			       x-in-upper-bound-of-grid))))
-  
+
 ;; So, we have that when eps is small, x and x_i are close to each other.
 
 (defthm x-in-upper-bound-of-grid-small-eps-better

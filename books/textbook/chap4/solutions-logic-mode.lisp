@@ -49,7 +49,7 @@ general guard is:
 
 The extra condition (> k 0) was added to make clear the intended
 domain.  Recall that in the book, we imply that k is a positive
-integer.  
+integer.
 
 |#
 
@@ -58,7 +58,7 @@ integer.
 
 ; Exercise 4.4
 
-; Here is the function mem defined earlier in the text, but with 
+; Here is the function mem defined earlier in the text, but with
 ; guards.
 
 (defun mem (e x)
@@ -167,7 +167,7 @@ Here is one:
 
 #|
 
-Some observations about the following encapsulate. 
+Some observations about the following encapsulate.
 
 1.  We use the ihs-lemmas book in order to reduce the effort required
 to prove termination of the functions.  We suggest that you acquaint
@@ -195,7 +195,7 @@ but this does not seem as clear.
 
 |#
 
-(encapsulate 
+(encapsulate
  nil
  (local (include-book "ihs/ihs-lemmas" :dir :system))
  (defun sum-base-10-digits (n)
@@ -509,8 +509,8 @@ but this does not seem as clear.
         (stringp x))
     x)
    (t ; (symbolp x) for good terms
-    (let ((a-val (assoc-eq x a))) 
-      (if a-val 
+    (let ((a-val (assoc-eq x a)))
+      (if a-val
 	  (cdr a-val) ; we do not want to destroy a nil binding
         0)))))
 
@@ -589,7 +589,7 @@ but this does not seem as clear.
 
 (defstobj st
   ;; The prev field stores scratchwork.  The ans field is an array associating
-  ;; with each i the number of iterations of next-k required to reach 1, 
+  ;; with each i the number of iterations of next-k required to reach 1,
   (prev :type integer :initially 0)
   (ans :type (array integer (100001)) :initially -1))
 

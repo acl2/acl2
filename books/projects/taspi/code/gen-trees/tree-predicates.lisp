@@ -88,7 +88,7 @@
              (has-proper-subtree-in-list a rest))))
 
 (dis+ind has-proper-subtree-in-list)
-    
+
 ;; True if no member of rest has a proper subtree in full.
 ;; A list l for which no member is a proper subtree of any other satistfies
 ;; (non-subtree-listp l l).
@@ -142,7 +142,7 @@
 
 (in-theory (disable tip-p))
 
-;; A list of tips (integers or symbols), 
+;; A list of tips (integers or symbols),
 ;;  so we know we can sort them with olessp.
 (defun tip-listp (l)
   (declare (xargs :guard t))
@@ -187,7 +187,7 @@
    (or (tip-p x)
        (and (consp x)
             (consp (cdr x))
-            (tree-listp x)))) 
+            (tree-listp x))))
 
  (defun tree-listp (list)
 
@@ -195,7 +195,7 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ;  ":Doc-Section TASPI
-;   Recognizes a list of well formed trees with no branch lengths 
+;   Recognizes a list of well formed trees with no branch lengths
 ;   and no singletons.~/
 ;   ~/
 ;   Arguments:
@@ -246,11 +246,11 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;   Recognizes well formed trees with no branch lengths 
+;   Recognizes well formed trees with no branch lengths
 ;   while allowing singletons.~/
 ;   ~/
 ;   Arguments:
-;      (1) flg - nil indicating a set of trees, 
+;      (1) flg - nil indicating a set of trees,
 ;                non-nil indicating a single tree
 ;      (2) x - a potential tree
 
@@ -261,7 +261,7 @@
                                      (if flg 1 0))
                   :guard t))
   (if flg
-      (if (atom x) 
+      (if (atom x)
           (or (and (symbolp x)
                    (not (equal x nil)))
               (integerp x))
@@ -308,7 +308,7 @@
            (taspip t x))
   :hints (("Goal" :in-theory (enable taspip tip-p))))
 
-;; counts the tips in a tree 
+;; counts the tips in a tree
 ;; (to be used to check no proper subtrees property)
 (mutual-recursion
  (defun count-tips (tree)
@@ -328,7 +328,7 @@
    (if (atom tree)
        1
      (count-tips-list tree)))
- 
+
  (defun count-tips-list (list)
    (declare (xargs :guard t
                    :measure (tree-measure list nil)))
@@ -477,7 +477,7 @@
 ;            assigned the name *nil*. See mytips-brlens."
   (declare (xargs :guard t))
   (if (consp tree)
-      (append (mytips (car tree)) 
+      (append (mytips (car tree))
               (mytips (cdr tree)))
     (if (equal tree nil)
         nil
@@ -514,7 +514,7 @@
 
 ;   Details: Does not matter if branch lengths are present or not. "
   (declare (xargs :guard t))
-  (if (atom term) 
+  (if (atom term)
       term
     (first-taxon (car term))))
 
@@ -566,7 +566,7 @@
   (implies (and (treep x)
                 (consp x))
            (tree-listp x))
-  :hints (("Goal" :in-theory (enable treep 
+  :hints (("Goal" :in-theory (enable treep
                                      tree-listp
                                      tip-p)))
   :rule-classes :forward-chaining)
@@ -577,7 +577,7 @@
 ;  :hints (("Goal" :in-theory (enable treep
 ;                                     tip-p
 ;                                     tree-listp))))
-                       
+
 (defthm count-tips-of-consp-equal-count-tips-list
   (implies (consp x)
            (equal (count-tips x)
@@ -610,8 +610,8 @@
   :hints (("Goal" :induct (tree-p-induction x flg)))
   :rule-classes (:rewrite :linear))
 
-;; Main thing here is 
-;; (implies (and (treep b) (proper-subtreep a b)) 
+;; Main thing here is
+;; (implies (and (treep b) (proper-subtreep a b))
 ;;          (< (count-tips a) (count-tips b))
 ;; which we'll use to say that if the tip counts of all the trees in a list are
 ;; equal, then no tree is a proper subtree of any other.
@@ -637,10 +637,10 @@
        (implies (and (flag flg nil)
                      (proper-subtreep a b))
                 (and (implies (treep b)
-                              (< (count-tips-list a) 
+                              (< (count-tips-list a)
                                  (count-tips-list b)))
                      (implies (tree-listp b)
-                              (<= (count-tips-list a) 
+                              (<= (count-tips-list a)
                                   (count-tips-list b))))))
   :hints (("Goal" :induct (tree-p-induction b flg)
            :in-theory (enable subtreep count-tips)))
@@ -650,9 +650,9 @@
   (implies (and (treep b)
                 (proper-subtreep a b))
            (< (count-tips a) (count-tips b)))
-  :hints (("Goal" :in-theory (enable subtreep 
+  :hints (("Goal" :in-theory (enable subtreep
                                      proper-subtreep
-                                     count-tips 
+                                     count-tips
                                      count-tips-list
                                      treep)))
   :rule-classes (:rewrite :linear))
@@ -690,8 +690,8 @@
 ;                                      (1- (depth (cons first rest)))))
 ;           (balanced-tree-helper rest
 ;                                 (depth rest)))
-;  :hints (("Goal" :in-theory 
-;           (e/d (balanced-tree-helper depth) 
+;  :hints (("Goal" :in-theory
+;           (e/d (balanced-tree-helper depth)
 ;                (balanced-tree-helper-when-not-zp)))))
 
 (defthm subtreep-self
@@ -700,7 +700,7 @@
 
 (defthm subtreep-smaller
   (implies (subtreep a b)
-           (<= (acl2-count a) 
+           (<= (acl2-count a)
                (acl2-count b)))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable subtreep))))

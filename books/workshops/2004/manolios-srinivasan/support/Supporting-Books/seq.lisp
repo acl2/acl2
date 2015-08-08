@@ -3,9 +3,9 @@
 (defun seq-macro (st pairs)
   (if (endp pairs)
       st
-    (list 's 
-	  (car pairs) 
-	  (cadr pairs) 
+    (list 's
+	  (car pairs)
+	  (cadr pairs)
 	  (if (endp (cddr pairs))
 	      st
 	    (seq-macro st (cddr pairs))))))

@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -57,7 +57,7 @@
   ;; collects all the nodes of all the routes of the travel list
   (if (endp travel_list)
       nil
-    (append (cdr (car travel_list)) 
+    (append (cdr (car travel_list))
             (grab_nodes (cdr travel_list)))))
 
 
@@ -103,12 +103,12 @@
 
 
 (defthm all_no_duplicates_and_all_no_intersectp_route_=>_no_dupli_grab_nodes
-  ;; we prove that this concept and if every route has no duplicate, 
+  ;; we prove that this concept and if every route has no duplicate,
   ;; then grab_nodes of this travel list has no duplicate
   (implies (and (all_no_intersectp_routep l)
                 (all_no_duplicatesp l))
            (no-duplicatesp (grab_nodes l)))
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-;   :hints (("GOAL" 
+;   :hints (("GOAL"
 ;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
   )

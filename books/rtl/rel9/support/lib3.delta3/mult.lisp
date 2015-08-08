@@ -46,9 +46,9 @@
          (bits y (1- n) 0))
     0))
 
-;; We define a macro, CAT, that takes a list of a list X of alternating data values 
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at 
-;; least 1 data/size pair, but we do not need to specify this in the guard, and 
+;; We define a macro, CAT, that takes a list of a list X of alternating data values
+;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at
+;; least 1 data/size pair, but we do not need to specify this in the guard, and
 ;; leaving it out of the guard simplifies the guard proof.
 
 (defun formal-+ (x y)
@@ -71,18 +71,18 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
-	       
+
 ;;;**********************************************************************
 ;;;			Radix-4 Booth Encoding
 ;;;**********************************************************************
 
 (defun theta (i y)
-  (+ (bitn y (1- (* 2 i))) 
+  (+ (bitn y (1- (* 2 i)))
      (bitn y (* 2 i))
      (* -2 (bitn y (1+ (* 2 i))))))
 
@@ -213,10 +213,10 @@
                   :use ((:instance bits-tail (x (* x y)) (i (1- (+ n (* 2 m)))))
                         (:instance expt-hack (x (* x y)) (n (+ n (* 2 m))) (m (+ -2 n (* 2 m))))
                         (:instance bvecp-product (m (1- n)) (n (1- (* 2 m))))
-                        (:instance bits-plus-mult-2 
+                        (:instance bits-plus-mult-2
                                    (n (1- (+ n (* 2 m)))) (m 0) (k (+ n (* 2 m))) (x (* x y)) (y 1))))))
 
-(in-theory (disable pp4p-theta-1 pp4p-theta-3 pp4p-theta-4 pp4p-theta-5)) 
+(in-theory (disable pp4p-theta-1 pp4p-theta-3 pp4p-theta-4 pp4p-theta-5))
 
 (in-theory (enable pp4p-theta))
 

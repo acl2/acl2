@@ -38,9 +38,9 @@
 (in-package "INSTANCE")
 
 
-; Everything in this file is in program mode.  We do not intend to 
+; Everything in this file is in program mode.  We do not intend to
 ; reason about these functions -- instead, we intend to use these
-; functions to create new functions, which the user will reason 
+; functions to create new functions, which the user will reason
 ; about.
 
 (program)
@@ -68,7 +68,7 @@
 ; could never be "automagically" updated when new theorems are added
 ; to the generic theory.
 ;
-; So, instead of doing things that way, I now simply store events in 
+; So, instead of doing things that way, I now simply store events in
 ; constants.  These constants can then be rewritten to create new but
 ; related theories.
 ;
@@ -79,7 +79,7 @@
 ; serious trouble when trying to rewrite theorems involving constants,
 ; e.g., to say that something was an integerp and greater than zero.
 ; So, instead of using one-way-unify, I introduce a simple unification
-; algorithm which has been adapted from Warren Hunt's work.  
+; algorithm which has been adapted from Warren Hunt's work.
 
 ; The system treats all symbols beginning with a ? as variables, and
 ; all other atoms as literals.
@@ -93,14 +93,14 @@
 ; We return two values: a boolean flag which indicates if we are
 ; successful in finding a match, and a list of substitutions of the
 ; form (variable . value).  This is all be fairly standard stuff.
-; 
+;
 ; For example:
 ;
 ;    (instance-unify-term '(predicate ?x) '(predicate (car a)) nil)
 ;    ==>
 ;    (t ((?x . (car a))))
 
-(mutual-recursion 
+(mutual-recursion
 
   (defun instance-unify-term (pattern term sublist)
     (if (atom pattern)
@@ -123,7 +123,7 @@
 		(mv t sublist)
 	      (mv nil nil))
 	  (instance-unify-list (cdr pattern) (cdr term) sublist)))))
-      
+
   (defun instance-unify-list (pattern-list term-list sublist)
     (if (or (atom term-list)
 	    (atom pattern-list))
@@ -132,23 +132,23 @@
 	    (mv t sublist)
 	  (mv nil nil))
       (mv-let (successp new-sublist)
-	      (instance-unify-term (car pattern-list) 
-				   (car term-list) 
+	      (instance-unify-term (car pattern-list)
+				   (car term-list)
 				   sublist)
 	      (if successp
-		  (instance-unify-list (cdr pattern-list) 
-				       (cdr term-list) 
+		  (instance-unify-list (cdr pattern-list)
+				       (cdr term-list)
 				       new-sublist)
 		(mv nil nil)))))
 )
 
 
 ; After a list of substitutions has been generated, we typically want
-; to apply them to a term.  We recur over the list of substitutions, 
+; to apply them to a term.  We recur over the list of substitutions,
 ; simply calling subst to do our work throughout a term.
 ;
 ; For example:
-; 
+;
 ;   (instance-substitute '((?x . (car a))) '(not (predicate ?x)))
 ;   ==>
 ;   (not (predicate (car a)))
@@ -170,19 +170,19 @@
 ; substitutions.
 ;
 ; For Example:
-;  
-;   (instance-rewrite1 '(predicate ?x) 
+;
+;   (instance-rewrite1 '(predicate ?x)
 ;                      '(not (predicate ?x))
 ;                      '(if (predicate (car x)) t nil))
 ;   =>
 ;   (if (not (predicate (car x))) t nil)
 
-(mutual-recursion 
+(mutual-recursion
 
   (defun instance-rewrite1 (pat repl term)
     (mv-let (successful sublist)
             (instance-unify-term pat term nil)
-	    (if successful 
+	    (if successful
 		(instance-substitute sublist repl)
 	      (if (atom term)
 		  term
@@ -223,8 +223,8 @@
 ; theorems, we will want to rewrite them so that they perform
 ; different functions.  For example, a generic "all" function might
 ; need to be rewritten so that its calls to (predicate x) are replaced
-; with calls to (not (predicate x)) for all x.  
-; 
+; with calls to (not (predicate x)) for all x.
+;
 ; To begin, we instantiate the function's declarations (e.g., comment
 ; strings, xargs, ignores, and so forth).  We simply duplicate comment
 ; strings, but for declare forms we allow rewriting to occur.
@@ -244,7 +244,7 @@
 ; creating the list '(oldname oldarg1 oldarg2 ...) then applying our
 ; substitutions to the new function.
 ;
-; As a trivial example, 
+; As a trivial example,
 ;  (instance-defun '(defun f (x) (+ x 1)) '(((f x) (g x))))
 ;    =>
 ;  (defun g (x) (+ x 1))
@@ -261,8 +261,8 @@
 	 (new-decls     (instance-decls defun-decls subs))
 	 (new-name      (car new-name/args))
 	 (new-args      (cdr new-name/args)))
-    `(,defun-symbol 
-       ,new-name ,new-args 
+    `(,defun-symbol
+       ,new-name ,new-args
        ,@new-decls
        ,new-body)))
 
@@ -301,7 +301,7 @@
 						       (symbol-name suffix))
 					suffix)
 	   (create-new-names (cdr name-list) suffix))))
-	
+
 (defun rename-defthms (event-list suffix)
   (sublis (create-new-names (defthm-names event-list) suffix)
 	  event-list))
@@ -316,12 +316,12 @@
 ; more complicated than instancing definitions, and involves:
 ;
 ;   a) determining what functional substitutions to make
-;   b) determining the theory in which to conduct the proofs 
+;   b) determining the theory in which to conduct the proofs
 ;   c) handling rule classes and other optional components
 ;   d) generating the actual defthm event
 ;
 ; My idea is essentially that if a substitution list can be used for
-; functionally instantiating theorems, then it can also be used for 
+; functionally instantiating theorems, then it can also be used for
 ; creating the new theorem.
 ;
 ; (a) Determining what functional substitutions to make.
@@ -331,7 +331,7 @@
 ;   (((predicate ?x)  (not (in ?x y)))
 ;    ((all ?x)        (all-not-in ?x y))
 ;    ((exists ?x)     (exists-not-in ?x y)))
-; 
+;
 ; From this list we can generate the functional instantiation hints.
 ; So, for example, we simply convert ((predicate ?x) (not (in ?x y)))
 ; into the substitution:
@@ -358,8 +358,8 @@
 ;
 ; When we prove the functional instantiation constraints, ideally we
 ; should work in an environment where the only definitions that are
-; enabled are the definitions used in the functional instantiation 
-; hints.  
+; enabled are the definitions used in the functional instantiation
+; hints.
 ;
 ; Well, the definitions we need are (almost) simply all of the
 ; function symbols in the right-hand side of the substitution list.
@@ -370,21 +370,21 @@
 ; have definitions?  This can occur if, for example, we are using a
 ; constrained function in the substitution list.  This is actually
 ; useful, e.g., for substituting (predicate ?x) -> (not (predicate
-; ?x)).  
+; ?x)).
 ;
-; My solution is a stupid hack.  We simply pass in the names of the 
+; My solution is a stupid hack.  We simply pass in the names of the
 ; generic functions for which we do not want to generate definitions
 ; along with the substitutinos.
 ;
 ; To begin, the following function will extract all function symbols
 ; that occur within a term.
 
-(mutual-recursion 
+(mutual-recursion
 
   (defun term-functions (term)
     (if (atom term)
         nil
-      (cons (car term) 
+      (cons (car term)
 	    (term-list-functions (cdr term)))))
 
   (defun term-list-functions (list)
@@ -398,7 +398,7 @@
 ; substitution list and extracts the function symbols from each right
 ; hand side, using term-functions.  The net result is the list of all
 ; functions that were used in replacements.
-  
+
 (defun subs-repl-functions (subs)
   (if (endp subs)
       nil
@@ -407,9 +407,9 @@
       (append (term-functions repl)
 	      (subs-repl-functions (cdr subs))))))
 
-; Given the above, we could then convert the list of function symbols 
+; Given the above, we could then convert the list of function symbols
 ; into a list of (:definition f)'s with the following function.
-   
+
 (defun function-list-to-definitions (funcs)
   (if (endp funcs)
       nil
@@ -438,7 +438,7 @@
 ; order of the elements is rule-classes, instructions, hints, otf-flg,
 ; and finally doc.  We parse these options with the following code:
 
-(defconst *default-parse-values* 
+(defconst *default-parse-values*
   '((nil . nil) (nil . nil) (nil . nil) (nil . nil) (nil . nil)))
 
 (defun parse-defthm-option (option return-value)
@@ -480,14 +480,14 @@
 ; substitutions to make.
 
 (defun instance-defthm (event new-name subs generics extra-defs)
-  (let* ((defthm-symbol (first event)) 
+  (let* ((defthm-symbol (first event))
 	 (defthm-name   (second event))
 	 (defthm-body   (third event))
 	 (new-body      (instance-rewrite defthm-body subs))
-	 (options       (parse-defthm-options (cdddr event) 
+	 (options       (parse-defthm-options (cdddr event)
 					      *default-parse-values*))
 	 (rc-opt        (first options)))
-    `(,defthm-symbol ,new-name 
+    `(,defthm-symbol ,new-name
        ,new-body
        :hints(("Goal"
 	       :use (:functional-instance ,defthm-name
@@ -514,7 +514,7 @@
 ; function symbols, we will want to skip all local events and only add
 ; the non-local events (using functional instantiation to create the
 ; theorems).  On the other hand, for the case when we are introducing
-; constrained functions, we will want to introduce new constrained 
+; constrained functions, we will want to introduce new constrained
 ; functions based on the encapsulate.
 ;
 ; So, encapsulates are handled separately based on whether or not any
@@ -533,7 +533,7 @@
 ; system to make the substitutions within the signatures.  We do that
 ; here by simple rewriting.  Note that we do not allow the number of
 ; return values to change.  I don't really think of this as a major
-; limitation, since almost always my constrained functions return a 
+; limitation, since almost always my constrained functions return a
 ; single value.  If you have an example of where this would be useful,
 ; it would be interesting to see it.
 
@@ -558,15 +558,15 @@
 
 ; Instantiating Entire Theories
 ;
-; 
+;
 ; We are now ready to introduce the functions which will walk through
-; a theory and call the appropriate instancing functions on each of 
-; the forms we encounter.  To support encapsulation, our functions 
+; a theory and call the appropriate instancing functions on each of
+; the forms we encounter.  To support encapsulation, our functions
 ; here are all mutually recursive.
 ;
 ; The arguments that we pass around are the following:
 ;
-;   - The event or event list to instantiate 
+;   - The event or event list to instantiate
 ;
 ;   - The global list of substitutions used to derive the instance
 ;
@@ -579,8 +579,8 @@
 ;     to indicate that the nearest encapsulate is merely a structural
 ;     wrapper for local lemmas.
 ;
-; Finally, we overload our behavior based on suffix, so that if no 
-; suffix is given, we simply replicate the generic theory instead 
+; Finally, we overload our behavior based on suffix, so that if no
+; suffix is given, we simply replicate the generic theory instead
 ; of instantiating a concrete instance of it.
 
 
@@ -596,8 +596,8 @@
 		 (eq (car event) 'defthmd))
 	     (let* ((name (second event))
 		    (new-name (intern-in-package-of-symbol
-			       (string-upcase 
-				(concatenate 'string 
+			       (string-upcase
+				(concatenate 'string
 					     (symbol-name name)
 					     (symbol-name suffix)))
 			       suffix)))
@@ -615,18 +615,18 @@
 	nil
       (let ((first (instance-event (car events) subs suffix generics mode extra-defs))
 	    (rest  (instance-event-list (cdr events) subs suffix generics mode extra-defs)))
-	(if first 
+	(if first
 	    (cons first rest)
 	  rest))))
 
   (defun instance-encapsulate (event subs suffix generics mode extra-defs)
     (declare (ignore mode))
     (let* ((signatures (second event))
-	   (new-sigs   (if signatures 
+	   (new-sigs   (if signatures
 			   (instance-signatures subs signatures)
 			 nil))
 	   (new-events (instance-event-list (cddr event) subs suffix generics
-					    (if signatures 
+					    (if signatures
 						'constrained
 					      nil)
 					    extra-defs)))
@@ -640,11 +640,11 @@
 
 (defmacro instance (theory)
   (let ((macro-name (intern-in-package-of-symbol
-		     (string-upcase (concatenate 'string 
+		     (string-upcase (concatenate 'string
 						 "instance-" (string theory)))
 		     theory)))
     `(defmacro ,macro-name (&key subs suffix generics extra-defs)
-       (list* 'encapsulate 
+       (list* 'encapsulate
 	      nil
 	      (instance-event-list ,theory subs suffix generics nil extra-defs)))))
 
@@ -659,17 +659,17 @@
 ; (predicate ?x) to (not (foo ?x y)).  How can we accurately say just
 ; what it is that we want to rewrite in each case?
 ;
-; Right now our substitutions are based on 
+; Right now our substitutions are based on
 ;  ( (predicate ?x)  (not (foo ?x y)) )
 ;  ( (all ?x)        (all-foo ?x y) )
 ;
-; We can easily pick out and say "all" is replaced by "all-foo", 
+; We can easily pick out and say "all" is replaced by "all-foo",
 ; but if we try to just use the car of the term as its symbol
-; replacement, then "predicate" would be "not".  
+; replacement, then "predicate" would be "not".
 ;
 ; OK, so we could do some kind of preprocessing step where we fill
 ; in argument guards.  The "generics" list right now is a big huge
 ; hack that allows us to ignore the fact that :predicate doens't
 ; have a definition.  Really the issue that this is trying to solve
-; is to tell us how to build our :in-theory event.  Right now the 
+; is to tell us how to build our :in-theory event.  Right now the
 ; :in-theory event is just a hack that we don't really understand.

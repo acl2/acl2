@@ -18,16 +18,16 @@
 ;; --------------------------------------------------------
 
 
-(make-thm :name |type-0-0-1-thm| 
+(make-thm :name |type-0-0-1-thm|
           :thm-type type
-          :itr-term (and (|$itr_0_typep| x) 
-                         (|$itr_1_typep| y)) 
+          :itr-term (and (|$itr_0_typep| x)
+                         (|$itr_1_typep| y))
           :ind-term (|$ind_0_typep| (list x y))
           :enables (|$itr_0_typep| |$itr_1_typep| |$ind_0_typep|))
 
- (make-thm :name |comp-1-thm| 
+ (make-thm :name |comp-1-thm|
           :thm-type comp
-          :itr-term (|$itr_comp_1| x y i) 
+          :itr-term (|$itr_comp_1| x y i)
           :ind-term (|$ind_comp_1| (list y x) x i))
 
  (make-thm :name |bitMmult-thm|
@@ -38,7 +38,7 @@
  (make-thm :name |type-1-1-thm|
           :thm-type type
           :itr-term (and (|$itr_1_typep| x)
-                         (|$itr_1_typep| y))         
+                         (|$itr_1_typep| y))
           :ind-term (|$ind_1_typep| (list x y))
           :enables (|$itr_1_typep| |$ind_1_typep|))
 
@@ -53,17 +53,17 @@
           :ind-term (|$ind_2_typep| x)
           :enables (|$itr_1_typep| |$ind_2_typep|))
 
-(make-thm :name |inv-ps-thm| 
+(make-thm :name |inv-ps-thm|
           :thm-type invariant
           :itr-name |iter_ps_3|
-          :ind-name |ps_2| 
+          :ind-name |ps_2|
           :arg-types ((|$itr_1_typep| x))
           :branches (|ps_2|)
-          :arg-list (x)  
+          :arg-list (x)
           :init-hist (0)
           :hist-widths (0))
 
- (make-thm :name |gpower-thm| 
+ (make-thm :name |gpower-thm|
           :thm-type fn
           :itr-term (|itr_gpower_1| x y)
           :ind-term (|ind_gpower_1| (list x y)))
@@ -80,11 +80,11 @@
           :enables (|$itr_2_typep| |$ind_3_typep|))
 
  (make-thm :name |inv-sums-thm|
-          :thm-type invariant 
-          :itr-name |iter_sums_3| 
-          :ind-name |sums_2| 
+          :thm-type invariant
+          :itr-name |iter_sums_3|
+          :ind-name |sums_2|
           :arg-list (x)
-          :arg-types ((|$itr_2_typep| x)) 
+          :arg-types ((|$itr_2_typep| x))
           :branches (|sums_2|)
           :init-hist (0)
           :hist-widths (0))
@@ -98,7 +98,7 @@
  (make-thm :name |type-2-2-4-thm|
           :thm-type type
           :itr-term (and (|$itr_2_typep| x)
-                         (|$itr_2_typep| y))  
+                         (|$itr_2_typep| y))
           :ind-term (|$ind_4_typep| (list x y))
           :enables (|$itr_2_typep| |$ind_4_typep|))
 
@@ -337,22 +337,22 @@
           :itr-term (|$itr_4_typep| x)
           :enables (|$itr_4_typep| |$ind_8_typep|))
 
- (make-thm :name |inv-rnds-6-4-thm| 
+ (make-thm :name |inv-rnds-6-4-thm|
           :thm-type invariant
-          :itr-name |iter_rnds_6| 
-          :ind-name |rnds_4| 
-          :arg-list (|tmp_290| |rndKeys_3| |initialKey_2|) 
-          :arg-types ((|$itr_3_typep| |initialKey_2|) 
+          :itr-name |iter_rnds_6|
+          :ind-name |rnds_4|
+          :arg-list (|tmp_290| |rndKeys_3| |initialKey_2|)
+          :arg-types ((|$itr_3_typep| |initialKey_2|)
                       (|$itr_4_typep| |rndKeys_3|)
                       (|$itr_3_typep| |tmp_290|))
-          :branches (|rnds_4|) 
+          :branches (|rnds_4|)
           :init-hist ( ( ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0)))
           :hist-widths (0))
 
  (make-thm :name |type-5-3-9-type|
           :thm-type type
           :itr-term (and (|$itr_3_typep| x)
-                         (|$itr_5_typep| y))  
+                         (|$itr_5_typep| y))
           :ind-term (|$ind_9_typep| (list x y))
           :enables (|$ind_9_typep| |$itr_5_typep| |$itr_3_typep|))
 
@@ -361,12 +361,12 @@
           :itr-term (|itr_rounds_1| x y)
           :ind-term (|ind_rounds_1| (list x y)))
 
- (make-thm :name |inv-rnds-5-3-thm| 
+ (make-thm :name |inv-rnds-5-3-thm|
           :thm-type invariant
           :itr-name |iter_rnds_5|
-          :ind-name |rnds_3| 
-          :arg-list (|tmp_283| |invRndKeys_2| |finalKey_2|) 
-          :arg-types ((|$itr_3_typep| |finalKey_2|) 
+          :ind-name |rnds_3|
+          :arg-list (|tmp_283| |invRndKeys_2| |finalKey_2|)
+          :arg-types ((|$itr_3_typep| |finalKey_2|)
                       (|$itr_4_typep| |invRndKeys_2|)
                       (|$itr_3_typep| |tmp_283|))
           :branches (|rnds_3|)
@@ -412,7 +412,7 @@
           :thm-type type
           :itr-term (and (|$itr_2_typep| z)
                          (|$itr_2_typep| y)
-                         (|$itr_1_typep| x))  
+                         (|$itr_1_typep| x))
           :ind-term (|$ind_10_typep| (list x y z))
           :enables (|$ind_10_typep| |$itr_2_typep| |$itr_1_typep|))
 
@@ -423,10 +423,10 @@
 
 (make-thm :name |inv-3-2-thm|
           :thm-type invariant
-          :itr-name |iter_w_3| 
-          :ind-name |w_2| 
-          :arg-list  (k) 
-          :arg-types ((|$itr_3_typep| k)) 
+          :itr-name |iter_w_3|
+          :ind-name |w_2|
+          :arg-list  (k)
+          :arg-types ((|$itr_3_typep| k))
           :branches (|w_2|)
           :init-hist ( ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0)
       ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0)
@@ -465,14 +465,14 @@
 
 (make-thm :name |takes-w_2|
           :thm-type takes
-          :take-depth 44 
-          :hist-width 64 
-          :invar-thm |inv-3-2-thm| 
+          :take-depth 44
+          :hist-width 64
+          :invar-thm |inv-3-2-thm|
           :itr-name |iter_w_3|
-          :arg-list (k) 
+          :arg-list (k)
           :branches (|w_2|)
           :arg-types ((|$itr_3_typep| k))
-          :ind-name |$ind_takes_1| 
+          :ind-name |$ind_takes_1|
           :ind-loop |w_2|
           :init-hist ( ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0)
       ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0) ( 0 0 0 0)

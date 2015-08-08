@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -57,7 +57,7 @@
 
 ;; (defthm bitn-setbitn-setbitn
 ;;   (implies (and (<  j w)
-;;                 (<= 0 j) 
+;;                 (<= 0 j)
 ;;                 (integerp w)
 ;;                 (integerp j))
 ;;            (equal (bitn (setbitn x w j y)

@@ -33,7 +33,7 @@
 ; THEN:
 ; (print-last-time) ; formatted output of runtime elapsed
 ;   or
-; (last-time) ; runtime elapsed as a rational number 
+; (last-time) ; runtime elapsed as a rational number
 
 ; Example:
 ;   ACL2 !>(save-time (mini-proveall))
@@ -92,13 +92,13 @@
 ;                      :eventp t)))
 ;  :SAVE-TIME-STOPPED
 ; ACL2 !>(saved-times)
-; 
+;
 ; arithmetic/top-with-meta: 0.15
 ; THM2: 0.02
 ; THM1: 0.00
 ;  :TIMES-PRINTED
 ; ACL2 !>(saved-times :raw t)
-; 
+;
 ; arithmetic/top-with-meta: 957/6250
 ; THM2: 5027/250000
 ; THM1: 2449/500000

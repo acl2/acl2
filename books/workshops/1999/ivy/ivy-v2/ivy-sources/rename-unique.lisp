@@ -139,7 +139,7 @@
   (if (or (atom a) (atom b))
       nil
       (double-list-induct (cdr a) (cdr b))))
-           
+
 (defthm len-append-right  ;; disabled below
   (implies (not (equal (len (append a b)) (len (append c b))))
            (not (equal (len a) (len c))))

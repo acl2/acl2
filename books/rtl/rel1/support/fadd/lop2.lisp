@@ -36,7 +36,7 @@
 		  (<= 0 K)
 		  (< A (EXPT 2 K))
 		  (< B (EXPT 2 K)))
-	     (= (PHI A 
+	     (= (PHI A
 		     (REM B (EXPT 2 (+ -1 K)))
 		     1 (1- K))
 		(EXPO (LOGIOR (* 2 A)
@@ -166,7 +166,7 @@
 		  (< B (EXPT 2 K)))
 	     (= (comp1 (* 2 (rem b (expt 2 (1- k))))
 		       k)
-		(comp1 (* 2 b) (1+ k))))		
+		(comp1 (* 2 b) (1+ k))))
   :rule-classes ()
   :hints (("Goal" :use (lop2-6)))))
 
@@ -539,7 +539,7 @@
 	     (= (phi a b 0 (1+ e))
 		(phi a b 1 e)))
   :rule-classes ()
-  :hints (("Goal" :use (lop2-22 
+  :hints (("Goal" :use (lop2-22
 			lop2-23
 			(:instance expo-monotone (x 1) (y a)))))))
 

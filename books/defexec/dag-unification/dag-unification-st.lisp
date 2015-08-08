@@ -1,6 +1,6 @@
 ;;; ============================================================================
 ;;; dag-unification-st.lisp
-;;; Título: A dag based unification algorithm using stobjs 
+;;; Título: A dag based unification algorithm using stobjs
 ;;; ============================================================================
 
 #| To certify this book:
@@ -33,7 +33,7 @@
 ;;; dag-unification-l.lisp}. However, in that book we used lists to store
 ;;; term graphs. Now we use one stobj; that is, only one object storing
 ;;; the graph needs ever exists and updatings are done destructively
-;;; instead of copying. 
+;;; instead of copying.
 
 
 ;;; From the logical perspective, a single-threaded object can be seen
@@ -44,7 +44,7 @@
 ;;; theorems given in {\tt dag-unification-l.lisp} to define and verify
 ;;; the same algorithm but now using the single--threaded object. Note
 ;;; that the algorithm naturally meets the restrictions needed when
-;;; programming with stobjs. 
+;;; programming with stobjs.
 
 ;;; Having defined and verified the algorithm that uses lists, the
 ;;; algorithm that uses the stobj can be easily verified proving the
@@ -52,7 +52,7 @@
 ;;; the stobj version. All these "translation" theorems have all the
 ;;; same form. Roughly speaking, they show that the list version
 ;;; of a function acting on the array component of the stobj computes
-;;; the same result than the stobj version. 
+;;; the same result than the stobj version.
 
 ;;; As we pointed in the book {\tt dag-unification-l.lisp}, some of the
 ;;; functions here need some very expensive conditions (checking that we
@@ -61,7 +61,7 @@
 ;;; execution. To overcome this drawback, we use the "mbe" feature
 ;;; of ACL2 (see the ACL2 manual, version 2.8).
 
- 
+
 ;;; The structure of this book is very simple. For every function of the
 ;;; algorithm defined using lists (see {\tt dag-unification-l.lisp}, we
 ;;; define an analogue function using the stobj and the corresponding
@@ -75,17 +75,17 @@
 ;;; The following books are used, and contain information that is
 ;;; relevant to understand the contents of this book:
 
-;;; *) 
+;;; *)
 ;;; {\tt dag-unification-l.lisp}, where the unification algorithm on term
 ;;; dags using lists is defined and verified
 
-;;; *) 
+;;; *)
 ;;; {\tt terms-as-dag.lisp}, where an algorithm to store first--order
 ;;; terms as dags (represented as a list) is defined and verified.
 
-;;; *) 
+;;; *)
 ;;; {\tt terms-dag-stobj.lisp}, where the @terms-dag@ stobj is defined
-;;; ans some useful theorems about it are proved. 
+;;; ans some useful theorems about it are proved.
 ;;; -)
 
 
@@ -109,13 +109,13 @@
   (term-graph-p (dag-component-st terms-dag)))
 
 
-(local  
+(local
  (defthm bounded-term-graph-p-fix-true-listp
    (equal (bounded-term-graph-p (fix-true-list g) n)
 	  (bounded-term-graph-p g n))))
 
 
-(local  
+(local
  (defthm term-graph-p-fix-true-listp
    (equal (term-graph-p (fix-true-list g))
 	  (term-graph-p g))))
@@ -124,9 +124,9 @@
  (defthm term-graph-p-st-main-property
    (equal (term-graph-p-st terms-dag)
 	  (term-graph-p (terms-dag-graph terms-dag)))))
- 
 
-(local  
+
+(local
  (defthm quasi-term-graph-p-fix-true-listp
    (equal (quasi-term-graph-p (fix-true-list g))
 	  (quasi-term-graph-p g))))
@@ -148,13 +148,13 @@
  (defthm list-of-term-dag-variables-fix-true-listp
    (equal (list-of-term-dag-variables (fix-true-list g))
 	  (list-of-term-dag-variables g))))
- 
+
 
 (local
  (defthm list-of-term-dag-variables-st-main-property
    (equal (list-of-term-dag-variables-st terms-dag)
 	  (list-of-term-dag-variables (terms-dag-graph terms-dag)))))
- 
+
 
 (in-theory (disable list-of-term-dag-variables-st))
 
@@ -168,7 +168,7 @@
 		 (nth h g)
 		 (not (consp (nth h g))))
 	    (integerp (nth h g)))))
- 
+
 
 (defun neighbors-st (h terms-dag)
   (declare (xargs :stobjs terms-dag
@@ -185,10 +185,10 @@
  (defthm equal-neighbors-st-neighbors
    (equal (neighbors-st h td)
 	  (neighbors h (terms-dag-graph td)))))
- 
+
 
 ;;; Needed for guard verification:
-;;; These two are proved in {\tt dag-unification-rules.lisp} 
+;;; These two are proved in {\tt dag-unification-rules.lisp}
 
 ;; (local
 ;;  (defthm bounded-term-graph-p-nth-property-1
@@ -216,7 +216,7 @@
 
 
 ;;; Definition of directed acyclic graphs:
- 
+
 
 (defun dag-p-aux-st (hs rev-path terms-dag)
   (declare (xargs :measure (measure-dag-p hs rev-path (terms-dag-graph
@@ -228,7 +228,7 @@
 		  :guard (and (bounded-nat-true-listp hs (dag-length terms-dag))
 			      (true-listp rev-path)
 			      (term-graph-p-st terms-dag))))
-			      
+
   (if (endp hs)
       t
     (let ((hs-car (nfix (car hs))))
@@ -245,7 +245,7 @@
  (defthm equal-dag-p-aux-st-dag-p-aux
    (equal (dag-p-aux-st hs rev-path td)
 	  (dag-p-aux hs rev-path (terms-dag-graph td)))))
- 
+
 (in-theory (disable dag-p-aux-st))
 
 ;;; Guard verification
@@ -255,7 +255,7 @@
    (implies (<= m n)
 	    (bounded-nat-true-listp (list-of-n m) n))
    :hints (("Goal" :in-theory (enable list-of-n)))))
- 
+
 (defun dag-p-st (terms-dag)
   (declare (xargs :stobjs terms-dag
 		  :guard (term-graph-p-st terms-dag)))
@@ -336,7 +336,7 @@
 				(bounded-nat-true-listp h (dag-length
 							   terms-dag)))
 			      (well-formed-term-dag-st-p terms-dag))))
-					     
+
   (mbe
    :logic
    (if (dag-p-st terms-dag)
@@ -354,7 +354,7 @@
 	   (cons (dag-as-term-st t (car h) terms-dag)
 		 (dag-as-term-st nil (cdr h) terms-dag))))
      'undef)
-   :exec 
+   :exec
    (if flg
        (let ((p (dagi h terms-dag)))
 	 (if (dag-bound-p p)
@@ -373,7 +373,7 @@
  (defthm equal-dag-as-term-st-dag-as-term-l
    (equal (dag-as-term-st flg h terms-dag)
 	  (dag-as-term-l flg h (terms-dag-graph terms-dag)))
-   :hints (("Goal" :in-theory (disable nth))))) 
+   :hints (("Goal" :in-theory (disable nth)))))
 
 
 (in-theory (disable dag-as-term-st))
@@ -410,7 +410,7 @@
 			      (well-formed-term-dag-st-p terms-dag))))
   (if (endp sol)
       sol
-    (cons (cons (caar sol) 
+    (cons (cons (caar sol)
 		(dag-as-term-st t (cdar sol) terms-dag))
 	  (solved-as-system-st (cdr sol) terms-dag))))
 
@@ -442,7 +442,7 @@
 
 (local (in-theory (enable upl-as-pair-of-systems)))
 
-(local 
+(local
  (defthm equal-upl-as-pair-of-systems-st-upl-as-pair-of-systems
    (equal (upl-as-pair-of-systems-st S sol bool terms-dag)
 	  (if (not bool)
@@ -476,7 +476,7 @@
 						 terms-dag))
 		  :stobjs terms-dag
 		  :guard (and
-			  (natp h) (< h (dag-length terms-dag)) 
+			  (natp h) (< h (dag-length terms-dag))
 			  (term-graph-p-st terms-dag)
 			  (dag-p-st terms-dag))))
   (mbe
@@ -485,7 +485,7 @@
        (let ((p (dagi h terms-dag)))
 	 (if (dag-bound-p p) (dag-deref-st p terms-dag) h))
      'undef)
-   :exec 
+   :exec
    (let ((p (dagi h terms-dag)))
      (if (dag-bound-p p) (dag-deref-st p terms-dag) h))))
 
@@ -495,7 +495,7 @@
  (defthm equal-dag-deref-st-deref-l
    (equal (dag-deref-st h terms-dag)
 	  (dag-deref-l h (terms-dag-graph terms-dag)))))
- 
+
 (in-theory (disable dag-deref-st))
 
 
@@ -545,7 +545,7 @@
 	 nil
        (or (occur-check-st t x (car h) terms-dag)
 	   (occur-check-st nil x (cdr h) terms-dag))))))
-   
+
 (local
  (defthm equal-occur-check-st-occur-check-st
    (equal (occur-check-st flg x h terms-dag)
@@ -566,7 +566,7 @@
 ;;; function returns a multivalue with the following components,
 ;;; obtained after the application of one step of M-M: the resulting
 ;;; system of equations to be solved, the resulting substitution, a
-;;; boolean value (to detect unsovability) and the stobj @terms-dag@: 
+;;; boolean value (to detect unsovability) and the stobj @terms-dag@:
 
 
 ;;; Guard verification:
@@ -635,7 +635,7 @@
   (declare (xargs :stobjs terms-dag
 		  :guard
 		  (and
-		   (consp S) 
+		   (consp S)
 		   (bounded-nat-pairs-true-listp S (dag-length
 							terms-dag))
 		   (bounded-nat-substitution-p U (dag-length
@@ -649,7 +649,7 @@
 	 (p2 (dagi t2 terms-dag)))
     (cond
      ((= t1 t2) (mv R U t terms-dag))
-     ((dag-variable-p p1)  
+     ((dag-variable-p p1)
       (if (occur-check-st t t1 t2 terms-dag)
 	  (mv nil nil nil terms-dag)
 	(let ((terms-dag (update-dagi t1 t2 terms-dag)))
@@ -665,7 +665,7 @@
 		    (mv (append pair-args R) U t terms-dag)
 		  (mv nil nil nil terms-dag)))))))
 
-    
+
 ;;; A strange case for a lemma that will be useful later:
 (local
  (defthm well-formed-upl-st-preserved-by-dag-transform-mm-st-caso-raro
@@ -686,8 +686,8 @@
    (equal (nth 0 l) (car l))))
 
 ;;; Note that due to the multivalue, we need four "translation"
-;;; theorems: 
- 
+;;; theorems:
+
 (local
  (defthm  dag-transform-mm-st-first-component
    (equal (first (dag-transform-mm-st S U terms-dag))
@@ -699,13 +699,13 @@
    (equal (second (dag-transform-mm-st S U terms-dag))
 	  (second (dag-transform-mm-l (list S U (terms-dag-graph
 						 terms-dag)))))))
- 
+
 (local
  (defthm dag-transform-mm-st-third-component
    (iff (third (dag-transform-mm-st S U terms-dag))
 	(dag-transform-mm-l (list S U (terms-dag-graph terms-dag))))))
- 
- 
+
+
 (local
  (defthm dag-transform-mm-st-fourth-component
    (implies (third (dag-transform-mm-st S U terms-dag))
@@ -729,7 +729,7 @@
 ;;; step of transformation. This will be useful for guard verification
 ;;; and it justifies the use of the more efficient executable body
 ;;; (without the expensive well-formedness check) instead of the logic
-;;; body. 
+;;; body.
 
 (local
  (defthm well-formed-upl-list
@@ -738,11 +738,11 @@
 				 (third upl)))
 	  (well-formed-upl upl))
    :hints (("Goal" :in-theory (enable well-formed-upl)))))
- 
+
 (local
  (defthm well-formed-upl-st-preserved-by-dag-transform-mm-st-casi
    (implies (and (well-formed-upl-st S U terms-dag)
-		 (consp S))		
+		 (consp S))
 	    (mv-let (S1 U1 bool1 terms-dag)
 		    (dag-transform-mm-st S U terms-dag)
 		    (implies bool1
@@ -752,10 +752,10 @@
 			 (upl (list S U (first terms-dag))))
 	    :in-theory (disable
 			well-formed-upl-preserved-by-dag-transform-mm-l)))))
- 
+
 (defthm well-formed-upl-st-preserved-by-dag-transform-mm-st
   (implies (and (well-formed-upl-st S U terms-dag)
-		(consp S))		
+		(consp S))
 	   (mv-let (S1 U1 bool1 terms-dag)
 		   (dag-transform-mm-st S U terms-dag)
 		   (declare (ignore bool1))
@@ -780,7 +780,7 @@
 	       (list (first upl) (second upl) (third upl)))
 	      (upl-as-pair-of-systems upl)))
     :hints (("Goal" :in-theory (enable upl-as-pair-of-systems)))))
-  
+
  (defthm unification-measure-decreases-st
    (mv-let (S1 U1 bool1 terms-dag1)
 	   (dag-transform-mm-st S U terms-dag)
@@ -788,7 +788,7 @@
 			 (consp S) bool)
 		    (o<
 		     (unification-measure
-		      (upl-as-pair-of-systems-st S1 U1 bool1 terms-dag1)) 
+		      (upl-as-pair-of-systems-st S1 U1 bool1 terms-dag1))
 		     (unification-measure
 		      (upl-as-pair-of-systems-st S U bool terms-dag)))))
    :hints (("Goal" :use (:instance
@@ -831,9 +831,9 @@
      (mv-let (S1 U1 bool1 terms-dag)
 	     (dag-transform-mm-st S U terms-dag)
 	     (dag-solve-system-st S1 U1 bool1 terms-dag)))))
-   
-  
-  
+
+
+
 
 ;;; Note that the above executable body is not terminating in
 ;;; general, even if {\tt occur-check} is never applied: the {\tt decompose}
@@ -852,19 +852,19 @@
 (local
  (defun true-listp-of-three-elements (l)
    (and (consp l) (consp (cdr l)) (consp (cddr l)) (equal (cdddr l) nil))))
- 
+
 (local
  (defthm true-listp-of-three-elements-dag-transform-mm-l
    (implies (dag-transform-mm-l upl)
 	    (true-listp-of-three-elements (dag-transform-mm-l upl)))
    :hints (("Goal" :in-theory (enable dag-transform-mm-l)))))
- 
+
 (local
  (defthm true-listp-of-three-elements-eliminate-destructors
    (implies (true-listp-of-three-elements l)
 	    (equal (list (first l) (second l) (third l))
 		   l))))
- 
+
 (local (in-theory (disable true-listp-of-three-elements)))
 
 ;;; Translation theorems:
@@ -884,7 +884,7 @@
 	    (equal (second (dag-solve-system-st S U bool terms-dag))
 		   (second (solve-upl-l
 			    (and bool (list S U (terms-dag-graph terms-dag)))))))))
- 
+
 
 (local
  (defthm  dag-solve-system-st-fourth-component
@@ -893,12 +893,12 @@
 		    (fourth (dag-solve-system-st S U bool terms-dag)))
 		   (third (solve-upl-l
 			   (and bool (list S U (terms-dag-graph terms-dag)))))))))
- 
+
 (local
  (defthm  dag-solve-system-st-third-component
    (iff (third (dag-solve-system-st S U bool terms-dag))
 	(solve-upl-l (and bool (list S U (terms-dag-graph terms-dag)))))))
- 
+
 
 
 
@@ -909,29 +909,29 @@
 (defun dag-mgs-st (S terms-dag)
   (declare (xargs :stobjs terms-dag
 		  :guard (well-formed-dag-system-st S terms-dag)))
-						    
+
   (mv-let (S1 sol bool terms-dag)
 	  (dag-solve-system-st S nil t terms-dag)
 	  (declare (ignore S1))
 	  (mv sol bool terms-dag)))
 
-  
- 
-(local (in-theory (enable dag-mgs-l))) 
+
+
+(local (in-theory (enable dag-mgs-l)))
 
 (local
  (defthm  dag-mgs-st-first-component
    (implies (second (dag-mgs-st S terms-dag))
 	    (equal (first (dag-mgs-st S terms-dag))
 		   (second (dag-mgs-l S (terms-dag-graph terms-dag)))))))
- 
+
 
 (local
  (defthm  dag-mgs-st-third-component
    (implies (second (dag-mgs-st S terms-dag))
 	    (equal (first (third (dag-mgs-st S terms-dag)))
 		   (third (dag-mgs-l S (terms-dag-graph terms-dag)))))))
- 
+
 (local
  (defthm  dag-mgs-st-second-component
    (iff (second (dag-mgs-st S terms-dag))
@@ -998,12 +998,12 @@
 		  (update-dagi h (if bound (cdr bound) (cons term t))
 			       terms-dag))
 		 (new-variables
-		  (if bound variables (acons term h variables)))) 
-	    (mv terms-dag (1+ h) nil new-variables)) 
+		  (if bound variables (acons term h variables))))
+	    (mv terms-dag (1+ h) nil new-variables))
 	(mv-let (terms-dag h1 hsl var1)
 		(term-as-dag-aux
 		 nil (cdr term) terms-dag (1+ h) variables)
-		(let* ((terms-dag 
+		(let* ((terms-dag
 			(update-dagi h (cons (car term) hsl) terms-dag)))
 		  (mv terms-dag h1 nil var1))))
     (if (endp term)
@@ -1068,7 +1068,7 @@
    (implies (and (bounded-nat-substitution-p alist n)
 		 (assoc x alist))
 	    (consp (assoc x alist)))))
- 
+
 
 
 (local
@@ -1105,12 +1105,12 @@
   (declare (xargs :stobjs terms-dag
 		  :guard (and (term-p t1) (term-p t2)
 			      (empty-graph-p-st terms-dag))))
-  (let* ((size (+ (length-term t t1) (length-term t t2) 1)) 
+  (let* ((size (+ (length-term t t1) (length-term t t2) 1))
 	 (terms-dag (resize-dag size terms-dag)))
     (term-as-dag (list 'equ t1 t2) terms-dag)))
 
 ;;; Note that this function do not need an alternative "executable"
-;;; body: 
+;;; body:
 
 (local
  (defthm unif-two-terms-problem-st-unif-two-terms-problem-l
@@ -1122,18 +1122,18 @@
 (in-theory (disable unif-two-terms-problem-st))
 
 
-    
+
 ;;; Examples:
 
 ; (unif-two-terms-problem-st
 ;    '(f x (g (a) y)) '(f x (g y x)) terms-dag)
 ; (show-dag 0 10 terms-dag)
-; ===> ((EQU 1 6) (F 2 3) (X . T) (G 4 5) (A) (Y . T) 
+; ===> ((EQU 1 6) (F 2 3) (X . T) (G 4 5) (A) (Y . T)
 ;                 (F 7 8) 2 (G 9 10) 5 2)
 ; (unif-two-terms-problem-st
 ;   '(f (h z) (g (h x) (h u))) '(f x (g (h u) v)) terms-dag)
 ; (show-dag 0 14 terms-dag)
-; ===> ((EQU 1 9) (F 2 4) (H 3) (Z . T) (G 5 7) (H 6) (X . T) (H 8) (U . T) 
+; ===> ((EQU 1 9) (F 2 4) (H 3) (Z . T) (G 5 7) (H 6) (X . T) (H 8) (U . T)
 ;                 (F 10 11) 6 (G 12 14) (H 13) 8 (V . T))
 ; ACL2 !>(unif-two-terms-problem-st
 ; 			 '(f (h z) (g (h x) (h u))) '(f x (g (h u) v))
@@ -1145,7 +1145,7 @@
 
 (defun initial-to-be-solved-st (terms-dag)
   (declare (xargs :stobjs terms-dag
-		  :guard (and 
+		  :guard (and
 			      (< 0 (dag-length terms-dag))
 			      (consp (dagi 0 terms-dag))
 			      (consp (cdr (dagi 0 terms-dag)))
@@ -1194,7 +1194,7 @@
 	(consp (cdar (term-as-dag-l (list 'equ t1 t2) g)))
 	(consp (cddar (term-as-dag-l (list 'equ t1 t2) g))))
    :hints (("Goal" :in-theory (enable term-as-dag-l)))))
-				    
+
 
 (local (in-theory (enable mv-nth-0-first
 			  mv-nth-1-second
@@ -1308,7 +1308,7 @@
 	     (second (dag-mgs-st S-dag terms-dag)))))
 
 
-(defthm dag-mgs-st-soundness 
+(defthm dag-mgs-st-soundness
   (let* ((S (tbs-as-system-st S-dag terms-dag))
 	 (dag-mgs-st (dag-mgs-st S-dag terms-dag))
 	 (unifiable (second dag-mgs-st))
@@ -1318,7 +1318,7 @@
 		  unifiable)
 	     (solution sol S))))
 
-(defthm dag-mgs-st-idempotent 
+(defthm dag-mgs-st-idempotent
   (let* ((dag-mgs-st (dag-mgs-st S-dag terms-dag))
 	 (unifiable (second dag-mgs-st))
 	 (sol (solved-as-system-st (first dag-mgs-st)
@@ -1343,7 +1343,7 @@
 
 
 
-(defthm  dag-mgu-st-completeness 
+(defthm  dag-mgu-st-completeness
   (implies (and (equal (instance t1 sigma)
 		       (instance t2 sigma))
 		(term-p t1) (term-p t2)
@@ -1386,7 +1386,7 @@
 ;;; And finally, proerties of @dag-mgu@:
 
 
-(defthm  dag-mgu-completeness 
+(defthm  dag-mgu-completeness
   (implies (and (equal (instance t1 sigma)
 		       (instance t2 sigma))
 		(term-p t1) (term-p t2))

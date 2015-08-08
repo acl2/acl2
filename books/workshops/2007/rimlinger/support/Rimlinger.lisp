@@ -1,5 +1,5 @@
 #|$ACL2s-Preamble$;
- 
+
 ;;; Script for the ACL2 Workshop 2007
 ;;; Work of Rober Krug adapted to work with the most recent version
 ;;; of Destiny.
@@ -52,7 +52,7 @@
    storeCat2 --- formerly storelocalvar2
    getLocal --- formerly ???
 
-   pushOpStack1 --- formerly pushop1 
+   pushOpStack1 --- formerly pushop1
    pushCat2 --- formerly pushop2
    getOp
    popOp
@@ -105,7 +105,7 @@ of Bind-free stuff at the end.
  (defun frame-p (x)
    ;; For present purposes, a frame consists of
    ;; an operand stack and a local variable array.
-   ;; The operand stack is modeled as a simple push-down 
+   ;; The operand stack is modeled as a simple push-down
    ;; stack, and the local variable array as a list with
    ;; the indices coresponding to position.
    (and (consp x)
@@ -201,9 +201,9 @@ of Bind-free stuff at the end.
  (defun store-in-local-variable-array (value offset array)
    (if (zp offset)
        (cons value (cdr array))
-     (cons (car array) 
-       (store-in-local-variable-array value 
-                      (+ -1 offset) 
+     (cons (car array)
+       (store-in-local-variable-array value
+                      (+ -1 offset)
                       (cdr array))))))
 
 (local
@@ -299,7 +299,7 @@ of Bind-free stuff at the end.
 
 (defthm ref-p-refh
   ;; This should be made stronger.
-  ;; Is a name always a symbol?  
+  ;; Is a name always a symbol?
   ;; What do subaddresses look like?
   (ref-p (refh name subaddress)))
 
@@ -539,7 +539,7 @@ of Bind-free stuff at the end.
 
 ;;; RBK: Note
 ;;; I would like to add some heap-p and ref-p hyps to
-;;; the below theorems, but I do not see how to easily 
+;;; the below theorems, but I do not see how to easily
 ;;; prove the meta-theorem ``good'' below in that case.
 
 (defthm valueh-pushh-same
@@ -604,7 +604,7 @@ of Bind-free stuff at the end.
     (&
      nil)))
 
-(defun find-to-remove (x mfc state) 
+(defun find-to-remove (x mfc state)
   (declare (xargs :guard t))
   (case-match x
     (('VALUEH ref
@@ -686,7 +686,7 @@ of Bind-free stuff at the end.
 
 (set-ignore-ok t)
 
-(defun find-to-remove-definition-<_1 (x mfc state) 
+(defun find-to-remove-definition-<_1 (x mfc state)
   (case-match x
     (('DEFINITION-<_1 v1 v2 h)
      (find-to-remove-1 `(REFH ,v2 'ARRAY_LENGTH_MARKER) h mfc state))
@@ -1038,7 +1038,7 @@ of Bind-free stuff at the end.
 
 (defmacro destiny-expand-hint (name)
   (let ((fn-name (intern-name (list (cadr name) "-expand-hint"))))
-    `(PROGN 
+    `(PROGN
       (DEFUN ,fn-name (ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP HIST PSPV CTX)
     (DECLARE (IGNORE HIST CTX))
     (DECLARE (XARGS :MODE :PROGRAM))
@@ -1201,7 +1201,7 @@ of Bind-free stuff at the end.
  ;;;             (- (mod x y) y)))))
  ;;;  :hints (("Goal" :in-theory (e/d (mod) (truncate))))
  ;;;  :otf-flg t)
-;;; 
+;;;
 ;;; (in-theory (disable truncate rem))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1331,10 +1331,10 @@ X          <--- (putOpStack  X stack)
 
 (defun |'i' is greater than or equal to 0| (i) (not (< i 0)))
 
-(defun | 'i' is less than length of the Array 'x'| 
+(defun | 'i' is less than length of the Array 'x'|
   (i x inputHeap)
-  (< i 
-     (valueH 
+  (< i
+     (valueH
       (refH x 'array_length_marker)
       inputHeap)))
 
@@ -1365,10 +1365,10 @@ X          <--- (putOpStack  X stack)
        (|'x' is defined| x)
        (|'op0' is less than 10| op0)
        (|'i' is greater than or equal to 0| i)
-       (| 'i' is less than length of the Array 'x'| 
+       (| 'i' is less than length of the Array 'x'|
         i x inputHeap))
       (clearLoop x (+ 1 i) (+ i 1) (pushH (refH x i) 0 inputHeap) nH
-                 
+
                  (pushFrame
                   (storeLocalVar1
                    (+ i 1 )
@@ -1378,12 +1378,12 @@ X          <--- (putOpStack  X stack)
                     0
                     (pushOpStack1
                      (+ i 1 )
-                     (popop              
+                     (popop
                       (topFrame inputStack )))))
                   (popFrame  inputStack ))
                  inputStaticArea)
       (mv x i op0 inputHeap nH inputStack inputStaticArea))
-    (mv 
+    (mv
      (tv-6)
      (tv-5)
      (tv-4)
@@ -1405,7 +1405,7 @@ X          <--- (putOpStack  X stack)
                   (stack-p inputStack)
                   (heap-counter-p nh)
                   (heap-p inputHeap)
-                  (= i op0))          
+                  (= i op0))
              (integerp (mv-nth 1 (clearLoop x i op0 inputHeap nH inputStack inputStaticArea))))
   )
 
@@ -1417,7 +1417,7 @@ X          <--- (putOpStack  X stack)
                   (stack-p inputStack)
                   (heap-counter-p nh)
                   (heap-p inputHeap)
-                  (= i op0))          
+                  (= i op0))
              (integerp (mv-nth 2 (clearLoop x i op0 inputHeap nH inputStack inputStaticArea))))
   )
 
@@ -1453,7 +1453,7 @@ X          <--- (putOpStack  X stack)
                   (stack-p inputStack)
                   (heap-counter-p nh)
                   (heap-p inputHeap)
-                  (= i op0))          
+                  (= i op0))
              (= (car (clearLoop x i op0 inputHeap nH inputStack inputStaticArea))x)))
 
 
@@ -1505,10 +1505,10 @@ X          <--- (putOpStack  X stack)
        (|'x' is defined| x)
        (|'op0' is less than 10| op0)
        (|'i' is greater than or equal to 0| i)
-       (| 'i' is less than length of the Array 'x'| 
+       (| 'i' is less than length of the Array 'x'|
         i x inputHeap))
       ( clearLoop-induction-fn-stack x (+ 1 i) (+ i 1) (pushH (refH x i) 0 inputHeap) nH
-                                     
+
                                      (pushFrame
                                       (storeLocalVar1
                                        (+ i 1 )
@@ -1556,12 +1556,12 @@ X          <--- (putOpStack  X stack)
        (|'x' is defined| x)
        (|'op0' is less than 10| op0)
        (|'i' is greater than or equal to 0| i)
-       (| 'i' is less than length of the Array 'x'| 
+       (| 'i' is less than length of the Array 'x'|
         i x inputHeap))
       (clearLoop-induction-fnh-1stack-1x-8i-8 x (+ 1 i) (+ i 1) (pushH (refH x i) 0 inputHeap) nH-1 nH-2
                                               stack inputStaticArea-1 inputStaticArea-2)
       (mv x i op0 inputHeap nH-1 nH-2 stack inputStaticArea-1 inputStaticArea-2))
-    (mv 
+    (mv
      (tv-8)
      (tv-7)
      (tv-6)
@@ -1577,7 +1577,7 @@ X          <--- (putOpStack  X stack)
 
 
 
-; The next set of theorems characterize the fact that the inputStack is irrelevant to the 
+; The next set of theorems characterize the fact that the inputStack is irrelevant to the
 ; determination of the other output values, namely x, i, inputHeap, nH, and inputStaticArea.
 ; In other words, the inputStack might just have well been the 'dummy-stack.
 
@@ -1611,7 +1611,7 @@ X          <--- (putOpStack  X stack)
                :in-theory
                (union-theories '(stack-p-dummy-stack)
                                (theory 'minimal-theory))))))
-                                                             
+
 (encapsulate
  nil
  (local
@@ -1642,7 +1642,7 @@ X          <--- (putOpStack  X stack)
                :in-theory
                (union-theories '(stack-p-dummy-stack)
                                (theory 'minimal-theory))))))
-                                                             
+
 (encapsulate
  nil
  (local
@@ -1673,7 +1673,7 @@ X          <--- (putOpStack  X stack)
                :in-theory
                (union-theories '(stack-p-dummy-stack)
                                (theory 'minimal-theory))))))
-                                                             
+
 (encapsulate
  nil
  (local
@@ -1799,8 +1799,8 @@ X          <--- (putOpStack  X stack)
                                      new-heap)
                              (valueh (refh x 'array_length_marker)
                                      inputHeap)))))
-                                                                         
-;  OK now we "bind the irrelevant variables".  
+
+;  OK now we "bind the irrelevant variables".
 ; I suspect that this characterizes the invarians of i vis-a-vis nH and inputStat.
 
 ;  This is based on the defuns "destiny-rewriting-goal-literal" and
@@ -1833,8 +1833,8 @@ X          <--- (putOpStack  X stack)
          (heap-counter-p nh-1)
          (heap-counter-p nh-2)
          (heap-p inputHeap)
-         (= i op0))  
-                 
+         (= i op0))
+
                  (equal (mv-nth 1 (clearLoop x i op0 inputHeap nh-1 inputStack stat-1))
          (mv-nth 1 (clearLoop x i op0 inputHeap nh-1 inputStack stat-1))))
  :hints
@@ -1868,8 +1868,8 @@ X          <--- (putOpStack  X stack)
          (heap-counter-p nh-1)
          (heap-counter-p nh-2)
          (heap-p inputHeap)
-         (= i op0))  
-                 
+         (= i op0))
+
                  (equal (mv-nth 3 (clearLoop x i op0 inputHeap nh-1 inputStack stat-1))
          (mv-nth 3 (clearLoop x i op0 inputHeap nh-1 inputStack stat-1))))
  :hints
@@ -1889,7 +1889,7 @@ X          <--- (putOpStack  X stack)
 ( not ( < ( arrayLength x inputHeap ) 10 ) ))
 
 ;; an induction helper
-                 
+
 (defthm |'i in output stack of loop at #2:iload_i' is greater than or equal to 10-helper|
     (implies
    (and (integerp i)
@@ -1903,9 +1903,9 @@ X          <--- (putOpStack  X stack)
                 (|length of the Array 'x' is greater than or equal to 10| x inputHeap)
                 (|'x' is defined| x)
                 (<= 0 i))
-                
+
                 (not (< (mv-nth 1 (clearLoop x i op0 inputHeap nH inputStack inputStaticArea)) 10))))
-                
+
 ;;  NOTE: This theorem literally translated from Destiny would express the output i as an
 ;; access into the local variable array of the output stack at offset 1.  However, Destiny
 ;; guarantees that this value is the same as the output of parameter i.  We take the liberty
@@ -1930,7 +1930,7 @@ X          <--- (putOpStack  X stack)
          (mv-nth
           1
           (clearLoop x 0 0 inputHeap nH
-                     
+
                      (pushFrame
                       (storeLocalVar1
                        0
@@ -1940,11 +1940,11 @@ X          <--- (putOpStack  X stack)
                         0
                         (pushOpStack1
                          0
-                         (popop              
+                         (popop
                           (topFrame inputStack )))))
                       (popFrame  inputStack ))
                      inputStaticArea))
-         
+
          10))))
 
 ;; This concludes the discussion of the termination conjecture.  We now proceed to the proof of the main
@@ -1960,7 +1960,7 @@ X          <--- (putOpStack  X stack)
 ;;; Array entries below loop counter are unchanged
 
 (defthm x5==x6-helper-1
-  (implies 
+  (implies
    (and (integerp i)
          (integerp op0)
          (array-p x 'int 1)
@@ -1971,7 +1971,7 @@ X          <--- (putOpStack  X stack)
          (= i op0)
               (not (< (arraylength x inputHeap) 10))
                             (|'x' is defined| x)
-            
+
         (integerp index)
         (< index i))
        (let ((heapmodel
@@ -1984,7 +1984,7 @@ X          <--- (putOpStack  X stack)
 ;;; Array entries at or above the loop counter are zeroed
 
 (defthm x5==x6-helper-2
-  (implies 
+  (implies
    (and (integerp i)
          (integerp op0)
          (array-p x 'int 1)
@@ -1995,7 +1995,7 @@ X          <--- (putOpStack  X stack)
          (= i op0)
               (not (< (arraylength x inputHeap) 10))
                             (|'x' is defined| x)
-            
+
         (integerp index)
             (<= 0 i)
         (<= i index)
@@ -2005,34 +2005,34 @@ X          <--- (putOpStack  X stack)
            (clearLoop x i op0 inputHeap nH inputStack inputStaticArea))))
          (equal (valueh (refh x index) heapmodel)
             0))))
-                        
-;; the main theorem                
+
+;; the main theorem
 
 (defthm |'x'[5] equals 'x'[6]|
-  
-  (implies 
+
+  (implies
    (and
     (array-p x 'int 1)
     (static-area-p inputStaticArea)
     (stack-p inputStack)
     (heap-counter-p nh)
     (heap-p inputHeap)
-    
+
     (not (< (arraylength x inputHeap) 10))
-    (|'x' is defined| x)        
-    ) 
+    (|'x' is defined| x)
+    )
    (let (
-         
+
          (outputHeap
           (mv-nth 3
-                  (clearLoop x 0 0 inputHeap nH 
+                  (clearLoop x 0 0 inputHeap nH
                              (pushFrame
                               (storeLocalVar1
                                0
                                1
                                (storeLocalVar1
                                 x
-                                0     
+                                0
                                 (pushOpStack1
                                  0
                                  (pushOpStack1
@@ -2044,8 +2044,8 @@ X          <--- (putOpStack  X stack)
                                 0
                                 (topFrame inputStack )
                                 )
-                               (popFrame inputStack )))                                    
+                               (popFrame inputStack )))
                              inputStaticArea))))
-     
+
      (= (valueh (refh x 5) outputHeap) (valueH (refH x 6) outputHeap)))))#|ACL2s-ToDo-Line|#
- 
+

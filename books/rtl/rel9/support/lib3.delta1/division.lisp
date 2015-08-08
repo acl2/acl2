@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -27,7 +27,7 @@
 (include-book "../lib3/bits")
 (include-book "../lib3/util")
 
-(set-prover-step-limit acl2::*default-step-limit*) 
+(set-prover-step-limit acl2::*default-step-limit*)
 (local (include-book "../lib3/top"))
 
 (encapsulate ()
@@ -51,12 +51,12 @@
     (and (rationalp (d$))
          (> (d$) 0))
     :rule-classes (:rewrite :type-prescription))
-  (defthm integerp-h$ 
+  (defthm integerp-h$
     (implies (not (zp k))
              (integerp (h$ k)))
     :rule-classes (:rewrite :type-prescription)))
 
-(defund p$ (k) 
+(defund p$ (k)
   (if (zp k)
       (x$)
     (- (* (expt 2 (rho$)) (p$ (1- k)))
@@ -122,7 +122,7 @@
   (implies (and (natp k)
                 (<= (- (d$)) (p$ k))
                 (< (p$ k) (d$)))
-           (and (<= -1 
+           (and (<= -1
                     (* (expt 2 (* k (rho$)))
                        (- (/ (x$) (d$)) (q$ k))))
                 (< (* (expt 2 (* k (rho$)))
@@ -171,7 +171,7 @@
            (and (<= (- (/ (expt 2 (* k (rho$)))))
                     (- (/ (x$) (d$)) (q$ k)))
                 (< (- (/ (x$) (d$)) (q$ k))
-                   (/ (expt 2 (* k (rho$))))))) 
+                   (/ (expt 2 (* k (rho$)))))))
   :hints (("Goal" :use (lemma-2-1-7)))
   :rule-classes ())
 
@@ -246,20 +246,20 @@
   (min (1- (expt 2 rho))
        (if (or (< i (expt 2 (1- m)))
                (= i (1- (expt 2 m))))
-           (1- (cg (* (expt 2 rho) 
+           (1- (cg (* (expt 2 rho)
                       (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                          (delta0 j n)))))
-         (1- (cg (* (expt 2 rho) 
+         (1- (cg (* (expt 2 rho)
                     (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                        (+ (delta0 j n) (/ (expt 2 n))))))))))
 
 (defund upper (i j rho m n)
-  (max (- 1 (expt 2 rho)) 
+  (max (- 1 (expt 2 rho))
        (if (< i (expt 2 (1- m)))
-           (1+ (fl (* (expt 2 rho) 
+           (1+ (fl (* (expt 2 rho)
                       (/ (pi0 i m)
                          (+ (delta0 j n) (/ (expt 2 n)))))))
-         (1+ (fl (* (expt 2 rho) 
+         (1+ (fl (* (expt 2 rho)
                     (/ (pi0 i m)
                        (delta0 j n))))))))
 
@@ -434,7 +434,7 @@
                 (= k (lookup i j table))
                 (not (= k (1- (expt 2 rho))))
                 (or (< i (expt 2 (1- m))) (= i (1- (expt 2 m)))))
-            (>= k (1- (cg (* (expt 2 rho) 
+            (>= k (1- (cg (* (expt 2 rho)
                              (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                 (delta0 j n)))))))
   :rule-classes ()
@@ -447,10 +447,10 @@
                 (natp rho)
                 (natp j)
                 (natp i))
-            (>= (cg (* (expt 2 rho) 
+            (>= (cg (* (expt 2 rho)
                        (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                           (delta0 j n))))
-                (* (expt 2 rho) 
+                (* (expt 2 rho)
                    (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                       (delta0 j n)))))
   :rule-classes ()
@@ -477,7 +477,7 @@
                 (= k (lookup i j table))
                 (not (= k (1- (expt 2 rho))))
                 (or (< i (expt 2 (1- m))) (= i (1- (expt 2 m)))))
-            (>= k (1- (* (expt 2 rho) 
+            (>= k (1- (* (expt 2 rho)
                          (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                             (delta0 j n))))))
   :rule-classes ()
@@ -742,7 +742,7 @@
                 (not (= k (1- (expt 2 rho))))
                 (< i (1- (expt 2 m)))
                 (>= i (expt 2 (1- m))))
-            (>= k (1- (cg (* (expt 2 rho) 
+            (>= k (1- (cg (* (expt 2 rho)
                              (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                 (+ (delta0 j n) (/ (expt 2 n)))))))))
   :rule-classes ()
@@ -759,10 +759,10 @@
                 (natp rho)
                 (natp j)
                 (natp i))
-            (>= (cg (* (expt 2 rho) 
+            (>= (cg (* (expt 2 rho)
                        (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                           (+ (delta0 j n) (/ (expt 2 n))))))
-                (* (expt 2 rho) 
+                (* (expt 2 rho)
                    (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                       (+ (delta0 j n) (/ (expt 2 n)))))))
   :rule-classes ()
@@ -790,7 +790,7 @@
                 (not (= k (1- (expt 2 rho))))
                 (< i (1- (expt 2 m)))
                 (>= i (expt 2 (1- m))))
-            (>= k (1- (* (expt 2 rho) 
+            (>= k (1- (* (expt 2 rho)
                          (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                             (+ (delta0 j n) (/ (expt 2 n))))))))
   :rule-classes ()
@@ -874,7 +874,7 @@
                 (natp i)
                 (< i (1- (expt 2 m)))
                 (>= i (expt 2 (1- m))))
-           (<= (+ (pi0 i m) 4) 
+           (<= (+ (pi0 i m) 4)
                (* (/ (expt 2 (- m 2))) (- (expt 2 m) 2))))
   :rule-classes ()
   :hints (("Goal"
@@ -942,10 +942,10 @@
                 (< d 2)
                 (natp j)
                 (< d (+ (delta0 j n) (/ (expt 2 n)))))
-            (>= (* (expt 2 rho) 
+            (>= (* (expt 2 rho)
                    (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                       (+ (delta0 j n) (/ (expt 2 n)))))
-                (* (expt 2 rho) 
+                (* (expt 2 rho)
                    (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                       d))))
   :rule-classes ()
@@ -1008,15 +1008,15 @@
                    (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                        d))))
   :rule-classes ()
-  :hints (("Goal" :use (div-table-19 
-                        div-table-20 
+  :hints (("Goal" :use (div-table-19
+                        div-table-20
                         div-table-25
-                        (:instance div-table-26 
+                        (:instance div-table-26
                                    (x (1+ k))
-                                   (y (* (expt 2 rho) 
+                                   (y (* (expt 2 rho)
                                          (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                             (+ (delta0 j n) (/ (expt 2 n))))))
-                                   (z (* (expt 2 rho) 
+                                   (z (* (expt 2 rho)
                                          (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                             d)))))
            :in-theory (disable jared-disables-1
@@ -1052,8 +1052,8 @@
   :rule-classes ()
   :hints (("Goal" :use (div-table-27
                         div-table-20
-                        (:instance *-weakly-monotonic 
-                                   (x d) 
+                        (:instance *-weakly-monotonic
+                                   (x d)
                                    (y+ (1+ k))
                                    (y (* (expt 2 rho)
                                          (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
@@ -1091,7 +1091,7 @@
   :rule-classes ()
   :hints (("Goal" :use (div-table-27
                         div-table-20
-                        (:instance *-strongly-monotonic 
+                        (:instance *-strongly-monotonic
                                    (x (expt 2 rho))
                                    (y+ (+ (pi0 i m) (/ (expt 2 (- m 3)))))
                                    (y p)))
@@ -1327,7 +1327,7 @@
                 (* (expt 2 rho) (/ (pi0 i m) d))))
   :rule-classes ()
   :hints (("Goal" :use (div-table-9-1
-                        (:instance *-weakly-monotonic 
+                        (:instance *-weakly-monotonic
                                    (x (* (expt 2 rho) (pi0 i m)))
                                    (y (/ (+ (delta0 j n) (expt 2 (- n)))))
                                    (y+ (/ d)))))))
@@ -1349,7 +1349,7 @@
                 (* (expt 2 rho) (/ p d))))
   :rule-classes ()
   :hints (("Goal" :use (div-table-9-1
-                        (:instance *-weakly-monotonic 
+                        (:instance *-weakly-monotonic
                                    (x (/ (expt 2 rho) d))
                                    (y (pi0 i m))
                                    (y+ p))))))
@@ -1573,7 +1573,7 @@
                 (* (expt 2 rho) (/ (pi0 i m) d))))
   :rule-classes ()
   :hints (("Goal" :use (div-table-19-1
-                        (:instance *-weakly-monotonic-negative-multiplier 
+                        (:instance *-weakly-monotonic-negative-multiplier
                                    (x (* (expt 2 rho) (pi0 i m)))
                                    (y+ (/ (delta0 j n)))
                                    (y (/ d))))
@@ -1596,7 +1596,7 @@
                 (* (expt 2 rho) (/ p d))))
   :rule-classes ()
   :hints (("Goal" :use (div-table-19-1
-                        (:instance *-weakly-monotonic 
+                        (:instance *-weakly-monotonic
                                    (x (/ (expt 2 rho) d))
                                    (y (pi0 i m))
                                    (y+ p))))))
@@ -1790,7 +1790,7 @@
                 (rationalp d)
                 (<= (delta0 j n) d)
                 (< d (+ (delta0 j n) (/ (expt 2 n))))
-                (<= (- d) p) 
+                (<= (- d) p)
                 (< p d)
                 (= k (lookup i j table)))
            (and (< (- (expt 2 rho)) k)
@@ -1909,7 +1909,7 @@
         (if (<= p2 (* h d1))
             (/ p2 h)
           d1)
-      (if (<= p1 (* h d2))          
+      (if (<= p1 (* h d2))
           d2
         (/ p1 h)))))
 
@@ -1924,8 +1924,8 @@
           (* h d2)
         p1))))
 
-;; Assume hmin < hmax.  If there exist (d1,p1) and (d2,p2) in R such 
-;; that p1 < hmax*d1 and p2 > hmin*d2, then (d4,p4) is in R' and 
+;; Assume hmin < hmax.  If there exist (d1,p1) and (d2,p2) in R such
+;; that p1 < hmax*d1 and p2 > hmin*d2, then (d4,p4) is in R' and
 ;; hmin*d4 < p4 < hmax*d4:
 
 (defund d4 (dmin pmin dmax pmax hmin hmax)
@@ -1965,7 +1965,7 @@
     (if (check-div-row (1- i) (expt 2 n) rho m n (nth (1- i) table))
         (i-witness-aux (1- i) rho m n table)
       (1- i))))
- 
+
 (defund i-witness (rho m n table)
   (i-witness-aux (expt 2 m) rho m n table))
 
@@ -1986,21 +1986,21 @@
          (entry (lookup i j table)))
     (if (or (>= entry (expt 2 rho))
             (<= entry (- (expt 2 rho))))
-        (d4 (delta0 j n) 
-            (pi0 i m) 
+        (d4 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             -1
             1)
       (if (< entry (lower i j rho m n))
-          (d4 (delta0 j n) 
-              (pi0 i m) 
+          (d4 (delta0 j n)
+              (pi0 i m)
               (+ (delta0 j n) (expt 2 (- n)))
               (+ (pi0 i m) (expt 2 (- 3 m)))
               (/ (1+ entry) (expt 2 rho))
               1)
-        (d4 (delta0 j n) 
-            (pi0 i m) 
+        (d4 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             -1
@@ -2012,21 +2012,21 @@
          (entry (lookup i j table)))
     (if (or (>= entry (expt 2 rho))
             (<= entry (- (expt 2 rho))))
-        (p4 (delta0 j n) 
-            (pi0 i m) 
+        (p4 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             -1
             1)
       (if (< entry (lower i j rho m n))
-          (p4 (delta0 j n) 
-              (pi0 i m) 
+          (p4 (delta0 j n)
+              (pi0 i m)
               (+ (delta0 j n) (expt 2 (- n)))
               (+ (pi0 i m) (expt 2 (- 3 m)))
               (/ (1+ entry) (expt 2 rho))
               1)
-        (p4 (delta0 j n) 
-            (pi0 i m) 
+        (p4 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             -1
@@ -2074,7 +2074,7 @@
                 (<= d dmax)
                 (<= pmin p)
                 (<= p pmax)
-                (rationalp h) 
+                (rationalp h)
                 (not (= h 0))
                 (< pmin (* h dmin))
                 (< p (* h d)))
@@ -2103,7 +2103,7 @@
                 (<= d dmax)
                 (<= pmin p)
                 (<= p pmax)
-                (rationalp h) 
+                (rationalp h)
                 (not (= h 0))
                 (< h 0)
                 (< p (* h d)))
@@ -2135,7 +2135,7 @@
                 (<= d dmax)
                 (<= pmin p)
                 (<= p pmax)
-                (rationalp h) 
+                (rationalp h)
                 (not (= h 0))
                 (< h 0)
                 (< p (* h d)))
@@ -2179,7 +2179,7 @@
            (< a1 (/ (+ a2 a3) 2)))
   :rule-classes ())
 
-(local-defthm converse-8 
+(local-defthm converse-8
   (implies (and (rationalp dmin)
                 (rationalp pmin)
                 (rationalp h)
@@ -2801,7 +2801,7 @@
                   (= p3 (* h d3)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (e/d (d3 p3)
-                                  (jared-disables-1  
+                                  (jared-disables-1
                                    jared-disables-2
                                    jared-disables-3
                                    jared-disables-4
@@ -2995,8 +2995,8 @@
                             (<= k (upper i j rho m n)))))))
   :rule-classes ()
   :hints (("Goal" :use (converse-34
-                        (:instance converse-35 (i (i-witness rho m n table)) 
-                                               (j (expt 2 n)) 
+                        (:instance converse-35 (i (i-witness rho m n table))
+                                               (j (expt 2 n))
                                                (row (nth (i-witness rho m n table) table))))
                   :in-theory (enable lookup check-div-entry j-witness))))
 
@@ -3033,12 +3033,12 @@
                 (< (- (expt 2 rho)) k)
                 (< k (lower i j rho m n)))
            (and (< k (1- (expt 2 rho)))
-                (or (< (1+ k) 
-                       (cg (* (expt 2 rho) 
+                (or (< (1+ k)
+                       (cg (* (expt 2 rho)
                               (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                  (delta0 j n)))))
                     (< (1+ k)
-                       (cg (* (expt 2 rho) 
+                       (cg (* (expt 2 rho)
                               (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                  (+ (delta0 j n) (/ (expt 2 n))))))))))
   :rule-classes ()
@@ -3069,12 +3069,12 @@
                 (< j (expt 2 n))
                 (< (- (expt 2 rho)) k)
                 (< k (lower i j rho m n)))
-           (or (< (1+ k) 
-                  (* (expt 2 rho) 
+           (or (< (1+ k)
+                  (* (expt 2 rho)
                      (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                         (delta0 j n))))
                (< (1+ k)
-                  (* (expt 2 rho) 
+                  (* (expt 2 rho)
                      (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                         (+ (delta0 j n) (/ (expt 2 n))))))))
   :rule-classes ()
@@ -3085,13 +3085,13 @@
                                jared-disables-4)
            :use (converse-38
                  converse-39
-                 (:instance cg-unique 
-                            (x (* (expt 2 rho) 
+                 (:instance cg-unique
+                            (x (* (expt 2 rho)
                                   (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                      (+ (delta0 j n) (/ (expt 2 n))))))
                             (n (1+ k)))
-                 (:instance cg-unique 
-                            (x (* (expt 2 rho) 
+                 (:instance cg-unique
+                            (x (* (expt 2 rho)
                                   (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                      (+ (delta0 j n)))))
                             (n (1+ k)))))))
@@ -3105,12 +3105,12 @@
                 (< i (expt 2 m))
                 (natp j)
                 (< j (expt 2 n))
-                (< (1+ k) 
-                  (* (expt 2 rho) 
+                (< (1+ k)
+                  (* (expt 2 rho)
                      (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                         (delta0 j n)))))
            (< (* (/ (1+ k) (expt 2 rho)) (delta0 j n))
-              (+ (pi0 i m) (/ (expt 2 (- m 3))))))           
+              (+ (pi0 i m) (/ (expt 2 (- m 3))))))
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable ;jared-disables-1
@@ -3121,7 +3121,7 @@
                         (:instance converse-8
                                    (pmin (1+ k))
                                    (h (/ (delta0 j n) (expt 2 rho)))
-                                   (dmin (* (expt 2 rho) 
+                                   (dmin (* (expt 2 rho)
                                             (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                                (delta0 j n)))))))))
 
@@ -3136,12 +3136,12 @@
                 (< i (expt 2 m))
                 (natp j)
                 (< j (expt 2 n))
-                (< (1+ k) 
-                  (* (expt 2 rho) 
+                (< (1+ k)
+                  (* (expt 2 rho)
                      (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                         x))))
            (< (* (/ (1+ k) (expt 2 rho)) x)
-              (+ (pi0 i m) (/ (expt 2 (- m 3))))))      
+              (+ (pi0 i m) (/ (expt 2 (- m 3))))))
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable ;jared-disables-1
@@ -3153,7 +3153,7 @@
                         (:instance converse-8
                                    (pmin (1+ k))
                                    (h (/ x (expt 2 rho)))
-                                   (dmin (* (expt 2 rho) 
+                                   (dmin (* (expt 2 rho)
                                             (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                                x))))))))
 
@@ -3166,12 +3166,12 @@
                 (< i (expt 2 m))
                 (natp j)
                 (< j (expt 2 n))
-                (< (1+ k) 
-                  (* (expt 2 rho) 
+                (< (1+ k)
+                  (* (expt 2 rho)
                      (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                         (+ (delta0 j n) (/ (expt 2 n)))))))
            (< (* (/ (1+ k) (expt 2 rho)) (+ (delta0 j n) (/ (expt 2 n))))
-              (+ (pi0 i m) (/ (expt 2 (- m 3))))))      
+              (+ (pi0 i m) (/ (expt 2 (- m 3))))))
   :rule-classes ()
   :hints (("Goal" :use (converse-39
                         (:instance converse-42 (x (+ (delta0 j n) (/ (expt 2 n)))))))))
@@ -3304,7 +3304,7 @@
                                    jared-disables-2
                                    jared-disables-3
                                    jared-disables-4)))))
-                                   
+
 
 (local-defthm converse-48
   (let* ((i (i-witness rho m n table))
@@ -3338,7 +3338,7 @@
                        jared-disables-2
                        jared-disables-3
                        jared-disables-4)
-           :use (converse-46 
+           :use (converse-46
                         converse-47
                         (:instance converse-44 (i (i-witness rho m n table))
                                                (j (j-witness rho m n table))
@@ -3357,12 +3357,12 @@
                 (> (expt 2 rho) k)
                 (> k (upper i j rho m n)))
            (and (> k (- 1 (expt 2 rho)))
-                (or (> (1- k) 
-                       (fl (* (expt 2 rho) 
+                (or (> (1- k)
+                       (fl (* (expt 2 rho)
                               (/ (pi0 i m)
                                  (delta0 j n)))))
                     (> (1- k)
-                       (fl (* (expt 2 rho) 
+                       (fl (* (expt 2 rho)
                               (/ (pi0 i m)
                                  (+ (delta0 j n) (/ (expt 2 n))))))))))
   :rule-classes ()
@@ -3382,30 +3382,30 @@
                 (> (expt 2 rho) k)
                 (> k (upper i j rho m n)))
            (and (> k (- 1 (expt 2 rho)))
-                (or (> (1- k) 
-                       (* (expt 2 rho) 
+                (or (> (1- k)
+                       (* (expt 2 rho)
                           (/ (pi0 i m)
                              (delta0 j n))))
                     (> (1- k)
-                       (* (expt 2 rho) 
+                       (* (expt 2 rho)
                           (/ (pi0 i m)
                              (+ (delta0 j n) (/ (expt 2 n)))))))))
   :rule-classes ()
   :hints (("Goal"
-           :in-theory (disable 
+           :in-theory (disable
                        ;jared-disables-1
                        jared-disables-2
                        jared-disables-3
                        jared-disables-4)
            :use (converse-39
                         converse-49
-                        (:instance fl-unique 
-                                   (x (* (expt 2 rho) 
+                        (:instance fl-unique
+                                   (x (* (expt 2 rho)
                                          (/ (pi0 i m)
                                             (+ (delta0 j n) (/ (expt 2 n))))))
                                    (n (1- k)))
-                        (:instance fl-unique 
-                                   (x (* (expt 2 rho) 
+                        (:instance fl-unique
+                                   (x (* (expt 2 rho)
                                          (/ (pi0 i m)
                                             (+ (delta0 j n)))))
                                    (n (1- k)))))))
@@ -3419,8 +3419,8 @@
                 (< i (expt 2 m))
                 (natp j)
                 (< j (expt 2 n))
-                (> (1- k) 
-                   (* (expt 2 rho) 
+                (> (1- k)
+                   (* (expt 2 rho)
                       (/ (pi0 i m)
                          (delta0 j n)))))
            (> (* (/ (1- k) (expt 2 rho)) (delta0 j n))
@@ -3435,7 +3435,7 @@
                         (:instance converse-8
                                    (dmin (1- k))
                                    (h (/ (delta0 j n) (expt 2 rho)))
-                                   (pmin (* (expt 2 rho) 
+                                   (pmin (* (expt 2 rho)
                                             (/ (pi0 i m)
                                                (delta0 j n)))))))))
 
@@ -3448,8 +3448,8 @@
                 (< i (expt 2 m))
                 (natp j)
                 (< j (expt 2 n))
-                (> (1- k) 
-                   (* (expt 2 rho) 
+                (> (1- k)
+                   (* (expt 2 rho)
                       (/ (pi0 i m)
                          (+ (delta0 j n) (expt 2 (- n)))))))
            (> (* (/ (1- k) (expt 2 rho)) (+ (delta0 j n) (expt 2 (- n))))
@@ -3460,7 +3460,7 @@
                         (:instance converse-8
                                    (dmin (1- k))
                                    (h (/ (+ (delta0 j n) (expt 2 (- n))) (expt 2 rho)))
-                                   (pmin (* (expt 2 rho) 
+                                   (pmin (* (expt 2 rho)
                                             (/ (pi0 i m)
                                                (+ (delta0 j n) (expt 2 (- n)))))))))))
 
@@ -3631,7 +3631,7 @@
                   (< p (* (/ (1- k) (expt 2 rho)) d)))))
   :rule-classes ()
   :hints (("Goal"
-           :use (converse-55 
+           :use (converse-55
                  converse-56
                  (:instance converse-53 (i (i-witness rho m n table))
                             (j (j-witness rho m n table))
@@ -3730,7 +3730,7 @@
                  (:instance converse-61 (p (p-witness rho m n table))
                             (d (d-witness rho m n table))
                             (k (lookup (i-witness rho m n table) (j-witness rho m n table) table))))
-           :in-theory (disable 
+           :in-theory (disable
                        natp
                        abs
                        jared-disables-1
@@ -3885,7 +3885,7 @@
                                    ))
            :use ((:instance converse-39 (i (i-witness rho m n table))
                                                (j (j-witness rho m n table)))
-                        (:instance d4-p4-lemma 
+                        (:instance d4-p4-lemma
                                    (dmin (delta0 (j-witness rho m n table) n))
                                    (dmax (+ (delta0 (j-witness rho m n table) n) (expt 2 (- n))))
                                    (pmin (pi0 (i-witness rho m n table) m))
@@ -3939,7 +3939,7 @@
 ;;**********************************************************************************
 
 (defund srt-entry (i j rho m n)
-  (max (- 1 (expt 2 rho)) 
+  (max (- 1 (expt 2 rho))
        (lower i j rho m n)))
 
 (defund srt-row (i j rho m n)
@@ -4016,7 +4016,7 @@
                 (< j (expt 2 n)))
            (and (integerp (srt-entry i j rho m n))
                 (< (srt-entry i j rho m n) (expt 2 rho))
-                (> (srt-entry i j rho m n) (- (expt 2 rho)))))                
+                (> (srt-entry i j rho m n) (- (expt 2 rho)))))
   :hints (("Goal" :in-theory (enable srt-entry)
                   :use lemma-2-3-1))
   :rule-classes ())
@@ -4128,7 +4128,7 @@
                 (natp j)
                 (< j (expt 2 n))
                 (check-div-entry i j rho m n entry))
-           (check-exists-div-entry i j rho m n))           
+           (check-exists-div-entry i j rho m n))
   :hints (("Goal" :in-theory (e/d (upper check-exists-div-entry check-div-entry)
                                   (jared-disables-1
                                    jared-disables-2
@@ -4145,7 +4145,7 @@
                 (natp j)
                 (<= j (expt 2 n))
                 (check-div-row i j rho m n row))
-           (check-exists-div-row i j rho m n))           
+           (check-exists-div-row i j rho m n))
   :hints (("Goal" :in-theory (enable check-exists-div-row check-div-row))))
 
 (local-defthm lemma-2-3-11
@@ -4155,7 +4155,7 @@
                 (natp i)
                 (<= i (expt 2 m))
                 (check-div-rows i rho m n rows))
-           (check-exists-div-rows i rho m n))           
+           (check-exists-div-rows i rho m n))
   :hints (("Goal" :in-theory (enable check-exists-div-rows check-div-rows))))
 
 (defthm lemma-2-3-b
@@ -4442,7 +4442,7 @@
                 (< (abs p) 2)
                 (not (zp m))
                 (< p 0))
-           (equal (* (expt 2 (- m 2)) 
+           (equal (* (expt 2 (- m 2))
                      (pi0 (bits (FL (* (EXPT 2 (+ -2 M)) P)) (+ -1 m) 0) m))
                   (FL (* p (EXPT 2 (+ -2 M))))))
   :rule-classes ()
@@ -4453,7 +4453,7 @@
                 (< (abs p) 2)
                 (not (zp m))
                 (< p 0))
-           (<= (* (expt 2 (- m 2)) 
+           (<= (* (expt 2 (- m 2))
                   (pi0 (bits (FL (* (EXPT 2 (+ -2 M)) P)) (+ -1 m) 0) m))
                (* (EXPT 2 (+ -2 M))
                   p)))
@@ -4479,7 +4479,7 @@
                 (< p 0))
            (< (* (EXPT 2 (+ -2 M))
                  p)
-              (+ (* (expt 2 (- m 2)) 
+              (+ (* (expt 2 (- m 2))
                     (pi0 (bits (FL (* (EXPT 2 (+ -2 M)) P)) (+ -1 m) 0) m))
                  1)))
   :rule-classes ()
@@ -4598,7 +4598,7 @@
               (and (bvecp j n)
                    (<= (delta0 j n) d)
                    (< d (+ (delta0 j n) (expt 2 (- n)))))))
-  :hints (("Goal" :use (j-bounds-3 j-bounds-5 
+  :hints (("Goal" :use (j-bounds-3 j-bounds-5
                         (:instance j-bounds-6 (d (1- d)))
                         (:instance j-bounds-8 (d (1- d))))
                   :in-theory (enable bvecp)))

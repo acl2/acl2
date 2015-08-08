@@ -20,7 +20,7 @@ generic theorems about clocks and invariants to produce the final theorems.
 (include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
-;; (defun natp (n) 
+;; (defun natp (n)
 ;;   (and (integerp n)
 ;;        (<= 0 n)))
 
@@ -29,7 +29,7 @@ generic theorems about clocks and invariants to produce the final theorems.
 ;; The macro clock-to-inv below works exactly as you would expect, functionally
 ;; instantiating the generic functions to get the concrete theorems.
 
-(defmacro clock-to-inv (name mode &key 
+(defmacro clock-to-inv (name mode &key
                              (pre 'pre)
                              (next 'next)
                              (run 'run)
@@ -64,7 +64,7 @@ generic theorems about clocks and invariants to produce the final theorems.
                (m-decreases (packn (list name '-m-decreases)))
                (pre-has-inv (packn (list name '-pre-has-inv)))
                (inv-persists (packn (list name '-inv-persists)))
-               (inv-and-external-implies-post 
+               (inv-and-external-implies-post
                 (packn (list name '-inv-and-external-implies-post))))
 
         `(encapsulate
@@ -74,7 +74,7 @@ generic theorems about clocks and invariants to produce the final theorems.
 
           (local (include-book "c2i-total"))
 
-          (local 
+          (local
            (defun-sk exists-pre-state (s)
              (exists (init i)
                      (and (,pre init)
@@ -89,28 +89,28 @@ generic theorems about clocks and invariants to produce the final theorems.
              (and (exists-pre-state s)
                   (not (,external s)))))
 
-          (local 
+          (local
            (defun find-external (s n)
              (declare (xargs :measure (nfix n)))
              (if (or (zp n) (,external s)) 0
                (1+ (find-external (,next s) (1- n))))))
-          
 
-          (local 
+
+          (local
            (defun ,m (s)
              (mv-let (p i)
                      (exists-pre-state-witness s)
                      (find-external s (- (,clock p) i)))))
-             
 
-          (local 
+
+          (local
            (defthm m-expands
              (equal (,m s)
-                    (find-external 
-                     s 
-                     (- (,clock 
-                         (mv-nth 
-                          0 
+                    (find-external
+                     s
+                     (- (,clock
+                         (mv-nth
+                          0
                           (exists-pre-state-witness s)))
                         (mv-nth 1 (exists-pre-state-witness s)))))))
 
@@ -125,7 +125,7 @@ generic theorems about clocks and invariants to produce the final theorems.
             :otf-flg t
             :hints (("Goal"
                      :in-theory (disable total-pre-has-total-inv)
-                     :use ((:functional-instance 
+                     :use ((:functional-instance
                             total-pre-has-total-inv
                             (total-pre ,pre)
                             (total-next ,next)
@@ -147,9 +147,9 @@ generic theorems about clocks and invariants to produce the final theorems.
                            (not (,external (,next s))))
                       (,inv (,next s)))
              :hints (("Goal"
-                      :in-theory 
+                      :in-theory
                       (disable total-inv-implies-total-next-total-inv)
-                       :use ((:functional-instance 
+                       :use ((:functional-instance
                               total-inv-implies-total-next-total-inv
                               (total-pre ,pre)
                               (total-next ,next)
@@ -159,21 +159,21 @@ generic theorems about clocks and invariants to produce the final theorems.
                               (total-inv ,inv)
                               (m ,m)
                               (total-external ,external)
-                              (exists-total-pre-state-witness 
+                              (exists-total-pre-state-witness
                                exists-pre-state-witness)
                               (exists-total-pre-state exists-pre-state)
                               (find-total-external find-external))))))
 
 
-          
+
           (defthm ,inv-and-external-implies-post
             (implies (and (,inv s)
                           (,external (,next s)))
                      (,post (,next s)))
              :hints (("Goal"
-                      :in-theory 
+                      :in-theory
                       (disable total-inv-and-total-external-implies-total-post)
-                     :use ((:functional-instance 
+                     :use ((:functional-instance
                             total-inv-and-total-external-implies-total-post
                             (total-pre ,pre)
                             (total-next ,next)
@@ -192,7 +192,7 @@ generic theorems about clocks and invariants to produce the final theorems.
             :otf-flg t
             :hints (("Goal"
                      :in-theory (disable m-is-an-ordinal)
-                     :use ((:functional-instance 
+                     :use ((:functional-instance
                             m-is-an-ordinal
                             (total-pre ,pre)
                             (total-next ,next)
@@ -202,7 +202,7 @@ generic theorems about clocks and invariants to produce the final theorems.
                             (total-inv ,inv)
                             (m ,m)
                             (total-external ,external)
-                            (exists-total-pre-state-witness 
+                            (exists-total-pre-state-witness
                              exists-pre-state-witness)
                             (exists-total-pre-state exists-pre-state)
                             (find-total-external find-external))))))
@@ -214,9 +214,9 @@ generic theorems about clocks and invariants to produce the final theorems.
                      (e0-ord-< (,m (,next s))
                                (,m s)))
             :hints (("Goal"
-                     :in-theory (disable exists-pre-state 
+                     :in-theory (disable exists-pre-state
                                          internal-steps-decrease-m)
-                     :use ((:functional-instance 
+                     :use ((:functional-instance
                             internal-steps-decrease-m
                             (total-pre ,pre)
                             (total-next ,next)
@@ -226,38 +226,38 @@ generic theorems about clocks and invariants to produce the final theorems.
                             (total-inv ,inv)
                             (m ,m)
                             (total-external ,external)
-                            (exists-total-pre-state-witness 
+                            (exists-total-pre-state-witness
                              exists-pre-state-witness)
                             (exists-total-pre-state exists-pre-state)
                             (find-total-external find-external))))))))
 
       ;; Not total. So use the partial conditions and also prove fewer
       ;; theorems.
-          
+
              (let* ((pre-has-inv (packn (list name '-pre-has-inv)))
                     (inv-persists (packn (list name '-inv-persists)))
-                    (inv-and-external-implies-post 
+                    (inv-and-external-implies-post
                      (packn (list name '-inv-and-external-implies-post))))
 
                `(encapsulate
 
                  (((,inv *) => *))
-                  
+
                   (local (include-book "c2i-partial"))
-                  
-                  (local 
+
+                  (local
                    (defun-sk exists-pre-state (s)
                      (exists (init i)
                              (and (,pre init)
                                   (natp i)
                                   (< i (,clock init))
                                   (equal s (,run init i))))))
-          
+
                   (local
                    (defun-sk no-external-run (s)
                      (forall i (not (,external (,run s i))))))
-                  
-                  (local 
+
+                  (local
                    (defthm no-external-run-expanded
                      (implies (,external (,run s i))
                               (,external (,run s (no-external-run-witness s))))
@@ -270,10 +270,10 @@ generic theorems about clocks and invariants to produce the final theorems.
                    (local
                     (defun ,inv (s)
                       (if (no-external-run s) T
-                        (and (exists-pre-state s) 
+                        (and (exists-pre-state s)
                              (not (,external s))))))
-                   
-                   (local (in-theory (disable ,pre ,inv 
+
+                   (local (in-theory (disable ,pre ,inv
                                               ,clock ,post)))
 
                    (defthm ,pre-has-inv
@@ -281,7 +281,7 @@ generic theorems about clocks and invariants to produce the final theorems.
                               (,inv s))
                      :hints (("Goal"
                               :in-theory (disable partial-pre-has-partial-inv)
-                              :use ((:functional-instance 
+                              :use ((:functional-instance
                                      partial-pre-has-partial-inv
                                      (partial-pre ,pre)
                                      (partial-next ,next)
@@ -290,25 +290,25 @@ generic theorems about clocks and invariants to produce the final theorems.
                                      (partial-clock-fn ,clock)
                                      (partial-inv ,inv)
                                      (partial-external ,external)
-                                     (exists-partial-pre-state-witness 
+                                     (exists-partial-pre-state-witness
                                       exists-pre-state-witness)
                                      (exists-partial-pre-state exists-pre-state)
-                                     (no-partial-external-partial-run 
+                                     (no-partial-external-partial-run
                                       no-external-run)
-                                     (no-partial-external-partial-run-witness 
+                                     (no-partial-external-partial-run-witness
                                       no-external-run-witness))))))
-                   
-                   
-                   
+
+
+
                    (defthm ,inv-persists
                      (implies (and (,inv s)
                                    (not (,external (,next s))))
                               (,inv (,next s)))
                      :hints (("Goal"
-                              :in-theory 
-                              (disable 
+                              :in-theory
+                              (disable
                                partial-inv-implies-partial-next-partial-inv)
-                              :use ((:functional-instance 
+                              :use ((:functional-instance
                                      partial-inv-implies-partial-next-partial-inv
                                      (partial-pre ,pre)
                                      (partial-next ,next)
@@ -317,26 +317,26 @@ generic theorems about clocks and invariants to produce the final theorems.
                                      (partial-clock-fn ,clock)
                                      (partial-inv ,inv)
                                      (partial-external ,external)
-                                     (exists-partial-pre-state-witness 
+                                     (exists-partial-pre-state-witness
                                       exists-pre-state-witness)
                                      (exists-partial-pre-state exists-pre-state)
-                                     (no-partial-external-partial-run 
+                                     (no-partial-external-partial-run
                                       no-external-run)
-                                     (no-partial-external-partial-run-witness 
+                                     (no-partial-external-partial-run-witness
                                       no-external-run-witness))))))
-                   
-                   
-                   
+
+
+
                    (defthm ,inv-and-external-implies-post
                      (implies (and (,inv s)
                                    (,external (,next s)))
                               (,post (,next s)))
-                     :hints 
+                     :hints
                      (("Goal"
-                       :in-theory 
-                       (disable 
+                       :in-theory
+                       (disable
                         partial-inv-and-partial-external-implies-partial-post)
-                       :use ((:functional-instance 
+                       :use ((:functional-instance
                               partial-inv-and-partial-external-implies-partial-post
                               (partial-pre ,pre)
                               (partial-next ,next)
@@ -345,20 +345,20 @@ generic theorems about clocks and invariants to produce the final theorems.
                               (partial-clock-fn ,clock)
                               (partial-inv ,inv)
                               (partial-external ,external)
-                              (exists-partial-pre-state-witness 
+                              (exists-partial-pre-state-witness
                                exists-pre-state-witness)
                               (exists-partial-pre-state exists-pre-state)
                               (no-partial-external-partial-run no-external-run)
-                              (no-partial-external-partial-run-witness 
+                              (no-partial-external-partial-run-witness
                                no-external-run-witness)))))))))))
-  
-       
+
+
 ;; Testing:
 
 ;; Example 1: Total correctness
 
-(local 
- (encapsulate 
+(local
+ (encapsulate
   ()
 
   (local (defun nextt (s) s))
@@ -372,10 +372,10 @@ generic theorems about clocks and invariants to produce the final theorems.
      (if (zp n) s (runt (nextt s) (1- n)))))
 
   (local
-   (defthm standard-theorem-1 
+   (defthm standard-theorem-1
      (implies (pret s)
               (externalt (runt s (clkt s))))))
-   
+
   (local
    (defthm standard-theorem-2
      (implies (pret s)
@@ -383,7 +383,7 @@ generic theorems about clocks and invariants to produce the final theorems.
 
   (local
    (defthm pre-not-external
-     (implies (pret s) 
+     (implies (pret s)
               (not (externalt s)))))
 
   (local
@@ -398,13 +398,13 @@ generic theorems about clocks and invariants to produce the final theorems.
 
 
   (local
-   (clock-to-inv try-total 
-                 :total 
-                 :pre pret 
-                 :next nextt 
-                 :external externalt 
-                 :post postt 
-                 :run runt 
+   (clock-to-inv try-total
+                 :total
+                 :pre pret
+                 :next nextt
+                 :external externalt
+                 :post postt
+                 :run runt
                  :clock clkt))))
 
 
@@ -416,50 +416,50 @@ generic theorems about clocks and invariants to produce the final theorems.
 (local
  (encapsulate
   ()
-  
+
   (local (defun nextp (s) s))
   (local (defun prep (s) (declare (ignore s)) nil))
   (local (defun postp (s) (declare (ignore s)) nil))
   (local (defun externalp (s) (declare (ignore s)) nil))
   (local (defun clkp (s) (declare (ignore s)) 0))
-  
+
   (local
    (defun runp (s n)
      (if (zp n) s (runp (nextp s) (1- n)))))
-  
-  (local  
-   (defthm standard-theorem-1p 
+
+  (local
+   (defthm standard-theorem-1p
      (implies (and (prep s)
                    (externalp (runp s i)))
               (externalp (runp s (clkp s))))))
-  
+
   (local
    (defthm standard-theorem-2p
      (implies (and (prep s)
                    (externalp (runp s i)))
               (postp (runp s (clkp s))))))
-  
+
   (local
    (defthm pre-not-externalp
-     (implies (prep s) 
+     (implies (prep s)
               (not (externalp s)))))
-  
+
   (local
    (defthm natp-truep
      (natp (clkp s))))
-  
+
   (local
    (defthm standard-thm-3p
      (implies (and (prep s)
                    (externalp (runp s n)))
               (<= (clkp s) n))))
-  
+
   (local
-   (clock-to-inv try-partial 
-                 :partial 
-                 :pre prep 
-                 :next nextp 
-                 :external externalp 
-                 :post postp 
-                 :run runp 
+   (clock-to-inv try-partial
+                 :partial
+                 :pre prep
+                 :next nextp
+                 :external externalp
+                 :post postp
+                 :run runp
                  :clock clkp))))

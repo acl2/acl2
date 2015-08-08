@@ -2,7 +2,7 @@
 ;  The Integers are shown to be an Euclidean Domain with
 ;  unique factorization. Here Size is abs; Quotient is ceiling
 ;  and Remainder is c-mod, a version of mod using ceiling in
-;  place of floor. 
+;  place of floor.
 
 ;  This version uses computable Skolem functions [in place of
 ;  quantifiers (defun-sk)] and is executable. The name of
@@ -32,7 +32,7 @@
 
 ; Last modified Feb. 06.
 
-#| 
+#|
 To certify this book, first, create a world with the following package:
 
 (defpkg "INT-C-MOD"
@@ -42,21 +42,21 @@ To certify this book, first, create a world with the following package:
 ; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports* ; ; ;
                      '(nat-listp acl2-number-listp)))
 
-(certify-book "ed4cb" 
+(certify-book "ed4cb"
 	      1)
 |#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The Integers are an Euclidean Doamin:
 
-;;  integerp  ; Predicate for set of Euclidean Domain elements. 
+;;  integerp  ; Predicate for set of Euclidean Domain elements.
 ;;  equal     ; Equality predicate for Euclidean Domain elements.
-;;  identity  ; Choose unique equivalence class representative for equal. 
+;;  identity  ; Choose unique equivalence class representative for equal.
 ;;  +         ; Addition in Euclidean Domain.
-;;  *         ; Multiplication in Euclidean Domain. 
+;;  *         ; Multiplication in Euclidean Domain.
 ;;  -         ; Unary minus in Euclidean Domain.
 ;;  0         ; 0 element in Euclidean Domain.
 ;;  1         ; 1 element in Euclidean Domain.
-;;  abs       ; Natp size of each nonzero Euclidean Domain element. 
+;;  abs       ; Natp size of each nonzero Euclidean Domain element.
 ;;  ceiling   ; Quotient in Euclidean Domain.
 ;;  c-mod     ; Remainder in Euclidean Domain.
 
@@ -67,7 +67,7 @@ To certify this book, first, create a world with the following package:
 ;; An Euclidean Domain is an integral domain, together with a Size function
 ;; from nonzero domain elements into the nonnegative integers, that
 ;; satisfies the Division Propery:
-;; 
+;;
 ;; Division Propery. For all domain elements x and all nonzero domain
 ;;             elements y there are domain elements q and r such that
 
@@ -83,7 +83,7 @@ To certify this book, first, create a world with the following package:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Commutative Ring is a nonempty set with two binary operations, addition
 ;; and multiplication, an unary operation, minus, and a ring element, zero,
-;; such that 
+;; such that
 
 ;; (1) the binary operations are commutative and associative,
 ;; (2) multiplication distributes over addition,
@@ -103,7 +103,7 @@ To certify this book, first, create a world with the following package:
 ;;     If the original Size function does not satisfy this property,
 ;;     then it can replaced by another that does satisfy this and the
 ;;     division property.
-;;      See Book 2 of the ACL2 Euclidean Domain books, ed2.lisp, 
+;;      See Book 2 of the ACL2 Euclidean Domain books, ed2.lisp,
 ;;      for a proof.
 
 ;;  In fact, for integers x and y, (abs (* x y)) = (* (abs x)(abs y)).
@@ -117,19 +117,19 @@ To certify this book, first, create a world with the following package:
 ;  about FLOOR and MOD to help certify this book
 
 (local
- (include-book "arithmetic/top" :dir :system 
+ (include-book "arithmetic/top" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
- (include-book "ihs/quotient-remainder-lemmas" :dir :system 
+ (include-book "ihs/quotient-remainder-lemmas" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
@@ -140,8 +140,8 @@ To certify this book, first, create a world with the following package:
  (include-book "ed3"
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (defthm
@@ -174,10 +174,10 @@ To certify this book, first, create a world with the following package:
 (defthm
   Equivalence-Law
   (implies (integerp x)
-	   (and (equal x x)  
+	   (and (equal x x)
 		(implies (integerp y)
 			 (and (booleanp (equal x y))
-			      (implies (equal x y) 
+			      (implies (equal x y)
 				       (equal y x))
 			      (implies (integerp z)
 				       (implies (and (equal x y)
@@ -360,9 +360,9 @@ To certify this book, first, create a world with the following package:
 		(not (equal x 0))
 		(integerp y)
 		(not (equal y 0)))
-	   (<= (abs x) 
+	   (<= (abs x)
 	       (abs (* x y))))
-  :rule-classes (:linear 
+  :rule-classes (:linear
 		 (:rewrite
 		  :corollary
 		  (and (implies (and (integerp x)
@@ -373,8 +373,8 @@ To certify this book, first, create a world with the following package:
 				     (not (equal x 0))
 				     (integerp y)
 				     (not (equal y 0)))
-				(<= (abs x) 
-				    (abs (* x y))))))) 
+				(<= (abs x)
+				    (abs (* x y)))))))
   :hints (("Goal"
 	   :in-theory (disable (:definition abs))
 	   :use ((:instance
@@ -397,7 +397,7 @@ To certify this book, first, create a world with the following package:
 (in-theory (disable (:definition abs)))
 
 ;;;;;;;;;;;;;;;;;;;;
-;; Divides-p theory: 
+;; Divides-p theory:
 
 ;; (defun-sk
 ;;   divides-p (x y)
@@ -409,7 +409,7 @@ To certify this book, first, create a world with the following package:
 ;; Computable Skolem function
 (defun
   Divides-p$-witness (x y)
-  (declare (xargs :guard 
+  (declare (xargs :guard
 		  (and (acl2-numberp x)
 		       (acl2-numberp y))))
   (if (not (= x 0))
@@ -421,7 +421,7 @@ To certify this book, first, create a world with the following package:
 
 (defun
   Divides-p (x y)
-  (declare (xargs :guard 
+  (declare (xargs :guard
 		  (and (acl2-numberp x)
 		       (acl2-numberp y))))
   (let ((z (divides-p$-witness x y)))
@@ -449,7 +449,7 @@ To certify this book, first, create a world with the following package:
 
 (defun
   Unit-p (x)
-  (declare (xargs :guard 
+  (declare (xargs :guard
 		  (acl2-numberp x)))
   (divides-p x 1))
 
@@ -537,10 +537,10 @@ To certify this book, first, create a world with the following package:
 		(not (equal y 0)))
 	   (< (abs x)
 	      (abs (* x y))))
-  :rule-classes (:linear 
-		 :rewrite)  
+  :rule-classes (:linear
+		 :rewrite)
   :hints (("Goal"
-	   :in-theory (e/d ((:definition abs)) 
+	   :in-theory (e/d ((:definition abs))
 			   ((:definition unit-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -559,7 +559,7 @@ To certify this book, first, create a world with the following package:
   Greatest-factor (x y)
   "Return the largest z such that z|x and
    1 < z <= y. If no such z exists return |x|."
-  (declare (xargs :guard 
+  (declare (xargs :guard
 		  (and (real/rationalp x)
 		       (integerp y)
 		       (>= y 0))))
@@ -676,7 +676,7 @@ To certify this book, first, create a world with the following package:
   (let ((gf (greatest-factor x (nfix (- (abs x) 1)))))
        (mv (divides-p$-witness gf x) gf)))
 
-(defun 
+(defun
   Reducible-p (x)
   (declare (xargs :guard (integerp x)))
   (mv-let (y z)
@@ -700,7 +700,7 @@ To certify this book, first, create a world with the following package:
 		(< y 0)
 		(< z 0)
 		(<= 1 (* y z)))
-	   (not (equal (divides-p$-witness (greatest-factor (* y z) 
+	   (not (equal (divides-p$-witness (greatest-factor (* y z)
 							    (+ -1 (* y z)))
 					   (* y z))
 		       1)))
@@ -948,7 +948,7 @@ To certify this book, first, create a world with the following package:
 		(<= 0 y)
 		(<= 0 z)
 		(<= 1 (* y z)))
-	   (not (equal (divides-p$-witness (greatest-factor (* y z) 
+	   (not (equal (divides-p$-witness (greatest-factor (* y z)
 							    (+ -1 (* y z)))
 					   (* y z))
 		       1)))
@@ -1186,7 +1186,7 @@ To certify this book, first, create a world with the following package:
 (defun
   Irreducible-factors (x)
   "Return a list, lst, of irreducible
-   elements of integerp, so that if x is 
+   elements of integerp, so that if x is
    in integerp, x is not 0, and x is not
    an unit, then x = product of the
    members in lst."
@@ -1314,17 +1314,17 @@ To certify this book, first, create a world with the following package:
 		  (and (acl2-numberp x)
 		       (acl2-numberp y))))
   (let ((u (unit-associates-p$-witness x y)))
-       (if (and (integerp x) 
+       (if (and (integerp x)
 		(integerp y))
 	   (and (unit-p u)
 		(= (* u x) y))
 	   (= x y))))
 
-(defthm 
+(defthm
   Unit-associates-p-suff
-  (implies (if (and (integerp x) 
+  (implies (if (and (integerp x)
 		    (integerp y))
-	       (and (unit-p u) 
+	       (and (unit-p u)
 		    (equal (* u x) y))
 	       (equal x y))
 	   (unit-associates-p x y)))
@@ -1396,7 +1396,7 @@ To certify this book, first, create a world with the following package:
 
 (defun
   Delete-one-unit-associate (x lst)
-  "Return the result of deleting one occurrence 
+  "Return the result of deleting one occurrence
    of an unit-associate of x from the list lst."
   (declare (xargs :guard (and (acl2-numberp x)
 			      (acl2-number-listp lst))))
@@ -1416,7 +1416,7 @@ To certify this book, first, create a world with the following package:
   (if (consp lst1)
       (and (member-unit-associate (car lst1) lst2)
 	   (bag-equal-unit-associates (cdr lst1)
-				      (delete-one-unit-associate (car lst1) 
+				      (delete-one-unit-associate (car lst1)
 								 lst2)))
       (atom lst2)))
 
@@ -1506,7 +1506,7 @@ To certify this book, first, create a world with the following package:
       0))
 
 (defthm
-  Bag-equal-unit-associates->equal-multiplicity-unit-associate 
+  Bag-equal-unit-associates->equal-multiplicity-unit-associate
   (implies (bag-equal-unit-associates lst1 lst2)
 	   (equal (multiplicity-unit-associate x lst1)
 		  (multiplicity-unit-associate x lst2)))

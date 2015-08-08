@@ -21,7 +21,7 @@ see a couple of lemmas, proving the final results that we want to state.
 (include-book "misc/defpun" :dir :system)
 (include-book "ordinals/ordinals" :dir :system)
 
-(defstub step-fn (*) => *) 
+(defstub step-fn (*) => *)
 (defun run-fn (s n) (if (zp n) s (run-fn (step-fn s) (1- n))))
 
 (encapsulate
@@ -49,10 +49,10 @@ see a couple of lemmas, proving the final results that we want to state.
  ;; SSR1 and SSR2 to apply inductive assertions via theorem proving
  ;; (in addition to just the correctness results).
 
- (defchoose default-state (s) () 
+ (defchoose default-state (s) ()
    (not (cutpoint s)))
- 
- 
+
+
  ;; The constraints imposed are specified as theorems with names enclosed
  ;; within vertical bars, namely as |some theorem|.
 
@@ -95,11 +95,11 @@ see a couple of lemmas, proving the final results that we want to state.
  ;; first exitpoint must satisfy the postcondition. But how do we go
  ;; from one cutpoint to the step-fn? The number of steps to do so has
  ;; been specified by the function steps-to-cutpoint below.
- 
+
 
  (defpun steps-to-cutpoint-tail (s i)
-   (if (cutpoint s) 
-       i 
+   (if (cutpoint s)
+       i
      (steps-to-cutpoint-tail (step-fn s) (1+ i))))
 
  (defun steps-to-cutpoint (s)
@@ -130,22 +130,22 @@ see a couple of lemmas, proving the final results that we want to state.
 ;; We start with a collection of definitions. steps-to-exitpoint below
 ;; is the number of steps to reach the first exitpoint, if one is
 ;; reachable. Otherwise it is (omega).
- 
+
 (local
  (defpun steps-to-exitpoint-tail (s i)
-  (if (exitpoint s) 
-      i 
+  (if (exitpoint s)
+      i
     (steps-to-exitpoint-tail (step-fn s) (1+ i)))))
 
 (local
  (defun steps-to-exitpoint (s)
    (let ((steps (steps-to-exitpoint-tail s 0)))
      (if (exitpoint (run-fn s steps))
-         steps 
+         steps
        (omega)))))
 
 ;; Our first job is to show that (steps-to-cutpoint s) is the minimum
-;; distance cutpoint reachable from s. 
+;; distance cutpoint reachable from s.
 
 ;; The following induction scheme is useful, as is the collection of events
 ;; inside the encapsulate below. In the encapsulate I summarize the theorems
@@ -175,7 +175,7 @@ see a couple of lemmas, proving the final results that we want to state.
                     (implies (natp k)
                              (<= cutpoint-steps k))
                     (cutpoint (run-fn s cutpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -192,7 +192,7 @@ see a couple of lemmas, proving the final results that we want to state.
  ;; Notice that most of the theorems I deal with have a free variable in the
  ;; hypothesis. This is unfortunate but necessary. As a result I presume that
  ;; most of the theorems will not be proved by ACL2 automatically but often
- ;; require :use hints. 
+ ;; require :use hints.
 
  (defthm steps-to-cutpoint-is-natp
   (implies (cutpoint (run-fn s k))
@@ -243,7 +243,7 @@ see a couple of lemmas, proving the final results that we want to state.
                     (implies (natp k)
                              (<= exitpoint-steps k))
                     (exitpoint (run-fn s exitpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -263,7 +263,7 @@ see a couple of lemmas, proving the final results that we want to state.
  ;; automatically but often require :use hints. This suggests the
  ;; proliferation of such hints in this book. For my first-cut pass at
  ;; this book, I will therefore not even try to remove :use hints but
- ;; just keep a note of them. 
+ ;; just keep a note of them.
 
  (defthm steps-to-exitpoint-is-natp
   (implies (exitpoint (run-fn s k))
@@ -319,7 +319,7 @@ see a couple of lemmas, proving the final results that we want to state.
  (defun big-step-induction (s k l)
    (if (zp k) (list s k l)
      (big-step-induction (step-fn-cutpoint (step-fn s))
-                         (1- k) 
+                         (1- k)
                          (- l (1+ (steps-to-cutpoint (step-fn s))))))))
 
 
@@ -340,7 +340,7 @@ see a couple of lemmas, proving the final results that we want to state.
                         (natp n)))
             (equal (run-fn (run-fn s m) n)
                    (run-fn s (+ m n))))))
- 
+
 ;; The step-fn rule is an ugly hack and I am almost doing it assuming I
 ;; know what I am doing. If I dont use this theorem, the definition of
 ;; run-fn does not expand in circumstances I want it to. The theorem
@@ -394,7 +394,7 @@ see a couple of lemmas, proving the final results that we want to state.
             :induct (big-step-induction s k l))
            ("Subgoal *1/2.4"
             :in-theory (disable |assertion invariant over cutpoints|)
-            :use ((:instance |assertion invariant over cutpoints| 
+            :use ((:instance |assertion invariant over cutpoints|
                              (n l)))))))
 
 
@@ -415,7 +415,7 @@ see a couple of lemmas, proving the final results that we want to state.
             (cutpoint (big-step-run-fn s k)))
    :hints (("Goal"
             :induct (big-step-induction s k l))
-           ("[1]Goal" 
+           ("[1]Goal"
             :in-theory (enable natp)
             :use ((:instance steps-to-cutpoint-is-minimal
                              (k (1- l))
@@ -425,7 +425,7 @@ see a couple of lemmas, proving the final results that we want to state.
                              (s (step-fn s))))))))
 
 ;; Now just apply the above two theorems to get the one we want. Note
-;; the 
+;; the
 
 ;; OK so I have proved that the first exitpoint ever hit by big steps
 ;; satisfies the assertion. Now the rest of the book I will try to
@@ -439,7 +439,7 @@ see a couple of lemmas, proving the final results that we want to state.
    (declare (xargs :measure (nfix l)
                    :hints (("Goal"
                             :use ((:instance
-                                   steps-to-cutpoint-is-ordinal 
+                                   steps-to-cutpoint-is-ordinal
                                    (s (step-fn s))))))))
    (if (zp l) 0
      (1+ (big-steps (step-fn-cutpoint (step-fn s))
@@ -468,10 +468,10 @@ see a couple of lemmas, proving the final results that we want to state.
    :rule-classes :type-prescription))
 
 ;; OK so let us prove that every cutpoint is big-step-run-fn of some
-;; number. 
+;; number.
 
 (local
- (defthmd cutpoint-is-hit-by-big-steps 
+ (defthmd cutpoint-is-hit-by-big-steps
    (implies (and (cutpoint (run-fn s l))
                  (natp l))
             (equal (big-step-run-fn s (big-steps s l))
@@ -507,12 +507,12 @@ see a couple of lemmas, proving the final results that we want to state.
  (defthmd first-exitpoint-is-hit-by-big-steps
    (implies (exitpoint (run-fn s m))
             (equal (run-fn s (steps-to-exitpoint s))
-                   (big-step-run-fn s 
+                   (big-step-run-fn s
                                  (big-steps s (steps-to-exitpoint
                                                s)))))
    :hints (("Goal"
             :in-theory (disable steps-to-exitpoint-provide-exitpoint)
-            :use ((:instance cutpoint-is-hit-by-big-steps 
+            :use ((:instance cutpoint-is-hit-by-big-steps
                              (l (steps-to-exitpoint s)))
                   (:instance steps-to-exitpoint-provide-exitpoint
                              (k m)))))))
@@ -530,7 +530,7 @@ see a couple of lemmas, proving the final results that we want to state.
    (if (zp m) (not (exitpoint s))
      (and (not (exitpoint s))
           (no-exitpoint (step-fn s) (1- m))))))
- 
+
 ;; Of course a state reachable in <= m steps from s is not an
 ;; exitpoint from this definition.
 
@@ -742,15 +742,15 @@ see a couple of lemmas, proving the final results that we want to state.
                  (not (exitpoint s)))
             (natp (1- (steps-to-exitpoint s))))
    :hints (("Goal"
-            :in-theory (e/d (natp) 
+            :in-theory (e/d (natp)
                             (steps-to-exitpoint-is-natp
-                             steps-to-exitpoint-provide-exitpoint))       
+                             steps-to-exitpoint-provide-exitpoint))
             :use ((:instance steps-to-exitpoint-is-natp (k n))
                   (:instance steps-to-exitpoint-provide-exitpoint
                              (k n)))))))
- 
+
 (local
- (defthm big-steps-is-natp->0 
+ (defthm big-steps-is-natp->0
   (implies (force (and (natp n)
                        (> n 0)))
           (natp (1- (big-steps s n))))))
@@ -761,7 +761,7 @@ see a couple of lemmas, proving the final results that we want to state.
   (defthm no-exitpoint-means-not-exitpoint
     (implies  (no-big-exitpoint s k)
               (not (exitpoint (big-step-run-fn s k)))))))
- 
+
 (local (in-theory (disable natp-posp--1)))
 
 (local
@@ -778,14 +778,14 @@ see a couple of lemmas, proving the final results that we want to state.
 (local
    (defthm big-steps-alternate-definition
      (equal (big-step-run-fn s k)
-            (if (zp k) s 
+            (if (zp k) s
               (step-fn-cutpoint (step-fn (big-step-run-fn s (1- k))))))
     :rule-classes :definition))
 
 (local
  (in-theory (disable big-step-run-fn)))
 
-(local 
+(local
  (defthmd run-fn-+-reduction
    (implies (and (natp m)
                  (natp n))
@@ -804,7 +804,7 @@ see a couple of lemmas, proving the final results that we want to state.
    :otf-flg t
    :hints (("Goal"
             :in-theory (disable |assertion invariant over cutpoints|)
-            :use ((:instance cutpoint-implies-assertion 
+            :use ((:instance cutpoint-implies-assertion
                              (l m))
                   (:instance big-step-is-always-a-cutpoint
                              (l m))
@@ -816,7 +816,7 @@ see a couple of lemmas, proving the final results that we want to state.
                   (:instance run-fn-+-reduction
                              (m (little-steps s k))
                              (n (- m (little-steps s k)))))))))
-                 
+
 
 (local
  (defthm big-steps-0-implies-no-step
@@ -828,7 +828,7 @@ see a couple of lemmas, proving the final results that we want to state.
 
 
 ;; The following is the crux of the final defthm.  Here we prove the basic
-;; partial correctness theorem but we have free variables all over. 
+;; partial correctness theorem but we have free variables all over.
 
 (local
  (defthm partial-correctness
@@ -839,14 +839,14 @@ see a couple of lemmas, proving the final results that we want to state.
                   (post (run-fn s steps)))))
   :hints (("Goal"
            :cases ((not (natp n)) (exitpoint s)))
-          ("Subgoal 1" 
+          ("Subgoal 1"
            :in-theory (disable steps-to-exitpoint-is-minimal)
            :use ((:instance steps-to-exitpoint-is-minimal (k 0))))
-           ("Subgoal 2" 
+           ("Subgoal 2"
            :in-theory (disable steps-to-exitpoint-is-minimal)
            :use ((:instance steps-to-exitpoint-is-minimal (k 0))))
-          ("Subgoal 3" 
-           :in-theory (disable 
+          ("Subgoal 3"
+           :in-theory (disable
                         big-steps
                         steps-to-exitpoint
                         big-step-run-fn
@@ -854,7 +854,7 @@ see a couple of lemmas, proving the final results that we want to state.
                         |assertion at exitpoint implies postcondition|
                         first-exitpoint-has-assertion-too
                         less-than-exitpoint-implies-no-exitpoint)
-           :use ((:instance  
+           :use ((:instance
                   |assertion at exitpoint implies postcondition|
                   (s (run-fn s (steps-to-exitpoint s))))
                  (:instance first-exitpoint-has-assertion-too

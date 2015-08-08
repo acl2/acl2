@@ -10,25 +10,25 @@
 ;;  made more complicated before they can be simplified.
 
 ;;Part A.
-;; Axiomatize, in ACL2, an arbitrary ring with unity.  
-;; Specifically, use encapsulate to introduce and constrain ACL2 
+;; Axiomatize, in ACL2, an arbitrary ring with unity.
+;; Specifically, use encapsulate to introduce and constrain ACL2
 ;; versions of the following functions:
-;;  o The predicate Rp. This is the test for membership in the 
+;;  o The predicate Rp. This is the test for membership in the
 ;;    Ring, i.e., X is in R iff Rp(X) is not nil.
 ;;  o The operations +_r, *_r, -_r, and the constants 0_r and 1_r.
-;;    These satisfy the closure, associative, distributive, 
+;;    These satisfy the closure, associative, distributive,
 ;;    identity, and right inverse axioms for a ring with unity.
 
 ;;Part B.
-;; Verify, in ACL2, that in any ring with unity, the additive 
-;; identity and additive inverses behave as expected on the left 
+;; Verify, in ACL2, that in any ring with unity, the additive
+;; identity and additive inverses behave as expected on the left
 ;; as well as on the right. That is, prove for all X in R,
 ;; (-_r X) +_r X = 0_r and 0_r +_r X = X.
-;; Hint: Show 0_r is the only additive idempotent in the ring. 
+;; Hint: Show 0_r is the only additive idempotent in the ring.
 ;; That is, prove if X +_r X = X, then X = 0_r.
 
 ;;Part C.
-;; Verify, in ACL2, that addition is always commutative in any 
+;; Verify, in ACL2, that addition is always commutative in any
 ;; ring with unity. That is, prove for all X, Y in R,
 ;; X +_r Y = Y +_r X.
 ;; Hint. Consider the two ways the distributive axioms can be used
@@ -53,7 +53,7 @@
  ;;--------------
  ;; Provide witnesses:
  (local
-  (defun 
+  (defun
     Rp (x)
     (rationalp x)))
 
@@ -71,9 +71,9 @@
   (defun
     -_r (x)
     (- x)))
- 
+
  (local
-  (defun 
+  (defun
     0_r ()
     0))
 
@@ -93,7 +93,7 @@
 			(Rp (-_r x))))
 	  (Rp (0_r))
 	  (Rp (1_r))))
- 
+
  (defthm
      Associative-Laws
      (implies (and (Rp x)
@@ -122,7 +122,7 @@
 	      (and (equal (+_r x (0_r)) x)
 		   (equal (*_r (1_r) x) x)
 		   (equal (*_r x (1_r)) x))))
- 
+
  (defthm
      Right-Inverse-Law
      (implies (Rp x)
@@ -197,7 +197,7 @@
     Left-Identity-Law
     (implies (Rp x)
 	     (equal (+_r (0_r) x) x))
-    :hints (("Goal"	 
+    :hints (("Goal"
 	     :use (:theorem
 		   (implies (Rp x)
 			    (equal (+_r (0_r) x)
@@ -248,7 +248,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; This next theorem is one of the axioms.
 ;;  By restating the axiom here, I ensure
-;;  that the left distributive rewrite rule 
+;;  that the left distributive rewrite rule
 ;;  is applied before the right distributive
 ;;  rule. Before this restatement, ACL2 applied
 ;;  the right rule before the left rule.

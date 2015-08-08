@@ -136,7 +136,7 @@
           (and (equal (car x) (car y))
                (<< (cdr x) (cdr y)))))))
 
-; Now we prove that << is a total ordering on ACL2 objects. 
+; Now we prove that << is a total ordering on ACL2 objects.
 
 (defthm <<-irreflexivity
   (not (<< x x)))

@@ -27,7 +27,7 @@
 
 ; :doc
 ; ":doc-section quotient-remainder-lemmas
-; 
+;
 ; A book of facts about FLOOR, MOD, TRUNCATE and REM, and integer ratios.
 ; Also enough of a theory of the Acl2 function NONNEGATIVE-INTEGER-QUOTIENT
 ; to prove the rules.
@@ -47,14 +47,14 @@
 ; TRUNCATE/REM, which operate on any rational numbers (as long as the divisor
 ; is non-zero).  Both (TRUNCATE x y) and (FLOOR x y) are integers, and
 ; specify the `integer part' of the rational number x/y; they differ in the
-; direction of rounding.  
+; direction of rounding.
 
 ; TRUNCATE is the `FORTRAN-style' quotient operation, rounding towards 0,
 ; i.e., (TRUNCATE x y) = (TRUNCATE (ABS x) (ABS y)).  This book provides a
 ; selected theory of TRUNCATE and REM.
 
 ; (FLOOR x y) is identical to TRUNCATE if x/y > 0 or x/y is an integer,
-; otherwise for negative non-integer ratios x/y, 
+; otherwise for negative non-integer ratios x/y,
 ; (FLOOR x y) = (TRUNCATE x y) - 1.  (FLOOR i (EXPT 2 j)) is the
 ; specification of an `arithmetic shift' of the integer i by -j bits.  Since
 ; FLOOR and MOD are the foundations for integer descriptions of hardware,
@@ -64,7 +64,7 @@
 ; the Acl2 function NONNEGATIVE-INTEGER-QUOTIENT, which is simple recursive
 ; specification of division of nonnegative integers by repeated subtraction.
 ; We provide only enough of a theory of NONNEGATIVE-INTEGER-QUOTIENT to prove
-; the desired properties of the Common Lisp functions. 
+; the desired properties of the Common Lisp functions.
 
 ; DOCUMENTATION
 
@@ -204,8 +204,8 @@
 ; Without these macros, fully 25% of the text of the
 ; \"quotient-remainder-lemmas\" book is given over simply to expressing
 ; the guards!~/~/"
-  
-  ) 
+
+  )
 
 (defmacro niq-guard (i j)
 
@@ -229,7 +229,7 @@
 
 ; ":doc-section qr-guard-macros
 ; Quotient/Remainder GUARD: Macro form of the guards for FLOOR, MOD, TRUNCATE,
-; and REM., or any ratio x/y of rationals (forced). 
+; and REM., or any ratio x/y of rationals (forced).
 ; ~/~/~"
 
   (mlambda (x y)
@@ -361,7 +361,7 @@
 
 ; This lemma serves as a :LINEAR definition of NONNEGATIVE-INTEGER-QUOTIENT,
 ; and allows us to derive interesting properties of FLOOR and TRUNCATE by
-; linear arithmetic.  This lemma is stored as a :LINEAR rule under NIQ 
+; linear arithmetic.  This lemma is stored as a :LINEAR rule under NIQ
 ; since we think of this as a property of NIQ, and not as a general property
 ; of (/ I J).~/~/"
   )
@@ -372,7 +372,7 @@
 (defthm niq-type
   (implies
    (niq-guard i j)
-   (and 
+   (and
     (equal (equal (nonnegative-integer-quotient i j) 0)
 	   (< i j))
     (equal (< 0 (nonnegative-integer-quotient i j))
@@ -387,7 +387,7 @@
      (and (>= i j)
 	  (niq-guard i j))
      (< 0 (nonnegative-integer-quotient i j))))
-   (:rewrite 
+   (:rewrite
     :corollary
     (implies
      (and (< i j)
@@ -534,7 +534,7 @@
 ;<  Without the :CASES hint, the inequality conditions simplify to a form
 ;that doesn't allow us to decide the sign of X, and the proof fails.  With
 ;the :CASES hint, we can decide the sign of X and the proof is obvious from
-;TRUNCATE-BOUNDS. 
+;TRUNCATE-BOUNDS.
 
 (defthm truncate-type
   (implies
@@ -722,7 +722,7 @@
 
 ; :doc
 ; ":doc-section truncate-lemmas
-; Rewrite (D) : (TRUNCATE i j) = 
+; Rewrite (D) : (TRUNCATE i j) =
 ;               (SIGNUM i) * (SIGNUM j) * (NIQ i j), for integers i,j.
 ; ~/
 ; This rule shows that TRUNCATE is the \"usual\" (i.e., FORTRAN-style)
@@ -794,7 +794,7 @@
 ; :doc
 ; ":doc-section rem-lemmas
 ; Rewrite (D): Transform (REM x y) < z, (REM x y) > z, and (REM x y) = z
-; into an equivalent TRUNCATE expression suitable for reasoning about with 
+; into an equivalent TRUNCATE expression suitable for reasoning about with
 ; TRUNCATE-BOUNDS and other theorems about TRUNCATE.
 ; ~/
 ; Since this lemma can be considered a `definition' of REM, it is exported
@@ -826,7 +826,7 @@
 
 ; :doc
 ; ":doc-section rem-lemmas
-; Rewrite: (REM x y) = 0, when x/y is an integer; 
+; Rewrite: (REM x y) = 0, when x/y is an integer;
 ; ~/
 ; NB: This rule is a corollary of a more general equality.
 ; The equality is also stored as a :REWRITE and :GENERALIZE rule.~/~/
@@ -978,7 +978,7 @@
 ; :doc
 ; ":doc-section rem-lemmas
 ;  Various : Decide (REM x y) < 0 and (REM x y) > 0 based on the sign of
-;  x and the INTEGERP-ness of x/y. 
+;  x and the INTEGERP-ness of x/y.
 ;  ~/
 ;  This rule is stored as appropriate :REWRITE, :LINEAR, :GENERALIZE, and
 ;  :TYPE-PRESCRIPTION rules.~/~/"
@@ -992,7 +992,7 @@
 	   (- (rem x y)))
     (equal (rem x (- y))
 	   (* (signum y) (signum y) (rem x y)))))
-   
+
   :hints
   (("Goal"
     :in-theory (enable linearize-rem)
@@ -1038,7 +1038,7 @@
 ; Rewrite: Rewrite (FLOOR x y) to a function of (TRUNCATE x y).
 ; ~/~/~/"
   )
-	      
+
 (in-theory (disable floor-as-truncate))
 
 (defthm floor-mod-elim
@@ -1194,7 +1194,7 @@
 		 (:linear :corollary
 			  (implies (and (<= x 0) (< y 0) (>= y x)
 					(qr-guard x y))
-				   (> (floor x y) 0))))   
+				   (> (floor x y) 0))))
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form
 ;;; see defxdoc form towards in the last part of this file.
@@ -1212,7 +1212,7 @@
 	   (equal (equal (floor x y) 0)
 		  (or (and (>= x 0) (> y 0) (< x y))
 		      (and (<= x 0) (< y 0) (> x y)))))
-  
+
   :hints (("Goal" :cases ((< (/ x y) 0) (> (/ x y) 0))))
   :rule-classes ((:rewrite)
 		 (:generalize)
@@ -1327,9 +1327,9 @@
 
 ;   :doc
 ;   ":doc-section floor-lemmas
-; Rewrite: (FLOOR (- x) y) = 
-;          (IF (INTEGERP (* x (/ y))) 
-;              (- (FLOOR x y)) 
+; Rewrite: (FLOOR (- x) y) =
+;          (IF (INTEGERP (* x (/ y)))
+;              (- (FLOOR x y))
 ;            (- (- (FLOOR x y)) 1)));
 ;          Rhs identical for -y.
 ; ~/~/~/"
@@ -1490,14 +1490,14 @@
 ; which for integers i is simply (ABS i).  Thus, this theorem won't justify
 ; a simple recursion by a negative y, since (FLOOR 1 y) = -1 for negative y,
 ; and (ABS -1) = (ABS 1).  For the most general case that includes negative
-; y one would need to define a different measure that could handle this 
+; y one would need to define a different measure that could handle this
 ; condition.~/~/"
     ))
 
 
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ;;;
-;;;    MOD 
+;;;    MOD
 ;;;
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1526,7 +1526,7 @@
 ; :doc
 ; ":doc-section mod-lemmas
 ; Rewrite (D): Transform (MOD x y) < z, (MOD x y) > z, and (MOD x y) = z
-; into an equivalent FLOOR expression suitable for reasoning about with 
+; into an equivalent FLOOR expression suitable for reasoning about with
 ; FLOOR-BOUNDS and other theorems about FLOOR.
 ; ~/
 ; Since this lemma can be considered a `definition' of MOD, it is exported
@@ -1556,7 +1556,7 @@
 
 ; :doc
 ; ":doc-section mod-lemmas
-; Rewrite: (MOD x y) = 0, when x/y is an integer; 
+; Rewrite: (MOD x y) = 0, when x/y is an integer;
 ; ~/
 ; This rule is a corollary of a more general equality.
 ; The equality is also stored as a :REWRITE and :GENERALIZE rule.~/~/
@@ -1751,7 +1751,7 @@
 ; :doc
 ; ":doc-section mod-lemmas
 ; Various: Decide (MOD x y) < 0 and (MOD x y) > 0 based on the sign of
-; y and the INTEGERP-ness of x/y. 
+; y and the INTEGERP-ness of x/y.
 ; ~/
 ; This rule is also stored as appropriate :REWRITE, :LINEAR, :GENERALIZE,
 ; and :TYPE-PRESCRIPTION rules.~/~/"
@@ -2018,7 +2018,7 @@
       (and (integerp i)
 	   (integerp (* x y)))
       (integerp (* x y i)))))
-   
+
   (defthm rewrite-floor-mod
     (implies
      (and (equal i (/ y z))
@@ -2076,7 +2076,7 @@
 	(force (not (equal z 0))))
    (and
     (equal (floor (+ x y) z)
-	   (+ i (floor y z))) 
+	   (+ i (floor y z)))
     (equal (floor (+ y x) z)
 	   (+ i (floor y z)))))
   :hints
@@ -2131,7 +2131,7 @@
 	(force (not (equal z 0))))
    (and
     (equal (mod (+ x y) z)
-	   (mod y z)) 
+	   (mod y z))
     (equal (mod (+ y x) z)
 	   (mod y z))))
   :hints
@@ -2286,7 +2286,7 @@
   ;;  which is spoiled by these 2 lemmas!
 
   (local (in-theory (disable rewrite-floor-mod rewrite-mod-mod)))
- 
+
   ;;< These first 2 lemmas have nothing to do with the :LINEAR theory of
   ;;FLOOR and MOD, so we DISABLE the key :LINEAR lemmas to avoid thrashing.
 
@@ -2355,7 +2355,7 @@
 	     (:instance mod-bounds (x x) (y (* i j)))
 	     (:instance <-*-left-cancel
 			(z (/ i)) (x (mod x (* i j))) (y (* i j))))))))
-  
+
   ;; Voila!
 
   (defthm floor-floor-integer
@@ -2433,7 +2433,7 @@
 ; ~/
 ; This is a crucial lemma for certain kinds of reasoning about hardware
 ; specifications, for example, we can use this to prove that
-; (MOD i (EXPT 2 n)) = (MOD i 2) + (MOD (FLOOR i 2) (EXPT 2 (1- n))), for 
+; (MOD i (EXPT 2 n)) = (MOD i 2) + (MOD (FLOOR i 2) (EXPT 2 (1- n))), for
 ; n > 0, which justifies a recursive specification of hardware
 ; operations.~/~/"
   )
@@ -2557,9 +2557,9 @@
 ; QUOTIENT-REMAINDER-FUNCTIONS and QUOTIENT-REMAINDER-RULES.  The former is
 ; simply a theory of the functions characterized by the book.  Since
 ; these functions are all ENABLEd by default, and most are non-recursive, one
-; should immediately: 
+; should immediately:
 
-; (IN-THEORY (DISABLE QUOTIENT-REMAINDER-FUNCTIONS)) 
+; (IN-THEORY (DISABLE QUOTIENT-REMAINDER-FUNCTIONS))
 
 ; upon loading this book, or the lemmas may never be applied.
 

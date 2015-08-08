@@ -35,7 +35,7 @@ fair selection. The theorems we prove are
   (if (endp keys) 0
     (+ (rank-proc i (<- procs (first keys)))
        (rank-keys i procs (rest keys)))))
-                  
+
 (defun locs-for-not-queue ()
   (list 0 2 4))
 
@@ -57,7 +57,7 @@ fair selection. The theorems we prove are
     (append (sequence-measure procs keys locs)
             (unfair-measure procs (first queue))
 	    (unfair-measure procs (current (<- procs (first queue))))
-            (if (or (and (choosing curr-p) 
+            (if (or (and (choosing curr-p)
 			 (equal (loc (<- procs (first
 						queue))) 7))
                     (and (pos curr-p)
@@ -86,7 +86,7 @@ fair selection. The theorems we prove are
   :rule-classes nil)
 
 (local
-(defthm normalize-append 
+(defthm normalize-append
   (equal (append a (append b c) d)
          (append a b c d)))
 )
@@ -138,7 +138,7 @@ fair selection. The theorems we prove are
                 (memberp a (locs-for-not-queue))
                 (< a (loc (<- procs in))))
            (equal (rank-keys a
-                             (-> procs in 
+                             (-> procs in
                                  (bake+-p (<- procs in) in procs max))
                              keys)
                   (rank-keys a procs keys))))
@@ -167,7 +167,7 @@ fair selection. The theorems we prove are
                 (equal (loc (<- procs in)) 0))
            (msr< (sequence-measure (-> procs in (bake+-p (<- procs in) in procs
                                                          max))
-                                   keys 
+                                   keys
                                    (locs-for-not-queue))
                  (sequence-measure procs keys (locs-for-not-queue)))))
 )
@@ -178,7 +178,7 @@ fair selection. The theorems we prove are
                 (equal (loc (<- procs in)) 2))
            (msr< (sequence-measure (-> procs in (bake+-p (<- procs in) in procs
                                                          max))
-                                   keys 
+                                   keys
                                    (locs-for-not-queue))
                  (sequence-measure procs keys (locs-for-not-queue)))))
 )
@@ -189,7 +189,7 @@ fair selection. The theorems we prove are
                 (equal (loc (<- procs in)) 4))
            (msr< (sequence-measure (-> procs in (bake+-p (<- procs in) in procs
                                                          max))
-                                   keys 
+                                   keys
                                    (locs-for-not-queue))
                  (sequence-measure procs keys (locs-for-not-queue)))))
 )
@@ -222,7 +222,7 @@ fair selection. The theorems we prove are
                 (suff-proc procs in bucket queue max)
                 (not (commit-proc (<- procs in)))
                 (not (memberp in queue)))
-            (msr< (rank-procs (-> procs in (bake+-p (<- procs in) in 
+            (msr< (rank-procs (-> procs in (bake+-p (<- procs in) in
 						    procs max))
                              keys queue (fair-step env X)
 			     (locs-for-not-queue))
@@ -516,12 +516,12 @@ fair selection. The theorems we prove are
                              queue
                              (fair-step env X)
                              (locs-for-not-queue))
-                 (rank-procs procs (keys procs) queue env 
+                 (rank-procs procs (keys procs) queue env
 			     (locs-for-not-queue))))
   :hints (("Goal"
            :do-not '(eliminate-destructors generalize)
 	   :do-not-induct t
-           :in-theory (disable bake+-p unfair-measure sequence-measure 
+           :in-theory (disable bake+-p unfair-measure sequence-measure
                                suff-proc commit-proc)
            :cases ((and (not (equal (loc (<- procs (car queue))) 7))
                         (not (equal (loc (<- procs (car queue))) 8)))
@@ -532,17 +532,17 @@ fair selection. The theorems we prove are
            ("Subgoal 2.1"
             :in-theory (disable commit-proc unfair-measure))
            ("Subgoal 2.1.2"
-            :cases ((not (equal (g :current (g (car queue) procs)) 
+            :cases ((not (equal (g :current (g (car queue) procs))
                                 (fair-select env x)))))
            ("Subgoal 2.1.2.1"
-            :cases ((memberp (g :current (g (car queue) procs)) 
+            :cases ((memberp (g :current (g (car queue) procs))
                              (select-que env))))
-           
+
            ("Subgoal 2.1.1"
-            :cases ((not (equal (g :current (g (car queue) procs)) 
+            :cases ((not (equal (g :current (g (car queue) procs))
                                 (fair-select env x)))))
            ("Subgoal 2.1.1.1"
-            :cases ((memberp (g :current (g (car queue) procs)) 
+            :cases ((memberp (g :current (g (car queue) procs))
                              (select-que env))))
 
           ("Subgoal 1"
@@ -556,7 +556,7 @@ fair selection. The theorems we prove are
 
 ;; END case 3
 
-;;  case 4 : (and (memberp in queue) 
+;;  case 4 : (and (memberp in queue)
 ;;               (not (memberp in locs))
 ;;               (not (equal in (first queue))))
 
@@ -568,7 +568,7 @@ fair selection. The theorems we prove are
 		(not (memberp (loc (<- procs in)) (locs-for-not-queue))))
 	   (not (choosing (<- procs in))))
   :hints (("Goal"
-	   :in-theory (enable locs-for-not-queue 
+	   :in-theory (enable locs-for-not-queue
 			      (:executable-counterpart locs-for-not-queue))))
   :rule-classes :forward-chaining)
 )
@@ -655,12 +655,12 @@ fair selection. The theorems we prove are
                              (locs-for-not-queue))
                  (rank-procs procs (keys procs)
                              queue
-                             env 
+                             env
                              (locs-for-not-queue))))
   :hints (("Goal"
            :do-not-induct t
            :do-not '(generalize eliminate-destructors)
-           :in-theory (disable bake+-p suff-proc commit-proc unfair-measure 
+           :in-theory (disable bake+-p suff-proc commit-proc unfair-measure
                                sequence-measure)
            :cases ((equal in (current (<- procs (first queue))))))
 	  ("Subgoal 1"
@@ -698,7 +698,7 @@ fair selection. The theorems we prove are
 )
 
 (local
-(in-theory (disable rank-procs 
+(in-theory (disable rank-procs
 		    memberp
 		    bake+-p suff-proc unfair-measure commit-proc))
 )
@@ -710,7 +710,7 @@ fair selection. The theorems we prove are
 (local
 (defthm rank-procs-decreases
   (implies (and (suff-proc procs in bucket queue max)
-		(implies (consp queue) 
+		(implies (consp queue)
 			 (suff-proc procs (first queue) bucket queue max))
 		(memberp in (keys procs))
 		(my-subsetp queue (keys procs))
@@ -724,7 +724,7 @@ fair selection. The theorems we prove are
 			     queue
 			     (fair-step env X)
 			     (locs-for-not-queue))
-		 (rank-procs procs (keys procs) queue env 
+		 (rank-procs procs (keys procs) queue env
 			     (locs-for-not-queue))))
   :hints (("Goal"
            :do-not '(eliminate-destructors generalize fertilize)
@@ -732,12 +732,12 @@ fair selection. The theorems we prove are
 	   :cases ((and (not  (memberp in queue))
 			(memberp (loc (<- procs in))
 				 (locs-for-not-queue)))
-		   (and (memberp in queue) 
+		   (and (memberp in queue)
 			(memberp (loc (<- procs in))
 				 (locs-for-not-queue)))
 		   (and (memberp in queue)
 			(equal in (first queue))
-			(not (memberp (loc (<- procs in)) 
+			(not (memberp (loc (<- procs in))
 				      (locs-for-not-queue))))
 		   (and (memberp in queue)
 			(not (equal in (first queue)))
@@ -747,9 +747,9 @@ fair selection. The theorems we prove are
            :in-theory (disable rank-procs-decreases-if-in-not-first-queue)
            :use ((:instance rank-procs-decreases-if-in-not-first-queue)))))
 )
-	
-(local			      
-(in-theory (disable rank-procs))		
+
+(local
+(in-theory (disable rank-procs))
 )
 
 (local

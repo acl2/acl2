@@ -14,8 +14,8 @@
 (defthmd lior-land-1
   (equal (lior x (land y z n) n)
          (land (lior x y n) (lior x z n) n))
-  :hints (("Goal" :use ((:instance logior-logand 
-				   (x (bits x (1- n) 0)) 
+  :hints (("Goal" :use ((:instance logior-logand
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior land))))
@@ -23,8 +23,8 @@
 (defthmd lior-land-2
   (equal (lior (land y z n) x n)
          (land (lior x y n) (lior x z n) n))
-  :hints (("Goal" :use ((:instance logior-logand 
-				   (x (bits x (1- n) 0)) 
+  :hints (("Goal" :use ((:instance logior-logand
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior land))))
@@ -32,8 +32,8 @@
 (defthmd land-lior-1
   (equal (land x (lior y z n) n)
          (lior (land x y n) (land x z n) n))
-  :hints (("Goal" :use ((:instance logand-logior 
-				   (x (bits x (1- n) 0)) 
+  :hints (("Goal" :use ((:instance logand-logior
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior land))))
@@ -41,8 +41,8 @@
 (defthmd land-lior-2
   (equal (land (lior y z n) x n)
          (lior (land x y n) (land x z n) n))
-  :hints (("Goal" :use ((:instance logand-logior 
-				   (x (bits x (1- n) 0)) 
+  :hints (("Goal" :use ((:instance logand-logior
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior land))))
@@ -51,7 +51,7 @@
   (equal (lior (land x y n) (lior (land x z n) (land y z n) n) n)
          (lior (land x y n) (land (lxor x y n) z n) n))
   :hints (("Goal" :use ((:instance log3
-				   (x (bits x (1- n) 0)) 
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior land lxor))))
@@ -62,7 +62,7 @@
                (land y (lnot x n) n)
                n))
   :hints (("Goal" :use ((:instance logxor-rewrite-2
-				   (x (bits x (1- n) 0)) 
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))))
            :in-theory (enable lior land lxor))))
 
@@ -70,7 +70,7 @@
   (equal (lnot (lxor x y n) n)
          (lxor (lnot x n) y n))
   :hints (("Goal" :use ((:instance lnot-logxor
-				   (x (bits x (1- n) 0)) 
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))))
            :in-theory (enable lxor))))
 
@@ -198,4 +198,4 @@
   :hints (("Goal" :in-theory (disable LNOT-LAND-aux)
            :use (:instance lnot-land-aux (x (fl x)) (y (fl y)))))
   )
-                         
+

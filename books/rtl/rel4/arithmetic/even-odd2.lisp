@@ -48,7 +48,7 @@
   (implies (even x)
            (integerp x))
   :rule-classes (;:compound-recognizer
-                 :forward-chaining)) 
+                 :forward-chaining))
 
 ;not currently a rewrite rule
 (defthm odd-means-integerp
@@ -133,7 +133,7 @@ there are plenty more nice even-odd theorems
                       (and (odd x) (odd y)))))
   :hints (("Goal" :in-theory (enable odd))))
 
-plus rules to rewrite oddp and evenp   
+plus rules to rewrite oddp and evenp
 
 (defthm oddp-sum
   (implies (and (integerp x)
@@ -160,4 +160,3 @@ plus rules to rewrite oddp and evenp
                  (:instance even-reduce (n (+ -3 n)))))))
 |#
 
-   

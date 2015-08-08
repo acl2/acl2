@@ -3,9 +3,9 @@
 ;; 27th, March 2008
 ;; GeNoC-synchronisation.lisp
 ;; this file contains the generic representation of the local
-;; synchronisation policies 
+;; synchronisation policies
 ;; between the nodes, ex: 2 steps and 4 steps handshaking algorithm
-;;still a Draft 
+;;still a Draft
 (begin-book);$ACL2s-Preamble$|#
 
 (in-package "ACL2")
@@ -26,13 +26,13 @@
    ((chk_avail * * * *) => *)
    ;; the next function uses chk_avail to see if it's possible to do a
    ;; transmission it send back the st updated with the required
-   ;; action or leaves it as it is 
+   ;; action or leaves it as it is
    ;; the check to decide wether the transmission will be done or not
    ;; will be done in the scheduling function by looking at the state
    ;; after the action has been taken by the next function
    ;; the usage of the state only to make the decision is attractive
    ;; however it means we imply the presence of a certain entry to
-   ;; change, thus we prefer two values as the  result 
+   ;; change, thus we prefer two values as the  result
    ;; the result of the test + the updated state, in this case the
    ;; user can use the result of the test and not the state
    ((good_route? * * * * ) => (mv * *))
@@ -43,8 +43,8 @@
    ;;actual check to verify the condition for a communication
    ;;and it sends back a true or nil
    ((check_ack * * *) => *))
- 
-  
+
+
   (local
    (defun req_trans (st)
      ;;local witness
@@ -53,48 +53,48 @@
    ;;modify the name into ack_trans
    (defun process_req (st dest)
      (declare (ignore st dest))
-     t)) 
-  (local        
+     t))
+  (local
    (defun chk_avail (st org dest route)
        (declare (ignore st))
      ;; this local witness is complicated for the simple reason that,
-     ;; one of the proof obligations needed to 
+     ;; one of the proof obligations needed to
      ;;prove necessitate the definition of such witness
      ;; the function checks three major conditions needed to verify
-     ;; that the origin of a message is different 
+     ;; that the origin of a message is different
      ;;from its destination, last element of a route is equal to a route
      ;; finally if the message is not arrived to its destination(route
-     ;; length equal 2), the next hop is not equal to the destination 
+     ;; length equal 2), the next hop is not equal to the destination
      ;; in instants of this function the user should provide the
      ;; necessary extra conditions needed to schedule a travel
-     (and ;(if (equal (len route) 2)  
-          ;    t 
+     (and ;(if (equal (len route) 2)
+          ;    t
           ;  (not (equal (cadr route) (car (last route)))))
           (not (equal org (car (last (cdr route)))))
           (equal (car (last (cdr route))) dest)
           (no-hops-equal-to-dest route dest)
           (no-consecutive-equals route))))
-  
-  
-  (local                
+
+
+  (local
    (defun good_route? (st org dest routes)
      (if (endp routes)
          (mv st nil)
-       (let ((route (car routes))) 
+       (let ((route (car routes)))
          (if (chk_avail st org dest route)
              (mv st (car route))
            (good_route? st org dest (cdr routes)))))))
-  
-  (local 
+
+  (local
    (defun test_routes (st tr)
      (let* ((routes  (routesv tr))
             (dest (car (last (car routes))))
             (org (orgv tr)))
-       (mv-let (newst r?) 
-               (good_route? st org dest routes) 
-               (mv newst r?) )))) 
-  
-  (local 
+       (mv-let (newst r?)
+               (good_route? st org dest routes)
+               (mv newst r?) ))))
+
+  (local
    (defun check_ack (st cur dest)
      (declare (ignore st cur dest))
      t))
@@ -103,10 +103,10 @@
   (defthm state-req-trand
     (implies (validstate ntkstate)
              (validstate (req_trans ntkstate))))
-  ;; the definition of chk_avail must guarantee the next three conditions   
+  ;; the definition of chk_avail must guarantee the next three conditions
   (defthm chk_avail_obligation-for-scheduling
     (implies (chk_avail st org dest route)
-             (and ;(if (equal (len route) 2)  t 
+             (and ;(if (equal (len route) 2)  t
                   ;  (not (equal (cadr route) (car (last route)))))
                   ;(not (equal org (car (last (cdr route)))))
                   (equal (car (last (cdr route))) dest)

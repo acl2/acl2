@@ -72,9 +72,9 @@
 
 (defun pmult (x y n)
   "Psuedo-multiplication function"
-  (declare (xargs :guard (and (o-p x) 
-                              (o-p y) 
-                              (natp n) 
+  (declare (xargs :guard (and (o-p x)
+                              (o-p y)
+                              (natp n)
                               (<= n (count1 (o-first-expt x)
                                             (o-first-expt y))))))
   (let* ((fe-x (o-first-expt x))
@@ -87,7 +87,7 @@
           ((o-finp y)
            (make-ord fe-x (* fco-x fco-y) (o-rst x)))
           (t
-           (make-ord (padd fe-x fe-y m) 
+           (make-ord (padd fe-x fe-y m)
                      fco-y
                      (pmult x (o-rst y) m))))))
 
@@ -98,12 +98,12 @@
                     (fco-x (o-first-coeff x)) (fco-y (o-first-coeff y)))
                 (cond ((or (equal x 0) (equal y 0)) 0)
                       ((and (o-finp x) (o-finp y)) (* x y))
-                      ((o-finp y) 
-                       (make-ord fe-x 
-                                 (* fco-x fco-y) 
+                      ((o-finp y)
+                       (make-ord fe-x
+                                 (* fco-x fco-y)
                                  (o-rst x)))
                       (t (make-ord (o+ fe-x fe-y)
-                                   fco-y 
+                                   fco-y
                                    (ob* x (o-rst y))))))
        :exec (pmult x y 0)))
 
@@ -124,7 +124,7 @@
                               (not (equal x 1))
                               (o-p y))))
   (cond ((o-finp y) (expt x y))
-        ((equal (o-first-expt y) 1) 
+        ((equal (o-first-expt y) 1)
          (omega-term (o-first-coeff y)
                      (expt x (o-rst y))))
         (t
@@ -150,10 +150,10 @@
   (Declare (xargs :guard (and (o-p a)
                               (o-infp a)
                               (equal (natpart a) 0)
-                              (posp p) 
-                              (equal n (olen a)) 
+                              (posp p)
+                              (equal n (olen a))
                               (natp q))))
-  (if (zp q) 
+  (if (zp q)
       p
     (padd (o* (o^2 a q) p)
           (o^3h a p n (1- q))
@@ -161,22 +161,22 @@
 
 (defun o^3 (a q)
   "Raises an infinite ordinal to a finite power"
-  (declare (xargs :guard (and (o-infp a) 
+  (declare (xargs :guard (and (o-infp a)
                               (natp q)
                               (o-p a))))
   (cond ((= q 0) 1)
         ((= q 1) a)
         ((limitp a) (o^2 a q))
-        (t 
+        (t
          (let ((c (limitpart a))
                (n (olen a)))
            (padd (o^2 c q) (o^3h c (natpart a) n (1- q)) n)))))
 
 (defun o^4 (a b)
   "Raises an infinite ordinal to an infinite power"
-  (declare (xargs :guard (and (o-infp a) 
+  (declare (xargs :guard (and (o-infp a)
                               (o-infp b)
-                              (o-p a) 
+                              (o-p a)
                               (o-p b))))
   (o* (omega-term (o* (o-first-expt a)
                       (limitpart b))
@@ -186,11 +186,11 @@
 (defun ob^ (x y)
   "Efficient ordinal exponentiation"
   (declare (xargs :guard (and (o-p x) (o-p y))))
-  (mbe 
-   :logic (let ((fe-x (o-first-expt x)) 
+  (mbe
+   :logic (let ((fe-x (o-first-expt x))
                 (fe-y (o-first-expt y))
                 (fco-y (o-first-coeff y)))
-            (cond ((or (and (o-finp y) 
+            (cond ((or (and (o-finp y)
                             (not (posp y))) ;(zp y))
                        (equal x 1))
                    1)
@@ -202,11 +202,11 @@
                    (if (equal fe-y 1)
                        (o* (omega-term fco-y 1)
                            (ob^ x (o-rst y)))
-                     (o* (omega-term (omega-term (o- fe-y 1) 
+                     (o* (omega-term (omega-term (o- fe-y 1)
                                                  fco-y)
                                      1)
                          (ob^ x (o-rst y)))))
-                  (t 
+                  (t
                    (o* (omega-term (o* fe-x (first-term y))
                                    1)
                        (ob^ x (o-rst y))))))

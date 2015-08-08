@@ -57,7 +57,7 @@
 		  :use ((:instance away)
 			(:instance fl-cg (x (* (expt 2 (1- n)) (sig x))))
 			(:instance fp-rep)
-			(:instance near-1-2 
+			(:instance near-1-2
 				   (c (cg (* (expt 2 (1- n)) (sig x))))
 				   (f (fl (* (expt 2 (1- n)) (sig x))))
 				   (p (expt 2 (- (1+ (expo x)) n))))))))
@@ -108,8 +108,8 @@
   :hints (("Goal" :in-theory (disable expo sig trunc-pos-rewrite away-pos-rewrite)
 		  :use ((:instance near-1-1)
 			(:instance near-1-3)
-			(:instance near-1-6 
-				   (p (expt 2 (- (1+ (expo x)) n))) 
+			(:instance near-1-6
+				   (p (expt 2 (- (1+ (expo x)) n)))
 				   (f (re (* (expt 2 (1- n)) (sig x)))))
 			(:instance near)))))
 
@@ -133,8 +133,8 @@
   :hints (("Goal" :in-theory (disable expo sig trunc-pos-rewrite away-pos-rewrite)
 		  :use ((:instance near-1-1)
 			(:instance near-1-3)
-			(:instance near-1-8 
-				   (p (expt 2 (- (1+ (expo x)) n))) 
+			(:instance near-1-8
+				   (p (expt 2 (- (1+ (expo x)) n)))
 				   (f (re (* (expt 2 (1- n)) (sig x)))))
 			(:instance near)))))
 
@@ -175,7 +175,7 @@
 		  (= (near x n) (trunc x n)))
 	     (>= (abs (- x y)) (- x (trunc x n))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable expo sig exactp2 trunc-pos-rewrite away-exactp-c 
+  :hints (("Goal" :in-theory (disable expo sig exactp2 trunc-pos-rewrite away-exactp-c
 				      near trunc-exactp-c away-pos-rewrite)
 		  :use ((:instance near1-b)
 			(:instance away-lower-pos)
@@ -194,7 +194,7 @@
 		  (= (near x n) (away x n)))
 	     (>= (abs (- x y)) (- (away x n) x)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable expo sig exactp2 trunc-pos-rewrite away-exactp-c 
+  :hints (("Goal" :in-theory (disable expo sig exactp2 trunc-pos-rewrite away-exactp-c
 				      near trunc-exactp-c away-pos-rewrite)
 		  :use ((:instance near1-a)
 			(:instance away-lower-pos)
@@ -202,7 +202,7 @@
 			(:instance trunc-exactp-c (a y))
 			(:instance away-exactp-c (a y))))))
 
-(in-theory (disable expo sig exactp2 trunc-pos-rewrite away-exactp-c 
+(in-theory (disable expo sig exactp2 trunc-pos-rewrite away-exactp-c
 		    trunc-exactp-c away-pos-rewrite exactp2-lemma))
 
 (defthm near-choice
@@ -495,7 +495,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -516,7 +516,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)

@@ -176,7 +176,7 @@
 
     `(encapsulate
       ((,defpun-f (x) t))
-    
+
       (local (in-theory (disable ,defpun-test ,defpun-base ,defpun-st)))
 
       (local (defun-nonexec ,defpun-stn (x n)
@@ -191,7 +191,7 @@
                (declare (xargs :measure (nfix n)))
                (if (or (zp n)
                        (,defpun-test x))
-                   (,defpun-base x) 
+                   (,defpun-base x)
                  (,defpun-fn (,defpun-st x) (1- n)))))
 
       (local (defun-nonexec ,defpun-f (x)
@@ -207,8 +207,8 @@
                              (:type-prescription ,defpun-fn))))
       (defthm ,(packn-pos (list defpun-f "-DEF") defpun-f)
         (equal (,defpun-f x)
-               (if (,defpun-test x) 
-                   (,defpun-base x) 
+               (if (,defpun-test x)
+                   (,defpun-base x)
                  (,defpun-f (,defpun-st x))))
         :hints (("Goal"
                  :use
@@ -222,7 +222,7 @@
                                        (defpun-fn ,defpun-fn)
                                        ))
                 ("Subgoal 2" :use ,fch))
-                                 
+
         :rule-classes nil)
       )
     ))
@@ -321,7 +321,7 @@
                new-defpun-fn
              (car pterm))
            (subst-defpun-fn-into-pseudo-term-list new-defpun-fn old-defpun-fn (cdr pterm))))))
- 
+
  (defun subst-defpun-fn-into-pseudo-bindings (new-defpun-fn old-defpun-fn pbindings)
    (declare (xargs :mode :program))
    (cond

@@ -69,7 +69,7 @@ To certify this book, first, create a world with the following package:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -82,16 +82,16 @@ To certify this book, first, create a world with the following package:
 |#
 (in-package "FLD")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; A Field is a nonempty set with two binary operations, addition and 
-;; multiplication, two unary operations, minus and inverse, and two field 
-;; elements, zero and one, such that 
+;; A Field is a nonempty set with two binary operations, addition and
+;; multiplication, two unary operations, minus and inverse, and two field
+;; elements, zero and one, such that
 
 ;; (1) the binary operations are commutative and associative,
 ;; (2) multiplication distributes over addition,
 ;; (3) zero is an identity for addition,
 ;; (4) minus produces an additive inverse,
 ;; (5) one is an identity for addition, and
-;; (6) inverse produces a multiplicative inverse 
+;; (6) inverse produces a multiplicative inverse
 ;;             for non-zero field elements.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Equality between ring elements is replaced with an equivalence relation
@@ -99,9 +99,9 @@ To certify this book, first, create a world with the following package:
 
 ;; There is also a ``choice'' function on the equivalence classes that
 ;; chooses an element from each equivalence class. In case new operations
-;; on the field are defined by future users of this book, this choice 
+;; on the field are defined by future users of this book, this choice
 ;; function may aid in defining these new operations, so as to ensure that
-;; the congruence theorems for the new operations hold.  
+;; the congruence theorems for the new operations hold.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (encapsulate
 
@@ -118,14 +118,14 @@ To certify this book, first, create a world with the following package:
 
  ((fdp (x) x)        ; x is in the field iff (fdg x).
   (+ (a b) f)        ; Addition in Field.
-  (* (a b) f)        ; Multiplication in Field. 
+  (* (a b) f)        ; Multiplication in Field.
   (- (f) f)          ; Unary minus in Field.
   (/ (f) f)          ; Unary recipical in Field
   (0_f () f)         ; 0 element in Field.
   (1_f () f)         ; 1 element in Field.
   (= (a b) Boolean)  ; Equality predicate for Field elements.
   (C_= (f) f))       ; Choose unique equivalence class representative for =.
- 
+
   ;;; ----------------
   ;;; Testigos locales
   ;;; ----------------
@@ -136,7 +136,7 @@ To certify this book, first, create a world with the following package:
 ;;     (defun coeficientep (a)
 ;;       (acl2-numberp a)))
 
- (local (defun 
+ (local (defun
 	  fdp (a)
 	  (acl2-numberp a)))
 
@@ -174,7 +174,7 @@ To certify this book, first, create a world with the following package:
 
  (local (defun 0_f ()
 	  0))
- 
+
   ;;; Neutro de la segunda operación
 
 ;;   (local
@@ -199,7 +199,7 @@ To certify this book, first, create a world with the following package:
   ;;; Axiomas
   ;;; -------
   ;;; Field Axioms:
- 
+
  ;;; El reconocedor es una función booleana
 
 ;;   (defthm booleanp-coeficientep
@@ -229,8 +229,8 @@ To certify this book, first, create a world with the following package:
  (defthm
     Equivalence-Law
     (and (booleanp (= x y))
-	 (= x x)  
-	 (implies (= x y) 
+	 (= x x)
+	 (implies (= x y)
 		  (= y x))
 	 (implies (and (= x y)
 		       (= y z))
@@ -349,7 +349,7 @@ To certify this book, first, create a world with the following package:
 	   :use Closure-Laws)))
 
 ;;   (defthm coeficientep--
-;;     (implies (coeficientep a) 
+;;     (implies (coeficientep a)
 ;; 	     (coeficientep (- a)))
 ;;     :rule-classes :type-prescription)
 
@@ -489,8 +489,8 @@ To certify this book, first, create a world with the following package:
 	   (= (+ (+ a b) c) (+ a (+ b c))))
   :hints (("Goal"
 	   :use Associativity-Laws)))
- 
-  ;;; Neutro de la primera operación 
+
+  ;;; Neutro de la primera operación
 
 ;;   (defthm |0 + a = a|
 ;;     (implies (coeficientep a)
@@ -575,14 +575,14 @@ To certify this book, first, create a world with the following package:
 	   :use Left-Distributivity-Law)))
 
 ;;; -----------------------------------------------------------------------
-;;; El inverso debe ser invisible para la primera operación y para sí mismo 
+;;; El inverso debe ser invisible para la primera operación y para sí mismo
 ;;; -----------------------------------------------------------------------
 
 ;; (ACL2::set-invisible-fns-table ((+ -) (- -)))
 (set-invisible-fns-table ((+ -) (- -) (* /) (/ /)))
 
 ;;; --------
-;;; Teoremas 
+;;; Teoremas
 ;;; --------
 
 (defthm
@@ -637,7 +637,7 @@ To certify this book, first, create a world with the following package:
 ;; 	   (= (* (+ a b) c) (+ (* a c) (* b c)))))
 
 (defthm |(a + b) * c = (a * c) + (b * c)|
-  (implies (and (fdp (double-rewrite a)) 
+  (implies (and (fdp (double-rewrite a))
 		(fdp (double-rewrite b))
 		(fdp (double-rewrite c)))
 	   (= (* (+ a b) c) (+ (* a c) (* b c)))))
@@ -667,7 +667,7 @@ To certify this book, first, create a world with the following package:
 ;;; NOTA:
 ;;;
 ;;; Estos teoremas son innecesarios desde un punto de vista lógico
-;;; pero son útiles en las subsecuentes demostraciones. 
+;;; pero son útiles en las subsecuentes demostraciones.
 
 ;; (local
 ;;   (defthm |a + b = b <=> a = 0|
@@ -729,7 +729,7 @@ To certify this book, first, create a world with the following package:
 	   :in-theory (disable |(a + b) + c = a + (b + c)|)
 	   :use (|(a + b) + c = a + (b + c)|
 		 (:instance |(a + b) + c = a + (b + c)| (a b) (b a))))))
-  
+
 ;;; Complemento a la conmutatividad y la asociatividad de la segunda operación
 
 ;;; NOTA:
@@ -741,17 +741,17 @@ To certify this book, first, create a world with the following package:
 ;; 	   (= (* a (* b c)) (* b (* a c))))
 ;;   :hints (("Goal"
 ;; 	   :in-theory (disable |(a * b) * c = a * (b * c)|)
-;; 	   :use (|(a * b) * c = a * (b * c)| 
+;; 	   :use (|(a * b) * c = a * (b * c)|
 ;; 		 (:instance |(a * b) * c = a * (b * c)| (a b) (b a))))))
 
 (defthm |a * (b * c) = b * (a * c)|
-  (implies (and (fdp (double-rewrite a)) 
+  (implies (and (fdp (double-rewrite a))
 		(fdp (double-rewrite b))
 		(fdp (double-rewrite c)))
 	   (= (* a (* b c)) (* b (* a c))))
   :hints (("Goal"
 	   :in-theory (disable |(a * b) * c = a * (b * c)|)
-	   :use (|(a * b) * c = a * (b * c)| 
+	   :use (|(a * b) * c = a * (b * c)|
 		 (:instance |(a * b) * c = a * (b * c)| (a b) (b a))))))
 
 ;;; Idempotencia del inverso
@@ -771,19 +771,19 @@ To certify this book, first, create a world with the following package:
 	   :use (:instance |a + b = 0 <=> b = - a| (a (- a)) (b a)))))
 
 ;;; Distributividad de la inversa sobre la primera operación
- 
+
 ;; (defthm |- (a + b) = (- a) + (- b)|
-;;   (implies (and (coeficientep a) (coeficientep b)) 
+;;   (implies (and (coeficientep a) (coeficientep b))
 ;; 	   (= (- (+ a b)) (+ (- a) (- b))))
-;;   :hints (("Goal" 
+;;   :hints (("Goal"
 ;; 	   :in-theory (disable |a + b = 0 <=> b = - a|)
 ;; 	   :use (:instance |a + b = 0 <=> b = - a| (a (+ a b)) (b (+ (- a) (- b)))))))
 
 (defthm |- (a + b) = (- a) + (- b)|
   (implies (and (fdp (double-rewrite a))
-		(fdp (double-rewrite b))) 
+		(fdp (double-rewrite b)))
 	   (= (- (+ a b)) (+ (- a) (- b))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable |a + b = 0 <=> b = - a|)
 	   :use (:instance |a + b = 0 <=> b = - a|
 			   (a (+ a b)) (b (+ (- a) (- b)))))))
@@ -792,13 +792,13 @@ To certify this book, first, create a world with the following package:
 
 ;; (defthm |- 0 = 0|
 ;;   (= (- (nulo)) (nulo))
-;;   :hints (("Goal" 
+;;   :hints (("Goal"
 ;; 	   :in-theory (disable |a + b = 0 <=> b = - a|)
 ;; 	   :use (:instance |a + b = 0 <=> b = - a| (a (nulo)) (b (nulo))))))
 
 (defthm |- 0 = 0|
   (= (- (0_f)) (0_f))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable |a + b = 0 <=> b = - a|)
 	   :use (:instance |a + b = 0 <=> b = - a| (a (0_f)) (b (0_f))))))
 
@@ -835,7 +835,7 @@ To certify this book, first, create a world with the following package:
 ;; 	   (= (* (nulo) a) (nulo)))
 ;;   :hints (("Goal"
 ;; 	   :in-theory (disable |a * (b + c) = (a * b) + (a * c)|)
-;; 	   :use (:instance |a * (b + c) = (a * b) + (a * c)| 
+;; 	   :use (:instance |a * (b + c) = (a * b) + (a * c)|
 ;;               (b (nulo)) (c (nulo))))))
 
 (defthm |0 * a = 0|
@@ -890,22 +890,22 @@ To certify this book, first, create a world with the following package:
 ;; (defthm |- a = 0 <=> a = 0|
 ;;   (implies (coeficientep a)
 ;; 	   (iff (= (- a) (nulo)) (= a (nulo))))
-;;   :hints (("Goal" 
+;;   :hints (("Goal"
 ;; 	   :in-theory (disable |a + b = 0 <=> b = - a|)
 ;; 	   :use (:instance |a + b = 0 <=> b = - a| (b (nulo))))))
 
 (defthm |- a = 0 <=> a = 0|
   (implies (fdp a)
 	   (iff (= (- a) (0_f)) (= a (0_f))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable |a + b = 0 <=> b = - a|)
 	   :use (:instance |a + b = 0 <=> b = - a| (b (0_f))))))
 
 (defthm |a * c = b * c <=> a = b or c = 0|
-  (implies (and (fdp a) 
-		(fdp b) 
+  (implies (and (fdp a)
+		(fdp b)
 		(fdp c))
-	   (iff (= (* a c) (* b c)) 
+	   (iff (= (* a c) (* b c))
 		(or (= a b)
 		    (= c (0_f)))))
   :hints (("Subgoal 3"
@@ -918,19 +918,19 @@ To certify this book, first, create a world with the following package:
 
 (local
   (defthm |a * b = b <=> a = 1|
-    (implies (and (fdp a) 
+    (implies (and (fdp a)
 		  (fdp b)
 		  (not (= b (0_f))))
-	     (iff (= (* a b) b) 
+	     (iff (= (* a b) b)
 		  (= a (1_f))))
     :hints (("Goal"
 	     :in-theory (disable |a * c = b * c <=> a = b or c = 0|)
-	     :use (:instance |a * c = b * c <=> a = b or c = 0| 
+	     :use (:instance |a * c = b * c <=> a = b or c = 0|
 			     (b (1_f)) (c b))))))
 
 (local
   (defthm |a != 0 implies a * b = 1 <=> b = (/ a)|
-    (implies (and (fdp a) 
+    (implies (and (fdp a)
 		  (fdp b)
 		  (not (= a (0_f))))
 	     (iff (= (* a b) (1_f)) (= b (/ a))))
@@ -978,7 +978,7 @@ To certify this book, first, create a world with the following package:
 		(not (= (double-rewrite a)(0_f)))
 		(not (= (double-rewrite b)(0_f))))
 	   (= (/ (* a b)) (* (/ a) (/ b))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable |a != 0 implies a * b = 1 <=> b = (/ a)|)
 	   :use (:instance |a != 0 implies a * b = 1 <=> b = (/ a)|
 			   (a (* a b)) (b (* (/ a) (/ b)))))))
@@ -986,12 +986,12 @@ To certify this book, first, create a world with the following package:
 (defthm
   |1 != 0|
   (not (= (1_f)(0_f)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use |0 != 1|)))
 
 (defthm |/ 1 = 1|
   (= (/ (1_f))(1_f))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable |a != 0 implies a * b = 1 <=> b = (/ a)|)
 	   :use (:instance |a != 0 implies a * b = 1 <=> b = (/ a)|
 			   (a (1_f)) (b (1_f))))))
@@ -1015,7 +1015,7 @@ To certify this book, first, create a world with the following package:
   (implies (and (fdp a)
 		(not (= a (0_f))))
 	   (iff (= (/ a)(1_f))(= a (1_f))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable |a != 0 implies a * b = 1 <=> b = (/ a)|)
 	   :use (:instance |a != 0 implies a * b = 1 <=> b = (/ a)|
 			   (b (1_f))))))
@@ -1057,7 +1057,7 @@ To certify this book, first, create a world with the following package:
 ;; 	   (= (+ (* a b) (* a c)) (nulo))))
 
 (defthm |b + c = 0 => (a * b) + (a * c) = 0|
-  (implies (and (fdp (double-rewrite a)) 
+  (implies (and (fdp (double-rewrite a))
 		(fdp (double-rewrite b))
 		(fdp (double-rewrite c))
 		(= (+ (double-rewrite b)

@@ -39,7 +39,7 @@
 
   (let ((np (active-pstates (pstates ms) (cstates ms) (lstates ms)))
 	(nc (active-cstates (cstates ms))))
-    
+
     (cond ((atom oracle) (list 'timeout count trace ms))
 	  ((and (equal np 0)
 		(equal nc 0)) (list (if (> (waiting-pstates (pstates ms)
@@ -73,7 +73,7 @@
 					   trace
 					   (list (list 'deliver (car cs))))
 		  (deliver-message ms cs ))))
-	  
+
 	  ;; If there is no operation of the given type to perform,
 	  ;; just go to the next member of the oracle.
 
@@ -91,7 +91,7 @@
   (implies (and (cstate-listp css)
 		(ith-active-cstate n css))
 	   (consp (ith-active-cstate n css))))
-   
+
 (defthm sim-guard-helper-2
   (implies (and (pstate-listp pss)
 		(cstate-listp css)
@@ -105,14 +105,14 @@
 		(lstate-listp lss)
 		(not (consp (cddr (ith-active-pstate n pss css lss)))))
 	   (not (cddr (ith-active-pstate n pss css lss)))))
-	   	
+
 (defthm sim-guard-helper-4
   (implies (and (pstate-listp pss)
 		(cstate-listp css)
 		(lstate-listp lss)
 		(not (consp (cdr (ith-active-pstate n pss css lss)))))
 	   (not (cdr (ith-active-pstate n pss css lss)))))
-	   	
+
 (verify-guards sim
   :hints (("Goal"
 	   :in-theory (disable deliver-message

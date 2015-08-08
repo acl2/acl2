@@ -78,7 +78,7 @@
 		    (floor x y))
 		 (<= (floor x y)
 		     (/ x y))))
-   :rule-classes ((:generalize) 
+   :rule-classes ((:generalize)
 		  (:linear :trigger-terms ((floor x y))))))
 
 (local
@@ -87,7 +87,7 @@
 		 (integerp (/ x y)))
 	    (equal (floor x y)
 		   (/ x y)))
-   :rule-classes ((:generalize) 
+   :rule-classes ((:generalize)
 		  (:linear :trigger-terms ((floor x y))))))
 
 (local
@@ -96,7 +96,7 @@
 		 (not (integerp (/ x y))))
 	    (< (floor x y)
 	       (/ x y)))
-   :rule-classes ((:generalize) 
+   :rule-classes ((:generalize)
 		  (:linear :trigger-terms ((floor x y))))))
 
 (local
@@ -137,7 +137,7 @@
   (declare (xargs :guard t
                   :measure (power-of-2-measure x)
 		  :hints (("Subgoal 2.2'" :use (:instance
-						(:theorem 
+						(:theorem
 						 (IMPLIES (AND (REAL/RATIONALP X)
 							       (< 2 X))
 							  (< (FLOOR X 2) (FLOOR X 1))))

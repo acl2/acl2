@@ -251,7 +251,7 @@
                (not (integerp end))
                (< (+ end (- start)) 0))
            '())
-          (t 
+          (t
            (cons start (range-1-v2 (+ 1 start) end))))))
 
  (local
@@ -372,7 +372,7 @@
 ;;; The problem stem from ancestors-check.  To see what is going on,
 ;;; consider how we could get here.  In memory-low, we are using
 ;;; disjointp hypotheses to prove that addr1 is not equal to addr2 ---
-;;; that is we have to relieve the hypothesis 
+;;; that is we have to relieve the hypothesis
 ;;; (not (equal addr1 addr2)).  So, (equal addr1 addr2) is pushed on
 ;;; to the ancestors stack.  Now, if in disjoint-thms-bind-free-fn-4
 ;;; we ask (subrangep (list addr1) (list addr2)), this will rewrite to
@@ -475,7 +475,7 @@
                ;; success
                ans
              ;; try again
-             (disjoint-thms-bind-free-fn-1 range1 range2 
+             (disjoint-thms-bind-free-fn-1 range1 range2
                                            (cdr clause)
                                            mfc state))))
         (t
@@ -494,7 +494,7 @@
 ;;; of equality.
 (defthm |(not (equal x y)) --- disjointp|
   (implies (and (syntaxp (not (rewriting-goal-literal x mfc state)))
-                (bind-free (disjoint-thms-bind-free-fn `(CONS ,x 'NIL) 
+                (bind-free (disjoint-thms-bind-free-fn `(CONS ,x 'NIL)
                                                        `(CONS ,y 'NIL)
                                                        mfc state)
                            (list r1 r2 i j))
@@ -543,7 +543,7 @@
                                       disjointp-1
                                       disjoint-bags-p
                                       memberp)))))
-   
+
 
 (local
  (defthm crock-1
@@ -559,7 +559,7 @@
                                       memberp)))))
 
 ;;; Are we either backchaining, or rewriting a (not (disjointp ...))
-;;; hypothesis.  
+;;; hypothesis.
 ;;; We need this as a separate function, because if mfc is used, it
 ;;; and state must be the last two args of the syntaxp, and they must
 ;;; appear in that order.
@@ -828,7 +828,7 @@
                 (disjoint-bags-p y z)))
     :hints (("Goal" :in-theory (enable disjoint-bags-p
                                        memberp)))))
-            
+
 
  (local
   (defthm crock-1-3
@@ -876,7 +876,7 @@
    (implies (and (syntaxp (not (rewriting-goal-literal base1 mfc state)))
                  ;; because of the intersectp-equal, we may not be able
                  ;; to find disjoint ranges, of which these are
-                 ;; subranges, as required for 
+                 ;; subranges, as required for
                  ;; |(disjointp (list x y)) --- disjoint super-ranges|
                  ;; |to work.
                  (syntaxp (intersectp-equal (non-quotep-addends base1)
@@ -893,7 +893,7 @@
    (implies (and (syntaxp (not (rewriting-goal-literal base1 mfc state)))
                  ;; because of the intersectp-equal, we may not be able
                  ;; to find disjoint ranges, of which these are
-                 ;; subranges, as required for 
+                 ;; subranges, as required for
                  ;; |(disjointp (list x y)) --- disjoint super-ranges|
                  ;; |to work.
                  (syntaxp (intersectp-equal (non-quotep-addends base1)

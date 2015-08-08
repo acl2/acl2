@@ -4,7 +4,7 @@
   (<= (len (nthcdr x lst)) (len lst)))
 
 (defthm nthcdr-of-len-lst--thm
-  (implies (and (true-listp lst) (natp xx) (>= xx (len lst))) 
+  (implies (and (true-listp lst) (natp xx) (>= xx (len lst)))
            (= (nthcdr xx lst) nil)))
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -46,23 +46,23 @@
            (true-listp (nthcdr x lst))))
 
 (defthm nthcdr-ge-len-nil--thm
-  (implies (and (true-listp x) (natp q) (>= q (len x))) 
+  (implies (and (true-listp x) (natp q) (>= q (len x)))
            (= (nthcdr q x) nil)))
 
 (defthm nthcdr-lt-len-not-nil--thm
-  (implies (and (true-listp x) (not (endp x)) (natp q) (< q (len x))) 
+  (implies (and (true-listp x) (not (endp x)) (natp q) (< q (len x)))
            (not (= (nthcdr q x) nil))))
 
 (defthm len-nthcdr-minus-1-gt-len-nthcdr--thm
-  (implies (and (true-listp x) (not (endp x)) (natp q) (> q 0) (< q (len x))) 
+  (implies (and (true-listp x) (not (endp x)) (natp q) (> q 0) (< q (len x)))
            (> (len (nthcdr (1- q) x)) (len (nthcdr q x)))))
 
 (defthm nth-ge-len-nil--thm
-  (implies (and (true-listp x) (natp q) (>= q (len x))) 
+  (implies (and (true-listp x) (natp q) (>= q (len x)))
            (= (nth q x) nil)))
 
 (defthm nthcdr-update-nth--thm
-  (implies (and (true-listp lst) (natp ix) (< ix (len lst))  
+  (implies (and (true-listp lst) (natp ix) (< ix (len lst))
                 (natp iy) (< ix iy))
            (= (nthcdr iy (update-nth ix z lst))
               (nthcdr iy lst))))

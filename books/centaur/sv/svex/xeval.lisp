@@ -179,7 +179,7 @@ and we get, for instance:</p>
                      ((when (eql test -1)) -1))
                   (4vec-bitor test
                               (svex-xeval (second expr.args)))))
-               (otherwise 
+               (otherwise
                 (svex-apply expr.fn (svexlist-xeval expr.args))))))))
 
   (define svexlist-xeval ((x svexlist-p))
@@ -192,7 +192,7 @@ and we get, for instance:</p>
             (svexlist-xeval (cdr x)))))
   ///
 
-  
+
   (local (defthm consp-of-svexlist-xeval
            (equal (consp (svexlist-xeval x))
                   (consp x))

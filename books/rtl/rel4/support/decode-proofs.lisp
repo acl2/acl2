@@ -25,8 +25,8 @@
 
 (defund decode (x n)
   (declare (xargs :guard (rationalp n)))
-  (if (and (natp x) (< x n)) 
-      (ash 1 x) 
+  (if (and (natp x) (< x n))
+      (ash 1 x)
     0))
 
 (defthm decode-nonnegative-integer-type

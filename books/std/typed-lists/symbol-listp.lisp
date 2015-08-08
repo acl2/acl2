@@ -68,6 +68,6 @@ std::deflist).</p>"
                     (zp n)))))
 
   (defthm eqlable-listp-when-symbol-listp
-    ;; Useful for, e.g., MEMBER-EQ guards 
+    ;; Useful for, e.g., MEMBER-EQ guards
     (implies (symbol-listp x)
              (eqlable-listp x))))

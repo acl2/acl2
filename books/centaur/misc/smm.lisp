@@ -25,7 +25,7 @@
 ;; (smml-addblock size smm)
 ;;      = (append smm (list (make-list size :initial-element 0)))
 
-;; We want these functions to have certain guards because of the way 
+;; We want these functions to have certain guards because of the way
 ;; defabsstobj uses the guards of the logic functions, but we don't want to
 ;; actually verify them because typically they're not actually sufficient.  But
 ;; these functions won't really be executed anyway so we'll just use EC-CALL to

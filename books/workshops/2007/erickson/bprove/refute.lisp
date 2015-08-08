@@ -164,10 +164,10 @@ PATH=/projects/hvg/SULFA/linux-bin:$PATH
       nil
     (or (contains-call rl (car x))
 	(contains-call-l rl (cdr x))))))
-   
-; we assume x is the body of a recursive function which  
+
+; we assume x is the body of a recursive function which
 ; is composed of an if tree with terms at the leaves
-; rl is the list of recursive functions for this 
+; rl is the list of recursive functions for this
 ; body
 (defun get-cases1 (x rl)
   (if (atom x)
@@ -187,7 +187,7 @@ PATH=/projects/hvg/SULFA/linux-bin:$PATH
 (defun get-cases (x rl)
   (mv-let (c b) (get-cases1 x rl) (declare (ignore b))
 	  c))
-    
+
 (mutual-recursion
  (defun decidable (x state)
   (if (atom x)
@@ -220,7 +220,7 @@ PATH=/projects/hvg/SULFA/linux-bin:$PATH
     (cons
      (append (caar l) (replace-at p (cadar l) x))
      (new-clauses p (cdr l) x))))
-  
+
 
 #|
 (mutual-recursion
@@ -229,7 +229,7 @@ PATH=/projects/hvg/SULFA/linux-bin:$PATH
   (if (decidable-l x state)
       (acl2::sat x nil sat::$sat state)
     (if (zp depth)
-	(mv nil nil sat::$sat state) 
+	(mv nil nil sat::$sat state)
       (mv-let (p err state) (find-rec-l x 0 state) (declare (ignore err))
 	      (mv-let (def state) (getdef (usepath p x) state)
 		      (mv-let (x2 err) (rwrite (usepath p x) def) (declare (ignore err))
@@ -240,7 +240,7 @@ PATH=/projects/hvg/SULFA/linux-bin:$PATH
      (declare (xargs :stobjs sat::$sat :mode :program))
    (if (endp x)
        (mv nil nil sat::$sat state)
-     (mv-let (r nop sat::$sat state) 
+     (mv-let (r nop sat::$sat state)
 	     (refute (car x) depth sat::$sat state)  (declare (ignore nop))
 	     (if r
 		 (mv r nil sat::$sat state)
@@ -264,7 +264,7 @@ PATH=/projects/hvg/SULFA/linux-bin:$PATH
       (mv-let (err r state) (bash-term-to-dnf2 `(or ,@x) nil nil state) (declare (ignore err))
 	      (mv r nil  state))
     (if (zp depth)
-	(mv nil nil  state) 
+	(mv nil nil  state)
       (mv-let (p err state) (find-rec-l x 0 state) (declare (ignore err))
 	      (mv-let (def state) (getdef (usepath p x) state)
 		      (mv-let (x2 err) (rwrite (usepath p x) def) (declare (ignore err))
@@ -275,7 +275,7 @@ PATH=/projects/hvg/SULFA/linux-bin:$PATH
      (declare (xargs  :mode :program))
    (if (endp x)
        (mv nil nil  state)
-     (mv-let (r nop  state) 
+     (mv-let (r nop  state)
 	     (refute5 (car x) depth  state)  (declare (ignore nop))
 	     (if r
 		 (mv r nil  state)
@@ -288,7 +288,7 @@ PATH=/projects/hvg/SULFA/linux-bin:$PATH
 
 (defmacro refute (x)
  `(let ((nop (cw "~%ATTEMPTING TO REFUTE~%~%~x0~%~%" ',x))) (declare (ignore nop))
-  (mv-let (err r state) 
+  (mv-let (err r state)
 	   (refute5 (list ',x) 6 state)
 	   (declare (ignore r))
 	   (if err

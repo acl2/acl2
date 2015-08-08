@@ -94,7 +94,7 @@
   (declare (xargs :guard (and (good-tree tree)
                               (good-taxa-list tl))))
   (and (perm (mytips tree) tl)
-       (orderedp t tree 
+       (orderedp t tree
                  (taxa-list-to-taxon-index tl))))
 
 (defthm good-tree-ordered-get-tree
@@ -131,7 +131,7 @@
   (declare (xargs :guard t))
   (or (integerp x)
       (equal x nil)))
-  
+
 (defthm integerp-or-nil-not-nil-gives-integerp-type
   (implies (and (integerp-or-nil x)
                 x)
@@ -146,7 +146,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed flag indicating rootedness.~/
-;  ~/ 
+;  ~/
 ;  "
   `(booleanp ,flg))
 
@@ -157,7 +157,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed flag indicating branch length presence.~/
-;  ~/ 
+;  ~/
 ;  "
   `(booleanp ,flg))
 
@@ -168,7 +168,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed id.~/
-;  ~/ 
+;  ~/
 ;  "
    `(integerp-or-nil ,id))
 
@@ -179,7 +179,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed name specfication.~/
-;  ~/ 
+;  ~/
 ;  "
    `(integerp-or-nil ,name))
 
@@ -190,7 +190,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed date specification.~/
-;  ~/ 
+;  ~/
 ;  "
    `(stringp-or-nil ,date))
 
@@ -201,7 +201,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed author specification.~/
-;  ~/ 
+;  ~/
 ;  "
    `(stringp-or-nil ,author))
 
@@ -212,7 +212,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed tool specification.~/
-;  ~/ 
+;  ~/
 ;  "
    `(stringp-or-nil ,tool))
 
@@ -223,7 +223,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed method specification.~/
-;  ~/ 
+;  ~/
 ;  "
    `(stringp-or-nil ,method))
 
@@ -234,7 +234,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed data type specification.~/
-;  ~/ 
+;  ~/
 ;  "
    `(stringp-or-nil ,data-type))
 
@@ -245,7 +245,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed model specification.~/
-;  ~/ 
+;  ~/
 ;  "
    `(stringp-or-nil ,model))
 
@@ -256,7 +256,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed maximum parsimony score.~/
-;  ~/ 
+;  ~/
 ;  "
   (declare (xargs :guard t))
   (or (rationalp mp)
@@ -269,7 +269,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed ingroup.~/
-;  ~/ 
+;  ~/
 ;  Arguments:
 ;     (1) group - potential ingroup
 ;     (2) tl - a list of taxa
@@ -284,7 +284,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed outgroup.~/
-;  ~/ 
+;  ~/
 ;  Arguments:
 ;     (1) group - potential outgroup
 ;     (2) tl - a list of taxa
@@ -299,7 +299,7 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed maximum likelihood score.~/
-;  ~/ 
+;  ~/
 ;  "
   (declare (xargs :guard t))
   (or (rationalp ml)
@@ -312,6 +312,6 @@
 
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed tree type specification.~/
-;  ~/ 
+;  ~/
 ;  "
    `(stringp-or-nil ,type))

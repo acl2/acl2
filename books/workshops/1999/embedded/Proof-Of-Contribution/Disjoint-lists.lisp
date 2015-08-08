@@ -18,7 +18,7 @@
 ;; The call (member-equal el l) returns the tail of the list
 ;; l, starting from the el element (if any). Thus, one cannot compare
 ;; member-equalities upon different lists. E.g.,
-;; (equal (member-equal el l) (member-equal el (append l l2))) 
+;; (equal (member-equal el l) (member-equal el (append l l2)))
 ;; does not hold - also when el belongs to l.
 ;; This justified our redesign of the member-equal function.
 ;;
@@ -78,12 +78,12 @@
 
 ;;
 ;; Name      : no-duplicates-in-append-imply-different-elements-in-components
-;; Statement : (no-duplicates (l1 * l2)) ^ (el1 in l1) ^ (el2 in l2) ---> el1 <> el2 
+;; Statement : (no-duplicates (l1 * l2)) ^ (el1 in l1) ^ (el2 in l2) ---> el1 <> el2
 ;;
 
 ;;
 ;; Name      : no-duplicates-in-append-imply-different-elements-in-components-2
-;; Statement : (no-duplicates (l1 * l2)) ^ (el in l1)  ---> (el not-in l2) 
+;; Statement : (no-duplicates (l1 * l2)) ^ (el in l1)  ---> (el not-in l2)
 ;;
 
 
@@ -111,7 +111,7 @@
 
 
 ;;
-;; Disjunction property between lists. 
+;; Disjunction property between lists.
 ;; Two list are defined disjunct if their append contains no duplicates.
 ;;
 
@@ -133,7 +133,7 @@
 
 
 (defthm disjoint-sets-have-no-common-els-2
- (implies 
+ (implies
   (and
    (no-intersection-p l1 l2)
    (member-equal-bool el l2))
@@ -145,22 +145,22 @@
 
 
 ;;
-;; Generalized append function. 
+;; Generalized append function.
 ;; It receives a list of lists, and return the append of the lists it contains.
 ;;
-;; The main theorem we intend to prove is that, whenever a generalized append of lists 
+;; The main theorem we intend to prove is that, whenever a generalized append of lists
 ;; contains no duplicates, each pair of lists is disjunct.
 ;;
 ;; The idea of the theorem is the following.
 ;; Consider the i-th and j-th lists contained into the ll list of lists. We assume i < j.
-;; We first that the i-th list is contained within the generalized append of 
-;; the first i elements of ll, which we call append-first-i-of-ll. 
-;; But, since i < j, the i-th list is also contained within the generalized append of 
-;; the first j elements of ll, which we call append-first-j-of-ll. 
+;; We first that the i-th list is contained within the generalized append of
+;; the first i elements of ll, which we call append-first-i-of-ll.
+;; But, since i < j, the i-th list is also contained within the generalized append of
+;; the first j elements of ll, which we call append-first-j-of-ll.
 ;; We then prove that the j-th list is contained within the generalized append of
 ;; the last |ll|-j elements of ll, which we call append-last-ll-j-of-ll.
 ;; But the generalized append of ll, append-ll, results from appending append-first-j-of-ll and
-;; append-last-ll-j-of-ll; thus, since append-ll is free of duplicates, 
+;; append-last-ll-j-of-ll; thus, since append-ll is free of duplicates,
 ;; append-first-j-of-ll and append-last-ll-j-of-ll are disjoint - that is, they contain no common elements.
 ;; This implies that the i-th and j-th lists are disjoint as well.
 ;;
@@ -168,12 +168,12 @@
 ;;
 ;;        append-first-i-of-ll                      append-last-ll-j-of-ll
 ;;                 |                                           |
-;;                 |     append-first-j-of-ll                  V  
-;;            |----+-----------------------------------|----------------|            
-;;            |    |                                   |                |            
-;;            |    V                                   |                |            
+;;                 |     append-first-j-of-ll                  V
+;;            |----+-----------------------------------|----------------|
+;;            |    |                                   |                |
+;;            |    V                                   |                |
 ;;            |---------|                              |                |
-;;            |         |                              |                |            
+;;            |         |                              |                |
 ;;            |         |                              |                |
 ;;            /---------------------------------------------------------\
 ;;            |       | |                              | |              |
@@ -182,7 +182,7 @@
 ;;                     |                                |
 ;;                    i-th                             j-th
 ;;                    list                             list
-;;            
+;;
 
 (defun append-lists (list-of-lists)
  (if (endp list-of-lists)
@@ -218,13 +218,13 @@
 
 
 (defthm append-lists-firstn-nthcdr
- (implies 
+ (implies
   (true-listp l)
   (equal (append (append-lists (firstn n l)) (append-lists (nthcdr n l)))
          (append-lists l))))
 
 (defthm append-lists-firstn-nthcdr-2
- (implies 
+ (implies
   (true-listp l)
   (equal (append-lists l)
          (append (append-lists (firstn n l)) (append-lists (nthcdr n l))))))
@@ -243,7 +243,7 @@
 ;;
 
 ;;
-;; Name      : member-of-nth-entry-of-ll-is-member-of-append-of-nthcdr-n-entries 
+;; Name      : member-of-nth-entry-of-ll-is-member-of-append-of-nthcdr-n-entries
 ;; Statement : (0 <= idx1 < |l|) ^ (el1 in (nth idx1 ll)) ---> (el1 in (append-lists (nthcdr idx1 ll)))
 ;;
 
@@ -256,7 +256,7 @@
 
 
 (defthm member-of-nth-entry-of-ll-is-member-of-append-of-first-n-entries-in-excess
- (implies 
+ (implies
   (and
    (in-range idx1 ll)
    (in-range idx2 ll)
@@ -264,21 +264,21 @@
    (member-equal-bool el1 (nth idx1 ll)))
   (member-equal-bool el1 (append-lists (firstn idx2 ll)))))
 
-(defthm member-of-nth-entry-of-ll-is-member-of-append-of-nthcdr-n-entries 
- (implies 
+(defthm member-of-nth-entry-of-ll-is-member-of-append-of-nthcdr-n-entries
+ (implies
   (and
    (in-range idx1 ll)
    (member-equal-bool el1 (nth idx1 ll)))
   (member-equal-bool el1 (append-lists (nthcdr idx1 ll)))))
 
 (in-theory (disable
-            member-of-nth-entry-of-ll-is-member-of-append-of-nthcdr-n-entries 
+            member-of-nth-entry-of-ll-is-member-of-append-of-nthcdr-n-entries
             ;member-of-nth-entry-of-ll-is-member-of-append-of-first-n-entries
             append-lists-firstn-nthcdr))
 
 
 (defthm no-duplicates-in-append-means-partitioning
- (implies 
+ (implies
   (and
    (true-listp ll)
    (no-duplicates-p (append-lists ll))
@@ -296,11 +296,11 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- 
+
 
 ;;
 ;; Name      : generalized-disjunctivity-of-els-2
-;; Statement : (no-duplicates-p (append-lists ll)) ^ (0 <= idx1 <= idx2 < |ll|) ^ 
+;; Statement : (no-duplicates-p (append-lists ll)) ^ (0 <= idx1 <= idx2 < |ll|) ^
 ;;             (el1 in (nth idx1 ll)) ---> (el1 not-in (nth idx2 ll))
 ;;
 
@@ -336,7 +336,7 @@
 
 
 (defthm different-list-indexes-are-different
- (implies 
+ (implies
   (and
    (in-range idx1 ll)
    (in-range idx2 ll))
@@ -366,28 +366,28 @@
 
 
 (defthm in-range-is-member-eq-bool
- (implies 
+ (implies
   (in-range idx l)
   (member-equal-bool (nth idx l) l))
  :hints (("Goal" :in-theory (enable in-range member-equal-bool))))
 
 
 
-(defthm l1 
+(defthm l1
  (implies
   (and
    (true-listp ll)
    (in-range idx1 ll))
   (and
-   (true-listp (nthcdr idx1 ll))    
+   (true-listp (nthcdr idx1 ll))
    (equal (car (nthcdr idx1 ll)) (nth idx1 ll) )
    (equal (cdr (nthcdr idx1 ll)) (nthcdr (1+ idx1) ll))))
  :hints (("Goal" :in-theory (enable in-range))))
 
 (defthm append-lists-car-cdr
- (implies 
+ (implies
   (true-listp ll)
-  (equal (append-lists ll) 
+  (equal (append-lists ll)
 	 (append
 	  (car ll)
 	  (append-lists (cdr ll))))))
@@ -395,14 +395,14 @@
 (in-theory (disable append-lists-car-cdr))
 
 (defthm append-lists-first-middle-end
- (implies 
+ (implies
   (and
    (in-range idx1 ll)
    (true-listp ll))
-  (equal (append-lists ll) 
+  (equal (append-lists ll)
 	 (append
 	  (append-lists (firstn idx1 ll))
-	  (append 
+	  (append
 	   (nth idx1 ll)
 	   (append-lists (nthcdr (1+ idx1) ll))))))
 :hints (("Goal" :use (l1
@@ -410,7 +410,7 @@
 		      (:instance append-lists-car-cdr (ll (nthcdr idx1 ll)))))))
 
 
-(defthm no-duplicates-l1-l2-l3-means-no-duplicates-l2 
+(defthm no-duplicates-l1-l2-l3-means-no-duplicates-l2
  (implies
   (no-duplicates-p (append l1 (append l2 l3)))
   (no-duplicates-p l2))
@@ -448,7 +448,7 @@
 		    append-lists-first-middle-end
 		    no-duplicates-l1-l2-l3-means-no-duplicates-l2
 		    no-duplicates-all-implies-no-duplicates-one))
-		    
+
 
 (in-theory (enable in-range))
 
@@ -478,15 +478,15 @@
    (in-range idx (nth gem1 ll))
    (in-range idx (nth gem2 ll)))
   (not (member-equal-bool (nth idx (nth gem2 ll)) (firstn idx (nth gem1 ll)))))
- :hints (("Goal" 
-	  :in-theory (enable in-range-is-member-eq-bool 
+ :hints (("Goal"
+	  :in-theory (enable in-range-is-member-eq-bool
 			     no-duplicates-means-an-element-not-before-neither-after
 			     no-duplicates-all-implies-no-duplicates-one)
 	  :cases ( (equal gem1 gem2)))
 	 ("Subgoal 2"
-	  :use ((:instance no-member-holds-on-firstn 
+	  :use ((:instance no-member-holds-on-firstn
 			   (el (nth idx (nth gem2 ll))) (l (nth gem1 ll)))
-		(:instance generalized-disjunctivity-unordered-2 
+		(:instance generalized-disjunctivity-unordered-2
 			  (idx1 gem1) (idx2 gem2) (el1 (nth idx (nth gem2 ll))))))))
 
 
@@ -500,5 +500,5 @@
  :rule-classes nil)
 
 
-	    
+
 

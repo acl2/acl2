@@ -163,7 +163,7 @@
       (defun ,fn-terminates (,@args)
 	(,fn-1-terminates (list ,@args)))
 
-      (defthm ,fn-terminates-type 
+      (defthm ,fn-terminates-type
 	(booleanp (,fn-terminates ,@args)))
 
       (defthm ,(packn-pos (list "OPEN_" fn "_MEASURE") fn)
@@ -345,14 +345,14 @@
 (defun test-base-body (fn form)
   (declare (type (satisfies if-formp) form))
   (let ((body (if-body form)))
-    (if (contains-fapp fn body)	
+    (if (contains-fapp fn body)
 	(mv `(not (not ,(if-test form))) (if-base form) body)
       (mv `(not ,(if-test form)) body (if-base form)))))
 
 (defun pun-form (fn form)
   (declare (type (satisfies if-formp) form))
   (let ((body (if-body form)))
-    (if (contains-fapp fn body)	
+    (if (contains-fapp fn body)
 	(let ((test (if-test form))
 	      (base (if-base form))
 	      (body (push-lets fn body)))
@@ -554,15 +554,15 @@
      (defstub defxch_test    (x)   nil)
      (defund defxch_steps   (x)  x)
 
-     (defun defxch_hyps (x) 
+     (defun defxch_hyps (x)
        (declare (ignore x)) t)
 
-     (defun defxch_type (x) 
+     (defun defxch_type (x)
        (declare (ignore x)) t)
 
-     (defun   defxch_inc     (x r) 
+     (defun   defxch_inc     (x r)
        (declare (ignore x)) r)
-     
+
      (defun defxch_base (r x)
        (declare (ignore x)) r)
 
@@ -573,13 +573,13 @@
      (defpun defxch_fn_pun (r x)
        (if (defxch_test x) (defxch_base r x)
 	 (defxch_fn_pun (defxch_inc x r) (defxch_steps x))))
-   
+
      ))
-  
+
   (defthm defxch_base_defxch_inc_commute
     (equal (defxch_base (defxch_inc a r) x)
 	   (defxch_inc a (defxch_base r x))))
-  
+
   (defthm defxch_type_defxch_r0
     (defxch_type (defxch_r0)))
 
@@ -649,21 +649,21 @@
       (defxch_type r))
      (equal (defxch_inc a (defxch_inc x r))
 	    (defxch_inc x (defxch_inc a r)))))
-  
+
   )
 
 (encapsulate
     ()
-  
+
   (local
-   (encapsulate 
+   (encapsulate
        ()
 
      (defun defxch_inductshun (r x)
        (declare (xargs :measure (defxch_measure x)))
        (if (or (not (defxch_hyps x)) (not (defxch_type r)) (defxch_test x) (not (defxch_terminates x))) r
 	 (defxch_inductshun (defxch_inc x r) (defxch_steps x))))
-     
+
      (defthm open_defxch_fn_pun
        (and
 	(implies
@@ -679,7 +679,7 @@
 	  (not (defxch_test x)))
 	 (equal (defxch_fn_pun r x)
 		(defxch_fn_pun (defxch_inc x r) (defxch_steps x))))))
-     
+
      (defthm foo-over-defxch_inc
        (implies
 	(and
@@ -691,7 +691,7 @@
 	       (defxch_inc a (defxch_fn_pun r x))))
        :hints (("goal" :induct (defxch_inductshun r x))
 	       ("Subgoal *1/1" :cases ((defxch_test x)))))
-     
+
      (defthm terminal_prop
        (implies
 	(and
@@ -705,21 +705,21 @@
        :hints (("Goal" :induct (defxch_inductshun r x))))
 
      ))
-     
+
   (defun defxch_fn (x)
     (declare (xargs :measure (defxch_measure x)))
     (if (defxch_terminates x)
 	(if (defxch_test x) (defxch_base (defxch_r0) x)
 	  (defxch_inc x (defxch_fn (defxch_steps x))))
       (defxch_default)))
-    
+
   (local
    (encapsulate
        ()
 
      (defun defxch_aux (x)
        (defxch_fn_pun (defxch_r0) x))
-     
+
      (defthm open_defxch_aux
        (implies
 	(and
@@ -729,7 +729,7 @@
 	       (if (defxch_test x) (defxch_base (defxch_r0) x)
 		 (defxch_inc x (defxch_aux (defxch_steps x))))))
        :hints (("Goal" :use (:instance terminal_prop (r (defxch_r0))))))
-     
+
      (defthm defxch_fn_to_aux
        (implies
 	(and
@@ -737,16 +737,16 @@
 	 (defxch_terminates x))
 	(equal (defxch_fn x) (defxch_aux x)))
        :hints (("Goal" :induct (defxch_fn x))))
-     
+
      ))
-  
+
   (defthm defxch_fn_to_fn_pun
     (implies
      (and
       (defxch_hyps x)
       (defxch_terminates x))
      (equal (defxch_fn x) (defxch_fn_pun (defxch_r0) x))))
-  
+
   )
 
 (local
@@ -755,7 +755,7 @@
 
    (defstub test (x) nil)
    (defstub steq (x) nil)
-   
+
    (defminterm foo_induction (x)
      (if (test x) x
        (foo_induction (steq x))))
@@ -802,7 +802,7 @@
 						(defxch_terminates foo_induction_terminates)
 						(defxch_inc        (lambda (x r) (+ 1 r)))
 						))))
-						
+
 
    ))
 
@@ -816,28 +816,28 @@
 	(open-fn_pun   (packn-pos (list "OPEN-" fn "_PUN") fn))
 	(fn_to_fn_pun  (packn-pos (list fn "_TO_" fn "_PUN") fn))
 	)
-    
+
     `(encapsulate
 	 ()
-       
-       ,@(and measure-required 
+
+       ,@(and measure-required
 	      `((defminterm ,fn_induction (x)
 		  (if (,fn_test x) x
 		    (,fn_induction (,fn_step x))))))
-       
+
        (defpun ,fn_pun (r x)
 	 (if (,fn_test x) (,fn_base r x)
 	   (,fn_pun (,fn_inc x r) (,fn_step x))))
-       
+
        (in-theory (enable ,open-fn_pun))
-       
+
        (defun ,fn (x)
 	 (declare (xargs :measure (,fn_induction_measure x)))
 	 (if (,fn_induction_terminates x)
 	     (if (,fn_test x) (,fn_base ,r0 x)
 	       (,fn_inc x (,fn (,fn_step x))))
 	   ,r0))
-       
+
        (defthmd ,fn_to_fn_pun
 	 (implies
 	  (,fn_induction_terminates x)
@@ -856,8 +856,8 @@
 						    (defxch_terminates ,fn_induction_terminates)
 						    (defxch_inc        ,fn_inc)
 						    ))))
-       
-       
+
+
        )))
 
 (local
@@ -866,7 +866,7 @@
    (defstub goo_test (x) nil)
    (defstub goo_step (x) nil)
    (defstub goo_pred (x) nil)
-   
+
    (defun goo_base (r x)
      (declare (ignore x))
      r)
@@ -875,9 +875,9 @@
      (and (goo_pred x) r))
 
    (defxch-1 goo goo_test 't goo_base goo_step goo_inc)
-   
+
    ))
-    
+
 (defun just-body (fn term)
   (declare (type t fn term))
   (if (consp term)
@@ -928,83 +928,83 @@
 	(let ((pun-body (remap-fn fn `(,fn_pun ,fn-inc) (push-lets fn tbody))))
 	  `(encapsulate
 	       ()
-	     
+
 	     (set-ignore-ok t)
 	     (set-irrelevant-formals-ok t)
-	     
+
 	     ,@(and defmeasure
 		    `((defminterm ,fn_induction ,args
 			(if ,test (list ,@args) ,(remap-fn fn `(,fn_induction) tbody)))))
-	     
+
 	     ,@(and (not defpun)
 		    `(
 		      (defpun ,fn_pun (xarg ,@args)
 			(if ,test xarg ,pun-body))
-		      
+
 		      (in-theory (enable ,open-fn_pun))
-		      
+
 		      (defun ,fn ,args
 			(declare (xargs :measure (,fn_induction_measure ,@args)))
 			(if (,fn_induction_terminates ,@args)
 			    ,form
 			  ,base))
 		      ))
-	     
+
 	     (local
 	      (encapsulate
 		  ()
-		
+
 		(defun ,fn-test-1 (list)
 		  (let ,(unbundle args 'list)
 		    ,test))
-		
+
 		(defun ,fn-step-1 (list)
 		  (let ,(unbundle args 'list)
 		    ,(remap-fn fn `(list) tbody)))
-		
+
 		(defun ,fn-inc-1 (list xarg)
 		  (let ,(unbundle args 'list)
 		    ,fn-inc))
-		
+
 		(defun ,fn-measure-1 (list)
 		  (let ,(unbundle args 'list)
 		    (,fn_induction_measure ,@args)))
-		
+
 		(defun ,fn-terminates-1 (list)
 		  (let ,(unbundle args 'list)
 		    (,fn_induction_terminates ,@args)))
-		
+
 		(defxch-1 ,fn-1 ,fn-test-1 ,base (lambda (r x) r) ,fn-step-1 ,fn-inc-1
 		  :measure    ,fn-measure-1
 		  :terminates ,fn-terminates-1
 		  )
-		
+
 		(defthm ,fn-1-reduction
 		  (equal (,fn ,@args)
 			 (,fn-1 (list ,@args)))
 		  :hints (("Goal" :induct (,fn_induction ,@args))))
-		
+
 		(defun ,fn_pun_induction (xarg ,@args)
 		  (declare (xargs :measure (,fn_induction_measure ,@args)))
 		  (if (,fn_induction_terminates ,@args)
 		      (if ,test xarg ,(remap-fn fn_pun `(,fn_pun_induction) pun-body))
 		    xarg))
-	     
+
 		(defthm ,fn-1-pun-reduction
 		  (implies
 		   (,fn_induction_terminates ,@args)
 		   (equal (,fn_pun xarg ,@args)
 			  (,fn-1-pun xarg (list ,@args))))
 		  :hints (("Goal" :induct (,fn_pun_induction xarg ,@args))))
-		
+
 		))
-	     
+
 	     (defthmd ,fn-to-fn-pun
 	       (implies
 		(,fn_induction_terminates ,@args)
 		(equal (,fn ,@args) (,fn_pun ,base ,@args)))
 	       :hints (("Goal" :in-theory (enable ,fn-1-to-fn-1-pun))))
-	     
+
 	     )))))))
 
 (encapsulate
@@ -1012,7 +1012,7 @@
  (local
   (encapsulate
    ()
-   
+
    (SET-IGNORE-OK T)
    (SET-IRRELEVANT-FORMALS-OK T)
    (defstub text (x y) nil)
@@ -1021,9 +1021,9 @@
    (defstub sty (x y) nil)
    (defun inxx  (x r) (+ 1 r))
    (defxch goop (x y)
-     (if (text x y) (r0) 
+     (if (text x y) (r0)
        (inxx x (goop (stx x y) (sty x y)))))
-   
+
    ))
  )
 
@@ -1032,7 +1032,7 @@
  (local
   (encapsulate
    ()
-   
+
    (SET-IGNORE-OK T)
    (SET-IRRELEVANT-FORMALS-OK T)
    (defstub text (x y) nil)
@@ -1044,11 +1044,11 @@
      (if (text x y) (list x y)
        (goop_induction (stx x y) (sty x y))))
    (defxch goop (x y)
-     (if (text x y) (r0) 
+     (if (text x y) (r0)
        (inxx x (goop (stx x y) (sty x y))))
      :measure goop_induction_measure
      :terminates goop_induction_terminates)
-   
+
    ))
  )
 
@@ -1057,7 +1057,7 @@
  (local
   (encapsulate
    ()
-   
+
    (SET-IGNORE-OK T)
    (SET-IRRELEVANT-FORMALS-OK T)
    (defstub text (x y) nil)
@@ -1071,7 +1071,7 @@
    (defun goop (x y)
      (declare (xargs :measure (goop_induction_measure x y)))
      (if (goop_induction_terminates x y)
-	 (if (text x y) (r0) 
+	 (if (text x y) (r0)
 	   (inxx x (goop (stx x y) (sty x y))))
        (r0)))
    (defpun goop_pun (xarg x y)
@@ -1079,12 +1079,12 @@
        (goop_pun (inxx x xarg) (stx x y) (sty x y))))
    (in-theory (enable open-goop_pun))
    (defxch goop (x y)
-     (if (text x y) (r0) 
+     (if (text x y) (r0)
        (inxx x (goop (stx x y) (sty x y))))
      :defpun  goop_pun
      :measure goop_induction_measure
      :terminates goop_induction_terminates)
-   
+
    ))
  )
 
@@ -1130,26 +1130,26 @@
        (declare (ignore r))
        t)
 
-     (defun vfaat_fn_inc (k st r) 
+     (defun vfaat_fn_inc (k st r)
        (declare (ignore k st)) r)
-     
+
      (defminterm vfaat_fn_induction (k st)
        (if (vfaat_fn_test k) (list k st)
 	 (vfaat_fn_induction (vfaat_fn_branch k st) (vfaat_fn_comp k st))))
-     
+
      (defun vfaat_fn (k st)
        (declare (xargs :measure (vfaat_fn_induction_measure k st)))
        (if (vfaat_fn_induction_terminates k st)
 	   (if (vfaat_fn_test k) (vfaat_fn_base)
 	     (vfaat_fn_inc k st (vfaat_fn (vfaat_fn_branch k st) (vfaat_fn_comp k st))))
 	 (vfaat_fn_default)))
-     
+
      (defpun vfaat_fn_pun (r k st)
        (if (vfaat_fn_test k) r
 	 (vfaat_fn_pun (vfaat_fn_inc k st r) (vfaat_fn_branch k st) (vfaat_fn_comp k st))))
-     
+
      ))
-  
+
   (defthm vfaat_fn_step_preserves_vfaat_fn_hyps
     (implies
      (and
@@ -1157,7 +1157,7 @@
       (vfaat_fn_hyp2 st))
      (and (vfaat_fn_hyp1 (vfaat_fn_branch k st))
 	  (vfaat_fn_hyp2 (vfaat_fn_comp k st)))))
-  
+
   (defthm vfaat_fn_type_vfaat_fn_base
     (vfaat_fn_type (vfaat_fn_base)))
 
@@ -1215,7 +1215,7 @@
       (vfaat_fn_hyps k st))
      (equal (vfaat_fn_inc a b (vfaat_fn_inc k st r))
 	    (vfaat_fn_inc k st (vfaat_fn_inc a b r)))))
-  
+
   (defthm vfaat_fn_property
     (equal (vfaat_fn k st)
 	   (if (vfaat_fn_induction_terminates k st)
@@ -1223,7 +1223,7 @@
 		 (vfaat_fn_inc k st (vfaat_fn (vfaat_fn_branch k st) (vfaat_fn_comp k st))))
 	     (vfaat_fn_default)))
     :rule-classes (:definition))
-  
+
   )
 
 (defthm vfaat_fn_to_fn_pun
@@ -1234,7 +1234,7 @@
    (equal (vfaat_fn k st)
 	  (vfaat_fn_pun (vfaat_fn_base) k st)))
   :rule-classes nil
-  :hints (("Goal" :use (:functional-instance 
+  :hints (("Goal" :use (:functional-instance
 			(:instance defxch_fn_to_fn_pun (x (list k st)))
 			(defxch_hyps       (lambda (list) (vfaat_fn_hyps (car list) (cadr list))))
 			(defxch_type       vfaat_fn_type)
@@ -1298,26 +1298,26 @@
        (declare (ignore r))
        t)
 
-     (defun vfaat_fnx_inc (k st r) 
+     (defun vfaat_fnx_inc (k st r)
        (declare (ignore k st)) r)
-     
+
      (defminterm vfaat_fnx_induction (k st)
        (if (vfaat_fnx_test k) (list k st)
 	 (vfaat_fnx_induction (vfaat_fnx_branch k st) (vfaat_fnx_comp k st))))
-     
+
      (defun vfaat_fnx (k st)
        (declare (xargs :measure (vfaat_fnx_induction_measure k st)))
        (if (vfaat_fnx_induction_terminates k st)
 	   (if (vfaat_fnx_test k) (vfaat_fnx_base (vfaat_fnx_r0) k st)
 	     (vfaat_fnx_inc k st (vfaat_fnx (vfaat_fnx_branch k st) (vfaat_fnx_comp k st))))
 	 (vfaat_fnx_default)))
-     
+
      (defpun vfaat_fnx_pun (r k st)
        (if (vfaat_fnx_test k) (vfaat_fnx_base r k st)
 	 (vfaat_fnx_pun (vfaat_fnx_inc k st r) (vfaat_fnx_branch k st) (vfaat_fnx_comp k st))))
-     
+
      ))
-  
+
   (defthm vfaat_fnx_step_preserves_vfaat_fnx_hyps
     (implies
      (and
@@ -1325,7 +1325,7 @@
       (vfaat_fnx_hyp2 st))
      (and (vfaat_fnx_hyp1 (vfaat_fnx_branch k st))
 	  (vfaat_fnx_hyp2 (vfaat_fnx_comp k st)))))
-  
+
   (defthm vfaat_fnx_type_vfaat_fnx_base
     (implies
      (and
@@ -1398,7 +1398,7 @@
       (vfaat_fnx_hyps k st))
      (equal (vfaat_fnx_inc a b (vfaat_fnx_inc k st r))
 	    (vfaat_fnx_inc k st (vfaat_fnx_inc a b r)))))
-  
+
   (defthm vfaat_fnx_property
     (equal (vfaat_fnx k st)
 	   (if (vfaat_fnx_induction_terminates k st)
@@ -1406,7 +1406,7 @@
 		 (vfaat_fnx_inc k st (vfaat_fnx (vfaat_fnx_branch k st) (vfaat_fnx_comp k st))))
 	     (vfaat_fnx_default)))
     :rule-classes (:definition))
-  
+
   )
 
 (defthm vfaat_fnx_to_fn_pun
@@ -1417,7 +1417,7 @@
    (equal (vfaat_fnx k st)
 	  (vfaat_fnx_pun (vfaat_fnx_r0) k st)))
   :rule-classes nil
-  :hints (("Goal" :use (:functional-instance 
+  :hints (("Goal" :use (:functional-instance
 			(:instance defxch_fn_to_fn_pun (x (list k st)))
 			(defxch_hyps       (lambda (list) (vfaat_fnx_hyps (car list) (cadr list))))
 			(defxch_type       vfaat_fnx_type)
@@ -1442,7 +1442,7 @@ ACL2:
    (<TERMINATES> k st)
    (equal (<NAME> k st)
 	  (<NAME>_pun <BASE> k st)))
-  :hints (("Goal" :use (:functional-instance 
+  :hints (("Goal" :use (:functional-instance
 			vfaat_fn_to_fn_pun
 			(vfaat_fn_hyp1                 kstate-p)
 			(vfaat_fn_hyp2                 st-p)
@@ -1482,7 +1482,7 @@ PVS:
           <NAME>_pun(<BASE>,k,st)
 %|- <NAME>_to_<NAME>_pun: PROOF
 %|-   (auto-rewrite "<NAME>_xch.fn_to_fn_pun") (skosimp) (assert)
-%|- QED  
+%|- QED
 
 
 |#

@@ -352,7 +352,7 @@
 (defrec induction-rule ((nume . pattern) condition . scheme))
 
 ; In ACL2 this nest does not actually terminate because the user may
-; set up looping induction rules.  Here is a trivial example that 
+; set up looping induction rules.  Here is a trivial example that
 ; forces ACL2 Version 2.7 into a stack overflow upon attacking any
 ; inductive theorem involving append.
 
@@ -361,7 +361,7 @@
 ;                              :scheme  (append a b))))
 
 ; ACL2 does not detect such loops.  Paco limits them: it doesn't allow
-; more than nnn rules to be invoked on any path.  
+; more than nnn rules to be invoked on any path.
 
 (acl2::set-well-founded-relation e0-ord-<)
 
@@ -370,7 +370,7 @@
 (defun apply-induction-rule (rule term type-alist xterm ens wrld nnn)
   (declare (xargs :measure (cons (cons (+ 1 (nfix nnn)) 3) 0)
                   :hints (("Goal" :in-theory (disable type-set
-                                                      one-way-unify1)))))  
+                                                      one-way-unify1)))))
 
 
 ; We apply the induction-rule, rule, to term, and return a possibly
@@ -1376,7 +1376,7 @@
         ((member (caar pairs) del)
          (count-undel (cdr pairs) del))
         (t (+ 1 (count-undel (cdr pairs) del)))))
-        
+
 (defun exists-pair-with-car (x lst)
   (cond ((endp lst) nil)
         ((equal x (caar lst)) t)
@@ -1589,7 +1589,7 @@
 (defun m&m-over-powerset1 (st subset stree ans fn)
 
 ; See m&m-over-powerset.
-  
+
   (cond
    ((eq stree t) (mv t ans))
    ((endp st)

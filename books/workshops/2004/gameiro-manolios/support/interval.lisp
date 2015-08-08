@@ -20,7 +20,7 @@
 ; Email: gameiro@math.gatech.edu
 
 ; Postal Mail:
-; School of  Mathematics 
+; School of  Mathematics
 ; Georgia Institute of  Technology
 ; 686 Cherry Street
 ; Atlanta, Georgia 30332-0160 U.S.A.
@@ -62,7 +62,7 @@
   (implies (intervalp x1 x2)
            (<= x1 x2))
   :rule-classes :forward-chaining)
-           
+
 (defthm prove-interval
   (implies (and (real/rationalp x1)
                 (real/rationalp x2)
@@ -118,7 +118,7 @@
 
 (encapsulate
  (((i+ * * * *) => (mv * *)))
-   
+
  (local (defun i+ (x1 x2 y1 y2)
           (mv (+ x1 y1)
               (+ x2 y2))))
@@ -126,7 +126,7 @@
  (defthm i+_ok
    (implies (and (in x x1 x2)
                  (in y y1 y2))
-            (mv-let (z1 z2) 
+            (mv-let (z1 z2)
                     (i+ x1 x2 y1 y2)
                     (in (+ x y) z1 z2)))))
 
@@ -142,7 +142,7 @@
                 (intervalp y1 y2))
            (intervalp (nth 0 (i+ x1 x2 y1 y2))
                       (nth 1 (i+ x1 x2 y1 y2))))
-  :hints (("goal" 
+  :hints (("goal"
            :use ((:instance i+_ok (x x1) (y y1))))))
 
 (defthm i+-expand-fc-1a
@@ -152,7 +152,7 @@
    :hints (("goal"
             :use (:instance i+_ok (y x) (x y))))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 0 (i+ x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -163,7 +163,7 @@
    :hints (("goal"
             :use (:instance i+_ok)))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 0 (i+ x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -174,7 +174,7 @@
    :hints (("goal"
             :use (:instance i+_ok (x y) (y x))))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 1 (i+ x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -185,7 +185,7 @@
    :hints (("goal"
             :use (:instance i+_ok)))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 1 (i+ x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -205,15 +205,15 @@
 
 (encapsulate
  (((i- * * * *) => (mv * *)))
-   
+
  (local (defun i- (x1 x2 y1 y2)
           (mv (- x1 y2)
               (- x2 y1))))
-                               
+
  (defthm i-_ok
    (implies (and (in x x1 x2)
                  (in y y1 y2))
-            (mv-let (z1 z2) 
+            (mv-let (z1 z2)
                     (i- x1 x2 y1 y2)
                     (in (- x y) z1 z2)))))
 
@@ -230,7 +230,7 @@
                 (intervalp y1 y2))
            (intervalp (nth 0 (i- x1 x2 y1 y2))
                       (nth 1 (i- x1 x2 y1 y2))))
-  :hints (("goal" 
+  :hints (("goal"
            :use ((:instance i-_ok (x x1) (y y1))))))
 
 (defthm i--expand-fc-1
@@ -240,7 +240,7 @@
    :hints (("goal"
             :use (:instance i-_ok)))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 0 (i- x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -251,7 +251,7 @@
    :hints (("goal"
             :use (:instance i-_ok)))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 1 (i- x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -278,11 +278,11 @@
 
 (encapsulate
  (((i* * * * *) => (mv * *)))
- 
+
  (local (defun max4 (x1 x2 x3 x4)
-          (max (max x1 x2) 
+          (max (max x1 x2)
                (max x3 x4))))
-   
+
  (local (defun i* (x1 x2 y1 y2)
           (let ((m0 (max4 (abs x1) (abs x2) (abs y1) (abs y2))))
             (mv (- (* m0 m0)) (* m0 m0)))))
@@ -315,12 +315,12 @@
                         (real/rationalp x4))
                    (real/rationalp (max4 x1 x2 x3 x4)))
           :rule-classes :type-prescription))
-   
+
  (local (defthm l4
           (equal (* (abs x) (abs x)) (* x x))))
 
  (set-ignore-ok t)
-  
+
  (local (defthm abs-m
           (implies (and (real/rationalp x1)
                         (real/rationalp x2)
@@ -337,23 +337,23 @@
  (local (defthm i*_ok-b
           (implies (and (in x x1 x2)
                         (in y y1 y2))
-                   (mv-let (z1 z2) 
+                   (mv-let (z1 z2)
                            (i* x1 x2 y1 y2)
                            (<= (* x y) z2)))
           :hints (("goal"
-                   :use 
+                   :use
                    ((:instance l1)
                     (:instance l2 (m (abs (max4 (abs x1)
                                                 (abs x2)
                                                 (abs y1)
                                                 (abs y2)))))
-                    (:instance l2 (x1 y1) (x2 y2) (x y) 
+                    (:instance l2 (x1 y1) (x2 y2) (x y)
                                (m (abs (max4 (abs x1)
                                              (abs x2)
                                              (abs y1)
                                              (abs y2)))))
                     (:instance *-preserves->=-for-nonnegatives
-                               (x2 (abs x)) (y2 (abs y)) 
+                               (x2 (abs x)) (y2 (abs y))
                                (x1 (abs (max4 (abs x1)
                                               (abs x2)
                                               (abs y1)
@@ -361,7 +361,7 @@
                                (y1 (abs (max4 (abs x1)
                                               (abs x2)
                                               (abs y1)
-                                              (abs y2)))))) 
+                                              (abs y2))))))
                    :in-theory (disable l1 l2 *-preserves->=-for-nonnegatives)))))
 
  (local (defthm l1-a
@@ -374,24 +374,24 @@
  (local (defthm i*_ok-a
           (implies (and (in x x1 x2)
                         (in y y1 y2))
-                   (mv-let (z1 z2) 
+                   (mv-let (z1 z2)
                            (i* x1 x2 y1 y2)
                            (<= z1 (* x y) )))
-          :hints 
+          :hints
           (("goal"
-            :use 
+            :use
             ((:instance l1-a)
              (:instance l2 (m (abs (max4 (abs x1)
                                          (abs x2)
                                          (abs y1)
                                          (abs y2)))))
-             (:instance l2 (x1 y1) (x2 y2) (x y) 
+             (:instance l2 (x1 y1) (x2 y2) (x y)
                         (m (abs (max4 (abs x1)
                                       (abs x2)
                                       (abs y1)
                                       (abs y2)))))
              (:instance *-preserves->=-for-nonnegatives
-                        (x2 (abs x)) (y2 (abs y)) 
+                        (x2 (abs x)) (y2 (abs y))
                         (x1 (abs (max4 (abs x1)
                                        (abs x2)
                                        (abs y1)
@@ -399,7 +399,7 @@
                         (y1 (abs (max4 (abs x1)
                                        (abs x2)
                                        (abs y1)
-                                       (abs y2)))))) 
+                                       (abs y2))))))
             :in-theory (disable l1-a l2 *-preserves->=-for-nonnegatives)))))
 
  (defthm i*_ok
@@ -423,7 +423,7 @@
                 (intervalp y1 y2))
            (intervalp (nth 0 (i* x1 x2 y1 y2))
                       (nth 1 (i* x1 x2 y1 y2))))
-  :hints (("goal" 
+  :hints (("goal"
            :use ((:instance i*_ok (x x1) (y y1))))))
 
 (defthm i*-expand-fc-1a
@@ -433,7 +433,7 @@
    :hints (("goal"
             :use (:instance i*_ok (x y) (y x))))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 0 (i* x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -444,7 +444,7 @@
    :hints (("goal"
             :use (:instance i*_ok)))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 0 (i* x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -455,7 +455,7 @@
    :hints (("goal"
             :use (:instance i*_ok (x y) (y x))))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 1 (i* x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -466,7 +466,7 @@
    :hints (("goal"
             :use (:instance i*_ok)))
    :rule-classes ((:rewrite)
-                  (:forward-chaining 
+                  (:forward-chaining
                    :trigger-terms ((nth 1 (i* x1 x2 y1 y2)))
                    :match-free :all)))
 
@@ -531,7 +531,7 @@
                  (real/rationalp y))
             (and (real/rationalp (nth 0 (vec_fld x y)))
                  (real/rationalp (nth 1 (vec_fld x y)))))
-   :hints (("goal" 
+   :hints (("goal"
             :use ((:instance vec_fld_ok (x1 x) (x2 x) (y1 y) (y2 y))))))
 
 (defthm real/rationalp-vec_fld
@@ -550,7 +550,7 @@
                            (nth 1 (i_vec_fld x1 x2 y1 y2)))
                 (intervalp (nth 2 (i_vec_fld x1 x2 y1 y2))
                            (nth 3 (i_vec_fld x1 x2 y1 y2)))))
-  :hints (("goal" 
+  :hints (("goal"
            :use ((:instance vec_fld_ok (x x1) (y y1))))))
 
 (defthm vec_fld-ok-1
@@ -696,7 +696,7 @@
                   (i- v2 v2 u2 u2)
                   (mv-let (w11 w12 w21 w22)
                           (i_perp x1 x2 y1 y2)
-                          (mv w11 w12 w21 w22))))) 
+                          (mv w11 w12 w21 w22)))))
 
 (defthm i_normal_vec_ok
   (let ((nvec (normal_vec u1 u2 v1 v2))

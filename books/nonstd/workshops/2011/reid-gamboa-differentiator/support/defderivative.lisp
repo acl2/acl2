@@ -25,7 +25,6 @@
              (defun ,differential-fn (,@args eps)
                (/ (,difference-fn ,@args eps)
                   eps))
-             
+
              (defun ,derivative-fn (,@args)
                (standard-part (,differential-fn ,@args (/ (i-large-integer))))))))))
-    

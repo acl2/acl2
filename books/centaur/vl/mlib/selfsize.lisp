@@ -67,13 +67,13 @@
        ((vl-operandinfo opinfo))
        ((mv err size)
         (vl-datatype-size opinfo.type))
-       
+
        ((when err)
         (mv (fatal :type :vl-selfsize-fail
                    :msg "Failed to find the size of datatype ~a0 for expression ~a1: ~@2"
                    :args (list opinfo.type x err))
             nil))
-       
+
        ((unless (vl-datatype-packedp opinfo.type))
         ;; not a sizable datatype
         (mv (ok) nil)))
@@ -352,7 +352,7 @@ details.</p>"
   (mv (warnings vl-warninglist-p)
       (size     maybe-natp :rule-classes :type-prescription))
   :verify-guards nil
-  
+
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
@@ -574,7 +574,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
   (mv (warnings vl-warninglist-p)
       (size     maybe-natp :rule-classes :type-prescription))
   :verify-guards nil
-  
+
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
@@ -821,7 +821,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                                        \"self-sizes\".  The smaller branch will be ~
                                        implicitly widened to match the larger branch. ~
                                        Arguments:~%     ~
-          
+
                                          - Condition:               ~a0~%     ~
                                          - True Branch  (size ~x1): ~a3~%     ~
                                          - False Branch (size ~x2): ~a4~%"
@@ -893,7 +893,7 @@ annotations left by @(see vl-design-follow-hids) like (e.g.,
                                       :args (list x))
                                nil))
                    :otherwise (vl-expr-selfsize x.expr ss typeov))
-                              
+
 
         ;; returns a single bit
         :vl-inside (mv (ok) 1)
@@ -1062,5 +1062,5 @@ sign-extend it and don't change any of its operands.</p>"
     :vl-tagged :special
 
     ))
-    
+
 

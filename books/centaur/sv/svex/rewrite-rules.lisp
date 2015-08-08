@@ -1365,8 +1365,8 @@
 ;;                                           (2vec->val (svex-quote->val w))
 ;;                                           z)))
 ;;   :rhs res)
-                 
-  
+
+
 
 
 
@@ -1383,7 +1383,7 @@
 ;;                                (svex-lookup k subst))
 ;;                       :hints(("Goal" :in-theory (enable svex-lookup
 ;;                                                         svex-alist-keys))))))
-  
+
 ;;   (b* (((when localp) (mv nil nil nil))
 ;;        ((mv okp subst)
 ;;         (concat-under-mask-meta-aux
@@ -1522,7 +1522,7 @@
   :rhs (concat new-w newx y)
   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-lsh))
          (bitops::logbitp-reasoning :prune-examples nil)))
-           
+
 
 (def-svex-rewrite zerox-to-concat
   :lhs (zerox w x)
@@ -1708,10 +1708,10 @@
                                                              (- k (nfix offset)))))
                                         concat)))
              (hons-assoc-equal k (rsh-of-concat-alist-fix acc))))))
-                  
-    
-       
-       
+
+
+
+
 
 
 (define svex-to-rsh-of-concat-table-aux ((x svex-p)
@@ -1835,9 +1835,9 @@
 ;;   :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-mask 4vec-rsh))
 ;;          (bitops::logbitp-reasoning :prune-examples nil)))
 
-                
-       
-                      
+
+
+
 
 ;; (define svex-meta-rsh-of-concat ((mask 4vmask-p)
 ;;                                  (args svexlist-p)
@@ -1934,7 +1934,7 @@
   :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-concat svex-apply))))
 
 
-    
+
 
 
 

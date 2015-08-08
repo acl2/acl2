@@ -43,7 +43,7 @@
   (if (zp n)
       (list c)
     (cons (xor3 c (car a) (car b))
-          (v-adder (1- n) 
+          (v-adder (1- n)
                    (maj3 c (car a) (car b))
                    (cdr a) (cdr b)))))
 
@@ -179,8 +179,8 @@
 (defun add-pairlist (A B list)
   (if (endp A)
       list
-    (add-pairlist (cdr A) (cdr B) 
-                  (cons (cons (car A) (car B)) 
+    (add-pairlist (cdr A) (cdr B)
+                  (cons (cons (car A) (car B))
                         list))))
 
 ;; Whether a given signal is high
@@ -220,7 +220,7 @@
   (if x (if y t nil) nil))
 
 (defun tbit-and (x y)
-  (cond 
+  (cond
    ((or (lowp x) (lowp y))
     'nil)
    ((or (xValp x) (xValp y))
@@ -228,15 +228,15 @@
    (t 't)))
 
 (defun concatn (n a b)
-  (if (zp n) 
-      b 
+  (if (zp n)
+      b
     (cons (car a) (concatn (- n 1) (cdr a) b))))
 
 (defun uandn-help (n a)
   (if (zp n)
       t
     (if (car a)
-        (uandn-help (- n 1) (cdr a)) 
+        (uandn-help (- n 1) (cdr a))
       nil)))
 
 (defun uandn (n a)
@@ -320,7 +320,7 @@
 (defund bv-const (w x)
   (if (zp w)
       nil
-    (cons (bit-2-bool (mod x 2)) 
+    (cons (bit-2-bool (mod x 2))
           (bv-const (1- w) (floor x 2)))))
 
 (defun nth-sublist (n lst)
@@ -366,10 +366,10 @@
 
 (defun update-sublist-h (lst lbit hbit val)
   (if (zp lbit)
-      (append-n (1+ hbit) 
-                (get-sublist val lbit hbit) 
+      (append-n (1+ hbit)
+                (get-sublist val lbit hbit)
                 (nth-cdr (1+ hbit) lst))
-    (cons (car lst) 
+    (cons (car lst)
           (update-sublist-h (cdr lst) (1- lbit) (1- hbit)
                             val))))
 
@@ -385,16 +385,16 @@
 (defund bv-decode-help (n rev-x)
   (declare (xargs :measure (nfix (1+ n))))
   (let ((len-h-ans (expt 2 (1- n)))) ;; half of the length of the answer
-    (cond 
+    (cond
      ((zp n)
       '(t))
-     ((car rev-x) 
+     ((car rev-x)
       (append-n len-h-ans (n-nils len-h-ans) (bv-decode-help (1- n) (cdr rev-x))))
-     (t 
+     (t
       (append-n len-h-ans (bv-decode-help (1- n) (cdr rev-x)) (n-nils len-h-ans))))))
 
 (defund bv-duplicate (n w x)
-  (cond 
+  (cond
    ((zp n) nil)
    (t (append-n w x (bv-duplicate (1- n) w x)))))
 
@@ -426,7 +426,7 @@
      (cons nil curr-b)
      (if (car a) (v-adder sz nil curr-b ans) ans))))
 
-;; Multiply the n, bit, bit-vectors a and b using 
+;; Multiply the n, bit, bit-vectors a and b using
 ;; n adders.
 (defun simple-mult (n a b)
   (simple-mult1 n n a b nil))
@@ -437,8 +437,8 @@
 ;;(i-am-here)
 
 (defthm SULFA-thm
-  (true-bvp 
-   (bv-eq 1 
+  (true-bvp
+   (bv-eq 1
           (uandn 8 (concatn 4 a b))
           (bv-and 1 (uandn 4 a) (uandn 4 b))))
   :hints (("Goal" :clause-processor (:function sat :hint nil))))
@@ -492,8 +492,8 @@
   :rule-classes nil)
 
 (defthm Booleanp-3
-  (implies (and (equal x 1) 
-                (not (equal y nil)) 
+  (implies (and (equal x 1)
+                (not (equal y nil))
                 (not (equal y t)))
            (not (Booleanp y)))
   :hints (("Goal" :clause-processor (:function sat :hint nil)))
@@ -597,11 +597,11 @@
 
 ;; Some examples from the TRIPS DSN-verification
 
-#| ;; Commented because it takes a while 
+#| ;; Commented because it takes a while
 ;; DEBUG---turn on
 (defthm DSN-bv-or-expand-rewrite
-  (true-bvp (bv-eq 256 
-                   (bv-or 256 
+  (true-bvp (bv-eq 256
+                   (bv-or 256
                           (expand-mask 8 x)
                           (expand-mask 8 y))
                    (expand-mask 8 (bv-or 8 x y))))
@@ -633,21 +633,21 @@
   :hints (("Goal" :clause-processor (:function sat :hint nil))))
 
 ;; 4 bit adder associativity
-(defthm 4-bit-adder-associativity 
+(defthm 4-bit-adder-associativity
   (n-bleq 4 (v-adder 4 nil (v-adder 4 nil a b) c)
           (v-adder 4 nil a (v-adder 4 nil b c)))
   :hints (("Goal" :clause-processor (:function sat :hint nil))))
 
 ;; 32 bit adder associativity
-(defthm 32-bit-adder-associativity 
+(defthm 32-bit-adder-associativity
  (n-bleq 32 (v-adder 32 nil (v-adder 32 nil a b) c)
          (v-adder 32 nil a (v-adder 32 nil b c)))
  :hints (("Goal" :clause-processor (:function sat :hint nil))))
 
-#| ;; Commented because it takes a while 
+#| ;; Commented because it takes a while
 ;; DEBUG---turn on
 ;; 200 Bit adder associativity
-(defthm 200-bit-adder-associativity 
+(defthm 200-bit-adder-associativity
  (n-bleq 200 (v-adder 200 nil (v-adder 200 nil a b) c)
          (v-adder 200 nil a (v-adder 200 nil b c)))
   :hints (("Goal" :clause-processor (:function sat :hint nil))))
@@ -655,16 +655,16 @@
 
 ;; 32x6 Shift-0
 (defthm 32x6-Shift-0
- (implies 
+ (implies
   (car (nth-cdr 5 shift0))
-  (n-bleq 32 
+  (n-bleq 32
           (shifter 6 32 shift0 reg)
           (n-nills 32)))
   :hints (("Goal" :clause-processor (:function sat :hint nil))))
 
 ;; 64x7 Shift-0
 (defthm 64x7-Shift-0
- (implies 
+ (implies
   (car (nth-cdr 6 shift0))
   (n-bleq 64 (shifter 7 64 shift0 reg)
           (n-nills 64)))
@@ -672,23 +672,23 @@
 
 ;; 32x4 Add-shift
 (defthm 32x4-Add-shift
- (n-bleq 32 
+ (n-bleq 32
          (shifter 4 32 shift0 (shifter 4 32 shift1 reg))
          (shifter 5 32 (v-adder 4 nil shift0 shift1) reg))
   :hints (("Goal" :clause-processor (:function sat :hint nil))))
 
-#| ;; Commented because it takes a while 
+#| ;; Commented because it takes a while
 ;; DEBUG---turn on
 ;; 64x6 Add-shift
 (defthm 64x6-Add-shift
- (n-bleq 64 
+ (n-bleq 64
          (shifter 6 64 shift0 (shifter 6 64 shift1 reg))
          (shifter 7 64 (v-adder 6 nil shift0 shift1) reg))
   :hints (("Goal" :clause-processor (:function sat :hint nil))))
 |# ;|
 
-(defthm mult-4x4 
- (n-bleq 8 
+(defthm mult-4x4
+ (n-bleq 8
          (simple-mult 4 a b)
          (simple-mult 4 b a))
  :hints (("Goal" :clause-processor (:function sat :hint nil))))
@@ -719,7 +719,7 @@
 
 ;; 64x6 Add-shift False
 ;; (thm
-;;  (n-bleq 64 
+;;  (n-bleq 64
 ;;          (shifter 6 64 shift0 (shifter 6 64 shift1 reg))
 ;;          (shifter 7 64 (v-adder 6 t shift0 shift1) reg))
 ;;   :hints (("Goal" :clause-processor (:function sat :hint nil)))

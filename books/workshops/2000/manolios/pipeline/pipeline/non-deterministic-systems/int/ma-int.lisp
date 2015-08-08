@@ -1,23 +1,23 @@
 ;  Copyright (C) 2000 Panagiotis Manolios
- 
+
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios who can be reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
@@ -79,7 +79,7 @@ The MA specification of Sawada's machine with interrupts.
 (defmacro MA-int () 6)
 
 (defun ALU-output (op val1 val2)
-  (cond ((equal op 0) 
+  (cond ((equal op 0)
 	 (+ val1 val2))
 	(t (* val1 val2))))
 
@@ -100,9 +100,9 @@ The MA specification of Sawada's machine with interrupts.
 	(latch2 (nth (MA-latch2) MA)))
     (and (nth (latch2-validp) latch2)
 	 (nth (latch1-validp) latch1)
-	 (bor (equal (nth (latch1-ra) latch1) 
+	 (bor (equal (nth (latch1-ra) latch1)
 		     (nth (latch2-rc) latch2))
-	      (equal (nth (latch1-rb) latch1) 
+	      (equal (nth (latch1-rb) latch1)
 		     (nth (latch2-rc) latch2))))))
 
 (defun step-latch1 (MA)
@@ -122,9 +122,9 @@ The MA specification of Sawada's machine with interrupts.
 	(latch2 (not (stall-condp MA))
 		(nth (latch1-op) latch1)
 		(nth (latch1-rc) latch1)
-		(value-of (nth (latch1-ra) latch1) 
+		(value-of (nth (latch1-ra) latch1)
 			  (nth (MA-regs) MA))
-		(value-of (nth (latch1-rb) latch1) 
+		(value-of (nth (latch1-rb) latch1)
 			  (nth (MA-regs) MA)))
       (update-nth (latch2-validp) nil (nth (MA-latch2) MA)))))
 
@@ -157,11 +157,11 @@ The MA specification of Sawada's machine with interrupts.
 
 (defun MA-step (MA i)
   (cond ((nth (MA-int) MA)
-	 (update-nth (MA-mem) 
-		     (int-handler (nth (MA-regs) MA) 
-				  (nth (MA-mem) MA) 
+	 (update-nth (MA-mem)
+		     (int-handler (nth (MA-regs) MA)
+				  (nth (MA-mem) MA)
 				  (nth (MA-int) MA))
-		     (update-nth (MA-int) 
+		     (update-nth (MA-int)
 				 nil
 				 (committed-MA MA))))
 	(i (update-nth (MA-int) i (committed-MA MA)))

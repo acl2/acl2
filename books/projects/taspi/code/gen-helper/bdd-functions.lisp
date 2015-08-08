@@ -41,12 +41,12 @@
              (qcons l r)))))
 
 (dis+ind q-or)
-                  
+
 (defun qs-subset (x y)
   (declare (xargs :guard t))
   (cond ((atom x)
          (if x (eq y t) t))
-        ((atom y) (if y t nil)) 
+        ((atom y) (if y t nil))
         (t (and (qs-subset (car x) (car y))
                 (qs-subset (cdr x) (cdr y))))))
 
@@ -127,7 +127,7 @@
            (let ((l (q-and-c2 first (car y)))
                  (r (q-and-c2 rest (cdr y))))
              (qcons l r)))))
-         
+
 (dis+ind q-and-c2)
 
 ;; Could also be called qs-intersect
@@ -169,14 +169,14 @@
 ; ":Doc-Section TASPI
 ;  Determines if bipartition x is consistent with each of those in list. ~/
 ;  ~/
-;  Arguments: 
-;    (1) x - a bipartition                                                
+;  Arguments:
+;    (1) x - a bipartition
 ;    (2) list - a list of bipartitions
 
 ;  Details: Set operations are used to determine if the bipartition x does not
 ;           conflict with each of the bipartitions in list.  Bipartitions must
 ;           be bdd based (as opposed to list based) and the underlying taxa list
-;           must be preserved between x and each member of list. 
+;           must be preserved between x and each member of list.
 ;           The bipartitions are assumed to be ordered such that no bipartition
 ;           x following y in list exists such that y is a subset of x and x=/y.
 ;           See also no-conflicts (list based)."
@@ -210,14 +210,14 @@
 ; ":Doc-Section TASPI
 ;  Determines if bipartition x is consistent with each of those in list. ~/
 ;  ~/
-;  Arguments: 
-;    (1) x - a bipartition                                                
+;  Arguments:
+;    (1) x - a bipartition
 ;    (2) list - a list of bipartitions
 
 ;  Details: Set operations are used to determine if the bipartition x does not
 ;           conflict with each of the bipartitions in list.  Bipartitions must
 ;           be bdd based (as opposed to list based) and the underlying taxa list
-;           must be preserved between x and each member of list. 
+;           must be preserved between x and each member of list.
 ;           Assumes no ordering of bipartitions in list.
 ;           See also q-no-conflicts."
   (declare (xargs :guard t))
@@ -237,13 +237,13 @@
 ;  ":Doc-Section TASPI
 ;  Determines if the list of bipartitions list is consistent. ~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;    (1) list - a list of bipartitions
 
-;  Details: Set operations are used to determine if the list of bipartitions 
+;  Details: Set operations are used to determine if the list of bipartitions
 ;           do not conflict.  Bipartitions must be list based (as opposed to
 ;           bdd based), and an underlying taxa list must be preserved between
-;           every pair of bipartitions in the list. The bipartitions are 
+;           every pair of bipartitions in the list. The bipartitions are
 ;           assumed to be ordered such that no bipartition x following y in
 ;           list exists such that y is a subset of x and x=/y.
 ;           See also no-conflicts-list (list based) and q-no-conflicts-list-gen."
@@ -273,13 +273,13 @@
 ;  ":Doc-Section TASPI
 ;  Determines if the list of bipartitions list is consistent. ~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;    (1) list - a list of bipartitions
 
-;  Details: Set operations are used to determine if the list of bipartitions 
+;  Details: Set operations are used to determine if the list of bipartitions
 ;           do not conflict.  Bipartitions must be list based (as opposed to
 ;           bdd based), and an underlying taxa list must be preserved between
-;           every pair of bipartitions in the list. No ordering on the 
+;           every pair of bipartitions in the list. No ordering on the
 ;           bipartitions is assumed.
 ;           See also q-no-conflicts-list."
   (declare (xargs :guard t))
@@ -301,7 +301,7 @@
 ;     (1) branch - a bdd based bipartition
 ;     (2) l - a list of bdd based bipartitions
 
-;  Details: All bipartitions must be based on the same taxa list.  
+;  Details: All bipartitions must be based on the same taxa list.
 ;           *Below* is defined in terms of the rooting given by taxa list."
   (declare (xargs :guard t))
   (cond ((atom l) nil)
@@ -336,7 +336,7 @@
 ;     (1) branch - a bdd based bipartition
 ;     (2) l - a list of bdd based bipartitions
 
-;  Details: All bipartitions must be based on the same taxa list.  
+;  Details: All bipartitions must be based on the same taxa list.
 ;           *Below* is defined in terms of the rooting given by taxa list."
   (declare (xargs :guard t))
   (cond ((atom l) nil)
@@ -411,7 +411,7 @@
               (and (valid-bdd (car x))
                    (valid-bdd (cdr x)))
             (and (or (equal (cdr x) t)
-                     (equal (cdr x) nil)) 
+                     (equal (cdr x) nil))
                  (valid-bdd (car x))))
         (if (consp (cdr x))
             (and (or (equal (car x) t)
@@ -438,7 +438,7 @@
                  (and (valid-bdd first)
                       (valid-bdd rest))
                (and (or (equal rest t)
-                        (equal rest nil)) 
+                        (equal rest nil))
                     (valid-bdd first)))
            (if (consp rest)
                (and (or (equal first t)
@@ -451,7 +451,7 @@
                   (not (equal first rest)))))))
 
 (dis+ind valid-bdd)
-         
+
 (defun valid-bdd-list (x)
   (declare (xargs :guard t))
   (if (consp x)
@@ -508,7 +508,7 @@
            (qs-subset-pop y (q-and-c2 top x)))
   :hints (("Goal" :in-theory (enable qs-subset-pop
                                      q-and))))
-                 
+
 (defthmd qs-subset-pop=qs-subset
   (implies (and (valid-bdd x)
                 (valid-bdd y))
@@ -533,7 +533,7 @@
   (implies (valid-bdd x)
            (valid-bdd (q-and-c2 x t)))
   :hints (("Goal" :in-theory (enable q-and-c2))))
-           
+
 (defthm valid-bdd-through-q-and-c2
   (implies (and (valid-bdd x)
                 (valid-bdd y))
@@ -549,7 +549,7 @@
                 (q-no-conflicts x y))
            (qs-subset-list (subtrees-not-implying x y)
                            (q-and-c2 top x)))
-  :hints (("Subgoal *1/5'4'" 
+  :hints (("Subgoal *1/5'4'"
            :use (:instance qs-subset-pop=qs-subset
                            (x y1) (y top)))
           ("Subgoal *1/5'6'"
@@ -680,7 +680,7 @@
                 (valid-bdd y))
            (qs-subset x y))
   :rule-classes :forward-chaining)
-               
+
 (defthm to-not-subset
   (implies (and (qs-subset x y)
                 (valid-bdd x)
@@ -779,7 +779,7 @@
                 (valid-bdd-list y))
            (valid-bdd-list (my-union x y))))
 
-      
+
 (defthm valid-bdd-through-q-or
   (implies (and (valid-bdd x)
                (valid-bdd y))

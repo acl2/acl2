@@ -30,7 +30,7 @@
  (defthm idfn-range-is-an-interval
      (interval-p (idfn-range))
    :rule-classes (:rewrite :type-prescription))
-     
+
  ;; The intervals are non-trivial
 
  (defthm idfn-domain-non-trivial
@@ -69,9 +69,9 @@
    :rule-classes nil)
 
  ; The function inv-interval takes y and return a pair of x1 <= x2 such that idfn(x1) <= y <= idfn(x2)
- ; or idfn(y1) >= y >= idfn(x2).  That is, they find a bounded, closed interval that contains the 
+ ; or idfn(y1) >= y >= idfn(x2).  That is, they find a bounded, closed interval that contains the
  ; inverse of y
- 
+
  (defthm idfn-inv-interval-correctness
      (implies (inside-interval-p y (idfn-range))
 	      (let* ((estimate (idfn-inv-interval y))
@@ -247,7 +247,7 @@
 
 (encapsulate
  ( ((differential-idfn * *) => *) )
- 
+
  (local
   (defun differential-idfn (x eps)
     (/ (- (idfn (+ x eps)) (idfn x)) eps)))
@@ -313,7 +313,7 @@
     ))
 
  (local (in-theory '(limited-derivative-idfn-body)))
- 
+
  (local
   (defun-std derivative-idfn (x)
     (if (inside-interval-p x (idfn-domain))
@@ -354,7 +354,7 @@
 		 (:instance IDFN-INVERSE-EXISTS (y x))
 		 (:instance IDFN-INVERSE-EXISTS (y (+ x eps)))
 		 )
-	   :in-theory '(differential-idfn-inverse-local 
+	   :in-theory '(differential-idfn-inverse-local
 			differential-idfn-definition
 			commutativity-of-+
 			commutativity-2-of-+
@@ -395,7 +395,7 @@
    (implies (and (standardp x)
 		 (inside-interval-p x (idfn-domain))
 		 (inside-interval-p (+ x eps) (idfn-domain))
-		 (i-small eps) 
+		 (i-small eps)
 		 (not (= eps 0)))
 	    (not (i-small (differential-idfn x eps))))
   :hints (("Goal"
@@ -525,10 +525,10 @@
 			    (x x)
 			    (y1 (+ x eps1))
 			    (y2 (+ x eps2)))
-		 (:instance i-close-to-small-sum 
+		 (:instance i-close-to-small-sum
 			    (x x)
 			    (eps eps1))
-		 (:instance i-close-to-small-sum 
+		 (:instance i-close-to-small-sum
 			    (x x)
 			    (eps eps2))
 		 )
@@ -601,7 +601,7 @@
   :hints (("Goal"
 	   :use ((:instance i-close-/-lemma))
 	   :in-theory '(i-close))))
-    
+
 (defthm not-small-differential-idfn
     (implies (and (standardp x)
 		  (inside-interval-p x (idfn-domain))
@@ -612,7 +612,7 @@
 	   :use ((:instance idfn-differential-not-small
 			    (x x)
 			    (y1 (+ x eps)))
-		 (:instance i-close-to-small-sum 
+		 (:instance i-close-to-small-sum
 			    (x x)
 			    (eps eps)))
 	   :in-theory '(differential-idfn-definition
@@ -660,7 +660,7 @@
 		  (inside-interval-p y2 (idfn-range))
 		  (i-close x y1) (not (= x y1))
 		  (i-close x y2) (not (= x y2)))
-	     (i-close (differential-idfn-inverse-local x (- y1 x)) 
+	     (i-close (differential-idfn-inverse-local x (- y1 x))
 		      (differential-idfn-inverse-local x (- y2 x))))
   :hints (("Goal"
 	   :use ((:instance close-differential-/-idfn
@@ -867,7 +867,7 @@
 				     (rdfn-domain idfn-range)))))
 
 (defthm differential-idfn-inverse-close
-   (implies (and (inside-interval-p x (idfn-range)) 
+   (implies (and (inside-interval-p x (idfn-range))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (idfn-range))

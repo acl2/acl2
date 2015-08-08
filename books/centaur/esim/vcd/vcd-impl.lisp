@@ -1402,14 +1402,14 @@
 
   (local (defthm l1
            (implies (consp nets)
-                    (CONSP (MV-NTH 0 (VCD-NETLIST-FILTER-PATH1 
+                    (CONSP (MV-NTH 0 (VCD-NETLIST-FILTER-PATH1
                                       (first (VCD-NET->PATH (FIRST nets)))
                                       nets))))
            :hints(("Goal" :in-theory (enable vcd-netlist-filter-path1)))))
 
   (local (defthm l2
            (implies (consp nets)
-                    (equal (CAR (MV-NTH 0 (VCD-NETLIST-FILTER-PATH1 
+                    (equal (CAR (MV-NTH 0 (VCD-NETLIST-FILTER-PATH1
                                            (first (VCD-NET->PATH (FIRST nets)))
                                            nets)))
                            (CAR NETS)))

@@ -14,7 +14,7 @@
 ;;;                     GENERATE AND PROPAGATE
 ;;;**********************************************************************
 
-;;Once the lemmas below are in place, the lemmas BITS-SUM, 
+;;Once the lemmas below are in place, the lemmas BITS-SUM,
 ;;BITS-SUM-SPECIAL-CASE, and BITS-SUM-PLUS-1 of book "bits" should be
 ;;deleted.
 
@@ -497,7 +497,7 @@
                  )
             (equal (bits (+ x y) i j)
                    (bits (+ (bits x i j)
-                            (bits y i j) 
+                            (bits y i j)
                             (logior (bitn x (1- j)) (bitn y (1- j))))
                          (- i j) 0)))
    :rule-classes ()))
@@ -612,8 +612,8 @@
             (equal (bits (+ 1 x y) i j)
                    (bits (+ (bits x i j)
                             (bits y i j)
-                            (lior (prop x y (1- j) 0) 
-                                  (gen x y (1- j) 0) 
+                            (lior (prop x y (1- j) 0)
+                                  (gen x y (1- j) 0)
                                   1))
                          (- i j) 0)))
    :hints (("Goal" :use bits-sum-plus-1
@@ -641,8 +641,8 @@
            (equal (bits (+ 1 x y) i j)
                   (bits (+ (bits x i j)
                            (bits y i j)
-                           (lior (prop x y (1- j) 0) 
-                                 (gen x y (1- j) 0) 
+                           (lior (prop x y (1- j) 0)
+                                 (gen x y (1- j) 0)
                                  1))
                         (- i j) 0)))
   :hints (("Goal" :use (bits-sum-plus-1 bits-sum-plus-1-with-prop-gen-normal)
@@ -751,10 +751,10 @@
                  (natp k)
                  (< k n))
             (equal (equal (bits (+ a b) k 0) 0)
-                   (equal (bits (lxor (lxor a b n) 
+                   (equal (bits (lxor (lxor a b n)
                                       (cat (lior a b n) n 0 1)
-                                      (1+ n)) 
-                                k 0) 
+                                      (1+ n))
+                                k 0)
                           0)))
    :hints (("Goal"
             :expand ((:free (x y) (cat x n y 1)))
@@ -789,7 +789,7 @@ to apply top-thm-2-0 with a replaced by a+1.  Thus it suffices to prove:
       (cat (lior a b n) n 1 1)
       (1+ n))
 =
-(lxor (lxor (1+ a) b n) 
+(lxor (lxor (1+ a) b n)
       (cat (lior (1+ a) b n) n 0 1)
       (1+ n))
 
@@ -831,7 +831,7 @@ lxor, cat, and lior that should make this proof pretty automatic.
                  (equal (bitn a 0) (bitn b 0)))
             (not (equal (bitn (bits (lxor (lxor a b n)
                                           (cat (lior a b n) n 1 1)
-                                          (1+ n)) 
+                                          (1+ n))
                                     k 0)
                               0)
                         0)))
@@ -859,7 +859,7 @@ lxor, cat, and lior that should make this proof pretty automatic.
                  (equal (bitn a 0) (bitn b 0)))
             (not (equal (bits (lxor (lxor a b n)
                                     (cat (lior a b n) n 1 1)
-                                    (1+ n)) 
+                                    (1+ n))
                               k 0)
                         0)))
    :hints (("Goal" :use top-thm-2-1-1-2-1))
@@ -876,8 +876,8 @@ lxor, cat, and lior that should make this proof pretty automatic.
             (equal (equal (bits (+ a b 1) k 0) 0)
                    (equal (bits (lxor (lxor a b n)
                                       (cat (lior a b n) n 1 1)
-                                      (1+ n)) 
-                                k 0) 
+                                      (1+ n))
+                                k 0)
                           0)))
    :hints (("Goal" :use (top-thm-2-1-1-1 top-thm-2-1-1-2)))
    :rule-classes ()))
@@ -969,7 +969,7 @@ lxor, cat, and lior that should make this proof pretty automatic.
                                     (x (lxor (lxor a b n)
                                              (cat (lior a b n) n 1 1)
                                              (1+ n)))
-                                    (y (lxor (lxor (1+ a) b n) 
+                                    (y (lxor (lxor (1+ a) b n)
                                              (cat (lior (1+ a) b n) n 0 1)
                                              (1+ n)))
                                     (k (1+ n))))
@@ -988,8 +988,8 @@ lxor, cat, and lior that should make this proof pretty automatic.
             (equal (equal (bits (+ a b 1) k 0) 0)
                    (equal (bits (lxor (lxor a b n)
                                       (cat (lior a b n) n 1 1)
-                                      (1+ n)) 
-                                k 0) 
+                                      (1+ n))
+                                k 0)
                           0)))
    :hints (("Goal" :use (top-thm-2-1-2-2
                          (:instance top-thm-2-0
@@ -1006,8 +1006,8 @@ lxor, cat, and lior that should make this proof pretty automatic.
             (equal (equal (bits (+ a b 1) k 0) 0)
                    (equal (bits (lxor (lxor a b n)
                                       (cat (lior a b n) n 1 1)
-                                      (1+ n)) 
-                                k 0) 
+                                      (1+ n))
+                                k 0)
                           0)))
    :hints (("Goal" :use (top-thm-2-1-1
                          top-thm-2-1-2
@@ -1033,10 +1033,10 @@ lxor, cat, and lior that should make this proof pretty automatic.
                 (< k n)
                 (or (equal c 0) (equal c 1)))
            (equal (equal (bits (+ a b c) k 0) 0)
-                  (equal (bits (lxor (lxor a b n) 
+                  (equal (bits (lxor (lxor a b n)
                                      (cat (lior a b n) n c 1)
-                                     (1+ n)) 
-                               k 0) 
+                                     (1+ n))
+                               k 0)
                          0)))
   :hints (("Goal" :use (top-thm-2-0 top-thm-2-1)
            :in-theory (theory 'ground-zero)))
@@ -1064,11 +1064,11 @@ lxor, cat, and lior that should make this proof pretty automatic.
                 (natp k)
                 (< k n))
            (equal (equal (bits (+ a b 1) k 0) 0)
-		  (equal (bits (lnot (lxor (lxor a b n) 
+		  (equal (bits (lnot (lxor (lxor a b n)
 				           (cat (land a b n) n 0 1)
 					   (1+ n))
 				     (1+ n))
-			       k 0) 
+			       k 0)
 			 0)))
   :hints (("Goal" :use (top-thm-3-lemma (:instance top-thm-2-old (c 1)))
            :expand ((cat (land a b n) n 0 1))
@@ -1107,7 +1107,7 @@ lxor, cat, and lior that should make this proof pretty automatic.
   (lnot (lior a (lnot b (1+ e)) (1+ e)) (1+ e)))
 
 (defun lam1 (a b e)
-  (land (bits (lamt a b e) e 2) 
+  (land (bits (lamt a b e) e 2)
 	(land (bits (lamg a b e) (1- e) 1)
 	      (lnot (bits (lamz a b e) (- e 2) 0) (1- e))
 	      (1- e))
@@ -1121,7 +1121,7 @@ lxor, cat, and lior that should make this proof pretty automatic.
 	(1- e)))
 
 (defun lam3 (a b e)
-  (land (bits (lamt a b e) e 2) 
+  (land (bits (lamt a b e) e 2)
 	(land (bits (lamz a b e) (1- e) 1)
 	      (lnot (bits (lamg a b e) (- e 2) 0) (1- e))
 	      (1- e))

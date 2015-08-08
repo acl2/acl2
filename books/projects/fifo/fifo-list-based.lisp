@@ -569,7 +569,7 @@ We saw checkpoint Subgoal *1/4'':
                                                   (LEN FIFO)))
        (FIFO-P FIFO))
   (NOT (MV-NTH 0
-               (FIFO-RUN (CDR INSTRUCTIONS) 
+               (FIFO-RUN (CDR INSTRUCTIONS)
                          (MV-NTH 1 (FIFO-STEP (CAR INSTRUCTIONS) FIFO))
                          (CONS (MV-NTH 2 (FIFO-STEP (CAR INSTRUCTIONS) FIFO))
                                (MV-NTH 1

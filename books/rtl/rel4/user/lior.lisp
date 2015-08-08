@@ -74,7 +74,7 @@ a bit vector of length N.
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(lior x y n) -- the base case
          `(binary-lior ,@x))
-        (t         
+        (t
          `(binary-lior ,(car x)
                        (lior ,@(cdr x))
                        ,(car (last x))))))
@@ -156,8 +156,8 @@ a bit vector of length N.
                 (case-split (integerp n))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j))))))
 
 (defthmd bits-lior-2
@@ -166,8 +166,8 @@ a bit vector of length N.
                 (case-split (integerp n))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ n (- j))))))
 
 ;notice the call to MIN in the conclusion
@@ -177,8 +177,8 @@ a bit vector of length N.
                 (case-split (integerp i))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j))))))
 
 (defthmd bitn-lior-1
@@ -187,8 +187,8 @@ a bit vector of length N.
                 (case-split (integerp n))
                 )
            (equal (bitn (lior x y n) m)
-                  (lior (bitn x m) 
-                        (bitn y m) 
+                  (lior (bitn x m)
+                        (bitn y m)
                         1))))
 
 (defthmd bitn-lior-2
@@ -207,8 +207,8 @@ a bit vector of length N.
                 )
            (equal (bitn (lior x y n) m)
                   (if (< m n)
-                      (lior (bitn x m) 
-                            (bitn y m) 
+                      (lior (bitn x m)
+                            (bitn y m)
                             1)
                     0))))
 

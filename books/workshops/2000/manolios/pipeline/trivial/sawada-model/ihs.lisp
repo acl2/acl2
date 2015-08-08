@@ -82,15 +82,15 @@
 ;; 		 (implies ,(fourth tuple) (stringp ,(fourth tuple))))
 ;; 	      :rule-classes nil))))
 
-   
+
 ;; (defun defword-struct-typecheck-thms (struct)
 ;;   (if (endp struct) nil
 ;;       (cons (defword-tuple-typecheck-thms (car struct))
 ;; 	    (defword-struct-typecheck-thms (cdr struct)))))
 
 ;; (defun type-check-thms
-;;     (name struct conc-name set-conc-name keyword-updater doc) 
-;;   (append     
+;;     (name struct conc-name set-conc-name keyword-updater doc)
+;;   (append
 ;;    (list
 ;;     `(local (defthm defword-symbolp-name (symbolp ',name)
 ;; 	      :rule-classes nil
@@ -116,13 +116,13 @@
 ;; ;; macro expansion is completed.  Because the original deword checks
 ;; ;; types of arguments before expanding macro, some defword expressions
 ;; ;; are rejected even if it can be considered as a legitimate defword
-;; ;; expression. For instance, 
+;; ;; expression. For instance,
 ;; ;; (defword new-word ((field1 *field1-pos* *field1-width*)
 ;; ;;                    (field2 *field2-pos* *field2-width*)))
 ;; ;; is rejected because *field1-pos* and other constants are not
-;; ;; integers. 
+;; ;; integers.
 ;; (defmacro defword* (name struct &key conc-name set-conc-name keyword-updater
-;; 			 doc) 
+;; 			 doc)
 ;;   (cond
 ;;    ((not (weak-defword-guards struct)))
 ;;    (t

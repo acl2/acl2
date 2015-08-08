@@ -141,12 +141,12 @@
                               (open-input-channel-p stream :byte state)
                               (maybe-byte-p buf))))
   (mbe :logic (mv-let (res buf state)
-                (if buf 
+                (if buf
                     (mv buf nil state)
                   (b* (((mv byte state) (read-byte$ stream state)))
                     (mv byte nil state)))
                 (mv (and (maybe-byte-p res) res) buf state))
-       :exec (if buf 
+       :exec (if buf
                  (mv buf nil state)
                (b* (((mv byte state) (read-byte$ stream state)))
                  (mv byte nil state)))))
@@ -798,7 +798,7 @@
                   :measure (aiger-buf-measure stream buf state)))
   (b* (((mv byte buf state) (read-byte-buf stream buf state))
        ((when (not byte))
-        
+
         (mv (aiger-err "EOF while reading bytecoded natural~%")
             0 buf state))
        ((when (not (logbitp 7 byte)))

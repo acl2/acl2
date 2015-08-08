@@ -15,14 +15,14 @@
 ; SUBSETP-EQUAL
 ; ------------------------------------------------------------
 
-(defthm subsetp-equal-cons 
+(defthm subsetp-equal-cons
   (implies (subsetp-equal a b)
 	   (subsetp-equal a (cons x b))))
 
-(defthm subsetp-equal-reflexive 
+(defthm subsetp-equal-reflexive
   (subsetp-equal l l))
 
-(defthm subsetp-equal-transitive 
+(defthm subsetp-equal-transitive
   (implies (and (subsetp-equal a b)
 		(subsetp-equal b c))
 	   (subsetp-equal a c))
@@ -68,12 +68,12 @@
   (set-equal l l)
   :hints (("Goal" :do-not-induct t)))
 
-(defthm set-equal-symmetric 
+(defthm set-equal-symmetric
   (implies (set-equal a b)
 	   (set-equal b a))
   :rule-classes nil)
 
-(defthm set-equal-transitive 
+(defthm set-equal-transitive
   (implies (and (set-equal a b)
 		(set-equal b c))
 	   (set-equal a c))
@@ -86,7 +86,7 @@
 ; MEMBERP-EQUAL
 ; ------------------------------------------------------------
 
-(defthm memberp-equal-subsetp-equal 
+(defthm memberp-equal-subsetp-equal
   (implies (and (memberp-equal x a)
 		(subsetp-equal a b))
 	   (memberp-equal x b))
@@ -145,7 +145,7 @@
   (implies (setp-equal a)
 	   (setp-equal (intersection-equal a b))))
 
-(local 
+(local
  (defthm member-equal-set-difference-equal
   (iff (member-equal x (set-difference-equal a b))
        (and (member-equal x a)
@@ -233,7 +233,7 @@
 ; Other Facts
 ; ------------------------------------------------------------
 
-(local 
+(local
  (defthm member-equal-append
    (iff (member-equal x (append a b))
 	(or (member-equal x a)
@@ -245,7 +245,7 @@
 	    (no-duplicatesp-equal b)
 	    (not (intersection-equal a b)))))
 
-(local 
+(local
  (defthm true-listp-append-rewrite
   (equal (true-listp (append a b))
 	 (true-listp b))))

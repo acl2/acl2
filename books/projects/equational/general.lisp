@@ -36,9 +36,9 @@
 (defconst *def-cfg*
   '( (raw-var-weight 2) ))
 
-;; VARP (x) 
-;; Given x, return t if x is a variable.  We assume that x was passed in from 
-;; the top-level of the immediate predicate or subterm it appears in, and thus 
+;; VARP (x)
+;; Given x, return t if x is a variable.  We assume that x was passed in from
+;; the top-level of the immediate predicate or subterm it appears in, and thus
 ;; x is a variable in that context iff it is not a cons.
 ;; G. Passmore :: 12/22/05
 
@@ -63,8 +63,8 @@
 (defun remove-elements-once-each (lst elements)
   (cond ((endp lst) nil)
 	((member-equal (car lst) elements)
-	 (remove-elements-once-each 
-	  (cdr lst) 
+	 (remove-elements-once-each
+	  (cdr lst)
 	  (remove-elements elements (list (car lst)))))
 	(t (cons (car lst) (remove-elements-once-each (cdr lst) elements)))))
 
@@ -74,7 +74,7 @@
 ;; G. Passmore :: 12/22/05
 
 (defun all-symbols* (lst)
-  (cond ((equal lst nil) nil) 
+  (cond ((equal lst nil) nil)
 	((symbolp lst) (list lst))
 	((consp lst) (append (all-symbols* (car lst))
 			     (all-symbols* (cdr lst))))))
@@ -82,13 +82,13 @@
 
 ;;
 ;; Configuration is just done through an alist.
-;; 
+;;
 
 (defun get-setting (prover-settings select)
   (cond ((endp prover-settings) nil) ; nil is default value
 	((equal (caar prover-settings) select) (cadar prover-settings))
 	(t (get-setting (cdr prover-settings) select))))
-  
+
 ;; EXTRACT-CLAUSE (proof-move)
 ;; Given a single proof-move, extract its constituent clause.
 ;; G. Passmore :: 12/23/05
@@ -100,7 +100,7 @@
 
 (defun clause-move-member (clause moves)
   (cond ((endp moves) nil)
-	(t (or (equal clause 
+	(t (or (equal clause
 		      (extract-clause (car moves)))
 	       (clause-move-member clause (cdr moves))))))
 
@@ -141,7 +141,7 @@
 (defun ctr-append (a b)
   (cond ((clause-move-member (extract-clause (car a)) b) b)
 	(t (append a b))))
-	 
+
 ;; COLLECT-ALL-TERMS (lit)
 ;; Given a literal, return all top-level terms.
 ;; Example: (*** '(not (G x (foo y (a))))) => (x (foo y (a)))

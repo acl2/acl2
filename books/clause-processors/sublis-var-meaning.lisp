@@ -234,7 +234,7 @@
     :flag term)
   (defthm eval-of-termlist-subst
     (implies (and (pseudo-term-listp x)
-                  (not (assoc nil alist))) 
+                  (not (assoc nil alist)))
              (equal (cterm-ev-lst (termlist-subst x alist) a)
                     (cterm-ev-lst x (append (cterm-ev-alist alist a) a))))
     :flag list))

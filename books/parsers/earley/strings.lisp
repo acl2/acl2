@@ -24,7 +24,7 @@
 (define str-trim-left2 ((char-bag character-listp)
                         (str-chars character-listp))
 
-  :returns (mv (done booleanp :hyp :fguard) 
+  :returns (mv (done booleanp :hyp :fguard)
                (thechars character-listp :hyp :fguard))
   :parents (earley-parser)
 
@@ -33,10 +33,10 @@
         ((equal (car char-bag)
                 (car str-chars))
          (mv nil (cdr str-chars)))
-        (t 
+        (t
          (str-trim-left2 (cdr char-bag) str-chars))))
 
-(local 
+(local
  (defthm str-trim-left2-makes-progress
    (implies (and (character-listp char-bag)
                  (character-listp str-chars)
@@ -51,7 +51,7 @@
   :parents (earley-parser)
   (b* (((when (or (not (character-listp char-bag))
                   (not (character-listp str-chars))))
-        (prog2$ (er hard 'str-trim-left1 
+        (prog2$ (er hard 'str-trim-left1
                     ;; By using hard and verified guards, we are guaranteed
                     ;; that we never enter this branch.
                     "Two arguments to str-trim-left1 were not character-listp")

@@ -28,7 +28,7 @@
 ;; unambiguous states A C T G), and R is the symbol for the ambiguous state
 ;; which could be A or G, then the entry for R should be (0 nil nil 0).  The
 ;; unambiguous states should be present as well; for example, T should map to
-;; (nil nil 0 nil).  *dna-scorelists* at the end of this file is an example 
+;; (nil nil 0 nil).  *dna-scorelists* at the end of this file is an example
 ;; for typical DNA sequences.
 
 ;; sequences - a fast alist mapping taxon names to sequences, each sequence
@@ -114,7 +114,7 @@
                 (equal (len parent) (len matrix))
                 (rational-or-nil-listp child)
                 (rational-or-nil-listp parent))
-           (rational-or-nil-listp (add-min-cost-to-parent-scorelist 
+           (rational-or-nil-listp (add-min-cost-to-parent-scorelist
                                    parent
                                    child matrix)))
   :hints (("Subgoal *1/5''" :in-theory (disable
@@ -125,7 +125,7 @@
  (defthm consp-not-len-0
    (implies (consp x)
             (not (equal (len x) 0)))))
- 
+
 ;; Adds in a child's entire sequence contribution to the scorelist of the parent.
 (defun combine-scorelists-for-sequence (parent child matrix)
   (declare (xargs :guard (and (sequence-scorelistp parent (len matrix))
@@ -146,7 +146,7 @@
                 (sequence-scorelistp child (len matrix))
                 (equal (len parent) (len child))
                 (cost-matrixp-nstates matrix (len matrix)))
-           (sequence-scorelistp (combine-scorelists-for-sequence parent child matrix) 
+           (sequence-scorelistp (combine-scorelists-for-sequence parent child matrix)
                                 (len matrix))))
 
 ;; Instead of making an all-zero parent scorelist to start with, we can take
@@ -202,8 +202,8 @@
 
 ;; Given the list of scorelists for all children, makes the scorelist of the
 ;; parent.  This can be called initially with init-scorelist like this:
-;; (make-internal-score-list (cdr scorelists) 
-;;                           matrix 
+;; (make-internal-score-list (cdr scorelists)
+;;                           matrix
 ;;                           (init-scorelist (car scorelists) matrix))
 (defun make-internal-score-list (scorelists matrix parentSoFar)
   (declare (xargs :guard (and (sequence-scorelistp parentSoFar (len matrix))
@@ -211,7 +211,7 @@
                               (cost-matrixp-nstates matrix (len matrix)))))
   (if (atom scorelists)
       parentSoFar
-    (make-internal-score-list 
+    (make-internal-score-list
      (cdr scorelists) matrix
      (combine-scorelists-for-sequence parentSoFar (car scorelists) matrix))))
 
@@ -219,9 +219,9 @@
   (implies (and (sequence-scorelistp parentSoFar (len matrix))
                 (scorelist-listp scorelists (len parentSoFar) (len matrix))
                 (cost-matrixp-nstates matrix (len matrix)))
-           (sequence-scorelistp (make-internal-score-list scorelists 
+           (sequence-scorelistp (make-internal-score-list scorelists
                                                           matrix
-                                                          parentSofar) 
+                                                          parentSofar)
                                 (len matrix))))
 
 (defthm len-make-internal-score-list
@@ -249,14 +249,14 @@
 ;;                   (c . (1 1 0))))
 ;;         (scorelists '(((0 nil nil) (nil 0 nil))
 ;;                       ((nil nil 0) (nil 0 nil)))))
-;;    (make-internal-score-list (cdr scorelists) matrix 
+;;    (make-internal-score-list (cdr scorelists) matrix
 ;;                              (init-scorelist (car scorelists) matrix)))
 
 ;; |#
 
 
 ;; if flg:
-;;     Return the sequence scorelist for tree 
+;;     Return the sequence scorelist for tree
 ;; if (not flg):
 ;;     List the scorelists for all children in the list of subtrees tree.
 (defun score-tree-and-sequences (flg tree sequences cssl-map matrix alpha-len)
@@ -273,15 +273,15 @@
       (if (atom tree)
           ;; Scorelist based immediately on a sequence
           (make-leaf-score-list (cdr (het tree sequences)) cssl-map alpha-len)
-        
+
         ;; Sum contributions of all children:
         (score-tree-and-sequences nil tree sequences cssl-map matrix alpha-len))
-        
+
     ;; List of trees
     (if (atom tree)
         nil
       (if (atom (cdr tree))
-          (init-scorelist (score-tree-and-sequences t (car tree) sequences 
+          (init-scorelist (score-tree-and-sequences t (car tree) sequences
                                                     cssl-map matrix alpha-len)
                           matrix)
         (combine-scorelists-for-sequence ;parent child matrix
@@ -335,16 +335,16 @@
 ; ":Doc-Section TASPI
 ;  Scores a tree under parsimony~/
 ;  ~/
-;  Arguments: 
-;    (1) tree - a single phylogenetic tree                     
-;    (2) sequences - a mapping of taxa to sequences            
-;    (3) cssl-map -  An alist mapping every character state,  
-;                    including ambiguous ones, to a list containing 
+;  Arguments:
+;    (1) tree - a single phylogenetic tree
+;    (2) sequences - a mapping of taxa to sequences
+;    (3) cssl-map -  An alist mapping every character state,
+;                    including ambiguous ones, to a list containing
 ;                    one element (either 0 or nil for infinity) for
-;                    each unambiguous state.                     
-;    (4) matrix - A mapping of unambiguous character states to 
-;                 transition costs.          
-;                   
+;                    each unambiguous state.
+;    (4) matrix - A mapping of unambiguous character states to
+;                 transition costs.
+;
 ;  Details: Does not handle branch lengths."
   (declare (xargs :guard (and (valid-sequences-same-length sequences)
                               (tree-matches-sequences t tree sequences)
@@ -371,16 +371,16 @@
 ; ":Doc-Section TASPI
 ;  Scores a list of trees under parsimony~/
 ;  ~/
-;  Arguments: 
-;     (1) trees - a list of  phylogenetic trees                
-;     (2) sequences - a mapping of taxa to sequences           
-;     (3) cssl-map -  An alist mapping every character state to a  
-;                     list containing one element (either 0 or nil 
-;                     for infinity) for each unambiguous state   
-;     (4) matrix - A mapping of unambiguous character states to 
-;                  transition costs.                           
+;  Arguments:
+;     (1) trees - a list of  phylogenetic trees
+;     (2) sequences - a mapping of taxa to sequences
+;     (3) cssl-map -  An alist mapping every character state to a
+;                     list containing one element (either 0 or nil
+;                     for infinity) for each unambiguous state
+;     (4) matrix - A mapping of unambiguous character states to
+;                  transition costs.
 
-;  Details: Does not handle branch lengths."  
+;  Details: Does not handle branch lengths."
   (declare (xargs :guard (and (valid-sequences-same-length sequences)
                               (tree-matches-sequences nil trees sequences)
                               (charstate-scorelist-map-p cssl-map (len matrix))
@@ -391,7 +391,7 @@
           (pscore-trees (cdr trees) sequences cssl-map matrix))))
 
 
-;;Default cost matrix for DNA; 
+;;Default cost matrix for DNA;
 ;; just 0 for no transition and 1 for any transition.
 (defconst *dna-matrix*
    (make-default-cost-matrix '(a c t g))
@@ -404,7 +404,7 @@
 ;  ~/
 ;  "
 )
- 
+
 (defconst *dna-cssl*
   (build-fast-alist-from-alist
    '((a    0   nil nil nil)
@@ -477,4 +477,4 @@ EXAMPLES!  see also testing.lisp
   (pscore-trees trees seqs  *dna-cssl* *dna-matrix*))
 
 ||#
- 
+

@@ -31,7 +31,7 @@
 		     (acl2::if (zp n)
 			 (acl2::car l)
 			 (nth (+ -1 n) (acl2::cdr l)))))))
-	  
+
 (defthm len-implies-true-listp
   (implies
    (len n list)
@@ -46,7 +46,7 @@
 
 (defun syn::consp (term)
   (declare (type t term))
-  (acl2::and 
+  (acl2::and
    (len 3 term)
    (equal (acl2::car term) 'acl2::cons)))
 
@@ -163,7 +163,7 @@
 	     (equal (acl2::car term) fn)))
 
 (defmacro syn::apply (fn &rest args)
-  `(list ',fn ,@args)) 
+  `(list ',fn ,@args))
 
 (defevaluator eval eval-list
   (
@@ -211,7 +211,7 @@
 (defmacro defevthm (ev name thm &rest key-args)
   `(defthm ,(symbol-fns::prefix ev '- name)
      ,thm
-     :hints (("Goal" :use (:functional-instance 
+     :hints (("Goal" :use (:functional-instance
 			   (:instance ,name
 				      ,@(free-var-bindings name ev thm))
 			   (syn::eval      ,ev)

@@ -101,7 +101,7 @@
 ;; But calling this directly produces a crazy error:
 (oracle-timelimit 1/10 (sleep 3) :onfail 99)
 
-HARD ACL2 ERROR in GETPROP:  No property was found under symbol 
+HARD ACL2 ERROR in GETPROP:  No property was found under symbol
 COMMAND-LANDMARK for key GLOBAL-VALUE.  GLOBAL-VAL didn't find a value.
 Initialize this symbol in PRIMORDIAL-WORLD-GLOBALS.
 
@@ -124,7 +124,7 @@ BOZO what is going on here?
 
 ;; Using it in a Make-event also produces the same crazy error.  After
 ;; adding tons of debugging output, the core exec function really is
-;; 
+;;
 (make-event
  (b* (((mv time bytes ans state) (oracle-timelimit 1/10
                                                    (prog2$ (sleep 3) 17)

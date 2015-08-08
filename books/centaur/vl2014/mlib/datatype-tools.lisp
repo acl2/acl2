@@ -191,7 +191,7 @@ into a usertype-free datatype --</p>
     (b* ((x (vl-datatype-fix x)))
       (vl-datatype-case x
         :vl-coretype (mv nil x)
-        :vl-enum (mv nil x) ;; bozo 
+        :vl-enum (mv nil x) ;; bozo
         :vl-usertype
         (b* (((mv warning newx newss) (vl-usertype-resolve x ss 100))
              ((when warning) (mv warning newx))
@@ -234,7 +234,7 @@ into a usertype-free datatype --</p>
     :vl-struct (mv t x.members)
     :vl-union  (mv t x.members)
     :otherwise (mv nil nil)))
-  
+
 (define vl-find-structmember ((name stringp) (membs vl-structmemberlist-p))
   :returns (memb (iff (vl-structmember-p memb) memb))
   (if (atom membs)
@@ -297,7 +297,7 @@ it's the first packed dimension (or the declared range of a net type).</p>"
   (mv (warning (iff (vl-warning-p warning) warning))
       (range  vl-maybe-range-p
               "On success: the range of this datatype."))
-  (b* (((fun (fail msg args)) 
+  (b* (((fun (fail msg args))
         (mv (make-vl-warning :type :vl-datatype-range-fail
                              :msg msg
                              :args args)
@@ -340,7 +340,7 @@ the wrong thing in a lot of cases.</p>."
   (mv (warning (iff (vl-warning-p warning) warning))
       (range  vl-maybe-range-p
               "On success: the range of this datatype."))
-  (b* (((fun (fail msg args)) 
+  (b* (((fun (fail msg args))
         (mv (make-vl-warning :type :vl-datatype-range-fail
                              :msg msg
                              :args args)
@@ -387,7 +387,7 @@ packed or we'll fail.</p>"
     (mv (warning (iff (vl-warning-p warning) warning))
         (size    (implies (not warning) (posp size)) :rule-classes :type-prescription))
     :measure (vl-datatype-count x)
-    (b* (((fun (fail reason args)) 
+    (b* (((fun (fail reason args))
           (mv (make-vl-warning :type :vl-datatype-size-fail
                                :msg reason
                                :args args)
@@ -509,7 +509,7 @@ packed or we'll fail.</p>"
     (mv (warning (iff (vl-warning-p warning) warning))
         (size    (implies (not warning) (posp size)) :rule-classes :type-prescription))
     :measure (vl-datatype-count x)
-    (b* (((fun (fail reason args)) 
+    (b* (((fun (fail reason args))
           (mv (make-vl-warning :type :vl-datatype-size-fail
                                :msg reason
                                :args args)
@@ -525,7 +525,7 @@ packed or we'll fail.</p>"
            (if (and udim-size pdim-size)
                (case x.name
                  ;; See SystemVerilog-2012 Section 6.11, Integer Data Types.
-                 
+
                  ;; integer atom types -- these don't have any dimensions, they're just fixed sizes
                  (:vl-byte     (success (* pdim-size udim-size 8)))
                  (:vl-shortint (success (* pdim-size udim-size 16)))
@@ -533,7 +533,7 @@ packed or we'll fail.</p>"
                  (:vl-longint  (success (* pdim-size udim-size 64)))
                  (:vl-integer  (success (* pdim-size udim-size 32)))
                  (:vl-time     (success (* pdim-size udim-size 64)))
-                 
+
                  ;; integer vector types -- these have arbitrary packed dimensions.
                  ((:vl-bit :vl-logic :vl-reg)
                   (success (* udim-size pdim-size)))
@@ -685,7 +685,7 @@ packed or we'll fail.</p>"
 
       (:vl-enum ;; just need to look at the base type, right?
        (fail "bozo: implement enum typing"))
-      
+
       (:vl-struct ;; just need to look at signedp and packed?
        (b* (((unless x.packedp) ;; (fail "non-packed struct")
              ;; Can we just say unpacked stuff is always unsigned?
@@ -723,6 +723,6 @@ usertypes resolved.</p>"
     (:vl-union  x.packedp)
     (:vl-enum   nil) ;; BOZO is this correct?
     (:vl-usertype nil)))
-       
-     
+
+
 

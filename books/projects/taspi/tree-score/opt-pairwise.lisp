@@ -3,19 +3,19 @@
 (include-book "../code/sequences/align")
 (include-book "../code/gen-helper/extra")
 
-(defun make-raw-sequence-pairings-each (child parent-seq 
+(defun make-raw-sequence-pairings-each (child parent-seq
                                           seqs-with-tree-keys acc)
   (declare (xargs :guard t))
   (if (consp child)
-      (let ((childSeq (cdr (assoc-hqual (car child) 
+      (let ((childSeq (cdr (assoc-hqual (car child)
                                          seqs-with-tree-keys))))
-        (make-raw-sequence-pairings-each 
+        (make-raw-sequence-pairings-each
          (car child) childSeq seqs-with-tree-keys
-         (make-raw-sequence-pairings-each 
-          (cdr child) 
+         (make-raw-sequence-pairings-each
+          (cdr child)
           parent-seq seqs-with-tree-keys
-          (cons 
-           (cons 
+          (cons
+           (cons
             parent-seq childSeq)
            acc))))
     acc))
@@ -50,7 +50,7 @@
        (cdr anc-tree-mapping))
     sequences))
 
-(defun get-opt-score-from-fully-loaded-tree 
+(defun get-opt-score-from-fully-loaded-tree
   (tree anc-mappings sequences cost-stuff)
   (let* ((new-seqs (update-raw-sequence-keys sequences anc-mappings))
          (pairings (make-raw-sequence-pairings tree new-seqs)))

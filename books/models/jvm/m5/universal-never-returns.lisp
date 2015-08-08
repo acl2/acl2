@@ -57,13 +57,13 @@ Aug 2, 2002
            (inside-universalp th (step x s)))
   :hints (("Goal"
            :in-theory (enable step))))
-       
+
 (in-theory (disable inside-universalp))
 
 (defthm inside-universalp-run
   (implies (inside-universalp th s)
            (inside-universalp th (run sched s)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable run))))
 
 ; This is a technical lemma, needed because I've disabled inside-universalp.

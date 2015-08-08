@@ -54,7 +54,7 @@
 	    (<= (norm (expt x n)) (norm x)))))
 
 ;; Now, we want to get rid of the n! terms.  We do that by considering
-;; the function 2^n, which is less than n!.  
+;; the function 2^n, which is less than n!.
 
 (local
  (defun expt-2-n (n)
@@ -68,7 +68,7 @@
  (defthm lemma-2
    (implies (and (integerp n)
 		 (<= 2 n))
-	    (<= (norm (expt-2-n (+ -1 n))) 
+	    (<= (norm (expt-2-n (+ -1 n)))
 		(norm (factorial n))))
    :hints (("Goal" :induct (factorial n)
 	    :in-theory (enable-disable (factorial) (norm-two))))))
@@ -93,7 +93,7 @@
 		 (integerp n)
 		 (<= 2 n))
 	    (<= (norm (taylor-exp-term x n))
-		(* (norm x) 
+		(* (norm x)
 		   (/ (norm (expt-2-n (+ -1 n)))))))
    :hints (("Goal'"
 	    :use ((:instance lemma-1)
@@ -127,10 +127,10 @@
    (implies (and (< (norm x) 1)
 		 (integerp n)
 		 (<= 2 n))
-	    (<= (sumlist-norm 
+	    (<= (sumlist-norm
 		 (taylor-exp-list nterms n x))
-		(* (norm x) 
-		   (sumlist-norm 
+		(* (norm x)
+		   (sumlist-norm
 		    (expt-2-n-list nterms n)))))))
 
 
@@ -278,7 +278,7 @@
    (implies (and (not (zp nterms))
 		 (integerp n)
 		 (<= 2 n))
-	    (<= (sumlist (expt-2-n-list-norm nterms n)) 
+	    (<= (sumlist (expt-2-n-list-norm nterms n))
 		1))
    :hints (("Goal" :use ((:instance lemma-11)
 			 (:instance lemma-12 (n (+ -2 n))))
@@ -325,7 +325,7 @@
 		 (not (zp nterms))
 		 (integerp n)
 		 (<= 2 n))
-	    (<= (sumlist-norm 
+	    (<= (sumlist-norm
 		 (taylor-exp-list nterms n x))
 		(norm x)))
    :hints (("Goal" :use ((:instance lemma-6)
@@ -414,14 +414,14 @@
 	    :in-theory (disable taylor-exp-list-limited))
 	   ("Goal'"
 	    :expand ((taylor-exp-list (i-large-integer) 0 x))))))
-		  
+
 ;; So we can take standard-parts of both sides and get an expression
 ;; for standard_part(1-Taylor(e^x)).
 
 (local
  (defthm lemma-23
    (implies (i-limited x)
-	    (equal (+ -1 
+	    (equal (+ -1
 		      (standard-part
 		       (sumlist (taylor-exp-list (i-large-integer) 0 x))))
 		   (standard-part
@@ -481,7 +481,7 @@
 			     (y (norm x)))
 		  (:instance standards-are-limited))
 	    :in-theory (disable standard-part-of-plus standards-are-limited)))))
-	    
+
 ;; And so, if x is standard and less than 1, we have that
 ;; standard-part(1-Taylor_1^n(e^x)) is less than x+x.
 
@@ -497,7 +497,7 @@
 		  (:instance lemma-25)
 		  (:instance lemma-21 (nterms (i-large-integer))))
 	    :in-theory nil))))
-		  
+
 ;; And this is the same result, but pushing the standard-part into the
 ;; norm.
 
@@ -505,12 +505,12 @@
  (defthm lemma-28
    (implies (and (standard-numberp x)
                  (< (norm x) 1))
-            (<= (norm 
-                 (standard-part (+ -1 
-                                   (sumlist 
-                                    (taylor-exp-list 
+            (<= (norm
+                 (standard-part (+ -1
+                                   (sumlist
+                                    (taylor-exp-list
                                      (i-large-integer)
-                                     0 
+                                     0
                                      x)))))
                 (+ (norm x) (norm x))))
    :hints (("Goal"
@@ -520,7 +520,7 @@
 			     (x -1)
 			     (y (sumlist (taylor-exp-list (i-large-integer) 0 x)))))
 	    :in-theory (disable lemma-27 taylor-exp-list-limited
-				i-limited-plus))))) 
+				i-limited-plus)))))
 
 ;; Again, the same theorem, but we take the 1 out of the
 ;; standard-part(1-X) term.
@@ -529,7 +529,7 @@
  (defthm lemma-29
    (implies (and (standard-numberp x)
 		 (< (norm x) 1))
-	    (<= (norm 
+	    (<= (norm
 		 (+ -1 (standard-part (sumlist (taylor-exp-list (i-large-integer) 0 x)))))
 		(+ (norm x) (norm x))))
    :hints (("Goal"
@@ -583,7 +583,7 @@
    (implies (and (acl2-numberp x)
 		 (i-small x))
 	    (i-small (norm (+ -1 (acl2-exp x)))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance small-if-<-small
 			     (x (+ (norm x) (norm x)))
 			     (y (norm (+ -1 (acl2-exp x))))))

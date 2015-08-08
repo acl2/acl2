@@ -2,9 +2,9 @@
 ; J Strother Moore
 
 ; This file is an ACL2 book.  To certify it, execute:
-; 
+;
 ; (certify-book "linear-find-path")
-; 
+;
 ; Read the paper to get the context.
 
 ; In this file, I define a linear version of find-path and prove that
@@ -211,7 +211,7 @@
 
 ; Q: Why did I name this constrained function x-linear-find-next-step?
 ; A: So that the system's dumb heuristics for equality substitution
-;    would use 
+;    would use
 
 ;    (equal (x-linear-find-next-step ...) (linear-find-next-step ...))
 
@@ -364,12 +364,12 @@
   :hints (("Goal" :induct
            (list (find-next-step-avoiding c stack1 b g mt)
                  (find-next-step-avoiding c stack2 b g mt)))))
-  
+
 (defthm pathless-mt-substitution-lemma2
   (implies (pathlessp new-mt stack b g mt)
            (pathlessp new-mt (cons e stack)
                       b g mt)))
-              
+
 (defthm pathless-mt-substitution-lemma3
   (implies (and (not (member b mt))
                 (not (member b stack))

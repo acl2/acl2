@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -109,7 +109,7 @@
               (lognot (logeqv i j)))
        (equal (logeqv j (lognot i))
               (lognot (logeqv i j))))
-  :hints (("goal" :in-theory (enable logeqv logand logior logorc1 
+  :hints (("goal" :in-theory (enable logeqv logand logior logorc1
                                      evenp ;BOZO prove evenp-lognot and drop this
                                      )
            :induct (log-induct-allows-negatives i j))))

@@ -18,7 +18,7 @@
    (local (defun rcdfn-classical (x) (declare (ignore x)) 0))
    (local (defun rcdfn-classical-prime (x) (declare (ignore x)) 0))
    (local (defun rcdfn-classical-domain () (interval 0 1)))
-   
+
    (defthm intervalp-rcdfn-classical-domain
      (interval-p (rcdfn-classical-domain))
    :rule-classes (:type-prescription :rewrite))
@@ -106,7 +106,7 @@
 			   (realp delta)
 			   (< 0 delta)
 			   (forall-x-within-delta-of-x0-f-x-within-epsilon-of-rcdfn-classical-prime x0 eps delta)))))
-   
+
    (defthmd rcdfn-classical-prime-is-continuous
      (implies (and (inside-interval-p x0 (rcdfn-classical-domain))
 		   ;(standardp x0)
@@ -183,7 +183,7 @@
 					forall-x-eps-delta-in-range-deriv-rcdfn-classical-works-witness)
 				       )))
 	  ("Subgoal 5"
-	   :use ((:instance rcdfn-classical-prime-is-derivative))) 
+	   :use ((:instance rcdfn-classical-prime-is-derivative)))
 	  ("Subgoal 3"
 	   :use ((:instance forall-x-eps-delta-in-range-deriv-rcdfn-classical-works-necc)))
 	  ("Subgoal 2"
@@ -223,7 +223,7 @@
 	  ("Subgoal 2"
 	   :use ((:instance rcdfn-classical-domain-non-trivial)))
 	  ))
-   
+
 (defun map-rcdfn-classical-prime (p)
   (if (consp p)
       (cons (rcdfn-classical-prime (car p))
@@ -371,7 +371,7 @@
 	  ("Subgoal 3"
 	   :use ((:instance rcdfn-classical-domain-non-trivial)))
 	  ))
-			  
+
 (defthm ftc-2-for-rcdfn-classical
   (implies (and (inside-interval-p a (rcdfn-classical-domain))
 		(inside-interval-p b (rcdfn-classical-domain)))
@@ -389,4 +389,4 @@
 				      (int-rcdfn-prime int-rcdfn-classical-prime)))
 	   )
    )
-				      
+

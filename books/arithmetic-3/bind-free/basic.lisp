@@ -228,7 +228,7 @@
 
 #|
 ;;; I would really like to not need the following rewrite rule.
-;;; However, type-reasoning is not particularly good at 
+;;; However, type-reasoning is not particularly good at
 ;;; determining the truth of inequalities.
 
 (defthm integerp-expt
@@ -241,12 +241,12 @@
 ;;; important to write type-prescription rules such that
 ;;; their conclusions actually specify a type-set.  Due to
 ;;; the presence of complex numbers and the fact that they
-;;; are linearly ordered, (< 0 (expt x n)) does not encode a 
+;;; are linearly ordered, (< 0 (expt x n)) does not encode a
 ;;; type-set.  This makes me unhappy at times.
 
 ;;; NOTE: Should the next 3 rules be :linear rules also?
 ;;; Since they compare to zero, probably not.  On the other hand,
-;;; as noted above, type-reasoning is not particularly good at 
+;;; as noted above, type-reasoning is not particularly good at
 ;;; determining the truth of inequalities.
 
 (defthm expt-type-prescription-non-0-base
@@ -286,7 +286,7 @@
 
 (defthm |(expt x 1)|
   (implies (acl2-numberp x)
-             (equal (expt x 1) 
+             (equal (expt x 1)
                     x)))
 
 (defthm |(expt 1 n)|
@@ -297,7 +297,7 @@
 ;;; in mini-theories.lisp
 
 (defthm |(expt x -1)|
-  (equal (expt x -1) 
+  (equal (expt x -1)
 	 (/ x)))
 
 (defthm |(equal (expt x n) 0)|
@@ -309,7 +309,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; Should we expand (expt (+ c x) d), whenever c and d are 
+;;; Should we expand (expt (+ c x) d), whenever c and d are
 ;;; constants?  What about (expt (+ x y) 256)?  Where should we draw
 ;;; the line?
 
@@ -317,7 +317,7 @@
     (implies (syntaxp (rewriting-goal-literal x mfc state))
              (equal (expt (+ x y) 2)
                     (+ (expt x 2)
-                       (* 2 x y) 
+                       (* 2 x y)
                        (expt y 2))))
   :hints (("Goal" :expand (expt (+ x y) 2))))
 
@@ -418,7 +418,7 @@
 
 (defun power-of-2 (x)
   (declare (xargs :mode :program))
-  ;; if x is a power of 2 (other than 2 itself), we return its 
+  ;; if x is a power of 2 (other than 2 itself), we return its
   ;; ``exponent''; Egg., the exponent of 4 is 2 and that of
   ;; 32 is 5.  We make no claims about the value returned
   ;; otherwise.

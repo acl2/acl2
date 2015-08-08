@@ -34,7 +34,7 @@
   ;; n should be an n32p
   (declare (xargs :guard (and (integerp n)
                               (integerp bit))))
-  (not (equal (logand n (ash 1 bit)) 
+  (not (equal (logand n (ash 1 bit))
               0)))
 
 (defun set-bit-32 (bit st n)
@@ -69,7 +69,7 @@
     (s :cr0 (set-bit-32 *cr0-pg-bit* paging-p cr0)
        st)))
 
-(defconst *pg-mask* 
+(defconst *pg-mask*
   ;; top 20 bits are on, low 12 bits are off.  4K pages
   (ash (+ -1 (expt 2 20)) 12))
 
@@ -79,7 +79,7 @@
   (declare (xargs :guard (integerp addr)))
   (logand addr *pg-mask*))
 
-(defconst *big-pg-mask* 
+(defconst *big-pg-mask*
   ;; top 11 bits are on, low 21 bits are off.  2M pages
   (ash (+ -1 (expt 2 11)) 21))
 
@@ -277,7 +277,7 @@
          (<= 0 (pdt-index x))
          (< (pdt-index x) 512))
     :hints (("Goal" :in-theory (enable pdt-index)))
-    :rule-classes ((:type-prescription 
+    :rule-classes ((:type-prescription
                     :corollary
                     (and (integerp (pdt-index x))
                          (<= 0 (pdt-index x))))
@@ -384,7 +384,7 @@
  (W32-LOW ADDR2 VAL (G :MEM ST)))
  ||#
 ;;; in the final hypothesis.  To which range does the read address
-;;; belong?  This can only be known if we know the value of 
+;;; belong?  This can only be known if we know the value of
 ;;; (PDPT-INDEX ADDR1).
 ;;;
 ;;; Is this a sign that my approach is wrong-headed?
@@ -432,7 +432,7 @@
                                   (page-table-ranges st)))
                  (n32p (g :CR3 st))
                  (memoryp (g :mem st)))
-            (equal (va-to-pa addr1 (s :mem 
+            (equal (va-to-pa addr1 (s :mem
                                       (w08-low addr2 val (g :mem st))
                                       st))
                    (va-to-pa addr1 st)))
@@ -452,7 +452,7 @@
                                   (page-table-ranges st)))
                  (n32p (g :CR3 st))
                  (memoryp (g :mem st)))
-            (equal (va-to-pa addr1 (s :mem 
+            (equal (va-to-pa addr1 (s :mem
                                       (w32-low addr2 val (g :mem st))
                                       st))
                    (va-to-pa addr1 st)))

@@ -27,10 +27,10 @@
         (if (< (cdr (het key-x taxon-index-alist))
                (cdr (het key-y taxon-index-alist)))
             (hons pair-x
-                  (merge-sort-of-ordered-alists 
+                  (merge-sort-of-ordered-alists
                    (cdr x) y taxon-index-alist))
           (hons pair-y
-                (merge-sort-of-ordered-alists 
+                (merge-sort-of-ordered-alists
                  x (cdr y) taxon-index-alist)))))))
 
 (defun sort-the-alist-by-merge
@@ -48,7 +48,7 @@
         alst
       (let ((evens-list (evens-gen alst))
             (odds-list (odds-gen alst)))
-        (merge-sort-of-ordered-alists 
+        (merge-sort-of-ordered-alists
           (sort-the-alist-by-merge evens-list taxon-index-alist)
           (sort-the-alist-by-merge odds-list taxon-index-alist)
           taxon-index-alist)))))
@@ -57,7 +57,7 @@
 (defthm subset-strip-cars-through-merge
   (implies (and (subset (strip-cars-gen x) z)
                 (subset (strip-cars-gen y) z))
-           (subset (strip-cars-gen 
+           (subset (strip-cars-gen
                     (merge-sort-of-ordered-alists
                      x y tia)) z)))
 
@@ -95,7 +95,7 @@
          (let* ((list-of-sorted-elements
                  (cluster-sort-by-merge
                   nil x taxon-index-alist))
-                (least-key-value-elements 
+                (least-key-value-elements
                  (pair-key-with-value list-of-sorted-elements)))
            (strip-cdrs-gen
             (sort-the-alist-by-merge least-key-value-elements
@@ -116,7 +116,7 @@
 (defthm taspip-strip-cdrs-taspip-merge
   (implies (and (taspip nil (strip-cdrs-gen x))
                 (taspip nil (strip-cdrs-gen y)))
-           (taspip nil (strip-cdrs-gen 
+           (taspip nil (strip-cdrs-gen
                         (merge-sort-of-ordered-alists
                          x y tia)))))
 
@@ -127,7 +127,7 @@
 
 (defthm taspip-strip-cdrs-taspip-sort
   (implies (taspip flg (strip-cdrs-gen x))
-           (taspip flg (strip-cdrs-gen 
+           (taspip flg (strip-cdrs-gen
                         (sort-the-alist-by-merge x tia)))))
 
 
@@ -160,19 +160,19 @@
 
 (defthm subset-mytips-strip-cdrs-sort-pair
   (implies (subset (mytips x) y)
-           (subset (mytips (strip-cdrs-gen 
+           (subset (mytips (strip-cdrs-gen
                             (sort-the-alist-by-merge
                              x tia)))
                    y))
-  :hints (("Subgoal *1/5'''" :in-theory 
+  :hints (("Subgoal *1/5'''" :in-theory
            (disable subset-mytips-evens-gen-mytips)
            :use (:instance subset-mytips-evens-gen-mytips
                            (x (cons x1 x2))))
-          ("Subgoal *1/4'5'" :in-theory 
+          ("Subgoal *1/4'5'" :in-theory
            (disable subset-mytips-evens-gen-mytips)
            :use (:instance subset-mytips-evens-gen-mytips
                            (x x2)))
-          ("Subgoal *1/3''" :in-theory 
+          ("Subgoal *1/3''" :in-theory
            (disable subset-mytips-evens-gen-mytips)
            :use (:instance subset-mytips-evens-gen-mytips))
 ))
@@ -182,13 +182,13 @@
   (implies (taspip flg x)
            (subset (mytips (cluster-sort-by-merge flg x tia))
                    (mytips x)))
-  :hints (("Subgoal *1/3''" :in-theory 
+  :hints (("Subgoal *1/3''" :in-theory
            (disable subset-mytips-strip-cdrs-sort-pair)
            :use (:instance subset-mytips-strip-cdrs-sort-pair
-                           (x (pair-key-with-value 
+                           (x (pair-key-with-value
                                (cluster-sort-by-merge nil x tia)))
                            (y (mytips x))))
-          ("Subgoal *1/3'4'" :in-theory 
+          ("Subgoal *1/3'4'" :in-theory
            (disable subset-mytips-gives-subset-pair)
            :use (:instance subset-mytips-gives-subset-pair
                            (x (cluster-sort-by-merge nil x tia))
@@ -200,24 +200,24 @@
            (subset (strip-cars-gen (pair-key-with-value x))
                    (mytips x))))
 
-(verify-guards 
+(verify-guards
  cluster-sort-by-merge
  :hints (("Goal" :do-not-induct t)
-         ("Subgoal 4'" :in-theory 
+         ("Subgoal 4'" :in-theory
           (disable subset-mytips-gives-subset-pair
                   keys-from-pair-key-subset-x
                   subset-mytips-cluster-sort-mytips-x)
           :use
           (:instance strip-cars-pair-cluster-subset-mytips
-                     (x (cluster-sort-by-merge 
+                     (x (cluster-sort-by-merge
                          nil x taxon-index-alist))))
-         ("Subgoal 4''" :use 
+         ("Subgoal 4''" :use
           (:instance subset-mytips-cluster-sort-mytips-x
                      (flg nil)
                      (tia taxon-index-alist)))
          ))
 
-(defun order-by-merge-help (flg x taxon-index-alist) 
+(defun order-by-merge-help (flg x taxon-index-alist)
   (declare (xargs :guard (and (good-taxon-index-halist
                                taxon-index-alist)
                               (taspip flg x)
@@ -239,7 +239,7 @@
 ;      (1) x - a tree
 ;      (2) taxon-index-alist - a mapping of taxa names to integers
 
-;   Details: The leaves in the tree must all be represented in the mapping 
+;   Details: The leaves in the tree must all be represented in the mapping
 ;            given.  Ordering is achieved using a merge sort algorithm.
 ;            Consider also order-by-insertion."
   (declare (xargs :guard (and (good-taxon-index-halist
@@ -263,10 +263,10 @@
 ;      (1) x - a tree
 ;      (3) taxon-index-alist - a mapping of taxa names to integers
 
-;   Details: The leaves in the tree must all be represented in the mapping 
+;   Details: The leaves in the tree must all be represented in the mapping
 ;            given.  Ordering is achieved using a merge sort algorithm.
 ;            The tree produced will only be fully ordered if each of the
-;            top-level trees are intially ordered.  
+;            top-level trees are intially ordered.
 ;            Consider also order-by-insertion-one-level."
   (declare (xargs :guard (and (good-taxon-index-halist taxon-index-alist)
                               (taspip t x)
@@ -283,15 +283,15 @@
 (defthm orderedp-nil-through-merge
   (implies (and (orderedp nil (strip-cdrs-gen x) tia)
                 (orderedp nil (strip-cdrs-gen y) tia))
-           (orderedp nil (strip-cdrs-gen 
+           (orderedp nil (strip-cdrs-gen
                           (merge-sort-of-ordered-alists
                            x y tia))
                      tia)))
 
 (defthm orderedp-nil-through-sort
   (implies (orderedp nil (strip-cdrs-gen x) tia)
-           (orderedp nil (strip-cdrs-gen 
-                          (sort-the-alist-by-merge x tia)) 
+           (orderedp nil (strip-cdrs-gen
+                          (sort-the-alist-by-merge x tia))
                      tia)))
 
 (defthm valid-pairing-through-merge-alst
@@ -318,11 +318,11 @@
                 (alistp-gen y)
                 (consp x)
                 (consp y))
-           (or (equal (caar 
+           (or (equal (caar
                        (merge-sort-of-ordered-alists
                         x y tia))
                       (caar x))
-               (equal (caar 
+               (equal (caar
                        (merge-sort-of-ordered-alists
                         x y tia))
                       (caar y))))
@@ -348,7 +348,7 @@
                 (alistp-gen y)
                 (ordered-list (strip-cars-gen x) tia)
                 (ordered-list (strip-cars-gen y) tia))
-           (ordered-list (strip-cars-gen 
+           (ordered-list (strip-cars-gen
                           (merge-sort-of-ordered-alists
                            x y tia)) tia))
   :hints (("Subgoal *1/8.1.1" :use
@@ -368,7 +368,7 @@
 
 (defthm ordered-list-strips-cars-of-sort
   (implies (alistp-gen alst)
-           (ordered-list (strip-cars-gen 
+           (ordered-list (strip-cars-gen
                           (sort-the-alist-by-merge alst tia))
                          tia)))
 
@@ -425,10 +425,10 @@
                 (taspip flg x)
                 (good-taxon-index-halist taxon-index-alist)
                 (subset (mytips x)
-                        (get-taxa-from-taxon-index 
+                        (get-taxa-from-taxon-index
                          taxon-index-alist)))
            (tree-listp
-            (cluster-sort-by-merge 
+            (cluster-sort-by-merge
              flg x taxon-index-alist))))
 
 (defthm treep-through-cluster-sort-by-merge
@@ -436,10 +436,10 @@
                 (taspip flg x)
                 (good-taxon-index-halist taxon-index-alist)
                 (subset (mytips x)
-                        (get-taxa-from-taxon-index 
+                        (get-taxa-from-taxon-index
                          taxon-index-alist)))
            (treep
-            (cluster-sort-by-merge 
+            (cluster-sort-by-merge
              flg x taxon-index-alist)))
   :hints (("Subgoal *1/19''" :expand (treep x))
 ))
@@ -457,12 +457,12 @@
 
 (defthm order-by-merge-gives-orderedp
   (implies (and (taspip flg x)
-                (good-taxon-index-halist 
+                (good-taxon-index-halist
                  taxon-index-alist)
                 (subset (mytips x)
                         (get-taxa-from-taxon-index
                          taxon-index-alist)))
-           (orderedp flg 
+           (orderedp flg
                      (order-by-merge-help flg x taxon-index-alist)
                      taxon-index-alist)))
 
@@ -471,10 +471,10 @@
                 (taspip flg x)
                 (good-taxon-index-halist taxon-index-alist)
                 (subset (mytips x)
-                        (get-taxa-from-taxon-index 
+                        (get-taxa-from-taxon-index
                          taxon-index-alist)))
            (treep
-            (order-by-merge-help 
+            (order-by-merge-help
              flg x taxon-index-alist))))
 
 (defthm tree-listp-through-order-by-merge
@@ -482,33 +482,33 @@
                 (taspip flg x)
                 (good-taxon-index-halist taxon-index-alist)
                 (subset (mytips x)
-                        (get-taxa-from-taxon-index 
+                        (get-taxa-from-taxon-index
                          taxon-index-alist)))
            (tree-listp
-            (order-by-merge-help 
+            (order-by-merge-help
              flg x taxon-index-alist))))
 
 
 (in-theory (disable order-by-merge-help))
-                
+
 (defun order-each-by-merge (input-trees taxon-index-alist)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;   Returns a list where each of the trees in the input list has been 
+;   Returns a list where each of the trees in the input list has been
 ;   structurally unchanged but now has leaves ordered according
 ;   to the mapping given.~/
 ;   ~/
 ;   Arguments:
 ;      (1) input-trees - a list of trees
 ;      (2) taxon-index-alist - a mapping of taxa names to integers
-;      (3) length-taxon-index-alist - a number larger than any value in the 
+;      (3) length-taxon-index-alist - a number larger than any value in the
 ;                                     mapping
 
-;   Details: The leaves in each of the trees must all be represented in the 
-;            mapping given.  Ordering is achieved using a merge sort 
+;   Details: The leaves in each of the trees must all be represented in the
+;            mapping given.  Ordering is achieved using a merge sort
 ;            algorithm. Consider also order-each-by-insertion."
   (declare (xargs :guard (and (good-taxon-index-halist
                                taxon-index-alist)
@@ -519,7 +519,7 @@
   (if (atom input-trees)
       nil
     (cons (order-by-merge (car input-trees) taxon-index-alist)
-          (order-each-by-merge (cdr input-trees) 
+          (order-each-by-merge (cdr input-trees)
                                taxon-index-alist))))
 
 ;It would be great to get the last property below through, but I haven't
@@ -539,9 +539,9 @@
 ;;   :hints (("Goal" :in-theory (enable order-by-merge-help))))
 
 #|
-(order-by-merge t 
-                '(b c (d (E h) (p g (s (r t))))) 
+(order-by-merge t
+                '(b c (d (E h) (p g (s (r t)))))
                 (build-fast-alist-from-alist
-                 (element-to-number '(a b c d e g h p r s t) 0) 
+                 (element-to-number '(a b c d e g h p r s t) 0)
                  'tia))
 |#

@@ -14,12 +14,12 @@
                                           (1+ curTreeNum)))
     nil))
 
-(defun add-trees-to-tree-db-from-list 
+(defun add-trees-to-tree-db-from-list
   (analysis-id rooted? brlens? list curTreeNum db)
   (declare (xargs :guard (and (natp curTreeNum)
                               (alistp db))))
   (if (consp list)
-      (add-trees-to-tree-db-from-list 
+      (add-trees-to-tree-db-from-list
        analysis-id rooted? brlens? (cdr list)
        (1+ curTreeNum)
        (acons curTreeNum
@@ -29,4 +29,4 @@
                                   (acons 'tree (car list) nil))))
              db))
     db))
-     
+

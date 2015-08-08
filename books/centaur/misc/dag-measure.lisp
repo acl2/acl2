@@ -65,7 +65,7 @@ termination is the count of nodes that we haven't yet traversed.  Writing
 functions in this style is doable, but passing around the record of nodes we've
 already seen complicates reasoning about the function.</p>
 
-<p>This framework helps to streamline a different approach.  In this approach, we define 
+<p>This framework helps to streamline a different approach.  In this approach, we define
 <ul>
 <li>a relatively fast, executable function that checks whether all paths from the current node through the graph are loop-free</li>
 <li>a measure function that takes a node in the graph, where if node A is loop-free and has successor node B, then measure(B) &lt; measure(A).</li>
@@ -201,7 +201,7 @@ the functions.</li>
                 (or (eq v :back)
                     (eq v :loop)
                     (natp v))))))
-     
+
 
 
 

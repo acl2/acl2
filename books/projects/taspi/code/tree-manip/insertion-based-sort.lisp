@@ -2,7 +2,7 @@
 ;; Recursively, each level is sorted, then the first taxon
 ;; of each term is determined and paired to its term,
 ;; the first taxons are found in the taxon-index-alist
-;; and the minimum is consed to the front, thus creating 
+;; and the minimum is consed to the front, thus creating
 ;; the term
 
 (in-package "ACL2")
@@ -67,7 +67,7 @@
            (< (cdr (assoc-hqual x tia)) cur-min)))
 
 (defthm get-min-key-not-key-member-strip
-  (implies (not (equal (get-min-key alst key cur-min tia) 
+  (implies (not (equal (get-min-key alst key cur-min tia)
                        key))
            (member-gen (get-min-key alst key cur-min tia)
                        (strip-cars-gen alst))))
@@ -114,7 +114,7 @@
                                 taxon-index-alist
                                 length-taxon-index-alist)))
       nil)))
-           
+
 (defthm sort-the-alist-by-insertion-when-not-consp
   (implies (not (consp alst))
            (equal (sort-the-alist-by-insertion alst tia len-tia)
@@ -129,12 +129,12 @@
                            (subset (strip-cars-gen alst)
                             (get-taxa-from-taxon-index tia))
                            (good-taxon-index-halist tia))
-                      (let ((min-key (get-min-key 
+                      (let ((min-key (get-min-key
                                       alst nil
                                       len-tia
                                       tia)))
                         (hons (assoc-hqual min-key alst)
-                              (sort-the-alist-by-insertion 
+                              (sort-the-alist-by-insertion
                                (del-pair min-key alst)
                                tia
                                len-tia)))
@@ -163,11 +163,11 @@
            x
          (let* ((list-of-sorted-elements
                  (cluster-sort-by-insertion
-                  nil x taxon-index-alist 
+                  nil x taxon-index-alist
                   length-taxon-index-alist))
-                (least-key-value-elements 
+                (least-key-value-elements
                  (pair-key-with-value list-of-sorted-elements)))
-           (strip-cdrs-gen (sort-the-alist-by-insertion 
+           (strip-cdrs-gen (sort-the-alist-by-insertion
                             least-key-value-elements
                             taxon-index-alist
                             length-taxon-index-alist))))
@@ -177,7 +177,7 @@
      (hons (cluster-sort-by-insertion
             t (car x) taxon-index-alist length-taxon-index-alist)
            (cluster-sort-by-insertion
-            nil (cdr x) taxon-index-alist 
+            nil (cdr x) taxon-index-alist
             length-taxon-index-alist))))
 )
 
@@ -190,13 +190,13 @@
   (equal (cluster-sort-by-insertion flg (cons first rest) tia len-tia)
          (if flg
              (let* ((list-of-sorted-elements
-                     (cluster-sort-by-insertion nil 
+                     (cluster-sort-by-insertion nil
                                    (cons first rest)
                                    tia len-tia))
-                    (least-key-value-elements 
-                     (pair-key-with-value 
+                    (least-key-value-elements
+                     (pair-key-with-value
                       list-of-sorted-elements)))
-               (strip-cdrs-gen (sort-the-alist-by-insertion 
+               (strip-cdrs-gen (sort-the-alist-by-insertion
                                 least-key-value-elements
                                 tia
                                 len-tia)))
@@ -210,8 +210,8 @@
                 (subset (strip-cars-gen alst)
                         (get-taxa-from-taxon-index tia))
                 (taspip nil (strip-cdrs-gen alst)))
-           (taspip nil (strip-cdrs-gen 
-                        (sort-the-alist-by-insertion 
+           (taspip nil (strip-cdrs-gen
+                        (sort-the-alist-by-insertion
                          alst tia len-tia)))))
 
 (defthm consp-gives-consp-sort
@@ -233,22 +233,22 @@
 (defthm subset-mytips-cluster-sort-by-insertion
   (subset (mytips (cluster-sort-by-insertion flg x tia len-tia))
           (mytips x))
-  :hints (("Subgoal *1/2'" :expand ((cluster-sort-by-insertion 
+  :hints (("Subgoal *1/2'" :expand ((cluster-sort-by-insertion
                                      flg x tia len-tia)
-                                    (cluster-sort-by-insertion 
+                                    (cluster-sort-by-insertion
                                      nil x tia len-tia)))
-          ("Subgoal *1/2'''" :in-theory 
+          ("Subgoal *1/2'''" :in-theory
            (disable subset-mytips-sort
                     subset-mytips-strip-cdrs-pair)
            :use ((:instance subset-mytips-sort
-                           (x (pair-key-with-value 
-                               (cluster-sort-by-insertion 
+                           (x (pair-key-with-value
+                               (cluster-sort-by-insertion
                                 nil x tia len-tia))))
                  (:instance subset-mytips-strip-cdrs-pair
-                            (x 
-                             (cluster-sort-by-insertion 
+                            (x
+                             (cluster-sort-by-insertion
                               nil x tia len-tia)))))))
-   
+
 (defthm taspip-cluster-sort-by-insertion
   (implies (and (taspip flg x)
                 (greater-all len-tia tia)
@@ -257,28 +257,28 @@
                         (get-taxa-from-taxon-index tia))
                 (good-taxon-index-halist tia)
                 (consp x))
-           (and (taspip flg (cluster-sort-by-insertion 
+           (and (taspip flg (cluster-sort-by-insertion
                              flg x tia len-tia))
-                (consp (cluster-sort-by-insertion 
+                (consp (cluster-sort-by-insertion
                         flg x tia len-tia))))
-  :hints (("Goal" :induct (cluster-sort-by-insertion 
+  :hints (("Goal" :induct (cluster-sort-by-insertion
                            flg x tia len-tia))
-          ("Subgoal *1/1.2" :expand (cluster-sort-by-insertion 
+          ("Subgoal *1/1.2" :expand (cluster-sort-by-insertion
                                      flg x tia len-tia)
-           :in-theory 
+           :in-theory
            (disable taspip-subset-strip-cars-mytips
                     subset-mytips-cluster-sort-by-insertion
                     keys-from-pair-key-subset-x)
            :use ((:instance taspip-subset-strip-cars-mytips
-                            (x (cluster-sort-by-insertion 
+                            (x (cluster-sort-by-insertion
                                 nil x tia len-tia))
                             (flg nil))
                  (:instance subset-mytips-cluster-sort-by-insertion
                             (flg nil))))
-          ("Subgoal *1/1.1" :expand (cluster-sort-by-insertion 
+          ("Subgoal *1/1.1" :expand (cluster-sort-by-insertion
                                      flg x tia len-tia))
           ("Subgoal *1/1.1.1'"
-           :in-theory 
+           :in-theory
            (disable taspip-subset-strip-cars-mytips
                     subset-mytips-cluster-sort-by-insertion
                     keys-from-pair-key-subset-x)
@@ -296,10 +296,10 @@
 
 (defthm alistp-gen-sort
   (implies (alistp-gen alst)
-           (alistp-gen 
+           (alistp-gen
             (sort-the-alist-by-insertion alst tia len-tia))))
 
-(verify-guards 
+(verify-guards
  cluster-sort-by-insertion
  :hints (("Goal" :do-not-induct t)
          ("Subgoal 4" :in-theory
@@ -307,9 +307,9 @@
                    subset-mytips-cluster-sort-by-insertion
                    keys-from-pair-key-subset-x)
           :use ((:instance taspip-subset-strip-cars-mytips
-                           (x (cluster-sort-by-insertion 
-                              nil x 
-                               taxon-index-alist 
+                           (x (cluster-sort-by-insertion
+                              nil x
+                               taxon-index-alist
                                length-taxon-index-alist))
                            (flg nil))
                 (:instance subset-mytips-cluster-sort-by-insertion
@@ -322,17 +322,17 @@
                           (x nil)
                           (y (mytips x))
                           (z (strip-cars-gen
-                              (pair-key-with-value 
-                               (cluster-sort-by-insertion 
-                                nil x 
+                              (pair-key-with-value
+                               (cluster-sort-by-insertion
+                                nil x
                                 taxon-index-alist
                                 length-taxon-index-alist))))))
 ))
- 
+
 (defun order-by-insertion-help
-  (flg x taxon-index-alist length-taxon-index-alist) 
+  (flg x taxon-index-alist length-taxon-index-alist)
   (declare (xargs :guard (and (taspip flg x)
-                              (good-taxon-index-halist 
+                              (good-taxon-index-halist
                                taxon-index-alist)
                               (subset (mytips x)
                                       (get-taxa-from-taxon-index
@@ -340,7 +340,7 @@
                               (rationalp length-taxon-index-alist)
                               (greater-all length-taxon-index-alist
                                            taxon-index-alist))))
-  (cluster-sort-by-insertion 
+  (cluster-sort-by-insertion
    flg x taxon-index-alist length-taxon-index-alist))
 
 (defun max-list-helper (curMax list)
@@ -359,7 +359,7 @@
   (if (consp list)
       (max-list-helper (car list) (cdr list))
     nil))
-                  
+
 (defun order-by-insertion (x taxon-index-alist)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
@@ -373,11 +373,11 @@
 ;      (1) x - a tree
 ;      (2) taxon-index-alist - a mapping of taxa names to integers
 
-;   Details: The leaves in the tree must all be represented in the mapping 
+;   Details: The leaves in the tree must all be represented in the mapping
 ;            given.  Ordering is achieved using an insertion sort algorithm.
 ;            Consider also order-by-merge."
   (declare (xargs :guard (and (taspip t x)
-                              (good-taxon-index-halist 
+                              (good-taxon-index-halist
                                taxon-index-alist)
                               (subset (mytips x)
                                       (get-taxa-from-taxon-index
@@ -402,13 +402,13 @@
 ;      (1) x - a tree
 ;      (3) taxon-index-alist - a mapping of taxa names to integers
 
-;   Details: The leaves in the tree must all be represented in the mapping 
+;   Details: The leaves in the tree must all be represented in the mapping
 ;            given.  Ordering is achieved using an insertion sort algorithm.
 ;            The tree produced will only be fully ordered if each of the
-;            top-level trees are intially ordered. 
+;            top-level trees are intially ordered.
 ;            Consider also order-by-merge-one-level."
   (declare (xargs :guard (and (taspip t x)
-                              (good-taxon-index-halist 
+                              (good-taxon-index-halist
                                taxon-index-alist)
                               (subset (mytips x)
                                       (get-taxa-from-taxon-index
@@ -417,7 +417,7 @@
     (if (rationalp max)
         (let ((least-key-value-elements (pair-key-with-value x)))
           (if (greater-all (1+ max) taxon-index-alist)
-              (hopy (strip-cdrs-gen (sort-the-alist-by-insertion 
+              (hopy (strip-cdrs-gen (sort-the-alist-by-insertion
                                least-key-value-elements
                                taxon-index-alist
                                (1+ max))))
@@ -426,7 +426,7 @@
 
 
 ;; now for correctness
-        
+
 (defthm ordered-nil-strip-cdrs-ordered-nil-strip-sort
   (implies (orderedp nil (strip-cdrs-gen alst) tia)
            (orderedp nil (strip-cdrs-gen
@@ -441,11 +441,11 @@
                            tia len-tia)) tia)))
 
 (defthm cluster-t-doesnt-change-ordered-nil
-  (implies (orderedp nil (cluster-sort-by-insertion 
+  (implies (orderedp nil (cluster-sort-by-insertion
                           nil x tia len-tia) tia)
-           (orderedp nil (cluster-sort-by-insertion 
+           (orderedp nil (cluster-sort-by-insertion
                           t x tia len-tia) tia))
-  :hints (("Goal" :expand (cluster-sort-by-insertion 
+  :hints (("Goal" :expand (cluster-sort-by-insertion
                           t x tia len-tia))))
 
 
@@ -457,7 +457,7 @@
 
 (defthm if-key-cur-min-pair
   (implies (equal (cdr (assoc-hqual key tia)) cur-min)
-           (<= (cdr (assoc-hqual 
+           (<= (cdr (assoc-hqual
                      (get-min-key alst key cur-min tia) tia))
                cur-min)))
 
@@ -466,31 +466,31 @@
                 (alistp-gen alst)
                 (< (cdr (assoc-hqual x tia))
                    len-tia))
-           (< (cdr (assoc-hqual 
+           (< (cdr (assoc-hqual
                     (get-min-key alst key len-tia tia) tia))
               len-tia))
-  :hints (("Subgoal *1/4.1.2'" :in-theory 
+  :hints (("Subgoal *1/4.1.2'" :in-theory
            (disable if-key-cur-min-pair)
            :use (:instance if-key-cur-min-pair
                            (key alst3)
-                           (cur-min 
-                            (cdr 
-                             (hons-assoc-equal alst3 tia)))
-                           (alst alst2)))
-          ("Subgoal *1/4.1.1" :in-theory 
-           (disable if-key-cur-min-pair)
-           :use (:instance if-key-cur-min-pair
-                           (key alst3)
-                           (cur-min 
+                           (cur-min
                             (cdr
                              (hons-assoc-equal alst3 tia)))
                            (alst alst2)))
-          ("Subgoal *1/2.1'''" :in-theory 
+          ("Subgoal *1/4.1.1" :in-theory
            (disable if-key-cur-min-pair)
            :use (:instance if-key-cur-min-pair
                            (key alst3)
-                           (cur-min 
-                            (cdr 
+                           (cur-min
+                            (cdr
+                             (hons-assoc-equal alst3 tia)))
+                           (alst alst2)))
+          ("Subgoal *1/2.1'''" :in-theory
+           (disable if-key-cur-min-pair)
+           :use (:instance if-key-cur-min-pair
+                           (key alst3)
+                           (cur-min
+                            (cdr
                              (hons-assoc-equal alst3 tia)))
                            (alst alst2)))))
 
@@ -499,10 +499,10 @@
                 (alistp-gen alst)
                 (consp alst)
                 (greater-all len-tia tia)
-                (subset (strip-cars-gen 
+                (subset (strip-cars-gen
                          alst)
                         (get-taxa-from-taxon-index tia)))
-           (< (cdr (assoc-hqual 
+           (< (cdr (assoc-hqual
                      (get-min-key alst key len-tia tia) tia))
                len-tia))
   :hints (("Subgoal *1/5.1''" :in-theory
@@ -510,17 +510,17 @@
            :use (:instance member-gen-get-taxa-with-greater-all-gives-<cur-min
                            (x alst3)
                            (cur-min len-tia)))
-          ("Subgoal *1/3.1''" :in-theory 
-           (disable 
+          ("Subgoal *1/3.1''" :in-theory
+           (disable
             if-key-cur-min-pair
             member-gen-get-taxa-with-greater-all-gives-<cur-min)
            :use ((:instance if-key-cur-min-pair
                            (key alst3)
-                           (cur-min 
-                            (cdr 
+                           (cur-min
+                            (cdr
                              (hons-assoc-equal alst3 tia)))
                            (alst alst2))
-                 (:instance 
+                 (:instance
                   member-gen-get-taxa-with-greater-all-gives-<cur-min
                   (x alst3)
                   (cur-min len-tia))))
@@ -551,10 +551,10 @@
     t))
 
 (defun get-min-key2 (alst key tia)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                   (and (alistp-gen alst)
                        (good-taxon-index-halist tia)
-                       (member-gen key 
+                       (member-gen key
                                    (get-taxa-from-taxon-index tia))
                        (subset (strip-cars-gen alst)
                                (get-taxa-from-taxon-index tia)))))
@@ -579,7 +579,7 @@
                         (get-taxa-from-taxon-index tia))
                 (greater-all len-tia tia)
                 (member-gen x (strip-cars-gen alst)))
-           (equal (get-min-key alst (caar alst) 
+           (equal (get-min-key alst (caar alst)
                                (cdr (assoc-hqual (caar alst)
                                                  tia))
                                tia)
@@ -593,7 +593,7 @@
                         (get-taxa-from-taxon-index tia))
                 (not (equal (get-min-key2 alst key tia)
                             key)))
-           (< (cdr (assoc-hqual (get-min-key2 alst key tia) 
+           (< (cdr (assoc-hqual (get-min-key2 alst key tia)
                                 tia))
               (cdr (assoc-hqual key tia)))))
 
@@ -602,17 +602,17 @@
                 (alistp-gen alst)
                 (subset (strip-cars-gen alst)
                         (get-taxa-from-taxon-index tia)))
-           (<= (cdr (assoc-hqual 
+           (<= (cdr (assoc-hqual
                      (get-min-key2 alst key tia) tia))
                (cdr (assoc-hqual key tia))))
-  :hints (("Subgoal *1/6'5'" 
+  :hints (("Subgoal *1/6'5'"
            :cases ((equal (get-min-key2 alst2 alst3 tia) alst3)))
           ("Subgoal *1/6.2" :in-theory
            (disable not-equal-get-min2)
            :use (:instance not-equal-get-min2
                            (alst alst2)
                            (key alst3)))
-          ("Subgoal *1/2.1" 
+          ("Subgoal *1/2.1"
            :cases ((equal (get-min-key2 alst2 alst3 tia) alst3)))
           ("Subgoal *1/2.1.2" :in-theory
            (disable not-equal-get-min2)
@@ -638,15 +638,15 @@
                 (check-less key alst tia))
            (<= (cdr (assoc-hqual key tia))
                (cdr (assoc-hqual x tia)))))
-           
+
 (defthm get-min-key-correct
   (implies (and (good-taxon-index-halist tia)
-                (subset (strip-cars-gen alst) 
+                (subset (strip-cars-gen alst)
                         (get-taxa-from-taxon-index tia))
                 (member-gen x (strip-cars-gen alst))
                 (alistp-gen alst)
                 (greater-all len-tia tia))
-           (<= (cdr (assoc-hqual 
+           (<= (cdr (assoc-hqual
                      (get-min-key alst key len-tia tia) tia))
                (cdr (assoc-hqual x tia))))
 )
@@ -654,8 +654,8 @@
 
 (defthm subset-strip-cars-strip-cars
   (implies (greater-all len-tia tia)
-           (subset 
-            (strip-cars-gen 
+           (subset
+            (strip-cars-gen
              (sort-the-alist-by-insertion alst tia len-tia))
             (strip-cars-gen alst))))
 
@@ -666,37 +666,37 @@
                         (get-taxa-from-taxon-index tia))
                 (greater-all len-tia tia)
                 (alistp-gen alst))
-           (ordered-list (strip-cars-gen 
-                          (sort-the-alist-by-insertion 
+           (ordered-list (strip-cars-gen
+                          (sort-the-alist-by-insertion
                            alst tia len-tia))
                          tia))
-  :hints (("Subgoal *1/4''" :in-theory 
+  :hints (("Subgoal *1/4''" :in-theory
            (disable get-min-key-correct)
-           :use (:instance 
+           :use (:instance
                  get-min-key-correct
-                 (x (car (strip-cars-gen 
+                 (x (car (strip-cars-gen
                           (sort-the-alist-by-insertion
-                           (del-pair 
+                           (del-pair
                             (get-min-key alst nil len-tia tia)
                             alst)
                            tia len-tia))))
                  (key nil)))
-          ("Subgoal *1/4'4'" :in-theory 
+          ("Subgoal *1/4'4'" :in-theory
            (disable member-gen-car-strip-cars
                     subset-strip-cars-strip-cars)
            :use ((:instance member-gen-car-strip-cars
                            (x (sort-the-alist-by-insertion
-                               (del-pair 
+                               (del-pair
                                 (get-min-key alst nil len-tia tia)
                                 alst)
                                tia len-tia))
                            (y (strip-cars-gen alst)))
                  (:instance subset-strip-cars-strip-cars
-                            (alst (del-pair 
+                            (alst (del-pair
                                    (get-min-key alst nil len-tia tia)
                                    alst)))))
 ))
-          
+
 (defthm orderedp-cluster
   (implies (and (taspip flg x)
                 (good-taxon-index-halist taxon-index-alist)
@@ -706,25 +706,25 @@
                 (greater-all length-taxon-index-alist
                              taxon-index-alist))
            (orderedp flg
-                     (cluster-sort-by-insertion 
+                     (cluster-sort-by-insertion
                       flg x taxon-index-alist
                       length-taxon-index-alist)
                      taxon-index-alist))
   :hints (("Subgoal *1/3.2" :in-theory
            (disable sort-the-alist-by-insertion-of-consp)
-           :expand (cluster-sort-by-insertion 
+           :expand (cluster-sort-by-insertion
                     flg x taxon-index-alist
                     length-taxon-index-alist))
           ("Subgoal *1/3.2'" :in-theory (disable sort-correct)
-           :use (:instance 
+           :use (:instance
                  sort-correct
                  (alst (pair-key-with-value
-                        (cluster-sort-by-insertion 
+                        (cluster-sort-by-insertion
                          nil x taxon-index-alist
                          length-taxon-index-alist)))
                  (tia taxon-index-alist)
                  (len-tia length-taxon-index-alist)))
-          ("Subgoal *1/3.1" :expand (cluster-sort-by-insertion 
+          ("Subgoal *1/3.1" :expand (cluster-sort-by-insertion
                                      flg x taxon-index-alist
                                      length-taxon-index-alist))
           ))
@@ -747,7 +747,7 @@
                          (sort-the-alist-by-insertion
                           alst tia len-tia)))))
 
- 
+
 (defthm member-len-del-pair-one-less
   (implies (member-gen x (strip-cars-gen alst))
            (equal (len (del-pair x alst))
@@ -768,7 +768,7 @@
   (implies (and (good-taxon-index-halist tia)
                 (taspip flg x)
                 (subset (mytips x)
-                        (get-taxa-from-taxon-index 
+                        (get-taxa-from-taxon-index
                          tia))
                 (rationalp len-tia)
                 (greater-all len-tia tia))
@@ -777,14 +777,14 @@
                   (len (double-rewrite x))))
   :hints (("Subgoal *1/3''" :expand
            (cluster-sort-by-insertion flg x tia len-tia)
-          :in-theory 
+          :in-theory
           (disable taspip-subset-strip-cars-mytips
                    subset-mytips-cluster-sort-by-insertion
                    keys-from-pair-key-subset-x
                    not-member-nil-mytips
                    not-member-nil-mytips-ans)
           :use ((:instance taspip-subset-strip-cars-mytips
-                           (x (cluster-sort-by-insertion 
+                           (x (cluster-sort-by-insertion
                                nil x tia len-tia))
                            (flg nil))
                 (:instance subset-mytips-cluster-sort-by-insertion
@@ -798,28 +798,28 @@
                 (consp x)
                 (good-taxon-index-halist tia)
                 (subset (mytips x)
-                        (get-taxa-from-taxon-index 
+                        (get-taxa-from-taxon-index
                          tia))
                 (rationalp len-tia)
                 (greater-all len-tia tia))
            (tree-listp (cluster-sort-by-insertion
                          flg x tia len-tia)))
-  :hints (("Subgoal *1/27'5'" 
+  :hints (("Subgoal *1/27'5'"
            :cases ((consp x1)))
           ("Subgoal *1/27.1"
-           :in-theory 
+           :in-theory
            (disable len-greater-1-tree-listp=treep
                     )
-           :use (:instance 
+           :use (:instance
                  len-greater-1-tree-listp=treep
                  (x (cluster-sort-by-insertion t x1 tia len-tia))))
-          ("Subgoal *1/17'5'" 
+          ("Subgoal *1/17'5'"
            :cases ((consp x1)))
           ("Subgoal *1/17.1"
-           :in-theory 
+           :in-theory
            (disable len-greater-1-tree-listp=treep
                     )
-           :use (:instance 
+           :use (:instance
                  len-greater-1-tree-listp=treep
                  (x (cluster-sort-by-insertion t x1 tia len-tia))))
           ("Subgoal *1/2'" :expand (cluster-sort-by-insertion
@@ -849,7 +849,7 @@
                 (greater-all length-taxon-index-alist
                              taxon-index-alist))
            (treep
-            (cluster-sort-by-insertion 
+            (cluster-sort-by-insertion
              flg x taxon-index-alist
              length-taxon-index-alist)))
 )
@@ -872,7 +872,7 @@
 
 (defthm order-by-insertion-gives-orderedp
   (implies (and (taspip flg x)
-                (good-taxon-index-halist 
+                (good-taxon-index-halist
                  taxon-index-alist)
                 (subset (mytips x)
                         (get-taxa-from-taxon-index
@@ -881,7 +881,7 @@
                 (greater-all length-taxon-index-alist
                              taxon-index-alist))
            (orderedp flg
-            (order-by-insertion-help flg x taxon-index-alist 
+            (order-by-insertion-help flg x taxon-index-alist
                                 length-taxon-index-alist)
             taxon-index-alist)))
 
@@ -896,7 +896,7 @@
                              taxon-index-alist))
            (treep (order-by-insertion-help flg x taxon-index-alist
                                       length-taxon-index-alist))))
-                
+
 
 (defthm order-by-insertion-gives-tree-listp
   (implies (and (tree-listp x)
@@ -920,21 +920,21 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;   Returns a list where each of the trees in the input list has been 
+;   Returns a list where each of the trees in the input list has been
 ;   structurally unchanged but now has leaves ordered according
 ;   to the mapping given.~/
 ;   ~/
 ;   Arguments:
 ;      (1) input-trees - a list of trees
 ;      (2) taxon-index-alist - a mapping of taxa names to integers
-;      (3) length-taxon-index-alist - a number larger than any value in the 
+;      (3) length-taxon-index-alist - a number larger than any value in the
 ;                                     mapping
 
-;   Details: The leaves in each of the trees must all be represented in the 
-;            mapping given.  Ordering is achieved using an insertion sort 
+;   Details: The leaves in each of the trees must all be represented in the
+;            mapping given.  Ordering is achieved using an insertion sort
 ;            algorithm. Consider also order-each-by-merge."
   (declare (xargs :guard (and (taspip nil input-trees)
-                              (good-taxon-index-halist 
+                              (good-taxon-index-halist
                                taxon-index-alist)
                               (subset (mytips input-trees)
                                       (get-taxa-from-taxon-index
@@ -944,8 +944,8 @@
                                            taxon-index-alist))))
   (if (atom input-trees)
       nil
-    (hons (order-by-insertion (car input-trees) 
+    (hons (order-by-insertion (car input-trees)
                               taxon-index-alist)
-          (order-each-by-insertion (cdr input-trees) 
-                                   taxon-index-alist 
+          (order-each-by-insertion (cdr input-trees)
+                                   taxon-index-alist
                                    length-taxon-index-alist))))

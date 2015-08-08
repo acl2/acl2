@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -159,8 +159,8 @@
 	     (<= (* (* a b) (* a b))
 		 (* (expt 2 (- (* 2 n) 2)) (* p p))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance *-doubly-monotonic 
-				   (x (* a a)) (a (* b b)) 
+  :hints (("Goal" :use ((:instance *-doubly-monotonic
+				   (x (* a a)) (a (* b b))
 				   (y p) (b (* (expt 2 (- (* 2 n) 2)) p))))))))
 ;not exported anywhere!
 ;rephrase?
@@ -319,7 +319,7 @@
   :rule-classes ())
 
 ;kill?
-(local 
+(local
  (defthm abs+
    (implies (and (rationalp x)
                  (rationalp y))

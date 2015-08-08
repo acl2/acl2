@@ -389,7 +389,7 @@
 			   (if (and (not (interval-right-inclusive-p interval))
 				    (realp b))
 			       (<  b (interval-right-endpoint interval))
-			       (<= (if (realp b) b (car b)) 
+			       (<= (if (realp b) b (car b))
 				   (interval-right-endpoint interval))))))
 	     (subinterval-p (interval a b) interval)))
 
@@ -405,7 +405,7 @@
 			   (if (and (not (interval-left-inclusive-p interval))
 				    (realp a))
 			       (<  (interval-left-endpoint interval) a)
-			       (<= (interval-left-endpoint interval) 
+			       (<= (interval-left-endpoint interval)
 				   (if (realp a) a (car a)))))))
 	     (subinterval-p (interval a b) interval)))
 
@@ -435,7 +435,7 @@
      (implies (and (standardp x)
 		   (standardp y)
 		   (i-close x y))
-	      (equal x y)) 
+	      (equal x y))
    :hints (("Goal" :in-theory (enable nsa-theory)))
    :rule-classes nil))
 
@@ -467,7 +467,7 @@
 		  (before-interval-p x interval)
 		  (after-interval-p y interval)
 		  (i-close x y))
-	     (i-close (interval-left-endpoint interval) 
+	     (i-close (interval-left-endpoint interval)
 		      (interval-right-endpoint interval)))
   :hints (("Goal"
 	   :use ((:instance close-squeeze
@@ -487,7 +487,7 @@
 		  (before-interval-p x interval)
 		  (after-interval-p y interval)
 		  (i-close x y))
-	     (equal (interval-left-endpoint interval) 
+	     (equal (interval-left-endpoint interval)
 		    (interval-right-endpoint interval)))
   :hints (("Goal"
 	   :use ((:instance close-standards-are-equal
@@ -497,7 +497,7 @@
 	   :in-theory (disable interval-p before-interval-p after-interval-p interval-left-endpoint interval-right-endpoint)
 	   ))
   )
-    
+
 (defthm close-right-endpoint
     (implies (and (interval-p interval)
 		  (inside-interval-p x interval)
@@ -594,5 +594,5 @@
       subinterval-p))
 
 (in-theory (disable interval-definition-theory))
-      
-    
+
+

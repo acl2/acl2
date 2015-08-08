@@ -101,7 +101,7 @@
   (declare (xargs :guard (and (rationalp x) (rationalp y) (integerp n))))
   (log>= (comp2 x n) (comp2 y n)))
 
- 
+
 ;; 5. unary logical operations
 
 ;make separate books for these? logior1 has one?
@@ -274,7 +274,7 @@
   (natp (logand1 x y)))
 
 
-;; logior1 
+;; logior1
 (defthm logior1-bvecp
   (bvecp (logior1 x) 1)
   :hints (("Goal" :in-theory (enable logior1))))

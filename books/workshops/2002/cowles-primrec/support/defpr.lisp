@@ -28,10 +28,10 @@
 #|
  To certify in ACL2 Version 2.6:
 
- (certify-book "defpr" 
+ (certify-book "defpr"
                0
                t ; compile-flg
-	       :defaxioms-okp nil 
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil)
 |#
 #|
@@ -61,13 +61,13 @@ Four examples are included below:
  functions.
 
 As shown by Pete & J, for some h's, such an f does not exist.
-Their example, showing such an f need not exist, has 
-  (test x) = (equal x 0), 
+Their example, showing such an f need not exist, has
+  (test x) = (equal x 0),
   (base x) = nil,
-  (h x y$)  = (cons nil y$), and 
+  (h x y$)  = (cons nil y$), and
   (st x)   = (- x 1).
 
-A sufficient (but not necessary) condition on h for the 
+A sufficient (but not necessary) condition on h for the
 existence of f is that h have a right fixed point, i.e., there is
 some c such that (h x c) = c.
 
@@ -80,29 +80,29 @@ fixed point is not necessary for the existence of f has
 The ACL2 function fix satisfies the recursive equation in
 generic-primitive-recursive-f, for these choices for test, base,
 h, and st.  Here (fix x) returns x if x is an ACL2 number and
-returns 0 otherwise. 
+returns 0 otherwise.
 
 Note:
 A function f satisfying the equation
     (equal (f x)
 	   (if (test x) (base x) (h x (f (st x)))))).
 is called primitive recursive because a recursive equation of
-this form is a generalization of the definitions by primitive 
+this form is a generalization of the definitions by primitive
 recursion studied in computability theory:
     F(x_1,...,x_n, 0)   = k(x_1,...,x_n)
     F(x_1,...,x_n, t+1) = h(t, F(x_1,...,x_n,t), x_1,...,x_n).
 |#
 #|
-At this point, the contents of Pete & J's defpun.list are closely 
+At this point, the contents of Pete & J's defpun.list are closely
 followed (with the modifications required to accommodate primitive
-recursive definitions in place of tail recursive definitions).  
+recursive definitions in place of tail recursive definitions).
 |#
 ; To introduce an arbitrary primitive-recursive function (assuming
 ; the existence of an appropriate fixed point), we proceed in three
 ; steps.  First is the proof that we can admit the generic one
 ; argument primitive recursive function.  This ``generic theorem''
-; is proved once; the proof is not redone for each new function.  
-; Second, the generic theorem is used to introduce the arity one 
+; is proved once; the proof is not redone for each new function.
+; Second, the generic theorem is used to introduce the arity one
 ; version of the desired function.  Third, we prove that the arity
 ; one version is a witness for the desired equation.
 
@@ -117,8 +117,8 @@ recursive definitions in place of tail recursive definitions).
 
 ; Note that 0 is a right fixed point of (* a b y).
 
-; We first recognize that this is probably primitive recursive 
-; (without checking that k is new, that the vars are distinct, 
+; We first recognize that this is probably primitive recursive
+; (without checking that k is new, that the vars are distinct,
 ; etc.).  Successful recognition produces
 
 ;  (mv '((a (car x))    ;; args decomposition
@@ -174,7 +174,7 @@ recursive definitions in place of tail recursive definitions).
 
 ;; First, the generic theorem is proved, assuming h$ has a right
 ;;  fixed point:
-;;  
+;;
 ;;  (defthm generic-primitive-recursive-f$
 ;;      (equal (f$ x)
 ;;             (if (test x) (base x) (h$ x (f$ (st x)))))
@@ -188,7 +188,7 @@ recursive definitions in place of tail recursive definitions).
 
 (encapsulate
  (((h$ * *) => *))
- 
+
  (local
   (defun h$ (x y$)
     (declare (ignore x y$))
@@ -198,7 +198,7 @@ recursive definitions in place of tail recursive definitions).
    h$-fix-is-fixed-point
    (equal (h$ x (h$-fix))(h$-fix)))
  ) ;; end encapsulate
- 
+
 (defun stn (x n)
   (if (zp n) x (stn (st x) (1- n))))
 
@@ -235,7 +235,7 @@ recursive definitions in place of tail recursive definitions).
 
  (local (defthm open-stn
 	    (implies (and (integerp n) (< 0 n))
-		     (equal (stn x n) 
+		     (equal (stn x n)
 			    (stn (st x) (1- n))))))
 
  (local (defthm +1-1 (equal (+ -1 +1 x) (fix x))))
@@ -251,7 +251,7 @@ recursive definitions in place of tail recursive definitions).
 
  (local (defthm test-nil-f$ch
 	    (implies (not (test x))
-		     (iff (test (stn (st x) 
+		     (iff (test (stn (st x)
 				     (f$ch (st x))))
 			  (test (stn x (f$ch x)))))
 	    :hints
@@ -261,7 +261,7 @@ recursive definitions in place of tail recursive definitions).
 				      (n (+ -1 (f$ch x)))))))))
 
  (local (defthm f$n-st
-	    (implies (and (test (stn x n)) 
+	    (implies (and (test (stn x n))
 			  (test (stn x m)))
 		     (equal (f$n x n) (f$n x m)))
 	    :rule-classes nil))
@@ -281,10 +281,10 @@ recursive definitions in place of tail recursive definitions).
 (defun arity-1-primitive-recursive-encap (f test base st h h-fix)
 
 ; Execution of this function produces an encapsulation that
-;  introduces a constrained primitive recursive f with the 
-;  constraint (equal (f x) 
+;  introduces a constrained primitive recursive f with the
+;  constraint (equal (f x)
 ;                    (if (test x) (base x) (h x (f (st x))))),
-; where test, base and st are previously defined functions of 
+; where test, base and st are previously defined functions of
 ; arity 1, h is a previously defined function of arity 2, and
 ; h-fix is a previously defined constant (function of arity 0).
 
@@ -297,7 +297,7 @@ recursive definitions in place of tail recursive definitions).
 
     `(encapsulate
       (((,f *) => *))
-    
+
       (local (in-theory (disable ,test ,base ,st ,h ,h-fix
 ;; This last entry is needed when h-fix is defined in terms of
 ;; a 0-ary functions introduced by defstub.
@@ -315,31 +315,31 @@ recursive definitions in place of tail recursive definitions).
                (declare (xargs :measure (nfix n)))
                (if (or (zp n)
                        (,test x))
-                   (,base x) 
+                   (,base x)
 		   (,h x (,fn (,st x) (1- n))))))
 
       (local (defun ,f (x)
                (if (,test (,stn x (,fch x)))
                    (,fn x (,fch x))
                    (,h-fix))))
-      
+
       (local (in-theory (enable ,h ,h-fix)))
 
       (local (defthm ,thm
 	       (equal (,h x (,h-fix))(,h-fix))
 	       :rule-classes nil))
 
-      (local (in-theory '(,f ,test ,base ,st 
-			     ,h ,h-fix 
+      (local (in-theory '(,f ,test ,base ,st
+			     ,h ,h-fix
 			     ,stn ,fn
-; This last entry is needed when fn is a constant function 
+; This last entry is needed when fn is a constant function
 ; returning T, NIL, or 0 (one of the singleton type sets)
                              (:type-prescription ,fn))))
 
       (defthm ,(packn-pos (list f "-DEF") f)
         (equal (,f x)
-               (if (,test x) 
-                   (,base x) 
+               (if (,test x)
+                   (,base x)
                    (,h x (,f (,st x)))))
         :hints (("Goal"
                  :use (:functional-instance
@@ -356,12 +356,12 @@ recursive definitions in place of tail recursive definitions).
 		       ))
                 ("Subgoal 2" :use ,fch)
 		("Subgoal 5" :use ,thm))
-                                 
+
         :rule-classes nil)
       )
     ))
 
-; Second, we recognize probably primitive-recursive definitions 
+; Second, we recognize probably primitive-recursive definitions
 ; and introduce the appropriate functions of arity 1.
 
 ; Note that probably-primitive-recursivep and destructure-primitive-recursion
@@ -383,18 +383,18 @@ recursive definitions in place of tail recursive definitions).
        (eq (car body) 'IF)
        (or (and (consp (caddr body))
                 (not (eq (car (caddr body)) f))
-		;; Determine if unique f-term occurs in 
+		;; Determine if unique f-term occurs in
                 ;; (cdr (caddr body)):
-                (eql (length 
-		      (remove-duplicates-equal 
+                (eql (length
+		      (remove-duplicates-equal
 		       (list-all-f-terms f (cdr (caddr body)))))
 		     1))
            (and (consp (cadddr body))
                 (not (eq (car (cadddr body)) f))
-                ;; Determine if unique f-term occurs in 
+                ;; Determine if unique f-term occurs in
                 ;; (cdr (cadddr body)):
-                (eql (length 
-		      (remove-duplicates-equal 
+                (eql (length
+		      (remove-duplicates-equal
 		       (list-all-f-terms f (cdr (cadddr body)))))
 		     1)))))
 
@@ -417,22 +417,22 @@ recursive definitions in place of tail recursive definitions).
   (cond
    ((and (consp (caddr body))
 	 (not (eq (car (caddr body)) f))
-	 ;; Determine if unique f-term occurs in 
-         ;; (cdr (caddr body)):       
-	 (eql (length 
-	       (remove-duplicates-equal 
+	 ;; Determine if unique f-term occurs in
+         ;; (cdr (caddr body)):
+	 (eql (length
+	       (remove-duplicates-equal
 		(list-all-f-terms f (cdr (caddr body)))))
 	      1))
-    (let ((f-term 
-	   (car (list-all-f-terms f (cdr (caddr body)))))) 
+    (let ((f-term
+	   (car (list-all-f-terms f (cdr (caddr body))))))
          (mv (destructure-primitive-recursion-aux vars 'x)
 	     (list 'NOT (cadr body))
 	     (cadddr body)
 	     (cons 'LIST (cdr f-term))
 	     (subst-equal 'y$$ f-term (caddr body)))))
    (t
-    (let ((f-term 
-	   (car (list-all-f-terms f (cdr (cadddr body)))))) 
+    (let ((f-term
+	   (car (list-all-f-terms f (cdr (cadddr body))))))
          (mv (destructure-primitive-recursion-aux vars 'x)
 	     (cadr body)
 	     (caddr body)
@@ -482,7 +482,7 @@ recursive definitions in place of tail recursive definitions).
 	   (symbol-listp vars)
 	   (eql (length rest) 2))
 
-; This form may be legal, so we will destructure it and proceed.  
+; This form may be legal, so we will destructure it and proceed.
 ;  Otherwise, we will cause an error.
 
       (let* ((dcl (first rest))
@@ -492,7 +492,7 @@ recursive definitions in place of tail recursive definitions).
 		     (eq (first xargs) 'XARGS)
 		     (eq (second xargs) ':fixpt)
 		     (probably-primitive-recursivep g vars body))
-		(arbitrary-primitive-recursive-encap 
+		(arbitrary-primitive-recursive-encap
 		 g vars body (third xargs))
 	        (defpr-syntax-er)))
       (defpr-syntax-er)))
@@ -532,16 +532,16 @@ This succeeds:
   (declare (xargs :fixpt 0))
   (if (not (equal x 0))
       (* (f1 (- x 1))
-	 (f1 (- x 1)))      
+	 (f1 (- x 1)))
       1))
-|#    
+|#
 #| Example 1. Tail recursion as a special case.
 ;     Tail recursion is a special case of primitive recursion:
 ;        The projection function defined by
 ;              (Id-2-2 x1 x2) <== x2
 ;          is used for the function h in the primitive recursive
-;          definition. Any constant can be used for the fixed 
-;          point.  
+;          definition. Any constant can be used for the fixed
+;          point.
 
 (defun
   Id-2-2 (x1 x2)
@@ -570,17 +570,17 @@ This succeeds:
 |#
 #| Example 2. Pete & J's cons example (modified).
 
-No ACL2 function g satisfies this equation: 
+No ACL2 function g satisfies this equation:
 (equal (g x)
        (if (equal x 0)
 	   nil
 	   (cons nil (g (- x 1)))))
 
-The ``problem'' from the point of view of this note is that cons 
-does not have a right fixed point, so one is provided by the 
+The ``problem'' from the point of view of this note is that cons
+does not have a right fixed point, so one is provided by the
 following:
 
-(defstub 
+(defstub
     cons-fix () => *)
 
 (defun

@@ -309,10 +309,10 @@ because... (BOZO)</p>
 
 
 
-             
 
-             
-             
+
+
+
 
 ;;         (b* (((wmv ok warnings lhssvex ?type size)
 ;;               (vl-index-expr-svex/size/type lhs conf))
@@ -353,7 +353,7 @@ because... (BOZO)</p>
 ;;                             (list (with-local-ps (vl-print-warnings warnings))))))
 ;;                (list* 'vl-procedural-assign->svstmts
 ;;                       svstmts shift end))))
-                   
+
 
 ;; (trace$
 ;;  #!vl (vl-operandinfo-to-svex-longest-static-prefix
@@ -406,7 +406,7 @@ because... (BOZO)</p>
                          :args (list lhs (or err "")))
                   nil nil))
 
-             
+
              ;; Dynselect-expr is in terms of the special variable
              ;; *svex-longest-static-prefix-var*.
              ((mv err longest-static-prefix-svex lsp-type dynselect-expr)
@@ -443,11 +443,11 @@ because... (BOZO)</p>
                          :msg "Failed to size the static part of LHS ~a0: ~@1"
                          :args (list lhs (or err "")))
                   nil nil))
-             
+
              (lsp-simp (sv::svex-concat
                         lsp-size (sv::svex-lhsrewrite longest-static-prefix-svex 0 lsp-size)
                         (sv::svex-z)))
-             
+
              ((unless (sv::lhssvex-p lsp-simp))
               (mv nil
                   (fatal :type :vl-assignstmt-fail
@@ -550,7 +550,7 @@ because... (BOZO)</p>
              'vl-procedural-assign->svstmts id t world)))
 
   (deffixequiv-mutual vl-procedural-assign->svstmts))
-          
+
 
 
 
@@ -658,7 +658,7 @@ because... (BOZO)</p>
 
        (lhs (vl-idexpr x1.name)))
     (vl-assignstmt->svstmts lhs x1.initval t conf)))
-       
+
 (local (in-theory (disable member append
                            sv::svarlist-addr-p-when-subsetp-equal
                            vl-warninglist-p-when-not-consp
@@ -808,7 +808,7 @@ because... (BOZO)</p>
              ((wmv ok2 warnings ans)
               (vl-caselist->svstmts x.caselist size test-svex default x.casetype conf nonblockingp)))
           (mv (and ok1 ok2) warnings ans))
-                    
+
 
         :otherwise
         (fail (warn :type :vl-stmt->svstmts-fail
@@ -857,8 +857,8 @@ because... (BOZO)</p>
           warnings
           (list (sv::make-svstmt-if :cond test :then first :else rest)))))
 
-         
-         
+
+
 
   ///
   (verify-guards vl-stmt->svstmts)
@@ -1132,7 +1132,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 |#
 
 ;; This works (heuristically) in a lot of common cases, but this isn't one of
-;; them.  It also wouldn't work if the flop was instead phrased as 
+;; them.  It also wouldn't work if the flop was instead phrased as
 
 #|
 
@@ -1185,7 +1185,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 
 
-    
+
 (define vl-evatomlist-delay-substitution ((x vl-evatomlist-p)
                                           (edge-dependent-delayp)
                                           (conf vl-svexconf-p))
@@ -1260,7 +1260,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
         (cons (cons var delay-expr) rest))))
 
 
-       
+
 (define vl-always->svex-checks ((x vl-always-p)
                                 (conf vl-svexconf-p))
   :short "Checks that the always block is suitable for translating to svex, ~
@@ -1316,7 +1316,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
              x.stmt.body
              trigger
              trigger-subst))))))
-             
+
 #!sv
 (define svar->lhs-by-mask ((x svar-p)
                            (mask 4vmask-p))
@@ -1472,7 +1472,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        ((wmv warnings)
         (vl-always->svex-latch-warnings (cdr write-masks) read-masks)))
     warnings))
-                   
+
 
 #!sv
 (define svarlist-remove-delays ((x svarlist-p))
@@ -1487,7 +1487,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 ;; (local
 ;;  #!sv
 ;;  (encapsulate nil
-   
+
 ;;    (defthm svex-lookup-in-fast-alist-clean
 ;;      (implies (svex-alist-p x)
 ;;               (iff (svex-lookup v (fast-alist-clean x))
@@ -1514,7 +1514,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
 
 
-    
+
 (define vl-always-apply-trigger-to-updates ((trigger sv::svex-p)
                                             (x sv::svex-alist-p))
   :returns (new-x sv::svex-alist-p)
@@ -1665,7 +1665,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
         (if (eq x.type :vl-always-comb)
             (vl-always->svex-latch-warnings write-masks read-masks)
           warnings))
-       
+
        ((with-fast subst))
 
        ;; Should we apply the substitution to the trigger?  This only matters
@@ -1695,7 +1695,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
                         blkst-subst))
 
        (updates (append nbst-trigger blkst-trigger))
-      
+
        (updates-rw (sv::svex-alist-rewrite-fixpoint updates))
 
        ;; Compilation was ok.  Now we need to turn the state back into a list

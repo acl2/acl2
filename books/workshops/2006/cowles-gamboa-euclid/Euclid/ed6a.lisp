@@ -4,7 +4,7 @@
 ;  Factorization. Here Size is the degree of a polynomial; Quotient
 ;  and Remainder are defined as expected for polynomials.
 
-;  This version uses quantifiers (defun-sk) and is 
+;  This version uses quantifiers (defun-sk) and is
 ;  non-exedutable.
 
 ; Copyright (C) 2006 John R. Cowles and Ruben A. Gamboa, University of
@@ -33,14 +33,14 @@
 ; Modified by Matt Kaufmann for ACL2 Version 3.1 because
 ; SBCL complains about LISP::.
 
-#| 
+#|
 To certify this book, first, create a world with the following packages:
 
 (defconst *import-symbols*
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -62,7 +62,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq *import-symbols*
 		     '(rem)))
 
-(certify-book "ed6a" 
+(certify-book "ed6a"
 	      6
 	      nil ;;compile-flg
 	      )
@@ -71,11 +71,11 @@ To certify this book, first, create a world with the following packages:
 ;; Univariate Polynomials with Coefficents from an arbitrary
 ;   Field Euclidean Doamin:
 
-;;  Polinomiop  ; Predicate for set of Euclidean Domain elements. 
+;;  Polinomiop  ; Predicate for set of Euclidean Domain elements.
 ;;  =           ; (Polynomial) Equality predicate for Euclidean Domain elements.
 ;;  C_=         ; Choose unique equivalence class representative for equal.
 ;;  +           ; (Polynomial) Addition in Euclidean Domain.
-;;  *           ; (Polynomial) Multiplication in Euclidean Domain. 
+;;  *           ; (Polynomial) Multiplication in Euclidean Domain.
 ;;  -           ; (Polynomial) Unary minus in Euclidean Domain.
 ;;  nulo        ; 0 (Polynomial) element in Euclidean Domain.
 ;;  identidad   ; 1 (Polynomial) element in Euclidean Domain.
@@ -86,7 +86,7 @@ To certify this book, first, create a world with the following packages:
 ;; An Euclidean Domain is an integral domain, together with a Size function
 ;; from nonzero domain elements into the nonnegative integers, that
 ;; satisfies the Division Propery:
-;; 
+;;
 ;; Division Propery. For all domain elements x and all nonzero domain
 ;;             elements y there are domain elements q and r such that
 
@@ -102,7 +102,7 @@ To certify this book, first, create a world with the following packages:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Commutative Ring is a nonempty set with two binary operations, addition
 ;; and multiplication, an unary operation, minus, and a ring element, zero,
-;; such that 
+;; such that
 
 ;; (1) the binary operations are commutative and associative,
 ;; (2) multiplication distributes over addition,
@@ -122,10 +122,10 @@ To certify this book, first, create a world with the following packages:
 ;;     If the original Size function does not satisfy this property,
 ;;     then it can replaced by another that does satisfy this and the
 ;;     division property.
-;;      See Book 2 of the ACL2 Euclidean Domain books, ed2.lisp, 
+;;      See Book 2 of the ACL2 Euclidean Domain books, ed2.lisp,
 ;;      for a proof.
 
-;;  In fact, for Gaussian integers x and y, 
+;;  In fact, for Gaussian integers x and y,
 ;;                (sq-abs (* x y)) = (* (sq-abs x)(sq-abs y)).
 ;;   So, if Gaussian integer y differs from 0, then (<= 1 (sq-abs y));
 ;;   then for any Gaussian integer x, (sq-abs x)  = (* (sq-abs x) 1)
@@ -143,8 +143,8 @@ To certify this book, first, create a world with the following packages:
  (include-book "ed3"
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil
 	       :load-compiled-file nil))
 
@@ -165,10 +165,10 @@ To certify this book, first, create a world with the following packages:
 (defthm
   Equivalence-Law
   (implies (polinomiop x)
-	   (and (= x x)  
+	   (and (= x x)
 		(implies (polinomiop y)
 			 (and (booleanp (= x y))
-			      (implies (= x y) 
+			      (implies (= x y)
 				       (= y x))
 			      (implies (polinomiop z)
 				       (implies (and (= x y)
@@ -337,12 +337,12 @@ To certify this book, first, create a world with the following packages:
 		(not (= x (nulo)))
 		(polinomiop y)
 		(not (= y (nulo))))
-	   (<= (deg x) 
+	   (<= (deg x)
 	       (deg (* x y))))
    :rule-classes nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-;; Divides-p theory: 
+;; Divides-p theory:
 
 ;;  Divides-p is defined using quantifiers (defun-sk) and
 ;;   is non-executable
@@ -503,7 +503,7 @@ To certify this book, first, create a world with the following packages:
 (defun
   Irreducible-factors (x)
   "Return a list, lst, of irreducible
-   elements of polinomiop, so that if x is 
+   elements of polinomiop, so that if x is
    in polinomiop, x is not (nulo), and x is not
    an unit, then x = product of the
    members in lst."
@@ -658,7 +658,7 @@ To certify this book, first, create a world with the following packages:
 		 (acl2::reducible-p reducible-p)
 		 (acl2::reducible-p-witness reducible-p-witness)
 		 (acl2::irreducible-p irreducible-p)
-		 (acl2::unit-associates-p unit-associates-p)		  
+		 (acl2::unit-associates-p unit-associates-p)
 		 (acl2::unit-associates-p-witness unit-associates-p-witness))
 		(acl2::x x)
 		(acl2::y y)))
@@ -680,7 +680,7 @@ To certify this book, first, create a world with the following packages:
 
 (defun
   Delete-one-unit-associate (x lst)
-  "Return the result of deleting one occurrence 
+  "Return the result of deleting one occurrence
    of an unit-associate of x from the list lst."
   (if (consp lst)
       (if (unit-associates-p x (car lst))
@@ -696,7 +696,7 @@ To certify this book, first, create a world with the following packages:
   (if (consp lst1)
       (and (member-unit-associate (car lst1) lst2)
 	   (bag-equal-unit-associates (cdr lst1)
-				      (delete-one-unit-associate (car lst1) 
+				      (delete-one-unit-associate (car lst1)
 								 lst2)))
       (atom lst2)))
 
@@ -784,7 +784,7 @@ To certify this book, first, create a world with the following packages:
       0))
 
 (defthm
-  Bag-equal-unit-associates->equal-multiplicity-unit-associate 
+  Bag-equal-unit-associates->equal-multiplicity-unit-associate
   (implies (bag-equal-unit-associates lst1 lst2)
 	   (equal (multiplicity-unit-associate x lst1)
 		  (multiplicity-unit-associate x lst2)))

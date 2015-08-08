@@ -79,7 +79,7 @@ prove (elsewhere) lemmas mixing lior with other functions
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(lior x y n) -- the base case
          `(binary-lior ,@x))
-        (t         
+        (t
          `(binary-lior ,(car x)
                        (lior ,@(cdr x))
                        ,(car (last x))))))
@@ -161,8 +161,8 @@ prove (elsewhere) lemmas mixing lior with other functions
                 (case-split (integerp n))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j))))))
 
 (defthmd bits-lior-2
@@ -171,8 +171,8 @@ prove (elsewhere) lemmas mixing lior with other functions
                 (case-split (integerp n))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ n (- j))))))
 
 ;notice the call to MIN in the conclusion
@@ -182,8 +182,8 @@ prove (elsewhere) lemmas mixing lior with other functions
                 (case-split (integerp i))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j))))))
 
 (defthmd bitn-lior-1
@@ -192,8 +192,8 @@ prove (elsewhere) lemmas mixing lior with other functions
                 (case-split (integerp n))
                 )
            (equal (bitn (lior x y n) m)
-                  (lior (bitn x m) 
-                        (bitn y m) 
+                  (lior (bitn x m)
+                        (bitn y m)
                         1))))
 
 (defthmd bitn-lior-2
@@ -212,8 +212,8 @@ prove (elsewhere) lemmas mixing lior with other functions
                 )
            (equal (bitn (lior x y n) m)
                   (if (< m n)
-                      (lior (bitn x m) 
-                            (bitn y m) 
+                      (lior (bitn x m)
+                            (bitn y m)
                             1)
                     0))))
 

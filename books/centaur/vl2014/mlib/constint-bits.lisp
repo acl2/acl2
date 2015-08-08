@@ -129,7 +129,7 @@ handled any sign/zero extensions, so we assume here that the atom's
                        :vl-1val
                        :vl-1val
                        :vl-1val))))
-  
+
 
 (local
  (assert! (equal (vl-constint->msb-bits

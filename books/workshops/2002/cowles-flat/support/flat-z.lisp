@@ -29,13 +29,13 @@
 ;  Last modified 28 December 2001.
 #|
  To certify (originally in ACL2 Version 2.6):
- (defpkg 
-     "FLAT" (union-eq 
+ (defpkg
+     "FLAT" (union-eq
 	      *acl2-exports*
 	      *common-lisp-symbols-from-main-lisp-package*))
 
  (certify-book "flat-z" 1 nil ; compile-flg
-	       :defaxioms-okp nil 
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil)
 |#
 (in-package "FLAT")
@@ -102,7 +102,7 @@ flat.lisp, of a function Z that satisfies the equation,
 (defthm
     base-of-Z-chain=0
     (implies (zp i)
-	     (equal (Z-chain i x) 
+	     (equal (Z-chain i x)
 		    0)))
 
 (defthm
@@ -116,7 +116,7 @@ flat.lisp, of a function Z that satisfies the equation,
 
 (defchoose
     lub-Z-chain-i i (x)
-    (not (equal (Z-chain i x) 
+    (not (equal (Z-chain i x)
 		0)))
 
 (defthm
@@ -152,7 +152,7 @@ flat.lisp, of a function Z that satisfies the equation,
 	      lub-$bottom$-based-chain-is-upper-bound
 	      ($bottom$ (lambda () 0))
 	      ($<=$ $0<=$)
-	      ($bottom$-based-chain Z-chain) 
+	      ($bottom$-based-chain Z-chain)
 	      (lub-$bottom$-based-chain lub-Z-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-Z-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-Z-chain-i)))
@@ -166,12 +166,12 @@ flat.lisp, of a function Z that satisfies the equation,
 	     (equal (lub-Z-chain x)
 		    (Z-chain i x)))
     :hints (("Goal"
-	     :by 
+	     :by
 	     (:functional-instance
 	      $bottom$-based-chain-is-$<=$-chain-f
 	      ($bottom$ (lambda () 0))
 	      ($<=$ $0<=$)
-	      ($bottom$-based-chain Z-chain) 
+	      ($bottom$-based-chain Z-chain)
 	      (lub-$bottom$-based-chain lub-Z-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-Z-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-Z-chain-i)))))
@@ -230,7 +230,7 @@ flat.lisp, of a function Z that satisfies the equation,
     (equal (lub-Z-chain x)(ub-g-chain x))
     :rule-classes nil
     :hints (("Goal"
-	     :by 
+	     :by
 	     (:functional-instance
 	      lub-$chain$=ub-shifted-$chain$
 	      ($bottom$ (lambda () 0))
@@ -248,7 +248,7 @@ flat.lisp, of a function Z that satisfies the equation,
 	     :use Z-chain-is-$0<=$-chain)
 	    ))
 
-(defthm 
+(defthm
     Z-axiom
     (equal (Z x)
 	   (if (equal x 0)

@@ -4,10 +4,10 @@
 ;; Main functions that are defined in this books are:
 ;;  (int2hex x len)
 ;;      Converting a signed integer to a hexadecimal string of length len.
-;;      It includes uppercase letters from A to F in the resulting string.  
+;;      It includes uppercase letters from A to F in the resulting string.
 ;;  (nat2hex x)
 ;;      Converting a natural number to a hexadecimal string
-;;      It includes uppercase letters from A to F in the resulting string.  
+;;      It includes uppercase letters from A to F in the resulting string.
 ;;  (int2oct x len)
 ;;      Converting a signed integer to a octagonal string of length len.
 ;;  (nat2oct x)
@@ -17,13 +17,13 @@
 ;;  (nat2bin x)
 ;;      Converting a natural number to a binary string.
 ;;  (int2digits x len base)
-;;      Converting a signed integer to a string of digits of length len. 
+;;      Converting a signed integer to a string of digits of length len.
 ;;      Base is used for the conversion.
 ;;  (nat2digits x base)
 ;;      Converting a natural number to a string of digits, using base
-;;      for the conversion. 
+;;      for the conversion.
 (in-package "RADIX")
-;; These books are included to prove some guards. 
+;; These books are included to prove some guards.
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
@@ -37,7 +37,7 @@
       (1+ (ilog (floor x base) base)))))
 
 (defun hex-digit (n cap)
-  (declare (xargs :guard (and (natp n) (<= 0 n) (< n 16) (booleanp cap))))  
+  (declare (xargs :guard (and (natp n) (<= 0 n) (< n 16) (booleanp cap))))
   (if (< n 10)
       (digit-to-char n)
     (if cap
@@ -66,7 +66,7 @@
 
 
 ; Returns how many characters of hex-digits are needed to print natural
-; number x. 
+; number x.
 (defun hex-print-size (x)
   (declare (xargs :guard (natp x)))
   (1+ (ilog x 16)))
@@ -91,21 +91,21 @@
   (implies (character-listp ans)
 	   (character-listp (convert-radix-lst x len base ans))))
 
-; (convert-radix x n r) converts an integer x to a digit-string of length n, 
-; using radix r. For example (convert-radix x 32 2) converts x to 
-; binary string of length 32. 
+; (convert-radix x n r) converts an integer x to a digit-string of length n,
+; using radix r. For example (convert-radix x 32 2) converts x to
+; binary string of length 32.
 (defun convert-int-radix (x n r)
   (declare (xargs :guard (and (integerp x) (natp n)
 			      (natp r) (<= 2 r) (<= r 10))))
   (coerce (convert-radix-lst x n r nil) 'string))
 
 ; Returns how many digits are needed to represent natural number x
-; using radix 'base'. 
+; using radix 'base'.
 (defun radix-print-size (x base)
   (declare (xargs :guard (and (natp x) (natp base) (<= 2 base))))
   (1+ (ilog x base)))
 
-	
+
 ; (nat2hex x cap) converts positive integer x to a hexadecimal string.
 ; If cap is non-nil, ABCDEF are used in the hexadecimal representation.
 ; Should convert-base be a better name?
@@ -127,7 +127,7 @@
   (convert-int-radix x len 8))
 
 ;; Following are examples to format the converted numbers.
-;; 
+;;
 ;;(fmx "hex of x is ~x0~%" (radix::int2hex 100 (radix::hex-print-size 100) t))
 ;;
 ;; Macro to print a non-negative integer in hex.

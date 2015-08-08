@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -92,7 +92,7 @@
                 )
            (even-aux (- x y)))
   :hints (("Subgoal *1/6" :cases ((equal y x) (equal y (+ -1 x)))
-           :in-theory (set-difference-theories  
+           :in-theory (set-difference-theories
                        (enable even-aux-reduce-2)
                        '(even-aux)))
           ("Goal" :cases (<= y x)
@@ -168,7 +168,7 @@
                        (even y))
                 (equal (even (+ y x))
                        (even y))))
-  :hints (("Goal" :use (:instance even-plus-even (x (* -1 x)) (y (+ x y)))))) 
+  :hints (("Goal" :use (:instance even-plus-even (x (* -1 x)) (y (+ x y))))))
 
 (defund odd (x)
   (and (integerp x)
@@ -209,7 +209,7 @@ there are plenty more nice even-odd theorems
                       (and (odd x) (odd y)))))
   :hints (("Goal" :in-theory (enable odd))))
 
-plus rules to rewrite oddp and evenp   
+plus rules to rewrite oddp and evenp
 
 (defthm oddp-sum
   (implies (and (integerp x)
@@ -243,7 +243,7 @@ plus rules to rewrite oddp and evenp
   (implies (and (odd x)
                 (odd y))
            (even (+ x y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance odd-reduce (n (+ x y 1)))
                  (:instance odd-reduce (n (+ x 1)))
                  (:instance even-plus-even (x (+ 1 X Y)) (y (- (+ 1 x))))

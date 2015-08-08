@@ -16,7 +16,7 @@
 
 (local
  (defun subcor-var-flg (flg vars terms x)
-   (cond 
+   (cond
     (flg ; subcor-var-lst
      (cond ((endp x) nil)
            (t (cons (subcor-var-flg nil vars terms (car x))
@@ -34,7 +34,7 @@
           (if flg
               (subcor-var-lst vars term x)
             (subcor-var vars term x)))))
-           
+
 (local
  (defthm subcor-var-flg-preserves-len
    (implies flg

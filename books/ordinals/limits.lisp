@@ -11,7 +11,7 @@
 (defthm limit-+
   (implies (o-p a)
            (not (limitp (o+ a 1))))
-  :hints (("goal" 
+  :hints (("goal"
 	   :in-theory (e/d (limitp) (natpart-o-rst)))))
 
 (local (in-theory (disable o+)))
@@ -35,7 +35,7 @@
   (defthm |limitp.b &  a < w^b   =>   a < w^[fe.a +1]  &  [fe.a + 1] < w^b :l1|
     (implies (and (not (equal b 0))
 		  (o-p a)
-		  (o-p b)      
+		  (o-p b)
 		  (o< a (o^ (omega) b)))
 	     (o< (o-first-expt a) b))
     :hints (("goal"
@@ -46,7 +46,7 @@
    (implies (and (limitp b)
 		 (o-p a)
 		 (o< a (o^ (omega) b)))
-	    (and (o< a 
+	    (and (o< a
 		     (o^ (omega) (o+ (o-first-expt a) 1)))
 		 (o< (o^ (omega) (o+ (o-first-expt a) 1))
 		     (o^ (omega) b))))

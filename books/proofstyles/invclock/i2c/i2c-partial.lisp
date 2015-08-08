@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 #|
- 
+
   i2c-partial.lisp
   ~~~~~~~~~~~~~~~~
 
@@ -55,7 +55,7 @@ state".
             (not (external-partial s))))
 
  (defthm inv-partial-and-external-partial-is-post-partial
-   (implies (and (inv-partial s) 
+   (implies (and (inv-partial s)
                  (external-partial (next-partial s)))
             (post-partial (next-partial s))))
 
@@ -67,7 +67,7 @@ state".
 )
 
 
-(defun run-partial (s n) 
+(defun run-partial (s n)
   (if (zp n) s (run-partial (next-partial s) (1- n))))
 
 ;; Here now I cannot use the constructive definition of clock which I did for
@@ -84,7 +84,7 @@ state".
 ;; way is more intuitive in this case.
 
 (defun-sk for-all-inv-partial (s i)
-  (forall j 
+  (forall j
           (implies (<= j i)
                    (inv-partial (run-partial s j)))))
 
@@ -121,7 +121,7 @@ state".
  (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;; Now prove some theorems. These theorems are admittedly more complicated than
-;; the total correctness ones. 
+;; the total correctness ones.
 
 ;; Just saying that we can bring next up before run.
 
@@ -155,11 +155,11 @@ state".
 ;; Now I need to show that find-external is actually an external state if such
 ;; an external state exists.
 
-(local 
+(local
  (defthm external-partial-to-find-external-partial
    (implies (and (external-partial (run-partial s i))
                  (inv-partial s))
-            (external-partial (next-partial 
+            (external-partial (next-partial
                                (run-partial s (find-external-partial s i)))))))
 
 ;; And thus exists-to-external must be true in this case.
@@ -186,7 +186,7 @@ state".
 ;; Hence the invariant theorems must give me that running for that many states
 ;; gives me a good state.
 
-(local 
+(local
  (defthm exists-to-good
    (implies (exists-run-partial-to-external-partial s)
             (post-partial (run-partial s (clock-partial--fn s))))
@@ -203,7 +203,7 @@ state".
             :use ((:instance for-all-inv-partial-necc))))))
 
 ;; Now I prove that anything less than external-witness must not be
-;; external. 
+;; external.
 
 ;; Comments: I dont like to have to always reason about this
 ;; thing. Here is what I mean. If there is a defun-sk then the witness gives me
@@ -221,13 +221,13 @@ state".
                  (<= i (exists-run-partial-to-external-partial-witness s)))
             (not (external-partial (run-partial s i))))
    :hints (("Goal"
-            :in-theory (e/d (exists-run-partial-to-external-partial) 
+            :in-theory (e/d (exists-run-partial-to-external-partial)
                             (for-all-inv-partial))))))
 
 
 
 ;; The main theorems exported from this book are marked with CAPITAL
-;; DEFTHM. 
+;; DEFTHM.
 
 ;; clock function is of course nato. This is obvious.
 
@@ -246,9 +246,9 @@ state".
             (<= (clock-partial--fn s) i))
    :hints (("Goal"
             :cases ((not (natp i))))
-           ("Subgoal 2"            
-            :in-theory (e/d (exists-run-partial-to-external-partial) 
-                            (exists-from-find-external-partial 
+           ("Subgoal 2"
+            :in-theory (e/d (exists-run-partial-to-external-partial)
+                            (exists-from-find-external-partial
                              for-all-inv-partial
                              inv-partial-persists-till-external-partial))
             :use ((:instance inv-partial-persists-till-external-partial)

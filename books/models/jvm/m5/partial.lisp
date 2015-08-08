@@ -27,7 +27,7 @@
 
 ; From this it follows that
 
-; (implies (inv s n0) (inv (run k s) n0)). 
+; (implies (inv s n0) (inv (run k s) n0)).
 
 ; Note that if you then plug in an initial state satisfying the
 ; invariant, and you suppose that after some arbitrary run the pc is
@@ -43,7 +43,7 @@
 
 ; But the classic inductive assertion method supplies an assertion
 ; only for selected cut points (one for each loop, plus the pre- and
-; post-conditions).  
+; post-conditions).
 
 ; In this file I demonstrate how to be explicit only at the cut
 ; points.  I use recursion by step in inv to define the invariant for
@@ -63,7 +63,7 @@
 ; Pete Manolios to attack the 2-Job version of the Apprentice problem.
 ; There, he defined the reachable states of the Apprentice problem as
 ; all the states that could be reached from certain states by the
-; execution of a fixed maximum number of steps (25?).  
+; execution of a fixed maximum number of steps (25?).
 
 ; The contribution I see for this little note is the use of defpun to
 ; avoid counting.
@@ -144,20 +144,20 @@
 ; non-negative int case exhibits all the interesting behavior.
 
 (defconst *half-prog*
-  '((iconst_0)      ; 0                                           
-    (istore_1)      ; 1               a := 0;                     
-    (iload_0)       ; 2  top of loop:                             
-    (ifeq 14)       ; 3               if n=0, goto 17;            
-    (iload_1)       ; 6                                           
-    (iconst_1)      ; 7                                           
-    (iadd)          ; 8                                           
-    (istore_1)      ; 9               a := a+1;                   
-    (iload_0)       ;10                                            
-    (iconst_2)      ;11                                           
-    (isub)          ;12                                           
-    (istore_0)      ;13               n := n-2;                   
-    (goto -12)      ;14               goto top of loop            
-    (iload_1)       ;17                                           
+  '((iconst_0)      ; 0
+    (istore_1)      ; 1               a := 0;
+    (iload_0)       ; 2  top of loop:
+    (ifeq 14)       ; 3               if n=0, goto 17;
+    (iload_1)       ; 6
+    (iconst_1)      ; 7
+    (iadd)          ; 8
+    (istore_1)      ; 9               a := a+1;
+    (iload_0)       ;10
+    (iconst_2)      ;11
+    (isub)          ;12
+    (istore_0)      ;13               n := n-2;
+    (goto -12)      ;14               goto top of loop
+    (iload_1)       ;17
     (halt)))        ;18
 
 ; Here is the ``semantics'' of the loop, in the case in interest.
@@ -175,7 +175,7 @@
 ; function takes a state, s, and the ``initial'' value of n, n0, and
 ; states the assertions we wish to attach to pcs 0, 2, and 18.  These
 ; are the so-called ``cut points'' of my choice: the entry to the
-; program, the top of the loop, and exit from the program.  
+; program, the top of the loop, and exit from the program.
 
 ; The particular assertions are not my main interest in this paper.
 ; You can read them if you want.  The real nugget in this paper is not
@@ -216,7 +216,7 @@
 ; We will later convert this to n0/2.
 
 ; ---------------------------------------------------------------------------
-; The Invariant -- The Only New Idea in this Note 
+; The Invariant -- The Only New Idea in this Note
 
 ; Here is the new idea.  I define the invariant for the program by
 ; using defpun.  The assertions are attached at the three cut points
@@ -390,24 +390,24 @@
 ; told we terminate, here is a program that sums the ints from n0 down
 ; to 0.
 
-(defconst *sum-prog*   
+(defconst *sum-prog*
                     ; We name local[0] n and local[1] a.
-  '((iconst_0)      ; 0                                           
-    (istore_1)      ; 1               a := 0;                     
-    (iload_0)       ; 2  top of loop:                             
-    (ifeq 14)       ; 3               if n=0, goto 17;            
-    (iload_0)       ; 6                                           
-    (iload_1)       ; 7                                           
-    (iadd)          ; 8                                           
-    (istore_1)      ; 9               a := n+a;                   
-    (iload_0)       ;10                                            
-    (iconst_m1)     ;11                                           
-    (iadd)          ;12                                           
-    (istore_0)      ;13               n := n-1;                   
-    (goto -12)      ;14               goto top of loop            
-    (iload_1)       ;17                                           
+  '((iconst_0)      ; 0
+    (istore_1)      ; 1               a := 0;
+    (iload_0)       ; 2  top of loop:
+    (ifeq 14)       ; 3               if n=0, goto 17;
+    (iload_0)       ; 6
+    (iload_1)       ; 7
+    (iadd)          ; 8
+    (istore_1)      ; 9               a := n+a;
+    (iload_0)       ;10
+    (iconst_m1)     ;11
+    (iadd)          ;12
+    (istore_0)      ;13               n := n-1;
+    (goto -12)      ;14               goto top of loop
+    (iload_1)       ;17
     (halt)))        ;18               halt with a on top of stack;
-    
+
 (defun suma (n a)
   (if (zp n)
       a
@@ -489,7 +489,7 @@
 ; ---------------------------------------------------------------------------
 ; A Recursive Method
 
-; Now let's do recursive factorial.   We'll bring in the clocked work 
+; Now let's do recursive factorial.   We'll bring in the clocked work
 ; we have already done, just to have the *demo-state* etc.
 
 (include-book "demo")
@@ -522,7 +522,7 @@
 ; locals:   (n)          5  <- suppose n=5
 ; stack:    any
 ; program:  fact prog
-; -------------------   caller-frame 
+; -------------------   caller-frame
 ; pc:       11
 ; locals:   (n+1)        6     this is caller-frame 3
 ; stack:    (n+1)
@@ -682,7 +682,7 @@
 ; The deepest fact caller frame has n0 as its local and occurs at
 ; a cs len of d0.  We are at least that deep.  But what if that is
 ; the topmost frame?  There must be a frame under it, that called it.
-; so we require that 1<d0. 
+; so we require that 1<d0.
 
 ; Here we prove the invariance of fact-inv under step, but we limit
 ; ourselves to starting states with sufficiently deep stacks.  This
@@ -697,7 +697,7 @@
            (fact-inv th (step th s) n0 d0))
   :otf-flg t
   :hints
-  (("Subgoal 8" 
+  (("Subgoal 8"
     :expand
     (FACT-CALLER-FRAMESP
      (POP (CADR (ASSOC-EQUAL TH (THREAD-TABLE S))))
@@ -789,15 +789,15 @@
                          *fact-def*)
 
                   (< 1 (sdepth (call-stack th s0)))
-                  
+
                   (mono-threadedp th sched)
-                  
+
                   (< (sdepth (call-stack th s1))
                      (sdepth (call-stack th s0))))
              (equal (top (stack (top-frame th s1)))
                     (int-fix (factorial n0)))))
 
-  :hints (("Goal" 
+  :hints (("Goal"
            :do-not-induct t
            :use
            (:instance fact-inv-run

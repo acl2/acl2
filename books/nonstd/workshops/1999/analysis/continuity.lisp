@@ -13,7 +13,7 @@
 
 ;; First, we introduce rcfn - a Real Continuous FunctioN of a single
 ;; argument.  It is assumed to return standard values for standard
-;; arguments, and to satisfy the continuity criterion.  
+;; arguments, and to satisfy the continuity criterion.
 
 (encapsulate
  ((rcfn (x) t))
@@ -104,7 +104,7 @@
    (implies (and (i-close x y)
 		 (i-limited x))
 	    (equal (standard-part x) (standard-part y)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance i-close-limited))
 	    :in-theory (enable-disable (i-close i-small)
 				       (i-close-limited))))))
@@ -165,11 +165,11 @@
 		(< 0 eps)
 		(< (rcfn a) z)
 		(< z (rcfn (+ a (* (- n i) eps)))))
-	   (<= z (rcfn (+ (find-zero-n a z i n eps) 
+	   (<= z (rcfn (+ (find-zero-n a z i n eps)
 			  eps)))))
 
 ;; The root found by find-zero-n is at least equal to a.
- 
+
 (defthm find-zero-n-lower-bound
   (implies (and (realp a) (realp eps) (< 0 eps))
 	   (<= a (find-zero-n a z i n eps))))
@@ -234,7 +234,7 @@ Note: This has moved to nsa.lisp
 		  (realp x)
 		  (<= 0 x))
 	     (not (< (+ a x) a)))))
- 
+
  (local
   (defthm lemma-1
     (implies (and (realp a) (i-limited a)
@@ -246,14 +246,14 @@ Note: This has moved to nsa.lisp
 		  (< 0 eps))
 	     (i-limited (+ a (* (+ n (- i)) eps))))
     :hints (("Goal" :do-not-induct t
-	     :use ((:instance limited-squeeze 
+	     :use ((:instance limited-squeeze
 			      (x (+ a (* (- n i) eps)))))
 	     :in-theory (disable distributivity limited-squeeze))
 	    ("Goal'''"
 	     :use ((:instance lemma-0
 			      (x (* EPS (+ (- I) N))))))
 	    )))
-	     
+
  (defthm limited-find-zero-n
    (implies (and (realp a) (i-limited a)
 		 (realp b) (i-limited b)
@@ -267,12 +267,12 @@ Note: This has moved to nsa.lisp
 	    :use ((:instance find-zero-n-lower-bound)
 		  (:instance find-zero-n-upper-bound)
 		  (:instance lemma-1)
-		  (:instance limited-squeeze 
+		  (:instance limited-squeeze
 			     (x (find-zero-n a z i n eps))
 			     (b (+ a (* (- n i) eps)))))
 	    :in-theory (disable lemma-1
-				find-zero-n-lower-bound 
-				find-zero-n-upper-bound 
+				find-zero-n-lower-bound
+				find-zero-n-upper-bound
 				large-if->-large
 				limited-squeeze))))
  )
@@ -311,7 +311,7 @@ Note: This has moved to nsa.lisp
  (local
   (defthm lemma-2
     (equal (+ (i-large-integer) 0) (i-large-integer))))
- 
+
  ;; And, N*x/N = x.
 
  (local
@@ -325,8 +325,8 @@ Note: This has moved to nsa.lisp
 		 (i-limited b)
 		 (realp b))
 	    (i-limited (find-zero-n a
-				    z 
-				    0 
+				    z
+				    0
 				    (i-large-integer)
 				    (+ (- (* (/ (i-large-integer)) a))
 				       (* (/ (i-large-integer)) b)))))
@@ -339,7 +339,7 @@ Note: This has moved to nsa.lisp
 			     (eps (/ (- b a) (i-large-integer)))))
 	    :in-theory (disable limited-find-zero-n))))
  )
-	    
+
 ;; And now, here's a routine that finds a "zero" in a given [a,b]
 ;; range.
 
@@ -350,8 +350,8 @@ Note: This has moved to nsa.lisp
 	   (< a b))
       (standard-part
        (find-zero-n a
-		    z 
-		    0 
+		    z
+		    0
 		    (i-large-integer)
 		    (/ (- b a) (i-large-integer))))
     0))
@@ -411,14 +411,14 @@ Note: This has moved to nsa.lisp
  (local
   (defthm lemma-1
     (equal (+ (i-large-integer) 0) (i-large-integer))))
- 
+
  ;; Also, N*x/N = x.
 
  (local
   (defthm lemma-2
     (equal (* (i-large-integer) x (/ (i-large-integer))) (fix x))))
 
- ;; This silly rule lets us know that x is close to x+eps! 
+ ;; This silly rule lets us know that x is close to x+eps!
 
  (local
   (defthm lemma-3
@@ -443,7 +443,7 @@ Note: This has moved to nsa.lisp
 		  (standard-numberp z)
 		  (< (rcfn a) z)
 		  (< z (rcfn b)))
-	     (equal (standard-part 
+	     (equal (standard-part
 		     (rcfn (+ (- (* (/ (i-large-integer)) a))
 			      (* (/ (i-large-integer)) b)
 			      (find-zero-n a z 0 (i-large-integer)
@@ -518,7 +518,7 @@ Note: This has moved to nsa.lisp
 
 (encapsulate
  ()
- 
+
  ;; First, if a and b are standard, (b-a)/N is small, for N a large
  ;; integer.
 
@@ -527,7 +527,7 @@ Note: This has moved to nsa.lisp
     (implies (and (standard-numberp a)
 		  (standard-numberp b))
 	     (i-small (/ (- b a) (i-large-integer))))))
-   
+
  ;; Silly algebra!  a<=a+x if and only if 0<=x....
 
  (local
@@ -560,7 +560,7 @@ Note: This has moved to nsa.lisp
  (local
   (defthm lemma-4
     (equal (+ (i-large-integer) 0) (i-large-integer))))
- 
+
  ;; And, N*x/N = x.
 
  (local
@@ -587,7 +587,7 @@ Note: This has moved to nsa.lisp
 			      (y b)))
 	     :in-theory (disable lemma-3
 				 standard-part-<=)))))
-		 
+
  ;; Similarly, find-zero-n finds a root at least equal to a.
 
  (local

@@ -1,23 +1,23 @@
 ;  Copyright (C) 2000 Panagiotis Manolios and J Strother Moore
- 
+
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios who can be reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu, moore@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
@@ -54,7 +54,7 @@
 ; between the admission of the automatically generated the-quot and
 ; its guard verification.  So I define the-quot now and prove what I
 ; need.  Then I do the defpun which will REDUNDANTLY define it.  Cool.
- 
+
 (defun the-quot (i j)
   (declare (xargs :guard (and (rationalp i)
                               (rationalp j)
@@ -133,7 +133,7 @@
          (defthm len-of-g
            (implies (natp n)
                     (equal (len (g n)) n)))
-         
+
          (defun bad-lemma-hint (k n)
            (if (zp k)
                (list k n)
@@ -208,7 +208,7 @@
              (equal (h (- n)) (+ (- (h -1) -1) (- n))))
     :rule-classes nil
     :hints (("Goal" :induct (natural-induction n)))))
- 
+
  (defun hconst () (+ 1 (h -1) ))
 
  (defthm acl2-numberp-hconst
@@ -276,7 +276,7 @@
  )
 
 ; Here is a witness for h that demonstrates that it is not just a linear
-; offset.  
+; offset.
 
 (encapsulate ((arbitrary-constant (x) t))
              (local (defun arbitrary-constant (x) (fix x)))
@@ -339,7 +339,7 @@
             (integer-induction (+ i 1))
           (integer-induction (- i 1))))
     t))
-        
+
 (defthm z-induction
   t
   :rule-classes ((:induction
@@ -404,8 +404,8 @@
   (declare (xargs :domain (and (integerp n) (<= -7 n)) :measure (+ 8 n)))
   (if (equal n 0)
       nil
-    (cons nil (gsev (- n 1)))))  
-  
+    (cons nil (gsev (- n 1)))))
+
 ; Tail Recursion
 
 (defpun trfact (n a)

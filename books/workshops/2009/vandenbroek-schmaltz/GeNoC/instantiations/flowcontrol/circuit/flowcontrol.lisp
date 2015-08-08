@@ -21,7 +21,7 @@
 
 (defun port-updateCircuit (port cstate id)
   ;; Updates a virtual channel.
-  ;; 
+  ;;
   ;; Arguments:
   ;; - port : a port
   ;; - cstate : the state to which the the circuit should be set. most often 'booked
@@ -31,7 +31,7 @@
 
 (defun clearCircuit (nst portname1 portname2)
  ;; Clears the state of the virtual channel
-  ;; 
+  ;;
   ;; Arguments:
   ;; - nst : list of ports in the node
   ;; - portname1 : name of the from port of the circuit
@@ -46,12 +46,12 @@
 
 (defun updateCircuit (nst portname1 portname2 cstate)
   ;; This function updates and/or creates the state of the virtual channel
-  ;; 
+  ;;
   ;; Arguments:
   ;; - nst : list of ports in the node
   ;; - portname1 : name of the from port of the circuit
   ;; - portname2 : name of the to port of the circuit
-  ;; - cstate : Virtual channel state. 
+  ;; - cstate : Virtual channel state.
   (if (endp nst)
     nil
     (cond ((equal (port-portname (car nst)) portname1)
@@ -60,7 +60,7 @@
            (cons (port-updateCircuit (car nst) cstate  portname1) (updateCircuit (cdr nst) portname1 portname2 cstate)))
           (t (cons (car nst) (updateCircuit (cdr nst) portname1 portname2 cstate))))))#|ACL2s-ToDo-Line|#
 
-                
+
 (defun sendack (nst portname)
   (if (endp nst)
     nil
@@ -71,9 +71,9 @@
 
 
 (defun switchBuffer (nst from to)
-  ;; move the head of the buffer of the from port to the tail of the buffer of the to port. 
-  ;;returns the update ports list. 
-  ;; 
+  ;; move the head of the buffer of the from port to the tail of the buffer of the to port.
+  ;;returns the update ports list.
+  ;;
   ;; Arguments:
   ;; - nst : the list of all ports of this node
   ;; - from : The input port which is switched
@@ -88,15 +88,15 @@
 
 
 (defun switch-port (portlist nst from)
-  ;; This  funtion loops over the portlist until the output port that the from port is routed to is found. 
+  ;; This  funtion loops over the portlist until the output port that the from port is routed to is found.
   ;; Depending on the state of the output port and the virtual channel the port is switched.
   ;; There are five possible cases.
   ;; 1) Its a tail flit and the circuit can be switched and cleared.
   ;; 2) Its a data flit and the flit can be swtiched.
-  ;; 3) Its a ack flit and the circuit state can be changes from 'request to 'booked  
+  ;; 3) Its a ack flit and the circuit state can be changes from 'request to 'booked
   ;; 4) Its an arived header flit and a ack can be send back.
   ;; 5) Its a header flit not a the destination and the circuit can be requested.
-  ;; 
+  ;;
   ;; Arguments:
   ;; - portlist : list of output ports of the node
   ;; - nst : list of pors in the node
@@ -110,31 +110,31 @@
                 (equal (port-circuitId to) (port-portname from))
                 (equal (flitT (port-buffer from)) 0))
            (clearCircuit (switchBuffer nst from to) (port-portname to) (port-portname from)))
-          
+
           ((and (equal (port-portname to) (status-route (port-status from))) ;booked
                  (not (port-bufferFull to))  ;; and space in buffer
                 (equal (port-circuitState to) 'booked)
                 (equal (port-circuitId to) (port-portname from)))
            (switchBuffer nst from to))
-          
+
           ((and (equal (port-buffer from) '(ack)) ;request to booked
                 (not (port-bufferFull to)) ;; and space in buffer
                 (equal (port-circuitState to) 'request)
                 (equal (port-circuitId to) (port-portname from)))
            (updateCircuit (switchBuffer nst from to) (port-portname to) (port-portname from) 'booked))
-          
+
           ((and (equal (port-portname to) (status-route (port-status from))) ; send ack
                 (not (port-bufferFull to))  ;; and space in buffer
                 (equal (port-portname to) 'loc)
                 (not (port-circuitState to)))
-           (sendack (updateCircuit (switchBuffer nst from to) (port-portname to) (port-portname from) 'booked) 
+           (sendack (updateCircuit (switchBuffer nst from to) (port-portname to) (port-portname from) 'booked)
                     (port-portname from)))
-          
+
           ((and (equal (port-portname to) (status-route (port-status from))) ;request
                 (not (port-bufferFull to))  ;; and space in buffer
                 (not (port-circuitState to)))
            (updateCircuit (switchBuffer nst from to) (port-portname to) (port-portname from) 'request))
-          
+
           (t (switch-port (cdr portlist) nst from)))))
 
 
@@ -152,7 +152,7 @@
   ;; This is the function that performs the flowcontrol in a router. This consists of scheduling the routed input nodes and switching the sheduled msg.
   (mv (switch-ports (ports-inputports nst) nst) memory))
 
-(definstance GenericFlowControl check-compliance-Flowcontrol                   
+(definstance GenericFlowControl check-compliance-Flowcontrol
   :functional-substitution
   ((flowcontrol circuit-FlowControl)))
 

@@ -9,7 +9,7 @@
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 (local-defthm rle-1
@@ -167,7 +167,7 @@
 		              (exactp (trunc x (1+ n)) (1+ n)))
 	                 (<= (near+ x n) (near+ y n))))
            (<= (near+ x n) (near+ y n)))
-  :rule-classes ()  
+  :rule-classes ()
   :hints (("Goal" :in-theory (enable common-rounding-mode-p)
                   :use (rle-7 rle-8
                         (:instance away-lower-pos (n (1+ n)))
@@ -284,7 +284,7 @@
                         (:instance trunc-upper-pos (n (1+ n)))
                         (:instance near-near (k n) (a (trunc x (1+ n))))
                         (:instance trunc-exactp-a (n (1+ n)))
-                        (:instance trunc-away (n (1+ n))) 
+                        (:instance trunc-away (n (1+ n)))
                         (:instance exactp-<= (m n) (n (1+ n)))))))
 
 (local-defthm rge-7
@@ -312,7 +312,7 @@
   :hints (("Goal" :use (rge-2 trunc-upper-pos
                         (:instance trunc-upper-pos (n (1+ n)))
                         (:instance trunc-exactp-a (n (1+ n)))
-                        (:instance trunc-away (n (1+ n))) 
+                        (:instance trunc-away (n (1+ n)))
                         (:instance exactp-<= (m n) (n (1+ n)))))))
 
 (defthm rnd>equal

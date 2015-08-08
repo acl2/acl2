@@ -21,7 +21,7 @@
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 
-(defthm nand-operation-thm1 
+(defthm nand-operation-thm1
   (implies (and (booleanp b1)
 		(booleanp b2))
 	   (ste-thm *nand-delay*
@@ -296,7 +296,7 @@
 (defthm p4
   (implies (and (booleanp b1)
 		(booleanp b3))
-	   
+
 	   (ste-thm *nand-delay*
 		    `(and (and (is 1 ,b1)
 			       (next (is 0 ,b3)))
@@ -405,7 +405,7 @@
 			       (next (next (is 3 nil))))
 			 )
 		)
-		
+
 	   (ste-thm *nand-delay*
 		    `(and (and (and (is 0 ,b0)
 				    (is 2 ,b2))
@@ -487,7 +487,7 @@
 			       (and (is 2 ,b2)
 				    (next (is 0 ,b3))))
 			  (next (next (is 3 nil))))
-		    
+
 		    `(and (and (next (next (is 1 ,(not (and b1 b3)))))
 			       (next (next (is 2 ,(or (not b0) (not b2))))))
 			  (next (next (is 3 nil))))
@@ -718,10 +718,10 @@
 			(:TYPE-PRESCRIPTION STE-THM))))
   )
 
- 
 
 
-			   
+
+
 
 
 ;;

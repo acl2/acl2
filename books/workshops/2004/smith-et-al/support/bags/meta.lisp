@@ -74,7 +74,7 @@ Without the :meta rule, this fails:
               (syntax-memberp x (caddr term))) ;Else, skip the cons.
           (if (and (equal (car term) 'binary-append)   ;; '(binary-append arg1 arg2)
                    (null (cdddr term)) ;consider inlining this?
-                   ) 
+                   )
               (or (syntax-memberp x (cadr term))
                   (syntax-memberp x (caddr term)))
 ;            (if (and (equal (car term) 'list-fix)   ;; '(list-fix arg1)
@@ -90,7 +90,7 @@ Without the :meta rule, this fails:
   )
 
 ;We expect TERM to be of the form (memberp x y).  If not, we do nothing.
-;If so, we call syntax-memberp.  If that function returns t, that means we can show 
+;If so, we call syntax-memberp.  If that function returns t, that means we can show
 ;syntactically that X is a memberp of Y.  If that function returns nil, we don't know whether
 ;X is a memberp of Y; in this case, we must return something equivalent to TERM,
 ;so we return TERM itself !
@@ -102,7 +102,7 @@ Without the :meta rule, this fails:
       term
     (if (syntax-memberp-fn nil (cadr term) (caddr term))
         ''t
-      term 
+      term
       )))
 
 (defthm syntax-memberp-implies-memberp
@@ -162,7 +162,7 @@ Without the :meta rule, this fails:
           (met ((hit result) (run-remove-1 a (cdr x)))
                (mv hit (cons (car x) result))))
       (mv nil x)))
-  
+
 (defthm v1-run-remove-1
   (equal (val 1 (run-remove-1 a x))
          (remove-1 a x)))
@@ -205,7 +205,7 @@ Without the :meta rule, this fails:
                   (mv t arg2)       ;then just return arg2 (we just drop arg1, since it matches elem)
                 (met ((hit newarg2) (syntax-remove-1 elem arg2)) ;otherwise, try to remove elem from arg2
                      (if hit ;if we succeeded in removing it
-                         (mv t `(cons ,arg1 ,newarg2))  ;the return the result of removing it, with arg1 tacked onto the front 
+                         (mv t `(cons ,arg1 ,newarg2))  ;the return the result of removing it, with arg1 tacked onto the front
                        (mv nil term) ;otherwise, we failed to remove elem from term
                        ))))
           (if (and (equal (car term) 'quote) ;; '(quote arg1)
@@ -335,8 +335,8 @@ Without the :meta rule, this fails:
             (met ((hit newarg1 newterm2) (syntax-remove-bag arg1 term2))
                  (met ((hit2 newarg2 newerterm2) (syntax-remove-bag arg2 newterm2))
                       (if (or hit hit2)
-                          (if (and (equal newarg2 ''nil) 
-					;don't bother making an append term of two nils 
+                          (if (and (equal newarg2 ''nil)
+					;don't bother making an append term of two nils
 					;(BOZO eventually, avoid making the append term if either arg is nil)
                                    (equal newarg1 ''nil))
                               (mv t ''nil newerterm2)
@@ -362,7 +362,7 @@ Without the :meta rule, this fails:
                    )
               (let ((arg1 (cadr term1)))
                 (if (consp arg1)
-                    (let ((arg1car `(quote ,(car arg1))) 
+                    (let ((arg1car `(quote ,(car arg1)))
                           (arg1cdr `(quote ,(cdr arg1))))
                       (met ((hit newterm2) (syntax-remove-1 arg1car term2))
                            (met ((hit2 newarg1cdr newerterm2) (syntax-remove-bag arg1cdr newterm2))
@@ -387,7 +387,7 @@ Without the :meta rule, this fails:
 ;;                      (declare (ignore hit))
 ;;                      (mv t newarg1 newterm2)))
 
-          
+
 ;term1 isn't a call to binary-append or cons:
             (met ((hit newterm2) (syntax-remove-bag-1 term1 term2))
                  (if hit
@@ -395,14 +395,14 @@ Without the :meta rule, this fails:
                    (mv nil term1 term2))))
 ;    )
           ))
-        
+
 ;term1 is a non-consp:
     (met ((hit newterm2) (syntax-remove-bag-1 term1 term2))
          (if hit
              (mv t '(quote nil) newterm2)
            (mv nil term1 term2))))
   )
-  
+
 
 (defirrelevant syntax-remove-bag 3 a (term1 term2)
   :hints (("goal" :in-theory (enable SYNTAX-REMOVE-1-FN
@@ -490,7 +490,7 @@ old version:
 ;                   (not (consp (cadr term1)))
                    )
 
-;BOZO test (here and elsewhere) whether quoted constants are bagps?               
+;BOZO test (here and elsewhere) whether quoted constants are bagps?
               (let ((arg1 (cadr term1)))
                 (if (consp arg1)
                     (let ((arg1car `(quote ,(car arg1)))
@@ -597,7 +597,7 @@ old version:
 				     ))))
 
 
-;add guard?		     
+;add guard?
 (defund meta-remove-bag (x y)
   (remove-bag x y))
 
@@ -608,19 +608,19 @@ old version:
 |#
 
 ;remove this?
-;add guard?		     
-(defun any-subbagp (term list) 
-  (declare (type t term list)) 
-  (if (consp list) 
-      (or (subbagp term (car list)) 
-	  (any-subbagp term (cdr list))) 
+;add guard?
+(defun any-subbagp (term list)
+  (declare (type t term list))
+  (if (consp list)
+      (or (subbagp term (car list))
+	  (any-subbagp term (cdr list)))
     nil))
 
 
 
 
 
-;add guard?		     
+;add guard?
 (defund hide-disjoint (x y)
   (disjoint x y))
 
@@ -631,7 +631,7 @@ old version:
   :hints (("Goal" :in-theory (enable hide-disjoint))))
 
 
-;add guard?		     
+;add guard?
 (defund hide-unique (list)
   (unique list))
 
@@ -642,7 +642,7 @@ old version:
   :hints (("Goal" :in-theory (enable hide-unique))))
 
 
-;add guard?		     
+;add guard?
 (defund hide-subbagp (x y)
   (subbagp x y))
 
@@ -656,7 +656,7 @@ old version:
   (hide-subbagp z z)
   :hints (("Goal" :in-theory (enable hide-subbagp))))
 
-;add guard?		     
+;add guard?
 (defund hide-memberp (x y)
   (memberp x y))
 
@@ -741,7 +741,7 @@ old version:
 (set-well-founded-relation e0-ord-<)
 
 (defthm v0-remove-1-subbagp
-  (implies 
+  (implies
    (v0 (syntax-remove-bag-1 list1 list2))
    (subbagp (syntax-ev list1 a) (syntax-ev list2 a)))
   :rule-classes (:rewrite :forward-chaining))
@@ -803,7 +803,7 @@ old version:
            (memberp elem (syntax-ev term2 a)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable syntax-remove-bag-fn))))
- 
+
 
 
 
@@ -860,12 +860,12 @@ old version:
 
 (encapsulate
  ()
- 
+
  (local (defthm syntax-remove-1-did-something-iff-1
           (implies (val 0 (syntax-remove-1 elem term))
                    (syntax-memberp elem term))
           :hints (("Goal" :in-theory (enable syntax-remove-1-fn)
-                   :do-not '(generalize eliminate-destructors))) 
+                   :do-not '(generalize eliminate-destructors)))
           ))
 
 
@@ -873,7 +873,7 @@ old version:
           (implies (syntax-memberp elem term)
                    (val 0 (syntax-remove-1 elem term)))
           :hints (("Goal" :in-theory (enable syntax-remove-1-fn syntax-memberp-fn)
-                   :do-not '(generalize eliminate-destructors))) 
+                   :do-not '(generalize eliminate-destructors)))
           ))
 
  (defthm syntax-remove-1-did-something-iff
@@ -916,7 +916,7 @@ old version:
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable syntax-remove-bag-fn))))
-     
+
 
 #|kill?
 (thm
@@ -968,7 +968,7 @@ old version:
                    (if hit
                        (list 'cons arg1 (syntax-intersection arg2 newterm2))
                      (syntax-intersection arg2 term2))))
-          
+
 ;;           (if (and (equal (car term1) 'list-fix) ;; '(list-fix arg1)
 ;;                    (null (cddr term1))
 ;;                    )
@@ -985,9 +985,9 @@ old version:
                          (if hit
                              `(cons ,arg1car ,(syntax-intersection arg1cdr newterm2))
                            (syntax-intersection arg1cdr term2))))
-                  ''nil 
+                  ''nil
                   ))
-            
+
 ;term1 isn't a call to binary-append or cons or list-fix:
             (met ((hit newterm2) (syntax-remove-bag-1 term1 term2))
                  (declare (ignore newterm2))
@@ -1039,7 +1039,7 @@ old version:
                        (VAL 1
                                   (SYNTAX-REMOVE-1 OTHER-TERM TERM)))))
   :hints (("Goal" :in-theory (enable SYNTAX-REMOVE-1-fn))))
-  
+
 (defthm smith-blah
   (IMPLIES (NOT (SYNTAX-MEMBERP elem term))
            (NOT (SYNTAX-MEMBERP elem (VAL 2 (SYNTAX-REMOVE-BAG other-term term)))))
@@ -1060,7 +1060,7 @@ old version:
 
 
 (in-theory (disable SYNTAX-MEMBERP-FN))
- 
+
 (defthm hack-eric
   (implies (and (val 0 (syntax-remove-bag-1 other-term y))
                 (not (syntax-memberp x y))
@@ -1083,7 +1083,7 @@ old version:
            (not (syntax-memberp x (syntax-intersection other-term y))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (syntax-intersection syntax-memberp
-                              ) 
+                              )
                            (poopsmith
                             (:induction  syntax-memberp))))))
 
@@ -1118,7 +1118,7 @@ old version:
            :use (:instance syntax-remove-bag-cannot-increase-count-two (term1 (val 1 (syntax-remove-bag term1 term2))) (term2 term3)))))
 
 
-(defthm checkinemail    
+(defthm checkinemail
   (<= (count (syntax-ev elem a)
              (syntax-ev (syntax-intersection term1 term2) a))
       (count (syntax-ev elem a)
@@ -1134,7 +1134,7 @@ old version:
 
 ;whoa! this proved!
 (defthm syntax-remove-bag-does-the-right-thing-helper
-  (equal (- (count elem (syntax-ev term1 a)) 
+  (equal (- (count elem (syntax-ev term1 a))
             (count elem (syntax-ev term2 a)))
          (- (count elem (syntax-ev (v1 (syntax-remove-bag term1 term2)) a))
             (count elem (syntax-ev (v2 (syntax-remove-bag term1 term2)) a))))
@@ -1146,9 +1146,9 @@ old version:
   (implies (not (syntax-memberp elem term))
            (equal (val 1 (syntax-remove-1 elem term))
                   term)))
-                              
 
-(in-theory (disable SYNTAX-REMOVE-BAG-1-fn SYNTAX-MEMBERP-fn))                   
+
+(in-theory (disable SYNTAX-REMOVE-BAG-1-fn SYNTAX-MEMBERP-fn))
 
 (in-theory (disable SUBBAGP-OF-REMOVE-1-FROM-SUBBAGP)) ;why needed?
 
@@ -1172,7 +1172,7 @@ old version:
                             (syntax-ev (val 2 (syntax-remove-bag other-term term)) alist))))
  :hints (("Goal" :do-not '(generalize eliminate-destructors)
           :in-theory (enable syntax-remove-bag SYNTAX-REMOVE-BAG-1))))
-                 
+
 ;bozo make equal
 (defthm syntax-remove-bag-does-the-right-thing
   (implies (subbagp (syntax-ev term1 alist) (syntax-ev term2 alist))
@@ -1220,7 +1220,7 @@ old version:
  (implies (not (syntax-ev (val 2 (syntax-remove-bag x y)) alist))
           (subbagp (syntax-ev y alist) (syntax-ev x alist)))
  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-          :in-theory (enable syntax-remove-bag 
+          :in-theory (enable syntax-remove-bag
                              subbagp
                              ))))
 
@@ -1429,7 +1429,7 @@ old version:
 	    (list (caddr term)))
 	(let ((hit (syntax-memberp x list)))
 	  (if hit
-	      '(quote t) 
+	      '(quote t)
 	    term)))
     term))
 
@@ -1453,7 +1453,7 @@ old version:
 
 #|
 (thm
- (implies (and (true-listp x) 
+ (implies (and (true-listp x)
                (true-listp y))
           (equal (ACL2-COUNT (BINARY-APPEND Y X))
                  (+ (acl2-count x) (acl2-count y))))
@@ -1472,7 +1472,7 @@ zz
                  (remove-bag (syntax-ev x alist)
                              (syntax-ev y alist))))
  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-          :in-theory (enable syntax-remove-bag-1 
+          :in-theory (enable syntax-remove-bag-1
                              ;unique
                              ))))
 
@@ -1484,7 +1484,7 @@ PUTBACK
             (equal (syntax-ev (v1 (syntax-remove-bag-1 x list)) alist)
                    (remove-bag (syntax-ev x alist) (syntax-ev list alist))))
    :hints (("goal" :do-not '(generalize eliminate-destructors)
-            :in-theory (e/d (remove-bag-append-disjoint 
+            :in-theory (e/d (remove-bag-append-disjoint
                              syntax-remove-bag-1
 ;remove-bag
                              )
@@ -1497,9 +1497,9 @@ PUTBACK
                  (v0 (syntax-remove-1 elem term)))
             (equal (syntax-ev (v1 (syntax-remove-1 elem term)) a)
                    (remove-1 (syntax-ev elem a) (syntax-ev term a))))
-   :hints (("Goal" :in-theory (e/d ( ;remove-1 
+   :hints (("Goal" :in-theory (e/d ( ;remove-1
 				    syntax-remove-1-fn
-				    REMOVE-1-APPEND 
+				    REMOVE-1-APPEND
 				    remove-bag-append-disjoint
 				    disjoint-memberp-implies-non-membership
 				    SYNTAX-MEMBERP-fn
@@ -1523,7 +1523,7 @@ PUTBACK
    :hints (("Goal" :in-theory (enable syntax-remove-bag))))
 |#
 
-;BOZO it would be nice if this returned a simplified term even if the first arg didn't simplify to nil.  
+;BOZO it would be nice if this returned a simplified term even if the first arg didn't simplify to nil.
 (defun syntax-meta-remove-bag-wrapper (term)
    (declare (type t term)
             (xargs :guard (pseudo-termp term)))
@@ -1533,15 +1533,15 @@ PUTBACK
  ;           (consp (cddr term))
             (null  (cdddr term)))
        (met ((hit v1 v2) (syntax-remove-bag-fn nil (cadr term) (caddr term)))
-            
+
             (if (and hit
 
-                     (equal v1 '(quote nil))  
+                     (equal v1 '(quote nil))
                      )
                 ;bozo consider remove-bag here?
                 ;`(meta-remove-bag ,v1 ,v2)
                 v2
-              
+
               term))
      term))
 
@@ -1636,7 +1636,7 @@ PUTBACK
                 (equal in2 (not in1))
                 )
            (equal (perm list1 list2)
-                  (perm (replace-perm in1 x y list1) 
+                  (perm (replace-perm in1 x y list1)
                         (replace-perm in2 x y list2))))
   :hints (("Goal" :in-theory (enable meta-subbagp meta-remove-bag))))
 
@@ -1647,14 +1647,14 @@ PUTBACK
   (declare (type t term1 term2))
   (met ((hit xterm1 xterm2) (syntax-remove-bag term1 term2))
        (declare (ignore xterm2))
-       (if (not hit) 
+       (if (not hit)
            (mv nil nil)
          (met ((hit xterm1 sub) (syntax-remove-bag xterm1 term1))
               (declare (ignore xterm1))
-              (mv 
+              (mv
                hit ;should this be t?  what if xterm1 is nil?
                sub)))))
- 
+
 (defun bind-common-elements (term1 term2 key)
   (declare (type t term1 term2 key))
   (met ((hit common) (common-elements term1 term2))
@@ -1686,7 +1686,7 @@ PUTBACK
 ;  perm-common-elimination
   ))
 
-;; Nonetheless, perm-common-elimination should be used in 
+;; Nonetheless, perm-common-elimination should be used in
 ;; place of such hack rules as these ..
 
 (in-theory
@@ -1719,7 +1719,7 @@ PUTBACK
 ;  perm-not-consp-nil
  ; perm-remove-bag-x-x
 ;  perm-append
-  perm-cons-append 
+  perm-cons-append
   perm-append-remove-1
 ;  perm-remove-1
  ; perm-remove-bag
@@ -1740,13 +1740,13 @@ PUTBACK
 (in-theory
  (disable
 ;  meta-remove-bag
- ;meta-remove-1 
+ ;meta-remove-1
   ))
 
 
 
 ;;=================================================================================
-;; :meta rule to simplify (memberp x lst) when we know that X is not a member of 
+;; :meta rule to simplify (memberp x lst) when we know that X is not a member of
 ;; certain things (namely, things syntactically present in LST).
 ;==================================================================================
 
@@ -1772,7 +1772,7 @@ PUTBACK
 (defun get-irrel-list-from-clause (x z clause)
   (declare (type t x clause)
 ;           (xargs :guard (pseudo-termp term))
-           )  
+           )
   (if (not (consp clause))
       nil
     (let ((literal (car clause)))
@@ -1801,7 +1801,7 @@ PUTBACK
         nest)
     (if (equal (car nest) 'cons)
         (list 'cons (cadr nest) (simplify-cons-and-append-nest-given-irrelevant-lists (caddr nest) irrel-list))
-      (if (equal (car nest) 'binary-append) 
+      (if (equal (car nest) 'binary-append)
        ;We don't have to recur on (cadr nest) because we know it won't be an append or a cons, because of how
        ;nests of those functions get normalized?
           (if (memberp (cadr nest) irrel-list) ;we're appending something irrelevant, so drop it
@@ -1814,7 +1814,7 @@ PUTBACK
           nest))
       )
     ))
-       
+
 (set-state-ok t)
 
 
@@ -1826,8 +1826,8 @@ PUTBACK
     (let ((irrel-list (get-irrel-list-from-clause (cadr term) (caddr term) (mfc-clause mfc))))
       (if (not (consp irrel-list))
           term
-        (list 'memberp 
-              (cadr term) 
+        (list 'memberp
+              (cadr term)
               (simplify-cons-and-append-nest-given-irrelevant-lists (caddr term) irrel-list))))))
 
 (defun make-not-memberp-claim (x term)
@@ -1844,7 +1844,7 @@ PUTBACK
         )
     (if (equal (car nest) 'cons)
         (hyp-fun-simplify-cons-and-append-nest-given-irrelevant-lists x (caddr nest) irrel-list)
-      (if (equal (car nest) 'binary-append) 
+      (if (equal (car nest) 'binary-append)
        ;We don't have to recur on (cadr nest) because we know it won't be an append or a cons, because of how
        ;nests of those functions get normalized?
           (if (memberp (cadr nest) irrel-list) ;we're appending something irrelevant, so drop it
@@ -1873,7 +1873,7 @@ PUTBACK
 
 (encapsulate
  ()
- (local 
+ (local
   (defthm helper-eric
     (implies
      (ev2 (hyp-fun-simplify-cons-and-append-nest-given-irrelevant-lists x nest irrel-list)
@@ -1913,7 +1913,7 @@ PUTBACK
 	    (list2 (caddr term)))
 	(let ((hit (syntax-subbagp-fn nil list1 list2)))
 	  (if hit
-	      '(quote t) 
+	      '(quote t)
 	    term)))
     term))
 
@@ -1943,7 +1943,7 @@ PUTBACK
 ;(my-syntax-subbagp '(cons a x) '(cons b (cons a x)))
 ;(my-syntax-subbagp '(cons a x) '(cons a x))
 
-#| 
+#|
 
 ;key lemma for *meta*-syntax-ev-syntax-subbagp
 ;bozo rename
@@ -1973,7 +1973,7 @@ PUTBACK
            (perm (syntax-ev (val 1 (syntax-subbagp-helper term1 term2)) a)
                  (remove-bag (syntax-ev term1 a) (syntax-ev term2 a))))
   :hints (("Goal" :in-theory (enable syntax-subbagp-helper-fn))))
- 
+
 (defthm syntax-subbagp-helper-implements-subbagp
   (implies (v0 (syntax-subbagp-helper term1 term2))
            (subbagp (syntax-ev term1 a) (syntax-ev term2 a)))
@@ -2053,7 +2053,7 @@ PUTBACK
                `(perm ,newarg1 ,newarg2)
              term))
     term))
-           
+
 
 (thm
  (IMPLIES (VAL 0 (SYNTAX-REMOVE-BAG-1 TERM1 TERM2))
@@ -2075,7 +2075,7 @@ PUTBACK
                     (REMOVE-1 (SYNTAX-EV elem alist)
                               (SYNTAX-EV TERM2 alist))))
  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-          :in-theory (enable syntax-remove-bag 
+          :in-theory (enable syntax-remove-bag
                              subbagp))))
 
 (thm
@@ -2084,7 +2084,7 @@ PUTBACK
           (subbagp (syntax-ev term1 alist)
                    (syntax-ev term2 a)))
  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-          :in-theory (enable syntax-remove-bag 
+          :in-theory (enable syntax-remove-bag
                              subbagp))))
 
 
@@ -2123,7 +2123,7 @@ PUTBACK
  :hints (("Goal" :do-not '(generalize eliminate-destructors)
           :in-theory (enable syntax-remove-bag))))
 
-      
+
 (defthm meta-perm-cancel
   (equal (syntax-ev term a)
          (syntax-ev (perm-cancel-metafunction term) a))
@@ -2154,7 +2154,7 @@ PUTBACK
  :hints (("Goal" :do-not '(generalize eliminate-destructors)
           :in-theory (enable syntax-remove-bag syntax-subbagp-helper))))
 
-        
+
  (VAL
       0
       (SYNTAX-REMOVE-BAG-1 (CADDR TERM1)
@@ -2175,7 +2175,7 @@ PUTBACK
                  ''NIL)
           (PERM (SYNTAX-EV (SYNTAX-INTERSECTION TERM1 TERM2) a)
                 (SYNTAX-EV TERM1 a)
-               
+
                 )))
 
 
@@ -2224,7 +2224,7 @@ PUTBACK
            (subbagp (syntax-ev (v1 (syntax-remove-bag term1 term2)) a)
                     (syntax-ev (v2 (syntax-remove-bag term1 term2)) a)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable syntax-remove-bag; 
+           :in-theory (enable syntax-remove-bag;
                               ;subbagp
                               ))))
 
@@ -2234,7 +2234,7 @@ PUTBACK
          (subbagp (syntax-ev (v1 (syntax-remove-bag term1 term2)) a)
                   (syntax-ev (v2 (syntax-remove-bag term1 term2)) a)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable syntax-remove-bag ; 
+           :in-theory (enable syntax-remove-bag ;
 ;subbagp
                               ))))
 
@@ -2257,8 +2257,8 @@ PUTBACK
                  (syntax-count elem term2))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable syntax-remove-bag))))
-                 
-         
+
+
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable syntax-remove-bag; subbagp
                               ))))

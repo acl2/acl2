@@ -143,7 +143,7 @@
 	       (:instance x-diff-y-x-only-member-not-member-y
 			  (x y) (y x) (a (free-vars f))))))
   :rule-classes nil)
-			      
+
 (in-theory (disable not-free-not-change-2))
 
 (defthm flip-same-term-list
@@ -157,7 +157,7 @@
 	   (equal (subst-free f x (subst-term tm x e))
 		  (subst-free (subst-free f x tm) x e)))
   :rule-classes nil)
-			      
+
 (defthm flip-only
   (implies (and (quantifier-free f)
 		(domain-term e)
@@ -168,7 +168,7 @@
          :do-not-induct t
 	 :use ((:instance flip-only-diff)
 	       (:instance flip-only-same)))))
-			      
+
 ;;------------------------
 ;; This is the induction scheme for instance-xsound-alls-1b below.
 ;; The difference from var-induct is that there is an extra argument tm
@@ -382,7 +382,7 @@
            :do-not-induct t
            :use ((:instance consp-has-member-equal
                             (x (free-vars (alls w f))))))))
-                            
+
 (defthm not-vars-alls-remove-vars-all
   (not (free-vars (alls (remove-equal x (free-vars f)) (list 'all x f))))
   :hints (("Goal"
@@ -414,7 +414,7 @@
            :do-not-induct t
            :use ((:instance member-difference-cons))))
   :rule-classes nil)
-  
+
 (defthm member-append-difference-cons
   (implies (and (member-equal x (append a2 (set-difference-equal b a2)))
                 (not (equal x a1)))
@@ -452,7 +452,7 @@
            :use ((:instance subset-skolem-lemma
                             (a (append a b))
                             (b (append a (set-difference-equal b a))))))))
-                            
+
 ;;------------------------------------
 
 (defthm vars-in-subst-term-list
@@ -494,7 +494,7 @@
                  (append (remove-equal x (free-vars f))
                          (vars-in-term tm))))
 
-;;--------------------------- 
+;;---------------------------
 
 (defthm subset-free-subst-append-remove-etc
   (subsetp-equal (free-vars (subst-free f x tm))

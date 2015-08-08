@@ -32,8 +32,8 @@
 ;; and only add the new functions and theorems that had been in COI.
 
 ;; Multicons Function
-;; Jared Davis 
-;; 
+;; Jared Davis
+;;
 ;; We introduce the notion of augmenting a set of lists by consing a new
 ;; element onto the front of each list.  For example, given the set { (a1 c),
 ;; (a2 b), (a2 c) }, we might multicons x onto the set to produce a new set
@@ -42,7 +42,7 @@
 ;; I got a little crazy and went to some effort to show that you can just use
 ;; conses in order to construct the new set.  I thought originally that this
 ;; would be a lot more efficient than the insert-based version below, because
-;; it replaces an "insert sort like" operation with simple conses.  
+;; it replaces an "insert sort like" operation with simple conses.
 ;;
 ;; On further consideration, I think the insert would always be sticking its
 ;; element at the front of the set, and so it would just be a small constant
@@ -111,7 +111,7 @@
                     (weakly-ordered-p (cdr x)))))))
 
 (local (defthm lexorder-cons
-         (equal (lexorder (cons x a) 
+         (equal (lexorder (cons x a)
                           (cons x b))
                 (lexorder a b))
          :hints(("Goal" :in-theory (enable lexorder)))))
@@ -134,7 +134,7 @@
                      (weakly-ordered-p x)))
          :hints(("Goal"
                  :induct (setp x)
-                 :in-theory (enable setp 
+                 :in-theory (enable setp
                                     tail
                                     sfix
                                     empty
@@ -152,7 +152,7 @@
                          (and (consp path)
                               (equal (car path) a)
                               (in (cdr path) X))))
-         :hints(("Goal" 
+         :hints(("Goal"
                  :in-theory (disable in-list-multicons-list)
                  :use (:instance in-list-multicons-list)))))
 

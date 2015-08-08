@@ -6,7 +6,7 @@
 ;; June 20th 2005
 ;; File: GeNoC-types.lisp
 
-;;Amr helmy 
+;;Amr helmy
 ;;31st october 2007
 
 ;; Rev. January 31st by JS (mainly state related functions)
@@ -28,15 +28,15 @@
                   (nth (1- n) (cdr x)))))
 
 ;;-----------------------------------------------|
-;;                                               | 
+;;                                               |
 ;;                         MISSIVES              |
 ;;                                               |
 ;;-----------------------------------------------|
-;; 
-;; The main inputs of function GeNoC are a list of 
+;;
+;; The main inputs of function GeNoC are a list of
 ;; uninjected missives and a list of enroute missives.
 ;; A missive represents a message together with meta
-;; information about it. 
+;; information about it.
 ;;
 ;; A missive is a tuple m = (id A frm B Flit Time)
 ;; id: a unique id
@@ -46,7 +46,7 @@
 ;; Flit: the number of flits in the message
 ;; Time: the desired injection time
 ;;
-;; Here is the list of functions related to 
+;; Here is the list of functions related to
 ;; missives.
 ;;
 ;; ------------------------------------------------|
@@ -88,23 +88,23 @@
 ;;           TRAVELING MISSIVES             |
 ;;                                          |
 ;;------------------------------------------|
-;; 
-;; Traveling missives are missives which have been
-;; injected in the network. They get two additional 
-;; fields: their current position of the header in 
-;; the network and the location of all their flits. 
 ;;
-;; A traveling missive is a tuple 
+;; Traveling missives are missives which have been
+;; injected in the network. They get two additional
+;; fields: their current position of the header in
+;; the network and the location of all their flits.
+;;
+;; A traveling missive is a tuple
 ;; tm = (id A current frm B Flit Time Loc)
 ;; current = current position of the header
 ;; Loc = current position of all the flits.
-;; 
-;; Here is the list of functions related to 
+;;
+;; Here is the list of functions related to
 ;; traveling missives.
 ;;
 ;; ------------------------------------------------|
 ;; IdTM, OrgTM, FrmTM, DestTM   |       accessors  |
-;; LocTM, CurTM, FlitTM, TimeTM |                  |      
+;; LocTM, CurTM, FlitTM, TimeTM |                  |
 ;; TM-ids                       | all id  in TM    |
 ;; TM-orgs                      | all org in TM    |
 ;; TM-dests                     | all dest in TM   |
@@ -140,18 +140,18 @@
 ;;                                                |
 ;;------------------------------------------------|
 ;;
-;; A travel is a traveling missive which has been 
-;; routed. that is, it has a new field containing 
-;; the possible next hops for the message. 
+;; A travel is a traveling missive which has been
+;; routed. that is, it has a new field containing
+;; the possible next hops for the message.
 ;;
-;; A travel is a tuple 
+;; A travel is a tuple
 ;; tr = (id org frm curr NxtHops dest Flits Time Loc)
 ;; NxtHops: the possible next hops for the travel.
 ;;
 ;; Accessors are IdV, OrgV, FrmV, RoutesV and FlitsV
 ;; (JS: V comes from the french word for travel, voyage :-)
 ;;
-;; Here is the list of functions related to 
+;; Here is the list of functions related to
 ;; travels.
 ;;
 ;; ------------------------------------------------|
@@ -239,10 +239,10 @@
 
 (create-for-all M-p :name Validfields-M)
 
-;; now we define the predicate that recognizes a valid list of 
+;; now we define the predicate that recognizes a valid list of
 ;; missives
 (defun Missivesp (M NodeSet)
-  (let ((M-ids (M-ids M))) 
+  (let ((M-ids (M-ids M)))
     (and (Validfields-M M)
          (subsetp (M-orgs M) NodeSet)    ;;origins subset of nodeset
        ;  (subsetp (M-dests M) NodeSet)         ;;destinations subset of nodeset
@@ -260,13 +260,13 @@
 ;(create-map V-id :name tm-ids)
 
 ;; We need a function that grabs the origins of Missives
-(create-map tm-org :name tm-orgs) 
+(create-map tm-org :name tm-orgs)
 
 ;; The same for the currents
-(create-map tm-cur :name tm-curs) 
+(create-map tm-cur :name tm-curs)
 
 ;; We also need a function that grabs the frames of a list of missives
-(create-map tm-frame :name tm-frms) 
+(create-map tm-frame :name tm-frms)
 
 ;; loc is a valid field iff
 ;; it is a list with for each flit
@@ -296,7 +296,7 @@
 
 (create-filter filter-car=-test :extra (a) :name filter-car=-alt)
 (defmacro filter-car= (a x)
-  `(filter-car=-alt ,x ,a)) 
+  `(filter-car=-alt ,x ,a))
 
 (defun per-resource-no-duplicate-flits (locs)
   (if (endp locs)
@@ -327,10 +327,10 @@
 ;; The following predicate recognizes a valid list of missives (partially)
 (create-for-all Validfields-TM-test :name Validfields-TM :extra (nodeset))
 
-;; now we define the predicate that recognizes a valid list of 
+;; now we define the predicate that recognizes a valid list of
 ;; missives
 (defun TMissivesp (M NodeSet)
-  (let ((M-ids (TM-ids M))) 
+  (let ((M-ids (TM-ids M)))
     (and (Validfields-TM M Nodeset)
          (subsetp (TM-orgs M) NodeSet)                ;;origines subset nodeset
          (subsetp (TM-curs M) NodeSet)                ;;current subset nodeset
@@ -356,7 +356,7 @@
 ;; We need a function that grabs the orgs of a list of travels
 (create-map V-org :name V-orgs)
 
-;; The following predicate checks that each travel has 
+;; The following predicate checks that each travel has
 ;; the right number of arguments
 (defun validfield-travelp (tr nodeset)
   ;; tr = (id org frm Routes flits time)
@@ -367,7 +367,7 @@
        ;(equal (caar (RoutesV tr)) (caar (LocV tr))) ;; routing must begin in location of header flit
 ;       (A-car= (RoutesV tr) (caar (LocV tr)))
        (validfield-loc (locv tr) (flitv tr) nodeset)))
-;       (validfield-route (routesv tr) (orgv tr) (caar (RoutesV tr)) (car (last (car (RoutesV tr)))) nodeset))) 
+;       (validfield-route (routesv tr) (orgv tr) (caar (RoutesV tr)) (car (last (car (RoutesV tr)))) nodeset)))
 
 (defun Validfields-TrLst-test (Tr nodeset)
       (and (validfield-travelp tr nodeset)
@@ -388,10 +388,10 @@
 (create-for-all Validfields-TrLst-test :name Validfields-TrLst :extra (nodeset))
 
 
-;; now we define the predicate that recognizes a valid list of 
+;; now we define the predicate that recognizes a valid list of
 ;; travels
 (defun TrLstp (TrLst nodeset)
-  (let ((V-ids (V-ids TrLst))) 
+  (let ((V-ids (V-ids TrLst)))
     (and (Validfields-TrLst TrLst nodeset)
          (true-listp TrLst)
          (No-Duplicatesp V-ids))))
@@ -414,7 +414,7 @@
 (defun get_resource_from_rstate (rstate)
   ;; st_entry =  ( (coor (id)) (buffers ...))
   ;; this function returns id
-  (cadar rstate)) 
+  (cadar rstate))
 
 
 (defun get_buffer_from_rstate (rstate)
@@ -427,15 +427,15 @@
 
 (defun validCoord (x)
   ;; x is (coor (id))
-  (and (equal (car x) 'Coor) 
-       (consp x) 
-       (consp (cdr x)) 
+  (and (equal (car x) 'Coor)
+       (consp x)
+       (consp (cdr x))
        (null (cddr x))))
 
 (defun ValidBuffer (x)
   ;; x is (buffers ...)
-  (and (equal (car x) 'Buffers) 
-       (consp x) 
+  (and (equal (car x) 'Buffers)
+       (consp x)
        (consp (cdr x))))
 
 ;; x is a state = ( ((coor (id)) (buffers ...)) ...)
@@ -449,7 +449,7 @@
 (defun validstate-entryp (st_entry)
   (if (endp st_entry)
       t
-    (and (Validcoord (car st_entry)) 
+    (and (Validcoord (car st_entry))
          (Validbuffer (cadr st_entry)))))
 
 (create-for-all Validstate-entryp :name ValidState)#|ACL2s-ToDo-Line|#

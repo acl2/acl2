@@ -60,7 +60,7 @@ comparison function beforehand; see the discussion of @(':weak') below.</p>
            :comparable-listp foolist-p
            :true-listp nil
            :weak t)
- 
+
   (defsort :comparablep rationalp
            :compare< <
            :prefix <
@@ -79,7 +79,7 @@ comparison function beforehand; see the discussion of @(':weak') below.</p>
            :compare< intalist2-<
            :comparablep (lambda (x alist) (stringp x)))
 
- 
+
 })
 
 <p>The first form is a new syntax that gives the name of the sorting function
@@ -319,7 +319,7 @@ it has a special hack for that particular case.</p>
         (er soft 'defsort-fn
             "Defsort: The formals, if provided, must be a symbol-list whose ~
              first element is named X (standing for the list to be sorted)."))
-                       
+
        ((mv kwd-alist args)
         (std::extract-keywords 'defsort *defsort-keywords* args nil))
 
@@ -341,7 +341,7 @@ it has a special hack for that particular case.</p>
                                          'ACL2::foo
                                        prefix)))
        (sort             (or sort (mksym prefix "-SORT")))
-       
+
 
        (comparable-listp (std::getarg :comparable-listp nil kwd-alist))
        (compare<         (std::getarg :compare< nil kwd-alist))
@@ -354,7 +354,7 @@ it has a special hack for that particular case.</p>
                              (cdr formals)
                            (std::getarg :extra-args nil kwd-alist)))
        (extra-args-guard (std::getarg :extra-args-guard t kwd-alist))
-       
+
        ((unless (and (symbol-listp extra-args)
                      (not (intersectp-eq '(x y z) extra-args))))
         (er soft 'defsort ":extra-args must be a symbol list not containing ~x0, ~x1, or ~x2.~%"
@@ -546,7 +546,7 @@ it has a special hack for that particular case.</p>
                     ;; necessary if comparablep is e.g. (lambda (x extra-args)
                     ;; (foo x)), because then it needs to match extra-args as a
                     ;; free variable.  We only need to do this when comparablep is a lambda.
-                    ,@(and (consp comparablep) 
+                    ,@(and (consp comparablep)
                            `((local (defthm defsort-comparablep-of-cadr
                                       (implies (and (,comparable-listp x . ,extra-args)
                                                     (consp x)
@@ -785,7 +785,7 @@ it has a special hack for that particular case.</p>
              :hints ((defsort-functional-inst
                        consp-of-comparable-mergesort
                        ,subst1)))))
-       
+
        ((when weak) (value events1))
 
        (insert           (mksym prefix "-INSERT"))

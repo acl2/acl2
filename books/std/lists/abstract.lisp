@@ -363,7 +363,7 @@ tagged with @(':osets') you could do:</p>
   `(table ,table-name nil (ruletable-keep-tags
                            ',tags (table-alist ',table-name world))
           :clear))
-  
+
 
 (defsection def-projection-rule
   :short "Define a theorem and save it in a table, denoting that it is a rule
@@ -413,7 +413,7 @@ about elementlist-mapappend."
     (implies (and (element-list-final-cdr-p t)
                   (not (consp x)))
              (element-list-p x))
-    
+
     :requirement (not true-listp)
     :name element-list-p-when-not-consp
     :body (implies (not (consp x))
@@ -432,7 +432,7 @@ about elementlist-mapappend."
                           (not x)))
     ;; (:rule-classes ((:rewrite :backchain-limit-lst 0)))
     )
-  
+
 
 
   (def-listp-rule element-p-of-car-when-element-list-p-when-element-p-nil
@@ -495,7 +495,7 @@ about elementlist-mapappend."
                   (and (not (consp x))
                        (non-element-p nil))))
     ;; :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-    
+
     :requirement (and (not element-p-of-nil)
                       (not not-element-p-of-nil)
                       negatedp
@@ -762,11 +762,11 @@ about elementlist-mapappend."
 ;; member-of-xformer-in-projection
 ;; subsetp-of-projection-in-projection
 ;; nth-of-projection
-;; 
+;;
 
 (defsection element-listxformer
   :short "Generic element-list transform for mapappend"
-  
+
   (encapsulate (((element-listxformer *) => *))
 
     (local (defun element-listxformer (x)

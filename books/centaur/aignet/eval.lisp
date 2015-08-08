@@ -224,7 +224,7 @@ and the inputs from the appropriate frame.</p>
               (< (io-id->ionum n aignet) (num-ins aignet)))
          (nth (io-id->ionum n aignet) aignet-invals)
        (nth n vals))))
-  
+
   (defthm memo-tablep-of-aignet-invals->vals-iter
     (implies (< (node-count aignet) (len vals))
              (<
@@ -344,7 +344,7 @@ and the inputs from the appropriate frame.</p>
   (defcong bits-equiv equal (aignet-vals->regvals regvals vals aignet) 2)
 
 
-  
+
 
   (defthm id-eval-of-in/regvals-of-aignet-vals-of-in/regvals-iters
     (let* ((vals (aignet-invals->vals-iter
@@ -620,7 +620,7 @@ and the inputs from the appropriate frame.</p>
                        (id-eval id invals regvals orig))))))
 
   (local (in-theory (disable acl2::take-redefinition)))
-  
+
   (defun set-prefix (n first second)
     (declare (xargs :guard (and (true-listp first)
                                 (true-listp second)
@@ -641,7 +641,7 @@ and the inputs from the appropriate frame.</p>
            (if (< (nfix m) (nfix n))
                (nth m first)
              (nth m second)))
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct (nth-set-prefix-ind m n first second)
             :expand ((set-prefix n first second))
             :in-theory (enable nth))))

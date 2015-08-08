@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -253,7 +253,7 @@
                        (< B A)
                        (< A (EXPT 2 N))
                        (< B (EXPT 2 N)))
-                  (= (LOP0 A B 0 N) 
+                  (= (LOP0 A B 0 N)
                      (1- n)))
          :rule-classes ()
          :hints (("Goal"  :expand ((LOP0 A B 1 (1- N)))
@@ -576,17 +576,17 @@
 		  (< B (EXPT 2 N)))
 	     (OR (= (LOP0 (+ A (- (EXPT 2 (+ -2 N))))
 			 (+ B (- (EXPT 2 (+ -2 N))))
-			 0 
+			 0
 			 (+ -1 N))
 		    (EXPO (+ A (- B))))
 		 (= (LOP0 (+ A (- (EXPT 2 (+ -2 N))))
 			 (+ B (- (EXPT 2 (+ -2 N))))
-			 0 
+			 0
 			 (+ -1 N))
 		    (+ 1 (EXPO (+ A (- B)))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expt)
-		  :use (lop0-1-7 
+		  :use (lop0-1-7
 			lop0-1-17
 			lop0-1-19
 			(:instance expt-split (r 2) (i (- n 1)) (j 1))
@@ -685,7 +685,7 @@
 			(:instance lop0-mod
 				   (a (- a (expt 2 (- n 2))))
 				   (b (- b (expt 2 (- n 2))))
-				   (d 1) 
+				   (d 1)
 				   (j (- n 2))
 				   (k (- n 2))))))))
 

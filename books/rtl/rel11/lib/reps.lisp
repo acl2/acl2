@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -73,9 +73,9 @@
          (bits y (1- n) 0))
     0))
 
-;; We define a macro, CAT, that takes a list of a list X of alternating data values 
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at 
-;; least 1 data/size pair, but we do not need to specify this in the guard, and 
+;; We define a macro, CAT, that takes a list of a list X of alternating data values
+;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at
+;; least 1 data/size pair, but we do not need to specify this in the guard, and
 ;; leaving it out of the guard simplifies the guard proof.
 
 (defun formal-+ (x y)
@@ -98,9 +98,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defund mulcat (l n x)
@@ -122,7 +122,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -189,7 +189,7 @@
 
 (defund dp () (declare (xargs :guard t)) '(nil 53 11))
 
-(defund ep () (declare (xargs :guard t)) '(t 64 15)) 
+(defund ep () (declare (xargs :guard t)) '(t 64 15))
 
 (in-theory (disable (sp) (dp) (ep)))
 
@@ -522,17 +522,17 @@
   (declare (xargs :guard (formatp f)))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
-(defund qnanize (x f) 
+(defund qnanize (x f)
   (declare (xargs :guard (and (integerp x) (formatp f))))
   (logior x (expt 2 (- (prec f) 2))))
 
 (defund indef (f)
   (if (explicitp f)
-      (cat (1- (expt 2 (+ (expw f) 3))) 
+      (cat (1- (expt 2 (+ (expw f) 3)))
            (+ (expw f) 3)
            0
            (- (sigw f) 2))
-    (cat (1- (expt 2 (+ (expw f) 2))) 
+    (cat (1- (expt 2 (+ (expw f) 2)))
          (+ (expw f) 2)
          0
          (1- (sigw f)))))

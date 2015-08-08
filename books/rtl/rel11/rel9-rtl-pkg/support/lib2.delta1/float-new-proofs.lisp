@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -28,21 +28,21 @@
 
 (local (include-book "../lib2/top"))
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "bits-new-proofs"))
 
              (defthmd bits_alt-is-bits
                (equal (bits_alt x i j)
                       (bits x i j)))
 
-             
+
              (defthmd bitn_alt-is-bitn
                (equal (bitn_alt x n)
                       (bitn x n)))
 
              ))
-               
+
 
 
 ;;;**********************************************************************
@@ -50,7 +50,7 @@
 ;;;**********************************************************************
 
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -171,7 +171,7 @@
 
 
 (defthm sig-sig
-    (equal (sig (sig x)) 
+    (equal (sig (sig x))
 	   (sig x)))
 
 
@@ -211,12 +211,12 @@
   (implies (and (rationalp x)
                 (not (equal x 0))
                 (integerp n))
-           (equal (expo (* (expt 2 n) x)) 
+           (equal (expo (* (expt 2 n) x))
                   (+ n (expo x)))))
 
 
 (defthmd sig-shift
-  (equal (sig (* (expt 2 n) x)) 
+  (equal (sig (* (expt 2 n) x))
          (sig x)))
 
 
@@ -544,7 +544,7 @@
 
 
 (defund esgnf_alt  (x p q) (bitn_alt x (+ p q)))
-(defund eexpof_alt (x p q) (bits_alt x (1- (+ p q)) p)) 
+(defund eexpof_alt (x p q) (bits_alt x (1- (+ p q)) p))
 (defund esigf_alt  (x p)   (bits_alt x (1- p) 0))
 
 (defund bias (q) (- (expt 2 (- q 1)) 1) )
@@ -559,19 +559,19 @@
 (local (in-theory (e/d (bits_alt-is-bits
                         bitn_alt-is-bitn) ())))
 
-(local 
+(local
  (defthm esgnf_alt-is-esgnf
    (equal (esgnf_alt x p q) (esgnf x p q))
    :hints (("Goal" :in-theory (e/d (esgnf_alt esgnf) ())))))
 
 
-(local 
+(local
  (defthm eexpof_alt-is-eexpof
    (equal (eexpof_alt x p q) (eexpof x p q))
    :hints (("Goal" :in-theory (e/d (eexpof_alt eexpof) ())))))
 
 
-(local 
+(local
  (defthm esigf_alt-is-esigf
    (equal (esigf_alt x p) (esigf x p))
    :hints (("Goal" :in-theory (e/d (esigf_alt esigf) ())))))
@@ -585,7 +585,7 @@
 
 
 
-(local 
+(local
  (defthm edecode_alt-is-edecode_alt
    (equal (edecode_alt x p q) (edecode x p q))
    :hints (("Goal" :in-theory (e/d (edecode_alt edecode) ())))))
@@ -596,19 +596,19 @@
 
 
 
-(local 
+(local
  (defthm isgnf_alt-is-isgnf
    (equal (isgnf_alt x p q) (isgnf x p q))
    :hints (("Goal" :in-theory (e/d (isgnf_alt isgnf) ())))))
 
 
-(local 
+(local
  (defthm iexpof_alt-is-iexpof
    (equal (iexpof_alt x p q) (iexpof x p q))
    :hints (("Goal" :in-theory (e/d (iexpof_alt iexpof) ())))))
 
 
-(local 
+(local
  (defthm isigf_alt-is-isigf
    (equal (isigf_alt x p) (isigf x p))
    :hints (("Goal" :in-theory (e/d (isigf_alt isigf) ())))))
@@ -622,7 +622,7 @@
        (< (iexpof_alt x p q) (- (expt 2 q) 1))))
 
 
-(local 
+(local
  (defthm nencodingp_alt-is-nencodingp
    (equal (nencodingp_alt x p q)
           (nencodingp x p q))
@@ -636,7 +636,7 @@
         (* (isigf_alt x p)
            (expt 2 (+ 1 (iexpof_alt x p q) (- (bias q)) (- p)))))))
 
-(local 
+(local
  (defthm ndecode_alt-is-ndecode
    (equal (ndecode_alt x p q)
           (ndecode x p q))
@@ -661,7 +661,7 @@
 		  (integerp p)
 		  (> p 1)
 		  (integerp q)
-		  (> q 0))  
+		  (> q 0))
 	     (equal (expo (ndecode_alt x p q))
 		    (- (iexpof_alt x p q) (bias q))))
     :hints (("Goal" :in-theory (enable expo-ndecode))))
@@ -686,14 +686,14 @@
        (< (+ (expo x) (bias q)) (- (expt 2 q) 1))
        (exactp x p)))
 
-(local 
+(local
  (defthm cat_alt-is-cat
    (equal (binary-cat_alt x m y n)
           (binary-cat x m y n))
    :hints (("Goal" :in-theory (enable binary-cat_alt
                                       binary-cat)))))
-                                      
-          
+
+
 
 
 (defund nencode_alt (x p q)
@@ -705,7 +705,7 @@
        (* (- (sig x) 1) (expt 2 (- p 1)))
        (- p 1)))
 
-(local 
+(local
  (defthm nencode_alt-is-nencode
    (equal (nencode_alt x p q)
           (nencode x p q))
@@ -795,11 +795,11 @@
        (not (= (isigf_alt x p) 0))))
 
 
-(local 
+(local
  (defthm dencodingp_alt-is-dencodingp
    (equal (dencodingp_alt x p q)
           (dencodingp x p q))
-   :hints (("Goal" :in-theory (e/d (dencodingp_alt 
+   :hints (("Goal" :in-theory (e/d (dencodingp_alt
                                     dencodingp) ())))))
 
 
@@ -810,7 +810,7 @@
 
 
 
-(local 
+(local
  (defthm ddecode_alt-is-decode
    (equal (ddecode_alt x p q)
           (ddecode x p q))
@@ -870,7 +870,7 @@
        (- p 1)))
 
 
-(local 
+(local
  (defthm dencode_alt-is-dencode
    (equal (dencode_alt x p q)
           (dencode x p q))
@@ -957,7 +957,7 @@
 ;; 		(and (natp m)
 ;; 		     (<= 1 m)
 ;; 		     (< m (expt 2 (1- p)))))))
-;; not true!! 
+;; not true!!
 
 (defthmd spd-mult
   (implies (and (integerp p)

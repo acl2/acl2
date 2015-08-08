@@ -112,7 +112,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; add some fns/vars to those temporarily touchable, remembering previous setting.~/
 
 ; ~bv[]
@@ -121,13 +121,13 @@
 ; (push+touchable :fns set-w :vars :initial)
 ; (push+touchable :vars (foo :initial bar))
 ; ~ev[] ~/
-; 
+;
 ; This event first pushes the previous temporary touchable settings
 ; (functions and variables) onto a stack (stored in a global variable)
 ; and then adds all those that meet the specification passed in.
-; 
+;
 ; ~ilc[pop-touchable] reinstates the previous setting.
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]) because it
 ; can render ACL2 unsound (~l[remove-untouchable]).
 ; ~/"
@@ -146,7 +146,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; set which fns/vars are temporarily touchable, remembering previous setting.~/
 
 ; ~bv[]
@@ -155,13 +155,13 @@
 ; (push=touchable :fns set-w :vars :initial)
 ; (push=touchable :vars (foo :initial bar)) ;``:fns ()'' default
 ; ~ev[] ~/
-; 
+;
 ; This event first pushes the previous temporary touchable settings
 ; (functions and variables) onto a stack (stored in a global variable)
 ; and then sets them to the specification passed in.
-; 
+;
 ; ~ilc[pop-touchable] reinstates the previous setting.
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]) because it
 ; can render ACL2 unsound (~l[remove-untouchable]).
 ; ~/"
@@ -180,22 +180,22 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; make all fns/vars temporarily touchable, remembering previous setting.~/
 
 ; ~bv[]
 ; Usage:
 ; (push-all-touchable)
 ; ~ev[] ~/
-; 
+;
 ; This event first pushes the previous temporary touchable settings
 ; (functions and variables) onto a stack (stored in a global variable)
 ; and then sets them to make everything temporarily touchable.
-; 
+;
 ; ~ilc[pop-touchable] reinstates the previous setting.  ~ilc[push+touchable]
 ; and ~ilc[push=touchable] allow more more specification of what should be
 ; permitted.
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]) because it
 ; can render ACL2 unsound (~l[remove-untouchable]).
 ; ~/"
@@ -210,18 +210,18 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; revert the effect of a push+touchable, push=touchable, or push-all-touchable.~/
 
 ; ~bv[]
 ; Usage:
 ; (pop-touchable)
 ; ~ev[] ~/
-; 
+;
 ; This event pops of the stack of saved temporary touchable settings,
 ; reverting the effect of a ~ilc[push+touchable], ~ilc[push=touchable], or
 ; ~ilc[push-all-touchable].
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]) because it
 ; can render ACL2 unsound (~l[remove-untouchable]).
 ; ~/"
@@ -278,7 +278,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; execute some events with some additional fns and/or vars made temporarily touchable.~/
 
 ; ~bv[]
@@ -296,12 +296,12 @@
 
 ; This is like ~ilc[progn] except that it surrounds the events with code to
 ; add certain fns and/or vars to those that are temporarily touchable.
-; 
+;
 ; Related to ~ilc[progn=touchable].
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]) because it
 ; can render ACL2 unsound (~l[remove-untouchable]).
-; 
+;
 ; Note that the syntax for this macro is not quite like traditional
 ; keyword arguments, which would come at the end of the argument list.
 ; ~/"
@@ -317,7 +317,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; execute some events with only the specified fns and/or vars temporarily touchable.~/
 
 ; ~bv[]
@@ -326,7 +326,7 @@
 ;   (defun foo ...)
 ;   (defun bar ...))
 ; (progn=touchable :vars (current-package ld-skip-proofsp) ; :fns ()  implied
-;   ...)  
+;   ...)
 ; (progn=touchable :fns :all    ; :vars ()  implied
 ;   ...)
 ; (progn=touchable :fns set-w :vars :all
@@ -335,12 +335,12 @@
 
 ; This is like ~ilc[progn] except that it surrounds the events with code to
 ; set only certain fns and/or vars as temporarily touchable.
-; 
+;
 ; Related to ~ilc[progn+touchable].
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]) because it
 ; can render ACL2 unsound (~l[remove-untouchable]).
-; 
+;
 ; Note that the syntax for this macro is not quite like traditional
 ; keyword arguments, which would come at the end of the argument list.
 ; ~/"
@@ -373,7 +373,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; execute some events but with certain untouchables removed.
 ; ~/~/
 ; Same as ~c[progn+touchable]. ~l[progn+touchable]."
@@ -417,7 +417,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; execute some events but with redefinition enabled.~/
 
 ; ~bv[]
@@ -425,20 +425,20 @@
 ; (progn+redef
 ;   (defun foo ...)
 ;   (defun bar ...))
-; (progn+redef :action t 
+; (progn+redef :action t
 ;   ...)
 ; (progn+redef :action (:doit! . :overwrite)
 ;   ...)
 ; ~ev[] ~/
-; 
+;
 ; This is like ~ilc[progn] except that it sets the
 ; ~ilc[ld-redefinition-action] as (optionally) specified for the
 ; given events.  An ~c[:action] of ~c[t] is a shortcut for
 ; ~c[(:doit! . :overwrite)].  ~ilc[make-event] is used to save and restore
 ; the old value of ~ilc[ld-redefinition-action].
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]).
-; 
+;
 ; Note that the syntax for this macro is not quite like traditional
 ; keyword arguments, which would come at the end of the argument list.
 ; ~/"
@@ -455,7 +455,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; execute some events but with redefinition enabled.
 ; ~/~/
 ; Same as ~c[progn+redef]. ~l[progn+redef]."
@@ -480,7 +480,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; embed some raw lisp code as an event.~/
 
 ; ~bv[]
@@ -522,7 +522,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; embed some raw lisp code as an event.
 ; ~/~/
 ; Same as ~c[in-raw-mode]. ~l[in-raw-mode]."
@@ -547,7 +547,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; ensure that given function names remain in :PROGRAM mode.~/
 
 ; ~bv[]
@@ -559,12 +559,12 @@
 ; ~ev[]
 ; where each ~c[fni] is a literal symbol which should have a ~ilc[program] mode
 ; definition. Each ~c[fni] not already flagged as \"program only\" is flagged
-; as such.  This prevents it from being migrated to ~ilc[logic] mode or being 
+; as such.  This prevents it from being migrated to ~ilc[logic] mode or being
 ; used in a macro.
-; 
+;
 ; This is a pseudo-event, meaning it can be used in an event context but does
 ; not (ever) change the world.
-; 
+;
 ; Note that the normal undoing mechanism (~pl[ubt]) does not undo the effects
 ; of this pseudo-event.
 ; ~/"
@@ -592,7 +592,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; assert that given symbols name :PROGRAM mode functions.~/
 
 ; ~bv[]
@@ -604,7 +604,7 @@
 ; ~ev[]
 ; where each ~c[fni] is a literal symbol which should have a ~ilc[program] mode
 ; definition. An error is raised if any ~c[fni] is not a program mode function.
-; 
+;
 ; This is a pseudo-event, meaning it can be used in an event context but does
 ; not (ever) change the world.
 ; ~/"
@@ -623,7 +623,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; ensure that named functions are and remain in :PROGRAM mode.~/
 
 ; ~bv[]
@@ -636,15 +636,15 @@
 ; where each ~c[fni] is a literal symbol which should have a ~ilc[program] mode
 ; definition. An error is raised if any ~c[fni] is not a program mode function.
 ; Also, each ~c[fni] not already flagged as \"program only\" is flagged
-; as such.  This prevents it from being migrated to ~ilc[logic] mode or being 
+; as such.  This prevents it from being migrated to ~ilc[logic] mode or being
 ; used in a macro.
-; 
+;
 ; This is actually a combination of ~ilc[assert-program-mode] and
 ; ~ilc[ensure-program-only-flag].
-; 
+;
 ; This is a pseudo-event, meaning it can be used in an event context but does
 ; not (ever) change the world.
-; 
+;
 ; Note that the normal undoing mechanism (~pl[ubt]) does not undo the effects
 ; of this pseudo-event.
 ; ~/"
@@ -796,7 +796,7 @@
     acl2::mfc-ancestors
     acl2::bad-atom<=
     acl2::alphorder
-    
+
     ;;-- from translate.lisp --
     acl2::latch-stobjs1
     acl2::big-n
@@ -815,7 +815,7 @@
     acl2::ev-w
     acl2::ev-w-lst
     acl2::user-stobj-alist-safe
-    
+
     ;;-- from history-management.lisp --
     acl2::start-proof-tree
     acl2::initialize-summary-accumulators
@@ -823,7 +823,7 @@
     acl2::set-w
     acl2::longest-common-tail-length-rec
     acl2::chk-virgin
-    
+
     ;;-- from other-events.lisp --
     in-package
     defpkg
@@ -850,7 +850,7 @@
     encapsulate
     include-book
     local
-    
+
     acl2::chk-package-reincarnation-import-restrictions
     acl2::theory-invariant
     acl2::acl2-raw-eval
@@ -866,7 +866,7 @@
     acl2::trace$-fn-simple
     acl2::untrace$-fn
     acl2::break-on-error-fn
-    
+
     ;;-- from ld.lisp --
     acl2::ld-print-results
     acl2::print-newline-for-time$
@@ -885,7 +885,7 @@
     acl2::mfc-relieve-hyp
     acl2::mfc-ap
     acl2::save-exec
-    
+
     ))
 
 #|| Removed by Matt K. after ACL2 Version 3.6.1 in favor of the defmacro just
@@ -922,7 +922,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; ensure that named functions are flagged as having special raw definitions.~/
 
 ; ~bv[]
@@ -937,10 +937,10 @@
 ; definition is flagged as such.  This idicates to interested parties that
 ; the \"loop\" definition of the function doesn't fully characterize the
 ; effects it has in raw lisp.
-; 
+;
 ; This is a pseudo-event, meaning it can be used in an event context but does
 ; not (ever) change the world.
-; 
+;
 ; Note that the normal undoing mechanism (~pl[ubt]) does not undo the effects
 ; of this pseudo-event.
 ; ~/"
@@ -956,7 +956,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; assert that given symbols do not have a special raw function definition.~/
 
 ; ~bv[]
@@ -969,7 +969,7 @@
 ; where each ~c[fni] is a literal symbol.  An error is raised if any ~c[fni]
 ; is is flagged as having a special raw definition.
 ; ~l[ensure-special-raw-definition-flag].
-; 
+;
 ; This is a pseudo-event, meaning it can be used in an event context but does
 ; not (ever) change the world.
 ; ~/"

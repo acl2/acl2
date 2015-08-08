@@ -70,7 +70,7 @@
     (equal (last (list-fix x))
            (list-fix (last x))))
 
-  (defthm len-of-last 
+  (defthm len-of-last
     (equal (len (last l))
            (if (consp l)
                1
@@ -85,7 +85,7 @@
          (if (consp x)
              t
            nil)))
-  
+
   (defsection subsetp-of-last
 
     (local (defthm l0

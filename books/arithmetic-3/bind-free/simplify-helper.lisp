@@ -8,7 +8,7 @@
 ;;
 ;; Nothing in this book is directly available to the user.
 ;; It is an irritating little book whose only purpose is to
-;; allow one to prove a couple of theorems about multiplying 
+;; allow one to prove a couple of theorems about multiplying
 ;; (or dividing) both sides of an inequality by a rational
 ;; number.  Previously one had to know that the other terms
 ;; of the inequality were rational also.  See cancel-terms or
@@ -28,7 +28,7 @@
 (local
  (include-book "default-hint"))
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                               hist pspv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -119,7 +119,7 @@
 	   ("Subgoal 3.1'4'" :use ((:instance completion-of-<
 					       (x (COMPLEX 0 (* A R)))
 					       (y 0))))
-           
+
            ("Subgoal 2.4'5'" :use ((:instance completion-of-<
 					      (x (COMPLEX (* A R) (* A S)))
                                               (y (COMPLEX (* A I) (* A J))))))
@@ -132,7 +132,7 @@
            ("Subgoal 2.1'6'" :use ((:instance completion-of-<
 					      (x (COMPLEX (* A R) (* A S)))
                                               (y (COMPLEX (* A R) (* A I))))))
-           
+
            ("Subgoal 1.4'5'" :use ((:instance completion-of-<
 					      (x (COMPLEX (* A I) (* A J)))
                                               (y (COMPLEX (* A R) (* A S))))))

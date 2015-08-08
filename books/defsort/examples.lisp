@@ -164,7 +164,7 @@
     :extra-args-guard (intval-alistp alist)
     :comparablep (lambda (x alist) (stringp x))
     :compare< intval-alist-<2))
-  
+
 
 
 
@@ -289,7 +289,7 @@
 (local
  (encapsulate ()
    (local (defun sorteltlist-p (x)
-            (declare (xargs :guard t)) 
+            (declare (xargs :guard t))
             (if (atom x)
                 (not x)
               (and (sortelt-p (car x))
@@ -304,7 +304,7 @@
 (local
  (encapsulate ()
    (local (defun sorteltlist-p (x)
-            (declare (xargs :guard t)) 
+            (declare (xargs :guard t))
             (if (atom x)
                 t
               (and (sortelt-p (car x))

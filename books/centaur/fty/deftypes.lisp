@@ -1103,7 +1103,7 @@
       :fields ,flexsum-fields
       :type-name ,name
       :ctor-body ,ctor-body
-      
+
       ,@(and extra-binder-names `(:extra-binder-names ,extra-binder-names))
       ,@(and no-ctor-macros `(:no-ctor-macros ,no-ctor-macros))
       ,@(and requirep `(:require ,(cdr requirep))))))
@@ -2437,7 +2437,7 @@
                                  sum)))
        ((when (consp var-or-binding))
         (er hard? 'flexsum-case-macro "Requires a variable, rather than ~x0" var-or-binding))
-                               
+
        (var (if (consp var-or-binding) (car var-or-binding) var-or-binding))
 
        (allowed-keywordlist-keys (append kinds '(:otherwise)))
@@ -2483,7 +2483,7 @@
                    (subsetp kinds keys)))
         (er hard? sum.case "Otherwise is present but all cases are already covered"))
        (kind-kwd-alist (pairlis$ keys vals))
-       
+
        (body
         (if sum.kind
             (let ((var.kind (intern-in-package-of-symbol

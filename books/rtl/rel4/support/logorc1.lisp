@@ -66,4 +66,3 @@
            (< (logorc1 i j) 0))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable logorc1 lognot))))
-  

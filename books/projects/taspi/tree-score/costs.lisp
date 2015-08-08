@@ -78,7 +78,7 @@
 ;; some node in the tree, we'll have a sequence-scorelist the length of a sequence,
 ;; which holds, for each character c in the sequence and for each
 ;; unambiguous state x, the parsimony score contribution of c over that subtree
-;; given that the state at the root is x.  
+;; given that the state at the root is x.
 ;; i.e. the nth entry in the sequence-scorelist will be parsimony score
 ;; contribution of the nth character c in the sequence.
 (defun sequence-scorelistp (x alphabet-len)
@@ -144,10 +144,10 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Recognizes a well-formed mapping from possible character states to its 
+;  Recognizes a well-formed mapping from possible character states to its
 ;  score list of length alpha-len.~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;     (1) x - a potential character state scorelist
 ;     (2) alpha-len - the required alphabet length (number of unambiguous
 ;                     characters)
@@ -180,7 +180,7 @@
     (let ((scoreList (het (car seq) cssl-map)))
       (cons (if scoreList (cdr scoreList) (hons-make-list-acc alpha-len nil nil))
             (make-leaf-score-list (cdr seq) cssl-map alpha-len)))))
-  
+
 (defthm sequence-scorelistp-make-leaf-score-list
   (implies (and (natp alpha-len)
                 (charstate-scorelist-map-p cssl-map alpha-len))
@@ -213,7 +213,7 @@
 ; ":Doc-Section TASPI
 ;  Recognizes a well-formed cost matrix with n states.~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;     (1) x - a potential cost matrix
 ;     (2) n - the number of unambiguous characters
 
@@ -236,7 +236,7 @@
                 (assoc-hqual key x))
            (rational-or-nil-listp (cdr (assoc-hqual key x)))))
 
-;; Helper functions for testing  
+;; Helper functions for testing
 (defun make-default-costlist (currstate alphabet)
   (if (atom alphabet)
       nil

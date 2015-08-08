@@ -43,10 +43,10 @@
 (local
  (include-book "collect"))
 
-(local 
+(local
  (in-theory (enable collect-*)))
 
-(local 
+(local
  (in-theory (enable collect-+)))
 
 (defun arith-bubble-down (x match)
@@ -84,8 +84,8 @@
          nil)))
 
 (defthm arith-normalize-factors-gather-exponents
-    (implies (and (bind-free 
-                   (arith-find-matching-factor-gather-exponents 
+    (implies (and (bind-free
+                   (arith-find-matching-factor-gather-exponents
                     (arith-factor-pattern-gather-exponents x) y)
                    (match))
                   (syntaxp (proveably-non-zero x mfc state)))
@@ -115,7 +115,7 @@
          nil)))
 
 (defthm arith-normalize-factors-scatter-exponents
-    (implies (and (bind-free 
+    (implies (and (bind-free
                    (arith-find-matching-factor-scatter-exponents
                     (arith-factor-pattern-scatter-exponents x) y)
                    (match))
@@ -277,7 +277,7 @@
 
 (defthm |arith (expt x 1)|
   (implies (acl2-numberp x)
-           (equal (expt x 1) 
+           (equal (expt x 1)
                   x)))
 
 (defthm |arith (expt 1 n)|
@@ -285,7 +285,7 @@
            1))
 
 (defthm |arith (expt x -1)|
-  (equal (expt x -1) 
+  (equal (expt x -1)
 	 (/ x)))
 
 (defthm |arith (expt (/ x) n)|

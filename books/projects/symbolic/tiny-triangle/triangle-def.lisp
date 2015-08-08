@@ -57,7 +57,7 @@
 ;; I've got just n sitting on top now.
 (defconst *unpatched-loop-block*
   (assemble `(; loop-label-hole:
-	      dup 
+	      dup
 	      jumpz ,*done-label-hole*
 	      pushs ,*idx-adr*
 	      dup
@@ -102,7 +102,7 @@
 	  *loop-block*
 	  *done-block*))
 
-;;; ;;========== Test harness 
+;;; ;;========== Test harness
 ;; ;; Initialize the state of the tiny interpreter so
 ;; ;; that it will calculate the n'th triangluation number.
 ;; ;; The variable 'tiny-state' is a stobj defined in tiny.lisp.

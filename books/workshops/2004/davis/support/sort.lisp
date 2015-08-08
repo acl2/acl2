@@ -92,7 +92,7 @@
 
 (encapsulate nil
 
-  (local (defthm lemma 
+  (local (defthm lemma
 	   (implies (in-list a acc)
 		    (in-list a (revappend x acc)))))
 
@@ -160,7 +160,7 @@
 			   split-list-length-part2)))
 
 (defun mergesort-exec (x)
-  (declare (xargs 
+  (declare (xargs
     :guard (true-listp x)
     :measure (len x)
     :hints(("Goal" :use ((:instance split-list-length-less-part1)
@@ -205,7 +205,7 @@
 		(insert (car x)
 			(mergesort (cdr x))))
        :exec (mergesort-exec x)))
-	   
+
 (defthm mergesort-set
   (setp (mergesort x)))
 
@@ -214,7 +214,7 @@
 	 (in-list a x)))
 
 (verify-guards mergesort)
-    
+
 (defthm mergesort-set-identity
   (implies (setp X)
 	   (equal (mergesort X) X))

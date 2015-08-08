@@ -2,7 +2,7 @@
 ; J Strother Moore
 
 ; This file is an ACL2 book.  To certify it, execute:
-; 
+;
 ; (certify-book "helpers")
 
 ; For an explanation of this file, see either the paper or the supporting

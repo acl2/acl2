@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-;; Transfinite induction (a.k.a. ordinal induction) in ACL2.  
+;; Transfinite induction (a.k.a. ordinal induction) in ACL2.
 ;; See http://www.mtnmath.com/whatrh/node52.html for a discussion of ordinal induction.
 
 ;; Thanks to Matt Kaufmann and Pete Manolios for enlightening discussions.
@@ -26,7 +26,7 @@
    (forall (x) (implies (and (o-p x)
                              (o< x alpha))
                         (transfinite-induction-predicate x))))
- 
+
  ;; The constraint on pred:
  (defthm pred-when-pred-for-smaller
    (implies (and (o-p alpha)
@@ -36,7 +36,7 @@
 ;; This function suggests the induction scheme. The clever idea of recurring
 ;; on the witness of the defun-sk is due to Matt Kaufmann. It turns out that
 ;; we can show the witness is smaller than x if we're not in the base case.
-     
+
 (local
  (defun transfinite-induction-scheme (x)
    (declare (xargs :measure (o-fix x)))
@@ -56,33 +56,33 @@
 
 
 
-;; Now try it out...  
+;; Now try it out...
 (local
- (encapsulate 
+ (encapsulate
   ()
-  
+
   (defun foo (x) (declare (ignore x)) t)
-  
+
   ;;We'll keep foo shut off to keep the proof from being trivial.
   (in-theory (disable foo (:type-prescription foo) (:executable-counterpart foo)))
-  
+
   (defun-sk foo-for-all-ordinals-smaller-than (alpha)
     (forall (x) (implies (and (o-p x)
                               (o< x alpha))
                          (foo x))))
-  
+
   (defthm foo-when-foo-for-smaller
     (implies (and (o-p alpha)
                   (foo-for-all-ordinals-smaller-than alpha))
              (foo alpha))
     :hints (("Goal" :in-theory (enable foo)))) ;this is the only place where we open up foo
-  
+
   ;; Is sure would be nice if the defun-sk would just phrase
   ;; foo-for-all-ordinals-smaller-than-necc this way...  The way it currently
   ;; gets phrased is with the hypothesis as an implies, and it fails to fire
   ;; due to free variables.
   (defthm foo-for-all-ordinals-smaller-than-necc-better
-    (implies (and (o-p x) 
+    (implies (and (o-p x)
                   (o< x alpha)
                   (not (foo x)))
              (not (foo-for-all-ordinals-smaller-than alpha)))

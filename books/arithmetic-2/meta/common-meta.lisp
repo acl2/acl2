@@ -403,7 +403,7 @@
 ; We only consider the base of an exponential when determining
 ; a match.  We handle quotep's carefully.  We want 2 to match
 ; with (expt 1/2 n) and 3, but not with (expt 3 n).  We
-; also want (expt 2 n) to match with (expt 3 n) and 
+; also want (expt 2 n) to match with (expt 3 n) and
 ; (expt 2 (* -1/2 n)) but not with (expt 3 i).  See pattern-matchp.
 
 ; Pseudo-examples:
@@ -540,7 +540,7 @@
 		      `(:mark2 ,base 1 ,exponent))
 		     ((eq (ffn-symb exponent) 'BINARY-*)
 		      (if (quotep (arg1 exponent))
-			  `(:mark2 ,base 
+			  `(:mark2 ,base
 				   ,(unquote (arg1 exponent))
 				   ,(arg2 exponent))
 			`(:mark2 ,base 1 ,(arg2 exponent))))
@@ -743,7 +743,7 @@
 ;                 BINARY-+)
 ; ===>
 ; (t (* 2 b) (BINARY-+ (- a) (BINARY-+ d (* b c))))
-  
+
   (cond ((or (variablep term)
 	     (fquotep term))
 	 (mv nil nil term))   ; For termination.
@@ -873,9 +873,9 @@
 					    (bin-op 'BINARY-+))))
 	    ("Subgoal 3''" :use ((:instance pull-piece-up-correct
 					     (bin-op 'BINARY-*)))))))
- 
+
  ; This is the only theorem we export.
- 
+
  (defthm new-term-correct
    (mv-let (flag new-term)
       (new-term term new-piece pattern pattern-fun bin-op)
@@ -909,7 +909,7 @@
 (in-theory (disable pull-piece-out new-term1 new-term))
 
 (in-theory (disable un-hide-times
-		    collect-times-0 
+		    collect-times-0
 		    collect-times-0a collect-times-0b
 		    collect-times-1a collect-times-1b
 		    collect-times-1c collect-times-1d
@@ -922,7 +922,7 @@
 		    collect-times-4))
 
 (in-theory (disable un-hide-plus
-		    collect-plus-0 
+		    collect-plus-0
 		    collect-plus-1a collect-plus-1b
 		    collect-plus-1c collect-plus-1d
 		    collect-plus-2a collect-plus-2b

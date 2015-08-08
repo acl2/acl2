@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -52,7 +52,7 @@
 
 ;BOZO disable?
 (defun esgnf  (x p q) (bitn x (+ p q)))
-(defun eexpof (x p q) (bits x (1- (+ p q)) p)) 
+(defun eexpof (x p q) (bits x (1- (+ p q)) p))
 (defun esigf  (x p)   (bits x (1- p) 0))
 
 (defund erepp (x p q)
@@ -129,7 +129,7 @@
 		  (integerp p)
 		  (> p 0)
 		  (integerp q)
-		  (> q 0))  
+		  (> q 0))
 	     (equal (expo (edecode x p q))
 		    (- (eexpof x p q) (bias q)))))
 
@@ -227,8 +227,8 @@
 ;;;          REPRESENTATIONS WITH IMPLICIT MSB
 ;;;***************************************************************
 
-;;Bit vectors of length p+q, consisting of 1-bit sign field, q-bit 
-;;exponent field (bias = 2**(q-1)-1), and (p-1)-bit significand field, 
+;;Bit vectors of length p+q, consisting of 1-bit sign field, q-bit
+;;exponent field (bias = 2**(q-1)-1), and (p-1)-bit significand field,
 ;;where p > 1.
 
 ;;Field extractors:
@@ -351,7 +351,7 @@
 		  (integerp p)
 		  (> p 1)
 		  (integerp q)
-		  (> q 0))  
+		  (> q 0))
 	     (equal (expo (ndecode x p q))
 		    (- (iexpof x p q) (bias q)))))
 
@@ -410,7 +410,7 @@
 	     (equal
 	      (expo (idecode x p q))
 	      (cond ((nencodingp x p q)
-		     (- (iexpof x p q) (bias q)))         
+		     (- (iexpof x p q) (bias q)))
 		    ((dencodingp x p q)
 		     (+ 2 (- p) (- (bias q)) (expo (isigf x p))))))))
 

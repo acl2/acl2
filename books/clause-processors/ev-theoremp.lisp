@@ -134,7 +134,7 @@
                           (theoremp (conjoin-clauses clrest))))
                 :hints(("Goal" :in-theory (enable conjoin-clauses disjoin-lst
                                                   car-cons cdr-cons))))
-        
+
               (defthm conjoin-clauses-append
                 (iff (theoremp
                       (conjoin-clauses (append cls1 cls2)))
@@ -143,13 +143,13 @@
                 :hints (("goal" :in-theory (enable append endp car-cdr-elim)
                          :induct (append cls1 cls2))))))))
     event))
-                
+
 
 (local
  (progn
    (defevaluator test-ev test-ev-lst ((if a b c)))
    (def-ev-theoremp test-ev)))
-      
+
 
 #||
 (defevaluator evthmp-ev evthmp-ev-lst

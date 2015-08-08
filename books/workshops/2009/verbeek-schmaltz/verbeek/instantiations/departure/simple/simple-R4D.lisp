@@ -15,12 +15,12 @@
 
 (defthm not-in-1-0-ready-for-dept-inst
   (implies (tmissivesp m nodeset)
-           (not-in (tm-ids (mv-nth 1 (simple-readyfordeparture m nil nil time))) 
+           (not-in (tm-ids (mv-nth 1 (simple-readyfordeparture m nil nil time)))
                    (tm-ids (mv-nth 0 (simple-readyfordeparture m nil nil time))))))
 
 (defthm not-in-1-0-ready-for-dept-inst-inverted
   (implies (tmissivesp m nodeset)
-           (not-in (tm-ids (mv-nth 0 (simple-readyfordeparture m nil nil time))) 
+           (not-in (tm-ids (mv-nth 0 (simple-readyfordeparture m nil nil time)))
                    (tm-ids (mv-nth 1 (simple-readyfordeparture m nil nil time))))))#|ACL2s-ToDo-Line|#
 
 

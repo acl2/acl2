@@ -213,7 +213,7 @@
               :fix (unsigned-byte-fix 1234 x))
 
   :inline t)
-  
+
 
 ;; (defun char-fix (x)
 ;;   (declare (xargs :guard t))

@@ -53,7 +53,7 @@
   (implies (and (real-polynomial-p poly1)
 		(real-polynomial-p poly2))
 	   (real-polynomial-p (polynomial-+ poly1 poly2))))
-  
+
 (defthm eval-polynomial-+
   (implies (and (real-polynomial-p poly1)
 		(real-polynomial-p poly2)

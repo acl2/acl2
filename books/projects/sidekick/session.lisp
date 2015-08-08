@@ -86,7 +86,7 @@
 ; access-command-tuple-form, access-command-tuple-defun-mode, access-command-tuple-number,
 ; etc.
 ;
-; (max-absolute-command-number wrld) 
+; (max-absolute-command-number wrld)
 ;
 ;  (scan-to-command wrld) -> prev-wrld
 ;    go backwards to the most recent binding of command-landmark.
@@ -123,7 +123,7 @@
 ;   Phase 1: collect up LDDs that we're going to print
 ;   Phase 2: print them.
 ;
-; 
+;
 
 
 

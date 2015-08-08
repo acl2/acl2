@@ -61,7 +61,7 @@
            (equal (logand i j k)
                   (logand (logand i j) k))))
 
- 
+
 (defthm logand-with-minus-one
    (implies (case-split (integerp i))
             (equal (logand -1 i) i))
@@ -290,7 +290,7 @@
     ()))
 
 
-(encapsulate 
+(encapsulate
  ()
  (local (defthm logand-2**n-1-aux
   (implies (and (< i (expt 2 n))
@@ -314,7 +314,7 @@
 )
 
 
-(encapsulate 
+(encapsulate
  ()
  (local
   (defthm and-dist-b-1
@@ -336,10 +336,10 @@
     (implies (and (integerp x) (>= x 0)
 		  (integerp y) (>= y 0)
 		  (integerp n) (> n 0)
-		  (= (logand (* (expt 2 (1- n)) x) (fl (/ y 2))) 
+		  (= (logand (* (expt 2 (1- n)) x) (fl (/ y 2)))
 		     (* (expt 2 (1- n)) (logand x (fl (/ (fl (/ y 2)) (expt 2 (1- n))))))))
 	     (= (logand (* (expt 2 n) x) y)
-		(* 2 
+		(* 2
 		   (* (expt 2 (1- n))
 		      (logand x
 			      (fl (/ (fl (/ y 2)) (expt 2 (1- n)))))))))
@@ -351,10 +351,10 @@
     (implies (and (integerp x) (>= x 0)
 		  (integerp y) (>= y 0)
 		  (integerp n) (> n 0)
-		  (= (logand (* (expt 2 (1- n)) x) (fl (/ y 2))) 
+		  (= (logand (* (expt 2 (1- n)) x) (fl (/ y 2)))
 		     (* (expt 2 (1- n)) (logand x (fl (/ (fl (/ y 2)) (expt 2 (1- n))))))))
 	     (= (logand (* (expt 2 n) x) y)
-		(* 2 
+		(* 2
 		   (* (expt 2 (1- n))
 		      (logand x
 			      (fl (/ y (expt 2 n))))))))
@@ -404,7 +404,7 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance and-dist-c-1)
 ;			(:instance mod>=0 (m x) (n (expt 2 n)))
-			(:instance bit-basic-h 
+			(:instance bit-basic-h
 				   (x y)
 				   (y (* (expt 2 n) (fl (/ x (expt 2 n)))))
 				   (z (mod x (expt 2 n))))
@@ -420,7 +420,7 @@
 		  (integerp y) (>= y 0)
 		  (integerp n) (>= n 0))
 	     (= (logand x y)
-		(logior (* (expt 2 n) 
+		(logior (* (expt 2 n)
 			   (logand (fl (/ x (expt 2 n)))
 				   (fl (/ y (expt 2 n)))))
 			(logand (mod x (expt 2 n))
@@ -435,7 +435,7 @@
 		  (integerp y) (>= y 0)
 		  (integerp n) (>= n 0))
 	     (= (logand x y)
-		(+ (* (expt 2 n) 
+		(+ (* (expt 2 n)
 		      (logand (fl (/ x (expt 2 n)))
 			      (fl (/ y (expt 2 n)))))
 		   (logand (mod x (expt 2 n))
@@ -447,7 +447,7 @@
 					      (fl (/ y (expt 2 n)))))
 				   (y (logand (mod x (expt 2 n))
 					      y)))
-;			(:instance mod>=0 (m x) (n (expt 2 n)))			
+;			(:instance mod>=0 (m x) (n (expt 2 n)))
 			(:instance mod-bnd-1 (m x) (n (expt 2 n)))
 			(:instance and-dist-a (x (mod x (expt 2 n)))))))))
 
@@ -459,11 +459,11 @@
 		(logand (mod x (expt 2 n)) y)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance and-dist-c-4)
-;			(:instance mod+-thm 
-	;			   (m (logand (mod x (expt 2 n)) y)) 
+;			(:instance mod+-thm
+	;			   (m (logand (mod x (expt 2 n)) y))
 		;		   (n (expt 2 n))
 			;	   (a (logand (fl (/ x (expt 2 n))) (fl (/ y (expt 2 n))))))
-;			(:instance mod>=0 (m x) (n (expt 2 n)))			
+;			(:instance mod>=0 (m x) (n (expt 2 n)))
 			(:instance mod-bnd-1 (m x) (n (expt 2 n)))
 			(:instance and-dist-a (x (mod x (expt 2 n))))
 			(:instance mod-does-nothing (x (logand (mod x (expt 2 n)) y))
@@ -524,11 +524,11 @@
            :induct (op-dist-induct x y n))))
 
   :hints (("Goal" :use ((:instance and-dist-c-4)
-;			(:instance mod+-thm 
-	;			   (m (logand (mod x (expt 2 n)) y)) 
+;			(:instance mod+-thm
+	;			   (m (logand (mod x (expt 2 n)) y))
 		;		   (n (expt 2 n))
 			;	   (a (logand (fl (/ x (expt 2 n))) (fl (/ y (expt 2 n))))))
-;			(:instance mod>=0 (m x) (n (expt 2 n)))			
+;			(:instance mod>=0 (m x) (n (expt 2 n)))
 			(:instance mod-bnd-1 (m x) (n (expt 2 n)))
 			(:instance and-dist-a (x (mod x (expt 2 n))))
 			(:instance mod-does-nothing (x (logand (mod x (expt 2 n)) y))
@@ -560,7 +560,7 @@
   :hints (("Goal" :in-theory (enable logand))))
 |#
 
-(defthm logand-0 
+(defthm logand-0
   (equal (logand 0 j) 0)
   :hints (("goal" :in-theory (enable logand)))
   )
@@ -599,7 +599,7 @@
 	  (list i j)
 	(op-dist-induct-negative (fl (/ i 2)) (fl (/ j 2)) (1+ n)))
     ()))
-  
+
 (defthm mod-logand-aux
     (implies (and (integerp x) (>= x 0)
 		  (integerp y) (>= y 0)
@@ -608,7 +608,7 @@
 		(logand (mod x (expt 2 n)) y)))
     :otf-flg t
   :rule-classes ()
-  :hints (("Goal" :do-not-induct t 
+  :hints (("Goal" :do-not-induct t
            :do-not '(generalize)
            :induct ( op-dist-induct x y n)
            :expand (LOGAND Y (MOD X (EXPT 2 N)))

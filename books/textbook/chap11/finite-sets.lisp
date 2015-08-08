@@ -88,7 +88,7 @@
 	(list (ind-2 (list (car x)) y z)
 	      (ind-2 (cdr x) y z)))
     x))
-	    
+
 (defthm subset-transitive
   (implies (and (=< X Y)
 		(=< Y Z))

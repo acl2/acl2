@@ -5,7 +5,7 @@
 
 (include-book "../chap10/ac-example")
 
-(encapsulate 
+(encapsulate
  ((ac (x y) t))
  (local (defun ac (x y) (declare (ignore x y))
           nil))

@@ -18,17 +18,17 @@
 
 (defspec GenericPriority
   (((prioritysorting * *)=> * ))
-  
-  
+
+
   (local
-   (defun prioritysorting (trlst order)        
+   (defun prioritysorting (trlst order)
      (declare (ignore order))
      trlst))
-  
-  ;; the output of the function is just a permutation of the input       
+
+  ;; the output of the function is just a permutation of the input
   (defthm isperm-prioritysorting
     (implies (trlstp trlst nodeset)
-             (is-perm (v-ids (prioritysorting trlst order)) 
+             (is-perm (v-ids (prioritysorting trlst order))
                       (v-ids trlst))))
 
   ;;the type of the output is a trlstp
@@ -45,9 +45,9 @@
   ;; remove and put a general relation between is-perm and subsetp
   (defthm subsetp-v-ids-priority-trlst
     (implies (trlstp trlst nodeset)
-             (subsetp (v-ids (prioritysorting trlst order)) 
+             (subsetp (v-ids (prioritysorting trlst order))
                       (v-ids trlst))))
-  ;; the result of the function is a true-listp 
+  ;; the result of the function is a true-listp
   ;;remove next theorem
   (defthm true-listp-priority-sorting
     (implies (trlstp trlst nodeset)
@@ -66,13 +66,12 @@
                       (v-frms trlst))))
 
   ;; the destinations of the output after transformation to missives
-  ;; is a subset of those of the input after the same transformation 
+  ;; is a subset of those of the input after the same transformation
   (defthm subsetp-prioritysort_mdests
-    (implies (trlstp trlst nodeset) 
-             (subsetp (m-dests (tomissives 
+    (implies (trlstp trlst nodeset)
+             (subsetp (m-dests (tomissives
                                 (totmissives (prioritysorting trlst order)) ))
                       (m-dests (tomissives(totmissives trlst))))))
-  
-  
+
+
   );;END OF encapsulation
-        

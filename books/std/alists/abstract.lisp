@@ -256,7 +256,7 @@ about keyval-alistp."
                   (and (not (consp x))
                        (non-keytype-p nil))))
     ;; :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-    
+
     :requirement (and (not keytype-p-of-nil)
                       (not not-keytype-p-of-nil)
                       key-negatedp)
@@ -289,7 +289,7 @@ about keyval-alistp."
                   (and (not (consp x))
                        (non-valtype-p nil))))
     ;; :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-    
+
     :requirement (and (not valtype-p-of-nil)
                       (not not-valtype-p-of-nil)
                       val-negatedp)
@@ -396,6 +396,6 @@ about keyval-alistp."
 
 ;; expensive...
 (in-theory (disable alistp-when-keyval-alist-p-rewrite))
-  
+
 ;; missing:
 ;; keyval-alist-p-of-make-fal

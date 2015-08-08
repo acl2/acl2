@@ -299,7 +299,7 @@
        (- (fast-alist-free overridden-assigns))
        ;; Compose together the final (gate-level) assignments to get full
        ;; update formulas (in terms of PIs and current states), and compose
-       ;; delays with these to get next states.       
+       ;; delays with these to get next states.
        ((mv updates next-states) (svex-compose-assigns/delays overridden-assigns delays))
 
        ;; Compute an initial state of all Xes

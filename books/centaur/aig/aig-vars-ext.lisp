@@ -467,7 +467,7 @@ under-the-hood memoization; kind of nasty."
                   (floor (max-nat-list (alist-vals nalist)) 60)))
      :hints(("Goal" :in-theory (disable aig-vars-sparse/trans-aux)))
      :rule-classes (:rewrite :linear))
-   
+
    (defthm alist-vals-of-pairlis
      (implies (equal (len X) (len y))
               (equal (alist-vals (pairlis$ x y))

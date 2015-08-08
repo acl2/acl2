@@ -19,7 +19,7 @@
   ;; b/ the destination of r is the destination node of m
   ;; c/ r is a subset of NodeSet
   ;; d/ a route r has a len >= 2
-  (and (equal (car r) (OrgM m)) 
+  (and (equal (car r) (OrgM m))
        (equal (car (last r)) (DestM m))
        (not (equal (car R) (car (last R))))))
 
@@ -28,7 +28,7 @@
   (if (endp routes)
       t
     (let ((r (car routes)))
-      (and (ValidRoutep r m) 
+      (and (ValidRoutep r m)
            (subsetp r NodeSet)
            (CheckRoutes (cdr routes) m NodeSet)))))
 
@@ -163,7 +163,7 @@
 (defthm assoc-equal-extract-sublst-M
   ;; if e is a key in id1 then e is still a key
   ;; after filtering according to id1
-  (implies (and (member-equal e id1) 
+  (implies (and (member-equal e id1)
                 (ValidFields-M M))
            (equal (assoc-equal e (extract-sublst M id1))
                   (assoc-equal e M)))
@@ -176,7 +176,7 @@
 
 (defthm extract-sublst-cancel-M
   ;; and now we can prove our second main lemma
-  (implies (and (subsetp id2 id1) 
+  (implies (and (subsetp id2 id1)
                 (ValidFields-M M))
            (equal (extract-sublst (extract-sublst M id1) id2)
                   (extract-sublst M id2))))
@@ -190,7 +190,7 @@
                   TrLst)))
 
 (defthm assoc-equal-tomissives-not-nil
-  ;; if e is in the ids of L then there is a key equal to 
+  ;; if e is in the ids of L then there is a key equal to
   ;; e in (ToMissives L)
   (implies (and (TrLstp L) (member-equal e (V-ids L)))
            (assoc-equal e (ToMissives L))))
@@ -231,7 +231,7 @@
   (implies (and (subsetp x NodeSet) (consp x))
            (member-equal (car (last x)) NodeSet)))
 
-;; Finally, we prove that converting a list of travels 
+;; Finally, we prove that converting a list of travels
 ;; to a list of missives gives something that is recoginized
 ;; by Missivesp
 (defthm checkroutes-caar

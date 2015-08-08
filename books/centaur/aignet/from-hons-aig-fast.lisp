@@ -104,7 +104,7 @@
                             (acl2::aig-and 'a4 'b4)))
          ((mv random-probs state)
           (generate-random-problems 10000 state))
-         (probs (append 
+         (probs (append
                  '((5 8) (31 31) (18 23) (31 22) (1 31) (12 14))
                  random-probs))
          ((mv ins outs)
@@ -112,7 +112,7 @@
 
          ((mv results ?st-alist)
           (aig-fast-biteval-seq-outs/state
-           nil 
+           nil
            (list s0 s1 s2 s3 s4 c4)
            nil
            ins)))

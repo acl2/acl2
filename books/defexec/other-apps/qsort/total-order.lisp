@@ -7,7 +7,7 @@ Here we define a non-strict total order, <<=, that corresponds to the strict
 total order in books/misc/total-order.lisp.
 |#
 
-(defun <<= (x y) 
+(defun <<= (x y)
   (declare (xargs :guard t))
   (lexorder x y))
 
@@ -15,13 +15,13 @@ total order in books/misc/total-order.lisp.
   (<<= x x))
 
 (defthm <<=-anti-symmetric
-  (implies (and (<<= x y) 
-                (<<= y x))  
+  (implies (and (<<= x y)
+                (<<= y x))
            (equal x y))
   :rule-classes :forward-chaining)
 
 (defthm <<=-transitive
-  (implies (and (<<= x y) 
+  (implies (and (<<= x y)
                 (<<= y z))
            (<<= x z)))
 

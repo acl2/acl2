@@ -119,4 +119,4 @@
            (append (svex-vars cond)
                    (svstmtlist-vars body)))
     :hints (("goal" :expand ((svstmt-vars (svstmt-while cond body)))))))
-      
+

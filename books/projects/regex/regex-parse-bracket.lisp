@@ -18,14 +18,14 @@
                                   (charset-memberp last))
                               (charsetp charset))
                   :measure (string-index-measure idx str)))
-                  
+
   (if (string-index-end idx str)
       ;; no closing bracket found
       (mv "Mismatched brackets" idx)
 
     ;; Binding of allprev to a couple cases where we just want
     ;; all previous stuff grouped together
-    (let ((allprev 
+    (let ((allprev
            (if last
                (cons last charset)
              (if charset
@@ -37,7 +37,7 @@
          ;; Reached the end of the bracket expression
          (mv allprev (1+ idx)))
         (#\-
-         ;; Unless last is nil or (cadr str) is ], 
+         ;; Unless last is nil or (cadr str) is ],
          (if (or (not last)
                  (string-index-end (1+ idx) str)
                  (equal (char str (1+ idx)) #\]))
@@ -59,9 +59,9 @@
                 (or (not last)
                     (charset-memberp last))
                 (charsetp charset)
-                (not (stringp 
+                (not (stringp
                       (mv-nth 0 (parse-bracket-inner str idx last charset)))))
-           (charsetp 
+           (charsetp
             (mv-nth 0 (parse-bracket-inner str idx last charset)))))
 ;;   :rule-classes
 ;;   (:rewrite
@@ -112,7 +112,7 @@
       (mv "Mismatched brackets" idx)
     ;;Cases for first character
     (case (char str idx)
-      (#\^ 
+      (#\^
        ;; Invert the contents of this bracket exprn
        ;; Look for ] as second character and add it as literal character
        ;; if it's there.

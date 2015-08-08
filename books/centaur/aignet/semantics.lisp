@@ -130,7 +130,7 @@
              (lookup-id id rest)))
     :hints(("Goal" :in-theory (enable lookup-id))))
 
-  
+
   (defun equiv-search-type-alist (type-alist goaltype equiv lhs rhs unify-subst wrld)
     (declare (xargs :mode :program))
     (b*  (((when (endp type-alist))
@@ -194,7 +194,7 @@
         nil
       (or (match-equiv-or-refinement equiv var (car terms) mfc state)
           (match-equiv-or-refinement-lst equiv var (cdr terms) mfc state))))
-    
+
 
   (defthm lookup-id-of-node-count
     (equal (lookup-id (node-count x) x)
@@ -244,7 +244,7 @@
   (defthm aignet-litp-of-mk-lit-0
     (aignet-litp (mk-lit 0 neg) aignet)
     :hints(("Goal" :in-theory (enable aignet-litp)))))
-                    
+
 
 (defsection ionum-uniqueness
 
@@ -295,7 +295,7 @@
                            (node-count (lookup-reg->nxst n2 aignet)))
                     (nat-equiv n1 n2)))
     :hints(("Goal" :in-theory (enable lookup-reg->nxst))))
-  
+
 
   (defthm lookup-stype-of-stype-count-match
     (implies (and (bind-free (match-equiv-or-refinement
@@ -535,7 +535,7 @@ assignments.</p>"
 
   ; (local (in-theory (enable gate-orderedp co-orderedp)))
 
-  
+
   (local (in-theory (enable aignet-lit-fix-id-val-linear)))
 
   ;; ;;; BOZO: Move this into the absstobj definition?  i.e., have
@@ -1134,7 +1134,7 @@ register values and the current frame's input values.</p>"
                                lit-eval))))
 
 
-  
+
   (defthm lookup-reg->nxst-of-non-nxst-extension
     (implies (and (aignet-extension-binding)
                   (equal (stype-count :nxst new)
@@ -1516,7 +1516,7 @@ same outputs when run starting at that initial state.</p>"
 
 
   (local (set-default-hints nil))
-  
+
   (defund aignet-print-gates (n aignet)
     (declare (Xargs :stobjs aignet
                     :guard (and (natp n)

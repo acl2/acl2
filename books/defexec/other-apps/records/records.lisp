@@ -17,7 +17,7 @@ value v in record r.
 The following main lemmas are "exported" about record (mget)et and (s)et:
 
 (defthm mget-same-mset
-  (equal (mget a (mset a v r)) 
+  (equal (mget a (mset a v r))
          v))
 
 (defthm mget-diff-mset
@@ -26,7 +26,7 @@ The following main lemmas are "exported" about record (mget)et and (s)et:
                   (mget a r))))
 
 (defthm mset-same-mget
-  (equal (mset a (mget a r) r) 
+  (equal (mset a (mget a r) r)
          r))
 
 (defthm mset-same-mset
@@ -97,7 +97,7 @@ well-formed record hypothesis.
            (or (null (cdr x))
                (<< (caar x) (caadr x))))))
 
-(defun ifmp (x) ;; ill-formed well-formed-map 
+(defun ifmp (x) ;; ill-formed well-formed-map
   (declare (xargs :guard t))
   (or (not (well-formed-map x))
       (and (consp x)
@@ -170,7 +170,7 @@ well-formed record hypothesis.
          (if v (cons (cons a v) r) r))
         ((equal a (caar r))
          (if v (cons (cons a v) (cdr r)) (cdr r)))
-        (t 
+        (t
          (cons (car r) (mset-wf a v (cdr r))))))
 
 ;; we need the following theorems in order to get the guard for s to verify.
@@ -202,7 +202,7 @@ well-formed record hypothesis.
          (if v (cons (cons a v) (cdr r)) (cdr r)))
         ((<< a (caar r))
          (if v (cons (cons a v) r) r))
-        (t 
+        (t
          (cons (car r) (mset-fast a v (cdr r))))))
 
 (local
@@ -252,7 +252,7 @@ well-formed record hypothesis.
 (local
 (defthm mset-wf-same-mget-wf
   (implies (well-formed-map r)
-           (equal (mset-wf a (mget-wf a r) r) 
+           (equal (mset-wf a (mget-wf a r) r)
                   r))))
 
 (local
@@ -332,7 +332,7 @@ well-formed record hypothesis.
 ;; s(et) and g(et) they wish to export from the book.
 
 (defthm mget-same-mset
-  (equal (mget a (mset a v r)) 
+  (equal (mget a (mset a v r))
          v))
 
 (defthm mget-diff-mset
@@ -352,7 +352,7 @@ well-formed record hypothesis.
 (in-theory (disable mget-of-mset-redux))
 
 (defthm mset-same-mget
-  (equal (mset a (mget a r) r) 
+  (equal (mset a (mget a r) r)
          r))
 
 (defthm mset-same-mset
@@ -373,7 +373,7 @@ well-formed record hypothesis.
 
 (defthm mset-non-nil-cannot-be-nil
   (implies v (mset a v r))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable map->acl2-of-record-non-nil)
            :use (:instance map->acl2-of-record-non-nil
                            (r (mset-wf a v (acl2->map r)))))))
@@ -393,6 +393,6 @@ well-formed record hypothesis.
 
   '(good-map-implies-equal-map->acl2-to-x
     good-map-implies-equal-acl2->map-to-x
-    
+
     good-map wf-keyp good-map-implies-well-formed-map mset-wf-is-bounded
     mset-wf-preserves-good-map mset mset-wf))

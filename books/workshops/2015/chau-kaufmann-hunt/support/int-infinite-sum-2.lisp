@@ -368,7 +368,7 @@
 
 (defthm-std realp-int-fi-prime
   (realp (int-fi-prime a b i))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance realp-riemann-fi-prime
                             (p (make-small-partition a b)))
                  (:instance realp-riemann-fi-prime
@@ -713,9 +713,9 @@
 
 (local
  (defthm find-max-diff-sum-fi-primes-x-n-limited
-   (implies (and (realp a) 
+   (implies (and (realp a)
                  (i-limited a)
-                 (realp b) 
+                 (realp b)
                  (i-limited b)
                  (< a b))
             (i-limited (find-max-diff-sum-fi-primes-x-n
@@ -745,7 +745,7 @@
        (standard-part
         (find-max-diff-sum-fi-primes-x-n a
                                          a
-                                         0 
+                                         0
                                          (i-large-integer)
                                          (/ (- b a)
                                             (i-large-integer))
@@ -772,8 +772,8 @@
 
 (local
  (defthm find-max-diff-sum-fi-primes-is-maximum
-   (implies (and (inside-interval-p a (fi-domain)) 
-                 (inside-interval-p b (fi-domain)) 
+   (implies (and (inside-interval-p a (fi-domain))
+                 (inside-interval-p b (fi-domain))
                  (realp x)
                  (<= a x)
                  (<= x b)
@@ -815,9 +815,9 @@
 
 (local
  (defthm find-min-diff-sum-fi-primes-x-n-limited
-   (implies (and (realp a) 
+   (implies (and (realp a)
                  (i-limited a)
-                 (realp b) 
+                 (realp b)
                  (i-limited b)
                  (< a b))
             (i-limited (find-min-diff-sum-fi-primes-x-n
@@ -847,7 +847,7 @@
        (standard-part
         (find-min-diff-sum-fi-primes-x-n a
                                          a
-                                         0 
+                                         0
                                          (i-large-integer)
                                          (/ (- b a)
                                             (i-large-integer))
@@ -874,8 +874,8 @@
 
 (local
  (defthm find-min-diff-sum-fi-primes-is-minimum
-   (implies (and (inside-interval-p a (fi-domain)) 
-                 (inside-interval-p b (fi-domain)) 
+   (implies (and (inside-interval-p a (fi-domain))
+                 (inside-interval-p b (fi-domain))
                  (realp x)
                  (<= a x)
                  (<= x b)
@@ -1147,7 +1147,7 @@
     (implies (partitionp p)
              (realp (riemann-diff-sum-fi-primes p i)))
     :rule-classes :type-prescription)))
- 
+
 (local
  (defthm limited-riemann-diff-sum-fi-primes-small-partition
    (implies (and (standardp i)

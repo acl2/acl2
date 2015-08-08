@@ -92,7 +92,7 @@
       (if (<= x y)
 	  (s x (- y x))
 	(- (s (- x y) y) (r (- x y) y))))))
-	
+
 )
 
 (defun c (x l)
@@ -156,7 +156,7 @@
 		  (rationalp l)
 		  (= 1 (+ (* a x) (* b y)))
 		  (= 1 (+ (* c x) (* d l))))
-	     (= 1 
+	     (= 1
 		(+ (* a x)
 		   (* c x)
 		   (* b d y l)
@@ -331,11 +331,11 @@
 	     (= (rem (one-mod x l) x) 1))
   :rule-classes ()
   :hints (("Goal" :use (one-mod-nat
-			(:instance one-mod-alt (m x))			
+			(:instance one-mod-alt (m x))
 			(:instance rem-one-mod-m-1 (m x))
 			(:instance c-int)
 			(:instance rem< (m 1) (n x))
-			(:instance rem+ 
+			(:instance rem+
 				   (m 1)
 				   (n x)
 				   (a (* (c x l)
@@ -760,7 +760,7 @@
 		  (= (len a) (len m))
 		  (rel-prime-moduli l)
 		  (sublistp m l))
-	     (congruent-all (crt1 a m l) a m)) 
+	     (congruent-all (crt1 a m l) a m))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable congruent-all rel-prime-moduli crt1))
 	  ("Subgoal *1/8" :use ((:instance rem0+1
@@ -779,7 +779,7 @@
 					   (m (cdr m))
 					   (x (car m)))))
 	  ("Subgoal *1/7" :use ((:instance natp-crt1 (a (cdr a)) (m (cdr m)))
-				(:instance cong0-2 (a (car a)))					   
+				(:instance cong0-2 (a (car a)))
 				(:instance one-mod-nat
 					   (x (car m))
 					   (l (remove (car m) l)))
@@ -802,7 +802,7 @@
 		  (= (len a) (len m))
 		  (rel-prime-moduli l)
 		  (sublistp m l))
-	     (congruent-all (crt1 a m l) a m)) 
+	     (congruent-all (crt1 a m l) a m))
   :rule-classes ()
   :hints (("Goal" :use (crt1-lemma))))
 

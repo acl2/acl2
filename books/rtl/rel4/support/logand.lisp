@@ -12,7 +12,7 @@ Todo:
  should logand-with-0 be both sides? what about logand-with-minus-one
  how order rules for efficiency? perhaps make a separate documentation book?
  any other log lemmas?
- are the 4 enough for assoc comm functions? 
+ are the 4 enough for assoc comm functions?
 
 |#
 (local ; ACL2 primitive
@@ -162,7 +162,7 @@ Todo:
 
 
 
-; If logand is less than -1, then both i and j are <= -1, and at least one of them is strictly < -1. 
+; If logand is less than -1, then both i and j are <= -1, and at least one of them is strictly < -1.
 (defthm logand-less-than-minus-one
   (implies (and (case-split (integerp i))
                 (case-split (integerp j))
@@ -337,7 +337,7 @@ Todo:
 
 
 ;BOZO also have logand-with-zero
-(defthm logand-0 
+(defthm logand-0
   (equal (logand 0 j) 0))
 
 

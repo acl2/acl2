@@ -4,7 +4,7 @@
 ;; File: GeNoC-scheduling.lisp
 ;; Rev. Nov. 22nd 2005
 ;; JS: NodeSet is not necessary in practice and fundamentally
-;; so I remove it from the scheduling definition 
+;; so I remove it from the scheduling definition
 (in-package "ACL2")
 (include-book "GeNoC-nodeset")
 (include-book "GeNoC-misc") ;; imports also GeNoC-types
@@ -12,8 +12,8 @@
 ;; Inputs: TrLst = ( ... (Id frm route) ...)
 ;; outputs: Scheduled and Delayed (which are both TrLst)
 (encapsulate
- ;; Function Scheduling represents the scheduling policy of the 
- ;; network. 
+ ;; Function Scheduling represents the scheduling policy of the
+ ;; network.
  ;; arguments: TrLst att
  ;; outputs: Scheduled Delayed newatt
  (((scheduling * *) => (mv * * *)))
@@ -27,14 +27,14 @@
                    (node (car top))
                    (atti (cadr top)))
               (if (zp atti)
-                  (cons top 
+                  (cons top
                         (consume-attempts (cdr att)))
-                (cons (list node (1- atti)) 
+                (cons (list node (1- atti))
                       (consume-attempts (cdr att))))))))
 
  (local (defun scheduling (TrLst att)
           ;; local witness
-          (mv 
+          (mv
            ;; scheduled frames
            (if (zp (SumOfAttempts att))
                nil  ;; no attempt left -> nothing is scheduled
@@ -46,10 +46,10 @@
            (if (zp (SumOfAttempts att))
                att ;; no attempt left -> no modification on att
              (consume-attempts att))))) ;; newatt has less attempts than att
- 
+
  ;; Proof obligations (also named constraints)
  ;; -----------------------------------------
- 
+
  ;; 1/Type of Scheduled and Delayed travels
  ;; ---------------------------------------
  ;; The list of scheduled travels is a valid travel list
@@ -66,7 +66,7 @@
  ;; ------------------------------------------------------
  (defthm consume-at-least-one-attempt
    ;; the scheduling policy should consume at least one attempt
-   ;; this is a sufficient condition to prove that 
+   ;; this is a sufficient condition to prove that
    ;; the full network function terminates
    (mv-let (Scheduled Delayed newatt)
 	   (scheduling TrLst att)
@@ -78,7 +78,7 @@
  ;; ------------------------------------------------------------------
  ;; For any scheduled travel sched-tr, there exists a unique travel
  ;; tr in the initial TrLst, such that IdV(sched-tr) = IdV(tr)
- ;; and FrmV(sched-tr) = FrmV(tr) and RoutesV(sched-tr) is a 
+ ;; and FrmV(sched-tr) = FrmV(tr) and RoutesV(sched-tr) is a
  ;; sublist of RoutesV(tr).
  ;; In ACL2, the uniqueness of the ids is given by the predicate
  ;; TrLstp.
@@ -87,7 +87,7 @@
  ;; First, let us define this correctness
  (defun s/d-travel-correctness (sd-TrLst TrLst/sd-ids)
    ;; sd-TrLst is the list of scheduled or delayed travels
-   ;; TrLst/sd-ids is the filtering of the initial TrLst 
+   ;; TrLst/sd-ids is the filtering of the initial TrLst
    ;; according to the ids of the scheduled or delayed travels
    (if (endp sd-TrLst)
        (if (endp TrLst/sd-ids)
@@ -98,7 +98,7 @@
        (and (equal (FrmV sd-tr) (FrmV tr))
             (equal (IdV sd-tr) (IdV tr))
             (subsetp (RoutesV sd-tr) (RoutesV tr))
-            (s/d-travel-correctness (cdr sd-TrLst) 
+            (s/d-travel-correctness (cdr sd-TrLst)
                                     (cdr TrLst/sd-ids))))))
 
  (defthm scheduled-travels-correctness
@@ -125,14 +125,14 @@
  ;; -------------------------------------
  ;; the correctness of the delayed travels differs from
  ;; the correctness of the scheduled travels because,
- ;; for the scheduled travels we will generally keep only 
+ ;; for the scheduled travels we will generally keep only
  ;; one route, but for the delayed travels we will not modify
- ;; the travels and keep all the routes. In fact, by 
- ;; converting a travel back to a missive we will remove the 
+ ;; the travels and keep all the routes. In fact, by
+ ;; converting a travel back to a missive we will remove the
  ;; routes.
  ;; ---------------------------------------------------------
 
- ;; the list Delayed is equal to filtering the initial 
+ ;; the list Delayed is equal to filtering the initial
  ;; TrLst according to the Ids of Delayed
 
  (defthm delayed-travel-correctness
@@ -153,7 +153,7 @@
    ;; the new att is equal to the initial one
    (implies (and (zp (SumOfAttempts att))
                  (TrLstp trlst))
-            (equal 
+            (equal
              (mv-nth 2 (scheduling TrLst att));; new att
              att)))
 
@@ -166,7 +166,7 @@
                      (scheduling TrLst att))
              TrLst)))
 
- ;; 7/ The intersection of the ids of the scheduled travels and those 
+ ;; 7/ The intersection of the ids of the scheduled travels and those
  ;; of the delayed travels is empty
  ;; -----------------------------------------------------------------
 
@@ -183,7 +183,7 @@
    ;; for the mv-nth
    (consp (scheduling TrLst att))
    :rule-classes :type-prescription)
- 
+
  (defthm true-listp-car-scheduling
    (implies (true-listp TrLst)
             (true-listp (mv-nth 0 (scheduling TrLst att))))
@@ -215,7 +215,7 @@
 (defthm correctroutesp-s/d-travel-correctness
   (implies (and (CorrectRoutesp TrLst/ids (ToMissives TrLst/ids) NodeSet)
                 (s/d-travel-correctness TrLst1 TrLst/ids))
-           (CorrectRoutesp TrLst1 
+           (CorrectRoutesp TrLst1
                            (ToMissives TrLst/ids) NodeSet)))
 
 
@@ -225,9 +225,9 @@
           (declare (ignore Delayed newatt))
           (implies (and (CorrectRoutesp TrLst (ToMissives TrLst) NodeSet)
                         (TrLstp TrLst))
-                   (CorrectRoutesp Scheduled 
+                   (CorrectRoutesp Scheduled
                                    (ToMissives
-                                    (extract-sublst 
+                                    (extract-sublst
                                        TrLst
                                        (V-ids scheduled)))
                                    NodeSet)))
@@ -235,7 +235,7 @@
   :hints (("GOAL"
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t
-           :in-theory 
+           :in-theory
            (disable mv-nth ;; to have my rules used
                     tomissives-extract-sublst TrLstp))))
 
@@ -245,18 +245,18 @@
           (declare (ignore scheduled newatt))
           (implies (and (CorrectRoutesp TrLst (ToMissives TrLst) NodeSet)
                         (TrLstp TrLst))
-                   (CorrectRoutesp Delayed  
+                   (CorrectRoutesp Delayed
                                    (ToMissives Delayed)
                                    NodeSet)))
   :otf-flg t
   :hints (("GOAL"
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t
-           :use 
+           :use
            ((:instance delayed-travel-correctness))
            :in-theory (disable tomissives-extract-sublst TrLstp))))
 
-;; the three defthms are similar to the three used to prove 
+;; the three defthms are similar to the three used to prove
 ;; missivesp-extract-sublst in GeNoC.lisp ... (proof by analogy)
 
 (defthm valid-trlstp-assoc-equal
@@ -267,12 +267,12 @@
 (defthm TrLstp-cons
   ;; lemma used in the next defthm
   ;; if we cons a valid travel to a filtered valid list
-  ;; of travel, we obtain a valid list of travel if the 
+  ;; of travel, we obtain a valid list of travel if the
   ;; consed travel has an id less than the first of the filter
   ;; and this id is not in the filter
   (implies (and (trlstp (extract-sublst L ids))
                 (trlstp (list (assoc-equal e L)))
-                (not (member-equal e ids)) 
+                (not (member-equal e ids))
                 (subsetp ids (V-ids L)))
            (trlstp (cons (assoc-equal e L)
                          (extract-sublst L ids)))))
@@ -296,8 +296,8 @@
     (implies (and (CorrectRoutesp TrLst (ToMissives TrLst) NodeSet)
                   (ValidParamsp Params)
                   (TrLstp TrLst))
-             (Missivesp (ToMissives 
-                         (mv-nth 1 
+             (Missivesp (ToMissives
+                         (mv-nth 1
                                  (scheduling TrLst att)))
                         NodeSet)))
   :otf-flg t
@@ -308,4 +308,3 @@
            :in-theory (disable Missivesp trlstp-delayed
                                TOMISSIVES-EXTRACT-SUBLST
                                TrLstp mv-nth))))
-                            

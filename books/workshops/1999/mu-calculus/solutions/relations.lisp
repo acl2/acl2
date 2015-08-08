@@ -24,7 +24,7 @@
           (relationp (put-assoc-equal v s val))))
 
 (defun value-of (x alist)
-  (declare (xargs :guard (alistp alist))) 
+  (declare (xargs :guard (alistp alist)))
   (cdr (assoc-equal x alist)))
 
 (defung image-aux (X r tmp)
@@ -59,7 +59,7 @@
   (range-aux r nil))
 
 (defung inverse-step-aux (st r tmp)
-"Creates a list of all the states from which st is reachable 
+"Creates a list of all the states from which st is reachable
 in one step."
   (declare (xargs :guard (and (relationp r) (true-listp tmp))))
   ((implies (true-listp tmp) (true-listp (inverse-step-aux st r tmp))))
@@ -71,7 +71,7 @@ in one step."
                         tmp))))
 
 (defung inverse-step (st r)
-"Creates a list of all the states from which st is reachable 
+"Creates a list of all the states from which st is reachable
 in one step."
   (declare (xargs :guard (relationp r)))
   ((true-listp (inverse-step st r)))
@@ -83,7 +83,7 @@ in one step."
   ((implies (relationp tmp) (relationp (inverse-aux r ran tmp))))
   (if (endp ran)
       tmp
-    (inverse-aux r (cdr ran) 
+    (inverse-aux r (cdr ran)
         (acons (car ran) (inverse-step (car ran) r) tmp))))
 
 ; Exercise 15

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -48,8 +48,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (trunc x n)
-		    (* (sgn x) 
-		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n))))))
 
 ;replaces trunc-pos
@@ -98,7 +98,7 @@
 
 (defthm trunc-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (trunc x n))
 		  (exactp x n)))
@@ -270,7 +270,7 @@
 		  (integerp n)
 		  (>= n k)
 		  ;;this isn't really needed, but it won't hurt me.
-		  (not (exactp x n))          
+		  (not (exactp x n))
 		  (= e (- (1+ (expo x)) n))
 		  (= z (trunc (- x (trunc x n)) n)))
 	     (= (- (trunc x (+ n k)) (trunc x n))
@@ -336,8 +336,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (away x n)
-		    (* (sgn x) 
-		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n))))))
 
 ;replaces away-pos
@@ -371,7 +371,7 @@
 (defthmd abs-away
     (implies (and (rationalp x)
 		  (integerp n))
-	     (equal (abs (away x n)) 
+	     (equal (abs (away x n))
 		    (* (cg (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n))))))
 
 
@@ -382,7 +382,7 @@
 
 (defthm away-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (away x n))
 		  (exactp x n)))
@@ -588,7 +588,7 @@
 		  (not (exactp x n)))
 	     (= (away x n)
 		(+ (trunc x n)
-		   (expt 2 (+ (expo x) 1 (- n))))))		
+		   (expt 2 (+ (expo x) 1 (- n))))))
   :rule-classes ())
 
 ;bad name?
@@ -684,7 +684,7 @@
   :rule-classes (:TYPE-PRESCRIPTION :LINEAR))
 
 (defthm near-0
-  (equal (near 0 n) 
+  (equal (near 0 n)
          0))
 
 (defthmd sgn-near-2
@@ -700,7 +700,7 @@
 
 (defthm near-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (near x n))
 		  (exactp x n)))
@@ -798,7 +798,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -895,7 +895,7 @@
 		  (integerp n)
 		  (> n 0))
 	     (= (near+ x n)
-		(trunc (+ x (expt 2 (- (expo x) n))) n)))		
+		(trunc (+ x (expt 2 (- (expo x) n))) n)))
   :rule-classes ())
 
 (defthm sgn-near+-2
@@ -1000,7 +1000,7 @@
 
 
 (defthm near+-est
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (near+ x n)))
@@ -1026,7 +1026,7 @@
                 ;(integerp n)
                 (natp n))
            (<= (near+ x n) (near+ y n))))
- 
+
 
 (defthm near+-power
     (implies (and (rationalp x) (> x 0)
@@ -1039,7 +1039,7 @@
 
 (defthm near+-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (near+ x n))
 		  (exactp x n)))
@@ -1106,7 +1106,7 @@
 
 (defthmd sticky-pos
     (implies (and (< 0 x)
-                  (rationalp x) 
+                  (rationalp x)
 		  (integerp n)
                   (> n 0))
 	     (> (sticky x n) 0))
@@ -1123,7 +1123,7 @@
 		  (integerp n) (> n 0)
 		  (integerp k))
 	     (= (sticky (* (expt 2 k) x) n)
-		(* (expt 2 k) (sticky x n))))		
+		(* (expt 2 k) (sticky x n))))
   :rule-classes ())
 
 (defthm sticky-exactp
@@ -1135,7 +1135,7 @@
 (defthm sticky-exactp-m
     (implies (and (rationalp x)
 		  (integerp m)
-		  (integerp n) 
+		  (integerp n)
 		  (> n m)
 		  (> m 0))
 	     (iff (exactp (sticky x n) m)
@@ -1184,7 +1184,7 @@
 
 
 (defthm near+-sticky
-    (implies (and (rationalp x) 
+    (implies (and (rationalp x)
 		  (integerp m) (> m 0)
 		  (integerp n) (> n (1+ m)))
 	     (= (near+ (sticky x n) m)
@@ -1202,7 +1202,7 @@
 		(sticky x m)))
   :rule-classes ())
 
- 
+
 (defthm sticky-plus-original ;; Fri Oct 13 14:40:05 2006
     (implies (and (rationalp x)
 		  (> x 0)
@@ -1259,7 +1259,7 @@
   :rule-classes :linear)
 
 ;;;**********************************************************************
-;;;                              ODDR 
+;;;                              ODDR
 ;;;**********************************************************************
 
 ;was called "odd" but that name conflicted with another function we wanted (a recursive version of oddp)
@@ -1300,7 +1300,7 @@
 (defthm oddr-other
     (implies (and (rationalp x)
 		  (> x 0)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1))
 	     (= (oddr x n)
 		(+ (trunc x (1- n))
@@ -1395,7 +1395,7 @@
 
 
 ;;;**********************************************************************
-;;;        IEEE Rounding (most theorems also apply to AWAY and NEAR+) 
+;;;        IEEE Rounding (most theorems also apply to AWAY and NEAR+)
 ;;;**********************************************************************
 
 (defun inf (x n)
@@ -1498,7 +1498,7 @@
 (defthm rnd-exactp-b
   (implies (and (rationalp x)
                 (common-rounding-mode-p mode)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (equal (equal x (rnd x mode n))
 		  (exactp x n))))
@@ -1640,9 +1640,9 @@
 (defthmd rnd-sticky
   (implies (and (common-rounding-mode-p mode)
                 (rationalp x)
-                (integerp m) 
+                (integerp m)
 		(> m 0)
-                (integerp n) 
+                (integerp n)
 		(>= n (+ m 2)))
            (equal (rnd (sticky x n) mode m)
                   (rnd x mode m))))
@@ -1671,7 +1671,7 @@
 
 
 ;;;**********************************************************************
-;;;                         Denormal Rounding 
+;;;                         Denormal Rounding
 ;;;**********************************************************************
 
 (defund drnd-original (x mode n k)
@@ -1796,10 +1796,10 @@
                 (integerp k)
                 (> k 0))
            (equal (drnd-original x mode n k)
-                  (rnd x 
+                  (rnd x
                        mode
-                       (+ n 
-                          (- (expo (spn k))) 
+                       (+ n
+                          (- (expo (spn k)))
                           (expo x))))))
 
 (defthm drnd-original-of-drepp-is-NOP

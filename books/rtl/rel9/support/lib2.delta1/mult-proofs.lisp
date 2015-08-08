@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -29,25 +29,25 @@
 (local (include-book "mult-new"))
 
 
-(local 
+(local
  (defthm bits-is-bits_alt
    (equal (bits x i j)
           (bits_alt x i j))
    :hints (("Goal" :in-theory (e/d (bits_alt bits) ())))))
-              
-(local               
+
+(local
  (defthm bitn-is-bitn_alt
    (equal (bitn x n)
           (bitn_alt x n))
    :hints (("Goal" :in-theory (e/d (bitn_alt bitn) ())))))
-          
-(local               
+
+(local
  (defthm binary-cat_alt-is-binary-cat
    (equal (binary-cat x m y n)
           (binary-cat_alt x m y n))
    :hints (("Goal" :in-theory (e/d (binary-cat_alt binary-cat) ())))))
-          
-(local               
+
+(local
  (defthm mulcat_alt-is-mulcat
    (equal (mulcat l n x)
           (mulcat_alt l n x))
@@ -55,18 +55,18 @@
 
 
 
-	       
+
 ;;;**********************************************************************
 ;;;			Radix-4 Booth Encoding
 ;;;**********************************************************************
 
 
 (defun theta (i y)
-  (+ (bitn y (1- (* 2 i))) 
+  (+ (bitn y (1- (* 2 i)))
      (bitn y (* 2 i))
      (* -2 (bitn y (1+ (* 2 i))))))
 
-(local 
+(local
  (defthm theta-is-theta_alt
    (equal (theta i y)
           (theta_alt i y))))
@@ -80,7 +80,7 @@
 	(sum-theta (1- m) y))))
 
 
-(local 
+(local
  (defthm sum-theta-is-sum-theta_alt
    (equal (sum-theta m y)
           (sum-theta_alt m y))))
@@ -105,7 +105,7 @@
 
 
 
-(local 
+(local
  (defthm bmux4-is-bmux4_alt
    (implies (and (natp n)
                  (integerp x)
@@ -120,7 +120,7 @@
 
 (encapsulate ((zeta (i) t))
  (local (defun zeta (i) (declare (ignore i)) 0))
- (defthm zeta-bnd 
+ (defthm zeta-bnd
      (and (integerp (zeta i))
 	  (<= (zeta i) 2)
 	  (>= (zeta i) -2))))
@@ -139,7 +139,7 @@
 	 0 (* 2 (1- i)))))
 
 
-(local 
+(local
  (defthm pp4-is-pp4_alt
    (implies (and (natp n)
                  (natp i)
@@ -149,7 +149,7 @@
             (equal (pp4 i x n)
                    (pp4_alt i x n)))
    :hints (("Goal" :in-theory (e/d (pp4 pp4_alt) ())))))
-   
+
 
 
 
@@ -157,7 +157,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 2 (1- m))) (zeta (1- m)))
-       (sum-zeta (1- m)))))   
+       (sum-zeta (1- m)))))
 
 (defun sum-pp4 (x m n)
   (if (zp m)
@@ -165,7 +165,7 @@
     (+ (pp4 (1- m) x n)
        (sum-pp4 x (1- m) n))))
 
-(local 
+(local
  (defthm sum-pp4-is-sum-pp4_alt
    (implies (and (natp n)
                  (bvecp x (+ -1 n))
@@ -205,7 +205,7 @@
 	  (neg (theta (1- i) y)) 1
 	  0 (* 2 (1- i)))))
 
-(local 
+(local
   (defthm pp4-theta-is-pp4-theta_alt
     (implies (and (not (zp n))
                   (bvecp x (+ -1 n))
@@ -214,7 +214,7 @@
                   (integerp x))
              (equal (pp4-theta i x y n)
                     (pp4_alt-theta_alt i x y n)))
-    :hints (("Goal" :in-theory (e/d (pp4_alt-theta_alt 
+    :hints (("Goal" :in-theory (e/d (pp4_alt-theta_alt
                                      pp4-theta)
                                     ())))))
 
@@ -227,7 +227,7 @@
        (sum-pp4-theta x y (1- m) n))))
 
 
-(local 
+(local
  (defthm sum-pp4-theta-is-sum-pp4_alt-theta_alt
     (implies (and (not (zp n))
                   (bvecp x (+ -1 n))
@@ -236,7 +236,7 @@
                   (integerp x))
              (equal (sum-pp4-theta x y m n)
                     (sum-pp4_alt-theta_alt x y m n)))))
-          
+
 
 
 (defthm booth4-corollary
@@ -257,19 +257,19 @@
 
 
 (defun m-mu-chi (i mode)
-  (cond ((equal mode 'mu)  
+  (cond ((equal mode 'mu)
          (if (zp i)  1
            (cons (cons 1  i) 1)))
         ((equal mode 'chi)
          (if (zp i)  0
            (cons (cons 1  i) 0)))))
-             
+
 
 (mutual-recursion
  (defun mu (i y)
    (declare (xargs :measure (m-mu-chi i 'mu)))
      (+ (bits y (1+ (* 2 i)) (* 2 i)) (chi i y)))
- 
+
  (defun chi (i y)
    (declare (xargs :measure (m-mu-chi i 'chi)))
    (if (zp i)
@@ -279,9 +279,9 @@
        0))))
 
 
-(local 
- (encapsulate () 
-              (local (encapsulate () 
+(local
+ (encapsulate ()
+              (local (encapsulate ()
 
                                   (defun mu-chi (i y mode)
                                     (declare (xargs :measure (if (and (not (equal mode 'mu))
@@ -298,7 +298,7 @@
                                               0))
                                         nil)))
 
-        
+
                                   (defthm mu-chi-is
                                     (equal (mu-chi i y mode)
                                            (if (equal mode 'mu)
@@ -311,7 +311,7 @@
 
 
 
-        
+
                                   (defthm mu-chi-is-2
                                     (equal (mu-chi i y mode)
                                            (if (equal mode 'mu)
@@ -339,19 +339,19 @@
                                                  (mode 'chi))
                                       (:instance mu-chi-is-2
                                                  (mode 'chi))))))
-                        
+
 
               ))
 
 
-  
+
 
 (defun phi (i y)
   (if (= (bits (mu i y) 1 0) 3)
       -1
     (bits (mu i y) 1 0)))
 
-(local 
+(local
  (defthm phi-is-phi_alt
    (equal (phi i y)
           (phi_alt i y))))
@@ -398,7 +398,7 @@
 	(sum-phi (1- m) y))))
 
 
-(local 
+(local
  (defthm sum-phi-is-sum-phi_alt
    (equal (sum-phi m y)
           (sum-phi_alt m y))
@@ -429,7 +429,7 @@
 	  0 (* 2 (1- i)))))
 
 
-(local 
+(local
  (defthm pp4-phi-is-pp4_alt-phi_alt
    (implies (and (integerp x)
                  (natp n)
@@ -442,7 +442,7 @@
                                        pp4
                                        bmux4_alt
                                        bmux4))))))
-                                       
+
 
 
 
@@ -452,14 +452,14 @@
     (+ (pp4-phi (1- m) x y n)
        (sum-pp4-phi x y (1- m) n))))
 
-(local 
+(local
  (defthm sum-pp4-phi-is-sum-pp4_alt-phi_alt
    (implies (and (integerp x)
                  (natp n)
                  (> n 0))
             (equal (sum-pp4-phi x y m n)
                    (sum-pp4_alt-phi_alt x y m n)))
-   :hints (("Goal" :in-theory (e/d () 
+   :hints (("Goal" :in-theory (e/d ()
                                    (pp4_alt-phi_alt
                                     pp4-phi))))))
 
@@ -478,7 +478,7 @@
 		   (* x y))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance static-booth-alt)))))
-           
+
 
 ;;;**********************************************************************
 ;;;                Encoding Redundant Representations
@@ -491,33 +491,33 @@
      (logior (bitn  a (+ -1  (* 2 i)))
  	     (bitn  b (+ -1  (* 2 i))))))
 
-(local 
+(local
  (defthm gamma-is-gamma_alt
    (equal (gamma i a b c)
           (gamma_alt i a b c))
    :hints (("Goal" :in-theory (e/d (gamma_alt gamma) ())))))
-                         
+
 
 
 (defun delta (i a b c d)
   (if (zp i)
       (bitn d 0)
-    (logand (logior (logand (bitn a (+ -2 (* 2 i))) 
+    (logand (logior (logand (bitn a (+ -2 (* 2 i)))
 			    (bitn b (+ -2 (* 2 i))))
 		    (logior (logand (bitn a (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))
 			    (logand (bitn b (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))))
-	    (lognot (logxor (bitn a (1- (* 2 i))) 
+	    (lognot (logxor (bitn a (1- (* 2 i)))
 			    (bitn b (1- (* 2 i))))))))
 
 
-(local 
+(local
  (defthm delta-is-delta_alt
    (equal (delta i a b c d)
           (delta_alt i a b c d))
    :hints (("Goal" :in-theory (e/d (delta_alt delta) ())))))
-                         
+
 
 
 (defun psi (i a b c d)
@@ -531,7 +531,7 @@
                 (delta (1+ i) a b c d))))))
 
 
-(local 
+(local
  (defthm psi-is-psi_alt
    (equal (psi i a b c d)
           (psi_alt i a b c d))
@@ -545,8 +545,8 @@
 (defthm psi-m-1
     (implies (and (natp m)
                   (>= m 1)
-		  (bvecp a (- (* 2 m) 2))   
-		  (bvecp b (- (* 2 m) 2))  
+		  (bvecp a (- (* 2 m) 2))
+		  (bvecp b (- (* 2 m) 2))
 		  (bvecp c 1)
 		  (bvecp d 1))
 	     (and (equal (gamma m a b c) 0)
@@ -554,7 +554,7 @@
 		  (>= (psi (1- m) a b c d) 0)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance psi_alt-m-1))
-           :in-theory (e/d () 
+           :in-theory (e/d ()
                            (psi
                             psi_alt
                             gamma
@@ -571,7 +571,7 @@
 	(sum-psi (1- m) a b c d))))
 
 
-(local 
+(local
  (defthm sum-psi-is-sum-psi
    (equal (sum-psi m a b c d)
           (sum-psi_alt m a b c d))
@@ -589,7 +589,7 @@
 	     (equal (+ a b c d) (sum-psi m a b c d)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance sum-psi_alt-lemma)))))
-           
+
 
 
 
@@ -612,14 +612,14 @@
 	  0 (* 2 (1- i)))))
 
 
-(local 
+(local
  (defthm pp4-psi-is-pp4_alt-psi_alt
    (implies (and (natp n)
                  (> n 0)
                  (integerp x))
             (equal (pp4-psi i x a b c d n)
                    (pp4_alt-psi_alt i x a b c d n)))
-   :hints (("Goal" :in-theory (e/d () 
+   :hints (("Goal" :in-theory (e/d ()
                                    (bmux4_alt
                                     bmux4
                                     psi_alt
@@ -633,14 +633,14 @@
        (sum-pp4-psi x a b c d (1- m) n))))
 
 
-(local 
+(local
  (defthm sum-pp4-psi-is-sum-pp4-psi
    (implies (and (natp n)
                  (> n 0)
                  (integerp x))
             (equal (sum-pp4-psi x a b c d m n)
                    (sum-pp4_alt-psi_alt x a b c d m n)))
-   :hints (("Goal" :in-theory (e/d () 
+   :hints (("Goal" :in-theory (e/d ()
                                    (pp4_alt-psi_alt
                                     pp4-psi))))))
 
@@ -672,13 +672,13 @@
 
 
 (defun eta (i y)
-  (+ (bitn y (1- (* 3 i))) 
+  (+ (bitn y (1- (* 3 i)))
      (bitn y (* 3 i))
      (* 2 (bitn y (1+ (* 3 i))))
      (* -4 (bitn y (+ 2 (* 3 i))))))
 
 
-(local 
+(local
  (defthm eta-is-eta_alt
    (equal (eta i y)
           (eta_alt i y))))
@@ -690,7 +690,7 @@
      (+ (* (expt 2 (* 3 (1- m))) (eta (1- m) y))
 	(sum-eta (1- m) y))))
 
-(local 
+(local
  (defthm sum-eta-is-sum-eta_alt
    (equal (sum-eta m y)
           (sum-eta_alt m y))))
@@ -720,7 +720,7 @@
 
 
 
-(local 
+(local
  (defthm bmux8-is-bmux8_alt
    (implies (and (natp n)
                  (> n 0)
@@ -732,7 +732,7 @@
 
 (encapsulate ((xi (i) t))
  (local (defun xi (i) (declare (ignore i)) 0))
- (defthm xi-bnd 
+ (defthm xi-bnd
      (and (integerp (xi i))
 	  (<= (xi i) 4)
 	  (>= (xi i) -4))))
@@ -752,7 +752,7 @@
 	 0 (* 3 (1- i)))))
 
 
-(local 
+(local
  (defthm pp8-is-pp8_alt
    (implies (and (natp n)
                  (> n 0)
@@ -766,7 +766,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 3 (1- m))) (xi (1- m)))
-       (sum-xi (1- m)))))   
+       (sum-xi (1- m)))))
 
 (defun sum-pp8 (x m n)
   (if (zp m)
@@ -775,7 +775,7 @@
        (sum-pp8 x (1- m) n))))
 
 
-(local 
+(local
  (defthm sum-pp8-sum-pp8_alt
    (implies (and (natp n)
                  (> n 0)
@@ -813,7 +813,7 @@
 	 0 (* 3 (1- i)))))
 
 
-(local 
+(local
  (defthm pp8-eta-is-pp8-eta_alt
    (implies (and (natp n)
                  (> n 0)
@@ -831,7 +831,7 @@
 
 
 
-(local 
+(local
  (defthm sum-pp8-eta-is-sum-pp8_alt-eta_alt
    (implies (and (natp n)
                  (> n 0)

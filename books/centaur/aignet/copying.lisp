@@ -455,7 +455,7 @@
                                 aignet-invals aignet-regvals aignet2 copy aignet)
                                aignet))))
     :hints(("Goal" :in-theory (enable aignet-copy-comb))))
-  
+
 )
 
 
@@ -583,7 +583,7 @@
            (+ (nfix (stype-count (pi-stype) aignet))
               (stype-count (pi-stype) aignet2))))
 
-  
+
   (defthm lookup-copy-of-aignet-copy-ins
     (implies (and (aignet-idp id aignet))
              (b* (((mv aignet-copy-new aignet2-new)
@@ -967,7 +967,7 @@
               (:free (aignet2) (aignet-copy-nxsts-iter n aignet copy
                                                      aignet2))))
             '(:do-not-induct t))))
-  
+
   (defthm stype-counts-preserved-of-aignet-copy-nxsts-iter
     (implies (not (equal (stype-fix stype) (nxst-stype)))
              (equal (stype-count stype
@@ -1041,7 +1041,7 @@
              (equal (node-count (lookup-stype n stype aignet))
                     0))
     :hints(("Goal" :in-theory (enable lookup-stype node-count stype-count))))
-  
+
   (defthmd node-count-of-lookup-reg->nxst-0
     (equal (node-count (lookup-reg->nxst 0 aignet))
            0)
@@ -1142,7 +1142,7 @@
     (defthm eval-output-of-aignet-complete-copy-aux
       (b* (((mv & & aignet2) (aignet-complete-copy-aux aignet copy gatesimp
                                                        strash aignet2)))
-        (equal (id-eval 
+        (equal (id-eval
                 (node-count (lookup-stype n (po-stype) aignet2))
                 invals regvals aignet2)
                (id-eval
@@ -1154,7 +1154,7 @@
     (defthm eval-nxst-of-aignet-complete-copy-aux
       (b* (((mv & & aignet2)
             (aignet-complete-copy-aux aignet copy gatesimp strash aignet2)))
-        (equal (id-eval 
+        (equal (id-eval
                 (node-count
                  (lookup-reg->nxst
                   (node-count (lookup-stype n (reg-stype)
@@ -1222,7 +1222,7 @@ nodes.</p>"
 
     (defthm eval-output-of-aignet-complete-copy
       (b* ((aignet2 (aignet-complete-copy aignet :gatesimp gatesimp)))
-        (equal (id-eval 
+        (equal (id-eval
                 (node-count (lookup-stype n (po-stype) aignet2))
                 invals regvals aignet2)
                (id-eval
@@ -1233,7 +1233,7 @@ nodes.</p>"
 
     (defthm eval-nxst-of-aignet-complete-copy
       (b* ((aignet2 (aignet-complete-copy aignet :gatesimp gatesimp)))
-        (equal (id-eval 
+        (equal (id-eval
                 (node-count
                  (lookup-reg->nxst
                   (node-count (lookup-stype n (reg-stype)
@@ -1517,7 +1517,7 @@ nodes.</p>"
               (:free (aignet2) (aignet-copy-nxsts-init-iter n aignet initsts copy
                                                      aignet2))))
             '(:do-not-induct t))))
-  
+
   (defthm stype-counts-preserved-of-aignet-copy-nxsts-init-iter
     (implies (not (equal (stype-fix stype) (nxst-stype)))
              (equal (stype-count stype
@@ -1703,7 +1703,7 @@ aignet when its initial value is the specified vector:</p>
       (implies (< (nfix n) (num-outs aignet))
                (b* (((mv & & aignet2) (aignet-copy-init-aux aignet initsts copy gatesimp
                                                                 strash aignet2)))
-                 (equal (id-eval 
+                 (equal (id-eval
                          (node-count (lookup-stype n (po-stype) aignet2))
                          invals regvals aignet2)
                         (id-eval
@@ -1715,7 +1715,7 @@ aignet when its initial value is the specified vector:</p>
       (implies (< (nfix n) (num-regs aignet))
                (b* (((mv & & aignet2)
                      (aignet-copy-init-aux aignet initsts copy gatesimp strash aignet2)))
-                 (equal (id-eval 
+                 (equal (id-eval
                          (node-count
                           (lookup-reg->nxst
                            (node-count (lookup-stype n (reg-stype)
@@ -1762,7 +1762,7 @@ aignet when its initial value is the specified vector:</p>
     (defthm eval-output-of-aignet-copy-init
       (implies (< (nfix n) (num-outs aignet))
                (b* ((aignet2 (aignet-copy-init aignet initsts :gatesimp gatesimp)))
-                 (equal (id-eval 
+                 (equal (id-eval
                          (node-count (lookup-stype n (po-stype) aignet2))
                          invals regvals aignet2)
                         (id-eval

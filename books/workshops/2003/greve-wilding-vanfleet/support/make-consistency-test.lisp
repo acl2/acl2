@@ -18,7 +18,7 @@
   (with-open-file
    (ifile file :direction :input)
    (read-forms ifile)))
-   
+
 ;; The forms we need to execute in the consistency test
 (defun test-forms ()
   `(
@@ -31,7 +31,7 @@
     ;; load all the axioms from the file, changing the axioms to defthms
     ,@(remove nil
 	      (mapcar
-	       #'(lambda (x) 
+	       #'(lambda (x)
 		   (if (equal (car x) 'defaxiom)
 		       `(defthm ,@(cdr x))
 		     nil))
@@ -44,4 +44,4 @@
    (ofile file :direction :output)
    (mapcar #'(lambda (x) (format ofile "~%~S" x)) (test-forms))))
 
-   
+

@@ -21,7 +21,7 @@ symbolic simulation. This book will be made use of in the defsimulate macro.
 (defstub nextt (*) => *)
 (defun run (s n) (if (zp n) s (run (nextt s) (1- n))))
 
-(encapsulate 
+(encapsulate
  (((default-state) => *)
   ((cutpoint *) => *)
   ((assertion *) => *)
@@ -31,10 +31,10 @@ symbolic simulation. This book will be made use of in the defsimulate macro.
  (local (defun cutpoint (s) (not (equal s nil))))
  (local (defun assertion (s) (declare (ignore s)) t))
  (local (defun exitpoint (s) (declare (ignore s)) t))
- 
+
  (defpun steps-to-cutpoint-tail (s i)
-  (if (cutpoint s) 
-      i 
+  (if (cutpoint s)
+      i
     (steps-to-cutpoint-tail (nextt s) (1+ i))))
 
  (defun steps-to-cutpoint (s)
@@ -49,7 +49,7 @@ symbolic simulation. This book will be made use of in the defsimulate macro.
          (run s steps)
        (default-state))))
 
-  
+
 
   ;; Notice that I specify the constraint that some cutpoint is reachable, but
   ;; do it via the nextt-cutpoint expressions.
@@ -62,7 +62,7 @@ symbolic simulation. This book will be made use of in the defsimulate macro.
                     (assertion s)
                  (not (exitpoint s)))
             (cutpoint (nextt-cutpoint (nextt s))))))
- 
+
 
 (local
  (defun cutpoint-induction (k steps s)
@@ -87,7 +87,7 @@ symbolic simulation. This book will be made use of in the defsimulate macro.
                    (implies (natp k)
                             (<= cutpoint-steps k))
                    (cutpoint (run s cutpoint-steps)))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :in-theory (enable natp)
             :induct (cutpoint-induction k steps s)))))
 

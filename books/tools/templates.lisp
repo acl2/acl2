@@ -106,7 +106,7 @@ At each atom in the tree:
   @({
     (:@proj <subtemplates-name> subforms)
    })
-  or 
+  or
   @({
     (:@append <subtemplates-name> subforms)
    })

@@ -51,7 +51,7 @@
 ;;==========Lemma 2==========
 
 (encapsulate  ;; Create local theory to aid
-()           ;; in proof of Lemma 2 
+()           ;; in proof of Lemma 2
 
 (local
  (defthm
@@ -113,7 +113,7 @@
 		   (oddp x))
 	      (evenp (* 1/2 (+ -1 x)(+ 1 x))))
     :hints (("Goal"
-	      ;;:in-theory (disable Lemma-2-e) 
+	      ;;:in-theory (disable Lemma-2-e)
 	      :use (:instance
 		    Lemma-2-e
 		    (x (- x 1))
@@ -129,7 +129,7 @@
 			  1))
 	      (evenp (* y y)))
     :hints (("Goal"
-	      :use Lemma-2-f)))) 
+	      :use Lemma-2-f))))
 
  (local
   (defthm
@@ -225,7 +225,7 @@
 			     (* 2 y y))
 			  1))
 	      (>= x 3))
-    :hints (("Goal" 
+    :hints (("Goal"
 	      :use (Lemma-2-k
 		    Lemma-2-m)))))
 
@@ -244,7 +244,7 @@
 	     :use Lemma-2-h)))
  ) ;;end encapsulate
 
-;;=====Lemma 3=================	   
+;;=====Lemma 3=================
 
 (defthm
  Lemma-3
@@ -278,7 +278,7 @@
 ;;========================
 ;; Generate Many Solutions
 
-;; This lemma shows how to construct new solutions to our particular Pell equation 
+;; This lemma shows how to construct new solutions to our particular Pell equation
 ;; from known solutions. Once more the proof depends only on elementary algebra.
 
 ;;======Lemma 4===================
@@ -305,7 +305,7 @@
 			    (* 2 y y))
 			 1)))))
 
-;; In the above lemma, the two given solutions, a, b and c, d, need not be 
+;; In the above lemma, the two given solutions, a, b and c, d, need not be
 ;; distinct. That is, using a = c and b = d in the construction of x, y
 ;; yields a new solution.  Thus, starting with one known solution, a = 3, b = 2,
 ;; many other solutions can be generated:
@@ -370,13 +370,13 @@
 
 ;;=====Lemma 5======
 
-;; This lemma constructs another new solution, ( a,b ), to our Pell equation 
+;; This lemma constructs another new solution, ( a,b ), to our Pell equation
 ;; from a known solution, ( x,y ).  This time the new solution is ``smaller''
 ;; than the old solution in the sense that b < y. The proof only requires
 ;; elementary algebra.
 
 (encapsulate  ;; Create local theory to aid
-()           ;; in proof of Lemma 5 
+()           ;; in proof of Lemma 5
 
 (local
  (defthm
@@ -739,7 +739,7 @@
 		  (<= (* s s)(* n n)))
 	     (<= s n))
    :hints (("Goal"
-	     :use Theorem-2-b)))) 
+	     :use Theorem-2-b))))
 
 (local
  (defthm
@@ -853,7 +853,7 @@ sqrt-posp-<=
 		 sqrt-loop-sq
 		 (r 1)))))
 
-(in-theory (disable (:DEFINITION sqrt-posp)))		
+(in-theory (disable (:DEFINITION sqrt-posp)))
 
 (defthm
  sqrt-posp-expt-2
@@ -877,7 +877,7 @@ sqrt-posp-<=
 				   ((and (equal (* (sqrt-posp (+ (* 2 r r) 1))
 						   (sqrt-posp (+ (* 2 r r) 1)))
 						(+ (* 2 r r) 1))
-					 (not (Exists-pair-pow-equal 
+					 (not (Exists-pair-pow-equal
 					       (sqrt-posp (+ (* 2 r r) 1))
 					       r)))
 				    0)
@@ -985,7 +985,7 @@ sqrt-posp-<=
  (implies (and (equal (* x x)
 		       (+ (* 2 y y) 1))
 		(posp x)
-		(posp y)		
+		(posp y)
 		(not (Exists-pair-pow-equal x y)))
 	   (<= (Find-smallest-y y) y))
  :rule-classes (:rewrite
@@ -1034,7 +1034,7 @@ sqrt-posp-<=
  (implies (and (posp x)
 		(posp y)
 		(equal (* x x)
-		       (+ (* 2 y y) 1))		
+		       (+ (* 2 y y) 1))
 		(not (Exists-pair-pow-equal x y)))
 	   (> y 2))
  :rule-classes nil
@@ -1053,7 +1053,7 @@ sqrt-posp-<=
  (implies (and (equal (* x x)
 		       (+ (* 2 y y) 1))
 		(posp x)
-		(posp y)		
+		(posp y)
 		(not (Exists-pair-pow-equal x y)))
 	   (> (Find-smallest-y y) 2))
  :rule-classes (:linear
@@ -1074,7 +1074,7 @@ sqrt-posp-<=
  (implies (and (equal (* x x)
 		       (+ (* 2 y y) 1))
 		(posp x)
-		(posp y)		
+		(posp y)
 		(not (Exists-pair-pow-equal x y)))
 	   (let ((a (- (* 3 (sqrt-posp (+ (* 2
 					     (Find-smallest-y y)
@@ -1123,7 +1123,7 @@ sqrt-posp-<=
    (implies (and (equal (* x x)
 			 (+ (* 2 y y) 1))
 		  (posp x)
-		  (posp y)		
+		  (posp y)
 		  (not (Exists-pair-pow-equal x y)))
 	     (let ((a (- (* 3 (sqrt-posp (+ (* 2
 					       (Find-smallest-y y)
@@ -1172,7 +1172,7 @@ sqrt-posp-<=
    (implies (and (equal (* x x)
 			 (+ (* 2 y y) 1))
 		  (posp x)
-		  (posp y)		
+		  (posp y)
 		  (not (Exists-pair-pow-equal x y)))
 	     (let ((b (+ (* -2 (sqrt-posp (+ (* 2
 						(Find-smallest-y y)
@@ -1205,7 +1205,7 @@ sqrt-posp-<=
    (implies (and (equal (* x x)
 			 (+ (* 2 y y) 1))
 		  (posp x)
-		  (posp y)		
+		  (posp y)
 		  (not (Exists-pair-pow-equal x y)))
 	     (let ((b (+ (* -2 (sqrt-posp (+ (* 2
 						(Find-smallest-y y)
@@ -1225,13 +1225,13 @@ sqrt-posp-<=
 						 (Find-smallest-y y))
 					      1)))
 			  (* 3 (Find-smallest-y y))))))))))
-		 
+
 (defthm
   Exists-pair-pow-a-b
   (implies (and (equal (* x x)
 			(+ (* 2 y y) 1))
 		 (posp x)
-		 (posp y)		
+		 (posp y)
 		 (not (Exists-pair-pow-equal x y)))
 	    (let ((a (- (* 3 (sqrt-posp (+ (* 2
 					      (Find-smallest-y y)
@@ -1245,7 +1245,7 @@ sqrt-posp-<=
 			(* 3 (Find-smallest-y y)))))
 	      (Exists-pair-pow-equal a b)))
   :hints (("Goal"
-	    :use (Theorem-2-ab 
+	    :use (Theorem-2-ab
 		  Theorem-2-ae))))
 
 (local
@@ -1254,7 +1254,7 @@ sqrt-posp-<=
    (implies (and (equal (* x x)
 			 (+ (* 2 y y) 1))
 		  (posp x)
-		  (posp y)		
+		  (posp y)
 		  (not (Exists-pair-pow-equal x y)))
 	     (let* ((a (- (* 3 (sqrt-posp (+ (* 2
 						(Find-smallest-y y)
@@ -1278,7 +1278,7 @@ sqrt-posp-<=
    (implies (and (equal (* x x)
 			 (+ (* 2 y y) 1))
 		  (posp x)
-		  (posp y)		
+		  (posp y)
 		  (not (Exists-pair-pow-equal x y)))
 	     (let* ((a (- (* 3 (sqrt-posp (+ (* 2
 						(Find-smallest-y y)
@@ -1306,7 +1306,7 @@ sqrt-posp-<=
   (implies (and (equal (* x x)
 			(+ (* 2 y y) 1))
 		 (posp x)
-		 (posp y)		
+		 (posp y)
 		 (not (Exists-pair-pow-equal x y)))
 	    (Exists-pair-pow-equal (sqrt-posp (+ (* 2
 						    (Find-smallest-y y)
@@ -1339,7 +1339,7 @@ sqrt-posp-<=
   (implies (and (equal (* x x)
 			(+ (* 2 y y) 1))
 		 (posp x)
-		 (posp y)		
+		 (posp y)
 		 (not (Exists-pair-pow-equal x y)))
 	    (not (Exists-pair-pow-equal (sqrt-posp (+ (* 2
 							 (Find-smallest-y y)
@@ -1350,7 +1350,7 @@ sqrt-posp-<=
 	    :use Find-smallest-y-not-exists)))
 ) ;; end encapsulate
 
-(defthm 
+(defthm
  Theorem-2
  (implies (and (posp x)
 		(posp y)
@@ -1366,14 +1366,14 @@ sqrt-posp-<=
 
 ;; Note (pair-pow j) is denoted by ( x_j,y_j ).
 
-;; By contradiction. Suppose there are positive 
-;; integers x and y such that for all positive integers j, 
+;; By contradiction. Suppose there are positive
+;; integers x and y such that for all positive integers j,
 ;; ( x,y ) |= ( x_j,y_j ) and  x^2 - 2 * y^2 = 1.
 ;; Since the positive integers are well-ordered, pick such an x
 ;; and y with y as small as possible.
 
 ;; Since y |= y_j for any j, then y > 2.
-;; By Lemma 5, a = 3 * x - 4 * y and 
+;; By Lemma 5, a = 3 * x - 4 * y and
 ;; b = -2 * x + 3 * y are positive integers that satisfy
 ;; b < y and a^2 - 2 * b^2 = 1.
 
@@ -1384,21 +1384,21 @@ sqrt-posp-<=
 ;; ( x_{j+1},y_{j+1} ) = ( x_1 * x_j + 2 * y_1 * y_j,
 ;;                         x_1 * y_j + x_j * y_1 )
 ;;                     = ( 3 * a + 2 * 2 * b,
-;;                         3 * b + a * 2 ) 
+;;                         3 * b + a * 2 )
 ;;                     = ( x,y ).
 ;; This contrdicts the above supposition.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Perhaps the most interesting step, to translate into ACL2, of this proof 
+;; Perhaps the most interesting step, to translate into ACL2, of this proof
 ;; is this: Given at least one pair, ( x,y ), of positive integers such that
-;; x^2 - 2 * y^2 = 1$ and for all positive integers j, ( x,y ) |= ( x_j,y_j ); 
+;; x^2 - 2 * y^2 = 1$ and for all positive integers j, ( x,y ) |= ( x_j,y_j );
 ;; we wish to locate the pair, ( q,r ), of positive integers, with r as small
-;; as possible}, such that q^2 - 2 * r^2 = 1 and for all positive integers j, 
+;; as possible}, such that q^2 - 2 * r^2 = 1 and for all positive integers j,
 ;; ( q,r ) |= ( x_j,y_j ). The desired ( q,r ) is found by an ACL2 function
 ;; that returns the first pair in this list, of y pairs,
 ;;                ( 1,1 ), ...,( q = floor(sqrt(2r^2 + 1)),r ),
 ;;                         ...,( x = floor(sqrt(2y^2 + 1)),y )
-;; that satisfies both  q^2 - 2 * r^2 = 1 and for all positive integers j, 
-;; ( q,r ) |= ( x_j,y_j ). 
+;; that satisfies both  q^2 - 2 * r^2 = 1 and for all positive integers j,
+;; ( q,r ) |= ( x_j,y_j ).
 
 ;;=========Definition 2=================
 
@@ -1504,7 +1504,7 @@ sqrt-posp-<=
 ;; Appendix
 ;; More Efficient Generation of Solutions
 
-;; Recall that (pair-pow n) computes all the positive integer 
+;; Recall that (pair-pow n) computes all the positive integer
 ;; solutions (x y) to x^2 - 2 y^2 = 1.
 
 ;;====Definition 1=========
@@ -1525,7 +1525,7 @@ sqrt-posp-<=
 
 ;; This straightforward implementation uses a linear number,
 ;; in $n$, of arithmetic operations to compute each solution
-;; (pair-pow n).  
+;; (pair-pow n).
 
 (defun
  nbr-calls-pair-pow (n)
@@ -1564,7 +1564,7 @@ sqrt-posp-<=
 		     (* 4 second second)))))
      (list 3 2)))
 
-;; (pair-pow-log n) produces an alternative sequence of pairs 
+;; (pair-pow-log n) produces an alternative sequence of pairs
 ;; that uses a logarithmic number, in n, of arithmetic
 ;; operations to compute each pair.
 

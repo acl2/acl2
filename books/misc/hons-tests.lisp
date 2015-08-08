@@ -501,7 +501,7 @@
 
 (defn q-iff-ite (x y)   ; why call q-not rather than q-ite?
   (if-bbb x y (q-not y)))
-      
+
 (defn q-nand (x y)
   (if (atom x)
       (if x (q-not y) t)
@@ -512,7 +512,7 @@
         (let ((l (q-nand (car x) (car y)))
               (r (q-nand (cdr x) (cdr y))))
           (qcons l r))))))
-      
+
 (defn q-nand-ite (x y)
   (if-bbb x (q-not y) t))
 
@@ -607,7 +607,7 @@
           (q-compose-list (cdr xs) l))))
 
 (defn q-restrict (x n v vars)
-  
+
   ;; Needs to be memoized.  Q-RESTRICT takes an ubdd X, a value N (T
   ;; or NIL), a variable V, which is a member of the list of variables
   ;; VARS with respect to which X is an ubdd.  Q-RESTRICT returns the
@@ -632,7 +632,7 @@
              (q-restrict (cdr x) n v (cdr vars))))))
 
 (defn q-restrict-shrink (x n v vars)
-  
+
   ;; Q-RESTRICT-SHRINK should to be memoized.  Q-RESTRICT-SHRINK takes
   ;; an ubdd X, a value N (t or nil), a variable V, which is a member
   ;; of the list of variables VARS with respect to which X is an ubdd.
@@ -670,12 +670,12 @@
            (eqlable-listp (delete-hql x l))))
 
 (defn q-reorder (x vars nvars)
-  
+
   ;; Needs to be memoized.  VARS and NVARS should be of the same
   ;; length.  X is an ubdd.  Q-REORDER returns the ubdd whose meaning
   ;; with respect to NVARS is equivalent to to the meaning of X with
   ;; respect to VARS.
-  
+
   (declare (xargs :guard (and (eqlable-listp vars)
                               (eqlable-listp nvars))
                   :measure (acl2-count nvars)))
@@ -739,7 +739,7 @@
           (qcons (qcons (qcar (qcar x))
                         (qcar (qcdr x)))
                  (qcons (qcdr (qcar x))
-                        (qcdr (qcdr x))))          
+                        (qcdr (qcdr x))))
         (hons (q-reorder-down-one (car x) var (cdr vars))
               (q-reorder-down-one (cdr x) var (cdr vars)))))))
 
@@ -747,7 +747,7 @@
 #||
 
 (defn find-best-position-helper (bdd var max-var)
-  (loop for 
+  (loop for
 
 (defn find-best-position (bdd var)
   (let ((max-var (max-depth bdd)))
@@ -1144,7 +1144,7 @@
              nil))))
 
 (in-theory (disable eql-var-lessp))
-           
+
 (defn var-lessp (v1 v2 var-order)
   (declare (xargs :guard (and (eqlablep v1)
                               (eqlablep v2)
@@ -1564,7 +1564,7 @@
 
 (defn and-c2 (x y) (and x (not y)))
 
- 
+
 ; Finds a satisfying assignment for an ubdd.
 
 (defn q-sat (x)

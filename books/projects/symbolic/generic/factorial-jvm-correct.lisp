@@ -13,17 +13,17 @@ recursive factorial program written in JVM. The JVM model is M5, which has been
 developed by Robert Krug, Hanbing Liu, and J Moore at UT Austin. They have
 proved various theorems about this model, but mostly using the so-called "clock
 functions". J has actually also proved partial correctness theorems using the
-method referred to in "Inductive Assertions and Operational Semantics". 
+method referred to in "Inductive Assertions and Operational Semantics".
 
 |#
 
-;; The book is included to get the class file in. 
+;; The book is included to get the class file in.
 (include-book "../m5/demo")
 (include-book "ordinals/ordinals" :dir :system)
 
 ;; Here is the definition of mathematical factorial function, referred to as
 ;; mfact in the paper.
-(defun fact (n) 
+(defun fact (n)
   (if (zp n) 1
     (* n (fact (1- n)))))
 
@@ -79,7 +79,7 @@ method referred to in "Inductive Assertions and Operational Semantics".
         (t nil)))
 
 ;; The assertion for this program is specified pretty naturally. These are
-;; adapted from J's book. 
+;; adapted from J's book.
 
 (defun fact-assertion (n0 d0 s)
   (and (integerp d0)
@@ -138,8 +138,8 @@ method referred to in "Inductive Assertions and Operational Semantics".
   (declare (ignore n0))
   (and (< (sdepth (call-stack (th) s)) d0)
        (> (sdepth (call-stack (th) s)) 0)))
-  
-       
+
+
 
 ;; The precondition must just say that I am in a state with d0 being equal to
 ;; the stack height, and I am poised to execute the factorial of n0. The latter
@@ -162,7 +162,7 @@ method referred to in "Inductive Assertions and Operational Semantics".
         (equal (sdepth (call-stack (th) s)) d0)))
 
 ;; And of course the postcondition is merely stating that the thing that is
-;; standing at the top of the stack is the factorial. 
+;; standing at the top of the stack is the factorial.
 
 (defun fact-postcondition (n0 d0 s)
   (declare (ignore d0))
@@ -207,15 +207,15 @@ method referred to in "Inductive Assertions and Operational Semantics".
   :exitpoint fact-exitpoint
   :exitsteps fact-exitsteps
   :run mono-run
-  :thms 
-  ((local 
+  :thms
+  ((local
     (defthm cutpoint-opener
       (implies (and (equal pc (pc (top-frame (th) s)))
                     (syntaxp (quotep pc)))
                (equal (acl2::concrete-nextt-cutpoint n0 d0 s)
                       (if (fact-cutpoint n0 d0 s) s
-                        (acl2::concrete-nextt-cutpoint 
-                         n0 d0 
+                        (acl2::concrete-nextt-cutpoint
+                         n0 d0
                          (mono-step s))))))))
    :hints (("Goal"
               :cases ((equal (pc (top-frame (th) acl2::s2)) 0)
@@ -224,7 +224,7 @@ method referred to in "Inductive Assertions and Operational Semantics".
              ("Subgoal 2"
               :in-theory (disable fact-caller-framesp)
               :use ((:instance (:definition fact-caller-framesp)
-                               (cs (pop 
+                               (cs (pop
                                     (CADR (ASSOC-EQUAL (TH)
                                                        (THREAD-TABLE acl2::S2)))))
                                (n0 acl2::s0)
@@ -232,24 +232,24 @@ method referred to in "Inductive Assertions and Operational Semantics".
              ("Subgoal 1"
               :in-theory (disable fact-caller-framesp)
               :use ((:instance (:definition fact-caller-framesp)
-                               (cs (pop 
+                               (cs (pop
                                     (CADR (ASSOC-EQUAL (TH)
                                                        (THREAD-TABLE acl2::S2)))))
                                (n0 acl2::s0)
                                (k (- acl2::s0 (car (locals (top-frame (th) acl2::s2))))))))))
-  
+
 
 ;; Finally for total correctness here is the rank function. The function is
 ;; handles recursion. It is meant so that
 ;; the call to ther recursion is given a slightly larger ordinal than the
-;; return. It should be thought more as a pair giving more priority to the calls than 
+;; return. It should be thought more as a pair giving more priority to the calls than
 ;; returns. This is also illustrative of the kind of ranking functions one needs
 ;; to write for recursive methods.
 
 (defun factorial-rank (n0 d0 s)
   (if (fact-exitpoint n0 d0 s)
       0
-    (acl2::o+ (acl2::o* (acl2::omega) 
+    (acl2::o+ (acl2::o* (acl2::omega)
                         (if (and (equal (pc (top-frame (th) s)) 0)
                                  (>= (sdepth (call-stack (th) s)) d0))
                             (nfix (+ 2 (nth 0 (locals (top-frame (th) s)))))
@@ -285,15 +285,15 @@ method referred to in "Inductive Assertions and Operational Semantics".
   :exitpoint fact-exitpoint
   :exitsteps fact-total-exitsteps
   :run mono-run
-  :thms 
-  ((local 
+  :thms
+  ((local
     (defthm cutpoint-opener
       (implies (and (equal pc (pc (top-frame (th) s)))
                     (syntaxp (quotep pc)))
                (equal (acl2::concrete-nextt-cutpoint n0 d0 s)
                       (if (fact-cutpoint n0 d0 s) s
-                        (acl2::concrete-nextt-cutpoint 
-                         n0 d0 
+                        (acl2::concrete-nextt-cutpoint
+                         n0 d0
                          (mono-step s))))))))
   :hints (("Goal"
            :cases ((equal (pc (top-frame (th) acl2::s2)) 0)
@@ -302,7 +302,7 @@ method referred to in "Inductive Assertions and Operational Semantics".
           ("Subgoal 2"
            :in-theory (disable fact-caller-framesp)
            :use ((:instance (:definition fact-caller-framesp)
-                            (cs (pop 
+                            (cs (pop
                                  (CADR (ASSOC-EQUAL (TH)
                                                     (THREAD-TABLE acl2::S2)))))
                             (n0 acl2::s0)
@@ -310,7 +310,7 @@ method referred to in "Inductive Assertions and Operational Semantics".
           ("Subgoal 1"
            :in-theory (disable fact-caller-framesp)
            :use ((:instance (:definition fact-caller-framesp)
-                            (cs (pop 
+                            (cs (pop
                                  (CADR (ASSOC-EQUAL (TH)
                                                     (THREAD-TABLE acl2::S2)))))
                             (n0 acl2::s0)

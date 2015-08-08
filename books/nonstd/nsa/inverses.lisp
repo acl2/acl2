@@ -64,7 +64,7 @@
    :hints (("Goal"
 	    :use ((:instance ifn-is-onto-predicate-suff (x y) (y y)))))
    )
-			   
+
 )
 
 (defchoose ifn-inverse (x) (y)
@@ -78,7 +78,7 @@
 	     (and (ifn-domain-p (ifn-inverse y))
 		  (equal (ifn (ifn-inverse y)) y)))
   :hints (("Goal"
-	   :use ((:instance ifn-inverse (x (ifn-is-onto-predicate-witness y)) (y y)) 
+	   :use ((:instance ifn-inverse (x (ifn-is-onto-predicate-witness y)) (y y))
 		 (:instance ifn-is-onto-predicate (y y))))))
 
 (defthm ifn-inverse-is-real

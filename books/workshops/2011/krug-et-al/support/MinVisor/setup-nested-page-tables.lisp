@@ -12,8 +12,8 @@
 
 #|
 
-/* 
- * Setting up page tables for PAE paging with 2MB pages.  
+/*
+ * Setting up page tables for PAE paging with 2MB pages.
  * The page tables will translate to the identity map upon
  * initialization, but will then be modified by setting all entries
  * pointing to the hypervisors code to 0.
@@ -47,7 +47,7 @@
  * Bit 4: PCD --- page-level cache disable
  * Bit 3: PWT --- page-level write through
  * Bits 2-0: Reserved, MBZ
- * 
+ *
  * Format of the page-directory-pointer entry:
  * Bits 63-52: Reserved, MBZ
  * Bits 51-12: Page-Directory Base Address
@@ -99,18 +99,18 @@ void sec_not_present(pdpt_t pdptp, u32 *visor_start, u32 visor_size)
   u64 mask;
 
   mask = ~((1 << 12) - 1);
-  
+
   // The top two bits are the index into the 4 entry
-  // page-directory-pointer table 
+  // page-directory-pointer table
   j = (u32)visor_start >> 30;
   pdpt_entry = pdptp[j];
 
   // mask will mask off the lower 12 bits of pdpt_entry.  By
   // construction, this is sufficient to (after type coercion) get us
-  // the pointer to the pdt holding secvisors physical memory. 
+  // the pointer to the pdt holding secvisors physical memory.
   tmp = pdpt_entry & mask;
   tmp32 = (u32)tmp;
-  pdt = (pdt_t)tmp32; 
+  pdt = (pdt_t)tmp32;
 
   // Bits 29-21 form the index into the 512 entry page-directory
   // table.  We grab those bits for the start and end of the
@@ -159,7 +159,7 @@ void init_pdpt(pdpt_t pdptp, pdt_t pdt_array[4])
   u64 page_present;
 
   page_present = 1;
-  
+
   for(i = 0; i < 4; i++){
     // Since each element of pdt_array is a 32 bit pointer, we don't
     // have to worry about clearing bits 63-52.  Similarly, since
@@ -210,7 +210,7 @@ int main()
 ;;; use trick for information-flow for effect functions
 ;;; include Y86-p preservation in invariant
 ;;; include frame condition and other desired read/access properties
-;;; in invariant.  
+;;; in invariant.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -279,7 +279,7 @@ or
 
  ;;; but make bind-free to choode n1 n2
  (defthm logand-mask-shifted-2
-   (implies (and (integerp x) 
+   (implies (and (integerp x)
                  (integerp n1)
                  (integerp n2)
                  (<= 0 n1)
@@ -298,13 +298,13 @@ or
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; Original c file is in 
+;;; Original c file is in
 ;;;    ~/School/Secvisor/Fragments/setup-nested-page-tables-fragment.c
 ;;; Original assembly is in
 ;;;    ~/School/Secvisor/Fragments/setup-nested-page-tables-fragment.s
 ;;; assembly obtained via
 ;;;    gcc -S setup-nested-page-tables-fragment.c
-;;; Handy listing file 
+;;; Handy listing file
 ;;;    ~/School/Secvisor/Fragments/setup-nested-page-tables-fragment.listing
 
 (defconst *snpt-code*
@@ -912,7 +912,7 @@ or
 ;;; (snpt-code-location), so I create a few constants.
 
 (defconst *snpt-symbol-table-for-offsets*
-  (y86-symbol-table *snpt-code* 
+  (y86-symbol-table *snpt-code*
                     0
                     '()))
 
@@ -978,7 +978,7 @@ or
   0)
 
 (defconst *concrete-snpt-symbol-table*
-  (y86-symbol-table *snpt-code* 
+  (y86-symbol-table *snpt-code*
                     *concrete-snpt-code-location*
                     '()))
 
@@ -2333,7 +2333,7 @@ or
 (defthm good-state-p-fc
   (implies (good-state-p s)
            (and (y86-p s)
-                (all-code-loaded-p s)))  
+                (all-code-loaded-p s)))
   :hints (("Goal" :in-theory (disable code-loaded-p)))
   :rule-classes :forward-chaining)
 
@@ -2426,7 +2426,7 @@ or
                                    memberp)
                                    (code-loaded-p))))
    :otf-flg t)
-           
+
  )
 
 (in-theory (disable code-loaded-p
@@ -2514,10 +2514,10 @@ or
 (defun init_pdpt-modify-loop-1 (loop-counter s)
   (if (zp loop-counter)
       (update-mem (R32 (+ 4 (G :ESP S)) S)
-                  (LOGIOR 1 
+                  (LOGIOR 1
                           (R32 (R32 (+ 8 (G :ESP S)) S)
                                S))
-                                          
+
                   (+ 4
                      (R32 (+ 4 (G :ESP S)) S))
                   0
@@ -2525,11 +2525,11 @@ or
     (init_pdpt-modify-loop-1 (+ -1 loop-counter)
                              (update-mem (+ (* 8 LOOP-COUNTER)
                                             (R32 (+ 4 (G :ESP S)) S))
-                                         (LOGIOR 1 
+                                         (LOGIOR 1
                                                  (R32 (+ (* 4 LOOP-COUNTER)
                                                          (R32 (+ 8 (G :ESP S)) S))
                                                       S))
-                                          
+
                                          (+ 4 (* 8 LOOP-COUNTER)
                                             (R32 (+ 4 (G :ESP S)) S))
                                          0
@@ -2645,7 +2645,7 @@ or
 
                  (disjointp (list (range (r32 (+ 4 (g :esp s)) s) 0 (+ 8 (* loop-counter 8)))
                                   (range (r32 (+ 8 (g :esp s)) s) 0 (+ 4 (* loop-counter 4)))))
-                                 
+
                  (integerp i)
                  (<= 0 i)
                  (<= i loop-counter)
@@ -2657,16 +2657,16 @@ or
                  (n32p (+ 11 (g :esp s)))
                  (n32p (+ (+ 7 (* LOOP-COUNTER 8)) (R32 (+ 4 (G :ESP S)) S)))
                  (n32p (+ (+ 3 (* LOOP-COUNTER 8)) (R32 (+ 8 (G :ESP S)) S)))
-                
+
                  (not (paging-p s))
                  (integerp loop-counter)
                  (<= 0 loop-counter)
                  ;; (< loop-counter 4)
                  )
             (equal (r32 (+ (* 8 i)
-                           (R32 (+ 4 (G :ESP S)) S)) 
+                           (R32 (+ 4 (G :ESP S)) S))
                         (init_pdpt-modify-loop-1 loop-counter s))
-                   (LOGIOR 1 
+                   (LOGIOR 1
                            (R32 (+ (* 4 i)
                                    (R32 (+ 8 (G :ESP S)) S))
                                 S))))
@@ -2690,7 +2690,7 @@ or
                  (n32p (+ 11 (g :esp s)))
                  (n32p (+ (+ 7 (* LOOP-COUNTER 8)) (R32 (+ 4 (G :ESP S)) S)))
                  (N32P (+ 15 (R32 (+ 8 (G :ESP S)) S)))
-                
+
                  (not (paging-p s))
                  (integerp loop-counter)
                  (<= 0 loop-counter)
@@ -2705,7 +2705,7 @@ or
                                        y86-p))
            ("Subgoal *1/4" :expand ((INIT_PDPT-MODIFY-LOOP-1 I S)))))
  )
-  
+
 
 (defun init_pdpt-modify-loop (loop-counter cf of sf zf imme1 valu1 s)
   (if (equal loop-counter 0)
@@ -2730,7 +2730,7 @@ or
                                S))
 
     (let ((loop-counter (+ -1 loop-counter)))
-      (UPDATE-REGS :EAX (LOGIOR 1 
+      (UPDATE-REGS :EAX (LOGIOR 1
                                 (R32 (+ (* 4 LOOP-COUNTER)
                                         (R32 (+ 8 (G :ESP S)) S))
                                      S))
@@ -2739,7 +2739,7 @@ or
                    :ECX (R32 (+ (* 4 LOOP-COUNTER)
                                 (R32 (+ 8 (G :ESP S)) S))
                              S)
-                   :EDX 0 
+                   :EDX 0
                    :EIP (+ 852 (SNPT-CODE-LOCATION))
                    :ESI (+ (* 8 LOOP-COUNTER)
                            (R32 (+ 4 (G :ESP S)) S))
@@ -2752,13 +2752,13 @@ or
                    :VALU1 valu1
                    (UPDATE-MEM (+ -4 (G :ESP S))
                                (G :EBP S)
-                                          
+
                                (+ -8 (G :ESP S))
                                (G :ESI S)
-                                          
+
                                (+ -12 (G :ESP S))
                                (G :EBX S)
-                                          
+
                                (+ -16 (G :ESP S))
                                0
 
@@ -2767,7 +2767,7 @@ or
 
                                (+ -24 (G :ESP S))
                                (+ 1 loop-counter)
-                                          
+
                                (init_pdpt-modify-loop-1 loop-counter S))))))
 
 (defun init_pdpt-modify (s)
@@ -2807,10 +2807,10 @@ or
 
                              (+ -20 (G :ESP S))
                              1
-                           
+
                              (+ -24 (G :ESP S))
                              (+ 1 LOOP-COUNTER)
-                           
+
                              (init_pdpt-modify-loop-1 loop-counter S)))))
 
 ;;; qwerty
@@ -2898,7 +2898,7 @@ or
             (equal (r32 (+ (* 8 i)
                            (R32 (+ 4 (G :ESP S)) S))
                         (init_pdpt-modify s))
-                   (LOGIOR 1 
+                   (LOGIOR 1
                            (R32 (+ (* 4 i)
                                    (R32 (+ 8 (G :ESP S)) S))
                                 S)))))
@@ -2909,7 +2909,7 @@ or
                  (integerp i)
                  (<= 0 i)
                  (<= i 3))
-            (equal (r32 (+ 4 
+            (equal (r32 (+ 4
                            (* 8 i)
                            (R32 (+ 4 (G :ESP S)) S))
                         (init_pdpt-modify s))
@@ -2920,12 +2920,12 @@ or
   (cond ((not (in-sub s1))
          ;; exit
          (equal s1 (init_pdpt-modify s0)))
-        ((equal (g :eip s1) 
+        ((equal (g :eip s1)
                 (+ *INIT_PDPT* (snpt-code-location)))
          ;; start
          (and (init_pdpt-pre s1)
               (equal s1 s0)))
-        ((equal (g :eip s1) 
+        ((equal (g :eip s1)
                 (+ *L15* (snpt-code-location)))
          ;; loop
          (and (init_pdpt-pre s0)
@@ -3091,16 +3091,16 @@ or
     (implies (and (cond ((not (in-sub s1))
                          ;; exit
                          t)
-                        ((equal (g :eip s1) 
+                        ((equal (g :eip s1)
                                 (+ *INIT_PDPT* (snpt-code-location)))
                          ;; start
                          (and (init_pdpt-pre s1)
                               t))
-                        ((equal (g :eip s1) 
+                        ((equal (g :eip s1)
                                 (+ *L15* (snpt-code-location)))
                          ;; loop
                          (and t
-                              (init_pdpt-loop-pre s1)      
+                              (init_pdpt-loop-pre s1)
                               t))
                         (t
                          'NIL))
@@ -3109,7 +3109,7 @@ or
                     (cond ((not (in-sub s1))
                            ;; exit
                            t)
-                          ((equal (g :eip s1) 
+                          ((equal (g :eip s1)
                                   (+ *INIT_PDPT* (snpt-code-location)))
                            ;; start
                            (UPDATE-REGS :EBP (+ -4 (G :ESP S1))
@@ -3120,7 +3120,7 @@ or
                                                   (+ -16 (N32-TO-I32 (+ -12 (G :ESP S1)))))
                                         :F-SF (SF (N32-TO-I32 (+ -28 (G :ESP S1))))
                                         :F-ZF (ZF (+ -28 (G :ESP S1)))
-                                        :IMME1 0 
+                                        :IMME1 0
                                         :VALU1 16
                                         (UPDATE-MEM (+ -4 (G :ESP S1)) (G :EBP S1)
                                                     (+ -8 (G :ESP S1)) (G :ESI S1)
@@ -3131,7 +3131,7 @@ or
                                                     ;; i --- loop counter
                                                     (+ -24 (G :ESP S1)) 0
                                                     S1)))
-                          ((and (equal (g :eip s1) 
+                          ((and (equal (g :eip s1)
                                        (+ *L15* (snpt-code-location)))
                                 (<= (R32 (+ -20 (G :EBP S1)) S1) 3))
                            ;; stay in loop
@@ -3178,7 +3178,7 @@ or
                                           S1))
 
                              S1)))
-                          ((and (equal (g :eip s1) 
+                          ((and (equal (g :eip s1)
                                        (+ *L15* (snpt-code-location)))
                                 (< 3 (R32 (+ -20 (G :EBP S1)) S1)))
                            ;; exit loop
@@ -3254,7 +3254,7 @@ or
               (assertion-invariant-default-hint-1 (butlast clause 1)))
              (concl-vars (all-vars concl))
              (new-concl `((LAMBDA ,concl-vars ,concl) ,@(subst s1-subst 's1 concl-vars)))
-             (instance (prettyify-clause (append new-hyps 
+             (instance (prettyify-clause (append new-hyps
                                                  (list new-concl))
                                          nil world)))
             `(:use ((:instance
@@ -3265,8 +3265,8 @@ or
 
 
  (local
-  (set-default-hints '((assertion-invariant-default-hint stable-under-simplificationp 
-                                                         clause 
+  (set-default-hints '((assertion-invariant-default-hint stable-under-simplificationp
+                                                         clause
                                                          world))))
 
 
@@ -3480,7 +3480,7 @@ or
   (and (good-state-p s)
        (equal (g :eip s) (+ *INIT_PDTS* (snpt-code-location)))
        (not (paging-p s))
-       (disjointp 
+       (disjointp
         (list (range (snpt-code-location) 0 993)                            ; code
               (range (g :esp s) -56 68)                                     ; stack
               (range (r32 (+ 4 (g :esp s)) s) 0 (* 4 4))                    ; pdt pointer array
@@ -3505,7 +3505,7 @@ or
   (and (good-state-p s)
        (equal (g :eip s) (+ *L7* (snpt-code-location)))
        (not (paging-p s))
-       (disjointp 
+       (disjointp
         (list (range (snpt-code-location) 0 993)                            ; code
               (range (+ 4 (g :ebp s)) -56 68)                                     ; stack
               (range (r32 (+ 4 (+ 4 (g :ebp s))) s) 0 (* 4 4))                    ; pdt pointer array
@@ -3573,7 +3573,7 @@ or
   (and (good-state-p s)
        (equal (g :eip s) (+ *L9* (snpt-code-location)))
        (not (paging-p s))
-       (disjointp 
+       (disjointp
         (list (range (snpt-code-location) 0 993)                            ; code
               (range (+ 4 (g :ebp s)) -56 68)                                     ; stack
               (range (r32 (+ 4 (+ 4 (g :ebp s))) s) 0 (* 4 4))                    ; pdt pointer array
@@ -3740,7 +3740,7 @@ or
                                S))))
             (memoryp (g :mem (init_pdts-modify-inner-loop-1 i j s)))))
 
- 
+
 
  (defthm |(good-state-p (init_pdts-modify-inner-loop-1 i j s))|
    (implies (and (good-state-p s)
@@ -3820,7 +3820,7 @@ or
                                    (R32 (+ 4 (G :ESP S)) S))
                                 S))
                         (init_pdts-modify-inner-loop-1 i j s))
-                   (LOGIOR 231 
+                   (LOGIOR 231
                            (+ (* 512 I 2097152)
                               (* 2097152 J-PRIME)))))
    :hints (("Subgoal *1/7" :cases ((equal j j-prime)))))
@@ -3851,7 +3851,7 @@ or
                    0))
    :hints (("Subgoal *1/7" :cases ((equal j j-prime)))))
 
-;;; !!! Why so many more hyps than 
+;;; !!! Why so many more hyps than
 ;;; |(r32 addr (init_pdts-modify-inner-loop-1 i j s))|
 ;;; are they all relly needed?
  (defthm |(init_pdts-modify-inner-loop-1 i j (w32 addr val s))|
@@ -3881,7 +3881,7 @@ or
                                               S)
                                          0
                                          (+ 8 (* 8 j))))))
-            (equal (init_pdts-modify-inner-loop-1 i j 
+            (equal (init_pdts-modify-inner-loop-1 i j
                                                   (w32 addr val s))
                    (w32 addr val (init_pdts-modify-inner-loop-1 i j s)))))
  )
@@ -4110,7 +4110,7 @@ or
 
 
 ;;; very messy!!!
-;;; DO I need to instantiate 
+;;; DO I need to instantiate
 ;;; |(r32 addr (init_pdts-modify-inner-loop-1 i j s)) --- written to 1|
 ;;; because it is not unifying, or is worse-than to blame?
  (defthm |(r32 addr (init_pdts-modify-outer-loop-1 i s)) --- written to 1|
@@ -4157,7 +4157,7 @@ or
                                    (R32 (+ 4 (G :ESP S)) S))
                                 S))
                         (init_pdts-modify-outer-loop-1 i s))
-                   (LOGIOR 231 
+                   (LOGIOR 231
                            (+ (* 512 I-PRIME 2097152)
                               (* 2097152 J-PRIME)))))
    :hints (("Goal" :cases ((equal i 0)
@@ -4252,7 +4252,7 @@ or
    :otf-flg t)
 
 ;;; Very messy!!!
-;;; DO I need to instantiate 
+;;; DO I need to instantiate
 ;;; |(r32 addr (init_pdts-modify-inner-loop-1 i j s)) --- written to 2|
 ;;; because it is not unifying, or is worse-than to blame?
  (defthm |(r32 addr (init_pdts-modify-outer-loop-1 i s)) --- written to 2|
@@ -4294,7 +4294,7 @@ or
                                          0 4096)
                                   (RANGE (R32 (+ 12 (R32 (+ 4 (G :ESP S)) S)) S)
                                          0 4096))))
-            (equal (r32 (+ 4 
+            (equal (r32 (+ 4
                            (* 8 j-prime)
                            (R32 (+ (* 4 i-prime)
                                    (R32 (+ 4 (G :ESP S)) S))
@@ -4488,7 +4488,7 @@ or
                                               S)
                                          0
                                          4096))))
-            (equal (init_pdts-modify-outer-loop-1 i 
+            (equal (init_pdts-modify-outer-loop-1 i
                                                   (w32 addr val s))
                    (w32 addr val (init_pdts-modify-outer-loop-1 i s))))
    :hints (("Goal" :cases ((equal i 0)
@@ -4626,7 +4626,7 @@ or
                        :ESI (+ (R32 (+ (R32 (+ 4 (G :ESP S)) S)
                                        (* 4 (+ -1 i)))
                                     S)
-                               (* 8 511)) 
+                               (* 8 511))
                        :ESP (+ -60 (G :ESP S))
                        :F-CF cf
                        :F-OF of
@@ -4736,7 +4736,7 @@ or
                                      (+ (* 512 i 2097152)
                                         (* 2097152 (+ 1 j))))
 
-                                   (init_pdts-modify-inner-loop-1 
+                                   (init_pdts-modify-inner-loop-1
                                     i j
                                     (init_pdts-modify-outer-loop-1 (+ -1 i) S))))))))
 
@@ -4989,7 +4989,7 @@ or
                                    (R32 (+ 4 (G :ESP S)) S))
                                 S))
                         (init_pdts-modify s))
-                   (LOGIOR 231 
+                   (LOGIOR 231
                            (+ (* 512 I-PRIME 2097152)
                               (* 2097152 J-PRIME)))))
    :hints (("Goal" :cases ((equal i-prime 0)
@@ -5024,19 +5024,19 @@ or
             :use ((:instance |(r32 addr (init_pdts-modify-outer-loop-1 i s)) --- written to 2|
                              (i-prime 0)
                              (i 3))))))
- 
+
  )
 
 (defun init_pdts-assertion (s0 s1)
   (cond ((not (in-sub s1))
          ;; exit
          (equal s1 (init_pdts-modify s0)))
-        ((equal (g :eip s1) 
+        ((equal (g :eip s1)
                 (+ *INIT_PDTS* (snpt-code-location)))
          ;; start
          (and (init_pdts-pre s1)
               (equal s1 s0)))
-        ((equal (g :eip s1) 
+        ((equal (g :eip s1)
                 (+ *L7* (snpt-code-location)))
          ;; outer loop
          (and (init_pdts-pre s0)
@@ -5050,7 +5050,7 @@ or
                     (imme1 (g :imme1 s1))
                     (valu1 (g :valu1 s1)))
                 (equal s1 (init_pdts-modify-outer-loop i j cf of sf zf imme1 valu1 s0)))))
-        ((equal (g :eip s1) 
+        ((equal (g :eip s1)
                 (+ *L9* (snpt-code-location)))
          ;; inner loop
          (and (init_pdts-pre s0)
@@ -5205,24 +5205,24 @@ or
     (implies (and (cond ((not (in-sub s1))
                          ;; exit
                          t)
-                        ((equal (g :eip s1) 
+                        ((equal (g :eip s1)
                                 (+ *INIT_PDTS* (snpt-code-location)))
                          ;; start
                          (and (init_pdts-pre s1)
                               t))
-                        ((equal (g :eip s1) 
+                        ((equal (g :eip s1)
                                 (+ *L7* (snpt-code-location)))
                          ;; outer loop
                          (and t
                               (init_pdts-outer-loop-pre s1)
                               t))
-                        ((equal (g :eip s1) 
+                        ((equal (g :eip s1)
                                 (+ *L9* (snpt-code-location)))
                          ;; inner loop
                          (and t
                               (init_pdts-inner-loop-pre s1)
                               ;; !!!
-                              
+
                               t))
                         (t
                          'NIL))
@@ -5231,7 +5231,7 @@ or
                     (cond ((not (in-sub s1))
                            ;; exit
                            t)
-                          ((equal (g :eip s1) 
+                          ((equal (g :eip s1)
                                   (+ *INIT_PDTS* (snpt-code-location)))
                            ;; start
                            (UPDATE-REGS :EBP (+ -4 (G :ESP S1))
@@ -5259,7 +5259,7 @@ or
                                                     0 (+ -48 (G :ESP S1))
                                                     0 (+ -52 (G :ESP S1))
                                                     0 S1)))
-                          ((and (equal (g :eip s1) 
+                          ((and (equal (g :eip s1)
                                        (+ *L7* (snpt-code-location)))
                                 (<= (r32 (+ -32 (g :ebp s1)) s1) 3))
                            ;; stay in outer loop
@@ -5292,7 +5292,7 @@ or
                                                             (* 4 (R32 (+ -32 (G :EBP S1)) S1)))
                                                          S1)
                                                     S1)))
-                          ((and (equal (g :eip s1) 
+                          ((and (equal (g :eip s1)
                                        (+ *L7* (snpt-code-location)))
                                 (< 3 (r32 (+ -32 (g :ebp s1)) s1)))
                            ;; exit outer loop
@@ -5311,7 +5311,7 @@ or
                                           (SF (N32-TO-I32 (+ 48 (G :ESP S1))))
                                           :F-ZF (ZF (+ 48 (G :ESP S1)))
                                           :IMME1 3 :VALU1 48 S1))
-                          ((and (equal (g :eip s1) 
+                          ((and (equal (g :eip s1)
                                        (+ *L9* (snpt-code-location)))
                                 (<= (r32 (+ -28 (g :ebp s1)) s1) 511))
                            ;; stay in inner loop
@@ -5358,7 +5358,7 @@ or
                                                        (* 8 (R32 (+ -28 (G :EBP S1)) S1)))
                                                     (R32 (+ -20 (G :EBP S1)) S1)
                                                     S1)))
-                          ((and (equal (g :eip s1) 
+                          ((and (equal (g :eip s1)
                                        (+ *L9* (snpt-code-location)))
                                 (< 511 (r32 (+ -28 (g :ebp s1)) s1)))
                            ;; exit inner loop
@@ -5428,7 +5428,7 @@ or
               (assertion-invariant-default-hint-1 (butlast clause 1)))
              (concl-vars (all-vars concl))
              (new-concl `((LAMBDA ,concl-vars ,concl) ,@(subst s1-subst 's1 concl-vars)))
-             (instance (prettyify-clause (append new-hyps 
+             (instance (prettyify-clause (append new-hyps
                                                  (list new-concl))
                                          nil world)))
             `(:use ((:instance
@@ -5440,8 +5440,8 @@ or
 
 
  (local
-  (set-default-hints '((assertion-invariant-default-hint stable-under-simplificationp 
-                                                         clause 
+  (set-default-hints '((assertion-invariant-default-hint stable-under-simplificationp
+                                                         clause
                                                          world))))
 
 
@@ -5656,13 +5656,13 @@ or
   (and (good-state-p s)
        (equal (g :eip s) (+ *SEC_NOT_PRESENT* (snpt-code-location)))
        (not (paging-p s))
-       (disjointp 
+       (disjointp
         (list (range (snpt-code-location) 0 993)              ; code
               (range (g :esp s) -56 76)                       ; stack
               (range (r32 (+ 4 (g :esp s)) s) 0 (* 4 8))      ; pdpt
               (range (logand (r32 (+ (r32 (+ 4 (g :esp s)) s) ; pdt
                                      (* 8 (ash (r32 (+ 8 (g :esp s)) s) -30)))
-                                  s)  
+                                  s)
                              (lognot (+ -1 (expt 2 12))))
                      0
                      (* 512 8))))
@@ -5702,7 +5702,7 @@ or
                         (+ (R32 (+ 8 (G :ESP S)) S)
                            (R32 (+ 12 (G :ESP S)) S)))
                 -21))
-       (n32p (+ 7 (* 8 
+       (n32p (+ 7 (* 8
                      (+ -1
                         (ASH (LOGAND 1071644672
                                      (+ (R32 (+ 8 (G :ESP S)) S)
@@ -5719,13 +5719,13 @@ or
   (and (good-state-p s)
        (equal (g :eip s) (+ *L2* (snpt-code-location)))
        (not (paging-p s))
-       (disjointp 
+       (disjointp
         (list (range (snpt-code-location) 0 993)               ; code
               (range (+ 4 (g :ebp s)) -56 76)                  ; stack
               (range (r32 (+ 4 (+ 4 (g :ebp s))) s) 0 (* 4 8)) ; pdpt
               (range (logand (r32 (+ (r32 (+ 4 (+ 4 (g :ebp s))) s)      ; pdt
                                      (* 8 (ash (r32 (+ 8 (+ 4 (g :ebp s))) s) -30)))
-                                  s)  
+                                  s)
                                   (lognot (+ -1 (expt 2 12))))
                      0
                      (* 512 8))))
@@ -5756,13 +5756,13 @@ or
        (equal (R32 (+ 16 (G :EBP S)) S)
               (R32 (+ 12 (G :ESP S0)) S0))
        ;; end
-       (equal (r32 (+ -24 (+ 4 (g :ebp s))) s) 
+       (equal (r32 (+ -24 (+ 4 (g :ebp s))) s)
               (ASH (LOGAND 1071644672
                            (+ (R32 (+ 8 (+ 4 (g :ebp s))) S)
                               (R32 (+ 12 (+ 4 (g :ebp s))) S)))
                    -21))
        ;; start
-       (equal (r32 (+ -28 (+ 4 (g :ebp s))) s) 
+       (equal (r32 (+ -28 (+ 4 (g :ebp s))) s)
               (ASH (LOGAND 1071644672 (R32 (+ 8 (+ 4 (g :ebp s))) S))
                    -21))
        ;; pdt
@@ -5814,7 +5814,7 @@ or
                                         (R32 (+ 4 (G :ESP S)) S))
                                      S)))
                      0
-                     (+ 4 
+                     (+ 4
                         (* 8 i)
                         (LOGAND 4294963200
                                 (R32 (+ (* 8 (ASH (R32 (+ 8 (G :ESP S)) S) -30))
@@ -5829,7 +5829,7 @@ or
                                         (R32 (+ 4 (G :ESP S)) S))
                                      S)))
                      0
-                     (+ 4 
+                     (+ 4
                         (* 8 i)
                         (LOGAND 4294963200
                                 (R32 (+ (* 8 (ASH (R32 (+ 8 (G :ESP S)) S) -30))
@@ -5947,13 +5947,13 @@ or
                                                             (ASH (R32 (+ 8 (G :ESP S)) S)
                                                                  -30)))
                                                       S))
-                                         (* 8 (ASH (LOGAND 1071644672 
+                                         (* 8 (ASH (LOGAND 1071644672
                                                            (R32 (+ 8 (G :ESP S)) S))
                                                    -21))
-                                         (+ 8 
-                                            (* 8 
-                                               (max 0 
-                                                    (- i (ASH (LOGAND 1071644672 
+                                         (+ 8
+                                            (* 8
+                                               (max 0
+                                                    (- i (ASH (LOGAND 1071644672
                                                                       (R32 (+ 8 (G :ESP S)) S))
                                                               -21)))))))))
             (equal (r32 addr (sec_not_present-modify-loop-1 i s))
@@ -6112,7 +6112,7 @@ or
                                (G :EBP S)
 
                                (+ -8 (G :ESP S))
-                               4294967295 
+                               4294967295
 
                                (+ -12 (G :ESP S))
                                4294963200
@@ -6175,7 +6175,7 @@ or
                                          (R32 (+ 4 (G :ESP S)) S))
                                       S))
 ;;; !!!
-;;; logand or below??? 
+;;; logand or below???
 ;;;                         (R32 (+ -28 (+ -4 (G :ESP S))) S)
                          (* 8 i))
                  :EBP (+ -4 (G :ESP S))
@@ -6196,7 +6196,7 @@ or
                              (G :EBP S)
 
                              (+ -8 (G :ESP S))
-                             4294967295 
+                             4294967295
 
                              (+ -12 (G :ESP S))
                              4294963200
@@ -6287,7 +6287,7 @@ or
                              (G :EBP S)
 
                              (+ -8 (G :ESP S))
-                             4294967295 
+                             4294967295
 
                              (+ -12 (G :ESP S))
                              4294963200
@@ -6389,7 +6389,7 @@ or
                    (integerp i)
                    (< i 0))
               (n32p (ash x i))))
-           
+
    (defthm crock-102
      (implies (and (integerp i)
                    (<= 0 i)
@@ -6537,7 +6537,7 @@ or
    (implies (and (sec_not_present-pre s)
                  (n32p addr)
                  (n32p (+ 3 addr))
-                 
+
                  (disjointp (list (range addr 0 4)
                                   (range (g :esp s) -56 56)
                                   (range (LOGAND 4294963200
@@ -6548,8 +6548,8 @@ or
                                                       S))
                                          (* 8
                                             (ASH (LOGAND 1071644672 (R32 (+ 8 (G :ESP S)) S))
-                                                 -21)) 
-                                         (+ 8 
+                                                 -21))
+                                         (+ 8
                                             (* 8 (MAX
                                                   0
                                                   (- (+ -1
@@ -6630,7 +6630,7 @@ or
  ;;; too many hyps!
  (defthm |(r32 addr (sec_not_present-modify s)) --- written to 2|
    (implies (and (sec_not_present-pre s)
-                 
+
                  (integerp i-prime)
                  (n32p (+ (* 8 I-PRIME)
                           (LOGAND 4294963200
@@ -6734,7 +6734,7 @@ or
                    (integerp i)
                    (< i 0))
               (n32p (ash x i))))
-           
+
    (defthm crock-102
      (implies (and (integerp i)
                    (<= 0 i)
@@ -7052,7 +7052,7 @@ or
                                         ash-to-floor
                                         )
              :do-not '(generalize eliminate-destructors fertilize))
-            
+
             )
     :otf-flg t))
 
@@ -7113,7 +7113,7 @@ or
                                         ash-to-floor
                                         )
              :do-not '(generalize eliminate-destructors fertilize))
-            
+
             )
     :otf-flg t))
 
@@ -7162,8 +7162,8 @@ or
         (cond ((equal step :one)
                (let ()
                  `(:computed-hint-replacement ((assertion-invariant-default-hint
-                                                stable-under-simplificationp 
-                                                clause 
+                                                stable-under-simplificationp
+                                                clause
                                                 world
                                                 :two))
 ;;;                                             :dynamic-e/d ((SEC_NOT_PRESENT-PRE
@@ -7181,7 +7181,7 @@ or
                       (assertion-invariant-default-hint-1 (butlast clause 1)))
                      (concl-vars (all-vars concl))
                      (new-concl `((LAMBDA ,concl-vars ,concl) ,@(subst s1-subst 's1 concl-vars)))
-                     (instance (prettyify-clause (append new-hyps 
+                     (instance (prettyify-clause (append new-hyps
                                                          (list new-concl))
                                                  nil world)))
                     `(:use ((:instance
@@ -7200,7 +7200,7 @@ or
 
 
  (local
-  (set-default-hints '((assertion-invariant-default-hint stable-under-simplificationp 
+  (set-default-hints '((assertion-invariant-default-hint stable-under-simplificationp
                                                          clause world :one))))
 
 
@@ -7235,7 +7235,7 @@ or
                           (S1 ($$$NEXT-CUTPOINT-MAIN S1)))
                          (SEC_NOT_PRESENT-ASSERTION S0 S1)))
           :RULE-CLASSES NIL
-          
+
           :HINTS (("Goal" :in-theory (disable MOD-BOUNDS-1
                                               N32+-WHEN-WORD-ALIGNED
                                               |(word-aligned-p x)|
@@ -7503,7 +7503,7 @@ or
        (N32P (+ 1
                 (R32 (+ 12 (R32 (+ 8 (G :ESP S)) S))
                      S)))
-       
+
        ;; A few more hyps found to be usefull --- about visor_start
        ;; --- see sec_not_present-pre
        ;; what is this last one really saying?
@@ -7518,7 +7518,7 @@ or
                         (+ (R32 (+ 12 (G :ESP S)) S)
                            (R32 (+ 16 (G :ESP S)) S)))
                 -21))
-       (n32p (+ 7 (* 8 
+       (n32p (+ 7 (* 8
                      (+ -1
                         (ASH (LOGAND 1071644672
                                      (+ (R32 (+ 12 (G :ESP S)) S)
@@ -7653,7 +7653,7 @@ or
 
 ;;; Blindly copy in proof of |(init_pdpt-pre s)| and two related thms
 
- 
+
 
  (local
   (defthm ash-thm-100
@@ -7977,7 +7977,7 @@ or
                                                           S1)))))))
     :otf-flg t))
 
- 
+
  (local
   (in-theory (disable init_pdpt-pre
                       init_pdts-pre
@@ -8057,7 +8057,7 @@ or
             (equal (r32 (+ (* 8 i)
                            (R32 (+ 4 (G :ESP S)) S))
                         (create_nested_pt-modify s))
-                   (LOGIOR 1 
+                   (LOGIOR 1
                            (R32 (+ (* 4 i)
                                    (R32 (+ 8 (G :ESP S)) S))
                                 S))))
@@ -8068,7 +8068,7 @@ or
                     (equal i 2)
                     (equal i 3))
             :do-not '(generalize eliminate-destructors fertilize))
-           ("Subgoal 4" 
+           ("Subgoal 4"
             :use ((:instance |(r32 addr (init_pdpt-modify s)) --- written to 1|
                              (i 0)
                              (s (UPDATE-REGS :EAX (R32 (+ 4 (G :ESP S)) S)
@@ -8212,7 +8212,7 @@ or
                                   (equal (ASH (R32 (+ 12 (G :ESP S)) S) -30) 1)
                                   (equal (ASH (R32 (+ 12 (G :ESP S)) S) -30) 2)
                                   (equal (ASH (R32 (+ 12 (G :ESP S)) S) -30) 3)))
-           ("Subgoal 3" 
+           ("Subgoal 3"
             :use ((:instance |(r32 addr (init_pdpt-modify s)) --- written to 1|
                              (i 0)
                              (s (UPDATE-REGS :EAX (R32 (+ 4 (G :ESP S)) S)
@@ -8356,7 +8356,7 @@ or
                                   (equal (ASH (R32 (+ 12 (G :ESP S)) S) -30) 1)
                                   (equal (ASH (R32 (+ 12 (G :ESP S)) S) -30) 2)
                                   (equal (ASH (R32 (+ 12 (G :ESP S)) S) -30) 3)))
-           ("Subgoal 2" 
+           ("Subgoal 2"
             :use ((:instance |(r32 addr (init_pdpt-modify s)) --- written to 1|
                              (i 0)
                              (s (UPDATE-REGS :EAX (R32 (+ 4 (G :ESP S)) S)
@@ -8500,7 +8500,7 @@ or
                                   (equal (ASH (R32 (+ 12 (G :ESP S)) S) -30) 1)
                                   (equal (ASH (R32 (+ 12 (G :ESP S)) S) -30) 2)
                                   (equal (ASH (R32 (+ 12 (G :ESP S)) S) -30) 3)))
-           ("Subgoal 1" 
+           ("Subgoal 1"
             :use ((:instance |(r32 addr (init_pdpt-modify s)) --- written to 1|
                              (i 0)
                              (s (UPDATE-REGS :EAX (R32 (+ 4 (G :ESP S)) S)
@@ -8736,7 +8736,7 @@ or
                                                                (+ 927 (SNPT-CODE-LOCATION))
                                                                S)))))))))))
             )
-           
+
            ("Subgoal 4" :use ((:instance |(r32 addr (init_pdpt-modify s)) --- written to 1|
                                          (i (ASH (R32 (+ 12 (G :ESP S)) S) -30))
                                          (s (UPDATE-REGS :EAX (R32 (+ 4 (G :ESP S)) S)
@@ -8760,7 +8760,7 @@ or
                                                                      (+ -24 (G :ESP S))
                                                                      (+ 927 (SNPT-CODE-LOCATION))
                                                                      S))))))
-           
+
            ("Subgoal 2" :use ((:instance |(r32 addr (init_pdpt-modify s)) --- written to 1|
                                          (i (ASH (R32 (+ 12 (G :ESP S)) S) -30))
                                          (s (UPDATE-REGS :EAX (R32 (+ 4 (G :ESP S)) S)
@@ -8915,7 +8915,7 @@ or
                                    (R32 (+ 8 (G :ESP S)) S))
                                 S))
                         (create_nested_pt-modify s))
-                   (LOGIOR 231 
+                   (LOGIOR 231
                            (+ (* 512 I-PRIME 2097152)
                               (* 2097152 J-PRIME)))))
    :hints (("Goal" :in-theory (disable |(logior 1 x)|
@@ -9268,7 +9268,7 @@ or
                                    (R32 (+ 8 (G :ESP S)) S))
                                 S))
                         (create_nested_pt-modify s))
-                   (LOGIOR 231 
+                   (LOGIOR 231
                            (+ (* 512 I-PRIME 2097152)
                               (* 2097152 J-PRIME)))))
    :hints (("Goal" :in-theory (disable |(logior 1 x)|
@@ -9363,7 +9363,7 @@ or
                                                                           (+ -24 (G :ESP S))
                                                                           (+ 927 (SNPT-CODE-LOCATION))
                                                                           S)))))))))
-           
+
            ("Subgoal 3.3" :use ((:instance |(r32 addr (init_pdts-modify s)) --- written to 1|
                                            (j-prime j-prime)
                                            (i-prime 1)
@@ -9398,7 +9398,7 @@ or
                                                                           (+ -24 (G :ESP S))
                                                                           (+ 927 (SNPT-CODE-LOCATION))
                                                                           S)))))))))
-           
+
            ("Subgoal 3.2" :use ((:instance |(r32 addr (init_pdts-modify s)) --- written to 1|
                                            (j-prime j-prime)
                                            (i-prime 2)
@@ -9433,7 +9433,7 @@ or
                                                                           (+ -24 (G :ESP S))
                                                                           (+ 927 (SNPT-CODE-LOCATION))
                                                                           S)))))))))
-           
+
            ("Subgoal 3.1" :use ((:instance |(r32 addr (init_pdts-modify s)) --- written to 1|
                                            (j-prime j-prime)
                                            (i-prime 3)
@@ -9591,7 +9591,7 @@ or
 
 
 
-                             
+
  )
 
 
@@ -9615,7 +9615,7 @@ or
  ;; at least $$$PRESUB-IMPLIES-INSUB is much faster with this
  (local (include-book "arithmetic-5/top" :dir :system))
 
- 
+
 
  (local
   (defthm ash-thm-100
@@ -9817,7 +9817,7 @@ or
 
 
 
-   
+
 
  (local
   (in-theory (disable $$$DEFP-SYMSIM-THEOREM)))
@@ -10902,7 +10902,7 @@ or
                                                                      (+ 927 (SNPT-CODE-LOCATION))
                                                                      S1))))))
 
-           
+
             ("Subgoal 11"  :use ((:instance $$$DEFP-SYMSIM-THEOREM
                                             (s1 (UPDATE-REGS
                                                  :EAX (R32 (+ 4 (G :ESP S1)) S1)
@@ -10954,8 +10954,8 @@ or
                                                                                  (+ 927 (SNPT-CODE-LOCATION))
                                                                                  S1))))))))))))))
 
-            
-           
+
+
             ("Subgoal 11'''"  :use ((:instance $$$DEFP-SYMSIM-THEOREM
                                                (s1 (UPDATE-REGS
                                                     :EAX (R32 (+ 4 (G :ESP S1)) S1)
@@ -11171,7 +11171,7 @@ or
               (assertion-invariant-default-hint-1 (butlast clause 1)))
              (concl-vars (all-vars concl))
              (new-concl `((LAMBDA ,concl-vars ,concl) ,@(subst s1-subst 's1 concl-vars)))
-             (instance (prettyify-clause (append new-hyps 
+             (instance (prettyify-clause (append new-hyps
                                                  (list new-concl))
                                          nil world)))
             `(:use ((:instance
@@ -11183,8 +11183,8 @@ or
 
 
  (local
-  (set-default-hints '((assertion-invariant-default-hint stable-under-simplificationp 
-                                                         clause 
+  (set-default-hints '((assertion-invariant-default-hint stable-under-simplificationp
+                                                         clause
                                                          world))))
 
  (local

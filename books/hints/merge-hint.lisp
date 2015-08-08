@@ -57,7 +57,7 @@
          (remove-assoc-equals key (cdr alist)))
         (t (cons (car alist)
                  (remove-assoc-equals key (cdr alist))))))
-                 
+
 (defun merge-restrict-hints (alist1 alist2)
 
 ; We assume both alists are true-lists of non-empty true-lists, e.g.,
@@ -92,7 +92,7 @@
                                  alist2))))
    (t (cons (car alist1)
             (merge-restrict-hints (cdr alist1) alist2)))))
-                                   
+
 
 (defun mergeable-theory-expressionp (arg)
 
@@ -149,12 +149,12 @@
 ; and val1 by key and a merged value created from val1 and val2.  But
 ; occasionally we wish to signal an error.  We do that by replacing
 ; key and val1 by :ERROR and an appropriate message.
-      
+
       (case key
         (:ERROR
 
 ; We merge error hints by producing a message that will print both of
-; them.  
+; them.
 
          (let ((str "This hint produced several errors:~ ~*0~%")
                (directive "~%~%~@*"))
@@ -210,11 +210,11 @@
                             val2)
                            (t (msg "~X01" val2 nil))))))
               (cddr keyword-alist))))))
-        
+
         (:NO-OP
 
 ; The value provided with a :NO-OP hint is irrelevant and so the merged value
-; will be T, arbitrarily. 
+; will be T, arbitrarily.
 
          (list* :NO-OP T (cddr keyword-alist)))
         (:EXPAND
@@ -233,7 +233,7 @@
            (listify-untranslated-expand-hint val1)
            (listify-untranslated-expand-hint val2))
           (cddr keyword-alist)))
-                
+
         (:RESTRICT
 
 ; The value provided with a :RESTRICT hint must be an association list
@@ -417,7 +417,7 @@
                 (t (union-equal val1 val2)))
           (cddr keyword-alist)))
         (:IN-THEORY
-         
+
 ; The value provided to an :IN-THEORY hint can be an arbitrary
 ; theory-producing form and in general we do not know how to merge
 ; them!  However, we can handle a few special (and very common) cases.
@@ -443,7 +443,7 @@
 ; you to use nonlinear arithmetic (t) and not to use nonlinear
 ; arithmetic (nil).  What do you do?  These are unmergable and we
 ; provoke an error.
-          
+
          (cond
           ((not (or (eq val1 t) (eq val1 nil)))
            (list* :NONLINEARP val1 (cddr keyword-alist)))

@@ -142,7 +142,7 @@
 			     (x (acl2-exp x))
 			     (y (/ (- (raise1-fn1 x) (raise1-fn1 (+ x (/ (i-large-integer)))))
 				   (- (/ (i-large-integer))))))
-		  ) 	
+		  )
 	    :in-theory (disable acl2-exp-derivative
 				i-close-to-small-sum
 				standard-part-of-plus)
@@ -352,7 +352,7 @@
 				   (- (/ (i-large-integer))))))
 		  (:instance standards-are-limited
 			     (x (/ x)))
-		  ) 	
+		  )
 	    :in-theory (disable acl2-ln-real-derivative
 				i-close-to-small-sum
 				standard-part-of-plus
@@ -466,11 +466,11 @@
 		 dcc-fn1*fn2-differentiable-classical-using-hyperreal-criterion
 		 (dcc-fn1 (lambda (x) (raise1-fn2a x n)))
 		 (dcc-fn2 raise1-fn2b)
-		 (differential-dcc-fn1 
+		 (differential-dcc-fn1
 		  (lambda (x eps) (differential-raise1-fn2a x n eps)))
 		 (differential-dcc-fn2 differential-raise1-fn2b)
 		 (differential-dcc-fn1*fn2 (lambda (x eps) (differential-raise1-fn2a*fn2b x n eps)))
-		 (derivative-dcc-fn1 
+		 (derivative-dcc-fn1
 		  (lambda (x) (derivative-raise1-fn2a x n)))
 		 (derivative-dcc-fn2 derivative-raise1-fn2b)
 		 (dcc-fn1*fn2 (lambda (x) (raise1-fn2a*fn2b x n)))
@@ -566,15 +566,15 @@
 		 (inside-interval-p (+ x eps) (raise1-fn2-domain)))
 	    (equal (differential-raise1-fn2a*fn2b x n eps)
 		   (differential-raise1-fn2 x n eps)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:functional-instance expand-differential-dcc-fn1*fn2
 					(dcc-fn1 (lambda (x) (raise1-fn2a x n)))
 					(dcc-fn2 raise1-fn2b)
-					(differential-dcc-fn1 
+					(differential-dcc-fn1
 					 (lambda (x eps) (differential-raise1-fn2a x n eps)))
 					(differential-dcc-fn2 differential-raise1-fn2b)
 					(differential-dcc-fn1*fn2 (lambda (x eps) (differential-raise1-fn2a*fn2b x n eps)))
-					(derivative-dcc-fn1 
+					(derivative-dcc-fn1
 					 (lambda (x) (derivative-raise1-fn2a x n)))
 					(derivative-dcc-fn2 derivative-raise1-fn2b)
 					(dcc-fn1*fn2 (lambda (x) (raise1-fn2a*fn2b x n)))
@@ -631,7 +631,7 @@
 
 (local (in-theory (disable derivative-raise1-fn2a*fn2b)))
 
-(local 
+(local
  (defun-sk forall-x-eps-delta-in-range-deriv-raise1-fn2-works (x n eps delta)
    (forall (x1)
 	   (implies (and (inside-interval-p x1 (raise1-fn2-domain))
@@ -663,7 +663,7 @@
 	    :in-theory (disable forall-x-eps-delta-in-range-deriv-raise1-fn2a*fn2b-works-necc
 				derivative-raise1-fn2
 				forall-x-eps-delta-in-range-deriv-raise1-fn2a*fn2b-works)
-))))	    
+))))
 
 (local
  (defun-sk exists-delta-for-x-and-eps-so-deriv-raise1-fn2-works (x n eps)
@@ -699,8 +699,8 @@
  (defun differential-raise1-fn1-o-fn2 (x n eps)
    (if (equal (raise1-fn2 (+ x eps) n) (raise1-fn2 x n))
        0
-     (* (differential-raise1-fn1 (raise1-fn2 x n) 
-				(- (raise1-fn2 (+ x eps) n) 
+     (* (differential-raise1-fn1 (raise1-fn2 x n)
+				(- (raise1-fn2 (+ x eps) n)
 				   (raise1-fn2 x n)))
 	(differential-raise1-fn2 x n eps)))))
 
@@ -749,17 +749,17 @@
 				      (ccr-fn1 raise1-fn1)
 				      (derivative-ccr-fn1 derivative-raise1-fn1)
 				      (differential-ccr-fn1 differential-raise1-fn1)
-				      (ccr-fn2 
+				      (ccr-fn2
 				       (lambda (x) (raise1-fn2 x n)))
-				      (derivative-ccr-fn2 
+				      (derivative-ccr-fn2
 				       (lambda (x) (derivative-raise1-fn2 x n)))
-				      (differential-ccr-fn2 
+				      (differential-ccr-fn2
 				       (lambda (x eps) (differential-raise1-fn2 x n eps)))
-				      (ccr-fn1-o-fn2 
+				      (ccr-fn1-o-fn2
 				       (lambda (x) (raise1-fn1-o-fn2 x n)))
-				      (derivative-ccr-fn1-o-fn2 
+				      (derivative-ccr-fn1-o-fn2
 				       (lambda (x) (derivative-raise1-fn1-o-fn2 x n)))
-				      (differential-ccr-fn1-o-fn2 
+				      (differential-ccr-fn1-o-fn2
 				       (lambda (x eps) (differential-raise1-fn1-o-fn2 x n eps)))
 				      (ccr-fn2-domain raise1-fn2-domain)
 				      (ccr-fn2-range raise1-fn2-range)
@@ -837,17 +837,17 @@
 				      (ccr-fn1 raise1-fn1)
 				      (derivative-ccr-fn1 derivative-raise1-fn1)
 				      (differential-ccr-fn1 differential-raise1-fn1)
-				      (ccr-fn2 
+				      (ccr-fn2
 				       (lambda (x) (raise1-fn2 x n)))
-				      (derivative-ccr-fn2 
+				      (derivative-ccr-fn2
 				       (lambda (x) (derivative-raise1-fn2 x n)))
-				      (differential-ccr-fn2 
+				      (differential-ccr-fn2
 				       (lambda (x eps) (differential-raise1-fn2 x n eps)))
-				      (ccr-fn1-o-fn2 
+				      (ccr-fn1-o-fn2
 				       (lambda (x) (raise1-fn1-o-fn2 x n)))
-				      (derivative-ccr-fn1-o-fn2 
+				      (derivative-ccr-fn1-o-fn2
 				       (lambda (x) (derivative-raise1-fn1-o-fn2 x n)))
-				      (differential-ccr-fn1-o-fn2 
+				      (differential-ccr-fn1-o-fn2
 				       (lambda (x eps) (differential-raise1-fn1-o-fn2 x n eps)))
 				      (ccr-fn2-domain raise1-fn2-domain)
 				      (ccr-fn2-range raise1-fn2-range)
@@ -1001,10 +1001,10 @@
                 )
            (forall-x-eps-delta-in-range-deriv-raise-works x n eps delta))
   :hints (("Goal"
-           :expand ((forall-x-eps-delta-in-range-deriv-raise-works x n eps 
+           :expand ((forall-x-eps-delta-in-range-deriv-raise-works x n eps
                                                                    delta))
            :use ((:instance  forall-x-eps-delta-in-range-deriv-raise-posp-x-works-necc
-                            (x1 (forall-x-eps-delta-in-range-deriv-raise-works-witness 
+                            (x1 (forall-x-eps-delta-in-range-deriv-raise-works-witness
                                  x n eps delta)))
                  )
            :in-theory (disable forall-x-eps-delta-in-range-deriv-raise1-fn1-o-fn2-works-necc
@@ -1070,7 +1070,7 @@
 		   (< 0 delta)
 		   (forall-x-eps-delta-in-range-deriv-raise-posp-x-works x n eps delta)
 		   )
-	      (forall-x-eps-delta-in-range-deriv-raise-posp-x-works 
+	      (forall-x-eps-delta-in-range-deriv-raise-posp-x-works
 	       x n eps (fix-delta delta x)))
      :hints (("Goal"
 	      :use ((:instance fix-delta-works)
@@ -1161,7 +1161,7 @@
    ))
 
 (local
- (encapsulate 
+ (encapsulate
   nil
   (local (include-book "nonstd/nsa/exp-sum" :dir :system))
 
@@ -1306,7 +1306,7 @@
    (implies (and (realp x)
 		 (integerp n))
 	    (realp (derivative-raise x n)))))
-   
+
 (local
  (defthm expt--1-n
    (implies (integerp n)
@@ -1433,7 +1433,7 @@
 (defun negative-domain ()
   (interval nil '(0)))
 
-(defun-sk forall-x-eps-delta-in-range-deriv-raise-neg-x-works (x n eps delta) 
+(defun-sk forall-x-eps-delta-in-range-deriv-raise-neg-x-works (x n eps delta)
  (forall (x1)
 	  (implies (and (inside-interval-p x1 (negative-domain))
 			(inside-interval-p x (negative-domain))
@@ -1482,7 +1482,7 @@
 		   (forall-x-eps-delta-in-range-deriv-raise-works (- x) n eps delta)
 		   )
 	      (forall-x-eps-delta-in-range-deriv-raise-works x n eps delta))
-     
+
      :instructions
      ((:use (:instance forall-x-eps-delta-in-range-deriv-raise-works-necc
 		       (x (- x))
@@ -1681,7 +1681,7 @@
 		   (< 0 delta)
 		   (forall-x-eps-delta-in-range-deriv-raise-works (- x) n eps delta)
 		   )
-	      (forall-x-eps-delta-in-range-deriv-raise-works 
+	      (forall-x-eps-delta-in-range-deriv-raise-works
 	       x n eps (fix-delta delta x)))
      :hints (("Goal"
 	      :use ((:instance lemma-3 (delta (fix-delta delta x)))
@@ -1690,7 +1690,7 @@
 		    )
 	      :in-theory (disable fix-delta
 				  forall-x-eps-delta-in-range-deriv-raise-works)))))
-  
+
   (defthmd raise-differentiable-for-negp-x-using-hyperreal-criterion
     (implies (and (realp x)
 		  (< x 0)
@@ -1704,7 +1704,7 @@
 		   (:instance fix-delta-works
 			      (delta (exists-delta-for-x-and-eps-so-deriv-raise-works-witness (- x) n eps)))
 		   (:instance exists-delta-for-x-and-eps-so-deriv-raise-works-suff
-			      (delta (fix-delta 
+			      (delta (fix-delta
 				      (exists-delta-for-x-and-eps-so-deriv-raise-works-witness (- x) n eps) x)))
 		   (:instance raise-differentiable-for-posp-x-using-hyperreal-criterion
 			      (x (- x))))
@@ -1716,14 +1716,14 @@
 
  (local
   (defthmd lemma-1
-    (equal (raise 0 n) 
+    (equal (raise 0 n)
 	   (if (= n 0)
 	       1
 	     0))))
 
  (local
   (defthmd lemma-2
-    (equal (derivative-raise 0 n) 
+    (equal (derivative-raise 0 n)
 	   (if (= n 1)
 	       1
 	     0))))
@@ -1869,7 +1869,7 @@
 	(forall-x-eps-delta-in-range-deriv-raise-works-witness x n eps delta))))
      :up
      :promote :bash)))
- 
+
  (local
    (defun fix-delta (eps)
      (* 1/2 (min 1 eps))))
@@ -1899,7 +1899,7 @@
 		 )
 	   )))
 
-  ) 
+  )
 
 (defthmd raise-differentiable-using-hyperreal-criterion
   (implies (and (or (and (inside-interval-p x (positive-domain))
@@ -2003,7 +2003,7 @@
 			      (delta (exists-delta-for-x-and-eps-so-deriv-raise-works-witness x n eps))))
 	     :in-theory (disable forall-x-eps-delta-in-range-deriv-raise-works
 				 forall-x-eps-delta-in-range-deriv-expt-works)))))
-			      
+
 
  (defthmd expt-differentiable-using-hyperreal-criterion
    (implies (and (integerp n)

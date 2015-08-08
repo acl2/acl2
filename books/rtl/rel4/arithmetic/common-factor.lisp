@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-                  
+
 (include-book "meta/meta-times-equal" :dir :system)
 (include-book "meta/meta-plus-equal" :dir :system)
 (include-book "meta/meta-plus-lessp" :dir :system)
@@ -12,7 +12,7 @@
                 (case-split (acl2-numberp b))
                 (case-split (acl2-numberp c))
                 )
-           (equal (equal (* a c) (* b c)) 
+           (equal (equal (* a c) (* b c))
                   (if (equal c 0)
                       t
                     (equal a b))))
@@ -29,7 +29,7 @@
            (equal (* x (* (/ x) y)) (fix y)))
   :hints (("Goal" :cases ((acl2-numberp x))))
   )
-   
+
 (defthm cancel-common-factors-in-equal
   (implies (and (bind-free (bind-k-to-common-factors lhs rhs) (k))
                 (case-split (not (equal 0 k)))
@@ -77,7 +77,7 @@
   :hints (("Goal" :use (:instance  cancel-in-prods-< (a lhs) (b rhs) (c (/ k))))))
 
 (defun find-common-factors-to-cancel-1 (expr)
-  (declare (xargs :guard (and (pseudo-termp expr))))  
+  (declare (xargs :guard (and (pseudo-termp expr))))
   (remove-cancelling-factor-pairs
    (find-common-factors-in-sum-of-products expr)))
 
@@ -117,13 +117,13 @@
 |#
 
 
-  
+
 
 
 ;check that the inverse isn't a factor too...
 
 
-;returns an alist binding k to the product of all common factors in term 
+;returns an alist binding k to the product of all common factors in term
 
 
 

@@ -29,7 +29,7 @@
     'error
     (apply-field 0 component data)))
 
-(in-theory (disable xmas-switch-function)) 
+(in-theory (disable xmas-switch-function))
 
 (defstructure xmas bool routing transfer)
 
@@ -149,14 +149,14 @@
                    (not (equal a 'error))
                    (not (equal b 'error)))
               (iff (xmas-bool (xmas-or a b)) (or (xmas-bool a) (xmas-bool b))))))
- 
+
  (defthm xmas-and-bool-thm
    (let ((a (xmas-transfer-calculate flga channela xmasnetwork unvisited ntkstate))
          (b (xmas-transfer-calculate flgb channelb xmasnetwork unvisited ntkstate)))
      (implies (and (not (equal a 'error))
                    (not (equal b 'error)))
               (iff (xmas-bool (xmas-and a b)) (and (xmas-bool a) (xmas-bool b)) ))))
- 
+
  (defthm xmas-or-error-thm-simple
   (equal (equal (xmas-or a b) 'error) (or (equal a 'error) (equal b 'error))))
 
@@ -167,7 +167,7 @@
    (and (member-equal comp (xmasnetwork-components xmasnetwork));(consp xmasnetwork);(componentp (car comps) (len (xmasnetwork-channels xmasnetwork)))
         (member-equal (component-type comp) (resourcetypes))
          ))
- 
+
 (create-for-all resource-predicate :extra (xmasnetwork) :name A-resources)
 
 (defthm components-do-not-start-with-and
@@ -203,12 +203,12 @@
 
 
 (defthm components-are-not-and
-  (implies 
+  (implies
            (equal comp 'and)
            (not (componentp comp n)))
    :hints (("Goal" :in-theory (enable componentp))))
 (defthm components-are-not-or
-  (implies 
+  (implies
            (equal comp 'or)
            (not (componentp comp n)))
    :hints (("Goal" :in-theory (enable componentp))))

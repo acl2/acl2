@@ -150,7 +150,7 @@
 		      (interval-right-inclusive-p (domain-rifn)))
 		 (not (equal (interval-left-endpoint (domain-rifn))
 			     (interval-right-endpoint (domain-rifn)))))))
- 
+
  (defun map-rifn (p)
    ;; map rifn over the list p
    (if (consp p)
@@ -161,7 +161,7 @@
  (defun riemann-rifn (p)
    ;; for partition p, take the Riemann sum of rifn over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn (cdr p))))
 
  (defun int-rifn (a b)

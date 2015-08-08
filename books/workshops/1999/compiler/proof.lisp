@@ -51,8 +51,8 @@
 ;; programs (as defined in "evaluator.lisp") in order to prove compiler
 ;; correctness. We could generate (PUSHC nil) for unbound variable access in
 ;; order to meet the semantics (of those non well-formed programs), but with
-;; the remarks below we'll fail anyway. 
-;; 
+;; the remarks below we'll fail anyway.
+;;
 ;; If a function or operator is called on a wrong number of arguments, the
 ;; compiler generates wrong code w.r.t. the evaluator. If there are too many
 ;; actuals, then the evaluator consumes the FIRST n (n = number of formals)
@@ -141,11 +141,11 @@
 ;;
 (defthm call-f-will-execute-the-code-for-f-new
   (implies (assoc f (construct-genv dcls))
- 	   (equal (append 
+ 	   (equal (append
  		   (compile-form (caddr (assoc f (construct-genv dcls)))
  				 (cadr (assoc f (construct-genv dcls)))
  				 0)
- 		   (list (list 'pop 
+ 		   (list (list 'pop
  			       (len (cadr (assoc f (construct-genv dcls)))))))
 		  (cdr (assoc f (download (compile-defs dcls))))))
   :hints (("Goal" :in-theory (enable get-body get-vars get-code)))
@@ -155,9 +155,9 @@
 (defthm call-f-will-execute-the-code-for-f
   (implies (and (function-callp (cons f args))
 		(wellformed-form (cons f args) (construct-genv dcls) cenv))
-	   (equal (append 
-		   (compile-form (get-body f (construct-genv dcls)) 
-				 (get-vars f (construct-genv dcls)) 
+	   (equal (append
+		   (compile-form (get-body f (construct-genv dcls))
+				 (get-vars f (construct-genv dcls))
 				 0)
 		   (list (list 'pop (len (get-vars f (construct-genv dcls))))))
 		  (get-code f (download (compile-defs dcls)))))
@@ -179,32 +179,32 @@
 
 
 (defthm machine-value-on-call
-  (implies 
+  (implies
    (and (function-callp (cons f args))
-	(defined (msteps (compile-form (cons f args) cenv top) 
+	(defined (msteps (compile-form (cons f args) cenv top)
 			 (download (compile-defs dcls)) stack n)))
-   (equal (msteps (compile-form (cons f args) cenv top) 
+   (equal (msteps (compile-form (cons f args) cenv top)
 		  (download (compile-defs dcls)) stack n)
-	  (msteps (get-code f (download (compile-defs dcls))) 
-		  (download (compile-defs dcls)) 
-		  (msteps (compile-forms args cenv top) 
+	  (msteps (get-code f (download (compile-defs dcls)))
+		  (download (compile-defs dcls))
+		  (msteps (compile-forms args cenv top)
 			  (download (compile-defs dcls)) stack n)
 		  (1- n)))))
 
 (defthm machine-strictness-on-call
-  (implies 
+  (implies
    (and (function-callp (cons f args))
-	(defined (msteps (compile-form (cons f args) cenv top) 
+	(defined (msteps (compile-form (cons f args) cenv top)
 			 (download (compile-defs dcls)) stack n)))
-   (defined (msteps (get-code f (download (compile-defs dcls))) 
-		    (download (compile-defs dcls)) 
-		    (msteps (compile-forms args cenv top) 
+   (defined (msteps (get-code f (download (compile-defs dcls)))
+		    (download (compile-defs dcls))
+		    (msteps (compile-forms args cenv top)
 			    (download (compile-defs dcls)) stack n)
 		    (1- n))))
-     :hints (("Goal" 
+     :hints (("Goal"
 	      :use (defined-if-equal-value machine-value-on-call)
 	      :in-theory (disable defined msteps msteps-eqn get-code))))
-  
+
 
 (in-theory (disable function-callp base-form get-code))
 
@@ -220,17 +220,17 @@
 (in-theory (disable MSTEPS-DISTRIBUTES-OVER-APPEND))
 
 (defthm compiled-body-value-1
-  (implies 
+  (implies
    (and (function-callp (cons f args))
   	(wellformed-form (cons f args) (construct-genv dcls) cenv)
-  	(defined (msteps (compile-form (cons f args) cenv top) 
+  	(defined (msteps (compile-form (cons f args) cenv top)
   			 (download (compile-defs dcls)) stack n)))
-   (equal 
-    (msteps (compile-form (cons f args) cenv top) 
+   (equal
+    (msteps (compile-form (cons f args) cenv top)
 	    (download (compile-defs dcls)) stack n)
     (msteps (list (list 'pop (len (get-vars f (construct-genv dcls)))))
 	     (download (compile-defs dcls))
-	     (msteps (compile-form (get-body f (construct-genv dcls)) 
+	     (msteps (compile-form (get-body f (construct-genv dcls))
 				   (get-vars f (construct-genv dcls)) 0)
 		     (download (compile-defs dcls))
 		     (msteps (compile-forms args cenv top)
@@ -239,15 +239,15 @@
 	     (1- n)))))
 
 (defthm compiled-body-strictness-1
-  (implies 
+  (implies
    (and (function-callp (cons f args))
   	(wellformed-form (cons f args) (construct-genv dcls) cenv)
-  	(defined (msteps (compile-form (cons f args) cenv top) 
+  	(defined (msteps (compile-form (cons f args) cenv top)
   			 (download (compile-defs dcls)) stack n)))
-   (defined 
+   (defined
      (msteps (list (list 'pop (len (get-vars f (construct-genv dcls)))))
 	     (download (compile-defs dcls))
-	     (msteps (compile-form (get-body f (construct-genv dcls)) 
+	     (msteps (compile-form (get-body f (construct-genv dcls))
 				   (get-vars f (construct-genv dcls)) 0)
 		     (download (compile-defs dcls))
 		     (msteps (compile-forms args cenv top)
@@ -256,23 +256,23 @@
 	     (1- n)))))
 
 (defthm compiled-body-strictness-2
-  (implies 
+  (implies
    (and (function-callp (cons f args))
   	(wellformed-form (cons f args) (construct-genv dcls) cenv)
-  	(defined (msteps (compile-form (cons f args) cenv top) 
+  	(defined (msteps (compile-form (cons f args) cenv top)
   			 (download (compile-defs dcls)) stack n)))
-   (defined 
-     (msteps (compile-form (get-body f (construct-genv dcls)) 
+   (defined
+     (msteps (compile-form (get-body f (construct-genv dcls))
 				   (get-vars f (construct-genv dcls)) 0)
 		     (download (compile-defs dcls))
 		     (msteps (compile-forms args cenv top)
 			     (download (compile-defs dcls)) stack n)
 		     (1- n))))
-  :hints (("Goal" 
-	   :use 
-	   (:instance 
+  :hints (("Goal"
+	   :use
+	   (:instance
 	    machine-strictness1
-	    (m1 (compile-form (get-body f (construct-genv dcls)) 
+	    (m1 (compile-form (get-body f (construct-genv dcls))
 			      (get-vars f (construct-genv dcls)) 0))
 	    (m2 (list (list 'pop (len (get-vars f (construct-genv dcls))))))
 	    (code (download (compile-defs dcls)))
@@ -328,12 +328,12 @@
 	   (wellformed-def (get-definition name defs) genv)))
 
 (defthm wff-3
-  (implies (and (definition-listp defs) 
+  (implies (and (definition-listp defs)
 		(assoc name (construct-genv defs)))
-	   (equal (get-definition name defs) 
+	   (equal (get-definition name defs)
 		  (list 'defun name (get-vars name (construct-genv defs))
 			(get-body name (construct-genv defs))))))
-  
+
 (in-theory (disable get-definition construct-genv))
 
 ;; If we prove this, the proof of wff-4 below runs faster.
@@ -346,7 +346,7 @@
 (defthm wff-4
   (implies (and (wellformed-defs defs (construct-genv defs))
 		(assoc name (construct-genv defs)))
-	   (equal (get-definition name defs) 
+	   (equal (get-definition name defs)
 		  (list 'defun name (get-vars name (construct-genv defs))
 			(get-body name (construct-genv defs)))))
      :hints (("Goal" :use wellformed-defs-definition-listp)))
@@ -375,7 +375,7 @@
 ;; Operator Calls on the Machine
 
 (defthm machine-on-operator-call
- (implies 
+ (implies
   (and (operator-callp (cons op args))
        (defined (msteps (compile-form (cons op args) cenv top) code stack n)))
   (equal (msteps (compile-form (cons op args) cenv top) code stack n)
@@ -397,13 +397,13 @@
 
 (defthm binary-for-args
   (implies (and (consp args) (consp (cdr args)) (null (cddr args)))
-	   (equal (append (rev args) stack) 
+	   (equal (append (rev args) stack)
 		  (append (list (cadr args) (car args)) stack))))
 
 (defthm unary-for-args-evlist
   (implies (and (consp args) (null (cdr args))
 		(defined (evlist args genv env n)))
-	   (and (consp (evlist args genv env n)) 
+	   (and (consp (evlist args genv env n))
 		(null (cdr (evlist args genv env n)))))
   :hints (("Goal" :induct (form-listp-induction args))))
 
@@ -418,13 +418,13 @@
 (defthm unary-for-argsevlist-append
   (implies (and (consp args) (null (cdr args))
 		(defined (evlist args genv env n)))
-	   (equal (append (rev (evlist args genv env n)) stack) 
+	   (equal (append (rev (evlist args genv env n)) stack)
 		  (cons (car (evlist args genv env n)) stack))))
 
 (defthm binary-for-argsevlist-append
   (implies (and (consp args) (consp (cdr args)) (null (cddr args))
 		(defined (evlist args genv env n)))
-	   (equal (append (rev (evlist args genv env n)) stack) 
+	   (equal (append (rev (evlist args genv env n)) stack)
 		  (append (list (cadr (evlist args genv env n))
 				(car (evlist args genv env n)))
 			  stack))))
@@ -445,7 +445,7 @@
 				 LEN SYMBOLP CONSP ATOM LIST1))
 		(wellformed-form (cons op args) genv cenv)
 		(defined (evlist args genv env n)))
-	   (equal (append (rev (evlist args genv env n)) stack) 
+	   (equal (append (rev (evlist args genv env n)) stack)
 		  (cons (car (evlist args genv env n)) stack)))
   :hints (("Goal" :use (unary-has-one-argument unary-for-argsevlist-append))))
 
@@ -453,14 +453,14 @@
   (implies (and (member op '(CONS EQUAL APPEND MEMBER ASSOC + - * LIST2))
 		(wellformed-form (cons op args) genv cenv)
 		(defined (evlist args genv env n)))
-	   (equal (append (rev (evlist args genv env n)) stack) 
+	   (equal (append (rev (evlist args genv env n)) stack)
 		  (append (list (cadr (evlist args genv env n))
 				(car (evlist args genv env n)))
 			  stack)))
   :hints (("Goal" :use (binary-has-two-arguments binary-for-argsevlist-append))))
 
 (defthm correct-opcall-unary
- (implies 
+ (implies
   (and (member op '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 1- 1+
 				 LEN SYMBOLP CONSP ATOM LIST1))
        (wellformed-form (cons op args) genv cenv)
@@ -470,7 +470,7 @@
  :hints (("Goal" :in-theory (disable member))))
 
 (defthm correct-opcall-binary
- (implies 
+ (implies
   (and (member op '(CONS EQUAL APPEND MEMBER ASSOC + - * LIST2))
        (wellformed-form (cons op args) genv cenv)
        (defined (evlist args genv env n)))
@@ -487,7 +487,7 @@
   :rule-classes nil)
 
 (defthm correct-opcall
- (implies 
+ (implies
   (and (operatorp op)
        (wellformed-form (cons op args) genv cenv)
        (defined (evlist args genv env n)))
@@ -515,15 +515,15 @@
 	   (wellformed-form (cadddr x) genv cenv)))
 
 (defthm compiler-on-if
-  (implies 
+  (implies
    (equal (car form) 'if)
    (equal (compile-form form cenv top)
 	  (append (compile-form (cadr form) cenv top)
 		  (list (list 'if (compile-form (caddr form) cenv top)
 			      (compile-form (cadddr form) cenv top)))))))
-		     
+
 (defthm cond-strictness
-  (implies 
+  (implies
    (and (equal (car form) 'IF)
 	;;(wellformed-form form genv cenv)
 	(defined (msteps (compile-form form cenv top) code stack n)))
@@ -531,43 +531,43 @@
   :hints (("Goal" :in-theory (enable defined))))
 
 (defthm then-strictness
- (implies 
+ (implies
   (and (equal (car form) 'if)
        (defined (msteps (compile-form form cenv top) code stack n))
        (car (msteps (compile-form (cadr form) cenv top) code stack n)))
-  (defined (msteps (compile-form (caddr form) cenv top) 
-		      code 
-		      (cdr (msteps (compile-form (cadr form) cenv top) 
-				   code stack n)) 
+  (defined (msteps (compile-form (caddr form) cenv top)
+		      code
+		      (cdr (msteps (compile-form (cadr form) cenv top)
+				   code stack n))
 		      n))))
-	       
+
 (defthm else-strictness
- (implies 
+ (implies
   (and (equal (car form) 'if)
        (defined (msteps (compile-form form cenv top) code stack n))
        (not (car (msteps (compile-form (cadr form) cenv top) code stack n))))
-  (defined (msteps (compile-form (cadddr form) cenv top) 
-		      code 
-		      (cdr (msteps (compile-form (cadr form) cenv top) 
-				   code stack n)) 
+  (defined (msteps (compile-form (cadddr form) cenv top)
+		      code
+		      (cdr (msteps (compile-form (cadr form) cenv top)
+				   code stack n))
 		      n))))
 
 ;; Crucial for strictness in case the condition is defined but not the
 ;; conditional
 ;;
 (defthm then-else-strictness
-  (implies 
+  (implies
    (and (equal (car form) 'if)
 	(defined (msteps (compile-form form cenv top) code stack n))
-	(not (defined (msteps (compile-form (caddr form) cenv top) 
-			      code 
-			      (cdr (msteps (compile-form (cadr form) cenv top) 
-					   code stack n)) 
+	(not (defined (msteps (compile-form (caddr form) cenv top)
+			      code
+			      (cdr (msteps (compile-form (cadr form) cenv top)
+					   code stack n))
 			      n))))
-   (defined (msteps (compile-form (cadddr form) cenv top) 
-		    code 
-		    (cdr (msteps (compile-form (cadr form) cenv top) 
-				 code stack n)) 
+   (defined (msteps (compile-form (cadddr form) cenv top)
+		    code
+		    (cdr (msteps (compile-form (cadr form) cenv top)
+				 code stack n))
 		    n))))
 
 (defthm evl-if-true
@@ -576,7 +576,7 @@
 		(defined (evl (cadr form) genv env n)))
 	   (equal (evl form genv env n)
 		  (evl (caddr form) genv env n))))
-	       
+
 (defthm evl-if-false
   (implies (and (equal (car form) 'if)
 		(not (car (evl (cadr form) genv env n)))
@@ -597,17 +597,17 @@
 		  (if (car (evl (cadr form) genv env n))
 		      (defined (evl (caddr form) genv env n))
 		    (defined (evl (cadddr form) genv env n))))))
-	    
+
 
 ;;---------------------------------------------------------------------------
 ;; The induction scheme that we will use to prove the compiler correctness for
-;; forms and form lists. 
+;; forms and form lists.
 ;; It is a combined structural and computational induction (on n). If flag is
 ;; true, we think of proving the theorem for a form x, and we use the
 ;; structural induction hypothesis for conditionals and argument lists (of
 ;; functions or operators) and the computational induction hypothesis in case
 ;; of the function call (where we evaluate resp. execute the function
-;; body). 
+;; body).
 ;; If flag is false, we think of proving the theorem for form lists and assume
 ;; the structural induction hypothesis for the form (car x) and the form list
 ;; (cdr x).
@@ -620,48 +620,48 @@
     (if flag
 	(if (base-form x) (list x cenv env top dcls stack n)
 	  (if (equal (car x) 'if)
-	      (list (compiler-induction 
+	      (list (compiler-induction
 		     t (cadr x) cenv env top dcls stack n)
-		    (compiler-induction 
-		     t (caddr x) cenv env top dcls 
+		    (compiler-induction
+		     t (caddr x) cenv env top dcls
 		     (cdr (msteps (compile-form (cadr x) cenv top)
 				  (download (compile-defs dcls))
 				  stack n))
 		     n)
-		    (compiler-induction 
+		    (compiler-induction
 		     t
-		     (cadddr x) cenv env top dcls 
+		     (cadddr x) cenv env top dcls
 		     (cdr (msteps (compile-form (cadr x) cenv top)
 				  (download (compile-defs dcls))
 				  stack n))
 		     n))
 	    (if (operatorp (car x))
-		(compiler-induction 
+		(compiler-induction
 		   nil
 		   (cdr x) cenv env top dcls stack n)
-	      (list (compiler-induction 
+	      (list (compiler-induction
 		     nil
 		     (cdr x) cenv env top dcls stack n)
-		    (compiler-induction 
+		    (compiler-induction
 		     t
 		     (get-body (car x) (construct-genv dcls))
 		     (get-vars (car x) (construct-genv dcls))
 		     (bind cenv (rev (get-stack-frame cenv top stack)) env)
 		     0
 		     dcls
-		     (msteps (compile-forms (cdr x) cenv top) 
+		     (msteps (compile-forms (cdr x) cenv top)
 			     (download (compile-defs dcls))
 			     stack n)
 		     (1- n))))))
-      (list (compiler-induction 
+      (list (compiler-induction
 	     t (car x) cenv env top dcls stack n)
-	    (compiler-induction 
+	    (compiler-induction
 	     nil
-	     (cdr x) 
-	     cenv 
+	     (cdr x)
+	     cenv
 	     env
-	     (1+ top) 
-	     dcls 
+	     (1+ top)
+	     dcls
 	     (msteps (compile-form (car x) cenv top)
 		     (download (compile-defs dcls))
 		     stack n)
@@ -684,11 +684,11 @@
 				  (download (compile-defs ,dcls));; code
 				  ,stack
 				  ,n)))
-	    (and 
-	     (defined 
+	    (and
+	     (defined
 	       (evlist ,forms
 		       (construct-genv ,dcls)
-		       (bind ,cenv (rev (get-stack-frame ,cenv ,top ,stack)) 
+		       (bind ,cenv (rev (get-stack-frame ,cenv ,top ,stack))
 			     ,env);; (nthcdr (+ ,top (len ,cenv)) ,stack))
 		       ,n))
 	     (equal
@@ -696,10 +696,10 @@
 		      (download (compile-defs ,dcls));; code
 		      ,stack
 		      ,n)
-	      (append 
+	      (append
 	       (rev (evlist ,forms
 			    (construct-genv ,dcls);; genv (evaluator)
-			    (bind ,cenv (rev (get-stack-frame ,cenv ,top ,stack)) 
+			    (bind ,cenv (rev (get-stack-frame ,cenv ,top ,stack))
 				  ,env);; (nthcdr (+ ,top (len ,cenv)) ,stack))
 			    ,n))
 	       ,stack)))))
@@ -728,7 +728,7 @@
 
 
 ;; This rule is crucial to the definedness part of the proof for operator
-;; calls 1/4.2. 
+;; calls 1/4.2.
 ;;
 (defthm evlop-defined-opcalls
   (implies (and (not (zp n))
@@ -833,7 +833,7 @@
   (implies (true-listp l) (true-listp (rev l))))
 
 (defthm mytake-len
-  (implies (true-listp vals) 
+  (implies (true-listp vals)
 	   (equal (mytake (len vals) (append vals stack)) vals)))
 
 (defthm nthcdr-len
@@ -889,12 +889,12 @@
 		(wellformed-form (cons f args) genv cenv)
 		;;(assoc f genv)
 		(defined (evlist args genv env n)))
-	   (equal 
-	    (rev (get-stack-frame 
+	   (equal
+	    (rev (get-stack-frame
 		  (get-vars f genv) 0
 		  (append (rev (evlist args genv env n)) stack)))
 	    (evlist args genv env n)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable get-stack-frame function-callp base-form)
 	   :use (:instance rev-get-stack-frame
 			      (vals (evlist args genv env n))
@@ -914,11 +914,11 @@
      :hints (("Goal" :in-theory (enable msteps))))
 
 
-;; This rule is needed for nthcdr-evlist-1 below. 
+;; This rule is needed for nthcdr-evlist-1 below.
 ;;
 (defthm nthcdr-evlist
   (implies (defined (evlist args genv env n))
-	   (equal (nthcdr (len args) 
+	   (equal (nthcdr (len args)
 			  (append (rev (evlist args genv env n)) stack))
 		  stack)))
 
@@ -939,10 +939,10 @@
 ;;The following rule are needed if we want to disable all of those many
 ;;functions.
 ;;
-		   
+
 (defthm natp1+ (implies (natp top) (natp (+ 1 top))))
 
-(defthm fcp 
+(defthm fcp
   (implies (wellformed-form x (construct-genv dcls) cenv)
 	   (equal (function-callp x)
 		  (and (consp x) (not (base-form x))
@@ -950,7 +950,7 @@
 		       (not (operatorp (car x))))))
   :rule-classes :rewrite)
 
-(defthm ocp 
+(defthm ocp
   (implies (wellformed-form x (construct-genv dcls) cenv)
 	   (equal (operator-callp x)
 		  (and (consp x) (not (base-form x))
@@ -974,7 +974,7 @@
 
 (in-theory (enable defined))
 
-(defthm msteps-nil 
+(defthm msteps-nil
   (implies (and (defined stack) (not (zp n)))
 	   (equal (msteps nil code stack n) stack))
   :hints (("Goal" :in-theory (disable zp))))
@@ -1015,12 +1015,12 @@
   (implies (and (not (consp x)) (defined (evlist x genv env n)))
 	   (null (evlist x genv env n)))
      :hints (("Goal" :in-theory (enable evlist))))
-    
+
 (defthm evlist-on-nil-1
   (implies (and (not (consp x)) (defined (evlist x genv env n)))
 	   (equal (append (rev (evlist x genv env n)) stack) stack))
      :hints (("Goal" :use evlist-on-nil)))
-    
+
 (defthm machine-on-nil-evlist
   (implies (and (not (consp x))
 		(not (defined (evlist x genv env n))))
@@ -1042,13 +1042,13 @@
 
     (forms-theorem x cenv env top dcls stack n))
 
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :induct (compiler-induction flag x cenv env top dcls stack n)
-	   :in-theory 
+	   :in-theory
 	   (disable evlist evl defined get-stack-frame bind
 		    compile-form compile-forms construct-genv download
 		    wellformed-form wellformed-forms mstep msteps
-		    operatorp get-body get-vars wellformed-form-eqn 
+		    operatorp get-body get-vars wellformed-form-eqn
 		    wellformed-forms-eqn base-form function-callp operator-callp
 		    natp compile-def compile-defs mstep-eqn msteps-eqn
 		    formp form-listp definitionp definition-listp
@@ -1094,22 +1094,22 @@
 		(wellformed-form main (construct-genv dcls) vars))))
 
 (defthm execute-lemma
-  (implies 
+  (implies
    (and (wellformed-program dcls vars main)
-	(defined 
-	  (execute (compile-program dcls vars main) 
+	(defined
+	  (execute (compile-program dcls vars main)
 		   (append (rev inputs) stack) n))
 	(true-listp inputs) (equal (len vars) (len inputs)))
-   (equal (execute (compile-program dcls vars main) 
+   (equal (execute (compile-program dcls vars main)
 		   (append (rev inputs) stack) n)
-	  (cons (car (evl main (construct-genv dcls) 
-			  (bind vars 
+	  (cons (car (evl main (construct-genv dcls)
+			  (bind vars
 				inputs
 				env)
 			  n))
 		stack)))
-  :hints (("Goal" 
-	   :in-theory 
+  :hints (("Goal"
+	   :in-theory
 	   (disable msteps download compile-defs
 		    compiler-correctness-for-forms
 		    get-stack-frame evl bind natp
@@ -1122,16 +1122,16 @@
 			    (stack (append (rev inputs) stack))))))
 
 (defthm execute-lemma-nil
-  (implies 
+  (implies
    (and (wellformed-program dcls vars main)
-	(defined 
-	  (execute (compile-program dcls vars main) 
+	(defined
+	  (execute (compile-program dcls vars main)
 		   (append (rev inputs) stack) n))
 	(true-listp inputs) (equal (len vars) (len inputs)))
-   (equal (execute (compile-program dcls vars main) 
+   (equal (execute (compile-program dcls vars main)
 		   (append (rev inputs) stack) n)
-	  (cons (car (evl main (construct-genv dcls) 
-			  (bind vars 
+	  (cons (car (evl main (construct-genv dcls)
+			  (bind vars
 				inputs
 				nil)
 			  n))
@@ -1150,20 +1150,20 @@
 ;;---------------------------------------------------------------------------
 
 (defthm compiler-correctness-for-programs
-  (implies 
+  (implies
    (and (wellformed-program dcls vars main)
-	(defined (execute (compile-program dcls vars main) 
-			  (append (rev inputs) stack) 
+	(defined (execute (compile-program dcls vars main)
+			  (append (rev inputs) stack)
 			  n))
-	(true-listp inputs) 
+	(true-listp inputs)
 	(equal (len vars) (len inputs)))
-   (equal (execute (compile-program dcls vars main) 
+   (equal (execute (compile-program dcls vars main)
 		   (append (rev inputs) stack) n)
 	  (cons (car (evaluate dcls vars main inputs n)) stack)))
-  :hints 
-  (("Goal" 
+  :hints
+  (("Goal"
     :use (execute-lemma-nil evaluate-is-evl-main)
-    :in-theory 
-    (disable compiler-correctness-for-forms get-stack-frame evl bind 
+    :in-theory
+    (disable compiler-correctness-for-forms get-stack-frame evl bind
 	     natp construct-genv msteps-eqn wellformed-program))))
 

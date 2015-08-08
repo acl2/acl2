@@ -97,7 +97,7 @@ reason about extract-n there.
 (local
 (in-theory (disable first-n extract-qs))
 )
-                
+
 (local
 (defthm arith-001
   (implies (and (<= lo hi)
@@ -109,12 +109,12 @@ reason about extract-n there.
   :rule-classes :forward-chaining)
 )
 
-(defthm load-alloc-extract-qs-same                              
+(defthm load-alloc-extract-qs-same
   (implies (and (equal n (1+ (- hi lo)))
                 (natp lo)
                 (natp hi)
                 (<= lo hi))
-           (equal (extract-qs lo hi 
+           (equal (extract-qs lo hi
                               (load-qs x lo n qs))
                   (first-n n x)))
   :hints (("Goal"
@@ -176,5 +176,4 @@ reason about extract-n there.
                             (mid1 i)
                             (mid2 (1+ i))))))
   :rule-classes nil)
-          
- 
+

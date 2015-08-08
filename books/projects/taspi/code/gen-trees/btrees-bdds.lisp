@@ -47,7 +47,7 @@
 (defthm good-taxon-bdd-through-build-fast
   (implies (and (good-taxon-bdd-alist x)
                 (good-taxon-bdd-alist acc))
-           (good-taxon-bdd-alist 
+           (good-taxon-bdd-alist
             (build-fast-alist-from-alist x acc))))
 
 (defthm good-depths-through-subtrees-implying

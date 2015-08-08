@@ -27,7 +27,7 @@
 
 (include-book "building-blocks")
 
-(local 
+(local
  (include-book "../../support/top"))
 
 (local
@@ -79,7 +79,7 @@
 
 #|
 ;;; I would really like to not need the following rewrite rule.
-;;; However, type-reasoning is not particularly good at 
+;;; However, type-reasoning is not particularly good at
 ;;; determining the truth of inequalities.
 
 ;;; Type reasoning should now (v2-8) be a little better at determining
@@ -96,8 +96,8 @@
 ;;; Note the form of the conclusion of these rules.  It is important
 ;;; to write type-prescription rules such that their conclusions
 ;;; actually specify a type-set.  Due to the presence of complex
-;;; numbers and the fact that they are linearly ordered, 
-;;; (< 0 (expt x n)) does not encode a type-set.  This makes me 
+;;; numbers and the fact that they are linearly ordered,
+;;; (< 0 (expt x n)) does not encode a type-set.  This makes me
 ;;; unhappy at times.
 
 ;;; NOTE: Should the next 3 rules be :linear rules also?
@@ -150,7 +150,7 @@
 		(integerp n))
 	   (equal (integerp (/ (expt x n)))
 		  (<= n 0)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
 		 (:type-prescription
 		  :corollary
 		  (implies (and (integerp x)
@@ -172,7 +172,7 @@
 		(integerp n))
 	   (equal (integerp (/ (expt x n)))
 		  (<= n 0)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
 		 (:type-prescription
 		  :corollary
 		  (implies (and (integerp x)
@@ -207,7 +207,7 @@
 
 (defthm |(expt x 1)|
   (implies (acl2-numberp x)
-	   (equal (expt x 1) 
+	   (equal (expt x 1)
 		  x)))
 
 (defthm |(expt 1 n)|
@@ -215,7 +215,7 @@
            1))
 
 (defthm |(expt x -1)|
-  (equal (expt x -1) 
+  (equal (expt x -1)
 	 (/ x)))
 
 ;;; Do we want a rule like the following?  I have neither tried to
@@ -301,7 +301,7 @@
     (implies (syntaxp (rewriting-goal-literal x mfc state))
              (equal (expt (+ x y) 2)
                     (+ (expt x 2)
-                       (* 2 x y) 
+                       (* 2 x y)
                        (expt y 2))))
   :hints (("Goal" :expand (expt (+ x y) 2))))
 
@@ -494,7 +494,7 @@
 ;;; 4. Some miscelaneous rules about expt.
 
 ;;; NOTE: There are several rules in this book which have (< 1 x)
-;;; as a hypothesis.  There probably should be rules with 
+;;; as a hypothesis.  There probably should be rules with
 ;;; (< 0 x) (< x 1) also.
 
 (defthm |(integerp (expt x n))|
@@ -875,7 +875,7 @@
 		     (/ lbd x)
 		   nil)
 		 lbd-rel
-		 (if ubd 
+		 (if ubd
 		     (/ ubd x)
 		   nil)
 		 ubd-rel))))
@@ -1004,7 +1004,7 @@
 		(integerp n))
 	   (<= (expt c d) (expt c n)))
   :rule-classes ((:linear :trigger-terms ((expt c n)))))
-  
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1056,7 +1056,7 @@
 	   (and (rationalp (expt x n))
 		(<= 0 (expt x n))))
   :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
+  :hints (("Goal" :use ((:instance
 			 expt-type-prescription-negative-base-even-exponent-a)))))
 
 #+non-standard-analysis
@@ -1068,7 +1068,7 @@
 	   (and (real/rationalp (expt x n))
 		(<= 0 (expt x n))))
   :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
+  :hints (("Goal" :use ((:instance
 			 expt-type-prescription-negative-base-even-exponent-a)))))
 
 (defthm expt-type-prescription-nonpositive-base-odd-exponent
@@ -1079,7 +1079,7 @@
 	   (and (rationalp (expt x n))
 		(<= (expt x n) 0)))
   :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
+  :hints (("Goal" :use ((:instance
 			 expt-type-prescription-negative-base-odd-exponent-a)))))
 
 #+non-standard-analysis
@@ -1091,6 +1091,6 @@
 	   (and (real/rationalp (expt x n))
 		(<= (expt x n) 0)))
   :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
+  :hints (("Goal" :use ((:instance
 			 expt-type-prescription-negative-base-odd-exponent-a)))))
 

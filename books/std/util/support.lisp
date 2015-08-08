@@ -199,7 +199,7 @@ extract-keywords), with default-value support."
     `(b* (,@pre-bindings
           . ,(assigns-for-getargs args name))
        ,rest)))
-  
+
 
 
 (defsection split-///

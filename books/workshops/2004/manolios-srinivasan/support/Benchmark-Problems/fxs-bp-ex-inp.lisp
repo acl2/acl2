@@ -8,27 +8,27 @@
 :set-irrelevant-formals-ok t
 
 (defun equalb (a b) (equal a b))
- 
+
 (defun nequal (a b) (not (equal a b))) (defun add-1 (a) (+ a 1))
- 
+
 (defun sub-1 (a) (- a 1))
- 
+
 (encapsulate ((intrp_mod_dmem (x1) t))
      (local (defun intrp_mod_dmem (x1) (declare (ignore x1)) 1))
      (defthm intrp_mod_dmem-type (integerp (intrp_mod_dmem x1))))
- 
+
 (encapsulate ((nextdmem (x3 x2 x1) t))
      (local (defun nextdmem (x3 x2 x1)
               (declare (ignore x3) (ignore x2) (ignore x1))
               1))
      (defthm nextdmem-type (integerp (nextdmem x3 x2 x1))))
- 
+
 (encapsulate ((dmem_read (x2 x1) t))
      (local (defun dmem_read (x2 x1)
               (declare (ignore x2) (ignore x1))
               1))
      (defthm dmem_read-type (integerp (dmem_read x2 x1))))
- 
+
 (encapsulate ((nextintrp (x1) t))
      (local (defun nextintrp (x1) (declare (ignore x1)) 1))
      (defthm nextintrp-type (integerp (nextintrp x1))))

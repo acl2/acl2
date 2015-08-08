@@ -74,9 +74,9 @@ So, I think I'd proceed as follows.
 ;(cw "~x0~%" (all-fnnames ',defs)) ; nil (w state)))
 (defun build-call-tree (fn-names state)
   (declare (xargs :mode :program))
-  (if (atom fn-names) 
+  (if (atom fn-names)
       nil
-    (acons (car fn-names) 
+    (acons (car fn-names)
            (all-fnnames (body (car fn-names) nil (w state)))
            (build-call-tree (cdr fn-names) state))))
 
@@ -93,7 +93,7 @@ So, I think I'd proceed as follows.
 (encapsulate
  ()
  (set-well-founded-relation l<)
- (mutual-recursion 
+ (mutual-recursion
   (defun free-node-list (ns call-tree unseen-nodes)
     (declare (xargs :measure (list (acl2-count unseen-nodes) (acl2-count ns) )))
     (if (atom ns)
@@ -104,7 +104,7 @@ So, I think I'd proceed as follows.
   (defun free-node (n call-tree unseen-nodes)
     (declare (xargs :measure (list (acl2-count unseen-nodes) 0)))
     (and (member n unseen-nodes)
-         (free-node-list (cdr (assoc n call-tree)) 
+         (free-node-list (cdr (assoc n call-tree))
                          call-tree
                          (set-difference-eq unseen-nodes (list n)))))
   )
@@ -115,12 +115,12 @@ So, I think I'd proceed as follows.
       (mv mr-fns-acc rst-fns-acc)
     (if (free-node (car df-fns) call-tree all-fns)
         (separate-fns (cdr df-fns)
-                      call-tree all-fns 
-                      mr-fns-acc 
+                      call-tree all-fns
+                      mr-fns-acc
                       (cons (car df-fns) rst-fns-acc))
-      (separate-fns (cdr df-fns) 
-                    call-tree all-fns 
-                    (cons (car df-fns) mr-fns-acc) 
+      (separate-fns (cdr df-fns)
+                    call-tree all-fns
+                    (cons (car df-fns) mr-fns-acc)
                     rst-fns-acc))))
 
 (defun find-fn-def (fn-name defs)
@@ -145,7 +145,7 @@ So, I think I'd proceed as follows.
      (mv-let (mr-fns fr-fns)
              (separate-fns dfnames call-tree fnnames nil nil)
              (cons 'progn
-                   (append 
+                   (append
                     (find-fn-defs fr-fns defs)
                     (if mr-fns
                         (list (cons 'mutual-recursion
@@ -163,11 +163,11 @@ So, I think I'd proceed as follows.
                          (mutual-recursion ,@(add-bogus-measure-lst defs)))
 ;                         (mutual-recursion ,@defs))
                          (value (mut-rec-fn ',defs state)))))
-  
+
 
 
 #|
-(mut-rec 
+(mut-rec
      (DEFUN WP-SUM-SIMPLE-MOD-2-L_280 (X Z A NSAVE)
             (WP-SUM-SIMPLE-MOD-2-L_282 X Z (COPY 0)
                                        NSAVE))

@@ -130,22 +130,22 @@ natp-induction (n)
  ((cS) => *)
  ((dS) => *))
 
-(local 
+(local
  (defun
      aS ( )
    2))
 
-(local 
+(local
  (defun
      bS ( )
    2))
 
-(local 
+(local
  (defun
      cS ( )
    0))
 
-(local 
+(local
  (defun
      dS ( )
    3))
@@ -154,28 +154,28 @@ natp-induction (n)
     pos-int-aS
     (and (integerp (aS))
 	  (> (aS) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
     pos-int-bS
     (and (integerp (bS))
 	  (> (bS) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
     nat-int-cS
     (and (integerp (cS))
 	  (>= (cS) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
     pos-int-dS
     (and (integerp (dS))
 	  (> (dS) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
@@ -183,14 +183,14 @@ natp-induction (n)
     (divides (dS)
 	      (+ 1
 		 (* (aS)
-		    (expt 2 
+		    (expt 2
 			  (cS))))))
 
 (defthm
     Induction-condition-Sierpinski
     (divides (dS)
-	      (+ -1 
-		 (expt 2 
+	      (+ -1
+		 (expt 2
 		       (bS)))))
 )
 
@@ -201,7 +201,7 @@ natp-induction (n)
 	     (divides (dS)
 		      (+ 1
 			 (* (aS)
-			    (expt 2 
+			    (expt 2
 				  (+ (cS)
 				     (* (bS)
 					n)))))))
@@ -227,7 +227,7 @@ natp-induction (n)
 		  (x (dS))
 		  (y (+ -1 (expt 2 (bS))))
 		  (z (* (aS)
-			(expt 2 
+			(expt 2
 			      (+ (- (bS))
 				 (cS)
 				 (* (bS) n))))))))))
@@ -238,22 +238,22 @@ natp-induction (n)
  ((cR) => *)
  ((dR) => *))
 
-(local 
+(local
  (defun
      aR ( )
    2))
 
-(local 
+(local
  (defun
      bR ( )
    2))
 
-(local 
+(local
  (defun
      cR ( )
    1))
 
-(local 
+(local
  (defun
      dR ( )
    3))
@@ -262,28 +262,28 @@ natp-induction (n)
     pos-int-aR
     (and (integerp (aR))
 	  (> (aR) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
     pos-int-bR
     (and (integerp (bR))
 	  (> (bR) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
     nat-int-cR
     (and (integerp (cR))
 	  (>= (cR) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
     pos-int-dR
     (and (integerp (dR))
 	  (> (dR) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
@@ -291,14 +291,14 @@ natp-induction (n)
     (divides (dR)
 	      (+ -1
 		 (* (aR)
-		    (expt 2 
+		    (expt 2
 			  (cR))))))
 
 (defthm
     Induction-condition-Riesel
     (divides (dR)
-	      (+ -1 
-		 (expt 2 
+	      (+ -1
+		 (expt 2
 		       (bR)))))
 )
 
@@ -309,7 +309,7 @@ Key-lemma-Riesel
 	   (divides (dR)
 		    (+ -1
 		       (* (aR)
-			  (expt 2 
+			  (expt 2
 				(+ (cR)
 				   (* (bR)
 				      n)))))))
@@ -335,7 +335,7 @@ Key-lemma-Riesel
 		  (x (dR))
 		  (y (+ -1 (expt 2 (bR))))
 		  (z (* (aR)
-			(expt 2 
+			(expt 2
 			      (+ (- (bR))
 				 (cR)
 				 (* (bR) n))))))))))
@@ -693,7 +693,7 @@ Key-lemma-Riesel
  (let* ((divisor-lt-sierpinski (u::pack-intern divisor divisor '-lt-sierpinski))
 	 )
    `(DEFTHM ,divisor-lt-sierpinski
-      (IMPLIES (AND (INTEGERP N) 
+      (IMPLIES (AND (INTEGERP N)
 		     (<= 0 N))
 		(< (,divisor N)
 		   (+ 1 (* ,number (EXPT 2 N))))))))
@@ -702,7 +702,7 @@ Key-lemma-Riesel
  (let* ((divisor-lt-riesel (u::pack-intern divisor divisor '-lt-sierpinski))
 	 )
    `(DEFTHM ,divisor-lt-riesel
-      (IMPLIES (AND (INTEGERP N) 
+      (IMPLIES (AND (INTEGERP N)
 		     (<= 0 N))
 		(< (,divisor N)
 		   (+ -1 (* ,number (EXPT 2 N))))))))
@@ -712,7 +712,7 @@ Key-lemma-Riesel
 	 (cover-thm (u::pack-intern divisor divisor '-cover-all-cases))
 	 )
    `(DEFTHM ,divisor-divides
-	 (IMPLIES (AND (INTEGERP N) 
+	 (IMPLIES (AND (INTEGERP N)
 		       (<= 0 N))
 		  (DIVIDES (,divisor N)
 			   (+ 1 (* ,number (EXPT 2 N)))))
@@ -725,7 +725,7 @@ Key-lemma-Riesel
 	 (cover-thm (u::pack-intern divisor divisor '-cover-all-cases))
 	 )
    `(DEFTHM ,divisor-divides
-	 (IMPLIES (AND (INTEGERP N) 
+	 (IMPLIES (AND (INTEGERP N)
 		       (<= 0 N))
 		  (DIVIDES (,divisor N)
 			   (+ -1 (* ,number (EXPT 2 N)))))

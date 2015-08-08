@@ -113,7 +113,7 @@ certify-book on this file.  Here's how I do it:
 				      (b-tie-list-of-type-fn
 				       p-number-list)
 				      (type-fn (lambda (x) (numericp x)))))))
-  
+
 (defthm unzip-of-numbers-is-number-list
   (implies (and (powerlist-p x)
 		(p-number-list x))
@@ -166,7 +166,7 @@ certify-book on this file.  Here's how I do it:
 
 (defthm min-elem-unzip
   (implies (powerlist-p x)
-	   (and (>= (p-min-elem (p-unzip-l x)) 
+	   (and (>= (p-min-elem (p-unzip-l x))
 		    (p-min-elem x))
 		(>= (p-min-elem (p-unzip-r x))
 		    (p-min-elem x))))

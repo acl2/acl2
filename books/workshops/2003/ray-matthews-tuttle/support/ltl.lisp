@@ -34,7 +34,7 @@ that are required to verify the reductions. The point in the case is that if
 for a real LTL semantics function these constraints are not satisfied for
 periodic paths, then the functions (and not the theorems) need to be changed,
 making encapsulate a viable option in order to not get bogged down in
-implementation of a model-checking routine for ltl. 
+implementation of a model-checking routine for ltl.
 
 Questions and comments are welcome. -- Sandip.
 
@@ -81,7 +81,7 @@ Questions and comments are welcome. -- Sandip.
 ;; recursive definition.
 
 (defun restricted-formulap (f v-list)
-  (cond ((atom f) (or (ltl-constantp f) 
+  (cond ((atom f) (or (ltl-constantp f)
                       (and (ltl-variablep f)
                            (memberp f v-list))))
         ((equal (len f) 3) (and (memberp (second f) '(& + U W))
@@ -108,7 +108,7 @@ Questions and comments are welcome. -- Sandip.
         ((equal (len f) 3) (set-union (create-restricted-var-set (first f))
                                       (create-restricted-var-set (third f))))
         ((equal (len f) 2) (create-restricted-var-set (second f)))
-        (t nil)))  
+        (t nil)))
 
 ;; And show that we have been successful
 
@@ -139,7 +139,7 @@ Questions and comments are welcome. -- Sandip.
 
 ;; We turn our attention to models.
 
-;; First this handy collection of functions that might help us. 
+;; First this handy collection of functions that might help us.
 ;; NOTE TO MYSELF: I should write some utilities in ACL2 that will allow me to
 ;; load the accessor and updater macros easily. I will have to think about it
 ;; at aome point.
@@ -147,7 +147,7 @@ Questions and comments are welcome. -- Sandip.
 ;; Here are the accessors and updaters as macros. A Kripke structure is a
 ;; record of states, initial-states, transition and label-fn.
 
-(defmacro initial-states (m) `(<- ,m :initial-states))  
+(defmacro initial-states (m) `(<- ,m :initial-states))
 (defmacro transition     (m) `(<- ,m :transition))
 (defmacro label-fn       (m) `(<- ,m :label-fn))
 (defmacro states         (m) `(<- ,m :states))
@@ -169,7 +169,7 @@ Questions and comments are welcome. -- Sandip.
 (defmacro cycle          (p) `(<- ,p :cycle))
 (defmacro prefix         (p) `(<- ,p :prefix))
 
-(defmacro >_ (&rest upds) `(update nil ,@upds)) 
+(defmacro >_ (&rest upds) `(update nil ,@upds))
 
 (defun next-statep (p q m)
   (memberp q (<- (transition m) p)))
@@ -183,7 +183,7 @@ Questions and comments are welcome. -- Sandip.
 (in-theory (disable next-statep initial-statep label-of))
 
 ;; The predicate modelp here precisely describes what we expect a Kripke
-;; Structure to look like. 
+;; Structure to look like.
 
 (defun next-states-in-states (m states)
   (if (endp states) T
@@ -210,7 +210,7 @@ Questions and comments are welcome. -- Sandip.
 
 (encapsulate
  (((modelp *) => *))
- 
+
  (local
   (defun modelp (m)
     (and (subset (initial-states m) (states m))
@@ -223,7 +223,7 @@ Questions and comments are welcome. -- Sandip.
                  (consp (states m))
                  (next-states-in-states m (states m)))))
 )
-       
+
 
 ;; We define a periodic path to be compatible with a model if (a) its initial
 ;; state is in the initial states of the model, (b) its prefix is a compatible
@@ -276,7 +276,7 @@ Questions and comments are welcome. -- Sandip.
   (cond ((endp cycle) nil) ;; for termination
         ((< (nfix n) (len cycle)) (nth n cycle))
         (t (state-at-aux (- n (len cycle)) cycle))))
-        
+
 (defun state-at (n ppath)
   (let ((init (initial-state ppath))
         (prefix (prefix ppath))
@@ -310,7 +310,7 @@ Questions and comments are welcome. -- Sandip.
            (equal (append (first-n n x)
                           (last-n n x))
                   x)))
-                  
+
 (defthm len-of-last-n-is-len-minus-n
   (implies (and (not (zp n))
                 (<= n (len x)))
@@ -330,7 +330,7 @@ Questions and comments are welcome. -- Sandip.
                 (true-listp y))
            (equal (first-n i (append y z))
                   y)))
-                  
+
 
 (defthm last-n-append-reduction
   (implies (equal i (len x))
@@ -362,49 +362,49 @@ Questions and comments are welcome. -- Sandip.
   (if (endp q) T
     (if (or (endp p) (< (len q) (len p))) nil
       (and (equal-label-segments-p p m (first-n (len p) q) n vars)
-           (equal-label-segments-sequence-p-small-p 
-            p m 
+           (equal-label-segments-sequence-p-small-p
+            p m
             (last-n (len p) q) n vars)))))
 
 (defun equal-label-segments-sequence-p-large-p (p m q n vars)
   (declare (xargs :measure (len p)))
   (if (endp p) T
     (if (or (endp q) (< (len p) (len q))) nil
-      (and (equal-label-segments-p (first-n (len q) p) m q n vars) 
-           (equal-label-segments-sequence-p-large-p 
+      (and (equal-label-segments-p (first-n (len q) p) m q n vars)
+           (equal-label-segments-sequence-p-large-p
             (last-n (len q) p) m q  n vars)))))
 
 (defun equal-labels-periodic-path-p (p m q n vars)
   (and (set-equal (set-intersect (label-of (initial-state p) m) vars)
                   (set-intersect (label-of (initial-state q) n) vars))
-       (or (and (equal-label-segments-p (prefix p) m 
-                                        (first-n (len (prefix p)) (prefix q))  
+       (or (and (equal-label-segments-p (prefix p) m
+                                        (first-n (len (prefix p)) (prefix q))
                                         n vars)
-                (equal-label-segments-sequence-p-small-p 
-                 (cycle p) m 
+                (equal-label-segments-sequence-p-small-p
+                 (cycle p) m
                  (last-n (len (prefix p)) (prefix q))
                  n vars)
-                (equal-label-segments-sequence-p-small-p 
+                (equal-label-segments-sequence-p-small-p
                  (cycle p) m (cycle q)
                  n vars))
-            (and (equal-label-segments-p 
+            (and (equal-label-segments-p
                   (first-n (len (prefix q)) (prefix p))
                   m (prefix q) n vars)
-                (equal-label-segments-sequence-p-large-p 
-                 (last-n 
+                (equal-label-segments-sequence-p-large-p
+                 (last-n
                   (len (prefix q))
                   (prefix p)) m
                   (cycle q) n vars)
-                (equal-label-segments-sequence-p-large-p 
+                (equal-label-segments-sequence-p-large-p
                  (cycle p) m (cycle q) n vars)))))
 
 
 ;; Now we define the semantics of ltl. The semantics function is the
 ;; concrete-ltl-semantics provided below. And I need not emphasize that the
-;; function is a mess. 
+;; function is a mess.
 
 ;; We have decided to snip out part of this book from here. I have actually
-;; proved that concrete-ltl-semantics satisfies the theorem 
+;; proved that concrete-ltl-semantics satisfies the theorem
 ;; ltl-ppath-semantics-cannot-distinguish-between-equal-labels. Actually we
 ;; proved a more general version of the theorem, and equal-labels-periodic-path-p
 ;; is too restrictive. However, as we will see in the sequel, that is all that we
@@ -427,11 +427,11 @@ Questions and comments are welcome. -- Sandip.
 ;; we can provide the actual theorems about concrete-ltl-semantics.
 
 
-(encapsulate 
+(encapsulate
  (((ltl-ppath-semantics * * *) => *))
- 
+
  (local
-  (defun ltl-ppath-semantics (f ppath m) 
+  (defun ltl-ppath-semantics (f ppath m)
     (declare (ignore f ppath m))
     T)
   )

@@ -5,12 +5,12 @@
   (and (symbolp s)
        (not (in s '(+ & MU NU true false)))))
 
-(defun basic-m-calc-formulap (f ap v) 
+(defun basic-m-calc-formulap (f ap v)
 "True iff f is a mu-calculus formula given that ap is the list of
 atomic proposition constants and v is the set of atomic proposition
 variables. This checks that f is a basic mu-calc formula.  We allow
 for abbreviations (e.g. =>) with translate. Formats of formulas are: p
--propositional variable or constant (EX f), (f1 & f2), (f1 + f2), 
+-propositional variable or constant (EX f), (f1 & f2), (f1 + f2),
  (~ f), (MU y f(y)), (NU y f(y))"
   (cond ((symbolp f)
 	 (or (in f '(true false))
@@ -38,13 +38,13 @@ now has AX, \| (same as +), => and -> (both are implies), and =, <->,
 <=> (all are for boolean equality).  This function just rewrites these
 in terms of the basic boolean operators."
   (cond ((symbolp f) f)
-	((equal (len f) 2) 
+	((equal (len f) 2)
 	 (let ((first (first f))
 	       (second (second f)))
 	   (cond ((equal first 'AX)
 		  `(~ (EX (~ ,(translate-f second)))))
 		 (t `(,first ,(translate-f second))))))
-	((equal (len f) 3) 
+	((equal (len f) 3)
 	 (let ((first (first f))
 	       (second (second f))
 	       (third (third f)))

@@ -13,9 +13,9 @@
         (t
          (let ((a (fib (- x 1)))
                (b (fib (- x 2))))
-           
+
            (+ a b)))))
-  
+
 
 ; Parallelized version of Fibonacci, using plet
 
@@ -28,12 +28,12 @@
          1)
 
         (t
-         (plet 
+         (plet
           (declare (granularity (> x 27)))
-          
+
           ((a (pfib (- x 1)))
            (b (pfib (- x 2))))
-          
+
           (binary-+ a b)))))
 
 
@@ -50,7 +50,7 @@
         (t
          (pcall
           (declare (granularity (> x 27)))
-          
+
           (binary-+ (pfib (- x 1))
                     (pfib (- x 2)))))))
 |#

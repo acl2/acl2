@@ -1,23 +1,23 @@
 ;  Copyright (C) 2000 Panagiotis Manolios
- 
+
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios who can be reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
@@ -49,7 +49,7 @@
 #|
      11  (3)
    1100 (12)
- +    1  (1) 
+ +    1  (1)
  ------
   10000 (16)
 
@@ -127,7 +127,7 @@ For example,
 (defun add-fix (i l)
   (if (zp i)
       nil
-    (cons (if (car l) t nil) 
+    (cons (if (car l) t nil)
 	  (add-fix (1- i) (cdr l)))))
 
 (defun 128fix (l)
@@ -212,7 +212,7 @@ For example,
 	      (equal (n (add-fix b l))
 		     (mmod (n l) (expt 2 b))))
      :hints (("goal" :induct (induct-for-thm l b))
-	     ("subgoal *1/2.4'" 
+	     ("subgoal *1/2.4'"
 	      :in-theory '(natp posp)
 	      :use (:instance mmod-over-expt (n (n (cdr l)))))))
 
@@ -235,12 +235,12 @@ For example,
    (defthm serial-add-add-fix
      (implies (and (integerp n) (<= 0 n))
 	      (equal (serial-adder (add-fix n nil)
-				   (add-fix n nil) 
+				   (add-fix n nil)
 				   nil)
 		     (add-fix (1+ n) nil))))
 
    ))
-   
+
 (defthm add-fix-add
   (implies (and (integerp n)
 		(<= 0 n))
@@ -262,13 +262,13 @@ For example,
 
 ; from isa128.lisp
 (defun ALU-output (op val1 val2)
-  (cond ((equal op 0) 
+  (cond ((equal op 0)
 	 (mod (+ (nfix val1) (nfix val2)) (expt 2 128)))
 	(t (mod (* (nfix val1) (nfix val2)) (expt 2 128)))))
 
 ; from isa128.lisp
 (defun excp (op val1 val2)
-  (cond ((equal op 0) 
+  (cond ((equal op 0)
 	 (not (equal (mod (+ (nfix val1) (nfix val2)) (expt 2 128))
 		     (+ (nfix val1) (nfix val2)))))
 	(t (not (equal (mod (* (nfix val1) (nfix val2)) (expt 2 128))

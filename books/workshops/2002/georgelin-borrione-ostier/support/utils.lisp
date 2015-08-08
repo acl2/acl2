@@ -8,18 +8,18 @@
 ;; File utils.lisp  for vhdl-acl2
 ;
 ;   Written by : Philippe Georgelin                                        ;
-;   Email : Philippe.Georgelin@st.com                                     
+;   Email : Philippe.Georgelin@st.com
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(local 
+(local
  (in-theory (disable functional-commutativity-of-minus-*-left
                     ; rearrange-negative-coefs-equal
 )))
 
-(defun make-name (prefix name suffix) 
-    (intern (string-upcase (concatenate 'string (string prefix) 
-					 (string name) 
+(defun make-name (prefix name suffix)
+    (intern (string-upcase (concatenate 'string (string prefix)
+					 (string name)
 					 (string suffix)))
 	    "ACL2"))
 
@@ -47,12 +47,12 @@
 	  ; nil))
 
 ;; unary operation
-	((and (consp expr) 
+	((and (consp expr)
 	      (equal (len expr) 2))
 	 (explore_right_expr (cadr expr)))
 
 ;;  index
-	((and (consp expr) 
+	((and (consp expr)
 	      (equal (car expr) 'index))
 	 (list (make-name (string (cadr expr))
 			  (natural-to-string (- (cadr (nth 2 expr))
@@ -64,7 +64,7 @@
 	      (equal (len expr) 3))
 	 (append (explore_right_expr (cadr expr))
 		 (explore_right_expr (caddr expr))))))
-				    
+
 
 ;ACL2 !>(explore_right_expr '(NOT (OR (OR I3 I4) A)))
 ;(i3 i4 a)
@@ -73,7 +73,7 @@
 (defun explore_one_conc_instr (list_of_conc_inst i list_accu)
   (cond ((endp list_of_conc_inst)
 	 list_accu)
-	(t 
+	(t
   (let ((res_exp (explore_right_expr (nth 2 (car list_of_conc_inst))))
 	(left_elmt (if (symbolp (caar list_of_conc_inst))
 		       (caar list_of_conc_inst)
@@ -84,15 +84,15 @@
 				"")))))
     (if (consp res_exp)
 	(explore_one_conc_instr (cdr list_of_conc_inst) (1+ i)
-		   (update-nth i 
+		   (update-nth i
 			       (list left_elmt res_exp)
 			       list_accu))
-      (explore_one_conc_instr (cdr list_of_conc_inst) (1+ i) 
+      (explore_one_conc_instr (cdr list_of_conc_inst) (1+ i)
 			      (update-nth i
 					  (list (nth i list_accu))
 					  list_accu)
 		    ))))))
-      
+
 
 #|
 ACL2 !>(explore_one_conc_instr '(   (SNOT <= (NOT B))
@@ -135,13 +135,13 @@ ACL2 !>(explore_one_conc_instr '(   (SNOT <= (NOT B))
 	     (if (equal search_dep_res nil)
 		 (cons first_element (replace_in_dep (cdr right_list) dep))
 	      (cons (update_list first_element
-			    search_dep_res 
+			    search_dep_res
 			    right_list)
 		    (replace_in_dep (cdr right_list) dep)))))))
 
 
 #|
-	
+
 ACL2 !>(replace_in_dep '(i1 i2 b) '((snot (b))
  (i1 (b s a))
  (i2 (a s snot))
@@ -159,18 +159,18 @@ ACL2 !>(replace_in_dep '(i1 i2 b) '((snot (b))
 		  (expr (cadr car_dep))
 		  (replace_new (replace_in_dep expr dep_orig)))
 	     (cons (cons (car car_dep) (list replace_new)) (all_dep (cdr dep) dep_orig))))))
-	
+
 
 
 (defun rec_all_dep (dep i)
   (cond ((zp i) dep)
-	(t (rec_all_dep 
+	(t (rec_all_dep
 	    (all_dep dep dep)
 	    (1- i)))))
 
 
-	
-#|		
+
+#|
 ACL2 !>(all_dep '((snot (b))
  (i1 (b s a))
  (i2 (a s snot))
@@ -209,7 +209,7 @@ ACL2 !>(all_dep '((snot (b))
 		       (profondeur_noeud (cdr node) accu prof_res)
 		     (profondeur_noeud (cdr node) accu accu_max)))
 	       (profondeur_noeud (cdr node) accu accu_max))))))
-	       
+
 #|
 ACL2 !>(profondeur_noeud '(((b s a) i2) ((a s snot))) 0 0)
 2
@@ -268,7 +268,7 @@ ACL2 !>(profondeur '((snot (b))
          (if (equal (CAR X) '0)
              (array-bitp1 (CDR X) (1- N))
              'nil))
-     (if (equal X 'nil) 
+     (if (equal X 'nil)
 	    (equal N '0)
             'nil)))
 
@@ -297,7 +297,7 @@ ACL2 !>(profondeur '((snot (b))
            (binding? (cdr x)))))
 
 
-(defun seq-fn+ (bind result) 
+(defun seq-fn+ (bind result)
   (declare (xargs :guard (binding? bind)))
   (cond ((endp bind) result)
         ((atom (caar bind))
@@ -308,7 +308,7 @@ ACL2 !>(profondeur '((snot (b))
          `(let ((,(caaar bind)
                  ,(cadar bind)))
             ,(seq-fn+ (cdr bind) result)))
-        (t 
+        (t
          (if (equal (caddar bind) nil)
 	     `(mv-let ,(caar bind)
 		      ,(cadar bind)
@@ -332,7 +332,7 @@ ACL2 !>(profondeur '((snot (b))
               (seq ,mem ,@(cdr rst))))))
 
 
-(defun make-onename (name) 
+(defun make-onename (name)
     (intern (string-upcase (string name))
 	    "ACL2"))
 
@@ -389,15 +389,15 @@ ACL2 !>(profondeur '((snot (b))
 	    `(,(make-name name-ent
 			    name_arch
 			    "-putst")
-	      (quote ,(make-name "" 
+	      (quote ,(make-name ""
 			       (string key)
 			       ""))
 		      ,dest
 		       (quote ,st))
-      
+
 
     `(,(make-name name-ent name_arch "-putst")
-      (quote ,(make-name "" 
+      (quote ,(make-name ""
 			       (string key)
 			       ""))
 	    ,dest
@@ -420,7 +420,7 @@ ACL2 !>(profondeur '((snot (b))
 	      `(,(make-name name-ent
 			    name_arch
 			    "-putst")
-		(quote ,(make-name "" 
+		(quote ,(make-name ""
 			       (string key)
 			       ""))
 		      (,(make-name name-ent
@@ -433,18 +433,18 @@ ACL2 !>(profondeur '((snot (b))
 	    `(,(make-name name-ent
 			    name_arch
 			    "-putst")
-	      (quote ,(make-name "" 
+	      (quote ,(make-name ""
 			       (string key)
 			       ""))
 		      ,dest
 		       (quote ,st)))
-      
+
 	(if (symbolp dest)
-	  
+
     `(,(make-name name-ent
 			    name_arch
 			    "-putst")
-      (quote ,(make-name "" 
+      (quote ,(make-name ""
 			       (string key)
 			       ""))
 	    (,(make-name name-ent
@@ -461,7 +461,7 @@ ACL2 !>(profondeur '((snot (b))
     `(,(make-name name-ent
 			    name_arch
 			    "-putst")
-      (quote ,(make-name "" 
+      (quote ,(make-name ""
 			       (string key)
 			       ""))
 	    ,dest
@@ -509,20 +509,20 @@ ACL2 !>(profondeur '((snot (b))
        (total_length (cdr list)))))
 
 #|
-	 
+
 (defun std_logic_vector-fn-unsigned (int result i)
   (if (and (naturalp int) (naturalp i))
       (if (or (= int 0) (>= i (len result)))
 	  result
 	(if (= (mod int 2) 0)
-	    (std_logic_vector-fn-unsigned 
+	    (std_logic_vector-fn-unsigned
 	     (NONNEGATIVE-INTEGER-QUOTIENT int 2)
 	     (setarrayi i
 			0
 			result)
 	     (1+ i)
 	     )
-	  (std_logic_vector-fn-unsigned 
+	  (std_logic_vector-fn-unsigned
 	   (NONNEGATIVE-INTEGER-QUOTIENT int 2)
 	   (setarrayi i
 		      1
@@ -533,8 +533,8 @@ ACL2 !>(profondeur '((snot (b))
 
 
 (defthm lemma_std_unsigned
-  (implies (true-listp result)    
-	   (true-listp (std_logic_vector-fn-unsigned int 
+  (implies (true-listp result)
+	   (true-listp (std_logic_vector-fn-unsigned int
 						     result
 						     i))))
 
@@ -569,9 +569,9 @@ ACL2 !>(profondeur '((snot (b))
   (if (and (naturalp int) (naturalp i))
       (if (or (= int 0) (>= i (len result)))
 	  (complete_by_1 result (1+ i) size)
-	  
+
 	(if (= (mod int 2) 0)
-	    (std_logic_vector-fn-signed 
+	    (std_logic_vector-fn-signed
 	     (NONNEGATIVE-INTEGER-QUOTIENT int 2)
 	     (setarrayi i
 			1
@@ -579,7 +579,7 @@ ACL2 !>(profondeur '((snot (b))
 	     (1+ i)
 	     size
 	     )
-	  (std_logic_vector-fn-signed 
+	  (std_logic_vector-fn-signed
 	   (NONNEGATIVE-INTEGER-QUOTIENT int 2)
 	   (setarrayi i
 		      0
@@ -590,13 +590,13 @@ ACL2 !>(profondeur '((snot (b))
 
 
 (defthm lemma_std_signed
-  (implies (true-listp result)    
-	   (true-listp (std_logic_vector-fn-signed int 
+  (implies (true-listp result)
+	   (true-listp (std_logic_vector-fn-signed int
 						   result
-						   i 
+						   i
 						   size))))
 
-				   
+
 (defun std_logic_vector (int size)
   (if (and (integerp int) (naturalp size))
       (let ((result (defarray size :initial-element 0)))
@@ -612,9 +612,9 @@ ACL2 !>(profondeur '((snot (b))
 		(< 0 size))
 	   (consp (make-list-ac size 0 nil))))
 
-; Q.E.D 
-	       
-  
+; Q.E.D
+
+
   (MAKE-LIST-AC SIZE 0 NIL)
 
 (defthm unary--lemma
@@ -623,7 +623,7 @@ ACL2 !>(profondeur '((snot (b))
 	   (and (integerp (+ -1 (- INT)))
 		(<= 0 (+ -1 (- INT))))))
 
-; Q.E.D 
+; Q.E.D
 
 ;; length of std_logic_vector is size
 (defthm length_std_logic_vector
@@ -662,10 +662,10 @@ ACL2 !>(profondeur '((snot (b))
 		(1 (vec{1+} (setarrayi i 0 vec) 1 size (1+ i)))
 		(otherwise
 		 (cw "Error : not an bit-vector "))))
-	  (otherwise 
+	  (otherwise
 	   (cw "Error : ret must be 1 or 0"))))
     (cw "Error on vec{1+} : size and i must be natural")))
-    
+
 
 
 (defun vec{not} (vec size i)
@@ -685,7 +685,7 @@ ACL2 !>(profondeur '((snot (b))
       (if (equal (getarrayi vec (1- size))
 		 0)
 	  (unsigned vec size 0)
-	(- (unsigned 
+	(- (unsigned
            (vec{1+} (vec{not} vec size 0) 1 size 0) size 0))))
 
 
@@ -713,10 +713,10 @@ ACL2 !>(profondeur '((snot (b))
 
 (defmacro others (size &rest number)
      `(other-fn (defarray ,size :initial-element '0)
-		0 
+		0
 	       ,size
 	       (quote ,number)))
-     
+
 (defmacro new (size &rest number)
   `(others ,size ,@number))
 
@@ -728,29 +728,29 @@ ACL2 !>(profondeur '((snot (b))
     (implies (not (equal (nfix n) (nfix m)))
              (equal (nth n (update-nth m val st))
                     (nth n st))))
-                    
+
 
 (defthm lemma_nth_update-nth2bis
     (implies (and (integerp n) (<= 0 n))
              (equal (nth n (update-nth n val st))
                     val)))
 
-              
-                    
+
+
 (defthm lemma_nth_update-nth3
     (equal (update-nth n v1 (update-nth n v2 st))
            (update-nth n v1 st)))
 
 
 (defthm update-nth-diff
-    (implies 
+    (implies
        (not (equal (nfix i1) (nfix i2)))
        (equal (update-nth i1 v1 (update-nth i2 v2 st))
               (update-nth i2 v2 (update-nth i1 v1 st))))
      :rule-classes ((:rewrite :loop-stopper ((i1 i2)))))
-		  
 
- 
+
+
 (defthm >_not_equal
       (implies (and (integerp q) (> q 1))
               (and (equal (equal q 1) nil)

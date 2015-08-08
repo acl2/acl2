@@ -438,7 +438,7 @@
        (parents (cdr (assoc :parents x)))
        (short   (str::trim (cdr (assoc :short x))))
        (long    (str::trim (cdr (assoc :long x))))
-  
+
        (acc     (str::revappend-chars "(defxdoc " acc))
 
        ;; use fmt-to-string to deal with all lisp-encoding stuff
@@ -519,7 +519,7 @@
         (t (include-xdoc-books
             (cdr dirs)
             (list* #\Newline
-                   #\Newline 
+                   #\Newline
                    (str::revappend-chars
                     (fmt-to-str (list 'include-book
                                       (concatenate 'string (car dirs) "-xdoc"))
@@ -585,7 +585,7 @@
            nil
          (if (find-topic (cdr (assoc :name (car x))) bad)
              (remove-ignored-topics (cdr x) bad)
-           (cons (car x) 
+           (cons (car x)
                  (remove-ignored-topics (cdr x) bad)))))
 
      (make-event

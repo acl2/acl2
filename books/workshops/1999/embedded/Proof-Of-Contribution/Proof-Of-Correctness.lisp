@@ -14,8 +14,8 @@
   (if (endp varlist)
       (null varlist)
     (and
-     (equal 
-      (get-cell (car varlist) memafterputs) 
+     (equal
+      (get-cell (car varlist) memafterputs)
       (updated-cell (car varlist) (car vals) mem))
      (equal-put-vals
       (cdr varlist)
@@ -60,20 +60,20 @@
    (equal-put-vals varlist vals mem memafter)
    (equal
     vals
-    (apply-direct-rns-to-value-according-to-type 
+    (apply-direct-rns-to-value-according-to-type
      (updated-cell gvar newv gmem)
      type))
-   (equal-values-and-attributes 
+   (equal-values-and-attributes
     (get-cell gvar gmem)
-    varlist 
-    mem 
+    varlist
+    mem
     type))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (updated-cell gvar newv gmem)
    varlist
    memafter
    type))
- :hints (("Goal" 
+ :hints (("Goal"
           :use ( (:instance props-of-updated-cell (mem gmem))
                  (:instance equal-put-vals-have-values-that-are-vals))
           :in-theory (disable apply-direct-rns-to-value-according-to-type))))
@@ -85,11 +85,11 @@
 (defun input-vars-e (varlist vals mem)
  (if (endp varlist)
      mem
-     (input-vars-e 
-      (cdr varlist) 
+     (input-vars-e
+      (cdr varlist)
       (cdr vals)
       (input-var (car varlist) (car vals) mem))))
- 
+
 
 
 (defun index-different-input-vars-e (varlist vals mem memafter)
@@ -108,9 +108,9 @@
 
 (defthm if-bad-index-in-range-ten-must-be-noninput
   (let ((bad-idx (index-different-input-vars-e varlist vals mem memafter)))
-    (implies 
-     (in-range bad-idx varlist) 
-     (not (equal 
+    (implies
+     (in-range bad-idx varlist)
+     (not (equal
 	   (get-cell (nth bad-idx varlist) memafter)
            (updated-cell
 	    (nth bad-idx varlist)
@@ -144,11 +144,11 @@
 (defthm update-independent-from-firstbn
  (implies
   (not (member-equal-bool (nth idx l1) (firstn idx l1)))
-  (equal (updated-cell 
+  (equal (updated-cell
 	  (nth idx l1)
 	  (nth idx l2)
 	  (input-vars-e (firstn idx l1) (firstn idx l2) mem))
-	 (updated-cell 
+	 (updated-cell
 	  (nth idx l1)
 	  (nth idx l2)
           mem))))
@@ -161,7 +161,7 @@
    (in-range idx l2))
   (equal
    (get-cell (nth idx l1) (input-vars-e l1 l2 mem))
-   (updated-cell 
+   (updated-cell
      (nth idx l1)
      (nth idx l2)
      (input-vars-e (firstn idx l1) (firstn idx l2) mem))))
@@ -182,8 +182,8 @@
 :hints (("Goal" :in-theory (disable updated-cell)
  :use (
        (:instance no-duplicates-all-implies-no-duplicates-one (idx1 gem1))
-       (:instance 
-        no-duplicates-means-an-element-does-not-appear-after-its-position 
+       (:instance
+        no-duplicates-means-an-element-does-not-appear-after-its-position
         (l (nth gem1 ll)))
        if-el-does-not-appear-after-its-position-then-input-vars-e-produces-v
        (:instance input-list-decomp
@@ -201,25 +201,25 @@
     (equal (len (nth gem1 ll)) (len vals))
     (in-range gem1 ll)
     (true-listp (nth gem1 ll)))
-   (equal-put-vals (nth gem1 ll) vals mem 
+   (equal-put-vals (nth gem1 ll) vals mem
     (input-vars-e  (nth gem1 ll) vals mem)))
   :hints (("Goal" :use (:instance rtm-variable-of-input-vars-e-is-correspondent-value
-			 (idx (index-different-input-vars-e 
-                               (nth gem1 ll) 
+			 (idx (index-different-input-vars-e
+                               (nth gem1 ll)
                                vals
-                               mem 
+                               mem
                                (input-vars-e (nth gem1 ll) vals  mem)))))
-	  ("Goal'" :cases ( (in-range (index-different-input-vars-e 
-				      (nth gem1 ll) 
+	  ("Goal'" :cases ( (in-range (index-different-input-vars-e
+				      (nth gem1 ll)
 				      vals
-				      mem 
+				      mem
 				      (input-vars-e (nth gem1 ll) vals mem))
 				     (nth gem1 ll)) ) )
 	  ("Subgoal 1" :in-theory '((:definition in-range)
 				    (:rewrite if-bad-index-in-range-ten-must-be-noninput)))
 	  ("Subgoal 2" :in-theory '((:rewrite if-bad-index-not-in-range-then-every-update)))))
-	  
-	
+
+
 
 (defthm input-vars-e-preserves-equal-values-attributes
   (implies
@@ -230,15 +230,15 @@
     (in-range gem1 ll)
     (true-listp vals)
     (true-listp (nth gem1 ll))
-    (equal 
-     vals 
-     (apply-direct-rns-to-value-according-to-type (updated-cell gvar newv gmem) type))                 
+    (equal
+     vals
+     (apply-direct-rns-to-value-according-to-type (updated-cell gvar newv gmem) type))
     (equal-values-and-attributes (get-cell gvar gmem) (nth gem1 ll) mem type))
    (equal-values-and-attributes (updated-cell gvar newv gmem)
-                                (nth gem1 ll) 
+                                (nth gem1 ll)
                                 (input-vars-e (nth gem1 ll) vals mem) type))
-  :hints (("Goal" 
-           :use 
+  :hints (("Goal"
+           :use
             ((:instance rtm-variable-of-input-vars-e-is-put-vals)
             (:instance if-values-are-rns-then-equal-values-is-kept
                        (varlist (nth gem1 ll))
@@ -255,7 +255,7 @@
    (assoc-equal gvar2 m)
    (in-range idx2 (rtmintvars-i gvar2 m))
    (not (equal gvar1 gvar2)))
-  (equal 
+  (equal
    (get-cell (nth idx2 (rtmintvars-i gvar2 m)) rm)
    (get-cell (nth idx2 (rtmintvars-i gvar2 m)) (input-vars-e (rtmintvars-i gvar1 m) vals rm))))
  :hints (("Goal" :use (:instance lemma1-different-vars-do-not-belong
@@ -277,15 +277,15 @@
    (not (equal gvar1 gvar2)))
   (equal-get-cells (rtmintvars-i gvar2 m) rm (input-vars-e (rtmintvars-i gvar1 m) vals rm)))
   :hints (("Goal" :in-theory nil
-	   :use ( (:instance variable-of-other-cell-untouched-input 
-			     (idx2 (idx-different-cell 
-				    (rtmintvars-i gvar2 m) 
+	   :use ( (:instance variable-of-other-cell-untouched-input
+			     (idx2 (idx-different-cell
+				    (rtmintvars-i gvar2 m)
 				    rm
 				    (input-vars-e (rtmintvars-i gvar1 m) vals rm))))))
 	  ("Goal'" :cases ( (in-range
-			     (idx-different-cell 
-				    (rtmintvars-i gvar2 m) 
-				    rm 
+			     (idx-different-cell
+				    (rtmintvars-i gvar2 m)
+				    rm
 				    (input-vars-e (rtmintvars-i gvar1 m) vals rm))
 			     (rtmintvars-i gvar2 m)) ))
 	  ("Subgoal 2" :in-theory '((:rewrite if-bad-index-not-in-range-then-every-equal)))
@@ -312,19 +312,19 @@
    (assoc-equal gvar1 m)
    (assoc-equal gvar2 m)
    (not (equal gvar1 gvar2)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (input-var gvar2 gval2 gm))
    (rtmintvars-i gvar1 m)
    (input-vars-e (rtmintvars-i gvar2 m) vals rm)
    (type-i gvar1 m)))
  :hints (("Goal" :use ( (:instance result-of-input-one-var
-                                   (var0 gvar1) (var gvar2) (val gval2)) 
+                                   (var0 gvar1) (var gvar2) (val gval2))
                         (:instance m-correspondent-values-implies-equal-values-and-attribus
                                    (memgstate gm)
                                    (memrstate rm))
                         (:instance variables-of-other-cells-untouched-input
                                    (gvar1 gvar2) (gvar2 gvar1))))))
-                        
+
 
 (defthm equal-values-kept-by-appropriate-input-vars
  (implies
@@ -338,30 +338,30 @@
    (m-correspondent-values-p m gm rm)
    (equal
     vals
-    (apply-direct-rns-to-value-according-to-type 
-     (updated-cell gvar1 gval1 gm) 
+    (apply-direct-rns-to-value-according-to-type
+     (updated-cell gvar1 gval1 gm)
      (type-i gvar1 m)))
    (assoc-equal gvar1 m))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (input-var gvar1 gval1 gm))
    (rtmintvars-i gvar1 m)
    (input-vars-e (rtmintvars-i gvar1 m) vals rm)
    (type-i gvar1 m)))
- :hints (("Goal" 
+ :hints (("Goal"
           :in-theory nil
           :use ((:instance result-of-input-one-var
                            (var0 gvar1) (var gvar1) (val gval1) (mem gm))
                 (:instance lemma-help3
                  (idx (pos-equal-0 gvar1 m)))
-                 (:instance 
-                 rtmintvars-i-is-pos-equal-0-of-retrieve-vars 
+                 (:instance
+                 rtmintvars-i-is-pos-equal-0-of-retrieve-vars
                  (gvar gvar1))
-                (:instance assoc-means-pos-in-range 
+                (:instance assoc-means-pos-in-range
                            (el gvar1)
                            (l m))
-                (:instance 
-                  m-correspondent-values-implies-equal-values-and-attribus 
-                  (memgstate gm) 
+                (:instance
+                  m-correspondent-values-implies-equal-values-and-attribus
+                  (memgstate gm)
                   (memrstate rm))
                  (:instance input-vars-e-preserves-equal-values-attributes
                             (ll (retrieve-rtmvars m))
@@ -388,12 +388,12 @@
    (m-correspondent-values-p m gm rm)
    (equal
     vals
-    (apply-direct-rns-to-value-according-to-type 
-     (updated-cell gvar2 gval2 gm) 
+    (apply-direct-rns-to-value-according-to-type
+     (updated-cell gvar2 gval2 gm)
      (type-i gvar2 m)))
    (assoc-equal gvar1 m)
    (assoc-equal gvar2 m))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (input-var gvar2 gval2 gm))
    (rtmintvars-i gvar1 m)
    (input-vars-e (rtmintvars-i gvar2 m) vals rm)
@@ -418,21 +418,21 @@
 
 (defun correct-wrt-anyarity (m)
   (if (endp m)
-      (null m) 
+      (null m)
     (and
      (correct-type (type-0 m))
      (correct-wrt-anyarity (cdr m)))))
 
 
 (defthm hlemma2
- (implies 
+ (implies
   (and
    (correct-wrt-anyarity m)
    (in-range idx m))
    (true-listp (nth idx m)))
  :hints (("Goal" :in-theory (enable rtmintvars-0)))
  :rule-classes nil)
- 
+
 
 (defthm equal-all-values-kept-by-appropriate-input-vars-idxed
  (implies
@@ -447,25 +447,25 @@
    (m-correspondent-values-p m gm rm)
    (equal
     vals
-    (apply-direct-rns-to-value-according-to-type 
-     (updated-cell (car (nth idx2 m)) gval2 gm) 
+    (apply-direct-rns-to-value-according-to-type
+     (updated-cell (car (nth idx2 m)) gval2 gm)
      (type-i-idx m idx2)))
    (in-range idx m)
    (in-range idx2 m))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell (car (nth idx m)) (input-var (car (nth idx2 m)) gval2 gm))
    (cdr (nth idx m))
    (input-vars-e (cdr (nth idx2 m)) vals rm)
    (type-i-idx m idx)))
-  :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range))) 
-	   :use ( hlemma2 
+  :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range)))
+	   :use ( hlemma2
                   (:instance hlemma1 (idx idx))
                   (:instance hlemma1 (idx idx2))
                   (:instance type-i-is-typeidx (idx idx))
                   (:instance type-i-is-typeidx (idx idx2))
 		  (:instance rtmintvars-i-is-cdr-of-nth-entry (gvar (car (nth idx m))))
 		  (:instance rtmintvars-i-is-cdr-of-nth-entry (gvar (car (nth idx2 m))))
-		  (:instance equal-all-values-kept-by-appropriate-input-vars 
+		  (:instance equal-all-values-kept-by-appropriate-input-vars
                              (gvar1 (car (nth idx m)))
                              (gvar2 (car (nth idx2 m))))
 		  (:instance no-duplicates-has-pos-equal-right-in-that-place (l m) (idx idx))
@@ -475,7 +475,7 @@
 
 
 (defthm type-invariance-after-input
- (equal 
+ (equal
   (var-type (get-cell v (input-var v2 val2 gm)))
   (var-type (get-cell v gm)) )
  :hints (("Goal" :in-theory (enable put-cell get-cell var-type))))
@@ -497,28 +497,28 @@
    (m-correspondent-values-p m gm rm)
    (equal
     vals
-    (apply-direct-rns-to-value-according-to-type 
-     (updated-cell (car (nth idx2 m)) gval2 gm) 
+    (apply-direct-rns-to-value-according-to-type
+     (updated-cell (car (nth idx2 m)) gval2 gm)
      (type-i-idx m idx2)))
    (in-range idx2 m))
-  (m-correspondent-values-p 
-   m 
-   (input-var (car (nth idx2 m)) gval2 gm)    
+  (m-correspondent-values-p
+   m
+   (input-var (car (nth idx2 m)) gval2 gm)
    (input-vars-e (cdr (nth idx2 m)) vals rm)))
- :hints (("Goal" 
+ :hints (("Goal"
           :in-theory nil
           :use ( (:instance equal-all-values-kept-by-appropriate-input-vars-idxed
-				  (idx (bad-idx-eqv-va m 
-                                                       (input-var (car (nth idx2 m)) gval2 gm) 
+				  (idx (bad-idx-eqv-va m
+                                                       (input-var (car (nth idx2 m)) gval2 gm)
                                                        (input-vars-e (cdr (nth idx2 m)) vals rm))))
                  (:instance hlemma2 (idx idx2))))
-	  ("Goal'" :cases ( (in-range (bad-idx-eqv-va m 
-                                                      (input-var (car (nth idx2 m)) gval2 gm) 
+	  ("Goal'" :cases ( (in-range (bad-idx-eqv-va m
+                                                      (input-var (car (nth idx2 m)) gval2 gm)
                                                       (input-vars-e (cdr (nth idx2 m)) vals rm)) m) ))
-	  ("Subgoal 2" 
+	  ("Subgoal 2"
                        :in-theory '((:forward-chaining alistp-forward-to-true-listp)
                                     (:rewrite if-bad-index-not-in-range-then-m-corr)))
-	  ("Subgoal 1" 
+	  ("Subgoal 1"
            :in-theory '((:rewrite if-bad-index-in-range-thne-must-be-different-vs)))))
 
 
@@ -526,8 +526,8 @@
  (if (endp vars)
      mem
      (input-var
-       (car (nth (car vars) m)) 
-       (car vals)       
+       (car (nth (car vars) m))
+       (car vals)
        (input-var-seq
         (cdr vars)
         (cdr vals)
@@ -541,16 +541,16 @@
 (defun input-vars-seq (varsseqs valsseqs mem)
  (if (endp varsseqs)
      mem
-     (input-vars-e 
-      (car varsseqs) 
-      (car valsseqs) 
+     (input-vars-e
+      (car varsseqs)
+      (car valsseqs)
       (input-vars-seq
        (cdr varsseqs)
        (cdr valsseqs)
        mem))))
 
-(defthm invariant1-s 
- (implies 
+(defthm invariant1-s
+ (implies
   (equal (var-value cell1) (var-value cell2))
   (equal
       (apply-direct-rns-to-value-according-to-type cell1 ty)
@@ -565,37 +565,37 @@
  :rule-classes nil)
 
 (defthm invariant3-s
- (equal 
-  (apply-direct-rns-to-value-according-to-type 
-   (updated-cell 
-    (car (nth (car vars) m)) 
-    (car vals) 
+ (equal
+  (apply-direct-rns-to-value-according-to-type
+   (updated-cell
+    (car (nth (car vars) m))
+    (car vals)
     (input-var-seq (cdr vars) (cdr vals) m gm))
    (type-i-idx m (car vars)))
-  (apply-direct-rns-to-value-according-to-type 
-   (updated-cell 
-    (car (nth (car vars) m)) 
+  (apply-direct-rns-to-value-according-to-type
+   (updated-cell
+    (car (nth (car vars) m))
     (car vals)
     gm)
    (type-i-idx m (car vars))))
- :hints (("Goal" :use ((:instance invariant1-s 
-                                  (cell1    (updated-cell 
-                                             (car (nth (car vars) m)) 
-                                             (car vals) 
+ :hints (("Goal" :use ((:instance invariant1-s
+                                  (cell1    (updated-cell
+                                             (car (nth (car vars) m))
+                                             (car vals)
                                              (input-var-seq (cdr vars) (cdr vals) m gm)))
-                                  (cell2    (updated-cell 
-                                             (car (nth (car vars) m)) 
+                                  (cell2    (updated-cell
+                                             (car (nth (car vars) m))
                                              (car vals)
                                              gm))
                                   ( ty      (type-i-idx m (car vars))))
-                       (:instance invariant2-s 
+                       (:instance invariant2-s
                                   (var (car (nth (car vars) m)))
                                   (val (car vals))
                                   (mem1 (input-var-seq (cdr vars) (cdr vals) m gm))
                                   (mem2 gm)))))
  :rule-classes nil)
 
-                                  
+
 
 (defun correct-encoding (vars vals varsseqs valsseqs m gm)
  (if (endp vars)
@@ -609,13 +609,13 @@
       (equal (len (car varsseqs)) (len (car valsseqs)))
       (equal
        (car valsseqs)
-       (apply-direct-rns-to-value-according-to-type 
-        (updated-cell 
-         (car (nth (car vars) m)) 
-         (car vals) 
-         gm) 
+       (apply-direct-rns-to-value-according-to-type
+        (updated-cell
+         (car (nth (car vars) m))
+         (car vals)
+         gm)
         (type-i-idx m (car vars))))
-      (correct-encoding 
+      (correct-encoding
        (cdr vars)
        (cdr vals)
        (cdr varsseqs)
@@ -627,7 +627,7 @@
 (defun ind-scheme (vars vals varsseqs valsseqs)
  (if (endp vars)
      (append vars vals varsseqs valsseqs)
-     (ind-scheme 
+     (ind-scheme
       (cdr vars)
       (cdr vals)
       (cdr varsseqs)
@@ -647,13 +647,13 @@
    (no-duplicates-p (retrieve-gemvars m))
    (m-correspondent-values-p m gm rm)
    (correct-encoding vars vals varsseqs valsseqs m gm))
-   (m-correspondent-values-p 
-    m 
-    (input-var-seq vars vals m gm)    
+   (m-correspondent-values-p
+    m
+    (input-var-seq vars vals m gm)
     (input-vars-seq varsseqs valsseqs rm)))
- :hints (("Goal" 
-          :induct (ind-scheme vars vals varsseqs valsseqs)) 
-         ("Subgoal *1/2" 
+ :hints (("Goal"
+          :induct (ind-scheme vars vals varsseqs valsseqs))
+         ("Subgoal *1/2"
           :in-theory (current-theory 'ground-zero)
           :use
           ( correct-encoding
@@ -684,7 +684,7 @@
  :hints (("Goal" :induct (input-var-seq vs2 vals2 m gm))
          ("Subgoal *1/2" :in-theory nil
           :use ((:instance input-var-seq (vars vs2) (vals vals2) (mem gm))
-                               (:instance input-var-preserves-correct-wrt-arity 
+                               (:instance input-var-preserves-correct-wrt-arity
                                           (v2 (car (nth (car vs2) m)))
                                           (val2 (car vals2))
                                           (gm (input-var-seq (cdr vs2) (cdr vals2) m gm)))))))
@@ -710,7 +710,7 @@
 
 
 (defthm a-var-in-m-appears-in-mem
-  (implies 
+  (implies
   (and
    (in-range var m)
    (vars-inclusion m mem))
@@ -719,13 +719,13 @@
 
 
 (defthm input-existing-var-does-not-increment-vars0
- (implies 
+ (implies
   (and
    (vars-inclusion m mem)
    (assoc-equal var mem)
    (vars-inclusion mem m))
-  (vars-inclusion 
-   (input-var var val mem) 
+  (vars-inclusion
+   (input-var var val mem)
    m))
  :hints (("Goal" :in-theory (enable put-cell get-cell)))
  :rule-classes nil)
@@ -763,13 +763,13 @@
                                          (val (car vals))
                                          (mem (input-var-seq (cdr vars) (cdr vals) m gm))))))
 
-(defthm input-var-invariant-wrt-var-attributes 
+(defthm input-var-invariant-wrt-var-attributes
  (equal (var-attributes vars mem)
         (var-attributes vars (input-var var val mem)))
  :hints (("Goal" :in-theory (enable put-cell get-cell var-attribute make-cell)))
  :rule-classes nil)
 
-(defthm input-varseq-invariant-wrt-var-attributes 
+(defthm input-varseq-invariant-wrt-var-attributes
  (equal (var-attributes otvars mem)
         (var-attributes otvars (input-var-seq vars vals m mem)))
  :hints (("Goal" :induct (input-var-seq vars vals m mem))
@@ -782,7 +782,7 @@
  :rule-classes nil)
 
 (defthm put-update-invariant-wrt-var-attributes
-  (equal 
+  (equal
    (var-attributes otvars mem)
    (var-attributes otvars (put-cell var (updated-cell var val mem) mem)))
   :hints (("Goal"
@@ -790,7 +790,7 @@
   :rule-classes nil)
 
 
-(defthm input-vars-e-invariant-wrt-var-attributes 
+(defthm input-vars-e-invariant-wrt-var-attributes
  (equal (var-attributes otvars mem)
         (var-attributes otvars (input-vars-e vars vals mem)))
  :hints (("Goal"  :induct (input-vars-e vars vals mem))
@@ -799,7 +799,7 @@
                                          (val (car vals)))))
  :rule-classes nil)
 
-(defthm input-vars-seqs-invariant-wrt-var-attributes 
+(defthm input-vars-seqs-invariant-wrt-var-attributes
  (equal (var-attributes otvars mem)
         (var-attributes otvars (input-vars-seq varsseqs valsseqs mem)))
  :hints (("Goal"  :induct (input-vars-seq varsseqs valsseqs mem))
@@ -808,7 +808,7 @@
                                          (vals (car valsseqs))
                                          (mem  (input-vars-seq (cdr varsseqs) (cdr valsseqs) mem)))))
  :rule-classes nil)
- 
+
 (defthm input-vars-seqs-preserves-point-to-good-rtm-var-sets
  (implies
   (m-entries-point-to-good-rtm-var-sets m rm)
@@ -819,7 +819,7 @@
                                          (mem rm)))))
 
 
-(defthm correct-arity-implies-correct-anyarity 
+(defthm correct-arity-implies-correct-anyarity
  (implies
   (correct-wrt-arity m gm)
   (correct-wrt-anyarity m))
@@ -840,12 +840,12 @@
    (correct-encoding vars vals varsseqs valsseqs m gm)
    (good-mapping-wrt-memories m gm rm))
   (good-mapping-wrt-memories m (input-var-seq vars vals m gm) (input-vars-seq varsseqs valsseqs rm)))
- :hints (("Goal" 
+ :hints (("Goal"
           :use ( correct-arity-implies-correct-anyarity
                  correct-encoding-implies-in-ranges
                  input-vars-seqs-preserves-point-to-good-rtm-var-sets
                  input-exisitng-varseq-doesnot-increment-vars
-                 input-var-seq-doesnot-decrement-vars          
+                 input-var-seq-doesnot-decrement-vars
                  (:instance input-var-seq-preserves-correct-wrt-arity (vs2 vars) (vals2 vals))
                  m-correspondence-kept-by-appropriate-inputs))))
 
@@ -881,8 +881,8 @@
               (my-or-2 (equal val 0) (equal val 1))
               (integerp val)))
   (is-typed-amem-p (input-var var val mem)))
- :hints (("Goal" 
-          :use 
+ :hints (("Goal"
+          :use
            ( (:instance putting-a-new-cell-preserves-typed-amem
                         (new-cell (updated-cell var val mem))
                         (c        var))
@@ -892,10 +892,10 @@
  (if (endp vars)
      t
      (and
-      (is-mem-cell-p 
-       (get-cell (car (nth (car vars) m)) 
+      (is-mem-cell-p
+       (get-cell (car (nth (car vars) m))
                  (input-var-seq (cdr vars) (cdr vals) m mem)))
-      (if (equal (var-type (get-cell (car (nth (car vars) m)) 
+      (if (equal (var-type (get-cell (car (nth (car vars) m))
                                      (input-var-seq (cdr vars) (cdr vals) m mem))) 'bool)
           (my-or-2 (equal (car vals) 0) (equal (car vals) 1))
           (integerp (car vals)))
@@ -908,7 +908,7 @@
    (ok-vars vars vals m mem))
   (is-typed-amem-p (input-var-seq vars vals m mem)))
  :hints (("Goal" :induct (input-var-seq vars vals m mem))
-         ("Subgoal *1/2" :use 
+         ("Subgoal *1/2" :use
           ( (:instance ok-vars)
             (:instance input-var-seq)
             (:instance input-okvar-keeps-typed-amem
@@ -949,7 +949,7 @@
 
 
 (defthm input-var-preserves-gem-instruction
- (implies 
+ (implies
   (and
    (gem-instruction-p instr mem)
    (is-typed-amem-p mem)
@@ -959,15 +959,15 @@
               (integerp val)))
   (gem-instruction-p instr (input-var var val mem)))
  :hints (("Goal" :in-theory '((:definition gem-instruction-p))
-          :use ( (:instance input-okvar-preserves-a-mem-cell (v (par1 instr))) 
-                 (:instance input-okvar-preserves-a-mem-cell (v (par2 instr))) 
+          :use ( (:instance input-okvar-preserves-a-mem-cell (v (par1 instr)))
+                 (:instance input-okvar-preserves-a-mem-cell (v (par2 instr)))
                  (:instance input-okvar-preserves-a-mem-cell (v (par3 instr)))
                  (:instance type-invariance-after-input (v (par1 instr)) (v2 var) (val2 val) (gm mem))
                  (:instance type-invariance-after-input (v (par2 instr)) (v2 var) (val2 val) (gm mem))
                  (:instance type-invariance-after-input (v (par3 instr)) (v2 var) (val2 val) (gm mem))))))
 
 (defthm input-var-preserves-gem-instruction-list
- (implies 
+ (implies
   (and
    (gem-instruction-list-p instrlist mem)
    (is-typed-amem-p mem)
@@ -979,21 +979,21 @@
  :hints (("Goal" :induct (gem-instruction-list-p instrlist mem))
          ("Subgoal *1/3" :in-theory '((:definition gem-instruction-list-p)))
          ("Subgoal *1/2" :in-theory '((:definition gem-instruction-list-p))
-         :use (:instance input-var-preserves-gem-instruction 
+         :use (:instance input-var-preserves-gem-instruction
                          (instr (car instrlist))))))
 
 
 (defthm input-var-seq-preserves-gem-instruction-list
- (implies 
+ (implies
   (and
    (gem-instruction-list-p instrlist mem)
    (is-typed-amem-p mem)
    (ok-vars vars vals m mem))
   (gem-instruction-list-p instrlist (input-var-seq vars vals m mem)))
  :hints (("Goal" :induct (input-var-seq vars vals m mem))
-         ("Subgoal *1/2" 
+         ("Subgoal *1/2"
           :in-theory (disable input-var is-mem-cell-p)
-          :use 
+          :use
           ( (:instance ok-vars)
             (:instance input-var-seq)
             (:instance input-var-preserves-gem-instruction-list
@@ -1025,10 +1025,10 @@
    (consp (make-state (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate)))
    (consp (cdr (make-state (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate))))
    (integerp (pcc (make-state (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate))))))
- :hints (("Goal" 
+ :hints (("Goal"
           :do-not-induct t
-          :in-theory '((:definition make-state) 
-                       (:rewrite skkk0) (:rewrite skkk1) (:rewrite skkk2) (:rewrite skkk3))   
+          :in-theory '((:definition make-state)
+                       (:rewrite skkk0) (:rewrite skkk1) (:rewrite skkk2) (:rewrite skkk3))
           :use ((:instance skkk4 (s1 gstate) (m (input-var-seq vars vals m (mem gstate))))
                 (:instance skkk5 (s1 gstate) (m (input-var-seq vars vals m (mem gstate))))
                 (:instance gem-statep (x gstate))
@@ -1052,13 +1052,13 @@
                            (mem (make-state (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate))))
     (bounded-amem-p (mem (make-state (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate))))
     (is-typed-amem-p (mem (make-state (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate))))))
- :hints (("Goal" 
+ :hints (("Goal"
           :do-not-induct t
-          :in-theory  '( (:rewrite skkk0) (:rewrite skkk1) (:rewrite skkk2) (:rewrite skkk3))   
+          :in-theory  '( (:rewrite skkk0) (:rewrite skkk1) (:rewrite skkk2) (:rewrite skkk3))
           :use (
                 (:instance gem-statep (x gstate))
                 (:instance gem-statep (x (make-state (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate))))
-                (:instance input-var-seq-preserves-gem-instruction-list 
+                (:instance input-var-seq-preserves-gem-instruction-list
                            (instrlist (code gstate)) (mem (mem gstate)))
                 (:instance bounded-input-preserves-boundedness (mem (mem gstate)))
                 (:instance input-okvar-seq-keeps-typed-amem (mem (mem gstate))))))
@@ -1080,7 +1080,7 @@
    (gem-statep gstate)
    (ok-gem-vars-vals vars vals m (mem gstate)))
   (gem-statep (make-state (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate))))
- :hints (("Goal" 
+ :hints (("Goal"
           :do-not-induct t
           :in-theory  '((:definition ok-gem-vars-vals) (:definition gem-statep))
           :use (prs01 prs02))))
@@ -1091,9 +1091,9 @@
  (if (endp vars)
      t
      (and
-      (is-mem-cell-p 
+      (is-mem-cell-p
        (get-cell (car vars) mem))
-      (if (equal (var-type (get-cell (car vars) 
+      (if (equal (var-type (get-cell (car vars)
                                      mem)) 'bool)
           (my-or-2 (equal (car vals) 0) (equal (car vals) 1))
           (integerp (car vals)))
@@ -1108,7 +1108,7 @@
    (is-typed-amem-p mem)
    (ok-rtm-vars vars vals mem))
   (is-typed-amem-p (input-vars-e vars vals mem)))
- :hints (("Subgoal *1/2" :use 
+ :hints (("Subgoal *1/2" :use
           ((:instance putting-a-new-cell-preserves-typed-amem
                      (c (car vars))
                      (new-cell (updated-cell (car vars) (car vals) mem)))
@@ -1135,7 +1135,7 @@
 
 
 (defthm input-var-preserves-rtm-instruction
- (implies 
+ (implies
   (and
    (rtm-instruction-p instr mem)
    (is-typed-amem-p mem)
@@ -1145,8 +1145,8 @@
               (integerp val)))
   (rtm-instruction-p instr (input-var var val mem)))
  :hints (("Goal" :in-theory '((:definition rtm-instruction-p))
-          :use ( (:instance input-okvar-preserves-a-mem-cell (v (par1 instr))) 
-                 (:instance input-okvar-preserves-a-mem-cell (v (par2 instr))) 
+          :use ( (:instance input-okvar-preserves-a-mem-cell (v (par1 instr)))
+                 (:instance input-okvar-preserves-a-mem-cell (v (par2 instr)))
                  (:instance input-okvar-preserves-a-mem-cell (v (par3 instr)))
                  (:instance type-invariance-after-input (v (par1 instr)) (v2 var) (val2 val) (gm mem))
                  (:instance type-invariance-after-input (v (par2 instr)) (v2 var) (val2 val) (gm mem))
@@ -1155,17 +1155,17 @@
 
 
 (defthm input-vars-preserves-rtm-instruction
- (implies 
+ (implies
   (and
    (rtm-instruction-p instr mem)
    (ok-rtm-vars vars vals mem)
    (is-typed-amem-p mem))
   (rtm-instruction-p instr (input-vars-e vars vals mem)))
  :hints (("Goal" :induct (input-vars-e vars vals mem))
-         ("Subgoal *1/2" 
+         ("Subgoal *1/2"
           :in-theory '((:definition input-var) (:definition input-vars-e))
-          :use (ok-rtm-vars              
-                (:instance input-var-preserves-rtm-instruction 
+          :use (ok-rtm-vars
+                (:instance input-var-preserves-rtm-instruction
                            (var (car vars))
                            (val (car vals))
                            (mem mem))
@@ -1177,7 +1177,7 @@
 
 
 (defthm input-vars-e-preserves-rtm-instruction-list
- (implies 
+ (implies
   (and
    (rtm-instruction-list-p instrlist mem)
    (ok-rtm-vars vars vals mem)
@@ -1186,12 +1186,12 @@
  :hints (("Goal" :induct (rtm-instruction-list-p instrlist mem))
          ("Subgoal *1/3" :in-theory '((:definition rtm-instruction-list-p)))
          ("Subgoal *1/2" :in-theory '((:definition rtm-instruction-list-p))
-         :use (:instance input-vars-preserves-rtm-instruction 
+         :use (:instance input-vars-preserves-rtm-instruction
                          (instr (car instrlist))))))
 
 
 (defthm input-vars-seq-preserves-rtm-instruction-list
- (implies 
+ (implies
   (and
    (rtm-instruction-list-p instrlist mem)
    (ok-rtmvarsseq varsseqs valsseqs mem)
@@ -1211,10 +1211,10 @@
    (consp (make-state (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate)))
    (consp (cdr (make-state (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate))))
    (integerp (pcc (make-state (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate))))))
- :hints (("Goal" 
+ :hints (("Goal"
           :do-not-induct t
-          :in-theory '((:definition make-state) 
-                       (:rewrite skkk0) (:rewrite skkk1) (:rewrite skkk2) (:rewrite skkk3r))   
+          :in-theory '((:definition make-state)
+                       (:rewrite skkk0) (:rewrite skkk1) (:rewrite skkk2) (:rewrite skkk3r))
           :use ((:instance skkk4r (s1 rstate) (m (input-vars-seq varsseqs valsseqs (mem rstate))))
                 (:instance skkk5r (s1 rstate) (m (input-vars-seq varsseqs valsseqs (mem rstate))))
                 (:instance rtm-statep (x rstate))
@@ -1232,13 +1232,13 @@
    (rtm-instruction-list-p (code (make-state (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate)))
                            (mem (make-state (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate))))
     (is-typed-amem-p (mem (make-state (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate))))))
- :hints (("Goal" 
+ :hints (("Goal"
           :do-not-induct t
-          :in-theory  '( (:rewrite skkk0) (:rewrite skkk1) (:rewrite skkk2) (:rewrite skkk3r))   
+          :in-theory  '( (:rewrite skkk0) (:rewrite skkk1) (:rewrite skkk2) (:rewrite skkk3r))
           :use (
                 (:instance rtm-statep (x rstate))
                 (:instance rtm-statep (x (make-state (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate))))
-                (:instance input-vars-seq-preserves-rtm-instruction-list 
+                (:instance input-vars-seq-preserves-rtm-instruction-list
                            (instrlist (code rstate)) (mem (mem rstate)))
                 (:instance ok-rtmvarsseqs-kjeeps-typed-amem (mem (mem rstate))))))
  :rule-classes nil)
@@ -1264,7 +1264,7 @@
   (and
    (equal (code st) (code st2))
    (equal (pcc st) (pcc st2)))
-  (equal 
+  (equal
         (pcc (execute-instruction st))
         (pcc (execute-instruction st2)))))
 
@@ -1272,20 +1272,20 @@
 
 (defun indsc (st1 st2 n)
  (if (zp n)
-     nil 
+     nil
      (append st1 st2
-      (indsc 
+      (indsc
        (execute-instruction st1) (execute-instruction st2) (1- n)))))
 
 
 
 (defthm listinstr-is-independent-from-mem
  (implies (and
-           (equal (pcc st) (pcc st2)) 
-           (equal (code st) (code st2))) 
+           (equal (pcc st) (pcc st2))
+           (equal (code st) (code st2)))
           (equal (listinstr st n) (listinstr st2 n)))
  :hints (("Goal" :induct (indsc st st2 n))
-         ("Subgoal *1/2" 
+         ("Subgoal *1/2"
           :in-theory nil
           :use ( listinstr
                  (:instance listinstr (st st2))
@@ -1296,9 +1296,9 @@
 
 
 (defthm listpars1-independent-from-mem
-  (implies 
+  (implies
    (and
-    (equal (pcc st) (pcc st2)) 
+    (equal (pcc st) (pcc st2))
     (equal (code st) (code st2)))
   (equal (listpars1 st n) (listpars1 st2 n)))
   :hints (("Goal" :in-theory nil
@@ -1315,15 +1315,15 @@
 	  (pars2-instructions (cdr listinstr)))))
 
 (defthm pars2-instruction-is-listpars2
-  (equal 
-   (pars2-instructions (listinstr st n)) 
+  (equal
+   (pars2-instructions (listinstr st n))
    (listpars2 st n)))
 
 
 (defthm listpars2-independent-from-mem
-  (implies 
+  (implies
    (and
-    (equal (pcc st) (pcc st2)) 
+    (equal (pcc st) (pcc st2))
     (equal (code st) (code st2)))
   (equal (listpars2 st n) (listpars2 st2 n)))
   :hints (("Goal" :in-theory nil
@@ -1339,15 +1339,15 @@
 	  (pars3-instructions (cdr listinstr)))))
 
 (defthm pars3-instruction-is-listpars3
-  (equal 
-   (pars3-instructions (listinstr st n)) 
+  (equal
+   (pars3-instructions (listinstr st n))
    (listpars3 st n)))
 
 
 (defthm listpars3-independent-from-mem
-  (implies 
+  (implies
    (and
-    (equal (pcc st) (pcc st2)) 
+    (equal (pcc st) (pcc st2))
     (equal (code st) (code st2)))
   (equal (listpars3 st n) (listpars3 st2 n)))
   :hints (("Goal" :in-theory nil
@@ -1363,15 +1363,15 @@
 	  (pars4-instructions (cdr listinstr)))))
 
 (defthm pars4-instruction-is-listpars4
-  (equal 
-   (pars4-instructions (listinstr st n)) 
+  (equal
+   (pars4-instructions (listinstr st n))
    (listpars4 st n)))
 
 
 (defthm listpars4-independent-from-mem
-  (implies 
+  (implies
    (and
-    (equal (pcc st) (pcc st2)) 
+    (equal (pcc st) (pcc st2))
     (equal (code st) (code st2)))
   (equal (listpars4 st n) (listpars4 st2 n)))
   :hints (("Goal" :in-theory nil
@@ -1381,23 +1381,23 @@
 
 
 (defthm all-rtm-adds-independent-from-mem
-  (implies 
+  (implies
    (and
-    (equal (pcc st) (pcc st2)) 
+    (equal (pcc st) (pcc st2))
     (equal (code st) (code st2)))
   (equal (all-rtm-adds-for-n-steps st n) (all-rtm-adds-for-n-steps st2 n))))
 
 (defthm all-rtm-subs-independent-from-mem
-  (implies 
+  (implies
    (and
-    (equal (pcc st) (pcc st2)) 
+    (equal (pcc st) (pcc st2))
     (equal (code st) (code st2)))
   (equal (all-rtm-subs-for-n-steps st n) (all-rtm-subs-for-n-steps st2 n))))
 
 (defthm listinstr-independent-from-mem
-  (implies 
+  (implies
    (and
-    (equal (pcc st) (pcc st2)) 
+    (equal (pcc st) (pcc st2))
     (equal (code st) (code st2)))
   (equal (listinstr st n) (listinstr st2 n))))
 
@@ -1410,14 +1410,14 @@
   (and
    (equal (code st) (code st2))
    (equal (pcc st) (pcc st2)))
-  (equal 
+  (equal
         (pcc (execute-n-instructions st  n))
         (pcc (execute-n-instructions st2 n))))
  :hints (("Goal" :induct (indsc st st2 n))
          ("Subgoal *1/2"
           :in-theory '((:definition execute-n-instructions))
-          :use 
-          ( 
+          :use
+          (
             (:instance same-pcc-after-execution-regardelss-of-mem (st st))
             (:instance execute-instruction-does-not-touch-code (st st))
             (:instance execute-instruction-does-not-touch-code (st st2))))))
@@ -1432,30 +1432,30 @@
       (append gstate rstate gstate2 rstate2)
     (case (opcode (nth (pcc gstate) (code gstate)))
       (gem-equ
-	(good-translation-induct 
-	 (execute-instruction    gstate                   ) 
+	(good-translation-induct
+	 (execute-instruction    gstate                   )
 	 (execute-n-instructions rstate (* 2 (len *rns*)) )
-	 (execute-instruction    gstate2                   ) 
+	 (execute-instruction    gstate2                   )
 	 (execute-n-instructions rstate2 (* 2 (len *rns*)) )
 	 ))
-      (gem-add 
-	(good-translation-induct 
-	 (execute-instruction    gstate             ) 
+      (gem-add
+	(good-translation-induct
+	 (execute-instruction    gstate             )
 	 (execute-n-instructions rstate (len *rns*) )
-	 (execute-instruction    gstate2             ) 
+	 (execute-instruction    gstate2             )
 	 (execute-n-instructions rstate2 (len *rns*) )
 	 ))
-      (gem-sub 
-	(good-translation-induct 
-	 (execute-instruction    gstate             ) 
+      (gem-sub
+	(good-translation-induct
+	 (execute-instruction    gstate             )
 	 (execute-n-instructions rstate (len *rns*) )
-	 (execute-instruction    gstate2             ) 
+	 (execute-instruction    gstate2             )
 	 (execute-n-instructions rstate2 (len *rns*) )
 	 ))
       (otherwise nil))))
 
 (defthm good-translation-is-independent-from-mem
- (implies 
+ (implies
   (and
    (equal (code gstate) (code gstate2))
    (equal (pcc gstate) (pcc gstate2))
@@ -1520,29 +1520,29 @@
    (>= (pcc gstate) 0)
    (m-correspondent-values-p m (mem gstate) (mem rstate)))
   (and
-   (good-mapping-wrt-memories 
-    m 
+   (good-mapping-wrt-memories
+    m
     (mem (make-state  (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate)))
     (mem (make-state  (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate))))
-   (good-translation-gem-rtm 
+   (good-translation-gem-rtm
     (make-state  (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate))
     (make-state  (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate))
     m)
    (gem-statep (make-state  (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate)))
    (rtm-statep (make-state  (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate)))
    (>= (pcc (make-state  (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate))) 0)
-   (m-correspondent-values-p 
+   (m-correspondent-values-p
     m
     (mem (make-state  (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate)))
     (mem (make-state  (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate))))
 ))
- :hints (("Goal" 
+ :hints (("Goal"
           :in-theory '((:definition correct-input)
                        (:type-prescription retrieve-rtmvars)
                        (:definition good-mapping-wrt-memories)
-                       (:definition good-mapping) 
-                       (:rewrite skkk0) 
-                       (:rewrite skkk1) 
+                       (:definition good-mapping)
+                       (:rewrite skkk0)
+                       (:rewrite skkk1)
                        (:rewrite skkk2))
           :use (
                 ok-rtmvarsseqs-preserve-rtmstatehood
@@ -1555,7 +1555,7 @@
                   (rstate2 (make-state  (input-vars-seq varsseqs valsseqs (mem rstate)) (pcc rstate) (code rstate))))))))
 
 
-(defun input-gem (vars vals m gstate) 
+(defun input-gem (vars vals m gstate)
  (make-state  (input-var-seq vars vals m (mem gstate)) (pcc gstate) (code gstate)))
 
 (defun input-rtm (varsseqs valsseqs rstate)
@@ -1575,28 +1575,28 @@
    (>= (pcc gstate) 0)
    (m-correspondent-values-p m (mem gstate) (mem rstate)))
   (and
-   (good-mapping-wrt-memories 
-    m 
+   (good-mapping-wrt-memories
+    m
     (mem (input-gem vars vals m gstate))
     (mem (input-rtm varsseqs valsseqs rstate)))
-   (good-translation-gem-rtm 
+   (good-translation-gem-rtm
     (input-gem vars vals m gstate)
     (input-rtm varsseqs valsseqs rstate)
     m)
-   (gem-statep (input-gem vars vals m gstate)) 
+   (gem-statep (input-gem vars vals m gstate))
    (rtm-statep (input-rtm varsseqs valsseqs rstate))
    (>= (pcc (input-gem vars vals m gstate)) 0)
-   (m-correspondent-values-p 
+   (m-correspondent-values-p
     m
     (mem (input-gem vars vals m gstate))
     (mem (input-rtm varsseqs valsseqs rstate)))))
- :hints (("Goal" 
-          :in-theory nil 
+ :hints (("Goal"
+          :in-theory nil
           :use (input-gem
                 input-rtm
                 all-properties-hold-after-correct-input0))))
 
-(defthm all-properties-hold-after-input-and-execution 
+(defthm all-properties-hold-after-input-and-execution
  (implies
   (and
    (integerp n)
@@ -1610,28 +1610,28 @@
    (>= (pcc gstate) 0)
    (m-correspondent-values-p m (mem gstate) (mem rstate)))
   (and
-   (good-mapping-wrt-memories 
-    m 
+   (good-mapping-wrt-memories
+    m
     (mem (execute-n-instructions (input-gem vars vals m gstate) n))
-    (mem (execute-n-instructions 
-          (input-rtm varsseqs valsseqs rstate) 
+    (mem (execute-n-instructions
+          (input-rtm varsseqs valsseqs rstate)
           (correspondent-steps n (input-gem vars vals m gstate)))))
-   (good-translation-gem-rtm 
+   (good-translation-gem-rtm
     (execute-n-instructions (input-gem vars vals m gstate) n)
-    (execute-n-instructions 
-          (input-rtm varsseqs valsseqs rstate) 
+    (execute-n-instructions
+          (input-rtm varsseqs valsseqs rstate)
           (correspondent-steps n (input-gem vars vals m gstate)))
     m)
    (gem-statep (execute-n-instructions (input-gem vars vals m gstate) n))
-   (rtm-statep (execute-n-instructions 
-                (input-rtm varsseqs valsseqs rstate) 
+   (rtm-statep (execute-n-instructions
+                (input-rtm varsseqs valsseqs rstate)
                 (correspondent-steps n (input-gem vars vals m gstate))))
    (>= (pcc (execute-n-instructions (input-gem vars vals m gstate) n)) 0)
-   (m-correspondent-values-p 
+   (m-correspondent-values-p
     m
     (mem (execute-n-instructions (input-gem vars vals m gstate) n))
-    (mem (execute-n-instructions 
-          (input-rtm varsseqs valsseqs rstate) 
+    (mem (execute-n-instructions
+          (input-rtm varsseqs valsseqs rstate)
           (correspondent-steps n (input-gem vars vals m gstate)))))))
  :hints (("Goal" :in-theory '((:definition good-mapping)
                               (:definition good-mapping-wrt-memories))
@@ -1643,7 +1643,7 @@
 (defun restart-program (gstate)
  (make-state (mem gstate) 0 (code gstate)))
 
-(defthm hh1 
+(defthm hh1
  (implies (gem-statep s) (gem-statep (restart-program s)))
  :rule-classes nil)
 
@@ -1663,22 +1663,22 @@
    (m-correspondent-values-p m (mem gstate) (mem rstate)))
   (and
    (>= 0 (pcc (restart-program gstate)))
-   (good-mapping-wrt-memories 
-    m 
-    (mem (restart-program gstate)) 
+   (good-mapping-wrt-memories
+    m
+    (mem (restart-program gstate))
     (mem (restart-program rstate)))
-   (m-correspondent-values-p 
-    m 
-    (mem (restart-program gstate)) 
+   (m-correspondent-values-p
+    m
+    (mem (restart-program gstate))
     (mem (restart-program rstate)))))
  :hints (("Goal" :in-theory '(
                               (:definition restart-program)
-                              (:rewrite skkk0) 
+                              (:rewrite skkk0)
                               (:rewrite skkk1)
                               (:rewrite skkk2))))
           :rule-classes nil)
 
-(defthm hh5 
+(defthm hh5
  (and
   (equal (code (restart-program s)) (code s))
   (equal (pcc  (restart-program s)) (pcc (initial-state p)))))
@@ -1691,7 +1691,7 @@
    (equal (code gstate) (code (initial-state gem-program)))
    (equal (code rstate) (code (initial-state rtm-program)))
    (correct-translation gem-program rtm-program m))
-  (good-translation-gem-rtm 
+  (good-translation-gem-rtm
    (restart-program gstate )
    (restart-program rstate )
    m))
@@ -1701,11 +1701,11 @@
                               (:definition code)
                               (:definition gem-statep)
                               (:definition rtm-statep)
-                              (:definition correct-translation) 
+                              (:definition correct-translation)
                               (:definition restart-program)
                               (:definition initial-state)
                               (:rewrite hh5)
-                              (:rewrite skkk0) 
+                              (:rewrite skkk0)
                               (:rewrite skkk1)
                               (:rewrite skkk2))
          :use
@@ -1719,7 +1719,7 @@
                          (rstate2 (restart-program rstate ))))))
  :rule-classes nil)
 
-       
+
 
 
 (defthm all-properties-hold-after-restarting-program
@@ -1736,19 +1736,19 @@
    (m-correspondent-values-p m (mem gstate) (mem rstate)))
   (and
    (>= 0 (pcc (restart-program gstate)))
-   (good-mapping-wrt-memories 
-    m 
-    (mem (restart-program gstate)) 
+   (good-mapping-wrt-memories
+    m
+    (mem (restart-program gstate))
     (mem (restart-program rstate)))
-    (good-translation-gem-rtm 
+    (good-translation-gem-rtm
     (restart-program gstate)
     (restart-program rstate)
     m)
    (gem-statep (restart-program gstate))
    (rtm-statep (restart-program rstate))
-   (m-correspondent-values-p 
-    m 
-    (mem (restart-program gstate)) 
+   (m-correspondent-values-p
+    m
+    (mem (restart-program gstate))
     (mem (restart-program rstate)))))
  :hints (("Goal" :in-theory nil
           :use (
@@ -1758,24 +1758,24 @@
                 hh6))))
 
 
-(defthm execution-after-input-gem-does-not-touch-code 
- (equal 
-  (code (execute-n-instructions (input-gem vars vals m gstate) n)) 
+(defthm execution-after-input-gem-does-not-touch-code
+ (equal
+  (code (execute-n-instructions (input-gem vars vals m gstate) n))
   (code gstate))
- :hints (("Goal" 
+ :hints (("Goal"
           :in-theory (disable execute-n-instructions)
           :use (:instance execute-n-instruction-does-not-touch-code
                           (st (input-gem vars vals m gstate))))))
-     
 
-(defthm execution-after-input-rtm-does-not-touch-code 
- (equal 
-  (code (execute-n-instructions (input-rtm varsseqs valsseqs rstate) n)) 
+
+(defthm execution-after-input-rtm-does-not-touch-code
+ (equal
+  (code (execute-n-instructions (input-rtm varsseqs valsseqs rstate) n))
   (code rstate))
- :hints (("Goal" 
+ :hints (("Goal"
           :in-theory (disable execute-n-instructions)
           :use (:instance execute-n-instruction-does-not-touch-code
-                          (st (input-rtm varsseqs valsseqs rstate))))))     
+                          (st (input-rtm varsseqs valsseqs rstate))))))
 
 
 
@@ -1788,24 +1788,24 @@
     (integerp n)
     (>= n 0)
     (good-mapping m)
-    (good-mapping-wrt-memories m (mem gstate) (mem rstate)) 
+    (good-mapping-wrt-memories m (mem gstate) (mem rstate))
     (good-translation-gem-rtm gstate rstate m)
     (gem-statep gstate)
     (rtm-statep rstate)
     (>= (pcc gstate) 0)
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
    (and
-    (good-mapping-wrt-memories m 
-                               (mem (execute-n-instructions gstate n)) 
+    (good-mapping-wrt-memories m
+                               (mem (execute-n-instructions gstate n))
                                (mem  (execute-n-instructions rstate (correspondent-steps n gstate))))
     (>= (pcc (execute-n-instructions gstate n)) 0)
-    (good-translation-gem-rtm 
-     (execute-n-instructions gstate n) 
+    (good-translation-gem-rtm
+     (execute-n-instructions gstate n)
      (execute-n-instructions rstate (correspondent-steps n gstate)) m)
     (rtm-statep (execute-n-instructions rstate (correspondent-steps n gstate)))
     (gem-statep (execute-n-instructions gstate n))
-    (m-correspondent-values-p 
-     m 
+    (m-correspondent-values-p
+     m
      (mem (execute-n-instructions gstate n))
      (mem (execute-n-instructions rstate (correspondent-steps n gstate))))))
   :hints (("Goal" :in-theory '((:definition good-mapping) (:definition good-mapping-wrt-memories))
@@ -1830,7 +1830,7 @@
   :hints (("Goal" :use (equalities-on-io fact-bout-rns))))
 
 (defthm sil00
- (implies (gem-statep gstate) 
+ (implies (gem-statep gstate)
           (and
            (is-typed-amem-p (mem gstate))
            (bounded-amem-p (mem gstate))))
@@ -1858,59 +1858,59 @@
    (equal (code (restart-program (execute-n-instructions (input-gem vars vals m gstate) n)))
           (code (initial-state gem-program)))
    (equal (code (restart-program
-                 (execute-n-instructions 
-                  (input-rtm varsseqs valsseqs rstate) 
+                 (execute-n-instructions
+                  (input-rtm varsseqs valsseqs rstate)
                   (correspondent-steps n (input-gem vars vals m gstate)))))
           (code (initial-state rtm-program)))
-   (good-mapping-wrt-memories 
-    m 
-    (mem (restart-program (execute-n-instructions (input-gem vars vals m gstate) n)))
-    (mem (restart-program
-          (execute-n-instructions 
-           (input-rtm varsseqs valsseqs rstate) 
-           (correspondent-steps n (input-gem vars vals m gstate))))))
-   (good-translation-gem-rtm 
-    (restart-program (execute-n-instructions (input-gem vars vals m gstate) n))
-    (restart-program
-     (execute-n-instructions 
-      (input-rtm varsseqs valsseqs rstate) 
-      (correspondent-steps n (input-gem vars vals m gstate))))
-    m)
-   (gem-statep (restart-program (execute-n-instructions (input-gem vars vals m gstate) n)))
-   (rtm-statep 
-    (restart-program
-     (execute-n-instructions 
-                (input-rtm varsseqs valsseqs rstate) 
-                (correspondent-steps n (input-gem vars vals m gstate)))))
-   (>= (pcc (restart-program (execute-n-instructions (input-gem vars vals m gstate) n))) 0)
-   (m-correspondent-values-p 
+   (good-mapping-wrt-memories
     m
     (mem (restart-program (execute-n-instructions (input-gem vars vals m gstate) n)))
     (mem (restart-program
-          (execute-n-instructions 
-           (input-rtm varsseqs valsseqs rstate) 
+          (execute-n-instructions
+           (input-rtm varsseqs valsseqs rstate)
+           (correspondent-steps n (input-gem vars vals m gstate))))))
+   (good-translation-gem-rtm
+    (restart-program (execute-n-instructions (input-gem vars vals m gstate) n))
+    (restart-program
+     (execute-n-instructions
+      (input-rtm varsseqs valsseqs rstate)
+      (correspondent-steps n (input-gem vars vals m gstate))))
+    m)
+   (gem-statep (restart-program (execute-n-instructions (input-gem vars vals m gstate) n)))
+   (rtm-statep
+    (restart-program
+     (execute-n-instructions
+                (input-rtm varsseqs valsseqs rstate)
+                (correspondent-steps n (input-gem vars vals m gstate)))))
+   (>= (pcc (restart-program (execute-n-instructions (input-gem vars vals m gstate) n))) 0)
+   (m-correspondent-values-p
+    m
+    (mem (restart-program (execute-n-instructions (input-gem vars vals m gstate) n)))
+    (mem (restart-program
+          (execute-n-instructions
+           (input-rtm varsseqs valsseqs rstate)
            (correspondent-steps n (input-gem vars vals m gstate))))))))
  :hints (("Goal" :in-theory '((:definition good-mapping-wrt-memories))
-          :use ( (:instance equalities-on-io-clean 
+          :use ( (:instance equalities-on-io-clean
                             (gem-typed-mem (mem gstate))
                             (rtm-typed-mem (mem rstate)))
                  sil00
                  all-properties-hold-after-correct-input1
                  (:instance trivialities-on-restart (st (execute-n-instructions (input-gem vars vals m gstate) n)))
-                 (:instance trivialities-on-restart 
-                            (st (execute-n-instructions 
-                                 (input-rtm varsseqs valsseqs rstate) 
+                 (:instance trivialities-on-restart
+                            (st (execute-n-instructions
+                                 (input-rtm varsseqs valsseqs rstate)
                                  (correspondent-steps n (input-gem vars vals m gstate)))))
                  (:instance m-correspondence-and-other-conditions-kept-execution-on-n-clean
                             (gstate (input-gem vars vals m gstate))
                             (rstate (input-rtm varsseqs valsseqs rstate)))
                  (:instance all-properties-hold-after-restarting-program
                             (gstate (execute-n-instructions (input-gem vars vals m gstate) n))
-                            (rstate (execute-n-instructions 
-                                     (input-rtm varsseqs valsseqs rstate) 
+                            (rstate (execute-n-instructions
+                                     (input-rtm varsseqs valsseqs rstate)
                                      (correspondent-steps n (input-gem vars vals m gstate)))))
                  execution-after-input-gem-does-not-touch-code
-                 (:instance execution-after-input-rtm-does-not-touch-code 
+                 (:instance execution-after-input-rtm-does-not-touch-code
                             (n (correspondent-steps n (input-gem vars vals m gstate))))))))
 
 
@@ -1932,39 +1932,39 @@
       (endp rtmseq-seq))
      t
      (and
-      (correct-input 
-       (car gemseq-seq) 
-       (car gemval-seq) 
+      (correct-input
+       (car gemseq-seq)
+       (car gemval-seq)
        (car rtmseq-seq)
        (car rtmval-seq)
        m gstate rstate)
       (valid-input-sequences
-       (cdr gemseq-seq) 
-       (cdr gemval-seq) 
+       (cdr gemseq-seq)
+       (cdr gemval-seq)
        (cdr rtmseq-seq)
        (cdr rtmval-seq)
-       m 
+       m
        (restart-program (execute-n-instructions (input-gem (car gemseq-seq) (car gemval-seq) m gstate) n))
-       (restart-program (execute-n-instructions 
-                         (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate) 
+       (restart-program (execute-n-instructions
+                         (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate)
                          (correspondent-steps n (input-gem (car gemseq-seq) (car gemval-seq) m gstate))))
        n))))
 
-     
+
 (defun build-gem-output (gemseq-seq gemval-seq m gstate n attr)
  (if (endp gemseq-seq)
      nil
      (cons (projectio (mem gstate) attr)
-           (build-gem-output 
-            (cdr gemseq-seq) 
-            (cdr gemval-seq) 
+           (build-gem-output
+            (cdr gemseq-seq)
+            (cdr gemval-seq)
             m
             (restart-program (execute-n-instructions (input-gem (car gemseq-seq) (car gemval-seq) m gstate) n))
             n
             attr))))
 
 (defun build-rtm-output (rtmseq-seq rtmval-seq m gstate rstate n attr gemseq-seq gemval-seq)
- (if 
+ (if
   (endp rtmseq-seq)
   nil
   (cons (decode m (projectio (mem rstate) attr))
@@ -1974,8 +1974,8 @@
          m
          (restart-program (execute-n-instructions (input-gem (car gemseq-seq) (car gemval-seq) m gstate) n))
          (restart-program
-          (execute-n-instructions 
-           (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate) 
+          (execute-n-instructions
+           (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate)
            (correspondent-steps n (input-gem (car gemseq-seq) (car gemval-seq) m gstate))))
          n
          attr
@@ -1995,14 +1995,14 @@
    (good-translation-gem-rtm gstate rstate m)
    (gem-statep gstate)
    (rtm-statep rstate)
-   (>= (pcc gstate) 0) 
+   (>= (pcc gstate) 0)
    (valid-input-sequences gemseq-seq gemval-seq rtmseq-seq rtmval-seq m gstate rstate n))
   (equal-output-sequences
    (build-rtm-output rtmseq-seq rtmval-seq m gstate rstate n attr gemseq-seq gemval-seq)
    (build-gem-output gemseq-seq gemval-seq m gstate n attr)))
  :hints (("Goal" :induct (valid-input-sequences gemseq-seq gemval-seq rtmseq-seq rtmval-seq m gstate rstate n))
          ("Subgoal *1/3" :in-theory '((:definition valid-input-sequences)))
-         ("Subgoal *1/2" 
+         ("Subgoal *1/2"
           :in-theory
           (union-theories (current-theory 'ground-zero)
                           '((:definition valid-input-sequences)
@@ -2018,8 +2018,8 @@
                                                     '((:definition build-rtm-output)
                                                       (:definition equal-output-sequences)
                                                       (:definition build-gem-output))))))
-         
-  
+
+
 
 
 
@@ -2055,14 +2055,14 @@
    (correct-translation gem-program rtm-program m)
    (good-mapping m)
    (good-mapping-wrt-memories m (mem gstate) (mem rstate))
-   (valid-input-sequences 
+   (valid-input-sequences
     gemseq-seq gemval-seq rtmseq-seq rtmval-seq m gstate rstate n))
   (equal-output-sequences
-   (build-rtm-output 
+   (build-rtm-output
     rtmseq-seq rtmval-seq m gstate rstate n attr gemseq-seq gemval-seq)
-   (build-gem-output 
+   (build-gem-output
     gemseq-seq gemval-seq m gstate n attr))))
- :hints (("Goal" 
+ :hints (("Goal"
           :in-theory (current-theory 'ground-zero)
           :use
            ((:instance correct-translation
@@ -2083,7 +2083,7 @@
 
 (defun correct-input-sequences (gemseq-seq rtmseq-seq m gem-program rtm-program)
  (valid-input-sequences (car gemseq-seq)
-                        (cdr gemseq-seq) 
+                        (cdr gemseq-seq)
                         (car rtmseq-seq)
                         (cdr rtmseq-seq)
                         m
@@ -2099,13 +2099,13 @@
 (defun instructs (prog)
  (cdr prog))
 
-(defthm mem-and-code-of-initial-state 
+(defthm mem-and-code-of-initial-state
  (and
   (equal (mem  (initial-state prog)) (declarations prog))
   (equal (code (initial-state prog)) (instructs    prog))))
 
 (defun gem-output-sequence (gemseq-seq m gem-program)
- (build-gem-output (car gemseq-seq) (cdr gemseq-seq) m 
+ (build-gem-output (car gemseq-seq) (cdr gemseq-seq) m
                    (initial-state gem-program)
                    (len (code (initial-state gem-program)))
                    'Output))
@@ -2116,8 +2116,8 @@
        (equal (code st1) (code st2)))
   (equal (correspondent-steps n st1) (correspondent-steps n st2))))
 
-(defthm correspondent-steps-no-matter-input 
- (equal 
+(defthm correspondent-steps-no-matter-input
+ (equal
   (correspondent-steps n (input-gem gemvars gemvals m gstate))
   (correspondent-steps n gstate))
  :hints (("Goal" :use (:instance correspondent-steps-independent-from-mem
@@ -2126,7 +2126,7 @@
 
 
 (defun build-rtm-output-clean (rtmseq-seq rtmval-seq m gstate rstate n attr)
- (if 
+ (if
   (endp rtmseq-seq)
   nil
   (cons (decode m (projectio (mem rstate) attr))
@@ -2136,20 +2136,20 @@
          m
          gstate
          (restart-program
-          (execute-n-instructions 
-           (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate) 
+          (execute-n-instructions
+           (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate)
            (correspondent-steps n gstate)))
          n
          attr))))
 
-(defthm after-restarting-same-code 
- (equal 
+(defthm after-restarting-same-code
+ (equal
   (code (restart-program (execute-n-instructions (input-gem gemvars gemvals m gstate) n)))
   (code gstate))
- :hints (("Goal" 
+ :hints (("Goal"
           :in-theory '((:definition input-gem)
-                       (:rewrite skkk2)) 
-          :use ( (:instance execute-n-instruction-does-not-touch-code 
+                       (:rewrite skkk2))
+          :use ( (:instance execute-n-instruction-does-not-touch-code
                             (st (input-gem gemvars gemvals m gstate)))
                  (:instance trivialities-on-restart
                             (st (execute-n-instructions (input-gem gemvars gemvals m gstate) n)))))))
@@ -2161,7 +2161,7 @@
 
 
 (defun build-rtm-output-induct (rtmseq-seq rtmval-seq m gstate gstate2 rstate n attr gemseq-seq gemval-seq)
- (if 
+ (if
   (endp rtmseq-seq)
   nil
   (cons (append rtmseq-seq rtmval-seq m gstate gstate2 rstate n attr gemseq-seq gemval-seq)
@@ -2172,8 +2172,8 @@
          (restart-program (execute-n-instructions (input-gem (car gemseq-seq) (car gemval-seq) m gstate) n))
          (restart-program (execute-n-instructions (input-gem (car gemseq-seq) (car gemval-seq) m gstate2) n))
          (restart-program
-          (execute-n-instructions 
-           (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate) 
+          (execute-n-instructions
+           (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate)
            (correspondent-steps n (input-gem (car gemseq-seq) (car gemval-seq) m gstate))))
          n
          attr
@@ -2189,22 +2189,22 @@
   (equal
    (build-rtm-output       rtmseq-seq rtmval-seq m st1 rstate n attr gemseq-seq gemval-seq)
    (build-rtm-output       rtmseq-seq rtmval-seq m st2 rstate n attr gemseq-seq gemval-seq)))
- :hints 
- (("Goal" 
+ :hints
+ (("Goal"
    :induct
    (build-rtm-output-induct rtmseq-seq rtmval-seq m st1 st2 rstate n attr gemseq-seq gemval-seq))
   ("Subgoal *1/2"
           :in-theory '((:definition build-rtm-output)
                        (:rewrite correspondent-steps-no-matter-input)
                        (:rewrite after-restarting-same-code)
-                       (:rewrite another-trivail-restart)) 
+                       (:rewrite another-trivail-restart))
           :use (correspondent-steps-independent-from-mem))))
-                         
 
 
-(defun build-rtm-output-induct2 
+
+(defun build-rtm-output-induct2
  (rtmseq-seq rtmval-seq m gstate gstate2 rstate n attr gemseq-seq gemval-seq gemseq-seq2 gemval-seq2)
- (if 
+ (if
   (endp rtmseq-seq)
   nil
   (cons (append rtmseq-seq rtmval-seq m gstate gstate2 rstate n attr gemseq-seq gemval-seq gemseq-seq2 gemval-seq2)
@@ -2215,8 +2215,8 @@
          (restart-program (execute-n-instructions (input-gem (car gemseq-seq) (car gemval-seq) m gstate) n))
          (restart-program (execute-n-instructions (input-gem (car gemseq-seq2) (car gemval-seq2) m gstate2) n))
          (restart-program
-          (execute-n-instructions 
-           (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate) 
+          (execute-n-instructions
+           (input-rtm (car rtmseq-seq) (car rtmval-seq) rstate)
            (correspondent-steps n (input-gem (car gemseq-seq) (car gemval-seq) m gstate))))
          n
          attr
@@ -2226,13 +2226,13 @@
          (cdr gemval-seq2)))))
 
 
-          
-(defthm build-rtm-output-independent-from-gem-input 
-  (equal 
+
+(defthm build-rtm-output-independent-from-gem-input
+  (equal
    (build-rtm-output rtmseq-seq rtmval-seq m gstate rstate n attr gemseq-seq gemval-seq)
    (build-rtm-output rtmseq-seq rtmval-seq m gstate rstate n attr gemseq-seq2 gemval-seq2))
- :hints (("Goal" 
-          :induct (build-rtm-output-induct2 rtmseq-seq rtmval-seq m gstate gstate rstate n attr 
+ :hints (("Goal"
+          :induct (build-rtm-output-induct2 rtmseq-seq rtmval-seq m gstate gstate rstate n attr
                                             gemseq-seq gemval-seq gemseq-seq2 gemval-seq2))
          ("Subgoal *1/2"
                          :in-theory '((:definition build-rtm-output)
@@ -2243,11 +2243,11 @@
                          :use (:instance build-rtm-output-independent-from-gem-memory
                                          (rtmseq-seq (cdr rtmseq-seq))
                                          (rtmval-seq (cdr rtmval-seq))
-                                         (st1 (RESTART-PROGRAM 
+                                         (st1 (RESTART-PROGRAM
                                                (EXECUTE-N-INSTRUCTIONS (INPUT-GEM (CAR GEMSEQ-SEQ)
                                                         (CAR GEMVAL-SEQ)
                                                         M GSTATE) N)))
-                                         (st2 (RESTART-PROGRAM 
+                                         (st2 (RESTART-PROGRAM
                                                (EXECUTE-N-INSTRUCTIONS (INPUT-GEM (CAR GEMSEQ-SEQ2)
                                                         (CAR GEMVAL-SEQ2)
                                                         M GSTATE) N)))
@@ -2286,11 +2286,11 @@
    (gem-program-p gem-program)
    (rtm-program-p rtm-program)
    (correct-translation gem-program rtm-program m)
-   (is-variable-mapping 
-    m 
-    (declarations gem-program) 
+   (is-variable-mapping
+    m
+    (declarations gem-program)
     (declarations rtm-program))
-   (correct-input-sequences 
+   (correct-input-sequences
     gemseq-seq rtmseq-seq m gem-program rtm-program))
   (equal-output-sequences
    (rtm-output-sequence rtmseq-seq m gem-program rtm-program)
@@ -2334,10 +2334,10 @@
 
 
 
-(defun semantically-equivalent 
+(defun semantically-equivalent
        (gem-program rtm-program m gemseq-seq rtmseq-seq)
  (implies
-  (correct-input-sequences 
+  (correct-input-sequences
    gemseq-seq rtmseq-seq m gem-program rtm-program)
   (equal-output-sequences
    (rtm-output-sequence rtmseq-seq m gem-program rtm-program)
@@ -2347,9 +2347,9 @@
   (and
    (gem-program-p gem-program)
    (rtm-program-p rtm-program)
-   (is-variable-mapping 
-    m 
-    (declarations gem-program) 
+   (is-variable-mapping
+    m
+    (declarations gem-program)
     (declarations rtm-program))
    (correct-translation gem-program rtm-program m)))
 
@@ -2367,23 +2367,23 @@
     m
     (mem (execute-n-instructions gstate n))
     (mem (execute-n-instructions rstate (correspondent-steps n gstate))))))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
            ( (:instance simple-fact-about-initial-rtmstate (rtmprog rtm-program))
              (:instance simple-fact-about-initial-gemstate (gemprog gem-program))
              (:instance redefinition-of-m-corr
                         (rtm-vars (declarations rtm-program))
                         (gem-vars (declarations gem-program)))
              (:instance redefinition-of-m-corr
-                        (rtm-vars (mem (execute-n-instructions 
-                                        (initial-state rtm-program) 
+                        (rtm-vars (mem (execute-n-instructions
+                                        (initial-state rtm-program)
                                         (correspondent-steps n (initial-state gem-program)))))
-                        (gem-vars (mem (execute-n-instructions (initial-state gem-program) n)))) 
+                        (gem-vars (mem (execute-n-instructions (initial-state gem-program) n))))
              (:instance m-correspondence-and-other-conditions-kept-execution-on-n
                         (gstate (initial-state gem-program))
                         (rstate (initial-state rtm-program))))
-           :in-theory 
+           :in-theory
            '( (:definition natp)
-              (:definition syntactically-equivalent) 
+              (:definition syntactically-equivalent)
               (:definition same-vars)
               (:definition correct-translation)
               (:definition gem-variables)
@@ -2401,7 +2401,7 @@
 (defthm syntactic-eqv-implies-semantic-eqv
  (implies
    (syntactically-equivalent gem-program rtm-program m)
-   (semantically-equivalent 
+   (semantically-equivalent
     gem-program rtm-program m gemseq-seq rtmseq-seq)))
 
 

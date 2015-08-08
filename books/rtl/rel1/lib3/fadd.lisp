@@ -125,7 +125,7 @@
   (comp1 (logior a (comp1 b (1+ e))) (1+ e)))
 
 (defun lam1 (a b e)
-  (logand (bits (lamt a b e) e 2) 
+  (logand (bits (lamt a b e) e 2)
 	  (logand (bits (lamg a b e) (1- e) 1)
 		  (comp1 (bits (lamz a b e) (- e 2) 0) (1- e)))))
 
@@ -135,7 +135,7 @@
 		  (comp1 (bits (lamz a b e) (- e 2) 0) (1- e)))))
 
 (defun lam3 (a b e)
-  (logand (bits (lamt a b e) e 2) 
+  (logand (bits (lamt a b e) e 2)
 	  (logand (bits (lamz a b e) (1- e) 1)
 		  (comp1 (bits (lamg a b e) (- e 2) 0) (1- e)))))
 

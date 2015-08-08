@@ -196,7 +196,7 @@ especially the first time before things are memoized.</p>"
                 :mintime 1/2
                 :msg "; stv-debug ev-alist: ~st sec, ~sa bytes.~%"))
 
-        
+
         ((with-fast ev-alist))
 
         (evaled-out-bits

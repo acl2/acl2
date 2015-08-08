@@ -30,7 +30,7 @@
 		(wff q))
 	   (wff (dist-or-and p q))))
 
-(defun cnf (f) 
+(defun cnf (f)
   (declare (xargs :guard (wff f)))
   (cond ((wfbinary f)
 	 (cond ((equal (car f) 'and) (list 'and (cnf (a1 f)) (cnf (a2 f))))

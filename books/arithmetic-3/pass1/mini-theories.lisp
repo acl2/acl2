@@ -29,7 +29,7 @@
 (defthm rewrite-linear-equalities-to-iff
    (equal (equal (< w x) (< y z))
           (iff (< w x) (< y z))))
- 
+
 (in-theory (disable rewrite-linear-equalities-to-iff))
 
 

@@ -25,15 +25,15 @@
 ;  Last modified 20 December 2001.
 #|
  To certify (originally in ACL2 Version 2.6):
- (defpkg 
-     "FLAT" (union-eq 
+ (defpkg
+     "FLAT" (union-eq
 	      *acl2-exports*
 	      *common-lisp-symbols-from-main-lisp-package*))
 
- (certify-book "flat" 
+ (certify-book "flat"
                1
                nil ; compile-flg
-	       :defaxioms-okp nil 
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil)
 |#
 (in-package "FLAT")
@@ -84,9 +84,9 @@
 ;;                        \ |      | /
 ;;                         ($bottom$)
 
-;;   Items (represented by nodes) related by this 
+;;   Items (represented by nodes) related by this
 ;;    strict partial order are connected by edges.
-;;  In what follows, the reflexive closure, of this 
+;;  In what follows, the reflexive closure, of this
 ;;   strict partial order, is denoted by $<=$.
 ;; ACL2 is used to verify that $<=$ is a reflexive
 ;;  partial order:
@@ -98,7 +98,7 @@
   (or (equal x ($bottom$))
       (equal x y)))
 
-;; $<=$ is a reflexive partial order on the ACL2 
+;; $<=$ is a reflexive partial order on the ACL2
 ;; universe:
 #|
 (thm ;; Reflexive
@@ -114,21 +114,21 @@
 	       ($<=$ y z))
 	  ($<=$ x z)))
 |#
-;; For each positive integer, n, the partial order 
-;;  $<=$ is extended elementwise to functions with 
+;; For each positive integer, n, the partial order
+;;  $<=$ is extended elementwise to functions with
 ;;  n arguments, x_1,...,x_n:
-;;  For functions $f$ and $g$, 
+;;  For functions $f$ and $g$,
 ;;     ($<=$ $f$ $g$) iff (for all x_1,...,x_n)
 ;;                        ($<=$ ($f$ x_1 ... x_n)
 ;;                              ($g$ x_1 ... x_n)).
 ;;
-;;  Extended this way, $<=$ is a reflexive partial 
-;;  order on functions, with n arguments, with a 
-;;  least element, $bottom-n$. $Bottom-n$ is the 
+;;  Extended this way, $<=$ is a reflexive partial
+;;  order on functions, with n arguments, with a
+;;  least element, $bottom-n$. $Bottom-n$ is the
 ;;  constant function, with n arguments, that always
 ;;  returns the constant ($bottom$).
 ;; ACL2 is used to verify the above claims about
-;;  about n-ary functions for n = 1. 
+;;  about n-ary functions for n = 1.
 #|
 (defstub
     $f$ (*) => *)
@@ -146,26 +146,26 @@
        ($f$ x)))
 :ubt :x-1
 (encapsulate
- ;; Antisymmetric: 
+ ;; Antisymmetric:
  ;;  For functions $f$ and $g$,
  ;;   (implies (and ($<=$ $f$ $g$)
  ;;                 ($<=$ $g$ $f$))
  ;;            (equal $f$ $g$)))
  ((($f$ *) => *)
   (($g$ *) => *))
- 
+
  (local
-  (defun 
+  (defun
       $f$ (x)
       (declare (ignore x))
       ($bottom$)))
- 
+
  (local
-  (defun 
+  (defun
       $g$ (x)
       (declare (ignore x))
       ($bottom$)))
- 
+
  (defthm
      $f$-$<=$-$g$
      ($<=$ ($f$ x)($g$ x))
@@ -177,14 +177,14 @@
      :rule-classes nil)
  ) ;; end encapsulate
 
-(thm ;; Antisymmetric: 
+(thm ;; Antisymmetric:
  (equal ($f$ x)($g$ x))
  :hints (("Goal"
 	  :use ($f$-$<=$-$g$
 		$g$-$<=$-$f$))))
 :ubt :x
 (encapsulate
- ;; Transitive: 
+ ;; Transitive:
  ;;  For functions $f$, $g$, and $h$,
  ;;   (implies (and ($<=$ $f$ $g$)
  ;;                 ($<=$ $g$ $h$))
@@ -192,25 +192,25 @@
  ((($f$ *) => *)
   (($g$ *) => *)
   (($h$ *) => *))
- 
+
  (local
-  (defun 
+  (defun
       $f$ (x)
       (declare (ignore x))
       ($bottom$)))
- 
+
  (local
-  (defun 
+  (defun
       $g$ (x)
       (declare (ignore x))
       ($bottom$)))
- 
+
  (local
-  (defun 
+  (defun
       $h$ (x)
       (declare (ignore x))
       ($bottom$)))
- 
+
  (defthm
      $f$-$<=$-$g$
      ($<=$ ($f$ x)($g$ x))
@@ -222,7 +222,7 @@
      :rule-classes nil)
  ) ;; end encapsulate
 
-(thm ;; Transitive: 
+(thm ;; Transitive:
  ($<=$ ($f$ x)($h$ x))
  :hints (("Goal"
 	  :use ($f$-$<=$-$g$
@@ -236,19 +236,19 @@
 (encapsulate
  ((($f$1 *) => *)
   (($f$2 *) => *))
- 
+
  (local
-  (defun 
+  (defun
       $f$1 (x)
       (declare (ignore x))
       ($bottom$)))
- 
+
  (local
-  (defun 
+  (defun
       $f$2 (x)
       (declare (ignore x))
       ($bottom$)))
- 
+
  (defthm
      $f$1-$<=$-$f$2
      ($<=$ ($f$1 x)($f$2 x))
@@ -281,28 +281,28 @@
 ;;          f_0, f_1, ..., f_i, ... .
 ;; Indexed functions are formalized in ACL2 by
 ;;  treating the index as an argument to the
-;;  function.   
+;;  function.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Axiomatize a $<=$ upper-bound of an indexed set 
+;; Axiomatize a $<=$ upper-bound of an indexed set
 ;;  of functions:
 
 (encapsulate
  (((f$1 * *) => *)
   ((ub-f$1 *) => *))
- 
+
  (local
-  (defun 
+  (defun
       f$1 (i x)
       (declare (ignore i x))
       ($bottom$)))
- 
+
  (local
-  (defun 
+  (defun
       ub-f$1 (x)
       (declare (ignore x))
       ($bottom$)))
- 
+
  (defthm
      f$1-$<=$-ub-f$1
      ($<=$ (f$1 i x)(ub-f$1 x))
@@ -335,17 +335,17 @@
 
 (encapsulate
  ((($bottom$-based-chain * *) => *))
- 
+
  (local
-  (defun 
+  (defun
       $bottom$-based-chain (i x)
       (declare (ignore i x))
       ($bottom$)))
- 
+
  (defthm
      base-of-$bottom$-based-chain=$bottom$
      (implies (zp i)
-	      (equal ($bottom$-based-chain i x) 
+	      (equal ($bottom$-based-chain i x)
 		     ($bottom$))))
 
  (defthm
@@ -386,7 +386,7 @@
 
 (defthm
     $bottom$-based-chain-is-$<=$-chain-b
-    (implies (and (equal ($bottom$-based-chain 
+    (implies (and (equal ($bottom$-based-chain
 			  (+ i j)
 			  x)
 			 ($bottom$))
@@ -394,7 +394,7 @@
 		  (>= j 0))
 	     (equal ($bottom$-based-chain i x)
 		    ($bottom$)))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use
 	     $bottom$-based-chain-is-$<=$-chain-a)))
 
@@ -402,21 +402,21 @@
     $bottom$-based-chain-is-$<=$-chain-c
     (implies (and (integerp j)
 		  (>= j 0)
-		  (not (equal 
+		  (not (equal
 			($bottom$-based-chain i x)
 			($bottom$))))
 	     (equal ($bottom$-based-chain (+ i j) x)
 		    ($bottom$-based-chain i x)))
     :hints (("Goal"
-	     :in-theory 
-	     (disable 
+	     :in-theory
+	     (disable
 	      $bottom$-based-chain-is-$<=$-chain-a)
-	     :use 
+	     :use
 	     $bottom$-based-chain-is-$<=$-chain-a)))
 
 (defthm
     $bottom$-based-chain-is-$<=$-chain-d
-    (implies (and (not (equal 
+    (implies (and (not (equal
 			($bottom$-based-chain i x)
 			($bottom$)))
 		  (integerp i)
@@ -426,10 +426,10 @@
 		    ($bottom$-based-chain j x)))
     :rule-classes nil
     :hints (("Goal"
-	     :in-theory 
+	     :in-theory
 	     (disable
 	      $bottom$-based-chain-is-$<=$-chain-c)
-	     :use 
+	     :use
 	     (:instance
 	      $bottom$-based-chain-is-$<=$-chain-c
 	      (j (- j i))))))
@@ -439,14 +439,14 @@
     (implies (and (not (equal
 			($bottom$-based-chain i x)
 			($bottom$)))
-		  (not (equal 
+		  (not (equal
 			($bottom$-based-chain j x)
 			($bottom$))))
 	     (equal ($bottom$-based-chain i x)
 		    ($bottom$-based-chain j x)))
     :rule-classes nil
     :hints (("Goal"
-	     :use 
+	     :use
 	     ($bottom$-based-chain-is-$<=$-chain-d
 	      (:instance
 	       $bottom$-based-chain-is-$<=$-chain-d
@@ -459,7 +459,7 @@
 
 (defchoose
     lub-$bottom$-based-chain-i i (x)
-    (not (equal ($bottom$-based-chain i x) 
+    (not (equal ($bottom$-based-chain i x)
 		($bottom$))))
 
 ;; Make sure the chosen index is a nonneg. integer:
@@ -470,36 +470,36 @@
 
 (defthm
     lub-$bottom$-based-chain-nat-i-rewrite
-    (implies (equal 
-	      ($bottom$-based-chain 
-	       (lub-$bottom$-based-chain-nat-i x) 
+    (implies (equal
+	      ($bottom$-based-chain
+	       (lub-$bottom$-based-chain-nat-i x)
 	       x)
 	      ($bottom$))
-	     (equal 
+	     (equal
 	      ($bottom$-based-chain i x)($bottom$)))
     :hints (("Goal"
 	     :use lub-$bottom$-based-chain-i)))
 
-(in-theory (disable 
+(in-theory (disable
 	    lub-$bottom$-based-chain-nat-i
-	    (:executable-counterpart 
+	    (:executable-counterpart
 	     lub-$bottom$-based-chain-nat-i)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Define the least upper bound of 
+;; Define the least upper bound of
 ;;  $bottom$-based-chain:
 
 (defun
     lub-$bottom$-based-chain (x)
-    ($bottom$-based-chain 
-     (lub-$bottom$-based-chain-nat-i x) 
+    ($bottom$-based-chain
+     (lub-$bottom$-based-chain-nat-i x)
      x))
 
 (in-theory (disable (:executable-counterpart
 		     lub-$bottom$-based-chain)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; lub-$bottom$-based-chain is upper bound of 
+;; lub-$bottom$-based-chain is upper bound of
 ;;  $bottom$-based-chain:
 
 (defthm
@@ -507,7 +507,7 @@
     ($<=$ ($bottom$-based-chain i x)
 	  (lub-$bottom$-based-chain x))
     :hints (("Goal"
-	     :use 
+	     :use
 	     (:instance
 	      $bottom$-based-chain-is-$<=$-chain-e
 	      (j (lub-$bottom$-based-chain-nat-i x))
@@ -517,7 +517,7 @@
 ;; Show lub-$bottom$-based-chain is LEAST upper bound
 ;;  of $bottom$-based-chain:
 
-;;  Axiomatize an upper bound of 
+;;  Axiomatize an upper bound of
 ;;   $bottom$-based-chain:
 
 (encapsulate
@@ -539,10 +539,10 @@
     ($<=$ (lub-$bottom$-based-chain x)
 	  (ub-$bottom$-based-chain x))
     :hints (("Goal"
-	     :in-theory 
-	     (disable 
+	     :in-theory
+	     (disable
 	      ub-$bottom$-based-chain-is-upper-bound)
-	     :use 
+	     :use
 	     (:instance
 	      ub-$bottom$-based-chain-is-upper-bound
 	      (i (lub-$bottom$-based-chain-nat-i x))
@@ -550,33 +550,33 @@
 
 (defthm
     $bottom$-based-chain-is-$<=$-chain-f
-    (implies (and 
-	      (>= i 
+    (implies (and
+	      (>= i
 		  (lub-$bottom$-based-chain-nat-i x))
 	      (integerp i))
-	     (equal 
+	     (equal
 	      (lub-$bottom$-based-chain x)
 	      ($bottom$-based-chain i x)))
     :hints (("Goal"
-	     :use 
+	     :use
 	     (:instance
 	      $bottom$-based-chain-is-$<=$-chain-d
 	      (i (lub-$bottom$-based-chain-nat-i x))
 	      (j i)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Axiomatize a $<=$-chain of functions (possibly 
+;; Axiomatize a $<=$-chain of functions (possibly
 ;;  without $bottom$ base):
 
 (encapsulate
  (((chain$ * *) => *))
- 
+
  (local
-  (defun 
+  (defun
       chain$ (i x)
       (declare (ignore i x))
       ($bottom$)))
- 
+
  (defthm
      chain$-is-$<=$-chain
      (implies (and (integerp i)
@@ -593,12 +593,12 @@
 	($bottom$)
         (chain$ (- i 1) x)))
 
-;; Choose an ``index'' for definition of lub of 
+;; Choose an ``index'' for definition of lub of
 ;;  chain$:
 
 (defchoose
     lub-chain$-i i (x)
-    (not (equal (chain$+$bottom$-base i x) 
+    (not (equal (chain$+$bottom$-base i x)
 		($bottom$))))
 
 ;; Make sure the chosen index is a nonneg. integer:
@@ -623,15 +623,15 @@
     lub-chain$-is-upper-bound-chain$+$bottom$-base
     ($<=$ (chain$+$bottom$-base i x)(lub-chain$ x))
     :hints (("Goal"
-	     :by 
+	     :by
 	     (:functional-instance
 	      lub-$bottom$-based-chain-is-upper-bound
-	      ($bottom$-based-chain 
+	      ($bottom$-based-chain
 	       chain$+$bottom$-base)
 	      (lub-$bottom$-based-chain lub-chain$)
-	      (lub-$bottom$-based-chain-nat-i 
+	      (lub-$bottom$-based-chain-nat-i
 	       lub-chain$-nat-i)
-	      (lub-$bottom$-based-chain-i 
+	      (lub-$bottom$-based-chain-i
 	       lub-chain$-i)))
 	    ("Subgoal 3"
 	     :use lub-chain$-i)
@@ -647,12 +647,12 @@
     (implies (and (integerp i)
 		  (>= i 0))
 	     ($<=$ (chain$ i x)(lub-chain$ x)))
-    :hints 
+    :hints
     (("Goal"
-      :in-theory 
-      (disable 
+      :in-theory
+      (disable
        lub-chain$-is-upper-bound-chain$+$bottom$-base)
-      :use 
+      :use
       (:instance
        lub-chain$-is-upper-bound-chain$+$bottom$-base
        (i (+ i 1))))))
@@ -676,7 +676,7 @@
 		   (>= i 0))
 	      ($<=$ (chain$ i x)(ub-chain$ x)))
      :hints (("Goal"
-	      :in-theory 
+	      :in-theory
 	      (disable $<=$ lub-chain$))))
  ) ;; end encapsulate
 
@@ -684,7 +684,7 @@
     lub-chain$-is-LEAST-upper-bound
     ($<=$ (lub-chain$ x)(ub-chain$ x))
     :hints (("Goal"
-	     :in-theory 
+	     :in-theory
 	     (disable ub-chain$-is-upper-bound)
 	     :use (:instance
 		   ub-chain$-is-upper-bound
@@ -707,7 +707,7 @@
      (implies (and (integerp i)
 		   (>= i 0))
 	      (equal (shifted$-chain i x)
-		     ($bottom$-based-chain (+ 1 i) 
+		     ($bottom$-based-chain (+ 1 i)
 					 x))))
  ) ;; end encapsulate
 
@@ -718,8 +718,8 @@
 	     ($<=$ (shifted$-chain i x)
 		   (shifted$-chain (+ 1 i)  x)))
     :hints (("Goal"
-	     :use 
-	     (:instance 
+	     :use
+	     (:instance
 	      $bottom$-based-chain-is-$<=$-chain
 	      (i (+ i 1))))))
 
@@ -731,12 +731,12 @@
 	($bottom$)
         (shifted$-chain (- i 1) x)))
 
-;; Choose an ``index'' for definition of lub of 
+;; Choose an ``index'' for definition of lub of
 ;;  shifted$-chain:
 
 (defchoose
     lub-shifted$-chain-i i (x)
-    (not (equal (shifted$-chain+$bottom$-base i x) 
+    (not (equal (shifted$-chain+$bottom$-base i x)
 		($bottom$))))
 
 ;; Make sure the chosen index is a nonneg. integer:
@@ -749,8 +749,8 @@
 
 (defun
     lub-shifted$-chain (x)
-    (shifted$-chain+$bottom$-base 
-     (lub-shifted$-chain-nat-i x) 
+    (shifted$-chain+$bottom$-base
+     (lub-shifted$-chain-nat-i x)
      x))
 
 (in-theory (disable (:executable-counterpart
@@ -766,12 +766,12 @@
 	     :by (:functional-instance
 		  lub-chain$-is-upper-bound
 		  (chain$ shifted$-chain)
-		  (chain$+$bottom$-base 
+		  (chain$+$bottom$-base
 		   shifted$-chain+$bottom$-base)
 		  (lub-chain$ lub-shifted$-chain)
-		  (lub-chain$-nat-i 
+		  (lub-chain$-nat-i
 		   lub-shifted$-chain-nat-i)
-		  (lub-chain$-i 
+		  (lub-chain$-i
 		   lub-shifted$-chain-i)))
 	    ("Subgoal 3"
 	     :use lub-shifted$-chain-i)
@@ -800,7 +800,7 @@
     ($<=$ ($bottom$-based-chain i x)
 	  (lub-shifted$-chain x))
     :hints (("Goal"
-	     :in-theory 
+	     :in-theory
 	     (disable $<=$ lub-shifted$-chain)
 	     :cases ((zp i)))))
 
@@ -811,19 +811,19 @@
 	     ($<=$ (shifted$-chain i x)
 		   (lub-$bottom$-based-chain x)))
     :hints (("Goal"
-	     :in-theory 
-	     (disable $<=$ 
+	     :in-theory
+	     (disable $<=$
 		      lub-$bottom$-based-chain))))
 
 (defthm
     lub-$bottom$-based-chain-$<=$-lub-shifted$-chain
     ($<=$ (lub-$bottom$-based-chain x)
 	  (lub-shifted$-chain x))
-    :hints (("Goal" 
-	     :by 
+    :hints (("Goal"
+	     :by
 	     (:functional-instance
 	      lub-$bottom$-based-chain-is-LEAST-upper-bound
-	      (ub-$bottom$-based-chain 
+	      (ub-$bottom$-based-chain
 	       lub-shifted$-chain)))))
 
 (defthm
@@ -831,20 +831,20 @@
     ($<=$ (lub-shifted$-chain x)
 	  (lub-$bottom$-based-chain x))
     :hints (("Goal"
-	     :in-theory 
+	     :in-theory
 	     (disable $<=$
 		      lub-$bottom$-based-chain)
 	     :by (:functional-instance
 		  lub-chain$-is-LEAST-upper-bound
-		  (ub-chain$ 
+		  (ub-chain$
 		   lub-$bottom$-based-chain)
 		  (chain$ shifted$-chain)
-		  (chain$+$bottom$-base 
+		  (chain$+$bottom$-base
 		   shifted$-chain+$bottom$-base)
 		  (lub-chain$ lub-shifted$-chain)
-		  (lub-chain$-nat-i 
+		  (lub-chain$-nat-i
 		   lub-shifted$-chain-nat-i)
-		  (lub-chain$-i 
+		  (lub-chain$-i
 		   lub-shifted$-chain-i)))
 	    ("Subgoal 2"
 	     :use lub-shifted$-chain-i)))
@@ -854,8 +854,8 @@
     (equal (lub-shifted$-chain x)
 	   (lub-$bottom$-based-chain x))
     :hints (("Goal"
-	     :in-theory 
-	     (disable lub-shifted$-chain 
+	     :in-theory
+	     (disable lub-shifted$-chain
 		      lub-$bottom$-based-chain)
 	     :use (:instance
 		   (:theorem
@@ -867,10 +867,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Axiomatize a function ($f$ x) and a $<=$-chain,
-;;  ($chain$ i x), of functions with $bottom$ base 
-;;  such that the shifted version of the chain, 
-;;  (shifted-$chain$ i x), has an upper bound, 
-;;  (ub-shifted-$chain$ x), with the property that 
+;;  ($chain$ i x), of functions with $bottom$ base
+;;  such that the shifted version of the chain,
+;;  (shifted-$chain$ i x), has an upper bound,
+;;  (ub-shifted-$chain$ x), with the property that
 ;;  for all x, (equal (ub-shifted-$chain$ x)
 ;;                    (shifted-$chain$ ($f$ x) x)):
 
@@ -879,17 +879,17 @@
   (($f$ *) => *)
   ((shifted-$chain$ * *) => *)
   ((ub-shifted-$chain$ *) => *))
- 
+
  (local
-  (defun 
+  (defun
       $chain$ (i x)
       (declare (ignore i x))
       ($bottom$)))
- 
+
  (defthm
      base-of-$chain$=$bottom$
      (implies (zp i)
-	      (equal ($chain$ i x) 
+	      (equal ($chain$ i x)
 		     ($bottom$))))
 
  (defthm
@@ -898,7 +898,7 @@
 		   (>= i 0))
 	      ($<=$ ($chain$ i x)
 		    ($chain$ (+ 1 i) x))))
- 
+
  (local
   (defun
       shifted-$chain$ (i x)
@@ -910,20 +910,20 @@
 		   (>= i 0))
 	      (equal (shifted-$chain$ i x)
 		     ($chain$ (+ 1 i) x))))
- 
+
  (local
-  (defun 
+  (defun
       ub-shifted-$chain$ (x)
       (declare (ignore x))
       ($bottom$)))
-  
+
   (defthm
       shifted-$chain$-$<=$-ub-shifted-$chain$
       (implies (and (integerp i)
 		    (>= i 0))
 	       ($<=$ (shifted-$chain$ i x)
 		     (ub-shifted-$chain$ x))))
-  
+
   (local
    (defun
        $f$ (x)
@@ -935,7 +935,7 @@
       (and (integerp ($f$ x))
 	   (>= ($f$ x) 0))
       :rule-classes :type-prescription)
-  
+
   (defthm
       ub-shifted-$chain$-=-shifted-$chain$-$f$
       (equal (ub-shifted-$chain$ x)
@@ -953,12 +953,12 @@
 		   $chain$-is-$<=$-chain
 		   (i (+ 1 i))))))
 
-;; Choose an ``index'' for definition of lub of 
+;; Choose an ``index'' for definition of lub of
 ;;  $chain$:
 
 (defchoose
     lub-$chain$-i i (x)
-    (not (equal ($chain$ i x) 
+    (not (equal ($chain$ i x)
 		($bottom$))))
 
 (defthm
@@ -995,22 +995,22 @@
 (defthm
     shifted-$chain$+$bottom$-base-rewrite
     (and (implies (zp i)
-		  (equal 
-		   (shifted-$chain$+$bottom$-base i 
+		  (equal
+		   (shifted-$chain$+$bottom$-base i
 						  x)
 		   ($bottom$)))
 	 (implies (not (zp i))
-		  (equal 
-		   (shifted-$chain$+$bottom$-base i 
+		  (equal
+		   (shifted-$chain$+$bottom$-base i
 						  x)
 		   (shifted-$chain$ (- i 1) x)))))
 
-;; Choose an ``index'' for definition of lub of 
+;; Choose an ``index'' for definition of lub of
 ;;  shifted-$chain$:
 
 (defchoose
     lub-shifted-$chain$-i i (x)
-    (not (equal (shifted-$chain$+$bottom$-base i x) 
+    (not (equal (shifted-$chain$+$bottom$-base i x)
 		($bottom$))))
 
 (defthm
@@ -1034,7 +1034,7 @@
 
 (defun
     lub-shifted-$chain$ (x)
-    (shifted-$chain$+$bottom$-base 
+    (shifted-$chain$+$bottom$-base
      (lub-shifted-$chain$-nat-i x) x))
 
 (in-theory (disable (:executable-counterpart
@@ -1045,26 +1045,26 @@
     (equal (lub-shifted-$chain$ x)(lub-$chain$ x))
     :rule-classes nil
     :hints (("Goal"
-	     :in-theory 
-	     (disable $<=$ 
+	     :in-theory
+	     (disable $<=$
 		      shifted-$chain$+$bottom$-base)
-	     :by 
+	     :by
 	     (:functional-instance
 	      lub-shifted$-chain-=-lub-$bottom$-based-chain
-	      (lub-shifted$-chain 
+	      (lub-shifted$-chain
 	       lub-shifted-$chain$)
 	      (lub-$bottom$-based-chain lub-$chain$)
 	      ($bottom$-based-chain $chain$)
-	      (lub-$bottom$-based-chain-i 
+	      (lub-$bottom$-based-chain-i
 	       lub-$chain$-i)
 	      (lub-$bottom$-based-chain-nat-i
 	       lub-$chain$-nat-i)
 	      (shifted$-chain shifted-$chain$)
-	      (shifted$-chain+$bottom$-base 
+	      (shifted$-chain+$bottom$-base
 	       shifted-$chain$+$bottom$-base)
-	      (lub-shifted$-chain-i 
+	      (lub-shifted$-chain-i
 	       lub-shifted-$chain$-i)
-	      (lub-shifted$-chain-nat-i 
+	      (lub-shifted$-chain-nat-i
 	       lub-shifted-$chain$-nat-i)))))
 
 (defthm
@@ -1072,8 +1072,8 @@
     ($<=$ (lub-shifted-$chain$ x)
 	  (ub-shifted-$chain$ x))
     :hints (("Goal"
-	     :in-theory 
-	     (disable 
+	     :in-theory
+	     (disable
 	      $<=$ shifted-$chain$=$chain$
 	      shifted-$chain$+$bottom$-base
 	      ub-shifted-$chain$-=-shifted-$chain$-$f$)
@@ -1084,9 +1084,9 @@
 		  (chain$+$bottom$-base
 		   shifted-$chain$+$bottom$-base)
 		  (lub-chain$ lub-shifted-$chain$)
-		  (lub-chain$-nat-i 
+		  (lub-chain$-nat-i
 		   lub-shifted-$chain$-nat-i)
-		  (lub-chain$-i 
+		  (lub-chain$-i
 		   lub-shifted-$chain$-i)))))
 
 (defthm
@@ -1096,18 +1096,18 @@
 	     ($<=$ (shifted-$chain$ i x)
 		   (lub-shifted-$chain$ x)))
     :hints (("Goal"
-	     :in-theory 
+	     :in-theory
 	     (disable shifted-$chain$+$bottom$-base)
 	     :by (:functional-instance
 		  lub-shifted$-chain-is-upper-bound
 		  (shifted$-chain shifted-$chain$)
 		  (shifted$-chain+$bottom$-base
 		   shifted-$chain$+$bottom$-base)
-		  (lub-shifted$-chain 
+		  (lub-shifted$-chain
 		   lub-shifted-$chain$)
-		  (lub-shifted$-chain-i 
+		  (lub-shifted$-chain-i
 		   lub-shifted-$chain$-i)
-		  (lub-shifted$-chain-nat-i 
+		  (lub-shifted$-chain-nat-i
 		   lub-shifted-$chain$-nat-i)
 		  ($bottom$-based-chain $chain$)))))
 
@@ -1116,7 +1116,7 @@
     ($<=$ (ub-shifted-$chain$ x)
 	  (lub-shifted-$chain$ x))
     :hints (("Goal"
-	     :in-theory 
+	     :in-theory
 	     (disable $<=$ shifted-$chain$=$chain$
 		      lub-shifted-$chain$))))
 
@@ -1156,9 +1156,9 @@
 
 (encapsulate
  (((mono-chain$ * *) => *))
- 
+
  (local
-  (defun 
+  (defun
       mono-chain$ (i x)
       (declare (ignore i x))
       ($bottom$)))
@@ -1169,7 +1169,7 @@
 		   (>= i 0))
 	      ($<=$ (mono-chain$ i x)
 		    (mono-chain$ (+ 1 i)  x))))
- 
+
  (defthm
      mono-chain$-is-chain-of-monotonic-functions
      (implies ($<=$ x y)
@@ -1187,12 +1187,12 @@
       (equal (mono-chain$ i x)
 	     (mono-chain$ i ($bottom$))))
   :rule-classes nil
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (disable
      mono-chain$-is-chain-of-monotonic-functions)
-    :use 
+    :use
     (:instance
      mono-chain$-is-chain-of-monotonic-functions
      (x ($bottom$))
@@ -1206,12 +1206,12 @@
 	($bottom$)
         (mono-chain$ (- i 1) x)))
 
-;; Choose an ``index'' for definition of lub of 
+;; Choose an ``index'' for definition of lub of
 ;;  mono-chain$:
 
 (defchoose
     lub-mono-chain$-i i (x)
-    (not (equal (mono-chain$+$bottom$-base i x) 
+    (not (equal (mono-chain$+$bottom$-base i x)
 		($bottom$))))
 
 (defthm
@@ -1235,7 +1235,7 @@
 
 (defun
     lub-mono-chain$ (x)
-    (mono-chain$+$bottom$-base 
+    (mono-chain$+$bottom$-base
      (lub-mono-chain$-nat-i x) x))
 
 (in-theory (disable (:executable-counterpart
@@ -1249,14 +1249,14 @@
 		  (>= i 0))
 	     ($<=$ (mono-chain$ i x)
 		   (lub-mono-chain$ x)))
-    :hints 
+    :hints
     (("Goal"
       :in-theory (disable $<=$)
       :by (:functional-instance
 	   lub-chain$-is-upper-bound
 	   (chain$ mono-chain$)
 	   (lub-chain$ lub-mono-chain$)
-	   (chain$+$bottom$-base 
+	   (chain$+$bottom$-base
 	    mono-chain$+$bottom$-base)
 	   (lub-chain$-i lub-mono-chain$-i)
 	   (lub-chain$-nat-i lub-mono-chain$-nat-i)))
@@ -1264,7 +1264,7 @@
       :in-theory (disable mono-chain$+$bottom$-base)
       )))
 
-;; Show lub-mono-chain$ is LEAST upper bound of 
+;; Show lub-mono-chain$ is LEAST upper bound of
 ;;   mono-chain$:
 
 ;;  Axiomatize an upper bound of mono-chain$:
@@ -1284,7 +1284,7 @@
 	      ($<=$ (mono-chain$ i x)
 		    (ub-mono-chain$ x)))
      :hints (("Goal"
-	      :in-theory 
+	      :in-theory
 	      (disable $<=$ lub-mono-chain$))))
  ) ;; end encapsulate
 
@@ -1299,7 +1299,7 @@
 	   (chain$ mono-chain$)
 	   (lub-chain$ lub-mono-chain$)
 	   (ub-chain$ ub-mono-chain$)
-	   (chain$+$bottom$-base 
+	   (chain$+$bottom$-base
 	    mono-chain$+$bottom$-base)
 	   (lub-chain$-i lub-mono-chain$-i)
 	   (lub-chain$-nat-i lub-mono-chain$-nat-i)))
@@ -1323,7 +1323,7 @@
 (defthm
   mono-chain$+$bottom$-base=$bottom$
   (implies (zp i)
-	   (equal (mono-chain$+$bottom$-base i x) 
+	   (equal (mono-chain$+$bottom$-base i x)
 		  ($bottom$))))
 
 (defthm
@@ -1332,7 +1332,7 @@
 			(mono-chain$+$bottom$-base i
 						   x)
 			($bottom$)))
-		  (not (equal 
+		  (not (equal
 			(mono-chain$+$bottom$-base j
 						   x)
 			($bottom$))))
@@ -1340,13 +1340,13 @@
 		    (mono-chain$+$bottom$-base j x)))
     :rule-classes nil
     :hints (("Goal"
-	     :in-theory (disable 
+	     :in-theory (disable
 			 $<=$
 			 mono-chain$+$bottom$-base)
-	     :by 
+	     :by
 	     (:functional-instance
 	      $bottom$-based-chain-is-$<=$-chain-e
-	      ($bottom$-based-chain 
+	      ($bottom$-based-chain
 	       mono-chain$+$bottom$-base)))))
 
 (defthm
@@ -1354,12 +1354,12 @@
   (or (equal (mono-chain$+$bottom$-base i ($bottom$))
 	     ($bottom$))
       (equal (mono-chain$+$bottom$-base i x)
-	     (mono-chain$+$bottom$-base i 
+	     (mono-chain$+$bottom$-base i
 					($bottom$))))
   :rule-classes nil
   :hints
   (("Goal"
-    :use 
+    :use
     (:instance
      mono-chain$-is-chain-of-monotonic-functions-a
      (i (+ -1 i))))))
@@ -1371,11 +1371,11 @@
     (implies ($<=$ x y)
 	     ($<=$ (lub-mono-chain$ x)
 		   (lub-mono-chain$ y)))
-    :hints 
+    :hints
     (("Goal"
-      :in-theory 
+      :in-theory
       (disable mono-chain$+$bottom$-base)
-      :use 
+      :use
       ((:instance
 	mono-chain$+$bottom$-base-is-chain-of-monotonic-fns
 	(i (lub-mono-chain$-nat-i ($bottom$)))

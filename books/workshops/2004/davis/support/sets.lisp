@@ -49,11 +49,11 @@
 ; The definitions in this file are redundant from the local include
 ; books.  This approach has several advantages.
 ;
-;  - it gives a better event order than simply including the books 
+;  - it gives a better event order than simply including the books
 ;    one by one
 ;
 ;  - this file is also faster to include than all of the local books
-;    below, and allows the "ugliness" of auxilliary lemmas to be 
+;    below, and allows the "ugliness" of auxilliary lemmas to be
 ;    hidden away
 ;
 ;  - it makes clear that these theorems are public, and entirely
@@ -66,7 +66,7 @@
 (local (include-book "sort"))
 
 
-; We begin with the definitions of the set theory functions and a 
+; We begin with the definitions of the set theory functions and a
 ; few trivial type prescriptions.
 
 (defund << (a b)
@@ -271,14 +271,14 @@
  (((predicate *) => *))
   (local (defun predicate (x) x)))
 
-(defun all (set-for-all-reduction) 
+(defun all (set-for-all-reduction)
   (declare (xargs :guard (setp set-for-all-reduction)))
   (if (empty set-for-all-reduction)
       t
     (and (predicate (head set-for-all-reduction))
 	 (all (tail set-for-all-reduction)))))
 
-(encapsulate 
+(encapsulate
  (((all-hyps) => *)
   ((all-set) => *))
 
@@ -305,8 +305,8 @@
 	   (equal (subset X Y)
 		  (subset-trigger X Y))))
 
-(COMPUTED-HINTS::automate-instantiation 
-  :new-hint-name pick-a-point-subset-hint 
+(COMPUTED-HINTS::automate-instantiation
+  :new-hint-name pick-a-point-subset-hint
   :generic-theorem all-by-membership
   :generic-predicate predicate
   :generic-hyps all-hyps
@@ -451,7 +451,7 @@
   (equal (subset X (sfix Y)) (subset X Y)))
 
 (defthm subset-in
-  (implies (and (subset X Y) (in a X)) 
+  (implies (and (subset X Y) (in a X))
            (in a Y)))
 
 (defthm subset-in-2
@@ -473,7 +473,7 @@
 
 (defthm subset-tail
   (subset (tail X) X)
-  :rule-classes ((:rewrite) 
+  :rule-classes ((:rewrite)
 		 (:forward-chaining :trigger-terms ((tail x)))))
 
 
@@ -712,7 +712,7 @@
   (equal (difference X (sfix Y)) (difference X Y)))
 
 (defthm difference-empty-X
-  (implies (empty X) 
+  (implies (empty X)
            (equal (difference X Y) (sfix X))))
 
 (defthm difference-empty-Y
@@ -771,7 +771,7 @@
   :rule-classes :type-prescription)
 
 (defthm cardinality-zero-empty
-  (equal (equal (cardinality x) 0)             
+  (equal (equal (cardinality x) 0)
 	 (empty x)))
 
 (defthm cardinality-sfix-cancel

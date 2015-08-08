@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -85,7 +85,7 @@ prove (elsewhere) lemmas mixing land0 with other functions
 
 ;We expect n to be a positive integer, and x and y to be bit vectors of length n.
 (defund binary-land0 (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -105,7 +105,7 @@ prove (elsewhere) lemmas mixing land0 with other functions
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(land0 x y n) -- the base case
          `(binary-land0 ,@x))
-        (t         
+        (t
          `(binary-land0 ,(car x)
                        (land0 ,@(cdr x))
                        ,(car (last x))))))
@@ -198,8 +198,8 @@ prove (elsewhere) lemmas mixing land0 with other functions
                 (case-split (integerp n))
                 )
            (equal (bits (land0 x y n) i j)
-                  (land0 (bits x i j) 
-                        (bits y i j) 
+                  (land0 (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j))))))
 
 ;perhaps use only the main rule, bits-land0?
@@ -209,8 +209,8 @@ prove (elsewhere) lemmas mixing land0 with other functions
                 (case-split (integerp n))
                 )
            (equal (bits (land0 x y n) i j)
-                  (land0 (bits x i j) 
-                        (bits y i j) 
+                  (land0 (bits x i j)
+                        (bits y i j)
                         (+ n (- j))))))
 
 ;Notice the call to MIN in the conclusion.
@@ -220,8 +220,8 @@ prove (elsewhere) lemmas mixing land0 with other functions
                 (case-split (integerp i))
                 )
            (equal (bits (land0 x y n) i j)
-                  (land0 (bits x i j) 
-                        (bits y i j) 
+                  (land0 (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j))))))
 
 (defthmd bitn-land0-1
@@ -230,8 +230,8 @@ prove (elsewhere) lemmas mixing land0 with other functions
                 (case-split (integerp n))
                 )
            (equal (bitn (land0 x y n) m)
-                  (land0 (bitn x m) 
-                        (bitn y m) 
+                  (land0 (bitn x m)
+                        (bitn y m)
                         1))))
 (defthmd bitn-land0-2
   (implies (and (<= n m)
@@ -249,8 +249,8 @@ prove (elsewhere) lemmas mixing land0 with other functions
                 )
            (equal (bitn (land0 x y n) m)
                   (if (< m n)
-                      (land0 (bitn x m) 
-                            (bitn y m) 
+                      (land0 (bitn x m)
+                            (bitn y m)
                             1)
                     0))))
 

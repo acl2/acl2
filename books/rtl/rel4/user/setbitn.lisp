@@ -76,9 +76,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 ;Allows things like (in-theory (disable cat)) to refer to binary-cat.

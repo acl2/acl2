@@ -28,7 +28,7 @@
         (t (append (qsort (filter 'LT (cdr x) (car x)))
                    (cons (car x)
                          (qsort (filter 'GTE (cdr x) (car x))))))))
-                         
+
 
 (defthm how-many-append
   (equal (how-many e (append x y))

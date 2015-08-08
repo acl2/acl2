@@ -55,13 +55,13 @@ To use at UW:
   alist2p (name L)
   "Determine if L satisfies the logical properties of an ACL2 array2p.
    The ignored argument, name, is there only to make life easier later
-   when using such standard ACL2 array functions as aref2, aset2, header, 
+   when using such standard ACL2 array functions as aref2, aset2, header,
    default, etc., that also have such an argument."
   (declare (ignore name)(xargs :guard t))
   (and (alistp l)
        (let ((header-keyword-list (cdr (assoc-eq :header L))))
 	    (and (keyword-value-listp header-keyword-list)
-		 (let ((dimensions 
+		 (let ((dimensions
 			(cadr (assoc-keyword :dimensions header-keyword-list))))
 		      (and (consp dimensions)
 			   (let ((cdr-dim (cdr dimensions)))
@@ -101,7 +101,7 @@ To use at UW:
 	 (equal (cdr (car (assoc2 i j l))) j)))))
 
 (local
- (defthm 
+ (defthm
    assoc-keyword-properties
    (implies
     (and (alistp l)
@@ -110,7 +110,7 @@ To use at UW:
 	 (equal (car (assoc-keyword x l)) x)))))
 
 (local
- (defthm 
+ (defthm
    bounded-integer-alistp2-car-assoc2-properties
    (implies
     (and (bounded-integer-alistp2 l m n)
@@ -129,26 +129,26 @@ To use at UW:
     (and
      (alistp L)
      (keyword-value-listp (cdr (assoc-eq :header L)))
-     (consp (cadr (assoc-keyword :dimensions 
+     (consp (cadr (assoc-keyword :dimensions
 				 (cdr (assoc-eq :header L)))))
-     (consp (cdadr (assoc-keyword :dimensions 
+     (consp (cdadr (assoc-keyword :dimensions
 				  (cdr (assoc-eq :header L)))))
      (integerp
-      (car (cadr (assoc-keyword :dimensions 
+      (car (cadr (assoc-keyword :dimensions
 				(cdr (assoc-eq :header L))))))
      (integerp
-      (cadr (cadr (assoc-keyword :dimensions 
+      (cadr (cadr (assoc-keyword :dimensions
 				 (cdr (assoc-eq :header L))))))
-     (< 0 (car (cadr (assoc-keyword :dimensions 
+     (< 0 (car (cadr (assoc-keyword :dimensions
 				    (cdr (assoc-eq :header L))))))
-     (< 0 (cadr (cadr (assoc-keyword :dimensions 
+     (< 0 (cadr (cadr (assoc-keyword :dimensions
 				     (cdr (assoc-eq :header L))))))
      (bounded-integer-alistp2 L
-			      (car (cadr (assoc-keyword 
-					  :dimensions 
+			      (car (cadr (assoc-keyword
+					  :dimensions
 					  (cdr (assoc-eq :header L)))))
-			      (cadr (cadr (assoc-keyword 
-					   :dimensions 
+			      (cadr (cadr (assoc-keyword
+					   :dimensions
 					   (cdr (assoc-eq :header L))))))))
    :rule-classes :forward-chaining))
 
@@ -177,7 +177,7 @@ To use at UW:
 ;;  L(i x) . . . L(i (- j 1)).
 
 (local
- (defthm 
+ (defthm
    alistp-compress211
    (alistp (compress211 name L i x j default))))
 
@@ -191,8 +191,8 @@ To use at UW:
          (>= x 0)
 	 (>= i 0)
 	 (> k i))
-    (bounded-integer-alistp2 (compress211 name L i x j default) 
-			     k 
+    (bounded-integer-alistp2 (compress211 name L i x j default)
+			     k
 			     j))))
 
 (local
@@ -205,7 +205,7 @@ To use at UW:
 		   (assoc2 m n L)))))
 
 (local
- (defthm 
+ (defthm
    compress211-assoc2-property-1
    (implies
     (and (not (assoc2 i n (compress211 name L i x j default)))
@@ -220,7 +220,7 @@ To use at UW:
 	   default))))
 
 (local
- (defthm 
+ (defthm
    compress211-assoc2-property-2
    (implies
     (and (alistp L)
@@ -251,7 +251,7 @@ To use at UW:
 	    (alistp (append L1 L2)))))
 
 (local
- (defthm 
+ (defthm
    alistp-compress21
    (alistp (compress21 name L n i j default))))
 
@@ -260,19 +260,19 @@ To use at UW:
    bounded-integer-alistp2-append
    (implies (and (bounded-integer-alistp2 L1 i j)
 		 (bounded-integer-alistp2 L2 i j))
-	    (bounded-integer-alistp2 (append L1 L2) 
-				     i 
+	    (bounded-integer-alistp2 (append L1 L2)
+				     i
 				     j))))
 
 (local
- (defthm 
+ (defthm
    bounded-integer-alistp2-compress21
    (implies
     (and (alist2p name L)
 	 (integerp i)
 	 (integerp n)
 	 (>= n 0))
-    (bounded-integer-alistp2 (compress21 name L n i j default) 
+    (bounded-integer-alistp2 (compress21 name L n i j default)
 			     i
 			     j))))
 
@@ -295,15 +295,15 @@ To use at UW:
 	   (assoc2 k m L)))))
 
 (local
- (defthm 
+ (defthm
    compress21-assoc2-property-1
    (implies
     (and (not (assoc2 k m (compress21 name L n i j default)))
-	 (alistp L) 
+	 (alistp L)
          (integerp i)
 	 (integerp j)
 	 (integerp k)
-	 (integerp m) 
+	 (integerp m)
 	 (integerp n)
 	 (<= n i)
 	 (<= n k)
@@ -321,7 +321,7 @@ To use at UW:
 		  (x 1))))))
 
 (local
- (defthm 
+ (defthm
    compress21-assoc2-property-2
    (implies
     (and (alistp L)
@@ -329,7 +329,7 @@ To use at UW:
     (not (assoc2 k m (compress21 name L n i j default))))))
 
 (local
- (defthm 
+ (defthm
    compress2-assoc2-property-0
    (implies
     (and (alistp L)
@@ -339,7 +339,7 @@ To use at UW:
 	   (cdr (assoc2 k m L))))))
 
 (local
- (defthm 
+ (defthm
    compress2-assoc2-property-1
    (implies
     (and (alist2p name L)
@@ -356,22 +356,22 @@ To use at UW:
 				))))))
 
 (local
- (defthm 
+ (defthm
    compress2-assoc2-property-2
    (implies
-    (and (alistp L) 
+    (and (alistp L)
 	 (not (assoc2 k m L)))
     (not (assoc2 k m (compress2 name L))))))
 
 (local
- (defthm 
+ (defthm
    header-compress2
    (implies
     (alist2p name L)
     (equal (assoc-eq :header (compress2 name L))
 	   (assoc-eq :header L)))))
 
-(defthm 
+(defthm
   alist2p-compress2
   (implies
    (alist2p name L)
@@ -382,7 +382,7 @@ To use at UW:
   :hints (("Goal"
 	   :in-theory (enable alist2p))))
 
-(defthm 
+(defthm
   alist2p-compress2-properties
   (implies
    (alist2p name L)
@@ -398,7 +398,7 @@ To use at UW:
 
 (local (in-theory (disable compress2)))
 
-(defthm 
+(defthm
   alist2p-aset2
   (implies
    (and (alist2p name L)
@@ -410,7 +410,7 @@ To use at UW:
 	(< j (cadr (dimensions name L))))
    (alist2p name (aset2 name L i j val))))
 
-(defthm 
+(defthm
   alist2p-aref2-compress2
   (implies
    (and (alist2p name L)
@@ -423,7 +423,7 @@ To use at UW:
    (equal (aref2 name (compress2 name L) i j)
 	  (aref2 name L i j))))
 
-(defthm 
+(defthm
   array2p-acons-properties
   (and
    (equal (header name (cons (cons (cons i j) val) L))
@@ -435,7 +435,7 @@ To use at UW:
    (equal (default name (cons (cons (cons i j) val) L))
 	  (default name L))))
 
-(defthm 
+(defthm
   alist2p-aset2-properties
   (implies
    (and (alist2p name L)
@@ -455,14 +455,14 @@ To use at UW:
     (equal (default name (aset2 name L i j val))
 	   (default name L)))))
 
-(defthm 
+(defthm
   alist2p-consp-header
   (implies
    (alist2p name L)
    (consp (header name L)))
   :rule-classes :type-prescription)
 
-(defthm 
+(defthm
   alist2p-car-header
   (implies
    (alist2p name L)
@@ -472,9 +472,9 @@ To use at UW:
 ;  These two theorems for the ALISR2P-AREF2-ASET2 cases are used to prove a
 ;  combined result, and then exported DISABLEd:
 ;    NOTE: The combined result below can be proved without first proving the
-;          two cases, but we'll keep these results organized as they were. 
+;          two cases, but we'll keep these results organized as they were.
 
-(defthm 
+(defthm
   alist2p-aref2-aset2-equal
   (implies
    (and (alist2p name L)
@@ -487,7 +487,7 @@ To use at UW:
    (equal (aref2 name (aset2 name L i j val) i j)
 	  val)))
 
-(defthm 
+(defthm
   alist2p-aref2-aset2-not-equal
   (implies
    (and (alist2p name L)
@@ -508,7 +508,7 @@ To use at UW:
    (equal (aref2 name (aset2 name L i1 j1 val) i2 j2)
 	  (aref2 name L i2 j2))))
 
-(defthm 
+(defthm
   alist2p-aref2-aset2
   (implies
    (and (alist2p name L)
@@ -537,9 +537,9 @@ To use at UW:
 ;;;   A forward definition of (ALIST2P name l), in terms of
 ;;;   HEADER, DIMENSIONS, and MAXIMUM-LENGTH.
 
-;;;   One should normaly DISABLE ALIST2P in favor of this 
-;;;   :FORWARD-CHAINING rule. If allowed to open, ALIST2P can 
-;;;   cause severe performance degradation due to its large size 
+;;;   One should normaly DISABLE ALIST2P in favor of this
+;;;   :FORWARD-CHAINING rule. If allowed to open, ALIST2P can
+;;;   cause severe performance degradation due to its large size
 ;;;   and many recursive functions.  This lemma is designed to be
 ;;;   used with the ALISP2-FUNCTIONS theory DISABLEd.
 
@@ -568,33 +568,33 @@ To use at UW:
 	(< 0 (cadr (dimensions name L)))))
   :rule-classes :linear)
 
-(deftheory 
-  alist2-functions 
+(deftheory
+  alist2-functions
   '(alist2p aset2 aref2 compress2 header dimensions maximum-length
     default)
   :doc "A theory of all functions specific to 2-dimensional alists.
-        This theory must be DISABLEd in order for the lemmas 
+        This theory must be DISABLEd in order for the lemmas
         exported by the alist2 book to be applicable.")
 
-(deftheory 
-  alist2-lemmas 
+(deftheory
+  alist2-lemmas
   '(alist2p-compress2
     alist2p-compress2-properties
     alist2p-aset2
     alist2p-aset2-properties
     alist2p-aref2-compress2
     array2p-acons-properties
-    alist2p-consp-header 
+    alist2p-consp-header
     alist2p-car-header
     alist2p-aref2-aset2
     alist2p-forward-modular
     alist2p-linear-modular))
 
-(deftheory 
+(deftheory
   alist2-disabled-lemmas
-  '(alist2p-aref2-aset2-equal 
+  '(alist2p-aref2-aset2-equal
     alist2p-aref2-aset2-not-equal)
   :doc "A theory of all rules exported DISABLEd by the alist2 book.
-        Note that in order for these rules to be applicable you 
+        Note that in order for these rules to be applicable you
         will first need to (DISABLE ALIST2-FUNCTIONS).")
 

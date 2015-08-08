@@ -55,7 +55,7 @@ prove *each* program partially correct with respect to that machine.
 (defmacro >s (&rest upds) `(update s ,@upds))
 
 ;; I leave the execute-op function below undefined since its semantics
-;; does not matter.  
+;; does not matter.
 
 (defstub execute-op (* *) => *)
 
@@ -70,7 +70,7 @@ prove *each* program partially correct with respect to that machine.
         (if (<= pc (len program))
             (>s :mem (execute-op (nth pc program) s)
                 :pc (1+ pc))
-          (>s :pc 0 
+          (>s :pc 0
               :mem nil
               :program nil))
       s)))
@@ -97,14 +97,14 @@ prove *each* program partially correct with respect to that machine.
 
 ;; Here we specify an arbitrary program of length 10.
 
-(encapsulate 
+(encapsulate
  (((arbitrary-program) => *))
 
  (local (defun arbitrary-program () (list 1 2 3 4 5 6 7 8 9 10)))
- 
+
  (defthm |arbitrary program is non-empty|
    (equal (len (arbitrary-program)) 10)))
- 
+
 ;; Now we specify the precondition and the modify condition as per
 ;; Manolios/Moore's notion.  The goal is to prove that for each state
 ;; s satisfying pre, s == (modify-factorial s).  Given the
@@ -134,13 +134,13 @@ prove *each* program partially correct with respect to that machine.
 
 (local
  (defun run (s n)
-   (if (zp n) s 
+   (if (zp n) s
      (run (next s) (1- n)))))
- 
+
 (local
  (defthm run-expansion
    (equal (run s n)
-          (if (zp n) s 
+          (if (zp n) s
             (run (next s) (1- n))))))
 
 (local
@@ -150,7 +150,7 @@ prove *each* program partially correct with respect to that machine.
    :hints (("Goal"
             :in-theory (disable |arbitrary program is non-empty|)
             :use |arbitrary program is non-empty|))))
- 
+
 (local
  (defthm memory-cleared-after-some-time
    (implies (pre s)
@@ -159,12 +159,12 @@ prove *each* program partially correct with respect to that machine.
                        :mem nil
                        :program nil)))))
 
-(local 
+(local
  (defthm memory-cleared-after-modify
    (implies (pre s)
             (equal (run (modify-factorial s) 3)
-                   (>s :pc 0 
-                       :mem nil 
+                   (>s :pc 0
+                       :mem nil
                        :program nil)))))
 
 (local
@@ -175,7 +175,7 @@ prove *each* program partially correct with respect to that machine.
 
 (local (in-theory (disable run-expansion)))
 
-(local 
+(local
  (defthm halted-to-stepw
    (implies (halted-statep s)
             (equal (stepw s) s))))

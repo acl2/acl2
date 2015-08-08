@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -43,8 +43,8 @@
 
 (defund decode (x n)
   (declare (xargs :guard (rationalp n)))
-  (if (and (natp x) (< x n)) 
-      (ash 1 x) 
+  (if (and (natp x) (< x n))
+      (ash 1 x)
     0))
 
 (defthm decode-nonnegative-integer-type

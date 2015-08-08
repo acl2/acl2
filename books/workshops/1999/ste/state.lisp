@@ -137,7 +137,7 @@
 (defuntyped s-lub (s1 s2) t
   s-p nil
   (if (and (s-p s1) (s-p s2))
-      (if (consp s1) 
+      (if (consp s1)
 	  (if (consp s2)
 	      (cons (b-lub (car s1) (car s2))
 		    (s-lub (cdr s1) (cdr s2)))
@@ -170,7 +170,7 @@
 (defthm nth-s-lub-is-b-lub-nths
   (implies (and (s-p s1)
 		(s-p s2)
-		
+
 		(n-p n s1)
 		(n-p n s2)
 		)
@@ -326,4 +326,4 @@
 		(s-p s2)
 		(equal (len s2) (len s))
 		(not (s-lte s2 s)))
-	   (not (s-lte (s-lub s1 s2) s))))	
+	   (not (s-lte (s-lub s1 s2) s))))

@@ -16,7 +16,7 @@
 
 (defthm member-gen-of-consp
   (equal (member-gen x (cons first rest))
-         (if (equal x first) 
+         (if (equal x first)
              t
            (member-gen x rest))))
 
@@ -155,14 +155,14 @@
 ; ":Doc-Section TASPI
 ;  Determines if bipartition x is consistent with each of those in list. ~/
 ;  ~/
-;  Arguments: 
-;    (1) x - a bipartition                                                
+;  Arguments:
+;    (1) x - a bipartition
 ;    (2) list - a list of bipartitions
 
 ;  Details: Set operations are used to determine if the bipartition x does not
 ;           conflict with each of the bipartitions in list.  Bipartitions must
 ;           be list based (as opposed to bdd-based) and the underlying taxa list
-;           must be preserved between x and each member of list. 
+;           must be preserved between x and each member of list.
 ;           The bipartitions are assumed to be ordered such that no bipartition
 ;           x following y in list exists such that y is a subset of x and x=/y.
 ;           See also q-no-conflicts (bdd based)."
@@ -197,13 +197,13 @@
 ; ":Doc-Section TASPI
 ;  Determines if the list of bipartitions x is consistent. ~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;    (1) list - a list of bipartitions
 
-;  Details: Set operations are used to determine if the list of bipartitions x 
+;  Details: Set operations are used to determine if the list of bipartitions x
 ;           do not conflict.  Bipartitions must be list based (as opposed to
 ;           bdd based), and an underlying taxa list must be preserved between
-;           every pair of bipartitions in the list. 
+;           every pair of bipartitions in the list.
 ;           The bipartitions are assumed to be ordered such that no bipartition
 ;           x following y in list exists such that y is a subset of x and x=/y.
 ;           See also q-no-conflicts-list (bdd based)."
@@ -298,7 +298,7 @@
   (implies (no-dups-gen (append x y))
            (no-dups-gen y)))
 
-;member append subset 
+;member append subset
 (defthm member-difference-member
   (implies (member-gen x (difference p q))
            (member-gen x p)))
@@ -364,11 +364,11 @@
            (subset (append x y) z)))
 
 ;; subset-list
-(defthm subset-list-gives-append-1  
+(defthm subset-list-gives-append-1
   (implies (subset-list x y)
            (subset-list x (append y z))))
 
-(defthm subset-list-gives-append-2  
+(defthm subset-list-gives-append-2
   (implies (subset-list x y)
            (subset-list x (append z y))))
 
@@ -589,7 +589,7 @@
       (cons (car x) (remove-dups (del-all (car x) (cdr x))))
     nil))
 
-(defthm remove-dups-when-not-consp      
+(defthm remove-dups-when-not-consp
   (implies (not (consp x))
            (equal (remove-dups x)
                   nil)))
@@ -682,7 +682,7 @@
 
 (defthm member-gen-len
   (implies (member-gen x y)
-           (equal (+ 1 (len (del x y))) 
+           (equal (+ 1 (len (del x y)))
                   (len y))))
 
 (defcong perm equal (len x) 1)
@@ -789,7 +789,7 @@
 
 (defthm not-member-through-union
   (implies (and (not (member-gen x (double-rewrite a)))
-                (not (member-gen x (double-rewrite b)))) 
+                (not (member-gen x (double-rewrite b))))
            (not (member-gen x (my-union a b)))))
 
 

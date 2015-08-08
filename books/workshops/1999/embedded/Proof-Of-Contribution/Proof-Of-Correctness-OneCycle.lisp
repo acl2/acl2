@@ -70,7 +70,7 @@
 (defun boolean-to-int (bool)
   (if bool 1 0))
 
-(defun int-to-bool (int) 
+(defun int-to-bool (int)
   (equal int 1))
 
 (defun make-n-list (el n)
@@ -93,13 +93,13 @@
   (and
    (integerp n)
    (in-range idx (make-n-list el n)))
-  (equal 
+  (equal
    (nth idx (make-n-list el n))
    el))
  :hints (("Goal" :induct (double-induct idx n))
 	 ("Subgoal *1/1" :use make-n-list)))
 
-  
+
 
 
 
@@ -124,7 +124,7 @@
 (defun make-state (mem pcc code)
   (cons mem (cons pcc code)))
 
- 
+
 (defun initial-state (prog)
   (make-state (car prog) 0 (cdr prog)))
 
@@ -151,7 +151,7 @@
      (is-mem-cell-p (get-cell (par2 instr) mem))
      (is-mem-cell-p (get-cell (par3 instr) mem))
      (equal (var-type (get-cell (par1 instr) mem)) 'Int)
-     (equal (var-type (get-cell (par2 instr) mem)) 'Int) 
+     (equal (var-type (get-cell (par2 instr) mem)) 'Int)
      (equal (var-type (get-cell (par3 instr) mem)) 'Int) )
     (and
      (equal (opcode instr) 'gem-equ)
@@ -232,7 +232,7 @@
      (is-mem-cell-p (get-cell (par1 instr) mem))
      (is-mem-cell-p (get-cell (par2 instr) mem))
      (is-mem-cell-p (get-cell (par3 instr) mem))
-     (equal (var-type (get-cell (par1 instr) mem)) 'Int) 
+     (equal (var-type (get-cell (par1 instr) mem)) 'Int)
      (equal (var-type (get-cell (par2 instr) mem)) 'Int)
      (equal (var-type (get-cell (par3 instr) mem)) 'Int)
      (positivep (par4 instr)))
@@ -242,7 +242,7 @@
      (is-mem-cell-p (get-cell (par1 instr) mem))
      (is-mem-cell-p (get-cell (par2 instr) mem))
      (is-mem-cell-p (get-cell (par3 instr) mem))
-     (equal (var-type (get-cell (par1 instr) mem)) 'Int) 
+     (equal (var-type (get-cell (par1 instr) mem)) 'Int)
      (equal (var-type (get-cell (par2 instr) mem)) 'Int)
      (equal (var-type (get-cell (par3 instr) mem)) 'Int)
      (positivep (par4 instr)))
@@ -334,7 +334,7 @@
 
 
 (defun sum-and-update (c1 c2 c3 prime mem)
-  (make-cell 
+  (make-cell
    (mod
     (+
      (var-value (get-cell c2 mem))
@@ -343,7 +343,7 @@
    (var-attribute (get-cell c1 mem))
    (var-type (get-cell c1 mem))))
 
-	
+
 (DEFUN SUM-AND-UPDATE-NOREST  (C1 C2 C3 MEM)
   (MAKE-CELL (mod
 	      (+ (VAR-VALUE (GET-CELL C2 MEM))
@@ -353,7 +353,7 @@
   (VAR-TYPE (GET-CELL C1 MEM))))
 
 (defun sub-and-update (c1 c2 c3 prime mem)
-  (make-cell 
+  (make-cell
    (mod
     (-
      (var-value (get-cell c2 mem))
@@ -362,9 +362,9 @@
    (var-attribute (get-cell c1 mem))
    (var-type (get-cell c1 mem))))
 
-	
+
 (DEFUN SUB-AND-UPDATE-NOREST  (C1 C2 C3 MEM)
-  (MAKE-CELL (mod 
+  (MAKE-CELL (mod
 	      (- (VAR-VALUE (GET-CELL C2 MEM))
 		 (VAR-VALUE (GET-CELL C3 MEM)))
 	      (prod *rns*))
@@ -374,7 +374,7 @@
 
 
 (defun and-update (c1 c2 c3 mem)
-  (make-cell 
+  (make-cell
    (boolean-to-int
     (and
      (int-to-bool (var-value (get-cell c2 mem)))
@@ -383,7 +383,7 @@
    (var-type (get-cell c1 mem))))
 
 (defun or-update (c1 c2 c3 mem)
-  (make-cell 
+  (make-cell
    (boolean-to-int
     (or
      (int-to-bool (var-value (get-cell c2 mem)))
@@ -392,7 +392,7 @@
    (var-type (get-cell c1 mem))))
 
 (defun gen-eq-update (c1 c2 c3 mem)
-  (make-cell 
+  (make-cell
    (boolean-to-int
     (equal
      (var-value (get-cell c2 mem))
@@ -408,16 +408,16 @@
  (implies
   (and
    (equal (var-type (get-cell c1 mem)) 'Int) ; This is added to account for booleans
-   (is-mem-cell-p (get-cell c1 mem)) 
-   (is-mem-cell-p (get-cell c2 mem)) 
-   (is-mem-cell-p (get-cell c3 mem)) 
+   (is-mem-cell-p (get-cell c1 mem))
+   (is-mem-cell-p (get-cell c2 mem))
+   (is-mem-cell-p (get-cell c3 mem))
    (positivep prime))
   (is-mem-cell-p (sum-and-update c1 c2 c3 prime mem)))
  :hints (("Goal" :in-theory (enable mod make-cell var-type var-attribute var-value)))
  :rule-classes :forward-chaining)
 
 #|
-(defthm gcd-unfold 
+(defthm gcd-unfold
  (equal (g-c-d x y)
 	(IF (ZP X)
 	    Y
@@ -426,13 +426,13 @@
 		(IF (<= X Y)
 		    (G-C-D X (- Y X))
 		    (G-C-D (- X Y) Y)))))
-  :hints (("Goal" :in-theory (enable g-c-d nonneg-int-gcd 
+  :hints (("Goal" :in-theory (enable g-c-d nonneg-int-gcd
 				     (:executable-counterpart nonneg-int-gcd)
 				     (:induction nonneg-int-gcd)))))
 |#
-  
 
-(defthm posp-all-unfold 
+
+(defthm posp-all-unfold
   (equal (posp-all l)
 	 (IF (ENDP L)
 	     T
@@ -448,7 +448,7 @@
 	 (integer>1-listp (cdr l)))))
 
 
-(defthm int>1-unfold 
+(defthm int>1-unfold
   (equal (integer>1-listp l)
 	 (IF (ENDP L)
 	     (NULL L)
@@ -469,13 +469,13 @@
   :hints (("Goal" :in-theory (enable prod posp rel-prime-moduli rel-prime-all rel-prime g-c-d (:executable-counterpart nonneg-int-gcd))))
   :rule-classes nil)
 
-(in-theory (disable 
-	    ;gcd-unfold 
+(in-theory (disable
+	    ;gcd-unfold
 	    posp-all-unfold int>1-unfold))
 
 (defthm greater-one-means-greater-zero
   (implies (integer>1-listp rns) (posp-all rns))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (enable posp-all posp)))
   :rule-classes nil)
 
@@ -496,8 +496,8 @@
  (implies
   (and
    (equal (var-type (get-cell c1 mem)) 'Int)
-   (is-mem-cell-p (get-cell c1 mem)) 
-   (is-mem-cell-p (get-cell c2 mem)) 
+   (is-mem-cell-p (get-cell c1 mem))
+   (is-mem-cell-p (get-cell c2 mem))
    (is-mem-cell-p (get-cell c3 mem)))
   (and
    (is-mem-cell-p (sum-and-update-norest c1 c2 c3 mem))
@@ -508,7 +508,7 @@
 		(:instance sils1a
 			   (a (+ (var-value (get-cell c2 mem)) (var-value (get-cell c3 mem))))
 			   (m (prod *rns*)))
-		(:instance mod-bounds-exp 
+		(:instance mod-bounds-exp
 			  (x (+ (var-value (get-cell c2 mem)) (var-value (get-cell c3 mem))))
 			  (y (prod *rns*))))
 	  :in-theory (enable posp make-cell var-type var-attribute var-value)))
@@ -519,9 +519,9 @@
  (implies
   (and
    (equal (var-type (get-cell c1 mem)) 'Int)
-   (is-mem-cell-p (get-cell c1 mem)) 
-   (is-mem-cell-p (get-cell c2 mem)) 
-   (is-mem-cell-p (get-cell c3 mem)) 
+   (is-mem-cell-p (get-cell c1 mem))
+   (is-mem-cell-p (get-cell c2 mem))
+   (is-mem-cell-p (get-cell c3 mem))
    (positivep prime) )
   (is-mem-cell-p (sub-and-update c1 c2 c3 prime mem)))
  :hints (("Goal" :in-theory (enable mod make-cell var-type var-attribute var-value)))
@@ -532,8 +532,8 @@
  (implies
   (and
    (equal (var-type (get-cell c1 mem)) 'Int)
-   (is-mem-cell-p (get-cell c1 mem)) 
-   (is-mem-cell-p (get-cell c2 mem)) 
+   (is-mem-cell-p (get-cell c1 mem))
+   (is-mem-cell-p (get-cell c2 mem))
    (is-mem-cell-p (get-cell c3 mem)))
   (and
    (is-mem-cell-p (sub-and-update-norest c1 c2 c3 mem))
@@ -544,7 +544,7 @@
 		(:instance sils1a
 			   (a (- (var-value (get-cell c2 mem)) (var-value (get-cell c3 mem))))
 			   (m (prod *rns*)))
-		(:instance mod-bounds-exp 
+		(:instance mod-bounds-exp
 			  (x (- (var-value (get-cell c2 mem)) (var-value (get-cell c3 mem))))
 			  (y (prod *rns*))))
 	  :in-theory (enable posp make-cell var-type var-attribute var-value)))
@@ -554,9 +554,9 @@
 (defthm and-update-returns-a-mem-cell
  (implies
   (and
-   (is-mem-cell-p (get-cell c1 mem)) 
-   (is-mem-cell-p (get-cell c2 mem)) 
-   (is-mem-cell-p (get-cell c3 mem))) 
+   (is-mem-cell-p (get-cell c1 mem))
+   (is-mem-cell-p (get-cell c2 mem))
+   (is-mem-cell-p (get-cell c3 mem)))
   (is-mem-cell-p (and-update c1 c2 c3 mem)))
  :hints (("Goal" :in-theory (enable my-or-2 make-cell var-type var-attribute var-value)))
  :rule-classes :forward-chaining)
@@ -564,9 +564,9 @@
 (defthm or-update-returns-a-mem-cell
  (implies
   (and
-   (is-mem-cell-p (get-cell c1 mem)) 
-   (is-mem-cell-p (get-cell c2 mem)) 
-   (is-mem-cell-p (get-cell c3 mem))) 
+   (is-mem-cell-p (get-cell c1 mem))
+   (is-mem-cell-p (get-cell c2 mem))
+   (is-mem-cell-p (get-cell c3 mem)))
   (is-mem-cell-p (or-update c1 c2 c3 mem)))
  :hints (("Goal" :in-theory (enable my-or-2 make-cell var-type var-attribute var-value)))
  :rule-classes :forward-chaining)
@@ -574,9 +574,9 @@
 (defthm gen-eq-update-returns-a-mem-cell
  (implies
   (and
-   (is-mem-cell-p (get-cell c1 mem)) 
-   (is-mem-cell-p (get-cell c2 mem)) 
-   (is-mem-cell-p (get-cell c3 mem))) 
+   (is-mem-cell-p (get-cell c1 mem))
+   (is-mem-cell-p (get-cell c2 mem))
+   (is-mem-cell-p (get-cell c3 mem)))
   (and
    (bounded-value (gen-eq-update c1 c2 c3 mem))
    (is-mem-cell-p (gen-eq-update c1 c2 c3 mem))))
@@ -585,7 +585,7 @@
 		(:instance sils1a
 			   (a (boolean-to-int (equal (var-value (get-cell c2 mem)) (var-value (get-cell c3 mem)))))
 			   (m (prod *rns*)))
-		(:instance mod-bounds-exp 
+		(:instance mod-bounds-exp
 			  (x (boolean-to-int (equal (var-value (get-cell c2 mem)) (var-value (get-cell c3 mem)))))
 			  (y (prod *rns*))))
 	  :in-theory (enable posp my-or-2 make-cell var-type var-attribute var-value)))
@@ -672,7 +672,7 @@
 	(rtm-sub  (rtm-sub     (par1 ins) (par2 ins) (par3 ins) (par4 ins) st))
 	(rtm-and  (rtm-and     (par1 ins) (par2 ins) (par3 ins) st))
 	(rtm-or   (rtm-or      (par1 ins) (par2 ins) (par3 ins) st))
-	(rtm-equ  (generic-eql (par1 ins) (par2 ins) (par3 ins) st))	
+	(rtm-equ  (generic-eql (par1 ins) (par2 ins) (par3 ins) st))
         (otherwise st))))
 
 
@@ -680,7 +680,7 @@
  (if
       (zp n)
       st
-    (execute-n-instructions 
+    (execute-n-instructions
      (execute-instruction st)
      (1- n))))
 
@@ -695,7 +695,7 @@
 
 
 (defthm in-range-instruction-is-gem-instruction
- (implies 
+ (implies
   (and
    (in-range pcc code)
    (gem-instruction-list-p code mem))
@@ -706,7 +706,7 @@
 
 
 (defthm in-range-instruction-is-rtmm-instruction
- (implies 
+ (implies
   (and
    (in-range pcc code)
    (rtm-instruction-list-p code mem))
@@ -718,7 +718,7 @@
 
 
 
-(defthm null-not-in-range 
+(defthm null-not-in-range
  (implies
   (and
    (integerp idx)
@@ -754,16 +754,16 @@
     (not (in-range (pcc st) (code st))))
    (equal (execute-instruction st) st))
   :hints (("Goal" :cases ( (gem-statep st) (rtm-statep st) ))
-	  ("Subgoal 2" :use ((:instance gem-statep (x st)) 
-			     null-opcode-implies-execution-does-not-touch-state 
+	  ("Subgoal 2" :use ((:instance gem-statep (x st))
+			     null-opcode-implies-execution-does-not-touch-state
 			     pcc-not-in-range-means-null-instruction))
-	  ("Subgoal 1" :use ((:instance rtm-statep (x st)) 
-			     null-opcode-implies-execution-does-not-touch-state 
+	  ("Subgoal 1" :use ((:instance rtm-statep (x st))
+			     null-opcode-implies-execution-does-not-touch-state
 			     pcc-not-in-range-means-null-instruction))))
 
 (in-theory (disable null-opcode-implies-execution-does-not-touch-state
 		    execute-not-in-range-instruction-retrieves-same-state))
- 
+
 
 (defthm execute-instruction-does-not-touch-code (equal (code (execute-instruction st)) (code st)))
 
@@ -831,17 +831,17 @@
 
 
 
-(defthm execute-instruction-is-type-and-attribute-invariant-on-any-var 
+(defthm execute-instruction-is-type-and-attribute-invariant-on-any-var
  (and
- (equal (var-attribute (get-cell cell (mem st))) 
+ (equal (var-attribute (get-cell cell (mem st)))
 	(var-attribute (get-cell cell (mem (execute-instruction st)))))
- (equal (var-type (get-cell cell (mem st))) 
+ (equal (var-type (get-cell cell (mem st)))
 	(var-type (get-cell cell (mem (execute-instruction st))))))
  :hints (("Goal" :in-theory (enable put-cell get-cell make-cell mem make-state var-attribute var-type))))
 
 
 
-(in-theory (disable 
+(in-theory (disable
 	    putting-an-existing-cell-does-not-change-var-inclusion-left
 	    putting-an-existing-cell-does-not-change-var-inclusion-right
 	    ))
@@ -878,7 +878,7 @@
 				      (c2 (par2 (nth (pcc st) (code st))))
 				      (c3 (par3 (nth (pcc st) (code st))))
 				      (mem (mem st))))
-	 :in-theory (disable bounded-value put-cell get-cell execute-instruction 
+	 :in-theory (disable bounded-value put-cell get-cell execute-instruction
 			     sum-and-update-norest sub-and-update-norest gen-eq-update
 			     par1 par2 par3 par4 member-equal nth rtm-add rtm-sub is-mem-cell-p))))
 
@@ -910,17 +910,17 @@
 			     par1 par2 par3 par4 member-equal nth rtm-add rtm-sub is-mem-cell-p))))
 
 #|
-(defthm execute-instruction-is-type-and-attribute-invariant-on-any-var 
+(defthm execute-instruction-is-type-and-attribute-invariant-on-any-var
  (and
- (equal (var-attribute (get-cell cell (mem st))) 
+ (equal (var-attribute (get-cell cell (mem st)))
 	(var-attribute (get-cell cell (mem (execute-instruction st)))))
- (equal (var-type (get-cell cell (mem st))) 
+ (equal (var-type (get-cell cell (mem st)))
 	(var-type (get-cell cell (mem (execute-instruction st))))))
  :hints (("Goal" :in-theory (enable put-cell get-cell make-cell mem make-state var-attribute var-type))))
 |#
 
 (defthm any-gem-instruction-is-conserved-by-execution
- (implies 
+ (implies
   (and
    (gem-statep st)
    (gem-instruction-p  instr (mem st)))
@@ -945,13 +945,13 @@
 
 
 (defthm a-gem-instruction-list-is-such-after-execute-instruction
- (implies 
+ (implies
   (and
    (gem-statep st)
    (gem-instruction-list-p  instrlist (mem st)))
  (gem-instruction-list-p instrlist (mem (execute-instruction st))))
-  :hints (("Goal" 
-	   :induct  (gem-instruction-list-p  instrlist (mem st)) ;(len instrlist) 
+  :hints (("Goal"
+	   :induct  (gem-instruction-list-p  instrlist (mem st)) ;(len instrlist)
 	   :in-theory (disable execute-instruction))
 	  ("Subgoal *1/3" :use (:instance gem-instruction-list-p  (instlist instrlist) (mem (mem st))))
 	  ("Subgoal *1/2"
@@ -988,7 +988,7 @@
 			    (c3 (par3 (nth (pcc st) (code st))))
 			    (mem (mem st)))))))
 
-		       
+
 
 (defthm executing-gem-instruction-retrieves-a-gem-state-from-gem-state
   (implies
@@ -1019,7 +1019,7 @@
 
 
 
-	     
+
 (defthm executing-gem-instruction-keeps-vars-inclusion-right
  (implies
   (gem-statep st)
@@ -1039,7 +1039,7 @@
 	   :use			       (:instance putting-an-existing-cell-does-not-change-var-inclusion-right
 					 (mem (mem st))
 					 (v (par1 (nth (pcc st) (code st))))
-					 (anyvalue (gen-eq-update 
+					 (anyvalue (gen-eq-update
 						    (par1 (nth (pcc st) (code st)))
 						    (par2 (nth (pcc st) (code st)))
 						    (par3 (nth (pcc st) (code st)))
@@ -1053,7 +1053,7 @@
 	   :use			       (:instance putting-an-existing-cell-does-not-change-var-inclusion-right
 					 (mem (mem st))
 					 (v (par1 (nth (pcc st) (code st))))
-					 (anyvalue (sum-and-update-norest 
+					 (anyvalue (sum-and-update-norest
 						    (par1 (nth (pcc st) (code st)))
 						    (par2 (nth (pcc st) (code st)))
 						    (par3 (nth (pcc st) (code st)))
@@ -1067,7 +1067,7 @@
 	   :use			       (:instance putting-an-existing-cell-does-not-change-var-inclusion-right
 					 (mem (mem st))
 					 (v (par1 (nth (pcc st) (code st))))
-					 (anyvalue (sub-and-update-norest 
+					 (anyvalue (sub-and-update-norest
 						    (par1 (nth (pcc st) (code st)))
 						    (par2 (nth (pcc st) (code st)))
 						    (par3 (nth (pcc st) (code st)))
@@ -1092,7 +1092,7 @@
 	   :use			       (:instance putting-an-existing-cell-does-not-change-var-inclusion-left
 					 (mem (mem st))
 					 (v (par1 (nth (pcc st) (code st))))
-					 (anyvalue (gen-eq-update 
+					 (anyvalue (gen-eq-update
 						    (par1 (nth (pcc st) (code st)))
 						    (par2 (nth (pcc st) (code st)))
 						    (par3 (nth (pcc st) (code st)))
@@ -1106,7 +1106,7 @@
 	   :use			       (:instance putting-an-existing-cell-does-not-change-var-inclusion-left
 					 (mem (mem st))
 					 (v (par1 (nth (pcc st) (code st))))
-					 (anyvalue (sum-and-update-norest 
+					 (anyvalue (sum-and-update-norest
 						    (par1 (nth (pcc st) (code st)))
 						    (par2 (nth (pcc st) (code st)))
 						    (par3 (nth (pcc st) (code st)))
@@ -1120,7 +1120,7 @@
 	   :use			       (:instance putting-an-existing-cell-does-not-change-var-inclusion-left
 					 (mem (mem st))
 					 (v (par1 (nth (pcc st) (code st))))
-					 (anyvalue (sub-and-update-norest 
+					 (anyvalue (sub-and-update-norest
 						    (par1 (nth (pcc st) (code st)))
 						    (par2 (nth (pcc st) (code st)))
 						    (par3 (nth (pcc st) (code st)))
@@ -1166,13 +1166,13 @@
 				      (c3 (par3 (nth (pcc st) (code st))))
 				      (prime (par4 (nth (pcc st) (code st))))
 				      (mem (mem st))))
-	 :in-theory (disable put-cell get-cell execute-instruction 
+	 :in-theory (disable put-cell get-cell execute-instruction
 			     sum-and-update sub-and-update and-update or-update gen-eq-update
 			     par1 par2 par3 par4 member-equal nth gem-add gem-sub is-mem-cell-p))))
 
 
 (defthm any-rtm-instruction-is-conserved-by-execution
- (implies 
+ (implies
   (and
    (rtm-statep st)
    (rtm-instruction-p  instr (mem st)))
@@ -1201,13 +1201,13 @@
 
 
 (defthm a-rtm-instruction-list-is-such-after-execute-instruction
- (implies 
+ (implies
   (and
    (rtm-statep st)
    (rtm-instruction-list-p  instrlist (mem st)))
  (rtm-instruction-list-p instrlist (mem (execute-instruction st))))
-  :hints (("Goal" 
-	   :induct  (rtm-instruction-list-p  instrlist (mem st))  
+  :hints (("Goal"
+	   :induct  (rtm-instruction-list-p  instrlist (mem st))
 	   :in-theory (disable execute-instruction))
 	  ("Subgoal *1/3" :use (:instance rtm-instruction-list-p  (instlist instrlist) (mem (mem st))))
 	  ("Subgoal *1/2"
@@ -1222,7 +1222,7 @@
     (rtm-instruction-p (nth (pcc st) (code st)) (mem st)))
    (is-typed-amem-p (mem (execute-instruction st))))
   :hints (("Goal"
-	   :in-theory (disable is-mem-cell-p 
+	   :in-theory (disable is-mem-cell-p
 			       and-update or-update gen-eq-update sum-and-update sub-and-update )
 	   :use (
 		 (:instance gen-eq-update-returns-a-mem-cell
@@ -1253,7 +1253,7 @@
 			    (prime (par4 (nth (pcc st) (code st))))
 			    (mem (mem st)))))))
 
-		       
+
 
 (defthm executing-rtm-instruction-retrieves-a-rtm-state-from-rtm-state
   (implies
@@ -1276,7 +1276,7 @@
 (defthm executing-rtm-instruction-is-attributes-invariant
   (implies
    (rtm-statep st)
-   (equal 
+   (equal
     (var-attributes vars (mem st))
     (var-attributes  vars (mem (execute-instruction st)))))
  :hints (("Goal" :in-theory (disable par1 par2 par3 par4 member-equal nth))
@@ -1297,7 +1297,7 @@
 
 
 
-   
+
 
 
 
@@ -1359,7 +1359,7 @@
 
 (defthm length-of-listpars1-n-is-n
  (implies
-  (and 
+  (and
    (integerp n)
    (>= n 0))
   (equal (len (listpars1 st n)) n))
@@ -1367,7 +1367,7 @@
 
 (defthm length-of-listpars2-n-is-n
  (implies
-  (and 
+  (and
    (integerp n)
    (>= n 0))
   (equal (len (listpars2 st n)) n))
@@ -1375,7 +1375,7 @@
 
 (defthm length-of-listpars3-n-is-n
  (implies
-  (and 
+  (and
    (integerp n)
    (>= n 0))
   (equal (len (listpars3 st n)) n))
@@ -1383,7 +1383,7 @@
 
 (defthm length-of-listpars4-n-is-n
  (implies
-  (and 
+  (and
    (integerp n)
    (>= n 0))
   (equal (len (listpars4 st n)) n))
@@ -1407,8 +1407,8 @@
   (and
    (or
     (null (nth (pcc gstate) (code gstate)))
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ)   
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add)   
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ)
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add)
     (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub))
   (not (equal var (par1 (nth (pcc gstate) (code gstate))))) )
   (equal (get-cell var (mem gstate)) (get-cell var (mem (execute-instruction gstate)))))
@@ -1419,10 +1419,10 @@
   (and
    (or
     (null (nth (pcc gstate) (code gstate)))
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'rtm-and)   
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'rtm-or)   
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'rtm-equ)   
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'rtm-add)   
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'rtm-and)
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'rtm-or)
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'rtm-equ)
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'rtm-add)
     (equal (opcode (nth (pcc gstate) (code gstate))) 'rtm-sub))
   (not (equal var (par1 (nth (pcc gstate) (code gstate))))) )
   (equal (get-cell var (mem gstate)) (get-cell var (mem (execute-instruction gstate)))))
@@ -1485,7 +1485,7 @@
    (true-listp m)
    (correct-wrt-arity m mem))
   (equal
-   (type-i gvar m) 
+   (type-i gvar m)
    (type-expected (rtmintvars-i gvar m)))))
 
 (defun pos-equal-0 (el l)
@@ -1507,7 +1507,7 @@
     (cons (gemvar-0 m) (retrieve-gemvars (cdr m)))))
 
 
-(defthm retrieve-gemvars-same-len 
+(defthm retrieve-gemvars-same-len
  (implies
   (true-listp m)
   (equal (len (retrieve-gemvars m)) (len m))))
@@ -1524,13 +1524,13 @@
 	      (in-range idx l)
               (NO-DUPLICATES-P (RETRIEVE-GEMVARS L)))
          (EQUAL idx 0))
-:hints (("Goal" 
-	 :in-theory (union-theories (current-theory 'ground-zero) 
-				    '((:definition in-range) 
-				      (:definition len) 
+:hints (("Goal"
+	 :in-theory (union-theories (current-theory 'ground-zero)
+				    '((:definition in-range)
+				      (:definition len)
 				      (:rewrite equal-nth-of-retrieve-car-of-nth)))
 	 :use
-	 ( 
+	 (
 	   (:instance retrieve-gemvars-same-len (m l))
 	   (:instance no-dup-3 (l (retrieve-gemvars l)) (idx2 0)))))
 :rule-classes nil)
@@ -1596,7 +1596,7 @@
    (assoc-equal v m2)))
 
 (defthm correct-wrt-arity-has-rtmintvars-i-tl
- (implies 
+ (implies
   (correct-wrt-arity m mem)
   (true-listp (rtmintvars-i gvar1 m)))
  :hints (("Goal" :in-theory (enable correct-wrt-arity type-0 gemvar-0 rtmintvars-0 correct-type))))
@@ -1627,7 +1627,7 @@
   (declare (xargs :measure (acl2-count n)))
   (if (zp n)
       t
-    (and 
+    (and
      (equal (opcode (nth (pcc st) (code st))) 'rtm-add)
      (all-rtm-adds-for-n-steps (execute-instruction st) (1- n)))))
 
@@ -1635,7 +1635,7 @@
   (declare (xargs :measure (acl2-count n)))
   (if (zp n)
       t
-    (and 
+    (and
      (equal (opcode (nth (pcc st) (code st))) 'rtm-sub)
      (all-rtm-subs-for-n-steps (execute-instruction st) (1- n)))))
 
@@ -1649,52 +1649,52 @@
       (>= (pcc rstate) (len (code rstate)))
     (case (opcode (nth (pcc gstate) (code gstate)))
       (gem-equ
-       (and 
+       (and
 	(in-range (pcc rstate) (code rstate))
-	(equal (listinstr     rstate (* 2 (len *rns*)) ) 
-	       (equality-trans3 
+	(equal (listinstr     rstate (* 2 (len *rns*)) )
+	       (equality-trans3
 		(eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*))
 		(eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*))
 		'tmp
 		(car (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m))))
-	(not (equal 
+	(not (equal
 	      (par1 (nth (pcc gstate) (code gstate)))
 	      (par2 (nth (pcc gstate) (code gstate)))))
-	(not (equal 
+	(not (equal
 	      (par1 (nth (pcc gstate) (code gstate)))
 	      (par3 (nth (pcc gstate) (code gstate)))))
-	(good-translation-gem-rtm 
-	 (execute-instruction    gstate                   ) 
+	(good-translation-gem-rtm
+	 (execute-instruction    gstate                   )
 	 (execute-n-instructions rstate (* 2 (len *rns*)) )
 	 m)))
-      (gem-add 
-       (and 
+      (gem-add
+       (and
 	(in-range (pcc rstate) (code rstate))
 	(all-rtm-adds-for-n-steps rstate (len *rns*) )
-	(equal (listpars1     rstate (len *rns*) ) 
+	(equal (listpars1     rstate (len *rns*) )
 	       (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m))
-	(equal (listpars2     rstate (len *rns*) ) 
+	(equal (listpars2     rstate (len *rns*) )
 	       (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*))) ;new
-	(equal (listpars3     rstate (len *rns*) ) 
+	(equal (listpars3     rstate (len *rns*) )
 	       (eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*))) ;new
 	(equal (listpars4     rstate (len *rns*) ) *rns*)
-	(good-translation-gem-rtm 
-	 (execute-instruction    gstate             ) 
+	(good-translation-gem-rtm
+	 (execute-instruction    gstate             )
 	 (execute-n-instructions rstate (len *rns*) )
 	 m)))
       (gem-sub ;;;gem-add
-       (and 
+       (and
 	(in-range (pcc rstate) (code rstate))
 	(all-rtm-subs-for-n-steps rstate (len *rns*) )
-	(equal (listpars1     rstate (len *rns*) ) 
+	(equal (listpars1     rstate (len *rns*) )
 	       (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m))
-	(equal (listpars2     rstate (len *rns*) ) 
+	(equal (listpars2     rstate (len *rns*) )
 	       (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*))) ;new
-	(equal (listpars3     rstate (len *rns*) ) 
+	(equal (listpars3     rstate (len *rns*) )
 	       (eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*))) ;new
 	(equal (listpars4     rstate (len *rns*) ) *rns*)
-	(good-translation-gem-rtm 
-	 (execute-instruction    gstate             ) 
+	(good-translation-gem-rtm
+	 (execute-instruction    gstate             )
 	 (execute-n-instructions rstate (len *rns*) )
 	 m)))
       (otherwise nil))))
@@ -1729,7 +1729,7 @@
    (equal-values-and-attributes gemcell lcell mem1 type)
    (equal-values-and-attributes gemcell lcell mem2 type))))
 
-   
+
 (defun idx-different-cell (l mem1 mem2)
   (cond
    ( (endp l) 0)
@@ -1739,9 +1739,9 @@
 
 
 (defthm if-bad-index-in-range-then-cells-must-be-different
- (implies 
-  (in-range (idx-different-cell l mem1 mem2) l) 
-  (not (equal 
+ (implies
+  (in-range (idx-different-cell l mem1 mem2) l)
+  (not (equal
 	(get-cell (nth (idx-different-cell l mem1 mem2) l) mem1)
 	(get-cell (nth (idx-different-cell l mem1 mem2) l) mem2))))
  :rule-classes :forward-chaining)
@@ -1762,7 +1762,7 @@
 (defthm m-correspondent-values-implies-equal-values-and-attribus
  (implies
   (and
-   (true-listp m) 
+   (true-listp m)
    (m-correspondent-values-p m memgstate memrstate)
    (assoc-equal gvar1 m))
   (equal-values-and-attributes
@@ -1771,7 +1771,7 @@
    memrstate
    (type-i gvar1 m)))
 :hints (("Goal" :in-theory (disable equal-values-and-attributes))))
- 
+
 (in-theory (disable gemvar-0 rtmintvars-0))
 
 
@@ -1787,20 +1787,20 @@
 	 (nth (pos-equal-0 gvar m) (retrieve-rtmvars m))))
 
 
-(defthm lemma-help2 
+(defthm lemma-help2
   (implies
    (true-listp m)
    (equal (len m) (len (retrieve-rtmvars m))))
   :rule-classes nil)
 
-(defthm lemma-help3 
+(defthm lemma-help3
   (implies
    (true-listp m)
     (iff (in-range idx m) (in-range idx (retrieve-rtmvars m))))
   :hints (("Goal" :use lemma-help2))
   :rule-classes nil)
 
-(defthm lemma-help4 
+(defthm lemma-help4
   (implies
    (and
     (assoc-equal gvar1 m)
@@ -1855,9 +1855,9 @@
   (cond
    ( (endp m)
      0 )
-   ( (not (equal-values-and-attributes 
+   ( (not (equal-values-and-attributes
 	   (get-cell (gemvar-0 m) gem-mem)
-	   (rtmintvars-0 m) 
+	   (rtmintvars-0 m)
 	   rtm-mem
 	   (type-0 m)))
      0 )
@@ -1865,23 +1865,23 @@
 
 (defthm if-bad-index-in-range-thne-must-be-different-mc
  (implies
-   (in-range (bad-idx-eqv-va m gem-mem rtm-mem) m) 
+   (in-range (bad-idx-eqv-va m gem-mem rtm-mem) m)
   (not (m-correspondent-values-p m gem-mem rtm-mem)))
  :hints (("Goal" :in-theory (enable gemvar-0))))
 
 (defthm if-bad-index-in-range-thne-must-be-different-vs
  (implies
-   (in-range (bad-idx-eqv-va m gem-mem rtm-mem) m) 
-  (not 
-   (equal-values-and-attributes 
+   (in-range (bad-idx-eqv-va m gem-mem rtm-mem) m)
+  (not
+   (equal-values-and-attributes
     (get-cell (car (nth (bad-idx-eqv-va m gem-mem rtm-mem) m))  gem-mem)
     (cdr (nth (bad-idx-eqv-va m gem-mem rtm-mem) m))
     rtm-mem
     (type-i-idx m (bad-idx-eqv-va m gem-mem rtm-mem)))))
- :hints (("Goal" :in-theory (e/d (type-0 gemvar-0 rtmintvars-0) 
+ :hints (("Goal" :in-theory (e/d (type-0 gemvar-0 rtmintvars-0)
 				 (var-attribute var-attributes apply-direct-rns-to-value-according-to-type
 						var-values-of-1-variable-is-one-element-list-of-var-value
-						var-values equal-values 
+						var-values equal-values
 						)))))
 
 
@@ -1889,10 +1889,10 @@
   (implies
    (and
     (true-listp m)
-    (not (in-range (bad-idx-eqv-va m gem-mem rtm-mem) m))) 
+    (not (in-range (bad-idx-eqv-va m gem-mem rtm-mem) m)))
     (m-correspondent-values-p m gem-mem rtm-mem))
-  :hints (("Goal" :in-theory (e/d (gemvar-0) 
-			  ((:type-prescription retrieve-rtmvars) 
+  :hints (("Goal" :in-theory (e/d (gemvar-0)
+			  ((:type-prescription retrieve-rtmvars)
 			   retrieve-rtmvars)))))
 
 (defthm execute-n-instructions-keeps-rtm-state-and-points-to-good
@@ -1907,12 +1907,12 @@
 	 ("Subgoal *1/2"
 	  :in-theory '((:definition execute-n-instructions)
 		       (:rewrite executing-rtm-instruction-keeps-m-pointing-to-rtm-var-sets)
-		       (:rewrite executing-rtm-instruction-retrieves-a-rtm-state-from-rtm-state))))) 
+		       (:rewrite executing-rtm-instruction-retrieves-a-rtm-state-from-rtm-state)))))
 
 
 ;;(ld "Proof-Of-Plus.lisp" :ld-error-action :error)
 
-(in-theory (enable 
+(in-theory (enable
 	    (:executable-counterpart build-values-by-rns)
 	    (:type-prescription build-values-by-rns)
 	    (:induction build-values-by-rns)
@@ -1924,7 +1924,7 @@
 (defun sum-list (vl2 vl3 rns)
   (if (endp vl2)
       nil
-       (cons (mod (+ (car vl2) (car vl3)) (car rns)) 
+       (cons (mod (+ (car vl2) (car vl3)) (car rns))
 	     (sum-list (cdr vl2) (cdr vl3) (cdr rns)))))
 
 (defthm sum-correspondence-by-put-list
@@ -1948,7 +1948,7 @@
   (and
    (integerp gval1)
    (integerp gval2)
-   (posp-all rns))          
+   (posp-all rns))
   (equal (build-values-by-rns (mod (+ gval1 gval2) (prod rns)) rns)
 	 (sum-list
 	  (build-values-by-rns  gval1 rns)
@@ -1988,8 +1988,8 @@
    (integerp val)
    (or (equal val 0) (equal val 1))
    (integer>1-listp rns))
-  (equal 
-   (build-values-by-rns val rns) 
+  (equal
+   (build-values-by-rns val rns)
    (make-n-list val (len rns))))
  :hints (("Goal" :in-theory (enable mod-x-y-=-x-exp))))
 
@@ -2018,9 +2018,9 @@
   (if (endp reslist)
       (null reslist)
     (and
-     (equal 
-      (get-cell (car reslist) memafterputs) 
-      (sum-and-update 
+     (equal
+      (get-cell (car reslist) memafterputs)
+      (sum-and-update
        (car par1list)
        (car par2list)
        (car par3list)
@@ -2070,26 +2070,26 @@
 
 (defthm behaviour-of-sum-and-update-norest
  (and
-  (equal 
-   (var-attribute (sum-and-update-norest c1 c2 c3 mem)) 
+  (equal
+   (var-attribute (sum-and-update-norest c1 c2 c3 mem))
    (var-attribute (get-cell c1 mem)))
-  (equal 
-   (var-value (sum-and-update-norest c1 c2 c3 mem)) 
+  (equal
+   (var-value (sum-and-update-norest c1 c2 c3 mem))
    (mod
     (+
      (var-value (get-cell c2 mem))
      (var-value (get-cell c3 mem)))
     (prod *rns*)))
-  (equal 
-   (var-type (sum-and-update-norest c1 c2 c3 mem)) 
-   (var-type (get-cell c1 mem))))   
+  (equal
+   (var-type (sum-and-update-norest c1 c2 c3 mem))
+   (var-type (get-cell c1 mem))))
  :hints (("Goal" :in-theory (enable var-type var-value var-attribute make-cell))))
 
 
- 
-    
-(defthm defexpansion 
-  (implies 
+
+
+(defthm defexpansion
+  (implies
    (not (null (var-value gcell)))
   (equal
    (equal-values-and-attributes gcell rtmvars rtmmem 'Int)
@@ -2100,8 +2100,8 @@
 		    (var-attributes rtmvars rtmmem)))))
   :hints (("Goal" :in-theory '((:definition equal-values-and-attributes)
 			       (:definition apply-direct-rns-to-value-according-to-type))
-	   :use (:instance build-values-by-rns-extended-behaves-standardly-on-non-nils 
-			   (gem-value (var-value gcell)) 
+	   :use (:instance build-values-by-rns-extended-behaves-standardly-on-non-nils
+			   (gem-value (var-value gcell))
 			   (rns *rns*)))))
 
 
@@ -2120,18 +2120,18 @@
    (equal-values-and-attributes (get-cell gvar1 gemmem) rtmvars1 rtmmem 'Int)
    (equal-values-and-attributes (get-cell gvar2 gemmem) rtmvars2 rtmmem 'Int)
    (equal-values-and-attributes (get-cell gvar3 gemmem) rtmvars3 rtmmem 'Int))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (sum-and-update-norest gvar1 gvar2 gvar3 gemmem)
    rtmvarsres
    rtmmemafter
    'Int))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (union-theories (current-theory 'ground-zero)
 				     '(
 				       (:definition integer>1-listp)
-				       (:definition equal-values) 
+				       (:definition equal-values)
 				       (:rewrite defexpansion)))
-	  :use (    
+	  :use (
 		(:instance greater-one-means-greater-zero (rns *rns*))
 		(:instance equal-sum-and-updates-have-values-that-are-sum-lists (rns *rns*))
 		(:instance equal-sum-and-updates-have-same-attributes           (rns *rns*))
@@ -2161,21 +2161,21 @@
 (defthm if-a-var-attribute-is-same-then-var-attributes-are-list-of
  (implies
   (equal (var-attribute (get-cell (car rtmvars) rtmmem)) (var-attribute gcell))
-  (equal-elements 
+  (equal-elements
    (var-attribute gcell)
    (var-attributes (make-n-list (car rtmvars) (len rns)) rtmmem))))
 
 
 
 (defthm defexpansion-bool-values
-  (implies 
+  (implies
     (or (equal (var-value gcell) 0)
 	(equal (var-value gcell) 1))
   (implies
    (equal-values-and-attributes gcell rtmvars rtmmem 'Bool)
    (equal-values (var-values (make-n-list (car rtmvars) (len *rns*)) rtmmem)
 		  (build-values-by-rns (var-value gcell) *rns*))))
-  :hints (("Goal" :use ( (:instance if-a-var-value-is-same-then-var-values-are-list-of 				  
+  :hints (("Goal" :use ( (:instance if-a-var-value-is-same-then-var-values-are-list-of
 				    (rns *rns*))))))
 
 
@@ -2197,7 +2197,7 @@
 (defthm cell-types
   (implies
    (is-mem-cell-p gcell)
-   (or 
+   (or
     (equal (var-type gcell) 'Bool)
     (equal (var-type gcell) 'Int)))
   :hints (("Goal" :in-theory (enable my-or-2)))
@@ -2224,9 +2224,9 @@
 
 
 (defthm defexpansion-bool-values-inv
-  (implies 
+  (implies
    (and
-    (is-mem-cell-p gcell) 
+    (is-mem-cell-p gcell)
     (equal (var-type gcell) 'Bool)
     (equal (type-expected rtmvars) (var-type gcell)))
   (implies
@@ -2238,7 +2238,7 @@
   :hints (("Goal" :use (bool-cell
 			(:instance equal-values-on-list-entails-equality-on-first-els
 				   (mem rtmmem)
-				   (n (len *rns*)) 
+				   (n (len *rns*))
 				   (el (car rtmvars))
 				   (val (var-value gcell)))
 			(:instance a-boolean-has-same-rnss-than-list-of-itself
@@ -2256,7 +2256,7 @@
 (defthm defexpansion-bool-attrs
   (implies
    (equal-values-and-attributes gcell rtmvars rtmmem 'Bool)
-   (equal-elements 
+   (equal-elements
     (var-attribute gcell)
     (var-attributes (make-n-list (car rtmvars) (len *rns*)) rtmmem)))
   :hints (("Goal" :use ( defexpansion-bool-attrs-1
@@ -2266,11 +2266,11 @@
 
 (defthm defexpansion-bool-attrs-inv-1
   (implies
-   (equal (type-expected rtmvars) 'Bool) 
-   (equal 
+   (equal (type-expected rtmvars) 'Bool)
+   (equal
     (var-attributes rtmvars rtmmem)
     (list (var-attribute (get-cell (car rtmvars) rtmmem)))))
-  :hints (("Subgoal 1'" :use (:theorem (implies 
+  :hints (("Subgoal 1'" :use (:theorem (implies
 				  (and (true-listp rtmvars2)
 				       (equal (+ 1 (len rtmvars2)) 1))
 				  (endp rtmvars2)))))
@@ -2279,7 +2279,7 @@
 (defthm defexpansion-bool-attrs-inv-2
   (implies
    (and
-    (equal (type-expected rtmvars) 'Bool) 
+    (equal (type-expected rtmvars) 'Bool)
     (equal val (var-attribute (get-cell (car rtmvars) rtmmem))))
    (equal-elements val (var-attributes rtmvars rtmmem))))
 
@@ -2290,8 +2290,8 @@
     (integerp n)
     (> n 0))
   (implies
-   (equal-elements 
-    val 
+   (equal-elements
+    val
     (var-attributes (make-n-list car-rtmvars n) rtmmem))
    (equal
     val
@@ -2299,24 +2299,24 @@
   :hints (("Subgoal *1/3'" :use (:instance make-n-list (el car-rtmvars) (n 1))))
   :rule-classes nil)
 
- 
+
 (defthm defexpansion-bool-attrs-inv
   (implies
    (and
     (equal (var-type gcell) 'Bool)
     (equal (type-expected rtmvars) (var-type gcell)))
   (implies
-   (equal-elements 
+   (equal-elements
     (var-attribute gcell)
     (var-attributes (make-n-list (car rtmvars) (len *rns*)) rtmmem))
-   (equal-elements 
+   (equal-elements
     (var-attribute gcell)
     (var-attributes rtmvars rtmmem))))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
 	   ( defexpansion-bool-attrs-inv-1
 	     defexpansion-bool-attrs-inv-2
-	     (:instance defexpansion-bool-attrs-inv-3 
-			(n (len *rns*)) 
+	     (:instance defexpansion-bool-attrs-inv-3
+			(n (len *rns*))
 			(car-rtmvars (car rtmvars))
 			(val (var-attribute gcell)))))))
 
@@ -2331,27 +2331,27 @@
    (and
     (equal-values (var-values (make-n-list (car rtmvars) (len *rns*)) rtmmem)
 		  (build-values-by-rns (var-value gcell) *rns*))
-    (equal-elements 
+    (equal-elements
      (var-attribute gcell)
      (var-attributes (make-n-list (car rtmvars) (len *rns*)) rtmmem)))))
   :hints (("Goal" :use
 	   ( bool-cell
 	     defexpansion-bool-attrs
-	     defexpansion-bool-values 
+	     defexpansion-bool-values
 	     defexpansion-bool-attrs-inv
 	     defexpansion-bool-values-inv))))
-  
+
 
 
 
 
 (defthm defexpansion-generic-bool
-  (implies 
+  (implies
    (and
-    (is-mem-cell-p gcell) 
+    (is-mem-cell-p gcell)
     (equal (var-type gcell) 'Bool)
     (equal (type-expected rtmvars) (var-type gcell)))
-  (equal 
+  (equal
    (equal-values-and-attributes gcell rtmvars rtmmem (var-type gcell))
    (and
     (equal-values (var-values (eventually-make-list rtmvars (len *rns*)) rtmmem)
@@ -2362,11 +2362,11 @@
 					     '((:definition type-expected)
 					       (:definition eventually-make-list)))
 					     :use (defexpansion-bool bool-cell))))
-					       
+
 (defthm defexpansion-generic-int
-  (implies 
+  (implies
    (and
-    (is-mem-cell-p gcell) 
+    (is-mem-cell-p gcell)
     (equal (var-type gcell) 'Int)
     (equal (type-expected rtmvars) (var-type gcell)))
   (equal
@@ -2380,14 +2380,14 @@
 					     '((:definition type-expected)
 					       (:definition eventually-make-list)))
 					     :use (defexpansion int-cell))))
-					       
 
 
 
-(defthm defexpansion-generic 
-  (implies 
+
+(defthm defexpansion-generic
+  (implies
    (and
-    (is-mem-cell-p gcell) 
+    (is-mem-cell-p gcell)
     (equal (type-expected rtmvars) (var-type gcell)))
   (equal
     (equal-values-and-attributes gcell rtmvars rtmmem (var-type gcell))
@@ -2396,13 +2396,13 @@
 		  (build-values-by-rns (var-value gcell) *rns*))
     (equal-elements (var-attribute gcell)
 		    (var-attributes (eventually-make-list rtmvars (len *rns*)) rtmmem)))))
-  :hints (("Goal"  
-	  :cases ( (equal (var-type gcell) 'Bool) 
+  :hints (("Goal"
+	  :cases ( (equal (var-type gcell) 'Bool)
 		   (equal (var-type gcell) 'Int) ))
 	  ("Subgoal 3" :use cell-types)
 	  ("Subgoal 2" :use defexpansion-generic-bool)
 	  ("Subgoal 1" :use defexpansion-generic-int)))
- 
+
 
 
 
@@ -2422,38 +2422,38 @@
    (equal (var-type (get-cell gvar1 gemmem)) 'Int)
    (is-mem-cell-p (get-cell gvar2 gemmem))
    (is-mem-cell-p (get-cell gvar3 gemmem))
-   (equal-sum-and-updates 
-    rtmvarsres 
-    rtmvars1 
+   (equal-sum-and-updates
+    rtmvarsres
+    rtmvars1
     (eventually-make-list rtmvars2 (len *rns*))
     (eventually-make-list rtmvars3 (len *rns*))
     *rns* rtmmem rtmmemafter)
    (equal-values-and-attributes (get-cell gvar1 gemmem) rtmvars1 rtmmem 'Int)
    (equal-values-and-attributes (get-cell gvar2 gemmem) rtmvars2 rtmmem (var-type (get-cell gvar2 gemmem)))
    (equal-values-and-attributes (get-cell gvar3 gemmem) rtmvars3 rtmmem (var-type (get-cell gvar3 gemmem))))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (sum-and-update-norest gvar1 gvar2 gvar3 gemmem)
    rtmvarsres
    rtmmemafter
    'Int))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (union-theories (current-theory 'ground-zero)
 				     '((:definition integer>1-listp)
 				       (:definition equal-values)
 				       (:definition is-mem-cell-p)
 				       (:rewrite defexpansion)))
-	  :use (     
+	  :use (
 		(:instance defexpansion-generic
 			   (gcell (get-cell gvar2 gemmem))
 			   (rtmvars rtmvars2))
 		(:instance defexpansion-generic
 			   (gcell (get-cell gvar3 gemmem))
 			   (rtmvars rtmvars3))
-		(:instance equal-sum-and-updates-have-values-that-are-sum-lists 
+		(:instance equal-sum-and-updates-have-values-that-are-sum-lists
 			   (rtmvars2 (eventually-make-list rtmvars2 (len *rns*)))
 			   (rtmvars3 (eventually-make-list rtmvars3 (len *rns*)))
 			   (rns *rns*))
-		(:instance equal-sum-and-updates-have-same-attributes           
+		(:instance equal-sum-and-updates-have-same-attributes
 			   (rtmvars2 (eventually-make-list rtmvars2 (len *rns*)))
 			   (rtmvars3 (eventually-make-list rtmvars3 (len *rns*)))
 			   (rns *rns*))
@@ -2471,7 +2471,7 @@
 
 
 
-(in-theory (disable sum-list sum-correspondence-by-put-list 
+(in-theory (disable sum-list sum-correspondence-by-put-list
 		    equal-sum-and-updates-have-same-attributes
 		    equal-sum-and-updates-have-values-that-are-sum-lists
 		    behaviour-of-sum-and-update-norest
@@ -2499,12 +2499,12 @@
   (if
       (zp n)
       st
-    (execute-n-rtm-adds 
-     (rtm-add 
-      (par1 (nth (pcc st) (code st))) 
-      (par2 (nth (pcc st) (code st))) 
-      (par3 (nth (pcc st) (code st))) 
-      (par4 (nth (pcc st) (code st))) 
+    (execute-n-rtm-adds
+     (rtm-add
+      (par1 (nth (pcc st) (code st)))
+      (par2 (nth (pcc st) (code st)))
+      (par3 (nth (pcc st) (code st)))
+      (par4 (nth (pcc st) (code st)))
      st)
      (1- n))))
 
@@ -2522,9 +2522,9 @@
   (if (zp n)
       mem
     (adds-list-n (cdr l1) (cdr l2) (cdr l3) (cdr l4)
-	       (put-cell 
-		(car l1) 
-		(sum-and-update 
+	       (put-cell
+		(car l1)
+		(sum-and-update
 		 (car l1)
 		 (car l2)
 		 (car l3)
@@ -2537,7 +2537,7 @@
 
 
 
-      
+
 
 (in-theory (disable member-equal))
 
@@ -2554,38 +2554,38 @@
    (rtm-statep st))
   (equal
    (mem (execute-n-rtm-adds st n))
-   (adds-list-n 
+   (adds-list-n
     (listpars1 st n)
     (listpars2 st n)
     (listpars3 st n)
     (listpars4 st n)
     (mem st)
     n)))
- :hints 
-	 (("Goal" :induct t ) 
+ :hints
+	 (("Goal" :induct t )
 	  ("Subgoal *1/2.2" :in-theory '((:definition all-rtm-adds-for-n-steps)
 					 (:definition execute-instruction)
 					 (:definition rtm-add)
 					 (:definition make-state)
 					 (:definition mem))
-	   )     
-	  ("Subgoal *1/2" 
+	   )
+	  ("Subgoal *1/2"
 		   :use ( execute-n-rtm-adds
-			  (:instance adds-list-n 
+			  (:instance adds-list-n
 				     (l1 (listpars1 st n))
 				     (l2 (listpars2 st n))
 				     (l3 (listpars3 st n))
 				     (l4 (listpars4 st n))
 				     (mem (mem st)))
-			  lemma12-lp1r lemma12-lp2r lemma12-lp3r lemma12-lp4r 
+			  lemma12-lp1r lemma12-lp2r lemma12-lp3r lemma12-lp4r
 			  (:theorem
 			   (IMPLIES (AND (ALL-RTM-ADDS-FOR-N-STEPS ST N)
 					 (>= (pcc st) 0)
 					 (not (zp n)))
-				    (equal (mem (execute-instruction st)) 
+				    (equal (mem (execute-instruction st))
 					   (PUT-CELL (CAR (LISTPARS1 ST N))
-						     (SUM-AND-UPDATE (CAR (LISTPARS1 ST N)) 
-								     (CAR (LISTPARS2 ST N)) 
+						     (SUM-AND-UPDATE (CAR (LISTPARS1 ST N))
+								     (CAR (LISTPARS2 ST N))
 								     (CAR (LISTPARS3 ST N))
 								     (CAR (LISTPARS4 ST N))
 								     (MEM ST))
@@ -2607,7 +2607,7 @@
 
 (defun adds-list-e (c1 c2 c3 c4 mem)
   (if
-      (endp c1) 
+      (endp c1)
       mem
     (adds-list-e
      (cdr c1)
@@ -2616,7 +2616,7 @@
      (cdr c4)
      (put-cell (car c1) (sum-and-update (car c1) (car c2) (car c3) (car c4) mem) mem))))
 
-     
+
 
 (defthm adds-list-e-is-adds-list-n
   (equal (adds-list-e c1 c2 c3 c4 mem) (adds-list-n c1 c2 c3 c4 mem (len c1)))
@@ -2641,7 +2641,7 @@
     (listpars4 st n)
     (mem st))))
  :hints (("Goal" :in-theory nil
-	  :use ((:instance adds-list-e-is-adds-list-n 
+	  :use ((:instance adds-list-e-is-adds-list-n
 			   (c1 (listpars1 st n))
 			   (c2 (listpars2 st n))
 			   (c3 (listpars3 st n))
@@ -2669,7 +2669,7 @@
 (defthm not-in-list-untouched-by-adds-list-e-1
   (implies
    (not (member-equal-bool (car l1) (cdr l1)))
-   (equal (get-cell (car l1) (adds-list-e (cdr l1) (cdr l2) (cdr l3) (cdr l4) mem)) 
+   (equal (get-cell (car l1) (adds-list-e (cdr l1) (cdr l2) (cdr l3) (cdr l4) mem))
 	  (get-cell (car l1) mem))))
 
 
@@ -2679,13 +2679,13 @@
    (not (member-equal-bool (nth idx l1) (firstn idx l1)))
    (not (member-equal-bool (nth idx l2) (firstn idx l1)))
    (not (member-equal-bool (nth idx l3) (firstn idx l1))))
-  (equal (sum-and-update 
+  (equal (sum-and-update
 	  (nth idx l1)
 	  (nth idx l2)
 	  (nth idx l3)
 	  (nth idx l4)
 	  (adds-list-e (firstn idx l1) (firstn idx l2) (firstn idx l3) (firstn idx l4) mem))
-	 (sum-and-update 
+	 (sum-and-update
 	  (nth idx l1)
 	  (nth idx l2)
 	  (nth idx l3)
@@ -2718,7 +2718,7 @@
    (in-range idx l4))
   (equal
    (get-cell (nth idx l1) (adds-list-e l1 l2 l3 l4 mem))
-   (sum-and-update 
+   (sum-and-update
      (nth idx l1)
      (nth idx l2)
      (nth idx l3)
@@ -2750,7 +2750,7 @@
 		 (:instance no-duplicates-all-implies-no-duplicates-one (idx1 gem1))
 		 (:instance no-duplicates-means-an-element-does-not-appear-after-its-position (l (nth gem1 ll)))
 		 if-el-does-not-appear-after-its-position-then-adds-list-e-produces-its-sum
-		 (:instance adds-list-decomp 
+		 (:instance adds-list-decomp
 			    (l1 (nth gem1 ll)) (l2 (nth gem2 ll)) (l3 (nth gem3 ll)))
 		 (:instance sum-and-update-independent-from-firstbn
 			    (l1 (nth gem1 ll)) (l2 (nth gem2 ll)) (l3 (nth gem3 ll)))))))
@@ -2765,7 +2765,7 @@
 		 (sum-and-update (car rtmvars1) (car rtmvars2) (car rtmvars3) (car rns) mem)))
      0 )
    ( t
-     (1+ (index-different-sum-and-updates 
+     (1+ (index-different-sum-and-updates
 	  (cdr rtmvarsres)
 	  (cdr rtmvars1)
 	  (cdr rtmvars2)
@@ -2776,11 +2776,11 @@
 
 (defthm if-bad-index-in-range-thne-must-be-nonsumandupdate
   (let ((bad-idx (index-different-sum-and-updates rtmvarsres rtmvars1 rtmvars2 rtmvars3 rns mem mem-after-add)))
-    (implies 
-     (in-range bad-idx rtmvarsres) 
-     (not (equal 
+    (implies
+     (in-range bad-idx rtmvarsres)
+     (not (equal
 	   (get-cell (nth bad-idx rtmvarsres) mem-after-add)
-           (sum-and-update 
+           (sum-and-update
 	    (nth bad-idx rtmvars1)
 	    (nth bad-idx rtmvars2)
 	    (nth bad-idx rtmvars3)
@@ -2809,33 +2809,33 @@
     (in-range gem2 ll)
     (in-range gem3 ll)
     (true-listp (nth gem1 ll)))
-   (equal-sum-and-updates (nth gem1 ll) (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem 
+   (equal-sum-and-updates (nth gem1 ll) (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem
     (adds-list-e (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem)))
   :hints (("Goal" :use (:instance rtm-variable-of-adds-list-e-is-sum-of-correspondent-variables
-				  (idx (index-different-sum-and-updates 
-					(nth gem1 ll) 
-					(nth gem1 ll) 
-					(nth gem2 ll) 
-					(nth gem3 ll) 
-					rns 
-					mem 
+				  (idx (index-different-sum-and-updates
+					(nth gem1 ll)
+					(nth gem1 ll)
+					(nth gem2 ll)
+					(nth gem3 ll)
+					rns
+					mem
 					(adds-list-e (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem)))))
-	  ("Goal'" :cases ( (in-range (index-different-sum-and-updates 
-				      (nth gem1 ll) 
-				      (nth gem1 ll) 
-				      (nth gem2 ll) 
-				      (nth gem3 ll) 
-				      rns 
-				      mem 
+	  ("Goal'" :cases ( (in-range (index-different-sum-and-updates
+				      (nth gem1 ll)
+				      (nth gem1 ll)
+				      (nth gem2 ll)
+				      (nth gem3 ll)
+				      rns
+				      mem
 				      (adds-list-e (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem))
 				     (nth gem1 ll)) ) )
 	  ("Subgoal 1" :in-theory '((:definition in-range)
 				    (:rewrite if-bad-index-in-range-thne-must-be-nonsumandupdate)))
 	  ("Subgoal 2" :in-theory '((:rewrite if-bad-index-not-in-range-then-every-equalsumandupdate)))))
-	  
-				      
-	  
-	  
+
+
+
+
 (defthm any-element-of-make-list-does-not-appear-into-other-lists
  (implies
   (and
@@ -2847,18 +2847,18 @@
    (not (equal gem1 gem2))
    (equal (len (nth gem1 ll)) 1)
    (in-range idx (make-n-list (car (nth gem1 ll)) n)))
-  (not (member-equal-bool 
+  (not (member-equal-bool
 	(nth idx (make-n-list (car (nth gem1 ll)) n))
 	(nth gem2 ll))))
- :hints (("Goal" :use 
+ :hints (("Goal" :use
 	  (
-	   (:instance 
+	   (:instance
 	    el-of-makelist-is-el
-	    (el (car (nth gem1 ll))))	    
-	   (:instance generalized-disjunctivity-unordered-2 
+	    (el (car (nth gem1 ll))))
+	   (:instance generalized-disjunctivity-unordered-2
 		      (idx1 gem1) (idx2 gem2) (el1 (car (nth gem1 ll)))))))
  :otf-flg t)
- 
+
 (defthm firstns-do-not-cotain-el-of-make-n-list-if-diff
  (implies
   (and
@@ -2870,16 +2870,16 @@
    (not (equal gem1 gem2))
    (equal (len (nth gem1 ll)) 1)
    (in-range idx (make-n-list (car (nth gem1 ll)) n)))
-  (not (member-equal-bool 
+  (not (member-equal-bool
 	(nth idx (make-n-list (car (nth gem1 ll)) n))
 	(firstn idx (nth gem2 ll)))))
  :hints (("Goal" :use
 	  (
-	   (:instance no-member-holds-on-firstn 
+	   (:instance no-member-holds-on-firstn
 		      (el (nth idx (make-n-list (car (nth gem1 ll)) n)))
 		      (l (nth gem2 ll)))
 	   any-element-of-make-list-does-not-appear-into-other-lists))))
- 
+
 
 
 (defthm rtm-variable-of-adds-list-e-is-sum-of-correspondent-variables-when-var-3-is-boolean
@@ -2899,15 +2899,15 @@
     (in-range idx (make-n-list (car (nth gem3 ll)) n))
     (in-range idx rns))
    (equal
-    (get-cell (nth idx (nth gem1 ll)) 
-	      (adds-list-e 
-	       (nth gem1 ll) 
-	       (nth gem2 ll) 
+    (get-cell (nth idx (nth gem1 ll))
+	      (adds-list-e
+	       (nth gem1 ll)
+	       (nth gem2 ll)
 	       (make-n-list (car (nth gem3 ll)) n)
 	       rns mem))
-    (sum-and-update 
-     (nth idx (nth gem1 ll)) 
-     (nth idx (nth gem2 ll)) 
+    (sum-and-update
+     (nth idx (nth gem1 ll))
+     (nth idx (nth gem2 ll))
      (nth idx (make-n-list (car (nth gem3 ll)) n))
      (nth idx rns) mem)))
   :hints (("Goal" :in-theory (disable sum-and-update)
@@ -2915,17 +2915,17 @@
 		 (:instance firstns-do-not-cotain-el-of-make-n-list-if-diff (gem1 gem3) (gem2 gem1))
 		 (:instance no-duplicates-all-implies-no-duplicates-one (idx1 gem1))
 		 (:instance no-duplicates-means-an-element-does-not-appear-after-its-position (l (nth gem1 ll)))
-		 (:instance adds-list-decomp 
-			    (l1 (nth gem1 ll)) 
-			    (l2 (nth gem2 ll)) 
+		 (:instance adds-list-decomp
+			    (l1 (nth gem1 ll))
+			    (l2 (nth gem2 ll))
 			    (l3 (make-n-list (car (nth gem3 ll)) n))
-			    (l4 rns))			    
+			    (l4 rns))
 		 (:instance sum-and-update-independent-from-firstbn
-			    (l1 (nth gem1 ll)) 
-			    (l2 (nth gem2 ll)) 
+			    (l1 (nth gem1 ll))
+			    (l2 (nth gem2 ll))
 			    (l3 (make-n-list (car (nth gem3 ll)) n))
 			    (l4 rns))))))
-				
+
 (defthm rtm-variable-of-adds-list-e-is-sum-of-correspondent-variables-when-var-2-is-boolean
   (implies
    (and
@@ -2943,33 +2943,33 @@
     (in-range idx (make-n-list (car (nth gem2 ll)) n))
     (in-range idx rns))
    (equal
-    (get-cell (nth idx (nth gem1 ll)) 
-	      (adds-list-e 
-	       (nth gem1 ll) 
+    (get-cell (nth idx (nth gem1 ll))
+	      (adds-list-e
+	       (nth gem1 ll)
 	       (make-n-list (car (nth gem2 ll)) n)
-	       (nth gem3 ll) 
+	       (nth gem3 ll)
 	       rns mem))
-    (sum-and-update 
-     (nth idx (nth gem1 ll)) 
+    (sum-and-update
+     (nth idx (nth gem1 ll))
      (nth idx (make-n-list (car (nth gem2 ll)) n))
-     (nth idx (nth gem3 ll)) 
+     (nth idx (nth gem3 ll))
      (nth idx rns) mem)))
   :hints (("Goal" :in-theory (disable sum-and-update)
 	   :use (
 		 (:instance firstns-do-not-cotain-el-of-make-n-list-if-diff (gem1 gem2) (gem2 gem1))
 		 (:instance no-duplicates-all-implies-no-duplicates-one (idx1 gem1))
 		 (:instance no-duplicates-means-an-element-does-not-appear-after-its-position (l (nth gem1 ll)))
-		 (:instance adds-list-decomp 
-			    (l1 (nth gem1 ll)) 
+		 (:instance adds-list-decomp
+			    (l1 (nth gem1 ll))
 			    (l2 (make-n-list (car (nth gem2 ll)) n))
-			    (l3 (nth gem3 ll)) 
-			    (l4 rns))			    
+			    (l3 (nth gem3 ll))
+			    (l4 rns))
 		 (:instance sum-and-update-independent-from-firstbn
-			    (l1 (nth gem1 ll)) 
+			    (l1 (nth gem1 ll))
 			    (l2 (make-n-list (car (nth gem2 ll)) n))
-			    (l3 (nth gem3 ll)) 
+			    (l3 (nth gem3 ll))
 			    (l4 rns))))))
-				
+
 (defthm rtm-variable-of-adds-list-e-is-sum-of-correspondent-variables-when-var-2and3-are-boolean
   (implies
    (and
@@ -2989,14 +2989,14 @@
     (in-range idx (make-n-list (car (nth gem3 ll)) n))
     (in-range idx rns))
    (equal
-    (get-cell (nth idx (nth gem1 ll)) 
-	      (adds-list-e 
-	       (nth gem1 ll) 
+    (get-cell (nth idx (nth gem1 ll))
+	      (adds-list-e
+	       (nth gem1 ll)
 	       (make-n-list (car (nth gem2 ll)) n)
 	       (make-n-list (car (nth gem3 ll)) n)
 	       rns mem))
-    (sum-and-update 
-     (nth idx (nth gem1 ll)) 
+    (sum-and-update
+     (nth idx (nth gem1 ll))
      (nth idx (make-n-list (car (nth gem2 ll)) n))
      (nth idx (make-n-list (car (nth gem3 ll)) n))
      (nth idx rns) mem)))
@@ -3006,17 +3006,17 @@
 		 (:instance firstns-do-not-cotain-el-of-make-n-list-if-diff (gem1 gem3) (gem2 gem1))
 		 (:instance no-duplicates-all-implies-no-duplicates-one (idx1 gem1))
 		 (:instance no-duplicates-means-an-element-does-not-appear-after-its-position (l (nth gem1 ll)))
-		 (:instance adds-list-decomp 
-			    (l1 (nth gem1 ll)) 
+		 (:instance adds-list-decomp
+			    (l1 (nth gem1 ll))
 			    (l2 (make-n-list (car (nth gem2 ll)) n))
-			    (l3 (make-n-list (car (nth gem3 ll)) n)) 
-			    (l4 rns))			    
+			    (l3 (make-n-list (car (nth gem3 ll)) n))
+			    (l4 rns))
 		 (:instance sum-and-update-independent-from-firstbn
-			    (l1 (nth gem1 ll)) 
+			    (l1 (nth gem1 ll))
 			    (l2 (make-n-list (car (nth gem2 ll)) n))
 			    (l3 (make-n-list (car (nth gem3 ll)) n))
 			    (l4 rns))))))
-				
+
 
 
 
@@ -3036,14 +3036,14 @@
     (in-range idx (eventually-make-list (nth gem3 ll) n))
     (in-range idx rns))
    (equal
-    (get-cell (nth idx (nth gem1 ll)) 
-	      (adds-list-e 
-	       (nth gem1 ll) 
+    (get-cell (nth idx (nth gem1 ll))
+	      (adds-list-e
+	       (nth gem1 ll)
 	       (eventually-make-list (nth gem2 ll) n)
 	       (eventually-make-list (nth gem3 ll) n)
 	       rns mem))
-    (sum-and-update 
-     (nth idx (nth gem1 ll)) 
+    (sum-and-update
+     (nth idx (nth gem1 ll))
      (nth idx (eventually-make-list (nth gem2 ll) n))
      (nth idx (eventually-make-list (nth gem3 ll) n))
      (nth idx rns) mem)))
@@ -3080,39 +3080,39 @@
     (in-range gem2 ll)
     (in-range gem3 ll)
     (true-listp (nth gem1 ll)))
-   (equal-sum-and-updates 
-    (nth gem1 ll) 
-    (nth gem1 ll) 
+   (equal-sum-and-updates
+    (nth gem1 ll)
+    (nth gem1 ll)
     (eventually-make-list (nth gem2 ll) n)
     (eventually-make-list (nth gem3 ll) n)
-    rns mem 
-    (adds-list-e 
-     (nth gem1 ll) 
+    rns mem
+    (adds-list-e
+     (nth gem1 ll)
      (eventually-make-list (nth gem2 ll) n)
      (eventually-make-list (nth gem3 ll) n)
      rns mem)))
   :hints (("Goal" :use (:instance rtm-variable-of-adds-list-e-is-sum-of-correspondent-variables-with-all-vars-types
-				  (idx (index-different-sum-and-updates 
-					(nth gem1 ll) 
-					(nth gem1 ll) 
+				  (idx (index-different-sum-and-updates
+					(nth gem1 ll)
+					(nth gem1 ll)
 					(eventually-make-list (nth gem2 ll) n)
 					(eventually-make-list (nth gem3 ll) n)
-					rns 
-					mem 
-					(adds-list-e 
-					 (nth gem1 ll) 
+					rns
+					mem
+					(adds-list-e
+					 (nth gem1 ll)
 					 (eventually-make-list (nth gem2 ll) n)
 					 (eventually-make-list (nth gem3 ll) n)
 					 rns mem)))))
-	  ("Goal'" :cases ( (in-range (index-different-sum-and-updates 
-				      (nth gem1 ll) 
-				      (nth gem1 ll) 
+	  ("Goal'" :cases ( (in-range (index-different-sum-and-updates
+				      (nth gem1 ll)
+				      (nth gem1 ll)
 				      (eventually-make-list (nth gem2 ll) n)
 				      (eventually-make-list (nth gem3 ll) n)
-				      rns 
-				      mem 
-				      (adds-list-e 
-				       (nth gem1 ll) 
+				      rns
+				      mem
+				      (adds-list-e
+				       (nth gem1 ll)
 				       (eventually-make-list (nth gem2 ll) n)
 				       (eventually-make-list (nth gem3 ll) n)
 				       rns mem))
@@ -3120,7 +3120,7 @@
 	  ("Subgoal 1" :in-theory '((:definition in-range)
 		       		    (:rewrite if-bad-index-in-range-thne-must-be-nonsumandupdate)))
 	  ("Subgoal 2" :in-theory '((:rewrite if-bad-index-not-in-range-then-every-equalsumandupdate)))))
-	  
+
 
 
 (defthm lemma2-only-adds-in-rtm-add
@@ -3133,7 +3133,7 @@
     (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add)
     (good-translation-gem-rtm gstate rstate m))
    (all-rtm-adds-for-n-steps rstate (len *rns*)))
-  :hints (("Goal" :expand 
+  :hints (("Goal" :expand
 	   ( (good-translation-gem-rtm gstate rstate m)
 	     (gem-statep gstate)
 	     (rtm-statep rstate)
@@ -3142,7 +3142,7 @@
 	   :in-theory nil))
   :rule-classes nil)
 
-	
+
 (defthm cells-untouched-by-execute-on-other-cell-add
  (implies
   (and
@@ -3154,7 +3154,7 @@
    (not (member-equal-bool v (listpars1 st n))))
   (equal (get-cell v (mem st))
 	 (get-cell v (mem (execute-n-instructions st n)))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :use (execute-n-instructions-tantamount-to-add-list-e
 		(:instance not-in-list-untouched-by-adds-list-e
 				  (v v)
@@ -3173,7 +3173,7 @@
     (rtm-statep rstate)
     (good-translation-gem-rtm gstate rstate m)
     (in-range (pcc gstate) (code gstate))
-    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)  
+    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)
     (true-listp m)
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
@@ -3184,9 +3184,9 @@
   :hints (("Goal" :in-theory (current-theory 'ground-zero)
 	   :expand (     (in-range (pcc gstate) (code gstate))
 			 (good-translation-gem-rtm gstate rstate m) )
-	   :use ( 
+	   :use (
 		 (:instance lemma1-different-vars-do-not-belong  (gvar2 (par1 (nth (pcc gstate) (code gstate)))))
-		 (:instance cells-untouched-by-execute-on-other-cell-add (st rstate) (n (len *rns*)) 
+		 (:instance cells-untouched-by-execute-on-other-cell-add (st rstate) (n (len *rns*))
 			    (v (nth idx1 (rtmintvars-i gvar1 m))))))))
 
 (defthm rtm-variables-of-other-cell-untouched-add
@@ -3197,24 +3197,24 @@
     (rtm-statep rstate)
     (good-translation-gem-rtm gstate rstate m)
     (in-range (pcc gstate) (code gstate))
-    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)   
+    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)
     (true-listp m)
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
-    (true-listp (rtmintvars-i gvar1 m))                         
+    (true-listp (rtmintvars-i gvar1 m))
     (not (equal gvar1 (par1 (nth (pcc gstate) (code gstate))))))
    (equal-get-cells
           (rtmintvars-i gvar1 m) (mem rstate) (mem (execute-n-instructions rstate (len *rns*)))))
   :hints (("Goal" :in-theory nil
-	   :use ( (:instance rtm-variable-of-other-cell-untouched-add 
-			     (idx1 (idx-different-cell 
-				    (rtmintvars-i gvar1 m) 
-				    (mem rstate) 
+	   :use ( (:instance rtm-variable-of-other-cell-untouched-add
+			     (idx1 (idx-different-cell
+				    (rtmintvars-i gvar1 m)
+				    (mem rstate)
 				    (mem (execute-n-instructions rstate (len *rns*)))))) ))
 	  ("Goal'" :cases ( (in-range
-			     (idx-different-cell 
-				    (rtmintvars-i gvar1 m) 
-				    (mem rstate) 
+			     (idx-different-cell
+				    (rtmintvars-i gvar1 m)
+				    (mem rstate)
 				    (mem (execute-n-instructions rstate (len *rns*))))
 			     (rtmintvars-i gvar1 m))))
 	  ("Subgoal 2" :in-theory '((:rewrite if-bad-index-not-in-range-then-every-equal)))
@@ -3223,7 +3223,7 @@
 
 
 
-(defthm properies-of-type-and-existence-of-current-args-add 
+(defthm properies-of-type-and-existence-of-current-args-add
  (implies
   (and
    (gem-statep gstate)
@@ -3235,29 +3235,29 @@
    (assoc-equal (par2 (nth (pcc gstate) (code gstate))) (mem gstate))
    (assoc-equal (par3 (nth (pcc gstate) (code gstate))) (mem gstate))))
   :hints (("Goal" :in-theory (enable get-cell)
-	   :use (:instance in-range-instruction-is-gem-instruction 
-			   (pcc (pcc gstate)) 
+	   :use (:instance in-range-instruction-is-gem-instruction
+			   (pcc (pcc gstate))
 			   (code (code gstate))
 			   (mem (mem gstate)))))
   :rule-classes nil)
 
 
-(defthm par1-of-current-instruction-is-into-mapping-add 
+(defthm par1-of-current-instruction-is-into-mapping-add
  (implies
   (and
    (vars-inclusion (mem gstate) m)
    (gem-statep gstate)
-   (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add)  
+   (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add)
    (in-range (pcc gstate) (code gstate)))
   (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m))
  :hints (("Goal" :in-theory (enable get-cell)
 	 :use (properies-of-type-and-existence-of-current-args-add
-	       (:instance inclusion-trans 
+	       (:instance inclusion-trans
 			  (v (par1 (nth (pcc gstate) (code gstate))))
 			  (m1 (mem gstate))
 			  (m2 m))
-	       (:instance in-range-instruction-is-gem-instruction 
-				 (pcc (pcc gstate)) 
+	       (:instance in-range-instruction-is-gem-instruction
+				 (pcc (pcc gstate))
 				 (code (code gstate))
 				 (mem (mem gstate)))))))
 
@@ -3279,7 +3279,7 @@
    (m-correspondent-values-p m (mem gstate) (mem rstate))
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))
    (correct-wrt-arity m (mem gstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (mem (execute-instruction gstate)))
    (rtmintvars-i gvar1 m)
    (mem (execute-n-instructions rstate (len *rns*)))
@@ -3295,7 +3295,7 @@
 		(:instance in-range (idx (pcc rstate)) (l (code rstate)))
 		rtm-variables-of-other-cell-untouched-add
 		teorema-main-con-pcc-in-range-su-variabile-non-interessata
-		(:instance equal-get-cells-implies-equal-values-and-attributes-still-works	
+		(:instance equal-get-cells-implies-equal-values-and-attributes-still-works
 			   (gemcell (get-cell gvar1 (mem gstate)))
 			   (lcell (rtmintvars-i gvar1 m))
 			   (mem1 (mem rstate))
@@ -3314,13 +3314,13 @@
    (good-translation-gem-rtm gstate rstate m))
   (equal
    (mem (execute-n-instructions rstate (len *rns*)))
-   (adds-list-e 
+   (adds-list-e
     (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m)
     (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*)) ;new
     (eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*)) ;new
     *rns*
     (mem rstate))))
-  :hints (("Goal" 	   
+  :hints (("Goal"
 	   :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range)))
 	   :use (good-translation-gem-rtm
 		 lemma2-only-adds-in-rtm-add
@@ -3337,13 +3337,13 @@
    (and
     (vars-inclusion (mem gstate) m)
     (gem-statep gstate)
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add) 
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add)
     (in-range (pcc gstate) (code gstate)))
    (and
     (in-range (pos-equal-0 (par1 (nth (pcc gstate) (code gstate))) m) m)
     (in-range (pos-equal-0 (par2 (nth (pcc gstate) (code gstate))) m) m)
     (in-range (pos-equal-0 (par3 (nth (pcc gstate) (code gstate))) m) m)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use (properies-of-type-and-existence-of-current-args-add
 			(:instance inclusion-trans (m1 (mem gstate)) (m2 m)
 				   (v (par1 (nth (pcc gstate) (code gstate)))))
@@ -3361,7 +3361,7 @@
 				   (el (par3 (nth (pcc gstate) (code gstate))))
 				   (l m)))))
    :rule-classes nil)
-   
+
 (defthm eqlenss-add
   (implies
    (and
@@ -3369,15 +3369,15 @@
     (rtm-statep rstate)
     (in-range (pcc gstate) (code gstate))
     (in-range (pcc rstate) (code rstate))
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add) 
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add)
     (good-translation-gem-rtm gstate rstate m))
    (and
     (equal (len (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m)) (len *rns*))
-    (equal (len (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*))) (len *rns*))    
+    (equal (len (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*))) (len *rns*))
     (equal (len (eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*))) (len *rns*))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range)))
-	   :use 
+	   :use
 	   (
 	    good-translation-gem-rtm
 	    (:instance length-of-listpars1-n-is-n (st rstate) (n (len *rns*)))
@@ -3385,10 +3385,10 @@
 	    (:instance length-of-listpars3-n-is-n (st rstate) (n (len *rns*))))))
   :rule-classes nil)
 
-  
+
 (defthm equal-sum-and-updates-after-n-instr
   (implies
-   (and  
+   (and
     (true-listp m)
     (correct-wrt-arity m (mem gstate))
     (gem-statep gstate)
@@ -3401,22 +3401,22 @@
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
     (equal gvar1 (par1 (nth (pcc gstate) (code gstate)))))
-   (equal-sum-and-updates 
+   (equal-sum-and-updates
     (rtmintvars-i gvar1 m)
     (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m)
     (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*)) ;new
     (eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*)) ;new
-    *rns* 
-    (mem rstate) 
+    *rns*
+    (mem rstate)
     (mem (execute-n-instructions rstate (len *rns*)))))
-  :hints (("Goal" 
-	   :in-theory (union-theories (current-theory 'ground-zero) 
+  :hints (("Goal"
+	   :in-theory (union-theories (current-theory 'ground-zero)
 				      '((:type-prescription retrieve-rtmvars)
 					(:definition positive-list)
 					(:definition positivep)
 					(:definition in-range)))
 	   :use
-	   ( 
+	   (
 	     (:instance correct-wrt-arity-has-rtmintvars-i-tl (mem (mem gstate)))
 	     (:instance sum-and-updates-holding-for-every-variable-type
 			(n (len *rns*))
@@ -3452,7 +3452,7 @@
     (equal gvar3 (par3 (nth (pcc gstate) (code gstate)))))
    (equal (get-cell gvar1 (mem (execute-instruction gstate)))
 	  (sum-and-update-norest gvar1 gvar2 gvar3 (mem gstate))))
-  :hints (("Goal" :in-theory (e/d (put-cell get-cell) 
+  :hints (("Goal" :in-theory (e/d (put-cell get-cell)
 				  (par1 par2 par3 par4 opcode pcc code nth gem-instruction-list-p
 					gen-eq-update sum-and-update sub-and-update sub-and-update-norest sum-and-update-norest))))
   :rule-classes nil)
@@ -3461,13 +3461,13 @@
 (DEFTHM mem-cellity-of-current-gem-args-add
   (IMPLIES
    (AND (GEM-STATEP GSTATE)
-	(equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add) 
+	(equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add)
 	(IN-RANGE (PCC GSTATE) (CODE GSTATE)))
    (AND (is-mem-cell-p (get-cell  (PAR1 (NTH (PCC GSTATE) (CODE GSTATE))) (mem gstate)))
 	(is-mem-cell-p (get-cell  (PAR2 (NTH (PCC GSTATE) (CODE GSTATE))) (mem gstate)))
 	(is-mem-cell-p (get-cell  (PAR3 (NTH (PCC GSTATE) (CODE GSTATE))) (mem gstate)))))
   :HINTS
-  (("Goal" 
+  (("Goal"
     :USE
     (:INSTANCE IN-RANGE-INSTRUCTION-IS-GEM-INSTRUCTION
 	       (PCC (PCC GSTATE))
@@ -3475,7 +3475,7 @@
 	       (MEM (MEM GSTATE))))))
 
 
- 
+
 (defthm type-is-for-pars-add
  (implies
    (and
@@ -3483,13 +3483,13 @@
     (vars-inclusion (mem gstate) m)
     (gem-statep gstate)
     (correct-wrt-arity m (mem gstate))
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add) 
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-add)
     (equal gvar1 (par1 (nth (pcc gstate) (code gstate))))
     (equal gvar2 (par2 (nth (pcc gstate) (code gstate))))
     (equal gvar3 (par3 (nth (pcc gstate) (code gstate))))
     (in-range (pcc gstate) (code gstate)))
    (equal (type-i gvar1 m) 'int))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable type-i-is-type-expected rtmintvars-i-is-pos-equal-0-of-retrieve-vars)
 	  :use ( properies-of-type-and-existence-of-current-args-add
 		 (:instance type-i-is-vartyper (gvar1 gvar1))
@@ -3503,7 +3503,7 @@
 			    (v (par3 (nth (pcc gstate) (code gstate))))))))
  :rule-classes nil)
 
-   
+
 (defthm m-correspondence-kept-on-same-gvar-add
   (implies
    (and
@@ -3520,16 +3520,16 @@
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (mem (execute-instruction gstate)))
    (rtmintvars-i gvar1 m)
    (mem (execute-n-instructions rstate (len *rns*)))
    (type-i gvar1 m)))
   :hints (("Goal"  :in-theory nil
-	   :use ( 
+	   :use (
 		 properies-of-type-and-existence-of-current-args-add
 		 mem-cellity-of-current-gem-args-add
-		 good-translation-gem-rtm 
+		 good-translation-gem-rtm
 		 (:instance type-i-is-vartyper (gvar1 gvar1) (mem (mem gstate)))
 		 (:instance type-i-is-vartyper (gvar1 (par2 (nth (pcc gstate) (code gstate)))) (mem (mem gstate)))
 		 (:instance type-i-is-vartyper (gvar1 (par3 (nth (pcc gstate) (code gstate)))) (mem (mem gstate)))
@@ -3548,18 +3548,18 @@
 		   (gvar3 (par3 (nth (pcc gstate) (code gstate))))
 		   )
 		  eqlenss-add
-		  (:instance correct-wrt-arity-has-rtmintvars-i-tl (mem (mem gstate)))			     
+		  (:instance correct-wrt-arity-has-rtmintvars-i-tl (mem (mem gstate)))
 		  (:instance type-is-for-pars-add
 		   (gvar2 (par2 (nth (pcc gstate) (code gstate))))
 		   (gvar3 (par3 (nth (pcc gstate) (code gstate)))))
 		  (:instance m-correspondent-values-implies-equal-values-and-attribus
-			     (memgstate (mem gstate)) (memrstate (mem rstate)) 
+			     (memgstate (mem gstate)) (memrstate (mem rstate))
 			     (gvar1 gvar1))
 		  (:instance m-correspondent-values-implies-equal-values-and-attribus
-			     (memgstate (mem gstate)) (memrstate (mem rstate)) 
+			     (memgstate (mem gstate)) (memrstate (mem rstate))
 			     (gvar1 (par2 (nth (pcc gstate) (code gstate)))))
 		  (:instance m-correspondent-values-implies-equal-values-and-attribus
-			     (memgstate (mem gstate)) (memrstate (mem rstate)) 
+			     (memgstate (mem gstate)) (memrstate (mem rstate))
 			     (gvar1 (par3 (nth (pcc gstate) (code gstate)))))
 		  equal-sum-and-updates-after-n-instr
 		  (:instance
@@ -3590,7 +3590,7 @@
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (mem (execute-instruction gstate)))
    (rtmintvars-i gvar1 m)
    (mem (execute-n-instructions rstate (len *rns*)))
@@ -3616,12 +3616,12 @@
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (in-range idx m)
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell (car (nth idx m)) (mem (execute-instruction gstate)))
-   (cdr (nth idx m)) 
+   (cdr (nth idx m))
    (mem (execute-n-instructions rstate (len *rns*)))
-   (type-i-idx m idx)))   
-  :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range))) 
+   (type-i-idx m idx)))
+  :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range)))
 	   :use ( (:theorem
 		   (implies
 		    (and
@@ -3652,12 +3652,12 @@
     (in-range (pcc rstate) (code rstate))
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
-  (m-correspondent-values-p 
-   m 
+  (m-correspondent-values-p
+   m
    (mem (execute-instruction gstate))
    (mem (execute-n-instructions rstate (len *rns*)))))
   :hints (("Goal" :use (:instance equal-values-correspondence-kept-by-any-execution-idxed-add
-				  (idx (bad-idx-eqv-va m 
+				  (idx (bad-idx-eqv-va m
 						       (mem (execute-instruction gstate))
 						       (mem (execute-n-instructions rstate (len *rns*)))))))
 	  ("Goal'" :cases ( (in-range (bad-idx-eqv-va m (mem (execute-instruction gstate))
@@ -3694,18 +3694,18 @@
     (correct-wrt-arity m (mem (execute-instruction gstate)))
     (vars-inclusion (mem (execute-instruction gstate)) m)
     (vars-inclusion m (mem (execute-instruction gstate)))
-    (m-correspondent-values-p 
-     m 
+    (m-correspondent-values-p
+     m
      (mem (execute-instruction gstate))
      (mem (execute-n-instructions rstate (len *rns*))))))
-:hints (("Goal" 
-	 :in-theory (disable 
+:hints (("Goal"
+	 :in-theory (disable
 		     rtm-statep gem-statep
-		     pcc code opcode 
-		     execute-instruction rtmintvars-i par1 par2 par3 nth len member-equal) 
-	 :use 
+		     pcc code opcode
+		     execute-instruction rtmintvars-i par1 par2 par3 nth len member-equal)
+	 :use
 	 (m-correspondence-kept-by-any-execution-idxed-add
-	  good-translation-gem-rtm 
+	  good-translation-gem-rtm
 	  (:instance execute-n-instructions-keeps-rtm-state-and-points-to-good
 		     (st rstate) (n (len *rns*)))
 	  (:instance executing-gem-instruction-retrieves-a-gem-state-from-gem-state (st gstate))
@@ -3715,7 +3715,7 @@
 
 
 
- 
+
 
 
 
@@ -3726,7 +3726,7 @@
 ;;(ld "Proof-Of-Minus.lisp" :ld-error-action :error)
 
 
-(in-theory (enable 
+(in-theory (enable
 	    (:executable-counterpart build-values-by-rns)
 	    (:type-prescription build-values-by-rns)
 	    (:induction build-values-by-rns)
@@ -3738,7 +3738,7 @@
 (defun sub-list (vl2 vl3 rns)
   (if (endp vl2)
       nil
-       (cons (mod (- (car vl2) (car vl3)) (car rns)) 
+       (cons (mod (- (car vl2) (car vl3)) (car rns))
 	     (sub-list (cdr vl2) (cdr vl3) (cdr rns)))))
 
 
@@ -3758,21 +3758,21 @@
 
 
 
-(in-theory (disable mod floor)) 
+(in-theory (disable mod floor))
 
 (defthm sub-correspondence-by-put-list-2-fin
  (implies
   (and
    (integerp gval1)
    (integerp gval2)
-   (posp-all rns))          
+   (posp-all rns))
   (equal (build-values-by-rns (mod (- gval1 gval2) (prod rns)) rns)
 	 (sub-list
 	  (build-values-by-rns  gval1 rns)
 	  (build-values-by-rns  gval2 rns)
 	 rns)))
  :hints (("Goal" :in-theory (disable sum-correspondence-by-put-list-2-fin sum-correspondence-by-put-list)
-	  :use (sub-correspondence-by-put-list 
+	  :use (sub-correspondence-by-put-list
 		(:instance mod-prod-makes-same-residues (x (- gval1 gval2)))))))
 
 
@@ -3802,8 +3802,8 @@
    (integerp val)
    (or (equal val 0) (equal val 1))
    (integer>1-listp rns))
-  (equal 
-   (build-values-by-rns val rns) 
+  (equal
+   (build-values-by-rns val rns)
    (make-n-list val (len rns)))))
 
 
@@ -3821,7 +3821,7 @@
 	   (make-n-list gval2 (len rns))
 	   rns)))
  :hints (("Goal" :in-theory nil
-	  :use (sub-correspondence-by-put-list-h 
+	  :use (sub-correspondence-by-put-list-h
 		(:instance a-boolean-has-same-rnss-than-list-of-itself (val gval2))))))
 
 (in-theory (disable mod--))
@@ -3831,9 +3831,9 @@
   (if (endp reslist)
       (null reslist)
     (and
-     (equal 
-      (get-cell (car reslist) memafterputs) 
-      (sub-and-update 
+     (equal
+      (get-cell (car reslist) memafterputs)
+      (sub-and-update
        (car par1list)
        (car par2list)
        (car par3list)
@@ -3884,26 +3884,26 @@
 
 (defthm behaviour-of-sub-and-update-norest
  (and
-  (equal 
-   (var-attribute (sub-and-update-norest c1 c2 c3 mem)) 
+  (equal
+   (var-attribute (sub-and-update-norest c1 c2 c3 mem))
    (var-attribute (get-cell c1 mem)))
-  (equal 
-   (var-value (sub-and-update-norest c1 c2 c3 mem)) 
+  (equal
+   (var-value (sub-and-update-norest c1 c2 c3 mem))
    (mod
     (-
      (var-value (get-cell c2 mem))
      (var-value (get-cell c3 mem)))
     (prod *rns*)))
-  (equal 
-   (var-type (sub-and-update-norest c1 c2 c3 mem)) 
-   (var-type (get-cell c1 mem))))   
+  (equal
+   (var-type (sub-and-update-norest c1 c2 c3 mem))
+   (var-type (get-cell c1 mem))))
  :hints (("Goal" :in-theory (enable var-type var-value var-attribute make-cell))))
 
 
- 
-    
+
+
 (defthm defexpansion-sub
-  (implies 
+  (implies
    (not (null (var-value gcell)))
   (equal
    (equal-values-and-attributes gcell rtmvars rtmmem 'Int)
@@ -3914,11 +3914,11 @@
 		    (var-attributes rtmvars rtmmem)))))
   :hints (("Goal" :in-theory '((:definition equal-values-and-attributes)
 			       (:definition apply-direct-rns-to-value-according-to-type))
-	   :use (:instance build-values-by-rns-extended-behaves-standardly-on-non-nils 
-			   (gem-value (var-value gcell)) 
+	   :use (:instance build-values-by-rns-extended-behaves-standardly-on-non-nils
+			   (gem-value (var-value gcell))
 			   (rns *rns*)))))
 
-  
+
 
 
 
@@ -3937,18 +3937,18 @@
    (equal-values-and-attributes (get-cell gvar1 gemmem) rtmvars1 rtmmem 'Int)
    (equal-values-and-attributes (get-cell gvar2 gemmem) rtmvars2 rtmmem 'Int)
    (equal-values-and-attributes (get-cell gvar3 gemmem) rtmvars3 rtmmem 'Int))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (sub-and-update-norest gvar1 gvar2 gvar3 gemmem)
    rtmvarsres
    rtmmemafter
    'Int))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (union-theories (current-theory 'ground-zero)
 				     '(
 				       (:definition integer>1-listp)
-				       (:definition equal-values) 
+				       (:definition equal-values)
 				       (:rewrite defexpansion-sub)))
-	  :use (    
+	  :use (
 		(:instance greater-one-means-greater-zero (rns *rns*))
 		(:instance equal-sub-and-updates-have-values-that-are-sub-lists (rns *rns*))
 		(:instance equal-sub-and-updates-have-same-attributes           (rns *rns*))
@@ -3988,38 +3988,38 @@
    (equal (var-type (get-cell gvar1 gemmem)) 'Int)
    (is-mem-cell-p (get-cell gvar2 gemmem))
    (is-mem-cell-p (get-cell gvar3 gemmem))
-   (equal-sub-and-updates 
-    rtmvarsres 
-    rtmvars1 
+   (equal-sub-and-updates
+    rtmvarsres
+    rtmvars1
     (eventually-make-list rtmvars2 (len *rns*))
     (eventually-make-list rtmvars3 (len *rns*))
     *rns* rtmmem rtmmemafter)
    (equal-values-and-attributes (get-cell gvar1 gemmem) rtmvars1 rtmmem 'Int)
    (equal-values-and-attributes (get-cell gvar2 gemmem) rtmvars2 rtmmem (var-type (get-cell gvar2 gemmem)))
    (equal-values-and-attributes (get-cell gvar3 gemmem) rtmvars3 rtmmem (var-type (get-cell gvar3 gemmem))))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (sub-and-update-norest gvar1 gvar2 gvar3 gemmem)
    rtmvarsres
    rtmmemafter
    'Int))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (union-theories (current-theory 'ground-zero)
 				     '((:definition integer>1-listp)
 				       (:definition equal-values)
 				       (:definition is-mem-cell-p)
 				       (:rewrite defexpansion-sub)))
-	  :use (     
+	  :use (
 		(:instance defexpansion-generic
 			   (gcell (get-cell gvar2 gemmem))
 			   (rtmvars rtmvars2))
 		(:instance defexpansion-generic
 			   (gcell (get-cell gvar3 gemmem))
 			   (rtmvars rtmvars3))
-		(:instance equal-sub-and-updates-have-values-that-are-sub-lists 
+		(:instance equal-sub-and-updates-have-values-that-are-sub-lists
 			   (rtmvars2 (eventually-make-list rtmvars2 (len *rns*)))
 			   (rtmvars3 (eventually-make-list rtmvars3 (len *rns*)))
 			   (rns *rns*))
-		(:instance equal-sub-and-updates-have-same-attributes           
+		(:instance equal-sub-and-updates-have-same-attributes
 			   (rtmvars2 (eventually-make-list rtmvars2 (len *rns*)))
 			   (rtmvars3 (eventually-make-list rtmvars3 (len *rns*)))
 			   (rns *rns*))
@@ -4037,7 +4037,7 @@
 
 
 
-(in-theory (disable sub-list sub-correspondence-by-put-list 
+(in-theory (disable sub-list sub-correspondence-by-put-list
 		    sub-correspondence-by-put-list-h
 		    sub-correspondence-by-put-list-2-fin
 		    equal-sub-and-updates-have-same-attributes
@@ -4067,12 +4067,12 @@
   (if
       (zp n)
       st
-    (execute-n-rtm-subs 
-     (rtm-sub 
-      (par1 (nth (pcc st) (code st))) 
-      (par2 (nth (pcc st) (code st))) 
-      (par3 (nth (pcc st) (code st))) 
-      (par4 (nth (pcc st) (code st))) 
+    (execute-n-rtm-subs
+     (rtm-sub
+      (par1 (nth (pcc st) (code st)))
+      (par2 (nth (pcc st) (code st)))
+      (par3 (nth (pcc st) (code st)))
+      (par4 (nth (pcc st) (code st)))
      st)
      (1- n))))
 
@@ -4090,9 +4090,9 @@
   (if (zp n)
       mem
     (subs-list-n (cdr l1) (cdr l2) (cdr l3) (cdr l4)
-	       (put-cell 
-		(car l1) 
-		(sub-and-update 
+	       (put-cell
+		(car l1)
+		(sub-and-update
 		 (car l1)
 		 (car l2)
 		 (car l3)
@@ -4105,7 +4105,7 @@
 
 
 
-      
+
 
 (in-theory (disable member-equal))
 
@@ -4122,38 +4122,38 @@
    (rtm-statep st))
   (equal
    (mem (execute-n-rtm-subs st n))
-   (subs-list-n 
+   (subs-list-n
     (listpars1 st n)
     (listpars2 st n)
     (listpars3 st n)
     (listpars4 st n)
     (mem st)
     n)))
- :hints 
-	 (("Goal" :induct t ) 
+ :hints
+	 (("Goal" :induct t )
 	  ("Subgoal *1/2.2" :in-theory '((:definition all-rtm-subs-for-n-steps)
 					 (:definition execute-instruction)
 					 (:definition rtm-sub)
 					 (:definition make-state)
 					 (:definition mem))
-	   )     
-	  ("Subgoal *1/2" 
+	   )
+	  ("Subgoal *1/2"
 		   :use ( execute-n-rtm-subs
-			  (:instance subs-list-n 
+			  (:instance subs-list-n
 				     (l1 (listpars1 st n))
 				     (l2 (listpars2 st n))
 				     (l3 (listpars3 st n))
 				     (l4 (listpars4 st n))
 				     (mem (mem st)))
-			  lemma12-lp1r lemma12-lp2r lemma12-lp3r lemma12-lp4r 
+			  lemma12-lp1r lemma12-lp2r lemma12-lp3r lemma12-lp4r
 			  (:theorem
 			   (IMPLIES (AND (ALL-RTM-SUBS-FOR-N-STEPS ST N)
 					 (>= (pcc st) 0)
 					 (not (zp n)))
-				    (equal (mem (execute-instruction st)) 
+				    (equal (mem (execute-instruction st))
 					   (PUT-CELL (CAR (LISTPARS1 ST N))
-						     (SUB-AND-UPDATE (CAR (LISTPARS1 ST N)) 
-								     (CAR (LISTPARS2 ST N)) 
+						     (SUB-AND-UPDATE (CAR (LISTPARS1 ST N))
+								     (CAR (LISTPARS2 ST N))
 								     (CAR (LISTPARS3 ST N))
 								     (CAR (LISTPARS4 ST N))
 								     (MEM ST))
@@ -4175,7 +4175,7 @@
 
 (defun subs-list-e (c1 c2 c3 c4 mem)
   (if
-      (endp c1) 
+      (endp c1)
       mem
     (subs-list-e
      (cdr c1)
@@ -4184,7 +4184,7 @@
      (cdr c4)
      (put-cell (car c1) (sub-and-update (car c1) (car c2) (car c3) (car c4) mem) mem))))
 
-     
+
 
 (defthm subs-list-e-is-subs-list-n
   (equal (subs-list-e c1 c2 c3 c4 mem) (subs-list-n c1 c2 c3 c4 mem (len c1)))
@@ -4209,7 +4209,7 @@
     (listpars4 st n)
     (mem st))))
  :hints (("Goal" :in-theory nil
-	  :use ((:instance subs-list-e-is-subs-list-n 
+	  :use ((:instance subs-list-e-is-subs-list-n
 			   (c1 (listpars1 st n))
 			   (c2 (listpars2 st n))
 			   (c3 (listpars3 st n))
@@ -4237,7 +4237,7 @@
 (defthm not-in-list-untouched-by-subs-list-e-1
   (implies
    (not (member-equal-bool (car l1) (cdr l1)))
-   (equal (get-cell (car l1) (subs-list-e (cdr l1) (cdr l2) (cdr l3) (cdr l4) mem)) 
+   (equal (get-cell (car l1) (subs-list-e (cdr l1) (cdr l2) (cdr l3) (cdr l4) mem))
 	  (get-cell (car l1) mem))))
 
 
@@ -4247,13 +4247,13 @@
    (not (member-equal-bool (nth idx l1) (firstn idx l1)))
    (not (member-equal-bool (nth idx l2) (firstn idx l1)))
    (not (member-equal-bool (nth idx l3) (firstn idx l1))))
-  (equal (sub-and-update 
+  (equal (sub-and-update
 	  (nth idx l1)
 	  (nth idx l2)
 	  (nth idx l3)
 	  (nth idx l4)
 	  (subs-list-e (firstn idx l1) (firstn idx l2) (firstn idx l3) (firstn idx l4) mem))
-	 (sub-and-update 
+	 (sub-and-update
 	  (nth idx l1)
 	  (nth idx l2)
 	  (nth idx l3)
@@ -4286,7 +4286,7 @@
    (in-range idx l4))
   (equal
    (get-cell (nth idx l1) (subs-list-e l1 l2 l3 l4 mem))
-   (sub-and-update 
+   (sub-and-update
      (nth idx l1)
      (nth idx l2)
      (nth idx l3)
@@ -4318,7 +4318,7 @@
 		 (:instance no-duplicates-all-implies-no-duplicates-one (idx1 gem1))
 		 (:instance no-duplicates-means-an-element-does-not-appear-after-its-position (l (nth gem1 ll)))
 		 if-el-does-not-appear-after-its-position-then-subs-list-e-produces-its-sub
-		 (:instance subs-list-decomp 
+		 (:instance subs-list-decomp
 			    (l1 (nth gem1 ll)) (l2 (nth gem2 ll)) (l3 (nth gem3 ll)))
 		 (:instance sub-and-update-independent-from-firstbn
 			    (l1 (nth gem1 ll)) (l2 (nth gem2 ll)) (l3 (nth gem3 ll)))))))
@@ -4333,7 +4333,7 @@
 		 (sub-and-update (car rtmvars1) (car rtmvars2) (car rtmvars3) (car rns) mem)))
      0 )
    ( t
-     (1+ (index-different-sub-and-updates 
+     (1+ (index-different-sub-and-updates
 	  (cdr rtmvarsres)
 	  (cdr rtmvars1)
 	  (cdr rtmvars2)
@@ -4344,11 +4344,11 @@
 
 (defthm if-bad-index-in-range-thne-must-be-nonsubandupdate
   (let ((bad-idx (index-different-sub-and-updates rtmvarsres rtmvars1 rtmvars2 rtmvars3 rns mem mem-after-sub)))
-    (implies 
-     (in-range bad-idx rtmvarsres) 
-     (not (equal 
+    (implies
+     (in-range bad-idx rtmvarsres)
+     (not (equal
 	   (get-cell (nth bad-idx rtmvarsres) mem-after-sub)
-           (sub-and-update 
+           (sub-and-update
 	    (nth bad-idx rtmvars1)
 	    (nth bad-idx rtmvars2)
 	    (nth bad-idx rtmvars3)
@@ -4377,33 +4377,33 @@
     (in-range gem2 ll)
     (in-range gem3 ll)
     (true-listp (nth gem1 ll)))
-   (equal-sub-and-updates (nth gem1 ll) (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem 
+   (equal-sub-and-updates (nth gem1 ll) (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem
     (subs-list-e (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem)))
   :hints (("Goal" :use (:instance rtm-variable-of-subs-list-e-is-sub-of-correspondent-variables
-				  (idx (index-different-sub-and-updates 
-					(nth gem1 ll) 
-					(nth gem1 ll) 
-					(nth gem2 ll) 
-					(nth gem3 ll) 
-					rns 
-					mem 
+				  (idx (index-different-sub-and-updates
+					(nth gem1 ll)
+					(nth gem1 ll)
+					(nth gem2 ll)
+					(nth gem3 ll)
+					rns
+					mem
 					(subs-list-e (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem)))))
-	  ("Goal'" :cases ( (in-range (index-different-sub-and-updates 
-				      (nth gem1 ll) 
-				      (nth gem1 ll) 
-				      (nth gem2 ll) 
-				      (nth gem3 ll) 
-				      rns 
-				      mem 
+	  ("Goal'" :cases ( (in-range (index-different-sub-and-updates
+				      (nth gem1 ll)
+				      (nth gem1 ll)
+				      (nth gem2 ll)
+				      (nth gem3 ll)
+				      rns
+				      mem
 				      (subs-list-e (nth gem1 ll) (nth gem2 ll) (nth gem3 ll) rns mem))
 				     (nth gem1 ll)) ) )
 	  ("Subgoal 1" :in-theory '((:definition in-range)
 				    (:rewrite if-bad-index-in-range-thne-must-be-nonsubandupdate)))
 	  ("Subgoal 2" :in-theory '((:rewrite if-bad-index-not-in-range-then-every-equalsubandupdate)))))
-	  
-				      
-	  
-	  
+
+
+
+
 (defthm any-element-of-make-list-does-not-appear-into-other-lists
  (implies
   (and
@@ -4415,18 +4415,18 @@
    (not (equal gem1 gem2))
    (equal (len (nth gem1 ll)) 1)
    (in-range idx (make-n-list (car (nth gem1 ll)) n)))
-  (not (member-equal-bool 
+  (not (member-equal-bool
 	(nth idx (make-n-list (car (nth gem1 ll)) n))
 	(nth gem2 ll))))
- :hints (("Goal" :use 
+ :hints (("Goal" :use
 	  (
-	   (:instance 
+	   (:instance
 	    el-of-makelist-is-el
-	    (el (car (nth gem1 ll))))	    
-	   (:instance generalized-disjunctivity-unordered-2 
+	    (el (car (nth gem1 ll))))
+	   (:instance generalized-disjunctivity-unordered-2
 		      (idx1 gem1) (idx2 gem2) (el1 (car (nth gem1 ll)))))))
  :otf-flg t)
- 
+
 (defthm firstns-do-not-cotain-el-of-make-n-list-if-diff
  (implies
   (and
@@ -4438,16 +4438,16 @@
    (not (equal gem1 gem2))
    (equal (len (nth gem1 ll)) 1)
    (in-range idx (make-n-list (car (nth gem1 ll)) n)))
-  (not (member-equal-bool 
+  (not (member-equal-bool
 	(nth idx (make-n-list (car (nth gem1 ll)) n))
 	(firstn idx (nth gem2 ll)))))
  :hints (("Goal" :use
 	  (
-	   (:instance no-member-holds-on-firstn 
+	   (:instance no-member-holds-on-firstn
 		      (el (nth idx (make-n-list (car (nth gem1 ll)) n)))
 		      (l (nth gem2 ll)))
 	   any-element-of-make-list-does-not-appear-into-other-lists))))
- 
+
 
 
 (defthm rtm-variable-of-subs-list-e-is-sub-of-correspondent-variables-when-var-3-is-boolean
@@ -4467,15 +4467,15 @@
     (in-range idx (make-n-list (car (nth gem3 ll)) n))
     (in-range idx rns))
    (equal
-    (get-cell (nth idx (nth gem1 ll)) 
-	      (subs-list-e 
-	       (nth gem1 ll) 
-	       (nth gem2 ll) 
+    (get-cell (nth idx (nth gem1 ll))
+	      (subs-list-e
+	       (nth gem1 ll)
+	       (nth gem2 ll)
 	       (make-n-list (car (nth gem3 ll)) n)
 	       rns mem))
-    (sub-and-update 
-     (nth idx (nth gem1 ll)) 
-     (nth idx (nth gem2 ll)) 
+    (sub-and-update
+     (nth idx (nth gem1 ll))
+     (nth idx (nth gem2 ll))
      (nth idx (make-n-list (car (nth gem3 ll)) n))
      (nth idx rns) mem)))
   :hints (("Goal" :in-theory (disable sub-and-update)
@@ -4483,17 +4483,17 @@
 		 (:instance firstns-do-not-cotain-el-of-make-n-list-if-diff (gem1 gem3) (gem2 gem1))
 		 (:instance no-duplicates-all-implies-no-duplicates-one (idx1 gem1))
 		 (:instance no-duplicates-means-an-element-does-not-appear-after-its-position (l (nth gem1 ll)))
-		 (:instance subs-list-decomp 
-			    (l1 (nth gem1 ll)) 
-			    (l2 (nth gem2 ll)) 
+		 (:instance subs-list-decomp
+			    (l1 (nth gem1 ll))
+			    (l2 (nth gem2 ll))
 			    (l3 (make-n-list (car (nth gem3 ll)) n))
-			    (l4 rns))			    
+			    (l4 rns))
 		 (:instance sub-and-update-independent-from-firstbn
-			    (l1 (nth gem1 ll)) 
-			    (l2 (nth gem2 ll)) 
+			    (l1 (nth gem1 ll))
+			    (l2 (nth gem2 ll))
 			    (l3 (make-n-list (car (nth gem3 ll)) n))
 			    (l4 rns))))))
-				
+
 (defthm rtm-variable-of-subs-list-e-is-sub-of-correspondent-variables-when-var-2-is-boolean
   (implies
    (and
@@ -4511,33 +4511,33 @@
     (in-range idx (make-n-list (car (nth gem2 ll)) n))
     (in-range idx rns))
    (equal
-    (get-cell (nth idx (nth gem1 ll)) 
-	      (subs-list-e 
-	       (nth gem1 ll) 
+    (get-cell (nth idx (nth gem1 ll))
+	      (subs-list-e
+	       (nth gem1 ll)
 	       (make-n-list (car (nth gem2 ll)) n)
-	       (nth gem3 ll) 
+	       (nth gem3 ll)
 	       rns mem))
-    (sub-and-update 
-     (nth idx (nth gem1 ll)) 
+    (sub-and-update
+     (nth idx (nth gem1 ll))
      (nth idx (make-n-list (car (nth gem2 ll)) n))
-     (nth idx (nth gem3 ll)) 
+     (nth idx (nth gem3 ll))
      (nth idx rns) mem)))
   :hints (("Goal" :in-theory (disable sub-and-update)
 	   :use (
 		 (:instance firstns-do-not-cotain-el-of-make-n-list-if-diff (gem1 gem2) (gem2 gem1))
 		 (:instance no-duplicates-all-implies-no-duplicates-one (idx1 gem1))
 		 (:instance no-duplicates-means-an-element-does-not-appear-after-its-position (l (nth gem1 ll)))
-		 (:instance subs-list-decomp 
-			    (l1 (nth gem1 ll)) 
+		 (:instance subs-list-decomp
+			    (l1 (nth gem1 ll))
 			    (l2 (make-n-list (car (nth gem2 ll)) n))
-			    (l3 (nth gem3 ll)) 
-			    (l4 rns))			    
+			    (l3 (nth gem3 ll))
+			    (l4 rns))
 		 (:instance sub-and-update-independent-from-firstbn
-			    (l1 (nth gem1 ll)) 
+			    (l1 (nth gem1 ll))
 			    (l2 (make-n-list (car (nth gem2 ll)) n))
-			    (l3 (nth gem3 ll)) 
+			    (l3 (nth gem3 ll))
 			    (l4 rns))))))
-				
+
 (defthm rtm-variable-of-subs-list-e-is-sub-of-correspondent-variables-when-var-2and3-are-boolean
   (implies
    (and
@@ -4557,14 +4557,14 @@
     (in-range idx (make-n-list (car (nth gem3 ll)) n))
     (in-range idx rns))
    (equal
-    (get-cell (nth idx (nth gem1 ll)) 
-	      (subs-list-e 
-	       (nth gem1 ll) 
+    (get-cell (nth idx (nth gem1 ll))
+	      (subs-list-e
+	       (nth gem1 ll)
 	       (make-n-list (car (nth gem2 ll)) n)
 	       (make-n-list (car (nth gem3 ll)) n)
 	       rns mem))
-    (sub-and-update 
-     (nth idx (nth gem1 ll)) 
+    (sub-and-update
+     (nth idx (nth gem1 ll))
      (nth idx (make-n-list (car (nth gem2 ll)) n))
      (nth idx (make-n-list (car (nth gem3 ll)) n))
      (nth idx rns) mem)))
@@ -4574,17 +4574,17 @@
 		 (:instance firstns-do-not-cotain-el-of-make-n-list-if-diff (gem1 gem3) (gem2 gem1))
 		 (:instance no-duplicates-all-implies-no-duplicates-one (idx1 gem1))
 		 (:instance no-duplicates-means-an-element-does-not-appear-after-its-position (l (nth gem1 ll)))
-		 (:instance subs-list-decomp 
-			    (l1 (nth gem1 ll)) 
+		 (:instance subs-list-decomp
+			    (l1 (nth gem1 ll))
 			    (l2 (make-n-list (car (nth gem2 ll)) n))
-			    (l3 (make-n-list (car (nth gem3 ll)) n)) 
-			    (l4 rns))			    
+			    (l3 (make-n-list (car (nth gem3 ll)) n))
+			    (l4 rns))
 		 (:instance sub-and-update-independent-from-firstbn
-			    (l1 (nth gem1 ll)) 
+			    (l1 (nth gem1 ll))
 			    (l2 (make-n-list (car (nth gem2 ll)) n))
 			    (l3 (make-n-list (car (nth gem3 ll)) n))
 			    (l4 rns))))))
-				
+
 
 
 
@@ -4604,14 +4604,14 @@
     (in-range idx (eventually-make-list (nth gem3 ll) n))
     (in-range idx rns))
    (equal
-    (get-cell (nth idx (nth gem1 ll)) 
-	      (subs-list-e 
-	       (nth gem1 ll) 
+    (get-cell (nth idx (nth gem1 ll))
+	      (subs-list-e
+	       (nth gem1 ll)
 	       (eventually-make-list (nth gem2 ll) n)
 	       (eventually-make-list (nth gem3 ll) n)
 	       rns mem))
-    (sub-and-update 
-     (nth idx (nth gem1 ll)) 
+    (sub-and-update
+     (nth idx (nth gem1 ll))
      (nth idx (eventually-make-list (nth gem2 ll) n))
      (nth idx (eventually-make-list (nth gem3 ll) n))
      (nth idx rns) mem)))
@@ -4648,39 +4648,39 @@
     (in-range gem2 ll)
     (in-range gem3 ll)
     (true-listp (nth gem1 ll)))
-   (equal-sub-and-updates 
-    (nth gem1 ll) 
-    (nth gem1 ll) 
+   (equal-sub-and-updates
+    (nth gem1 ll)
+    (nth gem1 ll)
     (eventually-make-list (nth gem2 ll) n)
     (eventually-make-list (nth gem3 ll) n)
-    rns mem 
-    (subs-list-e 
-     (nth gem1 ll) 
+    rns mem
+    (subs-list-e
+     (nth gem1 ll)
      (eventually-make-list (nth gem2 ll) n)
      (eventually-make-list (nth gem3 ll) n)
      rns mem)))
   :hints (("Goal" :use (:instance rtm-variable-of-subs-list-e-is-sub-of-correspondent-variables-with-all-vars-types
-				  (idx (index-different-sub-and-updates 
-					(nth gem1 ll) 
-					(nth gem1 ll) 
+				  (idx (index-different-sub-and-updates
+					(nth gem1 ll)
+					(nth gem1 ll)
 					(eventually-make-list (nth gem2 ll) n)
 					(eventually-make-list (nth gem3 ll) n)
-					rns 
-					mem 
-					(subs-list-e 
-					 (nth gem1 ll) 
+					rns
+					mem
+					(subs-list-e
+					 (nth gem1 ll)
 					 (eventually-make-list (nth gem2 ll) n)
 					 (eventually-make-list (nth gem3 ll) n)
 					 rns mem)))))
-	  ("Goal'" :cases ( (in-range (index-different-sub-and-updates 
-				      (nth gem1 ll) 
-				      (nth gem1 ll) 
+	  ("Goal'" :cases ( (in-range (index-different-sub-and-updates
+				      (nth gem1 ll)
+				      (nth gem1 ll)
 				      (eventually-make-list (nth gem2 ll) n)
 				      (eventually-make-list (nth gem3 ll) n)
-				      rns 
-				      mem 
-				      (subs-list-e 
-				       (nth gem1 ll) 
+				      rns
+				      mem
+				      (subs-list-e
+				       (nth gem1 ll)
 				       (eventually-make-list (nth gem2 ll) n)
 				       (eventually-make-list (nth gem3 ll) n)
 				       rns mem))
@@ -4688,7 +4688,7 @@
 	  ("Subgoal 1" :in-theory '((:definition in-range)
 		       		    (:rewrite if-bad-index-in-range-thne-must-be-nonsubandupdate)))
 	  ("Subgoal 2" :in-theory '((:rewrite if-bad-index-not-in-range-then-every-equalsubandupdate)))))
-	  
+
 
 
 (defthm lemma2-only-subs-in-rtm-sub
@@ -4701,7 +4701,7 @@
     (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub)
     (good-translation-gem-rtm gstate rstate m))
    (all-rtm-subs-for-n-steps rstate (len *rns*)))
-  :hints (("Goal" :expand 
+  :hints (("Goal" :expand
 	   ( (good-translation-gem-rtm gstate rstate m)
 	     (gem-statep gstate)
 	     (rtm-statep rstate)
@@ -4710,7 +4710,7 @@
 	   :in-theory nil))
   :rule-classes nil)
 
-	
+
 (defthm cells-untouched-by-execute-on-other-cell-sub
  (implies
   (and
@@ -4722,7 +4722,7 @@
    (not (member-equal-bool v (listpars1 st n))))
   (equal (get-cell v (mem st))
 	 (get-cell v (mem (execute-n-instructions st n)))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :use (execute-n-instructions-tantamount-to-sub-list-e
 		(:instance not-in-list-untouched-by-subs-list-e
 				  (v v)
@@ -4741,7 +4741,7 @@
     (rtm-statep rstate)
     (good-translation-gem-rtm gstate rstate m)
     (in-range (pcc gstate) (code gstate))
-    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)  
+    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)
     (true-listp m)
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
@@ -4752,9 +4752,9 @@
   :hints (("Goal" :in-theory (current-theory 'ground-zero)
 	   :expand (     (in-range (pcc gstate) (code gstate))
 			 (good-translation-gem-rtm gstate rstate m) )
-	   :use ( 
+	   :use (
 		 (:instance lemma1-different-vars-do-not-belong  (gvar2 (par1 (nth (pcc gstate) (code gstate)))))
-		 (:instance cells-untouched-by-execute-on-other-cell-sub (st rstate) (n (len *rns*)) 
+		 (:instance cells-untouched-by-execute-on-other-cell-sub (st rstate) (n (len *rns*))
 			    (v (nth idx1 (rtmintvars-i gvar1 m))))))))
 
 (defthm rtm-variables-of-other-cell-untouched-sub
@@ -4765,24 +4765,24 @@
     (rtm-statep rstate)
     (good-translation-gem-rtm gstate rstate m)
     (in-range (pcc gstate) (code gstate))
-    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)   
+    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)
     (true-listp m)
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
-    (true-listp (rtmintvars-i gvar1 m))                         
+    (true-listp (rtmintvars-i gvar1 m))
     (not (equal gvar1 (par1 (nth (pcc gstate) (code gstate))))))
    (equal-get-cells
           (rtmintvars-i gvar1 m) (mem rstate) (mem (execute-n-instructions rstate (len *rns*)))))
   :hints (("Goal" :in-theory nil
-	   :use ( (:instance rtm-variable-of-other-cell-untouched-sub 
-			     (idx1 (idx-different-cell 
-				    (rtmintvars-i gvar1 m) 
-				    (mem rstate) 
+	   :use ( (:instance rtm-variable-of-other-cell-untouched-sub
+			     (idx1 (idx-different-cell
+				    (rtmintvars-i gvar1 m)
+				    (mem rstate)
 				    (mem (execute-n-instructions rstate (len *rns*)))))) ))
 	  ("Goal'" :cases ( (in-range
-			     (idx-different-cell 
-				    (rtmintvars-i gvar1 m) 
-				    (mem rstate) 
+			     (idx-different-cell
+				    (rtmintvars-i gvar1 m)
+				    (mem rstate)
 				    (mem (execute-n-instructions rstate (len *rns*))))
 			     (rtmintvars-i gvar1 m))))
 	  ("Subgoal 2" :in-theory '((:rewrite if-bad-index-not-in-range-then-every-equal)))
@@ -4791,7 +4791,7 @@
 
 
 
-(defthm properies-of-type-and-existence-of-current-args-sub 
+(defthm properies-of-type-and-existence-of-current-args-sub
  (implies
   (and
    (gem-statep gstate)
@@ -4803,29 +4803,29 @@
    (assoc-equal (par2 (nth (pcc gstate) (code gstate))) (mem gstate))
    (assoc-equal (par3 (nth (pcc gstate) (code gstate))) (mem gstate))))
   :hints (("Goal" :in-theory (enable get-cell)
-	   :use (:instance in-range-instruction-is-gem-instruction 
-			   (pcc (pcc gstate)) 
+	   :use (:instance in-range-instruction-is-gem-instruction
+			   (pcc (pcc gstate))
 			   (code (code gstate))
 			   (mem (mem gstate)))))
   :rule-classes nil)
 
 
-(defthm par1-of-current-instruction-is-into-mapping-sub 
+(defthm par1-of-current-instruction-is-into-mapping-sub
  (implies
   (and
    (vars-inclusion (mem gstate) m)
    (gem-statep gstate)
-   (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub)  
+   (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub)
    (in-range (pcc gstate) (code gstate)))
   (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m))
  :hints (("Goal" :in-theory (enable get-cell)
 	 :use (properies-of-type-and-existence-of-current-args-sub
-	       (:instance inclusion-trans 
+	       (:instance inclusion-trans
 			  (v (par1 (nth (pcc gstate) (code gstate))))
 			  (m1 (mem gstate))
 			  (m2 m))
-	       (:instance in-range-instruction-is-gem-instruction 
-				 (pcc (pcc gstate)) 
+	       (:instance in-range-instruction-is-gem-instruction
+				 (pcc (pcc gstate))
 				 (code (code gstate))
 				 (mem (mem gstate)))))))
 
@@ -4847,7 +4847,7 @@
    (m-correspondent-values-p m (mem gstate) (mem rstate))
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))
    (correct-wrt-arity m (mem gstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (mem (execute-instruction gstate)))
    (rtmintvars-i gvar1 m)
    (mem (execute-n-instructions rstate (len *rns*)))
@@ -4863,7 +4863,7 @@
 		(:instance in-range (idx (pcc rstate)) (l (code rstate)))
 		rtm-variables-of-other-cell-untouched-sub
 		teorema-main-con-pcc-in-range-su-variabile-non-interessata
-		(:instance equal-get-cells-implies-equal-values-and-attributes-still-works	
+		(:instance equal-get-cells-implies-equal-values-and-attributes-still-works
 			   (gemcell (get-cell gvar1 (mem gstate)))
 			   (lcell (rtmintvars-i gvar1 m))
 			   (mem1 (mem rstate))
@@ -4882,13 +4882,13 @@
    (good-translation-gem-rtm gstate rstate m))
   (equal
    (mem (execute-n-instructions rstate (len *rns*)))
-   (subs-list-e 
+   (subs-list-e
     (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m)
     (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*)) ;new
     (eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*)) ;new
     *rns*
     (mem rstate))))
-  :hints (("Goal" 	   
+  :hints (("Goal"
 	   :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range)))
 	   :use (good-translation-gem-rtm
 		 lemma2-only-subs-in-rtm-sub
@@ -4905,13 +4905,13 @@
    (and
     (vars-inclusion (mem gstate) m)
     (gem-statep gstate)
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub) 
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub)
     (in-range (pcc gstate) (code gstate)))
    (and
     (in-range (pos-equal-0 (par1 (nth (pcc gstate) (code gstate))) m) m)
     (in-range (pos-equal-0 (par2 (nth (pcc gstate) (code gstate))) m) m)
     (in-range (pos-equal-0 (par3 (nth (pcc gstate) (code gstate))) m) m)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use (properies-of-type-and-existence-of-current-args-sub
 			(:instance inclusion-trans (m1 (mem gstate)) (m2 m)
 				   (v (par1 (nth (pcc gstate) (code gstate)))))
@@ -4929,7 +4929,7 @@
 				   (el (par3 (nth (pcc gstate) (code gstate))))
 				   (l m)))))
    :rule-classes nil)
-   
+
 (defthm eqlenss-sub
   (implies
    (and
@@ -4937,15 +4937,15 @@
     (rtm-statep rstate)
     (in-range (pcc gstate) (code gstate))
     (in-range (pcc rstate) (code rstate))
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub) 
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub)
     (good-translation-gem-rtm gstate rstate m))
    (and
     (equal (len (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m)) (len *rns*))
-    (equal (len (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*))) (len *rns*))    
+    (equal (len (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*))) (len *rns*))
     (equal (len (eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*))) (len *rns*))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range)))
-	   :use 
+	   :use
 	   (
 	    good-translation-gem-rtm
 	    (:instance length-of-listpars1-n-is-n (st rstate) (n (len *rns*)))
@@ -4953,10 +4953,10 @@
 	    (:instance length-of-listpars3-n-is-n (st rstate) (n (len *rns*))))))
   :rule-classes nil)
 
-  
+
 (defthm equal-sub-and-updates-after-n-instr
   (implies
-   (and  
+   (and
     (true-listp m)
     (correct-wrt-arity m (mem gstate))
     (gem-statep gstate)
@@ -4969,22 +4969,22 @@
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
     (equal gvar1 (par1 (nth (pcc gstate) (code gstate)))))
-   (equal-sub-and-updates 
+   (equal-sub-and-updates
     (rtmintvars-i gvar1 m)
     (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m)
     (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*)) ;new
     (eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*)) ;new
-    *rns* 
-    (mem rstate) 
+    *rns*
+    (mem rstate)
     (mem (execute-n-instructions rstate (len *rns*)))))
-  :hints (("Goal" 
-	   :in-theory (union-theories (current-theory 'ground-zero) 
+  :hints (("Goal"
+	   :in-theory (union-theories (current-theory 'ground-zero)
 				      '((:type-prescription retrieve-rtmvars)
 					(:definition positive-list)
 					(:definition positivep)
 					(:definition in-range)))
 	   :use
-	   ( 
+	   (
 	     (:instance correct-wrt-arity-has-rtmintvars-i-tl (mem (mem gstate)))
 	     (:instance sub-and-updates-holding-for-every-variable-type
 			(n (len *rns*))
@@ -5020,7 +5020,7 @@
     (equal gvar3 (par3 (nth (pcc gstate) (code gstate)))))
    (equal (get-cell gvar1 (mem (execute-instruction gstate)))
 	  (sub-and-update-norest gvar1 gvar2 gvar3 (mem gstate))))
-  :hints (("Goal" :in-theory (e/d (put-cell get-cell) 
+  :hints (("Goal" :in-theory (e/d (put-cell get-cell)
 				  (par1 par2 par3 par4 opcode pcc code nth gem-instruction-list-p
 					gen-eq-update sub-and-update sub-and-update sub-and-update-norest sub-and-update-norest))))
   :rule-classes nil)
@@ -5029,13 +5029,13 @@
 (DEFTHM mem-cellity-of-current-gem-args-sub
   (IMPLIES
    (AND (GEM-STATEP GSTATE)
-	(equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub) 
+	(equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub)
 	(IN-RANGE (PCC GSTATE) (CODE GSTATE)))
    (AND (is-mem-cell-p (get-cell  (PAR1 (NTH (PCC GSTATE) (CODE GSTATE))) (mem gstate)))
 	(is-mem-cell-p (get-cell  (PAR2 (NTH (PCC GSTATE) (CODE GSTATE))) (mem gstate)))
 	(is-mem-cell-p (get-cell  (PAR3 (NTH (PCC GSTATE) (CODE GSTATE))) (mem gstate)))))
   :HINTS
-  (("Goal" 
+  (("Goal"
     :USE
     (:INSTANCE IN-RANGE-INSTRUCTION-IS-GEM-INSTRUCTION
 	       (PCC (PCC GSTATE))
@@ -5043,7 +5043,7 @@
 	       (MEM (MEM GSTATE))))))
 
 
- 
+
 (defthm type-is-for-pars-sub
  (implies
    (and
@@ -5051,13 +5051,13 @@
     (vars-inclusion (mem gstate) m)
     (gem-statep gstate)
     (correct-wrt-arity m (mem gstate))
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub) 
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-sub)
     (equal gvar1 (par1 (nth (pcc gstate) (code gstate))))
     (equal gvar2 (par2 (nth (pcc gstate) (code gstate))))
     (equal gvar3 (par3 (nth (pcc gstate) (code gstate))))
     (in-range (pcc gstate) (code gstate)))
    (equal (type-i gvar1 m) 'int))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable type-i-is-type-expected rtmintvars-i-is-pos-equal-0-of-retrieve-vars)
 	  :use ( properies-of-type-and-existence-of-current-args-sub
 		 (:instance type-i-is-vartyper (gvar1 gvar1))
@@ -5071,7 +5071,7 @@
 			    (v (par3 (nth (pcc gstate) (code gstate))))))))
  :rule-classes nil)
 
-   
+
 (defthm m-correspondence-kept-on-same-gvar-sub
   (implies
    (and
@@ -5088,16 +5088,16 @@
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (mem (execute-instruction gstate)))
    (rtmintvars-i gvar1 m)
    (mem (execute-n-instructions rstate (len *rns*)))
    (type-i gvar1 m)))
   :hints (("Goal"  :in-theory nil
-	   :use ( 
+	   :use (
 		 properies-of-type-and-existence-of-current-args-sub
 		 mem-cellity-of-current-gem-args-sub
-		 good-translation-gem-rtm 
+		 good-translation-gem-rtm
 		 (:instance type-i-is-vartyper (gvar1 gvar1) (mem (mem gstate)))
 		 (:instance type-i-is-vartyper (gvar1 (par2 (nth (pcc gstate) (code gstate)))) (mem (mem gstate)))
 		 (:instance type-i-is-vartyper (gvar1 (par3 (nth (pcc gstate) (code gstate)))) (mem (mem gstate)))
@@ -5116,18 +5116,18 @@
 		   (gvar3 (par3 (nth (pcc gstate) (code gstate))))
 		   )
 		  eqlenss-sub
-		  (:instance correct-wrt-arity-has-rtmintvars-i-tl (mem (mem gstate)))			     
+		  (:instance correct-wrt-arity-has-rtmintvars-i-tl (mem (mem gstate)))
 		  (:instance type-is-for-pars-sub
 		   (gvar2 (par2 (nth (pcc gstate) (code gstate))))
 		   (gvar3 (par3 (nth (pcc gstate) (code gstate)))))
 		  (:instance m-correspondent-values-implies-equal-values-and-attribus
-			     (memgstate (mem gstate)) (memrstate (mem rstate)) 
+			     (memgstate (mem gstate)) (memrstate (mem rstate))
 			     (gvar1 gvar1))
 		  (:instance m-correspondent-values-implies-equal-values-and-attribus
-			     (memgstate (mem gstate)) (memrstate (mem rstate)) 
+			     (memgstate (mem gstate)) (memrstate (mem rstate))
 			     (gvar1 (par2 (nth (pcc gstate) (code gstate)))))
 		  (:instance m-correspondent-values-implies-equal-values-and-attribus
-			     (memgstate (mem gstate)) (memrstate (mem rstate)) 
+			     (memgstate (mem gstate)) (memrstate (mem rstate))
 			     (gvar1 (par3 (nth (pcc gstate) (code gstate)))))
 		  equal-sub-and-updates-after-n-instr
 		  (:instance
@@ -5158,7 +5158,7 @@
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (mem (execute-instruction gstate)))
    (rtmintvars-i gvar1 m)
    (mem (execute-n-instructions rstate (len *rns*)))
@@ -5184,12 +5184,12 @@
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (in-range idx m)
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell (car (nth idx m)) (mem (execute-instruction gstate)))
-   (cdr (nth idx m)) 
+   (cdr (nth idx m))
    (mem (execute-n-instructions rstate (len *rns*)))
-   (type-i-idx m idx)))   
-  :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range))) 
+   (type-i-idx m idx)))
+  :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero) '((:definition in-range)))
 	   :use ( (:theorem
 		   (implies
 		    (and
@@ -5220,12 +5220,12 @@
     (in-range (pcc rstate) (code rstate))
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
-  (m-correspondent-values-p 
-   m 
+  (m-correspondent-values-p
+   m
    (mem (execute-instruction gstate))
    (mem (execute-n-instructions rstate (len *rns*)))))
   :hints (("Goal" :use (:instance equal-values-correspondence-kept-by-any-execution-idxed-sub
-				  (idx (bad-idx-eqv-va m 
+				  (idx (bad-idx-eqv-va m
 						       (mem (execute-instruction gstate))
 						       (mem (execute-n-instructions rstate (len *rns*)))))))
 	  ("Goal'" :cases ( (in-range (bad-idx-eqv-va m (mem (execute-instruction gstate))
@@ -5262,18 +5262,18 @@
     (correct-wrt-arity m (mem (execute-instruction gstate)))
     (vars-inclusion (mem (execute-instruction gstate)) m)
     (vars-inclusion m (mem (execute-instruction gstate)))
-    (m-correspondent-values-p 
-     m 
+    (m-correspondent-values-p
+     m
      (mem (execute-instruction gstate))
      (mem (execute-n-instructions rstate (len *rns*))))))
-:hints (("Goal" 
-	 :in-theory (disable 
+:hints (("Goal"
+	 :in-theory (disable
 		     rtm-statep gem-statep
-		     pcc code opcode 
-		     execute-instruction rtmintvars-i par1 par2 par3 nth len member-equal) 
-	 :use 
+		     pcc code opcode
+		     execute-instruction rtmintvars-i par1 par2 par3 nth len member-equal)
+	 :use
 	 (m-correspondence-kept-by-any-execution-idxed-sub
-	  good-translation-gem-rtm 
+	  good-translation-gem-rtm
 	  (:instance execute-n-instructions-keeps-rtm-state-and-points-to-good
 		     (st rstate) (n (len *rns*)))
 	  (:instance executing-gem-instruction-retrieves-a-gem-state-from-gem-state (st gstate))
@@ -5283,7 +5283,7 @@
 
 
 
- 
+
 
 
 
@@ -5292,7 +5292,7 @@
 
 
 (defthm listinstr-of-2-unfolding-f
- (equal 
+ (equal
   (listinstr st 2)
   (list
    (nth (pcc st) (code st))
@@ -5303,16 +5303,16 @@
 		 (:instance listinstr (st (execute-instruction st)) (n 1))
 		 (:instance listinstr (st (execute-instruction (execute-instruction st))) (n 0))))))
 
-   
+
 
 (defthm listinstr-of-2-has-the-two-instructions
  (implies
   (equal (listinstr st 2)
 	 (rtm-eq-and v1 v2 tmp res))
   (and
-   (equal (nth (pcc st) (code st))  
+   (equal (nth (pcc st) (code st))
 	  (list 'rtm-equ tmp v1 v2))
-   (equal (nth (pcc (execute-instruction st)) (code (execute-instruction st))) 
+   (equal (nth (pcc (execute-instruction st)) (code (execute-instruction st)))
 	  (list 'rtm-and res tmp res))))
  :hints (("Goal" :in-theory (current-theory 'ground-zero)
 	  :use (rtm-eq-and
@@ -5326,16 +5326,16 @@
    (equal (opcode (nth (pcc st) (code st))) 'rtm-equ)
    (equal (par1   (nth (pcc st) (code st)))        tmp)
    (equal (par2   (nth (pcc st) (code st)))        v1)
-   (equal (par3   (nth (pcc st) (code st)))        v2)   
+   (equal (par3   (nth (pcc st) (code st)))        v2)
    (equal (opcode (nth (pcc (execute-instruction st)) (code (execute-instruction st)))) 'rtm-and)
    (equal (par1   (nth (pcc (execute-instruction st)) (code (execute-instruction st)))) res)
    (equal (par2   (nth (pcc (execute-instruction st)) (code (execute-instruction st)))) tmp)
    (equal (par3   (nth (pcc (execute-instruction st)) (code (execute-instruction st)))) res)))
- :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero) 
+ :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero)
 					    '((:definition par1)
 					      (:definition par2)
 					      (:definition par3)
-					      (:definition opcode))) 
+					      (:definition opcode)))
 	  :use (listinstr-of-2-has-the-two-instructions
 		(:instance
 		 (:theorem  (and
@@ -5365,9 +5365,9 @@
   (equal (listinstr st 2)
 	 (rtm-eq-or v1 v2 tmp res))
   (and
-   (equal (nth (pcc st) (code st))  
+   (equal (nth (pcc st) (code st))
 	  (list 'rtm-equ tmp v1 v2))
-   (equal (nth (pcc (execute-instruction st)) (code (execute-instruction st))) 
+   (equal (nth (pcc (execute-instruction st)) (code (execute-instruction st)))
 	  (list 'rtm-or res tmp tmp))))
  :hints (("Goal" :in-theory (current-theory 'ground-zero)
 	  :use (rtm-eq-or
@@ -5381,16 +5381,16 @@
    (equal (opcode (nth (pcc st) (code st)))   'rtm-equ)
    (equal (par1   (nth (pcc st) (code st)))        tmp)
    (equal (par2   (nth (pcc st) (code st)))         v1)
-   (equal (par3   (nth (pcc st) (code st)))         v2)   
+   (equal (par3   (nth (pcc st) (code st)))         v2)
    (equal (opcode (nth (pcc (execute-instruction st)) (code (execute-instruction st)))) 'rtm-or)
    (equal (par1   (nth (pcc (execute-instruction st)) (code (execute-instruction st)))) res)
    (equal (par2   (nth (pcc (execute-instruction st)) (code (execute-instruction st)))) tmp)
    (equal (par3   (nth (pcc (execute-instruction st)) (code (execute-instruction st)))) tmp)))
- :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero) 
+ :hints (("Goal" :in-theory (union-theories (current-theory 'ground-zero)
 					    '((:definition par1)
 					      (:definition par2)
 					      (:definition par3)
-					      (:definition opcode))) 
+					      (:definition opcode)))
 	  :use (listinstr-of-2-or-the-two-instructions
 		(:instance
 		 (:theorem  (and
@@ -5423,18 +5423,18 @@
 	  (rtm-eq-and v1 v2 tmp res))
     (equal (execute-instruction st)
 	   (generic-eql tmp v1 v2 st)))
-  :hints (("Goal" 
-	   :in-theory '((:definition execute-instruction)) 
+  :hints (("Goal"
+	   :in-theory '((:definition execute-instruction))
 	   :use (listinstr-of-2-has-the-two-opcodes))))
 
 (defthm two-steps-of-execution
  (implies
    (equal (listinstr st 2)
-	  (rtm-eq-and v1 v2 tmp res))   
+	  (rtm-eq-and v1 v2 tmp res))
     (equal (execute-instruction (execute-instruction st))
 	   (rtm-and res tmp res (generic-eql tmp v1 v2 st))))
-  :hints (("Goal" 
-	   :in-theory '((:definition execute-instruction)) 
+  :hints (("Goal"
+	   :in-theory '((:definition execute-instruction))
 	   :use (listinstr-of-2-has-the-two-opcodes))))
 
 
@@ -5463,7 +5463,7 @@
 	 (get-cell vx1 (mem st))))
  :hints (("Goal" :in-theory (disable execute-instruction     ; (See note above.)
                                      two-steps-of-execution  ; (See note above.)
-                                     opcode one-steps-of-execution;par1 par2 par3 pcc code 
+                                     opcode one-steps-of-execution;par1 par2 par3 pcc code
 				     gem-add gem-sub rtm-add rtm-sub and-update gen-eq-update)
 	  :use (two-steps-of-execution))))
 
@@ -5478,7 +5478,7 @@
   (equal
    (var-values listvars1 (mem st))
    (var-values listvars1 (mem (execute-instruction (execute-instruction st))))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :induct    (var-values listvars1 (mem st))
 	  :in-theory (disable listinstr-of-2-unfolding-f
 			      two-steps-of-execution execute-instruction one-steps-of-execution))
@@ -5496,15 +5496,15 @@
    (not (equal res v2))
    (not (equal tmp res)))
   (equal (var-value (get-cell res (mem (rtm-and res tmp res (generic-eql tmp v1 v2 st)))))
-	 (boolean-to-int 
-	  (and 
-	   (int-to-bool 
+	 (boolean-to-int
+	  (and
+	   (int-to-bool
 	    (boolean-to-int (equal (var-value (get-cell v1 (mem st)))
 				   (var-value (get-cell v2 (mem st))))))
 	   (int-to-bool (var-value (get-cell res (mem st))))))))
- :hints (("Goal" 
-	  :in-theory (e/d 
-	  (make-cell put-cell get-cell var-value) 
+ :hints (("Goal"
+	  :in-theory (e/d
+	  (make-cell put-cell get-cell var-value)
 	  (opcode one-steps-of-execution execute-instruction
 		  int-to-bool boolean-to-int
 		  gem-add gem-sub rtm-add rtm-sub )))))
@@ -5516,18 +5516,18 @@
 	  (rtm-eq-or v1 v2 tmp res))
     (equal (execute-instruction st)
 	   (generic-eql tmp v1 v2 st)))
-  :hints (("Goal" 
-	   :in-theory '((:definition execute-instruction)) 
+  :hints (("Goal"
+	   :in-theory '((:definition execute-instruction))
 	   :use (listinstr-of-2-or-has-the-two-opcodes))))
 
 (defthm two-steps-of-execution-or
  (implies
    (equal (listinstr st 2)
-	  (rtm-eq-or v1 v2 tmp res))   
+	  (rtm-eq-or v1 v2 tmp res))
     (equal (execute-instruction (execute-instruction st))
 	   (rtm-or res tmp tmp (generic-eql tmp v1 v2 st))))
-  :hints (("Goal" 
-	   :in-theory '((:definition execute-instruction)) 
+  :hints (("Goal"
+	   :in-theory '((:definition execute-instruction))
 	   :use (listinstr-of-2-or-has-the-two-opcodes))))
 
 
@@ -5542,7 +5542,7 @@
 	 (get-cell vx1 (mem st))))
  :hints (("Goal" :in-theory (disable execute-instruction       ; (See note above.)
                                      two-steps-of-execution-or ; (See note above.)
-                                     opcode one-steps-of-execution-or ;par1 par2 par3 pcc code 
+                                     opcode one-steps-of-execution-or ;par1 par2 par3 pcc code
 				     gem-add gem-sub rtm-add rtm-sub and-update gen-eq-update or-update)
 	  :use (two-steps-of-execution-or))))
 
@@ -5557,7 +5557,7 @@
   (equal
    (var-values listvars1 (mem st))
    (var-values listvars1 (mem (execute-instruction (execute-instruction st))))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :induct    (var-values listvars1 (mem st))
 	  :in-theory (disable listinstr-of-2-unfolding-f
 			      two-steps-of-execution-or execute-instruction one-steps-of-execution-or))
@@ -5575,14 +5575,14 @@
    (not (equal res v2))
    (not (equal tmp res)))
   (equal (var-value (get-cell res (mem (rtm-or res tmp tmp (generic-eql tmp v1 v2 st)))))
-	 (boolean-to-int 
+	 (boolean-to-int
 	  (equal (var-value (get-cell v1 (mem st)))
 		 (var-value (get-cell v2 (mem st)))))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :use (:theorem
 		(equal
-		 (or 
-		  (int-to-bool 
+		 (or
+		  (int-to-bool
 		   (boolean-to-int (equal (var-value (get-cell v1 (mem st)))
 					  (var-value (get-cell v2 (mem st))))))
 		  (int-to-bool
@@ -5590,8 +5590,8 @@
 					  (var-value (get-cell v2 (mem st)))))))
 		 (equal (var-value (get-cell v1 (mem st)))
 			(var-value (get-cell v2 (mem st))))))
-	  :in-theory (e/d 
-	  (make-cell put-cell get-cell var-value) 
+	  :in-theory (e/d
+	  (make-cell put-cell get-cell var-value)
 	  (opcode one-steps-of-execution-or execute-instruction
 		  int-to-bool boolean-to-int
 		  gem-add gem-sub rtm-add rtm-sub )))))
@@ -5599,12 +5599,12 @@
 
 
 (defthm execute-instruction-2-unfolding
-  (equal 
-   (execute-n-instructions st 2) 
+  (equal
+   (execute-n-instructions st 2)
    (execute-instruction (execute-instruction st)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (current-theory 'ground-zero)
-	   :use 
+	   :use
 	   ((:instance execute-n-instructions (n 2))
 	    (:instance execute-n-instructions (st (execute-instruction st)) (n 1))
 	    (:instance execute-n-instructions (st (execute-instruction (execute-instruction st))) (n 0))))))
@@ -5622,12 +5622,12 @@
    (not (equal res v2))
    (not (equal tmp res)))
   (equal (var-value (get-cell res (mem (execute-n-instructions st 2))))
-	 (boolean-to-int 
-	  (and 
+	 (boolean-to-int
+	  (and
 	   (equal (var-value (get-cell v1 (mem st)))
 		  (var-value (get-cell v2 (mem st))))
 	   (int-to-bool (var-value (get-cell res (mem st))))))))
- :hints (("Goal" :in-theory '((:definition int-to-bool) 
+ :hints (("Goal" :in-theory '((:definition int-to-bool)
 			      (:definition boolean-to-int))
 	  :use (two-steps-res two-steps-of-execution execute-instruction-2-unfolding))))
 
@@ -5643,18 +5643,18 @@
    (not (equal res v2))
    (not (equal tmp res)))
   (equal (var-value (get-cell res (mem (execute-n-instructions st 2))))
-	 (boolean-to-int 
+	 (boolean-to-int
 	  (equal (var-value (get-cell v1 (mem st)))
 		 (var-value (get-cell v2 (mem st)))))))
- :hints (("Goal" :in-theory '((:definition int-to-bool) 
+ :hints (("Goal" :in-theory '((:definition int-to-bool)
 			      (:definition boolean-to-int))
 	  :use (two-steps-res-or two-steps-of-execution-or execute-instruction-2-unfolding))))
 
 
-(defthm int-bool-int-cancellation 
+(defthm int-bool-int-cancellation
      (equal (int-to-bool (boolean-to-int  (equal v1 v2))) (equal v1 v2)))
 
-(defthm bool-int-bool-cancellation 
+(defthm bool-int-bool-cancellation
   (implies
    (or (equal res 0) (equal res 1))
   (equal (boolean-to-int (int-to-bool res)) res)))
@@ -5662,11 +5662,11 @@
 (defun eq-values (listvars1 listvars2 res mem n)
   (if (zp n)
       res
-    (eq-values 
-     (cdr listvars1) 
+    (eq-values
+     (cdr listvars1)
      (cdr listvars2)
-     (boolean-to-int 
-      (and 
+     (boolean-to-int
+      (and
        (equal (var-value (get-cell (car listvars1) mem))
 	      (var-value (get-cell (car listvars2) mem)))
        (int-to-bool res)))
@@ -5678,14 +5678,14 @@
   (declare (xargs :measure (acl2-count n)))
   (if (zp n)
       t
-    (and 
-     (equal 
+    (and
+     (equal
       (var-value (get-cell (car listvars1) mem))
       (var-value (get-cell (car listvars2) mem)))
      (equal-lv (cdr listvars1) (cdr listvars2) mem (1- n)))))
 
 
-(defthm case-zero 
+(defthm case-zero
   (equal (eq-values listvars1 listvars2 0 mem n) 0))
 
 (defthm case-one
@@ -5699,24 +5699,24 @@
    (equal n (len listvars1)))
   (equal
    (eq-values listvars1 listvars2 res mem n)
-   (boolean-to-int 
-    (and 
+   (boolean-to-int
+    (and
      (equal-lv listvars1 listvars2 mem n)
      (int-to-bool res)))))
  :hints (("Goal" :in-theory (disable int-to-bool boolean-to-int))))
 
-    
+
 (defthm equal-lv-is-equal-values
  (implies
   (and
    (equal n (len listvars1))
-   (equal n (len listvars2))) 
+   (equal n (len listvars2)))
   (equal
    (equal-lv listvars1 listvars2 mem n)
-   (equal-values 
+   (equal-values
     (var-values listvars1 mem)
     (var-values listvars2 mem)))))
-     
+
 
 (defthm eq-values-is-equal-values
  (implies
@@ -5726,14 +5726,14 @@
    (equal n (len listvars1)))
   (equal
    (eq-values listvars1 listvars2 res mem n)
-   (boolean-to-int 
-    (and 
-     (equal-values 
+   (boolean-to-int
+    (and
+     (equal-values
       (var-values listvars1 mem)
-      (var-values listvars2 mem))     
+      (var-values listvars2 mem))
      (int-to-bool res))))))
 
- 
+
 (defun induct-support (listvars1 listvars2 tmp res st)
   (if
       (endp listvars1)
@@ -5760,7 +5760,7 @@
    (not (member-equal-bool res (cdr listvars1)))
    (not (member-equal-bool res (cdr listvars2))))))
 
-(defthm listinstr-is-decomposed 
+(defthm listinstr-is-decomposed
  (implies
   (and
    (integerp n)
@@ -5768,11 +5768,11 @@
   (equal
    (listinstr (execute-n-instructions st n) m)
    (nthcdr n (listinstr st (+ n m)))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :induct (execute-n-instructions st n)
 	  :in-theory (disable execute-instruction))))
 
-(defthm nthcdr-2-unfolding 
+(defthm nthcdr-2-unfolding
   (equal (nthcdr 2 l) (cddr l)))
 
 (defthm nthcdr2ofeqtrans2
@@ -5781,12 +5781,12 @@
   (equal
    (equality-trans2 (cdr listvars1) (cdr listvars2) tmp res)
    (nthcdr 2 (equality-trans2 listvars1 listvars2 tmp res))))
- :hints (("Goal" :use 
+ :hints (("Goal" :use
 	  ( (:instance nthcdr-2-unfolding
 		       (l (equality-trans2 listvars1 listvars2 tmp res)))
 	    equality-trans2)
 	  :in-theory (union-theories (current-theory 'ground-zero) '((:definition rtm-eq-and))))))
-   
+
 (in-theory (disable nthcdr-2-unfolding nthcdr2ofeqtrans2 listinstr-is-decomposed))
 
 (defthm support-2a
@@ -5822,11 +5822,11 @@
    (integerp m)
    (>= m 0)
    (>= n 0))
-  (equal 
+  (equal
    (listinstr st (+ m n))
    (append (listinstr st m)
 	 (listinstr (execute-n-instructions st m) n))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable execute-instruction))))
 
 (defthm silly-00
@@ -5839,7 +5839,7 @@
    (equal (cadr l1) (cadr l)))))
 
 (defthm length-of-listintr
-  (implies 
+  (implies
    (and
     (integerp n)
     (>= n 0))
@@ -5854,7 +5854,7 @@
     (equal (car (listinstr st 2))  (car  (listinstr st le)))
     (equal (cadr (listinstr st 2)) (cadr (listinstr st le)))))
  :hints (("Goal" :in-theory (current-theory 'ground-zero)
-	  :use 
+	  :use
 	  (
 	   (:theorem (implies (integerp le) (equal (+ 2 -2 le) le)))
 	   (:instance silly-00
@@ -5873,7 +5873,7 @@
   (and
    (equal (car (listinstr st 2))  (car  (listinstr st (* 2 (len listvars1)))))
    (equal (cadr (listinstr st 2)) (cadr (listinstr st (* 2 (len listvars1)))))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (current-theory 'ground-zero)
 	  :use (:instance first-2-instr-are-same-if-many (le (* 2 (len listvars1))))))
  :otf-flg t)
@@ -5887,7 +5887,7 @@
    (equal (listinstr st (* 2 (len listvars1)))
 	  (equality-trans2 listvars1 listvars2 tmp res)))
   (equal (listinstr st 2) (rtm-eq-and (car listvars1) (car listvars2) tmp res)))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable execute-instruction)
 	  :use first-2-instr-are-same-if-many-inst)))
 
@@ -5906,11 +5906,11 @@
    (not (member-equal-bool res listvars2))
    (not (equal tmp res)))
   (equal
-   (eq-values 
-    listvars1 
-    listvars2 
-    (var-value (get-cell res (mem st))) 
-    (mem st) 
+   (eq-values
+    listvars1
+    listvars2
+    (var-value (get-cell res (mem st)))
+    (mem st)
     (len listvars1))
    (eq-values
     (cdr listvars1)
@@ -5918,10 +5918,10 @@
     (var-value (get-cell res (mem (execute-n-instructions st 2))))
     (mem st)
     (len (cdr listvars1)))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable listinstr-append listinstr-of-2-unfolding-f
 			      execute-instruction one-steps-of-execution execute-instruction-2-unfolding)
-	  :use 
+	  :use
 	  (first-two-instructions-are-eq-and
 	   (:instance two-steps-res-2 (v1 (car listvars1)) (v2 (car listvars2)))))))
 
@@ -5943,11 +5943,11 @@
    (not (member-equal-bool res listvars2))
    (not (equal tmp res)))
   (equal
-   (eq-values 
-    listvars1 
-    listvars2 
-    (var-value (get-cell res (mem st))) 
-    (mem st) 
+   (eq-values
+    listvars1
+    listvars2
+    (var-value (get-cell res (mem st)))
+    (mem st)
     (len listvars1))
    (eq-values
     (cdr listvars1)
@@ -5955,10 +5955,10 @@
     (var-value (get-cell res (mem (execute-n-instructions st 2))))
     (mem (execute-instruction (execute-instruction st)))
     (len (cdr listvars1)))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable listinstr-append listinstr-of-2-unfolding-f
 			      execute-instruction one-steps-of-execution execute-instruction-2-unfolding)
-	  :use 
+	  :use
 	  (first-two-instructions-are-eq-and
 	   (:instance two-steps-inertia-on-sequence-of-vars
 		      (v1 (car listvars1))
@@ -5970,13 +5970,13 @@
 		      (listvars1 (cdr listvars2)))
 	   (:instance two-steps-res-2 (v1 (car listvars1)) (v2 (car listvars2)))))))
 
-   
-
-  
 
 
 
-   
+
+
+
+
 (defthm value-of-result-after-executing-2n-instr
  (implies
   (and
@@ -5988,18 +5988,18 @@
    (not (equal tmp res))
    (equal (listinstr st (* 2 (len listvars1)))
 	  (equality-trans2 listvars1 listvars2 tmp res)))
- (equal 
-  (var-value 
-   (get-cell 
+ (equal
+  (var-value
+   (get-cell
     res
     (mem (execute-n-instructions st (* 2 (len listvars1))))))
-  (eq-values 
-   listvars1 
-   listvars2 
-   (var-value (get-cell res (mem st))) 
-   (mem st) 
+  (eq-values
+   listvars1
+   listvars2
+   (var-value (get-cell res (mem st)))
+   (mem st)
    (len listvars1))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable execute-instruction is-mem-cell-p)
 	  :induct (induct-support listvars1 listvars2 tmp res st))
 	 ("Subgoal *1/2" :use (support-1 support-2 support-3))))
@@ -6019,30 +6019,30 @@
    (not (equal tmp res))
    (equal (listinstr st (* 2 (len listvars1)))
 	  (equality-trans2 listvars1 listvars2 tmp res)))
- (equal 
-  (var-value 
-   (get-cell 
+ (equal
+  (var-value
+   (get-cell
     res
     (mem (execute-n-instructions st (* 2 (len listvars1))))))
   (boolean-to-int
    (and
-    (equal-values 
+    (equal-values
      (var-values listvars1 (mem st))
      (var-values listvars2 (mem st)))
     (int-to-bool (var-value (get-cell res (mem st))))))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable execute-instruction is-mem-cell-p)
 	  :use (value-of-result-after-executing-2n-instr))))
 (defthm nthcdr2ofeqtrans3
   (equal
    (equality-trans2 (cdr listvars1) (cdr listvars2) tmp res)
    (nthcdr 2 (equality-trans3 listvars1 listvars2 tmp res)))
- :hints (("Goal" :use 
+ :hints (("Goal" :use
 	  ( (:instance nthcdr-2-unfolding
 		       (l (equality-trans3 listvars1 listvars2 tmp res)))
 	    equality-trans3)
 	  :in-theory (union-theories (current-theory 'ground-zero) '((:definition rtm-eq-or))))))
-   
+
 (in-theory (disable nthcdr-2-unfolding nthcdr2ofeqtrans3 listinstr-is-decomposed))
 
 
@@ -6067,7 +6067,7 @@
    (equal (listinstr st (* 2 (len listvars1)))
 	  (equality-trans3 listvars1 listvars2 tmp res)))
   (equal (listinstr st 2) (rtm-eq-or (car listvars1) (car listvars2) tmp res)))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable nthcdr nthcdr2ofeqtrans3 execute-instruction
                               ;; v2-6 mod:
                               listinstr-append)
@@ -6082,13 +6082,13 @@
   (EQUAL
    (EXECUTE-N-INSTRUCTIONS (EXECUTE-N-INSTRUCTIONS ST 2) (* 2 (LEN (CDR LISTVARS1))))
    (EXECUTE-N-INSTRUCTIONS ST (* 2 (LEN LISTVARS1)))))
- :hints (("Goal" 
-	  :in-theory (current-theory 'ground-zero) 
-	  :use 
+ :hints (("Goal"
+	  :in-theory (current-theory 'ground-zero)
+	  :use
 	  (:instance execute-n-instruction-decomposition
 		     (n1 2)
 		     (n2 (* 2 (1- (len listvars1))))))
-	 ("Subgoal 1" 
+	 ("Subgoal 1"
 	  :use ((:theorem (equal (+ -2 2   (* 2 (LEN (CDR LISTVARS1))))
              				   (* 2 (LEN (CDR LISTVARS1)))))
 		(:theorem (equal (+ 2      (* 2 (LEN (CDR LISTVARS1))))
@@ -6107,30 +6107,30 @@
    (not (equal tmp res))
    (equal (listinstr st (* 2 (len listvars1)))
 	  (equality-trans3 listvars1 listvars2 tmp res)))
- (equal 
-  (var-value 
-   (get-cell 
+ (equal
+  (var-value
+   (get-cell
     res
     (mem (execute-n-instructions st (* 2 (len listvars1))))))
   (boolean-to-int
    (and
-    (equal-values 
+    (equal-values
      (var-values (cdr listvars1) (mem (execute-n-instructions st 2)))
      (var-values (cdr listvars2) (mem (execute-n-instructions st 2))))
-    (int-to-bool 
-     (boolean-to-int 
+    (int-to-bool
+     (boolean-to-int
       (equal (var-value (get-cell (car listvars1) (mem st)))
 	     (var-value (get-cell (car listvars2) (mem st))))))))))
- :hints (("Goal" 
-	  :in-theory (union-theories (current-theory 'ground-zero) 
+ :hints (("Goal"
+	  :in-theory (union-theories (current-theory 'ground-zero)
 				     '((:definition member-equal-bool)
 				       (:definition boolean-to-int)))
-	  :use 
+	  :use
 	  (
 	   support-2b
 	   support4
 	   first-two-instructions-are-eq-or
-	   (:instance value-of-result-after-executing-2n-instr-fin 
+	   (:instance value-of-result-after-executing-2n-instr-fin
 		      (st (execute-n-instructions st 2))
 		      (listvars1 (cdr listvars1))
 		      (listvars2 (cdr listvars2)))
@@ -6146,16 +6146,16 @@
    (equal (len listvars1) (len listvars2)))
   (equal
    (boolean-to-int
-    (equal-values 
+    (equal-values
      (var-values listvars1 (mem st ))
-     (var-values listvars2 (mem st ))))   
+     (var-values listvars2 (mem st ))))
    (boolean-to-int
     (and
-     (equal-values 
+     (equal-values
       (var-values (cdr listvars1) (mem st ))
       (var-values (cdr listvars2) (mem st )))
-     (int-to-bool 
-      (boolean-to-int 
+     (int-to-bool
+      (boolean-to-int
        (equal (var-value (get-cell (car listvars1) (mem st)))
 	      (var-value (get-cell (car listvars2) (mem st)))))))))))
 
@@ -6177,18 +6177,18 @@
    (not (equal tmp res))
    (equal (listinstr st (* 2 (len listvars1)))
 	  (equality-trans3 listvars1 listvars2 tmp res)))
- (equal 
-  (var-value 
-   (get-cell 
+ (equal
+  (var-value
+   (get-cell
     res
     (mem (execute-n-instructions st (* 2 (len listvars1))))))
   (boolean-to-int
-    (equal-values 
+    (equal-values
      (var-values  listvars1 (mem st ))
      (var-values  listvars2 (mem st ))))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory
-	  (union-theories (current-theory 'ground-zero) 
+	  (union-theories (current-theory 'ground-zero)
 				     '((:rewrite execute-instruction-2-unfolding)
 				       (:definition member-equal-bool)))
 	  :use (
@@ -6212,7 +6212,7 @@ one-steps-of-execution two-steps-of-execution two-steps-inertia
 two-steps-inertia-on-sequence-of-vars two-steps-res
 one-steps-of-execution-or two-steps-of-execution-or two-steps-inertia-or
 two-steps-inertia-on-sequence-of-vars-or two-steps-res-or
-execute-instruction-2-unfolding two-steps-res-2 two-steps-res-or-2 
+execute-instruction-2-unfolding two-steps-res-2 two-steps-res-or-2
 int-bool-int-cancellation bool-int-bool-cancellation case-zero case-one
 equal-lv-is-equal-values eq-values-is-equal-values
 support-1 listinstr-is-decomposed nthcdr-2-unfolding support-2a support-2
@@ -6220,7 +6220,7 @@ listinstr-append silly-00 length-of-listintr
 first-2-instr-are-same-if-many first-2-instr-are-same-if-many-inst
 first-two-instructions-are-eq-and support-3a support-3
 value-of-result-after-executing-2n-instr value-of-result-after-executing-2n-instr-fin
-equality-trans3 nthcdr2ofeqtrans3 support-2b 
+equality-trans3 nthcdr2ofeqtrans3 support-2b
 first-two-instructions-are-eq-or support4
 value-of-result-after-executing-2n-+2instr-fin
 at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
@@ -6231,9 +6231,9 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (cons (par1 (car listinstr))
 	  (pars1-instructions (cdr listinstr)))))
 
-(defthm pars1-instruction-is-listpars1 
-  (equal 
-   (pars1-instructions (listinstr st n)) 
+(defthm pars1-instruction-is-listpars1
+  (equal
+   (pars1-instructions (listinstr st n))
    (listpars1 st n)))
 
 
@@ -6250,14 +6250,14 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 (defthm cgr1 (equal (pars1-instructions (equality-trans2 l1 l2 tmp res)) (eqtr2 l1 tmp res)))
 
 (defthm pars1iappend
-  (equal (pars1-instructions (append l1 l2)) 
+  (equal (pars1-instructions (append l1 l2))
 	 (append (pars1-instructions l1) (pars1-instructions l2))))
 
 (defthm parsi-instructions-of-eq3-are-eqtr3
   (equal (pars1-instructions (equality-trans3 l1 l2 tmp res)) (eqtr3 l1 tmp res))
      :hints (("Subgoal 2" :in-theory nil)
 	     ("Goal" :use (eqtr3
-			   (:instance pars1iappend 
+			   (:instance pars1iappend
 				      (l1 (rtm-eq-or (car l1) (car l2 ) tmp res))
 				      (l2 (equality-trans2 (cdr l1) (cdr l2) tmp res)))
 			   (:instance cgr1 (l1 (cdr l1)) (l2 (cdr l2)))
@@ -6265,7 +6265,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 			   (:instance equality-trans3 (listvars1 l1) (listvars2 l2))))))
 
 
-(defthm only-tmp-res-into-eqtr3 
+(defthm only-tmp-res-into-eqtr3
  (implies
   (and
    (not (equal v tmp))
@@ -6282,7 +6282,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (and
     (not (equal v tmp))
     (not (equal v res))
-    (equal 
+    (equal
      (listinstr st n)
      (equality-trans3 l1 l2 tmp res)))
   (not (member-equal-bool v (listpars1 st n))))
@@ -6352,9 +6352,9 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (cons (opcode (car listinstr))
 	  (pars1-opcodes (cdr listinstr)))))
 
-(defthm pars1-opcodes-is-listopcodes 
-  (equal 
-   (pars1-opcodes (listinstr st n)) 
+(defthm pars1-opcodes-is-listopcodes
+  (equal
+   (pars1-opcodes (listinstr st n))
    (listopcodes st n)))
 
 (defun eqtr2o (l1)
@@ -6369,14 +6369,14 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 (defthm cgr2 (equal (pars1-opcodes (equality-trans2 l1 l2 tmp res)) (eqtr2o l1)))
 
 (defthm pars1oappend
-  (equal (pars1-opcodes (append l1 l2)) 
+  (equal (pars1-opcodes (append l1 l2))
 	 (append (pars1-opcodes l1) (pars1-opcodes l2))))
 
 (defthm parsi-opcodes-of-eq3-are-eqtr3o
   (equal (pars1-opcodes (equality-trans3 l1 l2 tmp res)) (eqtr3o l1))
      :hints (("Subgoal 2" :in-theory nil)
 	     ("Goal" :use (eqtr3o
-			   (:instance pars1oappend 
+			   (:instance pars1oappend
 				      (l1 (rtm-eq-or (car l1) (car l2 ) tmp res))
 				      (l2 (equality-trans2 (cdr l1) (cdr l2) tmp res)))
 			   (:instance cgr2 (l1 (cdr l1)) (l2 (cdr l2)))
@@ -6384,14 +6384,14 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 			   (:instance equality-trans3 (listvars1 l1) (listvars2 l2))))))
 
 
-(defthm eqtr3o-makes-par1-instrs 
+(defthm eqtr3o-makes-par1-instrs
   (all-par1ops (eqtr3o l))
   :otf-flg t)
 
 
 
-(defthm opcodes-on-par1-imply-instructions-on-par1 
- (implies 
+(defthm opcodes-on-par1-imply-instructions-on-par1
+ (implies
   (all-par1ops (pars1-opcodes (listinstr st n)))
   (all-par1opso st n)))
 
@@ -6401,12 +6401,12 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (equal (listinstr st n)
 	  (equality-trans3 l1 l2 tmp res))
    (not (member-equal-bool v (listpars1 st n))))
-  (equal 
-   (get-cell v (mem st)) 
+  (equal
+   (get-cell v (mem st))
    (get-cell v (mem (execute-n-instructions st n)))))
  :hints (("Goal"
 	  :in-theory nil
-	  :use 
+	  :use
 	  (opcodes-on-par1-imply-instructions-on-par1
 	   pars1-opcodes-is-listopcodes
 	   parsi-opcodes-of-eq3-are-eqtr3o
@@ -6419,14 +6419,14 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (and
     (not (equal v tmp))
     (not (equal v res))
-    (equal 
+    (equal
      (listinstr st n)
      (equality-trans3 l1 l2 tmp res)))
-  (equal 
-   (get-cell v (mem st)) 
+  (equal
+   (get-cell v (mem st))
    (get-cell v (mem (execute-n-instructions st n)))))
-  :hints (("Goal" 
-	   :use 
+  :hints (("Goal"
+	   :use
 	   (if-instructions-are-trans3-and-v-non-in-par1-v-untouched
 	    equality-trans3-has-par1-made-of-tmp-res))))
 
@@ -6435,17 +6435,17 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 
 
 (in-theory (disable
-	    pars1-instructions  pars1-instruction-is-listpars1 
+	    pars1-instructions  pars1-instruction-is-listpars1
 	    eqtr2 eqtr3 cgr1 pars1iappend parsi-instructions-of-eq3-are-eqtr3
 	    only-tmp-res-into-eqtr3 equality-trans3-has-par1-made-of-tmp-res
-	    all-par1ops all-par1opso 
+	    all-par1ops all-par1opso
 	    if-only-par1-involving-ops-are-there-then-other-vars-are-untouched
 	    pars1-opcodes pars1-opcodes-is-listopcodes
 	    eqtr2o eqtr3o cgr2 pars1oappend parsi-opcodes-of-eq3-are-eqtr3o
 	    eqtr3o-makes-par1-instrs opcodes-on-par1-imply-instructions-on-par1
 	    if-instructions-are-trans3-and-v-non-in-par1-v-untouched))
-	    
-	
+
+
 
 (defthm lemma2-only-adds-in-rtm-equ
   (implies
@@ -6457,19 +6457,19 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ)
     (good-translation-gem-rtm gstate rstate m))
    (and
-    (equal (listinstr     rstate (* 2 (len *rns*)) ) 
-	   (equality-trans3 
+    (equal (listinstr     rstate (* 2 (len *rns*)) )
+	   (equality-trans3
 	    (eventually-make-list (rtmintvars-i (par2 (nth (pcc gstate) (code gstate))) m) (len *rns*))
 	    (eventually-make-list (rtmintvars-i (par3 (nth (pcc gstate) (code gstate))) m) (len *rns*))
 	    'tmp
 	    (car (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m))))
-    (not (equal 
+    (not (equal
 	  (par1 (nth (pcc gstate) (code gstate)))
 	  (par2 (nth (pcc gstate) (code gstate)))))
-    (not (equal 
+    (not (equal
 	  (par1 (nth (pcc gstate) (code gstate)))
 	  (par3 (nth (pcc gstate) (code gstate)))))))
-  :hints (("Goal" :expand 
+  :hints (("Goal" :expand
 	   ( (good-translation-gem-rtm gstate rstate m)
 	     (gem-statep gstate)
 	     (rtm-statep rstate)
@@ -6494,7 +6494,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 		     (car (rtmintvars-i gvar2 m)))))
   :hints (("Goal" :in-theory nil
 	   :use (lemma1-different-vars-do-not-belong
-			(:instance member-equal-bool 
+			(:instance member-equal-bool
 				   (el (nth idx1 (rtmintvars-i gvar1 m)))
 				   (l (rtmintvars-i gvar2 m)))))))
 
@@ -6535,7 +6535,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (m-entries-point-to-good-rtm-var-sets m (mem rstate))
     (good-translation-gem-rtm gstate rstate m)
     (in-range (pcc gstate) (code gstate))
-    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)  
+    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)
     (true-listp m)
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
@@ -6543,12 +6543,12 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (in-range idx1 (rtmintvars-i gvar1 m)))
    (equal (get-cell (nth idx1 (rtmintvars-i gvar1 m)) (mem rstate))
 	  (get-cell (nth idx1 (rtmintvars-i gvar1 m)) (mem (execute-n-instructions rstate (* 2 (len *rns*)))))))
-  :hints (("Goal" :in-theory (current-theory 'ground-zero) 
+  :hints (("Goal" :in-theory (current-theory 'ground-zero)
 	   :expand (     (in-range (pcc gstate) (code gstate))
 			 (good-translation-gem-rtm gstate rstate m) )
 	   :use (
 		 (:instance a-variable-is-never-tmp (gvar1 gvar1))
-		 (:instance an-m-entry-is-never-nil 
+		 (:instance an-m-entry-is-never-nil
 			    (rtm-mem (mem rstate))
 			    (var (par1 (nth (pcc gstate) (code gstate)))))
 		 (:instance equality-trans3-means-touching-just-tmp-res
@@ -6560,7 +6560,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 			    (res (car (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m)))
 			    (n (* 2 (len *rns*))))
 		 (:instance lemma1-different-vars-do-not-belong-ref  (gvar2 (par1 (nth (pcc gstate) (code gstate)))))))))
-		 
+
 
 
 (defthm rtm-variables-of-other-cell-untouched-equ
@@ -6573,24 +6573,24 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (rtm-statep rstate)
     (good-translation-gem-rtm gstate rstate m)
     (in-range (pcc gstate) (code gstate))
-    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)   
+    (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m)
     (true-listp m)
     (no-duplicates-p (append-lists (retrieve-rtmvars m)))
     (assoc-equal gvar1 m)
-    (true-listp (rtmintvars-i gvar1 m))                         
+    (true-listp (rtmintvars-i gvar1 m))
     (not (equal gvar1 (par1 (nth (pcc gstate) (code gstate))))))
    (equal-get-cells
           (rtmintvars-i gvar1 m) (mem rstate) (mem (execute-n-instructions rstate (* 2 (len *rns*))))))
   :hints (("Goal" :in-theory nil
 	   :use ( (:instance rtm-variable-of-other-cell-untouched-equ
-			     (idx1 (idx-different-cell 
-				    (rtmintvars-i gvar1 m) 
-				    (mem rstate) 
+			     (idx1 (idx-different-cell
+				    (rtmintvars-i gvar1 m)
+				    (mem rstate)
 				    (mem (execute-n-instructions rstate (* 2 (len *rns*)))))) )))
 	  ("Goal'" :cases ( (in-range
-			     (idx-different-cell 
-				    (rtmintvars-i gvar1 m) 
-				    (mem rstate) 
+			     (idx-different-cell
+				    (rtmintvars-i gvar1 m)
+				    (mem rstate)
 				    (mem (execute-n-instructions rstate (* 2 (len *rns*)))))
 			     (rtmintvars-i gvar1 m))))
 	  ("Subgoal 2" :in-theory '((:rewrite if-bad-index-not-in-range-then-every-equal)))
@@ -6598,7 +6598,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 
 
 
-(defthm properies-of-type-and-existence-of-current-args-equ 
+(defthm properies-of-type-and-existence-of-current-args-equ
  (implies
   (and
    (gem-statep gstate)
@@ -6610,29 +6610,29 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (assoc-equal (par2 (nth (pcc gstate) (code gstate))) (mem gstate))
    (assoc-equal (par3 (nth (pcc gstate) (code gstate))) (mem gstate))))
   :hints (("Goal" :in-theory (enable get-cell)
-	   :use (:instance in-range-instruction-is-gem-instruction 
-			   (pcc (pcc gstate)) 
+	   :use (:instance in-range-instruction-is-gem-instruction
+			   (pcc (pcc gstate))
 			   (code (code gstate))
 			   (mem (mem gstate)))))
   :rule-classes nil)
 
 
-(defthm par1-of-current-instruction-is-into-mapping-equ 
+(defthm par1-of-current-instruction-is-into-mapping-equ
  (implies
   (and
    (vars-inclusion (mem gstate) m)
    (gem-statep gstate)
-   (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ)  
+   (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ)
    (in-range (pcc gstate) (code gstate)))
   (assoc-equal (par1 (nth (pcc gstate) (code gstate))) m))
  :hints (("Goal" :in-theory (enable get-cell)
 	 :use (properies-of-type-and-existence-of-current-args-equ
-	       (:instance inclusion-trans 
+	       (:instance inclusion-trans
 			  (v (par1 (nth (pcc gstate) (code gstate))))
 			  (m1 (mem gstate))
 			  (m2 m))
-	       (:instance in-range-instruction-is-gem-instruction 
-				 (pcc (pcc gstate)) 
+	       (:instance in-range-instruction-is-gem-instruction
+				 (pcc (pcc gstate))
 				 (code (code gstate))
 				 (mem (mem gstate)))))))
 
@@ -6657,7 +6657,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (m-correspondent-values-p m (mem gstate) (mem rstate))
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))
    (correct-wrt-arity m (mem gstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (mem (execute-instruction gstate)))
    (rtmintvars-i gvar1 m)
    (mem (execute-n-instructions rstate (* 2 (len *rns*))))
@@ -6673,7 +6673,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 		(:instance in-range (idx (pcc rstate)) (l (code rstate)))
 		rtm-variables-of-other-cell-untouched-equ
 		teorema-main-con-pcc-in-range-su-variabile-non-interessata
-		(:instance equal-get-cells-implies-equal-values-and-attributes-still-works	
+		(:instance equal-get-cells-implies-equal-values-and-attributes-still-works
 			   (gemcell (get-cell gvar1 (mem gstate)))
 			   (lcell (rtmintvars-i gvar1 m))
 			   (mem1 (mem rstate))
@@ -6686,7 +6686,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (and
     (vars-inclusion (mem gstate) m)
     (gem-statep gstate)
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ) 
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ)
     (in-range (pcc gstate) (code gstate)))
     (and
      (in-range (pos-equal-0 (par1 (nth (pcc gstate) (code gstate))) m) m)
@@ -6709,8 +6709,8 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 				   (el (par3 (nth (pcc gstate) (code gstate))))
 				   (l m)))))
    :rule-classes nil)
-   
-   
+
+
 (defthm equal-eq-update-norest-afetr-one-instr
   (implies
    (and
@@ -6723,7 +6723,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (equal gvar3 (par3 (nth (pcc gstate) (code gstate)))))
    (equal (get-cell gvar1 (mem (execute-instruction gstate)))
 	  (gen-eq-update gvar1 gvar2 gvar3 (mem gstate))))
-  :hints (("Goal" :in-theory (e/d (put-cell get-cell) 
+  :hints (("Goal" :in-theory (e/d (put-cell get-cell)
 				  (par1 par2 par3 par4 opcode pcc code nth gem-instruction-list-p
 					gen-eq-update sum-and-update sub-and-update sub-and-update-norest sum-and-update-norest))))
   :rule-classes nil)
@@ -6731,13 +6731,13 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 (DEFTHM mem-cellity-of-current-gem-args-equ
   (IMPLIES
    (AND (GEM-STATEP GSTATE)
-	(equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ) 
+	(equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ)
 	(IN-RANGE (PCC GSTATE) (CODE GSTATE)))
    (AND (is-mem-cell-p (get-cell  (PAR1 (NTH (PCC GSTATE) (CODE GSTATE))) (mem gstate)))
 	(is-mem-cell-p (get-cell  (PAR2 (NTH (PCC GSTATE) (CODE GSTATE))) (mem gstate)))
 	(is-mem-cell-p (get-cell  (PAR3 (NTH (PCC GSTATE) (CODE GSTATE))) (mem gstate)))))
   :HINTS
-  (("Goal" 
+  (("Goal"
     :USE
     (:INSTANCE IN-RANGE-INSTRUCTION-IS-GEM-INSTRUCTION
 	       (PCC (PCC GSTATE))
@@ -6745,7 +6745,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 	       (MEM (MEM GSTATE))))))
 
 
-    
+
 
 (DEFTHM
   VAR-ATTRIBUTES-OF-1-VARIABLE-IS-ONE-ELEMENT-LIST-OF-VAR-ATTRIBUTE
@@ -6789,10 +6789,10 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (equal gvar1 (par1 (nth (pcc gstate) (code gstate))))
     (equal gvar2 (par2 (nth (pcc gstate) (code gstate))))
     (equal gvar3 (par3 (nth (pcc gstate) (code gstate))))
-    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ) 
+    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ)
     (in-range (pcc gstate) (code gstate)))
    (equal (type-i gvar1 m) 'bool))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory nil ;(current-theory 'ground-zero)
 	  :use ( properies-of-type-and-existence-of-current-args-equ
 		 (:instance type-i-is-vartyper (gvar1 gvar1) (mem (mem gstate)))
@@ -6814,38 +6814,38 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 	      (MOD VAR-VALUE-GCELL2 15)
 	      (MOD VAR-VALUE-GCELL2 17)
 	      (MOD VAR-VALUE-GCELL2 19))))
-:hints (("Goal" :use ( 
-		      (:instance build-values-by-rns-extended-for-nil 
+:hints (("Goal" :use (
+		      (:instance build-values-by-rns-extended-for-nil
 				 (gem-value VAR-VALUE-GCELL2)
 				 (rns '(11 13 15 17 19)))
-		      (:instance build-values-by-rns-extended-for-nil 
+		      (:instance build-values-by-rns-extended-for-nil
 				 (gem-value VAR-VALUE-GCELL2)
 				 (rns '(13 15 17 19)))
-		      (:instance build-values-by-rns-extended-for-nil 
+		      (:instance build-values-by-rns-extended-for-nil
 				 (gem-value VAR-VALUE-GCELL2)
 				 (rns '(15 17 19)))
-		      (:instance build-values-by-rns-extended-for-nil 
+		      (:instance build-values-by-rns-extended-for-nil
 				 (gem-value VAR-VALUE-GCELL2)
 				 (rns '(17 19)))
-		      (:instance build-values-by-rns-extended-for-nil 
+		      (:instance build-values-by-rns-extended-for-nil
 				 (gem-value VAR-VALUE-GCELL2)
 				 (rns '(19)))
-		      (:instance build-values-by-rns-extended-for-nil 
+		      (:instance build-values-by-rns-extended-for-nil
 				 (gem-value VAR-VALUE-GCELL2)
 				 (rns nil)))))
 :rule-classes nil)
 
 (defthm var-values-of-n-list
- (equal 
-  (var-values (make-n-list gvar n) mem) 
+ (equal
+  (var-values (make-n-list gvar n) mem)
   (make-n-list (var-value (get-cell gvar mem)) n))
  :rule-classes nil)
 
-(defthm make-n-list-expansion-5 
- (equal 
-  (make-n-list el 5) 
+(defthm make-n-list-expansion-5
+ (equal
+  (make-n-list el 5)
   (list el el el el el))
- :hints (("Goal" :use 
+ :hints (("Goal" :use
 	  ( (:instance make-n-list (n 5))
  	    (:instance make-n-list (n 4))
 	    (:instance make-n-list (n 3))
@@ -6857,28 +6857,28 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 
 
 (defthm subgoal41
-(IMPLIES 
+(IMPLIES
  (EQUAL (VAR-VALUE (GET-CELL RTMINTVARS-I-GVAR3 RTMMEM))
                      1)
          (EQUAL (VAR-VALUES (MAKE-N-LIST RTMINTVARS-I-GVAR3 5)
                             RTMMEM)
                 '(1 1 1 1 1)))
 :hints (("Goal" :use ( (:instance make-n-list-expansion-5 (el (VAR-VALUE (GET-CELL RTMINTVARS-I-GVAR3 RTMMEM))))
-		       (:instance var-values-of-n-list 
+		       (:instance var-values-of-n-list
 				  (gvar RTMINTVARS-I-GVAR3)
 				  (n 5)
 				  (mem rtmmem)))))
 :rule-classes nil)
 
 (defthm subgoal21
-(IMPLIES 
+(IMPLIES
  (EQUAL (VAR-VALUE (GET-CELL RTMINTVARS-I-GVAR3 RTMMEM))
                      0)
          (EQUAL (VAR-VALUES (MAKE-N-LIST RTMINTVARS-I-GVAR3 5)
                             RTMMEM)
                 '(0 0 0 0 0)))
 :hints (("Goal" :use ( (:instance make-n-list-expansion-5 (el (VAR-VALUE (GET-CELL RTMINTVARS-I-GVAR3 RTMMEM))))
-		       (:instance var-values-of-n-list 
+		       (:instance var-values-of-n-list
 				  (gvar RTMINTVARS-I-GVAR3)
 				  (n 5)
 				  (mem rtmmem)))))
@@ -6892,7 +6892,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (is-mem-cell-p gcell2)
    (equal (type-expected rtmintvars-i-gvar2) (var-type gcell2))
    (equal-values-and-attributes gcell2 rtmintvars-i-gvar2 rtmmem (var-type gcell2)))
-  (equal 
+  (equal
    (var-values (eventually-make-list rtmintvars-i-gvar2 (len *rns*)) rtmmem)
    (build-values-by-rns (var-value gcell2) *rns*)))
  :hints (("Goal" :in-theory (enable my-or-2))
@@ -6916,8 +6916,8 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
   :hints (("Goal" :use ( fact-bout-rns
 			 (:instance crt-inversion (val gval1) (rns *rns*))
 			 (:instance crt-inversion (val gval2) (rns *rns*))))))
- 
-(defthm hlp1 
+
+(defthm hlp1
   (implies
    (and
     (is-mem-cell-p cell)
@@ -6940,32 +6940,32 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (equal-values-and-attributes gcell3 rtmintvars-i-gvar3 rtmmem (var-type gcell3)))
  (equal
   (equal
-   (var-value gcell2) 
+   (var-value gcell2)
    (var-value gcell3) )
   (equal
    (var-values (eventually-make-list rtmintvars-i-gvar2  (len *rns*)) rtmmem)
    (var-values (eventually-make-list rtmintvars-i-gvar3  (len *rns*)) rtmmem))))
- :hints (("Goal" 
-	  :in-theory nil 
+ :hints (("Goal"
+	  :in-theory nil
 	  :use
 	  ( (:instance hlp1 (cell gcell2))
 	    (:instance hlp1 (cell gcell3))
 	    (:instance ax-on-rns-values
 		       (gval1 (var-value gcell2))
 		       (gval2 (var-value gcell3)))
-	    (:instance var-values-of-evmakelist-is-rns-anyway 
+	    (:instance var-values-of-evmakelist-is-rns-anyway
 		       (gcell2 gcell2)
 		       (rtmintvars-i-gvar2 rtmintvars-i-gvar2))
-	    (:instance var-values-of-evmakelist-is-rns-anyway 
+	    (:instance var-values-of-evmakelist-is-rns-anyway
 		       (gcell2 gcell3)
 		       (rtmintvars-i-gvar2 rtmintvars-i-gvar3))))))
 
 (in-theory (disable ax-on-rns-values))
 
-	      
 
 
- 
+
+
 (defthm length-of-makelist-n
  (implies
   (and
@@ -6996,7 +6996,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (not (member-equal-bool 'tmp (rtmintvars-i gvar1 m) )))
   :hints (("Goal" :in-theory (enable rtmintvars-0))))
 
-(defthm type-of-a-mem-cell 
+(defthm type-of-a-mem-cell
   (implies
    (is-mem-cell-p cell)
    (my-or-2
@@ -7006,7 +7006,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
   :rule-classes nil)
 
 
-(defthm sillllly  
+(defthm sillllly
  (equal (make-n-list l1 1) (list l1))
  :hints (("Goal" :use (:instance make-n-list (el l1) (n 1))))
  :rule-classes nil)
@@ -7031,21 +7031,21 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
   (not (member-equal-bool el (eventually-make-list l n))))
  :hints (("Subgoal *1.1/4''" :use sillllly) ; Modified for v2-6 by Matt K.
 	 ("Subgoal *1.1/4.1"  :use sillllly))
- :rule-classes nil) 
+ :rule-classes nil)
 
 (defthm not-memb-1
  (implies
   (and
    (true-listp m)
-   (equal (len (rtmintvars-i gvar1 m)) 1) 
+   (equal (len (rtmintvars-i gvar1 m)) 1)
    (assoc-equal gvar1 m)
    (assoc-equal gvar2 m)
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))
    (not (equal gvar1 gvar2)))
-  (not (member-equal-bool 
+  (not (member-equal-bool
 	(car (rtmintvars-i gvar1 m))
 	(rtmintvars-i gvar2 m))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :use ( (:instance lemma1-different-vars-do-not-belong (idx1 0)))))
  :rule-classes nil)
 
@@ -7053,17 +7053,17 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
  (implies
   (and
    (true-listp m)
-   (equal (len (rtmintvars-i gvar1 m)) 1) 
+   (equal (len (rtmintvars-i gvar1 m)) 1)
    (assoc-equal gvar1 m)
    (assoc-equal gvar2 m)
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))
    (not (equal gvar1 gvar2)))
-  (not (member-equal-bool 
+  (not (member-equal-bool
 	(car (rtmintvars-i gvar1 m))
 	(eventually-make-list (rtmintvars-i gvar2 m) (len *rns*)))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :use ( not-memb-1
-		 (:instance not-member-equal-bool-holds-on-ev 
+		 (:instance not-member-equal-bool-holds-on-ev
 			    (el (car (rtmintvars-i gvar1 m)))
 			    (l (rtmintvars-i gvar2 m))
 			    (n (len *rns*))))))
@@ -7073,25 +7073,25 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 (defthm eq-and-update-behaviour
   (and
    (equal
-    (var-value (gen-eq-update c1 c2 c3 mem)) 
+    (var-value (gen-eq-update c1 c2 c3 mem))
     (boolean-to-int (equal
 		     (var-value (get-cell c2 mem))
 		     (var-value (get-cell c3 mem)))))
    (equal
-    (var-attribute (gen-eq-update c1 c2 c3 mem)) 
+    (var-attribute (gen-eq-update c1 c2 c3 mem))
     (var-attribute (get-cell c1 mem))))
   :hints (("Goal" :in-theory (enable var-value var-attribute))))
-  
+
 
 (defthm var-attribute-of-a-var-is-same-after-n-steps
  (implies
   (rtm-statep st)
   (equal (var-attribute (get-cell anyvar (mem st)))
 	 (var-attribute (get-cell anyvar (mem (execute-n-instructions st n))))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :induct (execute-n-instructions st n)
 	  :in-theory (disable rtm-statep execute-instruction))
-	 ("Subgoal *1/2" 
+	 ("Subgoal *1/2"
 	  :use
 	  (
 	   (:instance execute-instruction-is-type-and-attribute-invariant-on-any-var (cell anyvar))
@@ -7118,17 +7118,17 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
  (equal
   (boolean-to-int
    (equal
-    (var-value gcell2) 
+    (var-value gcell2)
     (var-value gcell3) ))
   (boolean-to-int
    (equal-values
     (var-values (eventually-make-list rtmintvars-i-gvar2  (len *rns*)) rtmmem)
     (var-values (eventually-make-list rtmintvars-i-gvar3  (len *rns*)) rtmmem)))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory nil
-	  :use 
-	  ((:instance bool-to-int-strip 
-		     (a (var-value gcell2)) 
+	  :use
+	  ((:instance bool-to-int-strip
+		     (a (var-value gcell2))
 		     (b (var-value gcell3))
 		     (c (var-values (eventually-make-list rtmintvars-i-gvar2  (len *rns*)) rtmmem))
 		     (d (var-values (eventually-make-list rtmintvars-i-gvar3  (len *rns*)) rtmmem)))
@@ -7156,7 +7156,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (not (endp (eventually-make-list l (len *rns*)))))
  :hints (("Goal" :use (:instance sil-support-2 (n (len *rns*))))))
 
- 
+
 (defthm not-in-car-if-no-memb
  (implies
   (and
@@ -7165,7 +7165,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
   (not (equal 'tmp (car l)))))
 
 (defthm sil-support-1
- (implies 
+ (implies
   (equal (type-i gvar1 m) 'bool)
   (equal  (LEN (RTMINTVARS-I gvar1 m)) 1)))
 
@@ -7190,7 +7190,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
                                   M)
                     (LEN '(11 13 15 17 19)))))
     (NOT (EQUAL 'TMP
-                (CAR (RTMINTVARS-I (PAR1 (NTH (PCC GSTATE) (CODE GSTATE))) 
+                (CAR (RTMINTVARS-I (PAR1 (NTH (PCC GSTATE) (CODE GSTATE)))
                                    M))))
     (EQUAL (LEN (RTMINTVARS-I (PAR1 (NTH (PCC GSTATE) (CODE GSTATE))) M)) 1)
    (equal (opcode (nth (pcc gstate) (code gstate))) 'gem-equ)
@@ -7207,13 +7207,13 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (m-correspondent-values-p m (mem gstate) (mem rstate))
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))
    (correct-wrt-arity m (mem gstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (mem (execute-instruction gstate)))
    (rtmintvars-i gvar1 m)
    (mem (execute-n-instructions rstate (* 2 (len *rns*))))
    (type-i gvar1 m)))
  :hints (("Goal" :in-theory nil
-	  :use ( 
+	  :use (
 		(:instance gem-statep (x gstate))
 		(:instance bounded-are-bounded (cell (par2 (nth (pcc gstate) (code gstate)))) (mem (mem gstate)))
 		(:instance bounded-are-bounded (cell (par3 (nth (pcc gstate) (code gstate)))) (mem (mem gstate)))
@@ -7226,18 +7226,18 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 			    (st rstate)
 			    (anyvar (car  (rtmintvars-i (par1 (nth (pcc gstate) (code gstate))) m)))
 			    (n (* 2 (len *rns*))))
-		 (:instance in-range (idx (pcc gstate)) (l (code gstate))) 
-		 (:instance not-memb-2 
+		 (:instance in-range (idx (pcc gstate)) (l (code gstate)))
+		 (:instance not-memb-2
 			    (gvar1 (par1 (nth (pcc gstate) (code gstate))))
 			    (gvar2 (par2 (nth (pcc gstate) (code gstate)))))
-		 (:instance not-memb-2 
+		 (:instance not-memb-2
 			    (gvar1 (par1 (nth (pcc gstate) (code gstate))))
 			    (gvar2 (par3 (nth (pcc gstate) (code gstate)))))
 		 (:instance type-of-a-mem-cell (cell (get-cell (par2 (nth (pcc gstate) (code gstate))) (mem gstate))))
 		 (:instance type-of-a-mem-cell (cell (get-cell (par3 (nth (pcc gstate) (code gstate))) (mem gstate))))
 		 properies-of-type-and-existence-of-current-args-equ
 		 mem-cellity-of-current-gem-args-equ
-		 good-translation-gem-rtm 
+		 good-translation-gem-rtm
 		 (:instance tmp-never-appears (n (len *rns*)) (gvar1 (par2 (nth (pcc gstate) (code gstate)))))
 		 (:instance tmp-never-appears (n (len *rns*)) (gvar1 (par3 (nth (pcc gstate) (code gstate)))))
 		 (:instance if-type-exepcted-is-ok-eventually-always-has-len-of-rns
@@ -7273,13 +7273,13 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 			     (gcell (get-cell gvar1 (mem (execute-instruction gstate))))
 			     (rtmmem (mem (execute-n-instructions rstate (* 2 (len *rns*))))))
 		  (:instance m-correspondent-values-implies-equal-values-and-attribus
-			     (memgstate (mem gstate)) (memrstate (mem rstate)) 
+			     (memgstate (mem gstate)) (memrstate (mem rstate))
 			     (gvar1 (par1 (nth (pcc gstate) (code gstate)))))
 		  (:instance m-correspondent-values-implies-equal-values-and-attribus
-			     (memgstate (mem gstate)) (memrstate (mem rstate)) 
+			     (memgstate (mem gstate)) (memrstate (mem rstate))
 			     (gvar1 (par2 (nth (pcc gstate) (code gstate)))))
 		  (:instance m-correspondent-values-implies-equal-values-and-attribus
-			     (memgstate (mem gstate)) (memrstate (mem rstate)) 
+			     (memgstate (mem gstate)) (memrstate (mem rstate))
 			     (gvar1 (par3 (nth (pcc gstate) (code gstate)))))
 		  (:instance value-of-result-after-executing-2n-+2instr-finale
 			     (tmp 'tmp)
@@ -7316,15 +7316,15 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 			     M)
 	       (LEN '(11 13 15 17 19)))))
    (NOT (EQUAL 'TMP
-             (CAR (RTMINTVARS-I (PAR1 (NTH (PCC GSTATE) (CODE GSTATE))) 
+             (CAR (RTMINTVARS-I (PAR1 (NTH (PCC GSTATE) (CODE GSTATE)))
 				  M))))
    (EQUAL (LEN (RTMINTVARS-I (PAR1 (NTH (PCC GSTATE) (CODE GSTATE))) M)) 1)))
- :hints (("Goal" :in-theory  nil 
-	  :use ( 
+ :hints (("Goal" :in-theory  nil
+	  :use (
 		(:instance sil-support-3 (l (RTMINTVARS-I (PAR2 (NTH (PCC GSTATE) (CODE GSTATE))) M) ))
 		(:instance not-in-car-if-no-memb (l (RTMINTVARS-I (PAR1 (NTH (PCC GSTATE) (CODE GSTATE))) m)))
 		(:instance sil-support-1 (gvar1 (PAR1 (NTH (PCC GSTATE) (CODE GSTATE)))))
-		(:instance in-range (idx (pcc gstate)) (l (code gstate))) 
+		(:instance in-range (idx (pcc gstate)) (l (code gstate)))
 		(:instance type-of-a-mem-cell (cell (get-cell (par2 (nth (pcc gstate) (code gstate))) (mem gstate))))
 		(:instance type-of-a-mem-cell (cell (get-cell (par3 (nth (pcc gstate) (code gstate))) (mem gstate))))
 		(:instance inclusion-trans (m1 (mem gstate)) (m2 m)
@@ -7371,7 +7371,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (M-ENTRIES-POINT-TO-GOOD-RTM-VAR-SETS M (MEM RSTATE))
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))
    (correct-wrt-arity m (mem gstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell gvar1 (mem (execute-instruction gstate)))
    (rtmintvars-i gvar1 m)
    (mem (execute-n-instructions rstate (* 2 (len *rns*))))
@@ -7390,7 +7390,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (no-duplicates-p (retrieve-gemvars m)))
   (equal (rtmintvars-i (car (nth idx m)) m)
 	 (cdr (nth idx m))))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory nil
 	  :use (
 	  (:instance no-duplicates-has-pos-equal-right-in-that-place (l m))
@@ -7402,7 +7402,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (true-listp m)
    (in-range idx m)
    (no-duplicates-p (retrieve-gemvars m)))
-  (equal (type-i (car (nth idx m)) m) 
+  (equal (type-i (car (nth idx m)) m)
 	 (type-i-idx m idx))))
 
 
@@ -7425,14 +7425,14 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (no-duplicates-p (retrieve-gemvars m))
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))
    (correct-wrt-arity m (mem gstate)))
-  (equal-values-and-attributes 
+  (equal-values-and-attributes
    (get-cell (car (nth idx m)) (mem (execute-instruction gstate)))
    (cdr (nth idx m))
    (mem (execute-n-instructions rstate (* 2 (len *rns*))))
    (type-i-idx m idx)))
   :hints (("Subgoal 2" :in-theory nil)
-	  ("Goal" :in-theory (union-theories (current-theory 'ground-zero) 
-					     '((:definition in-range))) 
+	  ("Goal" :in-theory (union-theories (current-theory 'ground-zero)
+					     '((:definition in-range)))
 	   :use ( (:theorem
 		   (implies
 		    (and
@@ -7467,12 +7467,12 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (no-duplicates-p (retrieve-gemvars m))
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))
    (correct-wrt-arity m (mem gstate)))
-  (m-correspondent-values-p 
-   m 
+  (m-correspondent-values-p
+   m
    (mem (execute-instruction gstate))
    (mem (execute-n-instructions rstate (* 2 (len *rns*))))))
   :hints (("Goal" :use (:instance equal-values-correspondence-kept-by-any-execution-idxed-equ
-				  (idx (bad-idx-eqv-va m 
+				  (idx (bad-idx-eqv-va m
 						       (mem (execute-instruction gstate))
 						       (mem (execute-n-instructions rstate (* 2 (len *rns*))))))))
 	  ("Goal'" :cases ( (in-range (bad-idx-eqv-va m (mem (execute-instruction gstate))
@@ -7509,19 +7509,19 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (correct-wrt-arity m (mem (execute-instruction gstate)))
     (vars-inclusion (mem (execute-instruction gstate)) m)
     (vars-inclusion m (mem (execute-instruction gstate)))
-    (m-correspondent-values-p 
-     m 
+    (m-correspondent-values-p
+     m
      (mem (execute-instruction gstate))
      (mem (execute-n-instructions rstate (* 2 (len *rns*)))))))
-  :hints (("Goal" 
-	   :in-theory ;nil 
-	   (disable 
+  :hints (("Goal"
+	   :in-theory ;nil
+	   (disable
 		       rtm-statep gem-statep
-		       pcc code opcode 
-		       execute-instruction rtmintvars-i par1 par2 par3 nth len member-equal) 
-	   :use 
+		       pcc code opcode
+		       execute-instruction rtmintvars-i par1 par2 par3 nth len member-equal)
+	   :use
 	   (m-correspondence-kept-by-any-execution-idxed-equ
-	    good-translation-gem-rtm 
+	    good-translation-gem-rtm
 	    (:instance execute-n-instructions-keeps-rtm-state-and-points-to-good
 		       (st rstate) (n (* 2 (len *rns*))))
 	    (:instance executing-gem-instruction-retrieves-a-gem-state-from-gem-state (st gstate))
@@ -7559,7 +7559,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
       0
     (+ (correspondent-steps-to-current-gem-instruction gstate)
        (correspondent-steps (1- n) (execute-instruction gstate)))))
-	 
+
 
 
 
@@ -7582,27 +7582,27 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (m-entries-point-to-good-rtm-var-sets m (mem rstate))
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
    (and
-    (good-translation-gem-rtm 
-     (execute-instruction gstate) 
-     (execute-n-instructions rstate 
+    (good-translation-gem-rtm
+     (execute-instruction gstate)
+     (execute-n-instructions rstate
 			     (correspondent-steps-to-current-gem-instruction gstate)) m)
     (rtm-statep (execute-n-instructions rstate (correspondent-steps-to-current-gem-instruction gstate)))
-    (m-entries-point-to-good-rtm-var-sets 
-     m 
+    (m-entries-point-to-good-rtm-var-sets
+     m
      (mem (execute-n-instructions rstate (correspondent-steps-to-current-gem-instruction gstate))))
     (gem-statep (execute-instruction gstate))
     (correct-wrt-arity m (mem (execute-instruction gstate)))
     (vars-inclusion (mem (execute-instruction gstate)) m)
     (vars-inclusion m (mem (execute-instruction gstate)))
-    (m-correspondent-values-p 
-     m 
+    (m-correspondent-values-p
+     m
      (mem (execute-instruction gstate))
      (mem (execute-n-instructions rstate (correspondent-steps-to-current-gem-instruction gstate))))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory '((in-range))
 	   :use
-	   ( 
-	    (:instance after-n-instructions-out-of-range-rtmstate-untouched 
+	   (
+	    (:instance after-n-instructions-out-of-range-rtmstate-untouched
 		       (n (correspondent-steps-to-current-gem-instruction gstate)))
 	     (:instance execute-not-in-range-instruction-retrieves-same-state (st gstate))))))
 
@@ -7628,25 +7628,25 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
    (and
     (>= (pcc (execute-instruction gstate)) 0)
-    (good-translation-gem-rtm 
-     (execute-instruction gstate) 
+    (good-translation-gem-rtm
+     (execute-instruction gstate)
      (execute-n-instructions rstate (correspondent-steps-to-current-gem-instruction gstate)) m)
     (rtm-statep (execute-n-instructions rstate (correspondent-steps-to-current-gem-instruction gstate)))
-    (m-entries-point-to-good-rtm-var-sets 
-     m 
+    (m-entries-point-to-good-rtm-var-sets
+     m
      (mem (execute-n-instructions rstate (correspondent-steps-to-current-gem-instruction gstate))))
     (gem-statep (execute-instruction gstate))
     (correct-wrt-arity m (mem (execute-instruction gstate)))
     (vars-inclusion (mem (execute-instruction gstate)) m)
     (vars-inclusion m (mem (execute-instruction gstate)))
-    (m-correspondent-values-p 
-     m 
+    (m-correspondent-values-p
+     m
      (mem (execute-instruction gstate))
      (mem (execute-n-instructions rstate (correspondent-steps-to-current-gem-instruction gstate))))))
-   :hints (("Goal" :in-theory '((:definition in-range)) 
+   :hints (("Goal" :in-theory '((:definition in-range))
 	    :use ((:instance instruction-incrementing-pvv (st gstate))
 			 correspondent-steps-to-current-gem-instruction
-			 good-translation-gem-rtm 
+			 good-translation-gem-rtm
 			 m-correspondence-and-other-conditions-kept-by-out-of-range-execution-2
 			 m-correspondence-and-other-conditions-kept-by-any-execution-add
 			 m-correspondence-and-other-conditions-kept-by-any-execution-sub
@@ -7668,7 +7668,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 (defun parallel-exec (gstate rstate n)
   (if (zp n)
       (list gstate rstate)
-    (parallel-exec 
+    (parallel-exec
      (execute-instruction gstate)
      (execute-n-instructions rstate (correspondent-steps-to-current-gem-instruction gstate))
      (1- n))))
@@ -7704,22 +7704,22 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (m-correspondent-values-p m (mem gstate) (mem rstate)))
    (and
     (>= (pcc (execute-n-instructions gstate n)) 0)
-    (good-translation-gem-rtm 
-     (execute-n-instructions gstate n) 
+    (good-translation-gem-rtm
+     (execute-n-instructions gstate n)
      (execute-n-instructions rstate (correspondent-steps n gstate)) m)
     (rtm-statep (execute-n-instructions rstate (correspondent-steps n gstate)))
-    (m-entries-point-to-good-rtm-var-sets 
-     m 
+    (m-entries-point-to-good-rtm-var-sets
+     m
      (mem (execute-n-instructions rstate (correspondent-steps n gstate))))
     (gem-statep (execute-n-instructions gstate n))
     (correct-wrt-arity m (mem (execute-n-instructions gstate n)))
     (vars-inclusion (mem (execute-n-instructions gstate n)) m)
     (vars-inclusion m (mem (execute-n-instructions gstate n)))
-    (m-correspondent-values-p 
-     m 
+    (m-correspondent-values-p
+     m
      (mem (execute-n-instructions gstate n))
      (mem (execute-n-instructions rstate (correspondent-steps n gstate))))))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
 	   ;(current-theory 'ground-zero)
 	   (disable executing-gem-instruction-preserves-correctness-wrt-arity
 				      execute-instruction-is-type-and-attribute-invariant-on-any-var
@@ -7739,12 +7739,12 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 				      good-translation-gem-rtm
 				      all-rtm-adds-for-n-steps
 				      null-opcode-implies-execution-does-not-touch-state
-				      bad-idx-eqv-va				      
+				      bad-idx-eqv-va
 				      mem pcc code opcode retrieve-rtmvars gem-statep rtm-statep execute-instruction)
 	  :induct (parallel-exec gstate rstate n))
-	  ("Subgoal *1/2" :use 
-	   (	    
-	    (:instance execute-n-instruction-decomposition 
+	  ("Subgoal *1/2" :use
+	   (
+	    (:instance execute-n-instruction-decomposition
 		      (n1 (correspondent-steps (1- n) gstate))
 		      (n2 (correspondent-steps-to-current-gem-instruction gstate))
 		      (st rstate))
@@ -7777,7 +7777,7 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
    (no-duplicates-p (retrieve-gemvars m))
    (no-duplicates-p (append-lists (retrieve-rtmvars m)))))
 
-(defun good-mapping-wrt-memories (m mem-gstate mem-rstate) 
+(defun good-mapping-wrt-memories (m mem-gstate mem-rstate)
   (and
    (correct-wrt-arity m mem-gstate)
    (vars-inclusion mem-gstate m)
@@ -7809,10 +7809,10 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
     (projectio (mem (execute-n-instructions gstate n)) attr))))
   :hints (("Goal"
 	   :in-theory (union-theories (current-theory 'ground-zero)
-				      '((:rewrite equalities-on-io) 
+				      '((:rewrite equalities-on-io)
 					(:definition correct-translation)
-					(:definition good-mapping-wrt-memories) 
-					(:definition gem-statep) 
+					(:definition good-mapping-wrt-memories)
+					(:definition gem-statep)
 					(:definition rtm-statep)
 					(:definition good-mapping)))
 	   :use
@@ -7820,9 +7820,9 @@ at-the-end-equality-on-all value-of-result-after-executing-2n-+2instr-finale))
 	    fact-bout-rns
 	    simple-fact-about-initial-rtmstate
 	    simple-fact-about-initial-gemstate
-	    (:instance m-correspondence-and-other-conditions-kept-execution-on-n 
+	    (:instance m-correspondence-and-other-conditions-kept-execution-on-n
 		       (gstate (initial-state gemprog))
 		       (rstate (initial-state rtmprog))
 		       (n (len (code gstate))))))))
-	    
+
 

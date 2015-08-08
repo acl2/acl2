@@ -66,7 +66,7 @@
 
 (defun add-name-subst (name subst suffix)
   (declare (xargs :mode :program))
-  (cons (list name 
+  (cons (list name
 	      (packn-string-in-pkg (string-append (string name) suffix) name))
 	subst))
 
@@ -104,8 +104,8 @@
 
 (defmacro make-generic-theory (theory)
   (let ((definstance-theory
-	  (packn-string-in-pkg 
-	   (string-append "DEFINSTANCE-" (string theory)) theory)))    
+	  (packn-string-in-pkg
+	   (string-append "DEFINSTANCE-" (string theory)) theory)))
     `(defmacro ,definstance-theory (subst suffix)
        (list* 'encapsulate
 	      'nil

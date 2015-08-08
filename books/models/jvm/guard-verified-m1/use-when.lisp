@@ -65,7 +65,7 @@
 ; resulting substitutions into ans.  The value is a list of alists.
 
 (mutual-recursion
- 
+
  (defun find-all-subterm-instances (pat term alist ans)
    (mv-let
     (instancep alist)

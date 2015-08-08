@@ -1,8 +1,8 @@
 
-;; check-output.lisp: This file checks the output of the 
+;; check-output.lisp: This file checks the output of the
 ;; SAT solver to determine whether it found the formula
-;; to be satisfyiable or unsatisfiable.  If a satisfying 
-;; instance is found it finds and prints an ACL2 
+;; to be satisfyiable or unsatisfiable.  If a satisfying
+;; instance is found it finds and prints an ACL2
 ;; counter-example.
 
 (in-package "SAT")
@@ -38,13 +38,13 @@
 (defun known-consp (var $sat)
   (declare (xargs :stobjs $sat))
   (let ((consp-var (consp-vari var $sat)))
-    (if (valid-varp consp-var) 
+    (if (valid-varp consp-var)
         (mv t (equal (ce-vali consp-var $sat) 1))
       (mv nil nil))))
 
 (defun known-eq-atom1 (atom-alist non-nil non-t $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((endp atom-alist)
     (mv nil nil non-nil non-t))
    ((equal (ce-vali (cdr (car atom-alist)) $sat) 1)
@@ -78,7 +78,7 @@
 (defun add-new-ce-val1 (var val todo-list $sat)
   (declare (xargs :stobjs $sat))
   (cond
-   ((not (valid-varp var)) 
+   ((not (valid-varp var))
     (cond
      ((endp todo-list)
       $sat)
@@ -99,7 +99,7 @@
 ;; Of course, we could use a Boolean array for that.
 (defun add-new-ce-val (var val $sat)
   (declare (xargs :stobjs $sat))
-  (let (($sat (add-new-ce-val1 var val nil $sat))) 
+  (let (($sat (add-new-ce-val1 var val nil $sat)))
     (mv val $sat)))
 
 ;; Look through the eq-alist for an entry
@@ -116,14 +116,14 @@
            (eq-x-a (cdar eq-alist))
            (a-val (ce-i-var-vali a $sat))
            (eq-x-a-val (equal (ce-vali eq-x-a $sat) 1)))
-      (cond 
+      (cond
        ((ce-val-unknownp a-val)
         (mv (er hard 'known-eq-val1
                 "Unknown value for previous variable in counter-example generation")
             nil nil nil nil))
        (eq-x-a-val
-        (mv t 
-            a-val 
+        (mv t
+            a-val
             (not (eq a-val nil))
             (not (eq a-val t))
             non-cons-list))
@@ -132,9 +132,9 @@
        ((eq a-val t)
         (known-eq-val1 (cdr eq-alist) non-nil t non-cons-list $sat))
        ((consp a-val)
-        (known-eq-val1 (cdr eq-alist) 
-                       non-nil 
-                       non-t 
+        (known-eq-val1 (cdr eq-alist)
+                       non-nil
+                       non-t
                        (cons a-val non-cons-list)
                        $sat))
        (t
@@ -154,8 +154,8 @@
    ((eq (caar non-cons-list) t)
     (car-non-cons-list (cdr non-cons-list) car-non-nil t car-non-cons-list))
    ((consp (caar non-cons-list))
-    (car-non-cons-list (cdr non-cons-list) 
-                         car-non-nil 
+    (car-non-cons-list (cdr non-cons-list)
+                         car-non-nil
                          car-non-t
                          (cons (caar non-cons-list) car-non-cons-list)))
    (t
@@ -170,8 +170,8 @@
    ((eq (cdar non-cons-list) t)
     (cdr-non-cons-list (cdr non-cons-list) cdr-non-nil t cdr-non-cons-list))
    ((consp (cdar non-cons-list))
-    (cdr-non-cons-list (cdr non-cons-list) 
-                         cdr-non-nil 
+    (cdr-non-cons-list (cdr non-cons-list)
+                         cdr-non-nil
                          cdr-non-t
                          (cons (cdar non-cons-list) cdr-non-cons-list)))
    (t
@@ -181,7 +181,7 @@
   (declare (xargs :stobjs $sat))
   (if (not (valid-varp var))
       (mv nil nil nil nil non-nil non-t non-cons-const)
-    (mv-let 
+    (mv-let
      (eq-atom atom-val non-nil non-t)
      (known-eq-atom var non-nil non-t $sat)
      (mv-let
@@ -190,7 +190,7 @@
       (mv-let
        (eq-val-known eq-val non-nil non-t non-cons-const)
        (known-eq-val var non-nil non-t non-cons-const $sat)
-       (cond 
+       (cond
         (eq-atom
          (mv t atom-val consp-known consp-val non-nil non-t non-cons-const))
         (eq-val-known
@@ -209,7 +209,7 @@
     (unquote i-expr))
    ((eq (car i-expr) 'consp)
     (ce-val-consp (eval-i-expr (cadr i-expr) $sat)))
-   ((eq (car i-expr) 'cons)    
+   ((eq (car i-expr) 'cons)
     (ce-val-cons (eval-i-expr (cadr i-expr) $sat)
                  (eval-i-expr (caddr i-expr) $sat)))
    ((eq (car i-expr) 'equal)
@@ -224,7 +224,7 @@
 ;; current counter-example.
 (defun ce-true-f-exprp (f-expr $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((eq 't f-expr)
     t)
    ((eq 'nil f-expr)
@@ -303,7 +303,7 @@
       (known-val
        (add-new-ce-val var val $sat))
       ((or (and consp-known consp-val)
-           (and (not consp-known) 
+           (and (not consp-known)
                 (or (valid-varp (car-vari var $sat))
                     (valid-varp (cdr-vari var $sat)))))
        (mv-let
@@ -312,27 +312,27 @@
         (mv-let
          (cdr-non-nil cdr-non-t cdr-non-cons-list)
          (cdr-non-cons-list non-cons-const nil nil nil)
-         ;; We need to be consistent with the ordering used in 
+         ;; We need to be consistent with the ordering used in
          ;; compare-cons-structure, so that an rhs value is always
          ;; built before an lhs value.  To do this, we just
          ;; need to make sure we go down the car first.
          (mv-let
           (car-val $sat)
-          (ce-var1 (car-vari var $sat) 
+          (ce-var1 (car-vari var $sat)
                    nil
-                   car-non-nil 
+                   car-non-nil
                    car-non-t
-                   car-non-cons-list 
+                   car-non-cons-list
                    $sat)
           (mv-let
            (cdr-val $sat)
-           (ce-var1 (cdr-vari var $sat) 
+           (ce-var1 (cdr-vari var $sat)
                     nil
-                    cdr-non-nil 
+                    cdr-non-nil
                     cdr-non-t
-                    cdr-non-cons-list 
+                    cdr-non-cons-list
                     $sat)
-           (add-new-ce-val var (cons car-val cdr-val) $sat))))))       
+           (add-new-ce-val var (cons car-val cdr-val) $sat))))))
       ((not non-nil)
        (add-new-ce-val var nil $sat))
       ((not non-t)
@@ -341,18 +341,18 @@
       ;; symbol that doesn't occur in the atom list, but to make
       ;; our life easy we pick a symbol that has never been used
       ;; in the counter-example, nor will it ever be used again.
-      (t 
+      (t
        (mv-let
         (unused-num $sat)
         (get-unused-number $sat)
         (add-new-ce-val var
-                        (intern-in-package-of-symbol 
+                        (intern-in-package-of-symbol
                          (concat "X" (num-to-str unused-num))
                          'X)
                         $sat))))))))
 
 ;; Find the counter-example value of a given variable.
-;; The philosophy here is to choose a cons if the 
+;; The philosophy here is to choose a cons if the
 ;; car and cdr are relevant, otherwise choose nil, unless
 ;; it has to be true.
 
@@ -362,7 +362,7 @@
 
 (defun ce-var-list (var-list $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((endp var-list)
     $sat)
    (t
@@ -437,7 +437,7 @@
 #|
 (defun gen-ce (sat-output $sat)
   (declare (xargs :stobjs $sat))
-  (prog2$ 
+  (prog2$
    (cw "Generating counter-example~%")
    (let* (($sat (resize-ce-val 0 $sat))
           ($sat (resize-ce-i-var-val 0 $sat))
@@ -462,7 +462,7 @@
      (err car-val $sat state)
      (run-ce-expr (car expr-list) ce-alist $sat state)
      (declare (ignore err))
-     (run-ce-expr-list (cdr expr-list) ce-alist 
+     (run-ce-expr-list (cdr expr-list) ce-alist
                        (cons car-val acc) $sat state)))))
 
 ;; Run the counter-example on an expression, looking up
@@ -485,14 +485,14 @@
    (t
     (let* ((fn (car expr))
            (exec-info (lookup-executable fn 'not-found $sat)))
-      (cond 
+      (cond
        ((eq exec-info 'not-found)
         ;; We must not have used the recognizer on this
-        ;; expression.  
+        ;; expression.
         (let* ((fn-list (needed-fn-expr expr nil nil $sat))
                ($sat (add-mem-entries fn-list $sat state)))
           ;; It won't happen again
-          (run-ce-expr expr ce-alist $sat state)))       
+          (run-ce-expr expr ce-alist $sat state)))
        (t
         (mv-let
          (arg-vals $sat state)
@@ -505,7 +505,7 @@
           (exec-info
            (let ((arg-vals (quote-list arg-vals nil)))
              (mv-let
-              (erp val state)            
+              (erp val state)
               (simple-translate-and-eval (cons (car expr) arg-vals)
                                          nil
                                          nil ;;'($sat)
@@ -513,8 +513,8 @@
                                          "run-ce"
                                          (w state)
                                          state)
-              (if erp 
-                  (mv (er hard 'run-ce "Unable to run counter-example~%") 
+              (if erp
+                  (mv (er hard 'run-ce "Unable to run counter-example~%")
                       nil $sat state)
                 (mv 'no-error (cdr val) $sat state)))))
           ((uninterpreted-fnp fn $sat state)
@@ -528,7 +528,7 @@
                        fn arg-vals)
                    nil $sat state))))
           (t
-           (run-ce-expr (fn-body fn state) 
+           (run-ce-expr (fn-body fn state)
                         (add-to-alist (fn-formals fn state) arg-vals nil)
                         $sat state))))))))))
 )
@@ -537,7 +537,7 @@
 ;; literal expressions.
 (defun run-ce (input-clause ce-alist $sat state)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((endp input-clause)
     (mv 'no-error nil $sat state))
    (t
@@ -556,10 +556,10 @@
     (let* ((entry (car ce-alist))
            (input-var (car entry))
            (val (cdr entry)))
-      (prog2$ 
+      (prog2$
        (cw "~x0: ~x1~%" input-var val)
        (print-ce-ins (cdr ce-alist))))))
-                   
+
 (defun print-ce-un-fn (fn un-fn-val-alist)
   (cond
    ((endp un-fn-val-alist)
@@ -567,7 +567,7 @@
    (t
     (let ((arg-vals (quote-list (caar un-fn-val-alist) nil))
           (call-val (cdar un-fn-val-alist)))
-      (prog2$ 
+      (prog2$
        (cw "~x0: ~x1~%" (cons fn arg-vals) call-val)
        (print-ce-un-fn fn (cdr un-fn-val-alist)))))))
 

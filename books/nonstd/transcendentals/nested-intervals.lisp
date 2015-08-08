@@ -4,9 +4,9 @@
 (include-book "arithmetic/top" :dir :system)
 
 (encapsulate
- ( ((nested-interval *) => * :formals (n) :guard (posp n)) 
+ ( ((nested-interval *) => * :formals (n) :guard (posp n))
    )
- 
+
  (local
   (defun nested-interval (n)
     (cons (realfix (- (/ n))) (realfix (/ n)))
@@ -85,7 +85,7 @@
 		 (:instance cdr-nested-interval-bounded-above))
 	   :in-theory (disable nested-intervals-are-intervals
 			       cdr-nested-interval-bounded-above)))
-		 
+
   )
 
 (defthm-std nested-interval-bound-is-standard
@@ -213,7 +213,7 @@
  (defthm car-interval-any-bound-is-real
    (realp (car-interval-any-bound))
    :rule-classes (:rewrite :type-prescription))
-  
+
  (defthm car-interval-any-bound-is-bound-for-standards
    (implies (and (posp n)
 		 (standardp n))
@@ -221,7 +221,7 @@
 		(car-interval-any-bound))))
  ))
 
-(local 
+(local
  (defthm-std car-interval-any-bound-is-bound
    (implies (posp n)
 	    (<= (car (nested-interval n))
@@ -272,11 +272,11 @@
 		(standard-part-car-interval-large)))
    :hints (("Goal"
 	    :use ((:functional-instance car-interval-any-bound-is-bound
-					(car-interval-any-bound 
+					(car-interval-any-bound
 					 standard-part-car-interval-large-classical)))))))
 
 
-  
+
 
 (local
  (encapsulate
@@ -289,7 +289,7 @@
   (defthm cdr-interval-any-bound-is-real
     (realp (cdr-interval-any-bound))
     :rule-classes (:rewrite :type-prescription))
-  
+
   (defthm cdr-interval-any-bound-is-bound-for-standards
     (implies (and (posp n)
 		  (standardp n))
@@ -335,7 +335,7 @@
 	    :in-theory (disable standard-part-<=
 				nested-intervals-are-intervals)))
    ))
-				
+
 
 (local
  (defthm standard-part-car-interval-satisfies-cdr-interval-any-bound-is-bound-for-standards
@@ -359,7 +359,7 @@
 		(cdr (nested-interval n))))
    :hints (("Goal"
 	    :use ((:functional-instance cdr-interval-any-bound-is-bound
-					(cdr-interval-any-bound 
+					(cdr-interval-any-bound
 					 standard-part-car-interval-large-classical))))
 	   ("Subgoal 1"
 	    :use ((:instance standard-part-car-interval-satisfies-cdr-interval-any-bound-is-bound-for-standards))
@@ -381,6 +381,6 @@
 	   :in-theory (disable standard-part-car-interval-large-is-lower-bound-of-cdrs
 			       standard-part-car-interval-large-is-upper-bound-of-cars)))
   :rule-classes nil)
-	    
+
 
 

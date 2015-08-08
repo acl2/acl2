@@ -32,7 +32,7 @@ self-explanatory.
    (implies (pre s) (inv s)))
 
  (defthm |inv persists|
-   (implies (and (inv s)  
+   (implies (and (inv s)
                  (not (exitpoint s)))
             (inv (step-fn s))))
 
@@ -42,7 +42,7 @@ self-explanatory.
             (post s)))
 
  (defthm |m is ordinal|
-   (implies (inv s) 
+   (implies (inv s)
             (o-p (m s))))
 
  (defthm |m decreases|
@@ -53,7 +53,7 @@ self-explanatory.
 
 
 (defun run-fn (s n)
-  (if (zp n) 
+  (if (zp n)
       s
     (run-fn (step-fn s) (1- n))))
 
@@ -95,12 +95,12 @@ self-explanatory.
  (defthm clock-fn-is-inv
    (implies (inv s)
             (inv (run-fn s (clock-fn s))))))
- 
+
 (local
  (defthm total-correctness-of-clock
    (implies (pre s)
             (post (run-fn s (clock-fn s))))))
- 
+
 (local
  (defthm n-is-first-reduces-to-clock
    (implies (and (n-is-first s n)
@@ -137,4 +137,3 @@ self-explanatory.
   :hints (("Goal"
            :use ((:instance exists-exitpoint-suff
                             (n (clock-fn s)))))))
-                            

@@ -18,7 +18,7 @@
 
 
 ;; Each of these macros is for a construct that occurs in both
-;; the basic and extended regexp parsers in exactly the same form 
+;; the basic and extended regexp parsers in exactly the same form
 ;; except for the name of the function in the recursive call.
 ;; Writing them as macros avoids repeating the code.
 ;; The variables str, prev1, prev2, opts, prev, and eprev
@@ -35,7 +35,7 @@
 ;; opts - parsing options
 
 (defmacro parse-* (parsefun)
-  `(if (valid-repeat prev1)          
+  `(if (valid-repeat prev1)
        (,parsefun str
                   (1+ idx)
                   (r-repeat prev1 0 -1)
@@ -66,8 +66,8 @@
      (if (parse-options-strict-repeat opts)
          (mv "? doesn't follow a regex" idx brcount)
        (,parsefun str (1+ idx) (r-repeat (r-any) 0 1) prev brcount opts))))
-  
-   
+
+
 
 (defmacro parse-+ (parsefun)
   ;; repeat one to infinity times
@@ -95,7 +95,7 @@
   ;; we consider the brace to be text; otherwise we return an error.
   `(let* ((valid (valid-repeat prev1))
           (prevr (if valid
-                     prev1 
+                     prev1
                    (r-any))))
      (if (and (not valid)
               (parse-options-strict-brace opts))
@@ -112,7 +112,7 @@
                  (if (mbt (> rest idx))
                      (,parsefun str rest brace prev2 brcount opts)
                    (mv "impossible error" idx brcount)))))))
-                  
+
 
 (defmacro parse-paren (parsefun)
   ;; Parse the inner expression, (xx check for the matching paren,)
@@ -135,10 +135,10 @@
                    (let ((idx rem))
                      (parse-end))
                  (if (mbt (> (1+ rem) idx))
-                     (,parsefun str (1+ rem) 
-                                (r-group inner (1+ brcount)) 
-                                prev 
-                                new-brcount 
+                     (,parsefun str (1+ rem)
+                                (r-group inner (1+ brcount))
+                                prev
+                                new-brcount
                                 opts)
                    (mv "impossible error" idx new-brcount))))
 
@@ -161,7 +161,7 @@
           (if (stringp regex) ;; catch error
               (mv regex rem brcount)
             (mv (r-disjunct eprev regex) rem brcount))))
-   
+
 
 (defmacro parse-backslash (parsefun elseaction)
   ;; In a context where the previous character in str is a backslash,
@@ -202,7 +202,7 @@
   `(mv eprev idx brcount))
 
 (defun ere-parse (str idx prev1 prev2 brcount opts)
-  (declare (xargs 
+  (declare (xargs
             :measure (string-index-measure idx str)
             :guard (and (stringp str)
                         (natp idx)
@@ -217,7 +217,7 @@
             :verify-guards nil
             ))
   ;; Set up correct bindings for the macro calls
-  (let* ((prev (if prev2 
+  (let* ((prev (if prev2
                    (r-concat prev2 prev1)
                  prev1))
          (eprev (if prev prev (r-empty))))
@@ -247,7 +247,7 @@
         (#\)
          (parse-end))
         (#\\
-         (parse-backslash 
+         (parse-backslash
           ere-parse
           (parse-text ere-parse)))
         (otherwise
@@ -295,8 +295,8 @@
                                 prev1)
                             (integerp brcount)
                             (<= 0 brcount)))
-                (case-split (not (stringp 
-                                  (mv-nth 0 (ere-parse 
+                (case-split (not (stringp
+                                  (mv-nth 0 (ere-parse
                                         str idx prev1 prev2 brcount opts))))))
            (regex-p (mv-nth 0 (ere-parse str idx prev1 prev2 brcount opts))))
   :rule-classes
@@ -318,7 +318,7 @@
 
 
 (defun bre-parse (str idx prev1 prev2 brcount opts)
-  (declare (xargs 
+  (declare (xargs
             :measure (string-index-measure idx str)
             :guard (and (stringp str)
                         (natp idx)
@@ -332,9 +332,9 @@
                         (natp brcount))
             :verify-guards nil
             ))
-   
+
   ;; Set up correct bindings for the macro calls
-  (let* ((prev (if prev2 
+  (let* ((prev (if prev2
                    (r-concat prev2 prev1)
                  prev1))
          (eprev (if prev prev (r-empty))))
@@ -417,8 +417,8 @@
                                 prev1)
                             (integerp brcount)
                             (<= 0 brcount)))
-                (case-split (not (stringp 
-                                  (mv-nth 0 (bre-parse 
+                (case-split (not (stringp
+                                  (mv-nth 0 (bre-parse
                                         str idx prev1 prev2 brcount opts))))))
            (regex-p (mv-nth 0 (bre-parse str idx prev1 prev2 brcount opts))))
   :rule-classes
@@ -434,7 +434,7 @@
 (verify-guards bre-parse :otf-flg t)
 
 (defun fixed-string-parse (str idx prev1 prev2 brcount opts)
-  (declare (xargs 
+  (declare (xargs
             :measure (string-index-measure idx str)
             :guard (and (stringp str)
                         (natp idx)
@@ -449,7 +449,7 @@
             :verify-guards nil
             ))
   ;; Set up correct bindings for the macro calls
-  (let* ((prev (if prev2 
+  (let* ((prev (if prev2
                    (r-concat prev2 prev1)
                  prev1))
          (eprev (if prev prev (r-empty))))
@@ -497,8 +497,8 @@
                                 prev1)
                             (integerp brcount)
                             (<= 0 brcount)))
-                (case-split (not (stringp 
-                                  (mv-nth 0 (fixed-string-parse 
+                (case-split (not (stringp
+                                  (mv-nth 0 (fixed-string-parse
                                         str idx prev1 prev2 brcount opts))))))
            (regex-p (mv-nth 0 (fixed-string-parse str idx prev1 prev2 brcount opts))))
   :rule-classes
@@ -555,7 +555,7 @@
             (* max inmax))))
         (& (r-repeat inner min max)))))
    (& regex)))
-           
+
 
 (local (defthm integerp-*
           (implies (and (integerp a)
@@ -568,7 +568,7 @@
   :rule-classes
   (:rewrite
    (:forward-chaining :trigger-terms ((post-parse-optimize regex)))))
-                                
+
 
 (local (defthm integerp-rationalp
           (implies (integerp x)

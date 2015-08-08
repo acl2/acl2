@@ -56,9 +56,9 @@
 
 ; from list-defthms
 ;; (defthm nth-take
-;;   (implies (and (integerp i) 
+;;   (implies (and (integerp i)
 ;;                 (<= 0 i)
-;;                 (integerp n) 
+;;                 (integerp n)
 ;;                 (<= 0 n))
 ;;            (equal (nth i (take n l))
 ;;                   (if (<= n (len l))

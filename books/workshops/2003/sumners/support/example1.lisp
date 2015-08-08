@@ -67,7 +67,7 @@ the user should use the fair2.lisp book instead (as in example2.lisp).
 
 ;; the following is just a rewrite rule we need from linear arithmetic (which
 ;; does not "rewrite")
-(local 
+(local
 (defthm linear-factoid3
   (implies (and (integerp x)
                 (integerp y))
@@ -99,7 +99,7 @@ the user should use the fair2.lisp book instead (as in example2.lisp).
 (defun time>= (y x)
   (and (natp y) (implies (natp x) (>= y x))))
 
-(defun-sk eventually-good (x) 
+(defun-sk eventually-good (x)
   (exists (y) (and (time>= y x) (good (run y)))))
 
 (defthm progress-or-liveness

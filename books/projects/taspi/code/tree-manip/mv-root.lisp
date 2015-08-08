@@ -1,4 +1,4 @@
-;; We are going to guard on the assumption that the 
+;; We are going to guard on the assumption that the
 ;; input tree is already ordered, so if the tree
 ;; is rooted, we need do nothing to get in a good
 ;; state.  However, if the tree is unrooted, we want
@@ -38,7 +38,7 @@
                            (get-taxa-from-taxon-index tia))
                    (subset (mytips (cdr x))
                            (get-taxa-from-taxon-index tia)))
-              (hons (caar x) 
+              (hons (caar x)
                     (orderly-append (cdar x) (list (cdr x)) tia))
             "Error: x does not match tia in node-to-node")
         x)
@@ -64,12 +64,12 @@
                            (get-taxa-from-taxon-index tia)))
               (orderly-append (car x) (cdr x) tia)
             "Error: Need x to match tia in branch-to-node")
-        ;; we're on a branch, so only two elements 
+        ;; we're on a branch, so only two elements
         ;; even if we're on the branch connecting
         ;; the first taxon, this will work to move
         ;; us to the node at which the first-taxon
         ;; is connected
-        (if (consp (cdr x)) 
+        (if (consp (cdr x))
             (if (and (taspip nil (cadr x))
                      (subset (mytips (cadr x))
                              (get-taxa-from-taxon-index tia))
@@ -106,7 +106,7 @@
 
 ; ":Doc-Section TASPI
 ;  Returns the structurally unchanged unrooted tree now with a representation
-;  rooted at the node connecting the first taxon according to the mapping 
+;  rooted at the node connecting the first taxon according to the mapping
 ;  given to the rest of the tree.~/
 ;  ~/
 ;  Arguments:
@@ -116,7 +116,7 @@
 ;  Details: Must be called on an unrooted tree in order to not change
 ;           structure.  If the initial representation is ordered according
 ;           to the mapping given, the resulting representation will be as
-;           well.  Taxa names in the tree must match up with the taxa names 
+;           well.  Taxa names in the tree must match up with the taxa names
 ;           in the mapping."
   (declare (xargs :guard (good-taxon-index-halist tia)))
   (if (rooted-at-branch x)
@@ -131,8 +131,8 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns the list of structurally unchanged unrooted trees now each with a 
-;  representation rooted at the node connecting the first taxon according to 
+;  Returns the list of structurally unchanged unrooted trees now each with a
+;  representation rooted at the node connecting the first taxon according to
 ;  the mapping given to the rest of the tree.~/
 ;  ~/
 ;  Arguments:
@@ -141,16 +141,16 @@
 ;    (3) ans - accumulator (initally nil)
 
 ;  Details: Must be called on a list of unrooted trees in order to not change
-;           structure.  If each of the initial representations is ordered 
-;           according to the mapping given, the resulting representations will 
-;           be as well.  Taxa names in the trees must match up with the taxa 
+;           structure.  If each of the initial representations is ordered
+;           according to the mapping given, the resulting representations will
+;           be as well.  Taxa names in the trees must match up with the taxa
 ;           names in the mapping."
   (declare (xargs :guard (good-taxon-index-halist tia)))
   (if (consp list)
       (mv-root-list (cdr list) tia
                     (hons (mv-root (car list) tia) ans))
     ans))
-          
+
 (defthm taspip-through-app
   (implies (and (taspip flg x)
                 (taspip nil y))
@@ -202,7 +202,7 @@
 ;                (<= 3 (len (double-rewrite x))))
 ;           (and (taspip flg (mv-root-helper x))
 ;                (treep (mv-root-helper x))))
-;  :hints (("Goal" :in-theory 
+;  :hints (("Goal" :in-theory
 ;           (disable len-greater-1-tree-listp=treep))
 ;))
 
@@ -236,7 +236,7 @@
 ;                (treep x))
 ;           (and (taspip flg (mv-root x))
 ;                (treep (mv-root x))))
-;  :hints (("Subgoal 7'4'" :in-theory 
+;  :hints (("Subgoal 7'4'" :in-theory
 ;           (disable taspip-through-mv-root-helper)
 ;           :use (:instance taspip-through-mv-root-helper
 ;                           (x (app x1 x2))))

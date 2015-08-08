@@ -13,7 +13,7 @@
 ;;;    (512) 322-9951
 ;;;    flatau@cli.com
 ;;;
-;;;    Modified for ACL2 Version_2.6 by: 
+;;;    Modified for ACL2 Version_2.6 by:
 ;;;    Jun Sawada, IBM Austin Research Lab. sawada@us.ibm.com
 ;;;    Matt Kaufmann, kaufmann@cs.utexas.edu
 ;;;

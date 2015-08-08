@@ -44,7 +44,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -69,7 +69,7 @@ To certify this book, first, create a world with the following packages:
 |#
 (in-package "FUPOL")
 
-;; (include-book "producto")  
+;; (include-book "producto")
 (include-book "fuproducto"
 	      :load-compiled-file nil)
 
@@ -182,14 +182,14 @@ To certify this book, first, create a world with the following packages:
 ;; 	  ("Subgoal *1/2.1.1"
 ;; 	   :in-theory (disable MON::monomio-coeficiente-termino)
 ;; 	   :use ((:instance COE::|b + c = 0 => (a * b) + (a * c) = 0|
-;; 			    (COE::a (coeficiente m)) (COE::b (coeficiente n)) 
+;; 			    (COE::a (coeficiente m)) (COE::b (coeficiente n))
 ;; 			    (COE::c (coeficiente (primero p))))))
 ;; ;;; Caso inductivo
 ;; 	  ("Subgoal *1/1"
-;; 	   :in-theory (disable +-monomio 
+;; 	   :in-theory (disable +-monomio
 ;; 			       UMON::*
-;; 			       fnp-fn fn 
-;; 			       |fn(m +Mo fn(p)) = fn(m +Mo p)| 
+;; 			       fnp-fn fn
+;; 			       |fn(m +Mo fn(p)) = fn(m +Mo p)|
 ;; 			       |(m +Mo fn(p)) = fn(m +Mo p)|
 ;; 			       |m1 +Mo (m2 +Mo p) =e m2 +Mo (m1 +Mo p)|
 ;; 			       fn-ordenado fnp-iff-ordenadop ordenadop-fn)
@@ -234,14 +234,14 @@ To certify this book, first, create a world with the following packages:
 	  ("Subgoal *1/2.1.1"
 	   :in-theory (disable FUMON::monomio-coeficiente-termino)
 	   :use ((:instance FLD::|b + c = 0 => (a * b) + (a * c) = 0|
-			    (FLD::a (coeficiente m)) (FLD::b (coeficiente n)) 
+			    (FLD::a (coeficiente m)) (FLD::b (coeficiente n))
 			    (FLD::c (coeficiente (primero p))))))
 ;;; Caso inductivo
 	  ("Subgoal *1/1"
-	   :in-theory (disable +-monomio 
+	   :in-theory (disable +-monomio
 			       FUMON::*
-			       fnp-fn fn 
-			       |fn(m +Mo fn(p)) =P fn(m +Mo p)| 
+			       fnp-fn fn
+			       |fn(m +Mo fn(p)) =P fn(m +Mo p)|
 			       |(m +Mo fn(p)) =P fn(m +Mo p)|
 			       |m1 +Mo (m2 +Mo p) =P m2 +Mo (m1 +Mo p)|
 			       |m1 +Mo (m2 +Mo p) = m2 +Mo (m1 +Mo p)|
@@ -281,7 +281,7 @@ To certify this book, first, create a world with the following packages:
 		  (p2 (fn (*-monomio m (+-monomio n (cdr p))))))))))
 
 (in-theory (disable FUMON::*
-		    |fn(m +Mo fn(p)) =P fn(m +Mo p)| 
+		    |fn(m +Mo fn(p)) =P fn(m +Mo p)|
 		    |(m +Mo fn(p)) =P fn(m +Mo p)|
 		    |n +Mo p = p_p +M (n +Mo p_r)|))
 
@@ -333,7 +333,7 @@ To certify this book, first, create a world with the following packages:
 ;;;
 ;;; Esta propiedad es expansiva; restringimos su aplicación sintácticamente
 
-(local 
+(local
   (defthm |m +M p = m +Mo p|
     (implies (and (monomiop (double-rewrite m))
 		  (polinomiop (double-rewrite p)))
@@ -367,7 +367,7 @@ To certify this book, first, create a world with the following packages:
   :hints (("Goal"
 	   :in-theory (enable =))))
 
-(local 
+(local
  (in-theory (enable |m *M p = m *M fn(p)|)))
 
 ;; (defcong = = (*-monomio m p) 2)
@@ -379,7 +379,7 @@ To certify this book, first, create a world with the following packages:
 	      (*-monomio m p2)))
   :rule-classes :congruence)
 
-;;; -------------------------------------------------------- 
+;;; --------------------------------------------------------
 ;;; Congruencia de la igualdad de polinomios con el producto
 ;;; --------------------------------------------------------
 
@@ -404,7 +404,7 @@ To certify this book, first, create a world with the following packages:
 ;; (defcong = = (* p q) 1
 ;;   :hints (("Goal"
 ;; 	   :in-theory (disable |p * q = q * p|)
-;; 	   :use (|p * q = q * p| 
+;; 	   :use (|p * q = q * p|
 ;; 		 (:instance |p * q = q * p| (p p-equiv))))))
 (defthm
   =-implies-=-*-1
@@ -414,7 +414,7 @@ To certify this book, first, create a world with the following packages:
   :rule-classes :congruence
   :hints (("Goal"
 	   :in-theory (disable |p * q = q * p|)
-	   :use ((:instance |p * q = q * p| (p p1)) 
+	   :use ((:instance |p * q = q * p| (p p1))
 		 (:instance |p * q = q * p| (p p2))))))
 
 ;;; NOTA:

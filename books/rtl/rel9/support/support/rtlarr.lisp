@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -30,14 +30,14 @@
 
 We define properties of a generic record accessor function and updater function
 we will use for RTL arrays.  The basic functions are (ag a r) and (as a v r)
-where a is an array index, v is a value, r is an "array" or record, and 
-(ag a r) returns the value set to index a in array r, and (as a v r) returns 
+where a is an array index, v is a value, r is an "array" or record, and
+(ag a r) returns the value set to index a in array r, and (as a v r) returns
 a new array with index a set to value v in array r.
 
 The following main lemmas are "exported" about record (ag)et and (as)et:
 
 (defthm ag-same-as
-  (equal (ag a (as a v r)) 
+  (equal (ag a (as a v r))
          v))
 
 (defthm ag-diff-as
@@ -46,7 +46,7 @@ The following main lemmas are "exported" about record (ag)et and (as)et:
                   (ag a r))))
 
 (defthm as-same-ag
-  (equal (as a (ag a r) r) 
+  (equal (as a (ag a r) r)
          r))
 
 (defthm as-same-as
@@ -68,13 +68,13 @@ We also include some auxiliary lemmas which have proven useful.
 (defthm as-non-default-cannot-be-nil
   (implies (not (equal v (default-get-valu)))
            (as a v r))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable rcd->acl2-of-record-non-nil)
            :use (:instance rcd->acl2-of-record-non-nil
                            (r (as-aux a v (acl2->rcd r)))))))
 
 (defthm non-nil-if-ag-not-default
-  (implies (not (equal (ag a r) 
+  (implies (not (equal (ag a r)
                        (default-get-valu)))
            r)
   :rule-classes :forward-chaining)
@@ -121,7 +121,7 @@ well-formed record hypothesis.
       (and (consp x)
            (consp (car x))
            (rcdp (cdr x))
-           (not (equal (cdar x) 
+           (not (equal (cdar x)
                        (default-get-valu)))
            (or (null (cdr x))
                (acl2::<< (caar x) (caadr x))))))
@@ -132,7 +132,7 @@ well-formed record hypothesis.
 (defmacro ifrp-tag ()
   ''unlikely-to-ever-occur-in-an-executable-counterpart)
 
-(defun ifrp (x) ;; ill-formed rcdp 
+(defun ifrp (x) ;; ill-formed rcdp
   (declare (xargs :guard t))
   (or (not (rcdp x))
       (and (consp x)
@@ -174,7 +174,7 @@ well-formed record hypothesis.
          (acons-if a v r))
         ((equal a (caar r))
          (acons-if a v (cdr r)))
-        (t 
+        (t
          (cons (car r) (as-aux a v (cdr r))))))
 
 ;; we need the following theorems in order to get the guard for s to verify.
@@ -225,7 +225,7 @@ well-formed record hypothesis.
 (local
 (defthm as-aux-same-ag-aux
   (implies (rcdp r)
-           (equal (as-aux a (ag-aux a r) r) 
+           (equal (as-aux a (ag-aux a r) r)
                   r))))
 
 (local
@@ -295,7 +295,7 @@ well-formed record hypothesis.
 ;; s(et) and g(et) they wish to export from the book.
 
 (defthm ag-same-as
-  (equal (ag a (as a v r)) 
+  (equal (ag a (as a v r))
          v))
 
 (defthm ag-diff-as
@@ -315,7 +315,7 @@ well-formed record hypothesis.
 (in-theory (disable ag-of-as-redux))
 
 (defthm as-same-ag
-  (equal (as a (ag a r) r) 
+  (equal (as a (ag a r) r)
          r))
 
 (defthm as-same-as
@@ -337,13 +337,13 @@ well-formed record hypothesis.
 (defthm as-non-default-cannot-be-nil
   (implies (not (equal v (default-get-valu)))
            (as a v r))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable rcd->acl2-of-record-non-nil)
            :use (:instance rcd->acl2-of-record-non-nil
                            (r (as-aux a v (acl2->rcd r)))))))
 
 (defthm non-nil-if-ag-not-default
-  (implies (not (equal (ag a r) 
+  (implies (not (equal (ag a r)
                        (default-get-valu)))
            r)
   :rule-classes :forward-chaining)
@@ -364,7 +364,7 @@ well-formed record hypothesis.
       (and (consp x)
            (consp (car x))
            (bv-arrp (cdr x) k)
-           (not (equal (cdar x) 
+           (not (equal (cdar x)
                        (default-get-valu)))
            (bvecp (cdar x) k)
            (or (null (cdr x))
@@ -467,7 +467,7 @@ well-formed record hypothesis.
 
 ;;Functions representing bit vectors of determined length but undetermined value:
 
-(encapsulate 
+(encapsulate
  ((reset2 (key size) t))
  (local (defun reset2 (key size) (declare (ignore key size)) nil))
  (defthm bv-arrp-reset2
@@ -476,7 +476,7 @@ well-formed record hypothesis.
    (("goal" :in-theory (enable bv-arrp)))
    ))
 
-(encapsulate 
+(encapsulate
  ((unknown2 (key size n) t))
  (local (defun unknown2 (key size n) (declare (ignore key size n)) nil))
  (defthm bv-arrp-unknown2

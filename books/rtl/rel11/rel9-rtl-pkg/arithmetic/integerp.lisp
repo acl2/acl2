@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -38,7 +38,7 @@
           (implies (and (< x 1)
                         (< 0 x))
                    (not (integerp x)))))
- 
+
  (defthm quotient-not-integerp
    (implies (and (< i j)
                  (<= 0 i)
@@ -57,7 +57,7 @@
  (local (defthm minus-1-rewrite
           (equal (* -1 x)
                  (- x))))
-             
+
  (defthm integerp-minus-aux
    (implies (acl2-numberp x) ;can't gen?
             (equal (integerp (* -1 x))
@@ -76,7 +76,7 @@
 
 
 #|
- 
+
  simplify integerp of a sum. see robert krug's meta rules on this subject
 
 |#
@@ -101,7 +101,7 @@
 
 
 #|
- 
+
  simplify integerp of a product. see robert krug's meta rules on this subject
 
 |#
@@ -129,7 +129,7 @@
   (implies (and (integerp (* a b))
                 (integerp c))
            (integerp (* a b c)))
-  :hints (("Goal" :in-theory (disable integerp-prod-of-3-last-two 
+  :hints (("Goal" :in-theory (disable integerp-prod-of-3-last-two
                                       integerp-prod-of-3-first-and-last)
            :use (:instance integerp-prod-of-3-last-two (a c) (c a)))))
 

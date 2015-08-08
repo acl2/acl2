@@ -920,7 +920,7 @@ bit of each variable."
                    :do-not '(generalize fertilize)
                    :induct (aig-rsim60 aig renv)
                    :in-theory (enable aig-rsim60 aig-vars aig-eval aig-env-lookup
-                                      aig-vecsim60 
+                                      aig-vecsim60
                                       subsetp-equal
                                       bitops::logbitp-of-loghead-split)))))
 

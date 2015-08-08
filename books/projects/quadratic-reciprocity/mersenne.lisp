@@ -74,7 +74,7 @@
 ;;[Error: Attempt to create an integer that is too large to represent.]
 
 ;; There is an obvious optimization of this procedure, based on
-;; the observation that if n has a proper divisor, then it has one 
+;; the observation that if n has a proper divisor, then it has one
 ;; that is at most sqrt(n).  Thus, we define an alternative to
 ;; the function least-divisor that stops at sqrt(n), and
 ;; establish a rewrite rule:
@@ -126,7 +126,7 @@
 		  (= n (least-divisor k n)))
 	     (= n (least-divisor-2 k n)))
   :rule-classes ()
-  :hints (("Goal" :use (least-divisor-divides 
+  :hints (("Goal" :use (least-divisor-divides
 			(:instance least-divisor-is-least (d (least-divisor-2 2 n)))))))
 
 (defthm least-divisor-rewrite
@@ -158,7 +158,7 @@
 ;;[Time: 54  minutes]
 
 ;; However, the above optimization does not help at all in the composite case.
-;; In the special case where mod(p,4) = 3 and 2*p+1 is prime, the following 
+;; In the special case where mod(p,4) = 3 and 2*p+1 is prime, the following
 ;; theorem may be used.  This theorem is attributed to Euler in Hardy and
 ;; Wright, where it appears as Theorem 103.  It is an immediate comsequence
 ;; of Euler's Criterion and the Second Supplement.
@@ -189,7 +189,7 @@
     (implies (and (primep p)
 		  (= (mod p 4) 3)
 		  (> p 3)
-		  (primep (1+ (* 2 p))))	  
+		  (primep (1+ (* 2 p))))
 	     (not (primep (m p))))
   :hints (("Goal" :use (theorem-103
 			expt-2-p-bnd

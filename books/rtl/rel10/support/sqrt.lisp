@@ -21,7 +21,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -51,13 +51,13 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defun re (x)
@@ -117,8 +117,8 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (local-defthm rtz-trunc
@@ -126,8 +126,8 @@
   :hints (("Goal" :in-theory (enable rtz trunc))))
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (local-defthm raz-away
@@ -256,7 +256,7 @@
                 (<= (rtz-sqrt x n) (- 1 (expt 2 (- n))))))
   :rule-classes ()
   :hints (("Goal" :use trunc-sqrt-bounds)))
-                                
+
 
 (defthm expo-rtz-sqrt
   (implies (and (rationalp x)
@@ -289,7 +289,7 @@
   (implies (and (not (zp n))
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1))                
+                (< x 1))
            (and (<= (* (rtz-sqrt x n)
                        (rtz-sqrt x n))
                     x)
@@ -370,14 +370,14 @@
 
 #|
 Proof: Let a = rtz-sqrt(n-2, x) and r = rto-sqrt-norm(x, n).
-Suppose a^2 = x.  Then r = a, l^2 <= x = a^2 = r^2, and l <= r.  
+Suppose a^2 = x.  Then r = a, l^2 <= x = a^2 = r^2, and l <= r.
 By rto-monotone, rto-exactp-b, and exactp-rtz-sqrt,
 
   rto(l, n) <= rto(r, n) = r.
 
-Thus, we may assume a^2 < x and r = a + 2^(1-n).  By rtz-sqrt-square-bounds, 
-l^2 <= x < (a + 2^(2-n))^2, and hence l < a + 2^(2-n) = fp+(a, n-1).  
-It follows from rtz-upper-pos, rtz-exactp-a, and fp+2 that 
+Thus, we may assume a^2 < x and r = a + 2^(1-n).  By rtz-sqrt-square-bounds,
+l^2 <= x < (a + 2^(2-n))^2, and hence l < a + 2^(2-n) = fp+(a, n-1).
+It follows from rtz-upper-pos, rtz-exactp-a, and fp+2 that
 rtz(l, n-1) <= a.  Thus,
 
   rto(l, n) <= rtz(l, n-1) + 2^(1+expo(l)-n)
@@ -401,14 +401,14 @@ rtz(l, n-1) <= a.  Thus,
 
 #|
 Proof: Let a = rtz-sqrt(x, n-1) and r = rto-sqrt-norm(x, n).
-We may assume that h < r; otherwise, by rto-monotone, 
+We may assume that h < r; otherwise, by rto-monotone,
 rto-exactp-b, and exactp-rtz-sqrt,
 
   rto(h, n) >= rto(r, n) = r.
 
-If a^2 = x, then r = a, h^2 >= x = a^2 = r^2, and h >= r.  
+If a^2 = x, then r = a, h^2 >= x = a^2 = r^2, and h >= r.
 Thus, by rtz-sqrt-square-bounds, a^2 < x and r = a + 2^(1-n) = fp+(a, n).
-Since h^2 >= x > a^2, h > a.  It follows from trunc-exactp-c that 
+Since h^2 >= x > a^2, h > a.  It follows from trunc-exactp-c that
 trunc(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
 
   rto(h, n) = rtz(h, n-1) + 2^(1-n)
@@ -462,7 +462,7 @@ trunc(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1)) 
+                (< x 1))
            (iff (= (* (rtz-sqrt x n) (rtz-sqrt x n)) x)
                 (= (rto-sqrt-norm x m) (rtz-sqrt x n))))
   :rule-classes ()
@@ -545,9 +545,9 @@ trunc(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
 #|
 Proof: Let e = fl(expo(x)/2), x0 = x/2^(2*e), and l0 = l/2^e.
 Then 1 <= x0 < 4 and l0^2 = l^2/2^(2*e) <= x/2^(2*e) = x0.
-By rto-shift and rto-sqrt-norm-lower, 
+By rto-shift and rto-sqrt-norm-lower,
 
-  rto(l, 66) = 2^e * rto(l0, n) 
+  rto(l, 66) = 2^e * rto(l0, n)
             <= 2^e * rto-sqrt-norm(x0, n)
              = sqrt(x, n).
 
@@ -587,7 +587,7 @@ By fp-rnd-rto and fp-rnd-monotone,
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 (defthm qe-2
@@ -638,7 +638,7 @@ By fp-rnd-rto and fp-rnd-monotone,
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -668,13 +668,13 @@ By fp-rnd-rto and fp-rnd-monotone,
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defun re (x)
@@ -754,7 +754,7 @@ By fp-rnd-rto and fp-rnd-monotone,
            (and (<= 1/2 (rtz-sqrt x n))
                 (<= (rtz-sqrt x n) (- 1 (expt 2 (- n))))))
   :rule-classes ())
-                                
+
 
 (defthm expo-rtz-sqrt
   (implies (and (rationalp x)
@@ -784,7 +784,7 @@ By fp-rnd-rto and fp-rnd-monotone,
   (implies (and (not (zp n))
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1))                
+                (< x 1))
            (and (<= (* (rtz-sqrt x n)
                        (rtz-sqrt x n))
                     x)
@@ -922,7 +922,7 @@ By fp-rnd-rto and fp-rnd-monotone,
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1)) 
+                (< x 1))
            (iff (= (* (rtz-sqrt x n) (rtz-sqrt x n)) x)
                 (= (rto-sqrt-temp x m) (rtz-sqrt x n))))
   :rule-classes ()
@@ -1047,7 +1047,7 @@ By fp-rnd-rto and fp-rnd-monotone,
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -1077,13 +1077,13 @@ By fp-rnd-rto and fp-rnd-monotone,
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defun re (x)
@@ -1160,7 +1160,7 @@ By fp-rnd-rto and fp-rnd-monotone,
            (and (<= 1/2 (rtz-sqrt x n))
                 (<= (rtz-sqrt x n) (- 1 (expt 2 (- n))))))
   :rule-classes ())
-                                
+
 
 (defthm expo-rtz-sqrt
   (implies (and (rationalp x)
@@ -1190,7 +1190,7 @@ By fp-rnd-rto and fp-rnd-monotone,
   (implies (and (not (zp n))
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1))                
+                (< x 1))
            (and (<= (* (rtz-sqrt x n)
                        (rtz-sqrt x n))
                     x)
@@ -1328,7 +1328,7 @@ By fp-rnd-rto and fp-rnd-monotone,
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1)) 
+                (< x 1))
            (iff (= (* (rtz-sqrt x n) (rtz-sqrt x n)) x)
                 (= (rto-sqrt x m) (rtz-sqrt x n))))
   :rule-classes ()

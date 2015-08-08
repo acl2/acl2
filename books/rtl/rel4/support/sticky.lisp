@@ -116,7 +116,7 @@
 		  (integerp n) (> n 0)
 		  (integerp k))
 	     (= (sticky (* (expt 2 k) x) n)
-		(* (expt 2 k) (sticky x n))))		
+		(* (expt 2 k) (sticky x n))))
   :rule-classes ())
 
 (defthm sticky-minus
@@ -232,11 +232,11 @@
 		  (not (exactp x n)))
 	     (= (away x n)
 		(+ (trunc x n)
-		   (expt 2 (+ (expo x) 1 (- n))))))		
+		   (expt 2 (+ (expo x) 1 (- n))))))
   :rule-classes ())
 
 (defthm sticky-0
-  (equal (sticky 0 n) 
+  (equal (sticky 0 n)
          0))
 
 (defthm minus-sticky
@@ -283,13 +283,13 @@
 (defthm sticky-exactp-m
     (implies (and (rationalp x)
 		  (integerp m)
-		  (integerp n) 
+		  (integerp n)
 		  (> n m)
 		  (> m 0))
 	     (iff (exactp (sticky x n) m)
 		  (exactp x m)))
   :rule-classes ())
 
-          
+
 
 

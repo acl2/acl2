@@ -16,7 +16,7 @@
 ;isn't nfix enabled?
 (defthm not-zp-nfix-reduction
   (implies (not (zp n))
-           (and (equal (nfix n) 
+           (and (equal (nfix n)
                        n)
                 (equal (nfix (1- n)) ;will this fire?  how do we normalize differences?
                        (1- n)))))
@@ -24,7 +24,7 @@
 ;isn't nfix enabled?
 (defthm zp-nfix
   (implies (zp n)
-           (equal (nfix n) 
+           (equal (nfix n)
                   0)))
 
 (defthm dumb
@@ -45,7 +45,7 @@
 (defund memberp (a x)
   (declare (type t a x))
   (if (consp x)
-      (if (equal a (car x)) 
+      (if (equal a (car x))
           t
 	(memberp a (cdr x)))
     nil))
@@ -73,8 +73,8 @@
 	    (memberp   a x)))
   :hints (("Goal" :in-theory (enable memberp))))
 
-(in-theory (disable member 
-                    member-equal 
+(in-theory (disable member
+                    member-equal
                     member-eq))
 
 (defthmd memberp-of-non-consp
@@ -115,7 +115,7 @@
   :hints (("Goal" :in-theory (enable memberp))))
 
 (defthm memberp-of-nil
-  (equal (memberp a nil) 
+  (equal (memberp a nil)
          nil)
   :hints (("goal" :in-theory (enable memberp))))
 
@@ -237,7 +237,7 @@
 
 (defthm non-membership-remove-1
   (implies (not (memberp a x))
-           (equal (remove-1 a x) 
+           (equal (remove-1 a x)
                   x))
   :hints (("Goal" :in-theory (enable remove-1))))
 
@@ -284,7 +284,7 @@
 (defthmd non-membership-removal-free
   (implies (and (not (memberp b x)) ;b is a free variable
                 (equal b a))
-           (equal (remove-1 a x) 
+           (equal (remove-1 a x)
                   x)))
 
 ;expensive?
@@ -322,7 +322,7 @@
   (implies (and (not (memberp a (remove-1 b x)))
 		(memberp a x))
 	   (equal b a))
-  :rule-classes :forward-chaining) 
+  :rule-classes :forward-chaining)
 
 
 
@@ -563,7 +563,7 @@ put back this for the forward-chaining?:
          (if (memberp a x)
              (perm (remove-1 a x) y)
            nil))
-  :hints (("Goal" :in-theory (enable perm) 
+  :hints (("Goal" :in-theory (enable perm)
            :induct (perm x y))))
 
 (defthm perm-of-non-consp-one
@@ -587,40 +587,40 @@ put back this for the forward-chaining?:
 
 
 
-(encapsulate 
+(encapsulate
  ()
- 
+
  (local
   (defthm perm-x-x
     (perm x x)
     :hints (("Goal" :in-theory (enable perm)))))
- 
+
  (local
   (defthm perm-of-remove-1-and-remove-1-blah
     (implies (perm x y)
              (perm (remove-1 a x) (remove-1 a y)))
     :hints (("Goal" :in-theory (e/d (perm
-                                     
+
                                      perm-of-cons-two)
                                     (;(:induction perm)
 
                                      perm-of-non-consp-one
                                      perm-of-non-consp-two))))))
- 
+
  (local
   (defthm perm-memberp
     (implies (and (perm x y)
                   (memberp a x))
              (memberp a y))
     :hints (("Goal" :in-theory (enable perm)))))
- 
+
  (local
   (defthm perm-transitivity
     (implies (and (perm x y)
                   (perm y z))
              (perm x z))
     :hints (("Goal" :in-theory (enable perm)))))
- 
+
  (defequiv perm :hints (("Goal" :in-theory (enable perm-commutative))))
  )
 
@@ -743,7 +743,7 @@ put back this for the forward-chaining?:
                   ))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
-;add a remove-bag iff rule?          
+;add a remove-bag iff rule?
 (defthm consp-remove-bag-rewrite
   (equal (consp (remove-bag x y))
          (not (subbagp y x)))
@@ -854,7 +854,7 @@ put back this for the forward-chaining?:
 
 (defthm remove-bag-not-consp-x
   (implies (not (consp x))
-           (equal (remove-bag x y) 
+           (equal (remove-bag x y)
                   y))
   :hints (("Goal" :in-theory (enable remove-bag))))
 
@@ -932,13 +932,13 @@ put back this for the forward-chaining?:
   (implies (not (memberp a y))
            (not (memberp a (remove-bag x y))))
   :hints (("Goal" :in-theory (enable remove-bag))))
-                  
+
 (defthm subbagp-implies-common-members-are-irrelevant
   (implies (subbagp x y)
-           (subbagp (remove-1 a x) 
+           (subbagp (remove-1 a x)
                    (remove-1 a y))))
 
-;bozo maybe we want to leave the remove-1 where it is??         
+;bozo maybe we want to leave the remove-1 where it is??
 (defthm subbagp-of-remove-1-both
   (equal (subbagp (remove-1 a x) y)
          (if (memberp a x)
@@ -992,42 +992,42 @@ put back this for the forward-chaining?:
 #|
 (encapsulate
  ()
- 
+
  (local
   (encapsulate
    ()
-   
+
    (defun raw-remove-bag (list1 list2)
      (if (consp list1)
 	 (let ((list2 (remove-1 (car list1) list2)))
 	   (raw-remove-bag (cdr list1) list2))
        list2))
-   
+
    (defthm raw-remove-bag-reduction
      (equal (raw-remove-bag list1 list2)
 	    (remove-bag list1 list2))
      :hints (("Goal" :in-theory (enable remove-bag))))
-   
+
    (defthm raw-remove-bag-reduction-instance
      (equal (raw-remove-bag (cdr list1) list2)
 	    (remove-bag (cdr list1) list2)))
-   
+
    (defun raw-remove-bag-double (list1 listx listy)
      (if (consp list1)
 	 (let ((listx (remove-1 (car list1) listx))
 	       (listy (remove-1 (car list1) listy)))
 	   (raw-remove-bag-double (cdr list1) listx listy))
        (cons listx listy)))
-   
+
    (defthm subbagp-implies-subbagp-raw-remove-bag
      (implies
       (subbagp listx listy)
       (subbagp (raw-remove-bag list1 listx) (raw-remove-bag list1 listy)))
-     :hints (("goal" 
+     :hints (("goal"
 	      :in-theory (disable raw-remove-bag-reduction)
 	      :induct (raw-remove-bag-double list1 listx listy))))
    ))
- 
+
  )
 |#
 
@@ -1065,13 +1065,13 @@ put back this for the forward-chaining?:
 (encapsulate
  ()
 
-;bozo 
+;bozo
  (local
   (defthm cons-remove-1-not-equal
     (implies (not (equal a b))
              (equal (cons a (remove-1 b x))
                     (remove-1 b (cons a x))))))
- 
+
  (defthm remove-bag-cons-remove-1-not-equal
    (implies (not (equal a b))
             (equal (remove-bag x (cons a (remove-1 b y)))
@@ -1092,7 +1092,7 @@ put back this for the forward-chaining?:
 (theory-invariant (incompatible (:rewrite remove-1-of-remove-bag)
                                 (:rewrite remove-bag-cons-remove-1-not-equal) ;bozo think about this
                                 ))
-                                
+
 (local
  (defthm membership-remove-bag-reduction
    (implies (and (consp y)
@@ -1151,10 +1151,10 @@ put back this for the forward-chaining?:
 	 (append (remove-bag x y)
 		 (remove-bag (remove-bag y x) z)))
   :hints (;("subgoal *1/1" :cases ((MEMBERP (CAR X) Y)))
-          ("goal" :in-theory (e/d (remove-bag 
+          ("goal" :in-theory (e/d (remove-bag
                                    append-of-remove-1-two
                                    append-of-remove-1-one
-                                   ) 
+                                   )
                                   (remove-1-append
                                    ))
            ;:induct (remove-bag y x)
@@ -1169,7 +1169,7 @@ put back this for the forward-chaining?:
 (defund disjoint (x y)
   (declare (type t x y))
   (if (consp x)
-      (if (memberp (car x) y) 
+      (if (memberp (car x) y)
           nil
 	(disjoint (cdr x) y))
     t))
@@ -1198,16 +1198,16 @@ put back this for the forward-chaining?:
 
 (defthm disjoint-of-non-consp-one
   (implies (not (consp x))
-           (equal (disjoint x y) 
+           (equal (disjoint x y)
                   t))
   :hints (("Goal" :in-theory (enable disjoint))))
 
 (defthm disjoint-of-non-consp-two
   (implies (not (consp y))
-           (equal (disjoint x y) 
+           (equal (disjoint x y)
                   t))
   :hints (("Goal" :in-theory (enable disjoint))))
-   
+
 (defthm disjoint-commutative
   (equal (disjoint x y)
          (disjoint y x))
@@ -1298,18 +1298,18 @@ put back this for the forward-chaining?:
 
 ;yuck?
 (defthmd subbagp-cons-car-memberp
-  (implies (subbagp (cons a x) y) 
-           (memberp a y)) 
+  (implies (subbagp (cons a x) y)
+           (memberp a y))
   :hints (("Goal" :in-theory (enable subbagp))))
 
 ;instead move remove-1 outside of append within a perm context??
-(defthm perm-cons-append 
+(defthm perm-cons-append
   (implies (memberp a y)
            (perm (cons a (append x (remove-1 a y)))
                  (append x y)))
    :hints (("goal" :in-theory (enable append perm))))
 
-;yuck? 
+;yuck?
 (defthm perm-append-remove-1
   (implies (and (memberp a y)
                 (memberp a x))
@@ -1326,13 +1326,13 @@ put back this for the forward-chaining?:
                   (bad-boy (cdr x) (remove-1 (car x) y))
                 (list (car x)))
             (if (consp y) (list (car y)) nil))))
- 
+
  (local (defthmd perm-has-no-badboy
           (iff (perm x y)
-               (not (bad-boy x y)))		       
+               (not (bad-boy x y)))
           :hints (("goal" :in-theory (enable perm)))))
 
- (defcong perm perm (remove-1 a x) 2 
+ (defcong perm perm (remove-1 a x) 2
    :hints (("Goal" :in-theory (enable perm-has-no-badboy ;bozo without this, we get a loop
                                       )))))
 
@@ -1378,7 +1378,7 @@ put back this for the forward-chaining?:
  (defcong perm perm (remove-bag x y) 2
    :hints (("Goal" :in-theory (enable (:EQUIVALENCE PERM-IS-AN-EQUIVALENCE)
                                       (:REWRITE PERM-REMOVE-BAG))))))
- 
+
 (defthmd subbagp-perm-append-remove-bag
   (implies (subbagp y z)
            (perm (append x (remove-bag y z))
@@ -1391,7 +1391,7 @@ put back this for the forward-chaining?:
                  (append y (remove-bag x z))))
   :hints (("Goal" :in-theory (enable remove-bag)
            :use (:instance subbagp-perm-append-remove-bag))))
- 
+
 
 #|
 (defthm perm-of-cdr-x-and-remove-1-of-car-x
@@ -1417,14 +1417,14 @@ put back this for the forward-chaining?:
 
 ;dup?
 (defthm perm-of-cons-and-cons
-  (equal (perm (cons a x) 
+  (equal (perm (cons a x)
                (cons a y))
          (perm x y))
   :hints (("Subgoal *1/3" :cases ((equal a (car x))))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable perm
      ;perm-of-cdr-x-and-remove-1-of-car-x
-                              (:induction perm) 
+                              (:induction perm)
                               remove-1))))
 
 (defthm perm-cons-remove
@@ -1457,7 +1457,7 @@ put back this for the forward-chaining?:
  :hints (("Goal" :in-theory (enable))))
 
 
-;drop? 
+;drop?
 (local
  (defthmd perm-membership-reduction
    (implies (and (memberp a x)
@@ -1517,7 +1517,7 @@ put back this for the forward-chaining?:
 
 ;bozo ;add the two "cross" cases for this.
 (defthm perm-append-x-y-z
-  (equal (perm (append x y) 
+  (equal (perm (append x y)
                (append x z))
          (perm y z))
   :hints (("goal" :in-theory (enable binary-append perm))))
@@ -1530,13 +1530,13 @@ put back this for the forward-chaining?:
                                    )))))
 
 (defthm perm-append-y-z-a
-  (equal (perm (append x z) 
+  (equal (perm (append x z)
                (append y z))
          (perm x y))
   :hints (("Goal" :use (:instance perm-append-x-y-z
                                   (x z) (y y) (z x)
-                                  ) 
-           :in-theory (e/d (append-commutative-inside-perm) 
+                                  )
+           :in-theory (e/d (append-commutative-inside-perm)
                            (perm-append-x-y-z
                             append-common-reduction
                             )))))
@@ -1563,7 +1563,7 @@ put back this for the forward-chaining?:
 ;bad name?
 (defthm perm-not-consp
   (implies (perm x x-equiv)
-           (iff (not (consp (remove-bag p x))) 
+           (iff (not (consp (remove-bag p x)))
                 (not (consp (remove-bag p x-equiv)))))
   :hints (("Goal" :induct (perm-remove-bag-induction p x x-equiv)
            :in-theory (enable remove-bag))
@@ -1607,14 +1607,14 @@ put back this for the forward-chaining?:
            :do-not '(generalize))))
 
 
-  
+
 #|
 ;--------- added for unique-subbagps---------------
 (defun perm-remove-bag-induction-2 (x y a)
   (declare (xargs :guard (and (equal y y)
                               (equal a a))))
   (if (consp x)
-      (perm-remove-bag-induction-2 (cdr x) (remove-1 (car x) y) 
+      (perm-remove-bag-induction-2 (cdr x) (remove-1 (car x) y)
                                    (remove-1 (car x) a))
     nil))
 |#
@@ -1672,7 +1672,7 @@ put back this for the forward-chaining?:
    :hints (("goal" :in-theory (enable subbagp))))
 
 
-#| 
+#|
  (local
   (defthm perm-implies-consp-remove-bag-correlation
     (implies
@@ -1726,7 +1726,7 @@ put back this for the forward-chaining?:
           (equal (old-subset x y)
                  (subbagp x y)))))
 
-;------   needed for *trigger*-syntax-ev-syntax-subbagp ---- 
+;------   needed for *trigger*-syntax-ev-syntax-subbagp ----
 ;rename
 (defthm unique-memberp-remove
   (implies (and (not (unique x))
@@ -1751,7 +1751,7 @@ put back this for the forward-chaining?:
   (implies (unique x)
            (not (memberp a (remove-1 a x))))
   :hints (("Goal" :in-theory (enable unique))))
-           
+
 (defthm non-unique-not-subbagp-of-unique
   (implies (and (not (unique x))
                 (unique y))
@@ -1859,7 +1859,7 @@ put back this for the forward-chaining?:
 
 (defthm count-when-non-member
   (implies (not (memberp a x))
-           (equal (count a x) 
+           (equal (count a x)
                   0))
   :hints (("Goal" :in-theory (enable count))))
 
@@ -1895,7 +1895,7 @@ put back this for the forward-chaining?:
   (equal (count a (remove-1 a x))
          (nfix (+ -1 (count a x))))
   :hints (("Goal" :in-theory (enable count))))
-                  
+
 (defthm count-of-remove-1-both
   (equal (count a (remove-1 b x))
          (if (equal a b)
@@ -1972,7 +1972,7 @@ put back this for the forward-chaining?:
                  (remove-1 a (append x y))))
   :hints (("goal" :in-theory (e/d (;append-commutes-inside-perm
                                    )
-                                  (REMOVE-1-APPEND 
+                                  (REMOVE-1-APPEND
                                    APPEND-REMOVE-1-REDUCTION))
            :use (:instance append-remove-1-reduction (x y) (y x)))))
 
@@ -1995,7 +1995,7 @@ put back this for the forward-chaining?:
            (memberp a (remove-bag x y)))
   :hints (("goal" :in-theory (e/d (remove-bag
                                    EQUALITY-FROM-MEM-AND-REMOVE ;bozo yuck
-                                   ) 
+                                   )
                                   (memberp-of-remove-bag ;yuck
                                    )))))
 
@@ -2007,7 +2007,7 @@ put back this for the forward-chaining?:
            (equal (remove-bag x y)
                   (remove-1 (car x) (remove-bag (cdr x) y))))
   :hints (("goal" :do-not-induct t
-           :in-theory (enable memberp 
+           :in-theory (enable memberp
                               remove-bag
                               REMOVE-BAG-ADDS-NO-TERMS
                               remove-bag-over-remove-1))))
@@ -2149,7 +2149,7 @@ put back this for the forward-chaining?:
     (implies (subbagp x list)
              (equal (perm (append x y) list)
                     (perm y (remove-bag x list))))
-    :hints (("Goal" :in-theory (enable perm subbagp remove-bag 
+    :hints (("Goal" :in-theory (enable perm subbagp remove-bag
                                        memberp-of-cons
                                        binary-append)))))
 |#
@@ -2227,7 +2227,7 @@ put back this for the forward-chaining?:
   :hints (("Goal" :use  UNIQUE-MEANS-NOT-MEMBERP-OF-REMOVE-1-SAME :in-theory (disable  UNIQUE-MEANS-NOT-MEMBERP-OF-REMOVE-1-SAME))))
 
 
-  
+
 ;could be expensive?
 (defthm subbagp-cdr-lemma
   (implies (and (not (subbagp y (cdr x)))
@@ -2250,7 +2250,7 @@ put back this for the forward-chaining?:
 
  ;lemmas needed for subbagp-pair trigger
 
-;bozo rename params on these? 
+;bozo rename params on these?
 ;rename?
 (defthm subbagp-disjoint
    (implies (and (disjoint w z)
@@ -2267,14 +2267,14 @@ put back this for the forward-chaining?:
                  (subbagp y w)
                  )
             (disjoint x y))
-   :hints (("Goal" :in-theory (disable subbagp-disjoint) 
+   :hints (("Goal" :in-theory (disable subbagp-disjoint)
            :use (:instance subbagp-disjoint (w z) (z w)))))
 
 ;end of events for trigger
 
 #|
  (local
-  (encapsulate 
+  (encapsulate
    ()
 
    (defthm disjoint-remove-1-not-memberp
@@ -2286,7 +2286,7 @@ put back this for the forward-chaining?:
 		    (not (memberp x setx)))
 	       (disjoint setx set3)))
      :hints (("Goal" :in-theory (enable disjoint))))
-  
+
    (defthm subbagp-disjoint-setx-1
      (implies (and (disjoint set1 setx)
                    (subbagp set3 set1)
@@ -2294,7 +2294,7 @@ put back this for the forward-chaining?:
               (disjoint set3 setx))
      :hints (("goal" :in-theory (e/d (subbagp)  ())))
      :rule-classes (:rewrite :forward-chaining))
-   
+
    (defthm subbagp-disjoint-setx-2
      (implies
       (and
@@ -2373,7 +2373,7 @@ put back this for the forward-chaining?:
          (and (not (memberp a x))
               (unique x)))
   :hints (("Goal" :in-theory (enable unique))))
-         
+
 (defthm unique-equal-rewrite
   (implies (booleanp y)
            (equal (equal (unique x) y)
@@ -2382,7 +2382,7 @@ put back this for the forward-chaining?:
 (defcong perm equal (unique x) 1
   :hints (("goal" :induct (perm x x-equiv)
            :in-theory (enable PERM-OF-CDR-X-AND-REMOVE-1-OF-CAR-X
-;perm 
+;perm
                               (:induction perm)
 ;unique
                               ))))
@@ -2402,18 +2402,18 @@ put back this for the forward-chaining?:
       (not (consp y)))
      :hints (("goal" :in-theory (enable perm)))
      :rule-classes (:forward-chaining))
-   
+
    (defthm membership-remove-1
      (implies (memberp x (remove-1 y list))
 	      (memberp x list))
      :hints (("goal" :in-theory (enable memberp remove-1))))
-   
+
    (defthm not-unique-remove-1
      (implies (not (unique (remove-1 x list)))
 	      (not (unique list)))
      :hints (("goal" :induct (remove-1 x list)
 	      :in-theory (enable unique remove-1))))
-   
+
    (defthm unique-remove-1-not-memberp-unique
      (implies
       (and
@@ -2423,7 +2423,7 @@ put back this for the forward-chaining?:
       (equal (unique list)
              (not (memberp x (remove-1 x list)))))
      :hints (("goal" :in-theory (enable unique memberp remove-1))))
-   
+
    )))
 |#
 
@@ -2437,7 +2437,7 @@ put back this for the forward-chaining?:
 
 (defthm perm-of-append-of-remove-bag-same
   (implies (subbagp x y)
-           (perm (append x (remove-bag x y)) 
+           (perm (append x (remove-bag x y))
                  y))
   :hints (("Goal" :in-theory (enable append))))
 
@@ -2511,7 +2511,7 @@ put back this for the forward-chaining?:
 (defthmd disjoint-memberp-implies-non-membership
   (implies (and (disjoint x y) ;y is a free variable
                 (memberp a y))
-           (equal (memberp a x) 
+           (equal (memberp a x)
                   nil)))
 
 ;changing disjoint could improve this rule..
@@ -2521,7 +2521,7 @@ put back this for the forward-chaining?:
   :hints (("Goal" :in-theory (enable disjoint))))
 
 (defthmd disjoint-subbagp-rewrite
-     (implies (disjoint x y) 
+     (implies (disjoint x y)
               (equal (subbagp x y)
                      (not (consp x))))
      :hints (("goal" :in-theory (enable disjoint subbagp))))
@@ -2548,7 +2548,7 @@ do we want to drive the list-fix in or out???
   (equal (remove-bag y (list-fix y))
          (remove-bag x y))
   :hints (("Goal" :in-theory (enable remove-bag list-fix))))
-|#       
+|#
 
 (defthm unique-of-list-fix
   (equal (unique (list-fix x))
@@ -2638,7 +2638,7 @@ do we want to drive the list-fix in or out???
 
 (defthmd disjoint-remove-bag
   (implies (disjoint x y)
-           (equal (remove-bag x y) 
+           (equal (remove-bag x y)
                   y))
   :hints (("goal" :in-theory (enable disjoint))))
 
@@ -2650,7 +2650,7 @@ bozo not quite right
          (and (subbagp x (remove-bag y z))
               (subbagp y z)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable subbagp append remove-1))))              
+           :in-theory (enable subbagp append remove-1))))
 |#
 
 ;do we already have this?
@@ -2672,46 +2672,46 @@ bozo not quite right
 #|
  (encapsulate
   ()
-  
+
   (local
    (encapsulate
     ()
-    
+
     (local
      (encapsulate
       ()
-      
+
       (defthm memberp-append-tail
 	(implies (consp a)
 		 (memberp (car a) (append b a)))
 	:hints (("goal" :in-theory (enable memberp binary-append))))
-      
+
       (defthm memberp-append-middle
 	(implies (consp b)
 		 (memberp (car b) (append a b c)))
 	:hints (("goal" :in-theory (enable memberp binary-append))))
-      
+
       (defthm append-cdr-tail-perm-remove-1
-	(implies 
+	(implies
 	 (consp y)
 	 (perm (append x (cdr y))
                (remove-1 (car y) (append x y))))
 	:hints (("goal" :in-theory (enable perm binary-append memberp remove-1))))
-      
+
       (defthm append-cdr-middle-perm-remove-1
-	(implies 
+	(implies
 	 (consp y)
 	 (perm (append x (cdr y) z)
                (remove-1 (car y) (append x y z))))
 	:hints (("goal" :in-theory (enable perm binary-append memberp remove-1))))
-      
-      ))
-    
 
-    
+      ))
+
+
+
     ))
-  
-  
+
+
   )
 |#
 
@@ -2835,7 +2835,7 @@ bozo not quite right
 
 (defthm non-membership-remove-all
   (implies (not (memberp a x))
-           (equal (remove-all a x) 
+           (equal (remove-all a x)
                   x))
   :hints (("Goal" :in-theory (enable remove-all))))
 
@@ -2843,8 +2843,8 @@ bozo not quite right
   (equal (memberp a (remove-all a x))
          nil)
   :hints (("Goal" :in-theory (enable remove-all memberp))))
-  
-(defthm remove-all-does-nothing 
+
+(defthm remove-all-does-nothing
   (implies (not (memberp a x))
            (equal (remove-all a x)
                   x))
@@ -2869,7 +2869,7 @@ bozo not quite right
          (not (memberp a x))))
 
 ;make remove-all analogues of all the remove-1 theorems!
-                
+
 (defthm remove-all-of-cons-same
   (equal (remove-all a (cons a x))
          (remove-all a x))
@@ -2900,7 +2900,7 @@ bozo not quite right
   (equal (remove-1 a (remove-all b x))
          (remove-all b (remove-1 a x)))
   :hints (("Goal" :in-theory (enable remove-all))))
-         
+
 (theory-invariant (incompatible (:rewrite remove-1-of-remove-all)
                                 (:rewrite remove-all-of-remove-1)))
 
@@ -2924,7 +2924,7 @@ bozo not quite right
 (defthmd non-membership-removal-free
   (implies (and (not (memberp b x)) ;b is a free variable
                 (equal b a))
-           (equal (remove-all a x) 
+           (equal (remove-all a x)
                   x)))
 |#
 
@@ -2960,7 +2960,7 @@ bozo not quite right
   (implies (and (not (memberp a (remove-all b x)))
 		(memberp a x))
 	   (equal b a))
-  :rule-classes :forward-chaining) 
+  :rule-classes :forward-chaining)
 |#
 
 ;slow proof?
@@ -3106,7 +3106,7 @@ bozo not quite right
 
 (encapsulate
  ()
- 
+
  (local (defthm helper-one
           (implies
            (and (memberp a y)
@@ -3115,7 +3115,7 @@ bozo not quite right
                     (memberp a (remove-bag x y))))
           :hints (("Goal" :in-theory (enable subbagp remove-1)))))
 
- (local (defthm helper-two 
+ (local (defthm helper-two
           (implies
            (and (subbagp x y)
                 (< (count a x) (count a y))
@@ -3389,7 +3389,7 @@ zz
           :do-not '(generalize eliminate-destructors))))
 |#
 
-           
+
 (defthm subbagp-means-counts-<=
   (implies (subbagp x y)
            (<= (count a x)
@@ -3404,7 +3404,7 @@ zz
                   (append (remove-bag x y) z)
                   ))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d (remove-bag 
+           :in-theory (e/d (remove-bag
                             REMOVE-1-of-append-when-memberp
                             subbagp
                             REMOVE-1-OF-REMOVE-BAG)
@@ -3461,7 +3461,7 @@ zz
   (implies (subbagp x y)
            (subbagp (remove-bag z x)
                     (remove-bag z y)))
-  :hints (("Goal" :in-theory (e/d (subbagp 
+  :hints (("Goal" :in-theory (e/d (subbagp
                                    remove-bag)
                                   (subbagp-cdr-remove-1-rewrite)))))
 
@@ -3490,10 +3490,10 @@ zz
 (defthm subbagp-of-remove-bag-and-remove-bag-2
   (implies (subbagp x2 x)
            (subbagp (remove-bag x bag) (remove-bag x2 bag)))
-  :hints (("Goal" :in-theory (e/d (subbagp 
+  :hints (("Goal" :in-theory (e/d (subbagp
                                    remove-bag)
                                   (subbagp-cdr-remove-1-rewrite)))) )
- 
+
 
 (defthm unique-subbagps-from-unique-subbagps-and-subbagp-2
   (implies (and (unique-subbagps x2 y bag)
@@ -3526,7 +3526,7 @@ zz
                                                                       (remove-bag (cdr y) bag)))
                             (a (car y))))
           ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (subbagp 
+           :in-theory (e/d (subbagp
                                    remove-bag)
                                   (subbagp-cdr-remove-1-rewrite
                                    MEMBERP-SUBBAGP-REMOVE-1-MEMBERP-REMOVE-BAG
@@ -3596,14 +3596,14 @@ zz
                 (memberp a z)
                 (subbagp x y))
            (not (memberp a x))))
-          
+
 ;BOZO move this stuff!
 ;BOZO turn this off?
 (defthm remove-bag-of-singleton
   (equal (remove-bag (list a) x)
          (remove-1 a x))
  :hints (("Goal" :in-theory (enable remove-bag))))
- 
+
 (defthm subbagp-of-remove-bag-and-remove-1
   (implies (memberp a x)
            (subbagp (remove-bag x bag) (remove-1 a bag)))

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -25,9 +25,9 @@
 (in-package "RTL")
 
 (defun split-list (lst lo hi)
-  (cond ((endp lst) 
+  (cond ((endp lst)
          (mv lo hi))
-        ((endp (cdr lst)) 
+        ((endp (cdr lst))
          (mv (cons (car lst) lo) hi))
         (t
          (split-list (cddr lst)

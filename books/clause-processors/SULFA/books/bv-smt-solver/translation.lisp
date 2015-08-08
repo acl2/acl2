@@ -57,7 +57,7 @@
                (cdr arg-types)
                (1+ n)
                (cons (symbol-from-str-num str n)
-                     acc)))))               
+                     acc)))))
 
 (defun bv-type-size (type)
   (cond
@@ -75,14 +75,14 @@
    (t
     `(bv-eq-raw ,(bv-type-size type) ,x ,y))))
 
-(defun gen-bv-eq-expr-list (str0 str1 arg-types n acc) 
+(defun gen-bv-eq-expr-list (str0 str1 arg-types n acc)
   (cond
    ((endp arg-types)
     acc)
    (t
     (let ((arg0 (symbol-from-str-num str0 n))
           (arg1 (symbol-from-str-num str1 n)))
-      (gen-bv-eq-expr-list 
+      (gen-bv-eq-expr-list
        str0 str1 (cdr arg-types)
        (1+ n)
        (cons (gen-eq-expr arg0 arg1 (car arg-types))
@@ -96,17 +96,17 @@
          (arg-types (revappend (cdr rev-sig) nil))
          (arg-names (gen-names "I" arg-types 0 nil))
          (axiom-name (symbol-from-sym-str raw-name "-AXIOM"))
-         (obj `(encapsulate 
+         (obj `(encapsulate
                 ((,raw-name ,arg-names t))
                 (local (defun ,raw-name ,arg-names
                          (declare (ignore . ,arg-names))
                          t))
                 (defthm ,axiom-name
                   (implies (and . ,(gen-bv-eq-expr-list "I" "J" arg-types 0 nil))
-                           ,(gen-eq-expr 
+                           ,(gen-eq-expr
                              `(,raw-name . ,(gen-names "I" arg-types 0 nil))
                              `(,raw-name . ,(gen-names "J" arg-types 0 nil))
-                             ret-type))) 
+                             ret-type)))
                 (in-theory (disable ,axiom-name))))
          (state (print-bv-object obj channel state))
          (obj `(defbv ,name ,arg-names
@@ -134,7 +134,7 @@
          (obj `(deftheory raw-bv-theory
                  (union-theories (current-theory :here)
                                  (quote ,(strip-cars sigs)))))
-         (state (print-bv-object obj channel state)))         
+         (state (print-bv-object obj channel state)))
     state))
 
 (defun chars-to-num1 (char-list ans)
@@ -173,7 +173,7 @@
     (mv-let
      (bv-sz bv-expr)
      (smt-to-acl2-expr (car expr-list) extra-fn-list var-alist)
-     (smt-to-acl2-expr-list (cdr expr-list) 
+     (smt-to-acl2-expr-list (cdr expr-list)
                             extra-fn-list var-alist
                             (cons bv-sz acc-sizes)
                             (cons bv-expr acc))))))
@@ -188,13 +188,13 @@
 ;; Note that I've decided to handle equality and logical
 ;; operatives by converting them into bit-vector operations.
 ;;
-;; The advantage, and disadvantage, of this is that it 
+;; The advantage, and disadvantage, of this is that it
 ;; keeps ACL2 from handling them specially (e.g. case-spliting
 ;; on if conditions).  They can always be simplified into
 ;; the logical operators if that's what we want.
 
 ;; The one exception to all this is let.  Since let isn't
-;; really an operation, but rather more of a language 
+;; really an operation, but rather more of a language
 ;; construct, I've decided to use ACL2's let.  If the explosion
 ;; get's out of hand, I'll have to find some way to contain it---
 ;; e.g. using bv-eq instead.
@@ -202,7 +202,7 @@
 (defun smt-to-acl2-expr (expr extra-fn-list var-alist)
   (cond
    ((atom expr)
-    (cond 
+    (cond
      ((integerp expr)
       (mv 0 expr))
      ((eq expr '|true|)
@@ -220,15 +220,15 @@
         (mv 32 `(bv-const 32 ,num))))
 
      (t
-      (let* ((var-entry (assoc-equal expr var-alist)))             
+      (let* ((var-entry (assoc-equal expr var-alist)))
         (cond
          (var-entry
           (mv (ve-sz var-entry) (ve-expr var-entry)))
          (t
-          (mv 0 
+          (mv 0
               (er hard 'smt-to-acl2-expr
                   "Unsupported expression: ~x0~%" expr))))))))
-   
+
    ;; SMT let expressions have the format
    ;; (let (var var-expr) body)
    ((or (eq (car expr) '|let|)
@@ -254,10 +254,10 @@
       ;; Bit vector extraction and concatenation
       ((and (consp (car expr)) (eq (caar expr) '|extract|))
        (mv (1+ (- (cadr (car expr)) (caddr (car expr))))
-           `(bv-ex ,(car arg-sizes) 
-                   ,(cadr (car expr)) 
-                   ,(caddr (car expr)) 
-                   . 
+           `(bv-ex ,(car arg-sizes)
+                   ,(cadr (car expr))
+                   ,(caddr (car expr))
+                   .
                    ,args)))
       ((and (consp (car expr)) (eq (caar expr) '|fill|))
        (mv (cadr (car expr))
@@ -324,7 +324,7 @@
            `(bv-rotate-left ,(car arg-sizes) . ,args)))
       ((eq (car expr) '|rotate_right|)
        (mv (car arg-sizes)
-           `(bv-rotate-right ,(car arg-sizes) . ,args)))      
+           `(bv-rotate-right ,(car arg-sizes) . ,args)))
 
 
       ;; Bit Vector predicates
@@ -344,7 +344,7 @@
        (mv 0 `(bv-s-gt ,(car arg-sizes) . ,args)))
       ((eq (car expr) '|bvsgeq|)
        (mv 0 `(bv-s-geq ,(car arg-sizes) . ,args)))
-      
+
 
       ;; Equality
       ((eq (car expr) '|=|)
@@ -375,7 +375,7 @@
       ((eq (car expr) '|iff|)
        (mv 0 `(b-iff . ,args)))
 
-      (t       
+      (t
        (let ((fn-entry (assoc-equal (car expr) extra-fn-list)))
          (cond
           (fn-entry
@@ -429,9 +429,9 @@
   (let* (;;(formula `(implies (and . ,assumpt-list) ,conc))
          ;;(formula `(implies ,(and-macro assumpt-list) ,conc))
          ;;(extra-raw-fn-list (raw-sig-alist extra-fn-list nil))
-         
-         ;;(hints `((sat-plus-when-stable 
-         ;;          stable-under-simplificationp 
+
+         ;;(hints `((sat-plus-when-stable
+         ;;          stable-under-simplificationp
          ;;          '(:extrafuns ,(raw-sig-alist extra-fn-list nil))
          ;;          '(theory (quote raw-bv-theory)))))
          ;;(state (print-bv-object '(comp t) channel state))
@@ -439,7 +439,7 @@
                           ,formula
                           ,(raw-sig-alist extra-fn-list nil)
                           raw-bv-theory
-                          ,(msg-info-expected-ans msg-info) 
+                          ,(msg-info-expected-ans msg-info)
                           ,(msg-info-file-name msg-info))))
     (print-bv-object obj channel state)))
 
@@ -461,7 +461,7 @@
    ((equal (len (car extrafuns)) 2)
     ;; Functions with no inputs are variables!
     (let* ((fn-entry (car extrafuns))
-           (fn (car fn-entry))           
+           (fn (car fn-entry))
            (ret-type (cadr fn-entry))
            (sz (bv-type-size ret-type)))
       (add-new-extrafuns (cdr extrafuns)
@@ -475,12 +475,12 @@
 
 (defun translate-type (type)
   (cond
-   ((eq type '|bool|) 
+   ((eq type '|bool|)
     'bool)
    ((and (consp type) (eq (car type) '|BitVec|))
     (cons 'bitvec (cdr type)))
    (t
-    (er hard 'translate-type 
+    (er hard 'translate-type
         "ERROR: Unrecognized type: ~x0~%" type))))
 
 (defun translate-type-list (type-list acc)
@@ -494,9 +494,9 @@
 
 (defun translate-sig (sig)
   (cons (car sig) (translate-type-list (cdr sig) nil)))
-    
+
 (defun translate-sigs (sig-list acc)
-  (cond 
+  (cond
    ((endp sig-list)
     acc)
    (t
@@ -549,25 +549,25 @@
       (mv-let
        (extra-fn-list var-alist)
        (add-new-extrafuns extrafuns extra-fn-list var-alist)
-       (write-smt-cmd-list (cddr smt-cmd-list) 
-                           assumpt-list 
+       (write-smt-cmd-list (cddr smt-cmd-list)
+                           assumpt-list
                            extra-fn-list
                            var-alist
                            msg-info
-                           channel 
+                           channel
                            state))))
 
    ((equal (car smt-cmd-list) '|:assumption|)
     (let* ((smt-assumpt (cadr smt-cmd-list))
            (acl2-assumpt (smt-to-acl2 smt-assumpt extra-fn-list var-alist)))
            ;;(acl2-assumpt `(b-hyp ,acl2-assumpt)))
-      (write-smt-cmd-list (cddr smt-cmd-list) 
+      (write-smt-cmd-list (cddr smt-cmd-list)
                           (cons acl2-assumpt assumpt-list)
                           extra-fn-list
                           var-alist
                           msg-info
-                          channel 
-                          state)))       
+                          channel
+                          state)))
 
    ((equal (car smt-cmd-list) '|:formula|)
     (mv-let
@@ -576,7 +576,7 @@
      (let* ((state (output-sig-events sigs channel state))
             (smt-conc (cadr smt-cmd-list))
             (acl2-conc (smt-to-acl2 smt-conc extra-fn-list var-alist))
-            (state (output-thm assumpt-list acl2-conc 
+            (state (output-thm assumpt-list acl2-conc
                                extra-fn-list msg-info channel state)))
        state)))
    (t
@@ -584,16 +584,16 @@
                         msg-info channel state))))
 
 (defun write-acl2-file (smt-cmd-list msg-file channel state)
-  (let* (;;(obj `(include-book ,(concat-str *sulfa-dir* "/books/bv-smt-solver/smt" ) 
+  (let* (;;(obj `(include-book ,(concat-str *sulfa-dir* "/books/bv-smt-solver/smt" )
          ;;                    :skip-proofs-okp t
-         ;;                    :ttags (sat-ttag))) 
+         ;;                    :ttags (sat-ttag)))
          ;;(state (print-bv-object obj channel state))
-         (state (write-smt-cmd-list smt-cmd-list nil nil nil 
+         (state (write-smt-cmd-list smt-cmd-list nil nil nil
                                     (make-msg-info 'UNKNOWN msg-file)
                                     channel state)))
     state))
 
-;; Translate an smt benchmark file from the SMT-lib format 
+;; Translate an smt benchmark file from the SMT-lib format
 ;; into an ACL2 file.
 (defun translate-smt-file (smt-file acl2-file msg-file state)
   (mv-let

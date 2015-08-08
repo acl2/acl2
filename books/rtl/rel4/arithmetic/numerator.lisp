@@ -32,7 +32,7 @@
            (and (< 0 (numerator x))
                 (integerp (numerator x))))
   :rule-classes (:type-prescription))
-           
+
 (defthm numerator-non-positive-integer-type-prescription
   (implies (<= x 0)
            (and (<= (numerator x) 0)

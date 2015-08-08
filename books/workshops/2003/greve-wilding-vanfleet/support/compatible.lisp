@@ -17,7 +17,7 @@
 
 (defthm member-selectlist-means
   (implies
-   (and 
+   (and
     (equal (selectlist l l1) (selectlist l l2))
     (member x l))
    (iff (equal (select x l1) (select x l2)) t))
@@ -29,7 +29,7 @@
     (equal (selectlist y l1) (selectlist y l2))
     (subsetp x y))
    (iff (equal (selectlist x l1) (selectlist x l2)) t)))
-   
+
 (defthm infiltration
   (implies
    (and
@@ -46,7 +46,7 @@
 ;; no dia segments.  This version using these functions would be
 ;; something like:
 
-;(defthm exfiltration 
+;(defthm exfiltration
 ;  (implies
 ;   (not (intersection-equal (dia y) (segs (current st))))
 ;   (equal (select y (next st))
@@ -62,7 +62,7 @@
 ; Matt K., after v4-2:
 ; Commenting out the following rule, which rewrites a term to itself!
 #||
-(defthm exfiltration 
+(defthm exfiltration
   (implies
    (and
     (equal (current st1) (current st2))
@@ -72,7 +72,7 @@
   :hints (("goal" :use (:instance separation (seg y)))))
 ||#
 
-(defthm mediation 
+(defthm mediation
   (implies
    (and
     (equal (current st1) (current st2))
@@ -82,6 +82,6 @@
    (equal (select x (next st1)) (select x (next st2))))
   :hints (("goal" :use (:instance separation (seg x)))))
 
-  
+
 
 

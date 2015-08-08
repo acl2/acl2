@@ -74,7 +74,7 @@
               (equal (assoc-equal x (append a b))
                      (or (assoc-equal x a)
                          (assoc-equal x b)))))
-   
+
 
    (defthm symbolp-assoc-equal
      (implies (symbol-listp (strip-cdrs alist))
@@ -259,7 +259,7 @@
  (encapsulate nil
    (local (in-theory (enable char-of-digit)))
 
-   
+
 
    (defconst *digit-chars* '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
 
@@ -505,7 +505,7 @@
             :do-not-induct t
             :expand ((new-symbol1-measure n base avoid))))
     :rule-classes :linear))
-      
+
 
 
 (define new-symbol1 ((n natp) (base symbolp)
@@ -597,7 +597,7 @@
                                (avoid symbol-listp))
   (make-n-vars n base 0 avoid)
   ///
-  
+
   (defthm new-symbols-from-base-len
     (equal (len (new-symbols-from-base n base avoid-lst))
            (nfix n)))

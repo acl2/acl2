@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -24,38 +24,38 @@
 
 (in-package "RTL")
 
-(include-book "../lib2/basic") ;; no change from rel8 
+(include-book "../lib2/basic") ;; no change from rel8
 
 (include-book "bits")
 
 (local (include-book "log-new"))
 
 
-(local 
+(local
  (defthm bits-is-bits_alt
    (equal (bits x i j)
           (bits_alt x i j))
    :hints (("Goal" :in-theory (e/d (bits_alt bits) ())))))
-              
-(local               
+
+(local
  (defthm bitn-is-bitn_alt
    (equal (bitn x n)
           (bitn_alt x n))
    :hints (("Goal" :in-theory (e/d (bitn_alt bitn) ())))))
-          
-(local               
+
+(local
  (defthm binary-cat_alt-is-binary-cat
    (equal (binary-cat x m y n)
           (binary-cat_alt x m y n))
    :hints (("Goal" :in-theory (e/d (binary-cat_alt binary-cat) ())))))
-          
-(local               
+
+(local
  (defthm mulcat_alt-is-mulcat
    (equal (mulcat l n x)
           (mulcat_alt l n x))
    :hints (("Goal" :in-theory (e/d (mulcat_alt mulcat) ())))))
-          
- 
+
+
 
 
 ;;;**********************************************************************
@@ -315,7 +315,7 @@
 		  (natp k))
 	     (equal (logior x (expt 2 k))
 		    (+ x
-		       (* (expt 2 k) 
+		       (* (expt 2 k)
 			  (- 1 (bitn x k))))))
     :hints (("Goal" :use ((:instance logior-expt-3-g)))))
 
@@ -518,8 +518,8 @@
                 (lognot (logxor i j)))
          (EQUAL (LOGXOR J (LOGNOT I))
                 (LOGNOT (LOGXOR I J)))))
-    
-	   
+
+
 
 (defthmd logior-logand
   (implies (and (integerp x)

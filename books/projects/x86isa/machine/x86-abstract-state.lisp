@@ -4274,7 +4274,7 @@
     (cons 'progn
           (x86-top-accessors-and-updaters-2 *pruned-x86-model-modified-mem*)))
 
-  
+
   ;; See the end of x86-state-field-thms.lisp.
   (local (in-theory (e/d* () (abstract-stobj-fns-ruleset x86p))))
 

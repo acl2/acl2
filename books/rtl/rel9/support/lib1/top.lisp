@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -36,7 +36,7 @@
 
 (include-book "rtlarr") ;semantics RTL array primitives
 
-(include-book "basic") ;properties of basic arithmetic functions: floor, ceiling, 
+(include-book "basic") ;properties of basic arithmetic functions: floor, ceiling,
 ;                       exponential, and remainder
 
 (include-book "bits") ;bit vectors

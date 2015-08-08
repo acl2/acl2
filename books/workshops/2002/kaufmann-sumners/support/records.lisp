@@ -13,7 +13,7 @@ value v in record r.
 The following main lemmas are "exported" about record (g)et and (s)et:
 
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
          v))
 
 (defthm g-diff-s
@@ -22,7 +22,7 @@ The following main lemmas are "exported" about record (g)et and (s)et:
                   (g a r))))
 
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
          r))
 
 (defthm s-same-s
@@ -77,7 +77,7 @@ well-formed record hypothesis.
 (defthm rcdp-implies-alistp
   (implies (rcdp x) (alistp x)))
 
-(defun ifrp (x) ;; ill-formed rcdp 
+(defun ifrp (x) ;; ill-formed rcdp
   (declare (xargs :guard t))
   (or (not (rcdp x))
       (and (consp x)
@@ -125,7 +125,7 @@ well-formed record hypothesis.
          (acons-if a v r))
         ((equal a (caar r))
          (acons-if a v (cdr r)))
-        (t 
+        (t
          (cons (car r) (s-aux a v (cdr r))))))
 
 ;; we use the name s-aux in this book, but used rcd-update in the paper for
@@ -182,7 +182,7 @@ well-formed record hypothesis.
 (local
 (defthm s-aux-same-g-aux
   (implies (rcdp r)
-           (equal (s-aux a (g-aux a r) r) 
+           (equal (s-aux a (g-aux a r) r)
                   r))))
 
 (local
@@ -250,7 +250,7 @@ well-formed record hypothesis.
 ;; s(et) and g(et) they wish to export from the book.
 
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
          v))
 
 (defthm g-diff-s
@@ -270,7 +270,7 @@ well-formed record hypothesis.
 (in-theory (disable g-of-s-redux))
 
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
          r))
 
 (defthm s-same-s
@@ -291,7 +291,7 @@ well-formed record hypothesis.
 
 (defthm s-non-nil-cannot-be-nil
   (implies v (s a v r))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable rcd->acl2-of-record-non-nil)
            :use (:instance rcd->acl2-of-record-non-nil
                            (r (s-aux a v (acl2->rcd r)))))))

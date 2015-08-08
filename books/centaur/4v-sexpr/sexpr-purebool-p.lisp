@@ -171,7 +171,7 @@ be executed, and uses a SAT solver to answer the question.</p>"
   :parents (4v-sexpr-purebool-p)
   :short "An executable version of @(see 4v-sexpr-purebool-p) using SAT."
   ((sexpr "The 4v-sexpr to check.")
-   &key 
+   &key
    ((config satlink::config-p) 'satlink::*default-config*))
   :returns
   (mv (fail booleanp :rule-classes :type-prescription

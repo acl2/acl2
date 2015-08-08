@@ -192,7 +192,7 @@
                        (< B A)
                        (< A (EXPT 2 N))
                        (< B (EXPT 2 N)))
-                  (= (PHI A B 0 N) 
+                  (= (PHI A B 0 N)
                      (1- n)))
          :rule-classes ()
          :hints (("Goal"  :expand ((PHI A B 1 (1- N)))
@@ -515,17 +515,17 @@
 		  (< B (EXPT 2 N)))
 	     (OR (= (PHI (+ A (- (EXPT 2 (+ -2 N))))
 			 (+ B (- (EXPT 2 (+ -2 N))))
-			 0 
+			 0
 			 (+ -1 N))
 		    (EXPO (+ A (- B))))
 		 (= (PHI (+ A (- (EXPT 2 (+ -2 N))))
 			 (+ B (- (EXPT 2 (+ -2 N))))
-			 0 
+			 0
 			 (+ -1 N))
 		    (+ 1 (EXPO (+ A (- B)))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expt)
-		  :use (lop1-7 
+		  :use (lop1-7
 			lop1-17
 			lop1-19
 			(:instance expt-split (r 2) (i (- n 1)) (j 1))
@@ -624,7 +624,7 @@
 			(:instance phi-mod
 				   (a (- a (expt 2 (- n 2))))
 				   (b (- b (expt 2 (- n 2))))
-				   (d 1) 
+				   (d 1)
 				   (j (- n 2))
 				   (k (- n 2))))))))
 

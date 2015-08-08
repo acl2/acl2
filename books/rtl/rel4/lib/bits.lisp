@@ -89,7 +89,7 @@
        (<= 0 (bitn x n)))
   :rule-classes (:type-prescription))
 
-;;(:type-prescription bitn) is no better than bitn-nonnegative-integer-type 
+;;(:type-prescription bitn) is no better than bitn-nonnegative-integer-type
 ;;and might be worse:
 
 (in-theory (disable (:type-prescription bitn)))
@@ -189,8 +189,8 @@
 		    (bitn x n))))
 
 (defthmd bitn-plus-mult
-    (implies (and (< n m) 
-		  (integerp m) 
+    (implies (and (< n m)
+		  (integerp m)
 		  (integerp k))
 	     (equal (bitn (+ x (* k (expt 2 m))) n)
 		    (bitn x n))))
@@ -229,7 +229,7 @@
        (integerp (bits x i j)))
   :rule-classes (:type-prescription))
 
-;;(:type-prescription bits) is no better than bits-nonnegative-integer-type 
+;;(:type-prescription bits) is no better than bits-nonnegative-integer-type
 ;;and might be worse:
 
 (in-theory (disable (:type-prescription bits)))
@@ -241,7 +241,7 @@
 		  (mod x (expt 2 (1+ i))))))
 
 (defthm mod-bits-equal
-  (implies (= (mod x (expt 2 (1+ i))) 
+  (implies (= (mod x (expt 2 (1+ i)))
 	      (mod y (expt 2 (1+ i))))
 	   (= (bits x i j) (bits y i j)))
   :rule-classes ())
@@ -453,7 +453,7 @@
 ;;		(not (equal 4 (bits x 15 6)))))
 ;;See also bits-match.
 
-(defthmd bits-dont-match 
+(defthmd bits-dont-match
   (implies (and (syntaxp (and (quotep i)
 			      (quotep j)
 			      (quotep k)))
@@ -550,9 +550,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defthm cat-nonnegative-integer-type
@@ -560,7 +560,7 @@
        (<= 0 (cat x m y n)))
   :rule-classes (:type-prescription))
 
-;;(:type-prescription cat) is no better than cat-nonnegative-integer-type 
+;;(:type-prescription cat) is no better than cat-nonnegative-integer-type
 ;;and might be worse:
 
 (in-theory (disable (:type-prescription binary-cat)))
@@ -671,7 +671,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 					(- i n)
@@ -695,7 +695,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 				       (- i n)
@@ -782,7 +782,7 @@
        (<= 0 (mulcat l n x)))
   :rule-classes (:type-prescription))
 
-;;(:type-prescription mulcat) is no better than mulcat-nonnegative-integer-type 
+;;(:type-prescription mulcat) is no better than mulcat-nonnegative-integer-type
 ;;and might be worse:
 
 (in-theory (disable (:type-prescription mulcat)))
@@ -795,7 +795,7 @@
 
 (defthm mulcat-1
     (implies (natp l)
-	     (equal (mulcat l 1 x) 
+	     (equal (mulcat l 1 x)
 		    (bits x (1- l) 0))))
 
 (defthm mulcat-0
@@ -872,7 +872,7 @@
        (<= 0 (setbitn x w n y)))
   :rule-classes (:type-prescription))
 
-;;(:type-prescription setbitn) is no better than setbits-nonnegative-integer-type 
+;;(:type-prescription setbitn) is no better than setbits-nonnegative-integer-type
 ;;and might be worse:
 
 (in-theory (disable (:type-prescription setbitn)))
@@ -897,7 +897,7 @@
 		      y
 		    (bitn x k)))))
 
- 
+
 ;;;**********************************************************************
 ;;;			  SHFT
 ;;;**********************************************************************
@@ -911,7 +911,7 @@
        (<= 0 (shft x s l)))
   :rule-classes (:type-prescription))
 
-;;(:type-prescription shft) is no better than shft-nonnegative-integer-type 
+;;(:type-prescription shft) is no better than shft-nonnegative-integer-type
 ;;and might be worse:
 (in-theory (disable (:type-prescription shft)))
 
@@ -941,7 +941,7 @@
 ;;(:type-prescription lnot) is no better than lnot-nonnegative-integer-type
 ;;and might be worse:
 
-(in-theory (disable (:type-prescription lnot))) 
+(in-theory (disable (:type-prescription lnot)))
 
 (defthm lnot-bvecp
   (implies (and (<= n k)
@@ -1105,7 +1105,7 @@
 		  (< n m)
 		  (natp n)
 		  (natp m))
-	     (equal (lior x y m) 
+	     (equal (lior x y m)
 		    (lior x y n))))
 
 (defthmd lxor-reduce
@@ -1340,8 +1340,8 @@
 		(case-split (integerp n))
 		(case-split (integerp i)))
 	   (equal (bits (land x y n) i j)
-		  (land (bits x i j) 
-			(bits y i j) 
+		  (land (bits x i j)
+			(bits y i j)
 			(+ (min n (1+ i)) (- j))))))
 
 (defthm bitn-land
@@ -1349,8 +1349,8 @@
 		(case-split (integerp n)))
 	   (equal (bitn (land x y n) m)
 		  (if (< m n)
-		      (land (bitn x m) 
-			    (bitn y m) 
+		      (land (bitn x m)
+			    (bitn y m)
 			    1)
 		    0))))
 
@@ -1359,8 +1359,8 @@
 		(case-split (integerp n))
 		(case-split (integerp i)))
 	   (equal (bits (lior x y n) i j)
-		  (lior (bits x i j) 
-			(bits y i j) 
+		  (lior (bits x i j)
+			(bits y i j)
 			(+ (min n (1+ i)) (- j))))))
 
 (defthm bitn-lior
@@ -1368,8 +1368,8 @@
 		(case-split (integerp n)))
 	   (equal (bitn (lior x y n) m)
 		  (if (< m n)
-		      (lior (bitn x m) 
-			    (bitn y m) 
+		      (lior (bitn x m)
+			    (bitn y m)
 			    1)
 		    0))))
 
@@ -1378,8 +1378,8 @@
 		(case-split (integerp n))
 		(case-split (integerp i)))
 	   (equal (bits (lxor x y n) i j)
-		  (lxor (bits x i j) 
-			(bits y i j) 
+		  (lxor (bits x i j)
+			(bits y i j)
 			(+ (min n (1+ i)) (- j))))))
 
 (defthm bitn-lxor
@@ -1387,8 +1387,8 @@
 		(case-split (integerp n)))
 	   (equal (bitn (lxor x y n) m)
 		  (if (< m n)
-		      (lxor (bitn x m) 
-			    (bitn y m) 
+		      (lxor (bitn x m)
+			    (bitn y m)
 			    1)
 		    0))))
 
@@ -1397,7 +1397,7 @@
 		  (integerp y)
 		  (not (zp n)))
 	     (= (bitn (lxor x y n) 0)
-		(bitn (+ x y) 0)))		
+		(bitn (+ x y) 0)))
   :rule-classes ())
 
 ;;Compositions:
@@ -1745,15 +1745,15 @@
 
 (defund decode (x n)
   (declare (xargs :guard (rationalp n)))
-  (if (and (natp x) (< x n)) 
-      (ash 1 x) 
+  (if (and (natp x) (< x n))
+      (ash 1 x)
     0))
 
 (defund encode (x n)
     (declare (xargs :guard (and (acl2-numberp x)
                                 (integerp n)
                                 (<= 0 n))))
-  (if (zp n) 
+  (if (zp n)
       0
     (if (= x (ash 1 n))
         n
@@ -1772,7 +1772,7 @@
 ;;This rule is no better than encode-nonnegative-integer-type and might be worse:
 (in-theory (disable (:type-prescription encode)))
 
-(defthm decode-nonnegative-integer-type 
+(defthm decode-nonnegative-integer-type
   (and (integerp (decode x n))
        (<= 0 (decode x n)))
   :rule-classes (:type-prescription))

@@ -16,12 +16,12 @@
 ;;;
 ;;;    Define and characterize a general purpose record structure with typed
 ;;;    slots.
-;;;    
+;;;
 ;;;    The on-line documentation only contains examples and a formal syntax
 ;;;    description. The complete documentation for DEFSTRUCTURE is a report
 ;;;    entitled "DEFSTRUCTURE for ACL2." This report is distributed with the
 ;;;    ACL2 release, and is also available from the ACL2 home page:
-;;;    
+;;;
 ;;;    http://www.cs.utexas.edu/users/moore/acl2
 ;;;
 ;;;    Bishop Brock
@@ -29,7 +29,7 @@
 ;;;    1717 West 6th Street, Suite 290
 ;;;    Austin, Texas 78703
 ;;;    brock@cli.com
-;;;    
+;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;;
 ;;;  Package Note:
@@ -87,7 +87,7 @@
 ; This legacy doc string was replaced Nov. 2014 by auto-generated defxdoc form
 ; below.
 ;(defdoc defstructure
-; 
+;
 ; ":doc-section defstructure
 ;Define and characterize a general purpose record structure with typed slots.
 
@@ -114,7 +114,7 @@
 ;
 ;  (:OPTIONS :GUARDS (:CONC-NAME MC-)))
 ;
-;(DEFSTRUCTURE S&ADDR 
+;(DEFSTRUCTURE S&ADDR
 ;  \"An MC68020 effective address abstraction.\"
 ;  (S     (:ASSERT (MC-STATE-P S) :REWRITE))
 ;  (LOC   (:ASSERT (SYMBOLP LOC)  :TYPE-PRESCRIPTION))
@@ -178,7 +178,7 @@
 
 ; slot-options ::= default-option |
 ;                  read-only-option |
-;                  {assert-option}* 
+;                  {assert-option}*
 
 ; default-option ::= :DEFAULT | (:DEFAULT) | (:DEFAULT slot-initform)
 
@@ -186,15 +186,15 @@
 
 ; assert-option ::= (:ASSERT assertion {assertion-rule-descriptor}*)
 
-; assertion-rule-descriptor ::= rule-token | 
+; assertion-rule-descriptor ::= rule-token |
 ;                               (rule-token corollary [other-rule-forms])
 
 ; rule-token ::= NIL | :REWRITE | :LINEAR | :LINEAR-ALIAS |
 ;                :WELL-FOUNDED-RELATION | :BUILT-IN-CLAUSE |
 ;                :COMPOUND-RECOGNIZER | :ELIM | :GENERALIZE | :META |
-;                :FORWARD-CHAINING | :EQUIVALENCE | :REFINEMENT | 
+;                :FORWARD-CHAINING | :EQUIVALENCE | :REFINEMENT |
 ;                :CONGRUENCE | :TYPE-PRESCRIPTION | :DEFINITION | :INDUCTION |
-;                :TYPE-SET-INVERTER 
+;                :TYPE-SET-INVERTER
 
 ; guards-option ::= :GUARDS
 
@@ -216,12 +216,12 @@
 ;                                (:KEYWORD-CONSTRUCTOR) |
 ;                                (:KEYWORD-CONSTRUCTOR keyword-constructor)
 
-; keyword-updater-option ::= :KEYWORD-UPDATER | (:KEYWORD-UPDATER) | 
+; keyword-updater-option ::= :KEYWORD-UPDATER | (:KEYWORD-UPDATER) |
 ;                         (:KEYWORD-UPDATER keyword-updater)
 
 ; predicate-option ::=  :PREDICATE | (:PREDICATE) | (:PREDICATE predicate)
 
-; weak-predicate-option ::=  :WEAK-PREDICATE | (:WEAK-PREDICATE) |  
+; weak-predicate-option ::=  :WEAK-PREDICATE | (:WEAK-PREDICATE) |
 ;                            (:WEAK-PREDICATE weak-predicate)
 
 ; force-option ::= :FORCE
@@ -236,7 +236,7 @@
 ; representation ::= :LIST | :MV | :DOTTED-LIST | :TREE | template
 
 ; mv-intro-macro-option ::=  :MV-INTRO-MACRO |
-;                            (:MV-INTRO-MACRO) |  
+;                            (:MV-INTRO-MACRO) |
 ;                            (:MV-INTRO-MACRO mv-intro-macro)
 
 ; update-method-option ::= :UPDATE-METHOD | (:UPDATE-METHOD) |
@@ -244,12 +244,12 @@
 
 ; update-method ::= :HEURISTIC | :SET | :COPY
 
-; assertion-lemma-hints-option ::= 
-;   :ASSERTION-LEMMA-HINTS | (:ASSERTION-LEMMA-HINTS) | 
+; assertion-lemma-hints-option ::=
+;   :ASSERTION-LEMMA-HINTS | (:ASSERTION-LEMMA-HINTS) |
 ;   (:ASSERTION-LEMMA-HINTS hints)
 
-; predicate-guard-hints-option ::= 
-;   :PREDICATE-GUARD-HINTS | (:PREDICATE-GUARD-HINTS) | 
+; predicate-guard-hints-option ::=
+;   :PREDICATE-GUARD-HINTS | (:PREDICATE-GUARD-HINTS) |
 ;   (:PREDICATE-GUARD-HINTS hints)
 
 ; prefix-option ::= :PREFIX | (:PREFIX) | (:PREFIX prefix)
@@ -294,7 +294,7 @@
 
 ;weak-predicate -- a symbol.
 
-;write-write-lemma -- a symbol. 
+;write-write-lemma -- a symbol.
 
 ;Definitions:
 
@@ -307,7 +307,7 @@
 ;document,and the ACL2 documentations for RULE-CLASSES.
 
 ;slots-assertion -- DEFSTRUCTURE assertions are covered in the DEFSTRUCTURE
-;document. 
+;document.
 
 ;slots-template -- A cons tree whose flattened form (by STRUCTURES::FLATTEN) is
 ;a permutation of the list of slot names of the structure.
@@ -561,7 +561,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 ;;;
 ;;;****************************************************************************
 
-;;;  All imports moved to package declaration.  
+;;;  All imports moved to package declaration.
 
 #|
 (u::import-as-macros ACL2::A-SYMBOL-UNIQUE-TO-THE-ACL2-PACKAGE)
@@ -607,7 +607,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 
 (defmacro mlambda (args form)
   "A macro lambda that doesn't substitute function symbols or quoted
-   constants." 
+   constants."
   (declare (xargs :guard (symbol-listp args)))
   (mlambda-fn args form))
 
@@ -745,7 +745,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
                (lambda-function-p (car term)))
             (reason-for-not-assertion-termp-list (cdr term))
          (msg "the CAR of ~p0 is neither a symbol nor a LAMBDA function."
-              term))))) 
+              term)))))
 
  (defun reason-for-not-assertion-termp-list (l)
    (cond
@@ -854,7 +854,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 ;;;    names, and are attached with APPEND or APPEND-DB.  If the entry is the
 ;;;    name of a function, macro, or lemma, then by convention a missing or
 ;;;    NULL entry indicates that the function, macro, or lemma will not be
-;;;    generated. 
+;;;    generated.
 ;;;
 ;;;    The following are lists of all possible entries in DB.  Please keep
 ;;;    them up to date as the code is modified.  These lists are also stored as
@@ -866,11 +866,11 @@ http://www.cs.utexas.edu/users/moore/acl2"
 ;;;    Keyword Entries, accessed by (DB <keyword>) :
 ;;;
 ;;;    :ACL2-COUNT-LEMMA -- The lemma describing the ACL2-COUNT of the
-;;;                         structure. 
+;;;                         structure.
 ;;;    :ASSERTIONS -- A list of ASSERTION records recording each assertion
 ;;;                   about the structure.
 ;;;    :ASSERTION-LEMMA -- The lemma capturing all assertions about the
-;;;      structure. 
+;;;      structure.
 ;;;    :ASSERTION-LEMMA-HINTS -- User option.
 ;;;    :CONC-NAME -- User option.
 ;;;    :CONSTRUCTOR-CALL -- A symbolic call of the constructor.
@@ -887,7 +887,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 ;;;    :KEYWORD-UPDATER -- User option.
 ;;;    :LIFT-IF-LEMMA -- The name of a lemma that `lifts' IFs through
 ;;;                      accessor references.
-;;;    :LEMMA-THEORY -- The theory of all lemmas created by this DEFSTRUCTURE. 
+;;;    :LEMMA-THEORY -- The theory of all lemmas created by this DEFSTRUCTURE.
 ;;;    :MV-INTRO-MACRO -- The name of a macro that generates a lemma that
 ;;;                       `introduces' MV constructors.
 ;;;    :NAME -- The structure name.
@@ -922,7 +922,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 ;;;    :UPDATE-METHOD -- User option.
 ;;;    :VALUE-VARIABLE -- A variable which is not one of the slot names of the
 ;;;       structure name, used as the symbolic variable in terms involving
-;;;       the slot writers. 
+;;;       the slot writers.
 ;;;    :VALUE-VARIABLE1 -- Another unique variable.
 ;;;    :VERIFY-GUARDS -- User option -- T, NIL, or :DEFAULT.
 ;;;    :WEAK-PREDICATE -- The name of the `weak' predicate on the structure.
@@ -935,7 +935,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 ;;;      constructor.
 ;;;    :WRITE-WRITE -- Boolean; true to generate WRITE-WRITE-LEMMA (default).
 ;;;    :WRITE-WRITE-LEMMA -- A lemma that normalizes multiple writes to a
-;;;      structure. 
+;;;      structure.
 ;;;
 ;;;    Slot/Keyword entries, accessed by (DB <slot> <keyword>):
 ;;;
@@ -952,28 +952,28 @@ http://www.cs.utexas.edu/users/moore/acl2"
 
 (defconst *db-fields*
   '(:ACL2-COUNT-LEMMA
-    :ASSERTIONS :ASSERTION-LEMMA :ASSERTION-LEMMA-HINTS 
+    :ASSERTIONS :ASSERTION-LEMMA :ASSERTION-LEMMA-HINTS
     :CONC-NAME :CONSTRUCTOR-CALL :DEFINITION-THEORY :DOC
     :ELIMINATION-LEMMA :FORCE :GUARDS :INLINE :MIX
-    :INTRO-MACRO 
-    :KEYWORD-CONSTRUCTOR 
-    :KEYWORD-SLOT-NAMES 
+    :INTRO-MACRO
+    :KEYWORD-CONSTRUCTOR
+    :KEYWORD-SLOT-NAMES
     :KEYWORD-UPDATER :LEMMA-THEORY :LIFT-IF-LEMMA :MV-INTRO-MACRO
-    :NAME #|:NORMALIZATION-LEMMA :NORMALIZE|# :PREDICATE 
+    :NAME #|:NORMALIZATION-LEMMA :NORMALIZE|# :PREDICATE
     :PREDICATE-CALL
     :PREDICATE-CONSTRUCTOR-LEMMA :PREDICATE-SLOT-WRITERS-LEMMA
     :PREDICATE-GUARD-HINTS
-    :PREDICATE-WEAK-PREDICATE-LEMMA 
+    :PREDICATE-WEAK-PREDICATE-LEMMA
     :PREFIX :READ-LEMMA :READ-ONLY
     :READ-WRITE :READ-WRITE-LEMMA
-    :REPRESENTATION 
-    :REQUIRED-SLOT-NAMES 
+    :REPRESENTATION
+    :REQUIRED-SLOT-NAMES
     :SET-CONC-NAME :SLOT-NAMES
     :TAG :TEMPLATE :UPDATE-METHOD :VALUE-VARIABLE :VALUE-VARIABLE1
-    :VERIFY-GUARDS 
+    :VERIFY-GUARDS
     :WEAK-PREDICATE :WEAK-PREDICATE-CALL
     :WEAK-PREDICATE-CONSTRUCTOR-LEMMA :WEAK-PREDICATE-SLOT-WRITERS-LEMMA
-    :WRITE-LEMMA 
+    :WRITE-LEMMA
     :WRITE-WRITE :WRITE-WRITE-LEMMA))
 
 (defconst *db-slot-fields*
@@ -1038,7 +1038,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 
 (defmacro append-db (&rest forms)
   "APPEND new sublists to DB, evaluting each sucessive form in the context of
-   the new DB." 
+   the new DB."
   (cond
    ((null forms) 'DB)
    (t `(LET ((DB (APPEND ,(car forms) DB)))
@@ -1126,7 +1126,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
   `(PACK-INTERN (DB :NAME) (DB :PREFIX) ,@names))
 
 (defun make-template (db)
-  
+
   "Using the :SLOT-NAMES, :REPRESENTATION, and :TAG, make a template for
    function generation.  If the structure is tagged, the tag is always added
    as the CAR.  We know that the :TAG is a symbol, and that the
@@ -1176,7 +1176,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 
 (defloop writer-calls (slot-names db)
   "Create a symbolic update form for a slot.  The default update form for
-  slot A of structure FOO with slots A, B, and C looks like 
+  slot A of structure FOO with slots A, B, and C looks like
   (SET-FOO-A FOOABC FOO)."
   (for ((slot in slot-names))
     (collect
@@ -1227,13 +1227,13 @@ http://www.cs.utexas.edu/users/moore/acl2"
     ""))
 
 (defmacro join-symbols (witness &rest rst)
-  `(intern-in-package-of-symbol (symbol-list-to-string (list ,@rst)) 
+  `(intern-in-package-of-symbol (symbol-list-to-string (list ,@rst))
                                 ,witness))
 
 (defun make-numbered-symbol (witness symbol number)
-  (intern-in-package-of-symbol (concatenate 'acl2::string 
+  (intern-in-package-of-symbol (concatenate 'acl2::string
                                      (symbol-name symbol)
-                                     (coerce (explode-nonnegative-integer number nil) 'acl2::string)) 
+                                     (coerce (explode-nonnegative-integer number nil) 'acl2::string))
                         witness))
 
 (defun number-symbol-list (witness list number)
@@ -1267,7 +1267,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 
 (defun strong-existential-fields (fn f x y)
   (if (consp f)
-      (cons `(cpath::tag-location ,(enkey (car f)) (equal (,@fn ,(car f) ,x) 
+      (cons `(cpath::tag-location ,(enkey (car f)) (equal (,@fn ,(car f) ,x)
                                                    (,@fn ,(car f) ,y)))
             (strong-existential-fields fn (cdr f) x y))
     nil))
@@ -1288,7 +1288,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 (defun extensionality (db)
 
   (db-let (name inline slot-names keyword-slot-names mix weak-predicate)
-          
+
     (let ((paths  (psort (enlist keyword-slot-names)))
           (fields (field-readers slot-names db)))
       (let ((field1 (number-symbol-list name fields 1))
@@ -1300,34 +1300,34 @@ http://www.cs.utexas.edu/users/moore/acl2"
 ;  The extensionality theorems decompose equality of two structures into
 ;; equality of their respective fields.
  "
-         
+
         `(
-          
+
           ;; How expensive is this rule??
-          
+
           (defthm ,(join-symbols name name '-extensionality! (if mix '|| '-helper))
             (implies
-             (and 
+             (and
               (,weak-predicate x)
               (,weak-predicate y))
              (iff
               (equal x y)
               (equal (gp-list '(,@paths) x)
                      (gp-list '(,@paths) y)))))
-          
+
           ,@(if mix nil
               `((defthm ,(join-symbols name name '-extensionality!)
                   (implies
-                   (and 
+                   (and
                     (,weak-predicate x)
                     (,weak-predicate y))
                    (iff
                     (equal x y)
                     (and ,@(strong-existential-fields nil fields `x `y)))))
                 ; :hints (("goal" :in-theory (disable cpath::sp==r))))
-                
+
                 (in-theory (disable ,(join-symbols name name '-extensionality! '-helper)))))
-          
+
           ,@(if inline nil
               `(
                 (defthm ,(join-symbols name name '-extensionality)
@@ -1338,7 +1338,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
                     ,@(existential-fields fields field1 field2)
                     ))
                   :hints (("goal" :in-theory (disable ,weak-predicate ,name))))
-                
+
                 (in-theory (disable ,(join-symbols name name '-extensionality!)))
                 ))
 
@@ -1353,7 +1353,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 
 (defun constructor-body (slot-names keyword-slot-names)
   (if (consp slot-names)
-      `(sp (list ,(car keyword-slot-names)) ,(car slot-names) 
+      `(sp (list ,(car keyword-slot-names)) ,(car slot-names)
           ,(constructor-body (cdr slot-names) (cdr keyword-slot-names)))
     'nil))
 
@@ -1375,7 +1375,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
    we need to bind it."
 
   (db-let (name acl2-count-lemma constructor-call slot-names representation
-                tag doc template inline keyword-slot-names) 
+                tag doc template inline keyword-slot-names)
 
     (cond
      ((eq representation :MV)
@@ -1386,7 +1386,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
  "
        `(DEFMACRO ,name ,slot-names ,@(if doc (list doc) nil)
           (CONS 'MV (LIST ,@slot-names)))))
-      
+
      (inline
       (list
        "
@@ -1394,7 +1394,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
  "
        `(DEFMACRO ,name ,slot-names ,@(if doc (list doc) nil)
           (MLAMBDA ,slot-names ,(constructor-body slot-names keyword-slot-names)))))
-    
+
      (t (list
          "
 ;  The constructor is defined as a function that accepts every slot.
@@ -1403,7 +1403,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
              `(DEFUN ,name ,slot-names ,@(if doc (list doc) nil)
                 ,@(guard-declaration T t db)
 ; perhaps the TAG argument doesn't make sense if we're using records?
-                ,(constructor-body slot-names keyword-slot-names)) 
+                ,(constructor-body slot-names keyword-slot-names))
            `(DEFUN ,name ,slot-names ,@(if doc (list doc) nil)
               ,@(guard-declaration T t db)
               ,(constructor-body slot-names keyword-slot-names)))
@@ -1441,7 +1441,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
         (equal (cpath::clrp-list ,(weak-predicate-body-aux keyword-slot-names)
                                 ,structure-name)
                nil)))
-               
+
 (defun reader-body (slot template tree)
   "Write a call to G to get slot from a structure."
   (declare (xargs :guard (symbolp slot)) (ignore template))
@@ -1458,10 +1458,10 @@ http://www.cs.utexas.edu/users/moore/acl2"
                           constructor-call name template tag
                           inline
                           keyword-slot-names)
-    
+
     ;;  Note that an untagged, 0-slot structure is defined to be NIL, and an
     ;;  untagged 1-slot structure is a single object.
-    
+
     (let* ((wp-body (weak-predicate-body keyword-slot-names name))
            (body (cond
                   ((null template) (list `(NULL ,name)))
@@ -1476,10 +1476,10 @@ http://www.cs.utexas.edu/users/moore/acl2"
 
        `(DEFUN ,weak-predicate (,name)
           ,@(guard-declaration T t db)
-          
-          ,wp-body ;(or t ,name) ;we only mention name to prevent an error about it being irrelevant but not declared so       
+
+          ,wp-body ;(or t ,name) ;we only mention name to prevent an error about it being irrelevant but not declared so
           )
-       
+
        (if inline
            nil
          (list
@@ -1532,7 +1532,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
 
   "The predicate, as the set of assertions for explicit instances of the
    constructor."
-  
+
   (db-let (slot-names assertions weak-predicate constructor-call)
     (let ((assertions
            (remove-duplicates-equal
@@ -1560,14 +1560,14 @@ http://www.cs.utexas.edu/users/moore/acl2"
         ,@(guard-declaration T nil db)
         ,(predicate-body db))
 
-         
+
      (if inline
          nil
 
        ;;  At times it is excessive to require that we prove the entire type
        ;;  predicate for a structure just to show that the weak predicate is
        ;;  satisfied, but this is the most generally useful rule to have
-       ;;  around. 
+       ;;  around.
 
        (list
         "
@@ -1581,7 +1581,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
             ,predicate-call
             ,weak-predicate-call)
            :RULE-CLASSES (:FORWARD-CHAINING :REWRITE :BUILT-IN-CLAUSE))
-        
+
         "
 ;  This lemma rewrites the predicate on an explicit reference of
 ;  the constructor.
@@ -1589,9 +1589,9 @@ http://www.cs.utexas.edu/users/moore/acl2"
         `(DEFTHM ,predicate-constructor-lemma
            (EQUAL (,predicate ,constructor-call)
                   ,(predicate-assertions-explicit db))))))))
-    
+
 ;;;  KEYWORD-CONSTRUCTOR
-;;;  
+;;;
 ;;;  The function KEYWORD-CONSTRUCTOR-FN is not a code generator per se, but
 ;;;  is a helper function for all keyword constructors defined by
 ;;;  DEFSTRUCTURE.  I had thought about generating a unique helper for each
@@ -1627,7 +1627,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
                  a valid keyword argument list because it contains the ~
                  ~#1~[keyword~/keywords~] ~&1, which ~#1~[is~/are~] ~
                  not the keyword ~#1~[form~/forms~] of any of the ~
-                 slot names ~&2." 
+                 slot names ~&2."
                FORM (set-difference-equal (evens args) keyword-slot-names)
                keyword-slot-names))
    (t nil)))
@@ -1644,7 +1644,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
                  ~#1~[keyword~/keywords~] ~&1. ~
                  Any slot which has no :DEFAULT option at ~
                  DEFSTRUCTURE time must be specified in every ~
-                 invocation of the constructor macro." 
+                 invocation of the constructor macro."
                form (set-difference-equal
                      required-slot-names (evens args))
                keyword-slot-names))
@@ -1668,7 +1668,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
             ',(default-alist slot-names db)
             ',keyword-slot-names ',required-slot-names)))
      nil)))
-   
+
 ;;;  READERS
 
 (defloop reader-definitions (slot-names db)
@@ -1698,7 +1698,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
   "Define the reader functions"
   (db-let (slot-names acl2-count-lemma)
     (if slot-names
-        (append 
+        (append
          (cons
          "
 ;  These are the `readers' for the structure.
@@ -1711,17 +1711,17 @@ http://www.cs.utexas.edu/users/moore/acl2"
 ;  This lemma justifies recursion on any slot of the structure.  It is
 ;  unlikely to be used unless the structure is itself recursive.
   "
-          
+
 ;This is a different lemma that what we had before the conversion to
 ;records.  Now it mentions the readers, so it was moved to after the
 ;readers are defined.
-          
+
           `(DEFTHM ,acl2-count-lemma
-             
+
              (AND ,@(acl2-count-lemma-claims slot-names db))
              :rule-classes (:rewrite :linear))
 
-          
+
           #|
           `(DEFTHM ,acl2-count-lemma
           (EQUAL (ACL2-COUNT ,constructor-call)
@@ -1730,7 +1730,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
           |#
           )))
       nil)))
-    
+
 
 ;;;  WRITERS
 
@@ -1952,7 +1952,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
         (list
        "
 ;  This is the macro that provides for updates of multiple slots of a
-;  structure. 
+;  structure.
  "
        `(DEFMACRO ,keyword-updater (&WHOLE FORM STRUCT &REST ARGS)
           (KEYWORD-UPDATER-FN
@@ -1961,7 +1961,7 @@ http://www.cs.utexas.edu/users/moore/acl2"
            ',update-method ',template ',(keyword-reader-map slot-names db)
            ',(keyword-writer-map slot-names db))))
       nil)))
-                            
+
 ;;;  READ-LEMMA
 
 (defloop read-lemma-body (slot-names db)
@@ -2014,49 +2014,49 @@ some simplifications in that way as well ( we do on his examples ).
 ;   ":doc-section lift-if-syntaxp
 ;   Meta heuristic for `lifting' IF through structure accessors.
 ;   ~/~/
-; 
+;
 ; The `LIFT-IF' lemma is introduced as a heuristic to speed certain proofs
 ; about specifications involving conditional structure access.  Here is the
 ; idea.  Imagine a generic structure defined by
-; 
+;
 ;  (DEFSTRUCTURE FOO A B C).
-; 
+;
 ; Now imaging that the term
-; 
+;
 ;  (FOO-A (IF test x y))
-; 
-; appears during a proof about a specification involving the structure.  
+;
+; appears during a proof about a specification involving the structure.
 ; This will happen because ACL2 does not normally move IF around during
 ; simplification.  Instead, ACL2 simplifies, with IF in place, and then
 ; clausifies out the IFs to produce cases.
-; 
+;
 ; Now, if the term above is actually
-; 
+;
 ;  (FOO-A (IF test (FOO a b c) (FOO a1 b1 c1))),
-; 
+;
 ; i.e., both the left and right branch of the IF are instances of the
-; constructor, then we can simplify this term to 
-; 
+; constructor, then we can simplify this term to
+;
 ;  (IF test a a1).
-; 
+;
 ; Even though we haven't eliminated the need to clausify away the IF, we have
 ; at least reduced the size of the term, perhaps substantially.  This is
 ; important because if we had clausified away to cases involving
-; 
+;
 ;  (FOO-A (FOO a b c)) and (FOO-A (FOO a1 b1 c1))
-; 
+;
 ; the prover is obligated to examine all of (FOO a b c) and (FOO a1 b1 c1)
 ; before applying the simple `read lemma' for the structure.  The sizes of
 ; terms can also have a very significant impact on the amount of time spent on
 ; I/O.
-; 
+;
 ; If it so happened that a = a1, e.g., this slot is invariant in a
 ; specification, then this would be further simplified to simply
-; 
+;
 ; a,
-; 
+;
 ; which will potentially result in one less test during clausification.
-; 
+;
 ; The heuristic embodied in this lemma is to lift IF through calls of the
 ; accessors if there is some hope that doing so will reduce the size of the
 ; resulting term.  If the left and right hand sides of the IF are both
@@ -2065,10 +2065,10 @@ some simplifications in that way as well ( we do on his examples ).
 ; right hand sides are themselves IF, hoping to win further down.  This
 ; heuristic has been found to result in very significant proof speedups for
 ; certain types of proofs. ~/"
-; 
+;
 ;   (declare (xargs :guard t
 ;                   :mode :logic))
-; 
+;
 ;   (and (consp left)
 ;        (consp right)
 ;        (symbolp constructor)
@@ -2102,7 +2102,7 @@ some simplifications in that way as well ( we do on his examples ).
 (defun lift-if-lemma (db)
   (db-let (name lift-if-lemma representation slot-names)
     (let ((test (pack-intern name name "-TEST")) ;Makes forms easer to read
-          (left (pack-intern name name "-LEFT")) ;w/o package marks. 
+          (left (pack-intern name name "-LEFT")) ;w/o package marks.
           (right (pack-intern name name "-RIGHT")))
       (if lift-if-lemma
           (list
@@ -2117,7 +2117,7 @@ some simplifications in that way as well ( we do on his examples ).
 
 (defun elimination-lemma (db)
   (db-let (elimination-lemma slot-names name force
-                             weak-predicate-call) 
+                             weak-predicate-call)
     (if (and elimination-lemma)
         (list
          "
@@ -2158,7 +2158,7 @@ some simplifications in that way as well ( we do on his examples ).
 
 (defun normalization-lemma (db)
   (db-let (name constructor-call normalization-lemma slot-names force
-                weak-predicate-call)  
+                weak-predicate-call)
 
     ;;  Note: In the first conjunct below (the equality conjunct), if both the
     ;;  LHS and RHS are explicit references of the constructor, then we can
@@ -2185,7 +2185,7 @@ some simplifications in that way as well ( we do on his examples ).
                      (AND ,@(normalize-equal-conjuncts slot-names db)))
               ,@(normalization-conjuncts slot-names slot-names db)))))
       nil)))
-      
+
 |#
 
 ;;;  SLOT-WRITERS-LEMMAS
@@ -2239,7 +2239,7 @@ some simplifications in that way as well ( we do on his examples ).
                   (flatten (all-bound-slots (remove slot slot-names) db)))))))
 
 (defloop predicate-slot-writers-lemma-fn
-  (predicate slot-names all-slot-names db)  
+  (predicate slot-names all-slot-names db)
   (for ((slot in slot-names))
     (unless (db slot :READ-ONLY)
       (collect
@@ -2266,13 +2266,13 @@ some simplifications in that way as well ( we do on his examples ).
                            `(AND ,@subst-assertions))
                           (t (car subst-assertions)))
                        'T))))))))))
-           
+
 (defun slot-writers-lemmas (db)
   (db-let (weak-predicate-slot-writers-lemma
            weak-predicate-call weak-predicate
            predicate-slot-writers-lemma predicate
            slot-names)
-                                             
+
     (append
      (if weak-predicate-slot-writers-lemma
          (list
@@ -2284,7 +2284,7 @@ some simplifications in that way as well ( we do on his examples ).
               ,weak-predicate-call
               (AND ,@(weak-predicate-slot-writers-lemma-fn
                       weak-predicate (map-if-slots-db slot-names :WRITER-CALL
-                                                   db)))))) 
+                                                   db))))))
        nil)
      (if predicate-slot-writers-lemma
          (list
@@ -2300,12 +2300,12 @@ some simplifications in that way as well ( we do on his examples ).
                          predicate slot-names slot-names db))))
        nil))))
 
-;;;  READ-WRITE-LEMMA 
+;;;  READ-WRITE-LEMMA
 
 (defloop read-write-conjuncts1 (slot-names write-slot db)
   (for ((read-slot in slot-names))
     (collect
-     (db-let (value-variable (read-slot reader) (write-slot writer) name) 
+     (db-let (value-variable (read-slot reader) (write-slot writer) name)
        (cond
         ((eq read-slot write-slot)
          `(EQUAL (,reader (,writer ,value-variable ,name))
@@ -2317,7 +2317,7 @@ some simplifications in that way as well ( we do on his examples ).
     (for ((write-slot in slot-names))
       (unless (db write-slot :READ-ONLY)
         (append (read-write-conjuncts1 all-slot-names write-slot db)))))
-        
+
 (defun read-write-lemma (db)
   (db-let (read-write-lemma slot-names force weak-predicate-call)
     (if read-write-lemma
@@ -2362,7 +2362,7 @@ some simplifications in that way as well ( we do on his examples ).
            "
 ;  This lemma normalizes multiple nested writes of a structure by pushing
 ;  writes for `deep' slots through writes to `shallow' slots, and reducing
-;  redundant writes to the same slot to a single write. 
+;  redundant writes to the same slot to a single write.
   "
            `(DEFTHM ,write-write-lemma
               (AND ,@(write-write-conjuncts  template db)))))
@@ -2388,7 +2388,7 @@ some simplifications in that way as well ( we do on his examples ).
             (map-assertions-for-rule-classes assertions))))
 
 (defun naked-proofs (db)
-  (db-let (assertion-lemma predicate predicate-call 
+  (db-let (assertion-lemma predicate predicate-call
                            predicate-guard-hints
                            assertion-lemma-hints guards verify-guards)
     (if (or assertion-lemma (and guards verify-guards))
@@ -2412,7 +2412,7 @@ some simplifications in that way as well ( we do on his examples ).
 ;  guaranteed to prove.  If it does not prove than you may have to provide
 ;  some :HINTS.  Any :ASSERTION-LEMMA-HINTS option to DEFSTRUCTURE will be
 ;  attached to this lemma.  Be sure that you have not specified
-;  unsatisfiable assertions. 
+;  unsatisfiable assertions.
  "
 
                `(DEFTHM ,assertion-lemma
@@ -2424,7 +2424,7 @@ some simplifications in that way as well ( we do on his examples ).
                   ,@(and assertion-lemma-hints
                          (list :HINTS assertion-lemma-hints))))))
       nil)))
-            
+
 ;;;  MV-INTRO-MACRO
 
 (defun mv-intro-macro-case-body (readers form n)
@@ -2440,7 +2440,7 @@ some simplifications in that way as well ( we do on his examples ).
                    (pack-intern (car form) name "-MV-INTRO-" (car form))))
      (n (car (unique-symbols 1 'MV-INTRO-MACRO-N (flatten form))))
      (mv-nth-form `(MV-NTH ,n ,form)))
-     
+
     `(DEFTHM ,event-name
        (EQUAL ,mv-nth-form
               (CASE ,n
@@ -2450,7 +2450,7 @@ some simplifications in that way as well ( we do on his examples ).
        (("Goal"
          :IN-THEORY '(ZP OPEN-MV-NTH ,@readers)
          :EXPAND (HIDE ,mv-nth-form))))))
-         
+
 (defun mv-intro-macro (db)
   (db-let (name slot-names mv-intro-macro)
     (if mv-intro-macro
@@ -2498,7 +2498,7 @@ some simplifications in that way as well ( we do on his examples ).
 
 (defun definition-theory (db)
   (db-let (name weak-predicate predicate definition-theory slot-names
-                representation mix inline) 
+                representation mix inline)
     (if inline
         nil
       (list
@@ -2563,7 +2563,7 @@ some simplifications in that way as well ( we do on his examples ).
             :KEYWORD-UPDATER :PREDICATE :PREDICATE-GUARD-HINTS :PREFIX
             :INLINE :MIX :READ-WRITE-LEMMA :REPRESENTATION :SET-CONC-NAME
             :SLOT-WRITERS :WEAK-PREDICATE :UPDATE-METHOD :VERIFY-GUARDS
-            :WRITE-WRITE-LEMMA) 
+            :WRITE-WRITE-LEMMA)
   "The valid options for DEFSTRUCTURE options.")
 
 (defconst *duplicate-options*
@@ -2631,7 +2631,7 @@ some simplifications in that way as well ( we do on his examples ).
 
             ;;  Here, the `subst-assertion' is made by substitution of the
             ;;  access forms for the free variables.
-          
+
             (make ASSERTION
                   :assertion assertion
                   :bound-slots bound-slots
@@ -2641,25 +2641,25 @@ some simplifications in that way as well ( we do on his examples ).
                                   bound-slots)
                   :slot slot
                   :rules NIL)))))))
-                
+
 
 (defun parse-rule (rule default-assertion context slot db)
   "Check rule syntax and return a RULE record."
 
   (let ((rule-token (if (atom rule) rule (car rule))))
-    
+
     (if (or (not (symbolp rule-token))
             (not (member rule-token *rule-tokens*)))
-        
+
         (bomb "The putative rule descriptor ~p0 in the context ~
                ~p1 is not valid because ~#2~[it~/its CAR~] ~
                is not one of the allowable rule tokens ~v3."
               rule context (if (equal rule rule-token) 0 1) *rule-tokens*)
-      
+
       (cond
 
        ;;  A symbolic rule inherits everything from the default-assertion.
-    
+
        ((or (atom rule) (null (cdr rule)))
         (make RULE
               :assertion default-assertion
@@ -2737,7 +2737,7 @@ some simplifications in that way as well ( we do on his examples ).
                      (car slot-and-options)))
 
         (options (if (symbolp slot-and-options) nil (cdr slot-and-options)))
-     
+
         (option-err
          (get-option-check-syntax 'DEFSTRUCTURE options *slot-options*
                                   *duplicate-slot-options* nil)))
@@ -2830,7 +2830,7 @@ some simplifications in that way as well ( we do on his examples ).
      (options? (and (consp last-car) (eq (car last-car) :OPTIONS)))
      (options (if options? (cdr last-car) nil))
      (slots (if options? (butlast slots-and-options 1) slots-and-options))
-     
+
      (option-err
       (get-option-check-syntax 'DEFSTRUCTURE options *options*
                                *duplicate-options* nil))
@@ -2899,7 +2899,7 @@ some simplifications in that way as well ( we do on his examples ).
           ((and slot-writers (eq (db :REPRESENTATION) :MV))
            (bomb ":MV structures can't have :SLOT-WRITERS."))
           (t (not slot-writers)))))
-      (:MV-INTRO-MACRO 
+      (:MV-INTRO-MACRO
        (if (eq (db :REPRESENTATION) :MV)
            (get-symbol :MV-INTRO-MACRO options
                        (pack-intern name name "-INTRO"))
@@ -2910,7 +2910,7 @@ some simplifications in that way as well ( we do on his examples ).
              NIL))))
       (:UPDATE-METHOD
        (let* ((default (if (db :READ-ONLY) :COPY (if (db :MIX) :SET :HEURISTIC)))
-              (method (get-option-member 'DEFSTRUCTURE :UPDATE-METHOD options 
+              (method (get-option-member 'DEFSTRUCTURE :UPDATE-METHOD options
                                    *update-methods* default default)))
          (if (and (db :READ-ONLY) (not (eq method :COPY)))
              (bomb "The only valid :UPDATE-METHOD for structures without ~
@@ -2940,7 +2940,7 @@ some simplifications in that way as well ( we do on his examples ).
 
      ;; Still extending we add the forms necessary to complete parsing, and
      ;; parsing the :ASSERT options and the slot descriptors, returning the
-     ;; DB. 
+     ;; DB.
 
      (acons-db
       (:VALUE-VARIABLE (car (unique-symbols 2 (pack-intern name "VALUE")
@@ -2974,7 +2974,7 @@ some simplifications in that way as well ( we do on his examples ).
                       #|normalize|# read-write write-write mv-intro-macro
                       weak-predicate inline mix set-conc-name)
     (cond
-     
+
      ;;  A few error checks.
 
      ((and (eq representation :MV)
@@ -2985,13 +2985,13 @@ some simplifications in that way as well ( we do on his examples ).
                  slot-names)))
 
      ((not weak-predicate)
-      (bomb "You have apparently tried to suppress the generation of the 
+      (bomb "You have apparently tried to suppress the generation of the
              weak predicate on the structure, which is currently illegal."))
 
      ((not predicate)
-      (bomb "You have apparently tried to suppress the generation of the 
+      (bomb "You have apparently tried to suppress the generation of the
              predicate on the structure, which is currently illegal."))
-     
+
      (t
 
       (extend-db
@@ -3026,7 +3026,7 @@ some simplifications in that way as well ( we do on his examples ).
                                   nil
                                 (make-prefix-name "ACL2-COUNT-" name)))
 
-           ;;  Weak Predicate. 
+           ;;  Weak Predicate.
 
            (:WEAK-PREDICATE-CALL `(,weak-predicate ,name))
            (:WEAK-PREDICATE-CONSTRUCTOR-LEMMA
@@ -3036,11 +3036,11 @@ some simplifications in that way as well ( we do on his examples ).
 
            (:PREDICATE-WEAK-PREDICATE-LEMMA
             (make-prefix-name predicate "-INCLUDES-" weak-predicate))
-           
+
            (:PREDICATE-CONSTRUCTOR-LEMMA (make-prefix-name predicate "-" name))
 
            ;;  We suppress the keyword-updater if it's an :MV or there
-           ;;  aren't any slots. 
+           ;;  aren't any slots.
 
            (:KEYWORD-UPDATER (if (or (eq representation :MV) (not slot-names))
                                  nil
@@ -3174,7 +3174,7 @@ For debugging.
 
   (let ((db (prepare-for-code-gen (parse-defstructure name doc-and-slots))))
     (db-let (inline guards)
-    
+
       `(PROGN
 
         (CAPSULE
@@ -3212,7 +3212,7 @@ For debugging.
              `(CAPSULE
                ,@(naked-proofs db)
                ,@(lemma-theory db))))))))
-    
+
 
 
 
@@ -3316,12 +3316,12 @@ For debugging.
                 (field2 (number-symbol-list name fields 2)))
             `(encapsulate
               ()
-              
+
               (acl2::defstructure ,name ,@rst)
-              
+
               (defthm ,(join-symbols name name '-extensionality!)
                 (implies
-                 (and 
+                 (and
                   (,(join-symbols name 'weak- name '-p) x)
                   (,(join-symbols name 'weak- name '-p) y)
                   )
@@ -3331,15 +3331,15 @@ For debugging.
                          (gp-list '(,@paths) y))))
                 :hints (("goal" :in-theory (e/d (acl2::path-list-record-reduction-1
                                                  acl2::path-list-record-reduction-2
-                                                 ,(join-symbols name 'weak- name '-p) 
-                                                 ,name) 
+                                                 ,(join-symbols name 'weak- name '-p)
+                                                 ,name)
                                                 (gp-list
                                                  (ACL2::CLRP-LIST)
                                                  ACL2::CLRP-LIST-OF-SP-WHEN-DIVERGES-FROM-ALL
                                                  acl2::GP-OF-CLRP-LIST-WHEN-DIVERGES-FROM-ALL
                                                  ACL2::S==R
                                                  ACL2::EQUAL-S-RECORD-EQUALITY)))))
-              
+
               (defthm ,(join-symbols name name '-extensionality)
                 (iff
                  (equal (,name ,@field1)
@@ -3348,8 +3348,8 @@ For debugging.
                   ,@(existential-fields field1 field2)
                   ))
                 :hints (("goal" :in-theory (enable ,name))))
-              
+
               (in-theory (disable ,(join-symbols name name '-extensionality!)))
-              
+
               ))))))
-  
+

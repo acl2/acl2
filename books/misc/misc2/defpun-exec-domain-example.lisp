@@ -23,7 +23,7 @@ show how, if it did, we could have used the macro itself via defexec.
 ;; This one fails.  So I wrap this in must-fail.
 
 (must-fail
- (defpun fact (x) 
+ (defpun fact (x)
    (declare (xargs :gdomain (natp x)
                    :measure (nfix x)))
    (if (equal x 0) 1 (* x (fact (- x 1))))))
@@ -31,7 +31,7 @@ show how, if it did, we could have used the macro itself via defexec.
 ;; If I look at the translation, then here's what I get, and the final
 ;; verify-guards fails.  Here I show how I could introduce all the events.
 
-;; ACL2 !>:trans1 (defpun fact (x) 
+;; ACL2 !>:trans1 (defpun fact (x)
 ;;    (declare (xargs :gdomain (natp x)
 ;;                    :measure (nfix x)))
 ;;    (if (equal x 0) 1 (* x (fact (- x 1))))))
@@ -70,7 +70,7 @@ show how, if it did, we could have used the macro itself via defexec.
           1 (* X (THE-FACT (- X 1))))
       'UNDEF))
 
-(ENCAPSULATE 
+(ENCAPSULATE
  ((FACT (X) T))
  (LOCAL (DEFUN-NONEXEC FACT (X) (THE-FACT X)))
  (DEFTHM FACT-DEF

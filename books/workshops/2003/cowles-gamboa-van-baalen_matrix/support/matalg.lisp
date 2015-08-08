@@ -30,7 +30,7 @@
       ACL2 Version 2.8 alpha (as of May 11 03)
 
 (certify-book "matalg"
-	      0 
+	      0
 	      t ;;compile-flg
 	      )
 |#
@@ -64,9 +64,9 @@ At UW:
 	(< (* (car (dimensions name l))
 	      (cadr (dimensions name l)))
 	   (maximum-length name l))
-	(<= (maximum-length name l) 
+	(<= (maximum-length name l)
 	    *maximum-positive-32-bit-integer*)
-	(bounded-integer-alistp2 l 
+	(bounded-integer-alistp2 l
 				 (car (dimensions name l))
 				 (cadr (dimensions name l)))))
   :rule-classes :forward-chaining)
@@ -79,7 +79,7 @@ At UW:
 	(< (* (car (dimensions name l))
 	      (cadr (dimensions name l)))
 	   (maximum-length name l))
-	(<= (maximum-length name l) 
+	(<= (maximum-length name l)
 	    *maximum-positive-32-bit-integer*)))
   :rule-classes :linear)
 
@@ -109,7 +109,7 @@ At UW:
 	   (not (array2p '$arg l)))
   :rule-classes :forward-chaining)
 
-(in-theory (disable alist2p array2p aset2 aref2 compress2 header 
+(in-theory (disable alist2p array2p aset2 aref2 compress2 header
 		    dimensions maximum-length default))
 
 (defthm
@@ -121,9 +121,9 @@ At UW:
 		(<= x 46340)
 		(<= y 46340))
 	   (< (* x y) 2147483647))
-  :rule-classes (:rewrite :linear) 
+  :rule-classes (:rewrite :linear)
   :hints (("Goal"
-	   :use (:instance 
+	   :use (:instance
 		 *-PRESERVES->=-FOR-NONNEGATIVES
 		 (x2 x)
 		 (y2 y)
@@ -133,17 +133,17 @@ At UW:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Boolean test for a matrix:
 
-;;  The  need for the following constant is explained in 
+;;  The  need for the following constant is explained in
 ;;   detail later in this book:
 
-;;   Search for 
+;;   Search for
 ;;      ; Ensuring closure of matrix multiplication.
 
 (defconst
   *INT-SQRT-MAXIMUM-POSITIVE-32-BIT-INTEGER*
   46340)
 
-;;  To ensure that matrix multiplication is closed, the 
+;;  To ensure that matrix multiplication is closed, the
 ;;   matrix can have no more that 46,340 rows and no more
 ;;   46,340 columns.
 
@@ -183,7 +183,7 @@ At UW:
   "Determine if all the following equalities hold:
    M1(m 0) = M2(m 0), . . . , M1(m n) = M2(m n);
    ie. determine if the m'th row of M1 matches the
-       m'th row of M2. 
+       m'th row of M2.
    All entries are treated as numbers."
   (declare (xargs :guard (and (integerp m)
 			      (>= m 0)
@@ -234,7 +234,7 @@ At UW:
 
 (defun
   m-= (M1 M2)
-  "Determine if the matrices represented by the alists 
+  "Determine if the matrices represented by the alists
    M1 and M2 are equal (as matrices of numbers)."
   (declare (xargs :guard (and (array2p '$arg1 M1)
 			      (array2p '$arg2 M2))))
@@ -274,14 +274,14 @@ At UW:
   m-0 (m n)
   "Return an alist representing the m by n matrix whose
    elements are all equal to 0.
-   To use the ACL2 efficient array mechanism to store (m-0 m n), 
-   (* m n)) must be stictly less than 2147483647 which is 
+   To use the ACL2 efficient array mechanism to store (m-0 m n),
+   (* m n)) must be stictly less than 2147483647 which is
    the *MAXIMUM-POSITIVE-32-BIT-INTEGER*."
   (declare (xargs :guard (and (integerp m)
 			      (integerp n)
 			      (> m 0)
 			      (> n 0))))
-  (list (list :HEADER 
+  (list (list :HEADER
 	      :DIMENSIONS (list m n)
 	      :MAXIMUM-LENGTH (+ 1 (* m n))
 	      :DEFAULT 0
@@ -316,8 +316,8 @@ At UW:
 		(<= m *INT-SQRT-MAXIMUM-POSITIVE-32-BIT-INTEGER*)
 		(<= n *INT-SQRT-MAXIMUM-POSITIVE-32-BIT-INTEGER*))
 	   (matrixp m n (m-0 m n)))
-  :hints (("Goal" :in-theory (enable array2p 
-				     dimensions 
+  :hints (("Goal" :in-theory (enable array2p
+				     dimensions
 				     header))))
 
 (defthm
@@ -342,24 +342,24 @@ At UW:
 (defthm
   alist2p-alist2p-m-0
   (implies (alist2p name1 M)
-	   (alist2p name2 (m-0 (car (dimensions 
+	   (alist2p name2 (m-0 (car (dimensions
 				     '$arg M))
-			       (cadr (dimensions 
+			       (cadr (dimensions
 				      '$arg M))))))
 
 (defthm
   array2p-array2p-m-0
   (implies (and (array2p name1 M)
 		(symbolp name2))
-	   (array2p name2 (m-0 (car (dimensions 
+	   (array2p name2 (m-0 (car (dimensions
 				     '$arg M))
-			       (cadr (dimensions 
+			       (cadr (dimensions
 				      '$arg M))))))
 
 ;;;;;;;;;;;;;;;;;;;
 ;; Identity matrix:
 
-(defun 
+(defun
   m-1a (n)
   "Return alist of length n of the form
    ( ((- n 1) . (- n 1)) . 1) . . . ((0 . 0) . 1) )."
@@ -375,12 +375,12 @@ At UW:
 (defun
   m-1 (n)
   "Return an alist representing the n by n identity matrix.
-   To use the ACL2 efficient array mechanism to store (m-1 n), 
-   (* n n)) must be stictly less than 2147483647 which is 
-   the *MAXIMUM-POSITIVE-32-BIT-INTEGER*." 
+   To use the ACL2 efficient array mechanism to store (m-1 n),
+   (* n n)) must be stictly less than 2147483647 which is
+   the *MAXIMUM-POSITIVE-32-BIT-INTEGER*."
   (declare (xargs :guard (and (integerp n)
 			      (>= n 0))))
-  (cons (list :HEADER 
+  (cons (list :HEADER
 	      :DIMENSIONS (list n n)
 	      :MAXIMUM-LENGTH (+ 1 (* n n))
 	      :DEFAULT 0
@@ -456,7 +456,7 @@ At UW:
 
 (defun
   m-trans (M)
-  "Return an alist representing the transpose of the matrix 
+  "Return an alist representing the transpose of the matrix
    represented by the alist M."
   (declare (xargs :guard (array2p '$arg M)))
   (cons (list :HEADER
@@ -487,7 +487,7 @@ At UW:
 		  :trigger-terms ((m-trans M))))
   :hints (("Goal"
 	   :in-theory (enable array2p header
-			      dimensions 
+			      dimensions
 			      maximum-length))))
 
 (defthm
@@ -523,7 +523,7 @@ At UW:
 	   :use (:theorem
 		 (implies (array2p '$arg1 M)
 			  (alist2p '$arg1
-				   (m-trans 
+				   (m-trans
 				    (m-trans M))))))))
 
 (defcong
@@ -549,7 +549,7 @@ At UW:
       (let ((key (caar M))
 	    (datum (cdar M)))
 	   (if (consp key)
-	       (acons key 
+	       (acons key
 		      (- (fix datum))
 		      (m-unary--a (cdr M)))
 	       (m-unary--a (cdr M))))
@@ -557,7 +557,7 @@ At UW:
 
 (defun
   m-unary-- (M)
-  "Return an alist representing the unary minus of the matrix 
+  "Return an alist representing the unary minus of the matrix
    represented by the alist M."
   (declare (xargs :guard (array2p '$arg M)))
   (cons (list :HEADER
@@ -587,7 +587,7 @@ At UW:
 		  :trigger-terms ((m-unary-- M))))
   :hints (("Goal"
 	   :in-theory (enable array2p header
-			      dimensions 
+			      dimensions
 			      maximum-length))))
 
 (defthm
@@ -640,7 +640,7 @@ At UW:
       (let ((key (caar M))
 	    (datum (cdar M)))
 	   (if (consp key)
-	       (acons key 
+	       (acons key
 		      (* a (fix datum))
 		      (s-*-a a (cdr M)))
 	       (s-*-a a (cdr M))))
@@ -649,7 +649,7 @@ At UW:
 (defun
   s-* (a M)
   "Return an alist representing the multiplication
-   of the scalar a times the matrix represented by 
+   of the scalar a times the matrix represented by
    the alist M."
   (declare (xargs :guard (and (acl2-numberp a)
 			      (array2p '$arg M))))
@@ -680,7 +680,7 @@ At UW:
 		  :trigger-terms ((s-* a M))))
   :hints (("Goal"
 	   :in-theory (enable array2p header
-			      dimensions 
+			      dimensions
 			      maximum-length))))
 
 (defthm
@@ -749,7 +749,7 @@ At UW:
   "Return an alist with the following values:
    M1(m 0)+M2(m 0), . . . , M1(m n)+M2(m n);
    ie. construct an alist of values representing
-   the vector sum of the m'th row of M1 and the 
+   the vector sum of the m'th row of M1 and the
    m'th row of M2."
   (declare (xargs :guard
 		  (and (integerp m)
@@ -810,9 +810,9 @@ At UW:
 
 (defun
   m-binary-+ (M1 M2)
-  "Return an alist representing the matrix sum 
-   of the matrices represented by the alists M1 
-   and M2. This is done by adding a header to an 
+  "Return an alist representing the matrix sum
+   of the matrices represented by the alists M1
+   and M2. This is done by adding a header to an
    alist containing the appropriate values."
   (declare (xargs :guard
 		  (and (array2p '$arg1 M1)
@@ -821,7 +821,7 @@ At UW:
 					       M1))
 			     (dim2 (dimensions '$arg2
 					       M2)))
-			    (and 
+			    (and
 			     (= (first dim1)
 				    (first dim2))
 			     (= (second dim1)
@@ -839,9 +839,9 @@ At UW:
 		(= dim12 dim22)))
       (cons (list :HEADER
 		  :DIMENSIONS (list dim11 dim12)
-		  :MAXIMUM-LENGTH 
+		  :MAXIMUM-LENGTH
 		  (+ 1 (* dim11 dim12))
-		  :DEFAULT 0 
+		  :DEFAULT 0
 		  :NAME 'matrix-sum)
 	    (m-binary-+-row-1 (compress2 '$arg1 M1)
 			      (compress2 '$arg2 M2)
@@ -857,7 +857,7 @@ At UW:
 	  (car rst))
       0))
 
-(add-binop m-+ m-binary-+) 
+(add-binop m-+ m-binary-+)
 
 (defthm
   alist2p-m-+
@@ -936,7 +936,7 @@ At UW:
 	   (equal (dimensions name (m-+ M1 M2))
 		  (dimensions name M1)))
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       equal-list-dimensions-array2p
 		       dimensions-m-+-alist2p)
 	   :use ((:instance
@@ -950,7 +950,7 @@ At UW:
 		(matrixp m n X2))
 	   (matrixp m n (m-+ X1 X2)))
   :hints (("Goal"
-	   :in-theory (disable m-binary-+)))) 
+	   :in-theory (disable m-binary-+))))
 
 (defthm
   default-m-+-alist2p
@@ -1096,14 +1096,14 @@ At UW:
    :hints (("Goal"
 	    :in-theory (disable m-binary-+ m-=
 				associativity-of-m-+)
-	    :use (:instance 
+	    :use (:instance
 		  right-m-+-unicity-of-m-0
 		  (M Y))))))
 
 (defthm
   right-m-+-inverse-of-m--_2
   (implies (and (alist2p name X)
-		(alist2p name Y)		
+		(alist2p name Y)
 		(equal (r X)(r Y))
 		(equal (c X)(c Y)))
 	   (m-= (m-+ X (m-- X) Y)
@@ -1115,7 +1115,7 @@ At UW:
  (defthm
    left-m-+-inverse-of-m--_2-lemma
    (implies (and (alist2p name X)
-		 (alist2p name Y)		
+		 (alist2p name Y)
 		 (equal (r X)(r Y))
 		 (equal (c X)(c Y)))
 	    (m-= (m-+ (m-+ (m-- X) X) Y)
@@ -1124,14 +1124,14 @@ At UW:
    :hints (("Goal"
 	    :in-theory (disable m-binary-+ m-=
 				associativity-of-m-+)
-	    :use (:instance 
+	    :use (:instance
 		  right-m-+-unicity-of-m-0
 		  (M Y))))))
 
 (defthm
   left-m-+-inverse-of-m--_2
   (implies (and (alist2p name X)
-		(alist2p name Y)		
+		(alist2p name Y)
 		(equal (r X)(r Y))
 		(equal (c X)(c Y)))
 	   (m-= (m-+ (m-- X) X Y)
@@ -1323,20 +1323,20 @@ At UW:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Ensuring closure of matrix multiplication.
 
-; Let dim1 be the number of rows and dim2 be the number of columns 
-; in an ACL2 two dimensional array.  The product, dim1*dim2, is 
+; Let dim1 be the number of rows and dim2 be the number of columns
+; in an ACL2 two dimensional array.  The product, dim1*dim2, is
 ; required to fit into 32 bits so that some compilers can lay down
-; faster code. Thus, dim1*dim2 <= maximum-positive-32-bit-integer 
-;                               = 2^31 - 1  
+; faster code. Thus, dim1*dim2 <= maximum-positive-32-bit-integer
+;                               = 2^31 - 1
 ;                               = 2,147,483,647.
 
 ; This restriction on the size of dim1*dim2 means that matrices
-; representable by ACL2 arrays are NOT closed under matrix 
+; representable by ACL2 arrays are NOT closed under matrix
 ; multiplication, even when the product is mathematically defined.
 ; To illustrate, suppose dim1*dim2 is required to be no larger than
-; 20; M1 is a matrix with 5 rows and 2 columns; and M2 is a matrix 
-; with 2 rows and 5 columns.  Then M1 and M2 would both be 
-; representable and their product, M1 * M2, would be mathematically 
+; 20; M1 is a matrix with 5 rows and 2 columns; and M2 is a matrix
+; with 2 rows and 5 columns.  Then M1 and M2 would both be
+; representable and their product, M1 * M2, would be mathematically
 ; defined, but not representable (since 25 > 20).
 
 ; Furthermore, when there are more than two matrices involved in a
@@ -1345,21 +1345,21 @@ At UW:
 ; computable in ACL2. Let's illustrate by extending the example given
 ; above with M1 and M2. Suppose M0 is a matrix with 2 rows and 5
 ; colums. Then the product (M0 * M1) * M2 is mathematically defined,
-; representable in ACL2, and computable in ACL2 (since both partial 
+; representable in ACL2, and computable in ACL2 (since both partial
 ; products (M0 * M1) and (M0 * M1) * M2 are representable in ACL2).
 ; But the product M0 * (M1 * M2) is mathematically defined,
 ; representable in ACL2, but NOT computable in ACL2 (since the
 ; partial product (M1 * M2) is NOT representable in ACL2).
 
-; One way to prevent this last problem and also ensure closure for 
+; One way to prevent this last problem and also ensure closure for
 ; matrix multiplication is to require that each of dim1 and dim2
-; be less than or equal to 46,340 which is the integer square root 
+; be less than or equal to 46,340 which is the integer square root
 ; of 2,147,483,647, the maximum-positive-32-bit-integer. Then
 ; the product of dim1*dim2 is guarenteed to be less than the
 ; the maximum-positive-32-bit-integer. Futhermore, with this stronger
 ; restriction, if the product M1 * . . . * Mn is both mathematically
-; defined and representable in ACL2, then, for any way of 
-; parenthesizing this product, all the partial products are also 
+; defined and representable in ACL2, then, for any way of
+; parenthesizing this product, all the partial products are also
 ; mathematically defined and representable in ACL2.
 
 ; Thus, for matrix multiplication, it is required that both the
@@ -1368,9 +1368,9 @@ At UW:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun m-binary-* (M1 M2)
-  "Return an alist representing the matrix product 
-   of the matrices represented by the alists M1 
-   and M2. This is done by adding a header to an 
+  "Return an alist representing the matrix product
+   of the matrices represented by the alists M1
+   and M2. This is done by adding a header to an
    alist containing the appropriate values."
   (declare (xargs :guard (and (array2p '$arg1 M1)
 			      (array2p '$arg2 M2)
@@ -1382,13 +1382,13 @@ At UW:
 	 (dim12 (second dim1))
 	 (dim21 (first dim2))
 	 (dim22 (second dim2)))
-    (if (mbt (and (alist2p '$arg1 M1) 
+    (if (mbt (and (alist2p '$arg1 M1)
 		  (alist2p '$arg2 M2)
 		  (= dim12 dim21)))
 	(cons (list :HEADER
-		    :DIMENSIONS 
+		    :DIMENSIONS
 		    (list dim11 dim22)
-		    :MAXIMUM-LENGTH 
+		    :MAXIMUM-LENGTH
 		    (+ 1 (* dim11 dim22))
 		    :DEFAULT 0
 		    :NAME 'matrix-product)
@@ -1407,7 +1407,7 @@ At UW:
 	  (car rst))
       1))
 
-(add-binop m-* m-binary-*) 
+(add-binop m-* m-binary-*)
 
 (defthm
   alist2p-m-*
@@ -1479,7 +1479,7 @@ At UW:
 		(matrixp n p X2))
 	   (matrixp m p (m-* X1 X2)))
   :hints (("Goal"
-	   :in-theory (disable m-binary-*)))) 
+	   :in-theory (disable m-binary-*))))
 
 (defthm
   default-m-*
@@ -1517,9 +1517,9 @@ At UW:
 		(< i (first (dimensions name M1)))
 		(< j (second (dimensions name M2))))
 	   (equal (aref2 name (m-* M1 M2) i j)
-		  (dot M1 
-		       M2 
-		       i 
+		  (dot M1
+		       M2
+		       i
 		       (+ -1 (second (dimensions name M1)))
 		       j)))
   :hints (("Goal"
@@ -1596,7 +1596,7 @@ At UW:
 	    (m-* M2 M3))))
 
 (local
- (defthm 
+ (defthm
    m-*-m--_left-lemma
    (implies (and (equal (c M1)(r M2))
 		 (alist2p name M1)
@@ -1610,7 +1610,7 @@ At UW:
 		  (m-= (m-+ (m-* M1 M2)(m-* (m-- M1) M2))
 		       (m-* (m-+ M1 (m-- M1)) M2)))))))
 
-(defthm 
+(defthm
   m-*-m--_left
   (implies (and (equal (c M1)(r M2))
 		(alist2p name M1)
@@ -1626,7 +1626,7 @@ At UW:
 		 m-*-m--_left-lemma))))
 
 (local
- (defthm 
+ (defthm
    m-*-m--_right-lemma
    (implies (and (equal (c M1)(r M2))
 		 (alist2p name M1)
@@ -1639,11 +1639,11 @@ At UW:
 	    :use ((:theorem
 		   (m-= (m-+ (m-* M1 M2)(m-* M1 (m-- M2)))
 			(m-* M1 (m-+ M2 (m-- M2)))))
-		  (:instance 
+		  (:instance
 		    right-nullity-of-m-0-for-m-*
 		    (p (c M2))))))))
 
-(defthm 
+(defthm
   m-*-m--_right
   (implies (and (equal (c M1)(r M2))
 		(alist2p name M1)
@@ -1760,12 +1760,12 @@ At UW:
       (let ((temp (aref2 name M i 0)))
 	   (aset2 name
 		  (aset2 name
-			 M 
-			 i 
+			 M
+			 i
 			 0
 			 (aref2 name
-				M 
-				j 
+				M
+				j
 				0))
 		  j
 		  0
@@ -1774,12 +1774,12 @@ At UW:
 		    (let ((temp (aref2 name M i k)))
 		         (aset2 name
 				(aset2 name
-				       M 
-				       i 
+				       M
+				       i
 				       k
 				       (aref2 name
-					      M 
-					      j 
+					      M
+					      j
 					      k))
 				j
 				k
@@ -1790,7 +1790,7 @@ At UW:
 
 (defun
   Ri<->Rj (name M i j)
-  "Return the result of interchanging 
+  "Return the result of interchanging
    row i and row j in array M."
   (declare (xargs :guard (and (array2p name M)
 			      (integerp i)
@@ -1804,7 +1804,7 @@ At UW:
 					(< j dims1))))))
   (Ri<->Rj-loop name
 		M
-		i 
+		i
 		j
 		(- (second (dimensions name M)) 1)))
 
@@ -1827,11 +1827,11 @@ At UW:
       (let ((temp (aref2 name M 0 i)))
 	   (aset2 name
 		  (aset2 name
-			 M 
+			 M
 			 0
-			 i 
+			 i
 			 (aref2 name
-				M 
+				M
 				0
 				j))
 		  0
@@ -1841,7 +1841,7 @@ At UW:
 		    (let ((temp (aref2 name M k i)))
 		         (aset2 name
 				(aset2 name
-				       M 
+				       M
 				       k
 				       i
 				       (aref2 name
@@ -1857,7 +1857,7 @@ At UW:
 
 (defun
   Ci<->Cj (name M i j)
-  "Return the result of interchanging 
+  "Return the result of interchanging
    column i and column j in array M."
   (declare (xargs :guard (and (array2p name M)
 			      (integerp i)
@@ -1871,7 +1871,7 @@ At UW:
 					(< j dims2))))))
   (Ci<->Cj-loop name
 		M
-		i 
+		i
 		j
 		(- (first (dimensions name M)) 1)))
 
@@ -1888,21 +1888,21 @@ At UW:
 					(< k (second dims)))))))
   (if (zp k)
       (aset2 name
-	     M 
-	     i 
+	     M
+	     i
 	     0
 	     (* a (fix (aref2 name
-			      M 
-			      i 
+			      M
+			      i
 			      0))))
     (Ri<-aRi-loop name
 		  (aset2 name
-			 M 
-			 i 
+			 M
+			 i
 			 k
 			 (* a (fix (aref2 name
-					  M 
-					  i 
+					  M
+					  i
 					  k))))
 		  a
 		  i
@@ -1910,7 +1910,7 @@ At UW:
 
 (defun
   Ri<-aRi (name M a i)
-  "Return the result of replacing each element, 
+  "Return the result of replacing each element,
    Mij, in row i of array M, with (* a Mij)."
   (declare (xargs :guard (and (acl2-numberp a)
 			      (array2p name M)
@@ -1919,7 +1919,7 @@ At UW:
 			      (< i (first (dimensions name M))))))
   (Ri<-aRi-loop name
 		M
-		a 
+		a
 		i
 		(- (second (dimensions name M)) 1)))
 
@@ -1939,9 +1939,9 @@ At UW:
 
   (if (zp k)
       (aset2 name
-	     M 
+	     M
 	     0
-	     i 
+	     i
 	     (* a (fix (aref2 name
 			      M
 			      0
@@ -1950,7 +1950,7 @@ At UW:
 		  (aset2 name
 			 M
 			 k
-		         i 
+		         i
 			 (* a (fix (aref2 name
 					  M
 					  k
@@ -1961,7 +1961,7 @@ At UW:
 
 (defun
   Ci<-aCi (name M a i)
-  "Return the result of replacing each element, 
+  "Return the result of replacing each element,
    Mji, in column i of array M, with (* a Mji)."
   (declare (xargs :guard (and (acl2-numberp a)
 			      (array2p name M)
@@ -1970,7 +1970,7 @@ At UW:
 			      (< i (second (dimensions name M))))))
   (Ci<-aCi-loop name
 		M
-		a 
+		a
 		i
 		(- (first (dimensions name M)) 1)))
 
@@ -1991,12 +1991,12 @@ At UW:
 					 (< k (second dims)))))))
   (if (zp k)
       (aset2 name
-	     M 
+	     M
 	     j
 	     0
 	     (+ (* a (fix (aref2 name
-				 M 
-				 i 
+				 M
+				 i
 				 0)))
 		(fix (aref2 name
 			    M
@@ -2004,12 +2004,12 @@ At UW:
 			    0))))
     (Rj<-aRi+Rj-loop name
 		     (aset2 name
-			    M 
-			    j 
+			    M
+			    j
 			    k
 			    (+ (* a (fix (aref2 name
-						M 
-						i 
+						M
+						i
 						k)))
 			       (fix (aref2 name
 					   M
@@ -2022,7 +2022,7 @@ At UW:
 
 (defun
   Rj<-aRi+Rj (name M a i j)
-  "Return the result of replacing each element, 
+  "Return the result of replacing each element,
    Mjk, in row j of matrix M, with (+ (* a Mik) Mjk)."
   (declare (xargs :guard (and (acl2-numberp a)
 			      (array2p name M)
@@ -2037,7 +2037,7 @@ At UW:
 					 (< j dims1))))))
   (Rj<-aRi+Rj-loop name
 		   M
-		   a 
+		   a
 		   i
 		   j
 		   (- (second (dimensions name M)) 1)))
@@ -2059,11 +2059,11 @@ At UW:
 					(< k (first dims)))))))
   (if (zp k)
       (aset2 name
-	     M 
+	     M
 	     0
 	     j
 	     (+ (* a (fix (aref2 name
-				 M 
+				 M
 				 0
 				 i)))
 		(fix (aref2 name
@@ -2072,7 +2072,7 @@ At UW:
 			    j))))
     (Cj<-aCi+Cj-loop name
 		     (aset2 name
-			    M 
+			    M
 			    k
 			    j
 			    (+ (* a (fix (aref2 name
@@ -2090,7 +2090,7 @@ At UW:
 
 (defun
   Cj<-aCi+Cj (name M a i j)
-  "Return the result of replacing each element, 
+  "Return the result of replacing each element,
    Mkj, in column j of matrix M, with (+ (* a Mki)
                                          Mkj)."
   (declare (xargs :guard (and (acl2-numberp a)
@@ -2107,7 +2107,7 @@ At UW:
 
   (Cj<-aCi+Cj-loop name
 		   M
-		   a 
+		   a
 		   i
 		   j
 		   (- (first (dimensions name M)) 1)))
@@ -2127,7 +2127,7 @@ At UW:
 
 ;; Row reduce C to I.
 ;;   Apply same row operations to B.
-;;   Multiply A successively on right by 
+;;   Multiply A successively on right by
 ;;        inverse of same row operations.
 ;;        (Done with equivalent column operations.)
 ;;   Modify D according to column operations on A.
@@ -2139,15 +2139,15 @@ At UW:
 ;;      A * B = I
 ;;      B * M = C
 ;;      D = determinant of A
-     
+
 ;;   After termination
 ;;      A = left inverse of B
-;;      B = left inverse of M (because C contains I 
+;;      B = left inverse of M (because C contains I
 ;;                                after termination)
 
 ;; Prove that after termination A = M:
 ;;      A = A * I = A * (B * M)
-;;                = (A * B) * M = I * M = M 
+;;                = (A * B) * M = I * M = M
 
 ;; Thus B is both left and right inverse of M
 ;;      and D is the determinant of M.
@@ -2157,7 +2157,7 @@ At UW:
 ;;   (Ri<-aRi)^(-1)    = Ri<-(/a)Ri
 ;;   (Rj<-aRi+Rj)^(-1) = Rj<-(-a)Ri+Rj
 
-;; Equivalent row and column operations as 
+;; Equivalent row and column operations as
 ;;  applied to identity matrix: I
 ;;    Ri<->Rj(I)    = Ci<->Cj(I)
 ;;    Ri<-aRi(I)    = Ci<-aCi(I)
@@ -2190,16 +2190,16 @@ At UW:
 			      (>= i1 0)
 			      (integerp j)
 			      (>= j 0)
-			      (< i (second 
+			      (< i (second
 				    (dimensions '$a
 						A)))
-			      (< i (first 
+			      (< i (first
 				    (dimensions '$b
 						B)))
-			      (< i (first 
+			      (< i (first
 				    (dimensions '$c
 						C)))
-			      (< i1 (second 
+			      (< i1 (second
 				     (dimensions '$a
 						 A)))
 			      (< i1 (first
@@ -2208,7 +2208,7 @@ At UW:
 			      (< i1 (first
 				     (dimensions '$c
 						 C)))
-			      (< j (second 
+			      (< j (second
 				    (dimensions '$c
 						C))))))
   (if (zp i)
@@ -2235,8 +2235,8 @@ At UW:
 (defun
   find-non-zero-col (name C i j k)
   "Determine if there is a nonzero value among
-   C(i k), C(i+1) k), . . . , C(j k). 
-   If not, return nil, otherwise return the 
+   C(i k), C(i+1) k), . . . , C(j k).
+   If not, return nil, otherwise return the
    first n such that C(n k) is nonzero."
   (declare (xargs :measure (let ((i (nfix i))
 				 (j (nfix j)))
@@ -2248,10 +2248,10 @@ At UW:
 			      (integerp j)
 			      (integerp k)
 			      (>= k 0)
-			      (< j (first 
+			      (< j (first
 				    (dimensions name
 						C)))
-			      (< k (second 
+			      (< k (second
 				    (dimensions name
 						C))))))
   (let ((i (nfix i))
@@ -2270,7 +2270,7 @@ At UW:
        .          .        .      .
        .          .          .    .
      C(j k)    C(j k+1)  . . .  C(j n)
-   If not, return nil, otherwise return the 
+   If not, return nil, otherwise return the
    first, obtained by searching column by column,
    pair p q, such that C(p q) is nonzero."
   (declare (xargs :measure (let ((k (nfix k))
@@ -2319,26 +2319,26 @@ At UW:
 			      (>= i 0)
 			      (>= j 0)
 			      (>= k 0)
-			      (>= n 0) 
-			      (< i (second 
+			      (>= n 0)
+			      (< i (second
 				    (dimensions '$a
 						A)))
-			      (< i (first 
+			      (< i (first
 				    (dimensions '$b
 						B)))
-			      (< i (first 
+			      (< i (first
 				    (dimensions '$c
 						C)))
-			      (< j (second 
+			      (< j (second
 				    (dimensions '$a
 						A)))
-			      (< j (first 
+			      (< j (first
 				    (dimensions '$b
 						B)))
-			      (< j (first 
+			      (< j (first
 				    (dimensions '$c
 						C)))
-			      (< n (second 
+			      (< n (second
 				    (dimensions '$c
 						C))))
 		  :verify-guards nil))
@@ -2351,15 +2351,15 @@ At UW:
 	   (let
 	    ((indices (find-non-zero-col-1 '$C C i j k n)))
 	    (if indices
-		(let* 
+		(let*
 		 ((p (first indices))
 		  (q (second indices))
 		  (val (aref2 '$C C p q)))
 		 (if (= p i)
-		     (mv-let 
+		     (mv-let
 		      (A B C)
 		      (zero-column (Ci<-aCi '$A A val     i)
-				   (Ri<-aRi '$B B (/ val) i) 
+				   (Ri<-aRi '$B B (/ val) i)
 				   (Ri<-aRi '$C C (/ val) i)
 				   i
 				   q
@@ -2367,23 +2367,23 @@ At UW:
 		      (cond ((= i j)
 			     (mv A B C (* val D)))
 			    ((= q i)
-			     (determinant-inverse-loop A B C 
+			     (determinant-inverse-loop A B C
 						       (* val D)
 						       (+ i 1)
 						       j
 						       (+ q 1)
 						       n))
 			    (t
-			     (determinant-inverse-loop A B C 
+			     (determinant-inverse-loop A B C
 						       (* val D)
-						       0     
+						       0
 						       j
 						       (+ q 1)
 						       n))))
-		     (mv-let 
+		     (mv-let
 		      (A B C)
 		      (zero-column (Ci<-aCi '$A (Ci<->Cj '$A A i p) val    i)
-				   (Ri<-aRi '$B (Ri<->Rj '$B B i p)(/ val) i) 
+				   (Ri<-aRi '$B (Ri<->Rj '$B B i p)(/ val) i)
 				   (Ri<-aRi '$C (Ri<->Rj '$C C i p)(/ val) i)
 				   i
 				   q
@@ -2399,9 +2399,9 @@ At UW:
 						       n))
 			    (t
 			     (determinant-inverse-loop A B C
-						       0          
+						       0
 						       (+ i 1)
-						       j 
+						       j
 						       (+ q 1)
 						       n))))))
 	        (mv A B C 0))))))
@@ -2412,16 +2412,16 @@ At UW:
   determinant-inverse (M)
   "Return multiple values A, B, C, and D.
    If M is a square array, the determinant of
-   M is returned in D.  If the determinant is 
+   M is returned in D.  If the determinant is
    nonzero, then the matrix inverse of M is
    returned in B."
   (declare (xargs :guard (and (array2p '$c M)
 			      (let ((dims (dimensions '$c M)))
-				   (= (first dims) 
+				   (= (first dims)
 				      (second dims))))))
   (let ((dims (dimensions '$c M)))
        (if (mbt (and (alist2p '$c M)
-		     (= (first dims) 
+		     (= (first dims)
 			(second dims))))
 	   (let ((dim1 (first dims)))
 	        (determinant-inverse-loop (compress2 '$A (m-1 dim1))
@@ -2434,22 +2434,22 @@ At UW:
 					  (- (second (dimensions '$c M)) 1)))
 	   (mv M (/ M) 1 M))))
 
-(defun 
+(defun
   determinant (M)
   (declare (xargs :guard (and (array2p '$c M)
 			      (let ((dims (dimensions '$c M)))
-				   (= (first dims) 
+				   (= (first dims)
 				      (second dims))))))
   (mv-let (A B C D)
 	  (determinant-inverse M)
 	  (declare (ignore A B C))
 	  D))
 
-(defun 
+(defun
   m-/ (M)
   (declare (xargs :guard (and (array2p '$c M)
 			      (let ((dims (dimensions '$c M)))
-				   (= (first dims) 
+				   (= (first dims)
 				      (second dims))))))
   (mv-let (A B C D)
 	  (determinant-inverse M)
@@ -2458,14 +2458,14 @@ At UW:
 
 #|;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Eventually, we will prove that for square matrices
-;;  whenever the determinant is not 0, then m-/ 
+;;  whenever the determinant is not 0, then m-/
 ;;  computes the two-sided inverse; and whenever the
 ;;  determinant is 0 then there is no inverse.
 ;;  Also it will be proved that non-square matrices
 ;;  do not have two-sided inverses.
 
 ;;  Meanwhile the definition of singualar given
-;;  immediately below is replaced by the second one 
+;;  immediately below is replaced by the second one
 ;;  below.
 
 ;; (defun
@@ -2473,18 +2473,18 @@ At UW:
 ;;   (declare (xargs :guard (array2p '$c M)))
 ;;   (not (and (mbt (alist2p '$c M))
 ;;             (let ((dims (dimensions '$c M)))
-;;                  (= (first dims) 
+;;                  (= (first dims)
 ;;                     (second dims)))
 ;;             (= (determinant M) 0))))
 |#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun 
+(defun
   m-singularp (M)
   (declare (xargs :guard (array2p '$c M)
 		  :verify-guards nil))
   (not (and (mbt (alist2p '$c M))
 	    (let ((dims (dimensions '$c M)))
-	         (= (first dims) 
+	         (= (first dims)
 		    (second dims)))
 	    (m-= (m-* M (m-/ M))
 		 (m-1 (r M)))
@@ -2532,10 +2532,10 @@ At UW:
 		       (second (dimensions name M))))
 		(array2p name (m-/ M)))
   :hints (("Goal"
-	   :in-theory 
-	   (disable 
+	   :in-theory
+	   (disable
 	    array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B-1)
-	   :use 
+	   :use
 	   (:instance
 	    array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B-1
 	    (D 1)))))
@@ -2546,10 +2546,10 @@ At UW:
 		(equal (r M)(c M)))
 	   (matrixp (r M)(c M)(m-/ M)))
   :hints (("Goal"
-	   :in-theory 
-	   (disable 
+	   :in-theory
+	   (disable
 	    array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B-1)
-	   :use 
+	   :use
 	   (:instance
 	    array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B-1
 	    (D 1)
@@ -2578,11 +2578,11 @@ At UW:
 		(equal (r X)(r Y))
 		(equal (c X)(c Y))
 		(m-= (m-* X Y)
-		     (m-1 (r X)))) 
+		     (m-1 (r X))))
 	   (m-= X (m-/ Y)))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       right-unity-of-m-1-for-m-*
 		       left-unity-of-m-1-for-m-*)
 	   :use ((:instance
@@ -2626,7 +2626,7 @@ At UW:
 		       (CADR (DIMENSIONS '$ARG M2)))
 		(EQUAL (CAR (DIMENSIONS '$ARG M1))
 		       (CAR (DIMENSIONS '$ARG M2))))
-	   (ALIST2P NAME (M-* (M-/ M2) 
+	   (ALIST2P NAME (M-* (M-/ M2)
 			      (M-/ M1))))
   :hints (("Goal"
 	   :in-theory (disable ALIST2P-M-*)
@@ -2675,7 +2675,7 @@ At UW:
 	   (m-= (s-* a (m-- M))
 		(m-- (s-* a M))))
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       associate-scalars-left-s-*)
 	   :use ((:instance
 		  associate-scalars-left-s-*
@@ -2697,7 +2697,7 @@ At UW:
 	   (m-= (m-- (m-+ M1 M2))
 		(m-+ (m-- M1)(m-- M2))))
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (disable distributivity-of-s-*-over-m-+)
 	   :use (:instance
 		 distributivity-of-s-*-over-m-+

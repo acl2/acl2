@@ -144,7 +144,7 @@
        network-st)))
 
 (defun print-states (client-st server-st network-st)
-  (prog2$ 
+  (prog2$
    (cw "Client state is: ~x0~%" client-st)
    (prog2$
     (cw "Server state is: ~x0~%" server-st)
@@ -165,7 +165,7 @@
 
 (defun server-make-message-1 (result)
   (declare (xargs :guard t))
-  (make-message *server-id* *client-id* 
+  (make-message *server-id* *client-id*
                 (list :answer result)))
 
 (defun server-step1 (server-st network-st)
@@ -175,7 +175,7 @@
   (mv-let (message network-st)
           (retrieve-network-message *server-id* network-st)
           (mv (list (+ 1 (car server-st))) ; todo abstract server state
-              (cons 
+              (cons
                (server-make-message-1
                 (server-function (get-input-from-client-request message)))
                network-st))))
@@ -239,8 +239,8 @@
       (network-st (initialize-network)))
   (mv-let (client-st network-st)
           (client-step1 client-st network-st)
-          (prog2$            
-           (print-states client-st server-st network-st)          
+          (prog2$
+           (print-states client-st server-st network-st)
            (mv-let (server-st network-st)
                    (server-step1 server-st
                                  (man-in-the-middle-attacks-once network-st))
@@ -275,7 +275,7 @@
                                    (declare (ignore network-st))
                                    (equal (expt (get-number-to-square-from-client-state client-st) 2)
                                           (get-answer-from-client-state client-st)))))))
-                                 
+
 (encapsulate (((attack1 *) => *))
              (local (defun attack1 (x) (declare (ignore x))
                       nil)))
@@ -293,7 +293,7 @@
 ; isn't true, so we leave it as is.
 
  (defthm |bad-square-is-good?-with-single-attack|
-   (implies 
+   (implies
     (and (valid-client-state client-st) ; is symbolic
          (valid-server-state server-st)
          (valid-network network-st))

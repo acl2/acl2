@@ -14,7 +14,7 @@
 |#
 
 (defun sum1 (n)
-  (if (zp n) 
+  (if (zp n)
       0
     (+ n (sum1 (1- n)))))
 
@@ -119,7 +119,7 @@
   (implies (natp n)
 	   (equal (sum6 n) (/  n (1+ n))))
   :hints(("goal" :induct t)
-	 ("subgoal *1/2''" 
+	 ("subgoal *1/2''"
 	  :use ((:instance absorb-1 (y (+ 1 n)) (x 1)))
 	  :in-theory (disable absorb-1))))
 

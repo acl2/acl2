@@ -274,7 +274,7 @@ types.</p>"
 ;;   (defret vl-datatype-resolved-p-of-vl-implicitvalueparam-final-type
 ;;     (implies (not err)
 ;;              (vl-datatype-resolved-p type))))
-    
+
 
 #|
 (trace$ #!vl (Vl-override-parameter

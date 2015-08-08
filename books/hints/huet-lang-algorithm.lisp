@@ -15,7 +15,7 @@
 ; able to use it to recognize recursion schemes.  For example, I would
 ; like to ask ``does this defun body match the scheme
 ;   (IF (test x) (tweak (REC (step x))) (base x))?''
-; and have it tell me "yes" even when the body in question is 
+; and have it tell me "yes" even when the body in question is
 ;   (IF (ENDP X) 0 (ADD1 (REC (CDR X)))).
 ; Note that the actual body reverses the parity of the test and
 ; matches the given scheme under the equality (if x y z) = (if (not x)
@@ -61,7 +61,7 @@
 ; these function variables with lambda expressions.  When we
 ; substitute lambda expressions for function variables we will also use
 ; integers for the formals, to save the bother of creating symbols.
-; Thus, we will be dealing with such ``terms'' as 
+; Thus, we will be dealing with such ``terms'' as
 ; ((lambda (1 2) (1 1 2)) A B)
 ; which beta reduces to (1 A B).
 
@@ -205,7 +205,7 @@
 ; (:MUST-BE-VARIABLE)             - binding must be a variable symbol,
 ;                                   which means x has the form
 ;                                   (:CONSTANT var) actually.
-; 
+;
 ; The meaning of a restrictions list is that we never allow a binding
 ; that would violate the restrictions.  We check this by actually
 ; creating the newly proposed bindings, i.e., adding the new triple, and
@@ -276,7 +276,7 @@
                                              wrld)))
                  (t (hl-ffnnamesp-lst fns (fargs pterm) bindings wrld)))))
         (t (hl-ffnnamesp-lst fns (fargs pterm) bindings wrld))))
-        
+
 (defun hl-ffnnamesp-lst (fns args bindings wrld)
   (cond ((endp args) nil)
         (t (or (hl-ffnnamesp fns (car args) bindings wrld)
@@ -311,7 +311,7 @@
 ; (:MUST-IMITATE g) - where g is a function symbol
 ; (:MUST-BE-VARIABLE)
 ; (:MUST-NOT-CONTAIN g1 ... gn) - where gi are function symbols.
- 
+
   (cond ((endp restrictions) t)
         ((hl-restrictionp bindings
                           (caar restrictions)
@@ -413,7 +413,7 @@
 
 ; Projection:  We have to consider the possibility that the function
 ; variable is (lambda (v1 ... vn) vi), for each i, and that the actual
-; corresponding to vi matches term.  
+; corresponding to vi matches term.
 
         (hl-one-way-unify1-projection
          (ffn-symb pat)
@@ -523,7 +523,7 @@
                                          (fargn term 2))
                                    hmax bindings restrictions wrld))
            (t
-            (append 
+            (append
 
 ; (c) If term is not an IF, we consider seeing it as (IF T term ...),
 ; except we do not have to match pat2 with ...!
@@ -539,9 +539,9 @@
                                     (list *nil* term)
                                     hmax bindings restrictions wrld))))))
    (t                          ;;; pat is LAMBDA application or concrete fn
-    
+
 ; Note:  This is case (a) above and the two should be kept in sync.
-    
+
     (cond
      ((variablep term) nil)
      ((or (fquotep term)
@@ -551,7 +551,7 @@
       (hl-one-way-unify1-lst (fargs pat) (fargs term)
                              hmax bindings restrictions wrld))
      (t nil)))))
-             
+
 (defun hl-one-way-unify1-lst (pargs targs hmax bindings restrictions wrld)
   (cond
    ((endp pargs) (list (cons hmax bindings)))
@@ -641,7 +641,7 @@
 ; the internal structure of constants are missed by our code.
 
 ; It is thus possible that we will find NO solutions when in fact there are
-; solutions.  Consider, for example, 
+; solutions.  Consider, for example,
 
 ; (IF (g x) (g y) x) versus (IF '(0 . 0) '(1 . 0) '0).
 
@@ -654,7 +654,7 @@
 ; we would find a solution, namely let g be cons-onto-0 and let x be
 ; 0 and y be 1.
 
-; Footnote: To try to match 
+; Footnote: To try to match
 
 ; (IF (g x) (g y) x) with (IF '(0 . 0) '(1 . 0) '0)
 
@@ -892,7 +892,7 @@
   (cond ((endp psubst-lst) nil)
         (t (cons (decode-psubst (cdr (car psubst-lst)) wrld)
                  (decode-psubst-lst (cdr psubst-lst) wrld)))))
-                 
+
 
 (defun make-fn-name-and-formals-alist (fns i wrld)
 
@@ -988,7 +988,7 @@
                  (t val)))))
 
 ; ---------------------------------------------------------------------------
-; Huet-Lang Matching:  Top Level 
+; Huet-Lang Matching:  Top Level
 
 (defun hl-one-way-unify (pat term restrictions wrld)
 
@@ -998,7 +998,7 @@
 ; (mv flg psubst-lst mixed-subst-lst).  If flg is nil, no match is
 ; possible.  Else, mixed-subst-lst is a list of ``mixed
 ; substitutions'', each of which suffices to produce a match.  See
-; sublis-mixed for a description of mixed substitutions.  Psubst-lst is 
+; sublis-mixed for a description of mixed substitutions.  Psubst-lst is
 ; in 1:1 correspondence with mixed-subst-lst but is in the internal
 ; form.
 
@@ -1055,7 +1055,7 @@
 
 ; The lesson learned from these examples is that there are some
 ; plausible heuristic rules that allow me to discard (or at least give
-; low priority to) some of the legal instantions.  
+; low priority to) some of the legal instantions.
 
 ; I disfavor substitutions that do not bind all the functional
 ; variables
@@ -1185,7 +1185,7 @@
 
 ; I am going to implement a general rewrite engine that applies a set of
 ; ``rules'' ``in all possible ways''.  It is good to understand what I DON'T
-; provide.  
+; provide.
 ; (1) While many of the rules are equalities, e.g.,
 ;     (EQUAL (IF X Y Z) (IF (NOT X) Z Y))
 ;     I always use them as left-to-right rewriters.  Thus, ``all possible
@@ -1285,7 +1285,7 @@
   (cond ((endp args) t)
         (t (and (no-ifs-governing-call fn (car args))
                 (no-ifs-governing-call-lst fn (cdr args)))))))
-         
+
 
 (defun fold-to-isolate (fn term)
 
@@ -1299,7 +1299,7 @@
 ;     (if (evenp n)
 ;         (binary-+ x len)
 ;         (binary-* y len)))
-;     y x n (len (if (evenp n) (cdr x) (cdr z)))) 
+;     y x n (len (if (evenp n) (cdr x) (cdr z))))
 
 ; In the event that such a treatment of term is impossible, this function
 ; returns (mv nil term).
@@ -1344,7 +1344,7 @@
   (cond
    ((eq (car rule) :META)
     (fold-to-isolate toxic-fnname term))
-   (t 
+   (t
     (let ((lhs (fargn rule 1))
           (rhs (fargn rule 2)))
       (mv-let (flg unify-subst)
@@ -1365,7 +1365,7 @@
               (apply-rules (cdr rules) term toxic-fnname
                            (if flg (add-to-set-equal new-term ans) ans))))))
 
-; We build in the rule 
+; We build in the rule
 ;  (equal (if test (fn ... x ...) (fn ... y ...))
 ;         (fn ... (if test x y) ...))
 ; in the general form where illustrated by the special case:
@@ -1586,8 +1586,8 @@
                              toxic-fnname
                              wrld)))))))
 )
-        
-; Note that we have built in the rule 
+
+; Note that we have built in the rule
 ; (equal (if test (fn ... x ...) (fn ... y ...))
 ;        (fn ... (if test x y) ...))
 ; even though it doesn't appear on the list below!
@@ -1679,7 +1679,7 @@
    (t *fixed-rematch-rules*)))
 
 (defun fn-rematch-rules (fn wrld)
-  
+
 ; Suppose arity is n.  Then (fn v1 ... vn) is a proper term.  For each
 ; argument position, i, we will build in the following rules
 
@@ -1757,7 +1757,7 @@
 ;     with functional variable f.  By definition, f is a defined,
 ;     hereditarily constrained function symbol.
 ; (2) Convert psusbt to a mixed subst, subst, and recover the binding
-;     of f, (lambda (v1...) term).  Note that the formals of the defined 
+;     of f, (lambda (v1...) term).  Note that the formals of the defined
 ;     function f may be different from (v1 ...).
 ; (3) Is term a call of a defined function?  If not If not, delete
 ;     psubst from the psubst-pool and repeat from (1).  Else, term is
@@ -1935,7 +1935,7 @@
                                toxic-fnname n wrld)))
                 (t (hld-driver (remove1-equal psubst psubst-pool)
                                restrictions toxic-fnname n wrld))))))))
-                   
+
 ; The draconian restriction enforced by functional instantiation,
 ; concerning the avoidance of capture, means that some of the
 ; ``solutions'' found by hld-driver are not really solutions.  These
@@ -2014,7 +2014,7 @@
 ;                          acc))))
 
 ; You may think you can instantiate h with
-;  (lambda (s) 
+;  (lambda (s)
 ;    (intern-in-package-of-symbol
 ;     (coerce
 ;      (append root
@@ -2024,7 +2024,7 @@
 
 ; (which makes h ignore its argument s and instead introduce a free n)
 ; and this, indeed, seems to work until you discover the draconian restriction,
-; which forces you to renames the free N, to say V1, to avoid capture.  
+; which forces you to renames the free N, to say V1, to avoid capture.
 
 ; Think of this as a programmer might: Can h be defined as a function
 ; so that generic-run does the same thing as make-var-lst1?  Answer:
@@ -2094,7 +2094,7 @@
 ; Fn is an undefined constrained function, so we skip it.
 
           (appropriate-lambda-free-varsp2 (cdr temp) fn-alist wrld)))))))
-            
+
 (defun appropriate-lambda-free-varsp (mixed-subst wrld)
 
 ; We say a mixed substitution is ``appropriate'' (with respect to its
@@ -2117,7 +2117,7 @@
           (strip-mixed-subst mixed-subst)
           (declare (ignore var-alist))
           (appropriate-lambda-free-varsp2 fn-alist fn-alist wrld)))
-  
+
 (defun collect-appropriate-lambda-free-vars-lst (alist-lst wrld)
   (cond
    ((endp alist-lst) nil)
@@ -2130,7 +2130,7 @@
 ; translated user-level format, one being a var-to-term substitution
 ; and the other being a functional substitution, to the form of a
 ; psubst.
- 
+
 (defun convert-var-alist-to-binding-pairs (var-alist)
   (cond ((endp var-alist) nil)
         (t (cons (list* (car (car var-alist))
@@ -2138,7 +2138,7 @@
                         (convert-free-vars-to-constants
                          (cdr (car var-alist))))
                  (convert-var-alist-to-binding-pairs (cdr var-alist))))))
-                 
+
 (defun formal-to-natp (var formals i)
   (cond ((endp formals) nil)
         ((eq var (car formals)) i)
@@ -2207,7 +2207,7 @@
 ; So here is the top-level function.
 
 (defun hld (pat term psubst0 restrictions toxic-fnname n wrld)
-  
+
 ; Unify pat and term and then do each psubst until they're all DONE.
 ; The unification must extend psubst0.  Convert each of the unifying
 ; extensions to mixed substitutions, filter out the inappropriate ones
@@ -2231,7 +2231,7 @@
          (rematch pat term psubst0 restrictions toxic-fnname n wrld)))
     (sort-mixed-substs-by-rank
      (remove-duplicates-equal
-      (collect-appropriate-lambda-free-vars-lst 
+      (collect-appropriate-lambda-free-vars-lst
        (convert-constants-to-free-vars-in-alist-lst
         (decode-psubst-lst
          (hld-driver psubst-pool restrictions toxic-fnname n wrld)
@@ -2311,7 +2311,7 @@
                   'current-acl2-world
                   wrld))
 
-; This function symbol is a DEFINED hereditarily constrained function.    
+; This function symbol is a DEFINED hereditarily constrained function.
 
     (hereditarily-constrained-fnnames-lst (fargs term) wrld
                                           (add-to-set-eq (ffn-symb term) ans)))
@@ -2402,7 +2402,7 @@
         (t (all-bound-vars-lst (cdr lst)
                                (all-bound-vars (car lst) ans)))))
 )
-        
+
 (defun all-bound-vars-alist (alist ans)
 
 ; Alist is a functional substitution alist pairing function symbols
@@ -2473,10 +2473,10 @@
 ;     suppose the alist contains (lambda (v1) (foo x v1)); then we
 ;     must rename x; but we cannot rename x to v1 or it will get
 ;     captured;
-; (b) free: the list of all variables used freely in any 
+; (b) free: the list of all variables used freely in any
 ;     lambda expression in alist;
 ; (c) renaming: an alist pairing each v in free with a new variable
-;     u, not occurring in avoid; when possible we allow v to be 
+;     u, not occurring in avoid; when possible we allow v to be
 ;     "renamed" to itself, but this means our alist will have the
 ;     pair (v . v) in it;
 ; (d) unrenaming-substitution: this is like the inverse to renaming
@@ -2520,7 +2520,7 @@
 ; adding a new event form.  Two example calls of definst are shown
 ; below.  After each we give a equivalent event.
 
-; (definst map-h-append bumper) 
+; (definst map-h-append bumper)
 
 ; is the same as
 
@@ -2532,13 +2532,13 @@
 ;            :do-not-induct t
 ;            <other Goal hints>)
 ;    <other hints>))
-                            
+
 ; The other option is
 
 ; (definst map-h-append ((x a) (map-h (lambda (x) ...)) (h (lambda (x) ...))))
 
 ; which is like the first example, but the mixed substitution is specified by
-; the user instead of being computed. 
+; the user instead of being computed.
 
 ; Except for the first two, the arguments of definst are the same as
 ; for defthm.  At the moment I do not try to merge the :hints in rest
@@ -2556,7 +2556,7 @@
 ; These next bindings may be nil until we finish certain checks.
 ; But it is nice to give them sensible names.
 
-            (hfn (car fns))  ; the defined hereditarily constrained fn 
+            (hfn (car fns))  ; the defined hereditarily constrained fn
             (cfn args)       ; the concrete fn
             )
         (cond

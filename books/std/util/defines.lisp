@@ -830,7 +830,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
               `((with-output :on (error)
                   (make-event
                    (if (logic-mode-p ',(defguts->name-fn (car gutslist)) (w state))
-                       ;; 
+                       ;;
                        (value '(flag::make-flag ,flag-name ,(defguts->name-fn (car gutslist))
                                                 :flag-mapping ,flag-mapping
                                                 ,@(and flag-defthm-macro

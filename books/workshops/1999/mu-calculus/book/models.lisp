@@ -11,7 +11,7 @@
        (relationp (fourth m))
        (relationp (fifth m))
        (relationp (sixth m))
-       (integerp (seventh m)) 
+       (integerp (seventh m))
        (<= 0 (seventh m))))
 
 ; The components of a model

@@ -196,7 +196,7 @@
      ;;                  (and (consp lit)
      ;;                       (eq (car lit) '1d-arr-tmp-list-equiv)
      ;;                       `(:expand (,lit))))))))
-     
+
      ;; (local (defthm nths-equal-by-1d-arr-tmp-list-equiv
      ;;          (implies (and (1d-arr-tmp-list-equiv x y)
      ;;                        (:@ :pred (1d-arr-tmp-listp x))

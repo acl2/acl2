@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -71,9 +71,9 @@
          (bits y (1- n) 0))
     0))
 
-;; We define a macro, CAT, that takes a list of a list X of alternating data values 
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at 
-;; least 1 data/size pair, but we do not need to specify this in the guard, and 
+;; We define a macro, CAT, that takes a list of a list X of alternating data values
+;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at
+;; least 1 data/size pair, but we do not need to specify this in the guard, and
 ;; leaving it out of the guard simplifies the guard proof.
 
 (defun formal-+ (x y)
@@ -96,14 +96,14 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -156,13 +156,13 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defun re (x)
@@ -269,7 +269,7 @@
                   (exactp a p)
                   (exactp b p)
                   (exactp q p)
-                  (< (abs (- 1 (* b y))) (/ (expt 2 p)))            
+                  (< (abs (- 1 (* b y))) (/ (expt 2 p)))
                   (< (abs (- (/ a b) q)) (expt 2 (- (1+ e) p)))
                   (ieee-rounding-mode-p mode))
              (= (rnd (+ q (* r y)) mode p)

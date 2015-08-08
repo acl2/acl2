@@ -82,7 +82,7 @@
 ;; impelemented.  The :ALISTFN argument expects a function or lambda of three
 ;; arguments corresponding to CL, HINTS, and AL in the theorem statement above.
 ;; If it takes fewer arguments, you must provide a lambda which wraps this
-;; function, such as (LAMBDA (CL HINTS AL) (MY-ALIST-LIST-FN CL AL)). 
+;; function, such as (LAMBDA (CL HINTS AL) (MY-ALIST-LIST-FN CL AL)).
 
 (include-book "misc/untranslate-patterns" :dir :system)
 (local (include-book "join-thms"))
@@ -252,8 +252,8 @@
 (defmacro def-multi-env-fns (ev evlst)
   (def-multi-env-fn ev evlst))
 
-  
-  
+
+
 
 (defun prove-multi-env-clause-proc-fn (name ev evlst clauseproc alists hints
                                             bad-guy alist-name world)
@@ -385,7 +385,7 @@
                    (append a b) (append a-al b-al))
                   (and (clauses-apply-alists-cons-ev a a-al)
                        (clauses-apply-alists-cons-ev b b-al)))))
-              
+
 (defthm consp-cp-term-correct
   (implies (clauses-apply-alists-cons-ev
             (consp-cp-term term)
@@ -424,7 +424,7 @@
  :ev cons-ev :evlst cons-ev-lst
  :clauseproc consp-cp
  :alistfn (lambda (cl hints al) (consp-cp-alists cl al)))
-  
+
 
 
 

@@ -14,10 +14,10 @@
 ;;; -----------------------------------------------
 
 (encapsulate ()
-  (local 
+  (local
     (defthm technical-lemma-1
       (= (+ p1 (nf p2)) (+ p1 p2))))
- 
+
   (defcong = = (+ p1 p2) 2
     :hints (("Goal"
 	     :in-theory (disable technical-lemma-1)
@@ -27,9 +27,9 @@
   (local
     (defthm technical-lemma-2
       (= (+ (nf p1) p2) (+ p1 p2))
-      :hints (("Goal" 
+      :hints (("Goal"
 	       :in-theory (disable =)))))
- 
+
   (defcong = = (+ p1 p2) 1
     :hints (("Goal"
 	     :in-theory (disable technical-lemma-2)
@@ -38,7 +38,7 @@
 
   (defthm nf-+
     (= (+ (nf p1) (nf p2)) (+ p1 p2))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :in-theory (disable = technical-lemma-1 technical-lemma-2)
 	     :use (technical-lemma-1
 		   (:instance technical-lemma-2 (p2 (nf p2))))))))

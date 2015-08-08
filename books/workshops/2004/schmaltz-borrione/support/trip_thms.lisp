@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -34,17 +34,17 @@
   ;; function that calls the trip step functions until the route contains only
   ;; one node number
   (if (< (len route) 2)
-      msg 
+      msg
     (if (equal (len route) 2) ;; we are done and we do the last step,
                               ;; which is identical to the first step
-        (first_travel_step msg route N) 
-      ;; either we do the nth step 
+        (first_travel_step msg route N)
+      ;; either we do the nth step
       (let ((route_triple (firstn 3 route)))
-        (do_travel1 (nth_travel_step msg route_triple N) 
-                    (cdr route) 
+        (do_travel1 (nth_travel_step msg route_triple N)
+                    (cdr route)
                     N)))))
 
-(local 
+(local
  (defthm do_travel_1_equal_msg_len_route_<=_2
    (implies (and (no-duplicatesp route)
                  (all_pos_intp route)
@@ -58,10 +58,10 @@
                    msg)))
 )
 
-(local 
+(local
  (defthm do_travel_1_equal_msg_=_3
    (implies (and (no-duplicatesp route)
-                 (true-listp route) 
+                 (true-listp route)
                  (integerp N) (< 0 N)
                  (all_pos_intp route)
                  (all_intp route)
@@ -71,7 +71,7 @@
             (equal (do_travel1 msg route N)
                    msg))
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-;    :hints (("GOAL" 
+;    :hints (("GOAL"
 ;             :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
    )
 )
@@ -106,11 +106,11 @@
            (availableMovep (cdr L) N))
   :rule-classes :forward-chaining)
 
-(local 
+(local
  (defthm do_travel1_equal_msg_>_3
    (implies (and (no-duplicatesp route)
                  (availableMovep route N)
-                 (true-listp route) 
+                 (true-listp route)
                  (integerp N) (< 0 N)
                  (all_pos_intp route)
                  (all_intp route)
@@ -119,7 +119,7 @@
             (equal (do_travel1 msg route N)
                    msg))
    :otf-flg t
-   :hints (("GOAL" 
+   :hints (("GOAL"
             :induct (do_travel1 msg route N)
             :do-not-induct t
             :in-theory (disable
@@ -136,7 +136,7 @@
   ;; we prove that doing iterative steps does not modify the message
   ;; if the route is made of valid moves
   (implies (and (no-duplicatesp route)
-                (all_pos_intp route) 
+                (all_pos_intp route)
                 (all_intp route)
                 (all_inf_np route (* 4 N))
                 (availableMovep route N)
@@ -144,12 +144,12 @@
                 (true-listp route))
            (equal (do_travel1 msg route N)
                   msg))
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :cases ((equal (len route) 3)
                    (<= (len route) 2)
                    (< 3 (len route))))))
 
-(local 
+(local
  (defthm do_travel_1_not_equal_msg_len_route_<=_2
    (implies (and (no-duplicatesp route)
                  (all_pos_intp route)
@@ -191,7 +191,7 @@
 (local
  (defthm do_travel1_nil
    (implies (and (no-duplicatesp route)
-                 (true-listp route) 
+                 (true-listp route)
                  (integerp N) (< 0 N)
                  (all_pos_intp route)
                  (all_intp route)
@@ -201,10 +201,10 @@
             (not (do_travel1 nil route N))))
 )
 
-(local 
+(local
  (defthm do_travel_1_not_equal_msg_=_3
    (implies (and (no-duplicatesp route)
-                 (true-listp route) 
+                 (true-listp route)
                  (integerp N) (< 0 N)
                  (all_pos_intp route)
                  (all_intp route)
@@ -213,7 +213,7 @@
                  (equal (len route) 3))
             (not (do_travel1 msg route N)))
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-;    :hints (("GOAL" 
+;    :hints (("GOAL"
 ;             :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
    )
 )
@@ -225,11 +225,11 @@
            (not (availableMovep (firstn 3 route) N))))
 )
 
-(local 
+(local
  (defthm do_travel1_not_equal_msg_>_3
    (implies (and (no-duplicatesp route)
                  (not (availableMovep route N))
-                 (true-listp route) 
+                 (true-listp route)
                  (integerp N) (< 0 N)
                  (all_pos_intp route)
                  (all_intp route)
@@ -237,7 +237,7 @@
                  (< 3 (len route)))
             (not (do_travel1 msg route N)))
    :otf-flg t
-   :hints (("GOAL" 
+   :hints (("GOAL"
             :induct (do_travel1 msg route N)
             :do-not-induct t
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
@@ -257,7 +257,7 @@
   ;; we prove that we lose the message if there is at least one
   ;; invalid move in the route
   (implies (and (no-duplicatesp route)
-                (all_pos_intp route) 
+                (all_pos_intp route)
                 (all_intp route)
                 (all_inf_np route (* 4 N))
                 (not (availableMovep route N))
@@ -301,7 +301,7 @@
                 (all_inf_routep tl (* 4 N))
                 (all_availableMovep_routep tl N)
                 (all_true-listp tl)
-                (integerp N) (< 0 N) 
+                (integerp N) (< 0 N)
                 (tlp tl))
            (equal (trip tl N)
                   tl))
@@ -323,7 +323,7 @@
   (if (endp tl)
       t
     (let* ((req_route (car tl))
-           (route (cdr req_route))) 
+           (route (cdr req_route)))
     (and (not (availableMovep route N))
          (all_not_available_routep (cdr tl) N)))))
 
@@ -342,7 +342,7 @@
                 (all_inf_routep tl (* 4 N))
                 (all_not_available_routep tl N)
                 (all_true-listp tl)
-                (integerp N) (< 0 N) 
+                (integerp N) (< 0 N)
                 (all_true-listp tl)
                 (tlp tl))
            (all_nil_msg (trip tl N)))

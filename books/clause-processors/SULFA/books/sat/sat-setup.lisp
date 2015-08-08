@@ -8,7 +8,7 @@
 (set-state-ok t)
 
 ;; For now at least, I'm going to have a maximum number
-;; of intermediate variables.  I could use resizable array's, 
+;; of intermediate variables.  I could use resizable array's,
 ;; for now, I'd like to avoid the hassle.
 
 ;; The following is a bad programming practice---a bound
@@ -26,7 +26,7 @@
 (defconst *init-array-size* 1000)
 
 ;; The maximum number of final variables.  I think 10 million
-;; should be plenty.  
+;; should be plenty.
 
 (defmacro sat-stobj ()
   `(defstobj $sat
@@ -39,12 +39,12 @@
      ;; the inputs---e.g. (cadddr i)
      (num-i-vars :type (integer 0 ,*max-vars*) :initially 0)
 
-     (car-var :type (array (integer 0 ,*max-vars*) (0)) 
+     (car-var :type (array (integer 0 ,*max-vars*) (0))
               :initially 0 :resizable t)
      (cdr-var :type (array (integer 0 ,*max-vars*) (0))
               :initially 0 :resizable t)
 
-     ;; Parrent of the list expression---e.g. 
+     ;; Parrent of the list expression---e.g.
      ;; 5=(car 6) => (cons-var 5)=6
      (cons-var :type (array (integer 0 ,*max-vars*) (0))
                :initially 0 :resizable t)
@@ -64,7 +64,7 @@
                     :initially 0 :resizable t)
 
      ;; A list of things "todo" when traversing a given variable.
-     ;; This generally amounts to setting it equal to its definition.     
+     ;; This generally amounts to setting it equal to its definition.
      ;; The todo-struct is of the form:
      ;; (<todo-list> . <i-todo-list>)
      ;; Where todo-list is a list of todo-entries involving
@@ -82,24 +82,24 @@
      (relevant-fvar :type (array (integer 0 1) (0))
                     :initially 0 :resizable t)
 
-     (eq-nil-var :type (array (integer 0 ,*max-vars*) (0)) 
+     (eq-nil-var :type (array (integer 0 ,*max-vars*) (0))
                  :initially 0 :resizable t)
-     (consp-var :type (array (integer 0 ,*max-vars*) (0)) 
+     (consp-var :type (array (integer 0 ,*max-vars*) (0))
                 :initially 0 :resizable t)
 
      ;; A structure mapping (eq x a0) to f-vars, where a0 is an atomic
      ;; constant.
      (eq-const-struct-var :type (array t (0)) :initially nil :resizable t)
 
-     ;; An alist mapping (eq x y) to f-vars, where both x and y are 
+     ;; An alist mapping (eq x y) to f-vars, where both x and y are
      ;; i-vars.
      (eq-alist-var :type (array t (0)) :initially nil :resizable t)
 
      ;; The counter example values
-     (ce-val :type (array (integer 0 1) (0)) 
+     (ce-val :type (array (integer 0 1) (0))
              :initially 0 :resizable t)
 
-     ;; Associates an i-var with its quoted constant counter-example 
+     ;; Associates an i-var with its quoted constant counter-example
      ;; value or nil if no such value is present.
      (ce-i-var-val :type (array t (0)) :initially 'sat::unknown :resizable t)
 
@@ -121,7 +121,7 @@
 
      (top-var-stack :type t :initially nil)
 
-     ;; During variable traversal, this is a stack of variables that have 
+     ;; During variable traversal, this is a stack of variables that have
      ;; been traversed.
      ;;
      ;; Afterward, this is a list of all top-level variables in the problem,
@@ -130,7 +130,7 @@
 
      (top-completed-var-list :type t :initially nil)
 
-     ;; The mapping of variables in the input to 
+     ;; The mapping of variables in the input to
      ;; intermediate variables.
      (input-alist :type t :initially nil)
 
@@ -140,12 +140,12 @@
 
      (sat-input-channel :type t :initially nil)
 
-     (top-var-eql :type (array (integer 0 1) (0)) 
+     (top-var-eql :type (array (integer 0 1) (0))
               :initially 0 :resizable t)
 
-     (pos-var :type (array (integer 0 1) (0)) 
+     (pos-var :type (array (integer 0 1) (0))
               :initially 0 :resizable t)
-     (neg-var :type (array (integer 0 1) (0)) 
+     (neg-var :type (array (integer 0 1) (0))
               :initially 0 :resizable t)
 
      (cet-entry :type (array t (0)) :resizable t)
@@ -169,7 +169,7 @@
      ;; This value is left for others tools to play with.
      (external-value :type t :initially nil)
 
-     (verbosity :type (integer 0 4) :initially 1) 
+     (verbosity :type (integer 0 4) :initially 1)
      ))
 
 (sat-stobj)
@@ -183,9 +183,9 @@
 (defun zero-sat-input-channel ($sat state)
   (declare (xargs :stobjs $sat))
   (let ((channel (sat-input-channel $sat)))
-    (cond 
+    (cond
      (channel
-      (let* ((state (close-output-channel (sat-input-channel $sat) 
+      (let* ((state (close-output-channel (sat-input-channel $sat)
                                           state))
              ($sat (update-sat-input-channel nil $sat)))
         (mv $sat state)))
@@ -225,14 +225,14 @@
          ($sat (update-num-f-clauses-pre-explore 0 $sat))
          ($sat (resize-top-var-eql 0 $sat))
          ($sat (resize-pos-var 0 $sat))
-         ($sat (resize-neg-var 0 $sat))        
+         ($sat (resize-neg-var 0 $sat))
 
          ;;($sat (resize-cet-entry 0 $sat))
          ($sat (update-num-cete 0 $sat))
          ($sat (update-un-fn-list nil $sat))
 
          ($sat (update-problem-stack-depth 0 $sat))
-         
+
          ($sat (update-explore-var-list nil $sat))
          ($sat (update-curr-ord-entry-list nil $sat))
          ($sat (update-saved-ord-entry-list nil $sat))
@@ -247,14 +247,14 @@
     (zero-sat-input-channel $sat state)))
 
 (defun zero-ce-vals ($sat)
-  (declare (xargs :stobjs $sat))  
+  (declare (xargs :stobjs $sat))
   (let* (($sat (resize-ce-val 0 $sat))
          ($sat (resize-ce-i-var-val 0 $sat))
          ($sat (update-unused-num 0 $sat)))
     $sat))
 
 (defun zero-sat-stobj! ($sat state)
-  (declare (xargs :stobjs $sat))  
+  (declare (xargs :stobjs $sat))
   (mv-let
    ($sat state)
    (zero-sat-stobj $sat state)
@@ -262,7 +262,7 @@
           ($sat (update-props-world nil $sat))
           ($sat (update-NLA-table nil $sat)))
      (mv $sat state))))
-         
+
 ;; Before begining a new :sat call, I allocate space for all
 ;; the arrays
 (defun construct-sat-stobj ($sat)
@@ -282,7 +282,7 @@
          ($sat (resize-consp-var (1+ *max-vars*) $sat))
          ($sat (resize-top-var-eql (1+ *max-vars*) $sat))
          ($sat (resize-pos-var (1+ *max-vars*) $sat))
-         ($sat (resize-neg-var (1+ *max-vars*) $sat)))         
+         ($sat (resize-neg-var (1+ *max-vars*) $sat)))
     $sat))
 
 (defun top-varp (var $sat)
@@ -297,50 +297,50 @@
 
 ;; Get the formals of a function.
 (defun fn-formals (fn state)
-  (cond 
+  (cond
    ((consp fn) ;; (lambda formals body)
     (cadr fn))
-   (t 
-    (let ((formals (getprop fn 
-                            'acl2::formals 
+   (t
+    (let ((formals (getprop fn
+                            'acl2::formals
                             'not-found
-                            'acl2::current-acl2-world 
+                            'acl2::current-acl2-world
                             (w state))))
       (if (not (equal formals 'not-found))
           formals
-        (er hard 
+        (er hard
             'fn-formals
-            "Unable to get formals of function ~x0 ~%" 
+            "Unable to get formals of function ~x0 ~%"
             fn))))))
 
 ;; Get the body of a function or return
 ;; nil if the body does not exist.
 (defun fn-body! (fn state)
-  (cond 
+  (cond
    ((consp fn) ;; (lambda formals body)
     (caddr fn))
    (t
-    (getprop 
-     fn 
-     'acl2::unnormalized-body 
-     nil 
-     'acl2::current-acl2-world 
-     (w state)))))     
+    (getprop
+     fn
+     'acl2::unnormalized-body
+     nil
+     'acl2::current-acl2-world
+     (w state)))))
 
 ;; Get the body of a function or error
 ;; if the body does not exist.
 (defun fn-body (fn state)
   (let ((body (fn-body! fn state)))
     (if body body
-      (er hard 
-          'fn-body 
-          "Unable to get body of function ~x0, returned ~x1 ~%" 
+      (er hard
+          'fn-body
+          "Unable to get body of function ~x0, returned ~x1 ~%"
           fn
           body))))
 
 ;; Get the justifying measure of a function.
 (defun fn-justification (fn state)
-  (getprop fn 
+  (getprop fn
            'acl2::justification
            #!acl2(make justification
                        :subset ()
@@ -348,14 +348,14 @@
                        :rel 'o-<
                        :measure '(quote 0)
                        :ruler-extenders *basic-ruler-extenders*)
-           'acl2::current-acl2-world 
+           'acl2::current-acl2-world
            (w state)))
 
 (defun concat-macro (lst)
   (if (consp lst)
       (if (consp (cdr lst))
-	  (cons 'concatenate 
-		(cons ''string (cons (car lst) 
+	  (cons 'concatenate
+		(cons ''string (cons (car lst)
 				     (cons (concat-macro (cdr lst))
 					   'nil))))
 	(car lst))
@@ -412,12 +412,12 @@
   (declare (xargs :stobjs $sat))
   (equal 1 (relevant-fvari f-var $sat)))
 
-;; If a variable is relevant, then all its 
+;; If a variable is relevant, then all its
 ;; parents are also relevant---e.g.
 ;; if 6=(car 5) is relevant, then so is 5.
 (defun mark-ivar-relevant (var $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((equal (relevant-ivari var $sat) 1)
     $sat)
    (t
@@ -436,7 +436,7 @@
     $sat))
 
 ;; We can just mark the first entry irrelevant, since
-;; if an alists first entry is irrelevant, the whole 
+;; if an alists first entry is irrelevant, the whole
 ;; thing is considered irrelevant.
 (defun mark-alist-irrelevant (alist $sat)
   (declare (xargs :stobjs $sat))
@@ -470,7 +470,7 @@
 ;; The next five functions are deal with the internal structure
 ;; of how variables are associated with (eq x a) where a is an
 ;; atomic constant.  I try to keep exactly how this structe is
-;; maintained abstracted from the rest of the function.  For 
+;; maintained abstracted from the rest of the function.  For
 ;; efficienty though, an array is used to represent the common
 ;; (eq x nil) variable.   Meanwhile the less common (eq x t) is
 ;; kept as the first entry in eq-const-struct.  The rest of the
@@ -496,8 +496,8 @@
    ((endp alist)
     (revappend front-ans (list (cons key val))))
    ((relevant-f-varp (cdr (car alist)) $sat)
-    (insert-after-relevant-vars key 
-                                val 
+    (insert-after-relevant-vars key
+                                val
                                 (cdr alist)
                                 (cons (car alist) front-ans)
                                 $sat))
@@ -563,7 +563,7 @@
         (mv y eq-var-y $sat))))))
 
 (defun unravel-atoms-alist (atoms-alist)
-  (cond 
+  (cond
    ((endp atoms-alist)
     (mv 0 0 nil))
    ((eq nil (caar atoms-alist))
@@ -593,7 +593,7 @@
           (eq-const-struct (cons eq-t non-nil-atoms)))
      (update-eq-const-struct-vari var eq-const-struct $sat))))
 
-   
+
 ;; Get the f-var associated with (eq var nil),
 ;; creating one if it doesn't already exist.
 (defun create-eq-nil-var (var $sat)
@@ -601,7 +601,7 @@
   (let ((eq-nil-var (eq-nil-vari var $sat)))
     (if (valid-varp eq-nil-var)
         (mv eq-nil-var $sat)
-      (mv-let 
+      (mv-let
        (eq-nil-var $sat)
        (++f-var $sat)
        (let* (($sat (update-eq-nil-vari var eq-nil-var $sat))
@@ -612,17 +612,17 @@
 ;; returning an invalid variable if one doesn't exist.
 (defun lookup-atom-var (var a $sat)
   (declare (xargs :stobjs $sat))
-(cond 
+(cond
    ((eq a nil)
     (eq-nil-vari var $sat))
    ((eq a t)
     (eq-t-vari var $sat))
-   (t 
+   (t
     (let*  ((eq-const-struct (eq-const-struct-vari var $sat))
             (eq-const-alist (cdr eq-const-struct))
             (eq-const-entry (assoc-equal a eq-const-alist)))
       (if eq-const-entry
-          (cdr eq-const-entry) 
+          (cdr eq-const-entry)
         0)))))
 
 ;; Get the f-var associated with (eq var a),
@@ -630,35 +630,35 @@
 ;; Here a is some atomic constant.
 (defun create-atom-var (var a $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((eq a nil)
     (create-eq-nil-var var $sat))
    ((eq a t)
     (let ((eq-const-struct (eq-const-struct-vari var $sat)))
     (if (valid-varp (car eq-const-struct))
         (mv (car eq-const-struct) $sat)
-      (mv-let 
+      (mv-let
        (eq-t-var $sat)
        (++f-var $sat)
-       (let* (($sat (update-eq-const-struct-vari 
-                     var 
+       (let* (($sat (update-eq-const-struct-vari
+                     var
                      (cons eq-t-var (cdr eq-const-struct))
                      $sat))
               ($sat (mark-ivar-relevant var $sat)))
          (mv eq-t-var $sat))))))
-   (t 
+   (t
     (let*  ((eq-const-struct (eq-const-struct-vari var $sat))
             (eq-const-alist (cdr eq-const-struct))
             (eq-const-entry (assoc-equal a eq-const-alist)))
       (if eq-const-entry
           (mv (cdr eq-const-entry) $sat)
-        (mv-let 
+        (mv-let
          (eq-a-var $sat)
          (++f-var $sat)
          (let* ((eq-const-alist (cons (cons a eq-a-var) eq-const-alist))
                 ($sat (update-eq-const-struct-vari var
                                                    (cons (car eq-const-struct)
-                                                         eq-const-alist) 
+                                                         eq-const-alist)
                                                    $sat))
                 ($sat (mark-ivar-relevant var $sat)))
            (mv eq-a-var $sat))))))))
@@ -670,7 +670,7 @@
   (let ((consp-var (consp-vari var $sat)))
     (if (valid-varp consp-var)
         (mv consp-var $sat)
-      (mv-let 
+      (mv-let
        (consp-var $sat)
        (++f-var $sat)
        (let* (($sat (update-consp-vari var consp-var $sat))
@@ -691,8 +691,8 @@
     (rev-append (cdr alist) ans))
    (t
     (remove-alist-entry key (cdr alist) (cons (car alist) ans)))))
-                        
-;; Remove the first equality, representing (eq i0 i1), 
+
+;; Remove the first equality, representing (eq i0 i1),
 ;; in i0's alist.
 (defun delete-first-equality (i0 $sat)
   (declare (xargs :stobjs $sat))
@@ -731,16 +731,16 @@
        (cdr-var $sat)
        (++i-var $sat)
        (let* (($sat (update-cdr-vari var cdr-var $sat))
-              ($sat (update-cons-vari cdr-var var $sat)))         
+              ($sat (update-cons-vari cdr-var var $sat)))
          (mv cdr-var $sat))))))
 
 (defun pop-traversal-var ($sat)
   (declare (xargs :stobjs $sat))
   (let ((var-stack (var-stack $sat)))
-    (cond 
+    (cond
      ((endp var-stack)
       (let ((top-var-stack (top-var-stack $sat)))
-        (cond 
+        (cond
          ((endp top-var-stack)
           (mv nil nil $sat))
          (t
@@ -815,16 +815,16 @@
     t)
    (t
     (and (getprop fn 'acl2::constrainedp nil 'acl2::current-acl2-world (w state))
-         (eq nil 
-             (getprop fn 
-                      'acl2::constraint-lst 
-                      t 
-                      'acl2::current-acl2-world 
+         (eq nil
+             (getprop fn
+                      'acl2::constraint-lst
+                      t
+                      'acl2::current-acl2-world
                       (w state)))))))
 
 (defun set-un-fn-mark (fn val $sat)
   (declare (xargs :stobjs $sat))
-  (update-props-world 
+  (update-props-world
    (putprop fn 'uninterpreted-functionp val (props-world $sat))
    $sat))
 
@@ -876,7 +876,7 @@
       (get-cons-structure cons-var
                           (cons 'cdr acc)
                           $sat)))))
-                        
+
 (defun traversed-prior-cons (i0-car-cdr-list i1-car-cdr-list)
   (cond
    ((or (endp i0-car-cdr-list) (endp i1-car-cdr-list))
@@ -891,15 +891,15 @@
     (mv nil (eq (car i0-car-cdr-list) 'cdr)))))
 
 ;; Returns a two-tuple: (mv <subsetp> <i0-pt-i1>), where
-;; <i0-pt-i1> is a Boolean that is true if i0 is or will be 
+;; <i0-pt-i1> is a Boolean that is true if i0 is or will be
 ;; traversed prior to i1.  Subsetp is a Boolean that
 ;; is true if one of the structures is a subset of the other
 ;; ---e.g. i0 = (car i1).
 
-;; Note that for any iN, (cdr iN) is considered traversed prior 
+;; Note that for any iN, (cdr iN) is considered traversed prior
 ;; to (car iN), which is traversed prior to iN.  This is not
 ;; entirely accurate as we actually traverse (car iN) and (cdr iN)
-;; at the same time.  However, the one place it matters, in 
+;; at the same time.  However, the one place it matters, in
 ;; eq-todo-to-cnf, we do it right!
 
 (defun traversed-prior (i0 i1 $sat)
@@ -921,12 +921,12 @@
 ;; return an invalid variable if it doesn't exist.
 (defun lookup-eq-var (i0 i1 $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((equal i0 i1)
     ;; If i0 is i1, then (eq x x)!.
     *f-true*)
    (t
-    (mv-let 
+    (mv-let
      (subsetp i0-pt-i1)
      (traversed-prior i0 i1 $sat)
      (cond
@@ -948,8 +948,8 @@
   (declare (xargs :stobjs $sat))
   (let* ((eq-alist (eq-alist-vari i0 $sat))
          (eq-entry (assoc-equal i1 eq-alist)))
-    (cond      
-     (eq-entry 
+    (cond
+     (eq-entry
       ;; If we already have an entry, return it.
       (mv (cdr eq-entry) $sat))
      (t
@@ -958,8 +958,8 @@
       (mv-let
        (f-var $sat)
        (++f-var $sat)
-       (let* (($sat (update-eq-alist-vari 
-                     i0 
+       (let* (($sat (update-eq-alist-vari
+                     i0
                      (cons (cons i1 f-var) (eq-alist-vari i0 $sat))
                      $sat))
               ($sat (mark-ivar-relevant i0 $sat)))
@@ -969,12 +969,12 @@
 ;; create one if it doesn't exist
 (defun create-eq-var (i0 i1 $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((equal i0 i1)
     ;; If i0 is i1, then (eq x x)!.
     (mv *f-true* $sat))
    (t
-    (mv-let 
+    (mv-let
      (subsetp i0-pt-i1)
      (traversed-prior i0 i1 $sat)
      (cond
@@ -1013,7 +1013,7 @@
     (ce-val-unknown-listp (cdr val-list)))))
 
 (defun ce-val-consp (x)
-  (cond 
+  (cond
    ((ce-val-unknownp x)
     'sat::unknown)
    (t
@@ -1043,4 +1043,3 @@
 
 
 
-  

@@ -53,7 +53,7 @@ actually do any nesting of quantifiers, But I am not claiming anything there.)
 
 (defstub next (* *) => *)
 
-(encapsulate 
+(encapsulate
  (((assertion *) => *)
   ((cutpoint *) => *))
 
@@ -69,15 +69,15 @@ actually do any nesting of quantifiers, But I am not claiming anything there.)
    :rule-classes :type-prescription)
 
 )
-    
+
 
 ;; Let us now define the invariant inv, and the corresponding (quantified)
 ;; version next-inv for recursion purposes.
 
 (defun run (s sched)
-  (if (endp sched) 
-      s 
-    (run (next s (first sched)) 
+  (if (endp sched)
+      s
+    (run (next s (first sched))
          (rest sched))))
 
 (defun no-cutpoint (p sched)
@@ -90,7 +90,7 @@ actually do any nesting of quantifiers, But I am not claiming anything there.)
 (defun del-last (l)
   (if (endp l) nil
     (if (endp (rest l)) nil
-      (cons (first l) (del-last (rest l))))))      
+      (cons (first l) (del-last (rest l))))))
 
 (defun sched-to-cutpoint (p sched)
   (and (cutpoint (run p sched))
@@ -187,7 +187,7 @@ actually do any nesting of quantifiers, But I am not claiming anything there.)
    (implies (and (sched-to-cutpoint s sched)
                  (not (cutpoint s)))
             (sched-to-cutpoint (next s (car sched)) (cdr sched)))))
- 
+
 (local
  (defthm sched-to-cutpoint-implies-consp
    (implies (and (sched-to-cutpoint s sched)
@@ -225,10 +225,10 @@ actually do any nesting of quantifiers, But I am not claiming anything there.)
 
 ;; And here is the final theorem. I of course need to package up this book, but
 ;; this is a rough draft.
- 
+
 (DEFTHM inv-definition
   (equal (inv s)
-         (if (cutpoint s) 
+         (if (cutpoint s)
              (assertion s)
            (next-inv s)))
   :rule-classes :definition)
