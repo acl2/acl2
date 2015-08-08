@@ -251,11 +251,14 @@
                     (t (and (,type-name (car x))
                             (,type-list-name (cdr x)))))))))
 
-(defmacro true ()
-  t)
+; Matt K., 8/8/2015: Commenting out the definitions of TRUE and FALSE, which
+; are now defined as functions in std/basic/defs.lisp.
 
-(defmacro false ()
-  nil)
+; (defmacro true ()
+;   t)
+; 
+; (defmacro false ()
+;   nil)
 
 (defmacro assert! (condition value)
 ; Like assert$, but avoids runtime check when in :program mode.
