@@ -55,5 +55,3 @@
 ;; These are relevant to code derived from Verilog:
 
 ;;(include-book "rtl") ;semantics of the basic RTL primitives
-
-;;(include-book "rtlarr") ;semantics of RTL array primitives

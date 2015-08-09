@@ -108,52 +108,46 @@
 ;;;                           Arrays
 ;;;**********************************************************************
 
-; Matt K. edit: Commenting out the rest, because rcdp here conflicts with the
-; definition in misc/records.lisp, and both are included when building the
-; ACL2+books manual.
-
-#||
-
-(INCLUDE-BOOK "misc/total-order" :dir :system)
+(include-book "misc/total-order" :dir :system)
 
 (defmacro default-get-valu () 0)
 
-(defun rcdp (x)
+(defun arcdp (x)
   (declare (xargs :guard t))
   (or (null x)
       (and (consp x)
            (consp (car x))
-           (rcdp (cdr x))
+           (arcdp (cdr x))
            (not (equal (cdar x)
                        (default-get-valu)))
            (or (null (cdr x))
                (acl2::<< (caar x) (caadr x))))))
 
-(defthm rcdp-implies-alistp
-  (implies (rcdp x) (alistp x)))
+(defthm arcdp-implies-alistp
+  (implies (arcdp x) (alistp x)))
 
-(defmacro ifrp-tag ()
+(defmacro aifrp-tag ()
   ''unlikely-to-ever-occur-in-an-executable-counterpart)
 
-(defun ifrp (x) ;; ill-formed rcdp
+(defun aifrp (x) ;; ill-formed arcdp
   (declare (xargs :guard t))
-  (or (not (rcdp x))
+  (or (not (arcdp x))
       (and (consp x)
            (null (cdr x))
            (consp (car x))
-           (equal (cdar x) (ifrp-tag))
-           (ifrp (caar x)))))
+           (equal (cdar x) (aifrp-tag))
+           (aifrp (caar x)))))
 
-(defun acl2->rcd (x)  ;; function mapping acl2 objects to well-formed records.
+(defun acl2->arcd (x)  ;; function mapping acl2 objects to well-formed records.
   (declare (xargs :guard t))
-  (if (ifrp x) (list (cons x (ifrp-tag))) x))
+  (if (aifrp x) (list (cons x (aifrp-tag))) x))
 
-(defun rcd->acl2 (r)  ;; inverse of acl2->rcd.
-  (declare (xargs :guard (rcdp r)))
-  (if (ifrp r) (caar r) r))
+(defun arcd->acl2 (r)  ;; inverse of acl2->arcd.
+  (declare (xargs :guard (arcdp r)))
+  (if (aifrp r) (caar r) r))
 
 (defun ag-aux (a r) ;; record g(et) when r is a well-formed record.
-  (declare (xargs :guard (rcdp r)))
+  (declare (xargs :guard (arcdp r)))
   (cond ((or (endp r)
              (acl2::<< a (caar r)))
          (default-get-valu))
@@ -164,14 +158,14 @@
 
 (defun ag (a x) ;; the generic record g(et) which works on any ACL2 object.
   (declare (xargs :guard t))
-  (ag-aux a (acl2->rcd x)))
+  (ag-aux a (acl2->arcd x)))
 
 (defun acons-if (a v r)
-  (declare (xargs :guard (rcdp r)))
+  (declare (xargs :guard (arcdp r)))
   (if (equal v (default-get-valu)) r (acons a v r)))
 
 (defun as-aux (a v r) ;; record s(et) when x is a well-formed record.
-  (declare (xargs :guard (rcdp r)))
+  (declare (xargs :guard (arcdp r)))
   (cond ((or (endp r)
              (acl2::<< a (caar r)))
          (acons-if a v r))
@@ -180,9 +174,112 @@
         (t
          (cons (car r) (as-aux a v (cdr r))))))
 
+;; we need the following theorems in order to get the guard for s to verify.
+
+(local
+(defthm as-aux-is-bounded
+  (implies (and (arcdp r)
+                (as-aux a v r)
+                (acl2::<< e a)
+                (acl2::<< e (caar r)))
+           (acl2::<< e (caar (as-aux a v r))))))
+
+(local
+(defthm as-aux-preserves-arcdp
+  (implies (arcdp r)
+           (arcdp (as-aux a v r)))))
+
 (defun as (a v x) ;; the generic record s(et) which works on any ACL2 object.
   (declare (xargs :guard t))
-  (rcd->acl2 (as-aux a v (acl2->rcd x))))
+  (arcd->acl2 (as-aux a v (acl2->arcd x))))
+
+
+;;;; basic property of records ;;;;
+
+(local
+(defthm arcdp-implies-true-listp
+  (implies (arcdp x)
+           (true-listp x))
+  :rule-classes (:forward-chaining
+                 :rewrite)))
+
+
+;;;; initial properties of s-aux and g-aux ;;;;
+
+(local
+(defthm ag-aux-same-as-aux
+  (implies (arcdp r)
+           (equal (ag-aux a (as-aux a v r))
+                  v))))
+
+(local
+(defthm ag-aux-diff-as-aux
+  (implies (and (arcdp r)
+                (not (equal a b)))
+           (equal (ag-aux a (as-aux b v r))
+                  (ag-aux a r)))))
+
+(local
+(defthm as-aux-same-ag-aux
+  (implies (arcdp r)
+           (equal (as-aux a (ag-aux a r) r)
+                  r))))
+
+(local
+(defthm as-aux-same-as-aux
+  (implies (arcdp r)
+           (equal (as-aux a y (as-aux a x r))
+                  (as-aux a y r)))))
+
+(local
+(defthm as-aux-diff-as-aux
+  (implies (and (arcdp r)
+                (not (equal a b)))
+           (equal (as-aux b y (as-aux a x r))
+                  (as-aux a x (as-aux b y r))))
+  :rule-classes ((:rewrite :loop-stopper ((b a as))))))
+
+(local
+(defthm as-aux-non-nil-cannot-be-nil
+  (implies (and (not (equal v (default-get-valu)))
+                (arcdp r))
+           (as-aux a v r))))
+
+(local
+(defthm ag-aux-is-nil-for-<<
+  (implies (and (arcdp r)
+                (acl2::<< a (caar r)))
+           (equal (ag-aux a r)
+                  (default-get-valu)))))
+
+
+;;;; properties of acl2->arcd and arcd->acl2 ;;;;
+
+(local
+(defthm acl2->arcd-arcd->acl2-of-arcdp
+  (implies (arcdp x)
+           (equal (acl2->arcd (arcd->acl2 x))
+                  x))))
+
+(local
+(defthm acl2->arcd-returns-arcdp
+  (arcdp (acl2->arcd x))))
+
+(local
+(defthm acl2->arcd-preserves-equality
+  (iff (equal (acl2->arcd x) (acl2->arcd y))
+       (equal x y))))
+
+(local
+(defthm arcd->acl2-acl2->arcd-inverse
+  (equal (arcd->acl2 (acl2->arcd x)) x)))
+
+(local
+(defthm arcd->acl2-of-record-non-nil
+  (implies (and r (arcdp r))
+           (arcd->acl2 r))))
+
+(in-theory (disable acl2->arcd arcd->acl2))
 
 
 ;;Basic properties of arrays:
@@ -241,8 +338,6 @@
 ;;sufficient to manipulate any record terms that are encountered.
 
 (in-theory (disable as ag))
-
-||#
 
 ;;;**********************************************************************
 ;;;                      Fixed-Point Registers

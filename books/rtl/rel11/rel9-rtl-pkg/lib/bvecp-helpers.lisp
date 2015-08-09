@@ -27,15 +27,7 @@
 (set-enforce-redundancy t)
 
 (include-book "rtl")
-(include-book "rtlarr")
 (local (include-book "../support/top/top"))
-
-(defthm bv-arrp-implies-nonnegative-integerp
-  (implies (bv-arrp obj size)
-           (and (integerp (ag index obj))
-                (<= 0 (ag index obj))))
-  :rule-classes (:rewrite :type-prescription)
-  )
 
 ; The two events following the next local include-book were added by Matt
 ; K. June 2004: Some proofs require calls of expt to be evaluated, but some

@@ -1,15 +1,15 @@
-(in-package "ACL2")
+(in-package "RTL")
 
 ; Added by Matt K., May 2015.  Improvement observed when certification used
 ; the :delay strategy:
 ; 18.90 sec. vs. 27.20 sec.
 (value-triple (set-gc-strategy :delay))
 
-(include-book "rtl/rel9/lib/top" :dir :system)   ;; The basic RTL library
+(include-book "rtl/rel11/lib/top" :dir :system)   ;; The basic RTL library
 
-(include-book "rtl/rel9/lib/mult" :dir :system)  ;; The Booth multiplication book
+(include-book "rtl/rel11/lib/mult" :dir :system)  ;; The Booth multiplication book
 
-(include-book "rtl/rel9/lib/gl" :dir :system)    ;; Connect lib with gl
+(include-book "rtl/rel11/lib/gl" :dir :system)    ;; Connect lib with gl
 
 (include-book "arithmetic-5/top" :dir :system)   ;; It's hard to do any arithmetic without this
 
@@ -148,7 +148,7 @@
 ;; The function Booth computes an array of 3-bit encodings of the
 ;; Booth digits (theta k y), 0 <= k < 17:
 
-(def-gl-thm encode-lemma
+(acl2::def-gl-thm encode-lemma
   :hyp (and (bvecp y 32)
             (natp k)
             (< k 17))
@@ -217,7 +217,7 @@
                           ((:free (pp) (partialproducts-loop-0 k x m21 pp))
                            (:free (pp) (partialproducts-loop-0 0 x m21 pp))))))
 
-(def-gl-thm partialproducts-lemma
+(acl2::def-gl-thm partialproducts-lemma
   :hyp (and (bvecp x 32)
             (bvecp y 32)
             (natp k)
@@ -305,7 +305,7 @@
                           63 0))))
   :hints (("subgoal *1/1" :expand ((:free (j bds sb psb) (align-loop-0 j pp psb sb tble0))))))
 
-(def-gl-thm align-lemma
+(acl2::def-gl-thm align-lemma
   :hyp (and (bvecp x 32)
             (bvecp y 32)
             (natp k)
@@ -361,7 +361,7 @@
 ;; The compression tree consists of 7 4:2 compressors and 1 3:2 compressor.  The
 ;; functionality of these components is proved automatically by gl:
 
-(def-gl-thm compress32-lemma
+(acl2::def-gl-thm compress32-lemma
   :hyp  (and (bvecp in0 64)
              (bvecp in1 64)
              (bvecp in2 64))
@@ -375,7 +375,7 @@
                                        (:nat in1 64)
                                        (:nat in2 64))))
 
-(def-gl-thm compress42-lemma
+(acl2::def-gl-thm compress42-lemma
   :hyp  (and (bvecp in0 64)
              (bvecp in1 64)
              (bvecp in2 64)
