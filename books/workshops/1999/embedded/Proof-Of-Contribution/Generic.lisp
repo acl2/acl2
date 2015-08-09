@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Section 1: preliminary definitions and lemmas 
+;; Section 1: preliminary definitions and lemmas
 ;; (some are taken from Boyer and Moore's ``small machine''
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,7 +61,7 @@
 ;; natp(n)                   predicate:   true iff n is natural number
 ;; firstn   (n l)            head of n elements of l
 ;; equal-elements (el l)     predicate: true iff   l = < el el el ... el >
-;; 
+;;
 
 #|
 (defun in-range (idx l)
@@ -78,7 +78,7 @@
 (defun equal-elements (el l)
  (if (endp l)
      (null l)
-     (and 
+     (and
       (equal el (car l))
       (equal-elements el (cdr l)))))
 #|
@@ -90,7 +90,7 @@
   (equal (nth idx l) el)))
 |#
 
-;;; 
+;;;
 ;;; Definition of a constant residue number system for the Gem2Rtm translation.
 ;;;
 

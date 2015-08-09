@@ -48,37 +48,37 @@
                            (FIB (BINARY-+ '-2 N))))))
 
 ; Induction machine computation.
-; 
+;
 ; From arg1:
-; 
+;
 ; Tests: {(zp n)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (zp n))}
 ; Calls: {(fib (1- n))}
-; 
+;
 ; From arg2:
-; 
+;
 ; Tests: {(zp n)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (zp n)), (equal n 1)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (zp n)), (not (equal n 1))}
 ; Calls: {(fib (- n 2))}
-; 
+;
 ; Combine by crossing and eliminating contradictions:
-; 
+;
 ; Tests: {(zp n)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (zp n)), (equal n 1)}
 ; Calls: {(fib (1- n))}
-; 
+;
 ; Tests: {(not (zp n)), (not (equal n 1))}
 ; Calls: {(fib (1- n)), (fib (- n 2))}
- 
+
 ; ==============================
 
 ; Example 1b.  Like 1a, but with xargs.
@@ -104,7 +104,7 @@
                            (FIB1 (BINARY-+ '-2 N))))))
 
 ; ==============================
- 
+
 ; Example 2.  We check that a small variation of Example 1a (and 1b) gives the
 ; same induction machine.
 
@@ -131,33 +131,33 @@
                            (FIB2 (BINARY-+ '-2 N))))))
 
 ; Induction machine computation for false branch at the top-level.
-; 
+;
 ; From arg1 of +, omitting "global" test (not (zp n)):
-; 
+;
 ; Tests: {}
 ; Calls: {(fib2 (1- n))}
-; 
+;
 ; From arg2:
-; 
+;
 ; Tests: {(equal n 1)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (equal n 1))}
 ; Calls: {(fib2 (- n 2))}
-; 
+;
 ; Combine by crossing, using top-level test:
-; 
+;
 ; Tests: {(zp n)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (zp n)), (equal n 1)}
 ; Calls: {(fib2 (1- n))}
-; 
+;
 ; Tests: {(not (zp n)), (not (equal n 1))}
 ; Calls: {(fib2 (1- n)), (fib2 (- n 2))}
-; 
+;
 ; ==============================
-; 
+;
 ; Example 3.  Let's try an example from Peter Dillinger.
 
 (defun foop (x)
@@ -184,22 +184,22 @@
 
 ; Now (lambda (result) result) generates (in environment with result bound to the
 ; IF term):
-; 
+;
 ; Tests: {}
 ; Calls: {}
-; 
+;
 ; And the IF term generates:
-; 
+;
 ; Tests: {(consp x)}
 ; Calls: {(foop (cdr x))}
-; 
+;
 ; Tests: {(not (consp x))}
 ; Calls: {}
-; 
+;
 ; So combining, we get what the IF term generates.
-; 
+;
 ; ==============================
-; 
+;
 ; Example 4.  The following is adapted from an example discussed in the ACL2
 ; seminar, and begs for merging the tests-and-calls for two branches when the
 ; calls are empty for both.
@@ -227,7 +227,7 @@
 ;        y
 ;      (cons (car x)
 ;            (app (cdr x) y)))))
-; 
+;
 (assert-event
  (equal
   (getprop 'app 'induction-machine nil 'current-acl2-world (w state))
@@ -237,51 +237,51 @@
 
 ; The lambda generates (in an alist binding result to the (if (endp x)...)
 ; term):
-; 
+;
 ; Tests: {(our-test result)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (our-test result))}
 ; Calls: {}
-; 
+;
 ; The argument of the lambda generates:
-; 
+;
 ; Tests: {(endp x)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (endp x))}
 ; Calls: {(app (cdr x) y)}
-; 
+;
 ; If we take the usual cross-product, we'll get four cases:
-; 
+;
 ; Tests: {(our-test result), (endp x)}
 ; Calls: {}
-; 
+;
 ; Tests: {(our-test result), (not (endp x))}
 ; Calls: {(app (cdr x) y)}
-; 
+;
 ; Tests: {(not (our-test result)), (endp x)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (our-test result)), (not (endp x))}
 ; Calls: {(app (cdr x) y)}
-; 
+;
 ; But suppose instead we first merge the two IF branch results in the lambda
 ; body, since they have the same Calls (empty), giving:
-; 
+;
 ; Tests: {}
 ; Calls: {}
-; 
+;
 ; Then the merge is just the result from the argument of the lambda:
-; 
+;
 ; Tests: {(endp x)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (endp x))}
 ; Calls: {(app (cdr x) y)}
-; 
+;
 ; ==============================
-; 
+;
 ; Example 5.  Peter Dillinger sent essentially this one.  It illustrates the
 ; crossing of non-trivial tests-and-calls lists.
 
@@ -319,27 +319,27 @@
                      (FOO (CONS X (IF (ENDP X) 'NIL (FOO (CDR X)))))))))
 
 ; For the lambda body:
-; 
+;
 ; Tests: {(true-listp (if (endp x) nil (foo (cdr x))))}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (true-listp (if (endp x) nil (foo (cdr x)))))}
 ; Calls: {(foo (cons x (if (endp x) nil (foo (cdr x)))))}
-; 
+;
 ; For the argument of the lambda:
-; 
+;
 ; Tests: {(endp x)}
 ; Calls: {}
-; 
+;
 ; Tests: {(not (endp x))}
 ; Calls: {(foo (cdr x))}
-; 
+;
 ; Now we cross them as usual.  What a mess!  Note that even though foo
 ; terminates, we cannot prove this, much as we cannot prove termination for
 ; other reflexive functions.
-; 
+;
 ; ==============================
-; 
+;
 ; Example 6.  This example gives the same induction machine as we have gotten
 ; before Version_3.5 (and subsequently as well) without :ruler-extenders
 ; specified.
@@ -365,26 +365,26 @@
     (TESTS-AND-CALLS ((NOT (CONSP X)))))))
 
 ; The easy one is this:
-; 
+;
 ; Tests: {(not (consp x))}
 ; Calls: {}
-; 
+;
 ; But for test (consp x), we recur on the true branch.
-; 
+;
 ;   Tests: {(bar (cdr x))}
 ;   Calls: {(bar (cdr x)), (bar (cdddr x))}
-; 
+;
 ;   Tests: {(not (bar (cdr x)))}
 ;   Calls: {(bar (cdr x))}
-; 
+;
 ; Merging back the top-level test:
-; 
+;
 ; Tests: {(consp x), (bar (cdr x))}
 ; Calls: {(bar (cdr x)), (bar (cdddr x))}
-; 
+;
 ; Tests: {(consp x), (not (bar (cdr x)))}
 ; Calls: {(bar (cdr x))}
-; 
+;
 ; Tests: {(not (consp x))}
 ; Calls: {}
 

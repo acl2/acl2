@@ -67,7 +67,7 @@
                   :pattern (butlast x n)
                   :scheme (butlast-induction x n))))
 
-  
+
 (def-listp-rule element-list-p-of-butlast
   (implies (element-list-p (double-rewrite x))
            (element-list-p (butlast x n))))

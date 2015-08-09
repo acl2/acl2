@@ -8,7 +8,7 @@
 ;;; types.lisp
 ;;;
 ;;; The neccesity for these theorems does not arise very often,
-;;; but it can be very irritating when they do.  
+;;; but it can be very irritating when they do.
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -78,5 +78,5 @@
 		      (equal x 1))))
   :hints (("Goal" :use ((:instance not-integerp-/-1)
 			(:instance not-integerp-/-2))
-	          :in-theory (disable not-integerp-/-1 
+	          :in-theory (disable not-integerp-/-1
 				      not-integerp-/-2))))

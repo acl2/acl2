@@ -241,7 +241,7 @@
              (implies (equal s1 (insert a s2))
                       (equal (delete a s1) s2)))
     :hints (("Goal" :do-not '(generalize eliminate-destructors)
-             :in-theory (e/d ( ;subset 
+             :in-theory (e/d ( ;subset
                               pick-a-point-subset-strategy) (delete in))))))
 
  (local
@@ -254,7 +254,7 @@
                       (equal s1 (insert a s2))))
     :rule-classes nil
     :hints (("Goal" :do-not '(generalize eliminate-destructors)
-             :in-theory (e/d ( ;subset 
+             :in-theory (e/d ( ;subset
                               pick-a-point-subset-strategy) (delete in))))))
 
 ;bzo prove the other one.  which way do we want to go?
@@ -273,7 +273,7 @@
          (emptyset))
   :hints (("Goal" :in-theory (enable INSERT))))
 
-;disable?        
+;disable?
 (defthmd subset-of-delete-helper
   (implies (and (not (subset (delete a x) y))
                 (setp y))
@@ -285,7 +285,7 @@
            (equal (subset (delete a x) y)
                   (if (in a x)
                       (if (in a y)
-                          (subset x (insert a y))    
+                          (subset x (insert a y))
                         (subset x (insert a y)))
                     (subset x y))))
   :hints (("Goal" :in-theory (enable subset-of-delete-helper))))
@@ -340,14 +340,14 @@
              (equal s (insert a (emptyset))))))
 
 ;; [jared] something like this is now in std/osets/top
-;; (defthmd tail-when-empty                
-;;   (implies (empty set) 
+;; (defthmd tail-when-empty
+;;   (implies (empty set)
 ;;            (equal (tail set)
 ;;                   (emptyset)))
 ;;   :hints (("Goal" :in-theory (enable tail))))
 
-(defthm tail-when-empty-cheap    
-  (implies (empty set) 
+(defthm tail-when-empty-cheap
+  (implies (empty set)
            (equal (tail set)
                   (emptyset)))
   :rule-classes ((:rewrite :backchain-limit-lst (1)))
@@ -356,7 +356,7 @@
 (defthm delete-head-of-self
   (equal (delete (head set) set)
          (tail set)))
- 
+
 (defthmd tail-when-not-setp
   (implies (not (setp s))
            (equal (tail s)

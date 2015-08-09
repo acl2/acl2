@@ -68,7 +68,7 @@
 			      (fdp lfd)
 			      (mstatep ms))
 		  :verify-guards nil))
-  
+
   (let ((request (first-request hpid lfd (lstates ms)))
 	(newfd (newfd hpid ms)))
     (if (not (consp request))
@@ -76,7 +76,7 @@
       (let* ((client-fd (second request))
 	     (client-hpid (first request))
 	     (client-ps (assoc-equal client-hpid (pstates ms))))
-	     
+
 	(if (not (consp client-ps))
 	    (list -1 ms)
 	  (list newfd
@@ -94,7 +94,7 @@
 					     (cstates ms))
 			     (pop-request hpid lfd (lstates ms))
 			     (programs ms))))))))
-		
+
 (defthm requestq-properties
   (implies (and (lstatep ls)
 		(consp (third ls)))
@@ -256,7 +256,7 @@
 	   (and (consp (cdr (find-ls host post lss)))
 		(consp (cddr (find-ls host post lss)))))
   :rule-classes :forward-chaining)
-		       
+
 (defthm find-ls-true-listp
   (implies (and (lstate-listp lss)
 		(consp (find-ls host port lss)))

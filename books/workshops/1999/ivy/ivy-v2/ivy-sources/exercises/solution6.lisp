@@ -1,4 +1,4 @@
-;; Exercise file to accompany 
+;; Exercise file to accompany
 ;;
 ;; Ivy: A Preprocessor and Proof Checker for First-order Logic
 ;;
@@ -11,28 +11,28 @@
 ;; given symbol list in steps 2 and 3 of the search procedure.  In
 ;; variable renaming, step 2, we generate a new variable.  In
 ;; Skolemization, step 3, we generate a Skolem function name.  Common
-;; Lisp has a function gensym, but it is state dependent and therefore 
-;; not available in ACL2.  Define an ACL2 function that generates a 
-;; symbol that is not in a given list of symbols, and prove its 
+;; Lisp has a function gensym, but it is state dependent and therefore
+;; not available in ACL2.  Define an ACL2 function that generates a
+;; symbol that is not in a given list of symbols, and prove its
 ;; correctness.
 
-;; Hint: ACL2 defines functions "coerce" and 
+;; Hint: ACL2 defines functions "coerce" and
 ;; "intern-in-package-of-symbol."  See ACL2 documentation for more
 ;; information.
 
 (in-package "ACL2")
 
-;; We assume that there is a list of symbols whose names are 
-;; "l...ld...d" where l=letter, d=digit.  The string of d's in the 
-;; symbol name is called an index.  If there is something other than 
-;; a digit to the right of the leftmost digit in the symbol name, 
+;; We assume that there is a list of symbols whose names are
+;; "l...ld...d" where l=letter, d=digit.  The string of d's in the
+;; symbol name is called an index.  If there is something other than
+;; a digit to the right of the leftmost digit in the symbol name,
 ;; that character is ignored.   For example,
 ;;
 ;;        index of v12x3 = 123.
 ;;
-;; How this works:  We used several functions suggested by 
-;; Matt Kaufmann's functions.  If there is a list of characters that 
-;; represents an integer the functions generate the list of characters 
+;; How this works:  We used several functions suggested by
+;; Matt Kaufmann's functions.  If there is a list of characters that
+;; represents an integer the functions generate the list of characters
 ;; that represents the successor of that integer.
 ;;
 ;; Given a list of symbols, we compute the index that represents the
@@ -77,7 +77,7 @@
 (defthm next-char-list-gives-charlist
   (implies (character-listp x)
 	   (character-listp (car (next-int-char-list x)))))
-  
+
 (defun charlist< (i1 i2)
   (declare (xargs :guard (and (character-listp i1) (character-listp i2))))
   (cond ((atom i2) nil)
@@ -87,14 +87,14 @@
 	(t (cond ((char< (car i1) (car i2)) t)
 		 ((char> (car i1) (car i2)) nil)
 		 (t (charlist< (cdr i1) (cdr i2)))))))
-      
+
 (defun next-int-char-list-actual (chars)
   (declare (xargs :guard t))
   (mv-let (next carryp)
           (next-int-char-list chars)
           (if carryp
               (cons #\1 next)
-            next)))	
+            next)))
 
 (defthm carry-char-list
   (implies (character-listp x)
@@ -181,15 +181,15 @@
 	   (equal (index (next-int-char-list-actual l))
 		  (next-int-char-list-actual l))))
 
-(defthm max-index-lessthan-gensym-index 
+(defthm max-index-lessthan-gensym-index
   (implies (symbolp sym)
-	   (charlist< 
+	   (charlist<
 	    (max-index l)
 	    (index (coerce (symbol-name (gen-sym sym (max-index l))) 'list))))
   :hints (("Goal" :do-not generalize
 	   :in-theory (disable next-int-char-list-actual))))
 
-;; top-level gensym: make a symbol (with a prefix sym) 
+;; top-level gensym: make a symbol (with a prefix sym)
 ;; that does not occur in the given list l
 
 (defun gen-symbol (sym l)
@@ -203,7 +203,7 @@
   (implies (symbolp sym)
 	   (not (member-equal (gen-symbol sym l) l)))
   :hints (("Goal" :in-theory (disable gen-sym))))
-  
+
 (in-theory (disable gen-symbol))
 
 ;; a few examples

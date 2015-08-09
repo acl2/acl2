@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -152,7 +152,7 @@
                 (bvecp v 1)
                 (bvecp w 1))
            (equal (+ u v w)
-                  (cat (lior (land u v 1) (lior (land u w 1) (land v w 1) 1) 1) 1 
+                  (cat (lior (land u v 1) (lior (land u w 1) (land v w 1) 1) 1) 1
                        (lxor u (lxor v w 1) 1) 1)))
   :hints (("Goal" :in-theory (enable bvecp)
            :cases ((and (equal u 0) (equal v 0) (equal w 0))
@@ -326,7 +326,7 @@
                             (cat (lior (land u v 1)
                                        (lior (land u w 1) (land v w 1) 1)
                                        1)
-                                 1 
+                                 1
                                  (lxor u (lxor v w 1) 1)
                                  1)))
                        (rc-sum x y k))))
@@ -343,7 +343,7 @@
                   (natp x)
                   (natp y))
              (equal (cat (rc-carry x y (1+ k))
-                         1 
+                         1
                          (bitn (rc-sum x y (1+ k)) k)
                          1)
                     (let ((u (bitn x k))
@@ -352,7 +352,7 @@
                       (cat (lior (land u v 1)
                                  (lior (land u w 1) (land v w 1) 1)
                                  1)
-                           1 
+                           1
                            (lxor u (lxor v w 1) 1)
                            1)))))
 
@@ -370,7 +370,7 @@
                        (bits y k 0))
                     (+ (* (expt 2 k)
                           (cat (rc-carry x y (1+ k))
-                               1 
+                               1
                                (bitn (rc-sum x y (1+ k)) k)
                                1))
                        (rc-sum x y k))))
@@ -401,7 +401,7 @@
                      (rc-sum x y k))))
   :hints (("Goal" :use main-4
            :expand ((cat (rc-carry x y (1+ k))
-                         1 
+                         1
                          (bitn (rc-sum x y (1+ k)) k)
                          1))
            :in-theory (e/d (bits-tail) (rc-sum rc-carry))))
@@ -417,7 +417,7 @@
                   (natp y))
              (equal (bits (rc-sum x y (1+ k)) (1- k) 0)
                     (rc-sum x y k)))
-    :hints (("Goal" 
+    :hints (("Goal"
              :expand ((rc-sum x y (1+ k)))
              :in-theory (e/d (cat) (rc-sum)))))
 

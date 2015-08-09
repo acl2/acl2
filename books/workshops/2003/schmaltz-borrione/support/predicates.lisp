@@ -31,7 +31,7 @@
 (defun no_requestp (REQ)
   (cond ((endp REQ) t)
 	((equal (car REQ) 1) nil)
-	(t (and (equal (car REQ) 0) 
+	(t (and (equal (car REQ) 0)
 		(no_requestp (cdr REQ))))))
 
 ; if no_requestp then the car of L is 0
@@ -63,7 +63,7 @@
 
 (defun no_requestp_matrix (M)
   (cond ((endp M) t)
-	((no_requestp (car M)) 
+	((no_requestp (car M))
 	 (no_requestp_matrix (cdr M)))
 	(t
 	 nil)))
@@ -73,7 +73,7 @@
 ; recognizer of a list of 1 and 0, i.e. a bit vector
 
 (defun list_of_1_and_0 (L)
-  (if (endp (cdr L)) 
+  (if (endp (cdr L))
       (or (equal (car L) 0) (equal (car L) 1))
       (and (or (equal (car L) 0) (equal (car L) 1))
 	   (list_of_1_and_0 (cdr L)))))
@@ -141,7 +141,7 @@
 (defun uniform_listp (L)
   (cond ((endp (cdr L)) t)
 	((not (equal (len (car L)) (len (cadr L)))) nil)
-	(t 
+	(t
 	 (uniform_listp (cdr L)))))
 
 ; if uniform_list len (len (car l)) = (len (cadr L))

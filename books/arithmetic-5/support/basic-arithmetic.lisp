@@ -93,12 +93,12 @@
 
 (defthm equal-+-x-y-x
   (equal (equal (+ x y) x)
-         (and (acl2-numberp x) 
+         (and (acl2-numberp x)
 	      (equal (fix y) 0))))
 
 (defthm equal-+-x-y-y
   (equal (equal (+ x y) y)
-	 (and (acl2-numberp y) 
+	 (and (acl2-numberp y)
 	      (equal (fix x) 0))))
 
 (defthm equal-minus-minus
@@ -162,7 +162,7 @@
 (defthm equal-*-x-y-x
   (equal (equal (* x y) x)
 	 (and (acl2-numberp x)
-	      (or (equal x 0) 
+	      (or (equal x 0)
 		  (equal y 1))))
   :hints (("Goal" :use
            ((:instance right-cancellation-for-*
@@ -173,7 +173,7 @@
 (defthm equal-*-y-x-x
   (equal (equal (* y x) x)
 	 (and (acl2-numberp x)
-	      (or (equal x 0) 
+	      (or (equal x 0)
 		  (equal y 1)))))
 
 (defthm equal-/-/
@@ -204,7 +204,7 @@
 	     (equal 1 (* x y))
 	     (equal y 0))))
 
-; The following hack helps in the application of equal-/ when 
+; The following hack helps in the application of equal-/ when
 ; forcing is turned off.
 
 (defthm numerator-nonzero-forward

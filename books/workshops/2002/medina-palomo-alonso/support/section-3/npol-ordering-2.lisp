@@ -88,7 +88,7 @@
 	   :in-theory (disable |p < q & q < r => p < r|)
 	   :use (:instance |p < q & q < r => p < r| (r p)))))
 
-;;; Congruence. 
+;;; Congruence.
 
 (defcong MON::=T equal (modified-monomial->o-p a) 1)
 

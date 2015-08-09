@@ -15,7 +15,7 @@
   :hints (("Goal" :in-theory (enable term-to-bfringes))))
 
 (defthm subset-list-btrees-to-fringes-of-term-to-bfringes
-  (subset-list (btrees-to-fringes 
+  (subset-list (btrees-to-fringes
                 (term-to-bfringes term taxa-list)
                 (build-taxa-list-tree taxa-list))
                taxa-list)
@@ -27,10 +27,10 @@
   :hints (("Goal" :in-theory (enable term-to-bfringes))))
 
 (defthm subset-list-union-cdr
-  (implies (subset-list (btrees-to-fringes 
+  (implies (subset-list (btrees-to-fringes
                          (my-union x y)
                          ftlt) z)
-           (subset-list (btrees-to-fringes 
+           (subset-list (btrees-to-fringes
                          (my-union x (cdr y))
                          ftlt) z)))
 (defthm valid-bdd-bfringe
@@ -82,13 +82,13 @@
                 (consp x)
                 (int-symlist (double-rewrite taxa-list))
                 (<= 2 (len (double-rewrite taxa-list))))
-           (bfringe x 
+           (bfringe x
                     (taxa-list-to-tree-alist taxa-list)))
   :hints (("Subgoal *1/3'''" :in-theory (disable q-or-if-either)
            :use (:instance q-or-if-either
                            (x (bfringe x1 (taxa-list-to-tree-alist
                                            taxa-list)))
-                           (y (bfringe-list 
+                           (y (bfringe-list
                                x2
                                (taxa-list-to-tree-alist taxa-list)))))))
 
@@ -99,7 +99,7 @@ given for the compute-consensus and tree-compatibility funtions.
 SKIP!!!
 (skip-proofs
 (defthm SKIP-valid-bdd-list-strip-cars-gen-bfringe-frequencies
-  (valid-bdd-list (strip-cars-gen 
+  (valid-bdd-list (strip-cars-gen
                    (bfringe-frequencies x taxa-list))))
 )
 
@@ -121,7 +121,7 @@ SKIP!!!
 ;                     (bfringe x y)
 ;                     (subset x (strip-cars-gen y))
 ;                     (consp x))
-;                (bfringe x 
+;                (bfringe x
 ;                         (build-fast-alist-from-alist-acc y acc)))
 ;       (implies (and (flag flg nil)
 ;                     (good-taxon-bdd-alist y)
@@ -131,32 +131,32 @@ SKIP!!!
 ;                     (bfringe-list x y)
 ;                     (subset x (strip-cars-gen y))
 ;                     (consp x))
-;                (bfringe-list x 
+;                (bfringe-list x
 ;                         (build-fast-alist-from-alist-acc y acc))))
 ;  :hints (("Goal" :induct (tree-p-induction x flg))
 ;          ("Subgoal *1/2.12'4'" :in-theory (disable q-or-if-either)
-;           :use (:instance 
+;           :use (:instance
 ;                 q-or-if-either
 ;                 (x (cdr
-;                     (assoc-hqual 
-;                      x1 
+;                     (assoc-hqual
+;                      x1
 ;                      (build-fast-alist-from-alist-acc y acc))))
-;                 (y (bfringe-list 
+;                 (y (bfringe-list
 ;                     x2
-;                     (build-fast-alist-from-alist-acc 
+;                     (build-fast-alist-from-alist-acc
 ;                      y acc)))))
 ;          ("Subgoal *1/2.4'4'" :in-theory (disable q-or-if-either)
-;           :use (:instance 
+;           :use (:instance
 ;                 q-or-if-either
-;                 (x (cdr 
-;                     (assoc-hqual 
-;                      x1 
+;                 (x (cdr
+;                     (assoc-hqual
+;                      x1
 ;                      (build-fast-alist-from-alist-acc y acc))))
-;                 (y (bfringe-list 
+;                 (y (bfringe-list
 ;                     x2
-;                     (build-fast-alist-from-alist-acc 
+;                     (build-fast-alist-from-alist-acc
 ;                      y acc)))))
-;          ("Subgoal *1/1'''" :expand 
+;          ("Subgoal *1/1'''" :expand
 ;           (bfringe x (build-fast-alist-from-alist-acc y acc)))
 ;))
 
@@ -182,7 +182,7 @@ SKIP!!!
    (implies (and (int-symlist taxa-list)
                  (subset tips-seen taxa-list))
             (<= (depth
-                 (bfringe tips-seen 
+                 (bfringe tips-seen
                           (build-fast-alist-from-alist
                            (taxa-list-to-tree-alist taxa-list)
                            acc)))

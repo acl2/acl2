@@ -917,7 +917,7 @@
 ; This will throw an error on translation.
 
  :hints (("Subgoal *1/1'" :eror (a b c))))
-              
+
 (remove-custom-keyword-hint :eror) ; added by Matt K.
 
 (add-custom-keyword-hint :eror

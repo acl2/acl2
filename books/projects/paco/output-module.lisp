@@ -37,7 +37,7 @@
 ; tracking/recording of the intermediate results.  (Fact 3) returns 6
 ; and we do not know ``how'' it computed 6.  But we can install a
 ; trace on fact -- after the fact, so to speak -- and then see that
-; (fact 3) gave rise to (fact 2) which computed 2, etc.  
+; (fact 3) gave rise to (fact 2) which computed 2, etc.
 
 ; My vision -- not yet fully realized and arguably impossible in light
 ; of the full exploration of this note -- is that I can define the
@@ -335,7 +335,7 @@
                                                  nil)
                                              (wormhole-data whs))))
                  nil))
-  
+
 (defun push-nume (nume)
   (if nume
       (wormhole-eval 'nume-stack
@@ -426,7 +426,7 @@
 ; To avoid cluttering the code with such forms, I tend to define
 ; macros with names like <foo-id> and then write (<foo-id> <body>).
 ; These expressions are logically equivalent to <body> but track
-; the numes as described.  
+; the numes as described.
 
 (defmacro <scons-term-id> (body)
   `(with-nume-tracking (hitp val) ,body
@@ -505,7 +505,7 @@
          (cl       (nth 2 (@ wormhole-input)))
          (clauses  (nth 3 (@ wormhole-input)))
          (hist-obj (nth 4 (@ wormhole-input)))
-         (NAMES 
+         (NAMES
           (REMOVE-DUPLICATES-EQUAL
            (STRIP-CADRS
             (NUMES-TO-RUNES
@@ -590,4 +590,4 @@
                 :ld-verbose nil
                 :ld-pre-eval-print nil)
       proof-attempt)))
-                            
+

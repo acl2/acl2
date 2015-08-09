@@ -144,7 +144,7 @@
     (goto -10)		; 37       goto even-loop
                         ;    even-t:
     (istore 1)		; 38       restore m
-    (iconst 1)		; 39       
+    (iconst 1)		; 39
     (goto -35)		; 40       ``return'' 1 to ``caller''
                         ;    even-nil:
     (istore 1)		; 41       restore m
@@ -227,7 +227,7 @@
                         (list x saved-m y)
                         (push (if (equal (mod m 2) 0) 1 0) nil)
                         *pi*))))
-                
+
 
 (in-theory (disable even-loop-clk))
 

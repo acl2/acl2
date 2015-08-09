@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -146,7 +146,7 @@
   :rule-classes())
 
 (defthm mod-bits-equal
-  (implies (= (mod x (expt 2 (1+ i))) 
+  (implies (= (mod x (expt 2 (1+ i)))
 	      (mod y (expt 2 (1+ i))))
 	   (= (bits x i j) (bits y i j)))
   :rule-classes ())
@@ -197,14 +197,14 @@
 		  (< x 0)
 		  (>= x (- (expt 2 j)))
 		  (>= i j))
-	     (equal (bits x i j) 
+	     (equal (bits x i j)
                     (1- (expt 2 (1+ (- i j)))))))
 
 (defthmd bits-minus-1
     (implies (and (natp i)
 		  (natp j)
 		  (>= i j))
-	     (equal (bits -1 i j) 
+	     (equal (bits -1 i j)
                     (1- (expt 2 (1+ (- i j)))))))
 
 (defthm bits-bits-sum
@@ -387,7 +387,7 @@
 ;;(thm (implies (equal 7 (bits x 8 6))
 ;;		(not (equal 4 (bits x 15 6)))))
 
-(defthmd bits-dont-match 
+(defthmd bits-dont-match
   (implies (and (syntaxp (and (quotep i)
 			      (quotep j)
 			      (quotep k)))
@@ -501,8 +501,8 @@
     (implies (natp i)
 	     (equal (bitn -1 i) 1)))
 
-;; The rewrite rule neg-bitn-2 has the hypotheses (integerp n) and (< x (- (expt 2 k) (expt 2 n))), 
-;; where n does not occur in the lhs.  When n is bound to a large integer, (expt 2 n) blows up. 
+;; The rewrite rule neg-bitn-2 has the hypotheses (integerp n) and (< x (- (expt 2 k) (expt 2 n))),
+;; where n does not occur in the lhs.  When n is bound to a large integer, (expt 2 n) blows up.
 
 (defthmd neg-bitn-2
     (implies (and (integerp x)
@@ -600,7 +600,7 @@
            (equal (bitn (sum-b b n) k)
 	          (nth k b))))
 
-;; The next lemma can be used to prove equality of two bit vectors by 
+;; The next lemma can be used to prove equality of two bit vectors by
 ;; proving that they have the same value at bit n for all n.
 
 (defun bit-diff (x y)
@@ -654,8 +654,8 @@
   :rule-classes ())
 
 (defthmd bitn-plus-mult
-    (implies (and (< n m) 
-		  (integerp m) 
+    (implies (and (< n m)
+		  (integerp m)
 		  (integerp k))
 	     (equal (bitn (+ x (* k (expt 2 m))) n)
 		    (bitn x n))))
@@ -683,9 +683,9 @@
          (bits y (1- n) 0))
     0))
 
-;; We define a macro, CAT, that takes a list of alternating data values and 
-;; sizes.  CAT-SIZE returns the formal sum of the sizes.  The list must contain 
-;; at least 1 data/size pair, but we do not need to specify this in the guard, 
+;; We define a macro, CAT, that takes a list of alternating data values and
+;; sizes.  CAT-SIZE returns the formal sum of the sizes.  The list must contain
+;; at least 1 data/size pair, but we do not need to specify this in the guard,
 ;; and leaving it out of the guard simplifies the guard proof.
 
 (defun formal-+ (x y)
@@ -708,9 +708,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defthm cat-nonnegative-integer-type
@@ -845,7 +845,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 					(- i n)
@@ -869,7 +869,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 				       (- i n)
@@ -903,8 +903,8 @@
 		      (bitn x (- i n))
 		    0)))))
 
-;; We introduce mbe for MULCAT not because we want particularly fast execution, 
-;; but because the existing logic definition does not satisfy the guard of cat, 
+;; We introduce mbe for MULCAT not because we want particularly fast execution,
+;; but because the existing logic definition does not satisfy the guard of cat,
 ;; which can't be changed because of the guard of bits.
 
 (defund mulcat (l n x)
@@ -945,7 +945,7 @@
 
 (defthm mulcat-1
     (implies (natp l)
-	     (equal (mulcat l 1 x) 
+	     (equal (mulcat l 1 x)
 		    (bits x (1- l) 0))))
 
 (defthm mulcat-0

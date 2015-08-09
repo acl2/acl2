@@ -26,7 +26,7 @@
 (defung set-union (X Y)
 "set union, i.e., X U Y"
   (declare (xargs :guard (true-listp X)))
-  ((implies (true-listp Y) (true-listp (set-union X Y))) 
+  ((implies (true-listp Y) (true-listp (set-union X Y)))
    :rule-classes :type-prescription)
   (if (endp X)
       Y
@@ -99,7 +99,7 @@
       (cons b (cons a X))))
 
 (defthm atom-==
-  (implies (and (atom a) 
+  (implies (and (atom a)
                 (atom b))
            (== a b))
   :rule-classes ((:forward-chaining :trigger-terms ((atom a) (atom b) (== a b)))))
@@ -111,7 +111,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((== X Y) (== Y Z)))))
 
 (defthm atom-consp-==
-  (implies (and (atom a) 
+  (implies (and (atom a)
                 (consp X))
            (not (== a X)))
   :rule-classes ((:forward-chaining :trigger-terms ((atom a) (consp X) (== a X)))))
@@ -154,7 +154,7 @@
          (or (in a X)
              (in a Y))))
 
-(defthm |X u {} == X| 
+(defthm |X u {} == X|
   (== (set-union X nil) X))
 
 (defthm |a in (X u {a} u Y)|
@@ -171,7 +171,7 @@
   (=< (set-union X Y)
       (set-union X (cons a Y))))
 
-(defthm |X u atom == X| 
+(defthm |X u atom == X|
   (implies (atom a)
            (== (set-union X a) X)))
 
@@ -182,7 +182,7 @@
 (in-theory (disable ==))
 
 ; Exercise 3, part 3
-(defthm |X u Y  == Y u X| 
+(defthm |X u Y  == Y u X|
   (== (set-union X Y)
       (set-union Y X)))
 
@@ -191,7 +191,7 @@
            (== (set-union X Y) Y)))
 
 ; Exercise 3, part 4
-(defthm |X u Y == Y  =  X =< Y|  
+(defthm |X u Y == Y  =  X =< Y|
   (equal (== (set-union X Y) Y)
          (=< X Y)))
 
@@ -199,7 +199,7 @@
 
 ; Exercise 3, part 5
 (defcong == == (set-union X Y) 1
-  :hints (("goal" 
+  :hints (("goal"
            :use ((:instance |X u Y  == Y u X|)
                  (:instance |X u Y  == Y u X| (x x-equiv))))))
 
@@ -220,7 +220,7 @@
          (and (in a X)
               (in a Y))))
 
-(defthm |X & atom = {}| 
+(defthm |X & atom = {}|
   (implies (atom a)
            (equal (intersect X a) nil)))
 
@@ -228,12 +228,12 @@
   (=< (intersect X Y)
       (intersect X (cons a Y))))
 
-(defthm |X & Y =< Y & X| 
+(defthm |X & Y =< Y & X|
   (=< (intersect X Y)
       (intersect Y X)))
 
 ; Exercise 4, part 2
-(defthm |X & Y == Y & X| 
+(defthm |X & Y == Y & X|
   (== (intersect X Y)
       (intersect Y X))
   :hints (("goal" :in-theory (enable ==))))
@@ -248,7 +248,7 @@
   (implies (or (=< Y X)
                (=< Z X))
            (=< (intersect Y Z) X)))
-  
+
 ; Exercise 5, part 1
 (defthm |X =< Y  ==>  X-Y == {}|
   (implies (=< X Y)
@@ -274,7 +274,7 @@
 (defun rem-dups (X)
   (declare (xargs :guard (true-listp X)))
   (if (consp X)
-      (cons (car X) 
+      (cons (car X)
             (rem-dups (set-remove (car X) (cdr X))))
     nil))
 
@@ -352,7 +352,7 @@
 (defthm =<-remove-el
  (=< (remove-el a X) X))
 
-(encapsulate 
+(encapsulate
  ()
  (local
   (defun ind-perm (X Y)
@@ -387,7 +387,7 @@
 (defthm rem-dups-set-remove-in
   (not (in a (rem-dups (set-remove a X)))))
 
-(defthm rem-dups-remove-el 
+(defthm rem-dups-remove-el
   (equal (rem-dups (set-remove a X))
          (remove-el a (rem-dups X))))
 
@@ -401,7 +401,7 @@
           (=< (set-remove a X)
               (set-remove a Y))))
 
-(defcong == == (set-remove a X) 2 
+(defcong == == (set-remove a X) 2
   :hints (("Goal" :in-theory (enable ==))))
 
 ; Since this function is used only to prove theorems, there is no
@@ -409,7 +409,7 @@
 (defun ind-perm2 (X Y)
    (cond ((atom X) (cons X Y))
          (t (ind-perm2 (set-remove (car X) X) (set-remove (car X) Y)))))
-  
+
 (defcong == perm (rem-dups X) 1
   :hints (("Goal" :induct (ind-perm2 x x-equiv))
           ("Subgoal *1/2''"
@@ -440,7 +440,7 @@
 (defthm in-not-in-remove-el
   (implies (not (in a X))
            (not (in a (remove-el b X)))))
-           
+
 (defthm =<-perm-remove-el
   (implies (=<-perm X (remove-el a Y))
            (=<-perm X Y)))
@@ -464,7 +464,7 @@
   (implies (=<-perm X Y)
            (=<-perm (remove-el a X)
                     (remove-el a Y)))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :trigger-terms ((remove-el a X) (remove-el a Y)))))
 
 (defthm =<-perm-transitive
@@ -495,7 +495,7 @@
 (defthm =<-perm-len
   (implies (=<-perm X Y)
            (<= (len X) (len Y))))
-              
+
 (defthm =<-len-rem-dups
   (implies (=< X Y)
            (<= (len (rem-dups X)) (len (rem-dups Y))))
@@ -510,7 +510,7 @@
                  (:instance rem-dups-same-set (x y)))
            :in-theory (disable rem-dups-same-set)))
   :rule-classes :forward-chaining)
- 
+
 (defthm remove-el-set-remove2
   (implies (no-dups X)
            (perm (remove-el a X)

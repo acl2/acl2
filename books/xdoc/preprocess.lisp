@@ -879,10 +879,10 @@
   (str::rchars-to-string (transform-code-segments x 0 (length x) nil)))
 
 #||
- (transform-code 
-"<p>This is 
+ (transform-code
+"<p>This is
 some regular text</p>
-<code>     
+<code>
     blah1
     <blah>blah2</blah>
     blah3

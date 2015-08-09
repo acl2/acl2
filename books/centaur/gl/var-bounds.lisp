@@ -161,7 +161,7 @@
                       (equal (bfr-eval x
                                        (bfr-param-env p (bfr-set-var k2 v env)))
                              (bfr-eval x (bfr-param-env p env))))))
-    
+
 
     (defcong acl2::nat-equiv equal (pbfr-semantic-depends-on k p x) 1
       :hints(("Goal" :cases ((pbfr-semantic-depends-on k p x))

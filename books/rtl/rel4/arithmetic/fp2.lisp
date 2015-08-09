@@ -91,13 +91,13 @@
 (local (defthm evenp-2k
   (implies (integerp k) (evenp (* 2 k)))
   :hints (("Goal" :in-theory (enable evenp)))))
-                                              
+
 (local (defthm evenp-expt-2
   (implies (and (integerp k)
                 (> k 0))
            (evenp (expt 2 k)))
   :hints (("Goal" :in-theory (enable evenp expt)))))
-                                              
+
 (local (defthm evenp-+-even
   (implies (evenp j) (equal (evenp (+ i j)) (evenp i)))
   :hints (("Goal" :in-theory (enable evenp)))))
@@ -109,8 +109,8 @@
 ;so I export them from the encapsulate with -alt appended to the names.
 
 
-(local 
- (encapsulate 
+(local
+ (encapsulate
   ()
   ;; [Jared] changed this to use arithmetic-3 instead of 2.
   (local (include-book "arithmetic-3/bind-free/top" :dir :system))
@@ -256,7 +256,7 @@
                   )))
   :rule-classes
   ((:forward-chaining :trigger-terms ((/ y+) (/ y))) :linear))
-         
+
 (defthm *-weakly-monotonic
   (implies (and
                 (<= y y+)
@@ -397,7 +397,7 @@
 
 ;BOZO move these to extra-rules? these are copied in fp.lisp!
 (encapsulate nil
-  (local 
+  (local
    (defthm renaming
     (implies (and (rationalp a)
                   (rationalp xmax)
@@ -556,7 +556,7 @@
            (and (< (- (* amax bmax)) (* a b))
                 (< (* a b) (* amax bmax))))
   :hints (("Goal" :cases ((< b 0) (> b 0))))
-  :rule-classes nil)  
+  :rule-classes nil)
 
 ;Apparenlty, ACL2 will match (- c) to -1...
 ;This rule is incomplete...
@@ -676,7 +676,7 @@
                   (equal (* lhs k) (* rhs k)))))
 
 #|
-;are the case splits caused by these 2 rules bad?  
+;are the case splits caused by these 2 rules bad?
 ;prove more rules with positive (and then negative) hyps?
 ;maybe we can rewrite LHS first, to prevent loops.  can we rely on the rewriting to simplify LHS enough?  what
 ;about funny cases?
@@ -722,7 +722,7 @@ In this case, we must be sure that we don't multiply through by k (since we foun
                   (equal x y)))
   :rule-classes nil)
 
-;move this stuff?                
+;move this stuff?
 (defun point-right-measure (x)
   (floor (if (and (rationalp x) (< 0 x)) (/ x) 0) 1))
 

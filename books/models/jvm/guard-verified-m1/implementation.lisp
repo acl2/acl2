@@ -145,7 +145,7 @@
                                     1)
                               (ncar tm w)
                               (ninstr1 st sym (ncdr tm w) w nnil)))))
-  
+
    (new-tape2 :formals (op tape pos)
               :input (and (natp op)
                           (natp tape)
@@ -171,7 +171,7 @@
                           (ifeq pos
                                 (mv (* 2 tape) 0)
                                 (mv tape (- pos 1)))
-                         
+
                           (ifeq (- pos (log2 tape 0))
                                 (mv (+ (- tape (expt 2 pos 1))
                                        (expt 2 (+ 1 pos) 1))
@@ -314,7 +314,7 @@
                         (not (equal (ninstr st sym tm w) -1)))
                    (and (integerp (ninstr st sym tm w))
                         (<= 0 (ninstr st sym tm w)))))))
-                                                      
+
       (defthm natp-mv-nth-0-new-tape2
         (implies (and (natp tape)
                       (natp pos))

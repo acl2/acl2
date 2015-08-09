@@ -35,7 +35,7 @@
 
 ;;--------------------------------------------------
 ;; The following 3 lemmas are for the base case of ground-term-eval
-	
+
 (defthm eval-subst-eval-equal-eval-subst
   (equal (eval-term-list (subst-term-list l x (eval-term tm i)) i)
          (eval-term-list (subst-term-list l x tm) i)))
@@ -93,7 +93,7 @@
  (defthm eval-term-gives-domain-member
    (member-equal (eval-term tm i) (fringe (domain i))))
 )  ;; end encapsulate
- 
+
 (defthm instance-term-sound
   (implies (and (variable-term x)
 		(not (vars-in-term-list (list tm)))

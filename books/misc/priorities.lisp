@@ -25,14 +25,14 @@
 
 ; Use
 
-; To use priority phased simplification, 
+; To use priority phased simplification,
 
 ; (include-book "books/misc/priorities")
 
 ; (set-default-hints (list *priority-phased-simplification* ...))
 
 ; where ... includes any other default hints you wish to install.
- 
+
 ; Then, establish your priorities with add-priorities, etc.  Make sure
 ; that all prioritized rules are disabled in the global current
 ; theory.  This can be done by invoking (DISABLE-PRIORITIZED-RUNES)
@@ -96,7 +96,7 @@
 
 (defmacro del-priority (n &rest items)
   `(table priorities ,n
-          (set-difference-equal 
+          (set-difference-equal
            (cdr (assoc-equal ,n
                              (table-alist 'priorities
                                           world)))
@@ -201,7 +201,7 @@
 ; simplification as a default hint.
 
   (set-default-hints (list *priority-phased-simplification*))
-  
+
 ; Now the typical user adds a bunch of rules.  In this case, they are
 ; all defuns.  The function ccc is identically t, but is defined in a
 ; way so that ACL2 doesn't notice.  We write arithmetic terms like (+ x

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -115,9 +115,9 @@
                 (> (* (expt 2 (* k rho)) x)
                    (expt 2 (- (* k rho) 2)))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance *-strongly-monotonic (x (expt 2 (* k rho))) 
+  :hints (("Goal" :use ((:instance *-strongly-monotonic (x (expt 2 (* k rho)))
                                                         (y x) (y+ 1))
-                        (:instance *-strongly-monotonic (x (expt 2 (* k rho))) 
+                        (:instance *-strongly-monotonic (x (expt 2 (* k rho)))
                                                         (y+ x) (y 1/4))))))
 
 (local-defthm lemma-4-1-2
@@ -250,7 +250,7 @@
                     l))))
   :rule-classes ()
   :hints (("Goal" :use (lemma-4-1-8
-                        (:instance *-weakly-monotonic 
+                        (:instance *-weakly-monotonic
                          (x (expt 2 (* k rho)))
                          (y+ (* (expt 2 (- (* k rho)))
                                 (fl (* (expt 2 (* k rho)) x))))
@@ -324,7 +324,7 @@
   :rule-classes ()
   :hints (("Goal"
            :use (lemma-4-1-11
-                 (:instance *-weakly-monotonic 
+                 (:instance *-weakly-monotonic
                             (x (expt 2 (* k rho)))
                             (y (* (expt 2 (- (* k rho)))
                                   (1+ (fl (* (expt 2 (* k rho)) x)))))
@@ -367,7 +367,7 @@
   :hints (("Goal"
            :use (lemma-4-1-13
                  (:instance *-weakly-monotonic (x (expt 2 (* k rho)))
-                            (y (* (fl (* (expt 2 (* k rho)) x)) 
+                            (y (* (fl (* (expt 2 (* k rho)) x))
                                   (expt 2 (- (* k rho)))))
                             (y+ x))))))
 
@@ -383,7 +383,7 @@
                  x)))
   :rule-classes ()
   :hints (("Goal" :use (lemma-4-1-13
-                        (:instance *-strongly-monotonic 
+                        (:instance *-strongly-monotonic
                                    (x (expt 2 (* k rho)))
                                    (y+ (* (1+ (fl (* (expt 2 (* k rho)) x)) )
                                           (expt 2 (- (* k rho)))))
@@ -466,7 +466,7 @@
        (not (zp (rho**)))
        (>= (* (k**) (rho**)) 2))
   :rule-classes ())
-  
+
 (local (defun x** () 1/2))
 
 (defthm x**-constraint
@@ -734,7 +734,7 @@
                                jared-disables-5)
            :use (lemma-4-1-23
                  lemma-4-1-22
-                 (:instance cg-sqrt-1 (x (- (* (expt 2 (- (* k rho))) s) (expt 2 (- (* k rho))))) 
+                 (:instance cg-sqrt-1 (x (- (* (expt 2 (- (* k rho))) s) (expt 2 (- (* k rho)))))
                             (y (- (* (expt 2 (- (* k rho))) (1- s)) (expt 2 (- (* k rho))))))))))
 
 (local-defthm lemma-4-1-25
@@ -883,7 +883,7 @@
                 (< (abs (h** k)) (expt 2 (rho**)))))
   :rule-classes ())
 
-(local (defun q** (k) 
+(local (defun q** (k)
   (if (or (zp k)
           (<= k (k**)))
       (q1**)
@@ -918,7 +918,7 @@
   :hints (("Goal" :use (q**-constraint k**-rho**-constraint)))
   :rule-classes (:type-prescription :rewrite))
 
-(local 
+(local
  (encapsulate
   ()
   (local (in-theory (disable ;jared-disables-1
@@ -961,7 +961,7 @@
                         (q** k))))
   :rule-classes ()
   :hints (("Goal"
-        
+
 
 ; Wow, slowest theorem ever.  Baseline on my AMD-8350 with a 16 GB memory threshold
 ; in ACL2(h) is 651 seconds.
@@ -1005,7 +1005,7 @@
   :hints (("Goal" :in-theory (theory 'minimal-theory)
                   :use (lemma-4-1-30-1 k**-rho**-constraint h**-constraint q**-constraint))))
 
-(local 
+(local
  (encapsulate ()
   (local (in-theory (disable jared-disables-1
                              jared-disables-2
@@ -1167,8 +1167,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (enable q**-rewrite-2)
                   :use (lemma-4-1-41 k**-rho**-constraint
-                        (:instance *-strongly-monotonic (x (expt 2 (* (k**) (rho**)))) 
-                                                        (y (q** k)) 
+                        (:instance *-strongly-monotonic (x (expt 2 (* (k**) (rho**))))
+                                                        (y (q** k))
                                                         (y+ (+ (q** (k**)) (expt 2 (- (* (k**) (rho**)))))))))))
 
 (local-defthm lemma-4-1-43
@@ -1250,7 +1250,7 @@
                 (>= k (k**))
                 (< (q** k) (q** (k**))))
            (<= (* (expt 2 (* k (rho**))) (q** k))
-               (1- (* (expt 2 (* k (rho**))) (q** (k**))))))               
+               (1- (* (expt 2 (* k (rho**))) (q** (k**))))))
   :rule-classes ()
   :hints (("Goal" :use (k**-rho**-constraint lemma-4-1-31 lemma-4-1-47 lemma-4-1-48
                         (:instance lemma-4-1-49 (a (* (expt 2 (* k (rho**))) (q** k))) (b (* (expt 2 (* k (rho**))) (q** (k**)))))))))
@@ -1261,7 +1261,7 @@
                 (< (q** k) (q** (k**))))
            (<= (q** k)
                (- (q** (k**))
-                  (expt 2 (- (* k (rho**)))))))            
+                  (expt 2 (- (* k (rho**)))))))
   :rule-classes ()
   :hints (("Goal" :use (k**-rho**-constraint lemma-4-1-50
                         (:instance *-weakly-monotonic (x (expt 2 (- (* k (rho**)))))
@@ -1394,7 +1394,7 @@
                   :use (k**-rho**-constraint lemma-4-1-44 lemma-4-1-45 lemma-4-1-56 lemma-4-1-62))))
 
 (defun cg-sqrt (x min max)
-  (declare (xargs :measure (nfix (- (1+ max) min))))  
+  (declare (xargs :measure (nfix (- (1+ max) min))))
   (if (and (natp min)
            (natp max)
            (<= min max))
@@ -1404,7 +1404,7 @@
     0))
 
 (defun seed (l k rho)
-  (1- (cg-sqrt (* (expt 2 (* k rho)) (1+ l)) 
+  (1- (cg-sqrt (* (expt 2 (* k rho)) (1+ l))
                (if (= (* k rho) 1)
                    1
                  (expt 2 (- (* k rho) 2)))
@@ -1699,7 +1699,7 @@
                 (<= (expt 2 (- (* k rho) 2)) seed)
                 (< seed (expt 2 (* k rho))))
            (= (* (expt 2 (* rho))
-                 (root 1 seed k rho))              
+                 (root 1 seed k rho))
               (bits seed (1- (* k rho)) (* (- k 1) rho))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable root digit))))
@@ -1738,10 +1738,10 @@
                 (> i 1)
                 (<= i k)
                 (= (* (expt 2 (* (1- i) rho))
-                      (root (1- i) seed k rho))                   
+                      (root (1- i) seed k rho))
                    (bits seed (1- (* k rho)) (* (- k (1- i)) rho))))
            (= (* (expt 2 (* i rho))
-                 (root i seed k rho))              
+                 (root i seed k rho))
               (bits seed (1- (* k rho)) (* (- k i) rho))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable root digit)
@@ -1760,7 +1760,7 @@
                 (not (zp i))
                 (<= i k))
            (= (* (expt 2 (* i rho))
-                 (root i seed k rho))              
+                 (root i seed k rho))
               (bits seed (1- (* k rho)) (* (- k i) rho))))
   :rule-classes ()
   :hints (("Goal" :induct (natp-induct i))
@@ -1773,7 +1773,7 @@
                 (<= (expt 2 (- (* k rho) 2)) seed)
                 (< seed (expt 2 (* k rho))))
            (= (* (expt 2 (* k rho))
-                 (root k seed k rho))              
+                 (root k seed k rho))
               seed))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable bvecp)

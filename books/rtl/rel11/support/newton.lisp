@@ -9,7 +9,7 @@
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
 
 (local-defthm ne-1
@@ -29,7 +29,7 @@
   :rule-classes ())
 
 (local-defthm ne-3
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x)
                   (not (zerop x)))
@@ -47,7 +47,7 @@
   :rule-classes ())
 
 (local-defthm ne-5
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x)
                   (not (zerop x)))
@@ -58,7 +58,7 @@
                         (:instance ne-4 (n (- n)) (r (/ (expt 2 (expo x)) (abs x))))))))
 
 (local-defthm ne-6
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x)
                   (not (zerop x)))
@@ -69,7 +69,7 @@
                   :in-theory (theory 'minimal-theory))))
 
 (local-defthm ne-7
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x)
                   (not (zerop x)))
@@ -79,7 +79,7 @@
   :hints (("Goal" :use (ne-6))))
 
 (local-defthm ne-8
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (/ (- (rne x n) x) x))
@@ -98,7 +98,7 @@
   :hints (("Goal" :in-theory (enable v))))
 
 (local-defthm rr-2
-  (implies (and (integerp p) 
+  (implies (and (integerp p)
 		(> p 0)
                 (rationalp u))
            (<= (abs (v u p)) (expt 2 (- p))))
@@ -112,7 +112,7 @@
     (implies (and (rationalp y1)
                   (rationalp y2)
                   (rationalp b)
-                  (integerp p) 
+                  (integerp p)
                   (> p 0))
              (= (- 1 (* b y3p))
                 (* (uu b y1)
@@ -126,7 +126,7 @@
                 (rationalp b)
                 (rationalp ep1)
                 (rationalp ep2)
-                (integerp p) 
+                (integerp p)
                 (> p 0)
                 (<= (abs (uu b y1)) ep1)
                 (<= (abs (uu b y2)) ep2))
@@ -150,7 +150,7 @@
                 (integerp p)
                 (rationalp (v (uu b y1) p))
                 (rationalp (- (uu b y2) 1))
-                (rationalp (1+ ep2)) 
+                (rationalp (1+ ep2))
                 (> p 0)
                 (<= (abs (uu b y1)) ep1)
                 (<= (abs (uu b y2)) ep2))
@@ -194,7 +194,7 @@
                 (integerp p)
                 (rationalp (abs (v (uu b y1) p)))
                 (rationalp (uu b y1))
-                (rationalp (1+ ep2)) 
+                (rationalp (1+ ep2))
                 (> p 0)
                 (<= (abs (uu b y1)) ep1)
                 (<= (abs (uu b y2)) ep2))
@@ -435,7 +435,7 @@
   :hints (("Goal" :use (ne-10))))
 
 (local-defthm ne-12
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
                   (not (= x 0))
 		  (rationalp x))
@@ -446,7 +446,7 @@
                   :in-theory (theory 'minimal-theory))))
 
 (local-defthm rne-diff-2
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
@@ -543,7 +543,7 @@
                 (rationalp x))
            (= (* (abs b) (abs x))
               (abs (* b x))))
-  :rule-classes ()) 
+  :rule-classes ())
 
 
 (local-defthm rr-25-c
@@ -780,7 +780,7 @@
                 (> b 0)
                 (<= (abs (- 1 (* b y))) ep))
            (<= (abs (- (* a y) (rne (* a y) p)))
-               (* (expt 2 (- p)) (abs (* a y))))) 
+               (* (expt 2 (- p)) (abs (* a y)))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance rne-diff-2 (x (* a y)) (n p))))))
 

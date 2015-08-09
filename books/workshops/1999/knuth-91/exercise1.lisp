@@ -4,14 +4,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Exercise 1.
 
-;; Use DefStub to tell ACL2 about a new function f.  Next, use 
+;; Use DefStub to tell ACL2 about a new function f.  Next, use
 ;; DefAxiom to force ACL2 to add the equation:
 
 ;;               f(x) = if  x = 0  then  0
 ;;                                 else  f(x) + 1.
 
-;; Make sure the equation is not added as a :rewrite rule. 
-;; Finally, use ACL2 to verify that nil is, indeed, a theorem of 
+;; Make sure the equation is not added as a :rewrite rule.
+;; Finally, use ACL2 to verify that nil is, indeed, a theorem of
 ;; this new theory.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Answer.

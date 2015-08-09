@@ -18,7 +18,7 @@
 ;;;  on netlists with deeply nested state structures.
 
 (mutual-recursion
- 
+
 (defun sts-okp (fn sts netlist)
   (declare (xargs :measure (se-measure fn netlist)
                   :guard   (and (symbolp fn)
@@ -75,7 +75,7 @@
                 (not (eq fn (caar netlist))))
            (equal (assoc fn (cdr netlist))
                   (assoc fn netlist))))
-           
+
 (defthm sts-okp-same-with-cdr
   (implies (and (net-syntax-okp netlist)
                 (net-arity-okp  netlist)

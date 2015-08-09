@@ -62,7 +62,7 @@
  (include-book "floor-mod-helper"))
 
 (local
- (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+ (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
 					       hist pspv))))
 
 
@@ -288,7 +288,7 @@
 ;;; But we do include a couple of rules with less case-splitting.
 ;;; We use the corollaries, because we do not want to introduce
 ;;; unnecessary IF tests when trying to relieve hypotheses.  Linear
-;;; arithmetic will be used when relieving a hypothesis, but 
+;;; arithmetic will be used when relieving a hypothesis, but
 ;;; not when rewriting the test of an IF exprression.
 
 (defun not-too-many-addends-1 (x n)
@@ -497,7 +497,7 @@
 	   (equal (floor (* x y) z)
 		  (floor x (/ z y)))))
 |#
-;;; The other possibility would be to do something similar to 
+;;; The other possibility would be to do something similar to
 ;;; the rtl books, and use fl := (floor x 1) as the primitive.
 
 (defun find-divisive-factor (x simplep mfc state)
@@ -800,8 +800,8 @@
 
 #|
 I think the above rule is as good as we can do.  Although we could
-derive a more general rule from the immediately below it is too messy, 
-and involves  (FLOOR (* Y (FLOOR X Y)) Z) which doesn't seem to have 
+derive a more general rule from the immediately below it is too messy,
+and involves  (FLOOR (* Y (FLOOR X Y)) Z) which doesn't seem to have
 an easy reduction unless the above applies anyway.
 
 (thm
@@ -818,7 +818,7 @@ an easy reduction unless the above applies anyway.
 ;;; Is this subsumed by |(mod (+ x (mod a b)) y)|?  I get so confused
 ;;; sometimes.
 
-;;; Now that I have weakened it a little, can I weaken 
+;;; Now that I have weakened it a little, can I weaken
 ;;; |(mod (+ x (mod a b)) y)|?
 
 ;;; Can I weaken any of the others?
@@ -868,7 +868,7 @@ an easy reduction unless the above applies anyway.
  (local (in-theory (enable floor-zero
                            floor-=-x/y
                            mod-x-y-=-x+y)))
- (local (in-theory (disable mod-zero 
+ (local (in-theory (disable mod-zero
                             default-plus-1
                             default-plus-2
                             default-times-1
@@ -880,7 +880,7 @@ an easy reduction unless the above applies anyway.
                             (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 1)
                             (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 2)
                             (:TYPE-PRESCRIPTION MOD-NONNEGATIVE)
-                            
+
                             (:TYPE-PRESCRIPTION RATIONALP-MOD)
 			    #+non-standard-analysis (:TYPE-PRESCRIPTION REALP-MOD)
                             (:TYPE-PRESCRIPTION FLOOR-ZERO . 4)
@@ -1023,7 +1023,7 @@ an easy reduction unless the above applies anyway.
                            ;; why?
                            mod-x-y-=-x+y)))
 
- (local (in-theory (disable 
+ (local (in-theory (disable
                     (:REWRITE FLOOR-=-X/Y . 2)
                     (:REWRITE FLOOR-ZERO . 5)
                     (:REWRITE FLOOR-ZERO . 4)
@@ -1362,7 +1362,7 @@ an easy reduction unless the above applies anyway.
 (defun gather-or-scatter-dangerously (mfc state)
   (declare (xargs :mode :program))
   (let ((ens (get-the-ens-dangerously mfc))
-	(nume (caar (getprop 'simplify-products-gather-exponents-equal 
+	(nume (caar (getprop 'simplify-products-gather-exponents-equal
 			     'runic-mapping-pairs
 			     nil
 			     'current-acl2-world
@@ -1386,7 +1386,7 @@ an easy reduction unless the above applies anyway.
 		  (real/rationalp (/ lhs rhs))
 		(syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
-                  (bind-free 
+                  (bind-free
 		   (ugly-hack-two lhs rhs mfc state)
                    (x))
                   (real/rationalp x)
@@ -1399,7 +1399,7 @@ an easy reduction unless the above applies anyway.
 		  (real/rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
-                  (bind-free 
+                  (bind-free
                    (ugly-hack-one lhs rhs mfc state)
                    (x))
                   (real/rationalp x)
@@ -1412,7 +1412,7 @@ an easy reduction unless the above applies anyway.
 		  (real/rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
-                  (bind-free 
+                  (bind-free
                    (ugly-hack-two lhs rhs mfc state)
                    (x))
 		  (real/rationalp x)
@@ -1427,7 +1427,7 @@ an easy reduction unless the above applies anyway.
 		  (real/rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
-                  (bind-free 
+                  (bind-free
                    (ugly-hack-one lhs rhs mfc state)
                    (x))
 		  (real/rationalp x)
@@ -1442,7 +1442,7 @@ an easy reduction unless the above applies anyway.
 ;;; same as find-constant-factor-<
 
 (defun find-constant-factor-floor-mod (lhs rhs)
-  
+
   ;;
 
   (cond ((and (eq (fn-symb lhs) 'BINARY-*)
@@ -1522,7 +1522,7 @@ an easy reduction unless the above applies anyway.
     (implies (and (real/rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
-                  (bind-free 
+                  (bind-free
                    (find-constant-factor-floor-mod lhs rhs)
                    (c))
                   (real/rationalp c)
@@ -1534,7 +1534,7 @@ an easy reduction unless the above applies anyway.
     (implies (and (real/rationalp (/ lhs rhs))
                   (syntaxp (in-term-order-* lhs mfc state))
 		(syntaxp (in-term-order-* rhs mfc state))
-                  (bind-free 
+                  (bind-free
                    (find-constant-factor-floor-mod lhs rhs)
 		   (c))
 		  (real/rationalp c)
@@ -1542,7 +1542,7 @@ an easy reduction unless the above applies anyway.
              (equal (mod lhs rhs)
                     (* (/ c)
                        (mod (* c lhs) (* c rhs)))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (e/d (mod)
                            (floor-cancel-*-const)))))
 
@@ -1572,7 +1572,7 @@ an easy reduction unless the above applies anyway.
 (defun find-cancelling-addends (x y mfc state)
   (declare (xargs :guard (pseudo-termp x)))
   (cond ((eq (fn-symb x) 'BINARY-+)
-         (cond ((and (proveably-integer 
+         (cond ((and (proveably-integer
 		      '(BINARY-* X (UNARY-/ Y))
 		      `((x . ,(negate-match (fargn x 1))) (y . ,y))
 		      mfc state)
@@ -1581,7 +1581,7 @@ an easy reduction unless the above applies anyway.
                 (list (cons 'addend (negate-match (fargn x 1)))))
                ((eq (fn-symb (fargn x 2)) 'BINARY-+)
                 (find-cancelling-addends (fargn x 2) y mfc state))
-               ((and (proveably-integer 
+               ((and (proveably-integer
 		      '(BINARY-* X (UNARY-/ Y))
 		      `((x . ,(negate-match (fargn x 2))) (y . ,y))
 		      mfc state)
@@ -1590,7 +1590,7 @@ an easy reduction unless the above applies anyway.
                 (list (cons 'addend (negate-match (fargn x 2)))))
                (t
                 nil)))
-        ((and (proveably-integer 
+        ((and (proveably-integer
 	       '(BINARY-* X (UNARY-/ Y))
 	       `((x . ,(negate-match x)) (y . ,y))
 	       mfc state)
@@ -1602,7 +1602,7 @@ an easy reduction unless the above applies anyway.
 (defthm cancel-floor-+
     (implies (and (real/rationalp (/ x y))
                   (syntaxp (in-term-order-+ x mfc state))
-                  (bind-free 
+                  (bind-free
                    (find-cancelling-addends x y mfc state)
                    (addend))
                   (equal i (/ addend y))
@@ -1617,7 +1617,7 @@ an easy reduction unless the above applies anyway.
 		  (syntaxp (not (equal x ''0)))
                   (real/rationalp (/ x y))
                   (syntaxp (in-term-order-+ x mfc state))
-                  (bind-free 
+                  (bind-free
                    (find-cancelling-addends x y mfc state)
                    (addend))
                   (equal i (/ addend y))
@@ -1644,7 +1644,7 @@ an easy reduction unless the above applies anyway.
 		 (mod (+ x a) y)))
  :hints (("Goal" :in-theory (enable |(mod (+ x y) z)|))))
 
-;;; This latter one will prove after verifying 
+;;; This latter one will prove after verifying
 ;;; |(mod (+ x (- (mod a b))) y)|.  I should investigate why this
 ;;; fails if tried here.
 
@@ -1659,8 +1659,8 @@ an easy reduction unless the above applies anyway.
 		 (mod (+ x (- a)) y))))
 |#
 
-;;; Is this a simple generalization of |(mod (mod x y) z)|?  Does it 
-;;; replace |(mod (mod x y) z)|?  Can we do the same for, say, 
+;;; Is this a simple generalization of |(mod (mod x y) z)|?  Does it
+;;; replace |(mod (mod x y) z)|?  Can we do the same for, say,
 ;;; |(mod (floor x y) z)|?
 
 (defun simplify-mod-+-mod-fn (x y mfc state)
@@ -1683,7 +1683,7 @@ an easy reduction unless the above applies anyway.
                        (proveably-integer '(BINARY-* X (UNARY-/ Y))
 					  `((x . ,(fargn arg2 2)) (y . ,y))
 					  mfc state)
-		       
+
 		       (stable-under-rewriting-sums (negate-match arg2)
 						    mfc state))
                   (list (cons 'w (fargn arg2 1))
@@ -1706,12 +1706,12 @@ an easy reduction unless the above applies anyway.
 (encapsulate nil
   (local
    (in-theory
-    (disable 
+    (disable
      (:TYPE-PRESCRIPTION MOD-NONNEGATIVE)
      (:TYPE-PRESCRIPTION RATIONALP-MOD)
      (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX)
      (:REWRITE MOD-X-Y-=-X . 4)
-     
+
      (:REWRITE PREFER-POSITIVE-ADDENDS-<)
      (:REWRITE REDUCE-RATIONALP-*)
      (:REWRITE
@@ -1794,7 +1794,7 @@ an easy reduction unless the above applies anyway.
                   (real/rationalp (/ x y))
 		  (not (equal y 0))
                   (syntaxp (in-term-order-+ x mfc state))
-                  (bind-free 
+                  (bind-free
                    (simplify-mod-+-mod-fn x y mfc state)
                    (w z term))
 		  ;; Prevent various odd loops.
@@ -1852,7 +1852,7 @@ an easy reduction unless the above applies anyway.
                   (real/rationalp (/ x y))
 		  (not (equal y 0))
                   (syntaxp (in-term-order-+ x mfc state))
-                  (bind-free 
+                  (bind-free
                    (simplify-mod-+-minus-mod-fn x y mfc state)
                    (w z term))
 		  ;; Prevent various odd loops.

@@ -67,7 +67,7 @@ think about removing bits from defn of land? why???
 
 ;We expect n to be a positive integer, and x and y to be bit vectors of length n.
 (defund binary-land (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -87,7 +87,7 @@ think about removing bits from defn of land? why???
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(land x y n) -- the base case
          `(binary-land ,@x))
-        (t         
+        (t
          `(binary-land ,(car x)
                        (land ,@(cdr x))
                        ,(car (last x))))))
@@ -170,7 +170,7 @@ think about removing bits from defn of land? why???
          (land x (land y z m) m)))
   :hints (("Goal" :cases ((natp n))
            :in-theory (enable land bits-tail))))
-  |#       
+  |#
 
 (defthm land-commutative
   (equal (land y x n)
@@ -215,8 +215,8 @@ think about removing bits from defn of land? why???
                 (case-split (integerp n))
                 )
            (equal (bits (land x y n) i j)
-                  (land (bits x i j) 
-                        (bits y i j) 
+                  (land (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j)))))
   :otf-flg t
   :hints (("Goal" :in-theory (enable land bits-logand))))
@@ -228,8 +228,8 @@ think about removing bits from defn of land? why???
                 (case-split (integerp n))
                 )
            (equal (bits (land x y n) i j)
-                  (land (bits x i j) 
-                        (bits y i j) 
+                  (land (bits x i j)
+                        (bits y i j)
                         (+ n (- j)))))
   :otf-flg t
   :hints (("Goal" :in-theory (enable land bits-logand))))
@@ -241,8 +241,8 @@ think about removing bits from defn of land? why???
                 (case-split (integerp i))
                 )
            (equal (bits (land x y n) i j)
-                  (land (bits x i j) 
-                        (bits y i j) 
+                  (land (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j)))))
   :hints (("Goal" :in-theory (enable bits-land-1 bits-land-2))))
 
@@ -252,8 +252,8 @@ think about removing bits from defn of land? why???
                 (case-split (integerp n))
                 )
            (equal (bitn (land x y n) m)
-                  (land (bitn x m) 
-                        (bitn y m) 
+                  (land (bitn x m)
+                        (bitn y m)
                         1)))
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable bitn)
@@ -275,8 +275,8 @@ think about removing bits from defn of land? why???
                 )
            (equal (bitn (land x y n) m)
                   (if (< m n)
-                      (land (bitn x m) 
-                            (bitn y m) 
+                      (land (bitn x m)
+                            (bitn y m)
                             1)
                     0)))
   :hints (("Goal" :in-theory (enable bitn-land-1 bitn-land-2))))
@@ -556,8 +556,8 @@ think about removing bits from defn of land? why???
   :rule-classes ()
   :hints (("Goal" :use ((:instance logand-slice (x (bits x (1- n) 0)) (n i) (k j))
                         )
-           :in-theory (enable expt-strong-monotone-linear 
-                              expt-weak-monotone-linear 
+           :in-theory (enable expt-strong-monotone-linear
+                              expt-weak-monotone-linear
                               land))))
 (defthm land-upper-bound
   (implies (and (integerp n)

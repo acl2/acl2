@@ -528,7 +528,7 @@
             :entry (list ',fn :tokens (vl-debug-tokstream tokstream))
             :exit (list ',fn
                         :errmsg (with-local-ps (vl-print-warning (first values)))
-                        :val ,(if printer 
+                        :val ,(if printer
                                   `(with-local-ps (,printer (second values)))
                                 `(second values))
                         :remainder (vl-debug-tokstream (third values))))))

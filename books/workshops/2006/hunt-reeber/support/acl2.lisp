@@ -29,22 +29,22 @@
   (if (zp n)
       (list c)
     (cons (xor3 c (car a) (car b))
-          (v-adder (1- n) 
+          (v-adder (1- n)
                    (maj3 c (car a) (car b))
                    (cdr a) (cdr b)))))
 
-(defthm v-adder-rewrite 
+(defthm v-adder-rewrite
   (equal
    (v-adder n c a b)
    (if (zp n)
        (list c)
      (cons (xor3 c (car a) (car b))
-           (v-adder (1- n) 
+           (v-adder (1- n)
                     (maj3 c (car a) (car b))
                     (cdr a) (cdr b))))))
 
 (defthm n-bleq-rewrite
-  (equal 
+  (equal
    (n-bleq n x y)
    (if (zp n)
        t
@@ -148,15 +148,15 @@
        nil
      (cons (car lst) (nth-sublist (1- n) (cdr lst))))))
 
-(defthm n-nills-rewrite 
-  (equal 
+(defthm n-nills-rewrite
+  (equal
    (n-nills n)
    (if (zp n)
        nil
      (cons nil (n-nills (1- n))))))
 
-(defthm rev-n-rewrite 
-  (equal 
+(defthm rev-n-rewrite
+  (equal
    (rev-n n x ans)
    (if (zp n)
        ans
@@ -190,7 +190,7 @@
     :hints (("Goal" :in-theory (disable mux-n-w-help-rewrite mux-n-w-help mux-n mux-n-help-rewrite))))
 
 (defthm shift-mux-help-rewrite
-  (equal 
+  (equal
    (shift-mux-help n w reg)
    (if (zp n)
        nil
@@ -199,29 +199,29 @@
 
 ;; ;; 32x6 Shift-0
 ;; (defthm 32x6-shift-0
-;;  (implies 
+;;  (implies
 ;;   (car (nth-cdr 5 shift0))
-;;   (n-bleq 32 
+;;   (n-bleq 32
 ;;           (shifter 6 32 shift0 reg)
 ;;           (n-nills 32))))
 
 
 ;; ;; 64x7 Shift-0
 ;; (defthm 64x7-shift-0
-;;  (implies 
+;;  (implies
 ;;   (car (nth-cdr 6 shift0))
 ;;   (n-bleq 64 (shifter 7 64 shift0 reg)
 ;;           (n-nills 64))))
 
 ;; ;; 32x4 Add-shift
 ;; (defthm 32x4-add-shift
-;;  (n-bleq 32 
+;;  (n-bleq 32
 ;;          (shifter 4 32 shift0 (shifter 4 32 shift1 reg))
 ;;          (shifter 5 32 (v-adder 4 nil shift0 shift1) reg)))
 
 ;; ;; 64x6 Add-shift
 ;; (defthm 64x6-add-shift
-;;  (n-bleq 64 
+;;  (n-bleq 64
 ;;          (shifter 6 64 shift0 (shifter 6 64 shift1 reg))
 ;;          (shifter 7 64 (v-adder 6 nil shift0 shift1) reg)))
 
@@ -233,7 +233,7 @@
       (cons t (cdr x)))))
 
 (defthm increment-rewrite
-  (implies 
+  (implies
    (and (syntaxp (quotep n))
         (not (zp n)))
    (equal (increment n x)
@@ -274,7 +274,7 @@
          (valid_digits (1- n) (cdr x)))))
 
 (defthm valid_digits-rewrite
-  (implies 
+  (implies
    (and (syntaxp (quotep n))
         (not (zp n)))
   (equal

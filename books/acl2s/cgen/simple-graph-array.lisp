@@ -16,12 +16,12 @@
                               (nat-listp ans))))
   (if (zp size)
     ans
-    (make-n-upto-list  (1- size) (cons (1- size) ans))))  
+    (make-n-upto-list  (1- size) (cons (1- size) ans))))
 
 (set-verify-guards-eagerness 0)
 
 
-(defmacro in (a X) 
+(defmacro in (a X)
   `(member-equal ,a ,X))
 
 (defun vertex-indexes (vs sym-lst)
@@ -121,11 +121,11 @@ from alst. Assumption: (len alst) = number of vertices in graph and
  (declare (xargs :stobjs (g$)
                  :guard (and (symbol-alistp alst)
                              (g$p g$))))
-                 
+
  (b* ((vs (strip-cars alst))
       (size (len alst))
       (g$ (init-g$ vs size g$)))
-   (symbol-alst->g$1 alst 
+   (symbol-alst->g$1 alst
                      vs ;find position (index)
                      g$
                      )))
@@ -172,9 +172,9 @@ the vertice with the maximum post time."
             (b* (((mv g$ fin!)
                   (dfs-visit1 g$ (car v) n fin 'dfs-visit)))
               (dfs-visit1 g$ (cdr v) n fin! 'dfs-visit-lst))))))))
-        
 
-(defun dfs-all-vertices (g$ vs n fin cnum) 
+
+(defun dfs-all-vertices (g$ vs n fin cnum)
   "Do DFS over all vertices in vs"
   (declare (xargs :stobjs (g$)
                   :guard (and (g$p g$)
@@ -182,20 +182,20 @@ the vertice with the maximum post time."
                               (nat-listp fin)
                               (natp cnum)
                               (natp n))))
- 
+
   (if (endp vs);visited all neighbours
       (mv g$ fin)
       (b* ((v-entry (ai (car vs) g$)))
            ;(- (cw "dfs-all: v-entry for ~x0 is ~x1~%" (car vs) v-entry)))
         (if (acl2::access vinfo% v-entry :seen);already seen
             (dfs-all-vertices g$ (cdr vs) n fin cnum)
-        (b* ((g$ (ui (car vs) 
+        (b* ((g$ (ui (car vs)
                      (acl2::change vinfo% v-entry :cc cnum)
                      g$))
-             ((mv g$ fin!) 
+             ((mv g$ fin!)
               (dfs-visit1 g$
-                          ;;update current component as part of pre 
-                          (car vs) n fin 
+                          ;;update current component as part of pre
+                          (car vs) n fin
                           'dfs-visit)))
           (dfs-all-vertices g$ (cdr vs) n fin! (1+ cnum)))))))
 
@@ -227,7 +227,7 @@ the vertice with the maximum post time."
 (defun make-empty-adj-list (vars)
   (declare (xargs :guard (and (symbol-listp vars)
                               (no-duplicatesp vars))))
-  ;order important 
+  ;order important
   ;order of keys alst created is the same as order of vars
   (if (endp vars)
     nil
@@ -246,13 +246,13 @@ the vertice with the maximum post time."
   (if (endp alst)
       nil
     (if (eq var (caar alst))
-      (cons (cons var (union-equal fvars 
+      (cons (cons var (union-equal fvars
                                    (cdar alst)))
             (cdr alst))
       (cons (car alst)
             (union-entry-in-adj-list var fvars (cdr alst))))))
-  
-  
+
+
 ;recurse above fun over list of indices
 (defun union-entries-in-adj-list (is fis alst)
  (declare (xargs :guard (and (adjacency-listp alst)
@@ -260,10 +260,10 @@ the vertice with the maximum post time."
                              (true-listp fis))))
  (if (endp is)
     alst
-    (union-entries-in-adj-list 
+    (union-entries-in-adj-list
      (cdr is) fis (union-entry-in-adj-list (car is) fis alst))))
 
-  
+
 (defun transpose-alst1 (alst ans)
 ;Scan G at index i and transpose the result corresponding to i in ans
   (declare (xargs :guard (and (adjacency-listp alst)
@@ -274,7 +274,7 @@ the vertice with the maximum post time."
     (b* (((cons v vs) (car alst)))
       (transpose-alst1 (cdr alst)
                        (union-entries-in-adj-list vs (list v) ans)))))
-  
+
 
 (defun transpose-alst (alst)
 ;Return transpose/reverse of alst
@@ -324,7 +324,7 @@ number (ccnum). This is used in simple-var-hyp? for finding cycles."
       ans
     (let ((v-entry (ai i g$)))
       (g$->var-quotient-alst1 g$ (1+ i) size
-                             (acons (acl2::access vinfo% v-entry :name) 
+                             (acons (acl2::access vinfo% v-entry :name)
                                     (acl2::access vinfo% v-entry :cc)
                                     ans)))))
 
@@ -349,7 +349,7 @@ number (ccnum). This is used in simple-var-hyp? for finding cycles."
       ans
     (let ((v-entry (ai i g$)))
       (g$->alst1 g$ (1+ i) size
-                    (acons (acl2::access vinfo% v-entry :name) 
+                    (acons (acl2::access vinfo% v-entry :name)
                            (vertex-names (acl2::access vinfo% v-entry :adj) g$)
                            ans)))))
 
@@ -363,7 +363,7 @@ number (ccnum). This is used in simple-var-hyp? for finding cycles."
                   :guard (symbol-alistp alst)))
   (mv-let (g$ fin)
           (scc1 alst g$)
-          (mv (g$->var-quotient-alst g$) 
+          (mv (g$->var-quotient-alst g$)
               (vertex-names fin g$)
               (g$->symbol-alist g$)
               g$)))
@@ -389,7 +389,7 @@ number (ccnum). This is used in simple-var-hyp? for finding cycles."
 (defun strongly-connected-components (alst debug-flag)
    "Strongly Connected Components of adj list graph alst.
 Gives (mv map-ccnum finished-vertex-list) as result, where
-map-ccnum, maps each vertex to its component number. 
+map-ccnum, maps each vertex to its component number.
 finished-vertex-list gives the list of vertexes in decreasing
 post times."
    (declare (xargs :guard (adjacency-listp alst)))
@@ -397,28 +397,28 @@ post times."
          (- (cw? (and (not (equal alst alst!))
                                debug-flag)
             "CEgen/Note: SCC: Got Adjacency list : ~x0 Fixed to : ~x1~%" alst alst!)))
-      (acl2::with-local-stobj 
+      (acl2::with-local-stobj
        g$
-       
+
        (mv-let (var-ccnum-alst decreasing-post-times-vertex-lst adj-alst g$)
                (scc0 alst! g$)
-               (mv var-ccnum-alst 
+               (mv var-ccnum-alst
                    decreasing-post-times-vertex-lst
                    adj-alst)))))
-   
+
 ;to check simple soundness (g$->symbol-alist g$) = alst!
-  
+
 (defun approximate-topological-sort (alst debug-flag)
 ;return vertices following the order ->, but
-;since alst might not be a dag, the order 
+;since alst might not be a dag, the order
 ;inside a component might be skewed, but we
 ;are okay with it, since we choose arbitrarily
-;from within a component 
+;from within a component
   (declare (xargs :guard (adjacency-listp alst)))
-  (b* (((mv & fin-vs &) 
+  (b* (((mv & fin-vs &)
         (strongly-connected-components alst debug-flag)))
     fin-vs))
-       
+
 
 
 
@@ -441,5 +441,5 @@ post times."
   (approximate-topological-sort A))
 ;ans:(A B E C F D G H K L J I)
 ;ans by memories graph.lisp: (A B E C F D G H K L J I)
-|#  
+|#
 ;What correctness theorems can we prove?

@@ -28,13 +28,13 @@
 
 (defthm remove-el-swap
   (equal (remove-el a (remove-el b X))
-         (remove-el b (remove-el a X)))) 
+         (remove-el b (remove-el a X))))
 
-(local 
+(local
  (defthm perm-reflexive
    (perm X X)))
 
-(local 
+(local
  (defthm perm-remove
    (implies (perm X Y)
             (perm (remove-el a X) (remove-el a Y)))))
@@ -54,14 +54,14 @@
            ("Subgoal *1/2''"
             :use ((:instance perm-remove (a (car Y))))))))
 
-(local 
+(local
  (defthm perm-in
    (implies (and (perm X Y)
                  (in a X))
             (in a Y))
    :rule-classes ((:forward-chaining :trigger-terms ((in a X) (in a Y))))))
 
-(local 
+(local
  (defthm perm-transitive
    (implies (and (perm X Y) (perm Y Z))
             (perm X Z))))

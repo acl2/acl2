@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 #|
-    
+
     programs.lisp
     ~~~~~~~~~~~~~
 
@@ -37,13 +37,13 @@ supporting materials to incorporate stobjs inlining.
 
 ;; The store just has one field: objs
 
-(defstobj qstor 
-  (objs :type (array T (0)) 
+(defstobj qstor
+  (objs :type (array T (0))
         :initially nil
         :resizable t)
   :inline t)
 
-(local 
+(local
 (defthm objsp-is-true-listp
   (equal (objsp x) (true-listp x))))
 
@@ -122,7 +122,7 @@ supporting materials to incorporate stobjs inlining.
   (if (and (natp lo)
            (natp hi)
            (<= lo hi))
-      (cons (objsi lo qstor) 
+      (cons (objsi lo qstor)
             (extract-qs (1+ lo) hi qstor))
     nil))
 
@@ -242,7 +242,7 @@ supporting materials to incorporate stobjs inlining.
 (defthm split-qs-returns-a-value-<=-hi+1
   (implies (and (natp lo)
                 (natp hi)
-                (<= lo hi))               
+                (<= lo hi))
   (<= (mv-nth 0 (split-qs lo hi splitter qs))
       (1+ hi)))
   :hints (("Goal"
@@ -254,7 +254,7 @@ supporting materials to incorporate stobjs inlining.
   (implies (and (natp lo)
                 (natp hi))
            (natp (mv-nth 0 (split-qs lo hi splitter qs)))))
- 
+
 (local
 (defthm arith-002
   (implies (and (<= i hi)

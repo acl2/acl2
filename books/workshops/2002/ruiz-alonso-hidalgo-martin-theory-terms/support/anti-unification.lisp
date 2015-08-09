@@ -1,6 +1,6 @@
 ;;; anti-unification.lisp
 ;;; Definition and correctness of an anti-unification algorithm
-;;; A proof of the existence of a greatest lower bound (glb) of two 
+;;; A proof of the existence of a greatest lower bound (glb) of two
 ;;; terms (w.r.t. subsumption).
 ;;; Created 22-10-99. Last revision: 15-02-2001
 ;;; =================================================================
@@ -95,7 +95,7 @@
 ;;; in the "worst" case), the same is not true for lists of terms. Thus,
 ;;; we have to distinguish nil as fail for nil as a list of
 ;;; terms. That's the reason for the third value of the returned
-;;; muti-value.  
+;;; muti-value.
 
 ;;; Guard verification
 
@@ -114,10 +114,10 @@
 ;;; phi. This rule reduces the complexity of the proofs.
 
 (local
- (defthm anti-unify-aux-bool-pair-args  
+ (defthm anti-unify-aux-bool-pair-args
    (iff (third (anti-unify-aux flg t1 t2 phi))
 	(if flg t (second (pair-args t1 t2))))))
- 
+
 
 
 
@@ -129,7 +129,7 @@
 
 
 ;;; ============================================================================
-;;; 2. Definition and properties of pre-anti-unify-aux 
+;;; 2. Definition and properties of pre-anti-unify-aux
 ;;; ============================================================================
 
 ;;; INTERESTING REMARK: In a first attempt, we tried to prove the main
@@ -155,7 +155,7 @@
 
 
 ;;; ----------------------------------------------------------------------------
-;;; 2.1 Definition of pre-anti-unify-aux 
+;;; 2.1 Definition of pre-anti-unify-aux
 ;;; ----------------------------------------------------------------------------
 
 
@@ -185,7 +185,7 @@
 			 (mv nil nil))))))))
 
 ;;; REMARK: Note the difference with anti-unify-aux: we assume the
-;;; injection phi as a constant association list. 
+;;; injection phi as a constant association list.
 
 ;;; An analogue property to anti-unify-aux-bool-pair-args:
 ;;; pre-anti-unification always suceeds for terms. For list of terms,
@@ -193,10 +193,10 @@
 ;;; complexity of the proofs.
 
 (local
- (defthm pre-anti-unify-aux-bool-pair-args  
+ (defthm pre-anti-unify-aux-bool-pair-args
    (iff (second (pre-anti-unify-aux flg t1 t2 phi))
 	(if flg t (second (pair-args t1 t2))))))
- 
+
 
 ;;; ----------------------------------------------------------------------------
 ;;; 2.2 Main properties of pre-anti-unify-aux
@@ -227,7 +227,7 @@
 	    (anti-unify-aux flg t1 t2 nil)
 	    (declare (ignore term bool))
 	    (subsetp (domain phi1) (domain phi))))))
- 
+
 
 
 
@@ -259,7 +259,7 @@
 	     (s1 (car pair-of-terms)))
 	(cons variable s1))
       (subst-anti-unify-1 (cdr phi))))))
- 
+
 (local
  (defun subst-anti-unify-2 (phi)
    (if (endp phi)
@@ -271,25 +271,25 @@
 	     (s2 (cdr pair-of-terms)))
 	(cons variable s2))
       (subst-anti-unify-2 (cdr phi))))))
- 
+
 
 
 ;;; We will show previously that (subst-anti-unify-1 phi) and
 ;;; (subst-anti-unify-2 phi) are, respectively, the first and second
 ;;; projections of the inverse of phi. The following encapsulate does
-;;; it. 
+;;; it.
 
 
 (local
  (encapsulate
   ()
 
-  (defthm list-of-variables-p-co-domain-main-property 
+  (defthm list-of-variables-p-co-domain-main-property
     (implies (and
 	      (member p (domain phi))
 	      (list-of-variables-p (co-domain phi)))
 	     (variable-p (cdr (assoc p phi)))))
-  
+
   (local
    (defthm subst-anti-unify-1-inverse
      (implies (and (setp (co-domain phi))
@@ -297,8 +297,8 @@
 		   (list-of-variables-p (co-domain phi)))
 	      (equal (val x (subst-anti-unify-1 phi))
 		     (car (val x (inverse phi)))))))
-  
-  
+
+
   (local
    (defthm subst-anti-unify-2-inverse
      (implies (and (setp (co-domain phi))
@@ -306,26 +306,26 @@
 		   (list-of-variables-p (co-domain phi)))
 	      (equal (val x (subst-anti-unify-2 phi))
 		     (cdr (val x (inverse phi)))))))
-  
+
   (local
-   (defthm val-val-inverse-lemma 
+   (defthm val-val-inverse-lemma
      (implies (and
 	       (member x (domain phi))
 	       (equal (val x phi) y))
 	      (member y (co-domain phi)))))
-  
+
   (local
-   (defthm val-val-inverse 
+   (defthm val-val-inverse
      (implies (and (setp (co-domain phi))
 		   (member x (domain phi)))
 	      (equal (val (val x phi) (inverse phi)) x))))
-  
-  
+
+
   (local
    (defthm member-domain-co-domain
      (implies (member x (domain phi))
 	      (member (val x phi) (co-domain phi)))))
-  
+
   (defthm inverse-projection-1
     (implies (and (setp (co-domain phi))
 		  (alistp phi)
@@ -352,25 +352,25 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm anti-unify-aux-injection-subsetp-1
      (implies (third (anti-unify-aux flg t1 t2 phi))
 	      (subsetp (domain phi)
 		       (domain (second (anti-unify-aux flg t1 t2 phi)))))))
-  
+
   (defthm alistp-anti-unify-aux-injection ;;; This rule will be used later
 				          ;;; again
     (implies (alistp phi)
 	     (alistp (second (anti-unify-aux flg t1 t2 phi)))))
-  
+
   (defthm anti-unify-aux-injection-subsetp-2 ;;; This rule will be used later
-					     ;;; again 
+					     ;;; again
     (implies (and (alistp phi2) (subsetp (domain phi1) (domain phi2)))
 	     (subsetp (domain (second (anti-unify-aux flg t1 t2 phi1)))
 		      (domain (second (anti-unify-aux flg t1 t2
 						      phi2))))))
-  
+
 
 
   (defthm subsumes-anti-unify-aux-lemma-1
@@ -395,8 +395,8 @@
 				   (second (anti-unify-aux
 					    flg t3 t4 phi0))))))
 	      (n (domain phi))))))
-  
-  
+
+
 
   (defthm subsumes-anti-unify-aux-lemma-2
     (implies
@@ -431,10 +431,10 @@
 ;;; And the intended theorems:
 
 (local
- (defthm subsumes-anti-unify-aux-1 
+ (defthm subsumes-anti-unify-aux-1
    (let* ((glb (pre-anti-unify-aux flg t1 t2 phi))
 	  (sigma (subst-anti-unify-1 phi)))
-     (implies (and 
+     (implies (and
 	       (injection-p phi flg t1 t2)
 	       (second glb))
 	      (equal (apply-subst flg sigma (first glb)) t1)))))
@@ -443,7 +443,7 @@
  (defthm subsumes-anti-unify-aux-2
   (let* ((glb (pre-anti-unify-aux flg t1 t2 phi))
 	 (sigma (subst-anti-unify-2 phi)))
-    (implies (and 
+    (implies (and
 	      (injection-p phi flg t1 t2)
 	      (second glb))
 	     (equal (apply-subst flg sigma (first glb)) t2)))))
@@ -451,7 +451,7 @@
 
 ;;; ············································································
 ;;; 2.2.3 pre-anti-unify-aux computes the least common generalization of
-;;; t1 and t2 
+;;; t1 and t2
 ;;; ············································································
 
 ;;; This means, using completeness, that we have to construct, given an
@@ -461,7 +461,7 @@
 
 ;;; SO our problem  REDUCES to:
 
-;;; - We have two substitutions sigma1 and sigma2, and a term.  
+;;; - We have two substitutions sigma1 and sigma2, and a term.
 ;;; - We have to construct a substitution a-u-subst s.t. applied to term
 ;;;   returns (first (anti-unify-aux flg t1 t2 phi)), where t1 is
 ;;;   (instance term sigma1) and t2 is (instance term sigma2). The
@@ -485,19 +485,19 @@
 
 ;;; REMARK: We only need to know the value of anti-unify-substitutions
 ;;; in the variables of term. This is the reason to define it with its
-;;; domain depending on a list l. 
+;;; domain depending on a list l.
 
 
 (local
- (defthm anti-unify-instances-success 
+ (defthm anti-unify-instances-success
   (second (pre-anti-unify-aux flg
 			      (apply-subst flg sigma1 term)
 			      (apply-subst flg sigma2 term)
 			      phi))))
-					   
+
 
 ;;; The main theorem of 2.2.3
-;;; 
+;;;
 ;;; REMARK: note the role of the list l in the proof.
 
 (local
@@ -512,7 +512,7 @@
      (implies (subsetp (variables flg term) l)
 	      (equal (apply-subst flg anti-unif-sigma term)
 		     anti-unif-term)))))
-    
+
 
 
 ;;; ----------------------------------------------------------------------------
@@ -522,7 +522,7 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm alistp-acl2-numberp-eqlablep
      (implies (and
@@ -530,13 +530,13 @@
 	       (alistp-acl2-numberp phi)
 	       (assoc x phi))
 	      (term-s-p-aux flg (cdr (assoc x phi))))))
-  
+
   (local
    (defthm pre-anti-unify-aux-equal-len
      (implies (second (pre-anti-unify-aux nil l1 l2 phi))
 	      (equal (len (first (pre-anti-unify-aux nil l1 l2 phi)))
 		     (len l1)))))
-  
+
 
   (defthm pre-anti-unify-aux-term-s-p-aux
     (let* ((glb (pre-anti-unify-aux flg t1 t2 phi)))
@@ -571,7 +571,7 @@
 ;;; ============================================================================
 
 
-  
+
 ;;; ----------------------------------------------------------------------------
 ;;; 3.1 Relation between anti-unify-aux and pre-anti-unify-aux
 ;;; ----------------------------------------------------------------------------
@@ -597,13 +597,13 @@
 ;;; Relation between extension-assoc and assoc
 
   (local
-   (defthm extension-assoc-main-property 
+   (defthm extension-assoc-main-property
      (implies (and (extension-assoc phi1 phi) (assoc x phi))
 	      (and (assoc x phi1)
 		   (equal (cdr (assoc x phi1)) (cdr (assoc x phi)))))))
 
 ;;; Transitivity of extension-assoc
- 
+
   (local
    (defthm extension-assoc-transitive
      (implies (and (extension-assoc phi2 phi1) (extension-assoc phi1 phi))
@@ -636,7 +636,7 @@
     :hints (("Goal" :use
 	     (:instance anti-unify-aux-pre-anti-unify-aux-main-lemma
 			(phi1 (second (anti-unify-aux flg t1 t2 phi)))))))))
-  
+
 
 ;;; ----------------------------------------------------------------------------
 ;;; 3.2 anti-unify-aux returns a suitable injection for pre-anti-unify-aux
@@ -654,7 +654,7 @@
  (defun acl2-numberp-increasing-list (l)
    (cond ((endp l) t)
 	 ((endp (cdr l)) (acl2-numberp (first l)))
-	 (t 
+	 (t
 	  (and
 	   (acl2-numberp (first l))
 	   (> (first l) (second l))
@@ -674,7 +674,7 @@
 	      (acl2-numberp-increasing-list
 	       (co-domain
 		(second (anti-unify-aux flg t1 t2 phi0)))))))
-  
+
   (defthm anti-unify-aux-injection-injection-p
     (implies
      (and (acl2-numberp-increasing-list (co-domain phi0))
@@ -682,7 +682,7 @@
      (injection-p
       (second
        (anti-unify-aux flg t1 t2 phi0)) flg t1 t2)))))
- 
+
 ;;; To apply the closure property we also need to prove that the second
 ;;; value of anti-unify-aux is a alistp-acl2-numberp
 
@@ -694,12 +694,12 @@
 	      (anti-unify-aux flg t1 t2 phi0))))))
 
 ;;; The above properties are enough to prove the main theorems below. So
-;;; we disable: 
+;;; we disable:
 (local
  (in-theory (disable anti-unify-aux
 		     pre-anti-unify-aux
 		     injection-p)))
- 
+
 
 
 ;;; ============================================================================
@@ -717,14 +717,14 @@
 
 ;;; REMARK: Note how the following properties are proved, in general:
 ;;; - (first of) anti-unify-aux is rewritten to (first of)
-;;; pre-anti-unify-aux using the rule anti-unify-aux-pre-anti-unify-aux 
+;;; pre-anti-unify-aux using the rule anti-unify-aux-pre-anti-unify-aux
 ;;; - The corresponding property of pre-anti-unify-aux is used, since
 ;;;   (second (anti-unify-aux t t1 t2 nil)) has the property injection-p
 
 
 
 (defthm anti-unify-lower-bound
-  
+
   (and (subs (anti-unify t1 t2) t1)
        (subs (anti-unify t1 t2) t2))
 
@@ -748,7 +748,7 @@
 
 
 (defthm anti-unify-greatest-lower-bound
-  
+
    (implies (and (subs term t1)
 		 (subs term t2))
 	    (subs term (anti-unify t1 t2)))
@@ -781,9 +781,9 @@
 	   (term-p (anti-unify t1 t2))))
 
 ;;; REMARK: We could have obtained this last theorem by functional
-;;; instantiation of the 
+;;; instantiation of the
 ;;; previous theorem, but it is also a trivial consequence of
-;;; pre-anti-unify-aux-term-p-aux 
+;;; pre-anti-unify-aux-term-p-aux
 
 
 (in-theory (disable anti-unify (anti-unify)))

@@ -8,7 +8,7 @@
 ;;; forcing-types.lisp
 ;;;
 ;;; We want to ensure that the arguments to arithmetic functions are
-;;; known to be of the appropriate type.  
+;;; known to be of the appropriate type.
 ;;;
 ;;; See the comments in ../basic-ops/forcing-types.lisp
 ;;;
@@ -26,7 +26,7 @@
 
 (defthm default-floor-ratio
   (implies (syntaxp (not (proveably-real/rational '(BINARY-* x (UNARY-/ y))
-						  `((x . ,x) (y . ,y)) 
+						  `((x . ,x) (y . ,y))
 						  mfc state)))
 	   (equal (floor x y)
 		  (if (real/rationalp (/ x y))
@@ -49,7 +49,7 @@
 
 (defthm default-mod-ratio
   (implies (syntaxp (not (proveably-real/rational '(BINARY-* x (UNARY-/ y))
-					     `((x . ,x) (y . ,y)) 
+					     `((x . ,x) (y . ,y))
 					     mfc state)))
 	   (equal (mod x y)
 		  (if (real/rationalp (/ x y))

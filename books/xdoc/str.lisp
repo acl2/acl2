@@ -88,7 +88,7 @@
                           (include-book
                            "std/strings/decimal" :dir :system
                            :uncertified-okp :ignore-certs)))
-   
+
    (make-event
     (er hard? 'xdoc/str
         "~%************************** XDOC/STR FAILURE **************************~%~

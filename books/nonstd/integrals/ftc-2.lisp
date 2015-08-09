@@ -16,7 +16,7 @@
    (local (defun rcdfn (x) (declare (ignore x)) 0))
    (local (defun rcdfn-prime (x) (declare (ignore x)) 0))
    (local (defun rcdfn-domain () (interval 0 1)))
-   
+
    (defthm intervalp-rcdfn-domain
      (interval-p (rcdfn-domain))
    :rule-classes (:type-prescription :rewrite))
@@ -401,7 +401,7 @@
 
 (local
  (defthm nil-not-in-interval
-   (implies (and (not x) 
+   (implies (and (not x)
 		 (interval-p interval))
 	    (not (inside-interval-p x interval)))
    :hints (("Goal"
@@ -448,7 +448,7 @@
 	   )
    :rule-classes nil
    ))
-   
+
 
 (local
  (defthmd close-minus-0
@@ -503,7 +503,7 @@
  ((rcdfn-subdomain () t))
 
  (local
-  (defun rcdfn-subdomain () 
+  (defun rcdfn-subdomain ()
     (let ((left (interval-left-endpoint (rcdfn-domain)))
 	  (right (interval-right-endpoint (rcdfn-domain))))
       (if (null left)
@@ -548,9 +548,9 @@
 	   (and (inside-interval-p x (rcdfn-subdomain))
 		(not (equal x (interval-left-endpoint (rcdfn-subdomain))))
 		(not (equal x (interval-right-endpoint (rcdfn-subdomain))))
-		(equal (derivative-diff-fn (interval-left-endpoint (rcdfn-subdomain)) x) 
+		(equal (derivative-diff-fn (interval-left-endpoint (rcdfn-subdomain)) x)
 		       (/ (- (diff-fn (interval-left-endpoint (rcdfn-subdomain))
-				      (interval-right-endpoint (rcdfn-subdomain))) 
+				      (interval-right-endpoint (rcdfn-subdomain)))
 			     (diff-fn (interval-left-endpoint (rcdfn-subdomain))
 				      (interval-left-endpoint (rcdfn-subdomain))))
 			  (- (interval-right-endpoint (rcdfn-subdomain))
@@ -627,14 +627,14 @@
 				      (exists-mvt-point-witness exists-mvt-point-for-diff-fn-witness)
 				      (rdfn-domain rcdfn-domain)
 				      (rdfn-subdomain rcdfn-subdomain)
-				      (rdfn (lambda (x) 
+				      (rdfn (lambda (x)
 					      (diff-fn (interval-left-endpoint (rcdfn-subdomain))
 						       x)))
 				      (derivative-rdfn (lambda (x)
 							 (derivative-diff-fn
 							  (interval-left-endpoint (rcdfn-subdomain))
 							  x)))
-				      (differential-rdfn 
+				      (differential-rdfn
 				       (lambda (x eps)
 					 (differential-diff-fn
 					  (interval-left-endpoint (rcdfn-subdomain))
@@ -665,7 +665,7 @@
 	    :in-theory (disable differential-diff-fn
 				derivative-diff-is-zero))
 	   )))
-				       
+
 (local
  (defthm strict-int-rcdfn-prime-a-a
    (implies (inside-interval-p a (rcdfn-domain))
@@ -716,8 +716,8 @@
 	   )
    ))
 
-		  
-	    
+
+
 (local
  (defthm diff-fn-expander
    (implies (and (inside-interval-p a (rcdfn-domain))

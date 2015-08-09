@@ -369,7 +369,7 @@ certify-book on this file.  Here's how I do it:
 		(p-similar-p x y)
 		(p-number-list x)
 		(p-number-list y))
-	   (equal (p-member-count 
+	   (equal (p-member-count
 		   (p-batcher-merge x y) m)
 		  (+ (p-member-count x m)
 		     (p-member-count y m))))
@@ -379,7 +379,7 @@ certify-book on this file.  Here's how I do it:
 						       (p-member-count x m)))
 				     (fn1-num (lambda (x)
 						(if (= x m) 1 0)))))))
-			   
+
 ;;; Finally, we're ready to drive towards the Big Theorem, that batcher-merge
 ;;; correctly merges sorted lists.  We start out by defining the interleaved
 ;;; property, which is described in the commentary at the top of the
@@ -678,7 +678,7 @@ certify-book on this file.  Here's how I do it:
 	   :use (:instance member-count-<=-of-interleaved-1)
 	   :in-theory (disable member-count-<=-of-interleaved-1
 			       member-count-<=-of-interleaved-crosses-once))))
-  
+
 (defthm member-count-<=-of-interleaved
   (implies (p-interleaved-p x y)
 	   (or (equal (p-member-count-<= x m) (p-member-count-<= y m))
@@ -712,7 +712,7 @@ certify-book on this file.  Here's how I do it:
 		(p-similar-p x y)
 		(p-number-list x)
 		(p-number-list y))
-	   (equal (p-member-count-<= 
+	   (equal (p-member-count-<=
 		   (p-batcher-merge x y)
 		   m)
 		  (+ (p-member-count-<= x m)
@@ -784,20 +784,20 @@ certify-book on this file.  Here's how I do it:
 	     (interleaved-p-cutoff (p-untie-r x)
 				   (p-untie-r y))))
     nil))
-	
+
 (defthm interleaved-p-if-nil-cutoff
       (implies (and (p-similar-p x y)
                     (p-number-list x)
                     (p-number-list y)
-                    (not (numericp 
+                    (not (numericp
                           (interleaved-p-cutoff x y)))
-                    (not (numericp 
+                    (not (numericp
                           (interleaved-p-cutoff y x))))
                (p-interleaved-p x y)))
-	   
+
 (encapsulate
  ()
- 
+
  (local
   (defthm foo-1
     (implies (interleaved-p-cutoff x y)
@@ -834,7 +834,7 @@ certify-book on this file.  Here's how I do it:
 		 (p-sorted-p x)
 		 (p-sorted-p y)
 		 (interleaved-p-cutoff x y))
-	    (< (1+ (p-member-count-<= 
+	    (< (1+ (p-member-count-<=
 		    y
 		    (interleaved-p-cutoff x y)))
 	       (p-member-count-<=
@@ -899,7 +899,7 @@ certify-book on this file.  Here's how I do it:
 			      (m (interleaved-p-cutoff
 				  (p-batcher-merge (p-unzip-r x) (p-unzip-l y))
 				  (p-batcher-merge (p-unzip-l x)
-						   (p-unzip-r y)))))))))) 
+						   (p-unzip-r y))))))))))
 
  (defthm inner-batcher-merge-call-is-interleaved-p
    (implies (and (powerlist-p x)
@@ -909,13 +909,13 @@ certify-book on this file.  Here's how I do it:
 		 (p-number-list y)
 		 (p-sorted-p x)
 		 (p-sorted-p y)
-		 (p-sorted-p 
+		 (p-sorted-p
 		  (p-batcher-merge (p-unzip-l x)
 				   (p-unzip-r y)))
-		 (p-sorted-p 
+		 (p-sorted-p
 		  (p-batcher-merge (p-unzip-r x)
 				   (p-unzip-l y))))
-	    (p-interleaved-p 
+	    (p-interleaved-p
 	     (p-batcher-merge (p-unzip-l x)
 			      (p-unzip-r y))
 	     (p-batcher-merge (p-unzip-r x)
@@ -938,10 +938,10 @@ certify-book on this file.  Here's how I do it:
 		(p-number-list y)
 		(p-sorted-p x)
 		(p-sorted-p y)
-		(p-sorted-p 
+		(p-sorted-p
 		 (p-batcher-merge (p-unzip-l x)
 				  (p-unzip-r y)))
-		(p-sorted-p 
+		(p-sorted-p
 		 (p-batcher-merge (p-unzip-r x)
 				  (p-unzip-l y))))
 	   (p-sorted-p (p-batcher-merge x y)))

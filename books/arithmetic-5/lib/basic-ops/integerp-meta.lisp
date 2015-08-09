@@ -30,7 +30,7 @@
 ;;;    integerp and the exception is know to not be an integerp.
 ;;; Given this we can determine that the original sum or product is
 ;;; or is not an integerp.  We preserve this bagging by the use of
-;;; intp-+ and intp-* so that ACL2 does not re-distribute and 
+;;; intp-+ and intp-* so that ACL2 does not re-distribute and
 ;;; re-associate the bags apart.  The rules intp-[12] and nintp-[12]
 ;;; then allow us to prove the desired result.
 ;;;
@@ -49,14 +49,14 @@
 
 (include-book "building-blocks")
 
-(local 
+(local
  (include-book "../../support/top"))
 
 (local
  (include-book "default-hint"))
 
 (local
- (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+ (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
 					       hist pspv))))
 
 (table acl2-defaults-table :state-ok t)
@@ -268,7 +268,7 @@
   (if (atom leaves)
       (mv intp-bags non-intp-bags)
     (let ((rewriting-result (if intp-flag
-				(mfc-rw+ '(INTEGERP x) 
+				(mfc-rw+ '(INTEGERP x)
 					 `((x . ,(car leaves)))
 					 t t mfc state)
 			      (mfc-rw+ #-non-standard-analysis '(RATIONALP x)
@@ -290,7 +290,7 @@
                          intp-bags non-intp-bags
 			 intp-flag))))))
 
-(defun bag-terms (type-alist bin-op 
+(defun bag-terms (type-alist bin-op
 			     intp-bags non-intp-bags
 			     intp-flag)
   (declare (xargs :guard (and (type-alistp type-alist)
@@ -345,7 +345,7 @@
 	(t
 	 (mv-let (flag new-leaves)
 	   (subtract-leaf leaf (cdr leaves))
-	   (if flag 
+	   (if flag
 	       (mv t (cons (car leaves)
 			   new-leaves))
 	     (mv nil leaves))))))
@@ -403,7 +403,7 @@
 		    (consp new-leaves))
 	       (mv-let (flag bag-list)
 		 (collect-bags-intp new-leaves intp-bags)
-		 (if flag 
+		 (if flag
 		     (mv t
 			 (cons (car non-intp-bags)
 			       bag-list))
@@ -445,12 +445,12 @@
 ; chance to normalize expressions --- most commonly at Goal.
 ; Consider, for example, that we know (integerp (* 1/2 Y X)) from,
 ; the type-alist and that we are asked about (integerp (* 1/2 X Y)).
-; This meta-integerp would return (integerp (* 1/2 Y X)), which 
+; This meta-integerp would return (integerp (* 1/2 Y X)), which
 ; would then be permuted to (integerp (* 1/2 X Y)), and we would
 ; loop.
 
   (if (eq (fn-symb term) 'INTEGERP)
-           
+
       (let ((bin-op (fn-symb (fargn term 1))))
 	(if (and (member-eq bin-op '(BINARY-+ BINARY-*))
 		 (eq (fn-symb (fargn (fargn term 1) 2)) bin-op))
@@ -490,7 +490,7 @@
 ;  ==> (integerp (intp-+ (+ a c) (+ b d)))
 
   (if (eq (fn-symb term) 'RATIONALP)
-           
+
       (let ((bin-op (fn-symb (fargn term 1))))
 	(if (and (member-eq bin-op '(BINARY-+ BINARY-*))
 		 (eq (fn-symb (fargn (fargn term 1) 2)) bin-op))
@@ -531,7 +531,7 @@
 ;  ==> (integerp (intp-+ (+ a c) (+ b d)))
 
   (if (eq (fn-symb term) 'REALP)
-           
+
       (let ((bin-op (fn-symb (fargn term 1))))
 	(if (and (member-eq bin-op '(BINARY-+ BINARY-*))
 		 (eq (fn-symb (fargn (fargn term 1) 2)) bin-op))
@@ -620,7 +620,7 @@
                          (floor x y))
                       (<= (floor x y)
                           (/ x y))))
-      :rule-classes ((:generalize) 
+      :rule-classes ((:generalize)
                      (:linear :trigger-terms ((floor x y))))))
 
    (local
@@ -630,7 +630,7 @@
                       (integerp (/ x y)))
                  (equal (floor x y)
                         (/ x y)))
-      :rule-classes ((:generalize) 
+      :rule-classes ((:generalize)
                      (:linear :trigger-terms ((floor x y))))))
 
    (local
@@ -640,12 +640,12 @@
                       (not (integerp (/ x y))))
                  (< (floor x y)
                     (/ x y)))
-      :rule-classes ((:generalize) 
+      :rule-classes ((:generalize)
                      (:linear :trigger-terms ((floor x y))))))
-   
+
    (local
     (in-theory (disable floor)))
-   
+
    (local
     (defun ind-hint (x y n)
       (declare (xargs :measure (abs (ifix x))))
@@ -664,7 +664,7 @@
                       (<= (- (EXPT 2 N)) X))
                  (equal (< (FLOOR X 2) (- (* 1/2 (EXPT 2 N))))
                         nil))))
-   
+
    (local
     (defthm two-x
         (implies (and (< x 4)
@@ -702,7 +702,7 @@
                      (< 1 n)
                      (< x (* 1/2 (EXPT 2 N))))
                 (< (+ 1 (* 2 x)) (expt 2 n)))))
-       
+
 
    (local
     (defthm logand-bounds
@@ -751,9 +751,9 @@
                      (<= (logand x y) 65535)))
      :hints (("Goal" :use ((:instance logand-bounds
                                       (n 16))))))
-   
+
    ))
-#| 
+#|
  (local
   (encapsulate
    ()
@@ -943,7 +943,7 @@
 
  (local
   (defthm big-tree-big-tree-2
-    (and 
+    (and
      (equal (intp-eva (big-tree bags 'INTP-+ 'BINARY-+) a)
 	    (intp-eva (big-tree-2 bags 'BINARY-+ 'BINARY-+) a))
      (equal (intp-eva (big-tree bags 'INTP-* 'BINARY-*) a)
@@ -1095,7 +1095,7 @@
 (in-theory (disable leaves tree big-tree bag-leaves bag-terms
 		    subtract-leaf subtract-bag
 		    collect-bags-intp collect-bags-non-intp
-		    collect-bags meta-integerp meta-rationalp 
+		    collect-bags meta-integerp meta-rationalp
 		    #+non-standard-analysis
 		    meta-realp
 		    ))

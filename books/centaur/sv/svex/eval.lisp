@@ -412,7 +412,7 @@ svex-eval).</p>"
                           ((when (eql test -1)) -1))
                        (4vec-bitor test
                                    (svex-eval (second x.args) env))))
-                    (otherwise 
+                    (otherwise
                      (svex-apply x.fn (svexlist-eval x.args env)))))))
 
   (define svexlist-eval

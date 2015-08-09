@@ -218,7 +218,7 @@
                 (< x y))
            (<= (acl2-exp x) (acl2-exp y)))
   :hints (("Goal"
-           :cases ((<= y 0) 
+           :cases ((<= y 0)
                    (and (< x 0) (< 0 y))
                    (<= 0 x)))
           ("Subgoal 2"
@@ -265,14 +265,14 @@
              :cases ((< x y) (= x y) (< y x)))
             ("Subgoal 1"
              :use ((:instance lemma-1 (x y) (y x)))
-             :in-theory (disable lemma-1)))) 
+             :in-theory (disable lemma-1))))
  )
 (defthm acl2-exp-is-increasing
   (implies (and (realp x)
                 (realp y)
                 (< x y))
            (< (acl2-exp x) (acl2-exp y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance acl2-exp-is-non-decreasing)
                  (:instance acl2-exp-is-1-1))
            :in-theory (disable acl2-exp-is-non-decreasing
@@ -292,8 +292,8 @@
   (implies (and (realp x)
                 (<= 1 x))
            (<= x (acl2-exp x)))
-  :hints (("Goal" 
-           :use ((:instance acl2-exp->-1-for-non-negatives-lemma)) 
+  :hints (("Goal"
+           :use ((:instance acl2-exp->-1-for-non-negatives-lemma))
            :in-theory (disable acl2-exp->-1-for-non-negatives-lemma))))
 
 (in-theory (disable acl2-exp))
@@ -321,7 +321,7 @@
 			     (INTERVAL 0 NIL)))
    :hints (("Goal"
 	    :in-theory (enable interval-definition-theory)))))
-   
+
 
 (local
  (defthm exp-lemma-3
@@ -412,7 +412,7 @@
                 (realp b))
            (equal (acl2-exp (complex a b))
                   (* (acl2-exp a) (acl2-exp (complex 0 b)))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance complex-definition (x a) (y b))
                  (:instance exp-sum
                             (x a)
@@ -430,7 +430,7 @@
            :in-theory (disable radiuspart
                                radiuspart-is-zero-only-for-zero)))
   :rule-classes (:type-prescription :rewrite))
-  
+
 (defthm real-ln-radiuspart
   (implies (not (equal (fix y) 0))
            (realp (acl2-ln-for-positive (radiuspart y))))
@@ -450,7 +450,7 @@
    (implies (and (realp i) (realp j) (realp r) (realp s))
             (equal (+ (complex i j) (complex r s))
                    (complex (+ i r) (+ j s))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :use ((:instance complex-definition (x i) (y j))
                   (:instance complex-definition (x r) (y s))
                   (:instance complex-definition (x (+ i r)) (y (+ j s))))))))
@@ -463,7 +463,7 @@
      (implies (and (realp a) (realp b) (realp r) (realp s))
               (equal (* (complex a b) (complex r s))
                      (* (+ a (* #C(0 1) b)) (+ R (* #C(0 1) S)))))
-     :hints (("Goal" 
+     :hints (("Goal"
               :use ((:instance complex-definition (x a) (y b))
                     (:instance complex-definition (x r) (y s)))))))
 
@@ -473,13 +473,13 @@
   (local
    (defthm *-complex-lemma-2
      (implies (and (realp a) (realp b) (realp r) (realp s))
-              (equal (complex (- (* a r) (* b s)) 
+              (equal (complex (- (* a r) (* b s))
                               (+ (* a s) (* b r)))
                      (+ (+ (* a R) (- (* b S)))
                         (* #C(0 1) (+ (* a S) (* b R))))))
-     :hints (("Goal" 
+     :hints (("Goal"
               :use ((:instance complex-definition
-                               (x (- (* a r) (* b s))) 
+                               (x (- (* a r) (* b s)))
                                (y (+ (* a s) (* b r)))))))))
 
   ;; And so now we can get a formula for the product of two complex
@@ -488,7 +488,7 @@
   (defthm *-complex
     (implies (and (realp i) (realp j) (realp r) (realp s))
              (equal (* (complex i j) (complex r s))
-                    (complex (- (* i r) (* j s)) 
+                    (complex (- (* i r) (* j s))
                              (+ (* i s) (* j r)))))))
  )
 
@@ -729,8 +729,8 @@
 			    (y (acl2-ln-for-positive y)))
 		 (:instance acl2-exp-ln-for-positive (y x))
 		 (:instance acl2-exp-ln-for-positive (y y))
-		 
-			    
+
+
 		 )
 	   :in-theory (disable uniqueness-of-ln-for-positive exp-sum acl2-exp-ln-for-positive ACL2-LN-FOR-POSITIVE))))
 

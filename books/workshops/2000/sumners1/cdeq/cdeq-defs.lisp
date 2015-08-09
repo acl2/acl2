@@ -67,7 +67,7 @@
 (defthm nil-update-absorbed
   (implies (not (g a r))
            (equal (s a nil r) r))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance s-same-g)
            :in-theory (disable s-same-g))))
 
@@ -98,7 +98,7 @@
 (in-theory (disable posp))
 
 
-(encapsulate 
+(encapsulate
  (((maxf) => *))
  (local (defun maxf () 1))
  (defthm maxf-is-positive-natural
@@ -163,12 +163,12 @@
   (and (consp x) (atom (rest x))))
 
 (defun get-top (d)
-  (if (endp (rest d)) 
+  (if (endp (rest d))
       (and (consp d) (val (first d)))
     (get-top (rest d))))
 
 (defun drop-top (d)
-  (if (endp (rest d)) 
+  (if (endp (rest d))
       ()
     (cons (first d) (drop-top (rest d)))))
 
@@ -182,8 +182,8 @@
 ;; various auxiliary theorems about mending and ages ;;
 
 (defthm mend-bounded-to-bot-top
-  (implies (and (integerp bot) 
-                (integerp x) 
+  (implies (and (integerp bot)
+                (integerp x)
                 (>= x bot))
            (equal (mend bot top (-> mem x y))
                   (mend bot top mem))))
@@ -224,9 +224,9 @@
            (equal (+ (- x) x y) y)))
 
 (defthm mend-top+1-unwind-hack
-  (implies (and (equal x (1+ bot)) 
+  (implies (and (equal x (1+ bot))
                 (integerp bot)
-                (integerp top) 
+                (integerp top)
                 (<= top bot))
            (equal (mend x top mem)
                   (cons (<- mem bot)
@@ -234,11 +234,11 @@
 
 
 (defthm agep-age<<-top+1
-  (implies (agep a) 
+  (implies (agep a)
            (age<< a (top+1 a))))
 
 (defthm agep-age<<-tag+1-top=0
-  (implies (agep a) 
+  (implies (agep a)
            (age<< a (tag+1 (top=0 a)))))
 
 (defthm age<<-transitive-top+1
@@ -348,7 +348,7 @@
 
 (defun c-thf-s (f s)
   (case (loc f)
-        (8  (if (equal (age s) (old f)) 
+        (8  (if (equal (age s) (old f))
                 (>s :age (new f))
               s))
         (10 (>s :ret (itm f) :clk (1+ (clk s))))
@@ -362,14 +362,14 @@
         (3  (>f :loc (if (> (bot f) (top (old f))) 5 4)))
         (4  (>f :loc 0 :ret nil))
         (5  (>f :loc 6 :itm (val (<- (mem s) (top (old f))))))
-        (6  (>f :loc 7 :new (old f)))                    
-        (7  (>f :loc 8 :new (top+1 (new f))))            
-        (8  (>f :loc 9 :new (if (equal (age s) (old f)) 
+        (6  (>f :loc 7 :new (old f)))
+        (7  (>f :loc 8 :new (top+1 (new f))))
+        (8  (>f :loc 9 :new (if (equal (age s) (old f))
                                  (age s) (new f))))
         (9  (>f :loc (if (equal (old f) (new f)) 10 11)))
         (10 (>f :loc 0 :ret (itm f)))
         (11 (>f :loc 0 :ret nil))
-        (t  (>f :loc 0))))                        
+        (t  (>f :loc 0))))
 
 (defun c-onr-s (o s)
   (case (loc o)
@@ -387,7 +387,7 @@
 
 (defun c-onr-o (p d o s)
   (case (loc o)
-        (0  (if p (>o :loc 19 :dtm d) 
+        (0  (if p (>o :loc 19 :dtm d)
               (>o :loc 1)))
         (1  (>o :loc 2 :bot (bot s)))
         (2  (>o :loc (if (= (bot o) 0) 3 4)))
@@ -398,9 +398,9 @@
         (7  (>o :loc 8 :old (age s)))
         (8  (>o :loc (if (> (bot o) (top (old o))) 9 10)))
         (9  (>o :loc 0 :ret (itm o)))
-        (10 (>o :loc 11))                                  
-        (11 (>o :loc 12 :new (top=0 (old o))))             
-        (12 (>o :loc 13 :new (tag+1 (new o))))             
+        (10 (>o :loc 11))
+        (11 (>o :loc 12 :new (top=0 (old o))))
+        (12 (>o :loc 13 :new (tag+1 (new o))))
         (13 (>o :loc (if (= (bot o) (top (old o))) 14 17)))
         (14 (>o :loc 15 :new (if (equal (age s) (old o))
                                  (age s) (new o))))
@@ -408,9 +408,9 @@
         (16 (>o :loc 0 :ret (itm o)))
         (17 (>o :loc 18))
         (18 (>o :loc 0 :ret nil))
-        (19 (>o :loc 20 :bot (bot s)))                     
-        (20 (>o :loc 21))                                    
-        (21 (>o :loc 22 :bot (1+ (bot o))))                
+        (19 (>o :loc 20 :bot (bot s)))
+        (20 (>o :loc 21))
+        (21 (>o :loc 22 :bot (1+ (bot o))))
         (t  (>o :loc 0))))
 
 (DEFUN cdeq (st in)
@@ -435,7 +435,7 @@
 
 (defun i-thf-s (f s)
   (case (loc f)
-        (8  (if (equal (age s) (old f)) 
+        (8  (if (equal (age s) (old f))
                 (>s :age (new f)
                     :xctr (1+ (xctr s)))
               s))
@@ -444,20 +444,20 @@
 
 (defun i-thf-f (f s)
   (case (loc f)
-        (0  (>f :loc 1))                                  
-        (1  (>f :loc 2 
-                :old (age s) 
+        (0  (>f :loc 1))
+        (1  (>f :loc 2
+                :old (age s)
                 :xctr (xctr s)))
-        (2  (>f :loc 3 
-                :bot (bot s) 
+        (2  (>f :loc 3
+                :bot (bot s)
                 :xitm (and (> (bot s) (top (age s)))
                            (val (<- (mem s) (top (age s)))))))
         (3  (>f :loc (if (> (bot f) (top (old f))) 5 4)))
         (4  (>f :loc 0 :ret nil))
         (5  (>f :loc 6 :itm (val (<- (mem s) (top (old f))))))
-        (6  (>f :loc 7 :new (old f)))                    
-        (7  (>f :loc 8 :new (top+1 (new f))))            
-        (8  (>f :loc 9 :new (if (equal (age s) (old f)) 
+        (6  (>f :loc 7 :new (old f)))
+        (7  (>f :loc 8 :new (top+1 (new f))))
+        (8  (>f :loc 9 :new (if (equal (age s) (old f))
                                 (age s) (new f))))
         (9  (>f :loc (if (equal (old f) (new f)) 10 11)))
         (10 (>f :loc 0 :ret (itm f)))
@@ -486,7 +486,7 @@
 
 (defun i-onr-o (p d o s)
   (case (loc o)
-        (0  (if p (>o :loc 19 :dtm d) 
+        (0  (if p (>o :loc 19 :dtm d)
               (>o :loc 1)))
         (1  (let ((o (>o :loc 2 :bot (bot s))))
               (if (= (bot s) 0)
@@ -495,13 +495,13 @@
         (2  (>o :loc (if (= (bot o) 0) 3 4)))
         (3  (>o :loc 0 :ret nil :xzero t))
         (4  (>o :loc 5 :bot (1- (bot o))))
-        (5  (>o :loc 6  
+        (5  (>o :loc 6
                 :xitm (and (>= (bot o) (top (age s)))
                            (val (<- (mem s) (bot o))))
                 :xctr (and (= (bot o) (top (age s)))
                            (xctr s))))
         (6  (>o :loc 7 :itm (val (<- (mem s) (bot o)))))
-        (7  (>o :loc 8 
+        (7  (>o :loc 8
                 :old (age s)
                 :xitm (and (>= (bot o) (top (age s)))
                            (xitm o))
@@ -513,22 +513,22 @@
                 (>o :loc 9 :xctr nil :xzero nil)
               (>o :loc 10)))
         (9  (>o :loc 0 :ret (itm o)))
-        (10 (>o :loc 11))                                  
-        (11 (>o :loc 12 :new (top=0 (old o))))             
-        (12 (>o :loc 13 :new (tag+1 (new o))))             
+        (10 (>o :loc 11))
+        (11 (>o :loc 12 :new (top=0 (old o))))
+        (12 (>o :loc 13 :new (tag+1 (new o))))
         (13 (>o :loc (if (= (bot o) (top (old o))) 14 17)))
         (14 (let ((o (>o :loc 15)))
               (if (equal (age s) (old o))
                   (>o :new (age s)
                       :xctr nil
                       :xzero t)
-                o)))              
+                o)))
         (15 (>o :loc (if (equal (old o) (new o)) 16 17)))
         (16 (>o :loc 0 :ret (itm o)))
         (17 (>o :loc 18 :xctr nil :xzero t))
         (18 (>o :loc 0 :ret nil))
-        (19 (>o :loc 20 :bot (bot s)))                     
-        (20 (>o :loc 21))                                    
+        (19 (>o :loc 20 :bot (bot s)))
+        (20 (>o :loc 21))
         (21 (>o :loc 22 :bot (1+ (bot o))))
         (22 (>o :loc 0  :xzero nil))
         (t  (>o :loc 0))))
@@ -591,7 +591,7 @@
         (0 (if p (>o :loc 5 :dtm d)
              (>o :loc 1)))
         ;; popBottom
-        (1 (>o :loc 2 
+        (1 (>o :loc 2
                :itm (get-bot (deq s))
                :ctr (and (one-eltp (deq s))
                          (ctr s))))
@@ -643,9 +643,9 @@
         (t s)))
 
 (defun r-thf-f (f s)
-  (let ((f (>f :xgo 
+  (let ((f (>f :xgo
                (and (consp (deq s))
-                    (or (= (loc f) 0) 
+                    (or (= (loc f) 0)
                         (xgo f))))))
     (case (loc f)
           ;; popTop
@@ -660,7 +660,7 @@
   (case (loc o)
         (1 (>s :deq (drop-bot (deq s))))
         (3 (if (or (= (ctr o) (ctr s))
-                   (and (atom (deq s)) 
+                   (and (atom (deq s))
                         (implies (itm o) (ctr o))
                         (not (xzero o))))
                (>s :ctr (1+ (ctr s)))
@@ -674,7 +674,7 @@
         (0 (if p (>o :loc 5 :dtm d)
              (>o :loc 1)))
         ;; popBottom
-        (1 (>o :loc 2 
+        (1 (>o :loc 2
                :itm (get-bot (deq s))
                :ctr (and (one-eltp (deq s))
                          (ctr s))))
@@ -739,7 +739,7 @@
                        :shr (>s :deq (push-bot (dtm o) deq))))
             (pop  (if (itm o)
                       (>st :onr (>o :st8 'idle :itm nil)
-                           :shr (>s :ret (itm o) 
+                           :shr (>s :ret (itm o)
                                     :clk (1+ (clk s))))
                     (>st :onr (>o :st8 'idle))))
             (idle (if (psh in)
@@ -754,8 +754,8 @@
 ;;;; BEGIN label function ;;;;
 
 (DEFUN label (st)
-  (list (ret (shr st)) 
-        (clk (shr st)) 
+  (list (ret (shr st))
+        (clk (shr st))
         (dtm (onr st))))
 
 ;;;; END label function ;;;;

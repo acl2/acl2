@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -34,7 +34,7 @@
 
 
 (encapsulate ()
- (local 
+ (local
  (defthm lemma-expt-muliply-2-reduce
    (implies (integerp y)
             (equal (* 2 (expt 2 y))
@@ -56,7 +56,7 @@
           ("Subgoal 2" :use ((:instance expo<= (n (* -1 (bias q)))
                                         (x (* -1 x)))))
           ("Subgoal 1" :use ((:instance expo<= (n (* -1 (bias q)))))))
-  :rule-classes 
+  :rule-classes
   ((:rewrite :match-free :once))))
 
 
@@ -173,17 +173,17 @@
 ;;            (> (spd p q) 0)))
 
 
-;; (local 
+;; (local
 ;;   (defthm sig-expt-2-reduce
 ;;     (equal (SIG (EXPT 2 n))
 ;;            1)
 ;;     :hints (("Goal" :use ((:instance SIG-SHIFT (x 1)))))))
 
 
-;; (local 
+;; (local
 ;;  (defthm expo-shift-specific
 ;;   (implies (integerp n)
-;;            (equal (EXPO (EXPT 2 n)) 
+;;            (equal (EXPO (EXPT 2 n))
 ;;                   n))
 ;;   :hints (("Goal" :in-theory (enable expo-shift)
 ;;            :cases ((equal (* (expt 2 n) 1)
@@ -201,7 +201,7 @@
 
 ;;(local (in-theory (enable LEMMA-EXPT-MULIPLY-2-REDUCE)))
 
-;; (local 
+;; (local
 ;;  (defthm lemma-expt-muliply-2-reduce
 ;;    (implies (integerp y)
 ;;             (equal (* 2 (expt 2 y))
@@ -220,8 +220,8 @@
 ;; (defthm specific-plus-less
 ;;   (implies (and (<= z 0)
 ;;                 (<= (+ R (EXPT 2 (+ 3 (* -1 P)))) 0))
-;;            (<= (+ R (EXPT 2 (+ 3 (* -1 P))) 
-                
+;;            (<= (+ R (EXPT 2 (+ 3 (* -1 P)))
+
 
 ;; >  D          (DEFTHM EXPO-LOWER-BOUND
 ;;                       (IMPLIES (AND (RATIONALP X) (NOT (EQUAL X 0)))
@@ -231,7 +231,7 @@
 
 ;; (encapsulate ()
 ;;    (local (include-book "rtl/rel5/arithmetic/expt" :dir :system))
-;;    (local 
+;;    (local
 ;;     (defthmd expt-weak-monotone-linear
 ;;       (implies (and (<= n m)
 ;;                     (case-split (integerp n))
@@ -270,7 +270,7 @@
 
 ;----------------------------------------------------------------------
 
-;; (local 
+;; (local
 ;;  (defthm local-inverse-specific
 ;;    (implies (integerp x)
 ;;             (equal (/ (expt 2 x))
@@ -278,7 +278,7 @@
 ;;    :hints (("Goal" :in-theory (enable zip)))
 ;;    :rule-classes nil))
 
-;; (local 
+;; (local
 ;;  (defthm local-integerp-specific
 ;;   (implies (and (integerp p)
 ;;                 (integerp q)
@@ -296,13 +296,13 @@
 ;----------------------------------------------------------------------
 
 
-(local 
+(local
  (defun am (m p g)
-   (* m (spd p g))))  
+   (* m (spd p g))))
 
 ;; this probably a bad choice!! we could have used "+"
 
-(local 
+(local
  (defun am-induct (m p g)
    (if (zip m)
        (list m p g)
@@ -318,10 +318,10 @@
 ;;   (+ x (expt 2 (- (1+ (expo x)) n))))
 
 
-(local 
+(local
  (defthm expo-shift-specific
   (implies (integerp n)
-           (equal (EXPO (EXPT 2 n)) 
+           (equal (EXPO (EXPT 2 n))
                   n))
   :hints (("Goal" :in-theory (enable expo-shift)
            :cases ((equal (* (expt 2 n) 1)
@@ -329,7 +329,7 @@
 
 
 ;; (sig x) (expo (1- n))
-(local 
+(local
  (defthm am-is-fp+1
   (implies (and (integerp m)
                 (<= 1 m)
@@ -363,7 +363,7 @@
 ;; ;; 	     (>= (+ (expo x) (expo y) 1) (expo (* x y))))
 ;; ;;   :rule-classes :linear)
 
-(local 
+(local
  (defthm expo-m-<=-specific
   (implies (and (<= 1 m)
                 (integerp m)
@@ -375,7 +375,7 @@
                                    (x m)
                                    (y (expt 2 (+ -1 p)))))))))
 
-(local 
+(local
  (defthm expo-m-<=-specific-2
   (implies (and (<= 1 m)
                 (integerp m)
@@ -391,8 +391,8 @@
           ("Subgoal 1" :use ((:instance expo-lower-bound
                                         (x m)))))
   :rule-classes :linear))
-                                        
-(local 
+
+(local
  (defthm bias-big-enough-induct-step-drepp-am-1-6
  (implies (and (<= 1 m)
                (integerp p)
@@ -412,7 +412,7 @@
 
 
 
-(local 
+(local
  (defthm fact-expo-am-specific
    (implies (and (integerp m)
                  (< 0 x)
@@ -422,7 +422,7 @@
                          (* m x)))
                 (expo (* m x))))
    :rule-classes :linear
-   :hints (("Goal" 
+   :hints (("Goal"
             :do-not '(fertilize)
             :in-theory (enable spd)
             :use ((:instance expo-monotone
@@ -430,7 +430,7 @@
                                    (* m x)))
                              (y (* m x))))))))
 
-(local 
+(local
   (defthm induct-step-drepp-am-1-9
      (implies (and (integerp m)
                    (integerp p)
@@ -460,11 +460,11 @@
 (local (include-book "../../arithmetic/basic"))
 
 ;; (local (defthm rationalp-spd
-;;          (rationalp (spd p q)))) 
+;;          (rationalp (spd p q))))
 
 
 
-(local 
+(local
  (defthm induct-step-drepp-am-1-5
   (implies (and (integerp m)
                 (integerp p)
@@ -482,14 +482,14 @@
            :use ((:instance exactp-<=
                             (x (* M (SPD P Q)))
                             (m (+ -2 P (EXPT 2 (+ -1 Q))
-                                  (EXPO (+ (* -1 (SPD P Q)) 
+                                  (EXPO (+ (* -1 (SPD P Q))
                                            (* m (SPD P q))))))
                             (n (+ -2 P (EXPT 2 (+ -1 Q))
                                   (EXPO (* M (SPD P Q)))))))))))
 
 
 
-(local 
+(local
  (defthm induct-step-drepp-am
    (IMPLIES (AND (DREPP (SPD P Q) P Q)
                  (<= 1 M)
@@ -506,14 +506,14 @@
            ("Subgoal 1" :in-theory (e/d (drepp positive-spd) (fp+ spd))
             :use ((:instance FP+1
                              (x (am (1- m) p q))
-                             (n (+ -2 P (EXPT 2 (- Q 1)) 
+                             (n (+ -2 P (EXPT 2 (- Q 1))
                                    (EXPO (am (1- m) p q)))))
                   (:instance am-is-fp+1
                              (m (1- m)))
                   (:instance induct-step-drepp-am-1-5)))
            ("Subgoal 1.1" :in-theory (enable bias)))))
 
-(local 
+(local
 (defthmd spd-mult-1
   (implies (and (integerp p)
                 (> p 1)
@@ -532,7 +532,7 @@
  (defthm am-in-between-1
   (implies (and (> r 0)
                 (rationalp r)
-                (integerp p) 
+                (integerp p)
                 (> p 1)
                 (integerp q)
                 (> q 0))
@@ -540,9 +540,9 @@
                r))
   :rule-classes :linear))
 
-;; (local (in-theory (enable positive-spd)))  
+;; (local (in-theory (enable positive-spd)))
 
-(local 
+(local
  (defthm fl-fact-specific
    (implies (and (> r 0)
                  (rationalp r)
@@ -556,7 +556,7 @@
  (defthm am-in-between-2
   (implies (and (> r 0)
                 (rationalp r)
-                (integerp p) 
+                (integerp p)
                 (> p 1)
                 (integerp q)
                 (> q 0))
@@ -564,7 +564,7 @@
               (am (+ 1 (fl (/ r (spd p q)))) p q)))
   :rule-classes :linear))
 
- 
+
 
 
 ;; (defthm expo-unique
@@ -616,7 +616,7 @@
  (defthm am-is-zero-implies-r-less-than-spd
   (implies (and (equal (am x p q) 0)
                 (rationalp x)
-                (integerp p) 
+                (integerp p)
                 (< 1 p)
                 (< 0 q)
                 (integerp q))
@@ -633,7 +633,7 @@
                 (rationalp x))
            (< r x))
   :rule-classes :forward-chaining))
-           
+
 
 
 ;; (defthmd smallest-spd
@@ -650,7 +650,7 @@
 ;;                  (:instance expo-lower-bound
 ;;                             (x r))))))
 
-;; (skip-proofs 
+;; (skip-proofs
 ;;  (defthm am-positive
 ;;    (implies (and (rationalp r)
 ;;                  (integerp p)
@@ -666,7 +666,7 @@
 ;; (defthm am-in-between-1
 ;;   (implies (and (> r 0)
 ;;                 (rationalp r)
-;;                 (integerp p) 
+;;                 (integerp p)
 ;;                 (> p 1)
 ;;                 (integerp q)
 ;;                 (> q 0))
@@ -697,14 +697,14 @@
  (defthm am-in-between-1-specific
   (implies (and (> r 0)
                 (rationalp r)
-                (integerp p) 
+                (integerp p)
                 (> p 1)
                 (drepp r p q)
                 (integerp q)
                 (> q 0))
            (<= (expt 2 (expo (am (fl (/ r (spd p q))) p q)))
                r))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance expo-lower-bound
                             (x (am (fl (/ r (spd p q))) p q)))
                  (:instance expo-monotone
@@ -717,7 +717,7 @@
                             (x (fl (/ r (spd p q)))))
                  (:instance smallest-spd))))
   :rule-classes :linear))
-                        
+
 
 
 ;; (defthm am-is-fp+1
@@ -812,19 +812,19 @@
                (EXPT 2
                      (+ 1
                         (EXPO (am m p q))))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (e/d (am bias drepp) (exactp-2**n))
-           :use ((:instance fp+2 
+           :use ((:instance fp+2
                             (x (am m p q))
                             (y (expt 2 (+ 1 (expo (am m p q)))))
                             (n (+ -2 P (EXPT 2 (- Q 1)) (EXPO (am m p q)))))
                  (:instance am-is-fp+1))))))
-                        
+
 
 (local
- (encapsulate () 
+ (encapsulate ()
   (local (include-book "../../arithmetic/basic"))
-  (local 
+  (local
    (defthm expt-i+j-combine
      (implies (and (integerp j1)
                    (integerp j2))
@@ -832,7 +832,7 @@
                      (expt 2 (+ j1 j2))))
      :hints (("Goal" :use ((:instance a15 (i 2)))))))
 
-  (local 
+  (local
    (defthm equal-expt-2-1-p-is-1-q
      (implies (and (integerp p)
                    (< 1 p)
@@ -856,7 +856,7 @@
                                             (n (+ 1 (expo r)))
                                             (m (+ 1 y))))))))
 
-  (local 
+  (local
    (defthm r-less-than-spn
      (implies (and (<= (+ (BIAS Q) (EXPO R)) 0)
                    (rationalp r)
@@ -871,7 +871,7 @@
               :use ((:instance EXPO-UPPER-BOUND-chain
                                (r r)
                                (y (* -1 (bias q)))))))))
-  
+
   (defthm fl-r-spd-less-than
      (implies (and (DREPP R P Q)
                    (integerp p)
@@ -882,18 +882,18 @@
                   (rationalp r))
              (< (fl (* r (/ (spd p q))))
                 (expt 2 (+ -1 p))))
-  :hints (("Goal" :in-theory (e/d (drepp) 
+  :hints (("Goal" :in-theory (e/d (drepp)
                                   (EQUAL-EXPT-2-1-P-IS-1-Q
                                    r-less-than-spn))
            :use ((:instance r-less-than-spn)
                  (:instance equal-expt-2-1-p-is-1-q))))
   :rule-classes :linear)))
 
-(local 
+(local
  (defthm am-in-between-2-specific
   (implies (and (> r 0)
                 (rationalp r)
-                (integerp p) 
+                (integerp p)
                 (> p 1)
                 (DREPP R P Q)
                 (integerp q)
@@ -903,7 +903,7 @@
 
                     (+ 1
                        (EXPO (AM (FL (* R (/ (SPD P Q)))) P Q))))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance expo-upper-bound
                             (x (am (fl (/ r (spd p q))) p q)))
                    (:instance expo-monotone
@@ -925,7 +925,7 @@
  (defthm expo-r-equal-expo-am
   (implies (and (> r 0)
                 (rationalp r)
-                (integerp p) 
+                (integerp p)
                 (> p 1)
                 (drepp r p q)
                 (integerp q)
@@ -938,10 +938,10 @@
                             (x r)
                             (n (expo (am (fl (/ r (spd p q))) p q)))))))
   :rule-classes nil))
-                           
+
 
 ;;;;
-;;;; not so useful!!! 
+;;;; not so useful!!!
 ;;;;
 
 
@@ -967,9 +967,9 @@
 ;;                  (:instance spd-mult-1
 ;;                             (m (fl (* R (/ (spd p q))))))))))
 
-;(i-am-here) ;; 
+;(i-am-here) ;;
 
-(local 
+(local
  (defthmd spd-mult-2
   (implies (and (integerp p)
                 (> p 1)
@@ -991,7 +991,7 @@
                  (:instance am-is-fp+1
                             (m (fl (* R (/ (spd p q))))))
                  (:instance smallest-spd))))))
-                 
+
 (local
  (defthmd spd-mult-2-specific
    (implies (and (integerp p)
@@ -1069,7 +1069,7 @@
            :use ((:instance spd-mult-1))))))
 
 
-;;; only this is new!! 
+;;; only this is new!!
 
 (defthmd spd-mult
   (implies (and (integerp p)
@@ -1086,7 +1086,7 @@
   :hints (("Goal" :in-theory (e/d () (am spd drepp
                                          spd-mult-1-specific-further
                                          spd-mult-2-specific-further)))
-          ("Subgoal 5" :cases ((< (* R (/ (SPD P Q)))  
+          ("Subgoal 5" :cases ((< (* R (/ (SPD P Q)))
                                   (expt 2 (1- p)))))
           ("Subgoal 5.1" :use ((:instance spd-mult-1-specific-further
                                           (m (/ r (spd p q))))))

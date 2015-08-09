@@ -33,7 +33,7 @@
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
 (local (set-default-hints '((acl2::nonlinearp-default-hint
-                             acl2::stable-under-simplificationp 
+                             acl2::stable-under-simplificationp
                              acl2::hist acl2::pspv))))
 
 (defun compute-public-dh-value (g exponent-value b)
@@ -50,7 +50,7 @@
                 (<= 1 base)
                 (integerp exponent)
                 (<= 1 exponent))
-           (and (integerp (expt base exponent)) 
+           (and (integerp (expt base exponent))
                 (<= 1 (expt base exponent)))))
 
 (defthm mod-returns-integer->=0
@@ -58,7 +58,7 @@
                 (<= 1 base)
                 (integerp modulo)
                 (<= 1 modulo))
-           (and (integerp (mod base modulo)) 
+           (and (integerp (mod base modulo))
                 (<= 0 (mod base modulo)))))
 |#
 
@@ -144,7 +144,7 @@
 
 (local (acl2::gather-exponents))
 
-(local (defthm mod-exponentiation-equivalent 
+(local (defthm mod-exponentiation-equivalent
          (implies (and (integerp g)
                        (<= 1 g)
                        (integerp b)
@@ -182,10 +182,10 @@
 
 ; i is the intruder
 (defun session-key-requires-one-part-of-key (g b x-exponent y-exponent i-exponent)
-  
+
   ;; we set the guards to nil to ensure that this function never executes and
   ;; is only used in the logical reasoning of a proof
-  (declare (xargs :guard nil 
+  (declare (xargs :guard nil
                   :verify-guards nil))
 
   (implies (and (force (integerp g))
@@ -200,7 +200,7 @@
                 (force (<= 1 i-exponent))
                 (not (equal i-exponent x-exponent))
                 (not (equal i-exponent y-exponent)))
-           
+
            (let ((x-public-value (compute-public-dh-value g x-exponent b))
                  (y-public-value (compute-public-dh-value g y-exponent b))
                  (session-key

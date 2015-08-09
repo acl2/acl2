@@ -27,7 +27,7 @@
 	     (equal (* (* x y) z)
 		    (* (* y x) z)))
     :rule-classes nil
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :in-theory (disable associativity-of-*)))))
 
  (defthm commutativity-2-of-*
@@ -42,7 +42,7 @@
 (encapsulate
  ()
 
- (local 
+ (local
   (defthm equiv-1-implies-equiv-*
     (implies (equal x1 x2)
 	     (equal (* x1 y)
@@ -59,7 +59,7 @@
                    (x1 (* x z))
                    (x2 (* y z))
                    (y  (/ z))))))
- 
+
 )
 
 (encapsulate
@@ -121,7 +121,7 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defthm uniqueness-of-+-inverses-lemma
     (implies (and (acl2-numberp x)

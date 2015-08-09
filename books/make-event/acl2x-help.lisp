@@ -102,7 +102,7 @@
   '(defattach acl2x-expansion-alist hons-copy-with-state))
 
 ;; Use of acl2x-replace that skips the proofs of form in the first pass, but
-;; not the second.  
+;; not the second.
 (defmacro maybe-skip-proofs (form)
   `(acl2x-replace (skip-proofs ,form)
                   ,form

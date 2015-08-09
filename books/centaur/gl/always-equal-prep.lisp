@@ -796,7 +796,7 @@
             :induct (g-always-equal-core a b hyp clk config bvar-db state)
             :expand ((:free (hyp) (g-always-equal-core a b hyp clk config bvar-db state))
                      (:free (hyp) (g-always-equal-core a a hyp clk config bvar-db state)))))))
-    
+
 
 
 

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -91,7 +91,7 @@ think about removing bits from defn of land0? why???
 
 ;We expect n to be a positive integer, and x and y to be bit vectors of length n.
 (defund binary-land0 (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -111,7 +111,7 @@ think about removing bits from defn of land0? why???
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(land0 x y n) -- the base case
          `(binary-land0 ,@x))
-        (t         
+        (t
          `(binary-land0 ,(car x)
                        (land0 ,@(cdr x))
                        ,(car (last x))))))
@@ -194,7 +194,7 @@ think about removing bits from defn of land0? why???
          (land0 x (land0 y z m) m)))
   :hints (("Goal" :cases ((natp n))
            :in-theory (enable land0 bits-tail))))
-  |#       
+  |#
 
 (defthm land0-commutative
   (equal (land0 y x n)
@@ -239,8 +239,8 @@ think about removing bits from defn of land0? why???
                 (case-split (integerp n))
                 )
            (equal (bits (land0 x y n) i j)
-                  (land0 (bits x i j) 
-                        (bits y i j) 
+                  (land0 (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j)))))
   :otf-flg t
   :hints (("Goal" :in-theory (enable land0 bits-logand))))
@@ -252,8 +252,8 @@ think about removing bits from defn of land0? why???
                 (case-split (integerp n))
                 )
            (equal (bits (land0 x y n) i j)
-                  (land0 (bits x i j) 
-                        (bits y i j) 
+                  (land0 (bits x i j)
+                        (bits y i j)
                         (+ n (- j)))))
   :otf-flg t
   :hints (("Goal" :in-theory (enable land0 bits-logand))))
@@ -265,8 +265,8 @@ think about removing bits from defn of land0? why???
                 (case-split (integerp i))
                 )
            (equal (bits (land0 x y n) i j)
-                  (land0 (bits x i j) 
-                        (bits y i j) 
+                  (land0 (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j)))))
   :hints (("Goal" :in-theory (enable bits-land0-1 bits-land0-2))))
 
@@ -276,8 +276,8 @@ think about removing bits from defn of land0? why???
                 (case-split (integerp n))
                 )
            (equal (bitn (land0 x y n) m)
-                  (land0 (bitn x m) 
-                        (bitn y m) 
+                  (land0 (bitn x m)
+                        (bitn y m)
                         1)))
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable bitn)
@@ -299,8 +299,8 @@ think about removing bits from defn of land0? why???
                 )
            (equal (bitn (land0 x y n) m)
                   (if (< m n)
-                      (land0 (bitn x m) 
-                            (bitn y m) 
+                      (land0 (bitn x m)
+                            (bitn y m)
                             1)
                     0)))
   :hints (("Goal" :in-theory (enable bitn-land0-1 bitn-land0-2))))
@@ -681,8 +681,8 @@ think about removing bits from defn of land0? why???
   :rule-classes ()
   :hints (("Goal" :use ((:instance logand-slice (x (bits x (1- n) 0)) (n i) (k j))
                         )
-           :in-theory (enable expt-strong-monotone-linear 
-                              expt-weak-monotone-linear 
+           :in-theory (enable expt-strong-monotone-linear
+                              expt-weak-monotone-linear
                               land0))))
 ; Start proof of land-slices.
 

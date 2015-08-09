@@ -110,13 +110,13 @@
 	         0))))
 
 (defthm arith-expt-1
-  (and (equal (expt x 1) 
+  (and (equal (expt x 1)
 	      (fix x))
        (equal (expt 1 i)
 	      1)))
 
 (defthm arith-expt-minus-1
-  (equal (expt x -1) 
+  (equal (expt x -1)
 	 (/ x)))
 
 (defthm arith-functional-commutativity-of-expt-/
@@ -195,7 +195,7 @@
 		    arith-commutativity-2-of-* arith-unicity-of-1
 		    arith-times-zero arith-inverse-of-*-1
 		    arith-inverse-of-*-2 arith-inverse-of-*-3
-		    arith-functional-self-inversion-of-/ 
+		    arith-functional-self-inversion-of-/
 		    arith-distributivity-of-/-over-*
 		    arith-functional-commutativity-of-minus-*-right
 		    arith-functional-commutativity-of-minus-*-left

@@ -64,4 +64,4 @@
   :hints (("Goal"
 	   :in-theory (enable xeval-feval)
 	   :do-not-induct t)))
-  
+

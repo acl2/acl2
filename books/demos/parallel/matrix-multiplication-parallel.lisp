@@ -18,17 +18,17 @@
 
 ; (1)
 ; Compiling gazonk2.lsp.
-; End of Pass 1.  
-; End of Pass 2.  
+; End of Pass 1.
+; End of Pass 2.
 ; gcc: gazonk2.c: No such file or directory
 ; gcc: no input files
 
 ; (2)
 ; Compiling gazonk2.lsp.
-; End of Pass 1.  
-; End of Pass 2.  
+; End of Pass 1.
+; End of Pass 2.
 ; Your C compiler failed to compile the intermediate file.
-; 
+;
 ; Error: Cannot open the file gazonk2.o.
 
 ; (3)
@@ -52,13 +52,13 @@
            (difference-div-2 (/ difference 2))
            (first-val (floor (+ left difference-div-2) 1))
            (second-val (1+ first-val)))
-      
+
       (cons first-val second-val)))
 
 (assert! (equal (get-midpoints 4 6)
                 (cons 5 6)))
 
-(assert! (equal (get-midpoints 4 7) 
+(assert! (equal (get-midpoints 4 7)
                 (cons 5 6)))
 
 (defun pmultiply-matrices-aux (a b n c-lhs-row c-rhs-row c-lhs-col c-rhs-col)
@@ -72,21 +72,21 @@
                   :mode :program)
            (type signed-byte n c-lhs-row c-rhs-row c-lhs-col c-rhs-col))
 
-  
+
 ; Returns a list of updates to C
- 
-  (if (equal c-lhs-row c-rhs-row)    
+
+  (if (equal c-lhs-row c-rhs-row)
       (list (multiply-matrices-row (nth c-lhs-row A) B))
 
-     
+
 
 ; Code for the case that we have multi-row by multi-col cell
-     
+
     (let* ((row-midpoints (get-midpoints c-lhs-row c-rhs-row))
            (row-left-midpoint (the-fixnum (car row-midpoints)))
            (row-right-midpoint (the-fixnum (cdr row-midpoints))))
-       
-       
+
+
       (plet (declare (granularity (> (* (- c-rhs-row c-lhs-row)
                                         (- c-rhs-col c-lhs-col))
                                      16000)))
@@ -100,7 +100,7 @@
                                       c-lhs-col c-rhs-col)))
             (append top-updates-list bottom-updates-list)))))
 
-(defun pmultiply-matrices (a b a-rows a-cols b-rows b-cols) 
+(defun pmultiply-matrices (a b a-rows a-cols b-rows b-cols)
 
 ; returns a new matrix, c, that stores the result of multiplying matrix a and
 ; matrix b.
@@ -116,7 +116,7 @@
                   :mode :program)
            (ignore b-rows))
   (let* ((n a-cols) ; c dimenision
-         (updates (pmultiply-matrices-aux 
+         (updates (pmultiply-matrices-aux
                    a b (1- n) 0 (1- a-rows) 0 (1- b-cols))))
     updates))
 

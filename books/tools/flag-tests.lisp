@@ -302,7 +302,7 @@
    (defequiv nat-list-equiv)
 
    ;; ;; no hint fails
-   ;; (defthm sum-pairs-list-nat-list-equiv-congruence 
+   ;; (defthm sum-pairs-list-nat-list-equiv-congruence
    ;;   (implies (nat-list-equiv x y)
    ;;            (equal (sum-pairs-list x) (sum-pairs-list y)))
    ;;   :rule-classes :congruence)

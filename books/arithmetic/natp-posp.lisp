@@ -41,7 +41,7 @@
 ;; College of Computer and Information Science
 ;; Northeastern University
 ;; 360 Huntington Avenue
-;; Boston, Massachusetts 02115 U.S.A. 
+;; Boston, Massachusetts 02115 U.S.A.
 
 ;; Modified by Jared Davis in January 2014 to add XDOC documentation
 

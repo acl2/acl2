@@ -19,7 +19,7 @@
 (in-package "ACL2")
 
 (defun sum1 (n)
-  (declare (xargs :measure (if (or (not (integerp n)) 
+  (declare (xargs :measure (if (or (not (integerp n))
 				   (<= n 0))
 			     0
 			     n)))

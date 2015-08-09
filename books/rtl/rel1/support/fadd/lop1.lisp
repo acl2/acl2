@@ -113,7 +113,7 @@
 		    (bitn x j)))
   :hints (("Goal" :use ((:instance rem-fl (m x) (n (expt 2 k)))
 			(:instance rem>=0 (m x) (n (expt 2 k)))
-			(:instance bit+*k 
+			(:instance bit+*k
 				   (x (rem x (expt 2 k)))
 				   (m k)
 				   (n j)
@@ -260,7 +260,7 @@
 		  (< B A)
 		  (< A (EXPT 2 N))
 		  (< B (EXPT 2 N)))
-	     (= (PHI A B 0 N) 
+	     (= (PHI A B 0 N)
 		(1- n)))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable c)
@@ -582,17 +582,17 @@
 		  (< B (EXPT 2 N)))
 	     (OR (= (PHI (+ A (- (EXPT 2 (+ -2 N))))
 			 (+ B (- (EXPT 2 (+ -2 N))))
-			 0 
+			 0
 			 (+ -1 N))
 		    (EXPO (+ A (- B))))
 		 (= (PHI (+ A (- (EXPT 2 (+ -2 N))))
 			 (+ B (- (EXPT 2 (+ -2 N))))
-			 0 
+			 0
 			 (+ -1 N))
 		    (+ 1 (EXPO (+ A (- B)))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expt)
-		  :use (lop1-7 
+		  :use (lop1-7
 			lop1-17
 			lop1-19
 			(:instance expo+ (m (- n 1)) (n 1))
@@ -691,7 +691,7 @@
 			(:instance phi-rem
 				   (a (- a (expt 2 (- n 2))))
 				   (b (- b (expt 2 (- n 2))))
-				   (d 1) 
+				   (d 1)
 				   (j (- n 2))
 				   (k (- n 2))))))))
 

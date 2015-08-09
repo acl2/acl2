@@ -20,7 +20,7 @@ stuff happens (but we can easily handle these cases).
 
 |#
 
-(local (include-book "bits-proofs")) 
+(local (include-book "bits-proofs"))
 
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
@@ -197,7 +197,7 @@ stuff happens (but we can easily handle these cases).
 ;BOZO get rid of the other in favor of this one?
 (defthm bits-plus-bits2
   (implies (and ;(rationalp x)
-                (integerp i) 
+                (integerp i)
                 (integerp j)
                 (integerp n)
                 (<= j n)
@@ -237,7 +237,7 @@ stuff happens (but we can easily handle these cases).
 
 ;this should fire after bits-bvecp, so we list it first
 ;or should we rewrite (bvecp (bits x i j))? <-- huh? make the conslusion an equal??
-(defthm bits-bvecp-when-x-is	
+(defthm bits-bvecp-when-x-is
   (implies (and (bvecp x k)	;gen k to be something less that the k in the rhs?
                 (case-split (<= 0 j))
                 )
@@ -394,7 +394,7 @@ I found a case where this failed to apply because I didn't know that j was an ac
                 (case-split (integerp j))
                 (case-split (integerp j2))
                 )
-           (< (BITS x i j) 
+           (< (BITS x i j)
               (BINARY-+ k (BINARY-* k (BITS x i j2))))))
 
 (defthm bits-upper-with-subrange-alt
@@ -407,7 +407,7 @@ I found a case where this failed to apply because I didn't know that j was an ac
                 (case-split (integerp j))
                 (case-split (integerp j2))
                 )
-           (equal (< (BINARY-+ k (BINARY-* k (BITS x i j2))) 
+           (equal (< (BINARY-+ k (BINARY-* k (BITS x i j2)))
                      (BITS x i j))
                   nil)))
 
@@ -594,7 +594,7 @@ I found a case where this failed to apply because I didn't know that j was an ac
                   x)))
 
 (defthm bits-0
-  (equal (bits 0 i j) 
+  (equal (bits 0 i j)
          0))
 
 
@@ -815,7 +815,7 @@ I found a case where this failed to apply because I didn't know that j was an ac
 ;watch out for loops with this rule
 (defthmd bits-tighten
   (implies (and (bvecp x i)
-                (<= i n) 
+                (<= i n)
                 (case-split (integerp n))
                 )
            (equal (bits x n j)

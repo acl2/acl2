@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 #|
- 
+
 require-book.lisp
 -----------------
 
@@ -25,7 +25,7 @@ Basically, instead of
 (include-book <name> ...)
 
 you can write
-   
+
 (require-book <name> ...)
 
 and that will fail only in one of these cases:
@@ -181,7 +181,7 @@ to give more specific messages for each recommended book.
                           ;; special for recommend-book:
                           for
                           ;; these are mostly ignored, but included for easy
-                          ;; transition to/from include-book: 
+                          ;; transition to/from include-book:
                           load-compiled-file uncertified-okp
                           defaxioms-okp skip-proofs-okp
                           ttags doc)

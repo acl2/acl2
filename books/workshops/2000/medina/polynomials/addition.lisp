@@ -1,6 +1,6 @@
 (in-package "POL")
 
-(include-book "normal-form")  
+(include-book "normal-form")
 
 ;;; -------------------
 ;;; Polynomial addition
@@ -8,7 +8,7 @@
 
 (defun + (p1 p2)
   (declare (xargs :guard (and (polynomialp p1) (polynomialp p2))))
-  (cond ((and (not (polynomialp p1)) (not (polynomialp p2))) 
+  (cond ((and (not (polynomialp p1)) (not (polynomialp p2)))
 	 *null*)
 	((not (polynomialp p1))
 	 p2)
@@ -50,7 +50,7 @@
 ;;; Polynomial addition is associative.
 
 (defthm associativity-of-append
-  (equal (append (append p1 p2) p3) 
+  (equal (append (append p1 p2) p3)
 	 (append p1 (append p2 p3))))
 
 (defthm associativity-of-+
@@ -63,13 +63,13 @@
     (defthm technical-lemma
       (equal (+-monomial m1 (+-monomial m2 (nf p)))
 	     (+-monomial m2 (+-monomial m1 (nf p))))))
- 
+
   (defthm commutativity-of-append-technical-lemma
-    (implies (and (polynomialp p1) 
-		  (polynomialp p2) 
+    (implies (and (polynomialp p1)
+		  (polynomialp p2)
 		  (not (nullp p2)))
 	     (equal (nf (append p1 p2))
-		    (+-monomial (first p2) 
+		    (+-monomial (first p2)
 			       (nf (append p1 (rest p2))))))))
 
 (defthm commutativity-of-append
@@ -78,7 +78,7 @@
 
 (defthm commutativity-of-+
   (= (+ p1 p2) (+ p2 p1))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable =))))
 
 ;;; Polynomial addition is associative-commutative.

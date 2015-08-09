@@ -29,7 +29,7 @@
 (defun count-bag-equal-list (e m)
   (declare (xargs :measure (acl2-count m)))
   (cond ((atom m) 0)
-	((equal e (car m)) 
+	((equal e (car m))
 	 (1+ (count-bag-equal-list e (cdr m))))
 	(t (count-bag-equal-list e (cdr m)))))
 
@@ -75,7 +75,7 @@
 ;; 	      (SUB-BAG-EQUIV-LIST M1 (INTER-BAG-EQUIV-LIST M2 M3)))
 ;;   ...)
 
-(union-bag-equiv-list *ma-list* *mb-list*) 
+(union-bag-equiv-list *ma-list* *mb-list*)
 ;; (A A B B C B C C B C)
 
 (inter-bag-equiv-list *ma-list* *mb-list*)

@@ -40,7 +40,7 @@
 		  (<= 0 K)
 		  (< A (EXPT 2 K))
 		  (< B (EXPT 2 K)))
-	     (= (PHI A 
+	     (= (PHI A
 		     (MOD B (EXPT 2 (+ -1 K)))
 		     1 (1- K))
 		(EXPO (LOGIOR (* 2 A)
@@ -173,7 +173,7 @@
 		  (< B (EXPT 2 K)))
 	     (= (lnot (* 2 (mod b (expt 2 (1- k))))
 		       k)
-		(lnot (* 2 b) (1+ k))))		
+		(lnot (* 2 b) (1+ k))))
   :rule-classes ()
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable lnot expt bits-reduce)
@@ -531,7 +531,7 @@
                      (phi a b 1 e)))
          :rule-classes ()
          :hints (("Goal" :in-theory (enable phi c)
-                  :use (lop2-22 
+                  :use (lop2-22
 			lop2-23
 			(:instance expo-monotone (x 1) (y a)))))))
 

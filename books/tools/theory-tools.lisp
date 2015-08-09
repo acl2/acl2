@@ -34,7 +34,7 @@
       (and (consp tree)
            (or (find-equal-in-tree x (car tree))
                (find-equal-in-tree x (cdr tree))))))
-    
+
 
 (defun find-in-concl (x clause)
   (declare (xargs :mode :program))

@@ -12,7 +12,7 @@
 
 (defun sat-cl-update-property-status (val $sat)
   (declare (xargs :stobjs $sat))
-  (sat-update-external-value 
+  (sat-update-external-value
    (list* val (cdr (sat-external-value $sat)))
    $sat))
 
@@ -22,9 +22,9 @@
 
 (defun sat-cl-update-marked-un-fns (val $sat)
   (declare (xargs :stobjs $sat))
-  (sat-update-external-value 
+  (sat-update-external-value
    (list* (car (sat-external-value $sat)) val
-          (cddr (sat-external-value $sat))) 
+          (cddr (sat-external-value $sat)))
    $sat))
 
 (defun sat-cl-ce-alist ($sat)
@@ -33,11 +33,11 @@
 
 (defun sat-cl-update-ce-alist (val $sat)
   (declare (xargs :stobjs $sat))
-  (sat-update-external-value 
+  (sat-update-external-value
    (list* (car (sat-external-value $sat))
           (cadr (sat-external-value $sat))
           val
-          (cdddr (sat-external-value $sat))) 
+          (cdddr (sat-external-value $sat)))
    $sat))
 
 ;; ---------------------------------------------------
@@ -93,8 +93,8 @@
                               alist))))))
 
 (defun sat-cl-add-un-fn-list (fn-list alist $sat state)
-  (declare (xargs :stobjs $sat)) 
-  (cond 
+  (declare (xargs :stobjs $sat))
+  (cond
    ((endp fn-list)
     (mv alist $sat state))
    (t
@@ -102,14 +102,14 @@
      (erp un-fn-alist $sat state)
      (sat-si-un-fn-alist (car fn-list) $sat state)
      (declare (ignore erp))
-     (sat-cl-add-un-fn-list (cdr fn-list) 
+     (sat-cl-add-un-fn-list (cdr fn-list)
                             (sat-cl-add-un-fn (car fn-list)
                                               un-fn-alist
                                               alist)
                             $sat state)))))
 
 (defun sat-cl-update-current-ce ($sat state)
-  (declare (xargs :stobjs $sat)) 
+  (declare (xargs :stobjs $sat))
   (mv-let
    (erp fn-list $sat state)
    (sat-un-fn-list $sat state)
@@ -142,7 +142,7 @@
   (mv-let
    ($sat state)
    (sat-cl-update-current-ce $sat state)
-   (prog2$ 
+   (prog2$
     (sat-cl-print-ce $sat)
     (mv $sat state))))
 
@@ -156,8 +156,8 @@
      (erp $sat state)
      (sat-add-expr t (car input-lit-list) $sat state)
      (declare (ignore erp))
-     (sat-cl-add-input-literal-list (cdr input-lit-list) 
-                                 $sat 
+     (sat-cl-add-input-literal-list (cdr input-lit-list)
+                                 $sat
                                  state)))))
 
 (defun sat-cl-clause-in-SULFA (clause $sat state)
@@ -237,7 +237,7 @@
                                 state
                                 nil) ; see comment about aok above
      (cond
-      (erp 
+      (erp
        (mv (er hard 'sat-cl-run-clause
                "Counter example check failed.  Perhaps the formula is not ~
                 executable.")
@@ -272,7 +272,7 @@
             $sat
             state))
        (t
-        (prog2$ 
+        (prog2$
          (cw "The expression is in the decidable ~
               Subclass of Unrollable List Formulas in ACL2 (SULFA).~%")
          (mv-let
@@ -289,7 +289,7 @@
               (sat-end-problem $sat state)
               (declare (ignore erp))
               (let* (($sat (sat-cl-update-property-status 'acl2::valid $sat)))
-                (prog2$ 
+                (prog2$
                  (cw "The SAT solver found no satisfying instance (to the negated formula); ~
                        therefore, the original formula is valid~%")
                  (mv nil '() $sat state)))))
@@ -315,18 +315,18 @@
                    (check-ce
                     (prog2$
                      (cw "Checking counter-example.~%")
-                     (mv-let 
+                     (mv-let
                       (ce-val state)
                       (sat-cl-run-clause input-clause ce-alist state)
                       (cond
-                       (ce-val                        
-                        (prog2$ 
+                       (ce-val
+                        (prog2$
                          (cw "The formula evaluated to true, so the counter example ~
                             is SPURIOUS.~%")
                          (mv (cons "The SAT-based procedure failed to verify ~
                                      the formula~%"
                                    nil)
-                             nil 
+                             nil
                              $sat
                              state)))
                        (t
@@ -337,7 +337,7 @@
                            (mv (cons "The SAT-based procedure failed to ~
                                        verify the formula~%"
                                      nil)
-                               nil 
+                               nil
                                $sat
                                state))))))))
                    (marked-un-fn-list
@@ -348,7 +348,7 @@
                      (mv (cons "The SAT-based procedure failed to verify ~
                                  the formula~%"
                                nil)
-                         nil 
+                         nil
                          $sat
                          state)))
                    (t
@@ -360,15 +360,15 @@
                        (mv (cons "The SAT-based SULFA solver failed to verify ~
                                    the formula~%"
                                  nil)
-                           nil 
+                           nil
                            $sat
-                           state)))))))))))))))))))))                     
+                           state)))))))))))))))))))))
 
 (defun sat-cl-lookup-hint-val (key default sat-hint)
   (let* ((entry (member key sat-hint)))
     (cond
      ((and entry (not (consp (cdr entry))))
-      (let ((val (er hard 'sat-cl'start 
+      (let ((val (er hard 'sat-cl'start
                      "ERROR: ~s0 requires a value~%"
                      key)))
         (declare (ignore val))

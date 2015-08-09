@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-#| 
+#|
 
      fairenv.lisp
      ~~~~~~~~~~~~
@@ -20,7 +20,7 @@ functions:
    (faie-step env X)     -- takes the current environment state, bakery state
                             and Xternal input and returns the next environment
                             state.
-   (fair-measure env in) -- returns a lexicographic pair (i include some theory 
+   (fair-measure env in) -- returns a lexicographic pair (i include some theory
                             below for well-founded ranks based on lexicographic
                             combinations of natural numbers) which is ensured
                             to decrease until the input in is selected.
@@ -37,7 +37,7 @@ fair input. The precise definition will be given in programs.lisp.
 
 (defun enqueue (e q)
   (if (endp q) (list e)
-      (cons (first q) 
+      (cons (first q)
             (enqueue e (rest q)))))
 
 (defmacro select-ctr (x) `(<- ,x :select-ctr))
@@ -68,14 +68,14 @@ fair input. The precise definition will be given in programs.lisp.
   (implies (memberp a q)
            (memberp a (enqueue e q))))
 
-(encapsulate 
+(encapsulate
  (((fair-select * *) => *)
   ((fair-step * *) => *)
   ((fair-measure * *) => *)
   ((btm-measure) => *)
   ((top-measure) => *))
 
- (local 
+ (local
   (defun fair-select (env X)
     (if (zp (select-ctr env))
         (first (select-que env))
@@ -107,11 +107,11 @@ fair input. The precise definition will be given in programs.lisp.
     (list 3 0 0)))
 
  ;;;; exported theorem required to prove invariant with select-que
- 
+
  (defthm fair-env-select-que-preserves
-   (memberp (fair-select env X) 
+   (memberp (fair-select env X)
             (select-que (fair-step env X))))
- 
+
  (defthm fair-step-preserves-membership
    (implies (memberp e (select-que env))
             (memberp e (select-que (fair-step env X)))))
@@ -151,7 +151,7 @@ fair input. The precise definition will be given in programs.lisp.
  (defthm top-measure-is-measure
    (and (msrp (top-measure))
         (nat-listp (top-measure))))
- 
+
  (defthm top-measure-is-len=0-fair-measure
    (len= (fair-measure env in)
          (top-measure)))
@@ -163,6 +163,6 @@ fair input. The precise definition will be given in programs.lisp.
 )
 
 
- 
- 
- 
+
+
+

@@ -117,7 +117,7 @@ differentiable functions.)
 		 (:instance i-close-limited
 			    (x x1)
 			    (y x2)))
-	   :in-theory (disable close-plus i-close-transitive i-close-limited)))) 
+	   :in-theory (disable close-plus i-close-transitive i-close-limited))))
 
 ;; Now we can show that f1+f2 is continuous:
 
@@ -187,7 +187,7 @@ differentiable functions.)
 		 (:instance i-close-limited
 			    (x x1)
 			    (y x2)))
-	   :in-theory (disable close-times i-close-transitive i-close-limited)))) 
+	   :in-theory (disable close-times i-close-transitive i-close-limited))))
 
 ;; And from that, the continuity of f1*f2 trivially follows:
 

@@ -1,6 +1,6 @@
 ; This is a modification of rhs1.lisp, but where instead of equiv1 we use iff.
 ; This illustrates that there is value in creating a double-rewrite warning for
-; the right-hand side even if 
+; the right-hand side even if
 
 (in-package "ACL2")
 

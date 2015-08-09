@@ -27,13 +27,13 @@
 
     ;; The inclusion of a period means that we are disabling our ability to
     ;; parse floating point numbers for now.
-    
+
     #\.
 
 
     ))
 
-(defconst *whitespace* 
+(defconst *whitespace*
   '(#\Space #\Newline))
 
 
@@ -72,11 +72,11 @@
         (t (tokenize-string2 (cdr input)
                              (cons (car input) curr-chars)
                              acc))))
-              
+
 (define tokenize-string1 ((input stringp))
   :returns (result string-listp :hyp :fguard)
 
-  (rev (tokenize-string2 (coerce input 'list) 
+  (rev (tokenize-string2 (coerce input 'list)
                          nil
                          nil))
   :prepwork

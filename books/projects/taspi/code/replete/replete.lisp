@@ -48,7 +48,7 @@
                                                      db)))))
                                   (hut first (cons parent (cdr p)) db)))))))
 
-(dis+ind replete-trees)                        
+(dis+ind replete-trees)
 
 (defun replete-trees-list-top1 (l db)
   (declare (xargs :guard (and (non-subtree-listp l l)
@@ -93,14 +93,14 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns a replete mapping of trees and subtrees in the input list to either 
-;  the number of times the tree occurs or to a list of each subtrees immediate 
+;  Returns a replete mapping of trees and subtrees in the input list to either
+;  the number of times the tree occurs or to a list of each subtrees immediate
 ;  parents.~/
 ;  ~/
 ;  Arguments:
 ;     (1) l - a list of trees no member of which is a proper subtree of another
 
-;  Details: The trees should all be ordered according to the same taxa list. 
+;  Details: The trees should all be ordered according to the same taxa list.
 ;           Branch lengths are not allowed (see replete-trees-list-brlens)."
   (declare (xargs :guard (non-subtree-listp l l)
                   :verify-guards nil))

@@ -135,7 +135,7 @@
 
 ;;;; Multiplying by zero results in a zero vector.
 (defthm sv*-0-left
-  (equal (sv* 0 v) 
+  (equal (sv* 0 v)
          (vzero (len v))))
 
 (defthm sv*-0-right
@@ -224,7 +224,7 @@
    (if (zp n)
        l
      (zero-dot*-recursion (1- n) (cdr l)))))
-  
+
 (defthm dot*-zero-left
   (equal (dot* (vzero n) l) 0)
   :hints (("Goal" :induct (zero-dot*-recursion n l))))

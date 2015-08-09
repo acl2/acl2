@@ -3,9 +3,9 @@
 ;  unique factorization. Here Size is abs; Quotient is floor
 ;  and Remainder is mod.
 
-;  This version uses quantifiers (defun-sk) and is 
+;  This version uses quantifiers (defun-sk) and is
 ;  non-executable.
- 
+
 ; Copyright (C) 2005  John R. Cowles, University of Wyoming
 
 ; This book is free software; you can redistribute it and/or modify
@@ -30,7 +30,7 @@
 
 ; Last modified Feb. 06.
 
-#| 
+#|
 To certify this book, first, create a world with the following package:
 
 (defpkg "INT-MOD"
@@ -40,7 +40,7 @@ To certify this book, first, create a world with the following package:
 ; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports*
    '(nat-listp acl2-number-listp)))
 
-   (certify-book "ed4aa" 
+   (certify-book "ed4aa"
                  1
 		 nil ;;compile-flg
 		 )
@@ -50,13 +50,13 @@ To certify this book, first, create a world with the following package:
 
 ;;  integerp  ; Predicate for set of Euclidean Domain elements.
 ;;  equal     ; Equality predicate for Euclidean Domain elements.
-;;  identity  ; Choose unique equivalence class representative for equal. 
+;;  identity  ; Choose unique equivalence class representative for equal.
 ;;  +         ; Addition in Euclidean Domain.
-;;  *         ; Multiplication in Euclidean Domain. 
+;;  *         ; Multiplication in Euclidean Domain.
 ;;  -         ; Unary minus in Euclidean Domain.
 ;;  0         ; 0 element in Euclidean Domain.
 ;;  1         ; 1 element in Euclidean Domain.
-;;  abs       ; Natp size of each nonzero Euclidean Domain element. 
+;;  abs       ; Natp size of each nonzero Euclidean Domain element.
 ;;  floor     ; Quotient in Euclidean Domain.
 ;;  mod       ; Remainder in Euclidean Domain.
 
@@ -64,7 +64,7 @@ To certify this book, first, create a world with the following package:
 ;; An Euclidean Domain is an integral domain, together with a Size function
 ;; from nonzero domain elements into the nonnegative integers, that
 ;; satisfies the Division Propery:
-;; 
+;;
 ;; Division Propery. For all domain elements x and all nonzero domain
 ;;             elements y there are domain elements q and r such that
 
@@ -80,7 +80,7 @@ To certify this book, first, create a world with the following package:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Commutative Ring is a nonempty set with two binary operations, addition
 ;; and multiplication, an unary operation, minus, and a ring element, zero,
-;; such that 
+;; such that
 
 ;; (1) the binary operations are commutative and associative,
 ;; (2) multiplication distributes over addition,
@@ -100,7 +100,7 @@ To certify this book, first, create a world with the following package:
 ;;     If the original Size function does not satisfy this property,
 ;;     then it can replaced by another that does satisfy this and the
 ;;     division property.
-;;      See Book 2 of the ACL2 Euclidean Domain books, ed2.lisp, 
+;;      See Book 2 of the ACL2 Euclidean Domain books, ed2.lisp,
 ;;      for a proof.
 
 ;;  In fact, for integers x and y, (abs (* x y)) = (* (abs x)(abs y)).
@@ -114,19 +114,19 @@ To certify this book, first, create a world with the following package:
 ;  about FLOOR and MOD to help certify this book
 
 (local
- (include-book "arithmetic/top" :dir :system 
+ (include-book "arithmetic/top" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
- (include-book "ihs/quotient-remainder-lemmas" :dir :system 
+ (include-book "ihs/quotient-remainder-lemmas" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
@@ -137,8 +137,8 @@ To certify this book, first, create a world with the following package:
  (include-book "ed3"
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 ;; AXIOMS
@@ -157,10 +157,10 @@ To certify this book, first, create a world with the following package:
 (defthm
   Equivalence-Law
   (implies (integerp x)
-	   (and (equal x x)  
+	   (and (equal x x)
 		(implies (integerp y)
 			 (and (booleanp (equal x y))
-			      (implies (equal x y) 
+			      (implies (equal x y)
 				       (equal y x))
 			      (implies (integerp z)
 				       (implies (and (equal x y)
@@ -350,9 +350,9 @@ To certify this book, first, create a world with the following package:
 		(not (equal x 0))
 		(integerp y)
 		(not (equal y 0)))
-	   (<= (abs x) 
+	   (<= (abs x)
 	       (abs (* x y))))
-  :rule-classes (:linear 
+  :rule-classes (:linear
 		 (:rewrite
 		  :corollary
 		  (and (implies (and (integerp x)
@@ -363,8 +363,8 @@ To certify this book, first, create a world with the following package:
 				     (not (equal x 0))
 				     (integerp y)
 				     (not (equal y 0)))
-				(<= (abs x) 
-				    (abs (* x y))))))) 
+				(<= (abs x)
+				    (abs (* x y)))))))
   :hints (("Goal"
 	   :in-theory (disable (:definition abs))
 	   :use ((:instance
@@ -387,7 +387,7 @@ To certify this book, first, create a world with the following package:
 (in-theory (disable (:definition abs)))
 
 ;;;;;;;;;;;;;;;;;;;;
-;; Divides-p theory: 
+;; Divides-p theory:
 
 ;;  Divides-p is defined using quantifiers (defun-sk) and
 ;;   is non-executable
@@ -479,10 +479,10 @@ To certify this book, first, create a world with the following package:
 		(not (equal y 0)))
 	   (< (abs x)
 	      (abs (* x y))))
-  :rule-classes (:linear 
-		 :rewrite)  
+  :rule-classes (:linear
+		 :rewrite)
   :hints (("Goal"
-	   :in-theory (e/d ((:definition abs)) 
+	   :in-theory (e/d ((:definition abs))
 			   ((:definition unit-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -556,7 +556,7 @@ To certify this book, first, create a world with the following package:
 (defun
   irreducible-factors (x)
   "Return a list, lst, of irreducible
-   elements of integerp, so that if x is 
+   elements of integerp, so that if x is
    in integerp, x is not 0, and x is not
    an unit, then x = product of the
    members in lst."
@@ -695,7 +695,7 @@ To certify this book, first, create a world with the following package:
 		  (acl2::reducible-p reducible-p)
 		  (acl2::reducible-p-witness reducible-p-witness)
 		  (acl2::irreducible-p irreducible-p)
-		  (acl2::unit-associates-p unit-associates-p)		  
+		  (acl2::unit-associates-p unit-associates-p)
 		  (acl2::unit-associates-p-witness unit-associates-p-witness))
 		 (acl2::x x)
 		 (acl2::y y)))
@@ -722,7 +722,7 @@ To certify this book, first, create a world with the following package:
 
 (defun
   Delete-one-unit-associate (x lst)
-  "Return the result of deleting one occurrence 
+  "Return the result of deleting one occurrence
    of an unit-associate of x from the list lst."
   (if (consp lst)
       (if (unit-associates-p x (car lst))
@@ -738,7 +738,7 @@ To certify this book, first, create a world with the following package:
   (if (consp lst1)
       (and (member-unit-associate (car lst1) lst2)
 	   (bag-equal-unit-associates (cdr lst1)
-				      (delete-one-unit-associate (car lst1) 
+				      (delete-one-unit-associate (car lst1)
 								 lst2)))
       (atom lst2)))
 
@@ -826,7 +826,7 @@ To certify this book, first, create a world with the following package:
       0))
 
 (defthm
-  Bag-equal-unit-associates->equal-multiplicity-unit-associate 
+  Bag-equal-unit-associates->equal-multiplicity-unit-associate
   (implies (bag-equal-unit-associates lst1 lst2)
 	   (equal (multiplicity-unit-associate x lst1)
 		  (multiplicity-unit-associate x lst2)))

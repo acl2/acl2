@@ -113,8 +113,8 @@ arbiter).
 
 (defthm getp-of-setp
   (equal (getp n (setp m v l))
-         (if (equal (nfix n) (nfix m)) 
-             v 
+         (if (equal (nfix n) (nfix m))
+             v
            (getp n l))))
 
 (defthm getp-of-atom
@@ -151,7 +151,7 @@ arbiter).
 (defun next-pr (x)
   (let ((x (1+ x))) (if (> x (last-pr)) 0 x)))
 
-(defun next-pc (x) 
+(defun next-pc (x)
   (let ((x (1+ x))) (if (> x (last-pc)) 0 x)))
 
 (defun in-crit (p)
@@ -169,7 +169,7 @@ arbiter).
              (ndx (if (and (not (in-crit p+)) (= i ndx)) n+ ndx)))
         (cons ndx prs))
     s))
-  
+
 (in-theory (disable (sys-step) (next-pr) (next-pc) (in-crit)))
 
 (defun sys-init () (cons 0 ()))
@@ -183,7 +183,7 @@ arbiter).
 
 ;; the following is just a rewrite rule we need from linear arithmetic (which
 ;; does not "rewrite")
-(local 
+(local
  (defthm linear-factoid3
    (implies (and (integerp x)
                  (integerp y))
@@ -292,7 +292,7 @@ arbiter).
          (ndx (car s))
          (prs (cdr s))
          (nogo (not (equal ndx (pick-pr)))))
-    (lexprod 
+    (lexprod
      (if (natp n) 1 2)
      (nfix (- (crit-pc) (getp (pick-pr) prs)))
      (if nogo 2 1)
@@ -311,10 +311,10 @@ arbiter).
 
 (defun good-time (n)
   (declare (xargs :measure (good-measure n)
-                  :hints (("Subgoal 1" 
+                  :hints (("Subgoal 1"
                            :use ((:instance last-pc-gt-crit-pc)
                                  (:instance pick-pr-<=-last-pr))
-                           :in-theory (disable last-pc-gt-crit-pc 
+                           :in-theory (disable last-pc-gt-crit-pc
                                                pick-pr-<=-last-pr
                                                getp setp)))))
   (cond ((not (natp n)) (good-time 0))
@@ -338,7 +338,7 @@ arbiter).
 (defun time>= (y x)
   (and (natp y) (implies (natp x) (>= y x))))
 
-(defun-sk eventually-good (x) 
+(defun-sk eventually-good (x)
   (exists (y) (and (time>= y x) (good (run y)))))
 
 (defthm progress-or-liveness

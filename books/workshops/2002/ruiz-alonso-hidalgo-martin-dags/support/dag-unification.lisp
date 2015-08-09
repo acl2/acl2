@@ -16,7 +16,7 @@
 (set-compile-fns t)
 
 ;;; One stobj, used to store the unification problem.
-;;; terms-dag store the terms as dags, as we describe below. 
+;;; terms-dag store the terms as dags, as we describe below.
 
 (defstobj terms-dag
   (dag :type (array t (1000))
@@ -30,7 +30,7 @@
 ;;;   variable symbol.
 ;;; - Function nodes: they are of the form (F . L) where F is a function
 ;;;   symbol and L is the list of its arguments (and it is different
-;;;   from T). 
+;;;   from T).
 ;;; - "Is" nodes: they are if the form N, where N is an integer.
 
 
@@ -73,12 +73,12 @@
 		  (update-dagi h (if bound (cdr bound) (cons term t))
 			       terms-dag))
 		 (new-variables
-		  (if bound variables (acons term h variables)))) 
-	    (mv terms-dag (1+ h) nil new-variables)) 
+		  (if bound variables (acons term h variables))))
+	    (mv terms-dag (1+ h) nil new-variables))
 	(mv-let (terms-dag h1 hsl var1)
 		(term-as-dag-aux
 		 nil (cdr term) terms-dag (1+ h) variables)
-		(let* ((terms-dag 
+		(let* ((terms-dag
 			(update-dagi h (cons (car term) hsl) terms-dag)))
 		  (mv terms-dag h1 nil var1))))
     (if (endp term)
@@ -106,21 +106,21 @@
 (defun unif-two-terms-problem (t1 t2 terms-dag)
   (declare (xargs :mode :program
 		  :stobjs (terms-dag)))
-  (let* ((size (+ (length-term t t1) (length-term t t2) 1)) 
+  (let* ((size (+ (length-term t t1) (length-term t t2) 1))
 	 (terms-dag (resize-dag size terms-dag)))
     (term-as-dag (list 'equ t1 t2) terms-dag)))
-       
+
 ;;; Examples:
 
 ;(unif-two-terms-problem
 ;    '(f x (g (a) y)) '(f x (g y x)) terms-dag)
 ; (show-dag 0 10 terms-dag)
-; ===> ((EQU 1 6) (F 2 3) (X . T) (G 4 5) (A) (Y . T) 
+; ===> ((EQU 1 6) (F 2 3) (X . T) (G 4 5) (A) (Y . T)
 ;                 (F 7 8) 2 (G 9 10) 5 2)
 ;(unif-two-terms-problem
 ;   '(f (h z) (g (h x) (h u))) '(f x (g (h u) v)) terms-dag)
 ;(show-dag 0 14 terms-dag)
-; ===> ((EQU 1 9) (F 2 4) (H 3) (Z . T) (G 5 7) (H 6) (X . T) (H 8) (U . T) 
+; ===> ((EQU 1 9) (F 2 4) (H 3) (Z . T) (G 5 7) (H 6) (X . T) (H 8) (U . T)
 ;                 (F 10 11) 6 (G 12 14) (H 13) 8 (V . T))
 
 ;;; Some macros, to improve readability:
@@ -141,7 +141,7 @@
   `(integerp ,x))
 
 ;;; Before defining the unification algorithm, we need some auxiliary
-;;; functions: 
+;;; functions:
 
 ;;; The function dag-deref finds the end of a instantiation chain
 
@@ -203,7 +203,7 @@
 	 (p2 (dagi t2 terms-dag)))
     (cond
      ((= t1 t2) (mv R U t terms-dag))
-     ((dag-variable-p p1)  
+     ((dag-variable-p p1)
       (if (occur-check t t1 t2 terms-dag)
 	  (mv nil nil nil terms-dag)
 	(let ((terms-dag (update-dagi t1 t2 terms-dag)))
@@ -218,12 +218,12 @@
 		(if bool
 		    (mv (append pair-args R) U t terms-dag)
 		  (mv nil nil nil terms-dag)))))))
-	   
+
 ;;; REMARK: If we want to be able to reconstruct the original
 ;;; unification problem, we could apply the elimination rule returning
-;;; (mv R (cons (cons (dag-symbol p1) t1) U) t terms-dag) instead of 
-;;; (mv R (cons (cons (dag-symbol p1) t2) U) t terms-dag) 
-;;; This would be equally sound. 
+;;; (mv R (cons (cons (dag-symbol p1) t1) U) t terms-dag) instead of
+;;; (mv R (cons (cons (dag-symbol p1) t2) U) t terms-dag)
+;;; This would be equally sound.
 
 
 ;;; Iterative application of transformation steps until failure is
@@ -291,7 +291,7 @@
   (if (endp vars)
       nil
     (cons
-     (cons (caar vars) 
+     (cons (caar vars)
 	   (dag-as-term t (cdar vars) terms-dag))
      (show-umg (cdr vars) terms-dag))))
 
@@ -309,7 +309,7 @@
 		  :mode :program))
   (let ((terms-dag
 	 (unif-two-terms-problem t1 t2 terms-dag)))
-    (mv-let (S U bool terms-dag) 
+    (mv-let (S U bool terms-dag)
 	    (dag-solve-system
 	     (initial-to-be-solved terms-dag) nil t terms-dag)
 	    (declare (ignore S))
@@ -321,14 +321,14 @@
 ;;; -------------------------
 
 ;;; Note that this is esentially the same function as dag-mgu, but we
-;;; are not interested in the unifier, only in unifiability. 
+;;; are not interested in the unifier, only in unifiability.
 
 (defun dag-unifiable (t1 t2 terms-dag)
   (declare (xargs :stobjs (terms-dag)
 		  :mode :program))
   (let ((terms-dag
 	 (unif-two-terms-problem t1 t2 terms-dag)))
-    (mv-let (S U bool terms-dag) 
+    (mv-let (S U bool terms-dag)
 	    (dag-solve-system
 	     (initial-to-be-solved terms-dag)
 	     nil t terms-dag)
@@ -343,7 +343,7 @@
 ;;;;
 
 ;;; See pages 85 and 86 of "Term Rewriting and All That...", Baader &
-;;; Nipkow. 
+;;; Nipkow.
 
 ;;; Auxiliary functions to build the unification problem
 (defun list-of-n (n)
@@ -447,7 +447,7 @@
 ;;; For n>20, impractical...
 
 
-;;; Analogue to the previous unification problem, but not unifiable. 
+;;; Analogue to the previous unification problem, but not unifiable.
 
 (defun exp-unif-problem-t1-qn (n)
   (declare (xargs :guard (and (integerp n) (>= n 0))))

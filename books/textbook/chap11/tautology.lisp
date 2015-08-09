@@ -2,7 +2,7 @@
 (include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
-; Section 11.5 Tautology Checking 
+; Section 11.5 Tautology Checking
 
 ; In this section, we define a notion of ifexp and prove the correctness
 ; of a simple tautology checker for such expressions.
@@ -90,7 +90,7 @@
 ; the measure to use.  It is the lexicographic combination of the two
 ; measures just defined.
 
-(verify-termination 
+(verify-termination
  if-n
  (declare (xargs :measure
 		 (cons (+ 1 (if-complexity x))
@@ -264,7 +264,7 @@
 
 (defthm normp-if-n
   (normp (if-n x)))
-           
+
 (defthm peval-if-n
   (equal (peval (if-n x) a)
          (peval x a)))
@@ -326,7 +326,7 @@
 ; Part of the specification of falsify is that on non-tautological normalized
 ; if-expressions, the first result of falsify is t.  The first result is
 ; (mv-nth 0 ...).
- 
+
 (defthm when-tautp-fails-falsify-wins
   (implies (and (normp x)
                 (not (tautp x a)))

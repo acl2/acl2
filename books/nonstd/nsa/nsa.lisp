@@ -50,7 +50,7 @@
 ;;; are standard.  Moreover, all complex numbers with realpart and
 ;;; imagpart in this range will be standard, too.
 ;;;
-;;; In addition, we get that 
+;;; In addition, we get that
 
 (defthm standard-numberp-rationalp
   (implies (and (rationalp x)
@@ -62,7 +62,7 @@
 				  (y (numerator x)))
 	   :in-theory (disable standardp-times)))
   :rule-classes nil)
-					
+
 (defthm standard-numberp-rationalp-with-syntaxp
   (implies (and (syntaxp (and (consp x) (eq (car x) 'quote)))
 		(rationalp x)
@@ -141,7 +141,7 @@
 				standardp-times
 				standard-numberp-naturals-to-10
 				truncate rem)))))
-	   
+
 (local
  (defthm rem-mod-integers-up-to-10000
    (implies (and (integerp x) (< 0 x) (<= x 10000))
@@ -238,22 +238,22 @@
   :rule-classes nil)
 
 (defthm standard-numberp-rationals-num-demom-100000000
-  (implies (and (rationalp x) 
+  (implies (and (rationalp x)
 		(<= -100000000 (numerator x))
 		(<= (numerator x) 100000000)
 		(<= (denominator x) 100000000))
 	   (standard-numberp x))
   :hints (("Goal"
 	   :use ((:instance standard-numberp-rationalp)
-		 (:instance standard-numberp-integers-to-100000000 
+		 (:instance standard-numberp-integers-to-100000000
 			    (x (numerator x)))
-		 (:instance standard-numberp-integers-to-100000000 
+		 (:instance standard-numberp-integers-to-100000000
 			    (x (denominator x))))))
   :rule-classes nil)
 
 (defthm standard-numberp-rationals-num-demom-100000000-with-syntaxp
   (implies (and (syntaxp (and (consp x) (eq (car x) 'quote)))
-		(rationalp x) 
+		(rationalp x)
 		(<= -100000000 (numerator x))
 		(<= (numerator x) 100000000)
 		(<= (denominator x) 100000000))
@@ -263,7 +263,7 @@
 
 ;;; Now, we have some theorems about standard-part.  We are careful
 ;;; here to not assume too much about i-large numbers.  In particular,
-;;; we limit our discussion to i-limited numbers. 
+;;; we limit our discussion to i-limited numbers.
 
 (defthm standard-part-of-complex-2
   (implies (complexp x)
@@ -275,7 +275,7 @@
 				   (y (imagpart x))))
 	   :in-theory (disable standard-part-of-complex)))
   :rule-classes nil)
-			
+
 (defthm standard-part-is-idempotent
     (implies (acl2-numberp x)
 	     (equal (standard-part (standard-part x))
@@ -411,7 +411,7 @@
   (implies (and (i-limited x)
 		(not (i-small x)))
 	   (i-limited (/ x))))
-			     
+
 ;;; Next, we can build a theory about i-large numbers.  It would be
 ;;; nice to be able to say something about i-large-plus, but this is
 ;;; not possible.  Consider "x + -x", for example.
@@ -484,7 +484,7 @@
 (defthm i-close-to-small-sum
     (implies (and (acl2-numberp x)
 		  (standardp x)
-		  (i-small eps)) 
+		  (i-small eps))
 	     (i-close x (+ x eps))))
 
 (defthm i-close-small
@@ -543,7 +543,7 @@
 		  (i-limited x))
 	     (equal (equal (standard-part x) (standard-part y))
 		    t))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance i-close-limited))
 	   :in-theory (enable-disable (i-close i-small)
 				      (i-close-limited)))))
@@ -580,7 +580,7 @@
 		(realp y))
 	   (< (abs x) (abs y)))
   :hints (("Goal"
-	   :use ((:instance small-<-non-small-lemma 
+	   :use ((:instance small-<-non-small-lemma
 			    (x (abs x))
 			    (y (abs y))))
 	   :in-theory (disable small-<-non-small-lemma))))
@@ -650,7 +650,7 @@
 	    (i-large y))
    :hints (("Goal"
 	    :use ((:instance large->-non-large-lemma))
-	    :in-theory (disable i-large 
+	    :in-theory (disable i-large
 				standards-are-limited
 				i-close-large i-close-large-2
 				i-close-limited i-close-limited-2
@@ -663,7 +663,7 @@
 		(<= (abs x) (abs y)))
 	   (i-large y))
    :hints (("Goal"
-	    :use ((:instance large-if->-large-lemma 
+	    :use ((:instance large-if->-large-lemma
 			     (x (abs x))
 			     (y (abs y))))
 	    :in-theory '(abs fix i-large-uminus))))
@@ -681,7 +681,7 @@
 			    (x x)
 			    (y b)))
 	   :in-theory (enable-disable (abs) (large-if->-large)))))
-   
+
 (in-theory (disable nsa-theory))
 
 ;;; Now we tackle the theory of non-standard complex number
@@ -739,8 +739,8 @@
 	    (equal (/ (complex r s))
 		   (/ (complex r (- s))
 		      (+ (* r r) (* s s)))))
-   :hints (("Goal" 
-	    :use ((:instance equal-/ 
+   :hints (("Goal"
+	    :use ((:instance equal-/
 			     (x (complex r s))
 			     (y (/ (complex r (- s))
 				   (+ (* r r) (* s s))))))
@@ -764,7 +764,7 @@
 	     (equal (/ (complex r s))
 		    (complex (/ r (+ (* r r) (* s s)))
 			     (/ (- s) (+ (* r r) (* s s))))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use ((:instance lemma-5
 			      (r r)
 			      (s (- s))
@@ -783,7 +783,7 @@
    :hints (("Goal"
 	    :cases ((or (not (= r 0)) (not (= s 0))))
 	    :in-theory (disable lemma-1 lemma-2 lemma-3 lemma-4))))
-	   
+
  )
 
 ;;; This is a very useful rewriting of complex inverses, when the
@@ -816,7 +816,7 @@
 
 (encapsulate
  ()
- 
+
  (local
   (in-theory (disable limited-squeeze)))
 
@@ -875,7 +875,7 @@
 			      (x (/ (+ (* r r) (* s s))))
 			      (y (/ (* r r)))))
 	     :in-theory '(nonnegative-product lemma-2)))))
-	  
+
  ;; Of course, the theorem above also holds for negative infinitesimal
  ;; 1/r.
 
@@ -903,7 +903,7 @@
      (equal (standard-part (/ (+ (* r r) (* s s)))) 0))
     :hints (("goal"
 	     :cases ((< 0 r) (< r 0))))))
-  
+
  ;; When 1/s is not infinetsimal, we can multiply both sides of the
  ;; equation above by s, and the result still holds.
 
@@ -922,7 +922,7 @@
 			      (y (/ (+ (* r r) (* s s))))))
 	     :in-theory (enable-disable (i-small i-large)
 					(limited*small->small))))))
-  
+
  ;; The same holds when 1/r is not infinitesimal, so we can multiply
  ;; both sides by r.  We consider the cases when x is positive and
  ;; negative separately.  First for positive r....
@@ -942,9 +942,9 @@
 		   (:instance standard-part-<=
 			      (x (* r (/ (+ (* r r) (* s s)))))
 			      (y (/ r))))))))
-  
+
  ;; ...then for negative r...
- 
+
  (local
   (defthm lemma-10
     (implies
@@ -960,7 +960,7 @@
 		   (:instance standard-part-<=
 			      (x (/ r))
 			      (y (* r (/ (+ (* r r) (* s s)))))))))))
-  
+
  ;; ... and then we combine the proofs for all possible r.
 
  (local
@@ -972,7 +972,7 @@
      (equal (standard-part (* r (/ (+ (* r r) (* s s))))) 0))
     :hints (("goal"
 	     :cases ((< 0 r) (< r 0))))))
-  
+
  ;; In summary, we have that if 1/r is infinitesimal, so is r/(r^2+s^2).
 
  (local

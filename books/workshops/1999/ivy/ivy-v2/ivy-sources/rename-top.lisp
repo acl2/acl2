@@ -11,7 +11,7 @@
 
 (encapsulate
  nil
- 
+
  (local (include-book "rename-sound"))
 
  ;; This event is redundant.  Its occurrence here makes it global.
@@ -25,7 +25,7 @@
 
 (encapsulate
  nil
- 
+
  (local (include-book "rename-unique"))
 
  ;; This event is redundant.  Its occurrence here makes it global.

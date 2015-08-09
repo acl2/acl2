@@ -13,7 +13,7 @@
 
 (in-package "ACL2")
 
-(defconst *abstract-proofs-exports* 
+(defconst *abstract-proofs-exports*
   '(last-elt r-step direct operator elt1 elt2 r-step-p make-r-step
     first-of-proof last-of-proof steps-up steps-down steps-valley
     proof-before-valley proof-after-valley inverse-r-step inverse-proof
@@ -37,7 +37,7 @@
 
 
 
-;;; We prove the following elementary result in simplicial topology: 
+;;; We prove the following elementary result in simplicial topology:
 
 ;;; Theorem 1: Let $K$ be a simplicial set. Any degenerate $n$-simplex
 ;;; $x\in K_n$ can be expressed in a unique way as a (possibly) iterated
@@ -51,7 +51,7 @@
 ;;; Theorem 2: Any ACL2 list $l$ can be expressed in a unique way as a
 ;;; pair $(dl,l')$ such that: $$l=degenerate(dl,l')$$
 ;;; with $l'$ without two consecutive elements equal and $dl$ an
-;;; strictly increasingdegeneracy list. 
+;;; strictly increasingdegeneracy list.
 
 
 ;;; We present an alternative proof, based on defining a reduction
@@ -76,7 +76,7 @@
 ;;; The reduction will be defined following the ideas of a previous
 ;;; formalization of abstract reduction systemas reported in reference
 ;;; [9] of the paper. This will allow us to functionally instantiate the
-;;; properties proved in that library of results. 
+;;; properties proved in that library of results.
 
 ;;; Domain of the reduction (we do not need to be more specific):
 
@@ -85,10 +85,10 @@
   t)
 
 ;;; Operators are of the form (<TYPE> . <I>) where <TYPE> is 'O or 'R
-;;; and <I> is the position of the list where the reduction takes place  
+;;; and <I> is the position of the list where the reduction takes place
 
 ;;; The function checking when it is valid to apply an operator to an
-;;; element: 
+;;; element:
 
 (defun s-legal (x op)
   (let ((l1 (car x))
@@ -104,19 +104,19 @@
 	   (< op-index (1- (len l2)))
 	   (equal (nth op-index l2)
 		  (nth (1+ op-index) l2))))))
-	
+
 
 (defun interchange1+ (i l)
   (if (zp i)
       (list* (second l) (1+ (first l)) (cddr l))
     (cons (first l) (interchange1+ (1- i) (cdr l)))))
-      
+
 (defun del-nth (i l)
   (if (zp i)
       (cdr l)
     (cons (car l) (del-nth (1- i) (cdr l)))))
 
-;;; The function that applies on step of reduction 
+;;; The function that applies on step of reduction
 
 (defun s-reduce-one-step (x op)
   (let ((l1 (car x))
@@ -146,7 +146,7 @@
   (cond ((endp l) 0)
 	((>= x (car l)) (1+ (disorders-aux (1+ x) (cdr l))))
 	(t (disorders-aux x (cdr l)))))
-    
+
 
 (defun disorders (l)
   (if (endp l)
@@ -167,13 +167,13 @@
 	    (< (disorders l1) (disorders l3)))
 	   (t nil))))
 
-    
+
 (defun s-ordinal-embedding (p)
   (let ((l1 (car p))
 	(l2 (cdr p)))
     (cons (cons 1 (1+ (consecutive-repetitions l2)))
 	  (disorders l1))))
-  
+
 
 (defthm s-rel-well-founded-relation
   (and (o-p (s-ordinal-embedding x))
@@ -187,7 +187,7 @@
 
 ;;; Second, notherianity of the reduction is justified proving that
 ;;; every application of a "legal" operator returns an smaller element
-;;; (w.r.t.  the well-founded relation s-rel) 
+;;; (w.r.t.  the well-founded relation s-rel)
 
 ;;; previous lemmas
 
@@ -206,7 +206,7 @@
 	   (< (disorders (interchange1+ i l))
 	      (disorders l)))
   :rule-classes :linear)
-	   
+
 
 (defthm car-del-nth
   (implies (and (natp i)
@@ -263,7 +263,7 @@
 	    nil))))))
 
 ;;; After a number of needed lemmas, we prove the main properties of
-;;; s-reducible: 
+;;; s-reducible:
 
 
 ;;; Some lemmas
@@ -391,7 +391,7 @@
 ;;; The equivalence closure s-equiv-p. Note that we need an extra
 ;;; argument P representing the sequence of reduction steps (either from
 ;;; direct or inverse) connecting the elements related (this sequence is
-;;; usually called a "proof")  
+;;; usually called a "proof")
 
 (defun s-equiv-p (x y p)
    (if (endp p)
@@ -415,7 +415,7 @@
   (defthm first-element-of-equivalence
     (implies (and (s-equiv-p x y p) (consp p))
 	     (equal (elt1 (car p)) x))))
- 
+
  (local
   (defthm last-elt-of-equivalence
     (implies (and (s-equiv-p x y p) (consp p))
@@ -427,7 +427,7 @@
 	     (equal (s-equiv-p x y (append p1 p2))
 		  (and (s-equiv-p x z p1)
 		       (s-equiv-p z y p2))))))
- 
+
  (local
   (defthm consp-inverse-proof
     (iff (consp (inverse-proof p))
@@ -437,24 +437,24 @@
   (defthm last-elt-append
     (implies (consp p2)
 	     (equal (last-elt (append p1 p2)) (last-elt p2)))))
-  
+
  (local
   (defthm last-elt-inverse-proof
-    (implies (consp p) 
+    (implies (consp p)
 	     (equal (last-elt (inverse-proof p))
 		    (inverse-r-step (car p))))))
-  
+
 
  (defthm s-equiv-p-symmetric
    (implies (s-equiv-p x y p)
 	    (s-equiv-p y x (inverse-proof p))))
- 
+
  (defthm s-equiv-p-transitive
    (implies (and (s-equiv-p x y p1)
 		 (s-equiv-p y z p2))
 	    (s-equiv-p x z (append p1 p2)))
    :rule-classes nil))
- 
+
 ;;; Note: In abstract-proofs.lisp (included by this book) we have the
 ;;; following definitions, checking "proof shapes":
 
@@ -473,11 +473,11 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; PART VI: Local confluence of S-reductions 
+;;; PART VI: Local confluence of S-reductions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; In this context, a reduction is locally confluent if every local
-;;; peak proof can be transformed in an equivalent valley proof. 
+;;; peak proof can be transformed in an equivalent valley proof.
 
 ;;; The following auxiliary definitions lead us to the definition of a
 ;;; function s-transform-local-peak. Each of these auxiliary definitions
@@ -486,61 +486,61 @@
 
 
 (defun s-transform-disjoint-o-o-local-peak  (i j l1 l2 l3 l4)
-    (list (make-r-step :direct t  
+    (list (make-r-step :direct t
 		       :operator (cons 'o j)
-		       :elt1 (cons l1 l2) 
+		       :elt1 (cons l1 l2)
 		       :elt2 (cons (interchange1+ j l1) l2))
-	  (make-r-step :direct nil  
+	  (make-r-step :direct nil
 		       :operator (cons 'o i)
-		       :elt1 (cons (interchange1+ i l3) l4) 
+		       :elt1 (cons (interchange1+ i l3) l4)
 		       :elt2 (cons l3 l4))))
 
 
 
 (defun s-transform-contiguous-o-o-local-peak
   (i j l1 l2 l3 l4)
-    (list (make-r-step :direct t  
+    (list (make-r-step :direct t
 		       :operator (cons 'o j)
-		       :elt1 (cons l1 l2) 
+		       :elt1 (cons l1 l2)
 		       :elt2 (cons (interchange1+ j l1) l2))
-	  (make-r-step :direct t  
+	  (make-r-step :direct t
 		       :operator (cons 'o i)
 		       :elt1 (cons (interchange1+ j l1) l2)
 		       :elt2 (cons
 			      (interchange1+ i
 					     (interchange1+ j l1))
 			      l2))
-	  (make-r-step :direct nil  
+	  (make-r-step :direct nil
 		       :operator (cons 'o j)
 		       :elt1 (cons
 			      (interchange1+ j
 					     (interchange1+ i l3))
 			      l4)
 		       :elt2 (cons (interchange1+ i l3) l4))
-	  (make-r-step :direct nil  
+	  (make-r-step :direct nil
 		       :operator (cons 'o i)
-		       :elt1 (cons (interchange1+ i l3) l4) 
+		       :elt1 (cons (interchange1+ i l3) l4)
 		       :elt2 (cons l3 l4))))
 
 
 
 (defun s-transform-o-r-local-peak (i j l1 l2 l3 l4)
-  (list (make-r-step :direct t  
+  (list (make-r-step :direct t
 		     :operator (cons 'r j)
-		     :elt1 (cons l1 l2) 
+		     :elt1 (cons l1 l2)
 		     :elt2 (cons (cons j l1) (del-nth j l2)))
-	(make-r-step :direct nil  
+	(make-r-step :direct nil
 		     :operator (cons 'o (1+ i))
-		     :elt1 (cons (interchange1+ (1+ i) l3) l4) 
+		     :elt1 (cons (interchange1+ (1+ i) l3) l4)
 		     :elt2 (cons l3 l4))))
 
-  
+
 (defun s-transform-r-o-local-peak (i j l1 l2 l3 l4)
-  (list (make-r-step :direct t  
+  (list (make-r-step :direct t
 		     :operator (cons 'o (1+ j))
-		     :elt1 (cons l1 l2) 
+		     :elt1 (cons l1 l2)
 		     :elt2 (cons (interchange1+ (1+ j) l1) l2))
-	(make-r-step :direct nil  
+	(make-r-step :direct nil
 		     :operator (cons 'r i)
 		     :elt1 (cons (cons i l3)  (del-nth i l4))
 		     :elt2 (cons l3 l4))))
@@ -548,38 +548,38 @@
 
 (defun s-transform-r-r-i-<-j-local-peak
   (i j l1 l2 l3 l4)
-  (list (make-r-step :direct t  
+  (list (make-r-step :direct t
 		     :operator (cons 'r (1- j))
-		     :elt1 (cons l1 l2) 
+		     :elt1 (cons l1 l2)
 		     :elt2 (cons (cons (1- j) l1) (del-nth (1- j) l2)))
-	(make-r-step :direct t  
+	(make-r-step :direct t
 		     :operator (cons 'o 0)
 		     :elt1 (cons (cons (1- j) l1) (del-nth (1- j) l2))
 		     :elt2 (cons (interchange1+ 0 (cons (1- j) l1))
 				 (del-nth (1- j) l2)))
-	(make-r-step :direct nil  
+	(make-r-step :direct nil
 		     :operator (cons 'r i)
 		     :elt1 (cons (cons i l3) (del-nth i l4))
 		     :elt2 (cons l3 l4))))
-	
+
 
 
 (defun s-transform-r-r-i->-j-local-peak
   (i j l1 l2 l3 l4)
-  (list (make-r-step :direct t  
+  (list (make-r-step :direct t
 		     :operator (cons 'r j)
-		     :elt1 (cons l1 l2) 
+		     :elt1 (cons l1 l2)
 		     :elt2 (cons (cons j l1) (del-nth j l2)))
-	(make-r-step :direct nil  
+	(make-r-step :direct nil
 		     :operator (cons 'o 0)
 		     :elt1 (cons (interchange1+ 0 (cons (1- i) l3))
 				 (del-nth (1- i) l4))
 		     :elt2 (cons (cons (1- i) l3) (del-nth (1- i) l4)))
-	(make-r-step :direct nil  
+	(make-r-step :direct nil
 		     :operator (cons 'r (1- i))
 		     :elt1 (cons (cons (1- i) l3) (del-nth (1- i) l4))
 		     :elt2 (cons l3 l4))))
-	
+
 
 
 
@@ -598,7 +598,7 @@
          (type2 (car operator2))
 	 (i (cdr operator1))
 	 (j (cdr operator2)))
-    (cond ((and (equal type1 'o) (equal type2 'o)) 
+    (cond ((and (equal type1 'o) (equal type2 'o))
 	   (cond ((= i j) nil)
 		 ((or (< (+ i 1) j) (< (+ j 1) i))
 		  (s-transform-disjoint-o-o-local-peak i j l1 l2 l3 l4))
@@ -606,15 +606,15 @@
 							 l4))))
 	  ((and (equal type1 'o) (not (equal type2 'o)))
 	   (s-transform-o-r-local-peak i j l1 l2 l3 l4))
-                                          
+
 	  ((and (not (equal type1 'o)) (equal type2 'o))
-	   (s-transform-r-o-local-peak i j l1 l2 l3 l4)) 
-                                          
-	  (t (cond ((= i j) nil) 
+	   (s-transform-r-o-local-peak i j l1 l2 l3 l4))
+
+	  (t (cond ((= i j) nil)
 		   ((< i j)
 		    (s-transform-r-r-i-<-j-local-peak i j l1 l2 l3 l4))
 		   (t (s-transform-r-r-i->-j-local-peak i j l1 l2 l3 l4)))))))
-	     
+
 
 ;;; ----------------------------------------------------------
 
@@ -643,7 +643,7 @@
 	   (steps-valley (s-transform-local-peak p))))
 
 ;;; For local-confluence-2, we need to deal with any of the auxiliary
-;;; functions  
+;;; functions
 
 
 ;;; s-transform-o-r-local-peak
@@ -664,7 +664,7 @@
 		       (interchange1+ i l) m
 		       (cons j l)
 		       (del-nth j m)))))
-	   
+
 
 ;;; s-transform-disjoint-r-o
 
@@ -681,9 +681,9 @@
 		       i j
 		       (cons i l) (del-nth i m)
 		       (interchange1+ j l) m))))
-		       
-    
-		
+
+
+
 ;;; s-transform-disjoint-o-o
 
 (defthm len-interchange1+
@@ -703,7 +703,7 @@
 (defthm nth-bigger-than-1-cons
   (implies (posp j)
 	   (equal (nth j (cons x l)) (nth (1- j) l))))
-  
+
 
 (defthm nth-interchange1+-case-2
   (implies (and (natp i)
@@ -765,7 +765,7 @@
 		       (interchange1+ i l) m
 		       (interchange1+ j l) m))))
 
-	   
+
 ;;; s-transform-contiguous-o-o-local-peak
 
 (defthm nth-i-interchange1+-i
@@ -784,7 +784,7 @@
 		(< (1+ i) (1- (len l))))
 	   (equal (nth (+ 2 i) (interchange1+ (+ 1 i) l))
 		  (1+ (nth (1+ i) l))))
-  :hints (("Goal" :use (:instance nth-1+i-interchange1+-i (i (1+ i)))))) 
+  :hints (("Goal" :use (:instance nth-1+i-interchange1+-i (i (1+ i))))))
 
 
 
@@ -814,7 +814,7 @@
 			 (interchange1+ i l) m
 			 (interchange1+ (1+ i) l) m)))
     :hints (("Goal" :in-theory (disable nth interchange1+)))))
-  
+
  (local
   (defthm s-transform-contiguous-o-o-local-peak-s-equiv-p-case-2
     (implies (and (natp j)
@@ -828,9 +828,9 @@
 			 (interchange1+ (1+ j) l) m
 			 (interchange1+ j l) m)))
     :hints (("Goal" :in-theory (disable nth interchange1+)))))
-  
-  
-  
+
+
+
  (defthm s-transform-contiguous-o-o-local-peak-s-equiv-p
    (implies (and (natp i)
 		 (< i (1- (len l)))
@@ -848,8 +848,8 @@
 			(interchange1+ i l) m
 			(interchange1+ j l) m)))
    :hints (("Goal" :cases ((= j (1+ i)) (= i (1+ j)))))))
- 
- 
+
+
 
 ;;; s-transform-r-r-i-<-j-local-peak
 
@@ -916,7 +916,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; PART VII: S-reduction is convergent 
+;;; PART VII: S-reduction is convergent
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; We prove now that S-reduction is convergent. That is every
@@ -938,7 +938,7 @@
 			    (CNV::x p1) (CNV::y p2) (CNV::p proof))
 		 (CNV::q simplex)
 		 (CNV::q-w (lambda () (cons nil nil)))
-		 (CNV::equiv-p s-equiv-p) 
+		 (CNV::equiv-p s-equiv-p)
 		 (CNV::proof-step-p s-proof-step-p)
 		 (CNV::r-equivalent
 		  (lambda (p1 p2)
@@ -958,7 +958,7 @@
 
 ;;; We prove the relation between S-reduction and degeneracy. See the
 ;;; paper for an explanation of this concept and its role in Simplicial
-;;; Topology 
+;;; Topology
 
 ;;; Degenerate
 
@@ -988,7 +988,7 @@
 
 
 (defthm deg-composition-main-lemma
-  (implies (and 
+  (implies (and
 	    (natp i)
 	    (< i (len m))
 	    (natp j)
@@ -1013,7 +1013,7 @@
 		  (degenerate l m)))
   :hints (("Goal" :in-theory (disable deg)))
   :rule-classes nil)
-  
+
 
 (defthm degenerate-interchange
   (implies (and
@@ -1051,12 +1051,12 @@
 (defun degenerate-steps (l1 l2)
   (if (endp l1)
       nil
-    (cons (make-r-step :direct nil  
+    (cons (make-r-step :direct nil
 		       :operator (cons 'r (car l1))
-		       :elt1 (cons l1 l2) 
+		       :elt1 (cons l1 l2)
 		       :elt2 (cons (cdr l1) (deg (car l1) l2)))
 	  (degenerate-steps (cdr l1) (deg (car l1) l2)))))
-  
+
 
 (defthm nth-deg-repetition
   (implies (and (natp i)
@@ -1172,7 +1172,7 @@
 
 
 (defthm s-normal-form-increasing-and-non-degenerated
-  (let ((snf (s-normal-form p))) 
+  (let ((snf (s-normal-form p)))
     (and (increasing (car snf))
 	 (non-degenerated (cdr snf)))))
 
@@ -1198,7 +1198,7 @@
 	(l1 (cdr p1))
 	(dl2 (car p2))
 	(l2 (cdr p2)))
-  (implies 
+  (implies
     (and (canonical p1) (canonical p2)
 	 (equal (degenerate dl1 l1) l)
 	 (equal (degenerate dl2 l2) l))
@@ -1216,7 +1216,7 @@
 ;;;;;;;;;;;;;;;;;; FINAL THEOREMS ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; Finally, (s-normal-form (cons nil l)) is a witness
-  
+
 
 (defun generate (l)
   (s-normal-form (cons nil l)))
@@ -1232,7 +1232,7 @@
 
 (defthm uniqueness
 
-  (implies 
+  (implies
     (and (canonical p1) (canonical p2)
 	 (equal (degenerate (car p1) (cdr p1)) l)
 	 (equal (degenerate (car p2) (cdr p2)) l))

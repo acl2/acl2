@@ -19,10 +19,10 @@
 ;;; We see here proofs from a very general point of view. Proofs are
 ;;; lists of r-steps, and r-steps are structures with four fields:
 ;;; elt1, elt2, direct and operator (every step "connect" elt1 and elt2
-;;; in the direction given by direct, and by application of operator). 
+;;; in the direction given by direct, and by application of operator).
 
 ;;; Definition and properties about manipulation of proofs and its form
-;;; are given here. 
+;;; are given here.
 
 ;;; The following is the definition of an abstract reduction step:
 
@@ -32,7 +32,7 @@
    elt1
    elt2
    (:options (:conc-name nil)
-	     (:do-not :tag)))   
+	     (:do-not :tag)))
 
 ;;; REMARK: An abstract proof will be defined as a list of r-steps. Note
 ;;; that, in this book, we do not require that the operator is applicable
@@ -50,7 +50,7 @@
 (defmacro last-elt (l)
   `(car (last ,l)))
 
-;;; First and last elements of a proof (including empty proofs) 
+;;; First and last elements of a proof (including empty proofs)
 
 (defun first-of-proof (x p)
    (if (endp p) x (elt1 (car p))))
@@ -68,7 +68,7 @@
       (steps-up (cdr p)))))
 
 ;;; Steps-down: A chain of direct steps
- 
+
 (defun steps-down (p)
    (if (endp p)
        t
@@ -77,7 +77,7 @@
       (steps-down (cdr p)))))
 
 ;;; Steps-valley: down and up
- 
+
 (defun steps-valley (p)
    (cond ((endp p) t)
 	 ((direct (car p)) (steps-valley (cdr p)))
@@ -85,7 +85,7 @@
 
 
 ;;; Steps-mountain: up and down
- 
+
 (defun steps-mountain (p)
    (cond ((endp p) t)
 	 ((direct (car p)) (steps-down (cdr p)))
@@ -110,7 +110,7 @@
     :elt1 (elt2 st)
     :elt2 (elt1 st)
     :operator (operator st)))
-      
+
 ;;; The piece of proof just before the first local-peak
 
 (defun proof-before-peak (p)
@@ -118,7 +118,7 @@
 	((and (not (direct (car p))) (direct (cadr p))) nil)
 	(t (cons (car p) (proof-before-peak (cdr p))))))
 
-;;; The piece of proof just after the first local peak  
+;;; The piece of proof just after the first local peak
 
 (defun proof-after-peak (p)
   (cond ((atom p) p)
@@ -251,7 +251,7 @@
   (implies (and (steps-down p1)
 		(steps-valley p2))
 	   (steps-valley (append p1 p2))))
-  
+
 (defthm steps-up-steps-valley
   (implies (steps-up p)
 	   (steps-valley p)))

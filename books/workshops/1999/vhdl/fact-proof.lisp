@@ -41,8 +41,8 @@
 	   (equal (nth n (insert-value m val st))
 		  (nth n st))))
 
-; ------------------------------------------ 
-;;; Basic properties on fact.doit-cycle	    
+; ------------------------------------------
+;;; Basic properties on fact.doit-cycle
 ; ------------------------------------------
 
 (defthm len_fact.doit-cycle
@@ -100,10 +100,10 @@
 		      (if (equal (nth 18 st) 1)
 			  (nth 12 st)
 			(nth 18 st))
-		    (nth 12 st)))))                   
+		    (nth 12 st)))))
 
 ;;; The value of 'op2+ is equal to 'doit.f if doit.r is not equal
-;;; to 1 and 'doit.mystate is equal to 1 
+;;; to 1 and 'doit.mystate is equal to 1
 
 (defthm lemma_fact.doit-cycle4
   (implies (equal (len st) 20)
@@ -162,7 +162,7 @@
 			1
 		      (nth 19 st))))))
 
-;;; Lemma about new values of doit.mystate after one cycle 
+;;; Lemma about new values of doit.mystate after one cycle
 ;;; of fact.doit-cycle
 
 (defthm lemma_fact.doit-cycle8
@@ -389,7 +389,7 @@
 
 (defthm length_computation-step_lemma
   (equal (len (computation-step st))
-	 (len st)) 
+	 (len st))
   :hints (("Goal"
 	   :in-theory (disable fact-cycle))))
 
@@ -461,7 +461,7 @@
 	   :in-theory (disable fact-cycle))))
 
 ; ---------------------------------------------------------------------
-;;; This function runs recursively and calls computation-step on doit.r 
+;;; This function runs recursively and calls computation-step on doit.r
 ; ---------------------------------------------------------------------
 
 (defun execute (st)

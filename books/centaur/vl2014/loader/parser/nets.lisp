@@ -480,11 +480,11 @@
              (scalaredp   (vl-is-token-of-type-p rtype :vl-kwd-scalared))
              (gstrength   (vl-disabled-gstrength strength))
              (cstrength   (vl-disabled-cstrength strength))
-             
+
 ; Subtle!  See the documentation for vl-netdecl-p and vl-assign-p.  If there
 ; are assignments, then the delay is ONLY about the assignments and NOT to
 ; be given to the decls.
-             
+
              ((mv decls assigns)
               (vl-build-netdecls loc declassigns nettype type atts vectoredp
                                  scalaredp delay cstrength gstrength))

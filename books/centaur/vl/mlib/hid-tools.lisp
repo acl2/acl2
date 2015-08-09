@@ -425,7 +425,7 @@ top-level hierarchical identifiers.</p>"
           ;; Found the declaration we want.  We aren't going to go any further:
           ;; there may be additional HID indexing stuff left, but if so it's just
           ;; array or structure indexing for the tail.
-          
+
           (b* ((trace (cons (make-vl-hidstep :name name1
                                              :item item
                                              ;; No indices -- they belong to
@@ -741,8 +741,8 @@ top-level hierarchical identifiers.</p>"
   (defthm vl-seltrace-indices-of-rev
     (equal (vl-seltrace->indices (rev x))
            (rev (vl-seltrace->indices x)))))
-         
-  
+
+
 
 (defprod vl-operandinfo
   ((orig-expr  vl-expr-p         "The original index expression, for error messages etc")
@@ -756,7 +756,7 @@ top-level hierarchical identifiers.</p>"
    (part     vl-partselect-p    "The final partselect")
    (type     vl-datatype-p      "The final datatype of the object, after
                                  partselecting.")))
-              
+
 
 (local (defthm nesting-level-of-vl-scopestack-find-item/context
          (<= (vl-scopestack-nesting-level
@@ -1076,7 +1076,7 @@ instance, in this case the @('tail') would be
            (vl-structmemberlist-resolved-p members))
     :hints (("Goal" :expand ((vl-datatype-resolved-p
                               (vl-union packedp signedp taggedp members pdims udims))))))
-  
+
   (defthm vl-datatype-resolved-p-of-make-enum
     (equal (vl-datatype-resolved-p
             (vl-enum basetype items pdims udims))
@@ -1236,7 +1236,7 @@ slightly different things:</p>
        ((when (eq (tag ref.item) :vl-paramdecl))
         (b* (((vl-paramdecl item) ref.item))
           (vl-paramtype-case item.type
-            :vl-typeparam 
+            :vl-typeparam
             (if (and item.type.default
                      (vl-datatype-resolved-p item.type.default))
                 (mv nil item.type.default)
@@ -1478,7 +1478,7 @@ slightly different things:</p>
 ;;     (b* ((x (vl-datatype-fix x)))
 ;;       (vl-datatype-case x
 ;;         :vl-coretype (mv nil x)
-;;         :vl-enum (mv nil x) ;; bozo 
+;;         :vl-enum (mv nil x) ;; bozo
 ;;         :vl-usertype
 ;;         (b* (((mv warning newx newss) (vl-usertype-resolve x ss))
 ;;              ((when warning) (mv warning newx))
@@ -1529,7 +1529,7 @@ slightly different things:</p>
              (vl-structmemberlist-resolved-p
               (mv-nth 1 (vl-datatype->structmembers x))))
     :hints(("Goal" :in-theory (enable vl-datatype->structmembers)))))
-  
+
 (define vl-find-structmember ((name stringp) (membs vl-structmemberlist-p))
   :returns (memb (iff (vl-structmember-p memb) memb))
   (if (atom membs)
@@ -1592,7 +1592,7 @@ are unsized dimensions."
     (mv nil nil)))
 
 (fty::deflist maybe-nat-list :elt-type maybe-natp)
-              
+
 
 (defines vl-datatype-size
   :prepwork ((local (in-theory (disable all-equalp
@@ -1698,7 +1698,7 @@ if unresolved dimensions are present.</p>"
                          (not (member nil x)))
                     (nat-listp x))
            :hints(("Goal" :in-theory (enable maybe-nat-list-p)))))
-  
+
   (verify-guards vl-datatype-size)
   (deffixequiv-mutual vl-datatype-size))
 
@@ -2115,7 +2115,7 @@ indicating that @('b') is considered signed.</p>
 ;;     (mv (err (iff (vl-msg-p err) err))
 ;;         (size    (implies (not err) (posp size)) :rule-classes :type-prescription))
 ;;     :measure (vl-datatype-count x)
-;;     (b* (((fun (fail reason args)) 
+;;     (b* (((fun (fail reason args))
 ;;           (mv (make-vl-msg :msg reason
 ;;                            :args args)
 ;;               nil))
@@ -2130,7 +2130,7 @@ indicating that @('b') is considered signed.</p>
 ;;               ((unless (and udim-size pdim-size))
 ;;                (fail "Dimensions of vector type ~a0 not resolvd"
 ;;                    (list x)))
-              
+
 ;;               ((vl-coredatatype-info typinfo) (vl-coretypename->info x.name))
 ;;               ((unless typinfo.size)
 ;;                ;; Something like a real, shortreal, void, realtime, chandle, etc.
@@ -2229,7 +2229,7 @@ indicating that @('b') is considered signed.</p>
 
 ;;       (:vl-enum ;; just need to look at the base type, right?
 ;;        (fail "bozo: implement enum typing"))
-      
+
 ;;       (:vl-struct ;; just need to look at signedp and packed?
 ;;        (b* (((unless x.packedp)
 ;;              (fail "non-packed struct")
@@ -2278,7 +2278,7 @@ usertypes resolved.</p>"
            ;; which you might think would be a 0-dimensional thing.
            t)
           (:vl-usertype (impossible))))))
-           
+
 
 
 
@@ -2321,7 +2321,7 @@ dimensions counts as unsigned.)</p>"
 ;;        ((when (consp udims)) (car udims))
 ;;        (pdims (vl-datatype->pdims x))
 ;;        ((when (consp pdims)) (car pdims))
-       
+
 
 
 
@@ -2809,7 +2809,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;                       ;; (:free (x) (vl-datatype-size (vl-datatype-update-dims nil nil x) ss))
 ;;                       ))
 ;;             ;; (and stable-under-simplificationp
-;;             ;;      '(:in-theory (enable 
+;;             ;;      '(:in-theory (enable
 ;;             ;;                     vl-datatype-update-dims
 ;;             ;;                     vl-datatype-set-unsigned
 ;;             ;;                     vl-datatype-packedp)))
@@ -2975,7 +2975,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
        ;; Note: We have at least one more dot in this HID, so if we don't have
        ;; a struct or union at the end of this, we have a problem.
        ((vl-hidexpr-dot x))
-       
+
        ((mv err rev-idxtrace)
         (vl-follow-array-indices (vl-hidindex->indices x.first) type))
 
@@ -3027,7 +3027,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
     (vl-follow-data-selects x.rest membtype trace))
   ///
 
-  
+
 
 
   (verify-guards vl-follow-data-selects)
@@ -3129,7 +3129,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;        ;; a struct or union at the end of this, we have a problem.
 ;;        ((vl-hidexpr-dot x))
 ;;        (nindices (len (vl-hidindex->indices x.first)))
-       
+
 ;;        ((mv err ?caveat idxtype dims ss)
 ;;         ;; Ignore the caveat because we're going dot-index into the new type at
 ;;         ;; least once more.
@@ -3185,7 +3185,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;                (not (vl-structmemberlist-check-usertypes members ss :rec-limit rec-limit))))
 ;;     :hints(("Goal" :in-theory (enable vl-datatype->structmembers
 ;;                                       vl-datatype-check-usertypes))))
-  
+
 ;;   (defthm vl-datatype-check-usertypes-of-find-structmember
 ;;     (implies (and (not (vl-structmemberlist-check-usertypes members ss :rec-limit rec-limit))
 ;;                   (vl-find-structmember name members))
@@ -3275,7 +3275,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                 nil)))
         (mv nil width))
       :otherwise (mv (vmsg "Impossible") (impossible)))))
-  
+
 
 (define vl-operandinfo-usertypes-ok ((x vl-operandinfo-p))
   (b* (((vl-operandinfo x)))
@@ -3291,10 +3291,10 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
                     (vl-seltrace-usertypes-ok x.seltrace)
                     (vl-datatype-resolved-p x.hidtype)
                     (consp x.hidtrace))))))
-           
+
 (define vl-operandinfo-index-count ((x vl-operandinfo-p))
   :returns (count natp :rule-classes :type-prescription)
-  ;; Gives the number of indices 
+  ;; Gives the number of indices
   (b* (((vl-operandinfo x)))
     (+ (vl-seltrace-index-count x.seltrace)
        (vl-partselect-case x.part
@@ -3472,7 +3472,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
              :hidtype type
              :seltrace seltrace
              :part x.part
-             :type final-type))) 
+             :type final-type)))
 
 
 
@@ -3612,7 +3612,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 ;;        ((mv err caveat-flg reduced-type idims reduced-ss)
 ;;         (vl-datatype-remove-dims (len x.indices) type type-ss))
 ;;        ((when err) (mv err nil nil nil reduced-ss))
-       
+
 ;;        ((unless has-partselect)
 ;;         (mv nil
 ;;             caveat-flg
@@ -3622,7 +3622,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
 
 ;;        ;; Take off one more dimension, and then add a dimension the width of
 ;;        ;; the partselect.
-       
+
 ;;        ;; Caveat-flag doesn't apply because implementations seem to agree that
 ;;        ;; partselects are always unsigned.
 ;;        ((mv err ?caveat-flg single-type psdims single-ss)
@@ -4201,7 +4201,7 @@ considered signed; in VCS, btest has the value @('0f'), indicating that
   :measure (vl-hidexpr-count x)
   (vl-hidexpr-case x
     :end x.name
-    :dot 
+    :dot
     (cat (vl-flatten-hidindex x.first)
          "."
          (vl-flatten-hidexpr x.rest))))

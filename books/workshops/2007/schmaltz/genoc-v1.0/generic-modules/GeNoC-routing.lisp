@@ -10,12 +10,12 @@
 
 (include-book "GeNoC-misc") ;; import also GeNoC-types
 
-(encapsulate 
+(encapsulate
  ;; Routing computes the route of each message within the network
  ;; It takes as arguments: M and NodeSet
  ;; It outputs a list of travel TrLst = (... (Id frm Route) ...)
  ;; Constraints:
- ;; 1/ If the input is a list of valid missives, the output must be 
+ ;; 1/ If the input is a list of valid missives, the output must be
  ;;    a list of valid travels (Ids are still unique)
  ;; 2/ Every route of every travel must be correct
  ;; 3/ Frms of the output must be equal to the frms of the input
@@ -33,27 +33,27 @@
                    (destination (DestM msv)))
               (cons (list Id frm (list (list origin destination)))
                     (route (cdr M)))))))
- 
- (local (defun routing (M NodeSet) 
+
+ (local (defun routing (M NodeSet)
           (declare (ignore NodeSet))
           (route M)))
-         
- ;; 1/ If the input is a list of valid missives, the output must be 
+
+ ;; 1/ If the input is a list of valid missives, the output must be
  ;;    a list of valid travels (Ids are still unique)
-  
+
  ;; local lemmas
  (local (defthm route-ids
-          ;; ids of the output TrLst are equal to the ids of 
+          ;; ids of the output TrLst are equal to the ids of
           ;; the initital missives
           (equal (V-Ids (route M)) (M-Ids M))))
 
  (local (defthm validfields-route
           (implies (Validfields-M M)
                    (validfields-TrLst (route M)))))
- 
+
  (local (defthm TrLstp-route
           (implies (and (Validfields-M M)
-                        (No-duplicatesp (M-ids M))) 
+                        (No-duplicatesp (M-ids M)))
                    (TrLstp (route M)))))
 
  (defthm TrLstp-routing
@@ -66,7 +66,7 @@
               (TrLstp (routing M NodeSet)))))
 
  ;; 2/ Routes must satisfy the predicate CorrectRoutesp
- (local 
+ (local
   (defthm correctroutesp-route
     (implies (Missivesp M NodeSet)
              (CorrectRoutesp (route M) M NodeSet))))
@@ -83,7 +83,7 @@
  (defthm true-listp-routing
    (true-listp (routing M NodeSet))
    :rule-classes :type-prescription)
- 
+
  (defthm routing-nil
    ;; the routing has to return nil if the list of missives is nil
    (not (routing nil NodeSet)))
@@ -104,7 +104,7 @@
 
 ;; A useful theorem.
 (defthm ids-routing
-  ;; the ids of the output of routing are equal to the ids 
+  ;; the ids of the output of routing are equal to the ids
   ;; of the initial list of missives
   (let ((NodeSet (NodeSetGenerator Params)))
     (implies (and (Missivesp M NodeSet)

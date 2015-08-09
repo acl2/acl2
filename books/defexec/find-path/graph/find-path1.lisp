@@ -2,7 +2,7 @@
 ; J Strother Moore
 
 ; This file is an ACL2 book.  To certify it, execute:
-; 
+;
 ; (certify-book "find-path1")
 
 ; The exercise in question is to prove that a certain function
@@ -204,7 +204,7 @@
 
 ; (no events)
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 0
 
          ; list processing
@@ -227,7 +227,7 @@
       ; saw that they would be used if available and recognized them
       ; as probably useful in the remainder of this exercise, so I
       ; proved them.
-      
+
       (defthm pathp-append
         (implies (and (true-listp p1)
                       (true-listp p2))
@@ -339,7 +339,7 @@
            (path-from-to (find-path a b g) a b g))
   :rule-classes nil)
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 1
 
 (defun simple-pathp (p g)
@@ -363,7 +363,7 @@
 
    (defthm car-simplify-path
      (equal (car (simplify-path p)) (car p)))
- 
+
          (defthm chop-iff-consp
            (implies (member e p)
                     (consp (chop e p))))
@@ -410,7 +410,7 @@
                 (path-from-to (simplify-path p) a b g)))
   :rule-classes nil)
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 2
 
 (defun find-all-next-steps (c stack b g)
@@ -474,11 +474,11 @@
               (implies (and (not (member e stack))
                             (not (equal e b))
                             (member e d))
-                       (subsetp (find-all-next-steps (neighbors e g) 
+                       (subsetp (find-all-next-steps (neighbors e g)
                                                      (cons e stack) b g)
                                 (find-all-next-steps d stack b g))))
 
-            ; list processing 
+            ; list processing
             (defthm subsetp-append-1
               (iff (subsetp (append a b) c)
                    (and (subsetp a c)
@@ -499,7 +499,7 @@
            (implies (and (subsetp a b)
                          (member e a))
                     (member e b)))
-      
+
       (defthm Crux-cdr
         (implies (and (consp c)
                       (member p (find-all-next-steps (cdr c) stack b g)))
@@ -554,7 +554,7 @@
    ; next checkpoints, e.g., generalizations.  That led me to the
    ; sequence of list processing lemmas between here and Crux-cdr
    ; above.
-   
+
    (defthm Crux
      (implies (and (true-listp stack)
                    (consp stack)
@@ -580,7 +580,7 @@
                            (p (cdr p))
                            (g g)))))
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 3
 
    (defthm find-all-next-steps-v-find-next-step
@@ -592,7 +592,7 @@
        (not (equal (find-path a b g) 'failure)))
   :rule-classes nil)
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; The Main Theorem
 
 (defthm Main

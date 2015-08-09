@@ -189,7 +189,7 @@
   (verify-guards aig-to-aignet)
 
   (defthm stype-count-of-aig-to-aignet
-    (implies (not (equal (stype-fix stype) (gate-stype)))  
+    (implies (not (equal (stype-fix stype) (gate-stype)))
              (equal (stype-count
                      stype
                      (mv-nth 3 (aig-to-aignet
@@ -540,14 +540,14 @@
     :hints(("Goal" :in-theory (enable aiglist-to-aignet))))
 
   (defthm stype-count-of-aiglist-to-aignet
-    (implies (not (equal (stype-fix stype) (gate-stype)))  
+    (implies (not (equal (stype-fix stype) (gate-stype)))
              (equal (stype-count
                      stype
                      (mv-nth 3 (aiglist-to-aignet
                                 x xmemo varmap gatesimp strash aignet)))
                     (stype-count stype aignet)))
     :hints(("goal" :in-theory (enable (:i aiglist-to-aignet))
-            :induct 
+            :induct
             (aiglist-to-aignet x xmemo varmap gatesimp strash aignet)
             :expand
             ((aiglist-to-aignet x xmemo varmap gatesimp strash aignet))))))

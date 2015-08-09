@@ -26,7 +26,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0)))))
               :hints (("Goal" :in-theory (enable binary-cat))))
 
@@ -38,7 +38,7 @@
                             (natp a0)
                             (equal (+ a0 a1) a))
                        (bvecp (+ x0
-                                 (* x1  (expt 2 a0)))                                 
+                                 (* x1  (expt 2 a0)))
                               a))
               :hints (("Goal" :use ((:instance cat-bvecp-2)
                                     (:instance binary-cat-2)))))
@@ -51,7 +51,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x2 a2 x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0))
                                  (* x2 (expt 2 (+ a0 a1))))))
               :hints (("Goal" :use ((:instance binary-cat-2
@@ -99,7 +99,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x3 a3 x2 a2 x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0))
                                  (* x2 (expt 2 (+ a0 a1)))
                                  (* x3 (expt 2 (+ a0 a1 a2))))))
@@ -111,9 +111,9 @@
                                     (:instance binary-cat-3)
                                     (:instance bcevp-sum-3
                                                (a (+ a0 a1 a2)))))))
-                       
 
-                                                 
+
+
 (defthmd cat-bvecp-4
     (implies (and (<= (+ a0 a1 a2 a3) a)
                   (case-split (integerp a)))
@@ -155,7 +155,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x4 a4 x3 a3 x2 a2 x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0))
                                  (* x2 (expt 2 (+ a0 a1)))
                                  (* x3 (expt 2 (+ a0 a1 a2)))
@@ -168,9 +168,9 @@
                                     (:instance binary-cat-4)
                                     (:instance bcevp-sum-4
                                                (a (+ a0 a1 a2 a3)))))))
-                       
 
-                                                 
+
+
 (defthmd cat-bvecp-5
     (implies (and (<= (+ a0 a1 a2 a3 a4) a)
                   (case-split (integerp a)))
@@ -217,7 +217,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x5 a5 x4 a4 x3 a3 x2 a2 x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0))
                                  (* x2 (expt 2 (+ a0 a1)))
                                  (* x3 (expt 2 (+ a0 a1 a2)))
@@ -231,7 +231,7 @@
                                     (:instance binary-cat-5)
                                     (:instance bcevp-sum-5
                                                (a (+ a0 a1 a2 a3 a4)))))))
-                       
+
 
 (defthmd cat-bvecp-6
     (implies (and (<= (+ a0 a1 a2 a3 a4 a5) a)
@@ -269,7 +269,7 @@
 ;;;**********************************************************************
 
 (defun theta (i y)
-  (+ (bitn y (1- (* 2 i))) 
+  (+ (bitn y (1- (* 2 i)))
      (bitn y (* 2 i))
      (* -2 (bitn y (1+ (* 2 i))))))
 
@@ -296,7 +296,7 @@
                             (bitn y (+ -1 (* 2 k)))))))
       :rule-classes ()))
   :enable (sumbits-thm)
-  :use (:instance sum-theta-lemma-i 
+  :use (:instance sum-theta-lemma-i
                   (k m))
   :rule-classes ())
 
@@ -340,7 +340,7 @@
 
 (encapsulate ((zeta (i) t))
  (local (defun zeta (i) (declare (ignore i)) 0))
- (defthm zeta-bnd 
+ (defthm zeta-bnd
      (and (integerp (zeta i))
 	  (<= (zeta i) 2)
 	  (>= (zeta i) -2))))
@@ -397,7 +397,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 2 (1- m))) (zeta (1- m)))
-       (sum-zeta (1- m)))))   
+       (sum-zeta (1- m)))))
 
 (defun sum-pp4 (x m n)
   (if (zp m)
@@ -556,7 +556,7 @@
 ;;;**********************************************************************
 
 (defun m-mu-chi (i mode)
-  (cond ((equal mode 'mu)  
+  (cond ((equal mode 'mu)
          (if (zp i)  1
            (cons (cons 1  i) 1)))
         ((equal mode 'chi)
@@ -567,7 +567,7 @@
  (defun mu (i y)
    (declare (xargs :measure (m-mu-chi i 'mu)))
      (+ (bits y (1+ (* 2 i)) (* 2 i)) (chi i y)))
- 
+
  (defun chi (i y)
    (declare (xargs :measure (m-mu-chi i 'chi)))
    (if (zp i)
@@ -630,7 +630,7 @@
       :induct (sub1-induction m)
       :enable (sum-odd-powers-of-2-equal)
       :hints (
-        ("subgoal *1/2" 
+        ("subgoal *1/2"
           :use (:instance bits-plus-bits
                  (x y)
                  (n (+ -1 (* 2 m)))
@@ -678,7 +678,7 @@
               (= (mu m y) 2)))
     (defrule lemma
       (implies (natp m)
-               (equal (bits y (+ -1 (* 2 m)) 0)  
+               (equal (bits y (+ -1 (* 2 m)) 0)
                       (+ (sum-phi m y)
                          (* (chi m y) (expt 2 (* 2 m))))))
       :induct (sub1-induction m)
@@ -769,13 +769,13 @@
 (defun delta (i a b c d)
   (if (zp i)
       (bitn d 0)
-    (logand (logior (logand (bitn a (+ -2 (* 2 i))) 
+    (logand (logior (logand (bitn a (+ -2 (* 2 i)))
 			    (bitn b (+ -2 (* 2 i))))
 		    (logior (logand (bitn a (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))
 			    (logand (bitn b (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))))
-	    (lognot (logxor (bitn a (1- (* 2 i))) 
+	    (lognot (logxor (bitn a (1- (* 2 i)))
 			    (bitn b (1- (* 2 i))))))))
 
 (local (defrule bvecp-delta
@@ -802,8 +802,8 @@
 (defrule psi-m-1
     (implies (and (natp m)
                   (>= m 1)
-		  (bvecp a (- (* 2 m) 2))   
-		  (bvecp b (- (* 2 m) 2))  
+		  (bvecp a (- (* 2 m) 2))
+		  (bvecp b (- (* 2 m) 2))
 		  (bvecp c 1)
 		  (bvecp d 1))
 	     (and (equal (gamma m a b c) 0)
@@ -951,7 +951,7 @@
 ;;;**********************************************************************
 
 (defun eta (i y)
-  (+ (bitn y (1- (* 3 i))) 
+  (+ (bitn y (1- (* 3 i)))
      (bitn y (* 3 i))
      (* 2 (bitn y (1+ (* 3 i))))
      (* -4 (bitn y (+ 2 (* 3 i))))))
@@ -1022,7 +1022,7 @@
 
 (encapsulate ((xi (i) t))
  (local (defun xi (i) (declare (ignore i)) 0))
- (defthm xi-bnd 
+ (defthm xi-bnd
      (and (integerp (xi i))
 	  (<= (xi i) 4)
 	  (>= (xi i) -4))))
@@ -1079,7 +1079,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 3 (1- m))) (xi (1- m)))
-       (sum-xi (1- m)))))   
+       (sum-xi (1- m)))))
 
 (defun sum-pp8 (x m n)
   (if (zp m)

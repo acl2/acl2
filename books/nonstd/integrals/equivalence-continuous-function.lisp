@@ -47,7 +47,7 @@
           ("Subgoal 2"
            :use ((:instance rcfn-hyper-domain-non-trivial)))
           ))
-           
+
 
 (encapsulate
  nil
@@ -116,7 +116,7 @@
                    (< (abs (- (riemann-rcfn-hyper p)
                               (strict-int-rcfn-hyper a b)))
                       eps)))
-  :rewrite :direct) 
+  :rewrite :direct)
 
 (defun-sk exists-delta-so-that-riemann-sum-is-close-to-int-rcfn-hyper (a b eps)
   (exists (delta)
@@ -128,7 +128,7 @@
                    (and (realp delta)
                         (< 0 delta)
                         (forall-partitions-riemann-sum-is-close-to-int-rcfn-hyper a b eps delta)))))
- 
+
 (defthm rcfn-hyper-is-integrable-hyperreal
   (implies (and (inside-interval-p a (rcfn-hyper-domain))
                 (inside-interval-p b (rcfn-hyper-domain))
@@ -162,4 +162,4 @@
            :use ((:instance rcfn-hyper-domain-non-trivial)))
           ))
 
-           
+

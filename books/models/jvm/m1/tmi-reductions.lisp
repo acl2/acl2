@@ -1,4 +1,4 @@
-; Reduction of TMI to an Algorithm to be Implemented on M1 
+; Reduction of TMI to an Algorithm to be Implemented on M1
 ; J Strother Moore
 ; April 10, 2012
 
@@ -34,7 +34,7 @@
 ; Some problems were discovered in the arithmetic library.
 
 ; Tell Robert that (set-default-arithmetic-theory) doesn't do the job advertised in
-; the README.  If you 
+; the README.  If you
 ; (include-book "arithmetic-5/top" :dir :system)
 ; (defun log2 (n)
 ;   (cond ((zp n) 0)
@@ -423,7 +423,7 @@
                 (descending-map map)
                 (not (instr st sym tm)))
            (not (instr (cdr (assoc st map)) sym (tm-to-tm1 tm map)))))
-           
+
 (defthm instr-implies-assoc
   (implies (and (turing-machinep tm)
                 (instr st sym tm))
@@ -613,9 +613,9 @@
        st-in)))
 
 ; Now we use make-cell to create a big number representing the given tmi1-style
-; machine.  
+; machine.
 
-(defun ncons (cell tail w) 
+(defun ncons (cell tail w)
   (+ cell
      (* (expt 2 (+ 4 (* 2 w))) tail)))
 
@@ -766,7 +766,7 @@
                                   (acl2::gather-exponents-theory))
            :nonlinearp t
            :do-not-induct t)))
-                
+
 (defthm nop-nnil
   (implies (natp w)
            (equal (nop (nnil w) w) 4))
@@ -834,7 +834,7 @@
                (new-tape1 (nop (ninstr st (current-sym tape) tm2 w) w) tape)
                tm2
                w
-               (- n 1)))))  
+               (- n 1)))))
 
 (defthm natp-make-cell
   (implies (and (force (natp w))
@@ -882,15 +882,15 @@
                           (< (nth 2 (instr st sym tm)) 4)
                           (<= 0 (nth 3 (instr st sym tm)))
                           (< (nth 3 (instr st sym tm)) (expt 2 w)))))))
-            
-                
+
+
 (defthm turing1-4-tuple-instr
   (implies (and (natp w)
                 (instr st sym tm)
                 (turing1-machinep tm w))
            (turing1-4-tuple (instr st sym tm) w))
   :hints (("Goal" :in-theory (disable turing1-4-tuple))))
-  
+
 
 (defthm tapep-new-tape1
   (implies (and (tapep tape)
@@ -935,7 +935,7 @@
 ; where the bits between the bottom and the topmost 1 in the binary expansion of n
 ; represent the tape and pos is the bit position of the current bit.  For example,
 ; ((0 1 0 0) . (1 1 0 0 0))
-; = (0 0 1 0 [ 1 ] 1 0 0 0) 
+; = (0 0 1 0 [ 1 ] 1 0 0 0)
 ; = (#B0010110001 . 4)
 
 ; We need to be able to convert back and forth between tapes and these pairs.
@@ -1437,7 +1437,7 @@
                                        (mv-nth 1 (convert-tape-to-tapen-pos tape))
                                        tm w n))
                    (if (tmi2 st tape tm w n) 1 0))
-             
+
             (implies
              (tmi2 st tape tm w n)
              (and (equal (mv-nth 2 (tmi3 st
@@ -1570,7 +1570,7 @@
                                n))
                  (mv-nth 1
                          (convert-tape-to-tapen-pos (tmi st tape tm n))))))))
-           
+
   :hints (("Goal" :do-not-induct t :in-theory (disable renaming-map))
           ("Goal''" :use (:instance tapep-tmi2
                                     (st (cdr (assoc st (renaming-map st tm))))

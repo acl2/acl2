@@ -39,13 +39,13 @@
 
 #|
  To certify (originally in ACL2 Version 2.6):
- (defpkg 
-     "FLAT" (union-eq 
+ (defpkg
+     "FLAT" (union-eq
 	     *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*))
 
  (certify-book "flat-ackermann" 1 nil ; compile-flg
-	       :defaxioms-okp nil 
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil)
 |#
 (in-package "FLAT")
@@ -95,7 +95,7 @@
 		  (f (- x1 1) 1)
 		  (f (- x1 1)(f x1 (- x2 1))))))
 |#
-#| Our heuristics are too primitive: 
+#| Our heuristics are too primitive:
    In fact we can get define a function f that satisfies:
 (equal (f x1 x2)
        (if (equal x1 0)
@@ -104,7 +104,7 @@
 		  (f (- x1 1) 1)
 		  (f (- x1 1)(f x1 (- x2 1))))))
 
- Recall that we wanted a function that satisfies the original 
+ Recall that we wanted a function that satisfies the original
   Peter version of the Ackermann recursive equation:
 (equal (f x1 x2)
        (if (equal x1 0)
@@ -113,7 +113,7 @@
 	       (f (- x1 1) 1)
 	       (f (- x1 1)(f x1 (- x2 1))))))
 
- ACL2 can then prove the following, which is close to what we 
+ ACL2 can then prove the following, which is close to what we
  had hoped for:
 
 (implies (not (equal x2 'undef$))
@@ -165,7 +165,7 @@
             (sq-if (lt-st-equal x2 0)
 		   (f21-chain (- i 1)(- x1 1) 1)
 		   (f21-chain (- i 1)(- x1 1)
-			      (f21-chain (- i 1) x1 
+			      (f21-chain (- i 1) x1
 					 (- x2 1)))))))
 
 (thm
@@ -193,7 +193,7 @@ Heuristics suggest that second list should be right strict.
 	 'undef$
          (list ,x ,y)))
 
-(defun 
+(defun
     f1-chain (i x)
     (if (zp i)
 	'undef$
@@ -204,21 +204,21 @@ Heuristics suggest that second list should be right strict.
 	         (if (equal x1 0)
 		     (lt-st-+ x2 1)
 		     (sq-if (lt-st-equal x2 0)
-			    (f1-chain (- i 1) 
+			    (f1-chain (- i 1)
 				      (list (- x1 1) 1))
-			    (f1-chain 
-			     (- i 1) 
+			    (f1-chain
+			     (- i 1)
 			     (rt-st-list (- x1 1)
 					 (f1-chain (- i 1)
-						   (list 
-						    x1 
+						   (list
+						    x1
 						    (- x2 1))))
 			     )))))))
 
 (defthm
     base-of-f1-chain=undef$
     (implies (zp i)
-	     (equal (f1-chain i x) 
+	     (equal (f1-chain i x)
 		    'undef$)))
 
 (defthm
@@ -232,7 +232,7 @@ Heuristics suggest that second list should be right strict.
 
 (defchoose
     lub-f1-chain-i i (x)
-    (not (equal (f1-chain i x) 
+    (not (equal (f1-chain i x)
 		'undef$)))
 
 (defthm
@@ -271,7 +271,7 @@ Heuristics suggest that second list should be right strict.
 	      lub-$bottom$-based-chain-is-upper-bound
 	      ($<=$ <def=)
 	      ($bottom$ (lambda () 'undef$))
-	      ($bottom$-based-chain f1-chain) 
+	      ($bottom$-based-chain f1-chain)
 	      (lub-$bottom$-based-chain lub-f1-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f1-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f1-chain-i)))
@@ -285,12 +285,12 @@ Heuristics suggest that second list should be right strict.
 	     (equal (lub-f1-chain x)
 		    (f1-chain i x)))
     :hints (("Goal"
-	     :by 
+	     :by
 	     (:functional-instance
 	      $bottom$-based-chain-is-$<=$-chain-f
 	      ($<=$ <def=)
 	      ($bottom$ (lambda () 'undef$))
-	      ($bottom$-based-chain f1-chain) 
+	      ($bottom$-based-chain f1-chain)
 	      (lub-$bottom$-based-chain lub-f1-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f1-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f1-chain-i)))))
@@ -353,7 +353,7 @@ Heuristics suggest that second list should be right strict.
     (max (lub-f1-chain-nat-i (list (- (car x) 1) 1))
 	 (max (lub-f1-chain-nat-i (list (car x)(- (cadr x) 1)))
 	      (lub-f1-chain-nat-i (rt-st-list (- (car x) 1)
-					(f1 (list 
+					(f1 (list
 					     (car x)
 					     (- (cadr x) 1)))
 					)))))
@@ -374,7 +374,7 @@ Heuristics suggest that second list should be right strict.
 		 (:instance
 		  f1-chain-is-<def=-chain-f
 		  (x (rt-st-list (- (car x) 1)
-				 (f1 (list 
+				 (f1 (list
 				      (car x)
 				      (- (cadr x) 1)))))
 		  (i (Skolem-f1 x)))))))
@@ -384,7 +384,7 @@ Heuristics suggest that second list should be right strict.
     (equal (lub-f1-chain x)(ub-g1-chain x))
     :rule-classes nil
     :hints (("Goal"
-             :by 
+             :by
              (:functional-instance
 	      lub-$chain$=ub-shifted-$chain$
 	      ($<=$ <def=)
@@ -414,7 +414,7 @@ Heuristics suggest that second list should be right strict.
 		        (sq-if (lt-st-equal x2 0)
 			       (f1 (list (- x1 1) 1))
 			       (f1 (rt-st-list (- x1 1)
-					       (f1 (list x1 
+					       (f1 (list x1
 							 (- x2 1))
 						   ))
 				   ))))))
@@ -440,7 +440,7 @@ Heuristics suggest that second list should be right strict.
 		   f1-def
 		   (x (list x1 x2))))))
 
-;  Recall the original Peter version of the Ackermann recursive 
+;  Recall the original Peter version of the Ackermann recursive
 ;   equation:
 
 ;        (equal (f x1 x2)

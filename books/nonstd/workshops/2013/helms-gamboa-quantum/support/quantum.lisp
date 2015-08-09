@@ -215,7 +215,7 @@
 (defun qustate-scale (s x)
   (if (endp s)
       nil
-    (cons (cons (* (caar s) x) 
+    (cons (cons (* (caar s) x)
 		(cdar s))
 	  (qustate-scale (cdr s) x))))
 
@@ -624,13 +624,13 @@
 
 (defconst *eps* 1/1000)
 
-(qstate-circuit-e '( (H 1) 
+(qstate-circuit-e '( (H 1)
 		    (CN 1 2)
 		    (CN 0 1)
 		    (H 0)
 		    (M 0)
 		    (M 1)
-		    ) 
+		    )
 		 (qstate-tensor-product (uniform-qstate-e 1 *eps*)
 				       (zero-qstate 2))
 		 *eps*
@@ -804,12 +804,12 @@ I don't think I need these, and they're more trouble than they're worth for now:
 
 (defthm qustate-amplitudes-make-qubit
   (equal (qustate-amplitudes-sum-squares (make-qubit alpha beta))
-	 (+ (* alpha (conjugate alpha)) 
+	 (+ (* alpha (conjugate alpha))
 	    (* beta  (conjugate beta)))))
 
 (defthm qustate-norm-make-qubit
   (equal (qustate-norm (make-qubit alpha beta))
-	 (acl2-sqrt (+ (* alpha (conjugate alpha)) 
+	 (acl2-sqrt (+ (* alpha (conjugate alpha))
 		       (* beta  (conjugate beta))))))
 
 (defthm realpart-not-complex
@@ -855,7 +855,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
   )
 
 (defthm conjugate-real
-  (implies (realp x) 
+  (implies (realp x)
 	   (equal (conjugate x) x))
   :hints (("Goal" :in-theory (enable conjugate))))
 
@@ -886,7 +886,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm qstate-norm-H-gate
   (equal (qustate-norm (qu-H-gate s n r))
 	 (qustate-norm s)))
-  
+
 (defthm qustate-scale-by-1
   (implies (qustatep x)
 	   (equal (qustate-scale x 1)
@@ -904,11 +904,11 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm qustate-norm-teleport-initial-instance
   (equal (qustate-norm (qstate-tensor-product (make-qubit alpha beta)
 					      (zero-qstate 2)))
-	 (acl2-sqrt (+ (* alpha (conjugate alpha)) 
+	 (acl2-sqrt (+ (* alpha (conjugate alpha))
 		       (* beta  (conjugate beta))))))
 
 (defthm qustate-norm-teleport-initial-instance-even-better
-  (implies (equal (+ (* alpha (conjugate alpha)) 
+  (implies (equal (+ (* alpha (conjugate alpha))
 		     (* beta  (conjugate beta)))
 		  1)
 	   (equal (qustate-norm (qstate-tensor-product (make-qubit alpha beta)
@@ -916,17 +916,17 @@ I don't think I need these, and they're more trouble than they're worth for now:
 		  1)))
 
 (defthm qustate-normalize-teleport-initial-instance
-  (implies (equal (+ (* alpha (conjugate alpha)) 
+  (implies (equal (+ (* alpha (conjugate alpha))
 		     (* beta  (conjugate beta)))
 		  1)
 	   (equal (qustate-normalize (qstate-tensor-product (make-qubit alpha beta)
 							    (zero-qstate 2)))
 		  (qstate-tensor-product (make-qubit alpha beta)
 					 (zero-qstate 2)))))
-  
+
 
 (defthm quantum-teleport-lemma-1
-  (implies (equal (+ (* alpha (conjugate alpha)) 
+  (implies (equal (+ (* alpha (conjugate alpha))
 		     (* beta  (conjugate beta)))
 		  1)
 	   (equal (qstate-circuit circuit
@@ -965,7 +965,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-3
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		)
@@ -982,7 +982,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 	   :use ((:instance quantum-teleport-lemma-2)
 		 (:instance qustate-norm-teleport-initial-instance-even-better))
 	   :in-theory nil)))
-			    
+
 
 
 (in-theory (disable acl2-sqrt (acl2-sqrt)))
@@ -990,7 +990,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-4
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		)
@@ -1027,7 +1027,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-5
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		)
@@ -1056,7 +1056,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-6
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		)
@@ -1078,7 +1078,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-7
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		;(realp r1) (<= 0 r1) (<= r1 1)
@@ -1113,7 +1113,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-8
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		;(realp r1) (<= 0 r1) (<= r1 1)
@@ -1144,7 +1144,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-9
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		;(realp r1) (<= 0 r1) (<= r1 1)
@@ -1175,7 +1175,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-10
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		)
@@ -1212,7 +1212,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-11
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		)
@@ -1243,7 +1243,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-12
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		)
@@ -1267,7 +1267,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-13
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		;(realp r1) (<= 0 r1) (<= r1 1)
@@ -1306,7 +1306,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-14
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qu-M-gate (list (list (/ alpha 2)    NIL NIL NIL)
@@ -1335,7 +1335,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-15
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (sort-and-merge (qu-M-gate (list (list (/ alpha 2)    NIL NIL NIL)
@@ -1375,7 +1375,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-16
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (+ (* 1/4 ALPHA (CONJUGATE ALPHA))
@@ -1389,7 +1389,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-17
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qustate-norm (sort-and-merge (qu-M-gate (list (list (/ alpha 2)    NIL NIL NIL)
@@ -1429,7 +1429,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-18
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qustate-normalize (qu-M-gate (list (list (/ alpha 2)    NIL NIL NIL)
@@ -1473,7 +1473,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-19
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		;(realp r1) (<= 0 r1) (<= r1 1)
@@ -1527,7 +1527,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-20
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qu-M-gate (list (list (/ alpha (acl2-sqrt 2))    NIL NIL NIL)
@@ -1557,7 +1557,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-21
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (sort-and-merge (qu-M-gate (list (list (/ alpha (acl2-sqrt 2))    NIL NIL NIL)
@@ -1613,7 +1613,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-23
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qustate-norm (sort-and-merge (qu-M-gate (list (list (/ alpha (acl2-sqrt 2)) NIL NIL NIL)
@@ -1640,7 +1640,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-24
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qustate-normalize (qu-M-gate (list (list (/ alpha (acl2-sqrt 2)) NIL NIL NIL)
@@ -1684,7 +1684,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-25
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		;(realp r1) (<= 0 r1) (<= r1 1)
@@ -1732,7 +1732,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-26
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qu-M-gate (list (list 0              	    NIL NIL NIL)
@@ -1761,7 +1761,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-27
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (sort-and-merge (qu-M-gate (list (list 0              	    NIL NIL NIL)
@@ -1800,7 +1800,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-28
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qustate-norm (sort-and-merge (qu-M-gate (list (list 0              	    	  NIL NIL NIL)
@@ -1826,7 +1826,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-29
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qustate-normalize (qu-M-gate (list (list 0          	    	       NIL NIL NIL)
@@ -1869,7 +1869,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-lemma-30
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		;(realp r1) (<= 0 r1) (<= r1 1)
@@ -1920,7 +1920,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleport-main-lemma
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qstate-circuit '( (H 1)
@@ -2020,7 +2020,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 				quantum-teleport-lemma-30
 				qstate-tensor-product (qstate-tensor-product)
 				make-qubit (make-qubit)
-				zero-qstate (zero-qstate) 
+				zero-qstate (zero-qstate)
 				qstate-circuit (qstate-circuit)
 				qustate-normalize (qustate-normalize))))
   )
@@ -2040,7 +2040,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-alice-value
   (implies (and (acl2-numberp alpha)
                 (acl2-numberp beta)
-                (equal (+ (* alpha (conjugate alpha)) 
+                (equal (+ (* alpha (conjugate alpha))
                           (* beta  (conjugate beta)))
                        1))
            (equal (quantum-teleportation-alice alpha beta r1 r2)
@@ -2084,17 +2084,17 @@ I don't think I need these, and they're more trouble than they're worth for now:
 	   :in-theory (disable quantum-teleport-main-lemma
 			       qstate-tensor-product (qstate-tensor-product)
 			       make-qubit (make-qubit)
-			       zero-qstate (zero-qstate) 
+			       zero-qstate (zero-qstate)
 			       qstate-circuit (qstate-circuit)
 			       qustate-normalize (qustate-normalize))))
   )
 
 (in-theory (disable quantum-teleportation-alice))
-	   
+
 (defthm qustate-norm-teleportation-alice
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qustate-norm (quantum-teleportation-alice alpha beta r1 r2))
@@ -2103,7 +2103,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm qustate-normalize-teleportation-alice
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (qustate-normalize (quantum-teleportation-alice alpha beta r1 r2))
@@ -2139,7 +2139,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-alice-value-case-1a
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		(< r1 1/2)
@@ -2155,7 +2155,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-alice-value-case-1b
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		(< r1 1/2)
@@ -2171,7 +2171,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-alice-value-case-2a
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		(< r1 1/2)
@@ -2187,7 +2187,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-alice-value-case-2b
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		(< r1 1/2)
@@ -2203,7 +2203,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-alice-value-case-3a
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		(not (< r1 1/2))
@@ -2219,7 +2219,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-alice-value-case-3b
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		(not (< r1 1/2))
@@ -2235,7 +2235,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-alice-value-case-4a
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		(not (< r1 1/2))
@@ -2251,7 +2251,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-alice-value-case-4b
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1)
 		(not (< r1 1/2))
@@ -2282,12 +2282,12 @@ I don't think I need these, and they're more trouble than they're worth for now:
     (quantum-teleportation-bob qstate q1 q2)))
 
 
-		  
+
 
 (defthm quantum-teleportation-protocol-works-lemma
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (quantum-teleportation-protocol alpha beta r1 r2)
@@ -2344,7 +2344,7 @@ I don't think I need these, and they're more trouble than they're worth for now:
 (defthm quantum-teleportation-protocol-works
   (implies (and (acl2-numberp alpha)
 		(acl2-numberp beta)
-		(equal (+ (* alpha (conjugate alpha)) 
+		(equal (+ (* alpha (conjugate alpha))
 			  (* beta  (conjugate beta)))
 		       1))
 	   (equal (narrow-to-qubit (quantum-teleportation-protocol alpha beta r1 r2) 2)
@@ -2352,4 +2352,4 @@ I don't think I need these, and they're more trouble than they're worth for now:
   :hints (("Goal"
 	   :in-theory (disable quantum-teleportation-protocol)))
   )
-  
+

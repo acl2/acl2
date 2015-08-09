@@ -84,7 +84,7 @@
 (encapsulate
 
 ; (1) Abstract spec: Specify that abst is
-;     associative-commutative (example: +). 
+;     associative-commutative (example: +).
 
  ((abst (x y) t))
 

@@ -19,7 +19,7 @@
 
 
 (definstance Genericsimulationextraction simple-simulation-compliance
-  ;; ACL2 proves automatically that our spidergon nodeset is a valid instance 
+  ;; ACL2 proves automatically that our spidergon nodeset is a valid instance
   ;; of the generic nodeset of GeNoC.
   :functional-substitution
   ((extract-simulation simple-extract-simulation)))

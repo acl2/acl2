@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -109,7 +109,7 @@ Concatenate the M-bit value X onto the N-bit value Y.  X will occupy the high bi
                 (case-split (integerp n))
                 (case-split (integerp m))
                 (case-split (<= 0 m))
-                )		  
+                )
            (equal (cat 0 m y n) y))
   :hints (("Goal" :in-theory (enable cat bits-tail))))
 
@@ -119,7 +119,7 @@ Concatenate the M-bit value X onto the N-bit value Y.  X will occupy the high bi
                 (case-split (integerp n))
                 (case-split (integerp m))
                 (case-split (<= 0 m))
-                )		  
+                )
            (equal (cat 0 m y n) (bits y (1- n) 0)))
   :hints (("Goal" :in-theory (enable cat bits-tail))))
 
@@ -250,7 +250,7 @@ these aren't right any more?
                                  (LESS-THAN-MULTIPLY-THROUGH-BY-INVERTED-FACTOR-FROM-LEFT-HAND-SIDE
                                   LESS-THAN-MULTIPLY-THROUGH-BY-INVERTED-FACTOR-FROM-RIGHT-HAND-SIDE))
           :use (:instance  mult-both-sides-of-<-by-positive (a (+ y (* x (expt 2 i)))) (b (expt 2 k))
-                           (c (/ (expt 2 i)))))) 
+                           (c (/ (expt 2 i))))))
  )
 
 
@@ -466,7 +466,7 @@ these aren't right any more?
           :rule-classes nil
           :hints (("Goal" :in-theory (e/d (cat bvecp expt-split
                                                EXPT-minus
-                                               ) 
+                                               )
                                           ( expt-inverse
 ;these must be disabled, or  bits-upper-bound-new fails to do its job
                                                LESS-THAN-MULTIPLY-THROUGH-BY-inverted-factor-FROM-LEFT-HAND-SIDE
@@ -502,7 +502,7 @@ these aren't right any more?
 
 
 
- 
+
  (local (defthm cat-bvecp-rewrite-case-2-a
           (implies (and (< k n) ;this case
                         (<= 0 k)
@@ -560,7 +560,7 @@ these aren't right any more?
                                    (;CANCEL-IN-PRODS-<-1-OF-2-WITH-1-OF-1
                                     ;CANCEL-TIMES-<-ERIC-1-BETTER-ALT
                                     bits-<-1
-                                    
+
                                     expt-inverse
                                     BITS-SLICE-ZERO-GEN))))))
 
@@ -600,15 +600,15 @@ these aren't right any more?
    (implies (and (case-split (<= 0 k))
                  (case-split (<= 0 n))
                  (case-split (<= 0 m))
-                 (case-split (integerp n)) 
-                 (case-split (integerp m)) 
-                 (case-split (integerp k)) 
+                 (case-split (integerp n))
+                 (case-split (integerp m))
+                 (case-split (integerp k))
                  )
             (equal (bvecp (cat x m y n) k)
                    (if (<= (+ m n) k)
                        t
                      (if (<= n k)
-                         (equal 0 (bits x (1- m) (+ k (* -1 n))))                      
+                         (equal 0 (bits x (1- m) (+ k (* -1 n))))
                        (and (equal 0 (bits x (1- m) 0))
                             (equal 0 (bits y (1- n) k))))))))
 
@@ -619,15 +619,15 @@ these aren't right any more?
                 (case-split (<= 0 k))
                 (case-split (<= 0 n))
                 (case-split (<= 0 m))
-                (case-split (integerp n)) 
-                (case-split (integerp m)) 
-                (case-split (integerp k)) 
+                (case-split (integerp n))
+                (case-split (integerp m))
+                (case-split (integerp k))
                 )
            (equal (bvecp (cat x m y n) k)
                   (if (<= (+ m n) k)
                       t
                     (if (<= n k)
-                        (equal 0 (bits x (1- m) (+ k (* -1 n))))                      
+                        (equal 0 (bits x (1- m) (+ k (* -1 n))))
                       (and (equal 0 (bits x (1- m) 0))
                            (equal 0 (bits y (1- n) k)))))))
   :hints (("Goal" :by cat-bvecp-rewrite)))
@@ -818,7 +818,7 @@ Art's example:
                     (if (>= j n)
                         (bits x (if (< i (+ m n))
                                     (- i n)
-                                  (1- m)) 
+                                  (1- m))
                               (- j n))
                       (cat (bits x (if (< i (+ m n))
                                         (- i n)
@@ -847,7 +847,7 @@ Art's example:
                     (if (>= j n)
                         (bits x (if (< i (+ m n))
                                     (- i n)
-                                  (1- m)) 
+                                  (1- m))
                               (- j n))
                       (cat (bits x (if (< i (+ m n))
                                        (- i n)
@@ -1061,7 +1061,7 @@ bits-dont-match can prove things like this:
               (NOT (EQUAL 3 (BITS x 15 6)))))
 |#
 
-(defthm bits-dont-match 
+(defthm bits-dont-match
   (implies (and (syntaxp (and (quotep i)
                               (quotep j)
                               (quotep k)))
@@ -1080,7 +1080,7 @@ bits-dont-match can prove things like this:
   :hints (("Goal" :in-theory ( set-difference-theories
                                (enable)
                               '( cat-bits-bits))
-           :use (:instance cat-bits-bits-bits 
+           :use (:instance cat-bits-bits-bits
                            (i i2)
                            (j j2)
                            (k (+ i (- j2)))
@@ -1105,7 +1105,7 @@ bits-dont-match can prove things like this:
   :hints (("Goal" :in-theory ( set-difference-theories
                                (enable)
                               '( cat-bits-bits))
-           :use (:instance cat-bits-bits-bits 
+           :use (:instance cat-bits-bits-bits
                            (i i2)
                            (j j2)
                            (k (+ i (- j2)))

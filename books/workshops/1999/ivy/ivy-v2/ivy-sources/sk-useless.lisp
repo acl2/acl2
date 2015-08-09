@@ -39,7 +39,7 @@
    (and (domain-term e)
 	(not (member-equal fsym (funcs-in-term-list l))))
    (not (member-equal fsym (funcs-in-term-list (subst-term-list l x e))))))
-	   
+
 (defthm not-member-funcx-subst
   (implies (and (domain-term e)
 		(not (member-equal fsym (funcs-in-formula f))))
@@ -49,7 +49,7 @@
 ;; Here are the 3 versions of the main result of this book.
 ;; Prove it with xeval, then use that to get the versions
 ;; in terms of feval and feval-d.
-	   
+
 (defthm xeval-with-useless-function
   (implies (and (not (member-equal fsym (funcs-in-formula f)))
 		(domain-term-list (fringe dom)))

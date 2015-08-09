@@ -21,8 +21,8 @@
 ; University of Wyoming
 ; Laramie, WY 82071-3682 U.S.A.
 
-;; The recursive calls, specified in the definition of the 
-;;  restricted tarai recursion, terminate for lists of 
+;; The recursive calls, specified in the definition of the
+;;  restricted tarai recursion, terminate for lists of
 ;;  integers of lengths 2-7.
 
 ;; (certify-book "C:/acl2/tak/rTarai9")
@@ -31,20 +31,20 @@
 
 (include-book "rTarai8")
 
-;; The RESTRICTED tarai recursion: 
+;; The RESTRICTED tarai recursion:
 #|(defthm
      rTarai-def
-     (implies (and 
+     (implies (and
 	       (integer-listp lst)
 	       (consp (rest lst))        ;; (len lst) > 1
-	       (not 
+	       (not
 		(consp (nthcdr 7 lst)))) ;; (len lst) <= 7
 	      (equal (rTarai lst)
 		     (if (<= (first lst)
 			     (second lst))
 			 (second lst)
-		         (rTarai (rTarai-lst 
-				  (lst-rotates-with-minus-1 
+		         (rTarai (rTarai-lst
+				  (lst-rotates-with-minus-1
 				   (- (DEC-FRONT-LEN lst) 1)
 				   lst)))))))
 |#
@@ -67,46 +67,46 @@
     e0-ordinalp-measure
     (e0-ordinalp (measure lst)))
 
-;; The recursion in (rTarai lst) halts when lst is a list 
+;; The recursion in (rTarai lst) halts when lst is a list
 ;;  of length 2:
 
-(local 
- (defthm 
-     lst-rotates-with-minus-1-2a 
-     (let ((lst (list first second))) 
-       (equal (lst-rotates-with-minus-1 1 lst) 
-	      (list (list (- first 1) second) 
-		    (list (- second 1) first)))) 
-     :hints (("Goal" 
-	      :expand (lst-rotates-with-minus-1  
-		       1		       
+(local
+ (defthm
+     lst-rotates-with-minus-1-2a
+     (let ((lst (list first second)))
+       (equal (lst-rotates-with-minus-1 1 lst)
+	      (list (list (- first 1) second)
+		    (list (- second 1) first))))
+     :hints (("Goal"
+	      :expand (lst-rotates-with-minus-1
+		       1
 		       (list first second))))))
 
 (defthm
     e0-ord-<-measure-rotates-2
     (let ((lst (list first second)))
-      (implies 
+      (implies
        (and (integer-listp lst)
 	    (> first second)
-	    (member-equal rlst (lst-rotates-with-minus-1 
+	    (member-equal rlst (lst-rotates-with-minus-1
 				(- (DEC-FRONT-LEN lst) 1)
-				lst))) 
+				lst)))
        (e0-ord-< (measure rlst)
 		 (measure lst)))))
 
 (defthm
     e0-ord-<-measure-rTarai-lst-2
     (let ((lst (list first second)))
-      (implies 
+      (implies
        (and (integer-listp lst)
 	  (> first second))
-       (e0-ord-< (measure (rTarai-lst 
-			   (lst-rotates-with-minus-1 
+       (e0-ord-< (measure (rTarai-lst
+			   (lst-rotates-with-minus-1
 			    (- (DEC-FRONT-LEN lst) 1)
 			    lst)))
 		 (measure lst)))))
 
-;; The recursion in (rTarai lst) halts when lst is a list 
+;; The recursion in (rTarai lst) halts when lst is a list
 ;;  of length 3:
 
 (local
@@ -117,7 +117,7 @@
 	      (list (list (- first 1) second third)
 		    (list (- second 1) third first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third)))))))
 
@@ -133,28 +133,28 @@
 (defthm
     e0-ord-<-measure-rotates-3
     (let ((lst (list first second third)))
-      (implies 
+      (implies
        (and (integer-listp lst)
 	    (> first second)
-	    (member-equal rlst (lst-rotates-with-minus-1 
+	    (member-equal rlst (lst-rotates-with-minus-1
 				(- (DEC-FRONT-LEN lst) 1)
-				lst))) 
+				lst)))
        (e0-ord-< (measure rlst)
 		 (measure lst)))))
 
 (defthm
     e0-ord-<-measure-rTarai-lst-3
     (let ((lst (list first second third)))
-      (implies 
+      (implies
        (and (integer-listp lst)
 	    (> first second))
-       (e0-ord-< (measure (rTarai-lst 
-			   (lst-rotates-with-minus-1 
+       (e0-ord-< (measure (rTarai-lst
+			   (lst-rotates-with-minus-1
 			    (- (DEC-FRONT-LEN lst) 1)
 			    lst)))
 		 (measure lst)))))
 
-;; The recursion in (rTarai lst) halts when lst is a list 
+;; The recursion in (rTarai lst) halts when lst is a list
 ;;  of length 4:
 
 (local
@@ -165,7 +165,7 @@
 	      (list (list (- first 1) second third forth)
 		    (list (- second 1) third forth first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth)))))))
 
@@ -193,28 +193,28 @@
 (defthm
     e0-ord-<-measure-rotates-4
     (let ((lst (list first second third fourth)))
-      (implies 
+      (implies
        (and (integer-listp lst)
 	    (> first second)
-	    (member-equal rlst (lst-rotates-with-minus-1 
+	    (member-equal rlst (lst-rotates-with-minus-1
 				(- (DEC-FRONT-LEN lst) 1)
-				lst))) 
+				lst)))
        (e0-ord-< (measure rlst)
 		 (measure lst)))))
 
-(defthm    
+(defthm
     e0-ord-<-measure-rTarai-lst-4
     (let ((lst (list first second third fourth)))
-      (implies  
-       (and (integer-listp lst) 
-	    (> first second)) 
-       (e0-ord-< (measure (rTarai-lst  
-			   (lst-rotates-with-minus-1  
-			    (- (DEC-FRONT-LEN lst) 1) 
-			    lst))) 
-		 (measure lst))))) 
+      (implies
+       (and (integer-listp lst)
+	    (> first second))
+       (e0-ord-< (measure (rTarai-lst
+			   (lst-rotates-with-minus-1
+			    (- (DEC-FRONT-LEN lst) 1)
+			    lst)))
+		 (measure lst)))))
 
-;; The recursion in (rTarai lst) halts when lst is a list 
+;; The recursion in (rTarai lst) halts when lst is a list
 ;;  of length 5:
 
 (local
@@ -225,7 +225,7 @@
 	      (list (list (- first 1) second third forth fifth)
 		    (list (- second 1) third forth fifth first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth fifth))))))
  )
@@ -267,28 +267,28 @@
 (defthm
     e0-ord-<-measure-rotates-5
     (let ((lst (list first second third fourth fifth)))
-      (implies 
+      (implies
        (and (integer-listp lst)
 	    (> first second)
-	    (member-equal rlst (lst-rotates-with-minus-1 
+	    (member-equal rlst (lst-rotates-with-minus-1
 				(- (DEC-FRONT-LEN lst) 1)
-				lst))) 
+				lst)))
        (e0-ord-< (measure rlst)
 		 (measure lst)))))
- 
-(defthm    
+
+(defthm
     e0-ord-<-measure-rTarai-lst-5
     (let ((lst (list first second third fourth fifth)))
-      (implies  
-       (and (integer-listp lst) 
-	    (> first second)) 
-       (e0-ord-< (measure (rTarai-lst  
-			   (lst-rotates-with-minus-1  
-			    (- (DEC-FRONT-LEN lst) 1) 
-			    lst))) 
-		 (measure lst))))) 
+      (implies
+       (and (integer-listp lst)
+	    (> first second))
+       (e0-ord-< (measure (rTarai-lst
+			   (lst-rotates-with-minus-1
+			    (- (DEC-FRONT-LEN lst) 1)
+			    lst)))
+		 (measure lst)))))
 
-;; The recursion in (rTarai lst) halts when lst is a list 
+;; The recursion in (rTarai lst) halts when lst is a list
 ;;  of length 6:
 
 (local
@@ -299,7 +299,7 @@
 	      (list (list (- first 1) second third forth fifth sixth)
 		    (list (- second 1) third forth fifth sixth first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth fifth sixth))))))
  )
@@ -342,7 +342,7 @@
  (defthm
      lst-rotates-with-minus-1-6e
      (let ((lst (list first second third forth fifth sixth)))
-       (equal 
+       (equal
 	(lst-rotates-with-minus-1 5 lst)
 	(list (list (- first 1) second third forth fifth sixth)
 	      (list (- second 1) third forth fifth sixth first)
@@ -356,28 +356,28 @@
 (defthm
     e0-ord-<-measure-rotates-6
     (let ((lst (list first second third fourth fifth sixth)))
-      (implies 
+      (implies
        (and (integer-listp lst)
 	    (> first second)
-	    (member-equal rlst (lst-rotates-with-minus-1 
+	    (member-equal rlst (lst-rotates-with-minus-1
 				(- (DEC-FRONT-LEN lst) 1)
-				lst))) 
+				lst)))
        (e0-ord-< (measure rlst)
 		 (measure lst)))))
- 
-(defthm    
+
+(defthm
     e0-ord-<-measure-rTarai-lst-6
     (let ((lst (list first second third fourth fifth sixth)))
-      (implies  
-       (and (integer-listp lst) 
-	    (> first second)) 
-       (e0-ord-< (measure (rTarai-lst  
-			   (lst-rotates-with-minus-1  
-			    (- (DEC-FRONT-LEN lst) 1) 
-			    lst))) 
-		 (measure lst))))) 
+      (implies
+       (and (integer-listp lst)
+	    (> first second))
+       (e0-ord-< (measure (rTarai-lst
+			   (lst-rotates-with-minus-1
+			    (- (DEC-FRONT-LEN lst) 1)
+			    lst)))
+		 (measure lst)))))
 
-;; The recursion in (rTarai lst) halts when lst is a list 
+;; The recursion in (rTarai lst) halts when lst is a list
 ;;  of length 7:
 
 (local
@@ -389,7 +389,7 @@
 		    (list (- second 1) third forth fifth sixth seventh first))
 	      ))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth fifth sixth seventh))))
 	     )))
@@ -431,7 +431,7 @@
  (defthm
      lst-rotates-with-minus-1-7e
      (let ((lst (list first second third forth fifth sixth seventh)))
-       (equal 
+       (equal
 	(lst-rotates-with-minus-1 5 lst)
 	(list (list (- first 1) second third forth fifth sixth seventh)
 	      (list (- second 1) third forth fifth sixth seventh first)
@@ -446,19 +446,19 @@
      lst-rotates-with-minus-1-7f
      (let ((lst (list first second third forth
 		      fifth sixth seventh)))
-       (equal 
+       (equal
 	(lst-rotates-with-minus-1 6 lst)
-	(list (list (- first 1) second third forth 
+	(list (list (- first 1) second third forth
 		    fifth sixth seventh)
 	      (list (- second 1) third forth fifth
 		    sixth seventh first)
-	      (list (- third 1) forth fifth sixth 
+	      (list (- third 1) forth fifth sixth
 		    seventh first second)
 	      (list (- forth 1) fifth sixth seventh
 		    first second third)
-	      (list (- fifth 1) sixth seventh first 
+	      (list (- fifth 1) sixth seventh first
 		    second third forth)
-	      (list (- sixth 1) seventh first second 
+	      (list (- sixth 1) seventh first second
 		    third forth fifth)
 	      (list (- seventh 1) first second third
 		    forth fifth sixth)
@@ -466,43 +466,43 @@
 
 (defthm
     e0-ord-<-measure-rotates-7
-    (let ((lst (list first second third fourth 
+    (let ((lst (list first second third fourth
 		     fifth sixth seventh)))
-      (implies 
+      (implies
        (and (integer-listp lst)
 	    (> first second)
-	    (member-equal rlst (lst-rotates-with-minus-1 
+	    (member-equal rlst (lst-rotates-with-minus-1
 				(- (DEC-FRONT-LEN lst) 1)
-				lst))) 
+				lst)))
        (e0-ord-< (measure rlst)
 		 (measure lst)))))
- 
-(defthm    
-    e0-ord-<-measure-rTarai-lst-7
-    (let ((lst (list first second third fourth 
-		     fifth sixth seventh)))
-      (implies  
-       (and (integer-listp lst) 
-	    (> first second)) 
-       (e0-ord-< (measure (rTarai-lst  
-			   (lst-rotates-with-minus-1  
-			    (- (DEC-FRONT-LEN lst) 1) 
-			    lst))) 
-		 (measure lst))))) 
 
-;; The recursion in (rTarai lst) halts when lst is a list 
+(defthm
+    e0-ord-<-measure-rTarai-lst-7
+    (let ((lst (list first second third fourth
+		     fifth sixth seventh)))
+      (implies
+       (and (integer-listp lst)
+	    (> first second))
+       (e0-ord-< (measure (rTarai-lst
+			   (lst-rotates-with-minus-1
+			    (- (DEC-FRONT-LEN lst) 1)
+			    lst)))
+		 (measure lst)))))
+
+;; The recursion in (rTarai lst) halts when lst is a list
 ;;  of any length 2-7:
 
 (defthm
     e0-ord-<-measure-rotates
-    (implies 
+    (implies
      (and (integer-listp lst)
 	  (consp (nthcdr 1 lst))       ;; (len lst) > 1
 	  (not (consp (nthcdr 7 lst))) ;; (len lst) <= 7
 	  (> (first lst)(second lst))
-	  (member-equal rlst (lst-rotates-with-minus-1 
+	  (member-equal rlst (lst-rotates-with-minus-1
 			      (- (DEC-FRONT-LEN lst) 1)
-			      lst))) 
+			      lst)))
      (e0-ord-< (measure rlst)
 	       (measure lst)))
     :hints (("Goal"
@@ -554,21 +554,21 @@
 		    (sixth (sixth lst))
 		    (seventh (seventh lst)))))))
 
-(defthm    
+(defthm
     e0-ord-<-measure-rTarai-lst
-      (implies  
+      (implies
        (and (integer-listp lst)
 	    (consp (nthcdr 1 lst))       ;; (len lst) > 1
 	    (not (consp (nthcdr 7 lst))) ;; (len lst) <= 7
-	    (> (first lst)(second lst))) 
-       (e0-ord-< (measure (rTarai-lst  
-			   (lst-rotates-with-minus-1  
-			    (- (DEC-FRONT-LEN lst) 1) 
-			    lst))) 
+	    (> (first lst)(second lst)))
+       (e0-ord-< (measure (rTarai-lst
+			   (lst-rotates-with-minus-1
+			    (- (DEC-FRONT-LEN lst) 1)
+			    lst)))
 		 (measure lst)))
     :hints (("Goal"
-	     :in-theory (disable 
-			 Fb measure dec-front-len 
+	     :in-theory (disable
+			 Fb measure dec-front-len
 			 e0-ord-<-measure-rTarai-lst-2
 			 e0-ord-<-measure-rTarai-lst-3
 			 e0-ord-<-measure-rTarai-lst-4
@@ -615,4 +615,4 @@
 		    (fifth (fifth lst))
 		    (sixth (sixth lst))
 		    (seventh (seventh lst)))))))
-	    
+

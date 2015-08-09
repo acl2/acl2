@@ -26,9 +26,9 @@
          )
   `( (encapsulate
       nil
-      
+
       (defthmd ,close-thm
-        (implies (and (acl2-numberp x) 
+        (implies (and (acl2-numberp x)
                       (acl2-numberp y)
                       (standardp x)
                       (standardp arg)
@@ -37,7 +37,7 @@
                              (- x y))
                           (elem-id 1)))
         :hints (("Goal" :by (:instance eks-close) :in-theory nil)))
-        
+
       (defthmd ,number-thm
         (implies (acl2-numberp x)
                  (acl2-numberp x))
@@ -60,7 +60,7 @@
         (implies (acl2-numberp x)
                  (acl2-numberp (elem-id 1)))
         :hints (("Goal" :by (:instance eks-prime-number) :in-theory nil)))
-      
+
       (defthmd ,prime-standard-thm
         (implies (and (standardp x)
                       (acl2-numberp x))
@@ -86,10 +86,10 @@
          (prime-standard-thm (symbol-append f-name 'prime-standard))
          (continuous-standard-thm (symbol-append f-name 'prime-continuous))
          )
-           
+
     `( (encapsulate
         nil
-      
+
         (defthmd ,close-thm
           (implies (and (acl2-numberp x)
                         (acl2-numberp y)
@@ -99,10 +99,10 @@
                    (i-close (/ (- (elem-const ,c arg) (elem-const ,c arg))
                                (- x y))
                             (elem-id 0)))
-          :hints (("Goal" 
+          :hints (("Goal"
                    :use (:instance elem-const-close (name ,c))
                    )))
-        
+
         (defthmd ,number-thm
           (acl2-numberp (elem-const ,c arg))
           :hints (("Goal" :in-theory '(elem-const-number))))
@@ -114,14 +114,14 @@
 
         (defthmd ,continuous-thm
           (i-close (elem-const ,c arg) (elem-const ,c arg))
-          :hints (("Goal" 
+          :hints (("Goal"
                    :by (:instance elem-const-continuous (name ,c))
                    )))
 
         (defthm ,prime-number-thm
           (acl2-numberp (elem-id 0))
           :hints (("Goal" :in-theory (enable elem-id))) )
-      
+
         (defthmd ,prime-standard-thm
           (standardp (elem-id 0))
           :hints (("Goal" :in-theory (enable elem-id))) )
@@ -137,7 +137,7 @@
        (not (null (second expr)))
        (not (null (third expr)))
        (null (cdddr expr))))
-             
+
 (defun unary-expr-p (expr)
   (and (symbolp (first expr))
        (not (null (second expr)))
@@ -148,7 +148,7 @@
        ;(symbolp (second expr))
        (equal (third expr) 'arg)
        (null (cdddr expr))))
-              
+
 (defun differentiate-binary-+ (f-expr f-name lhs-diff rhs-diff)
   (let ((combination-results
          (sum-d/dx-apply-fn (second f-expr)   ; LHS expr
@@ -164,7 +164,7 @@
         nil
         (local ,(first lhs-diff))
         (local ,(first rhs-diff))
-      
+
         ,(first combination-results)
         )
        ,(second combination-results) ; combination derivative
@@ -186,22 +186,22 @@
         nil
         (local ,(first lhs-diff))
         (local ,(first rhs-diff))
-      
+
         ,(first combination-results)
         )
        ,(second combination-results) ; combination derivative
-       ,(third combination-results)))) ; combination domain      
+       ,(third combination-results)))) ; combination domain
 
 
 
 (defun differentiate-unary (f-expr f-name inner-diff unary-infos)
   (let ((unary-info (assoc-equal (first f-expr) unary-infos)))
     (if (null unary-info)
-        (er hard 'top-level 
+        (er hard 'top-level
             "er1 Can't differentiate unary function ~x0" (first f-expr))
-      
+
       (let ((combination-results
-             (chain-composition-apply-fn 
+             (chain-composition-apply-fn
               (list (first unary-info) 'x) ; outer function (unary)
               (fourth unary-info) ; derivative of unary function
               (third unary-info) ; domain of unary function
@@ -215,7 +215,7 @@
             nil
 
 	    ,(first inner-diff)             ;(local ,(first inner-diff))
-      
+
             ,(first combination-results)
             )
            ,(second combination-results) ; combination derivative
@@ -226,10 +226,10 @@
   (let* ((inverse-info (assoc-equal (first f-expr) inverse-functions-list))
 	 (deriv-info (assoc-equal (fourth (cdr inverse-info)) unary-fn-list)))
     (if (or (null inverse-info) (null deriv-info))
-        (er hard 'top-level 
+        (er hard 'top-level
             "er2 Can't differentate inverse function ~x0" (first f-expr))
 	(let ((inverse-results
-	       (inv-d/dx-apply-fn 
+	       (inv-d/dx-apply-fn
 		`(,(fourth (cdr inverse-info)) x)
 		(third (cdr deriv-info))
 		(second (cdr inverse-info))
@@ -237,7 +237,7 @@
 		(third (cdr inverse-info))
 		(first f-expr))))
 	  (let ((unary-results
-		 (differentiate-unary f-expr 
+		 (differentiate-unary f-expr
 				      f-name
 				      `((encapsulate
 					 nil
@@ -283,12 +283,12 @@
          (differentiate-constant (second f-expr) f-name)
          )
         ((binary-expr-p 'binary-+ f-expr)
-         (differentiate-binary-+ f-expr f-name 
-                                 (differentiate-fn (second f-expr) 
+         (differentiate-binary-+ f-expr f-name
+                                 (differentiate-fn (second f-expr)
                                                    (symbol-append f-name 'left)
                                                    unary-fn-list
 						   inverse-functions-list)
-                                 (differentiate-fn (third f-expr) 
+                                 (differentiate-fn (third f-expr)
                                                    (symbol-append f-name 'right)
                                                    unary-fn-list
 						   inverse-functions-list)))
@@ -316,16 +316,16 @@
 	 (er hard 'top-level "er4 Can't differentiate unary function ~x0" f-expr))
 
 	((binary-expr-p 'binary-* f-expr)
-	 (differentiate-binary-* f-expr f-name 
-                                 (differentiate-fn (second f-expr) 
+	 (differentiate-binary-* f-expr f-name
+                                 (differentiate-fn (second f-expr)
                                                    (symbol-append f-name 'left)
                                                    unary-fn-list
 						   inverse-functions-list)
-                                 (differentiate-fn (third f-expr) 
+                                 (differentiate-fn (third f-expr)
                                                    (symbol-append f-name 'right)
                                                    unary-fn-list
 						   inverse-functions-list)))
-	
+
 
         (t (er hard  'top-level "er5 Can't differentate ~x0" f-expr))))
 
@@ -361,7 +361,7 @@
 
 
 
-(defun clean-domain (expr arg)  
+(defun clean-domain (expr arg)
   (clean-fn (remove-duplicates-equal (flatten-and `(and ,expr))) arg))
 
 (defun contains-atom (val expr)
@@ -387,23 +387,23 @@
 
  (defun argify (key-base expr)
    (declare (xargs :measure (acl2-count expr)))
-   (cond 
+   (cond
          ((equal expr 'x)
           (mv 'x nil))
          ((symbolp expr)
-          (mv `(elem-const ',key-base arg) 
+          (mv `(elem-const ',key-base arg)
               (list (cons key-base expr))))
          ((and (consp expr)
                (equal (first expr) 'quote)
                (acl2-numberp (second expr)))
-          (mv `(elem-const ',key-base arg) 
+          (mv `(elem-const ',key-base arg)
               (list (cons key-base (second expr)))))
          ((and (consp expr)
                (symbolp (first expr))
                (null (cdr expr)))
-          (mv `(elem-const ',key-base arg) 
+          (mv `(elem-const ',key-base arg)
               (list (cons key-base expr))))
-         
+
          ((consp expr)
           (mv-let (arg-expr arg-alist)
                   (argify-list key-base 1
@@ -430,8 +430,8 @@
                               ,(cdr (first args))))
               :hints (("Goal" :in-theory (enable elem-const
                                                  (:executable-counterpart elem-const))))))
-          (argify-unpack-thms (cdr args) 
-                              all-args 
+          (argify-unpack-thms (cdr args)
+                              all-args
                               (symbol-append thm-base 'a)))))
 
 (defun argify-unpack-thm-names (n thm-base)
@@ -452,7 +452,7 @@
     (if (symbolp (cdr (first args)))
         (cons `(standardp ,(cdr (first args)))
               (arg-standard-thms (rest args)))
-      ;(er hard  'top-level "neek neek ~x0" `(standardp ,(cdr (first args)))) 
+      ;(er hard  'top-level "neek neek ~x0" `(standardp ,(cdr (first args))))
       ;nil
       ;)))
       (arg-standard-thms (rest args)))))
@@ -460,7 +460,7 @@
 (defun add-one (n)
   (+ 1 n))
 
-(defun double (num) 
+(defun double (num)
   (+ num num))
 
 
@@ -504,8 +504,8 @@
                           (if expanded
                               (expand substituted terminals w (- depth 1))
                             (expand-all expr terminals w (- depth 1)))
-                          (mv all-expanded 
-                              (union-equal symbols (list fn)) 
+                          (mv all-expanded
+                              (union-equal symbols (list fn))
                               err)))))
        (mv expr nil nil))))
 
@@ -524,20 +524,20 @@
 
 #|
      (cons (expand (first exprs) terminals w (- depth 1))
-           (expand-all (rest exprs) terminals w (- depth 1))))))        
+           (expand-all (rest exprs) terminals w (- depth 1))))))
 |#
 
 
 (defun differentiate-and-clean-fn (f-expr f-name unary-fn-list inverse-functions-list w)
   (declare (xargs :mode :program))
   (mv-let (expanded-f-expr expanded-symbols expand-err)
-          (expand f-expr 
+          (expand f-expr
 		  (append (strip-cars unary-fn-list)
 			  (strip-cars inverse-functions-list))
 		  w 20)
           (if expand-err
               '(er hard 'top-level "Could not expand expression.")
-          (mv-let 
+          (mv-let
            (f-expr-bound bindings)
            (argify '(1) expanded-f-expr)
            (let* ((diff (differentiate-fn f-expr-bound (symbol-append f-name 'dirty) unary-fn-list inverse-functions-list))
@@ -550,19 +550,19 @@
              `(encapsulate
                nil
                ,derivation-code ; Do the actual derivative-proving
-      
-               ,@(argify-unpack-thms bindings 
+
+               ,@(argify-unpack-thms bindings
                                      listified-bindings
                                      'unargify)
-       
-               
+
+
                (local
                 (defthm-std ,std-thm
                   (implies (and ,@(arg-standard-thms bindings))
                            (standardp ,listified-bindings))
                   :rule-classes nil))
 
-      
+
 
                (defthm ,f-name
                  (implies (and ,@domain-expr
@@ -574,18 +574,18 @@
                           (i-close (/ (- ,clean-f-expr ,(subst 'y 'x clean-f-expr))
                                       (- x y))
                                    ,derivative-expr))
-                 :hints (("Goal" 
+                 :hints (("Goal"
                           :use ((:instance ,(symbol-append f-name 'dirty-close)
                                            (arg ,listified-bindings))
                                 (:instance ,std-thm))
-                          :in-theory '(elem-id 
+                          :in-theory '(elem-id
                                        ,@expanded-symbols
-                                       ,@(argify-unpack-thm-names 
+                                       ,@(argify-unpack-thm-names
                                           (length bindings)
                                           'unargify)
-                              
+
                                        ))))))))))
-            
+
 
 
 ;(differentiate-and-clean-fn '(binary-+ x x) 'twoxs nil)
@@ -602,23 +602,23 @@
 				   ,range
                                    ,fn-inverse)))
 
-(def-elem-derivative unary-/ 
-  elem-unary-/ 
+(def-elem-derivative unary-/
+  elem-unary-/
   (and (acl2-numberp x) (not (equal x 0)))
   (- (/ (* x x))))
 
 
 (def-elem-derivative unary--
-  elem-unary-- 
+  elem-unary--
   (acl2-numberp x)
   (elem-id -1))
 
-          
+
 (encapsulate
  nil
  (set-state-ok t)
  (set-ignore-ok t)
- (set-irrelevant-formals-ok t)          
+ (set-irrelevant-formals-ok t)
 
  (defun diff-fn (thm-name-base form state)
    (declare (xargs :mode :program))
@@ -628,14 +628,14 @@
                        T 'TOP-LEVEL
                        (w state) STATE)
            (mv-let (x unary-derivs state)
-                   (table-fn 'unary-derivatives 'nil state 
+                   (table-fn 'unary-derivatives 'nil state
                              '(table unary-derivatives))
                    (mv-let (x inverse-functions state)
 			   (table-fn 'inverse-functions 'nil state
 				     '(table inverse-functions))
-			   (mv `(progn ,(differentiate-and-clean-fn 
+			   (mv `(progn ,(differentiate-and-clean-fn
 					 val
-					 thm-name-base 
+					 thm-name-base
 					 unary-derivs
 					 inverse-functions
 					 (w state)))

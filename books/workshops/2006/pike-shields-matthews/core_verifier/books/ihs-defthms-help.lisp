@@ -19,7 +19,7 @@
   (if (zp i) (list val)
     (cons val (log-rep-hlp x (- i 1))))))
 
-;; Lil' endian representation of x.  
+;; Lil' endian representation of x.
 (defun log-rep (x)
   (let ((size (nbits x)))
     (if (zp size) (list NIL)
@@ -56,13 +56,13 @@
 
   (defthm nat-rep-loghead-1
     (implies (natp i)
-             (equal (nat-rep 
-                     (reverse 
-                      (list 
+             (equal (nat-rep
+                     (reverse
+                      (list
                        (equal (loghead 1 i) 1))))
                     (loghead 1 i))))
 
-(defthm less-loghead-expt 
-  (< (loghead j i) (expt2 j)) 
+(defthm less-loghead-expt
+  (< (loghead j i) (expt2 j))
   :hints (("Goal" :in-theory (enable loghead-when-i-is-not-an-integerp))))
 

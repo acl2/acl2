@@ -52,7 +52,7 @@ what the heck!!
  (local (defun assertion (s) (declare (ignore s)) t))
  (local (defun post (s) (declare (ignore s)) t))
  (local (defun default-state () t))
- 
+
  ;; The constraints imposed are specified as theorems with names enclosed
  ;; within vertical bars, namely as |some theorem|.
 
@@ -95,11 +95,11 @@ what the heck!!
  ;; first exitpoint must satisfy the postcondition. But how do we go
  ;; from one cutpoint to the nextt? The number of steps to do so has
  ;; been specified by the function steps-to-cutpoint below.
- 
+
 
  (defpun steps-to-cutpoint-tail (s i)
-   (if (cutpoint s) 
-       i 
+   (if (cutpoint s)
+       i
      (steps-to-cutpoint-tail (nextt s) (1+ i))))
 
  (defun steps-to-cutpoint (s)
@@ -160,20 +160,20 @@ what the heck!!
 ;; We start with a collection of definitions. steps-to-exitpoint below
 ;; is the number of steps to reach the first exitpoint, if one is
 ;; reachable. Otherwise it is (omega).
- 
+
 (defpun steps-to-exitpoint-tail (s i)
-  (if (exitpoint s) 
-      i 
+  (if (exitpoint s)
+      i
     (steps-to-exitpoint-tail (nextt s) (1+ i))))
 
 (defun steps-to-exitpoint (s)
   (let ((steps (steps-to-exitpoint-tail s 0)))
     (if (exitpoint (run s steps))
-        steps 
+        steps
       (omega))))
 
 ;; Our first job is to show that (steps-to-cutpoint s) is the minimum
-;; distance cutpoint reachable from s. 
+;; distance cutpoint reachable from s.
 
 ;; The following induction scheme is useful, and is taken from the
 ;; partial clock functions book by John and Daron, as is the
@@ -204,7 +204,7 @@ what the heck!!
                     (implies (natp k)
                              (<= cutpoint-steps k))
                     (cutpoint (run s cutpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -224,7 +224,7 @@ what the heck!!
  ;; automatically but often require :use hints. This suggests the
  ;; proliferation of such hints in this book. For my first-cut pass at
  ;; this book, I will therefore not even try to remove :use hints but
- ;; just keep a note of them. 
+ ;; just keep a note of them.
 
  (defthm steps-to-cutpoint-is-natp
   (implies (cutpoint (run s k))
@@ -284,7 +284,7 @@ what the heck!!
                     (implies (natp k)
                              (<= exitpoint-steps k))
                     (exitpoint (run s exitpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -304,7 +304,7 @@ what the heck!!
  ;; automatically but often require :use hints. This suggests the
  ;; proliferation of such hints in this book. For my first-cut pass at
  ;; this book, I will therefore not even try to remove :use hints but
- ;; just keep a note of them. 
+ ;; just keep a note of them.
 
  (defthm steps-to-exitpoint-is-natp
   (implies (exitpoint (run s k))
@@ -360,7 +360,7 @@ what the heck!!
  (defun big-step-induction (s k l)
    (if (zp k) (list s k l)
      (big-step-induction (nextt-cutpoint (nextt s))
-                         (1- k) 
+                         (1- k)
                          (- l (1+ (steps-to-cutpoint (nextt s))))))))
 
 
@@ -458,18 +458,18 @@ what the heck!!
 
 
 (local
- (encapsulate 
+ (encapsulate
   ()
-  
+
   (local
    (defthm no-exitpoint-means-not-exitpoint
      (implies  (no-big-exitpoint s k)
                (not (exitpoint (big-step-run s k))))))
-  
+
   (local
    (defthm big-steps-alternate-definition
      (equal (big-step-run s k)
-            (if (zp k) s (nextt-cutpoint 
+            (if (zp k) s (nextt-cutpoint
                           (nextt (big-step-run s (1- k))))))
     :rule-classes :definition))
 
@@ -504,7 +504,7 @@ what the heck!!
    (declare (xargs :measure (nfix l)
                    :hints (("Goal"
                             :use ((:instance
-                                   steps-to-cutpoint-is-ordinal 
+                                   steps-to-cutpoint-is-ordinal
                                    (s (nextt s))))))))
    (if (zp l) 0
      (1+ (big-steps (nextt-cutpoint (nextt s))
@@ -527,11 +527,11 @@ what the heck!!
    :rule-classes :type-prescription))
 
 ;; OK so let us prove that every cutpoint is big-step-run of some
-;; number. 
+;; number.
 
 
 (local
- (defthmd cutpoint-is-hit-by-big-steps 
+ (defthmd cutpoint-is-hit-by-big-steps
    (implies (and (cutpoint (run s l))
                  (natp l))
             (equal (big-step-run s (big-steps s l))
@@ -547,12 +547,12 @@ what the heck!!
  (defthmd first-exitpoint-is-hit-by-big-steps
    (implies (exitpoint (run s m))
             (equal (run s (steps-to-exitpoint s))
-                   (big-step-run s 
+                   (big-step-run s
                                  (big-steps s (steps-to-exitpoint
                                                s)))))
    :hints (("Goal"
             :in-theory (disable steps-to-exitpoint-provide-exitpoint)
-            :use ((:instance cutpoint-is-hit-by-big-steps 
+            :use ((:instance cutpoint-is-hit-by-big-steps
                              (l (steps-to-exitpoint s)))
                   (:instance steps-to-exitpoint-provide-exitpoint
                              (k m)))))))
@@ -570,7 +570,7 @@ what the heck!!
    (if (zp m) (not (exitpoint s))
      (and (not (exitpoint s))
           (no-exitpoint (nextt s) (1- m))))))
- 
+
 ;; Of course a state reachable in <= m steps from s is not an
 ;; exitpoint from this definition.
 
@@ -639,7 +639,7 @@ what the heck!!
  (defthm little-steps=0-bigs-step-run=identity
    (implies (equal (little-steps s k) 0)
             (equal (big-step-run s k) s))))
-   
+
 (local
  (defthmd big-steps-is-little-steps
    (implies (and (natp l)
@@ -781,15 +781,15 @@ what the heck!!
             (natp (1- (steps-to-exitpoint s))))
    :hints (("Goal"
             :do-not-induct t
-            :in-theory (e/d (natp) 
+            :in-theory (e/d (natp)
                             (steps-to-exitpoint-is-natp
-                             steps-to-exitpoint-provide-exitpoint))       
+                             steps-to-exitpoint-provide-exitpoint))
             :use ((:instance steps-to-exitpoint-is-natp (k n))
                   (:instance steps-to-exitpoint-provide-exitpoint
                              (k n)))))))
- 
+
 (local
- (defthm big-steps-is-natp->0 
+ (defthm big-steps-is-natp->0
   (implies (force (and (natp n)
                        (> n 0)))
           (natp (1- (big-steps s n))))))
@@ -805,19 +805,19 @@ what the heck!!
               (post (run s steps))))
    :hints (("Goal"
             :cases ((not (natp n)) (exitpoint s)))
-           ("Subgoal 1" 
+           ("Subgoal 1"
             :in-theory (disable steps-to-exitpoint-is-minimal)
             :use ((:instance steps-to-exitpoint-is-minimal (k 0))))
-           ("Subgoal 2" 
+           ("Subgoal 2"
             :in-theory (disable steps-to-exitpoint-is-minimal)
             :use ((:instance steps-to-exitpoint-is-minimal (k 0))))
-           ("Subgoal 3" 
-            :in-theory (disable 
+           ("Subgoal 3"
+            :in-theory (disable
                         first-exitpoint-is-hit-by-big-steps
                         |assertion at exitpoint implies postcondition|
                         first-exitpoint-has-assertion-too
                         less-than-exitpoint-implies-no-exitpoint)
-            :use ((:instance  
+            :use ((:instance
                    |assertion at exitpoint implies postcondition|
                    (s (run s (steps-to-exitpoint s))))
                   (:instance first-exitpoint-has-assertion-too
@@ -828,7 +828,7 @@ what the heck!!
                   (:instance less-than-exitpoint-implies-no-exitpoint
                              (k n)
                              (m (1- (big-steps s (steps-to-exitpoint s))))))))))
- 
+
 ;; OK, now that the partial correctness is proved, let me concentrate on the
 ;; termination proof. I have hardly anything to prove here. But let me still do
 ;; it. I now simply disable nextt-cutpoint as I define the clock function and
@@ -867,11 +867,11 @@ what the heck!!
 ;; following theorem where I show that the clock function is correct.
 
 (local
- (defthm clock-fn-is-natp 
+ (defthm clock-fn-is-natp
    (natp (clock-fn s))
    :rule-classes :type-prescription
    :hints (("Goal"
-            :in-theory 
+            :in-theory
             (disable |some cutpoint is reachable from a cutpoint|)))))
 
 
@@ -886,12 +886,12 @@ what the heck!!
    :hints (("Goal"
            :induct (clock-fn s))
           ("Subgoal *1/2"
-           :in-theory (disable  
+           :in-theory (disable
                        |some cutpoint is reachable from a cutpoint|
                        |assertion invariant over cutpoints|)
-           :use ((:instance 
+           :use ((:instance
                   |assertion invariant over cutpoints|)
-                 (:instance 
+                 (:instance
                   |some cutpoint is reachable from a cutpoint|))))))
 
 ;; And the final defthm showing total correctness.

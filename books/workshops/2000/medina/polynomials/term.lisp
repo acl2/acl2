@@ -32,14 +32,14 @@
   `(natural-listp ,a))
 
 ;;; ---------
-;;; Null term 
+;;; Null term
 ;;; ---------
 
 (defconst *null*
   nil)
 
 ;;; A term is null if it only contains zeros.
- 
+
 (defun nullp (a)
   (cond ((atom a)
 	 (equal a *null*))
@@ -68,7 +68,7 @@
 
   (local (defthm nullp-null
 	   (nullp (null n)))))
-  
+
 ;;; -------------------------------
 ;;; Compatibility relation on terms
 ;;; -------------------------------
@@ -133,7 +133,7 @@
 	   (= (* a b) b)))
 
 (defthm *-identity-2
-  (implies (and (termp a) (nullp b) (compatiblep a b)) 
+  (implies (and (termp a) (nullp b) (compatiblep a b))
 	   (= (* a b) a)))
 
 ;;; Term multiplication is commutative.

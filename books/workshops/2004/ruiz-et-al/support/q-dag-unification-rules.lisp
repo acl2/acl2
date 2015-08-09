@@ -41,7 +41,7 @@
 ;;; well-formedness conditions and that application of that operator
 ;;; does not change the "prefix terms" represented. All these
 ;;; properties imply that some sequences of operators build most general
-;;; unifiers (or detect failure of unification). 
+;;; unifiers (or detect failure of unification).
 
 ;;; ============================================================================
 ;;;
@@ -54,8 +54,8 @@
 
 ;;; * Applicability test: whenever i and j are distinct indices in the
 ;;; dag and the terms whose root nodes are, respectively, i and j, are
-;;; equal.  
-;;; * Step of reduction: modify the dag, making i point to j. 
+;;; equal.
+;;; * Step of reduction: modify the dag, making i point to j.
 
 
 ;;; -----------------------------------
@@ -64,10 +64,10 @@
 ;;;
 ;;; -----------------------------------
 
-  
+
 
 (defun unif-legal-q-identify (i j g)
-  (and 
+  (and
    (natp i) (< i (len g))
    (natp j) (< j (len g))
    (not (equal i j))
@@ -75,7 +75,7 @@
    (term-dag-non-variable-p j g)
    (equal (dag-as-term t i g)
 	  (dag-as-term t j g))))
-  
+
 (defun unif-legal-q (upl op)
   (if (equal (first op) 'identify)
       (unif-legal-q-identify (second op) (third op) (third upl))
@@ -96,7 +96,7 @@
       (unif-reduce-one-step-q-identify (second op) (third op) (first upl)
 				(second upl) (third upl))
     (unif-reduce-one-step-d upl op)))
-  
+
 ;;; ============================================================================
 ;;;
 ;;; 2) Relation between the transformations acting on both representations
@@ -115,7 +115,7 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defun induct-path-subterm (flg h g path)
     (declare (xargs :measure (measure-rec-dag flg h g)))
@@ -133,12 +133,12 @@
 	    (cons (induct-path-subterm t (car h) g path)
 		  (induct-path-subterm nil (cdr h) g path))))
       path))) ;;; to make this formal relevant
- 
+
  (local
   (defthm map-nfix-nat-true-listp
     (implies (nat-true-listp l)
 	     (equal (map-nfix l) l))))
- 
+
 ;;; Repeated
  (local
   (defthm ugly-lemma-1
@@ -146,12 +146,12 @@
 	     (equal (dag-as-term flg h g)
 		    (dag-as-term t h g)))
     :rule-classes nil))
- 
-  
+
+
  (local
   (defthm path-subterm
     (implies (and (dag-p g)
-		  (bounded-term-graph-p g n) 
+		  (bounded-term-graph-p g n)
 		  (if flg (natp h) (nat-true-listp h))
 		  (consp p)
 		  (path-p p g)
@@ -168,12 +168,12 @@
 					    (h (nth h g)))))))
 ;;; Repeated
  (local
-  (defthm size-subterm 
+  (defthm size-subterm
     (implies (subterm flg t1 t2)
 	     (>= (size flg t2) (size t t1)))
     :rule-classes nil))
- 
- 
+
+
  (defthm identify-preserves-dag-p-main-lemma
    (implies (and
 	     (dag-p g)
@@ -200,9 +200,9 @@
 			    (x (car (last p2)))
 			    (p p2)))))
 
-		      
-	   
-	   
+
+
+
 ;;; It would be better to disable obtain-path-from-h-to-x-from-an-updated-dag
 ;;; in dags.lisp
  (defthm identify-preserves-dag-p
@@ -213,10 +213,10 @@
 		 (term-dag-non-variable-p i g)
 		 (term-dag-non-variable-p j g)
 		 (not (dag-p (update-nth i j g))))
-	    
+
 	    (not (equal (dag-as-term t i g)
 			(dag-as-term t j g))))
-   
+
    :hints (("Goal" :use
 	    (:instance identify-preserves-dag-p-main-lemma
 		       (p (obtain-path-from-h-to-x-from-an-updated-dag i
@@ -224,7 +224,7 @@
 	    :in-theory (disable
 			obtain-path-from-h-to-x-from-an-updated-dag)))))
 
-  
+
 
 (local
  (defthm unif-reduce-one-step-q-preserves-bounded-well-formed-upl
@@ -233,10 +233,10 @@
 		 (unif-legal-q upl op))
 	    (bounded-well-formed-upl (unif-reduce-one-step-q upl op)
 				     n))))
- 
+
 ;;; Later, we will need that the @n@ of the above theorem be (len (third
 ;;; upl)). That is, we need a similar theorem for well-formed-upl. Le us
-;;; prove it. 
+;;; prove it.
 
 (encapsulate
  ()
@@ -247,9 +247,9 @@
 		  (unif-reduce-one-step-q upl op))
 	     (equal (len (third (unif-reduce-one-step-q upl op)))
 		    (len (third upl))))))
- 
+
  (local (in-theory (enable well-formed-upl-def)))
- 
+
  (defthm unif-reduce-one-step-q-preserves-well-formed-upl
    (implies (and (well-formed-upl upl)
 		 (unif-legal-q upl op))
@@ -260,7 +260,7 @@
 				unif-reduce-one-step-q)
 	    :cases ((unif-reduce-one-step-q upl op))))))
 
-  
+
 
 ;;; -----------------------------------
 ;;;
@@ -290,7 +290,7 @@
 	   (equal (upl-as-pair-of-systems (unif-reduce-one-step-q upl op))
 		  (unif-reduce-one-step-p (upl-as-pair-of-systems upl)
 					  op))))
- 
+
 
 ;;; When the operator is an identification:
 
@@ -308,12 +308,12 @@
 	    (dag-as-term flg h (update-nth i j g))
 	    (dag-as-term flg h g))))
 
-  
+
 
 (encapsulate
  ()
- 
- 
+
+
  (local
   (defthm identify-on-term-dags-tbs-as-system
     (implies (and (bounded-term-graph-p g n)
@@ -325,13 +325,13 @@
 		  (equal (dag-as-term t i g)
 			 (dag-as-term t j g))
 		  (bounded-nat-pairs-true-listp S n))
-	     
+
 	     (equal
 	      (tbs-as-system S (update-nth i j g))
 	      (tbs-as-system S g)))))
- 
- 
- 
+
+
+
  (local
   (defthm identify-on-term-dags-solved-as-system
     (implies (and (bounded-term-graph-p g n)
@@ -346,8 +346,8 @@
 	     (equal
 	      (solved-as-system sol (update-nth i j g))
 	      (solved-as-system sol g)))))
- 
- 
+
+
 ;;; Este se tiene cuando se tenga el anterior
  (defthm unif-reduce-one-step-q-for-identifications
    (implies (and (well-formed-upl upl)
@@ -398,7 +398,7 @@
 	  (remove-identifications (cdr unif-seq)))
 	 (t (cons (car unif-seq)
 		  (remove-identifications (cdr unif-seq)))))))
- 
+
 (local
  (defthm unif-seq-q-p-unif-seq-p-p
    (implies (and (well-formed-upl upl)
@@ -457,7 +457,7 @@
 				    (upl (list S nil g)))
 			 (:instance unif-seq-p-last-unif-seq-q-last
 				    (upl (list S nil g))))))))
- 
+
 (local
  (defthm mgs-seq-q-mgs-seq-computed-substitution
    (let ((last-upl (mgs-seq-q S g unif-seq)))
@@ -472,7 +472,7 @@
 				    (upl (list S nil g)))
 			 (:instance unif-seq-p-last-unif-seq-q-last
 				    (upl (list S nil g))))))))
- 
+
 ;;; This theorem is also interesting. The graph obtained by a complete
 ;;; legal sequence of transformations is acyclic:
 
@@ -513,7 +513,7 @@
 ;;; succeeds, then the indices substitution finally obtained represents
 ;;; a solution of the system represented by the initial indices system:
 
-(defthm mgs-seq-q-soundness 
+(defthm mgs-seq-q-soundness
   (let* ((S (tbs-as-system S-dag g))
 	 (last-upl (mgs-seq-q S-dag g unif-seq))
 	 (sol (solved-as-system (second last-upl) (third last-upl))))
@@ -523,7 +523,7 @@
 	     (solution sol S)))
   :hints (("Goal" :use (:instance mgs-seq-soundness
 				  (unif-seq (remove-identifications unif-seq))
-				  (S (tbs-as-system S-dag g)))))) 
+				  (S (tbs-as-system S-dag g))))))
 
 
 ;;; If a complete legal sequence of transformations on term dags
@@ -543,7 +543,7 @@
 ;;; substitution obtaned by a complet legal sequence of transformations:
 
 
-(defthm mgs-seq-q-most-general-solution 
+(defthm mgs-seq-q-most-general-solution
   (let* ((S (tbs-as-system S-dag g))
 	 (last-upl (mgs-seq-q S-dag g unif-seq))
 	 (sol (solved-as-system (second last-upl) (third last-upl))))

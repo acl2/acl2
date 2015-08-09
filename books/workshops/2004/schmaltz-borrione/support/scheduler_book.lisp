@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -48,8 +48,8 @@
 
 (defthm scheduler_tail_=_non_tail
   (equal (scheduler tl non_ovlp_r prev)
-         (append 
-          (rev non_ovlp_r) 
+         (append
+          (rev non_ovlp_r)
           (scheduler_non_tail tl prev))))
 
 (in-theory (disable scheduler))
@@ -58,17 +58,17 @@
   ;; if scheduler satisfies all_no_intersectp_routep then
   ;; the previous nodes have no intersection with grab_nodes
   ;; of scheduler
-  (implies (all_no_intersectp_routep 
+  (implies (all_no_intersectp_routep
             (scheduler tl nil prev))
            (no_intersectp prev
-                          (grab_nodes 
+                          (grab_nodes
                            (scheduler tl nil prev)))))
 
 (defthm all_no_intersectp_scheduler_non_tail
   ;; the following theorem proves that a route is unique but two routes may have
   ;; nodes in common
   (all_no_intersectp_routep (scheduler tl nil prev))
-  :hints (("Subgoal *1/2" 
+  :hints (("Subgoal *1/2"
            :use (:instance scheduler_and_prev_and_intersectp
                            (tl (cdr tl))
                            (prev (append (cdar tl) prev)))
@@ -81,7 +81,7 @@
 
 (defthm no_dupli_tl_=>_no_dupli_scheduler
   (implies (all_no_duplicatesp tl)
-           (all_no_duplicatesp 
+           (all_no_duplicatesp
             (scheduler tl nil prev))))
 
 (defthm all_no_duplicatesp_scheduler
@@ -90,7 +90,7 @@
   ;; of scheduler contains no duplicate
   (implies (all_no_duplicatesp tl)
            (no-duplicatesp (grab_nodes (scheduler tl nil prev))))
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :in-theory (disable
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
 ;  (commented out rule just below).]
@@ -125,28 +125,28 @@
            (all_addrp
             (scheduler tl nil prev))))
 
-(defthm all_pos_intp_route_lst 
+(defthm all_pos_intp_route_lst
   (implies (all_pos_intp_route_lstp tl)
-           (all_pos_intp_route_lstp 
+           (all_pos_intp_route_lstp
             (scheduler tl nil prev))))
 
 (defthm all_true-listp_scheduler
   (implies (all_true-listp tl)
-           (all_true-listp 
+           (all_true-listp
             (scheduler tl nil prev))))
 
 (defthm all_int_routep_scheduler
   (implies (all_int_routep tl)
-           (all_int_routep 
+           (all_int_routep
             (scheduler tl nil prev))))
 
 (defthm all_consp_scheduler
   (implies (all_consp_route tl)
-           (all_consp_route 
+           (all_consp_route
             (scheduler tl nil prev))))
 (defthm all_inf_routep_det_non_overlap_set
   (implies (all_inf_routep tl N)
-           (all_inf_routep 
+           (all_inf_routep
             (scheduler tl nil prev) N)))
 
 (defthm all_ok_nw_req_scheduler

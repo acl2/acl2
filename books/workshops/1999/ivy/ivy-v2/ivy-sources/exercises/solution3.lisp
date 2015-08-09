@@ -1,4 +1,4 @@
-;; Exercise file to accompany 
+;; Exercise file to accompany
 ;;
 ;; Ivy: A Preprocessor and Proof Checker for First-order Logic
 ;;
@@ -7,12 +7,12 @@
 ;;
 ;; Solution for exercise 3.
 ;;
-;; Define a function cnf  that converts negation normal form 
-;; formulas to conjunctive normal form and a predicate cnfp 
+;; Define a function cnf  that converts negation normal form
+;; formulas to conjunctive normal form and a predicate cnfp
 ;; that recognizes conjunctive normal form formulas.  Prove
 ;; correctness of the conversion function.
 
-;; Note 1: See book nnf for the predicate nnfp, a recognizer of 
+;; Note 1: See book nnf for the predicate nnfp, a recognizer of
 ;; in negation normal form.
 
 ;; Note: to prove correctness in this case means to prove that cnf
@@ -50,7 +50,7 @@
 		(wff q))
 	   (wff (dist-or-and p q))))
 
-(defun cnf (f) 
+(defun cnf (f)
   (declare (xargs :guard (wff f)))
   (cond ((wfbinary f)
 	 (cond ((equal (car f) 'and) (list 'and (cnf (a1 f)) (cnf (a2 f))))

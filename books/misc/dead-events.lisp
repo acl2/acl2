@@ -330,15 +330,15 @@
 ; Return-tail-of-world returns the tail of the world beginning from this
 ; number.
 
-  (cond ((endp wrld) 
+  (cond ((endp wrld)
          (er hard 'return-tail-of-world
              "Implementation error: Reached the end of the world!"))
         (t
          (let ((trip (car wrld)))
            (case-match trip
                (('event-landmark 'global-value . rest)
-                (cond 
-                  ((eql (access-event-tuple-number rest) 
+                (cond
+                  ((eql (access-event-tuple-number rest)
                         max-live-event-number)
                    wrld)
                   (t
@@ -410,9 +410,9 @@
          (event-supports-fn-lst (cdr names)
                                 supp-alist
                                 (cons (cons (car names)
-                                            (event-supports-fn 
-                                             (car names) 
-                                             supp-alist 
+                                            (event-supports-fn
+                                             (car names)
+                                             supp-alist
                                              nil))
                                       acc)))))
 
@@ -422,7 +422,7 @@
 ; name in namex, prints out a list of events that are supported by name. The
 ; event-supports macro uses the proof-supporters-alist and hence, for now, does
 ; not return the events for which name is a syntactic supporter (for example,
-; the events whose guard proofs need name). 
+; the events whose guard proofs need name).
 
 ; TO-DO:
 

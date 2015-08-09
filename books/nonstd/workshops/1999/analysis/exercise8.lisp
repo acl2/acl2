@@ -143,7 +143,7 @@ result about continuous functions.)
    (implies (and (i-close x1 x2)
 		 (i-close y1 y2))
 	    (i-close (+ x1 y1) (+ x2 y2)))
-   :hints (("Goal" :use ((:instance i-close-transitive 
+   :hints (("Goal" :use ((:instance i-close-transitive
 				    (x (+ x1 y1))
 				    (y (+ x1 y2))
 				    (z (+ x2 y2))))
@@ -241,7 +241,7 @@ result about continuous functions.)
 			     (x (f2 x))
 			     (y (f2 y1)))
 		  (:instance f2-differentiable (y2 y1)))
-	    :in-theory (enable-disable (standards-are-limited) 
+	    :in-theory (enable-disable (standards-are-limited)
 				       (i-close-limited f2-differentiable
                                                         ;; The following are
                                                         ;; also needed for v2-6.
@@ -282,8 +282,8 @@ result about continuous functions.)
 			      (y (/ (- (f2 x) (f2 y1)) (- x y1))))
 		   (:instance f2-differentiable (y2 y1)))
 	     :in-theory (disable i-limited-times f2-differentiable)))))
-    
-    
+
+
 
  (defthm f1*f2-differentiable-part1
    (implies (and (realp x)
@@ -323,7 +323,7 @@ result about continuous functions.)
 		(i-limited x1)
 		(i-limited y1))
 	   (i-close (* x1 y1) (* x2 y2)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance i-small-plus
 			    (x (* x1 (- y1 y2)))
 			    (y (* y2 (- x1 x2))))
@@ -361,7 +361,7 @@ result about continuous functions.)
 		   (:instance f2-y1-limited))
 	     :in-theory (disable congruence-of-close-over-* f2-uniformly-continuous
 				 f1-differentiable f2-y1-limited)))))
-    
+
  (local
   (defthm lemma-2
     (implies (and (standard-numberp x)
@@ -384,7 +384,7 @@ result about continuous functions.)
 		   (:instance standards-are-limited
 			      (x (f1 x))))
 	     :in-theory (disable congruence-of-close-over-* f2-differentiable)))))
-	     
+
  (defthm f1*f2-differentiable-part2
    (implies (and (standard-numberp x)
 		 (realp x)
@@ -404,7 +404,7 @@ result about continuous functions.)
 		  (:instance lemma-2))
 	    :in-theory (disable congruence-of-close-over-+ lemma-1 lemma-2))))
  )
-    
+
 ;; Now, to show that indeed we have the f1*f2 is differentiable, we
 ;; force ACL2 to functionally instantiate rdfn with f1*f2.  The
 ;; specific theorem we use doesn't matter as much as the :hint.

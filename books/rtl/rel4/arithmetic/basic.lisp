@@ -146,7 +146,7 @@
 
 (encapsulate
  ()
- (local (include-book "expt")) 
+ (local (include-book "expt"))
 
  (defthm expt-2-positive-rational-type
    (and (rationalp (expt 2 i))
@@ -158,12 +158,12 @@
             (and (integerp (expt 2 i))
                  (< 0 (expt 2 i))))
    :rule-classes (:type-prescription))
- 
+
 ;the rewrite rule counterpart to expt-2-positive-integer-type
  (defthm expt-2-integerp
    (implies (<= 0 i)
             (integerp (expt 2 i))))
- 
+
 
 
 ; (in-theory (disable a14)) ;the rules above are better than this one for (expt 2 i)
@@ -187,7 +187,7 @@
  (theory-invariant (incompatible (:rewrite expt-split)
                                  (:definition a15))
                    :key expt-split-invariant)
- 
+
  (defthmd expt-weak-monotone
    (implies (and (integerp n)
                  (integerp m))

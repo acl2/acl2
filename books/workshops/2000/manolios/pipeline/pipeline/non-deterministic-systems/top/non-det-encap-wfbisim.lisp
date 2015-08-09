@@ -1,23 +1,23 @@
 ;  Copyright (C) 2000 Panagiotis Manolios
- 
+
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios who can be reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
@@ -49,64 +49,64 @@
   (encap-con-to-abs (con) t)
   (encap-good-con (con) t)
   (encap-con-rank (con) t))
- 
+
  (local (defun encap-abs-step (abs int)
 	  (declare (ignore abs int))
 	  t))
- 
+
  (local (defun encap-abs-p (abs)
 	  (equal abs t)))
- 
+
  (local (defun encap-con-step (con int)
 	  (declare (ignore con int))
 	  nil))
- 
+
  (local (defun encap-con-p (con)
 	  (equal con nil)))
- 
+
  (local (defun encap-con-to-abs (con)
 	  (declare (ignore con))
 	  t))
- 
+
  (local (defun encap-good-con (con)
 	  (declare (ignore con))
 	  t))
- 
+
  (local (defun encap-con-rank (con)
 	  (declare (ignore con))
 	  0))
- 
- (defun encap-WF-rel (x y) 
+
+ (defun encap-WF-rel (x y)
    (and (encap-abs-p x) ;not needed, but helps with case analysis
 	(encap-con-p y)
 	(encap-good-con y)
 	(equal x (encap-con-to-abs y))))
- 
+
  (defthm encap-B-is-a-WF-bisim-core
    (let ((u (encap-abs-step s int))
 	 (v (encap-con-step w int)))
      (implies (and (encap-wf-rel s w)
 		   (not (encap-wf-rel u v)))
 	      (and (encap-wf-rel s v)
-		   (e0-ord-< (encap-con-rank v) 
+		   (e0-ord-< (encap-con-rank v)
 			     (encap-con-rank w)))))
    :rule-classes nil)
- 
+
  (defthm encap-abs-step-type
    (encap-abs-p (encap-abs-step x int)))
- 
+
  (defthm encap-con-step-type
    (encap-con-p (encap-con-step x int)))
 
  (defthm encap-con-not-abs
    (implies (encap-con-p x)
 	    (not (encap-abs-p x))))
- 
+
  (defthm encap-abs-not-con
    (implies (encap-abs-p x)
 	    (not (encap-con-p x))))
 
- (defthm encap-con-to-abs-type 
+ (defthm encap-con-to-abs-type
    (encap-abs-p (encap-con-to-abs x)))
  )
 
@@ -132,7 +132,7 @@
 
 (defequiv encap-B)
 
-(defun encap-rank (x) 
+(defun encap-rank (x)
   (if (encap-con-p x)
       (encap-con-rank x)
     0))
@@ -143,7 +143,7 @@
 	(t (encap-con-step w int))))
 
 (defthm type-fc
-  (implies (equal u (encap-con-step s int)) 
+  (implies (equal u (encap-con-step s int))
 	   (encap-con-p u)))
 
 (defthm encap-B-is-a-WF-bisim-0
@@ -153,9 +153,9 @@
 		(and (encap-B u w)
 		     (e0-ord-< (encap-rank u) (encap-rank s)))
 		(and (encap-B s (encap-take-appropriate-step w int))
-		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int)) 
+		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int))
 			       (encap-rank w)))))
-  :hints (("goal" 
+  :hints (("goal"
 	   :use (:instance encap-B-is-a-WF-bisim-core)))
   :rule-classes nil)
 
@@ -166,9 +166,9 @@
 		(and (encap-B u w)
 		     (e0-ord-< (encap-rank u) (encap-rank s)))
 		(and (encap-B s (encap-take-appropriate-step w int))
-		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int)) 
+		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int))
 			       (encap-rank w)))))
-  :hints (("goal" 
+  :hints (("goal"
 	   :use (:instance encap-B-is-a-WF-bisim-core (s w) (w s))))
   :rule-classes nil)
 
@@ -179,7 +179,7 @@
 		(and (encap-B u w)
 		     (e0-ord-< (encap-rank u) (encap-rank s)))
 		(and (encap-B s (encap-take-appropriate-step w int))
-		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int)) 
+		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int))
 			       (encap-rank w)))))
   :rule-classes nil)
 
@@ -195,9 +195,9 @@
 		(and (encap-B u w)
 		     (e0-ord-< (encap-rank u) (encap-rank s)))
 		(and (encap-B s (encap-take-appropriate-step w int))
-		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int)) 
+		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int))
 			       (encap-rank w)))))
-  :hints (("goal" 
+  :hints (("goal"
 	   :use ((:instance encap-B-is-a-WF-bisim-core (w (encap-con-to-abs s)))
 		 (:instance encap-B-is-a-WF-bisim-core (s (encap-con-to-abs w)))
 		 (:instance encap-B-is-a-WF-bisim-core (w s) (s (encap-con-to-abs w)))
@@ -211,15 +211,15 @@
 		(and (encap-B u w)
 		     (e0-ord-< (encap-rank u) (encap-rank s)))
 		(and (encap-B s (encap-take-appropriate-step w int))
-		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int)) 
+		     (e0-ord-< (encap-rank (encap-take-appropriate-step w int))
 			       (encap-rank w)))))
-  :hints (("goal" 
+  :hints (("goal"
 	   :use ((:instance encap-b (x s) (y w))
 		 (:instance encap-B-is-a-WF-bisim-0)
 		 (:instance encap-B-is-a-WF-bisim-1)
 		 (:instance encap-B-is-a-WF-bisim-2)
 		 (:instance encap-B-is-a-WF-bisim-3))
-	   :in-theory (disable encap-wf-rel encap-r 
+	   :in-theory (disable encap-wf-rel encap-r
 			       encap-take-appropriate-step encap-rank e0-ord-< encap-b)))
   :rule-classes nil)
 
@@ -252,11 +252,11 @@
 	       (and (encap-B u w)
 		    (e0-ord-< (encap-rank u) (encap-rank s)))
 	       (encap-exists-w-succ-for-s w s)))
-  :hints (("goal" 
+  :hints (("goal"
 	   :use ((:instance encap-B-is-a-WF-bisim (int (encap-r-witness s u)))
-		 (:instance encap-exists-w-succ-for-u-suff 
+		 (:instance encap-exists-w-succ-for-u-suff
 			    (v (encap-take-appropriate-step w (encap-r-witness s u))))
-		 (:instance encap-exists-w-succ-for-s-suff 
+		 (:instance encap-exists-w-succ-for-s-suff
 			    (v (encap-take-appropriate-step w (encap-r-witness s u)))))))
   :rule-classes nil
   :otf-flg t)

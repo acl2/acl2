@@ -118,7 +118,7 @@
 ; 0 n
 ; 1 d
 ; 2 a - answer
-; 3 x - param for lessp 
+; 3 x - param for lessp
 ; 4 y - param for lessp
   '((iconst 0)  ;  0
     (istore 2)  ;  1   a = 0

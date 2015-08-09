@@ -20,7 +20,7 @@
   (declare (xargs :guard t))
   (good-map r))
 
-(defun next-fn (name) 
+(defun next-fn (name)
   (declare (xargs :guard (symbolp name)))
   (symbol-append name '$next))
 
@@ -151,7 +151,7 @@
 ;; We assume that all fields satisfy wf-rcdp. This would be unacceptable in
 ;; practice as a variety of type declarations will be necessary.
 
-(defun stobj-name (name) 
+(defun stobj-name (name)
   (declare (xargs :guard (symbolp name)))
   (symbol-append 'stobj$ name))
 
@@ -190,7 +190,7 @@
       `(bind ,reg (,(get-fnname reg) ,st)
          ,(exec-var-binds (rest regs) st rslt)))))
 
-(defun exec-wire-upds (wires rslt) 
+(defun exec-wire-upds (wires rslt)
   (declare (xargs :guard (signal-listp wires)))
   (logic-wire-upds wires rslt))
 
@@ -216,23 +216,23 @@
       `(s (quote ,reg) (,(get-fnname reg) ,st)
           ,(exec-extract-upds (rest regs) st rslt)))))
 
-(defun exec-step (name) 
+(defun exec-step (name)
   (declare (xargs :guard (symbolp name)))
   (symbol-append name '$exec-step))
 
-(defun exec-run1 (name) 
+(defun exec-run1 (name)
   (declare (xargs :guard (symbolp name)))
   (symbol-append name '$exec-run1))
 
-(defun exec-load (name) 
+(defun exec-load (name)
   (declare (xargs :guard (symbolp name)))
   (symbol-append name '$exec-load))
 
-(defun exec-extract (name) 
+(defun exec-extract (name)
   (declare (xargs :guard (symbolp name)))
   (symbol-append name '$exec-extract))
 
-(defun exec-run (name) 
+(defun exec-run (name)
   (declare (xargs :guard (symbolp name)))
   (symbol-append name '$exec-run))
 
@@ -260,7 +260,7 @@
                         :guard (wf-rcdp x)))
         ,(exec-extract-upds regs st 'x))
       (defun ,(exec-run name) (x n)
-        (declare (xargs :guard (and (,(wf-logicp name) x) 
+        (declare (xargs :guard (and (,(wf-logicp name) x)
                                     (natp n))))
         (with-local-stobj ,st
             (mv-let (rslt ,st)
@@ -287,7 +287,7 @@
     (local (defthm ,(symbol-append name '-exec-run-logic-run)
              (equal (,(exec-run name) x n) (,(logic-run name) x n))))))
 
-(defun sim-top-fn (name) 
+(defun sim-top-fn (name)
   (declare (xargs :guard (symbolp name)))
   (symbol-append 'run- name))
 
@@ -331,19 +331,19 @@
            (g :arg2 instr)
          (1+ (nfix pc)))
        ()))
-  
+
   (defreg mem (instr rfile mem)
     (if (eq (g :op instr) 'store)
         (s (nfix (g (g :arg1 instr) rfile))
-           (g (g :arg2 instr) rfile) 
-           mem) 
+           (g (g :arg2 instr) rfile)
+           mem)
       mem))
-  
+
   (defreg rfile (instr rfile mem)
     (bind op (g :op instr)
       (if (eq op 'loadm)
           (s (nfix (g (g :arg1 instr) rfile))
-             (g (g (g :arg2 instr) rfile) mem) 
+             (g (g (g :arg2 instr) rfile) mem)
              rfile)
         (if (eq op 'loadi)
             (s (nfix (g (g :arg1 instr) rfile))

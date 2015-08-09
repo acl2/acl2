@@ -22,13 +22,13 @@ For example,
      (integerp x)
      (<= (- (expt 2 15)) x)
      (< x (expt 2 15))))
-  
+
   (defun fix-sbp16 (x)
     (declare (xargs :guard t))
     (if (sbp16 x) x 0))
-  
+
   (defrecord sbp :rd getbv :wr putbv :fix fix-sbp16 :typep sbp16)
-  
+
 The "raw" record structure introduced in the standard records book is
 used to define records defined using defrecord, and the functions for
 accessing and updating a record that are introduced by defrecord are
@@ -39,7 +39,7 @@ and set elements of record r for address a and value v.  We prove the
 following lemmas, each of which also holds of "raw" records:
 
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
          v))
 
 (defthm g-diff-s
@@ -48,7 +48,7 @@ following lemmas, each of which also holds of "raw" records:
                   (g a r))))
 
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
          r))
 
 (defthm s-same-s
@@ -64,10 +64,10 @@ following lemmas, each of which also holds of "raw" records:
 In addition, the defrecord macro proves one additional lemma that is
 not provable about raw records:
 
-(defthm typep-g 
+(defthm typep-g
   (typep (g a r)))
 
-for a typep predicate provided by the user.  
+for a typep predicate provided by the user.
 
 What makes this implementation of records interesting is that it has
 the peculiar property that each of the lemmas has no "type"
@@ -119,7 +119,7 @@ November 2002
    (defthm s-aux-preserves-rcdp
      (implies (rcdp r)
 	      (rcdp (s-aux a v r))))
-  
+
    (defthm rcdp-implies-true-listp
      (implies (rcdp x)
 	      (true-listp x))
@@ -139,7 +139,7 @@ November 2002
 
    (defthm s-aux-same-g-aux
      (implies (rcdp r)
-	      (equal (s-aux a (g-aux a r) r) 
+	      (equal (s-aux a (g-aux a r) r)
 		     r)))
 
    (defthm s-aux-same-s-aux
@@ -169,7 +169,7 @@ November 2002
      (implies (rcdp x)
 	      (equal (acl2->rcd (rcd->acl2 x))
 		     x)))
- 
+
    (defthm acl2->rcd-returns-rcdp
      (rcdp (acl2->rcd x)))
 
@@ -211,7 +211,7 @@ November 2002
 		   (not (equal r1 (s-aux a (g-aux a r1) r2))))
 	      (not (equal (s-aux a 0 r2) (s-aux a 0 r1))))
      :hints (("goal" :induct (s-g-induction a r1 r2))))
-  
+
    (defthm s-aux==r-aux
      (implies (and (syntaxp (not (equal v '(quote 0))))
 		   (rcdp r1)
@@ -229,7 +229,7 @@ November 2002
 
    (defthm worht
      (implies (rcdp y)
-	      (iff (equal x (rcd->acl2 y)) 
+	      (iff (equal x (rcd->acl2 y))
 		   (equal (acl2->rcd x) y))))
 
    ))
@@ -267,7 +267,7 @@ November 2002
    (defthm s-aux-non-nil-cannot-be-nil
      (implies (and v (rcdp r))
 	      (s-aux a v r)))
-   
+
    (defthm cdr-s-aux
      (equal (cdr (s-aux a v r))
 	    (cdr (cond ((or (endp r) (<< a (caar r)))
@@ -276,11 +276,11 @@ November 2002
 			(if v (cons (cons a v) (cdr r))
 			  (cdr r)))
 		       (t (cons (car r) (s-aux a v (cdr r))))))))
-   
+
    (defun len-len-induction (r1 r2)
      (if (or (endp r1) (endp r2)) nil
        (cons (cons (car r1) (car r2)) (len-len-induction (cdr r1) (cdr r2)))))
-   
+
    (defthm s-aux-equal-differential
      (implies (and (rcdp rcd1)
 		   (rcdp rcd2)
@@ -290,7 +290,7 @@ November 2002
 	      (iff (equal (g-aux a rcd1)
 			  (g-aux a rcd2)) nil))
      :hints (("goal" :induct (len-len-induction rcd1 rcd2))))
-   
+
    (defthm rcd->acl2-preserves-equality
      (implies
       (and
@@ -299,7 +299,7 @@ November 2002
       (iff (equal (rcd->acl2 x) (rcd->acl2 y))
 	   (equal x y)))
      :hints (("goal" :in-theory (enable rcd->acl2))))
-   
+
    (defthm car-s-aux
      (equal (car (s-aux a v r))
 	    (car (cond ((or (endp r) (<< a (caar r)))
@@ -308,23 +308,23 @@ November 2002
 			(if v (cons (cons a v) (cdr r))
 			  (cdr r)))
 		       (t (cons (car r) (s-aux a v (cdr r))))))))
-   
+
    (defthm s-aux-preserves-rcdp
      (implies
       (rcdp r)
       (rcdp (s-aux a v r))))
-   
+
    (defthm rcdp-acl2->rcd
      (rcdp (acl2->rcd x))
      :hints (("goal" :in-theory (enable acl2->rcd))))
-   
+
    (defthm acl2->rcd-preserves-equality
      (implies
       (syntaxp (symbolp x))
       (iff (equal x y)
 	   (equal (acl2->rcd x) (acl2->rcd y))))
      :hints (("goal" :in-theory (enable acl2->rcd))))
-   
+
    (defthm s-equal-differential-g
      (implies (and (equal (s a v rcd1)
 			  (s a v rcd2))
@@ -332,15 +332,15 @@ November 2002
 	      (iff (equal (g a rcd1)
 			  (g a rcd2)) nil))
      :hints (("goal" :in-theory (enable s g))))
- 
+
    (defthm s-equal-differential-v
      (implies (and (equal (s a v1 rcd1)
 			  (s a v2 rcd2))
 		   (not (equal rcd1 rcd2)))
 	      (iff (equal v1 v2) t)))
- 
+
    ))
-  
+
  (defthm s-equal-differential
    (implies (and (equal (s a v1 rcd1)
 			(s a v2 rcd2))
@@ -386,18 +386,18 @@ November 2002
 
     `(encapsulate
       ()
-      
+
       (defun ,zp (x)
 	(declare (type t x))
 	(equal (,fix x) ,default))
-      
+
       (defun ,wf (x)
 	(declare (type t x))
 	(and (consp x)
 	     (,typep (car x))
 	     (not (,zp (car x)))
 	     (not (,wf (cdr x)))))
-      
+
       (in-theory (disable (,zp) (,wf)))
 
       (defthm ,wf-forward
@@ -417,54 +417,54 @@ November 2002
 		(s a (cons (,fix v) (cdr x)) m))
 	    (if (,zp v) m
 	      (s a (cons (,fix v) x) m)))))
-      
+
       (defun ,rd (a m)
 	(declare (type t a m))
 	(let ((x (g a m)))
 	  (if (,wf x) (car x)
 	    ,default)))
-      
-      
+
+
       (defthm ,(join-symbols base rd '-same- wr '-hyps)
 	(implies (equal a b)
-		 (equal (,rd a (,wr b v r)) 
+		 (equal (,rd a (,wr b v r))
 			(,fix v))))
-      
+
       (defthm ,(join-symbols base rd '-diff- wr '-hyps)
 	(implies (not (equal a b))
 		 (equal (,rd a (,wr b v r))
 			(,rd a r))))
-      
+
       (defthm ,(join-symbols base wr '-same- rd '-hyps)
 	(implies (equal a b)
-		 (equal (,wr a (,rd b r) r) 
+		 (equal (,wr a (,rd b r) r)
 			r)))
-      
+
       (defthm ,(join-symbols base wr '-diff- wr '-hyps)
 	(implies (not (equal a b))
 		 (equal (,wr b y (,wr a x r))
 			(,wr a x (,wr b y r))))
 	:rule-classes ((:rewrite :loop-stopper ((b a ,wr)))))
-      
+
       (defthm ,(join-symbols base wr '-same- wr '-hyps)
 	(implies (equal a b)
 		 (equal (,wr a y (,wr b x r))
 			(,wr a y r))))
-      
+
       (defthm ,(join-symbols base rd '-of- wr '-redux)
 	(equal (,rd a (,wr b v r))
 	       (if (equal b a) (,fix v)
 		 (,rd a r)))
 	:hints (("goal" :in-theory (disable ,fix ,rd ,wr))))
-      
+
       (defthm ,(join-symbols base wr '-same- rd)
-	(equal (,wr a (,rd a r) r) 
+	(equal (,wr a (,rd a r) r)
 	       r))
-      
+
       (defthm ,(join-symbols base wr '-same- wr)
 	(equal (,wr a y (,wr a x r))
 	       (,wr a y r)))
-      
+
       (defthm ,(join-symbols base typep '- rd)
 	(and (,typep (,rd a r))
 	     (equal (,fix (,rd a r))
@@ -476,7 +476,7 @@ November 2002
 
       (defthm ,(join-symbols base wr '==r)
 	(implies
-	 (and 
+	 (and
 	  (,(join-symbols base wr '==r-hyp) v a r1)
 	  (equal r2 r1))
 	 (and (iff (equal r1 (,wr a v r2)) t)
@@ -490,7 +490,7 @@ November 2002
 
       (defthm ,(join-symbols base wr '== wr)
 	(implies
-	 (and 
+	 (and
 	  (equal a1 a2)
 	  (,(join-symbols base wr '== wr '-hyp) v1 v2)
 	  (equal r2 r1))
@@ -527,18 +527,18 @@ November 2002
 
     `(encapsulate
       ()
-      
+
       (defun ,zp (x)
 	(declare (type t x))
 	(equal (,fix x) ,default))
-      
+
       (defun ,wf (x)
 	(declare (type t x))
 	(and (consp x)
 	     (,typep (car x))
 	     (not (,zp (car x)))
 	     (not (,wf (cdr x)))))
-      
+
       (in-theory (disable (,zp) (,wf)))
 
       (defthm ,wf-forward
@@ -557,25 +557,25 @@ November 2002
 	      (cons (,fix v) (cdr x)))
 	  (if (,zp v) x
 	    (cons (,fix v) x))))
-      
+
       (defun ,rd (x)
 	(declare (type t x))
 	(if (,wf x) (car x)
 	  ,default))
-      
-      
+
+
       (defthm ,(join-symbols base rd '-same- wr)
-	(equal (,rd (,wr v r)) 
+	(equal (,rd (,wr v r))
 	       (,fix v)))
-      
+
       (defthm ,(join-symbols base wr '-same- rd)
 	(equal (,wr (,rd r) r)
 	       r))
-      
+
       (defthm ,(join-symbols base wr '- wr)
 	(equal (,wr y (,wr x r))
 	       (,wr y r)))
-      
+
       (defthm ,(join-symbols base typep '- rd)
 	(and (,typep (,rd r))
 	     (equal (,fix (,rd r))
@@ -586,7 +586,7 @@ November 2002
 	 (syntaxp (not (equal v '(quote 0))))
 	 (and (iff (equal r1 (,wr v r2))
 		   (and (equal (,rd r1) (,fix v))
-			(equal (,wr 0 r1) (,wr 0 r2)))) 
+			(equal (,wr 0 r1) (,wr 0 r2))))
 	      (iff (equal (,wr v r2) r1)
 		   (and (equal (,fix v) (,rd r1))
 			(equal (,wr 0 r2) (,wr 0 r1)))))))

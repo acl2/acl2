@@ -6,7 +6,7 @@
     ~~~~~~~~~~~~
 
 we define a bdd node manager based on stobjs and
-(later) prove that the "exported" functions: 
+(later) prove that the "exported" functions:
 (bmr is the bdd manager stobj)
 
    free-bdd (lst bmr) --> (copy bmr)
@@ -35,9 +35,9 @@ of stobjs).
 
 ;;;; BEGIN utility macros and functions ;;;;
 
-(defun symb-join (x y) 
+(defun symb-join (x y)
   (declare (xargs :guard (and (symbolp x) (symbolp y))))
-  (intern (concatenate 'string (symbol-name x) (symbol-name y)) 
+  (intern (concatenate 'string (symbol-name x) (symbol-name y))
 	  "ACL2"))
 
 (defun symb-app-fn (symb symbs)
@@ -50,7 +50,7 @@ of stobjs).
   (symb-app-fn symb symbs))
 
 (defun defpred-fn (name params body)
-  (declare (xargs :guard (and (symbolp name) 
+  (declare (xargs :guard (and (symbolp name)
                               (symbol-listp params))))
   (list `(defun ,name ,params ,body)
         `(defthm ,(symb-app name '-forward-chain)
@@ -64,8 +64,8 @@ of stobjs).
         `(in-theory (disable ,name))))
 
 (defmacro defpred (name params body)
-  (declare (xargs :guard 
-                  (and (symbolp name) 
+  (declare (xargs :guard
+                  (and (symbolp name)
                        (symbol-listp params))))
   (cons 'progn (defpred-fn name params body)))
 
@@ -75,7 +75,7 @@ of stobjs).
 
 (in-theory (disable natp))
 
-(defun pnatp (x) 
+(defun pnatp (x)
   (and (integerp x) (> x 0)))
 
 (defthm pnatp-compound-recognizer
@@ -84,7 +84,7 @@ of stobjs).
 
 (in-theory (disable pnatp))
 
-(defun fail (msg)  
+(defun fail (msg)
   (hard-error 'general-failure
 	      "~xa"
 	      (list (cons #\a msg))))
@@ -92,7 +92,7 @@ of stobjs).
 (defmacro fail-with (val msg)
   `(let ((fail-dmy (fail ,msg)))
      (declare (ignore fail-dmy)) ,val))
-     
+
 (defun binding? (x)
   (or (null x)
       (and (consp x)
@@ -102,7 +102,7 @@ of stobjs).
                     (consp (caar x))))
 	   (binding? (cdr x)))))
 
-(defun seq-fn (bind result) 
+(defun seq-fn (bind result)
   (declare (xargs :guard (binding? bind)))
   (cond ((endp bind) result)
         ((atom (caar bind))
@@ -113,7 +113,7 @@ of stobjs).
          `(let ((,(caaar bind)
                  ,(cadar bind)))
             ,(seq-fn (cdr bind) result)))
-        (t 
+        (t
          `(mv-let ,(caar bind)
               ,(cadar bind)
             ,(seq-fn (cdr bind) result)))))
@@ -138,7 +138,7 @@ of stobjs).
 ;;;; i am impressed ACL2 can prove the following without
 ;;;; any help.... :)
 
-(local 
+(local
 (defthm logand-is-natp
   (implies (natp y)
 	   (natp (logand x y)))
@@ -181,7 +181,7 @@ of stobjs).
        (consp (cdr x))
        (consp (cddr x))))
 
-(defun bddp (x) 
+(defun bddp (x)
   (or (booleanp x)
       (and (quadp x)
 	   (pnatp (b-id x))
@@ -196,20 +196,20 @@ of stobjs).
        (bddp (b-then x))
        (bddp (b-else x))))
 
-(local 
+(local
 (defthm bddp-forward-chain-cons
-  (implies (and (bddp x) 
+  (implies (and (bddp x)
 		(consp x))
 	   (bdd-trp x))
   :rule-classes :forward-chaining))
 
-(local 
+(local
 (defthm bddp-forward-chain-endp
   (implies (and (bddp x) (atom x))
 	   (symbolp x))
   :rule-classes :forward-chaining))
 
-(local 
+(local
 (defthm bddp-back-chain
   (implies (or (bdd-trp x)
 	       (bdd-0p x)
@@ -225,7 +225,7 @@ of stobjs).
 	   (bddp (first x))
 	   (bdd-listp (rest x)))))
 
-(local 
+(local
 (defthm bdd-listp-forward-chain-true-listp
   (implies (bdd-listp x) (true-listp x))
   :rule-classes :forward-chaining))
@@ -236,7 +236,7 @@ of stobjs).
 	   (bdd-trp (first x))
 	   (bdd-tr-listp (rest x)))))
 
-(local 
+(local
 (defthm bdd-tr-listp-forward-chain-true-listp
   (implies (bdd-tr-listp x) (true-listp x))
   :rule-classes :forward-chaining))
@@ -277,7 +277,7 @@ of stobjs).
 
 
 (defun b-node (id var then else)
-  (declare (xargs :guard (and (pnatp id) (pnatp var) 
+  (declare (xargs :guard (and (pnatp id) (pnatp var)
                               (bddp then) (bddp else))))
   (cons id (cons var (cons then else))))
 
@@ -286,7 +286,7 @@ of stobjs).
   (implies (and (pnatp id) (pnatp var)
 		(bddp then) (bddp else))
 	   (bdd-trp (b-node id var then else)))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
 		  :trigger-terms ((b-node id var then else)))
 		 (:rewrite))))
 
@@ -299,12 +299,12 @@ of stobjs).
                               (bddp rslt))))
   (cons f (cons g (cons h rslt))))
 
-(local 
+(local
 (defthm rslt-entry-is-ite-resultp
   (implies (and (bddp f) (bddp g) (bddp h)
 		(bddp rslt))
 	   (ite-resultp (rslt-entry f g h rslt)))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
 		  :trigger-terms ((rslt-entry f g h rslt)))
 		 (:rewrite))))
 
@@ -320,7 +320,7 @@ of stobjs).
 ;;;; "bdd-hash-code" is the hash-code we use on bdd nodes
 
 (defun bdd-hash-code (x y z r)
-  (declare (xargs :guard (and (natp x) (natp y) 
+  (declare (xargs :guard (and (natp x) (natp y)
                               (natp z) (natp r))))
   (let ((code (logand (logxor (logxor x (ash y 2))
                               (ash z 4))
@@ -331,7 +331,7 @@ of stobjs).
   (implies (and (natp r) (> r 0))
 	   (and (natp (bdd-hash-code x y z r))
 		(< (bdd-hash-code x y z r) r)))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :trigger-terms ((bdd-hash-code x y z r))))
   :hints (("Goal" :in-theory (disable logxor logand ash))))
 
@@ -420,9 +420,9 @@ of stobjs).
 ;;;; BEGIN "eql-bdd" function ;;;;
 
 (defun eql-bdd (x y)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                   (and (bddp x) (bddp y))))
-  (if (atom x) 
+  (if (atom x)
       (and (atom y) (iff x y))
     (and (consp y)
          (eql (b-id x) (b-id y)))))
@@ -446,11 +446,11 @@ of stobjs).
                   (and (pnatp var) (bddp then) (bddp else)
                        (bdd-tr-listp chain))))
   (cond ((endp chain) nil)
-        ((node-eql var then else (first chain)) 
+        ((node-eql var then else (first chain))
          (first chain))
         (t (bdd-match var then else (rest chain)))))
 
-(local 
+(local
 (defthm bdd-match-bddp
   (implies (and (bdd-tr-listp chain)
 		(bdd-match var then else chain))
@@ -461,11 +461,11 @@ of stobjs).
 ;;;; and if so, it returns this node. otherwise, it creates a
 ;;;; new bdd-node and adds it to the unique-tbl.
 
-(defun bdd-id (b) 
+(defun bdd-id (b)
   (declare (xargs :guard (bddp b)))
   (if (atom b) 0 (b-id b)))
 
-(local 
+(local
 (defthm bdd-id-natp
   (implies (bddp b)
 	   (natp (bdd-id b)))
@@ -475,8 +475,8 @@ of stobjs).
 (in-theory (disable eql-bdd bdd-id))
 
 (defun get-unique (var then else bdd-mgr)
-  (declare (xargs :guard (and (pnatp var) 
-                              (bddp then) 
+  (declare (xargs :guard (and (pnatp var)
+                              (bddp then)
                               (bddp else))
                   :stobjs bdd-mgr))
   (seq ((code (id-hash var (bdd-id then) (bdd-id else)))
@@ -505,7 +505,7 @@ of stobjs).
 ;;;; BEGIN "init-bdd" functions ;;;;
 
 (defun init-uniq-tbl (n bdd-mgr)
-  (declare (xargs :guard (and (natp n) 
+  (declare (xargs :guard (and (natp n)
                               (<= n (table-size)))
                   :measure (nfix (- (table-size) n))
                   :stobjs bdd-mgr))
@@ -530,7 +530,7 @@ of stobjs).
   (implies (and (bdd-mgrp x) (natp n))
            (bdd-mgrp (init-rslt-tbl n x))))
 
-(defun init-bdd (bdd-mgr) 
+(defun init-bdd (bdd-mgr)
   (declare (xargs :stobjs bdd-mgr))
   (seq ((bdd-mgr (init-uniq-tbl 0 bdd-mgr))
         (bdd-mgr (init-rslt-tbl 0 bdd-mgr))
@@ -549,7 +549,7 @@ of stobjs).
 
 ;;;; BEGIN "var-bdd" function ;;;;
 
-(defun var-bdd (n bdd-mgr) 
+(defun var-bdd (n bdd-mgr)
   (declare (xargs :guard (pnatp n)
                   :stobjs bdd-mgr))
   (get-unique n (bdd-1) (bdd-0) bdd-mgr))
@@ -567,7 +567,7 @@ of stobjs).
 
 ;;;; BEGIN result-tbl functions ;;;;
 
-;; the following predicate is used to keep from saving 
+;; the following predicate is used to keep from saving
 ;; "small" results in the result cache. you can use any
 ;; predicate here which preserves:
 ;;    (implies (cacheable-resultp f g h)
@@ -576,7 +576,7 @@ of stobjs).
 (defmacro cacheable-size () 10)
 
 (defun cacheable-resultp (f g h)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                   (and (bddp f) (bddp g) (bddp h))))
   (and (consp f) (consp g) (consp h)
        (> (b-id f) (cacheable-size))
@@ -607,7 +607,7 @@ of stobjs).
 
 (defun find-result (f g h bdd-mgr)
   (declare (xargs :guard (and (bddp f) (bddp g) (bddp h))
-                  :guard-hints 
+                  :guard-hints
                   (("Goal" :in-theory (disable ite-resultp?)))
                   :stobjs bdd-mgr))
   (and (cacheable-resultp f g h)
@@ -639,7 +639,7 @@ of stobjs).
 
 (local
 (defthm set-result-type-correct
-  (implies (and (bddp f) (bddp g) (bddp h) 
+  (implies (and (bddp f) (bddp g) (bddp h)
 		(bddp r) (bdd-mgrp x))
 	   (bdd-mgrp (set-result f g h r x)))))
 
@@ -668,8 +668,8 @@ of stobjs).
   (implies (bddp f) (bddp (else-node f v)))))
 
 (defun top-var (f g h)
-  (declare (xargs :guard 
-                  (and (bdd-trp f) (bddp g) (bddp h))))                  
+  (declare (xargs :guard
+                  (and (bdd-trp f) (bddp g) (bddp h))))
   (let ((fv (b-test f))
 	(not-g (atom g))
 	(not-h (atom h)))
@@ -683,7 +683,7 @@ of stobjs).
           (t
            (let ((gv (b-test g))
                  (hv (b-test h)))
-             (cond ((and (<= gv fv) 
+             (cond ((and (<= gv fv)
                          (<= hv fv)) fv)
                    ((<= hv gv) gv)
                    (t hv)))))))
@@ -700,26 +700,26 @@ of stobjs).
 ;;;; by proving the following theorems and then turning
 ;;;; then acl2-count
 
-(local 
+(local
 (defthm eql-bdd-consp-implies-consp
   (implies (and (eql-bdd f g) (consp f))
 	   (consp g))
   :rule-classes :forward-chaining))
 
-(local 
+(local
 (defthm acl2-count-consp->0
   (implies (consp x)
 	   (< 0 (acl2-count x)))
   :rule-classes :linear))
 
-(local 
+(local
 (defthm consp-<-acl2-count-bdd-else
   (implies (consp x)
 	   (< (acl2-count (b-else x))
 	      (acl2-count x)))
   :rule-classes :linear))
 
-(local 
+(local
 (defthm consp-<-acl2-count-bdd-then
   (implies (consp x)
 	   (< (acl2-count (b-then x))
@@ -734,8 +734,8 @@ of stobjs).
   (declare (xargs :guard (and (bddp f) (bddp g) (bddp h))
                   :stobjs bdd-mgr
                   :verify-guards nil ;;;; we verify the guard below
-		  :measure (+ (acl2-count f) 
-			      (acl2-count g) 
+		  :measure (+ (acl2-count f)
+			      (acl2-count g)
 			      (acl2-count h))))
   (cond ((atom f) (if f (mv g bdd-mgr) (mv h bdd-mgr)))
         ((yes-no? g h) (mv f bdd-mgr))
@@ -745,17 +745,17 @@ of stobjs).
         (t (let ((entry (find-result f g h bdd-mgr)))
              (if entry (mv (ite-rslt entry) bdd-mgr)
                (seq ((var (top-var f g h))
-                     ((then bdd-mgr) 
+                     ((then bdd-mgr)
                       (ite-bdd (then-node f var)
                                (then-node g var)
                                (then-node h var)
                                bdd-mgr))
-                     ((else bdd-mgr) 
+                     ((else bdd-mgr)
                       (ite-bdd (else-node f var)
                                (else-node g var)
                                (else-node h var)
                                bdd-mgr))
-                     ((rslt bdd-mgr) 
+                     ((rslt bdd-mgr)
                       (if (eql-bdd then else) (mv then bdd-mgr)
                         (get-unique var then else bdd-mgr)))
                      (bdd-mgr (set-result f g h rslt bdd-mgr)))
@@ -803,7 +803,7 @@ of stobjs).
   (declare (xargs :guard (bdd-listp keep)
                   :stobjs bdd-mgr))
   (if (endp keep) (mv () bdd-mgr)
-    (mv-let (copy bdd-mgr) 
+    (mv-let (copy bdd-mgr)
         (rebuild-bdd (first keep) bdd-mgr)
       (mv-let (rest bdd-mgr)
           (rebuild-bdds (rest keep) bdd-mgr)

@@ -19,7 +19,7 @@
 ;;                             else  a + 1 - x.
 
 ;; Since the inputs to both K and the measure are intended to be
-;; integers, non-integer inputs may be coerced to be integers by 
+;; integers, non-integer inputs may be coerced to be integers by
 ;; the ACL2 function ifix.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Answer.
@@ -33,9 +33,9 @@
   (b () t)
   (e () t))
  ;;----------------
- ;; Provide witnesses: 
+ ;; Provide witnesses:
  (local
-  (defun 
+  (defun
       a ()
       1))
 
@@ -54,7 +54,7 @@
      Type-of-a
      (integerp (a))
      :rule-classes :type-prescription)
- 
+
  (defthm
      Type-of-e
      (and (integerp (e))

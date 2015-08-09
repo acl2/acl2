@@ -56,7 +56,7 @@
       t
     (and (occ-arity-okp (car occs) netlist)
          (occs-arity-okp (cdr occs) netlist))))
-    
+
 (defun module-arity-okp (module cdr-netlist)
   (declare (xargs :guard (and (module-syntax-okp module)
                               (net-syntax-okp cdr-netlist))))
@@ -136,7 +136,7 @@
 			   (DELETE-EQ-MODULE FN NETLIST)))
   :hints (("Goal"
 	   :do-not-induct t
-	   :in-theory (enable-disable 
+	   :in-theory (enable-disable
 		       (module-arity-okp)
 		       (module-arity-okp-of-something-gross-2!!!))
 	   :use ((:instance module-arity-okp-of-something-gross-2!!!

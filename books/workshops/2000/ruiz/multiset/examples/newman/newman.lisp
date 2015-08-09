@@ -34,10 +34,10 @@
 (include-book "abstract-proofs")
 
 ;;; *******************************************************************
-;;; A MECHANICAL PROOF OF NEWMAN'S LEMMA: 
+;;; A MECHANICAL PROOF OF NEWMAN'S LEMMA:
 ;;; For terminating relations, local confluence implies
 ;;; confluence [see "Term Rewriting and all that..." (Baader & Nipkow),
-;;; chapter 2, pp. 28-29] 
+;;; chapter 2, pp. 28-29]
 ;;; *******************************************************************
 
 ;;; ============================================================================
@@ -50,7 +50,7 @@
 ;;; ----------------------------------------------------------------------------
 
 
-;;; A general noetherian partial order rel is defined. 
+;;; A general noetherian partial order rel is defined.
 ;;; It will be used to justify noetherianity of the reduction relation,
 ;;; based on the following meta-theorem:
 ;;; "A reduction is noetherian iff it is contained in a noetherian
@@ -63,13 +63,13 @@
 ;;; decidable, so we cannot define the transitive closure of a relation.
 
 
-(encapsulate 
+(encapsulate
  ((rel (x y) booleanp)
   (fn (x) e0-ordinalp))
- 
+
  (local (defun rel (x y) (declare (ignore x y)) nil))
  (local (defun fn (x) (declare (ignore x)) 1))
- 
+
  (defthm rel-well-founded-relation-on-mp
    ;; modified for v2-8 ordinals changes
    (and
@@ -78,7 +78,7 @@
 	     (o< (fn x) (fn y))))
    :rule-classes (:well-founded-relation
 		  :rewrite))
- 
+
  (defthm rel-transitive
    (implies (and (rel x y) (rel y z))
  	    (rel x z))
@@ -90,23 +90,23 @@
 (local
  (defthm rel-irreflexive
    (not (rel x x))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance rel-well-founded-relation-on-mp
 			     (y x)))))))
- 
-;;; REMARK: e0-ord-irreflexive (in multiset.lisp) is needed 
+
+;;; REMARK: e0-ord-irreflexive (in multiset.lisp) is needed
 
 ;;; ----------------------------------------------------------------------------
-;;; 1.2 A noetherian locally confluent relation 
+;;; 1.2 A noetherian locally confluent relation
 ;;; ----------------------------------------------------------------------------
 
 ;;; A general reduction is given by two functions: reduction-one-step
 ;;; and legal. Noetherianity is justified by inclusion in the previously
 ;;; defined well-founded relation on rel. Local confluence is defined by
 ;;; the existence of a function transform-local-peak, assumed to
-;;; transform every local peak to an equivalent valley proof. 
+;;; transform every local peak to an equivalent valley proof.
 
-(encapsulate 
+(encapsulate
  ((legal (x u) boolean)
   (reduce-one-step (x u) element)
   (transform-local-peak (x) proof))
@@ -114,7 +114,7 @@
  (local (defun legal (x u) (declare (ignore x u)) nil))
  (local (defun reduce-one-step (x u) (+ x u)))
  (local (defun transform-local-peak (x) (declare (ignore x)) nil))
- 
+
 
  (defun proof-step-p (s)
    (let ((elt1 (elt1 s)) (elt2 (elt2 s))
@@ -125,8 +125,8 @@
 				    elt2)))
 	  (implies (not direct) (and (legal elt2 operator)
 				   (equal (reduce-one-step elt2 operator)
-					  elt1))))))	
-   
+					  elt1))))))
+
  (defun equiv-p (x y p)
    (if (endp p)
        (equal x y)
@@ -139,20 +139,20 @@
      (implies (and (equiv-p x y p) (local-peak-p p))
               (and (steps-valley valley)
 		   (equiv-p x y valley)))))
- 
+
  (defthm noetherian
    (implies (legal x u) (rel (reduce-one-step x u) x))))
 
 ;;; ----------------------------------------------------------------------------
-;;; 1.3 Our goal 
+;;; 1.3 Our goal
 ;;; ----------------------------------------------------------------------------
 
 ;;; REMARK: We will prove that the reduction relation has the
 ;;; Church-Rosser property, instead of showing confluence (which is
-;;; equivalent). 
+;;; equivalent).
 
 ;;; Our definition of the Church-Rosser property (see confluence.lisp) is:
-;;; (defthm Chuch-Rosser-property                            
+;;; (defthm Chuch-Rosser-property
 ;;;   (let ((valley (transform-to-valley p)))
 ;;;     (implies (equiv-p x y p)
 ;;;	      (and (steps-valley valley)
@@ -182,7 +182,7 @@
         	:condition t
 	        :scheme (induct-equiv-p x p)))))
 
- 
+
 ;;; Proof-p: sometimes it will be useful to talk about proofs without
 ;;; mentioning equiv-p
 
@@ -195,7 +195,7 @@
 	     t
 	   (and (equal (elt2 (car p)) (elt1 (cadr p)))
 		(proof-p (cdr p))))))))
- 
+
 ;;;; Relation between proof-p y equiv-p
 
 (local
@@ -227,7 +227,7 @@
 	  (direct (cadr p)))
 	  (and (proof-step-p (car p))
 	       (proof-step-p (cadr p))
-	       (equal (elt2 (car p)) (elt1 (cadr p)))))    
+	       (equal (elt2 (car p)) (elt1 (cadr p)))))
 	(t (exists-local-peak (cdr p)))))
 
 (defun replace-local-peak (p)
@@ -273,7 +273,7 @@
 
 
 ; (acl2::defmul-components rel)
-;The list of components is: 
+;The list of components is:
 ; (REL REL-WELL-FOUNDED-RELATION-ON-MP T FN X Y)
 
 (acl2::defmul (REL REL-WELL-FOUNDED-RELATION-ON-MP T FN X Y)
@@ -300,7 +300,7 @@
 
 ;;; In order to admit transform-to-valley, our main goal is:
 
-;;; (defthm transform-to-valley-admission 
+;;; (defthm transform-to-valley-admission
 ;;;   (implies (exists-local-peak p)
 ;;; 	   (mul-rel (proof-measure (replace-local-peak p))
 ;;; 		    (proof-measure p)))
@@ -412,7 +412,7 @@
 		     (elt2 (cadr (local-peak p)))
 		     (local-peak p)))))
 
-(local	   
+(local
  (defthm transform-local-peak-equiv-p
    (implies (exists-local-peak p)
 	    (equiv-p (elt1 (car (local-peak p)))
@@ -431,7 +431,7 @@
  (defthm consp-proof-measure
    (equal (consp (proof-measure p))
 	  (consp p))))
- 
+
 (local
  (defthm car-equiv-p-proof-measure
    (implies (and (equiv-p x y p)
@@ -503,7 +503,7 @@
 		       (z (elt2 (cadr (local-peak p))))
 		       (p2 (transform-local-peak (local-peak p)))
 		       (p1 (local-peak p)))))))
- 
+
 ;;; REMARK: it could seem that in the lemma multiset-diff-proof-measure
 ;;; variables x, y and z are not needed and that proof-p could be used
 ;;; instead of equiv-p. But we think that in that case, to deal with the
@@ -520,7 +520,7 @@
 ;;;   (CONSP (MULTISET-DIFF
 ;;;               (CDR (PROOF-MEASURE (LOCAL-PEAK P)))
 ;;;               (CDR (PROOF-MEASURE (TRANSFORM-LOCAL-PEAK (LOCAL-PEAK P))))))).
-  
+
 ;;; Subgoal 1.2
 ;;; (IMPLIES
 ;;;  (AND (EXISTS-LOCAL-PEAK P)
@@ -536,7 +536,7 @@
 ;;; ············································································
 ;;; 3.2.3 An explicit reference to the peak-element
 ;;; ············································································
- 
+
 ;;; Definition and properties of peak-element
 ;;; ·········································
 
@@ -546,19 +546,19 @@
  (defthm peak-element-member-proof-measure-local-peak
    (implies (exists-local-peak p)
 	    (member (peak-element p) (proof-measure (local-peak p))))))
- 
+
 (local
  (defthm peak-element-rel-1
    (implies (exists-local-peak p)
 	    (rel (elt1 (car (local-peak p)))
 		 (peak-element p)))))
 
-(local 
+(local
  (defthm peak-element-rel-2
    (implies (exists-local-peak p)
 	    (rel (elt2 (cadr (local-peak p)))
 		 (peak-element p)))))
- 
+
 (local
  (defthm cdr-proof-measure-local-peak
    (implies (exists-local-peak p)
@@ -578,13 +578,13 @@
 ;;;   (CONSP (MULTISET-DIFF
 ;;;               (LIST (PEAK-ELEMENT P))
 ;;;               (CDR (PROOF-MEASURE (TRANSFORM-LOCAL-PEAK (LOCAL-PEAK P))))))).
-  
+
 ;;; Subgoal 1.2
 ;;; (IMPLIES
 ;;;  (AND (EXISTS-LOCAL-PEAK P)
 ;;;       (CONSP (TRANSFORM-LOCAL-PEAK (LOCAL-PEAK P))))
 ;;;  (FORALL-EXISTS-REL-BIGGER
-;;;      (ACL2::REMOVE-ONE 
+;;;      (ACL2::REMOVE-ONE
 ;;;            (PEAK-ELEMENT P)
 ;;;            (CDR (PROOF-MEASURE (TRANSFORM-LOCAL-PEAK (LOCAL-PEAK P)))))
 ;;;      (MULTISET-DIFF
@@ -606,7 +606,7 @@
        t
      (and (rel (car l) x) (rel-bigger-than-list x (cdr l))))))
 
- 
+
 ;;; Conditions assuring that an element m is rel-bigger-than-list than
 ;;; the elements of the proof-measure of a proof, when the proof is,
 ;;; respectively, steps-up or steps-down:
@@ -616,11 +616,11 @@
 
 (local
  (defthm transitive-reduction
-   (implies (and 
+   (implies (and
              (legal e1 op)
              (rel e1 m))
             (rel (reduce-one-step e1 op) m))
-   :hints (("Goal" 
+   :hints (("Goal"
             :use (:instance rel-transitive
                             (x (reduce-one-step e1 op)) (y e1) (z m))))))
 
@@ -636,7 +636,7 @@
 
 (local
  (defthm steps-up-proof-measure-w-f-v
-   (implies (and (proof-p p) (steps-up p) 
+   (implies (and (proof-p p) (steps-up p)
                  (if (consp p) (rel (elt2 (last-elt p)) m) t))
             (rel-bigger-than-list m (proof-measure p)))))
 
@@ -646,7 +646,7 @@
 ;;; contain the final endpoint.
 
 ;;; 2) The form of the rule allows one to distinguish between p empty or
-;;; non-empty. 
+;;; non-empty.
 
 
 ;;; In order to apply the two lemmas above we try to split
@@ -654,9 +654,9 @@
 ;;; before the valley (steps-up) and the proof after the valley
 ;;; (steps-down). The following lemmas are needed for that purpose.
 ;;; ····································································
-  
+
 ;;; If p is a proof, so they are the proofs after and before the
-;;; valley. 
+;;; valley.
 
 (local
  (defthm proof-p-two-pieces-of-a-valley
@@ -664,7 +664,7 @@
             (and (proof-p (proof-before-valley p))
                  (proof-p (proof-after-valley p))))))
 
-;;; rel-bigger-than-list when the list is splitted in two pieces 
+;;; rel-bigger-than-list when the list is splitted in two pieces
 
 (local
  (defthm rel-bigger-than-list-append
@@ -672,9 +672,9 @@
     (rel-bigger-than-list x (append l1 l2))
     (and (rel-bigger-than-list x l1)
          (rel-bigger-than-list x l2)))))
- 
 
-  
+
+
 ;;; REMARK: In abstract-proofs.lisp it is also shown that
 ;;; (proof-before-valley p) is steps-up and that when p is a valley then
 ;;; (proof-after-valley p) is steps-down. And also the lemma
@@ -682,13 +682,13 @@
 
 
 ;;; The transformed proof is a valley
-;;; ································· 
+;;; ·································
 
 (local
  (defthm local-peak-local-peak-p
    (implies (exists-local-peak p)
             (local-peak-p (local-peak p)))))
- 
+
 
 (local
  (defthm exists-local-peak-implies-proof-p-trasform-local-peak
@@ -719,7 +719,7 @@
      (implies (and (equiv-p x y p) (consp p))
 	      (and (equal (elt1 (car p)) x)
 		   (equal (elt2 (last-elt p)) y)))))
-  
+
   (defthm endpoints-of-transform-of-a-local-peak
     (implies (and (exists-local-peak p)
 		  (consp (transform-local-peak (local-peak p))))
@@ -747,7 +747,7 @@
    (let ((q (transform-local-peak (local-peak p))))
      (implies (consp (proof-before-valley q))
               (consp q)))))
- 
+
 
 ;;; And finally, the intended lemma
 ;;; ·······························
@@ -774,8 +774,8 @@
 
 ;;; 1: Using multiset-diff-member (see multiset.lisp) and the
 ;;; following lemma (stating that the peak-element is not a member of
-;;; the proof-meassure of the transformed proof), 
-;;; the calls to multiset-diff in the goals now disappear. 
+;;; the proof-meassure of the transformed proof),
+;;; the calls to multiset-diff in the goals now disappear.
 ;;; ···································································
 
 (local
@@ -785,7 +785,7 @@
    (defthm rel-bigger-than-list-not-member
      (implies (rel-bigger-than-list x l)
               (not (member x l)))))
-   
+
   (defthm peak-element-not-member-proof-measure
     (implies (exists-local-peak p)
              (not (member (peak-element p)
@@ -822,11 +822,11 @@
           (rel-bigger-than-list x l))))
 
 ;;; We are dealing with the cdr of the proof-measure:
-(local 
+(local
  (defthm rel-bigger-than-list-cdr
    (implies (rel-bigger-than-list x l)
             (rel-bigger-than-list x (cdr l)))))
- 
+
 ;;; With this two rules altogether with valley-rel-bigger-peak-lemma our
 ;;; unresolved goal becomes T, so we have:
 
@@ -834,7 +834,7 @@
 ;;; 3.2.6  The main lemma of this book
 ;;; ············································································
 
-(defthm transform-to-valley-admission 
+(defthm transform-to-valley-admission
   (implies (exists-local-peak p)
 	   (mul-rel (proof-measure (replace-local-peak p))
 		    (proof-measure p)))
@@ -851,7 +851,7 @@
                   :well-founded-relation mul-rel
                   :hints (("Goal" :use
                            (:instance transform-to-valley-admission)))))
-                                               
+
   (if (not (exists-local-peak p))
       p
     (transform-to-valley (replace-local-peak p))))
@@ -906,10 +906,10 @@
    :hints (("Goal" :use ((:instance atom-proof-endpoints-are-equal
                                     (p (transform-local-peak (local-peak p)))))))
    :rule-classes :forward-chaining))
- 
+
 ;;; REMARK: interesting use of forward-chaining.
 
-;;; In the following bridge lemma it is fundamental 
+;;; In the following bridge lemma it is fundamental
 ;;; replace-local-peak-another-definition and the case distinction
 ;;; generated by proof-append:
 
@@ -920,7 +920,7 @@
                                (proof-before-peak p)
                                (append (local-peak p)
                                        (proof-after-peak p)))))
-            (equiv-p x y (replace-local-peak p)))))  
+            (equiv-p x y (replace-local-peak p)))))
 
 (local (in-theory (disable replace-local-peak-another-definition)))
 

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -152,8 +152,8 @@
            (< (trunc x n) 0))
   :rule-classes :type-prescription)
 
-(defthm trunc-0 
-  (equal (trunc 0 n) 
+(defthm trunc-0
+  (equal (trunc 0 n)
          0))
 
 ;trying the case-split
@@ -318,13 +318,13 @@
 		  (> n 0) ;gen?  this isn't in pos-rewrite!
                   )
 	     (equal (trunc x n)
-		    (* (sgn x) 
-		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n))))))
 
 (defthm trunc-exactp-b
   (implies (and (rationalp x)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (iff (= x (trunc x n))
                 (exactp x n)))

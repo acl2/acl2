@@ -58,7 +58,7 @@
 ;; We will be reasoning about next-integer in the future.  In fact, we
 ;; will be looking at terms like next-integer(next-integer(x)) --
 ;; i.e., next two integer.  So, we prove here that this term is
-;; limited precisely when x is limited. 
+;; limited precisely when x is limited.
 
 (local
  (defthm limited-next-integer-norm
@@ -219,7 +219,7 @@
 		 (not (equal ratio 1)))
 	    (equal (sumlist seq)
 		   (if (consp seq)
-		       (/ (- (car seq) 
+		       (/ (- (car seq)
 			     (* ratio (last-elem seq)))
 			  (- 1 ratio))
 		     0)))))
@@ -267,11 +267,11 @@
  (local
   (defthm lemma-4
     (equal (expt factor 0) 1)))
-  
+
  (local
   (in-theory
    (disable expt)))
-  
+
  ;; Those are all the pieces we need to show that a_n = a_1*r^{n-1} in
  ;; a geometric series with factor r.
 
@@ -286,7 +286,7 @@
 ;; So now, we can combine the two previous results to find an
 ;; expression for the sum of a sequence.
 
-(encapsulate 
+(encapsulate
  ()
 
  ;; Here it is again!  x^0=1.
@@ -294,7 +294,7 @@
  (local
   (defthm lemma-1
     (equal (expt factor 0) 1)))
-  
+
  ;; Here is a dangerous theorem -- it goes against the definition of
  ;; x^n, by converting x*x^n into x^{n+1}.  It works though.
 
@@ -387,7 +387,7 @@
 
 (encapsulate
  ()
- 
+
  ;; The following is needed for v2-6 in order to get lemma-1 proved.
  (local (in-theory (enable exponents-add-unrestricted)))
 
@@ -435,7 +435,7 @@
 		 (< ratio 1))
 	    (equal (sumlist-norm seq)
 		   (* (norm (car seq))
-		      (norm (/ (- 1 (expt ratio 
+		      (norm (/ (- 1 (expt ratio
 					  (len seq)))
 			       (- 1 ratio))))))
    :INSTRUCTIONS
@@ -612,8 +612,8 @@
 	  (< counter 0))
       nil
     (cons (taylor-exp-term x counter)
-	  (taylor-exp-list (1- nterms) 
-			   (1+ counter) 
+	  (taylor-exp-list (1- nterms)
+			   (1+ counter)
 			   x))))
 
 ;; We show that the sequence can be split into two parts.  Later, we
@@ -653,7 +653,7 @@
 			    (x (/ (factorial counter)))
 			    (y (expt x counter))))
 	   :in-theory (disable i-limited-times))))
-  
+
 ;; And therefore the sum of the first n terms in the Taylor sequence
 ;; for e^x must be limited, if x and n are limited.
 
@@ -663,8 +663,8 @@
 		(i-limited counter)
 		(i-limited x))
 	   (i-limited (sumlist
-		       (taylor-exp-list nterms 
-					counter 
+		       (taylor-exp-list nterms
+					counter
 					x))))
   :hints (("Goal"
 	   :in-theory (enable-disable (limited-integers-are-standard)
@@ -678,7 +678,7 @@
 	   (< 0 counter))
       (* x (/ counter) (taylor-exp-term-2 x (1- counter)))
     1))
-    
+
 ;; We prove that both definitions give the same result.
 
 (defthm taylor-exp-term-2-=-taylor-exp-term
@@ -696,14 +696,14 @@
 (defun taylor-exp-term-2l (x counter)
   (if (and (integerp counter)
 	   (< 0 counter))
-      (if (<= counter (norm x)) 
+      (if (<= counter (norm x))
 	  (* x (/ counter) (taylor-exp-term-2l x (1- counter)))
 	(taylor-exp-term-2l x (1- counter)))
     1))
 (defun taylor-exp-term-2u (x counter)
   (if (and (integerp counter)
 	   (< 0 counter))
-      (if (<= counter (norm x)) 
+      (if (<= counter (norm x))
 	  (taylor-exp-term-2u x (1- counter))
 	(* x (/ counter) (taylor-exp-term-2u x (1- counter))))
     1))
@@ -755,7 +755,7 @@
 	   :do-not-induct t)
 	  )
   :rule-classes nil)
-			   
+
 ;; Now, recall that the lower sum is clearly limited up to a limited
 ;; counter.
 
@@ -801,7 +801,7 @@
       (norm (next-integer (norm x))))
   :hints (("Goal"
 	   :use ((:instance norm-norm)
-		 (:instance norm-preserves-<=-for-reals 
+		 (:instance norm-preserves-<=-for-reals
 			    (x (norm x))
 			    (y (next-integer (norm x)))))
 	   :in-theory (disable norm-norm norm-preserves-<=-for-reals))))
@@ -909,7 +909,7 @@
 	   :expand (taylor-exp-term-2u x counter)
 	   :do-not-induct t)
 	  ("Subgoal 2"
-	   :use ((:instance small*limited->small 
+	   :use ((:instance small*limited->small
 			    (x (* (/ counter) x))
 			    (y (taylor-exp-term-2u x (+ -1 counter)))))
 	   :in-theory (disable small*limited->small))
@@ -985,7 +985,7 @@
  (defthm geometric-sequence-generator-is-geometric
    (implies (and (not (zp nterms))
 		 (acl2-numberp x))
-	    (geometric-sequence-p 
+	    (geometric-sequence-p
 	     (geometric-sequence-generator nterms x a)
 	     a)))
 
@@ -997,7 +997,7 @@
 
 (encapsulate
  ()
- 
+
  ;; The following is needed for v2-6 in order to get lemma-1 proved.
  (local (in-theory (enable exponents-add-unrestricted)))
 
@@ -1023,7 +1023,7 @@
 		  (integerp n)
 		  (<= 0 n))
 	     (i-limited (expt factor n)))
-    :hints (("Goal" :use ((:instance large-if->-large 
+    :hints (("Goal" :use ((:instance large-if->-large
 				     (x (expt factor n))
 				     (y 1)))
 	     :in-theory (disable large-if->-large)))))
@@ -1166,7 +1166,7 @@
 			     (* prev (/ x (+ 1 i)))
 			     (+ 1 i)
 			     x))))
-  
+
 ;; We will find terms of the form 1/(n+1)! so we tell ACL2 to convert
 ;; those into 1/n! * 1/(1+n).
 
@@ -1199,7 +1199,7 @@
 		     nil)
 	     nil))
     :hints (("Goal" :expand (taylor-exp-list 1 counter x)))))
-	  
+
  ;; Then, we take that same one-element list, but compute it using the
  ;; new definition.
 
@@ -1246,7 +1246,7 @@
 (in-theory (disable taylor-exp-list-2-=-taylor-exp-list))
 
 ;; Now we prove a major lemma.  The Taylor expansion for sine is
-;; bounded above by a geometric series! 
+;; bounded above by a geometric series!
 
 (encapsulate
  ()
@@ -1354,7 +1354,7 @@
 	     :in-theory '(norm-non-negative-real
 			  norm-product
 			  commutativity-of-*)))))
-    
+
  (local (in-theory (disable norm-1/x)))
 
  ;; And that allows us to show that the Taylor expansion of e^x is
@@ -1366,11 +1366,11 @@
 		 (<= 0 i)
 		 (realp ratio)
 		 (<= (norm (/ x (+ 1 i))) (norm ratio)))
-	    (seq-norm-<= (taylor-exp-list-2 nterms 
-					    prev 
-					    i 
+	    (seq-norm-<= (taylor-exp-list-2 nterms
+					    prev
+					    i
 					    x)
-			 (geometric-sequence-generator 
+			 (geometric-sequence-generator
 			  nterms
 			  a1
 			  ratio)))
@@ -1459,7 +1459,7 @@
 
 (encapsulate
  ()
- 
+
  ;; First, some simple algebraic rules concerning
  ;; norm(x)/next-integer(norm(x)) -- this must be real, non-negative,
  ;; and less than 1.
@@ -1469,14 +1469,14 @@
     (and (realp (/ (norm x) (next-integer (norm x))))
 	 (<= 0 (/ (norm x) (next-integer (norm x))))
 	 (< (/ (norm x) (next-integer (norm x))) 1))))
-  
+
  ;; Since next-integer(next-integer(norm x)) > norm(x)+1, the
  ;; following lemma holds.
 
  (local
   (defthm lemma-2
     (< (/ (next-integer (next-integer (norm x))))
-       (- 1 
+       (- 1
 	  (/ (norm x)
 	     (next-integer (next-integer (norm x))))))))
 
@@ -1487,7 +1487,7 @@
   (defthm lemma-5
     (implies (i-limited x)
 	     (not (i-small (/ (next-integer (next-integer (norm x)))))))
-    :hints (("Goal" :use ((:instance i-small-udivide 
+    :hints (("Goal" :use ((:instance i-small-udivide
 				     (x (/ (next-integer (next-integer (norm x)))))))
 	     :in-theory (disable i-small-udivide)))))
 
@@ -1495,18 +1495,18 @@
  ;; 1-norm(x)/next-integer(next-integer(norm(x)) is not small -- this
  ;; means that norm(x)/next-integer(next-integer(norm(x)) can be used
  ;; as a ratio for our geometric sequence (since it is non-negative,
- ;; obviously less than 1, and not close to 1.) 
+ ;; obviously less than 1, and not close to 1.)
 
  (local
   (defthm lemma-6
     (implies (i-limited x)
-	     (not (i-small (- 1 
+	     (not (i-small (- 1
 			      (/ (norm x)
 				 (next-integer (next-integer (norm x))))))))
     :hints (("Goal" :use ((:instance lemma-2)
 			  (:instance lemma-5)
 			  (:instance small-if-<-small
-				     (x (- 1 
+				     (x (- 1
 					   (/ (norm x)
 					      (next-integer (next-integer (norm x))))))
 				     (y (/ (next-integer (next-integer (norm x)))))))
@@ -1517,7 +1517,7 @@
  (local
   (defthm lemma-8
     (implies (i-limited x)
-	     (not (i-close 1 
+	     (not (i-close 1
 			   (/ (norm x)
 			      (next-integer (next-integer (norm x)))))))
     :hints (("Goal" :use ((:instance lemma-6)
@@ -1526,7 +1526,7 @@
 				     (y (/ (norm x)
 					   (next-integer (next-integer (norm x)))))))
 	     :in-theory nil))))
-  
+
  ;; And so now, we have all the pieces we need to prove that the sum
  ;; of the norms of a Taylor expansion is limited -- as lont as we
  ;; start the sum far enough out.  Note, we're still using the
@@ -1600,7 +1600,7 @@
 	     :in-theory (disable taylor-exp-term)))
     ))
 
- (local (in-theory (disable taylor-exp-list 
+ (local (in-theory (disable taylor-exp-list
 			    limited-sumlist-norm-taylor-exp-2)))
 
  ;; Now we can prove the desired theorem, adding some extra hypothesis
@@ -1652,7 +1652,7 @@
     (implies (and (not (zp nterms))
 		  (i-small prev)
 		  (i-limited x))
-	     (i-small (sumlist 
+	     (i-small (sumlist
 		       (geometric-sequence-generator nterms
 						     prev
 						     (/ (norm x)
@@ -1704,7 +1704,7 @@
 					 (norm x)))))))
 	    :in-theory (disable comparison-test-small
 				taylor-exp-list-2-seq-<=geom-sequence-generator)
-	    :do-not-induct t))) 
+	    :do-not-induct t)))
 
  ;; To convert this result to the first definition of Taylor sign, we
  ;; proceed as before.  First, the first element of the Taylor
@@ -1721,7 +1721,7 @@
 		  (<= 0 counter))
 	     (and (acl2-numberp (car (taylor-exp-list nterms counter x)))
 		  (i-small (car (taylor-exp-list nterms counter x)))))
-    :hints (("Goal" :in-theory (disable taylor-exp-term))))) 
+    :hints (("Goal" :in-theory (disable taylor-exp-term)))))
 
  ;; Second, the actual definition of the Taylor term is small -- this
  ;; is needed if the rewriter decides to open up the definition.
@@ -1768,7 +1768,7 @@
    :hints (("Goal"
 	    :use ((:instance small-sumlist-norm-taylor-exp-2
 			     (prev (car (taylor-exp-list nterms counter x)))))
-	    :in-theory (enable-disable 
+	    :in-theory (enable-disable
 			(taylor-exp-list-2-=-taylor-exp-list)
 			(small-sumlist-norm-taylor-exp-2
 			 taylor-exp-list)))))
@@ -1814,7 +1814,7 @@
     (implies (and (i-large x)
 		  (realp x))
 	     (i-large (+ 1 x)))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use ((:instance large-if->-large
 			      (x x)
 			      (y (+ 1 x))))
@@ -1841,7 +1841,7 @@
   (defthm 2-<-large-integer
     (< 2 (i-large-integer))
     :hints (("Goal"
-	     :use ((:instance large->-non-large 
+	     :use ((:instance large->-non-large
 			      (x (i-large-integer))
 			      (y 2)))
 	     :in-theory (disable large->-non-large)))
@@ -1915,7 +1915,7 @@
 			      (y (next-integer (next-integer (norm x))))))
 	     :in-theory (disable large->-non-large)))
     :rule-classes (:rewrite :linear)))
-  
+
  ;; Now we show how we'll split a Taylor sequence into a lower half
  ;; and an upper half.  The lower half has the first
  ;; next-integer(next-integer(norm(x))) terms, and the upper half has
@@ -1928,17 +1928,17 @@
 	    (equal (taylor-exp-list (i-large-integer)
 				    counter
 				    x)
-		   (append (taylor-exp-list 
+		   (append (taylor-exp-list
 			    (next-integer
 			     (next-integer (norm x)))
 			    counter
 			    x)
-			   (taylor-exp-list 
+			   (taylor-exp-list
 			    (- (i-large-integer)
-			       (next-integer 
+			       (next-integer
 				(next-integer (norm x))))
-			    (+ counter 
-			       (next-integer 
+			    (+ counter
+			       (next-integer
 				(next-integer (norm x))))
 			    x))))
    :hints (("Goal"
@@ -1952,8 +1952,8 @@
 
  (defthm taylor-exp-list-limited
    (implies (i-limited x)
-	    (i-limited 
-	     (sumlist 
+	    (i-limited
+	     (sumlist
 	      (taylor-exp-list (i-large-integer) 0 x)))))
 
  ;; Moreover, the sumlist-norm is limited up to a limited counter.
@@ -1971,10 +1971,10 @@
 
  (defthm taylor-exp-list-norm-limited
    (implies (i-limited x)
-	    (i-limited 
-	     (sumlist-norm 
+	    (i-limited
+	     (sumlist-norm
 	      (taylor-exp-list (i-large-integer) 0 x)))))
- 
+
  )
 
 (in-theory (disable taylor-exp-list-split-for-limited))
@@ -1984,7 +1984,7 @@
 ;; expansion.
 
 (defun-std acl2-exp (x)
-  (standard-part 
+  (standard-part
    (sumlist (taylor-exp-list (i-large-integer) 0 (fix x)))))
 
 ;; But do we *really* have the e^x function?  Suppose we choose a
@@ -2032,13 +2032,13 @@
 			    (num (- nterms1 (i-large-integer)))
 			    (nterms1 (i-large-integer)))
 		 (:instance i-close-symmetric
-			    (x (SUMLIST-NORM 
+			    (x (SUMLIST-NORM
 				(TAYLOR-EXP-LIST (i-large-integer) 0 X)))
 			    (y (SUMLIST-NORM (TAYLOR-EXP-LIST NTERMS1 0 X))))
 		 )
 	   :in-theory (disable exp-convergent-norm-lemma
 			       i-close-symmetric))))
-	   
+
 ;; And so, the Taylor sine list norm is convergent, as the partial
 ;; sums are close for all large M, N.
 
@@ -2108,13 +2108,13 @@
 			    (num (- nterms1 (i-large-integer)))
 			    (nterms1 (i-large-integer)))
 		 (:instance i-close-symmetric
-			    (x (SUMLIST 
+			    (x (SUMLIST
 				(TAYLOR-EXP-LIST (i-large-integer) 0 X)))
 			    (y (SUMLIST (TAYLOR-EXP-LIST NTERMS1 0 X))))
 		 )
 	   :in-theory (disable exp-convergent-lemma
 			       i-close-symmetric))))
-	   
+
 ;; And so no matter what large counters we pick, the partial sums are
 ;; close to each other.
 

@@ -475,7 +475,7 @@ displays.  The module browser's web pages are responsible for defining the
     (cond ((eq x :vl-local) (vl-ps-span "vl_key" (vl-print "local")))
           ((eq x :vl-$unit) (vl-ps-span "vl_key" (vl-print "$unit")))
           (t (vl-ps-span "vl_id" (vl-print-str x))))))
-        
+
 
 
 (define vl-pp-specialkey ((x vl-specialkey-p) &key (ps 'ps))
@@ -662,7 +662,7 @@ displays.  The module browser's web pages are responsible for defining the
                  (vl-print-str (if x.minusp "-:" "+:"))
                  (vl-pp-expr x.width)
                  (vl-print "]"))))
-  
+
 
   (define vl-pp-partselect ((x vl-partselect-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-partselect-count x) 10)
@@ -778,7 +778,7 @@ displays.  The module browser's web pages are responsible for defining the
                                       (vl-print-str paramname)
                                       (vl-print-markup "</span>"))
                          ps)))
-        
+
         :vl-index (vl-ps-seq (vl-pp-scopeexpr x.scope)
                              (vl-pp-indexlist x.indices)
                              (vl-pp-partselect x.part))
@@ -1136,11 +1136,11 @@ displays.  The module browser's web pages are responsible for defining the
   ///
   (deffixequiv-mutual vl-pp-expr))
 
-          
-        
 
-        
-          
+
+
+
+
 
 (define vl-pps-expr ((x vl-expr-p))
   :returns (pretty-x stringp :rule-classes :type-prescription)
@@ -1584,7 +1584,7 @@ expression into a string."
                 (vl-print "// ")
                 (vl-pp-strings-separated-by-commas notes)
                 (vl-println ""))))
- 
+
 (define vl-vardecl-hiddenp ((x vl-vardecl-p))
   (b* (((vl-vardecl x) x))
     (or (hons-assoc-equal "VL_PORT_IMPLICIT" x.atts)
@@ -2287,7 +2287,7 @@ expression into a string."
        ((when (atom (cdr x))) ps)
        (ps (vl-print ", ")))
     (vl-pp-forloop-assigns (cdr x))))
-       
+
 
 (defines vl-pp-stmt
   :prepwork ((local (in-theory (disable not)))
@@ -2803,7 +2803,7 @@ expression into a string."
                    (vl-print ": ")
                    (vl-pp-genelement (cdar x))
                    (vl-pp-gencaselist (cdr x))))))
-                 
+
   (define vl-pp-genarrayblocklist ((x vl-genarrayblocklist-p) (name maybe-stringp)
                                    &key (ps 'ps))
     :measure (vl-genarrayblocklist-count x)
@@ -2835,7 +2835,7 @@ expression into a string."
                  (vl-println "end")))))
 
 
-                 
+
 
 
 (define vl-pp-module

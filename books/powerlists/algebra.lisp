@@ -56,7 +56,7 @@ appropriate certify-book command.  Something like the following will work:
   (powerlist-p (powerlist) t)
   (powerlist-car (powerlist) t)
   (powerlist-cdr (powerlist) t))
-  
+
  (local
   (in-theory (theory 'defstructure::minimal-theory-for-defstructure)))
 
@@ -100,7 +100,7 @@ appropriate certify-book command.  Something like the following will work:
 		 (< (acl2-count (powerlist-cdr x))
 		    (acl2-count x))))
    :rule-classes (:rewrite :linear))
-	   
+
  (defthm defs-read-powerlist
    (and (equal (powerlist-car (powerlist car cdr))
 	       car)
@@ -186,7 +186,7 @@ appropriate certify-book command.  Something like the following will work:
 (defthm powerlist-zip
   (powerlist-p (p-zip x y))
   :rule-classes (:rewrite :type-prescription))
- 
+
 (defun p-unzip-l (x)
   "Get the left part of a zipped powerlist"
   (declare (xargs :guard (powerlist-p x)))
@@ -471,7 +471,7 @@ appropriate certify-book command.  Something like the following will work:
  (local (defun fn2-assoc (x y) (+ (fix x) (fix y))))
  (local (defun fn2-accum (x y) (+ (fix x) (fix y))))
 
- ;; 
+ ;;
  ;; We assume our type function is boolean, and our equivalence class is
  ;;
  (defthm type-fn-boolean
@@ -587,7 +587,7 @@ appropriate certify-book command.  Something like the following will work:
 (defthm b-tie-fn1-regular
   (equal (p-regular-p (b-tie-fn1 x))
 	 (p-regular-p x)))
-  
+
 ;;; Now, we consider what happens when we apply a binary function pairwise to
 ;;; two powerlists.  As before, we can recurse using either unzip or untie.
 
@@ -665,13 +665,13 @@ appropriate certify-book command.  Something like the following will work:
 			   (x (powerlist-car x))
 			   (y (powerlist-cdr x)))
 	   :in-theory (disable similar-regular))))
-		 
+
 (defthm a-zip-fn2-regular
   (implies (p-similar-p x y)
 	   (equal (p-regular-p (a-zip-fn2 x y))
 		  (and (p-regular-p x)
 		       (p-regular-p y)))))
-			       
+
 ;;; Now, we define the functions derived to apply our commutative function to
 ;;; the powerlist elements.  We can prove that the resulting functions on
 ;;; powerlists are also commutative.
@@ -727,7 +727,7 @@ appropriate certify-book command.  Something like the following will work:
 		(p-similar-p y z))
 	   (equal (b-tie-fn2-assoc (b-tie-fn2-assoc x y) z)
 		  (b-tie-fn2-assoc x (b-tie-fn2-assoc y z)))))
-			    
+
 ;;; Next we define an accumulator or aggregator function over powerlists.  For
 ;;; example, given a powerlist of integers, we can find its sum, number of
 ;;; elements, etc.  What we can't do is find its "difference", since that's not
@@ -826,7 +826,7 @@ appropriate certify-book command.  Something like the following will work:
 
 (defthm unzip-b-tie-fn2-accum-fn1
   (implies (powerlist-p x)
-	   (equiv (fn2-accum 
+	   (equiv (fn2-accum
 		   (b-tie-fn2-accum-fn1 (p-unzip-l x))
 		   (b-tie-fn2-accum-fn1 (p-unzip-r x)))
 		  (b-tie-fn2-accum-fn1 x)))
@@ -892,7 +892,7 @@ appropriate certify-book command.  Something like the following will work:
 		(equiv equal)
 		(fn2-accum binary-+))))
   :rule-classes nil)
-  
+
 (defthm zip-a-zip-plus-fn1
   (equal (a-zip-plus-fn1 (p-zip x y))
 	 (+ (a-zip-plus-fn1 x)
@@ -1018,7 +1018,7 @@ appropriate certify-book command.  Something like the following will work:
 		(equiv iff)
 		(fn2-accum my-and))))
   :rule-classes nil)
-  
+
 (defthm zip-a-zip-and-fn1
   (iff (a-zip-and-fn1 (p-zip x y))
        (and (a-zip-and-fn1 x)
@@ -1154,7 +1154,7 @@ appropriate certify-book command.  Something like the following will work:
 	   :use (:functional-instance zip-b-tie-and-fn1
 				      (b-tie-and-fn1 b-tie-list-of-type-fn)
 				      (fn1 type-fn)))))
-	   
+
 (defthm tie-a-zip-list-of-type-fn
   (equal (a-zip-list-of-type-fn (p-tie x y))
 	 (and (a-zip-list-of-type-fn x)
@@ -1172,7 +1172,7 @@ appropriate certify-book command.  Something like the following will work:
 	   :use (:functional-instance tie-b-tie-and-fn1
 				      (b-tie-and-fn1 b-tie-list-of-type-fn)
 				      (fn1 type-fn)))))
-	   
+
 ;;; Now, we can prove the "inductive proof obligation" lemmas about the types
 ;;; of powerlists derived by unzipping/untieing a powerlist whose elements are
 ;;; all of type type-fn.

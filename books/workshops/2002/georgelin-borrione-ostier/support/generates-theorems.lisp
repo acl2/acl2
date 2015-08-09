@@ -5,14 +5,14 @@
 ;; for a formalization in ACL2                                             ;
 ;                                                                                                    ;
 ;   Written by : Philippe Georgelin                                        ;
-;   Email : Philippe.Georgelin@imag.fr                                     
+;   Email : Philippe.Georgelin@imag.fr
 ;                                                                          ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun make-lemma-putst (name-ent name_arch
 			 channel
 			 state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		:mode :program))
   (fms "
 ;; the type of putst is true-list when
@@ -33,7 +33,7 @@ nil))
   (if (endp list_of_process)
       nil
       (let ((name-update-sig (make-name name-ent name-arch "-update-signals")))
-    `((,name-update-sig (,(make-name (concatenate 'string 
+    `((,name-update-sig (,(make-name (concatenate 'string
 			       (string name-ent)
 			       (string name-arch)
 			       "-")
@@ -46,7 +46,7 @@ nil))
 (defun name-only-rec (name-ent name-arch list_of_process)
   (if (endp list_of_process)
       nil
-      (cons (make-name (concatenate 'string 
+      (cons (make-name (concatenate 'string
 			       (string name-ent)
 			       (string name-arch)
 			       "-")
@@ -57,7 +57,7 @@ nil))
 
 (defun make-rec-concurrent-stat-lemma (name-ent name_architecture
 				 concurrent-stat channel state)
-     (declare (xargs :stobjs state 
+     (declare (xargs :stobjs state
 		  :mode :program))
   (cond ((endp concurrent-stat) state)
 	(t (let ((name_conc (name_of_conc_stat name-ent name_architecture concurrent-stat))
@@ -69,13 +69,13 @@ nil))
 (defthm ~x2 ~%
 (and (equal (~x0 0 st) st)
        (implies (naturalp n)
-		(equal 
+		(equal
 		 (~x0 (1+ n) st)
-		 (~x0 n 
+		 (~x0 n
 		      ~x1))))
 :hints ((\"Goal\" :in-theory ~x3))) ~%"
 
-(list 
+(list
 (cons #\0 (make-name name-ent name_architecture "-rec-conc-stat"))
 (cons #\1 (append '(seq st) name_conc))
 (cons #\2 (make-name name-ent name_architecture "unfld-rec-conc-stat"))
@@ -90,7 +90,7 @@ nil)))))
 (defun make-lemma-cycle (name-ent name_arch
 			 channel
 			 state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		:mode :program))
   (fms "
 ; Simulation step maps well-formed states to well-formed states.
@@ -108,19 +108,19 @@ nil))
 (defun make-unfold-simul (name-ent name_arch
 			  channel
 			  state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		:mode :program))
   (fms "
 ;; Unfold one step of simulation function.
 (defthm ~x0
   (and (equal (~x1 0 st) st)
        (implies (naturalp n)
-		(equal 
+		(equal
 		 (~x1 (1+ n) st)
-		 (~x1 n 
-		      (~x2 
+		 (~x1 n
+		      (~x2
 		       (~x3 st))))))
-  :hints ((\"Goal\" :in-theory (disable ~x2 
+  :hints ((\"Goal\" :in-theory (disable ~x2
 					~x3))))"
 
 (list (cons #\0 (make-name name-ent name_arch "-unfold-simul"))
@@ -130,4 +130,4 @@ nil))
 channel
 state
 nil))
-  
+

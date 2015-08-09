@@ -166,7 +166,7 @@
                        (or (< 0 i)
                            (< 0 j)))))
   :hints (("Goal" :in-theory (enable logior))))
-  
+
 
 (defthm logior-negative-5
   (implies (and (case-split (integerp i))
@@ -483,7 +483,7 @@
                  (integerp n) (> n 0)
                  (= (logior (* (expt 2 (1- n)) x)
                             (* (expt 2 (1- n)) y))
-                    (* (expt 2 (1- n)) (logior x y))))			     
+                    (* (expt 2 (1- n)) (logior x y))))
             (= (logior (* (expt 2 n) x)
                        (* (expt 2 n) y))
                (* (expt 2 n)

@@ -283,7 +283,7 @@
       (cadr (fargn (car (car type-alist)) 1)))
      ((and (equal (fargn (car (car type-alist)) 1) term)
            (quotep (fargn (car (car type-alist)) 2))
-           (integerp (cadr (fargn (car (car type-alist)) 2))) 
+           (integerp (cadr (fargn (car (car type-alist)) 2)))
            (< 0 (cadr (fargn (car (car type-alist)) 2)))
            (ts= (cadr (car type-alist)) *ts-t*))
 
@@ -2997,7 +2997,7 @@
        ((and (consp x)
              (eq (ffn-symb x) 'MOD)
              (quotep (fargn x 2))
-             (natp (cadr (fargn x 2))) 
+             (natp (cadr (fargn x 2)))
              (not (eql (cadr (fargn x 2)) 0)))
         (let ((m (fargn x 1))
               (j (cadr (fargn x 2))))
@@ -5226,7 +5226,7 @@
            ("Subgoal 1"
             :in-theory (disable pseudo-term-listp-meta-ash-ash1)
             :use (:instance pseudo-term-listp-meta-ash-ash1))))
- 
+
  (in-theory (disable meta-ash-ash)))
 
 (local
@@ -5264,7 +5264,7 @@
    ((and (consp x)
          (eq (ffn-symb x) 'R)
          (quotep (fargn x 2))
-         (integerp (cadr (fargn x 2))) 
+         (integerp (cadr (fargn x 2)))
          (< 0 (cadr (fargn x 2)))
          (consp (fargn x 3)))
     (let ((a (fargn x 1))
@@ -5283,7 +5283,7 @@
         (bounded-address a 1 type-alist)
 
 ; Note that we call bounded-address with 1 instead of n.  That way we get an
-; interval containing just a.  Mx-rover accounts for n.  
+; interval containing just a.  Mx-rover accounts for n.
 ; (i-am-here) Do ever check that a+n<=*m-size*?  If not, how does this work?
 
         (cond

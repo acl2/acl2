@@ -604,8 +604,8 @@ so that their overrides are compatible with thier types.</p>"
       ;; (:vl-fwdtypedef (vl-fwdtypedef-scopesubst x ss)) ;; BOZO?
       ;; (:vl-import     (vl-import-scopesubst x ss)) ;; BOZO?
       (otherwise x))))
-    
-    
+
+
 
 
 (def-vl-scopesubst vl-module-scopesubst
@@ -628,11 +628,11 @@ so that their overrides are compatible with thier types.</p>"
              ;; while we rewrite its interior.
              ;;
              ;; However, if we do this, then what about global parameters that
-             ;; are used in X's parameters?  We'd need to 
+             ;; are used in X's parameters?  We'd need to
 
              ;; The module may have its own parameters.  These parameters may
              ;; refer to one another.  Consider for instance parameter a = 5.
-             ;; 
+             ;;
 
              (ss (vl-scopestack-push x ss)))
           (change-vl-module x

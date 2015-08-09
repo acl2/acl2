@@ -55,8 +55,8 @@
 
 (defun predicate-p (term)
   (and (consp term) ;drop this test?
-       (member (car term) '(equal < 
-			    integerp rationalp 
+       (member (car term) '(equal <
+			    integerp rationalp
 			    #+non-standard-analysis realp
 			    complex-rationalp
 			    #+non-standard-analysis complexp

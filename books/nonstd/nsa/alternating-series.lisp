@@ -96,7 +96,7 @@
 
 ;; Now, we show the key properties of the sum of an alternating
 ;; series.  Basically, the first element is a bound on the sum of the
-;; remaining elements. 
+;; remaining elements.
 
 (defthm sumlist-alternating-sequence-lemma
   (implies (and (alternating-sequence-p x)

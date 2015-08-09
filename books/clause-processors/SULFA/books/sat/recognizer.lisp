@@ -52,28 +52,28 @@
 (defun measure-vars (fn state)
   (cadr (fn-justification fn state)))
 
-;; Return whether a memory entry exists for the 
+;; Return whether a memory entry exists for the
 ;; function "fn".  If one does, then there will be
 ;; an "executable" entry.
 (defun need-funcp (fn $sat)
   (declare (xargs :stobjs $sat))
   (or (eq 'not-found (lookup-executable fn 'not-found $sat))
       (eq 'not-found (lookup-possible-sulfa fn 'not-found $sat))))
-   
+
 (mutual-recursion
 (defun executable-expr-listp (expr-list ok-fn-list $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((endp expr-list)
     t)
    ((not (executable-exprp (car expr-list) ok-fn-list $sat))
     nil)
-   (t 
+   (t
     (executable-expr-listp (cdr expr-list) ok-fn-list $sat))))
 
 (defun executable-exprp (expr ok-fn-list $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((or (atom expr) (quotep expr))
     t)
    ((consp (car expr))
@@ -87,12 +87,12 @@
 )
 
 (defun executable-fn-listp (def-fn-list state)
-  (cond 
+  (cond
    ((endp def-fn-list)
     t)
    ((constrained-fnp (car def-fn-list) state)
     nil)
-   (t 
+   (t
     (executable-fn-listp (cdr def-fn-list) state))))
 
 (defun executable-def-fn-listp (def-fn-list body-list $sat state)
@@ -112,28 +112,28 @@
     nil))
 
 (defun sat-package-constp (expr)
-  (cond 
+  (cond
    ((atom expr)
     (atom-in-sat-packagep expr))
    (t
     (or (sat-package-constp (car expr))
         (sat-package-constp (cdr expr))))))
-   
+
 (mutual-recursion
 (defun sat-package-expr-listp (expr-list ok-fn-list $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((endp expr-list)
     nil)
    ((sat-package-exprp (car expr-list) ok-fn-list $sat)
     t)
-   (t 
+   (t
     (sat-package-expr-listp (cdr expr-list) ok-fn-list $sat))))
 
 (defun sat-package-exprp (expr ok-fn-list $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
-   ((atom expr) 
+  (cond
+   ((atom expr)
     (atom-in-sat-packagep expr))
    ((quotep expr)
     (sat-package-constp (unquote expr)))
@@ -144,12 +144,12 @@
     (sat-package-expr-listp (cdr expr) ok-fn-list $sat))
    ((sat-package-fnp (car expr) $sat)
     t)
-   (t 
+   (t
     (sat-package-expr-listp (cdr expr) ok-fn-list $sat))))
 )
 
 (defun sat-package-fn-listp (def-fn-list)
-  (cond 
+  (cond
    ((endp def-fn-list)
     nil)
    ((atom-in-sat-packagep (car def-fn-list))
@@ -178,16 +178,16 @@
 
 (defun needed-fn-expr (expr ok-fn-list ans $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((or (atom expr) (quotep expr))
     ans)
    ((and (symbolp (car expr))
          (not (member-eq (car expr) ok-fn-list))
          (not (member-eq (car expr) ans))
          (need-funcp (car expr) $sat))
-    (needed-fn-list (cdr expr) 
+    (needed-fn-list (cdr expr)
                     (cons (car expr) ok-fn-list)
-                    (cons (car expr) ans) 
+                    (cons (car expr) ans)
                     $sat))
    ((and (consp (car expr)) (eq 'lambda (caar expr)))
     (needed-fn-list (cdr expr)
@@ -199,10 +199,10 @@
                     $sat))
    ((consp (car expr))
     (er hard 'needed-fn-expr
-        "Encountered an ill-formed ACL2 expression: ~x0~%" 
+        "Encountered an ill-formed ACL2 expression: ~x0~%"
         expr))
    (t
-    (needed-fn-list (cdr expr) ok-fn-list ans $sat))))   
+    (needed-fn-list (cdr expr) ok-fn-list ans $sat))))
 
 ;; Return a list of functions in expr-list that do
 ;; not have mem entries in $sat and are not in ok-fn-list
@@ -219,10 +219,10 @@
                     $sat)))
 )
 
-;; Return the set of mutually recursive functions that 
+;; Return the set of mutually recursive functions that
 ;; includes "fn".
 (defun def-fn-list (fn state)
-  (let ((rec-list 
+  (let ((rec-list
          (getprop fn
                   'acl2::recursivep
                   nil
@@ -242,7 +242,7 @@
   (body-list-help def-fn-list nil state))
 
 (defun merge-NLAs-help (changed new-NLA old-NLA rev-ans)
-  (cond 
+  (cond
    ((endp new-NLA)
     (mv changed (tail-rev rev-ans nil)))
    ((car old-NLA)
@@ -256,7 +256,7 @@
   (merge-NLAs-help changed new-NLA old-NLA nil))
 
 (defun make-NLA-help (formals NLA-vars rev-ans)
-  (cond 
+  (cond
    ((endp formals)
     (tail-rev rev-ans nil))
    ((member-eq (car formals) NLA-vars)
@@ -284,8 +284,8 @@
 
 (mutual-recursion
 (defun unbounded-vars (expr bounded-vars ans)
-  (cond 
-   ((and (atom expr) 
+  (cond
+   ((and (atom expr)
          (or (member expr bounded-vars)
              (member expr ans)))
     ans)
@@ -297,8 +297,8 @@
     ;; ((lambda <formals> <body>) . <args>)
     (let* ((lambda-formals (cadr (car expr)))
            (lambda-body (caddr (car expr)))
-           (ans (unbounded-vars lambda-body 
-                              (append lambda-formals bounded-vars) 
+           (ans (unbounded-vars lambda-body
+                              (append lambda-formals bounded-vars)
                               ans)))
       (unbounded-vars-expr-list (cdr expr) bounded-vars ans)))
    (t
@@ -308,7 +308,7 @@
   (if (endp expr-list)
       ans
     (unbounded-vars-expr-list (cdr expr-list)
-                              bounded-vars 
+                              bounded-vars
                               (unbounded-vars (car expr-list) bounded-vars ans))))
 )
 
@@ -323,24 +323,24 @@
     (unbounded-NLA-vars-help-args (cdr args)
                                   (cdr NLA)
                                   bounded-vars
-                                  (unbounded-vars (car args) 
-                                                  bounded-vars 
+                                  (unbounded-vars (car args)
+                                                  bounded-vars
                                                   ans)
                                   $sat
                                  ))
-   (t 
+   (t
     (unbounded-NLA-vars-help-args (cdr args)
                                   (cdr NLA)
                                   bounded-vars
-                                  (unbounded-NLA-vars-help (car args) 
-                                                           bounded-vars 
-                                                           ans 
+                                  (unbounded-NLA-vars-help (car args)
+                                                           bounded-vars
+                                                           ans
                                                            $sat)
                                   $sat))))
 
 (defun unbounded-NLA-vars-help (expr bounded-vars ans $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((or (atom expr) (quotep expr))
     ans)
    ((consp (car expr))
@@ -384,7 +384,7 @@
 
 (defun add-NLA-entries-fix-help (changed def-fn-list body-list $sat state)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((endp def-fn-list)
     (mv changed $sat))
    ((uninterpreted-fnp (car def-fn-list) $sat state)
@@ -402,9 +402,9 @@
            (curr-NLA (lookup-NLA fn 'not-found $sat)))
       (if (eq 'not-found curr-NLA)
           (let (($sat (set-NLA fn new-NLA $sat)))
-            (add-NLA-entries-fix-help t 
-                                      (cdr def-fn-list) 
-                                      (cdr body-list) 
+            (add-NLA-entries-fix-help t
+                                      (cdr def-fn-list)
+                                      (cdr body-list)
                                       $sat
                                       state))
         (mv-let
@@ -414,7 +414,7 @@
            (add-NLA-entries-fix-help changed
                                      (cdr def-fn-list)
                                      (cdr body-list)
-                                     $sat 
+                                     $sat
                                      state))))))))
 
 (defun add-NLA-entries-fix (def-fn-list body-list $sat state)
@@ -428,11 +428,11 @@
 
 (defun add-NLA-entries (def-fn-list body-list $sat state)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((equal '(nil) body-list)
     ;; One primitive
     (add-bodyless-NLA-entry (car def-fn-list) $sat state))
-   (t 
+   (t
     (add-NLA-entries-fix def-fn-list body-list $sat state))))
 
 
@@ -450,7 +450,7 @@
     (let* ((fn (car expr))
            (formals (cadr fn))
            (body (caddr fn))
-           (args (cdr expr)))          
+           (args (cdr expr)))
       (cond
        ((possible-SULFA-exprp body ok-fn-list $sat)
         (let* ((unbounded-NLA-vars (unbounded-NLA-vars-help
@@ -458,7 +458,7 @@
                                     nil
                                     nil
                                     $sat
-                                    ))         
+                                    ))
                (NLA (make-NLA formals unbounded-NLA-vars)))
           (possible-SULFA-expr-listp args NLA ok-fn-list $sat)))
        (t
@@ -480,7 +480,7 @@
    ((car NLA)
     (and (executable-exprp (car expr-list) ok-fn-list $sat)
          (possible-SULFA-expr-listp (cdr expr-list) (cdr NLA) ok-fn-list
-                                    $sat)))   
+                                    $sat)))
    ((possible-SULFA-exprp (car expr-list) ok-fn-list $sat)
     (possible-SULFA-expr-listp (cdr expr-list) (cdr NLA) ok-fn-list $sat))
    (t
@@ -496,7 +496,7 @@
     (possible-SULFA-bodyless-fn-list (cdr fn-list) $sat state))
    ((constrained-fnp (car fn-list) state)
     nil)
-   (t 
+   (t
     (possible-SULFA-bodyless-fn-list (cdr fn-list) $sat state))))
 
 (defun possible-SULFA-def-fn-list (def-fn-list body-list $sat state)
@@ -516,10 +516,10 @@
          (possible-SULFAp (possible-SULFA-def-fn-list def-fn-list body-list $sat state))
          ($sat (add-possible-SULFA-entries def-fn-list possible-sulfap $sat)))
     $sat))
-   
+
 (defun add-mem-entries (fn-list $sat state)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((endp fn-list)
     $sat)
    ((not (need-funcp (car fn-list) $sat))

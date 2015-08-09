@@ -34,7 +34,7 @@
 ;;; auto-generated defxdoc form in file dillinger-et-al-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; define a function that bridges ACL2 with raw Lisp.~/
 
 ; ~bv[]
@@ -46,7 +46,7 @@
 ;   [:raw-declare ~i[raw-decls]]
 ;   :raw ~i[raw-body])
 ; ~ev[] ~/
-; 
+;
 ; This is much like executing
 ; ~bv[]
 ; (defun ~i[name] (~i[formals])
@@ -62,7 +62,7 @@
 ; ~ev[]
 ; in raw Lisp, except that extra checks and bookkeeping make it safer
 ; than that.
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]), because
 ; it can easily corrupt ACL2 or render it unsound.
 ; ~/"

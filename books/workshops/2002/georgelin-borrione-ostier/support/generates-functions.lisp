@@ -3,7 +3,7 @@
 ;; This file generates functions for a formalization in ACL2
 ;                                                                          ;
 ;   Author : Philippe Georgelin                                            ;
-;   Email : Philippe.Georgelin@st.com                                     
+;   Email : Philippe.Georgelin@st.com
 ;                                                                          ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,12 +54,12 @@
     (lognot b-not lognot lognot vec-not)
     (logxor b-xor logxor logxor vec-xor)
     (lognor b-nor lognor lognor vec-nor)
-    (lognand b-nand lognand lognand vec-nand)    
+    (lognand b-nand lognand lognand vec-nand)
     (+ "non-defined_plus_on_bits" + + "non-defined_plus_on_bitvec")
     (* "non-defined_mult_on_bits" * * "non-defined_mult_on_bitvec")
-    (- "non-defined_minus_on_bits" - - "non-defined_minus_on_bitvec") 
+    (- "non-defined_minus_on_bits" - - "non-defined_minus_on_bitvec")
     (= equal = = equal)
-    (others others "non-defined_others_on_bits" others others 
+    (others others "non-defined_others_on_bits" others others
 	    "non-defined_others_on_bit_vector")
     (<= <= "non_defined_<=-on-bits" <= <= "non_defined_<=-on-bitsvec")
     (>= >= "non_defined_>=-on-bits" >= >= "non_defined_<=-on-bitsvec")
@@ -75,7 +75,7 @@
   (let ((name (if (consp name_func_or_type)
 		  (car name_func_or_type)
 		 name_func_or_type)))
-        
+
    (case name
            ('and *and*)
            ('or *or*)
@@ -92,7 +92,7 @@
 	   ('>= *>=*)
 	   ('< *<*)
 	   ('> *>*)
-	   
+
 	   ('bits *bits*)
 	   ('bitn *bitn*)
 	   ('round *round*)
@@ -103,7 +103,7 @@
            ('signed *signed*)
            ('unsigned *unsigned*)
            ('bit_vector *bit_vector*)
-	   
+
 	   ('others *others*)
 
            (otherwise name))))
@@ -121,7 +121,7 @@
 
 	  (case kind
 	      ('array
-	       `( (true-listp 
+	       `( (true-listp
 		   (,(make-name name-ent
 				  name-arch
 				  "-getst")
@@ -140,7 +140,7 @@
 				  (quote ,(car list_of_mem_elmts))
 				  st))
 				 ,size)
-		  
+
 		   ,@(make-list-predicate
 		      name-ent
 		      name-arch
@@ -148,7 +148,7 @@
 		      (cdr list_of_types)))
 	       )
 	      ('std_logic_vector
-	       `( (true-listp 
+	       `( (true-listp
 		   (,(make-name name-ent
 				  name-arch
 				  "-getst")
@@ -167,7 +167,7 @@
 				  (quote ,(car list_of_mem_elmts))
 				  st))
 				 ,size)
-		  
+
 		   ,@(make-list-predicate
 		      name-ent
 		      name-arch
@@ -175,7 +175,7 @@
 		      (cdr list_of_types))))
 
 	      ('bit_vector
-	       `( (true-listp 
+	       `( (true-listp
 		   (,(make-name name-ent
 				  name-arch
 				  "-getst")
@@ -194,7 +194,7 @@
 				  (quote ,(car list_of_mem_elmts))
 				  st))
 				 ,size)
-		  
+
 		   ,@(make-list-predicate
 		      name-ent
 		      name-arch
@@ -215,26 +215,26 @@
 	      name-arch
 	      (cdr list_of_mem_elmts)
 	      (cdr list_of_types))))))
-				  
-	   
-	      
+
+
+
 (defun make-state-p (name-ent name_architecture
 		     list_of_mem_elmts
 		     list_of_types
 		     channel state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		 :mode :program))
 
 (fms "~%
 (defun ~x0 (st)
  (declare (xargs :guard t))
       ~x1)~%"
-(list 
-(cons #\0 (make-name name-ent name_architecture 
+(list
+(cons #\0 (make-name name-ent name_architecture
 	      "-stp"))
 (cons #\1 (cons `and (append
 		      (list '(true-listp st))
-		      (list `(= (length st) 
+		      (list `(= (length st)
 			       ,(length list_of_mem_elmts)))
 		(make-list-predicate
 		 name-ent
@@ -272,7 +272,7 @@ nil))
 			 list_of_configurations
 			 channel
 			 state)
-(declare (xargs :stobjs state 
+(declare (xargs :stobjs state
 		:mode :program))
 
 (let ((total_list (append list_of_inputs
@@ -286,14 +286,14 @@ nil))
 (fms "
 ;; Accessor of the memory state : (getst var st) -> value~%
 (defun ~x0 (var st)
-  (declare (xargs :guard t) 
-	   (type ~x4 var) 
+  (declare (xargs :guard t)
+	   (type ~x4 var)
            (type (satisfies true-listp) st))
   (nth (~x1 var) st))~%~%
 ;; Updater of the memory state : (putst ver new st) -> st~%
 (defun ~x2 (var new st)
   (declare (xargs :guard t)
-	   (type ~x4 var) 
+	   (type ~x4 var)
            (type (satisfies true-listp) st))
   (update-nth (~x1 var) new st))~%~%
 ;;;;;;;;;;;;;;"
@@ -323,7 +323,7 @@ nil)))
 	  ,@(make-elmts-of-get-nth (cdr list)
 				 (1+ number)))))
 
-  
+
 
 (defun make-get-nth (name-ent name_architecture
 		     list_of_inputs
@@ -332,16 +332,16 @@ nil)))
 		     list_of_outputs
 		     list_of_configurations
 		     channel state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		 :mode :program))
   (let ((number_of_elemts (+ (length list_of_inputs)
 			    (length list_of_locals_signals)
-			    (length (make-next 
+			    (length (make-next
 				     list_of_locals_signals))
 			    (length list_of_variables)
 			    (length list_of_configurations)
 			    (length list_of_outputs)
-			    (length (make-next 
+			    (length (make-next
 				       list_of_outputs))))
 	(total_list (append list_of_inputs
 			    list_of_locals_signals
@@ -350,7 +350,7 @@ nil)))
 			    list_of_outputs
 			    (make-next list_of_outputs)
 			    (make-list_of_component list_of_configurations))))
-   
+
 (fms "~%
 ;;; Function get-nth : gives the position of an element
 ;;; in the memory state ~%
@@ -360,18 +360,18 @@ nil)))
    (the (integer 0 ~x2)
       ~x3))~%"
 
-(list 
-(cons #\0 (make-name name-ent name_architecture 
+(list
+(cons #\0 (make-name name-ent name_architecture
 	      "-get-nth"))
 (cons #\1 (append (list 'member) total_list))
 (cons #\2 (1- number_of_elemts))
-(cons #\3 (append (list 'case 'var) 
+(cons #\3 (append (list 'case 'var)
 		  (make-elmts-of-get-nth total_list 0))))
 channel
 state
 nil)))
 
-       
+
 ; ------------- generating macro make-state -----------------
 
 (defun make-state-key-arg (list_of_mem_elmts list_of_types)
@@ -407,7 +407,7 @@ nil)))
 ;       nil
 ;    ; (if (consp (car list_of_types))
 ;    ;	`( (defarray ,(nth 2 (car list_of_types))
-; ;	             :initial-element 
+; ;	             :initial-element
 ; ;		     ,(car list_of_mem_elmts)
 ; ;	   )
 ; ;	   ,@(make-state-body (cdr list_of_mem_elmts)
@@ -416,7 +416,7 @@ nil)))
 ;       `( ,(car list_of_mem_elmts)
 ; 	 ,@(make-state-body (cdr list_of_mem_elmts)
 ; 			      (cdr list_of_types)))))
-	   
+
 
 
 (defun make-state-body-for-components (list_of_configurations)
@@ -439,19 +439,19 @@ nil)))
 			list_of_default_gene_para
 			list_of_configurations
 			 channel state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		 :mode :program))
-  
-(fms "~% 
+
+(fms "~%
 ;;;;;;;  This macro make-state creates an initial state ;;;;;~%
 (defun ~x0 () (let ~x1
   ~x2))"
 
 (list (cons #\0 (make-name name-ent
-			   name_architecture 
+			   name_architecture
 			   "-make-state"))
       (cons #\1 (append (make-state-key-arg2 list_of_gener_param
-					     list_of_default_gene_para) 
+					     list_of_default_gene_para)
 			(make-state-key-arg list_of_mem_elmts list_of_types)
 		        ))
       (cons #\2 (append (list 'list)
@@ -467,16 +467,16 @@ nil))
 
 (defun make-update-state (name-ent name_architecture
 			  channel state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		 :mode :program))
-  
+
 (fms "~%
 ;;;;;  This function updates memory state ;;;;~%
 (defun ~x0 (key-arg st)
   (update-state-body ~x1 ~x2 key-arg st))"
 
-(list 
- (cons #\0 (make-name name-ent 
+(list
+ (cons #\0 (make-name name-ent
 		      name_architecture
 		      "-update-st"))
  (cons #\1 (string name-ent))
@@ -501,11 +501,11 @@ nil))
 		   int1
 		   int2
 		   bool_sig_var)
-  (declare (xargs :measure (nfix (- max1 int1))))			  
+  (declare (xargs :measure (nfix (- max1 int1))))
   (if (and (integerp max1) (integerp int1) (>= (- max1 int1) 0)
 	   (integerp int2))
       (if (= (nfix (- max1 int1)) 0)
-	
+
 	  `((,(make-name name-ent name_arch "-putst")
 	      (quote ,(make_name_var_sig name_var1
 					 bool_sig_var))
@@ -533,26 +533,26 @@ nil))
 				   (quote ,name_var1)
 					 ,(make-onename "st")))
 	    ,(make-onename "st"))
-	    
+
 	  ,@(slice-rec2 name-ent name_arch
 			 name_var1
 			 signed
 			 max1
-			 (1+ int1)		 
+			 (1+ int1)
 			 (1+ int2)
 			 bool_sig_var)))
     (cw "Error on slice-rec2")))
 
 
 (defun slice-rec1 (name-ent name_arch
-		   name_var1 	       
-		   name_var2 
-		       max1 
-		       int1 
-		       max2 
-		       int2 
+		   name_var1
+		   name_var2
+		       max1
+		       int1
+		       max2
+		       int2
 		       bool_sig_var)
-  (declare (xargs :measure (nfix (+ (- max1 int1) 
+  (declare (xargs :measure (nfix (+ (- max1 int1)
 				    (- max2 int2)))))
   (if (and (integerp max1) (integerp int1) (>= (- max1 int1) 0)
 	   (integerp max2) (integerp int2) (>= (- max2 int2) 0))
@@ -560,7 +560,7 @@ nil))
 	       (= (nfix (- max2 int2)) 0))
 
 	  `((,(make-name name-ent name_arch "-putst")
-	         (quote ,(make_name_var_sig name_var1 
+	         (quote ,(make_name_var_sig name_var1
 		 		            bool_sig_var))
 	    (setarrayi ,int1
 		       (getarrayi (,(make-name name-ent
@@ -576,7 +576,7 @@ nil))
 
 
  `((,(make-name name-ent name_arch "-putst")
-      (quote ,(make_name_var_sig name_var1 
+      (quote ,(make_name_var_sig name_var1
 				 bool_sig_var))
 	    (setarrayi ,int1
 		       (getarrayi (,(make-name name-ent
@@ -590,106 +590,106 @@ nil))
 				    "-getst")
 			(quote ,name_var1)
 			,(make-onename "st")))
-     
+
      ,(make-onename "st"))
    ,@(slice-rec1 name-ent name_arch
-	         name_var1 
-	         name_var2 
-	         max1 
-	         (1+ int1) 
-	         max2 
-	         (1+ int2) 
+	         name_var1
+	         name_var2
+	         max1
+	         (1+ int1)
+	         max2
+	         (1+ int2)
 	         bool_sig_var)))
 (cw "Error on slice-rec1")))
 
 
 (defun slice-rec3 (name-ent name_arch
-		   name_var1 	       
-		   name_var2 
-		   max1 
-		   int1 
-		   int2 
+		   name_var1
+		   name_var2
+		   max1
+		   int1
+		   int2
 		   bool_sig_var)
-  (declare (xargs :measure (nfix (- max1 int1)))) 
-				    
+  (declare (xargs :measure (nfix (- max1 int1))))
+
   (if (and (integerp max1) (integerp int1) (>= (- max1 int1) 0)
 	   (integerp int2))
       (if (and (= (nfix (- max1 int1)) 0))
 
 	  `((,(make-name name-ent name_arch "-putst")
-	        (quote ,(make_name_var_sig name_var1 
+	        (quote ,(make_name_var_sig name_var1
 					   bool_sig_var))
 	      (setarrayi ,int1
 			 (getarrayi (quote ,name_var2)
 				    ,int2)
 			 (,(make-name name-ent name_arch  "-getst")
 				   (quote ,name_var1)
-					 ,(make-onename "st")))	      
+					 ,(make-onename "st")))
 	      ,(make-onename "st")))
 
 
  `((,(make-name name-ent name_arch  "-putst")
-      (quote ,(make_name_var_sig name_var1 
+      (quote ,(make_name_var_sig name_var1
 				 bool_sig_var))
      (setarrayi ,int1
 		(getarrayi (quote ,name_var2)
 			   ,int2)
 		(,(make-name name-ent name_arch "-getst")
 		  (quote ,name_var1)
-			,(make-onename "st")))  
+			,(make-onename "st")))
      ,(make-onename "st"))
 
-   ,@(slice-rec3 name-ent name_arch 
-		 name_var1 
-		 name_var2 
-		 max1 
-		 (1+ int1) 
-		 (1+ int2) 
+   ,@(slice-rec3 name-ent name_arch
+		 name_var1
+		 name_var2
+		 max1
+		 (1+ int1)
+		 (1+ int2)
 		 bool_sig_var)))
 (cw "Error on slice-rec3")))
 
 
 (defun slice-rec4 (name-ent name_arch
-		   name_var1 	       
-		   name_var2 
+		   name_var1
+		   name_var2
 		   max1
 		   int1
 		   symb
 		   bool_sig_var)
-  (declare (xargs :measure (nfix (- max1 int1)))) 
-				    
+  (declare (xargs :measure (nfix (- max1 int1))))
+
   (if (and (integerp max1) (integerp int1) (>= (- max1 int1) 0))
       (if (and (= (nfix (- max1 int1)) 0))
 
 	  `((,(make-name name-ent name_arch "-putst")
-	        (quote ,(make_name_var_sig name_var1 
+	        (quote ,(make_name_var_sig name_var1
 					   bool_sig_var))
 	      (setarrayi ,int1
 			 (getarrayi (quote ,name_var2)
 				    ,symb)
 			 (,(make-name name-ent name_arch  "-getst")
 				   (quote ,name_var1)
-					 ,(make-onename "st")))	      
+					 ,(make-onename "st")))
 	      ,(make-onename "st")))
 
 
  `((,(make-name name-ent name_arch  "-putst")
-      (quote ,(make_name_var_sig name_var1 
+      (quote ,(make_name_var_sig name_var1
 				 bool_sig_var))
      (setarrayi ,int1
 		(getarrayi (quote ,name_var2)
 			   ,symb)
 		(,(make-name name-ent name_arch "-getst")
 		  (quote ,name_var1)
-			,(make-onename "st")))  
+			,(make-onename "st")))
      ,(make-onename "st"))
 
-   ,@(slice-rec4 name-ent name_arch 
-		 name_var1 
-		 name_var2 
-		 max1 
-		 (1+ int1) 
-		 symb 
+   ,@(slice-rec4 name-ent name_arch
+		 name_var1
+		 name_var2
+		 max1
+		 (1+ int1)
+		 symb
 		 bool_sig_var)))
 (cw "Error on slice-rec4")))
 
@@ -708,7 +708,7 @@ nil))
            (type_of element (cdr list_of_mem_element)
 		                        (cdr list_of_types)))
         (t "error on type_of")))
-           
+
 
 
 
@@ -723,7 +723,7 @@ nil))
 			(car (caddr rst)))
 		       (change-to-const (cdr (car rst)))))
 
-		 ((and (equal (caddr rst) nil) 
+		 ((and (equal (caddr rst) nil)
 		       (not (equal (cadr rst) nil)))
 		  (cons (list (nth (change-to-const (cdr (car rst)))
 				   (nth (change-to-const func$) *true_function*))
@@ -738,7 +738,7 @@ nil))
 
 
          (t "error on true_func")))
-     
+
 
 (mutual-recursion
 (defun expand-exp (name-ent name_arch e list_of_mem_elmt list_types)
@@ -748,7 +748,7 @@ nil))
       (cons `(,(make-name name-ent
 		  name_arch
 		  "-getst")
-         (quote ,e) 
+         (quote ,e)
 	    ,(make-onename "st"))
           (type_of e list_of_mem_elmt list_types)))
 
@@ -762,7 +762,7 @@ nil))
 			     (quote ,(nth 1 e)) st) ,(nth 2 e))
                 ;;(type_of (nth 1 e) list_of_mem_elmt list_types)))
 		*bit*))
-       
+
          (t ;; call of function$
            (true_func (car e)
 	      (expand-exp-list name-ent name_arch (cdr e) list_of_mem_elmt list_types)))))
@@ -784,7 +784,7 @@ nil))
     `(,(make-name name-ent
 		  name_arch
 		  "-getst")
-      (quote ,e) 
+      (quote ,e)
 	    ,(make-onename "st")))
    ((consp e)
     (if (equal (car e) 'quote)
@@ -819,7 +819,7 @@ nil))
 	       (deb2 (nth 2 (nth 2 list)))
 	       (fin2 (nth 3 (nth 2 list))))
 	   (slice-rec1 name-ent name_arch
-		       op1 
+		       op1
 		       op2
 		       fin1
 		       deb1
@@ -845,11 +845,11 @@ nil))
 			op2
 			fin1
 			deb1
-			(call_or_single_element 
-                            (car (expand-exp name-ent 
-					name_arch 
-					range2 
-					list_mem_elmt 
+			(call_or_single_element
+                            (car (expand-exp name-ent
+					name_arch
+					range2
+					list_mem_elmt
 					list_type)))
 			bool_sig_var)))
 
@@ -859,19 +859,19 @@ nil))
 	      ; OP1 (deb1 to fin1) <= OP2
 	      ; (index OP1 deb1 fin1) <= OP2
 	      (let ((deb1 (nth 2 (nth 0 list)))
-		    (fin1 (nth 3 (nth 0 list))))	     
+		    (fin1 (nth 3 (nth 0 list))))
 		     (slice-rec1 name-ent name_arch
-				  (nth 1 (nth 0 list)) 
+				  (nth 1 (nth 0 list))
 				  (nth 2 list)
 				  fin1
 				  deb1
 				  (- fin1 deb1)
 				  0
 				  bool_sig_var)))
-	 
+
 
 	((and (consp (nth 0 list))
-	      (consp (member 'index (nth 0 list))) 
+	      (consp (member 'index (nth 0 list)))
 	      (equal (len (nth 0 list)) 3)
 	      (consp (member 'index (nth 2 list)))
 	      (equal (len (nth 2 list)) 3))
@@ -880,30 +880,30 @@ nil))
 	 ; (index OP1 (fn i..)) <= (index OP2 (fn i..))
 	 (let ((op1 (nth 1 (nth 0 list)))
 	       (op2 (nth 1 (nth 2 list)))
-	       (range1 
-   (call_or_single_element (car (expand-exp name-ent 
-				       name_arch 
+	       (range1
+   (call_or_single_element (car (expand-exp name-ent
+				       name_arch
 				       (nth 2 (nth 0 list))
 				       list_mem_elmt
 				       list_type))))
-	       (range2 
-  (call_or_single_element (car (expand-exp name-ent 
-				      name_arch 
+	       (range2
+  (call_or_single_element (car (expand-exp name-ent
+				      name_arch
 				      (nth 2 (nth 2 list))
 				      list_mem_elmt
 				      list_type)))))
 	   `((,(make-name name-ent name_arch "-putst")
-	      (quote ,(make_name_var_sig op1 
+	      (quote ,(make_name_var_sig op1
 					 bool_sig_var))
 	      (setarrayi ,range1
 			 (getarrayi (quote ,op2)
 				    ,range2)
 			 (,(make-name name-ent name_arch  "-getst")
 			  (quote ,op1)
-			  ,(make-onename "st")))	      
+			  ,(make-onename "st")))
 	      ,(make-onename "st")))))
 
-	
+
 	((and (consp (nth 0 list))
 	      (consp (member 'index (nth 0 list)))
 	      (equal (len (nth 0 list)) 3)
@@ -912,25 +912,25 @@ nil))
 	 ; OP1 (fn i ..) <= (fn2 ...)
          ; (index OP1 (fn i ..)) <= (fn2 i ..)
 	 (let ((op1 (nth 1 (nth 0 list)))
-	       (op2 (car (expand-exp name-ent 
-				name_arch 
+	       (op2 (car (expand-exp name-ent
+				name_arch
 				(nth 2 list)
 				list_mem_elmt
 				list_type)))
-	       (range1 
-  (call_or_single_element (car (expand-exp name-ent 
-				      name_arch 
+	       (range1
+  (call_or_single_element (car (expand-exp name-ent
+				      name_arch
 				      (nth 2 (nth 0 list))
 				      list_mem_elmt
 				      list_type)))))
 	   `((,(make-name name-ent name_arch "-putst")
-	    (quote ,(make_name_var_sig op1 
+	    (quote ,(make_name_var_sig op1
 				       bool_sig_var))
 	    (setarrayi ,range1
 		       ,op2
 		       (,(make-name name-ent name_arch  "-getst")
 			(quote ,op1)
-			,(make-onename "st")))	      
+			,(make-onename "st")))
 	    ,(make-onename "st")))))
 
 	((and (consp (nth 0 list))
@@ -944,9 +944,9 @@ nil))
 	       (op2 (nth 2 list))
 	       (deb1 (nth 2 (nth 0 list)))
 	       (fin1 (nth 3 (nth 0 list))))
-	   
+
 	   (slice-rec2 name-ent name_arch
-			op1 
+			op1
 			op2
 			fin1
 			deb1
@@ -958,12 +958,12 @@ nil))
 	      (consp (member 'index (nth 0 list)))
 	      (equal (len (nth 0 list)) 4)
 	      (integerp (nth 2 list)))
-	
+
 	 ; OP1 (deb1 to fin1) <= (fn ....)
 	 ; (index OP1 deb1 fin1) <= (fn ..)
 	 (let* ((op1 (nth 1 (nth 0 list)))
-		(op2 (car (expand-exp name-ent 
-				 name_arch 
+		(op2 (car (expand-exp name-ent
+				 name_arch
 				 (nth 2 list)
 				 list_mem_elmt
 				 list_type)))
@@ -990,17 +990,17 @@ nil))
 	 ; OP1 (fn i..) <= OP2;
 	 ; (index OP1 (fn i ..)) <= OP2
 	 (let ((op1 (nth 1 (car list)))
-	       (op2 (car (expand-exp name-ent 
-				name_arch 
+	       (op2 (car (expand-exp name-ent
+				name_arch
 				(nth 2 list)
 				list_mem_elmt
 				list_type)))
-	       (range1 (car (expand-exp name-ent 
-				   name_arch 
+	       (range1 (car (expand-exp name-ent
+				   name_arch
 				   (nth 2 (car list))
 				   list_mem_elmt
 				   list_type))))
-	       
+
 	   `((,(make-name name-ent name_arch "-putst")
 	      (quote ,(make_name_var_sig op1
 					 bool_sig_var))
@@ -1010,7 +1010,7 @@ nil))
 			  (quote ,op1)
 			  ,(make-onename "st")))
 	     ,(make-onename "st")))))
-   
+
 
 	((and (not (consp (nth 0 list)))
 	      (equal (len (nth 2 list)) 4)
@@ -1020,9 +1020,9 @@ nil))
 	 (let* ((op1 (car list))
 		(op2 (nth 1 (nth 2 list)))
 		(deb2 (nth 2 (nth 2 list)))
-		(fin2 (nth 3 (nth 2 list)))) 
+		(fin2 (nth 3 (nth 2 list))))
 	   (slice-rec1 name-ent name_arch
-			op1 
+			op1
 			op2
 			(- fin2 deb2)
 			0
@@ -1038,7 +1038,7 @@ nil))
          ; OP1 <= (index OP2 (fn i..))
 	 `((,(make-name name-ent name_arch "-putst")
 	    (quote ,(make_name_var_sig (car list)
-				       bool_sig_var))  
+				       bool_sig_var))
 	    (getarrayi (,(make-name name-ent
 				    name_arch
 				    "-getst")
@@ -1052,9 +1052,9 @@ nil))
 	      (symbolp (nth 2 list)))
 	 ; A <= B
 	 (let ((op1 (nth 0 list))
-	       (op2 (nth 2 list)))   
+	       (op2 (nth 2 list)))
 	  `((,(make-name name-ent name_arch "-putst")
-	     (quote ,(make_name_var_sig op1 
+	     (quote ,(make_name_var_sig op1
 					bool_sig_var))
 	     (,(make-name name-ent name_arch "-getst")
 	      (quote ,op2)
@@ -1065,13 +1065,13 @@ nil))
 	((and (symbolp (car list)) (equal (length list) 3))
 	 ; A <= (fn ...)
 	 (let ((op1 (nth 0 list))
-	       (op2 (car (expand-exp name-ent 
-				name_arch 
+	       (op2 (car (expand-exp name-ent
+				name_arch
 				(nth 2 list)
 				list_mem_elmt
 				list_type))))
 	   `((,(make-name name-ent name_arch "-putst")
-	      (quote ,(make_name_var_sig op1 
+	      (quote ,(make_name_var_sig op1
 					 bool_sig_var))
 	      ,op2
 	      ,(make-onename "st")))))
@@ -1083,12 +1083,12 @@ nil))
 (defun if-statement (name-ent name-arch instr list_mem_elmt list_type)
   (if (endp instr)
       nil
-	 (let* ((instr_then (let-instructions name-ent 
-					      name-arch 
+	 (let* ((instr_then (let-instructions name-ent
+					      name-arch
 					      (caddr instr)
 					      list_mem_elmt list_type))
-	       (instr_else (let-instructions name-ent 
-					     name-arch 
+	       (instr_else (let-instructions name-ent
+					     name-arch
 					     (cadddr instr)
 					     list_mem_elmt list_type))
 	       (cond_stat (car (list (car (expand-exp-list name-ent name-arch
@@ -1098,23 +1098,23 @@ nil))
 
 	   (cond
 	    ((equal instr_then nil)
-	     
-	      `((if ,(car cond_stat)	
+
+	      `((if ,(car cond_stat)
 		    ,(make-onename "st")
 		  (seq ,(make-onename "st")
 		     ,@instr_else)))
-		   
+
 	      )
 
 	    ((equal instr_else nil)
 
 	     `((if ,(car cond_stat)
 		 (seq ,(make-onename "st")
-		     ,@instr_then)	
+		     ,@instr_then)
 		   ,(make-onename "st"))))
 
 	    (t
-		   
+
 	     `((if ,(car cond_stat)
 		 (seq ,(make-onename "st")
 		      ,@instr_then)
@@ -1134,40 +1134,40 @@ nil))
 		    nil))
 	(let ((num (cadr instr)))
 
-	`((,(make-name "" 
-			"for-loop" 
+	`((,(make-name ""
+			"for-loop"
 			(natural-to-string num))
 	    ,(make-onename "st"))
 	     ,@(let-instructions name-ent name-arch
 				 (cdr list) list_mem_elmt list_type)))
 
        ) ; end clause0
-	
-       
+
+
        ; clause1 : "if"  statement
 
        ((not (equal (member-eq 'if instr)
 		     nil))
 
-	(let ((new_list (if-statement name-ent 
-				      name-arch 
+	(let ((new_list (if-statement name-ent
+				      name-arch
 				      instr
 				      list_mem_elmt list_type)))
 
 	 `(,@new_list
 	     ,@(let-instructions name-ent name-arch
 				 (cdr list) list_mem_elmt list_type)))
-     
+
 
        ) ; end clause1
- 
+
          ; clause2 : variable assignment
         ((not (equal (member-eq ':= instr)
 		     nil))
-	
-	 (let ((new_list (assignment name-ent 
-				     name-arch 
-				     instr 
+
+	 (let ((new_list (assignment name-ent
+				     name-arch
+				     instr
 				     nil
 				     list_mem_elmt list_type)))
 
@@ -1182,10 +1182,10 @@ nil))
 	; clause2bis : C  variable assignment
         ((not (equal (member-eq '= instr)
 		     nil))
-	
-	 (let ((new_list (assignment name-ent 
-				     name-arch 
-				     instr 
+
+	 (let ((new_list (assignment name-ent
+				     name-arch
+				     instr
 				     nil
 				     list_mem_elmt list_type)))
 
@@ -1196,15 +1196,15 @@ nil))
 
 
 	 ) ; end clause2bis
-	
-	
+
+
 	; clause3 : signal assignment
 	((not (equal (member-eq '<= instr)
 		     nil))
 
-	 (let ((new_list (assignment name-ent 
-				     name-arch 
-				     instr 
+	 (let ((new_list (assignment name-ent
+				     name-arch
+				     instr
 				     t
 				     list_mem_elmt list_type)))
 
@@ -1212,7 +1212,7 @@ nil))
 	 `(,@new_list
 	     ,@(let-instructions name-ent name-arch
 				 (cdr list) list_mem_elmt list_type)))
-	 
+
 	 ) ; end clause3
 
 
@@ -1225,15 +1225,15 @@ nil))
 	(name_make-state (make-name name-ent arch_name "-make-state")))
     (if (endp args)
 	`(,name_make-state)
-      `(,name_putst (quote ,(car args)) 
-		     (list ,(car args))	     
+      `(,name_putst (quote ,(car args))
+		     (list ,(car args))
 	(,@(update-st-for-function name-ent arch_name (cdr args)))))))
-		     
+
 
 (defun make-functions (list_of_functions
 		       channel list_mem_elmt list_type
 		       state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		 :mode :program))
   (if (endp list_of_functions)
       state
@@ -1317,7 +1317,7 @@ nil))
       (cons #\4 `(seq st ,@new_instr))
       (cons #\5 `(,(make-name 'fct- new_name "-getst")
 		 'return
-		  st)))     
+		  st)))
 channel
 state
 nil)))
@@ -1333,7 +1333,7 @@ nil)))
 		      list_of_for
 		      channel list_mem_elmt list_type
 		      state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		 :mode :program))
 
   (let* ((instr_for (car list_of_for))
@@ -1344,9 +1344,9 @@ nil)))
 	 (instr (caddr instr_for))
 	 (new_instr (let-instructions name-ent name_arch
 				      instr list_mem_elmt list_type)))
-    
+
     (if (< range1 range2)  ;; ascending loop
-	
+
 	(fms "~%;; This function represents the for loop ~x0 ;;;;;;;~%
 (defun ~x0 (i j st)
   (declare (type integer i)
@@ -1386,9 +1386,9 @@ nil))))
 
 
 (defun process-functions (name-ent name_architecture
-			  list_of_process		 
+			  list_of_process
 		     channel list_mem_elmt list_type state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		 :mode :program))
 
 (if (endp list_of_process)
@@ -1396,12 +1396,12 @@ nil))))
   (let* ((new_instr (let-instructions name-ent name_architecture
 				      (cadr (car list_of_process))
 				      list_mem_elmt list_type))
-	(state  
+	(state
 (fms "~%;; This function represents the process ~x0 ;;;;;;;~%
 (defun ~x1 (st) ~x2)"
-(list 
+(list
 (cons #\0 (caar list_of_process))
-(cons #\1 (make-name (concatenate 'string 
+(cons #\1 (make-name (concatenate 'string
 				  (string name-ent)
 				  (string name_architecture)
 				  "-")
@@ -1410,13 +1410,13 @@ nil))))
 ;(cons #\2 (make-name name-ent name_architecture "-stp"))
 
 (cons #\2 (append '(seq st) new_instr)))
-                
+
 
 channel
 state
 nil)))
 
-(process-functions name-ent name_architecture 
+(process-functions name-ent name_architecture
 		   (cdr list_of_process)
 		   channel list_mem_elmt list_type
 		   state))))
@@ -1425,7 +1425,7 @@ nil)))
 
 
 
-(defun make-rec-comb-process (name-ent 
+(defun make-rec-comb-process (name-ent
 			      name_arch
 			      list_of_comb_process
 			      channel
@@ -1435,8 +1435,8 @@ nil)))
 
   (if (endp list_of_comb_process)
       state
-   
-    (let* ((name_process (make-name (concatenate 'string 
+
+    (let* ((name_process (make-name (concatenate 'string
 						 (string name-ent)
 						 (string name_arch)
 						 "-")
@@ -1448,8 +1448,8 @@ nil)))
   (cond ((zp i) st)
 	(t (~x0 (1- i) ~x1)))) ~%"
 
-(list 
-(cons #\0 (make-name (concatenate 'string 
+(list
+(cons #\0 (make-name (concatenate 'string
 				  (string name-ent)
 				  (string name_arch)
 				  "-")
@@ -1501,11 +1501,11 @@ nil)))
 				 "-putst"))
           (first_link (car links_inputs)))
       (if (not (consp (car first_link)))
-	  
+
   ; architecture -> input of component
 	  (let ((src (make-name "" (string (car first_link)) ""))
                 (dest (cadr first_link)))
-	  
+
    `((,name-putst-arch
       (quote ,name_instance)
        (,name-putst-comp (quote ,dest)
@@ -1514,31 +1514,31 @@ nil)))
 			 (,name-getst-arch (quote ,name_instance)
 					   ,(make-onename "st")))
        ,(make-onename "st"))
-     ,@(comp-updt_sig-rec_in name-ent name-arch 
+     ,@(comp-updt_sig-rec_in name-ent name-arch
 			 name-comp name_instance
 			 (cdr links_inputs))))
-	     
-	     
+
+
 	     ;; array -> one element
-	   
+
 	  (let ((src (make-name "" (string (nth 1 (car first_link))) ""))
                 (dest (make-name "" (string (nth 1 first_link)) "")))
-	    
-	    
-	  
+
+
+
    `((,name-putst-arch
       (quote ,name_instance)
        (,name-putst-comp (quote ,dest)
-			 (getarrayi (,name-getst-arch (quote ,src) 
-						      ,(make-onename "st")) 
+			 (getarrayi (,name-getst-arch (quote ,src)
+						      ,(make-onename "st"))
 				    ,(nth 2 (car first_link)))
 			 (,name-getst-arch (quote ,name_instance)
 					   ,(make-onename "st")))
        ,(make-onename "st"))
-     ,@(comp-updt_sig-rec_in name-ent name-arch 
+     ,@(comp-updt_sig-rec_in name-ent name-arch
 			 name-comp name_instance
 			 (cdr links_inputs))))))))
-	     
+
 
 
 (defun comp-updt_sig-rec_out (name-ent name-arch
@@ -1557,34 +1557,34 @@ nil)))
 				 "-getst"))
           (first_link (car links_outputs)))
       (if (not (consp (car first_link)))
-	  
+
 	  (let ((dest (make-name "" (string (car first_link)) ""))
                 (src (make-name "" (string (cadr first_link)) "")))
-	  
-   `((,name-putst-arch 
+
+   `((,name-putst-arch
      (quote ,src)
      (,name-getst-comp (quote ,dest)
 		       (,name-getst-arch (quote ,name_instance)
 					 ,(make-onename "st")))
       ,(make-onename "st"))
-    ,@(comp-updt_sig-rec_out name-ent name-arch 
+    ,@(comp-updt_sig-rec_out name-ent name-arch
 			 name-comp name_instance
 			 (cdr links_outputs))))
-	     
-	     
+
+
 	     ;; array -> one element
-	   
+
 	  (let ((dest (make-name "" (string (nth 1 (car first_link))) ""))
                 (src (make-name "" (string (nth 1 first_link)) "")))
-	  
+
    `((,name-putst-arch (quote ,dest)
 	               (setarrayi ,(nth 2 (car first_link))
-                          (,name-getst-comp (quote ,src) 
+                          (,name-getst-comp (quote ,src)
 					    (,name-getst-arch (quote ,name_instance)
 					                   ,(make-onename "st")))
                             (,name-getst-arch (quote ,dest) ,(make-onename "st")))
 	        ,(make-onename "st"))
-    ,@(comp-updt_sig-rec_out name-ent name-arch 
+    ,@(comp-updt_sig-rec_out name-ent name-arch
 			 name-comp name_instance
 			 (cdr links_outputs))))))))
 
@@ -1600,7 +1600,7 @@ nil)))
 		     (find_links_input inputs (cdr links)))
 
 	      (find_links_input inputs (cdr links)))))))
-       			  
+
 
 
 (defun find_links_output (outputs links)
@@ -1644,8 +1644,8 @@ nil)))
 	   (name_component (cadr comp))
 
 	   (inputs_of_comp (search_input_comp name_component list_of_components))
-	   (outputs_of_comp (search_output_comp name_component list_of_components))		   
-	   		
+	   (outputs_of_comp (search_output_comp name_component list_of_components))
+
 	   (links_inputs (find_links_input inputs_of_comp (cdr (car list_of_links))))
 	   (links_outputs (find_links_output outputs_of_comp (cdr (car list_of_links))))
 
@@ -1661,7 +1661,7 @@ nil)))
 				    (cdr list_of_configurations)
 				    (cdr list_of_links))))))
 
- 
+
 #|
 (defun components-update-signals (name-ent name-arch
 				  list_of_configurations
@@ -1685,7 +1685,7 @@ nil)))
 				    (cdr list_of_links))))))
 |#
 
-      
+
 (defun make-update-of-components (name-ent name_arch list_of_configurations)
   (if (endp list_of_configurations)
       nil
@@ -1707,7 +1707,7 @@ nil)))
 		            list_of_configurations
 			    list_of_links
 		            channel state)
-  (declare (xargs :stobjs state 
+  (declare (xargs :stobjs state
 		  :mode :program))
 
   (let* ((newinstr1 (let-update-signals name-ent name_architecture
@@ -1717,14 +1717,14 @@ nil)))
 					      list_of_components
 					      list_of_configurations
 					      list_of_links)))
-			    
+
   (fms "~%~%;;======== Function update of signals  =====~%~%
 (defun ~x0 (st) ~x2) ~%"
 ; (declare (xargs :guard (~x1 st)))
-(list 
+(list
 (cons #\0 (make-name name-ent name_architecture "-update-signals"))
 (cons #\1 (make-name name-ent name_architecture "-stp"))
-(cons #\2 (append '(seq st) 
+(cons #\2 (append '(seq st)
 		  newinstr1
 	          newinstr2
 		  newinstr3)))
@@ -1738,7 +1738,7 @@ nil)))
   (if (endp list_of_process)
       nil
     `((,(make-name (concatenate 'string
-    			   (string name-ent) 
+    			   (string name-ent)
 			       (string name-arch)
 			       "-")
 		  (caar list_of_process)
@@ -1753,7 +1753,7 @@ nil)))
       nil
     (let ((name-update-sig (make-name name-ent name-arch "-update-signals")))
     `((,name-update-sig (,(make-name (concatenate 'string
-    			   (string name-ent) 
+    			   (string name-ent)
 			       (string name-arch)
 			       "-")
 		  (caar list_of_conc_stat)
@@ -1777,12 +1777,12 @@ nil)))
 		      st))
 	      st)
 	  ,@(make-cycle-of-components name-ent name_arch (cdr list_of_configurations))))))
-	      
 
-	 
+
+
 (defun make-rec-concurrent-stat (name-ent name_architecture
 				 concurrent-stat channel state)
-     (declare (xargs :stobjs state 
+     (declare (xargs :stobjs state
 		  :mode :program))
   (cond ((endp concurrent-stat) state)
 	(t (let ((name_conc (name_of_conc_statem name-ent name_architecture concurrent-stat)))
@@ -1792,7 +1792,7 @@ nil)))
   (cond ((zp i) st)
 	(t (~x0 (1- i) ~x1)))) ~%"
 
-(list 
+(list
 (cons #\0 (make-name name-ent name_architecture "-rec-conc-stat"))
 (cons #\1 (append '(seq st) name_conc)))
 channel
@@ -1803,14 +1803,14 @@ nil)))))
 
 
 (defun form-rec-concurrent-stat-name (name-ent name_architecture i)
-  `((,(make-name "" (concatenate 'string 
+  `((,(make-name "" (concatenate 'string
                    (string name-ent)
 			       (string name_architecture)
 			       "-")
 		  "rec-conc-stat")
     ,i
        ,(make-onename "st"))))
-				      
+
 
 (defun number_of_signal_ass (list)
   (cond ((endp list) 0)
@@ -1825,7 +1825,7 @@ nil)))))
 	 nil)
 	 (t
 	  (let ((number_of_instr (number_of_signal_ass (cadar list_of_comb_process)))
-	       (name-func (make-name (concatenate 'string 
+	       (name-func (make-name (concatenate 'string
 						  (string name-ent)
 						  (string name_arch)
 						  "-")
@@ -1835,7 +1835,7 @@ nil)))))
 	     ,@(make-call-of-comp name-ent
 				  name_arch
 				  (cdr list_of_comb_process)))))))
-	   
+
 
 
 (defun make-cycle (name-ent name_architecture
@@ -1845,14 +1845,14 @@ nil)))))
 		   nat
 		   channel
 		   state)
-    (declare (xargs :stobjs state 
+    (declare (xargs :stobjs state
 		  :mode :program))
     (let ((list (name_of_process name-ent name_architecture
 				 list_of_process))
 	  (comp (make-cycle-of-components name-ent name_architecture list_of_configurations))
 	  (rec-conc-stat (if (equal nat nil)
 			     nil
-			   (form-rec-concurrent-stat-name name-ent 
+			   (form-rec-concurrent-stat-name name-ent
 			  name_architecture nat)))
 	  (make-call-of-comb-process (make-call-of-comp name-ent
 							 name_architecture
@@ -1860,12 +1860,12 @@ nil)))))
 	  )
 
 
-      
+
 
 (fms "~%~%;;======== Function cycle of simulation  =====~%~%
 (defun ~x0 (st) ~% ~x2) ~%"
 
-(list 
+(list
 (cons #\0 (make-name name-ent name_architecture "-cycle"))
 (cons #\2 (append '(seq st) list rec-conc-stat make-call-of-comb-process comp)))
 channel
@@ -1873,12 +1873,12 @@ state
 nil)
 ))
 
-    
+
 (defun make-simul (name-ent name_architecture
 		   channel
 		   state)
-  
-  (declare (xargs :stobjs state 
+
+  (declare (xargs :stobjs state
 		  :mode :program))
 
   (let ((name-simul (make-name name-ent name_architecture "-simul"))
@@ -1891,7 +1891,7 @@ nil)
       st
     ~x2)) ~%~%~%~% "
 ; (declare (xargs :guard (~x1 st)))
-(list 
+(list
 (cons #\0 name-simul)
 (cons #\1 (make-name name-ent name_architecture "-stp"))
 (cons #\2 `(,name-simul (1- n)

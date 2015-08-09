@@ -2,9 +2,9 @@
 
 (in-package "ACL2")
 
-(defun flatten (x)      
+(defun flatten (x)
   (cond ((atom x) (list x))
-        (t (append (flatten (car x)) (flatten (cdr x)))))) 
+        (t (append (flatten (car x)) (flatten (cdr x))))))
 
 (defun mc-flatten (x a)
   (cond ((atom x) (cons x a))
@@ -32,7 +32,7 @@
 
 
 (defthm gopher-acl2-count-cdr
-  (implies (consp x) 
+  (implies (consp x)
 	   (< (acl2-count (cdr (gopher x)))
 	      (acl2-count x))))
 

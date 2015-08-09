@@ -26,13 +26,13 @@
 ;;;
 ;;; ============================================================================
 
-;;; In this book ({\tt dag-unification-l.lisp}), we define and verify 
+;;; In this book ({\tt dag-unification-l.lisp}), we define and verify
 ;;; a unification algorithm based on term dags. This algorithm stores
 ;;; the terms to be unified as directed acyclic graphs and apply the
 ;;; rules of transformation of Martelli--Montanari until a solution is
 ;;; found or unsolvability is detected. The main properties of this
 ;;; algorithm are proved, showing that it computes a most general
-;;; unifier of the input terms, whenever they are unifiable. 
+;;; unifier of the input terms, whenever they are unifiable.
 
 ;;; In the book {\tt dag-unification-rules.lisp}, we proved how some
 ;;; sequences of transformation rules can be applied to a directed
@@ -47,7 +47,7 @@
 ;;; Combining the results of these books, we can define and verify a
 ;;; unification algorithm: given two terms, build the initial
 ;;; unification problem and iteratively apply the transformation rules
-;;; until a most general unifier (or unsolvability) is found. 
+;;; until a most general unifier (or unsolvability) is found.
 
 ;;; In the book {\tt dag-unification-st.lisp}, we will define a very
 ;;; similar algorithm to the one defined here, where the graph is stored
@@ -55,7 +55,7 @@
 ;;; list. Thus, we can do destructive updates, making unification much
 ;;; more efficient. Due to the logical properties of stobjs, we can
 ;;; easily translate the main properties obtained in this book to the
-;;; properties of the stobj version of the algorithm. 
+;;; properties of the stobj version of the algorithm.
 
 ;;; Note that some of the functions need some very expensive conditions
 ;;; (checking that we are dealing with directed acyclic graphs) in order
@@ -68,12 +68,12 @@
 ;;; The following books are used, and contain information that is
 ;;; relevant to understand the contents of this book:
 
-;;; *) 
+;;; *)
 ;;; {\tt dag-unification-rules.lisp}, where the properties of the
 ;;; transformation rules of Martelli--Montanari acting on term dags are
 ;;; proved.
 
-;;; *) 
+;;; *)
 ;;; {\tt terms-as-dag.lisp}, where an algorithm to store first--order
 ;;; terms as dags is defined and verified.
 
@@ -112,7 +112,7 @@
 ;;; unification problem is a three--element list with an indices system
 ;;; (representing the system of equations to be solved), an indices
 ;;; substitution (representing the substitution partially computed) and
-;;; a term graph storing the unification problem. 
+;;; a term graph storing the unification problem.
 
 ;;; Depending on the first equation of the list of equations to be
 ;;; solved (after "dereferencing" the pointers), one the rules is
@@ -131,7 +131,7 @@
 	 (p2 (dagi-l t2 g)))
     (cond
      ((= t1 t2) (list R U g))
-     ((dag-variable-p p1)  
+     ((dag-variable-p p1)
       (if (occur-check-l t t1 t2 g)
 	  nil
 	(let ((g (update-dagi-l t1 t2 g)))
@@ -149,7 +149,7 @@
 
 ;;; The above function can be seen as applying a particular operator
 ;;; (see {\tt dag-unification-rules.lisp}). The following function
-;;; computes that operator. 
+;;; computes that operator.
 
 (defun dag-transform-mm-l-op (upl)
    (let* ((S (first upl))
@@ -161,7 +161,7 @@
 	  (p2 (dagi-l t2 g)))
      (cond
       ((= t1 t2) '(delete 0))
-      ((dag-variable-p p1)  
+      ((dag-variable-p p1)
        (if (occur-check-l t t1 t2 g)
 	   '(occur-check 0)
 	 '(eliminate 0)))
@@ -180,19 +180,19 @@
 ;;; The following two theorems show that the application {\tt
 ;;; dag-transform-mm-l} obtains the same unification problem than the
 ;;; application of the operator computed by {\tt
-;;; dag-transform-mm-l-op}. 
+;;; dag-transform-mm-l-op}.
 
 (defthm transform-mm-l-applies-a-legal-operator
   (implies (not (normal-form-syst upl))
 	   (unif-legal-l upl (dag-transform-mm-l-op upl))))
- 
+
 
 (defthm transform-mm-l-applies-an-operator
   (implies (not (normal-form-syst upl))
 	   (equal (dag-transform-mm-l upl)
 		  (unif-reduce-one-step-l
 		   upl (dag-transform-mm-l-op upl)))))
- 
+
 (in-theory (disable dag-transform-mm-l
 		    unif-reduce-one-step-l
 		    unif-reduce-one-step-s))
@@ -206,12 +206,12 @@
 ;;; The noetherian property of the transformation relation (proved in
 ;;; {\tt dag-unification-rules.lisp} can be used now to prove the
 ;;; following theorem, showing that a well--founded measure decreases
-;;; with every application of {\tt dag-transform-mm-l}. 
+;;; with every application of {\tt dag-transform-mm-l}.
 
 ;;; Although this lemma is proved again for the termination proof of the
 ;;; following function, we prove it here explicitly, because it will be
 ;;; used for the termination proof of the stobj based algorithm in the
-;;; book {\tt dag-unification-st.lisp}. 
+;;; book {\tt dag-unification-st.lisp}.
 
 (defthm unification-measure-decreases-l
     (implies (and (well-formed-upl upl)
@@ -239,9 +239,9 @@
 
 
 ;;; The above lemma justifies the admission of the following
-;;; function {\tt solve-upl-l}, a function that iteratively applies 
+;;; function {\tt solve-upl-l}, a function that iteratively applies
 ;;; {\tt dag-transform-mm-l}, until the system of equations to
-;;; be solved is empty (or until unsolvability is detected):  
+;;; be solved is empty (or until unsolvability is detected):
 
 (defun solve-upl-l (upl)
   (declare (xargs :measure
@@ -256,7 +256,7 @@
 ;;; Again, this iterative application can be seen as the application of
 ;;; a sequence of operators starting in the initial unification
 ;;; problem. This sequence is computed by the following unification
-;;; problem: 
+;;; problem:
 
 (local
  (defun solve-upl-l-op (upl)
@@ -299,15 +299,15 @@
 ;;; indices system and the empty substitution. This function can be seen
 ;;; as a function to compute the most general solution of the system
 ;;; associated with an indices system. As above, we can see this
-;;; function as applying a sequence of operators: 
-		       
+;;; function as applying a sequence of operators:
+
 (defun dag-mgs-l (S g)
   (solve-upl-l (list S nil g)))
 
 (local
  (defun dag-mgs-l-op (S g)
    (solve-upl-l-op (list S nil g))))
- 
+
 
 
 (local
@@ -319,7 +319,7 @@
    :hints (("Goal" :in-theory (enable
 			       mgs-seq-l
 			       mgs-seq-l-p)))))
-	   
+
 
 
 ;;; Well-formedness of dag-mgs-l
@@ -342,9 +342,9 @@
  (in-theory (disable mgs-seq-l-mgs-seq-computed-substitution)))
 
 
-	    
-		  
-		  
+
+
+
 
 ;;; Since we have shown that {\tt dag-mgs-l} can be seen as applying a
 ;;; sequence of operators corresponding to the transformation relation
@@ -362,7 +362,7 @@
 	     (dag-mgs-l S-dag g))))
 
 
-(defthm dag-mgs-l-soundness 
+(defthm dag-mgs-l-soundness
   (let* ((S (tbs-as-system S-dag g))
 	 (dag-mgs-l (dag-mgs-l S-dag g))
 	 (sol (solved-as-system (second dag-mgs-l) (third dag-mgs-l))))
@@ -379,7 +379,7 @@
 	     (idempotent sol)))
   :hints (("Goal" :in-theory (disable idempotent))))
 
-(defthm dag-mgs-l-most-general-solution 
+(defthm dag-mgs-l-most-general-solution
   (let* ((S (tbs-as-system S-dag g))
 	 (dag-mgs-l (dag-mgs-l S-dag g))
 	 (sol (solved-as-system (second dag-mgs-l) (third dag-mgs-l))))
@@ -398,7 +398,7 @@
 ;;; term-as-dag.lisp}. In this way, we receive two terms (in the
 ;;; standard prefix/list representation) and a graph and we can store
 ;;; the terms in the graph and apply the unification algorithm on term
-;;; dags.  
+;;; dags.
 
 (defun dag-mgu-l (t1 t2 g)
   (let ((g (unif-two-terms-problem-l t1 t2 g)))
@@ -407,17 +407,17 @@
 
 
 
-(in-theory (disable 
+(in-theory (disable
 		    tbs-as-system
 		    initial-to-be-solved-l
 		    unif-two-terms-problem-l))
-		    
+
 
 (local (in-theory (disable dag-mgs-l-op-unif-seq-l-p-normal-form)))
 
 ;;; The following auxiliary lemmas are needed to prove the main
 ;;; properties of {\tt dag-mgu-l}. They are an easy consequence of the
-;;; properties of {\tt unif-two-terms-problem-l} and {\tt dag-mgs l}: 
+;;; properties of {\tt unif-two-terms-problem-l} and {\tt dag-mgs l}:
 
 (local
  (defthm dag-mgu-l-completeness-almost

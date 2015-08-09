@@ -224,7 +224,7 @@
                   ;;Invariant
                   (invariant-legal (nodes-length nodeset) marks))
              (invariant-legal (nodes-length nodeset) marks-after)))
-  :hints (("Goal" :in-theory (disable legal-mark append-to-dep append-to-esc depi esci marksi neighborsi update-marksi)))) 
+  :hints (("Goal" :in-theory (disable legal-mark append-to-dep append-to-esc depi esci marksi neighborsi update-marksi))))
 ;; the algorithm preserves invariant-legal
 (defthm algo-preserves-invariant-legal
   (let* ((marks-after (st-A-nodes-escapable-inv n graph marks nodeset)))

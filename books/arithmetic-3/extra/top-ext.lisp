@@ -8,7 +8,7 @@
 (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)
 (include-book "ext")
 
-(add-default-hints! '((nonlinearp-default-hint stable-under-simplificationp 
+(add-default-hints! '((nonlinearp-default-hint stable-under-simplificationp
                                                hist pspv)))
 
 (in-theory (enable strong-expt-type-prescription-rules))

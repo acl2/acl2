@@ -83,7 +83,7 @@
 ;;First, we express the gcd of X and Y as a linear combination of X and Y:
 
 (mutual-recursion
- 
+
  (defun r (x y)
    (declare (xargs :measure (nfix (+ x y))))
    (if (zp x)
@@ -104,7 +104,7 @@
 	   (s x (- y x))
 	 (- (s (- x y) y) (r (- x y) y))))))
  )
-	
+
 (defthm r-s-lemma
     (implies (and (natp x)
 		  (natp y))
@@ -251,7 +251,7 @@
 		  (= (len a) (len m))
 		  (rel-prime-moduli l)
 		  (sublistp m l))
-	     (congruent-all (crt1 a m l) a m)) 
+	     (congruent-all (crt1 a m l) a m))
   :rule-classes ())
 
 ;;The desired theorem follows easily:

@@ -6,37 +6,37 @@
   (declare (xargs :measure (make-ord (1+ (acl2-count x))
                                      (if flg 2 1) 0)
                   :guard (and (good-order-list order)
-                              (subset 
+                              (subset
                                (mytips x)
                                (get-taxa-from-order order))
                               )
                   :verify-guards nil
                   ))
-  
+
   (if flg
       (cond ((atom x) (if (null x) x (list x)))
             (t (ofringe nil x order)))
     (cond ((atom x) nil)
-          (t (omerge 
-              (ofringe t (car x) order) 
+          (t (omerge
+              (ofringe t (car x) order)
               (ofringe nil (cdr x) order) order)))))
 
 (defthmd subset-ofringe-mytips
   (subset (ofringe flg x order) (mytips x)))
 
 (verify-guards ofringe
-               :hints (("Subgoal 4'''" 
+               :hints (("Subgoal 4'''"
                         :use (:instance
                               subset-ofringe-mytips
                               (flg nil) (x x2)))
-                       ("Subgoal 2'''" 
+                       ("Subgoal 2'''"
                         :use (:instance
                               subset-ofringe-mytips
                               (flg t) (x x1)))))
 
 
 (defun fringes (flg x order)
-  (declare (xargs :guard (and 
+  (declare (xargs :guard (and
                           (good-order-list order)
                           (subset (mytips x)
                                   (get-taxa-from-order order)))
@@ -59,7 +59,7 @@
 
 (defun first-taxon (term)
   (declare (xargs :guard t))
-  (if (atom term) 
+  (if (atom term)
       term
     (first-taxon (car term))))
 
@@ -69,7 +69,7 @@
                                      (if flg 1 0))
                   :guard t))
   (if flg
-      (if (atom x) 
+      (if (atom x)
           (or (and (symbolp x)
                    (not (equal x nil)))
               (integerp x))
@@ -106,7 +106,7 @@
                                       (get-taxa-from-order
                                        order-alist)))))
   (if (assoc-equal (first-taxon x) order-alist)
-      (if (atom l) 
+      (if (atom l)
           (cons x nil)
         (if (< (cdr (assoc-equal (first-taxon x) order-alist))
                (cdr (assoc-equal (first-taxon (car l)) order-alist)))
@@ -118,22 +118,22 @@
 (defun partstotaspi (top under order)
   (declare (xargs :guard (and (good-order-list order)
                               (true-list-listp under)
-                              (subset 
-                               top 
+                              (subset
+                               top
                                (get-taxa-from-order order))
-                              (subset-list 
-                               under 
+                              (subset-list
+                               under
                                top)
                               (no-conflicts-list under)
                               )
                   :verify-guards nil))
-  (if (consp under) 
-      (orderly-cons (partstotaspi 
+  (if (consp under)
+      (orderly-cons (partstotaspi
                      (car under)
                      (get-subsets (car under)
                                   (cdr under))
                      order)
-                    (partstotaspi  
+                    (partstotaspi
                      (difference top (car under))
                      (get-non-subsets (car under)
                                       (cdr under))
@@ -179,7 +179,7 @@
 
 (defthm taspip-partstotaspi
   (implies (and (good-order-list order)
-                (subset-list under 
+                (subset-list under
                              top)
                 (subset top (get-taxa-from-order order))
                 (no-conflicts-list under))
@@ -196,7 +196,7 @@
   (implies (and (subset (mytips x) top)
                 (subset (mytips y) top))
            (subset (mytips (orderly-cons x y order)) top)))
-                
+
 (defthm subset-mytips-partstotaspi-top
   (implies (and (subset top
                         (get-taxa-from-order order))
@@ -208,9 +208,9 @@
   :hints (("Goal" :induct (partstotaspi top under order))))
 
 (verify-guards partstotaspi
-               :hints (("Subgoal 3'4'" 
+               :hints (("Subgoal 3'4'"
                         :in-theory (disable subset-mytips-partstotaspi-top)
-                        :use 
+                        :use
                         (:instance subset-mytips-partstotaspi-top
                                    (under (get-non-subsets under1 under2))
                                    (top (difference top under1))))))
@@ -257,25 +257,25 @@
                         (get-taxa-from-order order)))
            (subset-list (fringes flg x order)
                         (ofringe flg2 x order)))
-  :hints (("Subgoal *1/8.5'''" 
+  :hints (("Subgoal *1/8.5'''"
            :use ((:instance subset-ofringe-mytips
                             (flg nil)
                             (x x1))
                  (:instance subset-ofringe-mytips
                             (flg nil)
                             (x x2))))
-          ("Subgoal *1/8.4'''" 
+          ("Subgoal *1/8.4'''"
            :use ((:instance subset-ofringe-mytips
                             (flg nil)
                             (x x1))
                  (:instance subset-ofringe-mytips
                             (flg nil)
                             (x x2))))
-          ("Subgoal *1/8.2'''" 
+          ("Subgoal *1/8.2'''"
            :use (:instance subset-ofringe-mytips
                            (flg nil)
                            (x x2)))
-          ("Subgoal *1/8.1'''" 
+          ("Subgoal *1/8.1'''"
            :use (:instance subset-ofringe-mytips
                            (flg nil)
                            (x x2)))))
@@ -381,16 +381,16 @@
                       (x x1) (flg flg2))
             (:instance subset-ofringe-mytips
                       (x x2) (flg flg2))))
-          ("Subgoal *1/19'4'" :use 
+          ("Subgoal *1/19'4'" :use
            (:instance disjoint-lists-fringes))
           ("Subgoal *1/9.4'''" :use
            ((:instance subset-ofringe-mytips
                       (x x1) (flg flg2))
             (:instance subset-ofringe-mytips
                       (x x2) (flg flg2))))
-          ("Subgoal *1/9.4'4'" :use 
+          ("Subgoal *1/9.4'4'" :use
            (:instance disjoint-lists-fringes))
-          ("Subgoal *1/9.3'''"  :in-theory 
+          ("Subgoal *1/9.3'''"  :in-theory
            (disable subset-list-gives-omerge-1
                     subset-list-gives-omerge-2)
            :use
@@ -426,9 +426,9 @@
   :hints (("Goal" :induct (first-taxon x))))
 
 (defthm member-equal-first-taxon-orderly-cons-or
-  (implies (and (member-equal (first-taxon x) 
+  (implies (and (member-equal (first-taxon x)
                               (get-taxa-from-order order))
-                (member-equal (first-taxon y) 
+                (member-equal (first-taxon y)
                               (get-taxa-from-order order))
                 (good-order-list order))
            (or (equal (first-taxon (orderly-cons x y order))
@@ -446,7 +446,7 @@
            (member-equal
             (first-taxon (orderly-cons p q order))
             (append x y)))
-  :hints (("Subgoal *1/3.1'''" :use 
+  :hints (("Subgoal *1/3.1'''" :use
            (:instance member-equal-first-taxon-orderly-cons-or
                       (x p)
                       (y q)))))
@@ -478,7 +478,7 @@
 ; leave here
 (defthm orderly-cons-nil
   (implies (and (good-order-list order)
-                (member-equal (first-taxon x) 
+                (member-equal (first-taxon x)
                               (get-taxa-from-order order)))
            (equal (orderly-cons x nil order)
                   (list x))))
@@ -491,7 +491,7 @@
                 (consp top)
                 (subset top (get-taxa-from-order order))
                 (good-order-list order))
-           (member-equal 
+           (member-equal
             (first-taxon (partstotaspi top under order))
             top))
   :hints (("Goal" :induct (partstotaspi top under order))
@@ -499,10 +499,10 @@
            ;(disable not-consp-difference-subset)
            :use (:instance not-consp-difference-subset
                            (x under1)))
-          ("Subgoal *1/1.9''" :in-theory 
+          ("Subgoal *1/1.9''" :in-theory
            (disable member-equal-first-taxon-orderly-cons)
-           :use 
-           (:instance member-equal-first-taxon-orderly-cons 
+           :use
+           (:instance member-equal-first-taxon-orderly-cons
                       (x under1)
                       (y (difference top under1))
                       (p (partstotaspi under1 (get-subsets under1 under2)
@@ -530,14 +530,14 @@
            (smaller-all x (mytips y) order))
   :hints (("Goal" :in-theory (enable smaller-all))))
 
-           
+
 (defthmd helper
   (implies (and (subset fringes1 ofringe)
                 (not (consp x))
-                (member-equal 
+                (member-equal
                  (first-taxon
-                  (partstotaspi 
-                   fringes1 
+                  (partstotaspi
+                   fringes1
                    (get-subsets fringes1 fringes2) order))
                  fringes1)
                 (smaller-all x ofringe order)
@@ -550,16 +550,16 @@
                                          order))
               order))
             ))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
            (disable smaller-member-smaller-firsts
                     smaller-member-smaller)
            :use (:instance smaller-member-smaller-firsts
-                           (z (partstotaspi 
-                               fringes1 
+                           (z (partstotaspi
+                               fringes1
                                (get-subsets fringes1 fringes2) order))
                            (y ofringe))))
            )
-   
+
 (defthmd disjoint-parts-cons-gen
   (implies (and (not (member-equal x ofringe))
                 (no-conflicts-list fringes)
@@ -597,7 +597,7 @@
            (consp (ofringe flg x order))))
 
 (defthm good-fringes-list-fringes
-  (implies (and (subset (mytips x) 
+  (implies (and (subset (mytips x)
                         (get-taxa-from-order order))
                 (taspip flg x)
                 (good-order-list order))
@@ -649,7 +649,7 @@
   :hints (("Goal"
            :use (:instance smaller-all-omerge-becomes-cons
                            (y (ofringe nil x2 order))))
-          ("Subgoal 2" :in-theory 
+          ("Subgoal 2" :in-theory
            (disable ordered-less-first-smaller-all)
            :use ((:instance ordered-less-first-smaller-all
                            (y x2) (x x1))
@@ -670,7 +670,7 @@
            (not (get-subsets z y))))
 
 (defthm get-subsets-append-simplification
-  (implies (and (no-duplicatesp-equal 
+  (implies (and (no-duplicatesp-equal
                  (append tips1 tips2))
                 (true-listp x)
                 (good-fringes-list y)
@@ -681,7 +681,7 @@
                   x)))
 
 (defthm get-non-subsets-append-simplification
-  (implies (and (no-duplicatesp-equal 
+  (implies (and (no-duplicatesp-equal
                  (append tips1 tips2))
                 (true-listp x)
                 (good-fringes-list y)
@@ -715,7 +715,7 @@
            :use (:instance not-intersect-no-dups-no-dups-omerge
                            (x (list x1))
                            (y (ofringe nil x2 order))))
-          
+
 ))
 
 (defthm orderly-cons-becomes-cons
@@ -782,9 +782,9 @@
                             (x (cdr (fringes t x1 order)))
                             (y (fringes nil x2 order))
                             (z (ofringe nil x1 order))))
-           ("Subgoal 4" :in-theory 
+           ("Subgoal 4" :in-theory
             (disable subset-list-fringes-ofringe)
-            :use 
+            :use
             ((:instance subset-list-fringes-ofringe
                         (x x2)
                         (flg nil)
@@ -796,9 +796,9 @@
             (:instance subset-ofringe-mytips
                         (flg nil)
                         (x x1)))
-           ("Subgoal 2" :in-theory 
+           ("Subgoal 2" :in-theory
             (disable subset-list-fringes-ofringe)
-            :use 
+            :use
             ((:instance subset-list-fringes-ofringe
                         (x x1)
                         (flg t)
@@ -807,7 +807,7 @@
                         (flg nil)
                         (x x1))))
            ("Subgoal 1" :in-theory (disable difference-omerge)
-            :use 
+            :use
             (:instance difference-omerge
                        (x (ofringe nil x1 order))
                        (y (ofringe nil x2 order))))
@@ -833,7 +833,7 @@
                             (x (cdr (fringes t x1 order)))
                             (y (fringes nil x2 order))
                             (z (ofringe nil x1 order))))
-           ("Subgoal 1.1.3" :in-theory 
+           ("Subgoal 1.1.3" :in-theory
             (disable subset-list-fringes-ofringe)
             :use ((:instance subset-list-fringes-ofringe
                              (flg nil)
@@ -846,7 +846,7 @@
              (:instance subset-ofringe-mytips
                         (flg nil)
                         (x x1)))
-           ("Subgoal 1.1.1" :in-theory 
+           ("Subgoal 1.1.1" :in-theory
             (disable subset-list-fringes-ofringe)
             :use ((:instance subset-list-fringes-ofringe
                              (flg t)
@@ -862,7 +862,7 @@
                 (good-order-list order)
                 (not (and flg
                           (not (consp x))))
-                (no-duplicatesp-equal 
+                (no-duplicatesp-equal
                  (strip-cdrs order))
                 (no-duplicatesp-equal (mytips x))
                 (subset (mytips x)
@@ -884,7 +884,7 @@
   (implies (and (ordered-taspi x order)
                 (good-order-list order)
                 (consp x)
-                (no-duplicatesp-equal 
+                (no-duplicatesp-equal
                  (strip-cdrs order))
                 (no-duplicatesp-equal (mytips x))
                 (subset (mytips x)
@@ -896,4 +896,4 @@
                   x))
   :hints (("Goal" :use (:instance the-whole-shebang
                                   (flg t)))))
-           
+

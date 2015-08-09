@@ -572,7 +572,7 @@
            (node-listp x))
   :hints(("Goal" :in-theory (enable proper-node-listp
                                     node-listp))))
-  
+
 
 
 
@@ -678,7 +678,7 @@
           (aignet-extension-bind-scan-lookups term var (cdr table)))
          (new (cdr (assoc 'new subst))))
       `((,var . ,new))))
-           
+
 
   (defun aignet-extension-bind-inverse-fn (x var mfc state)
     (declare (xargs :mode :program
@@ -1008,7 +1008,7 @@
 
 
 
-              
+
 
 
 ;; (defthm node-by-stype-types
@@ -1305,7 +1305,7 @@
   (defthm litp-of-aignet-lit-fix
     (litp (aignet-lit-fix x aignet)))
   (verify-guards aignet-lit-fix)
-  
+
   (local (defthm lookup-id-in-extension-bind-inverse
            (implies (and (aignet-extension-bind-inverse :orig x :new y)
                          (< (nfix id) (node-count x)))
@@ -1325,7 +1325,7 @@
 
   (defthm aignet-litp-of-aignet-lit-fix
     (aignet-litp (aignet-lit-fix x aignet) aignet)
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct (aignet-lit-fix x aignet))
            (and stable-under-simplificationp
                 '(:in-theory (enable aignet-litp

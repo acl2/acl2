@@ -35,7 +35,7 @@
    ((ATMv1-keep      * *) => *) ; keep output function
    ((ATMv1-outc      * *) => *) ; outc output function
    ((ATMv1-e_detect  * *) => *) ; e_detect output function
-   ((ATMv1-reach_state *) => *) ; reachable states 
+   ((ATMv1-reach_state *) => *) ; reachable states
    ((ATMv1-error       *) => *)); error in a ATM
 
 ; - Definition of type work.local_type.FSM_state
@@ -62,7 +62,7 @@
   (local (defconst *ATMv1/max_try*  3))
 
 ; -Instances
-  (local (encapsulate            ; for register n 
+  (local (encapsulate            ; for register n
           (((ATMv1-n_reg-error *) => *))
           (defun ATMv1-n_reg-Sp (S) (REG-det-Sp S))
           (defun ATMv1-n_reg-next (I S) (REG-det-next I S))
@@ -74,7 +74,7 @@
             :functional-substitution ((REG-det-error ATMv1-n_reg-error))
             :rule-classes :rewrite)))
 
-  (local (encapsulate            ; for register ok 
+  (local (encapsulate            ; for register ok
           (((ATMv1-ok_reg-error *) => *))
           (defun ATMv1-ok_reg-Sp (S) (REG-det-Sp S))
           (defun ATMv1-ok_reg-next (I S) (REG-det-next I S))
@@ -86,7 +86,7 @@
             :functional-substitution ((REG-det-error ATMv1-ok_reg-error))
             :rule-classes :rewrite)))
 
-  (local (encapsulate            ; for register code 
+  (local (encapsulate            ; for register code
           (((ATMv1-code_reg-error *) => *))
           (defun ATMv1-code_reg-Sp (S) (REG-det-Sp S))
           (defun ATMv1-code_reg-next (I S) (REG-det-next I S))
@@ -107,7 +107,7 @@
             (ATMv1-ok_reg-Sp   (nth *ATMv1/ok_register*   x))
             (ATMv1-code_reg-Sp (nth *ATMv1/code_register* x))
             (ATMv1-FSM_statep  (nth *ATMv1/c_state* x))
-            (equal (len x) 4)))) 
+            (equal (len x) 4))))
 
 ;    + Definition of the transition function
   (local (defun ATMv1-next (current_input current_state)
@@ -132,18 +132,18 @@
                          1)
                         ((and (equal (nth *ATMv1/c_state* current_state)
                                      "test_code")
-                              (not (equal 
+                              (not (equal
                                (ATMv1-code_reg-out_value nil
                                 (nth *ATMv1/code_register* current_state))
                                (ATMv1-ok_reg-out_value nil
                                 (nth *ATMv1/ok_register* current_state))))
-                              (< (ATMv1-n_reg-out_value nil 
+                              (< (ATMv1-n_reg-out_value nil
                                   (nth *ATMv1/n_register* current_state))
                                  *ATMv1/max_try*))
-                         (1+ (ATMv1-n_reg-out_value nil 
+                         (1+ (ATMv1-n_reg-out_value nil
                               (nth *ATMv1/n_register* current_state))))
                         (T
-                         (ATMv1-n_reg-out_value nil 
+                         (ATMv1-n_reg-out_value nil
                           (nth *ATMv1/n_register* current_state))))
                   ; ld_flag
                   (or (and (equal (nth *ATMv1/c_state* current_state)
@@ -151,18 +151,18 @@
                            (nth *ATMv1/inc* current_input))
                       (and (equal (nth *ATMv1/c_state* current_state)
                                   "test_code")
-                           (not (equal 
-                                 (ATMv1-code_reg-out_value nil 
+                           (not (equal
+                                 (ATMv1-code_reg-out_value nil
                                   (nth *ATMv1/code_register* current_state))
                                  (ATMv1-ok_reg-out_value nil
                                   (nth *ATMv1/ok_register* current_state))))
-                           (< (ATMv1-n_reg-out_value nil 
+                           (< (ATMv1-n_reg-out_value nil
                                (nth *ATMv1/n_register* current_state))
                               *ATMv1/max_try*))))
                  (nth *ATMv1/n_register* current_state))
                 ; ATM/ok_register
                 (ATMv1-ok_reg-next
-                 (list 
+                 (list
                   ; in_value
                   (cond ((and (equal (nth *ATMv1/c_state* current_state)
                                      "init")
@@ -190,7 +190,7 @@
                  (nth *ATMv1/ok_register* current_state))
                 ; ATM/code_register
                 (ATMv1-code_reg-next
-                 (list 
+                 (list
                   ; in_value
                   (cond ((and (equal (nth *ATMv1/c_state* current_state)
                                      "card_in")
@@ -289,7 +289,7 @@
                     (equal (len current_input) 2))
                (or (and (equal (nth *ATMv1/c_state* current_state)
                                "test_code")
-                        (equal (ATMv1-code_reg-out_value nil 
+                        (equal (ATMv1-code_reg-out_value nil
                                 (nth *ATMv1/code_register* current_state))
                                (ATMv1-ok_reg-out_value nil
                                 (nth *ATMv1/ok_register* current_state)))
@@ -322,7 +322,7 @@
                                  (nth *ATMv1/code_register* current_state))
                                 (ATMv1-ok_reg-out_value nil
                                  (nth *ATMv1/ok_register* current_state))))
-                    (>= (ATMv1-n_reg-out_value nil 
+                    (>= (ATMv1-n_reg-out_value nil
                          (nth *ATMv1/n_register* current_state))
                         *ATMv1/max_try*)
                     (not (or (ATMv1-n_reg-e_detect nil
@@ -720,11 +720,11 @@
         (true-listp last_input) ; and all last start_op input
         (booleanp (nth 0 last_input))
         (booleanp (nth 1 last_input))
-        (equal (len last_input) 2)) 
+        (equal (len last_input) 2))
    (not (ATMv1-start_op last_input
                         (ATMv1-error (SPEC-ATMv1-rec-next input_trace
                                                           initial_state)))))
-  :rule-classes nil) 
+  :rule-classes nil)
 
 ; - If no error is injected in a ATMv1 FSM after n clock ticks,
 ; no error is detected
@@ -735,7 +735,7 @@
         (SPEC-ATMv1-Trace-Ip input_trace)) ; and all input trace
    (not (ATMv1-e_detect nil (SPEC-ATMv1-rec-next input_trace
                                                  initial_state))))
-   :rule-classes nil) 
+   :rule-classes nil)
 
 ; - If an error is injected in a ATMv1 FSM after n clock ticks,
 ; an error is detected
@@ -746,5 +746,5 @@
         (SPEC-ATMv1-Trace-Ip input_trace)) ; and all input trace
    (ATMv1-e_detect nil (ATMv1-error (SPEC-ATMv1-rec-next input_trace
                                                          initial_state))))
-   :rule-classes nil) 
+   :rule-classes nil)
 

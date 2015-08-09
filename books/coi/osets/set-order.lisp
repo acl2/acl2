@@ -37,17 +37,17 @@
 
  set-order.lisp
 
-   This is a top level file which you should use if you intend to 
-   reason about the set order.  Normally you should not do this, 
+   This is a top level file which you should use if you intend to
+   reason about the set order.  Normally you should not do this,
    but you might need it if you want to argue "from first principles"
    that list operations create sets, i.e. for efficiency reasons.
 
-   Note that merely including this file will do nothing for you.  
+   Note that merely including this file will do nothing for you.
    You need to also enable the relavent theories:
-    
+
       primitive-reasoning
         basic definitions of the primitive functions.  useful if you
-        have a very low level proof about the stucture of sets or 
+        have a very low level proof about the stucture of sets or
         something.  doesn't pertain to the order itself.
 
       order-reasoning
@@ -55,10 +55,10 @@
         primitives.  most of the membership level is based on this.
 
       cons-reasoning
-        properties relating cons to sets through the set order.  
-        this might be useful if you are introducing new "fast" 
+        properties relating cons to sets through the set order.
+        this might be useful if you are introducing new "fast"
         functions, based on cons rather than insert to construct
-        sets.  it is not easy to reason with. 
+        sets.  it is not easy to reason with.
 
 |#
 
@@ -75,7 +75,7 @@
 
 
 ; -------------------------------------------------------------------
-; primitive-reasoning 
+; primitive-reasoning
 
 (deftheory primitive-reasoning
   '(setp

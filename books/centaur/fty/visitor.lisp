@@ -62,7 +62,7 @@
 
 ;; (search-deftypes-table 'vl::vl-expr (table-alist 'flextypes-table (w state)))
 
-  
+
 (def-primitive-aggregate visitorspec
   (name       ;; Base name of the visitor.  Functions will be named <name>-<type>.
    formals    ;; Formals, with special case (varname :object) signifies the current object.
@@ -138,7 +138,7 @@
         (acl2::tmpl-sym-sublis `(("<TYPE>"    . ,(symbol-name type))
                                  ("<VISITOR>"    . ,(symbol-name x.name)))
                                '<VISITOR>-<TYPE> x.name)))))
-          
+
 (defun visitor-fnname (x type)
   (b* (((visitorspec x))
        (macroname (visitor-macroname x type)))
@@ -157,7 +157,7 @@
         (fixtype->name fty)
       type)))
 
-       
+
 
 (defun visitor-field-fn (fldname fldtype prod x)
   (b* (((visitorspec x))
@@ -176,7 +176,7 @@
                             nil
                           (cdr type))))
     nil))
-       
+
 
 (defun visitor-formal-names (formals)
   (strip-cars (std::remove-macro-args 'visitor formals nil)))
@@ -207,7 +207,7 @@
                               (visitor-formal-names x.formals))))
           ,@(and (not firstp) x.join)
           . ,rest-bindings))))
-         
+
 
 (defun visitor-return-values-aux (returns update x)
   (if (atom returns)
@@ -271,8 +271,8 @@
     (if (eql (len returns) 1)
         (car lst)
       (cons 'mv lst))))
-              
-    
+
+
 
 
 (defun visitor-prod-subbody (prod x)
@@ -310,8 +310,8 @@
       `(,prod.kind
         ,(visitor-prod-subbody prod x)
         . ,(visitor-prod-bodies (cdr prods) x)))))
-      
- 
+
+
 
 (defun visitor-sum-body (type x)
   (b* (((flexsum type))
@@ -328,7 +328,7 @@
          `(:measure ,(visitor-measure x (if type.count
                                             `(,type.count ,x.xvar)
                                           0))))))
-                        
+
 
 
 (defun visitor-list-measure (type x mrec)
@@ -338,7 +338,7 @@
     `(:measure ,(visitor-measure x (if type.count
                                        `(,type.count ,x.xvar)
                                      `(len ,x.xvar))))))
-  
+
 
 
 (defun visitor-list-body (type x)
@@ -405,8 +405,8 @@
                    (,name . ,(subst `(cdr ,x.xvar)
                                     x.xvar
                                     formal-names)))
-                  
-                  
+
+
                   ,@(and val-fnname
                          `((,(visitor-return-binder x.returns 'val nil x)
                             (,val-fnname . ,(subst `(cdar ,x.xvar)
@@ -478,7 +478,7 @@
                              (local (in-theory (disable ,name)))
                              (verify-guards ,fnname)
                              )))))
-    
+
 
 
 (defun visitor-omit-bound-types (types type-fns)
@@ -720,7 +720,7 @@
     (cons (cons (visitor-normalize-fixtype (caar type-fns) wrld)
                 (cdar type-fns))
           (visitor-normalize-type-fns (cdr type-fns) wrld))))
-        
+
 (defconst *defvisitor-template-keys*
   '(:returns :type-fns :field-fns :prod-fns :parents :short :long
     :fnname-template :renames :fixequivs :reversep :wrapper))
@@ -763,7 +763,7 @@
             "The only non-keyword argument after the name should be the formals."))
        (formals (car rest))
        (returns (cdr (assoc :returns kwd-alist)))
-       
+
        ((mv type-fns field-fns prod-fns)
         (visitor-process-fnspecs kwd-alist wrld))
 
@@ -821,7 +821,7 @@
         (visitor-omit-types (cdr types) omit-types)
       (cons (car types)
             (visitor-omit-types (cdr types) omit-types)))))
-              
+
 
 
 
@@ -1047,7 +1047,7 @@
         (visitor-membertype-collect-member-types type.val-type x wrld)))
     (mv (union-eq subtypes1 subtypes2)
         (or is-leaf1 is-leaf2))))
-       
+
 
 (defun visitor-type-collect-member-types (typename
                                           x    ;; visitorspec object
@@ -1114,7 +1114,7 @@
    (if (atom types)
        marks
      (visitor-mark-types-rec
-      (cdr types) rev-graph 
+      (cdr types) rev-graph
       (visitor-mark-type-rec (car types) rev-graph marks)))))
 
 (defun visitor-check-top-types (types marks)
@@ -1261,12 +1261,12 @@
                                    fty-graph nil nil))
        (- (fast-alist-free seen-al))
 
-       ;; 6. 
+       ;; 6.
        (forms (visitor-defvisitor-forms (reverse rev-toposort)
                                         (or (cdr (assoc :order-base kwd-alist)) 0)
                                         marks template deftypes-table
                                         kwd-alist)))
-    
+
     (and (cdr (assoc :debug kwd-alist))
          (progn$
           (cw "type graph: ~x0~%" type-graph)
@@ -1344,7 +1344,7 @@
        ((unless (eq (caar args) 'defvisitor))
         (er hard? 'defvisitor-multi "Bad arg: ~x0" (car args))
         (mv nil nil nil nil))
-       ;; defvisitor.  
+       ;; defvisitor.
        ((mv pre-/// post-///) (std::split-/// 'defvisitor (cdar args)))
        ((mv kwd-alist other-fns2)
         (extract-keywords 'defvisitor *defvisitor-inside-multi-keys* pre-/// nil))
@@ -1392,7 +1392,7 @@
                                     :fixequivs (getarg :fixequivs t kwd-alist)
                                     :name name
                                     :other-fns other-fns))
-       
+
        (def (visitor-multi multicfg types-templates)))
     `(defsection-progn ,name
        ,(append def ///-events post-///)
@@ -1468,13 +1468,13 @@ types.</p>
                     :tmp-var names1
                     :initial nil)
                    string-listp)
-   
+
    ;; Now we describe what is a base case and what we return in base cases.
    ;; This says, for any string field x, just produce (list x).  (The value
    ;; bound in the alist is a lambda or function that gets applied to the
    ;; formals, in this case just x.)
    :type-fns ((string list))
-   
+
    ;; Describes how the functions we produce should be named.  Here, <type> gets
    ;; replaced by the type of object each separate visitor function operates on.
    :fnname-template collect-strings-in-<type>)
@@ -1494,7 +1494,7 @@ accumulator:</p>
      ;; corresponds to the formal NAMES.  The :fix is optional but is needed if
      ;; the return type of your accumulator output is unconditional.
      :returns  (names-out (:acc names :fix (string-list-fix names))
-                          string-listp) 
+                          string-listp)
 
      ;; Base case specification.  This says that when visiting a
      ;; simple-tree-leaf product, use the function CONS as the visitor for the

@@ -3,12 +3,12 @@
 (in-package "ACL2")
 
 (defun fact (x)
-  (if (zp x) 
+  (if (zp x)
       1
     (* x (fact (- x 1)))))
 
 (defun tfact (x p)
-  (if (zp x) 
+  (if (zp x)
       p
     (tfact (- x 1) (* x p))))
 

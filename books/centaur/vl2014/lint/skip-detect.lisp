@@ -477,7 +477,7 @@ of three wires, but it's really suspicious to omit one out of ten.</p>"
          the list of all pattern names that were found in the expression, and
          which we need to investigate.")
    (x sd-patalist-p "The pattern produced for some particular expression.")
-   (y sd-patalist-p "The global @(see sd-patalist-p) that we assume was 
+   (y sd-patalist-p "The global @(see sd-patalist-p) that we assume was
                      produced for the entire module.")
    (ctx vl-context1-p "Where this expression came from."))
   :returns (probs sd-problemlist-p :hyp :fguard)

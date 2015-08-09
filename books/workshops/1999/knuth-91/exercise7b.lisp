@@ -8,13 +8,13 @@
 ;; Part B.
 
 ;; Use encapsulate to verify, in ACL2, that the function with two
-;; inputs that always returns the constant 0 is the unique total 
+;; inputs that always returns the constant 0 is the unique total
 ;; function satisfying the equation
 
 ;;       g(x,y)  =  if  zp(x)  then  0
 ;;                             else  g(x-1,g(x,y)).
 
-;; Recall that zp is one of ACL2's idioms for testing whether its 
+;; Recall that zp is one of ACL2's idioms for testing whether its
 ;; input is 0.
 ;; Make sure this equation is not added as a :rewrite rule.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -29,9 +29,9 @@
  ;; Signature:
  ((g (x y) t))
  ;;----------------
- ;; Provide witness: 
+ ;; Provide witness:
  (local
-  (defun 
+  (defun
       g (x y)
       (declare (ignore x y))
       0))
@@ -47,8 +47,8 @@
  ;; The recursion suggested by this equation does not halt in ACL2
  ;; and Common Lisp because of the innermost-first order of
  ;; evaluation. That is, the innermost call to g in the subterm
- ;; (g x y) is evaluated before the outermost call to g in 
- ;; (g (- x 1) (g x y)) is evaluated.  The recursion halts in a 
+ ;; (g x y) is evaluated before the outermost call to g in
+ ;; (g (- x 1) (g x y)) is evaluated.  The recursion halts in a
  ;; language that evaluates the outermost call first.
  ) ;; end encapsulate
 

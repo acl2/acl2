@@ -172,7 +172,7 @@
   (or (atom domain)
       (and (or (equal (assoc-equal (car domain) slow-al)
                       (hons-get (car domain) fast-al))
-               (cw "Fail for ~x0: slow = ~x1, fast = ~x2~%" 
+               (cw "Fail for ~x0: slow = ~x1, fast = ~x2~%"
                    (car domain)
                    (assoc-equal (car domain) slow-al)
                    (hons-get (car domain) fast-al)))

@@ -111,11 +111,11 @@
 
 (defun factor-pattern-gather-exponents (factor)
   (declare (xargs :guard (pseudo-termp factor)))
-  
+
 ; We only consider the base of an exponential when determining
 ; a match.  We handle quotep's carefully.  We want 2 to match
 ; with (expt 1/2 n), but not with 3 or (expt 3 n).  We
-; also want (expt 2 n) to match with (expt 3 n) and 
+; also want (expt 2 n) to match with (expt 3 n) and
 ; (expt 2 m) but not with (expt 3 i).  See pattern-matchp.
 
   (cond ((variablep factor)

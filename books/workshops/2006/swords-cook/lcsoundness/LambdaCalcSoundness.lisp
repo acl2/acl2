@@ -67,16 +67,16 @@
   (declare (xargs :measure (+ (if (VN-p try) 0 1) (acl2-count used))
                   :guard (and (varname-p try)
                               (varname-listp used))
-                  :guard-hints 
+                  :guard-hints
                   (("Goal" :do-not '(eliminate-destructors)
-                    :use (:theorem 
-                          (implies (natp (vn-num try)) 
+                    :use (:theorem
+                          (implies (natp (vn-num try))
                                    (natp (+ 1 (vn-num try)))))))))
   (if (not (member-equal try used))
       try
-    (pattern-match 
+    (pattern-match
      try
-     ((VN name num) 
+     ((VN name num)
       (unique-varname (VN name (1+ num)) (remove-equal try used)))
      (& (unique-varname (VN 'x 0) used)))))
 
@@ -114,7 +114,7 @@
 
 
 (defthm unique-cons-append
-  (and (not (member-equal 
+  (and (not (member-equal
              (unique-varname var (cons v (append list1 list2)))
              list2))
        (not (member-equal
@@ -128,7 +128,7 @@
   (implies (member-equal v list)
            (not (equal v (unique-varname var list)))))
 
-     
+
 (defthm varname-p-unique-varname
   (implies (varname-p try)
            (varname-p (unique-varname try used)))
@@ -188,14 +188,14 @@
                               (varname-p name)
                               (expression-p expr))
                   :verify-guards nil))
-    (pattern-match 
+    (pattern-match
      expr
 
      ((LAM !name & &) expr)
 
      ((LAM var type body)
       (if (is-used-in var value)
-          (let* ((newvar 
+          (let* ((newvar
                   (unique-varname var (cons name
                                             (append (used-var-list value)
                                                     (used-var-list body)))))
@@ -235,7 +235,7 @@
 (in-theory (disable subst-expression))
 
 
-	
+
 ;; Value-p: expr is a good value, not requiring further evaluation.
 (defun value-p (expr)
   (declare (xargs :guard (expression-p expr)))
@@ -290,7 +290,7 @@
 
 
 (defthm valid-evaluation-examples
-  (and 
+  (and
    (valid-evaluation
     '(APP (APP (LAM (VN x 0) (BOOL)
                     (LAM (VN y 0) (BOOL)
@@ -352,15 +352,15 @@
                               (stype-p type))))
 
   (pattern-match deriv
-    ((T-TRUE) 
+    ((T-TRUE)
      (and (equal term (TRUE))
           (equal type (BOOL))))
 
-    ((T-FALSE) 
+    ((T-FALSE)
      (and (equal term (FALSE))
           (equal type (BOOL))))
 
-    ((T-VAR) 
+    ((T-VAR)
      (and (VAR-p term)
           (let ((assoc (assoc-equal (VAR-name term) env)))
             (and assoc
@@ -389,7 +389,7 @@
 
 (defthm valid-typing-test
   (valid-typing nil
-                '(LAM (VN x 0) 
+                '(LAM (VN x 0)
                       (BOOL)
                       (IFELSE (VAR (VN x 0)) (FALSE) (TRUE)))
                 '(FUN (BOOL) (BOOL))
@@ -400,7 +400,7 @@
 
 
 
-;; PROGRESS -- 
+;; PROGRESS --
 
 ;; We provide a function progress-deriv which, given a non-value term
 ;; with a valid type derivation, produces a valid evaluation
@@ -420,7 +420,7 @@
          (if (value-p arg)
              (pattern-match fun
                ((LAM x & body)
-                (mv (E-AppAbs) 
+                (mv (E-AppAbs)
                     (subst-expression arg x body)))
                (& (mv nil nil)))
            (mv-let (argeval newarg)
@@ -443,7 +443,7 @@
        (mv-let (condeval newcond)
                (progress-deriv-expr cond (BOOL) condderiv)
                (if condeval
-                   (mv (E-IFCOND condeval) 
+                   (mv (E-IFCOND condeval)
                        (IFELSE newcond case1 case2))
                  (mv nil nil)))))
 
@@ -451,19 +451,19 @@
 
 
 (defun next-expr (term type deriv)
-  (mv-let (evder newexp) 
+  (mv-let (evder newexp)
     (progress-deriv-expr term type deriv)
     (declare (ignore evder))
     newexp))
 
 (defun progress-deriv (term type deriv)
-  (mv-let (evder newexp) 
+  (mv-let (evder newexp)
     (progress-deriv-expr term type deriv)
     (declare (ignore newexp))
     evder))
 
 (defthm progress
-  (implies 
+  (implies
    (and (valid-typing nil term type deriv)
         (not (value-p term)))
    (valid-evaluation term
@@ -480,7 +480,7 @@
 ;; Permutation
 
 ;; If env1 |- term : type by deriv and (env-same-bindings env1 env2)
-;; then env2 |- term : type by 
+;; then env2 |- term : type by
 ;; (permutation-deriv env1 env2 term type deriv).
 
 ;; env-same-bindings says that for each bound variable in env1,
@@ -539,7 +539,7 @@
                       (not (is-used-in var term))
                       (is-suffix suffix env1)
                       (equal env2 (insert-assoc var t2 suffix env1)))
-           (valid-typing env2 term type 
+           (valid-typing env2 term type
                          (weakening-deriv env1 var t2 suffix deriv)))
   :hints (("Goal"
            :induct (and (valid-typing env1 term type deriv)
@@ -555,8 +555,8 @@
            (type-deriv-p (weakening-deriv env1 k v suffix deriv))))
 
 (in-theory (disable weakening-deriv))
-  
-      
+
+
 
 
 
@@ -573,7 +573,7 @@
 ;; case in which alpha substitution is used.
 
 ;; - If we're substituting v1 for v2, v1 MUST be bound in env before
-;; the suffix, and v2 CANNOT be. 
+;; the suffix, and v2 CANNOT be.
 
 ;; Those conditions are covered by (alpha-subst-env-okp v1 v2 suffix
 ;; env).  We also require that v2 not be used inside the term.  Since
@@ -598,7 +598,7 @@
   :hints (("Goal" :in-theory (enable alpha-subst)))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-        
+
 (defthm alpha-subst-deriv-measure
   (= (acl2-count (alpha-subst-deriv suff env term v1 v2 d))
      (acl2-count d)))
@@ -615,7 +615,7 @@
 ;; by the result of this function.
 
 
-(defun substitution-deriv (env var val valtype val-deriv 
+(defun substitution-deriv (env var val valtype val-deriv
                                term term-type term-deriv)
   (declare (xargs :guard (and (environment-p env)
                               (varname-p var)
@@ -656,51 +656,51 @@
 
     ((T-ABS bodyder)
      (pattern-match term
-       ((LAM !var dom &) 
+       ((LAM !var dom &)
         (T-ABS (permutation-deriv
                 (list* (cons var dom) (cons var valtype) env)
                 bodyder)))
        ((LAM v dom body)
         (pattern-match term-type
-          ((FUN !dom ran) 
+          ((FUN !dom ran)
            (if (is-used-in v val)
-               (let ((newvar (unique-varname 
+               (let ((newvar (unique-varname
                               v (cons var
                                       (append (used-var-list val)
                                               (used-var-list body))))))
                  (T-ABS
-                  (substitution-deriv 
+                  (substitution-deriv
                    (cons (cons newvar dom) env)
-                   var val valtype 
+                   var val valtype
                    (weakening-deriv
                     env newvar dom env val-deriv)
                    (alpha-subst v newvar body)
                    ran
                    ;; body-der says env,v:dom|-body:ran
                    ;; need env,newvar:dom|-(alpha-subst newvar v body):ran
-                   (alpha-subst-deriv 
+                   (alpha-subst-deriv
                     env
                     (list* (cons var valtype) (cons v dom) env)
                     body v newvar
                     (permutation-deriv
                      (list* (cons v dom) (cons var valtype) env)
                      bodyder)))))
-             
+
              ;; val-deriv: env |- val : valtype
-             ;; bodyder: (cons (cons v dom) (cons (cons var valtype) env)) 
+             ;; bodyder: (cons (cons v dom) (cons (cons var valtype) env))
              ;;              |- body : ran
-             
+
              (T-ABS
               (substitution-deriv
                (cons (cons v dom) env)
-               var val valtype 
-               (weakening-deriv 
+               var val valtype
+               (weakening-deriv
                 env v dom env val-deriv)
-               body ran 
-               (permutation-deriv 
+               body ran
+               (permutation-deriv
                 (list* (cons v dom) (cons var valtype) env)
                 bodyder)))))))))))
-        
+
 
 
 
@@ -708,16 +708,16 @@
   (implies (force-and (valid-typing env val vtype vderiv)
                       (valid-typing (cons (cons var vtype) env)
                                     term ttype tderiv))
-           (valid-typing 
+           (valid-typing
             env (subst-expression val var term) ttype
             (substitution-deriv env var val vtype vderiv term ttype tderiv)))
   :hints (("Goal" :in-theory (enable subst-expression))
           ("Subgoal *1/22" :in-theory (enable is-used-in-used-var-list))
           ("Subgoal *1/21" :in-theory (enable is-used-in-used-var-list)))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
-                  
-(in-theory (disable substitution-deriv))                  
-                                   
+
+(in-theory (disable substitution-deriv))
+
 
 ;; If env |- term : type by type-deriv and term -> term2 by eval-deriv,
 ;; then this function returns a derivation that env |- term2 : type.
@@ -769,11 +769,11 @@
 
 
 (defthm preservation
-  (implies 
+  (implies
    (and (valid-typing env term type type-deriv)
         (valid-evaluation term term2 eval-deriv))
-   (valid-typing 
-    env term2 type 
+   (valid-typing
+    env term2 type
     (preservation-deriv
      env term type type-deriv eval-deriv)))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))

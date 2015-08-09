@@ -8,7 +8,7 @@
        (<= 0 x)
        (< x (expt 2 k))))
 
-; bias of a q bit exponent field is 2^(q-1)-1 
+; bias of a q bit exponent field is 2^(q-1)-1
 (defund bias (q) (- (expt 2 (- q 1)) 1) )
 
 (defthm bias-non-negative-integerp-type-prescription

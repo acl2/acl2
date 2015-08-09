@@ -8,13 +8,13 @@
 ;;; of data in memory.  C is a carry flag.  We prove that the limited (8-bit)
 ;;; precision computation delivers the correct result, provided N*(N+1)/2
 ;;; is less than 256 and N is greater than 0.
- 
+
 ;;;       LDA #0     ; load A immediate with the constant 0
 ;;;       CLC        ; clear the carry flag
 ;;; LOOP  ADC N      ; add with carry N to A
 ;;;       DEC N      ; decrement N
 ;;;       BNE LOOP   ; branch if N is non-zero to LOOP
- 
+
 ;;; Provide semantics for the 6502 DEC instruction.
 
 (defun dec (x)

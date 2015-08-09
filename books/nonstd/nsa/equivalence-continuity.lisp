@@ -65,7 +65,7 @@
 	    :use ((:instance rcfn-domain-non-trivial)))
 	   )
    )
-			     
+
 
 ;; Part 2: The classical definition of continuity implies the nonstd definition
 
@@ -121,7 +121,7 @@
 			 (< 0 delta)
 			 (forall-x-within-delta-of-x0-f-x-within-epsilon-of-classical-f x0 eps delta))))
    :classicalp nil)
- 
+
  (defthmd rcfn-classic-is-continuous
    (implies (and (inside-interval-p x0 (rcfn-classical-domain))
 		 (standardp x0)
@@ -217,8 +217,8 @@
 			(is-maximum-point-of-rcfn-classical a b max)))))
 
 (defthm maximum-point-theorem-classical-sk
-  (implies (and (inside-interval-p a (rcfn-classical-domain)) 
-		(inside-interval-p b (rcfn-classical-domain)) 
+  (implies (and (inside-interval-p a (rcfn-classical-domain))
+		(inside-interval-p b (rcfn-classical-domain))
 		(< a b))
 	   (rcfn-classical-achieves-maximum-point a b))
   :hints (("Goal"
@@ -255,8 +255,8 @@
 			(is-minimum-point-of-rcfn-classical a b min)))))
 
 (defthm minimum-point-theorem-classical-sk
-  (implies (and (inside-interval-p a (rcfn-classical-domain)) 
-		(inside-interval-p b (rcfn-classical-domain)) 
+  (implies (and (inside-interval-p a (rcfn-classical-domain))
+		(inside-interval-p b (rcfn-classical-domain))
 		(< a b))
 	   (rcfn-classical-achieves-minimum-point a b))
   :hints (("Goal"
@@ -328,7 +328,7 @@
 			 (realp delta)
 			 (< 0 delta)
 			 (forall-x-within-delta-of-x0-f-x-within-epsilon-of-hyper-f x0 eps delta)))))
- 
+
  (defthmd rcfn-hyper-is-continuous
    (implies (and (inside-interval-p x0 (rcfn-hyper-domain))
 		 ;(standardp x0)
@@ -409,7 +409,7 @@
 	  ("Subgoal 2"
 	   :use ((:instance rcfn-hyper-domain-non-trivial)))
 	  ))
-				     
+
 
 ;; Corollaries: Show the intermediate value theorem and extreme value theorems hold
 ;; for the hyperreal definition
@@ -463,8 +463,8 @@
 			(is-maximum-point-of-rcfn-hyper a b max)))))
 
 (defthm maximum-point-theorem-hyper-sk
-  (implies (and (inside-interval-p a (rcfn-hyper-domain)) 
-		(inside-interval-p b (rcfn-hyper-domain)) 
+  (implies (and (inside-interval-p a (rcfn-hyper-domain))
+		(inside-interval-p b (rcfn-hyper-domain))
 		(< a b))
 	   (rcfn-hyper-achieves-maximum-point a b))
   :hints (("Goal"
@@ -508,8 +508,8 @@
 			(is-minimum-point-of-rcfn-hyper a b min)))))
 
 (defthm minimum-point-theorem-hyper-sk
-  (implies (and (inside-interval-p a (rcfn-hyper-domain)) 
-		(inside-interval-p b (rcfn-hyper-domain)) 
+  (implies (and (inside-interval-p a (rcfn-hyper-domain))
+		(inside-interval-p b (rcfn-hyper-domain))
 		(< a b))
 	   (rcfn-hyper-achieves-minimum-point a b))
   :hints (("Goal"

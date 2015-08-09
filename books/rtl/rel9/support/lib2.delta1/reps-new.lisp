@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -53,7 +53,7 @@
 (defun esgnf_alt  (x p q) (bitn_alt x (+ p q)))
 
 
-(defun eexpof_alt (x p q) (bits_alt x (1- (+ p q)) p)) 
+(defun eexpof_alt (x p q) (bits_alt x (1- (+ p q)) p))
 
 
 (defun esigf_alt  (x p)   (bits_alt x (1- p) 0))
@@ -140,7 +140,7 @@
 		  (integerp p)
 		  (> p 0)
 		  (integerp q)
-		  (> q 0))  
+		  (> q 0))
 	     (equal (expo (edecode_alt x p q))
 		    (- (eexpof_alt x p q) (bias q))))
     :hints (("Goal" :use ((:instance expo-edecode)))))
@@ -260,8 +260,8 @@
 ;;;          REPRESENTATIONS WITH IMPLICIT MSB
 ;;;***************************************************************
 
-;;Bit vectors of length p+q, consisting of 1-bit sign field, q-bit 
-;;exponent field (bias = 2**(q-1)-1), and (p-1)-bit significand field, 
+;;Bit vectors of length p+q, consisting of 1-bit sign field, q-bit
+;;exponent field (bias = 2**(q-1)-1), and (p-1)-bit significand field,
 ;;where p > 1.
 
 ;;Field extractors:
@@ -335,7 +335,7 @@
 	     (iff (nencodingp_alt x p q) (not (dencodingp_alt x p q))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance not-both-nencodingp-and-dencodingp)))))
-  
+
 
 
 ;;Encoding functions:
@@ -424,7 +424,7 @@
 		  (integerp p)
 		  (> p 1)
 		  (integerp q)
-		  (> q 0))  
+		  (> q 0))
 	     (equal (expo (ndecode_alt x p q))
 		    (- (iexpof_alt x p q) (bias q))))
     :hints (("Goal" :use ((:instance expo-ndecode)))))
@@ -489,7 +489,7 @@
 	     (equal
 	      (expo (idecode_alt x p q))
 	      (cond ((nencodingp_alt x p q)
-		     (- (iexpof_alt x p q) (bias q)))         
+		     (- (iexpof_alt x p q) (bias q)))
 		    ((dencodingp_alt x p q)
 		     (+ 2 (- p) (- (bias q)) (expo (isigf_alt x p)))))))
     :hints (("Goal" :use ((:instance expo-idecode)))))

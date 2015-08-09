@@ -163,7 +163,7 @@
   ///
   (verify-guards svstmt-assign->subst)
 
-  
+
   (defthm svex-p-nonnil-compound-recognizer
     (implies (svex-p x) x)
     :rule-classes :compound-recognizer)
@@ -304,7 +304,7 @@
            :hints(("Goal" :in-theory (enable 4vec-? 3vec-?
                                              4vec-reduction-or
                                              3vec-reduction-or)))))
-           
+
 
   (defthm svstmt-merge-branches-aux-lookup-under-iff
     (iff (svex-lookup k (svstmt-merge-branches-aux key-alist cond then-st else-st st-acc))
@@ -413,7 +413,7 @@
             :induct (svstmt-merge-branches-aux
                      key-alist cond then-st else-st st-acc)
             :do-not-induct t))))
-    
+
 
 
 (define svstmt-merge-branches ((cond svex-p)
@@ -640,7 +640,7 @@
                               ~a0 (conflicts: ~a1)"
                             :args (list x conf-acc))
                   (make-svstate)))
-             ;; 
+             ;;
              (composed-rhs (svex-compose x.rhs st.blkst))
              (composed-rhs (if (and (eq nb-delayp t)
                                     (not x.blockingp))
@@ -724,7 +724,7 @@
             :hints (("goal" :use ((:instance svex-maskfree-rewrite-correct
                                    (env env1)))
                      :in-theory (disable svex-maskfree-rewrite-correct)))))
-                     
+
 
   (local (defthm svex-fix-under-iff
            (svex-fix x)
@@ -930,7 +930,7 @@
   (verify-guards svstmtlist-write-masks)
 
   (deffixequiv-mutual svstmt-write-masks))
-                         
+
 
 
 
@@ -948,7 +948,7 @@
                             (list (svstmt-assign '(concat 1 found '(0 . -1))
                                                  '(zerox 1 (rsh (b- 3 (zerox 8 i))
                                                                 (zerox 3 data))))
-                                  
+
                                   (svstmt-if '(zerox 1 found)
                                              (list (svstmt-assign '(concat 8 res '(0 . -1))
                                                                   '(zerox 8 i)))

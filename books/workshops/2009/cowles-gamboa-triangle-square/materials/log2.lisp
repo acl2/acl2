@@ -25,7 +25,7 @@
  (implies (posp n)
 	   (and (<= (expt 2 (flog2 n))
 		    n)
-		(< n 
+		(< n
 		   (expt 2 (+ 1 (flog2 n)))))))
 
 (defun
@@ -37,7 +37,7 @@
      (if (= n 1)
 	  0
 	  (if (evenp n)
-	      (+ 1 
+	      (+ 1
 		 (clog2 (/ n 2)))
 	      (+ 1
 		 (clog2 (/ (+ 1 n) 2)))))))
@@ -123,7 +123,7 @@
 (defthm
  clog2-is-correct-upper
  (implies (natp n)
-	   (<= n 
+	   (<= n
 	       (expt 2 (clog2 n))))
  :hints (("Subgoal *1/8"
 	   :use (:instance
@@ -157,14 +157,14 @@
      (if (= n 1)
 	  1
 	  (if (evenp n)
-	      (+ 1 
+	      (+ 1
 		 (nbr-calls-clog2 (/ n 2)))
 	      (+ 1
 		 (nbr-calls-clog2 (/ (+ 1 n) 2)))))))
 
 ;;                           ceiling
 ;;                             lg2
-;; (nbr-calls-clog2 0)  = 1    
+;; (nbr-calls-clog2 0)  = 1
 ;; (nbr-calls-clog2 1)  = 1     0
 ;; (nbr-calls-clog2 2)  = 2     1
 ;; (nbr-calls-clog2 3)  = 3     2
@@ -198,7 +198,7 @@
 	  (+ 1 (nbr-calls-flog2 (- n 1))))))
 
 ;;                           floor  ceiling
-;;                            lg2     lg2       
+;;                            lg2     lg2
 ;; (nbr-calls-flog2 0)  =  1
 ;; (nbr-calls-flog2 1)  =  2   0       0
 ;; (nbr-calls-flog2 2)  =  3   1       1
@@ -221,14 +221,14 @@
 ;; (nbr-calls-flog2 32) =  7   5       5
 ;; (nbr-calls-flog2 33) =  8   5       6
 
-;; conjecture: 
+;; conjecture:
 ;; For n >= 3
 ;;   2 + (floorlg2 n) <= (nbr-calls-flog2 n) <= 2 * (ceilinglg2 n)
 ;; This conjecture seems difficult for ACL2 to verify.
 
 ;; Modify the above conjecture.
 ;; conjecture:
-;; For n >= 1 
+;; For n >= 1
 ;;   2 + (floorlg2 n) <= (nbr-calls-flog2 n) <= 2 + 2 * (floorlg2 n)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

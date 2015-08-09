@@ -169,7 +169,7 @@
     (implies (and (bvecp x n)
 		  (<= n m)
                   (case-split (integerp m))
-                  )		  
+                  )
 	     (bvecp x m)))
 
 

@@ -55,7 +55,7 @@
 ;;a list of all the signal names that occur in a term:
 
 (mutual-recursion
- 
+
  (defun signals-occurring-in-term (term defs)
    (declare (xargs :mode :program))
    (cond ((not (consp term))
@@ -67,7 +67,7 @@
 		    (signals-occurring-in-term-list (cdr term) defs)))
 	 (t
 	  (signals-occurring-in-term-list (cdr term) defs))))
- 
+
  (defun signals-occurring-in-term-list (terms defs)
    (declare (xargs :mode :program))
    (if (consp terms)
@@ -89,16 +89,16 @@
     ()))
 
 ;;A supporter of a signal is a direct supporter or a supporter of a
-;;direct supporter.  The function CHECK-CIRCUIT determines whether 
+;;direct supporter.  The function CHECK-CIRCUIT determines whether
 ;;there exists a signal that supports itself.  Its definition depends
 ;;a function FIND-CYCLE, which takes a signal and a set of signals and
 ;;looks for a path of direct support from the signal that either contains
 ;;a cycle or leads to some member of the set:
 
 (mutual-recursion
- 
+
  (defun find-cycle (sig set checked defs)
-   ;;Look for 
+   ;;Look for
    (declare (xargs :mode :program))
    (cond ((member sig checked)
 	  ())
@@ -109,7 +109,7 @@
 			   (cons sig set)
 			   checked
 			   defs))))
- 
+
  (defun find-cycle-list (list set checked defs)
    (declare (xargs :mode :program))
    (and (consp list)
@@ -148,8 +148,8 @@
 	(t
 	 (ordered-signals-aux (cdr names)
 			      defs
-			      (cons (car names) 
-				    (ordered-signals-aux 
+			      (cons (car names)
+				    (ordered-signals-aux
 				      (direct-supporters (car names) defs)
 				      defs
 				      list))))))
@@ -179,7 +179,7 @@
 	(let ((supporters (direct-supporters (car names) defs)))
 	  (if (null supporters)
 	      (collect-cycle-numbers (cdr names)
-				     defs 
+				     defs
 				     (cons (cons (car names) 1) alist))
 	    (let ((num (cdr (assoc (car supporters) alist))))
 	      (and (consistent-cycle-numbers (cdr supporters)
@@ -187,13 +187,13 @@
 					     alist)
 		   (case (car (find-signal (car names) defs))
 		     (defwire
-			 (collect-cycle-numbers (cdr names) 
-						defs 
+			 (collect-cycle-numbers (cdr names)
+						defs
 						(cons (cons (car names) num)
 						      alist)))
 		     (defreg
-			 (collect-cycle-numbers (cdr names) 
-						defs 
+			 (collect-cycle-numbers (cdr names)
+						defs
 						(cons (cons (car names)
 							    (1+ num))
 						      alist)))))))))
@@ -211,7 +211,7 @@
 
 
 (mutual-recursion
- 
+
  (defun remove-parentheses (term names)
    (declare (xargs :mode :program))
    (cond ((not (consp term))
@@ -223,7 +223,7 @@
 	 (t
 	  (cons (car term)
 		(remove-parentheses-list (cdr term) names)))))
- 
+
  (defun remove-parentheses-list (terms names)
    (declare (xargs :mode :program))
    (if (consp terms)
@@ -233,7 +233,7 @@
 
 (defun get-sig-bodies (names defs)
   (if (consp names)
-      (cons (cadddr (find-signal (car names) defs)) 
+      (cons (cadddr (find-signal (car names) defs))
 	    (get-sig-bodies (cdr names) defs))
     ()))
 
@@ -321,7 +321,7 @@
 (defun compile-pipeline-fn (name output state)
   (declare (xargs :mode :program))
   (let ((path (if (eql (char name 0) #\/) name (string-append (cbd) name))))
-    (mv-let 
+    (mv-let
      (defs state)
      (read-list (string-append path ".trans") state)
      (let ((cycle (check-circuit defs)))
@@ -334,7 +334,7 @@
 		     (inputs (get-input-names defs))
 		     (noninputs (set-difference-equal names inputs))
 		     (args (direct-supporters-list noninputs defs))
-		     (bodies (remove-parentheses-list 
+		     (bodies (remove-parentheses-list
 			      (get-sig-bodies noninputs defs) names))
 		     (list `((in-package "ACL2")
                              (include-book

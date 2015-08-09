@@ -42,7 +42,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;   bversions   ;;;;;;;;;;;;;;;;;;;;;;
-           
+
 (verify-guards btree-to-fringe-help)
 (verify-guards btree-to-fringe)
 (verify-guards btree-to-fringe-length)
@@ -55,7 +55,7 @@
   (implies
    (alistp-gen dbfringe-frequencies)
    (alistp-gen
-    (bfringe-frequencies1 l dbterms 
+    (bfringe-frequencies1 l dbterms
                           dbfringe-frequencies ta))))
 
 (verify-guards bfringe-frequencies)
@@ -66,7 +66,7 @@
 (defthm mc-flatten-cdr-first-rev-flatten
   (equal (mc-flatten-cdr-first x a)
          (app (taspi-rev (taspi-flatten x)) a)))
-   
+
 (defthm consp-btree-to-fringe-from-x
   (implies (and (consp full-taxa-list-tree)
                 x)
@@ -101,7 +101,7 @@
                 (subset-list (btrees-to-fringes bdd-fringes2
                                                 full-taxa-list-tree)
                              x))
-           (subset-list (btrees-to-fringes 
+           (subset-list (btrees-to-fringes
                          (merge-bdd-fringes bdd-fringes1
                                             bdd-fringes2
                                             full-taxa-list-tree
@@ -118,13 +118,13 @@
   (implies (subset-list (btrees-to-fringes bdd-fringes
                                            full-taxa-list-tree)
                         x)
-           (subset-list (btrees-to-fringes 
+           (subset-list (btrees-to-fringes
                          (sort-bdd-fringes bdd-fringes
                                            full-taxa-list-tree
                                            taxon-index-alist)
                          full-taxa-list-tree)
                         x)))
-                     
+
 (verify-guards sort-bdd-fringes)
 ;; ================ end of sort/merge- bdd-fringes ==========
 (verify-guards make-good-fringes)
@@ -144,7 +144,7 @@
   (good-depths (make-good-fringes x y z) y))
 
 (defthm subset-list-btrees-make-good-fringes
-  (subset-list (btrees-to-fringes 
+  (subset-list (btrees-to-fringes
                 (make-good-fringes list y taxa-list) y)
                taxa-list))
 
@@ -180,7 +180,7 @@
                 (balanced-tree full-taxa-list-tree)
                 (<= (depth outstanding-taxa)
                     (depth full-taxa-list-tree))
-                (subset (btree-to-fringe outstanding-taxa 
+                (subset (btree-to-fringe outstanding-taxa
                                          full-taxa-list-tree)
                         (get-taxa-from-taxon-index taxon-index-alist)))
            (taspip nil (btree-to-fringe outstanding-taxa
@@ -222,7 +222,7 @@
                                            full-taxa-list-tree2)))
                 (balanced-tree (cons full-taxa-list-tree1
                                      full-taxa-list-tree2)))
-           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help 
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help
                                   x
                                   (cons full-taxa-list-tree1
                                         full-taxa-list-tree2))))
@@ -236,7 +236,7 @@
                                            full-taxa-list-tree2)))
                 (balanced-tree (cons full-taxa-list-tree1
                                      full-taxa-list-tree2)))
-           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help 
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help
                                   x
                                   (cons full-taxa-list-tree1
                                         full-taxa-list-tree2))))
@@ -254,11 +254,11 @@
                     (depth full-taxa-list-tree))
                 (balanced-tree full-taxa-list-tree)
                 )
-           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help 
-                                  x 
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help
+                                  x
                                   full-taxa-list-tree)))
-                   (taspi-rev (taspi-flatten (btree-to-fringe-help 
-                                  y 
+                   (taspi-rev (taspi-flatten (btree-to-fringe-help
+                                  y
                                   full-taxa-list-tree)))))
   :hints (("Goal" :induct (full-ind x y full-taxa-list-tree))
           ("Subgoal *1/47.7.1.3"
@@ -276,7 +276,7 @@
            :use (:instance first-from-full-flatten-innerds
                            (x x1) (full-taxa-list-tree
                                    full-taxa-list-tree1)))
-          ("Subgoal *1/46.4.1.2" 
+          ("Subgoal *1/46.4.1.2"
            :in-theory (disable first-from-full-flatten-innerds)
            :use (:instance first-from-full-flatten-innerds
                            (x x1) (full-taxa-list-tree
@@ -293,16 +293,16 @@
                     (depth full-taxa-list-tree))
                 (balanced-tree full-taxa-list-tree)
                 )
-           (subset (btree-to-fringe x 
+           (subset (btree-to-fringe x
                                     full-taxa-list-tree)
-                   (btree-to-fringe y 
+                   (btree-to-fringe y
                                     full-taxa-list-tree)))
   :hints (("Goal" :in-theory (enable btree-to-fringe))))
 
 (defthm valid-bdd-list-through-merge
   (implies (and (valid-bdd-list x)
                 (valid-bdd-list y))
-           (valid-bdd-list (merge-bdd-fringes 
+           (valid-bdd-list (merge-bdd-fringes
                             x y
                             full-taxa-list-tree
                             taxon-index-alist))))
@@ -310,8 +310,8 @@
 
 (defthm valid-bdd-list-through-sort
   (implies (valid-bdd-list x)
-           (valid-bdd-list (sort-bdd-fringes 
-                            x 
+           (valid-bdd-list (sort-bdd-fringes
+                            x
                             full-taxa-list-tree
                             taxon-index-alist)))
   :hints (("Goal" :in-theory (enable sort-bdd-fringes))))
@@ -324,7 +324,7 @@
                 (balanced-tree full-taxa-list-tree)
                 (subset (taspi-rev (taspi-flatten full-taxa-list-tree))
                         list))
-           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help 
+           (subset (taspi-rev (taspi-flatten (btree-to-fringe-help
                                   under
                                   full-taxa-list-tree)))
                    list)))
@@ -382,7 +382,7 @@
   :hints (("Goal" :expand ((btree-to-fringe
                     (q-and-c2 required-subtrees1 under)
                     full-taxa-list-tree)
-                           (btree-to-fringe required-subtrees1 
+                           (btree-to-fringe required-subtrees1
                                             full-taxa-list-tree)))))
 
 (defthm to-make-easier
@@ -513,7 +513,7 @@
 ;   ~/
 ;   Arguments:
 ;      (1) x - a tree (usually a subtree of some larger tree)
-;      (2) ta - a mapping of taxa-names their bdd based representation 
+;      (2) ta - a mapping of taxa-names their bdd based representation
 
 ;  Details: Arguments can actually be more general.  Another way to think of
 ;           this is that it returns the taxa names in the tree x, represented
@@ -574,19 +574,19 @@
 #||
 (fringe-frequencies-brlens '((((a b) (c d)) . 4) ((e . 5) f)))
 
-(bfringe-brlens '((((a b) (c d)) . 4) ((e . 5) f)) 
+(bfringe-brlens '((((a b) (c d)) . 4) ((e . 5) f))
                 '(a b c d e f))
 
 (bfringe-list-brlens '(((((a b) (c d)) . 4) ((e . 5) f))
-                       ) 
+                       )
                      '(a b c d e f))
 
 (bfringe-frequencies-brlens '(((((a b) (c d)) . 4) ((e . 5) f))
-                              ) 
+                              )
                             '(a b c d e f))
 
 (term-to-bfringes-brlens '(((((a b) (c d)) . 4) ((e . 5) f))
-                              ) 
+                              )
                             '(a b c d e f))
 
 ||#

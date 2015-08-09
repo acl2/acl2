@@ -1,4 +1,4 @@
-;; Exercise file to accompany 
+;; Exercise file to accompany
 ;;
 ;; Ivy: A Preprocessor and Proof Checker for First-order Logic
 ;;
@@ -7,8 +7,8 @@
 ;;
 ;; Solution for exercise 2.
 ;;
-;; Prove that if an interpretation contains a function func, 
-;; and if a formula does not contain the corresponding function 
+;; Prove that if an interpretation contains a function func,
+;; and if a formula does not contain the corresponding function
 ;; symbol, then evaluation of the formula in the interpretation is
 ;; independent of the occurrence of func.  Assume that func
 ;; is the first function in the interpretation.
@@ -16,7 +16,7 @@
 (in-package "ACL2")
 
 ;; Note 1: the intent of this exercise is to foster a
-;; fuller understanding of the evaluation function. 
+;; fuller understanding of the evaluation function.
 ;; We spare the reader from the tedious task of
 ;; proving supporting lemmas by providing them in the
 ;; following book:
@@ -68,8 +68,8 @@
 		      (equal (feval-d f dom (list* (domain i) (relations i)
 						   (cons (cons func n) func)
 						   (functions i)))
-			     (feval-d f dom i))))) 
-  :hints (("Goal" 
+			     (feval-d f dom i)))))
+  :hints (("Goal"
 	   :do-not generalize
 	   :in-theory (enable eval-atomic)
 	   :induct (feval-i flg f dom i)))

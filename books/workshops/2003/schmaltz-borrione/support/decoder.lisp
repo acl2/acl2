@@ -96,21 +96,21 @@
 
 ; function suggesting the induction scheme for the proof of the UNICITY theorem
 
-(local 
+(local
  (defun function_hint_th2_select (p Card_S sel)
   (cond ((zp p) 0)
 	((and (not (integerp Card_S))
 	      (not (integerp sel)))
 	 0)
-	(t (+ 1 (function_hint_th2_select  (1- p) 
-					   (1- Card_S) 
+	(t (+ 1 (function_hint_th2_select  (1- p)
+					   (1- Card_S)
 					   (1- sel))))))
 )
 
 ; UNIQUENESS OF THE SELECTION
 (defthm pth_select_=_0
   (implies (and (integerp p) (integerp Card_S)
-		(<= 0 p) (< p Card_S) 
+		(<= 0 p) (< p Card_S)
 		(not (equal p i)))
 	   (equal (nth p (select Card_S i)) 0))
   :hints (("GOAL"
@@ -164,7 +164,7 @@
                                 FUNCTIONAL-SELF-INVERSION-OF-/))))
 ; Prove 1.70
 
-; decoder returns 1 
+; decoder returns 1
 
 (defthm decoder_nth_1
   (implies (and (< HADDR (* Card_S MEM_SIZE))
@@ -173,7 +173,7 @@
 		(integerp Card_S))
 	   (equal (nth  (floor HADDR MEM_SIZE)
 			(decoder MEM_SIZE Card_S HADDR)) 1))
-  :hints (("GOAL" 
+  :hints (("GOAL"
 	   :in-theory (disable floor ))))
 ; Prove 0.11
 
@@ -204,7 +204,7 @@
 (defthm consp_DECODER
   (implies (and (integerp Card_S) (< 0 Card_S))
 	   (consp (DECODER MEM_SIZE Card_S HADDR))))
- 
+
 
 (in-theory (disable DECODER))
 

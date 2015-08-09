@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -38,8 +38,8 @@
 (defthmd lior0-land0-1
   (equal (lior0 x (land0 y z n) n)
          (land0 (lior0 x y n) (lior0 x z n) n))
-  :hints (("Goal" :use ((:instance logior-logand 
-				   (x (bits x (1- n) 0)) 
+  :hints (("Goal" :use ((:instance logior-logand
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior0 land0))))
@@ -47,8 +47,8 @@
 (defthmd lior0-land0-2
   (equal (lior0 (land0 y z n) x n)
          (land0 (lior0 x y n) (lior0 x z n) n))
-  :hints (("Goal" :use ((:instance logior-logand 
-				   (x (bits x (1- n) 0)) 
+  :hints (("Goal" :use ((:instance logior-logand
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior0 land0))))
@@ -56,8 +56,8 @@
 (defthmd land0-lior0-1
   (equal (land0 x (lior0 y z n) n)
          (lior0 (land0 x y n) (land0 x z n) n))
-  :hints (("Goal" :use ((:instance logand-logior 
-				   (x (bits x (1- n) 0)) 
+  :hints (("Goal" :use ((:instance logand-logior
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior0 land0))))
@@ -65,8 +65,8 @@
 (defthmd land0-lior0-2
   (equal (land0 (lior0 y z n) x n)
          (lior0 (land0 x y n) (land0 x z n) n))
-  :hints (("Goal" :use ((:instance logand-logior 
-				   (x (bits x (1- n) 0)) 
+  :hints (("Goal" :use ((:instance logand-logior
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior0 land0))))
@@ -75,7 +75,7 @@
   (equal (lior0 (land0 x y n) (lior0 (land0 x z n) (land0 y z n) n) n)
          (lior0 (land0 x y n) (land0 (lxor0 x y n) z n) n))
   :hints (("Goal" :use ((:instance log3
-				   (x (bits x (1- n) 0)) 
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))
 				   (z (bits z (1- n) 0))))
            :in-theory (enable lior0 land0 lxor0))))
@@ -86,7 +86,7 @@
                (land0 y (lnot x n) n)
                n))
   :hints (("Goal" :use ((:instance logxor-rewrite-2
-				   (x (bits x (1- n) 0)) 
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))))
            :in-theory (enable lior0 land0 lxor0))))
 
@@ -94,7 +94,7 @@
   (equal (lnot (lxor0 x y n) n)
          (lxor0 (lnot x n) y n))
   :hints (("Goal" :use ((:instance lnot-logxor
-				   (x (bits x (1- n) 0)) 
+				   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))))
            :in-theory (enable lxor0))))
 

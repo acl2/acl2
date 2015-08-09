@@ -22,7 +22,7 @@
 (defun MsgT (trans) (nth 2 trans))
 (defun DestT (trans) (nth 3 trans))
 
-(defun T-ids (Transts) 
+(defun T-ids (Transts)
   ;; function that grabs the ids of a list of trans.
   (if (endp Transts)
       nil
@@ -56,7 +56,7 @@
     (cons (DestT (car trs))
           (T-dests (cdr Trs)))))
 
-;; The following predicate checks that each transaction has 
+;; The following predicate checks that each transaction has
 ;; the right number of arguments
 (defun validfield-transactionp (trans)
   ;; trans = (id A msg B)
@@ -64,7 +64,7 @@
        (consp (cdr trans))         ;; (A msg B)
        (consp (cddr trans))        ;; (msg B)
        (consp (cdddr trans))        ;; (B)
-       (null (cddddr trans)))) 
+       (null (cddddr trans))))
 
 
 ;; The following predicate recognizes a valid list of transactions
@@ -77,11 +77,11 @@
            (MsgT trans)                             ;; msg /= nil
            (not (equal (OrgT trans) (DestT trans))) ;; A /= B
            (Validfields-T (cdr Transts))))))
-           
-;; now we define the predicate that recognizes a valid list of 
+
+;; now we define the predicate that recognizes a valid list of
 ;; transactions
 (defun Transactionsp (Transts NodeSet)
-  (let ((T-ids (T-ids Transts))) 
+  (let ((T-ids (T-ids Transts)))
     (and (Validfields-T Transts)
          (true-listp Transts)
          (subsetp (T-orgs Transts) NodeSet)
@@ -104,7 +104,7 @@
 (defun DestM (m) (nth 3 m))
 
 ;; We need a function that grabs the ids of a list of missives
-(defun M-ids (M) 
+(defun M-ids (M)
   (if (endp M)
       nil
     (append (list (caar M)) (M-ids (cdr M)))))
@@ -121,7 +121,7 @@
       nil
     (append (list (DestM (car M))) (M-dests (cdr M)))))
 
-;; We also need a function that grabs the frames of 
+;; We also need a function that grabs the frames of
 ;; a list of missives
 (defun M-frms (M)
   ;; grabs the frames of M
@@ -130,9 +130,9 @@
     (let* ((msv (car M))
            (m-frm (FrmM msv)))
       (append (list m-frm) (M-frms (cdr M))))))
-  
 
-;; The following predicate checks that each missive has 
+
+;; The following predicate checks that each missive has
 ;; the right number of arguments
 (defun validfield-missivep (m)
   ;; m = (id A frm B)
@@ -140,7 +140,7 @@
        (consp (cdr m))         ;; (A frm B)
        (consp (cddr m))        ;; (frm B)
        (consp (cdddr m))        ;; (B)
-       (null (cddddr m)))) 
+       (null (cddddr m))))
 
 ;; The following predicate recognizes a valid list of missives (partially)
 (defun Validfields-M (M)
@@ -153,10 +153,10 @@
            (not (equal (OrgM msv) (DestM msv))) ;; A /= B
            (Validfields-M (cdr M))))))
 
-;; now we define the predicate that recognizes a valid list of 
+;; now we define the predicate that recognizes a valid list of
 ;; transactions
 (defun Missivesp (M NodeSet)
-  (let ((M-ids (M-ids M))) 
+  (let ((M-ids (M-ids M)))
     (and (Validfields-M M)
          (subsetp (M-orgs M) NodeSet)
          (subsetp (M-dests M) NodeSet)
@@ -178,7 +178,7 @@
 (defun RoutesV (tr) (nth 2 tr))
 
 ;; We need a function that grabs the ids of a list of travels
-(defun V-ids (TrLst) 
+(defun V-ids (TrLst)
   (if (endp TrLst)
       nil
     (append (list (caar TrLst)) (V-ids (cdr TrLst)))))
@@ -194,7 +194,7 @@
            (consp (cdr r))
            (validfield-route (cdr routes))))))
 
-;; The following predicate checks that each travel has 
+;; The following predicate checks that each travel has
 ;; the right number of arguments
 (defun validfield-travelp (tr)
   ;; tr = (id frm Routes)
@@ -203,7 +203,7 @@
        (consp (cddr tr))        ;; (Routes) = ( ((R1) (R2) ...))
        (consp (caddr tr))       ;; ((R1) (R2) ...)
        (validfield-route (caddr tr))
-       (null (cdddr tr)))) 
+       (null (cdddr tr))))
 
 ;; The following predicate recognizes a valid list of missives (partially)
 (defun Validfields-TrLst (TrLst)
@@ -213,13 +213,13 @@
       (and (validfield-travelp tr)
            (natp (IdV tr))                     ;; id is a natural
            (FrmV tr)                           ;; frm /= nil
-           (true-listp (RoutesV tr))           
+           (true-listp (RoutesV tr))
            (Validfields-TrLst (cdr TrLst))))))
-           
-;; now we define the predicate that recognizes a valid list of 
+
+;; now we define the predicate that recognizes a valid list of
 ;; transactions
 (defun TrLstp (TrLst )
-  (let ((V-ids (V-ids TrLst))) 
+  (let ((V-ids (V-ids TrLst)))
     (and (Validfields-TrLst TrLst)
          (true-listp TrLst)
          (No-Duplicatesp V-ids))))
@@ -245,7 +245,7 @@
 (defun DestR (rst) (nth 1 rst))
 (defun MsgR (rst) (nth 2 rst))
 
-(defun R-ids (R) 
+(defun R-ids (R)
   ;; function that grabs the ids of a list of results
   (if (endp R)
       nil
@@ -266,14 +266,14 @@
           (R-msgs (cdr Results)))))
 
 
-;; The following predicate checks that each result has 
+;; The following predicate checks that each result has
 ;; the right number of arguments
 (defun validfield-resultp (rst)
   ;; tr = (Id Dest Msg)
   (and (consp rst)
        (consp (cdr rst))         ;; (Dest Msg)
        (consp (cddr rst))        ;; (Msg)
-       (null (cdddr rst)))) 
+       (null (cdddr rst))))
 
 ;; The following predicate recognizes a valid list of results (partially)
 (defun Validfields-R (R NodeSet)
@@ -285,11 +285,11 @@
            (MsgR rst)                           ;; msg /= nil
            (member (DestR rst) NodeSet)
            (Validfields-R (cdr R) NodeSet)))))
-           
-;; now we define the predicate that recognizes a valid list of 
+
+;; now we define the predicate that recognizes a valid list of
 ;; results
 (defun Resultsp (R NodeSet)
-  (let ((R-ids (R-ids R))) 
+  (let ((R-ids (R-ids R)))
     (and (Validfields-R R NodeSet)
          (true-listp R)
          (No-Duplicatesp R-ids))))
@@ -310,7 +310,7 @@
       0
     (let* ((top (car att))
 	   (rem-att (cadr top)))
-      (+ (nfix rem-att) 
+      (+ (nfix rem-att)
          (SumOfAttempts (cdr att))))))
 
 ;;-------------------- end of Attempts -------------------------------------

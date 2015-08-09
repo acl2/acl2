@@ -12,7 +12,7 @@
 	(implies (and (integerp v) (= gcd 1)) (= (* v gcd) v))
 	:rule-classes nil)
 
-(defthm pg-hack-2 
+(defthm pg-hack-2
  (implies
   (and
    (natp x)
@@ -26,7 +26,7 @@
  :rule-classes nil)
 
 
-(defthm pg-hack-3 
+(defthm pg-hack-3
  (implies
   (and
    (integerp a)
@@ -59,7 +59,7 @@
 
 (defthm pg-hack-5
  (implies
-   (and 
+   (and
      (integerp v1)
      (integerp v2)
      (integerp v3)
@@ -80,13 +80,13 @@
   :rule-classes nil)
 
 (defthm pg-hack-7
-(IMPLIES 
- (AND 
-  (equal decomp-a-b  
-	 V)             
+(IMPLIES
+ (AND
+  (equal decomp-a-b
+	 V)
   (equal (* decomp-a-b
 	    div)
-	 res) 
+	 res)
   (INTEGERP res))
  (INTEGERP (* V div)))
 :hints (("Goal" :in-theory nil))
@@ -94,7 +94,7 @@
 
 
 
-(defthm divides-both 
+(defthm divides-both
  (implies
   (and
    (natp x)
@@ -104,12 +104,12 @@
    (integerp v)
    (integerp (/ v y))
    (integerp (/ v x))
-   (rel-prime x y)) 
+   (rel-prime x y))
   (integerp (/ v (* x y))))
- :hints (("Goal" :in-theory (current-theory 'ground-zero) 
+ :hints (("Goal" :in-theory (current-theory 'ground-zero)
         :use (rel-prime
-              pg-hack-2 
-              pg-hack-4 
+              pg-hack-2
+              pg-hack-4
               pg-hack-6
 	     (:instance pg-hack-7 (div (/ (* X Y)))
                                   (res  (+ (* (* V (/ Y)) (A X Y)) (* (* V (/ X)) (B X Y))))
@@ -145,7 +145,7 @@
    (integerp (/ x z))
    (integerp (/ y z)))
   (= z 1))
- :hints (("Goal" :use (rel-prime g-c-d 
+ :hints (("Goal" :use (rel-prime g-c-d
 		       (:instance Nonneg-int-gcd-is-LARGEST-common-divisor-<= (d z)))))
  :rule-classes nil)
 
@@ -159,18 +159,18 @@
    (rel-prime a b)
    (integerp (/ (* b c) a)))
   (integerp (/ c a)))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
 	   ((:instance rel-prime (x a) (y b))
             (:instance g-c-d (x a) (y b))
 	    (:instance mod-0-intp (n c) (d a))
 	    (:instance mod-0-intp (n (* b c)) (d a))
 	    (:instance Divisor-of-product-divides-factor (y b) (z a) (x c))))))
- 
-	
 
-(defthm ck1 
+
+
+(defthm ck1
  (implies
-  (and 
+  (and
    (integerp x)
    (posp y)
    (integerp (/ x y)))
@@ -189,16 +189,16 @@
  (implies
   (and
    (integerp c))
-   (= (+ (* c a x) (* c b y)) 
+   (= (+ (* c a x) (* c b y))
       (* c (+ (* a x) (* b y)))))
  :rule-classes nil)
 
-(defthm ck4 
+(defthm ck4
  (implies
   (and
    (integerp c)
    (= (+ (* a x) (* b y)) 1))
-   (= (+ (* c a x) (* c b y)) c)) 
+   (= (+ (* c a x) (* c b y)) c))
  :hints (("Goal" :use (ck2 ck3)))
  :rule-classes nil)
 
@@ -215,7 +215,7 @@
   (= k (+ (* k (a m n) m) (* k (b m n) n))))
  :hints (("Goal" :use (
 		       (:instance ck4 (a (a m n)) (b (b m n)) (x m) (y n) (c k))
-		       (:instance a-b-thm (x m) (y n)) 
+		       (:instance a-b-thm (x m) (y n))
 		       (:instance rel-prime (x m) (y n)))))
  :rule-classes nil)
 
@@ -293,7 +293,7 @@
  :rule-classes nil)
 
 
-	
+
 (defthm gcd-divides-both
  (implies
   (and
@@ -304,7 +304,7 @@
    (integerp (/ y (g-c-d x y)))))
  :hints (("Goal" :in-theory (enable g-c-d))))
 
- 
+
 (defthm divboth1
   (implies
   (and
@@ -330,7 +330,7 @@
   (and
    (integerp (/ m       (g-c-d m (* n k))))
    (integerp (/ k       (g-c-d m (* n k))))))
-   :hints (("Goal" :use  (	    
+   :hints (("Goal" :use  (
 			  (:instance g-c-d (x m) (y (* n k)))
 			  (:instance Nonneg-int-gcd->-0 (n m) (d (* n k)))
 			  (:instance divboth1 (v m) (x n) (y k))
@@ -350,7 +350,7 @@
 	   :use ( divboth2
 		  (:instance g-c-d (x m) (y (* n k)))
 		  (:instance Nonneg-int-gcd->-0 (n m) (d (* n k)))
-		  (:instance only-divisor-of-coprimes-is-1 
+		  (:instance only-divisor-of-coprimes-is-1
 			     (z (g-c-d m (* n k)))
 			     (x m)
 			     (y k))))))
@@ -396,14 +396,14 @@
  (implies
    (and
    (posp-all m)
-   (natp el) 
+   (natp el)
    (rel-prime-all el m))
    (rel-prime el (prod m)))
  :hints ( ("Goal" :in-theory (disable rel-prime natp) :induct (len m))
 	  ("Subgoal *1/2''" :use ( (:instance rel-prime (x el) (y 1))
 				   (:instance g-c-d (x el) (y 1))
 				   (:instance Nonneg-int-gcd-1-right (x el))))
-	  ("Subgoal *1/1'" :use 
+	  ("Subgoal *1/1'" :use
 	   (helper
 	    helper2
 	    (:instance prod (l m))
@@ -412,7 +412,7 @@
 
 (defthm helper3
  (implies
-  (and 
+  (and
    (not (endp m))
    (rel-prime-moduli m))
   (and
@@ -421,7 +421,7 @@
    (natp (car m))
    (< 0 (car m)))))
 
-  
+
 
 (defthm diff-prod-means-cong-all-mod-list-inv-00
   (implies
@@ -431,9 +431,9 @@
     (divided-by-all v m))
   (integerp (/ v (prod m))))
  :hints (("Goal" :induct (len m))
-	 ("Subgoal *1/1" 
+	 ("Subgoal *1/1"
 	  :in-theory '((:definition posp) (:definition natp))
-	  :use 
+	  :use
 	  (
            helper
            helper3
@@ -449,24 +449,24 @@
 
 
 
-(in-theory 
+(in-theory
  (union-theories (current-theory 'ground-zero)
 		 '((:definition prod)
 		   (:definition natp)
 		   (:definition natp-all)
 		   (:definition congruent)
 		   (:definition congruent-all)
-		   (:definition posp)           
+		   (:definition posp)
 		   (:executable-counterpart prod)
 		   (:type-prescription prod)
 		   (:induction prod)
 		   (:executable-counterpart posp)
 		   (:type-prescription posp)
-		   (:definition posp-all)       
+		   (:definition posp-all)
 		   (:executable-counterpart posp-all)
 		   (:type-prescription posp-all)
 		   (:induction posp-all)
-		   (:definition divided-by-all) 
+		   (:definition divided-by-all)
 		   (:executable-counterpart divided-by-all)
 		   (:type-prescription divided-by-all)
 		   (:induction divided-by-all) )))
@@ -523,12 +523,12 @@
 
 
 (defthm product-divided-by-all
- (implies 
+ (implies
   (posp-all m)
   (divided-by-all (prod m) m))
  :hints (("Subgoal *1/1.2''"
 	  :induct t)
-	 ("Goal" 
+	 ("Goal"
 	  :in-theory (disable commutativity-of-*)
 	  :induct (len m))))
 
@@ -577,20 +577,20 @@
 
 
 (defthm nonint-equ-modneg-2
-  (implies 
-   (and 
+  (implies
+   (and
     (integerp x)
     (integerp y)
-    (not (integerp (/ x y)))) 
+    (not (integerp (/ x y))))
    (equal (mod (- x) y) (- y (mod x y))))
   :hints (("Goal" :in-theory (enable mod)))
   :rule-classes nil)
 
 (defthm int-equ-modneg
-  (implies 
-   (and 
-    (integerp x) 
-    (integerp y) 
+  (implies
+   (and
+    (integerp x)
+    (integerp y)
     (not (equal y 0))
     (integerp (/ x y)))
    (and
@@ -612,10 +612,10 @@
    (equal (mod (- x y) z)
 	  (mod (- (mod x z) (mod y z)) z)))
   :hints (("Goal"
-	 :use ( 
+	 :use (
 		 (:instance mod-+-exp (y (- y)))
 		 (:instance nonint-equ-modneg-2 (x y) (y z))
-		 (:instance cancel-mod-+-exp 
+		 (:instance cancel-mod-+-exp
 			    (i (/ z z))
 			    (x z)
 			    (y (- (mod x z) (mod y z))))
@@ -684,7 +684,7 @@
    (integerp m)
    (not (equal m 0)))
   (integerp (/ (- b1 b2) m)))
- :hints (("Goal" :in-theory nil 
+ :hints (("Goal" :in-theory nil
 	  :use (mod-of-0-is-0
 		       (:instance mod-=-0-exp (x (- b1 b2)) (y m))
 		       (:instance mod-- (x b1) (y b2) (z m)))))
@@ -704,7 +704,7 @@
  :rule-classes nil)
 
 
-(defthm congruence-holds-on-product 
+(defthm congruence-holds-on-product
  (implies
   (and
    (= (mod b1 m) (mod b2 m))
@@ -719,7 +719,7 @@
 	  (integerp-k-dividing2
 	   int-as-int2-+-diff-times-k2
 	   (:instance mod-x+i*y-y-exp (x (* a b2)) (y m) (i (* a (/ (- b1 b2) m))))))))
-	
+
 (thm
  (implies
   (and
@@ -732,7 +732,7 @@
 	  :use
 	  ( (:instance fix (x m))
 	    (:instance r-mod-mod (x b) (i 1) (z m))))))
-   
+
 (defthm congruence-holds-on-product-i
  (implies
   (and
@@ -742,14 +742,14 @@
   (equal (mod (* a (mod b m)) m) (mod (* a b) m)))
  :hints (("Goal"
 	  :use
-	  ( 
+	  (
 	    (:instance r-mod-mod (x b) (i 1) (z m))
 	    (:instance congruence-holds-on-product (b1 (mod b m)) (b2 b))))))
-	   
+
 
 
 (defun times (a b)
-  (if (zp b) 
+  (if (zp b)
       0
     (+ a (times a (1- b)))))
 
@@ -766,7 +766,7 @@
       (times a (- b))
     (times a b)))
 
-(defthm openup-times 
+(defthm openup-times
  (implies
   (not (zp y))
   (equal (times x y) (+ (times x (1- y)) x)))
@@ -775,18 +775,18 @@
 
 
 (thm
- (IMPLIES 
-  (AND 
+ (IMPLIES
+  (AND
    (integerp y)
    (integerp z)
    (posp z)) ;;; see before
    (equal (mod (times (mod x z) (mod y z)) z)
 	  (mod (times (mod x z) (mod (+ (mod (1- y) z) (mod 1 z)) z)) z)))
  :hints (("Subgoal 2" :in-theory '((:definition posp)))
-	 ("Goal" :use (			 
+	 ("Goal" :use (
 		       (:theorem (implies (integerp y) (equal y (+ (1- y) 1))))
 		       (:instance mod-+-exp (x (1- y)) (y 1) (z z))))))
-   
+
 
 
 (defthm h1
@@ -799,8 +799,8 @@
 
 
 (defthm h2
- (IMPLIES 
-  (AND 
+ (IMPLIES
+  (AND
    (integerp x)
    (integerp y)
    (integerp z)
@@ -810,15 +810,15 @@
    (INTEGERP (+ (MOD (+ -1 Y) Z) (MOD 1 Z)))
    (natp (mod (+ (mod (1- y) z) (mod 1 z)) z))))
 :hints (("Goal" :in-theory '((:definition posp) (:definition natp) )
-	 :use ( h1 
+	 :use ( h1
 		 (:instance h1 (x (1- y)))
 		 (:instance h1 (x 1))
 		 (:instance h1 (x (+ (mod (1- y) z) (mod 1 z)))))))
 :rule-classes nil)
 
 (defthm h3
- (IMPLIES 
-  (AND 
+ (IMPLIES
+  (AND
    (integerp x)
    (integerp y)
    (integerp z)
@@ -827,14 +827,14 @@
    (mod (times (mod x z) (mod (+ (mod (1- y) z) (mod 1 z)) z)) z)
    (mod (* (mod x z) (+ (mod (1- y) z) (mod 1 z)) ) z)))
   :hints (("Goal"
-	   :in-theory '((:definition natp) (:definition posp)) 
-	   :use 
+	   :in-theory '((:definition natp) (:definition posp))
+	   :use
 	   ( h2
 	     (:instance times-is-* (b (mod (+ (mod (1- y) z) (mod 1 z)) z)) (a (mod x z)))
 	     (:instance congruence-holds-on-product-i (b (+ (mod (1- y) z) (mod 1 z))) (a (mod x z)) (m z)))))
   :rule-classes nil)
 
-   
+
 (defthm mod-of-1-is-1
  (implies
   (and
@@ -851,15 +851,15 @@
   :rule-classes nil)
 
 (defthm h5->1
- (IMPLIES 
-  (AND 
+ (IMPLIES
+  (AND
    (integerp x)
    (integerp y)
    (integerp z)
    (> z 1))
    (equal (mod (times (mod x z) (mod y z)) z)
 	  (mod (+ (* (mod x z) (mod (1- y) z)) (mod x z) ) z)))
- :hints (("Subgoal 2" :in-theory '((:definition posp) 
+ :hints (("Subgoal 2" :in-theory '((:definition posp)
 				   (:rewrite distributivity)
 				   (:rewrite commutativity-of-*)
 				   (:rewrite unicity-of-1)))
@@ -869,11 +869,11 @@
 			 (:instance sss1 (x (mod x z)))
 			 (:theorem (implies (integerp y) (equal y (+ (1- y) 1))))
 			 (:instance mod-+-exp (x (1- y)) (y 1) (z z))))))
-   
+
 
 (defthm h5-=1
- (IMPLIES 
-  (AND 
+ (IMPLIES
+  (AND
    (integerp x)
    (integerp y)
    (integerp z)
@@ -883,8 +883,8 @@
 
 
 (defthm h5->=1
- (IMPLIES 
-  (AND 
+ (IMPLIES
+  (AND
    (integerp x)
    (integerp y)
    (posp z))
@@ -902,8 +902,8 @@
   (equal (mod (+ a b) m)
 	 (mod (+ (mod a m) b) m)))
   :hints (("Goal"
-	   :in-theory '((:definition fix) 
-			(:rewrite unicity-of-1) 
+	   :in-theory '((:definition fix)
+			(:rewrite unicity-of-1)
 			(:definition posp))
 	   :use
 	  ( (:instance integerp-mod-exp (i a) (j m))
@@ -917,8 +917,8 @@
 ;;; here now.
 
 (defthm h7
- (IMPLIES 
-  (AND 
+ (IMPLIES
+  (AND
    (NOT (ZP Y))
    (EQUAL (MOD (TIMES X (+ -1 Y)) Z)
 	  (MOD (TIMES (MOD X Z) (MOD (+ -1 Y) Z)) Z))
@@ -927,13 +927,13 @@
    (posp z))
    (equal (mod (times (mod x z) (mod y z)) z)
 	  (mod (+ (mod (* (mod x z) (mod (1- y) z)) z) (mod x z) ) z)))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory nil
-	  :use 
+	  :use
 	  (h5->=1
 	   h2
 	   ;h3
-	  (:instance h6 
+	  (:instance h6
 		     (a (* (mod x z) (mod (1- y) z)))
 		     (b (mod x z))
 		     (m z))))))
@@ -941,8 +941,8 @@
 
 
 (thm
- (IMPLIES 
-  (AND 
+ (IMPLIES
+  (AND
    (NOT (ZP Y))
    (EQUAL (MOD (TIMES X (+ -1 Y)) Z)
 	  (MOD (TIMES (MOD X Z) (MOD (+ -1 Y) Z)) Z))
@@ -957,7 +957,7 @@
    (not (equal z 0)))
   (equal (mod (times x y) z) (mod (times (mod x z) (mod y z)) z)))
  :hints (("Subgoal *1/3" :use
-	  ( openup-times 
+	  ( openup-times
 	    (:instance mod-+-exp (x (times x (1- y))) (y x) (z z))
 
 ;;; end new stuff
@@ -971,8 +971,8 @@
     (and
      (congruent-mod (car l1) (car l2) (car m))
      (congruent-all-mod-list (cdr l1) (cdr l2) (cdr m)))))
- 
-(defthm cong-all-mod-implies-cong-all-mod-list 
+
+(defthm cong-all-mod-implies-cong-all-mod-list
  (implies
   (and
    (congruent-all-mod v1 l1 m)
@@ -981,7 +981,7 @@
 
 
 (defthm rel-prime-is-pos
- (implies 
+ (implies
   (rel-prime-moduli m)
   (and
    (posp-all m)
@@ -996,7 +996,7 @@
   (integerp (/ (- a) b)))
  :rule-classes nil)
 
- 
+
 (defthm axp1
   (implies
    (and
@@ -1025,10 +1025,10 @@
     (congruent-all-mod v2 l2 m)
     (integerp (/ (- v1 v2) (prod m))))
    (congruent-all-mod-list l1 l2 m))
-  :hints (("Goal" 
-	   :in-theory '((:definition posp) 
+  :hints (("Goal"
+	   :in-theory '((:definition posp)
 			(:rewrite unicity-of-1))
-	   :use 
+	   :use
 	   ( axp1
 	     rel-prime-is-pos
 	     cong-all-mod-implies-cong-all-mod-list
@@ -1077,7 +1077,7 @@
    (implies
     (cong-sg-val v1 v2 m)
     (cong-sg-val (- v1 v2) 0 m)))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable mod-=-0-exp mod-- mod-+-exp cancel-mod-+-exp rewrite-mod-mod-exp r-mod-mod-cancel integerp-mod-exp)
 	  :induct (len m))
 	 ("Subgoal *1/1" :use  (
@@ -1140,9 +1140,9 @@
     (congruent-all-mod v1 l1 m)
     (congruent-all-mod v2 l2 m))
    (equal
-    (congruent-all-mod-list l1 l2 m) 
+    (congruent-all-mod-list l1 l2 m)
     (integerp (/ (- v1 v2) (prod m)))))
-  :hints (("Goal" :use (diff-prod-means-cong-all-mod-list 
+  :hints (("Goal" :use (diff-prod-means-cong-all-mod-list
 			diff-prod-means-cong-all-mod-list-inv))))
 
 
@@ -1164,7 +1164,7 @@
    (implies (equal resdiv 0) (equal (* resdiv prod) 0))
    (implies (< resdiv 0)     (<     (* resdiv prod) 0))
    (implies (> resdiv 0)     (>=    (* resdiv prod) prod)))))
-   
+
 
 (defthm a-number-in-arange-is-0-if-no-rest
  (implies
@@ -1258,7 +1258,7 @@
  :hints (("Goal" :in-theory (enable mod rem)))
  :rule-classes nil)
 
-(defun crtmod (a m) 
+(defun crtmod (a m)
   (mod (crt a m) (prod m)))
 
 
@@ -1274,9 +1274,9 @@
   (and
    (posp m)
    (natp a))
-  (natp (mod a m))) 
+  (natp (mod a m)))
  :hints (("Goal" :in-theory '((:rewrite integerp-mod-exp)
-			      (:definition natp) 
+			      (:definition natp)
 			      (:definition posp))
 	  :use ( (:instance mod-type-exp (x a) (y m))
 			(:instance mod-=-0-exp  (x a) (y m))))))
@@ -1293,10 +1293,10 @@
    (natp (crtmod a m))
    (< (crtmod a m) (prod m))
    (congruent-all-mod (crtmod a m) a m)))
- :hints (("Goal" :use 
+ :hints (("Goal" :use
 	  ( (:instance chinese-remainder-theorem (values a) (rns m))
 	    sils2
-	    (:instance congruent-all-same-with-mod 
+	    (:instance congruent-all-same-with-mod
 		       (l a)
 		       (x (crt a m)))
 	    (:instance modulo-prod-has-same-congruence
@@ -1313,7 +1313,7 @@
    (natp-all (build-values-by-rns val m))
    (= (len (build-values-by-rns val m)) (len m))))
  :hints (("Goal" :in-theory (enable rel-prime-moduli))))
-   
+
 
 (defthm crt-inversion
  (implies
@@ -1322,11 +1322,11 @@
    (natp val)
    (< val (prod rns)))
   (equal (crtmod (build-values-by-rns val rns) rns) val))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :use ( (:instance chinese-remainder-2 (a (build-values-by-rns val rns)) (m rns))
 		 (:instance lemma-x (m rns))
 		 (:instance values-built-by-rns-are-congruent-indeed (m rns))
-		 (:instance unique-inversion 
+		 (:instance unique-inversion
                             (m rns)
 			    (v1 val)
 			    (v2 (crtmod (build-values-by-rns val rns) rns))
@@ -1335,7 +1335,7 @@
 
 
 
-  
+
 
 
 ;;;;;;;;;; Corollaries for inversion
@@ -1361,5 +1361,5 @@
   (equal
    (build-values-by-rns (mod x (prod m)) m)
    (build-values-by-rns x m))))
-  
+
 

@@ -15,7 +15,7 @@
 
 (include-book "wfftype")
 (include-book "permutations")
-	
+
 ;;--------------------------------------
 ;; Function pull (f) moves quantifiers toward the root of a formula
 ;; as much as possible, using rules like
@@ -27,13 +27,13 @@
 ;;
 ;; Pull-top-left pulls quantifiers up from the left side, and
 ;; pull-top-right from the right side.
-;; 
+;;
 ;; The first functions I wrote were a little simpler than these.
 ;; Originally, when pull-top right got to the base case, it called
 ;; pull-top-left.  Now, they are independent (and the same except for
 ;; left/right):  we first pull-top-left, then call down-right,
 ;; which goes back down to the 'and or 'or and calls pull-top-right.
-;; 
+;;
 ;;     or                      q1                   q1
 ;;    / \           ->         q2        ->         q2
 ;;   q1 q3    pull-top-left    or    down-right     q3
@@ -41,7 +41,7 @@
 ;;   A   B                   A  q3                  or
 ;;                              q4                 / \
 ;;                               B                A   B
-;; 
+;;
 ;; I changed to the current version, because I had trouble getting
 ;; a soundness proof for the original.
 
@@ -55,7 +55,7 @@
       (list (car g) (a1 g) (pull-top-right op f (a2 g)))
       (list op f g)))
 
-(defun pull-top-left (op f g)			 
+(defun pull-top-left (op f g)
   (declare (xargs :guard (and (or (equal op 'and) (equal op 'or))
 			      (wff f) (nnfp f)
 			      (wff g) (nnfp f))))
@@ -97,7 +97,7 @@
 		(or (equal op 'and) (equal op 'or)
 		    (equal op 'imp) (equal op 'iff)))
 	   (wff (pull-top-right op f g))))
-						 
+
 (defthm pull-top-right-nnfp
   (implies (and (nnfp f)
 		(nnfp g)
@@ -105,14 +105,14 @@
 	   (nnfp (pull-top-right op f g)))
   :hints (("Goal"
 	   :induct (pull-top-right op f g))))
-						 
+
 (defthm pull-top-left-wff
   (implies (and (wff f)
 		(wff g)
 		(or (equal op 'and) (equal op 'or)
 		    (equal op 'imp) (equal op 'iff)))
 	   (wff (pull-top-left op f g))))
-						 
+
 (defthm pull-top-left-nnfp
   (implies (and (nnfp f)
 		(nnfp g)
@@ -120,7 +120,7 @@
 	   (nnfp (pull-top-left op f g)))
   :hints (("Goal"
 	   :induct (pull-top-left op f g))))
-						 
+
 (defthm down-right-wff
   (implies (wff f)
 	   (wff (down-right f))))

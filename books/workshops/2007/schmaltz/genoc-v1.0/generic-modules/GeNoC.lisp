@@ -26,20 +26,20 @@
   ;; - the set of existing nodes, NodeSet
   ;; - the list of attempts, att
   ;; - an accumulator of travels, TrLst
-  ;; 
+  ;;
   ;; we set the measure to be SumOfAttempts(att)
   (declare (xargs :measure (SumOfAttempts att)))
   (if (zp (SumOfAttempts att))
       ;; if every attempt has been consumed, we return the accumulator
       ;; TrLst and the remaining missives M
       (mv TrLst M)
-    ;; else, 
+    ;; else,
     (let ((V (Routing M NodeSet)))
       ;; we compute the routes. This produces the travel list V.
       (mv-let (Scheduled Delayed newAtt)
               ;; we call function scheduling
               (Scheduling V att)
-              ;; we enter the recursive call and accumulate the 
+              ;; we enter the recursive call and accumulate the
               ;; scheduled travels
               (GeNoC_t (ToMissives Delayed) NodeSet newAtt
                        (append Scheduled TrLst))))))
@@ -49,7 +49,7 @@
 ;; ----------------------
 (defun CorrectRoutes-GeNoC_t (routes m-dest)
   ;; GeNoC_t is correct if every element ctr of the output list
-  ;; is such that (a) FrmV(ctr) = FrmM(m) and (b) forall r in 
+  ;; is such that (a) FrmV(ctr) = FrmM(m) and (b) forall r in
   ;; RoutesV(ctr) Last(r) = DestM(m). For the m such that
   ;; IdM(m) = IdV(ctr).
   ;; This function checks that (b) holds.
@@ -73,8 +73,8 @@
            (m-dest (DestM m)))
       (and (equal v-frm m-frm)
            (CorrectRoutes-GeNoC_t routes m-dest)
-           (GeNoC_t-correctness1 (cdr TrLst) 
-                                 (cdr M/TrLst))))))  
+           (GeNoC_t-correctness1 (cdr TrLst)
+                                 (cdr M/TrLst))))))
 
 (defun GeNoC_t-correctness (TrLst M)
   ;; before checking correctness we filter M
@@ -86,22 +86,22 @@
 ;; Non tail definition of GeNoC_t
 ;; ------------------------------
 (defun GeNoC_t-non-tail-Comp (M NodeSet att)
-  ;; we define a non tail function that computes the 
+  ;; we define a non tail function that computes the
   ;; first output of GeNoC_t, i.e the completed transactions
   (declare (xargs :measure (SumOfAttempts att)))
   (if (zp (SumOfAttempts att))
       ;; if every attempt has been consumed, we return the accumulator
       ;; TrLst and the remaining missives M
       nil
-    ;; else, 
+    ;; else,
     (let ((V (Routing M NodeSet)))
       ;; we compute the routes. This produces the travel list V.
       (mv-let (Scheduled Delayed newAtt)
               ;; we call function scheduling
               (Scheduling V att)
-              ;; we enter the recursive call and accumulate the 
+              ;; we enter the recursive call and accumulate the
               ;; scheduled travels
-              (append (GeNoC_t-non-tail-Comp (ToMissives Delayed) 
+              (append (GeNoC_t-non-tail-Comp (ToMissives Delayed)
                                              NodeSet newAtt)
                       Scheduled)))))
 
@@ -120,15 +120,15 @@
 ;; Proof of GeNoC_t correctness
 ;; ----------------------------
 
-;; first we add a lemma that tells ACL2 that 
+;; first we add a lemma that tells ACL2 that
 ;; converting the travels that are routed and delayed
 ;; produced a valid list of missives
 (defthm missivesp-mv-nth1-scheduling-routing
   (let ((NodeSet (NodeSetGenerator Params)))
     (implies (and (Missivesp M NodeSet)
                   (ValidParamsp Params))
-             (Missivesp 
-              (ToMissives (mv-nth 1 
+             (Missivesp
+              (ToMissives (mv-nth 1
                                   (scheduling (routing M NodeSet)
                                               att)))
               NodeSet)))
@@ -148,26 +148,26 @@
          (append (v-ids a) (v-ids b))))
 
 (defthm extract-sublst-append
-  ;; filtering according to an append is the append 
+  ;; filtering according to an append is the append
   ;; of the filtering.
   (equal (extract-sublst M (append id1 id2))
          (append (extract-sublst M id1)
                  (extract-sublst M id2))))
 
 
-;; then to split the proof is two cases, we replace the 
-;; append by a conjunction. 
+;; then to split the proof is two cases, we replace the
+;; append by a conjunction.
 ;; the rule below allows this decomposition:
 
 (defthm correctroutess1-append
   (implies (and (equal (len a) (len c))
                 (equal (len b) (len d)))
-           (equal (genoc_t-correctness1 (append a b) 
+           (equal (genoc_t-correctness1 (append a b)
                                         (append c d))
                   (and (Genoc_T-Correctness1 a c)
                        (Genoc_T-Correctness1 b d)))))
 
-;; To have this lemma used we need to prove some 
+;; To have this lemma used we need to prove some
 ;; additional properties between len and extract-sublst
 ;; and len and v-ids (e.g. a is a call to v-ids)
 
@@ -190,7 +190,7 @@
            (subsetp x z)))
 
 (defthm v-ids-GeNoC_t-non-tail-comp
-  ;; the ids of the output of genoc_t-non-tail-comp is a 
+  ;; the ids of the output of genoc_t-non-tail-comp is a
   ;; subset of those of M
   ;; for this theorem the rule ids-routing is useful
   (let ((NodeSet (NodeSetGenerator Params)))
@@ -199,13 +199,13 @@
              (let ((Gnt (Genoc_T-Non-Tail-Comp M NodeSet att)))
                (subsetp (V-ids Gnt) (M-ids M)))))
   :hints (("GOAL"
-           :in-theory 
+           :in-theory
            (disable missivesp TrLstp))
           ("Subgoal *1/3"
-           :use 
+           :use
            ((:instance subsetp-scheduled-delayed-ids
                        (TrLst (Routing M (NodeSetGenerator Params)))))
-           :in-theory 
+           :in-theory
            (disable subsetp-scheduled-delayed-ids Missivesp TrLstp))))
 
 (defthm not-in-no-duplicatesp-equal-append
@@ -224,7 +224,7 @@
            (not-in x scheduled)))
 
 (defthm not-in-v-ids-genoc_t-non-tail-comp
-  ;; if the ids of a list have no common element with 
+  ;; if the ids of a list have no common element with
   ;; another ids then the output of genoc_t-non-tail-comp does
   ;; not introduce any new id
   (let ((NodeSet (NodeSetGenerator Params)))
@@ -261,22 +261,22 @@
            :induct (genoc_t-non-tail-comp M (nodeSetGenerator Params) att)
            :in-theory (disable missivesp TrLstp))
           ("Subgoal *1/2"
-           :use 
-           ((:instance 
+           :use
+           ((:instance
              not-in-v-ids-genoc_t-non-tail-comp
-             (delayed (tomissives 
+             (delayed (tomissives
                        (mv-nth 1 (scheduling
                                   (routing M (nodeSetGenerator Params))
                                   att))))
              (att (mv-nth 2 (scheduling
                              (routing M (nodeSetGenerator Params))
                              att)))
-             (Sched-ids (v-ids (mv-nth 0 (scheduling 
+             (Sched-ids (v-ids (mv-nth 0 (scheduling
                                           (routing M (nodeSetGenerator Params))
                                           att)))))
-            (:instance trlstp-scheduled 
+            (:instance trlstp-scheduled
                        (TrLst (routing M (Nodesetgenerator Params)))))
-           :in-theory 
+           :in-theory
            (disable trlstp-scheduled mv-nth trlstp
                     not-in-v-ids-genoc_t-non-tail-comp Missivesp))))
 
@@ -291,7 +291,7 @@
 
 (defthm ToMissives-Delayed/Rtg
   ;; we prove that the conversion of the delayed travels
-  ;; into a list of missives is equal to the filtering 
+  ;; into a list of missives is equal to the filtering
   ;; of the initial list of missives M according to the ids
   ;; of the delayed travels.
   (let ((NodeSet (NodeSetGenerator Params)))
@@ -308,9 +308,9 @@
            :do-not '(eliminate-destructors generalize fertilize)
            :use ((:instance ToMissives-extract-sublst
                             (L (Routing M (NodeSetGenerator Params)))
-                            (ids 
-                             (V-ids (mv-nth 1 
-                                            (scheduling 
+                            (ids
+                             (V-ids (mv-nth 1
+                                            (scheduling
                                              (Routing M (NodeSetGenerator Params))
                                              att)))))
                  (:instance delayed-travel-correctness
@@ -322,7 +322,7 @@
                                subsetp-scheduled-delayed-ids))))
 
 (defthm valid-missive-assoc-equal
-  ;; a list of a member of a valid list of missives 
+  ;; a list of a member of a valid list of missives
   ;; is a valid list of missives
   (implies (and (Missivesp M NodeSet)
                 (member-equal e (M-ids M)))
@@ -331,11 +331,11 @@
 (defthm missivesp-cons
   ;; lemma used in the next defthm
   ;; if we cons a valid missive to a filtered valid list
-  ;; of missives, we obtain a valid list of missives if the 
+  ;; of missives, we obtain a valid list of missives if the
   ;; the id of the consed missive is not in the filter
   (implies (and (missivesp (extract-sublst M ids) nodeset)
                 (missivesp (list (assoc-equal e M)) nodeset)
-                (not (member-equal e ids)) 
+                (not (member-equal e ids))
                 (subsetp ids (M-ids M)))
            (missivesp (cons (assoc-equal e M)
                             (extract-sublst M ids))
@@ -377,25 +377,25 @@
             (declare (ignore scheduled/rtg))
             (implies (and (Missivesp M NodeSet)
                           (ValidParamsp Params))
-                     (subsetp 
-                      (V-ids 
-                       (genoc_t-non-tail-comp 
+                     (subsetp
+                      (V-ids
+                       (genoc_t-non-tail-comp
                         (extract-sublst M (v-ids delayed/rtg))
                         NodeSet newAtt))
                       (V-ids delayed/rtg)))))
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
-           :use 
+           :use
            ((:instance subsetp-scheduled-delayed-ids
                        (TrLst (Routing M (NodeSetGenerator Params))))
             (:instance trlstp-delayed
                        (TrLst (routing M (NodeSetGenerator Params))))
-            ;; the following is required because in the conclusion of the 
+            ;; the following is required because in the conclusion of the
             ;; rule there is no call to extract-sublst
             (:instance v-ids-GeNoC_t-non-tail-comp
-                       (M (extract-sublst 
-                           M 
+                       (M (extract-sublst
+                           M
                            (V-ids (mv-nth 1 (scheduling
                                              (routing M (NodeSetGenerator Params))
                                              att)))))
@@ -417,7 +417,7 @@
            (equal (V-frms sd-trlst) (V-frms TrLst/sd-ids))))
 
 (defthm m-frms-to-v-frms
-  ;; this rule is only used to rewrite the next theorem to 
+  ;; this rule is only used to rewrite the next theorem to
   ;; the previous one.
   (equal (m-frms (toMissives x))
          (v-frms x)))
@@ -429,21 +429,21 @@
   (mv-let (Scheduled Delayed newAtt)
           (scheduling TrLst att)
           (declare (ignore Delayed newAtt))
-          (implies (and (TrLstp TrLst) 
+          (implies (and (TrLstp TrLst)
                         (ValidParamsp Params))
-                   (equal 
+                   (equal
                     (V-frms scheduled)
-                    (M-frms 
+                    (M-frms
                      (ToMissives (extract-sublst TrLst
                                                  (v-ids scheduled)))))))
   :hints (("GOAL"
            :use ((:instance s/d-travel-v-frms
-                            (sd-trlst 
+                            (sd-trlst
                              (mv-nth 0 (scheduling TrLst att)))
                             (TrLst/sd-ids
-                           (extract-sublst 
-                            TrLst 
-                            (v-ids 
+                           (extract-sublst
+                            TrLst
+                            (v-ids
                              (mv-nth 0 (scheduling TrLst att))))))
                (:instance scheduled-travels-correctness))
            :in-theory (disable TrLstp s/d-travel-v-frms mv-nth))))
@@ -452,7 +452,7 @@
 
 (defthm Scheduled/Rtg_not_modify_frames
   ;; we prove the the frames of the scheduled travels produced
-  ;; by scheduling and routing are equal to the frames 
+  ;; by scheduling and routing are equal to the frames
   ;; of the initial list of missives
   (let ((NodeSet (NodeSetGenerator Params)))
   (mv-let (Scheduled/Rtg Delayed/Rtg newAtt)
@@ -461,8 +461,8 @@
           (implies (and (Missivesp M NodeSet)
                         (ValidParamsp Params))
                    (equal (V-frms Scheduled/Rtg)
-                          (M-frms 
-                           (extract-sublst 
+                          (M-frms
+                           (extract-sublst
                             M (v-ids Scheduled/Rtg)))))))
   :hints (("GOAL"
            :do-not-induct t
@@ -482,7 +482,7 @@
                                 NodeSet)
                 (equal (V-frms L)
                        (m-frms (extract-sublst M (v-ids L)))))
-           (Genoc_T-Correctness1 L 
+           (Genoc_T-Correctness1 L
                                  (extract-sublst m (v-ids L)))))
 
 (defthm GC1_scheduled/Rtg
@@ -493,18 +493,18 @@
              (mv-let (scheduled/rtg delayed/rtg newAtt)
                      (scheduling (routing M NodeSet) att)
                      (declare (ignore delayed/rtg newAtt))
-                     (genoc_t-correctness1 
+                     (genoc_t-correctness1
                       scheduled/rtg
                       (extract-sublst M (v-ids scheduled/rtg))))))
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
            :do-not '(eliminate-destructors generalize fertilize)
-           :use 
+           :use
            ((:instance Scheduled/Rtg_not_modify_frames)
             (:instance subsetp-scheduled-delayed-ids
                        (TrLst (Routing M (NodeSetGenerator Params))))
-            (:instance 
+            (:instance
              scheduling-preserves-route-correctness
              (NodeSet (NodeSetGenerator Params))
              (TrLst (routing M (NodeSetGenerator Params))))
@@ -513,13 +513,13 @@
                        (L (mv-nth 0 (scheduling
                                      (routing m (NodeSetGenerator Params))
                                      att)))))
-           :in-theory (disable TrLstp Missivesp 
-                               Correctroutesp-Vm-Frms-Gc1        
+           :in-theory (disable TrLstp Missivesp
+                               Correctroutesp-Vm-Frms-Gc1
                                subsetp-scheduled-delayed-ids
                                Scheduling-Preserves-Route-Correctness
                                Scheduled/Rtg_not_modify_frames))))
 
-(defthm GeNoC_t-thm 
+(defthm GeNoC_t-thm
   ;; now we can prove the correctness of GeNoC_t
   (let ((NodeSet (NodeSetGenerator Params)))
     (implies (and (Missivesp M NodeSet)
@@ -535,17 +535,17 @@
            :in-theory (disable TrLstp Missivesp)
            :do-not-induct t)
           ("Subgoal *1/2"
-           :use 
+           :use
            ((:instance trlstp-delayed
                        (TrLst (routing M (NodeSetGenerator Params))))
             (:instance subsetp-scheduled-delayed-ids
                        (TrLst (Routing M (NodeSetGenerator Params))))
             (:instance GC1_scheduled/Rtg))
-           :in-theory (e/d (mv-nth) 
+           :in-theory (e/d (mv-nth)
                            (TrLstp missivesp trlstp-delayed
                                    subsetp-scheduled-delayed-ids
                                    GC1_scheduled/Rtg)))))
-                               
+
 ;;------------------------------------------------------------
 ;;      Definition and Validation of GeNoC
 ;;------------------------------------------------------------
@@ -595,7 +595,7 @@
 ;; -----------------
 (defun genoc-correctness (Results Trs/ids)
   ;; Trs/ids is the initial list of transactions filtered according
-  ;; to the ids of the list of results. 
+  ;; to the ids of the list of results.
   ;; We check that the messages and the destinations of these two lists
   ;; are equal.
   (and (equal (R-msgs Results)
@@ -615,10 +615,10 @@
 
 (defun all-frms-equal-to-p2psend (TrLst Trs)
   ;; check that every frame of TrLst is equal to the application
-  ;; of p2psend to the corresponding message in the list of 
+  ;; of p2psend to the corresponding message in the list of
   ;; transactions Trs
   (if (endp TrLst)
-      (if (endp Trs) 
+      (if (endp Trs)
           t
         nil)
     (let* ((tr (car TrLst))
@@ -755,7 +755,7 @@
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
-           :use ((:instance GeNoC_t-thm 
+           :use ((:instance GeNoC_t-thm
                             (M (ComputeMissives Trs)))
                  (:instance v-ids-GeNoC_t-non-tail-comp
                             (M (computemissives trs)))
@@ -763,8 +763,8 @@
                             (TrLst (genoc_t-non-tail-comp
                                     (computeMissives trs)
                                     (Nodesetgenerator params) att))
-                            (Trs (extract-sublst Trs 
-                                                 (v-ids 
+                            (Trs (extract-sublst Trs
+                                                 (v-ids
                                                   (genoc_t-non-tail-comp
                                                    (computeMissives trs)
                                                    (nodesetgenerator params)
@@ -773,11 +773,11 @@
                             (TrLst (genoc_t-non-tail-comp
                                     (computeMissives trs)
                                     (nodesetgenerator params) att))
-                            (M/TrLst 
+                            (M/TrLst
                              (extract-sublst (ComputeMissives Trs)
                                              (V-ids (genoc_t-non-tail-comp
                                                      (computeMissives trs)
-                                                     (nodesetgenerator params) 
+                                                     (nodesetgenerator params)
                                                      att))))
                             (NodeSet (Nodesetgenerator params))))
            :in-theory (e/d (mv-nth)

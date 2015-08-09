@@ -149,7 +149,7 @@
 
 ;;------------------------------------------------------------------
 ;; Prove that unsweetening a sweet-wff gives a wff.
-	
+
 (defthm unsweeten-wff-flg
   (cond ((equal flg 'and) (implies (sweet-wff-list-and x)
 				   (wff (unsweeten-and x))))
@@ -196,7 +196,7 @@
    (cond ;; ((equal f 'true) nil)
          ((not (wfand f)) (list (sweeten f)))
 	 (t (cons (sweeten (a1 f)) (sweeten-and (a2 f))))))
-	 
+
  (defun sweeten-or (f)
    (declare (xargs :guard (wff f)
 		   :measure (cons (1+ (acl2-count f)) 1)))

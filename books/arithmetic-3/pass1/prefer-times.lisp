@@ -31,8 +31,8 @@
 (local (include-book "inequalities"))
 
 
-(set-default-hints 
- '((nonlinearp-default-hint-pass1 stable-under-simplificationp 
+(set-default-hints
+ '((nonlinearp-default-hint-pass1 stable-under-simplificationp
                                   hist pspv)))
 
 
@@ -77,7 +77,7 @@
 (defthm normalize-<-/-to-*-1
   (implies (and (rationalp x)
 		(rationalp y))
-	   (equal (< x (/ y)) 
+	   (equal (< x (/ y))
 		  (cond ((< y 0) (< 1 (* x y)))
 			((< 0 y) (< (* x y) 1))
 			(t (< x 0))))))
@@ -85,7 +85,7 @@
 (defthm normalize-<-/-to-*-2
   (implies (and (rationalp x)
 		(rationalp y))
-		(equal (< (/ y) x) 
+		(equal (< (/ y) x)
 		       (cond ((< y 0) (< (* x y) 1))
 			     ((< 0 y) (< 1 (* x y)))
 			     (t (< 0 x))))))
@@ -98,7 +98,7 @@
 		  (cond ((< z 0) (< y (* x z)))
 			((< 0 z) (< (* x z) y))
 			(t (< x 0))))))
- 
+
 (defthm normalize-<-/-to-*-3-2
   (implies (and (rationalp x)
 		(rationalp y)

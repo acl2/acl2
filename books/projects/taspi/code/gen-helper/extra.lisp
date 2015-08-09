@@ -14,7 +14,7 @@
 (def-macro-alias member-hqual hons-member-equal 2)
 
 (defmacro dis+ind (x)
-  `(encapsulate () 
+  `(encapsulate ()
                 (in-theory (disable ,x))
                 (in-theory (enable (:induction ,x)))))
 
@@ -108,15 +108,15 @@
            (< (acl2-count (evens-gen x))
               (+ 1 (acl2-count x))))
   :hints (("Goal" :in-theory (enable evens-gen))))
- 
-(defthm even-gen-smaller-3                         
+
+(defthm even-gen-smaller-3
   (implies (consp alst2)
            (< (acl2-count (evens-gen alst2))
               (+ 1 (acl2-count alst1)
                  (acl2-count alst2))))
   :hints (("Goal" :in-theory (disable even-gen-smaller-2)
            :use (:instance even-gen-smaller-2
-                           (x alst2))))) 
+                           (x alst2)))))
 
 (defun app (x y)
   (declare (xargs :guard t))
@@ -232,7 +232,7 @@
 (defthm alistp-gen-through-evens-cdr
   (implies (alistp-gen x)
            (alistp-gen (evens-gen (cdr x)))))
-   
+
 (defthm alistp-gen-build-fast-alist-from-alist
   (implies (alistp-gen acc)
            (alistp-gen (build-fast-alist-from-alist x acc))))

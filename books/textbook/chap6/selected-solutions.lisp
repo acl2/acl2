@@ -31,7 +31,7 @@
 	   (e0-ord-< '(1 . 0) x)))
 
 ; ---------------------------------------------------------------------------
-; Exercise 6.4 
+; Exercise 6.4
 
 ;(e0-ordinalp '(2 1 . 27))
 ;(e0-ordinalp '(2 1 1 . 27))
@@ -64,8 +64,8 @@
 			 (< i2 j2))))))
 
 ; ---------------------------------------------------------------------------
-; Exercise 6.7 
-; (dec i) is the ith element of the sequence 
+; Exercise 6.7
+; (dec i) is the ith element of the sequence
 ; <(1 2 . 0), (1 1 2 . 0), (1 1 1 2 . 0), ...>
 ; This sequence is described in solutions.txt.
 
@@ -74,7 +74,7 @@
       '(1 2 . 0)
     (cons 1 (dec (1- n)))))
 
-(encapsulate 
+(encapsulate
  nil
  (local (include-book "arithmetic/top-with-meta" :dir :system))
  (defthm dec-decreases
@@ -144,7 +144,7 @@
                   (case-split (consp x)))
              (and (integerp (car (last x)))
                   (<= 0 (car (last x))))))))
-   
+
 (defthm acl2-count-prefix
   (implies (consp x)
            (< (acl2-count (prefix x))
@@ -218,7 +218,7 @@
                 (equal (len x) (len y)))
            (equal (equal (lex x) (lex y))
                   (equal x y)))
-  :hints (("Goal" 
+  :hints (("Goal"
                   :induct (lex-equal-hint x y))))
 
 (defthm lex-<-alternative-def
@@ -253,11 +253,11 @@
                 (e0-ord-< (lex x)
                           (lex y))))
   :hints (("Goal" :induct (lex-equal-hint x y))))
-                
+
 ; ---------------------------------------------------------------------------
 ; Exercise 6.11
 
-(defun upto (i max) 
+(defun upto (i max)
   (declare (xargs :measure (nfix (- (1+ max) i))))
   (if (and (integerp i)
            (integerp max)
@@ -319,9 +319,9 @@
 
 (defun ack (x y)
    (declare (xargs :measure (cons (1+ (nfix y)) (nfix x))))
-   (if (zp x) 
+   (if (zp x)
        1
-     (if (zp y) 
+     (if (zp y)
          (if (equal x 1) 2 (+ x 2))
        (ack (ack (1- x) y) (1- y)))))
 
@@ -362,7 +362,7 @@
 (defthm f3-is-unique
   (equal (f3 x) t)
   :hints (("Goal" :use f3-constraint)))
-               
+
 
 ; 4. (defun f (x) (if (f x) t nil))
 
@@ -391,7 +391,7 @@
 ; 5. (defun f (x) (if (f x) nil t))
 
 ; This is the same as (f x) = (not (f x)).
-       
+
 ; 6. (defun f (x) (if (zp x) 0 (f (- x 1))))
 
 (defun f6 (x) (if (zp x) 0 (f6 (- x 1))))

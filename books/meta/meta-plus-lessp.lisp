@@ -51,7 +51,7 @@
 
 (defun cancel_plus-lessp (x)
   (declare (xargs :guard (pseudo-termp x)))
-  (if (and (consp x) 
+  (if (and (consp x)
 	   (eq (car x) '<))
       (cond
        ((and (consp (cadr x))

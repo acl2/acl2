@@ -20,32 +20,32 @@ definition of modify.
 (defun pcnt (s) (second s))
 (defun mem (s) (third s))
 
-(defun update-mem (s val) 
+(defun update-mem (s val)
   (update-nth 2 val s))
 
 (defun next (s)
   (update-mem s nil))
 
-(defun halted (s) 
+(defun halted (s)
   (equal s (next s)))
 
 ;; the precondition says that memory location 3 contains a natural number.
 
-(defun pre (s) 
+(defun pre (s)
   (natp (nth 3 (mem s))))
 
-;; The modify says that we modify memory location 4 with factorial of 
+;; The modify says that we modify memory location 4 with factorial of
 ;; memory location 3.
 
-(defun modify (s) 
-  (update-mem 
+(defun modify (s)
+  (update-mem
    s
    (update-nth 4 (factorial (nth 3 (mem s))) (mem s))))
 
 
 (include-book "misc/defpun" :dir :system)
 
-(defpun stepw (s) 
+(defpun stepw (s)
   (if (halted s) s
     (stepw (next s))))
 
@@ -72,7 +72,7 @@ definition of modify.
 
 (local
  (in-theory (disable next modify)))
- 
+
 (defthm partial-correctness
   (implies (pre s)
            (== s (modify s)))

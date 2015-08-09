@@ -106,7 +106,7 @@
 (defthm subset-union-left-not
   (implies (not (subsetp-equal a c))
 	   (not (subsetp-equal (union-equal a b) c))))
-		 
+
 (defthm subset-union-right-not
   (implies (not (subsetp-equal b c))
 	   (not (subsetp-equal (union-equal a b) c))))
@@ -248,7 +248,7 @@
   (implies (not (subsetp-equal a b))
            (not (subsetp-equal (append c a) b))))
 
-(defthm member-append-cons  
+(defthm member-append-cons
   (member-equal x (append a (cons x b))))
 
 (defthm subset-append-cons
@@ -356,7 +356,7 @@
 
 ;;-----------------
 ;; Disjoint lists.
-	   
+
 (defun disjoint (a b)
   (declare (xargs :guard (and (true-listp a) (true-listp b))))
   (cond ((atom a) t)

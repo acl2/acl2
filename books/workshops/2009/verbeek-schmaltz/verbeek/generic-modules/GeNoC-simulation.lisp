@@ -1,5 +1,5 @@
 #|$ACL2s-Preamble$;
-;;Amr helmy 
+;;Amr helmy
 ;;4th august 2008
 ;; GeNoC-simulation.lisp
 ;; this file contains the definition of the generic simulation extraction
@@ -22,7 +22,7 @@
     (cons (list coor (caar contents) (cadar contents))
           (treat-state-entry coor (cdr contents))))))
 
-(local 
+(local
 (defun extract-simulation (ntkstate)
   (if (endp ntkstate)
       nil

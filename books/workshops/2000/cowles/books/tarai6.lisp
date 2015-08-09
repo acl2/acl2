@@ -21,8 +21,8 @@
 ; University of Wyoming
 ; Laramie, WY 82071-3682 U.S.A.
 
-;; Any total function from integer lists to integers that 
-;;  satisfies the tarai recursion must equal the function 
+;; Any total function from integer lists to integers that
+;;  satisfies the tarai recursion must equal the function
 ;;  Fb for lists of length 2-5:
 
 ;; (certify-book "C:/acl2/tak/tarai6")
@@ -31,31 +31,31 @@
 
 (include-book "tarai5")
 
-;; The book tarai5, included above, includes all the 
+;; The book tarai5, included above, includes all the
 ;;  definitions required to define Bailey's version (called
 ;;  Fb) of the f function for Knuth's Theorem 4. The included
 ;;  book also contains a theorem showing that the function Fb
-;;  satisfies the tarai recursion for lists of lengths between 
+;;  satisfies the tarai recursion for lists of lengths between
 ;;  2 and 7.
 
 ;; Fb satisfies the tarai recursion (rule-classes nil)
 ;;    (from the book tarai5):
 #|  (defthm
       Fb-sat-tarai-def
-      (implies (and 
+      (implies (and
 		(integer-listp lst)
 		(consp (rest lst))        ;; (len lst) > 1
-		(not 
+		(not
 		 (consp (nthcdr 7 lst)))) ;; (len lst) <= 7
 	       (equal (Fb lst)
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst 
-			     (lst-rotates-with-minus-1 
+			(Fb (Fb-lst
+			     (lst-rotates-with-minus-1
 			      (- (LEN lst) 1)
 			      lst)))))))
-|#			      
+|#
 
 (defthm
     integerp-last-el
@@ -89,35 +89,35 @@
  (((tarai *)  => *)
   ((tarai-lst *)  => *))
 
- (local (defun 
+ (local (defun
 	    tarai (lst)
 	    (Fb lst)))
- 
- (local (defun 
+
+ (local (defun
 	    tarai-lst (lst)
 	    (Fb-lst lst)))
 
  (defthm
      tarai-def
-     (implies (and 
+     (implies (and
 	       (integer-listp lst)
 	       (consp (rest lst))        ;; (len lst) > 1
-	       (not 
+	       (not
 		(consp (nthcdr 7 lst)))) ;; (len lst) <= 7
 	      (equal (tarai lst)
 		     (if (<= (first lst)
 			     (second lst))
 			 (second lst)
-		         (tarai (tarai-lst 
-				 (lst-rotates-with-minus-1 
+		         (tarai (tarai-lst
+				 (lst-rotates-with-minus-1
 				  (- (LEN lst) 1)
 				  lst))))))
      :rule-classes nil
      :hints (("Goal"
-	      :in-theory (disable Fb Fb-lst len  
+	      :in-theory (disable Fb Fb-lst len
 				  lst-rotates-with-minus-1)
 	      :use Fb-sat-tarai-def)))
- 
+
  (defthm
      tarai-lst-def
      (equal (tarai-lst lst)
@@ -159,7 +159,7 @@
     tarai=Fb-1
     (implies (and (integer-listp lst)
 		  (consp (rest lst))        ;; (len lst) > 1
-		  (not 
+		  (not
 		   (consp (nthcdr 7 lst))) ;; (len lst) <= 7
 		  (<= (first lst)(second lst)))
 	     (equal (tarai lst)(Fb lst)))
@@ -176,8 +176,8 @@
 	      (list (list (- first 1) second)
 		    (list (- second 1) first))))
      :hints (("Goal"
-	      :expand (lst-rotates-with-minus-1 
-		       1 
+	      :expand (lst-rotates-with-minus-1
+		       1
 		       (list first second))))))
 
 (defthm
@@ -185,23 +185,23 @@
     (let ((lst (list first second)))
       (implies (and (integer-listp lst)
 		    (> first second)
-		    (equal (tarai 
+		    (equal (tarai
 			    (list (- first 1) second))
-			   (Fb 
+			   (Fb
 			   (list (- first 1) second)))
 		    (equal (tarai
 			    (list (- second 1) first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) first)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
+		    (equal (tarai
+			    (list
+			     (Fb
 			      (list (- first 1) second))
 			     (Fb
 			      (list (- second 1) first))))
-			   (Fb 
-			    (list 
-			     (Fb 
+			   (Fb
+			    (list
+			     (Fb
 			      (list (- first 1) second))
 			     (Fb
 			      (list (- second 1) first))))))
@@ -213,7 +213,7 @@
 
 (defun
     Induct-hint-2 (first second)
-    (declare (xargs :measure 
+    (declare (xargs :measure
 		    (measure (list first second))))
     (let ((lst (list first second)))
       (if (integer-listp lst)
@@ -243,7 +243,7 @@
 	      (list (list (- first 1) second third)
 		    (list (- second 1) third first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third)))))))
 
@@ -261,26 +261,26 @@
     (let ((lst (list first second third)))
       (implies (and (integer-listp lst)
 		    (> first second)
-		    (equal (tarai 
+		    (equal (tarai
 			    (list (- first 1) second third))
-			   (Fb 
+			   (Fb
 			   (list (- first 1) second third)))
 		    (equal (tarai
 			    (list (- second 1) third first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) third first)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
+		    (equal (tarai
+			    (list
+			     (Fb
 			      (list (- first 1) second third))
 			     (Fb
 			      (list (- second 1) third first))
 			     (tarai
 			      (list (- third 1) first second))
 			     ))
-			   (Fb 
-			    (list 
-			     (Fb 
+			   (Fb
+			    (list
+			     (Fb
 			      (list (- first 1) second third))
 			     (Fb
 			      (list (- second 1) third first))
@@ -298,30 +298,30 @@
     (let ((lst (list first second third)))
       (implies (and (integer-listp lst)
 		    (> first second)
-		    (equal (tarai 
+		    (equal (tarai
 			    (list (- first 1) second third))
-			   (Fb 
+			   (Fb
 			   (list (- first 1) second third)))
 		    (equal (tarai
 			    (list (- second 1) third first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) third first)))
 		    (equal (tarai
 			    (list (- third 1) first second))
 			   (Fb
 			    (list (- third 1) first second)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
+		    (equal (tarai
+			    (list
+			     (Fb
 			      (list (- first 1) second third))
 			     (Fb
 			      (list (- second 1) third first))
 			     (Fb
 			      (list (- third 1) first second))
 			     ))
-			   (Fb 
-			    (list 
-			     (Fb 
+			   (Fb
+			    (list
+			     (Fb
 			      (list (- first 1) second third))
 			     (Fb
 			      (list (- second 1) third first))
@@ -337,7 +337,7 @@
 
 (defun
     Induct-hint-3 (first second third)
-    (declare (xargs :measure 
+    (declare (xargs :measure
 		    (measure (list first second third))))
     (let ((lst (list first second third)))
       (if (integer-listp lst)
@@ -376,7 +376,7 @@
 	      (list (list (- first 1) second third forth)
 		    (list (- second 1) third forth first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth)))))))
 
@@ -407,22 +407,22 @@
       (implies (and (integer-listp lst)
 		    (> first second)
 		    (<= second third)
-		    (equal (tarai 
-			    (list (- first 1) second 
+		    (equal (tarai
+			    (list (- first 1) second
 				  third fourth))
-			   (Fb 
-			    (list (- first 1) second 
+			   (Fb
+			    (list (- first 1) second
 				  third fourth)))
 		    (equal (tarai
 			    (list (- second 1) third
 				  fourth first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) third
 				  fourth first)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+		    (equal (tarai
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth))
 			     (Fb
 			      (list (- second 1) third
@@ -434,9 +434,9 @@
 			      (list (- fourth 1) first
 				    second third))))
 			   (Fb
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth))
 			     (Fb
 			      (list (- second 1) third
@@ -460,16 +460,16 @@
 		    (> first second)
 		    (> second third)
 		    (<= third fourth)
-		    (equal (tarai 
-			    (list (- first 1) second 
+		    (equal (tarai
+			    (list (- first 1) second
 				  third fourth))
-			   (Fb 
-			    (list (- first 1) second 
+			   (Fb
+			    (list (- first 1) second
 				  third fourth)))
 		    (equal (tarai
 			    (list (- second 1) third
 				  fourth first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) third
 				  fourth first)))
 		    (equal (tarai
@@ -478,10 +478,10 @@
 			   (Fb
 			    (list (- third 1) fourth
 				  first second)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+		    (equal (tarai
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth))
 			     (Fb
 			      (list (- second 1) third
@@ -493,9 +493,9 @@
 			      (list (- fourth 1) first
 				    second third))))
 			   (Fb
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth))
 			     (Fb
 			      (list (- second 1) third
@@ -520,16 +520,16 @@
 		    (> first second)
 		    (> second third)
 		    (> third fourth)
-		    (equal (tarai 
-			    (list (- first 1) second 
+		    (equal (tarai
+			    (list (- first 1) second
 				  third fourth))
-			   (Fb 
-			    (list (- first 1) second 
+			   (Fb
+			    (list (- first 1) second
 				  third fourth)))
 		    (equal (tarai
 			    (list (- second 1) third
 				  fourth first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) third
 				  fourth first)))
 		    (equal (tarai
@@ -544,10 +544,10 @@
 			   (Fb
 			    (list (- fourth 1) first
 				  second third)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+		    (equal (tarai
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth))
 			     (Fb
 			      (list (- second 1) third
@@ -559,9 +559,9 @@
 			      (list (- fourth 1) first
 				    second third))))
 			   (Fb
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth))
 			     (Fb
 			      (list (- second 1) third
@@ -580,54 +580,54 @@
 
 (defun
     Induct-hint-4 (first second third fourth)
-    (declare (xargs :measure 
-		    (measure (list first second 
+    (declare (xargs :measure
+		    (measure (list first second
 				   third fourth))))
     (let ((lst (list first second third fourth)))
       (if (integer-listp lst)
 	  (cond ((<= first second) 0)
 		((<= second third)
-		 (+ (Induct-hint-4 (- first 1) second 
+		 (+ (Induct-hint-4 (- first 1) second
 				   third fourth)
-		    (Induct-hint-4 (- second 1)third 
+		    (Induct-hint-4 (- second 1)third
 				   fourth first)
 		    (Induct-hint-4
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth first))
-		     (tarai (list (- third 1) fourth 
+		     (tarai (list (- third 1) fourth
 				  first second))
 		     (tarai (list (- fourth 1) first
 				  second third)))))
 		((<= third fourth)
-		 (+ (Induct-hint-4 (- first 1) second 
+		 (+ (Induct-hint-4 (- first 1) second
 				   third fourth)
-		    (Induct-hint-4 (- second 1) third 
+		    (Induct-hint-4 (- second 1) third
 				   fourth first)
 		    (Induct-hint-4 (- third 1) fourth
 				   first second)
 		    (Induct-hint-4
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth first))
 		     (Fb (list (- third 1) fourth
 			       first second))
 		     (tarai (list (- fourth 1) first
 				  second third)))))
-		(t (+ (Induct-hint-4 (- first 1) second 
+		(t (+ (Induct-hint-4 (- first 1) second
 				     third fourth)
-		      (Induct-hint-4 (- second 1) third 
+		      (Induct-hint-4 (- second 1) third
 				     fourth first)
 		      (Induct-hint-4 (- third 1) fourth
 				     first second)
 		      (Induct-hint-4 (- fourth 1) first
 				     second third)
 		      (Induct-hint-4
-		       (Fb (list (- first 1) second 
+		       (Fb (list (- first 1) second
 				 third fourth))
-		       (Fb (list (- second 1) third 
+		       (Fb (list (- second 1) third
 				 fourth first))
 		       (Fb (list (- third 1) fourth
 				 first second))
@@ -642,7 +642,7 @@
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
 	     :in-theory (disable Fb)
-	     :induct (Induct-hint-4 first second 
+	     :induct (Induct-hint-4 first second
 				    third fourth))))
 
 ;; (tarai lst) = (Fb lst) when lst is a list of length 5:
@@ -655,7 +655,7 @@
 	      (list (list (- first 1) second third forth fifth)
 		    (list (- second 1) third forth fifth first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth fifth))))))
  )
@@ -700,22 +700,22 @@
       (implies (and (integer-listp lst)
 		    (> first second)
 		    (<= second third)
-		    (equal (tarai 
-			    (list (- first 1) second 
+		    (equal (tarai
+			    (list (- first 1) second
 				  third fourth fifth))
-			   (Fb 
-			    (list (- first 1) second 
+			   (Fb
+			    (list (- first 1) second
 				  third fourth fifth)))
 		    (equal (tarai
 			    (list (- second 1) third
 				  fourth fifth first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) third
 				  fourth fifth first)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+		    (equal (tarai
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth fifth))
 			     (Fb
 			      (list (- second 1) third
@@ -730,9 +730,9 @@
 			      (list (- fifth 1) first
 				    second third fourth))))
 			   (Fb
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth fifth))
 			     (Fb
 			      (list (- second 1) third
@@ -750,7 +750,7 @@
     :hints (("Goal"
 	     :use (:instance
 		   tarai-def
-		   (lst (list first second third 
+		   (lst (list first second third
 			      fourth fifth))))))
 
 (defthm
@@ -760,16 +760,16 @@
 		    (> first second)
 		    (> second third)
 		    (<= third fourth)
-		    (equal (tarai 
-			    (list (- first 1) second 
+		    (equal (tarai
+			    (list (- first 1) second
 				  third fourth fifth))
-			   (Fb 
-			    (list (- first 1) second 
+			   (Fb
+			    (list (- first 1) second
 				  third fourth fifth)))
 		    (equal (tarai
 			    (list (- second 1) third
 				  fourth fifth first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) third
 				  fourth fifth first)))
 		    (equal (tarai
@@ -778,10 +778,10 @@
 			   (Fb
 			    (list (- third 1) fourth
 				  fifth first second)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+		    (equal (tarai
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth fifth))
 			     (Fb
 			      (list (- second 1) third
@@ -793,12 +793,12 @@
 			      (list (- fourth 1) fifth
 				    first second third))
 			     (tarai
-			      (list (- fifth 1) first 
+			      (list (- fifth 1) first
 				    second third fourth))))
 			   (Fb
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth fifth))
 			     (Fb
 			      (list (- second 1) third
@@ -810,13 +810,13 @@
 			      (list (- fourth 1) fifth
 				    first second third))
 			     (tarai
-			      (list (- fifth 1) first 
+			      (list (- fifth 1) first
 				    second third fourth))))))
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
 	     :use (:instance
 		   tarai-def
-		   (lst (list first second third 
+		   (lst (list first second third
 			      fourth fifth))))))
 
 (defthm
@@ -827,16 +827,16 @@
 		    (> second third)
 		    (> third fourth)
 		    (<= fourth fifth)
-		    (equal (tarai 
-			    (list (- first 1) second 
+		    (equal (tarai
+			    (list (- first 1) second
 				  third fourth fifth))
-			   (Fb 
-			    (list (- first 1) second 
+			   (Fb
+			    (list (- first 1) second
 				  third fourth fifth)))
 		    (equal (tarai
 			    (list (- second 1) third
 				  fourth fifth first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) third
 				  fourth fifth first)))
 		    (equal (tarai
@@ -846,15 +846,15 @@
 			    (list (- third 1) fourth
 				  fifth first second)))
 		    (equal (tarai
-			    (list (- fourth 1) fifth 
+			    (list (- fourth 1) fifth
 				  first second third))
 			   (Fb
-			    (list (- fourth 1) fifth 
+			    (list (- fourth 1) fifth
 				  first second third)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+		    (equal (tarai
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth fifth))
 			     (Fb
 			      (list (- second 1) third
@@ -866,12 +866,12 @@
 			      (list (- fourth 1) fifth
 				    first second third))
 			     (tarai
-			      (list (- fifth 1) first 
+			      (list (- fifth 1) first
 				    second third fourth))))
 			   (Fb
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth fifth))
 			     (Fb
 			      (list (- second 1) third
@@ -883,13 +883,13 @@
 			      (list (- fourth 1) fifth
 				    first second third))
 			     (tarai
-			      (list (- fifth 1) first 
+			      (list (- fifth 1) first
 				    second third fourth))))))
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
 	     :use (:instance
 		   tarai-def
-		   (lst (list first second third 
+		   (lst (list first second third
 			      fourth fifth))))))
 
 (defthm
@@ -900,16 +900,16 @@
 		    (> second third)
 		    (> third fourth)
 		    (> fourth fifth)
-		    (equal (tarai 
-			    (list (- first 1) second 
+		    (equal (tarai
+			    (list (- first 1) second
 				  third fourth fifth))
-			   (Fb 
-			    (list (- first 1) second 
+			   (Fb
+			    (list (- first 1) second
 				  third fourth fifth)))
 		    (equal (tarai
 			    (list (- second 1) third
 				  fourth fifth first))
-			   (Fb 
+			   (Fb
 			    (list (- second 1) third
 				  fourth fifth first)))
 		    (equal (tarai
@@ -919,21 +919,21 @@
 			    (list (- third 1) fourth
 				  fifth first second)))
 		    (equal (tarai
-			    (list (- fourth 1) fifth 
+			    (list (- fourth 1) fifth
 				  first second third))
 			   (Fb
-			    (list (- fourth 1) fifth 
+			    (list (- fourth 1) fifth
 				  first second third)))
 		    (equal (tarai
-			    (list (- fifth 1) first 
+			    (list (- fifth 1) first
 				  second third fourth))
 			   (Fb
-			    (list (- fifth 1) first 
+			    (list (- fifth 1) first
 				  second third fourth)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+		    (equal (tarai
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth fifth))
 			     (Fb
 			      (list (- second 1) third
@@ -945,12 +945,12 @@
 			      (list (- fourth 1) fifth
 				    first second third))
 			     (Fb
-			      (list (- fifth 1) first 
+			      (list (- fifth 1) first
 				    second third fourth))))
 			   (Fb
-			    (list 
-			     (Fb 
-			      (list (- first 1) second 
+			    (list
+			     (Fb
+			      (list (- first 1) second
 				    third fourth fifth))
 			     (Fb
 			      (list (- second 1) third
@@ -962,7 +962,7 @@
 			      (list (- fourth 1) fifth
 				    first second third))
 			     (Fb
-			      (list (- fifth 1) first 
+			      (list (- fifth 1) first
 				    second third fourth))))))
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
@@ -971,91 +971,91 @@
 				 tarai=Fb-5c)
 	     :use (:instance
 		   tarai-def
-		   (lst (list first second third 
+		   (lst (list first second third
 			      fourth fifth))))))
 
 (defun
     Induct-hint-5 (first second third fourth fifth)
-    (declare (xargs :measure 
-		    (measure (list first second 
+    (declare (xargs :measure
+		    (measure (list first second
 				   third fourth fifth))))
     (let ((lst (list first second third fourth fifth)))
       (if (integer-listp lst)
 	  (cond ((<= first second) 0)
 		((<= second third)
-		 (+ (Induct-hint-5 (- first 1) second 
+		 (+ (Induct-hint-5 (- first 1) second
 				   third fourth fifth)
-		    (Induct-hint-5 (- second 1)third 
+		    (Induct-hint-5 (- second 1)third
 				   fourth fifth first)
 		    (Induct-hint-5
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth fifth))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth fifth first))
-		     (tarai (list (- third 1) fourth 
+		     (tarai (list (- third 1) fourth
 				  fifth first second))
 		     (tarai (list (- fourth 1) fifth
 				  first second third))
-		     (tarai (list (- fifth 1) first 
+		     (tarai (list (- fifth 1) first
 				  second third fourth)))))
 		((<= third fourth)
-		 (+ (Induct-hint-5 (- first 1) second 
+		 (+ (Induct-hint-5 (- first 1) second
 				   third fourth fifth)
-		    (Induct-hint-5 (- second 1) third 
+		    (Induct-hint-5 (- second 1) third
 				   fourth fifth first)
 		    (Induct-hint-5 (- third 1) fourth
 				   fifth first second)
 		    (Induct-hint-5
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth fifth))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth fifth first))
 		     (Fb (list (- third 1) fourth
 			       fifth first second))
 		     (tarai (list (- fourth 1) fifth
 				  first second third))
-		     (tarai (list (- fifth 1) first 
+		     (tarai (list (- fifth 1) first
 				  second third fourth)))))
 		((<= fourth fifth)
-		 (+ (Induct-hint-5 (- first 1) second 
+		 (+ (Induct-hint-5 (- first 1) second
 				   third fourth fifth)
-		    (Induct-hint-5 (- second 1) third 
+		    (Induct-hint-5 (- second 1) third
 				   fourth fifth first)
 		    (Induct-hint-5 (- third 1) fourth
 				   fifth first second)
 		    (Induct-hint-5 (- fourth 1) fifth
 				   first second third)
 		    (Induct-hint-5
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth fifth))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth fifth first))
 		     (Fb (list (- third 1) fourth
 			       fifth first second))
 		     (Fb (list (- fourth 1) fifth
 			       first second third))
-		     (tarai (list (- fifth 1) first 
+		     (tarai (list (- fifth 1) first
 				  second third fourth)))))
-		(t (+ (Induct-hint-5 (- first 1) second 
+		(t (+ (Induct-hint-5 (- first 1) second
 				     third fourth fifth)
-		      (Induct-hint-5 (- second 1) third 
+		      (Induct-hint-5 (- second 1) third
 				     fourth fifth first)
 		      (Induct-hint-5 (- third 1) fourth
 				     fifth first second)
 		      (Induct-hint-5 (- fourth 1) fifth
 				     first second third)
-		      (Induct-hint-5 (- fifth 1) first 
+		      (Induct-hint-5 (- fifth 1) first
 				     second third fourth)
 		      (Induct-hint-5
-		       (Fb (list (- first 1) second 
+		       (Fb (list (- first 1) second
 				 third fourth fifth))
-		       (Fb (list (- second 1) third 
+		       (Fb (list (- second 1) third
 				 fourth fifth first))
 		       (Fb (list (- third 1) fourth
 				 fifth first second))
 		       (Fb (list (- fourth 1) fifth
 				 first second third))
-		       (Fb (list (- fifth 1) first 
+		       (Fb (list (- fifth 1) first
 				 second third fourth))))))
 	  0)))
 
@@ -1066,6 +1066,6 @@
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
 					:in-theory (disable Fb)
-	     :induct (Induct-hint-5 first second third 
+	     :induct (Induct-hint-5 first second third
 				    fourth fifth))))
 

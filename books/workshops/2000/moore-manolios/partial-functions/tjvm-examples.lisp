@@ -1,30 +1,30 @@
 ;  Copyright (C) 2000 Panagiotis Manolios and J Strother Moore
- 
+
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios who can be reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu, moore@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
 ;  Austin, TX 78701 USA
 
 ; (include-book "/v/hank/v104/text/tjvm/examples")
-; (certify-book "tjvm-examples" 1) 
+; (certify-book "tjvm-examples" 1)
 (in-package "TJVM")
 
 (include-book "defpun")
@@ -37,7 +37,7 @@
   (if (haltedp s)
       s
     (stepw (step s))))
-  
+
 (defun == (a b)(equal (stepw a) (stepw b)))
 
 (defequiv ==)
@@ -147,7 +147,7 @@
 
 ; The following lemma is proved just so we can prove the next
 ; theorem without any hints.  The hintless version is shown in the paper.
- 
+
 (defthm ==-invokestatic-fact-lemma
   (implies (and (equal (next-instruction call-stack)
                        '(invokestatic "Math" "fact" 1))

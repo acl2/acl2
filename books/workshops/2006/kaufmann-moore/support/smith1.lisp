@@ -1,4 +1,4 @@
-; An example from :doc note-2-9, based on events from Eric Smith.  
+; An example from :doc note-2-9, based on events from Eric Smith.
 
 (in-package "ACL2")
 

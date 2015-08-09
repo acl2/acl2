@@ -1370,7 +1370,7 @@ the way.</li>
        (nonstatic-count (vl-seltrace-index-count unres-sels))
        (nonstatic-indices (take nonstatic-count seltrace-indices))
        (static-indices (nthcdr nonstatic-count seltrace-indices))
-       
+
        ((mv err lsp-sel-expr)
         (vl-seltrace-to-svex-vector res-sels static-indices x.hidtype base-svex ss))
        ((when err) (fail err))
@@ -1428,7 +1428,7 @@ the way.</li>
            #!sv
            (implies (not (member v (svexlist-vars x)))
                     (not (member v (svex-vars (car x)))))))
-  
+
   (local (defthm svexlist-vars-of-take
            #!sv
            (implies (not (member v (svexlist-vars x)))
@@ -1611,8 +1611,8 @@ the way.</li>
                                     0)
                            :exec (vl-datatype-$unpacked_dimensions x.res))
          :otherwise 0))))
-       
-           
+
+
 
 
 (define vl-datatype-syscall-to-svex ((orig-x vl-expr-p)
@@ -1692,9 +1692,9 @@ the way.</li>
                         :msg "Unrecognized system function: ~a0"
                         :args (list (vl-expr-fix orig-x)))
                  (svex-x)))))
-                 
 
-           
+
+
 
   ///
   (defret vars-of-vl-datatype-syscall-to-svex

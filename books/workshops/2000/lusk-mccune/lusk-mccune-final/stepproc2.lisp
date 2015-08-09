@@ -40,7 +40,7 @@
 	(let* ((x (setup-listener (car ps) port ms))
 	       (lfd (first x))
 	       (ms1 (second x)))
-    
+
 	  (make-mstate
 	   (update-pstate (car ps)
 			  (make-pstate (car ps)
@@ -160,7 +160,7 @@
 	 (cstates ms)
 	 (lstates ms)
 	 (programs ms))
-      
+
       (let ((status (connection-status my-hpid dest-host dest-port ms)))
 	(case status
 	      (pending ms)  ;; do nothing
@@ -182,7 +182,7 @@
 	      (ready (let* ((x (connect my-hpid dest-host dest-port ms))
 			    (fd (first x))
 			    (ms1 (second x)))
-    
+
 		       (make-mstate
 			(update-pstate (car ps)
 				       (make-pstate (car ps)
@@ -253,7 +253,7 @@
 	 (cstates ms)
 	 (lstates ms)
 	 (programs ms))
-      
+
       ;; The listening FD is ok.  Try to accept a connection.
       (let* ((x (accept (car ps) lfd ms))
 	     (fd (first x))

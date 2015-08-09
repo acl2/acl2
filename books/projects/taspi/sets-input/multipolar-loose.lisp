@@ -1,4 +1,4 @@
-;; Implements multipolar consensus as introduced in the 
+;; Implements multipolar consensus as introduced in the
 ;; Sys. Bio paper - 55(5):837-843, 2006. BBL06.pdf
 ;; Also implements loose (semi-strict)
 
@@ -14,11 +14,11 @@
 ; ":Doc-Section TASPI
 ;  Returns those bipartitions in bfringes-left compatible with the entire set~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;    (1) bfringes-left - a set of bdd based bipartitions
-;    (2) all-bfringes - a set of bdd based bipartitions 
+;    (2) all-bfringes - a set of bdd based bipartitions
 
-;  Details: Arguments should have been created using the same taxa-list.  
+;  Details: Arguments should have been created using the same taxa-list.
 ;           First argument should always be a subset of second."
   (declare (xargs :guard t))
   (if (consp bfringes-left)
@@ -38,7 +38,7 @@
           (cons (car list)
                 (determine-incompat bfringe (cdr list)))
         (determine-incompat bfringe (cdr list)))
-    nil))          
+    nil))
 
 (defun build-incompat-graph (bfringes-left all-bfringes)
   (declare (xargs :guard t))
@@ -95,18 +95,18 @@
            (alistp-gen ans)
            (alistp-gen incompat-graph-all))
       (if (consp vertices)
-          (let ((used-colors 
+          (let ((used-colors
                  (get-used-colors (cdr (assoc-hqual (car vertices)
                                                     incompat-graph-all))
                                   ans)))
             (mv-let (found-color? color)
-                    (find-color-less-than-num? used-colors 
-                                               (list-down-to-zero num) 
+                    (find-color-less-than-num? used-colors
+                                               (list-down-to-zero num)
                                                num)
                     (if found-color?
                         (build-coloring (cdr vertices)
                                         incompat-graph-all
-                                        num 
+                                        num
                                         (cons (cons (car vertices)
                                                     color)
                                               ans))
@@ -124,7 +124,7 @@
   (if (alistp-gen coloring)
       (if (consp coloring)
           (if (equal (cdar coloring) color)
-              (cons (caar coloring) 
+              (cons (caar coloring)
                     (get-fringes-matching-color (cdr coloring)
                                                 color))
             (get-fringes-matching-color (cdr coloring)
@@ -153,14 +153,14 @@
     (if (alistp-gen coloring)
         (if (consp coloring)
             (let* ((curColor (cdar coloring))
-                   (curColor-bfringes (get-fringes-matching-color coloring 
+                   (curColor-bfringes (get-fringes-matching-color coloring
                                                                   curColor))
                    (remFringes (remove-from-alist curColor-bfringes
                                                   coloring))
                    (curTotal-fringes (app kernal curColor-bfringes)))
               (cons (build-term-top-guard-t curTotal-fringes
                                             taxa-list)
-                    (build-trees-from-coloring kernal 
+                    (build-trees-from-coloring kernal
                                                remFringes
                                                taxa-list (1- numPoles))))
           nil)
@@ -174,14 +174,14 @@
 ; ":Doc-Section TASPI
 ;  Returns the multipolar consensus of list-of-trees, using proportion alpha.~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;     (1) list-of-trees - a list of trees
-;     (2) alpha - rational between 0 and 1 indicating ratio at which 
+;     (2) alpha - rational between 0 and 1 indicating ratio at which
 ;                 bipartitions are displayed
 ;     (3) taxa-list - a list of taxa
 
 ;  Details: List-of-trees must have the taxa list given. Uses a greedy coloring
-;           algorithm where vertex order is determined by the frequency of 
+;           algorithm where vertex order is determined by the frequency of
 ;           representative bipartition.
 ;           Does not handle branch lengths (see multipolar-brlens)."
   (declare (xargs :guard t))
@@ -191,11 +191,11 @@
            (all-same-num-tips list-of-trees)
            (rationalp alpha)
            (< 0 alpha))
-      (let* ((bfringe-freqs (bfringe-frequencies list-of-trees 
+      (let* ((bfringe-freqs (bfringe-frequencies list-of-trees
                                                  taxa-list))
              (numtrees (len list-of-trees))
              (cutoff (ceiling numtrees (/ 1 alpha))) ;; num required to keep
-             (often-enough-bfringes 
+             (often-enough-bfringes
               (collect-when-size-is-at-least-cutoff
                bfringe-freqs cutoff))
              ;; order doesn't yet matter
@@ -205,7 +205,7 @@
              ;; so use difference
              (no-kernal (difference often-enough-bfringes
                                           kernal))
-             (incompat-graph (build-incompat-graph 
+             (incompat-graph (build-incompat-graph
                               no-kernal no-kernal)))
         (if (alistp-gen incompat-graph)
             (mv-let (coloring numPoles)
@@ -213,9 +213,9 @@
                                     incompat-graph
                                     0 nil)
                     (if (natp numPoles)
-                        (build-trees-from-coloring kernal 
-                                                   coloring 
-                                                   taxa-list 
+                        (build-trees-from-coloring kernal
+                                                   coloring
+                                                   taxa-list
                                                    numPoles)
                       'need-natp-numPoles-in-multipolar))
           'need-alistp-gen-incompat-graph-in-multipolar))
@@ -229,14 +229,14 @@
 ; ":Doc-Section TASPI
 ;  Returns the multipolar consensus of list-of-trees, using proportion alpha.~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;     (1) list-of-trees - a list of trees
-;     (2) alpha - rational between 0 and 1 indicating ratio at which 
+;     (2) alpha - rational between 0 and 1 indicating ratio at which
 ;                 bipartitions are displayed
 ;     (3) taxa-list - a list of taxa
 
 ;  Details: List-of-trees must have the taxa list given. Uses a greedy coloring
-;           algorithm where vertex order is determined by the frequency of 
+;           algorithm where vertex order is determined by the frequency of
 ;           representative bipartition.
 ;           Allows branch lengths (see also multipolar)."
   (declare (xargs :guard t))
@@ -251,12 +251,12 @@
 ; ":Doc-Section TASPI
 ;  Computes the loose consensus of a set of trees~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;     (1) list-of-trees - a list of trees
 ;     (2) taxa-list - list of taxa
 
-;  Details: List-of-trees must have the given taxa list.  The loose consensus 
-;           contains those biparititions in the list of trees given that are 
+;  Details: List-of-trees must have the given taxa list.  The loose consensus
+;           contains those biparititions in the list of trees given that are
 ;           compatible with every other bipartition present.
 ;           Does not allow branch lengths (see loose-brlens)."
   (declare (xargs :guard t))
@@ -264,10 +264,10 @@
            (int-symlist taxa-list)
            (<= 2 (len taxa-list))
            (all-same-num-tips list-of-trees))
-      (let* ((bfringe-freqs (bfringe-frequencies list-of-trees 
+      (let* ((bfringe-freqs (bfringe-frequencies list-of-trees
                                                  taxa-list))
              (kernal (get-kernal-splits (strip-cars-gen
-                                         bfringe-freqs) 
+                                         bfringe-freqs)
                                         (strip-cars-gen
                                          bfringe-freqs))))
         (build-term-top-guard-t kernal
@@ -282,13 +282,13 @@
 ; ":Doc-Section TASPI
 ;  Computes the loose consensus of a set of trees with branch lengths~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;    (1) list-of-trees - a list of trees
 ;    (2) taxa-list - list of taxa
 
-;  Details: List-of-trees must have the given taxa list.  The loose consensus 
-;           contains those biparititions in the list of trees given that are 
-;           compatible with every other bipartition present. Allows branch 
+;  Details: List-of-trees must have the given taxa list.  The loose consensus
+;           contains those biparititions in the list of trees given that are
+;           compatible with every other bipartition present. Allows branch
 ;           lenghts (see loose)."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))
@@ -303,7 +303,7 @@
               (1 2 (3 ((5 6) ((4 7) 8))))
               (1 2 (3 ((4 5) (6 (7 8)))))
               (1 2 ((4 5) (((3 6) 7) 8))))
-            2/7 
+            2/7
             '(1 2 3 4 5 6 7 8))
 
 (loose '((1 2 (3 (((4 5) 6) (7 8))))
@@ -325,13 +325,13 @@
                                              (1 2 ((4 5) (((3 6) 7) 8))))
                                            '(1 2 3 4 5 6 7 8)))
              (cutoff (ceiling 7 (/ 1 2/7))) ;; num required to keep
-             (often-enough-bfringes 
+             (often-enough-bfringes
               (collect-when-size-is-at-least-cutoff
                bfringe-freqs cutoff))
              ;; order doesn't yet matter
              (kernal (get-kernal-splits often-enough-bfringes
                                         often-enough-bfringes))
-             (incompat-graph (build-incompat-graph 
+             (incompat-graph (build-incompat-graph
                                            (difference often-enough-bfringes
                                                        kernal)
                                            (difference often-enough-bfringes
@@ -345,7 +345,7 @@
                     (cons (cons 'coloring coloring)
                           nil)))))
 
-(get-kernal-splits 
+(get-kernal-splits
  (strip-cars-gen
   (bfringe-frequencies
    '((1 2 (3 (((4 5) 6) (7 8))))
@@ -402,7 +402,7 @@
      (1 2 (3 ((4 5) (6 (7 8)))))
      (1 2 ((4 5) (((3 6) 7) 8))))
    '(1 2 3 4 5 6 7 8))) )
- 
+
 
 
 (btrees-to-fringes (strip-cars-gen '((((NIL NIL . T) (T)) . 0)

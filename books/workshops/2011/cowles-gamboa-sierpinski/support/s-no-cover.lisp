@@ -1,4 +1,4 @@
-;;Show k = 44745755^4  
+;;Show k = 44745755^4
 ;;         = (expt 44745755 4)
 ;;         = 4008735125781478102999926000625
 ;; is a Sierpinski number,
@@ -40,23 +40,23 @@
 ;; A partial cover = (3 17 97 241 257 673)
 ;; Covers all n except (mod n 4) = 2
 ;; For all positve integer n, if (mod n 4) does NOT equal 2,
-;; then  k*2^n + 1 is divible by a member of (3 17 97 241 257 673). 
+;; then  k*2^n + 1 is divible by a member of (3 17 97 241 257 673).
 
 ;; To show that k is a Sierpinski number,
-;;  a divisor for k*2^n + 1 must be found for all positive 
-;;  integer n such that (mod n 4) = 2. 
+;;  a divisor for k*2^n + 1 must be found for all positive
+;;  integer n such that (mod n 4) = 2.
 
 ;; Such a divisor is constructed using these facts:
 
 ;;       k is a fourth power
 
-;;       4*x^4 + 1 = (2*x^2 + 2*x + 1) * (2*x^2 - 2*x + 1) 
+;;       4*x^4 + 1 = (2*x^2 + 2*x + 1) * (2*x^2 - 2*x + 1)
 
 ;; Let i = 44745755, so k = i^4.
 
 ;; Then k * 2^(4n+2) + 1 = 2^2*(i*2^n)^4 + 1
 ;;                       = 4*(i*2^n)^4 + 1
-;;                       = (2*(i*2^n)^2 + 2*(i*2^n) + 1) 
+;;                       = (2*(i*2^n)^2 + 2*(i*2^n) + 1)
 ;;                          * (2*(i*2^n)^2 - 2*(i*2^n) + 1)
 
 #| To certify
@@ -147,8 +147,8 @@ divides-*
 	    (map-first (cdr triplets)))
      nil))
 
-Partial cover triplets 
-for those n such that 
+Partial cover triplets
+for those n such that
  (mod n 4) does NOT equal 2,
 (generate-sierpinski-triplets (expt 44745755 4) '(3 17 97 241 257 673))
 ==>((2 1 3)
@@ -380,22 +380,22 @@ natp-induction (n)
  ((cS) => *)
  ((dS) => *))
 
-(local 
+(local
  (defun
      aS ( )
    2))
 
-(local 
+(local
  (defun
      bS ( )
    2))
 
-(local 
+(local
  (defun
      cS ( )
    0))
 
-(local 
+(local
  (defun
      dS ( )
    3))
@@ -404,28 +404,28 @@ natp-induction (n)
     pos-int-aS
     (and (integerp (aS))
 	  (> (aS) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
     pos-int-bS
     (and (integerp (bS))
 	  (> (bS) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
     nat-int-cS
     (and (integerp (cS))
 	  (>= (cS) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
     pos-int-dS
     (and (integerp (dS))
 	  (> (dS) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
@@ -433,14 +433,14 @@ natp-induction (n)
     (divides (dS)
 	      (+ 1
 		 (* (aS)
-		    (expt 2 
+		    (expt 2
 			  (cS))))))
 
 (defthm
     Induction-condition-Sierpinski
     (divides (dS)
-	      (+ -1 
-		 (expt 2 
+	      (+ -1
+		 (expt 2
 		       (bS)))))
 )
 
@@ -451,7 +451,7 @@ natp-induction (n)
 	     (divides (dS)
 		      (+ 1
 			 (* (aS)
-			    (expt 2 
+			    (expt 2
 				  (+ (cS)
 				     (* (bS)
 					n)))))))
@@ -477,7 +477,7 @@ natp-induction (n)
 		  (x (dS))
 		  (y (+ -1 (expt 2 (bS))))
 		  (z (* (aS)
-			(expt 2 
+			(expt 2
 			      (+ (- (bS))
 				 (cS)
 				 (* (bS) n))))))))))
@@ -753,7 +753,7 @@ and name in hint:
 
 ;; Then k * 2^(4n+2) + 1 = 2^2*(i*2^n)^4 + 1
 ;;                       = 4*(i*2^n)^4 + 1
-;;                       = (2*(i*2^n)^2 + 2*(i*2^n) + 1) 
+;;                       = (2*(i*2^n)^2 + 2*(i*2^n) + 1)
 ;;                          * (2*(i*2^n)^2 - 2*(i*2^n) + 1)
 
 ;;k * 2^(4n+2) + 1 = 4 * k * 2^(4n) + 1
@@ -766,7 +766,7 @@ and name in hint:
 			      (+ 2
 				 (* 4 n)))))
 		  (+ 1
-		     (* 4 
+		     (* 4
 			k
 			(expt 2
 			      (* 4 n))))))
@@ -779,7 +779,7 @@ and name in hint:
 		       (expt 2
 			     (+ 2
 				(* 4 n)))))
-		 (y (* 4 
+		 (y (* 4
 		       k
 		       (expt 2
 			     (* 4 n))))))))
@@ -794,7 +794,7 @@ and name in hint:
 			      (+ 2
 				 (* 4 n)))))
 		  (+ 1
-		     (* 4 
+		     (* 4
 			(expt (* i
 				 (expt 2
 				       n))
@@ -961,7 +961,7 @@ and name in hint:
 		 (i 44745755)))))
 
 ;; (thm
-;;  (equal (+ 1 
+;;  (equal (+ 1
 ;;            (* 2 (* 44745755 (expt 2 (floor n 4))))
 ;;            (* 2 (expt (* 44745755 (expt 2 (floor n 4)))
 ;;                       2)))

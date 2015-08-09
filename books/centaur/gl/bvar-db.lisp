@@ -415,7 +415,7 @@
 
   (local
    (progn
-     
+
 
      (defund init-bvar-db$a (base bvar-db$a)
        (declare (ignore bvar-db$a)
@@ -429,7 +429,7 @@
      (defund next-bvar$a (bvar-db$a)
        (declare (xargs :guard t))
        (+ (base-bvar$a bvar-db$a) (len (ec-call (car bvar-db$a)))))
-     
+
      (defund filter-bvars (x bvar-db$a)
        (declare (xargs :guard t))
        (if (atom x)
@@ -461,7 +461,7 @@
        (declare (xargs :guard t))
        (filter-equivs (ec-call (cdr bvar-db$a)) bvar-db$a))
 
-     
+
      (defund bvar-listp$a (x bvar-db$a)
        (declare (xargs :guard t))
        (if (atom x)
@@ -514,7 +514,7 @@
                   (term-equivsp$a (cdr equivs) bvar-db$a))))
     :hints(("Goal" :in-theory (enable term-equivsp$a)))
     :rule-classes ((:definition :controller-alist ((term-equivsp$a t nil)))))
-           
+
 
   (local (in-theory (enable init-bvar-db$a
                             base-bvar$a
@@ -601,7 +601,7 @@
   ;;                                (1- n)
   ;;                              n)
   ;;                            (cdr x) bvar-db$a))))
-    
+
 
   ;; (local (defthm nth-filter-bvars-gte-base-bvar$a
   ;;          (implies (< (nfix n) (len (filter-bvars x bvar-db$a)))

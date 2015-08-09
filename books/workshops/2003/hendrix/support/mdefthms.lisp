@@ -356,7 +356,7 @@
 
 (defthm row-cons-elim
   (implies (not (m-emptyp m))
-           (equal (row-cons (row-car m) (row-cdr m)) 
+           (equal (row-cons (row-car m) (row-cdr m))
                   m))
   :rule-classes :rewrite)
 
@@ -496,7 +496,7 @@
                 (equal (len l) 1))
            (equal (row-cons l (col-cons k nil))
                   (col-cons (cons (car l) k) nil))))
-  
+
 ;;;; Row ops are kept on outside, so not normally enabled
 (defthmd row-cons-col-cons
   (implies (and (matrixp m)

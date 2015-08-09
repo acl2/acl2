@@ -13,7 +13,7 @@
        (relationp (fourth m))
        (relationp (fifth m))
        (relationp (sixth m))
-       (integerp (seventh m)) 
+       (integerp (seventh m))
        (<= 0 (seventh m))))
 
 ; The components of a model
@@ -98,7 +98,7 @@ propositions ap. The model includes the inverse transition relation
  (useful for EX A forumulas), the inverse labeling relation ((p si
 sj ...) ... (s sk sm ...))  indicating at which states atomic
 propositions are true, and the size of the model."
-  (declare (xargs :guard (and (true-listp s) (relationp r) 
+  (declare (xargs :guard (and (true-listp s) (relationp r)
 			      (true-listp ap) (relationp sl))))
   ((implies (and (true-listp s) (relationp r) (true-listp ap) (relationp sl))
 	    (modelp (make-model s r ap sl))) :rule-classes nil)

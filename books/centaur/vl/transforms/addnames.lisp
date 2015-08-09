@@ -55,7 +55,7 @@ will have names such as @('modinst_11') and @('gateinst_46').  We also insert ge
   (b* ((x (maybe-string-fix x))
        ((when x) (mv x (vl-namedb-fix namedb))))
     (vl-namedb-indexed-name basename namedb)))
-    
+
 
 (fty::defvisitor-template addnames ((x :object)
                                     (namedb vl-namedb-p))
@@ -106,7 +106,7 @@ will have names such as @('modinst_11') and @('gateinst_46').  We also insert ge
                :elems (list x)
                :loc (vl-genelement->loc x))
               namedb))))))
-         
+
 
 
 (fty::defvisitors vl-design-addnames-aux

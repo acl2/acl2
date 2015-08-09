@@ -35,7 +35,7 @@
       (cons (project t taxa-list (car trees))
             (project-each (cdr trees) taxa-list))
     nil))
-  
+
 (defun project-each-check-compat (taxa-list list-of-trees)
   (declare (xargs :guard t))
   (let ((new-trees (project-each list-of-trees taxa-list)))
@@ -74,7 +74,7 @@
 ;    (1) list-of-trees - a list of trees
 ;    (2) taxa-list - a list of taxa names
 
-;  Details: The trees given should have taxa list given and no branch lengths 
+;  Details: The trees given should have taxa list given and no branch lengths
 ;           (see also mct-brlens).  Returns a single maximum compatibility tree
 ;           even if there exists more than one."
   (declare (xargs :guard t))
@@ -93,8 +93,8 @@
 ;    (1) list-of-trees - a list of trees
 ;    (2) taxa-list - a list of taxa names
 
-;  Details: The trees given should have taxa list given and may or may not 
-;           have branch lengths (see also mct).  Returns a single maximum 
+;  Details: The trees given should have taxa list given and may or may not
+;           have branch lengths (see also mct).  Returns a single maximum
 ;           compatibility tree even if there exists more than one."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))

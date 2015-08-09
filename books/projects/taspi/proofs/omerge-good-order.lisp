@@ -62,11 +62,11 @@
 ;; omerge
 (defun olessp (x y order)
   (declare (xargs :guard (and (good-order-list order)
-                              (member-equal 
-                               x 
+                              (member-equal
+                               x
                                (get-taxa-from-order order))
-                              (member-equal 
-                               y 
+                              (member-equal
+                               y
                                (get-taxa-from-order order)))))
   (if (< (cdr (assoc-equal x order))
          (cdr (assoc-equal y order)))
@@ -77,10 +77,10 @@
   (declare (xargs :measure (+ (acl2-count x)
                               (acl2-count y))
                   :guard (and (good-order-list order)
-                              (subset 
+                              (subset
                                x
                                (get-taxa-from-order order))
-                              (subset 
+                              (subset
                                y
                                (get-taxa-from-order order)))))
   (cond ((not (consp x)) y)
@@ -95,7 +95,7 @@
 (defun mytips (tree)
   (declare (xargs :guard t))
   (if (consp tree)
-      (append (mytips (car tree)) 
+      (append (mytips (car tree))
               (mytips (cdr tree)))
     (if (equal tree nil)
         nil
@@ -103,10 +103,10 @@
 
 (defun smaller-all (x list order)
   (declare (xargs :guard (and (good-order-list order)
-                              (member-equal 
-                               x 
+                              (member-equal
+                               x
                                (get-taxa-from-order order))
-                              (subset 
+                              (subset
                                list
                                (get-taxa-from-order order)))))
 
@@ -120,10 +120,10 @@
   (declare (xargs :measure (+ (acl2-count list1)
                               (acl2-count list2))
                   :guard (and (good-order-list order)
-                              (subset 
-                               list1 
+                              (subset
+                               list1
                                (get-taxa-from-order order))
-                              (subset 
+                              (subset
                                list2
                                (get-taxa-from-order order)))))
   (if (consp list1)
@@ -201,7 +201,7 @@
   (implies (and (subset x y)
                 (good-order-list order)
                 (no-duplicatesp-equal (strip-cdrs order))
-                (subset y 
+                (subset y
                         (get-taxa-from-order order))
                 (subset z (get-taxa-from-order order)))
            (subset x (omerge z y order))))
@@ -267,7 +267,7 @@
                            (x x1)
                            (y (omerge x2 y order))
                            (z y)))
-          ("Subgoal *1/3.2" :in-theory 
+          ("Subgoal *1/3.2" :in-theory
            (disable subset-omerge-append
                     not-member-subset)
            :use (:instance subset-omerge-append
@@ -275,11 +275,11 @@
                            (y x2)
                            (u y)
                            (v y)))
-          ("Subgoal *1/3.2''" :use 
+          ("Subgoal *1/3.2''" :use
            (:instance not-member-subset
                       (x x1) (y (append x2 y))
                       (z (omerge x2 y order))))
-          ("Subgoal *1/3.1" :in-theory 
+          ("Subgoal *1/3.1" :in-theory
            (disable subset-omerge-append
                     not-member-subset)
            :use (:instance subset-omerge-append
@@ -287,11 +287,11 @@
                            (y x2)
                            (u y)
                            (v y)))
-          ("Subgoal *1/3.1''" :use 
+          ("Subgoal *1/3.1''" :use
            (:instance not-member-subset
                       (x x1) (y (append x2 y))
                       (z (omerge x2 y order))))
-          ("Subgoal *1/3.1'4'" 
+          ("Subgoal *1/3.1'4'"
            :use (:instance difference-not-member
                            (x x1)
                            (y (omerge x2 y order))
@@ -316,7 +316,7 @@
                 (subset y (get-taxa-from-order order)))
            (no-duplicatesp-equal (omerge x y order)))
   :hints (("Goal" :induct (omerge x y order))
-          ("Subgoal *1/4'6'" :in-theory 
+          ("Subgoal *1/4'6'" :in-theory
            (disable subset-omerge-append
                     binary-append
                     subset-same-members
@@ -326,14 +326,14 @@
                            (y (cons x1 x2))
                            (u y2)
                            (v y2)))
-          ("Subgoal *1/4'8'" :use 
+          ("Subgoal *1/4'8'" :use
            (:instance not-member-subset
                       (x y1) (y (append (cons x1 x2) y2))
                       (z (omerge (cons x1 x2) y2 order))))
           ("Subgoal *1/4'10'" :use
            (:instance needs-to-be-in-one
                       (x (cons x1 x2))))
-          ("Subgoal *1/3'4'" :in-theory 
+          ("Subgoal *1/3'4'" :in-theory
            (disable subset-omerge-append
                     not-member-subset)
            :use (:instance subset-omerge-append
@@ -341,9 +341,9 @@
                            (y x2)
                            (u y)
                            (v y)))
-          ("Subgoal *1/3'6'" :use 
+          ("Subgoal *1/3'6'" :use
            (:instance not-member-subset
-                      (x x1) 
+                      (x x1)
                       (y (append x2 y))
                       (z (omerge x2 y order))))
 ))

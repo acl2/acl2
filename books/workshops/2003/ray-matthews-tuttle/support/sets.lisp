@@ -24,7 +24,7 @@ useful later, since anyway I would need to reason about sets in model-checking.
 
 (defun set-intersect (x y)
   (cond ((endp x) nil)
-        ((memberp (first x) y) 
+        ((memberp (first x) y)
          (cons (first x) (set-intersect (rest x) y)))
         (t (set-intersect (rest x) y))))
 
@@ -62,7 +62,7 @@ useful later, since anyway I would need to reason about sets in model-checking.
 
 ;; Just prove that set-equal is an equivalence now, should be trivial.
 
-(defequiv set-equal)       
+(defequiv set-equal)
 
 ;; We have got reflexivity, and transitivity so far for subset, show that it is
 ;; anti-symmetric.
@@ -73,7 +73,7 @@ useful later, since anyway I would need to reason about sets in model-checking.
            (set-equal x y))
   :rule-classes :forward-chaining)
 
-;; This completes the properties of subset relation. 
+;; This completes the properties of subset relation.
 
 
 ;; Now show how union and intersection work with subset.
@@ -90,7 +90,7 @@ useful later, since anyway I would need to reason about sets in model-checking.
 (defthm union-is-a-subset-2
   (subset y (set-union x y)))
 
-;; This completes interaction of union and intersection with subset. 
+;; This completes interaction of union and intersection with subset.
 
 ;; Now show interaction between subset and memberp functions
 
@@ -107,7 +107,7 @@ useful later, since anyway I would need to reason about sets in model-checking.
                 (subset x y))
            (not (consp x))))
 
-;; This completes interaction between subset and memberp. 
+;; This completes interaction between subset and memberp.
 
 ;; Now we define a proper subset and show it is irreflexive.
 
@@ -128,7 +128,7 @@ useful later, since anyway I would need to reason about sets in model-checking.
            (subset x y)))
 
 ;; So I think we have proved enough theorems about sets for now, and we disable
-;; all the functions. 
+;; all the functions.
 
 (in-theory (disable proper-subset set-union set-equal set-intersect))
 

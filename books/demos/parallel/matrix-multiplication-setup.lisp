@@ -8,10 +8,10 @@
 (defun transpose-fast-aux (matrix)
   (if (endp matrix)
       (mv nil nil)
-    
+
     (let ((element-to-append (caar matrix))
           (new-row (cdar matrix)))
-      
+
       (mv-let (acc new-row-list)
               (transpose-fast-aux (cdr matrix))
               (mv (cons element-to-append acc)
@@ -26,9 +26,9 @@
                   (transpose-fast remaining-matrix)))))
 
 (defun dot-product (rowA colB acc)
-  (if (endp rowA) 
+  (if (endp rowA)
       acc
-    (dot-product (cdr rowA) 
+    (dot-product (cdr rowA)
                  (cdr colB)
                  (+ (* (car rowA) (car colB))
                     acc))))
@@ -46,13 +46,13 @@
   (cond ((equal curr-row rows)
          big-acc)
         ((equal curr-col cols)
-         (make-matrix-aux rows cols (1+ curr-row) 0 nil 
-                          (cons row-acc big-acc) 
+         (make-matrix-aux rows cols (1+ curr-row) 0 nil
+                          (cons row-acc big-acc)
                           64bit-flag))
-        (t 
-         (make-matrix-aux rows cols curr-row (1+ curr-col) 
-                          (cons (mod (+ (* curr-row curr-col) 
-                                        (* 23 curr-row curr-row) 
+        (t
+         (make-matrix-aux rows cols curr-row (1+ curr-col)
+                          (cons (mod (+ (* curr-row curr-col)
+                                        (* 23 curr-row curr-row)
                                         (* 3 curr-col curr-col))
                                      (if 64bit-flag 3000 300))
                                 row-acc)

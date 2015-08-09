@@ -49,7 +49,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -74,7 +74,7 @@ To certify this book, first, create a world with the following packages:
 |#
 (in-package "FUPOL")
 
-;;(include-book "forma-normal")  
+;;(include-book "forma-normal")
 (include-book "fuforma-normal"
 	      :load-compiled-file nil)
 
@@ -83,7 +83,7 @@ To certify this book, first, create a world with the following packages:
 ;;; ------------------
 
 (defun + (p q)
-  (cond ((and (not (polinomiop p)) (not (polinomiop q))) 
+  (cond ((and (not (polinomiop p)) (not (polinomiop q)))
 	 (nulo))
 	((not (polinomiop p))
 	 q)

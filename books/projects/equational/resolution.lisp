@@ -1,6 +1,6 @@
 ;; UTEP - Utrecht Texas Equational Prover
 ;; Written by Grant Olney Passmore {grant@math.utexas.edu}
-;; 
+;;
 ;; Resolution, merging, and factoring routines with Set-Of-Support
 ;; and term weighting.
 
@@ -33,8 +33,8 @@
   (mv-let (unified-instance mgu)
 	  (unify (strip-negation lit0) (strip-negation lit1))
 	  (if (not (member unified-instance '(DNU OUT-OF-TIME)))
-	      (remove-elements-once-each 
-	       (apply-unifier 
+	      (remove-elements-once-each
+	       (apply-unifier
 		(append clause0 (standardize-apart clause0 clause1)) mgu)
 	       (list (apply-unifier lit0 mgu) (apply-unifier lit1 mgu)))
 	    'DNR)))
@@ -54,7 +54,7 @@
 ;; referencing the input literals to resolution for documenting the proof steps.
 ;;
 ;; We return a list of the form:
-;; '( (top-clause-id + 1 
+;; '( (top-clause-id + 1
 ;;     (move :binary-resolution literal-id (clause-id lit-in-clause-id))
 ;;     ( RESOLVENT OF ABOVE MOVE ))
 ;;    (top-clause-id + 2
@@ -73,9 +73,9 @@
 	   (if (not (equal resolvent 'DNR))
 	       (let ((removed-dup-eq (remove-duplicates-equal resolvent)))
 		 (ctr-cons (list (list 'S (+ top-clause-id 1))
-				 (list 'move 
+				 (list 'move
 				       (if (equal (len resolvent) (len removed-dup-eq))
-					   ':binary-resolution 
+					   ':binary-resolution
 					   ':binary-resolution-and-merging)
 					   lit0-id (list clause1-id cur-clause1-pos))
 				 ;; Experimenting with implicit merging during binary resolution.  G.P. :: 11/14/06.
@@ -98,7 +98,7 @@
 	     (find-linear-resolvents c0-literal (list clause0-id cur-clause0-pos) clause0-fresh clause1 clause1
 				     clause1-id top-clause-id 0)))
 	(ctr-append new-resolvents
-		(find-all-binary-resolvents* (cdr clause0) clause0-fresh clause1 clause0-id clause1-id 
+		(find-all-binary-resolvents* (cdr clause0) clause0-fresh clause1 clause0-id clause1-id
 					     (+ (len new-resolvents) top-clause-id) (1+ cur-clause0-pos)))))))
 
 (defun find-all-binary-resolvents (clause0 clause1 clause0-id clause1-id top-clause-id)
@@ -107,12 +107,12 @@
 ;; MERGE-CLAUSE (clause clause-id top-clause)
 ;; Given a clause, attempt to merge any of its identical literals,
 ;; returning a new inference with id (1+ top-clause) if merging is
-;; successful.  
+;; successful.
 ;; G. Passmore :: 12/22/05
 
 (defun merge-clause* (clause clause-fresh clause-id top-clause cur-clause-pos cur-merge-positions cur-merge-lits)
   (cond ((endp clause) (if (not (consp cur-merge-positions)) nil
-			 (list (list 'S (1+ top-clause)) 
+			 (list (list 'S (1+ top-clause))
 			       (list 'MOVE ':MERGE-CLAUSE (list clause-id ':MERGED-LITERALS cur-merge-positions))
 			       (remove-duplicates-equal clause-fresh))))
 	((or (member-equal (car clause) (cdr clause))
@@ -129,7 +129,7 @@
 ;; find all moves of binary factors that may be extracted from lit and
 ;; the remaining literals in clause.
 ;; Note: if cur-clause-pos<lit-pos, then we do not perform factoring, as it would
-;; be a duplicate factor (this is assuming this function is called by 
+;; be a duplicate factor (this is assuming this function is called by
 ;; FIND-ALL-BINARY-FACTORS*, and that factoring is done in order).
 ;; Note: We now do implicit merging upon factoring.
 ;; G. Passmore :: 12/22/05
@@ -149,15 +149,15 @@
 		  (unify (strip-negation lit) (strip-negation (car clause)))
 		  (if (not (member unified-instance '(DNU OUT-OF-TIME)))
 		      (let ((new-factor (remove-duplicates-equal (apply-unifier clause-fresh mgu)))) ;; We merge now implicitly.
-			(cons (list (list 'S (1+ top-clause-id)) 
+			(cons (list (list 'S (1+ top-clause-id))
 				    (list 'move :BINARY-FACTORING (list clause-id :PRODUCT-LITERALS (list lit-pos cur-clause-pos)))
 				    new-factor)
 			      (binary-factors-for-literal* lit (cdr clause) clause-fresh lit-pos clause-id (1+ cur-clause-pos) (1+ top-clause-id))))
 		    (binary-factors-for-literal* lit (cdr clause) clause-fresh lit-pos clause-id (1+ cur-clause-pos) top-clause-id)))
 	(binary-factors-for-literal* lit (cdr clause) clause-fresh lit-pos clause-id (1+ cur-clause-pos) top-clause-id)))))
-		      
+
 (defun binary-factors-for-literal (lit clause lit-pos clause-id top-clause-id)
-  (binary-factors-for-literal* lit clause clause 
+  (binary-factors-for-literal* lit clause clause
 			       lit-pos clause-id 0 top-clause-id))
 
 ;; FIND-ALL-BINARY-FACTORS (clause clause-id top-clause-id cur-clause-pos)
@@ -182,12 +182,12 @@
 (defun linear-resolution* (cur-clause0 remaining-proof-moves top-clause-id cur-clause-id0)
   (if (endp remaining-proof-moves) nil
     ;(if (not (and (< cur-clause-id0 (/ last-cycle-top-clause 3/2)) (< cur-clause-id1 last-cycle-top-clause))) ;; This is a silly heuristic of mine.
-      (let ((new-resolvents (find-all-binary-resolvents cur-clause0 (extract-clause (car remaining-proof-moves)) 
+      (let ((new-resolvents (find-all-binary-resolvents cur-clause0 (extract-clause (car remaining-proof-moves))
 							cur-clause-id0 (caar remaining-proof-moves) top-clause-id)))
 	(append new-resolvents
 		(linear-resolution* cur-clause0 (cdr remaining-proof-moves) (+ (len new-resolvents) top-clause-id)
 				    cur-clause-id0 )))))
-				       
+
 ;;
 ;; ** New version of linear-resolution function, written on October 17th, 2006 **
 ;; The changes are now to allow full SOS usage at the linear-resolution level.
@@ -198,16 +198,16 @@
 	(t (let ((max-clause-weight (get-setting prover-settings 'max-weight)))
 	     (let (
 		 ;(weight-schema (get-setting prover-settings 'weight-schema))
-		   (new-sos-resolvents  
-		    (linear-resolution* (extract-clause (car sos-moves)) usable-moves 
-					top-clause-id (caar sos-moves))))					
+		   (new-sos-resolvents
+		    (linear-resolution* (extract-clause (car sos-moves)) usable-moves
+					top-clause-id (caar sos-moves))))
 	       (append (filter-out-heavy-clauses new-sos-resolvents max-clause-weight)
 		       (linear-resolution (cdr sos-moves) usable-moves (+ top-clause-id (len new-sos-resolvents)) prover-settings)))))))
 
 ;(defun linear-resolution (all-proof-moves top-clause-id last-cycle-top-clause)
 ;  (if (endp all-proof-moves) nil
 ;    (let ((new-resolvents (linear-resolution* (extract-clause (car all-proof-moves)) (cdr all-proof-moves) top-clause-id last-cycle-top-clause (caar all-proof-moves) 0)))
-;      (append new-resolvents 
+;      (append new-resolvents
 ;	      (linear-resolution (cdr all-proof-moves) (+ top-clause-id (len new-resolvents)) last-cycle-top-clause)))))
 
 ;; LINEAR-MERGING (all-proof-moves top-clause-id last-cycle-top-clause)
@@ -217,18 +217,18 @@
 
 (defun linear-merging (remaining-proof-moves top-clause-id last-cycle-top-clause cur-clause-id)
   (if (endp remaining-proof-moves) nil
-     (let ((new-moves (if (> cur-clause-id last-cycle-top-clause) 
+     (let ((new-moves (if (> cur-clause-id last-cycle-top-clause)
                           (merge-clause (extract-clause (car remaining-proof-moves)) (caar remaining-proof-moves) top-clause-id)
                         nil)))
-        (if (consp new-moves) 
+        (if (consp new-moves)
             (append (list new-moves) (linear-merging (cdr remaining-proof-moves) (+ top-clause-id (len new-moves)) last-cycle-top-clause (1+ cur-clause-id)))
           (linear-merging (cdr remaining-proof-moves) top-clause-id last-cycle-top-clause (1+ cur-clause-id))))))
 
 (defun linear-factoring (remaining-proof-moves top-clause-id last-cycle-top-clause cur-clause-id)
   (if (endp remaining-proof-moves) nil
-     (let ((new-moves (if (> cur-clause-id last-cycle-top-clause) 
+     (let ((new-moves (if (> cur-clause-id last-cycle-top-clause)
                           (find-all-binary-factors (extract-clause (car remaining-proof-moves)) (caar remaining-proof-moves) top-clause-id)
                          nil)))
-        (if (consp new-moves) 
+        (if (consp new-moves)
             (append new-moves (linear-factoring (cdr remaining-proof-moves) (+ top-clause-id (len new-moves)) last-cycle-top-clause (1+ cur-clause-id)))
           (linear-factoring (cdr remaining-proof-moves) top-clause-id last-cycle-top-clause (1+ cur-clause-id))))))

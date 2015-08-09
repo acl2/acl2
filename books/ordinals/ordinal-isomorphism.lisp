@@ -1,5 +1,5 @@
 #|
-This book proves the isomorphism between the old acl2 ordinals 
+This book proves the isomorphism between the old acl2 ordinals
 and the new acl2 ordinals under their respective < relations. the
 goal is to represent the high level ideas of bijection and
 homomorphism in acl2. To that end, we define ctoa: oc -> ac
@@ -130,10 +130,10 @@ to tell acl2 to use our relation for termination proofs. |#
 		   (not (posp x))))))
 
 ;makes a list of copies of a that is n elements
-(defun copyn (a n) 
+(defun copyn (a n)
   (declare (xargs :guard (natp n)))
-  (if (zp n) 
-      nil 
+  (if (zp n)
+      nil
     (cons a (copyn a (1- n)))))
 
 (local
@@ -149,7 +149,7 @@ to tell acl2 to use our relation for termination proofs. |#
   (declare (xargs :guard (o-p x)))
   (if (o-finp x)
       x
-    (append (copyn (ctoa (o-first-expt x)) 
+    (append (copyn (ctoa (o-first-expt x))
 		   (o-first-coeff x))
             (ctoa (o-rst x)))))
 
@@ -215,14 +215,14 @@ to tell acl2 to use our relation for termination proofs. |#
 		 (o< (o-first-expt x) (o-first-expt y)))
 	    (e0-ord-< (ctoa x)
 		      (ctoa y)))
-   :hints (("goal" 
+   :hints (("goal"
 	    :expand ((ctoa x) (ctoa y))))))
 
 ; Don't really need the hints above.
 
 (local
  (defun i2 (n1 n2)
-   (if (zp n2) 
+   (if (zp n2)
        n1
      (i2 (- n1 1) (- n2 1)))))
 
@@ -266,7 +266,7 @@ to tell acl2 to use our relation for termination proofs. |#
 	     (i1 (o-first-expt (o-rst x)) (o-first-expt y)))
 	 (i1 (o-first-expt x) (o-first-expt y)))
      (cons x y))))
- 
+
 (local
  (defthm app-copyn-1
    (implies (consp (copyn z x))
@@ -278,7 +278,7 @@ to tell acl2 to use our relation for termination proofs. |#
  (encapsulate
   ;this encapsulate is here so we can eliminate subgoal hints
   ()
-  
+
   (local
    (defthm o<-e0-ord-<-helper2
      (implies (and (o-infp y)
@@ -296,12 +296,12 @@ to tell acl2 to use our relation for termination proofs. |#
      :hints (("goal"
 	      :expand ((ctoa y)
 		       (ctoa (o-rst x)))))))
-  
+
   (defthm o<-e0-ord-<
     (implies (and (o-p x)
 		  (o-p y)
 		  (o< x y))
-	     (e0-ord-< (ctoa x) 
+	     (e0-ord-< (ctoa x)
 		       (ctoa y)))
     :hints (("goal" :induct (i1 x y))))))
 
@@ -324,8 +324,8 @@ to tell acl2 to use our relation for termination proofs. |#
      :hints (("goal"
 	      :cases ((posp (+ -1 x)))))
      :rule-classes ((:rewrite :match-free :all))))
-   
-  
+
+
    (defthm e0-ord-app-copyn
      (implies (and (posp x)
 		   (natp n)
@@ -341,7 +341,7 @@ to tell acl2 to use our relation for termination proofs. |#
 
 (local
  (encapsulate
- 
+
   ;this encapsulate is here to get rid of subgoal hints
 
   ()
@@ -398,7 +398,7 @@ to tell acl2 to use our relation for termination proofs. |#
 	     :cases ((o-infp (o-rst x)))))))
 
  (defthm |oc.x  <=>  oa(ctoa.x)|
-   (implies (o-p x) 
+   (implies (o-p x)
 	    (e0-ordinalp (ctoa x)))
    :rule-classes ((:forward-chaining)
 		  (:rewrite))))
@@ -408,7 +408,7 @@ to tell acl2 to use our relation for termination proofs. |#
 		  :verify-guards nil))
   (if (atom a)
       a
-    (o+ (omega-term (atoc (car a)) 
+    (o+ (omega-term (atoc (car a))
 		    1)
 	(atoc (cdr a)))))
 
@@ -466,7 +466,7 @@ to tell acl2 to use our relation for termination proofs. |#
 		 (car y))
 	     (ci (car x)
 		 (car y))
-	     (ci (cdr x) 
+	     (ci (cdr x)
 		 (cdr y))
 	     )
      (list x y))))
@@ -479,7 +479,7 @@ to tell acl2 to use our relation for termination proofs. |#
 
 (local
  (encapsulate
-  
+
   ()
 
   (local
@@ -488,7 +488,7 @@ to tell acl2 to use our relation for termination proofs. |#
     ;this encapsulate is here to get rid of the subgoal hints for help1
 
     ()
-  
+
     (local
      (defthm e0-ord-<-o<-help1a
        (implies (and (equal (o-first-expt (atoc (cdr x)))
@@ -515,8 +515,8 @@ to tell acl2 to use our relation for termination proofs. |#
        :rule-classes ((:rewrite :match-free :all))))
 
     (defthm e0-ord-<-o<-help1
-      (implies (and (consp x) 
-		    (consp y)  
+      (implies (and (consp x)
+		    (consp y)
 		    (e0-ordinalp x)
 		    (e0-ordinalp y)
 		    (implies (and (consp (cdr x))
@@ -538,7 +538,7 @@ to tell acl2 to use our relation for termination proofs. |#
 	       :do-not-induct t))
       :rule-classes nil)))
 
-  
+
 
   (local
    (defthm e0-ord-<-o<-help2a
@@ -574,8 +574,8 @@ to tell acl2 to use our relation for termination proofs. |#
 
   (local
    (defthm e0-ord-<-o<-help2
-     (implies (and (consp x) 
-		   (consp y)  
+     (implies (and (consp x)
+		   (consp y)
 		   (e0-ordinalp x)
 		   (e0-ordinalp y)
 		   (equal (o-first-expt (atoc x))
@@ -584,7 +584,7 @@ to tell acl2 to use our relation for termination proofs. |#
 			  (atoc (car y)))
 		   (implies (e0-ord-< (car x) (car y))
 			    (o< (atoc (car x)) (atoc (car y))))
-    
+
 		   (implies (e0-ord-< (cdr x) (cdr y))
 			    (o< (atoc (cdr x)) (atoc (cdr y))))
 		   (e0-ord-< x y))
@@ -752,7 +752,7 @@ to tell acl2 to use our relation for termination proofs. |#
 			    (x y)
 			    (y x))
 		 (:instance o<-e0-ord-<)))))
-	  
+
 (defthm atoc-=-equiv
  (implies (and (e0-ordinalp x)
 	       (e0-ordinalp y))
@@ -800,7 +800,7 @@ to tell acl2 to use our relation for termination proofs. |#
 
 (defthm e0-ordinal-well-founded
   (and (implies (e0-ordinalp x) (o-p (atoc x)))
-       (implies (and (e0-ordinalp x)                       
+       (implies (and (e0-ordinalp x)
                      (e0-ordinalp y)
                      (e0-ord-< x y))
                 (o< (atoc x) (atoc y))))

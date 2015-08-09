@@ -9,7 +9,7 @@
 
 (local (include-book "mod-proofs"))
 
-#| 
+#|
 
 Todo: We could probably prove REM analogs for most of the rules in this book (since REM and MOD agree on a
 certain range of inputs), but we don't use REM much at all in the library (for good reason, thinks Eric), so
@@ -18,7 +18,7 @@ perhaps this isn't worth spending time on.
 |#
 
 
-;This fact is built in to ACL2 as (:TYPE-PRESCRIPTION MOD), so we disable it. 
+;This fact is built in to ACL2 as (:TYPE-PRESCRIPTION MOD), so we disable it.
 (defthmd mod-acl2-numberp-type-prescription
   (acl2-numberp (mod x y))
   :rule-classes (:type-prescription))
@@ -83,7 +83,7 @@ perhaps this isn't worth spending time on.
                     (if (not (rationalp (/ x y)))
                         x
                       (if (integerp (/ x y))
-                          0 
+                          0
                         (+ X (* -1 Y (FLOOR (* X (/ Y)) 1))) ;this case is gross (basically the defn of mod)
                         ))))))
 
@@ -101,9 +101,9 @@ perhaps this isn't worth spending time on.
            (<= 0 (mod x y))))
 
 (defthm mod-non-negative-rationalp-type-prescription
-  (implies (and (case-split (< 0 y))                     
-                (case-split (not (complex-rationalp x))) 
-                (case-split (not (complex-rationalp y))) 
+  (implies (and (case-split (< 0 y))
+                (case-split (not (complex-rationalp x)))
+                (case-split (not (complex-rationalp y)))
                 )
            (and (<= 0 (mod x y))
                 (rationalp (mod x y)) ;we might as well include this
@@ -248,7 +248,7 @@ perhaps this isn't worth spending time on.
 ;I don't think we can drop either hyp.
 (defthm mod-sum-elim-second
   (implies (and (case-split (not (complex-rationalp x1)))
-                (case-split (not (complex-rationalp x2))) 
+                (case-split (not (complex-rationalp x2)))
                 )
            (equal (mod (+ x1 (mod x2 y)) y)
                   (mod (+ x1 x2) y))))
@@ -256,7 +256,7 @@ perhaps this isn't worth spending time on.
 (defthm mod-sum-elim-second-gen
   (implies (and (integerp (/ y2 y))
                 (case-split (not (complex-rationalp x1)))
-                (case-split (not (complex-rationalp x2))) 
+                (case-split (not (complex-rationalp x2)))
                 (case-split (not (equal y 0)))
                 (case-split (rationalp y))
                 )
@@ -276,7 +276,7 @@ perhaps this isn't worth spending time on.
 (defthm mod-sum-elim-first-gen
   (implies (and (integerp (/ y2 y))
                 (case-split (not (complex-rationalp x1)))
-                (case-split (not (complex-rationalp x2))) 
+                (case-split (not (complex-rationalp x2)))
                 (case-split (not (equal y 0)))
                 (case-split (rationalp y))
                 )
@@ -316,7 +316,7 @@ perhaps this isn't worth spending time on.
 
 ;I'm going to try keeping this disabled, since relieving the first hyp may be expensive.
 ;rename: no more n!
-;(integerp (* x (/ y))) basically says that x is a multiple of y, which is 
+;(integerp (* x (/ y))) basically says that x is a multiple of y, which is
 ;basicially what (equal (mod x y) 0) says too.
 (defthmd mod-mult-of-n
   (implies (and (integerp (* x (/ y)))
@@ -576,7 +576,7 @@ ex:   (INTEGERP (* (/ (EXPT 2 J))
                   0)))
 
 (defthm fl-mod-x-1
-  (equal (fl (mod x 1)) 
+  (equal (fl (mod x 1))
          0))
 
 (defthmd mod-by-2
@@ -705,7 +705,7 @@ ex:   (INTEGERP (* (/ (EXPT 2 J))
                 )
            (equal (equal (mod (+ x k) y) (mod k y))
                   (equal 0 (mod x y)))))
-  
+
 
 
 
@@ -750,7 +750,7 @@ ex:   (INTEGERP (* (/ (EXPT 2 J))
     (implies (and (integerp m)
 		  (integerp n))
 	     (integerp (mod m n)))
-  :rule-classes (:rewrite :type-prescription))  
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm rationalp-mod
     (implies (case-split (rationalp m))
@@ -827,7 +827,7 @@ ex:   (INTEGERP (* (/ (EXPT 2 J))
    (implies (and (<= 0 m)
                  (case-split (rationalp m))
                  )
-            (<= (mod m n) m))  
+            (<= (mod m n) m))
    :rule-classes :linear)
 
  )
@@ -872,7 +872,7 @@ ex:   (INTEGERP (* (/ (EXPT 2 J))
                 (natp n))
            (natp (mod m n)))
   :rule-classes ((:type-prescription :typed-term (mod m n))))
-           
+
 (defthm natp-mod-rewrite
   (implies (and (natp m)
                 (natp n))

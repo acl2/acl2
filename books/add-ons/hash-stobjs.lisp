@@ -397,7 +397,7 @@
              (:creator
               (packn-pos (list "CREATE-" root) root))
 ;---<
-             (:boundp 
+             (:boundp
               (and (eq key2 :hash-table)
                    (packn-pos (list root "-BOUNDP") root)))
              (:accessor?
@@ -824,7 +824,7 @@
                               :verify-guards t))
               (consp (hons-assoc-equal k (nth ,n ,var))))
              (,accessor?-name
-              
+
               (k ,var)
               (declare (xargs :guard ,(if (eq hash-test 'eql)
                                           `(and (,top-recog ,var)
@@ -1381,7 +1381,7 @@
               (eq (car type) 'hash-table))
          (cond ((or (atom (cdr type))
                     (not (member (cadr type)
-                                 '(EQL 
+                                 '(EQL
                                    EQUAL
                                    #+(and hons (not acl2-loop-only))
                                    HONS-EQUAL))))
@@ -1808,7 +1808,7 @@
    (assert! (equal (slowhash-get (cons 1 2) bigstobj) 4))
    (assert! (equal (slowhash-count bigstobj) 101))
 
-   
+
 
    (defun check-same (n bigstobj)
      (declare (xargs :stobjs (bigstobj)
@@ -1851,7 +1851,7 @@
    (make-event
     (let* ((bigstobj (slowhash-clear bigstobj))
            (bigstobj (bighash-init 10000 nil nil bigstobj)))
-      (mv nil '(value-triple :invisible) state bigstobj)))   
+      (mv nil '(value-triple :invisible) state bigstobj)))
 
    (assert! (equal (bighash-count bigstobj) 0))
    (assert! (equal (slowhash-count bigstobj) 0))

@@ -972,7 +972,7 @@ values.</p>"
                (:= (vl-match))
                (return (make-vl-patternkey-default))))
          (backup (vl-tokstream-save))
-         
+
          ((mv err expr tokstream)
           (vl-parse-expression))
          ((unless err)
@@ -1558,8 +1558,8 @@ identifier, so we convert it into a hidpiece.</p>"
       (seq tokstream
            (rest := (vl-parse-scoped-hid))
            (return (make-vl-scopeexpr-colon :first first :rest rest)))))
-            
-               
+
+
 
   (defparser vl-parse-function-call ()
     :measure (two-nats-measure (vl-tokstream-measure) 10)
@@ -1734,7 +1734,7 @@ identifier, so we convert it into a hidpiece.</p>"
            (parts := (vl-parse-1+-expressions-separated-by-commas))
            (:= (vl-match-token :vl-rcurly))
            (:= (vl-match-token :vl-rcurly))
-           
+
            (return (make-vl-assignpat-repeat :reps first-expr
                                              :vals parts)))))
 
@@ -2209,7 +2209,7 @@ identifier, so we convert it into a hidpiece.</p>"
             (set := (vl-parse-1+-open-value-ranges))
             (:= (vl-match-token :vl-rcurly))
             (return (list (make-vl-inside :elem first :set set))))
-            
+
           (op := (vl-parse-op 2 '((:vl-lt  . :vl-binary-lt)
                                   (:vl-lte . :vl-binary-lte)
                                   (:vl-gt  . :vl-binary-gt)
@@ -2505,7 +2505,7 @@ identifier, so we convert it into a hidpiece.</p>"
 
 
 
-         
+
 
 
 (defun vl-val-when-error-claim-fn (name args)
@@ -3320,6 +3320,6 @@ identifier, so we convert it into a hidpiece.</p>"
 ;  | streaming_concatenation
 
 
-; operator_assignment ::= 
+; operator_assignment ::=
 
 

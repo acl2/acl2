@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -30,7 +30,7 @@
 #|
 
 This book contains a few lemmas which are exported in lib/arith but which aren't needed in support/ or
-arithmetic/.  
+arithmetic/.
 
 |#
 
@@ -172,7 +172,7 @@ arithmetic/.
 ; use.
 
 (encapsulate nil
-  (local 
+  (local
    (defthm renaming
     (implies (and (rationalp a)
                   (rationalp xmax)
@@ -331,4 +331,4 @@ arithmetic/.
            (and (< (- (* amax bmax)) (* a b))
                 (< (* a b) (* amax bmax))))
   :hints (("Goal" :cases ((< b 0) (> b 0))))
-  :rule-classes nil)  
+  :rule-classes nil)

@@ -24,22 +24,22 @@
 #|
 To certify this book, first, create a world with the following packages:
 
-(DEFPKG 
-  "ACL2-ASG" 
-  (UNION-EQ 
-   *ACL2-EXPORTS* 
+(DEFPKG
+  "ACL2-ASG"
+  (UNION-EQ
+   *ACL2-EXPORTS*
    *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*))
 
-(DEFPKG 
-  "ACL2-AGP" 
-  (UNION-EQ *ACL2-EXPORTS* 
+(DEFPKG
+  "ACL2-AGP"
+  (UNION-EQ *ACL2-EXPORTS*
 	    *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*))
 
-(DEFPKG 
-  "ACL2-CRG" 
-  (UNION-EQ 
-   *ACL2-EXPORTS* 
-   *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*)) 
+(DEFPKG
+  "ACL2-CRG"
+  (UNION-EQ
+   *ACL2-EXPORTS*
+   *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*))
 
 (certify-book "aof" 3)
 |#
@@ -48,7 +48,7 @@ To certify this book, first, create a world with the following packages:
 ; An ordered field is Archimedean if and only if each element of the field is
 ; less than some positive integer. This book contains a convenient ACL2
 ; axiomatization of such fields. ACL2 is able to verify that the axioms are
-; consistent. The axioms permit the definition of a function, called 
+; consistent. The axioms permit the definition of a function, called
 ; Least-nat-bound, that returns the least nonnegative integer larger than its
 ; input.
 
@@ -76,7 +76,7 @@ To certify this book, first, create a world with the following packages:
 
  ; Witnesses:
  (local
-  (defun 
+  (defun
     aofp (x)
     (rationalp x)))
 
@@ -268,7 +268,7 @@ To certify this book, first, create a world with the following packages:
 				(equal (<_a x y) nil))))))
 
  (defthm
-   <=_a-extends-<_a   
+   <=_a-extends-<_a
    (implies (and (<_a x y)
 		 (aofp x)
 		 (aofp y))
@@ -284,7 +284,7 @@ To certify this book, first, create a world with the following packages:
 		 (aofp y)
 		 (aofp z))
 	    (<_a x z)))
- 
+
  (defthm
    Antisymmetry-of-<=_a
    (implies (and (<=_a x y)
@@ -343,7 +343,7 @@ To certify this book, first, create a world with the following packages:
                            (unary--_a unary-- unary--_a)
                            (unary-/_a unary-/ unary-/_a))))
 
-;The next two Right Unicity theorems are needed 
+;The next two Right Unicity theorems are needed
 ; for Knuth's generalized 91 function:
 
 (defthm
@@ -530,7 +530,7 @@ To certify this book, first, create a world with the following packages:
 		  (:functional-instance
 		   acl2-agp::Involution-of-inv
 		   (acl2-agp::equiv equal)
-		   (acl2-agp::pred (lambda (x) 
+		   (acl2-agp::pred (lambda (x)
 				     (and (aofp x)
 					  (not (equal x 0)))))
 		   (acl2-agp::op binary-*_a)
@@ -600,7 +600,7 @@ To certify this book, first, create a world with the following packages:
 		  (:functional-instance
 		   acl2-agp::inv-cancellation-on-right
 		   (acl2-agp::equiv equal)
-		   (acl2-agp::pred (lambda (x) 
+		   (acl2-agp::pred (lambda (x)
 				     (and (aofp x)
 					  (not (equal x 0)))))
 		   (acl2-agp::op binary-*_a)
@@ -634,7 +634,7 @@ To certify this book, first, create a world with the following packages:
 		(equal (equal (*_a z x)(*_a z y))
 		       (or (equal z 0)
 			   (equal x y)))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance
 		  (:functional-instance
 		   acl2-agp::Right-cancellation-for-op
@@ -650,7 +650,7 @@ To certify this book, first, create a world with the following packages:
 		  (:functional-instance
 		   acl2-agp::Right-cancellation-for-op
 		   (acl2-agp::equiv equal)
-		   (acl2-agp::pred (lambda (x) 
+		   (acl2-agp::pred (lambda (x)
 				     (and (aofp x)
 					  (not (equal x 0)))))
 		   (acl2-agp::op binary-*_a)
@@ -745,7 +745,7 @@ To certify this book, first, create a world with the following packages:
 		  (:functional-instance
 		   acl2-agp::Uniqueness-of-op-inverses
 		   (acl2-agp::equiv equal)
-		   (acl2-agp::pred (lambda (x) 
+		   (acl2-agp::pred (lambda (x)
 				     (and (aofp x)
 					  (not (equal x 0)))))
 		   (acl2-agp::op binary-*_a)
@@ -754,7 +754,7 @@ To certify this book, first, create a world with the following packages:
 		  (acl2-agp::x x)
 		  (acl2-agp::y y))))))
 
-(defthm 
+(defthm
   Functional-Commutativity-Laws-1
   (implies (and (aofp x)
 		(aofp y))
@@ -921,13 +921,13 @@ To certify this book, first, create a world with the following packages:
 		 (x (<_a (/_a x) 0))
 		 (y (<_a x 0))))))
 
-(local 
+(local
  (defthm
    <_a-Cancellation-Laws-for-+_a-lemma
    (implies (and (<_a (+_a x y)(+_a x z))
 		 (aofp x)
 		 (aofp y)
-		 (aofp z))	    
+		 (aofp z))
 	    (<_a y z))
    :hints (("Goal"
 	    :use (:instance
@@ -1162,7 +1162,7 @@ To certify this book, first, create a world with the following packages:
 			       (>_a y 0)))))))))
 
 (local
- (in-theory (disable  
+ (in-theory (disable
 	     (:REWRITE <_A-CANCELLATION-LAWS-FOR-+_A-LEMMA))))
 
 (local
@@ -1360,7 +1360,7 @@ To certify this book, first, create a world with the following packages:
   Least-nat-bound-loop (i x)
   (declare (xargs :guard (and (integerp i)
 			      (aofp x))
-		  :measure 
+		  :measure
 		  (let ((i (ifix i))
 			(x (afix x)))
 		       (cond ((<_a x 0)
@@ -1368,7 +1368,7 @@ To certify this book, first, create a world with the following packages:
 			     ((>_a i x)
 			      0)
 			     (t
-			      (+ 1 
+			      (+ 1
 				 (Nat-Int-Bound x)(- i)))))))
   (let ((i (ifix i))
 	(x (afix x)))
@@ -1405,7 +1405,7 @@ To certify this book, first, create a world with the following packages:
 		 (z 1)))))
 
 (local
- (defthm 
+ (defthm
    Least-nat-bound-loop-is-LEAST-bound-lemma
    (IMPLIES (AND (NOT (<_A X I))
 		 (NOT (<_A I X))
@@ -1455,7 +1455,7 @@ To certify this book, first, create a world with the following packages:
 	   (>_a (+_a 1 x) 0))
   :hints (("Goal"
 	   :in-theory (disable transitivity-of-<_a)
-	   :use (:instance 
+	   :use (:instance
 		 transitivity-of-<_a
 		 (x 0)(y x)(z (+_a 1 x))))))
 
@@ -1493,7 +1493,7 @@ To certify this book, first, create a world with the following packages:
 	   (>= (least-nat-bound-loop 0 x) 0))
   :rule-classes :type-prescription
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       <=-rationalp-Least-nat-bound-loop)
 	   :use (:instance
 		 <=-rationalp-Least-nat-bound-loop
@@ -1507,7 +1507,7 @@ To certify this book, first, create a world with the following packages:
 		(>=_a x r))
 	   (< r (least-nat-bound-loop i x)))
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       <=-rationalp-Least-nat-bound-loop)
 	   :use <=-rationalp-Least-nat-bound-loop)))
 
@@ -1518,7 +1518,7 @@ To certify this book, first, create a world with the following packages:
 	   (> (least-nat-bound-loop 0 x) 0))
   :rule-classes :type-prescription
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       <-rationalp-Least-nat-bound-loop)
 	   :use (:instance
 		 <-rationalp-Least-nat-bound-loop

@@ -45,9 +45,9 @@
 ;;; This legacy doc string was replaced Nov. 2014 by a corresponding
 ;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
 ;   :doc ":DOC-SECTION leftist-trees
-; 
+;
 ; An implementation of Leftist Trees.  ~/~/
-; 
+;
 ; Leftist trees are an efficient implementation of binary heaps. Regular
 ; (completely balanced) binary heaps are tricky, and in most cases near
 ; impossible, to implement in functional languages because of the need
@@ -59,40 +59,40 @@
 ; the fundamental heap operations (insert, delete-min) only recur on the
 ; right spine of the tree in question, this guarantees that these
 ; operations are O(log(n)), where n is the size of the tree.
-; 
+;
 ; Leftist trees look like this:
-; 
+;
 ;     (rank root left right)
-; 
+;
 ; where \"rank\" is defined to be the length of the right spine of the
 ; tree, \"root\" is the root element of the tree, \"left\" is the left
 ; sub-tree, and \"right\" is the right sub-tree.
-; 
+;
 ; Leftist trees are heap-ordered, and they are \"balanced\" in a loose
 ; sense. In particular, the size of the tree is at least as big as an
 ; exponential function of the rank:
-; 
+;
 ;     size(tree) >= 2^(rank(tree)) - 1,
-; 
+;
 ; or, solving for rank(tree) and noting that the rank is always an
 ; integer,
-; 
+;
 ;     rank(tree) <= floor(log(size(tree) + 1)).
-; 
+;
 ; The important tree operations are INSERT-LT, FIND-MIN-LT, and
 ; DELETE-MIN-LT. A useful function called BUILD-LT is also provided,
 ; which constructs a leftist tree from a list. An important constant is
 ; *EMPTY-LT*, which is the empty tree (for this implementation, just
 ; NIL).
-; 
+;
 ; To learn how to use the trees, see :DOC LEFTIST-TREE-FNS. To see some
 ; useful theorems about leftist trees, including the rank bound above,
-; see :DOC LEFTIST-TREE-THMS. 
-; 
-; Sources: 
+; see :DOC LEFTIST-TREE-THMS.
+;
+; Sources:
 ;   - Okasaki, Chris. Purely Functional Data Structures. Cambridge,
-;     U.K.: Cambridge UP, 1998. 17-20. Print.  
-; 
+;     U.K.: Cambridge UP, 1998. 17-20. Print.
+;
 ; ~/
 ; "
 )
@@ -105,11 +105,11 @@
 ; ------------------------------------------------------------
 ; Functions and Constants
 ; ------------------------------------------------------------
-; 
+;
 ; Function/Constant Name      Result
 ;   (supporting function)     Type
 ; ----------------------      ----
-; 
+;
 ; ** STRUCTURE **
 ; RANK-LT                     natural
 ; ROOT-LT                     ?
@@ -118,7 +118,7 @@
 ; *EMPTY-LT*                  NIL
 ; IS-EMPTY-LT                 boolean
 ; PROPER-LT                   boolean
-; 
+;
 ; ** OPERATIONS **
 ; MERGE-LT                    ltree
 ;   MAKE-LT                   ltree
@@ -126,7 +126,7 @@
 ; FIND-MIN-LT                 ?
 ; DELETE-MIN-LT               ltree
 ; BUILD-LT                    ltree
-; 
+;
 ; ** MISCELLANEOUS **
 ; SIZE-LT                     natural
 ; MEMBER-LT                   boolean
@@ -178,7 +178,7 @@
 ;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
 ;   ":doc-section leftist-tree-structure
 ; right sub-tree of a leftist tree~/~/
-; Returns the right sub-tree of a non-empty tree.~/"  
+; Returns the right sub-tree of a non-empty tree.~/"
   (cadddr tree))
 
 (defconst *empty-lt* NIL
@@ -189,13 +189,13 @@
 ; The default \"empty\" tree (just NIL)~/"
 )
 
-(defun is-empty-lt (tree) 
+(defun is-empty-lt (tree)
 ;;; This legacy doc string was replaced Nov. 2014 by a corresponding
 ;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
 ;   ":doc-section leftist-tree-structure
 ; checks if a tree is empty~/~/
 ; Checks if a tree is empty. For simplicity, we only require (atom
-; tree).~/" 
+; tree).~/"
   (atom tree))
 
 (defun proper-lt (tree)
@@ -222,7 +222,7 @@
          (<= (rank-lt (right-lt tree))
              (rank-lt (left-lt tree)))
          (implies (consp (left-lt tree))
-                  (lexorder (root-lt tree) 
+                  (lexorder (root-lt tree)
                             (root-lt (left-lt tree))))
          (implies (consp (right-lt tree))
                   (lexorder (root-lt tree)
@@ -252,7 +252,7 @@
 ;   ":doc-section leftist-tree-ops
 ; merge two leftist trees~/~/
 ; Merge two leftist trees.
-; 
+;
 ; Two leftist trees are merged by \"merging their right spines as you
 ; would merge two sorted lists, and then swapping the children of nodes
 ; along this path as necessary to restore the leftist property.\"
@@ -276,11 +276,11 @@
 ; insert an element into a leftist tree~/~/
 ; Insert an element into a leftist tree. This function is defined in
 ; terms of MERGE-LT.
-; 
+;
 ; Example usage:
-; 
+;
 ;     (INSERT-LT 2 (INSERT-LT 3 (INSERT-LT 4 *EMPTY-LT*)))
-; 
+;
 ; This creates a leftist tree with elements 2, 3, 4.~/"
   (merge-lt (list 1 x NIL NIL) tree))
 
@@ -334,7 +334,7 @@
 ; total number of elements in a leftist tree~/~/
 ; Returns the total number of elements in the tree.~/"
   (cond ((is-empty-lt tree) 0)
-	(t (+ 1 
+	(t (+ 1
 	      (size-lt (left-lt tree))
 	      (size-lt (right-lt tree))))))
 

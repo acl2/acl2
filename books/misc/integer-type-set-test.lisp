@@ -20,7 +20,7 @@
 (set-backchain-limit 0)
 
 (defthm lemma-1
- (implies (and (rationalp x) 
+ (implies (and (rationalp x)
                (integerp (* 1/2 x)))
           (foo (integerp x)))
  :rule-classes nil)

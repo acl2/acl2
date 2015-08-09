@@ -218,7 +218,7 @@
   (rewriting-hypothesis-1 term (mfc-ancestors mfc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
+
 ;;; Present-in-hyps is 'positive if term appears as a literal
 ;;; of goal, and 'negative if term appears negated.  It is NIL
 ;;; otherwise.  Note that due to ACL2's internal representation
@@ -403,7 +403,7 @@
 
 (defun proveably-non-zero (x alist mfc state)
   (declare (xargs :guard t))
-  
+
   ;; If x is not an IF expression, can rewriting determine that it
   ;; is numeric and not equal to zero?
 
@@ -426,7 +426,7 @@
 
 (defun proveably-non-zero-rational (x alist mfc state)
   (declare (xargs :guard t))
-  
+
   ;; If x is not an IF expression, can rewriting determine that it
   ;; is rational and not equal to zero?
 
@@ -450,7 +450,7 @@
 
 (defun proveably-non-zero-real/rational (x alist mfc state)
   (declare (xargs :guard t))
-  
+
   ;; If x is not an IF expression, can rewriting determine that it
   ;; is rational and not equal to zero?
 
@@ -467,7 +467,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; Before I moved the distributivity rules to distributivity.lisp, I 
+;;; Before I moved the distributivity rules to distributivity.lisp, I
 ;;; used the following:
 #|
 (defun stable-under-rewriting (x bin-op mfc state)
@@ -496,9 +496,9 @@
 
 (defun stable-under-rewriting-sums (x mfc state)
   (declare (xargs :guard t))
-  
+
   ;; If x is not an IF expression, does it rewrite to itself when
-  ;; inside a sum?  
+  ;; inside a sum?
 
   ;; This function is designed to test whether it is safe to add x to
   ;; a sum in order to cancel out a matching addend.  (X is presumably
@@ -526,7 +526,7 @@
 
 (defun stable-under-rewriting-products (x mfc state)
   (declare (xargs :guard t))
-  
+
   ;; If x is not an IF expression, does it rewrite to itself when
   ;; inside a product?
 
@@ -615,7 +615,7 @@
 
   ;; X is an ACL2 term.  We return t if x is a negative addend, or a
   ;; sum of negative addends.  Here, an addend is considered to be
-  ;; negative if it is a negative rational constant, or prints as 
+  ;; negative if it is a negative rational constant, or prints as
   ;; (- ...) or (* c ...) where c is a negative rational.  We also
   ;; require that x is not merely a negative constant.
 
@@ -953,8 +953,8 @@
 
   ;; Factors are the common factors so far.  Sum is the rest of the
   ;; sum to be examined. Normalize-terms-such-as-1/ax+bx-fn calls this
-  ;; the first time when it is examining a term of the form 
-  ;; (+ <addend> <rest-of-sum>), with factors the factors of <addend> and 
+  ;; the first time when it is examining a term of the form
+  ;; (+ <addend> <rest-of-sum>), with factors the factors of <addend> and
   ;; sum <sum>.  Using intersection-equal we cull the common factors of
   ;; factors and the addends of sum.
 
@@ -971,7 +971,7 @@
 
   ;; We form a new sum which is the original sum but with the common
   ;; factors removed from each addend.  That is, we return
-  ;; (/ sum (make-product common)) where we assume that 
+  ;; (/ sum (make-product common)) where we assume that
   ;; (make-product common) is non-zero.
 
   (if (eq (fn-symb sum) 'BINARY-+)
@@ -989,7 +989,7 @@
 ;;; When used as a syntaxp hypothesis in a simplification rule,
 ;;; ok-to-perform-xxx-simplification-p should prohibit the use of the
 ;;; rule only when type-set can
-;;; 1. determine that the original lhs and rhs of the inequality are 
+;;; 1. determine that the original lhs and rhs of the inequality are
 ;;;  integers, but
 ;;; 2. cannot determine that the new ones are alos integers.
 
@@ -1054,7 +1054,7 @@
  I had not been carrying out such simplifications in cases where x was a
  constant.  I had not not been doing so, because I had seen problems like:
 
-     (thm 
+     (thm
       (implies (and (rationalp x)
                   (integerp (* 3 x))
                   (rationalp y)
@@ -1112,7 +1112,7 @@
  been somewhat alleviated in more recent versions of ACL2 by the
  ability of forward-chaining rules to take on more than one
  instantiation.  I still, however, believe that my non-linear
- arithmetic extension is better.  
+ arithmetic extension is better.
 
  ===== End side bar comment one
 
@@ -1137,7 +1137,7 @@
 
  ;;; Since
  ;;; (thm
- ;;;  (implies (and (integerp x) 
+ ;;;  (implies (and (integerp x)
  ;;;                (integerp y))
  ;;;          (equal (< x y)
  ;;;                  (<= (+ 1 x) y))))
@@ -1153,7 +1153,7 @@
  ;;; This is just the first with x and y replaced with (* 3 x)
  ;;; and (* 3 y) respectively
 
- (thm 
+ (thm
   (implies (and (rationalp x)
                 (<= 0 x)
                 (integerp (* 3 x))
@@ -1165,7 +1165,7 @@
 
  ;;; A slight weakening of the above
 
- (thm 
+ (thm
   (implies (and (rationalp x)
                 (<= 0 x)
                 (integerp (* 3 x))
@@ -1177,7 +1177,7 @@
 
  ;;; A slightly more elaborate thm.
 
- (thm 
+ (thm
   (implies (and (rationalp x)
                 (<= 0 x)
                 (integerp (* 3 x))
@@ -1333,7 +1333,7 @@
 		  ;; We will be adding (< lhs rhs), so we must check
 		  ;; further before we can tell if the 1+-trick
 		  ;; applies.
-		  
+
 		  (simplify-ok-p-1 orig-term new-term
 				   alist
 				   mfc state))
@@ -1360,14 +1360,14 @@
 	     (cond ((eq parity 'positive)
 		    (cond ((eq relation '<)
 
-			   ;; Linear arithmetic sees this as 
+			   ;; Linear arithmetic sees this as
 			   ;; (<= rhs lhs), so the 1+-trick is not
 			   ;; applicable.  Go ahead and simplify.
 
 			   t)
 			  ((eq relation 'EQUAL)
 
-			   ;; Linear arithmetic sees this as 
+			   ;; Linear arithmetic sees this as
 			   ;; (or (< lhs rhs) (< rhs lhs)), so we must
 			   ;; check further before we can tell if the
 			   ;; 1+-trick applies.
@@ -1380,8 +1380,8 @@
 		   ((eq parity 'negative)
 		    (cond ((eq relation '<)
 
-			   ;; Linear arithmetic sees this as 
-			   ;; (< lhs rhs), so we must check further 
+			   ;; Linear arithmetic sees this as
+			   ;; (< lhs rhs), so we must check further
 			   ;; before we can tell if the 1+-trick
 			   ;; applies.
 
@@ -1390,7 +1390,7 @@
 					    mfc state))
 			  ((eq relation 'EQUAL)
 
-			   ;; Linear arithmetic sees this as 
+			   ;; Linear arithmetic sees this as
 			   ;; (and (<= lhs rhs) (<= rhs lhs)), so the
 			   ;; 1+-trick is not applicable.
 

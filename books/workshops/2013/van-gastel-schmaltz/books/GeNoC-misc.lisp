@@ -23,7 +23,7 @@
 ;;|                                                    |
 ;;|                    Not-in                            |
 ;;|                                                    |
-;;|-------------------------------------------------|        
+;;|-------------------------------------------------|
 (defun not-in-test (x y)
   (not (member-equal x y)))
 (create-for-all not-in-test :name not-in :extra (y))
@@ -51,7 +51,7 @@
 ;;|                                          |
 ;;|         Theoremes about Subsetp              |
 ;;|                                          |
-;;|---------------------------------------|        
+;;|---------------------------------------|
 ;; we prove some useful lemmas about subsetp
 (defthm subsetp-expand
   (implies (subsetp x y)
@@ -113,7 +113,7 @@
                 ;(subsetp (M-dests M) NodeSet)
                 (True-listp M)
                 (No-duplicatesp-equal (M-ids M))))
-  :rule-classes :forward-chaining)        
+  :rule-classes :forward-chaining)
 
 
 (defthm tomissives-truelistp
@@ -134,15 +134,15 @@
                        (not-in (m-ids x) (m-ids y))))))
 
 (defthm missivesy-missives-cdry
-  ;; missivesp y then missivesp cdr y                
-  (implies (missivesp y nodeset) 
+  ;; missivesp y then missivesp cdr y
+  (implies (missivesp y nodeset)
            (missivesp (cdr y) nodeset)))
 
 ;;|------------------------------|
 ;;|                              |
 ;;|            toTmissives                 |
 ;;|                                 |
-;;|------------------------------|                         
+;;|------------------------------|
 
 (defun ToTMissive-V (tr)
     (let ((frm (FrmV tr))
@@ -177,7 +177,7 @@
 ;; two important lemmas are needed
 
 ;; the first one rewrites (ToMissives (extract-sublst ..))
-;; to (extract-sublst (tomissives) ... )                 
+;; to (extract-sublst (tomissives) ... )
 (defthm TMissivesp-ToMissives-bis
   (implies (trlstp trlst nodeset)
            (TMissivesp (ToTMissives TrLst) NodeSet))
@@ -195,10 +195,10 @@
                 ;(subsetp (TM-dests M) NodeSet)
                 (True-listp M)
                 (No-duplicatesp-equal (TM-ids M))))
-  :rule-classes :forward-chaining)    
+  :rule-classes :forward-chaining)
 
 (defthm tmissivesy-tmissives-cdry
-  (implies (tmissivesp y nodeset) 
+  (implies (tmissivesp y nodeset)
            (tmissivesp (cdr y) nodeset)))
 
 (defthm rewrite-nodups-tm-ids-append
@@ -236,12 +236,12 @@
            (and (validfields-trlst trlst nodeset)
                 (true-listp trlst)
                 (no-duplicatesp-equal (v-ids trlst))))
-  :rule-classes :forward-chaining) 
+  :rule-classes :forward-chaining)
 
 ;;|------------------------------|
 ;;|                                 |
 ;;|                 rev                 |
-;;|------------------------------|  
+;;|------------------------------|
 (defun rev (x)
   (declare (xargs :guard (true-listp x)))
   (if (endp x)
@@ -264,7 +264,7 @@
 ;;|                                 |
 ;;|            ntkstate                 |
 ;;|                                 |
-;;|------------------------------| 
+;;|------------------------------|
 
 ;; valid ntkstate
 (defthm validstate-entry-implies-coord-and-buffer

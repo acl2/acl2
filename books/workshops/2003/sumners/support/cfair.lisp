@@ -20,7 +20,7 @@ may prove useful in some contexts.
 (include-book "../../../../ordinals/e0-ordinal")
 (set-well-founded-relation e0-ord-<)
 
-(encapsulate 
+(encapsulate
  (((legal-input * *) => *)
   ((legal-witness *) => *))
 
@@ -43,7 +43,7 @@ may prove useful in some contexts.
   (cond ((endp lst) ())
         ((equal n (first lst))
          (drop-lst (rest lst) n))
-        (t (cons (first lst) 
+        (t (cons (first lst)
                  (drop-lst (rest lst) n)))))
 
 (defun pos-in-lst (lst n)
@@ -57,7 +57,7 @@ may prove useful in some contexts.
            (legal-input s (nat->nice ctr))))
 
 (defun find-ndx (s top ctr)
-  (declare (xargs :measure 
+  (declare (xargs :measure
                   (let ((goal (nice->nat (legal-witness s))))
                     (cons (1+ (nfix (- goal top)))
                           (nfix (if (>= goal ctr)
@@ -79,7 +79,7 @@ may prove useful in some contexts.
     (cons (first x) (snoc e (rest x)))))
 
 (defun step-env (s hold top ctr)
-  (declare (xargs :measure 
+  (declare (xargs :measure
                   (let ((goal (nice->nat (legal-witness s))))
                     (cons (1+ (nfix (- goal top)))
                           (nfix (if (>= goal ctr)
@@ -127,7 +127,7 @@ may prove useful in some contexts.
            (<= (pos-in-lst (drop-lst lst b) a)
                (pos-in-lst lst a)))
   :rule-classes :linear)
-           
+
 (defthm pos-in-lst-<-not-legal-in-lst-help
   (implies (and (nat-listp lst)
                 (in-lst a lst)
@@ -146,7 +146,7 @@ may prove useful in some contexts.
                   (not (equal a (legal-in-lst s lst))))
              (< (pos-in-lst (drop-lst lst (legal-in-lst s lst)) a)
                 (pos-in-lst lst a))))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
            (:instance pos-in-lst-<-not-legal-in-lst-help
                       (a (nice->nat i)))))
   :rule-classes :linear)
@@ -161,7 +161,7 @@ may prove useful in some contexts.
               (in-lst n lst))))
 
 (defun env-ctr (goal top ctr)
-  (declare (xargs :measure 
+  (declare (xargs :measure
                   (cons (1+ (nfix (- goal top)))
                         (nfix (if (>= goal ctr)
                                   (- goal ctr)
@@ -353,35 +353,35 @@ may prove useful in some contexts.
                 (<= ctr top))
            (legal-input s (nat->nice (find-ndx s top ctr)))))
 
-(defthm transfer-nice->nat-over 
+(defthm transfer-nice->nat-over
   (implies (and (nicep i)
                 (not (equal (nat->nice n) i)))
            (not (equal (nice->nat i) n))))
 
-(encapsulate 
+(encapsulate
  (((fair-select * *) => *)
   ((fair-measure * *) => *)
   ((fair-update * *) => *)
   ((env-inv *) => *)
   ((env-init) => *))
- 
+
  (local
   (defun env-init ()
     (list () 0 0)))
- 
+
  (local
   (defun env-inv (e) (good-env e)))
- 
+
  (local
   (defun fair-update (e s)
     (let ((hold (first e))
           (top  (second e))
           (ctr  (third e)))
       (let ((ndx (legal-in-lst s hold)))
-        (if ndx 
+        (if ndx
             (list (drop-lst hold ndx) top ctr)
           (step-env s hold top ctr))))))
- 
+
  (local
   (defun fair-select (e s)
     (let ((hold (first e))
@@ -389,28 +389,28 @@ may prove useful in some contexts.
           (ctr  (third e)))
       (nat->nice (or (legal-in-lst s hold)
                      (find-ndx s top ctr))))))
- 
+
  (local
   (defun fair-measure (e i)
     (let ((hold (first e))
           (top  (second e))
           (ctr  (third e)))
       (env-msr i hold top ctr))))
- 
+
  ;; the following are the exported theorems for our constrained functions
  ;; defining a fair environment.
- 
+
  (defthm env-init-satisfies-invariant
    (env-inv (env-init)))
- 
+
  (defthm fair-update-preserves-env
    (implies (env-inv e)
             (env-inv (fair-update e s))))
- 
+
  (defthm fair-select-must-be-legal
    (implies (env-inv e)
             (legal-input s (fair-select e s))))
- 
+
  (defthm fair-measure-is-natural
    (implies (env-inv e)
             (natp (fair-measure e i))))
@@ -423,7 +423,7 @@ may prove useful in some contexts.
                 (fair-measure e i)))
    :hints (("Goal" :in-theory (disable env-msr)))
    :rule-classes (:linear :rewrite))
- 
+
  (defthm fair-measure-must-decrease-strictly
    (implies (and (env-inv e)
                  (nicep i)

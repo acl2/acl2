@@ -286,7 +286,7 @@ formerly the \"location directive\" and printed a location.</p>")
                             ((vl-msg look)))
                          (vl-fmt-aux look.msg 0 (length look.msg)
                                      (vl-fmt-pair-args look.args))))
-                  
+
                   (otherwise
                    (prog2$ (raise "Unsupported directive: ~~~x0.~%" type)
                            ps))))))))

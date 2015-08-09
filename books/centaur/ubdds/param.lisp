@@ -937,7 +937,7 @@
             (t (list (to-from-ind (car p) (car x) (cdr env))
                      (to-from-ind (cdr p) (cdr x) (cdr env)))))
     (list p x env)))
-    
+
 
 (defthm from-param-space-of-qcons
   (implies (and (car p) (cdr p))

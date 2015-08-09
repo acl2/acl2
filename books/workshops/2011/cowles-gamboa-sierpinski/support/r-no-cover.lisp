@@ -39,13 +39,13 @@
 ;; A partial cover = (7 17 31 41 71 97 113 127 151 241 257 281 337
 ;;                      641 673 1321 14449 29191 65537 6700417)
 ;; Covers all n except (mod n 2) = 0.
-;; For all positve integer n, if (mod n 2) = 1, then  k*2^n - 1 is divible 
+;; For all positve integer n, if (mod n 2) = 1, then  k*2^n - 1 is divible
 ;; by a member of (7 17 31 41 71 97 113 127 151 241 257 281 337
 ;;                   641 673 1321 14449 29191 65537 6700417).
 
 ;; To show that k is a Riesel number,
-;;  a divisor for k*2^n - 1 must be found for all positive 
-;;  integer n such that (mod n 2) = 0. 
+;;  a divisor for k*2^n - 1 must be found for all positive
+;;  integer n such that (mod n 2) = 0.
 
 ;; Such a divisor is constructed using these facts:
 
@@ -55,7 +55,7 @@
 
 ;; Let a = 3896845303873881175159314620808887046066972469809, so k = a^2.
 
-;; Then k * 2^(2n) - 1 = (a*2^n + 1) * (a*2^n - 1) 
+;; Then k * 2^(2n) - 1 = (a*2^n + 1) * (a*2^n - 1)
 
 #| To certify
   (certify-book "r-no-cover")
@@ -145,12 +145,12 @@ divides-*
 	    (map-first (cdr triplets)))
      nil))
 
-Partial cover triplets 
-for those n such that 
+Partial cover triplets
+for those n such that
  (mod n 2) = 1,
-(generate-riesel-triplets 
+(generate-riesel-triplets
 (expt 3896845303873881175159314620808887046066972469809 2)
-'(7 17 31 41 71 97 113 127 151 241 257 281 337 641 673 1321 
+'(7 17 31 41 71 97 113 127 151 241 257 281 337 641 673 1321
   14449 29191 65537 6700417))
 ==>((3 2 7)
    (8 5 17)
@@ -559,22 +559,22 @@ natp-induction (n)
  ((cR) => *)
  ((dR) => *))
 
-(local 
+(local
  (defun
    aR ( )
    2))
 
-(local 
+(local
  (defun
    bR ( )
    2))
 
-(local 
+(local
  (defun
    cR ( )
    1))
 
-(local 
+(local
  (defun
    dR ( )
    3))
@@ -583,28 +583,28 @@ natp-induction (n)
   pos-int-aR
   (and (integerp (aR))
 	(> (aR) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
   pos-int-bR
   (and (integerp (bR))
 	(> (bR) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
   nat-int-cR
   (and (integerp (cR))
 	(>= (cR) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
   pos-int-dR
   (and (integerp (dR))
 	(> (dR) 0))
-  :rule-classes 
+  :rule-classes
   :type-prescription)
 
 (defthm
@@ -612,18 +612,18 @@ natp-induction (n)
   (divides (dR)
 	    (+ -1
 	       (* (aR)
-		  (expt 2 
+		  (expt 2
 			(cR))))))
 
 (defthm
   Induction-condition-Riesel
   (divides (dR)
-	    (+ -1 
-	       (expt 2 
+	    (+ -1
+	       (expt 2
 		     (bR)))))
 ) ;;end encapsulate
 
-;; For integer n>=0, d | a*2^(b*n+cR)-1 
+;; For integer n>=0, d | a*2^(b*n+cR)-1
 (defthm
  Key-lemma-Riesel
  (implies (and (integerp n)
@@ -631,7 +631,7 @@ natp-induction (n)
 	   (divides (dR)
 		    (+ -1
 		       (* (aR)
-			  (expt 2 
+			  (expt 2
 				(+ (cR)
 				   (* (bR)
 				      n)))))))
@@ -657,7 +657,7 @@ natp-induction (n)
 		  (x (dR))
 		  (y (+ -1 (expt 2 (bR))))
 		  (z (* (aR)
-			(expt 2 
+			(expt 2
 			      (+ (- (bR))
 				 (cR)
 				 (* (bR) n))))))))))
@@ -687,7 +687,7 @@ natp-induction (n)
 	 (generate-riesel-lemmas number (cdr cover))))
    nil))
 
-(generate-riesel-lemmas 
+(generate-riesel-lemmas
 (expt 3896845303873881175159314620808887046066972469809 2)
 '(7 17 31 41 71 97 113 127 151 241 257 281 337 641 673 1321
   14449 29191 65537 6700417))
@@ -1248,7 +1248,7 @@ Theorems in list submitted to ACL2 by hand after modifying name of theorem:
 (generate-riesel-lemmas-a
 (expt 3896845303873881175159314620808887046066972469809 2)
 '(7 17 31 41 71 97 113 127 151 241 257 281 337 641 673 1321
-  14449 29191 65537 6700417)) 
+  14449 29191 65537 6700417))
 ==>
 ((DEFTHM
  DIVISOR-LEMMA-A- 7
@@ -1567,7 +1567,7 @@ and name in hint:
 
 ;; Let a = 3896845303873881175159314620808887046066972469809, so k = a^2.
 
-;; Then k * 2^(2n) - 1 = (a*2^n + 1) * (a*2^n - 1) 
+;; Then k * 2^(2n) - 1 = (a*2^n + 1) * (a*2^n - 1)
 
 (defthm
  Algebra-lemma-1
@@ -1576,10 +1576,10 @@ and name in hint:
 		     (* (expt a 2)
 			(expt 2 (* 2 n))))
 		  (* (+ 1
-			(* a 
+			(* a
 			   (expt 2 n)))
 		     (+ -1
-			(* a 
+			(* a
 			   (expt 2 n))))))
  :rule-classes nil)
 
@@ -1598,7 +1598,7 @@ and name in hint:
 		(integerp n)
 		(>= n 0))
 	   (divides (+ 1
-		       (* a 
+		       (* a
 			  (expt 2 n)))
 		    (+ -1
 		       (* (expt a 2)
@@ -1608,10 +1608,10 @@ and name in hint:
 	   :use ((:instance
 		  factor-divides
 		  (x (+ 1
-			(* a 
+			(* a
 			   (expt 2 n))))
 		  (y (+ -1
-			(* a 
+			(* a
 			  (expt 2 n)))))
 		 Algebra-lemma-1))))
 
@@ -1721,7 +1721,7 @@ and name in hint:
 	      (+ -1
 		 (* (expt 3896845303873881175159314620808887046066972469809 2)
 		    (expt 2 n)))))
- :rule-classes nil 
+ :rule-classes nil
  :hints (("Goal"
 	   :in-theory (disable SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<)
 	   :use ((:instance

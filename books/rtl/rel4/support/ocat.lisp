@@ -16,7 +16,7 @@
 (local (include-book "../arithmetic/expo"))
 (local (include-book "../arithmetic/arith2"))
 (local (include-book "../arithmetic/fp2"))
-(local (include-book "../arithmetic/integerp"))                
+(local (include-book "../arithmetic/integerp"))
 
 (local (in-theory (enable expt-minus)))
 
@@ -41,7 +41,7 @@
 ;became less general when we made ocat nfix its args
 (defthm ocat-0
     (implies (and (case-split (<= 0 y))
-                  (case-split (integerp y)))		  
+                  (case-split (integerp y)))
 	     (equal (ocat 0 y n) y))
     :hints (("Goal" :in-theory (enable ocat))))
 
@@ -145,7 +145,7 @@
                                      (c (expt 2 n))))))))
 
  (local (in-theory (enable bvecp)))
-           
+
  (local (defthm ocat-bvecp-rewrite-bk
           (implies (and (integerp n)
                         (<= 0 n)
@@ -175,7 +175,7 @@
                  )
             (equal (bvecp (ocat x y n) k)
                    (bvecp x (- k n))))
-   :hints (("goal" 
+   :hints (("goal"
             :use (ocat-bvecp-rewrite-fw ocat-bvecp-rewrite-bk))
            ))
 
@@ -244,7 +244,7 @@
            (equal (highbits (OCAT x y n) n)
                   x))
   :hints (("Goal" :in-theory (enable expt-split
-                                     ocat 
+                                     ocat
                                      highbits))))
 |#
 

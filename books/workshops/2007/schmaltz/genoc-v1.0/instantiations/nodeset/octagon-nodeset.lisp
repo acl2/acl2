@@ -16,7 +16,7 @@
     (cons bound (naturals (1- bound)))))
 
 (defun OctagonNodeSetGenerator (bound)
-  ;; more precisely we choose the bound to be the 
+  ;; more precisely we choose the bound to be the
   ;; number of nodes in one quarter of the Octagon
   (naturals (+ -1 (* 4 bound))))
 
@@ -55,7 +55,7 @@
   t
   :rule-classes nil
   :hints (("GOAL"
-           :use (:functional-instance 
+           :use (:functional-instance
                  nodeset-generates-valid-nodes
                  (ValidParamsp OctagonValidParamsp)
                  (NodeSetp OctagonNodeSetp)

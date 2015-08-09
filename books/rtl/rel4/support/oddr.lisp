@@ -130,7 +130,7 @@
 (defthm oddr-other
     (implies (and (rationalp x)
 		  (> x 0)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1))
 	     (= (oddr x n)
 		(+ (trunc x (1- n))

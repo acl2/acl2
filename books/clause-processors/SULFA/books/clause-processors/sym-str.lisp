@@ -6,8 +6,8 @@
 (defun concat-str-macro (lst)
   (if (consp lst)
       (if (consp (cdr lst))
-	  (cons 'concatenate 
-		(cons ''string (cons (car lst) 
+	  (cons 'concatenate
+		(cons ''string (cons (car lst)
 				     (cons (concat-str-macro (cdr lst))
 					   'nil))))
 	(car lst))

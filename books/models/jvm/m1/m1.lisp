@@ -235,7 +235,7 @@ but I want to students to see their definitions as warm-up exercises.
 (defthm m1-clk+
   (equal (m1 s (clk+ i j))
          (m1 (m1 s i) j)))
-  
+
 (in-theory (disable binary-clk+))
 
 (defthm m1-opener

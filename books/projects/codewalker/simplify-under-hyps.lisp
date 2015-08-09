@@ -552,7 +552,7 @@
 
 ; From simplify-under-hyps
 ; (if (f x) a b)
-(recovery-thm 
+(recovery-thm
  ((2 ((NOT (H X)) (NOT (P X))) B)
   (2 ((H X) (NOT (P X))) A)
   (2 ((NOT (G X)) (P X)) B)

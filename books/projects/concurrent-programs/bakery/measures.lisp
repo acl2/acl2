@@ -32,7 +32,7 @@ is well-founded.
   `(equal (len ,x) (len ,y)))
 
 (defun msrp (x)
-  (and (consp x) 
+  (and (consp x)
        (natp (first x))))
 
 (defun msr< (x y)
@@ -208,4 +208,4 @@ theorem demonstrates that msr1- decrements measures which are non-0.
                   (or (msr< x1 y1)
                       (and (equal x1 y1)
                            (msr< x2 y2))))))
-                 
+

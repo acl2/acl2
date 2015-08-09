@@ -12,7 +12,7 @@
 
 (include-book "rtlarr") ;semantics RTL array primitives
 
-(include-book "basic") ;properties of basic arithmetic functions: floor, ceiling, 
+(include-book "basic") ;properties of basic arithmetic functions: floor, ceiling,
 ;                       exponential, and remainder
 
 (include-book "bits") ;bit vectors and logical operations

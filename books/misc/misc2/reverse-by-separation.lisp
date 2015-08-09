@@ -79,7 +79,7 @@
            1 1 3   ;  15 : move 1 3
            4 1 15  ;  18 : back 1 15
            )))
-  
+
 (defun list-addr (xs)
   (cond ((atom xs) 0)
         (t (caar xs))))

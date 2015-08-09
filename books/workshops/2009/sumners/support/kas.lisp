@@ -14,10 +14,10 @@
   (case d (0 "0") (1 "1") (2 "2") (3 "3") (4 "4") (5 "5") (6 "6") (7 "7") (8 "8") (t "9")))
 
 (defun nat-to-string (n)
-  (string-append (if (zp (floor n 10)) "" (nat-to-string (floor n 10))) 
+  (string-append (if (zp (floor n 10)) "" (nat-to-string (floor n 10)))
 		 (dec-to-string (mod n 10))))
 
-(defun symbol-append-string (x) 
+(defun symbol-append-string (x)
   (cond ((symbolp x) (symbol-name x))
 	((stringp x) x)
 	(t (nat-to-string x))))
@@ -35,7 +35,7 @@
 
 (defun make-hyps-and-fn (n)
   `(defun ,(symbol-append 'hyps-and- n) ,(make-hyps-and-args-list n)
-     (and ,(symbol-append 'x n) 
+     (and ,(symbol-append 'x n)
           ,(cons (symbol-append 'hyps-and- (1- n))
                  (make-hyps-and-args-list (1- n))))))
 
@@ -86,13 +86,13 @@
     (let ((name (caar flds))
           (type (cadar flds)))
       (append (if (member-eq type '(:fixnum :object))
-                  (list (list name 
+                  (list (list name
                               (symbol-append 'get- name))
                         (list (symbol-append 'update- name)
                               (symbol-append 'set- name))
                         (list (symbol-append name 'p)
                               (symbol-append stb '- name 'p)))
-                (list (list (symbol-append name 'i) 
+                (list (list (symbol-append name 'i)
                             (symbol-append 'get- name))
                       (list (symbol-append 'update- name 'i)
                             (symbol-append 'set- name))
@@ -127,7 +127,7 @@
         ((member-eq (cadar flds) '(:fixnum :object))
          (stobj+-resize-funcs (cdr flds) stb))
         (t
-         (cons `(defun ,(symbol-append 'resize- (caar flds)) 
+         (cons `(defun ,(symbol-append 'resize- (caar flds))
                   (size ,stb)
                   (declare (xargs :stobjs ,stb))
                   (if (eql size (,(symbol-append 'length- (caar flds)) ,stb))
@@ -193,7 +193,7 @@
 (defun stobj+-record-fields-fn (stb fields array object type ctr)
   (if (endp fields) ()
     (let ((field (first fields)))
-      (list* `(defmacro ,(symbol-append object (intern "." "ACL2") field) 
+      (list* `(defmacro ,(symbol-append object (intern "." "ACL2") field)
                 (,object)
                 ,(let ((form `(list ',(symbol-append 'get- array)
                                     ,(if (eql ctr 0)
@@ -205,7 +205,7 @@
                    (if (eq type :fixnum)
                        `(list 'my-fixnum ,form)
                      form)))
-             `(defmacro ,(symbol-append object '.set- field) 
+             `(defmacro ,(symbol-append object '.set- field)
                 (,object ,field)
                 (list ',(symbol-append 'set- array)
                       ,(if (eql ctr 0)
@@ -224,7 +224,7 @@
     (let* ((fld (first fields))
            (array (second fld))
            (rcd-size (len (third fld))))
-      (cons `(defmacro ,(symbol-append (second fld) '-arr-ndx) 
+      (cons `(defmacro ,(symbol-append (second fld) '-arr-ndx)
                (,object)
                ,(if (>= rcd-size 2)
                     `(list '*^ (list 'my-fixnum ,object) ,rcd-size)
@@ -264,7 +264,7 @@
                 (let ((size (,(symbol-append 'length- array) ,stb)))
                   (declare (type (signed-byte ,(kern-fixnum-size)) size))
                   (floor^ size ,rcd-size)))
-             `(defabbrev ,(symbol-append 'ensure- object) 
+             `(defabbrev ,(symbol-append 'ensure- object)
                 (ptr extra)
                 (declare (type (signed-byte ,(kern-fixnum-size)) ptr extra))
                 (let ((size (,(symbol-append 'length- array) ,stb)))
@@ -542,7 +542,7 @@
     er er0 prog2$ cw ev-fncall-w
     fn-count-evg lexorder
     if not implies and or iff
-    acl2-numberp rationalp integerp consp 
+    acl2-numberp rationalp integerp consp
     characterp symbolp stringp
     booleanp termp keywordp
     true-listp symbol-listp
@@ -595,10 +595,10 @@
   (cond ((atom term) term)
         ((eq (first term) 'quote) term)
         ((eq (first term) 'cond)
-         (cons 'cond 
+         (cons 'cond
                (add-kern-to-conds (rest term))))
         ((eq (first term) 'case)
-         (list* 'case 
+         (list* 'case
                 (add-kern-to-calls (second term))
                 (add-kern-to-binds (rest (rest term)))))
         ((eq (first term) 'letk)
@@ -645,7 +645,7 @@
           ,(defunk-tag-body body))))))
 
 (defun parse-defunk-args (args)
-  (let* ((inlined (and (consp args) 
+  (let* ((inlined (and (consp args)
                        (eq (first args) :inline)))
          (args (if inlined (rest args) args)))
     (mv inlined (butlast args 1) (car (last args)))))
@@ -685,14 +685,14 @@
 (defunk promoted (x) :inline (>^ x 0))
 (defunk temp-node (x) :inline (<^ x 0))
 
-(defunk node< (x y) :inline  
+(defunk node< (x y) :inline
   (assert (and (promoted x)
                (promoted y))
    (<^ x y)))
 
 (defmacro kern-check-<^ (x y ctx)
   (if (kern-enable-check-<^s)
-      `(my-fixnum 
+      `(my-fixnum
         (if (<^ ,x ,y) ,x
           (er0 hard ,ctx "expected decreasing ~x0 < ~x1" ,x ,y)))
     x))
@@ -718,7 +718,7 @@
 (defmacro floor^ (x y)   `(my-fixnum (floor  (my-fixnum ,x) (my-fixnum ,y))))
 (defmacro expt^ (x y)    `(my-fixnum (expt   (my-fixnum ,x) (my-fixnum ,y))))
 (defmacro lognot^ (x)    `(my-fixnum (lognot (my-fixnum ,x))))
-(defmacro logand^ (x &rest y) 
+(defmacro logand^ (x &rest y)
   `(my-fixnum ,(if (endp y) x `(logand (my-fixnum ,x) (logand^ ,(first y) ,@(rest y))))))
 (defmacro logior^ (x &rest y)
   `(my-fixnum ,(if (endp y) x `(logior (my-fixnum ,x) (logior^ ,(first y) ,@(rest y))))))
@@ -970,16 +970,16 @@
 (defunk node.opcd (n) :inline (logand^ (if (promoted n) (my-fixnum (get-node-stor n ls$)) (my-fixnum (get-trans-stor (-^ n) ls$))) (opcd-mask)))
 (defunk node.size (n) :inline (floor^  (if (promoted n) (my-fixnum (get-node-stor n ls$)) (my-fixnum (get-trans-stor (-^ n) ls$))) (size-shft)))
 
-(defunk node.in-ctx (n) :inline 
+(defunk node.in-ctx (n) :inline
   (assert (promoted n) (=^ (logand^ (get-node-stor n ls$) (in-ctx-mask)) (in-ctx-mask))))
-(defunk node.set-in-ctx (n in-ctx.) :inline 
-  (assert (promoted n) (set-node-stor n (if in-ctx. (logior^ (get-node-stor n ls$) (in-ctx-mask)) 
+(defunk node.set-in-ctx (n in-ctx.) :inline
+  (assert (promoted n) (set-node-stor n (if in-ctx. (logior^ (get-node-stor n ls$) (in-ctx-mask))
 					  (logand^ (get-node-stor n ls$) (in-ctx-flip))) ls$)))
 
-(defunk node.user-mark (n) :inline 
+(defunk node.user-mark (n) :inline
   (=^ (logand^ (get-node-stor n ls$) (user-mark-mask)) (user-mark-mask)))
 (defunk node.set-user-mark (n user-mark.) :inline
-  (set-node-stor n (if user-mark. (logior^ (get-node-stor n ls$) (user-mark-mask)) 
+  (set-node-stor n (if user-mark. (logior^ (get-node-stor n ls$) (user-mark-mask))
 		     (logand^ (get-node-stor n ls$) (user-mark-flip))) ls$))
 
 (defunk node.rep (n)         :inline (if (promoted n) (my-fixnum (get-node-stor (1-^ n) ls$)) (node-btm)))
@@ -1014,7 +1014,7 @@
 (defunk dcv-btm   -1)
 
 ; NOTE -- While the preceding constants may look "symbolic", it is important
-; that these constants keep the value for which they are declared. 
+; that these constants keep the value for which they are declared.
 
 (defunk opcd-quote (make-opcd 1 nil nil nil 1))
 (defunk opcd-if    (make-opcd 3 nil t   nil 2))
@@ -1043,7 +1043,7 @@
     (assert (or (temp-node n)
                 (=^ (node.opcd n) (opcd-quote))
                 (node< arg n)
-                (list n i arg 
+                (list n i arg
                       (oper.name (opcd.index (node.opcd n)))
                       (opcd.narg (node.opcd n))
 		      (opcd.is-var (node.opcd n))))
@@ -1057,7 +1057,7 @@
     (assert (or (temp-node n)
                 (=^ (node.opcd n) (opcd-quote))
                 (node< arg n)
-                (list n i arg 
+                (list n i arg
                       (oper.name (opcd.index (node.opcd n)))
                       (opcd.narg (node.opcd n))
                       (node-to-term arg)))
@@ -1086,7 +1086,7 @@
             ((=^ opcd (opcd-quote))
              (list 'quote (qobj.obj (node.arg node 0))))
             (t
-             (cons (oper.name op) 
+             (cons (oper.name op)
                    (args-to-terms (opcd.narg opcd) 0 node ls$)))))))
 
 (defunk args-to-terms (n i node ls$)
@@ -1106,7 +1106,7 @@
                nil))  ; aok
 
 (defmacro kern-error (err-string node rslt)
-  `(prog2$ (kern-print-stats ls$) 
+  `(prog2$ (kern-print-stats ls$)
            (prog2$ (cw "       Final Term on Error: ~| ~p0 ~|~|" (kern-prune-node-term ,node))
                    (prog2$ (er hard 'kernel-simplify ,err-string)
                            ,rslt))))
@@ -1230,7 +1230,7 @@
 (defunk print-suffix-stack (n l r. ls$)
   (if (or (zp n) (zp l)) r.
     (print-suffix-stack (1-^ n) (1-^ l)
-                        (cons (list (rule.rune (loop.rule l)) 
+                        (cons (list (rule.rune (loop.rule l))
                                     (prune-node-term (loop.node l)))
                               r.)
                         ls$)))
@@ -1358,7 +1358,7 @@
          (opcd-btm))
         ((and (equal name. (oper.name op))
               (eq var. (oper.is-var op)))
-         (make-opcd (oper.narg op) 
+         (make-opcd (oper.narg op)
                     var.
                     (oper.is-if op)
                     (oper.is-equal op)
@@ -1488,7 +1488,7 @@
 					     (+^ (avg-num-args)
 						 (if temp. (base-trans-alloc)
 						   (base-node-alloc)))))))
-                    (if temp. (resize-trans-stor new-length ls$) 
+                    (if temp. (resize-trans-stor new-length ls$)
                       (resize-node-stor new-length ls$)))
                 ls$))
          (node (1-^ min-alloc))
@@ -1602,10 +1602,10 @@
          (ndx (if (/=^ opcd (opcd-btm))
                   (opcd.index opcd)
                 (get-next-op-ndx ls$)))
-         (ls$ (if (/=^ opcd (opcd-btm)) 
+         (ls$ (if (/=^ opcd (opcd-btm))
                   ls$
                 (letk ((ls$ (ensure-oper ndx (oper-stor-incr)))
-                       (ls$ (oper.set-uniq ndx chain)) 
+                       (ls$ (oper.set-uniq ndx chain))
                        (ls$ (set-op-hash hash ndx ls$))
                        (ls$ (set-next-op-ndx (1+^ ndx) ls$))
                        (ls$ (oper.set-next-stk ndx (opcd-btm)))
@@ -1778,7 +1778,7 @@
               (ls$ (memo.set-rslt m rep))
               (ls$ (memo.set-dcv  m dcv))
               (ls$ (memo-copy-args m x narg 0 ls$))
-              (ls$ (if (<=^ narg (num-1memo-args)) ls$ 
+              (ls$ (if (<=^ narg (num-1memo-args)) ls$
                      (memo.set-opcd (1+^ m) (opcd-memo-mrkr))))
               (ls$ (create-new-undo (-^ m) dcv (node-btm) (dcv-btm) ls$)))
          ls$)))))
@@ -1921,7 +1921,7 @@
 ; 3. determination of heaviest candidate in weighting
 ;    -- and clear the hash-table at the same time.
 
-(defunk hash-candidate (node) :inline 
+(defunk hash-candidate (node) :inline
   (logand^ node (get-candidate-mask us$)))
 
 (defunk find-candidate-in-chain (cand node us$)
@@ -1987,8 +1987,8 @@
 (defunk case-split-candidates (x ls$ us$)
   (letk ((opcd (node.opcd x)))
     (cond
-     ((or (=^ opcd (opcd-quote)) 
-          (opcd.is-var opcd)) 
+     ((or (=^ opcd (opcd-quote))
+          (opcd.is-var opcd))
       us$)
      ((and (opcd.is-if opcd)
            (not (if-subterm (node.arg x 0) ls$)))
@@ -2118,8 +2118,8 @@
 ; (:set-user-mark     <node> <mark>)
 ;
 ;;;; nfix is a natural fixnum
-; 
-; The function process-update does not place any assumptions on the 
+;
+; The function process-update does not place any assumptions on the
 ; update structure from the user-fn, so some checks are required.
 
 (defunk first-oper-ndx 1)
@@ -2242,11 +2242,11 @@
         n.))))
 
 (defunk pu-sieves (x.) :inline
-  (if (legal-sieves x.) x. 
+  (if (legal-sieves x.) x.
     (er-process-update-arg "expected well-formed list of sieves")))
 
 (defunk pu-trace-mark (x.) :inline
-  (if (is-trace-mark x.) x. 
+  (if (is-trace-mark x.) x.
     (er-process-update-arg "expected t/nil, :all, or symbol-list for trace mark")))
 
 (defunk set-var-bound (var node) :inline
@@ -2505,7 +2505,7 @@
 (defunk subst-node (y ls$)
   (assert (/=^ y (node-btm))
    (letk ((opcd-y (node.opcd y)))
-     (cond 
+     (cond
       ((=^ opcd-y (opcd-quote))
        (mv^ y ls$))
       ((opcd.is-var opcd-y)
@@ -2563,7 +2563,7 @@
     (assert (and (/=^ x (node-btm)) (/=^ y (node-btm)))
      (letk ((opcd-y (node.opcd y))
             (opcd-x (node.opcd x)))
-       (cond 
+       (cond
         ((opcd.is-var opcd-y)
          (1way-unify-var x opcd-y ls$))
         ((=^ opcd-y (opcd-quote))
@@ -2820,7 +2820,7 @@
       (mv^ x (dcv-empty) cond-failed. ls$ us$)
     (letk ((y dcv c-f. ls$ us$ (apply-rule (first rules.) x narg ls$ us$))
            (cond-failed. (or c-f. cond-failed.)))
-      (if (/=^ y x) 
+      (if (/=^ y x)
           (mv^ y dcv cond-failed. ls$ us$)
         (apply-rules (rest rules.) x narg cond-failed. ls$ us$)))))
 
@@ -2860,18 +2860,18 @@
   (if (=^ i 0) (mv t ls$ us$)
     (letk ((i (1-^ i)))
       (if (=^ i ndx) (rewrite-context i lhs ndx ls$ us$)
-	(letk ((top (get-curr-ctx-stk i ls$)))      
+	(letk ((top (get-curr-ctx-stk i ls$)))
           (if (not (and (well-formed-context-equation top)
 			(is-subterm lhs top ls$)))
 	      (rewrite-context i lhs ndx ls$ us$)
 	    (letk ((top-lhs (node.arg top 0))
-		   (tmp (node.rep top-lhs)) 
+		   (tmp (node.rep top-lhs))
 		   (ls$ (node.set-rep top-lhs (node-btm)))
 		   (top+ dcv ls$ us$ (decr-and-rewrite top ls$ us$))
 		   (ls$ (node.set-rep top-lhs tmp)))
               (cond ((=^ top+ (node-nil))
 		     (mv nil ls$ us$))
-		    ((node= top+ top) 
+		    ((node= top+ top)
 		     (rewrite-context i lhs ndx ls$ us$))
 		    (t
 		     (letk ((ls$ (set-curr-ctx-stk i top+ ls$))
@@ -2881,7 +2881,7 @@
 			 (rewrite-context i lhs ndx ls$ us$))))))))))))
 
 (defunk rewrite-case (cas. brn tst+ dir. ls$ us$)
-  (cond 
+  (cond
    ((and (not (eq dir. cas.))
          (is-boolean dir.))
     (mv^ brn (dcv-empty) ls$ us$))  ; DO NOT REWRITE branch
@@ -2893,7 +2893,7 @@
     (letk ((dcx- (get-current-dctx ls$))
            (age (get-current-age ls$))
            (dcx+ ls$ (create-new-dctx ls$))
-           (tst= ls$ (create-equal-tst-for-case tst+ cas. ls$)) 
+           (tst= ls$ (create-equal-tst-for-case tst+ cas. ls$))
            (ndx ls$ (push-new-context tst= ls$))
            (vald. ls$ us$ (extend-context tst= (ash^ 1 dcx+) ndx ls$ us$)))
       (if (not vald.)
@@ -2958,7 +2958,7 @@
           (assert (and (promoted x-) (/=^ x- rep))
            (letk ((ls$ (update-rep x- (-^ age) (dcv-btm) 3 ls$)))
              (mv^ x- (dcv-empty) ls$ us$)))
-        ;; /\ Rewrite the args and if the args have not changed and we were not marked to rewrite, then return original, otherwise... 
+        ;; /\ Rewrite the args and if the args have not changed and we were not marked to rewrite, then return original, otherwise...
         (letk ((x+ dcv2 cond-failed. ls$ us$ (rewrite-step opcd x ls$ us$)))
           (if (/=^ x+ x)
               (letk ((x+ dcv3 ls$ us$ (decr-and-rewrite x+ ls$ us$))
@@ -3077,7 +3077,7 @@
      (declare (xargs :stobjs ls$)
               (type (signed-byte ,(kern-fixnum-size)) ,(first args)))
      ,body))
-     
+
 (defunf kern-install-auto-rule (ndx opr typ ls$)
   (let* ((rune (list typ (oprcd.name opr)))
          (enabled (case typ
@@ -3138,10 +3138,10 @@
          (ndx (if (/=^ opcd (kern-opcd-btm))
                   (opcd.index opcd)
                 (get-next-op-ndx ls$)))
-         (ls$ (if (/=^ opcd (kern-opcd-btm)) 
+         (ls$ (if (/=^ opcd (kern-opcd-btm))
                   ls$
                 (letk ((ls$ (ensure-oper ndx (kern-oper-stor-incr)))
-                       (ls$ (oper.set-uniq ndx chain)) 
+                       (ls$ (oper.set-uniq ndx chain))
                        (ls$ (set-op-hash hash ndx ls$))
                        (ls$ (set-next-op-ndx (1+^ ndx) ls$)))
                   ls$)))
@@ -3186,9 +3186,9 @@
          (cons (first term)
                (kern-expand-lambdas-args (rest term) alist)))
         (t
-         (kern-expand-lambdas-fn 
+         (kern-expand-lambdas-fn
           (third (first term))
-          (kern-create-alist 
+          (kern-create-alist
            (second (first term))
            (kern-expand-lambdas-args (rest term) alist))))))
 
@@ -3342,7 +3342,7 @@
                              (append new-fns all-fns)
                              (cons (cons fn rules) rules-alist)
                              fak-thms ens wrld ls$)))))
- 
+
 (defun kern-trans-fak-thms (lemmas)
   (if (endp lemmas) ()
     (let* ((lemma (first lemmas))
@@ -3387,7 +3387,7 @@
 ;; the definition rule. One level of indirection in the function definition
 ;; will fail this check and allow the user to define functions which are equal,
 ;; if, but are not understood by the simplifier as such.
-;; 
+;;
 ;;   (enabled-numep (access rewrite-rule lemma :nume) ens)
 
 (defun kern-match-defn-body (lemma ens lhs fn num-formals)
@@ -3587,7 +3587,7 @@
                         (oprcd.name (kern-find-max-narg oprcds))
                         (oprcd.narg (kern-find-max-narg oprcds)))
              ls$))
-          (t     
+          (t
            (letk ((sp (get-kern-size-param ls$))
                   (ls$ (resize-node-stor (node-stor-size sp) ls$))
                   (ls$ (resize-node-hash (node-hash-size sp) ls$))
@@ -3735,13 +3735,13 @@
 
 (logic)
 
-;; the "hint" for the kernel-simplify processor is expected to be a call of the following 
-;; function where the arguments to the call should be quoted constants which are used to 
+;; the "hint" for the kernel-simplify processor is expected to be a call of the following
+;; function where the arguments to the call should be quoted constants which are used to
 ;; provide optional parameters to simplifier:
 
 (defun k-s-hint (size-param quiet alloc-display flip-t flip-nil rule-trace prune-depth context-reduce)
-  (list 'k-s-hint 
-	(list 'quote size-param) 
+  (list 'k-s-hint
+	(list 'quote size-param)
 	(list 'quote quiet)
 	(list 'quote alloc-display)
         (list 'quote flip-t)

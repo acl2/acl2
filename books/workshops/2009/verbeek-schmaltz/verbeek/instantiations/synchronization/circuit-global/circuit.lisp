@@ -44,8 +44,8 @@
   (let* ((routes  (routesv tr))
          (dest (car (last (car routes))))
          (org (orgv tr)))
-    (mv-let (newntkstate r?) 
-            (ct-good_route? ntkstate org dest routes) 
+    (mv-let (newntkstate r?)
+            (ct-good_route? ntkstate org dest routes)
             (mv newntkstate r?))))
 
 (defun ct-req_trans (st)

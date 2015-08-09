@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 ;; This book contains a proof of Euler's Criterion for quadratic residues:
-;; if p is an odd prime and m is not divisible by p, then 
+;; if p is an odd prime and m is not divisible by p, then
 
 ;;   mod(m^((p-1)/2),p) = 1 if m is a quadratic residue mod p
 ;;                        p-1 if not.
@@ -18,14 +18,14 @@
 (include-book "fermat")
 
 ;; Let p be a prime, let m be relatively prime to p, and let 0 < j < p.
-;; Then there exists a unique j' such that 0 < j' < p and 
+;; Then there exists a unique j' such that 0 < j' < p and
 ;;         mod(j*j',p) = mod(m,p),
 ;; called the associate of j w.r.t. a mod p.
 
 (defund associate (j m p)
   (mod (* m (expt j (- p 2))) p))
 
-(defthm associate-property 
+(defthm associate-property
     (implies (and (primep p)
 		  (integerp m)
 		  (not (zp j))
@@ -55,7 +55,7 @@
 			(:instance divides-leq (x p) (y j))
 			(:instance natp-mod-2 (m (* m (expt j (- p 2)))) (n p))))))
 
-(defthm associate-is-unique 
+(defthm associate-is-unique
     (implies (and (primep p)
 		  (integerp m)
 		  (not (zp j))
@@ -72,7 +72,7 @@
 			(:instance euclid (a j) (b (- x (associate j m p))))
 			(:instance divides-mod-equal (n p) (a x) (b (associate j m p)))))))
 
-(defthm associate-of-associate 
+(defthm associate-of-associate
     (implies (and (primep p)
 		  (integerp m)
 		  (not (zp j))
@@ -196,9 +196,9 @@
 			 (mod m p))))
   :rule-classes ()
   :hints (("Goal" :use (res-root1
-			(:instance mod-mult 
-				   (m (* (root1 m p) (root1 m p))) 
-				   (a (- p (* 2 (root1 m p)))) 
+			(:instance mod-mult
+				   (m (* (root1 m p) (root1 m p)))
+				   (a (- p (* 2 (root1 m p))))
 				   (n p))))))
 
 (defthm root1-root2
@@ -399,8 +399,8 @@
 		   (associates (1- p) m p)))
   :rule-classes ()
   :hints (("Goal" :use (distinct-positives-associates
-			(:instance pigeonhole-principle-2 
-				   (n (1- p)) 
+			(:instance pigeonhole-principle-2
+				   (n (1- p))
 				   (l (associates (1- p) m p)))))))
 
 ;; It follows that the product of associates(p-1,m,p) is (p-1)! and its
@@ -519,7 +519,7 @@
 	     (equal (expt m 1) m))
   :hints (("Goal" :expand ((expt m 1)))))
 
-(defthm times-list-associates    
+(defthm times-list-associates
     (implies (and (primep p)
 		  (not (= p 2))
 		  (integerp m)
@@ -528,7 +528,7 @@
 	     (equal (mod (times-list (associates n m p)) p)
 		    (if (residue m p)
 			(mod (- (expt m (/ (len (associates n m p)) 2))) p)
-		      (mod (expt m (/ (len (associates n m p)) 2)) p))))		      
+		      (mod (expt m (/ (len (associates n m p)) 2)) p))))
   :rule-classes ()
   :hints (("Subgoal *1/1" :use (res-root1 res-root2))))
 
@@ -595,7 +595,7 @@
 		  :use (euler-lemma
 			p-1-even
 			wilson-thm
-			(:instance mod-times-mod 
+			(:instance mod-times-mod
 				   (a (- (expt m (/ (1- p) 2)))) (b -1) (c -1) (n p))))))
 
 ;;  The "First Supplement" is the case a = 1:

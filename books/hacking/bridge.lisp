@@ -81,7 +81,7 @@
 ; for public use
 (defmacro defun-bridge (name
                         ll
-                        .(&key (logic '() logic-p) 
+                        .(&key (logic '() logic-p)
                                (logic-declare '())
                                (program '() program-p)
                                (program-declare '())
@@ -93,7 +93,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; define a function with a different low-level definition.~/
 
 ; ~bv[]
@@ -105,7 +105,7 @@
 ;   [:raw-declare ~i[raw-decls]]
 ;   :raw ~i[raw-body])
 ; ~ev[] ~/
-; 
+;
 ; This is much like executing
 ; ~bv[]
 ; (defun ~i[name] (~i[formals])
@@ -122,7 +122,7 @@
 ; ~ev[]
 ; in raw Lisp, except that extra checks and bookkeeping make it safer
 ; than that.
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]), because
 ; it can easily corrupt ACL2 or render it unsound.
 ; ~/"
@@ -143,7 +143,7 @@
                      (list raw))
              (append (reconstruct-declare-lst program-declare)
                      (list program)))))
-     (loop-def 
+     (loop-def
       `(defun ,name
          ,ll
          ,@ (and doc (list doc))

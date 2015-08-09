@@ -128,11 +128,11 @@
                              str::take-leading-digits-when-digit-listp
                              str::explode-when-not-stringp
                              acl2::member-when-atom)))
-  
+
   (deffixequiv svtv-parse-path-indices))
-       
-       
-  
+
+
+
 
 (define svtv-parse-path/select-aux ((dotted-parts string-listp)
                                     (orig-x stringp))
@@ -174,7 +174,7 @@
        ((unless lbrack-pos)
         (mv (msg "Found ] without previous [: \"~s0\" inside \"~s1\""
                  part1 orig-x) nil nil nil))
-            
+
        (name-part (subseq part1 0 lbrack-pos))
        (bracketed-part (subseq part1 lbrack-pos nil))
        (bracketed-parts (str::strtok bracketed-part '(#\])))
@@ -208,10 +208,10 @@
                              str::explode-when-not-stringp
                              acl2::lower-bound-of-len-when-sublistp
                              acl2::member-when-atom not)))
-  
+
   (deffixequiv svtv-parse-path/select-aux))
-       
-        
+
+
 (define svtv-parse-path/select ((x stringp))
   :returns (mv errmsg
                (path (implies (not errmsg) (path-p path)))
@@ -228,7 +228,7 @@
 (svtv-parse-path/select "a[0].b[2:]")
 (svtv-parse-path/select "a[0].b[:4]")
 (svtv-parse-path/select "a[0].b[2]3][3:5]")
-|#     
+|#
 
 
 

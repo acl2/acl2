@@ -354,7 +354,7 @@
            (equal (!mi ma v st)
                   st)))
 
-; End of Standard Series for True Primitives.  
+; End of Standard Series for True Primitives.
 
 (in-theory (disable stp i !i s !s mp mi !mi))
 
@@ -569,7 +569,7 @@
 ; This is READ-over-WRITE lemma for different non-overlapping addresses where
 ; the R is below the write.
 
- (implies (and (<= (+ ra sz) wa) ; we check the `below' hyp first! 
+ (implies (and (<= (+ ra sz) wa) ; we check the `below' hyp first!
                (integerp ra)
                (<= 0 ra)
                (integerp wa)
@@ -815,7 +815,7 @@
 ;                   (< (+ i 1) (len s1)))
 ;              (equal (nthcdr i (cdr (update-nth min v s1)))
 ;                     (nthcdr i (cdr s1))))))
-; 
+;
 ;  (defthm nthcdr-cdr-update-nth
 ;    (implies (and (natp i)
 ;                  (natp min)
@@ -1375,7 +1375,7 @@
    (implies (natp sz)
             (equal (!r addr1 sz val1 (!r addr1 sz val2 st))
                    (!r addr1 sz val1 st)))
-   :hints (("Goal" 
+   :hints (("Goal"
             :cases ((natp addr1))))))
 
 (encapsulate

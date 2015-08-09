@@ -1,5 +1,5 @@
 ;  Copyright (C) 2000 Panagiotis Manolios and J Strother Moore
- 
+
 ; Modified May 2004 by Matt Kaufmann, in order to allow stobjs.  Thanks to John
 ; Matthews for providing a motivating example.  NOTE:  Do not use a :stobjs
 ; declaration in your defpun!
@@ -11,11 +11,11 @@
 ;; provided, defpun will attempt to use the 0-ary function constructed
 ;; from the valtype base name: (default-valtype).
 #|
-(defpun joe (x) 
-  (if (zp x) x 
-    (joe (1- x))) 
-  :argtypes (integerp x) 
-  :valtype integerp 
+(defpun joe (x)
+  (if (zp x) x
+    (joe (1- x)))
+  :argtypes (integerp x)
+  :valtype integerp
   :default 0
   )
 |#
@@ -46,21 +46,21 @@
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios and J Strother Moore who can be
 ;  reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu, moore@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
@@ -166,19 +166,19 @@
     (implies
      (defpun-arg-type x)
      (defpun-ret-type (defpun-default))))
-  
+
   (defthm defpun-ret-type-defpun-base
     (implies
      (defpun-arg-type x)
      (defpun-ret-type (defpun-base x))))
-  
+
   (defthm defpun-arg-type-defpun-st
     (implies
      (and
       (not (defpun-test x))
       (defpun-arg-type x))
      (defpun-arg-type (defpun-st x))))
-  
+
   )
 
 (defun defpun-stn (x n)
@@ -293,7 +293,7 @@
 
     `(encapsulate
       ((,f (x) t))
-    
+
       (local (in-theory (disable ,test ,base ,st)))
 
       (local (defun-nonexec ,stn (x n)
@@ -308,7 +308,7 @@
                (declare (xargs :measure (nfix n)))
                (if (or (zp n)
                        (,test x))
-                   (,base x) 
+                   (,base x)
                  (,fn (,st x) (1- n)))))
 
       (local (defun-nonexec ,f (x)
@@ -343,8 +343,8 @@
 
       (defthm ,(packn-pos (list f "-DEF") f)
         (equal (,f x)
-               (if (,test x) 
-                   (,base x) 
+               (if (,test x)
+                   (,base x)
                  (,f (,st x))))
         :hints (("Goal"
                  :use
@@ -382,7 +382,7 @@
                                        )))
         :rule-classes nil)
       )
-      
+
     ))
 
 ; Second, we recognize probably tail-recursive definitions and introduce
@@ -459,12 +459,12 @@
 		      (,ret-type (,f ,@vars)))
 		     :hints (("Goal" :use (:instance ,(packn-pos (list f1 "-TYPE") f)
 						     (x (list ,@vars))))))))
-	  
+
 	  )
 	;;
 	;; DAG -- In most circumstances, the following rule appears to
 	;; work much better than the :definition rule above.
-	;; 
+	;;
 	;; Nonetheless, I have it disabled for now.
 	;;
 	(defthmd ,(packn-pos (list "OPEN-" f) f)
@@ -510,7 +510,7 @@
                new-fn
              (car pterm))
            (subst-fn-into-pseudo-term-list new-fn old-fn (cdr pterm))))))
- 
+
  (defun subst-fn-into-pseudo-bindings (new-fn old-fn pbindings)
    (declare (xargs :mode :program))
    (cond
@@ -607,25 +607,25 @@
 	   (pair plist) (extract-pair a (cddr plist))
 	   (mv pair (list* key val plist)))))
     (mv nil nil)))
-	  
+
 (defun extract-type-info (keypairs)
   (declare (xargs :mode :program))
-  (mv-let 
+  (mv-let
    (pair keypairs) (extract-pair :argtypes keypairs)
    (let ((argtype (if (consp pair) (cdr pair) nil)))
      (mv-let
       (pair keypairs) (extract-pair :valtype keypairs)
       (if (consp pair)
 	  (let ((rettype (cdr pair)))
-	    (mv-let 
+	    (mv-let
 	     (pair keypairs) (extract-pair :default keypairs)
-	     (if (consp pair) 
+	     (if (consp pair)
 		 (let ((default (cdr pair)))
 		   (mv argtype rettype default keypairs))
 	       (let ((default `(,(packn-pos (list "DEFAULT-" rettype) rettype))))
 		 (mv argtype rettype default keypairs)))))
 	(let ((rettype '(lambda (x) t)))
-	  (mv-let 
+	  (mv-let
 	   (pair keypairs) (extract-pair :default keypairs)
 	   (let ((default (if (consp pair) (cdr pair) 'nil)))
 	     (mv argtype rettype default keypairs)))))))))
@@ -642,7 +642,7 @@
     (mv-let
      (dcl body keypairs)
      (destructure-dcl-body-keypairs rest)
-     (mv-let 
+     (mv-let
       (arg-type ret-type default keypairs) (extract-type-info keypairs)
       (cond
        ((not (keyword-value-listp keypairs))

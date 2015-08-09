@@ -8,7 +8,7 @@
 
 ;; Note: This book depends on the existence of an include-book-dir
 ;; :symbolic that points to the top-level directory containing the
-;; books.  For the current version I have: 
+;; books.  For the current version I have:
 
 ;; (add-include-book-dir :symbolic "/u/sandip/Dropbox/research/projects/symbolic/starting-over")
 
@@ -38,7 +38,7 @@
   (cond ((endp x) nil)
         ((endp (rest x)) nil)
         (t (cons (first x) (dellast (rest x))))))
-    
+
 
 (defun lastval (x)
   (cond ((endp x) nil)
@@ -59,17 +59,17 @@
 ;; manageable.  Most of the parameters are about tweaking function
 ;; names.
 
-(defun defsimulate+-core 
+(defun defsimulate+-core
   (next run
 
-   params 
+   params
 
    subroutine-term insub existsexitpointsub stepstoexitpointsub
-   stepstoexitpointsub-tail nextexitpointsub   
-   
+   stepstoexitpointsub-tail nextexitpointsub
+
    premain inmain cutpoint assertion modifymain
    exitsteps exists-next-exitpoint next-exitpoint
-   correctness-theorem 
+   correctness-theorem
 
    hints package)
 
@@ -86,7 +86,7 @@
          ;; params includes both s0 and st.  params- does not include
          ;; s0.  Actually params- is used everywhere, --- params is
          ;; used only in assertion.
-         
+
          (params- (rest params))
          (params+i (snoc params- 'i))
          (nextterm (list next st))
@@ -105,7 +105,7 @@
          )
   `(encapsulate
     ()
-    
+
     (local (deftheory user-theory (current-theory :here)))
 
     ;; First deal with generic requirements for subroutines.
@@ -113,7 +113,7 @@
 
 
     ;; Now some easy theorems about the main program
-    (local 
+    (local
      (defthm $$$pre-implies-assertion
       (implies ,premainterm
                (let ((,s0 ,st))
@@ -124,7 +124,7 @@
      (defthm $$$assertion-main-implies-post
        (implies (and ,assertterm
                      (not ,inmainterm))
-                (equal ,st 
+                (equal ,st
                        (let ((,st ,s0))
                          ,modifyterm)))
        :rule-classes nil))
@@ -132,23 +132,23 @@
     (local
      (defthm $$$assertion-implies-cutpoint
        (implies ,assertterm
-                (or ,cutterm 
+                (or ,cutterm
                     (not ,inmainterm)))
        :rule-classes nil))
 
     ;;; RBK: made local
     (local
      (in-theory (theory 'ground-zero)))
-    
-    (local 
+
+    (local
      (defun-sk $$$exists-next-cutpoint ,params-
-       (exists n 
+       (exists n
                (let* ((,st (,run ,st n)))
                 ,cutterm))))
 
 
-     
-    (local 
+
+    (local
      (in-theory (union-theories (theory 'user-theory)
                                 (list '$$$defp-symsim-theorem))))
 
@@ -185,20 +185,20 @@
           (omega))))
 
     (defun-sk ,exists-next-exitpoint ,params-
-      (exists n 
+      (exists n
               (let* ((,st (,run ,st n)))
                 (not ,inmainterm))))
 
     (defun ,next-exitpoint ,params-
       (let* ((steps (,exitsteps ,@params-)))
         (,run ,st steps)))
-    
+
     ;;; RBK: Moved to top of file, for ease of use.
     ;;;(local
-    ;;; (include-book 
+    ;;; (include-book
     ;;;  "extended-partial-correctness" :dir :symbolic))
 
-    (local 
+    (local
      (in-theory (theory 'minimal-theory)))
 
     (defthm ,correctness-theorem
@@ -211,28 +211,28 @@
   :otf-flg t
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance 
-                  (:functional-instance 
+           :use ((:instance
+                  (:functional-instance
                    |epc composite partial correctness|
                    (epc-next (lambda (s) (let ((,st s)) ,nextterm)))
                    (epc-run (lambda (s n) (,run s n)))
-                   (exists-epc-next-cutpoint 
+                   (exists-epc-next-cutpoint
                     (lambda (s)
-                      (let ((,st s)) 
+                      (let ((,st s))
                         ($$$exists-next-cutpoint ,@params-))))
-                   (exists-epc-next-cutpoint-witness 
+                   (exists-epc-next-cutpoint-witness
                     (lambda (s)
                       (let ((,st s))
                           ($$$exists-next-cutpoint-witness ,@params-))))
-                   (epc-pre-sub (lambda (s) 
+                   (epc-pre-sub (lambda (s)
                               (let ((,st s)) ($$$presub ,@params-))))
-                   (epc-in-sub (lambda (s) 
+                   (epc-in-sub (lambda (s)
                              (let((,st s)) ,insubterm)))
-                   (epc-exists-exitpoint-sub 
-                    (lambda (s) 
+                   (epc-exists-exitpoint-sub
+                    (lambda (s)
                       (let ((,st s)) ,existsexitpointsubterm)))
                    (epc-exists-exitpoint-sub-witness
-                    (lambda (s) 
+                    (lambda (s)
                       (let ((,st s))
                         (,(packn+ (list existsexitpointsub '-witness)
                                   package)
@@ -240,26 +240,26 @@
                    (epc-steps-to-exitpoint-tail-sub
                     (lambda (s i)
                       (let ((,st s)) (,stepstoexitpointsub-tail ,@params+i))))
-                   (epc-modify-sub 
-                    (lambda (s) 
+                   (epc-modify-sub
+                    (lambda (s)
                       (let ((,st s))
                         ($$$modifysub ,@params-))))
-                   (epc-next-exitpoint-sub 
-                    (lambda (s) 
+                   (epc-next-exitpoint-sub
+                    (lambda (s)
                       (let ((,st s))
                         (,nextexitpointsub  ,@params-))))
-                   (epc-steps-to-exitpoint-sub 
+                   (epc-steps-to-exitpoint-sub
                     (lambda (s)
                       (let ((,st s))
                         (,stepstoexitpointsub ,@params-))))
 
-                   (epc-pre-main (lambda (s) 
+                   (epc-pre-main (lambda (s)
                                (let ((,st s)) ,premainterm)))
-                                 
-                   (epc-cutpoint-main 
+
+                   (epc-cutpoint-main
                     (lambda (s)
                       (let ((,st s)) ,cutterm)))
-                   (epc-exists-exitpoint-main 
+                   (epc-exists-exitpoint-main
                     (lambda (s)
                       (let ((,st s))
                         (,exists-next-exitpoint ,@params-))))
@@ -267,38 +267,38 @@
                     (lambda (s)
                       (let ((,st s))
                         (,(packn+ (list exists-next-exitpoint
-                                        '-witness) 
+                                        '-witness)
                                   package)
                          ,@params-))))
-                   (epc-next-exitpoint-main 
-                    (lambda (s) 
+                   (epc-next-exitpoint-main
+                    (lambda (s)
                       (let ((,st s))
                         (,next-exitpoint ,@params-))))
                    (epc-exitsteps-main
-                    (lambda (s) 
+                    (lambda (s)
                       (let ((,st s))
                         (,exitsteps ,@params-))))
                    (epc-exitsteps-main-tail
                     (lambda (s i)
                       (let ((,st s))
                         (,exitsteps-tail ,@params+i))))
-                   (epc-in-main (lambda (s) 
+                   (epc-in-main (lambda (s)
                               (let ((,st s)) ,inmainterm)))
-                                
-                   (epc-next-epc-cutpoint-main 
-                    (lambda (s) 
+
+                   (epc-next-epc-cutpoint-main
+                    (lambda (s)
                       (let ((,st s))
                         ($$$next-cutpoint-main ,@params-))))
-                   (epc-assertion-main 
+                   (epc-assertion-main
                     (lambda (s0 s)
                       (let ((,s0 s0)
                             (,st s))
                         ,assertterm)))
-                   (epc-modify-main 
-                    (lambda (s) 
+                   (epc-modify-main
+                    (lambda (s)
                       (let ((,st s)) ,modifyterm))))
                   (s ,st))))
-                        
+
           ("Subgoal 22"
            :use ((:instance
                   $$$assertion-invariant-over-cutpoints
@@ -325,46 +325,46 @@
            :use ((:instance $$$no-main-cutpoint-in-sub
                             (,st s))))
           ("Subgoal 15"
-           :use 
-           ((:instance 
+           :use
+           ((:instance
              (:definition $$$exists-next-cutpoint)
              (,st s))))
-                          
+
           ("Subgoal 14"
-           :use 
+           :use
            ((:instance $$$exists-next-cutpoint-suff
                        (,st s))))
           ("Subgoal 13"
-           :use 
+           :use
            ((:instance $$$next-cutpoint-main$def
                        (,st s))))
           ("Subgoal 12"
            :use ((:instance $$$correctness-of-sub
                             (,st s))))
           ("Subgoal 11"
-           :use ((:instance 
+           :use ((:instance
                   ,(packn+ (list stepstoexitpointsub-tail '$def)
                            package)
                   (,st s))))
           ("Subgoal 10"
-           :use 
-           ((:instance 
+           :use
+           ((:instance
              (:definition ,existsexitpointsub)
              (,st s))))
           ("Subgoal 9"
-           :use 
-           ((:instance 
+           :use
+           ((:instance
              ,(packn+ (list existsexitpointsub '-suff) package)
              (,st s))))
           ("Subgoal 8"
-           :use 
+           :use
            ((:instance (:definition ,nextexitpointsub)
                        (,st s))))
           ("Subgoal 7"
-           :use 
+           :use
            ((:instance (:definition ,stepstoexitpointsub)
                        (,st s))))
-                        
+
           ("Subgoal 6"
            :in-theory (enable ,run))
 
@@ -380,7 +380,7 @@
                   (,st s))))
           ("Subgoal 2"
            :use ((:instance ,(packn+ (list exists-next-exitpoint
-                                           '-suff) 
+                                           '-suff)
                                      package)
                             (,st s))))
           ("Subgoal 1"
@@ -394,38 +394,38 @@
 ;; proven some correctness of the subroutine.
 
 
-(defun process-default-subroutines 
-  (insub 
-   exists-exitpoint-sub 
-   steps-to-exitpoint-sub 
-   steps-to-exitpoint-sub-tail 
+(defun process-default-subroutines
+  (insub
+   exists-exitpoint-sub
+   steps-to-exitpoint-sub
+   steps-to-exitpoint-sub-tail
    next-exitpoint-sub
    next run params inmain cutpoint)
   (let ((s (lastval params)))
     `(encapsulate
       ()
 
-      
+
       (local (deftheory $$$subtheory (current-theory :here)))
       (local (in-theory (theory 'ground-zero)))
 
       (defun-nx ,insub ,params
          (declare (xargs :normalize nil))
          nil)
-      
-     (defun-nx $$$presub ,params 
+
+     (defun-nx $$$presub ,params
         nil)
 
       (defun-nx $$$modifysub ,params
         (declare (xargs :normalize nil))
         "Should never see this in a proof")
-      
+
       (defthm $$$no-main-cutpoint-in-sub
         (implies (,insub ,@params)
                  (not (,cutpoint ,@params)))
         :rule-classes nil)
-      
-      
+
+
       (defthm $$$in-sub-implies-in-main
         (implies (,insub ,@params)
                  (,inmain ,@params))
@@ -436,30 +436,30 @@
                  (,insub ,@params))
         :rule-classes nil)
 
-      
+
       (defp ,steps-to-exitpoint-sub-tail ,(snoc params 'i)
         (if (not (,insub ,@params))
             i
           (let* ((,s (,next ,s)))
             (,steps-to-exitpoint-sub-tail ,@(snoc params '(1+ i))))))
-      
+
       (defun-nx ,steps-to-exitpoint-sub ,params
         (declare (xargs :normalize nil))
         (let* ((steps (,steps-to-exitpoint-sub-tail ,@(snoc params 0)))
                (,s (,run ,s steps)))
           (if (not (,insub ,@params))
-              steps 
+              steps
             (omega))))
-      
+
       (defun-nx ,next-exitpoint-sub ,params
         (,run ,s (,steps-to-exitpoint-sub ,@params)))
-      
+
       (defun-sk ,exists-exitpoint-sub ,params
         (exists n
                 (let* ((,s (,run ,s n)))
                   (not (,insub ,@params))))
         :witness-dcls ((declare (xargs :normalize nil))))
-      
+
       (defthm $$$correctness-of-sub
         (implies (and ($$$presub ,@params)
                       (,exists-exitpoint-sub ,@params))
@@ -468,9 +468,9 @@
                       (equal (,next-exitpoint-sub ,@params)
                              ($$$modifysub ,@params))))
         :rule-classes nil)
-      
+
       (local (in-theory (theory 'ground-zero)))
-      
+
       (defp $$$next-cutpoint-main ,params
         (if (or (,cutpoint ,@params)
                 (not (,inmain ,@params)))
@@ -479,8 +479,8 @@
                          ($$$modifysub ,@params)
                        (,next ,s))))
             ($$$next-cutpoint-main ,@params))))
-      
-      
+
+
       (defthm $$$defp-symsim-theorem
         (equal ($$$next-cutpoint-main ,@params)
                (if (or (,cutpoint ,@params)
@@ -542,8 +542,8 @@
 (defun pre-modify-next-cutpoint (subs params next-cutpoint)
   (if (endp subs) nil
     (cons (list (access-presub (first subs) params)
-                (cons next-cutpoint 
-                      (snoc (dellast params) 
+                (cons next-cutpoint
+                      (snoc (dellast params)
                             (access-modifysub (first subs) params))))
           (pre-modify-next-cutpoint (rest subs)
                                     params next-cutpoint))))
@@ -551,11 +551,11 @@
 ;; Here is the main function for processing the non-trivial
 ;; subroutines.
 
-(defun process-nontrivial-subroutines 
+(defun process-nontrivial-subroutines
   (;; RBK: Hmmm.  run was not being used
    ;; next run params
    next params
-   subs insub 
+   subs insub
    exists-exitpoint-sub next-exitpoint-sub
    cutpoint inmain)
   (let* ((presublist (construct-presub-list subs params))
@@ -585,7 +585,7 @@
                :in-theory (union-theories (theory 'subtheory)
                                           (list '$$$presub '$$$modifysub))))
        :rule-classes nil)
-    
+
     (defthm $$$no-main-cutpoint-in-sub
       (implies (,insub ,@params)
                (not (,cutpoint ,@params)))
@@ -593,7 +593,7 @@
                :in-theory (union-theories (theory 'subtheory)
                                           (list '$$$presub '$$$modifysub))))
       :rule-classes nil)
-  
+
     (defthm $$$in-sub-implies-in-main
       (implies (,insub ,@params)
                (,inmain ,@params))
@@ -601,7 +601,7 @@
                :in-theory (union-theories (theory 'subtheory)
                                           (list '$$$presub '$$$modifysub))))
       :rule-classes nil)
-    
+
     ;; One possible optimization is not to generate the subroutine
     ;; correctness theorem if there is only one subroutine (since the
     ;; user has already proven that theorem and I can just use that.
@@ -631,7 +631,7 @@
                      (,next ,s))))
           ($$$next-cutpoint-main ,@params)))
       :rule-classes nil)
-  
+
     (defthm $$$defp-symsim-theorem
       (equal ($$$next-cutpoint-main ,@params)
              (if (or (,cutpoint ,@params)
@@ -641,51 +641,51 @@
                              `(t (let* ((,s (,next ,s)))
                                    ($$$next-cutpoint-main ,@params)))))))
       :hints (("Goal"
-               :use ((:instance $$$next-cutpoint-main$def)) 
+               :use ((:instance $$$next-cutpoint-main$def))
                :in-theory (enable $$$presub $$$modifysub)))))))
 
-;; Now package this all up to a single function. 
+;; Now package this all up to a single function.
 
 (defun defsimulate+-fn
-  (next params run 
-   subs insub exists-exitpoint-sub 
+  (next params run
+   subs insub exists-exitpoint-sub
    steps-to-exitpoint-sub stepstoexitpointsub-tail
    next-exitpoint-sub
-   precondition inmain cutpoint assertion modify 
+   precondition inmain cutpoint assertion modify
    exitsteps exists-next-exitpoint next-exitpoint
-   correctness-theorem 
+   correctness-theorem
    hints package)
   (declare (xargs :mode :program))
 
   (let* ((params- (rest params))
          (subroutine-term
           (if subs
-              (process-nontrivial-subroutines 
+              (process-nontrivial-subroutines
                ;; RBK:
-               ;; next run params- 
+               ;; next run params-
                next params-
-               subs insub 
+               subs insub
                exists-exitpoint-sub next-exitpoint-sub
                cutpoint inmain)
-            (process-default-subroutines 
+            (process-default-subroutines
              insub
-             exists-exitpoint-sub 
-             steps-to-exitpoint-sub 
-             stepstoexitpointsub-tail 
+             exists-exitpoint-sub
+             steps-to-exitpoint-sub
+             stepstoexitpointsub-tail
              next-exitpoint-sub
              next run params- inmain cutpoint))))
-         
-          (defsimulate+-core 
+
+          (defsimulate+-core
             next run
 
-            params 
+            params
 
             subroutine-term insub exists-exitpoint-sub steps-to-exitpoint-sub
-            stepstoexitpointsub-tail next-exitpoint-sub   
+            stepstoexitpointsub-tail next-exitpoint-sub
 
             precondition inmain cutpoint assertion modify
             exitsteps exists-next-exitpoint next-exitpoint
-            correctness-theorem 
+            correctness-theorem
 
             hints package)))
 
@@ -696,8 +696,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro defsimulate+
-  (next          
-   &key 
+  (next
+   &key
    (assertion-params '(s0 s1))
    (run '$$$run)
    (subs 'nil)
@@ -736,18 +736,18 @@
                               (symbolp exists-next-exitpoint)
                               (symbolp next-exitpoint)
                               (symbolp correctness-theorem))))
-  (defsimulate+-fn 
-    next assertion-params run 
-    
-    subs insub exists-exitpoint-sub 
+  (defsimulate+-fn
+    next assertion-params run
+
+    subs insub exists-exitpoint-sub
     steps-to-exitpoint-sub steps-to-exitpoint-sub-tail
     next-exitpoint-sub
-    
-    precondition inmain cutpoint assertion modify 
+
+    precondition inmain cutpoint assertion modify
 
     exitsteps exists-next-exitpoint next-exitpoint
-    
-    correctness-theorem 
+
+    correctness-theorem
 
     hints package))
 
@@ -773,7 +773,7 @@
      (try-run (try-next s) (- n 1)))))
 
 (local
- (defun try-precondition (p q r) 
+ (defun try-precondition (p q r)
    (declare (ignore p q r))
    nil))
 
@@ -782,7 +782,7 @@
    (declare (ignore a b s))
    t))
 
-(local 
+(local
  (defun try-cutpoint (a b s)
    (declare (ignore a b s))
    nil))
@@ -798,10 +798,10 @@
   nil))
 
 (local
- (defsimulate+ 
-   try-next 
+ (defsimulate+
+   try-next
    :assertion-params (a p q st)
-   :run try-run 
+   :run try-run
    :assertion try-assertion
    :cutpoint try-cutpoint
    :precondition try-precondition
@@ -814,55 +814,55 @@
  ()
 
  (local
-  (defun try-next (s) 
+  (defun try-next (s)
     (declare (xargs :normalize nil))
     s))
- 
+
  (local
   (defun try-run (s n)
     (if (zp n) s
       (try-run (try-next s) (- n 1)))))
- 
- 
- (local 
+
+
+ (local
   (defun try-insub (p q s)
     t))
- 
+
  (local
   (defun try-sub-precondition (p q s)
     (declare (xargs :normalize nil))
     nil))
- 
- (local 
+
+ (local
   (defun try-sub-modify (p q s)
     (declare (xargs :normalize nil))
     s))
 
- (local 
+ (local
   (defp try-steps-to-exitpoint-tail-sub (p q st i)
-    (if (not (try-insub p q st)) 
+    (if (not (try-insub p q st))
         i
       (try-steps-to-exitpoint-tail-sub p q (try-next st) (1+ i)))))
 
- (local 
+ (local
   (defun try-steps-to-exitpoint-sub (p q st)
     (declare (xargs :normalize nil))
     (let ((steps (try-steps-to-exitpoint-tail-sub p q st 0)))
      (if (not (try-insub p q (try-run st steps)))
-         steps 
+         steps
        (omega)))))
 
 
- (local 
-  (defun try-next-exitpoint-sub (p q st) 
+ (local
+  (defun try-next-exitpoint-sub (p q st)
     (try-run st (try-steps-to-exitpoint-sub p q st))))
 
 
- (local 
+ (local
   (defun-sk try-exists-exitpoint (p q st)
     (exists n (not (try-insub p q (try-run st n))))
     :witness-dcls  ((declare (xargs :normalize nil)))))
-  
+
  (local
   (defthm correctness-of-try
    (implies (and (try-sub-precondition p q st)
@@ -871,41 +871,41 @@
              (equal (try-next-exitpoint-sub p q st)
                    (try-sub-modify p q st))))))
 
-  
+
  (local
-  (defun try-precondition (p q r) 
+  (defun try-precondition (p q r)
     (declare (ignore p q r))
     nil))
- 
+
  (local
   (defun try-inmain (a b s)
     (declare (ignore a b s))
    t))
- 
- (local 
+
+ (local
   (defun try-cutpoint (a b s)
     (declare (ignore a b s))
     nil))
- 
+
  (local
   (defun try-assertion (p a b s)
     (declare (ignore p a b s))
     nil))
- 
+
  (local
   (defun try-modify (a b s)
     (declare (ignore a b s))
     nil))
- 
- 
+
+
  (local
   (encapsulate
    ()
    (local
-    (defsimulate+ 
-      try-next 
+    (defsimulate+
+      try-next
       :assertion-params (a p q st)
-      :run try-run 
+      :run try-run
       :assertion try-assertion
       :cutpoint try-cutpoint
       :precondition try-precondition
@@ -916,11 +916,11 @@
   (encapsulate
    ()
    (local
-    (defsimulate+ 
-      try-next 
+    (defsimulate+
+      try-next
       :assertion-params (a p q st)
       :subs ((try-sub-precondition try-sub-modify correctness-of-try))
-      :run try-run 
+      :run try-run
       :assertion try-assertion
       :cutpoint try-cutpoint
       :precondition try-precondition
@@ -937,12 +937,12 @@
   (encapsulate
    ()
    (local
-    (defsimulate+ 
-      try-next 
+    (defsimulate+
+      try-next
       :assertion-params (a p q st)
       :subs ((try-sub-precondition try-sub-modify correctness-of-try)
              (try-sub-precondition try-sub-modify correctness-of-try))
-      :run try-run 
+      :run try-run
       :assertion try-assertion
       :cutpoint try-cutpoint
       :precondition try-precondition
@@ -954,6 +954,6 @@
       :steps-to-exitpoint-sub try-steps-to-exitpoint-sub
       :steps-to-exitpoint-sub-tail try-steps-to-exitpoint-tail-sub
       :next-exitpoint-sub try-next-exitpoint-sub))))
- 
+
  )
 

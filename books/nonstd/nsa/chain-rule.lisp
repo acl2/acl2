@@ -108,7 +108,7 @@
 
  )
 
-;; It helps (for hint purposes) to separate the two parts of the 
+;; It helps (for hint purposes) to separate the two parts of the
 ;; condition for differentiability
 
 (defthm cr-fn1-differentiable-part1
@@ -275,7 +275,7 @@
 				     (rdfn-domain cr-fn2-range)))))
 
 (defthm differential-cr-fn1-close
-   (implies (and (inside-interval-p x (cr-fn2-range)) 
+   (implies (and (inside-interval-p x (cr-fn2-range))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (cr-fn2-range))
@@ -366,7 +366,7 @@
 				     (rdfn-domain cr-fn2-domain)))))
 
 (defthm differential-cr-fn2-close
-   (implies (and (inside-interval-p x (cr-fn2-domain)) 
+   (implies (and (inside-interval-p x (cr-fn2-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (cr-fn2-domain))
@@ -398,13 +398,13 @@
 
 (local
  (defthm close-if-same-standard-part
-     (implies (and (acl2-numberp x) 
+     (implies (and (acl2-numberp x)
 		   (acl2-numberp y)
 		   (i-limited x)
 		   (i-limited y)
 		   (equal (standard-part x) (standard-part y)))
 	      (i-close x y))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance i-close-transitive
 			     (x x)
 			     (y (standard-part x))
@@ -481,16 +481,16 @@
 		  (:instance i-close-symmetric
 			     (x (cr-fn1 x))
 			     (y (cr-fn1 (+ x eps1))))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps1))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps2))
-		  (:instance cr-fn1-continuous 
+		  (:instance cr-fn1-continuous
 			     (x x)
 			     (y (+ x eps1)))
-		  (:instance cr-fn1-continuous 
+		  (:instance cr-fn1-continuous
 			     (x x)
 			     (y (+ x eps2))))
 	    :in-theory '(inside-interval-is-real)))))
@@ -518,16 +518,16 @@
 		  (:instance i-close-symmetric
 			     (x (cr-fn2 x))
 			     (y (cr-fn2 (+ x eps1))))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps1))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps2))
-		  (:instance cr-fn2-continuous 
+		  (:instance cr-fn2-continuous
 			     (x x)
 			     (y (+ x eps1)))
-		  (:instance cr-fn2-continuous 
+		  (:instance cr-fn2-continuous
 			     (x x)
 			     (y (+ x eps2))))
 	    :in-theory '(inside-interval-is-real)))))
@@ -547,7 +547,7 @@
 		  (:instance cr-fn1-continuous
 			     (x x)
 			     (y (+ x eps)))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps)))
 	    :in-theory '(cr-fn1-real
@@ -570,7 +570,7 @@
 		  (:instance cr-fn2-continuous
 			     (x x)
 			     (y (+ x eps)))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps)))
 	    :in-theory '(cr-fn2-real
@@ -612,7 +612,7 @@
                      (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
                         (differential-cr-fn2 x eps))))))
  )
-   
+
 
 (encapsulate
  ( ((derivative-cr-fn1-o-fn2 *) => *) )
@@ -771,7 +771,7 @@
     :hints (("Goal"
 	     :use ((:instance i-small-uminus
 			      (x (+ x (- y)))))
-	     :in-theory '(i-close 
+	     :in-theory '(i-close
 			  distributivity-of-minus-over-+
 			  functional-self-inversion-of-minus
 			  fix)))))
@@ -834,11 +834,11 @@
 		    (<= 0 x)
 		    (equal (standard-part x) 0))
 	       (not (i-large x)))
-    :hints (("Goal" 
-	     :use ((:instance standard-part-<= 
+    :hints (("Goal"
+	     :use ((:instance standard-part-<=
 			      (x 1)
 			      (y x))
-		   (:instance standard-part-<= 
+		   (:instance standard-part-<=
 			      (x 1)
 			      (y (/ x)))
 		   (:instance (:theorem (implies (and (realp x) (< x 1) (< 0 x)) (< 1 (/ x)))))
@@ -982,7 +982,7 @@
     :hints (("Goal"
 	     :use ((:instance differential-cr-fn1-definition))))
     :rule-classes (:rewrite :type-prescription)))
-		  
+
 
  (local
   (defthm lemma-2
@@ -991,7 +991,7 @@
     :hints (("Goal"
 	     :use ((:instance i-small-uminus
 			      (x (+ x (- y)))))
-	     :in-theory '(i-close 
+	     :in-theory '(i-close
 			  distributivity-of-minus-over-+
 			  functional-self-inversion-of-minus
 			  fix)))))
@@ -1002,7 +1002,7 @@
 		   (inside-interval-p y1 (cr-fn2-domain))
 		   (i-close x y1) (not (= x y1))
 		   (not (equal (cr-fn2 y1) (cr-fn2 x))))
-	      (i-limited (differential-cr-fn1 (cr-fn2 x) 
+	      (i-limited (differential-cr-fn1 (cr-fn2 x)
 					      (- (cr-fn2 y1) (cr-fn2 x)))))
    :hints (("Goal"
 	    :use ((:instance cr-fn2-continuous
@@ -1038,7 +1038,7 @@
     :hints (("Goal"
 	     :use ((:instance i-small-uminus
 			      (x (+ x (- y)))))
-	     :in-theory '(i-close 
+	     :in-theory '(i-close
 			  distributivity-of-minus-over-+
 			  functional-self-inversion-of-minus
 			  fix)))))
@@ -1124,7 +1124,7 @@
    (implies (and (i-close x1 x2)
 		 (i-limited y))
 	    (i-close (* x1 y) (* x2 y)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance small*limited->small
 				      (x (- x1 x2))
 				      (y y)))
@@ -1166,7 +1166,7 @@
     :hints (("Goal"
 	     :use ((:instance differential-cr-fn1-definition))))
     :rule-classes (:rewrite :type-prescription)))
-		  
+
 
  (local
   (defthm lemma-2
@@ -1175,7 +1175,7 @@
     :hints (("Goal"
 	     :use ((:instance i-small-uminus
 			      (x (+ x (- y)))))
-	     :in-theory '(i-close 
+	     :in-theory '(i-close
 			  distributivity-of-minus-over-+
 			  functional-self-inversion-of-minus
 			  fix)))))
@@ -1189,9 +1189,9 @@
 		   (i-close x y2) (not (= x y1))
 		   (not (equal (cr-fn2 y1) (cr-fn2 x)))
 		   (not (equal (cr-fn2 y2) (cr-fn2 x))))
-	      (i-close (differential-cr-fn1 (cr-fn2 x) 
+	      (i-close (differential-cr-fn1 (cr-fn2 x)
 					    (- (cr-fn2 y1) (cr-fn2 x)))
-		       (differential-cr-fn1 (cr-fn2 x) 
+		       (differential-cr-fn1 (cr-fn2 x)
 					    (- (cr-fn2 y2) (cr-fn2 x)))))
    :hints (("Goal"
 	    :use ((:instance close-times-2
@@ -1245,7 +1245,7 @@
     :hints (("Goal"
 	     :use ((:instance i-small-uminus
 			      (x (+ x (- y)))))
-	     :in-theory '(i-close 
+	     :in-theory '(i-close
 			  distributivity-of-minus-over-+
 			  functional-self-inversion-of-minus
 			  fix)))))
@@ -1274,7 +1274,7 @@
     :hints (("Goal"
 	     :use ((:instance lemma-3))
 	     :in-theory nil))))
-      
+
 
  (defthm cr-fn1-o-fn2-differentiable-part2-lemma
        (implies (and (standardp x)
@@ -1285,7 +1285,7 @@
 		   (i-close x y2) (not (= x y1))
 		   (not (equal (cr-fn2 y1) (cr-fn2 x)))
 		   (not (equal (cr-fn2 y2) (cr-fn2 x))))
-	      (i-close (differential-cr-fn1-o-fn2 x (- y1 x)) 
+	      (i-close (differential-cr-fn1-o-fn2 x (- y1 x))
 		       (differential-cr-fn1-o-fn2 x (- y2 x))))
    :hints (("Goal"
 	    :use ((:instance close-differential-cr-fn1-after-fn2)
@@ -1401,10 +1401,10 @@
 	    (and (i-limited  (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y1)) (- x y1)))
 		 (i-close (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y1)) (- x y1))
 			  (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :use (cr-fn1-o-fn2-differentiable-part1
 		 cr-fn1-o-fn2-differentiable-part2)
-	   :in-theory nil 
+	   :in-theory nil
 	   )))
 
 (defthm cr-fn1-o-fn2-continuous
@@ -1461,7 +1461,7 @@
     (implies (inside-interval-p x (cr-fn2-domain))
 	     (or (not (equal (interval-left-endpoint (cr-fn2-domain)) x))
 		 (not (equal (interval-right-endpoint (cr-fn2-domain)) x))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance cr-fn2-domain-non-trivial))))
   :rule-classes nil)
 
@@ -1563,7 +1563,7 @@
 	  ))
 
 (defthm differential-cr-fn1-o-fn2-close
-   (implies (and (inside-interval-p x (cr-fn2-domain)) 
+   (implies (and (inside-interval-p x (cr-fn2-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (cr-fn2-domain))

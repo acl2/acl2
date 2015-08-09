@@ -15,7 +15,7 @@
 	(> z 0))
    (equal (mod (mod x y) z)
 	  (mod x z)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory nil
 	   :use rewrite-mod-mod)))
 
@@ -27,7 +27,7 @@
     (not (equal y 0)))
    (equal (equal (mod x y) 0)
 	  (integerp (/ x y))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory nil
 	   :use mod-=-0)))
 
@@ -55,7 +55,7 @@
    (and (integerp i)
 	(integerp j))
    (integerp (mod i j)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory nil
 	   :use integerp-mod)))
 
@@ -74,7 +74,7 @@
 	 (integerp y)
 	 (not (equal y 0)))
     (> (mod x y) y)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory nil
 	   :use mod-bounds)))
 
@@ -86,12 +86,12 @@
 	(not (equal z 0)))
    (equal (mod (+ x y) z)
 	  (mod (+ (mod x z) (mod y z)) z)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory nil
 	   :use mod-+)))
 
 
-			       
+
 
 
 (defthm cancel-mod-+-exp
@@ -104,26 +104,26 @@
 	(not (equal z 0)))
    (and
     (equal (mod (+ x y) z)
-	   (mod y z)) 
+	   (mod y z))
     (equal (mod (+ y x) z)
 	   (mod y z))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory nil
 	   :use cancel-mod-+)))
 
 (defthm mod-x+i*y-y-exp
    (implies
-    (and 
+    (and
      (integerp i)
      (integerp x)
      (integerp y)
      (not (equal y 0)))
     (equal (mod (+ x (* i y)) y)
 	   (mod x y)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory nil
 	   :use mod-x+i*y-y)))
- 
+
 (defthm mod-x-y-=-x-exp
   (implies
    (and
@@ -133,7 +133,7 @@
    (equal (equal (mod x y) x)
           (or (and (>= x 0) (> y 0) (< x y))
               (and (<= x 0) (< y 0) (> x y)))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory nil
 	   :use mod-x-y-=-x)))
 

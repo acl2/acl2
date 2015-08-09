@@ -254,7 +254,7 @@
                                                         xmasnetwork)))))
 (defun-sk component-has-channel-as-output (component channel xmasnetwork)
   (exists (i)
-          (and (natp i) 
+          (and (natp i)
                (< i (len (component-outs component)))
                (equal (get-out-channel component i xmasnetwork)
                       channel))))
@@ -323,7 +323,7 @@
            (xmasnetworkp xmasnetwork))
     (get-value (nth (xmas-signal-channel-ref signal) (xmasnetwork-channels xmasnetwork)) (xmas-signal-type signal))
     nil))
- 
+
 
 ;; MODIFYING/EXECUTION OF XMASNETWORK
 
@@ -351,7 +351,7 @@
         (t
          channel)))
 
-;; Updates the signal with the new value in the xmasnetwork 
+;; Updates the signal with the new value in the xmasnetwork
 (defun signal-update (signal value xmasnetwork)
   (let* ((channel-ref (xmas-signal-channel-ref signal))
          (type (xmas-signal-type signal))
@@ -435,7 +435,7 @@
                 (channelsp channels n))
            (consp (nth channel-ref channels))))
 (defthm channelsp-replace-nth.9
-  (implies (and 
+  (implies (and
                 (natp channel-ref)
                 (< channel-ref (len channels))
                 (channelsp channels n))
@@ -447,13 +447,13 @@
            (>= (nth 4 (nth channel-ref channels)) 0))
   :rule-classes :linear)
 (defthm channelsp-replace-nth.11
-  (implies (and 
+  (implies (and
                 (natp channel-ref)
                 (< channel-ref (len channels))
                 (channelsp channels n))
            (< (nth 3 (nth channel-ref channels)) n)))
 (defthm channelsp-replace-nth.12
-  (implies (and 
+  (implies (and
                 (natp channel-ref)
                 (< channel-ref (len channels))
                 (channelsp channels n))
@@ -501,14 +501,14 @@
                               (n (len (xmasnetwork-components xmasnetwork)))
                               (channels (xmasnetwork-channels xmasnetwork))
                               (channel (channel-update (nth (xmas-signal-channel-ref signal) (xmasnetwork-channels xmasnetwork)) (xmas-signal-type signal) value xmasnetwork)))))
-                           
+
                               ))
 
 
 (defthm update-signal-preserves-number-of-channels
   (equal (len (chans (update-signal signal value xmasnetwork)))
          (len (chans xmasnetwork))))
-                       |# 
+                       |#
 (defthmd nth-cdr
   (implies (natp n)
            (equal (nth n (cdr x))
@@ -534,8 +534,8 @@
                                   (signal signal1)
                                   ))
         ))
-         
- ;)        
+
+ ;)
 |#
 ;; Theorem get-signal-value-after-updating-signal allows to nicely abstract from the datastructures. We no longer need to expand functions get-signal-value or update-signal:
 ;(in-theory (disable update-signal get-signal-value))

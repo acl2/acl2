@@ -103,8 +103,8 @@
 
 (defun
     lst-rotates-with-minus-1 (n lst)
-    "Return the list of n+1 successive rotates of the 
-     list lst with the first of each rotate replaced 
+    "Return the list of n+1 successive rotates of the
+     list lst with the first of each rotate replaced
      by the first minus 1."
     (declare (xargs :guard (and (rational-listp lst)
 				(consp lst)
@@ -125,9 +125,9 @@
 
 (defun
     dec-front-len (lst)
-    "Return the number of strictly decreasing elements 
+    "Return the number of strictly decreasing elements
      at the front of the list lst."
-    (declare (xargs :guard (rational-listp lst))) 
+    (declare (xargs :guard (rational-listp lst)))
     (cond ((consp (rest lst))  ;; (len lst) > 1
 	   (if (<= (first lst)(second lst))
 	       1
@@ -146,7 +146,7 @@
 	      (list (list (- first 1) second third forth fifth sixth)
 		    (list (- second 1) third forth fifth sixth first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth fifth sixth))))))
  )
@@ -189,7 +189,7 @@
  (defthm
      lst-rotates-with-minus-1-6e
      (let ((lst (list first second third forth fifth sixth)))
-       (equal 
+       (equal
 	(lst-rotates-with-minus-1 5 lst)
 	(list (list (- first 1) second third forth fifth sixth)
 	      (list (- second 1) third forth fifth sixth first)
@@ -214,12 +214,12 @@
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst (lst-rotates-with-minus-1 
+			(Fb (Fb-lst (lst-rotates-with-minus-1
 				     (- (len lst) 1)
 				     lst)))))))
     :rule-classes nil)
 
-(defthm 
+(defthm
    ;;Time:  253.60 seconds (prove: 122.80, print: 130.74, other: 0.06)
     Fb-sat-tarai-def-6a
     (implies (and (integerp first)
@@ -233,7 +233,7 @@
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst (lst-rotates-with-minus-1 
+			(Fb (Fb-lst (lst-rotates-with-minus-1
 				     (- (dec-front-len lst) 1)
 				     lst)))))))
     :rule-classes nil)

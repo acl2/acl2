@@ -256,7 +256,7 @@
 
 ; (defmacro true ()
 ;   t)
-; 
+;
 ; (defmacro false ()
 ;   nil)
 
@@ -555,9 +555,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defthm unsigned-byte-p-cat
@@ -569,7 +569,7 @@
 
 (defun unit-value ()
 
-; Warning: If this is replaced with something other than nil, then 
+; Warning: If this is replaced with something other than nil, then
 
   (declare (xargs :guard t))
   nil)

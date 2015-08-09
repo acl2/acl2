@@ -6,7 +6,7 @@
 ;; June 20th 2005
 ;; File: GeNoC-types.lisp
 
-;;Amr helmy 
+;;Amr helmy
 ;;31st october 2007
 
 ;; Rev. January 31st by JS (mainly state related functions)
@@ -36,7 +36,7 @@
 (defun TimeT (trans) (nth 5 trans))
 
 
-(defun T-ids (Transts) 
+(defun T-ids (Transts)
   ;; function that grabs the ids of a list of trans.
   (if (endp Transts)
       nil
@@ -63,7 +63,7 @@
     (cons (DestT (car trs))
           (T-dests (cdr Trs)))))
 
-;; The following predicate checks that each transaction has 
+;; The following predicate checks that each transaction has
 ;; the right number of arguments
 (defun validfield-transactionp (trans)
   ;; trans = (id A msg B flits time)
@@ -90,15 +90,15 @@
            (not (equal (OrgT trans) (DestT trans))) ;; A /= B
            (Validfields-T (cdr Transts))))))
 
-;; now we define the predicate that recognizes a valid list of 
+;; now we define the predicate that recognizes a valid list of
 ;; transactions
 (defun Transactionsp (Transts NodeSet)
-  (let ((T-ids (T-ids Transts))) 
+  (let ((T-ids (T-ids Transts)))
     (and (Validfields-T Transts)
          (true-listp Transts)
-         (subsetp (T-orgs Transts) NodeSet)         
+         (subsetp (T-orgs Transts) NodeSet)
          ;; the origins are members of the nodeset
-         (subsetp (T-dests Transts) NodeSet)        
+         (subsetp (T-dests Transts) NodeSet)
          ;; the destinations are members of the nodeset
          (No-Duplicatesp T-ids))))
 
@@ -106,7 +106,7 @@
 
 
 ;;-----------------------------------------------|
-;;                                               | 
+;;                                               |
 ;;                         MISSIVES              |
 ;;                                               |
 ;;-----------------------------------------------|
@@ -125,7 +125,7 @@
 
 
 ;; We need a function that grabs the ids of a list of missives
-(defun M-ids (M) 
+(defun M-ids (M)
   (if (endp M)
       nil
     (append (list (caar M)) (M-ids (cdr M)))))
@@ -151,7 +151,7 @@
       (append (list m-frm) (M-frms (cdr M))))))
 
 
-;; The following predicate checks that each missive has 
+;; The following predicate checks that each missive has
 ;; the right number of arguments
 (defun validfield-missivep (m)
   ;; m = (id A frm B)
@@ -179,10 +179,10 @@
 ;;;           (Validfield-loc (LocM msv) (FlitM msv) nodeset)
            (Validfields-M (cdr M))))))
 
-;; now we define the predicate that recognizes a valid list of 
+;; now we define the predicate that recognizes a valid list of
 ;; missives
 (defun Missivesp (M NodeSet)
-  (let ((M-ids (M-ids M))) 
+  (let ((M-ids (M-ids M)))
     (and (Validfields-M M)
          (subsetp (M-orgs M) NodeSet)    ;;origins subset of nodeset
          (subsetp (M-dests M) NodeSet)         ;;destinations subset of nodeset
@@ -212,7 +212,7 @@
 (defun LocTM (m) (nth 7 m))
 
 ;; We need a function that grabs the ids of a list of missives
-(defun TM-ids (M) 
+(defun TM-ids (M)
   (if (endp M)
       nil
     (append (list (IdTM (car M))) (TM-ids (cdr M)))))
@@ -245,7 +245,7 @@
       (append (list m-frm) (TM-frms (cdr M))))))
 
 
-;; The following predicate checks that each missive has 
+;; The following predicate checks that each missive has
 ;; the right number of arguments
 (defun validfield-Tmissivep (m)
   ;; m = (id A current frm B)
@@ -291,10 +291,10 @@
            (ValidField-Loc (LocTM msv) (FlitTM msv) nodeset)
            (Validfields-TM (cdr M) nodeset)))))
 
-;; now we define the predicate that recognizes a valid list of 
+;; now we define the predicate that recognizes a valid list of
 ;; missives
 (defun TMissivesp (M NodeSet)
-  (let ((M-ids (TM-ids M))) 
+  (let ((M-ids (TM-ids M)))
     (and (Validfields-TM M Nodeset)
          (subsetp (TM-orgs M) NodeSet)                ;;origines subset nodeset
          (subsetp (TM-curs M) NodeSet)                ;;current subset nodeset
@@ -329,29 +329,29 @@
 
 
 ;; We need a function that grabs the ids of a list of travels
-(defun V-ids (TrLst) 
+(defun V-ids (TrLst)
   (if (endp TrLst)
       nil
     (append (list (caar TrLst)) (V-ids (cdr TrLst)))))
 
 ;; We need a function that grabs the orgs of a list of travels
-(defun V-orgs (TrLst) 
+(defun V-orgs (TrLst)
   (if (endp TrLst)
       nil
     (append (list (OrgV (car TrLst))) (V-orgs (cdr TrLst)))))
 
 
-;; The following predicate checks that each travel has 
+;; The following predicate checks that each travel has
 ;; the right number of arguments
 (defun validfield-travelp (tr nodeset)
   ;; tr = (id org frm Routes flits time)
   (and (consp tr)
-       (consp (cdr tr))           
-       (consp (cddr tr))          
-       (consp (cdddr tr))         
-       (consp (cddddr tr))        
-       (consp (cdr (cddddr tr))) 
-       (consp (cddr (cddddr tr))) 
+       (consp (cdr tr))
+       (consp (cddr tr))
+       (consp (cdddr tr))
+       (consp (cddddr tr))
+       (consp (cdr (cddddr tr)))
+       (consp (cddr (cddddr tr)))
        (consp (cdddr (cddddr tr)))
        (consp (cddddr (cddddr tr)))
        (null (cdr (cddddr (cddddr tr))))
@@ -362,7 +362,7 @@
 ;       (A-car= (RoutesV tr) (car (LocV tr)))
        (validfield-loc (locv tr) (flitv tr) nodeset)))#|ACL2s-ToDo-Line|#
 
-;       (validfield-route (routesv tr) (orgv tr) (caar (RoutesV tr)) (car (last (car (RoutesV tr)))) nodeset))) 
+;       (validfield-route (routesv tr) (orgv tr) (caar (RoutesV tr)) (car (last (car (RoutesV tr)))) nodeset)))
 
 ;; The following predicate recognizes a valid list of missives (partially)
 (defun Validfields-TrLst (TrLst nodeset)
@@ -383,10 +383,10 @@
            (not (equal (OrgV tr) (DestV tr)))
            (Validfields-TrLst (cdr TrLst) nodeset)))))
 
-;; now we define the predicate that recognizes a valid list of 
+;; now we define the predicate that recognizes a valid list of
 ;; travels
 (defun TrLstp (TrLst nodeset)
-  (let ((V-ids (V-ids TrLst))) 
+  (let ((V-ids (V-ids TrLst)))
     (and (Validfields-TrLst TrLst nodeset)
          (true-listp TrLst)
          (No-Duplicatesp V-ids))))
@@ -417,7 +417,7 @@
 (defun FlitR (rst) (nth 3 rst))
 (defun TimeR (rst) (nth 4 rst))
 
-(defun R-ids (R) 
+(defun R-ids (R)
   ;; function that grabs the ids of a list of results
   (if (endp R)
       nil
@@ -438,7 +438,7 @@
           (R-msgs (cdr Results)))))
 
 
-;; The following predicate checks that each result has 
+;; The following predicate checks that each result has
 ;; the right number of arguments
 (defun validfield-resultp (rst)
   ;; tr = (Id Dest Msg)
@@ -463,10 +463,10 @@
            (member (DestR rst) NodeSet)
            (Validfields-R (cdr R) NodeSet)))))
 
-;; now we define the predicate that recognizes a valid list of 
+;; now we define the predicate that recognizes a valid list of
 ;; results
 (defun Resultsp (R NodeSet)
-  (let ((R-ids (R-ids R))) 
+  (let ((R-ids (R-ids R)))
     (and (Validfields-R R NodeSet)
          (true-listp R)
          (No-Duplicatesp R-ids))))
@@ -485,13 +485,13 @@
 
 ;; we need accessors to the state elements
 (defun get_coor (st_entry)
-  ;;�st_entry =  ( (coor (id)) (buffers ...))
+  ;; st_entry =  ( (coor (id)) (buffers ...))
   ;; this function returns id
-  (cadar st_entry)) 
+  (cadar st_entry))
 
 
 (defun get_buff (st_entry)
-  ;;�st_entry =  ( (coor (id)) (buffers ...))
+  ;; st_entry =  ( (coor (id)) (buffers ...))
   ;; this function returns ...
   (cadadr st_entry))
 
@@ -511,29 +511,29 @@
 
 (defun validCoord (x)
   ;; x is (coor (id))
-  (and (equal (car x) 'Coor) 
-       (consp x) 
-       (consp (cdr x)) 
+  (and (equal (car x) 'Coor)
+       (consp x)
+       (consp (cdr x))
        (null (cddr x))))
 
 (defun ValidBuffer (x)
   ;; x is (buffers ...)
-  (and (equal (car x) 'Buffers) 
-       (consp x) 
+  (and (equal (car x) 'Buffers)
+       (consp x)
        (consp (cdr x))))
 
 (defun ValidCoordlist (x)
   ;; x is a state = ( ((coor (id)) (buffers ...)) ...)
   (if (endp x)
       t
-    (and (Validcoord (caar x)) 
+    (and (Validcoord (caar x))
          (Validcoordlist (cdr x)))))
 
 (defun ValidbuffersList (x)
   ;; x is a state = ( ((coor (id)) (buffers ...)) ...)
   (if (endp x)
       t
-    (and (ValidBuffer (cadar x)) 
+    (and (ValidBuffer (cadar x))
          (Validbufferslist (cdr x)))))
 
 ;; NOTE: nil is a valid state, so nil is also a valid state element
@@ -541,13 +541,13 @@
 (defun validstate-entryp (st_entry)
   (if (endp st_entry)
       t
-    (and (Validcoord (car st_entry)) 
+    (and (Validcoord (car st_entry))
          (Validbuffer (cadr st_entry)))))
 
 
 (defun ValidState (ntkstate)
-  (if (endp ntkstate) 
+  (if (endp ntkstate)
       t
-    (and ;(consp ntkstate) 
-     (Validstate-entryp (car ntkstate)) 
+    (and ;(consp ntkstate)
+     (Validstate-entryp (car ntkstate))
      (Validstate (cdr ntkstate)))))

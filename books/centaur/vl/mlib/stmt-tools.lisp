@@ -253,7 +253,7 @@ expressions.</p>"
   (local (Defthm vl-stmtlist-count-of-append
            (equal (vl-stmtlist-count (append a b))
                   (+ -1 (vl-stmtlist-count a) (vl-stmtlist-count b)))
-           :hints(("Goal" 
+           :hints(("Goal"
                    :in-theory (enable append)
                    :induct (append a b)
                    :expand ((vl-stmtlist-count a)
@@ -278,7 +278,7 @@ expressions.</p>"
     (if initval
         (cons initval (vl-vardecllist->initvals (cdr x)))
       (vl-vardecllist->initvals (cdr x)))))
-    
+
 
 
 (define vl-compoundstmt->exprs ((x vl-stmt-p))
@@ -286,7 +286,7 @@ expressions.</p>"
                       (implies (vl-exprlistlist-p x)
                                (vl-exprlist-p (flatten x)))
                       :hints(("Goal" :in-theory (enable flatten))))))
-                      
+
   :short "Get all immediate sub-expressions from any compound statement."
   :guard (not (vl-atomicstmt-p x))
   :returns (exprs vl-exprlist-p)

@@ -135,7 +135,7 @@
 	((and (eq bin-op 'BINARY-*)
 	      (eq (fn-symb term) 'BINARY-+))
 	 (let ((temp (info-list (arg2 term) pattern-fun val-fun bin-op)))
-	   (if temp 
+	   (if temp
 	       (info-list-intersect (info-list1 (arg1 term)
 						pattern-fun val-fun bin-op)
 				    temp
@@ -184,7 +184,7 @@
 ; We return the inverse of piece as determined by bin-op.
 ; This is currently a hack, and needs to be re-done properly.
 ; It may not be entirely correct.
-  
+
   (if (eq bin-op 'BINARY-*)
       (if (eq (fn-symb piece) 'EXPT)
           `(EXPT (UNARY-/ ,(fargn piece 1))
@@ -194,7 +194,7 @@
            (fargn piece 1))
           ((and (eq (fn-symb piece) 'BINARY-*)
                 (quotep (fargn piece 1)))
-           `(BINARY-* ,(kwote (- (unquote (fargn piece 1)))) 
+           `(BINARY-* ,(kwote (- (unquote (fargn piece 1))))
                       ,(fargn piece 2)))
           (t
            `(UNARY-- ,piece)))))
@@ -246,7 +246,7 @@
        (if (and temp
 		(my-apply-2 criterion cancelling-piece
 			    mfc state))
-	   (mv t 
+	   (mv t
 	       pattern
 	       cancelling-piece)
 	 (first-match (rest info-list1) info-list2
@@ -287,7 +287,7 @@
 
 ; This function is analogous in purpose to first-match.  We search
 ; term for a "negative" sub-term which we can move to the other side
-; of the original (in)equality.  
+; of the original (in)equality.
 
   (if (and (eq bin-op 'BINARY-*)
 	   (eq (fn-symb term) 'BINARY-+))
@@ -296,7 +296,7 @@
 			 bin-op mfc state)
 	(if flag
 	    (mv flag to-match cancelling-piece)
-	  
+
 	  (first-negative (arg2 term) pattern-fun val-fun criterion
 			   bin-op mfc state)))
     (first-negative1 term pattern-fun val-fun criterion
@@ -424,8 +424,8 @@
 
 ; 5. Making the meta-functions and -rules.
 
-(defmacro make-cancelling-meta (name bin-op rel 
-				     pattern-fun val-fun 
+(defmacro make-cancelling-meta (name bin-op rel
+				     pattern-fun val-fun
 				     criterion result)
 
   (let ((fn-name (intern-name (list name "-FN")))
@@ -469,11 +469,11 @@
          :rule-classes ((:meta :trigger-fns (,(unquote REL))))
          :otf-flg t)
 
-       (local 
+       (local
 	(in-theory (disable ,THM-NAME))))))
 
-(defmacro make-prefer-positives-meta (name bin-op rel 
-					 pattern-fun val-fun 
+(defmacro make-prefer-positives-meta (name bin-op rel
+					 pattern-fun val-fun
 					 criterion result)
 
   (let ((fn-name (intern-name (list name "-FN")))
@@ -491,13 +491,13 @@
 		   (mv-let (flag pattern cancelling-piece)
 		     (mv-let (temp-flag temp-pattern temp-cancelling-piece)
 		       (first-negative arg1 ,PATTERN-FUN
-				       ,VAL-FUN 
+				       ,VAL-FUN
 				       ,CRITERION
 				       ,BIN-OP mfc state)
 		       (if temp-flag
 			   (mv temp-flag temp-pattern temp-cancelling-piece)
 			 (first-negative arg2 ,PATTERN-FUN
-					 ,VAL-FUN 
+					 ,VAL-FUN
 					 ,CRITERION
 					 ,BIN-OP mfc state)))
 		     (if flag
@@ -519,7 +519,7 @@
 	        (eva (,FN-NAME term mfc state) a))
          :rule-classes ((:meta :trigger-fns (,(unquote REL)))))
 
-       (local 
+       (local
 	(in-theory (disable ,THM-NAME))))))
 
 (defmacro addends-equal-result ()

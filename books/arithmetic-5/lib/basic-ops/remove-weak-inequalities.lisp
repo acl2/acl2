@@ -52,7 +52,7 @@
   ;; inequality out of worries that otherwise I could remove too
   ;;; much from the clause.  I should think this through more
   ;;; carefully, but this is certainly safe even if not optimal.
-  
+
   (if (eq (present-in-hyps `(< ,y ,x) (mfc-clause mfc))
           'positive)
       (let ((contradictionp (mfc-ap `(< ,y ,x) mfc state)))
@@ -83,7 +83,7 @@
 
   ;; (thm (implies (and (< (+ 1 x) y) (< x y)) (equal a b)))
   ;; (thm (implies (and (<= (+ 1 x) y) (< x y)) (equal a b)))
-  
+
   (if (eq (present-in-hyps `(< ,x ,y) (mfc-clause mfc))
           'negative)
       (let ((contradictionp (mfc-ap `(NOT (< ,x ,y)) mfc state)))

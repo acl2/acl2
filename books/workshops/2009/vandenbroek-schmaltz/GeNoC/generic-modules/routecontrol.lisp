@@ -13,7 +13,7 @@
 
 (defspec GenericRouteControl
   (((routeControl * *) => (mv * *)))
-  
+
   (local (defun routeControl (node memory)
            ;; Route a node by trying to route its input ports.
            (mv node memory))))

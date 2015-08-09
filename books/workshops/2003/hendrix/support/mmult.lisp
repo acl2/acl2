@@ -21,7 +21,7 @@
   (declare (xargs :guard (col*-guard r m)))
   (if (m-emptyp m)
       nil
-    (cons (dot* r (col-car m)) 
+    (cons (dot* r (col-car m))
           (col* r (col-cdr m)))))
 
 (defthm mvectorp-col*
@@ -103,7 +103,7 @@
 ; generated for that defthm (in this case, row-cons-def).
 
            :in-theory (enable (:induction row-cons-def))))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :trigger-terms ((dot* k (col* l m))
                                   (dot* l (row* k m))))))
 
@@ -193,7 +193,7 @@
                   (row* (row* l n) m)))
   :hints (("Goal" :induct (row* l m))
           ("Subgoal *1/2"
-           :use (:instance dot*-col* 
+           :use (:instance dot*-col*
                            (k l)
                            (l (row-car m))
                            (m n)))))

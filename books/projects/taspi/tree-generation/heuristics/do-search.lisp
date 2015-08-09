@@ -47,7 +47,7 @@
     (if (good-taxon-index-halist tia)
         (let ((allNeighbors (get-unique-spr-neighbors curTrees nil
                                                    tia)))
-          (get-best-trees allNeighbors curScore nil seqs 
+          (get-best-trees allNeighbors curScore nil seqs
                           cssl-map matrix))
       (mv 'Error "Error: Need good tia in do-spr-search-iteration"))))
 
@@ -58,7 +58,7 @@
                               (valid-sequences-same-length seqs)
                               (charstate-scorelist-map-p cssl-map (len matrix))
                               (cost-matrixp-nstates matrix (len matrix)))
-                  :guard-hints (("Goal" :in-theory 
+                  :guard-hints (("Goal" :in-theory
                                  (disable perm-implies-subset
                                           MEMBER-GEN-ALISTP-GEN-GIVES-CONSP)))))
   (if (zp num-rearrangements)
@@ -72,14 +72,14 @@
             (if (perm newTrees curTrees)
                 (mv curScore curTrees num-rearrangements)
               (if (rationalp newScore)
-                  (do-search-with-spr seqs 
+                  (do-search-with-spr seqs
                                       (1- num-rearrangements)
                                       newTrees
                                       newScore
-                                      cssl-map 
+                                      cssl-map
                                       matrix)
-                (mv 'Error 
-                    "Error: Need rational newScore in 
+                (mv 'Error
+                    "Error: Need rational newScore in
                            do-search-with-spr"
                     'Error))))))
 
@@ -94,11 +94,11 @@
 ;  Arguments:
 ;    (1) seqs - a set of sequences
 ;    (2) num-rearrangements - a limit to the number of rearrangements to try
-;    (3) cssl-map -  An alist mapping every character state to a  
-;                    list containing one element (either 0 or nil 
-;                    for infinity) for each unambiguous state   
-;    (4) matrix - A mapping of unambiguous character states to 
-;                 transition costs.                           
+;    (3) cssl-map -  An alist mapping every character state to a
+;                    list containing one element (either 0 or nil
+;                    for infinity) for each unambiguous state
+;    (4) matrix - A mapping of unambiguous character states to
+;                 transition costs.
 
 ;  Details: Builds a few starting trees, starts from best of these and keeps
 ;           best trees found at each iteration to search from next."
@@ -110,28 +110,28 @@
     (if (<= 3 (len taxa-list))
         (let ((tree (build-unrooted-binary-tree taxa-List)))
           (if (tree-matches-sequences t tree seqs)
-              (let ((score (pscore-tree tree 
+              (let ((score (pscore-tree tree
                                         seqs cssl-map matrix)))
                 (if (rationalp score)
                     (do-search-with-spr seqs num-rearrangements
                                         (list tree)
                                         score
                                         cssl-map matrix)
-                  (mv 'Error 
-                    "Error: Need rational score in 
+                  (mv 'Error
+                    "Error: Need rational score in
                             spr-search"
                     'Error)))
-            (mv 'Error 
+            (mv 'Error
                 "Error: Need tree to match seqs in spr-search"
                 'Error)))
       (if (tree-matches-sequences t taxa-list seqs)
           (mv (pscore-tree taxa-list seqs cssl-map matrix)
               taxa-list
               num-rearrangements)
-        (mv 'Error 
+        (mv 'Error
             "Error: Need tree to match seqs in spr-search"
             'Error)))))
-                    
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -158,7 +158,7 @@
     (if (good-taxon-index-halist tia)
         (let ((allNeighbors (get-unique-tbr-neighbors curTrees nil
                                                    tia)))
-          (get-best-trees allNeighbors curScore nil seqs 
+          (get-best-trees allNeighbors curScore nil seqs
                           cssl-map matrix))
       (mv 'Error "Error: Need good tia in do-spr-search-iteration"))))
 
@@ -169,7 +169,7 @@
                               (valid-sequences-same-length seqs)
                               (charstate-scorelist-map-p cssl-map (len matrix))
                               (cost-matrixp-nstates matrix (len matrix)))
-                 :guard-hints (("Goal" :in-theory 
+                 :guard-hints (("Goal" :in-theory
                                  (disable perm-implies-subset
                                           member-gen-alistp-gen-gives-consp
                                           make-spr-pieces-to-do-tbr
@@ -185,14 +185,14 @@
             (if (perm newTrees curTrees)
                 (mv curScore curTrees num-rearrangements)
               (if (rationalp newScore)
-                  (do-search-with-tbr seqs 
+                  (do-search-with-tbr seqs
                                       (1- num-rearrangements)
                                       newTrees
                                       newScore
-                                      cssl-map 
+                                      cssl-map
                                       matrix)
-                (mv 'Error 
-                    "Error: Need rational newScore in 
+                (mv 'Error
+                    "Error: Need rational newScore in
                            do-search-with-spr"
                     'Error))))))
 
@@ -207,11 +207,11 @@
 ;  Arguments:
 ;    (1) seqs - a set of sequences
 ;    (2) num-rearrangements - a limit to the number of rearrangements to try
-;    (3) cssl-map -  An alist mapping every character state to a  
-;                    list containing one element (either 0 or nil 
-;                    for infinity) for each unambiguous state   
-;    (4) matrix - A mapping of unambiguous character states to 
-;                 transition costs.                           
+;    (3) cssl-map -  An alist mapping every character state to a
+;                    list containing one element (either 0 or nil
+;                    for infinity) for each unambiguous state
+;    (4) matrix - A mapping of unambiguous character states to
+;                 transition costs.
 
 ;  Details: Builds a few starting trees, starts from best of these and keeps
 ;           best trees found at each iteration to search from next."
@@ -223,25 +223,25 @@
     (if (<= 3 (len taxa-list))
         (let ((tree (build-unrooted-binary-tree taxa-List)))
           (if (tree-matches-sequences t tree seqs)
-              (let ((score (pscore-tree tree 
+              (let ((score (pscore-tree tree
                                         seqs cssl-map matrix)))
                 (if (rationalp score)
                     (do-search-with-tbr seqs num-rearrangements
                                         (list tree)
                                         score
                                         cssl-map matrix)
-                  (mv 'Error 
-                    "Error: Need rational score in 
+                  (mv 'Error
+                    "Error: Need rational score in
                             tbr-search"
                     'Error)))
-            (mv 'Error 
+            (mv 'Error
                 "Error: Need tree to match seqs in tbr-search"
                 'Error)))
       (if (tree-matches-sequences t taxa-list seqs)
           (mv (pscore-tree taxa-list seqs cssl-map matrix)
               taxa-list
               num-rearrangements)
-        (mv 'Error 
+        (mv 'Error
             "Error: Need tree to match seqs in tbr-search"
             'Error)))))
 

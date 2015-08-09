@@ -98,7 +98,7 @@
 ;;; The next six rules are gathered up into a single theory,
 ;;; strong-expt-type-prescription-rules and disabled in top.lisp.
 ;;; They are too expensive for daily wear, but are occasionally
-;;; useful.  
+;;; useful.
 
 (defthm expt-type-prescription-negative-base-even-exponent
   (implies (and (< r 0)
@@ -123,7 +123,7 @@
 		(integerp (* 1/2 i)))
            (<= 0 (expt r i)))
   :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
+  :hints (("Goal" :use ((:instance
 			 expt-type-prescription-negative-base-even-exponent)))))
 
 (defthm expt-type-prescription-nonpositive-base-odd-exponent
@@ -133,7 +133,7 @@
 		(not (integerp (* 1/2 i))))
            (<= (expt r i) 0))
   :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
+  :hints (("Goal" :use ((:instance
 			 expt-type-prescription-negative-base-odd-exponent)))))
 
 (defthm expt-negative-base-even-exponent

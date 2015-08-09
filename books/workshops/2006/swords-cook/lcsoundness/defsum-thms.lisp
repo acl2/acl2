@@ -7,7 +7,7 @@
 (in-package "ACL2")
 
 (include-book "arithmetic-3/bind-free/top" :dir :system)
-; (set-default-hints! '((nonlinearp-default-hint stable-under-simplificationp 
+; (set-default-hints! '((nonlinearp-default-hint stable-under-simplificationp
 ;                                              hist pspv)))
 (set-minimal-arithmetic-theory)
 ;;(include-book "structure-measure")

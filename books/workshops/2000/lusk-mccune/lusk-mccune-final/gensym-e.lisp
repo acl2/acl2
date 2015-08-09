@@ -54,7 +54,7 @@
 (defthm next-char-list-gives-charlist
   (implies (character-listp x)
 	   (character-listp (car (next-int-char-list x)))))
-  
+
 (defun charlist< (i1 i2)
   (declare (xargs :guard (and (character-listp i1) (character-listp i2))))
   (cond ((atom i2) nil)
@@ -64,14 +64,14 @@
 	(t (cond ((char< (car i1) (car i2)) t)
 		 ((char> (car i1) (car i2)) nil)
 		 (t (charlist< (cdr i1) (cdr i2)))))))
-      
+
 (defun next-int-char-list-actual (chars)
   (declare (xargs :guard t))
   (mv-let (next carryp)
           (next-int-char-list chars)
           (if carryp
               (cons #\1 next)
-            next)))	
+            next)))
 
 (defthm carry-char-list
   (implies (character-listp x)
@@ -158,15 +158,15 @@
 	   (equal (index (next-int-char-list-actual l))
 		  (next-int-char-list-actual l))))
 
-(defthm max-index-lessthan-gensym-index 
+(defthm max-index-lessthan-gensym-index
   (implies (symbolp sym)
-	   (charlist< 
+	   (charlist<
 	    (max-index l)
 	    (index (coerce (symbol-name (gen-sym sym (max-index l))) 'list))))
   :hints (("Goal" :do-not generalize
 	   :in-theory (disable next-int-char-list-actual))))
 
-;; top-level gensym: make a symbol (with a prefix sym) 
+;; top-level gensym: make a symbol (with a prefix sym)
 ;; that does not occur in the given list l
 
 (defun gen-symbol (sym l)
@@ -180,7 +180,7 @@
   (implies (symbolp sym)
 	   (not (member-equal (gen-symbol sym l) l)))
   :hints (("Goal" :in-theory (disable gen-sym))))
-  
+
 (in-theory (disable gen-symbol))
 
 ;; a few examples

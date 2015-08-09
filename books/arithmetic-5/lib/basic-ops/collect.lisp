@@ -24,10 +24,10 @@
 
 (include-book "building-blocks")
 
-(local 
+(local
  (include-book "../../support/top"))
 
-(local 
+(local
  (include-book "expt-helper"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,7 +86,7 @@
     (equal (collect-+ y x)
            (collect-+ x y)))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (and (active-runep '(:rewrite |(+ x x)|))
 	  (active-runep '(:rewrite |(+ x (- x))|))
@@ -99,7 +99,7 @@
 
 (in-theory (disable collect-+))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (not (active-runep '(:definition collect-+)))
    t)
@@ -443,7 +443,7 @@
     (equal (collect-* y x)
            (collect-* x y)))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (and (active-runep '(:rewrite |(* x x)|))
 	  (active-runep '(:rewrite |(* x (/ x))|))
@@ -478,7 +478,7 @@
 
 (in-theory (disable collect-*))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (not (active-runep '(:definition collect-*)))
    t)
@@ -515,7 +515,7 @@
 
 (in-theory (disable bubble-down-+-problem-finder))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (not (active-runep '(:rewrite bubble-down-+-problem-finder)))
    t)
@@ -563,7 +563,7 @@
              (equal (+ (bubble-down x match) y z)
                     (+ (collect-+ x y) z))))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (and (active-runep '(:rewrite bubble-down-+-bubble-down))
 	  (active-runep '(:rewrite bubble-down-+-match-1))
@@ -579,7 +579,7 @@
 
 (in-theory (disable bubble-down-*-problem-finder))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (not (active-runep '(:rewrite bubble-down-*-problem-finder)))
    t)
@@ -605,7 +605,7 @@
              (equal (* (bubble-down x match) y z)
                     (* (collect-* x y) z))))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (and (active-runep '(:rewrite bubble-down-*-bubble-down))
 	  (active-runep '(:rewrite bubble-down-*-match-1))
@@ -616,7 +616,7 @@
 
 (in-theory (disable bubble-down (:executable-counterpart bubble-down)))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (and (not (active-runep '(:rewrite bubble-down)))
 	  (not (active-runep '(:executable-counterpart bubble-down))))

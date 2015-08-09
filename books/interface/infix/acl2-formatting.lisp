@@ -136,7 +136,7 @@
 		     nil)))
 	      (t nil)))))))
 
-;; The following two functions support the reading of 
+;; The following two functions support the reading of
 ;; keyword commands, using ACL2 mechanisms for computing
 ;; number of args, if allowed.
 

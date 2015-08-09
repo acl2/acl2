@@ -33,9 +33,9 @@
 ; R == Recipient
 ; N == Nonce (random value)
 ;
-; I -> R   Ni, xi                                      
+; I -> R   Ni, xi
 ;   xi == g^(di)
-; R -> I   Ni, Nr, xr, gr, tr                          
+; R -> I   Ni, Nr, xr, gr, tr
 ;   xr == g^(dr), gr == DH group, tr == hash-under-kr (xr, Nr, Ni, IPi)
 ; I -> R   Ni, Nr, xi, xr, tr, ei, hi
 ;   ei == enc-under-ks (IDi, IDr, sai, signature-under-ki (Ni, Nr, xi, xr, gr))
@@ -167,12 +167,12 @@
 (in-theory (disable initiator-constants responder-constants public-constants))
 
 
-; Setup sample constants for example executions.  
+; Setup sample constants for example executions.
 
 (defconst *random-seed1* 412381)
 (defconst *random-seed2* 598171)
 
-(defconst *initiator-constants* 
+(defconst *initiator-constants*
   (let* ((id (CRYPTO::genrandom *random-seed1*))
          (nonce (CRYPTO::genrandom id))
          (dh-exponent (CRYPTO::genrandom nonce))
@@ -197,7 +197,7 @@
          (dh-exponent (CRYPTO::genrandom nonce))
          (private-key (CRYPTO::genrandom dh-exponent))
          ;; don't need ip for responder but makes life simpler
-         (ip (CRYPTO::genrandom private-key)) 
+         (ip (CRYPTO::genrandom private-key))
          (sa (CRYPTO::genrandom ip))
          (g (CRYPTO::genrandom sa))
          (b (CRYPTO::genrandom g)))
@@ -205,7 +205,7 @@
           (cons 'nonce nonce)
           (cons 'dh-exponent dh-exponent)
           (cons 'private-key private-key)
-          (cons 'ip ip) 
+          (cons 'ip ip)
           (cons 'sa sa)
           (cons 'g g)
           (cons 'b b))))
@@ -213,7 +213,7 @@
 ; Test that instantiated responder constant list is an responder constant list.
 (ACL2::assert! (responder-constantsp *responder-constants*))
 
-         
+
 
 
 (defconst *public-constants*
@@ -233,12 +233,12 @@
 
 ; Test that instantiated constant list is a constant list.
 (ACL2::assert! (constantsp *constants*))
-        
+
 
 (defconst *string-quote-initiator* 4)
 (defconst *string-quote-responder* 5)
- 
-   
+
+
 (defun msg1 (s)
   (declare (xargs :guard (alistp s)))
   (cdr (assoc-equal 1 s)))
@@ -256,8 +256,8 @@
   (cdr (assoc-equal 4 s)))
 
 (defmacro defmessage-accessor (label)
-  (let ((symbol 
-         (ACL2::intern-in-package-of-symbol 
+  (let ((symbol
+         (ACL2::intern-in-package-of-symbol
           (coerce (append (explode-atom label 10)
                           (explode-atom '-msg 10)) 'string) 'msg3)))
   `(defun ,symbol (msg)
@@ -286,7 +286,7 @@
   (CRYPTO::compute-keyed-hash (list Ni Nr) dh-key))
 
 (defund compute-sig-Ki (Ni Nr Xi Xr G B private-key-i)
-  (CRYPTO::compute-signature-list (list Ni Nr Xi Xr g b) 
+  (CRYPTO::compute-signature-list (list Ni Nr Xi Xr g b)
                                   private-key-i))
 
 (defund verify-sig-Ki (Ni Nr Xi Xr G B public-key-i)
@@ -302,7 +302,7 @@
 
 
 (defund compute-sig-Kr (Ni Nr Xi Xr private-key-r)
-  (CRYPTO::compute-signature-list (list Ni Nr Xi Xr) 
+  (CRYPTO::compute-signature-list (list Ni Nr Xi Xr)
                                   private-key-r))
 
 (defund verify-sig-Kr (Ni Nr Xi Xr public-key-r)
@@ -321,12 +321,12 @@
                                         session-key))
 (defthm nth2-of-compute-Ei-is-SigKi
   (implies (force (integer-listp (list IDi SAi SigKi)))
-           (equal (nth 2 (CRYPTO::decrypt-symmetric-list 
+           (equal (nth 2 (CRYPTO::decrypt-symmetric-list
                           (CRYPTO::encrypt-symmetric-list (list IDi SAi SigKi) session-key)
                           session-key))
                   SigKi))
   :hints (("Goal" :in-theory (enable CRYPTO::ENCRYPTABLE-LISTP))))
-         
+
 
 (defund compute-Hi (Ei session-key)
   (CRYPTO::compute-keyed-hash (append (list *string-quote-initiator*) Ei)
@@ -367,21 +367,21 @@
           (SAr-c (sa responder-constants))
           (G-c (g responder-constants))
           (B-c (b responder-constants))
-          
+
           ;; Calculate the more complex items
           (public-key-i-c (public-key-i public-constants))
           (public-key-r-c (public-key-r public-constants))
-          
+
           (SrcIP-c IPi-c)
 
           (Xi-c (CRYPTO::compute-public-dh-value G-c dh-exponent-i-c B-c))
           (Xr-c (CRYPTO::compute-public-dh-value G-c dh-exponent-r-c B-c))
 
           (Tr-c (compute-tr Xr-c Nr-c Ni-c SrcIP-c private-key-r-c))
-          
+
           (dh-key-c (CRYPTO::compute-dh-key Xr-c dh-exponent-i-c B-c))
           (session-key-c (compute-session-key Ni-c Nr-c dh-key-c))
-          
+
           (SigKi-c (compute-sig-Ki Ni-c Nr-c Xi-c Xr-c G-c B-c private-key-i-c))
           (SigKr-c (compute-sig-Kr Ni-c Nr-c Xi-c Xr-c private-key-r-c))
 
@@ -399,7 +399,7 @@
 
 
 (defmacro let-with-bindings-from-initiator-constants (body)
-  `(let* (          
+  `(let* (
           ;; Fetch from Initiator's Constants
           (IDi-c (id initiator-constants))
           (Ni-c (nonce initiator-constants))
@@ -425,7 +425,7 @@
           (SAr-c (sa responder-constants))
           (G-c (g responder-constants))
           (B-c (b responder-constants))
-          
+
           ;; Fetch from public constants
           (public-key-i-c (public-key-i public-constants))
           (public-key-r-c (public-key-r public-constants)))
@@ -438,7 +438,7 @@
        (integerp (Ni-msg msg))
        (integerp (src-ip-msg msg))))
 
-; Defnitions of good and bad messages.  
+; Defnitions of good and bad messages.
 
 (defun badly-forged-msg1p (msg responder-state initiator-constants responder-constants)
   (declare (ignore msg responder-state initiator-constants responder-constants))
@@ -529,7 +529,7 @@
   (and (well-formed-msg1p (msg1 network))
        (well-formed-msg2p (msg2 network))
        (well-formed-msg3p (msg3 network))
-       (well-formed-msg4p (msg4 network))))  
+       (well-formed-msg4p (msg4 network))))
 
 
 (defun well-formed-network-statep (network)
@@ -614,7 +614,7 @@
        (success s)
        (done s)
        (identityp (id-r s))))
-       
+
 (defun responder-state-after-step-1p (s)
   (declare (xargs :guard (alistp s)))
   (declare (ignore s))
@@ -631,7 +631,7 @@
        (assoc-equal 'done s)))
 
 
-(set-verify-guards-eagerness 0)  
+(set-verify-guards-eagerness 0)
 
 
 ; We use an auxilury function to ensure that we get abstraction.  Basically, we
@@ -647,7 +647,7 @@
          (my-update nil))
     (mv (acons 1 network-update network-s)
         (append my-update my-s))))
-  
+
 (defun initiator-step1-prev-msg-ok ()
   ;; there is no message to check, since the initiator is @ the beginning
   t)
@@ -660,42 +660,42 @@
                               (alistp network-s)
                               (alistp my-s))
                   :guard-hints (("Goal" :do-not '(eliminate-destructors generalize)))))
-           
+
   (if (initiator-step1-prev-msg-ok)
       (initiator-step1-aux network-s my-s my-constants public-constants)
     (get-mv-protocol-failure)))
-  
+
 
 (defthm initator-step1-acting-on-network-produces-well-formed-msg
   (implies (and (initiator-constantsp initiator-constants)
                 (public-constantsp public-constants))
-           (mv-let 
+           (mv-let
             (network-s-after-1 initiator-s-after-1)
             (initiator-step1 network-s initiator-s initiator-constants public-constants)
             (and (well-formed-network-state-after-step1p network-s-after-1)
                  (initiator-state-after-step-1p initiator-s-after-1)))))
 
 
-(defun run-1-step-honest (network-s initiator-constants responder-constants 
+(defun run-1-step-honest (network-s initiator-constants responder-constants
                                     public-constants initiator-s responder-s)
   (declare (ignore responder-constants))
-  (mv-let 
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
    (initiator-step1 network-s initiator-s initiator-constants public-constants)
-   
+
    (mv network-s-after-1
        initiator-s-after-1
        responder-s)))
-#|   
-(run-1-step-honest nil 
-                   *initiator-constants* 
-                   *responder-constants* 
-                   *public-constants* 
+#|
+(run-1-step-honest nil
+                   *initiator-constants*
+                   *responder-constants*
+                   *public-constants*
                    nil
-                   nil)     
+                   nil)
 |#
 
-(defun responder-step1-aux (network-s my-s my-constants public-constants) 
+(defun responder-step1-aux (network-s my-s my-constants public-constants)
   (declare (xargs :guard (and (responder-constantsp my-constants)
                               (public-constantsp public-constants)))
            (ignore public-constants))
@@ -704,19 +704,19 @@
 
            (Ni (ni-msg prev-msg))
            (Src-ip (Src-ip-msg prev-msg))
-           
+
            (Nr (nonce my-constants))
-           
+
            (g (g my-constants))
            (dh-exponent (dh-exponent my-constants))
            (b (b my-constants))
-           
+
            (Xr (CRYPTO::compute-public-dh-value g dh-exponent b))
-           
+
            (private-key (private-key my-constants))
-           
+
            (Tr (compute-tr Xr Nr Ni src-ip private-key))
-           
+
            (network-update (list (cons 'Ni Ni)
                                  (cons 'Nr Nr)
                                  (cons 'Xr Xr)
@@ -725,7 +725,7 @@
                                  (cons 'Tr Tr)))
            ;; no real update to my state, since I'm throwing it away - stateless
            (my-update nil))
-      
+
       (mv (acons 2 network-update network-s)
           (append my-update my-s))))
 
@@ -733,7 +733,7 @@
   (declare (xargs :guard (alistp msg)))
   (well-formed-msg1p msg))
 
-(defun responder-step1 (network-s my-s my-constants public-constants) 
+(defun responder-step1 (network-s my-s my-constants public-constants)
   (declare (xargs :guard (and (responder-constantsp my-constants)
                               (public-constantsp public-constants))))
 
@@ -762,28 +762,28 @@
 ; Later we'll want to show that a well-formed message that's missing a property
 ; yields failure
 
-(defun run-2-steps-honest (network-s initiator-constants responder-constants 
+(defun run-2-steps-honest (network-s initiator-constants responder-constants
                                     public-constants initiator-s responder-s)
 
-  (mv-let 
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
    (initiator-step1 network-s initiator-s initiator-constants public-constants)
-   
+
    (mv-let
     (network-s-after-2 responder-s-after-2)
     (responder-step1 network-s-after-1 responder-s responder-constants
                      public-constants)
- 
- 
+
+
     (mv network-s-after-2
         initiator-s-after-1
         responder-s-after-2))))
 
 #|
-(run-2-steps-honest nil 
-                   *initiator-constants* 
-                   *responder-constants* 
-                   *public-constants* 
+(run-2-steps-honest nil
+                   *initiator-constants*
+                   *responder-constants*
+                   *public-constants*
                    nil
                    nil)
 |#
@@ -796,39 +796,39 @@
 
     (let* (
            (prev-msg (msg2 network-s))
-           
-           
+
+
            (Ni (nonce my-constants))
            (Nr (Nr-msg prev-msg))
-           
+
            (dh-exponent (dh-exponent my-constants))
-           
+
            (G (G-msg prev-msg))
            (B (B-msg prev-msg))
-           
+
            (Xi (CRYPTO::compute-public-dh-value g dh-exponent b))
            (Xr (Xr-msg prev-msg))
            (Tr (Tr-msg prev-msg))
-           
+
            (ID-i (id my-constants))
            ;; ommitting id-r since it's not always there
-           
+
            (SA-i (sa my-constants))
-           
+
            (private-key (private-key my-constants))
-           
+
            (Sig-Ki (compute-sig-Ki Ni Nr Xi Xr G B private-key))
-           
+
            (dh-key (CRYPTO::compute-dh-key Xr dh-exponent b))
            (session-key (compute-session-key Ni Nr dh-key))
-           
-           
+
+
            (Ei (compute-ei ID-i SA-i Sig-Ki session-key))
-           
+
            (Hi (compute-hi Ei Session-key))
-           
+
            (src-ip (ip my-constants))
-           
+
            (network-update
             (list (cons 'Ni Ni)
                   (cons 'Nr Nr)
@@ -838,16 +838,16 @@
                   (cons 'Ei Ei)
                   (cons 'Hi Hi)
                   (cons 'Src-ip Src-ip)))
-           
+
            (my-update
             ;; don't need to save DH key, could comment ni and xi
-            (list (cons 'Ni Ni) 
+            (list (cons 'Ni Ni)
                   (cons 'Nr Nr)
                   (cons 'Xi Xi)
                   (cons 'Xr Xr)
                   (cons 'session-key session-key))))
-      
-    (mv 
+
+    (mv
      (acons 3 network-update network-s)
      (append my-update my-s))))
 
@@ -866,23 +866,23 @@
       (initiator-step2-aux network-s my-s my-constants public-constants)
     (get-mv-protocol-failure)))
 
-    
+
 
 (defthm poorly-formed-network-msg2-yields-failure-for-initiator
   (implies (not (well-formed-msg2p (msg2 network-s-after-2)))
-           (mv-let 
+           (mv-let
             (network-s-after-3 initiator-s-after-3)
-            (initiator-step2 network-s-after-2 initiator-s-after-1 
+            (initiator-step2 network-s-after-2 initiator-s-after-1
                              initiator-constants public-constants)
             (declare (ignore network-s-after-3))
             (protocol-failure initiator-s-after-3)))
   :hints (("Goal" :in-theory (disable well-formed-network-state-after-step2p))))
 
 
-(defun run-3-steps-honest (network-s initiator-constants responder-constants 
+(defun run-3-steps-honest (network-s initiator-constants responder-constants
                                      public-constants initiator-s responder-s)
 
-  (mv-let 
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
    (initiator-step1 network-s initiator-s initiator-constants public-constants)
 
@@ -892,21 +892,21 @@
                      public-constants)
 
 
-  (mv-let 
+  (mv-let
    (network-s-after-3 initiator-s-after-3)
-   (initiator-step2 network-s-after-2 initiator-s-after-1 initiator-constants 
+   (initiator-step2 network-s-after-2 initiator-s-after-1 initiator-constants
                     public-constants)
 
-    
+
     (mv network-s-after-3
         initiator-s-after-3
         responder-s-after-2)))))
 
 #|
-(run-3-steps-honest nil 
-                   *initiator-constants* 
-                   *responder-constants* 
-                   *public-constants* 
+(run-3-steps-honest nil
+                   *initiator-constants*
+                   *responder-constants*
+                   *public-constants*
                    nil
                    nil)
 |#
@@ -924,7 +924,7 @@
            (Xi (Xi-msg prev-msg))
            (Ni (Ni-msg prev-msg))
            (Tr-msg (Tr-msg prev-msg))
-           (Ei (Ei-msg prev-msg)) 
+           (Ei (Ei-msg prev-msg))
            (Hi-msg (Hi-msg prev-msg))
            (Src-ip (src-ip-msg prev-msg))
 
@@ -943,13 +943,13 @@
            (id-i (nth 0 ei-decrypted)) ; consider changing from nth to an abstraction
            (sa-i (nth 1 ei-decrypted))
            (sig-ki-msg (nth 2 ei-decrypted))
-         
+
            (public-key-i (public-key-i public-constants))
            (SigKi-calc (verify-sig-Ki Ni Nr Xi Xr G B public-key-i))
 
            (sa-r (sa my-constants))
            (id-r (id my-constants))
-         
+
            (sig-kr (compute-sig-kr Xi Xr Ni Nr private-key))
            (er (compute-er ID-r sa-r sig-kr session-key))
            (hr (compute-hr Er session-key))
@@ -967,21 +967,21 @@
            (network-update (list (cons 'er er)
                                  (cons 'hr hr))))
       (declare (ignore sa-i))
-         
+
       (mv
        (acons 4 network-update network-s)
        (append my-update my-s))))
-  
+
 ; everything suffixed with a -msg means it was pulled from a message
 ; everything suffixed with a -c means it was pulled from a constant list
-; everything suffixed with a -s means it was pulled from a state list (may be 
+; everything suffixed with a -s means it was pulled from a state list (may be
 ;   unused)
 
 (defun responder-step2-prev-msg-ok (prev-msg my-constants public-constants)
 
-  (and 
+  (and
    (well-formed-msg3p prev-msg)
-   
+
    (let* ((Xr-msg (Xr-msg prev-msg))
           (Nr-msg (Nr-msg prev-msg))
           (Xi-msg (Xi-msg prev-msg))
@@ -990,44 +990,44 @@
           (Ei-msg (Ei-msg prev-msg)) ;;; dsafdsfaasdfasdfdsf
           (Hi-msg (Hi-msg prev-msg))
          (Src-ip-msg (src-ip-msg prev-msg))
-         
+
          (Nr-c (nonce my-constants))
 
          (dh-exponent (dh-exponent my-constants))
          (B-c (b my-constants))
          (G-c (g my-constants))
-         
-         (Xr-c (CRYPTO::compute-public-dh-value G-c 
-                                                (dh-exponent my-constants) 
+
+         (Xr-c (CRYPTO::compute-public-dh-value G-c
+                                                (dh-exponent my-constants)
                                                 B-c))
          (dh-key-calc (CRYPTO::compute-dh-key Xi-msg dh-exponent B-c))
          (session-key-calc (compute-session-key Ni-msg Nr-c dh-key-calc))
-         
+
          (hi-calc (compute-hi Ei-msg session-key-calc))
          (private-key (private-key my-constants))
          (tr-calc (compute-tr Ni-msg Nr-c Xr-c src-ip-msg private-key))
-         
+
          (Ei-decrypted (CRYPTO::decrypt-symmetric-list Ei-msg session-key-calc))
-         (id-i (nth 0 Ei-decrypted)) 
+         (id-i (nth 0 Ei-decrypted))
          (sa-i (nth 1 Ei-decrypted))
          (sig-ki-msg (nth 2 Ei-decrypted))
-         
-         (public-key-i (public-key-i public-constants)) 
-         (SigKi-calc (verify-sig-ki Ni-msg Nr-msg Xi-msg Xr-msg G-c B-c 
+
+         (public-key-i (public-key-i public-constants))
+         (SigKi-calc (verify-sig-ki Ni-msg Nr-msg Xi-msg Xr-msg G-c B-c
                                     public-key-i))
 
          (sa-r (sa my-constants))
          (id-r (id my-constants))
-         
+
          (sig-kr (compute-sig-kr Ni-msg Nr-c Xi-msg Xr-c private-key))
          (er (compute-er ID-r sa-r sig-kr session-key-calc))
          (hr (compute-hr Er session-key-calc)))
      (declare (ignore id-i sa-i hr))
      (and (equal Nr-msg Nr-c)
-          (equal Xr-msg Xr-c) 
-          
+          (equal Xr-msg Xr-c)
+
           (equal tr-msg tr-calc)
-       
+
           (equal hi-msg hi-calc) ; swapped order
           (equal sig-ki-msg SigKi-calc)))))
 
@@ -1042,11 +1042,11 @@
   (let* ((dh-key (CRYPTO::compute-dh-key (xi-msg msg)
                                          (dh-exponent responder-constants)
                                          (b responder-constants)))
-         
+
          (session-key (compute-session-key (Ni-msg msg)
                                            (Nr-msg msg)
                                            dh-key))
-         
+
          (SigKi (compute-sig-Ki (Ni-msg msg)
                                 (Nr-msg msg)
                                 (Xi-msg msg)
@@ -1054,23 +1054,23 @@
                                 (g responder-constants)
                                 (b responder-constants)
                                 initiator-private-key))
-         
+
          (Ei-decrypted (CRYPTO::decrypt-symmetric-list (Ei-msg msg) session-key)))
 
      (not (equal (nth 2 Ei-decrypted)
                  SigKi))))
-  
+
 
 (defun badly-forged-msg3p (msg responder-constants initiator-public-key)
-  
+
   (let* ((dh-key (CRYPTO::compute-dh-key (xi-msg msg)
                                          (dh-exponent responder-constants)
                                          (b responder-constants)))
-         
+
          (session-key (compute-session-key (Ni-msg msg)
                                            (Nr-msg msg)
                                            dh-key))
-         
+
          (SigKi (verify-sig-Ki (Ni-msg msg)
                                (Nr-msg msg)
                                (Xi-msg msg)
@@ -1078,9 +1078,9 @@
                                (g responder-constants)
                                (b responder-constants)
                                initiator-public-key))
-         
+
          (Ei-decrypted (CRYPTO::decrypt-symmetric-list (Ei-msg msg) session-key)))
-    
+
     (not (equal (nth 2 Ei-decrypted)
                 SigKi))))
 
@@ -1089,13 +1089,13 @@
   (implies (and (constantsp constants)
                 (badly-forged-msg3p msg
                                     (responder-constants constants)
-                                    (public-key-I (public-constants constants))))           
-           (not (responder-step2-prev-msg-ok msg 
+                                    (public-key-I (public-constants constants))))
+           (not (responder-step2-prev-msg-ok msg
 
                                              (responder-constants constants)
                                              (public-constants constants))))
   :hints (("Goal" :in-theory (e/d (responder-step2-prev-msg-ok
-                                   compute-sig-ki verify-sig-ki) 
+                                   compute-sig-ki verify-sig-ki)
                                   (Ni-msg Nr-msg Xi-msg Src-ip-msg nonce ei-msg
                                           b g
                                           well-formed-msg3p xr-msg)))))
@@ -1104,7 +1104,7 @@
 (defun responder-step2 (network-s my-s my-constants public-constants)
   (declare (xargs :guard (and (responder-constantsp my-constants)
                               (public-constantsp public-constants))))
-  
+
   (if (responder-step2-prev-msg-ok (msg3 network-s) my-constants public-constants)
       (responder-step2-aux network-s my-s my-constants public-constants)
     (get-mv-protocol-failure)))
@@ -1112,7 +1112,7 @@
 
 (defthm poorly-formed-network-msg3-yields-failure-for-responder
   (implies (not (well-formed-msg3p (msg3 network-s-after-3)))
-           (mv-let 
+           (mv-let
             (network-s-after-4 responder-s-after-4)
             (responder-step2 network-s-after-3 responder-s-after-2
                              responder-constants public-constants)
@@ -1126,22 +1126,22 @@
                 (badly-forged-msg3p (msg3 network-s-after-3)
                                     (responder-constants constants)
                                     (public-key-i (public-constants constants))))
-           (mv-let 
+           (mv-let
             (network-s-after-4 responder-s-after-4)
             (responder-step2 network-s-after-3 responder-s-after-2
                              (responder-constants constants)
                              (public-constants constants))
             (declare (ignore network-s-after-4))
             (protocol-failure responder-s-after-4)))
-  :hints (("Goal" :in-theory (e/d (responder-step2) 
+  :hints (("Goal" :in-theory (e/d (responder-step2)
                                   (responder-step2-aux constantsp)))))
 
 
-  
-(defun run-4-steps-honest (network-s initiator-constants responder-constants 
+
+(defun run-4-steps-honest (network-s initiator-constants responder-constants
                                     public-constants initiator-s responder-s)
 
-  (mv-let 
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
    (initiator-step1 network-s initiator-s initiator-constants public-constants)
 
@@ -1150,7 +1150,7 @@
     (responder-step1 network-s-after-1 responder-s responder-constants public-constants)
 
 
-  (mv-let 
+  (mv-let
    (network-s-after-3 initiator-s-after-3)
    (initiator-step2 network-s-after-2 initiator-s-after-1 initiator-constants public-constants)
 
@@ -1158,16 +1158,16 @@
     (network-s-after-4 responder-s-after-4)
     (responder-step2 network-s-after-3 responder-s-after-2 responder-constants public-constants)
 
-    
+
     (mv network-s-after-4
         initiator-s-after-3
         responder-s-after-4))))))
 
 #|
-(run-4-steps-honest nil 
-                   *initiator-constants* 
-                   *responder-constants* 
-                   *public-constants* 
+(run-4-steps-honest nil
+                   *initiator-constants*
+                   *responder-constants*
+                   *public-constants*
                    nil
                    nil)
 |#
@@ -1183,7 +1183,7 @@
          (er (er-msg prev-msg))
          (Hr-msg (Hr-msg prev-msg))
          (session-key (session-key my-s))
-         
+
          (er-decrypted (CRYPTO::decrypt-symmetric-list er session-key))
          (id-r (nth 0 er-decrypted))
          (sa-r (nth 1 er-decrypted))
@@ -1195,7 +1195,7 @@
          (Ni (nonce my-constants))
 
          (public-key-r (public-key-r public-constants))
-         
+
          (SigKr-calc (verify-sig-kr Ni Nr Xi Xr public-key-r))
          (hr-calc (compute-hr Er session-key))
 
@@ -1216,12 +1216,12 @@
 
 
 (defun initiator-step3-prev-msg-ok (prev-msg my-s my-constants public-constants)
-  (and 
+  (and
    (well-formed-msg4p prev-msg)
    (let* ((Er-msg (Er-msg prev-msg))
           (Hr-msg (Hr-msg prev-msg))
           (Session-key (session-key my-s))
-          
+
           (Er-decrypted (CRYPTO::decrypt-symmetric-list Er-msg session-key))
           (id-r (nth 0 er-decrypted))
           (sa-r (nth 1 er-decrypted))
@@ -1233,11 +1233,11 @@
           (Ni-c (nonce my-constants))
 
           (public-key-r (public-key-r public-constants))
-         
+
           (SigKr-calc (verify-sig-kr Ni-c Nr-s Xi-s Xr-s public-key-r))
           (hr-calc (compute-hr Er-msg session-key)))
      (declare (ignore id-r sa-r))
-     
+
      (and (equal sig-kr-msg SigKr-calc)
           (equal hr-msg hr-calc)))))
 
@@ -1257,17 +1257,17 @@
   (let* ((dh-key (CRYPTO::compute-dh-key (Xr initiator-s)
                                          (dh-exponent initiator-constants)
                                          (b initiator-s)))
-         
+
          (SigKr (verify-sig-Kr (Nonce initiator-constants)
                                (Nr initiator-s)
                                (Xi initiator-s)
                                (Xr initiator-s)
                                responder-public-key))
-         
-         (Er-decrypted (CRYPTO::decrypt-symmetric-list (Er-msg msg) 
+
+         (Er-decrypted (CRYPTO::decrypt-symmetric-list (Er-msg msg)
                                                        (session-key initiator-s))))
     (declare (ignore dh-key))
-    
+
     (not (equal (nth 2 Er-decrypted)
                 SigKr))))
 
@@ -1277,12 +1277,12 @@
                 (badly-forged-msg4p msg
                                     initiator-s ; will probably need to qualify
                                     (initiator-constants constants)
-                                    (public-key-R (public-constants constants))))           
-           (not (initiator-step3-prev-msg-ok msg 
+                                    (public-key-R (public-constants constants))))
+           (not (initiator-step3-prev-msg-ok msg
                                              initiator-s
                                              (initiator-constants constants)
                                              (public-constants constants))))
-  :hints (("Goal" :in-theory (e/d (initiator-step3-prev-msg-ok 
+  :hints (("Goal" :in-theory (e/d (initiator-step3-prev-msg-ok
                                    compute-sig-ki verify-sig-ki)
                                   (nonce er-msg
                                          Ni Ni-msg Nr-msg Nr Xi Xr session-key
@@ -1291,7 +1291,7 @@
 
 (defthm poorly-formed-network-msg4-yields-failure-for-initiator
   (implies (not (well-formed-msg4p (msg4 network-s-after-4)))
-           (mv-let 
+           (mv-let
             (network-s-after-5 initiator-s-after-5)
             (initiator-step3 network-s-after-4 initiator-s-after-3
                              initiator-constants public-constants)
@@ -1307,22 +1307,22 @@
                                     initiator-s-after-2
                                     (initiator-constants constants)
                                     (public-key-r (public-constants constants))))
-           (mv-let 
+           (mv-let
             (network-s-after-5 initiator-s-after-5)
             (initiator-step3 network-s-after-4 initiator-s-after-2
                              (initiator-constants constants)
                              (public-constants constants))
             (declare (ignore network-s-after-5))
-            
+
             (protocol-failure initiator-s-after-5)))
-  :hints (("Goal" :in-theory (e/d (initiator-step3) 
+  :hints (("Goal" :in-theory (e/d (initiator-step3)
                                   (initiator-step3-aux msg4 constantsp)))))
 
 
-(defun run-5-steps-honest (network-s initiator-constants responder-constants 
+(defun run-5-steps-honest (network-s initiator-constants responder-constants
                                    public-constants initiator-s responder-s)
 
-  (mv-let 
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
    (initiator-step1 network-s initiator-s initiator-constants public-constants)
 
@@ -1331,7 +1331,7 @@
     (responder-step1 network-s-after-1 responder-s responder-constants public-constants)
 
 
-  (mv-let 
+  (mv-let
    (network-s-after-3 initiator-s-after-3)
    (initiator-step2 network-s-after-2 initiator-s-after-1 initiator-constants public-constants)
 
@@ -1339,10 +1339,10 @@
     (network-s-after-4 responder-s-after-4)
     (responder-step2 network-s-after-3 responder-s-after-2 responder-constants public-constants)
 
-  (mv-let 
+  (mv-let
    (network-s-after-5 initiator-s-after-5)
    (initiator-step3 network-s-after-4 initiator-s-after-3 initiator-constants public-constants)
-   
+
     (mv network-s-after-5
         initiator-s-after-5
         responder-s-after-4)))))))
@@ -1350,18 +1350,18 @@
 
 
 #|
-(run-5-steps-honest nil 
-                   *initiator-constants* 
-                   *responder-constants* 
-                   *public-constants* 
+(run-5-steps-honest nil
+                   *initiator-constants*
+                   *responder-constants*
+                   *public-constants*
                    nil
                    nil)
 |#
 
-#| 
+#|
 ; The below assertion illustrates an example of what a successful trace of the
 ; JFKr protocol looks like.
-(ACL2::assert! 
+(ACL2::assert!
  (mv-let (network-s initiator-s responder-s)
          (run-5-steps-honest nil *initiator-constants* *responder-constants*
                              *public-constants* nil nil)
@@ -1392,7 +1392,7 @@
    (let ((prev-msg (msg1 network)))
      (and (equal Ni-c (Ni-msg prev-msg))
           (equal SrcIP-c (Src-ip-msg prev-msg))))))
-  
+
 #|
 (ACL2::assert! (example-correct-message1 (quote ((1 (NI . 52425) (SRC-IP . 13441))))
                                    *constants*))
@@ -1420,7 +1420,7 @@
                                    *constants*)
          "Message2 test is exactly correct!")
 |#
-                                         
+
 ; We'll need to enable these for attacker proofs later
 
 (defun example-correct-message3 (network constants)
@@ -1510,16 +1510,16 @@
 
 
 (defthm run-2-steps-with-poorly-formed-attacker-yields-responder-failure
-     
-     (mv-let 
+
+     (mv-let
       (network-s-after-1 initiator-s-after-1)
       (initiator-step1 network-s initiator-s initiator-constants public-constants)
       (declare (ignore initiator-s-after-1))
-      
+
       (let ((network-s-after-1-munged (function-we-know-nothing-about1 network-s-after-1)))
         (mv-let
          (network-s-after-2 responder-s-after-2)
-         (responder-step1 network-s-after-1-munged responder-s 
+         (responder-step1 network-s-after-1-munged responder-s
                           responder-constants public-constants)
          (declare (ignore network-s-after-2))
 
@@ -1528,20 +1528,20 @@
 
 
 (defthm run-3-steps-with-poorly-formed-attacker-yields-initiator-failure
-     
-     (mv-let 
+
+     (mv-let
       (network-s-after-1 initiator-s-after-1)
       (initiator-step1 network-s initiator-s initiator-constants public-constants)
-      
-      
+
+
       (let ((network-s-after-1-munged (function-we-know-nothing-about1 network-s-after-1)))
         (mv-let
          (network-s-after-2 responder-s-after-2)
-         (responder-step1 network-s-after-1-munged responder-s 
+         (responder-step1 network-s-after-1-munged responder-s
                           responder-constants public-constants)
          (declare (ignore responder-s-after-2))
          (let ((network-s-after-2-munged (function-we-know-nothing-about2 network-s-after-2)))
-           (mv-let 
+           (mv-let
             (network-s-after-3 initiator-s-after-3)
             (initiator-step2 network-s-after-2-munged initiator-s-after-1
                              initiator-constants public-constants)
@@ -1553,40 +1553,40 @@
 
 
 (defthm run-4-steps-with-poorly-formed-attacker-yields-responder-failure
-  
-  (mv-let 
+
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
    (initiator-step1 network-s initiator-s initiator-constants public-constants)
-   
-   
+
+
    (let ((network-s-after-1-munged (function-we-know-nothing-about1 network-s-after-1)))
      (mv-let
       (network-s-after-2 responder-s-after-2)
-      (responder-step1 network-s-after-1-munged responder-s 
+      (responder-step1 network-s-after-1-munged responder-s
                        responder-constants public-constants)
-      
+
       (let ((network-s-after-2-munged (function-we-know-nothing-about2 network-s-after-2)))
-        (mv-let 
+        (mv-let
          (network-s-after-3 initiator-s-after-3)
          (initiator-step2 network-s-after-2-munged initiator-s-after-1
                           initiator-constants public-constants)
          (declare (ignore initiator-s-after-3))
 
          (let ((network-s-after-3-munged (function-we-know-nothing-about3 network-s-after-3)))
-           
+
            (mv-let
             (network-s-after-4 responder-s-after-4)
-            (responder-step2 network-s-after-3-munged responder-s-after-2 
+            (responder-step2 network-s-after-3-munged responder-s-after-2
                              responder-constants public-constants)
             (declare (ignore network-s-after-4))
-            
+
             (implies (not (well-formed-msg3p (msg3 network-s-after-3-munged)))
                      (protocol-failure responder-s-after-4)))))))))
 
-  :hints (("Goal" :in-theory (e/d (responder-step2 initiator-step2) 
-                                  (well-formed-msg1p 
-                                   well-formed-msg2p well-formed-msg3p 
-                                   
+  :hints (("Goal" :in-theory (e/d (responder-step2 initiator-step2)
+                                  (well-formed-msg1p
+                                   well-formed-msg2p well-formed-msg3p
+
                                    responder-step2-aux
                                    initiator-step2-aux responder-step1
                                    initiator-step1 ei-msg hi-msg ni-msg
@@ -1598,45 +1598,45 @@
   (let ((initiator-constants (initiator-constants constants))
         (responder-constants (responder-constants constants))
         (public-constants (public-constants constants)))
-    
-    (mv-let 
+
+    (mv-let
      (network-s-after-1 initiator-s-after-1)
      (initiator-step1 network-s initiator-s initiator-constants
                       public-constants)
-     
-     
+
+
      (let ((network-s-after-1-munged (function-we-know-nothing-about1 network-s-after-1)))
        (mv-let
         (network-s-after-2 responder-s-after-2)
-        (responder-step1 network-s-after-1-munged responder-s 
+        (responder-step1 network-s-after-1-munged responder-s
                          responder-constants public-constants)
-        
+
         (let ((network-s-after-2-munged (function-we-know-nothing-about2 network-s-after-2)))
-          (mv-let 
+          (mv-let
            (network-s-after-3 initiator-s-after-3)
            (initiator-step2 network-s-after-2-munged initiator-s-after-1
                             initiator-constants public-constants)
            (declare (ignore initiator-s-after-3))
-           
+
            (let ((network-s-after-3-munged (function-we-know-nothing-about3 network-s-after-3)))
-             
+
              (mv-let
               (network-s-after-4 responder-s-after-4)
-              (responder-step2 network-s-after-3-munged responder-s-after-2 
+              (responder-step2 network-s-after-3-munged responder-s-after-2
                                responder-constants public-constants)
               (declare (ignore network-s-after-4))
-              
+
               (implies
                (and (constantsp constants)
                     (badly-forged-msg3p (msg3 network-s-after-3-munged)
                                         (responder-constants constants)
                                         (public-key-i (public-constants constants))))
-               
+
                (protocol-failure responder-s-after-4))))))))))
-  
+
   :hints (("Goal" :in-theory (e/d (responder-step2)
                                   (constantsp
-                                   well-formed-msg3p 
+                                   well-formed-msg3p
                                    badly-forged-msg3p
                                    responder-step2-prev-msg-ok
                                    responder-step2-aux
@@ -1650,50 +1650,50 @@
 
 
 (defthm run-5-steps-with-poorly-formed-attacker-yields-initiator-failure
-  
-  (mv-let 
+
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
    (initiator-step1 network-s initiator-s initiator-constants public-constants)
-   
-   (let ((network-s-after-1-munged (function-we-know-nothing-about1 
+
+   (let ((network-s-after-1-munged (function-we-know-nothing-about1
                                     network-s-after-1)))
      (mv-let
       (network-s-after-2 responder-s-after-2)
-      (responder-step1 network-s-after-1-munged responder-s 
+      (responder-step1 network-s-after-1-munged responder-s
                        responder-constants public-constants)
-      
-      (let ((network-s-after-2-munged (function-we-know-nothing-about2 
+
+      (let ((network-s-after-2-munged (function-we-know-nothing-about2
                                        network-s-after-2)))
-        (mv-let 
+        (mv-let
          (network-s-after-3 initiator-s-after-3)
          (initiator-step2 network-s-after-2-munged initiator-s-after-1
                           initiator-constants public-constants)
-         
-         (let ((network-s-after-3-munged (function-we-know-nothing-about3 
+
+         (let ((network-s-after-3-munged (function-we-know-nothing-about3
                                           network-s-after-3)))
-          
+
            (mv-let
             (network-s-after-4 responder-s-after-4)
-            (responder-step2 network-s-after-3-munged responder-s-after-2 
+            (responder-step2 network-s-after-3-munged responder-s-after-2
                              responder-constants public-constants)
             (declare (ignore responder-s-after-4))
-            
+
             (let ((network-s-after-4-munged (function-we-know-nothing-about4
                                              network-s-after-4)))
-              
-              (mv-let 
+
+              (mv-let
                (network-s-after-5 initiator-s-after-5)
-               (initiator-step3 network-s-after-4-munged initiator-s-after-3 
+               (initiator-step3 network-s-after-4-munged initiator-s-after-3
                                 initiator-constants public-constants)
                (declare (ignore network-s-after-5))
 
-               (implies (not (well-formed-msg4p 
+               (implies (not (well-formed-msg4p
                               (msg4 network-s-after-4-munged)))
                         (protocol-failure initiator-s-after-5)))))))))))
 
-  :hints (("Goal" :in-theory (e/d (responder-step2 initiator-step2) 
-                                  (well-formed-msg1p 
-                                   well-formed-msg2p well-formed-msg3p 
+  :hints (("Goal" :in-theory (e/d (responder-step2 initiator-step2)
+                                  (well-formed-msg1p
+                                   well-formed-msg2p well-formed-msg3p
                                    responder-step2-aux
                                    initiator-step2-aux responder-step1
                                    initiator-step1 ei-msg hi-msg ni-msg
@@ -1706,55 +1706,55 @@
   (let ((initiator-constants (initiator-constants constants))
         (responder-constants (responder-constants constants))
         (public-constants (public-constants constants)))
-  
-  (mv-let 
+
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
    (initiator-step1 network-s initiator-s initiator-constants public-constants)
-   
-   
-   (let ((network-s-after-1-munged (function-we-know-nothing-about1 
+
+
+   (let ((network-s-after-1-munged (function-we-know-nothing-about1
                                     network-s-after-1)))
      (mv-let
       (network-s-after-2 responder-s-after-2)
-      (responder-step1 network-s-after-1-munged responder-s 
+      (responder-step1 network-s-after-1-munged responder-s
                        responder-constants public-constants)
-      
-      (let ((network-s-after-2-munged (function-we-know-nothing-about2 
+
+      (let ((network-s-after-2-munged (function-we-know-nothing-about2
                                        network-s-after-2)))
-        (mv-let 
+        (mv-let
          (network-s-after-3 initiator-s-after-3)
          (initiator-step2 network-s-after-2-munged initiator-s-after-1
                           initiator-constants public-constants)
-         
-         (let ((network-s-after-3-munged (function-we-know-nothing-about3 
+
+         (let ((network-s-after-3-munged (function-we-know-nothing-about3
                                           network-s-after-3)))
-           
+
            (mv-let
             (network-s-after-4 responder-s-after-4)
-            (responder-step2 network-s-after-3-munged responder-s-after-2 
+            (responder-step2 network-s-after-3-munged responder-s-after-2
                              responder-constants public-constants)
-            (declare (ignore responder-s-after-4))               
-            (let ((network-s-after-4-munged (function-we-know-nothing-about4 
+            (declare (ignore responder-s-after-4))
+            (let ((network-s-after-4-munged (function-we-know-nothing-about4
                                              network-s-after-4)))
-              
-              (mv-let 
+
+              (mv-let
                (network-s-after-5 initiator-s-after-5)
-               (initiator-step3 network-s-after-4-munged initiator-s-after-3 
+               (initiator-step3 network-s-after-4-munged initiator-s-after-3
                                 initiator-constants public-constants)
                (declare (ignore network-s-after-5))
-               
-               (implies 
+
+               (implies
                 (and (constantsp constants)
                      (badly-forged-msg4p (msg4 network-s-after-4-munged)
                                          initiator-s-after-3
                                          initiator-constants
                                          (public-key-R public-constants)))
-                
+
                 (protocol-failure initiator-s-after-5))))))))))))
 
-  :hints (("Goal" :in-theory (e/d (responder-step2 initiator-step2) 
-                                  (well-formed-msg1p 
-                                   well-formed-msg2p well-formed-msg3p 
+  :hints (("Goal" :in-theory (e/d (responder-step2 initiator-step2)
+                                  (well-formed-msg1p
+                                   well-formed-msg2p well-formed-msg3p
                                    responder-step2-aux
                                    initiator-step2-aux responder-step1
                                    initiator-step1 ei-msg hi-msg ni-msg
@@ -1768,44 +1768,44 @@
   (let ((initiator-constants (initiator-constants constants))
         (responder-constants (responder-constants constants))
         (public-constants (public-constants constants)))
-  
-  (mv-let 
+
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
    (initiator-step1 network-s initiator-s initiator-constants public-constants)
-   
-   
-   (let ((network-s-after-1-munged (function-we-know-nothing-about1 
+
+
+   (let ((network-s-after-1-munged (function-we-know-nothing-about1
                                     network-s-after-1)))
      (mv-let
       (network-s-after-2 responder-s-after-2)
-      (responder-step1 network-s-after-1-munged responder-s 
+      (responder-step1 network-s-after-1-munged responder-s
                        responder-constants public-constants)
-      
-      (let ((network-s-after-2-munged (function-we-know-nothing-about2 
+
+      (let ((network-s-after-2-munged (function-we-know-nothing-about2
                                        network-s-after-2)))
-        (mv-let 
+        (mv-let
          (network-s-after-3 initiator-s-after-3)
          (initiator-step2 network-s-after-2-munged initiator-s-after-1
                           initiator-constants public-constants)
-         
-         (let ((network-s-after-3-munged (function-we-know-nothing-about3 
+
+         (let ((network-s-after-3-munged (function-we-know-nothing-about3
                                           network-s-after-3)))
-           
+
            (mv-let
             (network-s-after-4 responder-s-after-4)
-            (responder-step2 network-s-after-3-munged responder-s-after-2 
+            (responder-step2 network-s-after-3-munged responder-s-after-2
                              responder-constants public-constants)
-               
 
-            (let ((network-s-after-4-munged (function-we-know-nothing-about4 
+
+            (let ((network-s-after-4-munged (function-we-know-nothing-about4
                                              network-s-after-4)))
-              
-              (mv-let 
+
+              (mv-let
                (network-s-after-5 initiator-s-after-5)
-               (initiator-step3 network-s-after-4-munged initiator-s-after-3 
+               (initiator-step3 network-s-after-4-munged initiator-s-after-3
                                 initiator-constants public-constants)
                (declare (ignore network-s-after-5))
-               (implies 
+               (implies
                 (and (constantsp constants)
                      (badly-forged-msg3p (msg3 network-s-after-3-munged)
                                          (responder-constants constants)
@@ -1819,14 +1819,14 @@
 
   :hints (("Goal" :do-not  '(eliminate-destructors generalize)
            :do-not-induct t
-           
-           :in-theory (e/d () 
-                           (responder-step2 
+
+           :in-theory (e/d ()
+                           (responder-step2
                             badly-forged-network-msg4-yields-failure-for-initiator
                             initiator-step2
-                            well-formed-msg1p 
+                            well-formed-msg1p
                             badly-forged-msg3p badly-forged-msg4p
-                            well-formed-msg2p well-formed-msg3p 
+                            well-formed-msg2p well-formed-msg3p
                             responder-step2-aux
                             initiator-step2-aux responder-step1
                             initiator-step1 ei-msg hi-msg ni-msg
@@ -1843,39 +1843,39 @@
 ; session keys.
 
 (defthm success-of-both-implies-equal-session-keys
-  (mv-let 
+  (mv-let
    (network-s-after-1 initiator-s-after-1)
-   (initiator-step1 network-s initiator-s 
+   (initiator-step1 network-s initiator-s
                     initiator-constants public-constants)
    (mv-let
     (network-s-after-2 responder-s-after-2)
-    (responder-step1 
+    (responder-step1
      (function-we-know-nothing-about1 network-s-after-1)
      responder-s responder-constant public-constants)
 
-    (mv-let 
+    (mv-let
      (network-s-after-3 initiator-s-after-3)
-     (initiator-step2 
+     (initiator-step2
       (function-we-know-nothing-about2 network-s-after-2)
-      initiator-s-after-1 initiator-constants 
+      initiator-s-after-1 initiator-constants
       public-constants)
 
      (mv-let
       (network-s-after-4 responder-s-after-4)
       (responder-step2
        (function-we-know-nothing-about3 network-s-after-3)
-       responder-s-after-2 responder-constants 
+       responder-s-after-2 responder-constants
        public-constants)
-      
-      (mv-let 
+
+      (mv-let
        (network-s-after-5 initiator-s-after-5)
        (initiator-step3
         (function-we-know-nothing-about4 network-s-after-4)
-        initiator-s-after-3 initiator-constants 
+        initiator-s-after-3 initiator-constants
         public-constants)
        (declare (ignore network-s-after-5))
-       
-       (implies 
+
+       (implies
         (and (done initiator-s-after-5)
              (success initiator-s-after-5)
              (done responder-s-after-4)

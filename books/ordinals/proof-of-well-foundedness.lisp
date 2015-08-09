@@ -1,4 +1,4 @@
-#| 
+#|
 We perform the proofs in another package, so that o< and o-p as
 defined in ACL2 won't interfere.
 
@@ -14,7 +14,7 @@ To certify this book:
 
 (in-package "ORD")
 
-#| 
+#|
 
 Since ACL2's sense of well-foundedness is based on o<, we need to
 prove that we can embed the natural numbers into the ordinals.
@@ -32,7 +32,7 @@ well-foundedness of o<.
 
 (defthm well-foundedness-of-natural-numbers
   (and (implies (natp x) (ACL2::o-p (id x)))
-       (implies (and (natp x)                       
+       (implies (and (natp x)
                      (natp y)
                      (< x y))
                 (ACL2::o< (id x) (id y))))
@@ -49,12 +49,12 @@ prove that they terminate using only < over the natural numbers.
 |#
 
 (defun o< (x y)
-  (cond ((o-finp x) 
+  (cond ((o-finp x)
          (or (o-infp y) (< x y)))
         ((o-finp y) nil)
-        ((not (equal (o-first-expt x) (o-first-expt y))) 
+        ((not (equal (o-first-expt x) (o-first-expt y)))
          (o< (o-first-expt x) (o-first-expt y)))
-        ((not (= (o-first-coeff x) (o-first-coeff y))) 
+        ((not (= (o-first-coeff x) (o-first-coeff y)))
          (< (o-first-coeff x) (o-first-coeff y)))
         (t (o< (o-rst x) (o-rst y)))))
 
@@ -111,17 +111,17 @@ Now we can prove the theorems that appear in the proof of well-foundedness:
            (o< x z))
   :rule-classes nil)
 
-(defthm non-circularity-of-o< 
-  (implies (o< x y) 
-           (not (o< y x))) 
+(defthm non-circularity-of-o<
+  (implies (o< x y)
+           (not (o< y x)))
   :rule-classes nil)
 
-(defthm trichotomy-of-o< 
-  (implies (and (o-p x) 
-                (o-p y)) 
-           (or (equal x y) 
-               (o< x y) 
-               (o< y x))) 
+(defthm trichotomy-of-o<
+  (implies (and (o-p x)
+                (o-p y))
+           (or (equal x y)
+               (o< x y)
+               (o< y x)))
   :rule-classes nil)
 
 #|
@@ -152,7 +152,7 @@ lemmas:
   :rule-classes nil
   :hints (("Goal" :use non-circularity-of-o<)))
 
-(defthm transitivity-of-o<= 
+(defthm transitivity-of-o<=
   (implies (and (o-p x)
                 (o-p y)
                 (o<= x y)
@@ -161,11 +161,11 @@ lemmas:
   :rule-classes nil
   :hints (("Goal" :use transitivity-of-o<)))
 
-(defthm trichotomy-of-o<= 
-  (implies (and (o-p x) 
-                (o-p y)) 
-           (or (o<= x y) (o<= y x))) 
-  :rule-classes nil 
+(defthm trichotomy-of-o<=
+  (implies (and (o-p x)
+                (o-p y))
+           (or (o<= x y) (o<= y x)))
+  :rule-classes nil
   :hints (("Goal" :use trichotomy-of-o<)))
 
 #|
@@ -175,9 +175,9 @@ o-ps is the concept of ordinal-depth, abbreviated od:
 
 |#
 
-(defun od (l) 
-  (if (o-finp l) 
-      0 
+(defun od (l)
+  (if (o-finp l)
+      0
     (1+ (od (o-first-expt l)))))
 
 #|

@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
-;; This book contains a formalization of Eisenstein's proof of Gauss's 
-;; Law of Quadratic Reciprocity: if p and q are distinct odd primes, 
+;; This book contains a formalization of Eisenstein's proof of Gauss's
+;; Law of Quadratic Reciprocity: if p and q are distinct odd primes,
 ;; then
 ;;  (residue(p,q) <=> residue(q,p)) <=> ((p-1)/2)*((q-1)/2) is even.
 
@@ -81,7 +81,7 @@
 (in-theory (disable evenp))
 
 ;; Our first goal is to derive yet another characterization of quadratic residues:
-;; if m is odd and relatively prime to an odd prime p, then  m is a quadratic residue 
+;; if m is odd and relatively prime to an odd prime p, then  m is a quadratic residue
 ;; mod p iff the sum
 ;;    fl(m/p) + fl(2*m/p) + fl(3*m/p) + ... + fl(((p-1)/2)*m/p)
 ;; is even.
@@ -118,7 +118,7 @@
 				(:instance evenp-oddp (m (mu (1- n) m p)))))))
 
 ;; We shall instantiate the above lemma with n = (p-1)/2.  In "gauss",
-;; we showed that reflections((p-1)/2,m,p) is a permutation of 
+;; we showed that reflections((p-1)/2,m,p) is a permutation of
 ;; positives((p-1)/2).  It follows that these two lists have the same
 ;; sum:
 
@@ -128,7 +128,7 @@
   :rule-classes ())
 
 (defthm perm-plus-list
-  (implies (perm l m) 
+  (implies (perm l m)
 	   (equal (plus-list l) (plus-list m)))
   :rule-classes ()
   :hints (("Subgoal *1/2" :use ((:instance perm-plus-list-lemma (x (car l)))))))
@@ -139,14 +139,14 @@
 		(integerp m)
 		(not (divides p m)))
 	   (equal (plus-list (positives (/ (1- p) 2)))
-		  (plus-list (reflections (/ (1- p) 2) m p))))		  
+		  (plus-list (reflections (/ (1- p) 2) m p))))
   :rule-classes ()
   :hints (("Goal" :use (perm-reflections
-			(:instance perm-plus-list 
+			(:instance perm-plus-list
 				   (m (reflections (/ (1- p) 2) m p))
 				   (l (positives (/ (1- p) 2))))))))
 
-;; Combining Gauss's Lemma with the above results, we have the following 
+;; Combining Gauss's Lemma with the above results, we have the following
 ;; characterization of quadratic residues:
 
 (defthm residue-mod-prods-positives
@@ -162,7 +162,7 @@
 			gauss-lemma
 			(:instance even-mu (n (/ (1- p) 2)))))))
 
-;;  Next, we sum the equation 
+;;  Next, we sum the equation
 ;;        m*n = fl(m*n/p)* p + mod(m*n,p)
 ;; from n = 1 to n = (p-1)/2:
 
@@ -229,13 +229,13 @@
 			(:instance primep-no-divisor (d q))
 			(:instance primep-no-divisor (d p) (p q))))))
 
-;; We shall complete the proof of quadratic reciprocity by showing that the sum in 
+;; We shall complete the proof of quadratic reciprocity by showing that the sum in
 ;; the above lemma equals the product ((p-1)/2) * ((q-1)/2).  This amounts to a
 ;; formalization of a geometric argument of Eisenstein.  (For a detailed discussion,
 ;; see http://www.russinoff.com/papers/gauss.html.)
 
-;; Given two lists of integers l and m, let wins(l,m) be the number 
-;; of pairs (x,y) in the cartesian product l x m such that x > y, and 
+;; Given two lists of integers l and m, let wins(l,m) be the number
+;; of pairs (x,y) in the cartesian product l x m such that x > y, and
 ;; let losses(l,m) be the number of pairs satisfying x < y.  Assume that
 ;; l and m are disjoint.  Then
 ;;   wins(l,m) + losses(l,m) = wins(l,m) + wins(m,l) = len(l)*len(m).
@@ -255,7 +255,7 @@
 
 (defun losses1 (x l)
   (if (consp l)
-      (if (< x (car l)) 
+      (if (< x (car l))
           (1+ (losses1 x (cdr l)))
         (losses1 x (cdr l)))
     0))
@@ -267,7 +267,7 @@
 
 (defun all-integerp (l)
   (if (consp l)
-      (and (integerp (car l)) 
+      (and (integerp (car l))
 	   (all-integerp (cdr l)))
     t))
 
@@ -348,17 +348,17 @@
 		(not (= p 2))
 		(not (= q 2))
 		(not (= p q)))
-           (not (intersectp-equal (mults i p) 
+           (not (intersectp-equal (mults i p)
 				  (mults (+ -1/2 (* 1/2 p)) q)))))
 
 ;; The product of the lengths of the two lists is
 ;;    len(l)*len(m) = ((p-1)/2) * (q-1)/2).
 
 (defthm len-mults
-  (equal (len (mults n p)) 
+  (equal (len (mults n p))
 	 (nfix n)))
 
-;; Once we show that wins(l,m) and wins(m,l) are equal to the two sums 
+;; Once we show that wins(l,m) and wins(m,l) are equal to the two sums
 ;; in the lemma equal-residue-even-plus, it will follow that the sum of
 ;; those two sums is that product, as desired.
 
@@ -489,10 +489,10 @@
 		(<= j (/ (1- p) 2)))
            (equal (plus-list (fl-prods j q p))
                   (wins (mults j q) (mults (/ (1- q) 2) p))))
-  :hints (("Goal" :induct (mults j q)))) 
+  :hints (("Goal" :induct (mults j q))))
 
 (defthm law-of-quadratic-reciprocity
-  (implies (and (primep p) 
+  (implies (and (primep p)
 		(not (= p 2))
                 (primep q)
 		(not (= q 2))

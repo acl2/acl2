@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -47,9 +47,9 @@
                   (integerp x)))
   :hints (("goal" :in-theory (disable rational-implies2)
            :use (rational-implies2
-                 (:instance lowest-terms 
+                 (:instance lowest-terms
                             (n (denominator x))
-                            (r x) 
+                            (r x)
                             (q 1))))))
 
 (defthm denominator-of-integer-is-one

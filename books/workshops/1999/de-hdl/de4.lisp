@@ -58,7 +58,7 @@
     (and    (list (and   (car ins) (b-fix (cadr ins)))))
     (and3   (list (and   (car ins) (cadr ins) (b-fix (caddr ins)))))
     (and4   (list (and   (car ins) (cadr ins) (caddr ins) (b-fix (cadddr ins)))))
- 
+
     (or     (list (b-fix (or  (car ins) (cadr ins)))))
     (or3    (list (b-fix (or  (car ins) (cadr ins) (caddr ins)))))
     (or4    (list (b-fix (or  (car ins) (cadr ins) (caddr ins) (cadddr ins)))))
@@ -91,7 +91,7 @@
 
     (buf    nil)
     (not    nil)
-    
+
     (and    nil)
     (and3   nil)
     (and4   nil)
@@ -127,7 +127,7 @@
 ;;;  values.
 
 (mutual-recursion
- 
+
 (defun se (fn ins sts netlist)
   (declare (xargs :measure (se-measure fn netlist)))
   (if (primp fn)
@@ -166,7 +166,7 @@
 )
 
 (mutual-recursion
- 
+
 (defun de (fn ins sts netlist)
   (declare (xargs :measure (se-measure fn netlist)))
   (if (primp fn)
@@ -185,7 +185,7 @@
            (de-occ md-occs
                    (se-occ md-occs wire-alist sts-alist new-netlist)
                    sts-alist new-netlist)))))))
-    
+
 (defun de-occ (occurs wire-alist sts-alist netlist)
   (declare (xargs :measure (se-measure occurs netlist)))
   (if (endp occurs)
@@ -207,7 +207,7 @@
       sts
     (de-sim fn (cdr ins-list)
             (de fn (car ins-list) sts netlist)
-            netlist)))    
+            netlist)))
 
 
 

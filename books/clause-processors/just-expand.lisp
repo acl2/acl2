@@ -94,7 +94,7 @@
 
 
 (defsection expand-if-marked
-  
+
 
   (defund expand-if-marked (fn args w)
     (declare (xargs :guard (and (symbolp fn)
@@ -323,7 +323,7 @@
       :hints ('(:expand ((remove-expand-mes-list x)
                          (remove-expand-mes-list nil))))
       :flag list)))
-  
+
 
 
 
@@ -364,7 +364,7 @@
     (b* (((when (atom term))
           (er hard? 'just-expand-cp "atom in term position in hints: ~x0~%" term)) ;; error
          ((mv erp trans-term)
-          (translate-cmp term t nil nil 'just-expand-cp w 
+          (translate-cmp term t nil nil 'just-expand-cp w
                          (default-state-vars nil)))
          ((when erp)
           (er hard? 'just-expand-cp "translate failed: ~@0~%" trans-term))
@@ -393,7 +393,7 @@
       ((':with rule term)
        (just-expand-cp-finish-hint rule nil term w))
       (& (just-expand-cp-finish-hint nil nil hint w))))
-  
+
 
   (defun just-expand-cp-parse-hints (hints w)
     (declare (Xargs :mode :program))
@@ -1158,14 +1158,14 @@
   ;;
   ;;  (std::set-returnspec-default-hints
   ;;   ((just-induct/expand-default-hint 'fnname id t world)))
-  ;; 
+  ;;
   ;; to wait until stable after inducting to expand calls, or
   ;;
   ;;  (std::set-returnspec-default-hints
   ;;   ((just-induct/expand-default-hint 'fnname id nil world)))
   ;;
   ;; to expand calls of the function immediately after inducting.
-  ;; 
+  ;;
   ;; (replace with set-deffixequiv-default-hints to use in deffixequiv proofs.)
   (and (eql (len (acl2::recursivep fnname world)) 1) ;; singly recursive
        (eql 0 (acl2::access acl2::clause-id id :forcing-round))

@@ -11,14 +11,14 @@
 (include-book "../fringes/fringes")
 
 (defun orderly-cons (x l taxon-index-alist)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                   (and (good-taxon-index-halist taxon-index-alist)
                        (taspip nil l)
                        (subset (mytips l)
-                               (get-taxa-from-taxon-index 
+                               (get-taxa-from-taxon-index
                                 taxon-index-alist))
-                       (member-gen 
-                        (first-taxon x) 
+                       (member-gen
+                        (first-taxon x)
                         (get-taxa-from-taxon-index taxon-index-alist)))
                   :verify-guards nil))
   (cond ((atom l) (hons x nil))
@@ -42,15 +42,15 @@
 (dis+ind orderly-cons)
 
 (defun orderly-append (l1 l2 taxon-index-alist)
-  (declare (xargs :guard (and (good-taxon-index-halist 
+  (declare (xargs :guard (and (good-taxon-index-halist
                                taxon-index-alist)
                               (taspip nil l1)
                               (subset (mytips l1)
-                                      (get-taxa-from-taxon-index 
+                                      (get-taxa-from-taxon-index
                                        taxon-index-alist))
                               (taspip nil l2)
                               (subset (mytips l2)
-                                      (get-taxa-from-taxon-index 
+                                      (get-taxa-from-taxon-index
                                        taxon-index-alist)))
                   :verify-guards nil))
   (cond ((atom l1) l2)
@@ -66,7 +66,7 @@
 
 (defthm orderly-append-of-consp
   (equal (orderly-append (cons first rest) l2 tia)
-         (orderly-cons first 
+         (orderly-cons first
                        (orderly-append rest l2 tia)
                        tia)))
 
@@ -89,14 +89,14 @@
                        (good-depths required-subtrees
                                     full-taxa-list-tree)
                        (subset (btree-to-fringe
-                                outstanding-taxa 
+                                outstanding-taxa
                                 full-taxa-list-tree)
-                                (get-taxa-from-taxon-index 
+                                (get-taxa-from-taxon-index
                                  taxon-index-alist))
                        (subset (mytips ans)
-                               (get-taxa-from-taxon-index 
+                               (get-taxa-from-taxon-index
                                 taxon-index-alist))
-                       (qs-subset-list required-subtrees 
+                       (qs-subset-list required-subtrees
                                        outstanding-taxa)
                        (taspip nil ans)
                        (q-no-conflicts-list required-subtrees)
@@ -127,10 +127,10 @@
 
 (defthm build-term-helper-when-not-consp
   (implies (not (consp required-subtrees))
-           (equal (build-term-helper outstanding-taxa 
+           (equal (build-term-helper outstanding-taxa
                                      required-subtrees
                                      ftlt tia ans)
-                  (orderly-append 
+                  (orderly-append
                    (btree-to-fringe outstanding-taxa ftlt)
                    ans tia))))
 
@@ -147,7 +147,7 @@
             ftlt tia (orderly-cons x ans tia)))))
 
 (dis+ind build-term-helper)
-               
+
 (defun build-term-top (bdd-fringes taxa-list)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
@@ -162,10 +162,10 @@
 
 ;  Details: BDD based bipartitions should have been created using the taxa-list
 ;           given.  Tree returned will be ordered according the order implied
-;           by the taxa list given. NOTE: Representation returned is rooted 
+;           by the taxa list given. NOTE: Representation returned is rooted
 ;           at the *longest* bipartition but could/should probably use mv-root when
 ;           building an unrooted tree."
-  (declare (xargs :guard 
+  (declare (xargs :guard
                   (and (<= 2 (len taxa-list))
                        (int-symlist taxa-list)
                        (valid-bdd-list bdd-fringes)
@@ -173,7 +173,7 @@
                                     (build-taxa-list-tree taxa-list))
                        (subset-list (btrees-to-fringes bdd-fringes
                                                        (build-taxa-list-tree
-                                                        taxa-list)) 
+                                                        taxa-list))
                                     taxa-list)
                        (not (member-gen nil bdd-fringes)))
                   :verify-guards nil))
@@ -195,5 +195,5 @@
                                  nil)
             'not-possible-to-create-tree-from-fringes))
       nil)))
-  
+
 

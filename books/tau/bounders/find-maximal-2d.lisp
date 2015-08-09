@@ -143,7 +143,7 @@
                 (or (null xxx) (integerp xxx)))
            (above-all1 (find-maximal1 lox hix loy hiy xxx) lox hix loy hiy))
   :hints (("Goal" :induct (find-maximal1 lox hix loy hiy xxx))
-          ("Subgoal *1/2" 
+          ("Subgoal *1/2"
            :use
            ((:instance above-all2-trans
                        (x LOX)
@@ -178,7 +178,7 @@
                 (<= y hiy))
            (>= max (fmla x y)))
   :rule-classes nil)
-                
+
 (defthm find-maximal-correct
   (implies (and (integerp lox)
                 (integerp hix)
@@ -199,6 +199,6 @@
 
 
 
-                
+
 
 

@@ -6,5 +6,5 @@
 
 (defmacro in-raw-mode (&rest forms)
   `(progn! (set-raw-mode t)
-           ,@forms 
+           ,@forms
            (set-raw-mode nil)))

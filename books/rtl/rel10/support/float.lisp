@@ -9,7 +9,7 @@
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 ;; From basic.lisp:
@@ -84,7 +84,7 @@ y < 2^p, and hence x and y are p-exact.
   :rule-classes ())
 
 (local-defthm exactp-factors-2
-  (implies (and (integerp n) 
+  (implies (and (integerp n)
                 (oddp n)
                 (not (zp k)))
            (not (integerp (/ n (expt 2 k)))))
@@ -94,7 +94,7 @@ y < 2^p, and hence x and y are p-exact.
 
 (local-defthm exactp-factors-3
   (implies (and (integerp n)
-                (integerp k) 
+                (integerp k)
                 (oddp n))
            (iff (integerp (* (expt 2 k) n))
                 (>= k 0)))
@@ -103,7 +103,7 @@ y < 2^p, and hence x and y are p-exact.
 
 (local-defthm exactp-factors-4
   (implies (and (integerp n)
-                (integerp k) 
+                (integerp k)
                 (oddp n))
            (iff (exactp n k)
                 (> k (expo n))))
@@ -113,7 +113,7 @@ y < 2^p, and hence x and y are p-exact.
 
 (local-defthm exactp-factors-5
   (implies (and (integerp x)
-                (integerp y) 
+                (integerp y)
                 (oddp x)
                 (oddp y))
            (>= (expo (* x y)) (expo x)))
@@ -131,7 +131,7 @@ y < 2^p, and hence x and y are p-exact.
 
 (local-defthm exactp-factors-7
   (implies (and (integerp x)
-                (integerp y) 
+                (integerp y)
                 (oddp x)
                 (oddp y))
            (oddp (* x y)))
@@ -142,7 +142,7 @@ y < 2^p, and hence x and y are p-exact.
 
 (local-defthm exactp-factors-8
   (implies (and (integerp x)
-                (integerp y) 
+                (integerp y)
                 (oddp x)
                 (oddp y)
                 (integerp k)
@@ -174,7 +174,7 @@ y < 2^p, and hence x and y are p-exact.
                   (oddp yp)
                   (iff (exactp x n) (exactp xp n))
                   (iff (exactp y n) (exactp yp n))
-                  (iff (exactp (* x y) n) (exactp (* xp yp) n)))))                  
+                  (iff (exactp (* x y) n) (exactp (* xp yp) n)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable exactp2)
                   :use (exactp-minus
@@ -226,7 +226,7 @@ y < 2^p, and hence x and y are p-exact.
 ;;;                 Sign, Significand, and Exponent
 ;;;**********************************************************************
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -333,7 +333,7 @@ y < 2^p, and hence x and y are p-exact.
            (equal (sig x) x)))
 
 (defthm sig-sig
-    (equal (sig (sig x)) 
+    (equal (sig (sig x))
 	   (sig x)))
 
 (defthm fp-rep-unique
@@ -355,11 +355,11 @@ y < 2^p, and hence x and y are p-exact.
   (implies (and (rationalp x)
                 (not (equal x 0))
                 (integerp n))
-           (equal (expo (* (expt 2 n) x)) 
+           (equal (expo (* (expt 2 n) x))
                   (+ n (expo x)))))
 
 (defthmd sig-shift
-  (equal (sig (* (expt 2 n) x)) 
+  (equal (sig (* (expt 2 n) x))
          (sig x)))
 
 (defthmd sgn-prod

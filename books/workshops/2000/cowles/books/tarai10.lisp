@@ -21,10 +21,10 @@
 ; University of Wyoming
 ; Laramie, WY 82071-3682 U.S.A.
 
-;; These implementations of Knuth's and Bailey's versions of the f function 
-;;  for Knuth's theorem 4 compute the same results for all true lists of 
-;;  lengths 0-4 and for all lists of integers of length 5. An example is 
-;;  provided showing there are lists of integers of length 6 for which the 
+;; These implementations of Knuth's and Bailey's versions of the f function
+;;  for Knuth's theorem 4 compute the same results for all true lists of
+;;  lengths 0-4 and for all lists of integers of length 5. An example is
+;;  provided showing there are lists of integers of length 6 for which the
 ;;  two functions compute different results.
 
 ;; (certify-book "C:/acl2/tak/tarai10")

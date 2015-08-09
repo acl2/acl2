@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -32,7 +32,7 @@
 (local (include-book "top1")) ; for land0-bits-1 and land0-bits-2
 
 (defun binary-land (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -58,7 +58,7 @@
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(land x y n) -- the base case
          `(binary-land ,@x))
-        (t         
+        (t
          `(binary-land ,(car x)
                        (land ,@(cdr x))
                        ,(car (last x))))))
@@ -199,8 +199,8 @@
                 (case-split (integerp n))
                 )
            (equal (bits (land x y n) i j)
-                  (land (bits x i j) 
-                        (bits y i j) 
+                  (land (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j)))))
   :hints (("Goal" :use bits-land0-1)))
 
@@ -211,8 +211,8 @@
                 (case-split (integerp n))
                 )
            (equal (bits (land x y n) i j)
-                  (land (bits x i j) 
-                        (bits y i j) 
+                  (land (bits x i j)
+                        (bits y i j)
                         (+ n (- j)))))
   :hints (("Goal" :use bits-land0-2)))
 
@@ -223,8 +223,8 @@
                 (case-split (integerp i))
                 )
            (equal (bits (land x y n) i j)
-                  (land (bits x i j) 
-                        (bits y i j) 
+                  (land (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j))))))
 
 (defthmd bitn-land-1
@@ -233,8 +233,8 @@
                 (case-split (integerp n))
                 )
            (equal (bitn (land x y n) m)
-                  (land (bitn x m) 
-                        (bitn y m) 
+                  (land (bitn x m)
+                        (bitn y m)
                         1))))
 (defthmd bitn-land-2
   (implies (and (<= n m)
@@ -253,7 +253,7 @@
            (equal (bitn (land x y n) k)
                   (if (< k n)
                       (land (bitn x k)
-                            (bitn y k) 
+                            (bitn y k)
                             1)
                     0))))
 

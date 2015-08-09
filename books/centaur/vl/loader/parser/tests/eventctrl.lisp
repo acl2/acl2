@@ -51,7 +51,7 @@
                       (or (equal (vl-pretty-delayoreventcontrol val) ,expect)
                           (cw "Expected: ~x0~%Found:~x1~%"
                               ,expect
-                              (vl-pretty-delayoreventcontrol val))))))) 
+                              (vl-pretty-delayoreventcontrol val)))))))
 
 
 (test-vl-parse-delay-or-eventcontrol :input "@(foo or bar or baz)"

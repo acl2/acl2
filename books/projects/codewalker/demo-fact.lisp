@@ -152,7 +152,7 @@
 ; prefer for the value of the ``big'' constant *program1* NOT to appear in our
 ; proofs or the functions that def-semantics writes.  So we define program1p to
 ; check that the program is *program1*.  Then we prove what we need to show
-; that invariant is maintained.  Then we disable program1p.  
+; that invariant is maintained.  Then we disable program1p.
 
 ; This is a standard sequence of events to hide a constant.  Note that if
 ; you're only going to verify one program against an API, you might as well put

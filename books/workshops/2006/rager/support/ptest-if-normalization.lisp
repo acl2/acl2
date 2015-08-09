@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 ; The below script normalizes Boolean formulas stated in terms of if
-; expressions.  
+; expressions.
 
 ; Dr. Warren Hunt Jr. originally authored the script for his hardware
 ; verfication class in March of 2006, and David L. Rager modified it to use
@@ -44,7 +44,7 @@
 	     (equal (* (* x y) z)
 		    (* (* y x) z)))
     :rule-classes nil
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :in-theory (disable associativity-of-*)))))
 
  (defthm commutativity-2-of-*
@@ -77,7 +77,7 @@
          (symbolp (car x))
          (almost-norm-if-exprp (cadr x))
          (almost-norm-if-exprp (cddr x)))))
-      
+
 (defun boolean-exprp (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -199,7 +199,7 @@
 
                 (if (member test f-vars)
                     (norm-ifs-var right t-vars f-vars)
-                  
+
                   (let ((new-left  (norm-ifs-var left
                                                   (cons test t-vars) f-vars))
                          (new-right (norm-ifs-var right t-vars
@@ -261,7 +261,7 @@
 (defun b-eqv (x y)
   (declare (xargs :guard t))
   (list* x (list* y t nil) (list* y nil t)))
-  
+
 (defun b-if-gates (c a b)
   (declare (xargs :guard t))
   (b-or (b-and c a) (b-and (b-not c) b)))
@@ -299,7 +299,7 @@
           (b-maj (b-maj a0 b0 c) a1 b1))))
 
 (defun one-bit-adder (c a b)
-  (declare (xargs :guard (and (consp a) 
+  (declare (xargs :guard (and (consp a)
                               (consp b))))
   (let ((a0 (car a))
         (b0 (car b)))
@@ -381,7 +381,7 @@
          (a5 (nth 5 a))
          (a6 (nth 6 a))
          (a7 (nth 7 a))
-         
+
          (b0 (nth 0 b))
          (b1 (nth 1 b))
          (b2 (nth 2 b))
@@ -439,7 +439,7 @@
          (a7 (nth 7 a))
          (a8 (nth 8 a))
          (a9 (nth 9 a))
-         
+
          (b0 (nth 0 b))
          (b1 (nth 1 b))
          (b2 (nth 2 b))
@@ -508,7 +508,7 @@
          (a9 (nth 9 a))
          (a10 (nth 10 a))
          (a11 (nth 11 a))
-         
+
          (b0 (nth 0 b))
          (b1 (nth 1 b))
          (b2 (nth 2 b))
@@ -595,7 +595,7 @@
          (a13 (nth 13 a))
          (a14 (nth 14 a))
          (a15 (nth 15 a))
-         
+
          (b0 (nth 0 b))
          (b1 (nth 1 b))
          (b2 (nth 2 b))
@@ -677,7 +677,7 @@
           s14
           s15
           c15)))
-  
+
 
 
 (defun b-eqv-list (x y)
@@ -708,7 +708,7 @@
       (if (and (atom left) (eq left right))
           (if (booleanp left) left (list* left t nil))
 
-        (if (atom test) 
+        (if (atom test)
            (if (booleanp test)
                 (if test
                     (pnorm-ifs left (1+ depth))
@@ -751,26 +751,26 @@
     (let ((test  (car x))
           (left  (cadr x))
           (right (cddr x)))
-      
+
       (if (and (atom left) (eq left right))
           (if (booleanp left) left (list* left t nil))
-        
+
         (if (atom test)
             (if (booleanp test)
                 (if test
                     (pnorm-ifs-var left t-vars f-vars)
                   (pnorm-ifs-var right t-vars f-vars))
-              
+
               (if (member test t-vars)
                   (pnorm-ifs-var left t-vars f-vars)
-                
+
                 (if (member test f-vars)
                     (pnorm-ifs-var right t-vars f-vars)
-                  
+
                   (plet (declare (granularity (and (nthcar left 3)
                                                         (nthcar right 3))))
                         ((new-left  (pnorm-ifs-var left
-                                                   (cons test t-vars) 
+                                                   (cons test t-vars)
                                                    f-vars))
                          (new-right (pnorm-ifs-var right
                                                    t-vars
@@ -791,7 +791,7 @@
 (defmacro test2 ()
   '(time$ (bvl two-bit-adder-ok
             (pnorm-ifs (b-eqv-list (two-bit-adder 'c '(a0 a1) '(b0 b1))
-                                   (bv-adder      'c '(a0 a1) '(b0 b1))) 
+                                   (bv-adder      'c '(a0 a1) '(b0 b1)))
                        0))))
 
 
@@ -837,24 +837,24 @@
 
 (defmacro test-4bit ()
   '(time$ (bvl four-bit-adder-ok
-               (norm-ifs-var (b-eqv-list (four-bit-adder 'c 
-                                                         '(a0 a1 a2 a3) 
+               (norm-ifs-var (b-eqv-list (four-bit-adder 'c
+                                                         '(a0 a1 a2 a3)
                                                          '(b0 b1 b2 b3))
-                                         
-                                         (bv-adder      'c 
-                                                        '(a0 a1 a2 a3) 
+
+                                         (bv-adder      'c
+                                                        '(a0 a1 a2 a3)
                                                         '(b0 b1 b2 a4)))
                              nil
                              nil))))
 
 (defmacro ptest-4bit ()
   '(time$ (bvl four-bit-adder-ok
-               (pnorm-ifs-var (b-eqv-list (four-bit-adder 'c 
-                                                         '(a0 a1 a2 a3) 
+               (pnorm-ifs-var (b-eqv-list (four-bit-adder 'c
+                                                         '(a0 a1 a2 a3)
                                                          '(b0 b1 b2 b3))
-                                         
-                                         (bv-adder      'c 
-                                                        '(a0 a1 a2 a3) 
+
+                                         (bv-adder      'c
+                                                        '(a0 a1 a2 a3)
                                                         '(b0 b1 b2 a4)))
                              nil
                              nil
@@ -864,34 +864,34 @@
 
 (defmacro test-8bit ()
   '(time$ (bvl eight-bit-adder-ok
-               (norm-ifs-var (b-eqv-list 
-                              (8-bit-ripple-carry-adder 
-                               'c 
+               (norm-ifs-var (b-eqv-list
+                              (8-bit-ripple-carry-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7)
                                '(b0 b1 b2 b3 b4 b5 b6 b7))
-                                         
-                              (bv-adder 
-                               'c 
+
+                              (bv-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7)
                                '(b0 b1 b2 b3 b4 b5 b6 b7)))
-                             
+
                              nil
                              nil))))
 
 
 (defmacro ptest-8bit ()
   '(time$ (bvl eight-bit-adder-ok
-               (pnorm-ifs-var (b-eqv-list 
-                              (8-bit-ripple-carry-adder 
-                               'c 
+               (pnorm-ifs-var (b-eqv-list
+                              (8-bit-ripple-carry-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7)
                                '(b0 b1 b2 b3 b4 b5 b6 b7))
-                                         
-                              (bv-adder 
-                               'c 
+
+                              (bv-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7)
                                '(b0 b1 b2 b3 b4 b5 b6 b7)))
-                             
+
                              nil
                              nil
                              ))))
@@ -902,89 +902,89 @@
 
 (defmacro test-10bit ()
   '(time$ (bvl ten-bit-adder-ok
-               (norm-ifs-var (b-eqv-list 
-                              (10-bit-ripple-carry-adder 
-                               'c 
-                               '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) 
+               (norm-ifs-var (b-eqv-list
+                              (10-bit-ripple-carry-adder
+                               'c
+                               '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9))
-                                         
-                              (bv-adder 
-                               'c 
+
+                              (bv-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9)))
-                             
+
                              nil
                              nil))))
 
 
 (defmacro ptest-10bit ()
   '(time$ (bvl ten-bit-adder-ok
-               (pnorm-ifs-var (b-eqv-list 
-                              (10-bit-ripple-carry-adder 
-                               'c 
-                               '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9) 
+               (pnorm-ifs-var (b-eqv-list
+                              (10-bit-ripple-carry-adder
+                               'c
+                               '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9))
-                                         
-                              (bv-adder 
-                               'c 
+
+                              (bv-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9)))
-                             
+
                              nil
                              nil
                              ))))
 
 (defmacro test-12bit ()
   '(time$ (bvl twelve-bit-adder-ok
-               (norm-ifs-var (b-eqv-list 
-                              (12-bit-ripple-carry-adder 
-                               'c 
-                               '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11) 
+               (norm-ifs-var (b-eqv-list
+                              (12-bit-ripple-carry-adder
+                               'c
+                               '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11))
-                                         
-                              (bv-adder 
-                               'c 
+
+                              (bv-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)))
-                             
+
                              nil
                              nil))))
 
 
 (defmacro ptest-12bit ()
   '(time$ (bvl twelve-bit-adder-ok
-               (pnorm-ifs-var (b-eqv-list 
-                              (12-bit-ripple-carry-adder 
-                               'c 
-                               '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11) 
+               (pnorm-ifs-var (b-eqv-list
+                              (12-bit-ripple-carry-adder
+                               'c
+                               '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11))
-                                         
-                              (bv-adder 
-                               'c 
+
+                              (bv-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11)))
-                             
+
                              nil
                              nil))))
 
 
 (defmacro test-16bit ()
   '(time$ (bvl sixteen-bit-adder-ok
-               (norm-ifs-var (b-eqv-list 
-                              (16-bit-ripple-carry-adder 
-                               'c 
+               (norm-ifs-var (b-eqv-list
+                              (16-bit-ripple-carry-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13
-                                    a14 a15) 
+                                    a14 a15)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13
                                     b14 b15))
-                                         
-                              (bv-adder 
-                               'c 
+
+                              (bv-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13
-                                    a14 a15) 
+                                    a14 a15)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13
                                     b14 b15)))
-                             
+
                              nil
                              nil))))
 
@@ -992,21 +992,21 @@
 
 (defmacro ptest-16bit ()
   '(time$ (bvl sixteen-bit-adder-ok
-               (pnorm-ifs-var (b-eqv-list 
-                              (16-bit-ripple-carry-adder 
-                               'c 
+               (pnorm-ifs-var (b-eqv-list
+                              (16-bit-ripple-carry-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13
-                                    a14 a15) 
+                                    a14 a15)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13
                                     b14 b15))
-                                         
-                              (bv-adder 
-                               'c 
+
+                              (bv-adder
+                               'c
                                '(a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13
-                                    a14 a15) 
+                                    a14 a15)
                                '(b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13
                                     b14 b15)))
-                             
+
                              nil
                              nil
                              0))))

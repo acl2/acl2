@@ -214,7 +214,7 @@ August, 2004
 
 ; ---------------------------------------------------------------
 ; Lemmas
-  
+
 (defthm true-listp-tower
   (true-listp (tower n)))
 
@@ -262,7 +262,7 @@ August, 2004
 ;      (cons (list 'MOVE a c)
 ;            (h b a c (- n 1))))
 
-; and because of play-app and the definition of play, 
+; and because of play-app and the definition of play,
 
 ; lhs
 ; =
@@ -310,8 +310,8 @@ August, 2004
 ;            (put (cons n (get a s))
 ;                 a
 ;                 s)))
-; 
-; Now that is not quite what we want.  But simplify it, first by 
+;
+; Now that is not quite what we want.  But simplify it, first by
 ; simplifying the (get a (put ... a ...)):
 
 ; (play (h a c b (- n 1))
@@ -360,7 +360,7 @@ August, 2004
 ;                          s))))
 
 ; Now do the MOVE and we get
-;                            
+;
 ; lhs
 ; =
 ; (play (h b a c (- n 1))
@@ -386,7 +386,7 @@ August, 2004
 
 ; Does this look familiar?  We can supply an induction hypothesis
 ; to tell us what this term is, too!
-;                
+;
 ; Here is the [lhs] of our theorem, again:
 
 ; (play (h a b c n)
@@ -397,7 +397,7 @@ August, 2004
 
 ; Instantiate it with a := b, b := a, c := c, n := (- n 1) and
 ; s := (put (cons n (get c s)) c s)
-; and simplify.  
+; and simplify.
 
 ; So now replace this with the rhs of the second induction
 ; hypothesis:
@@ -447,9 +447,9 @@ August, 2004
 ; tedious because we have to deal with the preservation of
 ; the big-tops hypothesis under the instantiations and
 ; the constant pathological possibilities that a = b or some
-; other a = 4 or some other nonsense that prevents the 
+; other a = 4 or some other nonsense that prevents the
 ; nth and update-nth rules from applying.  These are dealt with
-; by brute force:  just consider the possible values of 
+; by brute force:  just consider the possible values of
 ; a, b, and c and do the inductive argument for each one.
 
 ; Time:  14.10 seconds (prove: 12.85, print: 1.24, other: 0.01)

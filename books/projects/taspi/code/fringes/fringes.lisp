@@ -76,7 +76,7 @@
   (declare (xargs :measure (* 2 (acl2-count l))
                   :guard (tree-listp l)))
   (cond ((atom l) nil)
-        (t (omerge-oless (ofringe-oless (car l)) 
+        (t (omerge-oless (ofringe-oless (car l))
                          (ofringe-oless-list (cdr l))))))
 )
 
@@ -122,9 +122,9 @@
   (declare (xargs :guard (and (integer-halistp dbfringe-frequencies)
                               (alistp-gen dbterms)
                               (nat-or-cons-range-halistp dbterms)
-                              (if-cons-range-member-of-all-halistp 
+                              (if-cons-range-member-of-all-halistp
                                dbterms)
-                              (if-cons-range-subset-of-domain-halistp 
+                              (if-cons-range-subset-of-domain-halistp
                                dbterms
                                dbterms)
                               (alistp-gen l)
@@ -155,7 +155,7 @@
                  dbff)))))
 
 (dis+ind fringe-frequencies1)
-         
+
 (defun fringe-frequencies (l)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
@@ -190,7 +190,7 @@
                           (mc-flatten-cdr-first (car x) a))))
 
 (defun btree-to-fringe-help (btree full-taxa-list-tree)
-  (declare (xargs 
+  (declare (xargs
             :guard (and (consp btree)
                         (balanced-tree
                          full-taxa-list-tree)
@@ -203,31 +203,31 @@
           (d (cdr btree)))
       (if (atom a)
           (if (atom d)
-              (if a 
-                  (car full-taxa-list-tree) 
+              (if a
+                  (car full-taxa-list-tree)
                 (cdr full-taxa-list-tree))
-            (if a 
+            (if a
                 (hons (car full-taxa-list-tree)
-                      (btree-to-fringe-help 
-                       (cdr btree) 
+                      (btree-to-fringe-help
+                       (cdr btree)
                        (cdr full-taxa-list-tree)))
-              (btree-to-fringe-help 
-               (cdr btree) 
+              (btree-to-fringe-help
+               (cdr btree)
                (cdr full-taxa-list-tree))))
         (if (atom d)
-            (if d 
-                (hons (btree-to-fringe-help 
-                       (car btree) 
+            (if d
+                (hons (btree-to-fringe-help
+                       (car btree)
                        (car full-taxa-list-tree))
                       (cdr full-taxa-list-tree))
-              (btree-to-fringe-help 
-               (car btree) 
+              (btree-to-fringe-help
+               (car btree)
                (car full-taxa-list-tree)))
-          (hons (btree-to-fringe-help 
-                 (car btree) 
+          (hons (btree-to-fringe-help
+                 (car btree)
                  (car full-taxa-list-tree))
-                (btree-to-fringe-help 
-                 (cdr btree) 
+                (btree-to-fringe-help
+                 (cdr btree)
                  (cdr full-taxa-list-tree))))))))
 
 (defthm btree-to-fringe-help-when-not-consp
@@ -242,12 +242,12 @@
            (if (atom a)
                (if (atom d)
                    (if a (car ftlt) (cdr ftlt))
-                 (if a 
+                 (if a
                      (hons (car ftlt)
                            (btree-to-fringe-help rest (cdr ftlt)))
                    (btree-to-fringe-help rest (cdr ftlt))))
              (if (atom d)
-                 (if d 
+                 (if d
                      (hons (btree-to-fringe-help first (car ftlt))
                            (cdr ftlt))
                    (btree-to-fringe-help first(car ftlt)))
@@ -270,7 +270,7 @@
 ;     (1) btree - a bdd based bipartition
 ;     (2) full-taxa-list-tree - a binary tree based version of the taxa list
 
-;  Details: The btree given must have a depth less than that of the 
+;  Details: The btree given must have a depth less than that of the
 ;           full-taxa-list-tree and the resulting bipartition will have
 ;           the taxa given in the full-taxa-list-tree. "
   (declare (xargs :guard (and (balanced-tree
@@ -278,7 +278,7 @@
                               (<= (depth btree)
                                   (depth full-taxa-list-tree)))
                   :verify-guards nil))
-                               
+
   (if (atom btree)
       (if btree (mc-flatten-cdr-first full-taxa-list-tree nil) nil)
     (mc-flatten-cdr-first
@@ -301,7 +301,7 @@
 ;                   (btree-to-fringe-help btree ftlt) nil))))
 
 (in-theory (disable btree-to-fringe))
-                  
+
 
 ; it may be easy, and desireable, to make the following two functions faster
 ; by avoiding the creation of the full fringe
@@ -333,7 +333,7 @@
 ;   ~/
 ;   Arguments:
 ;      (1) x - a tree (usually a subtree of some larger tree)
-;      (2) ta - a mapping of taxa-names their bdd based representation 
+;      (2) ta - a mapping of taxa-names their bdd based representation
 
 ;  Details: Arguments can actually be more general.  Another way to think of
 ;           this is that it returns the taxa names in the tree x, represented
@@ -376,14 +376,14 @@
 (dis+ind bfringe-list)
 
 (defun bfringe-frequencies1 (l dbterms dbfringe-frequencies ta)
-  (declare (xargs 
-            :guard 
-            (and (integer-halistp dbfringe-frequencies)                 
+  (declare (xargs
+            :guard
+            (and (integer-halistp dbfringe-frequencies)
                  (alistp-gen dbterms)
                  (nat-or-cons-range-halistp dbterms)
-                 (if-cons-range-member-of-all-halistp 
+                 (if-cons-range-member-of-all-halistp
                   dbterms)
-                 (if-cons-range-subset-of-domain-halistp 
+                 (if-cons-range-subset-of-domain-halistp
                   dbterms
                   dbterms)
                  (alistp-gen l)
@@ -419,7 +419,7 @@
               ta))))
 
 (dis+ind bfringe-frequencies1)
-             
+
 (defun bfringe-frequencies (l taxa-list)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
@@ -495,15 +495,15 @@
                               (good-depths l1 full-taxa-list-tree)
                               (good-depths l2 full-taxa-list-tree)
                               (balanced-tree full-taxa-list-tree)
-                              (subset-list (btrees-to-fringes 
+                              (subset-list (btrees-to-fringes
                                             l1
                                             full-taxa-list-tree)
-                                           (get-taxa-from-taxon-index 
+                                           (get-taxa-from-taxon-index
                                             taxon-index-alist))
-                              (subset-list (btrees-to-fringes 
+                              (subset-list (btrees-to-fringes
                                             l2
                                             full-taxa-list-tree)
-                                           (get-taxa-from-taxon-index 
+                                           (get-taxa-from-taxon-index
                                             taxon-index-alist))
                               (not (member-gen nil l1))
                               (not (member-gen nil l2))
@@ -533,7 +533,7 @@
                       l1
                       (cdr l2)
                       full-taxa-list-tree taxon-index-alist))))))))
-                   
+
 (defthm merge-bdd-fringes-when-not-consp-l1
   (implies (not (consp l1))
            (equal (merge-bdd-fringes l1 l2 ftlt tia)
@@ -545,17 +545,17 @@
                   (if (consp l1) l1 l2))))
 
 (defthm merge-bdd-fringes-of-consp
-  (equal (merge-bdd-fringes (cons first rest) 
+  (equal (merge-bdd-fringes (cons first rest)
                             (cons first1 rest1) ftlt tia)
-         (let ((len-car-l1 (btree-to-fringe-length 
+         (let ((len-car-l1 (btree-to-fringe-length
                             first ftlt))
                (len-car-l2 (btree-to-fringe-length first1 ftlt)))
            (cond ((or (> len-car-l1 len-car-l2)
                       (and (= len-car-l1 len-car-l2)
-                           (< (cdr (het (btree-fringe-first first 
+                           (< (cdr (het (btree-fringe-first first
                                                             ftlt)
                                         tia))
-                              (cdr (het (btree-fringe-first first1 
+                              (cdr (het (btree-fringe-first first1
                                                             ftlt)
                                         tia)))))
                   (cons first (merge-bdd-fringes rest
@@ -586,15 +586,15 @@
 ; Details: Depth of each of the bdd based bipartitions must be less than that of
 ;          the full-taxa-list-tree.  The taxa names in the full-taxa-list-tree
 ;          must match those present as keys in the taxon-index-alist. "
-  (declare (xargs 
-            :guard 
+  (declare (xargs
+            :guard
             (and (good-depths bdd-fringes full-taxa-list-tree)
                  (good-taxon-index-halist taxon-index-alist)
                  (balanced-tree full-taxa-list-tree)
-                 (subset-list (btrees-to-fringes 
+                 (subset-list (btrees-to-fringes
                                bdd-fringes
                                full-taxa-list-tree)
-                              (get-taxa-from-taxon-index 
+                              (get-taxa-from-taxon-index
                                taxon-index-alist))
                  (consp full-taxa-list-tree)
                  (not (member-gen nil bdd-fringes)))
@@ -687,21 +687,21 @@
                                        taxa-list)))
          (full-taxa-list-tree (build-taxa-list-tree taxa-list))
          (taxon-index-alist (taxa-list-to-taxon-index taxa-list)))
-    ;; just to make guards easier, cause I can't deal with this 
-    ;; anymore, I've added the wrappers around bdd-fringes... 
+    ;; just to make guards easier, cause I can't deal with this
+    ;; anymore, I've added the wrappers around bdd-fringes...
     ;; *should* be able to prove from just adding to guards
     ;; (taspip t term) and (subset (mytips term) taxa-list)
 
     ;; This version does each strip one at a time
-    ;(sort-bdd-fringes (remove-nils 
-    ;                   (make-subset-list 
+    ;(sort-bdd-fringes (remove-nils
+    ;                   (make-subset-list
     ;                    (get-good-depths bdd-fringes
     ;                                     full-taxa-list-tree)
     ;                    full-taxa-list-tree
     ;                    taxa-list))
     ;                  full-taxa-list-tree
     ;                  taxon-index-alist)))
-    
+
     ;; This version does all the strips at once (more efficient)
     (sort-bdd-fringes (make-good-fringes bdd-fringes
                                          full-taxa-list-tree

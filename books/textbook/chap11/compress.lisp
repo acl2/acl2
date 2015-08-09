@@ -4,7 +4,7 @@
 ; Exercise 11.17
 
 (defun compress (x)
-  (cond ((or (endp x) (endp (cdr x))) 
+  (cond ((or (endp x) (endp (cdr x)))
 	 x)
 	((equal (car x) (cadr x))
 	 (compress (cdr x)))
@@ -248,7 +248,7 @@ ACL2 !>:trans1 (defcong same-compress same-compress (append x y) 1)
 ACL2 !>
 |#
 
-; If we can replace same-compress by its definition 
+; If we can replace same-compress by its definition
 
 #|
  (implies (equal (compress x) (compress x-equiv))

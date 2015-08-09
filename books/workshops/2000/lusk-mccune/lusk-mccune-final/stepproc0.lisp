@@ -11,7 +11,7 @@
 	((equal host (first (caar pss))) (cons (second (caar pss))
 					       (pids-in-use host (cdr pss))))
 	(t (pids-in-use host (cdr pss)))))
-	
+
 (defun newpid (host pss)
   (declare (xargs :guard (and (hostp host)
 			      (pstate-listp pss))))
@@ -182,7 +182,7 @@
 	   (and (consp (assoc-equal name pgms))
 		(consp (cdr (assoc-equal name pgms)))
 		(codep (second (assoc-equal name pgms))))))
-  
+
 (verify-guards exec-exec
 	       :otf-flg t)
 
@@ -206,8 +206,8 @@
 
 	;; All is well---the program exists.
 	;; Cons the new process onto the updated process list.
-	
-	(make-mstate 
+
+	(make-mstate
 
 	 (cons (make-pstate (list (second stmt)
 				  (newpid (caar ps) (pstates ms)))

@@ -19,7 +19,7 @@
 ;;; For the moment, we only treat lognot, logand, and logior.  I
 ;;; should look again, but I believe that lognot and logand (or,
 ;;; rather binary-logand) are the ``primitive'' definitions, and that
-;;; the others are defined in terms of those two. 
+;;; the others are defined in terms of those two.
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,7 +160,7 @@
 ;;; Misc:
 
 (defthm logand-bounds-pos
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
 		(integerp y)
 		(<= 0 x))
 	   (<= (logand x y) x))
@@ -169,14 +169,14 @@
 		 (:linear)
 		 (:rewrite
 		  :corollary
-		  (implies (and (integerp x) 
+		  (implies (and (integerp x)
 				(integerp y)
 				(<= 0 y))
 			   (<= (logand x y) y)))
-		 
+
 		 (:linear
 		  :corollary
-		  (implies (and (integerp x) 
+		  (implies (and (integerp x)
 				(integerp y)
 				(<= 0 y))
 			   (<= (logand x y) y)))))
@@ -411,7 +411,7 @@ and variants
 				(not (integerp (* 1/2 y))))
 			   (equal (logand (+ -1/2 (* 1/2 x)) (+ -1/2 (* 1/2 y)))
 				  (floor (logand x y) 2))))))
-		
+
 (local
  (defun ind-fn (n)
    (cond ((not (integerp n))
@@ -600,7 +600,7 @@ and variants
      (ind-hint (floor x 2) (+ -1 n)))))
 
 (defthm logand-mask
-  (implies (and (integerp x) 
+  (implies (and (integerp x)
 		(integerp n)
 		(<= 0 n))
 	   (equal (logand x (+ -1 (expt 2 n)))
@@ -610,7 +610,7 @@ and variants
 	   :cases ((equal n 0)))
 	  ("Subgoal 2" :induct (ind-hint x n))))
 
-(defun l-c-m-fn (c)  
+(defun l-c-m-fn (c)
   ;; logand-constant-mask, not least-common-multiple.  We need fewer
   ;; collisions among TLAs.
   (let ((n (power-of-2-minus-1 c)))
@@ -683,7 +683,7 @@ and variants
 
  (defthm logand-mask-shifted
    ;; This was taking 34 seconds, now it takes 6.24
-   (implies (and (integerp x) 
+   (implies (and (integerp x)
                  (integerp n1)
                  (integerp n2)
                  (<= 0 n1)
@@ -693,7 +693,7 @@ and variants
                    (* (expt 2 n1)
                       (mod (floor x (expt 2 n1))
                            (expt 2 n2)))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :do-not '(generalize)
             :induct (ind-hint x n1)))))
 
@@ -1389,7 +1389,7 @@ and variants
 		  (if (evenp x)
 		      (+ 1 x)
 		    (+ -1 x))))
-  :hints (("Goal" :in-theory (enable logior 
+  :hints (("Goal" :in-theory (enable logior
 				     logand))))
 
 (defthm logxor--1-x
@@ -1401,7 +1401,7 @@ and variants
   (implies (integerp x)
 	   (equal (logxor x x)
 		  0))
-  :hints (("Goal" :in-theory (enable logior 
+  :hints (("Goal" :in-theory (enable logior
 				     logand))))
 
 ;;; Misc:

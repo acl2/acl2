@@ -108,7 +108,7 @@
       (mv lit1 lit2 both neither))
     ///
     (local (in-theory (enable aignet-gate-simp-order)))
-    
+
     (defcong lit-equiv equal (aignet-gate-simp-order lit1 lit2 aignet) 1)
     (defcong lit-equiv equal (aignet-gate-simp-order lit1 lit2 aignet) 2)
     (defcong list-equiv equal (aignet-gate-simp-order lit1 lti2 aignet) 3)
@@ -1198,7 +1198,7 @@ to be done if non-<tt>NIL</tt>.</p>")
     (mv (lit-negate lit) strash aignet))
 
   ///
-  
+
   (def-aignet-preservation-thms aignet-hash-or)
 
   (defthm litp-aignet-hash-or
@@ -1254,7 +1254,7 @@ to be done if non-<tt>NIL</tt>.</p>")
         (aignet-hash-and (lit-negate c) fb gatesimp strash aignet)))
     (aignet-hash-or c-tb nc-fb gatesimp strash aignet))
 
-  /// 
+  ///
 
   (def-aignet-preservation-thms aignet-hash-mux)
 
@@ -1332,7 +1332,7 @@ to be done if non-<tt>NIL</tt>.</p>")
                     (lit-eval lit2 aignet-invals aignet-regvals aignet))))
     :hints((and stable-under-simplificationp
                 '(:in-theory (enable b-xor b-and b-ior)))))
-  
+
   (defthm stype-counts-preserved-of-aignet-hash-xor
     (implies (not (equal (stype-fix stype) (gate-stype)))
              (equal (stype-count stype (mv-nth 2 (aignet-hash-xor

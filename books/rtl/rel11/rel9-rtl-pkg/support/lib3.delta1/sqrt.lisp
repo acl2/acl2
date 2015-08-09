@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -96,7 +96,7 @@
   (defthm x$$-constraint
     (rationalp (x$$))
     :rule-classes (:rewrite :type-prescription))
-  (defthm integerp-h$$ 
+  (defthm integerp-h$$
     (implies (not (zp k))
              (integerp (h$$ k)))
     :rule-classes (:rewrite :type-prescription)))
@@ -107,12 +107,12 @@
     (+ (q$$ (1- k))
        (/ (h$$ k) (expt 2 (* k (rho$$)))))))
 
-(defund p$$ (k) 
+(defund p$$ (k)
   (if (zp k)
       (x$$)
     (- (* (expt 2 (rho$$)) (p$$ (1- k)))
-       (* (h$$ k) 
-          (+ (* 2 (q$$ (1- k))) 
+       (* (h$$ k)
+          (+ (* 2 (q$$ (1- k)))
              (/ (h$$ k) (expt 2 (* k (rho$$)))))))))
 
 (local-defthm lemma-3-1-1
@@ -138,7 +138,7 @@
 
 (local-defthm lemma-3-1-3
   (implies (and (rationalp a)
-                (rationalp b) 
+                (rationalp b)
                 (rationalp c)
                 (rationalp d)
                 (= a (- b c))
@@ -162,7 +162,7 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4)
-           :use (lemma-3-1-1 
+           :use (lemma-3-1-1
                  lemma-3-1-2
                  (:instance lemma-3-1-3 (a (* (expt 2 (* k (rho$$))) (- (x$$) (* (q$$ k) (q$$ k)))))
                             (b (* (expt 2 (* k (rho$$))) (- (x$$) (* (q$$ (1- k)) (q$$ (1- k))))))
@@ -260,8 +260,8 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4)
-           :use ((:instance *-weakly-monotonic 
-                                   (x (expt 2 (* k (rho$$)))) 
+           :use ((:instance *-weakly-monotonic
+                                   (x (expt 2 (* k (rho$$))))
                                    (y (+ (* (q$$ k) (q$$ k)) (- (* (expt 2 (- 1 (* k (rho$$)))) (q$$ k))) (expt 2 (- (* 2 k (rho$$))))))
                                    (y+ (x$$)))))))
 
@@ -304,8 +304,8 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4)
-           :use ((:instance *-strongly-monotonic 
-                            (x (expt 2 (* k (rho$$)))) 
+           :use ((:instance *-strongly-monotonic
+                            (x (expt 2 (* k (rho$$))))
                             (y+ (+ (* (q$$ k) (q$$ k)) (* (expt 2 (- 1 (* k (rho$$)))) (q$$ k)) (expt 2 (- (* 2 k (rho$$))))))
                             (y (x$$)))))))
 
@@ -539,7 +539,7 @@
   (implies (and (not (zp (rho$$)))
                 (natp k)
                 (> k 1)
-                (<= 1/2 (q$$ (1- k)))                
+                (<= 1/2 (q$$ (1- k)))
                 (< (q$$ (1- k)) 1)
                 (<= (- (* 2 (q$$ (1- k))))
                     (- (p$$ (1- k)) (expt 2 (- (* (1- k) (rho$$))))))
@@ -553,7 +553,7 @@
   (implies (and (not (zp (rho$$)))
                 (natp k)
                 (> k 1)
-                (<= 1/2 (q$$ (1- k)))                
+                (<= 1/2 (q$$ (1- k)))
                 (< (q$$ (1- k)) 1)
                 (<= (* (- (q$$ (1- k)) (expt 2 (- (* (1- k) (rho$$))))) (- (q$$ (1- k)) (expt 2 (- (* (1- k) (rho$$))))))
                     (x$$))
@@ -582,7 +582,7 @@
   (implies (and (not (zp (rho$$)))
                 (natp k)
                 (> k 1)
-                (<= 1/2 (q$$ (1- k)))                
+                (<= 1/2 (q$$ (1- k)))
                 (< (q$$ (1- k)) 1)
                 (< (h$$ k) (expt 2 (rho$$))))
            (<= (q$$ k) (+ 1 (- (expt 2 (* (- 1 k) (rho$$)))) (* (h$$ k) (expt 2 (- (* k (rho$$))))))))
@@ -603,7 +603,7 @@
   (implies (and (not (zp (rho$$)))
                 (natp k)
                 (> k 1)
-                (<= 1/2 (q$$ (1- k)))                
+                (<= 1/2 (q$$ (1- k)))
                 (< (q$$ (1- k)) 1)
                 (< (h$$ k) (expt 2 (rho$$))))
            (< (q$$ k) 1))
@@ -692,7 +692,7 @@
            (> (* (expt 2 (- (* k (rho$$)))) (h$$ k))
               -1/2))
   :rule-classes()
-  :hints (("Goal" :use (lemma-3-3-19 
+  :hints (("Goal" :use (lemma-3-3-19
                         lemma-3-3-21
                         (:instance lemma-3-3-22 (a (* (expt 2 (- (* k (rho$$)))) (h$$ k)))
                                                 (b (- (expt 2 (* (- 1 k) (rho$$)))))
@@ -739,12 +739,12 @@
                 (<= 1/2 (q$$ (1- k)))
                 (< (q$$ k) 1/2)
                 (> (h$$ k) (- (expt 2 (rho$$)))))
-              (< (* (+ (q$$ k) (expt 2 (- (* k (rho$$))))) 
+              (< (* (+ (q$$ k) (expt 2 (- (* k (rho$$)))))
                     (+ (q$$ k) (expt 2 (- (* k (rho$$))))))
                  x))
   :rule-classes()
   :hints (("Goal" :use (lemma-3-3-25
-                        (:instance lemma-3-3-26 (x (+ (q$$ k) (expt 2 (- (* k (rho$$)))))) 
+                        (:instance lemma-3-3-26 (x (+ (q$$ k) (expt 2 (- (* k (rho$$))))))
                                                 (y 1/2))))))
 
 (defthm lemma-3-3-b
@@ -752,11 +752,11 @@
                 (> (x$$) 1/4)
                 (natp k)
                 (> k 1)
-                (<= 1/2 (q$$ (1- k)))                
+                (<= 1/2 (q$$ (1- k)))
                 (< (q$$ (1- k)) 1)
                 (< (h$$ k) (expt 2 (rho$$)))
                 (> (h$$ k) (- (expt 2 (rho$$))))
-                (<= (x$$) (* (+ (q$$ k) (expt 2 (- (* k (rho$$))))) 
+                (<= (x$$) (* (+ (q$$ k) (expt 2 (- (* k (rho$$)))))
                              (+ (q$$ k) (expt 2 (- (* k (rho$$))))))))
            (and (<= 1/2 (q$$ k))
                 (< (q$$ k) 1)))
@@ -1013,7 +1013,7 @@
           (<= (* (/ (1+ h) (expt 2 rho))
                  (+ (delta0 j n) (* (1+ h) (expt 2 (- (* k rho))))))
               (* (/ (1+ h) (expt 2 rho))
-                 (+ d (* (1+ h) (expt 2 (- (* k rho))))))))              
+                 (+ d (* (1+ h) (expt 2 (- (* k rho))))))))
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable ;jared-disables-1
@@ -1280,7 +1280,7 @@
           (<= (* (/ (1+ h) (expt 2 rho))
                  (+ (delta0 j n) (expt 2 (- n)) (* (1+ h) (expt 2 (- (* k rho))))))
               (* (/ (1+ h) (expt 2 rho))
-                 (+ d (* (1+ h) (expt 2 (- (* k rho))))))))              
+                 (+ d (* (1+ h) (expt 2 (- (* k rho))))))))
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable ;jared-disables-1
@@ -1332,7 +1332,7 @@
                 (< i (1- (expt 2 m)))
                 (>= i (expt 2 (1- m))))
            (and (rationalp (pi0 i m))
-                (<= (+ (pi0 i m) 4) 
+                (<= (+ (pi0 i m) 4)
                     (* (/ (expt 2 (- m 2))) (- (expt 2 m) 2)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable pi0)
@@ -1603,7 +1603,7 @@
           (>= (* (/ (1- h) (expt 2 rho))
                  (+ (delta0 j n) (expt 2 (- n)) (* (1- h) (expt 2 (- (* k rho))))))
               (* (/ (1- h) (expt 2 rho))
-                 (+ d (* (1- h) (expt 2 (- (* k rho))))))))              
+                 (+ d (* (1- h) (expt 2 (- (* k rho))))))))
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable ;jared-disables-1
@@ -1778,7 +1778,7 @@
                                jared-disables-4)
            :use (sqrt-table-39
                  sqrt-table-40
-                 (:instance sqrt-table-36 (x p) (y 0) 
+                 (:instance sqrt-table-36 (x p) (y 0)
                             (z (* (/ (1- h) (expt 2 rho))
                                   (+ d (* (1- h) (expt 2 (- (* k rho))))))))))))
 
@@ -1862,7 +1862,7 @@
           (>= (* (/ (1- h) (expt 2 rho))
                  (+ (delta0 j n) (* (1- h) (expt 2 (- (* k rho))))))
               (* (/ (1- h) (expt 2 rho))
-                 (+ d (* (1- h) (expt 2 (- (* k rho))))))))              
+                 (+ d (* (1- h) (expt 2 (- (* k rho))))))))
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable ;jared-disables-1
@@ -1870,7 +1870,7 @@
                                jared-disables-3
                                jared-disables-4)
            :use (sqrt-table-7
-                 (:instance *-weakly-monotonic-neg (x (/ (1- h) (expt 2 rho))) 
+                 (:instance *-weakly-monotonic-neg (x (/ (1- h) (expt 2 rho)))
                             (y (+ (delta0 j n) (* (1- h) (expt 2 (- (* k rho))))))
                             (y+ (+ d (* (1- h) (expt 2 (- (* k rho)))))))))))
 
@@ -2086,8 +2086,8 @@
                (> h (- (expt 2 rho)))
                (< p
                  (* (/ (1+ h) (expt 2 rho))
-                    (+ d (* (1+ h) (expt 2 (- (* k rho)))))))  
-               (>= p              
+                    (+ d (* (1+ h) (expt 2 (- (* k rho)))))))
+               (>= p
                   (* (/ (1- h) (expt 2 rho))
                      (+ d (* (1- h) (expt 2 (- (* k rho)))))))))
   :rule-classes ()
@@ -2698,7 +2698,7 @@
 ;;                             >= 0.
 ;;
 ;; Assume dmin >= 1.  If there exist (d1,p1) and (d2,p2) in R such that
-;; p1 < h1*d1 + b1 and p2 > h2*d2 + b2, then (d7,p7) is in R" and 
+;; p1 < h1*d1 + b1 and p2 > h2*d2 + b2, then (d7,p7) is in R" and
 ;; h2*d7 + b2 < p7 < h1*d7 + b1:
 
 (defund d7 (dmin pmin dmax pmax h1 b1 h2 b2)
@@ -3075,8 +3075,8 @@
                                jared-disables-4)
            :use (d7-p7-1
                  d7-p7-7
-                 (:instance *-strongly-monotonic (x h2) 
-                            (y (d6 dmin pmin dmax pmax h2 b2)) 
+                 (:instance *-strongly-monotonic (x h2)
+                            (y (d6 dmin pmin dmax pmax h2 b2))
                             (y+ (/ (- (p5 dmin pmin dmax pmax h1 b1) b2) h2)))))))
 
 (local-defthm d7-p7-9
@@ -3123,8 +3123,8 @@
                                jared-disables-4)
            :use (d7-p7-1
                  d7-p7-7
-                 (:instance *-weakly-monotonic (x h2) 
-                            (y+ (d5 dmin pmin dmax pmax h1 b1)) 
+                 (:instance *-weakly-monotonic (x h2)
+                            (y+ (d5 dmin pmin dmax pmax h1 b1))
                             (y (/ (- (p5 dmin pmin dmax pmax h1 b1) b2) h2)))))))
 
 (local-defthm d7-p7-10
@@ -3171,8 +3171,8 @@
                                jared-disables-4)
            :use (d7-p7-1
                  d7-p7-7
-                 (:instance *-weakly-monotonic (x h1) 
-                            (y (d6 dmin pmin dmax pmax h2 b2)) 
+                 (:instance *-weakly-monotonic (x h1)
+                            (y (d6 dmin pmin dmax pmax h2 b2))
                             (y+ (/ (- (p5 dmin pmin dmax pmax h1 b1) b1) h1)))))))
 
 (local-defthm d7-p7-11
@@ -3267,8 +3267,8 @@
            :use (d7-p7-1
                  d7-p7-7
                  d7-p7-11
-                 (:instance *-strongly-monotonic (x h1) 
-                            (y+ (- (/ (- (p5 dmin pmin dmax pmax h1 b1) b2) h2) 
+                 (:instance *-strongly-monotonic (x h1)
+                            (y+ (- (/ (- (p5 dmin pmin dmax pmax h1 b1) b2) h2)
                                    (/ (- (p5 dmin pmin dmax pmax h1 b1) b1) h1)))
                             (y 0))))))
 
@@ -3373,7 +3373,7 @@
            :use (d7-p7-1
                  d7-p7-13
                  d7-p7-7
-                 (:instance *-strongly-monotonic (x h1) 
+                 (:instance *-strongly-monotonic (x h1)
                             (y (/ (- (p5 dmin pmin dmax pmax h1 b1) b1) h1))
                             (y+ (d7 dmin pmin dmax pmax h1 b1 h2 b2)))))))
 
@@ -3425,7 +3425,7 @@
            :use (d7-p7-1
                  d7-p7-13
                  d7-p7-7
-                 (:instance *-strongly-monotonic (x h2) 
+                 (:instance *-strongly-monotonic (x h2)
                             (y+ (/ (- (p5 dmin pmin dmax pmax h1 b1) b2) h2))
                             (y (d7 dmin pmin dmax pmax h1 b1 h2 b2)))))))
 
@@ -3578,8 +3578,8 @@
                                jared-disables-4)
            :use (d7-p7-1
                  d7-p7-17
-                 (:instance *-strongly-monotonic-neg (x h2) 
-                            (y+ (d6 dmin pmin dmax pmax h2 b2)) 
+                 (:instance *-strongly-monotonic-neg (x h2)
+                            (y+ (d6 dmin pmin dmax pmax h2 b2))
                             (y (/ (- (p5 dmin pmin dmax pmax h1 b1) b2) h2)))))))
 
 (local-defthm d7-p7-19
@@ -3627,8 +3627,8 @@
                                acl2::default-less-than-2)
            :use (d7-p7-1
                  d7-p7-17
-                 (:instance *-weakly-monotonic-neg (x h2) 
-                            (y (d5 dmin pmin dmax pmax h1 b1)) 
+                 (:instance *-weakly-monotonic-neg (x h2)
+                            (y (d5 dmin pmin dmax pmax h1 b1))
                             (y+ (/ (- (p5 dmin pmin dmax pmax h1 b1) b2) h2)))))))
 
 (local-defthm d7-p7-20
@@ -3675,7 +3675,7 @@
                                jared-disables-4)
            :use (d7-p7-1
                  (:instance d7-p7-3 (d (d5 dmin pmin dmax pmax h1 b1)))
-                 (:instance *-weakly-monotonic (x h1) 
+                 (:instance *-weakly-monotonic (x h1)
                             (y 0)
                             (y+ (- (d6 dmin pmin dmax pmax h2 b2) (d5 dmin pmin dmax pmax h1 b1))))))))
 
@@ -3723,8 +3723,8 @@
                                jared-disables-4)
            :use (d7-p7-1
                  d7-p7-20
-                 (:instance *-weakly-monotonic-neg (x h1) 
-                            (y+ (d6 dmin pmin dmax pmax h2 b2)) 
+                 (:instance *-weakly-monotonic-neg (x h1)
+                            (y+ (d6 dmin pmin dmax pmax h2 b2))
                             (y (/ (- (p5 dmin pmin dmax pmax h1 b1) b1) h1)))))))
 
 (local-defthm d7-p7-22
@@ -3868,8 +3868,8 @@
            :use (d7-p7-1
                  d7-p7-17
                  d7-p7-23
-                 (:instance *-strongly-monotonic-neg (x h2) 
-                            (y+ (- (/ (- (p5 dmin pmin dmax pmax h1 b1) b1) h1) 
+                 (:instance *-strongly-monotonic-neg (x h2)
+                            (y+ (- (/ (- (p5 dmin pmin dmax pmax h1 b1) b1) h1)
                                    (/ (- (p5 dmin pmin dmax pmax h1 b1) b2) h2)))
                             (y 0))))))
 
@@ -3974,7 +3974,7 @@
            :use (d7-p7-1
                  d7-p7-25
                  d7-p7-20
-                 (:instance *-strongly-monotonic-neg (x h1) 
+                 (:instance *-strongly-monotonic-neg (x h1)
                             (y+ (/ (- (p5 dmin pmin dmax pmax h1 b1) b1) h1))
                             (y (d7 dmin pmin dmax pmax h1 b1 h2 b2)))))))
 
@@ -4026,7 +4026,7 @@
            :use (d7-p7-1
                  d7-p7-25
                  d7-p7-20
-                 (:instance *-strongly-monotonic-neg (x h2) 
+                 (:instance *-strongly-monotonic-neg (x h2)
                             (y (/ (- (p5 dmin pmin dmax pmax h1 b1) b2) h2))
                             (y+ (d7 dmin pmin dmax pmax h1 b1 h2 b2)))))))
 
@@ -4079,7 +4079,7 @@
                   (> p7 (+ (* h2 d7) b2)))))
   :rule-classes ()
   :hints (("Goal"
-           :in-theory (e/d (p7) 
+           :in-theory (e/d (p7)
                            (jared-disables-1
                             jared-disables-2
                             jared-disables-3
@@ -4268,7 +4268,7 @@
     (if (check-sqrt-row (1- i) (expt 2 n) k rho m n (nth (1- i) table))
         (i-sqrt-aux (1- i) k rho m n table)
       (1- i))))
- 
+
 (defund i-sqrt (k rho m n table)
   (i-sqrt-aux (expt 2 m) k rho m n table))
 
@@ -4290,8 +4290,8 @@
     (if (or (not (integerp h))
             (>= h (expt 2 rho))
             (<= h (- (expt 2 rho))))
-        (d7 (delta0 j n) 
-            (pi0 i m) 
+        (d7 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             1
@@ -4299,16 +4299,16 @@
             -1
             (expt 2 (* (- 1 k) rho)))
       (if (not (check-upper-bound h i j k rho m n))
-          (d7 (delta0 j n) 
-              (pi0 i m) 
+          (d7 (delta0 j n)
+              (pi0 i m)
               (+ (delta0 j n) (expt 2 (- n)))
               (+ (pi0 i m) (expt 2 (- 3 m)))
               1
               (expt 2 (* (- 1 k) rho))
               (/ (1+ h) (expt 2 rho))
               (* (1+ h) (1+ h) (expt 2 (- (* (1+ k) rho)))))
-        (d7 (delta0 j n) 
-            (pi0 i m) 
+        (d7 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             (/ (1- h) (expt 2 rho))
@@ -4323,8 +4323,8 @@
     (if (or (not (integerp h))
             (>= h (expt 2 rho))
             (<= h (- (expt 2 rho))))
-        (p7 (delta0 j n) 
-            (pi0 i m) 
+        (p7 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             1
@@ -4332,16 +4332,16 @@
             -1
             (expt 2 (* (- 1 k) rho)))
       (if (not (check-upper-bound h i j k rho m n))
-          (p7 (delta0 j n) 
-              (pi0 i m) 
+          (p7 (delta0 j n)
+              (pi0 i m)
               (+ (delta0 j n) (expt 2 (- n)))
               (+ (pi0 i m) (expt 2 (- 3 m)))
               1
               (expt 2 (* (- 1 k) rho))
               (/ (1+ h) (expt 2 rho))
               (* (1+ h) (1+ h) (expt 2 (- (* (1+ k) rho)))))
-        (p7 (delta0 j n) 
-            (pi0 i m) 
+        (p7 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             (/ (1- h) (expt 2 rho))
@@ -4400,8 +4400,8 @@
                             (check-lower-bound h i j k rho m n))))))
   :rule-classes ()
   :hints (("Goal" :use (converse-34
-                        (:instance converse-35 (i (i-sqrt k rho m n table)) 
-                                               (j (expt 2 n)) 
+                        (:instance converse-35 (i (i-sqrt k rho m n table))
+                                               (j (expt 2 n))
                                                (row (nth (i-sqrt k rho m n table) table))))
                   :in-theory (enable lookup check-sqrt-entry j-sqrt))))
 
@@ -4491,8 +4491,8 @@
            (< (/ (1+ h) (expt 2 rho)) 1))
   :rule-classes ()
   :hints (("Goal" :use (converse-38
-                        (:instance *-strongly-monotonic (x (/ (expt 2 rho))) 
-                                                        (y (1+ h)) 
+                        (:instance *-strongly-monotonic (x (/ (expt 2 rho)))
+                                                        (y (1+ h))
                                                         (y+ (expt 2 rho)))))))
 
 (local-defthm converse-42
@@ -4522,7 +4522,7 @@
                 (< (- (expt 2 rho)) h)
                 (< h (expt 2 rho))
                 (not (check-upper-bound h i j k rho m n)))
-           (< (* (1+ h) (1+ h)) 
+           (< (* (1+ h) (1+ h))
               (expt 2 (* 2 rho))))
   :rule-classes ()
   :hints (("Goal" :use (converse-38
@@ -4582,7 +4582,7 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4)
-           :use (converse-45 
+           :use (converse-45
                  converse-41
                  (:instance converse-46 (h1 1)
                             (b1 (expt 2 (* (- 1 k) rho)))
@@ -4643,18 +4643,18 @@
                             acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
                             acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
            :use (converse-36
-                 (:instance converse-37 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-37 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table))
                             (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                 (:instance converse-39 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-39 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table)))
-                 (:instance converse-40 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-40 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table))
                             (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                 (:instance converse-41 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-41 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table))
                             (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                 (:instance converse-47 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-47 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table))
                             (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
                  (:instance d7-p7-lemma (dmin (delta0 (j-sqrt k rho m n table) n))
@@ -4746,18 +4746,18 @@
                             acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
                             acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
            :use (converse-36
-                        (:instance converse-37 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-37 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table))
                                                (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                        (:instance converse-39 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-39 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table)))
-                        (:instance converse-49 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-49 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table))
                                                (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                        (:instance converse-41 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-41 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table))
                                                (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                        (:instance converse-47 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-47 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table))
                                                (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
                         (:instance d7-p7-lemma (dmin (delta0 (j-sqrt k rho m n table) n))
@@ -4839,8 +4839,8 @@
            (> (/ (1- h) (expt 2 rho)) -1))
   :rule-classes ()
   :hints (("Goal" :use (converse-52
-                        (:instance *-strongly-monotonic (x (/ (expt 2 rho))) 
-                                                        (y+ (1- h)) 
+                        (:instance *-strongly-monotonic (x (/ (expt 2 rho)))
+                                                        (y+ (1- h))
                                                         (y (- (expt 2 rho))))))))
 
 (local-defthm converse-54
@@ -4978,7 +4978,7 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4)
-           :use (converse-56 
+           :use (converse-56
                  converse-58
                  converse-59
                  (:instance converse-60 (x (/ (1- h) (expt 2 rho)))
@@ -5042,20 +5042,20 @@
                             acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
                             acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
                             acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
-           
+
            :use (converse-36
-                        (:instance converse-37 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-37 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table))
                                                (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                        (:instance converse-39 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-39 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table)))
-                        (:instance converse-55 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-55 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table))
                                                (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                        (:instance converse-53 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-53 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table))
                                                (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                        (:instance converse-61 (i (i-sqrt k rho m n table)) 
+                        (:instance converse-61 (i (i-sqrt k rho m n table))
                                                (j (j-sqrt k rho m n table))
                                                (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
                         (:instance d7-p7-lemma (dmin (delta0 (j-sqrt k rho m n table) n))
@@ -5128,18 +5128,18 @@
                             acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
                             acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
            :use (converse-36
-                 (:instance converse-37 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-37 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table))
                             (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                 (:instance converse-39 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-39 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table)))
-                 (:instance converse-54 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-54 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table))
                             (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                 (:instance converse-53 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-53 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table))
                             (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
-                 (:instance converse-61 (i (i-sqrt k rho m n table)) 
+                 (:instance converse-61 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table))
                             (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))
                  (:instance d7-p7-lemma (dmin (delta0 (j-sqrt k rho m n table) n))
@@ -5339,8 +5339,8 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4)
-           
-           :use (converse-65 
+
+           :use (converse-65
                  converse-70
                  (:instance converse-71 (x1 (* (1- h) (1- h) (expt 2 (- (* (1+ k) rho)))))
                             (x2 (* (expt 2 (* (- 1 k) rho))))
@@ -5382,8 +5382,8 @@
                                jared-disables-2
                                jared-disables-3
                                jared-disables-4)
-           :use (converse-64 
-                 (:instance converse-72 (i (i-sqrt k rho m n table)) 
+           :use (converse-64
+                 (:instance converse-72 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table))
                             (d (d-sqrt k rho m n table))
                             (h (lookup (i-sqrt k rho m n table) (j-sqrt k rho m n table) table)))))))
@@ -5461,7 +5461,7 @@
                (- (expt 2 (* (- 1 k) rho)) 1)))
   :rule-classes ()
   :hints (("Goal"
-           :use (converse-74 
+           :use (converse-74
                  converse-76
                  converse-77
                  (:instance converse-60 (x (/ (1+ h) (expt 2 rho)))
@@ -5527,7 +5527,7 @@
            :use (converse-79
                  converse-39
                  converse-78
-                 (:instance converse-80 (h1 (/ (1+ h) (expt 2 rho))) 
+                 (:instance converse-80 (h1 (/ (1+ h) (expt 2 rho)))
                             (b1 (* (1+ h) (1+ h) (expt 2 (- (* (1+ k) rho)))))
                             (h2 -1)
                             (b2 (expt 2 (* (- 1 k) rho))))))))
@@ -5626,7 +5626,7 @@
                             acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE))
            :use ((:instance converse-39 (i (i-sqrt k rho m n table))
                             (j (j-sqrt k rho m n table)))
-                 (:instance d7-p7-lemma 
+                 (:instance d7-p7-lemma
                             (dmin (delta0 (j-sqrt k rho m n table) n))
                             (dmax (+ (delta0 (j-sqrt k rho m n table) n) (expt 2 (- n))))
                             (pmin (pi0 (i-sqrt k rho m n table) m))
@@ -5648,7 +5648,7 @@
                 (> k 1)
                 (not (admissible-for-iteration-p k rho m n table)))
            (let* ((i (i-sqrt k rho m n table))
-                  (j (j-sqrt k rho m n table)) 
+                  (j (j-sqrt k rho m n table))
                   (p (p-sqrt k rho m n table))
                   (d (d-sqrt k rho m n table))
                   (h (lookup i j table)))
@@ -5717,7 +5717,7 @@
 
 (defund admissible-srt-table-p (k rho m n table)
   (check-rows (expt 2 m) k rho m n table))
-  
+
 
 (local-defthm check-row-lemma
   (implies (and (natp j)
@@ -5957,7 +5957,7 @@
                 (or (< i (expt 2 (1- m)))
                     (= i (1- (expt 2 m)))))
            (>= (1+ h)
-               (cg (* (expt 2 rho) 
+               (cg (* (expt 2 rho)
                       (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                          (delta0 j n))))))
   :rule-classes ()
@@ -5981,7 +5981,7 @@
                 (or (< i (expt 2 (1- m)))
                     (= i (1- (expt 2 m)))))
            (>= (1+ h)
-               (* (expt 2 rho) 
+               (* (expt 2 rho)
                   (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                      (delta0 j n)))))
   :rule-classes ()
@@ -6012,7 +6012,7 @@
                         lemma-3-6-28
                         (:instance *-weakly-monotonic (x (/ (delta0 j n) (expt 2 rho)))
                                                       (y+ (1+ h))
-                                                      (y (* (expt 2 rho) 
+                                                      (y (* (expt 2 rho)
                                                             (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                                                (delta0 j n)))))))))
 
@@ -6033,7 +6033,7 @@
                 (>= i (expt 2 (1- m)))
                 (not (= i (1- (expt 2 m)))))
            (>= (1+ h)
-               (cg (* (expt 2 rho) 
+               (cg (* (expt 2 rho)
                       (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                          (+ (delta0 j n) (expt 2 (- n))))))))
   :rule-classes ()
@@ -6057,7 +6057,7 @@
                 (>= i (expt 2 (1- m)))
                 (not (= i (1- (expt 2 m)))))
            (>= (1+ h)
-               (* (expt 2 rho) 
+               (* (expt 2 rho)
                   (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                      (+ (delta0 j n) (expt 2 (- n)))))))
   :rule-classes ()
@@ -6088,7 +6088,7 @@
                         lemma-3-6-31
                         (:instance *-weakly-monotonic (x (/ (+ (delta0 j n) (expt 2 (- n))) (expt 2 rho)))
                                                       (y+ (1+ h))
-                                                      (y (* (expt 2 rho) 
+                                                      (y (* (expt 2 rho)
                                                             (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                                                (+ (delta0 j n) (expt 2 (- n)))))))))))
 
@@ -6325,8 +6325,8 @@
                 (< (p%% (1- k))
                    (+ (pi0 (i%% k) (m%%))
                       (/ (expt 2 (- (m%%) 3)))))))
-  :hints (("Goal" :use (m%%-constraint 
-                        k%%-constraint 
+  :hints (("Goal" :use (m%%-constraint
+                        k%%-constraint
                         (:instance i-bounds (p (p%% (1- k))) (m (m%%)))
                         (:instance local-lemma (x (P%% (+ -1 K)))
                                                (y1 (EXPT 2 (+ 2 (- (M%%)))))
@@ -6394,9 +6394,9 @@
                          (- (p%% k) (expt 2 (- (* k (rho%%))))))
                      (< (- (p%% k) (expt 2 (- (* k (rho%%)))))
                         (* 2 (q%% k))))
-                (and (< (x%%) (* (+ (q%% k) (expt 2 (- (* k (rho%%))))) 
+                (and (< (x%%) (* (+ (q%% k) (expt 2 (- (* k (rho%%)))))
                                  (+ (q%% k) (expt 2 (- (* k (rho%%)))))))
-                     (>= (x%%) (* (- (q%% k) (expt 2 (- (* k (rho%%))))) 
+                     (>= (x%%) (* (- (q%% k) (expt 2 (- (* k (rho%%)))))
                                   (- (q%% k) (expt 2 (- (* k (rho%%))))))))))
   :rule-classes ()
   :hints (("Goal" :use (m%%-constraint
@@ -6453,7 +6453,7 @@
                 (< (p%% (1- k))
                    (* (/ (1+ (h%% k)) (expt 2 (rho%%)))
                       (+ (* 2 (q%% (1- k))) (* (1+ (h%% k)) (expt 2 (- (* k (rho%%))))))))
-                (>= (p%% (1- k))             
+                (>= (p%% (1- k))
                     (* (/ (1- (h%% k)) (expt 2 (rho%%)))
                        (+ (* 2 (q%% (1- k))) (* (1- (h%% k)) (expt 2 (- (* k (rho%%))))))))))
   :rule-classes ()
@@ -6516,9 +6516,9 @@
                 (< (- (p%% (1- k)) (expt 2 (- (* (1- k) (rho%%)))))
                    (* 2 (q%% (1- k))))
                 (all-sqrt-accessible-p%% (1- k)))
-           (and (< (x%%) (* (+ (q%% k) (expt 2 (- (* k (rho%%))))) 
+           (and (< (x%%) (* (+ (q%% k) (expt 2 (- (* k (rho%%)))))
                             (+ (q%% k) (expt 2 (- (* k (rho%%)))))))
-                (>= (x%%) (* (- (q%% k) (expt 2 (- (* k (rho%%))))) 
+                (>= (x%%) (* (- (q%% k) (expt 2 (- (* k (rho%%)))))
                              (- (q%% k) (expt 2 (- (* k (rho%%)))))))))
   :rule-classes ()
   :hints (("Goal"
@@ -6542,9 +6542,9 @@
                          (- (p%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))))
                      (< (- (p%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                         (* 2 (q%% (k%%)))))
-                (and (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (and (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                                  (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
-                     (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                     (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                                   (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))))))))
   :rule-classes ()
   :hints (("Goal" :use (k%%-constraint
@@ -6629,7 +6629,7 @@
                         m%%-constraint
                         n%%-constraint
                         theorem-2-5
-                        (:instance sqrt-table-1 (i (i%% k)) (j (j%% k)) (rho (rho%%)) (m (m%%)) (n (n%%)) 
+                        (:instance sqrt-table-1 (i (i%% k)) (j (j%% k)) (rho (rho%%)) (m (m%%)) (n (n%%))
                                                 (p (p%% (1- k))) (d (* 2 (q%% (1- k)))))))))
 
 (local
@@ -6666,9 +6666,9 @@
 (defthm theorem-2-b
   (implies (and (<= 1/2 (q%% (k%%)))
                 (< (q%% (k%%)) 1)
-                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
-                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
                 (natp k)
                 (>= k (k%%)))
@@ -6708,15 +6708,15 @@
 (defthm theorem-2-a
   (implies (and (<= 1/2 (q%% (k%%)))
                 (< (q%% (k%%)) 1)
-                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                             (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
-                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
                 (natp k)
                 (>= k (k%%)))
-           (and (< (x%%) (* (+ (q%% k) (expt 2 (- (* k (rho%%))))) 
+           (and (< (x%%) (* (+ (q%% k) (expt 2 (- (* k (rho%%)))))
                             (+ (q%% k) (expt 2 (- (* k (rho%%)))))))
-                (>= (x%%) (* (- (q%% k) (expt 2 (- (* k (rho%%))))) 
+                (>= (x%%) (* (- (q%% k) (expt 2 (- (* k (rho%%)))))
                              (- (q%% k) (expt 2 (- (* k (rho%%)))))))))
   :rule-classes ()
   :hints (("Goal" :use (theorem-2-12
@@ -6726,9 +6726,9 @@
 (defthm theorem-2-b
   (implies (and (<= 1/2 (q%% (k%%)))
                 (< (q%% (k%%)) 1)
-                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
-                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
                 (natp k)
                 (>= k (k%%)))
@@ -6743,9 +6743,9 @@
 (defthmd theorem-2-c
   (implies (and (<= 1/2 (q%% (k%%)))
                 (< (q%% (k%%)) 1)
-                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                             (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
-                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
                 (natp k)
                 (> k (k%%)))
@@ -6824,9 +6824,9 @@
                 (< j (expt 2 n))
                 (div-accessible-p i j m n))
            (> (pi0 i m)
-              (+ (- (delta0 j n)) 
-                 (- (/ (expt 2 n))) 
-                 (- (/ (expt 2 (- m 3)))) 
+              (+ (- (delta0 j n))
+                 (- (/ (expt 2 n)))
+                 (- (/ (expt 2 (- m 3))))
                  (expt 2 (- (k-witness (+ (pi0 i m) (delta0 j n) (/ (expt 2 n)) (/ (expt 2 (- m 3))))))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable div-accessible-p)
@@ -6878,13 +6878,13 @@
                 (div-accessible-p i j m n)
                 (natp k)
                 (>= k (k-witness (+ (pi0 i m) (+ (delta0 j n) (/ (expt 2 n)) (/ (expt 2 (- m 3))))))))
-           (>= (+ (- (delta0 j n)) 
-                  (- (/ (expt 2 n))) 
-                  (- (/ (expt 2 (- m 3)))) 
+           (>= (+ (- (delta0 j n))
+                  (- (/ (expt 2 n)))
+                  (- (/ (expt 2 (- m 3))))
                   (expt 2 (- (k-witness (+ (pi0 i m) (delta0 j n) (/ (expt 2 n)) (/ (expt 2 (- m 3))))))))
-               (+ (- (delta0 j n)) 
-                  (- (/ (expt 2 n))) 
-                  (- (/ (expt 2 (- m 3)))) 
+               (+ (- (delta0 j n))
+                  (- (/ (expt 2 n)))
+                  (- (/ (expt 2 (- m 3))))
                   (expt 2 (- (* k rho))))))
   :rule-classes ()
   :hints (("Goal" :use (converse-39
@@ -6912,22 +6912,22 @@
                 (natp k)
                 (>= k (k-witness (+ (pi0 i m) (+ (delta0 j n) (/ (expt 2 n)) (/ (expt 2 (- m 3))))))))
            (> (pi0 i m)
-              (+ (- (delta0 j n)) 
-                 (- (/ (expt 2 n))) 
-                 (- (/ (expt 2 (- m 3)))) 
+              (+ (- (delta0 j n))
+                 (- (/ (expt 2 n)))
+                 (- (/ (expt 2 (- m 3))))
                  (expt 2 (- (* k rho))))))
   :rule-classes ()
   :hints (("Goal" :use (converse-39
                         lemma-3-5-7
                         lemma-3-5-11
                         (:instance lemma-3-5-12 (x (pi0 i m))
-                                                (y (+ (- (delta0 j n)) 
-                                                      (- (/ (expt 2 n))) 
-                                                      (- (/ (expt 2 (- m 3)))) 
+                                                (y (+ (- (delta0 j n))
+                                                      (- (/ (expt 2 n)))
+                                                      (- (/ (expt 2 (- m 3))))
                                                       (expt 2 (- (k-witness (+ (pi0 i m) (delta0 j n) (/ (expt 2 n)) (/ (expt 2 (- m 3)))))))))
-                                                (z (+ (- (delta0 j n)) 
-                                                      (- (/ (expt 2 n))) 
-                                                      (- (/ (expt 2 (- m 3)))) 
+                                                (z (+ (- (delta0 j n))
+                                                      (- (/ (expt 2 n)))
+                                                      (- (/ (expt 2 (- m 3))))
                                                       (expt 2 (- (* k rho))))))))))
 
 (local-defthm lemma-3-5-14
@@ -7008,9 +7008,9 @@
                   (check-lower-bound h i j k (rho%%) (m%%) (n%%))
                   (not (and (>= h (lower i j (rho%%) (m%%) (n%%)))
                             (<= h (upper i j (rho%%) (m%%) (n%%))))))))
-                            
+
   :rule-classes ()
-  :hints (("Goal" :use (lemma-3-5-16 
+  :hints (("Goal" :use (lemma-3-5-16
                         (:instance lemma-3-5-15 (i (i-witness (rho%%) (m%%) (n%%) (table%%)))
                                                 (j (j-witness (rho%%) (m%%) (n%%) (table%%))))))))
 
@@ -7061,12 +7061,12 @@
                 (> k (upper i j rho m n)))
            (and (> k (- 1 (expt 2 rho)))
                 (if (>= i (expt 2 (1- m)))
-                    (> (1- k) 
-                       (fl (* (expt 2 rho) 
+                    (> (1- k)
+                       (fl (* (expt 2 rho)
                               (/ (pi0 i m)
                                  (delta0 j n)))))
                   (> (1- k)
-                     (fl (* (expt 2 rho) 
+                     (fl (* (expt 2 rho)
                             (/ (pi0 i m)
                                (+ (delta0 j n) (/ (expt 2 n))))))))))
   :rule-classes ()
@@ -7087,12 +7087,12 @@
                 (> k (upper i j rho m n)))
            (and (> k (- 1 (expt 2 rho)))
                 (if (>= i (expt 2 (1- m)))
-                    (> (1- k) 
-                       (* (expt 2 rho) 
+                    (> (1- k)
+                       (* (expt 2 rho)
                           (/ (pi0 i m)
                              (delta0 j n))))
                   (> (1- k)
-                     (* (expt 2 rho) 
+                     (* (expt 2 rho)
                         (/ (pi0 i m)
                            (+ (delta0 j n) (/ (expt 2 n)))))))))
   :rule-classes ()
@@ -7103,18 +7103,18 @@
                                jared-disables-4)
            :use (converse-39
                  lemma-3-5-20
-                 (:instance fl-unique 
-                            (x (* (expt 2 rho) 
+                 (:instance fl-unique
+                            (x (* (expt 2 rho)
                                   (/ (pi0 i m)
                                      (+ (delta0 j n) (/ (expt 2 n))))))
                             (n (1- k)))
-                 (:instance fl-unique 
-                            (x (* (expt 2 rho) 
+                 (:instance fl-unique
+                            (x (* (expt 2 rho)
                                   (/ (pi0 i m)
                                      (+ (delta0 j n)))))
                             (n (1- k)))))))
 
-(local-defthm converse-8 
+(local-defthm converse-8
   (implies (and (rationalp dmin)
                 (rationalp pmin)
                 (rationalp h)
@@ -7132,8 +7132,8 @@
                 (< i (expt 2 m))
                 (natp j)
                 (< j (expt 2 n))
-                (> (1- k) 
-                   (* (expt 2 rho) 
+                (> (1- k)
+                   (* (expt 2 rho)
                       (/ (pi0 i m)
                          (delta0 j n)))))
            (> (* (/ (1- k) (expt 2 rho)) (delta0 j n))
@@ -7143,7 +7143,7 @@
                         (:instance converse-8
                                    (dmin (1- k))
                                    (h (/ (delta0 j n) (expt 2 rho)))
-                                   (pmin (* (expt 2 rho) 
+                                   (pmin (* (expt 2 rho)
                                             (/ (pi0 i m)
                                                (delta0 j n)))))))))
 
@@ -7156,8 +7156,8 @@
                 (< i (expt 2 m))
                 (natp j)
                 (< j (expt 2 n))
-                (> (1- k) 
-                   (* (expt 2 rho) 
+                (> (1- k)
+                   (* (expt 2 rho)
                       (/ (pi0 i m)
                          (+ (delta0 j n) (expt 2 (- n)))))))
            (> (* (/ (1- k) (expt 2 rho)) (+ (delta0 j n) (expt 2 (- n))))
@@ -7167,7 +7167,7 @@
                         (:instance converse-8
                                    (dmin (1- k))
                                    (h (/ (+ (delta0 j n) (expt 2 (- n))) (expt 2 rho)))
-                                   (pmin (* (expt 2 rho) 
+                                   (pmin (* (expt 2 rho)
                                             (/ (pi0 i m)
                                                (+ (delta0 j n) (expt 2 (- n)))))))))))
 
@@ -7373,7 +7373,7 @@
                   (> (expt 2 (rho%%)) h)
                   (check-upper-bound h i j k (rho%%) (m%%) (n%%))
                   (< h (lower i j (rho%%) (m%%) (n%%))))))
-                            
+
   :rule-classes ()
   :hints (("Goal" :use (lemma-3-5-17
                         m%%-constraint
@@ -7381,7 +7381,7 @@
                         rho%%-constraint
                         k%%-constraint
                         (:instance lemma-3-5-32 (m (m%%)) (n (n%%)) (rho (rho%%)) (i (i-witness (rho%%) (m%%) (n%%) (table%%)))
-                                                (j (j-witness (rho%%) (m%%) (n%%) (table%%))) 
+                                                (j (j-witness (rho%%) (m%%) (n%%) (table%%)))
                                                 (h (lookup (i-witness (rho%%) (m%%) (n%%) (table%%))(j-witness (rho%%) (m%%) (n%%) (table%%))(table%%))))))))
 
 (local-defthm lemma-3-5-3-a
@@ -7461,7 +7461,7 @@
                        (+ (delta0 j (n%%)) (* h (expt 2 (- (* k (rho%%)))))))))
            (<= (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                (* (/ h (expt 2 (rho%%))) (delta0 j (n%%)))))
-           
+
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable jared-disables-1
@@ -7493,7 +7493,7 @@
                                                (/ (* (1+ h) (1+ h)) (expt 2 (rho%%)))))))
            (<= (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                (* (/ (1+ h) (expt 2 (rho%%))) (delta0 j (n%%)))))
-           
+
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable jared-disables-1
@@ -7526,7 +7526,7 @@
                   (< h (lower i j (rho%%) (m%%) (n%%)))
                   (<= (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                       (* (/ (1+ h) (expt 2 (rho%%))) (delta0 j (n%%)))))))
-                            
+
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable jared-disables-1
@@ -7612,10 +7612,10 @@
                   :use (lemma-3-5-41))))
 
 (local-defthm lemma-3-5-43
-  (let ((k (1+ (max (max (k%%) 
-                         (k-witness (+ (pi0 i (m%%)) 
-                                       (delta0 j (n%%)) 
-                                       (/ (expt 2 (n%%))) 
+  (let ((k (1+ (max (max (k%%)
+                         (k-witness (+ (pi0 i (m%%))
+                                       (delta0 j (n%%))
+                                       (/ (expt 2 (n%%)))
                                        (/ (expt 2 (- (m%%) 3))))))
                     (k-witness (/ (- (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                                      (* (/ (1+ h) (expt 2 (rho%%))) (delta0 j (n%%))))
@@ -7631,10 +7631,10 @@
                         k%%-constraint))))
 
 (local-defund bar (i j h)
-  (1+ (max (max (k%%) 
-                (k-witness (+ (pi0 i (m%%)) 
-                              (delta0 j (n%%)) 
-                              (/ (expt 2 (n%%))) 
+  (1+ (max (max (k%%)
+                (k-witness (+ (pi0 i (m%%))
+                              (delta0 j (n%%))
+                              (/ (expt 2 (n%%)))
                               (/ (expt 2 (- (m%%) 3))))))
            (k-witness (/ (- (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                             (* (/ (1+ h) (expt 2 (rho%%))) (delta0 j (n%%))))
@@ -7663,9 +7663,9 @@
                   (<= (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                       (* (/ (1+ h) (expt 2 (rho%%))) (delta0 j (n%%)))))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance lemma-3-5-42 
-                                   (k (bar (i-witness (rho%%) (m%%) (n%%) (table%%)) 
-                                           (j-witness (rho%%) (m%%) (n%%) (table%%)) 
+  :hints (("Goal" :use ((:instance lemma-3-5-42
+                                   (k (bar (i-witness (rho%%) (m%%) (n%%) (table%%))
+                                           (j-witness (rho%%) (m%%) (n%%) (table%%))
                                            (lookup (i-witness (rho%%) (m%%) (n%%) (table%%))
                                                    (j-witness (rho%%) (m%%) (n%%) (table%%))
                                                    (table%%)))))))))
@@ -7719,7 +7719,7 @@
                         m%%-constraint
                         n%%-constraint
                         rho%%-constraint
-                        (:instance lemma-3-5-47 (m (m%%)) (n (n%%)) (rho (rho%%)) 
+                        (:instance lemma-3-5-47 (m (m%%)) (n (n%%)) (rho (rho%%))
                                                 (h (lookup (i-witness (rho%%) (m%%) (n%%) (table%%))
                                                            (j-witness (rho%%) (m%%) (n%%) (table%%))
                                                            (table%%)))
@@ -7765,7 +7765,7 @@
                        (+ (delta0 j (n%%)) (expt 2 (- (n%%))) (* h (expt 2 (- (* k (rho%%)))))))))
            (<= (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                (* (/ h (expt 2 (rho%%))) (+ (delta0 j (n%%)) (expt 2 (- (n%%)))))))
-           
+
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable jared-disables-1
@@ -7797,7 +7797,7 @@
                                                (/ (* (1+ h) (1+ h)) (expt 2 (rho%%)))))))
            (<= (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                (* (/ (1+ h) (expt 2 (rho%%))) (+ (delta0 j (n%%)) (expt 2 (- (n%%)))))))
-           
+
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable jared-disables-1
@@ -7830,7 +7830,7 @@
                   (< h (lower i j (rho%%) (m%%) (n%%)))
                   (<= (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                       (* (/ (1+ h) (expt 2 (rho%%))) (+ (delta0 j (n%%)) (expt 2 (- (n%%)))))))))
-                            
+
   :rule-classes ()
   :hints (("Goal"
            :in-theory (disable jared-disables-1
@@ -7910,10 +7910,10 @@
                   :use (lemma-3-5-53))))
 
 (local-defthm lemma-3-5-55
-  (let ((k (1+ (max (max (k%%) 
-                         (k-witness (+ (pi0 i (m%%)) 
+  (let ((k (1+ (max (max (k%%)
+                         (k-witness (+ (pi0 i (m%%))
                                        (delta0 j (n%%))
-                                       (/ (expt 2 (n%%))) 
+                                       (/ (expt 2 (n%%)))
                                        (/ (expt 2 (- (m%%) 3))))))
                     (k-witness (/ (- (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                                      (* (/ (1+ h) (expt 2 (rho%%))) (+ (delta0 j (n%%)) (expt 2 (- (n%%))))))
@@ -7934,10 +7934,10 @@
                  k%%-constraint))))
 
 (local-defund bar1 (i j h)
-  (1+ (max (max (k%%) 
-                (k-witness (+ (pi0 i (m%%)) 
+  (1+ (max (max (k%%)
+                (k-witness (+ (pi0 i (m%%))
                               (delta0 j (n%%))
-                              (/ (expt 2 (n%%))) 
+                              (/ (expt 2 (n%%)))
                               (/ (expt 2 (- (m%%) 3))))))
            (k-witness (/ (- (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                             (* (/ (1+ h) (expt 2 (rho%%))) (+ (delta0 j (n%%)) (expt 2 (- (n%%))))))
@@ -7967,8 +7967,8 @@
                       (* (/ (1+ h) (expt 2 (rho%%))) (+ (delta0 j (n%%)) (expt 2 (- (n%%)))))))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance lemma-3-5-54
-                                   (k (bar1 (i-witness (rho%%) (m%%) (n%%) (table%%)) 
-                                           (j-witness (rho%%) (m%%) (n%%) (table%%)) 
+                                   (k (bar1 (i-witness (rho%%) (m%%) (n%%) (table%%))
+                                           (j-witness (rho%%) (m%%) (n%%) (table%%))
                                            (lookup (i-witness (rho%%) (m%%) (n%%) (table%%))
                                                    (j-witness (rho%%) (m%%) (n%%) (table%%))
                                                    (table%%)))))))))
@@ -8010,7 +8010,7 @@
                         lemma-3-5-58
                         (:instance *-strongly-monotonic (x (* (/ (expt 2 rho)) (+ (delta0 j n) (expt 2 (- n)))))
                                                         (y (1+ h))
-                                                        (y+ (/ (* (expt 2 rho) (+ (pi0 i m) (expt 2 (- 3 m)))) 
+                                                        (y+ (/ (* (expt 2 rho) (+ (pi0 i m) (expt 2 (- 3 m))))
                                                                (+ (delta0 j n) (expt 2 (- n))))))))))
 
 (defthm lemma-3-5
@@ -8021,7 +8021,7 @@
                         m%%-constraint
                         n%%-constraint
                         rho%%-constraint
-                        (:instance lemma-3-5-59 (m (m%%)) (n (n%%)) (rho (rho%%)) 
+                        (:instance lemma-3-5-59 (m (m%%)) (n (n%%)) (rho (rho%%))
                                                 (h (lookup (i-witness (rho%%) (m%%) (n%%) (table%%))
                                                            (j-witness (rho%%) (m%%) (n%%) (table%%))
                                                            (table%%)))
@@ -8034,13 +8034,13 @@
 
 (local (defund xtable-entry (i j)
   (if (and (> (pi0 i (m%%))
-              (- (+ (delta0 j (n%%)) 
-                    (expt 2 (- (n%%))) 
+              (- (+ (delta0 j (n%%))
+                    (expt 2 (- (n%%)))
                     (expt 2 (- 3 (m%%))))))
            (<= (pi0 i (m%%))
                (- (expt 2 (- (* (k%%) (rho%%))))
                   (+ (delta0 j (n%%))
-                     (expt 2 (- (n%%))) 
+                     (expt 2 (- (n%%)))
                      (expt 2 (- 3 (m%%)))))))
       (- 1 (expt 2 (rho%%)))
     (lookup i j (table%%)))))
@@ -8124,13 +8124,13 @@
                 (< j (expt 2 (n%%))))
            (equal (lookup i j (xtable%%))
                   (if (and (> (pi0 i (m%%))
-                           (- (+ (delta0 j (n%%)) 
-                                 (expt 2 (- (n%%))) 
+                           (- (+ (delta0 j (n%%))
+                                 (expt 2 (- (n%%)))
                                  (expt 2 (- 3 (m%%))))))
                            (<= (pi0 i (m%%))
                                (- (expt 2 (- (* (k%%) (rho%%))))
                                   (+ (delta0 j (n%%))
-                                     (expt 2 (- (n%%))) 
+                                     (expt 2 (- (n%%)))
                                      (expt 2 (- 3 (m%%)))))))
                       (- 1 (expt 2 (rho%%)))
                     (lookup i j (table%%)))))
@@ -8207,8 +8207,8 @@
                   (not (check-entry i j k rho m n h)))))
   :rule-classes ()
   :hints (("Goal" :use (xtable-8
-                        (:instance xtable-9 (i (i-srt k rho m n table)) 
-                                            (j (expt 2 n)) 
+                        (:instance xtable-9 (i (i-srt k rho m n table))
+                                            (j (expt 2 n))
                                             (row (nth (i-srt k rho m n table) table))))
                   :in-theory (enable lookup j-srt))))
 
@@ -8294,13 +8294,13 @@
                           (expt 2 (- (n%%)))
                           (expt 2 (- 3 (m%%)))))))
           (< (lower i j (rho%%) (m%%) (n%%))
-             (* (expt 2 (rho%%)) 
+             (* (expt 2 (rho%%))
                 (/ (+ (pi0 i (m%%)) (/ (expt 2 (- (m%%) 3))))
                    (+ (delta0 j (n%%)) (/ (expt 2 (n%%))))))))
   :rule-classes ()
   :hints (("Goal" :use (xtable-14 rho%%-constraint m%%-constraint n%%-constraint
                         (:instance converse-39 (rho (rho%%)) (m (m%%)) (n (n%%)))
-                        (:instance cg-def (x (* (expt 2 (rho%%)) 
+                        (:instance cg-def (x (* (expt 2 (rho%%))
                                                 (/ (+ (pi0 i (m%%)) (/ (expt 2 (- (m%%) 3))))
                                                    (+ (delta0 j (n%%)) (/ (expt 2 (n%%)))))))))
                   :in-theory (enable lower))))
@@ -8315,10 +8315,10 @@
                        (+ (delta0 j (n%%))
                           (expt 2 (- (n%%)))
                           (expt 2 (- 3 (m%%)))))))
-          (<= (* (expt 2 (rho%%)) 
+          (<= (* (expt 2 (rho%%))
                  (/ (+ (pi0 i (m%%)) (/ (expt 2 (- (m%%) 3))))
                     (+ (delta0 j (n%%)) (/ (expt 2 (n%%))))))
-              (* (expt 2 (rho%%)) 
+              (* (expt 2 (rho%%))
                  (/ (- (expt 2 (- (* (k%%) (rho%%))))
                        (+ (delta0 j (n%%))
                           (expt 2 (- (n%%)))))
@@ -8343,7 +8343,7 @@
                           (expt 2 (- (n%%)))
                           (expt 2 (- 3 (m%%)))))))
           (< (lower i j (rho%%) (m%%) (n%%))
-             (* (expt 2 (rho%%)) 
+             (* (expt 2 (rho%%))
                 (/ (- (expt 2 (- (* (k%%) (rho%%))))
                       (+ (delta0 j (n%%))
                          (expt 2 (- (n%%)))))
@@ -8357,7 +8357,7 @@
                 (< i (expt 2 (m%%)))
                 (natp j)
                 (< j (expt 2 (n%%))))
-          (= (* (expt 2 (rho%%)) 
+          (= (* (expt 2 (rho%%))
                 (/ (- (expt 2 (- (* (k%%) (rho%%))))
                       (+ (delta0 j (n%%))
                          (expt 2 (- (n%%)))))
@@ -8455,12 +8455,12 @@
              (admissible-srt-table-p (k%%) (rho%%) (m%%) (n%%) (xtable%%))))
   :rule-classes ()
   :hints (("Goal" :use (rho%%-constraint m%%-constraint n%%-constraint k%%-constraint
-                        (:instance xtable-12 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))) 
+                        (:instance xtable-12 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%)))
                                              (j (j-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%)))
                                              (h (lookup (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))
                                                         (j-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))
                                                         (xtable%%))))
-                        (:instance xtable-23 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))) 
+                        (:instance xtable-23 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%)))
                                              (j (j-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))))
                         (:instance xtable-11 (k (k%%)) (rho (rho%%)) (m (m%%)) (n (n%%)) (table (xtable%%))))
                   :in-theory (enable check-lower-bound))))
@@ -8849,7 +8849,7 @@
                          (expt 2 (- 3 (m%%)))))))
           (let ((h (lookup i j (xtable%%))))
             (implies (and (< h (1- (expt 2 (rho%%))))
-                          (> (* k (rho%%)) 
+                          (> (* k (rho%%))
                              (k-witness (/ (- (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%)))) (* (/ (1+ h) (expt 2 (rho%%))) (delta0 j (n%%))))
                                            (/ (* (1+ h) (1+ h)) (expt 2 (rho%%))))))
                           (< h (lower i j (rho%%) (m%%) (n%%))))
@@ -8955,7 +8955,7 @@
                          (expt 2 (- 3 (m%%)))))))
           (let ((h (lookup i j (xtable%%))))
             (implies (and (< h (1- (expt 2 (rho%%))))
-                          (> (* k (rho%%)) 
+                          (> (* k (rho%%))
                              (k-witness (/ (- (+ (pi0 i (m%%)) (expt 2 (- 3 (m%%))))
                                               (* (/ (1+ h) (expt 2 (rho%%))) (+ (delta0 j (n%%)) (expt 2 (- (n%%))))))
                                            (/ (* (1+ h) (1+ h)) (expt 2 (rho%%))))))
@@ -9085,11 +9085,11 @@
                             jared-disables-3
                             jared-disables-4))
            :use (rho%%-constraint m%%-constraint n%%-constraint k%%-constraint
-                                  (:instance xtable-56 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))) 
+                                  (:instance xtable-56 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%)))
                                              (j (j-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))))
-                                  (:instance xtable-23 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))) 
+                                  (:instance xtable-23 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%)))
                                              (j (j-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))))
-                                  (:instance xtable-27 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))) 
+                                  (:instance xtable-27 (i (i-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%)))
                                              (j (j-srt (k%%) (rho%%) (m%%) (n%%) (xtable%%))))
                                   (:instance xtable-11 (k (k%%)) (rho (rho%%)) (m (m%%)) (n (n%%)) (table (xtable%%)))))))
 
@@ -9158,7 +9158,7 @@
                 (< j (expt 2 n)))
            (and (integerp (srt-entry i j rho m n))
                 (< (srt-entry i j rho m n) (expt 2 rho))
-                (> (srt-entry i j rho m n) (- (expt 2 rho)))))                
+                (> (srt-entry i j rho m n) (- (expt 2 rho)))))
   :hints (("Goal" :in-theory (enable srt-entry)
                   :use lemma-3-7-1))
   :rule-classes ())
@@ -9272,7 +9272,7 @@
                 (natp j)
                 (< j (expt 2 n))
                 (integerp h))
-           (>= (* (expt 2 rho) 
+           (>= (* (expt 2 rho)
                   (- (f (1+ h) i j k rho m n)
                      (f h i j k rho m n)))
                (+ (delta0 j n) (* (1- (* 2 h)) (expt 2 (- (* (1+ k) rho)))))))
@@ -9379,7 +9379,7 @@
                 (>= y z))
            (>= x z))
   :rule-classes ())
- 
+
 
 (local-defthm lemma-3-7-18
   (implies (and (not (zp rho))
@@ -9413,7 +9413,7 @@
                 (< j (expt 2 n))
                 (integerp h)
                 (>= h (- 1 (expt 2 rho))))
-           (>= (* (expt 2 rho) 
+           (>= (* (expt 2 rho)
                   (- (f (1+ h) i j k rho m n)
                      (f h i j k rho m n)))
                0))
@@ -9557,7 +9557,7 @@
                 (< j (expt 2 n))
                 (check-entry i j k rho m n h)
                 (integerp h))
-           (check-exists-entry i j k rho m n))           
+           (check-exists-entry i j k rho m n))
   :hints (("Goal" :in-theory (enable check-exists-entry check-entry)
                   :use (lemma-3-7-25))))
 
@@ -9571,7 +9571,7 @@
                 (natp j)
                 (<= j (expt 2 n))
                 (check-row i j k rho m n row))
-           (check-exists-row i j k rho m n))           
+           (check-exists-row i j k rho m n))
   :hints (("Goal" :in-theory (enable check-exists-row check-row))))
 
 (local-defthm lemma-3-7-28
@@ -9582,7 +9582,7 @@
                 (natp i)
                 (<= i (expt 2 m))
                 (check-rows i k rho m n rows))
-           (check-exists-rows i k rho m n))           
+           (check-exists-rows i k rho m n))
   :hints (("Goal" :in-theory (enable check-exists-rows check-rows))))
 
 (defthm lemma-3-7-b

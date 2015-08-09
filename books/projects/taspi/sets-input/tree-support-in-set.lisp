@@ -18,9 +18,9 @@
 ;    (2) set - a list of trees
 ;    (2) taxa-list - a list of taxa names
 
-;  Details: Does not allow branch lengths (see also not-conflicting-brlens). 
+;  Details: Does not allow branch lengths (see also not-conflicting-brlens).
 ;           Computation is only accurate if all trees are ordered according to
-;           the same taxa list, and the taxa names in each tree are exactly 
+;           the same taxa list, and the taxa names in each tree are exactly
 ;           those given in the taxa list."
   (declare (xargs :guard t))
   (if (consp set)
@@ -31,7 +31,7 @@
                (<= 2 (len taxa-list))
                (int-symlist taxa-list))
           (let ((tree-fringes (term-to-bfringes tree taxa-list))
-                (curFringes (term-to-bfringes (car set) 
+                (curFringes (term-to-bfringes (car set)
                                               taxa-list)))
             (if (and (good-depths (app tree-fringes curFringes)
                                   (build-taxa-list-tree taxa-list))
@@ -41,7 +41,7 @@
                                                      (build-taxa-list-tree
                                                       taxa-list))
                                   (taspi-rev taxa-list)))
-                (if (q-no-conflicts-list 
+                (if (q-no-conflicts-list
                      (sort-bdd-fringes (app tree-fringes curFringes)
                                        (build-taxa-list-tree taxa-list)
                                        (taxa-list-to-taxon-index taxa-list)))
@@ -69,13 +69,13 @@
 ;  Details: Allows branch lengths (see also not-conflicting).  Branch lengths
 ;           are not preserved in the trees returned.
 ;           Computation is only accurate if all trees are ordered according to
-;           the same taxa list, and the taxa names in each tree are exactly 
+;           the same taxa list, and the taxa names in each tree are exactly
 ;           those given in the taxa list."
   (declare (xargs :guard t))
     (let ((trees-no-brlens (remove-brlens-list set))
           (tree-no-brlens (remove-brlens tree)))
-      (not-conflicting tree-no-brlens 
-                       trees-no-brlens 
+      (not-conflicting tree-no-brlens
+                       trees-no-brlens
                        taxa-list)))
 
 (defun trees-supporting-all-branches (tree set taxa-list)
@@ -90,9 +90,9 @@
 ;    (1) tree - a tree
 ;    (2) set - a list of trees
 ;    (2) taxa-list - a list of taxa names
-;  
-;  Details: Does not allow branch lengths 
-;           (see trees-supporting-all-branches-brlens).  Trees returned may be 
+;
+;  Details: Does not allow branch lengths
+;           (see trees-supporting-all-branches-brlens).  Trees returned may be
 ;           more resolved than the input tree, but not less."
   (declare (xargs :guard t))
   (if (consp set)
@@ -103,11 +103,11 @@
                (<= 2 (len taxa-list))
                (int-symlist taxa-list))
           (let ((tree-fringes (term-to-bfringes tree taxa-list))
-                (curFringes (term-to-bfringes (car set) 
+                (curFringes (term-to-bfringes (car set)
                                               taxa-list)))
             (if (subset tree-fringes curFringes)
-                (cons (car set) 
-                      (trees-supporting-all-branches 
+                (cons (car set)
+                      (trees-supporting-all-branches
                        tree (cdr set) taxa-list))
               (trees-supporting-all-branches tree (cdr set) taxa-list)))
         'bad-tree-comparison-in-trees-supporting-all-branches)
@@ -119,21 +119,21 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ;   ":Doc-Section TASPI
-;  Returns trees from input set that support all branches in input tree 
+;  Returns trees from input set that support all branches in input tree
 ;  while allowing branch lengths~/
 ;  ~/
 ;  Arguments:
 ;    (1) tree - a tree
 ;    (2) set - a list of trees
 ;    (2) taxa-list - a list of taxa names
-;  
-;  Details: Allows branch lengths (see trees-supporting-all-branches).  Trees 
+;
+;  Details: Allows branch lengths (see trees-supporting-all-branches).  Trees
 ;           returned may be more resolved than the input tree, but not less.
 ;           Branch lengths are not preserved in trees returned."
   (declare (Xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list set))
         (tree-no-brlens (remove-brlens tree)))
-    (trees-supporting-all-branches tree-no-brlens 
+    (trees-supporting-all-branches tree-no-brlens
                                    trees-no-brlens
                                    taxa-list)))
 
@@ -185,10 +185,10 @@
                                                            (car set)
                                                            taxa-list))
               (cons (car set)
-                    (get-trees-with-count-greater x tree 
+                    (get-trees-with-count-greater x tree
                                                   (cdr set)
                                                   taxa-list))
-            (get-trees-with-count-greater x tree 
+            (get-trees-with-count-greater x tree
                                           (cdr set) taxa-list))
         'bad-comparison-in-get-trees-with-count-greater)
     nil))
@@ -211,7 +211,7 @@
 ;  Details: Does not allow branch lengths (see
 ;           trees-supporting-x-proportion-of-branches-in-tree-brlens).  All
 ;           trees involved should have the taxa list given."
-  (declare (xargs :guard (rationalp x))) 
+  (declare (xargs :guard (rationalp x)))
   (if (and (treep tree)
            (consp tree)
            (<= 2 (len taxa-list))
@@ -229,7 +229,7 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ;   ":Doc-Section TASPI
-;  Returns trees from input set that support x proportion of branches in input 
+;  Returns trees from input set that support x proportion of branches in input
 ;  tree while allowing branch lengths~/
 ;  ~/
 ;  Arguments:
@@ -240,13 +240,13 @@
 
 ;  Details: Does not allow branch lengths (see
 ;           trees-supporting-x-proportion-of-branches-in-tree-brlens).  All
-;           trees involved should have the taxa list given. Trees returned do 
+;           trees involved should have the taxa list given. Trees returned do
 ;           not preserve branch lengths. "
   (declare (xargs :guard (rationalp x)))
   (let ((trees-no-brlens (remove-brlens-list set))
         (tree-no-brlens (remove-brlens tree)))
     (trees-supporting-x-proportion-of-branches-in-tree
-     x tree-no-brlens 
+     x tree-no-brlens
      trees-no-brlens
      taxa-list)))
 
@@ -317,11 +317,11 @@
 (defun make-tree-support-for-branches (fringes set taxa-list)
   (declare (xargs :guard t))
   (if (consp fringes)
-      (cons (cons (car fringes) 
+      (cons (cons (car fringes)
                   (branch-support-trees (car fringes)
-                                        set 
+                                        set
                                         taxa-list))
-            (make-tree-support-for-branches (cdr fringes) 
+            (make-tree-support-for-branches (cdr fringes)
                                             set taxa-list))
     nil))
 
@@ -331,7 +331,7 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ;  ":Doc-Section TASPI
-;  Returns a listing of branches in the input tree and the trees supporting 
+;  Returns a listing of branches in the input tree and the trees supporting
 ;  that branch from the input set~/
 ;  ~/
 ;  Arguments:
@@ -339,7 +339,7 @@
 ;    (2) set - a list of trees
 ;    (3) taxa-list - a list of taxa names
 
-;  Details: All trees must have the taxa list given.  Bipartitions returned 
+;  Details: All trees must have the taxa list given.  Bipartitions returned
 ;           are bdd based.
 ;           Does not allow branch lengths (see
 ;           branch-by-branch-tree-support-brlens)."
@@ -358,7 +358,7 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns a listing of branches in the input tree and the trees supporting 
+;  Returns a listing of branches in the input tree and the trees supporting
 ;  that branch from the input set~/
 ;  ~/
 ;  Arguments:
@@ -366,17 +366,17 @@
 ;    (2) set - a list of trees
 ;    (3) taxa-list - a list of taxa names
 
-;  Details: All trees must have the taxa list given.  Bipartitions returned 
+;  Details: All trees must have the taxa list given.  Bipartitions returned
 ;           are bdd based.
-;           Allows branch lengths (see branch-by-branch-tree-support) but the 
+;           Allows branch lengths (see branch-by-branch-tree-support) but the
 ;           trees returned do not have branch lengths."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list set))
         (tree-no-brlens (remove-brlens tree)))
-    (branch-by-branch-tree-support tree-no-brlens 
-                                   trees-no-brlens 
+    (branch-by-branch-tree-support tree-no-brlens
+                                   trees-no-brlens
                                    taxa-list)))
-    
+
 (defun make-proportion-support-for-branches (fringes set taxa-list)
   (declare (xargs :guard t))
   (if (consp fringes)
@@ -393,7 +393,7 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns a listing of branches in the input tree and the proportion of trees 
+;  Returns a listing of branches in the input tree and the proportion of trees
 ;  in the input set that support that branch~/
 ;  ~/
 ;  Arguments:
@@ -401,8 +401,8 @@
 ;    (2) set - a list of trees
 ;    (3) taxa-list - a list of taxa names
 
-;  Details: All trees must have the taxa list given.  Bipartitions returned 
-;           are bdd based.  Does not allow branch lengths 
+;  Details: All trees must have the taxa list given.  Bipartitions returned
+;           are bdd based.  Does not allow branch lengths
 ;           (see branch-by-branch-proportion-support).  "
   (declare (xargs :guard t))
   (if (and (treep tree)
@@ -410,7 +410,7 @@
            (<= 2 (len taxa-list))
            (int-symlist taxa-list))
       (let ((fringes (term-to-bfringes tree taxa-list)))
-        (make-proportion-support-for-branches 
+        (make-proportion-support-for-branches
          fringes set taxa-list))
     'bad-input-tree))
 
@@ -420,7 +420,7 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns a listing of branches in the input tree and the proportion of trees 
+;  Returns a listing of branches in the input tree and the proportion of trees
 ;  in the input set with branch lengths that support that branch~/
 ;  ~/
 ;  Arguments:
@@ -428,12 +428,12 @@
 ;    (2) set - a list of trees
 ;    (3) taxa-list - a list of taxa names
 
-;  Details: All trees must have the taxa list given.  Bipartitions returned 
-;           are bdd based.  Allows branch lengths 
+;  Details: All trees must have the taxa list given.  Bipartitions returned
+;           are bdd based.  Allows branch lengths
 ;           (see branch-by-branch-proportion).  "
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list set))
         (tree-no-brlens (remove-brlens tree)))
-    (branch-by-branch-proportion-support tree-no-brlens 
+    (branch-by-branch-proportion-support tree-no-brlens
                                          trees-no-brlens
                                          taxa-list)))

@@ -66,7 +66,7 @@
                                                 initial-alist))
        ((when match) (mv t (car clause))))
     (find-matching-literal-in-clause pat (cdr clause) initial-alist)))
-    
+
 
 
 

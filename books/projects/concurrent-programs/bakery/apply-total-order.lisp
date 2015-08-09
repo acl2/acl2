@@ -21,9 +21,9 @@ some theorems that we wish to export from this book.
 
 (defun drop (a x)
   (cond ((endp x) ())
-        ((equal a (first x)) 
+        ((equal a (first x))
          (drop a (rest x)))
-        (t (cons (first x) 
+        (t (cons (first x)
                  (drop a (rest x))))))
 
 (defun insert (a x)

@@ -10,10 +10,10 @@
 (local (in-theory nil))
 ;(set-inhibit-warnings) ; restore theory warnings (optional)
 
-;;We define generic record accessing and updating functions to be used 
+;;We define generic record accessing and updating functions to be used
 ;;with RTL arrays.  The basic functions are (ag a r) and (as a v r)
 ;;where a is an array index, v is a value, r is an "array" or record.
-;;(ag a r) returns the value at index a in array r, and (as a v r) returns 
+;;(ag a r) returns the value at index a in array r, and (as a v r) returns
 ;;a new array with index a set to value v in array r.
 
 (include-book "misc/total-order" :dir :system)
@@ -28,7 +28,7 @@
       (and (consp x)
            (consp (car x))
            (rcdp (cdr x))
-           (not (equal (cdar x) 
+           (not (equal (cdar x)
                        (default-get-valu)))
            (or (null (cdr x))
                (<< (caar x) (caadr x))))))
@@ -39,7 +39,7 @@
 (defmacro ifrp-tag ()
   ''unlikely-to-ever-occur-in-an-executable-counterpart)
 
-(defun ifrp (x) ;; ill-formed rcdp 
+(defun ifrp (x) ;; ill-formed rcdp
   (declare (xargs :guard t))
   (or (not (rcdp x))
       (and (consp x)
@@ -81,7 +81,7 @@
          (acons-if a v r))
         ((equal a (caar r))
          (acons-if a v (cdr r)))
-        (t 
+        (t
          (cons (car r) (as-aux a v (cdr r))))))
 
 (defun as (a v x) ;; the generic record s(et) which works on any ACL2 object.
@@ -92,7 +92,7 @@
 ;;Basic properties of arrays:
 
 (defthm ag-same-as
-  (equal (ag a (as a v r)) 
+  (equal (ag a (as a v r))
          v))
 
 (defthm ag-diff-as
@@ -112,7 +112,7 @@
 (in-theory (disable ag-of-as-redux))
 
 (defthm as-same-ag
-  (equal (as a (ag a r) r) 
+  (equal (as a (ag a r) r)
          r))
 
 (defthm as-same-as
@@ -136,7 +136,7 @@
            (as a v r)))
 
 (defthm non-nil-if-ag-not-default
-  (implies (not (equal (ag a r) 
+  (implies (not (equal (ag a r)
                        (default-get-valu)))
            r)
   :rule-classes :forward-chaining)
@@ -151,7 +151,7 @@
       (and (consp x)
            (consp (car x))
            (bv-arrp (cdr x) k)
-           (not (equal (cdar x) 
+           (not (equal (cdar x)
                        (default-get-valu)))
            (bvecp (cdar x) k)
            (or (null (cdr x))
@@ -189,7 +189,7 @@
   `(as (cons ,a ,b) ,v ,r))
 
 
-;;We disable as and ag, assuming the rules proved in this book are 
+;;We disable as and ag, assuming the rules proved in this book are
 ;;sufficient to manipulate any record terms that are encountered.
 
 (in-theory (disable as ag))
@@ -209,7 +209,7 @@
 
 ;;Functions representing bit vectors of determined length but undetermined value:
 
-(encapsulate 
+(encapsulate
  ((reset2 (key size) t))
  (local (defun reset2 (key size) (declare (ignore key size)) nil))
  (defthm bv-arrp-reset2
@@ -217,7 +217,7 @@
    :hints
    (("goal" :in-theory (enable bv-arrp)))))
 
-(encapsulate 
+(encapsulate
  ((unknown2 (key size n) t))
  (local (defun unknown2 (key size n) (declare (ignore key size n)) nil))
  (defthm bv-arrp-unknown2

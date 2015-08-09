@@ -28,7 +28,7 @@
       ACL2 Version 2.8 alpha (as of May 11 03)
 
 (certify-book "linalg"
-	      0 
+	      0
 	      nil ;;compile-flg
 	      )
 |#
@@ -60,7 +60,7 @@ At UW:
 (in-package "ACL2")
 
 #|
-(include-book  ;;turing 
+(include-book  ;;turing
  "/home/cowles/acl2-sources/books/arithmetic-2.8/top")
 
 (include-book  ;;pyramid
@@ -269,7 +269,7 @@ At UW:
 (defthm numcols-zero
   (equal (c (m-0 m n)) n))
 
-#|;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+#|;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  (defthm zero-*-x
 ;;    (implies (equal (l p) n)
 ;; 	    (equal (m-* (m-zero m n) p)
@@ -635,7 +635,7 @@ At UW:
 			 (m-+ P (m-+ Q R))))))
 
 (in-theory (disable ASSOCIATIVITY-OF-M-+))
-		 
+
 #|;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  (defthm comm-+
 ;;    (implies (and (equal (l p) (l q))
@@ -720,7 +720,7 @@ At UW:
 		       (m-+ (m-* P Q)
 			    (m-* P R))))))
 
-(in-theory 
+(in-theory
  (disable LEFT-DISTRIBUTIVITY-OF-M-*-OVER-M-+))
 
 #|;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -746,7 +746,7 @@ At UW:
 			(m-+ (m-* Q P)
 			     (m-* R P))))))
 
-(in-theory 
+(in-theory
  (disable RIGHT-DISTRIBUTIVITY-OF-M-*-OVER-M-+))
 
 #|;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -922,7 +922,7 @@ At UW:
 		(s-* n (m-trans P))))
   :hints (("Goal"
 	   :in-theory (disable M-=-M-TRANS-S-*)
-	   :use (:instance 
+	   :use (:instance
 		 M-=-M-TRANS-S-*
 		 (s n)
 		 (M P)

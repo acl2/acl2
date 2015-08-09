@@ -114,7 +114,7 @@
                           (:instance integer-length-of-plus-1
                            (x (+ -1 (- x)))))
              :in-theory (enable lognot))))
-  
+
 
 
   (defthm integer-length-of-between-abs-and-minus-abs

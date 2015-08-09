@@ -59,7 +59,7 @@
     (and (or (atom (car c))
 	     (atom (car x)))
 	 (basic-on-call (cdr x) (cdr c)))))
-  
+
 (defun basic-on-calls (x l)
   (if (endp l)
       t
@@ -79,7 +79,7 @@
 	nil
       (basic-on-calls x calls))))
 
-;(ind-vars-basicp '(BINARY-APPEND Y (CONS X1 'NIL)) state)    
+;(ind-vars-basicp '(BINARY-APPEND Y (CONS X1 'NIL)) state)
 
 (mutual-recursion
  (defun get-schemes (x state)
@@ -230,7 +230,7 @@
 	    (mv-let (erp val state) (ld (list `(defstub ,nf (,@all-vars) t)))
  		    (if (or erp (equal val :error))
 			(mv (err-fun) bind pv state)
-		      (let ((pv (change pv pv :log (append 
+		      (let ((pv (change pv pv :log (append
 							    (access pv pv :log)
 							    (list `(defstub ,nf (,@all-vars) t))))))
 				      (mv nc bind pv state)))))))
@@ -267,7 +267,7 @@
     (let* ((call (car calls)))
       (mv-let (isub err) (pmatch fcall call nil)
 	      (let ((isub (strip-unmeas isub measured)))
-		(let ((realsub (inst-ll isub varsub))) 
+		(let ((realsub (inst-ll isub varsub)))
 		  (mv-let (r bind pv state)
 			  (intro-constr-funs
 			   (inst x realsub)
@@ -301,7 +301,7 @@
 			     ,@r)
 			    ,x)
 			  (list (inst-l tests varsub) subs) pv state)))))
-      
+
 
 (defun subgoals-from-im (x scheme im just pv state)
   (if (endp im)
@@ -473,7 +473,7 @@
  )
 
 |#
-	
+
 
 (defun conp (x state)
   (getprop (car x) 'constrainedp nil 'current-acl2-world (w state)))
@@ -503,7 +503,7 @@
 	   (equal (car x) (car y)))
       (mv nil (pairs (cdr x) (cdr y)))
     (mv t nil)))
-      
+
 
 (mutual-recursion
  (defun use-subst (x y l)
@@ -526,7 +526,7 @@
 	    (if err
 		(rwritel (cdr b) x)
 	      (mv r nil)))))
-	     
+
 (mutual-recursion
  (defun use-substl (b l)
    (if (atom l)
@@ -590,7 +590,7 @@
 	     (if err
 		 (mv-let (err cdrx y) (find-csub-l (cdr x) y e)
 			 (mv err (cons (car x) cdrx) y))
-	       (mv err (cons carx (cdr x)) y)))))) 
+	       (mv err (cons carx (cdr x)) y))))))
 
 
 (defun gen-common (x)
@@ -679,9 +679,9 @@
      `(case (and ,@(cons d (cdr (cadr (car x))))) ,(caddr (car x)))
      (add-disj2 d (cdr x)))))
 
-					; we assume x is the body of a recursive function which  
+					; we assume x is the body of a recursive function which
 					; is composed of an if tree with terms at the leaves
-					; rl is the list of recursive functions for this 
+					; rl is the list of recursive functions for this
 					; body
 (defun get-cases12 (x rl)
   (if (atom x)
@@ -754,10 +754,10 @@ state)
     (if (csubstp (car x) state)
 	(mv nil (orient-eq (car x) state))
       (find-csubst (cdr x) state))))
-    
+
 ; take the clause x and simplify it by locating a
 ; recursive function and assuming a base case for that
-; function 
+; function
 (defun gen-constr (x hyps pv state)
   (mv-let (p err state) (find-rec-nocon-l x 0 state)
 	  (if err
@@ -785,8 +785,8 @@ state)
 ;(use-subst '(g x y) '(binary-append (cdr y) (cons (car x) nil)) '((g (cdr x) y)))
 
 ; d is a list of differences that we are trying to resolve
-; we are at a base case when one side of an equality is a 
-; basic constrained function 	
+; we are at a base case when one side of an equality is a
+; basic constrained function
 
 (defun remove-nth (n x)
   (if (zp n)
@@ -829,7 +829,7 @@ state)
 
 ;(trav '(((0 1 2) 0)))
 
-  
+
 
 (defun cons-calls (l fcall)
   (if (endp l)
@@ -919,8 +919,8 @@ state)
 	      (if (not good)
 		  (blrewrite (cdr l) x)
 		(mv nil (inst rhs (cdrs-to-cadrs bind))))))))
-  			 
-(mutual-recursion 
+
+(mutual-recursion
  (defun lrewrite (x l)
    (if (atom x)
        (mv t x)
@@ -940,12 +940,12 @@ state)
 
 (defun simp (x r)
   (mv-let (err r) (lrewrite x r) r))
-		  
+
 (defun cond-simp (tbody bind)
   (let ((body2 (expand-conses tbody nil)))
     (simp (simp body2 bind) `(((cons (car x) (cdr x)) x)) )))
 
-	
+
 (defun tcs-to-ifun (tcs fn bind state)
   (let* ((fmls (all-vars (cons 'dummy (all-terms-tcs tcs))))
 	 (body (tcs-to-ifun2 tcs (cons fn fmls)))
@@ -963,7 +963,7 @@ state)
 
 
 ; rl must contain err and pv2 and must not contain pv
-(defmacro try-ubt (rl call err nerr)  
+(defmacro try-ubt (rl call err nerr)
   `(let ((nl (new-label (access pv pv :max-label)))
 	 (pv (change pv pv :max-label (1+ (access pv pv :max-label)))))
      (mv-let (err val state) (ld (list (list 'deflabel nl)))
@@ -1006,7 +1006,7 @@ state)
 	     (equal (car (car x)) 'equal))
 	0
       (1+ (find-equal (cdr x))))))
-    
+
 
 (defun tcmp (x y)
   (if (atom x)
@@ -1019,7 +1019,7 @@ state)
 	(if (equal r 0)
 	    (tcmp (cdr x) (cdr y))
 	  r)))))
-      
+
 (defun align-equal (x)
   (if (or
        (not (consp x))
@@ -1047,12 +1047,12 @@ state)
 (defmacro inc-depth (bind call rest)
   `(if (< 2 (access pv pv :depth))
        (mv t nil pv state)
-     (mv-let ,bind 
+     (mv-let ,bind
 	  (let ((pv (change pv pv :depth (1+ (access pv pv :depth)))))
 	    ,call)
 	  (let ((pv (change pv pv :depth (1- (access pv pv :depth)))))
 	    ,rest))))
-    
+
 (mutual-recursion
  (defun match2-0 (d hyps pv  state)
    (declare (xargs   :mode :program))
@@ -1085,7 +1085,7 @@ state)
 			 (if err
 			     (mv t nil pv state)
 			   (mv nil nil pv2 state)))
-	       
+
 	       (mv-let (err r) (try-decomp x y) ; if x and y have the same top function symbol, then decompose them
 		       (if (not err)
 			   (mv-let (err r pv state) (match2-0 (append r (cdr d)) hyps pv  state)
@@ -1107,7 +1107,7 @@ state)
 					   (if err
 					       (mv t r pv state)
 					     (match2-0 (list (use-substl-l (access pv pv :bind) (car d))) hyps pv state))))))))))))))
- 
+
 ; take an equality and attempt to match it against another disjunct.
 ; if a match is found, use any bindings present to substitute rhs for lhs
 ; and return the new y.
@@ -1138,9 +1138,9 @@ state)
 			     (mv t nil pv state)
 			   (mv nil (cons (car y) r) pv state)))
 	       (mv nil (cons r (cdr y)) pv state)))))
-			  
- 
- 
+
+
+
  (defun match2 (x y hyps pv  state)
    (declare (xargs   :mode :program))
    (if (or (atom x) (atom y))
@@ -1224,7 +1224,7 @@ state)
    (induct1 (get-schemes x state) x pv  state))
 
 ; x is a clause to prove
-(defun prove2-0 (x pv state) 
+(defun prove2-0 (x pv state)
   (declare (xargs :mode :program))
   (if (constrainedp-l x state)
       (try-match 0 x pv  state)
@@ -1244,7 +1244,7 @@ state)
           (mv-let
            (x  state)
            (prune-clause nil (insertion-sort x)  state) ;how reliable is prune? used to throw away ih after xfert
-	
+
            (mv-let
             (hit lcl tt pspv)
             (generalize-clause2
@@ -1274,7 +1274,7 @@ state)
                          (if err
                              (mv err r pv  state)
                            (mv nil r pv  state))))
-							  
+
             ))))))))
 
 ;					      (mv err r pv  state))))))
@@ -1312,7 +1312,7 @@ state)
 		 (mv-let (err max-var state) (table bprove 'max-var)
 		 (mv-let (err max-ifn state) (table bprove 'max-ifn)
 		 (mv-let (err max-thm state) (table bprove 'max-thm)
-		 (mv-let (err max-label state) (table bprove 'max-label)			 
+		 (mv-let (err max-label state) (table bprove 'max-label)
 		 (mv-let (err r pv state)
 			 (prove2 ',x (make pv :bind nil :schemes nil :log nil :max-fun (or max-fun 0) :max-var (or max-var 0) :max-ifn (or max-ifn 0) :max-thm (or max-thm 0) :max-label (or max-label 0) :depth 0)  state)
 			 (mv nil (cons 'progn (append
@@ -1324,7 +1324,7 @@ state)
 			    `(table bprove 'max-label ,(access pv pv :max-label)))
 			    (access pv pv :log))) state))))))))))
 
-  
+
 
 ;(prove2 '(equal (rv1 x 'nil) (rv x)) (make pv :bind nil :schemes nil :log nil :max-fun 0 :max-var 0 :max-ifn 0 :max-thm 0 :max-label 0 :depth 0)  state)
 

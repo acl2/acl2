@@ -22,7 +22,7 @@
 (encapsulate nil
   (local (include-book "arithmetic/top-with-meta" :dir :system))
   (local (progn
-           
+
 
            (defthm cdr-nthcdr
              (equal (nthcdr n (cdr x))
@@ -110,7 +110,7 @@
         ((and (eq (car x) 'if) (eql (length x) 4))
          (append (n-valuesp-rewrite1-al n clique (caddr x) a)
                  (n-valuesp-rewrite1-al n clique (cadddr x) a)))
-        ((member (car x) clique) nil) 
+        ((member (car x) clique) nil)
         ((consp (car x))
          (n-valuesp-rewrite1-al n clique (caddar x)
                              (pairlis$ (cadar x)
@@ -183,7 +183,7 @@
 ;;                         n-values-ev-theoremp-implies-clauses-apply-alists))))
 
 
-                
+
 ;; (defthm n-valuesp-rewrite1-correct
 ;;   (implies (and (natp n)
 ;;                 (n-values-ev (mv-nth 1 (n-valuesp-rewrite1 n clique x)) a)
@@ -222,7 +222,7 @@
    (in-theory (disable take))))
 
 
-  
+
 
 (defun n-valuesp-rewrite (clause clique)
   (declare (xargs :guard (pseudo-term-listp clause)))

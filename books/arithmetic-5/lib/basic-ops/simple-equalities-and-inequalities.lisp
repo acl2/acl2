@@ -22,7 +22,7 @@
 
 (include-book "building-blocks")
 
-(local 
+(local
  (include-book "../../support/top"))
 
 (local
@@ -39,11 +39,11 @@
 ;;; following, one cannot tell what the rule matches by examining
 ;;; the left-hand-side of the conclusion.  The rule |(equal (- x) c)|
 ;;; would appear to match on all equalities since the lhs is
-;;; (equal x c).  However, the syntaxp hypotheses limit the 
+;;; (equal x c).  However, the syntaxp hypotheses limit the
 ;;; applicability of the rule to those cases where:
 ;;; 1. c is a constant.  (The variables c and d will always denote
 ;;;    constants.)
-;;; 2. The x is ``like'' (- ...) in the sense of 
+;;; 2. The x is ``like'' (- ...) in the sense of
 ;;;    negative-addends-p.  The (- x) in the rhs of the
 ;;;    conclusion will undo this negation, not introduce it.
 ;;; In general, the rule's names are a good guide to what they
@@ -68,7 +68,7 @@
 (defthm |(equal (/ x) c)|
   (implies (and (syntaxp (numeric-constant-p c))
 		(syntaxp (mostly-divisive-factors-p x mfc state))
-		(syntaxp 
+		(syntaxp
 		 (simplify-ok-p `(EQUAL ,x ,c)
 				'(EQUAL (UNARY-/ x) (UNARY-/ c))
 				`((x . ,x) (c . ,c))
@@ -81,7 +81,7 @@
 (defthm |(equal c (/ x))|
   (implies (and (syntaxp (numeric-constant-p c))
 		(syntaxp (mostly-divisive-factors-p x mfc state))
-		(syntaxp 
+		(syntaxp
 		 (simplify-ok-p `(EQUAL ,x ,c)
 				'(EQUAL (UNARY-/ x) (UNARY-/ c))
 				`((x . ,x) (c . ,c))
@@ -102,7 +102,7 @@
 (defthm |(equal (/ x) (/ y))|
   (implies (and (syntaxp (mostly-divisive-factors-p x mfc state))
 		(syntaxp (mostly-divisive-factors-p y mfc state))
-		(syntaxp 
+		(syntaxp
 		 (simplify-ok-p `(EQUAL ,x ,y)
 				'(EQUAL (UNARY-/ x) (UNARY-/ y))
 				`((x . ,x) (y . ,y))
@@ -147,7 +147,7 @@
 
 (defthm |(< (/ x) 0)|
   (implies (and (syntaxp (mostly-divisive-factors-p x mfc state))
-		(syntaxp 
+		(syntaxp
 		 (simplify-ok-p `(< ,x '0)
 				'(< (UNARY-/ x) '0)
 				`((x . ,x))
@@ -158,7 +158,7 @@
 
 (defthm |(< 0 (/ x))|
   (implies (and (syntaxp (mostly-divisive-factors-p x mfc state))
-		(syntaxp 
+		(syntaxp
 		 (simplify-ok-p `(< '0 ,x)
 				'(< '0 (UNARY-/ x))
 				`((x . ,x))
@@ -169,7 +169,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; The next four rules have a rather complicated syntaxp test. 
+;;; The next four rules have a rather complicated syntaxp test.
 ;;; We are doing two things at once.
 ;;; 1. We are using a simplified version of simplify-ok-p.
 ;;; 2. We are restricting the rules applicablity to when it is most
@@ -181,7 +181,7 @@
 ;;; arithmetic procedures ore only used when we have such an
 ;;; objective).
 ;;; That is, if we don't know what our objective is and we are not
-;;; rewriting something which appears explicitly in the goal, it 
+;;; rewriting something which appears explicitly in the goal, it
 ;;; is likely to be more trouble than it is worth to introduce such
 ;;; a conjunction or disjunction.
 
@@ -206,7 +206,7 @@ generated from |(< (/ x) c) negative c| is illegal because if either
 state or mfc is a member of the vars of the term to be evaluated, we
 require that both mfc and state be present and that they be the last
 two args of the term, in that order.  We also require that the remaining
-vars be already bound.  This does not appear to be the case in 
+vars be already bound.  This does not appear to be the case in
 (SYNTAXP (OR (AND (REWRITING-GOAL-LITERAL X MFC STATE)
                   (LET (#) (COND # # #)))
              (LET ((OBJ #))
@@ -821,7 +821,7 @@ The vars already bound are (C X).
 		(<= (- x) y))
 	   (<= (* (/ x) y) -1))
   :rule-classes ((:rewrite :backchain-limit-lst (2 2 1 1))))
-  
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -971,7 +971,7 @@ The vars already bound are (C X).
 		  (< (+ c lhs) (+ c rhs)))))
 
 (defun find-constant-factor-equal (lhs rhs)
-  
+
   ;;
 
   (cond ((and (eq (fn-symb lhs) 'BINARY-*)
@@ -1044,7 +1044,7 @@ The vars already bound are (C X).
 	 nil)))
 
 (defun find-rational-constant-factor-< (lhs rhs)
-  
+
   ;;
 
   (cond ((and (eq (fn-symb lhs) 'BINARY-*)
@@ -1121,7 +1121,7 @@ The vars already bound are (C X).
 	 nil)))
 
 (defun find-constant-factor-< (lhs rhs)
-  
+
   ;;
 
   (cond ((and (eq (fn-symb lhs) 'BINARY-*)

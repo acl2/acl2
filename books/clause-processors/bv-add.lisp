@@ -64,14 +64,14 @@
                   (BV-ADD (EVL A ENV)
                           (EVL (CAR X) ENV))))
   :hints (("Goal" :expand (in a (cdr x)))))
-                     
+
 (defthm del-implies-bv-add-equality-2
   (implies (and (in a x)
                 (consp x)
                 (consp (cdr x)))
            (equal (evl (make-bv-add x) env)
                   (bv-add (evl a env) (evl (make-bv-add (del a x)) env))))
-  :hints (("Subgoal *1/4.2'" :use ((:instance bv-commute-2 (x (evl a env)) 
+  :hints (("Subgoal *1/4.2'" :use ((:instance bv-commute-2 (x (evl a env))
                                                 (y (evl (car x) env))
                                                 (z (evl (make-bv-add (del a
                                                                           (cdr
@@ -85,8 +85,8 @@
    (perm sym-list perm-list)
    (equal (evl (make-bv-add sym-list) env)
           (evl (make-bv-add perm-list) env)))
-  :hints (("Goal" :induct (perm sym-list perm-list))          
-          ("Subgoal *1/2" 
+  :hints (("Goal" :induct (perm sym-list perm-list))
+          ("Subgoal *1/2"
            :use ((:instance del-implies-bv-add-equality-2
                             (a (car sym-list))
                             (x perm-list)
@@ -168,22 +168,22 @@
     1)
    (t ;;(equal 'bv-add flg)
     0)))
-   
+
 (defun simplify-bv-adds-in (flg x)
-  (declare (xargs :measure 
+  (declare (xargs :measure
                   (list* (cons 1 (1+ (acl2-count x)))
-                         (simplify-bv-adds-in-flg-num flg))))                         
+                         (simplify-bv-adds-in-flg-num flg))))
   (cond
    ((equal 'expr-list flg)
     (cond
      ((atom x)
       nil)
-     (t 
+     (t
       (cons (simplify-bv-adds-in 'expr (car x))
             (simplify-bv-adds-in 'expr-list (cdr x))))))
 
    ((equal 'expr flg)
-    (cond 
+    (cond
      ((atom x)
       x)
      ((quotep x)
@@ -192,7 +192,7 @@
       (let* ((add-lst (simplify-bv-adds-in 'bv-add x))
              (add-lst (mergesort add-lst)))
         (make-bv-add add-lst)))
-        
+
      (t
       (cons (car x)
             (simplify-bv-adds-in 'expr-list (cdr x))))))
@@ -211,19 +211,19 @@
         (cond
          ((and (consp a1)
                (equal 'bv-add (car a1)))
-          (cons (simplify-bv-adds-in 'expr a0) 
+          (cons (simplify-bv-adds-in 'expr a0)
                 (simplify-bv-adds-in 'bv-add a1)))
          (t
-          (list (simplify-bv-adds-in 'expr a0) 
+          (list (simplify-bv-adds-in 'expr a0)
                 (simplify-bv-adds-in 'expr a1))))))))))
-   
+
 (defun bv-add-sort-cp (clause)
   (list (simplify-bv-adds-in 'expr-list clause)))
 
 (in-theory (disable mergesort perm))
 
 (defthm bv-add-merge-sort-ok
-  (implies 
+  (implies
    (and (consp sym-lst)
         (consp (cdr sym-lst)))
    (equal (evl (make-bv-add (mergesort sym-lst)) env)
@@ -248,7 +248,7 @@
         (equal (evl (simplify-bv-adds-in flg x) env)
                (evl x env)))
 
-       (implies 
+       (implies
         (equal flg 'expr-list)
         (equal (evl-list (simplify-bv-adds-in flg x) env)
                (evl-list x env)))
@@ -256,7 +256,7 @@
        (implies
         (and (not (equal flg 'expr))
              (not (equal flg 'expr-list))
-             (consp x) 
+             (consp x)
              (equal (car x) 'bv-add))
         (equal (evl (make-bv-add (simplify-bv-adds-in flg x)) env)
                (evl x env))))
@@ -278,7 +278,7 @@
                 (evl (conjoin-clauses (bv-add-sort-cp clause)) env))
            (evl (disjoin clause) env))
   :hints (("Goal" :induct (disjoin clause))
-          ("Subgoal *1/3" :use ((:instance correctness-of-bv-adds-in-expr 
+          ("Subgoal *1/3" :use ((:instance correctness-of-bv-adds-in-expr
                                            (x (car clause))
                                            (env env))))
           ("Subgoal *1/2" :use ((:instance correctness-of-bv-adds-in-expr

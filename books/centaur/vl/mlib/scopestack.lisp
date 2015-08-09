@@ -758,7 +758,7 @@ in it, such as a function, task, or block statement."
  (b* ((substs (scopes->tmplsubsts *vl-scopes->defs*)))
    `(progn . ,(template-proj
                '(make-event
-                 (def-scopetype-find '__type__ 
+                 (def-scopetype-find '__type__
                    (:@ :import t) (:@ (not :import) nil)
                    '__items__ 'definition 'vl-scopedef-p 'scopedef))
                substs))))
@@ -1095,7 +1095,7 @@ be very cheap in the single-threaded case.</p>"
               (mv-nth 1 (vl-import-stars-find-item name packages design))))
     :hints(("Goal" :in-theory (e/d (vl-import-stars-find-item)
                                    (vl-package-scope-item-alist-correct))))))
-       
+
 
 
 

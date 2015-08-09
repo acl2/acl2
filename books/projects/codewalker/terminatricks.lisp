@@ -558,7 +558,7 @@
 ;  '(((cons a b) (car :base) (cdr :base))))
 ; ==>
 ; ((:SLOT (NTH '1 (LOCALS ST)) ONE)
-;  (:SLOT (NTH '2 (LOCALS ST)) TWO)    
+;  (:SLOT (NTH '2 (LOCALS ST)) TWO)
 ;  (:SLOT (NTH '5 (LOCALS ST)) FIVE))
 
 (mutual-recursion
@@ -985,7 +985,7 @@
   (cond ((endp pdmach) nil)
         (t (union-equal
             (range-of-flag-from-tests vformal (car (car pdmach)))
-            (let ((slot (assoc-equal-cadr vformal (cdr (car pdmach))))) 
+            (let ((slot (assoc-equal-cadr vformal (cdr (car pdmach)))))
 
 ; If there is no slot setting the flag, then it would have been of the
 ; form (:SLOT flag flag) and we ignored it.  So we don't add a new flag
@@ -3650,7 +3650,7 @@
           (assign new-measure-patterns
                   new-measure-patterns)
 ; ``Admit'' the defun with a bogus measure just to grab the tmach.  Then
-; undo this so it doesn't confuse future proofs. 
+; undo this so it doesn't confuse future proofs.
           (do-and-undo
            (er-progn
             (skip-proofs
@@ -3727,7 +3727,7 @@
                         pattern."
                          name))
                     (t
-; We lay down a PROGN (as necessary) followed by an update-measure-patterns, the 
+; We lay down a PROGN (as necessary) followed by an update-measure-patterns, the
 ; new DEFUN, and the optional-lemmas.
                      (value
                       (progn-for-defunm-if-necessary

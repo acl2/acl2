@@ -1,5 +1,5 @@
 #|$ACL2s-Preamble$;
-;;Amr helmy 
+;;Amr helmy
 ;;31st october 2007
 ;; Rev. 31 Jan. 2008 by JS
 (begin-book);$ACL2s-Preamble$|#
@@ -13,10 +13,10 @@
 
 
 (defspec GenericNodesetbuffers
-  (((StateGenerator * *) => *) 
+  (((StateGenerator * *) => *)
    ;; Function StateGenerator generates
    ;; a state from two parameters
-   ;; the first one is the parameter used to 
+   ;; the first one is the parameter used to
    ;; generate the list of the nodes of the network
    ((ValidstateParamsp * *) => *)
    ;; recognizer for valid parameters
@@ -32,14 +32,14 @@
   ((generate-initial-ntkstate * *) => *))
   ;; put the list of transaction on the network
   ;;
-  ;; A network state is a list of node representing the state of the network 
-  ;; a state entry  has the form : 
-  ;;           (             (coor (...)) 
+  ;; A network state is a list of node representing the state of the network
+  ;; a state entry  has the form :
+  ;;           (             (coor (...))
   ;;                    (Buffers ...)
   ;;            )
-  ;;                               
+  ;;
   ;;example :
-  ;;        ( ((coor (2 3)) (buffers 4 3)) 
+  ;;        ( ((coor (2 3)) (buffers 4 3))
   ;;      ((coor (3 2)) (buffers 5 3))
   ;;      ((coor (5 4)) (buffers 2 3)))
   ;;
@@ -49,71 +49,71 @@
   ;;                 this means that the node coordinate is (2 3) and that
   ;;it has 4 buffers of which only 2 are free
   ;; The functions in the defspec serve for the following
-  
-  
-  ;;---------------------- Witness Functions -----------  
-  ;; Local functions for the next witness function 
-  ;; this function does not have to be instantiated 
-  (local 
+
+
+  ;;---------------------- Witness Functions -----------
+  ;; Local functions for the next witness function
+  ;; this function does not have to be instantiated
+  (local
    (defun stategeneratorlocal (nodeset y)
-     (if (endp nodeset) 
+     (if (endp nodeset)
          nil
        (append (list (list (list 'Coor  (car nodeset)) (list 'Buffers y)))
                (StateGeneratorlocal (cdr nodeset) y)))))
-  
-  
-  (local 
+
+
+  (local
    ;;a function taking a natural as input and generating a list of nodes
-   (defun StateGenerator (x y) 
+   (defun StateGenerator (x y)
      (let ((nodes (nodesetgenerator x)))
        (stategeneratorlocal nodes y))))
-  
-  ;; A function that verifies the the input parameters of the state
-  ;; genration function         
 
-  (local 
-   (defun ValidStateParamsp (x y) 
+  ;; A function that verifies the the input parameters of the state
+  ;; genration function
+
+  (local
+   (defun ValidStateParamsp (x y)
      (declare (ignore y))
      (validparamsp x)))
-  
+
   (local
    (defun loadbuffers (coordinates msgid ntkstate)
-     (declare (ignore coordinates msgid)) 
+     (declare (ignore coordinates msgid))
      ;; this function takes as input the coordinates of a node and
-     ;; loads a buffer 
+     ;; loads a buffer
      ;; in case there's still free buffers
      ntkstate))
 
-  (local 
+  (local
    (defun readbuffers (node_id ntkstate)
      (declare (ignore node_id))
      (car ntkstate)))
-  
+
   (local
    (defun generate-initial-ntkstate (talst ntkstate)
      (declare (ignore talst))
      ntkstate))
 
-;;---------------------- End Witness Functions -----------  
+;;---------------------- End Witness Functions -----------
 
-  (local 
+  (local
    (defthm validstate-stategenerator
      (validstate (stategeneratorlocal listx params2))))
-  
+
   ;; theoreme to prove the correctness
   (defthm nodeset-generates-valid-resources
-    (implies (ValidStateParamsp params params2) 
+    (implies (ValidStateParamsp params params2)
              (ValidState (StateGenerator params params2))))
-  
+
   ;; The funciton loadbuffers returns a validstate
   (defthm validstate-loadbuffers-statep
-    (implies  (validstate ntkstate) 
+    (implies  (validstate ntkstate)
               (validstate (loadbuffers coordinates msgid ntkstate))))
-  
-  (local 
+
+  (local
    (defthm valid-entry-car-stategeneratorlocal
      (validstate-entryp (car (stategeneratorlocal p1 p2)))))
-  
+
   (defthm Readbuffers-valid-entryp
     ;; reading a valid state for a valid node
     ;; returns a valid state entry
@@ -122,24 +122,24 @@
       (implies (and (ValidStateParamsp p1 p2)
                     (member-equal node_id NodeSet))
                (ValidState-entryp (Readbuffers node_id ntkstate)))))
-  
-  
+
+
   ;; this proof obligation is important to do the link between the
   ;; nodesetgenerator and the stategenerator
   ;; it states that The Validity of the stategenerator inputs must
-  ;; imply the validity of 
+  ;; imply the validity of
   ;; the input of the nodeset
   (defthm Validstateparamsp-implies-validparamsp
     (implies (ValidStateparamsp  param1 param2)
              (Validparamsp  param1)))
-  
+
   ;;this is an intermediate theorem used for the next one
-  (local 
+  (local
    (defthm getcoordinates-stategenerator-local
      (implies (true-listp listx)
               (equal (getcoordinates (stategeneratorlocal listx params2))
                      listx))))
-  
+
   ;; We prove the equality between the nodeset and the coordinates in
   ;; the stategenerator
 
@@ -147,12 +147,12 @@
     (implies  (ValidStateparamsp  param1 param2)
               (equal  (getcoordinates (StateGenerator  param1 param2))
                       (nodesetgenerator param1)))
-    :hints (("Goal" 
+    :hints (("Goal"
              :do-not '(generalize))))
-  
+
   (defthm subsets-are-valid-resources
     ;; this lemma is used to prove that routes are made of valid state nodes
     (implies (and (ValidState nodelist)
                   (subsetp y nodelist))
-             (ValidState y)))                
+             (ValidState y)))
   )

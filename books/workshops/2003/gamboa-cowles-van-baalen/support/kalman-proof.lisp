@@ -46,7 +46,7 @@
 (defun best-prior-estimate-of-x (k)
   (if (zp k)
       (xhatmin k)
-    (m-* (phi (1- k)) 
+    (m-* (phi (1- k))
 	 (best-estimate-of-x (1- k)))))
 
 (defun result-form (y Xp k)
@@ -65,7 +65,7 @@
 				     (m-* (h k) Xp))
 				(m-trans (m-- (z k)
 					      (m-* (h k) Xp)))))))))
-  
+
 (defaxiom best-estimate-of-x-def
   (implies (and (m-= (best-prior-estimate-of-x k) Xp)
 		(m-= (result-form-derivative y Xp k) (m-zero (n) (m))))
@@ -122,7 +122,7 @@
 			 (ww (1- k)))))
     :hints (("Goal" :do-not-induct t
 	     :use ((:instance lemma-1)
-		   (:instance (:theorem 
+		   (:instance (:theorem
 			       (implies (and (m-matrixp (l phi) (c phi) phi)
 					     (m-matrixp (l x) (c x) x)
 					     (m-matrixp (l xhat) (c xhat) xhat)
@@ -145,7 +145,7 @@
 	    ("Subgoal 2'" :in-theory nil))
     :rule-classes nil))
 
- (local 
+ (local
   (defthm lemma-3a
     (implies (and (m-matrixp (l a) (c a) a)
 		  (m-matrixp (l b) (c b) b)
@@ -163,16 +163,16 @@
   (defthm lemma-3b-1
     (implies (and (m-= (m-* (m-+ (m-* phi (m-+ x (m-unary-- xhat))) ww)
 			    (m-trans (m-+ (m-* phi (m-+ x (m-unary-- xhat))) ww)))
-		       (m-+ (m-* phi 
+		       (m-+ (m-* phi
 				 (m-* (m-+ x (m-unary-- xhat))
-				      (m-trans (m-* phi 
-						    (m-+ x 
+				      (m-trans (m-* phi
+						    (m-+ x
 							 (m-unary-- xhat))))))
 			    (m-+ (m-* phi (m-* (m-+ x (m-unary-- xhat))
 					       (m-trans ww)))
-				 (m-+ (m-* ww 
-					   (m-trans (m-* phi 
-							 (m-+ x 
+				 (m-+ (m-* ww
+					   (m-trans (m-* phi
+							 (m-+ x
 							      (m-unary-- xhat)))))
 				      (m-* ww (m-trans ww))))))
 		  (m-matrixp (l x) (c x) x)
@@ -228,7 +228,7 @@
 			      (b ww))))
 	    ("Goal''"
 	     :use ((:instance lemma-3b-1))
-	     :in-theory (disable acl2::trans-* 
+	     :in-theory (disable acl2::trans-*
 				 acl2::*-+-right
 				 acl2::*-+-left)))
     :rule-classes nil))
@@ -238,17 +238,17 @@
     (m-= (m-* (m-+ (m-* (phi (1- k)) (m-- (x (1- k)) (xhat (1- k))))
 		     (ww (1- k)))
 		(m-trans (m-+ (m-* (phi (1- k))
-				   (m-- (x (1- k)) (xhat (1- k)))) 
+				   (m-- (x (1- k)) (xhat (1- k))))
 			      (ww (1- k)))))
-	   (m-+ (m-* (m-* (phi (1- k)) 
+	   (m-+ (m-* (m-* (phi (1- k))
 			  (m-- (x (1- k)) (xhat (1- k))))
 		     (m-* (m-trans (m-- (x (1- k)) (xhat (1- k))))
 			  (m-trans (phi (1- k)))))
 		(m-+ (m-* (m-* (phi (1- k))
 			       (m-- (x (1- k)) (xhat (1- k))))
 			  (m-trans (ww (1- k))))
-		     (m-+ (m-* (ww (1- k)) 
-			       (m-* (m-trans (m-- (x (1- k)) 
+		     (m-+ (m-* (ww (1- k))
+			       (m-* (m-trans (m-- (x (1- k))
 						  (xhat (1- k))))
 				    (m-trans (phi (1- k)))))
 			  (m-* (ww (1- k)) (m-trans (ww (1- k))))))))
@@ -276,7 +276,7 @@
 				      (m-trans (ww (+ -1 k))))))
 		   (:instance mean-of-x-xhat*wtrans
 			      (k (1- k))))
-	     :in-theory (disable xhat z 
+	     :in-theory (disable xhat z
 				 acl2::*-+-right
 				 mean-of-x-xhat*wtrans)))))
 
@@ -297,14 +297,14 @@
 			      (q (m-trans (phi (+ -1 k)))))
 		   (:instance mean-of-w*trans-of-x-xhat
 			      (k (1- k))))
-	     :in-theory (disable xhat z 
+	     :in-theory (disable xhat z
 				 acl2::*-+-right
 				 mean-of-w*trans-of-x-xhat)))))
 
 
  (local
   (defthm lemma-4c
-    (m-= (M-MEAN 
+    (m-= (M-MEAN
 	  (ACL2::M-BINARY-* (PHI (+ -1 K))
 			    (ACL2::M-BINARY-* (ACL2::M-BINARY-+ (X (+ -1 K))
 								(ACL2::M-UNARY-- (XHAT (+ -1 K))))
@@ -335,8 +335,8 @@
 		   (:instance mean-delete
 			      (p (phi (1- k)))))
 	     :in-theory (disable xhat z acl2::*-+-right)))))
- 
- (local 
+
+ (local
   (defthm lemma-4-1
     (acl2::m-=
      (m-mean
@@ -376,9 +376,9 @@
 			    (acl2::m-unary-- (xhat (+ -1 k))))
 	  (acl2::m-binary-+ (acl2::m-trans (x (+ -1 k)))
 			    (acl2::m-unary-- (acl2::m-trans (xhat (+ -1 k)))))))
-	(acl2::m-trans (phi (+ -1 k)))))))    
-    :hints (("Goal" :in-theory (disable acl2::*-+-right 
-					acl2::*---right 
+	(acl2::m-trans (phi (+ -1 k)))))))
+    :hints (("Goal" :in-theory (disable acl2::*-+-right
+					acl2::*---right
 					acl2::*-+-left
 					acl2::*---left
 					acl2::right-distributivity-of-m-*-over-m-+
@@ -390,9 +390,9 @@
     (m-= (m-mean (m-* (m-+ (m-* (phi (1- k)) (m-- (x (1- k)) (xhat (1- k))))
 			   (ww (1- k)))
 		      (m-trans (m-+ (m-* (phi (1- k))
-					 (m-- (x (1- k)) (xhat (1- k)))) 
+					 (m-- (x (1- k)) (xhat (1- k))))
 				    (ww (1- k))))))
-	 (m-+ (m-* (m-* (phi (1- k)) 
+	 (m-+ (m-* (m-* (phi (1- k))
 			(m-mean (m-* (m-- (x (1- k)) (xhat (1- k)))
 				     (m-trans (m-- (x (1- k)) (xhat (1- k)))))))
 		   (m-trans (phi (1- k))))
@@ -427,7 +427,7 @@
 				 acl2::right-distributivity-of-m-*-over-m-+
 				 acl2::left-distributivity-of-m-*-over-m-+
 				 acl2::commutativity-2-of-m-+
-				 xhat 
+				 xhat
 				 x
 				 z
 				 xhatmin-recdef
@@ -440,7 +440,7 @@
 		  (< 0 k))
 	     (m-= (m-mean (m-* (m-- (x k) (xhatmin k))
 			       (m-trans (m-- (x k) (xhatmin k)))))
-		  (m-+ (m-* (m-* (phi (1- k)) 
+		  (m-+ (m-* (m-* (phi (1- k))
 				 (m-mean (m-* (m-- (x (1- k)) (xhat (1- k)))
 					      (m-trans (m-- (x (1- k)) (xhat (1- k)))))))
 			    (m-trans (phi (1- k))))
@@ -448,7 +448,7 @@
     :hints (("Goal" :do-not-induct t
 	     :use ((:instance lemma-2)
 		   (:instance lemma-4))
-	     :in-theory (disable x xhat xhatmin-recdef 
+	     :in-theory (disable x xhat xhatmin-recdef
 				 acl2::*-+-right
 				 acl2::*---right
 				 acl2::*-+-left
@@ -471,7 +471,7 @@
 			      (m-trans (m-- (x k) (xhatmin k)))))))
    :hints (("Goal" :do-not-induct t
 	    :use ((:instance lemma-5))
-	    :in-theory (disable x xhat xhatmin 
+	    :in-theory (disable x xhat xhatmin
 				gain-recdef pplus-recdef xhatmin-recdef
 				acl2::*-+-right
 				acl2::*---right
@@ -532,9 +532,9 @@
 			      (acl2::n2 1)))
 	     :in-theory (disable acl2::id-*-x)))
     :rule-classes nil))
-	       
 
- (local 
+
+ (local
   (defthm lemma-2a
     (implies (and (equal (l a) (l b))
 		  (equal (c a) (c b))
@@ -567,7 +567,7 @@
 				   (m-* (m-* (m-- (x k) (xhatmin k))
 					     (m-trans (v k)))
 					(m-trans (gain k)))))
-		   (m-+ (m-unary-- (m-* (gain k) 
+		   (m-+ (m-unary-- (m-* (gain k)
 					(m-* (m-* (v k)
 						  (m-trans (m-- (x k) (xhatmin k))))
 					     (m-trans (m-- (m-id (n))
@@ -584,7 +584,7 @@
 				      (m-- (x k) (xhatmin k))))
 			      (b (m-* (gain k)
 				      (v k)))))
-	     :in-theory (disable x xhat xhatmin 
+	     :in-theory (disable x xhat xhatmin
 				 gain-recdef pplus-recdef xhatmin-recdef
 				 acl2::*-+-right
 				 acl2::*-+-left
@@ -594,7 +594,7 @@
 				 ACL2::RIGHT-DISTRIBUTIVITY-OF-M-*-OVER-M-+)))
     :rule-classes nil))
 
- 
+
  (local
   (defthm lemma-3a1
     (and (equal (l (m-- (x k) (xhatmin k))) (n))
@@ -738,7 +738,7 @@
 			      (q (m-* (m-* (v k)
 					   (m-trans (v k)))
 				      (m-trans (gain k)))))
-		   (:instance mean-* 
+		   (:instance mean-*
 			      (p (m-* (v k)
 				      (m-trans (v k))))
 			      (q (m-trans (gain k))))
@@ -1231,7 +1231,7 @@
 			(m-trans (gain k))))))
     :hints (("Goal"
 	     :use ((:instance lemma-2))
-	     :in-theory (disable x xhat xhatmin 
+	     :in-theory (disable x xhat xhatmin
 				 gain-recdef pplus-recdef xhatmin-recdef
 				 acl2::*-+-right
 				 acl2::*-+-left
@@ -1253,7 +1253,7 @@
 				 (m-* (gain k) (h k))))))
 	 (m-+ (pminus k)
 	      (m-+ (m-unary-- (m-* (gain k) (m-* (h k) (pminus k))))
-		   (m-+ (m-unary-- (m-* (pminus k) 
+		   (m-+ (m-unary-- (m-* (pminus k)
 					(m-* (m-trans (h k))
 					     (m-trans (gain k)))))
 			(m-* (gain k)
@@ -1265,7 +1265,7 @@
 	     :in-theory (disable gain gain-recdef
 				 pminus pminus-recdef)))
     :rule-classes nil))
-				 
+
  (local
   (defthm lemma-5
     (m-= (m-+ (m-* (m-- (m-id (n))
@@ -1278,7 +1278,7 @@
 			(m-trans (gain k)))))
 	 (m-+ (pminus k)
 	      (m-+ (m-unary-- (m-* (gain k) (m-* (h k) (pminus k))))
-		   (m-+ (m-unary-- (m-* (pminus k) 
+		   (m-+ (m-unary-- (m-* (pminus k)
 					(m-* (m-trans (h k))
 					     (m-trans (gain k)))))
 			(m-+ (m-* (gain k)
@@ -1333,11 +1333,11 @@
 			      (acl2::r y))
 		   (:instance acl2::inv-*-x
 			      (acl2::p x)))
-	     :in-theory (disable acl2::assoc-* 
+	     :in-theory (disable acl2::assoc-*
 				 acl2::inv-*-x))
 	    ("Goal'4'"
 	     :in-theory (enable acl2::assoc-*)))))
-			      
+
  (local
   (defthm lemma-7
     (implies (and (integerp k) (<= 0 k))
@@ -1365,7 +1365,7 @@
 				 acl2::COMMUTATIVITY-2-OF-M-+
 				 ))
 	    ("Goal'''"
-	     :use (:theorem 
+	     :use (:theorem
 		   (implies (and (integerp k) (<= 0 k))
 			    (m-= (m-* (gain k)
 				      (m-* (m-+ (m-* (h k)
@@ -1449,7 +1449,7 @@
 	     :use ((:instance lemma-8))
 	     :in-theory (disable pminus pminus-recdef gain gain-recdef)))
     :rule-classes nil))
-		 
+
  (local
   (defthm lemma-10
     (implies (and (integerp k) (<= 0 k))
@@ -1510,7 +1510,7 @@
 				 acl2::trans-*
 				 acl2::trans-+
 				 acl2::trans---)))
-    :rule-classes nil)) 
+    :rule-classes nil))
 
  (local
   (defun natural-induction (n)
@@ -1531,9 +1531,9 @@
 	   ("Subgoal *1/1"
 	    :use ((:instance pplus-as-mean-case-0)))
 	   ))
-    
+
  )
-   
+
 (defthm pminus-as-mean
   (implies (and (integerp k) (<= 0 k))
 	   (m-= (pminus k)
@@ -1543,7 +1543,7 @@
 	   :use ((:instance pminus-as-mean-almost)
 		 (:instance pplus-as-mean (k (1- k))))
 	   :in-theory (disable pminus-as-mean-almost pplus-as-mean
-			       x xhat xhatmin 
+			       x xhat xhatmin
 			       gain-recdef pplus-recdef xhatmin-recdef
 			       (pminus) (x) (xhatmin)))))
 
@@ -1607,7 +1607,7 @@
  (local
   (encapsulate
    ()
- 
+
    (local
     (defthm lemma-2-1
       (equal (l (m-* (v k) (m-trans (v k))))
@@ -1635,7 +1635,7 @@
 						   (m-* (h k) (xhatmin k)))))
 				(m-* (v k) (m-trans (v k)))))))
      :hints (("Goal" :do-not-induct t
-	      :in-theory '(lemma-1 mean-+ lemma-2-1 lemma-2-2 
+	      :in-theory '(lemma-1 mean-+ lemma-2-1 lemma-2-2
 				   acl2::m-=-implies-equal-m-+-1))))
 
    ))
@@ -1688,7 +1688,7 @@
 		     (:instance acl2::*-+-right
 				(acl2::p (h k))
 				(acl2::q (m-* (x k) (m-trans (v k))))
-				(acl2::r (m-* (m-unary-- (xhatmin k)) 
+				(acl2::r (m-* (m-unary-- (xhatmin k))
 					      (m-trans (v k)))))
 		     (:instance mean-*
 				(p (h k))
@@ -1727,7 +1727,7 @@
 				   ACL2::RIGHT-DISTRIBUTIVITY-OF-M-*-OVER-M-+
 				   acl2::x-*-zero))
 	      ("Goal'7'"
-	       :use ((:theorem 
+	       :use ((:theorem
 		      (IMPLIES (m-= (m-mean (m-* (v k)
 						 (m-* (m-- (m-trans (x k))
 							   (m-trans (xhatmin k)))
@@ -1817,7 +1817,7 @@
     :hints (("Goal" :do-not-induct t
 	     :use ((:instance lemma-4)
 		   (:instance lemma-5))
-	     :in-theory (disable lemma-4 
+	     :in-theory (disable lemma-4
 				 lemma-5
 				 z
 				 xhatmin
@@ -1848,7 +1848,7 @@
     :hints (("Goal" :do-not-induct t
 	     :use ((:instance lemma-3)
 		   (:instance lemma-6))
-	     :in-theory (disable lemma-3 
+	     :in-theory (disable lemma-3
 				 lemma-6
 				 z
 				 xhatmin
@@ -1960,7 +1960,7 @@
  (local
   (encapsulate
    ()
- 
+
    (local
     (defthm lemma-10-1
       (implies (and (equal (l a) (l b))
@@ -1990,7 +1990,7 @@
    (local
     (defthm lemma-10-3
       (m-= (m-trans (m-- (z k) (m-* (h k) (xhatmin k))))
-	   (m-+ (m-trans (m-- (m-* (h k) (x k)) 
+	   (m-+ (m-trans (m-- (m-* (h k) (x k))
 			      (m-* (h k) (xhatmin k))))
 		(m-trans (v k))))
       :hints (("Goal" :do-not-induct t))))
@@ -2001,7 +2001,7 @@
 			(m-trans (m-- (z k)
 				      (m-* (h k) (xhatmin k))))))
 	   (m-mean (m-* (m-- (xhatmin k) (x k))
-			(m-trans (m-- (m-* (h k) (x k)) 
+			(m-trans (m-- (m-* (h k) (x k))
 				      (m-* (h k) (xhatmin k)))))))
       :hints (("Goal" :do-not-induct t
 	       :in-theory (disable MEAN-UNARY--
@@ -2056,7 +2056,7 @@
 						(m-unary-- (m-* (h k) (xhatmin k))))))))))
 	      ("Goal'6'"
 	       :use ((:instance mean-of-x-xhatmin*vtrans)
-		     (:instance mean-unary-- 
+		     (:instance mean-unary--
 				(p (m-* (m-+ (x k)
 					     (m-unary-- (xhatmin k)))
 					(m-trans (v k)))))
@@ -2070,7 +2070,7 @@
 
 	      ("Subgoal 2"
 	       :use ((:instance M-=-IMPLIES-M-=-M-MEAN-1
-				(x (m-* (m-- (xhatmin k) (x k)) 
+				(x (m-* (m-- (xhatmin k) (x k))
 					(m-trans (v k))))
 				(x-equiv (m-unary-- (m-* (m-- (x k) (xhatmin k))
 							 (m-trans (v k))))))
@@ -2112,7 +2112,7 @@
 		    (equal (c b) (l c)))
 	       (m-= (m-unary-- (m-mean (m-* (m-- a b) c)))
 		    (m-mean (m-* (m-- b a) c))))
-      :hints (("Goal" 
+      :hints (("Goal"
 	       :use ((:instance lemma-10-5)
 		     (:instance M-=-IMPLIES-M-=-M-MEAN-1
 				(x (ACL2::M-BINARY-* (ACL2::M-BINARY-+ B (ACL2::M-UNARY-- A))
@@ -2122,7 +2122,7 @@
 	       :in-theory (disable lemma-10-5 acl2::unary---+ acl2::assoc-+
 				   m-=-implies-m-=-m-mean-1))
 	      ("Goal'4'"
-	       :by (:theorem 
+	       :by (:theorem
 		    (implies
 		     (and (acl2::matrixp (car (dimensions 'acl2::$arg a))
 					 (car (dimensions 'acl2::$arg c))
@@ -2178,7 +2178,7 @@
 				  ACL2::right-DISTRIBUTIVITY-OF-M-*-OVER-M-+
 				  mean-+))))
    ))
-    
+
  (defthm gain-minimizes-error
    (implies (and (integerp k) (<= 0 k))
 	    (m-= (result-form-derivative (gain k) (xhatmin k) k)
@@ -2187,8 +2187,8 @@
 	    :use ((:instance lemma-9)
 		  (:instance lemma-10)
 		  (:instance gain-recdef))
-	    :in-theory (disable lemma-9 
-				lemma-10 
+	    :in-theory (disable lemma-9
+				lemma-10
 				lemma-0
 				lemma-1
 				lemma-3
@@ -2237,7 +2237,7 @@
 		(<= 0 k))
 	   (m-= (xhat k)
 		(best-estimate-of-x k)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :induct (natural-induction k))
 	  ("Subgoal *1/2"
 	   :use ((:instance xhatmin=best-prior-almost)
@@ -2268,4 +2268,4 @@
 		 (:instance xhat=best-estimate (k (1- k))))
 	   :in-theory '(best-prior-estimate-of-x zp)))
   :rule-classes nil)
-    
+

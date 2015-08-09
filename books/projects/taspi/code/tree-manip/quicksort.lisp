@@ -1,6 +1,6 @@
 ;Added guards March 25, 2004
 
-;This file throws together a function order that orders the 
+;This file throws together a function order that orders the
 ; symbols in a list
 ; uses quicksort algorithm.
 ; call with something like: (order '(a h f d k))
@@ -42,7 +42,7 @@
           (declare (ignore more))
           (<= (acl2-count less)
               (acl2-count list)))
-  :hints (("Goal" :use (:instance to-admit-less-gen 
+  :hints (("Goal" :use (:instance to-admit-less-gen
                                   (pivot pivot)
                                   (list list)
                                   (a nil)
@@ -95,16 +95,16 @@
                   :verify-guards nil))
   (if (consp list)
       (mv-let (less more) (separate pivot list nil nil)
-              (let ((new-less (if (consp less) 
+              (let ((new-less (if (consp less)
                                   (if (consp (cdr less))
-                                      (quick-order (car less) 
+                                      (quick-order (car less)
                                                    (cdr less))
                                     (list (car less)))
                                 nil))
                     (new-more (if (consp more)
                                   (if (consp (cdr more))
-                                      (cons pivot (quick-order 
-                                                   (car more) 
+                                      (cons pivot (quick-order
+                                                   (car more)
                                                    (cdr more)))
                                     (cons pivot (list (car more))))
                                 (list pivot))))
@@ -119,7 +119,7 @@
                 (symbolp pivot)
                 (symbol-listp less)
                 (symbol-listp more))
-           (mv-let (newless newmore) 
+           (mv-let (newless newmore)
                    (separate pivot list less more)
                    (and (symbol-listp newless)
                         (symbol-listp newmore)))))
@@ -131,7 +131,7 @@
 
 (defthm true-listp-quick-order
   (true-listp (quick-order pivot list)))
-  
+
 (defthm symbol-listp-cdar
   (implies (and (symbolp pivot)
                 (symbol-listp list)
@@ -171,7 +171,7 @@
 ;END OF LEMMAS FOR THE GUARD VERIFICATIION
 ;-------------------------------------------------------------------
 (verify-guards quick-order
-               :hints (("Subgoal 4" :use 
+               :hints (("Subgoal 4" :use
                         (:instance symbolp-first-first
                                    (x (car (separate pivot list less more)))))))
 

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -48,17 +48,17 @@
 ; Here is David Russinoff's proof outline for sticky-monotone.
 
 ; Proof:
-; 
+;
 ; By sticky-pos, sticky-0, and sticky-minus, we may assume x > 0.
-; 
+;
 ; By expo-sticky, we nay assume expo(x) = expo(y).
-; 
+;
 ; By trunc-monotone and the definition of sticky, we nay assume that
 ; y is (n-1)-exact and x is not (n-1)-exact.
-; 
-; By fp+2, since y > x > trunc(x,n-1), 
-; 
-;   sticky(y,n) = y 
+;
+; By fp+2, since y > x > trunc(x,n-1),
+;
+;   sticky(y,n) = y
 ;              >= fp+(trunc(x,n-1),n-1)
 ;               = trunc(x,n-1) + 2^(expo(trunc(x,n-1)) + 1 - (n-1))
 ;               > trunc(x,n-1) + 2^(expo(trunc(x,n-1)) + 1 - n)
@@ -277,8 +277,8 @@
 
 ;;(i-am-here) ;; Fri Oct 13 12:30:27 2006
 
-(encapsulate () 
-    (local 
+(encapsulate ()
+    (local
        (defthmd sticky-monotone-support
          (implies (and (<= x y)
                        (rationalp x)
@@ -290,7 +290,7 @@
                                sticky-monotone-neg)))
          :rule-classes :linear))
 
-    (encapsulate () 
+    (encapsulate ()
        (local (include-book "trunc"))
        (defthm trunc-to-0
          (implies (and (integerp n)
@@ -298,7 +298,7 @@
                   (equal (trunc x n) 0))
          :hints (("Goal" :by trunc-to-0-or-fewer-bits))))
 
-    (local 
+    (local
       (defthm |1/2-sig-x-not-integerp-lemma|
         (implies (and (rationalp x)
                       (not (equal x 0))
@@ -310,7 +310,7 @@
                               (:instance sig-lower-bound))))))
 
 
-    (local 
+    (local
      (defthm exactp-minus-fact
        (implies (and (integerp n)
                      (rationalp x)
@@ -349,4 +349,4 @@
                                             (m (+ 1 (expo y))))))
             ("Subgoal 1" :use ((:instance sticky-monotone-support))))
     :rule-classes :linear))
-  
+

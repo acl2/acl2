@@ -23,14 +23,14 @@
 ; ******************* END INITIALIZATION FOR ACL2s MODE ******************* ;
 ;$ACL2s-SMode$;ACL2s
 ;;Amr HELMY
-;; this file is similar to the one in the ACL2 book library the 
-;; differences are 
+;; this file is similar to the one in the ACL2 book library the
+;; differences are
 ;; some extra theorems at the end.
 ;; and the main difference is the change in the permutation function
 ;; to use member-equal instead of the function in used in the books.
 ;; But apart from that it is the same as the one in the ACL2 distribution
 ;; own-perm.lisp
-;; 13th March 2008 
+;; 13th March 2008
 (begin-book t :TTAGS ((:CCG)));$ACL2s-Preamble$|#
 
 (in-package "ACL2")#|ACL2s-ToDo-Line|#
@@ -52,14 +52,14 @@
 (local
  (encapsulate
   ()
-    
+
   (local
    (defthm is-perm-del
      (implies (member-equal a y)
               (equal (is-perm (del a y) x)
                      (is-perm y (cons a x))))
      :hints (("Goal" :induct (is-perm y x)))))
-  
+
   (defthm is-perm-symmetric
     (implies (is-perm x y) (is-perm y x)))))
 
@@ -78,7 +78,7 @@
                 (del b (del a x)))))
 
 (defthm member-not-equal-member-equal
-  (implies (and (member-equal a z) (not (equal a b))) 
+  (implies (and (member-equal a z) (not (equal a b)))
            (member-equal a (del b z))))
 
 (local (defthm is-perm-del-del
@@ -88,7 +88,7 @@
                          (is-perm (del a y) (del a z))))))
 
 (local (defthm is-perm-transitive
-         (implies (and (is-perm x y) (is-perm y z)) 
+         (implies (and (is-perm x y) (is-perm y z))
                   (is-perm x z)) ))
 
 (defequiv is-perm)
@@ -98,14 +98,14 @@
 ;; the next theorem proves that if a is not a member of Z then it
 ;; won't be a member if we remove another member of Z
 (defthm not-member-z-not-member-del
-  (implies (not (member-equal a z)) 
+  (implies (not (member-equal a z))
            (not (member-equal a (del b z)))))
 ;; If a is a member of Z and Z contains no duplications
 ;; then a is not member of (Z-a)
 (defthm member-no-duplicatesp-not-member-del
-  (implies (and (member-equal a z) (no-duplicatesp-equal z)) 
+  (implies (and (member-equal a z) (no-duplicatesp-equal z))
            (not (member-equal a (del a z)))))
-;; If y has no duplication removing an element from it keeps it 
+;; If y has no duplication removing an element from it keeps it
 ;; without duplications
 (defthm no-duplicatesp-delete
   (implies (no-duplicatesp-equal y)
@@ -114,26 +114,26 @@
 ;; if x is a permutation of Z, and a is not a member of Z then A is
 ;; not a member of the tail of X
 (defthm not-member-is-perm-no-member
-  (implies (and (not (member-equal a z)) (is-perm x z)) 
-           (not (member-equal a (cdr x)))))        
+  (implies (and (not (member-equal a z)) (is-perm x z))
+           (not (member-equal a (cdr x)))))
 ;; X is a permutation of Y, No duplications is Y then there is none in
 ;; X, and the first element of X is not member of its tail, needed of
 ;; the induction in the next theorem
 (defthm is-perm-no-memberp
-  (implies (and (is-perm x y) (no-duplicatesp-equal y)) 
+  (implies (and (is-perm x y) (no-duplicatesp-equal y))
            (not (member-equal (car x) (cdr x))))
-  :hints (("Subgoal *1/3.1" 
-           :use (:instance  not-member-is-perm-no-member  
+  :hints (("Subgoal *1/3.1"
+           :use (:instance  not-member-is-perm-no-member
                             (a (car x)) (x (cdr x))  (z  (DEL (CAR X) Y))))))
 
 ;;   a list x is a permutation of Y, and no duplication in y
 ;; then x contains no duplications
 (defthm is-perm-no-duplicatesp
-  (implies (and (is-perm x y) (no-duplicatesp-equal y)) 
+  (implies (and (is-perm x y) (no-duplicatesp-equal y))
            (no-duplicatesp-equal x))
-  :hints (("subgoal *1/5''" 
+  :hints (("subgoal *1/5''"
            :use (:instance is-perm-no-memberp))
-          ("subgoal *1/4" 
+          ("subgoal *1/4"
            :use (:instance no-duplicatesp-delete (a (car x))))))
 
 

@@ -9,7 +9,7 @@
 (defun lexicographic-pos-aux (procs queue)
   (if (endp queue) T
     (if (endp (rest queue)) T
-      (and (lex< (pos (<- procs (first queue))) 
+      (and (lex< (pos (<- procs (first queue)))
 		 (first queue)
 		 (pos (<- procs (second queue)))
 		 (second queue))
@@ -79,7 +79,7 @@
 
 
 (local
-(in-theory (disable memberp-lexicographic-temp-reduction 
+(in-theory (disable memberp-lexicographic-temp-reduction
                     car-of-extract-indices-is-a-member-of-queue))
 )
 
@@ -107,7 +107,7 @@
 		(pos (<- procs in))
 		(not (lex< (pos (<- procs curr))
 			   curr
-			   (pos (<- procs in))	
+			   (pos (<- procs in))
                            in ))
 		(memberp in queue))
 	   (not (memberp curr (previous queue in))))

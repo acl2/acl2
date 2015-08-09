@@ -21,8 +21,8 @@
 ; University of Wyoming
 ; Laramie, WY 82071-3682 U.S.A.
 
-;; Any total function from integer lists to integers that 
-;;  satisfies the tarai recursion must equal the function 
+;; Any total function from integer lists to integers that
+;;  satisfies the tarai recursion must equal the function
 ;;  Fb for lists of length 7:
 
 ;; (certify-book "C:/acl2/tak/tarai8")
@@ -31,31 +31,31 @@
 
 (include-book "tarai5")
 
-;; The book tarai5, included above, includes all the 
+;; The book tarai5, included above, includes all the
 ;;  definitions required to define Bailey's version (called
 ;;  Fb) of the f function for Knuth's Theorem 4. The included
 ;;  book also contains a theorem showing that the function Fb
-;;  satisfies the tarai recursion for lists of lengths between 
+;;  satisfies the tarai recursion for lists of lengths between
 ;;  2 and 7.
 
 ;; Fb satisfies the tarai recursion (rule-classes nil)
 ;;    (from the book tarai5):
 #|  (defthm
       Fb-sat-tarai-def
-      (implies (and 
+      (implies (and
 		(integer-listp lst)
 		(consp (rest lst))        ;; (len lst) > 1
-		(not 
+		(not
 		 (consp (nthcdr 7 lst)))) ;; (len lst) <= 7
 	       (equal (Fb lst)
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst 
-			     (lst-rotates-with-minus-1 
+			(Fb (Fb-lst
+			     (lst-rotates-with-minus-1
 			      (- (LEN lst) 1)
 			      lst)))))))
-|#			      
+|#
 
 (defthm
     integerp-last-el
@@ -89,35 +89,35 @@
  (((tarai *)  => *)
   ((tarai-lst *)  => *))
 
- (local (defun 
+ (local (defun
 	    tarai (lst)
 	    (Fb lst)))
- 
- (local (defun 
+
+ (local (defun
 	    tarai-lst (lst)
 	    (Fb-lst lst)))
 
  (defthm
      tarai-def
-     (implies (and 
+     (implies (and
 	       (integer-listp lst)
 	       (consp (rest lst))        ;; (len lst) > 1
-	       (not 
+	       (not
 		(consp (nthcdr 7 lst)))) ;; (len lst) <= 7
 	      (equal (tarai lst)
 		     (if (<= (first lst)
 			     (second lst))
 			 (second lst)
-		         (tarai (tarai-lst 
-				 (lst-rotates-with-minus-1 
+		         (tarai (tarai-lst
+				 (lst-rotates-with-minus-1
 				  (- (LEN lst) 1)
 				  lst))))))
      :rule-classes nil
      :hints (("Goal"
-	      :in-theory (disable Fb Fb-lst len  
+	      :in-theory (disable Fb Fb-lst len
 				  lst-rotates-with-minus-1)
 	      :use Fb-sat-tarai-def)))
- 
+
  (defthm
      tarai-lst-def
      (equal (tarai-lst lst)
@@ -159,7 +159,7 @@
     tarai=Fb-1
     (implies (and (integer-listp lst)
 		  (consp (rest lst))        ;; (len lst) > 1
-		  (not 
+		  (not
 		   (consp (nthcdr 7 lst))) ;; (len lst) <= 7
 		  (<= (first lst)(second lst)))
 	     (equal (tarai lst)(Fb lst)))
@@ -177,7 +177,7 @@
 		    (list (- second 1) third forth fifth sixth seventh first))
 	      ))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth fifth sixth seventh))))
 	     )))
@@ -219,7 +219,7 @@
  (defthm
      lst-rotates-with-minus-1-7e
      (let ((lst (list first second third forth fifth sixth seventh)))
-       (equal 
+       (equal
 	(lst-rotates-with-minus-1 5 lst)
 	(list (list (- first 1) second third forth fifth sixth seventh)
 	      (list (- second 1) third forth fifth sixth seventh first)
@@ -234,19 +234,19 @@
      lst-rotates-with-minus-1-7f
      (let ((lst (list first second third forth
 		      fifth sixth seventh)))
-       (equal 
+       (equal
 	(lst-rotates-with-minus-1 6 lst)
-	(list (list (- first 1) second third forth 
+	(list (list (- first 1) second third forth
 		    fifth sixth seventh)
 	      (list (- second 1) third forth fifth
 		    sixth seventh first)
-	      (list (- third 1) forth fifth sixth 
+	      (list (- third 1) forth fifth sixth
 		    seventh first second)
 	      (list (- forth 1) fifth sixth seventh
 		    first second third)
-	      (list (- fifth 1) sixth seventh first 
+	      (list (- fifth 1) sixth seventh first
 		    second third forth)
-	      (list (- sixth 1) seventh first second 
+	      (list (- sixth 1) seventh first second
 		    third forth fifth)
 	      (list (- seventh 1) first second third
 		    forth fifth sixth)
@@ -258,21 +258,21 @@
       (implies (and (integer-listp lst)
 		    (> first second)
 		    (<= second third)
-		    (equal (tarai 
-			    (list (- first 1) second third 
+		    (equal (tarai
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh))
-			   (Fb 
-			    (list (- first 1) second third 
+			   (Fb
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh)))
 		    (equal (tarai
 			    (list (- second 1) third fourth
 				  fifth sixth seventh first))
-			   (Fb 
-			    (list (- second 1) third fourth 
+			   (Fb
+			    (list (- second 1) third fourth
 				  fifth sixth seventh first)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
+		    (equal (tarai
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -294,8 +294,8 @@
 			      (list (- seventh 1) first second
 				    third fourth fifth sixth))))
 			   (Fb
-			    (list 
-			     (Fb 
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -320,7 +320,7 @@
     :hints (("Goal"
 	     :use (:instance
 		   tarai-def
-		   (lst (list first second third 
+		   (lst (list first second third
 			      fourth fifth sixth seventh))))))
 
 (defthm
@@ -330,17 +330,17 @@
 		    (> first second)
 		    (> second third)
 		    (<= third fourth)
-		    (equal (tarai 
-			    (list (- first 1) second third 
+		    (equal (tarai
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh))
-			   (Fb 
-			    (list (- first 1) second third 
+			   (Fb
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh)))
 		    (equal (tarai
 			    (list (- second 1) third fourth
 				  fifth sixth seventh first))
-			   (Fb 
-			    (list (- second 1) third fourth 
+			   (Fb
+			    (list (- second 1) third fourth
 				  fifth sixth seventh first)))
 		    (equal (tarai
 			    (list (- third 1) fourth fifth
@@ -348,9 +348,9 @@
 			   (Fb
 			    (list (- third 1) fourth fifth
 				  sixth seventh first second)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
+		    (equal (tarai
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -372,8 +372,8 @@
 			      (list (- seventh 1) first second
 				    third fourth fifth sixth))))
 			   (Fb
-			    (list 
-			     (Fb 
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -398,7 +398,7 @@
     :hints (("Goal"
 	     :use (:instance
 		   tarai-def
-		   (lst (list first second third 
+		   (lst (list first second third
 			      fourth fifth sixth seventh))))))
 
 (defthm
@@ -410,8 +410,8 @@
 		    (> third fourth)
 		    (<= fourth fifth))
 	       (equal (Fb
-		       (list 
-			(Fb 
+		       (list
+			(Fb
 			 (list (- first 1) second third
 			       fourth fifth sixth seventh))
 			(Fb
@@ -442,17 +442,17 @@
 		    (> second third)
 		    (> third fourth)
 		    (<= fourth fifth)
-		    (equal (tarai 
-			    (list (- first 1) second third 
+		    (equal (tarai
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh))
-			   (Fb 
-			    (list (- first 1) second third 
+			   (Fb
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh)))
 		    (equal (tarai
 			    (list (- second 1) third fourth
 				  fifth sixth seventh first))
-			   (Fb 
-			    (list (- second 1) third fourth 
+			   (Fb
+			    (list (- second 1) third fourth
 				  fifth sixth seventh first)))
 		    (equal (tarai
 			    (list (- third 1) fourth fifth
@@ -466,9 +466,9 @@
 			   (Fb
 			    (list (- fourth 1) fifth sixth
 				  seventh first second third)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
+		    (equal (tarai
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -490,8 +490,8 @@
 			      (list (- seventh 1) first second
 				    third fourth fifth sixth))))
 			   (Fb
-			    (list 
-			     (Fb 
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -514,10 +514,10 @@
 				    third fourth fifth sixth))))))
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
-	     :in-theory (disable Fb)   
+	     :in-theory (disable Fb)
 	     :use (:instance
 		    tarai-def
-		    (lst (list first second third 
+		    (lst (list first second third
 			       fourth fifth sixth seventh))))))
 
 (defthm
@@ -530,8 +530,8 @@
 		    (> fourth fifth)
 		    (<= fifth sixth))
 	       (equal (Fb
-		       (list 
-			(Fb 
+		       (list
+			(Fb
 			 (list (- first 1) second third
 			       fourth fifth sixth seventh))
 			(Fb
@@ -563,17 +563,17 @@
 		    (> third fourth)
 		    (> fourth fifth)
 		    (<= fifth sixth)
-		    (equal (tarai 
-			    (list (- first 1) second third 
+		    (equal (tarai
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh))
-			   (Fb 
-			    (list (- first 1) second third 
+			   (Fb
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh)))
 		    (equal (tarai
 			    (list (- second 1) third fourth
 				  fifth sixth seventh first))
-			   (Fb 
-			    (list (- second 1) third fourth 
+			   (Fb
+			    (list (- second 1) third fourth
 				  fifth sixth seventh first)))
 		    (equal (tarai
 			    (list (- third 1) fourth fifth
@@ -593,9 +593,9 @@
 			   (Fb
 			    (list (- fifth 1) sixth seventh first
 				  second third fourth)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
+		    (equal (tarai
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -617,8 +617,8 @@
 			      (list (- seventh 1) first second
 				    third fourth fifth sixth))))
 			   (Fb
-			    (list 
-			     (Fb 
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -641,10 +641,10 @@
 				    third fourth fifth sixth))))))
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
-	     :in-theory (disable Fb)   
+	     :in-theory (disable Fb)
 	     :use (:instance
 		   tarai-def
-		   (lst (list first second third 
+		   (lst (list first second third
 			      fourth fifth sixth seventh))))))
 
 (defthm
@@ -659,8 +659,8 @@
 		    (> fifth sixth)
 		    (<= sixth seventh))
 	       (equal (Fb
-		       (list 
-			(Fb 
+		       (list
+			(Fb
 			 (list (- first 1) second third
 			       fourth fifth sixth seventh))
 			(Fb
@@ -693,17 +693,17 @@
 		    (> fourth fifth)
 		    (> fifth sixth)
 		    (<= sixth seventh)
-		    (equal (tarai 
-			    (list (- first 1) second third 
+		    (equal (tarai
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh))
-			   (Fb 
-			    (list (- first 1) second third 
+			   (Fb
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh)))
 		    (equal (tarai
 			    (list (- second 1) third fourth
 				  fifth sixth seventh first))
-			   (Fb 
-			    (list (- second 1) third fourth 
+			   (Fb
+			    (list (- second 1) third fourth
 				  fifth sixth seventh first)))
 		    (equal (tarai
 			    (list (- third 1) fourth fifth
@@ -729,9 +729,9 @@
 			   (Fb
 			    (list (- sixth 1) seventh first second
 				  third fourth fifth)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
+		    (equal (tarai
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -753,8 +753,8 @@
 			      (list (- seventh 1) first second
 				    third fourth fifth sixth))))
 			   (Fb
-			    (list 
-			     (Fb 
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -777,10 +777,10 @@
 				    third fourth fifth sixth))))))
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
-	     :in-theory (disable Fb)   
+	     :in-theory (disable Fb)
 	     :use (:instance
 		   tarai-def
-		   (lst (list first second third 
+		   (lst (list first second third
 			      fourth fifth sixth seventh))))))
 
 (defthm
@@ -793,17 +793,17 @@
 		    (> fourth fifth)
 		    (> fifth sixth)
 		    (> sixth seventh)
-		    (equal (tarai 
-			    (list (- first 1) second third 
+		    (equal (tarai
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh))
-			   (Fb 
-			    (list (- first 1) second third 
+			   (Fb
+			    (list (- first 1) second third
 				  fourth fifth sixth seventh)))
 		    (equal (tarai
 			    (list (- second 1) third fourth
 				  fifth sixth seventh first))
-			   (Fb 
-			    (list (- second 1) third fourth 
+			   (Fb
+			    (list (- second 1) third fourth
 				  fifth sixth seventh first)))
 		    (equal (tarai
 			    (list (- third 1) fourth fifth
@@ -835,9 +835,9 @@
 			   (Fb
 			    (list (- seventh 1) first second
 				  third fourth fifth sixth)))
-		    (equal (tarai 
-			    (list 
-			     (Fb 
+		    (equal (tarai
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -859,8 +859,8 @@
 			      (list (- seventh 1) first second
 				    third fourth fifth sixth))))
 			   (Fb
-			    (list 
-			     (Fb 
+			    (list
+			     (Fb
 			      (list (- first 1) second third
 				    fourth fifth sixth seventh))
 			     (Fb
@@ -883,170 +883,170 @@
 				    third fourth fifth sixth))))))
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
-	     :in-theory (disable Fb)   
+	     :in-theory (disable Fb)
 	     :use ((:instance
 		    tarai-def
-		    (lst (list first second third 
+		    (lst (list first second third
 			       fourth fifth sixth seventh)))
 		   (:instance
 		    Fb-sat-tarai-def
-		    (lst (list first second third 
+		    (lst (list first second third
 			       fourth fifth sixth seventh)))))))
 
 (defun
     Induct-hint-7 (first second third fourth fifth sixth seventh)
     "Time:  1205.95 seconds (prove: 575.73, print: 630.05, other: 0.17)"
-    (declare (xargs :measure 
-		    (measure (list first second third 
+    (declare (xargs :measure
+		    (measure (list first second third
 				   fourth fifth sixth seventh))))
     (let ((lst (list first second third fourth fifth sixth seventh)))
       (if (integer-listp lst)
 	  (cond ((<= first second) 0)
 		((<= second third)
-		 (+ (Induct-hint-7 (- first 1) second third 
+		 (+ (Induct-hint-7 (- first 1) second third
 				   fourth fifth sixth seventh)
 		    (Induct-hint-7 (- second 1)third fourth
 				   fifth sixth seventh first)
 		    (Induct-hint-7
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth fifth sixth seventh))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth fifth sixth seventh first))
-		     (tarai (list (- third 1) fourth 
+		     (tarai (list (- third 1) fourth
 				  fifth sixth seventh first second))
 		     (tarai (list (- fourth 1) fifth
 				  sixth seventh first second third))
-		     (tarai (list (- fifth 1) sixth seventh first 
+		     (tarai (list (- fifth 1) sixth seventh first
 				  second third fourth))
 		     (tarai (list (- sixth 1) seventh first second
 				  third fourth fifth))
 		     (tarai (list (- seventh 1) first second
 				  third fourth fifth sixth)))))
 		((<= third fourth)
-		 (+ (Induct-hint-7 (- first 1) second third 
+		 (+ (Induct-hint-7 (- first 1) second third
 				   fourth fifth sixth seventh)
 		    (Induct-hint-7 (- second 1)third fourth
 				   fifth sixth seventh first)
-		    (Induct-hint-7 (- third 1) fourth 
+		    (Induct-hint-7 (- third 1) fourth
 				   fifth sixth seventh first second)
 		    (Induct-hint-7
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth fifth sixth seventh))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth fifth sixth seventh first))
-		     (Fb (list (- third 1) fourth 
+		     (Fb (list (- third 1) fourth
 			       fifth sixth seventh first second))
 		     (tarai (list (- fourth 1) fifth
 				  sixth seventh first second third))
-		     (tarai (list (- fifth 1) sixth seventh first 
+		     (tarai (list (- fifth 1) sixth seventh first
 				  second third fourth))
 		     (tarai (list (- sixth 1) seventh first second
 				  third fourth fifth))
 		     (tarai (list (- seventh 1) first second
 				  third fourth fifth sixth)))))
 		((<= fourth fifth)
-		 (+ (Induct-hint-7 (- first 1) second third 
+		 (+ (Induct-hint-7 (- first 1) second third
 				   fourth fifth sixth seventh)
 		    (Induct-hint-7 (- second 1)third fourth
 				   fifth sixth seventh first)
-		    (Induct-hint-7 (- third 1) fourth 
+		    (Induct-hint-7 (- third 1) fourth
 				   fifth sixth seventh first second)
 		    (Induct-hint-7 (- fourth 1) fifth
 				   sixth seventh first second third)
 		    (Induct-hint-7
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth fifth sixth seventh))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth fifth sixth seventh first))
-		     (Fb (list (- third 1) fourth 
+		     (Fb (list (- third 1) fourth
 			       fifth sixth seventh first second))
 		     (Fb (list (- fourth 1) fifth
 			       sixth seventh first second third))
-		     (tarai (list (- fifth 1) sixth seventh first 
+		     (tarai (list (- fifth 1) sixth seventh first
 				  second third fourth))
 		     (tarai (list (- sixth 1) seventh first second
 				  third fourth fifth))
 		     (tarai (list (- seventh 1) first second
 				  third fourth fifth sixth)))))
 		((<= fifth sixth)
-		 (+ (Induct-hint-7 (- first 1) second third 
+		 (+ (Induct-hint-7 (- first 1) second third
 				   fourth fifth sixth seventh)
 		    (Induct-hint-7 (- second 1)third fourth
 				   fifth sixth seventh first)
-		    (Induct-hint-7 (- third 1) fourth 
+		    (Induct-hint-7 (- third 1) fourth
 				   fifth sixth seventh first second)
 		    (Induct-hint-7 (- fourth 1) fifth
 				   sixth seventh first second third)
-		    (Induct-hint-7 (- fifth 1) sixth seventh first 
+		    (Induct-hint-7 (- fifth 1) sixth seventh first
 				   second third fourth)
 		    (Induct-hint-7
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth fifth sixth seventh))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth fifth sixth seventh first))
-		     (Fb (list (- third 1) fourth 
+		     (Fb (list (- third 1) fourth
 			       fifth sixth seventh first second))
 		     (Fb (list (- fourth 1) fifth
 			       sixth seventh first second third))
-		     (Fb (list (- fifth 1) sixth seventh first 
+		     (Fb (list (- fifth 1) sixth seventh first
 			       second third fourth))
 		     (tarai (list (- sixth 1) seventh first second
 				  third fourth fifth))
 		     (tarai (list (- seventh 1) first second
 				  third fourth fifth sixth)))))
 		((<= sixth seventh)
-		 (+ (Induct-hint-7 (- first 1) second third 
+		 (+ (Induct-hint-7 (- first 1) second third
 				   fourth fifth sixth seventh)
 		    (Induct-hint-7 (- second 1)third fourth
 				   fifth sixth seventh first)
-		    (Induct-hint-7 (- third 1) fourth 
+		    (Induct-hint-7 (- third 1) fourth
 				   fifth sixth seventh first second)
 		    (Induct-hint-7 (- fourth 1) fifth
 				   sixth seventh first second third)
-		    (Induct-hint-7 (- fifth 1) sixth seventh first 
+		    (Induct-hint-7 (- fifth 1) sixth seventh first
 				   second third fourth)
 		    (Induct-hint-7 (- sixth 1) seventh first second
 				   third fourth fifth)
 		    (Induct-hint-7
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth fifth sixth seventh))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth fifth sixth seventh first))
-		     (Fb (list (- third 1) fourth 
+		     (Fb (list (- third 1) fourth
 			       fifth sixth seventh first second))
 		     (Fb (list (- fourth 1) fifth
 			       sixth seventh first second third))
-		     (Fb (list (- fifth 1) sixth seventh first 
+		     (Fb (list (- fifth 1) sixth seventh first
 			       second third fourth))
 		     (Fb (list (- sixth 1) seventh first second
 			       third fourth fifth))
 		     (tarai (list (- seventh 1) first second
 				  third fourth fifth sixth)))))
 		(t
-		 (+ (Induct-hint-7 (- first 1) second third 
+		 (+ (Induct-hint-7 (- first 1) second third
 				   fourth fifth sixth seventh)
 		    (Induct-hint-7 (- second 1)third fourth
 				   fifth sixth seventh first)
-		    (Induct-hint-7 (- third 1) fourth 
+		    (Induct-hint-7 (- third 1) fourth
 				   fifth sixth seventh first second)
 		    (Induct-hint-7 (- fourth 1) fifth
 				   sixth seventh first second third)
-		    (Induct-hint-7 (- fifth 1) sixth seventh first 
+		    (Induct-hint-7 (- fifth 1) sixth seventh first
 				   second third fourth)
 		    (Induct-hint-7 (- sixth 1) seventh first second
 				   third fourth fifth)
 		    (Induct-hint-7 (- seventh 1) first second
 				   third fourth fifth sixth)
 		    (Induct-hint-7
-		     (Fb (list (- first 1) second 
+		     (Fb (list (- first 1) second
 			       third fourth fifth sixth seventh))
-		     (Fb (list (- second 1) third 
+		     (Fb (list (- second 1) third
 			       fourth fifth sixth seventh first))
-		     (Fb (list (- third 1) fourth 
+		     (Fb (list (- third 1) fourth
 			       fifth sixth seventh first second))
 		     (Fb (list (- fourth 1) fifth
 			       sixth seventh first second third))
-		     (Fb (list (- fifth 1) sixth seventh first 
+		     (Fb (list (- fifth 1) sixth seventh first
 			       second third fourth))
 		     (Fb (list (- sixth 1) seventh first second
 			       third fourth fifth))
@@ -1061,5 +1061,5 @@
 	       (equal (tarai lst)(Fb lst))))
     :hints (("Goal"
 	     :in-theory (disable Fb)
-	     :induct (Induct-hint-7 first second third 
+	     :induct (Induct-hint-7 first second third
 				    fourth fifth sixth seventh))))

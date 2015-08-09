@@ -59,7 +59,7 @@
    (implies (and (integerp x)
                  (integerp y))
             (divides x (* x y))))
-                   
+
  (dft prime-key
      (implies (and (integerp a)
                    (integerp b)
@@ -96,7 +96,7 @@
                    (rationalp c)
                    (<= c (+ x y))
                    (integerp i))
-              (<= (* (expt 2 i) c) 
+              (<= (* (expt 2 i) c)
                   (abs (+ (* (expt 2 i) x) (* (expt 2 i) y)))))
      :rule-classes nil
      :proof
@@ -112,7 +112,7 @@
                    (rationalp c)
                    (<= c (+ x y))
                    (integerp i))
-              (<= (* (expt 2 i) c) 
+              (<= (* (expt 2 i) c)
                   (abs (+ (* (expt 2 i) x) (* (expt 2 i) y)))))
      :rule-classes nil
      :proof
@@ -129,7 +129,7 @@
                             (equal (abs (* x y)) (* (abs x) (abs y))))
                    :enable abs)
           (Instantiate (x e) (y (+ x y)))))
-      (Observe (<= (* e c) 
+      (Observe (<= (* e c)
                    (abs (+ (* e x) (* e y)))))))
 
 (dft abs-chain-proof-3
@@ -138,7 +138,7 @@
                    (rationalp c)
                    (<= c (+ x y))
                    (integerp i))
-              (<= (* (expt 2 i) c) 
+              (<= (* (expt 2 i) c)
                   (abs (+ (* (expt 2 i) x) (* (expt 2 i) y)))))
      :rule-classes nil
      :proof

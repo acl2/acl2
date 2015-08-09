@@ -818,7 +818,7 @@ correctness criterion we've described.</p>
                                     (and (aignet-id-has-sat-var var/id sat-lits2)
                                          (equal (aignet-id->sat-lit var/id sat-lits2)
                                                 (aignet-id->sat-lit var/id sat-lits1)))))))))
-  
+
   (defthm sat-lit-extension-p-transitive
     (implies (and (sat-lit-extension-binding :new sat-lits3 :orig sat-lits2)
                   (sat-lit-extension-p sat-lits3 sat-lits2)
@@ -1337,7 +1337,7 @@ correctness criterion we've described.</p>
     (implies (syntaxp (not (equal aignet ''nil)))
              (equal (aignet->cnf-vals-iter n vals cnf-vals sat-lits aignet)
                     (aignet->cnf-vals-iter n vals cnf-vals sat-lits nil)))
-    :hints((acl2::just-induct-and-expand 
+    :hints((acl2::just-induct-and-expand
             (aignet->cnf-vals-iter n vals cnf-vals sat-lits aignet)
             :expand-others
             ((:free (aignet)
@@ -1366,7 +1366,7 @@ correctness criterion we've described.</p>
                 (sat-var->aignet-lit (satlink::make-var n) sat-lits)
                 vals)
              (nth n cnf-vals)))
-    :hints((acl2::just-induct-and-expand 
+    :hints((acl2::just-induct-and-expand
             (aignet->cnf-vals-iter m vals cnf-vals sat-lits aignet))))
 
 
@@ -1386,7 +1386,7 @@ correctness criterion we've described.</p>
              (equal (len (aignet->cnf-vals-iter m vals cnf-vals sat-lits
                                                 aignet))
                     (len cnf-vals)))
-    :hints((acl2::just-induct-and-expand 
+    :hints((acl2::just-induct-and-expand
             (aignet->cnf-vals-iter m vals cnf-vals sat-lits aignet))))
 
   (defthm len-of-aignet->cnf-vals
@@ -1400,10 +1400,10 @@ correctness criterion we've described.</p>
     (implies (and (sat-lit-extension-binding)
                   (sat-lit-extension-p sat-lits2 sat-lits1)
                   (sat-varp (satlink::var-fix var) sat-lits1))
-             (equal (satlink::eval-var 
+             (equal (satlink::eval-var
                      var (aignet->cnf-vals
                           vals cnf-vals sat-lits2 aignet))
-                    (satlink::eval-var 
+                    (satlink::eval-var
                      var (aignet->cnf-vals
                           vals cnf-vals sat-lits1 aignet))))
     :hints(("Goal" :in-theory (e/d (satlink::eval-var)
@@ -1604,7 +1604,7 @@ correctness criterion we've described.</p>
     (implies (syntaxp (not (equal aignet ''nil)))
              (equal (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
                     (cnf->aignet-vals-iter n vals cnf-vals sat-lits nil)))
-    :hints((acl2::just-induct-and-expand 
+    :hints((acl2::just-induct-and-expand
             (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
             :expand-others
             ((:free (aignet)
@@ -1619,7 +1619,7 @@ correctness criterion we've described.</p>
                 (aignet-id->sat-lit n sat-lits)
                 cnf-vals)
              (nth n vals)))
-    :hints((acl2::just-induct-and-expand 
+    :hints((acl2::just-induct-and-expand
             (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
 
   (defthm nth-of-cnf->aignet-vals
@@ -1639,7 +1639,7 @@ correctness criterion we've described.</p>
              (equal (len (cnf->aignet-vals-iter m vals cnf-vals sat-lits
                                                 aignet))
                     (len vals)))
-    :hints((acl2::just-induct-and-expand 
+    :hints((acl2::just-induct-and-expand
             (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
 
   (defthm len-of-cnf->aignet-vals
@@ -1713,7 +1713,7 @@ correctness criterion we've described.</p>
                       (id-eval 0 invals regvals aignet))))))
 
 
-  
+
   (defthmd aignet-vals-agree-with-cnf-of-aignet-extension-lemma
     (implies (and (aignet-extension-binding)
                   (sat-lits-wfp sat-lits orig)
@@ -2456,7 +2456,7 @@ correctness criterion we've described.</p>
   (local (in-theory (enable equal-1-by-bitp)))
 
   (local (encapsulate nil
-           
+
            (defthm lemma1
              (implies (and (equal (lit-id x) (nfix id))
                            (aignet-litp x aignet)
@@ -2506,7 +2506,7 @@ correctness criterion we've described.</p>
 
 
   (defthmd collect-supergate-correct-rw
-    (implies (and 
+    (implies (and
               ;; this hyp isn't logically necessary but just helps us bind the free vars
               (not (member-equal 0 (lit-collect-supergate
                                     (mk-lit id 0) top use-muxes nil
@@ -2668,7 +2668,7 @@ correctness criterion we've described.</p>
                      sat-varp-when-varp
                      sat-lit-listp
                      sat-lit-list-listp)))
-  
+
   (defthm mux-add-clauses-correct-rw1
     (equal (equal (satlink::eval-formula
                    (mux-add-clauses res-id c tb fb sat-lits orig-cnf)
@@ -2702,7 +2702,7 @@ correctness criterion we've described.</p>
                       cnf-vals sat-lits1 aignet1)))
         (implies (and (sat-lits-wfp sat-lits aignet)
                       (aignet-litp x aignet)
-                      (sat-lit-list-listp cnf sat-lits)                      
+                      (sat-lit-list-listp cnf sat-lits)
                       (equal (satlink::eval-formula cnf cnf-vals) 1))
                  (equal (satlink::eval-formula cnf1 cnf-vals) 1)))
       :flag lit)
@@ -2751,7 +2751,7 @@ correctness criterion we've described.</p>
     :rewrite :direct)
 
   (in-theory (disable cnf-for-aignet))
-  
+
   (defthm cnf-for-aignet-initial
     (cnf-for-aignet aignet nil (resize-aignet->sat n (create-sat-lits)))
     :hints(("Goal" :in-theory (enable cnf-for-aignet))))
@@ -2783,7 +2783,7 @@ correctness criterion we've described.</p>
 
   (local (in-theory (disable aignet-invals->vals
                              aignet-regvals->vals)))
-  
+
   ;; When cnf-for-aignet holds and a cube of literals are all marked, a
   ;; satisfying assignment of the CNF + cube literals gives a satisfying
   ;; evaluation of the cube.

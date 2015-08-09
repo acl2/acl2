@@ -174,7 +174,7 @@
 		  (integerp b)
 		  (>= b 0)
 		  (< b (expt 2 n))
-		  (or (= c 0) (= c 1)))		  
+		  (or (= c 0) (= c 1)))
 	     (not (= (bitn (tau a b c n) 0)
 		     (bitn (sigm a b c n) 0))))
   :rule-classes ()
@@ -326,7 +326,7 @@
 			(:instance bitn-0-1 (x a))))))
 
 (local (defthm top-13
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (IMPLIES (AND (INTEGERP N)
 				(<= 0 N)
@@ -366,7 +366,7 @@
 			(:instance rem-n-n+1 (a (+ a b c)) (n k)))))))
 
 (local (defthm top-14
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -464,7 +464,7 @@
   :rule-classes ()))
 
 (local (defthm top-18
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -498,7 +498,7 @@
 				   (k (expt 2 k))))))))
 
 (local (defthm top-19
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -532,7 +532,7 @@
 					 (* 2 (fl (/ b (expt 2 (1+ k)))))))))))))
 
 (local (defthm top-20
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -578,7 +578,7 @@
 			(:instance rem>=0 (m b) (n (expt 2 k))))))))
 
 (local (defthm top-21
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -605,7 +605,7 @@
 		  :use (top-19 top-20)))))
 
 (local (defthm top-22
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -658,7 +658,7 @@
 			(:instance rem+1-2)))))
 
 (local (defthm top-24
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -694,7 +694,7 @@
 			(:instance rem>=0 (m b) (n (expt 2 k))))))))
 
 (local (defthm top-25
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -722,7 +722,7 @@
 (local (defthm top-26
     (implies (and (integerp a)
 		  (>= a 0)
-		  (integerp b) 
+		  (integerp b)
 		  (>= b 0)
 		  (integerp k)
 		  (>= k 0)
@@ -739,7 +739,7 @@
 (local (defthm top-27
     (implies (and (integerp a)
 		  (>= a 0)
-		  (integerp b) 
+		  (integerp b)
 		  (>= b 0)
 		  (integerp k)
 		  (>= k 0)
@@ -755,7 +755,7 @@
 (local (defthm top-28
     (implies (and (integerp a)
 		  (>= a 0)
-		  (integerp b) 
+		  (integerp b)
 		  (>= b 0)
 		  (integerp k)
 		  (>= k 0)
@@ -772,7 +772,7 @@
 (local (defthm top-29
     (implies (and (integerp a)
 		  (>= a 0)
-		  (integerp b) 
+		  (integerp b)
 		  (>= b 0)
 		  (integerp k)
 		  (>= k 0)
@@ -784,7 +784,7 @@
 		 0))
   :rule-classes ()
   :hints (("Goal" :use ((:instance n<=fl
-				   (n 0) 
+				   (n 0)
 				   (x (/ (+ (rem a (expt 2 k)) (rem b (expt 2 k)) c) (expt 2 k))))
 			(:instance rem>=0 (m a) (n (expt 2 k)))
 			(:instance rem>=0 (m b) (n (expt 2 k))))))))
@@ -792,7 +792,7 @@
 (local (defthm top-30
     (implies (and (integerp a)
 		  (>= a 0)
-		  (integerp b) 
+		  (integerp b)
 		  (>= b 0)
 		  (integerp k)
 		  (>= k 0)
@@ -814,7 +814,7 @@
 				   (n 2)))))))
 
 (local (defthm top-31
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -847,7 +847,7 @@
 			(:instance fl-def))))))
 
 (local (defthm top-33
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -869,12 +869,12 @@
 			(expt 2 k))
 		     1)))
   :rule-classes ()
-  :hints (("Goal" :use (top-31 
+  :hints (("Goal" :use (top-31
 			top-29
 			(:instance top-32 (x (/ (+ (rem a (expt 2 k)) (rem b (expt 2 k)) c) (expt 2 k)))))))))
 
 (local (defthm top-34
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -1036,7 +1036,7 @@
   :hints (("Goal" :use (top-39 top-37)))))
 
 (local (defthm top-41
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B) (EXPT 2 k))  0)
 		  (= (REM (TAU A B 0 N) (EXPT 2 k)) 0)
@@ -1059,7 +1059,7 @@
   :hints (("Goal" :use ((:instance top-34 (c 0)) top-40)))))
 
 (local (defthm top-42
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B) (EXPT 2 k))  0)
 		  (= (REM (TAU A B 0 N) (EXPT 2 k)) 0)
@@ -1103,7 +1103,7 @@
 
 
 (local (defthm top-43
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B 1) (EXPT 2 k))  0)
 		  (= (REM (TAU A B 1 N) (EXPT 2 k)) 0)
@@ -1134,7 +1134,7 @@
 			(:instance rem+rem (n (expt 2 k)) (a (+ b 1)) (b a)))))))
 
 (local (defthm top-44
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B 1) (EXPT 2 k))  0)
 		  (= (REM (TAU A B 1 N) (EXPT 2 k)) 0)
@@ -1200,7 +1200,7 @@
 			(:instance top-36 (a b)))))))
 
 (local (defthm top-47
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B 1) (EXPT 2 k))  0)
 		  (= (REM (TAU A B 1 N) (EXPT 2 k)) 0)
@@ -1223,7 +1223,7 @@
 			(:instance bitn-0-1 (x (kap a b 1)) (n k)))))))
 
 (local (defthm top-48
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B 1) (EXPT 2 k))  0)
 		  (= (REM (TAU A B 1 N) (EXPT 2 k)) 0)
@@ -1250,7 +1250,7 @@
 			(:instance bitn-0-1 (x (+ a b 1)) (n k)))))))
 
 (local (defthm top-49
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (= (REM (+ A B C) (EXPT 2 k))  0)
 		  (= (REM (TAU A B C N) (EXPT 2 k)) 0)
@@ -1272,7 +1272,7 @@
 		  :use (top-48 top-42)))))
 
 (local (defthm top-50
-    (IMPLIES (AND (INTEGERP K) 
+    (IMPLIES (AND (INTEGERP K)
 		  (< 0 K)
 		  (IMPLIES (AND (INTEGERP N)
 				(<= 0 N)

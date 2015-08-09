@@ -1,7 +1,7 @@
 ; Unique Prime Factorization Theorem for Positive Integers.
 ; Copyright (C) 2004 John R. Cowles, University of Wyoming
 
-; This program is free software; you can redistribute it and/or 
+; This program is free software; you can redistribute it and/or
 ; modify it under the terms of the GNU General Public License as
 ; published by the Free Software Foundation; either version 2 of
 ; the License, or (at your option) any later version.
@@ -12,7 +12,7 @@
 ; GNU General Public License for more details.
 
 ; You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free 
+; License along with this program; if not, write to the Free
 ; Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
 ; USA.
 
@@ -26,10 +26,10 @@
 ;; is followed. Their proof is described in the book:
 
 ;; R.S. Boyer and J S. Moore, A Computational Logic, Academic Press,
-;; 1979. 
+;; 1979.
 
 ;; For the formal statement of the theorem, search for
-;;            PRIME-FACTORIZATION-EXISTENCE and 
+;;            PRIME-FACTORIZATION-EXISTENCE and
 ;;            PRIME-FACTORIZATION-UNIQUENESS.
 
 ;; Modified Jan. 05
@@ -47,30 +47,30 @@ To certify this book, first, create a world with the following package:
 ; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports*:
    '(nat-listp acl2-number-listp)))
 
-(certify-book "prime-fac" 
+(certify-book "prime-fac"
 	      1
 	      )
 |#
 (in-package "POS")
 
 (local
- (include-book "arithmetic/top-with-meta" :dir :system 
+ (include-book "arithmetic/top-with-meta" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
-(include-book "arithmetic/mod-gcd" :dir :system 
+(include-book "arithmetic/mod-gcd" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	      :uncertified-okp nil     
-	      :defaxioms-okp nil 
+;	      :uncertified-okp nil
+	      :defaxioms-okp nil
 	      :skip-proofs-okp nil)
 
 ;; The definition of nonneg-int-gcd often interacts with the rewrite rule,
 ;; commutativity-of-nonneg-int-gcd, to cause the rewriter to loop and stack
-;; overflow. 
+;; overflow.
 (in-theory (disable ACL2::commutativity-of-nonneg-int-gcd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,7 +78,7 @@ To certify this book, first, create a world with the following package:
 ;;                             nonneg-int-mod, and
 ;;                             nonneg-int-gcd.
 
-;; (defun 
+;; (defun
 ;;   nonnegative-integer-quotient (i j)
 ;;   (declare (xargs :guard (and (integerp i)
 ;;                               (not (< i 0))
@@ -116,7 +116,7 @@ To certify this book, first, create a world with the following package:
 ;;       (nonneg-int-gcd y (nonneg-int-mod x y))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun 
+(defun
   dividesp (x y)
   "Return T iff x|y iff there is an integer z
    such that (equal (* x z) y)."
@@ -130,7 +130,7 @@ To certify this book, first, create a world with the following package:
 
 (defun
   prime1p (x y)
-  "Return T iff x has no divisors z with 
+  "Return T iff x has no divisors z with
    1 < z <= y."
   (declare (xargs :guard (and (integerp x)
 			      (>= x 0)
@@ -203,13 +203,13 @@ To certify this book, first, create a world with the following package:
   :rule-classes ((:type-prescription
 		  :corollary
 		  (implies (and (integerp x)
-				(>= x 0)) 
+				(>= x 0))
 			   (and (integerp (greatest-factor x y))
 				(>= (greatest-factor x y) 0))))
 		 (:type-prescription
 		  :corollary
 		  (implies (and (integerp y)
-				(> y 1)) 
+				(> y 1))
 			   (and (integerp (greatest-factor x y))
 				(>= (greatest-factor x y) 0))))
 		 (:type-prescription
@@ -228,7 +228,7 @@ To certify this book, first, create a world with the following package:
 		  :corollary
 		  (implies (and (integerp x)
 				(>= x 0))
-			   (equal 
+			   (equal
 			    (ACL2::nonneg-int-mod x (greatest-factor x y)) 0)))))
 
 (defthm
@@ -271,7 +271,7 @@ To certify this book, first, create a world with the following package:
 (defun
   prime-factors (x)
   "Return a list, lst, of primes so that
-   x = product of the members of lst." 
+   x = product of the members of lst."
   (declare (xargs :guard (and (integerp x)
 			      (>= x 0))))
   (cond ((or (zp x)(= x 1)) nil)
@@ -416,7 +416,7 @@ To certify this book, first, create a world with the following package:
 		(primep p))
 	   (equal (ACL2::nonneg-int-gcd x p) 1))
   :hints (("Goal"
-	   :use (:instance 
+	   :use (:instance
 		 divisors-of-primep
 		 (d (ACL2::nonneg-int-gcd x p))))))
 
@@ -467,7 +467,7 @@ To certify this book, first, create a world with the following package:
 
 (defun
   delete-one (x lst)
-  "Return the result of deleting 
+  "Return the result of deleting
    one occurrence of x from the list lst."
   (declare (xargs :guard t))
   (if (consp lst)
@@ -538,14 +538,14 @@ To certify this book, first, create a world with the following package:
   (implies (member-equal x lst)
 	   (equal (+ 1 (len (delete-one x lst)))
 		  (len lst))))
-	  
+
 (defthm
   bag-equal->equal-len
   (implies (bag-equal lst1 lst2)
 	   (equal (len lst1)
 		  (len lst2)))
   :rule-classes nil)
- 
+
 (defthm
   member-equal-delete-one
   (implies (not (equal x y))
@@ -565,13 +565,13 @@ To certify this book, first, create a world with the following package:
 	  (+ 1 (multiplicity x (cdr lst)))
 	  (multiplicity x (cdr lst)))
       0))
- 
+
 (defthm
   multiplicity-delete-one-1
   (implies (member-equal x lst)
 	   (equal (+ 1 (multiplicity x (delete-one x lst)))
 		  (multiplicity x lst))))
- 
+
 (defthm
   multiplicity-delete-one-2
   (implies (not (equal x y))

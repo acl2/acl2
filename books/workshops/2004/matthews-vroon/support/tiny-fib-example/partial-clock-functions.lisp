@@ -224,7 +224,7 @@ the nth number in the fibonacci sequence written for the tiny machine.
                 (tiny-statep tiny-state))
 	   (equal (steps-to-cutpoint tiny-state)
 		  (o+ 1 (steps-to-cutpoint (next tiny-state))))))
-  
+
 (defthm integerp-ord-decrement
   (implies (natp n)
 	   (equal (o- n 1)
@@ -268,14 +268,14 @@ the nth number in the fibonacci sequence written for the tiny machine.
   (implies (and (at-cutpoint tiny-state)
                 (tiny-statep tiny-state))
 	   (equal (steps-to-cutpoint tiny-state)
-		  0))	   
+		  0))
   :rule-classes :forward-chaining)
 
 (defthm not-at-cutpoint-implies-steps-to-cutpoint-nonzero
   (implies (and (not (at-cutpoint tiny-state))
                 (tiny-statep tiny-state))
 	   (not (equal (steps-to-cutpoint tiny-state)
-		       0)))	   
+		       0)))
   :rule-classes :forward-chaining)
 
 (defthmd steps-to-cutpoint-nonzero-elim
@@ -330,7 +330,7 @@ the nth number in the fibonacci sequence written for the tiny machine.
                               (natp (steps-to-cutpoint tiny-state)))))
   (if (mbt (and (tiny-statep tiny-state)
 		(natp (steps-to-cutpoint tiny-state))))
-      (if (at-cutpoint tiny-state) 
+      (if (at-cutpoint tiny-state)
 	  tiny-state
 	(let ((tiny-state (next tiny-state)))
 	  (next-cutpoint tiny-state)))
@@ -345,13 +345,13 @@ the nth number in the fibonacci sequence written for the tiny machine.
   (implies (at-cutpoint tiny-state)
            (equal (next-cutpoint tiny-state)
                   tiny-state)))
- 
+
 (defthmd next-cutpoint-elim-next
   (implies (and (not (at-cutpoint tiny-state))
                 (tiny-statep tiny-state))
            (equal (next-cutpoint (next tiny-state))
                   (next-cutpoint tiny-state))))
-  
+
 (defthm next-cutpoint-intro-next
   (implies (and (not (at-cutpoint tiny-state))
                 (tiny-statep tiny-state))
@@ -389,7 +389,7 @@ the nth number in the fibonacci sequence written for the tiny machine.
   (declare (xargs :stobjs (tiny-state)
                   :guard (and (at-cutpoint tiny-state)
                               (not (at-exitpoint tiny-state)))
-                  :guard-hints (("goal" 
+                  :guard-hints (("goal"
                                  :in-theory (disable steps-to-cutpoint-run-1-elim)))))
   (let ((tiny-state (next tiny-state)))
     (next-cutpoint tiny-state)))
@@ -420,7 +420,7 @@ the nth number in the fibonacci sequence written for the tiny machine.
                   (tiny-statep tiny-state))
 	     (equal (cutpoint-to-cutpoint tiny-state)
 		    (run (1+ steps) tiny-state))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable run-1)
            :use ((:instance next-cutpoint-to-run (tiny-state
                                                   (next tiny-state)))))))
@@ -446,7 +446,7 @@ the nth number in the fibonacci sequence written for the tiny machine.
 (defun-nx cutpoint-measure (tiny-state)
   (if (at-exitpoint tiny-state)
       0
-    (o+ (o* (omega) (nfix (dtos-val tiny-state 0))) 
+    (o+ (o* (omega) (nfix (dtos-val tiny-state 0)))
         (nfix (- *max-prog-address* (progc tiny-state))))))
 
 (defthm prove-cutpoint-measure-is-ordinal
@@ -468,7 +468,7 @@ the nth number in the fibonacci sequence written for the tiny machine.
                 (not (at-exitpoint tiny-state)))
            (o< (cutpoint-measure (cutpoint-to-cutpoint tiny-state))
                (cutpoint-measure tiny-state)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :do-not-induct t
            :in-theory (enable cutpoint-to-cutpoint next
                               at-cutpoint at-exitpoint tiny-statep))))
@@ -484,7 +484,7 @@ the nth number in the fibonacci sequence written for the tiny machine.
 
 (in-theory (disable at-exitpoint))
 
-;here's the defexec version. but the mbt version below is equivalent, 
+;here's the defexec version. but the mbt version below is equivalent,
 ;still guaranteed to terminate, and more succinct.
 ;(defexec fast-cutpoint-to-cutpoint (tiny-state)
 ;  (declare (xargs :stobjs (tiny-state)

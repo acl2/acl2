@@ -28,7 +28,7 @@ negative" regardless of the sign of the value of x.
   (if (not (consp term))
       nil
     (case (car term)
-      (quote (and (rationalp (cadr term)) 
+      (quote (and (rationalp (cadr term))
                   (< (cadr term) 0)))
       (unary-- (not (negative-syntaxp (cadr term))))  ;perhaps we should use "positive-syntaxp" here...
       (binary-+ (and ;(equal (length term) 3) ;ok since binary-+ should always have 2 args
@@ -67,15 +67,15 @@ pos
  a product with an even number of negative factors
  a sum of two or more positive terms?
 
-It might be nice to someday decide how to handle a mixed sum.  For example, we might prefer 
+It might be nice to someday decide how to handle a mixed sum.  For example, we might prefer
   (integerp (+ 2 (* -1 x) y))
 to
-  (integerp (+ -1 x (* -1 y)) 
-since the former has one fewer negated addend.  And, when exactly half the terms are negated, we might prefer 
+  (integerp (+ -1 x (* -1 y))
+since the former has one fewer negated addend.  And, when exactly half the terms are negated, we might prefer
   (integerp (+ x (* -1 y)))
 to
   (integerp (+ (* -1 x) y))
-since the latter has the negation around the "smaller" term.  Or something like that. 
+since the latter has the negation around the "smaller" term.  Or something like that.
 
 
 so that the rules don't loop, we must ensure that a negative term * -1 is not negative

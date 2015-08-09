@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -53,7 +53,7 @@
   ;; defines a list of operations which are all local
   ;; op_lst has the form ( (node_nb op loc dat) .....)
   ;; so loc is the (nth 2 (car op_lst)) ...
-  ;; a transfer is local if 
+  ;; a transfer is local if
   ;; (and (< loc (* ms (1+ node_nb)))
   ;;      (<= (* node_nb ms) loc))
   (if (endp op_lst)
@@ -85,7 +85,7 @@
       t
     (and (equal (nth 1 (car op_lst)) 'WRITE)
          (all_write_op_lstp (cdr op_lst)))))
-  
+
 
 (defmacro valid_op_lst (op_lst)
   ;; recognizes a valid operations: read, write or no_op
@@ -97,7 +97,7 @@
   ;; defines a list of operations which are all non local
   ;; op_lst has the form ( (node_nb op loc dat) .....)
   ;; so loc is the (nth 2 (car op_lst)) ...
-  ;; a transfer is non local if 
+  ;; a transfer is non local if
   ;; (and (not (< loc (* ms (1+ node_nb))))
   ;;      (not (<= (* node_nb ms) loc)))
   ;; is not true
@@ -181,16 +181,16 @@
          (all_inf_routep (cdr lst) n))))
 
 (defun all_node_nb_validp (nw_op bound)
-  ;; defines a predicate that recognizes a nw_op list where every 
+  ;; defines a predicate that recognizes a nw_op list where every
   ;; node number is < bound
   (if (endp nw_op)
       t
     (and (and (integerp (caar nw_op)) ;; get the node number
               (<= 0 (caar nw_op)) (< (caar nw_op) bound))
          (all_node_nb_validp (cdr nw_op) bound))))
-       
+
 (defun all_address_validp (nw_op N ms)
-  ;; defines a predicate that recognizes a nw_op list where every 
+  ;; defines a predicate that recognizes a nw_op list where every
   ;; address is a valid address
   (if (endp nw_op)
       t
@@ -319,10 +319,10 @@
            (all_stat_okp (cdr resp_lst) (cdr res)))))
 )
 
-          
+
 (defun all_ok_dat_writep (req_lst res)
   ;; for write requests, the returned data is the data sent in the request
-  (if (endp res)      
+  (if (endp res)
       t
     (if (endp req_lst)
         nil
@@ -335,9 +335,9 @@
   `(car (last (cdr (car ,l)))))
 
 
-(defun all_ok_nw_req_p (req_lst ms) 
+(defun all_ok_nw_req_p (req_lst ms)
   ;; req_lst = ( ( (r/w addr dat) route) ...)
-  ;; this predicate assures that every request is routed to 
+  ;; this predicate assures that every request is routed to
   ;; a node number which contains the address of the request
   (if (endp req_lst)
       t
@@ -366,7 +366,7 @@
          (all_ok_statusp (cdr x)))))
 
 (defun all_addrp (no_over_lst)
-  ;; all the address of all the operations satisfy addrp(x) 
+  ;; all the address of all the operations satisfy addrp(x)
   (if (endp no_over_lst)
       t
     (and (addrp (nth 1 (caar no_over_lst)))

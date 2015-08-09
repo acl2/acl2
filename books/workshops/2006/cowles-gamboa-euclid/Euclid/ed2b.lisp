@@ -1,6 +1,6 @@
 ; ACL2 Euclidean Domain books -- Book 2b -- CounterExample.
-;   The Integers (with an unusual Size function) are shown 
-;   to be an Euclidean Domain without the Multiplicative 
+;   The Integers (with an unusual Size function) are shown
+;   to be an Euclidean Domain without the Multiplicative
 ;   Size Property. Here Quotient is round and Remainder is
 ;   rnd-rem, a version of rem using round in place of truncate.
 ; Copyright (C) 2005  John R. Cowles, University of Wyoming
@@ -34,7 +34,7 @@ To certify this book:
 ;; An Euclidean Domain is an integral domain, together with a Size function
 ;; from nonzero domain elements into the nonnegative integers, that
 ;; satisfies the Division Propery:
-;; 
+;;
 ;; Division Propery. For all domain elements x and all nonzero domain
 ;;             elements y there are domain elements q and r such that
 
@@ -50,7 +50,7 @@ To certify this book:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Commutative Ring is a nonempty set with two binary operations, addition
 ;; and multiplication, an unary operation, minus, and a ring element, zero,
-;; such that 
+;; such that
 
 ;; (1) the binary operations are commutative and associative,
 ;; (2) multiplications distributes over addition,
@@ -62,7 +62,7 @@ To certify this book:
 ;;   See Book 1 of ACL2 Euclidean Domain books, ed1.lisp, for a proof.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; In the ACL2 Euclidean Book, ed2a.lisp, it is shown that there is no 
+;; In the ACL2 Euclidean Book, ed2a.lisp, it is shown that there is no
 ;;  loss of generality in assuming Multiplicative Size Property:
 
 ;;     For all nonzero domain elements x and y, Size(x) <= Size(xy).
@@ -73,19 +73,19 @@ To certify this book:
 
 ;; Below an example is verified of an Euclidean Doamin (with multiplicative
 ;; identity) that does NOT satisfy the Multiplicative Size Property given
-;; above. 
+;; above.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The Integers are an Euclidean Doamin:
 
 ;;  integerp  ; Predicate for set of Euclidean Domain elements.
 ;;  equal     ; Equality predicate for Euclidean Domain elements.
-;;  identity  ; Choose unique equivalence class representative for equal. 
+;;  identity  ; Choose unique equivalence class representative for equal.
 ;;  +         ; Addition in Euclidean Domain.
-;;  *         ; Multiplication in Euclidean Domain. 
+;;  *         ; Multiplication in Euclidean Domain.
 ;;  -         ; Unary minus in Euclidean Domain.
 ;;  0         ; 0 element in Euclidean Domain.
 ;;  1         ; 1 element in Euclidean Domain.
-;;  abs-3     ; Natp size of each nonzero Euclidean Domain element. 
+;;  abs-3     ; Natp size of each nonzero Euclidean Domain element.
 ;;  round     ; Quotient in Euclidean Domain.
 ;;  rnd-rem   ; Remainder in Euclidean Domain.
 
@@ -104,19 +104,19 @@ To certify this book:
 ;  about FLOOR and MOD to help certify this book
 
 (local
- (include-book "arithmetic/top" :dir :system 
+ (include-book "arithmetic/top" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
  (include-book "ihs/quotient-remainder-lemmas" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
@@ -182,10 +182,10 @@ To certify this book:
 (defthm
   Equivalence-Law
   (implies (integerp x)
-	   (and (equal x x)  
+	   (and (equal x x)
 		(implies (integerp y)
 			 (and (booleanp (equal x y))
-			      (implies (equal x y) 
+			      (implies (equal x y)
 				       (equal y x))
 			      (implies (integerp z)
 				       (implies (and (equal x y)
@@ -288,7 +288,7 @@ To certify this book:
 ;; Euclidean Domain Defintions and Axioms:
 (defun
   abs-3 (x)
-  (declare (xargs :guard 
+  (declare (xargs :guard
 		  (real/rationalp x)))
   (if (= x 3)
       2
@@ -335,7 +335,7 @@ To certify this book:
 		(not (equal y 0)))
 	   (and (integerp (round x y))
 		(integerp (rnd-rem x y))))
-  :rule-classes nil) 
+  :rule-classes nil)
 
 (defthm
   Congruence-for-round-&-rnd-rem
@@ -377,7 +377,7 @@ To certify this book:
 ;;                 (not (equal x 0))
 ;;                 (integerp y)
 ;;                 (not (equal y 0)))
-;;            (<= (abs-3 x) 
+;;            (<= (abs-3 x)
 ;;                (abs-3 (* x y))))
 
 ;; Let x = -3 and y = -1.
@@ -390,7 +390,7 @@ To certify this book:
 			    (not (equal x 0))
 			    (integerp y)
 			    (not (equal y 0)))
-		       (<= (abs-3 x) 
+		       (<= (abs-3 x)
 			   (abs-3 (* x y))))
 	      nil))
   :rule-classes nil)

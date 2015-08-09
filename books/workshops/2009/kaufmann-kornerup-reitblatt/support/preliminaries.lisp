@@ -47,10 +47,10 @@
     `(s ,(car args) ,(cadr args) ,(s*-fn (cddr args)))))
 
 (defmacro s* (&rest args)
-  
+
 ; To set fields with respective values, starting with the empty record:
 ; ; (s* :fld1 val1 :fld2 val2 ... :fldk valk)
-  
+
 ;  (declare (xargs :guard (keyword-value-listp args)))
   (s*-fn args))
 

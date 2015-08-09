@@ -127,9 +127,9 @@ To compile it, I do the following:
 (defun prop-carry-vector (cin lcv)
   (if (powerlist-p lcv)
       (p-tie (prop-carry-vector cin (p-untie-l lcv))
-	     (prop-carry-vector 
-	      (p-last (prop-carry-vector 
-		       cin 
+	     (prop-carry-vector
+	      (p-last (prop-carry-vector
+		       cin
 		       (p-untie-l lcv)))
 	      (p-untie-r lcv)))
     (prop-carry cin lcv)))
@@ -166,7 +166,7 @@ To compile it, I do the following:
 				     (domain-p (lambda (x) (bit-nil-p x)))
 				     (bin-op prop-carry)
 				     (left-zero (lambda () nil))))))
-		
+
 (defthm prop-carry-last-shift-prop-carry-vector
   (implies (bit-nil-p c)
 	   (equal (prop-carry (p-last (p-shift c (prop-carry-vector c x)))
@@ -186,14 +186,14 @@ To compile it, I do the following:
 ;;; because it's simple to relate back to the ripple-carry adder.
 
 (defun adder-cla-slow (x y cin)
-  (let ((carry-vector 
+  (let ((carry-vector
 	 (prop-carry-vector nil
 			    (p-shift cin
 				     (local-carry-vector x y)))))
     (cons (pairwise-adder x y carry-vector)
-	  (prop-carry cin 
+	  (prop-carry cin
 		      (prop-carry (p-last carry-vector)
-				  (p-last 
+				  (p-last
 				   (local-carry-vector
 				    x y)))))))
 (in-theory (disable (adder-cla-slow)))
@@ -202,10 +202,10 @@ To compile it, I do the following:
 ;;; ripple-carry adder.  Luckily, we can verify it's identical to the one above
 
 (defun adder-cla-slow-good (x y cin)
-  (let ((carry-vector 
-	 (prop-carry-vector cin 
+  (let ((carry-vector
+	 (prop-carry-vector cin
 			    (local-carry-vector x y))))
-    (cons (pairwise-adder x y 
+    (cons (pairwise-adder x y
 			  (p-shift cin carry-vector))
 	  (p-last carry-vector))))
 (in-theory (disable (adder-cla-slow-good)))
@@ -280,21 +280,21 @@ To compile it, I do the following:
 (defun carry-look-ahead (x)
   (declare (xargs :measure (p-measure x)))
   (if (powerlist-p x)
-      (let ((y (carry-look-ahead     
+      (let ((y (carry-look-ahead
 		(cla-add (p-unzip-l x) (p-unzip-r x)))))
 	(p-zip (cla-add (cla-star y) (p-unzip-l x)) y))
     x))
 (in-theory (disable (carry-look-ahead)))
 
 (defun adder-cla (x y cin)
-  (let ((carry-vector (carry-look-ahead 
+  (let ((carry-vector (carry-look-ahead
 		       (p-shift cin
 				(local-carry-vector
 				 x y)))))
     (cons (pairwise-adder x y carry-vector)
-	  (prop-carry cin (prop-carry 
+	  (prop-carry cin (prop-carry
 			   (p-last carry-vector)
-			   (p-last 
+			   (p-last
 			    (local-carry-vector
 			     x y)))))))
 (in-theory (disable (adder-cla)))

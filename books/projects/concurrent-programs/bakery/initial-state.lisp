@@ -19,9 +19,9 @@ stuttering.
 
 ;; BEGIN Proofs of theorems.
 
-(encapsulate 
+(encapsulate
  (((initial-state-b) => *))
- 
+
   (local
    (defun initial-state-b ()
      (>_ :procs nil
@@ -42,7 +42,7 @@ stuttering.
   (DEFTHM fair-inv-b-c-initial-state->>
     (fair-inv-b-c (initial-state-b))
     :rule-classes nil)
-  
+
   (DEFTHM inv-c-s-rep-initial-state->>
     (inv-c-s (rep-c-s (initial-state-b)))
     :rule-classes nil)

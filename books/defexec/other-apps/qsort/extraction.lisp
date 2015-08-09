@@ -27,7 +27,7 @@ properties here are explicitly telling ACL2 how to work with extract-qs.
   (implies (natp x)
            (equal (extract-qs (1+ x) x qs) ()))
   :hints (("Goal" :expand (extract-qs (1+ x) x qs))))
-           
+
 (defthm extract-qs-expand-to-list
   (implies (and (natp x)
                 (>= x 0))
@@ -116,7 +116,7 @@ properties here are explicitly telling ACL2 how to work with extract-qs.
   :hints (("Subgoal *1/2"
            :expand (extract-qs (1+ lo) hi qs)))
   :rule-classes :forward-chaining)
-             
+
 (in-theory (disable extract-for-1-element
                     consp-extract-reduction))
 

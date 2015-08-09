@@ -42,13 +42,13 @@
 
 #|
  To certify (originally in ACL2 Version 2.6):
- (defpkg 
-     "FLAT" (union-eq 
+ (defpkg
+     "FLAT" (union-eq
 	      *acl2-exports*
 	      *common-lisp-symbols-from-main-lisp-package*))
 
  (certify-book "flat-reverse" 1 nil ; compile-flg
-	       :defaxioms-okp nil 
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil)
 |#
 (in-package "FLAT")
@@ -182,14 +182,14 @@
 			  (b (f-chain (- i 1)(cdr x)))
 			  (c (st-car b))
 			  (y (f-chain (- i 1)(st-cdr b))))
-		         (st-cons c (f-chain (- i 1) 
+		         (st-cons c (f-chain (- i 1)
 					     (rt-st-cons a y))))))
 	))
 
 (defthm
     base-of-f-chain=undef$
     (implies (zp i)
-	     (equal (f-chain i x) 
+	     (equal (f-chain i x)
 		    'undef$)))
 
 (defthm
@@ -203,7 +203,7 @@
 
 (defchoose
     lub-f-chain-i i (x)
-    (not (equal (f-chain i x) 
+    (not (equal (f-chain i x)
 		'undef$)))
 
 (defthm
@@ -242,7 +242,7 @@
 	      lub-$bottom$-based-chain-is-upper-bound
 	      ($<=$ <def=)
 	      ($bottom$ (lambda () 'undef$))
-	      ($bottom$-based-chain f-chain) 
+	      ($bottom$-based-chain f-chain)
 	      (lub-$bottom$-based-chain lub-f-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f-chain-i)))
@@ -257,12 +257,12 @@
 	     (equal (lub-f-chain x)
 		    (f-chain i x)))
     :hints (("Goal"
-             :by 
+             :by
 	     (:functional-instance
 	      $bottom$-based-chain-is-$<=$-chain-f
 	      ($<=$ <def=)
 	      ($bottom$ (lambda () 'undef$))
-	      ($bottom$-based-chain f-chain) 
+	      ($bottom$-based-chain f-chain)
 	      (lub-$bottom$-based-chain lub-f-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f-chain-i)))))
@@ -312,7 +312,7 @@
     Skolem-f (x)
     (max (lub-f-chain-nat-i (cdr x))
 	 (max (lub-f-chain-nat-i (st-cdr (f (cdr x))))
-	      (lub-f-chain-nat-i (rt-st-cons 
+	      (lub-f-chain-nat-i (rt-st-cons
 				  (car x)
 				  (f (st-cdr (f (cdr x)))))))))
 
@@ -331,7 +331,7 @@
 		    (i (Skolem-f x)))
 		   (:instance
 		    f-chain-is-<def=-chain-f
-		    (x (rt-st-cons 
+		    (x (rt-st-cons
 			(car x)
 			(f (st-cdr (f (cdr x))))))
 		    (i (Skolem-f x)))))))
@@ -341,7 +341,7 @@
     (equal (lub-f-chain x)(ub-g-chain x))
     :rule-classes nil
     :hints (("Goal"
-             :by 
+             :by
 	     (:functional-instance
 	      lub-$chain$=ub-shifted-$chain$
 	      ($<=$ <def=)
@@ -375,7 +375,7 @@
 	     :in-theory (disable ub-g-chain-=-g-chain-Skolem-f)
 	     :use lub-f-chain=ub-g-chain)))
 
-#| Recall the original Ashcroft version of a recursive equation 
+#| Recall the original Ashcroft version of a recursive equation
     for reverse:
 
 (equal (f x)

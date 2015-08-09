@@ -60,8 +60,8 @@ write:
 This is a macro that expands into an encapsulate, that automatically produces a
 witnessing function, and then adds the following definition rule:
 
-(defthm run-def 
-  (equal (run s) (if (halting s) s (run (step s)))) 
+(defthm run-def
+  (equal (run s) (if (halting s) s (run (step s))))
   :rule-classes :definition)
 
 All this is nice, but it does not allow you to actually "run" from a state,
@@ -100,13 +100,13 @@ By default, i.e., if the executable body ebody is not provided, it is simply
 the same as lbody. Thanks to Matt Kaufmann for suggesting this.
 
 Spec:
------ 
+-----
 
 Define a macro defpun-exec with the following properties:
 
-(1) It takes as argument fname, params, lbody, ebody, and guards, say 
+(1) It takes as argument fname, params, lbody, ebody, and guards, say
 
-(defpun-exec foo (x) (lbody x) :ebody (ebody x) :guard (guard x)) 
+(defpun-exec foo (x) (lbody x) :ebody (ebody x) :guard (guard x))
 
 The guard argument is optional.
 
@@ -127,7 +127,7 @@ executing the function is the same as executing the logical body.
 
 Now I show how to do it.
 
-Assumptions and acknowledgments: 
+Assumptions and acknowledgments:
 -------------------------------
 
 (1) The book defpun.lisp needs top be on the directory for this book to be
@@ -165,16 +165,16 @@ described below to make :expand hints natural.
  (defun replace-fsymb (orig new term)
    (declare (xargs :mode :program))
    (cond ((atom term) term)
-         ((eq (car term) orig) 
+         ((eq (car term) orig)
           (cons new (replace-fsymb-list orig new (rest term))))
          (t (cons (first term) (replace-fsymb-list orig new (rest term))))))
- 
+
  (defun replace-fsymb-list (orig new terms)
    (declare (xargs :mode :program))
    (cond ((endp terms) nil)
          (t (cons (replace-fsymb orig new (first terms))
                   (replace-fsymb-list orig new (rest terms))))))
- 
+
  )
 
 ;; Single-threaded objects (stobjs) complicate the production of executable
@@ -223,7 +223,7 @@ described below to make :expand hints natural.
     (acons (caar alist)
            (symbol-without-*-and-last-i (cdar alist))
            (remove-*-and-last-i (rest alist)))))
-      
+
 ;; What the code so far did was to replace the vals of an alist (kept the keys
 ;; same) by stripping * (and the last i) from any of the characters. Now I swap
 ;; keys and vals so that these fields now become the keys.
@@ -235,7 +235,7 @@ described below to make :expand hints natural.
 
 ;; Now I am going to create a number of alists, basically everything that is
 ;; supported by stobjs. I will create access-alist (but that is not really
-;; required), update-alist, update-i-alist, and resize-alist. 
+;; required), update-alist, update-i-alist, and resize-alist.
 
 (defun create-update-alist (alist)
   (declare (xargs :mode :program))
@@ -282,11 +282,11 @@ described below to make :expand hints natural.
                (replace-fsymb-alist-update (third term) alist))
        (let ((alist-fld (assoc-eq (car term) alist)))
          (if alist-fld
-             (cons 'update-nth 
+             (cons 'update-nth
                    (cons (cdr alist-fld)
                          (replace-fsymb-list-alist-update (rest term) alist)))
            (cons (first term) (replace-fsymb-list-alist-update (rest term) alist)))))))
- 
+
  (defun replace-fsymb-list-alist-update (terms alist)
    (declare (xargs :mode :program))
    (cond ((endp terms) nil)
@@ -308,14 +308,14 @@ described below to make :expand hints natural.
          (if alist-fld
              (list 'update-nth
                    (cdr alist-fld)
-                   (list 'resize-list (list 'nth 
+                   (list 'resize-list (list 'nth
                                             (cdr alist-fld)
                                             (third term))
                          (second term)
                          nil)
                    (third term))
            (cons (first term) (replace-fsymb-list-alist-resize (rest term) alist)))))))
- 
+
  (defun replace-fsymb-list-alist-resize (terms alist)
    (declare (xargs :mode :program))
    (cond ((endp terms) nil)
@@ -336,11 +336,11 @@ described below to make :expand hints natural.
                (replace-fsymb-alist-access (third term) alist))
      (let ((alist-fld (assoc-equal (car term) alist)))
        (if alist-fld
-           (cons 'nth 
+           (cons 'nth
                  (cons (cdr alist-fld)
                        (replace-fsymb-list-alist-access (rest term) alist)))
          (cons (first term) (replace-fsymb-list-alist-access (rest term) alist)))))))
- 
+
  (defun replace-fsymb-list-alist-access (terms alist)
    (declare (xargs :mode :program))
    (cond ((endp terms) nil)
@@ -362,12 +362,12 @@ described below to make :expand hints natural.
                (replace-fsymb-alist-access-i (third term) alist))
      (let ((alist-fld (assoc-equal (car term) alist)))
        (if alist-fld
-           (list 'nth 
+           (list 'nth
                  (replace-fsymb-alist-access-i (second term) alist)
                  (list 'nth (cdr alist-fld) (replace-fsymb-alist-access-i
                                              (third term) alist)))
          (cons (first term) (replace-fsymb-list-alist-access-i (rest term) alist)))))))
- 
+
  (defun replace-fsymb-list-alist-access-i (terms alist)
    (declare (xargs :mode :program))
    (cond ((endp terms) nil)
@@ -387,18 +387,18 @@ described below to make :expand hints natural.
                (replace-fsymb-alist-update-i (third term) alist))
      (let ((alist-fld (assoc-equal (car term) alist)))
        (if alist-fld
-           (list 'update-nth 
+           (list 'update-nth
                  (cdr alist-fld)
-                 (list 'update-nth 
+                 (list 'update-nth
                        (replace-fsymb-alist-update-i (second term) alist)
                        (replace-fsymb-alist-update-i (third term) alist)
-                       (list 'nth 
+                       (list 'nth
                              (cdr alist-fld)
                              (replace-fsymb-alist-update-i (fourth term)
                                                            alist)))
                  (replace-fsymb-alist-update-i (fourth term) alist))
          (cons (first term) (replace-fsymb-list-alist-update-i (rest term) alist)))))))
- 
+
  (defun replace-fsymb-list-alist-update-i (terms alist)
    (declare (xargs :mode :program))
    (cond ((endp terms) nil)
@@ -447,31 +447,31 @@ described below to make :expand hints natural.
 
 (include-book "misc/defpun" :dir :system)
 
-(defun defpun-exec-fn (fname params lbody ebody stobjs guard measure 
+(defun defpun-exec-fn (fname params lbody ebody stobjs guard measure
                              termination-hints guard-hints defrule-hints state)
   (declare (xargs :mode :program
                   :stobjs state))
   (let* ((ebody (if (null ebody) lbody ebody))
          (stobjs (if (symbolp stobjs) (list stobjs) stobjs))
-         (ebody (if (null stobjs) 
-                    ebody 
+         (ebody (if (null stobjs)
+                    ebody
                   (replace-with-stobj-call-list ebody (w state) stobjs)))
          (lfname (packn (list fname '-logic)))
          (defn-thm (packn (list fname '-def)))
          (declare-form (list 'declare (append (list 'xargs :guard guard)
-                                              (if measure 
+                                              (if measure
                                                   (list :measure measure)
                                                 nil)
-                                              (if termination-hints 
+                                              (if termination-hints
                                                   (list :hints
                                                         termination-hints)
                                                 nil)
-                                              (if guard-hints 
-                                                  (list :guard-hints 
+                                              (if guard-hints
+                                                  (list :guard-hints
                                                         guard-hints)
                                                 nil)))))
 
-    (let ((form 
+    (let ((form
     `(encapsulate nil
 
       ;; First we define a standard defpun function, call it defpun foo-logic,
@@ -479,11 +479,11 @@ described below to make :expand hints natural.
       ;; simply lbody with all calls to foo replaced by (recursive) calls to
       ;; foo-logic.
 
-      (defpun ,lfname ,params 
+      (defpun ,lfname ,params
         ,(replace-fsymb fname lfname lbody))
 
       ;; Now we define the function foo as:
-      ;;  (defexec foo (x) 
+      ;;  (defexec foo (x)
       ;;    (declare (xargs :guard (guard x)))
       ;;    (mbe :logic (foo-logic x) :exec (ebody x)))
 
@@ -492,8 +492,8 @@ described below to make :expand hints natural.
       ;; insures that when we do execute the function using ebody, the
       ;; execution eventually terminates.
 
-      
-      (defexec ,fname ,params 
+
+      (defexec ,fname ,params
         ,declare-form
         (mbe :logic ,(cons lfname params)
              :exec ,ebody))
@@ -505,7 +505,7 @@ described below to make :expand hints natural.
       ;; (defthm foo-def (equal (foo x) (lbody x)) :rule-classes :definition)
 
       (defthm ,defn-thm
-        (equal ,(cons fname params) 
+        (equal ,(cons fname params)
                ,lbody)
         :rule-classes :definition :hints ,defrule-hints)
 
@@ -515,8 +515,8 @@ described below to make :expand hints natural.
       ;; I would like to comment on some suggestions by Matt Kaufmann and
       ;; during the ACL2 meeting on 06/18/2003.
 
-      ;; When I first did this, I was dissatisfied by the following: 
-      ;; 
+      ;; When I first did this, I was dissatisfied by the following:
+      ;;
       ;; Once the definition rule is present you would think that you dont want
       ;; anything to do with foo-logic. So I would not like to have the logical
       ;; body of foo enabled, but rather I would simply have the definition
@@ -535,20 +535,20 @@ described below to make :expand hints natural.
 
       ;; (defthm foo-logic-to-foo
       ;;   (equal (foo-logic x) (lbody s))
-      ;;  :rule-classes :definition)      
-      
+      ;;  :rule-classes :definition)
+
       (defthm ,(packn (list lfname '-to- fname))
         (equal ,(cons lfname params) ,lbody)
         :rule-classes :definition)
-      
+
       ;; Now we do simply want the definition rule foo-def to apply, and (only
       ;; in case of an expand hint would we want to have the special rule
       ;; foo-logic-to-foo. So I would rather disable the body of foo in
       ;; general, and also the theorem foo-logic-def which was provided by the
       ;; defpun.
-      
+
       ;; (in-theory (disable foo (:definition foo-logic-def)))
-      
+
       (in-theory (disable ,fname (:definition ,(packn (list lfname '-def)))))
 
       ;; I think some form of theory invariants should be present here, since I
@@ -562,7 +562,7 @@ described below to make :expand hints natural.
       ;; foo-logic-to-foo, and provide rules to reason about foo-logic. Or he
       ;; should heve foo disabled, not use foo-logic-def, and use foo-def, and (in
       ;; case of expand hints) foo-logic-to-foo. I think we should have an
-      ;; invariant saying that  one of the two theories is used. 
+      ;; invariant saying that  one of the two theories is used.
 
       ;; So, here are the theory invariants I provide with this macro. If these
       ;; are not useful then simply comment them out and recertify the book.
@@ -573,15 +573,15 @@ described below to make :expand hints natural.
       (theory-invariant (incompatible (:defintitiion ,fname)
                                       (:definition
                                        ,(packn (list fname '-def)))))
-      
+
       ;; (theory-invariant (incompatible (:definition foo-logic-to-foo)
       ;;                                 (:definition foo-logic-def)))
 
-      (theory-invariant (incompatible (:definition 
+      (theory-invariant (incompatible (:definition
                                        ,(packn (list lfname '-to- fname)))
-                                      (:definition 
+                                      (:definition
                                        ,(packn (list lfname '-def))))))))
-      
+
       ;; And that is it. We might have to add more theory invariants, but I
       ;; think that is only important if the user wants to tweak with the
       ;; current structure. The structure is foo is disabled, and only opens
@@ -594,8 +594,8 @@ described below to make :expand hints natural.
 
 ))
 
-(defmacro defpun-exec (fn params lbody 
-                          &key 
+(defmacro defpun-exec (fn params lbody
+                          &key
                           (ebody '())
                           (guard '())
                           (measure '())
@@ -607,7 +607,7 @@ described below to make :expand hints natural.
                               (or (symbolp stobjs)
                                   (symbol-listp stobjs))
                               (symbol-listp params))))
-    `(defpun-exec-fn 
+    `(defpun-exec-fn
        (quote ,fn)
        (quote ,params)
        (quote ,lbody)
@@ -619,15 +619,15 @@ described below to make :expand hints natural.
        (quote ,guard-hints)
        (quote ,defrule-hints)
        state))
-       
-                                  
-                                           
-                          
-                          
 
 
 
-#| 
+
+
+
+
+
+#|
 
 Testing
 =======
@@ -640,7 +640,7 @@ providing a defpun.
 ACL2 !>(defpun-exec fact (n a)
              (if (equal n 0) a (fact (1- n) (* n a)))
              :ebody (if (zp n) a (* n (fact (1- n) a))))
-      
+
 So this will produce everything but you cannot evaluate it.
 
 ACL2 !>(trace$ fact)
@@ -712,7 +712,7 @@ ACL2 !>
     evaluate the lbody (as long as the lbody can be defined with defpun and
     defexec shows that the guard proof guarantees termination).
 
-ACL2 !>(defpun-exec trfact-without-ebody (n a) 
+ACL2 !>(defpun-exec trfact-without-ebody (n a)
            (if (equal n 0) a (trfact-without-ebody (1- n) (* n a)))
            :guard (and (integerp n) (integerp a) (>= n 0) (>= a 0)))
 
@@ -754,7 +754,7 @@ ACL2 !>
 We provide another little test to see that the macro works with stobjs. This
 also shows how the hints work. Note that we need to provide the explicit guard
 for the stobj. I can produce the guard stobjp automatically if necessary, but
-in this case it is fine. 
+in this case it is fine.
 
 ACL2 !>(defstobj foo (fld :type (array T (100)) :resizable t))
 
@@ -775,11 +775,11 @@ ACL2 !>(defun foop-exec (foo)
 ;; dont support mv-let yet). Anyway, this example shows that you can now do a
 ;; slow execution.
 
-ACL2 !>(defpun-exec bar (x foo) 
+ACL2 !>(defpun-exec bar (x foo)
          (if (equal x 0)
-             foo 
+             foo
            (bar (- x 1) (update-fldi 0 2 (resize-fld 100 foo))))
-         :ebody (if (equal x 0) 
+         :ebody (if (equal x 0)
                     foo
                   (let* ((foo (resize-fld 100 foo))
                          (foo (update-fldi 0 2 foo))

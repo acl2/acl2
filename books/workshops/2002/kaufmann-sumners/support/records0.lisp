@@ -13,7 +13,7 @@ value v in record r.
 The following main lemma are "exported" about record (g)et and (s)et:
 
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
 	 v))
 
 (defthm g-diff-s
@@ -22,7 +22,7 @@ The following main lemma are "exported" about record (g)et and (s)et:
                   (g a r))))
 
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
 	 r))
 
 (defthm s-same-s
@@ -199,7 +199,7 @@ existing key if it wants to set a key's value to nil.
                   alist))))
 
 ;;;; we can now prove s-same-g
-;;;;   (equal (s a (g a r) r) 
+;;;;   (equal (s a (g a r) r)
 ;;;;          r))
 
 (local
@@ -228,7 +228,7 @@ existing key if it wants to set a key's value to nil.
            (rcdp (delete-key a alist)))))
 
 ;;;; we can now prove g-same-s
-;;;;   (equal (g a (s a v r)) 
+;;;;   (equal (g a (s a v r))
 ;;;;           v))
 
 (local
@@ -381,11 +381,11 @@ existing key if it wants to set a key's value to nil.
   :rule-classes :forward-chaining)
 
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
 	 r))
 
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
 	 v))
 
 (defthm s-same-s

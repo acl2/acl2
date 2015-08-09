@@ -4,7 +4,7 @@
 
 (include-book "arithmetic-5/top" :dir :system)
 
-	       
+
 ;; From basic.lisp:
 
 (defund fl (x)
@@ -37,7 +37,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -70,14 +70,14 @@
 ;; From round.lisp:
 
 (defund away (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defund trunc (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defun re (x)
@@ -526,7 +526,7 @@ But by trunc-split (with n = 1+e, m = 1+e, k = n+1),
                   (natp k)
                   (< n k)
                   (<= k (1+ e)))
-             (equal f 
+             (equal f
                     (+ (* 1/2 (bitn x (- e n)))
                        (* (expt 2 (- n (1+ (expo r))))
                           (- r (trunc r (1+ n))))))))
@@ -568,7 +568,7 @@ But by trunc-split (with n = 1+e, m = 1+e, k = n+1),
   :rule-classes ()
   :hints  (("Goal" :use (ru-19
                          (:instance ru-20 (x (- r (trunc r (1+ n)))) (n (- (expo r) n)) (m (- n (1+ (expo r)))))))))
-  
+
 (defthm ru-23
   (let ((e (expo r))
         (x (trunc r k))
@@ -585,7 +585,7 @@ But by trunc-split (with n = 1+e, m = 1+e, k = n+1),
   :hints  (("Goal" :use (ru-18 ru-21)
                    :in-theory
                    #!acl2(disable |(* x (+ y z))| |(* x (- y))|
-                                  |(* x (expt x n))| |(* y x)| 
+                                  |(* x (expt x n))| |(* y x)|
                                   |(+ (+ x y) z)| |(+ 0 x)|
                                   NORMALIZE-FACTORS-GATHER-EXPONENTS
                                   SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
@@ -621,7 +621,7 @@ But by trunc-split (with n = 1+e, m = 1+e, k = n+1),
   :hints  (("Goal" :use (ru-18 ru-24)
                    :in-theory
                    #!acl2(disable |(* x (+ y z))| |(* x (- y))|
-                                  |(* x (expt x n))| |(* y x)| 
+                                  |(* x (expt x n))| |(* y x)|
                                   |(+ (+ x y) z)| |(+ 0 x)|
                                   NORMALIZE-FACTORS-GATHER-EXPONENTS
                                   SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
@@ -645,7 +645,7 @@ But by trunc-split (with n = 1+e, m = 1+e, k = n+1),
   :hints  (("Goal" :use (ru-18 ru-24)
                    :in-theory
                    #!acl2(disable |(* x (+ y z))| |(* x (- y))|
-                                  |(* x (expt x n))| |(* y x)| 
+                                  |(* x (expt x n))| |(* y x)|
                                   |(+ (+ x y) z)| |(+ 0 x)|
                                   NORMALIZE-FACTORS-GATHER-EXPONENTS
                                   SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))

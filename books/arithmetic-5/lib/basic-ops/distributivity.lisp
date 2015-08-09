@@ -21,7 +21,7 @@
 ;;; But, this would not occur if we distributed the (+ 1 y) over
 ;;; (* x (/ (+ 1 y))) before normalize-factors-scatter-exponents
 ;;; had a chance to fire.
-;;; 
+;;;
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

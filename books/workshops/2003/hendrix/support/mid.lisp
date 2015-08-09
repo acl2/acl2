@@ -21,7 +21,7 @@
 (local
  (defthm id-bootstrap
    (and (matrixp (mid n))
-        (equal (row-count (mid n)) 
+        (equal (row-count (mid n))
                (nfix n))
         (equal (col-count (mid n))
                (nfix n)))))
@@ -34,7 +34,7 @@
          (zp n)))
 
 (defthm row-count-id
-  (equal (row-count (mid n)) 
+  (equal (row-count (mid n))
          (nfix n)))
 
 (defthm col-count-id

@@ -10,7 +10,7 @@
 (in-package "ACL2")
 (deflabel alist-defuns-section)
 
-; * Structure of the Theory 
+; * Structure of the Theory
 ;
 ; The functions which occur in the alist theory are selected from
 ; the ACL2 base theory (as defined in axioms.lisp) plus other functions
@@ -27,7 +27,7 @@
 ; * General Strategy for Theory Construction
 ;
 ; The goal of this theory is to provide useful alist-processing functions
-; and useful theorems about those functions. 
+; and useful theorems about those functions.
 ;
 ; * Enabled and Disabled functions
 ;
@@ -41,7 +41,7 @@
 ;
 ; ACL2 (and Common Lisp) support three notions of equality: EQL, EQ and EQUAL.
 ; One uses EQL or EQ, rather than EQUAL, for efficiency. Many functions
-; have three versions, each based on a different equality. ASSOC uses EQL, 
+; have three versions, each based on a different equality. ASSOC uses EQL,
 ; however ASSOC-EQ and ASSOC-EQUAL are also defined.
 ;
 ; We have followed this naming convention. When a function relies on equality.
@@ -50,7 +50,7 @@
 ;
 ; In list-defthms, the EQL and EQ versions of all functions are re-written to the
 ; EQUAL version. All interesting rewrite rules about the list functions are
-; expressed in terms of the EQUAL versions of list functions. 
+; expressed in terms of the EQUAL versions of list functions.
 ;
 ; As a result, one can execute using the EQL or EQ versions, but one will reason
 ; using the EQUAL version.
@@ -236,7 +236,7 @@
 				  (eqlable-alistp a)))))
   (cond ((endp l) nil)
 	((bound? (car l) a)
-	 (cons (binding (car l) a) 
+	 (cons (binding (car l) a)
 	       (all-bindings (cdr l) a)))
 	(t (all-bindings (cdr l) a))))
 
@@ -258,7 +258,7 @@
 			      (alistp a))))
   (cond ((endp l) nil)
 	((bound?-equal (car l) a)
-	 (cons (binding-equal (car l) a) 
+	 (cons (binding-equal (car l) a)
 	       (all-bindings-equal (cdr l) a)))
 	(t (all-bindings-equal (cdr l) a))))
 
@@ -347,7 +347,7 @@
   (declare (xargs :guard (and (eqlable-listp l)
 			      (eqlable-alistp a))))
   (cond ((endp l) nil)
-	((bound? (car l) a) 
+	((bound? (car l) a)
 	 (cons (car l) (collect-bound (cdr l) a)))
 	(t (collect-bound (cdr l) a))))
 
@@ -356,7 +356,7 @@
   (declare (xargs :guard (and (symbol-listp l)
 			      (symbol-alistp a))))
   (cond ((endp l) nil)
-	((bound?-eq (car l) a) 
+	((bound?-eq (car l) a)
 	 (cons (car l) (collect-bound-eq (cdr l) a)))
 	(t (collect-bound-eq (cdr l) a))))
 
@@ -365,7 +365,7 @@
   (declare (xargs :guard (and (true-listp l)
 			      (alistp a))))
   (cond ((endp l) nil)
-	((bound?-equal (car l) a) 
+	((bound?-equal (car l) a)
 	 (cons (car l) (collect-bound-equal (cdr l) a)))
 	(t (collect-bound-equal (cdr l) a))))
 

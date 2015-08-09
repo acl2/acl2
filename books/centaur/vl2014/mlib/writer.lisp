@@ -2567,7 +2567,7 @@ expression into a string."
        ((when (atom (cdr x))) ps)
        (ps (vl-print ", ")))
     (vl-pp-forloop-assigns (cdr x))))
-       
+
 
 (defines vl-pp-stmt
   :prepwork ((local (in-theory (disable not)))
@@ -3083,7 +3083,7 @@ expression into a string."
                    (vl-print ": ")
                    (vl-pp-genelement (cdar x))
                    (vl-pp-gencaselist (cdr x))))))
-                 
+
   (define vl-pp-genarrayblocklist ((x vl-genarrayblocklist-p) (name maybe-stringp)
                                    &key (ps 'ps))
     :measure (vl-genarrayblocklist-count x)
@@ -3115,7 +3115,7 @@ expression into a string."
                  (vl-println "end")))))
 
 
-                 
+
 
 
 (define vl-pp-module

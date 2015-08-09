@@ -22,24 +22,24 @@
 ; Laramie, WY 82071-3682 U.S.A.
 
 ;; This book is a descendent of the NQTHM events reported in:
-;;  J.R. Cowles, Meeting a Challenge of Knuth, 
-;;  Internal Note 286, Computational Logic, Inc., 1993. 
+;;  J.R. Cowles, Meeting a Challenge of Knuth,
+;;  Internal Note 286, Computational Logic, Inc., 1993.
 ;;  ftp://ftp.cs.utexas.edu/pub/boyer/cli-notes/note-286.txt.
-;; The NQTHM events were completed during 1990-91 at Computational 
+;; The NQTHM events were completed during 1990-91 at Computational
 ;; Logic, Inc. of Austin, Texas, while the author was on sabbatical leave
 ;; from the University of Wyoming.
 
-;; This book mechanically verifies results, over an arbitrary Archimedean 
-;; ordered field, that generalize results that were first mechanically 
+;; This book mechanically verifies results, over an arbitrary Archimedean
+;; ordered field, that generalize results that were first mechanically
 ;; verified, using  NQTHM, over the ring of integers. Additional results,
-;; about termination of the recursion, with no analogue in the NQTHM 
+;; about termination of the recursion, with no analogue in the NQTHM
 ;; events are also included.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; In the paper; Textbook Examples of Recursion, Artificial Intelligence and
-;; Mathematical Theory of Computation: Papers in Honor of John McCarthy, 
-;; edited by Vladimir Lifschitz, Academic Press, 1991; Donald E. Knuth of 
-;; Stanford University gives the following generalization of McCarthy's 91 
+;; Mathematical Theory of Computation: Papers in Honor of John McCarthy,
+;; edited by Vladimir Lifschitz, Academic Press, 1991; Donald E. Knuth of
+;; Stanford University gives the following generalization of McCarthy's 91
 ;; function:
 
 ;; Let a be a real, let b and d be positive reals, and let c be a
@@ -59,8 +59,8 @@
 ;;   K( x ) <== if  x > 100  then  x - 10
 ;;                           else  K( K( x+11 ) ).
 
-;; Knuth calls the first definition of K given above, the generalized 
-;; 91 recursion scheme with parameters ( a,b,c,d ).  
+;; Knuth calls the first definition of K given above, the generalized
+;; 91 recursion scheme with parameters ( a,b,c,d ).
 
 ;; Knuth proves the following theorem and asks for a proof by computer:
 
@@ -88,8 +88,8 @@
 ;;    reals, and c a positive integer; there are total functions over the reals
 ;;    that satisfy the generalized 91 recursion.
 
-;; 1. If (c-1)b >= d, then there are MANY total functions over reals that 
-;;    satisfy the the generalized 91 recursion. It follows from this that 
+;; 1. If (c-1)b >= d, then there are MANY total functions over reals that
+;;    satisfy the the generalized 91 recursion. It follows from this that
 ;;    the recursion cannot always terminate.
 
 ;; 2, If (c-1)b < d, then the recursion always terminates. It follows
@@ -102,7 +102,7 @@
 
 ;; The results verified in this book generalize the corollary just stated by
 ;; replacing the ordered field of all reals with an arbitrary ordered
-;; Archimedean field. An Archimedean ordered field is an ordered field in 
+;; Archimedean field. An Archimedean ordered field is an ordered field in
 ;; which every field element is bounded above by some positive integer.
 ;; (See the ACL2 Archimedean Ordered Fields book for more details.) The
 ;; The Reals are an Archimedean ordered field, so results valid for all
@@ -155,13 +155,13 @@
 (defthm
   Compose-Iter-F
   (equal (Iter-F i (Iter-F j x))
-	 (iter-F (+ (nfix i) 
+	 (iter-F (+ (nfix i)
 		    (nfix j))
 		 x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Define an "abstract Knuth" function, G, of one argument that will be used 
+; Define an "abstract Knuth" function, G, of one argument that will be used
 ; later to help witness the existence of functions that satisfy the defining
 ; recursion of the generalized 91 function. The abstraction is obtained by
 ; temporarily considering the complex expression, d-(c-1)b, as a single value.
@@ -225,8 +225,8 @@
 	       0
 	       (-_a (/_a x y)
 		    (/_a y y)))
-	      (LEAST-NAT-BOUND-LOOP 
-	       0 
+	      (LEAST-NAT-BOUND-LOOP
+	       0
 	       (/_a x y))))
   :hints (("Goal"
 	   :use ((:instance
@@ -253,7 +253,7 @@
 	       (-_A (*_A (/_A z) X)))))
     (LEAST-NAT-BOUND-LOOP
      0
-     (+_A (/_A y z) 
+     (+_A (/_A y z)
 	  (-_A (*_A (/_A z) X))))))
   :hints (("Goal"
 	   :use (:instance
@@ -261,7 +261,7 @@
 		 (x1 (+_A (/_A y z)
 			  (+_A (-_A (/_A z z))
 			       (-_A (*_A (/_A z) X)))))
-		 (x2 (+_A (/_A y z) 
+		 (x2 (+_A (/_A y z)
 			  (-_A (*_A (/_A z) X)))))
            :in-theory (disable LEAST-NAT-BOUND-LOOP
                                LEAST-NAT-BOUND-IS-INCREASING-1))))
@@ -269,7 +269,7 @@
 (defun
   G (x)
   (declare (xargs :guard (aofp x)
-		  :measure 
+		  :measure
 		  (let ((x (afix x)))
 		       (cond ((>_a x (a1))
 			      0)
@@ -288,7 +288,7 @@
 
 (defun
   Iter-G (i x)
-  (declare (xargs :guard 
+  (declare (xargs :guard
 		  (and (aofp x)
 		       (integerp i)
 		       (>= i 0))
@@ -373,7 +373,7 @@
 		  (Iter-G i x)))
   :hints (("Goal"
 	   :induct (Induct-on-pos-int n))))
-	
+
 (defthm
   E1-pos-not-zero
   (implies (>_a (e1) 0)
@@ -392,7 +392,7 @@
 		 (a1)))
  :rule-classes nil
  :hints (("Goal"
-	  :in-theory (disable 
+	  :in-theory (disable
 		      Least-nat-bound-loop-is-LEAST-bound)
 	  :use (:instance
 		Least-nat-bound-loop-is-LEAST-bound
@@ -401,7 +401,7 @@
 
 (defthm
   Inequality-2
-  (<=_a (a1)(+_a (a1)(b1)))  
+  (<=_a (a1)(+_a (a1)(b1)))
   :hints (("Goal"
 	   :in-theory (disable +_a-Compatibility-of-<=_a
 			       <_a-cancellation-laws-for-+_a)
@@ -418,7 +418,7 @@
 		(<=_a x (a1))
 		(>_a (e1) 0))
 	   (equal (Iter-G (- i 1)
-			  (+_a x 
+			  (+_a x
 			       (-_a (b1))
 			       (*_a (e1)(Least-nat-bound
 					 (/_a (-_a (a1) x)
@@ -494,7 +494,7 @@
 		(aofp x))
 	   (equal (Iter-G (- i j)(-_a x (*_a j (b1))))
 		  (Iter-G i x)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :induct (induct-on-pos-int j))
 	  ("Subgoal *1/2"
 	   :use Iter-G_i-1_x-b1=Iter-G_i_x)
@@ -530,7 +530,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; For all choices of the parameters a,b,c,d from an Archimedean field, with
 ; b and d positive, and c a positive integer there are total fumctions, called
-; here K1 and K2, over the Archimedean field that satisfy the generalized 91 
+; here K1 and K2, over the Archimedean field that satisfy the generalized 91
 ; recursion.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -579,7 +579,7 @@
  ) ; end encapsulate
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Define two functions K1 and K2 that will be shown to  satisfy the 
+; Define two functions K1 and K2 that will be shown to  satisfy the
 ; generalized 91 recursion scheme with parameters ( (A),(B),(C),(D) ).
 
 (defun
@@ -598,7 +598,7 @@
 (defun
   K1 (x)
   (declare (xargs :guard (aofp x)
-		  :measure 
+		  :measure
 		  (let ((x (afix x)))
 		       (cond ((>_a x (a))
 			      0)
@@ -617,7 +617,7 @@
 (defun
   K2 (x)
   (declare (xargs :guard (aofp x)
-		  :measure 
+		  :measure
 		  (let ((x (afix x)))
 		       (cond ((>_a x (a))
 			      0)
@@ -635,7 +635,7 @@
 
 (defun
   Iter-K1 (i x)
-  (declare (xargs :guard 
+  (declare (xargs :guard
 		  (and (aofp x)
 		       (integerp i)
 		       (>= i 0))
@@ -653,7 +653,7 @@
 
 (defun
   Iter-K2 (i x)
-  (declare (xargs :guard 
+  (declare (xargs :guard
 		  (and (aofp x)
 		       (integerp i)
 		       (>= i 0))
@@ -685,7 +685,7 @@
 
 (defthm
   Inequality-2a
-  (<=_a (a)(+_a (a)(b)))  
+  (<=_a (a)(+_a (a)(b)))
   :hints (("Goal"
 	   :in-theory (disable +_a-Compatibility-of-<=_a
 			       <_a-cancellation-laws-for-+_a)
@@ -734,7 +734,7 @@
 	   :in-theory (enable e))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; The two functions K1 and K2 satisfy the generalized 91 recursion scheme 
+; The two functions K1 and K2 satisfy the generalized 91 recursion scheme
 ; with parameters ( (A),(B),(C),(D) ):
 
 (defthm
@@ -773,12 +773,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; So now that it has been verified that the two functions K1 and K2 satisfy 
+; So now that it has been verified that the two functions K1 and K2 satisfy
 ; the generalized 91 recursion scheme with parameters ( (A),(B),(C),(D) ), it
-; is now verified that the two functions are, indeed, distinct when 
+; is now verified that the two functions are, indeed, distinct when
 ; (D) <= (B)[(C)-1].
 
-(in-theory (disable 
+(in-theory (disable
 	    K1-satisfies-Gen-91-Recursion
 	    K2-satisfies-Gen-91-Recursion))
 
@@ -821,14 +821,14 @@
 ; Knuth's Theorem, is in fact equal to K1, provided (B)[(C) - 1] < (D):
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Introduce a new function G1 of one argument that satisfies 
+; Introduce a new function G1 of one argument that satisfies
 ; the simpler recurrence.
 
 (encapsulate
  ((G1 (x) a))
- 
- (local 
-  (defun 
+
+ (local
+  (defun
     G1 (x)
     (K1 x)))
 
@@ -881,7 +881,7 @@
 (encapsulate
  ((K (x) a)
   (Iter-K (i x) a))
- 
+
  (local
   (defun
     K (x)
@@ -939,7 +939,7 @@
 (defthm
   Compose-Iter-K
   (equal (Iter-K i (Iter-K j x))
-	 (iter-K (+ (nfix i) 
+	 (iter-K (+ (nfix i)
 		    (nfix j))
 		 x))
   :hints (("Goal"
@@ -1079,25 +1079,25 @@
 			  (+_a x (*_a n (d))))))
   :hints
   (("Goal"
-    :use 
+    :use
     (Iter-K_1_x=Iter-K_1+n_c-1_x+nd-induction-step-part-1
      n-1*c-1>0))))
 
 (defthm
   Iter-K_1_x=Iter-K_1+n_c-1_x+nd-induction-step
   (implies (and (integerp n)
-		(< 1 n)		
+		(< 1 n)
 		(equal (Iter-K 1 x)
 		       (Iter-K (+ (- (c)) 2 (- n) (* (c) n))
 			       (+_a x (*_a (d)(+ -1 n)))))
 		(< 1 (c))
 		(aofp x)
-		(<=_a (+_a x (*_a (d) n)) 
+		(<=_a (+_a x (*_a (d) n))
 		      (+_a (a) (d))))
 	   (equal (Iter-K 1 x)
 		  (Iter-K (+ 1 (- n) (* (c) n))
 			  (+_a x (*_a (d) n)))))
-  :hints 
+  :hints
   (("Goal"
     :use
     Iter-K_1_x=Iter-K_1+n_c-1_x+nd-induction-step-part-2)))
@@ -1114,7 +1114,7 @@
 (defthm
   Iter-K_1_x=Iter-K_1+n_c-1_x+nd
   (implies (and (integerp n)
-		(> n 0)		
+		(> n 0)
 		(aofp x)
 		(> (c) 1)
 		(>=_a (+_a (a)(d))
@@ -1190,7 +1190,7 @@
   :hints (("Goal"
 	   :use (Iter-K_i_x=Iter-K_i+n_c-1_x+nd-step-2
 		 Iter-K_i_x=Iter-K_i+n_c-1_x+nd-step-3)
-	   :in-theory 
+	   :in-theory
 	   (disable ITER-K=K
 		    COMPOSE-ITER-K
 		    DEF-ITER-K
@@ -1242,9 +1242,9 @@
 		(aofp x)
 		(<=_a x a))
 	   (>=_a (+_a a d)
-		 (+_a x 
-		      (*_a (Least-nat-bound (/_a 
-					     (-_a a x) 
+		 (+_a x
+		      (*_a (Least-nat-bound (/_a
+					     (-_a a x)
 					     d))
 			   d))))
   :hints (("Goal"
@@ -1255,10 +1255,10 @@
 		  (z (*_A D
 			  (LEAST-NAT-BOUND-LOOP
 			   0
-			   (-_A (/_A A d) 
+			   (-_A (/_A A d)
                                 (/_A X d))))))
-		 (:instance		  
-		  Inequality-b-lemma		  
+		 (:instance
+		  Inequality-b-lemma
 		  (r (-_a a x))
 		  (n (Least-nat-bound (/_a (-_a a x) d))
 		     ))))))
@@ -1271,16 +1271,16 @@
 		(> (c) 1)
 		(<=_a x (a)))
 	   (equal (Iter-K i x)
-		  (Iter-K (+ i 
+		  (Iter-K (+ i
 			     (* (Least-nat-bound
 				 (/_a (-_a (a) x)(d)))
 				(- (c) 1)))
-			  (+_a x 
+			  (+_a x
 			     (*_a (Least-nat-bound
 				   (/_a (-_a (a) x)(d)))
 				  (d))))))
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (disable ITER-K_1_X=ITER-K_1+N_C-1_X+ND-BASE-STEP
 		    ITER-K_I_X=ITER-K_I+N_C-1_X+ND-STEP-1)
 	   :use ((:instance
@@ -1319,19 +1319,19 @@
 		(aofp x)
 		(> (c) 1)
 		(<=_a x (a)))
-	   (equal (Iter-K (+ i 
+	   (equal (Iter-K (+ i
 			     (* (Least-nat-bound
 				 (/_a (-_a (a) x)(d)))
 				(- (c) 1)))
-			  (+_a x 
+			  (+_a x
 			       (*_a (Least-nat-bound
 				     (/_a (-_a (a) x)(d)))
 				    (d))))
-		  (Iter-K (+ -1 i 
+		  (Iter-K (+ -1 i
 			     (* (Least-nat-bound
 				 (/_a (-_a (a) x)(d)))
 				(- (c) 1)))
-			  (K (+_a x 
+			  (K (+_a x
 				  (*_a (Least-nat-bound
 					(/_a (-_a (a) x)(d)))
 				       (d)))))))
@@ -1340,12 +1340,12 @@
 			       Least-nat-bound)
 	   :use ((:instance
 		  Compose-Iter-K
-		  (i (+ -1 i 
+		  (i (+ -1 i
 			(* (Least-nat-bound
 			    (/_a (-_a (a) x)(d)))
 			   (- (c) 1))))
 		  (j 1)
-		  (x (+_a x 
+		  (x (+_a x
 			  (*_a (Least-nat-bound
 				(/_a (-_a (a) x)(d)))
 			       (d)))))))
@@ -1360,8 +1360,8 @@
 		(>_a d 0))
 	   (<_a (-_a a x)
 		 (*_a d
-		      (Least-nat-bound (/_a 
-					(-_a a x) 
+		      (Least-nat-bound (/_a
+					(-_a a x)
 					d)))))
   :hints (("Goal"
 	   :in-theory (disable <_a-Cancellation-Laws-for-*_a
@@ -1382,8 +1382,8 @@
 		(aofp x)
 		(>_a d 0))
 	   (<_a a (+_a x (*_a d
-			      (Least-nat-bound (/_a 
-						(-_a a x) 
+			      (Least-nat-bound (/_a
+						(-_a a x)
 						d))))))
   :hints (("Goal"
 	   :use Inequality-e-lemma)))
@@ -1395,19 +1395,19 @@
 		(aofp x)
 		(> (c) 1)
 		(<=_a x (a)))
-	   (equal (Iter-K (+ -1 i 
+	   (equal (Iter-K (+ -1 i
 			     (* (Least-nat-bound
 				 (/_a (-_a (a) x)(d)))
 				(- (c) 1)))
-			  (K (+_a x 
+			  (K (+_a x
 				  (*_a (Least-nat-bound
 					(/_a (-_a (a) x)(d)))
 				       (d)))))
-		  (Iter-K (+ -1 i 
+		  (Iter-K (+ -1 i
 			     (* (Least-nat-bound
 				 (/_a (-_a (a) x)(d)))
 				(- (c) 1)))
-			  (-_a (+_a x 
+			  (-_a (+_a x
 				    (*_a (Least-nat-bound
 					  (/_a (-_a (a) x)
 					       (d)))
@@ -1426,11 +1426,11 @@
 		(> (c) 1)
 		(<=_a x (a)))
 	   (equal (Iter-K i x)
-		  (Iter-K (+ -1 i 
+		  (Iter-K (+ -1 i
 			     (* (Least-nat-bound
 				 (/_a (-_a (a) x)(d)))
 				(- (c) 1)))
-			  (-_a (+_a x 
+			  (-_a (+_a x
 				    (*_a (Least-nat-bound
 					  (/_a (-_a (a) x)
 					       (d)))
@@ -1462,14 +1462,14 @@
 			     (* (Least-nat-bound
 				 (/_a (-_a (a) x)(d)))
 				(- (c) 1)))
-			  (-_a (+_a x (*_a 
+			  (-_a (+_a x (*_a
 				       (Least-nat-bound
 					(/_a (-_a (a) x)(d)))
 				       (d)))
 			       (b)))))
   :hints (("Goal"
-	   :in-theory 
-	   (disable  
+	   :in-theory
+	   (disable
 	    ITER-K_1_X=ITER-K_1+N_C-1_X+ND-BASE-STEP
 	    ITER-K_I_X=ITER-K_I+N_C-1_X+ND-STEP-1
 	    ITER-K=K
@@ -1513,8 +1513,8 @@
 				       (d)))
 			       (b)))))
   :hints (("Goal"
-	   :in-theory 
-	   (disable 
+	   :in-theory
+	   (disable
 	    ITER-K_I_X=ITER-K_I+N_C-1_X+ND-STEP-1
 	    ITER-K_I_X=ITER-K_I-1+N_C-1_X+ND-B
 	    ITER-K_I_X=ITER-K_I-1+N_C-1_X+ND-B-STEP-1
@@ -1543,7 +1543,7 @@
 			     (* (Least-nat-bound
 				 (/_a (-_a (a) x)(d)))
 				(- (c) 1)))
-			  (-_a (+_a x (*_a 
+			  (-_a (+_a x (*_a
 				       (Least-nat-bound
 					(/_a (-_a (a) x)(d)))
 				       (d)))
@@ -1571,7 +1571,7 @@
 		  (Iter-K (- i 1)
 			  (-_a x (b)))))
   :hints (("Goal"
-	   :use 
+	   :use
 	   Iter-K_i-1_x-b=Iter-K_i-1+n_c-1_x+nd-b)))
 
 (defthm
@@ -1676,7 +1676,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Verify that any function such as K, that satisfies the generalized 
+;; Verify that any function such as K, that satisfies the generalized
 ;; 91 recursion, is in fact equal to K1, provided (B)[(C) - 1] < (D):
 
 (defthm
@@ -1700,15 +1700,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Finally, verify that the recursion halts for any function such as K, that 
+;; Finally, verify that the recursion halts for any function such as K, that
 ;; satisfies the generalized 91 recursion, provided (B)[(C) - 1] < (D):
 ;;
 ;; The recursive calls occur for X <= (A):
 ;;
 ;;   K(X) = Iter-K( (C), X + (D) ) = K(...K(X + (D))...).
 ;;
-;; So K is recursively called, first on X + (D), then on K(X + (D)), 
-;; then on Iter-K( 2, X+(D) ),..., and finally on Iter-K( (C)-1, X+(D)). 
+;; So K is recursively called, first on X + (D), then on K(X + (D)),
+;; then on Iter-K( 2, X+(D) ),..., and finally on Iter-K( (C)-1, X+(D)).
 ;;
 ;; An ordinal measure is used to demonstrate termination. The
 ;; demonstration incurs the following proof obligations for each X and
@@ -1971,7 +1971,7 @@
 
 (in-theory (disable ei))
 
-(defthm 
+(defthm
     Proof-obligation-3
     (implies (and (>_a (e) 0)
 		  (aofp x)

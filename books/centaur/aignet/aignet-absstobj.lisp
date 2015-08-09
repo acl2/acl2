@@ -93,7 +93,7 @@
    (in-theory (disable regnums-correct))
    (in-theory (enable aignet$c::regnum->id))
 
-   
+
 
 
    (defsection nodes-correct
@@ -177,7 +177,7 @@
    ;;                 (equal count (aignet$c::num-regs aignet)))
    ;;            (aignet$c::regs-in-bounds count aignet))
    ;;   :hints(("Goal" :in-theory (enable aignet$c::aignet-regs-in-bounds))))
-   
+
    (local (in-theory (enable aignet$a::id->type)))
 
    (defsection aignet-count-equivs
@@ -365,7 +365,7 @@
                           (not (equal (ctype (stype x)) (out-ctype))))
                      (equal (stype x) (const-stype)))
             :hints(("Goal" :in-theory (enable stype stype-fix stypep)))))
-   
+
    (local (defthm id->phase-when-const
             (implies (equal (stype (car (lookup-id id aignet))) (const-stype))
                      (equal (aignet$a::id->phase id aignet) 0))
@@ -400,7 +400,7 @@
                         :exec aignet$c::num-nxsts)
             (num-gates :logic aignet$a::num-gates
                        :exec aignet$c::num-gates)
-            
+
             (fanin-litp :logic aignet$a::fanin-litp
                          :exec aignet$c::fanin-litp$inline)
             (id-existsp :logic aignet$a::id-existsp
@@ -668,7 +668,7 @@ the meanings of these fields later:</p>
 
 <p>There is one other stype, @(':const'), but generally no node in the list
 actually has constant type; instead, the final CDR of the list implicitly
-contains a constant node.  Thus, the number of nodes in the aignet is 
+contains a constant node.  Thus, the number of nodes in the aignet is
 @('(+ 1 (len aignet))').  However, we use a different function,
 @('node-count'), for this purpose so that we can feel free to use rules that
 would be expensive to generally apply to @('len').  </p>

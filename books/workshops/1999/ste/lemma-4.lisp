@@ -111,7 +111,7 @@
 		 (:instance len-c-eval
 			    (c c)
 			    (s (s-lub s r1)))
-		 (:instance len-s-lub 
+		 (:instance len-s-lub
 			    (s1 s)
 			    (s2 r1))
 		 (:instance r-nmp-consp-len-r2
@@ -120,7 +120,7 @@
 			    (n (+ 1 (len r2)))
 			    (m (len c)))
 		 )
-	   
+
 	   )
           ;; Added for v2-8 (just a wild guess) to deal with changes in
           ;; induction (less inhibiting of induction-hyp-terms and expansion of
@@ -138,7 +138,7 @@
 		 (:instance len-c-eval
 			    (c c)
 			    (s s))
-		; (:instance len-s-lub 
+		; (:instance len-s-lub
 		;	    (s1 s)
 		;	    (s2 r1))
 		 (:instance r-nmp-consp-len-r2
@@ -147,7 +147,7 @@
 			    (n (+ 1 (len r2)))
 			    (m (len c)))
 		 )
-	   
+
 	   )
 	  ("Subgoal *1/5.1.1'''"
 	   :expand ((R-DEFTRAJ R2 C (C-EVAL C S)))
@@ -161,7 +161,7 @@
 		 (:instance len-c-eval
 			    (c c)
 			    (s s))
-		; (:instance len-s-lub 
+		; (:instance len-s-lub
 		;	    (s1 s)
 		;	    (s2 r1))
 		 (:instance r-nmp-consp-len-r2
@@ -170,7 +170,7 @@
 			    (n (+ 1 (len r2)))
 			    (m (len c)))
 		 )
-	   
+
 	   )
 	  ) )
 
@@ -201,7 +201,7 @@
 		)
 	   (consp (r-deftraj r c s))))
 
-(defthm r-lte-r-deftraj-nils 
+(defthm r-lte-r-deftraj-nils
  (IMPLIES (AND (R-P R2)
 	       (R-NMP R2 N 0)
 	       )
@@ -306,7 +306,7 @@
 	   (not (r-nmp nil n m))))
 
 
-(defuntyped l-induct-rrs ((l-p l) (r-p r1) (r-p r2) (s-p s) (c-p c)) t 
+(defuntyped l-induct-rrs ((l-p l) (r-p r1) (r-p r2) (s-p s) (c-p c)) t
   boolean-listp nil
   (if (and (consp r1) (consp r2))
       (if (equal l t)
@@ -316,8 +316,8 @@
 		    (('and l1 l2) (append (l-induct-rrs l1 r1 r2 s c)
 					  (l-induct-rrs l2 r1 r2 s c)))
 		    (('when b l1) (if b (l-induct-rrs l1 r1 r2 s c) nil))
-		    (('next l1)   
-		     (l-induct-rrs l1 (cdr r1) (cdr r2) 
+		    (('next l1)
+		     (l-induct-rrs l1 (cdr r1) (cdr r2)
 				   (c-eval c (s-lub s (car r1))) c))))
     nil))
 
@@ -351,7 +351,7 @@
 	       (s-lte s1 s2))
 	  (equal (s-lub s1 s2) s2)))
 
-(defuntyped induct-rrs ( (r-p r1) (r-p r2) (s-p s) (c-p c)) t 
+(defuntyped induct-rrs ( (r-p r1) (r-p r2) (s-p s) (c-p c)) t
   boolean-listp nil
   (if (and (consp r1) (consp r2))
       (induct-rrs (cdr r1) (cdr r2) (c-eval c (s-lub s (car r1))) c)
@@ -406,7 +406,7 @@
 		(t-p r c)
 
 		(s-lte s (car r))
-		
+
 		(r-p r1)
 		(r-nmp r1 (len r1) (len s))
 
@@ -448,9 +448,9 @@
 		(l-p l)
 		(equal (l-depth l) (len r))
 		(equal (l-maxn l)  (len s))
-		
+
 		(l-eval l r)
-		
+
 		)
 	   (r-lte (r-deftraj  (l-defseq l (l-depth l) (l-maxn l)) c s) r))
   )
@@ -462,9 +462,9 @@
   (implies (r-nmp r n m)
 	   (equal (len r) n)))
 
-(defthm r-nmp-doo 
+(defthm r-nmp-doo
  (implies (and (s-p s) s )
-	  (not (r-nmp (cons s r) n 0)))) 
+	  (not (r-nmp (cons s r) n 0))))
 
 
 (defthm lemma-4-3-forward
@@ -502,7 +502,7 @@
 	   ))
   )
 
-(defmacro deftraj (a ckt) 
+(defmacro deftraj (a ckt)
   `(r-deftraj (l-defseq ,a (l-depth ,a) (l-maxn ,a)) ,ckt (s-make (l-maxn ,a) 'x)))
 
 (defthm lemma-4
@@ -516,9 +516,8 @@
 		(l-eval l (deftraj l c))
 		(iff (l-eval l r)
 		     (r-lte (deftraj l c) r))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance lemma-4-1)
 		 (:instance lemma-4-2)
 		 (:instance lemma-4-3))))
   )
-		 

@@ -111,7 +111,7 @@
                                mapfunc))))
     `(instance-Of-defspec map-mappable ,mapfunc '((mappable ,lambda-mapfunc) (do-map ,name)))))
 ;(create-map V-id :name V-ids)
-  
+
 (defun to-symbol-name (name)  (if (stringp name) name (symbol-name name)))
 (defun A-concatenate (names)  (if (endp names) "" (concatenate 'string "-" (to-symbol-name (car names)) (A-concatenate (cdr names)))))
 (defmacro make-name (prefix &rest names) `(intern-in-package-of-symbol (concatenate 'string (symbol-name ,prefix) (A-concatenate (list ,@names))) ,prefix))

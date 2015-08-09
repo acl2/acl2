@@ -24,8 +24,8 @@
 #|
 To certify this book:
 
-(certify-book "ed2a" 
-	      0   
+(certify-book "ed2a"
+	      0
 	      nil ;;compile-flg
 	      )
 |#
@@ -33,7 +33,7 @@ To certify this book:
 ;; An Euclidean Domain is an integral domain, together with a Size function
 ;; from nonzero domain elements into the nonnegative integers, that
 ;; satisfies the Division Propery:
-;; 
+;;
 ;; Division Propery. For all domain elements x and all nonzero domain
 ;;             elements y there are domain elements q and r such that
 
@@ -49,7 +49,7 @@ To certify this book:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Commutative Ring is a nonempty set with two binary operations, addition
 ;; and multiplication, an unary operation, minus, and a ring element, zero,
-;; such that 
+;; such that
 
 ;; (1) the binary operations are commutative and associative,
 ;; (2) multiplications distributes over addition,
@@ -80,11 +80,11 @@ To certify this book:
 ; Make temporary use of an ACL2 Arithmetic Book to help certify this book,
 
 (local
- (include-book "arithmetic/top" :dir :system 
+ (include-book "arithmetic/top" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (encapsulate
@@ -93,16 +93,16 @@ To certify this book:
   ((=_e * *) => *)        ; Equality predicate for Euclidean Domain elements.
   ((C_=_e *) => *)        ; Choose unique equivalence class representative for =_e.
   ((+_e * *) => *)        ; Addition in Euclidean Domain.
-  ((*_e * *) => *)        ; Multiplication in Euclidean Domain. 
+  ((*_e * *) => *)        ; Multiplication in Euclidean Domain.
   ((-_e *) => *)          ; Unary minus in Euclidean Domain.
   ((0_e) => *)            ; 0 element in Euclidean Domain.
   ((1_e) => *)            ; 1 element in Euclidean Domain.
-  ((size1 *) => *)        ; Natp size of each nonzero Euclidean Domain element. 
+  ((size1 *) => *)        ; Natp size of each nonzero Euclidean Domain element.
   ((q1_e * *) => *)       ; Quotient in Euclidean Domain.
   ((r1_e * *) => *))      ; Remainder in Euclidean Domain.
 
  ; Witnesses:
- (local (defun 
+ (local (defun
 	  edp (x)
 	  (rationalp x)))
 
@@ -129,7 +129,7 @@ To certify this book:
  (local (defun
 	  0_e ()
 	  0))
- 
+
  (local (defun
 	  1_e ()
 	  1))
@@ -163,10 +163,10 @@ To certify this book:
  (defthm
     Equivalence-Law
     (implies (edp x)
-	     (and (=_e x x)  
+	     (and (=_e x x)
 		  (implies (edp y)
 			   (and (booleanp (=_e x y))
-				(implies (=_e x y) 
+				(implies (=_e x y)
 					 (=_e y x))
 				(implies (edp z)
 					 (implies (and (=_e x y)
@@ -303,7 +303,7 @@ To certify this book:
 			       (=_e (r1_e y1 z)
 				    (r1_e y2 z))))))
    :rule-classes nil)
-		 
+
  (defthm
    Division-property
    (implies (and (edp x)
@@ -319,7 +319,7 @@ To certify this book:
 
 (defun
   ==_e (x1 x2)
-  "==_e nicely extends =_e 
+  "==_e nicely extends =_e
    to entire ACL2 universe."
   (if (edp x1)
       (if (edp x2)
@@ -361,8 +361,8 @@ To certify this book:
 (defthm
   ==_e-Equivalence-Law
   (and (booleanp (==_e x y))
-       (==_e x x)  
-       (implies (==_e x y) 
+       (==_e x x)
+       (implies (==_e x y)
 		(==_e y x))
        (implies (and (==_e x y)
 		     (==_e y z))
@@ -414,7 +414,7 @@ To certify this book:
 
 (defun
   C_==_e (x)
-  "C_==_e nicely extends C_=_e 
+  "C_==_e nicely extends C_=_e
    to entire ACL2 universe."
   (if (edp x)
       (C_=_e x)
@@ -454,7 +454,7 @@ To certify this book:
 		(==_e (**_e (**_e x y) z)
 		      (**_e x (**_e y z)))))
   :hints (("Goal"
-	   :in-theory (disable Commutativity-Laws-for-++_e-&-**_e)))) 
+	   :in-theory (disable Commutativity-Laws-for-++_e-&-**_e))))
 
 (defthm
   Left-Distributivity-Law-for-++_e-&-**_e
@@ -598,7 +598,7 @@ To certify this book:
 	   (==_e y1 y2))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable ==_e-C_==_e) 
+	   :in-theory (disable ==_e-C_==_e)
 	   :use ((:instance
 		  ==_e-C_==_e
 		  (x y1))
@@ -607,7 +607,7 @@ To certify this book:
 		  (x y2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; This book constucts, for any Euclidean domain, 
+;; This book constucts, for any Euclidean domain,
 ;;                <edp, =_e, C_=_e, +_e, *_e, -_e, 0_e, size1, q1_e, r1_e>,
 ;; functions size, q_e, and r_e such that
 
@@ -657,22 +657,22 @@ To certify this book:
 ;; 	       (not (=_e x (0_e)))
 ;; 	       (edp y)
 ;; 	       (not (=_e y (0_e))))
-;; 	    (<= (size x) 
+;; 	    (<= (size x)
 ;; 		(size (*_e x y))))
-		       
+
 ;; Outline of a proof.
 
 ;; Simplify the argument by taking =_e to be equality (and =_e-cl
 ;;  to be the identity function.
- 
+
 ;; If the domain contains only one element (0_e), then the above
-;; properties vacuously hold. 
+;; properties vacuously hold.
 
 ;; Otherwise the domain contains a nonzero element.
 ;;  For each nonzero domain element, x, choose a nonzero domain
 ;;  element c(x) such that (size1 (*_e x (c x))) is as small as possible.
 
-;;  Let (size x) = (size1 (*_e x (c x))), 
+;;  Let (size x) = (size1 (*_e x (c x))),
 ;;      (q_e x y) = (*_e (c y)
 ;;                       (q1_e x (*_e y (c y))))
 ;;      (r_e x y) = (r1_e x (*_e y (c y)))
@@ -693,14 +693,14 @@ To certify this book:
 ;;                        = (size1 (r_e x y))
 ;;                        = (size1 (r1_e x (*_e y (c y))))
 ;;                        < (size1 (*_e y (c y)))
-;;                        = (size y) 
+;;                        = (size y)
 
 ;;    Also (size x) = (size1 (*_e x (c x)))
 ;;                 <= (size1 (*_e x (*_e y (c (*_e x y)))))
 ;;                  = (size1 (*_e (*_e x y)(c (*_e x y))))
 ;;                  = (size (*_e x y))
 
-;;For each nonzero element x, choose a nonzero element c of edp 
+;;For each nonzero element x, choose a nonzero element c of edp
 ;; so that the product (**_e x c) has Size1 n (if it exists).
 (defchoose
   c_e (y)(x n)
@@ -725,7 +725,7 @@ To certify this book:
   :rule-classes ((:rewrite
 		  :corollary
 		  (implies (and (integerp n)
-				(>= n 0)				
+				(>= n 0)
 				(edp x)
 				(not (==_e x (0_e)))
 				(equal (size1 (**_e x y)) n)
@@ -749,7 +749,7 @@ To certify this book:
 				    (c_e x (size1 (**_e x y)))))
 		       (size1 (**_e x y)))))
   :hints (("Goal"
-	   :use (:instance 
+	   :use (:instance
 		 c_e-property
 		 (n (size1 (**_e x y)))))))
 
@@ -784,7 +784,7 @@ To certify this book:
 				    (c_e x (size1 x))))
 		       (size1 x))))
   :hints (("Goal"
-	   :use (:instance 
+	   :use (:instance
 		 C_e-properties-Size1
 		 (y (1_e))))))
 
@@ -859,7 +859,7 @@ To certify this book:
 				(integerp k)
 				(integerp n)
 				(<= 0 k)
-				(<= k n)				
+				(<= k n)
 				(edp x)
 				(not (==_e x (0_e)))
 				(edp (c_e x n))
@@ -869,7 +869,7 @@ To certify this book:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (Find-smallest-n x 0)
-;;   finds the smallest natp n such that (Size1 (*_e x (c_e x n))=n 
+;;   finds the smallest natp n such that (Size1 (*_e x (c_e x n))=n
 ;;   (if it exists).
 
 ;; Thus if there are nonzero elements in edp, then some nonzero element,
@@ -915,7 +915,7 @@ To certify this book:
 		(edp y)
 		(not (==_e y (0_e))))
 	   (>= (Size1 (**_e x y))(Find-smallest-n x 0)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
 		 :linear)
   :hints (("Goal"
 	   :use (:instance
@@ -950,8 +950,8 @@ To certify this book:
 		 (implies (and (edp x1)
 			       (not (==_e x1 (0_e)))
 			       (==_e x2 x1))
-			  (integerp (Size1 (**_e x1 
-						(c_e x2 
+			  (integerp (Size1 (**_e x1
+						(c_e x2
 						     (Find-smallest-n x2 0))))))))))
 
 (defthm
@@ -966,7 +966,7 @@ To certify this book:
 	   :in-theory (disable c_e-find-smallest-n-0
 			       c_e-find-smallest-n)
 	   :use (==_e-implies-equal-size1-**_e-c-e-find-smallest-n
-		 (:instance 
+		 (:instance
 		   c_e-find-smallest-n-0
 		   (x x1))
 		 (:instance
@@ -1017,7 +1017,7 @@ To certify this book:
 
 (defun
   Size (x)
-  (Size1 (**_e x 
+  (Size1 (**_e x
 	       (c_e (C_==_e x)(Find-smallest-n (C_==_e x) 0)))))
 
 (in-theory (disable (:executable-counterpart Size)))
@@ -1106,7 +1106,7 @@ To certify this book:
 					(find-smallest-n (C_==_e y) 0))))))
 		 (:instance
 		  ==_e-implies-equal-Find-smallest-n-0
-		  (x2 (C_==_e 
+		  (x2 (C_==_e
 		       (rr_e x
 			     (**_e y (c_e (C_==_e y)
 					  (find-smallest-n (C_==_e y) 0))))))
@@ -1120,7 +1120,7 @@ To certify this book:
 		(not (==_e x (0_e)))
 		(edp y)
 		(not (==_e y (0_e))))
-	   (<= (size x) 
+	   (<= (size x)
 	       (size (**_e x y))))
   :rule-classes nil
   :hints (("Goal"
@@ -1211,7 +1211,7 @@ To certify this book:
 		(not (=_e x (0_e)))
 		(edp y)
 		(not (=_e y (0_e))))
-	   (<= (size x) 
+	   (<= (size x)
 	       (size (*_e x y))))
   :rule-classes nil
   :hints (("Goal"

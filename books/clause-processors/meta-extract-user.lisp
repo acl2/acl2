@@ -36,7 +36,7 @@
 ;(include-book "meta-extract-ttag")
 (include-book "tools/defevaluator-fast" :dir :system)
 (include-book "ev-theoremp")
-(include-book "tools/def-functional-instance" :dir :system)           
+(include-book "tools/def-functional-instance" :dir :system)
 (include-book "tools/match-tree" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "magic-ev")
@@ -215,7 +215,7 @@
                                  :forcep nil)))
   :hints(("Goal" :use ((:instance mextract-contextual-badguy
                         (obj (list :relieve-hyp hyp alist rune target bkptr)))))))
-                
+
 ;; Assuming (mextract-ev-global-facts), meta-extract-formula produces a theorem
 (defthm mextract-formula
   (implies (and (mextract-ev-global-facts)
@@ -333,7 +333,7 @@
                (equal val
                       (mextract-ev-lst x alist))))
     :flag magic-ev-lst)
-  
+
     :hints(("goal" :in-theory (e/d (mextract-ev-of-fncall-args)
                                    (meta-extract-global-fact+)))))
 
@@ -454,7 +454,7 @@
     :hints (("goal" :use ((:instance ev-lst-of-pairlis-append-head-rest
                            (head nil))))))
 
-  
+
   (defthm ev-lst-of-pairlis
     (implies (and (no-duplicatesp keys)
 ; (true-listp vals)
@@ -853,7 +853,7 @@
 (local
  (localize-example
   using-typeset-and-type-alist
-  
+
   (defthm nth-when-symbolp
     (implies (symbolp n)
              (equal (nth n x)

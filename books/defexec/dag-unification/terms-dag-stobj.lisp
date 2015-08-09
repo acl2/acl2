@@ -45,20 +45,20 @@
 ;;; Depending on the kind of a node @h@, we will store in the array cell
 ;;; @h@ the following information:
 
-;;; *) 
+;;; *)
 ;;;   Variable nodes. They can be of two forms:
-;;; *.*) 
+;;; *.*)
 ;;;              @N@ (integer numbers): bound variables. They are bound to
 ;;;              the node @N@ (these nodes are called "IS" nodes).
 ;;; *.*)
-;;;              {\tt (X . T)} : they represent an unbound variable 
+;;;              {\tt (X . T)} : they represent an unbound variable
 ;;;              @X@. These nodes are called "VARIABLES".
 ;;; *.-)
 ;;; *)
 ;;;   Non-variable nodes (function nodes): {\tt (F. L)} (where @L@ is
 ;;;   different from @T@), interpreted as the function symbol @F@ and the
 ;;;   list @L@ of its neighbors (its arguments). These are "NON-VARIABLE"
-;;;   nodes.   
+;;;   nodes.
 ;;; -)
 
 ;;; Examples (representing the array as a list):
@@ -84,7 +84,7 @@
 
 
 
-;;; Reset the stobj: 
+;;; Reset the stobj:
 
 (defun reset-unif-problem (min max terms-dag)
   (declare (xargs :mode :program
@@ -160,7 +160,7 @@
    (implies (and (< n (len l)) (consp l))
 	    (equal (cons (nth n l) (list-components n (cdr l)))
 		   (list-components n l)))))
- 
+
 
 (local
  (defthm list-components-nth-list-components-for-true-listp
@@ -178,14 +178,14 @@
    (equal (list-components-nth n (fix-true-list l))
 	  (list-components-nth n l))
    :rule-classes nil))
- 
+
 
 (local
  (defthm list-components-nth-main-property
    (equal (list-components-nth 0 l) (fix-true-list l))
    :hints (("Goal" :use (:instance list-components-nth-true-listp (n 0))))))
- 
- 
+
+
 (local
  (defthm list-components-nth-aa-as-list-aux
    (equal (dag-component-st-aux n terms-dag)
@@ -200,7 +200,7 @@
 ;;; "export" the results about some functions defined on term dags
 ;;; representing the dag as a list to analogue functions defined on
 ;;; single--threaded object (see the book {\tt
-;;; dag-unification-st.lisp}). 
+;;; dag-unification-st.lisp}).
 
 (in-theory (disable dag-component-st))
 

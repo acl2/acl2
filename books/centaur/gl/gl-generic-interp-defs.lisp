@@ -102,7 +102,7 @@
   ;;          (gl-error x))
   ;;         :namedp t))
 
-  
+
 
   (defthm glcp-generic-run-gified-correct
     (implies (and (bfr-hyp-eval hyp (car env))

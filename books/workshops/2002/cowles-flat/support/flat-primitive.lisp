@@ -26,28 +26,28 @@
 ;  Last modified 20 December 2001.
 #|
  To certify (originally in ACL2 Version 2.6):
- (defpkg 
-     "FLAT" (union-eq 
+ (defpkg
+     "FLAT" (union-eq
 	      *acl2-exports*
 	      *common-lisp-symbols-from-main-lisp-package*))
 
  (certify-book "flat-primitive" 1 nil ; compile-flg
-	       :defaxioms-okp nil 
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil)
 |#
 (in-package "FLAT")
 (include-book "flat")
 #|
 A construction based on flat domains in ACL2, as introduced in
-flat.lisp, of a function f that satisfies the equation, for 
-functions h that are monotonic in their second argument, in the 
+flat.lisp, of a function f that satisfies the equation, for
+functions h that are monotonic in their second argument, in the
 following theorem,
 
 (defthm generic-primitive-recursive-f
     (equal (f x)
 	   (if (test x) (base x) (h x (f (st x)))))).
 
-The book primitive.lisp gives an alternative (and simpler) 
+The book primitive.lisp gives an alternative (and simpler)
 construction of such a primitive-recursive f.
 |#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,21 +87,21 @@ construction of such a primitive-recursive f.
 (defstub
   test (*) => *)
 
-(defstub 
+(defstub
   base (*) => *)
 
-(defstub 
+(defstub
   st (*) => *)
 
 (encapsulate
  (((h * *) => *))
- 
+
  (local
   (defun
       h (x y)
     (declare (ignore x y))
     ($bottom$)))
- 
+
  (defthm
      h-is-monotonic-2
      (implies ($<=$ y1 y2)
@@ -119,7 +119,7 @@ construction of such a primitive-recursive f.
 		   h-is-monotonic-2
 		   (y1 ($bottom$))
 		   (y2 y)))))
-    
+
 (defun
     f-chain (i x)
     (if (zp i)
@@ -131,7 +131,7 @@ construction of such a primitive-recursive f.
 (defthm
     base-of-f-chain=$bottom$
     (implies (zp i)
-	     (equal (f-chain i x) 
+	     (equal (f-chain i x)
 		    ($bottom$))))
 
 (defthm
@@ -145,7 +145,7 @@ construction of such a primitive-recursive f.
 
 (defchoose
     lub-f-chain-i i (x)
-    (not (equal (f-chain i x) 
+    (not (equal (f-chain i x)
 		($bottom$))))
 
 (defthm
@@ -179,7 +179,7 @@ construction of such a primitive-recursive f.
 	     :by
 	     (:functional-instance
 	      lub-$bottom$-based-chain-is-upper-bound
-	      ($bottom$-based-chain f-chain) 
+	      ($bottom$-based-chain f-chain)
 	      (lub-$bottom$-based-chain lub-f-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f-chain-i)))
@@ -226,7 +226,7 @@ construction of such a primitive-recursive f.
     (equal (lub-f-chain x)(ub-g-chain x))
     :rule-classes nil
     :hints (("Goal"
-	     :by 
+	     :by
 	     (:functional-instance
 	      lub-$chain$=ub-shifted-$chain$
 	      ($chain$ f-chain)
@@ -242,11 +242,11 @@ construction of such a primitive-recursive f.
 	     :use f-chain-is-$<=$-chain)
 	    ))
 
-(defthm 
+(defthm
     generic-primitive-recursive-f
     (equal (f x)
-	   (if (test x) 
-	       (base x) 
+	   (if (test x)
+	       (base x)
 	       (h x (f (st x)))))
     :hints (("Goal"
 	     :use lub-f-chain=ub-g-chain)))

@@ -148,7 +148,7 @@
 (defmacro if-lifts (name &rest terms)
   (declare (xargs :guard (and (symbolp name)
                               (rule-macro-termsp terms))))
-  (list* 'encapsulate () 
+  (list* 'encapsulate ()
          `(defmacro ,(symbol-append name '-on) ()
             (quote (in-theory (enable ,@(if-lift-thm-names terms)))))
          `(defmacro ,(symbol-append name '-off) ()
@@ -211,7 +211,7 @@
 
 (in-theory (disable prv prv2 prv3))
 
-  
+
 #| Section 3. -- simple typing rules |#
 
 (program)
@@ -450,7 +450,7 @@
   (mv-let (lhs binds) (parse-letthm form)
     (declare (ignore lhs))
     (binds-fns binds name)))
-    
+
 (defun letthm-body (name form)
   (mv-let (lhs binds) (parse-letthm form)
     (let* ((tvar (first (first binds)))
@@ -541,7 +541,7 @@
            (or (null (cdr x))
                (<< (caar x) (caadr x))))))
 
-(defun ifrp (x) ;; ill-formed rcdp 
+(defun ifrp (x) ;; ill-formed rcdp
   (or (not (rcdp x))
       (and (consp x)
            (null (cdr x))
@@ -573,7 +573,7 @@
          (if v (cons (cons a v) r) r))
         ((equal a (caar r))
          (if v (cons (cons a v) (cdr r)) (cdr r)))
-        (t 
+        (t
          (cons (car r) (s-aux a v (cdr r))))))
 
 (defun s (a v x)
@@ -621,7 +621,7 @@
 (local
 (defthm s-aux-same-g-aux
   (implies (rcdp r)
-           (equal (s-aux a (g-aux a r) r) 
+           (equal (s-aux a (g-aux a r) r)
                   r))))
 
 (local
@@ -684,13 +684,13 @@
 
 (defthm g-over-if
   (equal (g k (if a r1 r2))
-	 (if a 
+	 (if a
 	     (g k r1)
 	   (g k r2))))
 
 (defthm s-over-if
   (equal (s k (if a v1 v2) r)
-	 (if a 
+	 (if a
 	     (s k v1 r)
 	   (s k v2 r))))
 
@@ -721,7 +721,7 @@
 (in-theory (disable g-of-s-redux))
 
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
 	 v))
 
 (defthm g-diff-s
@@ -730,7 +730,7 @@
                   (g a r))))
 
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
 	 r))
 
 (defthm s-same-s
@@ -748,7 +748,7 @@
 
 (defthm s-non-nil-cannot-be-nil
   (implies v (s a v r))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable rcd->acl2-of-record-non-nil)
            :use (:instance rcd->acl2-of-record-non-nil
                            (r (s-aux a v (acl2->rcd r)))))))
@@ -796,12 +796,12 @@
 
 (defthmk-bdd bits-equiv-symmetric-2
   (let ((x (list (bv x1) (bv x0)))
-        (y (list (bv y1) (bv y0)))) 
+        (y (list (bv y1) (bv y0))))
      (equal (bits-equiv x y) (bits-equiv y x))))
 
 (defthmk-bdd bits-equiv-symmetric-5
   (let ((x (list (bv x4) (bv x3) (bv x2) (bv x1) (bv x0)))
-        (y (list (bv y4) (bv y3) (bv y2) (bv y1) (bv y0)))) 
+        (y (list (bv y4) (bv y3) (bv y2) (bv y1) (bv y0))))
      (equal (bits-equiv x y) (bits-equiv y x))))
 
 (in-theory (disable if-if-lift))
@@ -839,8 +839,8 @@
   (band-macro args))
 
 (defconst *ma-fields*
-  '(pPC pRF pDMem pIMem 
-    deOP deARG1 deARG2 deDEST deWRT deSRC1 deSRC2 
+  '(pPC pRF pDMem pIMem
+    deOP deARG1 deARG2 deDEST deWRT deSRC1 deSRC2
     deRegWrite deImm deuseImm deMemToReg deMemWrite dePC
     fdWRT fdINST fdPC
     emDEST emWRT emRegWrite emMemWrite emResult emMemToReg emARG2 emPC
@@ -1071,7 +1071,7 @@
 
 (defmacro make-flushes (st &rest flshd)
   (let ((flds (get-fields st)))
-    (list* 'progn 
+    (list* 'progn
 	   `(in-theory (enable ,@flds))
 	   (append (make-flushes-thms flds flshd)
 		   `((in-theory (disable ,@flds)))))))
@@ -1133,7 +1133,7 @@
 (defthmk maX6-proof (ma-matches-isa (maX6 m)))
 (defthmk maX7-proof (ma-matches-isa (maX7 m)))
 
-; Of course, we can avoid anything this nonsense by proving for 
+; Of course, we can avoid anything this nonsense by proving for
 ; any 4 steps away from some start arbitrary state:
 
 (defthmk ma-proof (ma-matches-isa (ma (ma (ma (ma m))))))

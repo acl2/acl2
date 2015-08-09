@@ -9,7 +9,7 @@
 
 (defconst *ip-message-bits*
   '(1 1 0 0 1 1 0 0 0 0 0 0 0 0 0 0
-      1 1 0 0 1 1 0 0 1 1 1 1 1 1 1 1 
+      1 1 0 0 1 1 0 0 1 1 1 1 1 1 1 1
       1 1 1 1 0 0 0 0 1 0 1 0 1 0 1 0
       1 1 1 1 0 0 0 0 1 0 1 0 1 0 1 0))
 
@@ -19,9 +19,9 @@
 
 (defconst *expanded-message-right*
   '(0 1 1 1 1 0 1 0 0 0 0 1 0 1 0 1 0 1 0 1 0 1 0 1
-      0 1 1 1 1 0 1 0 0 0 0 1 0 1 0 1 0 1 0 1 0 1 0 1)) 
+      0 1 1 1 1 0 1 0 0 0 0 1 0 1 0 1 0 1 0 1 0 1 0 1))
 
-(assert! 
+(assert!
   (equal (expand (cdr (cons (prefix-nth *ip-message-bits* 32)
                             (get-nth *ip-message-bits* 32))))
          *expanded-message-right*))
@@ -36,24 +36,24 @@
 (defconst *key-bits*
   '(0 0 0 1 0 0 1 1 0 0 1 1 0 1 0 0
       0 1 0 1 0 1 1 1 0 1 1 1 1 0 0 1
-      1 0 0 1 1 0 1 1 1 0 1 1 1 1 0 0 
+      1 0 0 1 1 0 1 1 1 0 1 1 1 1 0 0
       1 1 0 1 1 1 1 1 1 1 1 1 0 0 0 1))
 
-(assert! 
+(assert!
   (equal (bytes-to-8bits-msb *key*)
          *key-bits*))
 
 (defconst *key-pc-1-bits*
   '(1 1 1 1 0 0 0 0 1 1 0 0 1 1
       0 0 1 0 1 0 1 0 1 0 1 1 1 1
-      0 1 0 1 0 1 0 1 0 1 1 0 0 1 
+      0 1 0 1 0 1 0 1 0 1 1 0 0 1
       1 0 0 1 1 1 1 0 0 0 1 1 1 1))
-                             
+
 (defconst *key-shifted-0*
   '(1 1 1 1 0 0 0 0 1 1 0 0 1 1 0 0 1 0 1 0 1 0 1 0 1 1 1 1
-      0 1 0 1 0 1 0 1 0 1 1 0 0 1 1 0 0 1 1 1 1 0 0 0 1 1 1 1)) 
+      0 1 0 1 0 1 0 1 0 1 1 0 0 1 1 0 0 1 1 1 1 0 0 0 1 1 1 1))
 
-(assert! 
+(assert!
   (equal (permuted-choice-1 *key-bits*)
          *key-pc-1-bits*))
 
@@ -64,26 +64,26 @@
 (defconst *key-round-1-bits*
   '(0 0 0 1 1 0 1 1 0 0 0 0
       0 0 1 0 1 1 1 0 1 1 1 1
-      1 1 1 1 1 1 0 0 0 1 1 1 
+      1 1 1 1 1 1 0 0 0 1 1 1
       0 0 0 0 0 1 1 1 0 0 1 0))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-0* 0 t)
               *key-shifted-1*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-0* 0 t))
               *key-round-1-bits*)))
 
-(assert! 
+(assert!
   (equal (xor-bit-list *expanded-message-right*
                        *key-round-1-bits*)
          *xored-message*))
 
 (defconst *S-boxes-output*
-  '(0 1 0 1 1 1 0 0 1 0 0 0 0 0 1 0 
+  '(0 1 0 1 1 1 0 0 1 0 0 0 0 0 1 0
       1 0 1 1 0 1 0 1 1 0 0 1 0 1 1 1))
 
-(assert! 
-  (equal (apply-S-boxes (48-to-6bit-groups *xored-message*) 
+(assert!
+  (equal (apply-S-boxes (48-to-6bit-groups *xored-message*)
                         *S-boxes*)
          *S-boxes-output*))
 
@@ -91,15 +91,15 @@
   '(0 0 1 0 0 0 1 1 0 1 0 0 1 0 1 0
       1 0 1 0 1 0 0 1 1 0 1 1 1 0 1 1))
 
-(assert! 
+(assert!
   (equal (permute *S-boxes-output*)
-         *permuted-output*))                
+         *permuted-output*))
 
 (defconst *xored-left-feistel*
   '(1 1 1 0 1 1 1 1 0 1 0 0 1 0 1 0
       0 1 1 0 0 1 0 1 0 1 0 0 0 1 0 0))
 
-(assert! 
+(assert!
   (equal (xor-bit-list (car (cons (prefix-nth *ip-message-bits* 32)
                                   (get-nth *ip-message-bits* 32)))
                        *permuted-output*)
@@ -111,11 +111,11 @@
 
 (defconst *key-round-2-bits*
   '(0 1 1 1 1 0 0 1 1 0 1 0
-      1 1 1 0 1 1 0 1 1 0 0 1 
-      1 1 0 1 1 0 1 1 1 1 0 0 
+      1 1 1 0 1 1 0 1 1 0 0 1
+      1 1 0 1 1 0 1 1 1 1 0 0
       1 0 0 1 1 1 1 0 0 1 0 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-1* 1 t)
               *key-shifted-2*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-1* 1 t))
@@ -131,7 +131,7 @@
       0 1 0 0 0 0 1 0 1 1 0 0
       1 1 1 1 1 0 0 1 1 0 0 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-2* 2 t)
               *key-shifted-3*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-2* 2 t))
@@ -142,12 +142,12 @@
       0 1 0 1 1 0 0 1 1 0 0 1 1 1 1 0 0 0 1 1 1 1 0 1 0 1 0 1))
 
 (defconst *key-round-4-bits*
-  '(0 1 1 1 0 0 1 0 1 0 1 0 
+  '(0 1 1 1 0 0 1 0 1 0 1 0
       1 1 0 1 1 1 0 1 0 1 1 0
-      1 1 0 1 1 0 1 1 0 0 1 1 
+      1 1 0 1 1 0 1 1 0 0 1 1
       0 1 0 1 0 0 0 1 1 1 0 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-3* 3 t)
               *key-shifted-4*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-3* 3 t))
@@ -160,10 +160,10 @@
 (defconst *key-round-5-bits*
   '(0 1 1 1 1 1 0 0 1 1 1 0
       1 1 0 0 0 0 0 0 0 1 1 1
-      1 1 1 0 1 0 1 1 0 1 0 1 
+      1 1 1 0 1 0 1 1 0 1 0 1
       0 0 1 1 1 0 1 0 1 0 0 0))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-4* 4 t)
               *key-shifted-5*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-4* 4 t))
@@ -171,15 +171,15 @@
 
 (defconst *key-shifted-6*
   '(0 0 1 1 0 0 1 0 1 0 1 0 1 0 1 1 1 1 1 1 1 1 0 0 0 0 1 1
-      1 0 0 1 1 0 0 1 1 1 1 0 0 0 1 1 1 1 0 1 0 1 0 1 0 1 0 1)) 
+      1 0 0 1 1 0 0 1 1 1 1 0 0 0 1 1 1 1 0 1 0 1 0 1 0 1 0 1))
 
 (defconst *key-round-6-bits*
-  '(0 1 1 0 0 0 1 1 1 0 1 0 
-      0 1 0 1 0 0 1 1 1 1 1 0 
-      0 1 0 1 0 0 0 0 0 1 1 1 
+  '(0 1 1 0 0 0 1 1 1 0 1 0
+      0 1 0 1 0 0 1 1 1 1 1 0
+      0 1 0 1 0 0 0 0 0 1 1 1
       1 0 1 1 0 0 1 0 1 1 1 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-5* 5 t)
               *key-shifted-6*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-5* 5 t))
@@ -190,12 +190,12 @@
       0 1 1 0 0 1 1 1 1 0 0 0 1 1 1 1 0 1 0 1 0 1 0 1 0 1 1 0))
 
 (defconst *key-round-7-bits*
-  '(1 1 1 0 1 1 0 0 1 0 0 0 
-      0 1 0 0 1 0 1 1 0 1 1 1 
-      1 1 1 1 0 1 1 0 0 0 0 1 
+  '(1 1 1 0 1 1 0 0 1 0 0 0
+      0 1 0 0 1 0 1 1 0 1 1 1
+      1 1 1 1 0 1 1 0 0 0 0 1
       1 0 0 0 1 0 1 1 1 1 0 0))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-6* 6 t)
               *key-shifted-7*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-6* 6 t))
@@ -211,7 +211,7 @@
       1 1 0 0 0 0 0 1 0 0 1 1
       1 0 1 1 1 1 1 1 1 0 1 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-7* 7 t)
               *key-shifted-8*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-7* 7 t))
@@ -227,7 +227,7 @@
       1 1 1 0 1 1 0 1 1 1 1 0
       0 1 1 1 1 0 0 0 0 0 0 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-8* 8 t)
               *key-shifted-9*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-8* 8 t))
@@ -238,16 +238,16 @@
       1 1 1 1 0 0 0 1 1 1 1 0 1 0 1 0 1 0 1 0 1 1 0 0 1 1 0 0))
 
 (defconst *key-round-10-bits*
-  '(1 0 1 1 0 0 0 1 1 1 1 1 
+  '(1 0 1 1 0 0 0 1 1 1 1 1
       0 0 1 1 0 1 0 0 0 1 1 1
-      1 0 1 1 1 0 1 0 0 1 0 0 
+      1 0 1 1 1 0 1 0 0 1 0 0
       0 1 1 0 0 1 0 0 1 1 1 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-9* 9 t)
               *key-shifted-10*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-9* 9 t))
-              *key-round-10-bits*))) 
+              *key-round-10-bits*)))
 
 (defconst *key-shifted-11*
   '(0 1 0 1 0 1 1 1 1 1 1 1 1 0 0 0 0 1 1 0 0 1 1 0 0 1 0 1
@@ -259,7 +259,7 @@
       1 1 0 1 1 1 1 0 1 1 0 1
       0 0 1 1 1 0 0 0 0 1 1 0))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-10* 10 t)
               *key-shifted-11*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-10* 10 t))
@@ -275,7 +275,7 @@
       1 0 0 1 0 1 0 0 0 1 1 0
       0 1 1 1 1 1 1 0 1 0 0 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-11* 11 t)
               *key-shifted-12*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-11* 11 t))
@@ -291,7 +291,7 @@
       1 1 1 1 1 0 1 0 1 0 1 1
       1 0 1 0 0 1 0 0 0 0 0 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-12* 12 t)
               *key-shifted-13*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-12* 12 t))
@@ -299,15 +299,15 @@
 
 (defconst *key-shifted-14*
   '(1 1 1 1 1 1 1 0 0 0 0 1 1 0 0 1 1 0 0 1 0 1 0 1 0 1 0 1
-      1 1 1 0 1 0 1 0 1 0 1 0 1 1 0 0 1 1 0 0 1 1 1 1 0 0 0 1)) 
+      1 1 1 0 1 0 1 0 1 0 1 0 1 1 0 0 1 1 0 0 1 1 1 1 0 0 0 1))
 
 (defconst *key-round-14-bits*
-  '(0 1 0 1 1 1 1 1 0 1 0 0 
+  '(0 1 0 1 1 1 1 1 0 1 0 0
       0 0 1 1 1 0 1 1 0 1 1 1
       1 1 1 1 0 0 1 0 1 1 1 0
       0 1 1 1 0 0 1 1 1 0 1 0))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-13* 13 t)
               *key-shifted-14*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-13* 13 t))
@@ -323,7 +323,7 @@
       0 0 1 1 1 1 0 1 0 0 1 1
       1 1 1 1 0 0 0 0 1 0 1 0))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-14* 14 t)
               *key-shifted-15*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-14* 14 t))
@@ -339,7 +339,7 @@
       0 0 0 0 1 1 1 0 0 0 0 1
       0 1 1 1 1 1 1 1 0 1 0 1))
 
-(assert! 
+(assert!
   (and (equal (get-round-key *key-shifted-15* 15 t)
               *key-shifted-16*)
        (equal (permuted-choice-2 (get-round-key *key-shifted-15* 15 t))
@@ -349,7 +349,7 @@
   '(0 0 0 0 1 0 1 0 0 1 0 0 1 1 0 0 1 1 0 1 1 0 0 1 1 0 0 1 0 1 0 1
       0 1 0 0 0 0 1 1 0 1 0 0 0 0 1 0 0 0 1 1 0 0 1 0 0 0 1 1 0 1 0 0))
 
-(assert! 
+(assert!
   (let ((half-parts (encrypt-decrypt-64bit-block1 (cons (prefix-nth *ip-message-bits* 32)
                                                         (get-nth *ip-message-bits* 32))
                                                   *key-pc-1-bits* 0 t)))
@@ -358,10 +358,10 @@
            *pre-final-perm-message*)))
 
 (defconst *final-permuted-cipher*
-  '(1 0 0 0 0 1 0 1 1 1 1 0 1 0 0 0 0 0 0 1 0 0 1 1 0 1 0 1 0 1 0 0 
+  '(1 0 0 0 0 1 0 1 1 1 1 0 1 0 0 0 0 0 0 1 0 0 1 1 0 1 0 1 0 1 0 0
       0 0 0 0 1 1 1 1 0 0 0 0 1 0 1 0 1 0 1 1 0 1 0 0 0 0 0 0 0 1 0 1))
 
-(assert! 
+(assert!
   (equal (IP-inverse *pre-final-perm-message*)
          *final-permuted-cipher*))
-                     
+

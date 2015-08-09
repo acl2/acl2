@@ -1,23 +1,23 @@
 ;  Copyright (C) 2000 Panagiotis Manolios
- 
+
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios who can be reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
@@ -88,9 +88,9 @@
 	(latch2 (nth (MA-latch2) MA)))
     (and (nth (latch2-validp) latch2)
 	 (nth (latch1-validp) latch1)
-	 (bor (equal (nth (latch1-ra) latch1) 
+	 (bor (equal (nth (latch1-ra) latch1)
 		     (nth (latch2-rc) latch2))
-	      (equal (nth (latch1-rb) latch1) 
+	      (equal (nth (latch1-rb) latch1)
 		     (nth (latch2-rc) latch2))))))
 
 (defun step-latch1 (MA)
@@ -110,9 +110,9 @@
 	(latch2 (not (stall-condp MA))
 		(nth (latch1-op) latch1)
 		(nth (latch1-rc) latch1)
-		(nfix (value-of (nth (latch1-ra) latch1) 
+		(nfix (value-of (nth (latch1-ra) latch1)
 				(nth (MA-regs) MA)))
-		(nfix (value-of (nth (latch1-rb) latch1) 
+		(nfix (value-of (nth (latch1-rb) latch1)
 				(nth (MA-regs) MA))))
       (update-nth (latch2-validp) nil (nth (MA-latch2) MA)))))
 
@@ -129,7 +129,7 @@
       (nth (MA-pc) MA)
     (1+ (nth (MA-pc) MA))))
 
-(encapsulate 
+(encapsulate
  ((exc-step-pc (pc regs mem) t)
   (exc-step-regs (pc regs mem) t)
   (exc-step-mem (pc regs mem) t)
@@ -137,34 +137,34 @@
   (exc-step-latch2 (pc regs mem) t)
   (exc-step-exc-on (pc regs mem) t))
 
- (local (defun exc-step-pc (pc regs mem) 
+ (local (defun exc-step-pc (pc regs mem)
 	  (declare (ignore pc regs mem))
 	  0))
 
- (local (defun exc-step-regs (pc regs mem) 
+ (local (defun exc-step-regs (pc regs mem)
 	  (declare (ignore pc regs mem))
 	  nil))
 
- (local (defun exc-step-mem (pc regs mem) 
+ (local (defun exc-step-mem (pc regs mem)
 	  (declare (ignore pc regs mem))
 	  nil))
 
- (local (defun exc-step-latch1 (pc regs mem) 
+ (local (defun exc-step-latch1 (pc regs mem)
 	  (declare (ignore pc regs mem))
 	  nil))
 
- (local (defun exc-step-latch2 (pc regs mem) 
+ (local (defun exc-step-latch2 (pc regs mem)
 	  (declare (ignore pc regs mem))
 	  nil))
 
- (local (defun exc-step-exc-on (pc regs mem) 
+ (local (defun exc-step-exc-on (pc regs mem)
 	  (declare (ignore pc regs mem))
 	  nil))
 
  (defthm flushed-MA-exc-step
    (and (not (nth (latch1-validp) (exc-step-latch1 pc regs mem)))
 	(not (nth (latch2-validp) (exc-step-latch2 pc regs mem)))))
- 
+
  (defthm exc-step-pc-rational
    (rationalp (exc-step-pc pc regs mem))))
 
@@ -176,7 +176,7 @@
 (defun convert-regs (regs)
   (if (consp regs)
       (if (consp (car regs))
-	  (acons (caar regs) 
+	  (acons (caar regs)
 		 (n (cdar regs))
 		 (convert-regs (cdr regs)))
 	(cons (car regs) (convert-regs (cdr regs))))
@@ -207,7 +207,7 @@
 	 (rb-val (value-of rb regs)))
     (cond ((bor (equal op 0)
 		(equal op 1))
-	   (if (and exc-on 
+	   (if (and exc-on
 		    (excp op ra-val rb-val))
 	       (ISA-state (exc-step-pc pc regs mem)
 			  (convert-regs (exc-step-regs pc regs mem))

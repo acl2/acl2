@@ -243,7 +243,7 @@ It is similar in spirit to @(see acl2::q-ite); we try to avoid evaluating
                          ;; BOZO this duplicates ,else, which could lead to
                          ;; code blowup.  We can probably avoid that...
 
-                         ;; BOZO should also check-vars-not-free here.  See 
+                         ;; BOZO should also check-vars-not-free here.  See
                          ;; aig-ite and similar
                          (if a4vec-ite-test
                              (let ((a4vec-ite-then ,then))
@@ -825,7 +825,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
          ;; We're taking care of the cases where A or B are X or Z
          ;; elsewhere, so it suffices to just compare the uppers.
          a=b
-         
+
          (aig-or bz  ;; Ans is T, so upper set.
                  bx  ;; Ans it X, so upper set
                  )
@@ -873,12 +873,12 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                           (x a.upper) (y a.lower) (env env)))
                    :in-theory (disable acl2::aig-eval-and
                                        acl2::aig-eval-xor))))))
-           
-         
-       
-    
-    
-       
+
+
+
+
+
+
 (define and4 (a b c d)
   (and a b c d)
   ///
@@ -962,7 +962,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                                           (not xor iff))))))
 
 
-                              
+
 
   (local (defthmd 4vec-wildeq-expand
            (equal (4vec-wildeq (4vec a b) (4vec c d))
@@ -991,7 +991,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                                              bitops::logior**
                                              bitops::lognot**
                                              bitops::logbitp**)))))
-                         
+
   (local (defthm logbitp-0-of-aig-list->s
            (equal (logbitp 0 (aig-list->s x env))
                   (aig-eval (car x) env))

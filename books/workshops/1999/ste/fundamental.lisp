@@ -2,14 +2,14 @@
 
 (include-book "lemma-4")
 
-(defun-sk ste-thm (ckt a c)  
+(defun-sk ste-thm (ckt a c)
   (forall r (implies (and (r-p r)
 			  (t-p r ckt)
 			  (r-nmp r (l-depth a) (l-maxn a))
-			  
+
 			  (equal (l-depth a) (l-depth c))
 			  (equal (l-maxn a) (l-maxn c))
-			 
+
 			  (equal (len ckt) (l-maxn a))
 
 			  (l-eval a r)
@@ -20,7 +20,7 @@
   (implies (and (l-p a)
 		(l-p c)
 		(c-p ckt)
-		
+
 		(r-lte (l-defseq  c (l-depth c) (l-maxn c))
 		       (l-deftraj a ckt))
 		)
@@ -59,12 +59,12 @@
   :hints (("Goal"
 	   :use ((:instance  r-nmp-l-defseq))))
   )
-			     
+
 (defthm r-nmp-r-deftraj
  (IMPLIES (AND (L-P A)
 	       (C-P CKT)
 	       (equal (len ckt) m)
-	       
+
 	       (r-p r)
 	       (r-nmp r n m)
 	       (positivep n)
@@ -78,7 +78,7 @@
 
 
 (defthm r-nmp-r-deftraj-nils
-  (implies (and 
+  (implies (and
 	    (l-p a)
 	    (equal (l-maxn a) 0)
 					;(equal ckt nil)
@@ -138,16 +138,16 @@
 
 		(equal (l-depth a) (l-depth c))
 		(equal (l-maxn a) (l-maxn c))
-		
+
 		(equal (len ckt) (l-maxn a))
-			      
+
 		(ste-thm ckt a c)
 		)
 	   (r-lte (l-defseq  c (l-depth c) (l-maxn c))
 		  (l-deftraj a ckt)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :do-not '(generalize fertilize)
-	   :in-theory (disable ste-thm lemma-2-pre 
+	   :in-theory (disable ste-thm lemma-2-pre
 			       lemma-4-1
 			       lemma-4-2
 			       lemma-4-3 lemma-4-3-backward lemma-4-3-forward
@@ -160,7 +160,7 @@
 			    (l a)
 			    (c ckt))
 		 (:instance lemma-4-2
-			    (l a) 
+			    (l a)
 			    (c ckt))
 		 )
 	   )
@@ -197,10 +197,10 @@
   (implies (and (l-p a)
 		(l-p c)
 		(c-p ckt)
-		
+
 		(equal (l-depth a) (l-depth c))
 		(equal (l-maxn a) (l-maxn c))
-		
+
 		(equal (len ckt) (l-maxn a))
 		)
 	   (iff (ste-thm ckt a c)
@@ -230,7 +230,7 @@
     nil))
 
 (defmacro ste-wf (ckt &rest thms)
-  `(and 
+  `(and
     (c-p ,ckt)
     ,@(ste-wf-maxn ckt thms)
     ,@(ste-wf-depth (first (first thms)) thms)
@@ -241,12 +241,12 @@
   (implies (and (l-p a)
 		(l-p c)
 		(c-p ckt)
-		
+
 		(ste-wf ckt (a c))
 
 		;(equal (l-depth a) (l-depth c))
 		;(equal (l-maxn a) (l-maxn c))
-		
+
 		;(equal (len ckt) (l-maxn a))
 		)
 	   (iff (ste-thm ckt a c)

@@ -39,8 +39,8 @@
     (LAM (varname-p var) (stype-p type) (expression-p body))
     (APP (expression-p fun) (expression-p arg))
     (VAR (varname-p name))
-    (IFELSE (expression-p cond) 
-            (expression-p case1) 
+    (IFELSE (expression-p cond)
+            (expression-p case1)
             (expression-p case2)))
 
 
@@ -52,8 +52,8 @@
   (T-FALSE)
   (T-VAR)
   (T-ABS (type-deriv-p body))
-  (T-APP (stype-p argtype) 
-         (type-deriv-p fun) 
+  (T-APP (stype-p argtype)
+         (type-deriv-p fun)
          (type-deriv-p arg))
   (T-IF (type-deriv-p cond)
         (type-deriv-p case1)
@@ -130,7 +130,7 @@
       env
     (if (atom env)
         env
-      (cons 
+      (cons
        (if (equal (caar env) v1)
            (cons v2 (cdar env))
          (car env))
@@ -180,7 +180,7 @@
                 (not (is-bound-before-suffix v2 suff env)))
            (equal (cdr (assoc-equal v2 (env-subst-up-to v v2 suff env)))
                   (cdr (assoc-equal v env)))))
-            
+
 
 (defthm is-bound-before-suffix-env-subst-assoc1
   (implies (and (is-bound-before-suffix v suff env)
@@ -219,7 +219,7 @@
   (not (alpha-subst-env-okp v1 v2 (cons a env) env)))
 
 
-(in-theory (disable alpha-subst-env-okp))  
+(in-theory (disable alpha-subst-env-okp))
 
 
 
@@ -245,7 +245,7 @@
                 (assoc-equal x tail))
            (equal (assoc-equal x full)
                   (assoc-equal x env2))))
-           
+
 (defthm env-same-bindings1-cons2
   (implies (env-same-bindings1 tail full env2)
            (env-same-bindings1 tail (cons x full) (cons x env2))))
@@ -256,7 +256,7 @@
 
 (defthm env-same-bindings1-cons-twice
   (implies (not (equal (car a) (car b)))
-           (env-same-bindings1 
+           (env-same-bindings1
             tail (list* a b env) (list* b a env))))
 
 (defthm env-same-bindings1-cons-redundant
@@ -266,7 +266,7 @@
                                            env)
                                (list* (cons v t2)
                                       env))))
-           
+
 (defun env-same-bindings (env1 env2)
   (declare (xargs :guard (and (alistp env1) (alistp env2))))
   (env-same-bindings1 env1 env1 env2))
@@ -292,7 +292,7 @@
                                      env)
                               (list* (cons v t2)
                                      env))))
-                              
+
 
 
 (defthm same-bindings1-insert-assoc
@@ -306,7 +306,7 @@
 (defthm same-bindings1-insert-assoc1
   (implies (is-suffix suffix env)
            (env-same-bindings1 tail (cons (cons k v) env)
-                               (insert-assoc k v2 suffix 
+                               (insert-assoc k v2 suffix
                                              (cons (cons k v) env))))
   :hints (("Goal" :use same-bindings1-insert-assoc
            :in-theory (disable same-bindings1-insert-assoc))))
