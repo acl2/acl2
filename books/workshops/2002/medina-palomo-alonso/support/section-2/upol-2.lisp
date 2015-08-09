@@ -98,13 +98,13 @@
 
   (defthm |(p + q) + r = p + (q + r)|
     (= (+ (+ p q) r) (+ p (+ q r))))
-  
+
   (defthm |p * q = q * p|
     (= (* p q) (* q p)))
-  
+
   (defthm |(p * q) * r = p * (q * r)|
     (= (* (* p q) r) (* p (* q r))))
-    
+
   (defthm |p * (q + r) = (p * q) + (p * r)|
     (= (* p (+ q r)) (+ (* p q) (* p r))))
 
@@ -114,7 +114,7 @@
   (defthm |0 + p = p|
     (implies (polynomialp p)
 	     (= (+ (null) p) p)))
-  
+
   (defthm |1 * p = p|
     (implies (polynomialp p)
 	     (= (* (identity) p) p))))

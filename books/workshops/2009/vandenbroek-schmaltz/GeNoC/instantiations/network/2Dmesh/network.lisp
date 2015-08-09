@@ -9,7 +9,7 @@
 ;;x-dim-gen generates the nodes along a y coordinate
 (defun x-dim-gen (X y max)
   ;; generate the nodes along the x-dim, y is a constant
-  (if (zp X) 
+  (if (zp X)
     nil
     (let* ((curX (1- X))
            (conn (acons (list (list curX y) 'loc ) (list (list curX y) nil ) nil))
@@ -18,14 +18,14 @@
                    conn))
            (conn (if (< curX max)
                   (acons (list (list curX y) 'E ) (list (list X Y) 'W) conn)
-                   conn))           
+                   conn))
            (conn (if (> y 0)
                    (acons (list (list curX y) 'N ) (list (list curX (1- Y)) 'S) conn)
                    conn))
            (conn (if (> curX 0)
                    (acons (list (list curX y)  'W ) (list (list (1- curX) Y) 'E) conn)
                    conn)))
-      (append conn (x-dim-gen curX y max)))))  
+      (append conn (x-dim-gen curX y max)))))
 
 (defun coord-generator (X Y max)
   ;; generate a list of coordinates
@@ -36,7 +36,7 @@
 
 (defun 2Dmesh-topology (x)
   ;; Generates a list of the connection pressent in the network.
-  ;; Example: 
+  ;; Example:
   ;; (((0 0) LOC) (0 0) NIL)
   ;; (((0 0) S) (0 1) N)
   ;; ...
@@ -46,7 +46,7 @@
   ;;
   ;; Arguments:
   ;; - topo : Initialisation argument of the model. Often this is the size of the network.
-  (reverse (coord-generator x x (1- x))))  
+  (reverse (coord-generator x x (1- x))))
 
 
 
@@ -62,11 +62,11 @@
       (append (mem-gen-Y x y) (mem-gen (1- x) y))))
 
 
-(defun 2Dmesh-nodeMemory (x) 
+(defun 2Dmesh-nodeMemory (x)
  (reverse (mem-gen x x)))#|ACL2s-ToDo-Line|#
 
 
-(definstance GenericNetwork check-compliance-2dmesh-network                   
+(definstance GenericNetwork check-compliance-2dmesh-network
   :functional-substitution
   ((topology 2Dmesh-topology)
    (nodeMemory 2Dmesh-nodeMemory)))

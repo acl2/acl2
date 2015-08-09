@@ -13,10 +13,10 @@
 (include-book "symbol-manip")
 
 ;; general rewrites needed for compiled vectors
-(include-book "vector-comp-canon") 
+(include-book "vector-comp-canon")
 
 ;; to reason about firstn
-(include-book "list-defthms-help") 
+(include-book "list-defthms-help")
 
 ;; primitive definitions
 (include-book "source_shallow")
@@ -25,14 +25,14 @@
 (include-book "ihs-defthms-help")
 
 ;; more helper theorems for appending
-(include-book "append-defthms-help") 
+(include-book "append-defthms-help")
 
 (include-book "data-structures/list-defthms" :dir :system)
 
 (include-book "arithmetic/top-with-meta" :dir :system)
 
 ;; computed hints
-(include-book "computed-hints") 
+(include-book "computed-hints")
 
 ; Edited by Matt K.:
 ; (include-book "super-ihs" :dir :super-ihs)
@@ -46,7 +46,7 @@
 `(encapsulate ()
   (defthm ,name
      (equal  ,itr-term ,ind-term)
-     :hints (("Goal" 
+     :hints (("Goal"
               :induct t)
              (stable-simp-enable-hint1 stable-under-simplificationp pspv)
              (stable-simp-enable-hint2 stable-under-simplificationp pspv)
@@ -73,7 +73,7 @@
   (if (endp instantiations) nil
     (cons `(:instance ,(caar instantiations) ,@(cdar instantiations))
           (make-instantiations (cdr instantiations)))))
-  
+
 ;; inst-thm helper function.
 (defun make-inst-thms (instantiations)
   (if (endp instantiations) nil
@@ -90,7 +90,7 @@
     (let ((nthpred (join-symbols1 inv-name inv-name '|-nthpred-| index-name))
           (hist-inv-hlp (join-symbols1 inv-name inv-name '|-hist-inv-hlp-| index-name)))
 
-      (list 
+      (list
        `(defun ,nthpred (hist ,@arg-lst j)
           (equal (nth (loghead ,n j) hist)
                  (,ind-name ,@arg-lst j ',index-name)))
@@ -104,9 +104,9 @@
 (defun make-multi-nthpred (inv-name arg-lst ind-name n-lst index-names)
   (declare (xargs :mode :program))
   (if (endp index-names) nil
-    `(,@(multi-nthpred inv-name arg-lst ind-name 
+    `(,@(multi-nthpred inv-name arg-lst ind-name
                        (car n-lst) (car index-names))
-      ,@(make-multi-nthpred inv-name arg-lst ind-name (cdr n-lst) 
+      ,@(make-multi-nthpred inv-name arg-lst ind-name (cdr n-lst)
                             (cdr index-names)))))
 
 (defun this-stream-hist (one-stream? branches)
@@ -115,7 +115,7 @@
 (defun make-inv-hlp (inv-name index-names arg-lst branches one-stream?)
   (declare (xargs :mode :program))
   (let ((hist-inv-hlp (join-symbols1 inv-name inv-name '|-hist-inv-hlp-| (car index-names))))
-    (if (endp index-names) nil ;;`(,hist-inv-hlp (nth ,branches hist) ,@arg-lst i j) 
+    (if (endp index-names) nil ;;`(,hist-inv-hlp (nth ,branches hist) ,@arg-lst i j)
       (cons `(,hist-inv-hlp ,(this-stream-hist one-stream? branches)
                             ,@arg-lst i j)
             (make-inv-hlp inv-name (cdr index-names) arg-lst (- branches 1) one-stream?)))))
@@ -124,12 +124,12 @@
   (declare (xargs :mode :program))
   (let ((hist-inv-hlps (join-symbols1 inv-name inv-name '|-hist-inv-hlp|)))
     (list `(defun ,hist-inv-hlps (hist ,@arg-lst i j)
-             (if (zp j) 
+             (if (zp j)
                  (and ,@(make-inv-hlp inv-name index-names arg-lst branches one-stream?))
                (and ,@(make-inv-hlp inv-name index-names arg-lst branches one-stream?)
                     (,hist-inv-hlps hist ,@arg-lst i (- j 1))))))))
 
-;; three lemmas about each branch in a clique of streams.    
+;; three lemmas about each branch in a clique of streams.
 (defun inv-defun-events (ind-name inv-name arg-lst n index-name branches one-stream?)
   (declare (xargs :mode :program))
   (let ((hist-inv-hlps (join-symbols1 inv-name inv-name '|-hist-inv-hlp|))
@@ -150,7 +150,7 @@
                       (<= (- i (expt2 ,n)) l)
                       (,hist-inv-hlps hist ,@arg-lst i j))
                  (equal (,ind-name ,@arg-lst l ',index-name)
-                        (nth (loghead ,n l) 
+                        (nth (loghead ,n l)
                              ,(this-stream-hist one-stream? branches))
                         ))
         :hints (("Goal"
@@ -164,13 +164,13 @@
                       (< l i)
                       (<= (- i (expt2 ,n)) l)
                       (,hist-inv-hlps hist ,@arg-lst i (- i 1)))
-                 (equal 
+                 (equal
                         (,ind-name ,@arg-lst l ',index-name)
-                        (nth (loghead ,n l) 
+                        (nth (loghead ,n l)
                              ,(this-stream-hist one-stream? branches))))
-        :hints (("Goal" 
+        :hints (("Goal"
                  :use (:instance ,hist-inv-j (j (- i 1)))
-                 :in-theory (disable ,hist-inv-hlps 
+                 :in-theory (disable ,hist-inv-hlps
                                      (:executable-counterpart expt)
                                      unsigned-byte-p-forward-to-expt-bound
                                      unsigned-byte-p-loghead-forward-chaining
@@ -178,7 +178,7 @@
         :rule-classes
         ,(if (equal n 0)
              `(:rewrite
-               (:rewrite 
+               (:rewrite
                 :corollary (implies (and (natp l)
                                          (natp i)
                                          (< l i)
@@ -186,7 +186,7 @@
                                          (,hist-inv-hlps hist ,@arg-lst i (- i 1)))
                                     (equal (,ind-name ,@arg-lst l ',index-name)
                                            (nth 0 ,(this-stream-hist one-stream? branches))))
-                :hints (("Goal" 
+                :hints (("Goal"
                         :in-theory (disable ,hist-inv-hlps
                                             (:executable-counterpart expt)
                                             unsigned-byte-p-forward-to-expt-bound
@@ -201,36 +201,36 @@
                       (<= 0 j)
                       (<= 0 i)
                       (< j i)
-                      (equal (loghead ,n j) 
+                      (equal (loghead ,n j)
                              (loghead ,n i))
                       (<= (+ ,(- (- (expt2 n) 1)) i) j))
                  (>= j i))
         :hints (("Goal" :in-theory (enable loghead)))
-        :rule-classes ((:forward-chaining :trigger-terms ((equal (loghead ,n j) 
+        :rule-classes ((:forward-chaining :trigger-terms ((equal (loghead ,n j)
                                                                  (loghead ,n i)))))))))
 
 (defun make-inv-equivs-rec (ind-name arg-lst index-names n-lst itr-name branches)
   (if (endp index-names) nil
     (cons `(equal (,ind-name ,@arg-lst lim ',(car index-names))
-                  (nth (loghead ,(car n-lst) lim) 
+                  (nth (loghead ,(car n-lst) lim)
                        (nth ,branches (,itr-name ,@arg-lst i lim hist))))
-          (make-inv-equivs-rec ind-name arg-lst (cdr index-names) 
+          (make-inv-equivs-rec ind-name arg-lst (cdr index-names)
                                (cdr n-lst) itr-name (- branches 1)))))
 
 (defun make-inv-equivs (ind-name arg-lst index-names n-lst itr-name branches)
   ;; first case is for when hist is a flat list (not a buffer of buffers)
   (if (equal branches 0)
       `((equal (,ind-name ,@arg-lst lim ',(car index-names))
-               (nth (loghead ,(car n-lst) lim) 
+               (nth (loghead ,(car n-lst) lim)
                     (,itr-name ,@arg-lst i lim hist))))
     (make-inv-equivs-rec ind-name arg-lst index-names
                          n-lst itr-name branches)))
-       
+
        (defun inst-mk-cases (n size)
           (if (zp size) `((equal (loghead ,n lim) ,size))
             (cons `(equal (loghead ,n lim) ,size)
                   (inst-mk-cases n (- size 1)))))
-       
+
        (defun inst-hint (susp size)
          (if susp `(:cases ,(inst-mk-cases size (- (expt2 size) 1)))
            nil))
@@ -250,13 +250,13 @@
                       ,(if single-hist
                            `(,itr-inst ,@arg-lst lim)
                          `(nth ,branches (,itr-inst ,@arg-lst lim)))))
-          :hints (("Goal" 
+          :hints (("Goal"
                    :in-theory (enable ,ind-inst ,itr-inst loghead-0)
                    :use (:instance ,inv-name (lim lim) (i 0) (hist ',init-hist)))
                   (inst-hint stable-under-simplificationp ',(car n-lst))))
-       (cons 
+       (cons
         `(defthmd ,inv-inst-alt
-           (equal 
+           (equal
             (nth (loghead ,(car n-lst) lim)
                  ,(if single-hist
                       `(,itr-inst ,@arg-lst lim)
@@ -273,11 +273,11 @@
   (declare (xargs :mode :program))
   (let ((up (join-symbols1 '|up| '|up| (car index-names))))
     (if (endp index-names) nil
-      (cons `(update-nth 
+      (cons `(update-nth
               (loghead ,(car n-lst) i) ,up
               ,(this-stream-hist one-stream? branches))
             (make-update-hists (cdr index-names) (cdr n-lst) (- branches 1) one-stream?)))))
-          
+
 (defun make-ihs-names (inv-name index-names)
     (if (endp index-names) nil
       (cons (join-symbols1 inv-name inv-name '|-ihs-help-| (car index-names))
@@ -288,7 +288,7 @@
     (cons (join-symbols1 inv-name '|ind_| (car index-names))
           (ind-inst-names inv-name (cdr index-names)))))
 
-(defun main-inv-expand (inv-name arg-lst arg-preds ind-name itr-name 
+(defun main-inv-expand (inv-name arg-lst arg-preds ind-name itr-name
                                  n-lst index-names branches one-stream? init-hist)
   (declare (xargs :mode :program))
   (let ((hist-inv-hlps (join-symbols1 inv-name inv-name '|-hist-inv-hlp|))
@@ -305,11 +305,11 @@
                      (equal l (loghead ,(car n-lst) i))
                      (consp hist)
                      (,hist-inv-hlps hist ,@arg-lst i j))
-                (,hist-inv-hlps ,(if one-stream? 
-                                     `(update-nth l 
+                (,hist-inv-hlps ,(if one-stream?
+                                     `(update-nth l
                                                   up
                                                   ,(this-stream-hist one-stream? branches))
-                                   `(list ,@(reverse (make-update-hists 
+                                   `(list ,@(reverse (make-update-hists
                                                       index-names n-lst branches one-stream?))))
                                 ,@arg-lst (+ 1 i) j))
        :hints (("Goal" :induct t
@@ -349,7 +349,7 @@
      `(local (add-priority 4 stable-simp-enable-hint1))
      `(local (add-priority 5 hint-loghead-0))
      ;; -----------------------------------------------
-     
+
      `(defthmd+ ,inv-name
         (implies (and (true-listp hist)
                       (consp hist)
@@ -358,7 +358,7 @@
                       (<= i (+ lim 1))
                       ,@arg-preds
                       (,hist-inv-hlps hist ,@arg-lst i (- i 1)))
-                 (and ,@(make-inv-equivs ind-name arg-lst index-names 
+                 (and ,@(make-inv-equivs ind-name arg-lst index-names
                                          n-lst itr-loop-name branches)))
         :hints (("Goal" :induct t)
                 (hint-expand id ',arg-lst ',itr-loop-name ',ind-name ',inv-name)
@@ -367,16 +367,16 @@
                 (stable-simp-enable-hint3 stable-under-simplificationp pspv)
                 (disable-hint nil '(,hist-inv-hlps ,ind-name)))))
 
-     (make-inv-inst-thms  arg-lst inv-name index-names n-lst itr-inst 
+     (make-inv-inst-thms  arg-lst inv-name index-names n-lst itr-inst
                           init-hist one-stream? branches))))
 
 (defun inv-expand (ind-name inv-name arg-lst n-lst index-names one-stream?)
   (declare (xargs :mode :program))
   (if (endp index-names) nil
-    `(,@(inv-defun-events ind-name inv-name arg-lst 
+    `(,@(inv-defun-events ind-name inv-name arg-lst
                           (car n-lst) (car index-names)
                           (- (len index-names) 1) one-stream?)
-      ,@(inv-expand ind-name inv-name arg-lst 
+      ,@(inv-expand ind-name inv-name arg-lst
                     (cdr n-lst) (cdr index-names) one-stream?))))
 
 (defmacro inv-encap (inv-name arg-lst arg-preds i-name itr-name n-lst index-names init-hist)
@@ -386,15 +386,15 @@
          (streams (- (len rev-index-names) 1))
          (one-stream? (equal streams 0)))
 
-    `(encapsulate () 
+    `(encapsulate ()
                   ,@(make-multi-nthpred inv-name arg-lst ind-name
                                         rev-n-lst rev-index-names)
                   ,@(make-invs arg-lst inv-name rev-index-names streams one-stream?)
-                  ,@(inv-expand ind-name inv-name arg-lst 
+                  ,@(inv-expand ind-name inv-name arg-lst
                                 rev-n-lst rev-index-names one-stream?)
-                  ,@(main-inv-expand inv-name arg-lst arg-preds ind-name itr-name rev-n-lst  
+                  ,@(main-inv-expand inv-name arg-lst arg-preds ind-name itr-name rev-n-lst
                                      rev-index-names streams one-stream? init-hist))))
- 
+
 (defun inv-inst-alts (name index-names)
   (if (endp index-names) nil
     (cons (join-symbols1 name name (car index-names) '|-inst--alt-thm|)
@@ -410,14 +410,14 @@
     (cons (join-symbols1 name '|ind_| (car index-names))
           (ind-block-calls name (cdr index-names)))))
 
-(defmacro takes-thm (name depth hist-size inv-name itr-name arg-lst 
+(defmacro takes-thm (name depth hist-size inv-name itr-name arg-lst
                            arg-preds ind-takes i-name index-names init-hist)
   (let ((hist-inv-hlps (join-symbols1 inv-name inv-name '|-hist-inv-hlp|))
         (ind-name (join-symbols1 i-name '|$ind_block_| i-name))
         (itr-loop-name (join-symbols1 itr-name '|$itr_loop_| itr-name))
         (itr-inst (join-symbols1 itr-name '|itr_| itr-name))
         (name2 (join-symbols1 name name '|inst|)))
-    
+
 
   `(encapsulate ()
 
@@ -447,8 +447,8 @@
                 (hint-expand id ',arg-lst ',itr-loop-name ',ind-name ',inv-name)
              (stable-simp-enable-hint1 stable-under-simplificationp pspv)
              (stable-simp-enable-hint2 stable-under-simplificationp pspv)
-             (disable-hint '(,@(inv-inst-alts inv-name index-names) 
-                             ,@(ind-block-calls i-name index-names)) 
+             (disable-hint '(,@(inv-inst-alts inv-name index-names)
+                             ,@(ind-block-calls i-name index-names))
                            '(,@(inv-insts inv-name index-names)
                              ,hist-inv-hlps))))
 
@@ -456,7 +456,7 @@
     (implies (and ,@arg-preds)
              (equal (firstn ,depth (,itr-inst ,@arg-lst ,(- depth 1)))
                     (,ind-takes ,@arg-lst 0)))
-             :hints (("Goal" 
+             :hints (("Goal"
                       :in-theory (enable ,itr-inst ,hist-inv-hlps)
                       :use (:instance ,name (i 0) (hist ',init-hist))))))))
 ;; END STREAM CLIQUE INVARIANT STUFF
@@ -467,7 +467,7 @@
 ;; VECTOR SPLIT STUFF
 (defun make-c-vec-split-expand (size length)
   (if (not (and (< 0 size) (natp size) (<= size length))) nil
-    (if (zp length) nil 
+    (if (zp length) nil
       (cons `(c-vec-split ,size (nthcdr ,length x))
             (make-c-vec-split-expand size (- length size))))))
 
@@ -486,9 +486,9 @@
     nil))
 
 (defmacro vec-split-true-listp-thm (name type size length)
-  `(defthm ,name 
+  `(defthm ,name
      (implies (and (,type x)
-                    (natp |i|) 
+                    (natp |i|)
                     (<= |i| ,size))
                (true-listp (nth |i| (c-vec-split ,size x))))
      :hints (("Goal" :in-theory (enable ,type))
@@ -496,8 +496,8 @@
              (hint-c-vec-split stable-under-simplificationp ,size ,length))))
 
 (defmacro vec-split-eq-thm (name type size length)
-  `(defthm ,name 
-     (implies (and (,type x) 
+  `(defthm ,name
+     (implies (and (,type x)
                    (natp |i|) (natp |j|) (< |j| ,size) (< |i| ,size))
               (equal (nth |j| (nth |i| (c-vec-split ,size x)))
                      (nth (+ (* |i| ,size) |j|) x)))
@@ -509,10 +509,10 @@
   `(encapsulate ()
                 (vec-split-true-listp-thm ,(join-symbols1 name name '|-true-listp-thm|)
                                            ,type1 ,vec-size ,vec-length)
-                (vec-split-eq-thm ,(join-symbols1 name name '|-split-eq-thm|) 
+                (vec-split-eq-thm ,(join-symbols1 name name '|-split-eq-thm|)
                                   ,type1 ,vec-size ,vec-length)
                 (defthm ,name
-                   (implies (,type1 x) 
+                   (implies (,type1 x)
                             (,type2 (c-vec-split ,vec-size x)))
                    :hints (("Goal" :in-theory (disable nth))
                            (stable-simp-enable-hint1 stable-under-simplificationp pspv)
@@ -547,12 +547,12 @@
   (cond ((equal thm-type 'fn) `(fn-thm ,name ,itr-term ,ind-term))
         ((equal thm-type 'type) `(type-thm ,name ,itr-term ,ind-term ,enables))
         ((equal thm-type 'comp) `(comp-thm ,name ,itr-term ,ind-term))
-        ((equal thm-type 'invariant) 
+        ((equal thm-type 'invariant)
          `(inv-encap ,name ,arg-list ,arg-types ,ind-name ,itr-name
                      ,hist-widths ,branches ,init-hist))
-        ((equal thm-type 'takes) 
-         `(takes-thm ,name ,take-depth ,hist-width ,invar-thm ,itr-name 
+        ((equal thm-type 'takes)
+         `(takes-thm ,name ,take-depth ,hist-width ,invar-thm ,itr-name
                      ,arg-list ,arg-types ,ind-name ,ind-loop ,branches ,init-hist))
-        ((equal thm-type 'vector-split) 
+        ((equal thm-type 'vector-split)
          `(make-vec-thm ,name ,type1 ,type2 ,vector-size ,vector-length))))
 

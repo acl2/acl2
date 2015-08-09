@@ -207,7 +207,7 @@
                             (and (<= 0 (r08 addr st))
                                  (<= (r08 addr st) (+ -1 (expt 2 8)))))
                    :hints (("Goal" :in-theory (disable r08))))))
- 
+
  (defthm |(n32p (r32 addr (g :mem st)))|
    (implies (memoryp (g :mem st))
             (n32p (r32 addr st)))

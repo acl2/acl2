@@ -70,7 +70,7 @@
      (formal-+ (cadr x)
                (cat-size (cddr x))))))
 
-;data and sizes alternate thus: (cat x xsize y ysize z zsize ...)  
+;data and sizes alternate thus: (cat x xsize y ysize z zsize ...)
 (defmacro cat (&rest x)
   (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
   (cond ((endp (cddr x))
@@ -78,9 +78,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 ;Allows things like (in-theory (disable cat)) to refer to binary-cat.

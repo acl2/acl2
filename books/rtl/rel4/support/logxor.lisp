@@ -115,7 +115,7 @@
                   (+ (* 2 (logxor (fl (* 1/2 i)) (fl (* 1/2 j))))
                      (logxor (mod i 2) (mod j 2)))))
   :rule-classes ((:definition :controller-alist ((binary-logxor t t))))
-  :hints (("goal" :use (:instance fl-mod-equal 
+  :hints (("goal" :use (:instance fl-mod-equal
                                   (x (logxor i j))
                                   (y (+ (* 2 (logxor (fl (* 1/2 i)) (fl (* 1/2 j))))
                      (logxor (mod i 2) (mod j 2)))))
@@ -148,7 +148,7 @@
            :use (LOGXOR-ASSOCIATIVE
                  logxor-commutative
                  (:instance LOGXOR-ASSOCIATIVE (j i) (i j))))))
- 
+
 (defthm logxor-combine-constants
   (implies (syntaxp (and (quotep i)
                          (quotep j)))

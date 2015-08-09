@@ -67,7 +67,7 @@
 	 ((and (>= (len s) 3)
 	       (equal (car s) 'if)
 	       (expressionp (second s))) (labels-list (cddr s)))
-	  
+
 	 ((and (>= (len s) 3)
 	       (equal (car s) 'while)
 	       (expressionp (second s))) (labels-list (cddr s)))
@@ -92,7 +92,7 @@
   :hints (("Goal"
 	   :induct (prog-i flg s)))
   :rule-classes nil)
-  
+
 (defthm labels-stmt-symbol-listp
   (symbol-listp (labels-stmt x))
   :hints (("Goal"
@@ -144,7 +144,7 @@
 			      then
 			      (list* else-label endif-label labs)))
 		   (then-labels (labels-list then-seg)))
-		     
+
 	      (append (list (list 'branch (list 'not cond) else-label))
 		      then-seg
 		      (list (list 'goto endif-label))
@@ -153,13 +153,13 @@
 		       else
 		       (append (list* else-label endif-label labs)
 			       then-labels))
-			
+
 		      (list (list 'label endif-label))))))
 
 	 ((and (>= (len s) 3)
 	       (equal (car s) 'while)
 	       (expressionp (second s)))
-	  
+
 	  (let ((cond (second s))
 		(body (cddr s))
 		(start-label (gen-symbol 'startwhile- labs))
@@ -174,7 +174,7 @@
  (defun compile-list (c labs)
    (declare (xargs :guard (and (proglist c)
 			       (symbol-listp labs))))
-   
+
    (cond ((atom c) nil)
 	 (t (let* ((cc (compile-stmt (car c) labs))
 		   (cclabs (labels-list cc)))

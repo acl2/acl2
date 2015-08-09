@@ -98,5 +98,5 @@ do *more* than soundness.
   :hints (("Goal"
            :use ((:instance exists-exitpoint-suff
                             (n (clock-fn s)))))))
-  
-                 
+
+

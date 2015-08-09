@@ -22,7 +22,7 @@ theorems about clocks and invariants to produce the final theorems.
 (set-well-founded-relation e0-ord-<)
 
 
-;; (defun natp (n) 
+;; (defun natp (n)
 ;;   (and (integerp n)
 ;;        (<= 0 n)))
 
@@ -31,7 +31,7 @@ theorems about clocks and invariants to produce the final theorems.
 ;; The macro clock-to-inv below works exactly as you would expect, functionally
 ;; instantiating the generic functions to get the concrete theorems.
 
-(defmacro inv-to-clock (name mode &key 
+(defmacro inv-to-clock (name mode &key
                              (pre 'pre)
                              (next 'next)
                              (external 'external)
@@ -71,34 +71,34 @@ theorems about clocks and invariants to produce the final theorems.
         `(encapsulate
 
           (((,clock *) => *))
-          
+
           ;; Just throw in the book and do it.
 
           (local (include-book "i2c-total"))
 
-          ;; I should not be required to open next, pre, post, etc. 
+          ;; I should not be required to open next, pre, post, etc.
           (in-theory (disable ,next ,pre, post ,inv))
 
           (defun ,run (s n)
             (if (zp n) s
               (,run (,next s) (1- n))))
 
-          (local 
-           (defun clock-aux (s) 
+          (local
+           (defun clock-aux (s)
               (declare (xargs :measure (,m s)))
               (cond ((not (,inv s)) 0)
                     ((,external (,next s)) 0)
                     (t (1+ (clock-aux (,next s)))))))
 
-          (local 
+          (local
            (defun ,clock (s)
              (1+ (clock-aux s))))
 
-          (defthm ,clock-natp 
+          (defthm ,clock-natp
             (natp (,clock s))
             :hints (("Goal"
                      :in-theory (disable clock-total--fn-is-natp)
-                     :use ((:functional-instance 
+                     :use ((:functional-instance
                             clock-total--fn-is-natp
                             (inv-total ,inv)
                             (pre-total ,pre)
@@ -109,7 +109,7 @@ theorems about clocks and invariants to produce the final theorems.
                             (clock-total--fn ,clock)
                             (clock-total--fn-aux clock-aux)
                             (m ,m))))))
-          
+
 
       (defthm ,standard-1
         (implies (,pre s)
@@ -167,28 +167,28 @@ theorems about clocks and invariants to produce the final theorems.
 
       ;; Not total. So use the partial conditions and also prove fewer
       ;; theorems.
-          
+
       (let* ((run (packn (list name '-run)))
              (standard-1 (packn (list name '-standard-theorem-about-clocks-1)))
              (standard-2 (packn (list name '-standard-theorem-about-clocks-2)))
              (standard-3 (packn (list name '-standard-theorem-about-clocks-3)))
              (clock-natp (packn (list name '-clock-is-natp))))
-        
+
         `(encapsulate
-          
+
           (((,clock *) => *))
-          
+
           (local (include-book "i2c-partial"))
-          
+
           (in-theory (disable ,next ,pre ,post ,inv))
 
           (defun ,run (s n)
             (if (zp n) s
               (,run (,next s) (1- n))))
-          
+
           (local
            (defun-sk for-all-inv (s i)
-             (forall j 
+             (forall j
                      (implies (<= j i)
                               (,inv (,run s j))))))
            (local
@@ -216,12 +216,12 @@ theorems about clocks and invariants to produce the final theorems.
             (local
              (in-theory (disable for-all-inv-necc)))
 
-          (defthm ,clock-natp 
+          (defthm ,clock-natp
             (natp (,clock s))
             :otf-flg t
             :hints (("Goal"
                      :in-theory (disable clock-partial--is-a-natp)
-                     :use ((:functional-instance 
+                     :use ((:functional-instance
                             clock-partial--is-a-natp
                             (inv-partial ,inv)
                             (pre-partial ,pre)
@@ -232,7 +232,7 @@ theorems about clocks and invariants to produce the final theorems.
                             (clock-partial--fn ,clock)
                             (exists-run-partial-to-external-partial
                              exists-run-to-external)
-                            (exists-run-partial-to-external-partial-witness 
+                            (exists-run-partial-to-external-partial-witness
                              exists-run-to-external-witness)
                             (for-all-inv-partial for-all-inv)
                             (for-all-inv-partial-witness
@@ -255,13 +255,13 @@ theorems about clocks and invariants to produce the final theorems.
                             (clock-partial--fn ,clock)
                             (exists-run-partial-to-external-partial
                              exists-run-to-external)
-                            (exists-run-partial-to-external-partial-witness 
+                            (exists-run-partial-to-external-partial-witness
                              exists-run-to-external-witness)
                             (for-all-inv-partial for-all-inv)
                             (for-all-inv-partial-witness
                              for-all-inv-witness))))))
-          
-          
+
+
           (defthm ,standard-2
             (implies (and (,pre s)
                           (,external (,run s i)))
@@ -279,12 +279,12 @@ theorems about clocks and invariants to produce the final theorems.
                             (clock-partial--fn ,clock)
                             (exists-run-partial-to-external-partial
                              exists-run-to-external)
-                            (exists-run-partial-to-external-partial-witness 
+                            (exists-run-partial-to-external-partial-witness
                              exists-run-to-external-witness)
                             (for-all-inv-partial for-all-inv)
                             (for-all-inv-partial-witness
                              for-all-inv-witness))))))
-                                      
+
           (defthm ,standard-3
             (implies (and (,pre s)
                           (,external (,run s i)))
@@ -302,70 +302,70 @@ theorems about clocks and invariants to produce the final theorems.
                             (clock-partial--fn ,clock)
                             (exists-run-partial-to-external-partial
                              exists-run-to-external)
-                            (exists-run-partial-to-external-partial-witness 
+                            (exists-run-partial-to-external-partial-witness
                              exists-run-to-external-witness)
                             (for-all-inv-partial for-all-inv)
                             (for-all-inv-partial-witness
                              for-all-inv-witness)))))))))))
-                                      
-       
+
+
 
 ;; Testing:
 
 ;; Example 1: Total correctness
 
 (local
- (encapsulate 
+ (encapsulate
   ()
-  
+
   (local (defun nextt (s) s))
   (local (defun pret (s)(declare (ignore s)) nil))
   (local (defun postt (s) (declare (ignore s)) t))
   (local(defun externalt (s) (declare (ignore s)) t))
   (local (defun invt (s) (declare (ignore s)) nil))
   (local (defun meas (s) (declare (ignore s)) 0))
-  
+
   (local
    (defthm pre-has-inv
      (implies (pret s)
               (invt s))))
-  
+
   (local
    (defthm inv-persists
      (implies (and (invt s)
                  (not (externalt (nextt s))))
               (invt (nextt s)))))
-  
+
   (local
    (defthm inv-implies-post
      (implies (and (invt s)
                    (externalt (nextt s)))
               (postt (nextt s)))))
-  
+
   (local
    (defthm m-ordinal
      (e0-ordinalp (meas s))))
-  
-  
+
+
   (local
-   (defthm m-decreases 
+   (defthm m-decreases
      (implies (and (invt s)
                    (not (externalt (nextt s))))
               (e0-ord-< (meas (nextt s))
                         (meas s)))))
-  
+
   (local
    (defthm inv-not-external
      (implies (invt s)
               (not (externalt s)))))
   (local
-   (inv-to-clock try-total 
-                 :total 
-                 :pre pret 
-                 :next nextt 
-                 :external externalt 
-                 :post postt 
-                 :inv invt 
+   (inv-to-clock try-total
+                 :total
+                 :pre pret
+                 :next nextt
+                 :external externalt
+                 :post postt
+                 :inv invt
                  :m meas))))
 
 
@@ -373,7 +373,7 @@ theorems about clocks and invariants to produce the final theorems.
 ;; Example 2: Partial correctness
 
 (local
- (encapsulate 
+ (encapsulate
   ()
   (local (defun nextp (s) s))
   (local (defun prep (s) (declare (ignore s)) nil))
@@ -405,12 +405,12 @@ theorems about clocks and invariants to produce the final theorems.
              (postp (nextp s)))))
 
  (local
-  (inv-to-clock try-partial 
-                :partial 
-                :pre prep 
-                :next nextp 
-                :external externalp 
-                :post postp 
+  (inv-to-clock try-partial
+                :partial
+                :pre prep
+                :next nextp
+                :external externalp
+                :post postp
                 :inv invp))))
 
 

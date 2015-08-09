@@ -229,7 +229,7 @@
 
 (defun deep-tip-1 (x)
   (cond ((atom x) x)
-	((< (depth (car x)) 
+	((< (depth (car x))
 	    (depth (cdr x)))
 	 (deep-tip-1 (cdr x)))
 	(t (deep-tip-1 (car x)))))

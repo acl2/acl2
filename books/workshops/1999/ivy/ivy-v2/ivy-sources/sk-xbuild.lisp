@@ -124,7 +124,7 @@
 
 (defun ith-member (lst n)
   (declare (xargs :guard (integerp n)))
-			      
+
   (cond ((atom lst) nil)
 	((equal n 1) (car lst))
 	(t (ith-member (cdr lst) (- n 1)))))
@@ -459,7 +459,7 @@
 				(cons (cons fsym (step-sk-arity f (len vals)))
 				      (append func1
 					      func2))
-						      
+
 				(functions i)))
 		  (xeval (step-sk f vals fsym)
 			 dom
@@ -612,7 +612,7 @@
 ;;
 ;; It probably would be cleaner to prove something like the following,
 ;; then use the theorem for the first side.
-;; 
+;;
 ;; (implies
 ;;  (disjoint (fringe dom1) (fringe dom2))
 ;;  (equal (feval f (list* (domain i)
@@ -631,7 +631,7 @@
 ;;                                 (build-sk-d (list 'all y f) vals dom1 i)
 ;;                                 ))
 ;;                          (functions i)))))
-;; 
+;;
 ;; In fact, I started to prove this (see work-append-other), but it
 ;; wasn't easy, so I did it this way instead.
 
@@ -891,7 +891,7 @@
 				(relations i)
 				(cons (cons fsym (step-sk-arity f (len vals)))
 				      (append func1 (xbuild f vals dm i)))
-					      
+
 				(functions i)))
 		  (xeval (step-sk f vals fsym)
 			 dom

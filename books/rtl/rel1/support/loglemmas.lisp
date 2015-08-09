@@ -402,7 +402,7 @@
 		  (integerp n) (> n 0)
 		  (= (logior (* (expt 2 (1- n)) x)
 			     (* (expt 2 (1- n)) y))
-		     (* (expt 2 (1- n)) (logior x y))))			     
+		     (* (expt 2 (1- n)) (logior x y))))
 	     (= (logior (* (expt 2 n) x)
 			(* (expt 2 n) y))
 		(* (expt 2 n)
@@ -520,7 +520,7 @@
 		     (expt 2 n))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance or-dist-d-4)
-			(:instance rem+ 
+			(:instance rem+
 				   (m (logior (rem x (expt 2 n)) (rem y (expt 2 n))))
 				   (n (expt 2 n))
 				   (a (logior (fl (/ x (expt 2 n)))
@@ -540,7 +540,7 @@
 		(logior (rem x (expt 2 n)) (rem y (expt 2 n)))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance or-dist-d-5)
-			(:instance rem< 
+			(:instance rem<
 				   (m (logior (rem x (expt 2 n)) (rem y (expt 2 n))))
 				   (n (expt 2 n)))
 			(:instance rem>=0 (m x) (n (expt 2 n)))
@@ -586,10 +586,10 @@
     (implies (and (integerp x) (>= x 0)
 		  (integerp y) (>= y 0)
 		  (integerp n) (> n 0)
-		  (= (logand (* (expt 2 (1- n)) x) (fl (/ y 2))) 
+		  (= (logand (* (expt 2 (1- n)) x) (fl (/ y 2)))
 		     (* (expt 2 (1- n)) (logand x (fl (/ (fl (/ y 2)) (expt 2 (1- n))))))))
 	     (= (logand (* (expt 2 n) x) y)
-		(* 2 
+		(* 2
 		   (* (expt 2 (1- n))
 		      (logand x
 			      (fl (/ (fl (/ y 2)) (expt 2 (1- n)))))))))
@@ -601,10 +601,10 @@
     (implies (and (integerp x) (>= x 0)
 		  (integerp y) (>= y 0)
 		  (integerp n) (> n 0)
-		  (= (logand (* (expt 2 (1- n)) x) (fl (/ y 2))) 
+		  (= (logand (* (expt 2 (1- n)) x) (fl (/ y 2)))
 		     (* (expt 2 (1- n)) (logand x (fl (/ (fl (/ y 2)) (expt 2 (1- n))))))))
 	     (= (logand (* (expt 2 n) x) y)
-		(* 2 
+		(* 2
 		   (* (expt 2 (1- n))
 		      (logand x
 			      (fl (/ y (expt 2 n))))))))
@@ -647,7 +647,7 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance and-dist-c-1)
 			(:instance rem>=0 (m x) (n (expt 2 n)))
-			(:instance bit-basic-h 
+			(:instance bit-basic-h
 				   (x y)
 				   (y (* (expt 2 n) (fl (/ x (expt 2 n)))))
 				   (z (rem x (expt 2 n))))
@@ -663,7 +663,7 @@
 		  (integerp y) (>= y 0)
 		  (integerp n) (>= n 0))
 	     (= (logand x y)
-		(logior (* (expt 2 n) 
+		(logior (* (expt 2 n)
 			   (logand (fl (/ x (expt 2 n)))
 				   (fl (/ y (expt 2 n)))))
 			(logand (rem x (expt 2 n))
@@ -678,7 +678,7 @@
 		  (integerp y) (>= y 0)
 		  (integerp n) (>= n 0))
 	     (= (logand x y)
-		(+ (* (expt 2 n) 
+		(+ (* (expt 2 n)
 		      (logand (fl (/ x (expt 2 n)))
 			      (fl (/ y (expt 2 n)))))
 		   (logand (rem x (expt 2 n))
@@ -690,7 +690,7 @@
 					      (fl (/ y (expt 2 n)))))
 				   (y (logand (rem x (expt 2 n))
 					      y)))
-			(:instance rem>=0 (m x) (n (expt 2 n)))			
+			(:instance rem>=0 (m x) (n (expt 2 n)))
 			(:instance rem<n (m x) (n (expt 2 n)))
 			(:instance and-dist-a (x (rem x (expt 2 n)))))))))
 
@@ -702,11 +702,11 @@
 		(logand (rem x (expt 2 n)) y)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance and-dist-c-4)
-			(:instance rem+ 
-				   (m (logand (rem x (expt 2 n)) y)) 
+			(:instance rem+
+				   (m (logand (rem x (expt 2 n)) y))
 				   (n (expt 2 n))
 				   (a (logand (fl (/ x (expt 2 n))) (fl (/ y (expt 2 n))))))
-			(:instance rem>=0 (m x) (n (expt 2 n)))			
+			(:instance rem>=0 (m x) (n (expt 2 n)))
 			(:instance rem<n (m x) (n (expt 2 n)))
 			(:instance and-dist-a (x (rem x (expt 2 n))))
 			(:instance rem< (m (logand (rem x (expt 2 n)) y)) (n (expt 2 n)))))))
@@ -779,7 +779,7 @@
 		  (integerp k) (>= k 0))
 	     (= (logior x (expt 2 k))
 		(+ x
-		   (* (expt 2 k) 
+		   (* (expt 2 k)
 		      (- 1 (bitn x k))))))
   :rule-classes ()
   :hints (("Goal" :induct (or-dist-induct x k))

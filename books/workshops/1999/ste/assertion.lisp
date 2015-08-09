@@ -49,7 +49,7 @@
 ;;;
 ;;;
 
-(defuntyped l-evalp (l n m) t 
+(defuntyped l-evalp (l n m) t
   booleanp nil
   (if (and (l-p l) (positivep n) (naturalp m))
       (if (equal l t)
@@ -105,7 +105,7 @@
 		(l-evalp l n m))
 	   (l-evalp l n1 m1))
   :hints (("Goal" :do-not-induct t
-	   :in-theory (disable  
+	   :in-theory (disable
 		       l-evalp-larger-n l-evalp-larger-m
 		       l-evalp-larger-or-equal-n l-evalp-larger-or-equal-m
 		       )
@@ -140,7 +140,7 @@
 ;;;
 ;;;
 
-(defuntyped l-eval ((l-p l) (r-p r)) t 
+(defuntyped l-eval ((l-p l) (r-p r)) t
   booleanp nil
   (if (consp r)
       (if (equal l t)
@@ -196,13 +196,13 @@
 		      (('is i b)
 		       (cons (update-nth i b (s-make m 'x))
 			     (l-defseq t (1- n) m)))
-		      (('and l1 l2) 
+		      (('and l1 l2)
 		       (r-lub (l-defseq l1 n m) (l-defseq l2 n m)))
-		      (('when b l1) 
-		       (if b 
+		      (('when b l1)
+		       (if b
 			   (l-defseq l1 n m)
 			 (cons (s-make m 'x) (l-defseq t (1- n) m))))
-		      (('next l1)   
+		      (('next l1)
 		       (cons (s-make m 'x)
 			     (l-defseq l1 (1- n) m)))
 		      (&            nil)))
@@ -261,7 +261,7 @@
 		(('next l1)   (l-induct-n l1 (1- n))))
     ))
 
-(defuntyped l-induct-rn ((l-p l) (r-p r) (integerp n)) t 
+(defuntyped l-induct-rn ((l-p l) (r-p r) (integerp n)) t
   boolean-listp nil
   (if (consp r)
       (if (equal l t)
@@ -297,12 +297,12 @@
   (implies (and (naturalp n)
 		(naturalp m)
 		)
-	   
+
 	   (equal (l-defseq t n m)
 		  (r-make n (s-make m 'x))))
 
   :hints (("Goal" :induct (nat-induct n)))
-  
+
   )
 
 
@@ -316,7 +316,7 @@
 		(l-eval l r)
 		)
 	   (r-lte (l-defseq l n m) r))
-   :hints (("Goal" 
+   :hints (("Goal"
 ;	    :induct (l-induct-rn l r n)
 	    :do-not '(generalize)
 	    )))
@@ -330,13 +330,13 @@
 		(r-nmp r n m)
 
 		(l-evalp l n m)
-		
+
 		(l-eval l r)
-		
+
 
 		(r-lte r (l-defseq l n m))
 
-		
+
 		)
 	   (equal (l-defseq l n m) r))
   :hints (("Subgoal *1/4'''"
@@ -346,8 +346,8 @@
 			    (b R)
 			    ))
 	   ))
-  
-  )   
+
+  )
 
 
 
@@ -414,7 +414,7 @@
 		(r-lte (l-defseq l n m) r)
 		)
 	   (l-eval l r))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :induct (l-induct-rn l r n)
 	   :do-not '(generalize fertilize)
 	   )
@@ -447,4 +447,3 @@
 			    (m (l-maxn l))))
 	   ))
   )
-			       

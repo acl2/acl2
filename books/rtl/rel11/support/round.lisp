@@ -11,7 +11,7 @@
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 ;;---------------------------------------------------------------------------------
@@ -136,7 +136,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -172,8 +172,8 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (local-defthm rtz-trunc
@@ -185,8 +185,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (rtz x n)
-		    (* (sgn x) 
-		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use (trunc-rewrite))))
 
@@ -302,7 +302,7 @@
 
 (defthmd rtz-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rtz x n))))
@@ -424,8 +424,8 @@
 ;;;**********************************************************************
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (local-defthm raz-away
@@ -437,8 +437,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (raz x n)
-		    (* (sgn x) 
-		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use (away-rewrite))))
 
@@ -449,7 +449,7 @@
 (defthmd abs-raz
     (implies (and (rationalp x)
 		  (integerp n))
-	     (equal (abs (raz x n)) 
+	     (equal (abs (raz x n))
 		    (* (cg (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use abs-away)))
 
@@ -577,7 +577,7 @@
 
 (defthmd raz-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (raz x n))))
@@ -658,7 +658,7 @@
            (= (- x (rtz y k))
               (raz (- x y) (+ k (- (expo (- x y)) (expo y))))))
   :rule-classes ()
-  :hints (("Goal" :use (:instance minus-trunc-2 (n (+ k (- (expo x) (expo y)))))))) 
+  :hints (("Goal" :use (:instance minus-trunc-2 (n (+ k (- (expo x) (expo y))))))))
 
 (defthm rtz-plus-minus
     (implies (and (rationalp x)
@@ -799,7 +799,7 @@
 
 (defthmd rne-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rne x n))))
@@ -878,7 +878,7 @@
   :hints (("Goal" :use near2)))
 
 (defthm rne-diff
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
@@ -922,7 +922,7 @@
   :hints (("Goal" :use (ne-10))))
 
 (local-defthm ne-12
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
                   (not (= x 0))
 		  (rationalp x))
@@ -933,7 +933,7 @@
                   :in-theory (theory 'minimal-theory))))
 
 (defthm rne-diff-cor
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
@@ -978,7 +978,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -1005,7 +1005,7 @@
 
 (defthm rne-midpoint
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1)
 		  (exactp x (1+ n))
 		  (not (exactp x n)))
@@ -1119,7 +1119,7 @@
 
 (defthmd rna-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rna x n))))
@@ -1182,7 +1182,7 @@
   :hints (("Goal" :use near+2)))
 
 (defthm rna-diff
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rna x n)))
@@ -1297,7 +1297,7 @@
 
 (defthmd rto-positive
     (implies (and (< 0 x)
-                  (rationalp x) 
+                  (rationalp x)
 		  (integerp n)
                   (> n 0))
 	     (> (rto x n) 0))
@@ -1306,7 +1306,7 @@
 
 (defthmd rto-negative
     (implies (and (< x 0)
-                  (rationalp x) 
+                  (rationalp x)
 		  (integerp n)
                   (> n 0))
 	     (< (rto x n) 0))
@@ -1326,7 +1326,7 @@
 		  (integerp n) (> n 0)
 		  (integerp k))
 	     (= (rto (* (expt 2 k) x) n)
-		(* (expt 2 k) (rto x n))))		
+		(* (expt 2 k) (rto x n))))
   :rule-classes ()
   :hints (("Goal" :use sticky-shift)))
 
@@ -1345,7 +1345,7 @@
 
 (defthmd rto-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rto x n))))
@@ -1354,7 +1354,7 @@
 (defthm rto-exactp-c
     (implies (and (rationalp x)
 		  (integerp m)
-		  (integerp n) 
+		  (integerp n)
 		  (> n m)
 		  (> m 0))
 	     (iff (exactp (rto x n) m)
@@ -1598,7 +1598,7 @@
 (defthmd rnd$-exactp-b
   (implies (and (rationalp x)
                 (common-mode-p mode)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (equal (exactp x n)
                   (equal x (rnd$ x mode n))))
@@ -1639,7 +1639,7 @@
 
 (defthm rnd$>=rtz
     (implies (and (rationalp x)
-		  (> x 0) ;; 
+		  (> x 0) ;;
 		  (common-mode-p mode)
                   (integerp n)
                   (> N 0))
@@ -1783,9 +1783,9 @@
 (defthmd rnd$-rto
   (implies (and (common-mode-p mode)
                 (rationalp x)
-                (integerp m) 
+                (integerp m)
 		(> m 0)
-                (integerp n) 
+                (integerp n)
 		(>= n (+ m 2)))
            (equal (rnd$ (rto x n) mode m)
                   (rnd$ x mode m)))
@@ -1815,7 +1815,7 @@
 
 
 ;;;**********************************************************************
-;;;                         Denormal Rounding 
+;;;                         Denormal Rounding
 ;;;**********************************************************************
 
 (defund bias$ (q) (- (expt 2 (- q 1)) 1) )
@@ -2131,7 +2131,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -2185,8 +2185,8 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defthmd rtz-rewrite
@@ -2194,8 +2194,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (rtz x n)
-		    (* (sgn x) 
-		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use (trunc-rewrite))))
 
@@ -2311,7 +2311,7 @@
 
 (defthmd rtz-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rtz x n))))
@@ -2433,8 +2433,8 @@
 ;;;**********************************************************************
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defthmd raz-rewrite
@@ -2442,8 +2442,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (raz x n)
-		    (* (sgn x) 
-		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use (away-rewrite))))
 
@@ -2454,7 +2454,7 @@
 (defthmd abs-raz
     (implies (and (rationalp x)
 		  (integerp n))
-	     (equal (abs (raz x n)) 
+	     (equal (abs (raz x n))
 		    (* (cg (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use abs-away)))
 
@@ -2582,7 +2582,7 @@
 
 (defthmd raz-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (raz x n))))
@@ -2800,7 +2800,7 @@
 
 (defthmd rne-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rne x n))))
@@ -2879,7 +2879,7 @@
   :hints (("Goal" :use near2)))
 
 (defthm rne-diff
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
@@ -2888,7 +2888,7 @@
   :hints (("Goal" :use near-est)))
 
 (defthm rne-diff-cor
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
@@ -2924,7 +2924,7 @@
              (> x (expt 2 (- (expo x) n))))
   :rule-classes ()
   :hints (("Goal" :use (rf-2 expo-lower-bound)
-                  :in-theory (disable ACL2::EXPT-IS-INCREASING-FOR-BASE->-1 ACL2::|(< (expt x n) (expt x m))| 
+                  :in-theory (disable ACL2::EXPT-IS-INCREASING-FOR-BASE->-1 ACL2::|(< (expt x n) (expt x m))|
                                       ACL2::|(* (expt x m) (expt x n))| ACL2::|(* (expt c m) (expt d n))|
                                       ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS ACL2::SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))))
 
@@ -3022,10 +3022,10 @@
                (< z (fp+ y n))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable ACL2::|(+ (+ x y) z)| ACL2::|(+ 0 x)|
-ACL2::|(+ x (- x))| ACL2::|(+ y (+ x z))| ACL2::|(+ y x)| 
+ACL2::|(+ x (- x))| ACL2::|(+ y (+ x z))| ACL2::|(+ y x)|
 ACL2::|(- (+ x y))| ACL2::|(- (- x))| ACL2::|(< (expt x n) (expt x m))|
-ACL2::|(< (if a b c) x)| ACL2::BUBBLE-DOWN-+-MATCH-1 
-ACL2::BUBBLE-DOWN-+-MATCH-3 ACL2::NORMALIZE-ADDENDS 
+ACL2::|(< (if a b c) x)| ACL2::BUBBLE-DOWN-+-MATCH-1
+ACL2::BUBBLE-DOWN-+-MATCH-3 ACL2::NORMALIZE-ADDENDS
 ACL2::PREFER-POSITIVE-ADDENDS-< ACL2::REMOVE-STRICT-INEQUALITIES
 ACL2::SIMPLIFY-SUMS-<)
                   :use (rf-9 rf-8))))
@@ -3082,10 +3082,10 @@ ACL2::SIMPLIFY-SUMS-<)
                (< y (fp+ z n))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable ACL2::|(+ (+ x y) z)| ACL2::|(+ 0 x)|
-ACL2::|(+ x (- x))| ACL2::|(+ y (+ x z))| ACL2::|(+ y x)| 
+ACL2::|(+ x (- x))| ACL2::|(+ y (+ x z))| ACL2::|(+ y x)|
 ACL2::|(- (+ x y))| ACL2::|(- (- x))| ACL2::|(< (expt x n) (expt x m))|
-ACL2::|(< (if a b c) x)| ACL2::BUBBLE-DOWN-+-MATCH-1 
-ACL2::BUBBLE-DOWN-+-MATCH-3 ACL2::NORMALIZE-ADDENDS 
+ACL2::|(< (if a b c) x)| ACL2::BUBBLE-DOWN-+-MATCH-1
+ACL2::BUBBLE-DOWN-+-MATCH-3 ACL2::NORMALIZE-ADDENDS
 ACL2::PREFER-POSITIVE-ADDENDS-< ACL2::REMOVE-STRICT-INEQUALITIES
 ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
                   :use (rf-12 rf-13))))
@@ -3125,7 +3125,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
                   (< (abs (- x y)) (expt 2 (- (expo x) n))))
              (= y (rne x n)))
   :rule-classes ()
-  :hints (("Goal" :use (rne-minus 
+  :hints (("Goal" :use (rne-minus
                        (:instance exactp-minus (x y))
                        (:instance rf-16 (x (- x)) (y (- y)))))))
 
@@ -3179,7 +3179,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -3206,7 +3206,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defthm rne-midpoint
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1)
 		  (exactp x (1+ n))
 		  (not (exactp x n)))
@@ -3316,7 +3316,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defthmd rna-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rna x n))))
@@ -3379,7 +3379,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
   :hints (("Goal" :use near+2)))
 
 (defthm rna-diff
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rna x n)))
@@ -3410,7 +3410,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 (defun rna-witness (x y n)
@@ -3435,7 +3435,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 		  (<= (rna-witness x y n) y)
 		  (exactp (rna-witness x y n) (1+ n))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS acl2::SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-< 
+  :hints (("Goal" :in-theory (disable ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS acl2::SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
                                       acl2::|(< (expt x n) (expt x m))| rna)
 		  :use ((:instance exactp-2**n (n (expo y)) (m (1+ n)))
 			(:instance expo-upper-bound)
@@ -3647,7 +3647,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -3667,7 +3667,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -3770,7 +3770,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defthmd rto-positive
     (implies (and (< 0 x)
-                  (rationalp x) 
+                  (rationalp x)
 		  (integerp n)
                   (> n 0))
 	     (> (rto x n) 0))
@@ -3779,7 +3779,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defthmd rto-negative
     (implies (and (< x 0)
-                  (rationalp x) 
+                  (rationalp x)
 		  (integerp n)
                   (> n 0))
 	     (< (rto x n) 0))
@@ -3799,7 +3799,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 		  (integerp n) (> n 0)
 		  (integerp k))
 	     (= (rto (* (expt 2 k) x) n)
-		(* (expt 2 k) (rto x n))))		
+		(* (expt 2 k) (rto x n))))
   :rule-classes ()
   :hints (("Goal" :use sticky-shift)))
 
@@ -3818,7 +3818,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defthmd rto-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rto x n))))
@@ -3827,7 +3827,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 (defthm rto-exactp-c
     (implies (and (rationalp x)
 		  (integerp m)
-		  (integerp n) 
+		  (integerp n)
 		  (> n m)
 		  (> m 0))
 	     (iff (exactp (rto x n) m)
@@ -4042,7 +4042,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 (defthmd rnd-exactp-b
   (implies (and (rationalp x)
                 (common-mode-p mode)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (equal (exactp x n)
                   (equal x (rnd x mode n))))
@@ -4083,7 +4083,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defthm rnd>=rtz
     (implies (and (rationalp x)
-		  (> x 0) ;; 
+		  (> x 0) ;;
 		  (common-mode-p mode)
                   (integerp n)
                   (> N 0))
@@ -4197,9 +4197,9 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 (defthmd rnd-rto
   (implies (and (common-mode-p mode)
                 (rationalp x)
-                (integerp m) 
+                (integerp m)
 		(> m 0)
-                (integerp n) 
+                (integerp n)
 		(>= n (+ m 2)))
            (equal (rnd (rto x n) mode m)
                   (rnd x mode m)))
@@ -4345,12 +4345,12 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
                              (fp+ (rtz x n) n)
                            (rtz x n))))))
   :hints (("Goal" :use (rp-2 rp-5))))
-  
+
 (defund roundup-neg (x e sticky mode n)
   (case mode
     ((rdn raz) t)
     ((rup rtz) (and (= (bits x (- e n) 0) 0)
-                    (= sticky 0))) 
+                    (= sticky 0)))
     (rna (or (= (bitn x (- e n)) 0)
              (and (= (bits x (- e (1+ n)) 0) 0)
                   (= sticky 0))))
@@ -4531,7 +4531,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
                 (= xc (1- (- (expt 2 k) x)))
                 (= e (expo xc)))
              (= (bits (bits (lognot x) (+ -1 k) 0) (- e n) 0)
-                (bits xc (- e n) 0)))                
+                (bits xc (- e n) 0)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable lognot)
                   :use ((:instance bits-lognot (i (1- k)) (j 0))))))
@@ -4598,7 +4598,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
                 (= f (- z (fl z)))
                 (= f 0)
                 (= (bits x (- e n) 0) 0))
-             (= (abs z) (fp+ (rtz xc n) n)))                
+             (= (abs z) (fp+ (rtz xc n) n)))
   :rule-classes ()
   :hints (("Goal" :use (rn-10 rn-13 rn-14))))
 
@@ -4675,7 +4675,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
                 (= (bits x (- e n) 0) 0))
              (= (abs (rnd z mode n)) (abs z)))
   :rule-classes ()
-  :hints (("Goal" :use (rn-17 
+  :hints (("Goal" :use (rn-17
                         (:instance rnd-minus (x z))
                         (:instance rnd-exactp-b (x z))))))
 
@@ -5232,7 +5232,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
            (>= (/ x y) z))
   :hints (("Goal" :use ((:instance hack-1 (x (/ y)) (y (* y z)) (z x)))))
   :rule-classes ())
-                
+
 (local-defthm rn-49
   (implies (and (common-mode-p mode)
                 (rationalp z)
@@ -5928,7 +5928,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 
 ;;;**********************************************************************
-;;;                         Denormal Rounding 
+;;;                         Denormal Rounding
 ;;;**********************************************************************
 
 (defund drnd (x mode f)
@@ -6156,7 +6156,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
                      (spn f))))
   :hints (("Goal" :in-theory (enable sgn drnd-rewrite)
                   :use (drnd-tiny-2))))
-           
+
 (defthmd drnd-tiny-4
   (implies (formatp f)
            (equal (fp+ (spn f) (prec f))

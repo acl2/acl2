@@ -22,12 +22,12 @@
 ; Theorem asserting that the length of the string is essentially same as the
 ; length of the list of bytes representing it.
 ;
-(defthm coerce-produces-chars 
-  (implies (stringp S) 
+(defthm coerce-produces-chars
+  (implies (stringp S)
            (character-listp (coerce S 'LIST))))
 
-(defthm num-chars-equals-num-bytes 
-  (implies (character-listp cl) 
+(defthm num-chars-equals-num-bytes
+  (implies (character-listp cl)
            (equal (len cl)
                   (len
                    (charlist-to-bytes cl)))))
@@ -35,9 +35,9 @@
 ;
 ; This does not go through unless I include (> (len S) 0)
 ;
-;(defthm string-length-equals-num-bytes 
-;  (implies (stringp S)           
-;           (equal (len S) 
+;(defthm string-length-equals-num-bytes
+;  (implies (stringp S)
+;           (equal (len S)
 ;                  (len (string-to-bytes S)))))
 
 ;
@@ -68,10 +68,10 @@
       (cons n (make-list-n n (- x 1)))))
 
 
-(defthm length-x-make-list-n 
+(defthm length-x-make-list-n
   (implies (and (natp x)
-                (natp n)) 
-           (equal (len (make-list-n n x)) 
+                (natp n))
+           (equal (len (make-list-n n x))
                   x)))
 
 ;
@@ -149,7 +149,7 @@
 
 ;
 ; n-bitp is a generic method that verifies if a list has n bits
-; The other methods are just wrappers that are used for better readability of 
+; The other methods are just wrappers that are used for better readability of
 ; the code, and therefore directly call n-bitp.
 ;
 
@@ -157,7 +157,7 @@
   (and (bit-listp x-bits)
        (equal (len x-bits)
               n)))
-  
+
 (defun 64-bitp(x-bits)
   (n-bitp x-bits 64))
 
@@ -195,7 +195,7 @@
        (equal 0
 	      (mod (len x-bits)
 		   8))))
-  
+
 
 ;
 ; This method computes a logical compliment of two bit lists
@@ -210,17 +210,17 @@
 ;
 ; Correctness for not-bit
 ;
-(defthm not-not-bit 
-  (implies (bitp x) 
-           (equal (not-bit (not-bit x)) 
+(defthm not-not-bit
+  (implies (bitp x)
+           (equal (not-bit (not-bit x))
                   x)))
 
 ;
 ; Correctness theorem for not-bit-list
 ;
-(defthm not-not-bit-list 
-  (implies (bit-listp x) 
-           (equal (not-bit-list (not-bit-list x)) 
+(defthm not-not-bit-list
+  (implies (bit-listp x)
+           (equal (not-bit-list (not-bit-list x))
                   x)))
 
 ;
@@ -251,7 +251,7 @@
 ;
 ; Correctness theorem for and-bit-list
 ;
-(defthm and-bit-list-correct 
+(defthm and-bit-list-correct
   (implies (and (bit-listp x)
                 (bit-listp y))
            (and (equal (and-bit-list x y)
@@ -268,7 +268,7 @@
 (defun xor-bit-list(x y)
   (if (atom x)
       (if (bit-listp y)
-          y 
+          y
           nil)
       (if (atom y)
           (if (bit-listp x)
@@ -289,7 +289,7 @@
                        0)
                 (equal (xor-bit y y)
                        0))))
-           
+
 ;
 ; Correctness theorem for xor-bit-list
 ; NOT YET PROVED
@@ -305,9 +305,9 @@
 ;                       0))))
 
 ;
-; This method is the reverse of bits-to-number and computes 
+; This method is the reverse of bits-to-number and computes
 ; bit list out of a number.
-;        
+;
 
 (defun number-to-bits(x)
   (if (not (natp x))
@@ -322,8 +322,8 @@
       nil
       (let* ((bit-list (number-to-bits x))
              (len-list (len bit-list)))
-        (append bit-list 
-                (make-list-n 0 
+        (append bit-list
+                (make-list-n 0
                              (- 32 len-list))))))
 
 (defun number-to-8bits(x)
@@ -332,8 +332,8 @@
       nil
       (let* ((bit-list (number-to-bits x))
              (len-list (len bit-list)))
-        (append bit-list 
-                (make-list-n 0 
+        (append bit-list
+                (make-list-n 0
                              (- 8 len-list))))))
 
 (defun number-to-4bits(x)
@@ -342,8 +342,8 @@
       nil
       (let* ((bit-list (number-to-bits x))
              (len-list (len bit-list)))
-        (append bit-list 
-                (make-list-n 0 
+        (append bit-list
+                (make-list-n 0
                              (- 4 len-list))))))
 
 (defun number-to-4bits-msb(x)
@@ -369,14 +369,14 @@
       (bytes-to-8bits-msb bytes))))
 
 ;
-; This method is the reverse of number-to-bits and computes 
+; This method is the reverse of number-to-bits and computes
 ; the decimal equivalent of a bit list.
 ;
 
 (defun bits-to-number1(x exp)
   (if (not (bit-listp x))
       nil
-      (let ((val (* (car x) 
+      (let ((val (* (car x)
                     (expt 2 exp))))
         (if (null (cdr x))
             val
@@ -392,7 +392,7 @@
 ; Theorem to prove correctness of number-to-bits and bits-to-number
 ; NOT PROVED YET
 ;
-;(defthm bits-number-correct 
+;(defthm bits-number-correct
 ;  (implies (natp x)
 ;           (equal (bits-to-number (number-to-bits x))
 ;                  x)))
@@ -417,7 +417,7 @@
 
 ;
 ; A method that converts a number into its bit complement
-; In our case this will be a 32-bit number 
+; In our case this will be a 32-bit number
 ;
 
 (defun not-number(x)
@@ -436,7 +436,7 @@
          (if (= n 0)
              x
              (get-nth (cdr x)
-                      (- n 1))))))           
+                      (- n 1))))))
 
 ;
 ; Correctness of get-nth
@@ -450,7 +450,7 @@
                   (len x))))
 
 ;
-; Method for getting a list out of the first n items from 
+; Method for getting a list out of the first n items from
 ; a list of items.
 ;
 
@@ -481,18 +481,18 @@
 (defthm get-nth-prefix-correct
   (implies (and (natp n)
                 (consp x)
-                (< n 
+                (< n
                    (len x)))
-           (and (equal (append (prefix-nth x n) 
+           (and (equal (append (prefix-nth x n)
                              (get-nth x n))
                        x)
                 (equal (len (append (prefix-nth x n)
                                   (get-nth x n)))
                        (len x)))))
-           
+
 
 ;
-; Following methods deal with converting a list of large bits 
+; Following methods deal with converting a list of large bits
 ; (with 8bit boundaries) into a string.
 ;
 
@@ -569,7 +569,7 @@
 	  (bytes-to-charlist (cdr x)))))
 
 ;
-; An uber level function that converts a bigendian list of bits (multiple 
+; An uber level function that converts a bigendian list of bits (multiple
 ; of 8 bits) to a string by first converting them into groups of 8, converting
 ; these groups into bytes, converting these bytes into characters and then
 ; using coerce to force this character list to a string.
@@ -582,7 +582,7 @@
 	  (bytes (8bits-to-bytes 8bit-groups))
 	  (charlist (bytes-to-charlist bytes)))
       (coerce charlist 'string))))
-	  
+
 ;
 ; This method rotates a list of bits to the right by n bits
 ; This is called by rightrotate, after converting a number to bits
@@ -600,9 +600,9 @@
 ; David Rager's Lemma - this is required to admit the below theorem.
 ;
 (defthm get-nth-lemma-rotate
-  (implies (true-listp x) 
-           (equal (get-nth x 
-                           (len x)) 
+  (implies (true-listp x)
+           (equal (get-nth x
+                           (len x))
                   nil)))
 
 ;
@@ -611,14 +611,14 @@
 
 (defthm rightrotate-bits-correct
   (implies (true-listp x)
-           (equal (rightrotate-bits x (len x))                                    
+           (equal (rightrotate-bits x (len x))
                   x)))
 
 ;
 ; This method rotates a number to the right by n bits
 ; The number here is a decimal representation of a 32bit integer
 ;
-                       
+
 (defun rightrotate(number n)
   (let ((bit-list (number-to-32bits number)))
     (bits-to-number (rightrotate-bits bit-list n))))
@@ -640,7 +640,7 @@
 (defun bytes-to-32bit-blocks1(byte-list currval m)
   (if (atom byte-list)
       nil
-      (let ((val (+ (* currval 256) 
+      (let ((val (+ (* currval 256)
                     (car byte-list))))
         (if (null (cdr byte-list))
             (cons val nil)
@@ -654,7 +654,7 @@
 
 
 ;
-; This routine splits a list of bytes into a list of lists 
+; This routine splits a list of bytes into a list of lists
 ; which contain 64 bytes each = 512 bits.
 ;
 

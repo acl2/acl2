@@ -7,7 +7,7 @@
 
 ;; If the acl2x-expansion-alist-replacement attachment necessary for the
 ;; functioning of acl2x-replace has been removed, this replaces it.
-;; (use-acl2x-replace) 
+;; (use-acl2x-replace)
 
 (acl2x-replace
  ;; this is only run during pass 1 of certification

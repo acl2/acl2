@@ -122,7 +122,7 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
 
 ;; It is problematic to extend the proof of tarai-always-terminate below to
 ;; real arguments in ACL2(r),
-;; because it considers numerator/denominator of arguments. 
+;; because it considers numerator/denominator of arguments.
 #|
 (encapsulate
     (

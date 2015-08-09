@@ -1,6 +1,6 @@
 ; evalable-printing.lisp - Implements a "beginner-friendly" way of printing
-; objects such that evaluating the printed result gives that same result. 
-; 
+; objects such that evaluating the printed result gives that same result.
+;
 ; Nuances of the printing are controlled with the state global
 ; EVALABLE-PRINTING-ABSTRACTIONS, which should be a list containing some
 ; subset of (LIST LIST*-MULTIPLE LIST* CONS) in that order.  Each

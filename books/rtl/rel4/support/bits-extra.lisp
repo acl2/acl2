@@ -14,28 +14,28 @@
 
 ; Proof of bits-sum-swallow:
 
-; Proof:  Since y < 2^(k+1), y[i:k+1] = 0.  
-; 
+; Proof:  Since y < 2^(k+1), y[i:k+1] = 0.
+;
 ; Since x[k] = 0, x[k:0] = x[k-1:0] < 2^k.
-; 
-; Hence, 
-; 
-;   x[k:0] + y[k:0] < 2^k + 2^k = 2^(k+1) 
-; 
-; and 
-; 
+;
+; Hence,
+;
+;   x[k:0] + y[k:0] < 2^k + 2^k = 2^(k+1)
+;
+; and
+;
 ;   (x[k:0] + y[k:0])[k+1] = 0.
-; 
+;
 ; By BITS-SUM,
-; 
+;
 ;   (x+y)[i:k+1] = (x[i:k+1] + y[i:k+1] + (x[k:0] + y[k:0])[k+1])[i-k-1:0]
 ;                = (x[i:k+1])[i-k-1:0]
 ;                = x[i:k+1] {by BITS-BITS}.
-; 
+;
 ; By BITS-BITS,
-; 
-;   (x+y)[i:j] = (x+y)[i:k+1][i-k-1:j-k-1] 
-;              = x[i:k+1][i-k-1:j-k-1] 
+;
+;   (x+y)[i:j] = (x+y)[i:k+1][i-k-1:j-k-1]
+;              = x[i:k+1][i-k-1:j-k-1]
 ;              = x[i:j].
 
 (local-defthm bits<expt
@@ -528,7 +528,7 @@
                                      (acl2::k (1- (expt 2 (- i (1+ j)))))
                                      (acl2::m (1+ j))
                                      (acl2::n j))))))))
-                                   
+
 (local-defun prop-as-lxor-thm (i j x y)
   (implies (and (natp i)
                 (natp j)

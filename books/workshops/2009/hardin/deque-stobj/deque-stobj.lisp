@@ -23,7 +23,7 @@
 ;; hd points to front of the deque; tl points to one beyond the back of the deque.
 ;; Thus, the maximum capacity of the deque is MAXNODE - 1, not MAXNODE.
 
-(defstobj dqst 
+(defstobj dqst
   (arr :type (array t (2048)) :initially (empty))
   (hd  :type (unsigned-byte 11) :initially 0)
   (tl  :type (unsigned-byte 11) :initially 0))
@@ -32,7 +32,7 @@
 
 (defun tail-head-relation (dqst)
          (declare (xargs :stobjs dqst))
-         (and (natp (hd dqst)) 
+         (and (natp (hd dqst))
               (natp (tl dqst))
               (<= (hd dqst) (- (maxnode) 1))
               (<= (tl dqst) (- (maxnode) 1))
@@ -42,7 +42,7 @@
 ;; Index subtract with wrap-around
 (defun sub1 (x)
   (declare (xargs :guard (natp x)))
-  (if (zp x) 
+  (if (zp x)
       (- (maxnode) 1)
       (- x 1)))
 
@@ -70,7 +70,7 @@
 
 ;; Utility output functions
 
-(defun get-arr-list-first-n (i dqst) 
+(defun get-arr-list-first-n (i dqst)
   (declare (xargs :stobjs dqst :guard (natp i)))
   (if (or (zp i) (< (- (tl dqst) i) (hd dqst)))
       nil
@@ -85,10 +85,10 @@
 
 
 (defund get-first (dqst)
-  (declare (xargs :stobjs dqst 
+  (declare (xargs :stobjs dqst
                   :guard-hints (("Goal" :in-theory (enable is-empty)))))
   (if (is-empty dqst)
-      (empty)    
+      (empty)
       (arri (hd dqst) dqst)))
 
 
@@ -96,7 +96,7 @@
   (declare (xargs :stobjs dqst
                   :guard-hints (("Goal" :in-theory (enable size-of)))))
   (if (= (size-of dqst) 0)
-      (empty)    
+      (empty)
       (arri (- (tl dqst) 1) dqst)))
 
 
@@ -116,7 +116,7 @@
 
 
 ;; Index of element e, searching from the head to the tail
-(defund index-of--from-front (i e dqst) 
+(defund index-of--from-front (i e dqst)
   (declare (xargs :stobjs dqst :guard (natp i)
                   :guard-hints (("Goal" :in-theory (enable size-of)))))
   (if (or (zp i) (> i (size-of dqst)))
@@ -126,14 +126,14 @@
           (index-of--from-front (- i 1) e dqst))))
 
 
-(defthm ioff-nat--thm 
-  (implies (and (natp i) (dqstp dqst)) 
+(defthm ioff-nat--thm
+  (implies (and (natp i) (dqstp dqst))
            (natp (index-of--from-front i e dqst)))
   :hints (("Goal" :in-theory (enable index-of--from-front size-of))))
 
 
 ;; Index of element e, searching from the tail to the head
-(defund index-of--from-back (i e dqst) 
+(defund index-of--from-back (i e dqst)
   (declare (xargs :stobjs dqst :guard (natp i)
                   :guard-hints (("Goal" :in-theory (enable size-of)))))
   (if (or (zp i) (> i (size-of dqst)))
@@ -144,7 +144,7 @@
 
 
 (defthm iofb-nat--thm
-  (implies (and (natp i) (dqstp dqst)) 
+  (implies (and (natp i) (dqstp dqst))
            (natp (index-of--from-back i e dqst)))
   :hints (("Goal" :in-theory (enable index-of--from-back size-of))))
 
@@ -157,7 +157,7 @@
 
 
 ;; Shift up to the ith offset from the head
-(defund shift-up-to (i dqst) 
+(defund shift-up-to (i dqst)
   (declare (xargs :stobjs dqst :guard (natp i)))
   (if (or (zp i) (>= (+ (hd dqst) i) (tl dqst)))
       dqst
@@ -167,12 +167,12 @@
 
 
 ;; Shift down to the ith offset from the tail
-(defund shift-down-to (i dqst) 
+(defund shift-down-to (i dqst)
   (declare (xargs :stobjs dqst :guard (natp i)))
   (if (or (zp i) (< (- (- (tl dqst) 1) i) (hd dqst)))
       dqst
       (seq dqst
-        (update-arri (- (- (tl dqst) 1) i) 
+        (update-arri (- (- (tl dqst) 1) i)
                      (arri (- (- (tl dqst) 1) (- i 1)) dqst) dqst)
         (shift-down-to (- i 1) dqst))))
 
@@ -246,7 +246,7 @@
 
 
 ;; Removes the element at offset i from the back of the deque
-;; Note that offsets will be >= 1, since offset 0 corresponds 
+;; Note that offsets will be >= 1, since offset 0 corresponds
 ;; to the tail, which indexes beyond valid data.
 (defund remove-back (i dqst)
   (declare (xargs :stobjs dqst :guard (natp i)))
@@ -295,7 +295,7 @@
   (remove-first-occurrence e dqst))
 
 
-(defund clear-helper (i dqst) 
+(defund clear-helper (i dqst)
   (declare (xargs :stobjs dqst :guard (natp i)))
   (if (or (zp i) (> i (maxnode)))
       dqst

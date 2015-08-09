@@ -583,7 +583,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 ;;               :template vl-oddexpr-template
 ;;               :type <type>
 ;;               (define <type>-oddexprs ...
-                
+
 ;;                 (vl-warninglist-add-ctx
 ;;                  (<type>-oddexprs-aux x ss)
 ;;                  x)))
@@ -595,7 +595,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 ;; (make-event
 ;;  (let ((types '(vl-assign vl-... )))
 ;;    `(progn . ,(make-oddexprs-for-types types))))
-   
+
 
 
 ;; this goes away

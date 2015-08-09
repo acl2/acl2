@@ -1,10 +1,10 @@
 
 ;; In this section I implement a simple simplifier
-;; for a Boolean CNF clause list---duplicate literals 
-;; within a clause are deleted and clauses with a 
+;; for a Boolean CNF clause list---duplicate literals
+;; within a clause are deleted and clauses with a
 ;; literal and its negation are removed.
 ;;
-;; Some SAT solvers require these simplifications 
+;; Some SAT solvers require these simplifications
 ;; be performed before the CNF formula is passed to
 ;; them.
 
@@ -15,7 +15,7 @@
 (include-book "sat-setup")
 
 ;; Returns the negation of an f-expression.
-(defun negate-f-expr (f0) 
+(defun negate-f-expr (f0)
   (cond
    ((integerp f0)
     (- f0))
@@ -72,12 +72,12 @@
 ;; literals.
 (defun local-clause-opt (clause ans $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((endp clause)
     (let (($sat (remove-old ans $sat)))
       (mv nil ans $sat)))
    ((not (integerp (car clause)))
-    (cond 
+    (cond
      ((eq *f-false* (car clause))
       (local-clause-opt (cdr clause) ans $sat))
      ((eq *f-true* (car clause))
@@ -94,7 +94,7 @@
    ((oposite-lit (car clause) $sat)
     (let (($sat (remove-old ans $sat)))
       (mv t nil $sat)))
-   (t 
+   (t
     (let (($sat (add-lit (car clause) $sat)))
       (local-clause-opt
        (cdr clause)
@@ -126,10 +126,10 @@
 ;; Add a clause to the SAT input channel
 (defun add-cnf-clause (clause $sat state)
   (declare (xargs :stobjs $sat))
-  (mv-let 
+  (mv-let
    (always-true clause $sat)
    (local-clause-opt clause nil $sat)
-   (cond 
+   (cond
     (always-true
      (mv $sat state))
     (clause
@@ -137,7 +137,7 @@
             (state (print-object$-ser-wrapper clause nil (sat-input-channel $sat)
                                               state)))
        (mv $sat state)))
-    (t 
+    (t
      ;; At this point we have reduced the clause to false!
      ;; Therefore the formula is unsatisfiable.  We'll let
      ;; the SAT solver figure this out though.

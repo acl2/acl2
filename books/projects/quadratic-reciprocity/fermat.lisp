@@ -23,7 +23,7 @@
       ()
     (cons n (positives (1- n)))))
 
-;;The second list is mod-prods(p-1,a,p) = (mod(a,p), mod(2*a,p), ..., mod((p-1)*a,p)): 
+;;The second list is mod-prods(p-1,a,p) = (mod(a,p), mod(2*a,p), ..., mod((p-1)*a,p)):
 
 (defun mod-prods (n m p)
   (if (zp n)
@@ -111,7 +111,7 @@
 		  (not (zp j))
 		  (< j p)
 		  (not (= j i))
-		  (integerp m)		  
+		  (integerp m)
 		  (not (divides p m)))
 	     (not (equal (mod (* m i) p) (mod (* m j) p))))
   :hints (("Goal" :in-theory (enable divides)
@@ -125,7 +125,7 @@
     (implies (and (primep p)
 		  (not (zp i))
 		  (< i p)
-		  (integerp m)		  
+		  (integerp m)
 		  (not (divides p m)))
 	     (and (< 0 (mod (* m i) p))
 		  (> p (mod (* m i) p))))
@@ -184,7 +184,7 @@
   :rule-classes ())
 
 (defthm perm-times-list
-    (implies (perm l1 l2)		  
+    (implies (perm l1 l2)
 	     (equal (times-list l1)
 		    (times-list l2)))
   :rule-classes ()

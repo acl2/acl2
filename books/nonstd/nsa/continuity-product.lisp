@@ -101,7 +101,7 @@
 		 (:instance i-close-limited
 			    (x x1)
 			    (y x2)))
-	   :in-theory (disable close-times i-close-transitive i-close-limited)))) 
+	   :in-theory (disable close-times i-close-transitive i-close-limited))))
 
 (defthm f1*f2-continuous
   (implies (and (standard-numberp x)

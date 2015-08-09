@@ -177,10 +177,10 @@
 					    (i 0)
 					    (j (CAR V))))
 |#
-;;; did, however, have to be added to map-lemma-4 in 
+;;; did, however, have to be added to map-lemma-4 in
 ;;; books/workshops/2003/sustik/support/dickson,lisp
 ;;; (This test was done with the arithmetic/natp-posp book,
-;;; not this one which contains a generalization of the above: 
+;;; not this one which contains a generalization of the above:
 ;;; |(posp (+ c x))|
 
 (in-theory (disable natp posp))

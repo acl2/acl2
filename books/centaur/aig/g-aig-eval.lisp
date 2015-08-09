@@ -145,7 +145,7 @@
    ;; (defthm bfr-alistp-gobj-alist-to-bfr-alist
    ;;   (implies (atom-key-gobj-val-alistp x)
    ;;            (gl::bfr-alistp (mv-nth 0 (gobj-alist-to-bfr-alist x hyp)))))
-   
+
    ;; (defthm bfr-p-gobj-alist-to-bfr-alist
    ;;   (implies (and (gl::bfr-p hyp)
    ;;                 (atom-key-gobj-val-alistp x))
@@ -244,7 +244,7 @@
    (defthm aig-eval-eval-gobj-alist
      (implies (and (atom-key-gobj-val-alistp x)
                    (gl::bfr-hyp-eval hyp (car env))
-                   (not (gl::bfr-eval 
+                   (not (gl::bfr-eval
                          (mv-nth 1 (gobj-alist-to-bfr-alist x hyp))
                          (car env))))
               (equal (aig-eval aig (gl::bfr-eval-alist
@@ -258,7 +258,7 @@
    (defthm aig-eval-list-eval-gobj-alist
      (implies (and (atom-key-gobj-val-alistp x)
                    (gl::bfr-hyp-eval hyp (car env))
-                   (not (gl::bfr-eval 
+                   (not (gl::bfr-eval
                          (mv-nth 1 (gobj-alist-to-bfr-alist x hyp))
                          (car env))))
               (equal (aig-eval-list aig (gl::bfr-eval-alist
@@ -279,9 +279,9 @@
    ;;                                    gl::g-apply->args)
    ;;                                   ((force)))
    ;;            :expand ((gl::gobjectp (list* :g-apply fn args))))))
-             
 
- 
+
+
    (local (in-theory (disable atom-key-gobj-val-alistp
                               suffixp ; car-member-when-suffix
                               )))))
@@ -304,7 +304,7 @@
 
 (local
  (progn
-   
+
 
 (defthm eval-of-g-boolean-list
   (equal (gl::generic-geval (g-boolean-list x) env)
@@ -534,7 +534,7 @@
                                      gl::bfr-depends-on
                                      gl::bfr-from-param-space)))))
   :otf-flg t)
- 
+
 
 
 ;; (defthm aig-bfrify-list-bfr-listp
@@ -630,7 +630,7 @@
 (gl::verify-g-guards aig-eval-list-with-bddify)
 
 (encapsulate nil
-  (make-event 
+  (make-event
    `(acl2::without-waterfall-parallelism
      (gl::def-eval-g aig-eval-ev
                      ,(list* 'aig-eval-list 'if 'cons
@@ -639,7 +639,7 @@
 (local
  (progn
 
-   (acl2::without-waterfall-parallelism 
+   (acl2::without-waterfall-parallelism
     (gl::correctness-lemmas aig-eval-ev))
 
    (gl::eval-g-prove-f-i aig-eval-ev-f-i-generic-geval aig-eval-ev
@@ -709,7 +709,7 @@
 
 (local (in-theory (disable aig-eval-list-symbolic)))
 
-(gl::def-gobj-dependency-thm 
+(gl::def-gobj-dependency-thm
  aig-eval-list-with-bddify
  :hints`(("Goal" :in-theory (e/d (,gl::gfn)
                                  (gl::gobj-depends-on)))))

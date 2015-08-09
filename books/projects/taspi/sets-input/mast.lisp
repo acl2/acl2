@@ -3,7 +3,7 @@
 (include-book "../single-input/taxa-based")
 
 ;; Stupid plan for MAST: make list of each possibility for
-;; taxa in MAST, sort by length (or create as such), then 
+;; taxa in MAST, sort by length (or create as such), then
 ;; project each tree on set and determine if results
 ;; are equal.  Largest one satifying is MAST.
 
@@ -47,7 +47,7 @@
            (consp (cdr list)))
       (order-by-len-merge (order-by-len (evens-gen list))
                           (order-by-len (odds-gen list)))
-    list))          
+    list))
 
 (defun possible-taxa-lists (taxa-list)
   (declare (xargs :guard t))
@@ -70,7 +70,7 @@
   (declare (xargs :guard t))
   (if (and (consp list-of-taxa-lists)
            (consp list-of-trees))
-      (let ((mast? (project t 
+      (let ((mast? (project t
                             (car list-of-taxa-lists)
                             (car list-of-trees))))
         (if (project-each-checking (car list-of-taxa-lists)
@@ -128,11 +128,11 @@
         (1 2 ((4 5) (((3 6) 7) 8))))
       '(1 2 3 4 5 6 7 8))
 
-(mast-brlens '((a ((b c) (d e (f g)))) 
+(mast-brlens '((a ((b c) (d e (f g))))
                (a (b (c d (e f) g))))
              '(a b c d e f g))
 
-(mast-brlens '(((a . 4) (((b c) . 5) (d e (f g)))) 
+(mast-brlens '(((a . 4) (((b c) . 5) (d e (f g))))
                (a (b (c d (((e . 2) f) . 3) g))))
              '(a b c d e f g))
 ||#

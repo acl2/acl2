@@ -68,7 +68,7 @@
 (defthm apply-translation1-length
   (equal (len (apply-translation1 clist trans))
          (len clist)))
-         
+
 
 (defun apply-translation (str trans)
   (declare (xargs :guard (and (stringp str)

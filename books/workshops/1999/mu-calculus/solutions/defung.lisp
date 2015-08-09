@@ -5,12 +5,12 @@
   (declare (xargs :guard (and (symbolp s) (symbolp suf))))
   (intern-in-package-of-symbol
    (concatenate 'string
-                (symbol-name s) 
+                (symbol-name s)
 		"-"
                 (symbol-name suf))
    s))
 
-(defmacro defung (&rest def) 
+(defmacro defung (&rest def)
 ; A function definition that has a declare followed by a list of the
 ; form ((thm) commands), where commands can be anything that you would
 ; give to a defthm (look at defthm documentation), specifically it is:
@@ -20,13 +20,13 @@
 ;        :otf-flg      otf-flg
 ;        :doc          doc-string
 ;
-; The if test checks for documentation strings.  
+; The if test checks for documentation strings.
   (list 'progn
 	(cons 'defun (append (list (first def)
 				   (second def)
 				   (third def))
 			     (if (stringp (third def))
-				 (list (fourth def) 
+				 (list (fourth def)
 				       (sixth def))
 			       (list (fifth def)))))
 	(append (list 'defthm (make-sym (car def) 'return-type))

@@ -109,7 +109,7 @@ like them to, at least in the presence of nonlocal IN-THEORY events.</p>")
                (mv nil nil))
             (mv 1 args)))))
     `(with-output :off :all :stack :push
-       (progn 
+       (progn
          (outer-local-push :level ,level)
          (with-output :stack :pop (progn . ,events))
          (outer-local-pop)))))
@@ -205,6 +205,6 @@ like them to, at least in the presence of nonlocal IN-THEORY events.</p>")
 
 
 
-       
-       
-       
+
+
+

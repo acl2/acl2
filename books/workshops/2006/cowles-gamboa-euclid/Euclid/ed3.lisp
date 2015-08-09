@@ -1,4 +1,4 @@
-; ACL2 Euclidean Domain books -- Book 3 -- Algebraic Theory 
+; ACL2 Euclidean Domain books -- Book 3 -- Algebraic Theory
 ;  Convenient notation and events for using the theory of an
 ;  Euclidean Domain.
 ; Copyright (C) 2005  John R. Cowles, University of Wyoming
@@ -30,24 +30,24 @@ To certify this book, first, create a world with the following packages:
 
 (DEFPKG "ACL2-ASG"
   (SET-DIFFERENCE-EQUAL
-   (UNION-EQ *ACL2-EXPORTS* 
+   (UNION-EQ *ACL2-EXPORTS*
 	     *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*)
    '(ZERO)))
 
 (DEFPKG "ACL2-AGP"
   (SET-DIFFERENCE-EQUAL
-   (UNION-EQ *ACL2-EXPORTS* 
+   (UNION-EQ *ACL2-EXPORTS*
 	     *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*)
    '(ZERO)))
 
 (DEFPKG "ACL2-CRG"
   (SET-DIFFERENCE-EQUAL
-   (UNION-EQ *ACL2-EXPORTS* 
+   (UNION-EQ *ACL2-EXPORTS*
 	     *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*)
    '(ZERO)))
 
 (certify-book "ed3"
-	      3   
+	      3
 	      nil ;;compile-flg
 	      )
 
@@ -56,7 +56,7 @@ To certify this book, first, create a world with the following packages:
 ;; An Euclidean Domain is an integral domain, together with a Size function
 ;; from nonzero domain elements into the nonnegative integers, that
 ;; satisfies the Division Propery:
-;; 
+;;
 ;; Division Propery. For all domain elements x and all nonzero domain
 ;;             elements y there are domain elements q and r such that
 
@@ -72,7 +72,7 @@ To certify this book, first, create a world with the following packages:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Commutative Ring is a nonempty set with two binary operations, addition
 ;; and multiplication, an unary operation, minus, and a ring element, zero,
-;; such that 
+;; such that
 
 ;; (1) the binary operations are commutative and associative,
 ;; (2) multiplication distributes over addition,
@@ -108,7 +108,7 @@ To certify this book, first, create a world with the following packages:
 
 ;;  Integral Domain Theory.
 
-;;  Divides-p Theory. 
+;;  Divides-p Theory.
 
 ;; ;; (defun-sk
 ;; ;;   Divides-p (x y)
@@ -213,11 +213,11 @@ To certify this book, first, create a world with the following packages:
 ; Make temporary use of an ACL2 Arithmetic Book to help certify this book,
 
 (local
- (include-book "arithmetic/top" :dir :system 
+ (include-book "arithmetic/top" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -230,16 +230,16 @@ To certify this book, first, create a world with the following packages:
   ((=_e * *) => *)        ; Equality predicate for Euclidean Domain elements.
   ((C_=_e *) => *)        ; Choose unique equivalence class representative for =_e.
   ((binary-+_e * *) => *) ; Addition in Euclidean Domain.
-  ((binary-*_e * *) => *) ; Multiplication in Euclidean Domain. 
+  ((binary-*_e * *) => *) ; Multiplication in Euclidean Domain.
   ((-_e *) => *)          ; Unary minus in Euclidean Domain.
   ((0_e) => *)            ; 0 element in Euclidean Domain.
   ((1_e) => *)            ; 1 element in Euclidean Domain.
-  ((size *) => *)         ; Natp size of each nonzero Euclidean Domain element. 
+  ((size *) => *)         ; Natp size of each nonzero Euclidean Domain element.
   ((q_e * *) => *)        ; Quotient in Euclidean Domain.
   ((r_e * *) => *))       ; Remainder in Euclidean Domain.
 
  ; Witnesses:
- (local (defun 
+ (local (defun
 	  edp (x)
 	  (rationalp x)))
 
@@ -266,7 +266,7 @@ To certify this book, first, create a world with the following packages:
  (local (defun
 	  0_e ()
 	  0))
- 
+
  (local (defun
 	  1_e ()
 	  1))
@@ -317,10 +317,10 @@ To certify this book, first, create a world with the following packages:
  (defthm
     Equivalence-Law
     (implies (edp x)
-	     (and (=_e x x)  
+	     (and (=_e x x)
 		  (implies (edp y)
 			   (and (booleanp (=_e x y))
-				(implies (=_e x y) 
+				(implies (=_e x y)
 					 (=_e y x))
 				(implies (edp z)
 					 (implies (and (=_e x y)
@@ -459,7 +459,7 @@ To certify this book, first, create a world with the following packages:
 			       (=_e (r_e y1 z)
 				    (r_e y2 z))))))
    :rule-classes nil)
-		 
+
  (defthm
    Division-property
    (implies (and (edp x)
@@ -478,7 +478,7 @@ To certify this book, first, create a world with the following packages:
 		 (not (=_e x (0_e)))
 		 (edp y)
 		 (not (=_e y (0_e))))
-	    (<= (size x) 
+	    (<= (size x)
 		(size (*_e x y))))
    :rule-classes (:linear :rewrite))
  ) ; end encapsulate
@@ -491,7 +491,7 @@ To certify this book, first, create a world with the following packages:
 
 (defun
   ==_e (x1 x2)
-  "==_e nicely extends =_e 
+  "==_e nicely extends =_e
    to entire ACL2 universe."
   (if (edp x1)
       (if (edp x2)
@@ -555,8 +555,8 @@ To certify this book, first, create a world with the following packages:
 (defthm
   ==_e-Equivalence-Law
   (and (booleanp (==_e x y))
-       (==_e x x)  
-       (implies (==_e x y) 
+       (==_e x x)
+       (implies (==_e x y)
 		(==_e y x))
        (implies (and (==_e x y)
 		     (==_e y z))
@@ -617,7 +617,7 @@ To certify this book, first, create a world with the following packages:
 
 (defun
   C_==_e (x)
-  "C_==_e nicely extends C_=_e 
+  "C_==_e nicely extends C_=_e
    to entire ACL2 universe."
   (if (edp x)
       (C_=_e x)
@@ -657,7 +657,7 @@ To certify this book, first, create a world with the following packages:
 		(==_e (**_e (**_e x y) z)
 		      (**_e x (**_e y z)))))
   :hints (("Goal"
-	   :in-theory (disable Commutativity-Laws-for-++_e-&-**_e)))) 
+	   :in-theory (disable Commutativity-Laws-for-++_e-&-**_e))))
 
 (defthm
   Left-Distributivity-Law-for-++_e-&-**_e
@@ -823,7 +823,7 @@ To certify this book, first, create a world with the following packages:
 		(not (==_e x (0_e)))
 		(edp y)
 		(not (==_e y (0_e))))
-	   (<= (size x) 
+	   (<= (size x)
 	       (size (**_e x y))))
   :rule-classes (:linear :rewrite))
 
@@ -958,7 +958,7 @@ To certify this book, first, create a world with the following packages:
 		       (==_e x y))
 		(equal (==_e (++_e x z)(++_e z y))
 		       (==_e x y))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance
 		  (:functional-instance
 		   acl2-agp::Right-cancellation-for-op
@@ -971,7 +971,7 @@ To certify this book, first, create a world with the following packages:
 		  (acl2-agp::y y)
 		  (acl2-agp::z z))))))
 
-(defthm 
+(defthm
   Functional-Commutativity-Laws-1
   (implies (and (edp x)
 		(edp y))
@@ -1146,7 +1146,7 @@ To certify this book, first, create a world with the following packages:
 	   :use Left-Unicity-Laws-for-++_e-&-**_e)))
 
 ;;;;;;;;;;;;;;;;;;;;
-;; Divides-p theory: 
+;; Divides-p theory:
 
 (defun-sk
   Divides-p (x y)
@@ -1195,7 +1195,7 @@ To certify this book, first, create a world with the following packages:
 
 (defthm
   Booleanp-divides-p
-  (Booleanp (divides-p x y)) 
+  (Booleanp (divides-p x y))
   :rule-classes :type-prescription
   :hints (("Goal"
 	   :use (:instance
@@ -1314,7 +1314,7 @@ To certify this book, first, create a world with the following packages:
 	   (edp (divides-pp-witness x y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (O_e) is greatest element with 
+;; (O_e) is greatest element with
 ;;  respect to divides-pp relation.
 (defthm
   Greatest-divides-pp=0_e
@@ -1322,7 +1322,7 @@ To certify this book, first, create a world with the following packages:
 	   (divides-pp x (0_e))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (1_e) is least element with 
+;; (1_e) is least element with
 ;;  respect to divides-pp relation.
 (defthm
   Least-divides-pp=1_e
@@ -1353,7 +1353,7 @@ To certify this book, first, create a world with the following packages:
 	   (divides-pp x z))
   :rule-classes (:rewrite
 		 :forward-chaining)
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use (:instance
 		 Divides-pp-suff
 		 (y z)
@@ -1365,7 +1365,7 @@ To certify this book, first, create a world with the following packages:
   (implies (and (divides-pp x y)
 		(divides-pp x z))
 	   (divides-pp x (++_e y z)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use (:instance
 		 divides-pp-suff
 		 (y (++_e y z))
@@ -1377,7 +1377,7 @@ To certify this book, first, create a world with the following packages:
   (implies (and (divides-pp x y)
 		(divides-pp x z))
 	   (divides-pp x (++_e y (-_e z))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use (:instance
 		 divides-p1-suff
 		 (y (++_e y (-_e z)))
@@ -1526,12 +1526,12 @@ To certify this book, first, create a world with the following packages:
 		  (x y)
 		  (y x))))))
 
-(defthm 
-  Associates-pp-is-an-equivalence 
-  (and (booleanp (associates-pp x y)) 
-       (associates-pp x x) 
-       (implies (associates-pp x y) 
-		(associates-pp y x)) 
+(defthm
+  Associates-pp-is-an-equivalence
+  (and (booleanp (associates-pp x y))
+       (associates-pp x x)
+       (implies (associates-pp x y)
+		(associates-pp y x))
        (implies (and (associates-pp x y)
 		     (associates-pp y z))
 		(associates-pp x z)))
@@ -1596,7 +1596,7 @@ To certify this book, first, create a world with the following packages:
 		  (divides-pp x y2)))
   :rule-classes :congruence
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       associates-pp-implies-equal-divides-pp-1)
 	   :use ((:instance
 		  Transitivity-divides-pp
@@ -1887,7 +1887,7 @@ To certify this book, first, create a world with the following packages:
 		(not (==_e y (0_e))))
 	   (< (Size x)
 	      (Size (**_e x y))))
-  :rule-classes (:linear 
+  :rule-classes (:linear
 		 :rewrite)
   :hints (("Goal"
 	   :use Size-<-Size-**_e-lemma-3)
@@ -2012,7 +2012,7 @@ To certify this book, first, create a world with the following packages:
   (==_e (divides-pp-witness (1_e)(1_e))
 	(1_e))
   :hints (("Goal"
-	   :in-theory (disable least-divides-pp=1_e			  
+	   :in-theory (disable least-divides-pp=1_e
 			       divides-pp-suff)
 	   :use (:instance
 		 divides-pp-suff
@@ -2080,7 +2080,7 @@ To certify this book, first, create a world with the following packages:
 (in-theory (disable (:executable-counterpart unit-p)
 		    (:executable-counterpart unit-p1)
 		    (:executable-counterpart unit-pp)))
-		    
+
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Reducible-p and
 ;; Irreducible-p theory:
@@ -2204,7 +2204,7 @@ To certify this book, first, create a world with the following packages:
 
 (defthm
   Booleanp-reducible-p
-  (Booleanp (reducible-p x)) 
+  (Booleanp (reducible-p x))
   :rule-classes :type-prescription
   :hints (("Goal"
 	   :in-theory (disable (:definition unit-p))
@@ -2302,7 +2302,7 @@ To certify this book, first, create a world with the following packages:
 		(:instance
 		 unit-p1-=-unit-pp
 		 (x (car (reducible-p1-witness x))))
-		(:instance 
+		(:instance
 		 unit-p1-=-unit-pp
 		 (x (mv-nth 1 (reducible-p1-witness x))))))))
 
@@ -2345,7 +2345,7 @@ To certify this book, first, create a world with the following packages:
 	   (edp x))
   :rule-classes :forward-chaining
   :hints (("Goal"
-	   :use (:instance 
+	   :use (:instance
 		 closure-laws-for-++_e-&-**_e
 		 (x (mv-nth 0 (reducible-pp-witness x)))
 		 (y (mv-nth 1 (reducible-pp-witness x)))))))
@@ -2382,16 +2382,16 @@ To certify this book, first, create a world with the following packages:
 
 ;;  Clearly (0_e) can be factored in many ways, if the
 ;;   Euclidean Domain is not trivial (that is, if the
-;;   domain contains at least two distinct elements). 
+;;   domain contains at least two distinct elements).
 ;;  Also any factorization of (0_e) must contain at
 ;;   least one (0_e).
 
 ;;  Also units can be factored in many ways. For example
-;;   (-_e (1_e)) = (*_e (-_e (1_e))(-_e (1_e))(-_e (1_e))) 
+;;   (-_e (1_e)) = (*_e (-_e (1_e))(-_e (1_e))(-_e (1_e)))
 ;;               = (*_e (-_e (1_e))(-_e (1_e))(-_e (1_e))
 ;;                                 (-_e (1_e))(-_e (1_e)))
 ;;  Unique factorization should at least imply that any two
-;;   factorizations contain the same number of factors. 
+;;   factorizations contain the same number of factors.
 
 ;; Irreducible elements are non-zero, non-unit, non-reducible
 ;;  elements of the domain.
@@ -2473,7 +2473,7 @@ To certify this book, first, create a world with the following packages:
 (defun
   Irreducible-factors-1 (x)
   "Return a list, lst, of irreducible
-   elements of edp, so that if x is 
+   elements of edp, so that if x is
    in edp, x is not ==_e to 0_e, and x
    is not an unit, then x ==_e product
    of the members in lst."
@@ -2518,7 +2518,7 @@ To certify this book, first, create a world with the following packages:
 		(not (=_e y (0_e))))
 	   (< (size x) (size (*_e x y))))
   :rule-classes nil
-  :hints (("goal" 
+  :hints (("goal"
 	   :in-theory (e/d ((:definition ==_e)
 			    (:definition binary-**_e))
 			   ((:definition unit-p)
@@ -2532,7 +2532,7 @@ To certify this book, first, create a world with the following packages:
 (defun
   Irreducible-factors (x)
   "Return a list, lst, of irreducible
-   elements of edp, so that if x is 
+   elements of edp, so that if x is
    in edp, x is not =_e to 0_e, and x
    is not an unit, then x =_e product
    of the members in lst."
@@ -2856,29 +2856,29 @@ To certify this book, first, create a world with the following packages:
 			       Equivalence-law)
 	   :use ((:instance
 		  *_e-congruence
-		  (x1 (*_e-lst (irreducible-factors 
+		  (x1 (*_e-lst (irreducible-factors
 				(mv-nth 0 (reducible-p-witness x)))))
 		  (x2 (mv-nth 0 (reducible-p-witness x)))
-		  (y1 (*_e-lst (irreducible-factors 
+		  (y1 (*_e-lst (irreducible-factors
 				(mv-nth 1 (reducible-p-witness x)))))
 		  (y2 (mv-nth 1 (reducible-p-witness x))))
 		 (:instance
 		  equivalence-law
-		  (x (*_e-lst (append (irreducible-factors 
+		  (x (*_e-lst (append (irreducible-factors
 				       (mv-nth 0 (reducible-p-witness x)))
-				      (irreducible-factors 
+				      (irreducible-factors
 				       (mv-nth 1 (reducible-p-witness x))))))
-		  (y (*_e (*_e-lst (irreducible-factors 
+		  (y (*_e (*_e-lst (irreducible-factors
 				    (mv-nth 0 (reducible-p-witness x))))
-			  (*_e-lst (irreducible-factors 
+			  (*_e-lst (irreducible-factors
 				    (mv-nth 1 (reducible-p-witness x))))))
 		  (z (*_e (mv-nth 0 (reducible-p-witness x))
 			  (mv-nth 1 (reducible-p-witness x)))))
 		 (:instance
 		  equivalence-law
-		  (x (*_e-lst (append (irreducible-factors 
+		  (x (*_e-lst (append (irreducible-factors
 				       (mv-nth 0 (reducible-p-witness x)))
-				      (irreducible-factors 
+				      (irreducible-factors
 				       (mv-nth 1 (reducible-p-witness x))))))
 		  (y (*_e (mv-nth 0 (reducible-p-witness x))
 			  (mv-nth 1 (reducible-p-witness x))))
@@ -3050,8 +3050,8 @@ To certify this book, first, create a world with the following packages:
 		     (divides-p (C_==_e g)(C_==_e y))
 		     (implies (and (divides-p (gcd-p-witness (C_==_e x)
 							     (C_==_e y)
-							     (C_==_e g)) 
-					      (C_==_e x)) 
+							     (C_==_e g))
+					      (C_==_e x))
 				   (divides-p (gcd-p-witness (C_==_e x)
 							     (C_==_e y)
 							     (C_==_e g))
@@ -3076,8 +3076,8 @@ To certify this book, first, create a world with the following packages:
 		     (divides-p (C_==_e g)(C_==_e y))
 		     (implies (and (divides-p (gcd-p-witness (C_==_e x)
 							     (C_==_e y)
-							     (C_==_e g)) 
-					      (C_==_e x)) 
+							     (C_==_e g))
+					      (C_==_e x))
 				   (divides-p (gcd-p-witness (C_==_e x)
 							     (C_==_e y)
 							     (C_==_e g))
@@ -3090,8 +3090,8 @@ To certify this book, first, create a world with the following packages:
 		     (divides-pp g y)
 		     (implies (and (divides-pp (gcd-pp-witness x
 							       y
-							       g) 
-					       x) 
+							       g)
+					       x)
 				   (divides-pp (gcd-pp-witness x
 							       y
 							       g)
@@ -3116,21 +3116,21 @@ To certify this book, first, create a world with the following packages:
 		 divides-p-=-divides-pp
 		 (x (gcd-p-witness (C_==_e x)
 				   (C_==_e y)
-				   (C_==_e g))) 
+				   (C_==_e g)))
 		 (y (C_==_e x)))
 		(:instance
 		 divides-p-=-divides-pp
 		 (x (gcd-p-witness (C_==_e x)
 				   (C_==_e y)
-				   (C_==_e g))) 
+				   (C_==_e g)))
 		 (y (C_==_e y)))
 		(:instance
 		 divides-p-=-divides-pp
 		 (x (gcd-p-witness (C_==_e x)
 				   (C_==_e y)
-				   (C_==_e g))) 
+				   (C_==_e g)))
 		 (y (C_==_e g)))))))
-	
+
 (defthm
   Gcd-pp-necc
   (implies (not (and (divides-pp g x)
@@ -3148,7 +3148,7 @@ To certify this book, first, create a world with the following packages:
 
 (in-theory (disable (:definition gcd-pp-witness)
 		    (:executable-counterpart gcd-pp)))
-	   
+
 (defthm
   Gcd-p-implies-gcd-pp
   (implies (gcd-p x y g)
@@ -3262,18 +3262,18 @@ To certify this book, first, create a world with the following packages:
 				     (edp z1))
 				(and (edp (mv-nth 0 (Bezout1 x y n)))
 				     (edp (mv-nth 1 (Bezout1 x y n)))
-				     (not (==_e (++_e (**_e x 
+				     (not (==_e (++_e (**_e x
 							    (mv-nth 0
 								    (Bezout1 x y n)))
-						      (**_e y 
+						      (**_e y
 							   (mv-nth 1
 								   (Bezout1 x y n))))
 						(0_e)))
-				     (equal (Size (++_e (**_e x 
-							      (mv-nth 0 
+				     (equal (Size (++_e (**_e x
+							      (mv-nth 0
 								      (Bezout1 x y n)))
-							(**_e y 
-							      (mv-nth 1 
+							(**_e y
+							      (mv-nth 1
 								      (Bezout1 x y n)))
 							))
 					    n)))))
@@ -3309,7 +3309,7 @@ To certify this book, first, create a world with the following packages:
 									      )))))
 				   (**_e y (mv-nth 1 (Bezout1 x y (Size (++_e (**_e x z0)
 									      (**_e y z1)
-									      ))))))) 
+									      )))))))
 		       (Size (++_e (**_e x z0)
 				   (**_e y z1))))))
   :hints (("Goal"
@@ -3329,7 +3329,7 @@ To certify this book, first, create a world with the following packages:
 				 (**_e y (mv-nth 1 (Bezout1 x y (Size x)))))
 			   (0_e)))
 		(equal (Size (++_e (**_e x (mv-nth 0 (Bezout1 x y (Size x))))
-				   (**_e y (mv-nth 1 (Bezout1 x y (Size x)))))) 
+				   (**_e y (mv-nth 1 (Bezout1 x y (Size x))))))
 		       (Size x))))
   :hints (("Goal"
 	   :use (:instance
@@ -3339,12 +3339,12 @@ To certify this book, first, create a world with the following packages:
 
 (defun
   Find-smallest-n (x y n)
-  "Find smallest natp n such that the first two elements 
+  "Find smallest natp n such that the first two elements
    of the true list (Bezout1 x y n) are in edp, the linear
    combination
-               (++_e (**_e x 
+               (++_e (**_e x
 			   (mv-nth 0 (Bezout1 x y n)))
-		     (**_e y 
+		     (**_e y
 			   (mv-nth 1 (Bezout1 x y n))))
    is nonzero, and the size of the linear conbination is n."
   (declare (xargs :measure (let ((n (nfix n)))
@@ -3358,7 +3358,7 @@ To certify this book, first, create a world with the following packages:
 			    (Bezout1 x y n)
 			    (not (and (edp z0)
 				      (edp z1)
-				      (not (==_e (++_e (**_e x z0) 
+				      (not (==_e (++_e (**_e x z0)
 						       (**_e y z1))
 						 (0_e)))
 				      (equal (Size (++_e (**_e x z0)
@@ -3401,26 +3401,26 @@ To certify this book, first, create a world with the following packages:
 		(edp y))
 	   (and (edp (mv-nth 0 (Bezout1 x y (Find-smallest-n x y n))))
 		(edp (mv-nth 1 (Bezout1 x y (Find-smallest-n x y n))))
-		(not (==_e (++_e (**_e x 
-				       (mv-nth 0 
+		(not (==_e (++_e (**_e x
+				       (mv-nth 0
 					       (Bezout1 x y (Find-smallest-n x y n)))
 				       )
-				 (**_e y 
-				       (mv-nth 1 
+				 (**_e y
+				       (mv-nth 1
 					       (Bezout1 x y (Find-smallest-n x y n)))
 				       )
 				 )
 			   (0_e)))
-		(equal (Size (++_e (**_e x 
-					 (mv-nth 0 
+		(equal (Size (++_e (**_e x
+					 (mv-nth 0
 						 (Bezout1 x y (Find-smallest-n x y n))
 						 )
 					 )
-				   (**_e y 
-					 (mv-nth 1 
+				   (**_e y
+					 (mv-nth 1
 						 (Bezout1 x y (Find-smallest-n x y n))
 						 )
-					 ))) 
+					 )))
 		       (Find-smallest-n x y n))))
   :hints (("Goal"
 	   :in-theory (disable (:definition mv-nth)))))
@@ -3441,7 +3441,7 @@ To certify this book, first, create a world with the following packages:
 				      (**_e y (mv-nth 1 (Bezout1 x y n))))
 				(0_e)))
 		(equal (Size (++_e (**_e x (mv-nth 0 (Bezout1 x y n)))
-				   (**_e y (mv-nth 1 (Bezout1 x y n))))) 
+				   (**_e y (mv-nth 1 (Bezout1 x y n)))))
 		       n))))
   :rule-classes ((:rewrite
 		  :corollary
@@ -3449,7 +3449,7 @@ To certify this book, first, create a world with the following packages:
 				(integerp k)
 				(integerp n)
 				(<= 0 k)
-				(<= k n)				
+				(<= k n)
 				(edp x)
 				(not (==_e x (0_e)))
 				(edp y)
@@ -3460,20 +3460,20 @@ To certify this book, first, create a world with the following packages:
 					   (0_e))))
 			   (not (equal (Size (++_e (**_e x (mv-nth 0 (Bezout1 x y n)))
 						   (**_e y (mv-nth 1 (Bezout1 x y n)))
-						   )) 
+						   ))
 				       n))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (Find-smallest-n x y 0),
-;;   provided x is a nonzero element of edp, 
-;;   finds the smallest natp n such that 
+;;   provided x is a nonzero element of edp,
+;;   finds the smallest natp n such that
 ;;          (and (edp (mv-nth 0 (Bezout1 x y n)))
 ;;               (edp (mv-nth 1 (Bezout1 x y n)))
 ;;               (not (equal (+_e (*_e x (mv-nth 0 (Bezout1 x y n)))
 ;;                                (*_e y (mv-nth 1 (Bezout1 x y n))))
 ;;                           (0_e)))
 ;;               (equal (Size (+_e (*_e x (mv-nth 0 (Bezout1 x y n)))
-;;                                 (*_e y (mv-nth 1 (Bezout1 x y n))))) 
+;;                                 (*_e y (mv-nth 1 (Bezout1 x y n)))))
 ;;                      n))
 ;;   (if it exists).
 
@@ -3493,26 +3493,26 @@ To certify this book, first, create a world with the following packages:
 		(edp y))
 	   (and (edp (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 		(edp (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))
-		(not (==_e (++_e (**_e x 
-				       (mv-nth 0 
+		(not (==_e (++_e (**_e x
+				       (mv-nth 0
 					       (Bezout1 x y (Find-smallest-n x y 0)))
 				       )
-				 (**_e y 
-				       (mv-nth 1 
+				 (**_e y
+				       (mv-nth 1
 					       (Bezout1 x y (Find-smallest-n x y 0)))
 				       )
 				 )
 			   (0_e)))
-		(equal (Size (++_e (**_e x 
-					 (mv-nth 0 
+		(equal (Size (++_e (**_e x
+					 (mv-nth 0
 						 (Bezout1 x y (Find-smallest-n x y 0))
 						 )
 					 )
-				   (**_e y 
-					 (mv-nth 1 
+				   (**_e y
+					 (mv-nth 1
 						 (Bezout1 x y (Find-smallest-n x y 0))
 						 )
-					 ))) 
+					 )))
 		       (Find-smallest-n x y 0))))
   :hints (("Goal"
 	   :use (:instance
@@ -3533,7 +3533,7 @@ To certify this book, first, create a world with the following packages:
 				      (**_e y (mv-nth 1 (Bezout1 x y n))))
 				(0_e)))
 		     (equal (Size (++_e (**_e x (mv-nth 0 (Bezout1 x y n)))
-					(**_e y (mv-nth 1 (Bezout1 x y n))))) 
+					(**_e y (mv-nth 1 (Bezout1 x y n)))))
 			    n))))
   :rule-classes nil
   :hints (("Goal"
@@ -3554,7 +3554,7 @@ To certify this book, first, create a world with the following packages:
 	   (>= (Size (++_e (**_e x z0)
 			   (**_e y z1)))
 	       (Find-smallest-n x y 0)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
 		 :linear)
   :hints (("Goal"
 	   :in-theory (disable (:definition mv-nth))
@@ -3566,8 +3566,8 @@ To certify this book, first, create a world with the following packages:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The next sequence of equations and inequalities
 ;;  is used to establish the existence of the gcd
-;;  of any two elements of edp when at least one 
-;;  of the elements is nonzero. Any gcd of two 
+;;  of any two elements of edp when at least one
+;;  of the elements is nonzero. Any gcd of two
 ;;  elements can always be written as a linear
 ;;  combination of the two elements.
 
@@ -3596,7 +3596,7 @@ To certify this book, first, create a world with the following packages:
   (implies (and (edp x)
 		(edp y)
 		(not (==_e y (0_e))))
-	   (==_e (++_e x 
+	   (==_e (++_e x
 		       (-_e (**_e y
 				  (qq_e x y))))
 		 (rr_e x y)))
@@ -3617,7 +3617,7 @@ To certify this book, first, create a world with the following packages:
 	   (let ((lc (++_e (**_e x (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 			   (**_e y (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))
 			   )))
-	        (==_e (++_e x 
+	        (==_e (++_e x
 			    (-_e (**_e lc
 				       (qq_e x lc))))
 		      (rr_e x lc))))
@@ -3639,7 +3639,7 @@ To certify this book, first, create a world with the following packages:
 	   (let ((lc (++_e (**_e x (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 			   (**_e y (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))
 			   )))
-	        (==_e (++_e y 
+	        (==_e (++_e y
 			    (-_e (**_e lc
 				       (qq_e y lc))))
 		      (rr_e y lc))))
@@ -3662,11 +3662,11 @@ To certify this book, first, create a world with the following packages:
 	   (let ((lc (++_e (**_e x (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 			   (**_e y (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))
 			   )))
-	        (or (==_e (++_e x 
+	        (or (==_e (++_e x
 				(-_e (**_e lc
 					   (qq_e x lc))))
 			  (0_e))
-		    (< (Size (++_e x 
+		    (< (Size (++_e x
 				  (-_e (**_e lc
 					     (qq_e x lc)))))
 		       (Find-smallest-n x y 0)))))
@@ -3684,11 +3684,11 @@ To certify this book, first, create a world with the following packages:
 	   (let ((lc (++_e (**_e x (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 			   (**_e y (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))
 			   )))
-	        (or (==_e (++_e y 
+	        (or (==_e (++_e y
 				(-_e (**_e lc
 					   (qq_e y lc))))
 			  (0_e))
-		    (< (Size (++_e y 
+		    (< (Size (++_e y
 				  (-_e (**_e lc
 					     (qq_e y lc)))))
 		       (Find-smallest-n x y 0)))))
@@ -3705,11 +3705,11 @@ To certify this book, first, create a world with the following packages:
 		(edp q)
 		(edp b0)
 		(edp b1))
-	   (==_e (++_e x 
+	   (==_e (++_e x
 		       (-_e (**_e (++_e (**_e x b0)
 					(**_e y b1))
 				  q)))
-		 (++_e (**_e x 
+		 (++_e (**_e x
 			     (++_e (1_e)
 				   (-_e (**_e b0 q))))
 		      (-_e (**_e y b1 q)))))
@@ -3722,11 +3722,11 @@ To certify this book, first, create a world with the following packages:
 		(edp q)
 		(edp b0)
 		(edp b1))
-	   (==_e (++_e y 
+	   (==_e (++_e y
 		       (-_e (**_e (++_e (**_e x b0)
 					(**_e y b1))
 				  q)))
-		  (++_e (**_e y 
+		  (++_e (**_e y
 			      (++_e (1_e)
 				    (-_e (**_e b1 q))))
 			(-_e (**_e x b0 q)))))
@@ -3742,10 +3742,10 @@ To certify this book, first, create a world with the following packages:
 			   ))
 		 (b0 (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 		 (b1 (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0)))))
-	        (==_e (++_e x 
+	        (==_e (++_e x
 			    (-_e (**_e lc
 				       (qq_e x lc))))
-		      (++_e (**_e x 
+		      (++_e (**_e x
 				  (++_e (1_e)
 					(-_e (**_e b0
 						   (qq_e x lc)))))
@@ -3761,9 +3761,9 @@ To certify this book, first, create a world with the following packages:
 		 (b0 (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 		 (b1 (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))
 		 (q (qq_e x
-			  (++_e (**_e x 
+			  (++_e (**_e x
 				      (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
-				(**_e y 
+				(**_e y
 				      (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))
 				)))))))
 
@@ -3777,15 +3777,15 @@ To certify this book, first, create a world with the following packages:
 			   ))
 		 (b0 (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 		 (b1 (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0)))))
-	        (==_e (++_e y 
+	        (==_e (++_e y
 			    (-_e (**_e lc
 				       (qq_e y lc))))
-		      (++_e (**_e y 
+		      (++_e (**_e y
 				  (++_e (1_e)
-					(-_e (**_e b1 
+					(-_e (**_e b1
 						   (qq_e y lc)))))
-			    (-_e (**_e x 
-				       (**_e b0 
+			    (-_e (**_e x
+				       (**_e b0
 					     (qq_e y lc))))))))
   :rule-classes nil
   :hints (("Goal"
@@ -3796,9 +3796,9 @@ To certify this book, first, create a world with the following packages:
 		 (b0 (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 		 (b1 (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))
 		 (q (qq_e y
-			  (++_e (**_e x 
+			  (++_e (**_e x
 				      (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
-				(**_e y 
+				(**_e y
 				      (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))
 				)))))))
 
@@ -3831,30 +3831,30 @@ To certify this book, first, create a world with the following packages:
 		 Size->=-Find-smallest-n-0
 		 (z0 (++_e (1_e)
 			   (-_e (**_e (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0)))
-				      (qq_e x 
-					    (++_e 
-					     (**_e x 
-						   (mv-nth 0 
+				      (qq_e x
+					    (++_e
+					     (**_e x
+						   (mv-nth 0
 							   (Bezout1 x
-								    y 
+								    y
 								    (Find-smallest-n x y 0)))
 						   )
-					     (**_e y 
-						   (mv-nth 1 
+					     (**_e y
+						   (mv-nth 1
 							   (Bezout1 x
-								    y 
+								    y
 								    (Find-smallest-n x y 0)))
 						   )))))))
 		 (z1 (-_e
 		      (**_e (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0)))
-			    (qq_e x 
-				  (++_e 
-				   (**_e x 
-					 (mv-nth 0 
+			    (qq_e x
+				  (++_e
+				   (**_e x
+					 (mv-nth 0
 						 (Bezout1 x y (Find-smallest-n x y 0)
 							  )))
-				   (**_e y 
-					 (mv-nth 1 
+				   (**_e y
+					 (mv-nth 1
 						 (Bezout1 x y (Find-smallest-n x y 0)
 							  ))))))))))))
 
@@ -3887,30 +3887,30 @@ To certify this book, first, create a world with the following packages:
 		 Size->=-Find-smallest-n-0
 		 (z1 (++_e (1_e)
 			   (-_e (**_e (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0)))
-				      (qq_e y 
-					    (++_e 
-					     (**_e x 
-						   (mv-nth 0 
+				      (qq_e y
+					    (++_e
+					     (**_e x
+						   (mv-nth 0
 							   (Bezout1 x
-								    y 
+								    y
 								    (Find-smallest-n x y 0)))
 						   )
-					     (**_e y 
-						   (mv-nth 1 
+					     (**_e y
+						   (mv-nth 1
 							   (Bezout1 x
-								    y 
+								    y
 								    (Find-smallest-n x y 0)))
 						   )))))))
 		 (z0 (-_e
 		      (**_e (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0)))
-			    (qq_e y 
-				  (++_e 
-				   (**_e x 
-					 (mv-nth 0 
+			    (qq_e y
+				  (++_e
+				   (**_e x
+					 (mv-nth 0
 						 (Bezout1 x y (Find-smallest-n x y 0)
 							  )))
-				   (**_e y 
-					 (mv-nth 1 
+				   (**_e y
+					 (mv-nth 1
 						 (Bezout1 x y (Find-smallest-n x y 0)
 							  ))))))))))))
 
@@ -3950,7 +3950,7 @@ To certify this book, first, create a world with the following packages:
 	   :in-theory (disable (:definition find-smallest-n)
  			       (:definition mv-nth)
 			       right-distributivity-law)
-	   
+
 	   :use (Inequality-4a
 		 Equation-6a
 	         Inequality-7a))))
@@ -3972,12 +3972,12 @@ To certify this book, first, create a world with the following packages:
 		  (x (++_e (**_e x (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 			   (**_e y (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))))
 		  (y x)
-		  (z (qq_e x (++_e (**_e x 
-					 (mv-nth 0 
+		  (z (qq_e x (++_e (**_e x
+					 (mv-nth 0
 						 (Bezout1 x y (Find-smallest-n x y 0)))
 					 )
-				   (**_e y 
-					 (mv-nth 1 
+				   (**_e y
+					 (mv-nth 1
 						 (Bezout1 x y (Find-smallest-n x y 0)))
 					 )))))))))
 
@@ -3997,12 +3997,12 @@ To certify this book, first, create a world with the following packages:
 		  divides-pp-suff
 		  (x (++_e (**_e x (mv-nth 0 (Bezout1 x y (Find-smallest-n x y 0))))
 			   (**_e y (mv-nth 1 (Bezout1 x y (Find-smallest-n x y 0))))))
-		  (z (qq_e y (++_e (**_e x 
-					 (mv-nth 0 
+		  (z (qq_e y (++_e (**_e x
+					 (mv-nth 0
 						 (Bezout1 x y (Find-smallest-n x y 0)))
 					 )
-				   (**_e y 
-					 (mv-nth 1 
+				   (**_e y
+					 (mv-nth 1
 						 (Bezout1 x y (Find-smallest-n x y 0))))
 				   ))))))))
 
@@ -4136,13 +4136,13 @@ To certify this book, first, create a world with the following packages:
 (defthm
   Gcd=linear-combination
   (implies (gcd-pp x y g)
-	   (==_e (++_e (**_e x 
+	   (==_e (++_e (**_e x
 			     (mv-nth 0 (Bezout x y))
 			     (divides-pp-witness
 			      (++_e (**_e x (mv-nth 0 (Bezout x y)))
 				    (**_e y (mv-nth 1 (Bezout x y))))
 			      g))
-		       (**_e y 
+		       (**_e y
 			     (mv-nth 1 (Bezout x y))
 			     (divides-pp-witness
 			      (++_e (**_e x (mv-nth 0 (Bezout x y)))
@@ -4249,7 +4249,7 @@ To certify this book, first, create a world with the following packages:
 (defthm
   Linear-combination-divides-pp-gcd
   (implies (gcd-pp x y g)
-	   (divides-pp (++_e (**_e x 
+	   (divides-pp (++_e (**_e x
 				   (mv-nth 0 (bezout x y)))
 			     (**_e y
 				   (mv-nth 1 (bezout x y))))
@@ -4262,7 +4262,7 @@ To certify this book, first, create a world with the following packages:
 	   :use (gcd-pp-mv-nth-bezout
 		 (:instance
 		  gcd-pp-associates-pp
-		  (g1 (++_e (**_e x 
+		  (g1 (++_e (**_e x
 				  (mv-nth 0 (bezout x y)))
 			    (**_e y
 				  (mv-nth 1 (bezout x y)))))
@@ -4553,11 +4553,11 @@ To certify this book, first, create a world with the following packages:
 			       (:definition unit-pp))
 	   :use ((:instance
 		  unit-associates-pp-suff
-		  (u (divides-pp-witness (unit-associates-pp-witness x y) 
+		  (u (divides-pp-witness (unit-associates-pp-witness x y)
 					 (1_e)))
 		  (x y)
 		  (y x))
-		 (:instance 
+		 (:instance
 		  unit-pp-**_e-inverse
 		  (u (unit-associates-pp-witness x y)))))
 	  ("Subgoal 2"
@@ -4578,15 +4578,15 @@ To certify this book, first, create a world with the following packages:
 		  (u (**_e (unit-associates-pp-witness y z)
 			   (unit-associates-pp-witness x y)))
 		  (y z))))))
- 
+
 (set-backchain-limit nil)
- 
-(defthm 
-  Unit-associates-pp-is-an-equivalence 
-  (and (booleanp (unit-associates-pp x y)) 
-       (unit-associates-pp x x) 
-       (implies (unit-associates-pp x y) 
-		(unit-associates-pp y x)) 
+
+(defthm
+  Unit-associates-pp-is-an-equivalence
+  (and (booleanp (unit-associates-pp x y))
+       (unit-associates-pp x x)
+       (implies (unit-associates-pp x y)
+		(unit-associates-pp y x))
        (implies (and (unit-associates-pp x y)
 		     (unit-associates-pp y z))
 		(unit-associates-pp x z)))
@@ -4634,7 +4634,7 @@ To certify this book, first, create a world with the following packages:
 	   (unit-pp (divides-pp-witness x y)))
   :hints (("Goal"
 	   :in-theory (enable (:definition divides-pp))
-	   :use 
+	   :use
 	   Associates-pp-refines-unit-associates-pp-lemma-1)))
 
 (defthm
@@ -4649,7 +4649,7 @@ To certify this book, first, create a world with the following packages:
 			   ((:definition unit-pp)
 			    divides-pp-implies-witness=qq_e
 			    unit-associates-pp-suff))
-	   :use (:instance 
+	   :use (:instance
 		 Unit-associates-pp-suff
 		 (u (divides-pp-witness x y))))))
 
@@ -4903,17 +4903,17 @@ To certify this book, first, create a world with the following packages:
 	(member-unit-associate-pp x lst))
   :rule-classes nil
   :hints (("Subgoal *1/3"
-	   :use (:instance 
+	   :use (:instance
 		 Unit-associates-p-=-unit-associates-pp
 		 (y (car lst))))
 	  ("Subgoal *1/2"
-	   :use (:instance 
+	   :use (:instance
 		 Unit-associates-p-=-unit-associates-pp
 		 (y (car lst))))))
 
 (defun
   Delete-one-unit-associate (x lst)
-  "Return the result of deleting one occurrence 
+  "Return the result of deleting one occurrence
    of an unit-associate-p of x from the list lst."
   (if (consp lst)
       (if (unit-associates-p x (car lst))
@@ -4923,7 +4923,7 @@ To certify this book, first, create a world with the following packages:
 
 (defun
   Delete-one-unit-associate-pp (x lst)
-  "Return the result of deleting one occurrence 
+  "Return the result of deleting one occurrence
    of an unit-associate-pp of x from the list lst."
   (if (consp lst)
       (if (unit-associates-pp x (car lst))
@@ -4937,11 +4937,11 @@ To certify this book, first, create a world with the following packages:
 	 (Delete-one-unit-associate-pp x lst))
   :rule-classes nil
   :hints (("Subgoal *1/2"
-	   :use (:instance 
+	   :use (:instance
 		 Unit-associates-p-=-unit-associates-pp
 		 (y (car lst))))
 	  ("Subgoal *1/1"
-	   :use (:instance 
+	   :use (:instance
 		 Unit-associates-p-=-unit-associates-pp
 		 (y (car lst))))))
 
@@ -4953,7 +4953,7 @@ To certify this book, first, create a world with the following packages:
   (if (consp lst1)
       (and (member-unit-associate (car lst1) lst2)
 	   (bag-equal-unit-associates (cdr lst1)
-				      (delete-one-unit-associate (car lst1) 
+				      (delete-one-unit-associate (car lst1)
 								 lst2)))
       (atom lst2)))
 
@@ -4965,7 +4965,7 @@ To certify this book, first, create a world with the following packages:
   (if (consp lst1)
       (and (member-unit-associate-pp (car lst1) lst2)
 	   (bag-equal-unit-associates-pp (cdr lst1)
-					 (delete-one-unit-associate-pp (car lst1) 
+					 (delete-one-unit-associate-pp (car lst1)
 								       lst2)))
       (atom lst2)))
 
@@ -5029,7 +5029,7 @@ To certify this book, first, create a world with the following packages:
 (defthm
   Member-unit-associate-pp-delete-one-unit-associate-pp
   (implies (not (unit-associates-pp x y))
-	   (iff (member-unit-associate-pp x 
+	   (iff (member-unit-associate-pp x
 					  (delete-one-unit-associate-pp y lst))
 	        (member-unit-associate-pp x lst))))
 
@@ -5093,11 +5093,11 @@ To certify this book, first, create a world with the following packages:
 	 (Multiplicity-unit-associate-pp x lst))
   :rule-classes nil
   :hints (("Subgoal *1/2"
-	   :use (:instance 
+	   :use (:instance
 		 Unit-associates-p-=-unit-associates-pp
 		 (y (car lst))))
 	  ("Subgoal *1/1"
-	   :use (:instance 
+	   :use (:instance
 		 Unit-associates-p-=-unit-associates-pp
 		 (y (car lst))))))
 
@@ -5105,28 +5105,28 @@ To certify this book, first, create a world with the following packages:
   Multiplicity-unit-associate-pp-delete-one-unit-associate-pp-1
   (implies (and (member-unit-associate-pp y lst)
 		(unit-associates-pp x y))
-	   (equal (+ 1 (multiplicity-unit-associate-pp 
-			x 
+	   (equal (+ 1 (multiplicity-unit-associate-pp
+			x
 			(delete-one-unit-associate-pp y lst)))
 		  (multiplicity-unit-associate-pp x lst))))
 
 (defthm
   Multiplicity-unit-associate-pp-delete-one-unit-associate-pp-2
   (implies (not (unit-associates-pp x y))
-	   (equal (multiplicity-unit-associate-pp 
-		   x 
+	   (equal (multiplicity-unit-associate-pp
+		   x
 		   (delete-one-unit-associate-pp y lst))
 		  (multiplicity-unit-associate-pp x lst))))
 
 (defthm
-  Bag-equal-unit-associates-pp->equal-multiplicity-unit-associate-pp 
+  Bag-equal-unit-associates-pp->equal-multiplicity-unit-associate-pp
   (implies (bag-equal-unit-associates-pp lst1 lst2)
 	   (equal (multiplicity-unit-associate-pp x lst1)
 		  (multiplicity-unit-associate-pp x lst2)))
   :rule-classes nil)
 
 (defthm
-  Bag-equal-unit-associates->equal-multiplicity-unit-associate 
+  Bag-equal-unit-associates->equal-multiplicity-unit-associate
   (implies (bag-equal-unit-associates lst1 lst2)
 	   (equal (multiplicity-unit-associate x lst1)
 		  (multiplicity-unit-associate x lst2)))
@@ -5134,10 +5134,10 @@ To certify this book, first, create a world with the following packages:
   :hints (("Goal"
 	   :use (Bag-equal-unit-associates-pp->equal-multiplicity-unit-associate-pp
 		 Bag-equal-unit-associates-=-Bag-equal-unit-associates-pp
-		 (:instance 
+		 (:instance
 		  Multiplicity-unit-associate-=-Multiplicity-unit-associate-pp
 		  (lst lst1))
-		 (:instance 
+		 (:instance
 		  Multiplicity-unit-associate-=-Multiplicity-unit-associate-pp
 		  (lst lst2))))))
 
@@ -5163,7 +5163,7 @@ To certify this book, first, create a world with the following packages:
 	   :in-theory (e/d ((:definition divides-pp))
 			   ((:definition unit-pp)
 			    (:definition reducible-pp)))
-	   :use (:instance 
+	   :use (:instance
 		 unit-associates-pp-suff
 		 (u (divides-pp-witness d x))
 		 (x d)
@@ -5217,7 +5217,7 @@ To certify this book, first, create a world with the following packages:
 (defthm
   Irreducible-pp-gcd=1_e
   (implies (and (irreducible-pp x)
-		(edp y) 
+		(edp y)
 		(not (divides-pp x y)))
 	   (gcd-pp x y (1_e)))
   :hints (("Goal"
@@ -5264,15 +5264,15 @@ To certify this book, first, create a world with the following packages:
 		   (implies (==_e x y)
 			    (==_e (**_e x z)
 				  (**_e y z))))
-		  (x (++_e (**_e x 
+		  (x (++_e (**_e x
 				 (mv-nth 0 (bezout x y))
-				 (divides-pp-witness 
+				 (divides-pp-witness
 				  (++_e (**_e x (mv-nth 0 (bezout x y)))
 					(**_e y (mv-nth 1 (bezout x y))))
 				  (1_e)))
-			   (**_e y 
+			   (**_e y
 				 (mv-nth 1 (bezout x y))
-				 (divides-pp-witness 
+				 (divides-pp-witness
 				  (++_e (**_e x (mv-nth 0 (bezout x y)))
 					(**_e y (mv-nth 1 (bezout x y))))
 				  (1_e)))))
@@ -5280,7 +5280,7 @@ To certify this book, first, create a world with the following packages:
 		 (:instance
 		  gcd=linear-combination
 		  (g (1_e)))
-		 (:instance 
+		 (:instance
 		  (:theorem
 		   (implies (and (edp c)
 				 (edp d)
@@ -5292,15 +5292,15 @@ To certify this book, first, create a world with the following packages:
 		  (b (**_e y z))
 		  (c (**_e z
 			   (mv-nth 0 (bezout x y))
-			   (divides-pp-witness 
-			    (++_e (**_e x 
+			   (divides-pp-witness
+			    (++_e (**_e x
 					(mv-nth 0 (bezout x y)))
 				  (**_e y
 					(mv-nth 1 (bezout x y))))
 			    (1_e))))
 		  (d (**_e (mv-nth 1 (bezout x y))
-			   (divides-pp-witness 
-			    (++_e (**_e x 
+			   (divides-pp-witness
+			    (++_e (**_e x
 					(mv-nth 0 (bezout x y)))
 				  (**_e y (mv-nth 1 (bezout x y))))
 			    (1_e)))))))))
@@ -5459,7 +5459,7 @@ To certify this book, first, create a world with the following packages:
   (implies (and (edp x)
 		(unit-associates-pp (**_e x (**_e-lst lst1))
 				    (**_e-lst lst2)))
-	   (==_e (**_e x 
+	   (==_e (**_e x
 		       (**_e-lst lst1)
 		       (unit-associates-pp-witness (**_e x (**_e-lst lst1))
 						   (**_e-lst lst2)))
@@ -5670,16 +5670,16 @@ To certify this book, first, create a world with the following packages:
 
 (defthm
   Unit-associates-pp-**_e-**_e-lst-delete-one-unit-associate-lemma
-  (implies (and (unit-associates-pp 
+  (implies (and (unit-associates-pp
 		 (**_e x (**_e-lst (delete-one-unit-associate-pp x (cdr lst))))
 		 (**_e-lst (cdr lst)))
 		(edp (car lst))
 		(edp-listp (cdr lst))
 		(member-unit-associate-pp x (cdr lst)))
-	   (unit-associates-pp (**_e x 
+	   (unit-associates-pp (**_e x
 				     (car lst)
-				     (**_e-lst 
-				      (delete-one-unit-associate-pp x 
+				     (**_e-lst
+				      (delete-one-unit-associate-pp x
 								    (cdr lst))))
 			       (**_e (car lst) (**_e-lst (cdr lst)))))
  :hints (("goal"
@@ -5694,7 +5694,7 @@ To certify this book, first, create a world with the following packages:
   Unit-associates-pp-**_e-**_e-lst-delete-one-unit-associate
   (implies (and (edp-listp lst)
 		(member-unit-associate-pp x lst))
-	   (unit-associates-pp (**_e x (**_e-lst 
+	   (unit-associates-pp (**_e x (**_e-lst
 					(delete-one-unit-associate-pp x
 								      lst)))
 			       (**_e-lst lst)))
@@ -5722,7 +5722,7 @@ To certify this book, first, create a world with the following packages:
 	   :use (:instance
 		 unit-associates-pp-suff
 		 (x y)
-		 (y z) 
+		 (y z)
 		 (u (unit-associates-pp-witness (**_e x y)
 						(**_e x z)))))))
 
@@ -5794,7 +5794,7 @@ To certify this book, first, create a world with the following packages:
 		 (:instance
 		  *_e-lst-=-**_e-lst
 		  (lst lst2))
-		 (:instance 
+		 (:instance
 		  unit-associates-p-=-unit-associates-pp
 		  (x (*_e-lst lst1))
 		  (y (*_e-lst lst2)))

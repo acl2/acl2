@@ -155,7 +155,7 @@
 ;;   (implies (and (gobjectp x)
 ;;                 (g-number-p x))
 ;;            (wf-g-numberp (g-number->num x))))
-           
+
 
 ;; (defthm gobjectp-boolean-case
 ;;   (implies (and (gobjectp x)

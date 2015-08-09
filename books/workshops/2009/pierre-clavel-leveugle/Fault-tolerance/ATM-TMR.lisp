@@ -35,7 +35,7 @@
    ((ATMv2-keep      * *) => *) ; keep output function
    ((ATMv2-outc      * *) => *) ; outc output function
    ((ATMv2-e_detect  * *) => *) ; e_detect output function
-   ((ATMv2-reach_state *) => *) ; reachable states 
+   ((ATMv2-reach_state *) => *) ; reachable states
    ((ATMv2-error       *) => *)); error in a ATM
 
 ; - Definition of type work.local_type.FSM_state
@@ -62,7 +62,7 @@
   (local (defconst *ATMv2/max_try*  3))
 
 ; -Instances
-  (local (encapsulate          ; for register n 
+  (local (encapsulate          ; for register n
           (((ATMv2-n_reg-error *) => *))
           (defun ATMv2-n_reg-Sp (S) (TMR-Sp S))
           (defun ATMv2-n_reg-next (I S) (TMR-next I S))
@@ -74,7 +74,7 @@
             :functional-substitution ((TMR-error ATMv2-n_reg-error))
             :rule-classes :rewrite)))
 
-  (local (encapsulate           ; for register ok 
+  (local (encapsulate           ; for register ok
           (((ATMv2-ok_reg-error *) => *))
           (defun ATMv2-ok_reg-Sp (S) (TMR-Sp S))
           (defun ATMv2-ok_reg-next (I S) (TMR-next I S))
@@ -86,7 +86,7 @@
             :functional-substitution ((TMR-error ATMv2-ok_reg-error))
             :rule-classes :rewrite)))
 
-  (local (encapsulate            ; for register code 
+  (local (encapsulate            ; for register code
           (((ATMv2-code_reg-error *) => *))
           (defun ATMv2-code_reg-Sp (S) (TMR-Sp S))
           (defun ATMv2-code_reg-next (I S) (TMR-next I S))
@@ -106,7 +106,7 @@
 		(ATMv2-ok_reg-Sp   (nth *ATMv2/ok_register*   x))
 		(ATMv2-code_reg-Sp (nth *ATMv2/code_register* x))
 		(ATMv2-FSM_statep  (nth *ATMv2/c_state* x))
-		(equal (len x) 4)))) 
+		(equal (len x) 4))))
 
 ;    + Definition of the transition function
   (local (defun ATMv2-next (current_input current_state)
@@ -131,18 +131,18 @@
                          1)
                         ((and (equal (nth *ATMv2/c_state* current_state)
                                      "test_code")
-                              (not (equal 
+                              (not (equal
                                (ATMv2-code_reg-out_value nil
                                 (nth *ATMv2/code_register* current_state))
                                (ATMv2-ok_reg-out_value nil
                                 (nth *ATMv2/ok_register* current_state))))
-                              (< (ATMv2-n_reg-out_value nil 
+                              (< (ATMv2-n_reg-out_value nil
                                   (nth *ATMv2/n_register* current_state))
                                  *ATMv2/max_try*))
-                         (1+ (ATMv2-n_reg-out_value nil 
+                         (1+ (ATMv2-n_reg-out_value nil
                               (nth *ATMv2/n_register* current_state))))
                         (T
-                         (ATMv2-n_reg-out_value nil 
+                         (ATMv2-n_reg-out_value nil
                           (nth *ATMv2/n_register* current_state))))
                   ; ld_flag
                   (or (and (equal (nth *ATMv2/c_state* current_state)
@@ -150,18 +150,18 @@
                            (nth *ATMv2/inc* current_input))
                       (and (equal (nth *ATMv2/c_state* current_state)
                                   "test_code")
-                           (not (equal 
-                                 (ATMv2-code_reg-out_value nil 
+                           (not (equal
+                                 (ATMv2-code_reg-out_value nil
                                   (nth *ATMv2/code_register* current_state))
                                  (ATMv2-ok_reg-out_value nil
                                   (nth *ATMv2/ok_register* current_state))))
-                           (< (ATMv2-n_reg-out_value nil 
+                           (< (ATMv2-n_reg-out_value nil
                                (nth *ATMv2/n_register* current_state))
                               *ATMv2/max_try*))))
                  (nth *ATMv2/n_register* current_state))
                 ; ATM/ok_register
                 (ATMv2-ok_reg-next
-                 (list 
+                 (list
                   ; in_value
                   (cond ((and (equal (nth *ATMv2/c_state* current_state)
                                      "init")
@@ -189,7 +189,7 @@
                  (nth *ATMv2/ok_register* current_state))
                 ; ATM/code_register
                 (ATMv2-code_reg-next
-                 (list 
+                 (list
                   ; in_value
                   (cond ((and (equal (nth *ATMv2/c_state* current_state)
                                      "card_in")
@@ -288,7 +288,7 @@
                     (equal (len current_input) 2))
                (or (and (equal (nth *ATMv2/c_state* current_state)
                                "test_code")
-                        (equal (ATMv2-code_reg-out_value nil 
+                        (equal (ATMv2-code_reg-out_value nil
                                 (nth *ATMv2/code_register* current_state))
                                (ATMv2-ok_reg-out_value nil
                                 (nth *ATMv2/ok_register* current_state)))
@@ -321,7 +321,7 @@
                                  (nth *ATMv2/code_register* current_state))
                                 (ATMv2-ok_reg-out_value nil
                                  (nth *ATMv2/ok_register* current_state))))
-                    (>= (ATMv2-n_reg-out_value nil 
+                    (>= (ATMv2-n_reg-out_value nil
                          (nth *ATMv2/n_register* current_state))
                         *ATMv2/max_try*)
                     (not (or (ATMv2-n_reg-e_detect nil
@@ -634,7 +634,7 @@
     :rule-classes :rewrite)
 
 ;    + the start_op output signal is unchanged when an error occurs
-  (defthm ATMv2-thm-hardened-2    
+  (defthm ATMv2-thm-hardened-2
     (implies (and (ATMv2-Sp S)
                   (true-listp I)
                   (booleanp (nth 0 I))
@@ -745,9 +745,9 @@
           (ATMv2-next last_input
                                    (SPEC-ATMv2-rec-next input_trace
                                                         initial_state))))
-  :rule-classes nil) 
+  :rule-classes nil)
 
-; - If an error is injected in a ATMv2 FSM after n clock ticks, 
+; - If an error is injected in a ATMv2 FSM after n clock ticks,
 ; the start_op output signal keeps its value on the next clock tick
 (defthm SPEC-ATMv2-test2
   (implies
@@ -757,14 +757,14 @@
         (true-listp last_input) ; and all last start_op input
         (booleanp (nth 0 last_input))
         (booleanp (nth 1 last_input))
-        (equal (len last_input) 2)) 
+        (equal (len last_input) 2))
    (equal (ATMv2-start_op last_input
                           (ATMv2-error (SPEC-ATMv2-rec-next input_trace
                                                             initial_state)))
           (ATMv2-start_op last_input
                                        (SPEC-ATMv2-rec-next input_trace
                                                             initial_state))))
-  :rule-classes nil) 
+  :rule-classes nil)
 
 ; - If an error is injected in a ATMv2 FSM after n clock ticks,
 ; the keep output signal keeps its value on the next clock tick
@@ -779,7 +779,7 @@
           (ATMv2-keep nil
                                    (SPEC-ATMv2-rec-next input_trace
                                                         initial_state))))
-  :rule-classes nil) 
+  :rule-classes nil)
 
 ; - If an error is injected in a ATMv2 FSM after n clock ticks,
 ; the outc output signal keeps its value on the next clock tick
@@ -791,11 +791,11 @@
         (true-listp last_input) ; and all last input
         (booleanp (nth 0 last_input))
         (booleanp (nth 1 last_input))
-        (equal (len last_input) 2)) 
+        (equal (len last_input) 2))
    (equal (ATMv2-outc last_input
                       (ATMv2-error (SPEC-ATMv2-rec-next input_trace
                                                         initial_state)))
           (ATMv2-outc last_input
                                    (SPEC-ATMv2-rec-next input_trace
                                                         initial_state))))
-  :rule-classes nil) 
+  :rule-classes nil)

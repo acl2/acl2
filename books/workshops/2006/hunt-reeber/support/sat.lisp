@@ -6,7 +6,7 @@
 ;; This file contains the examples from our paper that we
 ;; were able to prove using our SAT based hint.
 ;; The theorems are given in block comments, since our
-;; SAT extension is not available without modifying the 
+;; SAT extension is not available without modifying the
 ;; ACL2 source code.
 
 ;; For a description of the example and a description of
@@ -32,24 +32,24 @@
   (if (zp n)
       (list c)
     (cons (xor3 c (car a) (car b))
-          (v-adder (1- n) 
+          (v-adder (1- n)
                    (maj3 c (car a) (car b))
                    (cdr a) (cdr b)))))
 
 ;; 4 Bit Adder Associativity
-;; (thm 
+;; (thm
 ;;   (n-bleq 4 (v-adder 4 nil (v-adder 4 nil a b) c)
 ;;           (v-adder 4 nil a (v-adder 4 nil b c)))
 ;;   :hints (("Goal" :external (sat nil sat::$sat))))
 
 ;; 32 bit adder associativity
-;; (thm 
+;; (thm
 ;;  (n-bleq 32 (v-adder 32 nil (v-adder 32 nil a b) c)
 ;;          (v-adder 32 nil a (v-adder 32 nil b c)))
 ;;  :hints (("Goal" :external (sat nil sat::$sat))))
 
 ;; 200 Bit adder associativity
-;; (thm 
+;; (thm
 ;;  (n-bleq 200 (v-adder 200 nil (v-adder 200 nil a b) c)
 ;;          (v-adder 200 nil a (v-adder 200 nil b c)))
 ;;   :hints (("Goal" :external (sat nil sat::$sat))))
@@ -114,17 +114,17 @@
     (mux-n-w sn rn (shift-mux-help (expt 2 sn) rn reg) rshift)))
 
 ;; 32x6 Shift-0
-;; (thm 
-;;  (implies 
+;; (thm
+;;  (implies
 ;;   (car (nth-cdr 5 shift0))
-;;   (n-bleq 32 
+;;   (n-bleq 32
 ;;           (shifter 6 32 shift0 reg)
 ;;           (n-nills 32)))
 ;;   :hints (("Goal" :external (sat nil sat::$sat))))
 
 ;; 64x7 Shift-0
-;; (thm 
-;;  (implies 
+;; (thm
+;;  (implies
 ;;   (car (nth-cdr 6 shift0))
 ;;   (n-bleq 64 (shifter 7 64 shift0 reg)
 ;;           (n-nills 64)))
@@ -132,14 +132,14 @@
 
 ;; 32x4 Add-shift
 ;; (thm
-;;  (n-bleq 32 
+;;  (n-bleq 32
 ;;          (shifter 4 32 shift0 (shifter 4 32 shift1 reg))
 ;;          (shifter 5 32 (v-adder 4 nil shift0 shift1) reg))
 ;;   :hints (("Goal" :external (sat nil sat::$sat))))
 
 ;; 64x6 Add-shift
 ;; (thm
-;;  (n-bleq 64 
+;;  (n-bleq 64
 ;;          (shifter 6 64 shift0 (shifter 6 64 shift1 reg))
 ;;          (shifter 7 64 (v-adder 6 nil shift0 shift1) reg))
 ;;   :hints (("Goal" :external (sat nil sat::$sat))))

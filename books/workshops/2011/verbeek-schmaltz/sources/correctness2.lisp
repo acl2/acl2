@@ -10,7 +10,7 @@
 ;; 5.) algorithm returns t --> deadlock
 ;;---------------------------------------
 ;;---------------------------------------
-;; First we prove that the set of 3-marked ports has no escape (theorems node-in-subgraph-of-3marked-nodes-is-no-escape and subgraph-of-3marked-nodes-has-no-escape). 
+;; First we prove that the set of 3-marked ports has no escape (theorems node-in-subgraph-of-3marked-nodes-is-no-escape and subgraph-of-3marked-nodes-has-no-escape).
 (defthm update-marksi-update-marksi
   (equal (update-marksi i x (update-marksi i y marks))
          (update-marksi i x marks)))
@@ -71,7 +71,7 @@
                 (invariant-3marks (nodes-length nodeset) marks graph nodeset)
                 (invariant-deps (nodes-length nodeset) marks graph nodeset)
                 (invariant-escs-total (nodes-length nodeset) marks graph nodeset))
-           (subsetp (st-filter-neighbors-for-dest (neighbors->destsi node graph) (find-member-not-in (depi node marks) (esci node marks))) 
+           (subsetp (st-filter-neighbors-for-dest (neighbors->destsi node graph) (find-member-not-in (depi node marks) (esci node marks)))
                     (append (filter-3marked-nodes (nodes-length nodeset) marks nodeset)
                             (filter-4marked-nodes (nodes-length nodeset) marks nodeset))))
   :otf-flg t
@@ -160,13 +160,13 @@
   (implies (and (invariant-4marks-paths n uncertain marks graph nodeset)
                 (equal (marksi node marks) 3))
            (invariant-4marks-paths n (remove-equal node uncertain) marks graph nodeset))
-  :hints (("Goal" :in-theory (e/d (temp13.4 temp13.5) (marksi update-marksi marksi E-d-path-to-3mark)))))                 
+  :hints (("Goal" :in-theory (e/d (temp13.4 temp13.5) (marksi update-marksi marksi E-d-path-to-3mark)))))
 (defthm temp13.13
   (implies (and (invariant-4marks-paths n uncertain marks graph nodeset)
                 (equal (marksi node marks) 4)
                 (E-d-path-to-3mark node marks graph nodeset))
            (invariant-4marks-paths n (remove-equal node uncertain) marks graph nodeset))
-  :hints (("Goal" :in-theory (e/d (temp13.4 temp13.5) (marksi update-marksi marksi E-d-path-to-3mark)))))                 
+  :hints (("Goal" :in-theory (e/d (temp13.4 temp13.5) (marksi update-marksi marksi E-d-path-to-3mark)))))
 
 (defun E-d-path-from-to-all (from tos dest graph nodeset)
   (if (endp tos)
@@ -265,7 +265,7 @@
                                  (to (car neighbors))
                                  (subgraph nil)
                                  (path (list from (car neighbors))))))))
- 
+
 (defthmd temp13.14.2
   (implies (and (valid-graph (nodes-length nodeset) graph nodeset)
                 (filled-graphp (nodes-length nodeset) graph)
@@ -303,7 +303,7 @@
           ("Subgoal *1/2" :use (:instance temp13.14.2
                                 (n (nodes-length nodeset))
                                 (dest (1- n))))))
-  
+
 (defthmd temp13.14
   (implies (and (valid-graph (nodes-length nodeset) graph nodeset)
                 (filled-graphp (nodes-length nodeset) graph)
@@ -452,7 +452,7 @@
                                    (update-marksi node 4 marks) graph nodeset))
   :hints (("Goal" :in-theory (disable E-d-path-to-3mark neighborsi temp21.4 update-marksi E-path-from-to-not-in)
                   :do-not '(eliminate-destructors generalize))
-          ("Subgoal *1/6" :expand (E-d-path-to-3mark (1- n) marks graph nodeset) 
+          ("Subgoal *1/6" :expand (E-d-path-to-3mark (1- n) marks graph nodeset)
                           :use (
                                 (:instance E-d-path-to-3mark-suff
                                  (path (car (E-d-path-to-3mark-witness (1- n) marks graph nodeset)))
@@ -503,7 +503,7 @@
   :hints (("Goal" :in-theory (e/d (temp13.4 temp13.5) ( E-d-path-to-3mark marksi append-to-esc)))))
 
 #|
-          ("Subgoal *1/6" :expand (E-d-path-to-3mark (1- n) marks graph nodeset) 
+          ("Subgoal *1/6" :expand (E-d-path-to-3mark (1- n) marks graph nodeset)
                           :use ((:instance E-d-path-to-3mark-suff
                                  (path (car (E-d-path-to-3mark-witness (1- n) marks graph nodeset)))
                                  (dest (mv-nth 1 (E-d-path-to-3mark-witness (1- n) marks graph nodeset)))
@@ -523,7 +523,7 @@
                                  (to (car (last (car (E-d-path-to-3mark-witness (1- n) marks graph nodeset)))))
                                  (subgraph nil))
                                  ))))
-|#          
+|#
 
 (in-theory (disable temp13.28.1))
 
@@ -636,7 +636,7 @@
                   (A-valid-nodes nodes nodeset)
                   (no-01-marks (nodes-length nodeset) marks nodeset)
                   (<= n (nodes-length nodeset))
-                  ;; Invariant 
+                  ;; Invariant
                   (A-consp stack)
                   (invariant-4marks-paths n nodes marks graph nodeset))
              (invariant-4marks-paths n nil marks-after graph nodeset)))
@@ -720,7 +720,7 @@
                 (invariant-3marks (nodes-length nodeset) marks graph nodeset)
                 (invariant-deps (nodes-length nodeset) marks graph nodeset)
                 (invariant-escs-total (nodes-length nodeset) marks graph nodeset))
-           (subsetp (st-filter-neighbors-for-dest (neighbors->destsi node graph) dest) 
+           (subsetp (st-filter-neighbors-for-dest (neighbors->destsi node graph) dest)
                     (append (filter-3marked-nodes (nodes-length nodeset) marks nodeset)
                             (filter-4marked-nodes (nodes-length nodeset) marks nodeset))))
   :otf-flg t
@@ -810,7 +810,7 @@
                                  (n (nodes-length nodeset))
                                  (node (car (last (car (E-d-path-to-3mark-witness (1- n) marks graph nodeset))))))))
           ))
-      
+
 
 (defthm temp14.4
   (implies (<= n (nodes-length nodeset))
@@ -860,7 +860,7 @@
              (not (equal (marksi node marks-after) 0))))
   :hints (("Goal" :in-theory (e/d (A-valid-nodes-show-nodeset) (esci depi update-marksi neighborsi update-depi update-esci marksi dests-of-edge update-marksi valid-graph temp1.16))
                   :expand (st-escapable-inv (list node) -1 graph marks nodeset))))
-  
+
 (defthm temp14.7
   (implies (and (valid-graph (nodes-length st-nodeset) graph nodeset)
                 (natp n)
@@ -950,7 +950,7 @@
   (implies (and (A-valid-nodes nodes nodeset)
                 (member-equal node nodes))
            (st-valid-node node nodeset)))
-           
+
 (defthm temp22.0
   (implies (and (invariant-deps n marks graph nodeset)
                 (invariant-unresolved n marks graph nodeset)

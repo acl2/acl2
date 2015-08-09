@@ -49,7 +49,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -119,7 +119,7 @@ To certify this book, first, create a world with the following packages:
 
 (defthm |p + (- p) = 0|
   (= (+ p (- p)) (nulo))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable = + +M - FUMON::-)
 	   :induct (fn p))
 	  ("Subgoal *1/1" :in-theory (enable = + +M))
@@ -191,14 +191,14 @@ To certify this book, first, create a world with the following packages:
 (local (in-theory (disable polinomiop = + -)))
 
 ;;; -----------------------------------------------------------------------
-;;; El inverso debe ser invisible para la primera operación y para sí mismo 
+;;; El inverso debe ser invisible para la primera operación y para sí mismo
 ;;; -----------------------------------------------------------------------
 (ACL2::set-invisible-fns-table ((+ -) (- -)))
 
 
 ;;; El opuesto de una suma de polinomios es la suma de los opuestos.
 
-(defthm |p + r = q + r <=> p = q|                                  
+(defthm |p + r = q + r <=> p = q|
   (implies (and (polinomiop (double-rewrite p))
 		(polinomiop (double-rewrite q)))
 	   (iff (= (+ p r) (+ q r)) (= p q)))
@@ -246,9 +246,9 @@ To certify this book, first, create a world with the following packages:
 	   :use (:instance |p + q = 0 <=> q = - p| (p (- p)) (q p)))))
 
 ;;; Distributividad de la inversa sobre la primera operación
- 
+
 (defthm |- (p + q) = (- p) + (- q)|
   (= (- (+ p q)) (+ (- p) (- q)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable |p + q = 0 <=> q = - p|)
 	   :use (:instance |p + q = 0 <=> q = - p| (p (+ p q)) (q (+ (- p) (- q)))))))

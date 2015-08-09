@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -125,7 +125,7 @@
                            (:instance  nonnegative-integer-quotient-upper-bound-rewrite
                                       (i (NUMERATOR (* I (/ J))))
                                       (j (DENOMINATOR (* I (/ J))))))
-                           
+
              :in-theory (set-difference-theories
                          (enable floor)
                          '(  nonnegative-integer-quotient-lower-bound-rewrite
@@ -152,7 +152,7 @@
                 (:instance  nonnegative-integer-quotient-max-value-rewrite
                             (i (* -1 (NUMERATOR (* I (/ J)))))
                             (j (DENOMINATOR (* I (/ J)))))
-           
+
                 (:instance  nonnegative-integer-quotient-lower-bound-rewrite
                             (i (* -1 (NUMERATOR (* I (/ J)))))
                             (j (DENOMINATOR (* I (/ J))))))
@@ -212,7 +212,7 @@
            (< (+ -1 (* i (/ j))) (floor i j)))
   :otf-flg t
   :hints (("Goal"
-             
+
            :in-theory (set-difference-theories
                        (enable floor)
                        '( ;why do these disables help so much?

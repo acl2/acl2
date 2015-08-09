@@ -143,7 +143,7 @@
 
   (define vl-patternkey-type-disambiguate ((x vl-patternkey-p)
                                            (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-patternkey-p))
     :measure (two-nats-measure (vl-patternkey-count x) 1)
@@ -159,7 +159,7 @@
 
   (define vl-slicesize-type-disambiguate ((x vl-slicesize-p)
                                            (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-slicesize-p))
     :measure (two-nats-measure (vl-slicesize-count x) 1)
@@ -175,7 +175,7 @@
 
   (define vl-casttype-type-disambiguate ((x vl-casttype-p)
                                            (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-casttype-p))
     :measure (two-nats-measure (vl-casttype-count x) 1)
@@ -202,7 +202,7 @@
 
   (define vl-stmt-type-disambiguate ((x vl-stmt-p)
                                      (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-stmt-p))
     :measure (two-nats-measure (vl-stmt-count x) 1)
@@ -229,7 +229,7 @@
 
   (define vl-fundecl-type-disambiguate ((x vl-fundecl-p)
                                      (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-fundecl-p))
     :measure 1
@@ -251,7 +251,7 @@
 
   (define vl-genelement-type-disambiguate ((x vl-genelement-p)
                                            (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-genelement-p))
     :measure (two-nats-measure (vl-genelement-count x) 1)
@@ -262,7 +262,7 @@
 
   (define vl-genarrayblock-type-disambiguate ((x vl-genarrayblock-p)
                                            (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-genarrayblock-p))
     :measure (two-nats-measure (vl-genarrayblock-count x) 1)
@@ -282,7 +282,7 @@
 
   (define vl-module-type-disambiguate ((x vl-module-p)
                                        (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-module-p))
     :measure 1
@@ -306,7 +306,7 @@
 
   (define vl-interface-type-disambiguate ((x vl-interface-p)
                                        (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-interface-p))
     :measure 1
@@ -330,7 +330,7 @@
 
   (define vl-package-type-disambiguate ((x vl-package-p)
                                        (ss vl-scopestack-p))
-    
+
     :returns (mv (warnings vl-warninglist-p)
                  (new-x vl-package-p))
     :measure 1
@@ -354,7 +354,7 @@
 
 
 (define vl-design-type-disambiguate ((x vl-design-p))
-  
+
   :returns (new-x vl-design-p)
   :measure 1
   (b* ((ss (vl-scopestack-init x))

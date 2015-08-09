@@ -40,7 +40,7 @@
 		      (interval-right-inclusive-p (domain-rifn-classical)))
 		 (not (equal (interval-left-endpoint (domain-rifn-classical))
 			     (interval-right-endpoint (domain-rifn-classical)))))))
- 
+
  (defun map-rifn-classical (p)
    ;; map rifn over the list p
    (if (consp p)
@@ -51,7 +51,7 @@
  (defun riemann-rifn-classical (p)
    ;; for partition p, take the Riemann sum of rifn over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-classical (cdr p))))
 
  (defun int-rifn-classical (a b)
@@ -79,8 +79,8 @@
 		    (< (abs (- (riemann-rifn-classical p)
 			       (strict-int-rifn-classical a b)))
 		       eps)))
-   :rewrite :direct) 
- 
+   :rewrite :direct)
+
  (defun-sk exists-delta-so-that-riemann-sum-is-close-to-int-rifn-classical (a b eps)
    (exists (delta)
 	   (implies (and (inside-interval-p a (domain-rifn-classical))
@@ -91,7 +91,7 @@
 		    (and (realp delta)
 			 (< 0 delta)
 			 (forall-partitions-riemann-sum-is-close-to-int-rifn-classical a b eps delta)))))
- 
+
  (defthm strict-int-rifn-classical-is-integral-of-rifn-classical
    (implies (and (inside-interval-p a (domain-rifn-classical))
 		 (inside-interval-p b (domain-rifn-classical))
@@ -210,7 +210,7 @@
 		  (:instance forall-partitions-riemann-sum-is-close-to-int-rifn-classical-necc))
 	    :in-theory (disable)
 	    ))))
-		  
+
 (local
  (defun standard-lower-bound-of-diff (x y)
    (if (i-limited y)
@@ -337,7 +337,7 @@
 (defthm realp-riemann-rifn-classical
   (implies (partitionp p)
 	   (REALP (RIEMANN-RIFN-CLASSICAL P))))
-  
+
 (defun realpos-listp (l)
   (if (consp l)
       (and (realp (car l))
@@ -506,7 +506,7 @@
 	     :use ((:instance lemma-4)
 		   (:instance standard-small-is-zero
 			      (x (abs (strict-int-rifn-classical a b)))))))))
-  
+
  (defthm strict-int-rifn-classical-is-integral-of-rifn-classical-using-nonstandard-criterion
    (implies (and (standardp a)
 		 (standardp b)
@@ -583,7 +583,7 @@
 		 (standardp eps)
 		 (< 0 eps))
 	    (< (abs (- (riemann-rifn p)
-		       (strict-int-rifn a b))) 
+		       (strict-int-rifn a b)))
 	       eps))
    :hints (("Goal" :do-not-induct t
 	    :use ((:instance strict-int-rifn-is-integral-of-rifn)
@@ -631,7 +631,7 @@
 		 (standardp eps)
 		 (< 0 eps))
 	    (< (abs (- (riemann-rifn p)
-		       (strict-int-rifn a b))) 
+		       (strict-int-rifn a b)))
 	       eps))
    :hints (("Goal" :do-not-induct t
 	    :use ((:instance rifn-is-integrable-hyperreal-step-1)
@@ -659,8 +659,8 @@
 		    (< (abs (- (riemann-rifn p)
 			       (strict-int-rifn a b)))
 		       eps)))
-   :rewrite :direct) 
- 
+   :rewrite :direct)
+
  (defun-sk exists-delta-so-that-riemann-sum-is-close-to-int-rifn (a b eps)
    (exists (delta)
 	   (implies (and (inside-interval-p a (domain-rifn))

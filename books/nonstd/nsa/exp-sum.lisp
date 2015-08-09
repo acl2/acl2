@@ -26,7 +26,7 @@
   (if (and (integerp k) (integerp n) (<= 0 k) (<= k n))
       (cons (/ (sumlist (binomial-expansion x y 0 k))
 	       (factorial k))
-	    (binomial-over-factorial-unswapped 
+	    (binomial-over-factorial-unswapped
 	     x y (1+ k) n))
     nil))
 
@@ -47,10 +47,10 @@
 
 (defthm exp-x+y-binomial-unswapped-expansion-lemma
   (implies (and (integerp counter) (<= 0 counter))
-	   (not (binomial-over-factorial-unswapped x y 
+	   (not (binomial-over-factorial-unswapped x y
 						   counter (+ -1 counter))))
   :hints (("Goal"
-	   :expand ((binomial-over-factorial-unswapped x y 
+	   :expand ((binomial-over-factorial-unswapped x y
 						   counter (+ -1 counter))))))
 
 ;; And here is an important theorem.  The Taylor expansion of e^{x+y}
@@ -61,12 +61,12 @@
 		(<= 0 nterms)
 		(integerp counter)
 		(<= 0 counter))
-	   (equal (taylor-exp-list nterms 
-				   counter 
+	   (equal (taylor-exp-list nterms
+				   counter
 				   (+ x y))
 		  (binomial-over-factorial-unswapped
 		   x
-		   y 
+		   y
 		   counter
 		   (1- (+ nterms counter)))))
   :hints (("Goal"
@@ -94,7 +94,7 @@
 		(integerp counter)
 		(<= 0 counter))
 	   (equal (taylor-exp-list  nterms counter (+ x y))
-		  (binomial-over-factorial x y 
+		  (binomial-over-factorial x y
 					   counter
 					   (1- (+ nterms counter)))))
   :hints (("Goal"
@@ -108,10 +108,10 @@
 (defun binomial-over-factorial-inner-sum (x y j i)
   (declare (xargs :measure (nfix (1+ (- i j)))))
   (if (and (integerp i) (integerp j) (<= 0 j) (<= j i))
-      (cons (/ (* (choose j i) 
+      (cons (/ (* (choose j i)
 		  (expt x (- i j)) (expt y j))
 	       (factorial i))
-	    (binomial-over-factorial-inner-sum 
+	    (binomial-over-factorial-inner-sum
 	     x y (1+ j) i))
     nil))
 
@@ -121,10 +121,10 @@
 (defun binomial-over-factorial-outer-sum (x y i n)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (integerp i) (integerp n) (<= 0 i) (<= i n))
-      (cons (sumlist 
-	     (binomial-over-factorial-inner-sum 
+      (cons (sumlist
+	     (binomial-over-factorial-inner-sum
 	      x y 0 i))
-	    (binomial-over-factorial-outer-sum 
+	    (binomial-over-factorial-outer-sum
 	     x y (1+ i) n))
     nil))
 
@@ -155,7 +155,7 @@
 (defthm binomial-over-factorial-=-expt-k-n-inner-sum-expansion-outer-sum
   (implies (and (integerp n) (<= 0 n))
 	   (equal (binomial-over-factorial x y k n)
-		  (binomial-over-factorial-outer-sum x y k n)))) 
+		  (binomial-over-factorial-outer-sum x y k n))))
 
 ;; A key lemma is that since (choose j i) = i!/(j! * (j-i)!), then
 ;; (choose j i) / i! = 1/(j! * (j-i)!)
@@ -164,7 +164,7 @@
   (implies (and (integerp i) (integerp j) (<= 0 j) (<= j i))
 	   (equal (/ (choose j i) (factorial i))
 		  (/ 1 (* (factorial j) (factorial (- i j)))))))
-  
+
 ;; So now, we redefine the binomial sum using the fact that the terms
 ;; in the binomial expansion of (x+y)^i/i! can be simplified using the
 ;; lemma above.
@@ -195,7 +195,7 @@
        (cons (sumlist (inner-sum-1 x y 0 i i))
 	     (outer-sum-1 x y (1+ i) n))
      nil)))
-   
+
 ;; And it's easy to see the two versions of the outer sum are equal to
 ;; each other.
 
@@ -216,7 +216,7 @@
 		(* (factorial j) (factorial (- i j))))
 	     (inner-sum-2 x y (1+ i) j n))
      nil)))
-   
+
 ;; And here is the sum of the terms by adding up all the columns.
 
 (local
@@ -239,7 +239,7 @@
    (implies (integerp n)
 	    (equal (sumlist (outer-sum-1 x y 0 n))
 		   (sumlist (outer-sum-2 x y 0 n))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use (:functional-instance ok-to-swap-inner-outer-expansions-lt-m=n
 				       (row-expansion-outer-lt-m=n
 					(lambda (i n)
@@ -276,7 +276,7 @@
        (cons (/ (expt x (- i j)) (factorial (- i j)))
 	     (inner-sum-3 x (1+ i) j n))
      nil)))
-						
+
 ;; We can see that the sum of inner-sum-2 is the same as the sum of
 ;; inner-sum-3 after we multiply by the factored term y^j/j!
 
@@ -290,12 +290,12 @@
 				      (expansion-oneop-times-zeroop
 				       (lambda (i n)
 					 (inner-sum-2 x y i j n)))
-				      (expansion-oneop 
+				      (expansion-oneop
 				       (lambda (i n)
 					 (inner-sum-3 x i j n)))
-				      (oneop 
+				      (oneop
 				       (lambda (i)
-					 (/ (expt x (- i j)) 
+					 (/ (expt x (- i j))
 					    (factorial (- i j)))))
 				      (zeroop
 				       (lambda ()
@@ -309,7 +309,7 @@
  (defun outer-sum-3 (x y j n)
    (declare (xargs :measure (nfix (1+ (- n j)))))
    (if (and (integerp j) (integerp n) (<= 0 j) (<= j n))
-       (cons (/ (* (sumlist (inner-sum-3 x j j n)) 
+       (cons (/ (* (sumlist (inner-sum-3 x j j n))
 		   (expt y j))
                 (factorial j))
              (outer-sum-3 x y (1+ j) n))
@@ -345,21 +345,21 @@
 		 (integerp j) (<= 0 j) (<= j i)
 		 (integerp n))
 	    (equal (inner-sum-3 x i j n)
-		   (taylor-exp-list (1+ (- n i)) 
+		   (taylor-exp-list (1+ (- n i))
 				    (- i j)
 				    x)))
    :hints (("Goal"
 	    :in-theory (disable taylor-exp-list-split)))))
-	   
+
 ;; And next, we use the Taylor expansion of e^x to replace inner-sum-3
 ;; in our outer sum, getting a new definition of the Taylor expansion
-;; of e^{x+y}. 
+;; of e^{x+y}.
 
 (defun exp-x-y-k-n (x y i n)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (integerp i) (integerp n) (<= 0 i) (<= i n))
-      (cons (* (sumlist 
-		(taylor-exp-list (1+ (- n i)) 0 x)) 
+      (cons (* (sumlist
+		(taylor-exp-list (1+ (- n i)) 0 x))
 	       (taylor-exp-term y i))
 	    (exp-x-y-k-n x y (1+ i) n))
     nil))
@@ -377,9 +377,9 @@
 
 (defthm exp-k-n-sum-simplification
   (implies (and (integerp nterms) (<= 0 nterms))
-	   (equal (sumlist 
+	   (equal (sumlist
 		   (taylor-exp-list nterms 0 (+ x y)))
-		  (sumlist 
+		  (sumlist
 		   (exp-x-y-k-n x y 0 (1- nterms)))))
   :hints (("Goal"
 	   :cases ((equal nterms 0)))))
@@ -390,7 +390,7 @@
 (defun exp-x-*-exp-y-n (x y i n)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (integerp i) (integerp n) (<= 0 i) (<= i n))
-      (cons (* (sumlist (taylor-exp-list (1+ n) 0 x)) 
+      (cons (* (sumlist (taylor-exp-list (1+ n) 0 x))
 	       (taylor-exp-term y i))
 	    (exp-x-*-exp-y-n x y (1+ i) n))
     nil))
@@ -417,12 +417,12 @@
 (defthm exp-x-*-exp-y-n-=-exp-x-n-*-exp-y-n
   (implies (and (integerp nterms)
 		(<= 0 nterms))
-	   (equal (* (sumlist 
+	   (equal (* (sumlist
 		      (taylor-exp-list nterms 0 x))
-		     (sumlist 
+		     (sumlist
 		      (taylor-exp-list nterms 0 y)))
-		  (sumlist 
-		   (exp-x-*-exp-y-n x y 0 
+		  (sumlist
+		   (exp-x-*-exp-y-n x y 0
 				    (1- nterms)))))
   :hints (("Goal"
 	   :use ((:instance exp-x-*-exp-y-n-=-exp-x-n-*-exp-y-n-lemma
@@ -443,12 +443,12 @@
  (defun prod-sum-delta (x y i n)
    (declare (xargs :measure (nfix (1+ (- n i)))))
    (if (and (integerp i) (integerp n) (<= 0 i) (<= i n))
-       (cons (* (sumlist 
-		 (taylor-exp-list i (1+ (- n i)) x)) 
+       (cons (* (sumlist
+		 (taylor-exp-list i (1+ (- n i)) x))
 		(taylor-exp-term y i))
 	     (prod-sum-delta x y (1+ i) n))
      nil)))
-  
+
 ;; Next we want to show that prod-sum-delta really is the difference
 ;; between these two functions.
 
@@ -492,7 +492,7 @@
 	      :in-theory (disable taylor-exp-list-split taylor-exp-list
 				  sumlist sumlist-append)
 	      :do-not-induct t))))
-   
+
 
   ;; We show that the sum of the terms in e^x minus the sum of the
   ;; upper-triangular region is the sum of the lower+diagonal region.
@@ -532,7 +532,7 @@
 			      (counter 1)))
 	     :in-theory (disable taylor-exp-list-split taylor-exp-list taylor-exp-term
 				 sumlist))))
- 
+
   ;; We specialize the result above for when we're looking at the
   ;; entire matrix.
 
@@ -582,7 +582,7 @@
  (defun prod-sum-delta-2 (x y i n)
    (declare (xargs :measure (nfix (1+ (- n i)))))
    (if (and (integerp i) (integerp n) (<= 0 i) (<= i n))
-       (append (mult-scalar 
+       (append (mult-scalar
 		(taylor-exp-list i (1+ (- n i)) x)
 		(taylor-exp-term y i))
 	       (prod-sum-delta-2 x y (1+ i) n))
@@ -594,7 +594,7 @@
  (defthm prod-sum-delta-=-prod-sum-delta-2
    (equal (sumlist (prod-sum-delta x y i n))
 	  (sumlist (prod-sum-delta-2 x y i n)))))
-   
+
 ;; Next, we perform the same procedure on exp-x-*-exp-y-n, resulting
 ;; in exp-x-*-exp-y-n-2.
 
@@ -613,7 +613,7 @@
  (defthm exp-x-*-exp-y-n-=-exp-x-*-exp-y-n-2
    (equal (sumlist (exp-x-*-exp-y-n x y i n))
 	  (sumlist (exp-x-*-exp-y-n-2 x y i n)))))
-   
+
 ;; Now, we define a new expansion of the Taylor expansion, but we
 ;; specify a "lower limit".  All the x^i/i! terms where i is less than
 ;; this lower limit are defined as 0.  Thus, this function returns
@@ -640,7 +640,7 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm lemma-1
      (implies (and (integerp nterms)
@@ -677,8 +677,8 @@
 		   (integerp llimit)
 		   (<= counter llimit))
 	      (equal (sumlist (taylor-exp-list-3 nterms counter llimit x))
-		     (sumlist (taylor-exp-list-3 (- nterms 
-						    (- llimit counter)) 
+		     (sumlist (taylor-exp-list-3 (- nterms
+						    (- llimit counter))
 						 llimit llimit x))))
      :hints (("Goal" :use ((:instance lemma-2 (k (- llimit counter))))
 	      :in-theory (disable lemma-1 lemma-2 sumlist
@@ -706,9 +706,9 @@
                     (integerp nterms)
                     (<= 0 counter)
                     (<= 0 nterms))
-               (equal (sumlist 
+               (equal (sumlist
                        (taylor-exp-list nterms counter x))
-                      (sumlist 
+                      (sumlist
                        (taylor-exp-list-3 (+ nterms counter)
                                           0
                                           counter
@@ -724,9 +724,9 @@
  (defun prod-sum-delta-3 (x y i n)
    (declare (xargs :measure (nfix (1+ (- n i)))))
    (if (and (integerp i) (integerp n) (<= 0 i) (<= i n))
-       (append (mult-scalar 
-		(taylor-exp-list-3 (1+ n) 
-				   0 
+       (append (mult-scalar
+		(taylor-exp-list-3 (1+ n)
+				   0
 				   (1+ (- n i))
 				   x)
 		(taylor-exp-term y i))
@@ -759,11 +759,11 @@
  (defun exp-x-*-exp-y-n-3 (x y i n)
    (declare (xargs :measure (nfix (1+ (- n i)))))
    (if (and (integerp i) (integerp n) (<= 0 i) (<= i n))
-       (append (mult-scalar 
+       (append (mult-scalar
 		(if (< i (next-integer (/ n 2)))
-		    (taylor-exp-list-3 
-		     (1+ n) 
-		     0 
+		    (taylor-exp-list-3
+		     (1+ n)
+		     0
 		     (next-integer (/ n 2))
 		     x)
 		  (taylor-exp-list-3 (1+ n) 0 0 x))
@@ -835,7 +835,7 @@
 						  (taylor-exp-list n i x)))
 		     (- (sumlist-norm (taylor-exp-list n i x))
 			(sumlist-norm (taylor-exp-list m i x)))))))
-  
+
 
   ;; A simple lemma checks the "lower limit" boundary condition of
   ;; taylor-exp-list-3 -- in fact, the function returns only zeros
@@ -871,7 +871,7 @@
 						  (taylor-exp-list n i x)))))
      :hints (("Subgoal *1/6.1''"
 	      :expand ((taylor-exp-list (+ -1 (- i) m) (+ 1 i) x))))))
-  
+
 
   ;; And so the sumlist-norm of the taylor-exp-list-3 can be computed
   ;; as the difference of the sumlist-norm of the taylor-exp-list of
@@ -881,16 +881,16 @@
     (implies (and (integerp m) (<= 0 m)
 		  (integerp i) (<= 0 i)
 		  (integerp n) (<= m n))
-	     (equal (sumlist-norm 
+	     (equal (sumlist-norm
 		     (taylor-exp-list-3 n i m x))
-		    (- (sumlist-norm 
+		    (- (sumlist-norm
 			(taylor-exp-list n i x))
-		       (sumlist-norm 
+		       (sumlist-norm
 			(taylor-exp-list (- m i)
 					 i
 					 x))))))
   ))
-		
+
 (local (in-theory (disable taylor-exp-term taylor-exp-list)))
 
 ;; So now we apply that theorem to the exp-x-*-exp-y-n-2 function.
@@ -947,17 +947,17 @@
   ;; the n/2 element approximation.
 
   (defthm sumlist-norm-exp-x-*-exp-y-n-3
-    (implies (and (integerp i) (integerp n) 
+    (implies (and (integerp i) (integerp n)
 		  (<= 0 i) (<= 2 n))
-	     (equal (sumlist-norm 
+	     (equal (sumlist-norm
 		     (exp-x-*-exp-y-n-3 x y i n))
-		    (- (sumlist-norm 
+		    (- (sumlist-norm
 			(exp-x-*-exp-y-n-2 x y i n))
-		       (sumlist-norm 
+		       (sumlist-norm
 			(exp-x-*-exp-y-n-2
-			 x 
+			 x
 			 y
-			 i 
+			 i
 			 (1- (next-integer (/ n 2))))))))
     :hints (("Goal"
 	     :induct (exp-x-*-exp-y-n-3 x y i n))
@@ -996,11 +996,11 @@
   (defthm sumlist-norm-exp-x-*-exp-y-n-2
     (implies (and (integerp i) (integerp n)
 		  (<= 0 i) (<= 0 n))
-	     (equal (sumlist-norm 
+	     (equal (sumlist-norm
 		     (exp-x-*-exp-y-n-2 x y i n))
-		    (* (sumlist-norm 
+		    (* (sumlist-norm
 			(taylor-exp-list (1+ n) 0 x))
-		       (sumlist-norm 
+		       (sumlist-norm
 			(taylor-exp-list (- (1+ n) i)
 					 i
 					 y)))))
@@ -1036,7 +1036,7 @@
 		(i-large nterms2))
 	   (i-small (- (sumlist-norm (taylor-exp-list nterms1 0 x))
 		       (sumlist-norm (taylor-exp-list nterms2 0 x)))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance exp-convergent-norm))
 	    :in-theory (enable-disable (i-close) (exp-convergent-norm)))))
 
@@ -1174,7 +1174,7 @@
   (defthm sumlist-norm-exp-x-*-exp-y-n-3-small
     (implies (and (integerp n) (<= 2 n)
 		  (i-limited x) (i-limited y) (i-large n))
-	     (i-small (sumlist-norm 
+	     (i-small (sumlist-norm
 		       (exp-x-*-exp-y-n-3 x y 0 n))))
     :hints (("Goal" :do-not-induct t
 	     :use ((:instance lemma-2
@@ -1291,7 +1291,7 @@
 				seq-norm-<=-append
 				seq-norm-<=-mult-scalar
 				seq-norm-<=-taylor-exp-list-3)))))
-	    
+
 ;; And so, the sumlist-norm of the prod-sum-delta-3 must be i-small....
 
 (local
@@ -1351,16 +1351,16 @@
 (local
  (defthm expt-x-*-expt-y-n---exp-x-y-k-n-small
    (implies (and (integerp nterms) (<= 0 nterms)
-		 (i-limited x) (i-limited y) 
+		 (i-limited x) (i-limited y)
 		 (i-large nterms))
-	    (i-small (- (* (sumlist 
+	    (i-small (- (* (sumlist
 			    (taylor-exp-list nterms 0 x))
-			   (sumlist 
-			    (taylor-exp-list nterms 0 
+			   (sumlist
+			    (taylor-exp-list nterms 0
 					     y)))
-			(sumlist 
+			(sumlist
 			 (taylor-exp-list nterms
-					  0 
+					  0
 					  (+ x y))))))
    :hints (("Goal" :do-not-induct t
 	    :use ((:instance expt-x-*-expt-y-n---exp-x-y-k-n-=-prod-sum-delta)
@@ -1383,7 +1383,7 @@
 		 (acl2-numberp x)
 		 (i-limited y))
 	    (equal (standard-part x) (standard-part y)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance close-x-y->same-standard-part))
 	    :in-theory (enable-disable (i-close i-small) (close-x-y->same-standard-part))))))
 

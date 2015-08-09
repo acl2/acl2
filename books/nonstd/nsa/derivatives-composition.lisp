@@ -107,7 +107,7 @@
 
  )
 
-;; It helps (for hint purposes) to separate the two parts of the 
+;; It helps (for hint purposes) to separate the two parts of the
 ;; condition for differentiability
 
 (defthm dc-fn1-differentiable-part1
@@ -246,14 +246,14 @@
  (local
   (defun differential-dc-fn1 (x eps)
     (/ (- (dc-fn1 (+ x eps)) (dc-fn1 x)) eps)))
- 
+
  (defthm differential-dc-fn1-definition
    (implies (and (inside-interval-p x (dc-fn-domain))
 		 (inside-interval-p (+ x eps) (dc-fn-domain)))
 	    (equal (differential-dc-fn1 x eps)
 		   (/ (- (dc-fn1 (+ x eps)) (dc-fn1 x)) eps))))
  )
-   
+
 
 (defthm realp-differential-dc-fn1
   (implies (and (inside-interval-p x (dc-fn-domain))
@@ -316,7 +316,7 @@
 				     (rdfn-domain dc-fn-domain)))))
 
 (defthm differential-dc-fn1-close
-   (implies (and (inside-interval-p x (dc-fn-domain)) 
+   (implies (and (inside-interval-p x (dc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dc-fn-domain))
@@ -338,7 +338,7 @@
  (local
   (defun differential-dc-fn2 (x eps)
     (/ (- (dc-fn2 (+ x eps)) (dc-fn2 x)) eps)))
- 
+
  (defthm differential-dc-fn2-definition
    (implies (and (inside-interval-p x (dc-fn-domain))
 		 (inside-interval-p (+ x eps) (dc-fn-domain)))
@@ -411,7 +411,7 @@
 				     (rdfn-domain dc-fn-domain)))))
 
 (defthm differential-dc-fn2-close
-   (implies (and (inside-interval-p x (dc-fn-domain)) 
+   (implies (and (inside-interval-p x (dc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dc-fn-domain))
@@ -429,7 +429,7 @@
 
 (encapsulate
  ( ((differential-dc-fnz * *) => *) )
- 
+
  (local
   (defun differential-dc-fnz (x eps)
     (/ (- (dc-fnz (+ x eps)) (dc-fnz x)) eps)))
@@ -505,7 +505,7 @@
 				     (rdfn-domain dc-fn-domain)))))
 
 (defthm differential-dc-fnz-close
-   (implies (and (inside-interval-p x (dc-fn-domain)) 
+   (implies (and (inside-interval-p x (dc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dc-fn-domain))
@@ -543,13 +543,13 @@
 
 (local
  (defthm close-if-same-standard-part
-     (implies (and (acl2-numberp x) 
+     (implies (and (acl2-numberp x)
 		   (acl2-numberp y)
 		   (i-limited x)
 		   (i-limited y)
 		   (equal (standard-part x) (standard-part y)))
 	      (i-close x y))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance i-close-transitive
 			     (x x)
 			     (y (standard-part x))
@@ -650,16 +650,16 @@
 		  (:instance i-close-symmetric
 			     (x (dc-fn1 x))
 			     (y (dc-fn1 (+ x eps1))))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps1))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps2))
-		  (:instance dc-fn1-continuous 
+		  (:instance dc-fn1-continuous
 			     (x x)
 			     (y (+ x eps1)))
-		  (:instance dc-fn1-continuous 
+		  (:instance dc-fn1-continuous
 			     (x x)
 			     (y (+ x eps2))))
 	    :in-theory '(inside-interval-is-real)))))
@@ -687,16 +687,16 @@
 		  (:instance i-close-symmetric
 			     (x (dc-fn2 x))
 			     (y (dc-fn2 (+ x eps1))))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps1))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps2))
-		  (:instance dc-fn2-continuous 
+		  (:instance dc-fn2-continuous
 			     (x x)
 			     (y (+ x eps1)))
-		  (:instance dc-fn2-continuous 
+		  (:instance dc-fn2-continuous
 			     (x x)
 			     (y (+ x eps2))))
 	    :in-theory '(inside-interval-is-real)))))
@@ -716,7 +716,7 @@
 		  (:instance dc-fn1-continuous
 			     (x x)
 			     (y (+ x eps)))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps)))
 	    :in-theory '(dc-fn1-real
@@ -739,7 +739,7 @@
 		  (:instance dc-fn2-continuous
 			     (x x)
 			     (y (+ x eps)))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps)))
 	    :in-theory '(dc-fn2-real
@@ -754,7 +754,7 @@
    ((differential-dc-fn1+fn2 * *) => *)
    ((derivative-dc-fn1+fn2 *) => *)
    )
-   
+
  (defun dc-fn1+fn2 (x)
    (+ (dc-fn1 x) (dc-fn2 x)))
 
@@ -790,7 +790,7 @@
    (implies (and (i-close x1 x2)
 		 (i-close y1 y2))
 	    (i-close (+ x1 y1) (+ x2 y2)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance i-small-plus
 			     (x (+ x1 (- x2)))
 			     (y (+ y1 (- y2)))))
@@ -807,13 +807,13 @@
 		 (inside-interval-p y1 (dc-fn-domain))
 		 (i-close x y1) (not (= x y1)))
 	    (i-limited  (/ (- (dc-fn1+fn2 x) (dc-fn1+fn2 y1)) (- x y1))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :use (dc-fn1-differentiable-part1
 		 dc-fn2-differentiable-part1
-		 (:instance i-limited-plus 
+		 (:instance i-limited-plus
 			    (x (/ (- (dc-fn1 x) (dc-fn1 y1)) (- x y1)))
 			    (y (/ (- (dc-fn2 x) (dc-fn2 y1)) (- x y1)))))
-	   :in-theory '(dc-fn1+fn2 distributivity commutativity-of-* commutativity-of-+ commutativity-2-of-+ 
+	   :in-theory '(dc-fn1+fn2 distributivity commutativity-of-* commutativity-of-+ commutativity-2-of-+
 			associativity-of-+ distributivity-of-minus-over-+)
 	   )))
 
@@ -826,15 +826,15 @@
 		 (i-close x y2) (not (= x y2)))
 	    (i-close (/ (- (dc-fn1+fn2 x) (dc-fn1+fn2 y1)) (- x y1))
 		     (/ (- (dc-fn1+fn2 x) (dc-fn1+fn2 y2)) (- x y2))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :use (dc-fn1-differentiable-part2
 		 dc-fn2-differentiable-part2
-		 (:instance close-plus 
+		 (:instance close-plus
 			    (x1 (/ (- (dc-fn1 x) (dc-fn1 y1)) (- x y1)))
 			    (x2 (/ (- (dc-fn1 x) (dc-fn1 y2)) (- x y2)))
 			    (y1 (/ (- (dc-fn2 x) (dc-fn2 y1)) (- x y1)))
 			    (y2 (/ (- (dc-fn2 x) (dc-fn2 y2)) (- x y2)))))
-	   :in-theory '(dc-fn1+fn2 distributivity commutativity-of-* commutativity-of-+ commutativity-2-of-+ 
+	   :in-theory '(dc-fn1+fn2 distributivity commutativity-of-* commutativity-of-+ commutativity-2-of-+
 			associativity-of-+ distributivity-of-minus-over-+)
 	   )))
 
@@ -848,10 +848,10 @@
 	    (and (i-limited  (/ (- (dc-fn1+fn2 x) (dc-fn1+fn2 y1)) (- x y1)))
 		 (i-close (/ (- (dc-fn1+fn2 x) (dc-fn1+fn2 y1)) (- x y1))
 			  (/ (- (dc-fn1+fn2 x) (dc-fn1+fn2 y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :use (dc-fn1+fn2-differentiable-part1
 		 dc-fn1+fn2-differentiable-part2)
-	   :in-theory nil 
+	   :in-theory nil
 	   )))
 
 (defthm dc-fn1+fn2-continuous
@@ -908,7 +908,7 @@
     (implies (inside-interval-p x (dc-fn-domain))
 	     (or (not (equal (interval-left-endpoint (dc-fn-domain)) x))
 		 (not (equal (interval-right-endpoint (dc-fn-domain)) x))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance dc-fn-domain-non-trivial))))
   :rule-classes nil)
 
@@ -983,7 +983,7 @@
 	  ))
 
 (defthm differential-dc-fn1+fn2-close
-   (implies (and (inside-interval-p x (dc-fn-domain)) 
+   (implies (and (inside-interval-p x (dc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dc-fn-domain))
@@ -1006,7 +1006,7 @@
    ((differential-dc-minus-fn1 * *) => *)
    ((derivative-dc-minus-fn1 *) => *)
    )
-   
+
  (defun dc-minus-fn1 (x)
    (- (dc-fn1 x)))
 
@@ -1049,9 +1049,9 @@
 		   (inside-interval-p y1 (dc-fn-domain))
 		   (i-close x y1) (not (= x y1)))
 	      (i-limited  (/ (- (dc-minus-fn1 x) (dc-minus-fn1 y1)) (- x y1))))
-   :hints (("Goal"  
+   :hints (("Goal"
 	    :use ((:instance dc-fn1-differentiable-part1)
-		  (:instance i-large-uminus 
+		  (:instance i-large-uminus
 			     (x (/ (- (dc-fn1 x) (dc-fn1 y1)) (- x y1)))))
 	    :in-theory '(dc-minus-fn1
 			 functional-self-inversion-of-minus
@@ -1069,9 +1069,9 @@
 		   (i-close x y2) (not (= x y2)))
 	      (i-close (/ (- (dc-minus-fn1 x) (dc-minus-fn1 y1)) (- x y1))
 		       (/ (- (dc-minus-fn1 x) (dc-minus-fn1 y2)) (- x y2))))
-   :hints (("Goal"  
+   :hints (("Goal"
 	    :use (dc-fn1-differentiable-part2
-		  (:instance close-uminus 
+		  (:instance close-uminus
 			     (x (/ (- (dc-fn1 x) (dc-fn1 y1)) (- x y1)))
 			     (y (/ (- (dc-fn1 x) (dc-fn1 y2)) (- x y2)))))
 	    :in-theory '(dc-minus-fn1
@@ -1092,10 +1092,10 @@
 	    (and (i-limited  (/ (- (dc-minus-fn1 x) (dc-minus-fn1 y1)) (- x y1)))
 		 (i-close (/ (- (dc-minus-fn1 x) (dc-minus-fn1 y1)) (- x y1))
 			  (/ (- (dc-minus-fn1 x) (dc-minus-fn1 y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :use (dc-minus-fn1-differentiable-part1
 		 dc-minus-fn1-differentiable-part2)
-	   :in-theory nil 
+	   :in-theory nil
 	   )))
 
 (defthm dc-minus-fn1-continuous
@@ -1183,7 +1183,7 @@
 	  ))
 
 (defthm differential-dc-minus-fn1-close
-   (implies (and (inside-interval-p x (dc-fn-domain)) 
+   (implies (and (inside-interval-p x (dc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dc-fn-domain))
@@ -1206,7 +1206,7 @@
    ((differential-dc-fn1*fn2 * *) => *)
    ((derivative-dc-fn1*fn2 *) => *)
    )
-   
+
   (defun dc-fn1*fn2 (x)
     (* (dc-fn1 x) (dc-fn2 x)))
 
@@ -1256,7 +1256,7 @@
    (implies (and (i-close x1 x2)
 		 (i-limited y))
 	    (i-close (* x1 y) (* x2 y)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance small*limited->small
 				      (x (- x1 x2))
 				      (y y)))
@@ -1330,9 +1330,9 @@
 		  (:instance dc-fn1-continuous
 			     (x x)
 			     (y (+ x eps))))
-	    :in-theory '(dc-fn1-real 
+	    :in-theory '(dc-fn1-real
 			 dc-fn2-real
-			 i-close-to-small-sum 
+			 i-close-to-small-sum
 			 differential-dc-fn1-limited
 			 differential-dc-fn2-limited
 			 numberp-differential-dc-fn1*fn2
@@ -1340,7 +1340,7 @@
 			 standard-dc-fn2
 			 standards-are-limited
 			 inside-interval-is-real
-			 differential-dc-fn1*fn2-definition))))) 
+			 differential-dc-fn1*fn2-definition)))))
 
 (local
  (defthm close-differential-dc-fn1*fn2
@@ -1383,10 +1383,10 @@
 			     (x (dc-fn2 (+ x eps1)))
 			     (y (dc-fn2 x))
 			     (z (dc-fn2 (+ x eps2))))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps1))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps2))
 		  (:instance close-times-2
@@ -1440,7 +1440,7 @@
 		   (inside-interval-p y1 (dc-fn-domain))
 		   (i-close x y1) (not (= x y1)))
 	      (i-limited  (/ (- (dc-fn1*fn2 x) (dc-fn1*fn2 y1)) (- x y1))))
-   :hints (("Goal"  
+   :hints (("Goal"
 	    :use ((:instance expand-differential-dc-fn1*fn2
 			     (x x)
 			     (eps (- y1 x)))
@@ -1475,7 +1475,7 @@
 		   (i-close x y2) (not (= x y2)))
 	      (i-close (/ (- (dc-fn1*fn2 x) (dc-fn1*fn2 y1)) (- x y1))
 		       (/ (- (dc-fn1*fn2 x) (dc-fn1*fn2 y2)) (- x y2))))
-   :hints (("Goal"  
+   :hints (("Goal"
 	    :use ((:instance expand-differential-dc-fn1*fn2
 			     (x x)
 			     (eps (- y1 x)))
@@ -1516,10 +1516,10 @@
 	    (and (i-limited  (/ (- (dc-fn1*fn2 x) (dc-fn1*fn2 y1)) (- x y1)))
 		 (i-close (/ (- (dc-fn1*fn2 x) (dc-fn1*fn2 y1)) (- x y1))
 			  (/ (- (dc-fn1*fn2 x) (dc-fn1*fn2 y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :use (dc-fn1*fn2-differentiable-part1
 		 dc-fn1*fn2-differentiable-part2)
-	   :in-theory nil 
+	   :in-theory nil
 	   )))
 
 (defthm dc-fn1*fn2-continuous
@@ -1629,7 +1629,7 @@
 	  ))
 
 (defthm differential-dc-fn1*fn2-close
-   (implies (and (inside-interval-p x (dc-fn-domain)) 
+   (implies (and (inside-interval-p x (dc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dc-fn-domain))
@@ -1715,7 +1715,7 @@
    :hints (("Goal"
 	    :use ((:instance standard-part-of-times))
 	    :in-theory '(i-small)))))
-			     
+
 
 (local
  (defthm limited-differential-dc-/-fnz
@@ -1769,7 +1769,7 @@
 			 commutativity-of-*)
 	    ))))
 
- 
+
 (encapsulate
  nil
 
@@ -1783,7 +1783,7 @@
 			   0)))
     :hints (("Goal" :use ((:instance I-SMALL-UDIVIDE (x (+ (- X) Y)))
 			  (:instance small-are-limited-forward
-				     (x (/ (+ (- X) Y))))) 
+				     (x (/ (+ (- X) Y)))))
 		    :in-theory '(i-small i-large)))))
 
  (local
@@ -1821,7 +1821,7 @@
 		   )
 	     :in-theory '(i-close
 			  i-small
-			  i-large 
+			  i-large
 			  fix
 			  DISTRIBUTIVITY-OF-MINUS-OVER-+
 			  COMMUTATIVITY-OF-+
@@ -1895,10 +1895,10 @@
 		  (:instance dc-fnz-continuous
 			     (x x)
 			     (y (+ x eps2)))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps1))
-		  (:instance i-close-to-small-sum 
+		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps2))
 		  (:instance close-times-2
@@ -1985,7 +1985,7 @@
 		   (inside-interval-p y1 (dc-fn-domain))
 		   (i-close x y1) (not (= x y1)))
 	      (i-limited  (/ (- (dc-/-fnz x) (dc-/-fnz y1)) (- x y1))))
-   :hints (("Goal"  
+   :hints (("Goal"
 	    :use ((:instance expand-differential-dc-/-fnz
 			     (x x)
 			     (eps (- y1 x)))
@@ -2000,7 +2000,7 @@
 			 commutativity-2-of-+
 			 MINUS-CANCELLATION-ON-LEFT
 			 inside-interval-is-real
-			 fix 
+			 fix
 			 =
 			 i-close
 			 distributivity-of-minus-over-+
@@ -2017,7 +2017,7 @@
 		   (i-close x y2) (not (= x y2)))
 	      (i-close (/ (- (dc-/-fnz x) (dc-/-fnz y1)) (- x y1))
 		       (/ (- (dc-/-fnz x) (dc-/-fnz y2)) (- x y2))))
-   :hints (("Goal"  
+   :hints (("Goal"
 	    :use ((:instance expand-differential-dc-/-fnz
 			     (x x)
 			     (eps (- y1 x)))
@@ -2038,7 +2038,7 @@
 			 commutativity-2-of-+
 			 MINUS-CANCELLATION-ON-LEFT
 			 inside-interval-is-real
-			 fix 
+			 fix
 			 =
 			 i-close
 			 distributivity-of-minus-over-+
@@ -2057,10 +2057,10 @@
 	    (and (i-limited  (/ (- (dc-/-fnz x) (dc-/-fnz y1)) (- x y1)))
 		 (i-close (/ (- (dc-/-fnz x) (dc-/-fnz y1)) (- x y1))
 			  (/ (- (dc-/-fnz x) (dc-/-fnz y2)) (- x y2)))))
-  :hints (("Goal"  
+  :hints (("Goal"
 	   :use (dc-/-fnz-differentiable-part1
 		 dc-/-fnz-differentiable-part2)
-	   :in-theory nil 
+	   :in-theory nil
 	   )))
 
 (defthm dc-/-fnz-continuous
@@ -2091,7 +2091,7 @@
  (defthm large-not-large-/
    (implies (i-large x)
 	    (i-limited (/ x)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :in-theory (enable i-close  i-large)))))
 
 (local
@@ -2119,7 +2119,7 @@
 		  (:instance standard-part-of-times
 			     (x (/ (dc-fnz x)))
 			     (y (* (differential-dc-fnz x eps)
-				   (/ (dc-fnz (+ eps x)))))) 
+				   (/ (dc-fnz (+ eps x))))))
 		  (:instance standard-part-of-times
 			     (x (differential-dc-fnz x eps))
 			     (y (/ (dc-fnz (+ eps x)))))
@@ -2195,14 +2195,14 @@
 			    (eps (/ (i-large-integer))))))
 	  ("Subgoal 2"
 	   :use ((:instance non-trivial-interval-eps-or--eps-dc-fn-domain
-			    (eps (/ (i-large-integer))))))	  
+			    (eps (/ (i-large-integer))))))
 	  ("Subgoal 1"
 	   :use ((:instance derivative-/-fnz-is-close-to-differential
 			    (eps (- (/ (i-large-integer)))))))
 	  ))
 
 (defthm differential-dc-/-fnz-close
-   (implies (and (inside-interval-p x (dc-fn-domain)) 
+   (implies (and (inside-interval-p x (dc-fn-domain))
 		 (standardp x)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (dc-fn-domain))

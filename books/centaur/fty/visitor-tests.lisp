@@ -34,7 +34,7 @@
 ; Example 1: Let's visit every LEAF and collect up the names.
 
 ;; First try: this is very simple but collects all the strings, even
-;; the "family" strings, instead of just the leaf names. 
+;; the "family" strings, instead of just the leaf names.
 (defvisitor-template collect-strings ((x :object))
   :returns (names (:join (append names1 names)
                    :tmp-var names1
@@ -130,7 +130,7 @@
       (nat2 natp)))
 
    (defvisitor :type my-prod :template double-sum-nats)
-   
+
 
    (local (in-theory (disable nfix natp)))
 

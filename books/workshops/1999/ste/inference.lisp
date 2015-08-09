@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 (include-book "fundamental")
-    
+
 ; Added for ACL2 Version  2.7:
 (set-match-free-default :once)
 (add-match-free-override :once t)
@@ -19,7 +19,7 @@
 
 
 
-(defthm s-lte-s-lubs 
+(defthm s-lte-s-lubs
  (implies (and (s-p s)
 	       (s-p s1)
 	       (s-p s2)
@@ -88,8 +88,8 @@
 			     (b (R-DEFTRAJ R4 CKT (C-EVAL CKT (S-LUB S R5))))
 			     (c (R-DEFTRAJ R6 CKT (C-EVAL CKT (S-LUB S R5))))
 			     )
-		  
-		  
+
+
 		  ) )
 	  ) )
 
@@ -125,7 +125,7 @@
 		)
 	   (r-lte (r-lub rc1 rc2)
 		  (r-deftraj (r-lub ra1 ra2) ckt s)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable r-lte-r-lub-r-deftraj-r-deftraj-r-lub
 			       r-lub-r-lte-r-lub r-lte-transitive)
 	   :use ((:instance r-lte-r-lub-r-deftraj-r-deftraj-r-lub
@@ -159,10 +159,10 @@
   `(and (l-p ,a)
 	(l-p ,c)
 	(c-p ,ckt)
-	
+
 	(equal (l-depth ,a) (l-depth ,c))
 	(equal (l-maxn ,a) (l-maxn ,c))
-	
+
 	(equal (len ,ckt) (l-maxn ,a))
 	))
 ;;;
@@ -177,7 +177,7 @@
 		(ste-thm ckt a c)
 		)
 	   (ste-thm ckt `(next ,a) `(next ,c)))
-  
+
   :hints (("Goal" :in-theory (disable ste-thm
 				      ste-thm-forward
 				      ste-thm-backward) )
@@ -226,7 +226,7 @@
 		 (:instance l-evalp-when-n-l-depth-and-l-maxn (l c1))
 		 (:instance l-evalp-when-n-l-depth-and-l-maxn (l c2)))))
   :otf-flg t
-  
+
   )
 
 (defthm ste-thm-conjoin
@@ -313,7 +313,7 @@
 		(r-lte r1 (r-deftraj r2 ckt s)))
 	   (r-lte (r-deftraj r1 ckt s) (r-deftraj r2 ckt s)))
   :otf-flg t
-  :hints (("Goal" :induct (induct-rrs r2 r1 s ckt))	  
+  :hints (("Goal" :induct (induct-rrs r2 r1 s ckt))
 
 ; The following subgoal was changed to *1/1.7'' from *1/1.4'' by Matt K. for
 ; v2-9, due to the change to rewrite-clause that avoids using forward-chaining
@@ -375,7 +375,7 @@
 			     (ckt ckt)
 			     (s s)))
 	   ))
-			     
+
   )
 
 (defthm lemma-5
@@ -387,7 +387,7 @@
 		(equal (l-maxn a) (len s))
 		(equal (l-maxn c) (len s))
 		(equal (l-depth a) (l-depth c))
-		
+
 		)
 	   (iff (r-lte (l-defseq   c (l-depth c) (l-maxn c))
 		       (r-deftraj (l-defseq a (l-depth a) (l-maxn a)) ckt s))
@@ -411,7 +411,7 @@
 ;
 ;		(r-lte (l-defseq a2 (l-depth a2) (l-maxn a2))
 ;		       (l-defseq c1 (l-depth c1) (l-maxn c1)))
-;		
+;
 ;		)
 ;	   (ste-thm ckt a1 c2))
 ;  :otf-flg t
@@ -479,7 +479,7 @@
 		(ste-wft ckt a2 c2)
 		(equal (l-depth a1) (l-depth a2))
 		(equal (l-maxn  a1) (l-maxn  a2))
-		
+
 		;;; ok
 		(r-lte (L-DEFSEQ C2 (L-DEPTH A1) (L-MAXN A1))
 		       (R-DEFTRAJ (L-DEFSEQ A2 (L-DEPTH A1) (L-MAXN A1))
@@ -516,14 +516,14 @@
 		(l-p c2)
 
 		(c-p ckt)
-		
+
 		(EQUAL (L-DEPTH A2) (L-DEPTH C2))
 		(EQUAL (L-MAXN A2) (L-MAXN C2))
 		(EQUAL (LEN CKT) (L-MAXN A2))
-		
+
 		(EQUAL (L-MAXN A1) (L-MAXN a2))
 		(EQUAL (L-DEPTH A1) (L-DEPTH a2))
-		
+
 		(ste-thm ckt a2 c2)
 		)
 	   (r-lte (L-DEFSEQ C2 (L-DEPTH A1) (L-MAXN A1))
@@ -537,10 +537,10 @@
 		(ste-wft ckt a2 c2)
 		(equal (l-depth a1) (l-depth a2))
 		(equal (l-maxn  a1) (l-maxn  a2))
-		
+
 		(r-lte (l-defseq a2 (l-depth a2) (l-maxn a2))
 		       (r-lub (l-defseq a1 (l-depth a1) (l-maxn a1))
-			      (l-defseq c1 (l-depth c1) (l-maxn c1))))	   
+			      (l-defseq c1 (l-depth c1) (l-maxn c1))))
 		)
 	   (r-lte (r-deftraj (l-defseq a2 (l-depth a1) (l-maxn a1))
 			     ckt (s-make (l-maxn a1) 'x))
@@ -559,8 +559,8 @@
 			     CKT (S-MAKE (L-MAXN A1) 'X))
 		  (R-DEFTRAJ (L-DEFSEQ A1 (L-DEPTH A1) (L-MAXN A1))
 			     CKT (S-MAKE (L-MAXN A1) 'X)))
-	   
-	   
+
+
 	   )
   :hints (("Goal"
 	   :in-theory (disable R-LTE-BOTH-IMPLIES-R-LTE-R-LUB
@@ -572,10 +572,10 @@
 					  CKT (S-MAKE (L-MAXN A1) 'X)))
 			    )
 		 )))
-  
+
   )
 
-   
+
 (defthm ste-thm-transitivity-pre
   (implies (and (ste-wft ckt a1 c1)
 		(ste-wft ckt a2 c2)
@@ -588,7 +588,7 @@
 		(r-lte (l-defseq a2 (l-depth a2) (l-maxn a2))
 		       (r-lub (l-defseq a1 (l-depth a1) (l-maxn a1))
 			      (l-defseq c1 (l-depth c1) (l-maxn c1))))
-		
+
 		)
 	   (ste-thm ckt a1 c2))
   :hints (("Goal"
@@ -627,7 +627,7 @@
 
 		(r-lte (l-defseq a2 (l-depth a2) (l-maxn a2))
 		       (l-defseq c1 (l-depth c1) (l-maxn c1)))
-		
+
 		)
 	   (ste-thm ckt a1 c2))
   :otf-flg t
@@ -653,7 +653,7 @@
 
 		(r-lte (defseq a2)
 		       (defseq c1))
-		
+
 		)
 	   (ste-thm ckt a1 c2))
   :hints (("Goal" :use ((:instance ste-thm-transitivity-simple-pre)))))

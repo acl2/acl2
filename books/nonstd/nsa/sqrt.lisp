@@ -3,7 +3,7 @@ In this Acl2 book, we prove that the square root function can be approximated
 in Acl2.  In particular, we prove the following theorem:
 
  (defthm convergence-of-iter-sqrt
-   (implies (and (realp x)	
+   (implies (and (realp x)
 		 (realp epsilon)
 		 (< 0 epsilon)
 		 (<= 0 x))
@@ -409,7 +409,7 @@ To load this book, it is sufficient to do something like this:
 ;;
 (defmacro 2-to-the-n (n)
   `(expt 2 ,n))
-  
+
 
 #|
 (defun 2-to-the-n (n)
@@ -538,8 +538,8 @@ To load this book, it is sufficient to do something like this:
 		  (* 2 (expt 2 x))))
   :hints (("Goal"
 	   :in-theory '(exponents-add-unrestricted (expt)))))
-  
-(local (in-theory (disable expt 
+
+(local (in-theory (disable expt
 			   right-unicity-of-1-for-expt
 			   expt-minus
 			   exponents-add-for-nonneg-exponents
@@ -548,7 +548,7 @@ To load this book, it is sufficient to do something like this:
 			   expt-1
 			   exponents-multiply
 			   functional-commutativity-of-expt-/-base)))
-			   
+
 
 (defthm iterate-sqrt-reduces-range-size
   (implies (and (<= (* low low) x)
@@ -630,7 +630,7 @@ To load this book, it is sufficient to do something like this:
 				    (y (- right left)))
 	     :in-theory (disable left-cancellation-for-*)))
     :rule-classes nil))
-		
+
  ;;
  ;; Using that, we show Acl2 how to derive an inequality contradiction that
  ;; it'll see in the next proof.
@@ -659,7 +659,7 @@ To load this book, it is sufficient to do something like this:
  ;;
  ;; So now, we can prove a general form of our theorem without appealing to the
  ;; iter-sqrt functions (with all the added complication that excites Acl2's
- ;; rewriting heuristics) 
+ ;; rewriting heuristics)
  ;;
  (local
   (defthm lemma-3
@@ -685,7 +685,7 @@ To load this book, it is sufficient to do something like this:
  ;; This is the second major point, since it shows how we can force
  ;; iterate-sqrt-range to iterate long enough to produce a small enough range.
  ;; Together with the first major result, this will prove the convergence of
- ;; iter-sqrt-range. 
+ ;; iter-sqrt-range.
  ;;
  (defthm iterate-sqrt-range-reduces-range-size-to-delta
    (implies (and (realp high)
@@ -736,7 +736,7 @@ To load this book, it is sufficient to do something like this:
  ;;
  (local
   (defthm convergence-of-iter-sqrt-1
-    (implies (and (realp x)	
+    (implies (and (realp x)
 		  (realp epsilon)
 		  (< 0 epsilon)
 		  (<= 0 x))
@@ -748,7 +748,7 @@ To load this book, it is sufficient to do something like this:
  ;;
  (local
   (defthm convergence-of-iter-sqrt-2
-    (implies (and (realp x)	
+    (implies (and (realp x)
 		  (realp epsilon)
 		  (< 0 epsilon)
 		  (<= 0 x))
@@ -780,10 +780,10 @@ To load this book, it is sufficient to do something like this:
 
  ;;
  ;; For stylistic reasons, we combine the two results above into a single
- ;; theorem. 
+ ;; theorem.
  ;;
  (defthm convergence-of-iter-sqrt
-   (implies (and (realp x)   
+   (implies (and (realp x)
 		 (realp epsilon)
 		 (< 0 epsilon)
 		 (<= 0 x))
@@ -856,7 +856,7 @@ To load this book, it is sufficient to do something like this:
 
 ;; A stronger version of the theorem avoids the check on x being
 ;; real.  The reason this result is still true is that for non-real x,
-;; iter-sqrt simply returns 0. 
+;; iter-sqrt simply returns 0.
 
 (defthm limited-iter-sqrt-strong
   (implies (i-limited x)
@@ -890,7 +890,7 @@ To load this book, it is sufficient to do something like this:
 ;; above!
 
 (defthm convergence-of-iter-sqrt-strong
-  (implies (and (realp x)  
+  (implies (and (realp x)
 		(realp epsilon)
 		(< 0 epsilon)
 		(i-small epsilon)
@@ -1018,7 +1018,7 @@ To load this book, it is sufficient to do something like this:
   :hints (("Goal"
 	   :cases ((< (acl2-sqrt x) y)
 		   (< y (acl2-sqrt x))))))
-	   
+
 ;; This simple theorem helps us decide when a number is equal to the
 ;; square root of x -- simply square both sides and go from
 ;; there....at least for positive numbers!
@@ -1206,7 +1206,7 @@ To load this book, it is sufficient to do something like this:
 		  (acl2-sqrt (standard-part x))))
   :hints (("Goal"
 	   :use ((:instance y*y=x->y=sqrt-x
-			    (x (standard-part x)) 
+			    (x (standard-part x))
 			    (y (standard-part (acl2-sqrt x))))))
 	  ("Goal'''"
 	   :use ((:instance standard-part-of-times

@@ -9,8 +9,8 @@
 ;;
 ;;  This data structure and algorithm implementation is based on
 ;;  "Accelerating Large Graph Algorithms on the GPU using CUDA" by
-;;  Parwan Harish and P.J. Narayanan (2007); and 
-;;  "Parallelizing Dijkstra's Single-Source Shortest-Path Algorithm" by 
+;;  Parwan Harish and P.J. Narayanan (2007); and
+;;  "Parallelizing Dijkstra's Single-Source Shortest-Path Algorithm" by
 ;;  Dan Ginsburg (2011).
 ;;
 ;;  Implements All-Pairs Shortest Path (APSP) for Weighted Graphs
@@ -34,12 +34,12 @@
   (edgeCount :type (integer 0 10000000) :initially 10000000)
 
   ;; (V) This contains a pointer to the edge list for each vertex
-  ;;  (vertexArray :type (array (integer 0 (1- *MAX_EDGES*)) (*MAX_VERTICES*)) 
+  ;;  (vertexArray :type (array (integer 0 (1- *MAX_EDGES*)) (*MAX_VERTICES*))
   ;;               :initially 0)
   (vertexArray :type (array (integer 0 9999999) (*MAX_VERTICES*)) :initially 0)
 
   ;; (E) This contains pointers to the vertices that each edge is attached to
-  ;;  (edgeArray :type (array (integer 0 (1- *MAX_VERTICES*)) (*MAX_EDGES*)) 
+  ;;  (edgeArray :type (array (integer 0 (1- *MAX_VERTICES*)) (*MAX_EDGES*))
   ;;             :initially 0)
   (edgeArray :type (array (integer 0 999999) (*MAX_EDGES*)) :initially 0)
 
@@ -85,8 +85,8 @@
 
 
 (defthm vertexArray-is-integer-listp--thm
-  (implies (vertexArrayp x) 
-           (integer-listp x)) 
+  (implies (vertexArrayp x)
+           (integer-listp x))
   :rule-classes ((:forward-chaining :trigger-terms ((vertexArrayp x))) :rewrite))
 
 (defthm edgeArray-is-integer-listp--thm
@@ -95,39 +95,39 @@
   :rule-classes ((:forward-chaining :trigger-terms ((edgeArrayp x))) :rewrite))
 
 (defthm weightArray-is-integer-listp--thm
-  (implies (weightArrayp x) 
-           (integer-listp x)) 
+  (implies (weightArrayp x)
+           (integer-listp x))
   :rule-classes ((:forward-chaining :trigger-terms ((weightArrayp x))) :rewrite))
 
 (defthm costArray-is-integer-listp--thm
   (implies (costArrayp x)
-           (integer-listp x)) 
+           (integer-listp x))
   :rule-classes ((:forward-chaining :trigger-terms ((costArrayp x))) :rewrite))
 
 (defthm updatingCostArray-is-integer-listp--thm
-  (implies (updatingCostArrayp x) 
-           (integer-listp x)) 
-:rule-classes ((:forward-chaining :trigger-terms ((updatingCostArrayp x))) 
+  (implies (updatingCostArrayp x)
+           (integer-listp x))
+:rule-classes ((:forward-chaining :trigger-terms ((updatingCostArrayp x)))
                :rewrite))
 
 (defthm maskArray-is-integer-listp--thm
-  (implies (maskArrayp x) 
-           (integer-listp x)) 
+  (implies (maskArrayp x)
+           (integer-listp x))
   :rule-classes ((:forward-chaining :trigger-terms ((maskArrayp x))) :rewrite))
 
 (defthm sourceVertexArray-is-integer-listp--thm
-  (implies (sourceVertexArrayp x) 
-           (integer-listp x)) 
-:rule-classes ((:forward-chaining :trigger-terms ((sourceVertexArrayp x))) 
+  (implies (sourceVertexArrayp x)
+           (integer-listp x))
+:rule-classes ((:forward-chaining :trigger-terms ((sourceVertexArrayp x)))
                :rewrite))
 
 (defthm resultArray-is-integer-listp--thm
-  (implies (resultArrayp x) 
-           (integer-listp x)) 
+  (implies (resultArrayp x)
+           (integer-listp x))
   :rule-classes ((:forward-chaining :trigger-terms ((resultArrayp x))) :rewrite))
 
 (defthm weightArrayp-update-nth--thm
-  (implies 
+  (implies
    (and (weightArrayp n)
         (>= x 0)
         (< x (len n))
@@ -137,7 +137,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((update-nth x y n))) :rewrite))
 
 (defthm maskArrayp-update-nth--thm
-  (implies 
+  (implies
    (and (maskArrayp n)
         (>= x 0)
         (< x (len n))
@@ -146,7 +146,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((update-nth x y n))) :rewrite))
 
 (defthm edgeArrayp-update-nth--thm
-  (implies 
+  (implies
    (and (edgeArrayp n)
         (>= x 0)
         (< x (len n))
@@ -157,7 +157,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((update-nth x y n))) :rewrite))
 
 (defthm costArrayp-update-nth--thm
-  (implies 
+  (implies
    (and (costArrayp n)
         (>= x 0)
         (< x (len n))
@@ -167,7 +167,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((update-nth x y n))) :rewrite))
 
 (defthm updatingCostArrayp-update-nth--thm
-  (implies 
+  (implies
    (and (updatingCostArrayp n)
         (>= x 0)
         (< x (len n))
@@ -177,7 +177,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((update-nth x y n))) :rewrite))
 
 (defthm resultArrayp-update-nth--thm
-  (implies 
+  (implies
    (and (resultArrayp n)
         (>= x 0)
         (< x (len n))
@@ -187,7 +187,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((update-nth x y n))) :rewrite))
 
 (defthm sourceVertexArrayp-update-nth--thm
-  (implies 
+  (implies
    (and (sourceVertexArrayp n)
         (>= x 0)
         (< x (len n))
@@ -198,7 +198,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((update-nth x y n))) :rewrite))
 
 (defthm costArray-ge-0--thm
-  (implies 
+  (implies
    (and (costArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -206,7 +206,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm updatingCostArray-ge-0--thm
-  (implies 
+  (implies
    (and (updatingCostArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -214,7 +214,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm nth-edgeArray-integerp--thm
-  (implies 
+  (implies
    (and (edgeArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -222,7 +222,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm nth-weightArray-integerp--thm
-  (implies 
+  (implies
    (and (weightArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -230,7 +230,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm nth-CostArray-integerp--thm
-  (implies 
+  (implies
    (and (costArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -238,7 +238,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm nth-updatingCostArray-integerp--thm
-  (implies 
+  (implies
    (and (updatingCostArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -246,7 +246,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm nth-maskArray-integerp--thm
-  (implies 
+  (implies
    (and (maskArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -255,7 +255,7 @@
 
 
 (defthm edgeArray-ge-0--thm
-  (implies 
+  (implies
    (and (edgeArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -263,7 +263,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm edgeArray-lt-max-vertex-count--thm
-  (implies 
+  (implies
    (and (edgeArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -272,7 +272,7 @@
 
 
 (defthm vertexArray-lt-max-edge-count--thm
-  (implies 
+  (implies
    (and (vertexArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -280,7 +280,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm natp-max-edge-count-minus-vertexArrayi--thm
-  (implies 
+  (implies
    (and (vertexArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -289,7 +289,7 @@
 
 
 (defthm sourceVertexArray-ge-0--thm
-  (implies 
+  (implies
    (and (sourceVertexArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -297,7 +297,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm weightArray-ge-0--thm
-  (implies 
+  (implies
    (and (weightArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -305,7 +305,7 @@
   :rule-classes ((:forward-chaining :trigger-terms ((nth x n))) :rewrite))
 
 (defthm vertexArray-ge-0--thm
-  (implies 
+  (implies
    (and (vertexArrayp n)
         (>= x 0)
         (< x (len n)))
@@ -314,16 +314,16 @@
 
 
 (defun init-vertex-array (i GraphData)
-  (declare (xargs :stobjs GraphData 
+  (declare (xargs :stobjs GraphData
                   :guard (and (natp i) (<= i *MAX_VERTICES*))))
   (cond ((not (and (mbt (GraphDatap GraphData))
                    (mbt (natp i))
                    (mbt (<= i *MAX_VERTICES*)))) GraphData)
         ((mbe :logic (zp i)
               :exec (int= i 0)) GraphData)
-        (t 
+        (t
          (seq GraphData
-              (update-vertexArrayi (1- i) (* (1- i) *MAX_EDGES_PER_VERTEX*) 
+              (update-vertexArrayi (1- i) (* (1- i) *MAX_EDGES_PER_VERTEX*)
                                    GraphData)
               (init-vertex-array (1- i) GraphData)))))
 
@@ -338,14 +338,14 @@
         ((> ix *MAX_EDGES*) (mv GraphData state))
         ((mbe :logic (zp ix)
               :exec (int= ix 0)) (mv GraphData state))
-        (t 
+        (t
          (mv-let (rnd1 state) (random$ *MAX_VERTICES* state)
                  (let ((GraphData (update-edgeArrayi (1- ix) rnd1 GraphData)))
-                   (mv-let (rnd2 state) (random$ 100 state) 
-                           (let ((GraphData (update-weightArrayi 
+                   (mv-let (rnd2 state) (random$ 100 state)
+                           (let ((GraphData (update-weightArrayi
                                              (1- ix)
                                              (if (zp rnd2) 1 rnd2) GraphData)))
-                             (init-edge-and-weight-arrays (1- ix) 
+                             (init-edge-and-weight-arrays (1- ix)
                                                           GraphData state))))))))
 
 
@@ -354,7 +354,7 @@
 ;;
 
 (defun generateRandomGraph (GraphData state)
-  (declare (xargs :stobjs (GraphData state) 
+  (declare (xargs :stobjs (GraphData state)
                   :verify-guards nil))
   (seq GraphData
        (init-vertex-array *MAX_VERTICES* GraphData)
@@ -366,7 +366,7 @@
 ;;
 
 (defun maskArrayEmptyp (i GraphData)
-  (declare (xargs :stobjs GraphData 
+  (declare (xargs :stobjs GraphData
                   :guard (and (natp i) (<= i *MAX_VERTICES*))))
   (cond ((not (and (mbt (GraphDatap GraphData))
                    (mbt (natp i)) (mbt (<= i *MAX_VERTICES*)))) nil)
@@ -377,10 +377,10 @@
 
 
 (defun init-mask-cost-updating-cost (v-down result-num GraphData)
-  (declare (xargs :stobjs GraphData 
-                  :guard (and (natp v-down) 
+  (declare (xargs :stobjs GraphData
+                  :guard (and (natp v-down)
                               (<= v-down *MAX_VERTICES*)
-                              (natp result-num) 
+                              (natp result-num)
                               (< result-num *MAX_SOURCES*))))
   (cond ((not (and (mbt (GraphDatap GraphData))
                    (mbt (natp v-down))
@@ -395,13 +395,13 @@
                     (seq GraphData
                          (update-maskArrayi (- *MAX_VERTICES* v-down) 1 GraphData)
                          (update-costArrayi (- *MAX_VERTICES* v-down) 0 GraphData)
-                         (update-updatingCostArrayi (- *MAX_VERTICES* v-down) 0 
+                         (update-updatingCostArrayi (- *MAX_VERTICES* v-down) 0
                                                     GraphData))
                   (seq GraphData
                        (update-maskArrayi (- *MAX_VERTICES* v-down) 0 GraphData)
-                       (update-costArrayi (- *MAX_VERTICES* v-down) 
+                       (update-costArrayi (- *MAX_VERTICES* v-down)
                                           #xffffffffffffffff GraphData)
-                       (update-updatingCostArrayi (- *MAX_VERTICES* v-down) 
+                       (update-updatingCostArrayi (- *MAX_VERTICES* v-down)
                                                   #xffffffffffffffff GraphData)))
                 (init-mask-cost-updating-cost (1- v-down) result-num GraphData)))))
 
@@ -409,7 +409,7 @@
   (IMPLIES (and (true-listp GraphData)
                 (natp v-down)
                 (<= v-down *MAX_VERTICES*)
-                (natp result-num) 
+                (natp result-num)
                 (< result-num *MAX_SOURCES*))
            (TRUE-LISTP (INIT-MASK-COST-UPDATING-COST v-down result-num GRAPHDATA))))
 
@@ -425,12 +425,12 @@
                  (init-mask-cost-updating-cost v-down result-num GraphData)))))
 
 (defthm imcuc-edgeArray-unchanged--thm
-  (= (nth *EDGEARRAYI* 
+  (= (nth *EDGEARRAYI*
           (init-mask-cost-updating-cost v-down result-num GraphData))
      (nth *EDGEARRAYI* GraphData)))
 
 (defthm imcuc-edgeCount-unchanged--thm
-  (= (nth *EDGECOUNT* 
+  (= (nth *EDGECOUNT*
           (init-mask-cost-updating-cost v-down result-num GraphData))
      (nth *EDGECOUNT* GraphData)))
 
@@ -441,12 +441,12 @@
                  (init-mask-cost-updating-cost v-down result-num GraphData)))))
 
 (defthm imcuc-resultArray-unchanged--thm
-  (= (nth *RESULTARRAYI* 
+  (= (nth *RESULTARRAYI*
           (init-mask-cost-updating-cost v-down result-num GraphData))
      (nth *RESULTARRAYI* GraphData)))
 
 (defthm imcuc-sourceVertexArray-unchanged--thm
-  (= (nth *SOURCEVERTEXARRAYI* 
+  (= (nth *SOURCEVERTEXARRAYI*
           (init-mask-cost-updating-cost v-down result-num GraphData))
      (nth *SOURCEVERTEXARRAYI* GraphData)))
 
@@ -460,7 +460,7 @@
      (car GraphData)))
 
 (defthm imcuc-weightArray-unchanged--thm
-  (= (nth *WEIGHTARRAYI* 
+  (= (nth *WEIGHTARRAYI*
           (init-mask-cost-updating-cost v-down result-num GraphData))
      (nth *WEIGHTARRAYI* GraphData)))
 
@@ -471,19 +471,19 @@
 (in-theory (disable init-mask-cost-updating-cost))
 
 (defthm plus-ge-0-if-addends-ge-0--thm
-  (implies (and (>= x 0) (>= y 0)) 
+  (implies (and (>= x 0) (>= y 0))
            (<= 0 (+ x y))))
 
 (defthm plus-is-integerp-if-addends-integerp--thm
-  (implies (and (integerp x) (integerp y)) 
+  (implies (and (integerp x) (integerp y))
            (integerp (+ x y))))
 
-;; Would like to use a more modern arithmetic book, but it interferes with 
+;; Would like to use a more modern arithmetic book, but it interferes with
 ;; Sol's defiteration macro, amongst other things.
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defun dsk1-inner-loop (edge-down edge-max tid GraphData)
-  (declare (xargs :stobjs GraphData 
+  (declare (xargs :stobjs GraphData
                   :guard (and (natp edge-down)
                               (natp edge-max)
                               (natp tid)
@@ -499,15 +499,15 @@
                    (mbt (<= edge-max *MAX_EDGES*)))) GraphData)
         ((mbe :logic (zp edge-down)
               :exec (int= edge-down 0)) GraphData)
-        (t (let ((updating-index (edgeArrayi 
-                                   (the (integer 0 *) (- edge-max edge-down)) 
+        (t (let ((updating-index (edgeArrayi
+                                   (the (integer 0 *) (- edge-max edge-down))
                                    GraphData)))
-             (seq GraphData 
-                  (update-updatingCostArrayi 
-                   updating-index 
-                   (min (updatingCostArrayi updating-index GraphData) 
+             (seq GraphData
+                  (update-updatingCostArrayi
+                   updating-index
+                   (min (updatingCostArrayi updating-index GraphData)
                         (+ (costArrayi tid GraphData)
-                           (weightArrayi (- edge-max edge-down) GraphData))) 
+                           (weightArrayi (- edge-max edge-down) GraphData)))
                    GraphData)
                   (dsk1-inner-loop (1- edge-down) edge-max tid GraphData))))))
 
@@ -522,37 +522,37 @@
               (len GraphData))))
 
 (defthm dsk1-il-costArray-unchanged--thm
-  (= (nth *COSTARRAYI* 
+  (= (nth *COSTARRAYI*
           (dsk1-inner-loop edge-down edge-max tid GraphData))
      (nth *COSTARRAYI* GraphData)))
 
 (defthm dsk1-il-edgeArray-unchanged--thm
-  (= (nth *EDGEARRAYI* 
+  (= (nth *EDGEARRAYI*
           (dsk1-inner-loop edge-down edge-max tid GraphData))
      (nth *EDGEARRAYI* GraphData)))
 
 (defthm dsk1-il-edgeCount-unchanged--thm
-  (= (nth *EDGECOUNT* 
+  (= (nth *EDGECOUNT*
           (dsk1-inner-loop edge-down edge-max tid GraphData))
      (nth *EDGECOUNT* GraphData)))
 
 (defthm dsk1-il-maskArray-unchanged--thm
-  (= (nth *MASKARRAYI* 
+  (= (nth *MASKARRAYI*
           (dsk1-inner-loop edge-down edge-max tid GraphData))
      (nth *MASKARRAYI* GraphData)))
 
 (defthm dsk1-il-resultArray-unchanged--thm
-  (= (nth *RESULTARRAYI* 
+  (= (nth *RESULTARRAYI*
           (dsk1-inner-loop edge-down edge-max tid GraphData))
      (nth *RESULTARRAYI* GraphData)))
 
 (defthm dsk1-il-sourceVertexArray-unchanged--thm
-  (= (nth *SOURCEVERTEXARRAYI* 
+  (= (nth *SOURCEVERTEXARRAYI*
           (dsk1-inner-loop edge-down edge-max tid GraphData))
      (nth *SOURCEVERTEXARRAYI* GraphData)))
 
 (defthm dsk1-il-vertexArray-unchanged--thm
-  (= (nth *VERTEXARRAYI* 
+  (= (nth *VERTEXARRAYI*
           (dsk1-inner-loop edge-down edge-max tid GraphData))
      (nth *VERTEXARRAYI* GraphData)))
 
@@ -561,7 +561,7 @@
      (car GraphData)))
 
 (defthm dsk1-il-weightArray-unchanged--thm
-  (= (nth *WEIGHTARRAYI* 
+  (= (nth *WEIGHTARRAYI*
           (dsk1-inner-loop edge-down edge-max tid GraphData))
      (nth *WEIGHTARRAYI* GraphData)))
 
@@ -583,11 +583,11 @@
 (in-theory (disable dsk1-inner-loop))
 
 ;; (defthm dsk1-il-GraphDatap-maskArray-update--thm
-;; (implies (and (GraphDatap GraphData) 
+;; (implies (and (GraphDatap GraphData)
 ;;               (or (= y 0) (= y 1)) (>= 0 x) (< x *MAX_VERTICES*)
-;;               (Graphdatap (dsk1-inner-loop edge-down edge-max tid 
+;;               (Graphdatap (dsk1-inner-loop edge-down edge-max tid
 ;;                                                               GraphData)))
-;;   (Graphdatap (dsk1-inner-loop edge-down edge-max tid 
+;;   (Graphdatap (dsk1-inner-loop edge-down edge-max tid
 ;;               (UPDATE-NTH *MASKARRAYI*
 ;;                            (UPDATE-NTH x y (NTH *MASKARRAYI* GRAPHDATA))
 ;;                            GRAPHDATA)))))
@@ -599,19 +599,19 @@
 
 ;; An instance of Hardin's Bridge:
 ;;
-;; array-based iterative loop --> tail-recursive stobj array fn == 
-;; non-tail-recursive stobj arrary fn ==> (thm involving nthcdr or take) ==> 
+;; array-based iterative loop --> tail-recursive stobj array fn ==
+;; non-tail-recursive stobj arrary fn ==> (thm involving nthcdr or take) ==>
 ;; primitive-recursive fn operating on a list
 
 ;; Load Sol's nice iterator stuff
-;; Synthesizes tail-recursive and non-tail-recursive stobj array fns 
+;; Synthesizes tail-recursive and non-tail-recursive stobj array fns
 ;; and proves them equal
 (include-book "centaur/misc/iter" :dir :system)
 
 ;; Iteration macro for a "nondecreasing" predicate on vertex array
 (defiteration nondec-arr (res GraphData)
   (declare (xargs :stobjs GraphData))
-  (and (<= (vertexArrayi (1- (- *MAX_VERTICES* ix)) GraphData) 
+  (and (<= (vertexArrayi (1- (- *MAX_VERTICES* ix)) GraphData)
            (vertexArrayi (- *MAX_VERTICES* ix) GraphData)) res)
    :returns res
    :index ix
@@ -717,17 +717,17 @@
   (implies (and (GraphDatap GraphData) (integerp xx) (>= xx 0)
                 (<= xx (len (nth *VERTEXARRAYI* GraphData))))
            (= (nondec-arr-iter xx res GraphData)
-              (nondec res (nthcdr (- *MAX_VERTICES* xx) 
+              (nondec res (nthcdr (- *MAX_VERTICES* xx)
                       (nth *VERTEXARRAYI* GraphData)))))
 :hints (("Goal" :in-theory (enable nondec-arr-iter)))
 )
 
-;; Non-tail-recursive stobj array fn = Primitive-recursive list fn 
+;; Non-tail-recursive stobj array fn = Primitive-recursive list fn
 (defthm nondec-arr-iter-*MAX_VERTICES*-eq-nondec--thm
   (implies (GraphDatap GraphData)
            (= (nondec-arr-iter *MAX_VERTICES* res GraphData)
               (nondec res (nth *VERTEXARRAYI* GraphData))))
-:hints (("Goal" :use (:instance nondec-arr-iter-eq-nondec-nthcdr--thm 
+:hints (("Goal" :use (:instance nondec-arr-iter-eq-nondec-nthcdr--thm
                                   (xx *MAX_VERTICES*))))
 )
 
@@ -744,18 +744,18 @@
               (nondecreasing (nth *VERTEXARRAYI* GraphData)))))
 
 
-;; Now it's easier to prove theorems about the tail-recursive stobj fn -- 
+;; Now it's easier to prove theorems about the tail-recursive stobj fn --
 ;; fails to prove without the bridge.
 (defthm vertices-nondecreasing-nth--thm
   (implies (and (GraphDatap GraphData)
-                (> ix 0) 
+                (> ix 0)
                 (< ix (len (nth *VERTEXARRAYI* GraphData)))
                 (vertices-nondecreasing GraphData))
            (<= (vertexArrayi (1- ix) GraphData)
                (vertexArrayi ix GraphData))))
 
 (defthm nondecreasing-vertexArray-nth--thm
-  (implies (and (GraphDatap GraphData) (> ix 0) 
+  (implies (and (GraphDatap GraphData) (> ix 0)
                 (< ix (len (nth *VERTEXARRAYI* GraphData)))
                 (nondecreasing (nth *VERTEXARRAYI* GraphData)))
            (<= (vertexArrayi (1- ix) GraphData)
@@ -784,11 +784,11 @@
            (<= x y)))
 
 (defun dijkstra-sssp-kernel-1 (tid-down GraphData)
-  (declare (xargs :stobjs GraphData 
+  (declare (xargs :stobjs GraphData
                   :guard (and (natp tid-down) (<= tid-down *MAX_VERTICES*)
                               (vertices-nondecreasing GraphData))
                   :guard-hints (("Goal" :in-theory (enable lt-means-le--thm))
-                                ("Subgoal 1.3" :USE (:INSTANCE 
+                                ("Subgoal 1.3" :USE (:INSTANCE
                                  NONDECREASING-VERTEXARRAY-NATP-DIFF-ADJACENT--THM
                                    (IX (+ 1 *MAX_VERTICES* (- TID-DOWN))))))))
   (cond ((not (and (mbt (GraphDatap GraphData))
@@ -799,19 +799,19 @@
         (t (if (= (maskArrayi (- *MAX_VERTICES* tid-down) GraphData) 1)
                (seq GraphData
                     (update-maskArrayi (- *MAX_VERTICES* tid-down) 0 GraphData)
-                    (dsk1-inner-loop 
+                    (dsk1-inner-loop
                      ;; edge-down = edge-end - edge-start
-                     (- (if (< (1+ (- *MAX_VERTICES* tid-down)) 
+                     (- (if (< (1+ (- *MAX_VERTICES* tid-down))
                                *MAX_VERTICES*)
-                            (vertexArrayi 
+                            (vertexArrayi
                              (1+ (- *MAX_VERTICES* tid-down))
                              GraphData)
                           *MAX_EDGES*)
                         (vertexArrayi (- *MAX_VERTICES* tid-down) GraphData))
-                     ;; edge-end 
+                     ;; edge-end
                      (if (< (1+ (- *MAX_VERTICES* tid-down))
                             *MAX_VERTICES*)
-                         (vertexArrayi 
+                         (vertexArrayi
                           (1+ (- *MAX_VERTICES* tid-down))
                           GraphData)
                        *MAX_EDGES*)
@@ -832,32 +832,32 @@
               (len GraphData))))
 
 (defthm dsk1-costArray-unchanged--thm
-  (= (nth *COSTARRAYI* 
+  (= (nth *COSTARRAYI*
           (dijkstra-sssp-kernel-1 x GraphData))
      (nth *COSTARRAYI* GraphData)))
 
 (defthm dsk1-edgeArray-unchanged--thm
-  (= (nth *EDGEARRAYI* 
+  (= (nth *EDGEARRAYI*
           (dijkstra-sssp-kernel-1 x GraphData))
      (nth *EDGEARRAYI* GraphData)))
 
 (defthm dsk1-edgeCount-unchanged--thm
-  (= (nth *EDGECOUNT* 
+  (= (nth *EDGECOUNT*
           (dijkstra-sssp-kernel-1 x GraphData))
      (nth *EDGECOUNT* GraphData)))
 
 (defthm dsk1-resultArray-unchanged--thm
-  (= (nth *RESULTARRAYI* 
+  (= (nth *RESULTARRAYI*
           (dijkstra-sssp-kernel-1 x GraphData))
      (nth *RESULTARRAYI* GraphData)))
 
 (defthm dsk1-sourceVertexArray-unchanged--thm
-  (= (nth *SOURCEVERTEXARRAYI* 
+  (= (nth *SOURCEVERTEXARRAYI*
           (dijkstra-sssp-kernel-1 x GraphData))
      (nth *SOURCEVERTEXARRAYI* GraphData)))
 
 (defthm dsk1-vertexArray-unchanged--thm
-  (= (nth *VERTEXARRAYI* 
+  (= (nth *VERTEXARRAYI*
           (dijkstra-sssp-kernel-1 x GraphData))
      (nth *VERTEXARRAYI* GraphData)))
 
@@ -866,7 +866,7 @@
      (car GraphData)))
 
 (defthm dsk1-weightArray-unchanged--thm
-  (= (nth *WEIGHTARRAYI* 
+  (= (nth *WEIGHTARRAYI*
           (dijkstra-sssp-kernel-1 x GraphData))
      (nth *WEIGHTARRAYI* GraphData)))
 
@@ -891,7 +891,7 @@
 
 ;; Equivalent of OCL_SSSP_KERNEL2()
 (defun dijkstra-sssp-kernel-2 (tid-down GraphData)
-  (declare (xargs :stobjs GraphData 
+  (declare (xargs :stobjs GraphData
                   :guard (and (natp tid-down) (<= tid-down *MAX_VERTICES*))))
   (cond ((not (and (mbt (GraphDatap GraphData))
                    (mbt (natp tid-down))
@@ -902,15 +902,15 @@
                 (if (> (costArrayi (- *MAX_VERTICES* tid-down) GraphData)
                        (updatingCostArrayi (- *MAX_VERTICES* tid-down) GraphData))
                     (seq GraphData
-                         (update-costArrayi 
-                          (- *MAX_VERTICES* tid-down) 
+                         (update-costArrayi
+                          (- *MAX_VERTICES* tid-down)
                           (updatingCostArrayi (- *MAX_VERTICES* tid-down) GraphData)
                           GraphData)
-                         (update-maskArrayi (- *MAX_VERTICES* tid-down) 1 
+                         (update-maskArrayi (- *MAX_VERTICES* tid-down) 1
                                             GraphData))
                   (update-updatingCostArrayi (- *MAX_VERTICES* tid-down)
-                                             (costArrayi 
-                                              (- *MAX_VERTICES* tid-down) 
+                                             (costArrayi
+                                              (- *MAX_VERTICES* tid-down)
                                               GraphData)
                                              GraphData))
                 (dijkstra-sssp-kernel-2 (1- tid-down) GraphData)))))
@@ -925,27 +925,27 @@
               (len GraphData))))
 
 (defthm dsk2-edgeArray-unchanged--thm
-  (= (nth *EDGEARRAYI* 
+  (= (nth *EDGEARRAYI*
           (dijkstra-sssp-kernel-2 x GraphData))
      (nth *EDGEARRAYI* GraphData)))
 
 (defthm dsk2-edgeCount-unchanged--thm
-  (= (nth *EDGECOUNT* 
+  (= (nth *EDGECOUNT*
           (dijkstra-sssp-kernel-2 x GraphData))
      (nth *EDGECOUNT* GraphData)))
 
 (defthm dsk2-resultArray-unchanged--thm
-  (= (nth *RESULTARRAYI* 
+  (= (nth *RESULTARRAYI*
           (dijkstra-sssp-kernel-2 x GraphData))
      (nth *RESULTARRAYI* GraphData)))
 
 (defthm dsk2-sourceVertexArray-unchanged--thm
-  (= (nth *SOURCEVERTEXARRAYI* 
+  (= (nth *SOURCEVERTEXARRAYI*
           (dijkstra-sssp-kernel-2 x GraphData))
      (nth *SOURCEVERTEXARRAYI* GraphData)))
 
 (defthm dsk2-vertexArray-unchanged--thm
-  (= (nth *VERTEXARRAYI* 
+  (= (nth *VERTEXARRAYI*
           (dijkstra-sssp-kernel-2 x GraphData))
      (nth *VERTEXARRAYI* GraphData)))
 
@@ -954,7 +954,7 @@
      (car GraphData)))
 
 (defthm dsk2-weightArray-unchanged--thm
-  (= (nth *WEIGHTARRAYI* 
+  (= (nth *WEIGHTARRAYI*
           (dijkstra-sssp-kernel-2 x GraphData))
      (nth *WEIGHTARRAYI* GraphData)))
 
@@ -1035,12 +1035,12 @@
                  (mask-array-not-empty-processing countdown GraphData)))))
 
 (defthm manep-edgeArray-unchanged--thm
-  (= (nth *EDGEARRAYI* 
+  (= (nth *EDGEARRAYI*
           (mask-array-not-empty-processing countdown GraphData))
      (nth *EDGEARRAYI* GraphData)))
 
 (defthm manep-edgeCount-unchanged--thm
-  (= (nth *EDGECOUNT* 
+  (= (nth *EDGECOUNT*
           (mask-array-not-empty-processing countdown GraphData))
      (nth *EDGECOUNT* GraphData)))
 
@@ -1051,12 +1051,12 @@
                  (mask-array-not-empty-processing countdown GraphData)))))
 
 (defthm manep-resultArray-unchanged--thm
-  (= (nth *RESULTARRAYI* 
+  (= (nth *RESULTARRAYI*
           (mask-array-not-empty-processing countdown GraphData))
      (nth *RESULTARRAYI* GraphData)))
 
 (defthm manep-sourceVertexArray-unchanged--thm
-  (= (nth *SOURCEVERTEXARRAYI* 
+  (= (nth *SOURCEVERTEXARRAYI*
           (mask-array-not-empty-processing countdown GraphData))
      (nth *SOURCEVERTEXARRAYI* GraphData)))
 
@@ -1070,7 +1070,7 @@
      (car GraphData)))
 
 (defthm manep-weightArray-unchanged--thm
-  (= (nth *WEIGHTARRAYI* 
+  (= (nth *WEIGHTARRAYI*
           (mask-array-not-empty-processing countdown GraphData))
      (nth *WEIGHTARRAYI* GraphData)))
 
@@ -1096,7 +1096,7 @@
               :exec (int= index-down 0)) GraphData)
         (t (seq GraphData
                 ;; Copy the result back
-                (update-ResultArrayi 
+                (update-ResultArrayi
                   (+ (* result-num *MAX_VERTICES*) (1- index-down))
                   (costArrayi (1- index-down) GraphData) GraphData)
                 (copy-out-results (1- index-down) result-num GraphData)))))
@@ -1111,22 +1111,22 @@
               (len GraphData))))
 
 (defthm cor-costArray-unchanged--thm
-  (= (nth *COSTARRAYI* 
+  (= (nth *COSTARRAYI*
           (copy-out-results index-down result-num GraphData))
      (nth *COSTARRAYI* GraphData)))
 
 (defthm cor-edgeArray-unchanged--thm
-  (= (nth *EDGEARRAYI* 
+  (= (nth *EDGEARRAYI*
           (copy-out-results index-down result-num GraphData))
      (nth *EDGEARRAYI* GraphData)))
 
 (defthm cor-edgeCount-unchanged--thm
-  (= (nth *EDGECOUNT* 
+  (= (nth *EDGECOUNT*
           (copy-out-results index-down result-num GraphData))
      (nth *EDGECOUNT* GraphData)))
 
 (defthm cor-maskArray-unchanged--thm
-  (= (nth *MASKARRAYI* 
+  (= (nth *MASKARRAYI*
           (copy-out-results index-down result-num GraphData))
      (nth *MASKARRAYI* GraphData)))
 
@@ -1137,12 +1137,12 @@
                  (copy-out-results index-down result-num GraphData)))))
 
 (defthm cor-sourceVertexArray-unchanged--thm
-  (= (nth *SOURCEVERTEXARRAYI* 
+  (= (nth *SOURCEVERTEXARRAYI*
           (copy-out-results index-down result-num GraphData))
      (nth *SOURCEVERTEXARRAYI* GraphData)))
 
 (defthm cor-updatingCostArray-unchanged--thm
-  (= (nth *UPDATINGCOSTARRAYI* 
+  (= (nth *UPDATINGCOSTARRAYI*
           (copy-out-results index-down result-num GraphData))
      (nth *UPDATINGCOSTARRAYI* GraphData)))
 
@@ -1156,7 +1156,7 @@
      (car GraphData)))
 
 (defthm cor-weightArray-unchanged--thm
-  (= (nth *WEIGHTARRAYI* 
+  (= (nth *WEIGHTARRAYI*
           (copy-out-results index-down result-num GraphData))
      (nth *WEIGHTARRAYI* GraphData)))
 
@@ -1167,8 +1167,8 @@
 (in-theory (disable copy-out-results))
 
 
-(defun APSP-helper (result-num-down GraphData) 
-  (declare (xargs :stobjs GraphData 
+(defun APSP-helper (result-num-down GraphData)
+  (declare (xargs :stobjs GraphData
                   :guard (and (natp result-num-down)
                               (<= result-num-down *MAX_SOURCES*)
                               (vertices-nondecreasing GraphData))))
@@ -1178,18 +1178,18 @@
         ((mbe :logic (zp result-num-down)
               :exec (int= result-num-down 0)) GraphData)
         (t (seq GraphData
-                (init-mask-cost-updating-cost *MAX_VERTICES* 
-                                              (- *MAX_SOURCES* result-num-down) 
+                (init-mask-cost-updating-cost *MAX_VERTICES*
+                                              (- *MAX_SOURCES* result-num-down)
                                               GraphData)
                 (mask-array-not-empty-processing #xffffffff GraphData)
-                (copy-out-results *MAX_VERTICES* 
+                (copy-out-results *MAX_VERTICES*
                                   (- *MAX_SOURCES* result-num-down) GraphData)
                 (APSP-helper (1- result-num-down) GraphData)))))
 
 
 (defun init-source-vertex-array (index-down numResults GraphData)
   (declare (xargs :stobjs GraphData
-                  :guard (and (natp index-down) 
+                  :guard (and (natp index-down)
                               (natp numResults)
                               (<= index-down *MAX_SOURCES*)
                               (<= numResults *MAX_SOURCES*))))
@@ -1203,8 +1203,8 @@
         ((mbe :logic (zp index-down)
               :exec (int= index-down 0)) GraphData)
         (t (seq GraphData
-                (if (<= index-down numResults) 
-                    (update-SourceVertexArrayi (1- index-down) (1- index-down) 
+                (if (<= index-down numResults)
+                    (update-SourceVertexArrayi (1- index-down) (1- index-down)
                                                GraphData)
                   (update-SourceVertexArrayi (1- index-down) 0 GraphData))
                 (init-source-vertex-array (1- index-down) numResults GraphData)))))
@@ -1237,27 +1237,27 @@
               (len GraphData))))
 
 (defthm isva-costArray-unchanged--thm
-  (= (nth *COSTARRAYI* 
+  (= (nth *COSTARRAYI*
           (init-source-vertex-array index-down numResults GraphData))
      (nth *COSTARRAYI* GraphData)))
 
 (defthm isva-edgeArray-unchanged--thm
-  (= (nth *EDGEARRAYI* 
+  (= (nth *EDGEARRAYI*
           (init-source-vertex-array index-down numResults GraphData))
      (nth *EDGEARRAYI* GraphData)))
 
 (defthm isva-edgeCount-unchanged--thm
-  (= (nth *EDGECOUNT* 
+  (= (nth *EDGECOUNT*
           (init-source-vertex-array index-down numResults GraphData))
      (nth *EDGECOUNT* GraphData)))
 
 (defthm isva-maskArray-unchanged--thm
-  (= (nth *MASKARRAYI* 
+  (= (nth *MASKARRAYI*
           (init-source-vertex-array index-down numResults GraphData))
      (nth *MASKARRAYI* GraphData)))
 
 (defthm isva-resultArray-unchanged--thm
-  (= (nth *RESULTARRAYI* 
+  (= (nth *RESULTARRAYI*
           (init-source-vertex-array index-down numResults GraphData))
      (nth *RESULTARRAYI* GraphData)))
 
@@ -1268,7 +1268,7 @@
                  (init-source-vertex-array index-down numResults GraphData)))))
 
 (defthm isva-updatingCostArray-unchanged--thm
-  (= (nth *UPDATINGCOSTARRAYI* 
+  (= (nth *UPDATINGCOSTARRAYI*
           (init-source-vertex-array index-down numResults GraphData))
      (nth *UPDATINGCOSTARRAYI* GraphData)))
 
@@ -1282,7 +1282,7 @@
      (car GraphData)))
 
 (defthm isva-weightArray-unchanged--thm
-  (= (nth *WEIGHTARRAYI* 
+  (= (nth *WEIGHTARRAYI*
           (init-source-vertex-array index-down numResults GraphData))
      (nth *WEIGHTARRAYI* GraphData)))
 
@@ -1295,7 +1295,7 @@
 
 (defun init-results (index-down GraphData)
   (declare (xargs :stobjs GraphData
-                  :guard (and (natp index-down) 
+                  :guard (and (natp index-down)
                               (<= index-down *MAX_RESULTS*))))
   (cond ((not (and (mbt (GraphDatap GraphData))
                    (mbt (natp index-down))
@@ -1317,7 +1317,7 @@
               (len GraphData))))
 
 (defthm ir-costArray-unchanged--thm
-  (= (nth *COSTARRAYI* 
+  (= (nth *COSTARRAYI*
           (init-results index-down GraphData))
      (nth *COSTARRAYI* GraphData)))
 
@@ -1328,17 +1328,17 @@
                  (init-results index-down GraphData)))))
 
 (defthm ir-edgeArray-unchanged--thm
-  (= (nth *EDGEARRAYI* 
+  (= (nth *EDGEARRAYI*
           (init-results index-down GraphData))
      (nth *EDGEARRAYI* GraphData)))
 
 (defthm ir-edgeCount-unchanged--thm
-  (= (nth *EDGECOUNT* 
+  (= (nth *EDGECOUNT*
           (init-results index-down GraphData))
      (nth *EDGECOUNT* GraphData)))
 
 (defthm ir-maskArray-unchanged--thm
-  (= (nth *MASKARRAYI* 
+  (= (nth *MASKARRAYI*
           (init-results index-down GraphData))
      (nth *MASKARRAYI* GraphData)))
 
@@ -1349,12 +1349,12 @@
                  (init-results index-down GraphData)))))
 
 (defthm ir-sourceVertexArray-unchanged--thm
-  (= (nth *SOURCEVERTEXARRAYI* 
+  (= (nth *SOURCEVERTEXARRAYI*
           (init-results index-down GraphData))
      (nth *SOURCEVERTEXARRAYI* GraphData)))
 
 (defthm ir-updatingCostArray-unchanged--thm
-  (= (nth *UPDATINGCOSTARRAYI* 
+  (= (nth *UPDATINGCOSTARRAYI*
           (init-results index-down GraphData))
      (nth *UPDATINGCOSTARRAYI* GraphData)))
 
@@ -1368,7 +1368,7 @@
      (car GraphData)))
 
 (defthm ir-weightArray-unchanged--thm
-  (= (nth *WEIGHTARRAYI* 
+  (= (nth *WEIGHTARRAYI*
           (init-results index-down GraphData))
      (nth *WEIGHTARRAYI* GraphData)))
 
@@ -1381,8 +1381,8 @@
 
 ;; Top-level function
 (defun APSP (numResults GraphData)
-  (declare (xargs :stobjs GraphData 
-                  :guard (and (natp numResults) 
+  (declare (xargs :stobjs GraphData
+                  :guard (and (natp numResults)
                               (<= numResults *MAX_SOURCES*)
                               (vertices-nondecreasing GraphData))))
   (cond ((not (and (mbt (GraphDatap GraphData))

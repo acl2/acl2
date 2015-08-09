@@ -125,7 +125,7 @@
              (< (* x1 y1) (* x2 y2)))
   :rule-classes :linear)
 
-(local 
+(local
  (in-theory (disable *-preserves-<=-1 *-preserves-<=-2
                      *-preserves-<-1 *-preserves-<-2)))
 
@@ -301,7 +301,7 @@
                                    (y (- y))))))
   :rule-classes (:linear :rewrite))
 
-(in-theory (disable x*y>1-positive-stronger 
+(in-theory (disable x*y>1-positive-stronger
                     x*y>1-negative x*y>=1-negative))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

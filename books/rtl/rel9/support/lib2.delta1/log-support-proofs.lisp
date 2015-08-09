@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -32,15 +32,15 @@
 ;;;
 ;;;
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "bits-new-proofs"))
 
              (defthm bits_alt-is-bits
                (equal (bits_alt x i j)
                       (bits x i j)))
 
-             
+
              (defthm bitn_alt-is-bitn
                (equal (bitn_alt x n)
                       (bitn x n)))
@@ -51,12 +51,12 @@
                       (binary-cat x m y n)))
 
              ))
-               
+
 
 ;;;;;;;;;
 
 
-(local 
+(local
  (defund bvequal (v1 v2 n)
   (equal (sumbits v1 n)
          (sumbits v2 n))))
@@ -76,11 +76,11 @@
            :in-theory (enable bvequal)))
   :rule-classes nil))
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "log-new"))
-              
-              
+
+
               (defthmd bitn-lognot-g
                 (implies (and (integerp x)
                               (integerp n)
@@ -96,7 +96,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-lnot-lognot-bvequal-lemma
    (implies (and (integerp x)
                  (natp n)
@@ -114,7 +114,7 @@
                              (n i)))))))
 
 
-(local 
+(local
  (defthm lnot-lognot-bvequal
    (implies (and (integerp x)
                  (natp n)
@@ -148,10 +148,10 @@
 
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "log-new-proofs"))
-              
+
               (defthmd bitn_alt-logand
                 (implies (and (integerp x)
                               (integerp y)
@@ -162,7 +162,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-land-logand-bvequal-lemma
    (implies (and (integerp x)
                  (integerp y)
@@ -185,7 +185,7 @@
 
 
 
-(local 
+(local
  (defthmd land-logand-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -193,7 +193,7 @@
                  (> n 0)
                  (natp i)
                  (<= i n))
-            (bvequal (land x y n) 
+            (bvequal (land x y n)
                      (bits (logand x y) (+ -1 n)  0)
                      i))
    :hints (("Goal" :in-theory (e/d (bvequal bitn-land-logand-bvequal-lemma)
@@ -222,10 +222,10 @@
 
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "log-new-proofs"))
-              
+
               (defthmd bitn_alt-logxor
                 (implies (and (case-split (integerp x))
                               (case-split (integerp y))
@@ -236,7 +236,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-lxor-logxor-bvequal-lemma
    (implies (and (integerp x)
                  (integerp y)
@@ -259,7 +259,7 @@
 
 
 
-(local 
+(local
  (defthmd lxor-logxor-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -267,7 +267,7 @@
                  (> n 0)
                  (natp i)
                  (<= i n))
-            (bvequal (lxor x y n) 
+            (bvequal (lxor x y n)
                      (bits (logxor x y) (+ -1 n)  0)
                      i))
    :hints (("Goal" :in-theory (e/d (bvequal bitn-lxor-logxor-bvequal-lemma)
@@ -292,10 +292,10 @@
 
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "log-new-proofs"))
-              
+
               (defthmd bitn_alt-logior
                 (implies (and (integerp x)
                               (integerp y)
@@ -306,7 +306,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-lior-logior-bvequal-lemma
    (implies (and (integerp x)
                  (integerp y)
@@ -329,7 +329,7 @@
 
 
 
-(local 
+(local
  (defthmd lior-logior-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -337,7 +337,7 @@
                  (> n 0)
                  (natp i)
                  (<= i n))
-            (bvequal (lior x y n) 
+            (bvequal (lior x y n)
                      (bits (logior x y) (+ -1 n)  0)
                      i))
    :hints (("Goal" :in-theory (e/d (bvequal bitn-lior-logior-bvequal-lemma)
@@ -364,7 +364,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-logand-logand-bvequal-lemma
    (implies (and (integerp x)
                  (integerp y)
@@ -387,7 +387,7 @@
 
 
 
-(local 
+(local
  (defthmd logand-logand-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -397,16 +397,16 @@
             (bvequal (logand (bits x n 0) y)
                      (logand x y)
                      i))
-   :hints (("Goal" :in-theory (e/d (bvequal 
+   :hints (("Goal" :in-theory (e/d (bvequal
                                     bitn-logand-logand-bvequal-lemma)
                                    ())))))
 
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
    (local (include-book "log-new"))
-   
+
    (defthm logand-bvecp-g
      (implies (and (natp n)
                    (bvecp x n)
@@ -459,5 +459,5 @@
   :hints (("Goal" :use ((:instance logand-bits-reduce
                                    (n 0)))
            :in-theory (e/d (bitn) (bits-n-n-rewrite)))))
-                                   
+
 

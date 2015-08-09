@@ -106,7 +106,7 @@
       (cons (get-analysis-id (car tbl))
             (get-analysis-ids (cdr tbl)))
     nil))
-    
+
 ;; ids match up as required
 (defun consistent-ids-all (study-tbl analysis-tbl tree-tbl)
   (declare (xargs :guard (and (good-study-table-struct study-tbl)
@@ -187,11 +187,11 @@
 (defun ml-has-model (analysis-tbl tree-tbl)
   (declare (xargs :guard (and (good-analysis-table-struct analysis-tbl)
                               (good-tree-table-struct tree-tbl)
-                              (consistent-ids-tree analysis-tbl 
+                              (consistent-ids-tree analysis-tbl
                                                    tree-tbl))
                   :guard-hints (("Goal''" :in-theory
                                  (disable subset-get-analysis-ids-for-non-nil-ml-of-get-analysis)
-                                 :use 
+                                 :use
                                  (:instance
                                   subset-get-analysis-ids-for-non-nil-ml-of-get-analysis)))))
   (let ((analysis-ids (get-analysis-ids-for-non-nil-ml tree-tbl)))
@@ -205,7 +205,7 @@
   (if (consp tree-tbl)
       (let* ((analysis-id (get-analysis-id (car tree-tbl)))
              (tree (get-tree (car tree-tbl)))
-             (analysis-entry (get-entry-by-id analysis-id 
+             (analysis-entry (get-entry-by-id analysis-id
                                               analysis-tbl))
              (tl (get-taxa-list analysis-entry)))
         (and (good-tree-tl tree tl)
@@ -238,7 +238,7 @@
 ;  Details: Checks that primary ids are unique, ids indexing into other tables
 ;           reference existing entries, maximum likelihood scores have an
 ;           associated model, and that any tree in the tree table has taxa
-;           names present in the taxa list in the associated analysis table. " 
+;           names present in the taxa list in the associated analysis table. "
   (declare (xargs :guard t))
   (and (good-study-table study-tbl)
        (good-analysis-table analysis-tbl)
@@ -326,7 +326,7 @@
 (defun good-pairing-to-add (pos val entry)
   (declare (xargs :guard t))
   (and (good-entry entry)
-       (or ;;You can't change the taxa-list this way since 
+       (or ;;You can't change the taxa-list this way since
            ;; it requires the tree to be reordered
            ;;(and (equal pos 'taxa-list)
            ;;     (good-taxa-list val))
@@ -368,12 +368,12 @@
 
 ;Question : Should I be hopying the val??
 (defun update-entry (pos val entry)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                   (and (good-entry entry)
                        (good-pairing-to-add pos val entry))))
   ;; remember, you can't change taxa-list cause then you
   ;; need to change the tree
-  (hut pos val entry))          
+  (hut pos val entry))
 
 
 (defcong perm equal (good-taxa-list x) 1
@@ -384,14 +384,14 @@
                               (good-entry entry)
                               (perm tl
                                     (get-taxa-list entry)))
-                  :guard-hints 
+                  :guard-hints
                   (("Subgoal 3" :in-theory
                     (disable
                      perm-implies-equal-good-taxa-list-1)
-                    :use (:instance 
+                    :use (:instance
                           perm-implies-equal-good-taxa-list-1
                           (x tl)
-                          (x-equiv 
+                          (x-equiv
                            (get-taxa-list entry)))))
                   ))
   (if (equal (get-taxa-list entry) tl)
@@ -399,8 +399,8 @@
     ;; update the taxa-list and reorder tree
     (if (perm tl (get-taxa-list entry))
         (cons (hons 'taxa-list tl)
-              (cons (hons 'tree 
-                          (let ((new-tree (order-by-merge 
+              (cons (hons 'tree
+                          (let ((new-tree (order-by-merge
                                            t
                                            (get-tree entry)
                                            (taxa-list-to-taxon-index tl))))
@@ -409,7 +409,7 @@
                               (mv-root new-tree))))
                     entry))
       entry)))
-               
+
 (defthm stringp-gives-stringp-or-nil
   (implies (stringp x)
            (stringp-or-nil x))
@@ -420,7 +420,7 @@
                 (good-pairing-to-add pos val entry))
            (good-entry (cons (cons pos val)
                              entry)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable good-entry
                               get-model
                               get-taxa-list
@@ -466,7 +466,7 @@
         (equal (get-ml (update-taxa-list-of-entry
                                 entry tl))
                (get-ml entry)))
-        :hints (("Goal" :in-theory 
+        :hints (("Goal" :in-theory
                  (enable
                   get-rooted-flg
                   get-brlens-flg
@@ -479,7 +479,7 @@
                   get-model
                   get-ingroup
                   get-outgroup
-                  get-mp 
+                  get-mp
                   get-ml))))
 
 (defthm update-changes
@@ -491,7 +491,7 @@
                        tl)
                 (equal (get-tree (update-taxa-list-of-entry
                                   entry tl))
-                       (let ((new-tree (order-by-merge 
+                       (let ((new-tree (order-by-merge
                                         t
                                         (get-tree entry)
                                         (taxa-list-to-taxon-index tl))))
@@ -529,8 +529,8 @@
                 (good-taxa-list (double-rewrite tl))
                 (perm (double-rewrite new-tl)
                       (double-rewrite tl)))
-           (good-tree (order-by-merge 
-                       t tree 
+           (good-tree (order-by-merge
+                       t tree
                        (taxa-list-to-taxon-index new-tl))
                       new-tl))
   :hints (("Goal" :in-theory (enable good-tree))))
@@ -600,7 +600,7 @@
                (get-ml entry))
         (equal (get-taxa-list (unroot-tree-entry entry))
                (get-taxa-list entry)))
-        :hints (("Goal" :in-theory 
+        :hints (("Goal" :in-theory
                  (enable
                   get-taxa-list
                   get-brlens-flg
@@ -613,7 +613,7 @@
                   get-model
                   get-ingroup
                   get-outgroup
-                  get-mp 
+                  get-mp
                   get-ml))))
 
 (defthm good-entry-unroot-tree-entry
@@ -646,7 +646,7 @@
                    (get-taxa-list (cdr first)))
              (cons (cons (car first)
                       (update-taxa-list-of-entry
-                       (cdr first) tl)) 
+                       (cdr first) tl))
                    (db-with-taxa-list tl rest))
            (db-with-taxa-list tl rest))))
 
@@ -680,9 +680,9 @@
 
 (defthm assoc-db-with-method-gives-correct-get-method
   (implies (assoc-hqual i (db-with-method method db))
-           (equal 
-            (get-method 
-             (cdr (assoc-hqual i 
+           (equal
+            (get-method
+             (cdr (assoc-hqual i
                                (db-with-method method db))))
             method))
   :hints (("Goal" :induct (len db))))
@@ -715,9 +715,9 @@
 
 (defthm assoc-db-with-date-gives-correct-get-date
   (implies (assoc-hqual i (db-with-date date db))
-           (equal 
-            (get-date 
-             (cdr (assoc-hqual i 
+           (equal
+            (get-date
+             (cdr (assoc-hqual i
                                (db-with-date date db))))
             date))
   :hints (("Goal" :induct (len db))))
@@ -750,9 +750,9 @@
 
 (defthm assoc-db-with-author-gives-correct-get-author
   (implies (assoc-hqual i (db-with-author author db))
-           (equal 
-            (get-author 
-             (cdr (assoc-hqual i 
+           (equal
+            (get-author
+             (cdr (assoc-hqual i
                                (db-with-author author db))))
             author))
   :hints (("Goal" :induct (len db))))
@@ -786,9 +786,9 @@
 
 (defthm assoc-db-with-tool-gives-correct-get-tool
   (implies (assoc-hqual i (db-with-tool tool db))
-           (equal 
-            (get-tool 
-             (cdr (assoc-hqual i 
+           (equal
+            (get-tool
+             (cdr (assoc-hqual i
                                (db-with-tool tool db))))
             tool))
   :hints (("Goal" :induct (len db))))
@@ -821,9 +821,9 @@
 
 (defthm assoc-db-with-data-type-gives-correct-get-data-type
   (implies (assoc-hqual i (db-with-data-type data-type db))
-           (equal 
-            (get-data-type 
-             (cdr (assoc-hqual i 
+           (equal
+            (get-data-type
+             (cdr (assoc-hqual i
                                (db-with-data-type data-type db))))
             data-type))
   :hints (("Goal" :induct (len db))))
@@ -856,9 +856,9 @@
 
 (defthm assoc-db-with-analysis-id-gives-correct-get-analysis-id
   (implies (assoc-hqual i (db-with-analysis-id analysis-id db))
-           (equal 
-            (get-analysis-id 
-             (cdr (assoc-hqual i 
+           (equal
+            (get-analysis-id
+             (cdr (assoc-hqual i
                                (db-with-analysis-id analysis-id db))))
             analysis-id))
   :hints (("Goal" :induct (len db))))
@@ -892,9 +892,9 @@
 
 (defthm assoc-db-with-model-gives-correct-get-model
   (implies (assoc-hqual i (db-with-model model db))
-           (equal 
-            (get-model 
-             (cdr (assoc-hqual i 
+           (equal
+            (get-model
+             (cdr (assoc-hqual i
                                (db-with-model model db))))
             model))
   :hints (("Goal" :induct (len db))))

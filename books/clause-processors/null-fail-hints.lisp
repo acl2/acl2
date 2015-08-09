@@ -2,7 +2,7 @@
 ;; by Sol Swords
 
 ;; This file introduces two hint keywords, used as follows:
-;; 
+;;
 ;; :null nil - an identity hint; useful in :or hints for an alternative in
 ;;             which nothing is done
 ;;

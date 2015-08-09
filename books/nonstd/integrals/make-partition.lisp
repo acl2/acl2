@@ -74,7 +74,7 @@
 		  (max (mesh p1)
 		       (mesh p2)))))
 
-(local 
+(local
  (defthm mesh-append
    (implies (and (partitionp p1)
 		 (partitionp p2)
@@ -111,7 +111,7 @@
 		 (natp n))
 	    (equal (car (last (make-partition-rec a delta n)))
 		   (+ a (* n delta))))))
-	     
+
 (local
  (defthm car-last-make-partition
    (implies (and (acl2-numberp a)
@@ -129,7 +129,7 @@
 		 )
 	    (partitionp (make-partition-rec a delta n)))))
 
-(local 
+(local
  (defthm partitionp-make-partition
    (implies (and (realp a)
 		 (realp b)
@@ -138,7 +138,7 @@
 		 )
 	    (partitionp (make-partition a b n)))))
 
-(local 
+(local
  (defthm maxlist-deltas-make-partition-rec
    (implies (and (acl2-numberp a)
 		 (acl2-numberp delta)
@@ -157,7 +157,7 @@
 	    (equal (maxlist (deltas (make-partition a b n)))
 		   (/ (- b a) n)))))
 
-(local 
+(local
  (defthm consp-cdr-make-partition-rec-2
    (consp (cdr (make-partition-rec a delta 2)))
    :hints (("Goal"
@@ -172,7 +172,7 @@
    ))
 
 
-   
+
 
 (local
  (defthm consp-cdr-make-partition-rec
@@ -223,8 +223,8 @@
 
 (local
  (defthm mesh-make-small-partition
-   (implies (and (acl2-numberp a) 
-		 (acl2-numberp b) 
+   (implies (and (acl2-numberp a)
+		 (acl2-numberp b)
 		 (< a b))
 	    (equal (mesh (make-small-partition a b))
 		   (/ (- b a) (i-large-integer))))))

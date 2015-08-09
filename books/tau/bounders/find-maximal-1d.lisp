@@ -69,7 +69,7 @@
                 (integerp hi)
                 (or (null xxx) (integerp xxx)))
            (above-all (find-maximal1 lo hi xxx) lo hi)))
-                
+
 (defthm above-all-is-a-universal-quantifier
   (implies (and (integerp lo)
                 (integerp hi)
@@ -91,6 +91,6 @@
 
 
 
-                
+
 
 

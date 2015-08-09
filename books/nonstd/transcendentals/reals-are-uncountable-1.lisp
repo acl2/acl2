@@ -5,18 +5,18 @@
 
 (include-book "nested-intervals")
 
-(encapsulate 
+(encapsulate
  ( ((seq *) => * :formals (n) :guard (posp n))
    ((a) => *)
    ((b) => *)
    )
- (local (defun seq (n) 
+ (local (defun seq (n)
           (declare (xargs :guard (posp n))
                    (ignore n))
           0))
  (local (defun a () 0))
  (local (defun b () 1))
- 
+
  (defthm seq-is-real
    (realp (seq n))
    :rule-classes (:rewrite :type-prescription))
@@ -75,13 +75,13 @@
 
 (defun next-two-indexes-in-range (n A B)
   (cons (next-index-in-range n A B)
-        (next-index-in-range (1+ (next-index-in-range n A B)) 
+        (next-index-in-range (1+ (next-index-in-range n A B))
                              (seq (next-index-in-range n A B))
                              B)))
 
 (defun exist-next-two-indexes-in-range (n A B)
   (and (exists-next-index-in-range n A B)
-       (exists-next-index-in-range (1+ (next-index-in-range n A B)) 
+       (exists-next-index-in-range (1+ (next-index-in-range n A B))
                                    (seq (next-index-in-range n A B))
                                    B)))
 
@@ -148,7 +148,7 @@
             :use ((:instance must-be-1))))
    :rule-classes (:built-in-clause)
    ))
- 
+
 (local
  (defthm counter-example-not-in-previous-sequence-lemma-2
    (implies (and (realp A)
@@ -176,12 +176,12 @@
                         (counter-example n a b))))
    :hints (("Goal" :do-not-induct t
             :use ((:instance must-be-1)))
-           ("Goal'" 
+           ("Goal'"
             :expand ((COUNTER-EXAMPLE 1 A B)))
            )
    :rule-classes (:built-in-clause)
    ))
-   
+
 (defthm counter-example-not-in-previous-sequence
   (implies (and (realp A)
                 (realp B)
@@ -226,7 +226,7 @@
            :use ((:instance counter-example-not-in-previous-sequence)
                  (:instance no-next-index-in-range-counter-example-not-in-following-sequence)))))
 
-  
+
 (defun-sk exists-in-sequence (x)
   (exists i
           (and (posp i)
@@ -375,7 +375,7 @@
 
 ;;-----------------------
 ;;
-;; Next up: We can assume that we can always get a next interval in the sequence, 
+;; Next up: We can assume that we can always get a next interval in the sequence,
 ;; so we should be able to get an infinite chain of closed intervals so that the
 ;; intersection of the intervals is in the original open interval (A,B) but not
 ;; in the sequence.
@@ -386,7 +386,7 @@
     def))
 
 (defun indexes-to-interval (indexes)
-  (cons (extend-seq (car indexes) (a)) 
+  (cons (extend-seq (car indexes) (a))
         (extend-seq (cdr indexes) (b))))
 
 (defun cantor-sequence-indexes (n)
@@ -402,7 +402,7 @@
                 (next-two-indexes-in-range next-n next-a next-b)
               nil))
         nil))))
-           
+
 (local
  (defthm cantor-sequence-indexes-is-pair-of-natps-lemma
    (implies (and (not (zp n))
@@ -421,8 +421,8 @@
                                 exist-next-two-indexes-in-range
                                 indexes-to-interval
                                 next-two-indexes-in-range)))))
-            
-                
+
+
 (local
  (defthm cantor-sequence-indexes-is-pair-of-natps-lemma-useful
    (implies
@@ -625,7 +625,7 @@
    (implies (and (posp n)
                  (cantor-sequence-indexes n))
             (cantor-sequence-indexes (+ -1 n)))))
-            
+
 
 (defthm cantor-sequence-indexes-is-nested-interval-left-strong
   (implies (and (posp n)
@@ -725,7 +725,7 @@
   (implies (null (cantor-sequence-indexes n))
            (<= (a) (second (cantor-sequence-indexes-critical-pair n))))
   :hints (("Goal"
-           :in-theory (disable next-two-indexes-in-range))      
+           :in-theory (disable next-two-indexes-in-range))
           ("Subgoal *1/5"
            :use ((:instance cantor-sequence-indexes-car-in-range (n (1- n))))
            :in-theory (disable next-two-indexes-in-range cantor-sequence-indexes-car-in-range))
@@ -740,7 +740,7 @@
            (< (second (cantor-sequence-indexes-critical-pair n))
               (third (cantor-sequence-indexes-critical-pair n))))
   :hints (("Goal"
-           :in-theory (disable next-two-indexes-in-range))      
+           :in-theory (disable next-two-indexes-in-range))
           ("Subgoal *1/5"
            :use ((:instance cantor-sequence-indexes-is-interval (n (1- n))))
            :in-theory (disable next-two-indexes-in-range cantor-sequence-indexes-is-interval))
@@ -755,7 +755,7 @@
            (<= (third (cantor-sequence-indexes-critical-pair n))
                (b)))
   :hints (("Goal"
-           :in-theory (disable next-two-indexes-in-range))      
+           :in-theory (disable next-two-indexes-in-range))
           ("Subgoal *1/5"
            :use ((:instance cantor-sequence-indexes-cdr-in-range (n (1- n))))
            :in-theory (disable next-two-indexes-in-range cantor-sequence-indexes-cdr-in-range))
@@ -814,7 +814,7 @@
 (defthm cantor-sequence-not-null-if-not-cantor-sequence-indexes-is-sometimes-null
   (implies (not (cantor-sequence-indexes-is-sometimes-null))
            (cantor-sequence-indexes n))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance cantor-sequence-indexes-is-sometimes-null-suff))
            :in-theory (disable cantor-sequence-indexes cantor-sequence-indexes-is-sometimes-null-suff)))
   )
@@ -853,7 +853,7 @@
 
 (defthm simplified-cantor-interval-satisfies-nested-intervals-are-intervals
   (implies (posp n)
-           (<= (car (simplified-cantor-interval n)) 
+           (<= (car (simplified-cantor-interval n))
                (cdr (simplified-cantor-interval n))))
   :hints (("Goal"
            :cases ((cantor-sequence-indexes-is-sometimes-null)))
@@ -981,7 +981,7 @@
                                simplified-cantor-interval-satisfies-nested-intervals-are-nested-strong
                                simplified-cantor-interval
                                ))
-           
+
           ))
 
 (in-theory (disable intersection-point (intersection-point)))
@@ -1113,8 +1113,8 @@
                                next-two-indexes-in-range
                                exist-next-two-indexes-in-range)))
   )
-       
-       
+
+
 
 (defthm next-index-in-range-minimal
   (implies (and (posp n)
@@ -1165,7 +1165,7 @@
                                exist-next-two-indexes-in-range
                                next-two-indexes-in-range
                                cantor-sequence-not-null-if-not-cantor-sequence-indexes-is-sometimes-null))))
-  
+
 (defthm max-cantor-sequence-is-useless-stronger
   (implies (and (not (cantor-sequence-indexes-is-sometimes-null))
                 (natp n))
@@ -1351,7 +1351,7 @@ v                (<= n m)
                 ;(<= n m)
                 (< (car (next-two-indexes-in-range n A B)) m)
                 (< m (cdr (next-two-indexes-in-range n A B))))
-           (not (in-range (seq m) 
+           (not (in-range (seq m)
                           (seq (car (next-two-indexes-in-range n A B)))
                           (seq (cdr (next-two-indexes-in-range n A B))))))
   :hints (("Goal"
@@ -1543,7 +1543,7 @@ v                (<= n m)
                                max-cantor-sequence-is-useless-for-natps
                                ))
           ))
-                 
+
 
 
 (defthm cantor-sequence-endpoints-lemma
@@ -1563,7 +1563,7 @@ v                (<= n m)
            :in-theory (disable cantor-sequence-indexes
                                cantor-sequence-indexes-simplified
                                indexes-to-interval
-                               
+
                                in-range
                                ))))
 
@@ -1610,7 +1610,7 @@ v                (<= n m)
                                indexes-to-interval
                                car-indexes-to-interval
                                cdr-indexes-to-interval))))
-                               
+
 (defun natural-induction (n)
   (if (zp n)
       n

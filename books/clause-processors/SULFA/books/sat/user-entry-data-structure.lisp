@@ -34,11 +34,11 @@
    (t
     (make-uae-list (cdr i-expr-list)
                    (cons (make-user-arg-entry (car i-expr-list))
-                         acc)))))                   
+                         acc)))))
 
 (defun make-user-un-fn-entry (fn uf-entry)
-  `(user-un-fn-entry 
-    . 
+  `(user-un-fn-entry
+    .
     ((,fn . ,(ufe-defined-var uf-entry))
      .
      ,(make-uae-list (ufe-arg-list uf-entry) nil))))
@@ -62,7 +62,7 @@
   (consp x))
 
 (defun user-entry-i-expr (entry)
-  (cond 
+  (cond
    ((uuf-entryp entry)
     (uufe-lhs entry))
    ((uv-entryp entry)
@@ -75,7 +75,7 @@
         entry))))
 
 (defun user-entry-i-var (entry)
-  (cond 
+  (cond
    ((uuf-entryp entry)
     (uufe-lhs entry))
    ((uv-entryp entry)
@@ -87,12 +87,12 @@
 
 (defun uae-list-vals (uae-list acc $sat)
   (declare (xargs :stobjs $sat))
-  (cond 
+  (cond
    ((endp uae-list)
     (revappend acc nil))
    (t
     (let* ((val (eval-i-expr (uae-i-expr (car uae-list)) $sat)))
-      (uae-list-vals (cdr uae-list) 
+      (uae-list-vals (cdr uae-list)
                      (cons `(quote ,val) acc)
                      $sat)))))
 
@@ -104,7 +104,7 @@
   (declare (xargs :stobjs $sat))
   (cond
    ((uuf-entryp entry)
-    `(,(uufe-fn entry) . 
+    `(,(uufe-fn entry) .
       ,(uufe-arg-vals entry $sat)))
    ((uv-entryp entry)
     (uve-a-var entry))

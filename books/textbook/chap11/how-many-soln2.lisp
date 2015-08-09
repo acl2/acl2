@@ -386,8 +386,8 @@ Subgoal *1/3.2''
   (perm (mergesort x) x))
 
 ; The theorem above is proved by using cntrex-is-counterexample to
-; rewrite the perm, above, into 
- 
+; rewrite the perm, above, into
+
 ; (equal (how-many (cntrex (mergesort x) x)
 ;                  (mergesort x))
 ;        (how-many (cntrex (mergesort x) x)

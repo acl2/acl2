@@ -19,7 +19,7 @@ data last modified: [2014-08-06]
 ; DATA CONSTRUCTOR TABLE
 (table data-constructor-table nil nil :clear)
 
-(defconst *register-data-constructor-keywords* 
+(defconst *register-data-constructor-keywords*
   '(:verbose :hints :proper :rule-classes :local-events :export-defthms :theory-name :recordp))
 
 
@@ -86,13 +86,13 @@ data last modified: [2014-08-06]
        (recordp (get1 :recordp kwd-alist))
        (dest-pred-alist (pairlis$ dex-names dpreds))
        (kwd-alist (acons :arity (len dex-names) (acons :recog recog (acons :dest-pred-alist dest-pred-alist kwd-alist)))))
-        
+
     `((defthm ,(s+ conx-name '-CONSTRUCTOR-PRED)
          (implies ,hyp
                   (,recog (,conx-name . ,dex-names)))
          :hints ,hints
          :rule-classes ,rule-classes)
-                      
+
        (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS)
          (implies (,recog x)
                   (and . ,(list-up-lists dpreds (apply-to-x-lst dex-names))))
@@ -107,15 +107,15 @@ data last modified: [2014-08-06]
                                   x))
                   :hints ,hints
                   :rule-classes ,(if (or recordp rule-classes) '(:elim) rule-classes))
-                
-                
+
+
                 (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS-PROPER)
                   (implies ,hyp
                            (and . ,(get-proper-dex-theorems conx-name dex-names)))
                   :hints ,hints
                   :rule-classes ,rule-classes)))
-       ;local 
+       ;local
        ;export-defthms TODO
-      
+
        (TABLE DATA-CONSTRUCTOR-TABLE ',conx-name ',kwd-alist))))
 

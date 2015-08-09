@@ -69,10 +69,10 @@
 	 (mode*))))
 
 (in-theory (disable mu* mode* sticky* rconst* add* mask* carry* sig* p* modep*
-		    (:executable-counterpart mu*) (:executable-counterpart mode*) 
-		    (:executable-counterpart sticky*) (:executable-counterpart rconst*) 
+		    (:executable-counterpart mu*) (:executable-counterpart mode*)
+		    (:executable-counterpart sticky*) (:executable-counterpart rconst*)
 		    (:executable-counterpart add*) (:executable-counterpart mask*)
-		    (:executable-counterpart carry*) (:executable-counterpart sig*) 
+		    (:executable-counterpart carry*) (:executable-counterpart sig*)
 		    (:executable-counterpart p*) (:executable-counterpart modep*)))
 
 (in-theory (enable rc_c2* pc_c2* sgnz_c3* exp_sum_c3* sigx_c3* sigy_c3*
@@ -113,7 +113,7 @@
   :hints (("Goal" :in-theory (enable sticky* sticky_nof* sticky_of*)
 		  :use (pc-0-1
 			(:instance bitn-0-1
-				   (x (mu*)) 
+				   (x (mu*))
 				   (n (- 126 (mu*))))))))
 
 (defthm sgnz-rewrite
@@ -187,8 +187,8 @@
 	     (near (expt 2 (- (p*) (1+ (mu*)))))
 	     (inf (1- (expt 2 (- (p*) (mu*)))))
 	     (t 0)))
-  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) modep* mode* 
-				     rconst* rconst_doub_of* rconst_sing_of* 
+  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) modep* mode*
+				     rconst* rconst_doub_of* rconst_sing_of*
 				     rconst_of* mu* rconst_nof* p* sgnz-rewrite)
 		  :use (pc-0-1 rc-vals overflow-0-1))))
 
@@ -306,12 +306,12 @@
 (defthm sig-prod-1
     (= (prod*) (* (expt 2 126) (sig (hat (x*))) (sig (hat (y*)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) prod* 
+  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) prod*
 				     sig-hat-x sig-hat-y)
 		  :use (sig-x-y-bnds sig-hat-x sig-hat-y))))
 
 (defthm sig-prod-2
-    (= (prod*) 
+    (= (prod*)
        (* (expt 2 (expo (prod*)))
 	  (sig (hat (x*)))
 	  (sig (hat (y*)))
@@ -321,8 +321,8 @@
 		  :use (expo-prod
 			sig-prod-1
 			overflow-0-1
-			(:instance expo+ 
-				   (m (+ (overflow*) 126)) 
+			(:instance expo+
+				   (m (+ (overflow*) 126))
 				   (n (- (overflow*))))))))
 
 (defthm SIG-PROD
@@ -330,13 +330,13 @@
 	   (* (sig (hat (x*)))
 	      (sig (hat (y*)))
 	      (expt 2  (- (overflow*)))))
-  :hints (("Goal" :use (sig-prod-2 
+  :hints (("Goal" :use (sig-prod-2
 			(:instance fp-abs (x (prod*)))
-			(:instance cancel-equal-* 
+			(:instance cancel-equal-*
 				   (a (expt 2 (expo (prod*))))
 				   (r (sig (prod*)))
 				   (s (* (sig (hat (x*)))
-					 (sig (hat (y*))) 
+					 (sig (hat (y*)))
 					 (expt 2  (- (overflow*))))))))))
 
 (in-theory (disable sig-prod))
@@ -364,7 +364,7 @@
 		  :use (overflow-0-1
 			sig-prod
 			(:instance expt-pos
-				   (x (+ (expo (hat (x*))) 
+				   (x (+ (expo (hat (x*)))
 					 (expo (hat (y*))))))
 			(:instance sig-lower-bound (x (hat (x*))))
 			(:instance sig-lower-bound (x (hat (y*))))
@@ -395,7 +395,7 @@
 		  :use (overflow-0-1
 			x-non-zero
 			y-non-zero
-			(:instance expt-pos 
+			(:instance expt-pos
 				   (x (+ (overflow*)
 					 (expo (hat (x*)))
 					 (expo (hat (y*))))))
@@ -414,7 +414,7 @@
 				   (x (* (hat (x*)) (hat (y*))))
 				   (m (sig (prod*)))
 				   (e (+ (expo (hat (x*)))
-					 (expo (hat (y*))) 
+					 (expo (hat (y*)))
 					 (overflow*))))))))
 
 (defthm SIG-XY
@@ -430,7 +430,7 @@
 				   (x (* (hat (x*)) (hat (y*))))
 				   (m (sig (prod*)))
 				   (e (+ (expo (hat (x*)))
-					 (expo (hat (y*))) 
+					 (expo (hat (y*)))
 					 (overflow*))))))))
 
 (in-theory (disable expo-xy sig-xy))
@@ -496,7 +496,7 @@
   :hints (("Goal" :in-theory (enable p* precision mu*)
 		  :use (sticky-exact-5
 			expo-prod
-			(:instance sticky-exact-6 
+			(:instance sticky-exact-6
 				   (x (prod*))
 				   (k (- (p*) (1+ (mu*))))
 				   (n (p*)))))))
@@ -512,7 +512,7 @@
 (defthm ADD-REWRITE
     (equal (add*)
 	   (+ (prod*) (rconst*)))
-  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) expo-prod 
+  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) expo-prod
 				     rconst* add* add_of* add_nof* rconst* p*)
 		  :use (prod-bnds
 			rconst-bnds
@@ -526,7 +526,7 @@
 	 (< (add*) (expt 2 (1+ (p*)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable p* (:executable-counterpart expt) expo-prod add-rewrite)
-		  :use (prod-bnds 
+		  :use (prod-bnds
 			rconst-bnds
 			overflow-0-1
 			(:instance expo-upper-bound (x (prod*)))
@@ -539,7 +539,7 @@
 		  :use (mask-nat
 			add-bnds
 			carry-0-1
-			(:instance logior-nat 
+			(:instance logior-nat
 				   (i (* (carry*) (expt 2 (1- (p*)))))
 				   (j (logand (add*) (mask*))))
 			(:instance logand-nat (i (add*)) (j (mask*)))))))
@@ -553,7 +553,7 @@
 			add-bnds
 			(:instance bitn-2**n (n (1- (p*))))
 			(:instance logand-nat (i (add*)) (j (mask*)))
-			(:instance bit-dist-b 
+			(:instance bit-dist-b
 				   (x (* (carry*) (expt 2 (1- (p*)))))
 				   (y (logand (add*) (mask*)))
 				   (n (1- (p*))))
@@ -704,13 +704,13 @@
 			carry-0-1
 			mask-nat
 			add-bnds
-			(:instance or-dist-d 
+			(:instance or-dist-d
 				   (x (* (carry*) (expt 2 (1- (p*)))))
 				   (y (logand (add*) (mask*)))
 				   (n (- (p*) 64)))
 			(:instance logand-nat (i (add*)) (j (mask*)))
 			(:instance bit-basic-b
-				   (x (rem (* (carry*) (expt 2 (1- (p*)))) 
+				   (x (rem (* (carry*) (expt 2 (1- (p*))))
 					   (expt 2 (- (p*) 64)))))))))
 
 (defthm sigz-rewrite
@@ -763,7 +763,7 @@
 	 (>= (exp_sum*) 0))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable bits-0-rem exp_sum* expx* expy*)
-		  :use (expx-bnds 
+		  :use (expx-bnds
 			expy-bnds
 			(:instance rem+rem (a #x4001) (b (+ (expx*) (expy*))) (n (expt 2 15)))
 			(:instance bits-nat
@@ -776,7 +776,7 @@
 				   (j 0))))))
 
 (defthm expz-rewrite
-    (equal (expz*) 
+    (equal (expz*)
 	   (if (= (overflow*) 1)
 	       (rem (+ (exp_sum*) (+ (carry*) 1)) (expt 2 15))
 	     (rem (+ (exp_sum*) (+ (carry*))) (expt 2 15))))
@@ -802,7 +802,7 @@
 (defthm sgnf-z
     (= (sgnf (z*) (extfmt)) (sgnz*))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) z* extfmt 
+  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) z* extfmt
 				     bits-0-rem p* sgnz-rewrite)
 		  :use (sigz-bnds
 			expz-bnds
@@ -814,14 +814,14 @@
 (defthm expf-z
     (= (expf (z*) (extfmt)) (expz*))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) z* bits extfmt 
+  :hints (("Goal" :in-theory (enable (:executable-counterpart expt) z* bits extfmt
 				     bits-0-rem p* sgnz-rewrite)
 		  :use (sigz-bnds
 			expz-bnds
 			(:instance fl-unique
 				   (x (+ (sgnz*) (/ (sigz*) (expt 2 64))))
 				   (n (sgnz*)))
-			(:instance rem< 
+			(:instance rem<
 				   (m (+ (* (expt 2 64) (expz*)) (sigz*)))
 				   (n (expt 2 79)))
 			(:instance rem+
@@ -1005,7 +1005,7 @@
        (rem (+ (expx*) (expy*) (expt 2 14) 1 (carry*) (overflow*))
 	    (expt 2 15)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable bits-0-rem exp_sum* expz-rewrite 
+  :hints (("Goal" :in-theory (enable bits-0-rem exp_sum* expz-rewrite
 				     (:executable-counterpart expt))
 		  :use (overflow-0-1
 			carry-0-1
@@ -1024,7 +1024,7 @@
     (= (rem (+ (expt 2 15) (expo (hat (z*))))
 	    (expt 2 15))
        (rem (+ (expt 2 15)
-	       (expo (* (hat (x*)) (hat (y*))))      
+	       (expo (* (hat (x*)) (hat (y*))))
 	       (carry*))
 	    (expt 2 15)))
   :rule-classes ()
@@ -1045,7 +1045,7 @@
 				   (m (+ (expx*) (expy*) 2 (carry*) (overflow*)))
 				   (n (expt 2 15)))))))
 
-(defun k* () 
+(defun k* ()
   (/ (- (expo (hat (z*)))
 	(+ (expo (* (hat (x*)) (hat (y*)))) (carry*)))
      (expt 2 15)))
@@ -1117,9 +1117,9 @@
 			expo-prod
 			pc-0-1
 			(:instance exact-bits-a-b (x (prod*)) (n (p*)) (k (- (p*) (mu*))))
-			(:instance exact-bits-a-d 
+			(:instance exact-bits-a-d
 				   (x (prod*))
-				   (n (p*)) 
+				   (n (p*))
 				   (k (- (p*) (mu*))))))))
 
 (defthm prod-exactp-2
@@ -1156,7 +1156,7 @@
 		(trunc (+ (prod*) (expt 2 (- (p*) (1+ (mu*)))))
 		       (1- (mu*)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable p* mu* precision add-rewrite 
+  :hints (("Goal" :in-theory (enable p* mu* precision add-rewrite
 				     rconst-rewrite mask-rewrite)
 		  :use (prod-nat
 			add-bnds
@@ -1165,10 +1165,10 @@
 			sig-add-expo
 			(:instance expo-lower-bound (x (add*)))
 			(:instance expo-upper-bound (x (add*)))
-			(:instance bits-trunc 
-				   (x (add*)) 
-				   (k (1- (mu*))) 
-				   (m (p*)) 
+			(:instance bits-trunc
+				   (x (add*))
+				   (k (1- (mu*)))
+				   (m (p*))
 				   (n (p*)))))))
 
 (defthm carry-0-near-3
@@ -1197,7 +1197,7 @@
 		(logand (+ (prod*) (expt 2 (- (p*) (1+ (mu*)))))
 		        (- (expt 2 (p*)) (expt 2 (- (p*) (mu*)))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable p* mu* precision modep* add-rewrite 
+  :hints (("Goal" :in-theory (enable p* mu* precision modep* add-rewrite
 				     rconst-rewrite mask-rewrite)
 		  :use (sig-rewrite-0))))
 
@@ -1210,7 +1210,7 @@
 		(trunc (+ (prod*) (expt 2 (- (p*) (1+ (mu*)))))
 		       (mu*))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable p* mu* precision add-rewrite 
+  :hints (("Goal" :in-theory (enable p* mu* precision add-rewrite
 				     rconst-rewrite mask-rewrite)
 		  :use (prod-nat
 			add-bnds
@@ -1219,10 +1219,10 @@
 			sig-add-expo
 			(:instance expo-lower-bound (x (add*)))
 			(:instance expo-upper-bound (x (add*)))
-			(:instance bits-trunc 
+			(:instance bits-trunc
 				   (x (add*))
-				   (k (mu*)) 
-				   (m (p*)) 
+				   (k (mu*))
+				   (m (p*))
 				   (n (p*)))))))
 
 (defthm carry-0-near-6
@@ -1347,7 +1347,7 @@
 
 (defthm add-lower
     (implies (= (carry*) 1)
-	     (<= (expt 2 (p*)) (add*)))  
+	     (<= (expt 2 (p*)) (add*)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable p*)
 		  :use (add-bnds
@@ -1466,7 +1466,7 @@
 		  :use (add-lower
 			pc-0-1
 			prod-nat
-			(:instance fp+1 
+			(:instance fp+1
 				   (x (- (expt 2 (p*)) (expt 2 (- (p*) (mu*)))))
 				   (y (away (prod*) (mu*)))
 				   (n (mu*)))
@@ -1762,7 +1762,7 @@
 		  :use (k-0-3
 			z-normal))))
 
-(defthm output-spec* 
+(defthm output-spec*
     (output-spec (x*) (y*) (rc*) (pc*))
   :hints (("Goal" :in-theory (enable output-spec)
 		  :use (z*-spec fmul-star-equivalence))))

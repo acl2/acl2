@@ -266,11 +266,11 @@
   (b* ((a (nfix a))
        (b (nfix b))
        ((ret stuff) (mathstuff a b)))
-    (list :sum stuff.sum 
+    (list :sum stuff.sum
           :prod stuff.prod))
   ///
   (assert! (equal (do-math-stuff 1 2) (list :sum 3 :prod 2))))
-  
+
 
 
 (defstobj foost (foo-x))

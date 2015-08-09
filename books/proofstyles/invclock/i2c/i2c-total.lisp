@@ -17,11 +17,11 @@ the external state as the "ending state" of the program) and in that state
 post holds.
 
 How do we normally prove this using invariants? The key idea is to define a
-function inv with the following properties: 
+function inv with the following properties:
 
 1. inv holds for every pre state.
-2. if inv holds in a state, then inv holds in the next state. 
-3. if invholds in an external state, then post holds in the same state.  
+2. if inv holds in a state, then inv holds in the next state.
+3. if invholds in an external state, then post holds in the same state.
 4. if inv holds in a state, then there is an external state reachable from that
 state.
 
@@ -70,9 +70,9 @@ programs,. but I have not done that as yet.
 
 (in-theory (disable natp))
 
-(encapsulate 
- 
- ;; This encapsulation formalizes the notion of an invariant proof. 
+(encapsulate
+
+ ;; This encapsulation formalizes the notion of an invariant proof.
 
  (((next-total *) => *)                ;; The step function
   ((pre-total *) => *)                 ;; pre-total condition
@@ -94,7 +94,7 @@ programs,. but I have not done that as yet.
  ;; invariant proof. Thse should be self-explanatory.
 
  (defthm pre-total-implies-inv-total
-   (implies (pre-total s) 
+   (implies (pre-total s)
             (inv-total s)))
 
  (defthm inv-total-is-invariant
@@ -149,7 +149,7 @@ programs,. but I have not done that as yet.
   (1+ (clock-total--fn-aux s)))
 
 ;; Ok so the proof. First prove that running for clock steps satisfies the
-;; invariant. 
+;; invariant.
 
 (local
  (defthm inv-total-run-total-1

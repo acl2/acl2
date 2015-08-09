@@ -21,7 +21,7 @@
 
 (include-book "building-blocks")
 
-(local 
+(local
  (include-book "../../support/top"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -154,7 +154,7 @@
 ;;; These rules might seem out of place in that they deal with
 ;;; cancelling like terms --- something otherwise handled elsewhere.
 ;;; However, by coming after (in this file) the two distributivity
-;;; rules above they will help catch such forms as 
+;;; rules above they will help catch such forms as
 ;;; (* (+ a b) (/ (+ a b))) here, rather than letting it get
 ;;; distributed out and then having to deal with it afterwards.  We
 ;;; place this comment here as a reminder of how the occasional

@@ -41,7 +41,7 @@
   (if (endp regs) ()
     (cons (logic-fn (first (first regs))
                     (second (first regs))
-                    (third (first regs)) 
+                    (third (first regs))
                     vars)
           (logic-fns (rest regs) vars))))
 
@@ -107,7 +107,7 @@
 (defmacro defsimulator (&rest regs)
   (let ((vars (reg-vars regs)))
     (append
-     `(encapsulate 
+     `(encapsulate
        ()
        (mutual-recursion ,@(logic-fns regs vars))
        (defstobj sv ,@(get-fns vars))
@@ -159,9 +159,9 @@
          :rule-classes nil)
        (defexec machine-state (n)
          (declare (xargs :guard (natp n)
-                         :guard-hints 
+                         :guard-hints
                          (("Goal" :in-theory (disable inv run-state ,@(get-fns vars))
-                           :use ((:instance inv-unroll 
+                           :use ((:instance inv-unroll
                                             (sv (run-state n (list ,@(var-nils vars))))))))))
          (mbe :logic (list ,@(lgc-fncls vars))
               :exec (with-local-stobj sv
@@ -172,20 +172,20 @@
 
 ;; example use from the paper:
 
-(defun initial-pc () 
+(defun initial-pc ()
   (declare (xargs :guard t))
   0)
-(defun initial-ra () 
+(defun initial-ra ()
   (declare (xargs :guard t))
   0)
-(defun initial-rb () 
+(defun initial-rb ()
   (declare (xargs :guard t))
   0)
 
 (defun instr (pc)
   (declare (xargs :guard t))
   ;; defines the program. we will encapsulate it here
-  ;; by defining a simple function and the disabling the body 
+  ;; by defining a simple function and the disabling the body
   ;; and executable counterpart
   (if (> (nfix pc) 0) 'bra 'mov))
 
@@ -197,7 +197,7 @@
 (defun >n (x y)
   (declare (xargs :guard t))
   (> (nfix x) (nfix y)))
-(defun +n (x y) 
+(defun +n (x y)
   (declare (xargs :guard t))
   (+ (nfix x) (nfix y)))
 

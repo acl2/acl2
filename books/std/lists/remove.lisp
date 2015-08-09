@@ -104,7 +104,7 @@ library."
 
   ;; (defcong list-equiv equal (remove a x) 2)
   ;; (defcong set-equiv set-equiv (remove a x) 2)
-  
+
   ;; (defthm member-of-remove
   ;;   (iff (member a (remove b x))
   ;;        (and (member a x)

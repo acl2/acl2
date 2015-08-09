@@ -37,7 +37,7 @@
 
 (defthm taspip-strip-cars-pair
   (implies (taspip flg x)
-           (not (member-gen nil (strip-cars-gen 
+           (not (member-gen nil (strip-cars-gen
                                  (pair-key-with-value
                                   x))))))
 
@@ -49,7 +49,7 @@
 
 (defthm taspip-nil-gives-taspip-nil-strip-cdrs
   (implies (taspip nil x)
-           (taspip nil (strip-cdrs-gen 
+           (taspip nil (strip-cdrs-gen
                         (pair-key-with-value x)))))
 
 (defthm consp-gives-consp-pair-key
@@ -106,7 +106,7 @@
                                       (get-taxa-from-taxon-index
                                        order))
                               (taspip flg x))
-                  :guard-hints (("Subgoal 4" :in-theory 
+                  :guard-hints (("Subgoal 4" :in-theory
                                  (disable subset-get-firsts-mytips)
                                  :use (:instance subset-get-firsts-mytips)))
                   :measure (make-ord (1+ (acl2-count x))
@@ -128,7 +128,7 @@
 
 (defthm ordered-nil-through-pair
   (implies (orderedp nil x tia)
-           (orderedp nil (strip-cdrs-gen 
+           (orderedp nil (strip-cdrs-gen
                           (pair-key-with-value x))
                      tia)))
 
@@ -168,7 +168,7 @@
 
 (defthm get-firsts-of-strip-cdrs-of-valid-pair-equal-strip-cars
   (implies (valid-pairing alst)
-           (equal (get-firsts 
+           (equal (get-firsts
                    (strip-cdrs-gen alst))
                   (strip-cars-gen alst))))
 
@@ -303,4 +303,4 @@
 
 (defthm treep-through-pair-key
   (implies (tree-listp x)
-           (tree-listp (strip-cdrs-gen (pair-key-with-value x)))))               
+           (tree-listp (strip-cdrs-gen (pair-key-with-value x)))))

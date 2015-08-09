@@ -95,7 +95,7 @@
 			((< z 0) (< y x))
 			((equal z 0) nil)
 			(t nil))))
-  :hints (("Goal" :use ((:instance 
+  :hints (("Goal" :use ((:instance
                          (:theorem
                           (implies (and (real/rationalp a)
                                         (< 0 a)

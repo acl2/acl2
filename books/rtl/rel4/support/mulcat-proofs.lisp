@@ -91,7 +91,7 @@
 
 (defthm mulcat-1
     (implies (natp l)
-	     (equal (mulcat l 1 x) 
+	     (equal (mulcat l 1 x)
 		    (bits x (1- l) 0)))
   :hints (("Goal" :in-theory (enable mulcat bits-tail)
 		  :expand ((mulcat l 1 x)))))

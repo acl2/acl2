@@ -65,8 +65,8 @@
   (declare (type (satisfies true-listp) keys vals))
   (declare (xargs :guard (pseudo-termp-key arg term)))
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) nil)
      (t (cons (beta-reduce-term nil (car term) keys vals)
 	      (beta-reduce-term arg (cdr term) keys vals)))))
@@ -98,8 +98,8 @@
 
 (defun beta-eval-key (arg term alist)
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) nil)
      (t (cons (beta-eval-key nil (car term) alist)
 	      (beta-eval-key arg (cdr term) alist)))))
@@ -121,8 +121,8 @@
 
 (defun wf-beta-term (arg term)
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) t)
      (t (and (wf-beta-term nil (car term))
 	     (wf-beta-term arg (cdr term))))))
@@ -159,13 +159,13 @@
     (wf-beta-term arg term)
     (equal (len keys) (len vals)))
    (equal (beta-eval-key arg (beta-reduce-term arg term keys vals) a1)
-	  (beta-eval-key arg term (pairlis$ keys 
+	  (beta-eval-key arg term (pairlis$ keys
 					    (beta-eval-key t vals a1)))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 	   :do-not-induct t
 	   :induct (beta-reduce-term arg term keys vals)
 	   :expand (:free (x) (hide x))
-	   :in-theory (e/d (beta-eval-constraint-0 
+	   :in-theory (e/d (beta-eval-constraint-0
 			    beta-eval-key-reduction)
 			   nil))))
 
@@ -212,7 +212,7 @@
    (lambda-expr-p term)
    (equal (beta-eval-key nil term a1)
 	  (beta-eval-key nil (CAR (CDR (CDR (CAR term))))
-			   (pairlis$ (CAR (CDR (CAR term))) 
+			   (pairlis$ (CAR (CDR (CAR term)))
 				     (beta-eval-key t (cdr term) a1)))))
   :hints (("Goal"
            :in-theory
@@ -223,7 +223,7 @@
    (lambda-expr-p term)
    (equal (beta-eval term a1)
 	  (beta-eval (CAR (CDR (CDR (CAR term))))
-		       (pairlis$ (CAR (CDR (CAR term))) 
+		       (pairlis$ (CAR (CDR (CAR term)))
 				 (beta-eval-list (cdr term) a1)))))
   :hints (("Goal" :use beta-eval-lambda-expr-helper
 	   :in-theory (enable beta-eval-key-reduction))))
@@ -251,7 +251,7 @@
     (lambda-expr-p term)
     (pseudo-termp term))
    (equal (beta-eval term a1)
-	  (beta-eval (beta-reduce-term nil (CAR (CDR (CDR (CAR term)))) 
+	  (beta-eval (beta-reduce-term nil (CAR (CDR (CDR (CAR term))))
 				       (CAR (CDR (CAR term)))
 				       (cdr term)) a1))))
 
@@ -281,13 +281,13 @@
 
   ;; Here we show that it can be used to create a meta rule if only we
   ;; could trigger :meta rules on calls of lambdas.
-   
+
   (defun beta-reduce-wrapper (term)
     (declare (type (satisfies pseudo-termp) term))
     (if (lambda-expr-p term)
         (beta-reduce-lambda-expr term)
       term))
-   
+
   (defthm *meta*-beta-reduce-hide
     (implies
      (pseudo-termp term)
@@ -315,7 +315,7 @@
 	       (,ev (beta-reduce-lambda-expr term) a1)))
        :hints (("Goal"
                 :in-theory (enable ,(packn (list ev "-CONSTRAINT-0")))
-                :use (:functional-instance 
+                :use (:functional-instance
                       beta-eval-to-beta-reduce-lambda-expr
                       (beta-eval ,ev)
                       (beta-eval-list ,ev-lst)))))))
@@ -357,7 +357,7 @@
    (pseudo-termp (cdr (assoc key alist))))))
 
 (local
-(defthm pseudo-term-alistp-pairlis$ 
+(defthm pseudo-term-alistp-pairlis$
   (implies
    (pseudo-term-listp vals)
    (pseudo-term-alistp (pairlis$ keys vals)))
@@ -393,7 +393,7 @@
 		 (t nil))))))
 
 (defthm len-beta-reduce-term
-  (implies 
+  (implies
    arg
    (equal (len (acl2::beta-reduce-term arg term keys vals))
 	  (len term))))
@@ -431,8 +431,8 @@
   (declare (xargs :guard (acl2::pseudo-termp-key arg term)
 		  :verify-guards nil))
   (cond
-   (arg 
-    (cond 
+   (arg
+    (cond
      ((endp term) nil)
      (t (cons (beta-reduce-pseudo-termp-switch nil (car term))
 	      (beta-reduce-pseudo-termp-switch arg (cdr term))))))
@@ -474,7 +474,7 @@
 
 (verify-guards beta-reduce-pseudo-termp-switch
 	       :hints (("Goal" :in-theory (enable LAMBDA-EXPR-P))))
-	       
+
 
 (defun beta-reduce-pseudo-termp (term)
   (beta-reduce-pseudo-termp-switch nil term))
@@ -483,7 +483,7 @@
   (implies
    (pseudo-termp term)
    (pseudo-termp (beta-reduce-pseudo-termp term)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
 		 (:forward-chaining :trigger-terms ((beta-reduce-pseudo-termp term)))))
 
 (in-theory (disable beta-reduce-pseudo-termp))

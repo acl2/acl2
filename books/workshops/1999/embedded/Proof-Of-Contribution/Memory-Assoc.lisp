@@ -16,7 +16,7 @@
 ;;; First we define the notion of (Gem or Rtm) typed memory cell, by providing a
 ;;; recognizer, a constructor and a set of accessors to the typed cell's elements.
 ;;;
-;;; Then we define a (Gem or Rtm) typed memory as a list of typed cells: 
+;;; Then we define a (Gem or Rtm) typed memory as a list of typed cells:
 ;;; we provide an accessor, a constructor and a recognizer.
 ;;;
 ;;; Finally we define accessors that 'slice' memories, extracting only
@@ -71,21 +71,21 @@
    (my-or-2
     (equal (var-type memcell) 'int)
     (and
-     (my-or-2 
+     (my-or-2
       (equal (var-value memcell) 0)
-      (equal (var-value memcell) 1))      
+      (equal (var-value memcell) 1))
      (equal (var-type memcell) 'bool)))))
 
- 
+
 (defthm non-boolean-cell-is-integer
- (implies 
+ (implies
   (and
    (is-mem-cell-p cell)
    (not (equal (var-type cell) 'bool)))
    (equal (var-type cell) 'int)))
 
 (defthm non-integer-cell-is-boolean
- (implies 
+ (implies
   (and
    (is-mem-cell-p cell)
    (not (equal (var-type cell) 'int)))
@@ -98,7 +98,7 @@
 ;;; Memory accessor, constructor, recognizer
 ;;;
 ;;; - (get-cell pos mem) : retrieves pos-th element of the mem memory list
-;;; - (put-cell pos cell mem) : puts the cell at position pos in the mem memory list 
+;;; - (put-cell pos cell mem) : puts the cell at position pos in the mem memory list
 ;;;   (nil elements are inserted if necessary)
 ;;;
 
@@ -149,7 +149,7 @@
 ;;;
 ;;; Memory slicing accessors: var-attributes, var-values and var-types
 ;;; They retrieve only the corresponding components of a list of memory cells.
-;;; 
+;;;
 
 
 (in-theory (disable var-attribute var-type var-value))
@@ -201,14 +201,14 @@
       (get-cell (caar vars) mem1)
       (get-cell (caar vars) mem2))
      (equal-wrt-vars (cdr vars) mem1 mem2))
-   ( t 
+   ( t
      nil)))
 
 
 
 
 (defthm equality-wrt-vars-means-every-var-has-same-value
- (implies 
+ (implies
   (and
    (assoc-equal v vars)
    (equal-wrt-vars vars mem1 mem2))
@@ -222,7 +222,7 @@
    (equal-wrt-vars mem1  mem1 mem2)
    (equal-wrt-vars mem2  mem1 mem2)))
 
-      
+
 
 (defthm a-variable-of-either-memory-is-equal-if-memories-are-equal
  (implies
@@ -234,7 +234,7 @@
   (equal
       (get-cell v mem1)
       (get-cell v mem2)))
- :hints (("Goal" :use 
+ :hints (("Goal" :use
 	 ((:instance equality-wrt-vars-means-every-var-has-same-value (vars mem1))
 	  (:instance equality-wrt-vars-means-every-var-has-same-value (vars mem2))))))
 
@@ -259,8 +259,8 @@
  :hints (("Goal" :use (a-variable-of-neither-memory-is-equal-if-memories-are-equal
 		       a-variable-of-either-memory-is-equal-if-memories-are-equal))))
 
-		       
- 
+
+
 
 
 (defthm equal-wrt-vars-reflexive
@@ -292,7 +292,7 @@
 
 
 
-   
+
 (defthm equal-memories-extends-to-all-vars
  (implies
   (equal-memories mem1 mem2)
@@ -331,13 +331,13 @@
  (equal-wrt-vars vars (retrieve-vars vars mem) mem))
 
 (defun same-caars-p (l1 l2)
-  (if (or 
+  (if (or
        (endp l1)
        (endp l2))
-      (and 
+      (and
        (endp l1)
        (endp l2))
-    (and 
+    (and
      (equal (caar l1) (caar l2))
      (same-caars-p (cdr l1) (cdr l2)))))
 
@@ -356,10 +356,10 @@
  (same-caars-p (retrieve-vars vars mem) vars))
 
 
-(defthm equal-wrt-vars-of-retrieve-vars 
+(defthm equal-wrt-vars-of-retrieve-vars
  (equal-wrt-vars (retrieve-vars vars mem) (retrieve-vars vars mem) mem)
  :hints (("Goal"
-	  :use ((:instance if-same-caars-same-equality-wrt-vars 
+	  :use ((:instance if-same-caars-same-equality-wrt-vars
 			   (vars1 (retrieve-vars vars mem))
 			   (vars2 vars)
 			   (mem1 (retrieve-vars vars mem))
@@ -416,21 +416,21 @@
    (vars-inclusion mem vars)
    (vars-inclusion vars mem))
   (equal-memories (retrieve-vars vars mem) mem))
-:hints (("Subgoal 2" :use 
-	 (vars-inclusio 
-	  (:instance equal-wrt-vars-commutative 
-		     (vars mem) 
-		     (mem1 mem) 
+:hints (("Subgoal 2" :use
+	 (vars-inclusio
+	  (:instance equal-wrt-vars-commutative
+		     (vars mem)
+		     (mem1 mem)
 		     (mem2 (retrieve-vars vars mem)))))
 	("Subgoal 1" :use
 	 (equal-wrt-vars-of-retrieve-vars
-	  (:instance equal-wrt-vars-commutative 
-		     (vars (retrieve-vars vars mem)) 
-		     (mem1 mem) 
+	  (:instance equal-wrt-vars-commutative
+		     (vars (retrieve-vars vars mem))
+		     (mem1 mem)
 		     (mem2 (retrieve-vars vars mem)))))))
 
 
-	 
+
 (in-theory (disable
 	            get-cell
 		    equal-memories-extends-to-all-vars
@@ -439,7 +439,7 @@
 
 ;;; cleanup things
 
-(in-theory (disable 
+(in-theory (disable
 	    equality-wrt-vars-means-every-var-has-same-value
 	    a-variable-of-either-memory-is-equal-if-memories-are-equal
 	    a-variable-of-neither-memory-is-equal-if-memories-are-equal

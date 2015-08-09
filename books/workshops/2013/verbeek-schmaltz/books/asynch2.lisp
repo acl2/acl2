@@ -27,7 +27,7 @@
     t
     (and (>= (len (car x)) n)
          (A-len->= (cdr x) n))))
-;; the strip-cars function 
+;; the strip-cars function
 (defun cars (x)
   (declare (xargs :guard (and (true-listp x)
                               (A-len->= x 1))))
@@ -55,7 +55,7 @@
     t
     (and (not (member-equal (car x) y))
          (not-in (cdr x) y))))
-;; Returns all the second element, i.e., the second projection 
+;; Returns all the second element, i.e., the second projection
 (defun cadrs (x)
   (declare (xargs :guard (and (true-listp x)
                               (A-len->= x 2))))
@@ -165,7 +165,7 @@
   (implies (subsetp x y)
            (subsetp x (cons a y))))
 (defthm subsetp-reflexive
-  (subsetp x x))  
+  (subsetp x x))
 
 
 

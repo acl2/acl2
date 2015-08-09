@@ -29,7 +29,7 @@ to short-circuit the evaluation of 4 input cases.
 ;;;; this book only contains definitions used for proving theorems
 ;;;; about the "executable" functions in bdd-mr.lisp. Thus, we do not
 ;;;; expect to execute the functions in this book and as such, we will
-;;;; not go through the overhead of verifying their guards. 
+;;;; not go through the overhead of verifying their guards.
 
 (set-verify-guards-eagerness 0)
 
@@ -38,21 +38,21 @@ to short-circuit the evaluation of 4 input cases.
 ;;;;; a couple of simple theorems here and actually hide the definition
 ;;;;; of acl2-count.
 
-(local 
+(local
 (defthm consp-<-acl2-count-bdd-else
   (implies (consp x)
 	   (< (acl2-count (b-else x))
 	      (acl2-count x)))
   :rule-classes :linear))
 
-(local 
+(local
 (defthm consp-<-acl2-count-bdd-then
   (implies (consp x)
 	   (< (acl2-count (b-then x))
 	      (acl2-count x)))
   :rule-classes :linear))
 
-(local 
+(local
 (defthm acl2-count-consp->0
   (implies (consp x)
 	   (< 0 (acl2-count x)))
@@ -139,9 +139,9 @@ to short-circuit the evaluation of 4 input cases.
 ;;;; for tests which are non-variables. We essentially use if-normalizing to show that
 ;;;; any if expression can be reduced to one where all tests are variables identifiers.
 
-(defun bdd-test> (x y) 
+(defun bdd-test> (x y)
   (or (atom y)
-      (> (b-test x) 
+      (> (b-test x)
          (b-test y))))
 
 (defun robdd (x)
@@ -159,7 +159,7 @@ to short-circuit the evaluation of 4 input cases.
 ;;;; are robdds. the following function builds this witness as a function of x and y.
 
 (defun robdd-witness (x y)
-  (declare (xargs :measure 
+  (declare (xargs :measure
                   (+ (acl2-count x) (acl2-count y))))
   (cond
    ((and (atom x) (atom y)) ())
@@ -178,14 +178,14 @@ to short-circuit the evaluation of 4 input cases.
               (robdd-witness (b-else x) y))
       (cons (cons (b-test x) t)
             (robdd-witness (b-then x) y))))
-   (t 
+   (t
     (if (bdd= (b-then x) (b-then y))
         (cons (cons (b-test x) nil)
               (robdd-witness (b-else x) (b-else y)))
       (cons (cons (b-test x) t)
             (robdd-witness (b-then x) (b-then y)))))))
 
-;;;; the following predicate (independent-of v x) is true when 
+;;;; the following predicate (independent-of v x) is true when
 ;;;; the bdd x is not dependent on the variable v
 
 (defun independent-of (v x)
@@ -228,10 +228,10 @@ to short-circuit the evaluation of 4 input cases.
                   (bdd-ev x a)))))
 
 ;;;; the above independence properties allow us to simplify bdd-ev's to not
-;;;; only deconstruct the bdd x, but also drop the variable bound to the 
+;;;; only deconstruct the bdd x, but also drop the variable bound to the
 ;;;; test position in x. NOTE, a more general theorem could be used here where
 ;;;; the binding to (b-test x) is forgotten from the assignment. The following
-;;;; is sufficient for our purposes since our witness function will construct 
+;;;; is sufficient for our purposes since our witness function will construct
 ;;;; the assignment in a specific manner..
 
 (local
@@ -245,7 +245,7 @@ to short-circuit the evaluation of 4 input cases.
 ;;;; the following forward chaining is not necessary in order for our saturation
 ;;;; theorem to succeed, but it is useful in helping ACL2 avoid unnecessary forcing
 ;;;; induced by the implication:
-;;;;      (implies (and (force (acl2-numberp x)) 
+;;;;      (implies (and (force (acl2-numberp x))
 ;;;;                    (force (acl2-numberp y))
 ;;;;                    (>= x y) (>= y x))
 ;;;;               (equal x y))
@@ -255,7 +255,7 @@ to short-circuit the evaluation of 4 input cases.
 ;;;; breaking it up into 18 subgoals and discharging each of them in an orderly fashion :)
 
 (defthm robdd-bdd=-saturates-bdd-ev-=
-  (implies (and (robdd x) (robdd y) 
+  (implies (and (robdd x) (robdd y)
                 (not (bdd= x y)))
            (not (equal (bdd-ev x (robdd-witness x y))
                        (bdd-ev y (robdd-witness x y))))))
@@ -280,13 +280,13 @@ to short-circuit the evaluation of 4 input cases.
 (in-theory (enable top-var then-node else-node b-node))
 
 (defun ite-spec (f g h)
-  (declare (xargs :measure (+ (acl2-count f) 
-			      (acl2-count g) 
+  (declare (xargs :measure (+ (acl2-count f)
+			      (acl2-count g)
 			      (acl2-count h))))
   (if (atom f) (if f g h)
     (let ((v (top-var f g h)))
-      (let ((then (ite-spec (then-node f v) 
-                            (then-node g v) 
+      (let ((then (ite-spec (then-node f v)
+                            (then-node g v)
                             (then-node h v)))
             (else (ite-spec (else-node f v)
                             (else-node g v)
@@ -301,7 +301,7 @@ to short-circuit the evaluation of 4 input cases.
 
 (local
 (defthm top-var->=-g-test
-  (implies (consp g) 
+  (implies (consp g)
            (>= (top-var f g h) (b-test g)))
   :rule-classes :linear))
 
@@ -325,7 +325,7 @@ to short-circuit the evaluation of 4 input cases.
                            (prop-if (bdd-ev (else-node f v) a)
                                     (bdd-ev (else-node g v) a)
                                     (bdd-ev (else-node h v) a)))
-                  (prop-if (bdd-ev f a) 
+                  (prop-if (bdd-ev f a)
                            (bdd-ev g a)
                            (bdd-ev h a))))
   :rule-classes nil))
@@ -340,13 +340,13 @@ to short-circuit the evaluation of 4 input cases.
                     (prop-if (bdd-ev (else-node f v) a)
                              (bdd-ev (else-node g v) a)
                              (bdd-ev (else-node h v) a)))
-           (prop-if (bdd-ev f a) 
+           (prop-if (bdd-ev f a)
                     (bdd-ev g a)
                     (bdd-ev h a))))
-  :hints (("Goal" 
-           :use (:instance ite-main-lemma-setup 
+  :hints (("Goal"
+           :use (:instance ite-main-lemma-setup
                            (v (top-var f g h)))
-           :in-theory (disable top-var prop-if 
+           :in-theory (disable top-var prop-if
                                then-node else-node)))))
 
 (local
@@ -361,7 +361,7 @@ to short-circuit the evaluation of 4 input cases.
              (equal (prop-if (bdd-ev (else-node f v) a)
                              (bdd-ev (else-node g v) a)
                              (bdd-ev (else-node h v) a))
-                    (prop-if (bdd-ev f a) 
+                    (prop-if (bdd-ev f a)
                              (bdd-ev g a)
                              (bdd-ev h a)))))
   :hints (("Goal"
@@ -372,10 +372,10 @@ to short-circuit the evaluation of 4 input cases.
 
 (defthm ite-spec-preserves-bdd-ev
   (equal (bdd-ev (ite-spec f g h) a)
-         (prop-if (bdd-ev f a) 
-                  (bdd-ev g a) 
+         (prop-if (bdd-ev f a)
+                  (bdd-ev g a)
                   (bdd-ev h a)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :induct (ite-spec f g h)
            :in-theory (disable then-node else-node
                                prop-if top-var))))
@@ -386,7 +386,7 @@ to short-circuit the evaluation of 4 input cases.
 
 ;;;;;;;;;;;;;;;;;;; BEGIN PART 3. ;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;; we now prove a few reductions which we make use of in the implementation 
+;;;; we now prove a few reductions which we make use of in the implementation
 ;;;; function ite-bdd in order to simplify ite calculations.
 
 (local
@@ -401,10 +401,10 @@ to short-circuit the evaluation of 4 input cases.
 (defthm ite-spec-reduction-1
   (implies (robdd f)
            (bdd= (ite-spec f (bdd-1) (bdd-0)) f))
-  :hints (("Goal" :use (:instance  
+  :hints (("Goal" :use (:instance
                         ite-spec-reduction-1-free
                         (g (bdd-1)) (h (bdd-0))))))
-(local 
+(local
 (defthm then-node-atom
   (implies (atom x) (equal (then-node x v) x))))
 
@@ -462,7 +462,7 @@ to short-circuit the evaluation of 4 input cases.
                 (bdd= f h))
            (bdd= (ite-spec f g h)
                  (ite-spec f g (bdd-0))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :induct (ite-spec f g h)
            :in-theory (disable top-var then-node else-node bdd=))
           ("Subgoal *1/1"
@@ -495,11 +495,11 @@ to short-circuit the evaluation of 4 input cases.
            :induct (ite-spec f g h)
            :in-theory (disable top-var then-node else-node bdd=))
           ("Subgoal *1/4"
-           :cases ((atom g) 
-                   (and (consp g) 
+           :cases ((atom g)
+                   (and (consp g)
                         (equal (top-var f g h) (b-test g)))))
           ("Subgoal *1/3"
-           :cases ((atom g) 
+           :cases ((atom g)
                    (and (consp g)
                         (equal (top-var f g h) (b-test g)))))))
 
@@ -570,7 +570,7 @@ to short-circuit the evaluation of 4 input cases.
                 (pnatp v)
                 (robdd f) (robdd g) (robdd h))
            (> v (b-test (ite-spec f g h))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :induct (ite-spec f g h)
            :in-theory (disable then-node else-node top-var)))
   :rule-classes ((:forward-chaining
@@ -633,7 +633,7 @@ to short-circuit the evaluation of 4 input cases.
 
 #|
 
-(local 
+(local
 (defthm bdd=-bdd-test>-rewrite
   (implies (bdd= x y)
            (equal (bdd-test> z x)
@@ -669,7 +669,7 @@ to short-circuit the evaluation of 4 input cases.
   :rule-classes nil))
 
 (defcong bdd= equal (robdd x) 1
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable robdd bdd=)
            :use ((:instance bdd=-robdd-cong-implies
                             (x x) (y x-equiv))
@@ -685,14 +685,14 @@ to short-circuit the evaluation of 4 input cases.
 (local (defcong bdd= equal (consp x) 1))
 
 (defun ite-f-induct (f fe g h)
-  (declare (xargs :measure (+ (acl2-count f) 
-			      (acl2-count g) 
+  (declare (xargs :measure (+ (acl2-count f)
+			      (acl2-count g)
 			      (acl2-count h))))
   (if (atom f) fe
     (let ((v (top-var f g h)))
-      (+ (ite-f-induct (then-node f v) 
+      (+ (ite-f-induct (then-node f v)
                        (then-node fe v)
-                       (then-node g v) 
+                       (then-node g v)
                        (then-node h v))
          (ite-f-induct (else-node f v)
                        (else-node fe v)
@@ -700,14 +700,14 @@ to short-circuit the evaluation of 4 input cases.
                        (else-node h v))))))
 
 (defun ite-g-induct (f g ge h)
-  (declare (xargs :measure (+ (acl2-count f) 
-			      (acl2-count g) 
+  (declare (xargs :measure (+ (acl2-count f)
+			      (acl2-count g)
 			      (acl2-count h))))
   (if (atom f) ge
     (let ((v (top-var f g h)))
-      (+ (ite-g-induct (then-node f v) 
+      (+ (ite-g-induct (then-node f v)
                        (then-node g v)
-                       (then-node ge v) 
+                       (then-node ge v)
                        (then-node h v))
          (ite-g-induct (else-node f v)
                        (else-node g v)
@@ -715,25 +715,25 @@ to short-circuit the evaluation of 4 input cases.
                        (else-node h v))))))
 
 (defun ite-h-induct (f g h he)
-  (declare (xargs :measure (+ (acl2-count f) 
-			      (acl2-count g) 
+  (declare (xargs :measure (+ (acl2-count f)
+			      (acl2-count g)
 			      (acl2-count h))))
   (if (atom f) he
     (let ((v (top-var f g h)))
-      (+ (ite-h-induct (then-node f v) 
+      (+ (ite-h-induct (then-node f v)
                        (then-node g v)
-                       (then-node h v) 
+                       (then-node h v)
                        (then-node he v))
          (ite-h-induct (else-node f v)
                        (else-node g v)
                        (else-node h v)
                        (else-node he v))))))
 
-(in-theory (disable top-var then-node else-node 
+(in-theory (disable top-var then-node else-node
                     bdd= b-node))
 
-(local (in-theory (disable bdd=-is-symmetric 
-                           bdd=-is-transitive 
+(local (in-theory (disable bdd=-is-symmetric
+                           bdd=-is-transitive
                            bdd=-is-reflexive)))
 
 (defcong bdd= bdd= (ite-spec f g h) 1

@@ -530,7 +530,7 @@
 
 
 
-#|| 
+#||
 
 (redef-errors (get-xdoc-table (w state)))
 

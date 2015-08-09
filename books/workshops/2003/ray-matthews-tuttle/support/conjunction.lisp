@@ -27,9 +27,9 @@ the conjunction of semantics of f1 and f2 wrt m.
            :in-theory (disable compatible-ppath-p)
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t
-           :cases ((compatible-ppath-p (ltl-semantics-witness 
+           :cases ((compatible-ppath-p (ltl-semantics-witness
                                         f m) m)))))
-     
+
 )
 
 (local
@@ -69,7 +69,7 @@ the conjunction of semantics of f1 and f2 wrt m.
            :do-not-induct t
            :cases ((compatible-ppath-p (ltl-semantics-witness (third f) m) m)))
           ("Subgoal 1"
-           :in-theory (disable compatible-ppath-p 
+           :in-theory (disable compatible-ppath-p
                                ltl-semantics-necc
                                ltl-ppath-semantics-can-be-decomposed-over-conjunctions
                                ltl-semantics)
@@ -82,7 +82,7 @@ the conjunction of semantics of f1 and f2 wrt m.
 )
 
 (local
-(in-theory (disable ltl-semantics ltl-formulap 
+(in-theory (disable ltl-semantics ltl-formulap
                     ltl-semantics-necc))
 )
 

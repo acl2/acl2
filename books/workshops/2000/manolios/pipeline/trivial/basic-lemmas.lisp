@@ -21,7 +21,7 @@
   :hints (("goal" :in-theory (enable rname-p))))
 
 
-; Lemmas about the projection from an MA state to an ISA state. 
+; Lemmas about the projection from an MA state to an ISA state.
 (defthm ISA-pc-proj
     (equal (ISA-pc (proj MA)) (MA-pc MA))
   :hints (("Goal" :in-theory (enable proj))))
@@ -110,7 +110,7 @@
 ; (ISA-before sub MT) returns the ISA state after executing all instructions
 ; represented in MT.
 (defun ISA-before (sub MT)
-  (declare (xargs :guard (and (INST-listp sub) (MAETT-p MT))))  
+  (declare (xargs :guard (and (INST-listp sub) (MAETT-p MT))))
   (ISA-at-tail sub (MT-trace MT) (MT-init-ISA MT)))
 
 (in-theory (disable ISA-before))
@@ -192,7 +192,7 @@
 
 ; Various small lemmas about attributes of instructions.  I don't
 ; comment each of them.  Most of them are trivial from the definition
-; of the instruction attributes and the definition of step-INST. 
+; of the instruction attributes and the definition of step-INST.
 (defthm INST-word-new-INST
     (equal (INST-word (new-INST ISA))
 	   (read-mem (ISA-pc ISA) (ISA-mem ISA)))
@@ -200,7 +200,7 @@
 
 (defthm INST-stg-new-INST
     (equal (INST-stg (new-INST ISA)) 'latch1)
-  :hints (("Goal" :in-theory (enable new-INST)))) 
+  :hints (("Goal" :in-theory (enable new-INST))))
 
 (defthm INST-pre-ISA-new-INST
     (equal (INST-pre-ISA (new-INST ISA)) ISA)
@@ -270,7 +270,7 @@
 
 
 ; In order to understand following several lemmas, you need to understand
-; how INST-pre-ISA and INST-post-ISA make a chain of ISA states. 
+; how INST-pre-ISA and INST-post-ISA make a chain of ISA states.
 ; Intuitively, (INST-pre-ISA i) is the ISA state before executing the
 ; instruction represented by i, and (INST-post-ISA i) is the ISA state
 ; after the execution.  Suppose we execute instruction I_0, I_1 and I_2
@@ -288,7 +288,7 @@
 ;   (INST-post-ISA i_1) = (INST-pre-ISA i_2)
 ;         ...
 ; The transition relation can be written as
-;  (INST-post-ISA I_0) = (ISA-step (INST-pre-ISA I_0)).  
+;  (INST-post-ISA I_0) = (ISA-step (INST-pre-ISA I_0)).
 (encapsulate nil
 (local
 (defthm INST-post-ISA-INST-in-induction
@@ -368,7 +368,7 @@
   :rule-classes nil))
 
 ; The relation between ISA-before and INST-pre-ISA is described by this
-; lemma. 
+; lemma.
 (defthm ISA-before-INST-pre-ISA-car
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
@@ -395,7 +395,7 @@
 ; will be fetched in the next machine cycle.  Since the MAETT records
 ; all fetched instructions, the program counter of post-ISA of the
 ; last instruction in the MAETT is equal to the  program counter in
-; the MA state. 
+; the MA state.
 (defthm ISA-pc-ISA-before-nil
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA))
@@ -441,7 +441,7 @@
   :rule-classes nil)
 
 ; Following several lemmas are about how the stages of an instruction
-; changes. 
+; changes.
 (defthm INST-stg-step-latch1-INST
     (implies (equal (INST-stg i) 'latch1)
 	     (equal (INST-stg (step-INST i MA))
@@ -468,7 +468,7 @@
 	     (not (equal (INST-stg (step-INST i MT)) 'retire)))
   :hints (("Goal" :in-theory (enable INST-p stage-p step-INST
 				     step-latch1-INST))))
-		  
+
 (encapsulate nil
 (local
 (defthm no-inst-after-INST-latch1-induction
@@ -482,10 +482,10 @@
 
 ; Instruction at latch1 is the most recently fetched instruction.  A
 ; MAETT records instructions in program order, so the instruction at latch1
-; is always represented by the last entry of a MAETT. 
+; is always represented by the last entry of a MAETT.
 (defthm no-inst-after-INST-latch1
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (subtrace-p trace MT)
 		  (INST-listp trace)
 		  (consp trace)
@@ -500,7 +500,7 @@
 ; A corollary of no-inst-after-INST-latch1.
 (defthm INST-latch1-last-inst-in-MT
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (subtrace-p trace MT)
 		  (INST-listp trace)
 		  (consp trace)
@@ -566,7 +566,7 @@
 )
 
 ; An instruction at latch2 is immediately followed by an instruction
-; at latch1. 
+; at latch1.
 (defthm INST-latch1-follows-INST-latch2
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
@@ -615,7 +615,7 @@
 				     trace-INST-invariant)))
   :rule-classes nil)
 )
-  
+
 ; There must be an instruction at latch1 if flag latch1-valid? in an
 ; MA state is on.  This lemma shows that a MAETT contains an entry
 ; representing the instruction at latch1 if latch1-valid? is on in
@@ -681,11 +681,11 @@
 ; latch1-op-INST-op-if-INST-in.  Then we re-state all the lemmas in a
 ; different style, starting from latch1-op-INST-op.  In the latter
 ; style, we use function INST-at to specify the instruction at a
-; specific latch. 
+; specific latch.
 (defthm latch1-op-INST-op-if-INST-in
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
-		  (INST-in i MT) (INST-p i) 
+		  (MAETT-p MT) (MA-state-p MA)
+		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch1))
 	     (equal (latch1-op (MA-latch1 MA)) (INST-op i)))
   :hints (("goal" :in-theory (e/d (INST-INVARIANT INST-LATCH1-INV)
@@ -694,7 +694,7 @@
 
 (defthm latch1-rc-INST-rc-if-INST-in
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch1))
 	     (equal (latch1-rc (MA-latch1 MA)) (INST-rc i)))
@@ -704,8 +704,8 @@
 
 (defthm latch1-ra-INST-ra-if-INST-in
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
-		  (INST-in i MT) (INST-p i) 
+		  (MAETT-p MT) (MA-state-p MA)
+		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch1))
 	     (equal (latch1-ra (MA-latch1 MA)) (INST-ra i)))
   :hints (("goal" :in-theory (e/d (INST-INVARIANT INST-LATCH1-INV)
@@ -714,8 +714,8 @@
 
 (defthm latch1-rb-INST-rb-if-INST-in
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
-		  (INST-in i MT) (INST-p i) 
+		  (MAETT-p MT) (MA-state-p MA)
+		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch1))
 	     (equal (latch1-rb (MA-latch1 MA)) (INST-rb i)))
   :hints (("goal" :in-theory (e/d (INST-INVARIANT INST-LATCH1-INV)
@@ -724,7 +724,7 @@
 
 (defthm latch2-op-INST-op-if-INST-in
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch2))
 	     (equal (latch2-op (MA-latch2 MA)) (INST-op i)))
@@ -734,7 +734,7 @@
 
 (defthm latch2-rc-INST-rc-if-INST-in
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch2))
 	     (equal (latch2-rc (MA-latch2 MA)) (INST-rc i)))
@@ -744,7 +744,7 @@
 
 (defthm latch2-val1-INST-val1-if-INST-in
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch2))
 	     (equal (latch2-ra-val (MA-latch2 MA)) (INST-ra-val i)))
@@ -754,7 +754,7 @@
 
 (defthm latch2-rb-val-INST-rb-val-if-INST-in
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch2))
 	     (equal (latch2-rb-val (MA-latch2 MA)) (INST-rb-val i)))
@@ -765,7 +765,7 @@
 
 (defthm latch1-op-INST-op
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-at 'latch1 MT))
 	     (equal (latch1-op (MA-latch1 MA))
 		    (INST-op (INST-at 'latch1 MT))))
@@ -775,7 +775,7 @@
 
 (defthm latch1-rc-INST-rc
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-at 'latch1 MT))
 	     (equal (latch1-rc (MA-latch1 MA))
 		    (INST-rc (INST-at 'latch1 MT))))
@@ -785,7 +785,7 @@
 
 (defthm latch1-ra-INST-ra
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-at 'latch1 MT))
 	     (equal (latch1-ra (MA-latch1 MA))
 		    (INST-ra (INST-at 'latch1 MT))))
@@ -795,7 +795,7 @@
 
 (defthm latch1-rb-INST-rb
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-at 'latch1 MT))
 	     (equal (latch1-rb (MA-latch1 MA))
 		    (INST-rb (INST-at 'latch1 MT))))
@@ -805,7 +805,7 @@
 
 (defthm latch2-op-INST-op
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-at 'latch2 MT))
 	     (equal (latch2-op (MA-latch2 MA))
 		    (INST-op (INST-at 'latch2 MT))))
@@ -815,7 +815,7 @@
 
 (defthm latch2-rc-INST-rc
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-at 'latch2 MT))
 	     (equal (latch2-rc (MA-latch2 MA))
 		    (INST-rc (INST-at 'latch2 MT))))
@@ -825,7 +825,7 @@
 
 (defthm latch2-ra-val-INST-ra-val
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-at 'latch2 MT))
 	     (equal (latch2-ra-val (MA-latch2 MA))
 		    (INST-ra-val (INST-at 'latch2 MT))))
@@ -835,7 +835,7 @@
 
 (defthm latch2-rb-val-INST-rb-val
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-at 'latch2 MT))
 	     (equal (latch2-rb-val (MA-latch2 MA))
 		    (INST-rb-val (INST-at 'latch2 MT))))

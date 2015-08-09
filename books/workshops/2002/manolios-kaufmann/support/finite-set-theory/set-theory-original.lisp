@@ -104,7 +104,7 @@
 ; be canonical.
 
   (cond ((ur-elementp s) (cons e nil))
-        ((equal e (car s)) s) 
+        ((equal e (car s)) s)
         ((<< e (car s))
          (cons (car s)
                (set-insert e (cdr s))))
@@ -148,7 +148,7 @@
                (t (list :UR-CONS (o-fix (cadr x))))))
         (t nil)))
 
-; Conversions:  
+; Conversions:
 ; (1) Make sure the output is ordinary, by using o-fix.
 ; (2) If we encounter :UR-CONS where an ur-element is expected, we convert it
 ;     the symbol ACL2::UR-CONS.  This prevents the accidental formation of
@@ -207,7 +207,7 @@
         (t (and (canonicalp (car x))
                 (canonicalp (cdr x))
                 (orderedp x)))))
-              
+
 (defthm canonicalp-ordinaryp
   (implies (canonicalp x) (ordinaryp x)))
 
@@ -301,7 +301,7 @@
 ; they didn't have to be for the proof to go through.
 
 ;                                    functionp1-set-insert  entire file
- 
+
 (defun scar (a)
 ; (car a)                                  ;;; 232 secs      1153 secs
 ; (if (equal (car a) :UR-CONS) nil (car a))   ;;; 404 secs      1212 secs
@@ -321,7 +321,7 @@
 
 ;                                          ;;;   2 secs       370 secs
 
- 
+
 (defun scdr (a)
 ; (sfix (cdr a))
 ; (if (equal (car a) :UR-CONS) nil (sfix (cdr a)))
@@ -636,7 +636,7 @@
 
 ; Finally, I want to establish the key fact about equality and subset,
 ; namely, that two sets are = iff they are subsets of eachother.
- 
+
 ; If (= a b), then it is obvious that (subsetp a b) and vice versa,
 ; given the congruence rules above.
 
@@ -801,7 +801,7 @@
 
 (defcong = equal (canonicalize x) 1
   :hints (("Goal" :in-theory (enable =))))
-                                          
+
 (defthm canonicalize-=
   (= (canonicalize x) x)
   :hints (("Goal" :in-theory (enable =))))
@@ -961,7 +961,7 @@
          (consp x))
   :hints (("Goal" :in-theory (enable ur-elementp))))
 
-(defcong = equal (integerp x) 1 
+(defcong = equal (integerp x) 1
   :hints (("Goal"
            :in-theory (set-difference-theories (enable =)
                                                '(integerp-canonicalize))
@@ -970,7 +970,7 @@
                  (:instance integerp-canonicalize
                             (x x-equiv))))))
 
-(defcong = equal (rationalp x) 1 
+(defcong = equal (rationalp x) 1
   :hints (("Goal"
            :in-theory (set-difference-theories (enable =)
                                                '(rationalp-canonicalize))
@@ -979,7 +979,7 @@
                  (:instance rationalp-canonicalize
                             (x x-equiv))))))
 
-(defcong = equal (symbolp x) 1 
+(defcong = equal (symbolp x) 1
   :hints (("Goal"
            :in-theory (set-difference-theories (enable =)
                                                '(symbolp-canonicalize))
@@ -988,7 +988,7 @@
                  (:instance symbolp-canonicalize
                             (x x-equiv))))))
 
-(defcong = equal (stringp x) 1 
+(defcong = equal (stringp x) 1
   :hints (("Goal"
            :in-theory (set-difference-theories (enable =)
                                                '(stringp-canonicalize))
@@ -997,7 +997,7 @@
                  (:instance stringp-canonicalize
                             (x x-equiv))))))
 
-(defcong = equal (consp x) 1 
+(defcong = equal (consp x) 1
   :hints (("Goal"
            :in-theory (set-difference-theories (enable =)
                                                '(consp-canonicalize))
@@ -1151,7 +1151,7 @@
                    (subsetp (,fn ,@(put-nth a1 (- n 1) vars))
                             (,fn ,@(put-nth a2 (- n 1) vars)))))
 
-        (defcong = = ,expr ,n 
+        (defcong = = ,expr ,n
           :hints (("Goal"
                    :use (:instance =-iff-subsetps
                                    (a ,expr)
@@ -1262,7 +1262,7 @@
   (implies (subsetp a1 a2)
            (subsetp (intersection a1 b)
                     (intersection a2 b))))
-      
+
 (defthm setp-intersection
   (setp (intersection a b)))
 
@@ -1440,7 +1440,7 @@
   (implies (subsetp a1 a2)
            (subsetp (diff a1 b)
                     (diff a2 b))))
-      
+
 (defthm setp-diff
   (setp (diff a b)))
 
@@ -1519,7 +1519,7 @@
   (brace x (brace x y)))
 
 ; Observe that a pair necessarily has cardinality 2.  But the larger
-; element need not have cardinality 2.  For example, (pair x x) is 
+; element need not have cardinality 2.  For example, (pair x x) is
 ; {x {x}}.
 
 ; We must be able to determine whether a set of cardinality 2 is a
@@ -1658,7 +1658,7 @@
        (:instance elim-choose-doubleton (x A))
 
 ; (ii) Represent y as a doubleton.
-    
+
        (:instance elim-choose-doubleton (x (y a)))
 
 ; (iii) When x is removed from y, the result is a singleton, which can
@@ -1691,7 +1691,7 @@
        (:instance elim-choose-doubleton (x A))
 
 ; (ii) Represent y as a singleton.
-    
+
        (:instance elim-choose-singleton (x (y a)))
 
 ; (iii) If x is a member of singleton set, the set is {x}.
@@ -1782,7 +1782,7 @@
 
 (in-theory (disable equal-pair-generalized))
 
-  
+
 
 ; ----------------------------------------------------------------------------
 ; Functions as Sets
@@ -1940,7 +1940,7 @@
   (implies (and (mem e f)
                 (pairsp f))
            (pairp e)))
-           
+
 (defthm pairsp-subset-such-that1
   (implies (pairsp f)
            (pairsp (subset-such-that1 f x))))
@@ -1991,7 +1991,7 @@
 ; to be the case that two functions are equal iff apply gives the same
 ; answers on both.  But if I defined a function as (and (pairsp f)
 ; (functionp1 f f)) then 8 is a functionp, because every element of 8
-; is a pair and their hds are unique.  
+; is a pair and their hds are unique.
 
 (defun functionp (f)
   (if (ur-elementp f)
@@ -2008,7 +2008,7 @@
   (<= (cardinality (subset-such-that1 f x))
       (cardinality f))
   :rule-classes :linear)
-      
+
 (defun simultaneously (a b)
   (declare (xargs :measure (cardinality a)))
   (cond ((ur-elementp a) b)
@@ -2117,7 +2117,7 @@
 (defthm ur-elementp-domain
   (equal (ur-elementp (domain f))
          (ur-elementp f)))
-       
+
 (defx :strategy :congruence (domain f) 1 :method :subsetp)
 
 (defthm mem-implies-mem-range
@@ -2366,7 +2366,7 @@
   (functionp (restrict f s)))
 
 ; My next main goal is the fundamental fact characterizing the elements
-; of a function.  
+; of a function.
 
 ; Perhaps disable this when we're done?
 
@@ -2467,7 +2467,7 @@
   :rule-classes nil
   :hints (("Goal"
            :in-theory (enable functionp apply equal-booleans))))
-                
+
 (defthm domain-restrict
   (= (domain (restrict f s))
      (intersection s (domain f))))
@@ -2599,7 +2599,7 @@
                             (f (functional-equiv-fn1))
                             (g (functional-equiv-fn2))
                             (s (domain (functional-equiv-fn1))))))))
-           
+
 ; The above encapsulation provides a nice way to prove two functions
 ; are equal.  You can just instantiate the lemma above with any two
 ; functions that are known to have the same domain and that are
@@ -2692,7 +2692,7 @@
 ; relation between two expressions under a hypothesis.
 
 ; This macro allows us to write:
-; (defx foo (subsetp ... ...) 
+; (defx foo (subsetp ... ...)
 ;   :strategy subset-relation
 ;   :rule-classes ...)
 
@@ -3057,7 +3057,7 @@
   :strategy :functional-equivalence)
 
 ; Now I will define seq-hd and seq-tl to let me do recursion down
-; sequences.  
+; sequences.
 
 (defun seq-hd (s) (apply s 1))
 
@@ -3201,7 +3201,7 @@
 
         (defthm ,(packn-in-pkg (list "SETP-" name) 'defmap)
           (setp ,call))
-        
+
         (defthm ,(packn-in-pkg (list "UR-ELEMENTP-" name) 'defmap)
           (equal (ur-elementp ,call)
                  (equal ,call nil)))
@@ -3221,7 +3221,7 @@
           (implies (and (subsetp ,s1 ,call)
                         (mem ,x ,s1))
                    ,body))
-        
+
         (defthm ,(packn-in-pkg (list "CARDINALITY-" name) 'defmap)
           (<= (cardinality ,call)
               (cardinality ,s))
@@ -3236,7 +3236,7 @@
           (= (,name ,@(put-nth `(intersection ,s1 ,s) sloc vars))
              (intersection (,name ,@(put-nth s1 sloc vars))
                            ,call)))
-        
+
         )))
    (t ;;; :map
 
@@ -3299,7 +3299,7 @@
           (subsetp (,name ,@(put-nth `(intersection ,s1 ,s) sloc vars))
                    (intersection (,name ,@(put-nth s1 sloc vars))
                                  ,call)))
-        
+
         )))))
 
 #|

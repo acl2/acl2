@@ -157,7 +157,7 @@ portnames and directions."
           (vl-simple-instantiate-args-main (cdr actuals) (cdr ports)
                                            portdecls))))
 
- 
+
 (define vl-simple-instantiate
   ((x        vl-module-p   "submodule to create an instance of")
    (instname stringp       "name for the new instance")

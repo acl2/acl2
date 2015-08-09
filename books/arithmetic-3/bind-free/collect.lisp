@@ -319,7 +319,7 @@
 ;;
 ;; Because above we have the same thing without syntaxp hyps, except with
 ;; slightly different names:
-;;  
+;;
 ;; (defthm |(* (expt x n) (expt y n))|
 ;;   (implies (integerp n)
 ;;            (equal (collect-* (expt x n) (expt y n))
@@ -449,7 +449,7 @@
 
 (in-theory (disable bubble-down (:executable-counterpart bubble-down)))
 
-(theory-invariant 
+(theory-invariant
  (and (not (active-runep '(:rewrite bubble-down)))
       (not (active-runep '(:executable-counterpart bubble-down))))
  :error nil)

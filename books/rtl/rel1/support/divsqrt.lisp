@@ -90,7 +90,7 @@
 		  (and (= (rem m n) 0)
 		       (= (rem (fl (/ m n)) p) 0))))
   :rule-classes ()
-  :hints (("Goal" :use (fl-rem-4 
+  :hints (("Goal" :use (fl-rem-4
 			fl-rem-0
 			(:instance fl-rem-0 (n (* n p)))
 			(:instance fl-rem-0 (m (fl (/ m n))) (n p))))))
@@ -563,11 +563,11 @@
 	     (= (fl (/ (rem (- (1- (expt 2 n)) (expt 2 l)) (expt 2 n))
 		       (expt 2 k)))
 		(fl (/ (- (1- (expt 2 n)) (expt 2 l))
-		       (expt 2 k)))))		       
+		       (expt 2 k)))))
   :rule-classes ()
   :hints (("Goal" :use (and-bits-e-3
-			(:instance hack-m4 
-				   (x (rem (- (1- (expt 2 n)) (expt 2 l)) (expt 2 n))) 
+			(:instance hack-m4
+				   (x (rem (- (1- (expt 2 n)) (expt 2 l)) (expt 2 n)))
 				   (y (- (1- (expt 2 n)) (expt 2 l)))))))))
 
 (local
@@ -630,7 +630,7 @@
 		  :use (and-bits-e-6
 			and-bits-e-7
 			(:instance integerp-expt (n (- n k)))
-			(:instance fl-unique 
+			(:instance fl-unique
 				   (x (- (expt 2 (- n k)) (/ (1+ (expt 2 l)) (expt 2 k))))
 				   (n (- (expt 2 (- n k)) 1))))))))
 
@@ -904,7 +904,7 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance bits-trunc-2)
 			(:instance and-bits-c (k (- n k)))))
-         ("Subgoal 1'5'" :use (:instance crap444))))) 
+         ("Subgoal 1'5'" :use (:instance crap444)))))
 
 (local
 (defthm hack-78
@@ -1182,7 +1182,7 @@
 	     (equal (* 1/2 x (EXPT 2 (+ N (* -1 (EXPO X)))))
 		(* X (EXPT 2 (+ -1 N (* -1 (EXPO X)))))))
   :hints (("Goal" :use ((:instance hack-83)
-			(:instance hack-84 
+			(:instance hack-84
 				   (a (* 1/2 (EXPT 2 (+ N (* -1 (EXPO X))))))
 				   (b (EXPT 2 (+ -1 N (* -1 (EXPO X)))))))))))
 
@@ -1215,7 +1215,7 @@
 		(fl-half (* x (expt 2 (- n (expo x)))))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance trunc-away-4)
-			(:instance hack-86 (k (fl-half (* x (expt 2 (- n (expo x))))))) 
+			(:instance hack-86 (k (fl-half (* x (expt 2 (- n (expo x)))))))
 			(:instance expo+ (m (- (expo x) n)) (n (- (1- n) (expo x))))
 			(:instance expo+ (m 1) (n (- (1- n) (expo x)))))))))
 
@@ -1353,7 +1353,7 @@
 		    (exactp (+ x (EXPT 2 (+ (EXPO X) (* -1 N)))) n)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance hack-87)
-			(:instance hack-88 
+			(:instance hack-88
 				   (x (+ x (* -1 (EXPT 2 (+ (EXPO X) (* -1 N))))
 					 (EXPT 2
 					       (+ 1 (* -1 N)
@@ -1482,7 +1482,7 @@
 		  (<= (near x n) a)
 		  (> x (+ a (expt 2 (- (expo a) n)))))
 	     (> (abs (- (near x n) x))
-		(abs (- (+ a 
+		(abs (- (+ a
 			   (expt 2 (- (expo a) n))
 			   (expt 2 (- (expo a) n)))
 			x))))
@@ -1537,7 +1537,7 @@
     (implies (and (rationalp x) (> x 0)
 		  (rationalp a) (> a 0)
 		  (integerp n) (> n 0)
-		  (>= (near x n) 
+		  (>= (near x n)
 		      (+ a
 			 (expt 2 (- (expo a) n))
 			 (expt 2 (- (expo a) n))))
@@ -1554,7 +1554,7 @@
     (implies (and (rationalp x) (> x 0)
 		  (rationalp a) (> a 0)
 		  (integerp n) (> n 0)
-		  (>= (near x n) 
+		  (>= (near x n)
 		      (+ a (expt 2 (- (1+ (expo a)) n))))
 		  (< x (+ a (expt 2 (- (expo a) n)))))
 	     (> (abs (- (near x n) x))
@@ -1596,7 +1596,7 @@
 		  (integerp n) (> n 0)
 		  (exactp a n)
 		  (< x a))
-	     (>= a 
+	     (>= a
 		 (+ (expt 2 (expo x))
 		    (expt 2 (- (1+ (expo x)) n)))))
   :rule-classes ()
@@ -2049,7 +2049,7 @@
 			  (expt 2 (1+ (expo x)))))
 		  (>= (+ x (expt 2 (- (expo x) n)))
 		      (expt 2 (1+ (expo x)))))
-	     (= x 
+	     (= x
 		(- (expt 2 (1+ (expo x)))
 		   (expt 2 (- (expo x) n)))))
   :rule-classes ()
@@ -2089,7 +2089,7 @@
 	     (integerp (* x (expt 2 (- n (expo x))))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance near-power-a-7)
-			(:instance hack-90 
+			(:instance hack-90
 				   (y (- (expt 2 (1+ (expo x))) (expt 2 (- (expo x) n))))
 				   (e (expt 2 (- n (expo x)))))
 			(:instance near-power-a-8))))))
@@ -2195,7 +2195,7 @@
   :hints (("Goal" :in-theory (disable expt-pos)
 		  :use ((:instance exactp-2**n (n (1+ (expo x))) (m n))
 			(:instance expt-pos (x (- (expo x) n)))
-			(:instance trunc-exactp-c 
+			(:instance trunc-exactp-c
 				   (x (+ x (expt 2 (- (expo x) n))))
 				   (a (expt 2 (1+ (expo x))))))))))
 
@@ -2230,7 +2230,7 @@
 			(:instance trunc-exactp-b (x (+ x (expt 2 (- (expo x) n)))))
 			(:instance expt-pos (x (1+ (expo x))))
 			(:instance expo-2**n (n (1+ (expo x))))
-			(:instance fp+1 
+			(:instance fp+1
 				   (x (expt 2 (1+ (expo x))))
 				   (y (trunc (+ x (expt 2 (- (expo x) n))) n))))))))
 
@@ -2378,7 +2378,7 @@
   :hints (("Goal" :use ((:instance near-choice)
 			(:instance trunc-exactp-a)
 			(:instance away-exactp-a)))))
-			
+
 (local
 (defthm near-trunc-case-1
     (implies (and (rationalp x) (> x 0)
@@ -2579,10 +2579,10 @@
 	     (> (+ (near x n)
 		   (expt 2 (- (+ 2 (expo x)) n)))
 		(+ (near x n)
-		   (expt 2 (- (1+ (expo x)) n)))))		 
+		   (expt 2 (- (1+ (expo x)) n)))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance expt-strong-monotone 
-				   (n (- (1+ (expo x)) n)) 
+  :hints (("Goal" :use ((:instance expt-strong-monotone
+				   (n (- (1+ (expo x)) n))
 				   (m (- (+ 2 (expo x)) n))))))))
 
 (local
@@ -2617,8 +2617,8 @@
 		  :use ((:instance near-exact)
 			(:instance expt-pos (x (- (expo x) n)))
 			(:instance trunc-exactp-b (x (+ x (expt 2 (- (expo x) n)))) (n (1- n)))
-			(:instance fp+1 
-				   (x (near x n)) 
+			(:instance fp+1
+				   (x (near x n))
 				   (y (trunc (+ x (expt 2 (- (expo x) n))) (1- n)))
 				   (n (1- n)))
 			(:instance near-pos)
@@ -2828,7 +2828,7 @@
 			(:instance trunc-exactp-b)
 			(:instance trunc-pos)
 			(:instance expt-pos (x (- (1+ (expo x)) n)))
-			(:instance trunc-exactp-c 
+			(:instance trunc-exactp-c
 				   (a (+ (trunc x n) (expt 2 (- (1+ (expo x)) n))))))))))
 
 (local (defthm away-imp-9
@@ -2845,7 +2845,7 @@
 			(:instance fp+2 (x (trunc x n)))
 			(:instance trunc-exactp-b)
 			(:instance trunc-pos)
-			(:instance away-exactp-c 
+			(:instance away-exactp-c
 				   (a (+ (trunc x n) (expt 2 (- (1+ (expo x)) n))))))))))
 
 (local (defthm away-imp-10
@@ -2916,7 +2916,7 @@
   :hints (("Goal" :use ((:instance expo+ (m (- (1+ (expo x)) n)) (n k)))))))
 
 (local
-(defthm hack-m8   
+(defthm hack-m8
     (implies (and (rationalp x)
 		  (rationalp y)
 		  (integerp k)

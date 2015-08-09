@@ -16,10 +16,10 @@ Based On Sandip's tiny-fib-correct.lisp file.
 (set-verify-guards-eagerness 0)
 
 (defconst *word-size* 32)
-(defconst *max-prog-address* 
+(defconst *max-prog-address*
   (1- (+ *prog-start-address*
          (len *tri-prog*))))
- 
+
 ;; The triangle program in indexed form.
 
 (DEFUN |idx| (n)
@@ -47,7 +47,7 @@ Based On Sandip's tiny-fib-correct.lisp file.
   (member (progc tiny-state) *tri-cutpoints*))
 
 
-;; Here are the assertions. 
+;; Here are the assertions.
 
 (defun tiny-tri-assertion (n tiny-state)
   (declare (xargs :stobjs tiny-state))
@@ -108,7 +108,7 @@ Based On Sandip's tiny-fib-correct.lisp file.
 ;; Ok, now some theorems. I need to prove that tri is always signed-byte-p
 ;; 32 and the reason is that after *done-label* there is a (plus<32> x 0)
 ;; around for whatever x is in address 20. But this is identity only if
-;; tri itself is a signed-byte-p 32. 
+;; tri itself is a signed-byte-p 32.
 
 (local
  (defthm plus<32>-is-signed-byte
@@ -120,11 +120,11 @@ Based On Sandip's tiny-fib-correct.lisp file.
 
 ;; NEW
 (local
- (defthm idx-is-signed-byte-p 
+ (defthm idx-is-signed-byte-p
    (signed-byte-p *word-size* (|idx| n))))
 
 (local
- (defthm tri-is-signed-byte-p 
+ (defthm tri-is-signed-byte-p
    (signed-byte-p *word-size* (tri n))))
 
 ;; The theorem below says that if you add 0 to it, you are fine. This takes us
@@ -139,7 +139,7 @@ Based On Sandip's tiny-fib-correct.lisp file.
    (declare (xargs :stobjs tiny-state))
   (if (tiny-tri-exitpoint n tiny-state)
       0
-    (o+ (o* (omega) (nfix (dtos-val tiny-state 0))) 
+    (o+ (o* (omega) (nfix (dtos-val tiny-state 0)))
         (nfix (- *max-prog-address* (progc tiny-state))))))
 
 
@@ -195,5 +195,5 @@ Based On Sandip's tiny-fib-correct.lisp file.
   :exitpoint tiny-tri-exitpoint
   :exitsteps tiny-tri-total-exitsteps
   :default dummy-tiny-state)
-  
+
 

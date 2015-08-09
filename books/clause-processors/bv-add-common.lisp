@@ -15,14 +15,14 @@
   (lexorder x y))
 
 (defthm bv-commute
-  (implies 
+  (implies
    (and (syntaxp (not (bv-add-lex-< x y))))
    (equal (bv-add x y)
           (bv-add y x)))
   :hints (("Goal" :in-theory (enable bv-add))))
 
 (defthm bv-commute-2
-  (implies 
+  (implies
    (syntaxp (not (bv-add-lex-< x y)))
    (equal (bv-add x (bv-add y z))
           (bv-add y (bv-add x z))))

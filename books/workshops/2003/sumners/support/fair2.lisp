@@ -17,7 +17,7 @@ weak.lisp.
 (include-book "n2n")
 
 (defun fair-ctr (goal ctr top)
-  (declare (xargs :measure 
+  (declare (xargs :measure
                   (cons (1+ (nfix (- goal top)))
                         (nfix (if (>= goal ctr)
                                   (- goal ctr)
@@ -57,7 +57,7 @@ weak.lisp.
 ;; ACL2 is actually able to infer this already, but we include it here for
 ;; better correspondence with the paper
 
-(local  
+(local
 (defthm fair-measure-natural
   (natp (fair-measure i f))
   :rule-classes :type-prescription))
@@ -128,12 +128,12 @@ constrained.
 (encapsulate
  (((env! * *) => *)
   ((env-measure! * * *) => *))
- 
+
 (local (defun env! (k n) (declare (ignore k))
          (fair-select (fair-run n))))
 (local (defun env-measure! (k i n) (declare (ignore k))
          (fair-measure i (fair-run n))))
- 
+
 (defthm env-measure!-is-natural
   (natp (env-measure! k i n))
   :rule-classes (:type-prescription :rewrite))

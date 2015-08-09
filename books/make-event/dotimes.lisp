@@ -41,12 +41,12 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
 (defmacro dotimes$ (var-limit-form form &key (name 'dotimes-default-name-foo))
   (declare (xargs :guard (and (true-listp var-limit-form)
                               (equal (length var-limit-form) 2))))
-  
+
   (let ((var (car var-limit-form))
         (limit (cadr var-limit-form)))
-    
+
     `(make-event
-      (with-output 
+      (with-output
        :off summary
        (progn
          (with-output
@@ -71,12 +71,12 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
   (var-limit-form form &key (name 'dotimes-default-name-foo))
   (declare (xargs :guard (and (true-listp var-limit-form)
                               (equal (length var-limit-form) 2))))
-  
+
   (let ((var (car var-limit-form))
         (limit (cadr var-limit-form)))
-    
+
     `(make-event
-      (with-output 
+      (with-output
        :off summary
        (progn!
          (with-output
@@ -117,9 +117,9 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
           (t
            (let ((a (fib (- x 1)))
                  (b (fib (- x 2))))
-           
+
              (+ a b)))))
-  
+
   (dotimes$ (i 4) (time$ (fib 25)) :name dotimes-foo)))
 
 #|
@@ -136,10 +136,10 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
    (i 4)
    (time$ (thm (equal 3 3))))))
 
-(dotimes$-with-error-triple 
- (i 100) 
+(dotimes$-with-error-triple
+ (i 100)
  (thm (equal (append x (append y z))
-             (append (append x y) z))) 
+             (append (append x y) z)))
  :name dotimes-thmm)
 
 |#

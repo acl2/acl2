@@ -101,7 +101,7 @@
 
 (def-set-equiv deftypedset-element-equiv0)
 
-(def-typed-set deftypedset-element-p0 deftypedset-set-type-0 
+(def-typed-set deftypedset-element-p0 deftypedset-set-type-0
   :equiv deftypedset-element-equiv0 :use-f-i nil)
 
 
@@ -120,7 +120,7 @@
 
 (def-set-equiv deftypedset-element-equiv1)
 
-(def-typed-set deftypedset-element-p1 deftypedset-set-type-1 
+(def-typed-set deftypedset-element-p1 deftypedset-set-type-1
   :equiv deftypedset-element-equiv1 :additional-param t :use-f-i nil)
 
 ;; (in-theory (disable deftypedset-element-equiv-based-set-theory ||#
@@ -148,11 +148,11 @@
 
 
 
-  
+
 
 (encapsulate
  (((set-union-op-equiv0 * *) => *))
- (local (defun set-union-op-equiv0 (x y) 
+ (local (defun set-union-op-equiv0 (x y)
           (declare (xargs :guard t))
           (equal x y)))
  (defequiv set-union-op-equiv0))
@@ -182,7 +182,7 @@
 
 (encapsulate
  (((set-union-op-equiv1 * *) => *))
- (local (defun set-union-op-equiv1 (x y) 
+ (local (defun set-union-op-equiv1 (x y)
           (declare (xargs :guard t))
           (equal x y)))
  (defequiv set-union-op-equiv1))

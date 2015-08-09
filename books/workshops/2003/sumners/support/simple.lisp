@@ -24,7 +24,7 @@ the use of this book.
 
 (encapsulate
  (((upper-bound) => *))
- 
+
  (local (defun upper-bound () 1))
 
  (defthm upper-bound-positive-natural
@@ -40,9 +40,9 @@ the use of this book.
 
 (defun fair-measure (i f)
   (if (selectp i)
-      (if (< i f) 
-          (+ i (- (upper-bound) f)) 
-        (- i f)) 
+      (if (< i f)
+          (+ i (- (upper-bound) f))
+        (- i f))
     0))
 
 (defun fair-step (f)
@@ -58,7 +58,7 @@ the use of this book.
            (natp (fair-measure i f)))
   :hints (("Goal" :in-theory (enable natp)))))
 
-(local 
+(local
 (defthm fair-measure-decreases
   (implies (and (selectp i)
                 (fair-inv f)
@@ -113,12 +113,12 @@ the use of this book.
 (encapsulate
  (((env *) => *)
   ((env-measure * *) => *))
- 
+
 (local (defun env (n)
          (fair-select (fair-run n))))
 (local (defun env-measure (i n)
          (fair-measure i (fair-run n))))
- 
+
 (defthm env-measure+-is-natural
   (natp (env-measure i n))
   :rule-classes (:type-prescription :rewrite))

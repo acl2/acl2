@@ -24,7 +24,7 @@
   (cond ((endp x) 0)
         (t (+ (how-many-smaller (car x) (cdr x))
               (bnext-size (cdr x))))))
-              
+
 (defthm how-many-smaller-bnext
   (equal (how-many-smaller e (bnext x))
          (how-many-smaller e x)))

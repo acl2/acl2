@@ -367,7 +367,7 @@ In these books we use the newly developed extended meta functions.
 	(t
 	 (mv-let (flag new-leaves)
 	   (subtract-leaf leaf (cdr leaves))
-	   (if flag 
+	   (if flag
 	       (mv t (cons (car leaves)
 			   new-leaves))
 	     (mv nil leaves))))))
@@ -436,7 +436,7 @@ In these books we use the newly developed extended meta functions.
 		    (consp new-leaves))
 	       (mv-let (flag bag-list)
 		 (collect-bags-intp new-leaves intp-bags)
-		 (if flag 
+		 (if flag
 		     (mv t
 			 (cons (car non-intp-bags)
 			       bag-list))
@@ -539,7 +539,7 @@ In these books we use the newly developed extended meta functions.
 
  (local
   (defthm big-tree-big-tree-2
-    (and 
+    (and
      (equal (intp-eva (big-tree bags 'INTP-+ 'BINARY-+) a)
 	    (intp-eva (big-tree-2 bags 'BINARY-+ 'BINARY-+) a))
      (equal (intp-eva (big-tree bags 'INTP-* 'BINARY-*) a)

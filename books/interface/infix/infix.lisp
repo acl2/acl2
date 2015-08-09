@@ -18,13 +18,13 @@
 ;;    Ignored in lisp.
 ;;    We handle doc strings by calling an ACL2 function
 ;;    that takes a doc string and 2 tables and returns
-;;    a doc string, with the ACL2 formatting done.  
-;;    In order to handle arbitrary formatting within doc strings `~id[x]` 
-;;    will eventually map to `x`.  Thus, in scribe mode, ~id[@section](Testing) 
+;;    a doc string, with the ACL2 formatting done.
+;;    In order to handle arbitrary formatting within doc strings `~id[x]`
+;;    will eventually map to `x`.  Thus, in scribe mode, ~id[@section](Testing)
 ;;    will come out as @section(Testing).
 ;;    Whereas @section(Testing) would come out as @@section(Testing)
 
-;; BUGS 
+;; BUGS
 
 ;; 1. In comments !p(implies a b) produces different results from !p(IMPLIES a b)
 ;;    Case is honored when reading comments.  !p may need to adjust case.
@@ -39,7 +39,7 @@
 ;;    INFIX-SETTINGS.)  With this turned off you can still use ! and whatever
 ;;    native text formatting conventions you wish.
 ;;
-;; 3. "!cfoo" when processed by nqftm2fmt will result in an attempt to 
+;; 3. "!cfoo" when processed by nqftm2fmt will result in an attempt to
 ;;    eval foo.  This may break, if the user is not taking advantage of
 ;;    this !c `feature'.
 
@@ -66,19 +66,19 @@
 ;; The first two effect the output of this infix processor.
 
 ;; To ensure that your text formatter (type 3) commands
-;; are preserved during processing steps 1 and 2, the simplest 
+;; are preserved during processing steps 1 and 2, the simplest
 ;; approach is to enclose the commands that you wish
 ;; to preserve in the ~id[...] form or between ~bid[] .. ~eid[] pairs.
 ;; SEE BUG 2 ABOVE.
 
 ;; Comments and doc strings are preprocessed to translate their ACL2
-;; formatting commands to our target formatter.  
+;; formatting commands to our target formatter.
 ;; Note that the ACL2 doc formatter goes to great lengths to make sure
 ;; weird characters in the target dialect are quoted.  So if you want
 ;; such things preserved, you need to use the ~id forms above.  Because
 ;; we now pass comment text through the ACL2 doc formatter, you
 ;; will need to treat comments as you treat doc strings.
-;; You also need ;; to be careful of occurences of "~".  If a "~" is 
+;; You also need ;; to be careful of occurences of "~".  If a "~" is
 ;; not followed by an ACL2 formatting command, we will complain.
 
 ;; Load packages and macros we depend on.
@@ -96,7 +96,7 @@
 #+gcl(eval-when (load eval compile)
 		(defun pages-allocated (type)
 		  (declare (ignore type))
-		  (multiple-value-bind 
+		  (multiple-value-bind
 		   (nfree npages maxpage nppage gcs used) (system:allocated 'cfun)
 		   (declare (ignore nfree maxpage nppage gcs used))
 		   npages)))
@@ -123,13 +123,13 @@
 (defvar a-very-rare-cons nil)
 
 (defun read-keyword-form (key n)
-  "This function reads the N args for keyword command, KEY, 
+  "This function reads the N args for keyword command, KEY,
 where we have used ACL2 mechanisms to compute N.  It returns a form.
 If KEY cannot be presented in keyword form, N will be NIL."
   (cond ((null n) key)
 	((integerp n)
 	 (let (args)
-	   (sloop for i from 1 to n 
+	   (sloop for i from 1 to n
 		  do (setq args
 			   (append
 			    args
@@ -234,16 +234,16 @@ instructions documented as legal instructions to LD.
 -    Tex                                 Scribe
 -    ----------------------------------------------------------------
 -    (load-base "latex-theory.lisp")     (load-base "scribe-theory.lisp")
--     ... 
--     Your extensions and/or redefinitions.  
+-     ...
+-     Your extensions and/or redefinitions.
 -     See in particular the documentation on make-infix et.al.
 -     under `SIX GENERAL OPERATOR SCHEMAS', and the examples at the
 -     end of this file and in scribe-theory.lisp and latex-theory.lisp.
 -     ...
--     INFIX-SETTINGS provides some simple control over an assortment of 
--     formatting options.  See `SETTINGS THAT MAY BE MODIFIED IN MODE-THEORY.LISP'. 
+-     INFIX-SETTINGS provides some simple control over an assortment of
+-     formatting options.  See `SETTINGS THAT MAY BE MODIFIED IN MODE-THEORY.LISP'.
 -     ...
--    (infix-settings :mode "clock"       (infix-settings :mode "clock" 
+-    (infix-settings :mode "clock"       (infix-settings :mode "clock"
 -               :extension "tex" ...)               :extension "mss" ...)
 
 2. Save clock-theory.lisp, preferably in the same directory with clock.events.
@@ -252,12 +252,12 @@ instructions documented as legal instructions to LD.
 
 -    (infix-file "clock").
 
-   which will result in the file "clock.tex" or "clock.mss" 
+   which will result in the file "clock.tex" or "clock.mss"
 
 4. Run the appropriate formatter.
 
 5. Special considerations for latex vs. scribe.
-   
+
 -  To get an index in LaTeX.             To avoid an index in Scribe
 -  ----------------------------------------------------------------
 -  %latex clock                          Insert @disable(Index) in clock.mss.
@@ -274,12 +274,12 @@ Below is such a call with keywords supplied with their defaults.
 -                 DEFAULT: :downcase.
 -
 -   :mode       - if not provided (thus defaulting to nil) we look for
--                 "fl-theory.lisp" and load it if present.  If not, we use 
--                 the mode of the last successfull call to infix-file or 
+-                 "fl-theory.lisp" and load it if present.  If not, we use
+-                 the mode of the last successfull call to infix-file or
 -                 query whether you want to use Scribe or Latex mode.
 -                 In this last case you will need to know where the basic
 -                 theory files are located.  Simplest is to create a trivial
--                 -theory file in the same directory as the event files that 
+-                 -theory file in the same directory as the event files that
 -                 just loads appropriate scribe or latex -theory file.
 -                 DEFAULT: fl root name.  If not found, queries the user.
 -
@@ -287,10 +287,10 @@ Below is such a call with keywords supplied with their defaults.
 -                 Controls where infix inserts line breaks within expressions.
 -                 DEFAULT: 77.
 -
--   :comment    - If t, then certain specially marked Acl2 expressions in 
--                 comments are replaced with their conventional notation.  
--                 See the documentation of the function `nqfmt2fmt' below for 
--                 a description of the special syntax for this replacement 
+-   :comment    - If t, then certain specially marked Acl2 expressions in
+-                 comments are replaced with their conventional notation.
+-                 See the documentation of the function `nqfmt2fmt' below for
+-                 a description of the special syntax for this replacement
 -                 process.  We assume you use this feature.  If not,
 -                 set *nq-default* to NIL in your mode file.
 -                 DEFAULT: T.
@@ -298,7 +298,7 @@ Below is such a call with keywords supplied with their defaults.
 
 			       COMMENT HANDLING
 
-- Jul 28 93 MKS - Extended comment handling.  
+- Jul 28 93 MKS - Extended comment handling.
 - Aug  3 93 MKS - Still haven't done anything with internal comments.
 
 Modified Treatment of comments: `infix-file' preserves comments
@@ -313,14 +313,14 @@ following the semi-colon or OPEN-BAR-COMMENT.  A comment may be turned into:
 
 - 1. Running TEXT.  The comment chars (see definition following) are
 - eliminated and the text is copied to the output file.
-- 
+-
 - 2. A FORMATted environment.  The comment chars (see definition
 - following) are eliminated, line breaks and spaces are preserved, and
 - the font is the default document font.
-- 
-- 3. A VERBATIM environment. The comment chars may or may not be preserved, 
+-
+- 3. A VERBATIM environment. The comment chars may or may not be preserved,
 - line breaks and spaces are PRESERVED and the font is a fixed width font.
-- 
+-
 - 4. An EMPHASIS environment. Like format, but the font is italic.
 
 This set, which is used by the named formats in *comment-format-alist*, can
@@ -372,31 +372,31 @@ There are three versions.  One reflects MKSmith's preferences, one Boyer's,
 and one the Common Lisp defaults.  MKSmiths is the default.  To get Boyer's,
 do (setup-comment-format 'boyer).  To get Common Lisp's, do
 (setup-comment-format 'cl).  You can insert this form in your theory file.
-To create your own conventions, see DEFINE-COMMENT-FORMAT.  
+To create your own conventions, see DEFINE-COMMENT-FORMAT.
 
 - Description:
 
--  BT begins running text, with no environment modifiers.  
+-  BT begins running text, with no environment modifiers.
 -  BF ... EF corresponds  to <begin-format> ... <end-format>
--  BV ... EV corresponds  to <begin-verbatim> ... <end-verbatim> 
--  BE ... EE corresponds  to <begin-emphasis> ... <end-emphasis> 
--  BS ... ES corresponds  to <begin-section-name> ... <end-section-name> 
--  BC ... EC corresponds  to <begin-comment> ... <end-comment> 
-- 
+-  BV ... EV corresponds  to <begin-verbatim> ... <end-verbatim>
+-  BE ... EE corresponds  to <begin-emphasis> ... <end-emphasis>
+-  BS ... ES corresponds  to <begin-section-name> ... <end-section-name>
+-  BC ... EC corresponds  to <begin-comment> ... <end-comment>
+-
 -              MKS           Boyer             CL
--  
--  #| ... |#   BT...         BV ... EV         BT...   
--  #|\ ... |#  BT...         BT ...            BT...   
+-
+-  #| ... |#   BT...         BV ... EV         BT...
+-  #|\ ... |#  BT...         BT ...            BT...
 -  #|- ... |#  BF... EF      BV- ... EV        BF... EF
 -  #|; ... |#  BV... EV      BV; ... EV        BV... BV
--  
+-
 -  ; ...       BT...         BV; ... EV        BE... EE
 -  ;; ...      BT...         BV;; ... EV       BF... EF
--  ;;; ...     BV... EV      BV;;; ... EV      BT...   
+-  ;;; ...     BV... EV      BV;;; ... EV      BT...
 -  ;;;; ...    BV;... EV     BV;;;; ... EV     BS... ES
 
--  ;# ...      BC... EC        
--  ;\ ...      BT...         BT ...            BT...   
+-  ;# ...      BC... EC
+-  ;\ ...      BT...         BT ...            BT...
 -  ;- ...      BF... EF      BV;- ... EV       BF... EF
 -  ;+ ...      BV... EV      BV;+ ... EV       BV... EV
 -  ;! ...      BE... EE      BV;! ... EV       BE... EE
@@ -457,7 +457,7 @@ former much easier to read in a file.  nqfmt2fmt thus permits one to
 keep Acl2 forms in files to be read and edited by humans, e.g., in
 comments in Acl2 event files.  Ordinary uses of !, e.g., uses of it
 followed by white space or punctuation characters, are, of course,
-unaltered.  
+unaltered.
 
 Let ev  be an Acl2 event form, e.g., (defun foo (x) 3)
     fm  be an Acl2 term, e.g., (plus x y)
@@ -466,10 +466,10 @@ Let ev  be an Acl2 event form, e.g., (defun foo (x) 3)
 Summary:
 
 !Pfm  - Pretty print.
-!Tfm  - Pretty print but without any line breaks.  
+!Tfm  - Pretty print but without any line breaks.
 !Eev  - Format event.
 !Ifoo - Identity, handling special chars of formatter.
-!Qfn  - `fn'. 
+!Qfn  - `fn'.
 !Vfoo - Verbatim.
 
 Begin HACK ALERT
@@ -479,7 +479,7 @@ Begin HACK ALERT
          like dynamically change the margin (*rightmost-char-number*)
          turn indexing on (SETQ *DO-NOT-INDEX* NIL) and off
          (SETQ *DO-NOT-INDEX* T), or even redefine a printer.
- 
+
 End HACK ALERT
 
 !section(text)    - Format text as a section header.
@@ -498,16 +498,16 @@ Detail:
 !Pfm  - Pretty print.  Results in conventional mathematical notation.
 
 !Qfn  - where fn is a symbol, results in fn surrounded by single gritches,
-        after formatting sensitive characters have been quoted, e.g., !qfoo results 
-        in `foo' in TeX.  Useful for distinguishing function symbols from other 
-        words in a sentence, since function symbols appear in Roman.  
+        after formatting sensitive characters have been quoted, e.g., !qfoo results
+        in `foo' in TeX.  Useful for distinguishing function symbols from other
+        words in a sentence, since function symbols appear in Roman.
         Mnemonic: Q -- think Quoted.
 
 !Tfm  - where fm is an Acl2 term, results in conventional mathematical
-        notation for fm, but without any line breaks.  
+        notation for fm, but without any line breaks.
         Mnemonic: T -- think Term.
 
-!Vfoo - foo is printed as is, but in typewriter font, and with special characters quoted.  
+!Vfoo - foo is printed as is, but in typewriter font, and with special characters quoted.
         Mnemonic: V -- think Verbatim.
 
 ! followed by anything else is left alone, along with the exclamation mark.
@@ -517,7 +517,7 @@ details on the syntax and replacements.  There is also an option to nqfmt2fmt
 for simply stripping out the !commands.
 
 (c) (infix-form fm) prints (to *standard-output*) the formatting input for the
-conventional notation for the Acl2 term fm.  `infix-form' and `infix-event' 
+conventional notation for the Acl2 term fm.  `infix-form' and `infix-event'
 can be used to generate Latex or Scribe to be inserted manually into
 papers, but we recommend the use of nqfmt2fmt, described above, for this
 purpose.
@@ -533,7 +533,7 @@ e.g., to introduce a new infix operator.  See the very end of this file, at
 `USER MODIFIABLE TABLE SETUP', for examples of how to establish new syntax.
 
 Also see `SETTINGS THAT MAY BE MODIFIED IN MODE-THEORY.LISP' to see how to
-control additional features of the printing process, e.g. indexing, details of 
+control additional features of the printing process, e.g. indexing, details of
 comment handling, parentheses around expressions, etc.
 
 
@@ -548,7 +548,7 @@ parentheses of a formula when the formula is an argument of a function that is
 being printed in the usual f(x,y) notation, with subterms separated by
 parentheses and commas.
 
-In addition, the user has two alternatives to fully parenthesized notation.  
+In addition, the user has two alternatives to fully parenthesized notation.
 
 1. Eliminate them at the top level by setting *TOP-PARENS-ELIMINABLE*
    to T.
@@ -576,7 +576,7 @@ built a -init.lisp file for some other formatter make sure you look at
 
 #| ---------------------------------------------------------------------------------
 
-                          COMPILATION DEPENDENCIES               
+                          COMPILATION DEPENDENCIES
 |#
 
 ;; Check that we are in a compatible Acl2.
@@ -614,7 +614,7 @@ built a -init.lisp file for some other formatter make sure you look at
 
 #| ---------------------------------------------------------------------------------
 
-             SETTINGS THAT MAY BE MODIFIED IN MODE-THEORY.LISP. 
+             SETTINGS THAT MAY BE MODIFIED IN MODE-THEORY.LISP.
 
 Use INFIX-SETTINGS to set this first set of properties.
 See files latex-mode.lisp and scribe-mode.lisp for examples.
@@ -656,11 +656,11 @@ all keyword arguments to INFIX-SETTINGS.
    Indicates whether you wish the outermost parentheses of function bodies suppressed.
 
 7. ELIMINATE-INNER-PARENS: boolean [T, nil]
-   Suppresses all precedence related parentheses.  Much cleaner output, though an 
-   expression printed with this flag=true may reconstruct oddly, depending on the 
+   Suppresses all precedence related parentheses.  Much cleaner output, though an
+   expression printed with this flag=true may reconstruct oddly, depending on the
    reader's precedence model.  The indentation of large expressions helps somewhat.
 
-   Example: Consider the defun, 
+   Example: Consider the defun,
    (defun foo (l)
      (and (plistp l) (and (bar l) (baz (cdr l)))))
 
@@ -676,7 +676,7 @@ all keyword arguments to INFIX-SETTINGS.
 
 9. NO-INDEX-CALLS: boolean [NIL, T] or list
    If you want all function calls indexed, NIL. you do not want any function use indexed, T.
-   If you want to exclude certain function calls, provide a list of function 
+   If you want to exclude certain function calls, provide a list of function
    names to be ignored.
 
 If you do not provide a keyword value pair, the settings remains unchanged.
@@ -688,7 +688,7 @@ The minimal call on INFIX-SETTINGS requires a mode and extension.
 
 (INFIX-SETTINGS :MODE                   "scribe"
 		:EXTENSION              "mss"   )
-	
+
 The maximal call, setting everything explicitly.
 The following shows infix-settings with all of the default settings as
 arguments.  The comments indicate required types of values.  `...' indicates
@@ -714,9 +714,9 @@ settings that the user may extend with more work.
 
 (defparameter *nq-default* t)
 
-; If *INFIX-OP-LOCATION* (:OP-LOCATION arg to INFIX-SETTINGS) is 'BACK 
-; then you get Boyer's style of printing a list of infix operators and 
-; arguments.  If 'FRONT, you get Smiths.  Smiths is the default.  
+; If *INFIX-OP-LOCATION* (:OP-LOCATION arg to INFIX-SETTINGS) is 'BACK
+; then you get Boyer's style of printing a list of infix operators and
+; arguments.  If 'FRONT, you get Smiths.  Smiths is the default.
 ; You can tell who last editted this file.
 
 ;- BACK form is      e.g
@@ -749,7 +749,7 @@ The following variables do not NEED to be reset in your mode file, but they may 
 ; *TOP-PARENS-ELIMINABLE-DEFAULT* is a global.  If t, then it is ALWAYS
 ; assumed to be ok to omit the outermost parentheses of the expressions
 ; we are about to print.  This may procudes output that cannot
-; unambiguously be parsed back into its original sexpr format. 
+; unambiguously be parsed back into its original sexpr format.
 
 (defparameter *top-parens-eliminable-default* nil)
 
@@ -760,7 +760,7 @@ INDEXING
 If you do not any index (SETQ *DO-NOT-INDEX* T).
 If you do not want occurences of functions indexed (SETQ *DO-NOT-INDEX-CALLS* T).
 If you want to exclude certain functions, add them to the list *DO-NOT-INDEX-CALLS-OF*.
-If you want no index, see comments at beginning of file. 
+If you want no index, see comments at beginning of file.
 
 
 DEBUGGING
@@ -781,7 +781,7 @@ Setting *INFIX-TRACE* to T will provide some debugging help when testing new mod
 ; Use INFIX-SETTINGS to set this variable.  See Introduction.
 
 ; One of NIL, "latex", "scribe", or another string.
-(defparameter *infix-mode* nil)          
+(defparameter *infix-mode* nil)
 
 
 ;; STRINGS BASED ON THE TARGET FORMATTER (LaTeX, Scribe, ...)
@@ -870,7 +870,7 @@ Setting *INFIX-TRACE* to T will provide some debugging help when testing new mod
 
 (defparameter *column-separator* nil)
 
-; *tabs-list* is a text-formatter specific variable.  Typically of the form of a 
+; *tabs-list* is a text-formatter specific variable.  Typically of the form of a
 ; list of pairs, either (tab . n) or (lm . n), where n is the value of
 ; *infix-loc* when we set tabs and margins.
 
@@ -937,7 +937,7 @@ Setting *INFIX-TRACE* to T will provide some debugging help when testing new mod
 Signatures as passed to (proclaim '(ftype ...) ..)
 
 () -> t : function of no args, returning arbitrary type
- 
+
             begin-tabbing                end-tabbing
             begin-normal-text            end-normal-text
             increase-margin
@@ -946,7 +946,7 @@ Signatures as passed to (proclaim '(ftype ...) ..)
             do-tab
             begin-flushright             end-flushright
 
-            ;; to-current-margin            ;; newline-to-current-margin    
+            ;; to-current-margin            ;; newline-to-current-margin
             ;; force-newline
 
 (t) -> t : function of one arbitray arg, returning arbitrary type
@@ -978,7 +978,7 @@ function symbol, including LET, COND, CASE, LIST, LIST*, and FOR.
 
 3. *event-printer-alist*, which governs the printing of events.
 
-4. *special-quoted-forms-alist*, which governs the special printing of selected 
+4. *special-quoted-forms-alist*, which governs the special printing of selected
 quoted symbols.
 
 Each table is an alist.  Each member of any of these alists is a list (symbol
@@ -1187,11 +1187,11 @@ call princ and write-char on just one argument, the thing to be printed.
   (pwrite-char #\Newline)
   (setq *infix-loc* (get-margin)))
 
-(defun newline-in-env (&optional force) 
+(defun newline-in-env (&optional force)
   (if force (pprinc *force-newline-in-env*) (pprinc *newline-in-env*))
   (line-return))
 
-(defun newline-in-text (&optional force) 
+(defun newline-in-text (&optional force)
   (if force (pprinc *force-newline-in-text*) (pprinc *newline-in-text*))
   (line-return))
 
@@ -1218,7 +1218,7 @@ call princ and write-char on just one argument, the thing to be printed.
      (cond ((and *testing*
 		 (> *infix-loc* *rightmost-char-number*))
 	    (throw 'advise-break t)))))
-          
+
 (defmacro pprin1i (x)
   `(progn (let ((x ,x))
             (pprin1 x)
@@ -1277,19 +1277,19 @@ call princ and write-char on just one argument, the thing to be printed.
 
 (defun clean-up-everything ()
   (sloop for alist in '(*fn-alist* *negative-constant-table*
-				     *negative-infix-table* 
+				     *negative-infix-table*
 				     *negative-unary-prefix-table*
                                      *negative-unary-suffix-table*
 				     *prefix-multiple-ops*
 				     *suffix-multiple-ops*
-                                     *infix-multiple-ops*) 
+                                     *infix-multiple-ops*)
            do (progn
                 (sloop for pair in (eval alist)
                          do (clean-up (car pair)))
                 (set alist nil)))
-  ;; Reinitialize 
+  ;; Reinitialize
   (setq *fn-alist* *save-fn-alist*))
-                 
+
 (defmacro make-constant-op (name str &optional neg-str)
   (let ((fn-name (intern (format nil "~s-constant-op-printer" name))))
     `(progn
@@ -1367,7 +1367,7 @@ call princ and write-char on just one argument, the thing to be printed.
              *fn-alist*)
        (push (cons ',name ,(length strs)) *suffix-multiple-ops*)
        ',name)))
-                 
+
 (defmacro make-unary-prefix-op (name str &optional neg-str)
   (let ((fn-name (intern (format nil "~s-unary-prefix-op-printer" name))))
     `(progn
@@ -1467,14 +1467,14 @@ call princ and write-char on just one argument, the thing to be printed.
 
 ;                                    TABBING
 
-; Infix-File generates text that uses the Latex `tabbing' or Scribe `format' environment, 
+; Infix-File generates text that uses the Latex `tabbing' or Scribe `format' environment,
 ; setting a tab for each new level of indentation.  We find this a convenient
-; sublanguage to target.  
+; sublanguage to target.
 
 ; It appears based upon various experiment that perhaps Latex cannot handle tabs
-; more than about 14 deep, or so.  
+; more than about 14 deep, or so.
 
-; The parameter, *latex-indent-number-limit*, could perhaps be increased if one 
+; The parameter, *latex-indent-number-limit*, could perhaps be increased if one
 ; had a Latex wherein this limit has been raised.  However, it is a relatively rare
 ; function that needs terms that are more than 13 function calls deep.  When
 ; infix-file hits this limit in Latex mode, it falls back upon the standard Acl2
@@ -1530,7 +1530,7 @@ call princ and write-char on just one argument, the thing to be printed.
 
 ; Our own printer, which slashifies (or otherwise quotes) the doc-special-chars and
 ; doc-other-chars in strings.  We print all Acl2 symbols with this
-; function and print-atom because we want to avoid generating stuff that will make 
+; function and print-atom because we want to avoid generating stuff that will make
 ; the text formatter barf, e.g., in Latex, a symbol with an unslashified $, <, or { in it.
 
   (cond ((stringp str)
@@ -1602,7 +1602,7 @@ call princ and write-char on just one argument, the thing to be printed.
 			  (pprinc ", "))
 			 ((cdr x)
 			  (print-atom (car x))
-			  (pprinc " and "))			 
+			  (pprinc " and "))
 			 (t (print-atom (car x))))))
 	(t (print-atom (car l)))))
 
@@ -1619,7 +1619,7 @@ call princ and write-char on just one argument, the thing to be printed.
 			  (pprinc ", "))
 			 ((cdr x)
 			  (print-bare-function-name (car x))
-			  (pprinc " and "))			 
+			  (pprinc " and "))
 			 (t (print-bare-function-name (car x))))))
 	(t (print-bare-function-name (car l)))))
 
@@ -1629,21 +1629,21 @@ call princ and write-char on just one argument, the thing to be printed.
 (defun bold-sym-printer (x &optional i)         ; Print in bold face.
   (pprinc *begin-bold-env*)
   (cond ((symbolp x) (print-atom x i))
-	((characterp x) (print-character x i)) 
+	((characterp x) (print-character x i))
 	(t (print-string x i)))
   (pprinc *end-bold-env*))
 
 (defun italic-sym-printer (x &optional i)               ; Print in italic face.
   (pprinc *begin-italic-env*)
   (cond ((symbolp x)    (print-atom x i))
-	((characterp x) (print-character x i)) 
+	((characterp x) (print-character x i))
 	(t (print-string x i)))
   (pprinc *end-italic-env*))
 
 (defun tt-sym-printer (x &optional i)           ; Print in typewriter font.
   (pprinc *begin-tt-env*)
   (cond ((symbolp x) (print-atom x i))
-	((characterp x) (print-character x i)) 
+	((characterp x) (print-character x i))
 	(t (print-string x i)))
   ;; We charge more for tt characters.
   (incf *infix-loc* (* (- *tt-size* 1) (our-flatc x)))
@@ -1652,7 +1652,7 @@ call princ and write-char on just one argument, the thing to be printed.
 (defun small-caps-sym-printer (x &optional i)           ; Print in small caps.
   (pprinc *begin-sc-env*)
   (cond ((symbolp x) (print-atom x i))
-	((characterp x) (print-character x i)) 
+	((characterp x) (print-character x i))
 	(t (print-string x i)))
   (pprinc *end-sc-env*))
 
@@ -1733,7 +1733,7 @@ call princ and write-char on just one argument, the thing to be printed.
 (defun tt-pprinci (term &optional (size 1))
   (pprinci *begin-tt-env* size)
   (pprinci term size)
-  (pprinci *end-tt-env*))   
+  (pprinci *end-tt-env*))
 
 (defun quote-printer1-tt-form (term)
   (tt-pprinci "(" *tt-size*)
@@ -1750,7 +1750,7 @@ call princ and write-char on just one argument, the thing to be printed.
                          (line-return))
                         (t (tt-pprinci " " *tt-size*))))
            until (atom (cdr tail))))
-                                
+
 (defun quote-printer1-advise-break (term)
   (tt-pprinci "(" *tt-size*)
   (set-margin)
@@ -2087,7 +2087,7 @@ call princ and write-char on just one argument, the thing to be printed.
 			     (to-current-margin)
 			     ;; (math-space 1)
 			     ;; Was imbedded in
-			     ;; (let((*rightmost-char-number* (- *rightmost-char-number* 8))) 
+			     ;; (let((*rightmost-char-number* (- *rightmost-char-number* 8)))
 			     ;;    <form>)
 			     (bold-sym-printer "endcase" 8)
 			     (pop-margin))
@@ -2115,7 +2115,7 @@ call princ and write-char on just one argument, the thing to be printed.
 					   (pprinci ", " 1)
 					   (to-current-margin))
 					  (t (to-current-margin)
-					     (bold-sym-printer " in " 3)))))) 
+					     (bold-sym-printer " in " 3))))))
 	       ;; Deleted (to-current-margin) after printing " in "
 	       (pop-margin)
 	       (to-current-margin)
@@ -2417,7 +2417,7 @@ call princ and write-char on just one argument, the thing to be printed.
       ;; (eq 'ground-zero (get fn 'main-event))
       (get fn '*predefined*)		;seems appropriate for Acl2.
       (member fn *do-not-index-calls-of*)))
-      
+
 (defun index-call (fn)
   (cond (*testing* nil)
         ((do-not-index-call-of fn) nil)
@@ -2492,7 +2492,7 @@ call princ and write-char on just one argument, the thing to be printed.
 		   ;; Issues newline at end of call.
 		   (infix-print-list-element-newline (car tail) (if (cdr tail) ", "))
 		   (cond ((and (cdr tail) (not (consp tail)))
-			  (pprinci " . ") 
+			  (pprinci " . ")
 			  (infix-print-list-element-newline (cdr tail))
 			  (loop-return nil))))
 		  ;; Should never get to this.  Sloop doesn't deal with
@@ -2504,7 +2504,7 @@ call princ and write-char on just one argument, the thing to be printed.
 (defun infix-print-l (l &optional printer)
   (let ((advice (advise-break l)))
     (if (null printer)
-	(if advice 
+	(if advice
 	    (setq printer (function infix-print-list-element-newline))
 	    (setq printer (function infix-print-list-element))))
     (set-margin)
@@ -2525,7 +2525,7 @@ call princ and write-char on just one argument, the thing to be printed.
     ;; Now we get rid of the indent.
     (pop-margin)))
 
-;;   &optional var || &optional (var [literal [varp]]) 
+;;   &optional var || &optional (var [literal [varp]])
 ;;   &rest v
 ;;   &key foo bar
 ;;   &whole l
@@ -2595,8 +2595,8 @@ call princ and write-char on just one argument, the thing to be printed.
 	       (smith-infix-print-tail "" term top-parens-were-eliminable)
 	       (boyer-infix-print-tail "" term top-parens-were-eliminable)))
           ((= (length term) 2)
-	   ;; We have accidentally captured a unary op.  Since 
-	   ;; We assume these will behave like +/-, e.g. if 
+	   ;; We have accidentally captured a unary op.  Since
+	   ;; We assume these will behave like +/-, e.g. if
 	   ;; (op x y) prints as "x O y" then (op x) prints as "O x".
 	   (pprinci op 3)
 	   (pprinci " ")
@@ -2647,9 +2647,9 @@ call princ and write-char on just one argument, the thing to be printed.
                         (t (cond ((null top-parens-were-eliminable)
                                   (pprinci ")")))
                            (pop-margin)
-			   ;; MOD  Nov 30 94 MKS 
+			   ;; MOD  Nov 30 94 MKS
                            ;; (to-current-margin)  ;newline
-			   ))))) 
+			   )))))
 
 
 (defun default-unary-prefix-printer (term op)
@@ -2693,7 +2693,7 @@ call princ and write-char on just one argument, the thing to be printed.
   ;; (let ((*left-margin-tab-context* nil)) .. )
   (infix-print-term1 (cadr term))
   (sloop for arg in (cddr term)
-           as str in strs 
+           as str in strs
            do (progn (cond (advice (to-current-margin))	;newline
                            (t (pprinci " ")))
                      (pprinci str)
@@ -2718,7 +2718,7 @@ call princ and write-char on just one argument, the thing to be printed.
                        ;;      (t (pprinci " ")))
                        (pprinci " ")
                        (infix-print-term1 (car tail))
-                       (cond ((null tail) nil) 
+                       (cond ((null tail) nil)
                              (advice (to-current-margin)) ;newline
                              (t (pprinci " ")))))
     (pop-margin)
@@ -2757,7 +2757,7 @@ call princ and write-char on just one argument, the thing to be printed.
     (pop-margin)
     (cond ((null top-parens-were-eliminable)
            (pprinci ")")))))
-        
+
 (defun default-unary-abs-printer (term lhs-str rhs-str)
   (let* ((top-parens-were-eliminable *top-parens-eliminable*)
          (*top-parens-eliminable* *top-parens-eliminable-default*))
@@ -2800,7 +2800,7 @@ call princ and write-char on just one argument, the thing to be printed.
 (defvar *local-context* nil
   "Indicates when we are in a `local' context, e.g. in encapsulate.")
 
-(defvar *local-handlers* nil 
+(defvar *local-handlers* nil
   "List of events that are sensitive to *local-context*")
 ;; Every -printer that calls event-label printer is so sensitive.
 
@@ -2846,7 +2846,7 @@ In which case we don't want to print *no-tab-command-trailer*."
 
 (eval-when (load compile eval)
 
-(defun begin-event (&optional doc) 
+(defun begin-event (&optional doc)
   (blankline)
   (event-doc-string doc)
   (begin-tabbing)
@@ -2856,10 +2856,10 @@ In which case we don't want to print *no-tab-command-trailer*."
   '(progn (end-tabbing)
 	  (blankline)))
 
-(defmacro begin-paragraph () 
+(defmacro begin-paragraph ()
   `(progn (blankline) (begin-text)))
 
-(defmacro end-paragraph () 
+(defmacro end-paragraph ()
   `(progn (end-text) (blankline)))
 
 )
@@ -2881,7 +2881,7 @@ In which case we don't want to print *no-tab-command-trailer*."
 (defun extract-keywords (l keys)
   (cond ((not (consp keys)) nil)
 	((member (car keys) l)
-	 (cons (cadr (member (car keys) l)) 
+	 (cons (cadr (member (car keys) l))
 	       (extract-keywords l (cdr keys))))
 	(t (cons nil (extract-keywords l (cdr keys))))))
 
@@ -3003,7 +3003,7 @@ In which case we don't want to print *no-tab-command-trailer*."
 	(signatures (cadddr term)))
     (begin-event "Define an evaluator.")
     (ppformat "Let `~s' be an evaluator function, with mutually-recursive counterpart
-`~s', for the functions" ev ev-list) 
+`~s', for the functions" ev ev-list)
     (print-bare-function-names (mapcar (function car) signatures))
     (index ev)
     (index ev-list)
@@ -3058,7 +3058,7 @@ In which case we don't want to print *no-tab-command-trailer*."
     (event-label-printer "Package ")
     (bold-sym-printer name)
     (index name " defined")
-    ;; (infix-print-term contents)    
+    ;; (infix-print-term contents)
     (to-current-margin)
     (end-event)))
 
@@ -3086,7 +3086,7 @@ In which case we don't want to print *no-tab-command-trailer*."
     (event-label-printer "Rebuild ")
     (italic-sym-printer name)
     (cond ((or (null key)
-	       (equal key t)	       
+	       (equal key t)
 	       (equal key :all)
 	       (equal key :query))
 	   (pprinc "."))
@@ -3158,7 +3158,7 @@ In which case we don't want to print *no-tab-command-trailer*."
 	((equal (car body) '*infix-backquote*)
 	 (pprinc "`") (infix-print-term1 (cadr body)))
 	(t (infix-print-term1 body))))
-  
+
 
 (defun defmacro-printer (event)
   (let* ((name (nth 1 event))
@@ -3312,7 +3312,7 @@ In which case we don't want to print *no-tab-command-trailer*."
 				       :ld-prompt :ld-pre-eval-filter
 				       :ld-pre-eval-print :ld-post-eval-print :ld-evisc-tuple
 				       :ld-error-triples :ld-error-action
-				       :ld-query-control-alist :ld-verbose)))) 
+				       :ld-query-control-alist :ld-verbose))))
     (begin-event)
     (event-label-printer "Load" " the file: ")
     (filename-sym-printer (cadr term))
@@ -3376,7 +3376,7 @@ In which case we don't want to print *no-tab-command-trailer*."
 	(bold-sym-printer "Measure: ")
 	(set-margin)
 	(infix-print-term1 measure)
-	(pop-margin))		  
+	(pop-margin))
       (when mode
 	(bold-sym-printer "Mode: ")
 	(print-atom mode)
@@ -3508,19 +3508,19 @@ In which case we don't want to print *no-tab-command-trailer*."
 			  (pprinc ", "))
 			 ((cdr x)
 			  (print-rune-string (car x))
-			  (pprinc " and "))			 
+			  (pprinc " and "))
 			 (t (print-rune-string (car x))))))
 	(t (print-rune-string (car runes)))))
 
 ;; name       ==   sym | string | :here   -- event name
 ;; theory     ==   (rune*)                -- sets of runes to enable/disable in concert
-;; theory-des == 
-;;      (DISABLE runic-desig*)            => theory        
-;;    | (ENABLE  runic-desig*)            => theory        
-;; 
+;; theory-des ==
+;;      (DISABLE runic-desig*)            => theory
+;;    | (ENABLE  runic-desig*)            => theory
+;;
 ;;    | (CURRENT-THEORY   name)           => theory  -- name is atom, string, or :here
 ;;    | (UNIVERSAL-THEORY name)           => theory  -- as of logical name
-;;    | (THEORY           name)           => theory        
+;;    | (THEORY           name)           => theory
 ;;    | (FUNCTION-THEORY  name)           => theory  -- function symbol rules
 ;;
 ;;    | (INTERSECTION-THEORIES th1 th2)   => theory
@@ -3671,9 +3671,9 @@ In which case we don't want to print *no-tab-command-trailer*."
 (declare-fn-printer function-theory (function function-theory-printer))
 
 ;; See scribe or latex init to see how the following are handled.
-;;  intersection-theories  
+;;  intersection-theories
 ;;  set-difference-theories
-;;  union-theories         
+;;  union-theories
 
 (defun theory-invariant-printer (form)
   (let ((term (cadr form))
@@ -3805,7 +3805,7 @@ Allow redefinition (even of system functions) without undoing.")
   (print-default-command-header)
   (pprinc "Reset LD specials to their initial value")
   (if (cadr term)
-      (pprinc ", including I/O channels.")      
+      (pprinc ", including I/O channels.")
       (pprinc "."))
   (no-tab-command-trailer))
 
@@ -4306,15 +4306,15 @@ Allow redefinition (even of system functions) without undoing.")
 
 (defparameter *comment-environment* nil)
 
-(defparameter *comment-format* 'smith)	
+(defparameter *comment-format* 'smith)
 
 (defparameter *comment-semi-net* nil)
 (defparameter *comment-lb-net* nil)
 
-;; We use this two stage template/eval kludge so that if the template can 
+;; We use this two stage template/eval kludge so that if the template can
 ;; be used to reset the variable after the user has defined these variables.
 
-;; Note a problem with this flexibility.  In some contexts we need to format 
+;; Note a problem with this flexibility.  In some contexts we need to format
 ;; special characters and in others we don't.  Thus in LaTeX, in a Verbatim
 ;; we don't need to quote `_', but in running text we do need to quote it.
 
@@ -4363,7 +4363,7 @@ Allow redefinition (even of system functions) without undoing.")
     (if (not saved-env)
         (pprinc string)
         (progn (end-environment)
-               (pprinc string)       
+               (pprinc string)
                (begin-environment saved-env)))))
 
 (defun end-environment-if-not (env)
@@ -4372,7 +4372,7 @@ Allow redefinition (even of system functions) without undoing.")
 
 (defun white-space-string-p (s)
   (let ((x t))
-    (sloop for i from 0 to (- (length s) 1) 
+    (sloop for i from 0 to (- (length s) 1)
              do (setq x (and x (member (char s i) *white-space*))))
     x))
 
@@ -4387,7 +4387,7 @@ Allow redefinition (even of system functions) without undoing.")
   ;; for that as a special case.  Also, Latex forbids control-l in a verbatim
   ;; environment, so we watch out for that, too.
 
-  ;; Thus, we forbid any empty environments, and we always pull a page break 
+  ;; Thus, we forbid any empty environments, and we always pull a page break
   ;; out of the current environment.
 
   ;; First, end an existing environment if it is not ENV.
@@ -4414,10 +4414,10 @@ Allow redefinition (even of system functions) without undoing.")
                         (append *saved-whitespace* (list ch)))))))
   ;; Tabs
   (cond ((and (equal env 'verbatim)
-              (eql ch #\Tab) 
+              (eql ch #\Tab)
               (not *reported-tabs*))
          (setq *reported-tabs* t)
-         (pformat *terminal-io* 
+         (pformat *terminal-io*
                   "WARNING: about tabs!~%We note the presence of a tab ~
                   in a comment that we are copying~%into a verbatim ~
                   environment.  Tabs will be treated just like ~%single spaces ~
@@ -4429,7 +4429,7 @@ Allow redefinition (even of system functions) without undoing.")
         ((and (eql ch #\Page) (equal env 'verbatim))
          (end-environment)
          (ppformat "~%~a~%"  *newpage*)
-         (begin-environment env))               
+         (begin-environment env))
 
         (ch
 	 ;; Switched (pwrite-char ch)
@@ -4441,26 +4441,26 @@ Allow redefinition (even of system functions) without undoing.")
 (defun read-char-in-comment ()
        (let ((c (read-char *standard-input* nil a-very-rare-cons)))
          (cond ((eq c a-very-rare-cons)
-                ;; EOF.  We are no longer in a comment.  
+                ;; EOF.  We are no longer in a comment.
                 ;; Exit whatever environment we are in, which will be either
                 ;; verbatim, format, or none.
                 (wrap-up-copy-comments))
                (t c))))
 
 (defun copy-comments-read-net (net)
-  ;; Returns (env char), where env is the environment to 
+  ;; Returns (env char), where env is the environment to
   ;; enter and char is nil or a char to unread.
   ;; Net is cdr of a net whose car = #\;
-  ;; Have already read a #\; 
+  ;; Have already read a #\;
   ;;
   ;; Test (progn (read-char)(COPY-COMMENTS-READ-NET *comment-semi-net*))
   ;;
   (let* ((subnet (car net))
          (action (cadr net))
 	 ;; on EOF does a throw out once it cleans up.
-         (c (read-char-in-comment)) 
+         (c (read-char-in-comment))
          (branch (assoc c subnet)))
-    (cond ((null branch) 
+    (cond ((null branch)
            (unread-char c *standard-input*)
            (list (car action) (cadr action)))
           (t (copy-comments-read-net (cdr branch))))))
@@ -4521,10 +4521,10 @@ Allow redefinition (even of system functions) without undoing.")
 
 ; This function tries to sneak up to the next top-level open parenthesis,
 ; parsing all of the Lisp comments up till there.
-; NOTE:  Jul 13 93 MKS 
+; NOTE:  Jul 13 93 MKS
 ; Random atoms, numbers, strings and characters are treated as if they were in
 ; comments.  And are printed in a FORMAT environment.
-; NOTE:  Nov 30 94 MKS 
+; NOTE:  Nov 30 94 MKS
 ; This sneaking up doesn't work quite the way we would like. If we have
 ; a comment line, followed by a blank line, followed by (foo ..) then we
 ; put out the formatted comment line, followed by a blank line, followed
@@ -4540,8 +4540,8 @@ Allow redefinition (even of system functions) without undoing.")
 
        (case ch
 
-; Semicolon starts a comment.  
-; We use *COMMENT-SEMI-NET* to determine how to format the comment based on the 
+; Semicolon starts a comment.
+; We use *COMMENT-SEMI-NET* to determine how to format the comment based on the
 ; immediately following characters.  This is user-setable to produce
 ; running text, a format environment (honors spaces and newlines, but probably
 ; does not produce a fixed width font), a verbatim environment (like format, but
@@ -4554,16 +4554,16 @@ Allow redefinition (even of system functions) without undoing.")
             (check-environment-and-write (car action) (cadr action))
 	    (format-comment-string (read-line *standard-input*) (car action))))
 
-; #\| starts a comment.  
+; #\| starts a comment.
 ; As above, we use the *comment-lb-net* to determine what formatting action to take.
-; \|# ends one. 
+; \|# ends one.
 
          (#\#
           (setq ch (read-char-in-comment))
           (cond ((not (eql ch #\|))
                  (error"Do not know how to handle #~s while copying at the top level." ch)))
           (let ((action (copy-comments-read-net *comment-lb-net*)))
-            
+
             ;; The following may not put us into an env if (cadr
             ;; action) is whitespace.
 
@@ -4600,7 +4600,7 @@ Allow redefinition (even of system functions) without undoing.")
           (unread-char #\: *standard-input*)
           (wrap-up-copy-comments))
          (otherwise ;; switched (pwrite-char ch)
-	  ;; MOD -  Sep 21 95 MKS 
+	  ;; MOD -  Sep 21 95 MKS
 	  ;; Added the following:
 	  (print-saved-whitespace)
 	  (handle-special-chars-in-string ch)
@@ -4622,13 +4622,13 @@ Allow redefinition (even of system functions) without undoing.")
 
 (defun define-comment-format (n format)
   ;; Last call to this sets *comment-format*.
-  ;; Can be overruled by 
+  ;; Can be overruled by
   ;;  1. assigning directly to *comment-format*,
-  ;;  2. calling (setup-comment-format format-name), or 
+  ;;  2. calling (setup-comment-format format-name), or
   ;;  3. calling infix-setup with the appropriate arguments.
   (if (not (check-comment-character-net format))
       (format *terminal-io* "~%Ill formed definition for comment format ~a" n)
-      (progn 
+      (progn
 	(setq *comment-format* n)
 	(cond ((assoc n *comment-format-alist*)
 	       (setq  *comment-format-alist* (update-alist *comment-format-alist* n format)))
@@ -4648,12 +4648,12 @@ Allow redefinition (even of system functions) without undoing.")
 		   "~%No comment format named ~a.  Defaluting to ~a." n *comment-format*))
         ((null *comment-format*)
          (cond ((eq *infix-op-location* 'FRONT)
-                (setq *comment-format* 'smith))    
+                (setq *comment-format* 'smith))
                ((eq *infix-op-location* 'BACK)
-                (setq *comment-format* 'boyer))    
+                (setq *comment-format* 'boyer))
                (t (setq *comment-format* 'smith))))
         ((assoc *comment-format* *comment-format-alist*))
-	(*comment-format-alist* 
+	(*comment-format-alist*
 	 (setq *comment-format* (caar *comment-format-alist*))
 	 (format *terminal-io* "~%Defaluting to first format in alist, ~a." *comment-format*))
         (t ;; Should never get here.
@@ -4862,8 +4862,8 @@ Allow redefinition (even of system functions) without undoing.")
 (defparameter *infix-trace* nil)
 
 (defun current-directory ()
-  ;; This is somewhat redundant.  
-  ;; That is (probe-file file) should equal 
+  ;; This is somewhat redundant.
+  ;; That is (probe-file file) should equal
   ;; (probe-file (concatenate 'string (current-directory) file))
   ;; But we let *current-directory* also be set by the input file.
   (truename "./"))
@@ -4908,7 +4908,7 @@ Allow redefinition (even of system functions) without undoing.")
   (let ((cert (probe-file (make-pathname :type "cert" :defaults fl)))
 	doit)
     (if cert
-	(progn 
+	(progn
 	  (format t "Checking ~s for defpackage forms.~%" cert)
 	  (with-open-file
 	   (*standard-input* cert :direction :input)
@@ -4971,7 +4971,7 @@ Allow redefinition (even of system functions) without undoing.")
     (if *infix-mode*
         (let ((infl  (type-file-name fl infix-input-file-type))  ; ".lisp"
               ;; .mss, .tex, .nqmss, .nqtex
-              (outfl (type-file-name fl (fmtfile-extension *infix-mode* comment) t))  
+              (outfl (type-file-name fl (fmtfile-extension *infix-mode* comment) t))
               (a-very-rare-cons (cons nil nil))
               (*print-pretty* nil)
               (*top-parens-eliminable* t)
@@ -4984,7 +4984,7 @@ Allow redefinition (even of system functions) without undoing.")
               inpos)
 	  (probe-cert-for-packages fl)
           (smash-infix-readtable)
-	  
+
           (with-open-file
            (*standard-input* infl :direction :input)
            (with-open-file
@@ -4998,7 +4998,7 @@ Allow redefinition (even of system functions) without undoing.")
 
             (ppformat *standard-prelude*)
             (sloop for form = (progn (copy-comments)
-				     ;; Set this here so we don't rewrite preceding comment, 
+				     ;; Set this here so we don't rewrite preceding comment,
 				     ;; if tabs overflow.
 				     (setq inpos (file-position *standard-input*))
 				     (readx *standard-input* nil a-very-rare-cons nil))
@@ -5054,7 +5054,7 @@ Allow redefinition (even of system functions) without undoing.")
   (let ((object (make-pathname :type "o" :defaults file)))
     (cond ((and (probe-file object)
 		(> (file-write-date object) (file-write-date file)))
-	   (load object))	  
+	   (load object))
 	  ((probe-file file) (load file))
 	  (t (error (format nil "~%No theory or init file mathcing ~f~%" file))))))
 
@@ -5069,7 +5069,7 @@ Allow redefinition (even of system functions) without undoing.")
 ;; 	   (load object2))
 ;; 	  (file2 (load file2))
 ;; 	  ((and object (> (file-write-date object) (file-write-date file)))
-;; 	   (load object))	  
+;; 	   (load object))
 ;; 	  ((probe-file file) (load file))
 ;; 	  (t (error (format nil "~%No theory or init file mathcing ~f~%" file))))))
 
@@ -5155,17 +5155,17 @@ Allow redefinition (even of system functions) without undoing.")
 ; is it just some user punctuation?  We take the attitude that the
 ; answer is punctuation.  Now, this attitude is a bit arbitrary.  nil.
 ; is a legal Common Lisp symbol.  Unfortunately it is ALSO a legal Acl2 symbol.
-; But we are just going to assume that it is atypical.  And likewise for 
+; But we are just going to assume that it is atypical.  And likewise for
 ; `foo.bar'.  We also run into problems reading things like
 ; xxx.@end{text}@begin{format}@tabclear{}.  This is a fine atom as far as
-; ACL2 is concerned. Likewise 
+; ACL2 is concerned. Likewise
 ; xxx.\begin{verbatim}\hfill
 ; So the text-formatting -init file will need to extend nqread-normal-clause-enders
 ; to account for this.
 
-; One might ask, who cares?  The reason we care is that nil, and other 
-; symbols on *atom-alist*, get printed specially.  For example, nil is 
-; printed in bold, not italics.  If we read nil. as one symbol, it would 
+; One might ask, who cares?  The reason we care is that nil, and other
+; symbols on *atom-alist*, get printed specially.  For example, nil is
+; printed in bold, not italics.  If we read nil. as one symbol, it would
 ; come out in intalics because nil. is not on *atom-alist*.
 
 ; The idea of fiddling with READ so that it is `smart' about not
@@ -5220,7 +5220,7 @@ Allow redefinition (even of system functions) without undoing.")
         (#\`
          (read-char *standard-input*)
          (list *infix-backquote* (acl2-read-preserving-whitespace)))
-        (otherwise 
+        (otherwise
 	 (let ((*package* *user-package*))
          (read-from-string
           (coerce
@@ -5274,7 +5274,7 @@ Allow redefinition (even of system functions) without undoing.")
 
 ; Although we may extend this set of replacement commands, we *promise* to give
 ; special meanings only to alphabetic characters after !.  Thus we promise
-; never to give !!  a replacement effect. 
+; never to give !!  a replacement effect.
 
 ; In every case, for one of the replacement characters, upper or lower case has
 ; the same effect.
@@ -5286,7 +5286,7 @@ Allow redefinition (even of system functions) without undoing.")
 ; Mnemonic: E -- think Event.
 
 ; !Ifoo, where foo is a symbol, results in foo, but with with formatting sensitive
-; characters quoted.  For example, in TeX, !Ia$b would result in a\$b.  
+; characters quoted.  For example, in TeX, !Ia$b would result in a\$b.
 ; Mnemonic: I -- think Identity.
 
 ; !Pfm, where fm is an Acl2 term, e.g., (plus x y), results in conventional
@@ -5296,15 +5296,15 @@ Allow redefinition (even of system functions) without undoing.")
 ; !Qfn, where fn is a symbol, results in fn surrounded by single gritches,
 ; after formatting sensitive characters have been quoted, e.g., !qfoo results in
 ; `foo' in TeX.  Useful for distinguishing function symbols from other words in a
-; sentence, since function symbols appear in Roman.  
+; sentence, since function symbols appear in Roman.
 ; Mnemonic: Q -- think Quoted.
 
 ; !Tfm, where fm is an Acl2 term, results in conventional mathematical
-; notation for fm, but without any line breaks.  
+; notation for fm, but without any line breaks.
 ; Mnemonic: T -- think Term.
 
 ; !Vfoo means that foo is printed as is, but in typewriter font, and with
-; special characters quoted.  
+; special characters quoted.
 ; Mnemonic: V -- think Verbatim.
 
 ; ! followed by anything else is left alone, along with the exclamation mark.
@@ -5354,7 +5354,7 @@ Allow redefinition (even of system functions) without undoing.")
 			      ((eql c #\\)
 			       (cond ((skip-index-entries) nil)
 				     ;; I am inserting a gigantic hack here because
-				     ;; I can't figure out a more principled, simple 
+				     ;; I can't figure out a more principled, simple
 				     ;; way to get the effect I want in LaTeX.
 				     ;; The problem is that at the end of a tabbing
 				     ;; environment we often have two lines of the form:
@@ -5379,7 +5379,7 @@ Allow redefinition (even of system functions) without undoing.")
 				   ((#\C #\c)
 				    (or just-remove-!
 					(let ((term (acl2-read-preserving-whitespace)))
-					  ;(handler-case 
+					  ;(handler-case
 					  (eval term)
 					   ;(error () (pwrite-char #\!)
 						;     (pwrite-char c)
@@ -5427,7 +5427,7 @@ Allow redefinition (even of system functions) without undoing.")
 						 "Surprising character after ! ~a.~%" c))
 				    (pwrite-char #\!)
 				    (pwrite-char c)))))
-			      ;; Let the user know we are making some kind 
+			      ;; Let the user know we are making some kind
 			      ;; of progress, every 60 lines
 			      ((eql c #\Newline)
 			       (if (= count 60)
@@ -5437,12 +5437,12 @@ Allow redefinition (even of system functions) without undoing.")
 			      (t (pwrite-char c)))
 			nil)
 			(pformat *terminal-io*
-				 "~%Sorry. Exceeded tabbing limit (2). 
+				 "~%Sorry. Exceeded tabbing limit (2).
 We can't handle this large a form in running text.  ~a needs hand massaging.~%"
 				 (car form))
 			(newline))))
 		   )))))
-                              
+
 (defvar balanced-parens '((#\( . #\))
 			  (#\[ . #\])
 			  (#\{ . #\})))
@@ -5452,21 +5452,21 @@ We can't handle this large a form in running text.  ~a needs hand massaging.~%"
   (let (left right)
     (setq rest (intern (string-upcase rest)))
     (cond ((equal rest 'ection)
-	   (setq left (read-char *standard-input* nil a-very-rare-cons))	 
+	   (setq left (read-char *standard-input* nil a-very-rare-cons))
 	   (setq right (cdr (assoc left balanced-parens)))
 	   (cond ((null right) (pprinc "section") (pwrite-char left))
 		 (t (pprinc *begin-section-env*)
 		    (sloop for c = (read-char *standard-input* nil a-very-rare-cons)
-			   until (equal c right) 
+			   until (equal c right)
 			   do (pwrite-char c))
 		    (pprinc *end-section-env*))))
-	  ((equal rest 'ubsection) 
-	   (setq left (read-char *standard-input* nil a-very-rare-cons))	 
+	  ((equal rest 'ubsection)
+	   (setq left (read-char *standard-input* nil a-very-rare-cons))
 	   (setq right (cdr (assoc left balanced-parens)))
 	   (cond ((null right) (pprinc "subsection") (pwrite-char left))
 		 (t (pprinc *begin-subsection-env*)
 		    (sloop for c = (read-char *standard-input* nil a-very-rare-cons)
-			   until (equal c right) 
+			   until (equal c right)
 			   do (pwrite-char c))
 		    (pprinc *end-subsection-env*))))
 	  (t (or just-remove-!
@@ -5476,16 +5476,16 @@ We can't handle this large a form in running text.  ~a needs hand massaging.~%"
 	     (pprinc rest)))))
 
 (defun skip-index-entries ()
-  ;; We are looking at a backslash. In Tex mode we need to skip to the end 
+  ;; We are looking at a backslash. In Tex mode we need to skip to the end
   ;; of the entry, because we may add !'s.  In Scribe mode this is just NIL.
   nil)
 
 (defun adjust-tabbing-env ()
-  ;; We are looking at a backslash. In Tex mode we may need to replace 
+  ;; We are looking at a backslash. In Tex mode we may need to replace
   ;;   ....  \\
   ;;   \end{tabbing}
   ;; with
-  ;;   ....  
+  ;;   ....
   ;;   \end{tabbing}
   ;; NOTE: this will only work if NQFMT2FMT is run.
   ;; In Scribe mode this is just NIL.
@@ -5548,7 +5548,7 @@ for settings you wish to modify. Defaults in caps.~%")
   (format *terminal-io* "~%:mode           : string - formatting style [\"SCRIBE\",\"latex\",...]")
   (format *terminal-io* "~%:extension      : string - output file extension [\"MSS\",\"tex\"]")
   (format *terminal-io* "~%:op-location    : ['FRONT, 'back]
-                - Multiline infix operators will be printed at the front 
+                - Multiline infix operators will be printed at the front
                 - or back of the line according to this setting.")
   (format *terminal-io* "~%:comment-format : ['SMITH, 'boyer, 'cl] - Comment format")
   (format *terminal-io* "~%:no-index: [t,NIL] - Index will/will not be created")
@@ -5561,7 +5561,7 @@ for settings you wish to modify. Defaults in caps.~%")
   (format *terminal-io* "~%:eliminate-top-parens    : [T, nil] - Topmost parens suppressed.")
   (format *terminal-io* "~%:eliminate-inner-parens  : [T, nil] - Inner parens suppressed."))
 
-                                   
+
 ;                             DEFINITION BY EXAMPLES
 
 ; Anyone extending the syntax by hand rather than by use of one of the make...
@@ -5608,7 +5608,7 @@ for settings you wish to modify. Defaults in caps.~%")
 		    (load-infix-init-file))))
         (t (format t "Remaining in ~a mode." *infix-mode*)))
 
-  
+
 
   (let ((*print-pretty* nil)
         (*print-case* :downcase))
@@ -5689,7 +5689,7 @@ described in the following table.")
     (nqfmt2fmt "infix-examples")))
 
 
-; The following should be modified to interact with the vaiables that set 
+; The following should be modified to interact with the vaiables that set
 ; parens printing.  In particular, this seems to be the piece of precedence that
 ; is most easily screwed up.
 
@@ -5748,7 +5748,7 @@ described in the following table.")
 ;                                     CONSTANT-OPS
 
 ; Sometimes you want to print a function as a constant, particularly if it is one.
-; (make-constant-op op str) causes (op ..) to print as str. 
+; (make-constant-op op str) causes (op ..) to print as str.
 
 ;                                     INFIX-OPS
 
@@ -5790,7 +5790,7 @@ described in the following table.")
 
 ; Examples of make-unary-suffix-op.
 
-; unary-prefix-ops should be unary function symbols. 
+; unary-prefix-ops should be unary function symbols.
 
 ; (make-unary-prefix-op foo str) makes (foo x) print as ($str$ x).
 
@@ -5816,7 +5816,7 @@ described in the following table.")
 
 ;; Lines in the test file are the following form:
 
-;;    filename 
+;;    filename
 ;; or (filename mode)
 ;; or (filename mode comment)
 
@@ -5846,7 +5846,7 @@ described in the following table.")
 ;;                        (infix-file (car test) :mode (cadr test) :comment t))
 ;;                       ((and (consp test) (eql (length test) 3))
 ;;                        ;; (file mode comment)
-;;                        (format *terminal-io* 
+;;                        (format *terminal-io*
 ;;                                "~%Translating ~a in ~a mode, with comment = ~a.~%"
 ;;                                (car test) (cadr test) (caddr test))
 ;;                        (infix-file (car test) :mode (cadr test) :comment (caddr test)))
@@ -5866,7 +5866,7 @@ described in the following table.")
 
 ;; MODIFY and USE:
 ;; mks: script test.log
-;; mks: 
+;; mks:
 ;; >(load "infix")
 ;; >(test-directory "scribe")
 ;; >(bye)
@@ -5886,7 +5886,7 @@ described in the following table.")
 	(com (if (string= mode "latex") nil t)))
     (if comment-p (setq com comment))
     (setq dir (concatenate 'string dir "*.lisp"))
-    (mapc (function (lambda (f) 
+    (mapc (function (lambda (f)
                       (format *terminal-io* "~%Infixing ~a.lisp." (pathname-name f))
                       (if (probe-file (make-pathname :type type :defaults f))
                           (format *terminal-io* "~%~a.~a already exists. Skipping.~%"
@@ -5900,7 +5900,7 @@ described in the following table.")
 #| Note on math printing from LSmith.
 
 Bill and I had troubles printing with infix because nesting math modes
-is not allowed in latex. Our latex output from infix is filled with 
+is not allowed in latex. Our latex output from infix is filled with
 
      {\ifmmode <form>\else$<form>$\fi}
 

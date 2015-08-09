@@ -6,7 +6,7 @@
     Expressions:
         varp                    ;; variable
 	constp                  ;; constant
-	integerp               
+	integerp
 	arithmetic              ;; +, -
 	boolean                 ;; 'true, 'false, and, or, not, =, <, >, <=, >=
 	list operations         ;; append, member, etc.
@@ -47,12 +47,12 @@
 					       'cons 'ith)))
 	      (evaluated-expressionp (car e))
 	      (evaluated-expressionp (cdr e))))
-	      
+
 	((equal (len e) 2)
 	 (and (not (member-equal (car e) (list 'not 'length 'car 'cdr)))
 	      (evaluated-expressionp (car e))
 	      (evaluated-expressionp (cdr e))))
-	 
+
 	(t (and (evaluated-expressionp (car e))
 		(evaluated-expressionp (cdr e))))))
 
@@ -141,7 +141,7 @@
        (car e)
        (+ (+ (rfix (evl2 (second e) mem)) (rfix (evl2 (third e) mem))))
        (- (- (rfix (evl2 (second e) mem)) (rfix (evl2 (third e) mem))))
-	    
+
        (= (if (equal (rfix (evl2 (second e) mem)) (rfix (evl2 (third e) mem)))
 	      ''true ''false))
        (< (if (< (rfix (evl2 (second e) mem)) (rfix (evl2 (third e) mem)))
@@ -172,7 +172,7 @@
 		   (evl2 (third e) mem)))
 
        (ith (ith (nfix (evl2 (second e) mem)) (lfix (evl2 (third e) mem))))
-       
+
        (otherwise (cons (evl2 (car e) mem)
 			(evl2 (cdr e) mem)))))
 

@@ -19,8 +19,8 @@
 ;; Moore wrote:
 ;; "A cell encodes one bit, b, of the message, but the encoding depends
 ;; upon the signal, x, output immediately before the cell.
-;; Let csig be x if b is t and not(x) otherwise. 
-;; Then a cell is defined as the concatenation of a "mark" subcell containing n 
+;; Let csig be x if b is t and not(x) otherwise.
+;; Then a cell is defined as the concatenation of a "mark" subcell containing n
 ;; repetitions of not(x), followed by a "code" subcell containing k repetitions
 ;; of csig."
 
@@ -43,11 +43,11 @@
             (cells (csig x (car msg)) n k (cdr msg)))))
 
 ;; "We adopt the convention that the sender holds the line high
-;; before and after the message is sent. Thus, on either side 
+;; before and after the message is sent. Thus, on either side
 ;; of the encoded cells we include "pads" of t, of arbitrary
 ;; lengths p1 and p2.
 ;(defun send (msg p1 n k p2)
-;  (append (listn p1 t) 
+;  (append (listn p1 t)
 ;          (append (cells t n k msg) (listn p2 t))))
 
 (defun send (msg p1 n k flg)
@@ -60,9 +60,9 @@
 ;; Receiving
 ;; ---------
 
-;; "Scan takes a signal x, and a list of signals, lst, and 
+;; "Scan takes a signal x, and a list of signals, lst, and
 ;; scans lst until it finds the first signal different from x.
-;; If lst happens to begin with a string of xs, scan finds the 
+;; If lst happens to begin with a string of xs, scan finds the
 ;; first edge."
 (defun scan (x lst)
   (if (endp lst)
@@ -71,13 +71,13 @@
         lst
       (scan x (cdr lst)))))
 
-;; "Recv-bit is the function that recovers the bit encoded in a 
+;; "Recv-bit is the function that recovers the bit encoded in a
 ;; cell. It takes two arguments. The first is the 0-based sampling
 ;; distance, j, at which it is supposed to sample [...].
-;; The second argument is the list of signals, starting with the 
+;; The second argument is the list of signals, starting with the
 ;; first signal in the mark subcell of the cell."
 (defun recv-bit (k lst)
-  ;; "The bit received is t if the first signal of the mark is 
+  ;; "The bit received is t if the first signal of the mark is
   ;; different from the signal sampled in the code subcell;
   ;; otherwise the bit received is f."
   (if (xor (car lst) (nth k lst))
@@ -89,7 +89,7 @@
 ;; of as starting with the signal, x, sampled in the code subcell
 ;; of previous cell. If i is 0, the empty message is recovered.
 ;; Otherwise, recv scans to the next edge (i.e., it scans past the
-;; initial xs to get past the code subcell of the previous cell 
+;; initial xs to get past the code subcell of the previous cell
 ;; and to the mark of the next cell). Recv then used recv-bit
 ;; to recover the bit in that cell and conses it to the result
 ;; of recursively recovering i - 1 more bits."
@@ -123,8 +123,8 @@
 ;; is an identity.
 
 (defthm car-cells
-  ;; if the size of the cells is properly set up and 
-  ;; if there is at least one bit in the message 
+  ;; if the size of the cells is properly set up and
+  ;; if there is at least one bit in the message
   ;; the first bit of the cell is the opposite of the previous
   ;; signal on the line.
   (implies (and (booleanp flg) (integerp n) (integerp k)
@@ -146,7 +146,7 @@
   (true-listp (cells flg n k msg))
   :rule-classes :type-prescription)
 
-(defthm bvp-cells 
+(defthm bvp-cells
   ;; if flg is a Boolean and lst a list of Booleans, then
   ;; cells is still a list of Booleans.
   (implies (and (bvp msg) (booleanp flg))
@@ -188,7 +188,7 @@
 (defthm scan-cells-nth
   ;; if rclock is in the code cell (n <= rclock < k) then
   ;; the rclock'th bit of scan is the first coded bit
-  (implies (and (integerp rclock) (<= n rclock) 
+  (implies (and (integerp rclock) (<= n rclock)
                 (< rclock (+ n k))
                 (integerp n) (< 0 n) (integerp k) (< 0 k)
                 (booleanp flg) (bvp msg) (consp msg))
@@ -207,7 +207,7 @@
                   (car a))))
 
 (defthm recv-bit-first-cell
-  (implies (and (integerp rclock) (<= n rclock) 
+  (implies (and (integerp rclock) (<= n rclock)
                 (< rclock (+ n k))
                 (integerp n) (< 0 n) (integerp k) (< 0 k)
                 (booleanp flg) (bvp msg) (consp msg))
@@ -227,16 +227,16 @@
 
 (defthm scan-cells-nthcdr
   ;; if rclock is in the code cell (n <= rclock < k) then
-  ;; the msg after rclock is an append of n+k-rclock coded 
+  ;; the msg after rclock is an append of n+k-rclock coded
   ;; signals and the next cell.
-  (implies (and (integerp rclock) (<= n rclock) 
+  (implies (and (integerp rclock) (<= n rclock)
                 (< rclock (+ n k))
                 (integerp n) (< 0 n) (integerp k) (< 0 k)
                 (booleanp flg) (bvp msg) (consp msg))
            (equal (nthcdr rclock (cells flg n k msg))
-                  (append (listn (- (+ n k) rclock) 
+                  (append (listn (- (+ n k) rclock)
                                  (csig flg (car msg)))
-                          (cells (csig flg (car msg)) n k 
+                          (cells (csig flg (car msg)) n k
                                  (cdr msg)))))
   :otf-flg t
   :hints (("GOAL"
@@ -275,7 +275,7 @@
          (recv i flg rclock msg)))
 
 (defthm recv-cells
-  (implies (and (integerp rclock) (<= n rclock) 
+  (implies (and (integerp rclock) (<= n rclock)
                 (< rclock (+ n k))
                 (true-listp msg)
                 (integerp n) (< 0 n) (integerp k) (< 0 k)
@@ -291,12 +291,12 @@
            :induct (cells flg n k msg))))
 
 (defthm recv-send-is-id
-  (implies (and (integerp rclock) (<= n rclock) 
+  (implies (and (integerp rclock) (<= n rclock)
                 (< rclock (+ n k))
                 (true-listp msg) (natp p1)
                 (integerp n) (< 0 n) (integerp k) (< 0 k)
                 (booleanp flg) (bvp msg) (consp msg))
-           (equal (recv (len msg) flg rclock 
+           (equal (recv (len msg) flg rclock
                         (send msg p1 n k flg))
                   msg))
   :otf-flg t

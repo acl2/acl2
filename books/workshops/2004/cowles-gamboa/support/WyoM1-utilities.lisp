@@ -2,7 +2,7 @@
 ; Copyright (C) 2004  J Strother Moore,
 ;               University of Texas at Austin
 
-; This program is free software; you can redistribute it and/or 
+; This program is free software; you can redistribute it and/or
 ; modify it under the terms of the GNU General Public License as
 ; published by the Free Software Foundation; either version 2 of
 ; the License, or (at your option) any later version.
@@ -13,7 +13,7 @@
 ; GNU General Public License for more details.
 
 ; You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free 
+; License along with this program; if not, write to the Free
 ; Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
 ; USA.
 
@@ -35,9 +35,9 @@
 ; Instructions
 
 ; To certify this book, you must first have certified your local
-; copy of WyoM1.lisp.  Then, copy this book to the same directory on 
+; copy of WyoM1.lisp.  Then, copy this book to the same directory on
 ; which your certified copy of WyoM1.lisp resides and on which you
-; have write permission, fire up ACL2 while connected to that 
+; have write permission, fire up ACL2 while connected to that
 ; directory and then execute the following two events.
 #|
 (include-book "WyoM1")
@@ -80,35 +80,35 @@
 	     (binding x alist))))
 
 (defthm states
-  (and (equal (call-stack (make-state call-stack defs)) 
+  (and (equal (call-stack (make-state call-stack defs))
 	      call-stack)
-       (equal (defs (make-state call-stack defs)) defs) 
-       (equal (pc (make-state 
+       (equal (defs (make-state call-stack defs)) defs)
+       (equal (pc (make-state
 		   (push (make-frame pc locals stack program)
 			 call-stack)
 		   defs))
 	      pc)
-       (equal (locals (make-state 
+       (equal (locals (make-state
 		       (push (make-frame pc locals stack program)
 			     call-stack)
 		       defs))
 	      locals)
-       (equal (stack (make-state 
+       (equal (stack (make-state
 		      (push (make-frame pc locals stack program)
 			    call-stack)
 		      defs))
 	      stack)
-       (equal (program (make-state 
+       (equal (program (make-state
 			(push (make-frame pc locals stack program)
 			      call-stack)
 			defs))
 	      program)))
 
-(in-theory (disable make-state call-stack defs 
+(in-theory (disable make-state call-stack defs
 		    make-frame pc locals stack program))
 
 ; The next block of lemmas force ACL2 to expand certain functions
-; in certain common situations, augmenting its heuristics 
+; in certain common situations, augmenting its heuristics
 ; controlling expansion.
 
 (defthm step-opener
@@ -131,5 +131,5 @@
 		(>= j 0))
 	   (equal (run s (+ i j))
 		  (run (run s i) j))))
-  
+
 (in-theory (disable run))

@@ -19,7 +19,7 @@ v27
 (value :q)
 (load "paco.boot")
 (lp)
-(in-package "PACO") 
+(in-package "PACO")
 
 ; ---------------------------------------------------------------------------
 ; To test

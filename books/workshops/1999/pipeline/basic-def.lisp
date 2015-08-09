@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Basic-def.lisp: 
+; Basic-def.lisp:
 ; Copyright reserved by SRC
 ; Author  Jun Sawada, University of Texas at Austin
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;'
@@ -219,7 +219,7 @@
 (defconst *read-write* 2)
 
 ;;  Definition of Address Transformer
-;;  page-num Address --> Page number 
+;;  page-num Address --> Page number
 ;;  page-offset Address --> Page Offset
 (defun page-num (addr)
   (declare (xargs :guard (addr-p addr)))
@@ -251,7 +251,7 @@
     (implies (addr-p addr)
 	     (< (page-offset addr) *num-page-words*))
   :rule-classes :linear)
-	     
+
 (in-theory (disable page-num page-offset))
 ;;  End of Address Transformer
 
@@ -317,7 +317,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  Definition of Read-mem 
+;  Definition of Read-mem
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro get-page (n mem)
   `(aref1 'mem ,mem ,n))
@@ -348,7 +348,7 @@
   :hints (("Goal" :in-theory (enable page-p page-array-p))))
 
 (encapsulate nil
-(local 
+(local
  (defthm page-p-assoc-mem-array
      (implies (and (mem-array-p mem)
 		   (integerp pn)
@@ -357,7 +357,7 @@
 	      (page-p (cdr (assoc pn mem))))
    :hints (("Goal" :in-theory (enable assoc mem-array-p)))))
 
-(local 
+(local
  (defthm integerp-default-in-mem-array
      (implies (mem-p mem)
 	      (integerp (default 'mem mem)))
@@ -371,7 +371,7 @@
   :hints (("Goal" :in-theory (enable aref1 mem-p))))
 )
 
-(local   
+(local
  (defthm word-p-assoc-word-array
      (implies (and (word-array-p wa)
 		   (integerp pn)
@@ -406,12 +406,12 @@
 	     (implies (and (mem-p mem) (addr-p addr))
 		      (acl2-numberp (read-mem addr mem))))))
 
-   
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Definition of Write-Mem
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Page tag is calculated for fast array access. 
+; Page tag is calculated for fast array access.
 ; The tag for the <n>'th page is given by page<n>.
 (defun gen-page-tag (page-num)
   (declare (xargs :guard (and (integerp page-num)
@@ -442,7 +442,7 @@
  (defthm true-listp-explode-nonnegative-integer-rewrite
      (implies (true-listp x)
 	      (true-listp (explode-nonnegative-integer n print-base x)))))
-       
+
 (verify-guards gen-page-tag
      :hints (("goal" :in-theory (enable U::coerce-string-designator-list
 					U::STRING-DESIGNATOR-LISTP
@@ -492,7 +492,7 @@
 		  mem))))
 
 (verify-guards write-page
-  :hints (("Goal" :in-theory (enable page-p page-array-p)))) 
+  :hints (("Goal" :in-theory (enable page-p page-array-p))))
 
 (in-theory (disable  write-mem init-page gen-page-tag write-page))
 
@@ -562,9 +562,9 @@
 	     (page-p (write-page val offset page)))
   :hints (("Goal" :in-theory (enable write-page))))
 
-(local   
+(local
  (defthm valid-integer-assoc-mem-array
-     (implies (and (mem-array-p ma) 
+     (implies (and (mem-array-p ma)
 		   (integerp pn)
 		   (assoc pn ma)
 		   (integerp (cdr (assoc pn ma)))
@@ -573,9 +573,9 @@
 	      (equal (cdr (assoc pn ma)) 2))
    :hints (("Goal" :in-theory (enable mem-array-p assoc)))))
 
-(local   
+(local
  (defthm page-p-assoc-mem-array
-     (implies (and (mem-array-p ma) 
+     (implies (and (mem-array-p ma)
 		   (integerp pn)
 		   (assoc pn ma)
 		   (not (integerp (cdr (assoc pn ma)))))
@@ -728,7 +728,7 @@
 	(set-page (update-page page :mode mode) pn mem))))
 
 (verify-guards set-page-mode
-	:hints (("Goal" :in-theory (enable mem-p))))      
+	:hints (("Goal" :in-theory (enable mem-p))))
 
 (defthm mem-p-set-page-mode
     (implies (and (mem-p mem)
@@ -850,7 +850,7 @@
     (implies (and (mem-alist-p alist)
 		  (mem-p mem))
 	     (mem-p (load-mem-alist alist mem))))
-    
+
 (in-theory (disable page-p page-array-p word-array-p mem-p))
 (in-theory (disable read-reg))
 (in-theory (disable write-reg))

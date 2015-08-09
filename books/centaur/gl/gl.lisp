@@ -104,7 +104,7 @@
           (b* ((result-exprs (dumb-gify-body-lst (cdr x)))
                (vars (cadr (car x)))
                (body (caddr (car x))))
-            `(b* ,(pairlis$ 
+            `(b* ,(pairlis$
                    (pairlis$ (acl2::replicate (len vars) 'mv)
                              (pairlis$ vars
                                        (pairlis$ (acl2::replicate (len vars) 'hyp)
@@ -113,7 +113,7 @@
                ,(dumb-gify-body body))))
          (t (b* ((result-exprs (dumb-gify-body-lst (cdr x)))
                  (vars (mk-xes (len (cdr x)) 0)))
-              `(b* ,(pairlis$ 
+              `(b* ,(pairlis$
                      (pairlis$ (acl2::replicate (len vars) 'mv)
                                (pairlis$ vars
                                          (pairlis$ (acl2::replicate (len vars) 'hyp)
@@ -127,8 +127,8 @@
        nil
      (cons (dumb-gify-body (car x))
            (dumb-gify-body-lst (cdr x))))))
-               
-          
+
+
 
 (defmacro def-g-simple (name body)
   `(progn (def-g-fn ,name ',(dumb-gify-body body))
@@ -514,7 +514,7 @@
 (verify-g-guards hons-get)
 
 (def-gobj-dependency-thm hons-get
-  :hints `(("Goal" 
+  :hints `(("Goal"
             :in-theory (e/d (,gfn)))))
 
 

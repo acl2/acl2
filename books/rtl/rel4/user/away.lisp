@@ -74,7 +74,7 @@
 (defthm away-rational-type-prescription
   (rationalp (away x n))
   :rule-classes :type-prescription)
- 
+
 (defthm away-of-non-rationalp-is-0
   (implies (not (rationalp x))
            (equal (away x n)
@@ -237,13 +237,13 @@
                 (integerp n)
                 (> n 0))
            (equal (away x n)
-                  (* (sgn x) 
-                     (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+                  (* (sgn x)
+                     (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))
                      (expt 2 (- (1+ (expo x)) n))))))
 
 (defthm away-exactp-a
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (away x n))
 		  (exactp x n)))

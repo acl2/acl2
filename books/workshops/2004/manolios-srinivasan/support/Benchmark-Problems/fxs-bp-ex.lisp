@@ -9,61 +9,61 @@
 
 
 (defun equalb (a b) (equal a b))
- 
+
 (defun nequal (a b) (not (equal a b))) (defun add-1 (a) (+ a 1))
- 
+
 (defun sub-1 (a) (- a 1))
- 
+
 (encapsulate ((nextdmem (x3 x2 x1) t))
      (local (defun nextdmem (x3 x2 x1)
               (declare (ignore x3) (ignore x2) (ignore x1))
               1))
      (defthm nextdmem-type (integerp (nextdmem x3 x2 x1))))
- 
+
 (encapsulate ((dmem_read (x2 x1) t))
      (local (defun dmem_read (x2 x1)
               (declare (ignore x2) (ignore x1))
               1))
      (defthm dmem_read-type (integerp (dmem_read x2 x1))))
- 
+
 (encapsulate ((rf0 (x1) t))
      (local (defun rf0 (x1) (declare (ignore x1)) 1))
      (defthm rf0-type (integerp (rf0 x1))))
- 
+
 (encapsulate ((imem0 (x1) t))
      (local (defun imem0 (x1) (declare (ignore x1)) 1))
      (defthm imem0-type (integerp (imem0 x1))))
- 
+
 (encapsulate ((src1 (x1) t))
      (local (defun src1 (x1) (declare (ignore x1)) 1))
      (defthm src1-type (integerp (src1 x1))))
- 
+
 (encapsulate ((src2 (x1) t))
      (local (defun src2 (x1) (declare (ignore x1)) 1))
      (defthm src2-type (integerp (src2 x1))))
- 
+
 (encapsulate ((opcode (x1) t))
      (local (defun opcode (x1) (declare (ignore x1)) 1))
      (defthm op-type (integerp (opcode x1))))
- 
+
 (encapsulate ((dest (x1) t))
      (local (defun dest (x1) (declare (ignore x1)) 1))
      (defthm dest-type (integerp (dest x1))))
- 
+
 (encapsulate ((alu (x3 x2 x1) t))
      (local (defun alu (x3 x2 x1)
               (declare (ignore x3) (ignore x2) (ignore x1))
               1))
      (defthm alu-type (integerp (alu x3 x2 x1))))
- 
+
 (encapsulate ((getregwrite (x1) t))
      (local (defun getregwrite (x1) (declare (ignore x1)) nil))
      (defthm getregwrite-type (booleanp (getregwrite x1))))
- 
+
 (encapsulate ((getmemtoreg (x1) t))
      (local (defun getmemtoreg (x1) (declare (ignore x1)) nil))
      (defthm getmemtoreg-type (booleanp (getmemtoreg x1))))
- 
+
 (encapsulate ((getuseimm (x1) t))
      (local (defun getuseimm (x1) (declare (ignore x1)) nil))
      (defthm getuseimm-type (booleanp (getuseimm x1))))
@@ -1116,7 +1116,7 @@
            mwis_alu_exception0 mwppc0 mwval0 mwdest0 mwwrt0
            mwregwrite0)
        (spec-initialize_a (g 'spec st) pc0 dmem0 epc0 isexception0)))
- 
+
 (defthm web_core_a
          (implies (and (integerp pc0) (integerp dmem0) (integerp epc0)
                        (booleanp isexception0) (integerp bpstate0)

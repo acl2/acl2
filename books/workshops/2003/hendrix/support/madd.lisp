@@ -128,7 +128,7 @@
 (include-book "mentry")
 
 (defthm row-m+
-  (implies (and (matrixp m) 
+  (implies (and (matrixp m)
                 (matrixp n))
            (equal (row i (m+ m n))
                   (if (< (nfix i) (row-count m))

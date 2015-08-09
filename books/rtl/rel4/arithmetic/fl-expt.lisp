@@ -28,8 +28,8 @@
            (equal (FL (* 1/2 (FL (* X (/ (EXPT 2 N))))))
                   (FL (* 1/2 X (/ (EXPT 2 N))))))
   :hints (("Goal" :in-theory (disable fl-def-linear)
-           :use 
-           ((:instance fl-unique 
+           :use
+           ((:instance fl-unique
                        (x (* 1/2 (FL (* X (/ (EXPT 2 N))))))
                        (n (FL (* 1/2 X (/ (EXPT 2 N))))))
             (:instance fl-def-linear (x (* 1/2 X (/ (EXPT 2 N)))))))))
@@ -85,18 +85,18 @@
 ;                                        LESS-THAN-MULTIPLY-THROUGH-BY-inverted-factor-FROM-LEFT-HAND-SIDE
                                        )
           :use (
-          (:instance FL-DEF-LINEAR-part-1  
+          (:instance FL-DEF-LINEAR-part-1
                      (x (+ (* X (/ (EXPT 2 M)))
                            (* Y (/ (EXPT 2 M))))))
-          (:instance FL-DEF-LINEAR-part-1  
+          (:instance FL-DEF-LINEAR-part-1
                      (x x))
-          (:instance FL-DEF-LINEAR-part-2  
+          (:instance FL-DEF-LINEAR-part-2
                      (x (+ (* X (/ (EXPT 2 M)))
                            (* Y (/ (EXPT 2 M))))))
-          (:instance FL-DEF-LINEAR-part-2  
+          (:instance FL-DEF-LINEAR-part-2
                      (x x))
 
-          (:instance fl-unique 
+          (:instance fl-unique
                      (x (* (/ (expt 2 m)) (+ y (* 2 (FL (* 1/2 X))))))
                      (n (FL (* (/ (EXPT 2 m)) (+ y X)))))))))
 |#

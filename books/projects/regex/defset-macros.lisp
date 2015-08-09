@@ -98,8 +98,8 @@
           s
         (,set-union (cdr r) (,set-insert (car r) s)))))
 ;;         (if (,set-member (car r) s)
-;;             (,set-union (cdr r) s) 
-;;           (cons (car r)  
+;;             (,set-union (cdr r) s)
+;;           (cons (car r)
 ;;                 (,set-union (cdr r) s))))))
 ;;                     (,set-insert (car r) s)))))
 
@@ -139,7 +139,7 @@
       :rule-classes :forward-chaining))
 
 (defmacro defcong-set-member-1 ()
-  ``(defcong ,equiv iff (,set-member e s) 1 
+  ``(defcong ,equiv iff (,set-member e s) 1
       ,@(thm-hints 'set-member-congruence-1- nil)
       :event-name ,(makename 'set-member-congruence-1-)))
 
@@ -203,8 +203,8 @@
 
 (defmacro defcong-set-insert-2 ()
 ``(defcong ,set-equiv ,set-equiv (,set-insert e s) 2
-    ,@(thm-hints 
-       'set-insert-congruence-2- 
+    ,@(thm-hints
+       'set-insert-congruence-2-
        nil)
     :event-name ,(makename 'set-insert-congruence-2-)))
 
@@ -293,14 +293,14 @@
     ,@(thm-hints 'set-union-member3- nil)))
 
 
-(defmacro defthm-set-delete-len () 
+(defmacro defthm-set-delete-len ()
   ``(defthm ,(makename 'set-delete-len-)
       (implies (,set-member e s)
                (< (len (,set-delete e s))
                   (len s)))
       :rule-classes (:rewrite :linear)
       ,@(thm-hints 'set-delete-len- nil)))
-                    
+
 
 
 ;; This should be used to define a set where elements are distinguished
@@ -308,7 +308,7 @@
 ;; of the equiv function or else nil;  if you wish to further restrict
 ;; possible set elements then subsequently use def-typed-set.
 
-(defmacro def-set-equiv (equiv &key (equiv-guard 'nil) (pkg-sym 'ACL2::asdf) 
+(defmacro def-set-equiv (equiv &key (equiv-guard 'nil) (pkg-sym 'ACL2::asdf)
                                (prove-elem-congruences 't) (use-f-i 't))
   (let* ((orig-sym 'defset-element-equiv)
          (before-label (makesym 'before-def-set- equiv))
@@ -321,7 +321,7 @@
          (set-insert (makename 'set-insert-))
          (set-delete (makename 'set-delete-))
          (set-union (makename 'set-union-))
-         (subs 
+         (subs
           `((defset-element-equiv ,equiv)
             ,@(if equiv-guard `((defset-element-equiv-setp ,equivable-setp)) nil)
             (set-member-defset-element-equiv ,set-member)
@@ -330,9 +330,9 @@
             (set-insert-defset-element-equiv ,set-insert)
             (set-delete-defset-element-equiv ,set-delete)
             (set-union-defset-element-equiv ,set-union))))
-    
+
     `(progn
-      
+
       ,@(if use-f-i
             `((deflabel ,before-label))
           nil)
@@ -400,11 +400,11 @@
 (defmacro thm-hints2 (thm-name-base other)
   `(if use-f-i
        `(:hints (("Goal"
-                  :use (:functional-instance 
+                  :use (:functional-instance
                         ,(makesym ,thm-name-base orig-equiv '- orig-sym)
                         ,@subs)
                   :do-not-induct t
-                  :in-theory 
+                  :in-theory
                   (disable ,(makesym ,thm-name-base orig-equiv '- orig-sym)))))
      ,other))
 
@@ -473,7 +473,7 @@
 
 (defmacro defthm-subset-setp ()
   ``(defthm ,(makesym set-subset '- typename)
-      (implies (and (,set-subset r s) 
+      (implies (and (,set-subset r s)
                     (,setp ,@(elemp-args 's)))
                (,setp ,@(elemp-args 'r)))
       ,@(thm-hints2 'set-subset- nil)))
@@ -523,7 +523,7 @@
                                (setp-guard 'nil)
                                (def-setp 't) (equiv 'equal)
                                (pkg-sym 'ACL2::asdf) (use-f-i 't))
-  (let* ((orig-sym (if additional-param 'deftypedset-set-type-1 
+  (let* ((orig-sym (if additional-param 'deftypedset-set-type-1
                      'deftypedset-set-type-0))
          (orig-equiv (if additional-param 'deftypedset-element-equiv1
                        'deftypedset-element-equiv0))
@@ -537,7 +537,7 @@
          (set-delete (makename 'set-delete-))
          (set-subset (makename 'set-subset-))
          (set-union (makename 'set-union-))
-         (subs (if additional-param 
+         (subs (if additional-param
                    `((deftypedset-element-p1 ,elemp)
                      (deftypedset-element-equiv1 ,equiv)
                      (deftypedset-set-type-1p ,setp)
@@ -554,7 +554,7 @@
                    (set-delete-deftypedset-element-equiv0 ,set-delete)
                    (set-subset-deftypedset-element-equiv0 ,set-subset)
                    (set-union-deftypedset-element-equiv0 ,set-union)))))
-    
+
     `(encapsulate
       ()
       (in-theory (enable ,equiv-disabled-fns))
@@ -649,7 +649,7 @@
 ;; (defmacro defthm-f-on-set-truelist ()
 ;;   ``(defthm ,(makesym 'function-on-set-true-listp f)
 ;;       (true-listp (,f-on-set ,@(f-args 's)))))
-  
+
 (defmacro defthm-f-on-set-member ()
   ``(defthm ,(makesym 'function-on-set-member- f)
       (implies (and (case-split ,(make-hard-guard2 set-guard 's))
@@ -672,7 +672,7 @@
       (implies (case-split (not ,(make-hard-guard2 set-guard 's)))
                (equal (,f-on-set ,@(f-args 's)) (,bad-input-fn)))
       ,@(thm-hints 'function-on-set-bad-guard- nil)))
-  
+
 
 (defmacro defcong-f-on-set-1 ()
   ``(defcong ,set-equiv ,set-equiv (,f-on-set ,@(f-args 's)) 1
@@ -685,7 +685,7 @@
       (implies (and (case-split ,(make-hard-guard2 set-guard 's))
                     (case-split ,(make-hard-guard2 set-guard `(,set-insert x s))))
                (,set-equiv (,f-on-set ,@(f-args `(,set-insert x s)))
-                           (,set-union (,f ,@(f-args 'x)) 
+                           (,set-union (,f ,@(f-args 'x))
                                        (,f-on-set ,@(f-args 's)))))
       ,@(thm-hints 'function-on-set-insert- nil)))
 
@@ -703,7 +703,7 @@
   (declare (xargs :guard t))
   nil)
 
-(defmacro prove-set-congruence-of-f (f &key 
+(defmacro prove-set-congruence-of-f (f &key
                                        (f-on-set 'nil f-set-given)
                                        (additional-param 'nil)
                                        (elem-guard 'nil)
@@ -724,7 +724,7 @@
 ;; parameter) which runs f on every element of a set and returns the union of all
 ;; values returned by f.
 
-;; The theorem proved is the congruence relation which says that 
+;; The theorem proved is the congruence relation which says that
 ;; (f-on-set x) is set-equal to (f-on-set y) if x is set-equal to y.
 
 ;; The only required argument of prove-set-congruences-of-f is f, the function
@@ -741,7 +741,7 @@
 
 ;; set-guard: A (predefined) function of the same arguments as f-on-set.
 ;; If given, 1) if f-on-set is not predefined, this will be set as its guard, and
-;; 2) unless hard-guard is explicitly set to nil, acts as an exception to the 
+;; 2) unless hard-guard is explicitly set to nil, acts as an exception to the
 ;; usual behavior of f-on-set by forcing it to return (bad-input-fn)
 ;;  if this guard is not
 ;; met.  I.e., if set-guard is defined then the automatically-defined f-on-set
@@ -790,7 +790,7 @@
                                     (if elem-guard
                                         (makesym elem-guard '-setp)
                                       'true-fun1)))
-                     (elt-guard1 ,(if elem-guard elem-guard 
+                     (elt-guard1 ,(if elem-guard elem-guard
                                     'true-fun1))
                      (set-insert-set-union-op-equiv1 ,set-insert)
                      (set-subset-set-union-op-equiv1 ,set-subset)
@@ -814,9 +814,9 @@
                      (set-member-set-union-op-equiv0 ,set-member)
                      (set-union-set-union-op-equiv0 ,set-union)
                      (bad-input-fn0 ,bad-input-fn)))))
-    
+
     `(progn
-      
+
       (in-theory (enable ,equiv-disabled-fns))
       ,@(if use-f-i `((deflabel ,before-label)) nil)
       ,@(if set-guard nil

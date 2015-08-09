@@ -77,7 +77,7 @@
              (eq (flexsum->name (car types)) name)
              (car types))
         (get-flexsum-from-types name (cdr types)))))
-        
+
 
 
 #!FTY

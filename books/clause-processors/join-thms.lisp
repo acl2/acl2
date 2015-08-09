@@ -74,7 +74,7 @@
        :hints (("goal" :induct (append x y)
                 :in-theory (e/d (disjoin-when-consp)
                                 (disjoin)))))
-     
+
      (defthm conjoin-cons
        (iff (ev (conjoin (cons x y)) a)
             (and (ev x a)

@@ -40,7 +40,7 @@
          (intern-in-package-of-symbol (coerce (packn1 (list root "-" index))
                                               'string)
                                       root)))
-                                           
+
     (cond ((function-symbolp name wrld)
            (gen-name root (1+ index) wrld))
           (t name))))

@@ -22,7 +22,7 @@
 ACL2 Warning [Double-rewrite] in ( DEFTHM INSERT-IS-CONS[AGAIN] ...):
 In a :REWRITE rule generated from INSERT-IS-CONS[AGAIN], equivalence
 relation PERM is maintained at one problematic occurrence of variable
-X in the right-hand side, but not at any binding occurrence of X. 
+X in the right-hand side, but not at any binding occurrence of X.
 Consider replacing that occurrence of X in the right-hand side with
 (DOUBLE-REWRITE X).  See :doc double-rewrite for more information on
 this issue.
@@ -70,7 +70,7 @@ ACL2 Warning [Double-rewrite] in ( DEFTHM REV-IS-ID[AGAIN] ...):  In
 a :REWRITE rule generated from REV-IS-ID[AGAIN], equivalence relation
 PERM is maintained at one problematic occurrence of variable X in the
 right-hand side, but not at any binding occurrence of X.  Consider
-replacing that occurrence of X in the right-hand side with 
+replacing that occurrence of X in the right-hand side with
 (DOUBLE-REWRITE X).  See :doc double-rewrite for more information on
 this issue.
 |# ; |
@@ -89,7 +89,7 @@ this issue.
 ACL2 Warning [Double-rewrite] in ( DEFTHM REV-REV-AGAIN[AGAIN] ...):
 In a :REWRITE rule generated from REV-REV-AGAIN[AGAIN], equivalence
 relation == is maintained at one problematic occurrence of variable
-X in the right-hand side, but not at any binding occurrence of X. 
+X in the right-hand side, but not at any binding occurrence of X.
 Consider replacing that occurrence of X in the right-hand side with
 (DOUBLE-REWRITE X).  See :doc double-rewrite for more information on
 this issue.

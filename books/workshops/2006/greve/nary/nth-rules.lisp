@@ -37,8 +37,8 @@
        (and (natp b)
 	    (nfix-equiv a b))))
 
-(theory-invariant 
- (incompatible 
+(theory-invariant
+ (incompatible
   (:definition nfix-equiv)
   (:rewrite equal-nfix-rewrite)
   ))
@@ -166,7 +166,7 @@
 		    (equal-nth-conclusion (1- n) (cdr x) (cdr y)))
 	     (equal x y))))
   :rule-classes (:definition))
-  
+
 (defun equal-nth-conclusion-fn (n x y)
   (if (zp n) (if (and (consp x) (consp y))
 		 (and (equal (car x) (car y))
@@ -236,8 +236,8 @@
   (equal (nth a (nil-list m v))
 	 (if (nfix-equiv a m) v
 	   nil))
-  :hints (("Goal" :in-theory 
-	   '(nth-nil-list-not-nfix-equiv 
+  :hints (("Goal" :in-theory
+	   '(nth-nil-list-not-nfix-equiv
 	     nth-nil-list-nfix-equiv))))
 
 (defthm nthcdr-nil-list
@@ -333,7 +333,7 @@
 
 (defequiv nfix-list-equiv)
 
-(defthm open-nfix-list-equiv 
+(defthm open-nfix-list-equiv
   (and
    (implies
     (consp x)
@@ -346,7 +346,7 @@
     (not (consp x))
     (equal (nfix-list-equiv x y)
 	   (not (consp y))))))
-  
+
 (in-theory (disable nfix-list-equiv))
 
 
@@ -407,7 +407,7 @@
 
 (defun equal-nth*-induction (list x y)
   (if (consp list)
-      (equal-nth*-induction (cdr list) 
+      (equal-nth*-induction (cdr list)
 			    (clr-nth (car list) x)
 			    (clr-nth (car list) y))
     (list x y)))
@@ -448,51 +448,51 @@
 
 (encapsulate
     ()
-  
+
   (defun maxval-p (a list)
     (if (consp list)
 	(if (< (nfix a) (nfix (car list))) nil
 	  (maxval-p a (cdr list)))
       t))
-  
+
   (defun maxval (list)
     (if (consp list)
 	(if (maxval-p (car list) (cdr list))
 	    (nfix (car list))
 	  (maxval (cdr list)))
       0))
-  
+
   (defthm maxval-p-maxval-prop
     (IMPLIES (AND (NOT (MAXVAL-P A Z))
 		  (MAXVAL-P X Z)
 		  (< (NFIX X) (NFIX A)))
 	     (< (NFIX X) (MAXVAL Z)))
     :rule-classes (:linear :rewrite))
-  
+
   (defthm not-maxval-p-maxval-prop-2
     (implies
      (not (maxval-p x list))
      (< (nfix x) (maxval list)))
     :rule-classes (:rewrite :linear))
-  
+
   (defthm maxval-p-maxval-prop-3
     (implies
      (maxval-p x list)
      (<= (maxval list) (nfix x)))
     :rule-classes (:rewrite :linear))
-  
+
   (defund maxsize (list)
     (if (consp list)
 	(1+ (maxval list))
       0))
-  
+
   (local
    (defthm max-maxsize
      (equal (max (1+ (nfix x)) (maxsize list))
 	    (if (maxval-p x list) (1+ (nfix x))
 	      (maxsize list)))
      :hints (("Goal" :in-theory (enable maxsize)))))
-  
+
   (local
    (defthm open-maxsize
      (implies
@@ -502,13 +502,13 @@
 		 (1+ (nfix (car list)))
 	       (maxsize (cdr list)))))
      :hints (("goal" :in-theory (enable maxsize)))))
-  
+
   (local
    (defthm equal-max-reduction
      (implies (equal (max a b) d)
 	      (iff (equal (max a (max b c))
 			  (max d c)) t))))
- 
+
   (defthm len-copy-nth*
     (equal (len (copy-nth* list x y))
 	   (max (maxsize list) (len y)))
@@ -517,7 +517,7 @@
 	    ("Subgoal *1/2" :in-theory (enable maxsize max))))
 
   )
-  
+
 
 (defthm nth*-copy-equiv-reduction
   (equal (nth*-copy-equiv list x y z)
@@ -558,7 +558,7 @@
 	   nil))
   :hints (("Goal" :in-theory (enable maxsize)))
   :otf-flg t)
- 
+
 (defthm nth*-equiv-reduction
   (equal (nth*-equiv list x y)
 	 (nth*-copy-equiv list x y z)))
@@ -711,7 +711,7 @@
 		     (nth* x b))
 	      (equal (nth* y a)
 		     (nth* y b))))
-  :hints (("Goal" :in-theory (disable 
+  :hints (("Goal" :in-theory (disable
 			      NTH*-GET-COPY-EQUIVALENCE
 			      ))))
 

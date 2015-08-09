@@ -283,7 +283,7 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
             (vl-genelement-enumname-declarations x)))
         (mv warnings
             (make-vl-genblock :elems elems :loc (vl-modelement->loc x.item))))
-      
+
       :vl-genif
       (b* (((mv warnings then) (vl-genelementblock-enumname-declarations x.then))
            ((wmv warnings else) (vl-genelementblock-enumname-declarations x.else)))
@@ -306,7 +306,7 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
              x
              :body body)))
       :vl-genblock
-      (b* (((mv warnings elems) (vl-genelementlist-enumname-declarations x.elems))) 
+      (b* (((mv warnings elems) (vl-genelementlist-enumname-declarations x.elems)))
         (mv warnings
             (change-vl-genblock
              x
@@ -352,9 +352,9 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   ///
   (verify-guards vl-genelementlist-enumname-declarations)
   (deffixequiv-mutual vl-genelementlist-enumname-declarations))
-      
-      
-    
+
+
+
 
 
 
@@ -422,4 +422,4 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
 
 
 
-    
+

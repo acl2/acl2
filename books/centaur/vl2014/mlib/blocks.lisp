@@ -776,7 +776,7 @@ etc., are overwritten with whatever is in the genblob.</p>"
                                    ,@(and new-x '((make-vl-genblock
                                                    :elems new-elems
                                                    :loc (vl-modelement->loc x.item))))))))
-       
+
        (define ,apply-to-gencaselist ((x vl-gencaselist-p) . ,raw-formals)
          :returns ,(maybe-mv-fn `(,@returns
                                   ,@(and new-x '((new-x vl-gencaselist-p)))))

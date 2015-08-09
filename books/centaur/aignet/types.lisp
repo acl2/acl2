@@ -54,7 +54,7 @@
 (deflist stype-listp (x)
   (stypep x)
   :true-listp t)
-  
+
 (local (defthm eqlable-listp-when-stype-listp
          (implies (stype-listp x)
                   (and (eqlable-listp x)
@@ -242,7 +242,7 @@ symbols in its list."
       (('ctype ('stype x))
        (b* ((possibilities (stype-vartable-lookup x vartable))
             (remaining (filter-ctype negp val possibilities))
-            
+
             (vartable (cons (cons x remaining) vartable))
             ((when (endp remaining))
              ;; contradiction
@@ -251,7 +251,7 @@ symbols in its list."
       (('regp ('stype x))
        (b* ((possibilities (stype-vartable-lookup x vartable))
             (remaining (filter-regp negp val possibilities))
-            
+
             (vartable (cons (cons x remaining) vartable))
             ((when (endp remaining))
              ;; contradiction

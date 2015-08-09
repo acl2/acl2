@@ -1269,7 +1269,7 @@ unfloat then/else values."
     (4vec ;; upper is set if then and else are true, or if either is Z or X -- meaning,
      ;; if they're not both false.
      (logior then.upper else.upper then.lower else.lower)
-     ;; lower is set if then and else are true, otherwise not -- 
+     ;; lower is set if then and else are true, otherwise not --
      (logand then.upper else.upper then.lower else.lower)))
 
   ///

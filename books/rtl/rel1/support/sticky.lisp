@@ -11,7 +11,7 @@
 (include-book "divsqrt")
 
 (defun STICKY (x n)
-  (cond ((= n 1) 
+  (cond ((= n 1)
 	 (* (sgn x) (expt 2 (expo x))))
 	((exactp x (1- n))
 	 x)
@@ -40,7 +40,7 @@
 		  (integerp n) (> n 0)
 		  (integerp k))
 	     (= (sticky (* (expt 2 k) x) n)
-		(* (expt 2 k) (sticky x n))))		
+		(* (expt 2 k) (sticky x n))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable exactp-shift expt-pos)
 		  :use ((:instance expt-pos (x k))
@@ -73,7 +73,7 @@
   :hints (("Goal" :in-theory (disable trunc-exactp-b)
 		  :use ((:instance trunc-exactp-b (n  (1- n)))
 			(:instance expo-trunc (n (1- n)))
-			(:instance expt-strong-monotone 
+			(:instance expt-strong-monotone
 				   (n (1+ (- (expo x) n)))
 				   (m (+ 2 (- (expo x) n))))
 			(:instance trunc-pos (n (1- n)))
@@ -126,7 +126,7 @@
   :hints (("Goal" :in-theory (disable trunc-exactp-b)
 		  :use ((:instance expo-sticky-2)
 			(:instance expo-upper-bound)
-			(:instance expt-strong-monotone 
+			(:instance expt-strong-monotone
 				   (n (1+ (- (expo x) n)))
 				   (m (+ 2 (- (expo x) n)))))))))
 
@@ -222,8 +222,8 @@
 			(:instance trunc-exactp-b (n (1- n)))
 			(:instance trunc-pos (n (1- n)))
 			(:instance trunc-diff-pos (n (1- n)))
-			(:instance away-exactp-c 
-				   (n (1- n)) 
+			(:instance away-exactp-c
+				   (n (1- n))
 				   (a (+ (trunc x (1- n))
 					 (expt 2 (+ (expo x) 2 (- n)))))))))))
 
@@ -344,7 +344,7 @@
   :hints (("Goal" :in-theory (disable fl+int expo trunc-rewrite)
 		  :use ((:instance minus-trunc-1)
 			exactp2
-			(:instance fl+int 
+			(:instance fl+int
 				   (x (* y (expt 2 (- (1- k) (expo y)))))
 				   (n (- (* x (expt 2 (- (1- k) (expo y))))))))))))
 
@@ -576,7 +576,7 @@
 		  (not (exactp x n)))
 	     (= (away x n)
 		(+ (trunc x n)
-		   (expt 2 (+ (expo x) 1 (- n))))))		
+		   (expt 2 (+ (expo x) 1 (- n))))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance away-sticky-2 (n (1+ n)))
 			(:instance away-sticky-3 (n (1+ n)))))))
@@ -649,7 +649,7 @@
 
 (defthm EXACTP-MINUS
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
 		  (exactp (- x) n)))

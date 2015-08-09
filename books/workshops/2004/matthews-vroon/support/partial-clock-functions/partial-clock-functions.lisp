@@ -398,13 +398,13 @@
 (defthm at-cutpoint-implies-steps-to-cutpoint-zero
   (implies (at-cutpoint mstate)
 	   (equal (steps-to-cutpoint mstate)
-		  0))	   
+		  0))
   :rule-classes :forward-chaining)
 
 (defthm not-at-cutpoint-implies-steps-to-cutpoint-nonzero
   (implies (not (at-cutpoint mstate))
 	   (not (equal (steps-to-cutpoint mstate)
-		       0)))	   
+		       0)))
   :rule-classes :forward-chaining)
 
 (defthmd steps-to-cutpoint-nonzero-elim
@@ -607,7 +607,7 @@
 
 ;;The following two theorems show that any cutpoint
 ;; state eventually leads to an exitpoint state.
-                  
+
 (defthmd next-exitpoint-correct
   (implies (at-cutpoint mstate)
            (equal (run (steps-to-exitpoint mstate) mstate)

@@ -1,7 +1,7 @@
 ; The Tail Recursion Book
 ; Copyright (C) 2004 John R. Cowles, University of Wyoming
 
-; This program is free software; you can redistribute it and/or 
+; This program is free software; you can redistribute it and/or
 ; modify it under the terms of the GNU General Public License as
 ; published by the Free Software Foundation; either version 2 of
 ; the License, or (at your option) any later version.
@@ -12,7 +12,7 @@
 ; GNU General Public License for more details.
 
 ; You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free 
+; License along with this program; if not, write to the Free
 ; Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
 ; USA.
 
@@ -43,10 +43,10 @@
   `(acl2::defpun ,g ,args ,@tail))
 ;;=====================================================================
 ;; Let test, base, and step be unary functions.
-;; A total ACL2 function f is said to satisfy the defining tail recursion 
+;; A total ACL2 function f is said to satisfy the defining tail recursion
 ;; axiom for the proposed definition
 
-;; (defun 
+;; (defun
 ;;   f (x)
 ;;   (if (test x)
 ;;       (base x)
@@ -78,7 +78,7 @@
 ;; Let test1, base1, and step1 be unary functions.
 ;; The tail recursion in the proposed definition
 
-;; (defun 
+;; (defun
 ;;   f1 (x)
 ;;   (if (test1 x)
 ;;       (base1 x)
@@ -89,23 +89,23 @@
 
 ;; (AND (mp (m x))                                  ; Defun-goal-1
 ;;      (IMPLIES (NOT (test1 x))                    ; Defun-goal-2
-;;               (rel (m (step1 x)) 
+;;               (rel (m (step1 x))
 ;;                    (m x))).
 
 ;; THEOREM 1. If the tail recursion satisfies the mp-measure conjecture for
 ;;            measure m, then there is exactly one total function satisfying
-;;            the defining tail recursion axiom. 
+;;            the defining tail recursion axiom.
 
-;;            That is, (IMPLIES ((FORALL x)(AND (IMPLIES (mp x) 
+;;            That is, (IMPLIES ((FORALL x)(AND (IMPLIES (mp x)
 ;;                                                       (O-P (fn x)))
-;;                                              ((FORALL y)(IMPLIES 
-;;                                                            (AND (mp x)   
+;;                                              ((FORALL y)(IMPLIES
+;;                                                            (AND (mp x)
 ;;                                                                 (mp y)
 ;;                                                                 (rel x y))
 ;;                                                            (O< (fn x)(fn y))))
-;;                                              (mp (m x)) 
+;;                                              (mp (m x))
 ;;                                              (IMPLIES (NOT (test1 x))
-;;                                                       (rel (m (step1 x)) 
+;;                                                       (rel (m (step1 x))
 ;;                                                            (m x)))))
 ;;                               ((EXISTS UNIQUE FUNCTION f1)
 ;;                                ((FORALL x)(EQUAL (f1 x)
@@ -145,19 +145,19 @@
 ;; Assume the hypothesis of THEOREM 1.
 ;; That is, assume
 
-;;      (IMPLIES ((FORALL x)(AND (IMPLIES (mp x) 
+;;      (IMPLIES ((FORALL x)(AND (IMPLIES (mp x)
 ;;                                        (O-P (fn x)))
-;;                               ((FORALL y)(IMPLIES 
-;;                                           (AND (mp x)   
+;;                               ((FORALL y)(IMPLIES
+;;                                           (AND (mp x)
 ;;                                                (mp y)
 ;;                                                (rel x y))
 ;;                                           (O< (fn x)(fn y))))
-;;                               (mp (m x)) 
+;;                               (mp (m x))
 ;;                               (IMPLIES (NOT (test1 x))
-;;                                        (rel (m (step1 x)) 
+;;                                        (rel (m (step1 x))
 ;;                                             (m x)))))
 
-;; Let rel, mp, fn, m, test1, and step1 be functions satisfying the 
+;; Let rel, mp, fn, m, test1, and step1 be functions satisfying the
 ;; given hypothesis.
 
 (encapsulate
@@ -176,13 +176,13 @@
 
  (local (defun fn (x)
 	  x))
- 
+
  (local (defun m (x)
 	  (acl2-count x)))
 
  (local (defun test1 (x)
 	  (zp x)))
- 
+
  (local (defun step1 (x)
 	  (- x 1)))
 
@@ -309,7 +309,7 @@
 
 ;; The tail recursion in the proposed definition
 
-;; (defun 
+;; (defun
 ;;   f2 (x)
 ;;   (if (test2 x)
 ;;       (base2 x)
@@ -320,7 +320,7 @@
 ;; For all inputs x, there is an n such that (test2 (step2n x n)) is not NIL.
 
 ;; THEOREM 2. If there is exactly one total function satisfying the defining
-;;            tail recursion axiom, then the recursion always terminates. 
+;;            tail recursion axiom, then the recursion always terminates.
 
 ;;            That is, (IMPLIES ((EXISTS UNIQUE FUNCTION f2)
 ;;                               ((FORALL x)(EQUAL (f2 x)
@@ -376,7 +376,7 @@
  (local (defun base2 (x)
 	  (declare (ignore x))
 	  0))
- 
+
  (local (defun step2 (x)
 	  (- x 1)))
 
@@ -461,15 +461,15 @@
 ;; However, the current proof would be sound in any circumstances
 ;; where g2=h2 does logically follow. For example, since g1=h1 is
 ;; a theorem, as shown above, this proof (with g1 replacing g2 and
-;; h1 replacing h2) shows that the recursion in the definition of 
-;; f1 (and g1 & h1) always terminates. 
+;; h1 replacing h2) shows that the recursion in the definition of
+;; f1 (and g1 & h1) always terminates.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Prove the conclusion of THEOREM 2.
 ;; That is, prove the recursion always halts
 ;; Prove ((FORALL x)((EXISTS n)(test2 (step2n x n))))
 
-;; At this point the proof closely follows the proof, given by 
+;; At this point the proof closely follows the proof, given by
 ;; J and Pete, in their DEFPUN work, that tail recursive definitions
 ;; are always satisfied by at least one total ACL2 function.
 
@@ -483,7 +483,7 @@
   nbr-step2 (n)(x)
   (test2 (step2n x n)))
 
-(defun 
+(defun
   f2n (x n)
   (declare (xargs :measure (nfix n)))
   (if (or (zp n) (test2 x))
@@ -506,7 +506,7 @@
 (encapsulate
  nil
 
- (local 
+ (local
   (defthm
     test2-nbr-step2
     (implies (test2 x)
@@ -523,7 +523,7 @@
 	     (equal (g2a x)(base2 x)))))
 
  (local
-  (defthm 
+  (defthm
     test2-h2a-def
     (implies (test2 x)
 	     (equal (h2a x)(base2 x)))))
@@ -536,8 +536,8 @@
 	     (equal (step2n x n)
 		    (step2n (step2 x)(- n 1))))))
 
- (local 
-  (defthm +1-1 
+ (local
+  (defthm +1-1
     (equal (+ -1 +1 x) (fix x))))
 
  (local
@@ -558,11 +558,11 @@
 	     (iff (test2 (step2n (step2 x)(nbr-step2 (step2 x))))
 		  (test2 (step2n x (nbr-step2 x)))))
     :hints (("Subgoal 2"
-	     :use (:instance 
+	     :use (:instance
 		   nbr-step2
 		   (x (step2 x))
 		   (n (+ -1 (nbr-step2 x))))))))
- 
+
  (local
   (defthm
     f2n-step2
@@ -713,7 +713,7 @@
 ;; -------------------------------------------------------------------------
 ;; COROLLARY 2. The tail recursion in the definition of f1,
 
-;;              (defun 
+;;              (defun
 ;;                f1 (x)
 ;;                (if (test1 x)
 ;;                    (base1 x)
@@ -721,7 +721,7 @@
 
 ;; always terminates.
 
-;; That is,  
+;; That is,
 ;; For all inputs x, there is an n such that (test1 (step1n x n)) is not NIL.
 
 ;; The ``proof'' given above for THEOREM 2 is carefully followed, replacing
@@ -732,7 +732,7 @@
 ;; Prove the recursion always halts in f1.
 ;; That is, prove ((FORALL x)((EXISTS n)(test1 (step1n x n))))
 
-;; At this point the proof closely follows the proof, given by 
+;; At this point the proof closely follows the proof, given by
 ;; J and Pete, in their DEFPUN work, that tail recursive definitions
 ;; are always satisfied by at least one total ACL2 function.
 
@@ -746,7 +746,7 @@
   nbr-step1 (n)(x)
   (test1 (step1n x n)))
 
-(defun 
+(defun
   f1n (x n)
   (declare (xargs :measure (nfix n)))
   (if (or (zp n) (test1 x))
@@ -769,7 +769,7 @@
 (encapsulate
  nil
 
- (local 
+ (local
   (defthm
     test1-nbr-step1
     (implies (test1 x)
@@ -786,7 +786,7 @@
 	     (equal (g1a x)(base1 x)))))
 
  (local
-  (defthm 
+  (defthm
     test1-h1a-def
     (implies (test1 x)
 	     (equal (h1a x)(base1 x)))))
@@ -799,8 +799,8 @@
 	     (equal (step1n x n)
 		    (step1n (step1 x)(- n 1))))))
 
- (local 
-  (defthm +1-1 
+ (local
+  (defthm +1-1
     (equal (+ -1 +1 x) (fix x))))
 
  (local
@@ -821,11 +821,11 @@
 	     (iff (test1 (step1n (step1 x)(nbr-step1 (step1 x))))
 		  (test1 (step1n x (nbr-step1 x)))))
     :hints (("Subgoal 2"
-	     :use (:instance 
+	     :use (:instance
 		   nbr-step1
 		   (x (step1 x))
 		   (n (+ -1 (nbr-step1 x))))))))
- 
+
  (local
   (defthm
     f1n-step1
@@ -915,7 +915,7 @@
 
 ;; The tail recursion in the proposed definition
 
-;; (defun 
+;; (defun
 ;;   f3 (x)
 ;;   (if (test3 x)
 ;;       (base3 x)
@@ -925,17 +925,17 @@
 
 ;; For all inputs x, there is an n such that (test3 (step3n x n)) is not NIL.
 
-;; The tail recursion in the proposed definition of f3 is said to satisfy 
+;; The tail recursion in the proposed definition of f3 is said to satisfy
 ;; the meaure conjecture for nonnegative-integer-valued measure im provided
 ;; the following goals are true.
 
 ;; (AND (integerp (im x))               ; Goal 1
 ;;      (>= (im x) 0)                   ; Goal 2
 ;;      (IMPLIES (NOT (test3 x))        ; Goal 3
-;;               (< (im (step3 x)) 
+;;               (< (im (step3 x))
 ;;                  (im x))).
 
-;; THEOREM 3. If the tail recursion proposed in the definition of f3 always 
+;; THEOREM 3. If the tail recursion proposed in the definition of f3 always
 ;;            terminates, then the tail recursion satisfies the measure
 ;;            conjecture for some nonnegative-integer-valued measure m.
 
@@ -943,9 +943,9 @@
 ;;                                ((EXISTS n)(test3 (step3n x n))))
 ;;                               ((EXISTS FUNCTION im)
 ;;                                ((FORALL x)(AND (integerp (im x))
-;;                                                (>= (im x) 0) 
+;;                                                (>= (im x) 0)
 ;;                                                (IMPLIES (NOT (test3 x))
-;;                                                         (< (im (step3 x)) 
+;;                                                         (< (im (step3 x))
 ;;                                                            (im x)))))))
 ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;; PROOF OF THEOREM 3.
@@ -970,7 +970,7 @@
 
  (local (defun test3 (x)
 	  (zp x)))
- 
+
  (local (defun step3 (x)
 	  (- x 1)))
 
@@ -995,9 +995,9 @@
 
 ;; ((EXISTS FUNCTION im)
 ;;  ((FORALL x)(AND (integerp (im x))
-;;                  (>= (im x) 0) 
+;;                  (>= (im x) 0)
 ;;                  (IMPLIES (NOT (test3 x))
-;;                           (< (im (step3 x)) 
+;;                           (< (im (step3 x))
 ;;                              (im x)))))))
 
 (defun
@@ -1100,9 +1100,9 @@
 (defthm
   im-is-measure
   (AND (integerp (im x))
-       (>= (im x) 0) 
+       (>= (im x) 0)
        (IMPLIES (NOT (test3 x))
-		(< (im (step3 x)) 
+		(< (im (step3 x))
 		   (im x))))
   :rule-classes nil)
 
@@ -1110,7 +1110,7 @@
 ;; -------------------------------------------------------------------------
 ;; Use the measure im to get ACL2 to accept the proposed definition of f3
 
-;; (defun 
+;; (defun
 ;;   f3 (x)
 ;;   (if (test3 x)
 ;;       (base3 x)
@@ -1121,7 +1121,7 @@
 (defstub
   base3 (*) => *)
 
-(defun 
+(defun
   f3 (x)
   (declare (xargs :measure (im x)))
   (if (test3 x)
@@ -1143,7 +1143,7 @@
 
 ;; The tail recursion in the proposed definition
 
-;; (defun 
+;; (defun
 ;;   f4 (x)
 ;;   (if (test4 x)
 ;;       (base4 x)
@@ -1154,10 +1154,10 @@
 ;; There is an n such that (test4 (step4n (a) n)) is not NIL.
 
 ;; THEOREM 4. If ACL2 can prove (EQUAL (f4 (a))(b)) from the defining
-;;            axiom for the tail recursion defining f4, then the 
-;;            recursion terminates on input (a). 
+;;            axiom for the tail recursion defining f4, then the
+;;            recursion terminates on input (a).
 
-;;            That is, (IMPLIES 
+;;            That is, (IMPLIES
 ;;                      (((FORALL x)
 ;;                        (EQUAL (f4 x)
 ;;                               (if (test4 x)
@@ -1193,7 +1193,7 @@
  (local (defun base4 (x)
 	  (declare (ignore x))
 	  0))
- 
+
  (local (defun step4 (x)
 	  (- x 1)))
 
@@ -1220,7 +1220,7 @@
 (defstub
   b () => *)
 
-(skip-proofs 
+(skip-proofs
  (defthm
    f4-a=b
    (equal (f4 (a))
@@ -1229,13 +1229,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; WARNING: This use of skip-proofs will render ACL2 unsound.
-;; This is because the purported theorem f4-a=b is NOT really a 
+;; This is because the purported theorem f4-a=b is NOT really a
 ;; logical consequence of the constrained axiom f4-def.
 ;; [See below for a ``proof'' of NIL. Search for (defun k1 ...)]
 
 ;; However, the current proof would be sound in any circumstances
 ;; where f4-a=b does logically follow. For example, see the
-;; application in the WyoM1 Correctness Without a Clock book, in 
+;; application in the WyoM1 Correctness Without a Clock book, in
 ;; the file WyoM1-correct.lisp, that relates a correctness result
 ;; for a ``clockless'' tail recursive formal intepreter, used to
 ;; model the stack machine WyoM1, to the same result for a ``clocked''
@@ -1247,7 +1247,7 @@
 
 ;;  ((EXISTS n)(test4 (step4n (a) n)))
 
-;; At this point the proof closely follows the proof, given by 
+;; At this point the proof closely follows the proof, given by
 ;; J and Pete, in their DEFPUN work, that tail recursive definitions
 ;; are always satisfied by at least one total ACL2 function.
 
@@ -1261,7 +1261,7 @@
   nbr-step4 (n)(x)
   (test4 (step4n x n)))
 
-(defun 
+(defun
   f4n (x n)
   (declare (xargs :measure (nfix n)))
   (if (or (zp n) (test4 x))
@@ -1280,7 +1280,7 @@
 (encapsulate
  nil
 
- (local 
+ (local
   (defthm
     test4-nbr-step4
     (implies (test4 x)
@@ -1304,8 +1304,8 @@
 	     (equal (step4n x n)
 		    (step4n (step4 x)(- n 1))))))
 
- (local 
-  (defthm +1-1 
+ (local
+  (defthm +1-1
     (equal (+ -1 +1 x) (fix x))))
 
  (local
@@ -1326,11 +1326,11 @@
 	     (iff (test4 (step4n (step4 x)(nbr-step4 (step4 x))))
 		  (test4 (step4n x (nbr-step4 x)))))
     :hints (("Subgoal 2"
-	     :use (:instance 
+	     :use (:instance
 		   nbr-step4
 		   (x (step4 x))
 		   (n (+ -1 (nbr-step4 x))))))))
- 
+
  (local
   (defthm
     f4n-step4
@@ -1457,7 +1457,7 @@
 ;; The above example demonstrates that the application of THEOREM 4
 ;; via FUNCTIONAL INSTANTIATION is NOT to be trusted. However, by
 ;; carefully following the proof of THEOREM 4, consistent results can
-;; be obtained. This is illustrated by showing how to relate 
+;; be obtained. This is illustrated by showing how to relate
 ;; corrrectness results obtained using an interpreter without a clock
 ;; to the same results using an intepreter with a clock. See the
 ;; WyoM1 Correctness Without a Clock book in the file

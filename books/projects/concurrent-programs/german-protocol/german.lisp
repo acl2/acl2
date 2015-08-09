@@ -2,14 +2,14 @@
 
 #|
 
- german.lisp 
+ german.lisp
  ~~~~~~~~~~~
 
 Author: Sandip Ray
 Date: Wed Oct  5 01:37:01 2005
 
 This book represents my efforts to model the German protocol and reason about
-it with ACL2. 
+it with ACL2.
 
 Prelude
 =======
@@ -293,7 +293,7 @@ session.  To include the book after certification, do (include-book
 ;; on keys as possible. To that end, whenever we need to add a constraint I
 ;; should add an explanatory note saying why the constraint is necessary.
 
-(encapsulate 
+(encapsulate
  (((keys) => *))
  (local (defun keys () nil)))
 
@@ -328,11 +328,11 @@ session.  To include the book after certification, do (include-book
         ;; means when I ask a garbage process to make a step then the result is
         ;; a no-op.
         st
-    (cond (;; Rule 1: 
+    (cond (;; Rule 1:
            (and (equal action :request-shared-access)
                 (equal (g pid clients) :idle)
                 (not ch1))
-           (>st :ch1 
+           (>st :ch1
                 (s pid :req-shared-access ch1)))
           (;; Rule 2:
            (and (equal action :request-exclusive-access)
@@ -349,7 +349,7 @@ session.  To include the book after certification, do (include-book
                 :hil (set-hil-hsl keys hil hsl)))
           (;; Rule 4:
            (and (equal action :home-sends-invalidate)
-                (g pid hil) 
+                (g pid hil)
                 (not (g pid ch2))
                 (or (and (equal hcm :req-shared-access)
                          heg)
@@ -404,7 +404,7 @@ session.  To include the book after certification, do (include-book
 ;; restriction is important or not, but I tried to model it as per the Murphy
 ;; definition.
 
-(defun initial-clients (keys) 
+(defun initial-clients (keys)
   (if (endp keys) nil
     (let ((clients (initial-clients (rest keys))))
       (s (first keys) :idle clients))))
@@ -491,10 +491,10 @@ session.  To include the book after certification, do (include-book
 ;; example I dont want to see a "witness" until I am ready and understand what
 ;; the witness means in a context.  So I deal with quantifiers principally via
 ;; :use hints.
-        
+
 (local (in-theory (disable coherent-processes coherent-processes-necc)))
 
-;; default cases are pretty simple.  
+;; default cases are pretty simple.
 (local
  (defthm |coherent default cases|
    (implies (and (coherent st)
@@ -548,36 +548,36 @@ session.  To include the book after certification, do (include-book
  (defthm coherent-after-setting-idle
    (implies (coherent-processes keys clients)
             (coherent-processes keys (s i :idle clients)))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
-    ((equal 
-      i 
+     :cases
+    ((equal
+      i
       (mv-nth 1
               (coherent-processes-witness keys (s i :idle clients))))
      (equal i (car (coherent-processes-witness keys (s i :idle clients))))))
     ("Subgoal 1"
     :in-theory (enable coherent-processes)
-    :use 
-    ((:instance 
+    :use
+    ((:instance
       coherent-processes-necc
       (i (car (coherent-processes-witness keys (s i :idle clients))))
       (j (mv-nth 1 (coherent-processes-witness keys (s i :idle clients)))))))
     ("Subgoal 2"
      :in-theory (enable coherent-processes)
-     :use 
-     ((:instance 
+     :use
+     ((:instance
        coherent-processes-necc
        (i (car (coherent-processes-witness keys (s i :idle clients))))
        (j (mv-nth 1 (coherent-processes-witness keys (s i :idle clients)))))))
     ("Subgoal 3"
-     :use 
+     :use
      ((:instance (:definition coherent-processes)
                  (clients (s i :idle clients)))
-      (:instance 
+      (:instance
        coherent-processes-necc
        (i (car (coherent-processes-witness keys (s i :idle clients))))
-       (j (mv-nth 1 (coherent-processes-witness keys 
+       (j (mv-nth 1 (coherent-processes-witness keys
                                                 (s i :idle clients))))))))))
 
 
@@ -611,7 +611,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defun ch2-client-shared-invariant (st)
    (ch2-client-shared (ch2 st) (keys) (clients st))))
- 
+
 (local (defthm |init has ch2-shared| (ch2-client-shared-invariant (init))))
 
 (local (in-theory (disable ch2-client-shared ch2-client-shared-necc)))
@@ -641,16 +641,16 @@ session.  To include the book after certification, do (include-book
             (coherent-processes keys (s j :shared clients)))
    :hints (("Goal"
             :in-theory (enable coherent-processes)
-            :cases ((equal j 
-                           (car (coherent-processes-witness 
+            :cases ((equal j
+                           (car (coherent-processes-witness
                                  keys (s j :shared clients))))))
            ("Subgoal 2"
             :use ((:instance (:definition coherent-processes)
                              (clients (s j :shared clients))))))))
- 
+
 ;; OK so now we can prove that execution of rule 7 gives us a coherent state.
 
-(local 
+(local
  (defthm |coherent after rule 7|
    (implies (and (ch2-client-shared-invariant st)
                  (coherent st)
@@ -676,7 +676,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defun ch2-client-exclusive-invariant (st)
    (ch2-client-exclusive (ch2 st) (keys) (clients st))))
-(local 
+(local
  (defthm |init has ch2-exclusive| (ch2-client-exclusive-invariant (init))))
 
 (local
@@ -693,10 +693,10 @@ session.  To include the book after certification, do (include-book
                  (memberp j keys)
                  (equal (g i ch2) :grant-exclusive))
             (equal (g j clients) :idle))
-   
+
    :hints (("Goal"
             :use ch2-client-exclusive-necc))))
-                
+
 (local
  (defthm ch2-exclusive-means-set-idle
    (implies (and (ch2-client-exclusive ch2 keys clients)
@@ -705,7 +705,7 @@ session.  To include the book after certification, do (include-book
                  (memberp n keys)
                  (equal (g i ch2) :grant-exclusive))
             (equal (g m (s n v clients)) (if (equal m n) v :idle)))))
- 
+
 (local
  (defthm |ch2-exclusive causes coherence|
    (implies (and (ch2-client-exclusive ch2 keys clients)
@@ -714,14 +714,14 @@ session.  To include the book after certification, do (include-book
             (coherent-processes keys (s j :exclusive clients)))
    :hints (("Goal"
             :in-theory (enable coherent-processes)
-            :cases 
-            ((equal 
-              j 
-              (car (coherent-processes-witness 
+            :cases
+            ((equal
+              j
+              (car (coherent-processes-witness
                     keys (s j :exclusive clients)))))))))
- 
+
 ;; Now of course rule 8 should just go through.
-                            
+
 (local
  (defthm |coherent after rule 8|
    (implies (and (ch2-client-exclusive-invariant st)
@@ -760,7 +760,7 @@ session.  To include the book after certification, do (include-book
                                  :home-grants-shared
                                  :home-grants-exclusive))))
             (ch2-client-shared-invariant (german-step st stimulus)))))
-                                
+
 ;; Let us now first take care of sharer-invalidate-cache.  This works because
 ;; if I set something to :idle then nothing changes in terms of what has
 ;; shared.
@@ -770,32 +770,32 @@ session.  To include the book after certification, do (include-book
    (implies (and (ch2-client-shared ch2 keys clients)
                  (not (equal val :grant-shared)))
             (ch2-client-shared (s i val ch2) keys (s j :idle clients)))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
-     ((equal 
-       i 
-       (car (ch2-client-shared-witness 
+     :cases
+     ((equal
+       i
+       (car (ch2-client-shared-witness
              (s i val ch2) keys (s j :idle clients))))
-      (equal 
-       j 
-       (mv-nth 1 (ch2-client-shared-witness (s i val ch2) keys 
+      (equal
+       j
+       (mv-nth 1 (ch2-client-shared-witness (s i val ch2) keys
                                             (s j :idle clients))))))
     ("Subgoal 2"
      :in-theory (enable ch2-client-shared))
     ("Subgoal 1"
      :in-theory (enable ch2-client-shared))
     ("Subgoal 3"
-     :use 
+     :use
      ((:instance (:definition ch2-client-shared)
                  (clients (s j :idle clients))
                  (ch2 (s i val ch2)))
-      (:instance 
+      (:instance
        ch2-client-shared-necc
        (i (car (ch2-client-shared-witness (s i val ch2) keys
                                           (s j :idle clients))))
        (j  (mv-nth 1 (ch2-client-shared-witness (s i val ch2)
-                                                keys 
+                                                keys
                                                 (s j :idle clients))))))))))
 
 (local
@@ -803,7 +803,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (ch2-client-shared-invariant st)
                  (equal (action stimulus) :sharer-invalidate-cache))
             (ch2-client-shared-invariant (german-step st stimulus)))))
- 
+
 ;; Now let us take the other cases in turn.  For the case
 ;; :home-sends-invalidate for example, we know that ch2-client-shared-invariant
 ;; still holds after the action if it held before.  This is because if we
@@ -816,32 +816,32 @@ session.  To include the book after certification, do (include-book
                  (ch2-client-shared ch2 keys clients))
             (ch2-client-shared (s pid val ch2) keys clients))
    :hints (("Goal"
-            :cases 
-            ((equal 
+            :cases
+            ((equal
               (car (ch2-client-shared-witness (s pid val ch2) keys clients))
               pid)))
            ("Subgoal 2"
-            :use 
+            :use
             ((:instance (:definition ch2-client-shared)
                         (ch2 (s pid val ch2)))
-             (:instance 
+             (:instance
               ch2-client-shared-necc
               (i (car (ch2-client-shared-witness (s pid val ch2) keys
                                                  clients)))
               (j (mv-nth 1 (ch2-client-shared-witness (s pid val ch2) keys
                                                       clients))))))
            ("Subgoal 1"
-            :use 
+            :use
             ((:instance (:definition ch2-client-shared)
                         (ch2 (s pid val ch2)))
-             (:instance 
+             (:instance
               ch2-client-shared-necc
               (i (car (ch2-client-shared-witness (s pid val ch2) keys
                                                  clients)))
               (j (mv-nth 1 (ch2-client-shared-witness (s pid val ch2) keys
                                                       clients)))))))))
- 
- 
+
+
 ;; While we are at it, we might also prove that if a client is set to :shared
 ;; then the invariant remains.
 
@@ -851,37 +851,37 @@ session.  To include the book after certification, do (include-book
                  (equal (g i ch2) :grant-shared))
             (ch2-client-shared ch2 keys (s j :shared clients)))
    :hints (("Goal"
-            :cases 
-            ((equal 
+            :cases
+            ((equal
               j
               (mv-nth 1
-                      (ch2-client-shared-witness 
+                      (ch2-client-shared-witness
                        ch2 keys (s j :shared clients))))))
            ("Subgoal 2"
-            :use 
-            ((:instance 
+            :use
+            ((:instance
               (:definition ch2-client-shared)
               (clients (s j :shared clients)))
-             (:instance 
+             (:instance
               ch2-client-shared-necc
-              (i (car (ch2-client-shared-witness 
+              (i (car (ch2-client-shared-witness
                        ch2 keys (s j :shared clients))))
-              (j (mv-nth 
-                  1 (ch2-client-shared-witness 
-                     ch2 
+              (j (mv-nth
+                  1 (ch2-client-shared-witness
+                     ch2
                      keys (s j :shared clients)))))))
            ("Subgoal 1"
-            :use 
-            ((:instance 
+            :use
+            ((:instance
               (:definition ch2-client-shared)
               (clients (s j :shared clients)))
-             (:instance 
+             (:instance
               ch2-client-shared-necc
-              (i (car (ch2-client-shared-witness 
+              (i (car (ch2-client-shared-witness
                        ch2 keys (s j :shared clients))))
-              (j (mv-nth 
-                  1 (ch2-client-shared-witness 
-                     ch2 
+              (j (mv-nth
+                  1 (ch2-client-shared-witness
+                     ch2
                      keys (s j :shared clients))))))))))
 
 ;; OK this takes care of three of the 5 non-trivial cases of the
@@ -891,10 +891,10 @@ session.  To include the book after certification, do (include-book
  (defthm |ch2 shared invariant after no grants-shared set|
    (implies (and (ch2-client-shared-invariant st)
                  (memberp (action stimulus) '(:home-grants-exclusive
-                                              :client-receives-shared 
+                                              :client-receives-shared
                                               :home-sends-invalidate)))
             (ch2-client-shared-invariant (german-step st stimulus)))))
- 
+
 ;; That leaves us with two cases, namely :home-grants-shared and
 ;; :client-receives-exclusive.  Let us look at :home-grants-shared.  Why is
 ;; this going to satisfy ch2-client-shared-invariant? The reason is that when
@@ -910,12 +910,12 @@ session.  To include the book after certification, do (include-book
 
 (local
  (defun-sk not-heg-clients-shared (heg keys clients)
-   (forall i 
+   (forall i
            (implies (and (not heg)
                          (memberp i keys))
                     (or (equal (g i clients) :shared)
                         (equal (g i clients) :idle))))))
-                   
+
 (local
  (defun not-heg-clients-shared-invariant (st)
    (not-heg-clients-shared (heg st) (keys) (clients st))))
@@ -939,9 +939,9 @@ session.  To include the book after certification, do (include-book
                 (not heg))
             (ch2-client-shared ch2 keys clients))
    :hints (("Goal"
-            :use 
+            :use
             ((:instance (:definition ch2-client-shared))
-             (:instance 
+             (:instance
               not-heg-clients-shared-necc
               (i (mv-nth 1 (ch2-client-shared-witness ch2 keys clients)))))))))
 (local
@@ -1007,7 +1007,7 @@ session.  To include the book after certification, do (include-book
                  (not (equal a :grant-shared))
                  (equal (g i ch2) :grant-exclusive))
             (ch2-client-shared (s j a ch2)
-                               keys 
+                               keys
                                (s j b clients)))
    :hints (("Goal"
             :cases ((equal j (car (ch2-client-shared-witness
@@ -1019,13 +1019,13 @@ session.  To include the book after certification, do (include-book
            ("Subgoal 2"
             :in-theory (enable ch2-client-shared)))))
 
-(local                                  
+(local
  (defthm  |ch2-shared after client-receives-exclusive|
    (implies (and (ch2-client-shared-invariant st)
                  (channel-nil-exclusive-invariant st)
                  (equal (action stimulus) :client-receives-exclusive))
             (ch2-client-shared-invariant (german-step st stimulus)))))
- 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Proof of ch2-client-shared-invariant                      ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1042,7 +1042,7 @@ session.  To include the book after certification, do (include-book
                                  :client-receives-shared
                                  :client-receives-exclusive
                                  :sharer-invalidate-cache
-                                 :home-grants-shared 
+                                 :home-grants-shared
                                  :home-grants-exclusive))))
             (ch2-client-exclusive-invariant (german-step st stimulus)))))
 
@@ -1057,32 +1057,32 @@ session.  To include the book after certification, do (include-book
    (implies (and (ch2-client-exclusive ch2 keys clients)
                  (not (equal val :grant-exclusive)))
             (ch2-client-exclusive (s i val ch2) keys (s j :idle clients)))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
-     ((equal 
-       i 
-       (car (ch2-client-exclusive-witness 
+     :cases
+     ((equal
+       i
+       (car (ch2-client-exclusive-witness
              (s i val ch2) keys (s j :idle clients))))
-      (equal 
-       j 
-       (mv-nth 1 (ch2-client-exclusive-witness (s i val ch2) keys 
+      (equal
+       j
+       (mv-nth 1 (ch2-client-exclusive-witness (s i val ch2) keys
                                                (s j :idle clients))))))
     ("Subgoal 2"
      :in-theory (enable ch2-client-exclusive))
     ("Subgoal 1"
      :in-theory (enable ch2-client-exclusive))
     ("Subgoal 3"
-     :use 
+     :use
      ((:instance (:definition ch2-client-exclusive)
                  (clients (s j :idle clients))
                  (ch2 (s i val ch2)))
-      (:instance 
+      (:instance
        ch2-client-exclusive-necc
        (i (car (ch2-client-exclusive-witness (s i val ch2) keys
                                              (s j :idle clients))))
        (j  (mv-nth 1 (ch2-client-exclusive-witness (s i val ch2)
-                                                   keys 
+                                                   keys
                                                    (s j :idle clients))))))))))
 
 
@@ -1091,7 +1091,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (ch2-client-exclusive-invariant st)
                  (equal (action stimulus) :sharer-invalidate-cache))
             (ch2-client-exclusive-invariant (german-step st stimulus)))))
- 
+
 
 ;; Notice however, that the property above does not let us prove things for
 ;; (say) home-sends-invalidate.  This is because in that condition the client
@@ -1106,29 +1106,29 @@ session.  To include the book after certification, do (include-book
    (implies (and (not (equal val :grant-exclusive))
                  (ch2-client-exclusive ch2 keys clients))
             (ch2-client-exclusive (s pid val ch2) keys clients))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
-     ((equal 
+     :cases
+     ((equal
        (car (ch2-client-exclusive-witness (s pid val ch2) keys clients))
        pid)))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition ch2-client-exclusive)
                  (ch2 (s pid val ch2)))
-      (:instance 
+      (:instance
        ch2-client-exclusive-necc
        (i (car (ch2-client-exclusive-witness (s pid val ch2) keys clients)))
-       (j  (mv-nth 1 (ch2-client-exclusive-witness 
+       (j  (mv-nth 1 (ch2-client-exclusive-witness
                       (s pid val ch2) keys clients))))))
     ("Subgoal 1"
-     :use 
+     :use
      ((:instance (:definition ch2-client-exclusive)
                  (ch2 (s pid val ch2)))
-      (:instance 
+      (:instance
        ch2-client-shared-necc
        (i (car (ch2-client-exclusive-witness (s pid val ch2) keys clients)))
-       (j (mv-nth 1 (ch2-client-exclusive-witness 
+       (j (mv-nth 1 (ch2-client-exclusive-witness
                      (s pid val ch2) keys clients)))))))))
 
 ;; This now allows us to prove that ch2-client-exclusive-invariant holds under
@@ -1141,7 +1141,7 @@ session.  To include the book after certification, do (include-book
                           '(:home-grants-shared
                             :home-sends-invalidate)))
             (ch2-client-exclusive-invariant (german-step st stimulus)))))
- 
+
 ;; Now we are left with three cases, namely client-receives-shared,
 ;; client-receives-exclusive, and home-grants-exclusive.  Why do these cases
 ;; work? For the first I will use the property that if there is a
@@ -1171,7 +1171,7 @@ session.  To include the book after certification, do (include-book
    (forall i
            (implies (memberp i keys)
                     (not (equal (g i ch2) :grant-exclusive))))))
- 
+
 (local (in-theory (disable no-grant-exclusive no-grant-exclusive-necc)))
 
 ;; Now we first prove that if there is no grant-exclusive then
@@ -1181,11 +1181,11 @@ session.  To include the book after certification, do (include-book
  (defthm no-grant-exclusive-implies-ch2-exclusive
    (implies (no-grant-exclusive keys ch2)
             (ch2-client-exclusive ch2 keys clients))
-   :hints 
+   :hints
    (("Goal"
      :in-theory (enable ch2-client-exclusive)
-     :use 
-     ((:instance 
+     :use
+     ((:instance
        no-grant-exclusive-necc
        (i (car (ch2-client-exclusive-witness ch2 keys clients)))))))))
 
@@ -1205,7 +1205,7 @@ session.  To include the book after certification, do (include-book
             :use ((:instance channel-nil-exclusive-necc
                              (i (no-grant-exclusive-witness keys ch2))
                              (j i)))))))
- 
+
 ;; Finally, no-grant-exclusive must mean that after setting a channel to NIL,
 ;; we still have that property.
 
@@ -1213,25 +1213,25 @@ session.  To include the book after certification, do (include-book
  (defthm no-grant-after-setting-channel
    (implies (no-grant-exclusive keys ch2)
             (no-grant-exclusive keys (s i nil ch2)))
-   :hints 
+   :hints
    (("Goal"
-     :use 
+     :use
      ((:instance (:definition no-grant-exclusive)
                  (ch2 (s i nil ch2)))
-      (:instance 
+      (:instance
        no-grant-exclusive-necc
        (i (no-grant-exclusive-witness keys (s i nil ch2))))))
     ("Goal'"
-     :cases 
+     :cases
      ((equal i (no-grant-exclusive-witness keys (s i nil ch2))))))))
-                 
+
 ;; Now of course I am done by simply splitting the two cases about whether
 ;; no-grants-exclusive holds or not.
 
 (local
  (defthm |ch2 exclusive for client sharing|
    (implies (and (ch2-client-exclusive-invariant st)
-                 (channel-nil-exclusive-invariant st)     
+                 (channel-nil-exclusive-invariant st)
                  (equal (action stimulus) :client-receives-shared))
             (ch2-client-exclusive-invariant (german-step st stimulus)))
    :hints (("Goal"
@@ -1255,29 +1255,29 @@ session.  To include the book after certification, do (include-book
             (equal (g j (s i nil ch2)) NIL))
    :hints (("Goal"
             :cases ((equal j i))))))
- 
+
 (local
  (defthm ch2-exclusive-after-ch2-nil-2
    (implies (and (channel-nil-exclusive ch2 keys)
                  (equal (g j ch2) :grant-exclusive)
                  (memberp j keys))
             (ch2-client-exclusive (s j nil ch2) keys (s m val clients)))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
-     ((equal 
-       j 
-       (car (ch2-client-exclusive-witness 
+     :cases
+     ((equal
+       j
+       (car (ch2-client-exclusive-witness
              (s i nil ch2) keys (s m val clients))))))
     ("Subgoal 2"
      :in-theory (enable ch2-client-exclusive))
     ("Subgoal 1"
      :in-theory (enable ch2-client-exclusive)))))
-                
+
 (local
  (defthm |ch2 exclusive for client exclusive|
    (implies (and (ch2-client-exclusive-invariant st)
-                 (channel-nil-exclusive-invariant st)     
+                 (channel-nil-exclusive-invariant st)
                  (equal (action stimulus) :client-receives-exclusive))
             (ch2-client-exclusive-invariant (german-step st stimulus)))))
 
@@ -1313,7 +1313,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |init has hsl-client|
    (hsl-client-invariant (init))))
-  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Definition of new predicate                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1404,22 +1404,22 @@ session.  To include the book after certification, do (include-book
                  (memberp i keys)
                  (equal (g i ch3) :invalidate-ack))
             (not-heg-clients-shared val keys clients))
-   :hints 
+   :hints
    (("Goal"
-     :use 
+     :use
      ((:instance (:definition not-heg-clients-shared)
                  (heg val))
-      (:instance 
+      (:instance
        invalidate-ack-clients-necc
        (j (not-heg-clients-shared-witness val keys clients))))))))
- 
+
 (local
  (defthm |heg-shared after home-receives-invalidate|
    (implies (and (not-heg-clients-shared-invariant st)
                  (invalidate-ack-clients-invariant st)
                  (equal (action stimulus) :home-receives-invalidate))
             (not-heg-clients-shared-invariant (german-step st stimulus)))))
- 
+
 ;; The next case is when client receives shared.  This works because client of
 ;; course can receive as much shared as it wants, and nothing will happen to
 ;; this predicate.
@@ -1430,28 +1430,28 @@ session.  To include the book after certification, do (include-book
                  (or (equal val :shared)
                      (equal val :idle)))
             (not-heg-clients-shared heg keys (s i val clients)))
-   :hints 
+   :hints
    (("Goal"
-     :use 
+     :use
      ((:instance (:definition not-heg-clients-shared)
                  (clients (s i val clients)))
-      (:instance 
+      (:instance
        not-heg-clients-shared-necc
        (i (not-heg-clients-shared-witness heg keys (s i val clients))))))
     ("Goal'"
-     :cases 
-     ((equal i 
-             (not-heg-clients-shared-witness heg keys 
+     :cases
+     ((equal i
+             (not-heg-clients-shared-witness heg keys
                                              (s i val clients))))))))
  ;; So this should give me the case of client-receives-shared.
-                 
+
 (local
  (defthm |heg-shared after client-receives-shared|
    (implies (and (not-heg-clients-shared-invariant st)
                  (memberp (action stimulus) '(:sharer-invalidate-cache
                                               :client-receives-shared)))
             (not-heg-clients-shared-invariant (german-step st stimulus)))))
- 
+
 
 ;; What happens when client-receives-exclusive?  What I need here is that when
 ;; ch2 has grant-exclusive then heg is T
@@ -1467,7 +1467,7 @@ session.  To include the book after certification, do (include-book
            (implies (and (memberp i keys)
                          (equal (g i ch2) :grant-exclusive))
                     heg))))
- 
+
 (local
  (defun heg-exclusive-invariant (st) (heg-exclusive (heg st) (keys) (ch2 st))))
 
@@ -1491,7 +1491,7 @@ session.  To include the book after certification, do (include-book
                              (clients (s j val clients)))
                   (:instance heg-exclusive-necc))))))
 
-(local 
+(local
  (defthm |heg shared after client-receives-exclusive|
    (implies (and (not-heg-clients-shared-invariant st)
                  (heg-exclusive-invariant st)
@@ -1514,7 +1514,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (not-heg-clients-shared-invariant st)
                  (equal (action stimulus) :home-grants-exclusive))
             (not-heg-clients-shared-invariant (german-step st stimulus)))))
- 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Proof of ch2-client-exclusive-invariant                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1548,24 +1548,24 @@ session.  To include the book after certification, do (include-book
  (defthm channel-set-to-nil-implies-channel-nil
    (implies (channel-nil-exclusive ch2 keys)
             (channel-nil-exclusive (s i nil ch2) keys))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
+     :cases
      ((equal i (car (channel-nil-exclusive-witness (s i nil ch2)
                                                    keys)))
-      (equal i (mv-nth 1 (channel-nil-exclusive-witness (s i nil ch2) 
+      (equal i (mv-nth 1 (channel-nil-exclusive-witness (s i nil ch2)
                                                         keys)))))
     ("Subgoal 2"
      :in-theory (enable channel-nil-exclusive))
     ("Subgoal 1"
      :in-theory (enable channel-nil-exclusive))
     ("Subgoal 3"
-     :use 
-     ((:instance 
+     :use
+     ((:instance
        channel-nil-exclusive-necc
        (i  (car (channel-nil-exclusive-witness (s i nil ch2)
                                                keys)))
-       (j (mv-nth 1 (channel-nil-exclusive-witness (s i nil ch2) 
+       (j (mv-nth 1 (channel-nil-exclusive-witness (s i nil ch2)
                                                    keys))))
       (:instance (:definition channel-nil-exclusive)
                  (ch2 (s i nil ch2))))))))
@@ -1573,7 +1573,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |channels-nil when ch2 set to nil|
    (implies (and (channel-nil-exclusive-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:sharer-invalidate-cache
                             :client-receives-shared
                             :client-receives-exclusive)))
@@ -1593,7 +1593,7 @@ session.  To include the book after certification, do (include-book
      (and (implies (g (first keys) ch2)
                    (equal (g (first keys) hsl) T))
           (hsl-ch2 hsl (rest keys) ch2)))))
- 
+
 (local
  (defun hsl-ch2-invariant (st) (hsl-ch2 (hsl st) (keys) (ch2 st))))
 
@@ -1606,7 +1606,7 @@ session.  To include the book after certification, do (include-book
 ;; End Definition of new predicate                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local 
+(local
  (defthm hsl-ch2-and-all-false-implies-nil
    (implies (and (hsl-ch2 hsl keys ch2)
                  (memberp i keys)
@@ -1619,7 +1619,7 @@ session.  To include the book after certification, do (include-book
                  (all-false keys hsl))
             (channel-nil-exclusive (s i :grant-exclusive ch2) keys))
    :hints (("Goal"
-            :cases ((equal i (car (channel-nil-exclusive-witness 
+            :cases ((equal i (car (channel-nil-exclusive-witness
                                    (s i :grant-exclusive ch2) keys)))))
            ("Subgoal 2"
             :in-theory (enable channel-nil-exclusive))
@@ -1645,7 +1645,7 @@ session.  To include the book after certification, do (include-book
                  (not (equal val :grant-exclusive)))
             (channel-nil-exclusive (s i val ch2) keys))
    :hints (("Goal"
-            :cases ((equal i (car (channel-nil-exclusive-witness 
+            :cases ((equal i (car (channel-nil-exclusive-witness
                                    (s i val ch2) keys)))))
           ("Subgoal 2"
            :use ((:instance heg-exclusive-necc
@@ -1691,7 +1691,7 @@ session.  To include the book after certification, do (include-book
 
 (local
  (defun hil-heg-invariant (st) (hil-heg (keys) (hil st) (ch2 st) (heg st))))
- 
+
 (local (defthm |init has hil-heg| (hil-heg-invariant (init))))
 
 (local (in-theory (disable hil-heg hil-heg-necc)))
@@ -1711,7 +1711,7 @@ session.  To include the book after certification, do (include-book
                    (if (equal i j) val nil)))
    :hints (("Goal"
             :use hil-heg-necc))))
-  
+
 (local
  (defthm hil-heg-channels-nil
    (implies (and (hil-heg keys hil ch2 heg)
@@ -1780,7 +1780,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hsl-clients if hsl set to T|
    (implies (and (hsl-client-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:home-grants-shared
                             :home-grants-exclusive)))
             (hsl-client-invariant (german-step st stimulus)))))
@@ -1804,7 +1804,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (hsl-client-invariant st)
                  (equal (action stimulus) :sharer-invalidate-cache))
             (hsl-client-invariant (german-step st stimulus)))))
- 
+
 ;; The second about when home sets hsl to nil.  Here I must carry around as
 ;; invariant that the corresponding client was idle.  But first let us prove
 ;; that if some client is idle then I can set any value to hsl.
@@ -1868,7 +1868,7 @@ session.  To include the book after certification, do (include-book
                  (hsl-client-invariant st)
                  (equal (action stimulus) :home-receives-invalidate))
             (hsl-client-invariant (german-step st stimulus)))))
-                                        
+
 ;; All right now down to two more cases for this predicate.  These are cases
 ;; where the client receives a value either shared or exclusive.  Now in these
 ;; cases I know that hsl-ch2 covers me.
@@ -1900,7 +1900,7 @@ session.  To include the book after certification, do (include-book
                  (memberp i keys)
                  (g i ch2))
             (hsl-client keys (s i v clients) hsl))))
- 
+
 (local
  (defthm |hsl-client for client-receives|
    (implies (and (hsl-client-invariant st)
@@ -1908,7 +1908,7 @@ session.  To include the book after certification, do (include-book
                  (memberp (action stimulus) '(:client-receives-shared
                                               :client-receives-exclusive)))
             (hsl-client-invariant (german-step st stimulus)))))
- 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Proof of hsl-client-invariant                             ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1924,7 +1924,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |ch3-client default cases|
    (implies (and (invalidate-ack-clients-invariant st)
-                 (not (memberp (action stimulus) 
+                 (not (memberp (action stimulus)
                                '(:home-receives-invalidate
                                  :sharer-invalidate-cache
                                  :client-receives-shared
@@ -1940,23 +1940,23 @@ session.  To include the book after certification, do (include-book
    (implies (and (invalidate-ack-clients clients ch3 keys)
                  (not (equal v :invalidate-ack)))
             (invalidate-ack-clients clients (s i v ch3) keys))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
-     ((equal i 
+     :cases
+     ((equal i
              (car (invalidate-ack-clients-witness clients (s i v ch3) keys)))))
     ("Subgoal 1"
      :in-theory (enable invalidate-ack-clients))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition invalidate-ack-clients)
                  (ch3 (s i v ch3)))
-      (:instance 
+      (:instance
        invalidate-ack-clients-necc
        (i (car (invalidate-ack-clients-witness clients (s i v ch3) keys)))
        (j (mv-nth 1 (invalidate-ack-clients-witness clients (s i v ch3)
                                                     keys)))))))))
- 
+
 
 ;; This lets us prove the case of home-receives-invalidate
 (local
@@ -1989,7 +1989,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defun invalidate-clients-invariant (st)
    (invalidate-clients (ch2 st) (clients st) (keys))))
- 
+
 (local
  (defthm invalidate-clients-for-nil
    (invalidate-clients nil clients keys)))
@@ -2027,7 +2027,7 @@ session.  To include the book after certification, do (include-book
    :rule-classes :forward-chaining
    :hints (("Goal"
             :use ((:instance coherent-processes-necc))))))
-           
+
 ;; Now if the guy to which invalidate is sent was exclusive then coherent will
 ;; kick in and show that all other processes are shared or idle.  Thus when we
 ;; set this to anything like idle or shared I should be in great shape.
@@ -2039,10 +2039,10 @@ session.  To include the book after certification, do (include-book
                  (memberp i keys)
                  (or (equal v :shared)
                      (equal v :idle)))
-            (invalidate-ack-clients (s i v clients) 
+            (invalidate-ack-clients (s i v clients)
                                     (s i u ch3)
                                     keys))
-   :hints 
+   :hints
    (("Goal"
      :cases ((equal i (mv-nth 1 (invalidate-ack-clients-witness (s i v clients)
                                                                 (s i u ch3)
@@ -2050,7 +2050,7 @@ session.  To include the book after certification, do (include-book
     ("Subgoal 1"
      :in-theory (enable invalidate-ack-clients))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition invalidate-ack-clients)
                  (clients (s i v clients))
                  (ch3 (s i u ch3)))
@@ -2076,8 +2076,8 @@ session.  To include the book after certification, do (include-book
             (invalidate-ack-clients (s j v clients)
                                     (s j u ch3)
                                     keys))))
- 
-            
+
+
 ;; All right, now if it is exclusive then we are done.  But it can be shared.
 ;; If it is shared then what do I know? Well, I should know that there is no
 ;; exclusive at all, from coherent-processes.  But that is not sufficient.
@@ -2120,7 +2120,7 @@ session.  To include the book after certification, do (include-book
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Definition of new predicate                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
- 
+
 ;; Now I should know that if valid-status holds and no process has exclusive
 ;; then all are idle or shared.  To simplify the reasoning let us define a
 ;; function saying that no process is exclusive.  Of course this is not an
@@ -2174,7 +2174,7 @@ session.  To include the book after certification, do (include-book
  (defthm exclusive-implies-exclusive-witness
    (implies (not (no-exclusive keys clients))
             (and (memberp (exclusive-witness keys clients) keys)
-                 (equal (g (exclusive-witness keys clients) clients) 
+                 (equal (g (exclusive-witness keys clients) clients)
                         :exclusive)))
    :rule-classes :forward-chaining))
 
@@ -2186,12 +2186,12 @@ session.  To include the book after certification, do (include-book
                  (valid-status clients keys)
                  (or (equal v :shared)
                      (equal v :idle)))
-            (invalidate-ack-clients (s i v clients) 
+            (invalidate-ack-clients (s i v clients)
                                     (s i u ch3)
                                     keys))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
+     :cases
      ((equal i (mv-nth 1 (invalidate-ack-clients-witness (s i v clients)
                                                          (s i u ch3)
                                                          keys)))))
@@ -2226,7 +2226,7 @@ session.  To include the book after certification, do (include-book
                  (valid-status-invariant st)
                  (equal (action stimulus) :sharer-invalidate-cache))
             (invalidate-ack-clients-invariant (german-step st stimulus)))))
- 
+
 ;; Now why does invalidate-ack-clients hold when we have a grant-shared? The
 ;; reason is ch2-shared-invariant which says that everybody is shared or idle
 ;; anyways.
@@ -2239,17 +2239,17 @@ session.  To include the book after certification, do (include-book
                  (or (equal v :shared)
                      (equal v :idle)))
             (invalidate-ack-clients (s i v clients) ch3 keys))
-   :hints 
+   :hints
   (("Goal"
-    :cases 
-    ((equal i (mv-nth 1 (invalidate-ack-clients-witness (s i v clients) 
+    :cases
+    ((equal i (mv-nth 1 (invalidate-ack-clients-witness (s i v clients)
                                                         ch3
                                                         keys)))))
    ("Subgoal 1"
     :in-theory (enable invalidate-ack-clients))
    ("Subgoal 2"
     :in-theory (enable invalidate-ack-clients)
-    :use 
+    :use
     ((:instance ch2-client-shared-necc
                 (j (mv-nth 1 (invalidate-ack-clients-witness (s i v clients)
                                                              ch3
@@ -2261,13 +2261,13 @@ session.  To include the book after certification, do (include-book
                  (ch2-client-shared-invariant st)
                  (equal (action stimulus) :client-receives-shared))
             (invalidate-ack-clients-invariant (german-step st stimulus)))))
- 
+
 ;; Now the last case, which is client-receives-exclusive.  I dont like to think
 ;; about this one right now --- I am tired after doing the rest of the cases.
 ;; But I am pretty sure that if there is an invalidate-ack somewhere then there
 ;; cannot be a :grant-exclusive.  So for now I posit that as a predicate and go
 ;; on.
-    
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Begin Definition of new predicate                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2279,11 +2279,11 @@ session.  To include the book after certification, do (include-book
                          (memberp j keys)
                          (equal (g i ch3) :invalidate-ack))
                     (not (equal (g j ch2) :grant-exclusive))))))
- 
+
 (local
  (defun invalidate-exclusive-invariant (st)
    (invalidate-exclusive (ch3 st) (ch2 st) (keys))))
- 
+
 (local
  (defthm |init has invalidate-exclusive|
    (invalidate-exclusive-invariant (init))))
@@ -2306,16 +2306,16 @@ session.  To include the book after certification, do (include-book
                  (memberp i keys)
                  (equal (g i ch2) :grant-exclusive))
             (invalidate-ack-clients clients ch3 keys))
-   :hints 
+   :hints
    (("Goal"
      :in-theory (enable invalidate-ack-clients)
-     :use 
-     ((:instance 
+     :use
+     ((:instance
        invalidate-exclusive-necc
        (j i)
        (i (car (invalidate-ack-clients-witness clients ch3 keys)))))))))
 
-(local 
+(local
  (defthm |invalidate-ack-clients after client-receives-exclusive|
    (implies (and (invalidate-ack-clients-invariant st)
                  (invalidate-exclusive-invariant st)
@@ -2394,7 +2394,7 @@ session.  To include the book after certification, do (include-book
             (heg-exclusive heg keys ch2))
    :hints (("Goal"
             :in-theory (enable heg-exclusive)))))
- 
+
 (local
  (defthm |heg exclusive home-grants-exclusive|
    (implies (and (heg-exclusive-invariant st)
@@ -2410,16 +2410,16 @@ session.  To include the book after certification, do (include-book
    (implies (and (heg-exclusive heg keys ch2)
                  (not (equal v :grant-exclusive)))
             (heg-exclusive heg keys (s i v ch2)))
-   :hints 
+   :hints
    (("Goal"
      :cases ((equal i (heg-exclusive-witness heg keys (s i v ch2)))))
     ("Subgoal 1"
      :in-theory (enable heg-exclusive))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition heg-exclusive)
                  (ch2 (s i v ch2)))
-      (:instance 
+      (:instance
        heg-exclusive-necc
        (i (heg-exclusive-witness heg keys (s i v ch2)))))))))
 
@@ -2436,7 +2436,7 @@ session.  To include the book after certification, do (include-book
                             :home-grants-shared
                             :home-grants-exclusive)))
             (heg-exclusive-invariant (german-step st stimulus)))))
-  
+
 ;; The only thorny case is when home actually gets an invalidate.  Then it sets
 ;; heg to nil.  Why is this ok? This is ok since we have just by serendipity
 ;; added the predicate invalidate-exclusive which says that there is no
@@ -2459,7 +2459,7 @@ session.  To include the book after certification, do (include-book
                  (invalidate-exclusive-invariant st)
                  (equal (action stimulus) :home-receives-invalidate))
             (heg-exclusive-invariant (german-step st stimulus)))))
-           
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Proof of heg-exclusive-invariant                          ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2473,7 +2473,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hsl-ch2 default cases|
    (implies (and (hsl-ch2-invariant st)
-                 (not (memberp (action stimulus) 
+                 (not (memberp (action stimulus)
                                '(:home-sends-invalidate
                                  :home-receives-invalidate
                                  :sharer-invalidate-cache
@@ -2497,7 +2497,7 @@ session.  To include the book after certification, do (include-book
             (hsl-ch2 (s i T hsl) keys (s i v ch2)))
    :hints (("Subgoal *1/4"
             :cases ((equal i (car keys)))))))
- 
+
 (local
  (defthm |hsl-ch2 after home sets|
    (implies (and (hsl-ch2-invariant st)
@@ -2505,7 +2505,7 @@ session.  To include the book after certification, do (include-book
                           '(:home-grants-shared
                             :home-grants-exclusive)))
             (hsl-ch2-invariant (german-step st stimulus)))))
- 
+
 (local
  (defthm hsl-ch2-after-ch2-nil
    (implies (hsl-ch2 hsl keys ch2)
@@ -2602,7 +2602,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defun invalidate-ack-ch2-invariant (st)
    (invalidate-ack-ch2 (ch2 st) (ch3 st) (keys))))
- 
+
 (local
  (defthm invalidate-ack-ch2-nil (invalidate-ack-ch2 nil nil keys)))
 
@@ -2627,7 +2627,7 @@ session.  To include the book after certification, do (include-book
             (hsl-ch2 (s i v hsl) keys ch2))
    :hints (("Subgoal *1/6"
             :cases ((equal i (car keys)))))))
- 
+
 (local
  (defthm |hsl-ch2 after home receives invalidate|
    (implies (and (hsl-ch2-invariant st)
@@ -2679,7 +2679,7 @@ session.  To include the book after certification, do (include-book
                  (memberp (action stimulus) '(:home-receives-invalidate
                                               :home-grants-shared)))
             (hil-heg-invariant (german-step st stimulus)))))
- 
+
 ;; The next thing which covers a lot of cases is the statement that if I set
 ;; ch2 of any process to nil then hil-heg cannot be violated.
 
@@ -2687,23 +2687,23 @@ session.  To include the book after certification, do (include-book
  (defthm hil-heg-ch2-nil
    (implies (hil-heg keys hil ch2 heg)
             (hil-heg keys hil (s i nil ch2) heg))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
+     :cases
      ((equal i (mv-nth 1 (hil-heg-witness keys hil (s i nil ch2) heg)))))
     ("Subgoal 1"
      :in-theory (enable hil-heg))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition hil-heg)
                  (ch2 (s i nil ch2)))
-      (:instance 
+      (:instance
        hil-heg-necc
        (i (car (hil-heg-witness keys hil (s i nil ch2) heg)))
        (j (mv-nth 1 (hil-heg-witness keys hil (s i nil ch2) heg)))))))))
 
 ;; This will let us prove many of the cases, in particular all that involve
-;; client.  
+;; client.
 
 (local
  (defthm |hil-heg for clients|
@@ -2739,7 +2739,7 @@ session.  To include the book after certification, do (include-book
  (defun unique-hil-invariant (st) (unique-hil (hil st) (heg st) (keys))))
 
 (local
- (defthm |init has unique-hil| 
+ (defthm |init has unique-hil|
    (unique-hil-invariant (init))))
 
 (local
@@ -2763,32 +2763,32 @@ session.  To include the book after certification, do (include-book
                  (memberp i keys)
                  (g i hil))
             (hil-heg keys (s i v hil) (s i u ch2) heg))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
-     ((equal 
-       i 
+     :cases
+     ((equal
+       i
        (car (hil-heg-witness keys (s i v hil) (s i u ch2) heg)))))
     ("Subgoal 2"
      :in-theory (enable hil-heg)
-     :use 
-     ((:instance 
+     :use
+     ((:instance
        unique-hil-necc
        (j (car (hil-heg-witness keys (s i v hil) (s i u ch2) heg))))))
     ("Subgoal 1"
-     :use 
+     :use
      ((:instance (:definition hil-heg)
                  (hil (s i v hil))
                  (ch2 (s i u ch2)))
-      (:instance 
+      (:instance
        hil-heg-necc
        (i (car (hil-heg-witness keys (s i v hil) (s i u ch2) heg)))
        (j (mv-nth 1 (hil-heg-witness keys (s i v hil) (s i u ch2) heg))))
-      (:instance 
+      (:instance
        unique-hil-necc
        (i (car (hil-heg-witness keys (s i v hil) (s i u ch2) heg)))
        (j (mv-nth 1 (hil-heg-witness keys (s i v hil) (s i u ch2) heg)))))))))
-          
+
 ;; All right, now we can prove the hil-heg invariance for
 ;; home-sends-invalidate.
 
@@ -2846,7 +2846,7 @@ session.  To include the book after certification, do (include-book
                          heg
                          (g i hsl))
                     (not (g j hsl))))))
- 
+
 (local
  (defun hsl-heg-invariant (st) (hsl-heg (hsl st) (heg st) (keys))))
 
@@ -2875,28 +2875,28 @@ session.  To include the book after certification, do (include-book
                  (hil-heg keys hil ch2 heg)
                  heg)
             (hil-heg keys (set-hil-hsl keys hil hsl) ch2 heg))
-   :hints 
+   :hints
    (("Goal"
-     :use 
+     :use
      ((:instance (:definition hil-heg)
                  (hil (set-hil-hsl keys hil hsl)))
-      (:instance 
+      (:instance
        hsl-heg-necc
        (i (car (hil-heg-witness keys (set-hil-hsl keys hil hsl)
                                 ch2 heg)))
        (j (mv-nth 1 (hil-heg-witness keys (set-hil-hsl keys hil hsl)
                                      ch2 heg))))
-      (:instance 
+      (:instance
        hil-heg-necc
-       (i (car (hil-heg-witness keys 
+       (i (car (hil-heg-witness keys
                                 (set-hil-hsl keys hil hsl)
                                 ch2 heg)))
-       (j (mv-nth 1 (hil-heg-witness keys 
+       (j (mv-nth 1 (hil-heg-witness keys
                                      (set-hil-hsl keys hil hsl)
                                      ch2 heg)))))))))
-                 
 
-(local 
+
+(local
  (defthm |hil-heg after home-picks-request|
    (implies (and (hil-heg-invariant st)
                  (hsl-ch2-invariant st)
@@ -2932,33 +2932,33 @@ session.  To include the book after certification, do (include-book
                                  :client-receives-shared
                                  :client-receives-exclusive))))
             (invalidate-ack-idle-invariant (german-step st stimulus)))))
- 
+
 ;; All right now if home makes changes ch3 nothing can happen to this
-;; predicate.  
+;; predicate.
 
 (local
  (defthm invalidate-ack-idle-if-other-than-invalidate
    (implies (and (invalidate-ack-idle clients keys ch3)
                  (not (equal v :invalidate-ack)))
             (invalidate-ack-idle clients keys (s i v ch3)))
-   :hints 
+   :hints
    (("Goal"
      :cases ((equal i (invalidate-ack-idle-witness clients keys (s i v ch3)))))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition invalidate-ack-idle)
                  (ch3 (s i v ch3)))
-      (:instance 
+      (:instance
        invalidate-ack-idle-necc
        (i (invalidate-ack-idle-witness clients keys (s i v ch3))))))
     ("Subgoal 1"
-     :use 
+     :use
      ((:instance (:definition invalidate-ack-idle)
                  (ch3 (s i v ch3)))
-      (:instance 
+      (:instance
        invalidate-ack-idle-necc
        (i (invalidate-ack-idle-witness clients keys (s i v ch3)))))))))
- 
+
 (local
  (defthm |home-receives invalidate correctly|
    (implies (and (invalidate-ack-idle-invariant st)
@@ -2972,27 +2972,27 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm invalidate-ack-idle-set-idle
    (implies (invalidate-ack-idle clients keys ch3)
-            (invalidate-ack-idle (s i :idle clients) keys 
+            (invalidate-ack-idle (s i :idle clients) keys
                                  (s i :invalidate-ack ch3)))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
+     :cases
      ((equal i (invalidate-ack-idle-witness (s i :idle clients)
-                                            keys 
+                                            keys
                                             (s i :invalidate-ack ch3)))))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition invalidate-ack-idle)
                  (clients (s i :idle clients))
                  (ch3 (s i :invalidate-ack ch3)))
-      (:instance 
+      (:instance
        invalidate-ack-idle-necc
        (i (invalidate-ack-idle-witness (s i :idle clients)
-                                       keys 
+                                       keys
                                        (s i :invalidate-ack ch3))))))
     ("Subgoal 1"
      :in-theory (enable invalidate-ack-idle)))))
-           
+
 
 (local
  (defthm |invalidate-ack-idle after sharer invalidates|
@@ -3016,16 +3016,16 @@ session.  To include the book after certification, do (include-book
    (implies (and (not (equal (g i ch3) :invalidate-ack))
                  (invalidate-ack-idle clients keys ch3))
             (invalidate-ack-idle (s i v clients) keys ch3))
-   :hints 
+   :hints
    (("Goal"
      :cases ((equal i (invalidate-ack-idle-witness (s i v clients) keys ch3))))
     ("Subgoal 1"
      :in-theory (enable invalidate-ack-idle))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition invalidate-ack-idle)
                  (clients (s i v clients)))
-      (:instance 
+      (:instance
        invalidate-ack-idle-necc
        (i (invalidate-ack-idle-witness (s i v clients) keys ch3))))))))
 
@@ -3038,7 +3038,7 @@ session.  To include the book after certification, do (include-book
                  (memberp i keys)
                  (invalidate-ack-idle clients keys ch3))
             (invalidate-ack-idle (s i v clients) keys ch3))))
- 
+
 (local
  (defthm |invalidate-ack-idle for clients|
    (implies (and (invalidate-ack-idle-invariant st)
@@ -3084,19 +3084,19 @@ session.  To include the book after certification, do (include-book
      :cases ((equal i (mv-nth 1 (invalidate-exclusive-witness ch3 (s i v ch2)
                                                               keys)))))
     ("Subgoal 1"
-     :use 
+     :use
      ((:instance (:definition invalidate-exclusive)
                  (ch2 (s i v ch2)))))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition invalidate-exclusive)
                  (ch2 (s i v ch2)))
-      (:instance 
+      (:instance
        invalidate-exclusive-necc
        (i (car (invalidate-exclusive-witness ch3 (s i v ch2) keys)))
        (j (mv-nth 1 (invalidate-exclusive-witness ch3 (s i v ch2) keys)))))))))
 
-          
+
 ;; And this takes care of a number of cases, in particular all cases other than
 ;; home-receives-invalidate grant-exclusive and invalidate-cache.  At least so
 ;; I believe.  Let us see if I am right.
@@ -3104,7 +3104,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |invalidate-exclusive for not ch2 exclusive|
    (implies (and (invalidate-exclusive-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:home-sends-invalidate
                             :client-receives-shared
                             :client-receives-exclusive
@@ -3123,17 +3123,17 @@ session.  To include the book after certification, do (include-book
             (invalidate-exclusive (s i v ch3) ch2 keys))
    :hints
    (("Goal"
-     :cases 
+     :cases
      ((equal i (car (invalidate-exclusive-witness (s i v ch3) ch2 keys)))))
     ("Subgoal 1"
-     :use 
+     :use
     ((:instance (:definition invalidate-exclusive)
                 (ch3 (s i v ch3)))))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition invalidate-exclusive)
                  (ch3 (s i v ch3)))
-      (:instance 
+      (:instance
        invalidate-exclusive-necc
        (i (car (invalidate-exclusive-witness (s i v ch3) ch2 keys)))
        (j (mv-nth 1 (invalidate-exclusive-witness (s i v ch3) ch2 keys)))))))))
@@ -3143,7 +3143,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (invalidate-exclusive-invariant st)
                  (equal (action stimulus) :home-receives-invalidate))
             (invalidate-exclusive-invariant (german-step st stimulus)))))
- 
+
 ;; What happens when sharer invalidates the cache?  I have to claim that no
 ;; channel now has grant exclusive.  Why is that? Because I know that if
 ;; somebody does have it, then all channels have to be nil.  But all channels
@@ -3156,41 +3156,41 @@ session.  To include the book after certification, do (include-book
                  (not (equal u :grant-exclusive))
                  (g i ch2))
             (invalidate-exclusive (s i v ch3) (s i u ch2) keys))
-   :hints 
+   :hints
    (("Goal"
-     :cases 
+     :cases
      ((equal i (car (invalidate-exclusive-witness (s i v ch3)
                                                   (s i u ch2)
                                                   keys)))))
     ("Subgoal 2"
-     :cases ((equal i (mv-nth 1 (invalidate-exclusive-witness (s i v ch3) 
+     :cases ((equal i (mv-nth 1 (invalidate-exclusive-witness (s i v ch3)
                                                               (s i u ch2)
                                                               keys)))))
     ("Subgoal 2.1"
      :in-theory (enable invalidate-exclusive))
     ("Subgoal 2.2"
      :in-theory (enable invalidate-exclusive)
-     :use 
+     :use
      ((:instance channel-nil-exclusive-necc
-                 (j (car (invalidate-exclusive-witness (s i v ch3) 
+                 (j (car (invalidate-exclusive-witness (s i v ch3)
                                                        (s i u ch2)
                                                        keys))))))
     ("Subgoal 1"
-     :cases 
-     ((equal i (mv-nth 1 (invalidate-exclusive-witness (s i v ch3) 
+     :cases
+     ((equal i (mv-nth 1 (invalidate-exclusive-witness (s i v ch3)
                                                        (s i u ch2)
                                                        keys)))))
     ("Subgoal 1.1"
      :in-theory (enable invalidate-exclusive))
     ("Subgoal 1.2"
      :in-theory (enable invalidate-exclusive)
-     :use 
-     ((:instance 
+     :use
+     ((:instance
        channel-nil-exclusive-necc
        (i (car (invalidate-exclusive-witness (s i v ch3)
                                              (s i u ch2)
                                              keys)))
-       (j (mv-nth 1 (invalidate-exclusive-witness (s i v ch3) 
+       (j (mv-nth 1 (invalidate-exclusive-witness (s i v ch3)
                                                   (s i u ch2)
                                                   keys)))))))))
 
@@ -3220,7 +3220,7 @@ session.  To include the book after certification, do (include-book
 
 (local
  (defun hsl-ch3-invariant (st) (hsl-ch3 (hsl st) (ch3 st) (keys))))
- 
+
 (local
  (defthm hsl-ch3-for-nil (hsl-ch3 nil nil keys)))
 
@@ -3259,13 +3259,13 @@ session.  To include the book after certification, do (include-book
                  (invalidate-exclusive-invariant st)
                  (equal (action stimulus) :home-grants-exclusive))
             (invalidate-exclusive-invariant (german-step st stimulus)))))
- 
-                                
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Proof of invalidate-exclusive-invariant                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; All right now on to hil-hsl.                  
+;; All right now on to hil-hsl.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Section 3.13: Proof of hil-hsl-invariant
@@ -3274,7 +3274,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hil-hsl default cases|
    (implies (and (hil-hsl-invariant st)
-                 (not (memberp (action stimulus) 
+                 (not (memberp (action stimulus)
                                '(:pick-new-request
                                  :home-sends-invalidate
                                  :home-receives-invalidate
@@ -3349,7 +3349,7 @@ session.  To include the book after certification, do (include-book
                  (hsl-boolean-invariant st)
                  (equal (action stimulus) :pick-new-request))
             (hil-hsl-invariant (german-step st stimulus)))))
- 
+
 ;; Let us do home-sends-invalidate now.  This involves showing that if hil is
 ;; set to nil then hil-hsl does not change.
 
@@ -3359,7 +3359,7 @@ session.  To include the book after certification, do (include-book
             (hil-hsl (s i nil hil) hsl keys))
    :hints (("Subgoal *1/4"
             :cases ((equal i (car keys)))))))
- 
+
 (local
  (defthm |hil-hsl after invalidating|
    (implies (and (hil-hsl-invariant st)
@@ -3385,7 +3385,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defun hil-invalidate-invariant (st)
    (hil-invalidate (hil st) (ch3 st) (keys))))
- 
+
 (local
  (defthm hil-invalidate-for-nil (hil-invalidate nil nil keys)))
 
@@ -3411,7 +3411,7 @@ session.  To include the book after certification, do (include-book
             :do-not '(eliminate-destructors generalize fertilize))
            ("Subgoal *1/5"
             :cases ((equal i (car keys)))))))
- 
+
 (local
  (defthm |hil-hsl after home-receives-invalidate|
    (implies (and (hil-hsl-invariant st)
@@ -3432,11 +3432,11 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hil-hsl after granting|
    (implies (and (hil-hsl-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:home-grants-shared
                             :home-grants-exclusive)))
             (hil-hsl-invariant (german-step st stimulus)))))
- 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Proof of hil-hsl-invariant                                ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3452,7 +3452,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |invalidate-ack-ch2 default cases|
    (implies (and (invalidate-ack-ch2-invariant st)
-                 (not (memberp (action stimulus) 
+                 (not (memberp (action stimulus)
                                '(:home-sends-invalidate
                                  :home-receives-invalidate
                                  :sharer-invalidate-cache
@@ -3483,7 +3483,7 @@ session.  To include the book after certification, do (include-book
  (defthm |invalidate-ack-ch2 after ch2 nil|
    (implies (and (invalidate-ack-ch2-invariant st)
                  (memberp (action stimulus)
-                          '(:client-receives-shared 
+                          '(:client-receives-shared
                             :sharer-invalidate-cache
                             :client-receives-exclusive)))
             (invalidate-ack-ch2-invariant (german-step st stimulus)))))
@@ -3521,7 +3521,7 @@ session.  To include the book after certification, do (include-book
            (implies (and (memberp i keys)
                          (equal (g i ch3) :invalidate-ack))
                     (or (equal hcm :req-exclusive-access)
-                        (and (equal hcm :req-shared-access) 
+                        (and (equal hcm :req-shared-access)
                              heg))))))
 
 (local
@@ -3534,7 +3534,7 @@ session.  To include the book after certification, do (include-book
 
 (local
  (in-theory (disable hcm-invalidate-ack hcm-invalidate-ack-necc)))
- 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Definition of new predicate                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3553,7 +3553,7 @@ session.  To include the book after certification, do (include-book
               (g (first keys) ch2))
          (first keys)
        (invalidate-ack-ch2-witness ch2 ch3 (rest keys))))))
- 
+
 (local
  (defthm invalidate-ack-from-witness
    (implies (or (not (memberp (invalidate-ack-ch2-witness ch2 ch3 keys) keys))
@@ -3568,7 +3568,7 @@ session.  To include the book after certification, do (include-book
                  (not heg)
                  (equal hcm :req-shared-access))
             (invalidate-ack-ch2 ch2 ch3 keys))
-   :hints 
+   :hints
    (("Goal"
      :use ((:instance hcm-invalidate-ack-necc
                       (i (invalidate-ack-ch2-witness ch2 ch3 keys))))))))
@@ -3642,7 +3642,7 @@ session.  To include the book after certification, do (include-book
                                  :home-receives-invalidate
                                  :home-grants-exclusive))))
             (unique-hil-invariant (german-step st stimulus)))))
- 
+
 ;; I will start with home-sends-invalidate.  Why is unique-hil an invariant in
 ;; this case?  If a state is unique-nil then setting a particular index to nil
 ;; does not change the situation.
@@ -3651,7 +3651,7 @@ session.  To include the book after certification, do (include-book
  (defthm unique-hil-implies-so-after-hil-nil
    (implies (unique-hil hil heg keys)
             (unique-hil (s i nil hil) heg keys))
-   :hints 
+   :hints
    (("Goal"
      :cases ((equal i (car (unique-hil-witness (s i nil hil) heg keys)))
              (equal i (mv-nth 1 (unique-hil-witness (s i nil hil) heg keys)))))
@@ -3660,14 +3660,14 @@ session.  To include the book after certification, do (include-book
     ("Subgoal 2"
      :in-theory (enable unique-hil))
     ("Subgoal 3"
-     :use 
+     :use
      ((:instance (:definition unique-hil)
                  (hil (s i nil hil)))
       (:instance
        unique-hil-necc
        (i (car (unique-hil-witness (s i nil hil) heg keys)))
        (j (mv-nth 1 (unique-hil-witness (s i nil hil) heg keys)))))))))
- 
+
 
 ;; Well, that kind of does it for home-sends-invalidate.  Here is the proof.
 
@@ -3703,12 +3703,12 @@ session.  To include the book after certification, do (include-book
    (implies (and (hil-hsl hil hsl keys)
                  (all-false keys hsl))
             (unique-hil (s i v hil) heg keys))
-   :hints 
+   :hints
    (("Goal"
      :in-theory (enable unique-hil)
      :cases ((equal i (car (unique-hil-witness (s i v hil) heg keys)))))
     ("Subgoal 1"
-     :cases 
+     :cases
      ((equal i (mv-nth 1 (unique-hil-witness (s i v hil) heg keys))))))))
 
 
@@ -3741,12 +3741,12 @@ session.  To include the book after certification, do (include-book
    (implies (hsl-heg hsl heg keys)
             (unique-hil (set-hil-hsl keys hil hsl)
                         heg keys))
-   :hints 
+   :hints
    (("Goal"
-     :use 
+     :use
      ((:instance (:definition unique-hil)
                  (hil (set-hil-hsl keys hil hsl)))
-      (:instance 
+      (:instance
        hsl-heg-necc
        (i (car (unique-hil-witness (set-hil-hsl keys hil hsl)
                                    heg keys)))
@@ -3773,12 +3773,12 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hsl-heg default cases|
    (implies (and (hsl-heg-invariant st)
-                 (not (memberp (action stimulus) 
+                 (not (memberp (action stimulus)
                                '(:home-receives-invalidate
                                  :home-grants-shared
                                  :home-grants-exclusive))))
             (hsl-heg-invariant (german-step st stimulus)))))
- 
+
 ;; Now this works for home receiving invalidate since heg is being set to nil.
 
 (local
@@ -3787,7 +3787,7 @@ session.  To include the book after certification, do (include-book
             (hsl-heg hsl heg keys))
    :hints (("Goal"
             :in-theory (enable hsl-heg)))))
- 
+
 (local
  (defthm |hsl-heg after home receives invalidate|
    (implies (and (hsl-heg-invariant st)
@@ -3803,17 +3803,17 @@ session.  To include the book after certification, do (include-book
    (implies (and (all-false keys hsl)
                  (memberp i keys))
             (equal (g i hsl) nil))))
- 
+
 (local
  (defthm hsl-can-be-set-when-all-false
    (implies (all-false keys hsl)
             (hsl-heg (s i v hsl) heg keys))
-   :hints 
+   :hints
    (("Goal"
      :in-theory (enable hsl-heg)
      :cases ((equal i (car (hsl-heg-witness (s i v hsl) heg keys)))
              (equal i (mv-nth 1 (hsl-heg-witness (s i v hsl) heg keys))))))))
- 
+
 (local
  (defthm |hsl-heg after home-grants-exclusive|
    (implies (and (hsl-heg-invariant st)
@@ -3833,7 +3833,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hsl-ch3 default cases|
    (implies (and (hsl-ch3-invariant st)
-                 (not (memberp (action stimulus) 
+                 (not (memberp (action stimulus)
                                '(:home-receives-invalidate
                                  :sharer-invalidate-cache
                                  :home-grants-shared
@@ -3882,7 +3882,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (hsl-ch3 hsl ch3 keys)
                  (not (memberp i keys)))
             (hsl-ch3 hsl (s i v ch3) keys))))
- 
+
 (local
  (defthm hsl-ch2-implies-hsl-ch3-after-set
    (implies (and (hsl-ch2 hsl keys ch2)
@@ -3918,7 +3918,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hsl-boolean default cases|
    (implies (and (hsl-boolean-invariant st)
-                 (not (memberp (action stimulus) 
+                 (not (memberp (action stimulus)
                                '(:home-receives-invalidate
                                  :home-grants-shared
                                  :home-grants-exclusive))))
@@ -3931,11 +3931,11 @@ session.  To include the book after certification, do (include-book
             (hsl-boolean (s i v hsl) keys))
    :hints (("Subgoal *1/4"
             :cases ((equal i (car keys)))))))
- 
-(local 
+
+(local
  (defthm |hsl-boolean other cases|
    (implies (and (hsl-boolean-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:home-receives-invalidate
                             :home-grants-shared
                             :home-grants-exclusive)))
@@ -4082,7 +4082,7 @@ session.  To include the book after certification, do (include-book
                  (hcm-invalidate-ack-invariant st)
                  (equal (action stimulus) :pick-new-request))
             (hil-invalidate-invariant (german-step st stimulus)))))
- 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Proof of hil-invalidate-invariant                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4094,10 +4094,10 @@ session.  To include the book after certification, do (include-book
 ;; Section 3.20: Proof of hil-invalidate-ch2-invariant              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local 
+(local
  (defthm |hil-invalidate-ch2 default cases|
    (implies (and (hil-invalidate-ch2-invariant st)
-                 (not (memberp (action stimulus) 
+                 (not (memberp (action stimulus)
                                '(:pick-new-request
                                  :home-sends-invalidate
                                  :sharer-invalidate-cache
@@ -4122,10 +4122,10 @@ session.  To include the book after certification, do (include-book
    (implies (and (hil-invalidate-ch2-invariant st)
                  (memberp (action stimulus)
                           '(:sharer-invalidate-cache
-                            :client-receives-shared 
+                            :client-receives-shared
                             :client-receives-exclusive)))
             (hil-invalidate-ch2-invariant (german-step st stimulus)))))
- 
+
 ;; And as usual setting hil to nil does not matter.  So we use that to do the
 ;; sending of invalidate.
 
@@ -4155,7 +4155,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hil-invalidate-ch2 for grant|
    (implies (and (hil-invalidate-ch2-invariant st)
-                 (memberp (action stimulus) '(:home-grants-shared 
+                 (memberp (action stimulus) '(:home-grants-shared
                                               :home-grants-exclusive)))
             (hil-invalidate-ch2-invariant (german-step st stimulus)))))
 
@@ -4194,7 +4194,7 @@ session.  To include the book after certification, do (include-book
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End Definition of new predicate                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
+
 (local
  (defthm not-hcm-implies-not-invalidate
    (implies (and (hcm-ch2 hcm heg ch2 keys)
@@ -4213,15 +4213,15 @@ session.  To include the book after certification, do (include-book
               (g (first keys) hil))
          (first keys)
        (hil-invalidate-rwitness hil ch2 (rest keys))))))
- 
+
 (local
  (defthm hil-invalidate-rwitness-invalidate
-   (implies (or (not (equal (g (hil-invalidate-rwitness hil ch2 keys) ch2) 
+   (implies (or (not (equal (g (hil-invalidate-rwitness hil ch2 keys) ch2)
                             :invalidate))
                 (not (g (hil-invalidate-rwitness hil ch2 keys) hil))
                 (not (memberp (hil-invalidate-rwitness hil ch2 keys) keys)))
             (hil-invalidate-ch2 hil ch2 keys))))
- 
+
 (local
  (defthm not-hcm-implies-hil-invalidate
    (implies (and (hcm-ch2 hcm heg ch2 keys)
@@ -4271,7 +4271,7 @@ session.  To include the book after certification, do (include-book
 ;; hence I am done.  And of course if heg was already nil then there is nothing
 ;; to do.
 
-;; All right, let us do this.  
+;; All right, let us do this.
 
 (local
  (defthm hsl-ch3-and-ch3-to-hsl
@@ -4279,7 +4279,7 @@ session.  To include the book after certification, do (include-book
                  (memberp i keys)
                  (g i ch3))
             (g i hsl))))
-  
+
 (local
  (defthm hsl-heg-hsl-ch3-implies-only-one
    (implies (and (hsl-heg hsl heg keys)
@@ -4312,7 +4312,7 @@ session.  To include the book after certification, do (include-book
             (equal (g j ch2) nil))
    :hints (("Goal"
             :cases ((equal i j))))))
- 
+
 ;; And therefore I have it when heg.
 
 (local
@@ -4327,7 +4327,7 @@ session.  To include the book after certification, do (include-book
             (hcm-ch2 hcm v ch2 keys))
    :hints (("Goal"
             :in-theory (enable hcm-ch2)))))
-                            
+
 ;; For the final theorem I will case-split on whether heg is true.
 
 (local
@@ -4340,7 +4340,7 @@ session.  To include the book after certification, do (include-book
                  (equal (action stimulus) :home-receives-invalidate))
             (hcm-ch2-invariant (german-step st stimulus)))
    :hints (("Goal" :cases ((heg st))))))
-           
+
 ;; The argument for picking a request is kind of cute.  It says that if hcm is
 ;; not one of the approved values then there is no invalidate, and since there
 ;; is no invalidate I am now allowed to make hcm anything!  Isn't it cute?
@@ -4366,7 +4366,7 @@ session.  To include the book after certification, do (include-book
             (hcm-ch2-invariant (german-step st stimulus)))))
 
 ;; For granting shared a similar argument is necessary but now we also set
-;; ch2.  
+;; ch2.
 
 (local
  (defthm hcm-ch2-and-not-hcm-implies-hcm-anything-with-ch2
@@ -4393,7 +4393,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (hcm-ch2-invariant st)
                  (equal (action stimulus) :home-grants-shared))
             (hcm-ch2-invariant (german-step st stimulus)))))
- 
+
 
 ;; And home-sends-invalidate is rather trivial since the definition of hcm is
 ;; done with this predicate in mind.
@@ -4403,7 +4403,7 @@ session.  To include the book after certification, do (include-book
    (implies (or (and (equal hcm :req-shared-access)
                      heg)
                 (equal hcm :req-exclusive-access))
-            (hcm-ch2 hcm heg ch2 keys)) 
+            (hcm-ch2 hcm heg ch2 keys))
    :hints (("Goal"
             :in-theory (enable hcm-ch2)))))
 
@@ -4430,17 +4430,17 @@ session.  To include the book after certification, do (include-book
                              (i (hcm-ch2-witness hcm heg (s i v ch2) keys)))))
            ("Subgoal 1"
             :in-theory (enable hcm-ch2)))))
- 
+
 (local
  (defthm |hcm-ch2 after client sets|
    (implies (and (hcm-ch2-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:sharer-invalidate-cache
-                            :client-receives-shared 
+                            :client-receives-shared
                             :client-receives-exclusive)))
             (hcm-ch2-invariant (german-step st stimulus)))))
 
-;; And the exclusive of course just requires that we have hsl-ch2 which we do.  
+;; And the exclusive of course just requires that we have hsl-ch2 which we do.
 
 (local
  (defthm hsl-ch2-and-all-false-implies-hcm
@@ -4497,7 +4497,7 @@ session.  To include the book after certification, do (include-book
                  (or (not (equal hcm :req-shared-access))
                      (not heg)))
             (hcm-invalidate-ack v u ch3 keys))
-   :hints 
+   :hints
    (("Goal"
      :use ((:instance (:definition hcm-invalidate-ack)
                       (hcm v)
@@ -4521,13 +4521,13 @@ session.  To include the book after certification, do (include-book
                  (or (not (equal hcm :req-shared-access))
                      (not heg)))
             (hcm-invalidate-ack v u (s i w ch3) keys))
-   :hints 
+   :hints
    (("Goal"
      :cases ((equal i (hcm-invalidate-ack-witness v u (s i w ch3) keys))))
     ("Subgoal 1"
      :in-theory (enable hcm-invalidate-ack))
     ("Subgoal 2"
-     :use 
+     :use
      ((:instance (:definition hcm-invalidate-ack)
                  (hcm v)
                  (ch3 (s i w ch3))
@@ -4540,7 +4540,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (hcm-invalidate-ack-invariant st)
                  (equal (action stimulus) :home-grants-shared))
             (hcm-invalidate-ack-invariant (german-step st stimulus)))))
- 
+
 ;; As I well realize now this predicate is kind of a mirror image of hcm-ch2.
 ;; So home-receives-invalidate is going to have a problem.  And indeed exactly
 ;; the same problem as hcm-ch2.  And the solution is exactly the same too!
@@ -4570,7 +4570,7 @@ session.  To include the book after certification, do (include-book
                  (equal (g i ch3) :invalidate-ack)
                  heg)
             (hcm-invalidate-ack hcm v (s i u ch3) keys))
-   :hints 
+   :hints
    (("Goal"
      :in-theory (enable hcm-invalidate-ack)
      :cases ((equal i (hcm-invalidate-ack-witness hcm v (s i u ch3) keys)))))))
@@ -4596,13 +4596,13 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hcm-invalidate-ack when home-receives-invalidate|
    (implies (and (hsl-heg-invariant st)
-                 (hsl-ch3-invariant st) 
+                 (hsl-ch3-invariant st)
                  (hcm-invalidate-ack-invariant st)
                  (equal (action stimulus) :home-receives-invalidate))
             (hcm-invalidate-ack-invariant (german-step st stimulus)))
    :hints (("Goal"
             :cases ((heg st))))))
-           
+
 ;; What happens when the sharer invalidates?  I need to claim that under the
 ;; non-trivial conditions there is no invalidate at all, and hence there is no
 ;; problem.
@@ -4617,7 +4617,7 @@ session.  To include the book after certification, do (include-book
             :in-theory (enable hcm-invalidate-ack)
             :use hcm-ch2-necc))))
 
-(local                            
+(local
  (defthm |hcm-invalidate-ack after sharer invalidates|
    (implies (and (hcm-invalidate-ack-invariant st)
                  (hcm-ch2-invariant st)
@@ -4633,7 +4633,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (hsl-ch3 hsl ch3 keys)
                  (all-false keys hsl))
             (hcm-invalidate-ack hcm heg ch3 keys))
-   :hints 
+   :hints
    (("Goal"
      :cases ((equal i (hcm-invalidate-ack-witness hcm heg ch3 keys))))
     ("Subgoal 1"
@@ -4670,7 +4670,7 @@ session.  To include the book after certification, do (include-book
                                  :sharer-invalidate-cache
                                  :client-receives-shared
                                  :client-receives-exclusive
-                                 :home-grants-shared 
+                                 :home-grants-shared
                                  :home-grants-exclusive))))
             (invalidate-clients-invariant (german-step st stimulus)))))
 
@@ -4690,7 +4690,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |invalidate-clients after home-grants|
    (implies (and (invalidate-clients-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:home-grants-shared
                             :home-grants-exclusive)))
             (invalidate-clients-invariant (german-step st stimulus)))))
@@ -4711,7 +4711,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |clients are fine with invalidate-clients|
    (implies (and (invalidate-clients-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:sharer-invalidate-cache
                             :client-receives-shared
                             :client-receives-exclusive)))
@@ -4737,7 +4737,7 @@ session.  To include the book after certification, do (include-book
                        (equal (g (first keys) ch2) :grant-shared)
                        (equal (g (first keys) ch2) :grant-exclusive)))
           (hil-client-ch2 hil clients ch2 (rest keys))))))
- 
+
 (local
  (defun hil-client-ch2-invariant (st)
    (hil-client-ch2 (hil st) (clients st) (ch2 st) (keys))))
@@ -4773,7 +4773,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (invalidate-clients ch2 clients keys)
                  (not (memberp i keys)))
             (invalidate-clients (s i v ch2) clients keys))))
- 
+
 (local
  (defthm hil-client-hil-ch2-reduction
    (implies (and (hil-client-ch2 hil clients ch2 keys)
@@ -4834,7 +4834,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hil-client when home grants|
    (implies (and (hil-client-ch2-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:home-grants-exclusive
                             :home-grants-shared)))
             (hil-client-ch2-invariant (german-step st stimulus)))))
@@ -4850,11 +4850,11 @@ session.  To include the book after certification, do (include-book
             (hil-client-ch2 hil (s i v clients) (s i u ch2) keys))
    :hints (("Subgoal *1/3"
             :cases ((equal i (car keys)))))))
- 
+
 (local
  (defthm |hil-client when client is set|
    (implies (and (hil-client-ch2-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:client-receives-exclusive
                             :client-receives-shared)))
             (hil-client-ch2-invariant (german-step st stimulus)))))
@@ -4946,18 +4946,18 @@ session.  To include the book after certification, do (include-book
 
 (local
  (defthm hil-client-witness-to-hil-clients
-   (implies 
+   (implies
     (or (not (memberp (hil-client-witness hil clients ch2 keys) keys))
         (implies (g  (hil-client-witness hil clients ch2 keys) hil)
                  (or (equal (g (hil-client-witness hil clients ch2 keys)
-                               clients) 
+                               clients)
                             :shared)
                      (equal (g (hil-client-witness hil clients ch2 keys)
-                               clients) 
+                               clients)
                             :exclusive)
-                     (equal (g (hil-client-witness hil clients ch2 keys) ch2) 
+                     (equal (g (hil-client-witness hil clients ch2 keys) ch2)
                             :grant-shared)
-                     (equal (g (hil-client-witness hil clients ch2 keys) ch2) 
+                     (equal (g (hil-client-witness hil clients ch2 keys) ch2)
                             :grant-exclusive))))
     (hil-client-ch2 hil clients ch2 keys))
    :rule-classes nil))
@@ -4985,14 +4985,14 @@ session.  To include the book after certification, do (include-book
                  (hcm-invalidate-ack hcm heg ch3 keys)
                  (not hcm))
             (hil-client-ch2 (set-hil-hsl keys hil hsl) clients ch2 keys))
-   :hints 
+   :hints
    (("Goal"
-     :use 
+     :use
      ((:instance hil-client-witness-to-hil-clients
                  (hil (set-hil-hsl keys hil hsl)))
-      (:instance 
+      (:instance
        hcm-invalidate-ack-necc
-       (i (hil-client-witness (set-hil-hsl keys hil hsl) 
+       (i (hil-client-witness (set-hil-hsl keys hil hsl)
                               clients ch2 keys))))))))
 
 (local
@@ -5056,7 +5056,7 @@ session.  To include the book after certification, do (include-book
             (hsl-client-ch2 (s i nil hsl) clients ch2 (s i v ch3) keys))
    :hints (("Subgoal *1/4"
             :cases ((equal i (car keys)))))))
- 
+
 (local
  (defthm |hsl-client-ch2 when home-receives-invalidate|
    (implies (and (hsl-client-ch2-invariant st)
@@ -5069,10 +5069,10 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm hsl-client-set-ch3
    (implies (hsl-client-ch2 hsl clients ch2 ch3 keys)
-            (hsl-client-ch2 hsl 
+            (hsl-client-ch2 hsl
                             (s i u clients)
-                            (s i v ch2) 
-                            (s i :invalidate-ack ch3) 
+                            (s i v ch2)
+                            (s i :invalidate-ack ch3)
                             keys))
    :hints (("Subgoal *1/4"
             :cases ((equal i (car keys)))))))
@@ -5091,7 +5091,7 @@ session.  To include the book after certification, do (include-book
    (implies (and (hsl-client-ch2 hsl clients ch2 ch3 keys)
                  (or (equal v :exclusive)
                      (equal v :shared)))
-            (hsl-client-ch2 hsl 
+            (hsl-client-ch2 hsl
                             (s i v clients)
                             (s i u ch2)
                             ch3 keys))
@@ -5101,7 +5101,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hsl-client-ch2 when client sets|
    (implies (and (hsl-client-ch2-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:client-receives-shared
                             :client-receives-exclusive)))
             (hsl-client-ch2-invariant (german-step st stimulus)))))
@@ -5123,7 +5123,7 @@ session.  To include the book after certification, do (include-book
 (local
  (defthm |hsl-client-ch2 when home grants|
    (implies (and (hsl-client-ch2-invariant st)
-                 (memberp (action stimulus) 
+                 (memberp (action stimulus)
                           '(:home-grants-shared
                             :home-grants-exclusive)))
             (hsl-client-ch2-invariant (german-step st stimulus)))))
@@ -5157,8 +5157,8 @@ session.  To include the book after certification, do (include-book
 ;; predicate or lemma.]
 
 (local
- (in-theory (disable coherent 
-                     ch2-client-shared-invariant  
+ (in-theory (disable coherent
+                     ch2-client-shared-invariant
                      ch2-client-exclusive-invariant
                      not-heg-clients-shared-invariant
                      channel-nil-exclusive-invariant
@@ -5172,7 +5172,7 @@ session.  To include the book after certification, do (include-book
                      hil-hsl-invariant
                      invalidate-ack-ch2-invariant
                      unique-hil-invariant
-                     hsl-heg-invariant 
+                     hsl-heg-invariant
                      hsl-ch3-invariant
                      invalidate-clients-invariant
                      hsl-boolean-invariant
@@ -5183,7 +5183,7 @@ session.  To include the book after certification, do (include-book
                      hcm-invalidate-ack-invariant
                      hil-client-ch2-invariant
                      hsl-client-ch2-invariant
-                     init 
+                     init
                      (init)
                      german-step)))
 
@@ -5215,7 +5215,7 @@ session.  To include the book after certification, do (include-book
         (hcm-invalidate-ack-invariant st)
         (hil-invalidate-invariant st)
         (hil-hsl-invariant st))))
-                          
+
 ;; Now the final proofs which should go thru without too much hassle.
 
 (local
@@ -5249,16 +5249,16 @@ session.  To include the book after certification, do (include-book
       (german-run (german-step st stimulus) (rest stimuli)))))
 
 (local
- (defthm |inv persists along run| 
+ (defthm |inv persists along run|
    (implies (inv st) (inv (german-run st stimuli)))))
 
 (local
- (defthm |inv is true of all runs from init| 
+ (defthm |inv is true of all runs from init|
    (inv (german-run (init) stimuli))))
 
 ;; And the final one is a capital DEFTHM.
 
 (DEFTHM |every run is coherent| (coherent (german-run (init) stimuli)))
 
-  
-    
+
+

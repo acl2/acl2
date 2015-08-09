@@ -329,7 +329,7 @@
 
 (defthm-std realp-int-fi-prime
   (realp (int-fi-prime a b i))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance realp-riemann-fi-prime
                             (p (make-small-partition a b)))
                  (:instance realp-riemann-fi-prime

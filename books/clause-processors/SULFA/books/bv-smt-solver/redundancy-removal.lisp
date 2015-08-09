@@ -1,9 +1,9 @@
 
 ;; This file defines our own version of sat-add-expr that
 ;; remove redundancies and uninterpreted function calls.
-;; I realize that this isn't really the best thing to do, considering 
+;; I realize that this isn't really the best thing to do, considering
 ;; that the SAT system doesn't guarantee sat-add-expr's internals
-;; won't change, but I didn't want to make a version of SAT that 
+;; won't change, but I didn't want to make a version of SAT that
 ;; understood the meaning of bv-eq-raw (needed to get rid of the
 ;; uninterpreted function) and I didn't want to rethink the tool
 ;; interface to make this possible without messing with internals...
@@ -14,7 +14,7 @@
 ;; I need a hash table for fast redundancy removal
 ;; --------------------------------------------------------
 
-(encapsulate 
+(encapsulate
  ()
  (defttag acl2::SMT)
 
@@ -30,22 +30,22 @@
  (progn!
   (set-raw-mode t)
   (defparameter eriks-hash-table (make-hash-table :test #'equal))
- 
+
   (defun eriks-ht-lookup (key table)
     (declare (ignore table))
-    (multiple-value-bind 
+    (multiple-value-bind
      (val foundp)
      (gethash key eriks-hash-table)
      (if foundp (cons key val) nil)))
 
   (defun eriks-ht-set (key val table)
     (declare (ignore table))
-    (progn 
+    (progn
       (setf (gethash key eriks-hash-table) val)
       'eriks-fake-alist))
 
   (defun eriks-ht-reset ()
-    (progn 
+    (progn
       (clrhash eriks-hash-table)
       'eriks-fake-alist))
   (set-raw-mode nil)))
@@ -57,9 +57,9 @@
 
 (defund bv-eq-raw (n x y)
   (declare (xargs :guard (and (natp n)
-                              (true-listp x) 
+                              (true-listp x)
                               (true-listp y))))
-  (cond 
+  (cond
    ((zp n)
     t)
    ((iff (car x) (car y))
@@ -101,7 +101,7 @@
 
 (defun sig-arg-rv-types (sig) sig)
 
-(defun sig-type-bv-size (type) 
+(defun sig-type-bv-size (type)
   (cond
    ((equal type 'bool)
     0)
@@ -112,7 +112,7 @@
 
 (defun get-ivar-if-present (call $sat-plus)
   (declare (xargs :stobjs $sat-plus))
-  (cdr (eriks-ht-lookup call (fn-call-to-ivar-alist $sat-plus)))) 
+  (cdr (eriks-ht-lookup call (fn-call-to-ivar-alist $sat-plus))))
 
 (defun add-new-fun-call (ivar call $sat-plus)
   (declare (xargs :stobjs $sat-plus))
@@ -147,7 +147,7 @@
   (cond
    (const-argsp
     (cons (cons new-uce (car uce-list-pair))
-          (cdr uce-list-pair)))    
+          (cdr uce-list-pair)))
    (t
     (cons (car uce-list-pair)
           (cons new-uce (cdr uce-list-pair))))))
@@ -162,8 +162,8 @@
     (cond
      (const-argsp
       (non-const-uce-list uce-list-pair))
-     (t      
-      (revappend (non-const-uce-list uce-list-pair) 
+     (t
+      (revappend (non-const-uce-list uce-list-pair)
                  (const-uce-list uce-list-pair))))))
 
 (defun add-new-extra-fun-call (var call const-argsp $sat-plus)
@@ -195,7 +195,7 @@
     '(quote t))
 
    ((and (sp-constp arg1) (sp-constp arg2))
-    (cond 
+    (cond
      ((equal type 'bool)
       `(quote ,(iff (sp-const-val arg1) (sp-const-val arg2))))
      ((equal type 'nat)
@@ -206,23 +206,23 @@
       (er hard 'gen-eq-todo-expr "Not supported\n"))))
 
    ((term-order arg1 arg2)
-    (cond 
+    (cond
      ((equal type 'bool)
       `(iff (sat::i-expression ,arg1) (sat::i-expression ,arg2)))
      ((and (consp type) (equal (car type) 'bitvec))
-      `(bv-eq-raw (quote ,(sig-type-bv-size type)) 
-                  (sat::i-expression ,arg1) 
+      `(bv-eq-raw (quote ,(sig-type-bv-size type))
+                  (sat::i-expression ,arg1)
                   (sat::i-expression ,arg2)))
      (t
       (er hard 'gen-eq-todo-expr "Not supported\n"))))
 
    (t
-    (cond 
+    (cond
      ((equal type 'bool)
       `(quote (iff ,arg2 ,arg1)))
      ((and (consp type) (equal (car type) 'bitvec))
-      `(bv-eq-raw (quote ,(sig-type-bv-size type)) 
-                  (sat::i-expression ,arg2) 
+      `(bv-eq-raw (quote ,(sig-type-bv-size type))
+                  (sat::i-expression ,arg2)
                   (sat::i-expression ,arg1)))
      (t
       (er hard 'gen-eq-todo-expr "Not supported\n"))))))
@@ -232,8 +232,8 @@
    ((endp args1)
     acc-body)
    (t
-    (let ((bv-eq-expr (gen-eq-todo-expr (car arg-rv-types) 
-                                        (car args1) 
+    (let ((bv-eq-expr (gen-eq-todo-expr (car arg-rv-types)
+                                        (car args1)
                                         (car args2))))
       (cond
        ((not (quotep bv-eq-expr))
@@ -250,7 +250,7 @@
                                 bv-eq-expr))
          (t
           ;; It's correct to return '(quote nil), but I don't think
-          ;; this case can occur naturally.  Why call this function, if you 
+          ;; this case can occur naturally.  Why call this function, if you
           ;; already know it's going to return '(quote nil)?
           (er hard 'args-bv-eq-todo-expr
               "'nil was input as the acc-body for args-bv-eq-todo-expr.  I didn't ~
@@ -284,7 +284,7 @@
                               acc-body)))))))
 
 (defun constant-listp (x)
-  (cond 
+  (cond
    ((endp x)
     t)
    ((quotep (car x))
@@ -297,13 +297,13 @@
    ((endp iargs-list)
     (revappend acc nil))
    (t
-    (create-todo-args-list 
+    (create-todo-args-list
      (cdr iargs-list)
      (cons `(sat::i-expression ,(car iargs-list))
            acc)))))
 
 ;; Expr is either <sym> or (<sym> <iexpr> ... <iexpr>).
-(defun lookup-ivar-from-fn-call (expr $sat $sat-plus)      
+(defun lookup-ivar-from-fn-call (expr $sat $sat-plus)
   (declare (xargs :stobjs ($sat $sat-plus)))
   (let* ((ivar (get-ivar-if-present expr $sat-plus)))
     (cond
@@ -331,8 +331,8 @@
        (sat::new-top-i-var $sat)
        (let* ((const-argsp (constant-listp (cdr expr)))
               (call-list (lookup-extra-fun-call-list (car expr) const-argsp $sat-plus))
-              (sig (lookup-extra-fun-sig (car expr) $sat-plus)))              
-         (cond 
+              (sig (lookup-extra-fun-sig (car expr) $sat-plus)))
+         (cond
           ((endp call-list)
            (let* (($sat-plus (add-new-fun-call ivar expr $sat-plus))
                   ($sat-plus (add-new-extra-fun-call ivar expr const-argsp $sat-plus)))
@@ -359,7 +359,7 @@
     (mv-let
      (expr $sat $sat-plus)
      (redundancy-removal (car expr-list) alist $sat $sat-plus)
-     (redundancy-removal-list (cdr expr-list) alist 
+     (redundancy-removal-list (cdr expr-list) alist
                               (cons expr acc)
                               $sat $sat-plus)))))
 
@@ -368,7 +368,7 @@
   (cond
    ((atom expr)
     (let ((entry (assoc-equal expr alist)))
-      (cond 
+      (cond
        (entry
         (mv (cdr entry) $sat $sat-plus))
        (t
@@ -385,15 +385,15 @@
               (body (caddr (car expr)))
               (alist (pairlis$ formals i-expr-list)))
          (redundancy-removal body alist $sat $sat-plus)))
-      (t 
-       (lookup-ivar-from-fn-call (cons (car expr) i-expr-list) 
+      (t
+       (lookup-ivar-from-fn-call (cons (car expr) i-expr-list)
                                  $sat $sat-plus)))))))
 )
 
 
 (defun smt-sat-add-expr (expr $sat $sat-plus state)
   (declare (xargs :stobjs ($sat $sat-plus)))
-  ;;(prog2$ 
+  ;;(prog2$
   ;; (cw ".")
   (mv-let
    (i-expr $sat $sat-plus)

@@ -18,7 +18,7 @@
 ;; Index n says that when the n-th variable is reached, use d2 as the
 ;; domain instead of dom.  This is used to prove that we can permute
 ;; universally quantified variables.  (The analogous thing would work for
-;; existentially quantified variables.) 
+;; existentially quantified variables.)
 
 (defun keval (vars f dom n d2 i)
   (declare (xargs :measure (cons (cons (+ 1 (acl2-count vars))
@@ -45,7 +45,7 @@
 			      i)
 	   (and (keval vars f dom n (car d2) i)
 		(keval vars f dom n (cdr d2) i))))
-	(t 
+	(t
 	 (if (atom dom) (keval (cdr vars)
 			       (subst-free f (car vars) dom)
 			       (domain i)
@@ -172,7 +172,7 @@
 			      i)
 	   (cons (keval-i vars f dom n (car d2) i)
 		 (keval-i vars f dom n (cdr d2) i))))
-	(t 
+	(t
 	 (if (atom dom) (keval-i (cdr vars)
 			       (subst-free f (car vars) dom)
 			       (domain i)

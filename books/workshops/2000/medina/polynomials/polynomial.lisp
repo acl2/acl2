@@ -1,6 +1,6 @@
 (in-package "POL")
 
-(include-book "monomial")  
+(include-book "monomial")
 
 ;;; ---------------------
 ;;; Polynomial recognizer
@@ -97,13 +97,13 @@
 ;;; If a polynomial is uniform then it is complete.
 
 (defthm uniformp-completep
-  (implies (uniformp p) 
+  (implies (uniformp p)
 	   (completep p (len (term (first p))))))
 
 ;;; Therefore, a polynomial is uniform if, and only if, it is
 ;;; complete.
 
-(defthm uniformp-iff-completep  
+(defthm uniformp-iff-completep
   (iff (uniformp p) (completep p (len (term (first p)))))
   :rule-classes nil)
 
@@ -111,5 +111,5 @@
 ;;; two first terms are compatible.
 
 (defmacro compatiblep (p1 p2)
-  `(and (uniformp ,p1) (uniformp ,p2) 
+  `(and (uniformp ,p1) (uniformp ,p2)
 	(MON::compatiblep (first ,p1) (first ,p2))))

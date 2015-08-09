@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -68,7 +68,7 @@
   (declare (xargs :guard (and (acl2-numberp x)
                               (integerp n)
                               (<= 0 n))))
-  (if (zp n) 
+  (if (zp n)
       0
     (if (= x (ash 1 n))
         n
@@ -92,7 +92,7 @@
                 )
            (bvecp (encode x n) (+ 1 (expo n)))) ;The +1 is necessary
   :hints (("Subgoal *1/5" :use (:instance EXPT-WEAK-MONOTONE
-                                          (n (+ 1 (EXPO (1- N)))) 
+                                          (n (+ 1 (EXPO (1- N))))
                                           (m (+ 1 (EXPO N))))
            :in-theory (set-difference-theories
                        (enable encode bvecp power2p ash-rewrite)

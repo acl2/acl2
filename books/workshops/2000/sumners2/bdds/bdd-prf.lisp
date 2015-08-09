@@ -35,7 +35,7 @@ function could "hide" an error in the bdd-mgr.
 ;;;; this book only contains definitions used for proving theorems
 ;;;; about the "executable" functions in bdd-mr.lisp. Thus, we do not
 ;;;; expect to execute the functions in this book and as such, we will
-;;;; not go through the overhead of verifying their guards. 
+;;;; not go through the overhead of verifying their guards.
 
 (set-verify-guards-eagerness 0)
 
@@ -148,8 +148,8 @@ function could "hide" an error in the bdd-mgr.
 
 (defun is-a-result (rslt)
   (bdd= (ite-rslt rslt)
-        (ite-spec (ite-f rslt) 
-                  (ite-g rslt) 
+        (ite-spec (ite-f rslt)
+                  (ite-g rslt)
                   (ite-h rslt))))
 
 (defun ite-results (lst)
@@ -215,7 +215,7 @@ function could "hide" an error in the bdd-mgr.
 
 (defthm no-dup-ids-membership
   (implies (and (no-dup-ids lst)
-                (in-tbl f lst) 
+                (in-tbl f lst)
                 (in-tbl g lst)
                 (equal (b-id f) (b-id g)))
            (equal f g))
@@ -236,7 +236,7 @@ function could "hide" an error in the bdd-mgr.
                 (in-uniq-tbl f bmr)
                 (in-uniq-tbl g bmr))
            (equal (eql-bdd f g) (bdd= f g)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable flatten)
            :use ((:instance no-dup-ids-membership
                             (lst (flatten (uniq-tbl bmr))))
@@ -278,7 +278,7 @@ function could "hide" an error in the bdd-mgr.
   (implies (bdd-match v l r (nth n x))
            (in-tbl (bdd-match v l r (nth n x))
                    (flatten x)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable (:induction nth))
            :induct (nth n x)
            :expand (nth n x))))
@@ -293,7 +293,7 @@ function could "hide" an error in the bdd-mgr.
   (implies (and (contained x x)
                 (in-tbl e x))
            (embedded e x))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
            (:instance contained-and-in-tbl-embedded-free
                       (y x)))))
 
@@ -349,7 +349,7 @@ function could "hide" an error in the bdd-mgr.
           (inject-at (1- n) e (rest lst)))))
 
 (defthm trivial-factoid1
-  (implies (and (integerp n) 
+  (implies (and (integerp n)
                 (integerp k)
                 (integerp m))
            (equal (+ (- k) m k n) (+ m n))))
@@ -402,7 +402,7 @@ function could "hide" an error in the bdd-mgr.
   (implies (and (ids-bounded x id)
                 (<= n (len x))
                 (integerp id))
-           (ids-bounded (inject-at n (b-node id v g h) x) 
+           (ids-bounded (inject-at n (b-node id v g h) x)
                         (1+ id)))
   :hints (("Goal" :induct (inject-induct n x)
            :in-theory (enable b-node))))
@@ -461,7 +461,7 @@ function could "hide" an error in the bdd-mgr.
 (in-theory (disable bdd-code))
 
 (defthm codes-match-update-nth-free
-  (implies (and (codes-match tbl m) 
+  (implies (and (codes-match tbl m)
                 (natp m) (natp n)
                 (each-has-code lst (+ m n)))
            (codes-match (update-nth n lst tbl) m))
@@ -473,12 +473,12 @@ function could "hide" an error in the bdd-mgr.
   (implies (and (codes-match tbl 0) (natp n)
                 (each-has-code lst n))
            (codes-match (update-nth n lst tbl) 0))
-  :hints (("Goal" :use 
-           (:instance codes-match-update-nth-free 
+  :hints (("Goal" :use
+           (:instance codes-match-update-nth-free
                       (m 0)))))
 
 (defthm nth-codes-match-each-has-code-free
-  (implies (and (codes-match tbl m) 
+  (implies (and (codes-match tbl m)
                 (natp m) (natp n))
            (each-has-code (nth n tbl) (+ m n)))
   :hints (("Goal" :in-theory (enable nth)
@@ -488,8 +488,8 @@ function could "hide" an error in the bdd-mgr.
 (defthm nth-codes-match-each-has-code
   (implies (and (codes-match tbl 0) (natp n))
            (each-has-code (nth n tbl) n))
-  :hints (("Goal" :use 
-           (:instance nth-codes-match-each-has-code-free 
+  :hints (("Goal" :use
+           (:instance nth-codes-match-each-has-code-free
                       (m 0)))))
 
 (defun no-node-eql (v l r lst)
@@ -502,7 +502,7 @@ function could "hide" an error in the bdd-mgr.
     (implies (and (each-has-code lst n)
                   (not (equal n code)))
              (no-node-eql v l r lst)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :induct (no-node-eql v l r lst)
            :in-theory (enable eql-bdd bdd-code bdd-id b-node))))
 
@@ -544,8 +544,8 @@ function could "hide" an error in the bdd-mgr.
     (implies (codes-match tbl 0)
              (equal (no-node-eql v l r (flatten tbl))
                     (no-node-eql v l r (nth code tbl)))))
-  :hints (("Goal" :use 
-           (:instance codes-match-no-node-eql-to-nth-free 
+  :hints (("Goal" :use
+           (:instance codes-match-no-node-eql-to-nth-free
                       (m 0)))))
 
 (defthm bdd=-b-node-node-eql-under-uniq-tbl
@@ -556,7 +556,7 @@ function could "hide" an error in the bdd-mgr.
                 (consp x))
            (equal (bdd= (b-node 'if v l r) x)
                   (node-eql v l r x)))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
            (enable node-eql b-node bdd=))))
 
 (defthm in-uniq-tbl-definition-forward-chain
@@ -731,7 +731,7 @@ function could "hide" an error in the bdd-mgr.
                   :trigger-terms ((find-result f g h bmr)))
                  :rewrite))
 
-(in-theory (disable in-uniq-tbl))  
+(in-theory (disable in-uniq-tbl))
 
 (defthm find-result-returns-correct-result
   (implies (and (ite-results (rslt-tbl bmr))
@@ -753,7 +753,7 @@ function could "hide" an error in the bdd-mgr.
   :rule-classes ((:forward-chaining
                   :trigger-terms ((find-result f g h bmr)))
                  :rewrite))
-  
+
 (in-theory (enable update-nth))
 
 (defthm update-nth-is-a-result-ite-results
@@ -911,7 +911,7 @@ function could "hide" an error in the bdd-mgr.
            :do-not '(generalize eliminate-destructors
                      fertilize eliminate-irrelevance))
           ("Subgoal *1/8"
-           :use ((:instance 
+           :use ((:instance
                   eql-bdd-is-correct
                   (f (mv-nth 0
                              (ite-bdd (then-node f (top-var f g h))
@@ -1057,7 +1057,7 @@ function could "hide" an error in the bdd-mgr.
 (defthm init-uniq-tbl-clears-flattened-tbl
   (implies (bdd-mgrp bmr)
            (equal (flatten (uniq-tbl (init-uniq-tbl 0 bmr))) ()))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance cleared-from-init-uniq-tbl-n (n 0))
                  (:instance cleared-from-flatten-nthcdr-is-nil
                             (x (uniq-tbl (init-uniq-tbl 0 bmr)))
@@ -1108,7 +1108,7 @@ function could "hide" an error in the bdd-mgr.
 (defthm init-rslt-tbl-has-ite-results
   (implies (bdd-mgrp bmr)
            (ite-results (rslt-tbl (init-rslt-tbl 0 bmr))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance cleared-from-init-rslt-tbl-n (n 0))
                  (:instance cleared-from-ite-results-nthcdr
                             (x (rslt-tbl (init-rslt-tbl 0 bmr)))
@@ -1117,7 +1117,7 @@ function could "hide" an error in the bdd-mgr.
 (defthm init-rslt-tbl-has-rslts-contained
   (implies (bdd-mgrp bmr)
            (rslts-contained (rslt-tbl (init-rslt-tbl 0 bmr)) u))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance cleared-from-init-rslt-tbl-n (n 0))
                  (:instance cleared-from-rslts-contained-nthcdr
                             (x (rslt-tbl (init-rslt-tbl 0 bmr)))
@@ -1126,7 +1126,7 @@ function could "hide" an error in the bdd-mgr.
 (defthm init-uniq-tbl-has-codes-match
   (implies (bdd-mgrp bmr)
            (codes-match (uniq-tbl (init-uniq-tbl 0 bmr)) 0))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance cleared-from-init-uniq-tbl-n (n 0))
                  (:instance cleared-from-codes-match-nthcdr
                             (x (uniq-tbl (init-uniq-tbl 0 bmr)))
@@ -1139,7 +1139,7 @@ function could "hide" an error in the bdd-mgr.
 (defthm init-bdd-is-correct
   (implies (bdd-mgrp bmr)
            (bdd-mgr-inv (init-bdd bmr)))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
            (enable init-bdd bdd-mgr-inv uniq-tbl-inv))))
 
 (in-theory (disable init-bdd))
@@ -1172,9 +1172,9 @@ function could "hide" an error in the bdd-mgr.
              (and (in-uniq-tbl g nbm)
                   (bdd= g f)
                   (bdd-mgr-inv nbm))))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
            (enable bdd-mgr-inv bdd= b-node))
-          ("Subgoal *1/1" :in-theory 
+          ("Subgoal *1/1" :in-theory
            (enable in-uniq-tbl))))
 
 (defthm rebuild-bdds-maintains-in-uniq-tbl
@@ -1205,7 +1205,7 @@ function could "hide" an error in the bdd-mgr.
 
 ;;;; We now define a satisfiability checker using the bdd-mgr implementation.
 ;;;; we will use the above theory to prove the correctness of the sat checker
-;;;; while keeping the 
+;;;; while keeping the
 
 (defun prop-formula (x)
   (or (atom x)
@@ -1220,7 +1220,7 @@ function could "hide" an error in the bdd-mgr.
         (t (prop-if (prop-ev (second x) a)
                     (prop-ev (third x) a)
                     (prop-ev (fourth x) a)))))
- 
+
 (defun formulap (x)
   (declare (xargs :guard t
                   :verify-guards t))
@@ -1235,16 +1235,16 @@ function could "hide" an error in the bdd-mgr.
   (declare (xargs :guard (formulap formula)
                   :stobjs bdd-mgr
                   :verify-guards nil)) ;; we defer the guard check.
-  (cond ((pnatp formula) 
+  (cond ((pnatp formula)
          (var-bdd formula bdd-mgr))
         ((atom formula)
          (mv (if formula (bdd-1) (bdd-0)) bdd-mgr))
         (t
-         (seq (((f-bdd bdd-mgr) 
+         (seq (((f-bdd bdd-mgr)
                 (formula->bdd (second formula) bdd-mgr))
-               ((g-bdd bdd-mgr) 
+               ((g-bdd bdd-mgr)
                 (formula->bdd (third formula) bdd-mgr))
-               ((h-bdd bdd-mgr) 
+               ((h-bdd bdd-mgr)
                 (formula->bdd (fourth formula) bdd-mgr)))
               (ite-bdd f-bdd g-bdd h-bdd bdd-mgr)))))
 
@@ -1270,7 +1270,7 @@ function could "hide" an error in the bdd-mgr.
            :do-not '(generalize eliminate-destructors
                      fertilize eliminate-irrelevance))
           ("Subgoal *1/1" :in-theory (enable b-node robdd))))
- 
+
 (in-theory (disable prop-if))
 
 (defthm prop-look-reduction
@@ -1349,7 +1349,7 @@ function could "hide" an error in the bdd-mgr.
                                robdd-bdd=-saturates-bdd-ev-=)
            :use ((:instance formula->bdd-is-correct
                             (bmr (init-bdd bmr))
-                            (a (robdd-witness 
+                            (a (robdd-witness
                                 (mv-nth 0 (formula->bdd f (init-bdd bmr)))
                                 (bdd-0))))
                  (:instance eql-bdd-is-correct
@@ -1361,5 +1361,5 @@ function could "hide" an error in the bdd-mgr.
                  (:instance robdd-bdd=-saturates-bdd-ev-=
                             (x (mv-nth 0 (formula->bdd f (init-bdd bmr))))
                             (y (bdd-0)))))))
-                            
+
 ;;;; END final verification ;;;;

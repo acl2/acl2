@@ -34,7 +34,7 @@
 	 (cdr alist))
 	((and (integerp (cdr (car alist)))
 	      (> (cdr (car alist)) 0))
-	 (cons (cons (car (car alist)) (- (cdr (car alist)) 1)) 
+	 (cons (cons (car (car alist)) (- (cdr (car alist)) 1))
 	       (cdr alist)))
 	(t (cons (car alist) (reduct-assoc (cdr alist))))))
 
@@ -57,10 +57,10 @@
 (defun measure-assoc (alist)
   (cond ((endp alist) 0)
 	((and (integerp (cdr (car alist)))
-	      (> (cdr (car alist)) 0)) 
+	      (> (cdr (car alist)) 0))
 	 (+ (cdr (car alist)) (measure-assoc (cdr alist))))
 	(t (measure-assoc (cdr alist)))))
-	
+
 (defthm o-p-measure-assoc
   (o-p (measure-assoc alist)))
 
@@ -71,7 +71,7 @@
 
 (defun count-bag-equal-assoc (elt alist)
   (cond ((endp alist) 0)
-	((and (equal elt (car (car alist))) 
+	((and (equal elt (car (car alist)))
 	      (integerp (cdr (car alist)))
 	      (> (cdr (car alist)) 0))
 	 (+ (cdr (car alist))
@@ -110,17 +110,17 @@
 
 #|
 
-(defconst *ma-assoc* 
-  (include-assoc 
-   'a (include-assoc 
+(defconst *ma-assoc*
+  (include-assoc
+   'a (include-assoc
        'a (include-assoc 'b (include-assoc 'b (include-assoc 'c nil))))))
 
 *ma-assoc*
 ;; ((C . 1) (B . 2) (A . 2))
 
 (defconst *mb-assoc*
-  (include-assoc 
-   'b (include-assoc 
+  (include-assoc
+   'b (include-assoc
        'c (include-assoc 'c (include-assoc 'b (include-assoc 'c nil))))))
 
 *mb-assoc*
@@ -141,7 +141,7 @@
 ;;    (SUB-BAG-EQUIV-ASSOC M1 (INTER-BAG-EQUIV-ASSOC M2 M3)))
 ;;   ...)
 
-(union-bag-equiv-assoc *ma-assoc* *mb-assoc*) 
+(union-bag-equiv-assoc *ma-assoc* *mb-assoc*)
 ;; ((C . 4) (B . 4) (A . 2))
 
 (inter-bag-equiv-assoc *ma-assoc* *mb-assoc*)

@@ -1,17 +1,17 @@
 
 ;; A tutorial of the SULFA clause processor system.
 
-;; We use the term Subclass of Unrollable List Formulas in 
+;; We use the term Subclass of Unrollable List Formulas in
 ;; ACL2 (SULFA) to refer to the decidable subclass of
 ;; ACL2 formulas understood by our clause processor.  We
-;; also refer to the clause processor itself as SULFA, though 
+;; also refer to the clause processor itself as SULFA, though
 ;; it is actually defined as an ACL2 function named "sat".
 
 (in-package "ACL2")
 
-;; To use our system, first we need to include the clause 
-;; processor book.  It requires two ttags "sat" and "sat-cl", 
-;; representing the system call to the SAT solver and the 
+;; To use our system, first we need to include the clause
+;; processor book.  It requires two ttags "sat" and "sat-cl",
+;; representing the system call to the SAT solver and the
 ;; SULFA-SAT clause processor respectively.
 
 (include-book "../clause-processors/sat-clause-processor" :ttags (sat sat-cl))
@@ -44,11 +44,11 @@
 ;; Produces the following output (using the zChaff SAT solver),
 ;; which correctly identives a=nil, b=nil as a counter-example.
 
-[Note:  A hint was supplied for our processing of the goal above. 
+[Note:  A hint was supplied for our processing of the goal above.
 Thanks!]
 [SGC for 0 RELOCATABLE-BLOCKS pages..(77546 writable)..(T=2).GC finished]
 The expression is in our decidable subclass of ACL2 formulas (SULFA).
-Calling SAT solver.  Num-vars: 7, Num-clauses: 19 
+Calling SAT solver.  Num-vars: 7, Num-clauses: 19
 Time spent by SAT solver: 0
 [SGC for 0 RELOCATABLE-BLOCKS pages..(77546 writable)..(T=12).GC finished]
 Generating counter-example:
@@ -109,10 +109,10 @@ ACL2 !>
            (equal a c))
   :hints (("Goal" :clause-processor (:function sat :hint nil)))
   :rule-classes nil)
-                
+
 #|
 ;; Note that the first hypothesis is necessary, as
-;; the clause processor correctly identifies the 
+;; the clause processor correctly identifies the
 ;; counter-example a='nil, b='(nil), c='(nil) in
 ;; the theorem below
 
@@ -125,11 +125,11 @@ ACL2 !>
   :hints (("Goal" :clause-processor (:function sat :hint nil)))
   :rule-classes nil)
 
-[Note:  A hint was supplied for our processing of the goal above. 
+[Note:  A hint was supplied for our processing of the goal above.
 Thanks!]
 [SGC for 0 RELOCATABLE-BLOCKS pages..(88160 writable)..(T=7).GC finished]
 The expression is in our decidable subclass of ACL2 formulas (SULFA).
-Calling SAT solver.  Num-vars: 19, Num-clauses: 52 
+Calling SAT solver.  Num-vars: 19, Num-clauses: 52
 Time spent by SAT solver: 0
 Generating counter-example:
 The following counter example was generated:
@@ -161,10 +161,10 @@ ACL2 !>
 ;; We call the functions equal, if, car, cdr, cons, and consp the
 ;; SULFA primitives.
 
-;; If you try to prove most theorems about other core ACL2 primitives, 
+;; If you try to prove most theorems about other core ACL2 primitives,
 ;; you get a message saying that the formula is not in SULFA.
 
-#| 
+#|
 
 ;; For example:
 (defthm +-failure
@@ -174,7 +174,7 @@ ACL2 !>
 
 ;; Produces
 
-[Note:  A hint was supplied for our processing of the goal above. 
+[Note:  A hint was supplied for our processing of the goal above.
 Thanks!]
 [SGC for 0 RELOCATABLE-BLOCKS pages..(77551 writable)..(T=5).GC finished]
 
@@ -196,7 +196,7 @@ Time:  0.06 seconds (prove: 0.06, print: 0.00, other: 0.00)
 ACL2 !>
 |# ;|
 
-;; However, we also can handle uninterpreted functions.  
+;; However, we also can handle uninterpreted functions.
 ;; For example, if we create a symbol "f" using defstub
 
 (defstub f (*) => *)
@@ -208,10 +208,10 @@ ACL2 !>
                 (equal (f y) (f z))
                 (equal a z))
            (equal (f x) (f a)))
-  :hints (("Goal" :clause-processor 
-           (:function 
-            sat 
-            :hint 
+  :hints (("Goal" :clause-processor
+           (:function
+            sat
+            :hint
             '(:check-counter-example nil))))
   :rule-classes nil)
 ;; (the check-counter-example=nil hint tells the clause processor
@@ -219,7 +219,7 @@ ACL2 !>
 ;;  isn't executable).
 
 ;; And we support "treating a function as if it were uninterpreted".
-;; For example, in the property below we treat "+" and "<" as 
+;; For example, in the property below we treat "+" and "<" as
 ;; uninterpreted:
 
 (defthm uninterpreted-prop-2
@@ -228,10 +228,10 @@ ACL2 !>
                 (equal (+ a 4) 25)
                 (< x y))
            (< a b))
-  :hints (("Goal" :clause-processor 
-           (:function 
-            sat 
-            :hint 
+  :hints (("Goal" :clause-processor
+           (:function
+            sat
+            :hint
             '(:uninterpreted-functions (< binary-+)))))
   :rule-classes nil)
 
@@ -246,19 +246,19 @@ ACL2 !>
 
 (defthm uninterpreted-failure
   (equal (+ a b) (+ b c))
-  :hints (("Goal" :clause-processor 
-           (:function 
-            sat 
-            :hint 
+  :hints (("Goal" :clause-processor
+           (:function
+            sat
+            :hint
             '(:uninterpreted-functions (binary-+)))))
   :rule-classes nil)
 
 ;; producing the following output:
-[Note:  A hint was supplied for our processing of the goal above. 
+[Note:  A hint was supplied for our processing of the goal above.
 Thanks!]
 [SGC for 0 RELOCATABLE-BLOCKS pages..(77551 writable)..(T=2).GC finished]
 The expression is in our decidable subclass of ACL2 formulas (SULFA).
-Calling SAT solver.  Num-vars: 6, Num-clauses: 8 
+Calling SAT solver.  Num-vars: 6, Num-clauses: 8
 Time spent by SAT solver: 0
 [SGC for 0 RELOCATABLE-BLOCKS pages..(77551 writable)..(T=13).GC finished]
 Generating counter-example:
@@ -310,12 +310,12 @@ ACL2 !>
   :hints (("Goal" :clause-processor (:function sat :hint nil)))
   :rule-classes nil)
 
-;; We also support the restricted application of functions defined 
+;; We also support the restricted application of functions defined
 ;; using arbitrary executable functions.
 
 ;; For example, consider the following function foo:
 
-(defun foo (a b) 
+(defun foo (a b)
   (if (zp a)
       b
     (cdr b)))
@@ -329,7 +329,7 @@ ACL2 !>
            (not (equal (cdr (foo (+ 7 6) b)) b)))
   :hints (("Goal" :clause-processor (:function sat :hint nil)))
   :rule-classes nil)
-  
+
 ;; We call the first argument of foo a "ground formal" because
 ;; it must be grounded in any SULFA formula.
 
@@ -342,7 +342,7 @@ ACL2 !>
 ;; where the second argument is a list of Boolean representing
 ;; whether the corresponding formal of 'foo is a ground formal.
 
-;; For example, to see that all arguments of 'binary-+ 
+;; For example, to see that all arguments of 'binary-+
 ;; must be grounded
 (sat-ground-formals 'binary-+ $sat state)
 ;; returns
@@ -353,20 +353,20 @@ ACL2 !>
 ;; returns
 (NIL (NIL NIL NIL) <$sat> <state>)
 
-;; Note: that these results are always relative to the 
+;; Note: that these results are always relative to the
 ;; the last uninterpreted-functions list given to the
 ;; clause processor.  If we attempt to prove:
 
 (defthm uninterpreted-failure
   (equal (+ a b) (+ b c))
-  :hints (("Goal" :clause-processor 
-           (:function 
-            sat 
-            :hint 
+  :hints (("Goal" :clause-processor
+           (:function
+            sat
+            :hint
             '(:uninterpreted-functions (binary-+)))))
   :rule-classes nil)
 
-;; Then 
+;; Then
 (sat-ground-formals 'binary-+ $sat state)
 ;; returns
 (NIL (NIL NIL) <$sat> <state>)
@@ -375,7 +375,7 @@ ACL2 !>
 ;;  function list, the ground formals will reset).
 |# ;|
 
-;; SULFA also contains restricted applications of recursively 
+;; SULFA also contains restricted applications of recursively
 ;; defined functions.  We use the notion of ground formals to
 ;; force applications of recursive functions to be unrollable.
 
@@ -391,7 +391,7 @@ ACL2 !>
   (if (zp n)
       (list c)
     (cons (xor3 c (car a) (car b))
-          (v-adder (1- n) 
+          (v-adder (1- n)
                    (maj3 c (car a) (car b))
                    (cdr a) (cdr b)))))
 
@@ -407,19 +407,19 @@ ACL2 !>
 ;; Thus, the "commutativity of an 8 bit v-adder" is in SULFA
 
 (defthm 8-v-adder-commute
-  (equal (v-adder 8 nil a b) 
+  (equal (v-adder 8 nil a b)
          (v-adder 8 nil b a))
     :hints (("Goal" :clause-processor (:function sat :hint nil)))
   :rule-classes nil)
 
-;; But the above property isn't a theorem for untyped domains, and 
+;; But the above property isn't a theorem for untyped domains, and
 ;; SULFA finds a counter-example:
 
-[Note:  A hint was supplied for our processing of the goal above. 
+[Note:  A hint was supplied for our processing of the goal above.
 Thanks!]
 [SGC for 0 RELOCATABLE-BLOCKS pages..(87209 writable)..(T=6).GC finished]
 The expression is in our decidable subclass of ACL2 formulas (SULFA).
-Calling SAT solver.  Num-vars: 84, Num-clauses: 320 
+Calling SAT solver.  Num-vars: 84, Num-clauses: 320
 Time spent by SAT solver: 0
 Generating counter-example:
 The following counter example was generated:
@@ -464,7 +464,7 @@ ACL2 !>
   (implies
    (and (n-bvp 8 a)
         (n-bvp 8 b))
-   (equal (v-adder 8 nil a b) 
+   (equal (v-adder 8 nil a b)
           (v-adder 8 nil b a)))
    :hints (("Goal" :clause-processor (:function sat :hint nil)))
    :rule-classes nil)
@@ -477,15 +477,15 @@ ACL2 !>
   (implies
    (and (n-bvp 1024 a)
         (n-bvp 1024 b))
-   (equal (v-adder 1024 nil a b) 
+   (equal (v-adder 1024 nil a b)
           (v-adder 1024 nil b a)))
    :hints (("Goal" :clause-processor (:function sat :hint nil)))
    :rule-classes nil)
 
-;; In order to get much bigger with our system, you would want to switch to 
+;; In order to get much bigger with our system, you would want to switch to
 ;; a bit-vector equality operation, rather than using the n-bit Boolean predicate
 ;; (remember that equal isn't that efficient) and use a tree representation
-;; for bit vectors rather than a list representation (when trees 
+;; for bit vectors rather than a list representation (when trees
 ;; get over a thousand elements deep, like the lists in this bit-vector
 ;; representation, it puts significant pressure on the conversion algorithm).
 
@@ -505,12 +505,12 @@ ACL2 !>
   (implies (equal (nth 5 x) 1)
            (bar 10 x nil))
   :hints (("Goal" :clause-processor (:function sat :hint nil)))
-  :rule-classes nil)  
+  :rule-classes nil)
 
-;; In the property above, the application of "bar" explodes during 
+;; In the property above, the application of "bar" explodes during
 ;; unrolling.  Thus, an n=10 is about as big as we can get.
 
-;; However, if we a version of "bar" with only one recursive call, it 
+;; However, if we a version of "bar" with only one recursive call, it
 ;; does not explode:
 
 (defun bar-better (n x ans)
@@ -518,17 +518,17 @@ ACL2 !>
    ((zp n)
     ans)
    (t
-    (bar-better (1- n) 
-                (cdr x) 
-                (or (equal (car x) 0) 
-                    (equal (car x) 1) 
+    (bar-better (1- n)
+                (cdr x)
+                (or (equal (car x) 0)
+                    (equal (car x) 1)
                     ans)))))
 
 (defthm bar-better-prop
   (implies (equal (nth 50 x) 1)
            (bar-better 100 x nil))
   :hints (("Goal" :clause-processor (:function sat :hint nil)))
-  :rule-classes nil)  
+  :rule-classes nil)
 
 ;; For a more fun example, we can load in our model of the
 ;; Sudoku puzzle:
@@ -562,11 +562,11 @@ ACL2 !>
 
 [SGC for 4763 FIXNUM pages..(97600 writable)..(T=7).GC finished]
 [SGC for 4763 FIXNUM pages..(97600 writable)..(T=7).GC finished]
-Calling SAT solver.  Num-vars: 8123, Num-clauses: 393829 
+Calling SAT solver.  Num-vars: 8123, Num-clauses: 393829
 Time spent by SAT solver: 0.084005
 Generating counter-example:
 The following counter example was generated:
-X: 
+X:
 ((2 1 6 7 9 3 4 8 5)
  (9 8 4 5 6 1 3 2 7)
  (7 3 5 8 2 4 6 1 9)

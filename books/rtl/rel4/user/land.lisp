@@ -57,7 +57,7 @@ a bit vector of length N.
 
 ;We expect n to be a positive integer, and x and y to be bit vectors of length n.
 (defund binary-land (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))))
@@ -76,7 +76,7 @@ a bit vector of length N.
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(land x y n) -- the base case
          `(binary-land ,@x))
-        (t         
+        (t
          `(binary-land ,(car x)
                        (land ,@(cdr x))
                        ,(car (last x))))))
@@ -169,8 +169,8 @@ a bit vector of length N.
                 (case-split (integerp n))
                 )
            (equal (bits (land x y n) i j)
-                  (land (bits x i j) 
-                        (bits y i j) 
+                  (land (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j))))))
 
 ;perhaps use only the main rule, bits-land?
@@ -180,8 +180,8 @@ a bit vector of length N.
                 (case-split (integerp n))
                 )
            (equal (bits (land x y n) i j)
-                  (land (bits x i j) 
-                        (bits y i j) 
+                  (land (bits x i j)
+                        (bits y i j)
                         (+ n (- j))))))
 
 ;Notice the call to MIN in the conclusion.
@@ -191,8 +191,8 @@ a bit vector of length N.
                 (case-split (integerp i))
                 )
            (equal (bits (land x y n) i j)
-                  (land (bits x i j) 
-                        (bits y i j) 
+                  (land (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j))))))
 
 (defthmd bitn-land-1
@@ -201,8 +201,8 @@ a bit vector of length N.
                 (case-split (integerp n))
                 )
            (equal (bitn (land x y n) m)
-                  (land (bitn x m) 
-                        (bitn y m) 
+                  (land (bitn x m)
+                        (bitn y m)
                         1))))
 (defthmd bitn-land-2
   (implies (and (<= n m)
@@ -220,8 +220,8 @@ a bit vector of length N.
                 )
            (equal (bitn (land x y n) m)
                   (if (< m n)
-                      (land (bitn x m) 
-                            (bitn y m) 
+                      (land (bitn x m)
+                            (bitn y m)
                             1)
                     0))))
 

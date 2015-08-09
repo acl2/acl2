@@ -154,7 +154,7 @@ To compile it, I do the following:
 (defun p-prefix-sum-aux (prefix x)
   (if (powerlist-p x)
       (p-tie (p-prefix-sum-aux prefix (p-untie-l x))
-	     (p-prefix-sum-aux (p-last (p-prefix-sum-aux 
+	     (p-prefix-sum-aux (p-last (p-prefix-sum-aux
 					prefix
 					(p-untie-l x)))
 			       (p-untie-r x)))
@@ -172,7 +172,7 @@ To compile it, I do the following:
 (defun p-shift (val x)
   (if (powerlist-p x)
       (p-tie (p-shift val (p-untie-l x))
-	     (p-shift (p-last (p-untie-l x)) 
+	     (p-shift (p-last (p-untie-l x))
 		      (p-untie-r x)))
     val))
 (in-theory (disable (p-shift)))
@@ -200,7 +200,7 @@ To compile it, I do the following:
 (defthm binop-last-shift-prefix-sum
   (implies (domain-p c)
 	   (equal (bin-op (p-last
-			   (p-shift 
+			   (p-shift
 			    c (p-prefix-sum-aux c x)))
 			  (p-last x))
 		  (p-last (p-prefix-sum-aux c x)))))
@@ -227,7 +227,7 @@ To compile it, I do the following:
                 (p-domain-list-p x))
            (equal (p-prefix-sum-aux c1 (p-shift c2 x))
                   (p-shift (bin-op c1 c2)
-                           (p-prefix-sum-aux 
+                           (p-prefix-sum-aux
                             (bin-op c1 c2)
                             x))))
   :hints (("Goal"
@@ -246,7 +246,7 @@ To compile it, I do the following:
   (if (powerlist-p x)
       (if (powerlist-p (p-untie-l x))
 	  (p-tie (p-add-left-pairs val (p-untie-l x))
-		 (p-add-left-pairs (p-last 
+		 (p-add-left-pairs (p-last
 				    (p-untie-l x))
 				   (p-untie-r x)))
 	(bin-op val (p-untie-l x)))
@@ -278,7 +278,7 @@ To compile it, I do the following:
 		(p-domain-list-p x))
 	   (equal (p-add-left-pairs val x)
 		  (p-add-right-pairs (p-shift val x)))))
-	     
+
 ;;; Ok now, we want to prove that the right unzip of ps(x) is equal to
 ;;; ps(arp(x)), where arp(x) is the right-pairs sum of adjacent pairs in x.
 ;;; The first step is to show that at least they have the same last element.
@@ -288,7 +288,7 @@ To compile it, I do the following:
   (implies (and (domain-p val)
 		(p-regular-p x)
 		(p-domain-list-p x))
-	   (equal (p-last (p-prefix-sum-aux 
+	   (equal (p-last (p-prefix-sum-aux
 			   val
 			   (p-add-right-pairs x)))
 		  (p-last (p-prefix-sum-aux val x)))))
@@ -319,12 +319,12 @@ To compile it, I do the following:
 	   (and (equal (p-prefix-sum-aux
 			val
 			(p-add-right-pairs x))
-		       (bin-op val 
+		       (bin-op val
 			       (bin-op (p-untie-l x)
 				       (p-untie-r x))))
-		(equal (p-unzip-r 
+		(equal (p-unzip-r
 			(p-prefix-sum-aux val x))
-		       (bin-op val 
+		       (bin-op val
 			       (bin-op (p-untie-l x)
 				       (p-untie-r x))))
 		)))
@@ -338,10 +338,10 @@ To compile it, I do the following:
 		(powerlist-p x)
 		(p-regular-p x)
 		(p-domain-list-p x))
-	   (equal (p-prefix-sum-aux 
+	   (equal (p-prefix-sum-aux
 		   val
 		   (p-add-right-pairs x))
-		  (p-unzip-r 
+		  (p-unzip-r
 		   (p-prefix-sum-aux val x))))
   :hints (("Goal" :induct (prefix-sum-p-add-right-pairs-induction-hint val x))))
 
@@ -371,7 +371,7 @@ To compile it, I do the following:
 	   :use ((:instance similar-regular (x (p-shift val x)) (y x))
 		 (:instance similar-regular (x x) (y (p-shift val x))))
 	   :in-theory (disable similar-regular))))
-  
+
 (defthm p-regular-prefix-sum
   (equal (p-regular-p (p-prefix-sum-aux val x))
 	 (p-regular-p x))
@@ -387,12 +387,12 @@ To compile it, I do the following:
 		(domain-p val1)
 		(domain-p val2))
 	   (equal (p-prefix-sum-aux val1
-				    (p-add-left-pairs 
+				    (p-add-left-pairs
 				     val2 x))
-		  (p-unzip-l 
+		  (p-unzip-l
 		   (p-prefix-sum-aux (bin-op val1 val2)
 				     x)))))
-			   
+
 ;;; Now, we're ready to define the first parallel prefix sum algorithm.  This
 ;;; algorithm is also based on shifting powerlists, but its written entirely in
 ;;; terms of zip.  In particular, we require a version of shift that uses only
@@ -457,7 +457,7 @@ To compile it, I do the following:
 	   (equal (p-measure x) (p-measure y)))
   :hints (("Goal"
 	   :induct (unzip-on-x-and-y x y))))
-	   
+
 (defthm measure-star
   (equal (p-measure (p-star x)) (p-measure x))
   :rule-classes (:linear :rewrite))
@@ -472,7 +472,7 @@ To compile it, I do the following:
 		   (p-measure x))
 		(< (p-measure (p-unzip-r (p-add (p-star x) x)))
 		   (p-measure x)))))
-  
+
 (defthm similar-add-star
   (implies (p-regular-p x)
 	   (p-similar-p (p-add (p-star x) x) x))
@@ -661,7 +661,7 @@ To compile it, I do the following:
   :hints (("Goal"
 	   :use ((:instance unzip-regular (x (p-add x y))))
 	   :in-theory (disable unzip-regular))))
-  
+
 (defthm regular-unzip-add-star
   (implies (and (p-regular-p x)
 		(p-similar-p x y))
@@ -670,7 +670,7 @@ To compile it, I do the following:
   :hints (("Goal"
 	   :use ((:instance regular-unzip-add (x (p-star x))))
 	   :in-theory (disable regular-unzip-add))))
-  
+
 (defthm regular-unzip-add-star-useful
   (implies (and (powerlist-p x)
 		(p-regular-p x)
@@ -737,12 +737,12 @@ To compile it, I do the following:
   (implies (and (powerlist-p x)
 		(p-regular-p x)
 		(p-domain-list-p x)
-		(equal 
+		(equal
 		 (p-lf-prefix-sum (p-add (p-unzip-l x)
 					 (p-unzip-r x)))
 		 (p-prefix-sum (p-add (p-unzip-l x)
 				      (p-unzip-r x)))))
-	   (equal 
+	   (equal
 	    (p-lf-prefix-sum (p-add (p-unzip-l x)
 				    (p-unzip-r x)))
 	    (p-unzip-r (p-prefix-sum x))))
@@ -774,7 +774,7 @@ To compile it, I do the following:
   (implies (and (p-regular-p x)
 		(p-similar-p x y))
 	   (equal (p-add (p-star x) y)
-		  (p-add-tie (p-shift (left-zero) x) 
+		  (p-add-tie (p-shift (left-zero) x)
 			     y)))
   :hints (("Goal" :use ((:instance similar-star)
 			(:instance add-add-tie (x (p-star x)))

@@ -36,19 +36,19 @@
 ;;; needed about first--order terms and substitutions are taken from the
 ;;; following books:
 
-;;; *) 
+;;; *)
 ;;;   {\tt basic.lisp}: some basic results about lists, association
-;;;   lists, etc. 
-;;; *) 
+;;;   lists, etc.
+;;; *)
 ;;;   {\tt terms.lisp}: basic concepts about terms and substitutions.
 ;;; *)
 ;;;   {\tt matching.lisp}: a pattern for a rule--based matching
-;;;   algorithm. 
-;;; *) 
-;;;   {\tt subsumption.lisp}: the subsumption relation between terms.  
+;;;   algorithm.
+;;; *)
+;;;   {\tt subsumption.lisp}: the subsumption relation between terms.
 ;;; *)
 ;;;  {\tt subsumption-subst.lisp}: the subsumption relation between
-;;;  substitutions. 
+;;;  substitutions.
 ;;; -)
 
 ;;; A substitution $\sigma$ is a {\em solution} of an equation $t_1 =
@@ -69,7 +69,7 @@
 ;;; \mbox{{\bf Check}:} & \{x= t\}\cup R;U & \Rightarrow_u \bot\\
 ;;;  & &\mbox{{\small if $x\in var(t)$ and $x\not=t$}}\\
 ;;; \mbox{{\bf Eliminate}:} & \{x= t\}\cup R;U & \Rightarrow_u
-;;; \theta(R); \{x= t\}\cup \theta(U) \\ 
+;;; \theta(R); \{x= t\}\cup \theta(U) \\
 ;;;  & &\mbox{{\small if $x\in X$, $x\notin var(t)$ and
 ;;;  $\theta=\{x\mapsto t\}$}}\\
 ;;; \mbox{{\bf Decompose}:} & \{f(s_1,\ldots,s_n)=
@@ -80,7 +80,7 @@
 ;;; if $n\not= m$ or $f\not= g$}}\\
 ;;; \mbox{{\bf Orient}:} & \{t= x\}\cup R;U & \Rightarrow_u \{x= t\}\cup R;U \\
 ;;;  & &\mbox{{\small if $x\in X$, $t\notin X$}}\\
-;;; \end{array}$$ 
+;;; \end{array}$$
 
 ;;; To obtain a most general solution of a system of equations $S$ (or
 ;;; detect its unsolvability), we can apply this rules
@@ -88,7 +88,7 @@
 ;;; $S;\emptyset$, until $\bot$ is obtained or a pair of systems
 ;;; $\emptyset;\sigma$ is obtained. In the first case, the system $S$ is
 ;;; unsolvable. In the second case $\sigma$ is most general solution of
-;;; $S$. 
+;;; $S$.
 
 ;;; In this book we formalize in ACL2 this result. Note that we are not
 ;;; going to define an {\em algorithm} to apply the rules. We only
@@ -96,11 +96,11 @@
 ;;; rules of transformations. From these properties it is easy to
 ;;; conclude that every algorithm that applies the rules until a
 ;;; solution or failure is obtained, is an algorithm that computes most
-;;; general solutions.   
+;;; general solutions.
 
 ;;; So in this book:
 
-;;; *) 
+;;; *)
 ;;;   Definition of the relation $\Rightarrow_u$. We represent the
 ;;;   relation $\Rightarrow_u$ as a reduction relation. That is, we
 ;;;   consider a set of {\em operators} that can be applied to a set of
@@ -109,17 +109,17 @@
 ;;;   operators and the {\em one--reduction step} (the result of
 ;;;   applying an operator to an object). See \cite{amai-jruiz} for more
 ;;;   details about the formalization of abstract reductions.
-;;; *) 
+;;; *)
 ;;;   The transformation relation preserves the set of solutions and
-;;;   idempotency of the second system (under certain conditions).     
-;;; *) 
+;;;   idempotency of the second system (under certain conditions).
+;;; *)
 ;;;   The transformation relation is terminating.
 ;;; *)
 ;;;   A finite sequence of transformation steps (until there is no
 ;;;   applicable rule), ends with a most general solution of the
-;;;   original system, or failure, if there is no solution. 
+;;;   original system, or failure, if there is no solution.
 ;;; -)
- 
+
 
 ;;; ============================================================================
 ;;;
@@ -136,7 +136,7 @@
 ;;; {\em legal} to apply a given operator to a pair of systems of
 ;;; equations. And a second function {\tt unif-reduce-one-step-p} that
 ;;; computes the result of applying a given (legal) operator to a pair
-;;; of systems of equations. 
+;;; of systems of equations.
 
 ;;; Pairs of systems of equations will be represented as lists of the
 ;;; form {\tt (S sol)}, where {\tt S} is a system of equations and {\tt
@@ -168,7 +168,7 @@
 ;;; -)
 
 ;;; Definition of the function {\tt unif-legal-p} (the applicability
-;;; test). Note the auxiliary functions for every type of operator. 
+;;; test). Note the auxiliary functions for every type of operator.
 
 
 (defun unif-legal-p-delete (t1 t2)
@@ -195,19 +195,19 @@
 	       (pair-args (cdr t1) (cdr t2))
 	       (declare (ignore pair-args))
 	       (not bool))))
-	       
-(defun unif-legal-p-orient (t1 t2) 
+
+(defun unif-legal-p-orient (t1 t2)
   (and (not (variable-p t1))
        (variable-p t2)))
-       
+
 (defun unif-legal-p-eliminate (t1 t2)
   (and (variable-p t1)
        (not (member t1 (variables t t2)))))
-       
 
-(defun unif-legal-p-occur-check (t1 t2) 
+
+(defun unif-legal-p-occur-check (t1 t2)
   (and (variable-p t1)
-       (not (equal t1 t2))   
+       (not (equal t1 t2))
        (member t1 (variables t t2))))
 
 (defun unif-legal-p (S-sol op)
@@ -232,7 +232,7 @@
 
 ;;; Definition of the function {\tt unif\--reduce\--one\--step\--p},
 ;;; implementing the application of one step of transformation. Note
-;;; again the auxiliary functions for every type of operator. 
+;;; again the auxiliary functions for every type of operator.
 
 (defun unif-reduce-one-step-p-delete (equ R sol)
   (declare (ignore equ))
@@ -268,8 +268,8 @@
 (defun unif-reduce-one-step-p-occur-check (equ R sol)
   (declare (ignore equ R sol))
   nil)
-  
-  
+
+
 
 (defun eliminate-n (n l)
   (if (zp n)
@@ -295,16 +295,16 @@
 
 ;;; ============================================================================
 ;;;
-;;; 2) The transformations preserve the set of solutions 
+;;; 2) The transformations preserve the set of solutions
 ;;;
 ;;; ============================================================================
 
 ;;; We prove now that the rules of transformation preserve the
 ;;; solutions of the pair of systems of equations. That is, we want to
-;;; prove the following theorems:  
+;;; prove the following theorems:
 
 ; (defthm mm-preserves-solutions-1
-;   (implies (and (unif-legal-p S-sol op) 
+;   (implies (and (unif-legal-p S-sol op)
 ; 		  (solution sigma (both-systems S-sol)))
 ; 	   (solution sigma (both-systems (unif-reduce-one-step-p S-sol op)))))
 
@@ -331,7 +331,7 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm member-solution
      (implies (and
@@ -344,14 +344,14 @@
    (defthm solution-delete-one
      (implies (solution sigma S)
 	      (solution sigma (delete-one x S)))))
-  
+
   (local
    (defthm solution-delete-one-2
     (implies (and (solution sigma (delete-one x S))
 		  (equal (instance (car x) sigma)
 			 (instance (cdr x) sigma)))
 	     (solution sigma S))))
-  
+
   (defcong perm iff (solution sigma s) 2)))
 
 
@@ -368,18 +368,18 @@
 		   (< n (len l)))
 	      (perm l (cons (nth n l) (eliminate-n n l))))
      :rule-classes nil))
-  
+
   (defthm perm-nth-eliminate-n-instance
     (let ((S (car S-sol)))
-      (implies (and (< n (len S)) (natp n)) ;;; The order of the 
-					    ;;; hypothesis is 
+      (implies (and (< n (len S)) (natp n)) ;;; The order of the
+					    ;;; hypothesis is
 					    ;;; important (free vars)
 	       (perm S (cons (nth n S) (eliminate-n n S)))))
     :hints (("Goal" :use (:instance perm-nth-eliminate-n
 				    (l (car S-sol))))))))
- 
- 
- 
+
+
+
 ;;; And also some general rules that will be useful:
 
 
@@ -405,7 +405,7 @@
 ;;;
 ;;; -----------------------------------
 
-;;; See the definition of {\tt pair-args} in {\tt basic.lisp}. 
+;;; See the definition of {\tt pair-args} in {\tt basic.lisp}.
 
 (local
  (defun induction-transform-sel-decompose-rule (l1 l2)
@@ -414,7 +414,7 @@
      (induction-transform-sel-decompose-rule (cdr l1) (cdr l2)))))
 
 (local
- (defthm transform-sel-rule-decompose 
+ (defthm transform-sel-rule-decompose
    (implies (second (pair-args l1 l2))
 	    (equal (solution sigma (first (pair-args l1 l2)))
 		   (equal (apply-subst nil sigma l1)
@@ -440,7 +440,7 @@
  (encapsulate
   ()
   (local
-   (defthm main-property-eliminate-lemma 
+   (defthm main-property-eliminate-lemma
      (implies (and (solution sigma sol) (variable-p x) flg)
 	      (equal
 	       (apply-subst flg sigma (val x sol))
@@ -464,10 +464,10 @@
 	    (equal
 	     (solution sigma (apply-syst sol S))
 	     (solution sigma S)))))
-		
+
 
 (local
-  (defthm main-property-eliminate-corollary 
+  (defthm main-property-eliminate-corollary
     (implies (solution sigma sol)
  	    (equal
  	     (solution sigma (apply-range sol S))
@@ -481,7 +481,7 @@
 
 ;;; Our goal here is to prove that the equation $x=t$ when $x$ is a
 ;;; variable (different from $t$) in the set of variables of $t$, has no
-;;; solution. 
+;;; solution.
 
 ;;; Our proof plan is the following. The idea is to show that
 ;;; $\sigma(x)\not=\sigma(t)$, for all $\sigma$, and we prove it by
@@ -499,7 +499,7 @@
 ;;; Every descendant has a size strictly less than its superterm.
 ;;; 6)
 ;;; Thus, $size(\sigma(x)) < size(\sigma(t)))$ (that is, they are
-;;; different). 
+;;; different).
 ;;; -)
 
 (local
@@ -511,23 +511,23 @@
      (implies (and (variable-p x)
 		   (member x (variables flg term)))
 	      (subterm flg (val x sigma) (apply-subst flg sigma term)))))
-  
+
   (local
-   (defthm 
+   (defthm
      if-x-is-not-term-and-is-in-term-then-is-in-some-argument
      (implies (and (member x (variables t term))
 		   (not (equal x term)))
 	      (member x (variables nil (cdr term))))))
-  
+
   (local
-   (defthm size-subterm 
+   (defthm size-subterm
      (implies (subterm flg t1 t2)
 	      (>= (size flg t2) (size t t1)))
      :rule-classes nil))
 
   (local
-   (defthm 
-     size-of-sigma-x-leq-than-the-size-of-sigma-of-arguments 
+   (defthm
+     size-of-sigma-x-leq-than-the-size-of-sigma-of-arguments
      (implies (and
 	       (variable-p x)
 	       (member x (variables t term))
@@ -539,9 +539,9 @@
 	      ((:instance size-subterm (flg nil)
 			  (t1 (val x sigma))
 			  (t2 (apply-subst nil sigma (cdr term)))))))))
-  
-  (defthm 
-    transform-sel-check-rule-not-equal-size 
+
+  (defthm
+    transform-sel-check-rule-not-equal-size
     (implies (and
 	      (variable-p x)
 	      (member x (variables t term))
@@ -553,14 +553,14 @@
 	     :use (:instance
 		   size-of-sigma-x-leq-than-the-size-of-sigma-of-arguments))))))
 
-;;; REMARK: It can be proved with @<@, but it is not necessary here. 
+;;; REMARK: It can be proved with @<@, but it is not necessary here.
 
 
 ;;; And finally, the equation $x=t$ has no solution (when $x$ is in
 ;;; $var(t)$ and is different from $t$).
 
 (local
- (defthm transform-sel-check-rule 
+ (defthm transform-sel-check-rule
    (implies (and
 	     (variable-p x)
 	     (member x (variables t term))
@@ -601,7 +601,7 @@
 ;;; $n=m$ and $a=b$. That is the equation $f(t_1,\ldots,t_n
 ;;; . a)=g(s_1,\ldots,s_m . b)$ has no solution when $n\not= m$ or
 ;;; $a\not= b$. Note that the function @pair-args@ (see {\tt basic.lisp})
-;;; checks this property). 
+;;; checks this property).
 
 (local
  (encapsulate
@@ -611,8 +611,8 @@
      (implies (equal (apply-subst nil sigma l)
 		     (apply-subst nil sigma m))
 	      (second (pair-args l m)))))
-  
-  (defthm transform-sel-not-pair-rule 
+
+  (defthm transform-sel-not-pair-rule
     (implies (and (not (variable-p t1))
 		  (not (variable-p t2))
 		  (not (second (pair-args (cdr t1) (cdr t2)))))
@@ -627,16 +627,16 @@
 ;;;
 ;;; -----------------------------------
 
-;;; The following function computes the union of the pair of the system: 
+;;; The following function computes the union of the pair of the system:
 
 (defun both-systems (S-T)
   (append (first S-T) (second S-T)))
 
 ;;; And these are the theorems proving that the transformations preserve
-;;; the set of solutions of the pair of systems: 
+;;; the set of solutions of the pair of systems:
 
 (defthm mm-preserves-solutions-1
-  (implies (and (unif-legal-p S-sol op) 
+  (implies (and (unif-legal-p S-sol op)
 		(solution sigma (both-systems S-sol)))
 	   (solution sigma (both-systems (unif-reduce-one-step-p S-sol op)))))
 
@@ -657,17 +657,17 @@
 
 ;;; ============================================================================
 ;;;
-;;; 3) The transformation rules preserve idempotency (under certain conditions) 
+;;; 3) The transformation rules preserve idempotency (under certain conditions)
 ;;;
 ;;; ============================================================================
 
 ;;; Our goal in this section is to prove the following:
 
-;  (defthm transform-mm-sel-preserves-idempotency 
+;  (defthm transform-mm-sel-preserves-idempotency
 ;    (let* ((S (first S-sol)) (sol (second S-sol))
 ; 	    (transformado (unif-reduce-one-step-p S-sol op))
 ; 	    (St (first transformado)) (solt (second transformado)))
-;      (implies (and (unif-legal-p S-sol op) 
+;      (implies (and (unif-legal-p S-sol op)
 ; 		     (idempotent sol)
 ; 		     (disjointp (system-var S) (domain sol)))
 ; 	      (and (idempotent solt)
@@ -680,25 +680,25 @@
 
 ;;; First, we use again a congruence with respect to @system-var@ and
 ;;; @equal-set@, that will be useful again to reason about selection of
-;;; equations: 
+;;; equations:
 
 (local
  (encapsulate
-  
+
   ()
-  
+
   (local (defthm subsetp-variables-lemma-1
 	   (implies (member ecu s2)
 		    (subsetp (variables t (car ecu))
 			     (system-var s2)))))
-  
+
   (local (defthm subsetp-variables-lemma-2
 	   (implies (member ecu s2)
 		    (subsetp (variables t (cdr ecu))
 			     (system-var s2)))))
-  
+
   (local (defthm subsetp-system-var
-		       (implies (subsetp S1 S2) 
+		       (implies (subsetp S1 S2)
 				(subsetp (system-var S1) (system-var S2)))))
 
 
@@ -711,13 +711,13 @@
 ;;; An useful lemma:
 
 (local
- (defthm system-var-append 
+ (defthm system-var-append
    (equal (system-var (append x y))
 	  (append (system-var x) (system-var y)))))
 
 
 ;;; Again, we need some specific lemmas for some of the transformation
-;;; rules. Let us see. 
+;;; rules. Let us see.
 
 
 ;;; -----------------------------------
@@ -732,7 +732,7 @@
   (defthm pair-args-system-var-lemma-1  ;;it will be used later
     (subsetp (system-var (first (pair-args l1 l2)))
 	     (append (variables nil l1) (variables nil l2))))
-  
+
   (local (defthm pair-args-system-var-lemma-2
 	   (implies (second (pair-args l1 l2))
 		    (subsetp (append (variables nil l1)
@@ -740,13 +740,13 @@
 			     (system-var (first (pair-args l1 l2)))))
 	   :hints (("Goal" :induct
 		    (induction-transform-sel-decompose-rule l1 l2)))))
-  
+
   (defthm pair-args-system-var
     (implies (second (pair-args l1 l2))
 	     (equal-set (system-var (first (pair-args l1 l2)))
 			(append (variables nil l1)
 				(variables nil l2)))))))
- 
+
 
 
 ;;; -----------------------------------
@@ -757,37 +757,37 @@
 
 
 (local
- (defthm apply-range-preserves-domain 
+ (defthm apply-range-preserves-domain
    (equal (domain (apply-range sigma S)) (domain S))))
 
 
 (local
- (defthm co-domain-de-apply-range 
+ (defthm co-domain-de-apply-range
   (equal (co-domain (apply-range sigma s))
 	 (apply-subst nil sigma (co-domain s)))))
 
 
 (local
- (defthm apply-range-preserves-system-substitution 
+ (defthm apply-range-preserves-system-substitution
   (implies (system-substitution S)
 	   (system-substitution (apply-range sigma S)))))
 
 (local
- (defthm eliminate-variables-in-co-domain 
+ (defthm eliminate-variables-in-co-domain
   (implies (not (member (car ecu) (variables t (cdr ecu))))
 	   (not (member (car ecu)
 			(variables flg (apply-subst flg (list ecu) s)))))))
 
 
 (local
- (defthm variables-apply-subsetp-lemma 
+ (defthm variables-apply-subsetp-lemma
   (implies (and (not (member x (variables flg term)))
 		(not (member x (variables nil (co-domain sigma)))))
 	   (not (member x (variables flg (apply-subst flg sigma term)))))))
 
 
 (local
- (defthm variables-apply-subsetp 
+ (defthm variables-apply-subsetp
   (subsetp (variables flg (apply-subst flg sigma term))
 	   (append (variables flg term) (variables nil (co-domain sigma))))
   :hints (("Goal" :in-theory (enable not-subsetp-witness-lemma)))))
@@ -801,19 +801,19 @@
 
 (local
  (defthm
-   domain-disjoint-co-domain-eliminate-bridge-lemma 
+   domain-disjoint-co-domain-eliminate-bridge-lemma
   (implies (disjointp m
 		      (append (variables flg term)
 			      (variables nil (co-domain sigma))))
 	   (disjointp m (variables flg (apply-subst flg sigma term))))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
 	   ((:instance
 	     subsetp-disjoint
 	     (b (append (variables flg term) (variables nil (co-domain sigma))))
 	     (a (variables flg (apply-subst flg sigma term)))))))))
 
 (local
- (defthm eliminate-eliminate-variables 
+ (defthm eliminate-eliminate-variables
   (implies (not (member (car ecu) (variables t (cdr ecu))))
 	   (not (member (car ecu) (system-var
 				   (apply-syst (list ecu) s)))))
@@ -825,29 +825,29 @@
  (encapsulate
   ()
   (local
-   (defthm eliminate-eliminate-variables-2 
+   (defthm eliminate-eliminate-variables-2
      (implies (and (not (member x (variables nil (co-domain sigma))))
 		   (not (member x (system-var s))))
 	      (not (member x (system-var
 			      (apply-syst sigma s)))))))
-  
-  (defthm subsetp-system-var-co-domain 
+
+  (defthm subsetp-system-var-co-domain
     (subsetp (system-var (apply-syst sigma s))
 	     (append (variables nil (co-domain sigma))
 		     (system-var s)))
     :hints (("Goal" :in-theory
 	     (enable not-subsetp-witness-lemma))))))
- 
+
 
 (local
  (defthm
-   domain-disjoint-system-eliminate-bridge-lemma 
+   domain-disjoint-system-eliminate-bridge-lemma
    (implies (disjointp m
 		       (append (variables nil (co-domain sigma))
 			       (system-var S)))
 	   (disjointp m
 		      (system-var (apply-syst sigma S))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance
 		   subsetp-disjoint
 		   (b (append (variables nil (co-domain sigma)) (system-var S)))
@@ -862,11 +862,11 @@
 ;;; -----------------------------------
 
 (local
- (defthm transform-mm-sel-preserves-idempotency 
+ (defthm transform-mm-sel-preserves-idempotency
    (let* ((S (first S-sol)) (sol (second S-sol))
 	  (transformado (unif-reduce-one-step-p S-sol op))
 	  (St (first transformado)) (solt (second transformado)))
-     (implies (and (unif-legal-p S-sol op) 
+     (implies (and (unif-legal-p S-sol op)
 		   (idempotent sol)
 		   (disjointp (system-var S) (domain sol)))
 	      (and (idempotent solt)
@@ -879,7 +879,7 @@
 
 ;;; ============================================================================
 ;;;
-;;; 4) The transformation rules describe a noetherian relation 
+;;; 4) The transformation rules describe a noetherian relation
 ;;;
 ;;; ============================================================================
 
@@ -898,11 +898,11 @@
 ;;; where @n-system-var@ defines the the number of (different) variables
 ;;; of the system, @size-system@ is the total number of function symbols
 ;;; of the system and {\tt n\--variables\--right\--hand\--side} is the
-;;; number of equations in a system with a variable right hand side. 
+;;; number of equations in a system with a variable right hand side.
 
 ;;; Our goal is to prove the following theorems:
 
-; (defthm ordinalp-unification-measure 
+; (defthm ordinalp-unification-measure
 ;   (o-p (unification-measure S-sol)))
 
 ; (defthm unification-measure-decreases
@@ -914,20 +914,20 @@
 ; that the transformation relation is well-founded
 
 ;;; The first theorem is easy. For the second, we need to prove the
-;;; following: 
+;;; following:
 
 ;;; 1)
 ;;;  Every transformation step does not add new variables to the first
-;;;  system. 
+;;;  system.
 ;;; 2)
-;;;  The ELIMINATE rule eliminates one variable of the first system. 
+;;;  The ELIMINATE rule eliminates one variable of the first system.
 ;;; 3)
 ;;;  If the number of variables stays the same, then the size of the
-;;;  first system does not increase. 
+;;;  first system does not increase.
 ;;; 4)
 ;;;  If the number of variables and the size is equal, then the number
 ;;;  of variables in the right hand side of equations stay the same.
-;;; -)  
+;;; -)
 
 ;;; Let us see in detail every of the above items:
 
@@ -951,7 +951,7 @@
 		      (system-var S)))))
 
 (local
-  (defthm subsetp-variables-eliminate-lemma 
+  (defthm subsetp-variables-eliminate-lemma
     (implies (and (natp n) (< n (len S)))
 	     (subsetp (append (system-var (list (nth n S)))
 			      (system-var (eliminate-n n S)))
@@ -960,9 +960,9 @@
 
 
 (local
-  (defthm subsetp-variables-eliminate 
+  (defthm subsetp-variables-eliminate
    (implies (and (natp n) (< n (len S))
-		 (variable-p (car (nth n S)))) 
+		 (variable-p (car (nth n S))))
 	    (subsetp (system-var (apply-syst (list (nth n S)) (eliminate-n n S)))
 		     (system-var S)))
    :hints (("Goal"
@@ -975,7 +975,7 @@
 ;;; Two lemmas about @len@, @setp@ and @subsetp@.
 
 (local
- (defthm len-subsetp-setp 
+ (defthm len-subsetp-setp
    (implies (and (setp l) (setp m) (subsetp l m))
 	   (<= (len l) (len m)))
    :hints (("Goal" :induct (subset-induction l m)))))
@@ -999,19 +999,19 @@
 	     (subsetp (system-var (car (unif-reduce-one-step-p S-sol op)))
 		      (system-var (car S-sol))))
     :hints (("Subgoal 2"
-	     :use (:instance subsetp-variables-eliminate 
+	     :use (:instance subsetp-variables-eliminate
 			     (n (cadr op))
 			     (S (car S-sol))))))
-  
+
 ;; And finally, in terms of @n-system-var@:
 
   (defthm
-    transform-does-not-increases-n-variables 
+    transform-does-not-increases-n-variables
     (implies (unif-legal-p S-sol op)
 	     (>= (n-system-var (first S-sol))
 		 (n-system-var (first (unif-reduce-one-step-p S-sol op)))))
     :rule-classes :linear
-    :hints (("Goal" :in-theory 
+    :hints (("Goal" :in-theory
 	     (disable system-var unif-reduce-one-step-p unif-legal-p))))))
 
 
@@ -1026,25 +1026,25 @@
 
 ;;; For that purpose, we will use the lemma {\tt
 ;;; len\--subsetp\--setp\--strict} (see below) where @x@ is {\tt (car
-;;; ecu)}.  
+;;; ecu)}.
 
 (local
  (encapsulate
   ()
- 
+
   (local
    (defthm positive-length-member
      (implies (member x l)
 	      (< 0 (len l)))
      :rule-classes (:rewrite :linear)))
-  
+
   (local
    (defthm member-eliminate
      (implies (and (member x l)
 		   (not (equal x y)))
 	      (member x (eliminate y l)))))
-  
-  (defthm len-subsetp-setp-strict 
+
+  (defthm len-subsetp-setp-strict
     (implies (and
 	      (setp l)
 	      (setp m)
@@ -1098,7 +1098,7 @@
 ;;; We show now that the size of the system does not increase (whenever
 ;;; the number of variables stays the same).
 
-;;; First, two useful congruences, to deal with selection of equations: 
+;;; First, two useful congruences, to deal with selection of equations:
 
 (local
  (encapsulate
@@ -1109,7 +1109,7 @@
 		    (equal (size-system S)
 			   (+ (size t (car x)) (size t (cdr x))
 			      (size-system (delete-one x S)))))))
-  
+
   (defcong perm equal (size-system S) 1)))
 
 
@@ -1125,14 +1125,14 @@
 			   (if (variable-p (cdr x))
 			       (1+ (n-variables-right-hand-side (delete-one x S)))
 			     (n-variables-right-hand-side (delete-one x S)))))))
-  
+
   (defcong perm equal (n-variables-right-hand-side S) 1)))
 
 
 ;;; A technical lemma:
 
 (local
-  (defthm size-system-append 
+  (defthm size-system-append
     (equal (size-system (append x y))
  	  (+ (size-system x) (size-system y)))))
 
@@ -1140,7 +1140,7 @@
 ;;; This lemma is needed to deal with the DECOMPOSE rule:
 
 (local
- (defthm size-systems-decompose-lemma 
+ (defthm size-systems-decompose-lemma
    (implies (second (pair-args l1 l2))
  	    (equal (size-system (first (pair-args l1 l2)))
  		   (+ (size nil l1) (size nil l2))))))
@@ -1163,11 +1163,11 @@
 
 ;;; We disable @n-system-var@:
 
-(local (in-theory (disable n-system-var)))  
+(local (in-theory (disable n-system-var)))
 
 ;;; REMARK: This @disable@ is needed here, because we want to prove
 ;;; later  {\tt
-;;; if\--n\--variables\--and\--size\--are\--equal\--reduction\--decrease\--n\--variables\--r-h-s}  
+;;; if\--n\--variables\--and\--size\--are\--equal\--reduction\--decrease\--n\--variables\--r-h-s}
 
 
 ;;; -----------------------------------
@@ -1179,7 +1179,7 @@
 ;;; A technical lemma:
 
 (local
- (defthm size-t->-0 
+ (defthm size-t->-0
   (implies (not (variable-p term)) (< 0 (size t term)))
   :rule-classes :linear))
 
@@ -1213,13 +1213,13 @@
 
 (local (in-theory (disable n-system-var
 		    size-system
-		    n-variables-right-hand-side))) 
+		    n-variables-right-hand-side)))
 
 (local (in-theory (disable unif-legal-p unif-reduce-one-step-p)))
 
 ;;; And finally:
 
-(defthm lexp-unification-measure 
+(defthm lexp-unification-measure
   (o-p (unification-measure S-sol)))
 
 (defthm unification-measure-decreases
@@ -1258,9 +1258,9 @@
 	   (unif-seq-p-p
 	    (unif-reduce-one-step-p S-sol op)
 	    (cdr unif-seq))))))
-      
+
 ;;; The following function obtains the last pair of systems obtained by
-;;; a sequence of transformations (given by the sequence of operators):  
+;;; a sequence of transformations (given by the sequence of operators):
 
 (defun unif-seq-p-last (S-sol unif-seq)
   (if (endp unif-seq)
@@ -1279,7 +1279,7 @@
 ;;; First, a technical lemma:
 
 (local
- (defthm if-solvable-transform-sel-success 
+ (defthm if-solvable-transform-sel-success
    (implies (and (consp seq)
 		 (unif-seq-p-p S-sol seq)
 		 (unif-seq-p-last S-sol seq))
@@ -1303,7 +1303,7 @@
 
 
 (local
- (defthm unif-seq-p-equivalent-2 
+ (defthm unif-seq-p-equivalent-2
   (implies (and  (unif-seq-p-p S-sol unif-seq)
 		 (unif-seq-p-last S-sol unif-seq)
 		 (solution sigma (both-systems (unif-seq-p-last S-sol unif-seq))))
@@ -1311,8 +1311,8 @@
   :rule-classes nil))
 
 (local
- (defthm unif-seq-p-unsolvable 
-  (implies (and (consp S-sol) ;;; esto es necesario 
+ (defthm unif-seq-p-unsolvable
+  (implies (and (consp S-sol) ;;; esto es necesario
 		(unif-seq-p-p S-sol unif-seq)
 		(not (unif-seq-p-last S-sol unif-seq)))
 	   (not (solution sigma (both-systems S-sol))))
@@ -1323,10 +1323,10 @@
 (local (in-theory (enable both-systems)))
 
 
-;;; Idempotence of the second system is preserved: 
+;;; Idempotence of the second system is preserved:
 
 (local
- (defthm unif-seq-p-preserves-idempotency 
+ (defthm unif-seq-p-preserves-idempotency
    (let* ((S (first S-sol))  (sol (second S-sol))
 	  (unif-seq-p-last (unif-seq-p-last S-sol unif-seq))
 	  (solution (second unif-seq-p-last)))
@@ -1347,14 +1347,14 @@
 
 ;;; We are interested in a particular case of sequences. Those beginning
 ;;; in pair of systems of the form $S;\emptyset$ and ending in pair of
-;;; systems of the form $\emptyset;\sigma$ or in $\bot$ (failure). 
+;;; systems of the form $\emptyset;\sigma$ or in $\bot$ (failure).
 ;;; From the above properties it is easy to prove
 ;;; that $S$ is solvable if and only if failure is not
 ;;; obtained, and in that case $\sigma$ is a most general solution of
-;;; $S$. 
+;;; $S$.
 
 ;;; This the definition of these type of sequences of operators, and the
-;;; pair of system finally obtained by the sequence of transformations: 
+;;; pair of system finally obtained by the sequence of transformations:
 
 
 (defun mgs-seq-p (S seq)
@@ -1372,45 +1372,45 @@
 ; ACL2 !>(defconst *S0* (list (cons '(f x (g v) (a)) '(f (h y z) y v))))
 
 ;;; The function @mgs-seq-p@ checks if a given sequence of operators is
-;;; legal: 
+;;; legal:
 
-; ACL2 !>(mgs-seq-p *S0* '((decompose 0) (eliminate 0) 
+; ACL2 !>(mgs-seq-p *S0* '((decompose 0) (eliminate 0)
 ;                          (orient 0) (eliminate 0) (orient 0) (eliminate 0)))
 ; T
 
 ;;; The function @mgs-seq@ obtains the final pair of system obtained
 ;;; applying the sequence of opertors:
 
-; ACL2 !>(mgs-seq *S0* '((decompose 0) (eliminate 0) (orient 0) 
+; ACL2 !>(mgs-seq *S0* '((decompose 0) (eliminate 0) (orient 0)
 ;                        (eliminate 0) (orient 0) (eliminate 0)))
 ; (NIL (V A) (Y G (A)) (X H (G (A)) Z))
 
 ;;; The second system contains a most genarl solution of @*S0*@:
- 
-; ACL2 !>(second (mgs-seq *S0* '((decompose 0) (eliminate 0) (orient 0) 
+
+; ACL2 !>(second (mgs-seq *S0* '((decompose 0) (eliminate 0) (orient 0)
 ;                                (eliminate 0) (orient 0) (eliminate 0))))
 ; ((V A) (Y G (A)) (X H (G (A)) Z))
 
 ;;; The following properties prove the intended properties, an easy
 ;;; consequence of the properties of the previous section:
 
-(defthm mgs-seq-completeness 
+(defthm mgs-seq-completeness
   (implies (and (solution sigma S)
 		(mgs-seq-p S unif-seq))
 	   (mgs-seq S unif-seq))
   :rule-classes nil
   :hints
-  (("Goal" :use 
+  (("Goal" :use
     ((:instance unif-seq-p-unsolvable (S-sol (list S nil)))))))
 
 
-(defthm mgs-seq-soundness 
+(defthm mgs-seq-soundness
   (implies (and (mgs-seq-p S unif-seq)
 		(mgs-seq S unif-seq))
 	   (solution (second (mgs-seq S unif-seq)) S))
   :rule-classes nil
   :hints (("Goal" :use
-	   ((:instance unif-seq-p-equivalent-2 
+	   ((:instance unif-seq-p-equivalent-2
 		       (S-sol (list S nil))
 		       (sigma (second (mgs-seq S unif-seq))))))))
 
@@ -1435,7 +1435,7 @@
 
 (in-theory (disable mgs-seq mgs-seq-p))
 
-(defthm mgs-sel-most-general-solution 
+(defthm mgs-sel-most-general-solution
   (implies (and (solution sigma S) (mgs-seq-p S unif-seq))
 	   (subs-subst (second (mgs-seq S unif-seq)) sigma))
   :hints (("Goal"
@@ -1460,7 +1460,7 @@
 ;;; not obtained and in that case $\sigma$ is a most general idempotent
 ;;; solution of $S$. Thus, to verify a given unification algorithm, we
 ;;; simply has to show that the result obtained is the result obtained
-;;; by a sequence of legal operators. 
+;;; by a sequence of legal operators.
 
 
 

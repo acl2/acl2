@@ -196,7 +196,7 @@
 		   (floor x y))
 		(<= (floor x y)
 		    (/ x y))))
-  :rule-classes ((:generalize) 
+  :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y)))
                  (:forward-chaining :trigger-terms ((floor x y)))))
 
@@ -205,7 +205,7 @@
 		(integerp (/ x y)))
 	   (equal (floor x y)
 		  (/ x y)))
-  :rule-classes ((:generalize) 
+  :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y)))
                  (:forward-chaining :trigger-terms ((floor x y)))))
 
@@ -214,7 +214,7 @@
 		(not (integerp (/ x y))))
 	   (< (floor x y)
 	      (/ x y)))
-  :rule-classes ((:generalize) 
+  :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y)))
                  (:forward-chaining :trigger-terms ((floor x y)))))
 
@@ -278,7 +278,7 @@
 		    (<= y x)
 		  (<= x y)))
 	   (< 0 (floor x y)))
-;;  :hints (("Subgoal 4.1.2'" :in-theory 
+;;  :hints (("Subgoal 4.1.2'" :in-theory
 ;;                            (enable prefer-positive-exponents-match-base)))
 ;;  :otf-flg t
   :rule-classes ((:rewrite :backchain-limit-lst 0)
@@ -610,7 +610,7 @@
 
 
 
-(defthm floor-cancel-* 
+(defthm floor-cancel-*
   (implies (and (fm-guard x y)
 		(integerp x))
 	   (and (equal (floor (* x y) y)
@@ -631,7 +631,7 @@
 		      0
 		    (- y (mod x y)))))
   :hints (("Goal" :in-theory (enable mod))))
-		   
+
 (defthm simplify-mod-*
   (implies (fm-guard x (y z))
 	    (equal (mod (* x y) (* y z))
@@ -649,7 +649,7 @@
 		(integerp i)
 		(fm-guard (x y) z))
 	   (and (equal (floor (+ x y) z)
-		       (+ i (floor y z))) 
+		       (+ i (floor y z)))
 		(equal (floor (+ y x) z)
 		       (+ i (floor y z))))))
 
@@ -665,7 +665,7 @@
 		(integerp i)
 		(fm-guard (x y) z))
 	   (and (equal (mod (+ x y) z)
-		       (mod y z)) 
+		       (mod y z))
 		(equal (mod (+ y x) z)
 		       (mod y z))))
   :hints (("Goal" :in-theory (enable mod))))

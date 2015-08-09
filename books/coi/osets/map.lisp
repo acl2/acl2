@@ -34,11 +34,11 @@
 ;; and only add the new functions and theorems that had been in COI.
 
 
-#| 
+#|
 
  map.lisp
 
-   This is an optional extension of the sets library, and is not 
+   This is an optional extension of the sets library, and is not
    included by default when you run include-book on "sets".
 
 
@@ -51,7 +51,7 @@
       map-list<function>
 
    In addition to introducing these functions, a large rewriting
-   strategy is developed for reasoning about the new mapping 
+   strategy is developed for reasoning about the new mapping
    functions.
 
 
@@ -71,25 +71,25 @@
      (SET::map-function (square x))
        - (SET::map<square> '(1 2 3)) = (1 4 9)
        - (SET::map<square> '(a b c)) = (0)
-    
+
    Note that you cannot use macros here.  For example, you cannot map
-   real/rationalp, because it is not a function.  
+   real/rationalp, because it is not a function.
 
-  
-   Controlling Packages.  
 
-   As you can see, the new map<f> functions are added to the SET 
+   Controlling Packages.
+
+   As you can see, the new map<f> functions are added to the SET
    package by default.  If you would like them to be in a new place,
-   you can use the :in-package-of argument to map-function.  For 
+   you can use the :in-package-of argument to map-function.  For
    example, since defthm is in the ACL2 package, we can run:
 
      (SET::map-function (square x)
        :in-package-of defthm)
 
-   And map<square> will be created in the ACL2 package instead of 
+   And map<square> will be created in the ACL2 package instead of
    the sets package.
-  
-   
+
+
    Multi-Argument Transformation Functions.
 
    You can also introduce transformations with multiple arguments.
@@ -103,10 +103,10 @@
 
      (SET::map-function (square-then-add input offset)
         :in-package-of defthm)
-   
+
      (map<square-then-add> '(1 2 3) 5) => (6 9 14)
 
-   
+
    Supporting Guards.
 
    We can support transformation functions that require guards by
@@ -128,7 +128,7 @@
 
 |#
 
-(in-package "SET") 
+(in-package "SET")
 (include-book "quantify")
 (include-book "std/osets/map" :dir :system)
 (set-verify-guards-eagerness 2)
@@ -155,7 +155,7 @@
 ;; ; We will map an arbitrary transformation function across the set.  We
 ;; ; don't assume anything about transform.
 
-;; (encapsulate 
+;; (encapsulate
 ;;   (((transform *) => *))
 ;;   (local (defun transform (x) x)))
 
@@ -165,7 +165,7 @@
 ;; ; ensure that we first transform every element of the set, and then
 ;; ; mergesort the results.  This gives O(n) + O(n log n) performance
 ;; ; intead of the O(n^2) required for repeated insertion.  We introduce
-;; ; these functions as a constant, so we can rewrite it later to 
+;; ; these functions as a constant, so we can rewrite it later to
 ;; ; actually create maps.
 
 ;; (defconst *map-functions* '(
@@ -201,7 +201,7 @@
 ;; (instance-*map-functions*)
 
 
-;; ; We now quantify over the predicate inversep, allowing us to talk 
+;; ; We now quantify over the predicate inversep, allowing us to talk
 ;; ; about the existence of inverses in sets.
 
 ;; (quantify-predicate (inversep a b))
@@ -285,7 +285,7 @@
 
 
 
-;; ; And finally we prove this theorem, which will be useful for 
+;; ; And finally we prove this theorem, which will be useful for
 ;; ; verifying the guards of map.
 
 ;;   (defthm map-mbe-equivalence
@@ -337,10 +337,10 @@
 ;; ; the following function, for which we introduce a corresponding
 ;; ; macro.
 
-;; (defun map-function-fn (function in-package 
-;;                                  set-guard 
-;;                                  list-guard 
-;;                                  element-guard 
+;; (defun map-function-fn (function in-package
+;;                                  set-guard
+;;                                  list-guard
+;;                                  element-guard
 ;;                                  arg-guard)
 
 ;;   (declare (xargs :mode :program))
@@ -441,7 +441,7 @@
 
 ;;                 #+joe
 ;; 		(deftheory ,theory<f>
-;;                   (union-theories 
+;;                   (union-theories
 ;;                    (theory ',(mksym (app "theory" ipw) in-package))
 ;;                    '(,map<f> ,map-list<f> ,inversep<f>
 ;;                      ,@theory<f>-defthms)))
@@ -449,12 +449,12 @@
 ;;                 )))
 
 
-;; (defmacro map-function (function &key in-package-of 
-;;                                       set-guard 
-;;                                       list-guard 
-;;                                       element-guard 
+;; (defmacro map-function (function &key in-package-of
+;;                                       set-guard
+;;                                       list-guard
+;;                                       element-guard
 ;;                                       arg-guard)
-;;   (map-function-fn function 
+;;   (map-function-fn function
 ;;                    (if in-package-of in-package-of 'in)
 ;;                    (standardize-to-package "?SET" '?set set-guard)
 ;;                    (standardize-to-package "?LIST" '?list list-guard)
@@ -463,13 +463,13 @@
 ;;                    ))
 
 
-;; (deftheory generic-map-theory 
+;; (deftheory generic-map-theory
 ;;   ;(union-theories (theory 'theory<inversep>)
 ;;   `(,@(INSTANCE::defthm-names *map-theorems*)
-;;       map 
+;;       map
 ;;       map-list
 ;;       inversep))
 
 ;; (in-theory (disable generic-map-theory))
-                     
+
 

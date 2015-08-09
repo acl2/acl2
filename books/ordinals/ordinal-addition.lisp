@@ -130,7 +130,7 @@
   (implies (o-p a)
            (o< a (o+ a 1))))
 
-#|  
+#|
 (local
  (defun add-ind-1 (a b)
    (if (consp a)
@@ -146,8 +146,8 @@
   :hints (("goal"
 	   :in-theory (enable o<)
 	   :induct (o< a b)))
-  :rule-classes ((:rewrite 
-                  :corollary 
+  :rule-classes ((:rewrite
+                  :corollary
                   (implies (and (o-p a)
                                 (o-p b))
                            (equal (o< b (o+ a 1))
@@ -227,7 +227,7 @@
 	   :cases ((o< (o-first-expt b)
 		       (o-first-expt c))))))
 
-(encapsulate 
+(encapsulate
 
 ; This encapsulate is here just so that we do not have to give a
 ; subgoal hint to |(a+b)+c = a+(b+c)|.
@@ -245,7 +245,7 @@
     :hints (("goal"
              :cases ((o< (o-first-expt b) (o-first-expt c))
                      (o< (o-first-expt c) (o-first-expt b)))))))
- 
+
  (local
   (defun o+-induct (a b c)
     (if (and (o-p a)
@@ -280,10 +280,10 @@
   (implies (and (o-p a)
                 (o-p b))
            (o<= (o- a b) a))
-  :hints (("goal" 
+  :hints (("goal"
 	   :in-theory (enable o<)
            :induct (o- a b)))
-  :rule-classes ((:rewrite) 
+  :rule-classes ((:rewrite)
                  (:forward-chaining :trigger-terms ((o- a b)))))
 
 (defthm bad
@@ -291,18 +291,18 @@
                 (o-p a)
                 (o-p b))
            (o<= (o-first-expt a) (o-first-expt b)))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :trigger-terms ((o< (o-first-expt a) (o-first-expt b))))))
 
 #|
 (defthm o--o-first-expt
   (implies (and (o-p a)
 		(o-p b))
-	   (not (o< (o-first-expt a) 
+	   (not (o< (o-first-expt a)
 		    (o-first-expt (o- a b))))))
 |#
 
-; The hints are not really needed, but they speed up the book. 
+; The hints are not really needed, but they speed up the book.
 (defthm o-first-expt-o--<
  (implies (and (o< (o-first-expt b) (o-first-expt a))
                (o-p a)
@@ -311,10 +311,10 @@
 	  (o< (o-first-expt (o- b c))
 	      (o-first-expt a)))
  :hints (("goal"
-	  :in-theory 
+	  :in-theory
 	  (disable |a <= b & b < c  =>  a < c|)
 	  :use ((:instance |a <= b & b < c  =>  a < c|
-			   (a (o-first-expt (o- b 
+			   (a (o-first-expt (o- b
 					     c)))
 			   (b (o-first-expt b))
 			   (c (o-first-expt a)))))))
@@ -340,7 +340,7 @@
   :hints (("goal"
 	   :use ((:instance o-first-expt-o--<
 			    (b (o-rst a))
-			    (c b))))))) 
+			    (c b)))))))
 
  (defthm |a <= b  =>  a+(b-a) = b|
    (implies (and (o-p a)
@@ -485,9 +485,9 @@ corollary, you get the above rule.
   (implies (and (atom a)
 		(atom b))
 	   (equal (o+ a b) (+ a b))))
-  	
+
 (defthm o+-o-rst-1
-  (implies (and (o< (o-first-expt b) 
+  (implies (and (o< (o-first-expt b)
 		    (o-first-expt a))
                 (o-p a)
 		(o-p b))

@@ -116,7 +116,7 @@
 ;;; Suppose that we have (collection-P x a0 a1 ... an)  to a simpler
 ;;; argument.  We begin by defining a synonym for collection-P, e.g.,
 ;;;
-;;; (defun collection-P-tag (x a0 a1 ... an) 
+;;; (defun collection-P-tag (x a0 a1 ... an)
 ;;;   (collection-P x a0 a1 ... an))
 ;;;
 ;;; Now we instruct the theorem prover to rewrite instances of
@@ -124,9 +124,9 @@
 ;;; and as long as conclusion occurs as the goal.  For example,
 ;;;
 ;;; (defthm tagging-theorem
-;;;   (implies 
+;;;   (implies
 ;;;     (and (syntaxp (rewriting-goal-lit mfc state))
-;;;          (syntaxp (rewriting-conc-lit `(collection-P ,x ,a0 ... ,an) 
+;;;          (syntaxp (rewriting-conc-lit `(collection-P ,x ,a0 ... ,an)
 ;;;                                       mfc state)))
 ;;;            (equal (collection-P x a0 ... an)
 ;;;                   (collection-P-tag x a0 ... an))))
@@ -178,7 +178,7 @@
 ;;; Now, our intention is to functionally instantiate the theorem in
 ;;; question.  To do this, we need to provide values for the
 ;;; hypotheses and arguments a0 ... an.
-;;; 
+;;;
 ;;; In order to recover the hypotheses, we first remove from the
 ;;; clause all of our trigger terms.  We then negate each of the
 ;;; remaining literals as they occur in the clause.  And, if there are
@@ -232,7 +232,7 @@
 ;;; Building Hints
 ;;;
 ;;; Our ultimate goal now is to be able to create functional
-;;; instantiation hints for each trigger which was found.  In other 
+;;; instantiation hints for each trigger which was found.  In other
 ;;; words, we now have a set of triggers which look like the following:
 ;;;
 ;;;  ((collection-P-tag col1 [extra-args1])
@@ -273,9 +273,9 @@
 ;;;   the collection predicate has the collection as its first
 ;;;   argument.
 ;;;
-;;;   The substitution for collection-P is also fairly easy.  Since 
-;;;   we require that the collection function's first argument is 
-;;;   the collection under examination, we simply need to write 
+;;;   The substitution for collection-P is also fairly easy.  Since
+;;;   we require that the collection function's first argument is
+;;;   the collection under examination, we simply need to write
 ;;;   (lambda (?x) (actual-collection-P ?x [extra-args])), where the
 ;;;   extra arguments are taken from the trigger we are looking at.
 ;;;
@@ -291,8 +291,8 @@
 ;;;
 ;;;     (predicate ?x a0 a1 a2 ... an)
 ;;;
-;;;   Where "predicate" is literally the name of the generic 
-;;;   predicate.  The user can then provide a substitution such 
+;;;   Where "predicate" is literally the name of the generic
+;;;   predicate.  The user can then provide a substitution such
 ;;;   as:
 ;;;
 ;;;     (predicate ?x ?y) -> (not (integer-lessp ?x ?y))
@@ -311,15 +311,15 @@
 		   predicate-rewrite)     ; rewrite rule for predicate
   (let* ((base-pred (cons generic-predicate (cons '?x (cddr trigger))))
 	 (pred-sub  (instance-rewrite base-pred predicate-rewrite)))
-    `(:functional-instance 
+    `(:functional-instance
       ,generic-theorem
-      (,generic-hyps         
+      (,generic-hyps
        (lambda () ,hyps-sub))
-      (,generic-collection   
+      (,generic-collection
        (lambda () ,(second trigger)))
-      (,generic-collection-P 
+      (,generic-collection-P
        (lambda (?x) ,(cons collection-P-sub (cons '?x (cddr trigger)))))
-      (,generic-predicate 
+      (,generic-predicate
        (lambda (?x) ,pred-sub)))))
 
 (defun build-hints (triggers
@@ -334,7 +334,7 @@
   (if (endp triggers)
       nil
     (cons (build-hint (car triggers)
-		      generic-theorem 
+		      generic-theorem
 		      generic-hyps
 		      generic-collection
 		      generic-predicate
@@ -343,7 +343,7 @@
 		      hyps-sub
 		      predicate-rewrite)
 	  (build-hints (cdr triggers)
-		       generic-theorem 
+		       generic-theorem
 		       generic-hyps
 		       generic-collection
 		       generic-predicate
@@ -353,7 +353,7 @@
 		       predicate-rewrite))))
 
 
-(defconst *message* 
+(defconst *message*
  "~|~%We suspect this conjecture should be proven by functional ~
   instantiation of ~x0.  This suspicion is caused by ~x2, so ~
   if this is not what you want to do, then you should disable ~
@@ -365,7 +365,7 @@
 ;;; Of course, some of those hints can be computed.  Here we write a function
 ;;; to actually provide these hints and install the computed hint function.
 
-(defun automate-instantiation-fn (new-hint-name 
+(defun automate-instantiation-fn (new-hint-name
 				  generic-theorem
 				  generic-hyps
 				  generic-collection
@@ -384,7 +384,7 @@
 	   nil
 	 (let ((triggers (harvest-trigger clause ,trigger-symbol)))
 	   (if (not triggers)
-	       nil 
+	       nil
 	     (let* ((others   (set-difference-equal clause triggers))
 		    (hyps     (others-to-hyps others))
 		    (phrase   (string-for-tilde-@-clause-id-phrase id))
@@ -399,13 +399,13 @@
 					   ,predicate-rewrite))
 		    (hints    (list :use fi-hints
 				    :expand triggers)))
-	       (prog2$ (cw *message* 
-			   ,generic-theorem 
-			   (list phrase hints) 
+	       (prog2$ (cw *message*
+			   ,generic-theorem
+			   (list phrase hints)
 			   ,tagging-theorem)
 		       hints))))))
 
-     (add-default-hints! 
+     (add-default-hints!
       '((,new-hint-name id clause world stable-under-simplificationp)))
 
      ))
@@ -413,9 +413,9 @@
 
 
 
-(defmacro automate-instantiation (&key new-hint-name 
+(defmacro automate-instantiation (&key new-hint-name
 				       generic-theorem
-                                       generic-hyps 
+                                       generic-hyps
 				       generic-collection
 				       generic-predicate
 				       generic-collection-predicate
@@ -423,7 +423,7 @@
 				       predicate-rewrite
 				       actual-trigger
 				       tagging-theorem)
-  (automate-instantiation-fn new-hint-name 
+  (automate-instantiation-fn new-hint-name
 			     (list 'quote generic-theorem)
 			     (list 'quote generic-hyps)
 			     (list 'quote generic-collection)

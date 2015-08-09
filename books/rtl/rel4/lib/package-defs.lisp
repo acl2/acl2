@@ -42,9 +42,9 @@
 
 (defmacro fp-symbols ()
   ''(natp fl cg fl-half bvecp bv-arrp sumbits sigm kap tau lamt lamg lamz lam1 lam2 lam3 lam4 lam0 lamb
-          expo sgn sig 
-          exactp fp+ bias esgnf eexpof esigf erepp eencodingp eencode edecode ndecode rebias-expo isgnf iexpof isigf 
-          nrepp drepp irepp nencodingp dencodingp iencodingp nencode dencode iencode ddecode idecode trunc away re 
+          expo sgn sig
+          exactp fp+ bias esgnf eexpof esigf erepp eencodingp eencode edecode ndecode rebias-expo isgnf iexpof isigf
+          nrepp drepp irepp nencodingp dencodingp iencodingp nencode dencode iencode ddecode idecode trunc away re
           near near-witness near+ sticky oddr kp inf minf ieee-mode-p rnd flip rnd-const drnd))
 
 ;;ACL2 symbols that are imported by all packages:

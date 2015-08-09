@@ -40,7 +40,7 @@
              (local (defthm true-listp-rm
                       (implies (true-listp a)
                                (true-listp (rm e a)))))
-             
+
              (defthm ordered-perms
                (implies (and (true-listp a)
                              (true-listp b)

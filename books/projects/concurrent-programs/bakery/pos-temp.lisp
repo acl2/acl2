@@ -31,8 +31,8 @@ the invariants
 (defthm pos=1+temp-auxlillary-property-1
   (implies (implies (pos (<- procs (falsifier-pos-temp procs queue)))
                     (equal (pos (<- procs (falsifier-pos-temp procs queue)))
-                           (1+ (temp (<- procs 
-                                         (falsifier-pos-temp procs 
+                           (1+ (temp (<- procs
+                                         (falsifier-pos-temp procs
                                                              queue))))))
            (pos=1+temp procs queue)))
 )
@@ -43,8 +43,8 @@ the invariants
                          queue))
            (pos=1+temp procs queue)))
 )
- 
-(local            
+
+(local
 (defthm inv-p-p-implies-pos=1+temp
   (implies (inv-p-p procs in bucket queue max)
            (implies (pos (<- procs in))

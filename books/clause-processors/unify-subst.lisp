@@ -322,7 +322,7 @@
     (b* (((mv ?ok newalist) (unify-const pat const alist)))
       (implies (all-keys-bound keys alist)
                (all-keys-bound keys newalist))))
-  
+
 
   (encapsulate nil
     (local (defthm equal-of-len
@@ -917,7 +917,7 @@
      (defthm new-ev-simple-one-way-unify-equalities-of-nil
        (equal (new-ev-simple-one-way-unify-equalities pat term subst nil)
               t))
-     
+
      (defthm new-ev-simple-one-way-unify-equalities-of-cons
        (equal (new-ev-simple-one-way-unify-equalities pat term subst (cons a b))
               (and (equal (new-ev term a)
@@ -933,7 +933,7 @@
                      (new-ev-lst pat (new-ev-alist subst (car envs))))
               (new-ev-lst-simple-one-way-unify-equalities pat term subst (cdr envs)))))
 
-     
+
      (defthm simple-one-way-unify-lst-with-new-ev
        (mv-let (ok subst)
          (simple-one-way-unify-lst pat term alist)
@@ -955,7 +955,7 @@
      (defthm new-ev-lst-simple-one-way-unify-equalities-of-nil
        (equal (new-ev-lst-simple-one-way-unify-equalities pat term subst nil)
               t))
-     
+
      (defthm new-ev-lst-simple-one-way-unify-equalities-of-cons
        (equal (new-ev-lst-simple-one-way-unify-equalities pat term subst (cons a b))
               (and (equal (new-ev-lst term a)
@@ -990,7 +990,7 @@
       nil
     (cons (def-unify-suffix-pair new-ev ev (car syms))
           (def-unify-suffix-pairs new-ev ev (cdr syms)))))
-                
+
 (defun def-unify-fn (ev ev-alist world)
   (b* ((ev-lst (find-ev-counterpart ev world))
        (constr-0 (ev-find-fncall-generic-rule ev world))
@@ -1070,7 +1070,7 @@
   (equal (cdr (assoc-equal k (id-nest-ev-alist x a)))
          (id-nest-ev (cdr (assoc-equal k x)) a)))
 
-(defthm simple-one-way-unify-usage-for-id-nest-ev 
+(defthm simple-one-way-unify-usage-for-id-nest-ev
   (mv-let (ok subst)
     (simple-one-way-unify template term alist)
     (implies (and ok

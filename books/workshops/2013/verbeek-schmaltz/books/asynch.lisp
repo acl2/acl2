@@ -192,7 +192,7 @@
                                 t)
                               (acks-guard acks)
                               )))
-  (mbe :logic 
+  (mbe :logic
        (cond ((not s/transitions)
               result)
              ((atom s/transitions)
@@ -650,7 +650,7 @@
 ;; It is done by induction over xdi-reach (lemma spec-of-xdi-reach).
 ;; You cannot simply formulate this lemma by saying that any state s2 reachable from any state in the set of states ss currently under
 ;; exploration will be added to the return value of xdi-reach, because this is not true: if the path towards s2 includes visited
-;; states, then s2 is reachable from some state s in ss, but it will not be added to xdi-reach. 
+;; states, then s2 is reachable from some state s in ss, but it will not be added to xdi-reach.
 ;; We have to formulate it more subtly: any state s2 for which there exists a state s in ss such that s~~s2 AND this trace does not
 ;; include any visited state, AND this path is simple, will be added to xdi-reach. This lemma (lemma spec-of-xdi-reach) can be proven inductively.
 
@@ -1045,7 +1045,7 @@
 
 
 (defun input-wirep (xdi-sm wire)
-  (member-equal (list (car wire) (cadr wire) 'ex) (strip-cars (uni (proj 3 xdi-sm)))))  
+  (member-equal (list (car wire) (cadr wire) 'ex) (strip-cars (uni (proj 3 xdi-sm)))))
 (defun envp (xdi-sm env)
   (if (endp env)
     t

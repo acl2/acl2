@@ -768,7 +768,7 @@
         ((fquotep term) nil)
         ((flambda-applicationp term)
          (union-eq (all-fnnames (lambda-body (ffn-symb term)))
-                   (all-fnnames-lst (fargs term)))) 
+                   (all-fnnames-lst (fargs term))))
         (t
          (add-to-set-eq (ffn-symb term)
                         (all-fnnames-lst (fargs term))))))
@@ -812,7 +812,7 @@
              (erp (mv t test))
              (test (eval1 (fargn term 2) alist wrld nnn))
              (t    (eval1 (fargn term 3) alist wrld nnn)))))
-   (t 
+   (t
     (mv-let (erp args)
             (eval1-lst (fargs term) alist wrld nnn)
             (cond
@@ -845,7 +845,7 @@
                         (cond (erp (mv t vals))
                               (t (mv nil (cons val vals)))))))))))
 )
-  
+
 
 (defun eval (term alist wrld)
   (eval1 term alist wrld *eval-nnn*))
@@ -860,7 +860,7 @@
 (eval1 '(binary-append x y) '((x . (1 2 3)) (y . (4 5 6))) (w) 10)
 (eval1 '(length (binary-append x y))
        '((x . (1 2 3)) (y . (4 5 6))) (w) 10)
-    
+
 (set-w)
 
 ; Here is an example that shows we can eval1 calls of eval1
@@ -1100,7 +1100,7 @@
   (cond ((variablep term)
          (mv 1 0 0))
         ((fquotep term)
-         (mv 0 
+         (mv 0
              0
              (fn-count-evg (cadr term))))
         (t (mv-let (v f p-f)
@@ -1249,7 +1249,7 @@
     (mv-let (erp val)
             (apply fn (strip-cadrs args) wrld)
             (cond (erp (mv nil (cons-term fn args)))
-                  (t 
+                  (t
                    (<scons-term-id>
                     (mv t (kwote val)))))))
    ((and (eq fn 'equal)
@@ -1418,7 +1418,7 @@
 
 (defun comm-equal (fn lhs rhs term)
 
-; This function is equivalent to 
+; This function is equivalent to
 ; (or (equal `(,fn ,lhs ,rhs) term)
 ;     (equal `(,fn ,rhs ,lhs) term))
 
@@ -2066,7 +2066,7 @@
 ; worse-than check.
 
   (cond ((variablep term1)
-         
+
 ; Suppose that term1 is a variable.  The only thing that it can
 ; be worse than is a quote.  That is, if we return t, then we
 ; must ensure that either term2 is term1 or (worse-than term1
@@ -2365,7 +2365,7 @@
 
   (cond ((basic-worse-than term1 term2) t)
         ((pseudo-variantp term1 term2) nil)
-        ((variablep term1) 
+        ((variablep term1)
 
 ; If term1 is a variable and not basic-worse-than term2, what do
 ; we know about term2?  Term2 might be a variable.  Term2 cannot
@@ -2434,8 +2434,8 @@
 ; We say that term1 is basic-worse-than term2 if
 ; * term2 is a variable and term1 properly contains it, e.g.,
 ;   (F A B) is basic-worse-than A;
-; * term2 is a quote and term1 is either not a quote or is a 
-;   bigger quote, e.g., both X and '124 are basic-worse-than 
+; * term2 is a quote and term1 is either not a quote or is a
+;   bigger quote, e.g., both X and '124 are basic-worse-than
 ;   '17 and '(A B C D E) is worse than 'X; or
 
 ; * term1 and term2 are applications of the same function and
@@ -2552,7 +2552,7 @@
     (worse-than term1 term2)))
 
 ; ----------------------------------------------------------------
-; Section:  Generating New Variables 
+; Section:  Generating New Variables
 
 ; This section defines the function genvar, which is used to
 ; generate new variable symbols.  The book contains three
@@ -2569,12 +2569,12 @@
 
 ; (genvar1 pkg-witness char-lst avoid-lst cnt)
 ;   repeatedly uses gsym with increasing cnts to create symbols
-;   until it finds one not in avoid-lst.  
+;   until it finds one not in avoid-lst.
 ;   Example:
 ;   (genvar1 'rewrite '(#\A #\B #\C) '(ABC0 ABC2 ABC1) 0) = ABC3
 
 ; (genvar pkg-witness prefix-string n avoid-lst)
-;   create a legal variable symbol not in avoid-lst.  
+;   create a legal variable symbol not in avoid-lst.
 ;   Examples:
 ;   (genvar 'rewrite "ABC" nil '(ABC0 ABC1))     = ABC
 ;   (genvar 'rewrite "ABC" nil '(ABC ABC0 ABC1)) = ABC2
@@ -2647,7 +2647,7 @@
 
 (encapsulate
  nil
- (local 
+ (local
   (defthm lemma-1
     (IMPLIES
      (AND (STRINGP STR1)
@@ -2691,7 +2691,7 @@
             (iff (equal (coerce x 'string) (coerce y 'string))
                  (equal x y)))
    :hints (("Subgoal 1" :use lemma-1))))
-       
+
 (defthm character-listp-explode-nonnegative-integer
   (implies (acl2::character-listp a)
            (acl2::character-listp
@@ -3063,7 +3063,7 @@
                 (<= 0 n))
            (GSYM 'REWRITE '(#\X) N))
   :hints (("Goal" :use ((:instance gsym-prop1)))))
-                                   
+
 (defthm gsym-prop4
   (IMPLIES (AND (INTEGERP n)
                 (<= 0 n))
@@ -3086,7 +3086,7 @@
   (declare (xargs :measure
                   (genvar1-measure 'REWRITE '(#\X)
                                    avoid-lst cnt)))
-  (let* ((cnt (nfix cnt))         
+  (let* ((cnt (nfix cnt))
          (sym (gsym 'REWRITE '(#\X) cnt)))
     (cond ((member sym avoid-lst)
            (genvar1-special-case-induction avoid-lst (1+ cnt)))

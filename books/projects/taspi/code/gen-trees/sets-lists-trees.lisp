@@ -59,7 +59,7 @@
 
 (defthm member-int-or-symbol
   (implies (and (good-taxon-index-halist taxon-index-alist)
-                (member-gen x (get-taxa-from-taxon-index 
+                (member-gen x (get-taxa-from-taxon-index
                                taxon-index-alist)))
            (tip-p x))
   :rule-classes :forward-chaining)
@@ -67,7 +67,7 @@
 (defthm good-index-flatten-taspip
   (implies (and (good-taxon-index-halist taxon-index-alist)
                 (true-listp x)
-                (subset x 
+                (subset x
                         (get-taxa-from-taxon-index taxon-index-alist)))
            (taspip nil x))
   :hints (("Goal" :induct (true-listp x))))
@@ -90,7 +90,7 @@
   (implies (and (good-taxon-index-halist taxon-index-alist)
                 (consp x)
                 (subset x
-                        (get-taxa-from-taxon-index 
+                        (get-taxa-from-taxon-index
                          taxon-index-alist)))
            (hons-assoc-equal (car x)
                              taxon-index-alist)))

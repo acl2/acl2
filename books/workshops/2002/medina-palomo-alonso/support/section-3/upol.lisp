@@ -21,7 +21,7 @@
   (declare (xargs :guard t))
   (if (atom p)
       (equal p nil)
-    (and (consp (first p)) 
+    (and (consp (first p))
 	 (not (MON::nullp (first p)))
 	 (or (atom (rest p))
 	     (and (consp (second p))

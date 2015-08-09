@@ -27,7 +27,7 @@
 	((>= (abs x) 1) (expo2 (abs x)))
 	(t (expo1 (abs x)))))
 
-(defun sgn (x) 
+(defun sgn (x)
   (if (= x 0)
       0
     (if (< x 0) -1 +1)))
@@ -321,7 +321,7 @@
 	     (<= (+ (expo x) (expo y)) (expo (* x y))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo sig)
-		  :use ((:instance *-doubly-monotonic 
+		  :use ((:instance *-doubly-monotonic
 				   (x (expt 2 (expo x)))
 				   (y (abs x))
 				   (a (expt 2 (expo y)))
@@ -458,7 +458,7 @@
   :hints (("Goal" :in-theory (disable expo)
 		  :use ((:instance exactp-prod-1)
 			(:instance exactp-prod-2)
-			(:instance integerp-x-y-z 
+			(:instance integerp-x-y-z
 				   (x (* x (expt 2 (- (1- m) (expo x)))))
 				   (y (* y (expt 2 (- (1- n) (expo y)))))
 				   (z (expt 2 (+ (expo x) (expo y) 1 (- (expo (* x y)))))))))))
@@ -524,7 +524,7 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo expt)
 		  :use ((:instance expo-prod-lower (y x))
-			(:instance integerp-x-y 
+			(:instance integerp-x-y
 				   (x (* (* x x) (expt 2 (- (1- (* 2 n)) (expo (* x x))))))
 				   (y (expt 2 (- (expo (* x x)) (* 2 (expo x))))))
 			(:instance exactp-x2-5 (e (expo x)) (e2 (expo (* x x))))))))
@@ -564,8 +564,8 @@
 	     (exactp x n))
   :rule-classes ()
   :hints (("Goal" :use ((:instance expo+ (m (- (1- m) (expo x))) (n (- n m)))
-			(:instance integerp-x-y 
-				   (x (* x (expt 2 (- (1- m) (expo x))))) 
+			(:instance integerp-x-y
+				   (x (* x (expt 2 (- (1- m) (expo x)))))
 				   (y (expt 2 (- n m))))))))
 
 (defthm exactp-<=-expo
@@ -577,8 +577,8 @@
 	     (integerp (* x (expt 2 (- (1- n) e)))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance expo+ (m (- (1- n) (expo x))) (n (- (expo x) e)))
-			(:instance integerp-x-y 
-				   (x (* x (expt 2 (- (1- n) (expo x))))) 
+			(:instance integerp-x-y
+				   (x (* x (expt 2 (- (1- n) (expo x)))))
 				   (y (expt 2 (- (expo x) e))))))))
 
 (defthm exactp->=-expo
@@ -590,7 +590,7 @@
 	     (exactp x n))
   :rule-classes ()
   :hints (("Goal" :use ((:instance expo+ (m (- (1- n) e)) (n (- e (expo x))))
-			(:instance integerp-x-y 
+			(:instance integerp-x-y
 				   (x (* x (expt 2 (- (1- n) e))))
 				   (y (expt 2 (- e (expo x)))))))))
 
@@ -779,7 +779,7 @@
 	     (>= (expo (- y x)) (- (1+ (min (expo x) (expo y))) n)))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo exactp)
-		  :use ((:instance expo-diff-min-1)			
+		  :use ((:instance expo-diff-min-1)
 			(:instance expo-monotone)))))
 
 (defthm expo-
@@ -915,7 +915,7 @@
 		  :use ((:instance xy2-2 (z (* x y y)))
 			(:instance xy2-4)
 			(:instance xy2-5)
-			(:instance abs+3 
+			(:instance abs+3
 				   (x1 (- (* 2 (expo y)) (expo (* y y))))
 				   (x2 (expo (* x y y)))
 				   (x3 (- (+ (expo (* y y)) (expo x)) (expo (* x y y)))))))))
@@ -1186,7 +1186,7 @@
 		 (+ (expo x) (1- n))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo)
-		  :use ((:instance expo-2x-upper)		 
+		  :use ((:instance expo-2x-upper)
 			(:instance expo-monotone (x (+ x y)) (y (* 2 x)))))))
 
 (defthm expo-diff-abs-neg-2

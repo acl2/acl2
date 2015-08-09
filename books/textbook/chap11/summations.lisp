@@ -15,7 +15,7 @@
 |#
 
 (defun sum1 (n)
-  (if (zp n) 
+  (if (zp n)
       0
     (+ n (sum1 (1- n)))))
 
@@ -153,8 +153,8 @@
            (equal
             (* (+ (- n) (- (* n n))) (/ (+ 1 n)))
             (- n)))
-  :hints (("goal" :in-theory 
-	   (disable distributivity 
+  :hints (("goal" :in-theory
+	   (disable distributivity
 		    left-distributivity-of-*-over-+)
            :use ((:instance combine-fractions)))))
 
@@ -171,7 +171,7 @@
   (equal (equal (* x z) (* y z))
 	 (or (equal 0 (fix z))
 	     (equal (fix x) (fix y))))
-  :hints (("goal" :use (:instance 
+  :hints (("goal" :use (:instance
 			(:theorem (implies (equal x y)
 					   (equal (* x (/ z))
 						  (* y (/ z)))))
@@ -201,7 +201,7 @@
   (implies (natp n)
 	   (equal (sum6 n) (/ n (1+ n))))
   :hints(("goal" :induct t)
-	 ("subgoal *1/2''" 
+	 ("subgoal *1/2''"
 	  :use ((:instance absorb-1 (y (+ 1 n)) (x 1))))))
 
 ; ---------------------------------------------------------------------------

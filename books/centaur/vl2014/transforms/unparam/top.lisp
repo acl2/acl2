@@ -515,10 +515,10 @@ introduced.</p>"
                 (mv nil warnings (vl-genelement-fix x))))
             (mv t warnings
                 (change-vl-genblock x :elems res-elems)))
-            
+
 
           ;; Didn't expect to see these resolved forms yet; leave them.
-          
+
           :vl-genarray
           (mv t (warn :type :vl-already-resolved-generate
                       :msg "~a0: Didn't expect to see an already-resolved genarray."

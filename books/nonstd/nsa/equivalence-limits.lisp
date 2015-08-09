@@ -246,7 +246,7 @@
 			(< 0 delta)
 			(forall-x-within-delta-of-x0-f-x-within-epsilon-of-classical-limit x0 eps delta))))
    :classicalp nil)
- 
+
  (defthmd rlfn-classic-has-a-limit
    (implies (and (inside-interval-p x0 (rlfn-classical-domain))
 		 (standardp x0)
@@ -281,7 +281,7 @@
 			       (x (forall-x-within-delta-of-x0-f-x-within-epsilon-of-classical-limit-witness x0 eps gamma))))
 	      :in-theory (disable abs)))
      ))
-  
+
   (defthm rlfn-classic-has-limits-step-1
     (implies (and (inside-interval-p x0 (rlfn-classical-domain))
 		  (standardp x0)
@@ -476,4 +476,4 @@
 	  ("Subgoal 1"
 	   :in-theory (enable abs))))
 
-			     
+

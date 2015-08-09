@@ -11,7 +11,7 @@
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 ;;---------------------------------------------------------------------------------
@@ -136,7 +136,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -190,8 +190,8 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (local-defthm rtz-trunc
@@ -203,8 +203,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (rtz x n)
-		    (* (sgn x) 
-		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use (trunc-rewrite))))
 
@@ -320,7 +320,7 @@
 
 (defthmd rtz-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rtz x n))))
@@ -443,8 +443,8 @@
 ;;;**********************************************************************
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (local-defthm raz-away
@@ -456,8 +456,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (raz x n)
-		    (* (sgn x) 
-		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use (away-rewrite))))
 
@@ -468,7 +468,7 @@
 (defthmd abs-raz
     (implies (and (rationalp x)
 		  (integerp n))
-	     (equal (abs (raz x n)) 
+	     (equal (abs (raz x n))
 		    (* (cg (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use abs-away)))
 
@@ -596,7 +596,7 @@
 
 (defthmd raz-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (raz x n))))
@@ -819,7 +819,7 @@
 
 (defthmd rne-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rne x n))))
@@ -898,7 +898,7 @@
   :hints (("Goal" :use near2)))
 
 (defthm rne-diff
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
@@ -942,7 +942,7 @@
   :hints (("Goal" :use (ne-10))))
 
 (local-defthm ne-12
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
                   (not (= x 0))
 		  (rationalp x))
@@ -953,7 +953,7 @@
                   :in-theory (theory 'minimal-theory))))
 
 (defthm rne-diff-cor
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
@@ -998,7 +998,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -1025,7 +1025,7 @@
 
 (defthm rne-exact
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1)
 		  (exactp x (1+ n))
 		  (not (exactp x n)))
@@ -1139,7 +1139,7 @@
 
 (defthmd rna-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rna x n))))
@@ -1202,7 +1202,7 @@
   :hints (("Goal" :use near+2)))
 
 (defthm rna-diff
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rna x n)))
@@ -1317,7 +1317,7 @@
 
 (defthmd rto-positive
     (implies (and (< 0 x)
-                  (rationalp x) 
+                  (rationalp x)
 		  (integerp n)
                   (> n 0))
 	     (> (rto x n) 0))
@@ -1326,7 +1326,7 @@
 
 (defthmd rto-negative
     (implies (and (< x 0)
-                  (rationalp x) 
+                  (rationalp x)
 		  (integerp n)
                   (> n 0))
 	     (< (rto x n) 0))
@@ -1346,7 +1346,7 @@
 		  (integerp n) (> n 0)
 		  (integerp k))
 	     (= (rto (* (expt 2 k) x) n)
-		(* (expt 2 k) (rto x n))))		
+		(* (expt 2 k) (rto x n))))
   :rule-classes ()
   :hints (("Goal" :use sticky-shift)))
 
@@ -1365,7 +1365,7 @@
 
 (defthmd rto-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rto x n))))
@@ -1374,7 +1374,7 @@
 (defthm rto-exactp-c
     (implies (and (rationalp x)
 		  (integerp m)
-		  (integerp n) 
+		  (integerp n)
 		  (> n m)
 		  (> m 0))
 	     (iff (exactp (rto x n) m)
@@ -1618,7 +1618,7 @@
 (defthmd fp-rnd-exactp-b
   (implies (and (rationalp x)
                 (common-mode-p mode)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (equal (exactp x n)
                   (equal x (fp-rnd x mode n))))
@@ -1659,7 +1659,7 @@
 
 (defthm fp-rnd>=rtz
     (implies (and (rationalp x)
-		  (> x 0) ;; 
+		  (> x 0) ;;
 		  (common-mode-p mode)
                   (integerp n)
                   (> N 0))
@@ -1803,9 +1803,9 @@
 (defthmd fp-rnd-rto
   (implies (and (common-mode-p mode)
                 (rationalp x)
-                (integerp m) 
+                (integerp m)
 		(> m 0)
-                (integerp n) 
+                (integerp n)
 		(>= n (+ m 2)))
            (equal (fp-rnd (rto x n) mode m)
                   (fp-rnd x mode m)))
@@ -1860,10 +1860,10 @@
                       (rtz r n)))))
   :hints (("Goal" :in-theory (enable round-up-p ieee-mode-p ieee-rounding-mode-p common-rounding-mode-p common-mode-p rnd-const fp-rnd-const)
                   :use ((:instance round-up-thm (mode (old-mode mode)))))))
-  
+
 
 ;;;**********************************************************************
-;;;                         Denormal Rounding 
+;;;                         Denormal Rounding
 ;;;**********************************************************************
 
 (defund denorm-rnd (x mode p q)
@@ -2112,7 +2112,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -2166,8 +2166,8 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defthmd rtz-rewrite
@@ -2175,8 +2175,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (rtz x n)
-		    (* (sgn x) 
-		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use (trunc-rewrite))))
 
@@ -2292,7 +2292,7 @@
 
 (defthmd rtz-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rtz x n))))
@@ -2415,8 +2415,8 @@
 ;;;**********************************************************************
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defthmd raz-rewrite
@@ -2424,8 +2424,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (raz x n)
-		    (* (sgn x) 
-		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use (away-rewrite))))
 
@@ -2436,7 +2436,7 @@
 (defthmd abs-raz
     (implies (and (rationalp x)
 		  (integerp n))
-	     (equal (abs (raz x n)) 
+	     (equal (abs (raz x n))
 		    (* (cg (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :use abs-away)))
 
@@ -2564,7 +2564,7 @@
 
 (defthmd raz-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (raz x n))))
@@ -2783,7 +2783,7 @@
 
 (defthmd rne-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rne x n))))
@@ -2862,7 +2862,7 @@
   :hints (("Goal" :use near2)))
 
 (defthm rne-diff
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
@@ -2871,7 +2871,7 @@
   :hints (("Goal" :use near-est)))
 
 (defthm rne-diff-cor
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rne x n)))
@@ -2917,7 +2917,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -2944,7 +2944,7 @@
 
 (defthm rne-exact
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1)
 		  (exactp x (1+ n))
 		  (not (exactp x n)))
@@ -3054,7 +3054,7 @@
 
 (defthmd rna-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rna x n))))
@@ -3117,7 +3117,7 @@
   :hints (("Goal" :use near+2)))
 
 (defthm rna-diff
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (rna x n)))
@@ -3143,7 +3143,7 @@
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 (defun rna-witness (x y n)
@@ -3168,7 +3168,7 @@
 		  (<= (rna-witness x y n) y)
 		  (exactp (rna-witness x y n) (1+ n))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS acl2::SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-< 
+  :hints (("Goal" :in-theory (disable ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS acl2::SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
                                       acl2::|(< (expt x n) (expt x m))| rna)
 		  :use ((:instance exactp-2**n (n (expo y)) (m (1+ n)))
 			(:instance expo-upper-bound)
@@ -3380,7 +3380,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -3400,7 +3400,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -3503,7 +3503,7 @@
 
 (defthmd rto-positive
     (implies (and (< 0 x)
-                  (rationalp x) 
+                  (rationalp x)
 		  (integerp n)
                   (> n 0))
 	     (> (rto x n) 0))
@@ -3512,7 +3512,7 @@
 
 (defthmd rto-negative
     (implies (and (< x 0)
-                  (rationalp x) 
+                  (rationalp x)
 		  (integerp n)
                   (> n 0))
 	     (< (rto x n) 0))
@@ -3532,7 +3532,7 @@
 		  (integerp n) (> n 0)
 		  (integerp k))
 	     (= (rto (* (expt 2 k) x) n)
-		(* (expt 2 k) (rto x n))))		
+		(* (expt 2 k) (rto x n))))
   :rule-classes ()
   :hints (("Goal" :use sticky-shift)))
 
@@ -3551,7 +3551,7 @@
 
 (defthmd rto-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (exactp x n)
                   (= x (rto x n))))
@@ -3560,7 +3560,7 @@
 (defthm rto-exactp-c
     (implies (and (rationalp x)
 		  (integerp m)
-		  (integerp n) 
+		  (integerp n)
 		  (> n m)
 		  (> m 0))
 	     (iff (exactp (rto x n) m)
@@ -3775,7 +3775,7 @@
 (defthmd rnd-exactp-b
   (implies (and (rationalp x)
                 (common-mode-p mode)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (equal (exactp x n)
                   (equal x (rnd x mode n))))
@@ -3816,7 +3816,7 @@
 
 (defthm rnd>=rtz
     (implies (and (rationalp x)
-		  (> x 0) ;; 
+		  (> x 0) ;;
 		  (common-mode-p mode)
                   (integerp n)
                   (> N 0))
@@ -3930,9 +3930,9 @@
 (defthmd rnd-rto
   (implies (and (common-mode-p mode)
                 (rationalp x)
-                (integerp m) 
+                (integerp m)
 		(> m 0)
-                (integerp n) 
+                (integerp n)
 		(>= n (+ m 2)))
            (equal (rnd (rto x n) mode m)
                   (rnd x mode m)))
@@ -3988,10 +3988,10 @@
                         (fp+ (rtz z n) n)
                       (rtz z n)))))
   :hints (("Goal" :use ((:instance round-up-p-thm$ (r z))))))
-  
+
 
 ;;;**********************************************************************
-;;;                         Denormal Rounding 
+;;;                         Denormal Rounding
 ;;;**********************************************************************
 
 (defund drnd (x mode p q)

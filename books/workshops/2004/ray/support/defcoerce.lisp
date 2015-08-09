@@ -30,7 +30,7 @@ Known issues:
 
 1. The macro does not work for stobjs with no array field at all. (In
 the defpun-exec with defcoerce I dont use the macro unless there is
-some array field, which is why the negligence.) 
+some array field, which is why the negligence.)
 
 2.It also does not work with types T for arrays. I think I will be
 able to handle that soon. But so far I have not done it.
@@ -55,7 +55,7 @@ more robust (although as they say the taste of the pudding....:->)
 
 |#
 
-;; We use some arithmetic books. As is customary with me in recent 
+;; We use some arithmetic books. As is customary with me in recent
 ;; days, I will simply use Robert's arithmetic-2 library.
 
 ;; The only real issue in defining the functions copy-from and copy-to
@@ -66,13 +66,13 @@ more robust (although as they say the taste of the pudding....:->)
 ;; theorems between nth and update-nth. I use the version of these theorems
 ;; that I have used for the verification of a stobj-based quicksort.
 
-(in-theory (enable nth update-nth))  
+(in-theory (enable nth update-nth))
 
-(defthm nth-update-nth-diff 
+(defthm nth-update-nth-diff
   (implies (not (equal (nfix n) (nfix m)))
            (equal (nth n (update-nth m v l)) (nth n l))))
 
-(defthm nth-update-nth-same 
+(defthm nth-update-nth-same
   (implies (equal (nfix n) (nfix m))
            (equal (nth n (update-nth m v l)) v)))
 
@@ -104,7 +104,7 @@ more robust (although as they say the taste of the pudding....:->)
  (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 ;; Ok so how does it all work? Given an array field we define the
-;; function copy-from-array as follows. 
+;; function copy-from-array as follows.
 
 ; The following was removed with the addition of natp-compound-recognizer to
 ; ACL2 2.9.2.
@@ -114,7 +114,7 @@ more robust (although as they say the taste of the pudding....:->)
 ;        (and (integerp n)
 ;             (<= 0 n)))
 ;   :rule-classes :compound-recognizer))
- 
+
 (local
  (in-theory (disable natp)))
 
@@ -131,7 +131,7 @@ more robust (although as they say the taste of the pudding....:->)
   :hints (("Goal"
            :in-theory (enable nth)
            :do-not '(eliminate-destructors generalize fertilize))))
-                      
+
 
 ;; END generic stuff.
 
@@ -145,7 +145,7 @@ more robust (although as they say the taste of the pudding....:->)
 This example shows what theorems I need and how I prove the entire
 thing. This is a good example and also shows how the macro works.
 
-(defstobj stb$ 
+(defstobj stb$
   (fld1 :type (array (unsigned-byte 31) (64)) :initially 0 :resizable t)
   (fld2 :type (unsigned-byte 31) :initially 0))
 
@@ -162,7 +162,7 @@ thing. This is a good example and also shows how the macro works.
   (copy-from-stb$-fld1-aux (fld1-length stb$) stb$))
 
 
-(local 
+(local
  (defthm copy-from-stb$-fld1-len
    (implies (natp len)
             (equal (len (copy-from-stb$-fld1-aux len stb$))
@@ -197,7 +197,7 @@ thing. This is a good example and also shows how the macro works.
         :hints (("Goal"
                  :do-not-induct t
                  :in-theory (disable stb$p |copy from field is identity|)
-                 :use ((:instance 
+                 :use ((:instance
                         (:functional-instance
                          |copy from field is identity|
                          (fldf (lambda () *fld1i*))
@@ -214,12 +214,12 @@ thing. This is a good example and also shows how the macro works.
                    (nth *fld1i* stb$)))
    :hints (("Goal"
             :use ((:instance copy-from-stb$-fld1-identity-aux))))))
-                            
+
 (in-theory (disable copy-from-stb$-fld1))
 
 (defun stb$-fld1p-logic (x)
   (declare (xargs :guard t))
-  (if (consp x) 
+  (if (consp x)
       (and (unsigned-byte-p 31 (car x))
            (stb$-fld1p-logic (cdr x)))
     (equal x nil)))
@@ -258,7 +258,7 @@ thing. This is a good example and also shows how the macro works.
   :hints (("Goal"
            :in-theory (enable nth))))
 
-(defthm copy-to-stb$-fld1-aux-true-listp 
+(defthm copy-to-stb$-fld1-aux-true-listp
   (implies (true-listp (nth *fld1i* stb$))
            (true-listp (nth *fld1i* (copy-to-stb$-fld1-aux l len stb$))))
   :rule-classes :type-prescription)
@@ -267,10 +267,10 @@ thing. This is a good example and also shows how the macro works.
   (implies (natp len)
            (equal (len (nth *fld1i* (copy-to-stb$-fld1-aux l len stb$)))
                   (if (< len (len (nth *fld1i* stb$)))
-                      (len (nth *fld1i* stb$)) 
+                      (len (nth *fld1i* stb$))
                     len))))
 
-(verify-guards  copy-to-stb$-fld1-aux 
+(verify-guards  copy-to-stb$-fld1-aux
                 :hints (("Goal" :in-theory (disable unsigned-byte-p))))
 
 
@@ -290,15 +290,15 @@ thing. This is a good example and also shows how the macro works.
   (implies (and (stb$-fld1p-logic l)
                 (equal (len l) (len (nth *fld1i* stb$)))
                 (fld1p (nth *fld1i* stb$)))
-           (equal (nth *fld1i* 
-                       (copy-to-stb$-fld1-aux l 
+           (equal (nth *fld1i*
+                       (copy-to-stb$-fld1-aux l
                                               (len (nth *fld1i* stb$))
                                               stb$))
                   l))
   :hints (("Goal"
            :in-theory (disable |copy to field is identity|)
            :use ((:instance
-                  (:functional-instance 
+                  (:functional-instance
                    |copy to field is identity|
                    (copy-to-fld
                     (lambda (l x)
@@ -384,13 +384,13 @@ thing. This is a good example and also shows how the macro works.
            (equal (copy-from-stb$ stb$)
                   stb$))
   :hints (("Goal"
-           :in-theory (disable copy-from-stb$ 
+           :in-theory (disable copy-from-stb$
                                |copy from is identity|)
-           :use ((:instance 
+           :use ((:instance
                   (:functional-instance
                    |copy from is identity|
                    (hypos (lambda (x) (stb$p x)))
-                   (copy-from 
+                   (copy-from
                     (lambda (x) (copy-from-stb$ x))))
                   (x stb$))))))
 
@@ -399,14 +399,14 @@ thing. This is a good example and also shows how the macro works.
 (defun copy-to-stb$ (l stb$)
   (declare (xargs :stobjs stb$
                   :guard (and (stb$p-logic l)
-                              (equal (len (nth *fld1i* l)) 
+                              (equal (len (nth *fld1i* l))
                                      (fld1-length stb$)))
                   :guard-hints (("Goal"
                                  :do-not-induct t))))
   (let* ((stb$ (copy-to-stb$-fld1 (nth 0 l) stb$))
          (stb$ (update-fld2 (nth 1 l) stb$)))
     stb$))
-          
+
 (defthm nth-copy-to-stb$
   (implies (and (natp i)
                 (stb$p-logic l)
@@ -435,13 +435,13 @@ thing. This is a good example and also shows how the macro works.
                   l))
   :hints (("Goal"
            :use ((:instance
-                  (:functional-instance  
+                  (:functional-instance
                    |copy to whole is identity|
-                   (copy-to 
+                   (copy-to
                     (lambda (l x)
                       (copy-to-stb$ l x)))
-                   (hypotheses 
-                    (lambda (l x) 
+                   (hypotheses
+                    (lambda (l x)
                       (and (stb$p x)
                            (stb$p-logic l)
                            (equal (len (nth *fld1i* l))
@@ -480,7 +480,7 @@ thing. This is a good example and also shows how the macro works.
          (fldp-logic-implies-truelistp (packn (list fldp-logic
                                                    '-implies-truelistp)))
          (fldp-logic-implies-type (packn (list fldp-logic '-implies- etype-name)))
-         (copy-to-fld-aux-true-listp (packn (list copy-to-fld-aux 
+         (copy-to-fld-aux-true-listp (packn (list copy-to-fld-aux
                                                 '-truelistp)))
          (copy-to-fld-len (packn (list copy-to-fld-aux '-len)))
          (nth-copy-to-fld (packn (list 'nth- copy-to-fld)))
@@ -492,10 +492,10 @@ thing. This is a good example and also shows how the macro works.
                                                      '-is-true-listp-aux)))
          (copy-to-fld-is-true-listp (packn (list copy-to-fld
                                                  '-is-true-listp))))
-         
 
 
-    (list 
+
+    (list
 
      `(defun ,copy-from-fld-aux (len ,stb)
        (declare (xargs :stobjs ,stb
@@ -508,13 +508,13 @@ thing. This is a good example and also shows how the macro works.
      `(defun ,copy-from-fld (,stb)
        (declare (xargs :stobjs ,stb))
        (,copy-from-fld-aux (,fld-length ,stb) ,stb))
-     
-     `(local 
+
+     `(local
        (defthm ,copy-from-fld-len
          (implies (natp len)
                   (equal (len (,copy-from-fld-aux len stb))
                          len))))
-     
+
 
      `(local
        (defthm ,nth-copy-from-fld
@@ -523,29 +523,29 @@ thing. This is a good example and also shows how the macro works.
                        (< i len))
                   (equal (nth i (,copy-from-fld-aux len stb))
                          (nth i (nth ,fldi* stb))))))
-     
+
 
      `(local
        (defthm ,fldp-implies-true-listp
          (implies (,fldp l)
                   (true-listp l))))
 
-             
+
      `(local
        (defthm ,stbp-implies-true-listp
          (implies (,stbp stb)
                   (true-listp (nth ,fldi* stb)))
          :rule-classes :forward-chaining))
-     
+
      `(local
        (defthmd ,copy-from-fld-identity-aux
          (implies (,stbp stb)
                   (equal (,copy-from-fld-aux (len (nth ,fldi* stb)) stb)
                          (nth ,fldi* stb)))
         :hints (("Goal"
-                 :in-theory (disable ,stbp 
+                 :in-theory (disable ,stbp
                                      |copy from field is identity|)
-                 :use ((:instance 
+                 :use ((:instance
                         (:functional-instance
                          |copy from field is identity|
                          (fldf (lambda () ,fldi*))
@@ -554,7 +554,7 @@ thing. This is a good example and also shows how the macro works.
                             (,copy-from-fld-aux (len (nth ,fldi* x))
                                                  x))))
                         (x stb)))))))
-     
+
 
      `(local
        (defthm ,copy-from-fld-identity
@@ -563,18 +563,18 @@ thing. This is a good example and also shows how the macro works.
                          (nth ,fldi* stb)))
         :hints (("Goal"
                  :use ((:instance ,copy-from-fld-identity-aux))))))
-     
+
      `(in-theory (disable ,copy-from-fld))
-     
+
 
       `(defun ,fldp-logic (x)
         (declare (xargs :guard t))
-        (if (consp x) 
+        (if (consp x)
             (let ((y (car x)))
               (and ,etype
                    (,fldp-logic (cdr x))))
          (equal x nil)))
-     
+
      `(defun ,copy-to-fld-aux (l len ,stb)
         (declare (xargs :stobjs ,stb
                         :verify-guards nil
@@ -596,15 +596,15 @@ thing. This is a good example and also shows how the macro works.
                          (nth i stb)))
          :hints (("Goal"
                   :induct (,copy-to-fld-aux l len stb)))))
-     
 
 
-     `(local 
+
+     `(local
        (defthm ,fldp-logic-implies-truelistp
          (implies (,fldp-logic l)
                   (true-listp l))))
-       
-      `(local 
+
+      `(local
         (defthm ,fldp-logic-implies-type
           (implies (and (,fldp-logic l)
                         (natp i)
@@ -613,11 +613,11 @@ thing. This is a good example and also shows how the macro works.
                    ,etype))
         :hints (("Goal"
                  :in-theory (enable nth)))))
-    
+
 
 
      `(local
-       (defthm ,copy-to-fld-aux-true-listp 
+       (defthm ,copy-to-fld-aux-true-listp
          (implies (true-listp (nth ,fldi* stb))
                   (true-listp (nth ,fldi* (,copy-to-fld-aux l len stb))))
          :rule-classes :type-prescription))
@@ -627,14 +627,14 @@ thing. This is a good example and also shows how the macro works.
          (implies (natp len)
                   (equal (len (nth ,fldi* (,copy-to-fld-aux l len stb)))
                          (if (< len (len (nth ,fldi* stb)))
-                             (len (nth ,fldi* stb)) 
+                             (len (nth ,fldi* stb))
                            len)))))
 
 
-     `(verify-guards ,copy-to-fld-aux 
+     `(verify-guards ,copy-to-fld-aux
                     :hints (("Goal" :in-theory (disable ,etype-name))))
-     
-     
+
+
      `(local
         (defthm ,nth-copy-to-fld
           (implies (and (natp i)
@@ -643,23 +643,23 @@ thing. This is a good example and also shows how the macro works.
                    (equal (nth i (nth ,fldi* (,copy-to-fld-aux l len stb)))
                           (nth i l)))))
 
-     
+
 
      `(local
        (defthmd ,copy-to-fld-identity-aux
          (implies (and (,fldp-logic l)
                        (equal (len l) (len (nth ,fldi* stb)))
                        (,fldp (nth ,fldi* stb)))
-                  (equal (nth ,fldi* 
+                  (equal (nth ,fldi*
                               (,copy-to-fld-aux
-                               l 
+                               l
                                (len (nth ,fldi* stb))
                                stb))
                          l))
          :hints (("Goal"
                   :in-theory (disable |copy to field is identity|)
                   :use ((:instance
-                         (:functional-instance 
+                         (:functional-instance
                           |copy to field is identity|
                           (copy-to-fld
                            (lambda (l x)
@@ -668,27 +668,27 @@ thing. This is a good example and also shows how the macro works.
                           (fld (lambda () ,fldi*)))
                        (x stb)))))))
 
-     
+
      `(defun ,copy-to-fld (l ,stb)
         (declare (xargs :stobjs ,stb
                         :guard (and (,fldp-logic l)
                                     (= (len l) (,fld-length ,stb)))))
         (,copy-to-fld-aux l (,fld-length ,stb) ,stb))
-     
+
      `(local
        (defthm ,copy-to-fld-aux-len-whole
          (implies (,stbp stb)
                   (equal (len (,copy-to-fld-aux l len stb))
                          (len stb)))))
-     
+
 
      `(local
        (defthm ,copy-to-fld-len-whole
          (implies (,stbp stb)
                   (equal (len (,copy-to-fld l stb))
                          (len stb)))))
-     
-     
+
+
 
      `(local
        (defthm ,copy-to-fld-is-true-listp-aux
@@ -699,7 +699,7 @@ thing. This is a good example and also shows how the macro works.
        (defthm ,copy-to-fld-is-true-listp
          (implies (,stbp stb)
                   (true-listp (,copy-to-fld l stb)))))
-     
+
 
      `(local
        (defthm ,copy-to-fld-identity
@@ -712,16 +712,16 @@ thing. This is a good example and also shows how the macro works.
          :hints (("Goal"
                   :do-not-induct t
                   :use ,copy-to-fld-identity-aux))))
-     
+
      `(in-theory (disable ,copy-to-fld))
-     
+
      )))
 
 ;; OK so I need to figure out the type of each component. I initially did it by
 ;; looking over the world for each component of the array. But now that I am
 ;; installing these functions while defining the stobj, I do not have to do
 ;; that any more. I merely get the fields from the type declaration of the
-;; stobj. 
+;; stobj.
 
 (defun get-type-of (fld)
   (cond ((endp fld) t)
@@ -735,7 +735,7 @@ thing. This is a good example and also shows how the macro works.
 
 ;; That really simplifies things from the existing code. Thanks a lot to John
 ;; Matthews and Daron Vroon for suggesting this in their ACL2 workshop talk.
-         
+
 
 ;; Now we do create array-thms for every array field using the following
 ;; recursive function. In a way, this function is the heart of this tool.
@@ -759,21 +759,21 @@ thing. This is a good example and also shows how the macro works.
              (copy-to-true-listp (packn (list copy-to '-truelistp)))
              (copy-to-identity (packn (list copy-to '-identity))))
 
-        (append 
-         
+        (append
+
          events
 
-         (list 
+         (list
           `(defun ,stbp-logic (l)
              (declare (xargs :guard t))
              (and (true-listp l)
                   (equal (len l) ,len)
                   ,@fldsp-logic))
-          
+
           `(defun ,copy-from (,stb)
              (declare (xargs :stobjs ,stb))
              ,(cons 'list copy-from-flds))
-          
+
          `(local
            (defthm ,len-copy-from
              (equal (len (,copy-from ,stb)) ,len)))
@@ -795,13 +795,13 @@ thing. This is a good example and also shows how the macro works.
                      (equal (,copy-from stb)
                             stb))
             :hints (("Goal"
-                     :in-theory (disable ,copy-from 
+                     :in-theory (disable ,copy-from
                                          |copy from is identity|)
-                     :use ((:instance 
+                     :use ((:instance
                             (:functional-instance
                              |copy from is identity|
                              (hypos (lambda (x) (,stbp x)))
-                             (copy-from 
+                             (copy-from
                               (lambda (x) (,copy-from x))))
                             (x stb))))))
 
@@ -818,7 +818,7 @@ thing. This is a good example and also shows how the macro works.
 
             (let* (,@copy-to-flds)
               ,stb))
-          
+
          `(local
            (defthm ,nth-copy-to
              (implies (and (natp i)
@@ -831,7 +831,7 @@ thing. This is a good example and also shows how the macro works.
            :hints (("Goal"
                     :cases (,@cases)))))
 
-         `(local 
+         `(local
            (defthm ,copy-to-true-listp
              (implies (and (,stbp stb)
                            (,stbp-logic l))
@@ -847,38 +847,38 @@ thing. This is a good example and also shows how the macro works.
             :hints (("Goal"
                      :in-theory (disable |copy to whole is identity|)
                      :use ((:instance
-                            (:functional-instance  
+                            (:functional-instance
                              |copy to whole is identity|
-                             (copy-to 
+                             (copy-to
                               (lambda (l x)
                                 (,copy-to l x)))
-                             (hypotheses 
-                              (lambda (l x) 
+                             (hypotheses
+                              (lambda (l x)
                                 (and (,stbp x)
                                      (,stbp-logic l)
                                      (let ((,stb x))
                                        ,@lenps)))))
                             (x ,stb))))))
-         
+
          `(in-theory (disable ,copy-to)))))
 
 
     (if (atom (car flds))
-       
+
         ;; For inline fields
-        (defcoerce-fn-aux stb 
-          (cdr flds) 
-          fldsp-logic 
-          cases 
-          lenps 
+        (defcoerce-fn-aux stb
+          (cdr flds)
+          fldsp-logic
+          cases
+          lenps
           copy-from-flds
-          copy-to-flds 
-          events 
+          copy-to-flds
+          events
           len)
 
       ;; The real stuff now.... Notice that this function is now more
       ;; complicated than before. This is because I am generating everything
-      ;; "on the fly" rather than 
+      ;; "on the fly" rather than
       (let* ((fld (car flds))
              (fld-name (car fld))
              (type (get-type-of (cdr fld))))
@@ -897,11 +897,11 @@ thing. This is a good example and also shows how the macro works.
                 ;; Note: Here I am going on creating the fldsp list so that I
                 ;; can finally define the stbp predicate. But of course this
                 ;; means that I need to create a predicate called fldp for
-                ;; every field of the stobj. 
+                ;; every field of the stobj.
 
-                    
+
                  (append (if (resizable-fldp fld)
-                             
+
                              ;; Do not have the length parameter for resizable
                              ;; arrays.
 
@@ -921,12 +921,12 @@ thing. This is a good example and also shows how the macro works.
                 (snoc copy-from-flds `(,copy-from-fld ,stb))
 
                 (snoc  copy-to-flds `(,stb (,copy-to-fld (nth ,len l) ,stb)))
-        
+
                  (append (array-thms stb etype fld-name)
                          events)
 
                 (1+ len)))
-          
+
           ;; The non-array case: This part is obviously much easier....:->:->
 
           (let* ((update-fld (packn (list 'update- fld-name))))
@@ -938,7 +938,7 @@ thing. This is a good example and also shows how the macro works.
                 ;; Note: Here I am going on creating the fldsp list so that I
                 ;; can finally define the stbp predicate. But of course this
                 ;; means that I need to create a predicate called fldp for
-                ;; every field of the stobj. 
+                ;; every field of the stobj.
 
                 (snoc fldsp-logic `(let* ((y (nth ,len l)))
                                      ,(if (translate-declaration-to-guard type
@@ -956,7 +956,7 @@ thing. This is a good example and also shows how the macro works.
                 (snoc copy-from-flds `(,fld-name ,stb))
 
                 (snoc copy-to-flds `(,stb (,update-fld (nth ,len l) ,stb)))
-        
+
                 events
 
                 (1+ len))))))))
@@ -970,7 +970,7 @@ thing. This is a good example and also shows how the macro works.
   `(encapsulate
     ()
     (defstobj ,@stb-def)
-    ,@(defcoerce-fn-aux 
+    ,@(defcoerce-fn-aux
         (car stb-def) ;; stb
         (cdr stb-def) ;; flds
         nil nil nil nil nil nil
@@ -982,14 +982,14 @@ thing. This is a good example and also shows how the macro works.
 
 
 #|
-          
+
 ;; Testing: Here I define a stobj with two fields, and see how the theorems
 ;; work ouy.
 
-ACL2 !>(defcoerce stb1 
+ACL2 !>(defcoerce stb1
          (fld1 :type (array (signed-byte 31) (60))
-               :initially 0 
-               :resizable t) 
+               :initially 0
+               :resizable t)
          (fld2 :type t))
 
 

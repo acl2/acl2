@@ -9,7 +9,7 @@
 ;; we've seen before, return t.  If we get through all the sequences and
 ;; there's at most one "big state", return nil.
 
-(defun parsimony-informative-helper 
+(defun parsimony-informative-helper
   (seqs i state-hash missingGapChars first-big-state)
   (declare (xargs :guard (and (natp i)
                               (if (consp seqs)
@@ -17,7 +17,7 @@
                                        (< i (- (len (car seqs)) 1)))
                                 t))))
   (if (atom seqs)
-      nil 
+      nil
     (let* ((curr-state (nth-gen i (cdar seqs)))
            (seen (het curr-state state-hash)))
       (if (and seen
@@ -25,8 +25,8 @@
           (if (and first-big-state
                    (not (equal first-big-state curr-state)))
               t
-            (parsimony-informative-helper (cdr seqs) i 
-                                          state-hash missingGapChars 
+            (parsimony-informative-helper (cdr seqs) i
+                                          state-hash missingGapChars
                                           curr-state))
         (parsimony-informative-helper (cdr seqs) i
                                       (hut curr-state t state-hash)
@@ -58,7 +58,7 @@
     (if (parsimony-informative? curPos seqs missingGapChars)
         (number-pis-helper seqs (- curPos 1) (+ 1 curNum) missingGapChars)
       (number-pis-helper seqs (- curPos 1) curNum missingGapChars))))
-                                
+
 (defun number-of-p-informative-sites (seqs missingGapChars)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
@@ -67,10 +67,10 @@
 ; ":Doc-Section TASPI
 ;  Returns the number of sites that are parsimony informative~/
 ;  ~/
-;  Arguments: 
-;    (1) seqs - a set of sequences                                 
+;  Arguments:
+;    (1) seqs - a set of sequences
 ;    (2) missingGapChars - a list of characters indicating gaps or
-;                          missing characters                       
+;                          missing characters
 
 ;  Details: Checks that sequences are valid before counting number
 ;           of parsimony informative sites."
@@ -85,7 +85,7 @@
 #||
 EXAMPLES:
 
-(number-of-p-informative-sites  
+(number-of-p-informative-sites
  (build-fast-alist-from-alist
   '((1 a c t g - a)  ; Taxon . Sequence
     (2 g g - g g g)

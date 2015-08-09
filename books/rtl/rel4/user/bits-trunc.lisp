@@ -71,7 +71,7 @@
 (defthm bits-trunc-2
   (implies (and (= n (1+ (expo x)))
                 (>= x 0)
-                (integerp k) 
+                (integerp k)
                 (> k 0)
                 )
            (= (trunc x k)

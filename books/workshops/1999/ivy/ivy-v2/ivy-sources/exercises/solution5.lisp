@@ -1,4 +1,4 @@
-;; Exercise file to accompany 
+;; Exercise file to accompany
 ;;
 ;; Ivy: A Preprocessor and Proof Checker for First-order Logic
 ;;
@@ -8,10 +8,10 @@
 ;; Solution for exercise 5.
 ;;
 ;; Conjunctions and disjunctions are binary, which makes it inconvenient
-;; to write conjectures with several hypotheses.  Define a function 
+;; to write conjectures with several hypotheses.  Define a function
 ;; to convert a formula with multiple-arity conjunctions and
 ;; disjunctions to a formula with binary conjunctions and disjunctions.
-;; Decide what properties have to be proved to demonstrate that your 
+;; Decide what properties have to be proved to demonstrate that your
 ;; approach is acceptable, and prove those properties.
 
 (in-package "ACL2")
@@ -162,7 +162,7 @@
 
 ;;------------------------------------------------------------------
 ;; Prove that unsweetening a sweet-wff gives a wff.
-	
+
 (defthm unsweeten-wff-flg
   (cond ((equal flg 'and) (implies (sweet-wff-list-and x)
 				   (wff (unsweeten-and x))))
@@ -209,7 +209,7 @@
    (cond ;; ((equal f 'true) nil)
          ((not (wfand f)) (list (sweeten f)))
 	 (t (cons (sweeten (a1 f)) (sweeten-and (a2 f))))))
-	 
+
  (defun sweeten-or (f)
    (declare (xargs :guard (wff f)
 		   :measure (cons (1+ (acl2-count f)) 1)))

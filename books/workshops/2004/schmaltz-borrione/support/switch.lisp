@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -48,7 +48,7 @@
 ;;                |                |
 ;;                 ----------------
 ;;                        /|\
-;;                         | 
+;;                         |
 ;;                         |
 ;;                   route_from_to
 
@@ -65,13 +65,13 @@
 ;;      to the to_cwise port
 ;;    - to_ccwise_nb: is the number of the node that is connected
 ;;      to the to_ccwise port
-;;    - to_across_nb: is the number of the node that is connected 
+;;    - to_across_nb: is the number of the node that is connected
 ;;      to the to_across port
-;;    - route_from_to is a list containing two numbers: the first one 
-;;      is the input where there is a message, and the second element is 
+;;    - route_from_to is a list containing two numbers: the first one
+;;      is the input where there is a message, and the second element is
 ;;      the output port to which the message should be send
 
-;; The switch put the message in the output list corresponding to 
+;; The switch put the message in the output list corresponding to
 ;; the route_from_to list.
 
 ;; the output list is (to_node to_cwise to_ccwise to_across)
@@ -151,7 +151,7 @@
                  (t
                   ;; the origin is not valid
                   (mv nil nil nil nil))))
-          (t 
+          (t
            ;; the target is not a valid node
            (mv nil nil nil nil))))
 )

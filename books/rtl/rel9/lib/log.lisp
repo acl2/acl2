@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -24,7 +24,7 @@
 
 (in-package "ACL2")
 
-(set-enforce-redundancy t) ; for some reason, acl2 4.3 complains about  logand-natp 
+(set-enforce-redundancy t) ; for some reason, acl2 4.3 complains about  logand-natp
 
 (local (include-book "../support/top/top"))
 
@@ -275,7 +275,7 @@
 		  (natp k))
 	     (equal (logior x (expt 2 k))
 		    (+ x
-		       (* (expt 2 k) 
+		       (* (expt 2 k)
 			  (- 1 (bitn x k)))))))
 
 (defthmd logand-expt-3
@@ -364,7 +364,7 @@
 (defthmd logand-bitn-lognot-1
   (implies (and (integerp n)
                 (integerp x)
-                (integerp y))                
+                (integerp y))
            (equal (logand (bitn (lognot x) n) (bitn y n))
                   (logand (lognot (bitn x n)) (bitn y n)))))
 

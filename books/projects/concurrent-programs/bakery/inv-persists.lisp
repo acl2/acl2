@@ -6,8 +6,8 @@
   ~~~~~~~~~~~~~~~~~
 
 In this book, we prove one of the two big theorems in the bakery
-implementation, viz., that invariants described in properties.lisp persist. 
-The formal statement we prove will be given by 
+implementation, viz., that invariants described in properties.lisp persist.
+The formal statement we prove will be given by
 
 (defthm inv-persists->>
   (implies (inv st)
@@ -144,7 +144,7 @@ to me).
 (defthm q<max-persists-nil
   (implies (and (q<max procs queue max)
                 (not (<- procs in)))
-           (q<max (-> procs in 
+           (q<max (-> procs in
                       (bake+-p nil in procs max))
                   (bake+-q nil queue bucket max)
                   (bake+-max nil max)))
@@ -203,13 +203,13 @@ to me).
 		  (bake+-q (<- procs in) queue bucket max)
 		  (bake+-max (<- procs in) max)))
    :hints (("Goal"
-	   :in-theory (disable inv-p-keys inv-p-p 
-			       bake+-p bake+-q bake+-max 
+	   :in-theory (disable inv-p-keys inv-p-p
+			       bake+-p bake+-q bake+-max
 			       uniquep b=max q<max))))
 )
 
-(local	
-(in-theory (disable reduction-for-bucket 
+(local
+(in-theory (disable reduction-for-bucket
                     q<max-if-something-else-set
                     q<max-persists-non-nil-aux))
 )
@@ -281,7 +281,7 @@ to me).
 		(inv-p-p procs in bucket queue max))
 	   (choosing-pos (-> procs in (bake+-p (<- procs in) in procs max))
 			 (bake+-q (<- procs in) queue bucket max)))
-  :hints (("Subgoal 2" 
+  :hints (("Subgoal 2"
 	   :do-not '(eliminate-destructors generalize fertilize))
 	  ("Subgoal *1/5"
            :do-not '(eliminate-destructors generalize fertilize))
@@ -457,17 +457,17 @@ to me).
 (defthm legal-status-persists-itself-non-nil
   (implies (and (legal-status (<- procs in))
                 (inv-p-p procs in bucket queue max))
-           (legal-status (<- (-> procs in (bake+-p (<- procs in) in 
+           (legal-status (<- (-> procs in (bake+-p (<- procs in) in
                                                    procs max))
                              in))))
-)  
+)
 
 (local
 (defthm legal-status-persists-others-non-nil
   (implies (and (legal-status (<- procs in))
                 (legal-status (<- procs a))
                 (not (equal a in)))
-           (legal-status (<- (-> procs in (bake+-p (<- procs in) 
+           (legal-status (<- (-> procs in (bake+-p (<- procs in)
                                                    in procs max))
                              a))))
 )
@@ -490,12 +490,12 @@ to me).
                 (uniquep keys)
 		(memberp in keys))
 	   (legal-status-listp keys
-			       (-> procs in 
+			       (-> procs in
 				   (bake+-p (<- procs in) in procs max))))
   :hints (("Goal"
-          :induct (legal-status-listp keys 
-                                      (-> procs in 
-                                          (bake+-p (<- procs in) in procs 
+          :induct (legal-status-listp keys
+                                      (-> procs in
+                                          (bake+-p (<- procs in) in procs
                                                    max)))
           :do-not-induct t)
           ("Subgoal *1/3"
@@ -523,7 +523,7 @@ to me).
                              in))))
 )
 
-(local  
+(local
 (defthm legal-status-persists-others-nil
   (implies (and (legal-status (<- procs a))
                 (not (equal a in)))
@@ -543,7 +543,7 @@ to me).
   (implies (and (legal-status-listp keys procs)
                 (not (memberp in keys)))
            (legal-status-listp keys (-> procs in a))))
-                
+
 )
 
 (local
@@ -614,7 +614,7 @@ to me).
            :in-theory (disable bake+-p bake+-q))))
 )
 
-(local           
+(local
 (defthm lexicographic-temp-for-not-member
   (implies (not (memberp in queue))
            (equal (lexicographic-temp (-> procs in p) queue)
@@ -719,7 +719,7 @@ to me).
 (defun lexicographic-pos-aux (procs queue)
   (if (endp queue) T
     (if (endp (rest queue)) T
-      (and (lex< (pos (<- procs (first queue))) 
+      (and (lex< (pos (<- procs (first queue)))
 		 (first queue)
 		 (pos (<- procs (second queue)))
 		 (second queue))
@@ -780,7 +780,7 @@ to me).
 	   :cases ((equal (current (g a procs)) in)))))
 )
 
-(local 
+(local
 (defthm choosing-pos-pos-reduction
   (implies (and (choosing-pos procs queue)
 		(not (choosing (<- procs curr))))
@@ -835,7 +835,7 @@ to me).
 )
 
 (local
-(defthm non-nil-memberp-contrapositive 
+(defthm non-nil-memberp-contrapositive
   (implies (and (non-nil-indices procs keys)
 		(memberp a keys)
 		(not (<- procs in)))
@@ -843,16 +843,16 @@ to me).
 )
 
 (local
-(defthm inv-p-keys-preserved-nil-aux 
+(defthm inv-p-keys-preserved-nil-aux
   (implies (and (inv-p-keys procs keys bucket queue max)
 		(non-nil-indices procs keys)
 		(not (<- procs in)))
 	   (inv-p-keys (-> procs in (bake+-p nil in procs max))
-		       keys 
+		       keys
 		       (bake+-b nil bucket in max)
 		       (bake+-q nil queue bucket max)
 		       (bake+-max nil max)))
-  :hints (("Subgoal *1/5" 
+  :hints (("Subgoal *1/5"
 	   :in-theory (disable inv-p-p-preserves-others-nil)
 	   :use ((:instance inv-p-p-preserves-others-nil
 			    (a (car keys)))))))
@@ -871,7 +871,7 @@ to me).
 		       (bake+-q nil queue bucket max)
 		       (bake+-max nil max)))
   :hints (("Goal"
-	  :in-theory (disable my-subsetp 
+	  :in-theory (disable my-subsetp
 			      inv-p-p non-nil-indices
 			      bake+-p bake+-b bake+-q bake+-max))))
 )
@@ -917,7 +917,7 @@ to me).
 		    (bake+-q (<- procs in) queue bucket max)
 		    (bake+-max (<- procs in) max)))
   :hints (("Goal"
-	   :induct (inv-p-keys (-> procs in 
+	   :induct (inv-p-keys (-> procs in
 				   (bake+-p (<- procs in) in procs max))
 			       keys
 			       (bake+-b (<- procs in) bucket in max)
@@ -925,10 +925,10 @@ to me).
 			       (bake+-max (<- procs in) max)))
 	  ("Subgoal *1/2.2"
 	   :cases ((equal in (car keys))))
-          ("Subgoal *1/2.3" 
+          ("Subgoal *1/2.3"
            :cases ((equal in (car keys))))))
 )
-   
+
 (local
 (in-theory (enable my-subsetp))
 )
@@ -979,7 +979,7 @@ to me).
 )
 
 (local
-(in-theory (disable inv-p-p inv-p-keys 
+(in-theory (disable inv-p-p inv-p-keys
 		    disjoint legal-status-listp))
 )
 
@@ -1000,12 +1000,12 @@ to me).
 (defthm select-que-persists->>
   (implies (and (my-subsetp keys (select-que env))
 		(equal in (fair-select env X)))
-	   (my-subsetp (insert in keys) 
+	   (my-subsetp (insert in keys)
 		       (select-que (fair-step env X)))))
 )
 
 (local
-(in-theory (disable my-subsetp 
+(in-theory (disable my-subsetp
                     memberp-and-subsetp-implies-subsetp-select))
 )
 
@@ -1014,7 +1014,7 @@ to me).
 	   (inv-b-c (bake+ st in)))
   :hints (("Goal"
            :cases ((memberp in (keys (procs st))) (not (<- (procs st) in))))
-	  ("Subgoal 2" 
+	  ("Subgoal 2"
 	   :in-theory (disable g-keys-relationship))
           ("Subgoal 1"
            :in-theory (disable keys-are-non-nil)
@@ -1373,7 +1373,7 @@ to me).
                         (cent-b (<- procs a) bucket a)
                         (cent-q (<- procs a) queue a bucket)
                         (cent-go (<- procs a) go queue a))))
-                        
+
 )
 
 
@@ -1642,7 +1642,7 @@ to me).
   :rule-classes nil)
 )
 
-(local           
+(local
 (in-theory (enable cent-p cent-go))
 )
 
@@ -1699,7 +1699,7 @@ to me).
            :do-not-induct t
            :cases ((and (not (get-go st))
                         (memberp in (keys (procs st))))
-                   (and (get-go st) 
+                   (and (get-go st)
                         (equal (get-go st) in)
                         (memberp in (keys (procs st))))
                    (and (not (get-go st))
@@ -1716,7 +1716,7 @@ to me).
                             (procs (procs st))
                             (queue (queue st))
                             (go (get-go st)))))
-          
+
           ("[1]Subgoal 1" ; # changed by Matt K. for cons-tag-trees mod (v3-2)
            :in-theory (disable go-procs-for-go-non-nil
                                inv-p-p-persists-itself-nil-not-go)
@@ -1732,17 +1732,16 @@ to me).
            :in-theory (disable keys-are-non-nil)
            :use ((:instance keys-are-non-nil
                             (procs (procs st)))
-                 (:instance go-has-procs 
+                 (:instance go-has-procs
                             (procs (procs st))
                             (keys (keys (procs st)))
                             (queue (queue st))
                             (go (get-go st))))))
   :rule-classes nil)
 
-                            
 
-           
-  
-          
-           
-         
+
+
+
+
+

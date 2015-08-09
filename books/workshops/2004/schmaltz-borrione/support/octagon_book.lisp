@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -23,18 +23,18 @@
 
 (in-package "ACL2")
 
-;; we import the definition of the function node which is imported by 
+;; we import the definition of the function node which is imported by
 ;; this book
 (include-book "collect_msg_book")
 
 ;;-----------------------------------------------------------------------
 ;;-----------------------------------------------------------------------
-;;                  
+;;
 ;;                             OCTAGON
 ;;
 ;;-----------------------------------------------------------------------
 ;;-----------------------------------------------------------------------
- 
+
 (defun ComputeResponses (tl Glob_Mem ms cr_lst)
   ;; computes the responses of the requests of tl by calling function
   ;; node with the right inputs.
@@ -49,10 +49,10 @@
            (nw_r/w (car request))
            (nw_addr (cadr request))
            (nw_dat (caddr request)))
-      (mv-let (dnt1 dnt2 stat r_dat dnt3 Glob_Mem1) 
+      (mv-let (dnt1 dnt2 stat r_dat dnt3 Glob_Mem1)
               (node 'no_op ;; no local operations
                     0 0 ;; loc dat are not considered in the computation
-                    Glob_Mem 
+                    Glob_Mem
                     0 0 ;; nw_stat nw_r_dat = incoming response, irrelevant here
                     nw_r/w nw_addr nw_dat ;; incoming request
                     0 1 ;; IncomingResponse = 0,  IncomingRequest = 1
@@ -64,7 +64,7 @@
                Glob_Mem1
                ms
                (acons ;; the response is inserted in tl
-                     (list stat r_dat) 
+                     (list stat r_dat)
                      (rev route) ;; we reverse the route
                      cr_lst)))))
 )
@@ -81,10 +81,10 @@
            (nw_r/w (car request))
            (nw_addr (cadr request))
            (nw_dat (caddr request)))
-      (mv-let (dnt1 dnt2 stat r_dat dnt3 Glob_Mem1) 
+      (mv-let (dnt1 dnt2 stat r_dat dnt3 Glob_Mem1)
               (node 'no_op ;; no local operations
                     0 0 ;; loc dat are not considered in the computation
-                    Glob_Mem 
+                    Glob_Mem
                     0 0 ;; nw_stat nw_r_dat = incoming response, irrelevant here
                     nw_r/w nw_addr nw_dat ;; incoming request
                     0 1 ;; IncomingResponse = 0,  IncomingRequest = 1
@@ -92,16 +92,16 @@
                     ms)
               (declare (ignore dnt1 dnt2 dnt3))
               (acons ;; the response is inserted in tl
-                     (list stat r_dat) 
+                     (list stat r_dat)
                      (rev route) ;; we reverse the route
                      (ComputeResponses_non_tail_cr_lst
                       (cdr tl) Glob_Mem1 ms)))))
-                     
-      
+
+
 )
 
 (defthm ComputeResponses_=_non_tail_cr_lst
-  ;; we prove a rule that will rewrite the tail definition into the 
+  ;; we prove a rule that will rewrite the tail definition into the
   ;; non tail one
   (equal (car
           (ComputeResponses tl Glob_Mem ms cr_lst))
@@ -118,10 +118,10 @@
            (nw_r/w (car request))
            (nw_addr (cadr request))
            (nw_dat (caddr request)))
-      (mv-let (dnt1 dnt2 stat r_dat dnt3 Glob_Mem1) 
+      (mv-let (dnt1 dnt2 stat r_dat dnt3 Glob_Mem1)
               (node 'no_op ;; no local operations
                     0 0 ;; loc dat are not considered in the computation
-                    Glob_Mem 
+                    Glob_Mem
                     0 0 ;; nw_stat nw_r_dat = incoming response, irrelevant here
                     nw_r/w nw_addr nw_dat ;; incoming request
                     0 1 ;; IncomingResponse = 0,  IncomingRequest = 1
@@ -135,7 +135,7 @@
   ;; rule to rewrite the second output of function ComputeResponses
   (equal (mv-nth 1 (computeResponses tl Glob_mem ms cr_lst))
          (ComputeResponses_glob_Mem tl Glob_Mem ms)))
-  
+
 (in-theory (disable ComputeResponses))
 
 (defthm consp_x_=>_consp_rev_x
@@ -165,11 +165,11 @@
 
 (defthm mem_node_ok_non_loc_op
   ;; to prove the memory correct we prove the folllowing lemma on node:
-  ;; if there is no incomingRequest and if the location of the order 
+  ;; if there is no incomingRequest and if the location of the order
   ;; is not owned by the local memory then the global memory is not changed
   (implies (and (equal IncomingRequest 0)
                 (< loc (* ms node_nb))
-                (<= ms loc)) 
+                (<= ms loc))
            (equal (mv-nth 5
                           (node op loc dat Glob_Mem
                                 nw_stat nw_r_dat nw_r/w nw_addr nw_dat
@@ -193,12 +193,12 @@
                 (all_addrp req_lst)
                 (true-listp Glob_Mem)
                 (NODE_MEM_SIZEp ms))
-           (all_ok_statusp 
+           (all_ok_statusp
             (car
              (ComputeResponses req_lst Glob_Mem ms nil))))
   :otf-flg t
-  :hints (("GOAL" 
-           :induct (ComputeResponses_non_tail_cr_lst 
+  :hints (("GOAL"
+           :induct (ComputeResponses_non_tail_cr_lst
                     req_lst Glob_Mem ms)
            :do-not-induct t
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
@@ -220,12 +220,12 @@
                 (all_addrp req_lst)
                 (true-listp Glob_Mem)
                 (NODE_MEM_SIZEp ms))
-           (all_ok_statusp 
+           (all_ok_statusp
             (car
              (ComputeResponses req_lst Glob_Mem ms nil))))
   :otf-flg t
-  :hints (("GOAL" 
-           :induct (ComputeResponses_non_tail_cr_lst 
+  :hints (("GOAL"
+           :induct (ComputeResponses_non_tail_cr_lst
                     req_lst Glob_Mem ms)
            :do-not-induct t
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
@@ -244,14 +244,14 @@
         nil
       (and (equal (nth 1 (caar res))
                   (nth (local_addr (nth 1 (caar req_lst)) ms)
-                       (get_local_Mem Glob_Mem (last_route req_lst) 
+                       (get_local_Mem Glob_Mem (last_route req_lst)
                                       ms)))
-           (all_read_dat_okp (cdr req_lst) (cdr res) 
+           (all_read_dat_okp (cdr req_lst) (cdr res)
                              Glob_Mem ms)))))
 
 
 (defthm all_ok_data_read_ComputeResponses
-  ;; in case of good read requests the returned data is equal to the 
+  ;; in case of good read requests the returned data is equal to the
   ;; data in the initial memory
   (implies (and (all_r/w_1 req_lst) ; read requests
                 ;; every address of the request is own by the destination
@@ -266,11 +266,11 @@
                 (NODE_MEM_SIZEp ms))
            (all_read_dat_okp req_lst
                              (car
-                              (ComputeResponses req_lst Glob_Mem ms 
+                              (ComputeResponses req_lst Glob_Mem ms
                                                 nil))
                              Glob_Mem MS))
   :hints (("GOAL"
-           :induct (ComputeResponses_non_tail_cr_lst 
+           :induct (ComputeResponses_non_tail_cr_lst
                     req_lst Glob_Mem ms)
            :do-not-induct t
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
@@ -296,7 +296,7 @@
                                (ComputeResponses req_lst Glob_Mem
                                                  ms nil))))
   :hints (("GOAL"
-           :induct (ComputeResponses_non_tail_cr_lst 
+           :induct (ComputeResponses_non_tail_cr_lst
                     req_lst Glob_Mem ms)
            :do-not-induct t
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
@@ -321,14 +321,14 @@
            (equal (mv-nth 1 (ComputeResponses req_lst Glob_Mem ms nil))
                   Glob_Mem))
 )
-           
+
 (defun all_ok_mem_writep (req_lst mem ms)
   ;; in case of good write requests, the location is changed as a call
   ;; to put-nth
   (if (endp req_lst)
       mem
-     (all_ok_mem_writep (cdr req_lst) 
-                        (put-nth (global_addr (nth 1 (caar req_lst)) 
+     (all_ok_mem_writep (cdr req_lst)
+                        (put-nth (global_addr (nth 1 (caar req_lst))
                                               (last_route req_lst)
                                               ms)
                                  (nth 2 (caar req_lst))
@@ -358,7 +358,7 @@
 
 
 ;; But we prove lemmas to show that hypotheses of previous theorems
-;; are preserved by computeRes. This in order to be able to use the 
+;; are preserved by computeRes. This in order to be able to use the
 ;; correctness of Octagon
 
 (defthm not_member_equal_rev
@@ -377,7 +377,7 @@
 
 (defthm all_no_duplicatesp_computeResponses
   (implies (all_no_duplicatesp tl)
-           (all_no_duplicatesp 
+           (all_no_duplicatesp
             (car (computeResponses tl Glob_Mem ms nil))))
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
 ;   :hints (("GOAL"
@@ -391,12 +391,12 @@
 
 (defthm all_pos_intp_computeResponses
   (implies (all_pos_intp_route_lstp tl)
-           (all_pos_intp_route_lstp 
+           (all_pos_intp_route_lstp
             (car (computeResponses tl Glob_Mem ms nil)))))
-                                     
+
 (defthm all_true-listp_computeResponses
   (implies (all_true-listp tl)
-           (all_true-listp 
+           (all_true-listp
             (car (computeResponses tl Glob_Mem ms nil)))))
 
 (defthm tlp_computeResponses
@@ -406,10 +406,10 @@
 (defthm all_int_rev
   (implies (all_intp l)
            (all_intp (rev l))))
-                      
+
 (defthm all_int_routep_computeResponse
   (implies (all_int_routep tl)
-           (all_int_routep (car 
+           (all_int_routep (car
                             (computeResponses tl Glob_mem ms nil)))))
 
 (defthm all_inf_np_rev
@@ -418,7 +418,7 @@
 
 (defthm all_inf_routep_computeResponses
   (implies (all_inf_routep tl N)
-           (all_inf_routep (car 
+           (all_inf_routep (car
                             (computeResponses tl Glob_mem ms nil))
                             N)))
 
@@ -447,7 +447,7 @@
             (availableMovep (append L (list x)) N)))
 )
 
-(local 
+(local
  (defthm availableMovep_append_3
    (implies (and (availableMovep l N)
                  (equal (car (last l))
@@ -498,8 +498,8 @@
 (defthm all_availablemovep_routep_computeResponses
   (implies (and (all_availablemovep_routep tl N)
                 (all_int_routep tl))
-           (all_availablemovep_routep 
-            (car 
+           (all_availablemovep_routep
+            (car
              (computeResponses tl Glob_mem ms nil))
             N)))
 
@@ -518,9 +518,9 @@
            (nw_stat (car response))
            (nw_r_dat (cadr response)))
       (mv-let (stat r_dat dnt1 dnt2 dnt3 Glob_Mem1)
-              (node 'no_op 0 0 Glob_Mem 
+              (node 'no_op 0 0 Glob_Mem
                     nw_stat nw_r_dat ;; incoming response
-                    0 0 0 
+                    0 0 0
                     1 0 ;; IncomingResponse = 1, IncomingRequest = 0
                     node_nb ms)
               (declare (ignore dnt1 dnt2 dnt3))
@@ -542,9 +542,9 @@
            (nw_stat (car response))
            (nw_r_dat (cadr response)))
       (mv-let (stat r_dat dnt1 dnt2 dnt3 Glob_Mem1)
-              (node 'no_op 0 0 Glob_Mem 
+              (node 'no_op 0 0 Glob_Mem
                     nw_stat nw_r_dat ;; incoming response
-                    0 0 0 
+                    0 0 0
                     1 0 ;; IncomingResponse = 1, IncomingRequest = 0
                     node_nb ms)
               (declare (ignore dnt1 dnt2 dnt3))
@@ -559,7 +559,7 @@
   ;; rule to rewrite the tail recursive function to the non-tail one
   (equal (car
           (ComputeRes tl Glob_Mem ms res_lst))
-         (append (rev res_lst) 
+         (append (rev res_lst)
                  (ComputeRes_non_tail_res_lst tl Glob_Mem ms))))
 
 (defun ComputeRes_glob_mem (tl Glob_Mem ms)
@@ -572,9 +572,9 @@
            (nw_stat (car response))
            (nw_r_dat (cadr response)))
       (mv-let (stat r_dat dnt1 dnt2 dnt3 Glob_Mem1)
-              (node 'no_op 0 0 Glob_Mem 
+              (node 'no_op 0 0 Glob_Mem
                     nw_stat nw_r_dat ;; incoming response
-                    0 0 0 
+                    0 0 0
                     1 0 ;; IncomingResponse = 1, IncomingRequest = 0
                     node_nb ms)
               (declare (ignore dnt1 dnt2 dnt3 stat r_dat))
@@ -601,7 +601,7 @@
 
 (defthm all_ok_statusp_=>_all_ok_resultp
   (implies (all_ok_statusp resp_lst)
-           (all_ok_resultp 
+           (all_ok_resultp
             (car (computeRes resp_lst Glob_Mem ms nil))))
   :hints (("GOAL"
            :in-theory (enable node))))
@@ -616,7 +616,7 @@
 
 (defthm ComputeRes_correctness_mem
   ;; the memory is not changed by ComputeRes
-  (equal (mv-nth 1 
+  (equal (mv-nth 1
                  (ComputeRes resp_lst Glob_Mem ms nil))
          Glob_Mem)
   :hints (("GOAL"
@@ -655,7 +655,7 @@
                               (ComputeRes tl_back Glob_Mem2 ms nil)
                               (mv loc_done nw_done Glob_Mem3))))))
 )
- 
+
 
 (in-theory (disable ;(:REWRITE COLLECT_=_NW_OP_NON_TAIL)
                     ;(:REWRITE COLLECT_MSG_=_COLLECT_MEM)
@@ -672,7 +672,7 @@
   ;; in case of good read orders, all the results of the non-overlapping
   ;; communications are OK
   ;; we only consider non local communications
-  (implies (and (all_read_op_lstp op_lst) 
+  (implies (and (all_read_op_lstp op_lst)
                 (all_non_loc_op_lstp op_lst ms)
                 (all_node_nb_validp op_lst (* 4 N))
                 (all_address_validp op_lst (* 4 N) ms)
@@ -680,7 +680,7 @@
                 (integerp N) (< 0 N)
                 (true-listp Glob_Mem)
                 (NODE_MEM_SIZEp ms))
-           (all_ok_resultp 
+           (all_ok_resultp
             (mv-nth 1 (Octagon op_lst N ms Glob_Mem))))
   :otf-flg t
   :hints (("GOAL"
@@ -690,22 +690,22 @@
            :use ((:instance all_ok_status_read_computeresponses
                             (req_lst
                               (scheduler
-                               (MAKE_TRAVEL_LIST 
+                               (MAKE_TRAVEL_LIST
                                 (MV-NTH 1
-                                        (COLLECT_MSG OP_LST NIL NIL 
+                                        (COLLECT_MSG OP_LST NIL NIL
                                                      Glob_Mem ms))
                                 NIL ms N)
                                NIL NIL))
                             (Glob_Mem
                              (MV-NTH 2
-                                     (COLLECT_MSG OP_LST NIL NIL 
+                                     (COLLECT_MSG OP_LST NIL NIL
                                                   Glob_Mem ms))))))))
 
 (defthm all_ok_status_write_Octagon
   ;; in case of good read orders, all the results of the non-overlapping
   ;; communications are OK
   ;; we only consider non local communications
-  (implies (and (all_write_op_lstp op_lst) 
+  (implies (and (all_write_op_lstp op_lst)
                 (all_non_loc_op_lstp op_lst ms)
                 (all_node_nb_validp op_lst (* 4 N))
                 (all_address_validp op_lst (* 4 N) ms)
@@ -713,7 +713,7 @@
                 (integerp N) (< 0 N)
                 (true-listp Glob_Mem)
                 (NODE_MEM_SIZEp ms))
-           (all_ok_resultp 
+           (all_ok_resultp
             (mv-nth 1 (Octagon op_lst N ms Glob_Mem))))
   :otf-flg t
   :hints (("GOAL"
@@ -724,21 +724,21 @@
            :use ((:instance all_ok_status_write_computeresponses
                             (req_lst
                               (scheduler
-                               (MAKE_TRAVEL_LIST 
+                               (MAKE_TRAVEL_LIST
                                 (MV-NTH 1
-                                        (COLLECT_MSG OP_LST NIL NIL 
+                                        (COLLECT_MSG OP_LST NIL NIL
                                                      Glob_Mem ms))
                                 N\IL ms N)
                                NIL NIL))
                             (Glob_Mem
                              (MV-NTH 2
-                                     (COLLECT_MSG OP_LST NIL NIL 
+                                     (COLLECT_MSG OP_LST NIL NIL
                                                   Glob_Mem ms))))))))
 
 (defthm mem_ok_read_Octagon
-  ;; we prove that in case of read transfers the memory is not 
+  ;; we prove that in case of read transfers the memory is not
   ;; changed
-  (implies (and (all_read_op_lstp op_lst) 
+  (implies (and (all_read_op_lstp op_lst)
                 (all_non_loc_op_lstp op_lst ms)
                 (all_node_nb_validp op_lst (* 4 N))
                 (all_address_validp op_lst (* 4 N) ms)
@@ -746,7 +746,7 @@
                 (integerp N) (< 0 N)
                 (true-listp Glob_Mem)
                 (NODE_MEM_SIZEp ms))
-           (equal (mv-nth 2 
+           (equal (mv-nth 2
                           (Octagon op_lst N ms Glob_Mem))
                   Glob_Mem))
   :otf-flg t
@@ -755,8 +755,8 @@
            ;; not require any induction
            :do-not-induct t
            :do-not '(eliminate-destructors generalize)
-           :use (:instance 
-                 (:theorem 
+           :use (:instance
+                 (:theorem
                   (implies (and (integerp a) (integerp b)
                                 (< 0 a) (< 0 b)
                                 (equal (len l) (* a b)))
@@ -782,14 +782,14 @@
 
 (defthm not_consp_op_lst_collect_msg
   (implies (not (consp op_lst))
-           (not (consp 
+           (not (consp
                  (mv-nth 1 (collect_msg op_lst nil nil Glob_Mem ms)))))
   :hints (("GOAL"
            :in-theory (enable collect_msg))))
 
 (defthm not_consp_nw_op_make_travel_list
   (implies (not (consp nw_op))
-           (not (consp 
+           (not (consp
                  (make_travel_list nw_op nil ms N))))
   :hints (("GOAL"
            :in-theory (enable make_travel_list))))
@@ -812,7 +812,7 @@
            (not (consp (car (computeRes res_lst glob_mem ms nil)))))
   :hints (("GOAL"
            :in-theory (enable computeRes))))
-        
+
 (set-non-linearp t)
 
 (defthm all_ok_dat_write_Octagon
@@ -825,10 +825,10 @@
                 (true-listp Glob_Mem)
                 (NODE_MEM_SIZEp ms))
            (all_dat_okp
-            (car (computeresponses 
-                  (scheduler (make_travel_list 
-                              (mv-nth 1 
-                                      (collect_msg op_lst nil nil 
+            (car (computeresponses
+                  (scheduler (make_travel_list
+                              (mv-nth 1
+                                      (collect_msg op_lst nil nil
                                                    Glob_Mem ms))
                               NIL ms N)
                              nil nil)
@@ -838,14 +838,14 @@
   :hints (("GOAL"
            :do-not-induct t
            :use (;(:instance all_ok_dat_write_ComputeResponses
-                 ;           (req_lst (scheduler 
-                 ;                     (make_travel_list 
-                 ;                      (mv-nth 1 (collect_msg op_lst nil nil 
+                 ;           (req_lst (scheduler
+                 ;                     (make_travel_list
+                 ;                      (mv-nth 1 (collect_msg op_lst nil nil
                  ;                                             Glob_Mem ms))
                  ;                      nil ms N)
                  ;                     nil nil)))
                  (:instance COMPUTERES_CORRECTNESS_DAT
-                            (resp_lst 
+                            (resp_lst
                              (CAR
                               (COMPUTERESPONSES
                                (SCHEDULER
@@ -866,7 +866,7 @@
                                GLOB_MEM MS NIL)))))
            :in-theory (disable ;all_ok_dat_write_computeresponses
                                COMPUTERES_CORRECTNESS_DAT))))
-                           
+
 
 (defthm all_ok_dat_read_Octagon
   (implies (and (all_read_op_lstp op_lst)
@@ -878,10 +878,10 @@
                 (true-listp Glob_Mem)
                 (NODE_MEM_SIZEp ms))
            (all_dat_okp
-            (car (computeresponses 
-                  (scheduler (make_travel_list 
-                              (mv-nth 1 
-                                      (collect_msg op_lst nil nil 
+            (car (computeresponses
+                  (scheduler (make_travel_list
+                              (mv-nth 1
+                                      (collect_msg op_lst nil nil
                                                    Glob_Mem ms))
                               NIL ms N)
                              nil nil)
@@ -891,7 +891,7 @@
   :hints (("GOAL"
            :do-not-induct t
            :use ((:instance COMPUTERES_CORRECTNESS_DAT
-                            (resp_lst 
+                            (resp_lst
                              (CAR
                               (COMPUTERESPONSES
                                (SCHEDULER
@@ -915,7 +915,7 @@
 
 
 (defthm all_write_mem_octagon
-  (implies (and (all_write_op_lstp op_lst) 
+  (implies (and (all_write_op_lstp op_lst)
                 (all_non_loc_op_lstp op_lst ms)
                 (all_node_nb_validp op_lst (* 4 N))
                 (all_address_validp op_lst (* 4 N) ms)
@@ -924,10 +924,10 @@
                 (true-listp Glob_Mem)
                 (NODE_MEM_SIZEp ms))
            (equal (mv-nth 2 (Octagon op_lst N MS Glob_Mem))
-                  (all_ok_mem_writep 
-                   (scheduler 
+                  (all_ok_mem_writep
+                   (scheduler
                     (make_travel_list
-                     (mv-nth 1 (collect_msg op_lst nil nil 
+                     (mv-nth 1 (collect_msg op_lst nil nil
                                             Glob_Mem ms))
                      NIL ms N)
                     nil nil)
@@ -935,10 +935,10 @@
   :hints (("GOAL"
            :do-not-induct t
            :use ((:instance mem_ok_write_ComputeResponses
-                            (req_lst 
-                             (scheduler 
+                            (req_lst
+                             (scheduler
                               (make_travel_list
-                               (mv-nth 1 (collect_msg op_lst nil nil 
+                               (mv-nth 1 (collect_msg op_lst nil nil
                                                       Glob_Mem ms))
                                NIL ms N)
                               nil nil))))

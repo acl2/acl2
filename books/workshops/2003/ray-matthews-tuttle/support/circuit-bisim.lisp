@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 #|
-  
+
   circuit-bisim.lisp
   ~~~~~~~~~~~~~~~~~~
 
@@ -50,12 +50,12 @@ restricted by vars.
 
 (defthm member-is-memberp
   (implies (evaluation-eq-member-p p states vars)
-           (memberp (evaluation-eq-member p states vars) 
+           (memberp (evaluation-eq-member p states vars)
                     states)))
 
 (defthm member-is-evaluation-eq
   (implies (evaluation-eq-member-p p states vars)
-           (evaluation-eq p (evaluation-eq-member p states vars) 
+           (evaluation-eq p (evaluation-eq-member p states vars)
                           vars)))
 
 (defun-sk strict-evaluation-p (st vars)
@@ -106,7 +106,7 @@ restricted by vars.
   (if (endp label) t
     (and (equal (<- s (first label)) T)
          (truthp-label (rest label) s))))
-         
+
 (defun only-truth-p (states m)
   (if (endp states) T
     (and (truthp-label (label-of (first states) m) (first states))
@@ -124,7 +124,7 @@ restricted by vars.
                 (equal (<- s v) T))
            (memberp v label)))
 
-(defun only-all-truths-p (states m vars) 
+(defun only-all-truths-p (states m vars)
   (if (endp states) T
     (and (all-truthsp-label (label-of (first states) m) (first states) vars)
          (only-all-truths-p (rest states) m vars))))
@@ -205,7 +205,7 @@ restricted by vars.
 
 (local
 (defun circuit-bisim (p m q n vars)
-  (and (circuit-modelp m) 
+  (and (circuit-modelp m)
        (circuit-modelp n)
        (memberp p (states m))
        (memberp q (states n))
@@ -273,14 +273,14 @@ restricted by vars.
 (defthm c-bisimilar-equiv-implies-bisimilar-initial-states-m->n
    (implies (and (c-bisim-equiv m n vars)
                  (memberp s (initial-states m)))
-            (circuit-bisim s m 
-                           (c-bisimilar-initial-state-witness-m->n s m n vars) 
+            (circuit-bisim s m
+                           (c-bisimilar-initial-state-witness-m->n s m n vars)
                            n vars))
    :otf-flg t
    :hints (("Goal"
             :do-not '(generalize eliminate-destructors)
             :do-not-induct t
-	    :in-theory (disable member-is-memberp 
+	    :in-theory (disable member-is-memberp
 				evaluation-eq-subset-to-member)
 	    :use ((:instance evaluation-eq-subset-to-member
 			     (p s)
@@ -295,13 +295,13 @@ restricted by vars.
 (defthm c-bisimilar-equiv-implies-bisimilar-initial-states-n->m
    (implies (and (c-bisim-equiv m n vars)
                  (memberp s (initial-states n)))
-            (circuit-bisim (c-bisimilar-initial-state-witness-n->m m s n vars) 
+            (circuit-bisim (c-bisimilar-initial-state-witness-n->m m s n vars)
                            m s n vars))
    :otf-flg t
    :hints (("Goal"
             :do-not '(generalize eliminate-destructors)
             :do-not-induct t
-	    :in-theory (disable member-is-memberp 
+	    :in-theory (disable member-is-memberp
 				evaluation-eq-subset-to-member)
 	    :use ((:instance evaluation-eq-subset-to-member
 			     (p s)
@@ -310,29 +310,29 @@ restricted by vars.
 		  (:instance member-is-memberp
 			     (p s)
 			     (states (initial-states m)))
-                  (:instance 
+                  (:instance
                    evaluation-eq-is-symmetric
                    (p (evaluation-eq-member s (initial-states m) vars))
                    (q s))))))
 )
-                             
+
 
 ;; Now we go to our first difficult proof, showing that bisimilar
 ;; states have equal labels.
 
 ;; (label-of s m) are only truths.
 
-(defthm truthp-label-from-only-truthp 
-  (implies (and (only-truth-p states m) 
-                (memberp s states)) 
+(defthm truthp-label-from-only-truthp
+  (implies (and (only-truth-p states m)
+                (memberp s states))
            (truthp-label (label-of s m) s)))
 
 ;; And all truths are present in the label.
 
-(defthm all-truths-p-from-only-all-truths-p 
-  (implies (and (only-all-truths-p states m vars) 
-                (memberp s states)) 
-           (all-truthsp-label (label-of s m) s vars))) 
+(defthm all-truths-p-from-only-all-truths-p
+  (implies (and (only-all-truths-p states m vars)
+                (memberp s states))
+           (all-truthsp-label (label-of s m) s vars)))
 
 ;; For every variable in (and vars label) they re members of vars and label.
 
@@ -433,7 +433,7 @@ restricted by vars.
                  (:instance  c-bisimilar-states-have-labels-equal-aux)))
           ("Goal'''"
            :use evaluation-eq-is-symmetric)))
-)	  
+)
 
 ;; Now we start with the next states.
 
@@ -471,7 +471,7 @@ restricted by vars.
   :hints (("Goal"
            :in-theory (disable well-formed-transition-p-expanded)
            :use well-formed-transition-p-expanded)))
-           
+
 (local
 (defthm c-bisimilar-witness-member-of-states-m->n
   (implies (and (circuit-bisim p m q n vars)
@@ -516,7 +516,7 @@ restricted by vars.
                                only-evaluations-p
                                all-evaluations-p
                                evaluation-p
-                               subset 
+                               subset
                                r-is-evaluation-eq-member-p)
            :use ((:instance r-is-evaluation-eq-member-p
                             (states-n (states m))
@@ -546,7 +546,7 @@ restricted by vars.
            :do-not-induct t
            :in-theory (enable next-statep))
           ("Goal'"
-           :in-theory (disable evaluationp-for-subset 
+           :in-theory (disable evaluationp-for-subset
                                r-is-evaluation-eq-member-p)
            :use ((:instance r-is-evaluation-eq-member-p
                             (states-m (states m))
@@ -576,7 +576,7 @@ restricted by vars.
                                only-evaluations-p
                                all-evaluations-p
                                evaluation-p
-                               subset 
+                               subset
                                r-is-evaluation-eq-member-p)
            :use ((:instance r-is-evaluation-eq-member-p
                             (q p)
@@ -594,8 +594,8 @@ restricted by vars.
           ("Goal'''"
            :use evaluation-eq-is-symmetric)))
 )
- 
-(local               
+
+(local
 (defthm c-bisimilar-witness-produces-bisimilar-states-m->n
   (implies (and (circuit-bisim p m q n vars)
                  (next-statep p r m))
@@ -607,7 +607,7 @@ restricted by vars.
            :do-not-induct t
            :in-theory (enable next-statep))
           ("Goal'"
-           :in-theory (disable evaluationp-for-subset 
+           :in-theory (disable evaluationp-for-subset
                                r-is-evaluation-eq-member-p)
            :use ((:instance r-is-evaluation-eq-member-p
                             (states-m (states m))
@@ -626,7 +626,7 @@ restricted by vars.
 (defthm c-bisimilar-witness-produces-bisimilar-states-n->m
   (implies (and (circuit-bisim p m q n vars)
                  (next-statep q r n))
-            (circuit-bisim 
+            (circuit-bisim
              (c-bisimilar-transition-witness-n->m p m q r n vars)
              m r n vars))
   :hints (("Goal"
@@ -638,7 +638,7 @@ restricted by vars.
                                only-evaluations-p
                                all-evaluations-p
                                evaluation-p
-                               subset 
+                               subset
                                r-is-evaluation-eq-member-p)
            :use ((:instance r-is-evaluation-eq-member-p
                             (q p)
@@ -653,7 +653,7 @@ restricted by vars.
                  (:instance evaluationp-for-subset
                             (st q)
                             (variables (variables n)))))
-          ("Subgoal 3" 
+          ("Subgoal 3"
            :use evaluation-eq-is-symmetric)
           ("Subgoal 2"
            :use evaluation-eq-is-symmetric)
@@ -697,14 +697,14 @@ restricted by vars.
   :hints (("Goal"
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t
-           :use 
-           ((:functional-instance 
+           :use
+           ((:functional-instance
              bisimilar-models-have-same-ltl-semantics
              (bisimilar-equiv (lambda (m n vars)
                                 (c-bisim-equiv m n vars)))
              (modelp (lambda (m) (circuit-modelp m)))
              (bisimilar (lambda (p m q n vars)
-                          (circuit-bisim 
+                          (circuit-bisim
                            p m q n vars)))
              (bisimilar-initial-state-witness-m->n
               (lambda (s m n vars)
@@ -722,5 +722,5 @@ restricted by vars.
               (lambda (p m q r n vars)
                 (c-bisimilar-transition-witness-n->m
                  p m q r n vars))))))))
-           
-  
+
+

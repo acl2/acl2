@@ -142,7 +142,7 @@
 ;;; auto-generated defxdoc form in file hacking-xdoc.lisp.
 
 ; ":Doc-Section hacker
-; 
+;
 ; execute some events, subsuming the specified ttags with the current ttag.~/
 
 ; ~bv[]
@@ -154,7 +154,7 @@
 ;   (include-book
 ;    \"bar\" :ttags ((:bar))))
 ; ~ev[] ~/
-; 
+;
 ; This is like ~ilc[progn] except that the first argument is a
 ; ttag-spec (~l[defttag]) to be authorized within the constituent
 ; events and then subsumed.  That is, an active ttag is required
@@ -164,7 +164,7 @@
 ; subsumption.  If my book requires a ttag, I can then use this to
 ; include other books/forms requiring other ttags without those others
 ; needing specific prior authorization.
-; 
+;
 ; An active ttag is required to use this form (~l[defttag]).
 ; ~/"
   `(progn!+subsume-ttags ,ttag-spec

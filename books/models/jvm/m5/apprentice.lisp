@@ -144,7 +144,7 @@ version.
     (invokevirtual "Job" "start" 0)
     (load job2)
     (invokevirtual "Job" "start" 0)
- to 
+ to
     (load job2)
     (load job1)
     (invokevirtual "Job" "start" 0)
@@ -241,7 +241,7 @@ proved it after about an hour's work.
 ;  meta 10000000 ctrl-d
 ; so as not to put it in the kill ring.
 
-; I sometimes divert output to foo.log and use 
+; I sometimes divert output to foo.log and use
 ;   /u/moore/bin/watchlog foo.log
 ; to observe it in another buffer.  To get the diversion stuff, do
 
@@ -446,7 +446,7 @@ Sun Jul 15 14:17:26 2001
                                       (PROGRAM frame))
                   (index-into-program pc
                                       (program1 class method)))))
-                  
+
 ; Details: In the defthm above, class and method and pc will always be
 ; constant.  Generally (program frame) will be undetermined, but
 ; (programp frame "..." "...") will be settled by some case of the
@@ -659,7 +659,7 @@ Sun Jul 15 14:17:26 2001
                 (equal job `(REF ,i))
                 (equal stack nil)))
        (t  nil)))))
-           
+
 (defun thread-no         (thread) (nth 0 thread))
 (defun thread-call-stack (thread) (nth 1 thread))
 (defun thread-status     (thread) (nth 2 thread))
@@ -1815,7 +1815,7 @@ Sun Jul 15 14:17:26 2001
 ; that 1<= th < (len (heap s)).
 
 ; Suppose we know (good-state s).  Now how do we open up (step th s)?
-; We need to get 
+; We need to get
 ; (good-thread i
 ;              (if (and (endp (cdr tt))
 ;                       except-last-flg)
@@ -2002,7 +2002,7 @@ Sun Jul 15 14:17:26 2001
 
 (defthm bind-bind
   (equal (bind i v1 (bind i v2 lst))
-         (bind i v1 lst))) 
+         (bind i v1 lst)))
 
 (defthm lookup-method-in-good-class-table
   (implies (and (syntaxp (and (quotep class)
@@ -2214,7 +2214,7 @@ Sun Jul 15 14:17:26 2001
 ; if the counter in such a state is non-nil, then it is rel to the
 ; counter in the next state.  Monotonicity-2, further below, says once
 ; the counter is non-nil, it stays non-nil.
- 
+
 (defthm Monotonicity
   (let* ((s1 (run sched *a0*))
          (s2 (step th s1)))
@@ -2259,7 +2259,7 @@ Sun Jul 15 14:17:26 2001
               (cons (+ 1 (len cdr-counts))
                     (natural-sum cdr-counts)))
             :well-founded-relation e0-ord-<))
-            
+
     (if (equal fn 'makemultiarray2)
         (if
          (zp car-counts)
@@ -2346,7 +2346,7 @@ Sun Jul 15 14:17:26 2001
                                    (disable good-thread-table)))))
 
 ; ---------------------------------------------------------------------------
-; Appendix 2.  Some Handy Utilities 
+; Appendix 2.  Some Handy Utilities
 
 #|
 
@@ -2354,7 +2354,7 @@ Sun Jul 15 14:17:26 2001
 ; M5.  If you evaluate (s (caar (cadaar s))) it will return
 ; thread0-frame0-pc, telling you what state component that refers to.
 
-(assign s 
+(assign s
 '(((0 ((thread0-frame0-pc (thread0-frame0-local0
                            thread0-frame0-local1
                            thread0-frame0-local2)
@@ -2645,7 +2645,7 @@ Sun Jul 15 14:17:26 2001
 
 ; This test runs 530 steps, leaves the counter at 15, and confirms
 ; that we are always in good-states during the run.
- 
+
 (defun repeat (th n)
   (if (zp n)
       nil

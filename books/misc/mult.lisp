@@ -6,7 +6,7 @@ Matt Wilding (http://hokiepokie.org) Feb 2002
 
 This ACL2 script solves a challenge posed by Bill Legato, to prove
 that a program written for the Mostek 6502 microprocessor correctly
-implements multiplication.  The program is described in 
+implements multiplication.  The program is described in
 
 A Weakest Precondition Model for Assembly Language Programs
 
@@ -16,26 +16,26 @@ also containing the program is available, which is currently FOUO.)
 Comments from the 2.5x version of this script:
 
 xx In this script we solve this challenge in the following steps:
-xx 
+xx
 xx
 xx 1. Model the program in ACL2 using a stobj to represent state,
 xx adding a definition for each line of the program, and combining the
 xx lines into a program.
-xx 
+xx
 xx 2. Describe the algorithm abstractly in a function "loop-spec".
-xx 
+xx
 xx 3. Prove the loop-spec works.
-xx 
+xx
 xx 4. Prove that our Mostek 6502 program model works like loop-spec.
-xx 
+xx
 xx 5. Combine the lemmas of 3. and 4. into the final theorem.
-xx 
+xx
 xx Solving the challenge problem required 15 hours.
-xx 
+xx
 xx   1. Understanding the algorithm                1 hr
 xx   2. Modeling the program in ACL2               2 hrs
-xx   3. Wasting time working on the proof before 
-xx      remembering yet again that decomposing 
+xx   3. Wasting time working on the proof before
+xx      remembering yet again that decomposing
 xx      proofs is *always* the right thing to do   4 hrs.
 xx   4. Proving that loop-spec works               3 hrs
 xx   5. Proving that loop-spec works like the
@@ -43,8 +43,8 @@ xx      real program                               3.5 hrs
 xx   6. Cleaning and documenting                   1.5 hrs
 xx                                                 -------
 xx                                                 15 hrs
-xx 
-xx 
+xx
+xx
 xx The proof runs in under a minute under ACL2 2.5x, a version of ACL2
 xx 2.5 enhanced with nu-rewriter patches.  The proof uses Super-IHS,
 xx the Rockwell Collins ACL2 book that extends IHS.  It would take a
@@ -57,7 +57,7 @@ The proof has now been ported to ACL2 2.6.  The port to 2.6 required
 about 3.5 hours of work, plus 1 hour for rearranging the lemmas
 sensibly and documenting.  Some Super-IHS rules were ripped out of
 Super-IHS and put here so as to make this script depend only on
-distibuted books.  
+distibuted books.
 
 While I was at porting the proof, I spent some time reorganizing and
 simplifying.  Most importantly, I eliminated the use of a spec
@@ -146,8 +146,8 @@ Christmas 2001
 (defun sub1-logcdr-logcdr-carry-induction (m x y c)
   (if (zp m)
       (or x y c)
-    (sub1-logcdr-logcdr-carry-induction 
-     (1- m) 
+    (sub1-logcdr-logcdr-carry-induction
+     (1- m)
      (logcdr x)
      (logcdr y)
      (if (or (and (equal (logcar x) 1) (equal (logcar y) 1))
@@ -209,7 +209,7 @@ Christmas 2001
   (implies (and (syntaxp (constant-syntaxp x))
                 (syntaxp (constant-syntaxp y))
                 (equal sum (+ x y)))
-           (equal (+ x y z) (+ sum z))))    
+           (equal (+ x y z) (+ sum z))))
 
 (defthm *ark*-ash-+-pos
   (implies (and (integerp x)
@@ -232,7 +232,7 @@ Christmas 2001
   (equal
    (logtail n1 (+ x (ash y n2)))
    (+ (logtail n1 x) (ash y (- n2 n1)))))
-  :hints (("goal" :in-theory 
+  :hints (("goal" :in-theory
            (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY logtail*)
            :induct (sub1-sub1-logcdr-induction n2 n1 x))))
 
@@ -378,7 +378,7 @@ Christmas 2001
 (defthm logapp-logapp
   (implies
    (and
-    (integerp n1) (integerp n2) 
+    (integerp n1) (integerp n2)
     (integerp a) (integerp b) (integerp c)
     (<= 0 n2) (<= n2 n1))
    (equal
@@ -420,14 +420,14 @@ Christmas 2001
     (+ (logtail n x) (logtail n y))))
   :hints (("goal" :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY)
            :induct (sub1-logcdr-logcdr-induction n x y))))
-  
+
 (defthm *ark*-loghead-ash-pos-rewrite
   (implies
    (and
     (integerp n1)
     (integerp n2)
     (integerp x)
-    (<= 0 n1) 
+    (<= 0 n1)
     (<= 0 n2))
   (equal (loghead n1 (ash x n2))
          (if (<= n1 n2)
@@ -442,7 +442,7 @@ Christmas 2001
     (integerp n1)
     (integerp n2)
     (integerp x)
-    (<= 0 n1) 
+    (<= 0 n1)
     (<= 0 n2))
   (equal (logtail n1 (ash x n2))
          (if (<= n1 n2)
@@ -486,7 +486,7 @@ Christmas 2001
    (and
     (integerp n) (<= 0 n)
     (unsigned-byte-p n x))
-   (equal 
+   (equal
     (unsigned-byte-p n (1- x))
     (< 0 x)))
   :hints (("goal" :in-theory (enable unsigned-byte-p))))
@@ -500,9 +500,9 @@ Christmas 2001
   :hints (("goal" :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY)
            :induct (sub1-logcdr-induction n a))))
 
-(defthm equal-logcar-1 
-  (equal (equal (logcar x) 1) 
-         (not (equal (logcar x) 0))) 
+(defthm equal-logcar-1
+  (equal (equal (logcar x) 1)
+         (not (equal (logcar x) 0)))
   :hints (("goal" :in-theory (enable logcar))))
 
 (defthm logapp-loghead
@@ -523,7 +523,7 @@ Christmas 2001
    (equal (logtail n x) (logbit n x)))
   :hints (("goal" :induct (sub1-logcdr-induction n x)
            :in-theory (enable LOGOPS-RECURSIVE-DEFINITIONS-THEORY logbit))))
-  
+
 (defthm equal-x-logapp-x
   (implies
    (and (integerp x) (integerp y) (integerp n) (<= 0 n))
@@ -545,11 +545,11 @@ Christmas 2001
 (defthm equal-logbit-logbit-logcdr-bridge
   (implies
    (and (integerp x) (integerp n) (<= 0 n))
-   (equal 
+   (equal
     (equal (logbit n (logcdr x)) (logbit (1+ n) x))
     t))
   :hints (("goal" :in-theory (enable logbit logbitp*))))
-  
+
 (defthm unsigned-byte-p-logcdr
   (implies
    (unsigned-byte-p n x)
@@ -869,7 +869,7 @@ Christmas 2001
           :USE X-UPDATE-TYPE-HELPER)))
 
 ;; We now model the algorithm contained in Legato's paper.  We use the
-;; line numbers from page 7 of his note. 
+;; line numbers from page 7 of his note.
 
 ;; We use an awkward modeling style to avoid use of the reader.  This
 ;; means that
@@ -877,8 +877,8 @@ Christmas 2001
 ;; 1.  We employ IHS functions directly.  logapp, loghead, logtail,
 ;;     ash, logcdr, unsigned-byte-p etc. are all described in the IHS
 ;;     library that comes with the ACL2 distribution.
-;; 2.  We employ an awkward, multiple-let-binding style.    
-;;    
+;; 2.  We employ an awkward, multiple-let-binding style.
+;;
 ;; Note also that the Mostek 6502 microprocessor commands of this
 ;; program assume a big-endian byte, while we prefer a small-endian
 ;; style for proofs.  We model the operations how we like, but this
@@ -903,7 +903,7 @@ Christmas 2001
 ;; loop ror f1
 (defun line3 (st)
   (declare (xargs :stobjs st
-                  :guard-hints (("goal" :in-theory 
+                  :guard-hints (("goal" :in-theory
                                  (enable logapp loghead logcar stp)))))
   (let ((temp (cflg st)))
     (let ((st (update-cflg (logcar (f1 st)) st)))
@@ -921,8 +921,8 @@ Christmas 2001
 ;; adc f2 - set a to a + f2 + c
 (defun line6 (st)
   (declare (xargs :stobjs st
-                  :guard-hints (("goal" :in-theory 
-                                 (enable logapp loghead 
+                  :guard-hints (("goal" :in-theory
+                                 (enable logapp loghead
                                          logcar logbit)))))
   (let ((temp (+ (a st) (f2 st) (cflg st))))
     (let ((st (update-a (loghead 8 temp) st)))
@@ -932,7 +932,7 @@ Christmas 2001
 ;; zcoef ror a
 (defun line7 (st)
   (declare (xargs :stobjs st
-                  :guard-hints (("goal" :in-theory 
+                  :guard-hints (("goal" :in-theory
                                  (enable logapp loghead logcar)))))
   (let ((temp (cflg st)))
     (let ((st (update-cflg (logcar (a st)) st)))
@@ -942,7 +942,7 @@ Christmas 2001
 ;; ror low
 (defun line8 (st)
   (declare (xargs :stobjs st
-                  :guard-hints (("goal" :in-theory 
+                  :guard-hints (("goal" :in-theory
                                  (enable logapp loghead logcar)))))
   (let ((temp (cflg st)))
     (let ((st (update-cflg (logcar (low st)) st)))
@@ -952,7 +952,7 @@ Christmas 2001
 ;; dex
 (defun line9 (st)
   (declare (xargs :stobjs st
-                  :guard-hints (("goal" :in-theory 
+                  :guard-hints (("goal" :in-theory
                                  (enable logapp loghead logcar)))))
   (let ((temp (loghead 8 (1- (x st)))))
     (let ((st (update-zflg (if (equal temp 0) 1 0) st)))
@@ -965,11 +965,11 @@ Christmas 2001
 (defun multloop (st)
   (declare (xargs :stobjs st
                   :measure (nfix (x st))
-                  :hints (("goal" :in-theory 
+                  :hints (("goal" :in-theory
                            (enable unsigned-byte-p nfix)))))
   (if (and (integerp (x st)) (< 0 (x st)))
       (let ((st (line3 st)))
-        (let ((st (if (equal (cflg st) 1) 
+        (let ((st (if (equal (cflg st) 1)
                       (let ((st (line5 st)))
                         (line6 st))
                     st)))
@@ -980,7 +980,7 @@ Christmas 2001
                     (multloop st)
                   st))))))
     st))
-                
+
 (defun multprog (st)
   (declare (xargs :stobjs st))
   (let ((st (line1 st)))
@@ -1041,7 +1041,7 @@ ACL2>
     (equal (logcar x) 1)
     (integerp x) (integerp y) (integerp n) (<= 0 n))
    (equal (ash (* y x) n) (+ (ash y n) (ash (* y (logcdr x)) (1+ n)))))
-  :hints (("goal" :in-theory 
+  :hints (("goal" :in-theory
            (enable *ARK*-ASH-+-POS ash-*2-simplify ash*))))
 
 (defthm *-logcar-casesplit
@@ -1061,8 +1061,8 @@ ACL2>
     (equal (logcdr (+ x y)) z)
     (integerp x) (integerp y))
    (equal
-    (logapp 
-     1 
+    (logapp
+     1
      (b-xor (logcar x) (logcar y))
      z)
     (+ x y)))
@@ -1087,7 +1087,7 @@ ACL2>
     (stp st)
     (<= (x st) 8))
    (equal (result (multloop st))
-          (+ 
+          (+
            (logtail (x st) (result st))
            (ash (* (loghead (x st) (f1 st)) (f2 st)) (- 8 (x st))))))
   :hints (("goal" :in-theory (enable logtail* logbitp* ash*))))
@@ -1099,4 +1099,4 @@ ACL2>
    (equal (result (multprog st))
           (* (f1 st) (f2 st))))
   :hints (("goal" :in-theory (disable multloop result))))
-  
+

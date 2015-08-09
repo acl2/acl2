@@ -4,7 +4,7 @@
 ;;
 ;; Author: Olga Shumsky (shumsky@mcs.anl.gov)
 ;;
-;; As Bill suggested in substitution, I will attempt to write a 
+;; As Bill suggested in substitution, I will attempt to write a
 ;; simultaneous-apply and prove soundness of seqify by proving that
 ;;
 ;;     (simultaneous-apply s f) = (sequential-apply (seqify s) f)
@@ -15,14 +15,14 @@
   (declare (xargs :guard (and (wft-list l) (wfsubst s))))
   (if (atom l)
       l
-      (cons (cond ((variable-term (car l)) 
+      (cons (cond ((variable-term (car l))
 		   (if (fassoc (car l) s)
 		       (cdr (fassoc (car l) s))
 		       (car l)))
 		  ((domain-term (car l)) (car l))
 		  ((wf-ap-term-top (car l))
 		   (cons (caar l) (simapply-term-list s (cdar l))))
-		  (t (car l))) ;; leave non-term unchanged 
+		  (t (car l))) ;; leave non-term unchanged
 	    (simapply-term-list s (cdr l)))))
 
 (defun sim-apply (s f)
@@ -35,13 +35,13 @@
 	(t f)))
 
 ;; let's try a different sequential-apply.  The idea is to match the
-;; structure of sequential apply to that of simultaneous apply.  
+;; structure of sequential apply to that of simultaneous apply.
 (defun seq-term-list (s l)
   (declare (xargs :guard (and (wfsubst s) (wft-list l))))
   (if (atom s)
       l
       (seq-term-list (cdr s) (subst-term-list l (caar s) (cdar s)))))
-      
+
 (defun seq-apply (s f)
   (declare (xargs :guard (and (wfsubst s) (wff f))))
   (cond ((wfnot f) (list 'not (seq-apply s (a1 f))))
@@ -80,7 +80,7 @@
 	   (intersect-equal x y))
   :rule-classes nil)
 
-;; The lemma subst-term-list-no-change is needed for the 
+;; The lemma subst-term-list-no-change is needed for the
 ;; proof of lemma seq-term-list-no-change.  It is not needed
 ;; anywhere else, but if left enable slows things down considerably
 (defthm subst-term-list-no-change
@@ -88,10 +88,10 @@
 	   (equal (subst-term-list l x tm) l)))
 
 ;; The lemma seq-term-list-no-change is used in proofs of
-;; lemmas seq-term-listvar-list-fassoc and 
+;; lemmas seq-term-listvar-list-fassoc and
 ;; sim-seq-variable-disjoint-subst-cars-cdrs. It is not needed
 ;; anywhere else, but if left enable slows things down considerably.
-;; The lemmas is disabled after it is proved and explicitly enabled 
+;; The lemmas is disabled after it is proved and explicitly enabled
 ;; for the proofs of the two lemmas.
 (defthm seq-term-list-no-change
   (implies (and (wft-list l)
@@ -114,12 +114,12 @@
 		(fassoc x s))
 	   (equal (seq-term-list s (list x))
 		  (list (cdr (fassoc x s)))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (enable wft-list-true-list))
-	  ("Subgoal *1/2" 
-	   :in-theory (enable seq-term-list-no-change 
+	  ("Subgoal *1/2"
+	   :in-theory (enable seq-term-list-no-change
 			      wft-list-true-list))
-	  ("Subgoal *1/2.2" 
+	  ("Subgoal *1/2.2"
 	   :use ((:instance x-member-listx-intersect
 			    (x (cars (cdr s)))
 			    (y (vars-in-term-list (cdrs (cdr s))))
@@ -179,7 +179,7 @@
 		  (cons (cons p (seq-term-list s l1))
 			(seq-term-list s l2))))
   :hints (("Goal" :in-theory (enable wft-list-true-list))))
-		
+
 ;; This theorem is the goal of section 1.
 (defthm sim-seq-variable-disjoint-subst-cars-cdrs
   (implies (and (wft-list a)
@@ -197,7 +197,7 @@
 ;;------------------ Section 2 -----------------------------------
 ;; The goal of this section is to prove that subst-term-list and
 ;; subst-cdrs cancel each other.  In particular, we need to prove
-;; that under certain conditions 
+;; that under certain conditions
 ;;         (equal (subst-term-list
 ;;                  (simapply-term-list (subst-cdrs s v1 v2) a) v2 v1)
 ;;                (simapply-term-list s a))))
@@ -207,48 +207,48 @@
 ;;         (subst-term-list (simapply-term-list s a) v1 v2))
 ;; provided v2 is a new variable.  This is done in lemma
 ;; subst-term-list-simapply-term-list-distribute.
-;; 
+;;
 ;; The second step is to prove that (simapply-term-list s l)
 ;; does not introduce new variables wrt (cdrs s) and l.  This is
 ;; done in lemma simapply-term-list-introduces-no-new-vars.
 ;;
-;; I use an series of encapsulates so that the auxiliary lemmas 
+;; I use an series of encapsulates so that the auxiliary lemmas
 ;; do not get in the way later.
 
 ;; Step 1:
 ;; note that the exported theorem of this statement breaks up into
 ;; too many cases.  maybe it can be fixed and go faster?
-(encapsulate 
+(encapsulate
  ()
- (local (defthm fassoc-subst-cdrs 
+ (local (defthm fassoc-subst-cdrs
 	  (implies (fassoc x y)
 		   (fassoc x (subst-cdrs y v tm)))))
 
- (local (defthm fassoc-subst-cdrs-not 
+ (local (defthm fassoc-subst-cdrs-not
 	  (implies (and (symbolp x)
 			(wfsubst y)
 			(not (fassoc x y)))
 		   (not (fassoc x (subst-cdrs y v tm))))))
 
- (local (defthm member-subst-fassoc 
+ (local (defthm member-subst-fassoc
 	  (implies (and (wfsubst s)
 		(member-equal x (cars s)))
 		   (fassoc x s))))
 
- (local (defthm fassoc-domain-subst-cdrs 
+ (local (defthm fassoc-domain-subst-cdrs
 	  (implies (and (wfsubst s)
 			(domain-term (cdr (fassoc x s))))
 		   (equal (fassoc x (subst-cdrs s v1 v2))
 			  (fassoc x s)))))
 
- (local (defthm fassoc-subst-cdr-equal-cdr 
+ (local (defthm fassoc-subst-cdr-equal-cdr
 	  (implies (and (wfsubst s)
 			(fassoc x s)
 			(variable-term (cdr (fassoc x s))))
 		   (equal (fassoc x (subst-cdrs s (cdr (fassoc x s)) v))
 			  (cons x v)))))
 
- (local (defthm fassoc-subst-cdr-same 
+ (local (defthm fassoc-subst-cdr-same
 	  (implies (and (wfsubst s)
 			(fassoc x s)
 			(variable-term (cdr (fassoc x s)))
@@ -257,21 +257,21 @@
 			  (fassoc x s)))))
 
  (local (defthm fassoc-wft
-	  (implies 
+	  (implies
 	   (and (wfsubst s)
 		(fassoc x s)
 		(consp (cdr (fassoc x s)))
 		(not (member-equal v2 (vars-in-term-list (cdrs s)))))
 	   (equal (fassoc x (subst-cdrs s v1 v2))
-		  (cons x 
+		  (cons x
 			(cons (cadr (fassoc x s))
 			      (subst-term-list (cddr (fassoc x s)) v1 v2)))))
   :hints (("Goal" :in-theory (enable wft-list-true-list)))))
-	
+
  (local (defthm simapply-term-list-true-list
 	  (implies (true-listp l)
 		   (true-listp (simapply-term-list s l)))))
-	   
+
  (local (defthm fassoc-domain-term
 	  (implies (and (wfsubst s)
 			(fassoc x s)
@@ -298,13 +298,13 @@
 ;; Step 2:
 ;; Prove that simapply-term-list introduces not new variable occurrences
 
-(encapsulate 
+(encapsulate
  ()
  (local (defthm var-occurrence-tl-fassoc
 	  (implies (and (wfsubst s)
 			(fassoc a s)
 			(not (var-occurrence-term-list x (cdrs s))))
-		   (not (var-occurrence-term-list 
+		   (not (var-occurrence-term-list
 			 x (list (cdr (fassoc a s))))))))
 
  (local (defthm var-occurrence-tl-cons
@@ -317,7 +317,7 @@
 	  (implies (and (wfsubst s)
 			(wft-list l))
 		   (true-listp (simapply-term-list s l)))))
-	
+
  ;; exported lemma of this encapsulate
  (defthm var-occurrence-simapply-term-list
   (implies (and (wft-list l)
@@ -328,42 +328,42 @@
 	   (not (var-occurrence-term-list x (simapply-term-list s l))))
   :rule-classes nil)
 
- ) ;; end of encapsulate 
+ ) ;; end of encapsulate
 
 
 (local (defthm wfsubst-cdrs-wftlist
 	 (implies (wfsubst s)
 		  (wft-list (cdrs s)))))
- 
-(encapsulate 
+
+(encapsulate
  ()
  ;; relationship between var-occurrence and vars-in-term-list
  (local (defthm var-occurrence-member-vars-term-list-1
 	  (implies (and (wft-list l)
 			(not (var-occurrence-term-list x l)))
 		   (not (member-equal x (vars-in-term-list l))))))
- 
+
  (local (defthm var-occurrence-member-vars-term-list-2
 	  (implies (and (wft-list l)
 			(var-occurrence-term-list x l))
 		   (member-equal x (vars-in-term-list l)))))
- 
+
  ;; lemmas to prove that simapply-term-list is a wft-list
  (local (defthm cdr-fassoc-wftlist
 	  (implies (and (wfsubst s)
 			(fassoc x s))
 		   (wft-list (list (cdr (fassoc x s)))))))
- 
+
  (local (defthm wftlist-cons
 	  (implies (and (wft-list (list x))
 			(wft-list y))
 		   (wft-list (cons x y)))))
- 
+
  (local (defthm simapply-term-list-wftlist
 	  (implies (and (wft-list l)
 			(wfsubst s))
 		   (wft-list (simapply-term-list s l)))))
- 
+
  ;; exported theorem of this section
  (defthm simapply-term-list-introduces-no-new-vars
    (implies (and (wft-list l)
@@ -371,14 +371,14 @@
 		 (wfsubst s)
 		 (not (member-equal x (vars-in-term-list l)))
 		 (not (member-equal x (vars-in-term-list (cdrs s)))))
-	    (not (member-equal 
+	    (not (member-equal
 		  x (vars-in-term-list (simapply-term-list s l)))))
    :hints (("Goal" :do-not-induct t
 	    :use var-occurrence-simapply-term-list)))
- 
+
  ) ;; end of encapsulate
 
-(defthm subst-term-list-inverse 
+(defthm subst-term-list-inverse
   (implies (and (variable-term v1)
 		(variable-term v2)
 		(not (member-equal v2 (vars-in-term-list l))))
@@ -418,17 +418,17 @@
  (local (defthm intersect-union-subset-1
 	  (implies (and (subsetp-equal (intersect-equal x y1) z)
 			(subsetp-equal (intersect-equal x y2) z))
-		   (subsetp-equal (intersect-equal 
+		   (subsetp-equal (intersect-equal
 				   x (union-equal y1 y2)) z))))
 
  (local (defthm intersect-union-subset-2
 	  (implies (not (subsetp-equal (intersect-equal x y) z))
-		   (not (subsetp-equal (intersect-equal 
+		   (not (subsetp-equal (intersect-equal
 					x (union-equal y a)) z)))))
 
  (local (defthm intersect-union-subset-3
 	  (implies (not (subsetp-equal (intersect-equal x y) z))
-		   (not (subsetp-equal (intersect-equal 
+		   (not (subsetp-equal (intersect-equal
 					x (union-equal a y)) z)))))
 
  (local (defthm intersect-cons-subset-1
@@ -442,18 +442,18 @@
 		   (subsetp-equal (vars-in-term-list (subst-term-list l v y))
 				  (cons y (vars-in-term-list l))))))
 
- (local (defthm member-subst 
+ (local (defthm member-subst
 	  (implies (and (wft-list l)
 			(variable-term v)
 			(variable-term y)
 			(not (equal v y)))
-		   (not (member-equal 
+		   (not (member-equal
 			 v (vars-in-term-list (subst-term-list l v y)))))))
-		
- (local 
+
+ (local
   (defthm subset-intersect-helper-subcase
     (implies (and (subsetp-equal (intersect-equal cs y1) v2)
-		  (subsetp-equal (intersect-equal cs (cons a y2)) 
+		  (subsetp-equal (intersect-equal cs (cons a y2))
 				 (cons v1 v2))
 		  (not (member-equal z cs))
 		  (not (equal v1 z))
@@ -462,19 +462,19 @@
 		  (subsetp-equal y1 (cons z y2)))
 	     (subsetp-equal (intersect-equal cs (cons a y1)) v2))
     :hints (("Goal" :do-not generalize))))
-		
+
  (defthm subset-intersect-helper
-   (implies 
+   (implies
     (and (variable-term y)
 	 (variable-term v1)
 	 (not (equal y v1))
 	 (var-list cs)
 	 (wft-list cd)
 	 (var-list v2)
-	 (subsetp-equal (intersect-equal cs (vars-in-term-list cd)) 
+	 (subsetp-equal (intersect-equal cs (vars-in-term-list cd))
 			(cons v1 v2))
 	 (not (member-equal y cs)))
-    (subsetp-equal (intersect-equal cs (vars-in-term-list 
+    (subsetp-equal (intersect-equal cs (vars-in-term-list
 					(subst-term-list cd v1 y)))
 		   v2)))
 
@@ -491,7 +491,7 @@
 		(member-equal a l1))
 	   (not (equal a (gen-symbol 'y l2)))))
 
-(defthm cars-subst-cdrs  
+(defthm cars-subst-cdrs
   (implies (wfsubst s)
 	   (equal (cars (subst-cdrs s x tm))
 		  (cars s))))
@@ -501,14 +501,14 @@
 	   (equal (cdrs (subst-cdrs s v e))
 		  (subst-term-list (cdrs s) v e))))
 
-(defthm seq-last-subst-unroll  
+(defthm seq-last-subst-unroll
   (implies (and (wft-list a)
 		(wfsubst s)
 		(variable-term v1)
 		(variable-term v2))
 	   (equal (seq-term-list (append s (list (cons v1 v2))) a)
 		  (subst-term-list (seq-term-list s a) v1 v2)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable sim-seq-variable-disjoint-subst-cars-cdrs))))
 
 ; this lemma is the essence of the proof
@@ -523,7 +523,7 @@
         (subsetp-equal (vars-in-term-list a) vars)
 	(subsetp-equal (vars-in-term-list (cdrs s)) vars)
         (subsetp-equal (cars s) vars)
-	(subsetp-equal (intersect-equal (cars s) 
+	(subsetp-equal (intersect-equal (cars s)
 					(vars-in-term-list (cdrs s)))
 		       vars-to-fix)
 	)
@@ -545,7 +545,7 @@
 ;; Prove that sim-apply and seq-apply/seqify give the same result
 ;; note: case 2 takes a long time.  Can anything be done?
 
-(defthm simaltaneous-sequential-subst 
+(defthm simaltaneous-sequential-subst
   (implies (and (wff f)
 		(quantifier-free f)
 		(var-list vars)
@@ -554,10 +554,10 @@
 	   (equal (seq-apply (seqify s vars) f)
 		  (sim-apply s f)))
   :hints (("Goal" :induct (sim-apply s f))))
-	
+
 ;;-----------------------------------------------------------------
 ;; Now, state the equivalence of simultaneous and sequential
-;; substitutions in terms of official sequential-apply 
+;; substitutions in terms of official sequential-apply
 
 (defthm wfsubst-seqify
   (implies (and (wfsubst s)
@@ -565,11 +565,11 @@
            (wfsubst (seqify s vars))))
 
 ;; Prove that two sequential apply functions give the same result
-;; 
-;; does several inductions, but it is faster and cleaner to do that 
+;;
+;; does several inductions, but it is faster and cleaner to do that
 ;; then to prove the subgoals separately
 
-(defthm two-seq-versions-same 
+(defthm two-seq-versions-same
   (implies (and (wff f)
 		(quantifier-free f)
 		(wfsubst s))

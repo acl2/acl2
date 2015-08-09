@@ -6,7 +6,7 @@
 
 #|
 
-Note.  I'd really like to use multi-sets to handle common factors that appear multiple times (e.g., x in 
+Note.  I'd really like to use multi-sets to handle common factors that appear multiple times (e.g., x in
 (+ (* x x) (* a x x)).  But for right now, we only handle one ocurrence of each factor.  (Multiple occurrences
 will be handled the next time our rules are tried.
 
@@ -64,7 +64,7 @@ will be handled the next time our rules are tried.
                     SUM-OF-PRODUCTS-SYNTAXP))
 
 (defund find-inverted-factors-in-list (lst)
-  (declare (xargs :guard (true-listp lst)))  
+  (declare (xargs :guard (true-listp lst)))
   (if (endp lst)
       nil
     (if (and (consp (car lst))
@@ -84,8 +84,8 @@ will be handled the next time our rules are tried.
       (if (member-equal non-inverted-factor lst)
           (remove-cancelling-factor-pairs-helper
            (cdr inverted-factor-lst)
-           (remove-one inverted-factor 
-                       (remove-one non-inverted-factor 
+           (remove-one inverted-factor
+                       (remove-one non-inverted-factor
                                    lst)))
         (remove-cancelling-factor-pairs-helper (cdr inverted-factor-lst) lst)))))
 
@@ -97,7 +97,7 @@ will be handled the next time our rules are tried.
 ;removes any pair of elements <term> and (/ <term>) from the list, so that we don't cancel something that will
 ;get blown away anyway.  Note that this is only an issue if we have unnormalized subterms, which *can* happen.
 (defund remove-cancelling-factor-pairs (lst)
-  (declare (xargs :guard (true-listp lst)))  
+  (declare (xargs :guard (true-listp lst)))
   (let* ((inverted-factor-lst (find-inverted-factors-in-list lst)))
     (if inverted-factor-lst
         (remove-cancelling-factor-pairs-helper inverted-factor-lst lst)
@@ -117,7 +117,7 @@ will be handled the next time our rules are tried.
       nil
     (if (not (consp term)) ;term was a symbol
         (list term)
-      (case (car term)	
+      (case (car term)
         (binary-+ (my-intersection-equal (get-factors-of-product (cadr term))
                                          (find-common-factors-in-sum-of-products-aux (caddr term))))
         (otherwise (get-factors-of-product term)) ;must be a single product...
@@ -130,7 +130,7 @@ will be handled the next time our rules are tried.
 ;helps ensure that we don't cancel a factor whose inverse is also a factor (in this case the bad factor won't
 ;be considered a "common factor" of whichever side also has its inverse among its factors.
 (defund find-common-factors-in-sum-of-products (term)
-  (declare (xargs :guard (pseudo-termp term)))  
+  (declare (xargs :guard (pseudo-termp term)))
   (remove-cancelling-factor-pairs (find-common-factors-in-sum-of-products-aux term)))
 
 (defthm find-common-factors-in-sum-of-products-true-listp
@@ -140,7 +140,7 @@ will be handled the next time our rules are tried.
 ;(REMOVE-CANCELLING-FACTOR-PAIRS '(a b (unary-/ a) d d d c (unary-/ d) (unary-/ d) (unary-/ d)))
 
 (defund make-product-from-list-of-factors (lst)
-  (declare (xargs :guard (true-listp lst)))  
+  (declare (xargs :guard (true-listp lst)))
   (if (endp lst)
       1
     (if (endp (cdr lst))
@@ -148,7 +148,7 @@ will be handled the next time our rules are tried.
       (list 'binary-* (car lst) (make-product-from-list-of-factors (cdr lst))))))
 
 (defun find-common-factors-to-cancel (lhs rhs)
-  (declare (xargs :guard (and (pseudo-termp lhs) (pseudo-termp rhs))))  
+  (declare (xargs :guard (and (pseudo-termp lhs) (pseudo-termp rhs))))
   (remove-cancelling-factor-pairs ; do we need this call?
    (my-intersection-equal
     (find-common-factors-in-sum-of-products lhs)
@@ -163,4 +163,4 @@ will be handled the next time our rules are tried.
     (if (endp common-factor-list)
         nil
       (list (cons 'k (make-product-from-list-of-factors common-factor-list))))))
-                  
+

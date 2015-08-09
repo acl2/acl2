@@ -424,7 +424,7 @@
   :rule-classes ())
 
 (defthm x-or-x/2
-    (implies (integerp x) 
+    (implies (integerp x)
 	     (or (integerp (/ x 2)) (integerp (/ (1+ x) 2))))
   :rule-classes ())
 

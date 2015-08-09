@@ -50,7 +50,7 @@
   (or (not (mv-nth 0 (parse-int str idx)))
       (and (integerp (mv-nth 0 (parse-int str idx)))
            (<= 0 (mv-nth 0 (parse-int str idx)))))
-  :rule-classes ((:rewrite 
+  :rule-classes ((:rewrite
                   :corollary (implies (mv-nth 0 (parse-int str idx))
                                       (and (integerp (mv-nth 0 (parse-int str idx)))
                                            (<= 0 (mv-nth 0 (parse-int str idx))))))
@@ -61,13 +61,13 @@
            (and (integerp (mv-nth 1 (parse-int str idx)))
                 (<= 0 (mv-nth 1 (parse-int str idx)))
                 (<= idx (mv-nth 1 (parse-int str idx)))))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
                  (:type-prescription
                   :corollary
                   (implies (natp idx)
                            (natp (mv-nth 1 (parse-int str idx)))))
                  (:linear
-                  :corollary 
+                  :corollary
                   (implies (natp idx)
                            (and (<= 0 (mv-nth 1 (parse-int str idx)))
                                 (<= idx (mv-nth 1 (parse-int str idx))))))))
@@ -75,10 +75,10 @@
 (defthm parse-int-type2-strong
   (implies (indexp idx str)
            (<= (mv-nth 1 (parse-int str idx)) (length str)))
-  :rule-classes (:rewrite 
-                 (:linear 
-                  :corollary 
-                  (implies 
+  :rule-classes (:rewrite
+                 (:linear
+                  :corollary
+                  (implies
                    (indexp idx str)
                    (<= (mv-nth 1 (parse-int str idx)) (length str))))))
 
@@ -113,7 +113,7 @@
   (implies (and (integerp idx)
                 (mv-nth 0 (close-brace-p str idx opts)))
            (< idx (mv-nth 1 (close-brace-p str idx opts))))
-  :rule-classes 
+  :rule-classes
   (:rewrite
    (:linear
     :corollary (implies (and (integerp idx)
@@ -158,8 +158,8 @@
   :rule-classes (:rewrite :linear))
 
 (in-theory (disable close-brace-p))
-                              
-                 
+
+
 
 
 (defun has-closing-brace (str idx opts)
@@ -189,7 +189,7 @@
       ;; Grep doesn't allow opening comma;
       ;; use {0,n} instead
       ;; (if (equal (car str) #\,)
-;;           (mv-let 
+;;           (mv-let
 ;;            (num rest pow) (parse-int (cdr str))
 ;;            (declare (ignore pow))
 ;;            (if num
@@ -198,23 +198,23 @@
 ;;                            (mv `(repeat ,reg 0 ,num ) rest)
 ;;                          (mv "Bad character after number in brace" rest)))
 ;;              (mv "Bad character after comma beginning brace" rest)))
-        (mv-let 
+        (mv-let
          (num1 rest pow) (parse-int str idx)
          (declare (ignore pow))
          (if num1
              (if (and (not (string-index-end rest str))
                       (equal (char str rest) #\,)
                       (not (string-index-end (1+ rest) str)))
-                 (mv-let 
+                 (mv-let
                   (close rest) (close-brace-p str (1+ rest) opts)
                   (if close
                       (mv (r-repeat reg num1 -1) rest)
-                    (mv-let 
+                    (mv-let
                      (num2 rest pow) (parse-int str rest)
                      (declare (ignore pow))
                      (mv-let (close rest) (close-brace-p str rest opts)
-                             (if (and num2 
-                                      (<= num1 num2) 
+                             (if (and num2
+                                      (<= num1 num2)
                                       close)
                                  (mv (r-repeat reg num1 num2)
                                      rest)
@@ -226,19 +226,19 @@
            (mv "Bad character begins brace" rest)))
     (mv "No closing brace" idx)))
 
-  
+
 (defthm parse-brace-index-weak
   (implies (natp idx)
            (and (integerp (mv-nth 1 (parse-brace str idx reg opts)))
                 (<= 0  (mv-nth 1 (parse-brace str idx reg opts)))
                 (<= idx (mv-nth 1 (parse-brace str idx reg opts)))))
   :rule-classes
-  (:rewrite 
+  (:rewrite
    (:type-prescription
     :corollary (implies (natp idx)
                         (natp (mv-nth 1 (parse-brace str idx reg opts)))))
-   (:linear 
-    :corollary 
+   (:linear
+    :corollary
     (implies (natp idx)
              (and (<= 0  (mv-nth 1 (parse-brace str idx reg opts)))
                   (<= idx (mv-nth 1 (parse-brace str idx reg opts))))))))

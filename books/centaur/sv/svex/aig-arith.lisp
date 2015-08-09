@@ -398,12 +398,12 @@ for AIGs instead of for @(see gl::bfr)s.</p>")
    (b* ((table (table-alist 'defsymbolic-forms (w state)))
         (tail-after-bfr-ite-bss
          (member-equal (assoc 'bfr-ite-bss-fn table) table))
-        (events1 
+        (events1
          (defsymbolic-aig-table-events
            tail-after-bfr-ite-bss
            nil
            *defsymbolic-aig-subst*))
-        (events2 
+        (events2
          '((defthm aig-ite-bss-fn-of-const-tests
              (and (equal (sv::aig-ite-bss-fn t v1 v0) (list-fix v1))
                   (equal (sv::aig-ite-bss-fn nil v1 v0) (list-fix v0)))

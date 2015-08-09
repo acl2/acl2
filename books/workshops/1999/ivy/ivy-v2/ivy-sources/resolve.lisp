@@ -58,7 +58,7 @@
 			      (wff f2) (integer-listp l2))))
   (if (and (exists-literal-at-position f1 l1)
 	   (exists-literal-at-position f2 l2)
-	   (complements (literal-at-position f1 l1) 
+	   (complements (literal-at-position f1 l1)
 			(literal-at-position f2 l2)))
       (list 'or (remove-literal f1 l1) (remove-literal f2 l2))
     'true))
@@ -72,7 +72,7 @@
 ;; Ground soundness of resolve
 ;;
 
-(defthm remove-false-unit-gsound 
+(defthm remove-false-unit-gsound
   (implies (and (exists-literal-at-position f pos)
 		(not (feval (literal-at-position f pos) i)))
 	   (equal (feval (remove-literal f pos) i)
@@ -83,7 +83,7 @@
 		(feval g i)
 		(exists-literal-at-position f pos1)
 		(exists-literal-at-position g pos2)
-		(complements (literal-at-position f pos1) 
+		(complements (literal-at-position f pos1)
 			     (literal-at-position g pos2))
 		(not (feval (remove-literal f pos1) i)))
 	   (feval (remove-literal g pos2) i))
@@ -99,7 +99,7 @@
 (in-theory (disable resolve))
 
 ;;----------------------------------------------------------------------------
-;; Soundness of resolve under universal closure 
+;; Soundness of resolve under universal closure
 
 (defthm remove-literal-subst-free-commute
   (equal (remove-literal (subst-free f x tm) l)
@@ -131,17 +131,17 @@
       (if (atom vars)
           nil
 	  (if (atom dom)
-              (alls-i-2 (cdr vars) t 
-		      (subst-free f (car vars) dom) 
-		      (subst-free g (car vars) dom) 
+              (alls-i-2 (cdr vars) t
+		      (subst-free f (car vars) dom)
+		      (subst-free g (car vars) dom)
 		      'junk i)
               (cons (alls-i-2 vars nil f g (car dom) i)
                     (alls-i-2 vars nil f g (cdr dom) i))))))
 
 
 ;; Note: condition (**) is added in the flg==nil case to avoid the
-;; inductive case 
-;; 
+;; inductive case
+;;
 ;; (implies (and (feval-d f dom i)
 ;;               (feval-d g dom i))
 ;;          (feval-d (resolve f posf g posg) dom i))
@@ -159,13 +159,13 @@
 			     (feval-d (alls vars f) dom i)
 			     (feval-d (alls vars g) dom i))
 			(feval-d (alls vars (resolve f posf g posg)) dom i))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :induct (alls-i-2 vars flg f g dom i))
-          ("Subgoal *1/3" 
+          ("Subgoal *1/3"
 	   :in-theory (enable resolve))
           ("Subgoal *1/2"
-	   :in-theory (enable resolve) 
-	   :expand (alls vars (list 'or 
+	   :in-theory (enable resolve)
+	   :expand (alls vars (list 'or
 				    (remove-literal f posf)
 				    (remove-literal g posg)))))
   :rule-classes nil)
@@ -175,11 +175,11 @@
  		(feval (alls vars f) i)
 		(feval (alls vars g) i))
 	   (feval (alls vars (resolve f posf g posg)) i))
-  :hints (("Goal" :by (:instance resolve-fsound-alls-aux (flg t)))))   
+  :hints (("Goal" :by (:instance resolve-fsound-alls-aux (flg t)))))
 
 ;;-----------------------------------------
 
-(encapsulate 
+(encapsulate
  nil
  (local (include-book "close"))
  (defthm feval-alls-subset
@@ -200,7 +200,7 @@
            (feval (universal-closure (resolve f l1 g l2)) i))
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance 
+           :use ((:instance
 		  feval-alls-subset
 		  (f f)
 		  (a (free-vars f))
@@ -208,7 +208,7 @@
 		      (free-vars f)
 		      (union-equal (free-vars g)
 				   (free-vars (resolve f l1 g l2))))))
-                 (:instance 
+                 (:instance
 		  feval-alls-subset
 		  (f g)
 		  (a (free-vars g))
@@ -216,7 +216,7 @@
 		      (free-vars f)
 		      (union-equal (free-vars g)
 				   (free-vars (resolve f l1 g l2))))))
-                 (:instance 
+                 (:instance
 		  feval-alls-subset
 		  (f (resolve f l1 g l2))
 		  (a (free-vars (resolve f l1 g l2)))

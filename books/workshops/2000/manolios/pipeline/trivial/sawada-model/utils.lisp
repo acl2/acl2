@@ -29,10 +29,10 @@
 
 
 ;
-; Macro ld-up-to fast loads ACL2 events in a file to a specified point. 
+; Macro ld-up-to fast loads ACL2 events in a file to a specified point.
 ;  (ld-up-to "<filename>" <event_name>  {:speed <speed> })
 ; This command loads ACL2 file <filename> to the point where
-; <event_name> is first defined. 
+; <event_name> is first defined.
 
 ; Since ld-up-to skips proofs of the theorems in a loaded file by
 ; default, a user can quickly reach the state where he or she wants
@@ -41,7 +41,7 @@
 ; defined by deflabel can be used as well.  Keyword :all can be
 ; specified when the user want to load the whole file.
 
-; 
+;
 ; The user can specify loading speed using keyword :speed
 ;  :speed 0  Does not skip proofs. The slowest way to load a file.
 ;  :speed 1  Skips proofs, but performs other checks on theorems.
@@ -53,7 +53,7 @@
 ; Example
 ;  (ld-up-to "invariants-def.lisp" invariants)
 ;   This command loads ACL2 file invariant-def.lisp until it finds the
-;   definition of function invariants. 
+;   definition of function invariants.
 ;
 ;  (ld-up-to "invariants-def.lisp" :all :speed 2)
 ;   this command load the all events in invariants-def.lisp except
@@ -86,7 +86,7 @@
 ; :up-to keyword is not given, it load all events in <filename>.  So
 ; (refresh <filename>) is equivalent to (refresh <filename> :back-to 1
 ; :up-to :all).  <event1> can be a number designating an event.
-; 
+;
 ; The user can also specify loading speed using keyword :speed
 ;  :speed 0  Does not skip proofs. The slowest way to load a file.
 ;  :speed 1  Skips proofs, but performs other checks on theorems.

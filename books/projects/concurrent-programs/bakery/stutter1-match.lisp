@@ -95,14 +95,14 @@ prove in a separate book that inv implies suff.
                   (cent (rep-b-c st) (pick-b-c st in))))
   :rule-classes nil)
 
-(DEFTHM >>-fair-match-b-c 
+(DEFTHM >>-fair-match-b-c
   (implies (and (fair-suff-b-c st X)
                 (commit-b-c st (fair-select (env st) X)))
            (equal (rep-b-c (fair-bake+ st X))
                   (cent (rep-b-c st)
                         (fair-pick-b-c st X))))
   :rule-classes nil)
-  
+
 (DEFTHM match-c-s
   (implies (and (suff-c-s st in)
                 (legal st in)

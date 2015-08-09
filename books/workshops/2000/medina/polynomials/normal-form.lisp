@@ -1,7 +1,7 @@
 (in-package "POL")
 
 (include-book "polynomial")
-(include-book "lexicographical-ordering")  
+(include-book "lexicographical-ordering")
 
 ;;; --------------------------------------------------------------------
 ;;; Polynomial strictly ordered by a decreasing term order without nulls
@@ -14,7 +14,7 @@
 (defun orderedp (p)
   (declare (xargs :guard (polynomialp p)))
   (and (polynomialp p)
-       (or (nullp p) 
+       (or (nullp p)
 	   (and (not (MON::nullp (first p)))
 		(term-greater-than-leader (first p) (rest p))
 		(orderedp (rest p))))))
@@ -38,7 +38,7 @@
 	((nullp p)
 	 (polynomial m *null*))
 	((TER::= (term m) (term (first p)))
-	 (let ((c (COMMON-LISP::+ (coefficient m) (coefficient (first p))))) 
+	 (let ((c (COMMON-LISP::+ (coefficient m) (coefficient (first p)))))
 	   (if (equal c 0)
 	       (rest p)
 	     (polynomial (monomial c (term m)) (rest p)))))
@@ -48,7 +48,7 @@
 	 (polynomial (first p) (+-monomial m (rest p))))))
 
 ;;; Type rule.
- 
+
 (defthm polynomialp-+-monomial
   (polynomialp (+-monomial m p))
   :rule-classes (:type-prescription :rewrite))
@@ -93,7 +93,7 @@
   :rule-classes (:type-prescription :rewrite))
 
 ;;; Normal form polynomial recognizer.
- 
+
 (defmacro nfp (p)
   `(equal (nf ,p) ,p))
 
@@ -130,7 +130,7 @@
   :rule-classes (:type-prescription :rewrite)
   :hints (("Goal"
 	   :in-theory (disable completep-nf)
-	   :use ((:instance completep-nf 
+	   :use ((:instance completep-nf
 			    (n (len (term (first p)))))))))
 
 ;;; Normal form is recognized as such.
@@ -149,13 +149,13 @@
 ;;; Examples:
 
 #|
-(POL::= '((1 . (2 3))  (2 . (8 9)) (6 . (4 5)) 
+(POL::= '((1 . (2 3))  (2 . (8 9)) (6 . (4 5))
 	  (0 . (4 5)) (-2 . (8 9)) (3 . (2 3)))
 	'((6 . (4 5)) (4 . (2 3))))
 
-(POL::= '( (1 . (7 7))  (1 . (2 3)) (2 . (8 9)) (3 . (2 3)) (6 . (4 5)) 
-	   (0 . (4 5)) (-2 . (8 9)) (3 . (2 3))) 
-	'((-3 . (8 9))  (0 . (1 1)) (1 . (7 7)) (6 . (4 5)) 
+(POL::= '( (1 . (7 7))  (1 . (2 3)) (2 . (8 9)) (3 . (2 3)) (6 . (4 5))
+	   (0 . (4 5)) (-2 . (8 9)) (3 . (2 3)))
+	'((-3 . (8 9))  (0 . (1 1)) (1 . (7 7)) (6 . (4 5))
 	   (3 . (8 9))  (7 . (2 3))))
 |#
 

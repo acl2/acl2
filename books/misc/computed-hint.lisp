@@ -4,15 +4,15 @@
 ;;   Jun Sawada
 ;;   sawada@cs.utexas.edu
 ;;   University of Texas at Austin, 1999
-;;   
+;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
 (program)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; use-hint-always: Apply hints whenever possible. 
-; 
+; use-hint-always: Apply hints whenever possible.
+;
 ; This hint fires always.
 ; (defthm thm-name body
 ;   :hints ((use-hint-always (:cases '((< 0 b))))))
@@ -24,11 +24,11 @@
 ; example, if you want to case-split on the condition (equal x 0),
 ; and then, for each case, you want to case-split on the condition
 ; (equal y 0), you can write a hint like
-; 
+;
 ; (defthm thm-name body
 ;   :hints ((use-hint-always :cases '((equal x 0)))
 ;           (use-hint-always :cases '((equal y 0)))))
-; 
+;
 ; Computational hints are removed once it is applied. So
 ; use-hint-always never keep applying its hint. (Should have been
 ; named use-hint-whenever-possible or something.)
@@ -36,25 +36,25 @@
 (defmacro use-hint-always (&rest hint)
   `',hint)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; When-occur:  Find an term occurence and fire the hint.
-; 
+;
 ; When term is found in the goal clause, hint is invoked.  An example
-; usage follows: 
+; usage follows:
 ;:hints ((when-occur (FETCHED-INST MT (MT-FINAL-ISA MT)
 ;				  (MT-IN-SPECULTV? MT))
 ;		       :cases ((b1p (MT-IN-SPECULTV? MT)))))
 ;
 ; The case split is performed when the expression (FETCHED-INST ...)
 ; is found.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro when-occur (term &rest hint)
   `(and (occur-lst ',term clause) ',hint))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; When-occur-&:  Find an term occurence and try another computed hint.
-; 
+;
 ; Compination version of When-occur.  User can combine more than
 ; one combination version of computation hints.  For example you can
 ; apply hint like:
@@ -66,7 +66,7 @@
 ; version just like in the example shown above.  Unless the all
 ; computed hint conditions are met and the hint is actually fired,
 ; the computed hint is not elimiated from the hint list.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro when-occur-& (term hint)
   `(and (occur-lst ',term clause) ,hint))
 
@@ -89,21 +89,21 @@
 	  (and (occur-lst (car terms) clause)
 	       (multiple-occur-check (cdr terms) clause)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-;  when-multiple-occur: Fire hint when multiple terms appear in the 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  when-multiple-occur: Fire hint when multiple terms appear in the
 ;  clause
-;   
+;
 ;  Example:
 ;  (defthm p-is-true-2 (p z)
 ;   :hints ((when-multiple-occur ((buz x) (bar x))
 ;               :use (:instance bar-or-buz (x z)))))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro when-multiple-occur (terms &rest hint)
   `(and (multiple-occur-check ',terms clause) ',hint))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Combination version of when-multiple-occur
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro when-multiple-occur-& (terms hint)
   `(and (multiple-occur-check ',terms clause) ,hint))
 
@@ -148,7 +148,7 @@
     (if flg (mv flg val) ,second)))
 
 
-; restriction on pattern matching. 
+; restriction on pattern matching.
 ;  We don't look into quoted constants.  Quoted constants should be literally
 ; equal to the pattern or match to a meta-variable as it is.
 ; Pattern Match returns the substitution for the outer-most matching pattern.
@@ -169,7 +169,7 @@
 	      (eq (ffn-symb pattern) (ffn-symb term)))
 	 (pattern-match-lst (fargs pattern) (fargs term) subst))
 	(t (mv nil nil))))
-	 
+
 (defun pattern-match-lst (patterns terms subst)
   (cond ((and (null patterns) (null terms))
 	 (mv t subst))
@@ -180,7 +180,7 @@
 		  (pattern-match-lst (cdr patterns) (cdr terms) new-subst)
 		  (mv nil nil))))))
 )
-      
+
 
 (mutual-recursion
 (defun pattern-occur (pattern term subst)
@@ -194,7 +194,7 @@
 	(t (mv2-or (pattern-occur patterns (car args) subst)
 		   (pattern-occur-lst patterns (cdr args) subst)))))
 )
-    
+
 (mutual-recursion
 (defun subst-meta (pattern subst)
   (cond ((or (variablep pattern) (fquotep pattern))
@@ -211,7 +211,7 @@
 	    (subst-meta-lst (cdr patterns) subst))))
 )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; when-pattern:  Fire hint when a pattern appears in the current
 ; clause
 ;
@@ -219,17 +219,17 @@
 ; "meta-variables".  Meta variables is denoted by a list of symbol @
 ; and another symbol.  For example (f x (@ x)) matches a term
 ; (f x z), by substituting z for (@ x).  The computed hint:
-; 
+;
 ;  (defthm f-of-f-of-x (f (f y))
 ;     :hints ((when-pattern (f (@ z))
 ;                  :use (:instance f-is-true (x (@ z))))))
-; 
+;
 ; is applied when a pattern (f (@ z)) is found.  Before applying the
 ; hint, the meta-variables in the hints are replaced with the
 ; corresponding expression.  In the example above, (f (f y)) matches
 ; (f (@ z)) and we use the lemma f-is-true with the substitution
-; (f y) for x. 
-; 
+; (f y) for x.
+;
 ; Note: we do not provide the combination version of when-pattern
 ; hints.  Variable substitution makes its implementation difficult.
 ; Users are recommended to put the when-pattern macro at the end
@@ -238,8 +238,8 @@
 ;    (and (f x) (f (f x)) (f (f (f x))))
 ;    :hints ((when-not-GS-match-& ((0) nil . 0)
 ;              (when-pattern (f (@ v))
-;                  :use ((:instance f-is-true ((x (@ v)))))))))	            
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;                  :use ((:instance f-is-true ((x (@ v)))))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro when-pattern (term &rest hint)
   `(mv-let (flg subst) (pattern-occur-lst ',term clause nil)
     (if flg (subst-meta ',hint subst) nil)))
@@ -255,36 +255,36 @@
 		(pattern-occur-lst ',(car terms) clause subst)
 		(mv nil nil))))))
 
-		
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; When-multi-patterns: Apply hints when a multiple pattern
 ; matches to (possibly distinct) subexpressions of the clause.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro when-multi-patterns (terms &rest hint)
   `(mv-let (flg subst) ,(multiple-pattern-check (reverse terms))
     (if flg (subst-meta ',hint subst) nil)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; when-GS-match:  Apply hints when the goal spec match the pattern.
 ;
-; The hint is applied to any subgoal whose goal spec falls into the 
+; The hint is applied to any subgoal whose goal spec falls into the
 ; given pattern. For example:
-; 
+;
 ;  (defthm f-iterated
 ;    (and (f x) (f (f x)) (f (f (f x))))
 ;    :hints ((when-GS-match ((0) (*) . 0) :in-theory (enable f-is-true))))
-; 
+;
 ; This hint fires for any "Subgoal n" where n is arbitrary positive
 ; integer. The goal spec is specified with clause ID with wild cards.
 ; It is better to give a number of examples to illustrate how to use
 ; clause ID with wild cards.
-; 
+;
 ;          (* * . *)		Any goal-specs
 ;	   ((0 1 2) * 2)	"Subgoal  *1.2/n0.n1....ni''
 ;	   ((0) (1 2 *) . 0)	"Subgoal *1.2.n"
 ;	   ((0) (1 2 . *) . 0)	"Subgoal *1.2.n0.n1....ni
 ;	   ((3 *) (1 2) . *)	"[3]Subgoal *n0/1.2'n'
-; 
+;
 ; A wild card can be any natural number or a list of natural numbers.
 ; However, the clause ID is always of form
 ; ((m1 m2 ... mj) (n1 n2 ... ni) l)
@@ -293,31 +293,31 @@
 ; natural numbers, while the last * matches a natural number.
 
 ; See ACL2 manual for detailed ID clause document.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro when-GS-match (spec-pattern &rest hint)
   `(and (gs-pattern-match id ',spec-pattern) ',hint))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Combination version of when-GS-match.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro when-GS-match-& (spec-pattern hint)
   `(and (gs-pattern-match id ',spec-pattern) ,hint))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Complement version of when-GS-match. The hint is applied when
 ; the goal spec does not match the pattern.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro when-not-GS-match (spec-pattern &rest hint)
   `(and (not (gs-pattern-match id ',spec-pattern)) ',hint))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Combination version of when-not-GS-match
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro when-not-GS-match-& (spec-pattern hint)
   `(and (not (gs-pattern-match id ',spec-pattern)) ,hint))
-  
+
 (defun gsnum-pattern-match (id pattern)
   (or (equal pattern '*) (equal id pattern)))
 
@@ -364,7 +364,7 @@
 ; When an expression is a literal, it is consider to appear in the
 ; clause positively.  If the negation of an expression is a literal in
 ; the clause, it is consider to appear negatively.
-; 
+;
 ; Consider following example:
 ;  (defthm complex-lemma
 ;    (and (implies (f x) (f (g x x)))
@@ -374,7 +374,7 @@
 ;           (when-occur-positive (f (g x x))
 ;               :use (:insance f-is-true (x (g x x))))))
 ;   :rule-classes nil)
-; 
+;
 ; From the body of the lemma, three clauses are generated
 ;  ~ (f y) \/ (f (g x x))
 ;  ~ (h (h y)) \/ (h y)
@@ -437,10 +437,10 @@
 	    (mv nil nil))))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; when-pos/neg-occur
 ; Combined occurence of positive and negative clauses fire hint.
-; 
+;
 ; Example
 ;  :hints ((when-pos/neg-occur ((f x)) ((g x))
 ;                  :use (g-implies-f)))
@@ -449,4 +449,3 @@
 (defmacro when-pos/neg-occur (plit nlit &rest hint)
   `(mv-let (flg subst) (multi-patterns-asserted-p ',plit ',nlit clause nil)
     (if flg (subst-meta ',hint subst) nil)))
-  

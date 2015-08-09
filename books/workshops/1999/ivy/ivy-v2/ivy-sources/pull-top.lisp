@@ -9,7 +9,7 @@
 
 (encapsulate
  nil
- 
+
  (local (include-book "pull-sound"))
 
  ;; This event is redundant.  Its occurrence here makes it global.
@@ -23,9 +23,9 @@
 
 (encapsulate
  nil
- 
+
  (local (include-book "pull-pulls"))
- 
+
  ;; These events are redundant.  Their occurrences here make them global.
 
  (defthm pull-quants-pulls

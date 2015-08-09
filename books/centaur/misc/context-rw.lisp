@@ -109,7 +109,7 @@ bound to <tt>n</tt>.  We then simplify the term corresponding to <tt>x</tt> in
 the LHS under this substitution.  This is just <tt>(mod a n)</tt>, which
 probably doesn't simplify to anything.  So this application fails.
 
-We then try the second rule.  This causes <tt>y</tt>, which is bound to 
+We then try the second rule.  This causes <tt>y</tt>, which is bound to
 <tt>(+ b c d (foo m n) e)</tt>, to be rewritten under mod N.  Now, our meta
 rule fires recursively on this sum, so each element is rewritten under a mod N
 context.  Specifically, when we get to <tt>(foo m n)</tt>, we can apply
@@ -231,7 +231,7 @@ when it becomes available.
                                      :forcep nil)))
             (mv res alist)))
          (args (fargs hyp))
-         ((unless (and 
+         ((unless (and
                    ;; check that synp is defined as expected
                    (fn-check-def 'synp state '(vars form term) ''t)
                    ;; check that all three args are quoted
@@ -303,7 +303,7 @@ when it becomes available.
                                       (atom x)
                                     (and (consp x)
                                          (equal (len (cdr x)) (1- n)))))))))
-    
+
     (defthm mx-relieve-hyp-all-vars-bound
       (mv-let (ok new-alist)
         (mx-relieve-hyp hyp alist rune target n mfc state)
@@ -614,7 +614,7 @@ when it becomes available.
                                   state))
                        a))
                    (a (ctx-ev-alist alist a)))))))
-             
+
   (defthm assoc-nil-of-mx-relieve-hyps
     (implies (not (assoc nil alist))
              (not (assoc nil (mv-nth 1 (mx-relieve-hyps
@@ -919,7 +919,7 @@ when it becomes available.
 
 
 (in-theory (disable mfc-apply-rewrite-rule))
-       
+
 
 
 (defun all-identities-except-x (x alist)
@@ -1147,7 +1147,7 @@ when it becomes available.
 
 
 
-                
+
 
 
 (defthm sub-alistp-of-unify-const
@@ -1373,7 +1373,7 @@ when it becomes available.
 (defthm pseudo-term-substp-of-unify-const-redef
   (implies (pseudo-termp pat)
            (pseudo-term-substp (mv-nth 1 (unify-const-redef pat const)))))
-        
+
 (in-theory (disable unify-const-redef))
 
 (mutual-recursion
@@ -1493,14 +1493,14 @@ when it becomes available.
                                (and (consp x)
                                     (equal (len (cdr x)) (1- n))))))))
     (local (in-theory (disable len)))
-    
+
     (defthm unify-const-single-var-unify-lemma
       (implies (and (all-keys-bound (simple-term-vars pat) alist)
                     (mv-nth 0 (unify-const pat const alist))
                     (all-identities-except-x var alist)
                     (pseudo-termp pat))
                (equal (ctx-ev
-                       pat 
+                       pat
                        (cons (cons var (ctx-ev
                                         (cdr (hons-assoc-equal var alist))
                                         (ctx-ev-alist subst a)))
@@ -1520,7 +1520,7 @@ when it becomes available.
                     (pseudo-termp pat)
                     (pseudo-termp term))
                (equal (ctx-ev
-                       pat 
+                       pat
                        (cons (cons var (ctx-ev
                                         (cdr (hons-assoc-equal var alist))
                                         (ctx-ev-alist subst a)))
@@ -1539,7 +1539,7 @@ when it becomes available.
                     (pseudo-term-listp pat)
                     (pseudo-term-listp term))
                (equal (ctx-ev-lst
-                       pat 
+                       pat
                        (cons (cons var (ctx-ev
                                         (cdr (hons-assoc-equal var alist))
                                         (ctx-ev-alist subst a)))
@@ -1561,7 +1561,7 @@ when it becomes available.
   ;;                            (pseudo-termp pat)
   ;;                            (pseudo-termp term))
   ;;                       (equal (ctx-ev
-  ;;                               pat 
+  ;;                               pat
   ;;                               (cons (cons var (ctx-ev
   ;;                                                (cdr (hons-assoc-equal var alist))
   ;;                                                (ctx-ev-alist subst a)))
@@ -1573,7 +1573,7 @@ when it becomes available.
   ;;                          (pseudo-term-listp pat)
   ;;                          (pseudo-term-listp term))
   ;;                     (equal (ctx-ev-lst
-  ;;                             pat 
+  ;;                             pat
   ;;                             (cons (cons var (ctx-ev
   ;;                                                (cdr (hons-assoc-equal var alist))
   ;;                                                (ctx-ev-alist subst a)))
@@ -1599,7 +1599,7 @@ when it becomes available.
   ;;                 (all-identities-except-x var alist)
   ;;                 (pseudo-)
   ;;            (equal (substitute-into-term
-  ;;                    pat 
+  ;;                    pat
   ;;                    (cons (cons var (substitute-into-term
   ;;                                     (cdr (hons-assoc-equal var alist))
   ;;                                     subst))
@@ -1632,7 +1632,7 @@ when it becomes available.
 ;;                              (mv-nth 0 (simple-one-way-unify pat term alist))
 ;;                              (all-identities-except-x var alist))
 ;;                         (equal (substitute-into-term
-;;                                 pat 
+;;                                 pat
 ;;                                 (cons (cons var (substitute-into-term
 ;;                                                  (cdr (hons-assoc-equal var alist))
 ;;                                                  subst))
@@ -1642,7 +1642,7 @@ when it becomes available.
 ;;                            (mv-nth 0 (simple-one-way-unify-lst pat term alist))
 ;;                            (all-identities-except-x var alist))
 ;;                       (equal (substitute-into-list
-;;                               pat 
+;;                               pat
 ;;                               (cons (cons var (substitute-into-term
 ;;                                                (cdr (hons-assoc-equal var alist))
 ;;                                                subst))
@@ -1664,7 +1664,7 @@ when it becomes available.
 ;;                   (mv-nth 0 (simple-one-way-unify pat term alist))
 ;;                   (all-identities-except-x var alist))
 ;;              (equal (substitute-into-term
-;;                      pat 
+;;                      pat
 ;;                      (cons (cons var (substitute-into-term
 ;;                                       (cdr (hons-assoc-equal var alist))
 ;;                                       subst))
@@ -1803,7 +1803,7 @@ when it becomes available.
                               (car runes)
                               (fgetprop fn 'lemmas nil (w state))))))
                         (st state)))))))
-                         
+
 
 (in-theory (disable try-context-rws))
 
@@ -1962,7 +1962,7 @@ when it becomes available.
    ;; give up on that and try BAR-OF-FOO instead.  The required (buzp (froz x))
    ;; hyps are relieved and we then rewrite (foo w (baz z)), which becomes
    ;; (foo y (baf x y)).  So apply-contexts produces (bar y (foo y (baf x y))).
-   ;; 
+   ;;
 
    (defthm bar-of-baz
      (equal (bar w (baz z))
@@ -2050,7 +2050,7 @@ when it becomes available.
 
 (local (in-theory (disable mod)))
 
-(in-theory (disable mod-+-cong1 mod-+-cong2))  
+(in-theory (disable mod-+-cong1 mod-+-cong2))
 
 
 (thm (implies (and (rationalp a)
@@ -2093,7 +2093,7 @@ when it becomes available.
                (not (equal n 0)))
     :cong ((b (equal y (mod b n))))
     :check (rationalp y))
-  
+
   (defthm rationalp-mod
     (implies (and (rationalp x) (rationalp y))
              (rationalp (mod x y)))

@@ -159,7 +159,7 @@ into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
                                    (bitops::b2 1)
                                    (bitops::r2 i)))
                      :in-theory (disable bitops::+-of-logcons-with-cin)))))
-   
+
    (local (defthm logsquash-linear
             (implies (and (integerp a) (integerp b)
                           (<= a b))
@@ -249,7 +249,7 @@ into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
                      (<= (integer-length x.lower) 6)))
           (list* #\0 #\b (4vec-to-bitwise-chars x.upper x.lower len))))
       (list* #\0 #\x (4vec-to-hex-chars x.upper x.lower len)))))
-         
+
 
 
 (define stv-entry-to-xml ((entry     "The value that the user gave, originally.")

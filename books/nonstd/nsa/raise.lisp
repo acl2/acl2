@@ -36,7 +36,7 @@
              :use ((:instance raise-expt-for-non-negative-exponents
                               (i (- i))))
              :in-theory (disable raise-expt-for-non-negative-exponents)))))
- 
+
  (defthm raise-expt
    (implies (integerp i)
              (equal (raise a i)

@@ -81,7 +81,7 @@
 ; 4         j+2k         2j+3k
 ; 3        2j+3k         3j+5k
 ; 2        3j+5k         5j+8k
-; 1        5j+8k        8j+13k  
+; 1        5j+8k        8j+13k
 
 ; Do you recognize the coefficients on j and k in the final line?
 
@@ -122,7 +122,7 @@
     (isub)       ; 12
     (istore 0)   ; 13  n=n-1
     (iload 2)    ; 14  save k on stack
-    (iload 1)    ; 15  
+    (iload 1)    ; 15
     (iload 2)    ; 16
     (iadd)       ; 17
     (istore 2)   ; 18  k=j+k
@@ -161,7 +161,7 @@
 ; of all of the locals.  We could struggle to come up with closed-form expressions
 ; for the final values of j and k but there's no need.  We're not interested --
 ; but to verify the loop we have to specify what they are, somehow.
- 
+
 (defun fib-locals (n j k)
   (if (zp n)
       (list n j k)
@@ -210,13 +210,13 @@
 ;                                 (+ (* j (fib (- n 1))) (* k (fib n)))))
 ;                       (push (helper n j k) nil)
 ;                       *pi*)))
-; 
+;
 ;   :hints (("Goal" :induct (helper n j k))))
 
 ; Of course, we first would have to figure out WHAT to write for the final values
 ; of j and k!  But we could, in principle, adopt this approach and modify the rest of the
 ; file to reflect these final values.  I won't.  Instead, I'll rely on fib-locals
-; which is sort like saying ``the final locals are fib are whatever they are (as 
+; which is sort like saying ``the final locals are fib are whatever they are (as
 ; computed by the analogous ACL2 function.''
 
 (in-theory (disable loop-clk))

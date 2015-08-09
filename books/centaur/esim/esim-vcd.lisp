@@ -1213,10 +1213,10 @@ $dumpall
 
 
 
-(defconst *vecs* 
+(defconst *vecs*
   (vcd-gather-vectors acl2::|*fadd*|))
 
-(time$ (load-vcdarr *vecs* vcd$)) ;; 0.1 second 
+(time$ (load-vcdarr *vecs* vcd$)) ;; 0.1 second
 
 (defconsts *pathmap*
   (vcd-pathmap 0 *vecs* (* 2 (len *vecs*))))
@@ -1265,7 +1265,7 @@ $dumpall
 
 (defconsts (*fadd-vecs* *fadd-hier*)
   (vcd-gather-vectors acl2::|*fadd*|))
-  
+
 (defconsts *iu-mvecs*
   (vcd-compress-vectors *iu-vecs*))
 

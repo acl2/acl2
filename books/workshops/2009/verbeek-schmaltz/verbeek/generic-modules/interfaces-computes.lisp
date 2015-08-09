@@ -1,9 +1,9 @@
 #|$ACL2s-Preamble$;
 ;; Amr Helmy
-;; instance of interfaces 
+;; instance of interfaces
 ;; October 26th 2007
 ;; File: Interfaces-computes.lisp
-;; Amr helmy 
+;; Amr helmy
 ;; 31st october 2007
 
 (begin-book);$ACL2s-Preamble$|#
@@ -43,7 +43,7 @@
 
 (defthm tm-dests-computetmissives      ;; ok
   (equal (tm-dests (computetmissives trs))
-         (t-dests trs)))        
+         (t-dests trs)))
 
 (defthm tm-orgs-computetmissives      ;; ok
   (equal (tm-orgs (computetmissives trs))
@@ -54,16 +54,16 @@
            (tmissivesp (computetmissives trs) nodeset)))
 
 (defthm tmissivesp-computetmissives-extract-sublst
-  (implies (and (transactionsp trs nodeset) 
+  (implies (and (transactionsp trs nodeset)
                 (no-duplicatesp-equal ids)
                 (subsetp ids (tm-ids (computetmissives trs))))
            (tmissivesp (extract-sublst (computetmissives trs) ids) nodeset)))
 
 (defthm m-ids-computtmisives-tomissives ;;change name
-  (equal (m-ids (tomissives (computetmissives trs))) (t-ids trs)))        
+  (equal (m-ids (tomissives (computetmissives trs))) (t-ids trs)))
 
 (defthm m-dests-computtmisives-tomissives
-  (equal (m-dests (tomissives (computetmissives trs))) (t-dests trs)))        
+  (equal (m-dests (tomissives (computetmissives trs))) (t-dests trs)))
 
 ;; the next four lemmas are similar to those used to prove
 ;; the lemma tomissives-extract-sublst .... (proof by analogy)

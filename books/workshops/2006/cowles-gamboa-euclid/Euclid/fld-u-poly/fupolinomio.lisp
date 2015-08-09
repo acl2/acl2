@@ -44,7 +44,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -69,8 +69,8 @@ To certify this book, first, create a world with the following packages:
 |#
 (in-package "FUPOL")
 
-;;(include-book "monomio")  
-(include-book "fumonomio"  
+;;(include-book "monomio")
+(include-book "fumonomio"
 	      :load-compiled-file nil)
 
 ;;; ---------

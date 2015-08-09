@@ -7,133 +7,133 @@
 :set-ignore-ok t
 :set-irrelevant-formals-ok t
 
- 
+
 (defun equalb (a b) (equal a b))
- 
+
 (defun nequal (a b) (not (equal a b))) (defun add-1 (a) (+ a 1))
- 
+
 (defun sub-1 (a) (- a 1))
- 
+
 (encapsulate ((intrp_mod_dmem (x1) t))
 	      (local (defun intrp_mod_dmem (x1) (declare (ignore x1)) 1))
 	      (defthm intrp_mod_dmem-type (integerp (intrp_mod_dmem x1))))
- 
+
 (encapsulate ((nextdmem (x3 x2 x1) t))
 	      (local (defun nextdmem (x3 x2 x1)
 		       (declare (ignore x3) (ignore x2) (ignore x1))
 		       1))
 	      (defthm nextdmem-type (integerp (nextdmem x3 x2 x1))))
- 
+
 (encapsulate ((dmem_read (x2 x1) t))
 	      (local (defun dmem_read (x2 x1)
 		       (declare (ignore x2) (ignore x1))
 		       1))
 	      (defthm dmem_read-type (integerp (dmem_read x2 x1))))
- 
+
 (encapsulate ((nextintrp (x1) t))
 	      (local (defun nextintrp (x1) (declare (ignore x1)) 1))
 	      (defthm nextintrp-type (integerp (nextintrp x1))))
- 
+
 (encapsulate ((isinterrupt (x1) t))
 	      (local (defun isinterrupt (x1) (declare (ignore x1)) nil))
 	      (defthm isinterrupt-type (booleanp (isinterrupt x1))))
- 
+
 (encapsulate ((rf0 (x1) t))
 	      (local (defun rf0 (x1) (declare (ignore x1)) 1))
 	      (defthm rf0-type (integerp (rf0 x1))))
- 
+
 (encapsulate ((imem0 (x1) t))
 	      (local (defun imem0 (x1) (declare (ignore x1)) 1))
 	      (defthm imem0-type (integerp (imem0 x1))))
- 
+
 (encapsulate ((src1 (x1) t))
 	      (local (defun src1 (x1) (declare (ignore x1)) 1))
 	      (defthm src1-type (integerp (src1 x1))))
- 
+
 (encapsulate ((src2 (x1) t))
 	      (local (defun src2 (x1) (declare (ignore x1)) 1))
 	      (defthm src2-type (integerp (src2 x1))))
- 
+
 (encapsulate ((opcode (x1) t))
 	      (local (defun opcode (x1) (declare (ignore x1)) 1))
 	      (defthm op-type (integerp (opcode x1))))
- 
+
 (encapsulate ((dest (x1) t))
 	      (local (defun dest (x1) (declare (ignore x1)) 1))
 	      (defthm dest-type (integerp (dest x1))))
- 
+
 (encapsulate ((alu (x3 x2 x1) t))
 	      (local (defun alu (x3 x2 x1)
 		       (declare (ignore x3) (ignore x2) (ignore x1))
 		       1))
 	      (defthm alu-type (integerp (alu x3 x2 x1))))
- 
+
 (encapsulate ((getregwrite (x1) t))
 	      (local (defun getregwrite (x1) (declare (ignore x1)) nil))
 	      (defthm getregwrite-type (booleanp (getregwrite x1))))
- 
+
 (encapsulate ((getmemtoreg (x1) t))
 	      (local (defun getmemtoreg (x1) (declare (ignore x1)) nil))
 	      (defthm getmemtoreg-type (booleanp (getmemtoreg x1))))
- 
+
 (encapsulate ((getuseimm (x1) t))
 	      (local (defun getuseimm (x1) (declare (ignore x1)) nil))
 	      (defthm getuseimm-type (booleanp (getuseimm x1))))
- 
+
 (encapsulate ((getimm (x1) t))
 	      (local (defun getimm (x1) (declare (ignore x1)) 1))
 	      (defthm getimm-type (integerp (getimm x1))))
- 
+
 (encapsulate ((getmemwrite (x1) t))
 	      (local (defun getmemwrite (x1) (declare (ignore x1)) nil))
 	      (defthm getmemwrite-type (booleanp (getmemwrite x1))))
- 
+
 (encapsulate ((getisbranch (x1) t))
 	      (local (defun getisbranch (x1) (declare (ignore x1)) nil))
 	      (defthm getisbranch-type (booleanp (getisbranch x1))))
- 
+
 (encapsulate ((takebranch (x3 x2 x1) t))
 	      (local (defun takebranch (x3 x2 x1)
 		       (declare (ignore x3) (ignore x2) (ignore x1))
 		       nil))
 	      (defthm takebranch-type (booleanp (takebranch x3 x2 x1))))
- 
+
 (encapsulate ((selecttargetpc (x3 x2 x1) t))
 	      (local (defun selecttargetpc (x3 x2 x1)
 		       (declare (ignore x3) (ignore x2) (ignore x1))
 		       1))
 	      (defthm selecttargetpc-type (integerp (selecttargetpc x3 x2 x1))))
- 
+
 (encapsulate ((alu_exception (x3 x2 x1) t))
 	      (local (defun alu_exception (x3 x2 x1)
 		       (declare (ignore x3) (ignore x2) (ignore x1))
 		       nil))
 	      (defthm alu_exception-type (booleanp (alu_exception x3 x2 x1))))
- 
+
 (encapsulate ((getreturnfromexception (x1) t))
 	      (local (defun getreturnfromexception (x1)
 		       (declare (ignore x1))
 		       nil))
 	      (defthm getreturnfromexception-type
 		(booleanp (getreturnfromexception x1))))
- 
+
 (encapsulate ((nextbpstate (x1) t))
 	      (local (defun nextbpstate (x1) (declare (ignore x1)) 1))
 	      (defthm nextbpstate-type (integerp (nextbpstate x1))))
- 
+
 (encapsulate ((predictdirection (x1) t))
 	      (local (defun predictdirection (x1) (declare (ignore x1)) nil))
 	      (defthm predictdirection-type (booleanp (predictdirection x1))))
- 
+
 (encapsulate ((predicttarget (x1) t))
 	      (local (defun predicttarget (x1) (declare (ignore x1)) 1))
 	      (defthm predicttarget-type (integerp (predicttarget x1))))
- 
+
 (defun read-pimem_a (a pimem)
    (declare (xargs :measure (acl2-count pimem)))
    (if (endp pimem) (imem0 a)
        (if (g 0 (car pimem)) (imem0 a) (read-pimem_a a (cdr pimem)))))
- 
+
 (defun read-prf_a (a prf)
    (declare (xargs :measure (acl2-count prf)))
    (if (endp prf) (rf0 a)
@@ -149,12 +149,12 @@
 		  (g 8 (car prf)))
 	     (g 9 (car prf)))
 	    (t (read-prf_a a (cdr prf)))))))
- 
+
 (defun read-simem_a (a simem)
    (declare (xargs :measure (acl2-count simem)))
    (if (endp simem) (imem0 a)
        (if (g 0 (car simem)) (imem0 a) (read-simem_a a (cdr simem)))))
- 
+
 (defun read-srf_a (a srf)
    (declare (xargs :measure (acl2-count srf)))
    (if (endp srf) (rf0 a)
@@ -170,9 +170,9 @@
 		  (g 9 (car srf)))
 	     (g 10 (car srf)))
 	    (t (read-srf_a a (cdr srf)))))))
- 
+
 (defun u-state_a (impl spec) (seq nil 'impl impl 'spec spec))
- 
+
 (defun impl-state_a
    (pimem ppc pintrp bpstate ffbpstate ffpintrp
 	  ffpredicteddirection ffpredictedtarget ffwrt ffinst
@@ -225,13 +225,13 @@
         'mwisreturnfromexception mwisreturnfromexception
         'mwis_alu_exception mwis_alu_exception 'mwppc mwppc 'mwval
         mwval 'mwdest mwdest 'mwwrt mwwrt 'mwregwrite mwregwrite))
- 
+
 (defun initpimem_a (pimem) (cons (s 0 t (s 1 nil nil)) pimem))
- 
+
 (defun nextpimem_a (pimem) (cons (s 0 nil (s 1 nil nil)) pimem))
- 
+
 (defun initppc_a (pc0) pc0)
- 
+
 (defun nextppc_a
    (initi pc0 commit_impl commit_pc mem1_is_interrupt emppc
 	  mem1_is_returnfromexception pepc mem1_is_alu_exception
@@ -249,9 +249,9 @@
     (stall ppc)
     (if_predict_branch_taken predicted_target)
     (t (add-1 ppc))))
- 
+
 (defun initpintrp_a (intrp0) intrp0)
- 
+
 (defun nextpintrp_a
    (initi intrp0 commit_impl commit_intrp stall pintrp)
    (cond
@@ -259,9 +259,9 @@
     (commit_impl commit_intrp)
     (stall pintrp)
     (t (nextintrp pintrp))))
- 
+
 (defun initbpstate_a (bpstate0) bpstate0)
- 
+
 (defun nextbpstate_a
    (initi bpstate0 commit_impl commit_bpstate stall bpstate)
    (cond
@@ -269,20 +269,20 @@
     (commit_impl commit_bpstate)
     (stall bpstate)
     (t (nextbpstate bpstate))))
- 
+
 (defun initffbpstate_a (ffbpstate0) ffbpstate0)
- 
+
 (defun nextffbpstate_a (initi ffbpstate0 stall ffbpstate bpstate)
    (cond (initi ffbpstate0) (stall ffbpstate) (t bpstate)))
- 
+
 (defun initffpintrp_a (ffpintrp0) ffpintrp0)
- 
+
 (defun nextffpintrp_a (initi ffpintrp0 stall ffpintrp pintrp)
    (cond (initi ffpintrp0) (stall ffpintrp) (t pintrp)))
- 
+
 (defun initffpredicteddirection_a (ffpredicteddirection0)
    ffpredicteddirection0)
- 
+
 (defun nextffpredicteddirection_a
    (initi ffpredicteddirection0 stall ffpredicteddirection
 	  if_predict_branch_taken)
@@ -290,10 +290,10 @@
     (initi ffpredicteddirection0)
     (stall ffpredicteddirection)
     (t if_predict_branch_taken)))
- 
+
 (defun initffpredictedtarget_a (ffpredictedtarget0)
    ffpredictedtarget0)
- 
+
 (defun nextffpredictedtarget_a
    (initi ffpredictedtarget0 stall ffpredictedtarget
 	  predicted_target)
@@ -301,9 +301,9 @@
     (initi ffpredictedtarget0)
     (stall ffpredictedtarget)
     (t predicted_target)))
- 
+
 (defun initffwrt_a () nil)
- 
+
 (defun nextffwrt_a (initi commit_impl squash stall ffwrt)
    (cond
     (initi nil)
@@ -311,19 +311,19 @@
     (squash nil)
     (stall ffwrt)
     (t t)))
- 
+
 (defun initffinst_a (ffinst0) ffinst0)
- 
+
 (defun nextffinst_a (initi ffinst0 stall ffinst if_inst)
    (cond (initi ffinst0) (stall ffinst) (t if_inst)))
- 
+
 (defun initffppc_a (ffppc0) ffppc0)
- 
+
 (defun nextffppc_a (initi ffppc0 stall ffppc ppc)
    (cond (initi ffppc0) (stall ffppc) (t ppc)))
- 
+
 (defun initprf_a (prf) (cons (s 0 t (s 1 nil nil)) prf))
- 
+
 (defun nextprf_a
    (prf initi commit_impl mwwrt mwdest mwregwrite
 	wb_is_alu_exception_bar wb_is_interrupt_bar
@@ -339,24 +339,24 @@
                                  (s 8 wb_is_returnfromexception_bar
                                     (s 9 mwval nil))))))))))
          prf))
- 
+
 (defun initfdpintrp_a (fdpintrp0) fdpintrp0)
- 
+
 (defun nextfdpintrp_a (initi fdpintrp0 stall fdpintrp ffpintrp)
    (cond (initi fdpintrp0) (stall fdpintrp) (t ffpintrp)))
- 
+
 (defun initfdbpstate_a (fdbpstate0) fdbpstate0)
- 
+
 (defun nextfdbpstate_a (initi fdbpstate0 stall fdbpstate ffbpstate)
    (cond (initi fdbpstate0) (stall fdbpstate) (t ffbpstate)))
- 
+
 (defun initfdppc_a (fdppc0) fdppc0)
- 
+
 (defun nextfdppc_a (initi fdppc0 stall fdppc ffppc)
    (cond (initi fdppc0) (stall fdppc) (t ffppc)))
- 
+
 (defun initfdwrt_a () nil)
- 
+
 (defun nextfdwrt_a (initi commit_impl squash stall fdwrt ffwrt)
    (cond
     (initi nil)
@@ -364,15 +364,15 @@
     (squash nil)
     (stall fdwrt)
     (t ffwrt)))
- 
+
 (defun initfdinst_a (fdinst0) fdinst0)
- 
+
 (defun nextfdinst_a (initi fdinst0 stall fdinst ffinst)
    (cond (initi fdinst0) (stall fdinst) (t ffinst)))
- 
+
 (defun initfdpredicteddirection_a (fdpredicteddirection0)
    fdpredicteddirection0)
- 
+
 (defun nextfdpredicteddirection_a
    (initi fdpredicteddirection0 stall fdpredicteddirection
 	  ffpredicteddirection)
@@ -380,10 +380,10 @@
     (initi fdpredicteddirection0)
     (stall fdpredicteddirection)
     (t ffpredicteddirection)))
- 
+
 (defun initfdpredictedtarget_a (fdpredictedtarget0)
    fdpredictedtarget0)
- 
+
 (defun nextfdpredictedtarget_a
    (initi fdpredictedtarget0 stall fdpredictedtarget
 	  ffpredictedtarget)
@@ -391,34 +391,34 @@
     (initi fdpredictedtarget0)
     (stall fdpredictedtarget)
     (t ffpredictedtarget)))
- 
+
 (defun initdebpstate_a (debpstate0) debpstate0)
- 
+
 (defun nextdebpstate_a (initi debpstate0 fdbpstate)
    (cond (initi debpstate0) (t fdbpstate)))
- 
+
 (defun initdepintrp_a (depintrp0) depintrp0)
- 
+
 (defun nextdepintrp_a (initi depintrp0 fdpintrp)
    (cond (initi depintrp0) (t fdpintrp)))
- 
+
 (defun initdeppc_a (deppc0) deppc0)
- 
+
 (defun nextdeppc_a (initi deppc0 fdppc)
    (cond (initi deppc0) (t fdppc)))
- 
+
 (defun initdesrc1_a (desrc10) desrc10)
- 
+
 (defun nextdesrc1_a (initi desrc10 if_id_src1)
    (cond (initi desrc10) (t if_id_src1)))
- 
+
 (defun initdesrc2_a (desrc20) desrc20)
- 
+
 (defun nextdesrc2_a (initi desrc20 if_id_src2)
    (cond (initi desrc20) (t if_id_src2)))
- 
+
 (defun initdearg1_a (a1) a1)
- 
+
 (defun nextdearg1_a
    (initi a1 if_id_src1 prf commit_impl mwwrt mwdest mwregwrite
 	  wb_is_alu_exception_bar wb_is_interrupt_bar
@@ -429,9 +429,9 @@
 		   (nextprf_a prf initi commit_impl mwwrt mwdest mwregwrite
 			      wb_is_alu_exception_bar wb_is_interrupt_bar
 			      wb_is_returnfromexception_bar mwval)))))
- 
+
 (defun initdearg2_a (a2) a2)
- 
+
 (defun nextdearg2_a
    (initi a2 if_id_src2 prf commit_impl mwwrt mwdest mwregwrite
 	  wb_is_alu_exception_bar wb_is_interrupt_bar
@@ -442,68 +442,68 @@
 		   (nextprf_a prf initi commit_impl mwwrt mwdest mwregwrite
 			      wb_is_alu_exception_bar wb_is_interrupt_bar
 			      wb_is_returnfromexception_bar mwval)))))
- 
+
 (defun initdedest_a (dedest0) dedest0)
- 
+
 (defun nextdedest_a (initi dedest0 fdinst)
    (cond (initi dedest0) (t (dest fdinst))))
- 
+
 (defun initdeop_a (deop0) deop0)
- 
+
 (defun nextdeop_a (initi deop0 fdinst)
    (cond (initi deop0) (t (opcode fdinst))))
- 
+
 (defun initdeimm_a (deimm0) deimm0)
- 
+
 (defun nextdeimm_a (initi deimm0 fdinst)
    (cond (initi deimm0) (t (getimm fdinst))))
- 
+
 (defun initdeuseimm_a (deuseimm0) deuseimm0)
- 
+
 (defun nextdeuseimm_a (initi deuseimm0 fdinst)
    (cond (initi deuseimm0) (t (getuseimm fdinst))))
- 
+
 (defun initdeisreturnfromexception_a (deisreturnfromexception0)
    deisreturnfromexception0)
- 
+
 (defun nextdeisreturnfromexception_a
    (initi deisreturnfromexception0 fdinst)
    (cond
     (initi deisreturnfromexception0)
     (t (getreturnfromexception fdinst))))
- 
+
 (defun initderegwrite_a (deregwrite0) deregwrite0)
- 
+
 (defun nextderegwrite_a (initi deregwrite0 id_regwrite)
    (cond (initi deregwrite0) (t id_regwrite)))
- 
+
 (defun initdememwrite_a (dememwrite0) dememwrite0)
- 
+
 (defun nextdememwrite_a (initi dememwrite0 id_memwrite)
    (cond (initi dememwrite0) (t id_memwrite)))
- 
+
 (defun initdememtoreg_a (dememtoreg0) dememtoreg0)
- 
+
 (defun nextdememtoreg_a (initi dememtoreg0 fdinst)
    (cond (initi dememtoreg0) (t (getmemtoreg fdinst))))
- 
+
 (defun initdeisbranch_a (deisbranch0) deisbranch0)
- 
+
 (defun nextdeisbranch_a (initi deisbranch0 fdinst)
    (cond (initi deisbranch0) (t (getisbranch fdinst))))
- 
+
 (defun initdewrt_a () nil)
- 
+
 (defun nextdewrt_a (initi commit_impl squash stall fdwrt)
    (cond
     (initi nil)
     (commit_impl nil)
     (squash nil)
     (t (and (not stall) fdwrt))))
- 
+
 (defun initdepredicteddirection_a (depredicteddirection0)
    depredicteddirection0)
- 
+
 (defun nextdepredicteddirection_a
    (initi depredicteddirection0 stall depredicteddirection
 	  fdpredicteddirection)
@@ -511,10 +511,10 @@
     (initi depredicteddirection0)
     (stall depredicteddirection)
     (t fdpredicteddirection)))
- 
+
 (defun initdepredictedtarget_a (depredictedtarget0)
    depredictedtarget0)
- 
+
 (defun nextdepredictedtarget_a
    (initi depredictedtarget0 stall depredictedtarget
 	  fdpredictedtarget)
@@ -522,109 +522,109 @@
     (initi depredictedtarget0)
     (stall depredictedtarget)
     (t fdpredictedtarget)))
- 
+
 (defun initembpstate_a (embpstate0) embpstate0)
- 
+
 (defun nextembpstate_a (initi embpstate0 debpstate)
    (cond (initi embpstate0) (t debpstate)))
- 
+
 (defun initempintrp_a (empintrp0) empintrp0)
- 
+
 (defun nextempintrp_a (initi empintrp0 depintrp)
    (cond (initi empintrp0) (t depintrp)))
- 
+
 (defun initemppc_a (emppc0) emppc0)
- 
+
 (defun nextemppc_a (initi emppc0 deppc)
    (cond (initi emppc0) (t deppc)))
- 
+
 (defun initemis_alu_exception_a (emis_alu_exception0)
    emis_alu_exception0)
- 
+
 (defun nextemis_alu_exception_a
    (initi emis_alu_exception0 ex_is_alu_exception)
    (cond (initi emis_alu_exception0) (t ex_is_alu_exception)))
- 
+
 (defun initemis_taken_branch_a (emis_taken_branch0)
    emis_taken_branch0)
- 
+
 (defun nextemis_taken_branch_a
    (initi emis_taken_branch0 ex_is_taken_branch)
    (cond (initi emis_taken_branch0) (t ex_is_taken_branch)))
- 
+
 (defun initemtargetpc_a (emtargetpc0) emtargetpc0)
- 
+
 (defun nextemtargetpc_a (initi emtargetpc0 ex_targetpc)
    (cond (initi emtargetpc0) (t ex_targetpc)))
- 
+
 (defun initemarg2_a (emarg20) emarg20)
- 
+
 (defun nextemarg2_a (initi emarg20 ex_fwd_src2)
    (cond (initi emarg20) (t ex_fwd_src2)))
- 
+
 (defun initemresult_a (emresult0) emresult0)
- 
+
 (defun nextemresult_a (initi emresult0 ex_result)
    (cond (initi emresult0) (t ex_result)))
- 
+
 (defun initemdest_a (emdest0) emdest0)
- 
+
 (defun nextemdest_a (initi emdest0 dedest)
    (cond (initi emdest0) (t dedest)))
- 
+
 (defun initemwrt_a () nil)
- 
+
 (defun nextemwrt_a (initi commit_impl squash dewrt)
    (cond (initi nil) (commit_impl nil) (squash nil) (t dewrt)))
- 
+
 (defun initemisreturnfromexception_a (emisreturnfromexception0)
    emisreturnfromexception0)
- 
+
 (defun nextemisreturnfromexception_a
    (initi emisreturnfromexception0 deisreturnfromexception)
    (cond (initi emisreturnfromexception0) (t deisreturnfromexception)))
- 
+
 (defun initemmispredictedtaken_a (emmispredictedtaken0)
    emmispredictedtaken0)
- 
+
 (defun nextemmispredictedtaken_a
    (initi emmispredictedtaken0 mispredicted_taken)
    (cond (initi emmispredictedtaken0) (t mispredicted_taken)))
- 
+
 (defun initemmispredictednottaken_a (emmispredictednottaken0)
    emmispredictednottaken0)
- 
+
 (defun nextemmispredictednottaken_a
    (initi emmispredictednottaken0 mispredicted_nottaken)
    (cond (initi emmispredictednottaken0) (t mispredicted_nottaken)))
- 
+
 (defun initemregwrite_a (emregwrite0) emregwrite0)
- 
+
 (defun nextemregwrite_a (initi emregwrite0 deregwrite)
    (cond (initi emregwrite0) (t deregwrite)))
- 
+
 (defun initemmemwrite_a (emmemwrite0) emmemwrite0)
- 
+
 (defun nextemmemwrite_a (initi emmemwrite0 dememwrite)
    (cond (initi emmemwrite0) (t dememwrite)))
- 
+
 (defun initemmemtoreg_a (emmemtoreg0) emmemtoreg0)
- 
+
 (defun nextemmemtoreg_a (initi emmemtoreg0 dememtoreg)
    (cond (initi emmemtoreg0) (t dememtoreg)))
- 
+
 (defun initpdmemhist_2_a (dmem0) dmem0)
- 
+
 (defun nextpdmemhist_2_a (initi dmem0 pdmemhist_1)
    (cond (initi dmem0) (t pdmemhist_1)))
- 
+
 (defun initpdmemhist_1_a (dmem0) dmem0)
- 
+
 (defun nextpdmemhist_1_a (initi dmem0 pdmem)
    (cond (initi dmem0) (t pdmem)))
- 
+
 (defun initpdmem_a (dmem0) dmem0)
- 
+
 (defun nextpdmem_a
    (initi dmem0 commit_impl pdmemhist_2 mem1_is_interrupt pdmem
 	  emwrt emmemwrite mem1_is_alu_exception_bar
@@ -637,19 +637,19 @@
 	  mem1_is_returnfromexception_bar)
      (nextdmem pdmem emresult emarg2))
     (t pdmem)))
- 
+
 (defun initpepchist_2_a (epc0) epc0)
- 
+
 (defun nextpepchist_2_a (initi epc0 pepchist_1)
    (cond (initi epc0) (t pepchist_1)))
- 
+
 (defun initpepchist_1_a (epc0) epc0)
- 
+
 (defun nextpepchist_1_a (initi epc0 pepc)
    (cond (initi epc0) (t pepc)))
- 
+
 (defun initpepc_a (epc0) epc0)
- 
+
 (defun nextpepc_a
    (initi epc0 commit_impl pepchist_2 mem1_is_alu_exception
 	  mem1_is_returnfromexception_bar mem1_is_interrupt_bar
@@ -661,20 +661,20 @@
 	  mem1_is_interrupt_bar)
      emppc)
     (t pepc)))
- 
+
 (defun initpisexceptionhist_2_a (isexception0) isexception0)
- 
+
 (defun nextpisexceptionhist_2_a
    (initi isexception0 pisexceptionhist_1)
    (cond (initi isexception0) (t pisexceptionhist_1)))
- 
+
 (defun initpisexceptionhist_1_a (isexception0) isexception0)
- 
+
 (defun nextpisexceptionhist_1_a (initi isexception0 pisexception)
    (cond (initi isexception0) (t pisexception)))
- 
+
 (defun initpisexception_a (isexception0) isexception0)
- 
+
 (defun nextpisexception_a
    (initi isexception0 commit_impl pisexceptionhist_2
 	  mem1_is_alu_exception mem1_is_returnfromexception
@@ -687,105 +687,105 @@
 	  mem1_is_interrupt_bar)
      (and mem1_is_alu_exception mem1_is_returnfromexception_bar))
     (t pisexception)))
- 
+
 (defun initmmbpstate_a (mmbpstate0) mmbpstate0)
- 
+
 (defun nextmmbpstate_a (initi mmbpstate0 embpstate)
    (cond (initi mmbpstate0) (t embpstate)))
- 
+
 (defun initmmpintrp_a (mmpintrp0) mmpintrp0)
- 
+
 (defun nextmmpintrp_a (initi mmpintrp0 empintrp)
    (cond (initi mmpintrp0) (t empintrp)))
- 
+
 (defun initmmisreturnfromexception_a (mmisreturnfromexception0)
    mmisreturnfromexception0)
- 
+
 (defun nextmmisreturnfromexception_a
    (initi mmisreturnfromexception0 emisreturnfromexception)
    (cond (initi mmisreturnfromexception0) (t emisreturnfromexception)))
- 
+
 (defun initmmis_alu_exception_a (mmis_alu_exception0)
    mmis_alu_exception0)
- 
+
 (defun nextmmis_alu_exception_a
    (initi mmis_alu_exception0 emis_alu_exception)
    (cond (initi mmis_alu_exception0) (t emis_alu_exception)))
- 
+
 (defun initmmppc_a (mmppc0) mmppc0)
- 
+
 (defun nextmmppc_a (initi mmppc0 emppc)
    (cond (initi mmppc0) (t emppc)))
- 
+
 (defun initmmval_a (mmval0) mmval0)
- 
+
 (defun nextmmval_a (initi mmval0 emmemtoreg mem1_readdata emresult)
    (cond (initi mmval0) (emmemtoreg mem1_readdata) (t emresult)))
- 
+
 (defun initmmdest_a (mmdest0) mmdest0)
- 
+
 (defun nextmmdest_a (initi mmdest0 emdest)
    (cond (initi mmdest0) (t emdest)))
- 
+
 (defun initmmwrt_a () nil)
- 
+
 (defun nextmmwrt_a (initi commit_impl emwrt)
    (cond (initi nil) (commit_impl nil) (t emwrt)))
- 
+
 (defun initmmregwrite_a (mmregwrite0) mmregwrite0)
- 
+
 (defun nextmmregwrite_a (initi mmregwrite0 emregwrite)
    (cond (initi mmregwrite0) (t emregwrite)))
- 
+
 (defun initmwbpstate_a (mwbpstate0) mwbpstate0)
- 
+
 (defun nextmwbpstate_a (initi mwbpstate0 mmbpstate)
    (cond (initi mwbpstate0) (t mmbpstate)))
- 
+
 (defun initmwpintrp_a (mwpintrp0) mwpintrp0)
- 
+
 (defun nextmwpintrp_a (initi mwpintrp0 mmpintrp)
    (cond (initi mwpintrp0) (t mmpintrp)))
- 
+
 (defun initmwisreturnfromexception_a (mwisreturnfromexception0)
    mwisreturnfromexception0)
- 
+
 (defun nextmwisreturnfromexception_a
    (initi mwisreturnfromexception0 mmisreturnfromexception)
    (cond (initi mwisreturnfromexception0) (t mmisreturnfromexception)))
- 
+
 (defun initmwis_alu_exception_a (mwis_alu_exception0)
    mwis_alu_exception0)
- 
+
 (defun nextmwis_alu_exception_a
    (initi mwis_alu_exception0 mmis_alu_exception)
    (cond (initi mwis_alu_exception0) (t mmis_alu_exception)))
- 
+
 (defun initmwppc_a (mwppc0) mwppc0)
- 
+
 (defun nextmwppc_a (initi mwppc0 mmppc)
    (cond (initi mwppc0) (t mmppc)))
- 
+
 (defun initmwval_a (mwval0) mwval0)
- 
+
 (defun nextmwval_a (initi mwval0 mmval)
    (cond (initi mwval0) (t mmval)))
- 
+
 (defun initmwdest_a (mwdest0) mwdest0)
- 
+
 (defun nextmwdest_a (initi mwdest0 mmdest)
    (cond (initi mwdest0) (t mmdest)))
- 
+
 (defun initmwwrt_a () nil)
- 
+
 (defun nextmwwrt_a (initi commit_impl mmwrt)
    (cond (initi nil) (commit_impl nil) (t mmwrt)))
- 
+
 (defun initmwregwrite_a (mwregwrite0) mwregwrite0)
- 
+
 (defun nextmwregwrite_a (initi mwregwrite0 mmregwrite)
    (cond (initi mwregwrite0) (t mmregwrite)))
- 
+
 (defun impl-simulate_a
    (impl initi pc0 commit_impl commit_pc alu_exception_handler
 	 intrp0 commit_intrp bpstate0 commit_bpstate ffbpstate0
@@ -1062,7 +1062,7 @@
 			     (nextmwdest_a initi mwdest0 mmdest)
 			     (nextmwwrt_a initi commit_impl mmwrt)
 			     (nextmwregwrite_a initi mwregwrite0 mmregwrite)))))
- 
+
 (defun impl-initialize_a
    (impl pc0 intrp0 bpstate0 ffbpstate0 ffpintrp0
 	 ffpredicteddirection0 ffpredictedtarget0 ffinst0 ffppc0
@@ -1271,17 +1271,17 @@
 			     (initmwppc_a mwppc0) (initmwval_a mwval0)
 			     (initmwdest_a mwdest0) (initmwwrt_a)
 			     (initmwregwrite_a mwregwrite0)))))
- 
+
 (defun spec-state_a (simem spc sintrp srf sdmem sepc sisexception)
    (seq nil 'simem simem 'spc spc 'sintrp sintrp 'srf srf 'sdmem sdmem
         'sepc sepc 'sisexception sisexception))
- 
+
 (defun initsimem_a (simem) (cons (s 0 t (s 1 nil nil)) simem))
- 
+
 (defun nextsimem_a (simem) (cons (s 0 nil (s 1 nil nil)) simem))
- 
+
 (defun initspc_a (pc0) pc0)
- 
+
 (defun nextspc_a
    (initi pc0 project_impl project_pc isa is_interrupt spc
 	  is_returnfromexception sepc is_alu_exception
@@ -1295,9 +1295,9 @@
     ((and isa is_taken_branch) targetpc)
     (isa (add-1 spc))
     (t spc)))
- 
+
 (defun initsintrp_a (intrp0) intrp0)
- 
+
 (defun nextsintrp_a
    (initi intrp0 project_impl project_intrp isa sintrp)
    (cond
@@ -1305,9 +1305,9 @@
     (project_impl project_intrp)
     (isa (nextintrp sintrp))
     (t sintrp)))
- 
+
 (defun initsrf_a (srf) (cons (s 0 t (s 1 nil nil)) srf))
- 
+
 (defun nextsrf_a
    (srf initi project_impl impl.prf isa inst regwrite
 	is_alu_exception_bar is_interrupt_bar
@@ -1324,9 +1324,9 @@
                                     (s 9 is_returnfromexception_bar
 				       (s 10 val nil)))))))))))
          srf))
- 
+
 (defun initsdmem_a (dmem0) dmem0)
- 
+
 (defun nextsdmem_a
    (initi dmem0 project_impl impl.pdmemhist_2 isa is_interrupt
 	  sdmem memwrite is_alu_exception_bar
@@ -1339,9 +1339,9 @@
 	  is_returnfromexception_bar)
      (nextdmem sdmem result arg2_temp))
     (t sdmem)))
- 
+
 (defun initsepc_a (epc0) epc0)
- 
+
 (defun nextsepc_a
    (initi epc0 isa is_alu_exception is_returnfromexception_bar
 	  is_interrupt_bar spc sepc)
@@ -1351,9 +1351,9 @@
 	  is_interrupt_bar)
      spc)
     (t sepc)))
- 
+
 (defun initsisexception_a (isexception0) isexception0)
- 
+
 (defun nextsisexception_a
    (initi isexception0 isa is_alu_exception is_returnfromexception
 	  is_interrupt_bar is_returnfromexception_bar
@@ -1364,7 +1364,7 @@
 	  is_interrupt_bar)
      (and is_alu_exception is_returnfromexception_bar))
     (t sisexception)))
- 
+
 (defun spec-simulate_a
    (spec initi pc0 project_impl project_pc isa
 	 alu_exception_handler intrp0 project_intrp impl.prf dmem0
@@ -1415,7 +1415,7 @@
 			     (nextsisexception_a initi isexception0 isa is_alu_exception
 						 is_returnfromexception is_interrupt_bar
 						 is_returnfromexception_bar sisexception)))))
- 
+
 (defun spec-initialize_a (spec pc0 intrp0 dmem0 epc0 isexception0)
    (let* ((simem (g 'simem spec)) (spc (g 'spc spec))
           (sintrp (g 'sintrp spec)) (srf (g 'srf spec))
@@ -1448,7 +1448,7 @@
 	       (spec-state_a (initsimem_a simem) (initspc_a pc0)
 			     (initsintrp_a intrp0) (initsrf_a srf) (initsdmem_a dmem0)
 			     (initsepc_a epc0) (initsisexception_a isexception0)))))
- 
+
 (defun simulate_a
    (st initi isa project_impl project_pc project_intrp commit_impl
        commit_pc commit_bpstate commit_intrp pc0
@@ -1489,7 +1489,7 @@
     (spec-simulate_a (g 'spec st) initi pc0 project_impl project_pc
 		     isa alu_exception_handler intrp0 project_intrp impl.prf
 		     dmem0 impl.pdmemhist_2 epc0 isexception0)))
- 
+
 (defun initialize_a
    (st initi isa project_impl project_pc project_intrp commit_impl
        commit_pc commit_bpstate commit_intrp pc0 intrp0 bpstate0
@@ -1527,7 +1527,7 @@
 		       mwdest0 mwregwrite0)
     (spec-initialize_a (g 'spec st) pc0 intrp0 dmem0 epc0
 		       isexception0)))
- 
+
 (defun equiv_ma
    (ppc_v impl.ppc prf_v a1 impl.prf pimem_v impl.pimem pdmem_v
 	  impl.pdmem pepc_v impl.pepc pisexception_v
@@ -1696,7 +1696,7 @@
                                    impl.mwisreturnfromexception))
                       (equalb mwis_alu_exception_v
                               impl.mwis_alu_exception)))))
- 
+
 (defun rank
    (impl.mwwrt zero impl.mmwrt impl.emwrt impl.dewrt impl.fdwrt
 	       impl.ffwrt)
@@ -1708,7 +1708,7 @@
     (impl.fdwrt (add-1 (add-1 (add-1 (add-1 zero)))))
     (impl.ffwrt (add-1 (add-1 (add-1 (add-1 (add-1 zero))))))
     (t (add-1 (add-1 (add-1 (add-1 (add-1 (add-1 zero)))))))))
- 
+
 (defun committedpc
    (impl.mwwrt impl.mwppc impl.mmwrt impl.mmppc impl.emwrt
 	       impl.emppc impl.dewrt impl.deppc impl.fdwrt impl.fdppc
@@ -1721,7 +1721,7 @@
     (impl.fdwrt impl.fdppc)
     (impl.ffwrt impl.ffppc)
     (t impl.ppc)))
- 
+
 (defun committedbpstate
    (impl.mwwrt impl.mwbpstate impl.mmwrt impl.mmbpstate impl.emwrt
 	       impl.embpstate impl.dewrt impl.debpstate impl.fdwrt
@@ -1734,7 +1734,7 @@
     (impl.fdwrt impl.fdbpstate)
     (impl.ffwrt impl.ffbpstate)
     (t impl.bpstate)))
- 
+
 (defun committedintrp
    (impl.mwwrt impl.mwpintrp impl.mmwrt impl.mmpintrp impl.emwrt
 	       impl.empintrp impl.dewrt impl.depintrp impl.fdwrt

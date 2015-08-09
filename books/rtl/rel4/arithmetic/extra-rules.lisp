@@ -135,8 +135,8 @@
 	     (<= (* (* a b) (* a b))
 		 (* (expt 2 (- (* 2 n) 2)) (* p p))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance *-doubly-monotonic 
-				   (x (* a a)) (a (* b b)) 
+  :hints (("Goal" :use ((:instance *-doubly-monotonic
+				   (x (* a a)) (a (* b b))
 				   (y p) (b (* (expt 2 (- (* 2 n) 2)) p))))))))
 ;not exported anywhere!
 ;rephrase?
@@ -295,7 +295,7 @@
   :rule-classes ())
 
 ;kill?
-(local 
+(local
  (defthm abs+
    (implies (and (rationalp x)
                  (rationalp y))

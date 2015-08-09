@@ -32,8 +32,8 @@ binds the variable k
   (declare (xargs :guard (pseudo-termp term)))
   (if (not (consp term)) ;term was a symbol
       nil
-    (case (car term)	
-      (quote (if (integerp (cadr term)) 
+    (case (car term)
+      (quote (if (integerp (cadr term))
                  nil ;no denominator
                (if (rationalp (cadr term))
                    `((k . ',(denominator (cadr term))))
@@ -52,7 +52,7 @@ binds the variable k
   (declare (xargs :guard (pseudo-termp term)))
   (if (not (consp term)) ;term was a symbol
       (equal factor term)
-    (case (car term)	
+    (case (car term)
       (binary-* (if (equal factor (cadr term))
                     t
                   (is-a-factor factor (caddr term))))
@@ -76,7 +76,7 @@ binds the variable k
   (declare (xargs :guard (pseudo-termp term)))
   (if (not (consp term)) ;term was a symbol
       t
-    (case (car term)	
+    (case (car term)
       (binary-* nil) ;associativity of * must not have fired (or we are in the (* x y) of a (/ (* x y))
       (binary-+ nil) ;distributivity must not have fired...
       (unary-/ (and (consp (cdr term))
@@ -86,14 +86,14 @@ binds the variable k
 
 
 ;Checks whether TERM is a product of (1 or more) "factors".
-;Also checks that only the first factor (if any) is a constant...  (If the constants aren't collected, the 
+;Also checks that only the first factor (if any) is a constant...  (If the constants aren't collected, the
 ;term isn't yet normalized, and rules can loop). BOZO document why the cancelling rule is okay even though
 ;constants are a little weird..
 (defun product-syntaxp (term first-factor-can-be-a-constant)
   (declare (xargs :guard (pseudo-termp term)))
   (if (not (consp term)) ;term was a symbol
       t
-    (case (car term)	
+    (case (car term)
       (binary-* (and (factor-syntaxp (cadr term) first-factor-can-be-a-constant)
                      (product-syntaxp (caddr term) nil)))
 ;check that term is a single factor..
@@ -108,7 +108,7 @@ binds the variable k
   (declare (xargs :guard (pseudo-termp term)))
   (if (not (consp term)) ;term was a symbol
       t
-    (case (car term)	
+    (case (car term)
       (binary-+ (and (product-syntaxp (cadr term) t)
                      (sum-of-products-syntaxp (caddr term))))
       (otherwise (product-syntaxp term t)))))

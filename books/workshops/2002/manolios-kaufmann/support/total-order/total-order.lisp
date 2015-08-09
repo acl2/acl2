@@ -36,7 +36,7 @@
            (characterp x)
            (stringp x))))
 
-(defstub bad-atom<= (* *) => *) 
+(defstub bad-atom<= (* *) => *)
 
 (defmacro boolp (x)
   `(or (equal ,x t)
@@ -154,7 +154,7 @@
 
 (local
  (defthm atom-order-transitive
-   (implies (and (atom-order x y) 
+   (implies (and (atom-order x y)
                  (atom-order y z)
                  (atom x)
                  (atom y)
@@ -167,8 +167,8 @@
  (defthm atom-order-anti-symmetric
    (implies (and (atom x)
                  (atom y)
-                 (atom-order x y) 
-                 (atom-order y x))  
+                 (atom-order x y)
+                 (atom-order y x))
             (equal x y))
    :hints (("Goal"
             :in-theory (union-theories
@@ -178,8 +178,8 @@
                   (:instance bad-atom<=-anti-symmetric)
                   (:instance code-char-char-code-is-identity (c y))
                   (:instance code-char-char-code-is-identity (c x)))))
-   :rule-classes 
-   ((:forward-chaining :corollary 
+   :rule-classes
+   ((:forward-chaining :corollary
                        (implies (and (atom-order x y)
                                      (not (consp x))
                                      (not (consp y)))
@@ -192,11 +192,11 @@
  (defthm atom-order-total
    (implies (and (atom x)
                  (atom y))
-            (or (atom-order x y) 
+            (or (atom-order x y)
 		(atom-order y x)))
    :hints (("Goal" :use (:instance bad-atom<=-total)
             :in-theory (enable string< symbol-<)))
-   :rule-classes 
+   :rule-classes
    ((:forward-chaining :corollary
                        (implies (and (not (atom-order x y))
                                      (not (consp x))
@@ -223,17 +223,17 @@
   (total-order x x))
 
 (defthm total-order-anti-symmetric
-  (implies (and (total-order x y) 
-		(total-order y x))  
+  (implies (and (total-order x y)
+		(total-order y x))
 	   (equal x y))
   :rule-classes :forward-chaining)
 
 (defthm total-order-transitive
-  (implies (and (total-order x y) 
+  (implies (and (total-order x y)
 		(total-order y z))
 	   (total-order x z)))
 
 (defthm total-order-total
-  (or (total-order x y) 
+  (or (total-order x y)
       (total-order y x))
   :rule-classes nil)

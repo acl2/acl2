@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -31,15 +31,15 @@
 
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "bits-new-proofs"))
 
              (defthm bits_alt-is-bits
                (equal (bits_alt x i j)
                       (bits x i j)))
 
-             
+
              (defthm bitn_alt-is-bitn
                (equal (bitn_alt x n)
                       (bitn x n)))
@@ -50,24 +50,24 @@
                       (binary-cat x m y n)))
 
              ))
-               
+
 
 
 ;;;**********************************************************************
 ;;;                      Bit Vector Addition
 ;;;**********************************************************************
 
-(encapsulate () 
+(encapsulate ()
     (local (include-book "../../arithmetic/top"))
 
-(local 
+(local
  (defthm bvecp-fl-1/2
    (implies (bvecp x (+ 1 n))
             (BVECP (FL (* 1/2 X)) n))
    :hints (("Goal" :in-theory (e/d (bvecp
                                     expt-2-reduce-leading-constant) ())))))
 
-(local 
+(local
  (defthm bvecp-mod-2
    (implies (integerp x)
             (BVECP (MOD X 2) 1))
@@ -75,7 +75,7 @@
 
 
 
-(local 
+(local
  (defthm land-logand
    (implies (and (bvecp x n)
                  (bvecp y n)
@@ -91,7 +91,7 @@
 
 
 
-(local 
+(local
  (defthm lxor-logxor
    (implies (and (bvecp x n)
                  (bvecp y n)
@@ -104,7 +104,7 @@
            ("Subgoal *1/4" :use ((:instance logxor-def
                                             (i x)
                                             (j y)))))))
-(local 
+(local
  (defthm logior-1-x
    (implies (bvecp x 1)
             (equal (logior 1 x) 1))
@@ -112,7 +112,7 @@
             :cases ((equal x 0))))))
 
 
-(local 
+(local
  (defthm lior-logior
    (implies (and (bvecp x n)
                  (bvecp y n)
@@ -134,14 +134,14 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance half-adder)))))
 
-(local 
+(local
  (defthm bvecp-1-plus
    (implies (natp x)
             (bvecp x (+ 1 (expo x))))
    :hints (("Goal" :in-theory (e/d (bvecp) ())))))
 
 
-(local 
+(local
  (defthm bvecp-max-1
    (implies (and (natp x)
                  (integerp m))
@@ -153,7 +153,7 @@
 
 
 
-(local 
+(local
  (defthm bvecp-max-2
    (implies (and (natp x)
                  (integerp m))
@@ -181,13 +181,13 @@
                 (bvecp v 1)
                 (bvecp w 1))
            (equal (+ u v w)
-                  (cat_alt (logior (logand u v) (logior (logand u w) (logand v w))) 1 
+                  (cat_alt (logior (logand u v) (logior (logand u w) (logand v w))) 1
                        (logxor u (logxor v w)) 1)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance full-adder)))))
 
 
-(local 
+(local
  (defthm bvecp-max-backchain-1
    (implies (and (natp x)
                  (integerp m)
@@ -201,7 +201,7 @@
 
 
 
-(local 
+(local
  (defthm bvecp-max-backchain-2
    (implies (and (natp x)
                  (integerp m)
@@ -226,7 +226,7 @@
 					(logand y z)))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (e/d () (max))
-           :use ((:instance add-3 
+           :use ((:instance add-3
                             (n (max (+ 1 (expo x))
                                     (max (+ 1 (expo y))
                                          (+ 1 (expo z))))))))))
@@ -244,12 +244,12 @@
 
 (local (include-book "../../arithmetic/top"))
 
-(local 
+(local
  (defthm logand-1-x-g
    (implies (integerp x)
             (equal (LOGAND 1 x)
                    (bitn x 0)))
-   :hints (("Goal" :in-theory (e/d (logand bitn mod 
+   :hints (("Goal" :in-theory (e/d (logand bitn mod
                                            evenp
                                            bits-mod)
                                    (bits-n-n-rewrite))))))
@@ -257,14 +257,14 @@
 
 
 
-(local 
+(local
  (encapsulate ()
               (local (include-book "../support/logior"))
               (defthm logior-1-x
                 (implies (bvecp x 1)
                          (equal (logior 1 x) 1)))))
- 
-(local 
+
+(local
  (defthm rc-carry_alt-is-rc-carry
    (equal (rc-carry_alt x y k)
           (rc-carry x y k))
@@ -288,7 +288,7 @@
 
 
 
-(local 
+(local
  (defthm logxor-1-x-g
    (implies (bvecp x 1)
             (equal (LOGXOR 1 x)
@@ -296,7 +296,7 @@
    :hints (("Goal" :in-theory (enable bvecp)
             :cases ((equal x 0))))))
 
-(local 
+(local
  (defthm lxor-1
    (implies (case-split (bvecp y 1))
             (equal (lxor 1 y 1)
@@ -306,7 +306,7 @@
 
 
 
-(local 
+(local
  (defthm lxor-0-g
    (implies (case-split (bvecp y 1))
             (equal (lxor 0 y 1)
@@ -314,11 +314,11 @@
    :hints (("Goal" :in-theory (enable bvecp)
             :cases ((equal x 0))))))
 
-(local 
+(local
  (defthm bvecp-1-rc-carry
    (bvecp (rc-carry x y k) 1)))
 
-(local 
+(local
  (defthm rc-sum_alt-is-rc-sum
    (equal (rc-sum_alt x y k)
           (rc-sum x y k))
@@ -329,7 +329,7 @@
                                  (:instance bitn-0-1
                                             (x y)
                                             (n (+ -1 k))))))))
-                                 
+
 
 (defthm ripple-carry_alt
   (implies (and (natp x)
@@ -350,7 +350,7 @@
     0))
 
 
-(local 
+(local
  (defthm gen_alt-is-gen
    (equal (gen_alt x y i j)
           (gen x y i j))))
@@ -367,7 +367,7 @@
     1))
 
 
-(local 
+(local
  (defthm prop_alt-is-prop
    (equal (prop_alt x y i j)
           (prop x y i j))))
@@ -410,10 +410,10 @@
   :hints (("Goal" :use ((:instance gen-val-cor2)))))
 
 
-(local 
+(local
  (defthm lior-bitn-is
-   (equal (lior (bitn x i) 
-                (bitn y i) 
+   (equal (lior (bitn x i)
+                (bitn y i)
                 1)
           (logior (bitn x i)
                   (bitn y i)))
@@ -423,8 +423,8 @@
                          (:instance bitn-0-1
                                     (x y)
                                     (n i)))))))
-                         
-                  
+
+
 ;;                                       (LIOR (BITN X I) (BITN Y I) 1)))
 
 
@@ -454,20 +454,20 @@
   :hints (("Goal" :use ((:instance prop-val)))))
 
 
-(local 
+(local
  (defthm bvecp-fl-1/2
    (implies (bvecp x (+ 1 n))
             (BVECP (FL (* 1/2 X)) n))
    :hints (("Goal" :in-theory (e/d (bvecp
                                     expt-2-reduce-leading-constant) ())))))
 
-(local 
+(local
  (defthm bvecp-mod-2
    (implies (integerp x)
             (BVECP (MOD X 2) 1))
    :hints (("Goal" :in-theory (e/d (bvecp) ())))))
 
-(local 
+(local
  (defthm lxor-bits-are-g
    (implies (and (bvecp x n)
                  (bvecp y n)
@@ -592,7 +592,7 @@
 
 
 
-(local 
+(local
  (defthm lior-logior
    (implies (and (bvecp x n)
                  (bvecp y n)
@@ -618,7 +618,7 @@
 	     (equal (bits_alt (+ 1 x y) i j)
 		    (bits_alt (+ (bits_alt x i j)
 			     (bits_alt y i j)
-			     (logior (prop_alt x y (1- j) 0) 
+			     (logior (prop_alt x y (1- j) 0)
 				     (gen_alt x y (1- j) 0) ))
 			  (- i j) 0)))
   :rule-classes ()
@@ -626,7 +626,7 @@
 
 
 
-(local 
+(local
  (defthm land-logand
    (implies (and (bvecp x n)
                  (bvecp y n)
@@ -676,7 +676,7 @@
 
 ;; (local (include-book "../../arithmetic/top"))
 
-;; (local 
+;; (local
 ;;  (defthmd bitn-mod-2
 ;;    (implies (integerp x)
 ;;             (equal (bitn (mod x 2) 0)
@@ -684,7 +684,7 @@
 ;;    :hints (("Goal" :in-theory (e/d (bitn bits-mod)
 ;;                                    (bits-n-n-rewrite))))))
 
-(local 
+(local
  (defthm bits-land-specific
    (implies (and (natp n)
                  (> n 0))
@@ -696,11 +696,11 @@
                                   (land x y n))))
            ("Subgoal 2" :cases ((bvecp (land x y n) n))
             :in-theory (e/d () (bits-land))))))
-            
 
 
 
-(local 
+
+(local
  (defthmd land-logand-g
    (implies (and (natp n)
                  (> n 0)
@@ -715,7 +715,7 @@
                                     (n n)))
             :in-theory (e/d (bits-land-specific)
                             (land-logand))))))
-                                   
+
 
 
 
@@ -737,8 +737,8 @@
                                    (y y)
                                    (i k)
                                    (j 0))))))
-                                   
-           
+
+
 
 (defthmd gen_alt-extend-3
     (implies (and (natp i)
@@ -747,7 +747,7 @@
 		  (natp x)
 		  (natp y)
 		  (bvecp z (1+ j))
-		  (= (logand y z) 0))		  
+		  (= (logand y z) 0))
 	     (equal (gen_alt (+ x y) z i 0)
 		    (logand (prop_alt x y i (1+ j))
 			    (gen_alt (+ x y) z j 0))))
@@ -779,7 +779,7 @@
 	      k)))
       0)))
 
-(local 
+(local
  (defthm lop_alt-is-lop
    (equal (lop_alt a b d k)
           (lop a b d k))
@@ -830,7 +830,7 @@
 ;;
 
 
-;; (local 
+;; (local
 ;;  (defthm lior-logior
 ;;    (implies (and (bvecp x n)
 ;;                  (bvecp y n)
@@ -844,7 +844,7 @@
 ;;                                             (i x)
 ;;                                             (j y)))))))
 
-(local 
+(local
  (defthm bvecp-2-muliply
    (implies (integerp a)
             (bvecp (* 2 (mod a (expt 2 e))) (+ 1 e)))
@@ -854,7 +854,7 @@
 
 
 
-(local 
+(local
  (defund bvequal (v1 v2 n)
   (equal (sumbits v1 n)
          (sumbits v2 n))))
@@ -874,11 +874,11 @@
            :in-theory (enable bvequal)))
   :rule-classes nil))
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "log-new"))
-              
-              
+
+
               (defthmd bitn-lognot-g
                 (implies (and (integerp x)
                               (integerp n)
@@ -894,7 +894,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-lnot-lognot-bvequal-lemma
    (implies (and (integerp x)
                  (natp n)
@@ -912,7 +912,7 @@
                              (n i)))))))
 
 
-(local 
+(local
  (defthm lnot-lognot-bvequal
    (implies (and (integerp x)
                  (natp n)
@@ -927,7 +927,7 @@
 
 
 
-(local 
+(local
  (defthm lnot-lognot
   (implies (and (natp n)
                 (> n 0)
@@ -956,24 +956,24 @@
 		 (= (expo (- a b)) (1- (expo lambda)))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance lop-thm-1)))))
-                        
+
 
 ;;;
 ;;;
 ;;; We need set of theorem about how lxor is equal logxor
 ;;;
-;;;                                  land is logand 
-;;; 
+;;;                                  land is logand
+;;;
 ;;
 
 (defun lamt_alt (a b e)
   (logxor a (bits_alt (lognot b) e 0)))
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "log-new-proofs"))
-              
+
               (defthmd bitn_alt-logxor
                 (implies (and (case-split (integerp x))
                               (case-split (integerp y))
@@ -987,7 +987,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-lxor-logxor-bvequal-lemma
    (implies (and (integerp x)
                  (integerp y)
@@ -1010,7 +1010,7 @@
 
 
 
-(local 
+(local
  (defthmd lxor-logxor-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -1018,13 +1018,13 @@
                  (> n 0)
                  (natp i)
                  (<= i n))
-            (bvequal (lxor x y n) 
+            (bvequal (lxor x y n)
                      (bits (logxor x y) (+ -1 n)  0)
                      i))
    :hints (("Goal" :in-theory (e/d (bvequal bitn-lxor-logxor-bvequal-lemma)
                                    ())))))
 
-(local 
+(local
 (defthm lxor-logxor
   (implies (and (natp n)
                 (> n 0)
@@ -1040,7 +1040,7 @@
 
 
 
-(local 
+(local
  (defthm lamt_alt-is-lamt
    (implies (and (natp e)
                  (integerp a)
@@ -1055,12 +1055,12 @@
                              (y (bits (lognot b) e 0))
                              (i e)
                              (j 0)))))))
-           
 
 
 
 
-(local 
+
+(local
  (defthm lamt_alt-is-lamt-g
    (implies (and (natp e)
                  (natp i)
@@ -1077,7 +1077,7 @@
                              (y (bits (lognot b) e 0))
                              (i e)
                              (j i)))))))
-           
+
 
 
 (defun lamg_alt (a b e)
@@ -1086,10 +1086,10 @@
 
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "log-new-proofs"))
-              
+
               (defthmd bitn_alt-logand
                 (implies (and (integerp x)
                               (integerp y)
@@ -1100,7 +1100,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-land-logand-bvequal-lemma
    (implies (and (integerp x)
                  (integerp y)
@@ -1123,7 +1123,7 @@
 
 
 
-(local 
+(local
  (defthmd land-logand-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -1131,14 +1131,14 @@
                  (> n 0)
                  (natp i)
                  (<= i n))
-            (bvequal (land x y n) 
+            (bvequal (land x y n)
                      (bits (logand x y) (+ -1 n)  0)
                      i))
    :hints (("Goal" :in-theory (e/d (bvequal bitn-land-logand-bvequal-lemma)
                                    ())))))
 
 
-(local 
+(local
  (defthmd land-logand-g2
    (implies (and (natp n)
                  (> n 0)
@@ -1164,7 +1164,7 @@
 
 ;; (i-am-here) ;; Mon Feb 16 14:49:46 2009
 
-(local 
+(local
  (defthm lamg_alt-is-lamg
    (implies (and (natp e)
                  (integerp a)
@@ -1186,7 +1186,7 @@
                                          (y a)
                                          (n (+ 1 e))))
             :in-theory (e/d (logand-bvecp-g) ())))))
-                                         
+
 
 
 
@@ -1196,10 +1196,10 @@
 
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "log-new-proofs"))
-              
+
               (defthmd bitn_alt-logior
                 (implies (and (integerp x)
                               (integerp y)
@@ -1210,7 +1210,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-lior-logior-bvequal-lemma
    (implies (and (integerp x)
                  (integerp y)
@@ -1234,7 +1234,7 @@
 
 
 
-(local 
+(local
  (defthmd lior-logior-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -1242,7 +1242,7 @@
                  (> n 0)
                  (natp i)
                  (<= i n))
-            (bvequal (lior x y n) 
+            (bvequal (lior x y n)
                      (bits (logior x y) (+ -1 n)  0)
                      i))
    :hints (("Goal" :in-theory (e/d (bvequal bitn-lior-logior-bvequal-lemma)
@@ -1251,7 +1251,7 @@
 
 
 
-(local 
+(local
  (defthmd lior-logior-g
    (implies (and (natp n)
                  (> n 0)
@@ -1266,17 +1266,17 @@
            :in-theory (e/d (lior-logior-bvequal) ())))))
 
 
-(local 
+(local
  (defthmd bits-lognot-is-specific
    (implies (and (integerp x)
                  (natp e))
             (equal  (bits (lognot (bits x e 0)) e 0)
                     (bits (lognot x) e 0)))
    :hints (("Goal" :in-theory (e/d (lognot bits-mod mod) ())))))
-          
 
 
-(local 
+
+(local
  (defthm lamz_alt-is-lamz
    (implies (and (natp e)
                  (integerp a)
@@ -1290,11 +1290,11 @@
 
 
 (defun lam1_alt (a b e)
-  (logand (bits_alt (lamt_alt a b e) e 2) 
+  (logand (bits_alt (lamt_alt a b e) e 2)
 	  (logand (bits_alt (lamg_alt a b e) (1- e) 1)
 		  (bits_alt (lognot (lamz_alt a b e)) (- e 2) 0))))
 
-(local 
+(local
  (defthm lam1_alt-is-lam1
    (implies (and (integerp a)
                  (integerp b)
@@ -1312,7 +1312,7 @@
                                     lamz))
             :cases ((<= 2 e))))))
 
-                                    
+
 
 (defun lam2_alt (a b e)
   (logand (bits_alt (lognot (lamt_alt a b e)) e 2)
@@ -1321,7 +1321,7 @@
 
 
 
-(local 
+(local
  (defthmd bits-bits-specific
    (implies (and (natp e)
                  (natp i)
@@ -1331,7 +1331,7 @@
                    (bits (bits (lognot x) e 0) e i)))))
 
 
-(local 
+(local
  (defthmd bits-lognot-is-specific-2
    (implies (and (integerp x)
                  (natp e)
@@ -1360,7 +1360,7 @@
 
 
 
-(local 
+(local
  (defthm bitn-bits-lognot-bits-lognot-bvequal-lemma
    (implies (and (integerp x)
                  (natp e)
@@ -1383,14 +1383,14 @@
                   (:instance bitn-0-1
                              (x x)
                              (n (+ i j))))))))
-                  
 
 
 
 
 
 
-(local 
+
+(local
  (defthm bits-lognot-bits-lognot-bvequal
    (implies (and (integerp x)
                  (natp e)
@@ -1410,7 +1410,7 @@
 
 
 
-(local 
+(local
  (defthmd bits-lognot-is-specific-3
    (implies (and (integerp x)
                  (natp e)
@@ -1424,16 +1424,16 @@
                                    (n (+ 1 e (* -1 i)))))
            :in-theory (e/d (bits-lognot-bits-lognot-bvequal) ())))))
 
- 
-
-
-
-                                
 
 
 
 
-(local 
+
+
+
+
+
+(local
  (defthm lam2_alt-is-lam2
    (implies (and (integerp a)
                  (integerp b)
@@ -1458,7 +1458,7 @@
 
 
 (defun lam3_alt (a b e)
-  (logand (bits_alt (lamt_alt a b e) e 2) 
+  (logand (bits_alt (lamt_alt a b e) e 2)
 	  (logand (bits_alt (lamz_alt a b e) (1- e) 1)
 		  (bits_alt (lognot (lamg_alt a b e)) (- e 2) 0))))
 
@@ -1468,7 +1468,7 @@
 ;;                 (natp e))
 ;;            (bvecp (lamg a b e) n)))
 
-(local 
+(local
  (defthm lam3_alt-is-lam3
    (implies (and (integerp a)
                  (integerp b)
@@ -1500,7 +1500,7 @@
 
 
 
-(local 
+(local
  (defthm lam4_alt-is-lam4
    (implies (and (integerp a)
                  (integerp b)
@@ -1535,7 +1535,7 @@
 		  (logior (lam3_alt a b e)
 			  (lam4_alt a b e)))))
 
-           
+
 ;; (defthmd bits_alt-logior
 ;;    (implies (and (integerp x)
 ;;                  (integerp y)
@@ -1543,7 +1543,7 @@
 ;;                  (integerp j))
 ;;             (equal (bits_alt (logior x y) i j)
 ;;                    (logior (bits_alt x i j) (bits_alt y i j))))
-(local 
+(local
    (DEFTHMD BITS-LOGIOR
      (IMPLIES (AND (INTEGERP X)
                    (INTEGERP Y)
@@ -1555,7 +1555,7 @@
      :hints (("Goal" :use ((:instance bits_alt-logior))))))
 
 
-(local 
+(local
  (defthmd lam0_alt-is-lam0-lemma
    (implies (and (integerp a)
                  (integerp b)
@@ -1583,14 +1583,14 @@
 
 
 
-(local 
+(local
  (defthm lam0_alt-is-lam0
    (implies (and (integerp a)
                  (integerp b)
                  (natp e)
                  (> e 1))
             (equal (lam0_alt a b e)
-                   (lam0 a b e)))                   
+                   (lam0 a b e)))
    :hints (("Goal" :cases ((bvecp (lam0_alt a b e) (+ -1 e))))
            ("Subgoal 1" :use ((:instance lam0_alt-is-lam0-lemma))))))
 
@@ -1605,7 +1605,7 @@
 
 
 
-;; (local 
+;; (local
 ;;  (defthmd bits-lognot-is-specific-2
 ;;    (implies (and (integerp x)
 ;;                  (natp e)
@@ -1620,7 +1620,7 @@
 
 
 
-;; (local 
+;; (local
 ;;  (defthm lamt_alt-is-lamt-g
 ;;    (implies (and (natp e)
 ;;                  (natp i)
@@ -1637,14 +1637,14 @@
 ;;                              (y (bits (lognot b) e 0))
 ;;                              (i e)
 ;;                              (j i)))))))
-           
+
 
 ;; (BITN (LOGNOT (LAMT_ALT A B E)) 0)
 ;; (BITN (LOGNOT (BITN (LAMT A B E) 0))
 ;;                      0)))
 
 
-(local 
+(local
  (defthm bitn-lamt_alt-is-lamt
    (implies (and (natp e)
                  (natp i)
@@ -1654,13 +1654,13 @@
             (equal (bitn (lamt_alt a b e) i)
                    (bitn (lamt a b e) i)))
    :hints (("Goal" :use ((:instance lamt_alt-is-lamt))))))
-                                    
-   
 
 
 
 
-(local 
+
+
+(local
  (defthm lamb_alt-is-lamb
    (implies (and (integerp a)
                  (integerp b)
@@ -1698,7 +1698,7 @@
 		      (= (expo (- a b)) (1- (expo (lamb_alt a b e)))))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance lop-thm-2))
-           :in-theory (e/d () 
+           :in-theory (e/d ()
                            (lamb_alt
                             lamb)))))
 
@@ -1725,7 +1725,7 @@
                                    (i 0)
                                    (e k)
                                    (x (LOGXOR A B)))))))
-                                                      
+
 
 
 
@@ -1738,7 +1738,7 @@
 ;;                                       (LOGXOR (BITS_ALT X I J)
 ;;                                               (BITS_ALT Y I J)))))
 
-(local 
+(local
  (defthm bits-logxor
    (implies (and (integerp x)
                  (integerp y)
@@ -1758,9 +1758,9 @@
                 (< k n)
                 (or (equal c 0) (equal c 1)))
            (equal (equal (bits_alt (+ a b c) k 0) 0)
-                  (equal (bits_alt (logxor (logxor a b) 
+                  (equal (bits_alt (logxor (logxor a b)
                                        (cat_alt (logior a b) n c 1))
-                               k 0) 
+                               k 0)
                          0)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance top-thm-2)

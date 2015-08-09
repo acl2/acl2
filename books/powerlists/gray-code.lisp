@@ -53,7 +53,7 @@ To compile it, I do the following:
       (p-tie (list 'nest 0) (list 'nest 1))
     (p-tie (p-map-tie 0 (p-gray-code (1- n)))
 	   (p-map-tie 1 (p-reverse (p-gray-code (1- n)))))))
-(in-theory (disable (p-gray-code)))      
+(in-theory (disable (p-gray-code)))
 
 ;;; We want to prove that p-gray-code doesn't violate any guards, but this
 ;;; requires that we do some simple reasoning about tye types of p-map-tie,
@@ -82,7 +82,7 @@ To compile it, I do the following:
 	       (equal (p-untie-r x) (p-untie-r y))))
     (or (and (equal x 0) (equal y 1))
 	(and (equal x 1) (equal y 0)))))
-(in-theory (disable (p-gray-p)))	
+(in-theory (disable (p-gray-p)))
 
 (verify-guards p-gray-p)
 
@@ -156,7 +156,7 @@ To compile it, I do the following:
   (p-gray-seq-p (p-gray-code n)))
 
 ;;; Finally, we need only show that p-gray-code generates all the possible
-;;; bit-vectors of n bits, and no more vectors.  We begin by recognizing a 
+;;; bit-vectors of n bits, and no more vectors.  We begin by recognizing a
 
 (defun p-bit-vector-p (bit-vector n)
   (declare (xargs :guard (integerp n)))

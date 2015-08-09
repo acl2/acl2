@@ -21,7 +21,7 @@
 
 ; Seen is an alist pairing symbols with all the properties we have so
 ; far seen.  We say a trip (sym prop . val) is ``in'' seen if prop is
-; an element of the value associated with sym in seen.  
+; an element of the value associated with sym in seen.
 
 
 ; Some ACL2 record accessor forms expand into terms involving the
@@ -110,7 +110,7 @@
       (access rewrite-rule (car lemmas) :lhs)
       :rhs
       (access rewrite-rule (car lemmas) :rhs)
-      :subclass 
+      :subclass
       (let ((subclass (access rewrite-rule (car lemmas) :subclass)))
         (case subclass
           (abbreviation 'paco::backchain)
@@ -155,7 +155,7 @@
         (t (cons (cons (caar bic-alist)
                        (copy-built-in-clauses1 (cdar bic-alist)))
                  (copy-built-in-clauses (cdr bic-alist))))))
-  
+
 (defun copy-induction-machine (lst)
 
 ; An ACL2 induction-machine is a list of tests-and-calls records.
@@ -295,7 +295,7 @@
                           a))
                    (otherwise a)))
                 (FORMALS
-                
+
 ; Every time we see a FORMALS property we know we are dealing with a function
 ; symbol, fn.  Paco must have some properties for fn that ACL2 does not
 ; maintain.  The first is a FN-NUMES property, giving the numes for
@@ -350,7 +350,7 @@
                   a))
                 ((BODY UNNORMALIZED-BODY RECURSIVEP CONTROLLER-ALISTS
                        PRIMITIVE-RECURSIVE-DEFUNP LEVEL-NO)
-                
+
 ; These properties have values that are the same in ACL2 as in Paco.
 ; Generally speaking, the only time it is safe to make that assumption
 ; is if the value is composed of terms, function symbols, conses (not
@@ -464,7 +464,7 @@
 ;             (assign acl2::paco-w (w state))
 ; but we don't because there are other Paco variables we want to transfer.
 ; If we were to set acl2::paco-w now and then get interrupted while
-; computing another variable, that variable would not correspond to 
+; computing another variable, that variable would not correspond to
 ; the new w even though paco-w and (w state) would be equal.
 
               (value nil))))
@@ -675,7 +675,7 @@
          (rst (translate-paco-use-hint (cdr arg) ctx wrld state)))
         (value (cons (sublis-var alist thm) rst)))))
    (t (er soft ctx "Ill-formed :INSTANCE ~x0" (car arg)))))
-         
+
 (defun translate-paco-expand-hint (arg ctx wrld state)
   (cond
    ((atom arg) (value-nil :EXPAND arg ctx state))
@@ -735,7 +735,7 @@
            (set-difference-equal currently-disabled-numes
                                  numes-to-enable)))))))
    (t (er soft ctx "Ill-formed :IN-THEORY hint, ~x0." arg))))
-                               
+
 (defun translate-paco-hands-off-hint (arg ctx wrld state)
   (cond
    ((atom arg) (value-nil :HANDS-OFF arg ctx state))
@@ -784,14 +784,14 @@
         ((term (translate (car arg) t t t ctx wrld state))
          (rst (translate-paco-cases-hint (cdr arg) ctx wrld state)))
         (value (cons term rst))))))
-        
+
 (defun translate-paco-by-hint (arg ctx wrld state)
   (cond ((symbolp arg)
          (let ((thm (formula arg t wrld)))
            (cond (thm (value thm))
                  (t (er soft ctx "~x0 does not name a theorem." arg)))))
         (t (er soft ctx "~x0 does not name a theorem." arg))))
-         
+
 (defun translate-paco-induct-hint (arg ctx wrld state)
   (er-let* ((term (translate arg t t t ctx wrld state)))
     (value (cond ((equal term *nil*) :DO-NOT-INDUCT)
@@ -837,7 +837,7 @@
 
 (defun translate-paco-hints (x ctx wrld state)
 
-;  key                 input                           output   
+;  key                 input                           output
 
 ; :USE       (... (:INSTANCE name . subst) ...)  => (... thm ...)
 ; :EXPAND    (... term ...)                      => (... term ...)
@@ -897,16 +897,16 @@
                  (pprogn
                   (fms *proof-failure-string* nil *standard-co* state nil)
                   (mv t nil state)))))))))
-                            
+
 (defmacro paco::dthm (name term &key
                            (hints 'nil)
                            (depth '10)
                            (rule-classes '(:REWRITE)))
-  
+
   `(paco::defthm-fn ',name ',term ,depth state
                     ,(list 'quote hints)
                     ,(list 'quote rule-classes)))
-            
+
 (defmacro paco::show-proof (d-level)
   `(paco::describe-proof-attempt (@ last-proof-attempt) ,d-level))
 

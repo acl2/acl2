@@ -7,15 +7,15 @@
 (deflabel begin-table-def)
 
 ; The valid pipeline stages in this machine are latch1, latch2 and
-; retire. 
+; retire.
 (defun stage-p (stg)
   (declare (xargs :guard t))
   (or (equal stg 'latch1) (equal stg 'latch2) (equal stg 'retire)))
 
 (in-theory (disable proj flushed? stage-p))
 
-; The definition of MAETT entry which represents an instruction. 
-; Only a few fields are required for this example.  
+; The definition of MAETT entry which represents an instruction.
+; Only a few fields are required for this example.
 ;  Field	Description
 ;  stg		The current stage of the represented instruction.
 ;  pre-ISA	The ISA state before the execution of this instruction.
@@ -51,9 +51,9 @@
   (MAETT (proj MA) nil))
 
 ; The MAETT entry representing a newly fetched instruction.  Argument
-; ISA is the pre-ISA state of the newly fetched instruction.  In other 
+; ISA is the pre-ISA state of the newly fetched instruction.  In other
 ; words, it is the correct ISA state before executing the newly
-; fetched instruction. 
+; fetched instruction.
 (defun new-inst (ISA)
   (declare (xargs :guard (ISA-state-p ISA)))
   (INST 'latch1
@@ -73,7 +73,7 @@
 ; Function step-INST updates the MAETT entry to reflect the change of
 ; the state of the represented instruction.  In this example, we only
 ; have to update the stage field as the instruction advances through the
-; pipeline.  
+; pipeline.
 (defun step-INST (i MA)
   (declare (xargs :guard (and (INST-p i) (MA-state-p MA))))
   (cond ((equal (INST-stg i) 'latch1)
@@ -100,7 +100,7 @@
 ; Function to update an MAETT.  MT-step takes arguments MA and MT,
 ; which are the current MA state and the corresponding MAETT, and it
 ; returns the updated MAETT.  The new MAETT represents the next MA
-; state (MA-step MA sig).   
+; state (MA-step MA sig).
 (defun MT-step (MT MA sig)
   (declare (xargs :guard (and (MAETT-p MT) (MA-state-p MA)
 			      (MA-sig-p sig))))
@@ -111,7 +111,7 @@
 
 
 ; Function to iteratively update a MAETT, MT, for n cycles.  Argument
-; MA and MT are the initial MA state and the corresponding MAETT. 
+; MA and MT are the initial MA state and the corresponding MAETT.
 (defun MT-stepn (MT MA sig-list n)
   (declare (xargs :guard (and (MAETT-p MT) (MA-state-p MA)
 			      (MA-sig-listp sig-list)
@@ -157,7 +157,7 @@
 (defthm MAETT-p-MT-step
     (implies (and (MAETT-p MT) (MA-state-p MA) (MA-sig-p sig))
 	     (MAETT-p (MT-step MT MA sig)))
-  :hints (("Goal" :in-theory (enable MT-step)))) 
+  :hints (("Goal" :in-theory (enable MT-step))))
 
 (verify-guards MT-step)
 
@@ -246,15 +246,15 @@
     (implies (INST-p i) (word-p (INST-result i)))
   :hints (("Goal" :in-theory (enable INST-result ALU-output))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Defintion of INST-at
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; INST-at returns the MAETT entry whose represented instruction is at
-; a particular stage.  
-; 
+; a particular stage.
+;
 ; (INST-at stg MT) is nil if there is no instruction at stage stg in
-; MAETT MT.  If there is one, it returns the corresponding MAETT entry 
-; representing the instruction. 
+; MAETT MT.  If there is one, it returns the corresponding MAETT entry
+; representing the instruction.
 
 (defun trace-inst-at (stg trace)
   (declare (xargs :guard (and (stage-p stg) (INST-listp trace))))
@@ -272,9 +272,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Definition of invariant conditions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Invariant conditions required for the proof of correctness diagram 
-; are defined here.  We needed seven invariant conditions. 
-; 
+; Invariant conditions required for the proof of correctness diagram
+; are defined here.  We needed seven invariant conditions.
+;
 ;       (pc-match-p MT MA)
 ;          The program counter holds the correct value.
 ;       (regs-match-p MT MA)
@@ -282,7 +282,7 @@
 ;       (mem-match-p MT MA)
 ;          The memory is in the correct state.
 ;       (ISA-chain-p MT)
-;          MAETT records correct ISA execution of instructions. 
+;          MAETT records correct ISA execution of instructions.
 ;       (MT-inst-invariant MT MA)
 ;          Each instruction in the pipeline satisfies "instruction invariant".
 ;       (MT-contains-all-insts MT MA)
@@ -320,7 +320,7 @@
 ; The register is updated when an instruction retires.  So the
 ; register file in the MA holds the results of all retired
 ; instruction, but none of the partially executed instructions,
-; including I. 
+; including I.
 (defun trace-regs (trace ISA)
   (declare (xargs :guard (and (INST-listp trace) (ISA-state-p ISA))))
   (if (endp trace)
@@ -338,16 +338,16 @@
   (equal (MT-regs MT) (MA-regs MA)))
 
 ; Memory state does not change in this model.  The memory of the MA state
-; should be equal to that of the initial ISA state. 
+; should be equal to that of the initial ISA state.
 (defun mem-match-p (MT MA)
   (declare (xargs :guard (and (MAETT-p MT) (MA-state-p MA))))
   (equal (MA-mem MA) (ISA-mem (MT-init-ISA MT))))
 
 ; MAETT represents the sequence of instructions as a list, where each
-; element of the list represents an instruction.  Each entry 
+; element of the list represents an instruction.  Each entry
 ; has pre-ISA and post-ISA fields, which store the ISA state before
 ; and after executing the represented instruction.  This ISA
-; states form a sort of chain.  Suppose MT has a list of instruction 
+; states form a sort of chain.  Suppose MT has a list of instruction
 ; entries (I_0 I_1 I_2 ...).  I_0 represents the first instruction to be
 ; executed, I_1 represents the second and so on.  Then following
 ; equations hold:
@@ -355,12 +355,12 @@
 ; (INST-post-ISA I_0) = (INST-pre-ISA I_1)
 ; (ISA-step (INST-pre-ISA I_1)) = (INST-post-ISA I_1)
 ; (INST-post-ISA I_1) = (INST-pre-ISA I_2)
-;   .... 
+;   ....
 ; This relations are checked by the predicate ISA-chain-p.  In other
-; words, ISA-chain-p checks whether the correct sequence of ISA states 
+; words, ISA-chain-p checks whether the correct sequence of ISA states
 ; are stored in the MAETT.  Following picture may help the reader to
 ; understand the relations of pre-ISA and post-ISA.
-; 
+;
 ;   (INST-pre-ISA i_0)
 ;         |  execution of i_0
 ;         v
@@ -384,17 +384,17 @@
 
 ; Each instruction should satisfy some invariant conditions at each
 ; stage of the pipeline.  Mostly, these conditions are about the
-; intermediate values stored in the pipeline latches. 
-; 
+; intermediate values stored in the pipeline latches.
+;
 ; For instance, field latch1-op of latch latch1 in the MA state hould
 ; hold the operand of instruction at stage latch1.  If you see the
 ; definition of inst-latch1-inv, you can find the corresponding
 ; equation as the second conjunct of the body of the definition.
-; 
-; Predicate inst-invariant checks whether instruction entry i and the 
-; corresponding MA state satisfies these stage-dependent invariant. 
+;
+; Predicate inst-invariant checks whether instruction entry i and the
+; corresponding MA state satisfies these stage-dependent invariant.
 ; MT-inst-invariant checks all instructions in the MAETT satisfies
-; inst-invariant. 
+; inst-invariant.
 
 ; The condition that instruction should satisfy at state latch1.
 (defun inst-latch1-inv (i MA)
@@ -433,21 +433,21 @@
   (declare (xargs :guard (and (MAETT-p MT) (MA-state-p MA))))
   (trace-inst-invariant (MT-trace MT) MA))
 
-; If field latch1-valid? of an MA state is on, the corresponding MAETT 
+; If field latch1-valid? of an MA state is on, the corresponding MAETT
 ; contains an entry representing the instruction at latch1.  Similarly
-; for latch2.  
+; for latch2.
 (defun MT-contains-all-insts (MT MA)
   (declare (xargs :guard (and (MAETT-p MT) (MA-state-p MA))))
   (and (implies (b1p (latch1-valid? (MA-latch1 MA)))
 		(inst-at 'latch1 MT))
        (implies (b1p (latch2-valid? (MA-latch2 MA)))
 		(inst-at 'latch2 MT))))
-       
+
 ; This pipelined machine executes instructions in program order.
-; The instruction at latch1 is younger than the instruction at latch2, 
+; The instruction at latch1 is younger than the instruction at latch2,
 ; and the instruction at latch2 is younger than any retired
 ; instructions.  This fact is checked by MT-in-order-p, assuming that
-; instructions are recorded in program order in a MAETT. 
+; instructions are recorded in program order in a MAETT.
 (defun trace-in-order-p (trace)
   (declare (xargs :guard (INST-listp trace)))
   (if (endp trace)
@@ -482,6 +482,6 @@
 
 (deftheory non-rec-invariant-def
     (non-rec-functions (theory 'invariant-def) world))
-			     
+
 (in-theory (disable non-rec-invariant-def))
 

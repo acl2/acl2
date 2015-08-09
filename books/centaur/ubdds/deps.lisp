@@ -118,7 +118,7 @@
                                       (ubdd-deps (cdr x))))))
          :hints(("Goal" :in-theory (enable ubdd-deps)))
          :rule-classes ((:rewrite :backchain-limit-lst 0))))
-  
+
 
 (local (in-theory (disable qcons nth)))
 

@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 ; eric smith, david russinoff, with suggestions by matt kaufmann
-; amd, june 2001 
+; amd, june 2001
 
 ;this file was previously called irepsproofs.lisp
 
@@ -23,8 +23,8 @@
 (local (in-theory (enable bvecp-forward)))
 
 ;;encoding of floating-point numbers with implicit msb
-;;bit vectors of length p+q, consisting of 1-bit sign field, 
-;;q-bit exponent field (bias = 2**(q-1)-1), and (p-1)-bit 
+;;bit vectors of length p+q, consisting of 1-bit sign field,
+;;q-bit exponent field (bias = 2**(q-1)-1), and (p-1)-bit
 ;;significand field:
 ;; p must be > 1
 
@@ -164,7 +164,7 @@
 
 ;some of the rules below may be bad because they are put into both the
 ; forward-chaining and type-prescription rule classes, causing them
-; not to always work. 
+; not to always work.
 
 ;!! rc
 (defthm bvecp-isigf-forward-3
@@ -237,10 +237,10 @@
                 (integerp p)
                 (> p 1)
                 (integerp q)
-                (> q 0))  
+                (> q 0))
            (equal (expo (ndecode x p q))
                   (- (iexpof x p q) (bias q))))
-  :hints (("goal" :in-theory (e/d (ndecode nencodingp 
+  :hints (("goal" :in-theory (e/d (ndecode nencodingp
                                            expt-split
                                            expt-minus
                                            isigf
@@ -383,9 +383,9 @@
                 (> q 0))
            (equal (expo (idecode x p q))
                   (cond ((nencodingp x p q)
-                         (- (iexpof x p q) (bias q)))         
+                         (- (iexpof x p q) (bias q)))
                         ((dencodingp x p q)
-                         (+ 2 (- p) (- (bias q)) (expo (isigf x p)))))))         
+                         (+ 2 (- p) (- (bias q)) (expo (isigf x p)))))))
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable idecode iencodingp)
                               '()))))
@@ -415,7 +415,7 @@
                    (+ (* -1 (BIAS Q))
                       (EXPT 2 (1- Q))
                       (EXPO (ISIGF X P)))))
-  :hints (("Goal" :in-theory (enable ddecode dencodingp bias)))))     
+  :hints (("Goal" :in-theory (enable ddecode dencodingp bias)))))
 
 (defthm drepp-ddecode
   (implies (and (dencodingp x p q)
@@ -516,7 +516,7 @@
    :hints (("Goal" :in-theory (enable exactp)
             :use ( sig-lower-bound)))))
 
-(local 
+(local
  (defthm nencodingp-nencode-2
    (IMPLIES (AND (NREPP X P Q)
                  (INTEGERP P)
@@ -545,8 +545,8 @@
                  (INTEGERP Q)
                  (< 0 Q))
             (< 0 (IEXPOF (NENCODE X P Q) P Q)))
-   :hints (("Goal"  :in-theory (e/d ( nencode 
-                                      iexpof 
+   :hints (("Goal"  :in-theory (e/d ( nencode
+                                      iexpof
                                       bvecp
                                       nrepp
                                       bits-tail) (sig-lower-bound sig-upper-bound))
@@ -595,7 +595,7 @@
 
 (local (in-theory (disable expt-compare))) ;yuck
 
-(local 
+(local
  (defthmd dencodingp-dencode-hack-4
    (implies (and (drepp x p q)
                  (integerp p)
@@ -605,14 +605,14 @@
             (bvecp (* (SIG X)
                       (EXPT 2 (+ -3 P (EXPO X) (EXPT 2 (1- Q)))))
                    (- p 1)))
-           
+
    :hints (("Goal" :in-theory (set-difference-theories (enable dencodingp drepp dencode
                                                                iexpof isigf bias exactp
                                                                expt-split
                                                                bvecp)
                                                        '(abs EXPT-COMPARE sig-upper-bound))
             :use (dencodingp-dencode-hack-3
-                  sig-upper-bound 
+                  sig-upper-bound
                   (:instance expt-weak-monotone
                              (n (+ -3 P (EXPO X) (EXPT 2 (1- Q))))
                              (m (- p 2))))))))
@@ -625,23 +625,23 @@
                 (> q 0)
                 )
            (dencodingp (dencode x p q) p q) )
-  :hints (("Goal" :in-theory (e/d (exactp 
-                                     dencodingp 
-                                     drepp 
+  :hints (("Goal" :in-theory (e/d (exactp
+                                     dencodingp
+                                     drepp
                                      dencode
-                                     iexpof 
-                                     isigf 
+                                     iexpof
+                                     isigf
                                      bias
                                      bits-tail
-                                     
+
                                      bvecp
                                      bvecp-bits-0
                                      )
                                   (sig-upper-bound
                                    BITS-SHIFT
                                    BITS-SPLIT-AROUND-ZERO))
-           :use (sig-upper-bound 
-                 sig-lower-bound 
+           :use (sig-upper-bound
+                 sig-lower-bound
                  dencodingp-dencode-hack-4
                  (:instance expt-strong-monotone
                             (n (- p 1))
@@ -682,7 +682,7 @@
                   (- p 1)))
   :hints (("goal" :in-theory (set-difference-theories
                               (enable bvecp)
-                              '(nencodingp-nencode-2-1 
+                              '(nencodingp-nencode-2-1
                                 sig-upper-bound))
            :use (sig-lower-bound sig-upper-bound nencodingp-nencode-2-1)))
   :rule-classes nil)
@@ -697,8 +697,8 @@
                   (if (equal (sgn x) 1) 0 1)))
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable isgnf nencode nrepp bvecp)
-                              '(nencodingp-nencode-2-1 
-                                bitn-bvecp-0 
+                              '(nencodingp-nencode-2-1
+                                bitn-bvecp-0
                                 sig-upper-bound
                                                         ))
            :use (nencodingp-nencode-2-1
@@ -719,11 +719,11 @@
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable isgnf dencode drepp bvecp bias)
                               '(nencodingp-nencode-2-1 bitn-bvecp-0))
-           :use (dencodingp-dencode-hack-4 
+           :use (dencodingp-dencode-hack-4
                  (:instance expt-strong-monotone
                             (n (- p 1))
                             (m (+ p q -1)))
-                 (:instance bitn-bvecp-0 
+                 (:instance bitn-bvecp-0
                             (m q)
                             (x (* (SIG X)
                                   (EXPT 2 (+ -3 P (EXPO X) (EXPT 2 (1- Q))))))
@@ -737,9 +737,9 @@
                 (> q 0))
            (equal (isgnf (iencode x p q) p q)
                   (if (equal (sgn x) 1) 0 1)))
-  
+
   :hints (("Goal" :in-theory (enable irepp iencode))))
-  
+
 (defthm isigf-nencode-1
   (implies (and (nrepp x p q)
                 (integerp p)
@@ -777,7 +777,7 @@
                 (> q 0))
            (equal (isigf (dencode x p q) p)
                   (* (sig x) (expt 2 (+ -2 p (expo x) (bias q))))))
-  
+
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable isigf dencode drepp bias bits-tail lead-bit-0)
                               '(BITS-SHIFT))
@@ -792,7 +792,7 @@
            (equal (iexpof (nencode x p q) p q)
                   (+ (expo x) (bias q))))
   :hints (("Goal" :in-theory (enable iexpof nencode nrepp bvecp
-                                     bits-tail)  
+                                     bits-tail)
            :use (isigf-nencode-1))))
 
 (defthm iexpof-dencode

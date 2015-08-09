@@ -23,13 +23,13 @@
 ; types it produces the equivalent object of the type indicated by the
 ; function's name.
 
-; 209/16          rationalp   BRAT  
+; 209/16          rationalp   BRAT
 ; "B1101.0001"    stringp     BSTR
 ; "b1101.0001"    stringp
 ; B1101.0001      symbolp     BSYM
 
 ; In addition, negatives may be written in the more or less obvious ways:
-;-209/16          rationalp   BRAT  
+;-209/16          rationalp   BRAT
 ;"-B1101.0001"    stringp     BSTR
 ;"-b1101.0001"    stringp
 ;-B1101.0001      symbolp     BSYM
@@ -121,14 +121,14 @@
                                    (cons (if (= (mod x 2) 1) #\1 #\0) lst)))))
 
 (defun rat-to-str2 (lst place e)
-  (declare (xargs :mode :program))  
+  (declare (xargs :mode :program))
   (cond ((= place e) (cons #\. lst))
         ((null lst)
          (cons #\0 (rat-to-str2 nil (1+ place) e)))
         (t (cons (car lst) (rat-to-str2 (cdr lst) (1+ place) e)))))
 
 (defun rat-to-str1 (m e)
-  (declare (xargs :mode :program))  
+  (declare (xargs :mode :program))
   (let* ((lst (nat-to-binary-charlist m nil))
          (place (- (length lst))))
     (cond ((< e place)
@@ -136,7 +136,7 @@
           (t (rat-to-str2 lst place e)))))
 
 (defun bstr (x)
-  (declare (xargs :mode :program))  
+  (declare (xargs :mode :program))
   (let* ((rat (brat x))
          (abs-rat (abs rat))
          (sgn-rat (if (< rat 0) -1 +1)))

@@ -14,7 +14,7 @@ satisfies the spurious correctness criterion.
 ||#
 
 ;; The machine has a halt flag and any other component the programmer
-;; cares about.  
+;; cares about.
 
 (defun not-halt-flg (s) (first s))
 (defun program-component (s) (second s))
@@ -23,8 +23,8 @@ satisfies the spurious correctness criterion.
 ;; I just define next this way.  Note that it is easy to do variants
 ;; of this, for example defining (next s) to be just nil.
 
-(defun next (s) 
-  (if (not-halt-flg s) nil 
+(defun next (s)
+  (if (not-halt-flg s) nil
     s))
 
 ;; Here is the definition of halting.
@@ -46,7 +46,7 @@ satisfies the spurious correctness criterion.
 ;; program component of interest is the factorial then the modify
 ;; function might say that the factorial is in some memory location, I
 ;; don't care.  The only thing is that this is not the end of the
-;; program so the halt-flg is not set by modify yet.  
+;; program so the halt-flg is not set by modify yet.
 
 (encapsulate
  (((pre *) => *)

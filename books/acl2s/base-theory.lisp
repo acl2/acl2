@@ -17,11 +17,11 @@
 ; due to the algorithm not being as general as it can be. See the
 ; acl2s-issues file. Second, I made one pass through the
 ; documentation of ACL2-built-ins. I should check again and I
-; should check functions defined in the books we load 
+; should check functions defined in the books we load
 
 (sig append ((listof :a) (listof :a)) => (listof :a))
 (sig acl2::rev ((listof :a)) => (listof :a))
-(sig nth (nat (listof :a)) => :a 
+(sig nth (nat (listof :a)) => :a
      :satisfies (< x1 (len x2)))
 (sig acl2::fix-true-list ((listof :a)) => (listof :a))
 (sig last ((listof :a)) => (listof :a))
@@ -87,13 +87,13 @@
   :rule-classes ((:rewrite)))
 
 (defthm numerator-1-decreases
-  (implies (rationalp n) 
+  (implies (rationalp n)
            (< (numerator (- n 1))
               (numerator n)))
-  :hints (("goal" 
-           :use ((:instance ACL2::|(* r (denominator r))| 
+  :hints (("goal"
+           :use ((:instance ACL2::|(* r (denominator r))|
                   (acl2::r n))
-                 (:instance ACL2::|(* r (denominator r))| 
+                 (:instance ACL2::|(* r (denominator r))|
                   (acl2::r (- n 1)))
                  )
            :in-theory (disable ACL2::|(* r (denominator r))|)))

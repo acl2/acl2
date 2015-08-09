@@ -125,7 +125,7 @@
                     (:free (x) (rep-shr x))
                     (:free (x) (rep-onr x))
                     (:free (x) (rep-thf x))))))
-                   
+
 
 ;;;; END WEB proof -- labeling, stuttering, and matching ;;;;
 

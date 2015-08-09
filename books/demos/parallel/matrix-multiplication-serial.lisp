@@ -11,7 +11,7 @@
 
 (defun multiply-matrices-aux (A B)
   (declare (xargs :mode :program))
-  (if (endp A) 
+  (if (endp A)
       nil
     (cons (multiply-matrices-row (car A) B)
           (multiply-matrices-aux (cdr A) B))))

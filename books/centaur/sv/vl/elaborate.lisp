@@ -84,7 +84,7 @@
   :fnname-template <type>-elaborate)
 
 
-  
+
 (local (in-theory (disable cons-equal)))
 
 (fty::defvisitor-multi vl-elaborate
@@ -96,7 +96,7 @@
               (list reclimit :order :count 0))
     :renames ((vl-expr vl-expr-elaborate-aux)
               (vl-datatype vl-datatype-elaborate-aux))
-    
+
     :short "Resolve constant expressions, parameter values, and datatypes."
     :long "
 <p>In the previous version of VL, we used to do a series of transforms that:</p>
@@ -178,7 +178,7 @@ expression.  This information is stored in the svexconf before translating the
 expression with @(see vl-expr-to-svex).</p>
 
 ")
-  
+
   (fty::defvisitors :template elaborate
     :dep-types (vl-fundecl)
     :order-base 1
@@ -380,11 +380,11 @@ expression with @(see vl-expr-to-svex).</p>
               (list reclimit 0 (vl-expr-count x) 9))
     :returns (mv (ok)
                  (constantp)
-                 (warnings vl-warninglist-p) 
+                 (warnings vl-warninglist-p)
                  (new-x vl-expr-p)
                  (svex sv::svex-p)
                  (new-conf vl-svexconf-p))
-                 
+
     (b* (((mv ok warnings x conf)
           (vl-expr-elaborate x conf :reclimit reclimit))
          ((unless ok) (mv nil nil warnings x (svex-x) conf))
@@ -398,7 +398,7 @@ expression with @(see vl-expr-to-svex).</p>
     :measure (acl2::nat-list-measure
               (list reclimit 0 (vl-expr-count x) 10))
     :returns (mv (ok)
-                 (warnings vl-warninglist-p) 
+                 (warnings vl-warninglist-p)
                  (new-x vl-expr-p)
                  (new-conf vl-svexconf-p))
     (b* (((mv ok ?constantp warnings new-x ?svex new-conf)
@@ -411,13 +411,13 @@ expression with @(see vl-expr-to-svex).</p>
     :measure (acl2::nat-list-measure
               (list reclimit 0 (vl-expr-count x) 11))
     :returns (mv (ok)
-                 (warnings vl-warninglist-p) 
+                 (warnings vl-warninglist-p)
                  (new-x vl-expr-p)
                  (new-conf vl-svexconf-p))
     (b* (((mv ok warnings new-x ?svex new-conf)
           (vl-expr-resolve-to-constant x conf :reclimit reclimit)))
       (mv ok warnings new-x new-conf)))
-    
+
   (define vl-expr-resolve-to-constant-and-bind-param
     ((name vl-scopeexpr-p)
      (expr vl-expr-p)
@@ -429,7 +429,7 @@ expression with @(see vl-expr-to-svex).</p>
      ((reclimit natp) '1000))
     :measure (acl2::nat-list-measure
               (list reclimit 0 (vl-expr-count expr) 20))
-    
+
     :returns (mv (ok)
                  (warnings vl-warninglist-p)
                  (new-nameconf vl-svexconf-p)
@@ -450,7 +450,7 @@ expression with @(see vl-expr-to-svex).</p>
                     :params (hons-acons name svex nameconf.params)))
          (exprconf (if same-scope nameconf exprconf)))
       (mv t warnings nameconf exprconf)))
-      
+
 
 
 
@@ -472,7 +472,7 @@ expression with @(see vl-expr-to-svex).</p>
                  (new-type vl-datatype-p)
                  (new-nameconf vl-svexconf-p)
                  (new-typeconf vl-svexconf-p))
-    
+
     (b* (((vl-svexconf nameconf) (vl-svexconf-fix nameconf))
          ((vl-svexconf typeconf) (vl-svexconf-fix typeconf))
          (name (vl-scopeexpr-fix name))
@@ -566,7 +566,7 @@ expression with @(see vl-expr-to-svex).</p>
 
          ((vl-paramdecl decl) hidstep.item))
       ;; Note: We're potentially in a new scope here, so everything we do needs
-      ;; to involve just the hidstep.ss and no 
+      ;; to involve just the hidstep.ss and no
       (vl-paramtype-case decl.type
         :vl-typeparam
         (mv nil
@@ -658,9 +658,9 @@ expression with @(see vl-expr-to-svex).</p>
                  (list* 'vl-expr-elaborate
                         ok (with-local-ps (vl-pp-expr new-x))
                         (and warnings (with-local-ps (vl-print-warnings warnings)))))))
-                      
-                      
-                      
+
+
+
 
 ||#
 
@@ -725,7 +725,7 @@ expression with @(see vl-expr-to-svex).</p>
           (mv (and ok1 ok2) warnings new-x conf))
 
         ;; inside, stream, tagged, pattern
-        
+
         :otherwise
         (vl-expr-elaborate-aux x conf :reclimit reclimit))))
 
@@ -828,7 +828,7 @@ expression with @(see vl-expr-to-svex).</p>
          ((when (eq (tag ref.item) :vl-paramdecl))
           (b* (((vl-paramdecl item) ref.item))
             (vl-paramtype-case item.type
-              :vl-typeparam 
+              :vl-typeparam
               (if item.type.default
                   (b* ((same-scope (equal conf.ss ref.ss))
                        (declconf (if same-scope conf (make-vl-svexconf :ss ref.ss)))
@@ -893,4 +893,4 @@ expression with @(see vl-expr-to-svex).</p>
   :template elaborate
   :type vl-package
   :renames ((vl-package vl-package-elaborate-aux)))
-              
+

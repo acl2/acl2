@@ -130,8 +130,8 @@
 	  (equal (o-first-expt (o* a b))
 		 (o+ (o-first-expt a) (o-first-expt b)))))
 
-(encapsulate 
- 
+(encapsulate
+
  ;this encapsulate is here so that o*-o-first-expt-< doesn't interfere with
  ;any other theorems in the book
 
@@ -178,13 +178,13 @@
   (implies (and (o-p a)
                 (o-p b))
            (equal (equal a (o* a b))
-                  (or (equal a 0) 
+                  (or (equal a 0)
                       (equal b 1))))
-  :hints (("goal" 
+  :hints (("goal"
            :cases ((equal a 0)
                    (equal b 0)
                    (equal b 1)))))
-    
+
 (defthm |(ab)c = a(bc)|
   (implies (and (o-p a)
 		(o-p b)
@@ -214,7 +214,7 @@
 		(o-p a)
 		(o-p b))
 	   (equal (o-rst (o* a b))
-		  (if (o-infp b) 
+		  (if (o-infp b)
 		      (o* a (o-rst b))
 		    (o-rst a)))))
 
@@ -227,18 +227,18 @@
 		(o-p c))
 	   (o< (o-first-expt (o* a b))
 	       (o-first-expt (o* a c))))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :trigger-terms ((o< (o-first-expt b)
                                       (o-first-expt c))))
 		 (:rewrite :match-free :all)))
 
-(encapsulate 
+(encapsulate
 
 ; This encapsulate is here to avoid the use of subgoal hints.
 
  nil
 
- (local 
+ (local
   (defthm |a(b + c) = ab + ac helper1|
     (implies (and (o< (o-first-expt c) (o-first-expt b))
                   (implies (and (o-p a) (o-p (o-rst b)) (o-p c))
@@ -259,8 +259,8 @@
   (defthm |a(b + c) = ab + ac helper2|
    (implies (and (o<= (o-first-expt c) (o-first-expt b))
                  (o<= (o-first-expt b) (o-first-expt c))
-                 (o-p a) 
-                 (o-p b) 
+                 (o-p a)
+                 (o-p b)
                  (o-p c))
             (equal (o* a (o+ b c))
                    (o+ (o* a b) (o* a c))))
@@ -272,7 +272,7 @@
     (cond ((equal a 0)
 	   (list a b c))
 	  ((and (o-infp b)
-		(o< (o-first-expt c) 
+		(o< (o-first-expt c)
 		    (o-first-expt b)))
 	   (o*-ind-1 a (o-rst b) c))
 	  ((o< (o-first-expt b)
@@ -300,7 +300,7 @@
                            (|a <= b  =>  a+(b-a) = b|
 			       |a(b + c) = ab + ac|
 			       o*))
-	   :use ((:instance |a(b + c) = ab + ac| 
+	   :use ((:instance |a(b + c) = ab + ac|
 			    (b 1)
 			    (c (o- b 1)))
 		 (:instance |a <= b  =>  a+(b-a) = b|
@@ -316,7 +316,7 @@
 	   :in-theory (enable o<))))
 
 (encapsulate
- 
+
  ;this encapsulate is here so that the lemmas used to prove
  ;|(a < b) & ~(c = 0)  <=>  ca < cb| don't slow down the
  ;rest of the book
@@ -349,7 +349,7 @@
                      (o< a b))))
     :rule-classes ((:rewrite :match-free :all))))
 
- (defthm |(a < b) & ~(c = 0)  <=>  ca < cb| ;a < b  =>  ca < cb    
+ (defthm |(a < b) & ~(c = 0)  <=>  ca < cb| ;a < b  =>  ca < cb
    (implies (and (o-p a)
                  (o-p b)
                  (o-p c))
@@ -429,7 +429,7 @@
            (equal (equal (o* a b) 1)
                   (and (equal a 1)
                        (equal b 1))))
-  :hints (("goal" 
+  :hints (("goal"
            :use |~(a=0) & b>1  <=>  a < ab|
            :in-theory (e/d (o<) (|~(a=0) & b>1  <=>  a < ab|)))))
 
@@ -460,7 +460,7 @@
     (implies (and (o-infp b)
 		  (o-p a)
 		  (o-p b))
-	     (o-p (make-ord (o+ (o-first-expt a) (o-first-expt b)) 
+	     (o-p (make-ord (o+ (o-first-expt a) (o-first-expt b))
                             (o-first-coeff b)
                             (o* a (o-rst b)))))
     :hints (("goal"
@@ -489,7 +489,7 @@
                     (o-first-expt (o-first-expt b))))
            (equal (o* a b)
                   b))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
 		  :trigger-terms ((o< (o-first-expt (o-first-expt a))
 				      (o-first-expt (o-first-expt b)))))))
 
@@ -629,6 +629,6 @@
 (defthm o*-o-infp-def
   (implies (not (equal a 0))
            (equal (o* a (make-ord b1 b2 b3))
-                  (make-ord (o+ (o-first-expt a) b1) 
+                  (make-ord (o+ (o-first-expt a) b1)
 			    b2
 			    (o* a b3)))))

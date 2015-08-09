@@ -31,7 +31,7 @@ but for now, we're just keeping the theorems that we need.
 						   (denominator (/ x y))
 						   y))
 		  (nonnegative-integer-quotient x y)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use (:instance quotient-cancellation
 			   (z (* (numerator (/ x y)) (denominator (/ x y)))))
 	   :in-theory (disable quotient-cancellation))))
@@ -79,14 +79,14 @@ but for now, we're just keeping the theorems that we need.
 						   y))
 		  (nonnegative-integer-quotient (numerator (/ x y))
 						(denominator (/ x y)))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance quotient-cancellation
 			    (x (numerator (/ x y)))
 			    (y (denominator (/ x y)))
 			    (z (* (denominator (/ x y)) x)))
 		 (:instance numer-denom-lemma))
 	   :in-theory (disable quotient-cancellation numer-denom-lemma))))
-	   
+
 (defthm quotient-numer-denom
   (implies (and (integerp x) (< 0 x) (integerp y) (< 0 y))
 	   (equal (nonnegative-integer-quotient (numerator (/ x y))
@@ -94,9 +94,9 @@ but for now, we're just keeping the theorems that we need.
 		  (nonnegative-integer-quotient x y)))
   :hints (("Goal" :use ((:instance quotient-numer-denom-lemma)
 			(:instance quotient-numer-denom-lemma3))
-	   :in-theory (disable quotient-numer-denom-lemma 
+	   :in-theory (disable quotient-numer-denom-lemma
 			       quotient-numer-denom-lemma3))))
-				   
+
 (defthm remainder-theorem-1
   (implies (and (integerp x) (< 0 x) (integerp y) (< 0 y))
 	   (equal (+ (* (truncate x y) y) (rem x y)) x)))
@@ -109,7 +109,7 @@ but for now, we're just keeping the theorems that we need.
 (defthm remainder-theorem-2
   (implies (and (integerp x) (< 0 x) (integerp y) (< 0 y))
 	   (< (rem x y) y)))
-	  
+
 (defthm quotient-lower-bound
   (implies (and (integerp x) (< 0 x) (integerp y) (< 0 y))
 	   (<= (nonnegative-integer-quotient x y)
@@ -138,9 +138,9 @@ but for now, we're just keeping the theorems that we need.
   (implies (and (integerp x) (< 0 x) (integerp y) (< 0 y))
 	   (<= 0 (rem x y)))
   :rule-classes (:linear :rewrite))
-  
+
 (defthm rem-upper-bound
   (implies (and (integerp x) (< 0 x) (integerp y) (< 0 y))
 	   (< (rem x y) y))
   :rule-classes (:linear :rewrite))
-  
+

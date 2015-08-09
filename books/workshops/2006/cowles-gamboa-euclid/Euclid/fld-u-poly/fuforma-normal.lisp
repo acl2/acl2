@@ -50,7 +50,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -95,7 +95,7 @@ To certify this book, first, create a world with the following packages:
 
 (defun ordenadop (p)
   (and (polinomiop p)
-       (or (nulop p) 
+       (or (nulop p)
 	   (and (not (FUMON::nulop (primero p)))
 		(termino-mayor-termino-principal (primero p) (resto p))
 		(ordenadop (resto p))))))
@@ -107,7 +107,7 @@ To certify this book, first, create a world with the following packages:
 ;;; Suma un monomio a un polinomio
 
 (defun +M (m p)
-  (cond ((and (not (monomiop m)) (not (polinomiop p))) 
+  (cond ((and (not (monomiop m)) (not (polinomiop p)))
          (nulo))
         ((not (polinomiop p))
          (list m))
@@ -141,7 +141,7 @@ To certify this book, first, create a world with the following packages:
 ;; 	((nulop p)
 ;; 	 (+M m (nulo)))
 ;; 	((TER::= (termino m) (termino (primero p)))
-;; 	 (let ((c (COE::+ (coeficiente m) (coeficiente (primero p))))) 
+;; 	 (let ((c (COE::+ (coeficiente m) (coeficiente (primero p)))))
 ;; 	   (if (COE::= c (COE::nulo))
 ;; 	       (resto p)
 ;; 	     (+M (MON::+ (primero p) m) (resto p)))))
@@ -164,7 +164,7 @@ To certify this book, first, create a world with the following packages:
 	((nulop p)
 	 (+M m (nulo)))
 	((FUTER::= (termino m) (termino (primero p)))
-	 (let ((c (FLD::+ (coeficiente m) (coeficiente (primero p))))) 
+	 (let ((c (FLD::+ (coeficiente m) (coeficiente (primero p)))))
 	   (if (FLD::= c (FLD::0_f))
 	       (resto p)
 	       (+M (FUMON::+ (primero p) m) (resto p)))))
@@ -174,7 +174,7 @@ To certify this book, first, create a world with the following packages:
 	 (+M (primero p) (+-monomio m (resto p))))))
 
 ;;; Clausura
- 
+
 (defthm polinomiop-+-monomio
   (polinomiop (+-monomio m p))
   :rule-classes (:type-prescription :rewrite))
@@ -363,7 +363,7 @@ To certify this book, first, create a world with the following packages:
 ;; 		  (+-monomio m2 (+-monomio m1 p)))))
 
 (defthm |t(m1) = t(mp(p)) => m1 +Mo (m2 +Mo p) =P m2 +Mo (m1 +Mo p)|
-  (implies (and (monomiop (double-rewrite m1)) 
+  (implies (and (monomiop (double-rewrite m1))
 		(ordenadop (double-rewrite p))
 		(equal (termino m1) (termino (car p))))
 	   (=P (+-monomio m1 (+-monomio m2 p))

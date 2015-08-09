@@ -23,11 +23,11 @@ Here is our specification of the "interesting set of functions":
 
 (encapsulate (((f *) => *))
 
-             (local 
+             (local
               (defun f (x)
                 (declare (ignore x))
                 0))
-             
+
              (defthm f-is-jvm-int-valued
                (and (integerp (f x))
                     (>= (f x) (* -1 (expt 2 31)))
@@ -154,11 +154,11 @@ Sun Jun 30 23:21:06 2002
 
 (encapsulate (((f *) => *))
 
-             (local 
+             (local
               (defun f (x)
                 (declare (ignore x))
                 0))
-             
+
              (defthm f-is-jvm-int-valued
                (and (integerp (f x))
                     (>= (f x) (* -1 (expt 2 31)))
@@ -278,7 +278,7 @@ Sun Jun 30 23:21:06 2002
 ; universal computes our arbitrary int-valued function f.
 
 (defun universal-schedule (x)
-  (universal-sched 0 (int-fix-nat (f x))))  
+  (universal-sched 0 (int-fix-nat (f x))))
 
 (defthm universal-computes-f
   (equal (top
@@ -313,7 +313,7 @@ Sun Jun 30 23:21:06 2002
   (and (integerp (int-fix (factorial n)))
        (>= (int-fix (factorial n)) (* -1 (expt 2 31)))
        (<= (int-fix (factorial n)) (1- (expt 2 31))))
-  :rule-classes 
+  :rule-classes
   ((:linear :corollary
             (>= (int-fix (factorial n)) (* -1 (expt 2 31))))
    (:linear :corollary

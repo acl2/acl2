@@ -37,7 +37,7 @@
       (translate term t t t 'top-level (w state) state)
       (declare (ignore erp))
       (mv expr state)))
-    (t 
+    (t
      (let ((expr (caddr (car symsim-ans))))
        (mv expr state))))))
 |# ;|
@@ -48,10 +48,10 @@
   (mv-let
    (erp expr state)
    (translate expr t t t 'top-level (w state) state)
-   (cond 
+   (cond
     (erp
      (mv (er hard 'smt-rewrite-hyp "ERROR: Unable to translate SMT expression: ~
-                               ~x0~%" 
+                               ~x0~%"
              expr)
          formula
          state))
@@ -60,7 +60,7 @@
       (expr state)
       (smt-symsim expr nil nil state)
       (cond
-       ((quotep expr) 
+       ((quotep expr)
         (mv expr formula state))
        ((quotep formula)
         (mv-let
@@ -95,30 +95,30 @@
        ;; We've reduced the formula to true
        (mv t nil nil state))
       ((quotep expr)
-       (cond 
+       (cond
         ((unquote expr)
          ;; We've reduced a literal to false, so we don't need it
-         (smt-rewrite-hyp-list (cdr hyp-list) formula raw-bv-theory-name 
+         (smt-rewrite-hyp-list (cdr hyp-list) formula raw-bv-theory-name
                                acc state))
         (t
          ;; We've reduced a literal to true, so the clause is true
          (mv t nil nil state))))
       (t
-       (smt-rewrite-hyp-list (cdr hyp-list) 
+       (smt-rewrite-hyp-list (cdr hyp-list)
                              formula
-                             raw-bv-theory-name 
-                             (cons expr acc) 
+                             raw-bv-theory-name
+                             (cons expr acc)
                              state)))))))
 
 (defun smt-rewrite (hyp-list formula raw-bv-theory-name state)
   (mv-let
    (erp formula state)
    (translate formula t t t 'top-level (w state) state)
-   (cond 
+   (cond
     (erp
      (mv nil
          (er hard 'smt-rewrite "ERROR: Unable to translate SMT expression: ~
-                               ~x0~%" 
+                               ~x0~%"
              formula)
          state))
     (t
@@ -140,13 +140,13 @@
           (t
            (mv-let
             (formula state)
-            (smt-symsim formula 
+            (smt-symsim formula
                         nil
                         `(("Goal" :in-theory (theory (quote ,raw-bv-theory-name))))
                         state)
             (mv nil (cons formula hyp-list) state))))))))))))
-         
-                                                                
+
+
 (defun smt-sat-add-hyp-list (hyp-list $sat $sat-plus state)
   (declare (xargs :stobjs ($sat $sat-plus)))
   (cond
@@ -161,7 +161,7 @@
 (defun smt-solve1 (hyp-list formula raw-bv-theory-name $sat $sat-plus state)
   (declare (xargs :stobjs ($sat $sat-plus)))
   (mv-let
-   (solved hyp-list state) 
+   (solved hyp-list state)
    (time$ (smt-rewrite hyp-list formula raw-bv-theory-name state))
    (cond
     (solved
@@ -215,15 +215,15 @@
    (cond
     ((and (not (equal ans 'sat)) (not (equal ans 'unsat)))
      (write-msg "INTERNAL ERROR" msg-file $sat $sat-plus state))
-    ((and (equal ans 'sat) 
+    ((and (equal ans 'sat)
           (equal expected-ans 'unsat))
-     (write-msg "SAT---ERROR: Expected unsat" 
+     (write-msg "SAT---ERROR: Expected unsat"
                 msg-file $sat $sat-plus state))
-    ((and (equal ans 'sat) 
+    ((and (equal ans 'sat)
           (equal expected-ans 'sat))
      (write-msg "SAT---as expected."
                 msg-file $sat $sat-plus state))
-    ((and (equal ans 'sat) 
+    ((and (equal ans 'sat)
           (equal expected-ans 'unknown))
      (write-msg "SAT"
                 msg-file $sat $sat-plus state))
@@ -244,11 +244,11 @@
                 msg-file $sat $sat-plus state)))))
 
 (defmacro smt-check (hyp-list formula extrafuns raw-bv-theory-name expected-ans msg-file)
-  `(smt-check-fn (quote ,hyp-list) 
+  `(smt-check-fn (quote ,hyp-list)
                  (quote ,formula)
                  (quote ,extrafuns)
                  (quote ,raw-bv-theory-name)
                  (quote ,expected-ans)
-                 ,msg-file 
+                 ,msg-file
                  $sat $sat-plus state))
 

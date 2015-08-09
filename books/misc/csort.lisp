@@ -205,7 +205,7 @@
          (if (zp n) nil x))
   :hints (("Goal" :expand (REPEAT 1 X))))
 
-; Chapter 2: All-gte, Orderings, etc 
+; Chapter 2: All-gte, Orderings, etc
 
 (defun data (pair)
   (cdr pair))

@@ -10,7 +10,7 @@
 
  (local (defun step-generic (in)
           in))
- 
+
  (local (defun prop-generic (n in)
           (declare (ignore n in))
           t))

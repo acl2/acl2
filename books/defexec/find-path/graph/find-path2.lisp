@@ -2,7 +2,7 @@
 ; J Strother Moore
 
 ; This file is an ACL2 book.  To certify it, execute:
-; 
+;
 ; (certify-book "find-path2")
 
 ; This file is a cleaned up version of the file find-path1.lisp, which
@@ -32,7 +32,7 @@
 ;    I say ``necessary'' because you may well need other list processing
 ;    lemmas, depending on which graph theory lemmas you invent.  But at
 ;    least it is a start.
- 
+
 ; ---------------------------------------------------------------------------
 ; Getting Started
 
@@ -156,7 +156,7 @@
 
 ; (no events)
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 0
 
       (defthm pathp-append
@@ -198,7 +198,7 @@
            (path-from-to (find-path a b g) a b g))
   :rule-classes nil)
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 1
 
 (defun simple-pathp (p g)
@@ -222,7 +222,7 @@
 
    (defthm car-simplify-path
      (equal (car (simplify-path p)) (car p)))
- 
+
          (defthm chop-iff-consp
            (implies (member e p)
                     (consp (chop e p))))
@@ -263,7 +263,7 @@
                 (path-from-to (simplify-path p) a b g)))
   :rule-classes nil)
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 2
 
 (defun find-all-next-steps (c stack b g)
@@ -305,7 +305,7 @@
               (implies (and (not (member e stack))
                             (not (equal e b))
                             (member e d))
-                       (subsetp (find-all-next-steps (neighbors e g) 
+                       (subsetp (find-all-next-steps (neighbors e g)
                                                      (cons e stack) b g)
                                 (find-all-next-steps d stack b g))))
 
@@ -324,7 +324,7 @@
            (implies (and (subsetp a b)
                          (member e a))
                     (member e b)))
-      
+
       (defthm Crux-cdr
         (implies (and (consp c)
                       (member p (find-all-next-steps (cdr c) stack b g)))
@@ -364,7 +364,7 @@
                            (p (cdr p))
                            (g g)))))
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 3
 
    (defthm find-all-next-steps-v-find-next-step
@@ -376,7 +376,7 @@
        (not (equal (find-path a b g) 'failure)))
   :rule-classes nil)
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; The Main Theorem
 
 (defthm Main

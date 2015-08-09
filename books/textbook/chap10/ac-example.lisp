@@ -2,7 +2,7 @@
 
 (in-package "ACL2")
 
-(encapsulate 
+(encapsulate
  ((ac-fun (x y) t))
  (local (defun ac-fun (x y) (declare (ignore x y))
           nil))
@@ -21,22 +21,22 @@
   :hints (("Goal"
            :in-theory (disable associativity-of-ac-fun)
            :use ((:instance associativity-of-ac-fun)
-                 (:instance associativity-of-ac-fun 
+                 (:instance associativity-of-ac-fun
                             (x y) (y x))))))
 
 (defthm commutativity-2-of-*
   (equal (* y (* x z))
          (* x (* y z)))
-  :hints (("Goal" 
-           :by (:functional-instance 
+  :hints (("Goal"
+           :by (:functional-instance
                 commutativity-2-of-ac-fun
                 (ac-fun binary-*)))))
 
 (defthm commutativity-2-of-*
   (equal (* y (* x z))
          (* x (* y z)))
-  :hints (("Goal" 
-           :by (:functional-instance 
+  :hints (("Goal"
+           :by (:functional-instance
                 commutativity-2-of-ac-fun
                 (ac-fun (lambda (x y) (* x y)))))))
 
@@ -46,8 +46,8 @@
   (declare (xargs :guard (and (symbolp prefix) (symbolp name))))
   (intern-in-package-of-symbol
    (concatenate 'string
-                (symbol-name prefix) 
-                "-" 
+                (symbol-name prefix)
+                "-"
                 (symbol-name name))
    prefix))
 
@@ -55,8 +55,8 @@
   `(defthm ,(make-name 'commutativity-2-of op)
      (equal (,op y (,op x z))
             (,op x (,op y z)))
-     :hints (("Goal" 
-              :by (:functional-instance 
+     :hints (("Goal"
+              :by (:functional-instance
                    commutativity-2-of-ac-fun
                    (ac-fun (lambda (x y) (,op x y))))))))
 

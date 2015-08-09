@@ -43,15 +43,15 @@
   :hints (("Goal" :induct (if-nat-val-key-not-subtree-of-any list db))))
 
 (defthm not-subtree-not-not-subtree-gives-proper-subtreep
-  (implies (and (not (not-subtree-of-keys 
-                      l 
+  (implies (and (not (not-subtree-of-keys
+                      l
                       (replete-trees tree parent db)))
                 (not-subtree-of-keys l db))
            (proper-subtreep l tree)))
 
 (defthm not-not-subtree-of-keys-gives-has-proper-subtree-in-list
-  (implies (and (not (not-subtree-of-keys 
-                      l1 
+  (implies (and (not (not-subtree-of-keys
+                      l1
                       (replete-trees tree parent db)))
                 (not-subtree-of-keys l1 db)
                 (not-subtree-of-keys-list l2 db)
@@ -117,7 +117,7 @@
                 (nat-or-cons-range-halistp db)
                 (if-nat-val-key-not-subtree-of parent db)
                 (subset args parent))
-           (if-cons-range-member-of-all-halistp 
+           (if-cons-range-member-of-all-halistp
             (replete-trees args parent db)))
   :hints (("Goal" :induct (replete-trees args parent db))))
 
@@ -132,11 +132,11 @@
                 (non-subtree-listp l l))
            (and (alistp-gen (replete-trees-list-top1 l db))
                 (if-cons-range-subset-of-domain-halistp
-                 (replete-trees-list-top1 l db) 
+                 (replete-trees-list-top1 l db)
                  (replete-trees-list-top1 l db))
-                (nat-or-cons-range-halistp 
+                (nat-or-cons-range-halistp
                  (replete-trees-list-top1 l db))
-                (if-cons-range-member-of-all-halistp 
+                (if-cons-range-member-of-all-halistp
                  (replete-trees-list-top1 l db))))
   :hints (("Goal" :induct (replete-trees-list-top1 l db))))
 
@@ -144,11 +144,11 @@
   (implies (non-subtree-listp l l)
            (and (alistp-gen (replete-trees-list-top l))
                 (if-cons-range-subset-of-domain-halistp
-                 (replete-trees-list-top l) 
+                 (replete-trees-list-top l)
                  (replete-trees-list-top l))
-                (nat-or-cons-range-halistp 
+                (nat-or-cons-range-halistp
                  (replete-trees-list-top l))
-                (if-cons-range-member-of-all-halistp 
+                (if-cons-range-member-of-all-halistp
                  (replete-trees-list-top l))))
   :hints (("Goal" :in-theory (enable replete-trees-list-top))))
 
@@ -177,15 +177,15 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns a replete mapping of trees and subtrees in the input list to either 
-;  the number of times the tree occurs or to a list of each subtrees immediate 
+;  Returns a replete mapping of trees and subtrees in the input list to either
+;  the number of times the tree occurs or to a list of each subtrees immediate
 ;  parents.~/
 ;  ~/
 ;  Arguments:
 ;     (1) l - a list of trees no member of which is a proper subtree of another
 
-;  Details: The trees should all be ordered according to the same taxa list. 
-;           Branch lengths are allowed, but not preserved 
+;  Details: The trees should all be ordered according to the same taxa list.
+;           Branch lengths are allowed, but not preserved
 ;           (see replete-trees-list-top)."
   (declare (xargs :guard t))
   (let ((removed (remove-brlens-list l)))
@@ -196,5 +196,5 @@
 #||
 (replete-trees-list-brlens '((((a b) (c d)) . 4) ((e . 5) f)
                              ))
-                           
+
 ||#

@@ -473,7 +473,7 @@
        ;; structures to associate the LHS for each override with its variables
        ;; and entries.
        ((mv ovlines ovs) (svtv-lines->overrides overrides 0))
-       
+
        ;; Apply the overrides to the assigns.  Each wire that is overridden has
        ;; its gate-level assignment replaced with something like:
        ;; (if override-this-phase override-value original-assignment)
@@ -1187,7 +1187,7 @@ used in the @(see defsvtv) form.  For example,</p>
    '((\"clk\"           1   ~)
      (\"dwire\"         _   _   _  dat  _)
      (\"cwire\"         _ ctrl  _   _   _))
-   :overrides 
+   :overrides
    '((\"inst.signal\"   _   _   _  ov   _))
    :outputs
    '((\"firstout\"      _   _   _ outa  _)

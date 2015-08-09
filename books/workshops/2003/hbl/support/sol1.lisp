@@ -3,18 +3,18 @@
 ; March 26th, 2003
 
 
-; Abstract 
+; Abstract
 ; Rockwell challenge is about reasoning effectively about updates to dynamic
 ; data structures in a linear address space.
-; 
+;
 ;             Dynamic Datastructures in ACL2: A Challenge
 ;
 ;                  David Greve and Matt Wilding
 ;                          Nov. 2002
-; http://hokiepokie.org/docs/festival02.txt 
+; http://hokiepokie.org/docs/festival02.txt
 ; a local copy is in http://melton.csres.utexas.edu
 
-; The key is to 
+; The key is to
 ;   (1) recover the notion of objects being independent entities and
 ;   (2) reduce update-on-the fly operations to simpler operations that apply a
 ;       corresponding sequence of updates.
@@ -30,7 +30,7 @@
 
 ; 1.  Problem Set Up
 ; *****************************
-; (acl2::set-match-free-error nil) ; 
+; (acl2::set-match-free-error nil) ;
 (in-package "ACL2")
 (include-book "misc/records" :dir :system)
 (include-book "arithmetic/top-with-meta" :dir :system)
@@ -48,7 +48,7 @@
     t))
 
 ;; We introduce two data structures.
-;; "A" nodes have 4 words.  
+;; "A" nodes have 4 words.
 ;; Words 0 and 3 are scalars and words 1 and 2 are A node pointers.
 
 ;; Collect addresses in the first n nodes of an a structure
@@ -128,15 +128,15 @@
 
 
 
-; 2.  Proof of property I 
+; 2.  Proof of property I
 ; *****************************
 ;
 ; 2.1 Problem Analysis
 ; *****************************
-; Difficulty:  
-;   Data structures in linear addressed space. 
+; Difficulty:
+;   Data structures in linear addressed space.
 ;   Abtraction at high level language hides many important assumption.
-;   (1) Independent entity. 
+;   (1) Independent entity.
 ;   (2) Well-formness
 
 (defun make-ram-config (addr n ram)
@@ -161,12 +161,12 @@
 
 
 ; Strategy:
-;   To prove (g addr (s addrx v mem)) = (g addr mem) 
-;   The only way we know is to prove 
-;              addr!=addrx 
+;   To prove (g addr (s addrx v mem)) = (g addr mem)
+;   The only way we know is to prove
+;              addr!=addrx
 ;
-;   Update on the fly is hard. Thus let's reduce it to 
-;   apply a sequnce of updates. 
+;   Update on the fly is hard. Thus let's reduce it to
+;   apply a sequnce of updates.
 ;
 ;   If we can prove addr not member of updated cells, then we prove the final
 ;   result
@@ -189,7 +189,7 @@
 
 (defun apply-A-update (addr ram)
   (s addr (+ (g addr ram) (g (+ 2 addr) ram)) ram))
-    
+
 
 (defun apply-A-updates (seq ram)
   (if (endp seq) ram
@@ -198,17 +198,17 @@
 
 (defthm a-mark-objects-alt-definition
   (equal (a-mark-objects addr n ram)
-         (apply-a-updates (collect-a-updates-dynamic 
+         (apply-a-updates (collect-a-updates-dynamic
                            (make-ram-config addr n ram))
                           ram))
   :rule-classes :definition)
 
 ; The above theorem ''a-mark-objects-alt-definition''
-; Reduce the a-mark-objects to apply  dynamic 
+; Reduce the a-mark-objects to apply  dynamic
 
 
 
-; And we know: 
+; And we know:
 (defun a-updates-w (l)
    (if (endp l) nil
       (cons (car l) (a-updates-w (cdr l)))))
@@ -219,7 +219,7 @@
                    (g x ram))))
 
 
-; Thus to prove the final goal 
+; Thus to prove the final goal
 ;
 ;     (defthm rd-read-over-a-mark-objects
 ;       (implies
@@ -231,11 +231,11 @@
 ;
 ; We need to show the following: *P1*
 ;      (implies (not (member addr (a-collect-1 rc)))
-;               (not (member addr 
-;                        (a-updates-w 
+;               (not (member addr
+;                        (a-updates-w
 ;                          (collect-a-udpate-dynamic rc)))))
 ;
-; where a-collect-1 is 
+; where a-collect-1 is
 
 (defun a-collect-1 (rc)
   (declare (xargs :measure (nfix (n rc))))
@@ -255,8 +255,8 @@
          (a-collect-1 (make-ram-config addr n ram)))
   :rule-classes :definition)
 
-; However *P1* is not true. 
-; We can only a similar *P1* style lemma for 
+; However *P1* is not true.
+; We can only a similar *P1* style lemma for
 
 (defun collect-a-updates-static (rc)
   (declare (xargs :measure (nfix (n rc))))
@@ -267,23 +267,23 @@
       (if (zp addr) nil
         (append
          (list addr)
-         (collect-A-updates-static 
+         (collect-A-updates-static
           (make-ram-config (g (+ 2 addr) ram) (1- n)
                            ram)))))))
 
 
 
 
-; Now the Major Task is to show 
+; Now the Major Task is to show
 ;   (collect-a-updates-dynamic rc) == (collect-A-updates-static rc)
 ;  under the condition of (uniqueness (a-collect-1 rc))
 
 ; We have the observation that "uniqueness" is not the fundamental reason.
-; We need to characterize the "shape" of object does not change, in order to 
-; prove 
+; We need to characterize the "shape" of object does not change, in order to
+; prove
 ;   (collect-a-updates-dynamic rc) == (collect-A-updates-static rc)
- 
-; Define structural Equivalent. 
+
+; Define structural Equivalent.
 ;
 ; Basically, if two objects are structural equivalent, they occupied the same
 ; range of memory and their components are structural equivalent to each other.
@@ -294,7 +294,7 @@
        (equal n1 n2)
        (cond ((zp n1) t)
              ((zp addr1) t)
-             (t (and 
+             (t (and
                  (struct-equiv-A-ram-config1
                   (g (+ addr1 1) ram1)
                   (- n1 1)
@@ -331,7 +331,7 @@
 
 ; For "shape" not change, we need to introduce the concept of link cell and
 ; data cells. and show structural equivalent state, these two set do not
-; change. 
+; change.
 
 (defun A-collect-link-cells-static (rc)
   (declare (xargs :measure (nfix (n rc))))
@@ -340,7 +340,7 @@
         (ram  (ram rc)))
     (if (zp n) nil
       (if (zp addr) nil
-        (append (list (+ addr 1) 
+        (append (list (+ addr 1)
                       (+ addr 2))
                 (A-collect-link-cells-static
                  (make-ram-config (g (+ 1 addr) ram)
@@ -439,7 +439,7 @@
   :hints (("Goal" :induct (cong-induct rc rc-equiv))))
 
 
-; We can prove 
+; We can prove
 ;  under the condition that link cells and data cells do not overlap
 ;  collect-dynamic == collect-static
 ;
@@ -478,13 +478,13 @@
   (and (implies (and (struct-equiv-A-ram-config1 addr1 n1 ram1 addr2 n2 ram2)
                      (not (zp n1))
                      (not (zp addr1)))
-                (struct-equiv-A-ram-config 
+                (struct-equiv-A-ram-config
                  (make-ram-config (g (+ 2 addr1) ram1) (1- n1) ram1)
                  (make-ram-config (g (+ 2 addr2) ram2) (1- n2) ram2)))
        (implies (and (struct-equiv-A-ram-config1 addr1 n1 ram1 addr2 n2 ram2)
                      (not (zp addr1))
                      (not (zp n1)))
-                (struct-equiv-A-ram-config 
+                (struct-equiv-A-ram-config
                  (make-ram-config (g (+ 1 addr1) ram1) (1- n1) ram1)
                  (make-ram-config (g (+ 1 addr2) ram2) (1- n2) ram2)))))
 
@@ -501,18 +501,18 @@
     (and (implies (and (struct-equiv-A-ram-config rc1 rc2)
                        (not (zp (addr rc1)))
                        (not (zp (n    rc1))))
-                  (struct-equiv-A-ram-config 
+                  (struct-equiv-A-ram-config
                    (make-ram-config (g (+ 2 addr1) ram1) (1- n1) ram1)
                    (make-ram-config (g (+ 2 addr2) ram2) (1- n2) ram2)))
          (implies (and (struct-equiv-A-ram-config rc1 rc2)
                        (not (zp (addr rc1)))
                        (not (zp (n    rc1))))
-                  (struct-equiv-A-ram-config 
+                  (struct-equiv-A-ram-config
                    (make-ram-config (g (+ 1 addr1) ram1) (1- n1) ram1)
                    (make-ram-config (g (+ 1 addr2) ram2) (1- n2) ram2))))))
- 
+
 (defthm struct-equiv-A-ram-config-implies-struct-equiv-A-ram-config-1-instance
-  (let* ((rc1 (rc-s (addr rc) (+ (g (addr rc) (ram rc)) 
+  (let* ((rc1 (rc-s (addr rc) (+ (g (addr rc) (ram rc))
                                  (g (+ 2 (addr rc)) (ram rc))) rc))
          (rc2 rc)
          (addr1 (addr rc1))
@@ -524,13 +524,13 @@
     (and (implies (and (struct-equiv-A-ram-config rc1 rc2)
                        (not (zp (addr rc1)))
                        (not (zp (n    rc1))))
-                  (struct-equiv-A-ram-config 
+                  (struct-equiv-A-ram-config
                    (make-ram-config (g (+ 2 addr1) ram1) (1- n1) ram1)
                    (make-ram-config (g (+ 2 addr2) ram2) (1- n2) ram2)))
          (implies (and (struct-equiv-A-ram-config rc1 rc2)
                        (not (zp (addr rc1)))
                        (not (zp (n    rc1))))
-                  (struct-equiv-A-ram-config 
+                  (struct-equiv-A-ram-config
                    (make-ram-config (g (+ 1 addr1) ram1) (1- n1) ram1)
                    (make-ram-config (g (+ 1 addr2) ram2) (1- n2) ram2))))))
 
@@ -541,7 +541,7 @@
                               (a-collect-link-cells-static rc)))
                 (not (zp (addr rc)))
                 (not (zp (n    rc))))
-           (struct-equiv-A-ram-config 
+           (struct-equiv-A-ram-config
             (MAKE-RAM-CONFIG (G (+ 2 (ADDR RC))
                                 (RAM (RC-S (ADDR RC)
                                            (+ (G (ADDR RC) (RAM RC))
@@ -559,7 +559,7 @@
   :hints (("Goal" :in-theory (disable struct-equiv-A-ram-config rc-s)
            :use
            struct-equiv-A-ram-config-implies-struct-equiv-A-ram-config-1-instance)))
-          
+
 
 (defthm overlap-append-1
   (implies (overlap a b)
@@ -581,7 +581,7 @@
                               (a-collect-link-cells-static rc)))
                 (not (zp (n rc)))
                 (not (zp (addr rc))))
-           (not (overlap (a-collect-data-cells-static 
+           (not (overlap (a-collect-data-cells-static
                           (make-ram-config (G (+ 2 (ADDR RC)) (RAM RC))
                                            (+ -1 (N RC))
                                            (RAM RC)))
@@ -591,7 +591,7 @@
                                            (RAM RC))))))
   :hints (("Goal" :do-not '(generalize))))
 
-                 
+
 (defcong struct-equiv-A-ram-config equal (collect-A-updates-static rc) 1
   :hints (("Goal" :induct (cong-induct rc rc-equiv))))
 
@@ -599,14 +599,14 @@
 (defthm not-overlap-implies-collect-a-update-dynamic-equal-static
   (implies (not (overlap (a-collect-data-cells-static rc)
                          (a-collect-link-cells-static rc)))
-           (equal (collect-a-updates-dynamic rc) 
+           (equal (collect-a-updates-dynamic rc)
                   (collect-a-updates-static rc)))
   :hints (("Goal" :induct (collect-a-updates-dynamic rc)
            :do-not '(generalize)
            :in-theory (disable rc-s struct-equiv-A-ram-config))))
 
-; After we proved the above 
-;           (equal (collect-a-updates-dynamic rc) 
+; After we proved the above
+;           (equal (collect-a-updates-dynamic rc)
 ;                  (collect-a-updates-static rc))
 ;
 ; We need to show (unique (a-collect-1 rc) implies not overlap link + data
@@ -628,11 +628,11 @@
 (defthm mem-collect-a-updates-static-mem-a-collect-1
   (implies (member x (a-updates-w (collect-a-updates-static rc)))
            (member x (a-collect-1 rc)))
-  :rule-classes ((:rewrite :corollary 
+  :rule-classes ((:rewrite :corollary
                            (implies (not (member x (a-collect-1 rc)))
                                     (not (member x (a-updates-w (collect-a-updates-static rc))))))))
 
-; and this fact 
+; and this fact
 
 (defthm not-overlap-g-a-mark
   (let ((rc (make-ram-config addr n ram)))
@@ -650,7 +650,7 @@
     :hints (("Goal" :expand (seq-int x 1))))
 
 
-#| ;; just to show as not closely related  result. 
+#| ;; just to show as not closely related  result.
 (defthm mem-a-collect-mem-link-or-data
   (implies (and (member x (a-collect-1 rc))
                 (not (member x (a-collect-data-cells-static rc))))
@@ -670,7 +670,7 @@
 (defthm subset-append-3
   (implies (and (subsetp a b)
                 (subsetp c d))
-           (subsetp (append a c) 
+           (subsetp (append a c)
                     (append b d))))
 
 (defthm subsetp-link-all
@@ -749,14 +749,14 @@
                     (a-collect-link-cells-static rc))
            (not (unique (a-collect-1 rc))))
   :hints (("Goal" :do-not '(generalize)))
-  :rule-classes ((:rewrite :corollary                 
+  :rule-classes ((:rewrite :corollary
                            (implies (unique (a-collect-1 rc))
                                     (not (overlap (a-collect-data-cells-static rc)
                                                   (a-collect-link-cells-static rc)))))))
-;; Finally w proved 
+;; Finally w proved
 ;;  (implies (overlap (a-collect-data-cells-static rc)
 ;;                    (a-collect-link-cells-static rc))
-;;           (not (unique (a-collect-1 rc)))) 
+;;           (not (unique (a-collect-1 rc))))
 
 (defthm a-collect-unique-implies-not-changed
     (implies (and (unique (a-collect addr n ram))
@@ -768,7 +768,7 @@
 ;----------------------------------------------------
 ; Finally we have the first proof for A
 
-; Very similar for B data structure. Comment skipped 
+; Very similar for B data structure. Comment skipped
 
 (defun collect-B-updates-dynamic (rc)
   (declare (xargs :measure (nfix (n rc))))
@@ -795,7 +795,7 @@
 
 (defthm B-mark-object-alt-definition
   (equal (B-mark-objects addr n ram)
-         (apply-B-updates (collect-B-updates-dynamic 
+         (apply-B-updates (collect-B-updates-dynamic
                            (make-ram-config addr n ram)) ram))
   :rule-classes :definition)
 
@@ -820,7 +820,7 @@
        (equal n1 n2)
   (cond ((zp n1) t)
         ((zp addr1) t)
-        (t (and 
+        (t (and
             (struct-equiv-B-ram-config1
              (g addr1 ram1)
              (- n1 1)
@@ -839,7 +839,7 @@
 (defun struct-equiv-B-ram-config (rc1 rc2)
   (struct-equiv-B-ram-config1 (addr rc1) (n rc1) (ram rc1)
                               (addr rc2) (n rc2) (ram rc2)))
-  
+
 
 (defthm struct-equiv-B-ram-config1-reflexive
   (struct-equiv-B-ram-config1 x1 x2 x3 x1 x2 x3))
@@ -975,13 +975,13 @@
   (and (implies (and (struct-equiv-B-ram-config1 addr1 n1 ram1 addr2 n2 ram2)
                      (not (zp n1))
                      (not (zp addr1)))
-                (struct-equiv-B-ram-config 
+                (struct-equiv-B-ram-config
                  (make-ram-config (g addr1 ram1) (1- n1) ram1)
                  (make-ram-config (g addr2 ram2) (1- n2) ram2)))
        (implies (and (struct-equiv-B-ram-config1 addr1 n1 ram1 addr2 n2 ram2)
                      (not (zp addr1))
                      (not (zp n1)))
-                (struct-equiv-B-ram-config 
+                (struct-equiv-B-ram-config
                  (make-ram-config (g (+ 1 addr1) ram1) (1- n1) ram1)
                  (make-ram-config (g (+ 1 addr2) ram2) (1- n2) ram2)))))
 
@@ -996,16 +996,16 @@
     (and (implies (and (struct-equiv-B-ram-config rc1 rc2)
                        (not (zp (addr rc1)))
                        (not (zp (n    rc1))))
-                  (struct-equiv-B-ram-config 
+                  (struct-equiv-B-ram-config
                    (make-ram-config (g  addr1 ram1) (1- n1) ram1)
                    (make-ram-config (g  addr2 ram2) (1- n2) ram2)))
          (implies (and (struct-equiv-B-ram-config rc1 rc2)
                        (not (zp (addr rc1)))
                        (not (zp (n    rc1))))
-                  (struct-equiv-B-ram-config 
+                  (struct-equiv-B-ram-config
                    (make-ram-config (g (+ 1 addr1) ram1) (1- n1) ram1)
                    (make-ram-config (g (+ 1 addr2) ram2) (1- n2) ram2))))))
-  
+
 
 (defthm struct-equiv-B-ram-config-implies-struct-equiv-B-ram-config-1-instance
   (let* ((rc1 (rc-s (+ 2 (addr rc)) 0 rc))
@@ -1019,13 +1019,13 @@
     (and (implies (and (struct-equiv-B-ram-config rc1 rc2)
                        (not (zp (addr rc1)))
                        (not (zp (n    rc1))))
-                  (struct-equiv-B-ram-config 
+                  (struct-equiv-B-ram-config
                    (make-ram-config (g addr1 ram1) (1- n1) ram1)
                    (make-ram-config (g addr2 ram2) (1- n2) ram2)))
          (implies (and (struct-equiv-B-ram-config rc1 rc2)
                        (not (zp (addr rc1)))
                        (not (zp (n    rc1))))
-                  (struct-equiv-B-ram-config 
+                  (struct-equiv-B-ram-config
                    (make-ram-config (g (+ 1 addr1) ram1) (1- n1) ram1)
                    (make-ram-config (g (+ 1 addr2) ram2) (1- n2) ram2))))))
 
@@ -1035,7 +1035,7 @@
                               (b-collect-link-cells-static rc)))
                 (not (zp (addr rc)))
                 (not (zp (n    rc))))
-           (struct-equiv-B-ram-config 
+           (struct-equiv-B-ram-config
             (MAKE-RAM-CONFIG (G (ADDR RC)
                                 (RAM (RC-S (+ 2 (addr RC)) 0  RC)))
                              (+ -1 (N RC))
@@ -1065,7 +1065,7 @@
                               (b-collect-link-cells-static rc)))
                 (not (zp (n rc)))
                 (not (zp (addr rc))))
-           (not (overlap (b-collect-data-cells-static 
+           (not (overlap (b-collect-data-cells-static
                           (make-ram-config (G (ADDR RC) (RAM RC))
                                            (+ -1 (N RC))
                                            (RAM RC)))
@@ -1074,8 +1074,8 @@
                                            (+ -1 (N RC))
                                            (RAM RC))))))
   :hints (("Goal" :do-not '(generalize))))
-  
-                     
+
+
 (defcong struct-equiv-B-ram-config equal (collect-B-updates-static rc) 1
   :hints (("Goal" :induct (cong-induct-B rc rc-equiv))))
 
@@ -1084,7 +1084,7 @@
 (defthm not-overlap-implies-collect-B-update-dynamic-equal-static
   (implies (not (overlap (B-collect-data-cells-static rc)
                          (B-collect-link-cells-static rc)))
-           (equal (collect-B-updates-dynamic rc) 
+           (equal (collect-B-updates-dynamic rc)
                   (collect-B-updates-static rc)))
   :hints (("Goal" :induct (collect-B-updates-dynamic rc)
            :do-not '(generalize)
@@ -1136,7 +1136,7 @@
 (defthm mem-collect-B-updates-static-mem-B-collect-1
   (implies (member x (b-updates-w (collect-B-updates-static rc)))
            (member x (B-collect-1 rc)))
-  :rule-classes ((:rewrite :corollary 
+  :rule-classes ((:rewrite :corollary
                            (implies (not (member x (b-collect-1 rc)))
                                     (not (member x (b-updates-w (collect-b-updates-static rc))))))))
 
@@ -1183,7 +1183,7 @@
                     (b-collect-link-cells-static rc))
            (not (unique (b-collect-1 rc))))
   :hints (("Goal" :do-not '(generalize)))
-  :rule-classes ((:rewrite :corollary                 
+  :rule-classes ((:rewrite :corollary
                            (implies (unique (b-collect-1 rc))
                                     (not (overlap (b-collect-data-cells-static rc)
                                                   (b-collect-link-cells-static rc)))))))
@@ -1198,22 +1198,22 @@
 
 ; 3.  Proof of property II
 ; *****************************
-; 
-; 3.1 Proof Analysis 
+;
+; 3.1 Proof Analysis
 ; The key point is to prove that update one objects maintain the structural
 ; equivalent with respect to another object.
 ;
-; Successively reduce composition of X-mark to a composition of apply-X-updates 
- 
+; Successively reduce composition of X-mark to a composition of apply-X-updates
+
 ; 3.2 Proof Scipts
 
-; Similarly introduce 
+; Similarly introduce
 (defun collect-bab-updates-dynamic (addr1 n1 addr2 n2 addr3 n3 ram)
   (let* ((rc1 (make-ram-config addr1 n1 ram))
          (rc2 (make-ram-config addr2 n2 (apply-B-updates
-                                         (collect-B-updates-dynamic rc1) 
+                                         (collect-B-updates-dynamic rc1)
                                          (ram rc1))))
-         (rc3 (make-ram-config addr3 n3 (apply-A-updates 
+         (rc3 (make-ram-config addr3 n3 (apply-A-updates
                                          (collect-A-updates-dynamic rc2)
                                          (ram rc2)))))
   (list   (collect-B-updates-dynamic rc1)
@@ -1223,16 +1223,16 @@
 
 
 (defun apply-bab-updates (l ram)
-  (apply-B-updates (caddr l) 
-                   (apply-a-updates (cadr l) 
+  (apply-B-updates (caddr l)
+                   (apply-a-updates (cadr l)
                                     (apply-B-updates (car l) ram))))
 
 (defthm equal-compose-bab-apply-bab
   (equal (compose-bab addr1 n1 addr2 n2 addr3 n3 ram)
-         (apply-bab-updates (collect-bab-updates-dynamic 
+         (apply-bab-updates (collect-bab-updates-dynamic
                              addr1 n1 addr2 n2 addr3 n3 ram) ram)))
 
-; Now we need to prove 
+; Now we need to prove
 ;
 ; (defthm unique-equal-collect-dynamic-to-static
 ;   (implies (unique (append (b-collect-1 (make-ram-config addr1 n1 ram))
@@ -1243,7 +1243,7 @@
 ;
 
 ; The idea is to successively reduce collect-X-updates-dynamic to
-; collect-X-updates-static 
+; collect-X-updates-static
 ; We need to show perservation of structural equivalence with respect to one
 ; object after updates to other objects
 ;
@@ -1265,7 +1265,7 @@
 (defthm struct-equiv-a-ram-config-apply-B-update
   (implies (not (member (+ 2 x) (a-collect-link-cells-static rc)))
            (struct-equiv-a-ram-config
-            (make-ram-config (addr rc) 
+            (make-ram-config (addr rc)
                              (n    rc)
                              (apply-B-update x (ram rc)))
             rc)))
@@ -1292,14 +1292,14 @@
            :in-theory (disable apply-B-update struct-equiv-A-ram-config)
            :induct (no-overlap-induct-A l rc))))
 
-; above is about structure equivalent with respect to A after unrelated B updates 
+; above is about structure equivalent with respect to A after unrelated B updates
 ; Similarly for B after A, B after B, (and A after A)
 
 
 (defthm struct-equiv-B-ram-config-apply-A-update
   (implies (not (member x (B-collect-link-cells-static rc)))
            (struct-equiv-B-ram-config
-            (make-ram-config (addr rc) 
+            (make-ram-config (addr rc)
                              (n    rc)
                              (apply-A-update x (ram rc)))
             rc)))
@@ -1326,11 +1326,11 @@
            :induct (no-overlap-induct-B l rc))))
 
 ;----------
-; A after A 
+; A after A
 (defthm struct-equiv-a-ram-config-apply-A-update
   (implies (not (member x (a-collect-link-cells-static rc)))
            (struct-equiv-a-ram-config
-            (make-ram-config (addr rc) 
+            (make-ram-config (addr rc)
                              (n    rc)
                              (apply-A-update x (ram rc)))
             rc)))
@@ -1353,7 +1353,7 @@
   (implies (not (overlap (a-updates-w l)
                          (a-collect-link-cells-static (make-ram-config addr n ram))))
            (struct-equiv-A-ram-config
-                   (make-ram-config addr 
+                   (make-ram-config addr
                                     n
                                     (apply-A-updates l ram))
                    (make-ram-config addr n ram)))
@@ -1364,12 +1364,12 @@
 
 
 ;---
-; B after B 
+; B after B
 
 (defthm struct-equiv-B-ram-config-apply-B-update
   (implies (not (member (+ 2 x) (B-collect-link-cells-static rc)))
            (struct-equiv-B-ram-config
-            (make-ram-config (addr rc) 
+            (make-ram-config (addr rc)
                              (n    rc)
                              (apply-B-update x (ram rc)))
             rc)))
@@ -1388,7 +1388,7 @@
            :induct (no-overlap-induct-A l rc))))
 
 
-; Colloray from the result of property 1 
+; Colloray from the result of property 1
 (defthm collect-dynamic-equal-static-A-1
   (implies (unique (a-collect-1 rc1))
            (equal (collect-A-updates-dynamic rc1)
@@ -1452,7 +1452,7 @@
                            (a-collect-1 rc1)))
            (not (overlap  (b-updates-w (collect-B-updates-static rc2))
                           (a-collect-link-cells-static rc1))))
-  :hints (("Goal" :in-theory (disable  
+  :hints (("Goal" :in-theory (disable
                               overlap-subset
                               a-collect-1 b-collect-1)
            :do-not-induct t
@@ -1469,34 +1469,34 @@
 (defthm collect-dynamic-equal-static-A-2-instance
   (implies (unique (append (b-collect-1 (make-ram-config addr1 n1 ram))
                            (a-collect-1 (make-ram-config addr2 n2 ram))))
-           (equal (collect-A-updates-dynamic 
-                   (make-ram-config addr2 n2 
+           (equal (collect-A-updates-dynamic
+                   (make-ram-config addr2 n2
                                     (apply-b-updates (collect-B-updates-static
-                                                      (make-ram-config addr1 n1 ram)) 
+                                                      (make-ram-config addr1 n1 ram))
                                                      ram)))
-                  (collect-A-updates-static 
+                  (collect-A-updates-static
                    (make-ram-config addr2 n2 ram))))
   :hints (("Goal"  :use ((:instance no-overlap-implies-A-struct-equiv-lemma
-                                    (l (collect-B-updates-static 
+                                    (l (collect-B-updates-static
                                         (make-ram-config addr1 n1 ram)))
-                                    (rc (make-ram-config addr2 n2 ram))))))) 
+                                    (rc (make-ram-config addr2 n2 ram)))))))
 
 ;
-; This above is an important step towards, 
+; This above is an important step towards,
 ;            (equal (collect-bab-updates-dynamic addr1 n1 addr2 n2 addr3 n3 ram)
 ;                   (collect-bab-updates-static  addr1 n1 addr2 n2 addr3 n3 ram)))
 ;
 
-; next we need to prove 
-;             (equal (collect-B-updates-dynamic 
+; next we need to prove
+;             (equal (collect-B-updates-dynamic
 ;                     (make-ram-config addr3 n3
-;                                      (apply-A-updates 
+;                                      (apply-A-updates
 ;                                       (collect-A-updates-static
 ;                                        (make-ram-config addr2 n2 ram))
 ;                                       (apply-b-updates
 ;                                        (collect-B-updates-static
 ;                                         (make-ram-config addr1 n1 ram)) ram))))
-;                    (collect-B-updates-static 
+;                    (collect-B-updates-static
 ;                     (make-ram-config addr3 n3 ram))))
 ; We prove this by establishing reducing inner most of apply-X-updates to
 ; structural-equivalence to original state
@@ -1506,11 +1506,11 @@
                            (B-collect-1 rc2)))
            (not (overlap  (b-updates-w (collect-B-updates-static rc1))
                           (B-collect-link-cells-static rc2))))
-  :hints (("Goal" :in-theory (disable  
+  :hints (("Goal" :in-theory (disable
                               overlap-subset
                               a-collect-1 b-collect-1)
            :do-not-induct t
-           :use ((:instance overlap-subset 
+           :use ((:instance overlap-subset
                             (A (b-updates-w
                                 (collect-B-updates-static rc1)))
                             (c (B-collect-link-cells-static rc2))
@@ -1523,14 +1523,14 @@
 (defthm collect-dynamic-equal-static-B-3-instance-lemma-1
   (implies (unique (append (b-collect-1 (make-ram-config addr1 n1 ram))
                            (b-collect-1 (make-ram-config addr3 n3 ram))))
-           (struct-equiv-B-ram-config 
-                   (make-ram-config addr3 n3 
+           (struct-equiv-B-ram-config
+                   (make-ram-config addr3 n3
                                     (apply-b-updates (collect-B-updates-static
                                                       (make-ram-config addr1 n1 ram))
                                                      ram))
                    (make-ram-config addr3 n3 ram)))
   :hints (("Goal"  :use ((:instance no-overlap-implies-B-struct-equiv-2-lemma
-                                    (l (collect-B-updates-static 
+                                    (l (collect-B-updates-static
                                         (make-ram-config addr1 n1 ram)))
                                     (rc (make-ram-config addr3 n3 ram))))))
   :rule-classes :forward-chaining)
@@ -1548,11 +1548,11 @@
                            (b-collect-1 rc2)))
            (not (overlap  (a-updates-w (collect-A-updates-static rc1))
                           (B-collect-link-cells-static rc2))))
-  :hints (("Goal" :in-theory (disable  
+  :hints (("Goal" :in-theory (disable
                               overlap-subset
                               a-collect-1 b-collect-1)
            :do-not-induct t
-           :use ((:instance overlap-subset 
+           :use ((:instance overlap-subset
                             (A (a-updates-w
                                 (collect-A-updates-static rc1)))
                             (b (a-collect-1 rc1))
@@ -1564,14 +1564,14 @@
 (defthm collect-dynamic-equal-static-B-3-instance-lemma-2
   (implies (unique (append (a-collect-1 (make-ram-config addr2 n2 ram))
                            (b-collect-1 (make-ram-config addr3 n3 ram))))
-           (struct-equiv-B-ram-config 
-                   (make-ram-config addr3 n3 
+           (struct-equiv-B-ram-config
+                   (make-ram-config addr3 n3
                                     (apply-a-updates (collect-A-updates-static
                                                       (make-ram-config addr2 n2 ram))
                                                      ram))
                    (make-ram-config addr3 n3 ram)))
   :hints (("Goal"  :use ((:instance no-overlap-implies-B-struct-equiv-lemma
-                                    (l (collect-A-updates-static 
+                                    (l (collect-A-updates-static
                                         (make-ram-config addr2 n2 ram)))
                                     (rc (make-ram-config addr3 n3 ram))))))
   :rule-classes :forward-chaining)
@@ -1580,14 +1580,14 @@
 (defthm collect-dynamic-equal-static-B-3-instance-lemma-3
   (implies (unique (append (b-collect-1 (make-ram-config addr1 n1 ram))
                            (a-collect-1 (make-ram-config addr2 n2 ram))))
-           (struct-equiv-A-ram-config 
-                   (make-ram-config addr2 n2 
+           (struct-equiv-A-ram-config
+                   (make-ram-config addr2 n2
                                     (apply-b-updates (collect-B-updates-static
                                                       (make-ram-config addr1 n1 ram))
                                                      ram))
                    (make-ram-config addr2 n2 ram)))
   :hints (("Goal"  :use ((:instance no-overlap-implies-A-struct-equiv-lemma
-                                    (l (collect-B-updates-static 
+                                    (l (collect-B-updates-static
                                         (make-ram-config addr1 n1 ram)))
                                     (rc (make-ram-config addr2 n2 ram))))))
   :rule-classes :forward-chaining)
@@ -1621,9 +1621,9 @@
   (implies (unique (append (b-collect-1 (make-ram-config addr1 n1 ram))
                            (a-collect-1 (make-ram-config addr2 n2 ram))
                            (b-collect-1 (make-ram-config addr3 n3 ram))))
-            (struct-equiv-B-ram-config 
-             (make-ram-config addr3 n3 
-                              (apply-A-updates 
+            (struct-equiv-B-ram-config
+             (make-ram-config addr3 n3
+                              (apply-A-updates
                                (collect-A-updates-static
                                 (make-ram-config addr2 n2 ram))
                                (apply-b-updates (collect-B-updates-static
@@ -1637,27 +1637,27 @@
                             (ram  (apply-b-updates (collect-B-updates-static
                                                     (make-ram-config addr1 n1
                                                                      ram)) ram)))))))
-  
-                        
+
+
 ;----------------------
-(defthm collect-dynamic-equal-static-B-3-instance 
+(defthm collect-dynamic-equal-static-B-3-instance
    (implies (unique (append (b-collect-1 (make-ram-config addr1 n1 ram))
                             (a-collect-1 (make-ram-config addr2 n2 ram))
                             (b-collect-1 (make-ram-config addr3 n3 ram))))
-            (equal (collect-B-updates-dynamic 
+            (equal (collect-B-updates-dynamic
                     (make-ram-config addr3 n3
-                                     (apply-A-updates 
+                                     (apply-A-updates
                                       (collect-A-updates-static
                                        (make-ram-config addr2 n2 ram))
                                       (apply-b-updates
                                        (collect-B-updates-static
                                         (make-ram-config addr1 n1 ram)) ram))))
-                   (collect-B-updates-static 
+                   (collect-B-updates-static
                     (make-ram-config addr3 n3 ram))))
    :hints (("Goal" :use ((:instance collect-dynamic-equal-static-B-2
-                                    (rc2 
+                                    (rc2
                                      (make-ram-config addr3 n3
-                                     (apply-A-updates 
+                                     (apply-A-updates
                                       (collect-A-updates-static
                                        (make-ram-config addr2 n2 ram))
                                       (apply-b-updates
@@ -1683,7 +1683,7 @@
                            (b-collect-1 (make-ram-config addr3 n3 ram))))
            (equal (collect-bab-updates-dynamic addr1 n1 addr2 n2 addr3 n3 ram)
                   (collect-bab-updates-static  addr1 n1 addr2 n2 addr3 n3 ram)))
-  :hints (("Goal" :in-theory (disable 
+  :hints (("Goal" :in-theory (disable
                               apply-B-updates
                               apply-B-update
                               apply-A-updates
@@ -1774,7 +1774,7 @@
 
 
 (defthm unqiue-app-implies-w-r-w-r-no-overlap
-  (implies (unique (append (a-collect-1 rc1) 
+  (implies (unique (append (a-collect-1 rc1)
                            (b-collect-1 rc2)))
            (not (overlap (a-data-cell-w-r (collect-A-updates-static rc1))
                          (b-data-cell-w-r (collect-B-updates-static rc2)))))
@@ -1783,7 +1783,7 @@
                                    (a (a-data-cell-w-r
                                        (collect-A-updates-static rc1)))
                                    (b (a-collect-1 rc1))
-                                   (c (b-data-cell-w-r 
+                                   (c (b-data-cell-w-r
                                        (collect-B-updates-static rc2)))
                                    (d (b-collect-1 rc2)))))))
 
@@ -1808,6 +1808,6 @@
     (a-mark-objects ptr1 n1 (b-mark-objects ptr2 n2 ram))
     (b-mark-objects ptr2 n2 (a-mark-objects ptr1 n1 ram)))))
 
-; 5.  Generalization 
+; 5.  Generalization
 ; *****************************
 ; In sol2.lisp

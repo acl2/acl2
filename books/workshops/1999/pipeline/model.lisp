@@ -5,7 +5,7 @@
 (deflabel begin-model)
 
 ; Basic Pipeline Design
-; Our example machine is very simple.  It consists of a program counter, 
+; Our example machine is very simple.  It consists of a program counter,
 ; a register file, the memory, pipeline latches latch1 and latch2.
 ; The programmer visible components are the program counter, the register
 ; file and the memory.  It can execute two types of instructions, ADD
@@ -13,7 +13,7 @@
 ;           --------------------------------
 ;          | op    |  RC   |  RA   |   RB  |
 ;           --------------------------------
-;           15    12 11    8 7     4 3     0 
+;           15    12 11    8 7     4 3     0
 ;
 ; where RC, RA and RB are operand register specifiers.  There are only
 ; two valid opcodes 0 (ADD) and 1 (SUB).  An instruction without a
@@ -24,28 +24,28 @@
 ; 1.  No exceptions and no interrupts occur.  There is one external
 ; input to the machine.  If this input signal is on, the machine may
 ; fetch a new instruction from the memory.  Pipeline flushing can be
-; done by running the machine with 0's as its inputs. 
-; 
+; done by running the machine with 0's as its inputs.
+;
 ; We define this machine at two levels: instruction-set architecture
 ; and micro-architecture.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ISA Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Description of ISA
 ; The ISA state consists of only programmer visible states, that is,
-; the program counter, register file and the memory. 
-; ISA behavior is specified by ISA-step.  Depending on the operand, 
+; the program counter, register file and the memory.
+; ISA behavior is specified by ISA-step.  Depending on the operand,
 ; it executes ADD or SUB operation.
 
 ; Definition of the ISA state.
-; 
+;
 ; Note: For the detail of the definition with defstructure, please
 ; refer to the public ACL2 book data-structures/structures.lisp.
 ; Briefly speaking, an expression (ISA-state PC REGS MEM) returns
 ; an ISA state whose program counter, register file and memory are PC,
 ; REGS and MEM, respectively.  The pc value of an ISA state, ISA, can
-; be obtained by (ISA-pc ISA). 
+; be obtained by (ISA-pc ISA).
 (defstructure ISA-state
   (pc   (:assert (addr-p pc)   :rewrite))
   (regs (:assert (regs-p regs) :rewrite))
@@ -73,15 +73,15 @@
 				 (read-reg rb (ISA-regs ISA))))
 			rc (ISA-regs ISA))
 	     (ISA-mem ISA)))
-		  
-; Definition of NOP. It only increments the program counter. 
+
+; Definition of NOP. It only increments the program counter.
 (defun ISA-default (ISA)
   (declare (xargs :guard (ISA-state-p ISA)))
   (ISA-state (addr (1+ (ISA-pc ISA)))
 	     (ISA-regs ISA)
 	     (ISA-mem ISA)))
 
-; Next ISA state function.  It takes the current ISA state and returns 
+; Next ISA state function.  It takes the current ISA state and returns
 ; the ISA state after executing one instruction.  This function is a
 ; simple dispatcher of corresponding functions depending on the
 ; instruction type.
@@ -98,19 +98,19 @@
 	(otherwise (ISA-default ISA))))))
 
 ; N step ISA function.  It returns the ISA state after executing n
-; instructions from the initial state, ISA.  
+; instructions from the initial state, ISA.
 (defun ISA-stepn (ISA n)
   (declare (xargs :guard (and (ISA-state-p ISA) (integerp n) (<= 0 n))))
   (if (zp n) ISA (ISA-stepn (ISA-step ISA) (1- n))))
 
 (deflabel end-ISA-def)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; MA Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Definition of MA states
 ;
-; Definition of pipeline latch latch1. 
+; Definition of pipeline latch latch1.
 (defstructure latch1
   (valid? (:assert (bitp valid?) :rewrite))
   (op     (:assert (opcd-p op)   :rewrite))
@@ -128,7 +128,7 @@
   (rb-val  (:assert (word-p rb-val) :rewrite))
   (:options :guards))
 
-; Definition of pipelined micro-architecture. 
+; Definition of pipelined micro-architecture.
 (defstructure MA-state
   (pc     (:assert (addr-p pc)       :rewrite (:rewrite (acl2-numberp pc))))
   (regs   (:assert (regs-p regs)     :rewrite))
@@ -150,8 +150,8 @@
   MA-sig-p)
 
 (deflabel begin-MA-def)
-; The definition of ALU.  The ALU takes opcode and two operands, 
-; and outputs the result. 
+; The definition of ALU.  The ALU takes opcode and two operands,
+; and outputs the result.
 (defun ALU-output (op val1 val2)
   (declare (xargs :guard (and (opcd-p op) (word-p val1) (word-p val2))))
   (cond ((equal op 0) (word (+ val1 val2)))
@@ -178,7 +178,7 @@
 ; between the instructions at latch1 and latch2, the instruction at
 ; latch1 should stall until the instruction at latch2 completes.  We
 ; check whether the destination register of the instruction at latch2
-; is one of the source registers of the instruction at latch1. 
+; is one of the source registers of the instruction at latch1.
 (defun dependency? (MA)
   (declare (xargs :guard (MA-state-p MA)))
   (let ((latch1 (MA-latch1 MA))
@@ -191,7 +191,7 @@
 
 ; The stall condition.  If both latch1 and latch2 contain valid
 ; instructions, and there are dependencies between the two
-; instructions, the instruction at latch1 is stalled.  
+; instructions, the instruction at latch1 is stalled.
 (defun stall-cond? (MA)
   (declare (xargs :guard (MA-state-p MA)))
   (b-and (latch1-valid? (MA-latch1 MA))
@@ -238,7 +238,7 @@
 	    (b-if (stall-cond? MA) (latch1-rb latch1) (rb-field inst)))))
 
 
-; The condition whether a new instruction is fetched. 
+; The condition whether a new instruction is fetched.
 (defun fetch-inst? (MA sig)
   (declare (xargs :guard (and (MA-state-p MA) (MA-sig-p sig))))
   (b-and sig
@@ -249,13 +249,13 @@
 (defthm bitp-fetch-inst?
     (bitp (fetch-inst? MA sig)))
 
-; Function step-pc defines how the program counter is updated. 
+; Function step-pc defines how the program counter is updated.
 (defun step-pc (MA sig)
   (declare (xargs :guard (and (MA-state-p MA) (MA-sig-p sig))))
   (b-if (fetch-inst? MA sig)
 	(addr (1+ (MA-pc MA)))
 	(MA-pc MA)))
-			
+
 ; MA-step defines how the MA state is updated every clock cycle.  The
 ; memory does not change in our model.  The behavior of other
 ; components is specified by the corresponding step functions.
@@ -265,7 +265,7 @@
 	    (step-regs MA)
 	    (MA-mem MA)
 	    (step-latch1 MA sig)
-	    (step-latch2 MA)))	    
+	    (step-latch2 MA)))
 
 ; MA-stepn returns the MA state after n clock cycles of MA execution.
 ; The argument MA is the initial state, and sig-list specifies the
@@ -370,5 +370,5 @@ n cycles of MA execution.  We also prove the liveness property with:
 				      (zeros (flush-cycles MA))
 				      (flush-cycles MA)))))).
 
-Function flush-cycles calculates the number of cycles to flush the pipeline. 
+Function flush-cycles calculates the number of cycles to flush the pipeline.
 |#

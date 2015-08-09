@@ -4,7 +4,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Exercise 4.
 
-;; The trichotomy axiom says that exactly one of the relations, 
+;; The trichotomy axiom says that exactly one of the relations,
 ;; X <_a Y, X = Y, Y <_a X is true. It naively translates into the
 ;; conjunction of the following:
 
@@ -12,7 +12,7 @@
 ;;       X <_a Y  or  X = Y  or  Y <_a X;
 
 ;;  2. At most one of the relations is true
-;;     (a) if  X <_a Y, then  (not (X = Y)); 
+;;     (a) if  X <_a Y, then  (not (X = Y));
 ;;     (b) if  X <_a Y, then  (not (Y <_a X));
 ;;     (c) if  X = Y, then  (not (X <_a Y))  and  (not (Y <_a X));
 ;;     (d) if  Y <_a X, then  (not (X = Y))  and  (not (X <_a Y)).

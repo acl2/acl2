@@ -37,7 +37,7 @@
   :hints (("goal" :in-theory (enable o<))))
 
 (defthm o-first-coeff-<-fc
-  (implies (and (< (o-first-coeff a) 
+  (implies (and (< (o-first-coeff a)
 		   (o-first-coeff b))
 		(equal (o-first-expt a) (o-first-expt b))
 		(o-p a)
@@ -182,11 +182,11 @@
 		(o-p c))
 	   (o< a c))
   :hints (("goal"
-	   :use (:instance |a <= b & ~(a = b)  =>  a < b| 
-			   (b b) 
+	   :use (:instance |a <= b & ~(a = b)  =>  a < b|
+			   (b b)
 			   (a c))))
   :rule-classes ((:forward-chaining
-		  :trigger-terms ((o< a b) (o< c b)))))  
+		  :trigger-terms ((o< a b) (o< c b)))))
 
 (defthm |a <= b & b < c  =>  a < c|
   (implies (and (o< b c)

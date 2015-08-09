@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -96,7 +96,7 @@
   :rule-classes ((:type-prescription :typed-term (lnot x n))))
 
 ;lnot-nonnegative-integer-type is strictly better, and we don't need both
-(in-theory (disable (:type-prescription lnot))) 
+(in-theory (disable (:type-prescription lnot)))
 
 (defthm lnot-natp
   (natp (lnot x n)))
@@ -182,8 +182,8 @@
           :hints (("Goal" :in-theory (disable ;a10
                                       )
                    :use ((:instance fl-lnot-1)
-                         (:instance fl= 
-                                    (x (/ (lnot x n) (expt 2 k))) 
+                         (:instance fl=
+                                    (x (/ (lnot x n) (expt 2 k)))
                                     (y (+ (expt 2 (- n k))
                                           (/ (- -1 x) (expt 2 k))))))))))
 
@@ -209,7 +209,7 @@
    (implies (and (<= k n)
                  (bvecp x n)
                  (<= 0 k)
-                 (integerp n) 
+                 (integerp n)
                  (integerp k)
                  )
             (equal (fl (* (/ (expt 2 k)) (lnot x n)))
@@ -249,7 +249,7 @@
    (implies (and (<= k n)
                  ;(bvecp x n)
                  (<= 0 k)
-                 (integerp n) 
+                 (integerp n)
                  (integerp k)
                  )
             (equal (fl (* (/ (expt 2 k)) (lnot x n)))
@@ -275,7 +275,7 @@
 (local (defthmd lnot-fl-eric-helper-2
    (implies (and (<= k n)
                  (<= 0 k)
-                 (integerp n) 
+                 (integerp n)
                  (integerp k)
                  )
             (equal (lnot (/ (bits x (1- n) 0) (expt 2 k)) (- n k))
@@ -290,7 +290,7 @@
 (defthmd lnot-fl-original
    (implies (and (<= k n)
                  (<= 0 k)
-                 (integerp n) 
+                 (integerp n)
                  (integerp k)
                  )
             (equal (fl (* (/ (expt 2 k)) (lnot x n)))
@@ -328,7 +328,7 @@
              (equal (lnot x m)
                     (+ (lnot x n) (* (expt 2 n) (1- (expt 2 (- m n)))))))
     :rule-classes ()
-    :hints (("goal"  :in-theory (enable lnot expt-split) 
+    :hints (("goal"  :in-theory (enable lnot expt-split)
              ))))
 
 
@@ -368,7 +368,7 @@
                    (:instance expt-weak-monotone)
 ;                 (:instance lnot-bnds (n m))
 ;                              (:instance mod+-thm (m (lnot x n)) (n (expt 2 n)) (a (1- (expt 2 (- m n)))))
-                              
+
                    )))))
 
  (local
@@ -649,7 +649,7 @@
 ; Start proof of bits-lnot-aux-2 (for bits-lnot).
 
 (local
- (defthm hack 
+ (defthm hack
    (implies (and (integerp n) (integerp i) (<= n i))
             (< (expt 2 n) (expt 2 (1+ i))))
    :rule-classes nil))

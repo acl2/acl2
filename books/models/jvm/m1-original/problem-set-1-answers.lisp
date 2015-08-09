@@ -48,7 +48,7 @@
 
 ;  turnin --list alexsp cs378
 
-; In my presentation of the problems below, when I write 
+; In my presentation of the problems below, when I write
 
 ; expr ==> value
 
@@ -71,7 +71,7 @@
 ; (let ((v1 t1)       Evaluate each of the ti.  Then let the vi have those
 ;       ...           respective values.  In that environment, evaluate and
 ;       (vn tn))      return the value of body.
-;  body)              
+;  body)
 
 ; (let* ((v1 t1)      Evaluate t1 and let v1 have that value.  Then ...
 ;        ...          then evaluate tn and let vn have that value.  In
@@ -81,7 +81,7 @@
 ; [Note: the difference between let and let* is that in the former the
 ; variables get their values ``in parallel'' and in the latter they get them
 ; ``in sequence.''  For example, suppose x has the value 1 in the ``global
-; environment.''  Then 
+; environment.''  Then
 
 ; (let  ((x 5) (y (+ 1 x))) (* x y)) ==> 10
 
@@ -149,7 +149,7 @@
 
 ; (natp x)              t or nil indicating whether x is a natural number
 ;                       (nonnegative integer)
- 
+
 ; (if x y z)            if x is t, then y, else z;
 
 ; [Note: The description is more complicated if x is not Boolean.]
@@ -251,7 +251,7 @@
 ;  3. INVOKEVIRTUAL            ((D - SYMBOLP) (E - ENDP))
 ;  4. "Hello World!"           ((B - STRINGP) (E - ENDP))
 ;  5. NIL                      ((D - SYMBOLP) (E - ENDP))
-;  6. :NAME                    ((D - SYMBOLP) (E - ENDP) (F - KEYWORDP)) 
+;  6. :NAME                    ((D - SYMBOLP) (E - ENDP) (F - KEYWORDP))
 ;  7. (ILOAD 0)                ((C - CONSP))
 ;  8. ("Beta" "position")      ((C - CONSP))
 ;  9. ((ILOAD 0) (IFNE 237))   ((C - CONSP))
@@ -264,10 +264,10 @@
 ; 1. (ILOAD 0)
 ;    Answers:                        ILOAD              0                   NIL
 
-; 2. (GETFIELD ("Beta" "position"))  
+; 2. (GETFIELD ("Beta" "position"))
 ;    Answers:                        GETFIELD           ("Beta" "position") NIL
 
-; 3. (IINC 3 -1)          
+; 3. (IINC 3 -1)
 ;    Answers:                        IINC               3                   (-1)
 
 ; 4. (IADD)
@@ -286,12 +286,12 @@
 
 ; Problem 1-3.  For each object below, write the CONS expression that constructs
 ; it.  Each answer will be a call of CONS, applied to numbers, quoted symbols,
-; strings, and/or NIL. 
+; strings, and/or NIL.
 
 ; 0.  (ILOAD 2)  Answer: (cons 'ILOAD (cons 2 NIL))
 
 ; 1.  (IADD)     Answer: (cons 'IADD NIL)
-; 2.  ((:ID 3) (:CT NIL)) 
+; 2.  ((:ID 3) (:CT NIL))
 ;     Answer: (cons (cons :ID (cons 3 nil))
 ;                   (cons (cons :CT (cons NIL nil))
 ;                          nil))
@@ -363,7 +363,7 @@
 
 ; ---
 
-; Problem 1-8:  Prove Problem 1-7. 
+; Problem 1-8:  Prove Problem 1-7.
 
 ; Answer 1-8:
 ; Proof that (stack (make-state a b c d)) = c
@@ -389,7 +389,7 @@
 
 ; ---
 
-; Problem 1-9: 
+; Problem 1-9:
 ; Define (len x) to return the number of elements of list x.
 ; Thus, (len '(a b c)) ==> 3.  (``==>'' means ``evaluates to'')
 
@@ -515,7 +515,7 @@
 ; Problem 1-17:
 ; A ``keyword argument list'' is a list of even length whose even elements
 ; (i.e., elements in the even positions, 0, 2, 4, ...) are keywords.  Thus,
-; (:A 1 :B 2 :C 3) is a keyword argument list.  So is (:A :B :B 2 :C 3).  
+; (:A 1 :B 2 :C 3) is a keyword argument list.  So is (:A :B :B 2 :C 3).
 ; We say that a value for keyword key is ``supplied'' by x if key appears
 ; as an even element of x.  Define (suppliedp key x) to return t or nil
 ; to indicate whether key is supplied by x.

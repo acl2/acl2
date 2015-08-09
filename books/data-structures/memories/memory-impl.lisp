@@ -47,13 +47,13 @@
 (in-package "MEM")
 (set-verify-guards-eagerness 2)
 
-(include-book "log2") 
+(include-book "log2")
 (include-book "memtree")
 (include-book "misc/records" :dir :system)
 
 
 
-; Definition of memories.  A memory is a relatively complicated structure 
+; Definition of memories.  A memory is a relatively complicated structure
 ; which combined several components:
 ;
 ;   mtree  - a memtree (see the included book "memtree")
@@ -61,7 +61,7 @@
 ;   size   - the logical size of this memory (0 <= size < (expt 2 depth)
 ;   fast   - a flag indicating if depth is a fixnum (almost always t)
 ;   record - an ACL2 record ("misc/records")
-; 
+;
 ; Here is the basic idea.  Memtrees are really pretty nice all on their own,
 ; but they are limited in that (1) you always have to keep track of their
 ; depth, (2) their size can only be a power of 2, and (3) their addresses must
@@ -97,7 +97,7 @@
 
 
 ; We implement a typical fixing function for memories.  Our default memory is
-; an empty tree with size 1 and depth 1.  
+; an empty tree with size 1 and depth 1.
 
 (defun _memory-fix (mem)
   (declare (xargs :guard (_memory-p mem)))
@@ -151,7 +151,7 @@
            (signed-byte-p 29 (_memory-depth mem))))
 
 (defthm _memory-mtree-length/depth
-  (<= (_memory-size mem) 
+  (<= (_memory-size mem)
       (expt 2 (_memory-depth mem)))
   :rule-classes :linear)
 
@@ -203,9 +203,9 @@
   (implies (not (_memory-p mem))
            (equal (_memory-record mem) nil)))
 
-(in-theory (disable _memory-depth 
-                    _memory-mtree 
-                    _memory-fast 
+(in-theory (disable _memory-depth
+                    _memory-mtree
+                    _memory-fast
                     _memory-record
                     _memory-size))
 
@@ -219,7 +219,7 @@
 ; give a multi-step process for removing hyptheses:
 ;
 ;  (1) determine a normal form for the data structure such that "equivalent"
-;  structures are equal. 
+;  structures are equal.
 ;
 ;  (2) define the desired operations assuming well formed data structures (we
 ;  already did this too, our load and store operations)
@@ -301,7 +301,7 @@
 (defthm _to-mem-identity
   (implies (not (_bad-memory-p x))
            (equal (_to-mem x) x)))
-               
+
 (in-theory (disable _to-mem))
 
 
@@ -358,12 +358,12 @@
 ;
 ; Below is the "user's notion" of what a memory is.  It should always be
 ; disabled.  Basically, we require that a user's memory is always has a depth
-; and size of at least one.  
+; and size of at least one.
 ;
 ; This gives us the crucial property that "bad memories" are not memories in
 ; the user's sense.  Why is this so important?  Well, we are very much
-; concerned with efficiency of operations.  As long as we know that our 
-; arguments are not bad, we can skip all of this mapping and just provide 
+; concerned with efficiency of operations.  As long as we know that our
+; arguments are not bad, we can skip all of this mapping and just provide
 ; high speed execution using MBE.
 
 (defun memory-p (mem)
@@ -431,9 +431,9 @@
           (equal size 1))
       (cons (cons nil t) (cons 1 (cons 1 nil)))
     (let ((depth (_log2 (1- size))))
-      (cons 
+      (cons
        (cons nil (signed-byte-p 29 depth))
-       (cons size 
+       (cons size
              (cons depth nil))))))
 
 (defthm _new-memory
@@ -442,7 +442,7 @@
 
 (defthm memory-p-of-new
   (memory-p (new size))
-  :hints(("Goal" 
+  :hints(("Goal"
           :in-theory (enable _memory-p
                              _memory-size
                              _memory-depth))))
@@ -493,20 +493,20 @@
        :exec (let* ((fast (cdar mem))
                     (mtree (caar mem))
                     (depth (caddr mem)))
-               (if fast 
+               (if fast
                    (_fixnum-memtree-load addr mtree depth)
                  (_memtree-load addr mtree depth)))))
 
 (defun _store (addr elem mem)
   (declare (xargs :guard (and (memory-p mem)
                               (address-p addr mem))
-                  :guard-hints (("Goal" 
+                  :guard-hints (("Goal"
                                  :use (:instance _address-from-address)
                                  :in-theory (enable _memory-p
                                                     _memory-mtree
                                                     _memory-fast
                                                     _memory-depth
-                                                    _memory-record                                                    
+                                                    _memory-record
                                                     _memory-size)))))
   (mbe :logic (let ((fast   (_memory-fast mem))
                     (mtree  (_memory-mtree mem))
@@ -525,7 +525,7 @@
                     (fast   (cdar mem))
                     (memcdr (cdr mem))
                     (depth  (cadr memcdr)))
-               (cons (cons (if fast 
+               (cons (cons (if fast
                                (if elem
                                    (_fixnum-memtree-store addr elem mtree depth)
                                  (_fixnum-memtree-store-nil addr mtree depth))
@@ -549,7 +549,7 @@
                    (equal (address-p addr mem)
                           (and (natp addr)
                                (< addr (_memory-size mem)))))))
- 
+
  (local (in-theory (disable address-p)))
 
  (defthm _store-memory
@@ -557,18 +557,18 @@
    :hints(("Goal" :in-theory (enable _memory-p))))
 
 )
-                                  
+
 (defthm _store-size
   (equal (_memory-size (_store addr elem mem))
          (_memory-size mem))
-  :hints(("Goal" :in-theory (e/d (_memory-size) 
+  :hints(("Goal" :in-theory (e/d (_memory-size)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
 (defthm _store-fast
   (equal (_memory-fast (_store addr elem mem))
          (_memory-fast mem))
-  :hints(("Goal" :in-theory (e/d (_memory-fast) 
+  :hints(("Goal" :in-theory (e/d (_memory-fast)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
@@ -576,21 +576,21 @@
   (equal (_memory-mtree (_store addr elem mem))
          (if (address-p addr mem)
              (if elem
-                 (_memtree-store addr elem 
+                 (_memtree-store addr elem
                                  (_memory-mtree mem)
                                  (_memory-depth mem))
-               (_memtree-store-nil addr 
+               (_memtree-store-nil addr
                                    (_memory-mtree mem)
                                    (_memory-depth mem)))
            (_memory-mtree mem)))
-  :hints(("Goal" :in-theory (e/d (_memory-mtree) 
+  :hints(("Goal" :in-theory (e/d (_memory-mtree)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
 (defthm _store-depth
   (equal (_memory-depth (_store addr elem mem))
          (_memory-depth mem))
-  :hints(("Goal" :in-theory (e/d (_memory-depth) 
+  :hints(("Goal" :in-theory (e/d (_memory-depth)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
@@ -599,7 +599,7 @@
           (if (address-p addr mem)
               (_memory-record mem)
             (s addr elem (_memory-record mem))))
-  :hints(("Goal" :in-theory (e/d (_memory-record) 
+  :hints(("Goal" :in-theory (e/d (_memory-record)
                                  (_store-memory))
           :use (:instance _store-memory))))
 
@@ -664,14 +664,14 @@
        :exec  (let* ((fast (cdar mem))
                      (mtree (caar mem))
                      (depth (caddr mem)))
-                (if fast 
+                (if fast
                     (_fixnum-memtree-load addr mtree depth)
                   (_memtree-load addr mtree depth)))))
 
 (defun store (addr elem mem)
   (declare (xargs :guard (and (memory-p mem)
                               (address-p addr mem))
-                  :guard-hints(("Goal" 
+                  :guard-hints(("Goal"
                                 :use (:instance _address-from-address)
                                 :in-theory (enable _memory-p
                                                    _memory-mtree
@@ -684,7 +684,7 @@
                     (fast   (cdar mem))
                     (memcdr (cdr mem))
                     (depth  (cadr memcdr)))
-               (cons (cons (if fast 
+               (cons (cons (if fast
                                (if elem
                                    (_fixnum-memtree-store addr elem mtree depth)
                                  (_fixnum-memtree-store-nil addr mtree depth))

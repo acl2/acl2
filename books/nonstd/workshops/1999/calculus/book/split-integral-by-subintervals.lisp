@@ -18,7 +18,7 @@
                  (i-small (mesh p)))
             (i-close (riemann-rcfn p)
                      (integral-rcfn a b)))))
-       
+
 ;;; Main idea of proof of split-integral-by-subintervals:
 ;;; each integral-rcfn term in the conclusion is i-close to a
 ;;; riemann-rcfn term involving an appropriate partition:

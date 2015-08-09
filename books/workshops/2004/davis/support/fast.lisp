@@ -82,7 +82,7 @@
   :hints(("Goal" :in-theory (enable primitives-theory))))
 
 (defthm cons-to-insert-nonempty
-  (implies (and (setp X) 
+  (implies (and (setp X)
                 (<< a (head X)))
            (equal (cons a X) (insert a X)))
   :hints(("Goal" :in-theory (enable primitives-theory
@@ -129,31 +129,31 @@
 (encapsulate ()
 
   (local (defthmd fast-union-head-weak
-	   (implies (and (setp X) 
+	   (implies (and (setp X)
 			 (setp Y)
 			 (setp (fast-union X Y))
 			 (not (equal (head (fast-union X Y)) (head X))))
 		    (equal (head (fast-union X Y)) (head Y)))
-	   :hints(("Goal" 
+	   :hints(("Goal"
 		   :in-theory (enable primitive-order-theory)
 		   :use (:instance fast-union (X X) (Y Y))))))
 
   (defthm fast-union-set
     (implies (and (setp X) (setp Y))
 	     (setp (fast-union X Y)))
-    :hints(("Goal" 
+    :hints(("Goal"
 	    :in-theory (enable primitive-order-theory))
-	   ("Subgoal *1/9" 
-	    :use (:instance fast-union-head-weak 
-			    (X X) 
+	   ("Subgoal *1/9"
+	    :use (:instance fast-union-head-weak
+			    (X X)
 			    (Y (tail Y))))
-	   ("Subgoal *1/7" 
+	   ("Subgoal *1/7"
 	    :use (:instance fast-union-head-weak
-			    (X (tail X)) 
+			    (X (tail X))
 			    (Y Y)))
-	   ("Subgoal *1/5" 
+	   ("Subgoal *1/5"
 	    :use (:instance fast-union-head-weak
-			    (X (tail X)) 
+			    (X (tail X))
 			    (Y (tail Y))))))
 
 
@@ -164,25 +164,25 @@
 				 ((empty Y)              (head X))
 				 ((<< (head X) (head Y)) (head X))
 				 (t                      (head Y)))))
-	   :hints(("Goal" 
+	   :hints(("Goal"
 		   :in-theory (enable primitive-order-theory))
-		  ("Subgoal *1/3" :use 
-		   (:instance cons-head 
-			      (a (head X)) 
+		  ("Subgoal *1/3" :use
+		   (:instance cons-head
+			      (a (head X))
 			      (X (fast-union (tail X) (tail Y))))))))
 
-            
+
   (defthm fast-union-membership
     (implies (and (setp X) (setp Y))
 	     (equal (in a (fast-union X Y))
 		    (or (in a X) (in a Y))))
-    :hints(("Goal" 
+    :hints(("Goal"
 	    :in-theory (enable primitive-order-theory))
-           ("Subgoal *1/5" 
-	    :use (:instance cons-head 
-			    (a (head Y)) 
+           ("Subgoal *1/5"
+	    :use (:instance cons-head
+			    (a (head Y))
 			    (X (fast-union X (tail Y)))))
-	   ("Subgoal *1/4" 
+	   ("Subgoal *1/4"
 	    :use ((:instance cons-head
 			     (a (head X))
 			     (X (fast-union (tail X) Y)))
@@ -193,7 +193,7 @@
 			     (a a)
 			     (b (head X))
 			     (X (fast-union (tail X) Y)))))
-	   ("Subgoal *1/3" 
+	   ("Subgoal *1/3"
 	    :use (:instance cons-head
 			    (a (head X))
 			    (X (fast-union (tail X) (tail Y)))))))
@@ -214,7 +214,7 @@
   (cond ((empty X) (sfix X))
         ((empty Y) (sfix Y))
         ((equal (head X) (head Y))
-         (cons (head X) 
+         (cons (head X)
                (fast-intersect (tail X) (tail Y))))
         ((<< (head X) (head Y))
          (fast-intersect (tail X) Y))
@@ -234,7 +234,7 @@
 			 (not (empty (fast-intersect X Y)))
 			 (not (<< (head X) (head Y))))
 		    (not (empty (tail Y))))))
-			 
+
   (local (defthm lemma-2
 	   (implies (and (not (empty X))
 			 (not (empty Y))
@@ -302,7 +302,7 @@
     (implies (and (setp X) (setp Y))
 	     (equal (in a (fast-intersect X Y))
 		    (and (in a X) (in a Y))))
-    :hints(("Goal" :in-theory (enable primitive-order-theory 
+    :hints(("Goal" :in-theory (enable primitive-order-theory
 				      head-minimal))
 	   ("Subgoal *1/3" :use (:instance fast-intersect-order-weak
 					   (a (head X))
@@ -343,7 +343,7 @@
 		  (<< (head X) (head Y)))
 	     (equal (head (fast-difference X Y))
 		    (head X)))
-    :hints(("Goal" 
+    :hints(("Goal"
 	    :in-theory (disable cons-set)
 	    :use (:instance cons-head
 			    (a (head X))
@@ -398,7 +398,7 @@
 ;;; we will go ahead and disable all these theorems and put them into
 ;;; nice packages for the future.
 
-(deftheory fast-union-theory 
+(deftheory fast-union-theory
   '(fast-union-set
     fast-union-membership))
 
@@ -412,9 +412,9 @@
     fast-difference-membership
     fast-difference-empty))
 
-(deftheory cons-theory 
+(deftheory cons-theory
   '(cons-set
-    cons-head 
+    cons-head
     cons-to-insert-empty
     cons-to-insert-nonempty
     cons-in))
@@ -427,4 +427,4 @@
                     fast-intersect-theory
                     fast-difference-theory
 		    cons-theory))
-                    
+

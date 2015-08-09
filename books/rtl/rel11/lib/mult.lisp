@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -73,9 +73,9 @@
          (bits y (1- n) 0))
     0))
 
-;; We define a macro, CAT, that takes a list of a list X of alternating data values 
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at 
-;; least 1 data/size pair, but we do not need to specify this in the guard, and 
+;; We define a macro, CAT, that takes a list of a list X of alternating data values
+;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at
+;; least 1 data/size pair, but we do not need to specify this in the guard, and
 ;; leaving it out of the guard simplifies the guard proof.
 
 (defun formal-+ (x y)
@@ -98,12 +98,12 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
-	       
+
 ;;;**********************************************************************
 ;;;			Radix-4 Booth Encoding
 ;;;**********************************************************************
@@ -111,7 +111,7 @@
 (defsection-rtl |Radix-4 Booth Encoding| |Multiplication|
 
 (defun theta (i y)
-  (+ (bitn y (1- (* 2 i))) 
+  (+ (bitn y (1- (* 2 i)))
      (bitn y (* 2 i))
      (* -2 (bitn y (1+ (* 2 i))))))
 
@@ -139,7 +139,7 @@
 
 (encapsulate ((zeta (i) t))
  (local (defun zeta (i) (declare (ignore i)) 0))
- (defthm zeta-bnd 
+ (defthm zeta-bnd
      (and (integerp (zeta i))
 	  (<= (zeta i) 2)
 	  (>= (zeta i) -2))))
@@ -160,7 +160,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 2 (1- m))) (zeta (1- m)))
-       (sum-zeta (1- m)))))   
+       (sum-zeta (1- m)))))
 
 (defun sum-pp4 (x m n)
   (if (zp m)
@@ -244,18 +244,18 @@
 (defsection-rtl |Statically Encoded Multiplier Arrays| |Multiplication|
 
 (defun m-mu-chi (i mode)
-  (cond ((equal mode 'mu)  
+  (cond ((equal mode 'mu)
          (if (zp i)  1
            (cons (cons 1  i) 1)))
         ((equal mode 'chi)
          (if (zp i)  0
            (cons (cons 1  i) 0)))))
-             
+
 (mutual-recursion
  (defun mu (i y)
    (declare (xargs :measure (m-mu-chi i 'mu)))
      (+ (bits y (1+ (* 2 i)) (* 2 i)) (chi i y)))
- 
+
  (defun chi (i y)
    (declare (xargs :measure (m-mu-chi i 'chi)))
    (if (zp i)
@@ -351,13 +351,13 @@
 (defun delta (i a b c d)
   (if (zp i)
       (bitn d 0)
-    (logand (logior (logand (bitn a (+ -2 (* 2 i))) 
+    (logand (logior (logand (bitn a (+ -2 (* 2 i)))
 			    (bitn b (+ -2 (* 2 i))))
 		    (logior (logand (bitn a (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))
 			    (logand (bitn b (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))))
-	    (lognot (logxor (bitn a (1- (* 2 i))) 
+	    (lognot (logxor (bitn a (1- (* 2 i)))
 			    (bitn b (1- (* 2 i))))))))
 
 (defun psi (i a b c d)
@@ -373,8 +373,8 @@
 (defthm psi-m-1
     (implies (and (natp m)
                   (>= m 1)
-		  (bvecp a (- (* 2 m) 2))   
-		  (bvecp b (- (* 2 m) 2))  
+		  (bvecp a (- (* 2 m) 2))
+		  (bvecp b (- (* 2 m) 2))
 		  (bvecp c 1)
 		  (bvecp d 1))
 	     (and (equal (gamma m a b c) 0)
@@ -445,7 +445,7 @@
 (defsection-rtl |Radix-8 Booth Encoding| |Multiplication|
 
 (defun eta (i y)
-  (+ (bitn y (1- (* 3 i))) 
+  (+ (bitn y (1- (* 3 i)))
      (bitn y (* 3 i))
      (* 2 (bitn y (1+ (* 3 i))))
      (* -4 (bitn y (+ 2 (* 3 i))))))
@@ -476,7 +476,7 @@
 
 (encapsulate ((xi (i) t))
  (local (defun xi (i) (declare (ignore i)) 0))
- (defthm xi-bnd 
+ (defthm xi-bnd
      (and (integerp (xi i))
 	  (<= (xi i) 4)
 	  (>= (xi i) -4))))
@@ -497,7 +497,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 3 (1- m))) (xi (1- m)))
-       (sum-xi (1- m)))))   
+       (sum-xi (1- m)))))
 
 (defun sum-pp8 (x m n)
   (if (zp m)

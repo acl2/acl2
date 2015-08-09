@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -322,7 +322,7 @@
                 (rationalp y)
                 (rationalp z)
                 )
-           (<= 0 
+           (<= 0
            (+ (FL (* 1/2 X))
               (FL (* 1/2 Y))
               (FL (* 1/2 Z))))))
@@ -368,7 +368,7 @@
                          ;             fl-<-integer
                                       ;fl-def-linear-part-1
                                       )
-           
+
            :use (;(:instance add3-1-neg) ;BOZO if these are put back, things get really slow..
                  ;(:instance add3-1-neg (x y))
                  ;(:instance add3-1-neg (x z))

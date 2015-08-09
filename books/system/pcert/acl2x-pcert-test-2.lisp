@@ -13,7 +13,7 @@
  (local (make-event '(defun g (x) x)))
  (defun h (x) x))
 
-; Not in :expansion-alist-nonlocal of .pcert0 file, because 
+; Not in :expansion-alist-nonlocal of .pcert0 file, because
 ; unelided expansion is already in .acl2x file.
 ; [3]
 (encapsulate

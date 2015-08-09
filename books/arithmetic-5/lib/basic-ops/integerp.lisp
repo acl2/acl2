@@ -25,14 +25,14 @@
 (local
  (include-book "default-hint"))
 
-(local 
+(local
  (include-book "../../support/top"))
 
 (local
  (include-book "integerp-helper"))
 
 ;; (local
-;;  (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+;;  (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
 ;; 					       hist pspv))))
 
 (table acl2-defaults-table :state-ok t)
@@ -70,9 +70,9 @@
 ;;; NOTE: It might be a good idea to add a bind-free/meta rule
 ;;; generalizing the following.
 
-;;; We used to limit the coverage of these rules to the case 
+;;; We used to limit the coverage of these rules to the case
 ;;; where there were only two factors.  It would be nice to be
-;;; able to write a bind-free or meta type rule to handle the 
+;;; able to write a bind-free or meta type rule to handle the
 ;;; general situation, rather than proliferating rules as below.
 ;;; This would also ensure complete coverage for even larger
 ;;; terms.
@@ -95,7 +95,7 @@
 
 ;;; I surely don't need all this to prove not-integerp-helper!
 ;;; Clean this up.
- 
+
  (local
   (include-book "common"))
 
@@ -5403,7 +5403,7 @@ Robert
 ;;; make certain simple assumptions about the forms of the terms they
 ;;; see.
 
-;;; The rule integerp-minus-x replaces (integerp (- x)) with 
+;;; The rule integerp-minus-x replaces (integerp (- x)) with
 ;;; (integerp x) We use negative-addends-p to handle the more general
 ;;; situation, e.g., (integerp (+ 3 (- x) (* -7 y))).
 
@@ -5477,7 +5477,7 @@ Robert
 
 (defthm |(integerp (* c x))|
     (implies (and (syntaxp (in-term-order-* `(BINARY-* ,c ,x) mfc state))
-                  (bind-free (find-integerp-hyp c x mfc state) 
+                  (bind-free (find-integerp-hyp c x mfc state)
                              (d a))
                   (equal (* d a) c)  ; a = c/d
                   (integerp (* d x))
@@ -5489,7 +5489,7 @@ Robert
 
 #|
 ;;; I do not need this rule anymore.  See |(expt (/ x) n)| in
-;;; basic.lisp.  I leave it in anyway in case I later change 
+;;; basic.lisp.  I leave it in anyway in case I later change
 ;;; |(expt (/ x) n)|.
 
 ;;; The neccesity of this rule points out a problem with my current
@@ -5531,7 +5531,7 @@ Robert
    (implies (integerp x)
 	    (equal (integerp (+ y z x))
 		   (integerp (+ y z))))))
-		 
+
 
 (defthm integerp-+-reduce-constant
   (implies (and (syntaxp (rational-constant-p c))
@@ -5556,13 +5556,13 @@ Robert
 ;;; Expressions like (integerp (+ 1/2 x)) show up when one is reasoning
 ;;; about odd and even.
 
-;;; Note1: We do not have to worry about expressions such as 
-;;; (integerp (+ -1/2 x)) or (integerp (+ 3/2 x)) because of 
+;;; Note1: We do not have to worry about expressions such as
+;;; (integerp (+ -1/2 x)) or (integerp (+ 3/2 x)) because of
 ;;; integerp-+-reduce-leading-constant.
 
-;;; Note 2: We could write a similar rule --- probably a meta rule 
-;;; --- for expressions such as (integerp (+ 1/3 x)) and 
-;;; (integerp (+ 3/10 x)).  For (integerp (+ c/d x)), (* n x) is not 
+;;; Note 2: We could write a similar rule --- probably a meta rule
+;;; --- for expressions such as (integerp (+ 1/3 x)) and
+;;; (integerp (+ 3/10 x)).  For (integerp (+ c/d x)), (* n x) is not
 ;;; an integer for all 0 < n < d.  But this would probably be a messy
 ;;; proof to do --- it would depend on c/d being in lowest terms ---
 ;;; but I have not thought about it yet.

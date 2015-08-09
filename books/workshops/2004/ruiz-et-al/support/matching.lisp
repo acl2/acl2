@@ -1,11 +1,11 @@
 ;;; matching.lisp
 ;;; Definition and correctness of a RULE BASED matching
-;;; algorithm between systems of equations. 
+;;; algorithm between systems of equations.
 ;;; This definition is a PATTERN for concrete matching
 ;;; algorithms. See subsumption.lisp for a concrete
-;;; implementation. 
-;;; This is an alternative to a more classical formulation in 
-;;; matching.lisp   
+;;; implementation.
+;;; This is an alternative to a more classical formulation in
+;;; matching.lisp
 ;;; Created: 9-10-99 Last revison: 05-01-2001
 ;;; =============================================================================
 
@@ -45,11 +45,11 @@
 ;;; a-pair selects an element of every non-empty list:
 
 (encapsulate
- 
+
  ((a-pair (lst) t))
- 
+
  (local (defun a-pair (lst) (car lst)))
- 
+
  (defthm a-pair-selected
    (implies (consp l) (member (a-pair l) l))))
 
@@ -66,7 +66,7 @@
 	 (t1 (car ecu)) (t2 (cdr ecu))
 	 (R (eliminate ecu S)))
     (cond
-     ((variable-p t1) 
+     ((variable-p t1)
       (let ((bound (assoc t1 match)))
 	(if bound
 	    (if (equal (cdr bound) t2)
@@ -85,7 +85,7 @@
 
 
 ;;; ----------------------------------------------------------------------------
-;;; 1.2 Main properties of transform-subs-sel 
+;;; 1.2 Main properties of transform-subs-sel
 ;;; ----------------------------------------------------------------------------
 
 
@@ -99,19 +99,19 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm member-matcher
      (implies (and (matcher sigma S)
 		   (member equ S))
 	      (equal (instance (car equ) sigma) (cdr equ)))))
-   
+
   (local
    (defthm subsetp-matcher
      (implies (and (matcher sigma S)
 		   (subsetp S1 S))
 	      (matcher sigma S1))))
-   
+
 
   (defcong equal-set iff (matcher x y) 2)))
 
@@ -126,7 +126,7 @@
    (defthm equal-set-selection-and-eliminate-lemma
      (implies (member x S)
 	      (equal-set (cons x (eliminate x S)) S))))
-   
+
   (defthm equal-set-selection-and-eliminate
     (implies (consp (car S-match))
 	     (equal-set (car S-match)
@@ -159,16 +159,16 @@
      (if (or (endp l1) (endp l2))
 	 t
        (induction-pair-args (cdr l1) (cdr l2)))))
-  
+
   (local
-   (defthm matcher-pair-args 
+   (defthm matcher-pair-args
      (implies (second (pair-args l1 l2))
 	      (equal (matcher sigma (car (pair-args l1 l2)))
 		     (equal (apply-subst nil sigma l1) l2)))
      :hints (("Goal" :induct (induction-pair-args l1 l2)))))
-  
-  
-  
+
+
+
   (local
    (defthm matcher-sigma-value
      (implies (and
@@ -176,32 +176,32 @@
 	       (variable-p x)
 	       (assoc x S))
 	      (equal (val x sigma) (cdr (assoc x S))))))
-  
-  
+
+
   (local
    (defthm pair-args-apply-subst
      (second (pair-args term (apply-subst nil sigma term)))))
-  
+
   (local
    (defthm matcher-topmost-function-symbol
      (implies (and (not (variable-p t1))
 		   (not (equal (car t1) (car t2))))
 	      (not (equal (instance t1 sigma) t2)))))
-  
-  
+
+
   (local
    (defthm matcher-variable-non-variable
      (implies (and (not (variable-p t1))
 		   (variable-p t2))
 	      (not (equal (instance t1 sigma) t2)))))
-  
+
 
   (local
    (defthm matcher-not-pair-args
      (implies (and (not (variable-p t1))
 		   (not (second (pair-args t1 t2))))
 	      (not (equal (instance t1 sigma) t2)))))
-  
+
   (local
    (defthm matcher-assoc
      (implies (and
@@ -209,7 +209,7 @@
 	       (assoc x S)
 	       (not (equal (val x sigma) (cdr (assoc x S)))))
 	      (not (matcher sigma S)))))
-  
+
 ;;; The three main theorems of this subsubsection
 ;;; ·············································
 
@@ -218,15 +218,15 @@
      (and (not (normal-form-syst S-match))
 	  (matcher sigma (union-systems S-match)))
      (matcher sigma (union-systems (transform-subs-sel S-match)))))
-  
+
   (defthm transform-subs-sel-preserves-matchers-2
     (implies
      (and (not (normal-form-syst S-match))
 	  (transform-subs-sel S-match)
 	  (matcher sigma (union-systems (transform-subs-sel S-match))))
      (matcher sigma (union-systems S-match))))
-  
-  (defthm transform-subs-sel-fail 
+
+  (defthm transform-subs-sel-fail
     (implies
      (and (not (normal-form-syst S-match))
 	  (not (transform-subs-sel S-match)))
@@ -237,7 +237,7 @@
 
 ;;; ············································································
 ;;; 1.2.3 (system-substitution (cdr S-match)) is an invariant in the rules
-;;;     of transformation. 
+;;;     of transformation.
 ;;; ············································································
 
 
@@ -245,15 +245,15 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm not-assoc-not-member-domain
-     (implies  (and 
+     (implies  (and
 		(system-substitution S)
 		(not (assoc x S)))
 	       (not (member x (domain S))))))
-  
-  
+
+
   (defthm transform-subs-sel-preserves-system-substitution
     (implies
      (and (not (normal-form-syst S-match))
@@ -269,7 +269,7 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm matcher-extended
      (implies (and (matcher sigma s)
@@ -291,32 +291,32 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defthm length-system-positive-if-consp
     (implies (consp S)
 	     (< 0 (length-system S)))
     :rule-classes :linear))
- 
+
  (local
   (defthm length-system-append
     (equal (length-system (append s1 s2))
 	   (+ (length-system s1) (length-system s2)))))
- 
+
  (local
   (defthm eliminate-not-member
     (implies (not (member x S))
 	     (equal (length-system (eliminate x S))
 		    (length-system S)))
     :rule-classes (:rewrite :linear)))
- 
+
  (local
   (defthm length-system-eliminate
     (implies (member e S)
 	     (< (length-system (eliminate e S))
 		(length-system S)))
     :rule-classes :linear))
- 
+
  (local
   (defthm length-system-eliminate-leq
     (<= (length-system (eliminate e S))
@@ -331,7 +331,7 @@
     :hints (("Goal" :in-theory
 	     (disable (:META CANCEL_PLUS-EQUAL-CORRECT))))
     :rule-classes nil)) ;;; I needed this disable, surprisingly (20-8-2002)
- 
+
  (local
   (defthm length-system-selection-and-delete-one
     (implies (consp (car S-match))
@@ -344,8 +344,8 @@
 	     (:instance length-system-selection-and-delete-one-lemma
 			(S (car S-match))
 			(x (a-pair (car S-match))))))))
- 
-;;; NOTE: This is a very similar technique to use 
+
+;;; NOTE: This is a very similar technique to use
 ;;; equal-set-selection-and-eliminate. Note that the same is not true with
 ;;; eliminate. But the following lemma relates both.
 
@@ -353,22 +353,22 @@
    (defthm length-system-eliminate-delete-one-x
      (<= (length-system (eliminate x S)) (length-system (delete-one x S)))
      :rule-classes :linear))
-  
+
   (local
    (defthm length-size-pair-args
      (implies (second (pair-args args1 args2))
 	      (equal (length-system (first (pair-args args1 args2)))
 		     (+ (length-term nil args1)
 			(length-term nil args2))))))
-  
+
 ;;; And the main result:
 ;;; ····················
-  
+
   (defthm transform-subs-sel-decreases-length-of-first-system
     (implies (not (normal-form-syst S-match))
 	     (o< (length-system (car (transform-subs-sel s-match)))
 		 (length-system (car s-match))))))
-  
+
 ;;; REMARK: This is non-local because will be used to prove admission of
 ;;; concrete subsumption algorithms by functional instantiation
 
@@ -381,42 +381,42 @@
 (local
  (encapsulate
   ()
-;;; ***  
+;;; ***
   (local
    (defthm system-s-p-variable-s-p
      (implies (and (system-s-p S)
  		   (member equ S)
  		   (variable-p (car equ)))
  	      (variable-s-p (car equ)))))
-  
+
   (local
    (defthm termp-s-p-member-system-s-p
      (implies (and (system-s-p S)
 		   (member equ S))
 	      (term-s-p (cdr equ)))))
-  
+
 
 ;;; Closure properties:
 
   (defthm transform-subs-sel-preserves-system-s-p
-    (implies 
+    (implies
      (and (not (normal-form-syst S-match))
 	  (system-s-p (first S-match)))
      (system-s-p (first (transform-subs-sel S-match)))))
 
-  
+
   (defthm transform-subs-sel-sel-preserves-substitution-s-p
     (implies
      (and (not (normal-form-syst S-match))
 	  (system-s-p (first S-match))
 	  (substitution-s-p (cdr S-match)))
      (substitution-s-p (cdr (transform-subs-sel S-match)))))))
- 
+
 ;;; -----------------
 
 
 ;;; ******* We have just "extracted" all the required knowledge of
-;;; ******* transform-subs-sel 
+;;; ******* transform-subs-sel
 
 (in-theory (disable transform-subs-sel))
 
@@ -428,7 +428,7 @@
 
 
 ;;; ============================================================================
-;;; 2. Applying transformation rules until a solution (or nil) is found 
+;;; 2. Applying transformation rules until a solution (or nil) is found
 ;;; ============================================================================
 
 
@@ -453,7 +453,7 @@
 ;;; Technical lemma:
 
 (local
- (defthm if-matchable-transform-subs-sel-success 
+ (defthm if-matchable-transform-subs-sel-success
   (implies (subs-system-sel (transform-subs-sel S-match))
 	   (transform-subs-sel S-match))))
 
@@ -477,7 +477,7 @@
 
 (local
  (defthm subs-system-sel-fail
-  (implies (and (not (subs-system-sel S-match)) 
+  (implies (and (not (subs-system-sel S-match))
 		(consp S-match))
 	   (not (matcher sigma (union-systems S-match))))))
 
@@ -491,8 +491,8 @@
 ;;; ··································································
 
 (local
- (defthm subs-system-sel-preserves-system-substitution 
-  (implies (system-substitution (cdr S-match)) 
+ (defthm subs-system-sel-preserves-system-substitution
+  (implies (system-substitution (cdr S-match))
 	   (system-substitution (cdr (subs-system-sel S-match))))))
 
 ;;; Guard verification: a substitution-s-p is returned
@@ -500,7 +500,7 @@
 
 (local
  (defthm
-   subs-system-sel-substitution-s-p 
+   subs-system-sel-substitution-s-p
    (let* ((S (first S-match))  (match (cdr S-match))
 	  (subs-system-sel (subs-system-sel S-match))
 	  (matcher (cdr subs-system-sel)))
@@ -532,8 +532,8 @@
 ;;; Technical lemma:
 
 (local
- (defthm 
-   in-normal-forms-S-is-matchable-by-any-sigma 
+ (defthm
+   in-normal-forms-S-is-matchable-by-any-sigma
    (matcher sigma (first (subs-system-sel S-sol)))))
 
 
@@ -545,7 +545,7 @@
 	   (matcher (first (match-sel S)) S))
   :rule-classes nil
   :hints
-  (("Goal" :use 
+  (("Goal" :use
     (:instance subs-system-sel-preserves-matchers-2
 	       (S-match (cons S nil))
 	       (sigma (first (match-sel S)))))))
@@ -556,7 +556,7 @@
 	   (match-sel S))
   :rule-classes nil
   :hints
-  (("Goal" :use 
+  (("Goal" :use
     (:instance subs-system-sel-fail (S-match (cons S nil))))))
 
 
@@ -588,7 +588,7 @@
 
 (defun subs-sel (t1 t2)
   (match-sel (list (cons t1 t2))))
-  
+
 
 
 (defun matching-sel (t1 t2)
@@ -630,7 +630,7 @@
 
 
 
-;;; Closure property: 
+;;; Closure property:
 ;;; (the following theorem is needed for guard verification)
 ;;; ························································
 

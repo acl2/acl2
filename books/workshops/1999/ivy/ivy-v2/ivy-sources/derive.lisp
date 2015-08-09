@@ -2,14 +2,14 @@
 
 ;; This book has the interface to the program (say external-prover) that
 ;; searches for a refutation of a list of clauses.
-;; 
+;;
 ;; External-prover receives a list of annotated clauses (the initial proof)
 ;; and returns a list of annotated clauses (the proof object).
 ;; The annotations are clause identifiers and justifications.
 ;; Function check-proof below checks the soundness of each
 ;; clause in the proof object.  (If we are lucky, one of the clauses
 ;; in the proof object is 'false.)
-;; 
+;;
 ;; Function refute-n-check below is at the center of things.  It takes
 ;; a closed wff in universal-prefix-cnf, strips the universal
 ;; quantifiers, constructs an initial proof object, calls Otter,
@@ -93,7 +93,7 @@
       (list 'and
 	    (prf-clause (car prf))
 	    (extract-all-steps (cdr prf)))))
-	
+
 ;; Extract the input steps from a wfproof, conjoin them, and return a wff.
 
 (defun extract-input-steps (prf)
@@ -229,7 +229,7 @@
 ;; Now, prove that if check-proof succeeds, the proof is sound.
 
 (defthm step-extract-xsound-closure
-  (implies (and 
+  (implies (and
 	    (xeval (universal-closure (extract-all-steps prf)) (domain i) i)
 	    (assoc-equal id prf))
 	   (xeval (universal-closure (prf-clause (assoc-equal id prf)))
@@ -488,7 +488,7 @@
 ;; Otter proof objects and IVY proof objects.  Otter proof objects
 ;; have simultaneous substitutions (the conventional type),
 ;; and IVY expects sequential substitutions.
-  
+
 (defun fix-subst-in-step (step all-vars)
   (declare (xargs :guard (and (wfproof-step step)
 			      (var-list all-vars))))
@@ -660,14 +660,14 @@
 	   :do-not-induct t
 	   :use ((:instance check-proof-xsound
 			    (prf (fix-substs-in-prf
-				  (external-prover 
+				  (external-prover
 				   (assign-ids-to-prf
 				    (initial-proof
 				     (remove-leading-alls f))
 				    1))
 				  (free-vars
 				   (extract-all-steps
-				    (external-prover 
+				    (external-prover
 				     (assign-ids-to-prf
 				      (initial-proof
 				       (remove-leading-alls f))
@@ -725,14 +725,14 @@
 	  ("Goal'"
 	   :use ((:instance uc-extract-all-extract-input-xsound
 			    (prf (fix-substs-in-prf
-				  (external-prover 
+				  (external-prover
 				   (assign-ids-to-prf
 				    (initial-proof
 				     (remove-leading-alls f))
 				    1))
 				  (free-vars
 				   (extract-all-steps
-				    (external-prover 
+				    (external-prover
 				     (assign-ids-to-prf
 				      (initial-proof
 				       (remove-leading-alls f))

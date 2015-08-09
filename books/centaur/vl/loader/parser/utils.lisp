@@ -663,7 +663,7 @@ frequently.</p>")
 
 (defmacro defparser (name formals &rest args)
   (defparser-fn name formals args))
- 
+
 (defun defparser-top-fn (name guard resulttype state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((wrld (w state))

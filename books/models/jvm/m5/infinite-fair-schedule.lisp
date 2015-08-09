@@ -30,14 +30,14 @@
 ; enumeration of successive "blocks".
 
 ; index:0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 ...
-; 
-; block 
+;
+; block
 ; 0     0
 ; 1        0  1
 ; 2              0  1  2
 ; 3                       0  1  2  3
 ; 4                                   0  1  2  3  4
-; 5                                                  0  1  2  3  4  5 
+; 5                                                  0  1  2  3  4  5
 
 ; The first item in every block is 0.  The last item in block b is b.
 
@@ -150,7 +150,7 @@
   (("Goal" :do-not '(generalize fertilize))
    ("Subgoal *1/1.2.1" :expand (MOVEI (+ -1 (- BASE) D X) (+ 1 BASE)))
    ("Subgoal *1/1.1" :expand (MOVEI (+ D X) BASE))))
-                                                  
+
 (defthm no-intervening-occurrence
   (implies (and (< y (+ 1 x (moveb x base)))
                 (< x y)

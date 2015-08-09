@@ -37,7 +37,7 @@ induction hint.
 		  (+ lo (walk (extract-qs lo hi qs) splitter))))
   :hints (("Goal"
 	   :induct (split-qs lo hi splitter qs))))
-	
+
 
 
 (defthm split-qs-is-identity-for-below-range
@@ -61,10 +61,10 @@ induction hint.
                 (natp hi))
            (equal (extract-qs lo hi (mv-nth 1 (split-qs lo hi splitter qs)))
                   (merge-func (extract-qs lo hi qs) splitter)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :induct (split-qs lo hi splitter qs))))
 
-	   
+
 (in-theory (disable extract-qs-decrement-hi))
 
 

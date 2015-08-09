@@ -61,7 +61,7 @@ an arbitrary symbol in ACL2.
 
 (defthm ncar-of-1+-lsh
   (equal (ncar (1+ (lsh n))) 1)
-  :hints (("Subgoal *1/2'" 
+  :hints (("Subgoal *1/2'"
            :use (:instance ncar-of-+2-reduce
                            (n (1+ (lsh (+ -1 n)))))
            :in-theory (disable ncar))))
@@ -90,7 +90,7 @@ an arbitrary symbol in ACL2.
   (implies (and (natp n)
                 (bitp b))
            (equal (ncar (ncons b n)) b)))
-           
+
 (defthm ncdr-of-ncons-reduce
   (implies (and (natp n)
                 (bitp b))
@@ -207,7 +207,7 @@ an arbitrary symbol in ACL2.
         ((stringp x) 1)
         ((symbolp x) 2)
         ((consp x)
-         (+ 1 
+         (+ 1
             (nice-count (car x))
             (nice-count (cdr x))))
         (t 0)))
@@ -438,7 +438,7 @@ an arbitrary symbol in ACL2.
   (nice->nat (nat->nice x)))
 
 (defthm nice-natp-of-nice-nat
-  (nice-natp (nice-nat x)))     
+  (nice-natp (nice-nat x)))
 
 (in-theory (disable nice-natp))
 

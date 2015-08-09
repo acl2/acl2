@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -145,7 +145,7 @@
   :hints (("Goal" :in-theory (enable lognot)
 		  :use ((:instance mod-mult (m (1- (- x))) (a 1) (n n))
 			(:instance mod-diff (a (1- n)) (b x) (n n))
-			(:instance mod-does-nothing 
+			(:instance mod-does-nothing
 				   (m (- (1- n) (mod x n)))
 				   (n n))
 			(:instance mod-bnd-2 (m x) (n n))
@@ -175,10 +175,10 @@
 		  (<= j i)
 		  (integerp x))
 	     (equal (bits (lognot x) i j)
-		    (+ (expt 2 (- (1+ i) j)) 
+		    (+ (expt 2 (- (1+ i) j))
 		       (fl (/ (1- (- (mod x (expt 2 (1+ i))))) (expt 2 j))))))
   :hints (("Goal" :in-theory (enable bits-lognot-1)
-		  :use ((:instance fl+int-rewrite 
+		  :use ((:instance fl+int-rewrite
 				   (x (/ (1- (- (mod x (expt 2 (1+ i))))) (expt 2 j)))
 				   (n (expt 1 (- (1+ i) j))))))))
 
@@ -197,7 +197,7 @@
 (defthm bits-sum-shift
     (implies (and (integerp x)
 		  (integerp y)
-		  (natp i) 
+		  (natp i)
 		  (natp j)
 		  (> j 0)
 		  (>= i j))

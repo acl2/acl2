@@ -1,6 +1,6 @@
 (in-package "MON")
 
-(include-book "term")  
+(include-book "term")
 
 ;;; -----------
 ;;; Constructor
@@ -28,7 +28,7 @@
 
 (defmacro monomialp (a)
   `(and (consp ,a)
-	(rationalp (first ,a)) 
+	(rationalp (first ,a))
 	(termp (rest ,a))))
 
 ;;; -------------
@@ -124,7 +124,7 @@
 	   (= (* a b) b)))
 
 (defthm *-identity-2
-  (implies (and (monomialp a) (onep b) (compatiblep a b)) 
+  (implies (and (monomialp a) (onep b) (compatiblep a b))
 	   (= (* a b) a)))
 
 ;;; Compatible monomial multiplication has left and right cancellative
@@ -135,7 +135,7 @@
 	   (nullp (* a b))))
 
 (defthm *-cancellative-2
-  (implies (and (nullp b) (compatiblep a b)) 
+  (implies (and (nullp b) (compatiblep a b))
 	   (nullp (* a b))))
 
 ;;; Monomial multiplication is associative.

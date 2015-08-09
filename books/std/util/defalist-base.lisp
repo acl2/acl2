@@ -324,8 +324,8 @@ to override it.</p>")
                                ,inst-thm
                                . ,fn-subst))))
         :rule-classes ,rule-classes))))
-       
-       
+
+
 (defun defalist-instantiate-table-thms-aux
   (table key val name formals kwd-alist x
          req-alist fn-subst world)
@@ -535,7 +535,7 @@ each value satisfies @(see? " (xdoc::full-escape-symbol valp) ")."))))
                                :rule-classes nil))))
 
              (local (in-theory nil))
-             
+
              ,@(and (not (eq key t))
                     `((defthm ,(mksym 'booleanp-of- keyp '-for- name '-key)
                         (or (equal (,keyp ,@key-formals) t)
@@ -593,10 +593,10 @@ each value satisfies @(see? " (xdoc::full-escape-symbol valp) ")."))))
        ,@(and parents `(:parents ,parents))
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))
-       
+
        (encapsulate ()
          . ,events)
-       
+
        . ,(and rest
                `((value-triple (cw "Deflist: submitting /// events.~%"))
                  (with-output

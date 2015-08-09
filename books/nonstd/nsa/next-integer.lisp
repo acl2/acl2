@@ -63,7 +63,7 @@
 
 ;; Now we prove a formal result claiming that next-integer preserves
 ;; the "limited" scale.  That is, if next-integer(x) is large, then it
-;; must be the case that x is large also. 
+;; must be the case that x is large also.
 
 (encapsulate
  ()
@@ -116,7 +116,7 @@
 			      (x -2)
 			      (y (+ x 2))))
 	     :in-theory (disable limited+large->large)))))
-	     
+
  ;; But that means that next-integer(x) is i-large if and only if x is
  ;; i-large!
 
@@ -130,7 +130,7 @@
 	     :use ((:instance lemma-2)
 		   (:instance lemma-4))
 	     :in-theory nil))))
-		   
+
  ;; And so, we state in our main theorem:
 
  (defthm large-next-integer
@@ -138,7 +138,7 @@
 		 (<= 0 x))
 	    (equal (i-large (next-integer x))
 		   (i-large x)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance lemma-5))
 	    :in-theory (disable lemma-5))))
  )

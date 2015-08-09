@@ -14,7 +14,7 @@
 ; nil.
 
 ; We will implement low-seven with an M1 program that does not halt unless it
-; finds a seven.  
+; finds a seven.
 
 ; Note: This is just a warm-up for more interesting proofs about
 ; non-terminating programs.  Obviously, low-seven could look through all the

@@ -138,7 +138,7 @@
       (defthm insert-is-cons
         (perm (insert a x) (cons a x)))
 
-      (defthm insert-sort-is-id 
+      (defthm insert-sort-is-id
         (perm (insert-sort x) x))
 
       (defcong perm perm (app x y) 2)

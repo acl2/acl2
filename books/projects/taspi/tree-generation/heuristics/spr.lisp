@@ -1,4 +1,4 @@
-;; a subset of tbr moves are spr's at the edges of the tree... 
+;; a subset of tbr moves are spr's at the edges of the tree...
 ;;  gonna start there
 
 ;; piece is the piece taken off, rest is the pruned tree we are attaching to
@@ -20,26 +20,26 @@
       (if (and (consp rest)
                (consp (cdr rest))
                (consp (cddr rest)))
-          (hppend (orderly-splice (cdr rest) 
-                                   (orderly-spr-helper 'not-top 
-                                                       piece 
+          (hppend (orderly-splice (cdr rest)
+                                   (orderly-spr-helper 'not-top
+                                                       piece
                                                        (car rest)
-                                                       tia) 
+                                                       tia)
                                    nil
                                    tia)
-                   (orderly-splice (hist (car rest) 
+                   (orderly-splice (hist (car rest)
                                          (caddr rest))
-                                   (orderly-spr-helper 'not-top 
-                                                       piece 
+                                   (orderly-spr-helper 'not-top
+                                                       piece
                                                        (cadr rest)
-                                                       tia) 
+                                                       tia)
                                    nil
                                    tia)
                    (orderly-splice
                     (hist (car rest) (cadr rest))
-                    (orderly-spr-helper 'not-top piece 
+                    (orderly-spr-helper 'not-top piece
                                         (caddr rest)
-                                        tia) 
+                                        tia)
                     nil
                     tia))
         "Error: Must start with unrooted tree in orderly-spr-helper")
@@ -52,14 +52,14 @@
                      (member-gen (first-taxon piece)
                                  (get-taxa-from-taxon-index tia)))
                 (hppend (hist (orderly-cons piece (hist rest) tia))
-                         (orderly-splice (car rest) 
-                                         (orderly-spr-helper 'not-top piece 
+                         (orderly-splice (car rest)
+                                         (orderly-spr-helper 'not-top piece
                                                              (cadr rest)
                                                              tia)
                                          nil tia)
-                         (orderly-splice (cadr rest) 
-                                         (orderly-spr-helper 'not-top 
-                                                             piece 
+                         (orderly-splice (cadr rest)
+                                         (orderly-spr-helper 'not-top
+                                                             piece
                                                              (car rest)
                                                               tia)
                                          nil tia))
@@ -86,7 +86,7 @@
     (if (consp x)
         (mv-let (yes1 val1)
                 (go-on?-helper (car x) (1+ n))
-                (if yes1 (mv t val1) 
+                (if yes1 (mv t val1)
                   (mv-let (yes2 val2)
                           (go-on?-helper (cdr x) (1+ n))
                           (if yes2 (mv t val2)
@@ -100,9 +100,9 @@
   (implies (rationalp n)
            (rationalp (mv-nth 1 (go-on?-helper x n)))))
 
-(verify-guards 
+(verify-guards
  go-on?-helper
- :hints (("Subgoal 3''" 
+ :hints (("Subgoal 3''"
           :use (:instance go-on?-helper-rationalp
                           (n (+ 1 n))
                           (x x1)))
@@ -112,7 +112,7 @@
                              (:instance go-on?-helper-rationalp
                                         (n (+ 1 n))
                                         (x x2))))
-         ("Subgoal 1''" 
+         ("Subgoal 1''"
           :use (:instance go-on?-helper-rationalp
                           (n (+ 1 n))
                           (x x2)))
@@ -138,9 +138,9 @@
                     (if (and (taspip t newRest)
                              (subset (mytips newRest)
                                      (get-taxa-from-taxon-index tia)))
-                        (hons (hons (hist (car x) (cadr x)) 
-                                    (order-by-insertion-one-level newRest 
-                                                                  tia)) 
+                        (hons (hons (hist (car x) (cadr x))
+                                    (order-by-insertion-one-level newRest
+                                                                  tia))
                               nil)
                       "Error: Need good newRest in orderly-get-pieces"))
                 nil)
@@ -151,7 +151,7 @@
                                      (get-taxa-from-taxon-index tia)))
                         (hons (hons (hist (car x) (caddr x))
                                     (order-by-insertion-one-level newRest
-                                                                  tia)) 
+                                                                  tia))
                               nil)
                       "Error: Need good newRest in second branch of orderly-get-pieces"))
                 nil)
@@ -170,21 +170,21 @@
                         (subset (mytips newRest)
                                 (get-taxa-from-taxon-index tia)))
                    (hons (hons x (order-by-insertion-one-level newRest
-                                                               tia)) 
+                                                               tia))
                                ans)
                  "Error: Need good newRest in third branch of orderly-get-pieces")))
-           (if (go-on? x) 
+           (if (go-on? x)
                (let ((newRest (branch-to-node x tia)))
                  (if (and (taspip t newRest)
                           (subset (mytips newRest)
                                   (get-taxa-from-taxon-index tia)))
-                     (hons-acons rest 
+                     (hons-acons rest
                                  (order-by-insertion-one-level newRest tia)
                                  nil)
                    "Error: Need good newRest in fourth branch of orderly-get-pieces"))
              nil)
            (if (consp (cdr x))
-               (if (and (subset (mytips (list rest)) 
+               (if (and (subset (mytips (list rest))
                                 (get-taxa-from-taxon-index tia))
                         (member-gen (first-taxon (cadr x))
                                     (get-taxa-from-taxon-index tia))
@@ -192,11 +192,11 @@
                                     (get-taxa-from-taxon-index tia))
                         (taspip nil (list rest)))
                    (hppend
-                    (orderly-get-pieces (car x) 
-                                        (orderly-cons (cadr x) (hist rest) tia) 
+                    (orderly-get-pieces (car x)
+                                        (orderly-cons (cadr x) (hist rest) tia)
                                         nil tia)
-                    (orderly-get-pieces (cadr x) 
-                                        (orderly-cons (car x) (hist rest) tia) 
+                    (orderly-get-pieces (cadr x)
+                                        (orderly-cons (car x) (hist rest) tia)
                                         nil tia))
                  "Error: Need properties for orderly-cons in orderly-get-pieces")
              "Error: need binary trees in get-pieces")
@@ -207,7 +207,7 @@
                          (get-taxa-from-taxon-index tia)))
             (hons (hons x (order-by-insertion-one-level newRest tia)) ans)
           "Error: Need good newRest in last branch of orderly-get-pieces")))))
-  
+
 (defun mv-root-and-remove-dups (list tia hash)
   (declare (xargs :guard (and (good-taxon-index-halist tia)
                               (alistp-gen hash))))
@@ -226,7 +226,7 @@
   (if (consp pieces)
       (let ((newHash
              (mv-root-and-remove-dups
-              (orderly-spr-helper 'topnode (caar pieces) 
+              (orderly-spr-helper 'topnode (caar pieces)
                                   (cdar pieces) tia)
               tia hash)))
               (if (alistp-gen newHash)
@@ -235,7 +235,7 @@
                                   newHash)
                 "Error: Need good hash table returned in orderly-do-spr"))
     (strip-cars-gen hash)))
- 
+
 (defun orderly-spr (x tia)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
@@ -261,7 +261,7 @@
           x
         (let ((pieces (orderly-get-pieces x nil nil tia)))
           (if (alistp-gen pieces)
-              (orderly-do-spr 
+              (orderly-do-spr
                (orderly-get-pieces x nil nil tia)
            tia nil)
             "Error: Need good pieces from orderly-get-pieces in orderly-spr")))

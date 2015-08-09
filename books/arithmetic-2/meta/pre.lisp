@@ -26,12 +26,12 @@
 
 (defthm |Non-numeric y in (+ x y)|
   (implies (not (acl2-numberp y))
-           (equal (+ x y) 
+           (equal (+ x y)
                   (fix x))))
 
 (defthm |Non-numeric x in (- x)|
   (implies (not (acl2-numberp x))
-           (equal (- x) 
+           (equal (- x)
                   0)))
 
 (defthm |Non-Numeric x in (* x y)|

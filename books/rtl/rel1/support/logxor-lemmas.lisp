@@ -54,8 +54,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (disable a10)
 		  :use ((:instance fl-comp1-1)
-			(:instance fl= 
-				   (x (/ (comp1 x n) (expt 2 k))) 
+			(:instance fl=
+				   (x (/ (comp1 x n) (expt 2 k)))
 				   (y (+ (expt 2 (- n k))
 					 (/ (- -1 x) (expt 2 k))))))))))
 
@@ -295,7 +295,7 @@
 			       (logand y (comp1 x n)))
 		       2))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance logior-fl 
+  :hints (("Goal" :use ((:instance logior-fl
 				   (i (logand x (comp1 y n)))
 				   (j (logand y (comp1 x n)))))))))
 
@@ -461,7 +461,7 @@
 		  (integerp y))
 	     (= (logxor x y) (logxor y x)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance bit-basic-c 
+  :hints (("Goal" :use ((:instance bit-basic-c
 				   (x (LOGIOR (+ -1 (* -1 Y)) X))
 				   (y (LOGIOR (+ -1 (* -1 X)) Y)))))))
 

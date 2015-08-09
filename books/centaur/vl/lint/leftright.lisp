@@ -316,7 +316,7 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                    ((unless dupes)
                     ;; Fine, keep going to check subexpressions.
                     ;; BOZO if we instead recurred on subexprs, we would be able
-                    ;; to skip down all the way to the frontier.  We'll have to 
+                    ;; to skip down all the way to the frontier.  We'll have to
                     ;; reason about the count, though.
                     (vl-exprlist-leftright-check subexprs indexy ctx))
 

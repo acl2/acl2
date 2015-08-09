@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -104,12 +104,12 @@
 		  (integerp n)
 		  (> n 0))
 	     (= (near+ x n)
-		(trunc (+ x (expt 2 (- (expo x) n))) n)))		
+		(trunc (+ x (expt 2 (- (expo x) n))) n)))
   :rule-classes ())
 
 ;why disabled?
 (defthmd near+-minus
-  (= (near+ (* -1 x) n) 
+  (= (near+ (* -1 x) n)
      (* -1 (near+ x n))))
 
 ;why disabled?
@@ -253,7 +253,7 @@
 
 (defthm near+-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (near+ x n))
 		  (exactp x n)))
@@ -289,7 +289,7 @@
                      (exactp a n)
                      (>= a x))
                 (>= a (near+ x n))))
-     
+
 (defthm near+-exactp-d
        (implies (and (rationalp x)
                      (integerp n)
@@ -330,7 +330,7 @@
                 ;(integerp n)
                 (natp n))
            (<= (near+ x n) (near+ y n))))
- 
+
 
 
 (defund near+-witness (x y n)
@@ -392,7 +392,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -434,7 +434,7 @@
 
 
 (defthm near+-est
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (near+ x n)))

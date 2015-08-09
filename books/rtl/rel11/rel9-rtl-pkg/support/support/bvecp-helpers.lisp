@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -77,7 +77,7 @@
 ;could use (local (in-theory (enable expt-compare-with-double)))
 ;remove?
 (defthm bits-does-nothing-hack
-  (implies (and (< x (expt 2 i)) 
+  (implies (and (< x (expt 2 i))
                 (integerp x)
                 (<= 0 x)
                 (integerp i)
@@ -91,7 +91,7 @@
 
 ;remove?
 (defthm bits-does-nothing-hack-2
-  (implies (and (< x (expt 2 i)) 
+  (implies (and (< x (expt 2 i))
                 (integerp x)
                 (<= 0 x)
                 (integerp i)
@@ -224,7 +224,7 @@
 
 
 ;can remove these two?
-(defthm natp-* 
+(defthm natp-*
   (implies (and (integerp x)
                 (>= x 0)
                 (integerp y)
@@ -232,7 +232,7 @@
            (and (integerp (* x y))
                 (>= (* x y) 0))))
 
-(defthm natp-+ 
+(defthm natp-+
   (implies (and (integerp x)
                 (>= x 0)
                 (integerp y)

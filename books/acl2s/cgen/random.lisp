@@ -4,38 +4,38 @@
 
 #|
 
-  A Simple Random Number Generator              Version 0.1 
+  A Simple Random Number Generator              Version 0.1
   Jared Davis <jared@cs.utexas.edu>          February 25, 2004
-  
+
   This file is in the public domain.  You can freely use it for any
-  purpose without restriction. 
- 
+  purpose without restriction.
+
   This is just a basic pure multiplicative pseudorandom number gen-
   erator.  *M31* is the 31st mersenne prime, and *P1* is 7^5 which
   is a primitive root of *M31*, ensuring that our period is M31 - 1.
   This idea is described in "Elementary Number Theory and its Appli-
   cations" by Kenneth H. Rosen, Fourth Edition, Addison Wesley 1999,
   in Chapter 10.1, pages 356-358.
- 
+
   The random number generator uses a stobj, rand, to store the seed.
   You will want to use the following functions:
 
     (genrandom <max> rand)
        Returns (mv k rand) where 0 <= k < max.
-            
+
     (update-seed <newseed> rand)
        Manually switch to a new seed.  By default, a large messy num-
-       ber will be used.  You probably don't need to change it, but 
+       ber will be used.  You probably don't need to change it, but
        it might be good if you want to be able to reproduce your re-
        sults in the future.
- 
+
   Normally we are not particularly interested in reasoning about ran-
   dom numbers.  However, we can say that the number k generated is an
-  an integer, and that 0 <= k < max when max is a positive integer. 
-  See the theorems genrandom-minimum and genrandom-maximum. 
+  an integer, and that 0 <= k < max when max is a positive integer.
+  See the theorems genrandom-minimum and genrandom-maximum.
 
   --
-  
+
   Modified slightly by Peter Dillinger, 7 Feb 2008
   With significant additions by Dimitris Vardoulakis & Peter Dillinger where
     noted below.
@@ -46,8 +46,8 @@
 (set-verify-guards-eagerness 2)
 
 
-(defconst *M31* 2147483647)    
-(defconst *P1* 16807)          
+(defconst *M31* 2147483647)
+(defconst *P1* 16807)
 
 (defstobj rand
   (seed :type integer :initially 1382728371))
@@ -85,21 +85,21 @@
    (natp (car (genrandom max rand)))
    :rule-classes :type-prescription)
 
- (defthm genrandom-minimum 
+ (defthm genrandom-minimum
    (<= 0 (car (genrandom max rand)))
    :rule-classes :linear)
- 
+
  (defthm genrandom-maximum
    (implies (posp max)
             (<= (car (genrandom max rand)) (1- max)))
    :rule-classes :linear))
- 
+
 (in-theory (disable genrandom))
 
 
 
 ;=====================================================================;
-; 
+;
 ; Begin additions by Peter Dillinger &  Dimitris Vardoulakis
 ; Last modified 7 February 2008
 ;
@@ -159,13 +159,13 @@
 
 
 
-; generate indices uniformly within a specified length 
+; generate indices uniformly within a specified length
 (defun random-index (len rand)
   (declare (xargs :stobjs (rand)
                   :guard (posp len)))
   (genrandom len rand))
 
-             
+
 ;generate integers according to a pseudo-geometric distribution
 (defun random-integer (rand)
   (declare (xargs :stobjs (rand)))
@@ -216,7 +216,7 @@
 (in-theory (disable random-int-between))
 
 
-; generate a signed rational with pseudo-geometric numerator & denominator 
+; generate a signed rational with pseudo-geometric numerator & denominator
 (defun random-rational (rand)
   (declare (xargs :stobjs (rand)))
   (mv-let (numer rand)
@@ -252,7 +252,7 @@
 
 (defthm random-probability>=0
   (<= 0 (car (random-probability r)))
-  :rule-classes (:linear :type-prescription)) 
+  :rule-classes (:linear :type-prescription))
 
 (encapsulate nil
   (local (include-book "arithmetic/rationals" :dir :system))
@@ -266,7 +266,7 @@
               (<= (* (/ d) n)
                   1))))
   |#
-  
+
   (defthm random-probability<=1
     (<= (car (random-probability r)) 1)
     :rule-classes :linear))
@@ -293,7 +293,7 @@
 
 (encapsulate nil
   (local (include-book "arithmetic-3/top" :dir :system))
-  
+
   (defthm random-rational-between-lower
     (implies (and (rationalp i)
                   (rationalp j)
@@ -311,8 +311,8 @@
                     (<= (* i p)
                         (* j p)))
            :rule-classes nil))
-  
-  (local 
+
+  (local
    (defthm random-rational-between-upper-lemma
      (implies (and (rationalp i)
                    (rationalp j)
@@ -357,7 +357,7 @@
 
 
 
-; generate a signed rational with pseudo-geometric numerator & denominator 
+; generate a signed rational with pseudo-geometric numerator & denominator
 (defun random-nonzero-rational (rand)
   (declare (xargs :stobjs (rand)))
   (mv-let (numer rand)
@@ -506,7 +506,7 @@
 
 (defthm random-keyword-type
   (symbolp (car (random-keyword r)))
-  :hints (("Goal" :use (:instance random-symbol-same-package_expand-package 
+  :hints (("Goal" :use (:instance random-symbol-same-package_expand-package
                         (sym :acl2-pkg-witness))))
   :rule-classes :type-prescription)
 
@@ -544,7 +544,7 @@
   (defthm random-keyword-keyword
     (equal (symbol-package-name (car (random-keyword r)))
            "KEYWORD")
-    :hints (("Goal" :use (:instance random-symbol-same-package_expand-package 
+    :hints (("Goal" :use (:instance random-symbol-same-package_expand-package
                                     (sym :acl2-pkg-witness))))))
 
 (in-theory (disable random-keyword))
@@ -637,7 +637,7 @@
  :off (prove observation event)
  (defthm random-acl2-symbol-type
    (symbolp (car (random-acl2-symbol r)))
-   :hints (("Goal" :use (:instance random-symbol-same-package_expand-package 
+   :hints (("Goal" :use (:instance random-symbol-same-package_expand-package
                          (sym 'acl2::acl2-pkg-witness))))
    :rule-classes :type-prescription))
 
@@ -685,7 +685,7 @@
       :acl2-symbol
        :boolean
       :keyword
-     
+
      :string))
 
 (defun random-value (spec rand)

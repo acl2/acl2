@@ -1,23 +1,23 @@
 ;  Copyright (C) 2000 Panagiotis Manolios
- 
+
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios who can be reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
@@ -61,18 +61,18 @@ system with a WEB.  The systems are deterministic.
 ; also not be the case in general.  R, B, and rank should be
 ; undefined.
 
-(defmacro generate-full-system (abs-step abs-p con-step con-p 
+(defmacro generate-full-system (abs-step abs-p con-step con-p
 				con-to-abs good-con con-rank)
-  `(progn 
+  `(progn
 
-     (defun WF-rel (x y) 
+     (defun WF-rel (x y)
        (declare (xargs :normalize nil))
        (and (,abs-p x)
 	    (,con-p y)
 	    (,good-con y)
 	    (equal x (,con-to-abs y))))
 
-     (defun B (x y) 
+     (defun B (x y)
        (declare (xargs :normalize nil))
        (bor (WF-rel x y)
 	    (WF-rel y x)
@@ -84,7 +84,7 @@ system with a WEB.  The systems are deterministic.
 		 (equal (,con-to-abs x)
 			(,con-to-abs y)))))
 
-     (defun rank (x) 
+     (defun rank (x)
        (declare (xargs :normalize nil))
        (if (,con-p x)
 	   (,con-rank x)
@@ -96,7 +96,7 @@ system with a WEB.  The systems are deterministic.
 	      (equal y (,abs-step x)))
 	     (t (equal y (,con-step x)))))
 
-     (encapsulate 
+     (encapsulate
       ()
       (local (in-theory nil))
 
@@ -110,7 +110,7 @@ system with a WEB.  The systems are deterministic.
 	:rule-classes ((:forward-chaining :trigger-terms ((Wf-rel x y)))))
 
       (defthm B-fc
-	(equal (B x y) 
+	(equal (B x y)
 	       (bor (WF-rel x y)
 		    (WF-rel y x)
 		    (equal x y)
@@ -122,16 +122,16 @@ system with a WEB.  The systems are deterministic.
 				(,con-to-abs y)))))
 	:hints (("goal" :by B))
 	:rule-classes ((:forward-chaining :trigger-terms ((B x y)))))
-	
+
       (defthm rank-fc
-	(equal (rank x) 
+	(equal (rank x)
 	       (if (,con-p x)
 		   (,con-rank x)
 		 0))
 	:hints (("goal" :by rank))
 	:rule-classes ((:forward-chaining :trigger-terms ((rank x)))))
 
-      (defthm R-fc 
+      (defthm R-fc
 	(equal (R x y)
 	       (cond ((,abs-p x)
 		      (equal y (,abs-step x)))
@@ -150,7 +150,7 @@ system with a WEB.  The systems are deterministic.
 	 (implies (and (WF-rel s w)
 		       (not (WF-rel u v)))
 		  (and (WF-rel s v)
-		       (e0-ord-< (,con-rank v) 
+		       (e0-ord-< (,con-rank v)
 				 (,con-rank w))))))
 
      (in-theory (disable b-is-a-wf-bisim-core))
@@ -164,7 +164,7 @@ system with a WEB.  The systems are deterministic.
      (defthm con-step-type
        (,con-p (,con-step x)))
 
-     (defthm con-not-abs 
+     (defthm con-not-abs
        (implies (,con-p x)
 		(not (,abs-p x))))
 
@@ -176,20 +176,20 @@ system with a WEB.  The systems are deterministic.
   `(encapsulate
     ()
 
-    (encapsulate 
+    (encapsulate
      ()
      (local (in-theory nil))
 
-     (local (in-theory (enable abs-step-type con-step-type con-not-abs abs-not-con 
+     (local (in-theory (enable abs-step-type con-step-type con-not-abs abs-not-con
 			       con-to-abs-type
 			       Wf-rel-fc B-fc
 			       b-is-a-wf-bisim-core)))
-    
+
      (defequiv b
-       :hints (("goal" 
+       :hints (("goal"
 		:by (:functional-instance
 		     encap-B-is-an-equivalence
-  
+
 		     (encap-abs-step ,abs-step)
 		     (encap-abs-p ,abs-p)
 		     (encap-con-step ,con-step)
@@ -197,11 +197,11 @@ system with a WEB.  The systems are deterministic.
 		     (encap-con-to-abs ,con-to-abs)
 		     (encap-good-con ,good-con)
 		     (encap-con-rank ,con-rank)
-		    
+
 		     (encap-wf-rel wf-rel)
 		     (encap-B B))))))
-     
-    (defthm rank-well-founded 
+
+    (defthm rank-well-founded
       (e0-ordinalp (rank x)))
 
     (defun-weak-sk exists-w-succ-for-u-weak (w u)
@@ -215,7 +215,7 @@ system with a WEB.  The systems are deterministic.
 	     (B s v)
 	     (e0-ord-< (rank v) (rank w)))))
 
-    (encapsulate 
+    (encapsulate
      ()
      (local (in-theory nil))
 
@@ -224,7 +224,7 @@ system with a WEB.  The systems are deterministic.
 		     (B u v))
 		(exists-w-succ-for-u-weak w u))
        :hints (("goal" :by exists-w-succ-for-u-weak-suff))
-       :rule-classes ((:forward-chaining 
+       :rule-classes ((:forward-chaining
 		       :trigger-terms ((r w v) (b u v)
 				       (exists-w-succ-for-u-weak w u)))))
 
@@ -234,18 +234,18 @@ system with a WEB.  The systems are deterministic.
 		     (e0-ord-< (rank v) (rank w)))
 		(exists-w-succ-for-s-weak w s))
        :hints (("goal" :by exists-w-succ-for-s-weak-suff))
-       :rule-classes ((:forward-chaining 
+       :rule-classes ((:forward-chaining
 		       :trigger-terms ((r w v) (b s v)
 				       (exists-w-succ-for-s-weak w s))))))
 
     (local (in-theory nil))
 
-    (local (in-theory (enable abs-step-type con-step-type con-not-abs abs-not-con 
+    (local (in-theory (enable abs-step-type con-step-type con-not-abs abs-not-con
 			      con-to-abs-type
 			      exists-w-succ-for-s-weak-fc exists-w-succ-for-u-weak-fc
-			      R-fc Wf-rel-fc B-fc rank-fc 
+			      R-fc Wf-rel-fc B-fc rank-fc
 			      b-is-a-wf-bisim-core)))
-    
+
     (defthm b-is-a-wf-bisim-weak
       (implies (and (b s w)
 		    (r s u))
@@ -253,10 +253,10 @@ system with a WEB.  The systems are deterministic.
 		   (and (b u w)
 			(e0-ord-< (rank u) (rank s)))
 		   (exists-w-succ-for-s-weak w s)))
-      :hints (("goal" 
+      :hints (("goal"
 	       :by (:functional-instance
 		    B-is-a-WF-bisim-sk
-		    
+
 		    (encap-abs-step ,abs-step)
 		    (encap-abs-p ,abs-p)
 		    (encap-con-step ,con-step)
@@ -264,12 +264,12 @@ system with a WEB.  The systems are deterministic.
 		    (encap-con-to-abs ,con-to-abs)
 		    (encap-good-con ,good-con)
 		    (encap-con-rank ,con-rank)
-		    
+
 		    (encap-R R)
 		    (encap-wf-rel wf-rel)
 		    (encap-B B)
 		    (encap-rank rank)
-		    
+
 		    (encap-exists-w-succ-for-u exists-w-succ-for-u-weak)
 		    (encap-exists-w-succ-for-s exists-w-succ-for-s-weak))))
       :rule-classes nil)
@@ -295,10 +295,10 @@ system with a WEB.  The systems are deterministic.
 		   (and (b u w)
 			(e0-ord-< (rank u) (rank s)))
 		   (exists-w-succ-for-s w s)))
-      :hints (("goal" 
+      :hints (("goal"
 	       :by (:functional-instance
 		    B-is-a-WF-bisim-weak
-		    
+
 		    (exists-w-succ-for-u-weak exists-w-succ-for-u)
 		    (exists-w-succ-for-s-weak exists-w-succ-for-s))))
       :rule-classes nil)

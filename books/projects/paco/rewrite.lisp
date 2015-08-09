@@ -44,7 +44,7 @@
 
 (defun clausify (term ens wrld)
   (strip-branches (normalize term t nil ens wrld) nil nil))
-    
+
 (defun if-tautologyp (term ens wrld)
 
 ; The main application of this function is to determine whether a
@@ -211,7 +211,7 @@
 
 ; We determine whether (sublis-var alist1 term1) is equal to term2.
 ; We just chase vars in term1 and use equal at the tips.  There is
-; one subtlety.  Consider 
+; one subtlety.  Consider
 
 ; (equal-mod-alist '(foo x z (cons x y))
 ;                  '((x . '1) (y . '2))
@@ -1235,7 +1235,7 @@
               (not (fquotep term))
               (eq (ffn-symb term) 'synp))
          (let ((mfc (if (member-eq 'mfc (all-vars (cadr (fargn term 3))))
-                        (make metafunction-context 
+                        (make metafunction-context
                               :type-alist type-alist
                               :obj '?
                               :iff-flg nil
@@ -1335,7 +1335,7 @@
                                     :obj nil
                                     :iff-flg nil))
                     (t (mv nil unify-subst)))))))
-           
+
 (defun rewrite-with-lemma (term lemma
                    ; &extra formals
                    type-alist obj iff-flg wrld fnstack ancestors rcnst nnn)
@@ -1365,7 +1365,7 @@
                ((eq (access rewrite-rule lemma :rhs)
                     'extended)
                 (list term
-                      (make metafunction-context 
+                      (make metafunction-context
                             :type-alist type-alist
                             :obj obj
                             :iff-flg iff-flg
@@ -1503,7 +1503,7 @@
                              (access rewrite-constant rcnst :ens)))
          (rewrite-entry
           (rewrite-with-lemmas1 term (cdr lemmas))))
-        (t 
+        (t
          (mv-let
           (rewrittenp rewritten-term)
           (<rewrite-with-lemmas1-id>
@@ -1599,7 +1599,7 @@
                        (access rewrite-constant rcnst
                                :current-clause)
                        (cdr (access rewrite-rule rule :heuristic-info)))
-                      (cond 
+                      (cond
                        ((contains-rewriteable-callp
                          fn rewritten-body
                          (if (cdr recursivep)
@@ -1652,7 +1652,7 @@
                                                  fnstack)
                                   :nnn (- nnn 1))))
                             rewritten-body))))
-                       (t 
+                       (t
                         rewritten-body)))
                      (t (rewrite-solidify term type-alist iff-flg ens wrld)))))
                   (t (rewrite-solidify term type-alist iff-flg ens wrld)))))

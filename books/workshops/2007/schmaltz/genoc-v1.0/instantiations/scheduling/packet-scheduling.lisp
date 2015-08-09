@@ -29,7 +29,7 @@
 
 (defun consume-attempts (att)
   ;; this function substracts one attempt to every node
-  ;; in the current model at each call of the scheduler 
+  ;; in the current model at each call of the scheduler
   ;; (function packet-scheduling) each node consumes one attempt,
   ;; i.e. each node tries to send a message.
   (if (zp (SumOfAttempts att))
@@ -38,9 +38,9 @@
            (node (car top))
            (att-i (cadr top)))
       (if (zp att-i)
-          (cons top 
+          (cons top
                 (consume-attempts (cdr att)))
-        (cons (list node (1- att-i)) 
+        (cons (list node (1- att-i))
               (consume-attempts (cdr att)))))))
 
 (defun no_intersectp_packet (route prev)
@@ -54,7 +54,7 @@
          (no_intersectp_packet (cdr route) (cdr prev)))))
 
 (defun test_prev_routes (routes prev)
-  ;; returns a route that does not overlap previous 
+  ;; returns a route that does not overlap previous
   ;; travels if such a route exists in routes. returns
   ;; nil otherwise.
   (if (endp routes)
@@ -88,10 +88,10 @@
       ;; we update prev properly and schedule the travel
       (if r?
           (pkt-scheduler (cdr TrLst)
-                         (cons (update_route tr r?) scheduled) 
+                         (cons (update_route tr r?) scheduled)
                          delayed (update-prev prev r?))
         ;; otherwise the travel is delayed
-        (pkt-scheduler (cdr TrLst) 
+        (pkt-scheduler (cdr TrLst)
                        scheduled (cons tr delayed) prev)))))
 
 (defun packet-scheduling (TrLst att)
@@ -99,7 +99,7 @@
   ;; TrLst is the travel list, att is the list of attempts
   (if (zp (SumOfAttempts att))
       (mv nil  ;; nothing is scheduled if there is no attempt left
-          TrLst ;; everything is delayed 
+          TrLst ;; everything is delayed
           Att)
     ;; otherwise we call pkt-scheduler and consume attempts
     (mv-let (scheduled delayed)
@@ -138,7 +138,7 @@
       (if r?
           (pkt-sched-nt-del (cdr TrLst)
                             (update-prev prev r?))
-        (cons tr 
+        (cons tr
               (pkt-sched-nt-del (cdr TrLst) prev))))))
 
 (defthm pkt-scheduler-=-non-tail-delayed
@@ -160,7 +160,7 @@
 
 (defthm consume-at-least-one-attempt-packet-scheduling
   ;; the scheduling policy should consume at least one attempt
-  ;; this is a sufficient condition to prove that 
+  ;; this is a sufficient condition to prove that
   ;; the full network function terminates
   (mv-let (Scheduled Delayed newatt)
           (packet-scheduling TrLst att)
@@ -184,7 +184,7 @@
                     (V-ids TrLst))))
 ;------------------------------------------------------------------
 
-;; 3/ we prove that the list of scheduled travels is a 
+;; 3/ we prove that the list of scheduled travels is a
 ;; valid travel list
 ;; --------------------------------------------------
 
@@ -198,19 +198,19 @@
 
 ;; proof for the scheduled travels
 ;; -------------------------------
-(local 
+(local
  (defthm validfields-trlst-pkt-sched
    (implies (ValidFields-TrLst TrLst)
-            (ValidFields-TrLst 
+            (ValidFields-TrLst
              (pkt-sched-nt-sched TrLst prev)))))
 
-(local 
+(local
  (defthm not-member-V-ids-pkt-sched
    (implies (not (member-equal e (V-ids TrLst)))
-            (not 
-             (member-equal 
-              e 
-              (V-ids 
+            (not
+             (member-equal
+              e
+              (V-ids
                (pkt-sched-nt-sched TrLst prev)))))))
 
 (local (defthm no-duplicatesp-pkt-sched
@@ -228,19 +228,19 @@
 
 ;; proof for the delayed travels
 ;; -----------------------------
-(local 
+(local
  (defthm validfields-trlst-pkt-del
    (implies (ValidFields-TrLst TrLst)
-            (ValidFields-TrLst 
+            (ValidFields-TrLst
              (pkt-sched-nt-del TrLst prev)))))
 
-(local 
+(local
  (defthm not-member-V-ids-pkt-del
    (implies (not (member-equal e (V-ids TrLst)))
-            (not 
-             (member-equal 
-              e 
-              (V-ids 
+            (not
+             (member-equal
+              e
+              (V-ids
                (pkt-sched-nt-del TrLst prev)))))))
 
 (local (defthm no-duplicatesp-pkt-del
@@ -259,7 +259,7 @@
 
 (defthm extract-sublst-cons
   (implies (not (member-equal id Ids))
-           (equal (extract-sublst (cons (list id frm routes) L) 
+           (equal (extract-sublst (cons (list id frm routes) L)
                                   Ids)
                   (extract-sublst L Ids))))
 
@@ -270,7 +270,7 @@
              (member-equal r? routes))))
 
 (defthm pkt-scheduled-correctness
-    (let ((Scheduled (pkt-sched-nt-sched TrLst prev))) 
+    (let ((Scheduled (pkt-sched-nt-sched TrLst prev)))
       (implies (TrLstp TrLst)
                (s/d-travel-correctness
                 scheduled
@@ -280,7 +280,7 @@
 ;; according to the ids of Delayed
 ;; ----------------------------------------------------
 (defthm pkt-delayed-correctness
-  (let ((delayed (pkt-sched-nt-del TrLst prev))) 
+  (let ((delayed (pkt-sched-nt-del TrLst prev)))
     (implies (TrLstp TrLst)
              (equal delayed
                     (extract-sublst TrLst (V-ids delayed)))))
@@ -302,7 +302,7 @@
                    (v-ids (pkt-sched-nt-sched trlst prev)))))
 
 
-;; Finally, we check that our circuit scheduling function 
+;; Finally, we check that our circuit scheduling function
 ;; is a valid instance of GeNoC-scheduling
 ;; ------------------------------------------------------
 (defthm check-compliance-packet-scheduling
@@ -311,8 +311,8 @@
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
-           :use 
-           ((:functional-instance 
+           :use
+           ((:functional-instance
              consume-at-least-one-attempt
              (scheduling packet-scheduling)))
            :in-theory (disable consume-at-least-one-attempt
@@ -329,9 +329,9 @@
 ;;
 ;;---------------------------------------------------------------------
 (defun create_steps (TrLst steps)
-  ;; creates the lists of the nodes used at every step 
+  ;; creates the lists of the nodes used at every step
   ;; by the routes in TrLst (the only route kept by the scheduler)
-  ;; steps is nil at function call and contains the lists of 
+  ;; steps is nil at function call and contains the lists of
   ;; the step-nodes. steps = ( (r0[0] r1[0] ...) (r0[1] r1[1] ...) ...)
   (if (endp TrLst)
       steps

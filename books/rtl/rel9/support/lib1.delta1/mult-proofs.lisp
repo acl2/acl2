@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -42,7 +42,7 @@
 
 
 (defun theta (i y)
-  (+ (bitn y (1- (* 2 i))) 
+  (+ (bitn y (1- (* 2 i)))
      (bitn y (* 2 i))
      (* -2 (bitn y (1+ (* 2 i))))))
 
@@ -56,7 +56,7 @@
 ;----------------------------------------------------------------------
 
 
-;; (local-defthm  
+;; (local-defthm
 ;;  expt-merge-specific
 ;;  (implies (integerp i)
 ;;           (EQUAL (+ (EXPT 2 (+ -1 i))
@@ -66,7 +66,7 @@
 
 
 
-;; (local-defthm 
+;; (local-defthm
 ;;  bitn-minus-1-is-0
 ;;  (implies (integerp x)
 ;;           (equal (bitn x -1) 0))
@@ -91,7 +91,7 @@
   :rule-classes ())
 
 
-(local-defthm 
+(local-defthm
  bvecp-integerp
  (implies (bvecp x k)
           (integerp x))
@@ -104,9 +104,9 @@
                 (bvecp y (1- (* 2 m))))
            (equal y (sum-theta m y)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance sum-theta-lemma-i 
+  :hints (("Goal" :use ((:instance sum-theta-lemma-i
                                    (k m))
-                        (:instance  sumbits-thm 
+                        (:instance  sumbits-thm
                                     (n (+ -1  (* 2 m)))
                                     (x y)))
            :expand (SUMBITS Y (* 2 M))
@@ -160,7 +160,7 @@
 
 (encapsulate ((zeta (i) t))
  (local (defun zeta (i) (declare (ignore i)) 0))
- (defthm zeta-bnd 
+ (defthm zeta-bnd
      (and (integerp (zeta i))
 	  (<= (zeta i) 2)
 	  (>= (zeta i) -2))))
@@ -205,7 +205,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0)))))
               :hints (("Goal" :in-theory (enable binary-cat))))
 
@@ -217,7 +217,7 @@
                             (natp a0)
                             (equal (+ a0 a1) a))
                        (bvecp (+ x0
-                                 (* x1  (expt 2 a0)))                                 
+                                 (* x1  (expt 2 a0)))
                               a))
               :hints (("Goal" :use ((:instance cat-bvecp-2)
                                     (:instance binary-cat-2)))))
@@ -230,7 +230,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x2 a2 x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0))
                                  (* x2 (expt 2 (+ a0 a1))))))
               :hints (("Goal" :use ((:instance binary-cat-2
@@ -278,7 +278,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x3 a3 x2 a2 x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0))
                                  (* x2 (expt 2 (+ a0 a1)))
                                  (* x3 (expt 2 (+ a0 a1 a2))))))
@@ -290,9 +290,9 @@
                                     (:instance binary-cat-3)
                                     (:instance bcevp-sum-3
                                                (a (+ a0 a1 a2)))))))
-                       
 
-                                                 
+
+
 (defthmd cat-bvecp-4
     (implies (and (<= (+ a0 a1 a2 a3) a)
                   (case-split (integerp a)))
@@ -334,7 +334,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x4 a4 x3 a3 x2 a2 x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0))
                                  (* x2 (expt 2 (+ a0 a1)))
                                  (* x3 (expt 2 (+ a0 a1 a2)))
@@ -347,9 +347,9 @@
                                     (:instance binary-cat-4)
                                     (:instance bcevp-sum-4
                                                (a (+ a0 a1 a2 a3)))))))
-                       
 
-                                                 
+
+
 (defthmd cat-bvecp-5
     (implies (and (<= (+ a0 a1 a2 a3 a4) a)
                   (case-split (integerp a)))
@@ -396,7 +396,7 @@
                             (natp a1)
                             (natp a0))
                        (equal (cat x5 a5 x4 a4 x3 a3 x2 a2 x1 a1 x0 a0)
-                              (+ x0 
+                              (+ x0
                                  (* x1 (expt 2 a0))
                                  (* x2 (expt 2 (+ a0 a1)))
                                  (* x3 (expt 2 (+ a0 a1 a2)))
@@ -410,7 +410,7 @@
                                     (:instance binary-cat-5)
                                     (:instance bcevp-sum-5
                                                (a (+ a0 a1 a2 a3 a4)))))))
-                       
+
 
 (defthmd cat-bvecp-6
     (implies (and (<= (+ a0 a1 a2 a3 a4 a5) a)
@@ -459,10 +459,10 @@
 (defthm zeta-bnd-properties-3
   (<= -2 (zeta i))
   :rule-classes :linear)
-  
 
-(local 
- (encapsulate () 
+
+(local
+ (encapsulate ()
      (local-defthm x-zeta-bnd-specific
                    (implies (and (<= 0 x)
                                  (< (* 2 x) y)
@@ -543,7 +543,7 @@
                         (LNOT (neg any) 1))
                      1)
               :hints (("Goal" :in-theory (enable neg lnot))))
-       
+
 
 (defthm pp4-reduce-to-1
   (implies (and (integerp n)
@@ -609,7 +609,7 @@
   (implies (and (integerp n)
                 (integerp m)
                 (< 0 m))
-           (equal (+ (expt 2 n) 
+           (equal (+ (expt 2 n)
                      (sum-pp4-part1 m n))
                   (expt 2 (+ n (* 2 m)))))
   :hints (("Goal" :do-not '(generalize)
@@ -678,7 +678,7 @@
            (integerp (sum-pp4-part2 m x n)))
   :hints (("Goal" :in-theory (e/d () (bmux4 bmux4-reduce-to))))
   :rule-classes :type-prescription)
-                    
+
 
 
 ;; (defun sum-bmux4 (x m n)
@@ -701,7 +701,7 @@
 ;;                                 (IF (<= 0 ZETA)
 ;;                                     (* ZETA X)
 ;;                                     (+ -1 (EXPT 2 N) (* ZETA X)))))
-       
+
 
 ;; (defthm part2-item-reduce-to-alt
 ;;   (equal (+ (* -1 (NEG (ZETA i))
@@ -709,7 +709,7 @@
 ;;             (* (EXPT 2 (* 2 i))
 ;;                (BMUX4 (ZETA i) X N)))
 ;;          (+ (* x (zeta i)))))
-  
+
 
 
 
@@ -807,7 +807,7 @@
 
            :induct t
            :in-theory (e/d ()
-                           (bmux4 (sum-zeta) 
+                           (bmux4 (sum-zeta)
                                   bmux4-reduce-to neg lnot zeta-bnd))
            :do-not '(generalize))
           ("Subgoal *1/3" :use sum-pp4-part2-reduce-lemma)
@@ -858,7 +858,7 @@
     (+ (pp4-theta (1- m) x y n)
        (sum-pp4-theta x y (1- m) n))))
 
-       
+
 
 (local-defthm booth4-corollary-lemma
     (implies (and (not (zp n))
@@ -871,7 +871,7 @@
 		   (* x (sum-theta m y))
 		   (- (* (expt 2 (* 2 (1- m))) (neg (theta (1- m) y)))))))
   :rule-classes ()
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:functional-instance
                   booth4-thm
                   (zeta (lambda (i) (theta i y)))
@@ -888,9 +888,9 @@
 
 (defthm theta-m-minus-1
   (implies (bvecp y (1- (* 2 m)))
-           (equal (neg (theta (+ -1 m) y)) 
+           (equal (neg (theta (+ -1 m) y))
                   0)))
-                  
+
 (defthm booth4-corollary
     (implies (and (not (zp n))
 		  (not (zp m))
@@ -905,26 +905,26 @@
                         (:instance sum-theta-lemma))
            :in-theory (disable pp4-theta theta
                                sum-pp4-theta sum-theta))))
-                        
+
 
 ;;;**********************************************************************
 ;;;                Statically Encoded Multiplier Arrays
 ;;;**********************************************************************
 
 (defun m-mu-chi (i mode)
-  (cond ((equal mode 'mu)  
+  (cond ((equal mode 'mu)
          (if (zp i)  1
            (cons (cons 1  i) 1)))
         ((equal mode 'chi)
          (if (zp i)  0
            (cons (cons 1  i) 0)))))
-             
+
 
 (mutual-recursion
  (defun mu (i y)
    (declare (xargs :measure (m-mu-chi i 'mu)))
      (+ (bits y (1+ (* 2 i)) (* 2 i)) (chi i y)))
- 
+
  (defun chi (i y)
    (declare (xargs :measure (m-mu-chi i 'chi)))
    (if (zp i)
@@ -962,7 +962,7 @@
 ;;                (BITS Y (+ -1 (* 2 M)) (+ -2 (* 2 M))))
 ;;             3)).
 
-(local 
+(local
  (encapsulate ()
               (local (include-book "../support/cat"))
               (defthm cat-bits-bits
@@ -978,7 +978,7 @@
                               )
                          (equal (cat (bits x i j) m (bits x k l) n)
                                 (bits x i l))))))
-              
+
 
 ;; (local-defthmd binary-cat-2
 ;;               (implies (and (bvecp x1 a1)
@@ -986,7 +986,7 @@
 ;;                             (natp a1)
 ;;                             (natp a0))
 ;;                        (equal (cat x1 a1 x0 a0)
-;;                               (+ x0 
+;;                               (+ x0
 ;;                                  (* x1 (expt 2 a0)))))
 ;;               :hints (("Goal" :in-theory (enable binary-cat))))
 
@@ -1000,7 +1000,7 @@
                             (< l j)
                             (< j i))
                        (equal (bits x i l)
-                              (+ (* (expt 2 (+ (* -1 l) j)) 
+                              (+ (* (expt 2 (+ (* -1 l) j))
                                     (bits x i j))
                                  (bits x (+ -1 j) l))))
               :hints (("Goal" :in-theory (disable cat-bits-bits)
@@ -1023,7 +1023,7 @@
                               (+ (* (expt 2 (* 2 k))
                                     (bits y (+ 1 (* 2 k)) (* 2 k)))
                                  (bits y (+ -1 (* 2 k)) 0))))
-              :hints (("Goal" 
+              :hints (("Goal"
                        :use ((:instance bits-bits-split
                                         (x y)
                                         (i (+ 1 (* 2 k)))
@@ -1096,7 +1096,7 @@
                             (k (+ -1 m)))
                  (:instance y-lower-bound
                             (k (+ -1 m)))))))
-                            
+
 
 
 
@@ -1120,7 +1120,7 @@
                                                   (+ -2 (* 2 m)))
                                             1))))
             ("Subgoal *1/4.2" :in-theory (enable chi-upper-bound))
-            ("Subgoal *1/4.1" :cases ((not (equal (BITS Y (+ -1 (* 2 M)) 
+            ("Subgoal *1/4.1" :cases ((not (equal (BITS Y (+ -1 (* 2 M))
                                                         (+ -2 (* 2 m))) 3))))
             ("Subgoal *1/4.1.2" :use chi-m-subgoal-1-5)
             ("Subgoal *1/4.1.1" :use ((:instance y-expand-local
@@ -1217,8 +1217,8 @@
 
 (local-defthm sum-phi-lemma-k
                (implies (natp m)
-                        (equal (bits y (+ -1 (* 2 m)) 0)  
-                               ;; could have used sumbits here. 
+                        (equal (bits y (+ -1 (* 2 m)) 0)
+                               ;; could have used sumbits here.
                                (+ (sum-phi m y)
                                   (* (chi m y) (expt 2 (* 2 m))))))
                :hints (("Goal" :do-not '(generalize)
@@ -1238,7 +1238,7 @@
   :hints (("Goal" :in-theory (enable SUM-ODD-POWERS-UPPER-BOUND-WEAK
                                      sum-odd-powers-upper-bound-lemma)))
   :rule-classes :linear)
-                                   
+
 
 
 (defthm sum-phi-lemma
@@ -1284,7 +1284,7 @@
 		   (* x (sum-phi m y))
 		   (- (* (expt 2 (* 2 (1- m))) (neg (phi (1- m) y)))))))
   :rule-classes ()
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:functional-instance
                   booth4-thm
                   (zeta (lambda (i) (phi i y)))
@@ -1341,20 +1341,20 @@
 (defun delta (i a b c d)
   (if (zp i)
       (bitn d 0)
-    (land (lior (land (bitn a (+ -2 (* 2 i))) 
+    (land (lior (land (bitn a (+ -2 (* 2 i)))
                       (bitn b (+ -2 (* 2 i)))
                       1)
 		(lior (land (bitn a (+ -2 (* 2 i)))
-                            (gamma (1- i) a b c) 
+                            (gamma (1- i) a b c)
                             1)
 		      (land (bitn b (+ -2 (* 2 i)))
                             (gamma (1- i) a b c)
                             1)
                       1)
                 1)
-	  (lnot (lxor (bitn a (1- (* 2 i))) 
-                      (bitn b (1- (* 2 i))) 
-                      1) 
+	  (lnot (lxor (bitn a (1- (* 2 i)))
+                      (bitn b (1- (* 2 i)))
+                      1)
                 1)
 	  1)))
 
@@ -1375,14 +1375,14 @@
 ;;               (implies (and (<= 0 b)
 ;;                             (< b (expt 2 k)))
 ;;                        (equal (bitn b k) 0)))
-                    
+
 
 ;;see  bitn-too-small
 
 (defthm psi-m-1
     (implies (and (natp m)
                   (>= m 1)
-		  (bvecp a (- (* 2 m) 2))  ;; 
+		  (bvecp a (- (* 2 m) 2))  ;;
 		  (bvecp b (- (* 2 m) 2))  ;;
 		  (bvecp c 1)
 		  (bvecp d 1))
@@ -1411,7 +1411,7 @@
                (implies (bvecp d 1)
                         (equal (delta 0 a b c d)
                                d)))
-           
+
 
 (local-defthm sum-psi-lemma-k
     (implies (and (natp k)
@@ -1490,7 +1490,7 @@
 
 
 
-            
+
 (local-defthm delta-bnd-1
   (<= 0 (delta i a b c d))
   :rule-classes :linear)
@@ -1525,7 +1525,7 @@
 ;;                             (natp a1)
 ;;                             (natp a0))
 ;;                        (equal (cat x1 a1 x0 a0)
-;;                               (+ x0 
+;;                               (+ x0
 ;;                                  (* x1 (expt 2 a0)))))
 ;;               :hints (("Goal" :in-theory (enable binary-cat))))
 
@@ -1556,7 +1556,7 @@
        (>= (psi i a b c d) -2))
   :hints (("Goal" :in-theory (e/d (bits-expand-specific)
                                   (bits bitn
-                                        gamma 
+                                        gamma
                                         delta))
            :expand ((gamma (+ 1 i) a b c)
                     (DELTA (+ 1 I) A B C D)))))
@@ -1588,7 +1588,7 @@
   (integerp (psi i a b c d)))
 
 
-(local-defthm 
+(local-defthm
  redundant-booth4-corollary-lemma
     (implies (and (not (zp n))
 		  (not (zp m))
@@ -1640,7 +1640,7 @@
     :hints (("Goal" :in-theory (disable psi sum-pp4-psi)
              :use ((:instance redundant-booth4-corollary-lemma)
                    (:instance sum-psi-lemma))))
-          
+
   :rule-classes ())
 
 ;;;**********************************************************************
@@ -1649,7 +1649,7 @@
 
 
 (defun eta (i y)
-  (+ (bitn y (1- (* 3 i))) 
+  (+ (bitn y (1- (* 3 i)))
      (bitn y (* 3 i))
      (* 2 (bitn y (1+ (* 3 i))))
      (* -4 (bitn y (+ 2 (* 3 i))))))
@@ -1673,7 +1673,7 @@
                      (* (expt 2 (* 3 k))
                         (bitn y (+ -1 (* 3 k)))))))
   :hints (("Goal" :do-not '(generalize fertilize)
-           :in-theory (enable bitn-neg 
+           :in-theory (enable bitn-neg
                               expt-2-reduce-leading-constant)
            :induct (sum-eta k y))
           ("Subgoal *1/2" :expand ((SUMBITS Y (* 3 K))
@@ -1686,9 +1686,9 @@
     (implies (and (not (zp m))
 		  (bvecp y (1- (* 3 m))))
 	     (equal y (sum-eta m y)))
-  :hints (("Goal" :use ((:instance sum-eta-lemma-i 
+  :hints (("Goal" :use ((:instance sum-eta-lemma-i
                                    (k m))
-                        (:instance  sumbits-thm 
+                        (:instance  sumbits-thm
                                     (n (+ -1  (* 3 m)))
                                     (x y)))
            :do-not-induct t
@@ -1710,7 +1710,7 @@
 
 (encapsulate ((xi (i) t))
  (local (defun xi (i) (declare (ignore i)) 0))
- (defthm xi-bnd 
+ (defthm xi-bnd
      (and (integerp (xi i))
 	  (<= (xi i) 4)
 	  (>= (xi i) -4))))
@@ -1732,7 +1732,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 3 (1- m))) (xi (1- m)))
-       (sum-xi (1- m)))))   
+       (sum-xi (1- m)))))
 
 
 
@@ -1774,7 +1774,7 @@
 (defthm xi-bnd-properties-3
   (<= -4 (xi i))
   :rule-classes :linear)
-  
+
 
 (defthm bvecp-bmux8
   (implies (and (bvecp x (+ -2 n))
@@ -1787,7 +1787,7 @@
                             (n (+ -2 n))
                             (m n))))))
 
-          
+
 
 
 (defthm pp8-reduce-to-1
@@ -1867,7 +1867,7 @@
   (implies (and (integerp n)
                 (integerp m)
                 (< 0 m))
-           (equal (+ (expt 2 n) 
+           (equal (+ (expt 2 n)
                      (sum-pp8-part1 m n))
                   (expt 2 (+ n (* 3 m)))))
   :hints (("Goal" :do-not '(generalize)
@@ -1931,7 +1931,7 @@
                              (integerp n))
                         (equal (BITS (* 3 X) (+ -1 N) 0)
                                (* 3 x)))
-               :hints (("Goal" :in-theory (e/d (bvecp expt-2-reduce-leading-constant) 
+               :hints (("Goal" :in-theory (e/d (bvecp expt-2-reduce-leading-constant)
                                                (expt-compare
                                                 bits-reduce))
                         :use ((:instance bits-reduce
@@ -1955,11 +1955,11 @@
                         (BMUX8 (xi (+ -1 M)) X N)))
                   (* X (xi (+ -1 M))
                      (EXPT 2 (+ -3 (* 3 M))))))
-  :hints (("Goal" :in-theory (e/d (expt-2-reduce-leading-constant 
-                                   lnot 
-                                   bvecp-bits-specific-2 
+  :hints (("Goal" :in-theory (e/d (expt-2-reduce-leading-constant
+                                   lnot
+                                   bvecp-bits-specific-2
                                    bvecp-bits-specific-3)
-                                  (bmux4 bmux8-reduce-to xi-bnd 
+                                  (bmux4 bmux8-reduce-to xi-bnd
                                          EQUAL-MULTIPLY-THROUGH-BY-INVERTED-FACTOR-FROM-RIGHT-HAND-SIDE))
            :use ((:instance bmux8-reduce-to
                             (eta (+ -1 m)))
@@ -1979,7 +1979,7 @@
                         (expt 2 (* 3 (+ -1 m)))))
                   (* x (sum-xi m))))
   :hints (("Goal" :in-theory (e/d ()
-                                  (bmux8 (sum-xi) 
+                                  (bmux8 (sum-xi)
                                          bmux8-reduce-to neg lnot xi-bnd))
            :do-not '(generalize))
           ("Subgoal *1/3" :use sum-pp8-part2-reduce-lemma)
@@ -2037,9 +2037,9 @@
 ;;     (implies (and (not (zp m))
 ;; 		  (bvecp y (1- (* 3 m))))
 ;; 	     (equal y (sum-eta m y)))
-;;   :hints (("Goal" :use ((:instance sum-eta-lemma-i 
+;;   :hints (("Goal" :use ((:instance sum-eta-lemma-i
 ;;                                    (k m))
-;;                         (:instance  sumbits-thm 
+;;                         (:instance  sumbits-thm
 ;;                                     (n (+ -1  (* 3 m)))
 ;;                                     (x y)))
 ;;            :do-not-induct t
@@ -2079,7 +2079,7 @@
 		   (sum-pp8-eta x y m n))
 		(+ (expt 2 (+ n (* 3 m)))
 		   (* x y))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable sum-eta
                                pp8-eta
                                bmux8

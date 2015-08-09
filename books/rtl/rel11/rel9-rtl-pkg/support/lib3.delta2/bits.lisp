@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -147,7 +147,7 @@
   :rule-classes())
 
 (defthm mod-bits-equal
-  (implies (= (mod x (expt 2 (1+ i))) 
+  (implies (= (mod x (expt 2 (1+ i)))
 	      (mod y (expt 2 (1+ i))))
 	   (= (bits x i j) (bits y i j)))
   :rule-classes ())
@@ -267,7 +267,7 @@
 		  (< x 0)
 		  (>= x (- (expt 2 j)))
 		  (>= i j))
-	     (equal (bits x i j) 
+	     (equal (bits x i j)
                     (1- (expt 2 (1+ (- i j))))))
   :hints (("Goal" :use (neg-bits-1-new))))
 
@@ -275,7 +275,7 @@
     (implies (and (natp i)
 		  (natp j)
 		  (>= i j))
-	     (equal (bits -1 i j) 
+	     (equal (bits -1 i j)
                     (1- (expt 2 (1+ (- i j)))))))
 
 (defthm bits-tail
@@ -401,7 +401,7 @@
 ;;(thm (implies (equal 7 (bits x 8 6))
 ;;		(not (equal 4 (bits x 15 6)))))
 
-(defthmd bits-dont-match 
+(defthmd bits-dont-match
   (implies (and (syntaxp (and (quotep i)
 			      (quotep j)
 			      (quotep k)))
@@ -630,7 +630,7 @@
            (equal (bitn (sum-b b n) k)
 	          (nth k b))))
 
-;; The next two lemmas allow one to prove equality of two bit vectors of width k by 
+;; The next two lemmas allow one to prove equality of two bit vectors of width k by
 ;; proving each of these has the same value at bit i, for 0 <= i < k.
 
 (defun diff-bit (x y k)
@@ -675,8 +675,8 @@
   :rule-classes ())
 
 (defthmd bitn-plus-mult
-    (implies (and (< n m) 
-		  (integerp m) 
+    (implies (and (< n m)
+		  (integerp m)
 		  (integerp k))
 	     (equal (bitn (+ x (* k (expt 2 m))) n)
 		    (bitn x n))))
@@ -702,9 +702,9 @@
          (bits y (1- n) 0))
     0))
 
-;; We define a macro, Ca, THAT takes a list of a list X of alternating data values 
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at 
-;; least 1 data/size pair, but we do not need to specify this in the guard, and 
+;; We define a macro, Ca, THAT takes a list of a list X of alternating data values
+;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at
+;; least 1 data/size pair, but we do not need to specify this in the guard, and
 ;; leaving it out of the guard simplifies the guard proof.
 
 (defun formal-+ (x y)
@@ -727,9 +727,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defthm cat-nonnegative-integer-type
@@ -864,7 +864,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 					(- i n)
@@ -888,7 +888,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 				       (- i n)
@@ -922,8 +922,8 @@
 		      (bitn x (- i n))
 		    0)))))
 
-;; We introduce mbe for MULCAT not because we want particularly fast execution, 
-;; but because the existing logic definition does not satisfy the guard of cat, 
+;; We introduce mbe for MULCAT not because we want particularly fast execution,
+;; but because the existing logic definition does not satisfy the guard of cat,
 ;; which can't be changed because of the guard of bits.
 
 (defund mulcat (l n x)
@@ -964,7 +964,7 @@
 
 (defthm mulcat-1
     (implies (natp l)
-	     (equal (mulcat l 1 x) 
+	     (equal (mulcat l 1 x)
 		    (bits x (1- l) 0))))
 
 (defthm mulcat-0
@@ -1123,7 +1123,7 @@
   :rule-classes())
 
 (defthm mod-bits-equal
-  (implies (= (mod x (expt 2 (1+ i))) 
+  (implies (= (mod x (expt 2 (1+ i)))
 	      (mod y (expt 2 (1+ i))))
 	   (= (bits x i j) (bits y i j)))
   :rule-classes ())
@@ -1153,7 +1153,7 @@
                 (>= k i))
 	   (equal (bits (+ (bits x k 0) y) i j)
 		  (bits (+ x y) i j)))
-  :hints (("Goal" :use (bits-bits-sum-new)))) 
+  :hints (("Goal" :use (bits-bits-sum-new))))
 
 (defthmd bits-bits-sum-alt
   (implies (and (integerp x)
@@ -1243,7 +1243,7 @@
 		  (< x 0)
 		  (>= x (- (expt 2 j)))
 		  (>= i j))
-	     (equal (bits x i j) 
+	     (equal (bits x i j)
                     (1- (expt 2 (1+ (- i j))))))
   :hints (("Goal" :use (neg-bits-1-new))))
 
@@ -1251,7 +1251,7 @@
     (implies (and (natp i)
 		  (natp j)
 		  (>= i j))
-	     (equal (bits -1 i j) 
+	     (equal (bits -1 i j)
                     (1- (expt 2 (1+ (- i j)))))))
 
 
@@ -1378,7 +1378,7 @@
 ;;(thm (implies (equal 7 (bits x 8 6))
 ;;		(not (equal 4 (bits x 15 6)))))
 
-(defthmd bits-dont-match 
+(defthmd bits-dont-match
   (implies (and (syntaxp (and (quotep i)
 			      (quotep j)
 			      (quotep k)))
@@ -1606,7 +1606,7 @@
            (equal (bitn (sum-b b n) k)
 	          (nth k b))))
 
-;; The next two lemmas allow one to prove equality of two bit vectors of width k by 
+;; The next two lemmas allow one to prove equality of two bit vectors of width k by
 ;; proving each of these has the same value at bit i, for 0 <= i < k.
 
 (defun diff-bit (x y k)
@@ -1652,8 +1652,8 @@
   :rule-classes ())
 
 (defthmd bitn-plus-mult
-    (implies (and (< n m) 
-		  (integerp m) 
+    (implies (and (< n m)
+		  (integerp m)
 		  (integerp k))
 	     (equal (bitn (+ x (* k (expt 2 m))) n)
 		    (bitn x n))))
@@ -1679,9 +1679,9 @@
          (bits y (1- n) 0))
     0))
 
-;; We define a macro, Ca, THAT takes a list of a list X of alternating data values 
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at 
-;; least 1 data/size pair, but we do not need to specify this in the guard, and 
+;; We define a macro, Ca, THAT takes a list of a list X of alternating data values
+;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at
+;; least 1 data/size pair, but we do not need to specify this in the guard, and
 ;; leaving it out of the guard simplifies the guard proof.
 
 (defun formal-+ (x y)
@@ -1704,9 +1704,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defthm cat-nonnegative-integer-type
@@ -1841,7 +1841,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 					(- i n)
@@ -1865,7 +1865,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 				       (- i n)
@@ -1899,8 +1899,8 @@
 		      (bitn x (- i n))
 		    0)))))
 
-;; We introduce mbe for MULCAT not because we want particularly fast execution, 
-;; but because the existing logic definition does not satisfy the guard of cat, 
+;; We introduce mbe for MULCAT not because we want particularly fast execution,
+;; but because the existing logic definition does not satisfy the guard of cat,
 ;; which can't be changed because of the guard of bits.
 
 (defund mulcat (l n x)
@@ -1941,7 +1941,7 @@
 
 (defthm mulcat-1
     (implies (natp l)
-	     (equal (mulcat l 1 x) 
+	     (equal (mulcat l 1 x)
 		    (bits x (1- l) 0))))
 
 (defthm mulcat-0

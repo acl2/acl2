@@ -47,7 +47,7 @@
 	   (eqlable-listp l)))
 
 ; ---------- LINEAR ----------
-  
+
 (defthm <=maxlist
   (implies (member-equal x l)
 	   (<= x (maxlist l)))

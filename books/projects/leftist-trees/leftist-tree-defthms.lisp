@@ -26,7 +26,7 @@
  leftist-tree-defthms.lisp
 
    This file contains the basic theory of leftist trees,
-   proving the basic operations correct. 
+   proving the basic operations correct.
 
    This implementation follows "Purely Functional Data
    Structures" by Chris Okasaki.
@@ -73,7 +73,7 @@
                   (rank-lt tree)))
 ;;; This legacy doc string was replaced Nov. 2014 by a corresponding
 ;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
-;   :doc ":doc-section leftist-tree-misc-thms 
+;   :doc ":doc-section leftist-tree-misc-thms
 ; ~/~/
 ; (length-right-spine-lt tree) ==> (rank-lt tree)~/"
   )
@@ -130,7 +130,7 @@
 ;   ":doc-section leftist-tree-thms
 ; Theorems proving that the basic operations respect PROPER-LT~/~/~/")
 
-(local 
+(local
  (defthmd proper-merge-lt-L1
    (implies (and (consp right_tree1)
                  (consp tree2)
@@ -200,7 +200,7 @@
 ;;; auto-generated defxdoc form in file leftist-trees-xdoc.lisp.
 ;   :doc ":doc-section leftist-tree-structure-thms
 ; ~/~/
-; (and (proper-lt tree1) (proper-lt tree2)) 
+; (and (proper-lt tree1) (proper-lt tree2))
 ;     ==> (proper-lt (merge-lt tree1 tree2))~/"
   )
 

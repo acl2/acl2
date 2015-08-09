@@ -68,7 +68,7 @@
 ;;
 ;; where in both cases n >= 0 and instructions are as defined below.
 ;;
-;; Abstract Machine Configuration: 
+;; Abstract Machine Configuration:
 ;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;   code  == ((fn_1 . code_1) (fn_2 . code_2) ... (fn_n . code_n))
 ;;   stack == (top top_1 top_2 ... bottom)
@@ -76,11 +76,11 @@
 ;; Operator calls including calls of user defined procedures consume (pop)
 ;; their arguments from the stack and push their result on top of the
 ;; stack. Instructions are
-;;  
+;;
 ;; Abstract Machine Instructions and Evaluation
 ;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;   (PUSHC <constant>)      ; push <constant> onto the stack
-;;   (PUSHV <index>)         ; push the value of the <index>'th stack cell 
+;;   (PUSHV <index>)         ; push the value of the <index>'th stack cell
 ;;   (CALL <name>)           ; execute the code associated with <name> in code
 ;;   (OPR <name>)            ; execute the Lisp operator <name> on the stack
 ;;   (IF <then> <else>)      ; execute <else>, if top = nil, otherwise <then>
@@ -240,11 +240,11 @@
 		   (consp (cddr form))
 		   (instruction-listp (caddr form))))
 	     (t nil))))
-	      
-	 
+
+
 (defun instruction-listp (seq)
   (declare (xargs :guard t))
-  (if (consp seq) 
+  (if (consp seq)
     (and (instructionp (car seq))
 	 (instruction-listp (cdr seq)))
     (null seq)))
@@ -256,7 +256,7 @@
 	(t (and (consp (car l))
 		(symbolp (caar l))
 		(instruction-listp (cdar l))
-		(codep (cdr l))))))       
+		(codep (cdr l))))))
 
 (defun declsp (dcls)
   (declare (xargs :guard t))
@@ -281,7 +281,7 @@
 ;; "code".
 ;;
 
-(defun get-code (f code) 
+(defun get-code (f code)
   (declare (xargs :guard (and (symbolp f) (alistp code))))
   (cdr (assoc f code)))
 
@@ -308,7 +308,7 @@
 (defun opr (op code stack)
   (declare (ignore code)
 	   (xargs :guard (true-listp stack)))
-  (cond 
+  (cond
    ((equal op 'CAR) (cons (MCAR (car stack)) (cdr stack)))
    ((equal op 'CDR) (cons (MCDR (car stack)) (cdr stack)))
    ((equal op 'CADR) (cons (MCADR (car stack)) (cdr stack)))
@@ -340,11 +340,11 @@
 (defun mstep (form code stack n)
   (declare (xargs :measure (cons (1+ (acl2-count n)) (acl2-count form))
 		  :guard (and (instructionp form) (codep code) (natp n))))
-  (cond 
+  (cond
    ((or (zp n) (not (true-listp stack))) 'ERROR)
    ((equal (car form) 'PUSHC) (cons (cadr form) stack))
    ((equal (car form) 'PUSHV) (cons (nth (cadr form) stack) stack))
-   ((equal (car form) 'CALL) 
+   ((equal (car form) 'CALL)
     (msteps (cdr (assoc (cadr form) code)) code stack (1- n)))
    ((equal (car form) 'OPR) (opr (cadr form) code stack))
    ((equal (car form) 'IF)
@@ -370,14 +370,14 @@
 ;; sequences. That is we have get rid of the DEFCODE's and construct a true
 ;; association list:
 ;;
-;;    ((DEFCODE f1 code1) (DEFCODE f2 code2) ...)  -> 
+;;    ((DEFCODE f1 code1) (DEFCODE f2 code2) ...)  ->
 ;;    ((f1 . code1) (f2 . code2) ...)
 ;;
 
 (defun download (dcls)
   (declare (xargs :guard (declsp dcls)))
   (if (consp dcls)
-      (cons (cons (cadar dcls) (caddar dcls)) 
+      (cons (cons (cadar dcls) (caddar dcls))
 	    (download (cdr dcls)))
     nil))
 
@@ -401,36 +401,36 @@
 ;;
 ;;---------------------------------------------------------------------------
 
-(defthm msteps-eqn 
-  (equal (msteps seq code stack n) 
+(defthm msteps-eqn
+  (equal (msteps seq code stack n)
 	 (cond ((or (zp n) (not (true-listp stack))) 'ERROR)
 	       ((endp seq) stack)
-	       (t (msteps 
+	       (t (msteps
 		   (cdr seq) code (mstep (car seq) code stack n) n))))
-  :rule-classes ((:definition 
-		  :clique (mstep msteps) 
-		  :controller-alist 
+  :rule-classes ((:definition
+		  :clique (mstep msteps)
+		  :controller-alist
 		  ((msteps t nil nil nil) (mstep t nil nil nil)))))
 
 
-(defthm mstep-eqn 
-  (equal (mstep form code stack n) 
-	 (cond 
+(defthm mstep-eqn
+  (equal (mstep form code stack n)
+	 (cond
    ((or (zp n) (not (true-listp stack))) 'ERROR)
    ((equal (car form) 'PUSHC) (cons (cadr form) stack))
    ((equal (car form) 'PUSHV) (cons (nth (cadr form) stack) stack))
-   ((equal (car form) 'CALL) 
+   ((equal (car form) 'CALL)
     (msteps (cdr (assoc (cadr form) code)) code stack (1- n)))
    ((equal (car form) 'OPR) (opr (cadr form) code stack))
    ((equal (car form) 'IF)
     (if (car stack)
 	(msteps (cadr form) code (cdr stack) n)
       (msteps (caddr form) code (cdr stack) n)))
-   ((equal (car form) 'POP) 
+   ((equal (car form) 'POP)
     (cons (car stack) (nthcdr (cadr form) (cdr stack))))))
-  :rule-classes ((:definition 
-		  :clique (mstep msteps) 
-		  :controller-alist 
+  :rule-classes ((:definition
+		  :clique (mstep msteps)
+		  :controller-alist
 		  ((msteps t nil nil nil) (mstep t nil nil nil)))))
 
 
@@ -453,24 +453,24 @@
       (list code stack n)
     (if flag
 	(if (equal (car x) 'CALL)
-	    (machine-induction nil 
+	    (machine-induction nil
 			       (cdr (assoc (cadr x) code))
 			       code stack (1- n))
 	  (if (equal (car x) 'IF)
-	      (list (machine-induction nil 
-				       (cadr x) 
+	      (list (machine-induction nil
+				       (cadr x)
 				       code (cdr stack) n)
-		    (machine-induction nil 
-				       (caddr x) 
+		    (machine-induction nil
+				       (caddr x)
 				       code (cdr stack) n))
 	    (list code stack n)))
       (list (machine-induction t (car x) code stack n)
-	    (machine-induction nil (cdr x) 
-			       code 
+	    (machine-induction nil (cdr x)
+			       code
 			       (mstep (car x) code stack n)
 			       n)))))
-	  
-		    
+
+
 
 
 

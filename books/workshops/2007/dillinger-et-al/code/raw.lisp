@@ -146,7 +146,7 @@
     (let* ((fresh-no-dups (remove-duplicates-eql fresh))
            (main `(make-raw-definitions
                    ,all-forms
-                   :compile ,compile 
+                   :compile ,compile
                    :fresh ,fresh-no-dups
                    :save-fns ,save-fns
                    :save-macros ,save-macros
@@ -231,7 +231,7 @@
                               (consp decls-and-body))))
   `(progn (copy-raw-defun ,name ,name-for-old)
           (make-raw-definitions
-           ((defun ,name ,ll 
+           ((defun ,name ,ll
               ,@ (and ll `((declare (ignorable . ,ll))))
               . ,decls-and-body))
            :compile t

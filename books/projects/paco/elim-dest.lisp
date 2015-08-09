@@ -233,7 +233,7 @@
                (find-first-var-lst (cdr lst))))))
 )
 
-(mutual-recursion 
+(mutual-recursion
 
 (defun find-first-fnsymb (term)
   (cond ((variablep term) nil)
@@ -556,7 +556,7 @@
 ; symbol is computed at definition time and stored as a property of
 ; that name.  Functions with no stored level-no (primitives) have
 ; level-no 0.  Lambda expressions are assigned the max level-no
-; of their bodies.  
+; of their bodies.
 
 (mutual-recursion
 
@@ -764,7 +764,7 @@
 ; restriction.  There are probably better ways to do this than to call
 ; the full-blown convert-type-set-to-term and clausify.  But this is
 ; simple, elegant, and lets us take advantage of improvements to those
-; two utilities.  
+; two utilities.
 
 ; Subtle Design Issue: Once upon a time, Paco clausified (not (hyp t))
 ; rather than (not (hyp v)) and then generalized the assembled clause.
@@ -879,7 +879,7 @@
              (cond ((ffnnamep (ffn-symb term)
                               (subst-expr 'x term inst-formula))
                     (mv nil nil))
-                   (t 
+                   (t
                     (<apply-generalize-rule-id>
                      (mv t inst-formula)))))))))))
 

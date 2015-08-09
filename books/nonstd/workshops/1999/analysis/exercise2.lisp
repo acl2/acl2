@@ -47,14 +47,14 @@ function g(x)=-f(x).
 		(realp b)
 		(realp z))
 	   (i-limited (find-zero-n-2 a
-				     z 
-				     0 
+				     z
+				     0
 				     (i-large-integer)
 				     (+ (- (* (/ (i-large-integer)) a))
 					(* (/ (i-large-integer)) b)))))
    :hints (("Goal"
 	    :use ((:instance
-		   (:functional-instance 
+		   (:functional-instance
 		    limited-find-zero-body
 		    (rcfn (lambda (x) (- (rcfn x))))
 		    (find-zero-n (lambda (a z i n
@@ -73,8 +73,8 @@ function g(x)=-f(x).
 	   (< a b))
       (standard-part
        (find-zero-n-2 a
-		      z 
-		      0 
+		      z
+		      0
 		      (i-large-integer)
 		      (/ (- b a) (i-large-integer))))
     0))
@@ -100,8 +100,8 @@ function g(x)=-f(x).
                             (< a b))
                        (standard-part
                         (find-zero-n-2 a
-                                       z 
-                                       0 
+                                       z
+                                       0
                                        (i-large-integer)
                                        (/ (- b a) (i-large-integer))))
                      0)))))
@@ -119,7 +119,7 @@ function g(x)=-f(x).
                        (standard-part
                         (find-zero-n-2 a
                                        (- z)
-                                       0 
+                                       0
                                        (i-large-integer)
                                        (/ (- b a) (i-large-integer))))
                      0)))
@@ -142,7 +142,7 @@ function g(x)=-f(x).
 		       z)))
   :hints (("Goal"
 	   :use ((:instance
-		  (:functional-instance 
+		  (:functional-instance
 		   intermediate-value-theorem
 		   (rcfn (lambda (x) (- (rcfn x))))
 		   (find-zero (lambda (a b z)
@@ -154,6 +154,6 @@ function g(x)=-f(x).
 				   a (- z) i n eps))))
 		  (z (if (realp z) (- z) z))
 		  ))
-	   :in-theory 
+	   :in-theory
 	   (disable intermediate-value-theorem))
            ))

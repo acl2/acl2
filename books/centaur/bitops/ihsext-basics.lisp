@@ -209,7 +209,7 @@ off looking at the source code.</p>")
 
   ;; (defthm bxor-norm
   ;;   (implies
-  ;;    (syntaxp (and 
+  ;;    (syntaxp (and
   ;;              (not (equal x ''0))
   ;;              (not (equal x ''1))
   ;;              (or
@@ -3493,7 +3493,7 @@ off looking at the source code.</p>")
     :rule-classes ((:induction
                     :pattern (logmask i)
                     :scheme (count-down i))))
-  
+
   (add-to-ruleset ihsext-redefs logmask**)
   (add-to-ruleset ihsext-recursive-redefs logmask**)
   (add-to-ruleset ihsext-inductions logmask-induct)

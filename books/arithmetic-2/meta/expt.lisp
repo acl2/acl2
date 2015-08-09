@@ -12,7 +12,7 @@
 ;; which are too expensive for normal use, but are occasionally
 ;; useful.  They can be enabled as a group with
 ;; (in-theory (enable strong-expt-rules)).
-;; 
+;;
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,7 +96,7 @@
            0)))
 
 (defthm |(expt x 1)|
-  (equal (expt x 1) 
+  (equal (expt x 1)
          (fix x)))
 
 (defthm |(expt 1 i)|
@@ -104,7 +104,7 @@
          1))
 
 (defthm |(expt x -1)|
-  (equal (expt x -1) 
+  (equal (expt x -1)
 	 (/ x)))
 
 (defthm case-split-on-non-integer-exponents
@@ -417,7 +417,7 @@
 		(integerp (* 1/2 i)))
            (<= 0 (expt x i)))
   :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
+  :hints (("Goal" :use ((:instance
 			 expt-type-negative-base-even-exponent)))))
 
 (defthm expt-type-nonpositive-base-odd-exponent
@@ -427,7 +427,7 @@
 		(not (integerp (* 1/2 i))))
            (<= (expt x i) 0))
   :rule-classes (:type-prescription :generalize)
-  :hints (("Goal" :use ((:instance 
+  :hints (("Goal" :use ((:instance
 			 expt-type-negative-base-odd-exponent)))))
 
 (defthm expt-negative-base-even-exponents

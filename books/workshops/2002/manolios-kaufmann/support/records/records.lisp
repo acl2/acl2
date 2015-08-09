@@ -109,7 +109,7 @@
 
 ; $$$ A main theorem
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
 	 r))
 
 (local
@@ -139,7 +139,7 @@
 
 ; $$$ A main theorem
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
 	 v))
 
 (local

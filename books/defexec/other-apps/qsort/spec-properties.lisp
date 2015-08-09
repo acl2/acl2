@@ -24,7 +24,7 @@ to be proved is that it produces an ordered permutation of its input.
         ((<<= (car x) (cadr x))
          (ordp (rest x)))
         (t nil)))
-             
+
 (defthm ordp-my-del-reduction
   (implies (ordp x)
            (ordp (my-del e x))))

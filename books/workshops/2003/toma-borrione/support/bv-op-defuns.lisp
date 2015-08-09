@@ -1,7 +1,7 @@
 ;------------------------------------------
 ;
 ; Author:  Diana Toma
-; TIMA-VDS, Grenoble, France 
+; TIMA-VDS, Grenoble, France
 ; March 2003
 ; ACL2 formalization of bit-vectors as lists
 ; Definitions of bit-vectors operations
@@ -23,10 +23,10 @@
     (or (equal 0 b)
         (equal 1 b)))
 
-            
+
 ;--- bit operations
 
-; or 
+; or
 (defun b-or (x y)
    (if (and (bitp x) (bitp y))
        (if (or (equal x 1) (equal y 1))
@@ -34,7 +34,7 @@
             0)
        nil))
 
-; and   
+; and
 (defun b-and (x y)
    (if (and (bitp x) (bitp y))
        (if (and (equal x 1) (equal y 1))
@@ -45,10 +45,10 @@
 ;not
 (defun b-not (x)
    (if (bitp x)
-       (if (equal x 0) 
+       (if (equal x 0)
            1
            0)
-       nil)) 
+       nil))
 
 ;xor
 (defun  b-xor (x y)
@@ -89,7 +89,7 @@
 
 
 
-; transforms a bit-vector into the positive integer corresponding at the little-endian interpretation 
+; transforms a bit-vector into the positive integer corresponding at the little-endian interpretation
 ; we treat only the unsigned case
 
 (defun bv-int-little-endian (v)
@@ -114,13 +114,13 @@
 
 (defun int-bv-little-endian(i)
   (if (and (integerp i)
-            (<= 0 i)) 
-       (if  (equal (floor i 2) 0) 
+            (<= 0 i))
+       (if  (equal (floor i 2) 0)
             (list (mod i 2))
-            (cons (mod i 2) (int-bv-little-endian (floor i 2)))) 
+            (cons (mod i 2) (int-bv-little-endian (floor i 2))))
     nil))
 
-                         
+
 ;  transforms i into the bit-vector corresponding at the big-endian interpretation of i
 
 (defun int-bv-big-endian (i)
@@ -152,7 +152,7 @@
 
 ;and between two bit-vectors with arbitrary length
 
-(defun binary-bv-and (x y)   
+(defun binary-bv-and (x y)
   (if (and (bvp x) (bvp y))
       (if (<= (len x) (len y))
           (bv-a (bv-to-n x (len y)) y)
@@ -169,11 +169,11 @@
       nil))
 
 (defmacro bv-and (&rest args)
-   (bv-and-macro args))      
+   (bv-and-macro args))
 
 
 
-;or between two bit-vectors with the same length 
+;or between two bit-vectors with the same length
 
 (defun bv-o (x y)
    (if (and (bvp x) (bvp y)
@@ -185,7 +185,7 @@
 
 ;or between two bit-vectors with arbitrary length
 
-(defun binary-bv-or (x y)   
+(defun binary-bv-or (x y)
   (if (and (bvp x) (bvp y))
       (if (<= (len x) (len y))
           (bv-o (bv-to-n x (len y)) y)
@@ -201,7 +201,7 @@
       nil))
 
 (defmacro bv-or (&rest args)
-   (bv-or-macro args)) 
+   (bv-or-macro args))
 
 
 
@@ -219,7 +219,7 @@
 
 ;xor between two bit-vectors with arbitrary length
 
-(defun binary-bv-xor (x y)   
+(defun binary-bv-xor (x y)
   (if (and (bvp x) (bvp y))
       (if (<= (len x) (len y))
           (bv-xo (bv-to-n x (len y)) y)
@@ -235,26 +235,26 @@
       nil))
 
 (defmacro bv-xor (&rest args)
-   (bv-xor-macro args)) 
+   (bv-xor-macro args))
 
 
 ; not of a bit-vector x
 
-(defun bv-not (x)   
+(defun bv-not (x)
   (if (bvp x)
       (if (endp x)
            nil
           (cons (b-not (car x)) (bv-not (cdr x))))
-      nil)) 
+      nil))
 
 
 
 ; addition modulo  (2 pow i) of two bit-vectors x and y
 
 (defun binary-plus (i x y )
-  (if (and (bvp x) (<= 0 (bv-int-big-endian x)) 
+  (if (and (bvp x) (<= 0 (bv-int-big-endian x))
            (<=  (bv-int-big-endian x) (expt 2 i))
-           (bvp y) (<= 0 (bv-int-big-endian y))  
+           (bvp y) (<= 0 (bv-int-big-endian y))
            (<=  (bv-int-big-endian y) (expt 2 i))
            (integerp i) (<= 0 i))
       (bv-to-n (int-bv-big-endian (mod (+  (bv-int-big-endian x)
@@ -265,14 +265,14 @@
 (defun plus-macro (i lst )
   (if (and (consp lst) (integerp i) (<= 0 i))
       (if (consp (cdr lst))
-          (list 'binary-plus i (car lst) 
+          (list 'binary-plus i (car lst)
                 (plus-macro i (cdr lst) ))
           (car lst))
       nil))
 
 (defmacro plus (i &rest args )
-   (plus-macro  i args )) 
- 
+   (plus-macro  i args ))
+
 ;auxiliary shift operations
 
 (defun << (x n w)

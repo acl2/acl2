@@ -419,7 +419,7 @@
 ; Note that if expr is not an atom, it is of the form
 ; ( <expr> + <expr> ) or
 ; ( <expr> - <expr> ) or
-; ( <expr> * <expr> ).  
+; ( <expr> * <expr> ).
 
 ; Hence, (nth 0 expr) is the first subexpression and (nth 2 expr) is
 ; the second.
@@ -737,7 +737,7 @@
 (defthm run-app
   (equal (run (app a b) s)
          (run b (run a s))))
-  
+
 (defthm run-opener
   (and (equal (run nil s) s)
        (equal (run (cons th sched) s)
@@ -795,7 +795,7 @@
 ; Concretely, for the  factorial code, here are the steps.
 
 ; [1] Specify the concepts related to what you're doing.
-;     Typically we do it at two levels, 
+;     Typically we do it at two levels,
 ;     (a) What we want.
 ;     (b) How we'll do it.
 
@@ -932,7 +932,7 @@
   (implies (natp n)
            (equal (run (ifact-sched n)
                        (make-state 0
-                                   (cons n (cons a nil)) 
+                                   (cons n (cons a nil))
                                    stack
                                    *ifact-program*))
                   (make-state 14
@@ -979,7 +979,7 @@
 ; The semantic functions for each instruction return a new state
 ; constructed from parts of an old one, s.  Typically the new
 ; state is just s with one or two components changed.  The others
-; are fixed, for that instruction.  
+; are fixed, for that instruction.
 
 ; A good example is that of ILOAD:
 
@@ -1107,7 +1107,7 @@
 ;               (push (arg1 inst) (stack s))
 ;               (program s)))
 
-; we could write 
+; we could write
 
 ; (defun execute-ICONST (inst s)
 ;   (semantics (ICONST c)
@@ -1120,7 +1120,7 @@
 
 ; and it will
 ; * generate the name execute-ICONST,
-; * fill in the formals, and 
+; * fill in the formals, and
 ; * use the semantics function to generate the body.
 
 ; So now we define defsem...

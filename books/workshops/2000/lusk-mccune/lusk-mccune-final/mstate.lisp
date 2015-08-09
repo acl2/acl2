@@ -58,7 +58,7 @@
 	  ;; a connect or waiting for an accept.  As it is, the
 	  ;; simulator will attempt these, so it might spin.
 	  (t 'active))))
-     
+
 (in-theory (disable statementp))
 
 (defun waiting-pstates (pss css lss)
@@ -220,7 +220,7 @@
 		    )
 		   nil
 		   )
-		 
+
 		 '(((lutra 320) 5 (gyro 440) 6) ('m3 'm4) ('m1 'm2)))
 |#
 

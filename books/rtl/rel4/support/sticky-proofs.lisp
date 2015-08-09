@@ -126,7 +126,7 @@
 		  (integerp n) (> n 0)
 		  (integerp k))
 	     (= (sticky (* (expt 2 k) x) n)
-		(* (expt 2 k) (sticky x n))))		
+		(* (expt 2 k) (sticky x n))))
   :rule-classes ()
   :hints (("goal" :in-theory (enable sticky a15)
 		  :use (;(:instance expt-pos (x k))
@@ -172,7 +172,7 @@
                               '( trunc-exactp-b))
 		  :use ((:instance trunc-exactp-b (n  (1- n)))
 			(:instance expo-trunc (n (1- n)))
-			(:instance expt-strong-monotone 
+			(:instance expt-strong-monotone
 				   (n (1+ (- (expo x) n)))
 				   (m (+ 2 (- (expo x) n))))
 ;			(:instance trunc-pos (n (1- n)))
@@ -189,7 +189,7 @@
 	     (<= (expt 2 (expo x))
 		 (sticky x n)))
   :rule-classes ()
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (enable sticky)
            :use ((:instance expo-trunc (n (1- n)))
 			(:instance expo-lower-bound (x (trunc x (1- n))))
@@ -229,7 +229,7 @@
                               '(trunc-exactp-b))
 		  :use ((:instance expo-sticky-2)
 			(:instance expo-upper-bound)
-			(:instance expt-strong-monotone 
+			(:instance expt-strong-monotone
 				   (n (1+ (- (expo x) n)))
 				   (m (+ 2 (- (expo x) n)))))))))
 
@@ -328,8 +328,8 @@
 			(:instance trunc-exactp-b (n (1- n)))
 ;			(:instance trunc-pos (n (1- n)))
 			(:instance trunc-diff-pos (n (1- n)))
-			(:instance away-exactp-c 
-				   (n (1- n)) 
+			(:instance away-exactp-c
+				   (n (1- n))
 				   (a (+ (trunc x (1- n))
 					 (expt 2 (+ (expo x) 2 (- n)))))))))))
 
@@ -510,7 +510,7 @@
   :hints (("goal" :in-theory (disable fl+int-rewrite expo trunc-rewrite)
 		  :use ((:instance minus-trunc-1)
 			exactp2
-			(:instance fl+int-rewrite 
+			(:instance fl+int-rewrite
 				   (x (* y (expt 2 (- (1- k) (expo y)))))
 				   (n (- (* x (expt 2 (- (1- k) (expo y))))))))))))
 
@@ -750,7 +750,7 @@
 		  (not (exactp x n)))
 	     (= (away x n)
 		(+ (trunc x n)
-		   (expt 2 (+ (expo x) 1 (- n))))))		
+		   (expt 2 (+ (expo x) 1 (- n))))))
   :rule-classes ()
   :hints (("goal" :use ((:instance away-sticky-2 (n (1+ n)))
 			(:instance away-sticky-3 (n (1+ n)))))))
@@ -892,14 +892,14 @@
 	     (= (+ x (sticky y k))
 		(sticky (+ x y) k2)))
   :rule-classes ()
-  :hints (("Goal" :use (sticky-plus sticky-lemma-1 sticky-lemma-2 
+  :hints (("Goal" :use (sticky-plus sticky-lemma-1 sticky-lemma-2
                                     (:instance
                                      trunc-0
                                      (n (+ -1 K (* -1 (EXPO Y)))))))))
 
 
 ;from add3
-(local 
+(local
  (defthm sticky-sticky-1
    (implies (and (rationalp x)
 ;                 (> x 0)
@@ -913,7 +913,7 @@
    :rule-classes ()
    :hints (("goal" :use ((:instance sticky))))))
 
-(local 
+(local
  (defthm sticky-sticky-2
    (implies (and (rationalp x)
 ;                 (> x 0)
@@ -1025,7 +1025,7 @@
     (implies (and (rationalp x)
 		  (> x 0)
 		  (integerp m)
-		  (integerp n) 
+		  (integerp n)
 		  (> n m)
 		  (> m 0))
 	     (iff (exactp (sticky x n) m)
@@ -1042,7 +1042,7 @@
 (defthm sticky-exactp-m
     (implies (and (rationalp x)
 		  (integerp m)
-		  (integerp n) 
+		  (integerp n)
 		  (> n m)
 		  (> m 0))
 	     (iff (exactp (sticky x n) m)
@@ -1057,6 +1057,6 @@
    ;                     (:instance exactp- (x (- (sticky x n))) (n m))
                         ))))
 
-          
+
 
 

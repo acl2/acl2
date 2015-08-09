@@ -65,7 +65,7 @@
      :check-expansion t)))
 
 
-;***** DEFUNT macro for Pete Manolios & Northeastern CSU290 ***** 
+;***** DEFUNT macro for Pete Manolios & Northeastern CSU290 *****
 
 (defun defunt-make-sym (s suf)
 ; Returns the symbol s-suf.
@@ -181,7 +181,7 @@
                    :nonlinearp))
        (prog2$
         nil ;;harshrc 14Jan2012- The following gives a nasty error when run inside of ld
-        ;; (observation-cw 'my-nonlinearp-default-hint 
+        ;; (observation-cw 'my-nonlinearp-default-hint
         ;;                 "~%~%[Note: We now enable non-linear arithmetic.]~%~%")
         '(:computed-hint-replacement t
                      :nonlinearp t))
@@ -200,7 +200,7 @@
           (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
          (prog2$
           nil ;;The following gives a nasty error when run inside of ld
-          ;; (observation-cw 'my-nonlinearp-default-hint 
+          ;; (observation-cw 'my-nonlinearp-default-hint
           ;;                 "~%~%[Note: We now disable non-linear arithmetic.]~%~%")
            '(:computed-hint-replacement t
                         :nonlinearp nil))
@@ -221,14 +221,14 @@
      (assign checkpoint-processors
              (set-difference-eq (@ checkpoint-processors)
                                 '(ELIMINATE-DESTRUCTORS-CLAUSE)))
-     
+
      ;;CCG settings
-     (set-ccg-print-proofs nil)     
+     (set-ccg-print-proofs nil)
      (set-ccg-inhibit-output-lst
       '(QUERY BASICS PERFORMANCE BUILD/REFINE SIZE-CHANGE))
-     
+
      (value '(value-triple :invisible))))
-   
+
      (set-default-hints '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)))
 
      ;; Other events:

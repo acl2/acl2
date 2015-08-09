@@ -6,14 +6,14 @@
 
 (in-package "ACL2")
 
-(include-book "fact")  ;; The solution to exercise 1 requires the 
+(include-book "fact")  ;; The solution to exercise 1 requires the
                        ;; definition of fact-put from this book.
 
 ;;; Exercise 1
 ;;; ==========
 
 ;;; The definition of insert-value is found in file vhdl.lisp, and
-;;; theorems are listed below.  The first three theorems are also 
+;;; theorems are listed below.  The first three theorems are also
 ;;; found in file fact-proof.lisp.
 
 (defthm insert-value_consp
@@ -26,9 +26,9 @@
 
 
 (defthm lemma_nth_insert-value1
-  (implies (and (integerp n) 
-		(<= 0 n) 
-		(consp st) 
+  (implies (and (integerp n)
+		(<= 0 n)
+		(consp st)
 		(< n (len st)))
 	   (equal (nth n (insert-value n val st))
 		  val)))
@@ -42,7 +42,7 @@
 	 (len st)))
 
 (defthm lemma_fact-get_fact-put
-  (implies (and (< (fact-get-nth var) (len st)) 
+  (implies (and (< (fact-get-nth var) (len st))
 		(consp st))
 	   (equal (fact-get (fact-put new var st) var)
 		  new)))

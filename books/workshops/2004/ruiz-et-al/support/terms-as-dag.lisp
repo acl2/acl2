@@ -69,12 +69,12 @@
 
 ; ACL2 !>(term-as-dag
 ;            '(f (h x) y (k (g (k y) (k x z))))
-;	       '(nil nil nil nil nil nil nil nil nil nil nil)) 
+;	       '(nil nil nil nil nil nil nil nil nil nil nil))
 ; ((F 1 3 4) (H 2) (X . T)
-;            (Y . T) 
+;            (Y . T)
 ;            (K 5) (G 6 8) (K 7) 3 (K 9 10) 2 (Z . T))
 
-		  
+
 ;;; The main auxiliary function {\tt term-as-dag-aux} is defined
 ;;; recursively in the structure of the term stored. The flag @flg@
 ;;; indicates if @term@ is considered to be a term or a list of terms,
@@ -83,7 +83,7 @@
 ;;; stored with shared variables, the argument @variables@ stored a
 ;;; association list, associating variables previously stored with the
 ;;; corresponding index of the node where the variable is already stored
-;;; in the graph. 
+;;; in the graph.
 
 ;;; This function returns a multivalue with four values. The first one
 ;;; is the new graph obtained, the second is the first available index
@@ -91,14 +91,14 @@
 ;;; lists of terms) is the list of initial indices where each of the
 ;;; terms of the list have been stored, and the fourth is the new
 ;;; association list of variables to indices, extending the input
-;;; association list. 
+;;; association list.
 
 ;;; Our goal in this book is to verify this function, showing that it
 ;;; sores a term in the conditions required by the rules of
 ;;; transformation of a unification algorithm acting on term dags (see
 ;;; {\tt dag\--unification\--rules\-.lisp}. That is, we prove the
 ;;; following theorems (the predicate {\tt empty-graph-p} describes
-;;; graphs with @nil@ in all its positions):  
+;;; graphs with @nil@ in all its positions):
 
 ; (defthm term-as-dag-term-graph-p
 ;   (implies (and (empty-graph-p g) (term-p term))
@@ -115,7 +115,7 @@
 ;   (implies (and (empty-graph-p g) (term-p term))
 ; 	     (equal (dag-as-term t 0 (term-as-dag term g))
 ;		    term)))
- 
+
 
 ; (defthm term-as-dag-no-duplicatesp-variables
 ;    (implies (and (empty-graph-p g) (term-p term))
@@ -128,45 +128,45 @@
 ;;; dag-unification-rules.lisp}). In fact, in the last section of this
 ;;; book, we define and verify a function that (using the above function
 ;;; {\tt term-as-dag}) stores a given unification problem as directed
-;;; acyclicic graph. 
+;;; acyclicic graph.
 
 ;;; Finally, note that for the moment we are not talking about
 ;;; single--threaded objects. But later (book {\tt
 ;;; dag-unification-st.lisp}), we will use the properties of
 ;;; these functions to verify an analogue functions defined using stobjs
-;;; (that is, the graph obtained will be destructively updated). 
+;;; (that is, the graph obtained will be destructively updated).
 
 
 ;;; The following books are used, and contain information that is
 ;;; relevant to understand the contents of this book:
 
-;;; *) 
+;;; *)
 ;;;  The book {\tt dag-unification-rules} describes the rules of
 ;;;  transformation of unification, done with a dag representation of
 ;;;  terms. It includes the book {\tt dags.lisp}, where it is described
 ;;;  how term graphs are represented and the meaning of the information
-;;;  stored in the nodes 
+;;;  stored in the nodes
 ;;; -)
 
 
 ;;; ============================================================================
 ;;;
-;;; 1) The proof strategy 
+;;; 1) The proof strategy
 ;;;
 ;;; ============================================================================
 
 ;;; Note that verifying the function @term-as-dag@ may be difficult,
 ;;; for several reasons:
 
-;;; *) 
+;;; *)
 ;;;   We use an association list to avoid duplication of variables.
-;;; *) 
+;;; *)
 ;;;   The node corresponding to a function symbol is updated {\em after}
 ;;;   the list of its arguments have been stored.
-;;; *) 
+;;; *)
 ;;;   To store a list of terms, the @cdr@ of the list is stored having
-;;;   as input the graph obtained after storing the @car@ of the list.  
-;;; *) 
+;;;   as input the graph obtained after storing the @car@ of the list.
+;;; *)
 ;;;   We must ensure that the graph stored is a directed acyclic graph
 ;;;   (as defined by @dag-p@). In particular this property has to be
 ;;;   held in every stage of the proccess (because we need to use
@@ -178,7 +178,7 @@
 ;;; followed. The main idea is to employ some kind of compositional
 ;;; reasoning, in order to consider the difficult issues of the proofs
 ;;; separately. In particular, we reason about "shared variables" and
-;;; the proccess of "storing the term", separately. 
+;;; the proccess of "storing the term", separately.
 
 ;;; For that purpose, we define a version of {\tt term-as-dag-aux},
 ;;; called {\tt term-as-dag-aux-ns}, storing terms (or list of terms)
@@ -218,7 +218,7 @@
 ;;; index, then the node is updated to that index. If the variable node
 ;;; is not bound in the association list, then the node is not updated,
 ;;; but the association list is extended, binding the new variable to
-;;; the current index. 
+;;; the current index.
 
 
 (local
@@ -235,31 +235,31 @@
 	       (1+ h1) h2 g (acons (term-dag-symbol h1 g) h1
 				   variables)))))
 	 (t (make-shared-variables (1+ h1) h2 g variables)))))
- 
+
 
 ;;; Our strategy is as follows:
 
-;;; *) 
+;;; *)
 ;;;  Verify the properties of {\tt term-as-dag-aux-ns}, showing that
-;;;  stores the input term as a directed acyclic graph. 
-;;; *) 
-;;;  Show that {\tt make-shared-variables} preserves those properties. 
-;;; *) 
+;;;  stores the input term as a directed acyclic graph.
+;;; *)
+;;;  Show that {\tt make-shared-variables} preserves those properties.
+;;; *)
 ;;;  Prove that the composition of {\tt make-shared-variables} and {\tt
-;;;  term-as-dag-aux-ns} is equal to {\tt term-as-dag-aux} 
-;;; *) 
+;;;  term-as-dag-aux-ns} is equal to {\tt term-as-dag-aux}
+;;; *)
 ;;;  Combine all the above results to prove the intended properties of
 ;;;  {\tt term-as-dag-aux}. As a particular case, the properties of
-;;;  {\tt term-as-dag}.  
+;;;  {\tt term-as-dag}.
 ;;; -)
 
 ;;; There is an exception to this strategy: when we prove the {\tt
 ;;; term-graph-p} property of the graph obtained by {\tt
 ;;; term-as-dag} (theorem {\tt term-as-dag-term-graph-p} above),
 ;;; we will reason directly with the definition of the function {\tt
-;;; term-as-dag}.  
+;;; term-as-dag}.
 
-(local (in-theory (disable assoc-val)))  
+(local (in-theory (disable assoc-val)))
 
 
 ;;; ============================================================================
@@ -271,7 +271,7 @@
 ;;; One of the main drawbacks in the proof effort described in this book
 ;;; is the proof that the graphs obtained are acyclic, as defined by the
 ;;; function @dag-p@ (see {\tt dags.lisp}). In this section we define
-;;; some conditions on graphs stronger than the @dag-p@ condition. 
+;;; some conditions on graphs stronger than the @dag-p@ condition.
 
 
 ;;; -----------------------------------
@@ -282,14 +282,14 @@
 
 ;;; The property @init-term-dag-p@ defined below describes a particular
 ;;; type of directed acyclicic graphs: those obtained storing terms
-;;; using the function @term-as-dag@. 
+;;; using the function @term-as-dag@.
 
 ;;; Note the style of the definition: we define  {\em a property of
 ;;; nodes} ({\tt property\--element\--init\--term\--dag-p} in this
 ;;; case). Then we define a function ({\tt init\--term\--dag-p\--aux} in
 ;;; this case) checking if that property holds in a list of given
 ;;; nodes. Finally we define the function {\tt init\--term\--dag-p}
-;;; checking the property in the list off all the nodes of a graph.  
+;;; checking the property in the list off all the nodes of a graph.
 
 ;;; A graph has the property {\tt init-term-dag-p} if every node is
 ;;; @nil@, or a compound node such that its arguments are bigger
@@ -305,7 +305,7 @@
 
 (local
  (defun property-element-init-term-dag-p (h node g)
-   (or (and (natp node) (< node h) (term-dag-variable-p node g)) 
+   (or (and (natp node) (< node h) (term-dag-variable-p node g))
        (equal node nil)
        (and (consp node)
 	    (variable-p (car node)) (equal (cdr node) t))
@@ -347,7 +347,7 @@
        t
      (and (natp (car l))
 	  (local-nat-listp (cdr l))))))
- 
+
 
 (local
  (defthm list-from-to-local-nat-listp
@@ -367,7 +367,7 @@
 (local
  (defun init-term-dag-p (g)
    (init-term-dag-p-aux (list-from-to 0 (len g)) g)))
- 
+
 
 
 ;;; -----------------------------------
@@ -392,23 +392,23 @@
 
 
 
-(local  
+(local
  (defun tree-p-aux (hs g)
    (if (endp hs)
        t
      (and (property-element-tree-p (car hs) (nth (car hs) g))
 	  (tree-p-aux (cdr hs) g)))))
- 
+
 (local
  (defun tree-p (g)
    (tree-p-aux (list-from-to 0 (len g)) g)))
- 
+
 
 
 
 ;;; -----------------------------------
 ;;;
-;;; 2.2) The property {\tt init-term-dag-p} implies {\tt dag-p} 
+;;; 2.2) The property {\tt init-term-dag-p} implies {\tt dag-p}
 ;;;
 ;;; -----------------------------------
 
@@ -420,20 +420,20 @@
 ;;; obvioulsy it has to be the first time it appears in a path):
 
 ;;; We first prove some properties about {\tt init-term-dag-p} before
-;;; disabling the function: 
+;;; disabling the function:
 
 (local
  (encapsulate
-  
+
   ()
-  
+
   (local
    (defthm init-term-dag-p-aux-member-1
      (implies (and (init-term-dag-p-aux hs g)
 		   (member h hs)
 		   (not (term-dag-is-p h g)))
 	      (smaller-than-list h (neighbors h g)))))
-  
+
   (local
    (defthm init-term-dag-p-aux-member-2
      (implies (and  (member x (neighbors h g))
@@ -441,21 +441,21 @@
 		    (member h hs)
 		    (term-dag-is-p h g))
 	      (not (consp (neighbors x g))))))
-  
-  
+
+
   (local
    (defthm init-term-dag-p-aux-member-3
      (implies (and (init-term-dag-p-aux hs g)
 		   (member h hs))
 	      (nat-true-listp (neighbors h g)))))
-  
+
   (local
    (defthm nth-non-nil
      (implies (and (<= (len l) n) (natp n))
 	      (not (nth n l)))))
-  
 
-;; If a node is not an "is" node, then is smaller than its neighbors.  
+
+;; If a node is not an "is" node, then is smaller than its neighbors.
 
   (defthm init-term-dag-p-property-1
     (implies (and (natp h)
@@ -464,9 +464,9 @@
 	     (smaller-than-list h (neighbors h g)))
     :hints (("Goal" :cases ((< h (len g))))
 	    ("Subgoal 1" :in-theory (disable neighbors))))
- 
-;; Non--terminal nodes are not neighbors of an "is" node:  
-  
+
+;; Non--terminal nodes are not neighbors of an "is" node:
+
   (defthm init-term-dag-p-property-2
     (implies (and (natp h)
 		  (init-term-dag-p g)
@@ -475,17 +475,17 @@
 	     (not (member x (neighbors h g))))
     :hints (("Goal" :cases ((< h (len g))))
 	    ("Subgoal 1" :in-theory (disable neighbors))))
-  
-  
+
+
 ;; The list neighbors of every node is a true list of natural numbers:
-  
+
   (defthm init-term-dag-p-property-3
     (implies (and (init-term-dag-p g) (natp h))
 	     (nat-true-listp (neighbors h g)))
     :hints (("Goal" :cases ((< h (len g))))
 	    ("Subgoal 1" :in-theory (disable neighbors))))))
- 
- 
+
+
 
 ;;; The three above properties should suffice:
 
@@ -503,7 +503,7 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defun strictly-increasing-path-piece (p)
      (cond ((or (endp p) (endp (cdr p))) p)
@@ -511,31 +511,31 @@
 					   (strictly-increasing-path-piece (cdr
 									    p))))
 	   (t (list (first p))))))
-  
+
   (local
    (defun remaining-path-piece (p)
      (cond ((endp p) p)
 	   ((endp (cdr p)) (cdr p))
 	   ((< (first p) (second p)) (remaining-path-piece (cdr p)))
 	   (t (cdr p)))))
- 
+
   (local
    (defthm strictly-increasing-path-piece-append-remaining-path-piece
      (equal (append (strictly-increasing-path-piece p)
 		    (remaining-path-piece p))
 	    p)))
-  
+
   (local
    (defun strictly-increasing-list (l)
      (cond ((endp l) t)
 	   ((endp (cdr l)) t)
 	   (t (and (< (first l) (second l))
 		   (strictly-increasing-list (cdr l)))))))
-  
+
   (local
    (defthm strictly-increasing-path-piece-strictly-increasing
      (strictly-increasing-list  (strictly-increasing-path-piece p))))
-  
+
 
   (local
    (defthm smaller-than-list-main-property
@@ -547,11 +547,11 @@
    (defthm map-nfix-true-listp
      (implies (nat-true-listp l)
 	      (equal (map-nfix l) l))))
- 
+
   (local
    (defthm init-term-dag-p-neighbors-main-property
      (implies (and (natp h)
-		   (<= x h) 		
+		   (<= x h)
 		   (consp (neighbors x g))
 		   (init-term-dag-p g))
 	      (not (member x (neighbors h g))))
@@ -566,14 +566,14 @@
 		   (init-term-dag-p g)
 		   (not (endp (remaining-path-piece p))))
 	      (not (consp (neighbors (first (remaining-path-piece p)) g))))))
-  
-		
+
+
   (local
    (defthm path-p-with-its-first-a-terminal-node
      (implies (and (path-p p g)
 		   (not (endp (cdr p))))
 	      (consp (neighbors (first p) g)))))
-  
+
 
   (local
    (defthm remaining-path-piece-main-property-corollary
@@ -581,16 +581,16 @@
 		   (init-term-dag-p g)
 		   (not (endp (remaining-path-piece p))))
 	      (not (consp (cdr (remaining-path-piece p)))))))
-  
+
 
 
   (local
    (defthm strictly-increasing-path-piece-non-terminal-nodes
      (implies (and (path-p p g)
-		   (member x (strictly-increasing-path-piece p))		
+		   (member x (strictly-increasing-path-piece p))
 		   (not (endp (remaining-path-piece p))))
 	      (consp (neighbors x g)))))
-  
+
   (local
    (defthm no-duplicatesp-strictly-increasing
      (implies (strictly-increasing-list p)
@@ -600,7 +600,7 @@
    (defthm no-duplicatesp-unitary
      (implies (endp (cdr l))
 	      (no-duplicatesp l))))
-  
+
 
   (local
    (defthm disjointp-remaining-path-piece-and-strictly-increasing-path-piece
@@ -614,7 +614,7 @@
 					 p))
 	      :in-theory (disable disjointp-conmutative))
 	     ("Goal'" :use remaining-path-piece-main-property))))
- 
+
 
   (local
    (defthm path-p-init-term-dag-p-previous-lemma
@@ -628,7 +628,7 @@
 	      (disable
 	       strictly-increasing-path-piece-append-remaining-path-piece)
 	      :cases ((endp (remaining-path-piece p)))))))
-		
+
 
 
   (local
@@ -643,16 +643,16 @@
     (implies (init-term-dag-p g)
 	     (dag-p g))
     :hints (("Goal" :use dag-p-soundness)))))
- 
+
 
 ;;; -----------------------------------
 ;;;
-;;; 2.3) The property {\tt tree-p-p} implies {\tt dag-p} 
+;;; 2.3) The property {\tt tree-p-p} implies {\tt dag-p}
 ;;;
 ;;; -----------------------------------
 
 ;;; This is an easy corollary of the result of the previous section and
-;;; the fact that @tree-p@  is a particular case of @init-term-dag-p@: 
+;;; the fact that @tree-p@  is a particular case of @init-term-dag-p@:
 
 (local
  (defthm tree-p-aux-implies-init-term-dag-p-aux
@@ -668,12 +668,12 @@
 
 ;;; ============================================================================
 ;;;
-;;; 3) About the {\tt tree-p} property of terms stored with {\tt term\--as\--dag\--aux\--l-ns} 
+;;; 3) About the {\tt tree-p} property of terms stored with {\tt term\--as\--dag\--aux\--l-ns}
 ;;;
 ;;; ============================================================================
 
 ;;; We now show that, under some conditions, the graph stored by the
-;;; function {\tt term-as-dag-aux-ns} has the {\tt tree-p} property: 
+;;; function {\tt term-as-dag-aux-ns} has the {\tt tree-p} property:
 
 ;;; First, we are prove some interesting properties about the function
 ;;; {\tt term-as-dag-aux-ns} that will be useful in general:
@@ -704,7 +704,7 @@
    (implies (and (natp h) (term-p-aux flg term))
 	    (nat-true-listp
 	     (third (term-as-dag-aux-ns flg term g h))))))
- 
+
 (local
  (defthm  term-as-dag-aux-ns-smaller-than-list
    (implies (and (natp h) (natp h1) (< h h1))
@@ -733,10 +733,10 @@
      (and (> h (car l))
 	  (bigger-than-list h (cdr l))))))
 
-   
+
 (local
  (defthm term-as-dag-aux-ns-bigger-than-list
-   (implies (natp h) 
+   (implies (natp h)
 	    (bigger-than-list (second (term-as-dag-aux-ns flg term g h))
 			      (third (term-as-dag-aux-ns flg term g h))))))
 
@@ -746,7 +746,7 @@
 ;;; for {\tt term-as-dag-aux-ns}.
 
 ;;; The elements above the input index are not modified, so the
-;;; @tree-p-aux@ property is preserved:   
+;;; @tree-p-aux@ property is preserved:
 
 (local
  (defthm term-as-dag-aux-ns-initial-segment-nth
@@ -756,7 +756,7 @@
 
 
 
-	  
+
 (local
  (defthm tree-p-aux-term-as-dag-aux-ns-initial-segment
    (implies (and (natp h) (natp h1) (<= h h1))
@@ -777,7 +777,7 @@
 
 ;;; A particular case, applied to solve one of the induction case of the
 ;;; theorem below:
- 
+
 (local
  (defthm tree-p-aux-append-particular-case
    (let* ((h1 (second (term-as-dag-aux-ns flg1 term1 g1 h)))
@@ -801,11 +801,11 @@
 		   (term-as-dag-aux-ns
 		    flg2 term2 g2
 		    (second (term-as-dag-aux-ns flg1 term1 g1 h))))))
-	     
+
 	     (g g3))))))
 
 
-;;; Above the first available index, the graph is not modified: 
+;;; Above the first available index, the graph is not modified:
 
 (local
  (defthm term-as-dag-aux-ns-final-segment-nth
@@ -814,8 +814,8 @@
      (implies (and (natp h) (<= hf h) (natp h1))
 	      (equal (nth h (car (term-as-dag-aux-ns flg term g h1)))
 		     (nth h g))))))
- 
-;;; And finally the intended property about {\tt term-as-dag-aux-ns}: 
+
+;;; And finally the intended property about {\tt term-as-dag-aux-ns}:
 
 (local
  (encapsulate
@@ -824,7 +824,7 @@
    (defthm variable-p-property-element-tree-p
      (implies (variable-p term)
 	      (property-element-tree-p h (cons term t)))))
-   
+
 
   (local
    (defthm compound-node-property-element-tree-p
@@ -832,43 +832,43 @@
 	      (property-element-tree-p
 	       h
 	       (cons symb (third (term-as-dag-aux-ns nil term g h1)))))))
-  
+
 
   (defthm tree-p-aux-term-as-dag-aux-ns-update-nth
     (implies (and (natp h) (natp h1) (< h h1))
 	     (equal (tree-p-aux (list-from-to h1 h2)
 				(update-nth h x g))
 		    (tree-p-aux (list-from-to h1 h2)  g))))
-   
+
 
   (defthm term-as-dag-aux-ns-implies-tree-p-main-lemma
     (let* ((res (term-as-dag-aux-ns flg term g h))
 	   (gf (first res))
-	   (hf (second res))) 
+	   (hf (second res)))
       (implies (and (natp h) (term-p-aux flg term))
 	       (tree-p-aux (list-from-to h hf) gf)))
     :hints (("Goal" :in-theory (disable property-element-tree-p))))))
-  
+
 
 ;;; The above property about {\tt tree-p-aux} can be used to prove the
 ;;; intended property about {\tt tree-p}, but before we need some
-;;; technical lemmas: 
+;;; technical lemmas:
 
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm nth-non-nil
      (implies (and (<= (len l) n) (natp n))
 	      (not (nth n l)))))
-  
+
   (local
    (defthm tree-p-aux-member
      (implies (and (tree-p-aux l g) (member x l))
 	      (property-element-tree-p x (nth x g)))
      :rule-classes nil))
-  
+
 
 
 
@@ -894,10 +894,10 @@
 	    (gf (first res)))
        (implies (and (natp h) (tree-p g) (subsetp l (list-from-to 0 h)))
 		(tree-p-aux l gf)))
-     :hints (("Goal" 
+     :hints (("Goal"
 	      :induct (len l)
 	      :in-theory (disable property-element-tree-p)))))
-  
+
   (local
    (defthm term-as-dag-aux-ns-implies-tree-p-final-segment
      (let* ((res (term-as-dag-aux-ns flg term g h))
@@ -905,7 +905,7 @@
 	    (hf (second res)))
        (implies (and (natp h) (tree-p g) (subsetp l (list-from-to hf (len gf))))
 		(tree-p-aux l gf)))
-     :hints (("Goal" 
+     :hints (("Goal"
 	      :induct (len l)
 	      :in-theory (disable property-element-tree-p)))))
 
@@ -920,8 +920,8 @@
        (implies (and (natp h) (tree-p g) (term-p-aux flg term))
 		(tree-p-aux (append l1 (append l2 l3)) gf)))
      :rule-classes nil))
-   
-   
+
+
 ;; This is the intended result of this section: the term stored by {\tt
 ;; term-as-dag-aux-ns} verifies {\tt tree-p}:
 
@@ -932,7 +932,7 @@
 	     (tree-p (first (term-as-dag-aux-ns flg term g h))))
     :hints (("Goal"
 	     :cases ((and (not flg) (not (consp term)))))
-	    ("Subgoal 2" 
+	    ("Subgoal 2"
 	     :in-theory (disable
 			 tree-p-aux-append
 			 append-list-from-to)
@@ -967,7 +967,7 @@
 ;       (implies (and (natp h)
 ;		     (term-p-aux flg term)
 ;		     (tree-p g))
-;		(equal (dag-as-term flg (if flg h hs-ret) g-ret) 
+;		(equal (dag-as-term flg (if flg h hs-ret) g-ret)
 ;		       term))))
 
 
@@ -976,7 +976,7 @@
 ;;; *)
 ;;;  First we show how the {\tt tree-p} property is related to updating
 ;;;  the graph. This is esssential to be able to use induction
-;;;  hypothesis in the proof of the main result. 
+;;;  hypothesis in the proof of the main result.
 ;;; *)
 ;;;  Then we introduce the notion of subgraph, and coincidence in a list
 ;;;  of indices. We show that when two graphs coincide in a subgraph,
@@ -986,8 +986,8 @@
 ;;;  the proof of the main theorem, since, for example, it allows to use
 ;;;  the value of {\tt dag-as-term} in the rest of arguments of a list
 ;;;  of terms.
-;;; *) 
-;;;  We prove the main theorem by induction on the structure of terms. 
+;;; *)
+;;;  We prove the main theorem by induction on the structure of terms.
 ;;; -)
 
 
@@ -1002,11 +1002,11 @@
 ;;; {\tt tree-p-update-nth-variables} and {\tt
 ;;; tree-p-update-nth-smaller-than-list} below, showing how the {\tt
 ;;; tree-p} property is preserved by  the updatings done during the
-;;; proccess of {\tt terms-as-dag-l-ns}: 
+;;; proccess of {\tt terms-as-dag-l-ns}:
 
 (local
  (encapsulate
-  
+
   ()
 
 
@@ -1015,7 +1015,7 @@
      (implies (natp h) (<= (1+ h) (len (update-nth h x g))))
      :rule-classes :linear))
 
-  
+
   (local
    (defthm property-element-tree-p-variable-p
      (implies (variable-p term)
@@ -1032,20 +1032,20 @@
    (defthm nth-non-nil
      (implies (and (<= (len l) n) (natp n))
 	      (not (nth n l)))))
-  
+
   (local
    (defthm tree-p-aux-list-from-to-beyond-length-lemma
      (implies (and (<= (len g) h1)
 		   (natp h1)
 		   (subsetp hs (list-from-to (len g) h1)))
-	      (tree-p-aux hs g)))) 
-   
+	      (tree-p-aux hs g))))
+
   (local
    (defthm tree-p-aux-list-from-to-beyond-length
      (implies (and (natp h1) (<= (len g) h1)
 		   (tree-p-aux (list-from-to 0 (len g)) g))
 	      (tree-p-aux (list-from-to 0 h1) g))
-     :hints (("Goal" 
+     :hints (("Goal"
 	      :in-theory (disable
 			  tree-p-aux-append
 			  append-list-from-to)
@@ -1056,14 +1056,14 @@
 			  (l1 (list-from-to 0 (len g)))
 			  (l2 (list-from-to (len g) h1))))))
      :rule-classes nil))
-  
+
   (local
    (defthm property-element-tree-p-smaller-than-list
      (implies (and (nat-true-listp l)
 		   (smaller-than-list h l))
 	      (property-element-tree-p h (cons x l)))))
-  
-	   
+
+
   (local
    (defthm tree-p-aux-update-nth-smaller-than-list
      (implies (and (tree-p-aux hs g)
@@ -1074,7 +1074,7 @@
 	      (tree-p-aux hs (update-nth h (cons x l) g)))
      :hints (("Goal" :in-theory (disable property-element-tree-p)
 	      :induct (len hs)))))
-   
+
 
 ;; These are the main theorems in this subsection, establishing that the
 ;; {\tt tree-p} property is preserved after updating the graph like our
@@ -1087,7 +1087,7 @@
 	     :use
 	     (:instance tree-p-aux-list-from-to-beyond-length
 			(h1 (len (update-nth h (cons term t) g)))))))
-  
+
 
   (defthm tree-p-update-nth-smaller-than-list
     (implies (and (tree-p g) (natp h)
@@ -1097,9 +1097,9 @@
     :hints (("Goal" :use
 	     (:instance tree-p-aux-list-from-to-beyond-length
 			(h1 (len (update-nth h (cons x l) g)))))))))
-  
+
 ;;; All the needed properties about {\tt tree-p} are now extracted:
-	    
+
 (local (in-theory (disable tree-p)))
 
 
@@ -1133,7 +1133,7 @@
 	  (subsetp-all-neighbors (cdr hs1) hs2 g)))))
 
 ;;; A list of nodes @hs@ is a subgraph of a graph @g@ if all the
-;;; neighbors of the nodes of the list are in the same list.   
+;;; neighbors of the nodes of the list are in the same list.
 
 (local
  (defun subgraph-p (hs g)
@@ -1141,14 +1141,14 @@
 
 ;;; The following function define the notion of {\em coincidence} in a
 ;;; set of indices of two given graphs.
- 
+
 (local
  (defun graph-coincide (hs g1 g2)
    (if (endp hs)
        t
      (and (equal (nth (car hs) g1) (nth (car hs) g2))
 	  (graph-coincide (cdr hs) g1 g2)))))
- 
+
 
 ;;; Now we show that if we have two directed acyclic graphs such that a
 ;;; given set of indices form a subgraph and coincide in both subgraphs,
@@ -1160,14 +1160,14 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm graph-coincide-forward-chaining
      (implies (and (graph-coincide hs g1 g2)
 		   (member h hs))
 	      (equal (nth h g1) (nth h g2)))
      :rule-classes :forward-chaining))
-  
+
   (local (in-theory (enable neighbors)))
 
   (local
@@ -1184,7 +1184,7 @@
 		   (term-dag-is-p h g)
 		   (member h hs1))
 	      (member (nth h g) hs2))))
-   
+
   (defthm subsetp-all-neighbors-forward-chaining
     (implies (and (subsetp-all-neighbors hs1 hs2 g1)
 		  (graph-coincide hs1 g1 g2))
@@ -1192,7 +1192,7 @@
     :rule-classes (:forward-chaining :rewrite))
 
   (local (in-theory (disable neighbors)))
-  
+
 
   (defthm dag-as-term-equal-when-coincide-in-subgraphs
     (implies (and (subgraph-p hs g1)
@@ -1202,11 +1202,11 @@
 	     (equal (dag-as-term flg h g1)
 		    (dag-as-term flg h g2)))
     :rule-classes :forward-chaining)))
-  
+
 
 ;;; -----------------------------------
 ;;;
-;;; 4.3) Subgraphs and coincidence in {\tt term-as-dag-aux-ns} 
+;;; 4.3) Subgraphs and coincidence in {\tt term-as-dag-aux-ns}
 ;;;
 ;;; -----------------------------------
 
@@ -1242,7 +1242,7 @@
 
 
 ;;; And now, the following sequence of events show that the nodes of the
-;;; graph used to store a term are a subgraph of the entire graph: 
+;;; graph used to store a term are a subgraph of the entire graph:
 
 (local
  (encapsulate
@@ -1294,7 +1294,7 @@
 			  (second (term-as-dag-aux-ns t term1 g
 							h))))))))))
 
-   
+
 
   (local
    (defthm subsetp-all-neighbors-coincide-particular-case
@@ -1305,7 +1305,7 @@
 	    (g-term2 (first (term-as-dag-aux-ns flg2 term2 g-term1 h1))))
        (implies (and (natp h) (subsetp-all-neighbors hs hs g-term1))
 		(subsetp-all-neighbors hs hs g-term2)))))
-   
+
   (local
    (defthm subsetp-all-neighbors-cons-second-argument-lemma
      (implies (subsetp-all-neighbors l1 l2 g)
@@ -1330,13 +1330,13 @@
    (defthm nat-true-listp-list-from-to
      (implies (natp h)
 	      (nat-true-listp (list-from-to h h1)))))
-		    
+
   (defthm  term-as-dag-aux-ns-local-nat-listp
     (let* ((res (term-as-dag-aux-ns flg term g h))
 	   (hs-ret (third res)))
-      (implies (natp h) 
+      (implies (natp h)
 	       (local-nat-listp hs-ret))))
- 
+
   (defthm subsetp-list-from-to
     (implies
      (and (natp h1) (natp h2)
@@ -1346,7 +1346,7 @@
      (subsetp hs (list-from-to (1+ h1) h2))))
 
    (defthm subgraph-p-term-as-dag-aux-ns
-     (implies (natp h) 
+     (implies (natp h)
 	      (subgraph-p
 	       (list-from-to
 		h
@@ -1401,10 +1401,10 @@
 		     (first
 		      (term-as-dag-aux-ns t term1 g h))
 		     (second (term-as-dag-aux-ns t term1 g h)))))
-	       
+
 	       (hs (list-from-to
 		    h (second (term-as-dag-aux-ns t term1 g h)))))))))
-	     
+
   (local
    (defthm graph-coincide-update-nth
      (implies (and (not (member h hs)) (natp h) (local-nat-listp hs))
@@ -1421,7 +1421,7 @@
 ;; the list of its arguments) corresponding to the induction case of
 ;; non-variable terms:
 
-   
+
   (local
    (defthm equal-dag-as-term-update-nth
      (implies
@@ -1433,7 +1433,7 @@
 	nil
 	(third (term-as-dag-aux-ns nil term g (+ 1 h)))
 	(update-nth h
-		    (cons f (third (term-as-dag-aux-ns nil term g (1+ h)))) 
+		    (cons f (third (term-as-dag-aux-ns nil term g (1+ h))))
 		    (first (term-as-dag-aux-ns nil term g (+ 1 h)))))
        (dag-as-term
 	nil
@@ -1449,14 +1449,14 @@
 	(g1 (first (term-as-dag-aux-ns nil term g (+ 1 h))))
 	(g2 (update-nth
 	     h
-	     (cons f (third (term-as-dag-aux-ns nil term g (1+ h)))) 
+	     (cons f (third (term-as-dag-aux-ns nil term g (1+ h))))
 	     (first (term-as-dag-aux-ns nil term g (+ 1 h)))))
 	(hs (list-from-to
 	     (1+ h)
 	     (second (term-as-dag-aux-ns nil term g (+ 1 h))))))))))
-  
+
 ;; And finally the intended result of this section:
-								     
+
   (local
    (defthm term-as-dag-aux-ns-dag-as-term-aux-relationship
      (let* ((res (term-as-dag-aux-ns flg term g h))
@@ -1465,10 +1465,10 @@
        (implies (and (natp h)
 		     (term-p-aux flg term)
 		     (tree-p g))
-		(equal (dag-as-term flg (if flg h hs-ret) g-ret) 
+		(equal (dag-as-term flg (if flg h hs-ret) g-ret)
 		       term)))
      :rule-classes nil))
-   
+
 ;; This result is better used in form of a rewriting rule:
 
   (defthm term-as-dag-aux-ns-dag-as-term-aux-relationship-rewrite-rule
@@ -1478,16 +1478,16 @@
       (implies (and (natp h)
 		    (term-p-aux flg term)
 		    (tree-p g)
-		    (equal h1 (if flg h hs-ret))) 
+		    (equal h1 (if flg h hs-ret)))
 	       (equal (dag-as-term flg h1 g-ret)
 		      term)))
     :hints (("Goal"
 	     :use term-as-dag-aux-ns-dag-as-term-aux-relationship)))))
-  
+
 
 ;;; ============================================================================
 ;;;
-;;; 5) Relationship between {\tt terms\--as\--dag\--aux\--l-ns} and {\tt terms\--as-dag\--aux\--l} 
+;;; 5) Relationship between {\tt terms\--as\--dag\--aux\--l-ns} and {\tt terms\--as-dag\--aux\--l}
 ;;;
 ;;; ============================================================================
 
@@ -1509,13 +1509,13 @@
 ;;; a term using the function {\tt term-as-dag-aux} is the same than
 ;;; the graph obtained storing the same term with {\tt
 ;;; term-as-dag-aux-ns} and after that applying {\tt
-;;; make-shared-variables}. 
+;;; make-shared-variables}.
 
 
 
 ;;; The following two properties show that the second value returned by
 ;;; term-as-dag-aux is a natural number (that is, the first available
-;;; index after storing the graph). 
+;;; index after storing the graph).
 
 (local
  (defthm integerp-term-as-dag-aux
@@ -1529,7 +1529,7 @@
    :rule-classes :linear))
 
 
- 
+
 ;;; Now we establish some properties about the function {\tt
 ;;; make-shared-variables} (see its definition in Section 1):
 
@@ -1574,7 +1574,7 @@
 		    (first (make-shared-variables h1 h2 g variables))
 		    (second (make-shared-variables h1 h2 g variables)))))
    :rule-classes nil))
-  
+
 ;;; The following two lemmas show that some nodes of the original graph
 ;;; do not change after making the variables shared:
 
@@ -1627,8 +1627,8 @@
 			       t (car term) g1 g2 h)
 			      (induct-hint-for-last-index-independent-of-graph
 			       nil (cdr term) g1-n g2-n hcar))))))))
-	    
-	  
+
+
 ;; The second and third values returned by {\tt term-as-dag-aux-ns} do
 ;; not depend on the graph:
 
@@ -1639,7 +1639,7 @@
 	     (second (term-as-dag-aux-ns flg term g2 h)))
       (equal (third (term-as-dag-aux-ns flg term g1 h))
 	     (third (term-as-dag-aux-ns flg term g2 h))))
-     
+
      :hints (("Goal"
 	      :induct
 	      (induct-hint-for-last-index-independent-of-graph
@@ -1674,7 +1674,7 @@
 			 (g1 (car (term-as-dag-aux t term1 g h
 						     variables)))
 			 (g2 (car (term-as-dag-aux-ns t term1 g h))))))))
-  
+
 
 
 ;; The following (very long lemmas) deal with induction case 4 of the
@@ -1687,7 +1687,7 @@
        (term-as-dag-aux-ns nil term2
 			     (car (term-as-dag-aux t term1 g h variables))
 			     (cadr (term-as-dag-aux-ns t term1 g h))))
-      
+
       (cadr (term-as-dag-aux-ns nil term2
 				  (car (term-as-dag-aux-ns t term1 g h))
 				  (cadr (term-as-dag-aux-ns t term1 g
@@ -1700,7 +1700,7 @@
 			 (g1 (car (term-as-dag-aux t term1 g h
 						     variables)))
 			 (g2 (car (term-as-dag-aux-ns t term1 g h))))))))
-   
+
   (local
    (defthm update-nth-term-as-dag-aux-ns-below
      (implies (and (natp h1) (natp h2) (< h1 h2))
@@ -1721,7 +1721,7 @@
 	      :use (:instance last-index-independent-of-graph
 			      (flg nil) (term term2) (g1 g) (h (+ 1 h2))
 			      (g2 (update-nth h1 x g)))))))
-   
+
   (local
    (defthm make-shared-variables-terms-as-dag-aux-l-ns-graph
      (implies (and (natp h1) (natp h2))
@@ -1747,7 +1747,7 @@
 		     (second
 		      (make-shared-variables h1 h2 g variables))))
      :hints (("Goal" :induct (make-shared-variables h1 h2 g variables)))))
-   
+
 
   (local
    (defthm induction-case-4-term-as-dag-aux-in-two-steps-graph
@@ -1936,7 +1936,7 @@
 	h h2 (update-nth h (cons f l) g) variables)
        (make-shared-variables
 	(1+ h) h2 (update-nth h (cons f l) g) variables)))))
-   
+
 
   (local
    (defthm make-shared-variables-update-nth-disjoint-variables
@@ -1953,7 +1953,7 @@
 	      :expand (make-shared-variables h1 h2 (update-nth h x g) variables))
 	     ("Subgoal *1/2.2"
 	      :expand (make-shared-variables h1 h2 (update-nth h x g) variables)))))
-   
+
 
 ;; The following deals with base case 1 of the induction proof of our
 ;; main goal. Note that the lemma is needed because in some cases
@@ -1972,11 +1972,11 @@
 		       (list (update-nth h (cons term t) g)
 			     (cons (cons term h) variables)))))))
 
-		  
+
 
 ;; And finally, the intended result, proved by induction on the
 ;; structure of @term@
-  
+
   (defthm term-as-dag-aux-in-two-steps
     (let* ((res1 (term-as-dag-aux flg term g h variables))
 	   (g-ret1 (first res1))
@@ -2038,7 +2038,7 @@
 ;;; index less than @h@. That is, if we have made variables shared in
 ;;; @g@ until index @h-1@ then {\tt ((variables-well-stored-p h g
 ;;; variables)} where @vraibles@ is the association list computed {\tt
-;;; make-shared-variables} up to that moment. 
+;;; make-shared-variables} up to that moment.
 
 (local
  (defun variables-well-stored-p (h g variables)
@@ -2048,13 +2048,13 @@
 	       (equal (cdar variables) (1- h))
 	       (variables-well-stored-p (1- h) g (cdr variables))))
 	 (t (variables-well-stored-p (1- h) g variables)))))
- 
+
 
 ;;; Now we prove some properties about @variables-well-stored-p@. For
 ;;; example, if {\tt (variables-well-stored-p h1 g variables)}, then in
 ;;; the association list @variables@ the variables are bound to
 ;;; natural numbers strictly less than the index @h1@, and those numbers
-;;; point to variable nodes in the graph. 
+;;; point to variable nodes in the graph.
 
 (local
  (defthm variables-well-stored-p-integerp
@@ -2091,7 +2091,7 @@
 
 
 ;;; These two lemmas establish how updating affects to {\tt
-;;; variables-well-stored-p}: 
+;;; variables-well-stored-p}:
 
 (local
  (defthm variales-well-stored-p-update-nth-above-the-index
@@ -2122,7 +2122,7 @@
 					(cdr (assoc (car (nth h1 g)) variables))
 					g)
 			    variables)))))
-   
+
 
 ;;; -----------------------------------
 ;;;
@@ -2135,7 +2135,7 @@
 ;;; init-term-dag-p-make-shared-variables-main-lemma}, which describes
 ;;; the main invariant related to the {\tt init-term-dag-p} property
 ;;; during the proccess. The goal theorem in this section will be a
-;;; particular case of that lemma.  
+;;; particular case of that lemma.
 
 (local
  (encapsulate
@@ -2146,7 +2146,7 @@
      (equal (init-term-dag-p-aux (append hs1 hs2) g)
 	    (and (init-term-dag-p-aux hs1 g)
 		 (init-term-dag-p-aux hs2 g)))))
-  
+
 
 
 ;; Needed for {\tt Subgoal *1/4.3}
@@ -2157,7 +2157,7 @@
    (defthm property-element-tree-p-property-element-init-term-dag-p
      (implies (property-element-tree-p h node)
 	      (property-element-init-term-dag-p h node g))))
-	   
+
 
   (local
    (in-theory (disable property-element-tree-p
@@ -2182,14 +2182,14 @@
 				  g))
      :hints (("Goal" :use init-term-dag-p-aux-property-element-tree-p-lemma
 	      :in-theory (disable list-from-to)))))
-  
-  
+
+
   (local
-   (defthm tree-p-aux-implies-property-element-tree-p 
-     (implies (and (natp h1) (natp h2) (< h1 h2) 
+   (defthm tree-p-aux-implies-property-element-tree-p
+     (implies (and (natp h1) (natp h2) (< h1 h2)
 		   (tree-p-aux (list-from-to h1 h2) g))
 	      (property-element-tree-p h1 (nth h1 g)))))
-  
+
   (local
    (defthm init-term-dag-p-aux-one-index-beyond
      (implies (and (tree-p-aux (list-from-to h1 h2) g)
@@ -2197,8 +2197,8 @@
 		   (init-term-dag-p-aux (list-from-to h0 h1) g))
 	      (init-term-dag-p-aux (list-from-to h0 (1+ h1)) g))
      :hints (("Goal"
-	      :use init-term-dag-p-aux-property-element-tree-p))))  
- 
+	      :use init-term-dag-p-aux-property-element-tree-p))))
+
 ;; Needed for {\tt Subgoal *1/4.2}
 
   (local
@@ -2206,7 +2206,7 @@
      (implies (and (not (term-dag-variable-p h1 g))
 		   (variables-well-stored-p h1 g variables))
 	      (variables-well-stored-p (1+ h1) g variables))))
-   
+
 
 
 ;; Needed for {\tt Subgoal *1/4.1}
@@ -2216,7 +2216,7 @@
      (implies (and (natp h1) (natp h2) (< h1 h2)
 		   (tree-p-aux (list-from-to h1 h2) g))
 	      (tree-p-aux (list-from-to (1+ h1) h2) g))))
-   
+
 
 ;; Needed for {\tt Subgoal *1/3.1}
 
@@ -2228,10 +2228,10 @@
 	      (variables-well-stored-p (1+ h1) g
 				       (cons (cons (car (nth h1 g)) h1)
 					     variables)))))
-   
+
 
 ;; Needed for {\tt Subgoal *1/2.2'}
-   
+
   (local
    (defthm variables-well-stored-p-not-variable-if-stored
      (implies (and (variables-well-stored-p h1 g variables)
@@ -2241,7 +2241,7 @@
      :hints (("Goal" :use (:instance variables-well-stored-p-integerp
 				     (x (car (nth h1 g))))))))
 
-   
+
 ;; Needed for {\tt Subgoal *1/2.1}
 
   (local
@@ -2264,22 +2264,22 @@
 	      (property-element-init-term-dag-p h0 (nth h0 g)
 						(update-nth h2 x g)))
      :hints (("Goal" :in-theory (enable property-element-init-term-dag-p)))))
-   
+
 
   (local
    (defthm init-term-dag-p-aux-list-from-to-update-nth
      (implies (and (natp h0) (natp h1) (natp h2) (<= h0 h1) (<= h1 h2)
 		   (init-term-dag-p-aux (list-from-to h0 h1) g))
 	      (init-term-dag-p-aux (list-from-to h0 h1) (update-nth h2 x g)))))
-   
-		  
+
+
 
   (local
    (defthm init-term-dag-p-aux-update-nth-one-index-beyond-almost
      (implies (and (variables-well-stored-p h1 g variables)
 		   (natp h1) (natp h0) (<= h0 h1)
 		   (init-term-dag-p-aux (list-from-to h0 h1) g)
-		   (equal (cdr (nth h1 g)) t) 
+		   (equal (cdr (nth h1 g)) t)
 		   (assoc (car (nth h1 g)) variables))
 	      (init-term-dag-p-aux (append (list-from-to h0 h1)
 					   (list-from-to h1 (1+ h1)))
@@ -2295,7 +2295,7 @@
      (implies (and (variables-well-stored-p h1 g variables)
 		   (natp h1) (natp h0) (<= h0 h1)
 		   (init-term-dag-p-aux (list-from-to h0 h1) g)
-		   (equal (cdr (nth h1 g)) t) 
+		   (equal (cdr (nth h1 g)) t)
 		   (assoc (car (nth h1 g)) variables))
 	      (init-term-dag-p-aux (list-from-to h0 (+ 1 h1))
 				   (update-nth h1
@@ -2310,7 +2310,7 @@
   (defthm init-term-dag-p-make-shared-variables-main-lemma
     (implies (and (natp h1) (natp h2) (natp h0)
 		  (<= h0 h1) (<= h1 h2)
-		  (tree-p-aux (list-from-to h1 h2) g) 
+		  (tree-p-aux (list-from-to h1 h2) g)
 		  (init-term-dag-p-aux (list-from-to h0 h1) g)
 		  (variables-well-stored-p h1 g variables))
 	     (init-term-dag-p-aux
@@ -2323,16 +2323,16 @@
 ;; presented above, simply noting that when {\tt tree-p} is verified by
 ;; a graph, then it verifies {\tt tree-p-aux} for every range of natural
 ;; numbers:
-  
+
 
   (local (in-theory (disable property-element-tree-p)))
-  
+
   (local
    (defthm property-element-tree-p-natp-all-indices
      (implies (and (tree-p g)
 		   (local-nat-listp hs))
 	      (tree-p-aux hs g))))
-  
+
 
   (local
    (defthm nth-aux-make-shared-variables-beyond-the-limit
@@ -2340,8 +2340,8 @@
 	      (equal (nth h3 (first (make-shared-variables h1 h2 g
 							   variables)))
 		     (nth h3 g)))))
-  
-       
+
+
 
   (local
    (defthm tree-p-aux-make-shared-variables-beyond-the-limit
@@ -2350,7 +2350,7 @@
 		   (tree-p-aux (list-from-to h3 h4) g))
 	      (tree-p-aux (list-from-to h3 h4)
 			  (first (make-shared-variables h1 h2 g variables))))))
-  
+
 
   (local
    (defthm init-term-dag-p-make-shared-variables-bridge-lemma
@@ -2365,24 +2365,24 @@
 	       (first
 		(make-shared-variables h1 h2 g variables))))
      :rule-classes nil))
-  
-  
+
+
   (local
    (defthm len-update-nth-corollary
      (implies
       (and (natp h1) (natp h2) (< h1 h2)
 	   (< h1 h2) (<= h2 (len g)))
       (not (< (len (update-nth h1 x g)) h2)))))
-  
-  
+
+
   (local
    (defthm len-make-shared-variables-auxiliar-property
      (implies (and (natp h1) (natp h2) (<= h1 h2) (<= h2 (len g)))
 	      (<= h2 (len (first (make-shared-variables h1 h2 g
 							variables)))))
      :rule-classes :linear))
-  
-  
+
+
 ;; Finally, the intended property:
 
   (defthm init-term-dag-p-make-shared-variables
@@ -2448,14 +2448,14 @@
 	nil
       (cons (nth h1 l)
 	    (nths-from-to l (1+ h1) h2))))
-   
+
 
   (defun my-subseq-list (l h1 h2)
     (declare (xargs :measure (list* (cons 1 (1+ (nfix (- h2 h1)))) (nfix h1))))
     (cond ((zp (- h2 h1)) nil)
 	  ((zp h1) (cons (car l) (my-subseq-list (cdr l) h1 (- h2 1))))
 	  (t (my-subseq-list (cdr l) (- h1 1) (- h2 1)))))
- 
+
 
   (local
    (defthm update-nth-nths-from-to
@@ -2468,7 +2468,7 @@
 	t
       (and (acl2-numberp (cdar a))
 	   (alist-to-acl2-numberp (cdr a)))))
- 
+
   (local
    (defthm alist-to-indices-does-not-provide-dag-variables
      (implies (and (alist-to-acl2-numberp a)
@@ -2513,7 +2513,7 @@
      (implies (and (natp h1) (natp h2))
 	      (equal  (nths-from-to l h1 h2)
 		      (my-subseq-list l h1 h2)))))
-   
+
   (local
    (defthm my-subseq-list-particular-case
      (equal (my-subseq-list l 0 (len l))
@@ -2523,22 +2523,22 @@
   (local
    (defthm nths-from-to-particular-case
      (equal (nths-from-to l 0 (len l)) (fix-true-list l))))
-   
+
   (local
    (defthm list-of-term-dag-variables-fix-true-list-l
      (equal (list-of-term-dag-variables (fix-true-list l))
 	    (list-of-term-dag-variables l))))
-  
+
   (local
    (defthm revappend-rev-list
      (equal (revappend l ac)
 	    (append (revlist l) ac))))
-   
+
   (local
    (defthm len-update-nth-corollary-2
      (implies (and (natp h) (< h (len g)))
 	      (equal (len (update-nth h x g)) (len g)))))
-   
+
   (local
    (defthm len-make-shared-variables-arithmetic-lemma
      (implies (and (not (zp (- h2 h1)))
@@ -2568,13 +2568,13 @@
 	 (make-shared-variables 0 (len g) g nil))))
       (strip-cars
        (second (make-shared-variables 0 (len g) g nil))))
-     
+
      :hints (("Goal" :use
 	      ((:instance len-make-shared-variables
 			  (h1 0) (h2 (len g)) (variables nil))
 	       (:instance my-subseq-list-particular-case
 			  (l (car (make-shared-variables 0 (len g) g nil)))))))))
-  
+
 ;; Finally it is to show that the variables bound by the association
 ;; list are not duplicated, and consequently (using the previous lemmas)
 ;; we prove (theorem {\tt
@@ -2587,7 +2587,7 @@
      (implies (alistp a)
 	      (iff (member x (strip-cars a))
 		   (assoc x a)))))
-   
+
   (local
    (defthm no-duplicatesp-make-shared-variables
      (implies (and (alistp variables) (no-duplicatesp (strip-cars variables)))
@@ -2595,7 +2595,7 @@
 	       (strip-cars
 		(second
 		 (make-shared-variables h1 h2 g variables)))))))
-   
+
   (local
    (defthm no-duplicatesp-make-shared-variables-particular-case-lemma
      (no-duplicatesp
@@ -2615,13 +2615,13 @@
      (list-of-term-dag-variables
       (first
        (make-shared-variables 0 (len g) g nil))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use
 	     no-duplicatesp-make-shared-variables-particular-case-lemma
 	     :in-theory (disable
 			 no-duplicatesp-make-shared-variables-particular-case-lemma
 			 make-shared-variables-variables))))
-  
+
 
 
 
@@ -2629,12 +2629,12 @@
 ;; pieces to prove our main goals in this book.  We show now that the
 ;; terms computed by the function {\tt dag-as-term} are preserved
 ;; after making variables to be shared.
-  
+
   (local
    (defthm variables-are-not-is
      (implies (term-dag-variable-p h g)
 	      (not (term-dag-is-p h g)))))
-  
+
   (local
    (defthm variables-well-stored-p-assoc
      (implies (and (assoc x variables)
@@ -2646,11 +2646,11 @@
    (defthm car-update-nth-in-strictly-positives-indices
      (implies (and (integerp h) (< 0 h))
 	      (equal (car (update-nth h x g)) (car g)))))
-   
+
 
 ;; Attention! The proof of the following lemma is very long, but I
 ;; prefer not to impose condition on @h@, since in that case I have to
-;; impose conditions on @g@ and @gms@. 
+;; impose conditions on @g@ and @gms@.
 
 
   (local
@@ -2688,10 +2688,10 @@
        :cases
        ((equal (nth h g)
 	       (nth h (first (make-shared-variables h1 h2 g variables)))))))))
-   
+
 
 ;; And finally one of the intended theorems in this section, showing that {\tt
-;; make-shared-variables} preserves the value of {\tt dag-as-term}. 
+;; make-shared-variables} preserves the value of {\tt dag-as-term}.
 
   (defthm dag-as-term-make-shared-variables
     (implies (and
@@ -2704,7 +2704,7 @@
 							 variables)))
 		    (dag-as-term flg h g)))
     :hints (("Goal" :induct (dag-as-term flg h g))))))
-  
+
 
 ;;; ============================================================================
 ;;;
@@ -2716,13 +2716,13 @@
 ;;; computed by {\tt term-as-dag}, those properties that allows us to
 ;;; apply our unification algorithm acting on term dags to that
 ;;; graph. That is, under certain initial conditions, the following
-;;; properties hold: 
+;;; properties hold:
 
-;;; *) 
+;;; *)
 ;;;   The graph is a well--formed directed acyclic graph
-;;; *) 
+;;; *)
 ;;;   The graph has no duplicates variables
-;;; *) 
+;;; *)
 ;;;   The term stored in the graph (at index 0) is the input term
 ;;; -)
 
@@ -2802,13 +2802,13 @@
    :hints (("Goal" :in-theory (enable tree-p)))))
 
 ;;; The graph obtained by {\tt term-as-dag} verifies {\tt
-;;; init-term-dag-p}: 
+;;; init-term-dag-p}:
 
 (local
  (defthm term-as-dag-init-term-dag-p
    (implies (and (tree-p g) (term-p term))
 	    (init-term-dag-p (term-as-dag term g)))))
- 
+
 ;;; The graph obtained by {\tt term-as-dag} is a directed acyclic graph
 
 (defthm term-as-dag-dag-p
@@ -2816,7 +2816,7 @@
 	   (dag-p (term-as-dag term g))))
 
 ;;; The graph obtained by {\tt term-as-dag} stores the input term (at
-;;; index 0): 
+;;; index 0):
 
 (defthm term-as-dag-stores-term
   (implies (and (empty-graph-p g) (term-p term))
@@ -2826,7 +2826,7 @@
 ;;; And the following sequence of events shows that the list of
 ;;; variables of the graph obtained by {\tt term-as-dag} has no
 ;;; duplicates (theorem {\tt term-as-dag-no-duplicatesp-variables}
-;;; below): 
+;;; below):
 
 (encapsulate
  ()
@@ -2851,16 +2851,16 @@
 		  (empty-graph-p-aux (list-from-to h2 h3) g))
 	     (equal (first (make-shared-variables h2 h3 g variables))
 		    g))))
- 
+
  (local
   (defthm make-shared-variables-empty-graph-p-aux-2
     (implies (and (natp h1) (natp h2) (natp h3) (natp h4)
 		  (<= h1 h2) (<= h2 h3) (<= h3 h4)
 		  (empty-graph-p-aux (list-from-to h3 h4) g))
-	     (empty-graph-p-aux 
+	     (empty-graph-p-aux
 	      (list-from-to h3 h4)
 	      (first (make-shared-variables h1 h2 g variables))))))
- 
+
  (local
   (defthm make-shared-variables-empty-graph-p-aux-final-segment
     (implies (and (natp h1) (natp h2) (natp h3)
@@ -2892,7 +2892,7 @@
 		       (h3 (len (first (term-as-dag-aux-ns t term g 0))))
 		       (g (first (term-as-dag-aux-ns t term g 0)))
 		       (variables nil))
-	    :in-theory 
+	    :in-theory
 	    (disable make-shared-variables-empty-graph-p-aux-final-segment))))
 
  )
@@ -2909,13 +2909,13 @@
 ;;; We have left (intentionally) one property about {\tt
 ;;; term-as-dag}. We show in this section that the graph obtained by
 ;;; {\tt term-as-dag } acting on an empty graph is a well formed term
-;;; graph. 
+;;; graph.
 
 ;;; Unlike, the above properties, we will reason directly with the
 ;;; definition of {\tt term-as-dag-aux}. First, we prove that the
 ;;; property {\tt term-graph-p} is preserved by {\tt
 ;;; term-as-dag-aux}. And second, we show that {\tt empty-graph-p}
-;;; implies {\tt term-graph-p}. 
+;;; implies {\tt term-graph-p}.
 
 ;;; -----------------------------------
 ;;;
@@ -2925,7 +2925,7 @@
 
 
 ;;; The following propeerties show how some updates to graph does not
-;;; change the {\tt bounded-term-graph-p} property. 
+;;; change the {\tt bounded-term-graph-p} property.
 
 (local
  (defthm bounded-term-graph-p-update-nth-args
@@ -2952,7 +2952,7 @@
 	    (and (integerp (cdr (assoc x a)))
 		 (< (cdr (assoc x a)) n)
 		 (<= 0 (cdr (assoc x a)))))))
-   
+
 
 
 (local
@@ -2985,7 +2985,7 @@
 		  (bounded-nat-substitution-p var-res (len g))))))
 
 ;;; And the intended result of this subsection, a particular case of the
-;;; above theorem: 
+;;; above theorem:
 
 (defthm term-as-dag-term-graph-p
   (implies (and (term-graph-p g)
@@ -2994,7 +2994,7 @@
 	   (term-graph-p (term-as-dag term g))))
 
 
-(in-theory (disable term-as-dag)) 
+(in-theory (disable term-as-dag))
 
 ;;; ============================================================================
 ;;;
@@ -3008,7 +3008,7 @@
 ;;; indices system, an indices substitution and a well--formed directed
 ;;; acyclic graph. Initially, the indices substitution is empty. We now
 ;;; describe how we build the graph and the indices system for a
-;;; unification problem of the form $\{t_1=t_2\}$: 
+;;; unification problem of the form $\{t_1=t_2\}$:
 
 ;;; This function computes the graph. Note that the list that represents
 ;;; the graph is previously resized after computing how many nodes are
@@ -3016,7 +3016,7 @@
 ;;; graph using {\tt term-as-dag}:
 
 (defun unif-two-terms-problem (t1 t2 g)
-  (let* ((size (+ (length-term t t1) (length-term t t2) 1)) 
+  (let* ((size (+ (length-term t t1) (length-term t t2) 1))
 	 (g (resize-list g size nil)))
     (term-as-dag (list 'equ t1 t2) g)))
 
@@ -3029,7 +3029,7 @@
 		(second args-0)))))
 
 ;;; Following the results proved in the book {\tt
-;;; dag-unification-rules}, our goal is to prove the following: 
+;;; dag-unification-rules}, our goal is to prove the following:
 
 ; If (empty-graph-p g)
 ; let* g-t1-t2     =  (unif-two-terms-problem t1 t2 g)
@@ -3037,8 +3037,8 @@
 ; then:
 ;    (well-formed-dag-system S-dag-t1-t2 g-t1-t2)
 ;      and
-;    (equal (tbs-as-system S-dag-t1-t2 g-t1-t2) 
-;           (list (cons t1 t2)))  
+;    (equal (tbs-as-system S-dag-t1-t2 g-t1-t2)
+;           (list (cons t1 t2)))
 
 
 ;;; If we prove the above property, we will able to use the theorems
@@ -3052,7 +3052,7 @@
  (defthm len-resize-list
    (implies (natp n)
 	    (equal (len (resize-list l n x)) n))))
- 
+
 (local (in-theory (disable resize-list)))
 
 
@@ -3091,7 +3091,7 @@
  (local
   (defthm equal-nth-car
 	 (equal (nth 0 g) (car g))))
- 
+
  (local
   (defthm len-args-term-as-dag-aux
     (equal (len (third (term-as-dag-aux nil args g h variables)))
@@ -3126,7 +3126,7 @@
 	(term-as-dag (list 'equ t1 t2) g))))
      2)
     :hints (("Goal" :in-theory (enable term-as-dag))))
-  
+
  (local
   (defthm nat-true-listp-len-two-first
     (implies (and (nat-true-listp l)
@@ -3145,7 +3145,7 @@
      (implies (and (equal (len (cdr (car g))) 2)
 		   (term-graph-p g))
 	      (nat-true-listp (cdr (car g))))))
-  
+
   (defthm unif-two-terms-problem-well-formed-dag-system
     (let* ((g-t1-t2 (unif-two-terms-problem t1 t2 g))
 	   (S-dag-t1-t2 (initial-to-be-solved g-t1-t2)))
@@ -3160,7 +3160,7 @@
 	    ("Subgoal 1" :in-theory (enable
 				     well-formed-upl)))))
 
-  
+
 
 ;;; And finally, the following sequence of events show that the initial
 ;;; unification problem built by the function {\tt
@@ -3174,7 +3174,7 @@
  (local
 
   (defthm unif-two-terms-problem-stores-the-problem-lemma-1
-    (implies (and 
+    (implies (and
 	      (equal (len (cdr (nth h g))) 2)
 	      (equal (dag-as-term t h g)
 		     (list 'equ t1 t2)))
@@ -3186,7 +3186,7 @@
 
  (local
   (defthm unif-two-terms-problem-stores-the-problem-lemma-2
-    (implies (and 
+    (implies (and
 	      (equal (len (cdr (nth h g))) 2)
 	      (equal (dag-as-term t h g)
 		     (list 'equ t1 t2)))
@@ -3194,7 +3194,7 @@
 		    t2))
     :hints (("Goal'''" :expand (dag-as-term nil (cdr (nth h g)) g))
 	    ("Goal'5'" :expand (dag-as-term nil (cddr (nth h g)) g)))))
-  
+
  (local
   (defthm unif-two-terms-problem-stores-the-problem-almost
     (let* ((g-t1-t2 (unif-two-terms-problem t1 t2 g))
@@ -3202,7 +3202,7 @@
       (implies (and (empty-graph-p g) (term-p t1) (term-p t2)
 		    (equal (dag-as-term t 0 g-t1-t2)
 			   (list 'equ t1 t2)))
-	       (equal (tbs-as-system S-dag-t1-t2 g-t1-t2) 
+	       (equal (tbs-as-system S-dag-t1-t2 g-t1-t2)
 		      (list (cons t1 t2)))))
     :hints (("Goal" :in-theory
 	     (disable nth term-as-dag-stores-term)))
@@ -3213,7 +3213,7 @@
    (let* ((g-t1-t2 (unif-two-terms-problem t1 t2 g))
 	  (S-dag-t1-t2 (initial-to-be-solved g-t1-t2)))
      (implies (and (empty-graph-p g) (term-p t1) (term-p t2))
-	      (equal (tbs-as-system S-dag-t1-t2 g-t1-t2) 
+	      (equal (tbs-as-system S-dag-t1-t2 g-t1-t2)
 		     (list (cons t1 t2)))))
    :hints (("Goal" :use unif-two-terms-problem-stores-the-problem-almost))))
 

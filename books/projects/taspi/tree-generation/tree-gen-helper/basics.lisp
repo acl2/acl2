@@ -8,7 +8,7 @@
       (if (consp (cdr list))
           (if (consp (cddr list))
               (hons (car list)
-                    (hist (build-unrooted-binary-tree-helper 
+                    (hist (build-unrooted-binary-tree-helper
                            (cdr list))))
             list)
         "shouldn't happen")
@@ -41,7 +41,7 @@
   (declare (xargs :guard t))
   (if (consp taxa)
       (if (consp (cdr taxa))
-          (build-arbitraryTree-helper (cddr taxa) 
+          (build-arbitraryTree-helper (cddr taxa)
                                       (hons (hist (car taxa)
                                                   (cadr taxa))
                                             (hist ans)))
@@ -97,40 +97,40 @@
 (defun orderly-splice (piece1 pieces ans tia)
   (declare (xargs :guard (good-taxon-index-halist tia)))
   (if (consp pieces)
-      (if (and (subset (mytips piece1) 
+      (if (and (subset (mytips piece1)
                        (get-taxa-from-taxon-index tia))
                (member-gen (first-taxon (car pieces))
                            (get-taxa-from-taxon-index tia)))
           (if (consp piece1)
               (if (taspip nil piece1)
                   (orderly-splice piece1 (cdr pieces)
-                                  (hons (orderly-cons (car pieces) 
+                                  (hons (orderly-cons (car pieces)
                                                 (hist piece1) tia)
                                         ans) tia)
                 "Error: Need pieces to match tia in orderly-splice")
             (if (taspip nil (list piece1))
                 (orderly-splice piece1 (cdr pieces)
-                                  (hons (orderly-cons (car pieces) 
+                                  (hons (orderly-cons (car pieces)
                                                 (hist piece1) tia)
                                         ans) tia)
-              "Error: Need second branch pieces to match tia 
+              "Error: Need second branch pieces to match tia
                       in orderly-splice"))
         "Error: Need third branch pieces to match tia")
     ans))
 
-(defmacro hppend (&rest args) `(hons-append ,@args)) 
+(defmacro hppend (&rest args) `(hons-append ,@args))
 
 (defun splice2 (x list ans)
   (declare (xargs :guard t))
   (if (consp list)
-      (splice2 x (cdr list) 
+      (splice2 x (cdr list)
               (hons (hppend x (hist (car list))) ans))
     ans))
 
 (defun orderly-splice2 (piece1 pieces ans tia)
   (declare (xargs :guard (good-taxon-index-halist tia)))
   (if (consp pieces)
-      (if (and (subset (mytips piece1) 
+      (if (and (subset (mytips piece1)
                        (get-taxa-from-taxon-index tia))
                (member-gen (first-taxon (car pieces))
                            (get-taxa-from-taxon-index tia))
@@ -140,20 +140,20 @@
           (if (consp piece1)
               (if (taspip nil piece1)
                   (orderly-splice2 piece1 (cdr pieces)
-                                  (hons (orderly-append 
+                                  (hons (orderly-append
                                          piece1
-                                         (hist (car pieces)) 
+                                         (hist (car pieces))
                                           tia)
                                         ans) tia)
                 "Error: Need pieces to match tia in orderly-splice")
             (if (taspip nil (list piece1))
                 (orderly-splice2 piece1 (cdr pieces)
                                   (hons (orderly-append
-                                         (hist piece1) 
+                                         (hist piece1)
                                          (hist (car pieces))
                                         tia)
                                         ans) tia)
-              "Error: Need second branch pieces to match tia 
+              "Error: Need second branch pieces to match tia
                       in orderly-splice"))
         "Error: Need third branch pieces to match tia")
     ans))
@@ -180,13 +180,13 @@
                        (get-taxa-from-taxon-index tia))
                (taspip nil (list tree)))
           (hppend (hist (orderly-cons x (hist tree) tia))
-                   (orderly-splice (car tree) 
-                                   (orderly-addTaxa-rooted 
-                                    x (cadr tree) tia) 
+                   (orderly-splice (car tree)
+                                   (orderly-addTaxa-rooted
+                                    x (cadr tree) tia)
                                    nil tia)
-                   (orderly-splice (cadr tree) 
-                                   (orderly-addTaxa-rooted 
-                                    x (car tree) tia) 
+                   (orderly-splice (cadr tree)
+                                   (orderly-addTaxa-rooted
+                                    x (car tree) tia)
                                    nil tia))
         "Error: Need well-formed taxa and tree in orderly-addTaxa-rooted")
     (if (and (member-gen (first-taxon x)
@@ -195,12 +195,12 @@
                        (get-taxa-from-taxon-index tia))
                (taspip nil (list tree)))
         (hist (orderly-cons x (hist tree) tia))
-      "Error: Need well-formed taxa and tree in second 
+      "Error: Need well-formed taxa and tree in second
               branch of orderly-addTaxa-rooted")))
 
 (defun addTaxa-unrooted (x tree)
   (declare (xargs :guard (= 3 (len tree))))
-  (hppend (splice2 (cdr tree) 
+  (hppend (splice2 (cdr tree)
                    (addTaxa-rooted x (car tree))
                    nil)
           (splice2 (hist (car tree)
@@ -214,7 +214,7 @@
 (defun orderly-addTaxa-unrooted (x tree tia)
   (declare (xargs :guard (and (= 3 (len tree))
                               (good-taxon-index-halist tia))))
-  (hppend (orderly-splice2 (cdr tree) 
+  (hppend (orderly-splice2 (cdr tree)
                             (orderly-addTaxa-rooted x (car tree) tia)
                             nil tia)
            (orderly-splice2 (hist (car tree)
@@ -236,17 +236,17 @@
 ;Of trees in list, input sequences seq,
 ; return best score and trees achieving that score
 (defun get-best-trees (list curScore curTrees seq cssl-map matrix)
-  (declare (xargs :guard                   
+  (declare (xargs :guard
                   (and (valid-sequences-same-length seq)
                        (charstate-scorelist-map-p cssl-map (len matrix))
                        (rationalp curScore)
                        (cost-matrixp-nstates matrix (len matrix)))))
   (if (consp list)
-      (if (tree-matches-sequences t (car list) seq)        
+      (if (tree-matches-sequences t (car list) seq)
           (let ((newScore (pscore-tree (car list) seq cssl-map matrix)))
             (if (rationalp newScore)
                 (if (< newScore curScore)
-                    (get-best-trees (cdr list) newScore 
+                    (get-best-trees (cdr list) newScore
                                     (hist (car list)) seq
                                     cssl-map matrix)
                   (if (= newScore curScore)

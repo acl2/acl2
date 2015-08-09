@@ -87,19 +87,19 @@
 
 ;;---------------------
 ;; Now, the final, protected versions.
-  
+
 (defun skolemize (f)
   (declare (xargs :guard (and (wff f) (ok-for-skolem f))))
   (if (ok-for-skolem f)
       (skolem f)
       f))
-      
+
 (defun skolemize-extend (f i)
   (declare (xargs :guard (and (wff f) (ok-for-skolem f))))
   (if (ok-for-skolem f)
       (skolem-extend f i)
       i))
-      
+
 (defthm skolemize-fsound
   (equal (feval (skolemize f) (skolemize-extend f i))
 	 (feval f i)))

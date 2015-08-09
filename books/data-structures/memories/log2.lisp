@@ -51,9 +51,9 @@
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
-(set-default-hints '((ACL2::nonlinearp-default-hint 
+(set-default-hints '((ACL2::nonlinearp-default-hint
                       ACL2::stable-under-simplificationp
-                      ACL2::hist 
+                      ACL2::hist
                       ACL2::pspv)))
 
 (defun _log2-tr (n acc)
@@ -74,7 +74,7 @@
        :exec (_log2-tr n 0)))
 
 (defthm _log2-equiv
-  (implies (and (natp n) 
+  (implies (and (natp n)
                 (natp acc))
            (equal (_log2-tr n acc)
                   (+ (_log2 n) acc))))
@@ -111,7 +111,7 @@
  (local (defun my-induction (i j)
           (declare (xargs :guard (and (natp i)
                                       (natp j))))
-          (if (or (zp i) 
+          (if (or (zp i)
                   (zp j))
               nil
             (list (my-induction (floor i 2)

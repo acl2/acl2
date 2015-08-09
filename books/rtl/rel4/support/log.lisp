@@ -193,7 +193,7 @@
                 (integerp k) (>= k 0))
            (= (logior x (expt 2 k))
               (+ x
-                 (* (expt 2 k) 
+                 (* (expt 2 k)
                     (- 1 (bitn x k))))))
   :rule-classes ())
 

@@ -97,7 +97,7 @@
 (defthm code-b
     (implies (and (formatp phi)
 		  (normal-encoding-p z phi))
-	     (= (sig (decode z phi)) 
+	     (= (sig (decode z phi))
 		(* (sigf z phi) (expt 2 (- 1 (get-sbits phi))))))
   :rule-classes ())
 

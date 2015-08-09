@@ -1,4 +1,4 @@
-;;; subsumption-subst.lisp 
+;;; subsumption-subst.lisp
 ;;; The subsumption relation between substitutions
 ;;; Created 13-10-99. Last revision: 09-01-2001
 ;;; =================================================================
@@ -19,22 +19,22 @@
 
 
 ;;; *******************************************************************
-;;; THE SUBSUMPTION RELATION BETWEEN SUBSTITUTIONS. 
+;;; THE SUBSUMPTION RELATION BETWEEN SUBSTITUTIONS.
 ;;; DEFINITION AND PROPERTIES.
 ;;; *******************************************************************
 
 ;;; Our goal is to define the subsumption relation between
 ;;; substitutions. In the literature, this relation is defined in this
-;;; way: 
+;;; way:
 ;;;     sigma <= delta iff (exists gamma) gamma·sigma = delta
 ;;; where "·" stands for composition.
 
 ;;; Note that equality between substitutions is functional equality (we cannot
 ;;; use equal), so we reformulate this property as:
 
-;;; (*) sigma <= delta iff (exists gamma) 
-;;;                        s.t. for all term 
-;;;                        gamma·sigma(term) = delta(term) 
+;;; (*) sigma <= delta iff (exists gamma)
+;;;                        s.t. for all term
+;;;                        gamma·sigma(term) = delta(term)
 
 
 ;;; Our goal in this book is to define the subsumption relation between
@@ -54,7 +54,7 @@
 ;;;    (matching-subst-r sigma delta). Both functions will be based on a
 ;;;    matching algorithm called subs-subst-mv.
 
-;;; 2) Prove that if (subs-subst sigma delta), then 
+;;; 2) Prove that if (subs-subst sigma delta), then
 ;;;    (matching-subst-r sigma delta) applied to sigma(term) is equal to
 ;;;    delta(term), with the same matching substitution, for all
 ;;;    term. The reverse implication is trivial.
@@ -85,7 +85,7 @@
 (local
  (defthm true-list-of-variables-variables
    (true-list-of-variables (variables flg term))))
- 
+
 
 ;;; ===== TRUE-LIST-OF-EQLABLEP (needed for guard verification)
 (local
@@ -105,7 +105,7 @@
  (defthm true-list-of-eqlablep-variables
    (implies (term-s-p-aux flg term)
 	    (true-list-of-eqlablep (variables flg term)))))
- 
+
 
 
 ;;; ===== DOMAIN-VAR
@@ -113,7 +113,7 @@
 
 (defun domain-var (sigma)
   (if (endp sigma)
-      nil  
+      nil
     (if (variable-p (caar sigma))
 	(cons (caar sigma) (domain-var (cdr sigma)))
       (domain-var (cdr sigma)))))
@@ -137,7 +137,7 @@
  (defthm true-list-of-eqlablep-domain-var
    (implies (substitution-s-p sigma)
 	    (true-list-of-eqlablep (domain-var sigma)))))
- 
+
 
 (local (in-theory (disable domain-var)))
 
@@ -150,7 +150,7 @@
 
 (defun co-domain-var (sigma)
   (if (endp sigma)
-      nil  
+      nil
     (if (variable-p (caar sigma))
 	(cons (cdar sigma) (co-domain-var (cdr sigma)))
       (co-domain-var (cdr sigma)))))
@@ -165,7 +165,7 @@
 
 ;;; ====== IMPORTANT-VARIABLES
 ;;; For subsumption of substitutions, we only pay atention to these
-;;; variables 
+;;; variables
 
 (defun important-variables (sigma delta)
   (append (domain-var sigma)
@@ -193,7 +193,7 @@
 
 
 ;;;; NOTATION:
-;;;; ^^^^^^^^^ 
+;;;; ^^^^^^^^^
 ;;;; In the followin comments, V will be
 ;;;; (important-variables sigma delta))
 
@@ -203,7 +203,7 @@
 ;;; variables of the domain of sigma, the domain of delta and the
 ;;; variables of the terms in the co-domain of sigma (i.e, the list V), and
 ;;; test if the list of terms sigma(V) subsumes the list of terms
-;;; delta(V). 
+;;; delta(V).
 
 (defun subs-subst-mv (sigma delta)
   (let ((V (important-variables sigma delta)))
@@ -224,7 +224,7 @@
 	  bool))
 
 
-;;; ===== MATCHING-SUBST 
+;;; ===== MATCHING-SUBST
 ;;; An important auxiliary definition: when
 ;;; (subs-subst sigma delta) returns t, this is the substitution that
 ;;; applied to the list (apply-subst nil sigma V) returns
@@ -260,7 +260,7 @@
 
 ;;; 3) Note that subst-sust-r probably has many repetitions in his
 ;;; domain, but this is not a problem for us. We will not use
-;;; subs-sust-r to compute, only as a tool to deduce properties. 
+;;; subs-sust-r to compute, only as a tool to deduce properties.
 
 
 ;;; ============================================================================
@@ -268,10 +268,10 @@
 ;;; ============================================================================
 
 ;;; We want to prove: if (subs-sust sigma delta), then
-;;; the substitutions 
-;;; delta 
-;;; and 
-;;; (composition (subs-subst-r sigma delta) sigma) 
+;;; the substitutions
+;;; delta
+;;; and
+;;; (composition (subs-subst-r sigma delta) sigma)
 ;;; are functionally equal.
 
 ;;; ----------------------------------------------------------------------------
@@ -286,19 +286,19 @@
 ;;; WE DISTINGUISH THREE CASES.
 
 ;;; ············································································
-;;; 3.1.1 Case 1: x is a variable outside V 
+;;; 3.1.1 Case 1: x is a variable outside V
 ;;; ············································································
 
 
 
 (local
- (defthm subs-subst-main-property-variable-x-not-in-V 
+ (defthm subs-subst-main-property-variable-x-not-in-V
    (let ((V (important-variables sigma delta)))
      (implies (and
 	       (variable-p x)
 	       (not (member x V))
 	       (subs-subst sigma delta))
-	      (equal (instance (val x sigma) (matching-subst-r sigma delta)) 
+	      (equal (instance (val x sigma) (matching-subst-r sigma delta))
 		     (val x delta))))
    :hints (("Goal" :in-theory (enable x-not-in-domain-remains-the-same)))))
 
@@ -308,7 +308,7 @@
 ;;; ············································································
 
 
-;;; 3.1.2.1 A lemma for this case 2: 
+;;; 3.1.2.1 A lemma for this case 2:
 ;;; subs-subst composed with sigma is equal to delta in V.
 ;;; ······················································
 
@@ -321,9 +321,9 @@
    (defthm pair-args-success
      (second (pair-args (apply-subst nil sigma l)
 			(apply-subst nil delta l)))))
-  
+
   (local
-   (defthm apply-nil-apply-t 
+   (defthm apply-nil-apply-t
      (implies (and (equal (apply-subst nil sigma1 l)
 			  (apply-subst nil sigma2 l))
 		   (member x l))
@@ -340,7 +340,7 @@
 	       (matcher sigma (first (pair-args l m))))
 	      (equal (equal (apply-subst nil sigma l) m) t))
      :hints (("Goal" :induct (pair-args l m)))))
-  
+
 ;;; And the intended lemma:
 
   (defthm matching-subst-composed-sigma-coincide-with-delta-in-V
@@ -359,16 +359,16 @@
 			     (sigma2 delta)))))))
 
 
- 
-;;; REMARKS: 
+
+;;; REMARKS:
 ;;; 1) If we not disable important-variables the proof is longer.
 ;;; 2) The condition (variable-p x) is not necessary, but the proof is
-;;; shorter. 
- 
+;;; shorter.
+
 
 ;;; The above lemma gives the fundamental property of subs-subst and
 ;;; matching-subst . We can forget its definition, so we disable their
-;;; definitions: 
+;;; definitions:
 
 (local (in-theory (disable subs-subst matching-subst)))
 
@@ -376,7 +376,7 @@
 ;;; ·······························
 
 (local
- (defthm variables-co-domain-var 
+ (defthm variables-co-domain-var
   (implies (member x (domain-var sigma))
 	   (subsetp (variables t (val x sigma))
 		    (variables nil (co-domain-var sigma))))))
@@ -387,7 +387,7 @@
 
 (local
  (defthm
-   subs-subst-main-property-variable-x-in-domain-var-sigma  
+   subs-subst-main-property-variable-x-in-domain-var-sigma
    (implies (and
 	     (variable-p x)
 	     (member x (domain-var sigma))
@@ -397,17 +397,17 @@
 
 
 ;;; ············································································
-;;; 3.1.3. Case 3: x in V but not in (domain-var sigma) 
+;;; 3.1.3. Case 3: x in V but not in (domain-var sigma)
 ;;; ············································································
 
 
 ;;; 3.1.3.1 A lemma for Case 3
-;;; In this case, matching and matching-subst-r take the same values. 
+;;; In this case, matching and matching-subst-r take the same values.
 ;;; ·································································
 
 (local
  (defthm
-   subsumption-subst-main-property-variable-in-V-not-in-domain-var-sigma-lemma 
+   subsumption-subst-main-property-variable-in-V-not-in-domain-var-sigma-lemma
    (let ((V (important-variables sigma delta)))
      (implies (and
 	       (variable-p x)
@@ -428,7 +428,7 @@
 
 ;;; 3.1.3.2 The main result for this case.
 ;;; This result is not strictly needed, bu we include in favour of
-;;; clarity. 
+;;; clarity.
 
 (local
  (defthm
@@ -448,7 +448,7 @@
 ;;; 3.2 Statements of the soundness theorem
 ;;; ----------------------------------------------------------------------------
 
-;;; Joining the three cases together, we prove 
+;;; Joining the three cases together, we prove
 ;;; functional equality between
 ;;; (composition (matching-subst-r sigma delta) sigma) and delta.
 
@@ -470,7 +470,7 @@
 
 ;;; DIFFERENT VERSIONS OF THE SOUNDNESS THEOREM
 
- 
+
 ;;; With terms and list of terms (not only with variables)
 ;;; ······················································
 
@@ -488,15 +488,15 @@
    :rule-classes nil))
 
 ;;; We prefer this formulation to be called the soundness theorem of
-;;; subs-subst 
+;;; subs-subst
 
 (defthm
   subs-subst-soundness
   (implies (subs-subst sigma delta)
 	   (equal
 	    (instance term (composition (matching-subst-r sigma delta)
-					sigma)) 
-		      
+					sigma))
+
 	    (instance term delta)))
    :rule-classes nil
    :hints (("Goal" :use
@@ -527,10 +527,10 @@
 
 ;;; With respect to subsumption between terms
 ;;; ·········································
-	   
+
 
 ;;; Trivial consequence of completeness of subsumption and the previous
-;;; lemma: 
+;;; lemma:
 
 
 (defthm
@@ -554,8 +554,8 @@
 
 
 ;;; We want to prove the following:
-;;; If sigma <= delta, then (subs-subst sigma delta). 
-;;; In fact, it will be more useful to prove 
+;;; If sigma <= delta, then (subs-subst sigma delta).
+;;; In fact, it will be more useful to prove
 
 
 ;;; The theorem is very easy to prove, but the problem is how we
@@ -593,7 +593,7 @@
    (equal (instance (instance term (sigma-w)) (gamma-w))
 	  (instance term (delta-w)))
    :hints (("Goal" :use sigma-w-delta-w-subsumption-hypothesis))))
-    
+
 ;;; The main lemma
 (defthm gamma-w-matcher
   (matcher (gamma-w)
@@ -618,7 +618,7 @@
 ;;; 4. Closure properties of subs-subst
 ;;; ============================================================================
 
-(local (in-theory (enable matching-subst matching-subst-r 
+(local (in-theory (enable matching-subst matching-subst-r
 		   important-variables)))
 
 ;;; ============================================================================
@@ -632,30 +632,30 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defthm substitution-s-p--apply-subst-nil-term-s-p-aux
     (implies (and (substitution-s-p sigma)
 		  (true-list-of-eqlablep l))
 	     (term-s-p-aux nil (apply-subst nil sigma l)))))
- 
+
  (local
   (defthm pair-args-system-p
     (implies (and (term-s-p-aux nil l)
 		  (term-s-p-aux nil m))
 	     (system-s-p (first (pair-args l m))))))
- 
+
  (defthm matching-subst-substitution-s-p
    (implies (and (substitution-s-p sigma)
 		 (substitution-s-p delta))
 	    (substitution-s-p (matching-subst sigma delta))))
- 
+
  (local
   (defthm restriction-substitution-s-p
     (implies (and (substitution-s-p sigma)
 		  (true-list-of-eqlablep l))
 	     (substitution-s-p (restriction sigma l)))))
- 
+
  (defthm matching-subst-r-substitution-s-p
    (implies (and (substitution-s-p sigma)
 		 (substitution-s-p delta))
@@ -666,19 +666,19 @@
 
 
 ;;; ----------------------------------------------------------------------------
-;;; 4.2 Closure property for the completeness theorem 
+;;; 4.2 Closure property for the completeness theorem
 ;;; ----------------------------------------------------------------------------
 
 ;;; We can prove a slightly different version of the completeness
 ;;; theorem: the closure property of the completeness theorem
-;;; 
+;;;
 
 ;;; We want to prove the following:
 ;;; let us suppose that sigma and gamma are two substitutions IN A GIVEN
 ;;; SIGNATURE. Suppose that sigma <= delta, i.e., there exists a
 ;;; substitution gamma IN THE SAME SIGNATURE such that sigma(term) =
-;;; gamma.sigma(term), FOR ALL TERM IN THE SIGNATURE. 
-;;; Then (subs-subst sigma delta).  
+;;; gamma.sigma(term), FOR ALL TERM IN THE SIGNATURE.
+;;; Then (subs-subst sigma delta).
 
 ;;; Let us formulate the hypothesis using encapsulate:
 
@@ -719,12 +719,12 @@
 ;;; The main lemma
 (local
  (defthm gamma-w-s-matcher
-   (implies (true-list-of-eqlablep l) 
+   (implies (true-list-of-eqlablep l)
 	    (matcher (gamma-w-s)
 		     (first (pair-args (apply-subst nil (sigma-w-s) l)
 				       (apply-subst nil (delta-w-s)
 						    l)))))))
-;;; And the closure property for the completeness theorem 
+;;; And the closure property for the completeness theorem
 
 (defthm subs-subst-completeness-closure
   (subs-subst (sigma-w-s) (delta-w-s))
@@ -735,10 +735,10 @@
 		      (S (system-subs-subst (sigma-w-s) (delta-w-s)))))))
 
 ;;; REMARK: Note that this result can be easily used by functional
-;;; instantiation.  
+;;; instantiation.
 
 ;;; We disable the defintions of subs-subst (the subsumption relation)
-;;; and matching-subst-r (the witness substitution) 
+;;; and matching-subst-r (the witness substitution)
 
 (in-theory (disable subs-subst matching-subst-r))
 

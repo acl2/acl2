@@ -15,14 +15,14 @@
 (in-package "ACL2")
 
 
-(local 
+(local
  (include-book "../pass1/top"))
 
 (include-book "building-blocks")
 
 (include-book "default-hint")
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                               hist pspv)))
 
 (table acl2-defaults-table :state-ok t)
@@ -34,9 +34,9 @@
 ;;; NOTE: It might be a good idea to add a bind-free/meta rule
 ;;; generalizing the following.
 
-;;; We used to limit the coverage of these rules to the case 
+;;; We used to limit the coverage of these rules to the case
 ;;; where there were only two factors.  It would be nice to be
-;;; able to write a bind-free or meta type rule to handle the 
+;;; able to write a bind-free or meta type rule to handle the
 ;;; general situation, rather than proliferating rules as below.
 ;;; This would also ensure complete coverage for even larger
 ;;; terms.
@@ -1172,7 +1172,7 @@ Robert
   (find-integerp-hyp-1 c x (mfc-type-alist mfc)))
 
 (defthm |(integerp (* c x))|
-    (implies (and (bind-free (find-integerp-hyp c x mfc state) 
+    (implies (and (bind-free (find-integerp-hyp c x mfc state)
                              (d a))
                   (equal (* d a) c)
                   (integerp (* d x))
@@ -1218,7 +1218,7 @@ Robert
                   (integerp (+ (+ c (- (floor c 1))) x))))
   :hints (("Goal" :in-theory (disable floor))))
 
-(encapsulate 
+(encapsulate
  ()
 
  (local
@@ -1253,7 +1253,7 @@ Robert
 
  (local
   (defthm X-OR-X/2
-    (implies (integerp x) 
+    (implies (integerp x)
 	     (or (integerp (/ x 2)) (integerp (/ (1+ x) 2))))
     :rule-classes ()
     :hints (("Goal" :in-theory (disable FUNCTIONAL-SELF-INVERSION-OF-MINUS)

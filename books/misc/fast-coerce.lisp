@@ -51,8 +51,8 @@
 ;
 ; We would like to tailor the :exec part of the definition to fit the Lisp we
 ; are using via features, but we think this would break the ability to share
-; certificates across Lisps.  Ugh.  For now we are just going to leave it as 
-; is, and say don't use it if your primary environment is the new version of 
+; certificates across Lisps.  Ugh.  For now we are just going to leave it as
+; is, and say don't use it if your primary environment is the new version of
 ; CCL.
 ;
 ; Ideally we should get rid of this file and simply improve each Lisp.
@@ -87,12 +87,12 @@
 ; acl2-ccl                  4.96s              4.07s    (NEW VERSION)
 ;                          2.080 GB           2.080 GB
 
-#||               
+#||
 
-(time$ (loop for i fixnum from 1 to 10000000 do 
+(time$ (loop for i fixnum from 1 to 10000000 do
              (coerce "Hello, World!" 'list)))
 
-(time$ (loop for i fixnum from 1 to 10000000 do 
+(time$ (loop for i fixnum from 1 to 10000000 do
              (fast-coerce "Hello, World!" 'list)))
 
 ||#
@@ -114,13 +114,13 @@
            :exec (= (the-fixnum i)
                     (the-fixnum len)))
       nil
-    (cons (the character 
+    (cons (the character
                (char (the string x)
                      (the (signed-byte 30) i)))
-          (fast-coerce-aux1 x 
-                            (the-fixnum 
+          (fast-coerce-aux1 x
+                            (the-fixnum
                              (+ (the-fixnum 1)
-                                (mbe :logic (nfix i) 
+                                (mbe :logic (nfix i)
                                      :exec (the-fixnum i))))
                             (the-fixnum len)))))
 
@@ -139,14 +139,14 @@
            :exec (= (the integer i) (the integer len)))
       nil
     (cons (char x i)
-          (fast-coerce-aux2 x 
+          (fast-coerce-aux2 x
                             (+ (the integer 1)
-                               (mbe :logic (nfix i) 
+                               (mbe :logic (nfix i)
                                     :exec (the integer i)))
                             len))))
 
 (local (defthm lemma
-          (implies (and (natp i) 
+          (implies (and (natp i)
                         (< i (len x)))
                    (equal (cons (nth i x)
                                 (cdr (nthcdr i x)))
@@ -176,8 +176,8 @@
                            (list (stringp x))
                            (string (character-listp x)))))
   (mbe :logic (coerce x y)
-       :exec 
-       ;; I'd like to just use 
+       :exec
+       ;; I'd like to just use
        ;;  (if (eq y 'list)
        ;;     (coerce x 'list)
        ;;    (coerce x 'string))
@@ -185,12 +185,12 @@
        ;; this would break certificate-compatibility, so I just leave it as is.
        (if (eq y 'list)
            (let ((length (length x)))
-             (if (< (the integer length) 
+             (if (< (the integer length)
                     (the integer 536870912))
-                 (fast-coerce-aux1 (the string x) 
+                 (fast-coerce-aux1 (the string x)
                                    (the (signed-byte 30) 0)
                                    (the (signed-byte 30) length))
-               (fast-coerce-aux2 (the string x) 
+               (fast-coerce-aux2 (the string x)
                                  (the integer 0)
                                  (the integer length))))
          (coerce x y))))

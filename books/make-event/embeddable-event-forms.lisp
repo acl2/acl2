@@ -6,7 +6,7 @@
 (defmacro assign$ (name value)
   `(with-output
     :off summary
-    (make-event (pprogn (f-put-global 
+    (make-event (pprogn (f-put-global
                          (quote ,name)
                          ,value
                          state)

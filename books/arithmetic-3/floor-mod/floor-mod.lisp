@@ -70,7 +70,7 @@
 
 (include-book "../bind-free/top")
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                               hist pspv)))
 
 (include-book "../bind-free/building-blocks")
@@ -346,7 +346,7 @@
 		   (floor x y))
 		(<= (floor x y)
 		    (/ x y))))
-  :rule-classes ((:generalize) 
+  :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y)))))
 
 (defthm floor-bounds-2
@@ -354,7 +354,7 @@
 		(integerp (/ x y)))
 	   (equal (floor x y)
 		  (/ x y)))
-  :rule-classes ((:generalize) 
+  :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y)))))
 
 (defthm floor-bounds-3
@@ -362,7 +362,7 @@
 		(not (integerp (/ x y))))
 	   (< (floor x y)
 	      (/ x y)))
-  :rule-classes ((:generalize) 
+  :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y)))))
 
 (defthm mod-bounds-1
@@ -471,7 +471,7 @@
 		 (:rewrite
                   :backchain-limit-lst 1
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (rationalp-guard x y)
                                 (< 0 y)
@@ -480,7 +480,7 @@
 		 (:rewrite
                   :backchain-limit-lst 1
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (rationalp-guard x y)
                                 (< y 0)
@@ -511,7 +511,7 @@
 		 (:rewrite
                   :backchain-limit-lst 1
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (rationalp-guard x y)
                                 (< 0 x)
@@ -520,7 +520,7 @@
 		 (:rewrite
                   :backchain-limit-lst 1
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (rationalp-guard x y)
                                 (< x 0)
@@ -623,7 +623,7 @@
                  (:rewrite
                   :backchain-limit-lst 1
 		  :corollary
-		   (implies (and (syntaxp 
+		   (implies (and (syntaxp
                                   (not (rewriting-goal-literal x mfc state)))
                                  (rationalp-guard x y)
                                  (equal y 0)
@@ -632,7 +632,7 @@
                  (:rewrite
                   :backchain-limit-lst 1
 		  :corollary
-		   (implies (and (syntaxp 
+		   (implies (and (syntaxp
                                   (not (rewriting-goal-literal x mfc state)))
                                  (rationalp-guard x y)
                                  (< 0 y)
@@ -663,7 +663,7 @@
                  (:rewrite
                   :backchain-limit-lst 1
 		  :corollary
-		   (implies (and (syntaxp 
+		   (implies (and (syntaxp
                                   (not (rewriting-goal-literal x mfc state)))
                                  (rationalp-guard x y)
                                  (equal y 0)
@@ -672,7 +672,7 @@
                  (:rewrite
                   :backchain-limit-lst 1
 		  :corollary
-		   (implies (and (syntaxp 
+		   (implies (and (syntaxp
                                   (not (rewriting-goal-literal x mfc state)))
                                  (rationalp-guard x y)
                                  (< y 0)
@@ -729,7 +729,7 @@
                  (:rewrite
                   :backchain-limit-lst 1
                   :corollary
-                  (implies (and (syntaxp 
+                  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (rationalp-guard x y)
                                 (equal y 0))
@@ -963,7 +963,7 @@
 
 (defthm floor-cancel-*
     (implies (and (rationalp-guard x y)
-                  (bind-free 
+                  (bind-free
                    (find-common-factors x y mfc state)
                    (common-factors))
                   (rationalp common-factors)
@@ -972,7 +972,7 @@
                     (floor (* x (/ common-factors)) (* y (/ common-factors))))))
 (defthm mod-cancel-*
     (implies (and (rationalp-guard x y)
-                  (bind-free 
+                  (bind-free
                    (find-common-factors x y mfc state)
                    (common-factors))
                   (rationalp common-factors)
@@ -991,19 +991,19 @@
 (defun find-cancelling-addends (x y mfc state)
   (declare (xargs :guard (pseudo-termp x)))
   (cond ((eq (fn-symb x) 'BINARY-+)
-         (cond ((proveably-integer 
+         (cond ((proveably-integer
                  `(BINARY-* ,(fargn x 1) (UNARY-/ ,y))
                  mfc state)
                 (list (cons 'addend (fargn x 1))))
                ((eq (fn-symb (fargn x 2)) 'BINARY-+)
                 (find-cancelling-addends (fargn x 2) y mfc state))
-               ((proveably-integer 
+               ((proveably-integer
                  `(BINARY-* ,(fargn x 2) (UNARY-/ ,y))
                  mfc state)
                 (list (cons 'addend (fargn x 2))))
                (t
                 nil)))
-        ((proveably-integer 
+        ((proveably-integer
           `(BINARY-* ,x (UNARY-/ ,y))
           mfc state)
          (list (cons 'addend x)))
@@ -1011,7 +1011,7 @@
          nil)))
 
 (defthm cancel-floor-+
-    (implies (and (bind-free 
+    (implies (and (bind-free
                    (find-cancelling-addends x y mfc state)
                    (addend))
                   (rationalp-guard x y addend)
@@ -1022,7 +1022,7 @@
 
 (defthm cancel-mod-+
     (implies (and (not (equal y 0))
-                  (bind-free 
+                  (bind-free
                    (find-cancelling-addends x y mfc state)
                    (addend))
                   (rationalp-guard x y addend)
@@ -1065,7 +1065,7 @@
 
 (defthm simplify-mod-+-mod
     (implies (and (not (equal y 0))
-                  (bind-free 
+                  (bind-free
                    (simplify-mod-+-mod-fn x y mfc state)
                    (w z))
                   (rationalp-guard w x y z)
@@ -1108,7 +1108,7 @@
 
 (defthm simplify-mod-+-minus-mod
     (implies (and (not (equal y 0))
-                  (bind-free 
+                  (bind-free
                    (simplify-mod-+-minus-mod-fn x y mfc state)
                    (w z))
                   (rationalp-guard w x y z)

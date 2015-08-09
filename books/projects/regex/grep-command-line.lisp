@@ -33,7 +33,7 @@
 (defsum grep-translation
   (grep-translation-none)
   (grep-translation-ignore-case) ;; -i --ignore-case -y
-  ) 
+  )
 
 (defsum grep-overall-mode
   (grep-mode-help) ;; --help
@@ -85,7 +85,7 @@
    (booleanp ignore-case)
    (booleanp print-errors) ;; -s --no-messages
    (booleanp invert-match) ;; -v --invert-match
-   (booleanp print-line-nums) ;; -n --line-number  
+   (booleanp print-line-nums) ;; -n --line-number
    (grep-match-mode-p match-mode)
    (integerp before-context) ;; -B --before-context -C --context
    (integerp after-context) ;; -A --after-context -C --context
@@ -154,7 +154,7 @@
      ((any "--count" "-c")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-outmode 
+       (update-grep-command-line-outmode
         (grep-output-count) cmdline)))
      ((any "ignore-case" "-i")
       (grep-option-parse
@@ -164,62 +164,62 @@
      ((any "--files-with-matches" "-l")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-outmode 
+       (update-grep-command-line-outmode
         (grep-output-filename) cmdline)))
      ((any "--line-number" "-n")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-print-line-nums 
+       (update-grep-command-line-print-line-nums
         t cmdline)))
      ((any "--only-matching" "-o")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-outmode 
+       (update-grep-command-line-outmode
         (grep-output-match) cmdline)))
      ((any "--quiet" "--silent" "-q")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-outmode 
+       (update-grep-command-line-outmode
         (grep-output-match) cmdline)))
      ((any "--no-messages" "-s")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-print-errors 
+       (update-grep-command-line-print-errors
         nil cmdline)))
      ((any "--invert-match" "-v")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-invert-match 
+       (update-grep-command-line-invert-match
         t cmdline)))
      ((any "--line-regexp" "-x")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-match-mode 
+       (update-grep-command-line-match-mode
         (grep-match-line) cmdline)))
      ((any "--version" "-V")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-mode 
+       (update-grep-command-line-mode
         (grep-mode-version) cmdline)))
      ((any "--help")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-mode 
+       (update-grep-command-line-mode
         (grep-mode-help) cmdline)))
      ((any "--byte-offset" "-b")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-print-byte-offset 
+       (update-grep-command-line-print-byte-offset
         t cmdline)))
      ((any "--with-filename" "-H")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-print-filenames 
+       (update-grep-command-line-print-filenames
         (grep-filename-print-filename) cmdline)))
      ((any "--no-filename" "-h")
       (grep-option-parse
        (cdr tokens)
-       (update-grep-command-line-print-filenames 
+       (update-grep-command-line-print-filenames
         (grep-filename-no-filename) cmdline)))
      ((any "--line-buffered")
       (grep-option-parse
@@ -334,7 +334,7 @@
            (grep-option-parse
             (cddr tokens)
             (update-grep-command-line-before-context
-             
+
              num (update-grep-command-line-after-context
                   cmdline num)))
          (mv (er hard? 'top-level "bad after-context")
@@ -343,13 +343,13 @@
       (grep-option-parse
        (cdr tokens)
        (update-grep-command-line-color
-        
+
         (grep-color-always) cmdline)))
      ((any "--color=" "--colour=")
       (grep-option-parse
        (cddr tokens)
        (update-grep-command-line-color
-        
+
         (pattern-match (cadr tokens)
                        ("never" (grep-color-never))
                        ("always" (grep-color-always))
@@ -360,7 +360,7 @@
       (grep-option-parse
        (cddr tokens)
        (update-grep-command-line-binary-mode
-        
+
         (pattern-match (cadr tokens)
                        ("binary" (grep-binary-binary))
                        ("text" (grep-binary-text))
@@ -371,7 +371,7 @@
       (grep-option-parse
        (cddr tokens)
        (update-grep-command-line-read-devices
-        
+
         (pattern-match (cadr tokens)
                        ("read" t)
                        ("skip" nil)
@@ -381,7 +381,7 @@
       (grep-option-parse
        (cddr tokens)
        (update-grep-command-line-directory-mode
-        
+
         (pattern-match (cadr tokens)
                        ("read" (grep-directories-read))
                        ("skip" (grep-directories-skip))
@@ -397,13 +397,13 @@
       (grep-option-parse
        (cddr tokens)
        (update-grep-command-line-filter
-        
+
         (grep-filter-include (cadr tokens)) cmdline)))
      ((any "--exclude=")
       (grep-option-parse
        (cddr tokens)
        (update-grep-command-line-filter
-        
+
         (grep-filter-exclude (cadr tokens)) cmdline)))
      ((any "--max-count=" "-m")
       (mv-let
@@ -419,11 +419,11 @@
              nil))))
      ((any "-" "--")
       (if (atom (cdr tokens))
-          (mv 
+          (mv
               (cdr tokens) (update-grep-command-line-pattern
                cmdline
                (grep-pattern-string "-")))
-        (mv 
+        (mv
             (cddr tokens) (update-grep-command-line-pattern
              cmdline
              (grep-pattern-string (cadr tokens))))))
@@ -438,7 +438,7 @@
                   (grep-option-parse
                    (cdr tokens)
                    (update-grep-command-line-after-context
-                    
+
                     num (update-grep-command-line-before-context
                      cmdline
                      num)))
@@ -449,7 +449,7 @@
                         (grep-pattern-none-yet))
                  (mv
                   (update-grep-command-line-pattern
-                   
+
                    (grep-pattern-string (car tokens)) cmdline)
                   (cdr tokens))
                (mv cmdline tokens))))))))
@@ -469,7 +469,7 @@
   (declare (xargs :guard (and (stringp string)
                               )))
   (let* ((opts (parse-options
-                (pattern-match 
+                (pattern-match
                  (grep-command-line-regexp-mode options)
                  ((grep-regexp-basic) 'bre)
                  ((grep-regexp-extended) 'ere)
@@ -534,7 +534,7 @@
    ((grep-pattern-file fname)
     (parse-pattern-file fname options state))
    (& (mv (er hard? 'top-level "No pattern") state))))
-    
+
 
 
 
@@ -563,11 +563,11 @@
 ;;                                 (mv (cons (cons linenum matchstr) matches)
 ;;                                     state)
 ;;                               (mv matches state)))))))
-                               
 
 
 
-;; (defun print-line-range 
+
+;; (defun print-line-range
 ;;   (start end current fname print-name print-num channel state)
 ;;   (if (and (integerp end)
 ;;            (> current end))
@@ -583,7 +583,7 @@
 ;;                (and print-name (cw "~s0:" fname))
 ;;                (prog2$
 ;;                 (and print-num (cw "~x0:" current))
-;;                 (prog2$ 
+;;                 (prog2$
 ;;                  (cw "~s0~%" line)
 ;;                  (if more
 ;;                      (print-line-range start end (1+ current) fname
@@ -598,7 +598,7 @@
 ;;     (if (atom matches)
 ;;         state
 ;;       (let ((state
-;;              (print-line-range 
+;;              (print-line-range
 ;;               (max nextline (- (caar matches) before-context))
 ;;               (+ (caar matches) after-context)
 ;;               nextline
@@ -613,7 +613,7 @@
 ;;   (fname matches print-name options)
 ;;   (if (atom matches)
 ;;       nil
-;;     (prog2$ 
+;;     (prog2$
 ;;      (and print-name (cw "~s0:" fname))
 ;;      (prog2$
 ;;       (and (grep-command-line-print-line-nums options)
@@ -648,7 +648,7 @@
 ;;       nil
 ;;     (prog2$ (if (and (>= (caar matches) start)
 ;;                      (stringp (cdar matches)))
-;;                 (prog2$ 
+;;                 (prog2$
 ;;                  (and print-name (cw "~s0:" fname))
 ;;                  (prog2$ (and print-num (cw "~x0:" (caar matches)))
 ;;                          (cw "~s0~%" (cdar matches))))
@@ -668,13 +668,13 @@
 ;;                            (cdr matches) (1+ linenum) channel state)
 ;;                           (mv (cons (car matches) rest) state))
 ;;                 (mv (list (car matches)) state))
-;;             (if more 
+;;             (if more
 ;;                 (mv-let (rest state)
 ;;                         (fill-out-matches
 ;;                          matches (1+ linenum) channel state)
 ;;                         (mv (cons (list linenum) rest) state))
 ;;               (mv (list (list linenum)) state)))))
-          
+
 
 
 ;; (defun print-non-matching-matches-in-file
@@ -686,18 +686,18 @@
 ;;         nil
 ;;       (prog2$ (if (cdar matches)
 ;;                   nil
-;;                 (print-match-range 
-;;                  (- (caar matches) before-context) 
+;;                 (print-match-range
+;;                  (- (caar matches) before-context)
 ;;                  (+ (caar matches) after-context)
 ;;                  all-matches fname print-name print-num))
 ;;               (print-non-matching-matches-in-file
 ;;                fname (cdr matches) all-matches print-name options)))))
-                        
-        
+
+
 ;; (defun print-matches-or-lines-in-file
 ;;   (fname matches print-name options channel state)
 ;;   (pattern-match-list
-;;    ((grep-command-line-outmode options) 
+;;    ((grep-command-line-outmode options)
 ;;     (grep-command-line-invert-match options))
 ;;    (((grep-output-line) nil)
 ;;     (print-matching-lines-in-file
@@ -772,7 +772,7 @@
 (defun print-lines (fname print-name print-num oldlines num)
   (if (or (zp num) (atom oldlines))
       nil
-    (prog2$ 
+    (prog2$
      (print-lines fname print-name print-num (cdr oldlines) (1- num))
      (print-line fname print-name (caar oldlines) print-num
                  (cdar oldlines) "-"))))
@@ -781,7 +781,7 @@
 
 (defmacro print-for-match (line)
   `(prog2$
-    (print-lines fname print-name print-num oldlines 
+    (print-lines fname print-name print-num oldlines
                  before-context)
     (prog2$
      (print-line fname print-name linenum print-num
@@ -828,7 +828,7 @@
               (mv (if (> ,count 0) 0 1) state)))))
 
 
-(defun grep-through-file (pattern file fname print-name linenum 
+(defun grep-through-file (pattern file fname print-name linenum
                                   oldlines nextn count options state)
   (let ((invert (grep-command-line-invert-match options))
         (before-context (grep-command-line-before-context options))
@@ -840,7 +840,7 @@
             (let ((trans-line (if (grep-command-line-ignore-case options)
                                   (case-insens-trans line)
                                 line)))
-              (mv-let 
+              (mv-let
                (havematch matchstr brs)
                (match-regex pattern trans-line line)
                (declare (ignore brs))
@@ -850,7 +850,7 @@
 
                   (((grep-output-line) nil)
                    (print-for-match line))
- 
+
                   (((grep-output-line) t)
                    (print-in-range line))
 
@@ -870,7 +870,7 @@
                                           (1+ linenum) oldlines nextn count
                                           options state)
                      (mv 1 state)))
-                 
+
                   (((grep-output-count) nil)
                    (count-through-file (1+ count)))
 
@@ -890,7 +890,7 @@
 
                   (((grep-output-silent) t)
                    (mv 0 state))
-                
+
                   (((grep-output-silent) nil)
                    (if more
                        (grep-through-file pattern file fname print-name
@@ -902,7 +902,7 @@
                          state)))))))))
 
 
-  
+
 
 (defun grep-through-files (pattern options files multi state)
   (declare (xargs :guard (and (regex-p pattern)
@@ -924,7 +924,7 @@
                       (& nil))))
                    (mv-let
                     (code state)
-                    (grep-through-file pattern channel file 
+                    (grep-through-file pattern channel file
                                        print-fname 0 nil -1 0
                                        options state)
                     (mv-let
@@ -941,8 +941,8 @@
                          state))))
                 (prog2$ (cw "File couldn't be opened: ~p0~%" file)
                         (mv 2 state)))))))
-       
-      
+
+
 
 
 (defun find-first-occurrence-after (str char idx)
@@ -971,7 +971,7 @@
                                  "-"
                                  (subseq arg idx (1+ idx)))
                     (grep-split-abbrev-args arg (1+ idx)))))))
-            
+
 
 
 (defun grep-split-args (args)
@@ -995,7 +995,7 @@
 
 
 (defun grep-exec (args state)
-  (mv-let 
+  (mv-let
    (options files)
    (grep-option-parse
     (grep-split-args args)
@@ -1012,10 +1012,10 @@
        (mv-let (pattern state)
                (get-pattern options state)
                (let ((files (if (consp files) files (list "/dev/stdin"))))
-                 (grep-through-files pattern options files 
+                 (grep-through-files pattern options files
                                      (consp (cdr files)) state)))))
     (& (prog2$ (er hard? 'top-level "bad top-level mode (should never occur)")
                (mv 2 state))))))
-               
-    
+
+
 

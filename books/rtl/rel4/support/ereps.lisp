@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 ; Eric Smith, David Russinoff, with contributions and suggestions by Matt Kaufmann
-; AMD, June 2001 
+; AMD, June 2001
 ;this file was previously called repsproofs.lisp
 
 (include-book "rtl")
@@ -14,15 +14,15 @@
 ;(set-inhibit-warnings) ; restore theory warnings (optional)
 
 
-; bias of a q bit exponent field is 2^(q-1)-1 
+; bias of a q bit exponent field is 2^(q-1)-1
 (defund bias (q) (- (expt 2 (- q 1)) 1) )
 
 ;;Encoding of floating-point numbers with explicit leading one:
-;;bit vectors of length p+q+1, consisting of 1-bit sign field, 
+;;bit vectors of length p+q+1, consisting of 1-bit sign field,
 ;;q-bit exponent field (bias = 2**(q-1)-1), and p-bit significand field.
 
 (defund esgnf  (x p q) (bitn x (+ p q)))
-(defund eexpof (x p q) (bits x (1- (+ p q)) p)) 
+(defund eexpof (x p q) (bits x (1- (+ p q)) p))
 (defund esigf  (x p)   (bits x (1- p) 0))
 
 ;;;**********************************************************************
@@ -124,7 +124,7 @@
                 (integerp p)
                 (> p 0)
                 (integerp q)
-                (> q 0))  
+                (> q 0))
            (equal (expo (edecode x p q))
                   (- (eexpof x p q) (bias q))
                   )))

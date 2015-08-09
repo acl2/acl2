@@ -46,7 +46,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -67,7 +67,7 @@ To certify this book, first, create a world with the following packages:
 (in-package "FUMON")
 
 ;; (include-book "coeficiente")
-;; (include-book "termino")  
+;; (include-book "termino")
 (include-book "coe-fld"
 	      :load-compiled-file nil)
 (include-book "futermino"
@@ -85,12 +85,12 @@ To certify this book, first, create a world with the following packages:
 
 ;; (defun monomiop (a)
 ;;   (and (consp a)
-;;        (coeficientep (first a)) 
+;;        (coeficientep (first a))
 ;;        (terminop (rest a))))
 
 (defun monomiop (a)
   (and (consp a)
-       (fdp (first a)) 
+       (fdp (first a))
        (terminop (rest a))))
 
 ;;; Constructor
@@ -153,7 +153,7 @@ To certify this book, first, create a world with the following packages:
 
 ;; (defun = (a b)
 ;;   (or (and (not (monomiop a)) (not (monomiop b)))
-;;       (and (monomiop a) (monomiop b) 
+;;       (and (monomiop a) (monomiop b)
 ;; 	   (nulop a) (nulop b))
 ;;       (and (monomiop a) (monomiop b)
 ;; 	   (COE::= (coeficiente a) (coeficiente b))
@@ -161,7 +161,7 @@ To certify this book, first, create a world with the following packages:
 
 (defun = (a b)
   (or (and (not (monomiop a)) (not (monomiop b)))
-      (and (monomiop a) (monomiop b) 
+      (and (monomiop a) (monomiop b)
 	   (nulop a) (nulop b))
       (and (monomiop a) (monomiop b)
 	   (FLD::= (coeficiente a) (coeficiente b))
@@ -272,7 +272,7 @@ To certify this book, first, create a world with the following packages:
 	   (equal (equal (termino y1)
 			 (termino y2))
 		  t)))
-		   
+
 ;;(defcong = = (* a b) 1)
 (defthm =-implies-=-*-1
   (implies (= y1 y2)
@@ -286,7 +286,7 @@ To certify this book, first, create a world with the following packages:
 	   (= (* x y1)
 	      (* x y2)))
   :rule-classes :congruence)
- 
+
 ;;; Conmutatividad de la operación
 
 (defthm |a * b = b * a|
@@ -438,7 +438,7 @@ To certify this book, first, create a world with the following packages:
 	   (termino a)))
 
 ;;; Negación
- 
+
 ;; (defun - (a)
 ;;   (monomio (COE::- (coeficiente a)) (termino a)))
 
@@ -453,7 +453,7 @@ To certify this book, first, create a world with the following packages:
   :hints (("Goal" :in-theory (disable (nulo)))))
 
 ;;; --------
-;;; Teoremas 
+;;; Teoremas
 ;;; --------
 
 ;;; Teoremas que resultan de aplicar la conmutatividad a los axiomas
@@ -482,7 +482,7 @@ To certify this book, first, create a world with the following packages:
 	   (= (- (+ a b)) (+ (- a) (- b)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Additional Theorems 
+;; Additional Theorems
 ;;   added by J. Cowles
 
 (defthm

@@ -67,7 +67,7 @@ will be the facts that we claim about the bakery algorithm.
                   (cent (rep-b-c st) (pick-b-c st in))))
   :rule-classes nil)
 
-(DEFTHM >>-fair-match-b-c 
+(DEFTHM >>-fair-match-b-c
   (implies (and (fair-suff-b-c st X)
                 (commit-b-c st (fair-select (env st) X)))
            (equal (rep-b-c (fair-bake+ st X))
@@ -131,7 +131,7 @@ will be the facts that we claim about the bakery algorithm.
 ;; "inv" is sufficient:
 
 (DEFTHM inv-b-c-sufficient->>
-  (implies (inv-b-c st) 
+  (implies (inv-b-c st)
            (suff-b-c st in))
   :rule-classes nil)
 

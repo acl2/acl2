@@ -1,7 +1,7 @@
 ; In this file, we demonstrate a way to define a memory that uses fast records
 ; for its implementation but allows the user to define some extra properties
 ; about their implementation (for example, the types of the keys and/or
-; values).  
+; values).
 
 ; The value in this file is that it provides a way of learning about one user's
 ; way of manipulating records that didn't require reasoning about low-level
@@ -50,7 +50,7 @@
 (defun update-loc (i val mem)
   (declare (xargs :guard (and (memory-p mem)
                               (natp i)
-                              (memory-val-p val))))      
+                              (memory-val-p val))))
   (mset i val mem))
 
 (in-theory (enable extensible-records))

@@ -23,7 +23,7 @@
 	((< x 2) 0)
 	(t (1+ (expo (/ x 2))))))
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -125,7 +125,7 @@
   (implies (and (rationalp x)
                 (not (equal x 0))
                 (integerp n))
-           (equal (expo (* (expt 2 n) x)) 
+           (equal (expo (* (expt 2 n) x))
                   (+ n (expo x)))))
 
 (defthmd expo-x+2**k
@@ -174,7 +174,7 @@
   :rule-classes (:rewrite :linear))
 
 (defthmd sig-shift
-  (equal (sig (* (expt 2 n) x)) 
+  (equal (sig (* (expt 2 n) x))
          (sig x)))
 
 (defthm already-sig
@@ -184,7 +184,7 @@
            (= (sig x) x)))
 
 (defthm sig-sig
-    (equal (sig (sig x)) 
+    (equal (sig (sig x))
 	   (sig x)))
 
 

@@ -12,7 +12,7 @@
              (top (cadddr x)))
          (and (rationalp score)
               ;; to keep track of where we could have come from
-              (or left ;; 
+              (or left ;;
                   diag ;; t for direction
                   top)))))
 
@@ -24,7 +24,7 @@
              (other (caddr x)))
          (and (rationalp score)
               ;; to keep track of where we could have come from
-              (or diag 
+              (or diag
                   other))))) ;; left or top
 
 (defun valid-matrix-entry (x)
@@ -49,7 +49,7 @@
 ;; First row in matrix
 (defun build-affine-first-row-help (raw2 gap-open gap-extend len)
   (if (consp raw2)
-      (cons 
+      (cons
        (list (list -1 -1 nil) ;match junk
              (list -1 -1 nil) ;insert junk
              (list (+ gap-open (* gap-extend len)) nil len));delete
@@ -95,20 +95,20 @@
            (t
             (< x y)))))
 
-(defun build-affine-align-matrix-row-help 
+(defun build-affine-align-matrix-row-help
   (char raw2 transMat gap-open gap-extend prev-row diag-entry left-entry)
   (if (consp raw2)
       (let ((top-entry (car prev-row)))
         ;; Compute possible scores
-        (let* ((insert-from-insert (plus-neg1-inf (insert-score top-entry) 
+        (let* ((insert-from-insert (plus-neg1-inf (insert-score top-entry)
                                     gap-extend))
-               (insert-from-match (plus-neg1-inf (match-score top-entry) 
+               (insert-from-match (plus-neg1-inf (match-score top-entry)
                                     (+ gap-extend gap-open)))
-               (delete-from-delete (plus-neg1-inf (delete-score left-entry) 
+               (delete-from-delete (plus-neg1-inf (delete-score left-entry)
                                                gap-extend))
                (delete-from-match (plus-neg1-inf (match-score left-entry)
                                     (plus-neg1-inf gap-open gap-extend)))
-               (match-from-match 
+               (match-from-match
                 (plus-neg1-inf (match-score diag-entry)
                    (get-cost char (car raw2) transMat)))
                (match-from-insert
@@ -123,9 +123,9 @@
                (delete (if (<-neg1-inf delete-from-delete delete-from-match)
                            (list delete-from-delete nil t)
                          (list delete-from-match t nil)))
-               (match (if (<-neg1-inf match-from-match 
+               (match (if (<-neg1-inf match-from-match
                              match-from-delete)
-                          (if (<-neg1-inf match-from-match 
+                          (if (<-neg1-inf match-from-match
                                  match-from-insert)
                               (list match-from-match
                                     nil t nil)
@@ -136,12 +136,12 @@
                           (list match-from-insert t nil nil))))
                (new-entry (list match insert delete)))
           (cons new-entry
-                (build-affine-align-matrix-row-help 
-                 char (cdr raw2) transMat gap-open gap-extend 
+                (build-affine-align-matrix-row-help
+                 char (cdr raw2) transMat gap-open gap-extend
                  (cdr prev-row) top-entry new-entry))))
     nil))
-                                                  
-               
+
+
 (defun build-affine-align-matrix-row-top (char raw2 transMat gap-open
                                            gap-extend prev-row)
   (if (consp prev-row)
@@ -158,11 +158,11 @@
                first-above-entry new-entry)))
     "Error: Prev-row has to have something in it"))
 
- 
+
 (defun build-affine-align-matrix-rows (raw1 raw2 transMat gap-open
                                             gap-extend prev-row acc)
   (if (consp raw1)
-      (let ((new-row (build-affine-align-matrix-row-top 
+      (let ((new-row (build-affine-align-matrix-row-top
                       (car raw1)
                       raw2 transMat gap-open gap-extend prev-row)))
         (build-affine-align-matrix-rows (cdr raw1) raw2 transMat gap-open
@@ -173,11 +173,11 @@
 (defun build-affine-align-matrix (raw1 raw2 transMat gap-open
                                        gap-extend)
   ;; Build-first row aligning to gaps
-  (let ((first-row (build-affine-first-row-top 
+  (let ((first-row (build-affine-first-row-top
                     raw2 gap-open gap-extend)))
     (build-affine-align-matrix-rows raw1 raw2 transMat gap-open
                                     gap-extend first-row first-row)))
-  
+
 
 ;;unpacks cost-stuff to call appropriate filling functions
 (defun build-align-matrix (raw1 raw2 cost-stuff)
@@ -191,8 +191,8 @@
         ;; So far this is the only one we're implementing
         "Error: Unknown gap penalty type")
     "Error: Need good cost-stuff in build-align-matrix-helper"))
-                
-;; Assumes matrix is row reversed (i.e. first row is actually 
+
+;; Assumes matrix is row reversed (i.e. first row is actually
 ;; bottom row of matrix).
 (defun get-score-from-matrix (align-mat)
   (if (consp align-mat)
@@ -226,7 +226,7 @@
 (defun distance-matrix (sequences cost-stuff)
   (if (consp sequences)
       (cons (cons (caar sequences)
-                  (get-distances (cdar sequences) 
+                  (get-distances (cdar sequences)
                                  sequences ;;including self
                                  cost-stuff))
             (distance-matrix (cdr sequences) cost-stuff))
@@ -236,12 +236,12 @@
 (include-book
  "tree-score/min-length")
 (get-score-from-matrix
- (build-align-matrix '(a a t) '(a c a c t) 
+ (build-align-matrix '(a a t) '(a c a c t)
                      (list 'affine *dna-trans-matrix* 3 1))
  )
 
 (get-score-from-matrix
- (build-align-matrix '(a a g) '(a g t a c) 
+ (build-align-matrix '(a a g) '(a g t a c)
                      (list 'affine *dna-trans-matrix* 4 1))
  )
 ||#

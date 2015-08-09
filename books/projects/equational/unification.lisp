@@ -1,12 +1,12 @@
 ;; UTEP - Utrecht Texas Equational Prover
 ;; Written by Grant Olney Passmore {grant@math.utexas.edu}
-;; 
+;;
 ;; Unification routines.
 
 (in-package "ACL2")
 (include-book "general")
 
-;; UNIFICATION 
+;; UNIFICATION
 ;;
 ;; Motivating example:
 ;; lit0 = (P x (f x y) (g (f (a) z)))    lit1 = (P u (f (g (a)) u) w)
@@ -33,26 +33,26 @@
 	(first-unmatched-symbol-pair (car lit0) (car lit1))))))
 
 ;; FUNCTION-SYMBOLS (lit)
-;; Given a literal, lit, return a list of all function 
-;; symbols appearing within, possibly containing duplicates 
-;; (only a membership check will be done upon this list, 
+;; Given a literal, lit, return a list of all function
+;; symbols appearing within, possibly containing duplicates
+;; (only a membership check will be done upon this list,
 ;; so duplicates are fine).
 ;; G. Passmore :: 12/22/05
 
 ;; FUNCTION-SYMBOLS* (lit cur-list)
 ;; This auxiliary function locates function symbols by noting that
-;; they appear with an immediate left parenthesis.  
+;; they appear with an immediate left parenthesis.
 ;; Note that the literal here, lit*, is passed in as the cdr of the literal
-;; given to the parent FUNCTION-SYMBOLS function, so that we omit the top-level 
+;; given to the parent FUNCTION-SYMBOLS function, so that we omit the top-level
 ;; predicate.
 ;; G. Passmore :: 12/22/05
 
 (defun function-symbols* (lit* cur-list)
   (if (equal lit* nil) cur-list
     (if (consp lit*)
-	(if (consp (car lit*)) 
-	    (function-symbols* 
-	     (cdr lit*) 
+	(if (consp (car lit*))
+	    (function-symbols*
+	     (cdr lit*)
 	     (append (list (caar lit*)) (function-symbols* (cdar lit*) cur-list)))
 	  (function-symbols* (cdr lit*) cur-list))
       nil)))
@@ -65,7 +65,7 @@
 ;; Given a literal, lit, we return a list of the top-level predicate symbol,
 ;; which happens to just be the car.
 ;; G. Passmore :: 12/22/05
-   
+
 (defun predicate-symbol (lit)
   (cond ((consp lit) (list (car lit)))
 	(t nil)))
@@ -82,7 +82,7 @@
 ;; old in sexpr with new.
 ;; G. Passmore :: 12/22/05
 
-(defun deepsubst (sexpr old new) 
+(defun deepsubst (sexpr old new)
   (cond ((equal sexpr old) new)
 	((consp sexpr)
               (cons (deepsubst (car sexpr) old new)
@@ -101,7 +101,7 @@
 	 (or (deepmember (car sexpr) element)
 	     (deepmember (cdr sexpr) element)))
 	(t nil)))
-	 
+
 ;; APPLY-UNIFIER (form unifier)
 ;; Given a unifier, return the result of applying the unifier to a
 ;; form (either a literal or an entire clause).
@@ -110,12 +110,12 @@
 (defun apply-unifier (form unifier)
   (if (endp unifier) form
     (let ((cur-subst (car unifier)))
-      (apply-unifier 
+      (apply-unifier
        (deepsubst form (car cur-subst) (cadr cur-subst))
        (cdr unifier)))))
-	
+
 ;; NEGATIVE-LITERALP (lit)
-;; Given a literal, return t if this literal is negative (i.e. 
+;; Given a literal, return t if this literal is negative (i.e.
 ;; of the form (not (P x y)).
 ;; G. Passmore :: 12/22/05
 
@@ -176,7 +176,7 @@
 
 (defun standardize-clause (clause frozen-vars available-std-vars)
   (if (endp frozen-vars) clause
-    (standardize-clause 
+    (standardize-clause
      (deepsubst clause (car frozen-vars) (car available-std-vars))
      (cdr frozen-vars)
      (cdr available-std-vars))))
@@ -191,27 +191,27 @@
 (defun standardize-apart (clause0 clause1)
   (let ((clause0-vars (clause-variable-symbols clause0))
 	(clause1-vars (clause-variable-symbols clause1)))
-    (let ((c0-vars-intersect-c1-vars 
+    (let ((c0-vars-intersect-c1-vars
 	   (lst-intersection clause0-vars clause1-vars))
 	  (usable-SAVL-vars
 	   (remove-elements *standardize-apart-vars-lst* (append clause0-vars clause1-vars))))
       (standardize-clause clause1 (remove-duplicates c0-vars-intersect-c1-vars) usable-SAVL-vars))))
 
 ;; UNIFY (lit0 lit1) => (MV unified-instance mgu) | 'DNU | 'OUT-OF-TIME
-;; Given two literals, lit0 and lit1, find and apply the most general unifier, 
-;; returning (mv lit0 NIL) if the terms are unified by the empty substitution, 
+;; Given two literals, lit0 and lit1, find and apply the most general unifier,
+;; returning (mv lit0 NIL) if the terms are unified by the empty substitution,
 ;; returning (mv 'DNU nil) of the terms do not unify, and returning (mv unified-instance mgu)
 ;; if unification is successful.
-;; Note: We may run out of time, in which case we return (mv 'OUT-OF-TIME nil). 
+;; Note: We may run out of time, in which case we return (mv 'OUT-OF-TIME nil).
 ;; We *do* utilize an occurs-check.
 ;; G. Passmore :: 12/22/05
 
 (defun unify* (lit0 lit1 function-symbols predicate-symbols cur-mgu time-count)
   (declare (xargs :measure (acl2-count time-count)))
-  (cond ((not (posp time-count)) (mv 'OUT-OF-TIME nil)) 
+  (cond ((not (posp time-count)) (mv 'OUT-OF-TIME nil))
 	((equal lit0 lit1) (mv lit0 cur-mgu))
 	(t (let ((cur-unifier (first-unmatched-symbol-pair lit0 lit1)))
-;; If the two literals disagree on a function symbol, they do not unify.	     
+;; If the two literals disagree on a function symbol, they do not unify.
 	     (cond ((and (member (car cur-unifier) function-symbols)
 			 (member (cadr cur-unifier) function-symbols))
 		    (mv 'DNU nil))
@@ -219,7 +219,7 @@
 		   ((or (member (car cur-unifier) predicate-symbols)
 			(member (cadr cur-unifier) predicate-symbols))
 		    (mv 'DNU nil))
-;; If the current unifier does not pass an OCCURS-CHECK, they do not unify. 
+;; If the current unifier does not pass an OCCURS-CHECK, they do not unify.
 		   ((and (consp (cadr cur-unifier))
 			 (deepmember (cadr cur-unifier) (car cur-unifier))) (mv 'DNU nil))
 ;; Otherwise, we now perform the substitution and recur!
@@ -234,7 +234,7 @@
 ;; G. Passmore :: 12/22/05
 
 (defun unify (lit0 lit1)
-  (unify* lit0 lit1 
+  (unify* lit0 lit1
 	  (append (function-symbols lit0) (function-symbols lit1))
 	  (append (predicate-symbol lit0) (predicate-symbol lit1))
   nil 100))

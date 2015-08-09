@@ -4,16 +4,16 @@
 ;; "Encapsulation for Practical Simplification Procedures"
 ;; by Olga Shumsky Matlin and William McCune
 ;;
-;; submitted to the Fourth International Workshop on the 
+;; submitted to the Fourth International Workshop on the
 ;; ACL2 Theorem Prover and Its Applications (ACL2-2003)
 ;;
-;; For more information contact 
+;; For more information contact
 ;;   Olga Shumsky Matlin (matlin@mcs.anl.gov)
 ;;   William McCune (mccune@mcs.anl.gov)
-;; 
 ;;
-;; Direct Incorporation Algorithm: 
-;; 
+;;
+;; Direct Incorporation Algorithm:
+;;
 ;;     While(Q)
 ;;       C = dequeue(Q)
 ;;       C = rewrite(C,S)
@@ -23,7 +23,7 @@
 ;;           add to Q D simplified by C
 ;;         S = S + C
 ;;
-;; Limbo Incorporation Algorithm: 
+;; Limbo Incorporation Algorithm:
 ;;
 ;;     preprocess(C, S, Limbo):
 ;;       C = rewrite(C, S+Limbo)
@@ -52,7 +52,7 @@
 
 (encapsulate
 
- ;;----------------- Signatures (constrained functions)   
+ ;;----------------- Signatures (constrained functions)
 
  (
   (simplify (x y) t)      ; simplify x by element of list y
@@ -60,22 +60,22 @@
   (true-symbolp (x) t)    ; expression x is a true-symbolp
 
   (ceval (x i) t)         ; evaluate clause x in interpretation i
-  
+
   (scount (x) t)          ; size evaluator for measure functions
  )
 
- ;;------------------- Witnesses 
- 
+ ;;------------------- Witnesses
+
  (local (defun simplify (x y)
 	  (declare (xargs :guard t)
 		   (ignore y))
 	  x))
- 
+
  (local (defun true-symbolp (x)
 	  (declare (xargs :guard t)
 		   (ignore x))
 	  t))
- 
+
  (local (defun ceval (x i)
 	  (declare (xargs :guard t)
 		   (ignore x i))
@@ -84,7 +84,7 @@
  (local (defun scount (x)
 	  (declare (xargs :guard t))
 	  (acl2-count x)))
- 
+
  ;;------------------- Properties and Exported Functions
 
  (defthm scount-natural
@@ -97,16 +97,16 @@
        (< (scount (simplify x y))
 	  (scount x)))
    :rule-classes nil)
- 
+
  (defthm simplify-idempotent
    (equal (simplify (simplify x y) y)
  	  (simplify x y)))
- 
+
  (defthm simplify-subset
    (implies (and (not (equal (simplify a x) a))
 		 (subsetp-equal x y))
             (not (equal (simplify a y) a)))
-   :rule-classes ((:rewrite :match-free :all))) 
+   :rule-classes ((:rewrite :match-free :all)))
 
  (defthm simplify-append
    (implies (and (equal (simplify a x) a)
@@ -130,7 +130,7 @@
    (if (endp x)
        t
      (and (ceval (car x) i) (ceval-list (cdr x) i))))
- 
+
 ; The following was added by Matt Kaufmann after ACL2 Version 3.4 because of
 ; a soundness bug fix; see ``subversive'' in :doc note-3-5.
  (defthm ceval-list-type
@@ -164,7 +164,7 @@
   (implies (and (rewritable a x)
 		(subsetp-equal x y))
 	   (rewritable a y))
-  :rule-classes ((:rewrite :match-free :all))) 
+  :rule-classes ((:rewrite :match-free :all)))
 
 (defthm simplify-append-restated
   (implies (and (not (rewritable a x))
@@ -183,7 +183,7 @@
 (defun extract-rewritables (x s)
   (declare (xargs :guard (true-listp s)))
   (cond ((endp s) nil)
-	((rewritable (car s) (list x)) 
+	((rewritable (car s) (list x))
 	 (cons (car s) (extract-rewritables x (cdr s))))
 	(t (extract-rewritables x (cdr s)))))
 
@@ -192,8 +192,8 @@
 (defun extract-n-simplify-rewritables (x s)
   (declare (xargs :guard (true-listp s)))
   (cond ((endp s) nil)
-	((rewritable (car s) (list x)) 
-	 (cons (simplify (car s) (list x)) 
+	((rewritable (car s) (list x))
+	 (cons (simplify (car s) (list x))
 	       (extract-n-simplify-rewritables x (cdr s))))
 	(t (extract-n-simplify-rewritables x (cdr s)))))
 
@@ -201,12 +201,12 @@
 (defun remove-rewritables (x s)
   (declare (xargs :guard (true-listp s)))
   (cond ((endp s) nil)
-	((rewritable (car s) (list x)) 
+	((rewritable (car s) (list x))
 	 (remove-rewritables x (cdr s)))
 	(t (cons (car s) (remove-rewritables x (cdr s))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; For the proof of termination of direct-incorporation:	   
+;; For the proof of termination of direct-incorporation:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun lcount (x)
@@ -218,8 +218,8 @@
 (defthm extract-consp
   (implies (not (consp (extract-rewritables x s)))
 	   (not (consp (extract-n-simplify-rewritables x s)))))
-	   
-(local 
+
+(local
  (include-book "../../../../arithmetic/top-with-meta"))
 
 (defthm small-sum-<-large-sum
@@ -229,13 +229,13 @@
 
 (defthm lcount-extract
   (implies (consp (extract-rewritables x s))
-	   (< (lcount (extract-n-simplify-rewritables x s)) 
+	   (< (lcount (extract-n-simplify-rewritables x s))
 	      (lcount (extract-rewritables x s)))))
 
 (defthm lcount-remove
   (implies (true-listp s)
 	   (equal (lcount (remove-rewritables x s))
-		  (- (lcount s) 
+		  (- (lcount s)
 		     (lcount (extract-rewritables x s))))))
 
 (defthm lcount-append
@@ -260,19 +260,19 @@
 
 ;;;;;; end of termination proof preparations
 (defun direct-incorporation (q s)
-  (declare 
-   (xargs 
+  (declare
+   (xargs
     :guard (and (true-listp q) (true-listp s))
     :measure (cons (+ 1 (lcount q) (lcount s)) (+ 1 (lcount q)))
-    :hints (("subgoal 2" 
-	     :cases 
+    :hints (("subgoal 2"
+	     :cases
 	     ((consp (extract-rewritables (simplify (car q) s) s))
 	      (not (consp (extract-rewritables (simplify (car q) s) s))))))))
   (cond ((or (not (true-listp q)) (not (true-listp s))) 'INPUT-ERROR)
 	((endp q) s)
 	((true-symbolp (simplify (car q) s)) (direct-incorporation (cdr q) s))
-	(t (direct-incorporation 
-	    (append (cdr q) 
+	(t (direct-incorporation
+	    (append (cdr q)
 		    (extract-n-simplify-rewritables (simplify (car q) s) s))
 	    (cons (simplify (car q) s)
 		  (remove-rewritables (simplify (car q) s) s))))))
@@ -285,14 +285,14 @@
 (defun mutually-irreducible-el-list (x s)
   (declare (xargs :guard (true-listp s)))
   (cond ((endp s) t)
-	((or (rewritable x (list (car s))) 
+	((or (rewritable x (list (car s)))
 	     (rewritable (car s) (list x))) nil)
 	(t (mutually-irreducible-el-list x (cdr s)))))
 
 (defun irreducible-list (s)
   (declare (xargs :guard (true-listp s)))
   (cond ((endp s) t)
-	((mutually-irreducible-el-list (car s) (cdr s)) 
+	((mutually-irreducible-el-list (car s) (cdr s))
 	 (irreducible-list (cdr s)))
 	(t nil)))
 
@@ -309,18 +309,18 @@
 
 (defthm subsetp-cons
   (subsetp-equal s (cons x s))
-  :hints (("goal" 
+  :hints (("goal"
 	   :do-not-induct t
 	   :in-theory (disable subsetp-append-1)
 	   :use ((:instance subsetp-append-1 (x (list x)))))))
-              
+
 (defthm forward-simplify-irreducible
   (implies (and (irreducible-list s)
 		(not (rewritable x s)))
 	   (mutually-irreducible-el-list x (remove-rewritables x s))))
 
 ;; top level correctness proof for direct-incorporation
-(defthm direct-incorporation-is-irreducible 
+(defthm direct-incorporation-is-irreducible
   (implies (irreducible-list s)
 	   (irreducible-list (direct-incorporation q s))))
 
@@ -364,8 +364,8 @@
 	   :in-theory (disable true-symbolp-ceval)
 	   :use ((:instance true-symbolp-ceval
 			    (x (simplify (car q) s)))))
-	  ("subgoal *1/3.6" 
-	   :use ((:instance ceval-extract-n-simp-2 
+	  ("subgoal *1/3.6"
+	   :use ((:instance ceval-extract-n-simp-2
 			    (x (simplify (car q) s))))))
   :rule-classes nil)
 
@@ -381,8 +381,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Limbo-Based Formalization
 ;;
-;; processing with forward and backward 
-;; demodulation/subsumption in two separate loops, 
+;; processing with forward and backward
+;; demodulation/subsumption in two separate loops,
 ;; using a limbo list
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -395,7 +395,7 @@
     (append l (list (simplify x (append s l))))))
 
 (defun initial-limbo (q s l)
-  (declare (xargs :guard (and (true-listp q) 
+  (declare (xargs :guard (and (true-listp q)
 			      (true-listp s)
 			      (true-listp l))))
   (if (endp q)
@@ -412,12 +412,12 @@
 			      (true-listp r))))
   (if (endp d)
       r
-      (preprocess-list (cdr d) s (preprocess (car d) 
+      (preprocess-list (cdr d) s (preprocess (car d)
 				  (append s (cdr d))
 				  r))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; For the proof of termination of limbo-process:	   
+;; For the proof of termination of limbo-process:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; auxiliary function; this function is easier to reason about
@@ -447,7 +447,7 @@
 
 (defthm subsetp-append-3
   (subsetp-equal s (append s c r))
-  :hints (("goal" 
+  :hints (("goal"
 	   :use ((:instance subsetp-append-2 (r (append c r)))))))
 
 (defthm scount-rewritable-append
@@ -493,17 +493,17 @@
 ;;;;;; end of termination proof preparations
 
 (defun process-limbo (l s)
-  (declare 
-   (xargs 
+  (declare
+   (xargs
     :guard (and (true-listp l) (true-listp s))
     :measure (cons (+ 1 (lcount l) (lcount s)) (+ 1 (lcount l)))
-    :hints (("subgoal 1" 
+    :hints (("subgoal 1"
 	     :cases ((consp (extract-rewritables (car l) s))
 		     (not (consp (extract-rewritables (car l) s))))))))
   (cond ((or (not (true-listp l)) (not (true-listp s))) 'INPUT-ERROR)
 	((endp l) s)
-	(t (process-limbo 
-	    (append 
+	(t (process-limbo
+	    (append
 	     (cdr l)
 	     (preprocess-list (extract-rewritables (car l) s)
 			      (append (remove-rewritables (car l) s) l)
@@ -530,7 +530,7 @@
 	(t (irreducible-list-by-list (cdr l) s))))
 
 ;; x rewrites nothing in l
-(defun irreducible-list-by-el (x l) 
+(defun irreducible-list-by-el (x l)
   (declare (xargs :guard (true-listp l)))
   (cond ((endp l) t)
 	((rewritable (car l) (list x)) nil)
@@ -540,7 +540,7 @@
 (defun irreducible-tail-by-head (l)
   (declare (xargs :guard (true-listp l)))
   (cond ((endp l) t)
-	((irreducible-list-by-el (car l) (cdr l)) 
+	((irreducible-list-by-el (car l) (cdr l))
 	 (irreducible-tail-by-head (cdr l)))
 	(t nil)))
 
@@ -575,7 +575,7 @@
   (implies (not (rewritable x (cons l1 l2)))
 	   (not (rewritable x (list l1))))
   :rule-classes ((:rewrite :match-free :all)))
-	   
+
 (defthm append-irreducible-tail-by-head
   (implies (and (not (rewritable x l))
 		(irreducible-tail-by-head l))
@@ -591,7 +591,7 @@
 				   (x (simplify x (append s l))))))))
 
 ;; mini-goal
-(defthm limbo-irreducible-tail-by-head 
+(defthm limbo-irreducible-tail-by-head
   (implies (irreducible-tail-by-head l)
 	   (irreducible-tail-by-head (initial-limbo q s l))))
 
@@ -599,30 +599,30 @@
 (defthm remove-rewritables-subset
     (subsetp-equal (remove-rewritables x s) s))
 
-(defthm irreducible-cons-remove-rewritables 
+(defthm irreducible-cons-remove-rewritables
   (implies (and (irreducible-list-by-list l s)
 		(irreducible-list-by-el x l))
 	   (irreducible-list-by-list l (cons x (remove-rewritables x s))))
-  :hints (("subgoal *1/2" 
+  :hints (("subgoal *1/2"
 	   :use ((:instance simplify-append-restated
-			    (a (car l)) 
-			    (x (list x)) 
+			    (a (car l))
+			    (x (list x))
 			    (y (remove-rewritables x s)))))))
 
-(defthm irreducible-cons 
+(defthm irreducible-cons
   (implies (and (irreducible-list-by-list l s)
 		(irreducible-list-by-el x l))
 	   (irreducible-list-by-list l (cons x s)))
-  :hints (("Subgoal *1/2" 
+  :hints (("Subgoal *1/2"
 	   :use ((:instance simplify-append-restated
 			    (a (car l))
 			    (x (list x))
 			    (y s))))))
 
-(defthm irreducible-list-by-list-append-2 
+(defthm irreducible-list-by-list-append-2
   (implies (and (irreducible-list-by-list l1 s)
 		(irreducible-list-by-list l2 s))
-	   (irreducible-list-by-list (append l1 l2) s)))  
+	   (irreducible-list-by-list (append l1 l2) s)))
 
 (defthm irreducible-list-by-el-append-cons
   (implies (and (not (rewritable x1 (list l1)))
@@ -635,7 +635,7 @@
 		(irreducible-list-by-el x1 x2))
          (irreducible-tail-by-head (append l (cons x1 x2)))))
 
-(defthm irreducible-tail-by-head-append 
+(defthm irreducible-tail-by-head-append
   (implies (and (true-listp l)
 		(true-listp x)
 		(irreducible-tail-by-head l)
@@ -656,8 +656,8 @@
 
 (defthm rewritable-simplify-append-all
   (not (rewritable (simplify y (append s (cons x (append l d2 r)))) (list x)))
-  :hints (("goal" 
-	   :use ((:instance 
+  :hints (("goal"
+	   :use ((:instance
 		  rewritable-by-member
 		  (x (simplify y (append s (cons x (append l d2 r)))))
 		  (y x)
@@ -685,18 +685,18 @@
 (defthm subsetp-append-5
   (implies (subsetp-equal l z)
 	   (subsetp-equal l (append x z))))
-			
+
 (defthm rewritable-element-by-list-append-all
   (implies (rewritable y l)
 	   (rewritable y (append s (cons x (append l d2 r))))))
 
 (defthm simplify-not-rewritable-append-all
   (not (rewritable
-	(simplify y (append s (cons x (append l d2 r)))) 
+	(simplify y (append s (cons x (append l d2 r))))
 	l))
-  :hints (("goal" 
-	   :use ((:instance 
-		  rewritable-element-by-list-append-all 
+  :hints (("goal"
+	   :use ((:instance
+		  rewritable-element-by-list-append-all
 		  (y (simplify y (append s (cons x (append l d2 r))))))))))
 
 ;; mini-goal
@@ -709,16 +709,16 @@
   (subsetp-equal r (append l d2 r)))
 
 (defthm rewritable-element-by-list-append-last
-  (implies 
+  (implies
    (rewritable y r)
    (rewritable y (append s (cons x (append l d2 r))))))
 
 (defthm simplify-not-rewritable-append-last
   (not (rewritable
 	(simplify y (append s (cons x (append l d2 r)))) r))
-  :hints (("goal" 
+  :hints (("goal"
 	   :in-theory (disable rewritable-element-by-list-append-last)
-	   :use ((:instance 
+	   :use ((:instance
 		  rewritable-element-by-list-append-last
 		  (y (simplify y (append s (cons x (append l d2 r))))))))))
 
@@ -741,14 +741,14 @@
   (member-equal x (append r (list x))))
 
 (defthm special-head-tail-helper
-  (implies 
-   (irreducible-tail-by-head 
+  (implies
+   (irreducible-tail-by-head
     (special-ppd d (append s (cons x l)) (append r (list y))))
-   (irreducible-list-by-el 
+   (irreducible-list-by-el
     y (special-ppd d (append s (cons x l)) (append r (list y)))))
-  :hints (("goal" 
+  :hints (("goal"
 	   :do-not-induct t
-	   :use ((:instance 
+	   :use ((:instance
 		  irreducible-member
 		  (x y)
 		  (l (special-ppd d (append s (cons x l))
@@ -756,7 +756,7 @@
 		  (s (append r (list y))))))))
 
 ;; mini-goal
-(defthm special-ppd-irreducible-tail-by-head 
+(defthm special-ppd-irreducible-tail-by-head
   (irreducible-tail-by-head (special-ppd d (append s (cons x l)) r)))
 
 
@@ -775,17 +775,17 @@
 (defthm limbo-incorporation-is-irreducible
   (implies (irreducible-list s)
 	   (irreducible-list (limbo-incorporation q s)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :do-not-induct t
 	   :in-theory (disable process-limbo-irreducible)
-	   :use ((:instance process-limbo-irreducible 
+	   :use ((:instance process-limbo-irreducible
 			    (l (initial-limbo q s nil)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Proving Soundness of Two-Step Formalization:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Computation of initial-limbo list is sound 
+;; Computation of initial-limbo list is sound
 (defthm limbo-sound-l
   (implies (and (not (ceval-list l i))
                      (ceval-list s i))
@@ -812,7 +812,7 @@
 (defthm ceval-extract
   (implies (ceval-list s i)
 	   (ceval-list (extract-rewritables x s) i)))
-  
+
 (defthm special-ppd-sound-1
   (implies (and (ceval-list d i)
 		(ceval-list s i)
@@ -820,7 +820,7 @@
 	   (ceval-list (special-ppd d s r) i)))
 
 (defthm process-limbo-sound
-  (implies (and (ceval-list l i) 
+  (implies (and (ceval-list l i)
 		(ceval-list s i))
 	   (ceval-list (process-limbo l s) i)))
 
@@ -831,7 +831,7 @@
 		(ceval-list s i)
 		(not (ceval-list d i)))
 	   (not (ceval-list (special-ppd d s r) i)))
-  :hints (("Subgoal *1/2" 
+  :hints (("Subgoal *1/2"
 	   :in-theory (disable true-symbolp-ceval)
 	   :use ((:instance true-symbolp-ceval
 			    (x (simplify (car d) (append s (cdr d) r))))))))
@@ -843,14 +843,14 @@
   :rule-classes ((:rewrite :match-free :all)))
 
 (defthm ceval-append-big-helper
-  (implies 
+  (implies
    (and (true-listp l)
 	(true-listp s)
 	(ceval-list r i)
 	(not (ceval-list (append l s) i)))
-   (not (ceval-list (append l 
+   (not (ceval-list (append l
 			    (special-ppd (extract-rewritables x s)
-					 (append (remove-rewritables x s) 
+					 (append (remove-rewritables x s)
 						 (cons x l))
 					 r)
 			    (cons x (remove-rewritables x s)))
@@ -862,9 +862,9 @@
 		   (not (and (ceval x i)
 			     (ceval-list l i)
 			     (ceval-list (remove-rewritables x s) i)))))
-	  ("subgoal 2" 
+	  ("subgoal 2"
 	   :in-theory (disable special-ppd-sound-2)
-	   :use ((:instance 
+	   :use ((:instance
 		  special-ppd-sound-2
 		  (d (extract-rewritables x s))
 		  (s (append (remove-rewritables x s) (cons x l))))))))
@@ -883,7 +883,7 @@
                 (ceval-list q i)
                 (ceval-list s i))
            (ceval-list (limbo-incorporation q s) i)))
- 
+
 (defthm split-process-sound-2
   (implies (and (true-listp s)
                 (not (ceval-list q i))
@@ -902,7 +902,7 @@
   (implies (true-listp s)
 	   (equal (ceval-list (limbo-incorporation q s) i)
 		  (and (ceval-list q i) (ceval-list s i))))
-  :hints (("goal" 
+  :hints (("goal"
 	   :in-theory (disable limbo-incorporation)
 	   :use limbo-incorporation-sound-iff)))
-	   
+

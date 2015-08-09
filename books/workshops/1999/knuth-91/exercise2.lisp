@@ -5,7 +5,7 @@
 ;;Exercise 2.
 ;; Part A.
 
-;; Formally state McCarthy's definition for the 91 function in 
+;; Formally state McCarthy's definition for the 91 function in
 ;; ACL2:
 
 ;;   M(x) <==  if  x > 100  then   x - 10
@@ -16,7 +16,7 @@
 ;;   measure(x) <==  if   x > 100  then  0
 ;;                                 else  101 - x.
 
-;; Observe ACL2's resistance to accepting this definition.  
+;; Observe ACL2's resistance to accepting this definition.
 ;; Carefully note the non-trivial part of the measure conjecture.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Answer.
@@ -58,14 +58,14 @@
 
 ;; Formally state the following definition in ACL2:
 
-;;  M(x) <==  if   x > 100  then  x - 10 
+;;  M(x) <==  if   x > 100  then  x - 10
 ;;                          else  91.
 
 ;; Observe that ACL2 accepts this definition. Next, formally state
-;; and prove, in ACL2, that the next equation holds for all 
+;; and prove, in ACL2, that the next equation holds for all
 ;; integers x.
 
-;;   M(x)  =  if  x > 100  then  x - 10 
+;;   M(x)  =  if  x > 100  then  x - 10
 ;;                         else  M(M(x+11)).
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Answer.

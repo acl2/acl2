@@ -151,7 +151,7 @@
                  (> n 0)
                  (< (re (* (expt 2 (1- n)) (sig x))) 1/2))
             (= (near+ x n)
-               (trunc (+ x (expt 2 (- (expo x) n))) n)))		
+               (trunc (+ x (expt 2 (- (expo x) n))) n)))
    :rule-classes ()
    :hints (("Goal" :in-theory (enable trunc-rewrite near+)
             :use (near+trunc-3
@@ -263,13 +263,13 @@
 		  (integerp n)
 		  (> n 0))
 	     (= (near+ x n)
-		(trunc (+ x (expt 2 (- (expo x) n))) n)))		
+		(trunc (+ x (expt 2 (- (expo x) n))) n)))
   :rule-classes ()
   :hints (("Goal" :use (near+trunc-12 near+trunc-5))))
 
 ;why disabled?
 (defthmd near+-minus
-  (= (near+ (* -1 x) n) 
+  (= (near+ (* -1 x) n)
      (* -1 (near+ x n)))
   :hints (("goal" :in-theory (enable near+)
            :use (trunc-minus
@@ -361,7 +361,7 @@
            :use ((:instance away)
                  (:instance fl-cg (x (* (expt 2 (1- n)) (sig x))))
                  (:instance fp-rep)
-                 (:instance near+-1-2 
+                 (:instance near+-1-2
                             (c (cg (* (expt 2 (1- n)) (sig x))))
                             (f (fl (* (expt 2 (1- n)) (sig x))))
                             (p (expt 2 (- (1+ (expo x)) n))))))))
@@ -413,8 +413,8 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance near+-1-1)
 			(:instance near+-1-3)
-			(:instance near+-1-6 
-				   (p (expt 2 (- (1+ (expo x)) n))) 
+			(:instance near+-1-6
+				   (p (expt 2 (- (1+ (expo x)) n)))
 				   (f (re (* (expt 2 (1- n)) (sig x)))))
 			(:instance near+)))))
 ;drop?
@@ -439,8 +439,8 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance near+-1-1)
 			(:instance near+-1-3)
-			(:instance near+-1-8 
-				   (p (expt 2 (- (1+ (expo x)) n))) 
+			(:instance near+-1-8
+				   (p (expt 2 (- (1+ (expo x)) n)))
 				   (f (re (* (expt 2 (1- n)) (sig x)))))
 			(:instance near+)))))
 
@@ -479,7 +479,7 @@
 		  (= (near+ x n) (trunc x n)))
 	     (>= (abs (- x y)) (- x (trunc x n))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable away-exactp-c 
+  :hints (("Goal" :in-theory (disable away-exactp-c
 				      near+ trunc-exactp-c)
 		  :use ((:instance near+1-b)
 			(:instance away-lower-pos)
@@ -498,7 +498,7 @@
 		  (= (near+ x n) (away x n)))
 	     (>= (abs (- x y)) (- (away x n) x)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (disable away-exactp-c 
+  :hints (("Goal" :in-theory (disable away-exactp-c
 				      trunc-exactp-c)
 		  :use ((:instance near+1-a)
 			(:instance away-lower-pos)
@@ -551,7 +551,7 @@
 
 (defthm near+-exactp-a
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (near+ x n))
 		  (exactp x n)))
@@ -618,7 +618,7 @@
       (/ (+ (near+ x n) (near+ y n)) 2)
     (expt 2 (expo y))))
 
-(local 
+(local
  (defthm near+-near+-1
     (implies (and (rationalp x)
 		  (rationalp y)
@@ -847,7 +847,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -868,7 +868,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -913,7 +913,7 @@
 		  (<= (near+ x n) a)
 		  (> x (+ a (expt 2 (- (expo a) n)))))
 	     (> (abs (- (near+ x n) x))
-		(abs (- (+ a 
+		(abs (- (+ a
 			   (expt 2 (- (expo a) n))
 			   (expt 2 (- (expo a) n)))
 			x))))
@@ -972,7 +972,7 @@
     (implies (and (rationalp x) (> x 0)
 		  (rationalp a) (> a 0)
 		  (integerp n) (> n 0)
-		  (>= (near+ x n) 
+		  (>= (near+ x n)
 		      (+ a
 			 (expt 2 (- (expo a) n))
 			 (expt 2 (- (expo a) n))))
@@ -991,7 +991,7 @@
     (implies (and (rationalp x) (> x 0)
 		  (rationalp a) (> a 0)
 		  (integerp n) (> n 0)
-		  (>= (near+ x n) 
+		  (>= (near+ x n)
 		      (+ a (expt 2 (- (1+ (expo a)) n))))
 		  (< x (+ a (expt 2 (- (expo a) n)))))
 	     (> (abs (- (near+ x n) x))
@@ -1033,7 +1033,7 @@
 		  (integerp n) (> n 0)
 		  (exactp a n)
 		  (< x a))
-	     (>= a 
+	     (>= a
 		 (+ (expt 2 (expo x))
 		    (expt 2 (- (1+ (expo x)) n)))))
   :rule-classes ()
@@ -1348,7 +1348,7 @@
                               )
 		  :use ((:instance exactp-2**n (n (1+ (expo x))) (m n))
 ;			(:instance expt-pos (x (- (expo x) n)))
-			(:instance trunc-exactp-c 
+			(:instance trunc-exactp-c
 				   (x (+ x (expt 2 (- (expo x) n))))
 				   (a (expt 2 (1+ (expo x))))))))))
 
@@ -1384,7 +1384,7 @@
 			(:instance trunc-exactp-b (x (+ x (expt 2 (- (expo x) n)))))
 ;			(:instance expt-pos (x (1+ (expo x))))
 			(:instance expo-2**n (n (1+ (expo x))))
-			(:instance fp+1 
+			(:instance fp+1
 				   (x (expt 2 (1+ (expo x))))
 				   (y (trunc (+ x (expt 2 (- (expo x) n))) n))))))))
 
@@ -1450,7 +1450,7 @@
                                     (1- (+ k (- (expo (+ x y)) (expo y)))))
                               (sig (+ x y)))))))
   :otf-flg t
-  :rule-classes nil 
+  :rule-classes nil
   :hints (("Goal" :in-theory (e/d (expt-split
                                    expt-minus
                                    exactp sig ; EXPT-SPLIT-leading-constant

@@ -440,7 +440,7 @@
          (<built-in-clausep2-id>
           t))
         (t (built-in-clausep2 (cdr bic-lst) cl ens fns))))
-                         
+
 (defun built-in-clausep1 (bic-alist cl ens fns)
 
 ; Bic-alist is the alist of built-in clauses, organized via top fnname.  Cl is
@@ -477,7 +477,7 @@
                               cl
                               ens
                               (all-fnnames-lst cl)))))
-           
+
 (defun crunch-clause-segments1 (seg1 cl)
 
 ; This function reverses seg1 and appends it to cl, like (revappend seg1
@@ -654,7 +654,7 @@
                                 (or flg (not (eq action 'no-change)))
                                 ans
                                 (- nnn 1)))))))))))
-             
+
 
 (defun rewrite-clause-lst (segs cdr-tail new-clause wrld rcnst flg ans nnn)
   (declare (xargs :measure (cons (cons (+ 1 (nfix nnn)) 2) (len segs))))
@@ -743,7 +743,7 @@
 ; indicates whether remove-trivial-equations changed anything.  Thus,
 ; this call may answer ``yes, something was changed'' when in fact,
 ; nothing was done by rewrite-clause itself.
-                     
+
             (rewrite-clause current-clause nil wrld local-rcnst
                             hitp nil (len current-clause)))))
 

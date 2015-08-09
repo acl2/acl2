@@ -83,7 +83,7 @@ Bill's challenge.
 
 The theorem that Dave proved is the following: (I believe he proved
 this some time before Thu, 12 Jul 2007 07:52:05 -0500 (when I got to
-know it). 
+know it).
 
   (defthm run_spec
     (equal (run stmt mem)
@@ -104,7 +104,7 @@ know it).
              mem))
     :rule-classes nil)
 
-Note that the equation has the hypothesis (run_terminates stmt mem).  
+Note that the equation has the hypothesis (run_terminates stmt mem).
 
 John Cowles, on Sat, 14 Jul 2007 11:41:59 -0600, proved the following
 theorem, for Bill's language.
@@ -129,7 +129,7 @@ theorem, for Bill's language.
 
 This answers Bill's challenge, by noting that nil acts as the btm
 here.  Subsequently, John Cowles made several improvements to his
-book.   
+book.
 
 John Cowles' book (as also, I believe, Dave Greve's solution) are
 based on the language that Bill Young originally proposed.  On Wed, 25
@@ -210,13 +210,13 @@ pasted the formulas from the prover output).
 (defstub generic-dst2 (x st1 st2) t) ; take part of x, perhaps based on st1 and st2
 (defstub generic-step (x st) t) ; step
 
-(encapsulate 
+(encapsulate
  (((generic-btm) => *)
   ((generic-finish * *) => *))
- 
+
  (local (defun generic-btm () nil))
  (local (defun generic-finish (x st) (declare (ignore x)) st))
- 
+
  (defthm generic-finish-is-not-generic-btm
    (implies (not (equal st (generic-btm)))
             (not (equal (generic-finish x st) (generic-btm))))))
@@ -232,18 +232,18 @@ pasted the formulas from the prover output).
 ;; course is not new, and was originally used in defpun, and in
 ;; several other places, including (probably) John C's paper on
 ;; introducing primitive recursive equations and (definitely) my
-;; generalization of primitive recursive equations.  
+;; generalization of primitive recursive equations.
 
 (defun generic-run-clk (x st clk)
   (declare (xargs :measure (nfix clk)))
   (cond ((zp clk) (generic-btm))
         ((equal st (generic-btm)) st)
-        ((generic-test1 x st) 
+        ((generic-test1 x st)
          (generic-finish x st))
-        ((generic-test2 x st) 
+        ((generic-test2 x st)
          (generic-run-clk (generic-dst1 x st) (generic-step x st) (1- clk)))
-        (t (let ((st2 (generic-run-clk (generic-dst1 x st) 
-                                       (generic-step x st) 
+        (t (let ((st2 (generic-run-clk (generic-dst1 x st)
+                                       (generic-step x st)
                                        (1- clk))))
              (if (equal st2 (generic-btm))
                  (generic-btm)
@@ -257,7 +257,7 @@ pasted the formulas from the prover output).
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm generic-run-clk-divergence-helper
      (implies (and (not (equal (generic-run-clk x st c) (generic-btm)))
@@ -265,8 +265,8 @@ pasted the formulas from the prover output).
                    (natp i))
               (equal (generic-run-clk x st (+ c i)) (generic-run-clk x st c)))
      :rule-classes nil))
-  
-  
+
+
   (defthm generic-run-clk-divergence
     (implies (and (not (equal (generic-run-clk x st c1) (generic-btm)))
                   (natp c1)
@@ -294,7 +294,7 @@ pasted the formulas from the prover output).
 ;; think about quantification (and get Skolemization as a result).
 
 (defun-sk exists-enough (x st)
-  (exists clk 
+  (exists clk
           (and (natp clk)
                (not (equal (generic-run-clk x st clk) (generic-btm))))))
 
@@ -358,7 +358,7 @@ pasted the formulas from the prover output).
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm generic-run-2-works-one-direction
      (implies (and (not (equal st (generic-btm)))
@@ -366,7 +366,7 @@ pasted the formulas from the prover output).
                    (generic-test2 x st)
                    (exists-enough x st))
               (exists-enough (generic-dst1 x st) (generic-step x st)))
-     :hints 
+     :hints
      (("Goal"
        :use ((:instance exists-enough)
              (:instance (:definition generic-run-clk)
@@ -375,7 +375,7 @@ pasted the formulas from the prover output).
                         (x (generic-dst1 x st))
                         (st (generic-step x st))
                         (clk (1- (exists-enough-witness x st)))))))))
-  
+
   (local
    (defthm generic-run-2-works-other-direction
      (implies (and (not (equal st (generic-btm)))
@@ -388,14 +388,14 @@ pasted the formulas from the prover output).
                                (x (generic-dst1 x st))
                                (st (generic-step x st)))
                     (:instance exists-enough-suff
-                               (clk (1+ (exists-enough-witness 
-                                         (generic-dst1 x st) 
+                               (clk (1+ (exists-enough-witness
+                                         (generic-dst1 x st)
                                          (generic-step x st)))))
                     (:instance (:definition generic-run-clk)
-                               (clk (1+ (exists-enough-witness 
+                               (clk (1+ (exists-enough-witness
                                          (generic-dst1 x st)
                                          (generic-step x st))))))))))
-  
+
   (defthmd generic-run-2-exists-works
     (implies (and (not (equal st (generic-btm)))
                   (not (generic-test1 x st))
@@ -449,7 +449,7 @@ pasted the formulas from the prover output).
                   (:instance (:definition exists-enough))))
            ("Subgoal 1.2"
             :cases ((<= (exists-enough-witness x st)
-                        (exists-enough-witness (generic-dst1 x st) 
+                        (exists-enough-witness (generic-dst1 x st)
                                                (generic-step x st)))))
            ("Subgoal 1.2.1"
             :in-theory (enable exists-enough)
@@ -462,7 +462,7 @@ pasted the formulas from the prover output).
            ("Subgoal 1.2.2"
             :in-theory (enable generic-run-clk exists-enough)
             :use ((:instance generic-run-clk-divergence
-                             (c1 (1+ (exists-enough-witness 
+                             (c1 (1+ (exists-enough-witness
                                       (generic-dst1 x st)
                                       (generic-step x st))))
                              (c2 (exists-enough-witness x st))))))))
@@ -513,12 +513,12 @@ pasted the formulas from the prover output).
                  (not (generic-test1 x st))
                  (not (generic-test2 x st))
                  (exists-enough x st))
-            (equal (generic-run-clk (generic-dst1 x st) (generic-step x st) 
-                                    (exists-enough-witness (generic-dst1 x st) 
+            (equal (generic-run-clk (generic-dst1 x st) (generic-step x st)
+                                    (exists-enough-witness (generic-dst1 x st)
                                                            (generic-step x st)))
-                   (generic-run-clk (generic-dst1 x st) (generic-step x st) 
+                   (generic-run-clk (generic-dst1 x st) (generic-step x st)
                                     (1- (exists-enough-witness x st)))))
-   
+
    :hints (("Goal"
             :in-theory (enable exists-enough generic-run-clk)
             :cases ((<= (exists-enough-witness x st)
@@ -562,11 +562,11 @@ pasted the formulas from the prover output).
             :use generic-run-3-works-one-direction-1)
            ("Subgoal 2"
             :in-theory (enable generic-run3-first-part)
-            :use 
+            :use
             ((:instance (:definition exists-enough))
              (:instance (:definition generic-run-clk)
                         (clk (exists-enough-witness x st)))
-             (:instance 
+             (:instance
               exists-enough-suff
               (x (GENERIC-DST2 X ST
                                (GENERIC-RUN-CLK (GENERIC-DST1 X ST)
@@ -586,47 +586,47 @@ pasted the formulas from the prover output).
 ;; conclusion.  Then I apply the divergence lemma (and case split) to
 ;; allow myself to produce the right instantiation to match the
 ;; definitional equation.
-                         
-(local       
+
+(local
  (defthm generic-run-3-works-other-direction-helper
    (implies (and (not (equal st (generic-btm)))
                  (not (generic-test1 x st))
                  (not (generic-test2 x st))
                  (exists-enough (generic-dst1 x st) (generic-step x st))
-                 (let ((st2 (generic-run (generic-dst1 x st) 
+                 (let ((st2 (generic-run (generic-dst1 x st)
                                          (generic-step x st))))
                    (exists-enough (generic-dst2 x st st2) st2)))
             (exists-enough x st))
    :rule-classes nil
-   :hints 
+   :hints
    (("Goal"
      :use ((:instance (:definition exists-enough)
                       (x (generic-dst1 x st))
                       (st (generic-step x st)))
            (:instance (:definition exists-enough)
-                      (x (let ((st2 (generic-run (generic-dst1 x st) 
+                      (x (let ((st2 (generic-run (generic-dst1 x st)
                                                  (generic-step x st))))
                            (generic-dst2 x st st2)))
-                      (st (generic-run (generic-dst1 x st) 
+                      (st (generic-run (generic-dst1 x st)
                                        (generic-step x st))))
-           (:instance 
+           (:instance
             exists-enough-suff
-            (clk (1+ (max (exists-enough-witness 
+            (clk (1+ (max (exists-enough-witness
                            (generic-dst1 x st)
                            (generic-step x st))
                           (exists-enough-witness
-                           (let ((st2 (generic-run (generic-dst1 x st) 
+                           (let ((st2 (generic-run (generic-dst1 x st)
                                                    (generic-step x st))))
                              (generic-dst2 x st st2))
-                           (generic-run (generic-dst1 x st) 
+                           (generic-run (generic-dst1 x st)
                                         (generic-step x st)))))))))
     ("Subgoal 1"
-     :use 
-     ((:instance 
+     :use
+     ((:instance
        (:definition generic-run-clk)
        (clk (+ 1
                (EXISTS-ENOUGH-WITNESS
-                (GENERIC-DST2 
+                (GENERIC-DST2
                  X ST
                  (GENERIC-RUN-CLK (GENERIC-DST1 X ST)
                                   (GENERIC-STEP X ST)
@@ -636,11 +636,11 @@ pasted the formulas from the prover output).
                                  (GENERIC-STEP X ST)
                                  (EXISTS-ENOUGH-WITNESS (GENERIC-DST1 X ST)
                                                         (GENERIC-STEP X ST)))))))
-      (:instance 
+      (:instance
        generic-run-clk-divergence
        (x (generic-dst1 x st))
        (st (generic-step x st))
-       (c1 (exists-enough-witness (generic-dst1 x st) 
+       (c1 (exists-enough-witness (generic-dst1 x st)
                                   (generic-step x st)))
        (c2 (EXISTS-ENOUGH-WITNESS
             (GENERIC-DST2 X ST
@@ -653,27 +653,27 @@ pasted the formulas from the prover output).
                              (EXISTS-ENOUGH-WITNESS (GENERIC-DST1 X ST)
                                                     (GENERIC-STEP X ST))))))))
     ("Subgoal 2"
-     :use ((:instance 
+     :use ((:instance
             (:definition generic-run-clk)
             (clk (+ 1
                     (EXISTS-ENOUGH-WITNESS (generic-dst1 x st) (generic-step x st)))))
-           
-           (:instance 
+
+           (:instance
             generic-run-clk-divergence
-            (x (GENERIC-DST2 
+            (x (GENERIC-DST2
                 X ST
                 (GENERIC-RUN-CLK (GENERIC-DST1 X ST)
                                  (GENERIC-STEP X ST)
                                  (EXISTS-ENOUGH-WITNESS (GENERIC-DST1 X ST)
                                                         (GENERIC-STEP X
                                                                       ST)))))
-            
+
             (st (GENERIC-RUN-CLK (GENERIC-DST1 X ST)
                                  (GENERIC-STEP X ST)
                                  (EXISTS-ENOUGH-WITNESS (GENERIC-DST1 X ST)
                                                         (GENERIC-STEP X ST))))
-            
-            (c2 (exists-enough-witness (generic-dst1 x st) 
+
+            (c2 (exists-enough-witness (generic-dst1 x st)
                                        (generic-step x st)))
             (c1 (EXISTS-ENOUGH-WITNESS
                  (GENERIC-DST2 X ST
@@ -737,7 +737,7 @@ pasted the formulas from the prover output).
                   (:instance generic-run3-first-part)))
            ("Subgoal 4.2.2"
             :cases ((<= (EXISTS-ENOUGH-WITNESS
-                         (GENERIC-DST2 
+                         (GENERIC-DST2
                           X ST
                           (GENERIC-RUN-CLK (GENERIC-DST1 X ST)
                                            (GENERIC-STEP X ST)
@@ -748,10 +748,10 @@ pasted the formulas from the prover output).
                         (+ -1 (EXISTS-ENOUGH-WITNESS X ST)))))
            ("Subgoal 4.2.2.2"
             :in-theory (enable exists-enough)
-            :use 
-            ((:instance 
+            :use
+            ((:instance
               generic-run-clk-divergence
-              (x (GENERIC-DST2 
+              (x (GENERIC-DST2
                   X ST
                   (GENERIC-RUN-CLK (GENERIC-DST1 X ST)
                                    (GENERIC-STEP X ST)
@@ -773,10 +773,10 @@ pasted the formulas from the prover output).
                                            X ST))))))))
            ("Subgoal 4.2.2.1"
             :in-theory (enable exists-enough)
-            :use 
-            ((:instance 
+            :use
+            ((:instance
               generic-run-clk-divergence
-              (x (GENERIC-DST2 
+              (x (GENERIC-DST2
                   X ST
                   (GENERIC-RUN-CLK (GENERIC-DST1 X ST)
                                    (GENERIC-STEP X ST)
@@ -795,29 +795,29 @@ pasted the formulas from the prover output).
                    (GENERIC-RUN-CLK (GENERIC-DST1 X ST)
                                     (GENERIC-STEP X ST)
                                     (+ -1 (EXISTS-ENOUGH-WITNESS X ST)))))))))))
- 
+
 
 
 (local (in-theory (disable generic-run)))
 
-;; Now that we have done all the cases, the final theorem is trivial.                            
-   
+;; Now that we have done all the cases, the final theorem is trivial.
+
 (defthm |definition of generic-run|
   (equal (generic-run x st)
-         (cond ((equal st (generic-btm)) 
+         (cond ((equal st (generic-btm))
                 (generic-btm))
-               ((generic-test1 x st) 
+               ((generic-test1 x st)
                 (generic-finish x st))
-               ((generic-test2 x st) 
+               ((generic-test2 x st)
                 (generic-run (generic-dst1 x st) (generic-step x st)))
-               (t (let 
-                      ((st2 (generic-run (generic-dst1 x st) 
+               (t (let
+                      ((st2 (generic-run (generic-dst1 x st)
                                          (generic-step x st))))
                     (generic-run (generic-dst2 x st st2) st2)))))
   :rule-classes :definition)
 
-   
 
-                    
-                            
-                
+
+
+
+

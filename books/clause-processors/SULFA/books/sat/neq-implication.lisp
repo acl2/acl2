@@ -27,10 +27,10 @@
 ;; Otherwise we determine a DNF formula Ca involving the components of
 ;; x that imply (equal (car x) (car y)) and Cb involving the components
 ;; of x that imply (equal (cdr x) (cdr y)).  We then
-;; have a method "and-merge-implications" that merges two DNF formulas X 
+;; have a method "and-merge-implications" that merges two DNF formulas X
 ;; and Y into a DNF formula Z such that Z implies X and Y, as well
 ;; as a method "or-merge-implications" that merges two DNF formulas X
-;; and Y into a DNF formula Z such that Z implies X or Y.  New variables 
+;; and Y into a DNF formula Z such that Z implies X or Y.  New variables
 ;; are sometimes created to avoid explosion.  The DNF formula for
 ;; (equal x y) is therefore:
 
@@ -44,7 +44,7 @@
   (cons (negate-f-expr f0) conj))
 
 ;; The cnf-literals is a disjunction y0 \/ y1 \/ ... yN
-;; that is intended to represent the implication 
+;; that is intended to represent the implication
 ;; (not y0) /\ (not y1) /\ ... (not yN) -> ???
 ;; and now we want the conjunction y0 /\ y1 /\ ... yN.
 ;; In our minds we negate the literals, but in reality
@@ -94,7 +94,7 @@
   (add-cnf-disjunct-implication1 f0 (cdr disj) $sat state))
 
 ;; Normalizes x0 /\ disj
-;; x0 /\ (y0 \/ y1 \/ ... yN) 
+;; x0 /\ (y0 \/ y1 \/ ... yN)
 (defun merge-and2 (x0 disj ans)
   (cond
    ((endp disj)
@@ -103,13 +103,13 @@
     (let ((ans (cons (append-conjuncts x0 (car disj)) ans)))
       (merge-and2 x0 (cdr disj) ans)))))
 
-;; Normalizes disj0 /\ disj1, 
+;; Normalizes disj0 /\ disj1,
 ;; (x0 \/ x1 \/ ... xN) /\ (y0 \/ y1 \/ ... yN)
-;; (x0 /\ y0) \/ 
-;; (x0 /\ y1) \/ 
+;; (x0 /\ y0) \/
+;; (x0 /\ y1) \/
 ;; ...
-;; (x0 /\ yN) \/ 
-;; (x1 /\ y0) \/ 
+;; (x0 /\ yN) \/
+;; (x1 /\ y0) \/
 ;; ...
 ;; (xN /\ yN) \/
 (defun merge-and1 (disj0 disj1 ans)
@@ -120,7 +120,7 @@
     (let ((ans (merge-and2 (car disj0) disj1 ans)))
       (merge-and1 (cdr disj0) disj1 ans)))))
 
-;; Given two disjuncts disj0 and disj1 return a 
+;; Given two disjuncts disj0 and disj1 return a
 ;; disjunct disj2 such that disj2 -> (disj0 /\ disj1).
 (defun merge-and (disj0 disj1 $sat state)
   (declare (xargs :stobjs $sat))
@@ -142,7 +142,7 @@
        (mv-let
         ($sat state)
         (add-cnf-disjunct-implication f-var disj0 $sat state)
-        (mv (cons len-disj1 
+        (mv (cons len-disj1
                   (merge-and1 (list (singleton-conjunct f-var))
                               (cdr disj1)
                               nil))
@@ -155,7 +155,7 @@
        (mv-let
         ($sat state)
         (add-cnf-disjunct-implication f-var disj1 $sat state)
-        (mv (cons len-disj0 
+        (mv (cons len-disj0
                   (merge-and1 (list (singleton-conjunct f-var))
                               (cdr disj0)
                               nil))
@@ -175,7 +175,7 @@
       (mv-let
        (eq-i1-a $sat)
        (create-atom-var i1 a $sat)
-       ;; (not (eq i0 a)) \/ (not (eq i1 a)) 
+       ;; (not (eq i0 a)) \/ (not (eq i1 a))
        (let ((x0 (add-conjunct eq-i0-a (singleton-conjunct eq-i1-a))))
          (compute-eq-atoms (cdr atoms-alist)
                            i1
@@ -191,7 +191,7 @@
       (mv-let
        (eq-i1-a $sat)
        (create-eq-var i1 a $sat)
-       ;; (not (eq i0 a)) \/ (not (eq i1 a)) 
+       ;; (not (eq i0 a)) \/ (not (eq i1 a))
        (let ((x0 (add-conjunct eq-i0-a (singleton-conjunct eq-i1-a))))
          (compute-eq-alist (cdr eq-alist)
                            i1
@@ -211,17 +211,17 @@
      (compute-eq-atoms (atoms-alist-vari i0 $sat) i1 (empty-disjunct) $sat)
      (mv-let
       (eq-i0-i1-disj $sat)
-      (compute-eq-alist (eq-alist-vari i0 $sat) 
+      (compute-eq-alist (eq-alist-vari i0 $sat)
                         i1
                         eq-i0-i1-disj
                         $sat)
       (let ((car-i0 (car-vari i0 $sat))
             (cdr-i0 (cdr-vari i0 $sat))
             (consp-i0 (consp-vari i0 $sat)))
-        (cond         
+        (cond
          ((or (not (valid-varp car-i0))
               (not (valid-varp cdr-i0)))
-          ;; Note: I don't think we really have to do this if 
+          ;; Note: I don't think we really have to do this if
           ;; (car i1) or (cdr i1) don't exist.  I need to
           ;; think more about that though!!! ???
           (mv eq-i0-i1-disj $sat state))
@@ -230,7 +230,7 @@
           (mv (er hard 'compute-eq-disjunction
                   "The consp of a variable must exist if we are going ~
                    to instanciate the neq axiom on it~%")
-              $sat 
+              $sat
               state))
          (t
           (mv-let
@@ -252,7 +252,7 @@
                 (eq-i0-i1-disj-cons $sat state)
                 (merge-and (singleton-disjunct (singleton-conjunct consp-i0))
                            (singleton-disjunct (singleton-conjunct consp-i1))
-                           $sat 
+                           $sat
                            state)
                 (mv-let
                  (eq-i0-i1-disj-cons $sat state)

@@ -6,14 +6,14 @@
 (in-theory (disable quotient-remainder-functions))
 
 
-(encapsulate 
+(encapsulate
  ( ((digit-seq *) => * :formals (n) :guard (posp n)))
 
- (local (defun digit-seq (n) 
+ (local (defun digit-seq (n)
           (declare (xargs :guard (posp n))
                    (ignore n))
           0))
- 
+
 (defthm digit-seq-is-digit
   (implies (posp n)
 	   (and (integerp (digit-seq n))
@@ -101,7 +101,7 @@
 	   (and (equal i 1)
 		(equal min 1)))
   :rule-classes nil)
-		
+
 (defthmd digit-seq-sum-split
   (implies (and (posp min)
 		(posp max)
@@ -114,16 +114,16 @@
 		     (digit-seq-sum (1+ i) max))))
   :hints (("Subgoal *1/4.3"
 	   :use ((:instance digit-seq-sum-split-lemma)))))
-		
 
-(encapsulate 
+
+(encapsulate
  ( ((digit-seq-2 *) => * :formals (n) :guard (posp n)))
 
- (local (defun digit-seq-2 (n) 
+ (local (defun digit-seq-2 (n)
 	  (declare (xargs :guard (posp n))
 		   (ignore n))
 	  0))
- 
+
  (defthm digit-seq-2-is-digit
    (implies (posp n)
 	    (and (integerp (digit-seq-2 n))
@@ -216,7 +216,7 @@
 			    (x 1)
 			    (y (+ (* A (/ C)) (- (* B (/ C)))))
 			    (z c))))))
-	   
+
 (defthmd minimum-separation
   (implies (and (posp min)
 		(posp max)
@@ -277,7 +277,7 @@
 			    (b c)))
 	   :in-theory (disable abs)))
   :rule-classes nil)
-		
+
 (defthm different-enough-digits-implies-different-numbers-lemma-2
   (implies (and (realp b)
 		(realp c)
@@ -294,7 +294,7 @@
 			    (z2 (* 2 d))))
 	   :in-theory (disable abs)))
   :rule-classes nil)
-		
+
 (defthmd digit-sum-difference-split
   (implies (and (posp i)
 		(posp min)
@@ -368,7 +368,7 @@
 			    (a (digit-seq-sum (1+ i) max))
 			    (b (- (digit-seq-2-sum (1+ i) max))))
 		 ))))
-  
+
 
 
 (defthmd different-enough-digits-implies-different-numbers
@@ -804,7 +804,7 @@
 	   :in-theory (enable i-close)
 	   )))
 
-(defthmd small-diff-implies-close 
+(defthmd small-diff-implies-close
   (implies (and (realp x)
 		(realp y)
 		(realp eps)
@@ -830,7 +830,7 @@
 		 (:instance small-diff-implies-close)
 		 )))
   :rule-classes nil)
-	   
+
 
 
 
@@ -848,14 +848,14 @@
 			    (y (NTH-DIGIT-SEQ-SUM NUM 1 (I-LARGE-INTEGER)))
 			    (eps (/ (expt 10 (i-large-integer)))))))))
 
-(encapsulate 
+(encapsulate
  ( ((seq *) => * :formals (n) :guard (posp n)) )
 
- (local (defun seq (n) 
+ (local (defun seq (n)
 	  (declare (xargs :guard (posp n))
 		   (ignore n))
 	  0))
- 
+
  (defthm seq-is-real
    (implies (posp n)
 	    (realp (seq n)))
@@ -936,7 +936,7 @@
             (standardp (seq i)))))
 
 #|
-TODO: This theorem no longer works.  The substitution 
+TODO: This theorem no longer works.  The substitution
 
     digit-seq-2-sum-limit -> (lambda () (seq (posfix i)))
 

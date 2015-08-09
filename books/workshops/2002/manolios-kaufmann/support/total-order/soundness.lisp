@@ -114,7 +114,7 @@
 			   (i 0) (j 0) (k 0)))))
 
 (defthm good-atom-order-transitive
-  (implies (and (good-atom-order x y) 
+  (implies (and (good-atom-order x y)
 		(good-atom-order y z)
 		(atom x)
 		(atom y)
@@ -125,8 +125,8 @@
 
 (defthm good-atom-order-anti-symmetric
   (implies (and (good-atom x)
-		(good-atom-order x y) 
-		(good-atom-order y x))  
+		(good-atom-order x y)
+		(good-atom-order y x))
 	   (equal x y))
   :hints (("Goal"
 	   :in-theory (union-theories
@@ -135,8 +135,8 @@
 	   :use ((:instance symbol-equality (s1 x) (s2 y))
 		 (:instance code-char-char-code-is-identity (c y))
 		 (:instance code-char-char-code-is-identity (c x)))))
-  :rule-classes 
-   ((:forward-chaining :corollary 
+  :rule-classes
+   ((:forward-chaining :corollary
                        (implies (and (good-atom-order x y)
 				     (good-atom x)
                                      (not (consp x))
@@ -149,11 +149,11 @@
 (defthm good-atom-order-total
   (implies (and (atom x)
 		(atom y))
-	   (or (good-atom-order x y) 
+	   (or (good-atom-order x y)
 	       (good-atom-order y x)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (enable string< symbol-<)))
-  :rule-classes 
+  :rule-classes
   ((:forward-chaining :corollary
 		      (implies (and (not (good-atom-order x y))
 				    (not (consp x))
@@ -186,7 +186,7 @@
   (good-object-order x x))
 
 (defthm good-object-order-anti-symmetric
-  (implies (and (good-object-order x y) 
+  (implies (and (good-object-order x y)
 		(good-object-order y x)
 		(good-object x)
 		(good-object y))
@@ -195,11 +195,11 @@
 
 (defthm good-object-order-transitive
   (implies (and (good-object x)
-		(good-object-order x y) 
+		(good-object-order x y)
 		(good-object-order y z))
 	   (good-object-order x z)))
 
 (defthm good-object-order-total
-  (or (good-object-order x y) 
+  (or (good-object-order x y)
       (good-object-order y x))
   :rule-classes nil)

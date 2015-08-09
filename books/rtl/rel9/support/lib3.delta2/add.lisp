@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -89,9 +89,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defund mulcat (l n x)
@@ -135,7 +135,7 @@
                 (bvecp v 1)
                 (bvecp w 1))
            (equal (+ u v w)
-                  (cat (logior (logand u v) (logior (logand u w) (logand v w))) 1 
+                  (cat (logior (logand u v) (logior (logand u w) (logand v w))) 1
                        (logxor u (logxor v w)) 1)))
   :rule-classes ())
 
@@ -235,7 +235,7 @@
 (local (defthmd logand-bitn-lognot-1
   (implies (and (integerp n)
                 (integerp x)
-                (integerp y))                
+                (integerp y))
            (equal (logand (bitn (lognot x) n) (bitn y n))
                   (logand (lognot (bitn x n)) (bitn y n))))
   :hints (("Goal" :cases ((< n 0))
@@ -355,8 +355,8 @@
                      (cat (cout2 u v w x zcin) n 0 1))))
   :rule-classes ()
   :hints (("Goal" :induct (comp-4-2-induct u v w x zcin n))
-          ("Subgoal *1/2" :in-theory (enable comp-4-2-2 comp-4-2-3 comp-4-2-1 logand-bitn-lognot-1 logand-bitn-lognot-2 
-                                      compress-bit-5-3 bits-logior bits-logxor bits-logand 
+          ("Subgoal *1/2" :in-theory (enable comp-4-2-2 comp-4-2-3 comp-4-2-1 logand-bitn-lognot-1 logand-bitn-lognot-2
+                                      compress-bit-5-3 bits-logior bits-logxor bits-logand
                                       logand-bits-lognot bitn-logior bitn-logxor bitn-logand)))))
 
 (defthm compress-5-3
@@ -414,7 +414,7 @@
   :hints (("Goal" :use ((:instance compress-5-3 (cin (bits (cat (cout1 u v w) n c0 1) (1- n) 0))))
                   :in-theory (enable bits-logxor bitn-logxor bits-logand bitn-logand bits-logior bitn-logior bits-cat bitn-cat))
           ("Subgoal 1.2'''" :in-theory (enable cat))
-          ("Subgoal 1.1''" :in-theory (enable bits-logxor bitn-logxor bits-logand bitn-logand bits-logior bitn-logior 
+          ("Subgoal 1.1''" :in-theory (enable bits-logxor bitn-logxor bits-logand bitn-logand bits-logior bitn-logior
                                        logand-bitn-lognot-1 logand-bitn-lognot-2 logand-bits-lognot bits-cat bitn-cat)
                            :expand ((CAT (LOGIOR (LOGAND X (LOGNOT (LOGXOR U V W X)))
                                                  (LOGAND (LOGXOR U V W X)
@@ -565,7 +565,7 @@
 (defthm bits-sum-shift
     (implies (and (integerp x)
 		  (integerp y)
-		  (natp i) 
+		  (natp i)
 		  (natp j)
 		  (> j 0)
 		  (>= i j))
@@ -620,7 +620,7 @@
 	     (equal (bits (+ 1 x y) i j)
 		    (bits (+ (bits x i j)
 			     (bits y i j)
-			     (logior (prop x y (1- j) 0) 
+			     (logior (prop x y (1- j) 0)
 				     (gen x y (1- j) 0) ))
 			  (- i j) 0)))
   :rule-classes ())
@@ -662,7 +662,7 @@
 		  (natp x)
 		  (natp y)
 		  (bvecp z (1+ j))
-		  (= (logand y z) 0))		  
+		  (= (logand y z) 0))
 	     (equal (gen (+ x y) z i 0)
 		    (logand (prop x y i (1+ j))
 			    (gen (+ x y) z j 0)))))
@@ -722,7 +722,7 @@
   (bits (lognot (logior a (bits (lognot b) e 0))) e 0))
 
 (defun lam1 (a b e)
-  (logand (bits (lamt a b e) e 2) 
+  (logand (bits (lamt a b e) e 2)
 	  (logand (bits (lamg a b e) (1- e) 1)
 		  (bits (lognot (lamz a b e)) (- e 2) 0))))
 
@@ -732,7 +732,7 @@
 		  (bits (lognot (lamz a b e)) (- e 2) 0))))
 
 (defun lam3 (a b e)
-  (logand (bits (lamt a b e) e 2) 
+  (logand (bits (lamt a b e) e 2)
 	  (logand (bits (lamz a b e) (1- e) 1)
 		  (bits (lognot (lamg a b e)) (- e 2) 0))))
 
@@ -788,8 +788,8 @@
                 (< k n)
                 (or (equal c 0) (equal c 1)))
            (equal (equal (bits (+ a b c) k 0) 0)
-                  (equal (bits (logxor (logxor a b) 
+                  (equal (bits (logxor (logxor a b)
                                        (cat (logior a b) n c 1))
-                               k 0) 
+                               k 0)
                          0)))
   :rule-classes ())

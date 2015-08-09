@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -37,7 +37,7 @@
 ;;formalization of RTL semantics.
 
 
-	       
+
 ;;Bit-vector access:
 
 (defund fl (x)
@@ -103,9 +103,9 @@
         ((endp (cddddr x))
          `(binary-cat_alt ,@x))
         (t
-         `(binary-cat_alt ,(car x) 
-                      ,(cadr x) 
-                      (cat_alt ,@(cddr x)) 
+         `(binary-cat_alt ,(car x)
+                      ,(cadr x)
+                      (cat_alt ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 ;Allows things like (in-theory (disable cat)) to refer to binary-cat_alt.
@@ -149,7 +149,7 @@
 ;LAND (bitwise and):
 
 (defund binary-land_alt (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -176,7 +176,7 @@
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(land_alt x y n) -- the base case
          `(binary-land_alt ,@x))
-        (t         
+        (t
          `(binary-land_alt ,(car x)
                        (land_alt ,@(cdr x))
                        ,(car (last x))))))
@@ -187,7 +187,7 @@
 ;;LIOR_ALT (bitwise inclusive or):
 
 (defund binary-lior_alt (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -214,7 +214,7 @@
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(lior_alt x y n) -- the base case
          `(binary-lior_alt ,@x))
-        (t         
+        (t
          `(binary-lior_alt ,(car x)
                        (lior_alt ,@(cdr x))
                        ,(car (last x))))))
@@ -225,7 +225,7 @@
 ;;LXOR_ALT (bitwise exclusive or):
 
 (defund binary-lxor_alt (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -252,7 +252,7 @@
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(lxor_alt x y n) -- the base case
          `(binary-lxor_alt ,@x))
-        (t         
+        (t
          `(binary-lxor_alt ,(car x)
                        (lxor_alt ,@(cdr x))
                        ,(car (last x))))))
@@ -371,7 +371,7 @@
   (declare (xargs :guard (and (rationalp x) (rationalp y) (integerp n))))
   (log>= (comp2 x n) (comp2 y n)))
 
- 
+
 ;;Unary logical operations:
 
 (defund logand1 (x n)
@@ -459,15 +459,15 @@ get rid of the bits_alt call.
 
 (defund decode (x n)
   (declare (xargs :guard (rationalp n)))
-  (if (and (natp x) (< x n)) 
-      (ash 1 x) 
+  (if (and (natp x) (< x n))
+      (ash 1 x)
     0))
 
 (defund encode (x n)
     (declare (xargs :guard (and (acl2-numberp x)
                                 (integerp n)
                                 (<= 0 n))))
-  (if (zp n) 
+  (if (zp n)
       0
     (if (= x (ash 1 n))
         n
@@ -561,26 +561,26 @@ get rid of the bits_alt call.
                               (bvecp i n))))
   i)
 
-(encapsulate 
+(encapsulate
  ((reset (key size) t))
  (local (defun reset (key size) (declare (ignore key size)) 0))
  (defthm bvecp-reset (bvecp (reset key size) size)
    :hints (("Goal" :in-theory (enable bvecp expt)))
-   :rule-classes 
-   (:rewrite 
-    (:forward-chaining :trigger-terms ((reset key size)))	
+   :rule-classes
+   (:rewrite
+    (:forward-chaining :trigger-terms ((reset key size)))
     (:type-prescription :corollary
-                        (and (integerp (reset key size)) 
+                        (and (integerp (reset key size))
                              (>= (reset key size) 0))
                         :hints
                         (("Goal" :in-theory '(implies bvecp)))))))
 
-(encapsulate 
+(encapsulate
  ((unknown (key size n) t))
  (local (defun unknown (key size n) (declare (ignore key size n)) 0))
  (defthm bvecp-unknown (bvecp (unknown key size n) size)
    :hints (("Goal" :in-theory (enable bvecp expt)))
-   :rule-classes 
+   :rule-classes
    (:rewrite
     (:forward-chaining :trigger-terms ((unknown key size n)))
     (:type-prescription :corollary

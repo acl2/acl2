@@ -25,7 +25,7 @@
 (defun test_prev_routes (r? prev)
   ;; function that returns a route that uses nodes
   ;; that are not in prev or returns nil if there is no
-  ;; such route. 
+  ;; such route.
   (cond ((endp r?)
          nil)
         ((endp prev)
@@ -52,7 +52,7 @@
                               newntkstate)
                 ;; otherwise the transaction is delayed
                 (ct-scheduler (cdr TrLst)
-                              (cons v Scheduled) 
+                              (cons v Scheduled)
                               Arrived
                               prev
                               (cons (len (car (RoutesV (car TrLst)))) measureAcc)
@@ -156,9 +156,9 @@
       (mv-let (newntkstate r?)
               (inst-test_routes ntkstate v)
               (if (test_prev_routes r? prev)
-                  (ct-scheduler-nt-car (cdr TrLst) (cons r? prev) 
+                  (ct-scheduler-nt-car (cdr TrLst) (cons r? prev)
                                        newntkstate)
-                  (cons v (ct-scheduler-nt-car (cdr TrLst) prev 
+                  (cons v (ct-scheduler-nt-car (cdr TrLst) prev
                                                newntkstate)))))))
 (defthm ct-scheduler-nt-equal
   (equal (car (ct-scheduler TrLst Scheduled ArrivedAcc prev measureAcc ntkstate))
@@ -172,9 +172,9 @@
       (mv-let (newntkstate r?)
               (inst-test_routes ntkstate v)
               (if (test_prev_routes r? prev)
-                (cons v (ct-scheduler-nt-mv1 (cdr TrLst) (cons r? prev) 
+                (cons v (ct-scheduler-nt-mv1 (cdr TrLst) (cons r? prev)
                                              newntkstate))
-                  (ct-scheduler-nt-mv1 (cdr TrLst) prev 
+                  (ct-scheduler-nt-mv1 (cdr TrLst) prev
                                        newntkstate))))))
 (defthm ct-scheduler-nt-mv1-equal
   (equal (mv-nth 1 (ct-scheduler TrLst Scheduled  ArrivedAcc prev measureAcc ntkstate))
@@ -188,11 +188,11 @@
       (mv-let (newntkstate r?)
               (inst-test_routes ntkstate v)
               (if (test_prev_routes r? prev)
-                  (cons 0 
-                        (ct-scheduler-nt-mv2 (cdr TrLst) (cons r? prev) 
+                  (cons 0
+                        (ct-scheduler-nt-mv2 (cdr TrLst) (cons r? prev)
                                              newntkstate))
                   (cons (len (car (RoutesV (car TrLst))))
-                        (ct-scheduler-nt-mv2 (cdr TrLst) prev 
+                        (ct-scheduler-nt-mv2 (cdr TrLst) prev
                                              newntkstate)))))))
 (defthm ct-scheduler-nt-mv2-equal
   (equal (mv-nth 2 (ct-scheduler TrLst Scheduled ArrivedAcc prev measureAcc ntkstate))
@@ -205,7 +205,7 @@
 (defthm ntkstate-test-routes-mv0
   (equal (mv-nth 0 (ct-test_routes ntkstate v)) ntkstate))
 (defthm ntkstate-test-routes-car
-  (equal (car (ct-test_routes ntkstate v)) ntkstate))  
+  (equal (car (ct-test_routes ntkstate v)) ntkstate))
 
 
 
@@ -295,25 +295,25 @@
            (V-ids TrLst)))
 ;------------------------------------------------------------------
 
-;; 3/ we prove that the list of scheduled travels is a 
+;; 3/ we prove that the list of scheduled travels is a
 ;; valid travel list
 ;; --------------------------------------------------
 
 
 ;; proof for the scheduled travels
 ;; -------------------------------
-(local 
+(local
  (defthm validfields-trlst-ct-sched
    (implies (ValidFields-TrLst TrLst nodeset)
             (ValidFields-TrLst (ct-scheduler-nt-car TrLst prev ntkstate) nodeset))))
 
-(local 
+(local
  (defthm not-member-V-ids-ct-sched
    (implies (not (member-equal e (V-ids TrLst)))
-            (not 
-             (member-equal 
-              e 
-              (V-ids 
+            (not
+             (member-equal
+              e
+              (V-ids
                (ct-scheduler-nt-car TrLst prev ntkstate)))))))
 
 (defthm no-duplicatesp-ct-sched
@@ -331,19 +331,19 @@
 
 ;; proof for the delayed travels
 ;; -----------------------------
-(local 
+(local
  (defthm validfields-trlst-ct-del
    (implies (ValidFields-TrLst TrLst nodeset)
-            (ValidFields-TrLst 
+            (ValidFields-TrLst
              (ct-scheduler-nt-mv1 TrLst prev ntkstate) nodeset))))
 
-(local 
+(local
  (defthm not-member-V-ids-ct-del
    (implies (not (member-equal e (V-ids TrLst)))
-            (not 
-             (member-equal 
-              e 
-              (V-ids 
+            (not
+             (member-equal
+              e
+              (V-ids
                (ct-scheduler-nt-mv1 TrLst prev ntkstate)))))))
 
 (local (defthm no-duplicatesp-ct-del
@@ -362,7 +362,7 @@
 
 (defthm extract-sublst-cons
   (implies (not (member-equal id Ids))
-           (equal (extract-sublst (cons (list id org frm routes flit time) L) 
+           (equal (extract-sublst (cons (list id org frm routes flit time) L)
                                   Ids)
                   (extract-sublst L Ids))))
 
@@ -377,11 +377,11 @@
 (defthm no-duplicatesp-equal-append
   ;; to move to misc
   (implies (no-duplicatesp-equal (append (list x) (v-ids y)))
-           (not (member-equal x (v-ids y)))))             
+           (not (member-equal x (v-ids y)))))
 
 
 (defthm ct-scheduled-correctness
-  (let ((arrived (ct-scheduler-nt-mv1 TrLst prev st))) 
+  (let ((arrived (ct-scheduler-nt-mv1 TrLst prev st)))
     (implies (TrLstp TrLst nodeset)
              (s/d-travel-correctness
               arrived
@@ -399,43 +399,43 @@
 ;; according to the ids of Delayed
 ;; ----------------------------------------------------
 (defthm ct-delayed-correctness
-  (let ((traveling (ct-scheduler-nt-car TrLst prev st))) 
+  (let ((traveling (ct-scheduler-nt-car TrLst prev st)))
     (implies (TrLstp TrLst nodeset)
              (subsetp
               (V-ids traveling) (v-ids Trlst))))
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :in-theory (disable len ct-test_routes)
            :do-not '(eliminate-destructors)))
   :rule-classes nil)
 
 
 (defthm ct-delayed-correctness-org
-  (let ((traveling (ct-scheduler-nt-car TrLst prev st))) 
+  (let ((traveling (ct-scheduler-nt-car TrLst prev st)))
     (implies (TrLstp TrLst nodeset)
              (subsetp (V-orgs traveling) (v-orgs Trlst))))
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :in-theory (disable len ct-test_routes)
            :do-not '(eliminate-destructors)))
   :rule-classes nil)
 
 
 (defthm ct-delayed-correctness-frm
-  (let ((traveling (ct-scheduler-nt-car TrLst prev st))) 
+  (let ((traveling (ct-scheduler-nt-car TrLst prev st)))
     (implies (TrLstp TrLst nodeset)
              (subsetp
               (V-frms traveling) (v-frms Trlst))))
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :in-theory (disable len ct-test_routes)
            :do-not '(eliminate-destructors)))
   :rule-classes nil)
 
 
 (defthm ct-delayed-correctness-destination
-  (let ((traveling (ct-scheduler-nt-car TrLst prev st))) 
+  (let ((traveling (ct-scheduler-nt-car TrLst prev st)))
     (implies (TrLstp TrLst nodeset)
              (subsetp
               (Tm-dests (totmissives traveling)) (Tm-dests (totmissives Trlst)))))
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :in-theory (disable len ct-test_routes)
            :do-not '(eliminate-destructors))
           ("Subgoal *1/9" :in-theory (e/d (ct-test_routes)
@@ -444,12 +444,12 @@
 
 
 (defthm ct-delayed-correctness-destination-m
-  (let ((traveling (ct-scheduler-nt-car TrLst prev st))) 
+  (let ((traveling (ct-scheduler-nt-car TrLst prev st)))
     (implies (TrLstp TrLst nodeset)
              (subsetp
-              (m-dests (tomissives(totmissives traveling))) 
+              (m-dests (tomissives(totmissives traveling)))
               (m-dests (tomissives (totmissives Trlst))))))
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :in-theory (disable len ct-test_routes ct-chk_avail)
            :do-not '(eliminate-destructors))
           ("Subgoal *1/9" :in-theory (e/d (ct-test_routes)
@@ -463,29 +463,29 @@
                   (tomissives (totmissives (extract-sublst
                                             trlst
                                             (v-ids (ct-scheduler-nt-car TrLst prev st)))))))
-  :hints (("GOAL" 
+  :hints (("GOAL"
            :in-theory (disable len ct-test_routes))
           ("Subgoal *1/9" :in-theory (e/d (ct-test_routes)
                                           (ct-chk_avail)))))
 
 (defthm equal-tmids-vids-pkttraveling
-  (equal (v-ids (ct-scheduler-nt-car TrLst prev p)) 
+  (equal (v-ids (ct-scheduler-nt-car TrLst prev p))
          (tm-ids (totmissives (ct-scheduler-nt-car TrLst prev p))))
-  :rule-classes nil)    
+  :rule-classes nil)
 
 
 (defthm equal-mids-tmids-vids-pkttraveling
-  (equal (v-ids (ct-scheduler-nt-car TrLst prev p)) 
+  (equal (v-ids (ct-scheduler-nt-car TrLst prev p))
          (m-ids (tomissives (totmissives (ct-scheduler-nt-car TrLst prev p)))))
   :hints (("Goal" :in-theory (disable ct-test_routes)))
   :rule-classes nil)
 
 (defthm ct-delayed-correctness-ultime-totmissives
   (implies (Trlstp trlst nodeset)
-           (equal (tomissives 
+           (equal (tomissives
                    (totmissives (ct-scheduler-nt-car TrLst prev st)))
-                  (tomissives 
-                   (totmissives 
+                  (tomissives
+                   (totmissives
                     (extract-sublst trlst
                                     (tm-ids (totmissives (ct-scheduler-nt-car TrLst prev st))))))))
   :hints (("GOAL"
@@ -506,11 +506,11 @@
            (equal (tomissives (totmissives (ct-scheduler-nt-car TrLst prev p)))
                   (extract-sublst (tomissives(totmissives trlst))
                                   (tm-ids (totmissives (ct-scheduler-nt-car TrLst prev p))))))
-  
+
   :hints (("Goal"   :do-not-induct t
-                    :use ((:instance ToTMissives-extract-sublst (L trslt) 
+                    :use ((:instance ToTMissives-extract-sublst (L trslt)
                            (ids (v-ids (ct-scheduler-nt-car TrLst prev p))))
-                          (:instance ToMissives-extract-sublst (L (totmissives TRlst)) (ids (v-ids (ct-scheduler-nt-car TrLst prev p))))    
+                          (:instance ToMissives-extract-sublst (L (totmissives TRlst)) (ids (v-ids (ct-scheduler-nt-car TrLst prev p))))
                           )
                     :in-theory (disable extract-sublst v-ids default-car assoc-equal
                                         nth-with-large-index nth-add1
@@ -524,7 +524,7 @@
 ;; ------------------------------------------------------------
 
 (defthm not-in-cons
-  (implies (and (not-in x y) 
+  (implies (and (not-in x y)
                 (not (member-equal e x)))
            (not-in x (cons e y))))
 

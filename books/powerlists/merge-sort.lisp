@@ -135,7 +135,7 @@ certify-book on this file.  Here's how I do it:
 	    (equal (+ (p-member-count (p-split-1 x) m)
 		      (p-member-count (p-split-2 x) m))
 		   (p-member-count x m))))
-	  
+
  (local (defthm member-count-of-insert
 	  (implies (numericp e)
 		   (equal (p-member-count (p-insert e x) m)
@@ -170,7 +170,7 @@ certify-book on this file.  Here's how I do it:
 			(p-number-list x)
 			(p-sorted-p x))
 		   (p-sorted-p (p-insert e x)))))
-	  
+
  (defthm *obligation*-sorted-merge
    (implies (and (p-mergeable-p x y)
 		 (p-sorted-p x)
@@ -223,9 +223,9 @@ certify-book on this file.  Here's how I do it:
  (defthm *obligation*-sortable-mergeable
    (implies (and (powerlist-p x)
 		 (p-sortable-p x))
-	    (p-mergeable-p (p-merge-sort 
+	    (p-mergeable-p (p-merge-sort
 			    (p-split-1 x))
-			   (p-merge-sort 
+			   (p-merge-sort
 			    (p-split-2 x)))))
  )
 

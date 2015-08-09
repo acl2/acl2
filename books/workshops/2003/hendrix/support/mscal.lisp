@@ -6,7 +6,7 @@
 (include-book "mdefthms")
 
 (defun sm* (s m)
-  (declare (xargs :guard (and (acl2-numberp s) 
+  (declare (xargs :guard (and (acl2-numberp s)
                               (matrixp m))
                   :verify-guards nil))
   (if (m-emptyp m)
@@ -76,7 +76,7 @@
 
 (defthm sm*-0-left
   (implies (matrixp m)
-           (equal (sm* 0 m) 
+           (equal (sm* 0 m)
                   (mzero (row-count m) (col-count m))))
   :hints (("Goal" :induct (sm* 0 m))))
 

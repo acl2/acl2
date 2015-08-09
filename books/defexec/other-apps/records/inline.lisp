@@ -51,8 +51,8 @@
            (eq fn in-fn)
            (member-eq fn *exec-trm-built-ins*)
            (stobj-access-fn fn))))
-  
-(defun exec-fnname (fn) 
+
+(defun exec-fnname (fn)
   (declare (xargs :guard (symbolp fn)))
   (symbol-append fn '$exec))
 
@@ -187,4 +187,4 @@
 
 
 
-  
+

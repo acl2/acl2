@@ -1,5 +1,5 @@
 ;;; defmul.lisp
-;;; Definition of macros DEFMUL and DEFMUL-COMPONENTS, needed to define 
+;;; Definition of macros DEFMUL and DEFMUL-COMPONENTS, needed to define
 ;;; well-founded multiset relations induced by well-founded
 ;;; relations. It needs book "multiset.lisp"
 ;;; Last Revision: 19-09-00
@@ -47,14 +47,14 @@
 
 
 
-;;; First: Given "rel" a well-founded relation on a set A, we need to know the 
+;;; First: Given "rel" a well-founded relation on a set A, we need to know the
 ;;;   components needed to extend this relation on the set of finite multisets
 ;;;   over A:
 ;;;  - "rel": The well-founded relation defined on A.
 ;;;  - "mp": The meaure property defining the set A.
 ;;;  - "fn": The embedding justifying well-foundedness of "rel".
 ;;;  - "theorem": The theorem name with  rule class
-;;;    "well-founded-relation" associated with "rel". 
+;;;    "well-founded-relation" associated with "rel".
 ;;;  - "varx", "vary": The variables used in the "theorem".
 
 
@@ -83,16 +83,16 @@
 			      ('E0-ORD-< (fn x) (fn y)))
 		    ''NIL)
 	       (mv t fn rel x y))
-	      
+
 	      (& (mv nil nil nil nil nil))))
 
 (defun components-of-well-founded-relation-rule-fn (rel world)
   (declare (xargs :mode :program))
   (if (eq rel 'e0-ord-<)
       (list rel nil 'e0-ordinalp 'e0-ord-<-fn nil nil)
-      (let ((name 
+      (let ((name
 	     (cadddr (assoc-eq rel
-			       (global-val 
+			       (global-val
 				'well-founded-relation-alist world)))))
 	(mv-let (nmp nfn nrel nx ny)
 		(destructure-aux-well-founded-relation-rule
@@ -123,7 +123,7 @@
 	   (packn-in-pkg (append prefix
 				 (list n-fn "0"))
 			 n-fn))
-	  (rel-bigg 
+	  (rel-bigg
 	   (packn-in-pkg (append prefix
 				 (list "EXISTS-" n-rel "-BIGGER"))
 			 n-rel))
@@ -144,7 +144,7 @@
 	   (packn-in-pkg (append prefix (list n-mp "-TRUE-LISTP"))
 			 n-mp))
 	  (new-mp-multiset-diff
-	   (packn-in-pkg 
+	   (packn-in-pkg
 	    (append prefix (list n-mp "-TRUE-LISTP-MULTISET-DIFF"))
 	    n-mp))
 	  (cong-name1
@@ -161,7 +161,7 @@
 	   (packn-in-pkg (append prefix (list theorem "-REWRITE"))
 			 n-rel))
 	  (mult-th
-	   (packn-in-pkg 
+	   (packn-in-pkg
 	    (append prefix
 		    (list "MULTISET-EXTENSION-OF-" n-rel "-WELL-FOUNDED"))
 	    n-rel))
@@ -178,7 +178,7 @@
 (defmacro defmul-components (rel &key prefix)
   `(let ((n-rel
 	  (car (assoc-eq (quote ,rel)
-			 (global-val 
+			 (global-val
 			  'well-founded-relation-alist (w state))))))
      (if (eq n-rel nil)
 	 (er soft 'defmul-components
@@ -186,7 +186,7 @@
               See :DOC well-founded-relation."
 	     (quote ,rel))
          (let ((list (defmul-symbols-not-new
-		       (components-of-well-founded-relation-rule-fn 
+		       (components-of-well-founded-relation-rule-fn
 			(quote ,rel) (w state))
 		       (if (quote ,prefix) (list (quote ,prefix) "-") nil)
 		       (w state))))
@@ -203,9 +203,9 @@
 			 (list "Empty list" "~x*" "~x* and " "~x*, " list)
 			 (quote ,prefix))
 		    (declare (ignore val))
-		    (mv nil (components-of-well-founded-relation-rule-fn 
+		    (mv nil (components-of-well-founded-relation-rule-fn
 			     (quote ,rel) (w state)) state))
-		   (mv-let 
+		   (mv-let
 		    (val state)
 		    (fmx "~%WARNING: The ~#0~[symbol~/symbols~] ~*1 ~
                        ~#0~[is~/are~] defined yet. Perhaps you must ~
@@ -214,13 +214,13 @@
 			 (if (= (length list) 1) 0 1)
 			 (list "Empty list" "~x*" "~x* and " "~x*, " list))
 		    (declare (ignore val))
-		    (mv nil (components-of-well-founded-relation-rule-fn 
+		    (mv nil (components-of-well-founded-relation-rule-fn
 			     (quote ,rel) (w state)) state)))
-	       (mv-let 
+	       (mv-let
 		(val state)
 		(fmx "~%The list of components is: ~%")
 		(declare (ignore val))
-		(mv nil (components-of-well-founded-relation-rule-fn 
+		(mv nil (components-of-well-founded-relation-rule-fn
 			 (quote ,rel) (w state)) state)))))))
 
 
@@ -229,27 +229,27 @@
 ;;; ============================================================================
 
 
-;;; Given "n-rel" a well-founded relation on a set A, and given the 
+;;; Given "n-rel" a well-founded relation on a set A, and given the
 ;;;   components needed to extend this relation to the set of finite multisets
 ;;;   over A:
 ;;;  - "n-rel": The well-founded relation defined on A.
 ;;;  - "n-mp": The measure property defining the set A.
 ;;;  - "n-fn": The embedding justifying the well-foundedness of "rel".
 ;;;  - "theorem": The theorem name with rule class
-;;;     "well-founded-relation" associated with "rel". 
+;;;     "well-founded-relation" associated with "rel".
 ;;;  - "varx", "vary": The variables used in the "theorem".
 ;;; We build:
 ;;;  - "EXISTS-n-rel-BIGGER": Needed for "MUL-n-rel".
 ;;;  - "FORALL-EXISTS-n-rel-BIGGER": Needed for "MUL-n-rel".
 ;;;  - "MUL-n-rel": Well-founded relation on finite multisets over A.
 ;;;  - "MAP-n-fn-E0-ORD": The embedding justifying the well-foundedness of
-;;;    "MUL-n-rel". 
-;;;  - "n-mp-TRUE-LISTP": The measure property defining the finite 
+;;;    "MUL-n-rel".
+;;;  - "n-mp-TRUE-LISTP": The measure property defining the finite
 ;;;    multisets over A.
 ;;;  - "theorem-REWRITE": Well-founded relation theorem associated with
 ;;;    "n-rel", but now as a rewriting rule.
 ;;;  - "n-mp-TRUE-LISTP-MULTISET-DIFF": Needed for the guards verification of
-;;;    "MUL-n-rel". 
+;;;    "MUL-n-rel".
 ;;;  - "MULTISET-EXTENSION-OF-n-rel-WELL-FOUNDED": Well-founded relation
 ;;;    theorem associated with "MUL-n-rel".
 ;;;  - "EQUAL-SET-IMPLIES-IFF-FORALL-EXISTS-n-rel-BIGGER-1" and
@@ -261,7 +261,7 @@
 ;;;   well-founded relations (the first with an explicit property "mp" and the
 ;;;   second with this property equal to "t"). The third case is for the
 ;;;   "e0-ord-<" relation (the primitive well-founded relation over
-;;;   "e0-ordinalp"). 
+;;;   "e0-ordinalp").
 
 (defun defmul-events-rel (prefix v-g n-rel n-mp)
   (declare (xargs :mode :program))
@@ -280,13 +280,13 @@
 	     (packn-in-pkg (append prefix (list n-mp "-TRUE-LISTP"))
 			   n-mp)))
 	)
-    (list 
-     
+    (list
+
      `(defun ,rel-bigg (x l)        ; exists-rel-bigger
 	(declare (xargs :guard ,(if (eq n-mp t)
 				    `(,new-mp l)
 				    `(and (,n-mp x) (,new-mp l)))
-			:guard-hints 
+			:guard-hints
 			(("Goal" :hands-off ,(if (eq n-mp t)
 						 `(,n-rel)
 						 `(,n-rel ,n-mp))))
@@ -294,11 +294,11 @@
 	(cond ((atom l) nil)
 	      ((,n-rel x (car l)) t)
 	      (t (,rel-bigg x (cdr l)))))
-     
+
      `(defun ,for-exis (l m)        ; forall-exists-rel-bigger
 	(declare (xargs :guard (and (,new-mp l)
 				    (,new-mp m))
-			:guard-hints 
+			:guard-hints
 			(("Goal" :hands-off ,(if (eq n-mp t)
 						 `()
 						 `(,n-mp))))
@@ -315,7 +315,7 @@
 	(let ((m-n (multiset-diff m n))
 	      (n-m (multiset-diff n m)))
 	  (and (consp m-n) (,for-exis n-m m-n))))
-     
+
      )))
 
 ; The following was modified for v2-8 for ordinals changes.
@@ -336,14 +336,14 @@
 	     (packn-in-pkg (append prefix (list n-mp "-TRUE-LISTP"))
 			   n-mp)))
 	)
-    (list 
-     (list 'defmacro fn0 '(x)           ;added to convert from new to old ordinals 
+    (list
+     (list 'defmacro fn0 '(x)           ;added to convert from new to old ordinals
 	(list 'list (list 'quote 'ctoa) (list 'list (list 'quote n-fn) 'x)))
-     
+
      `(defun ,map-fn (l)            ; map-fn-e0-ord
 	(declare (xargs :guard (,new-mp l)
 			:guard-hints
-			(("Goal" 
+			(("Goal"
 			  :use ((:instance ,theorem (,varx (car l))))
 			  :hands-off ,(if (eq n-mp t)
 					  `(,n-fn)
@@ -367,17 +367,17 @@
   (declare (xargs :mode :program))
   (let ((new-mp
 	 (packn-in-pkg (append prefix (list n-mp "-TRUE-LISTP"))
-		       n-mp))	
+		       n-mp))
 	)
-    (list 
-     
+    (list
+
      `(defun ,new-mp (l)          ; mp-true-listp
 	(declare (xargs :verify-guards ,v-g))
 	(if (atom l)
 	    (equal l nil)
-	    (and (,n-mp (car l)) 
+	    (and (,n-mp (car l))
 		 (,new-mp (cdr l)))))
-     
+
      )))
 
 ; The following was modified for v2-8 for ordinals changes.
@@ -413,7 +413,7 @@
 			       n-rel "-BIGGER-2"))
 	  n-rel))
 	(mult-th
-	 (packn-in-pkg 
+	 (packn-in-pkg
 	  (append prefix (list "MULTISET-EXTENSION-OF-" n-rel "-WELL-FOUNDED"))
 	  n-rel))
 	(mult-lm
@@ -422,18 +422,18 @@
 		  (list "MULTISET-EXTENSION-OF-" n-rel "-WELL-FOUNDED-Lemma"))
 	  n-rel)))
 
-    (list 
-     
+    (list
+
      `(local (defthm ,n-rewr
 	       (and (o-p (,n-fn ,varx))
 		    (implies (,n-rel ,varx ,vary)
 		      (o< (,n-fn ,varx) (,n-fn ,vary))))
 	       :rule-classes :rewrite
 	       :hints (("Goal" :use ,theorem))))
-     
+
      `(defthm ,mult-lm
 	(and (implies (true-listp x) (e0-ordinalp (,map-fn x)))
-	     (implies (and (true-listp x)                   
+	     (implies (and (true-listp x)
 			   (true-listp y)
 			   (,m-rel x y))
 	       (e0-ord-< (,map-fn x) (,map-fn y))))
@@ -451,10 +451,10 @@
 			(MUL::mp (lambda (x) t))
 			(MUL::fn ,n-fn)))
 		 :hands-off (,n-fn ,n-rel))))
-     
+
      `(defthm ,mult-th
 	(and (implies (true-listp x) (o-p (,final-map-fn x)))
-	     (implies (and (true-listp x)                   
+	     (implies (and (true-listp x)
 			   (true-listp y)
 			   (,m-rel x y))
 	       (o< (,final-map-fn x) (,final-map-fn y))))
@@ -474,12 +474,12 @@
 			(MUL::exists-rel-bigger ,rel-bigg)
 			(MUL::forall-exists-rel-bigger ,for-exis)))
 		 :hands-off (,n-fn ,n-rel))))
-     
+
      `(defcong MUL::equal-set iff (,for-exis l m) 2
 	:event-name ,cong-name2
 	:hints (("Goal"
 		 :use ((:functional-instance
-			(:instance 
+			(:instance
 			 MUL::equal-set-implies-iff-forall-exists-rel-bigger-2
 			 (MUL::l l) (MUL::m m))
 			(MUL::fn ,n-fn)
@@ -488,7 +488,7 @@
 			(MUL::exists-rel-bigger ,rel-bigg)
 			(MUL::forall-exists-rel-bigger ,for-exis)))
 		 :hands-off (,n-fn ,n-rel))))
-     
+
      )))
 
 ; The following was modified for v2-8 for ordinals changes.
@@ -530,32 +530,32 @@
 			       n-rel "-BIGGER-2"))
 	  n-rel))
 	(mult-th
-	 (packn-in-pkg 
+	 (packn-in-pkg
 	  (append prefix (list "MULTISET-EXTENSION-OF-" n-rel "-WELL-FOUNDED"))
 	  n-rel))
 	(mult-lm
-	 (packn-in-pkg 
+	 (packn-in-pkg
 	  (append prefix (list "MULTISET-EXTENSION-OF-" n-rel "-WELL-FOUNDED-LEMMA"))
 	  n-rel))
 	)
 
-    (list 
-     
+    (list
+
      `(local (defthm ,n-rewr
 	       (and (implies (,n-mp ,varx) (o-p (,n-fn ,varx)))
-		    (implies (and (,n-mp ,varx) 
+		    (implies (and (,n-mp ,varx)
 				  (,n-mp ,vary)
 				  (,n-rel ,varx ,vary))
 		      (o< (,n-fn ,varx) (,n-fn ,vary))))
 	       :rule-classes :rewrite
 	       :hints (("Goal" :use ,theorem))))
-      
+
      `(defthm ,new-mp-multiset-diff
 	(implies (,new-mp m)
 	  (,new-mp (multiset-diff m n)))
 	:hints (("Goal"
 		 :use ((:functional-instance
-			(:instance 
+			(:instance
 			 MUL::mp-true-listp-multiset-diff
 			 (MUL::m m) (MUL::n n))
 			(MUL::mp-true-listp ,new-mp)
@@ -565,7 +565,7 @@
 		 :hands-off (,n-mp ,n-fn ,n-rel))))
      `(defthm ,mult-lm
 	(and (implies (,new-mp x) (e0-ordinalp (,map-fn x)))
-	     (implies (and (,new-mp x)                   
+	     (implies (and (,new-mp x)
 			   (,new-mp y)
 			   (,m-rel x y))
 		      (e0-ord-< (,map-fn x) (,map-fn y))))
@@ -585,12 +585,12 @@
 		 :hands-off (,n-mp ,n-fn ,n-rel))))
      `(defthm ,mult-th
 	(and (implies (,new-mp x) (o-p (,final-map-fn x)))
-	     (implies (and (,new-mp x)                   
+	     (implies (and (,new-mp x)
 			   (,new-mp y)
 			   (,m-rel x y))
 		      (o< (,final-map-fn x) (,final-map-fn y))))
 	:rule-classes ,(extend-rule-classes :WELL-FOUNDED-RELATION
-					    rule-classes))     
+					    rule-classes))
      `(defcong MUL::equal-set iff (,for-exis l m) 1
 	:event-name ,cong-name1
 	:hints (("Goal"
@@ -604,7 +604,7 @@
 			(MUL::exists-rel-bigger ,rel-bigg)
 			(MUL::forall-exists-rel-bigger ,for-exis)))
 		 :hands-off (,n-mp ,n-fn ,n-rel))))
-     
+
      `(defcong MUL::equal-set iff (,for-exis l m) 2
 	:event-name ,cong-name2
 	:hints (("Goal"
@@ -657,17 +657,17 @@
 			       n-rel "-BIGGER-2"))
 	  n-rel))
 	(mult-th
-	 (packn-in-pkg 
+	 (packn-in-pkg
 	  (append prefix (list "MULTISET-EXTENSION-OF-" n-rel "-WELL-FOUNDED"))
 	  n-rel))
 	(mult-lm
-	 (packn-in-pkg 
+	 (packn-in-pkg
 	  (append prefix (list "MULTISET-EXTENSION-OF-" n-rel "-WELL-FOUNDED-LEMMA"))
 	  n-rel))
 	)
 
     (list
-      
+
      `(defthm ,new-mp-multiset-diff
 	(implies (,new-mp m)
 	  (,new-mp (multiset-diff m n)))
@@ -683,7 +683,7 @@
 		 :hands-off (,n-mp ,n-rel))))
      `(defthm ,mult-lm
 	(and (implies (,new-mp x) (e0-ordinalp (,map-fn x)))
-	     (implies (and (,new-mp x)                   
+	     (implies (and (,new-mp x)
 			   (,new-mp y)
 			   (,m-rel x y))
 	       (e0-ord-< (,map-fn x) (,map-fn y))))
@@ -702,7 +702,7 @@
 			(MUL::fn (lambda (x) x)))))))
      `(defthm ,mult-th
 	(and (implies (,new-mp x) (o-p (,final-map-fn x)))
-	     (implies (and (,new-mp x)                   
+	     (implies (and (,new-mp x)
 			   (,new-mp y)
 			   (,m-rel x y))
 	       (o< (,final-map-fn x) (,final-map-fn y))))
@@ -720,7 +720,7 @@
 			(MUL::rel ,n-rel)
 			(MUL::exists-rel-bigger ,rel-bigg)
 			(MUL::forall-exists-rel-bigger ,for-exis))))))
-     
+
      `(defcong MUL::equal-set iff (,for-exis l m) 2
 	:event-name ,cong-name2
 	:hints (("Goal"
@@ -751,7 +751,7 @@
 	(varx (car (cddddr list)))
 	(vary (cadr (cddddr list)))
 	(l-prefix (if prefix (list prefix "-") nil)))
-    (append 
+    (append
      (if (eq n-mp t)
 	 nil
 	 (defmul-events-mp l-prefix verify-guards n-mp))
@@ -776,7 +776,7 @@
 (defmacro defmul (list &key prefix
 		       (verify-guards 'nil)
 		       (rule-classes '(:WELL-FOUNDED-RELATION)))
-  `(encapsulate 
+  `(encapsulate
     ()
     ,@(defmul-events list prefix verify-guards rule-classes)))
 
@@ -792,35 +792,35 @@
 ;   know:
 ;   - <rel>: The well-founded relation defined on A.
 ;   - <theorem>: The theorem with rule class \"well-founded-relation\"
-;     associated with <rel>. 
+;     associated with <rel>.
 ;   - <mp>: The measure property defining the set A.
 ;   - <fn>: The embedding justifying the well-foundedness of <rel>.
 ;   - <varx>, <vary>: The variables used in the <theorem>.
 ;   and eval the \"defmul\" macro with the list of these components:
-; 
+;
 ;   (defmul (<rel> <theorem> <mp> <fn> <varx> <vary>))
-; 
+;
 ; The main non-local events generated by this macro call are:
-; 
-;   - the definitions needed for the multiset relation induced by <rel>: 
+;
+;   - the definitions needed for the multiset relation induced by <rel>:
 ;     functions exists-<rel>-bigger, forall-exists-<rel>-bigger and
-;     mul-<rel>. 
+;     mul-<rel>.
 ;   - the definition of the multiset measure property, <mp>-true-listp.
-;   - the definition of mp-<fn>-e0-ord, the embedding function from 
+;   - the definition of mp-<fn>-e0-ord, the embedding function from
 ;     multisets to ordinals.
-;   - the well-foundedness theorem for mul-<rel>, named 
+;   - the well-foundedness theorem for mul-<rel>, named
 ;     multiset-extension-of-<rel>-well-founded.
-; 
+;
 ; To see the complete list of generated events use :trans1 on a defmul call.
-; 
+;
 ; We expect defmul to work without assistance from the user. After the
 ; above call to defmul, the function mul-<rel> is defined as a
 ; well-founded relation on multisets of elements satisfying the property
 ; <mp>, induced by the well-founded relation <rel>. From
 ; this moment on, mul-<rel> can be used in the admissibility test
 ; for recursive functions to show that the recursion terminates.
-; 
-; 
+;
+;
 ; This macro has three optionals arguments:
 ;   :prefix <prefix> : With this argument we can use <prefix> as a prefix for
 ;     the names of the events builded.
@@ -830,53 +830,53 @@
 ;     :well-founded-relation.
 ;   :verify-guards <expr> : The value of <expr> must be T or NIL. With this
 ;     argument we can decide when the guards of the functions builded must be
-;     verified on definition time. 
-; 
+;     verified on definition time.
+;
 ; To know the list of names that we need to supply to a  \"defmul\" call, we
 ;   have developed a tool to look up the Acl2 \"world\" and print that list:
-; 
+;
 ;   (defmul-components <rel>)
-; 
+;
 ; This is only an informative tool, not a event. This macro looks up the Acl2
 ;   \"world\", and informs if some symbols (those that the \"defmul\" macro
 ;   builds) have been already defined. As the \"defmul\" macro, has one
 ;   optional argument to propose a prefix:
 ;   :prefix <prefix> : With this argument we can use <prefix> as a prefix for
 ;     the names of the events builded.
-; 
+;
 ; An example:
-; 
-;   (encapsulate 
+;
+;   (encapsulate
 ;    ((my-mp (v) booleanp)
 ;     (my-rel (v w) booleanp)
 ;     (my-fn (v) e0-ordinalp))
-;   
+;
 ;    (local (defun my-mp (v) (declare (ignore v)) nil))
 ;    (local (defun my-rel (v w) (declare (ignore v w)) nil))
 ;    (local (defun my-fn (v) (declare (ignore v)) 1))
-;   
+;
 ;    (defthm my-rel-well-founded-relation
 ;      (and (implies (my-mp v) (e0-ordinalp (my-fn v)))
-;   	   (implies (and (my-mp v) 
+;   	   (implies (and (my-mp v)
 ;   			 (my-mp w)
 ;   			 (my-rel v w))
 ;   	     (e0-ord-< (my-fn v) (my-fn w)))))
 ;  ;    :rule-classes :well-founded-relation) ; commented out for v2-8 ordinals changes
-;    
+;
 ;    (defun map-my-fn-e0-ord (l)
 ;      l))
-;   
+;
 ;   ; (defmul-components my-rel)
 ;   ; => WARNING: The symbol MAP-MY-FN-E0-ORD is defined yet. Perhaps you must
-;   ;    use the :PREFIX option. 
+;   ;    use the :PREFIX option.
 ;   ;
-;   ;    The list of components is: 
+;   ;    The list of components is:
 ;   ;     (MY-REL MY-REL-WELL-FOUNDED-RELATION MY-MP MY-FN V W)
 ;   ;
 ;   ; (defmul-components my-rel :prefix new)
 ;   ; => The list of components is:
 ;   ;     (MY-REL MY-REL-WELL-FOUNDED-RELATION MY-MP MY-FN V W)
-;   
+;
 ;   (defmul (MY-REL MY-REL-WELL-FOUNDED-RELATION MY-MP MY-FN V W)
 ;     :prefix new :rule-classes :rewrite)
 ; ~/")
@@ -891,34 +891,34 @@
    know:
    - &lt;rel&gt;: The well-founded relation defined on A.
    - &lt;theorem&gt;: The theorem with rule class \"well-founded-relation\"
-     associated with &lt;rel&gt;. 
+     associated with &lt;rel&gt;.
    - &lt;mp&gt;: The measure property defining the set A.
    - &lt;fn&gt;: The embedding justifying the well-foundedness of &lt;rel&gt;.
    - &lt;varx&gt;, &lt;vary&gt;: The variables used in the &lt;theorem&gt;.
    and eval the \"defmul\" macro with the list of these components:</p>
- 
+
  <p>(defmul (&lt;rel&gt; &lt;theorem&gt; &lt;mp&gt; &lt;fn&gt; &lt;varx&gt; &lt;vary&gt;))</p>
- 
+
  <p>The main non-local events generated by this macro call are:</p>
- 
- <p>- the definitions needed for the multiset relation induced by &lt;rel&gt;: 
+
+ <p>- the definitions needed for the multiset relation induced by &lt;rel&gt;:
      functions exists-&lt;rel&gt;-bigger, forall-exists-&lt;rel&gt;-bigger and
-     mul-&lt;rel&gt;. 
+     mul-&lt;rel&gt;.
    - the definition of the multiset measure property, &lt;mp&gt;-true-listp.
-   - the definition of mp-&lt;fn&gt;-e0-ord, the embedding function from 
+   - the definition of mp-&lt;fn&gt;-e0-ord, the embedding function from
      multisets to ordinals.
-   - the well-foundedness theorem for mul-&lt;rel&gt;, named 
+   - the well-foundedness theorem for mul-&lt;rel&gt;, named
      multiset-extension-of-&lt;rel&gt;-well-founded.</p>
- 
+
  <p>To see the complete list of generated events use :trans1 on a defmul call.</p>
- 
+
  <p>We expect defmul to work without assistance from the user. After the
  above call to defmul, the function mul-&lt;rel&gt; is defined as a
  well-founded relation on multisets of elements satisfying the property
  &lt;mp&gt;, induced by the well-founded relation &lt;rel&gt;. From
  this moment on, mul-&lt;rel&gt; can be used in the admissibility test
  for recursive functions to show that the recursion terminates.</p>
- 
+
  <p>This macro has three optionals arguments:
    :prefix &lt;prefix&gt; : With this argument we can use &lt;prefix&gt; as a prefix for
      the names of the events builded.
@@ -929,53 +929,53 @@
    :verify-guards &lt;expr&gt; : The value of &lt;expr&gt; must be T or NIL. With this
      argument we can decide when the guards of the functions builded must be
      verified on definition time. </p>
- 
+
  <p>To know the list of names that we need to supply to a  \"defmul\" call, we
    have developed a tool to look up the Acl2 \"world\" and print that list:</p>
- 
+
  <p>(defmul-components &lt;rel&gt;)</p>
- 
+
  <p>This is only an informative tool, not a event. This macro looks up the Acl2
    \"world\", and informs if some symbols (those that the \"defmul\" macro
    builds) have been already defined. As the \"defmul\" macro, has one
    optional argument to propose a prefix:
    :prefix &lt;prefix&gt; : With this argument we can use &lt;prefix&gt; as a prefix for
      the names of the events builded.</p>
- 
+
  <p>An example:</p>
- 
- <p>(encapsulate 
+
+ <p>(encapsulate
     ((my-mp (v) booleanp)
      (my-rel (v w) booleanp)
      (my-fn (v) e0-ordinalp))
-   
+
     (local (defun my-mp (v) (declare (ignore v)) nil))
     (local (defun my-rel (v w) (declare (ignore v w)) nil))
     (local (defun my-fn (v) (declare (ignore v)) 1))
-   
+
     (defthm my-rel-well-founded-relation
       (and (implies (my-mp v) (e0-ordinalp (my-fn v)))
-   	   (implies (and (my-mp v) 
+   	   (implies (and (my-mp v)
    			 (my-mp w)
    			 (my-rel v w))
    	     (e0-ord-&lt; (my-fn v) (my-fn w)))))
   ;    :rule-classes :well-founded-relation) ; commented out for v2-8 ordinals changes
-    
+
     (defun map-my-fn-e0-ord (l)
       l))
-   
+
    ; (defmul-components my-rel)
    ; =&gt; WARNING: The symbol MAP-MY-FN-E0-ORD is defined yet. Perhaps you must
-   ;    use the :PREFIX option. 
+   ;    use the :PREFIX option.
    ;
-   ;    The list of components is: 
+   ;    The list of components is:
    ;     (MY-REL MY-REL-WELL-FOUNDED-RELATION MY-MP MY-FN V W)
    ;
    ; (defmul-components my-rel :prefix new)
    ; =&gt; The list of components is:
    ;     (MY-REL MY-REL-WELL-FOUNDED-RELATION MY-MP MY-FN V W)
-   
+
    (defmul (MY-REL MY-REL-WELL-FOUNDED-RELATION MY-MP MY-FN V W)
      :prefix new :rule-classes :rewrite)
- 
+
  </p>")

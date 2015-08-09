@@ -23,7 +23,7 @@
                 (< I *EXPT-2-32*))
            (EQUAL (BITS I 31 0)
                   I))
-  :HINTS (("Goal" 
+  :HINTS (("Goal"
            :IN-THEORY (ENABLE bits-reduce))))
 
 (DEFTHM BVECP-BITN

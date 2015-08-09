@@ -1118,7 +1118,7 @@ construct fast alists binding identifiers to things, etc.</p>"
                       (implies (and (vl-keyvallist-p x)
                                     (consp x))
                                (consp (car x))))))
-  
+
   :guard (equal (len subexprs)
                 (len (vl-keyvallist->subexprs x)))
   :returns (new-x vl-keyvallist-p)
@@ -1274,7 +1274,7 @@ construct fast alists binding identifiers to things, etc.</p>"
       :vl-stream
       (let ((nsizeexprs (len (vl-slicesize->subexprs x.size))))
         (change-vl-stream
-         x 
+         x
          :size (vl-slicesize-update-subexprs x.size (take nsizeexprs subexprs))
          :parts (vl-streamexprlist-update-subexprs x.parts (nthcdr nsizeexprs subexprs))))
       :vl-call
