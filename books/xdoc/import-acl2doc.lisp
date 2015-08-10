@@ -305,9 +305,9 @@ find what you want.</p>")
   (pairlis$ (xdoc::all-topic-names topics)
             (all-topic-froms topics)))
 
-;; ACL2::UNSIGNED-BYTE-P-LEMMAS: unknown: Not logical name: 
+;; ACL2::UNSIGNED-BYTE-P-LEMMAS: unknown: Not logical name:
 ;; ACL2::UNSIGNED-BYTE-P-LEMMAS.
-;; ACL2::SIGNED-BYTE-P-LEMMAS: unknown: Not logical name: 
+;; ACL2::SIGNED-BYTE-P-LEMMAS: unknown: Not logical name:
 ;; ACL2::SIGNED-BYTE-P-LEMMAS.
 ;; ACL2::IHS: unknown: Not logical name: ACL2::IHS.
 ;; ACL2::DATA-STRUCTURES: unknown: Not logical name: ACL2::DATA-STRUCTURES.

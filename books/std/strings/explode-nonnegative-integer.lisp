@@ -137,7 +137,7 @@
                 (revappend (basic-eni-core n base) acc))))
 
 (local (defthm equal-of-simpler-explode-nonnegative-integers
-         (implies (force (print-base-p base))                         
+         (implies (force (print-base-p base))
                   (equal (equal (simpler-explode-nonnegative-integer n base acc)
                                 (simpler-explode-nonnegative-integer m base acc))
                          (equal (nfix n) (nfix m))))))
@@ -288,7 +288,7 @@
                    char))
    :hints(("Goal" :use ((:instance l1 (i (char-code char))))))))
 
-            
+
 (defund basic-unexplode-core (x)
   (declare (xargs :guard (and (character-listp x)
                               (str::digit-listp x))))

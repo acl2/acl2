@@ -6,7 +6,7 @@
 (include-book "exp-properties")
 
 (local
- (defun ln-domain-p (x) 
+ (defun ln-domain-p (x)
   (and (realp x)
        (< 0 x))))
 
@@ -34,9 +34,9 @@
             (standardp (acl2-ln-for-positive x))))
 
 ; In order to prove that acl2-ln is limited for any non-small x, I
-; use the fact that acl2-exp is large for large, positive x. I prove that by 
-; establishing x as a (loose) lower bound for acl2-exp. The first two terms 
-; in acl2-exp's Taylor series expansions are 1+x and all subsequent terms 
+; use the fact that acl2-exp is large for large, positive x. I prove that by
+; establishing x as a (loose) lower bound for acl2-exp. The first two terms
+; in acl2-exp's Taylor series expansions are 1+x and all subsequent terms
 ; are positive, which proves the power bound.
 (local
  (defthm taylor-exp-term-positive
@@ -46,7 +46,7 @@
                 (< 0 counter))
            (< 0 (taylor-exp-term x counter)))))
 
-(local 
+(local
  (defthm taylor-exp-list-positive
   (implies (and (realp x)
                 (< 0 x)
@@ -68,7 +68,7 @@
             :expand (taylor-exp-list nterms 0 x))
            ("Goal'"
             :expand (TAYLOR-EXP-LIST (+ -1 NTERMS) 1 X)))))
-         
+
 (local
  (defthm expand-out-exp-list-lemma
    (implies (and (acl2-numberp x)
@@ -92,7 +92,7 @@
                              (nterms (- nterms 2))
                              (counter 2)
                              (x x)))))))
-                            
+
 
 (local
  (defthm i-large-integer->-3
@@ -105,7 +105,7 @@
   (implies (and (realp x)
                 (< 0 x))
            (<= x (acl2-exp x)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance expand-out-exp-list-less
                            (nterms (i-large-integer))
                            (x x))
@@ -158,7 +158,7 @@
            (< 0 (acl2-ln-for-positive x)))
   :hints (("Goal" :use (:instance acl2-ln-for-positive-increasing
                                   (x 1) (y x)))))
-  
+
 (defthm ln-for-positive-limited->-1
   (implies (and (i-limited x)
                 (realp x)
@@ -166,7 +166,7 @@
            (i-limited (acl2-ln-for-positive x)))
   :hints (("Goal"
            :in-theory (disable exp-large-for-positive-large)
-           :use (:instance exp-large-for-positive-large 
+           :use (:instance exp-large-for-positive-large
                            (x (acl2-ln-for-positive x))))))
 
 (local
@@ -175,7 +175,7 @@
                  (not (i-small x)))
             (not (i-large (/ x))))
    :hints (("Goal" :in-theory (enable i-small i-large)))))
-          
+
 (local
  (defthm ln-for-positive-limited-<-1
    (implies (and (not (i-small x))
@@ -219,7 +219,7 @@
    (implies (and (realp x) (< 0 x) (not (i-small x))
                  (realp y))
             (not (i-small (+ x (* y y)))))))
-                
+
 
 (defthm i-small-sqrt
   (implies (and (realp x)
@@ -270,7 +270,7 @@
            (equal (i-large (acl2-sqrt x))
                   (i-large x)))
   :hints (("Goal" :use (:instance i-large-* (x (acl2-sqrt x))))))
-  
+
 (local
  (defthm large-*-+
   (implies (and (realp x)
@@ -331,7 +331,7 @@
            :use ((:instance zero-is-small (x (radiuspart x)))
                  (:instance number-limited (x (acl2-ln x)))
                  (:instance ln-for-positive-limited (x (radiuspart x)))))))
-                
+
 (defthm-std acl2-ln-standard
   (implies (standardp x)
            (standardp (acl2-ln x)))
@@ -345,10 +345,10 @@
                  (i-limited x)
                  (i-limited y)
                  (i-close x y))
-           
+
             (i-close (acl2-exp (acl2-ln x)) (acl2-exp (acl2-ln y))))))
 
-(local 
+(local
  (defthm acl2-ln-continuous-lemma-2
    (implies (and (realp x) (< 0 x)
                  (realp y) (< 0 y)
@@ -365,7 +365,7 @@
             :in-theory (enable-disable (i-close i-small)
                                        (exp-ln acl2-ln-continuous-lemma-1
                                                acl2-exp-standard-part-out
-                                               i-close-limited 
+                                               i-close-limited
                                                i-close-limited-2
                                                LIMITED+LARGE->LARGE
                                                ))))))
@@ -384,7 +384,7 @@
                            (y (standard-part (acl2-ln y))))
                  (:instance acl2-ln-continuous-lemma-2)))))
 
-           
+
 (defthm acl2-ln-real-derivative
   (implies (and (realp x) (< 0 x)
                 (realp y) (< 0 y)
@@ -394,7 +394,7 @@
                        (- x y))
                     (/ x)))
   :hints (("Goal"
-           :use (:functional-instance 
+           :use (:functional-instance
                  inverse-g-close
                  (inverse-f acl2-exp)
                  (inverse-f-domain-p exp-domain-p)
@@ -416,18 +416,18 @@
                     (/ x)))
   :hints (("Goal" :use (:instance acl2-ln-real-derivative))))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-acl2-ln
  (acl2-ln x)
  (and (realp x) (< 0 x)))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-acl2-ln-prime
  (/ x)
  (and (realp x) (< 0 x)))
 
 
-(def-elem-derivative acl2-ln 
+(def-elem-derivative acl2-ln
   elem-acl2-ln
   (and (realp x) (< 0 x))
   (/ x))

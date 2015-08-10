@@ -92,7 +92,7 @@
       :tvs (rep-tvs (maxf) (tvs st))))
 
 
-(defun rank>-thf (f) 
+(defun rank>-thf (f)
   (let ((loc (loc f)))
     (cond ((= loc 1) 3)
           ((= loc 2) 2)
@@ -124,7 +124,7 @@
 (in-theory (disable indexp))
 
 
-(defun rank0-thf (f) 
+(defun rank0-thf (f)
   (let ((loc (loc f)))
     (cond ((= loc 1) 0)
           ((= loc 2) 3)
@@ -185,7 +185,7 @@
    (implies (and (indexp i N)
                  (xgo val)
                  (equal (ctr val) ctr)
-                 (not (equal (ctr (<- tvs i)) ctr)))                
+                 (not (equal (ctr (<- tvs i)) ctr)))
             (equal (miss-count (-> tvs i val) N ctr)
                    (1- (miss-count tvs N ctr))))
    :hints (("Goal" :in-theory (enable posp))
@@ -223,7 +223,7 @@
           ((= loc 3) 4)
           ((= loc 4) 3)
           ((= loc 0) 2)
-          ((or (= loc 1) 
+          ((or (= loc 1)
                (= loc 5)) 1)
           (t 3))))
 
@@ -238,7 +238,7 @@
 
 
 (DEFUN commit (st in)
-  (let ((thf (<- (tvs st) 
+  (let ((thf (<- (tvs st)
                  (thf (ndx in))))
         (onr (onr st))
         (shr (shr st)))
@@ -251,7 +251,7 @@
             (0 (psh in))
             (3 (implies (itm onr)
                         (and (ctr onr)
-                             (not (= (ctr onr) 
+                             (not (= (ctr onr)
                                      (ctr shr))))))))))
 
 (DEFUN pick (st in)
@@ -410,7 +410,7 @@
 (DEFUN inv (st)
   (and (inv-shr (shr st))
        (inv-onr (onr st) (shr st))
-       (inv-tvs (tvs st) (shr st) 
+       (inv-tvs (tvs st) (shr st)
                 (onr st) (maxf))))
 
 ;;;; END invariant definition ;;;;
@@ -472,7 +472,7 @@
            (inv-tvs (-> x i (r-thf-f f s))
                     (r-thf-s f s) o
                     N))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
            (disable r-thf-f r-thf-s inv-shr inv-thf))
           ("Subgoal *1/6" :cases ((equal i n)))))
 
@@ -492,13 +492,13 @@
   (implies (and (indexp i (maxf))
                 (inv-tvs x s o (maxf)))
            (inv-thf (<- x i) s o))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
            (:instance inv-tvs-implies-inv-thf
                       (N (maxf))))))
 
 (DEFTHM >>-invariant-persistent
   (implies (inv st) (inv (intr+ st in)))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
            (disable r-thf-f r-thf-s r-onr-o r-onr-s
                     inv-thf inv-shr inv-onr
                     thf-inv-shr-thm)

@@ -12,7 +12,7 @@
 
 ; (certify-book "time-dollar-with-gc" 0 t :ttags :all)
 
-(progn! 
+(progn!
  (set-raw-mode t)
  (load (concatenate 'string (cbd) "time-dollar-with-gc-raw.lsp")))
 

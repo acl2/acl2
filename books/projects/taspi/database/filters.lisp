@@ -22,7 +22,7 @@
   (if (consp tree-tbl)
       (if (equal (get-analysis-id (car tree-tbl)) analysis-id)
           (cons (get-tree (car tree-tbl))
-                (get-trees-with-analysis-id analysis-id 
+                (get-trees-with-analysis-id analysis-id
                                             (cdr tree-tbl)))
         (get-trees-with-analysis-id analysis-id
                                     (cdr tree-tbl)))
@@ -34,19 +34,19 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table whose entries have the given 
+;  Returns tree ids from the tree table whose entries have the given
 ;  analysis-id.~/
 ;  ~/
 ;  Arguments:
 ;    (1) analysis-id - an id
 ;    (2) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (good-tree-table tree-tbl)))
   (if (consp tree-tbl)
       (if (equal (get-analysis-id (car tree-tbl)) analysis-id)
           (cons (get-id (car tree-tbl))
-                (get-tree-ids-with-analysis-id analysis-id 
+                (get-tree-ids-with-analysis-id analysis-id
                                             (cdr tree-tbl)))
         (get-tree-ids-with-analysis-id analysis-id
                                        (cdr tree-tbl)))
@@ -73,7 +73,7 @@
             (cons (get-tree (car tree-tbl))
                   (get-trees-with-analysis-ids analysis-ids
                                                (cdr tree-tbl)))
-          (get-trees-with-analysis-ids analysis-ids 
+          (get-trees-with-analysis-ids analysis-ids
                                        (cdr tree-tbl))))
     nil))
 
@@ -83,13 +83,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table whose entries have one of the given 
+;  Returns tree ids from the tree table whose entries have one of the given
 ;  analysis-ids.~/
 ;  ~/
 ;  Arguments:
 ;    (1) analysis-ids - a list of ids
 ;    (2) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (good-tree-table tree-tbl)))
   (if (consp tree-tbl)
@@ -98,7 +98,7 @@
             (cons (get-id (car tree-tbl))
                   (get-tree-ids-with-analysis-ids analysis-ids
                                                   (cdr tree-tbl)))
-          (get-tree-ids-with-analysis-ids analysis-ids 
+          (get-tree-ids-with-analysis-ids analysis-ids
                                           (cdr tree-tbl))))
     nil))
 
@@ -111,7 +111,7 @@
   (equal (get-trees-with-analysis-id analysis-id (cons first rest))
          (if (equal (get-analysis-id first) analysis-id)
              (cons (get-tree first)
-                   (get-trees-with-analysis-id analysis-id 
+                   (get-trees-with-analysis-id analysis-id
                                                rest))
            (get-trees-with-analysis-id analysis-id
                                        rest))))
@@ -137,7 +137,7 @@
   (equal (get-trees-with-analysis-ids analysis-ids (cons first rest))
          (if (member-gen (get-analysis-id first) analysis-ids)
              (cons (get-tree first)
-                   (get-trees-with-analysis-ids analysis-ids 
+                   (get-trees-with-analysis-ids analysis-ids
                                                rest))
            (get-trees-with-analysis-ids analysis-ids
                                        rest))))
@@ -160,21 +160,21 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns analysis ids from the analysis table whose entries have the given 
+;  Returns analysis ids from the analysis table whose entries have the given
 ;  taxon.~/
 ;  ~/
 ;  Arguments:
 ;    (1) taxon - a taxon name
 ;    (2) analysis-tbl - an analysis table
-;  
-;  "  
+;
+;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
       (if (member-gen taxon (get-taxa-list (car analysis-tbl)))
           (cons (get-id (car analysis-tbl))
-                (get-analysis-ids-with-taxon taxon 
+                (get-analysis-ids-with-taxon taxon
                                              (cdr analysis-tbl)))
-        (get-analysis-ids-with-taxon taxon 
+        (get-analysis-ids-with-taxon taxon
                                      (cdr analysis-tbl)))
     nil))
 
@@ -190,7 +190,7 @@
 ;    (1) taxon - a taxon name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -209,17 +209,17 @@
 ;    (1) taxon - a taxon name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
-;  "  
+;
+;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-taxon taxon analysis-tbl)))
     (get-tree-ids-with-analysis-ids analysis-ids tree-tbl)))
-   
+
 (defthm tree-listp-get-trees-with-taxon
   (implies (good-tree-table tree-tbl)
-           (tree-listp (get-trees-with-taxon taxon 
-                                             analysis-tbl 
+           (tree-listp (get-trees-with-taxon taxon
+                                             analysis-tbl
                                              tree-tbl))))
 
 (defthm taspip-nil-get-trees-with-taxon
@@ -238,13 +238,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns analysis ids from the analysis table that have the given set of 
+;  Returns analysis ids from the analysis table that have the given set of
 ;  taxa.~/
 ;  ~/
 ;  Arguments:
 ;    (1) taxa - a list of taxa name
 ;    (2) analysis-tbl - an analysis table
-;  
+;
 ;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
@@ -260,14 +260,14 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns trees from the tree table that have the given set of 
+;  Returns trees from the tree table that have the given set of
 ;  taxa.~/
 ;  ~/
 ;  Arguments:
 ;    (1) taxa - a list of taxa name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -280,14 +280,14 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns trees from the tree table that have the given set of 
+;  Returns trees from the tree table that have the given set of
 ;  taxa.~/
 ;  ~/
 ;  Arguments:
 ;    (1) taxa - a list of taxa name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -311,15 +311,15 @@
 (defthm not-member-get-ids-through-get-analysis-ids-with-taxa
   (implies (and (good-analysis-table y)
                 (not (member-gen x (get-ids y))))
-           (not (member-gen x (get-analysis-ids-with-taxa 
+           (not (member-gen x (get-analysis-ids-with-taxa
                                taxa y))))
   :hints (("Goal" :in-theory (enable get-id))))
 
 (defthm member-id-ids-with-taxa-subset-mytips
   (implies (and (good-analysis-table analysis-tbl)
-                (member-gen 
-                 x 
-                 (get-analysis-ids-with-taxa taxa 
+                (member-gen
+                 x
+                 (get-analysis-ids-with-taxa taxa
                                              analysis-tbl)))
            (subset taxa (get-taxa-list
                          (get-entry-by-id x analysis-tbl))))
@@ -334,35 +334,35 @@
   (implies (and (good-tree-table tree-tbl)
                 (good-analysis-table analysis-tbl)
                 (check-for-good-tree-tl analysis-tbl tree-tbl))
-           (subset-each taxa (mytips-list (get-trees-with-taxa 
-                                           taxa 
-                                           analysis-tbl 
+           (subset-each taxa (mytips-list (get-trees-with-taxa
+                                           taxa
+                                           analysis-tbl
                                            tree-tbl))))
-  :hints (("Subgoal *1/4.4'''" :in-theory 
+  :hints (("Subgoal *1/4.4'''" :in-theory
            (disable member-id-ids-with-taxa-subset-mytips)
            :use (:instance
                  member-id-ids-with-taxa-subset-mytips
-                 (x (get-analysis-id (cons tree-tbl3 
+                 (x (get-analysis-id (cons tree-tbl3
                                            tree-tbl4)))))
-          ("Subgoal *1/4.3'''" :in-theory 
+          ("Subgoal *1/4.3'''" :in-theory
            (disable member-id-ids-with-taxa-subset-mytips)
            :use (:instance
                  member-id-ids-with-taxa-subset-mytips
-                 (x (get-analysis-id (cons tree-tbl3 
+                 (x (get-analysis-id (cons tree-tbl3
                                            tree-tbl4)))))
-          ("Subgoal *1/4.2'''" :in-theory 
+          ("Subgoal *1/4.2'''" :in-theory
            (disable member-id-ids-with-taxa-subset-mytips)
            :use (:instance
                  member-id-ids-with-taxa-subset-mytips
-                 (x (get-analysis-id (cons tree-tbl3 
+                 (x (get-analysis-id (cons tree-tbl3
                                            tree-tbl4)))))
-          ("Subgoal *1/4.1'''" :in-theory 
+          ("Subgoal *1/4.1'''" :in-theory
            (disable member-id-ids-with-taxa-subset-mytips)
            :use (:instance
                  member-id-ids-with-taxa-subset-mytips
-                 (x (get-analysis-id (cons tree-tbl3 
+                 (x (get-analysis-id (cons tree-tbl3
                                            tree-tbl4)))))))
-             
+
 (defthm good-analysis-table-of-consp
   (implies (good-analysis-table (cons first rest))
            (and (good-analysis-entry first)
@@ -387,13 +387,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns analysis ids from the analysis table that have the given number 
+;  Returns analysis ids from the analysis table that have the given number
 ;  taxa.~/
 ;  ~/
 ;  Arguments:
 ;    (1) n - an integer
 ;    (2) analysis-tbl - an analysis table
-;  
+;
 ;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
@@ -450,12 +450,12 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns analysis ids from the analysis table that have the given method.~/ 
+;  Returns analysis ids from the analysis table that have the given method.~/
 ;  ~/
 ;  Arguments:
 ;    (1) method - a method name
 ;    (2) analysis-tbl - an analysis table
-;  
+;
 ;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
@@ -472,13 +472,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns trees from the tree table that have the given method.~/ 
+;  Returns trees from the tree table that have the given method.~/
 ;  ~/
 ;  Arguments:
 ;    (1) method - a method name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -491,20 +491,20 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given method.~/ 
+;  Returns tree ids from the tree table that have the given method.~/
 ;  ~/
 ;  Arguments:
 ;    (1) method - a method name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
   (let ((analysis-ids (get-analysis-ids-with-method method analysis-tbl)))
     (get-tree-ids-with-analysis-ids analysis-ids tree-tbl)))
 
-;; date 
+;; date
 
 (defun get-analysis-ids-with-date (date analysis-tbl)
 
@@ -512,13 +512,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given date.~/ 
+;  Returns tree ids from the tree table that have the given date.~/
 ;  ~/
 ;  Arguments:
 ;    (1) date - a date name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
@@ -535,13 +535,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns trees from the tree table that have the given date.~/ 
+;  Returns trees from the tree table that have the given date.~/
 ;  ~/
 ;  Arguments:
 ;    (1) date - a date name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -554,13 +554,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given date.~/ 
+;  Returns tree ids from the tree table that have the given date.~/
 ;  ~/
 ;  Arguments:
 ;    (1) date - a date name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -575,13 +575,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given author.~/ 
+;  Returns tree ids from the tree table that have the given author.~/
 ;  ~/
 ;  Arguments:
 ;    (1) author - a author name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
@@ -598,13 +598,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns trees from the tree table that have the given author.~/ 
+;  Returns trees from the tree table that have the given author.~/
 ;  ~/
 ;  Arguments:
 ;    (1) author - a author name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -617,13 +617,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given author.~/ 
+;  Returns tree ids from the tree table that have the given author.~/
 ;  ~/
 ;  Arguments:
 ;    (1) author - a author name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -638,13 +638,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given tool.~/ 
+;  Returns tree ids from the tree table that have the given tool.~/
 ;  ~/
 ;  Arguments:
 ;    (1) tool - a tool name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
@@ -661,13 +661,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns trees from the tree table that have the given tool.~/ 
+;  Returns trees from the tree table that have the given tool.~/
 ;  ~/
 ;  Arguments:
 ;    (1) tool - a tool name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -680,13 +680,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given tool.~/ 
+;  Returns tree ids from the tree table that have the given tool.~/
 ;  ~/
 ;  Arguments:
 ;    (1) tool - a tool name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -701,13 +701,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given data type.~/ 
+;  Returns tree ids from the tree table that have the given data type.~/
 ;  ~/
 ;  Arguments:
 ;    (1) data-type - a data type name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
@@ -724,13 +724,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns trees from the tree table that have the given data type.~/ 
+;  Returns trees from the tree table that have the given data type.~/
 ;  ~/
 ;  Arguments:
 ;    (1) data-type - a data type name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -743,13 +743,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given data type.~/ 
+;  Returns tree ids from the tree table that have the given data type.~/
 ;  ~/
 ;  Arguments:
 ;    (1) data-type - a data-type name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -764,13 +764,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given model.~/ 
+;  Returns tree ids from the tree table that have the given model.~/
 ;  ~/
 ;  Arguments:
 ;    (1) model - a model name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (good-analysis-table analysis-tbl)))
   (if (consp analysis-tbl)
@@ -787,13 +787,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns trees from the tree table that have the given model.~/ 
+;  Returns trees from the tree table that have the given model.~/
 ;  ~/
 ;  Arguments:
 ;    (1) model - a model name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))
@@ -806,13 +806,13 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns tree ids from the tree table that have the given model.~/ 
+;  Returns tree ids from the tree table that have the given model.~/
 ;  ~/
 ;  Arguments:
 ;    (1) model - a model name
 ;    (2) analysis-tbl - an analysis table
 ;    (3) tree-tbl - a tree table
-;  
+;
 ;  "
   (declare (xargs :guard (and (good-analysis-table analysis-tbl)
                               (good-tree-table tree-tbl))))

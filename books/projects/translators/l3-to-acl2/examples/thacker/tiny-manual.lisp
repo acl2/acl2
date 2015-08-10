@@ -996,7 +996,7 @@ val Run_def = Def
    (('storeim v8) (dfn-storeim v8 st$))
    (& (assert! nil
                (mv (arb uty) st$)))))
-  
+
 #||
 
 ---------------------------------------------
@@ -1379,7 +1379,7 @@ val Next_def = Def
                     (2 a2)
                     (otherwise a3))))
   :hints (("Goal" :use bits-diff-1-forward)))
-                  
+
 (defun-struct next (st$)
   (declare (xargs :stobjs st$))
   (let ((v (decode (imi (pctr st$) st$))))
@@ -1701,9 +1701,9 @@ val LoadIM_def = tDef
       |- LoadIM_tupled =
          WFREC
            (@R.
-              WF R  
+              WF R
                state a i h t.
-                (i = h::t)  
+                (i = h::t)
                 R ((a + 1w,t),state with IM := (a =+ Encode h) state.IM)
                   ((a,i),state))
            ( LoadIM_tupled a'.
@@ -1731,7 +1731,7 @@ val LoadIM_def = tDef
 ||#
 
 ; !! Think about how to deal with the following, which cuts the time to admit
-; loadim from 78 seconds down to less than 1/10 second.  I made an attempt to 
+; loadim from 78 seconds down to less than 1/10 second.  I made an attempt to
 ; start proving type theorems in tiny.lisp.10, but I stumbled at dfn-jump,
 ; maybe simply because I hadn't proved all necessary type theorems yet.
 ; As of tiny.lisp.13.good, at least, this book certifies with the following

@@ -37,13 +37,13 @@ how to define the assertions so that we can derive the VCG obligations.
 (encapsulate
  (((cutpoint *) => *))
 
- (local 
-  (defun cutpoint (s) 
-    (or (pre s) 
+ (local
+  (defun cutpoint (s)
+    (or (pre s)
         (exitpoint s))))
 
  (defthm |pre implies cutpoint|
-   (implies (pre s) 
+   (implies (pre s)
             (cutpoint s)))
 
  (defthm |exitpoint implies cutpoint|
@@ -60,23 +60,23 @@ how to define the assertions so that we can derive the VCG obligations.
 ;; The assertion we wish to attach at s is that there exists a pre state p such
 ;; that this is s is reachable from p and there is no exitpoint in the path
 ;; from p to s.
-  
+
 ;; So I now define what is meant by there is no exitpoint along a path.  The
 ;; predicate no-exitpoint below says that there is no exitpoint from p within a
 ;; distance less than n.
 
-;; Then we define the predicate we wanted via quantification. 
+;; Then we define the predicate we wanted via quantification.
 
 ;; (defun-sk exists-some-exitpoint (s)
 ;;   (exists alpha (exitpoint (run-fn s alpha))))
-                     
+
 
 (local (in-theory (disable exists-some-exitpoint
                            exists-some-exitpoint-suff)))
 
 
 ;; (defun-sk exists-pre-state (s)
-;;   (exists (p m) 
+;;   (exists (p m)
 ;;           (and (pre p)
 ;;                (natp m)
 ;;                (equal s (run-fn p m))
@@ -97,8 +97,8 @@ how to define the assertions so that we can derive the VCG obligations.
 
 
 (defpun steps-to-cutpoint-tail (s i)
-  (if (cutpoint s) 
-      i 
+  (if (cutpoint s)
+      i
     (steps-to-cutpoint-tail (step-fn s) (1+ i))))
 
 (defun steps-to-cutpoint (s)
@@ -109,7 +109,7 @@ how to define the assertions so that we can derive the VCG obligations.
 
 ;; (step-fn-cutpoint s) is simply the closest cutpoint reachable from s.
 
-(defchoose default-state (s) () 
+(defchoose default-state (s) ()
   (not (cutpoint s)))
 
 
@@ -155,7 +155,7 @@ how to define the assertions so that we can derive the VCG obligations.
                    (implies (natp k)
                             (<= exitpoint-steps k))
                    (exitpoint (run-fn s exitpoint-steps)))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :induct (cutpoint-induction k steps s)))))
 
 ;; (local
@@ -250,7 +250,7 @@ how to define the assertions so that we can derive the VCG obligations.
                    (implies (natp k)
                             (<= cutpoint-steps k))
                    (cutpoint (run-fn s cutpoint-steps)))))
-   :hints (("Goal" 
+   :hints (("Goal"
             ;; :in-theory (enable natp)
             :induct (cutpoint-induction k steps s)))))
 
@@ -268,7 +268,7 @@ how to define the assertions so that we can derive the VCG obligations.
 ;; Notice that most of the theorems I deal with have a free variable in the
 ;; hypothesis. This is unfortunate but necessary. As a result I presume that
 ;; most of the theorems will not be proved by ACL2 automatically but often
-;; require :use hints. 
+;; require :use hints.
 
 (local
  (defthm steps-to-cutpoint-is-natp
@@ -306,7 +306,7 @@ how to define the assertions so that we can derive the VCG obligations.
 ;; cutpoint.  We now dive into the proof of the fact that if the assertion
 ;; holds and we are at an exitpoint then the postcondition holds too.  Now to
 ;; prove this we must show that the exitpoint satisfying the assertion is the
-;; (unique) step-fn-exitpoint of the witnessing pre state.  
+;; (unique) step-fn-exitpoint of the witnessing pre state.
 
 (local
  (defthmd exitpoint-implies-s=step-fn-exitpoint
@@ -338,13 +338,13 @@ how to define the assertions so that we can derive the VCG obligations.
                                           s))))
                  (:instance (:definition inv))))
           ("Subgoal 2.4.1"
-           :use ((:instance 
+           :use ((:instance
                   exists-some-exitpoint-suff
                   (s (car (inv-witness s)))
                   (alpha (mv-nth 1 (inv-witness s))))
                  (:instance (:definition inv))))
           ("Subgoal 2.4.2"
-           :use ((:instance 
+           :use ((:instance
                   clock-fn-is-natp
                   (s (car (inv-witness s)))
                   (k (mv-nth 1 (inv-witness s))))
@@ -506,7 +506,7 @@ how to define the assertions so that we can derive the VCG obligations.
                   (:instance exitpoint-and-not-exitpoint-implies-natp
                              (k (- (clock-fn p) m))
                              (s (run-fn p m))))))))
- 
+
 
 (local (in-theory (disable run-fn)))
 
@@ -523,7 +523,7 @@ how to define the assertions so that we can derive the VCG obligations.
    :rule-classes :forward-chaining
    :hints (("Goal"
             :in-theory (enable run-fn)))))
-                
+
 
 (local
  (defthmd run-fn-step-fn-=-run-fn-1+
@@ -557,7 +557,7 @@ how to define the assertions so that we can derive the VCG obligations.
                                 run-fn-+-reduction
                                 inv)
             :cases ((< (mv-nth 1 (inv-witness s))
-                       (clock-fn 
+                       (clock-fn
                         (car (inv-witness s))))))
            ("Subgoal 2"
             :use ((:instance inv)
@@ -570,7 +570,7 @@ how to define the assertions so that we can derive the VCG obligations.
                              (m (mv-nth 1 (inv-witness s)))
                              (n n))))
            ("Subgoal 2.3.1"
-           :use ((:instance 
+           :use ((:instance
                   exists-some-exitpoint-suff
                   (s (car (inv-witness s)))
                   (alpha (+ N
@@ -602,7 +602,7 @@ how to define the assertions so that we can derive the VCG obligations.
             :use ((:instance run-fn-+-reduction
                              (s (car (inv-witness s)))
                              (m (mv-nth 1 (inv-witness s)))))))))
-                  
+
 
 
 ;; OK so we are done.  We disable all the definitions since we have proved

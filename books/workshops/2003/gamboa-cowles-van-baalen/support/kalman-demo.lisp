@@ -158,4 +158,4 @@
 		  (:instance lemma-4)
 		  (:instance lemma-5)))))
  )
-  
+

@@ -78,7 +78,7 @@ independence of certain lemmas.
            (equal x y))
   :rule-classes :forward-chaining)
 
-;; We define a recognizer for a set of k-tuples. 
+;; We define a recognizer for a set of k-tuples.
 
 (defun tuple-setp (k A)
   (cond ((atom A) (equal A nil))
@@ -120,7 +120,7 @@ independence of certain lemmas.
   :rule-classes :forward-chaining)
 
 (defthm subset-cons
-  (implies (tuple-set-subsetp A B) 
+  (implies (tuple-set-subsetp A B)
            (tuple-set-subsetp A (cons e B))))
 
 (defthm tuple-set-subsetp-reflexive
@@ -251,13 +251,13 @@ independence of certain lemmas.
 		(tuple-setp k S)
 		(tuple-in-set x S))
 	   (natp (tuple-set-min-first S)))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :match-free :all
                   :trigger-terms ((tuple-setp k S)
                                   (tuple-in-set x S)))))
 
 (defun tuple-set->ordinal-partial-sum (k S i)
-  (declare (xargs :measure (o+ (o* (omega) (nfix k)) 
+  (declare (xargs :measure (o+ (o* (omega) (nfix k))
 			       (nfix (- (tuple-set-max-first S) i)))))
   (cond ((or (not (natp k)) (not (natp i))) 0)
 	((zp k) 0)
@@ -292,7 +292,7 @@ independence of certain lemmas.
 (defthm tuple-set->ordinal-partial-sum-produces-ordinal
   (o-p (tuple-set->ordinal-partial-sum k A i))
   :rule-classes ((:rewrite)
-		 (:forward-chaining 
+		 (:forward-chaining
 		  :trigger-terms ((tuple-set->ordinal-partial-sum K A i)))))
 
 (defthm tuple-set->ordinal-produces-ordinal
@@ -369,7 +369,7 @@ independence of certain lemmas.
 		  0)
 		 (map-lemma-1.1-induction-hint
 		  k A B (1+ i))))))
-  
+
 (in-theory (enable tuple-set-min-first-property))
 
 (defthm tuple-set-min-first-upper-bound
@@ -495,7 +495,7 @@ independence of certain lemmas.
 	  (tuple-setp k a)
 	  (posp k)
 	  (< 1 k))
-     (o<= (o^ (omega) 
+     (o<= (o^ (omega)
 	      (o+ (tuple-set->ordinal-partial-sum
 		   (+ -1 k)
 		   (tuple-set-projection (tuple-set-filter a (+ 1 i)))
@@ -504,7 +504,7 @@ independence of certain lemmas.
 	  (o^ (omega)
 	      (o+ (tuple-set->ordinal-partial-sum
 		   (+ -1 k)
-		   (tuple-set-projection 
+		   (tuple-set-projection
 		    (tuple-set-filter a i))
 		   0)
 		  1))))))
@@ -543,7 +543,7 @@ independence of certain lemmas.
 			      (c (o^ (omega)
 				     (o+ (tuple-set->ordinal-partial-sum
 					  (+ -1 k)
-					  (tuple-set-projection 
+					  (tuple-set-projection
 					   (tuple-set-filter a i))
 					  0)
 					 1)))))))))
@@ -944,7 +944,7 @@ independence of certain lemmas.
                 (tuple-set-subsetp A B)
                 (natural-tuplep k v)
                 (tuple-in-set v B)
-                (equal (tuple-set->ordinal-partial-sum k A 0) 
+                (equal (tuple-set->ordinal-partial-sum k A 0)
                        (tuple-set->ordinal-partial-sum k B 0))
                 (natp k)
 		(<= 1 k))
@@ -986,7 +986,7 @@ independence of certain lemmas.
 	  ("Subgoal *1/2.1''"
 	   :use ((:instance tuple-set-min-first-special
 			    (S A))))
-	  
+
 	  ("Subgoal *1/2.1'5'"
 	   :use ((:instance tuple-set-min-first-nat
 			    (k 1)
@@ -998,7 +998,7 @@ independence of certain lemmas.
                 (tuple-set-subsetp A B)
                 (natural-tuplep k v)
                 (tuple-in-set v B)
-                (equal (tuple-set->ordinal k A) 
+                (equal (tuple-set->ordinal k A)
                        (tuple-set->ordinal k B))
                 (natp k)
 		(<= 1 k))
@@ -1039,7 +1039,7 @@ independence of certain lemmas.
 		      k (rest S) (first S))))
 	   (o< (tuple-set->ordinal k S)
 	       (tuple-set->ordinal k (rest S))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance |b <= a & a <= b  =>  a = b|
 			    (a (TUPLE-SET->ORDINAL K S))
 			    (b (TUPLE-SET->ORDINAL K (CDR S))))

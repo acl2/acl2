@@ -1,4 +1,4 @@
-; Def-saved-obligs -- 
+; Def-saved-obligs --
 ; Copyright (C) 2013 Centaur Technology
 ;
 ; Contact:
@@ -32,7 +32,7 @@
 
 (include-book "std/util/support" :dir :system)
 
-(defxdoc def-saved-obligs 
+(defxdoc def-saved-obligs
   :parents (macro-libraries)
   :short "Save the proof obligations for a given event as separate defthms."
   :long "<p>Say you'd like to admit a function and verify its guards, but you
@@ -109,7 +109,7 @@ without :skip-proofs-okp.)</p> ")
       nil
     (cons `(:by ,(caar prooflst))
           (saved-obligs-prooflst-collect-hints (cdr prooflst)))))
-    
+
 
 (defun saved-obligs-hint (id state)
   (declare (xargs :mode :program :stobjs state))
@@ -119,7 +119,7 @@ without :skip-proofs-okp.)</p> ")
        (hintlst (@ saved-obligs-hintlst))
        (state (f-put-global 'saved-obligs-hintlst (cdr hintlst) state)))
     (value (car hintlst))))
-       
+
 
 (defun def-saved-obligs-fn (name args state)
   (declare (xargs :mode :program :stobjs state))
@@ -175,10 +175,10 @@ without :skip-proofs-okp.)</p> ")
                            ',default-hints-table
                            :clear))
              (value-triple ',name)))))
-       
-       
-           
-     
+
+
+
+
 
 (defmacro def-saved-obligs (name &rest args)
   `(make-event

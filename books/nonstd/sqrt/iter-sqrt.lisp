@@ -3,7 +3,7 @@ In this Acl2 book, we prove that the square root function can be approximated
 in Acl2.  In particular, we prove the following theorem:
 
  (defthm convergence-of-iter-sqrt
-   (implies (and (rationalp x)	
+   (implies (and (rationalp x)
 		 (rationalp epsilon)
 		 (< 0 epsilon)
 		 (<= 0 x))
@@ -63,7 +63,7 @@ To load this book, it is sufficient to do something like this:
     (let ((mid (/ (+ low high) 2)))
       (if (<= (* mid mid) x)
 	  (iterate-sqrt-range mid high x (1- num-iters))
-	(iterate-sqrt-range low mid x 
+	(iterate-sqrt-range low mid x
 			    (1- num-iters))))))
 
 ;;
@@ -84,7 +84,7 @@ To load this book, it is sufficient to do something like this:
   (implies (and (rationalp low)
 		(rationalp high)
 		(< low high))
-	   (< (car (iterate-sqrt-range low high x 
+	   (< (car (iterate-sqrt-range low high x
 				       num-iters))
 	      (cdr (iterate-sqrt-range low high x
 				       num-iters))))
@@ -383,11 +383,11 @@ To load this book, it is sufficient to do something like this:
 		 (< low high)
 		 (<= x (* high high))
 		 (<= delta (/ epsilon (+ high high))))
-	    (let ((range (iterate-sqrt-range low high x 
+	    (let ((range (iterate-sqrt-range low high x
 					     num-iters)))
 	      (implies (< (- (cdr range) (car range))
 			  delta)
-		       (< (- x 
+		       (< (- x
 			     (* (car range) (car range)))
 			  epsilon))))
    :hints (("Goal"
@@ -483,7 +483,7 @@ To load this book, it is sufficient to do something like this:
 		      low high x
 		      (guess-num-iters (- high low)
 				       (/ epsilon
-					  (+ high 
+					  (+ high
 					     high))))))
 	  (car range)))
     nil))
@@ -574,7 +574,7 @@ To load this book, it is sufficient to do something like this:
 				    (y (- right left)))
 	     :in-theory (disable left-cancellation-for-*)))
     :rule-classes nil))
-		
+
  ;;
  ;; Using that, we show Acl2 how to derive an inequality contradiction that
  ;; it'll see in the next proof.
@@ -603,7 +603,7 @@ To load this book, it is sufficient to do something like this:
  ;;
  ;; So now, we can prove a general form of our theorem without appealing to the
  ;; iter-sqrt functions (with all the added complication that excites Acl2's
- ;; rewriting heuristics) 
+ ;; rewriting heuristics)
  ;;
  (local
   (defthm aux
@@ -629,7 +629,7 @@ To load this book, it is sufficient to do something like this:
  ;; This is the second major point, since it shows how we can force
  ;; iterate-sqrt-range to iterate long enough to produce a small enough range.
  ;; Together with the first major result, this will prove the convergence of
- ;; iter-sqrt-range. 
+ ;; iter-sqrt-range.
  ;;
  (defthm iterate-sqrt-range-reduces-range-size-to-delta
    (implies (and (rationalp high)
@@ -684,7 +684,7 @@ To load this book, it is sufficient to do something like this:
  ;;
  (local
   (defthm convergence-of-iter-sqrt-1
-    (implies (and (rationalp x)	
+    (implies (and (rationalp x)
 		  (rationalp epsilon)
 		  (< 0 epsilon)
 		  (<= 0 x))
@@ -696,7 +696,7 @@ To load this book, it is sufficient to do something like this:
  ;;
  (local
   (defthm convergence-of-iter-sqrt-2
-    (implies (and (rationalp x)	
+    (implies (and (rationalp x)
 		  (rationalp epsilon)
 		  (< 0 epsilon)
 		  (<= 0 x))
@@ -728,10 +728,10 @@ To load this book, it is sufficient to do something like this:
 
  ;;
  ;; For stylistic reasons, we combine the two results above into a single
- ;; theorem. 
+ ;; theorem.
  ;;
  (defthm convergence-of-iter-sqrt
-   (implies (and (rationalp x)   
+   (implies (and (rationalp x)
 		 (rationalp epsilon)
 		 (< 0 epsilon)
 		 (<= 0 x))

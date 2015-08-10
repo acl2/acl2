@@ -96,7 +96,7 @@
     (IFEQ 12)   ;  5 if m=0, goto 17
     (ILOAD 1)   ;  6
     (IFEQ 16)   ;  7 if n=0, goto 23
-    (ILOAD 0)   ;  8 
+    (ILOAD 0)   ;  8
     (ICONST 1)  ;  9
     (ISUB)      ; 10
     (ISTORE 0)  ; 11 m = m-1;

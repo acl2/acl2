@@ -39,7 +39,7 @@ hypothesis.
            (or (null (cdr x))
                (<< (caar x) (caadr x))))))
 
-(defun ifrp (x) ;; ill-formed rcdp 
+(defun ifrp (x) ;; ill-formed rcdp
   (or (not (rcdp x))
       (and (consp x)
            (null (cdr x))
@@ -71,7 +71,7 @@ hypothesis.
          (if v (cons (cons a v) r) r))
         ((equal a (caar r))
          (if v (cons (cons a v) (cdr r)) (cdr r)))
-        (t 
+        (t
          (cons (car r) (s-aux a v (cdr r))))))
 
 (defun s (a v x)
@@ -129,7 +129,7 @@ hypothesis.
 (local
 (defthm s-aux-same-g-aux
   (implies (rcdp r)
-           (equal (s-aux a (g-aux a r) r) 
+           (equal (s-aux a (g-aux a r) r)
                   r))))
 
 (local
@@ -167,7 +167,7 @@ hypothesis.
 (defthm s-keys-aux-reduction
   (implies (rcdp r)
            (equal (keys-aux (s-aux a v r))
-                  (if v 
+                  (if v
                       (insert a (keys-aux r))
                     (drop a (keys-aux r)))))))
 
@@ -209,7 +209,7 @@ hypothesis.
 ;;;; final properties of record g(et) and s(et) ;;;;
 
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
 	 v))
 
 (defthm g-diff-s
@@ -229,7 +229,7 @@ hypothesis.
 (in-theory (disable g-of-s-redux))
 
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
 	 r))
 
 (defthm s-same-s
@@ -248,7 +248,7 @@ hypothesis.
 
 (defthm s-keys-reduction
   (equal (keys (s a v r))
-         (if v 
+         (if v
              (insert a (keys r))
            (drop a (keys r)))))
 
@@ -260,7 +260,7 @@ hypothesis.
 
 (defthm s-non-nil-cannot-be-nil
   (implies v (s a v r))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable rcd->acl2-of-record-non-nil)
            :use (:instance rcd->acl2-of-record-non-nil
                            (r (s-aux a v (acl2->rcd r)))))))
@@ -273,7 +273,7 @@ hypothesis.
 (defthm s-same-g-back-chaining
   (implies (equal v (g a r))
            (equal (s a v r) r)))
-                  
+
 
 ;; We disable s and g, assuming the rules proven in this book are sufficient to
 ;; manipulate record terms which are encountered

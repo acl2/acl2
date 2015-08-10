@@ -51,14 +51,14 @@
  (local
   (defun domain-rifn-classical-cmp ()
     (interval nil nil)))
- 
+
  (defthm domain-rifn-classical-cmp-is-non-trivial-interval
    (and (interval-p (domain-rifn-classical-cmp))
 	(implies (and (interval-left-inclusive-p (domain-rifn-classical-cmp))
 		      (interval-right-inclusive-p (domain-rifn-classical-cmp)))
 		 (not (equal (interval-left-endpoint (domain-rifn-classical-cmp))
 			     (interval-right-endpoint (domain-rifn-classical-cmp)))))))
- 
+
  (defun map-rifn-classical-small (p)
    ;; map rifn-classical over the list p
    (if (consp p)
@@ -75,12 +75,12 @@
   (defun riemann-rifn-classical-small (p)
    ;; for partition p, take the Riemann sum of rifn-classical over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-classical-small (cdr p))))
   (defun riemann-rifn-classical-big (p)
    ;; for partition p, take the Riemann sum of rifn-classical over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-classical-big (cdr p))))
 
  (defun int-rifn-classical-small (a b)
@@ -336,14 +336,14 @@
  (local
   (defun domain-rifn-classical-const-fn ()
     (interval nil nil)))
- 
+
  (defthm domain-rifn-classical-const-fn-is-non-trivial-interval
    (and (interval-p (domain-rifn-classical-const-fn))
 	(implies (and (interval-left-inclusive-p (domain-rifn-classical-const-fn))
 		      (interval-right-inclusive-p (domain-rifn-classical-const-fn)))
 		 (not (equal (interval-left-endpoint (domain-rifn-classical-const-fn))
 			     (interval-right-endpoint (domain-rifn-classical-const-fn)))))))
- 
+
  (defun map-rifn-classical-const-fn (p)
    ;; map rifn over the list p
    (if (consp p)
@@ -359,7 +359,7 @@
  (defun riemann-rifn-classical-const-fn (p)
    ;; for partition p, take the Riemann sum of rifn over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-classical-const-fn (cdr p))))
 
  (local
@@ -494,7 +494,7 @@
            (real-listp (map-rifn-classical-const*const-fn p))))
 
 (defun riemann-rifn-classical-const*const-fn (p)
-  (dotprod (deltas p) 
+  (dotprod (deltas p)
 	   (map-rifn-classical-const*const-fn (cdr p))))
 
 (defthm real-listp-deltas
@@ -541,7 +541,7 @@
  nil
 
  (local (in-theory (disable riemann-rifn-classical-const*const-fn)))
- 
+
  (defun-std strict-int-rifn-classical-const*const-fn (a b)
    (if (and (realp a)
 	    (realp b)
@@ -732,14 +732,14 @@
  (local
   (defun domain-rifn-classical-op ()
     (interval nil nil)))
- 
+
  (defthm domain-rifn-classical-op-is-non-trivial-interval
    (and (interval-p (domain-rifn-classical-op))
 	(implies (and (interval-left-inclusive-p (domain-rifn-classical-op))
 		      (interval-right-inclusive-p (domain-rifn-classical-op)))
 		 (not (equal (interval-left-endpoint (domain-rifn-classical-op))
 			     (interval-right-endpoint (domain-rifn-classical-op)))))))
- 
+
  (defun map-rifn-classical-left (p)
    ;; map rifn-classical over the list p
    (if (consp p)
@@ -756,12 +756,12 @@
   (defun riemann-rifn-classical-left (p)
    ;; for partition p, take the Riemann sum of rifn-classical over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-classical-left (cdr p))))
   (defun riemann-rifn-classical-right (p)
    ;; for partition p, take the Riemann sum of rifn-classical over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-classical-right (cdr p))))
 
  (defun int-rifn-classical-left (a b)
@@ -953,7 +953,7 @@
            (real-listp (map-rifn-classical-left+right p))))
 
 (defun riemann-rifn-classical-left+right (p)
-  (dotprod (deltas p) 
+  (dotprod (deltas p)
 	   (map-rifn-classical-left+right (cdr p))))
 
 (defthm real-riemann-rifn-classical-left
@@ -1004,7 +1004,7 @@
  nil
 
  (local (in-theory (disable riemann-rifn-classical-left+right)))
- 
+
  (defun-std strict-int-rifn-classical-left+right (a b)
    (if (and (realp a)
 	    (realp b)
@@ -1199,7 +1199,7 @@
            (real-listp (map-rifn-classical-left-right p))))
 
 (defun riemann-rifn-classical-left-right (p)
-  (dotprod (deltas p) 
+  (dotprod (deltas p)
 	   (map-rifn-classical-left-right (cdr p))))
 
 (defthm real-riemann-rifn-classical-left
@@ -1250,7 +1250,7 @@
  nil
 
  (local (in-theory (disable riemann-rifn-classical-left-right)))
- 
+
  (defun-std strict-int-rifn-classical-left-right (a b)
    (if (and (realp a)
 	    (realp b)

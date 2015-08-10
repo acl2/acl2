@@ -40,9 +40,9 @@ corresponding comments in the total correctness proofs.
   ((partial-post *) => *)
   ((partial-clock-fn *) => *))
 
- 
+
  (local (defun partial-next (s) s))
- 
+
  (defun partial-run (s n) (if (zp n) s (partial-run (partial-next s) (1- n))))
 
  (local (defun partial-pre (s) (declare (ignore s)) nil))
@@ -65,7 +65,7 @@ corresponding comments in the total correctness proofs.
             (partial-external (partial-run s (partial-clock-fn s)))))
 
  (defthm standard-theorem-for-partial-clocks-2
-   (implies (and (partial-pre s) 
+   (implies (and (partial-pre s)
                  (partial-external (partial-run s i)))
             (partial-post (partial-run s (partial-clock-fn s)))))
 
@@ -89,7 +89,7 @@ corresponding comments in the total correctness proofs.
 (local (in-theory (disable exists-partial-pre-state exists-partial-pre-state-suff)))
 
 (defun-sk no-partial-external-partial-run (s)
-  (forall i 
+  (forall i
           (not (partial-external (partial-run s i)))))
 
 (defun partial-inv (s)
@@ -101,11 +101,11 @@ corresponding comments in the total correctness proofs.
  (local
   (defun partial-run-fn (s n)
     (if (zp n) s (partial-run-fn (partial-next s) (1- n)))))
- 
+
  (local
   (defthm partial-run-fn-is-partial-run
     (equal (partial-run s n) (partial-run-fn s n))))
- 
+
  (local
   (in-theory (disable partial-run-fn-is-partial-run)))
 
@@ -116,7 +116,7 @@ corresponding comments in the total correctness proofs.
     :hints (("Goal"
              :in-theory (disable partial-clock-fn-is-natp)
              :use partial-clock-fn-is-natp))))
- 
+
  (local
   (defthm partial-pre-has-partial-clock->0
     (implies (and (partial-pre s)
@@ -128,24 +128,24 @@ corresponding comments in the total correctness proofs.
             ("Subgoal 1"
              :in-theory (disable standard-theorem-for-partial-clocks-1)
              :use standard-theorem-for-partial-clocks-1))))
- 
+
  (DEFTHM partial-pre-has-partial-inv
    (implies (partial-pre s)
             (partial-inv s))
    :hints (("Goal"
             :cases ((no-partial-external-partial-run s)))
            ("Subgoal 2"
-            :use ((:instance exists-partial-pre-state-suff 
+            :use ((:instance exists-partial-pre-state-suff
                              (init s)
                              (i 0))))))
- 
+
  (local
   (in-theory (disable no-partial-external-partial-run no-partial-external-partial-run-necc)))
- 
+
  (local
   ;; [Jared] changed this to use arithmetic-3 instead of 2
   (include-book "arithmetic-3/bind-free/top" :dir :system))
- 
+
  (local
   (defthm partial-run-is-same-for-nfix
     (equal (partial-run s (nfix i))
@@ -153,13 +153,13 @@ corresponding comments in the total correctness proofs.
     :hints (("Goal"
              :cases ((natp i))
              :in-theory (enable partial-run-fn-is-partial-run)))))
- 
+
  (local
   (defthm partial-external-to-partial-external-partial-next
     (implies (partial-external (partial-run (partial-next s) i))
              (partial-external (partial-run s (1+ (nfix i)))))))
- 
- 
+
+
  (local
   (defthm no-partial-external-to-partial-external-partial-next
     (implies (no-partial-external-partial-run s)
@@ -167,7 +167,7 @@ corresponding comments in the total correctness proofs.
     :hints (("Goal"
              :use ((:instance no-partial-external-partial-run-necc
                               (i (1+ (nfix i)))))))))
- 
+
  (local
   (defthm no-partial-external-persists
     (implies (no-partial-external-partial-run s)
@@ -175,7 +175,7 @@ corresponding comments in the total correctness proofs.
     :hints (("Goal"
              :use ((:instance (:definition no-partial-external-partial-run)
                               (s (partial-next s))))))))
- 
+
  (local
   (defthm partial-run-natp-partial-next
     (implies (and (equal s (partial-run init i))
@@ -185,7 +185,7 @@ corresponding comments in the total correctness proofs.
     :rule-classes nil
     :hints (("Goal"
              :in-theory (enable partial-run-fn-is-partial-run)))))
- 
+
  (local
   (defthm partial-clock-<-partial-next
     (implies (and (partial-pre p)
@@ -202,7 +202,7 @@ corresponding comments in the total correctness proofs.
              :in-theory (disable partial-clock-fn-is-natp)
              :use ((:instance partial-clock-fn-is-natp
                               (s p)))))))
- 
+
  (local
   (defthm partial-clock-fn-<-partial-next-concretized
     (implies (and (partial-pre p)
@@ -219,7 +219,7 @@ corresponding comments in the total correctness proofs.
                               (j (no-partial-external-partial-run-witness p)))
                    (:instance (:definition no-partial-external-partial-run)
                               (s p)))))))
- 
+
  (local
   (defthm partial-run-+-reduction
     (implies (and (natp i)
@@ -228,8 +228,8 @@ corresponding comments in the total correctness proofs.
                     (partial-run (partial-run s i) j)))
     :hints (("Goal"
              :in-theory (enable partial-run-fn-is-partial-run)))))
- 
- (local 
+
+ (local
   (defthm weird-partial-run-+-reduction
     (equal (partial-run (partial-run s i) j)
            (partial-run s (+ (nfix i) (nfix j))))
@@ -237,10 +237,10 @@ corresponding comments in the total correctness proofs.
              :cases ((and (natp i) (natp j))
                      (natp i)
                      (natp j))))))
- 
+
  (local
   (in-theory (disable partial-run-+-reduction)))
- 
+
  (local
   (defthm no-partial-external-to-no-partial-external
     (implies (not (no-partial-external-partial-run (partial-run p i)))
@@ -249,12 +249,12 @@ corresponding comments in the total correctness proofs.
              :in-theory (disable partial-run-+-reduction)
              :use ((:instance no-partial-external-partial-run-necc
                               (s p)
-                              (i (+ (nfix i) (nfix (no-partial-external-partial-run-witness 
+                              (i (+ (nfix i) (nfix (no-partial-external-partial-run-witness
                                                     (partial-run
                                                      p i))))))
                    (:instance (:definition no-partial-external-partial-run)
                               (s (partial-run p i))))))))
- 
+
  (DEFTHM partial-inv-implies-partial-next-partial-inv
    (implies (and (partial-inv s)
                  (not (partial-external (partial-next s))))
@@ -277,14 +277,14 @@ corresponding comments in the total correctness proofs.
                   (:instance no-partial-external-to-no-partial-external
                              (p (mv-nth 0 (exists-partial-pre-state-witness s)))
                              (i (mv-nth 1 (exists-partial-pre-state-witness s))))))))
- 
- 
- (local 
+
+
+ (local
   (in-theory (enable partial-run-+-reduction)))
- 
+
  (local
   (in-theory (disable weird-partial-run-+-reduction)))
- 
+
  (local
   (defthm partial-clock-fn-is-the-smallest
     (implies (and (natp i)
@@ -297,9 +297,9 @@ corresponding comments in the total correctness proofs.
                      (> (partial-clock-fn p) (1+ i))))
             ("Subgoal 2"
              :in-theory (disable partial-clock-fn-is-natp)
-             :use ((:instance partial-clock-fn-is-natp 
+             :use ((:instance partial-clock-fn-is-natp
                               (s p)))))))
- 
+
  (local
   (defthm partial-run-1-is-partial-next
     (equal (partial-run s 1)
@@ -307,7 +307,7 @@ corresponding comments in the total correctness proofs.
     :hints (("Goal"
              :use ((:instance (:definition partial-run)
                               (n 1)))))))
- 
+
  (local
   (defthm partial-external-to-not-no-partial-external
     (implies (partial-external (partial-next s))
@@ -315,14 +315,14 @@ corresponding comments in the total correctness proofs.
     :hints (("Goal"
              :use ((:instance no-partial-external-partial-run-necc
                               (i 1)))))))
- 
+
  (DEFTHM partial-inv-and-partial-external-implies-partial-post
    (implies (and (partial-inv s)
                  (partial-external (partial-next s)))
             (partial-post (partial-next s)))
    :hints (("Goal"
             :do-not '(eliminate-destructors generalize fertilize)
-            :in-theory (e/d (exists-partial-pre-state) 
+            :in-theory (e/d (exists-partial-pre-state)
                             (partial-run-+-reduction standard-theorem-for-partial-clocks-2
                                              fix nfix))
             :use ((:instance partial-run-natp-partial-next

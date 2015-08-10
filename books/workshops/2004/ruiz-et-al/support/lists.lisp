@@ -25,7 +25,7 @@
  (((list-strategy-prop *) => *)
   ((list-strategy-hyp) => *)
   ((list-strategy-list) => *))
- 
+
  (local
   (defun list-strategy-prop (x)
     (atom x)))
@@ -33,7 +33,7 @@
  (local
   (defun list-strategy-hyp ()
     t))
- 
+
  (local
   (defun list-strategy-list ()
     nil))
@@ -89,26 +89,26 @@
   (declare (xargs :mode :program))
 
   (case-match form
-	      
+
 	      (('IMPLIES form-hyp form-list)
 	       (declare (ignore form-list))
 	       form-hyp)
-	      
+
 	      (& t)))
 
 (defun defun-defstrategy-list-hint (form list prop prop-list)
   (declare (xargs :mode :program))
 
-  `(:use (:functional-instance 
+  `(:use (:functional-instance
 	  list-strategy-prop-list-strategy-list
-	  (list-strategy-hyp 
+	  (list-strategy-hyp
 	   (lambda () ,(components-strategy-list (first form))))
 	  (list-strategy-list (lambda () ,list))
           (list-strategy-prop ,prop)
           (list-strategy-prop-list ,prop-list))))
 
 (defmacro conjunctive-extension-list (list prop prop-list)
-  `(defun-defstrategy-list-hint clause 
+  `(defun-defstrategy-list-hint clause
      (quote ,list) (quote ,prop) (quote ,prop-list)))
 
 ;;;----------------------------------------------------------------------------
@@ -121,7 +121,7 @@
  (((true-list-strategy-prop *) => *)
   ((true-list-strategy-hyp) => *)
   ((true-list-strategy-list) => *))
- 
+
  (local
   (defun true-list-strategy-prop (x)
     (atom x)))
@@ -129,7 +129,7 @@
  (local
   (defun true-list-strategy-hyp ()
     t))
- 
+
  (local
   (defun true-list-strategy-list ()
     nil))
@@ -156,7 +156,7 @@
  (local
   (defun true-sublist-strategy (list1 list2)
     (declare (xargs :guard (and (true-listp list1)
-				(eqlable-listp list1)			
+				(eqlable-listp list1)
 				(true-listp list2)
 				(eqlable-listp list2))))
     (if (consp list1)
@@ -190,26 +190,26 @@
   (declare (xargs :mode :program))
 
   (case-match form
-	      
+
 	      (('IMPLIES form-hyp form-list)
 	       (declare (ignore form-list))
 	       form-hyp)
-	      
+
 	      (& t)))
 
 (defun defun-defstrategy-true-list-hint (form list prop prop-list)
   (declare (xargs :mode :program))
 
-  `(:use (:functional-instance 
+  `(:use (:functional-instance
 	  true-list-strategy-prop-list-strategy-list
-	  (true-list-strategy-hyp 
+	  (true-list-strategy-hyp
 	   (lambda () ,(components-strategy-true-list (first form))))
 	  (true-list-strategy-list (lambda () ,list))
           (true-list-strategy-prop ,prop)
           (true-list-strategy-prop-list ,prop-list))))
 
 (defmacro conjunctive-extension-true-list (list prop prop-list)
-  `(defun-defstrategy-true-list-hint clause 
+  `(defun-defstrategy-true-list-hint clause
      (quote ,list) (quote ,prop) (quote ,prop-list)))
 
 ;;;============================================================================

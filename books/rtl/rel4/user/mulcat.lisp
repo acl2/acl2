@@ -76,9 +76,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 ;Allows things like (in-theory (disable cat)) to refer to binary-cat.
@@ -122,7 +122,7 @@
 
 (defthm mulcat-1
     (implies (natp l)
-	     (equal (mulcat l 1 x) 
+	     (equal (mulcat l 1 x)
 		    (bits x (1- l) 0))))
 
 (defthm mulcat-bvecp-simple
@@ -138,11 +138,11 @@
            (bvecp (mulcat l n x) p)))
 
 (defthm mulcat-0
-  (equal (mulcat l n 0) 
+  (equal (mulcat l n 0)
          0))
 
 (defthm mulcat-0-two
-  (equal (mulcat l 0 x) 
+  (equal (mulcat l 0 x)
          0))
 
 (defthm bvecp-mulcat-1

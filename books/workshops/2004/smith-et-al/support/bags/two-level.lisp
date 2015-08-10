@@ -6,18 +6,18 @@
 
 
 
-(defund any-subbagp (term list) 
-  (declare (type t term list)) 
-  (if (consp list) 
-      (or (subbagp term (car list)) 
-	  (any-subbagp term (cdr list))) 
-    nil)) 
+(defund any-subbagp (term list)
+  (declare (type t term list))
+  (if (consp list)
+      (or (subbagp term (car list))
+	  (any-subbagp term (cdr list)))
+    nil))
 
-(defund flat (zlist)  
-  (if (consp zlist) 
+(defund flat (zlist)
+  (if (consp zlist)
       (append (car zlist)
-	      (flat (cdr zlist))) 
-    nil)) 
+	      (flat (cdr zlist)))
+    nil))
 
 (defthm true-listp-flat
   (true-listp (flat list))
@@ -34,7 +34,7 @@
                   nil))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable flat))))
-  
+
 (defthm flat-of-singleton
   (equal (flat (cons x nil))
          (list-fix x))
@@ -46,12 +46,12 @@
   :hints (("Goal" :in-theory (enable flat))))
 
 ;could we just say that TERM is disjoint from (flat LIST) ?
-(defund disjoint-list (term list) 
-  (declare (type t term list)) 
-  (if (consp list) 
-      (and (disjoint term (car list)) 
-	   (disjoint-list term (cdr list))) 
-    t)) 
+(defund disjoint-list (term list)
+  (declare (type t term list))
+  (if (consp list)
+      (and (disjoint term (car list))
+	   (disjoint-list term (cdr list)))
+    t))
 
 ;disable?
 ;rename?
@@ -59,22 +59,22 @@
   (implies (not (consp list))
 	   (disjoint-list x list))
   :hints (("goal" :in-theory (enable disjoint-list flat))))
- 
-(defthm open-disjoint-list 
-  (and 
-   (equal (disjoint-list term (cons entry rest)) 
-	  (and (disjoint term entry) 
-	       (disjoint-list term rest))) 
+
+(defthm open-disjoint-list
+  (and
+   (equal (disjoint-list term (cons entry rest))
+	  (and (disjoint term entry)
+	       (disjoint-list term rest)))
    (equal (disjoint-list term nil) t))
   :hints (("Goal" :in-theory (enable disjoint-list))))
 
-(defthm any-subbagp-implies-subbagp-flat 
-  (implies (any-subbagp term list) 
+(defthm any-subbagp-implies-subbagp-flat
+  (implies (any-subbagp term list)
            (subbagp term (flat list)))
   :rule-classes (:rewrite :forward-chaining)
   :hints (("Goal" :in-theory (enable flat any-subbagp))))
 
-(defthm disjoint-list-implies-disjoint-flat 
+(defthm disjoint-list-implies-disjoint-flat
   (implies (disjoint-list term list)
 	   (disjoint term (flat list)))
   :rule-classes (:rewrite :forward-chaining)
@@ -111,7 +111,7 @@
 ;bozo
 (defthm flat-perm
   (implies (perm x y)
-           (equal (perm (flat x) (flat y)) 
+           (equal (perm (flat x) (flat y))
                   t))
   :hints (("goal" :in-theory (enable perm memberp remove-1 flat))))
 
@@ -138,8 +138,8 @@
   :hints (("goal" :do-not '(generalize eliminate-destructors)
 ;           :do-not-induct t
 ;           :induct (REMOVE-BAG F2 F1)
-           :in-theory (e/d (subbagp 
-                            remove-bag flat) 
+           :in-theory (e/d (subbagp
+                            remove-bag flat)
                            (;SUBBAGP-OF-REMOVE-1-BOTH
                             SUBBAGP-CDR-REMOVE-1-REWRITE
                             ;SUBBAGP-APPEND-2
@@ -190,18 +190,18 @@
 
 (theory-invariant (incompatible (:rewrite flat-append)
                                 (:rewrite APPEND-of-flat-and-flat)))
-                                
+
 (encapsulate
  ()
 
 (local
   (encapsulate
    ()
-   
+
    (defthmd unique-subbagps-not-subbagps
      (implies (and (unique list)
                    (unique-subbagps x y list))
-              (equal (subbagp x y) 
+              (equal (subbagp x y)
                    (not (consp x))))
      :rule-classes (:rewrite :forward-chaining)
      :hints (("goal" :in-theory (enable disjoint-subbagp-rewrite)
@@ -222,7 +222,7 @@
               (not (unique list)))
      :hints (("goal" :use (:instance unique-subbagps-not-subbagps
 				     (y (flat y))))))
-   
+
    ))
 
 |#
@@ -237,7 +237,7 @@
   (equal (disjoint-list (append x y) list)
          (and (disjoint-list x list)
               (disjoint-list y list)))
-  :hints (("goal" :in-theory (enable ;disjoint-of-append 
+  :hints (("goal" :in-theory (enable ;disjoint-of-append
 ;disjoint-list-reduction
                               ))))
 
@@ -247,7 +247,7 @@
   (implies (and (memberp x list1)
                 (consp x)
                 (subbagp (flat list1) list2))
-           (equal (disjoint x list2) 
+           (equal (disjoint x list2)
                   nil))
   :hints (("Goal" :use (:instance DISJOINT-OF-FLAT-HELPER-2 (lst x) (lst-of-lsts list1)))))
 

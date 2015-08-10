@@ -1,7 +1,7 @@
 ;------------------------------------------
 ;
 ; Author:  Diana Toma
-; TIMA-VDS, Grenoble, France 
+; TIMA-VDS, Grenoble, France
 ; March 2003
 ; ACL2 formalization of SHAs
 ; Logic functions (and theorems) needed for all four SHA
@@ -25,7 +25,7 @@
 
 (defthm bvp-Ch
   (implies (and  (bvp x) (bvp y) (bvp z))
-         (bvp (Ch x y z)))) 
+         (bvp (Ch x y z))))
 
 (defthm wordp-Ch
   (implies (and  (wordp x w) (wordp y w) (wordp z w))
@@ -36,12 +36,12 @@
   (if (and  (bvp x)
           (bvp y)
           (bvp z))
-      (bv-xor  x y z) 
+      (bv-xor  x y z)
        nil))
 
 (defthm bvp-Parity
   (implies (and  (bvp x) (bvp y) (bvp z))
-         (bvp (Parity x y z)))) 
+         (bvp (Parity x y z))))
 
 (defthm wordp-Parity
   (implies (and  (wordp x w) (wordp y w) (wordp z w))
@@ -56,23 +56,23 @@
 
 (defthm bvp-Maj
   (implies (and  (bvp x) (bvp y) (bvp z))
-         (bvp (Maj x y z)))) 
+         (bvp (Maj x y z))))
 
 (defthm wordp-Maj
   (implies (and  (wordp x w) (wordp y w) (wordp z w))
          (wordp (Maj x y z) w)))
-           
+
 (defun Ft (i x y z)
  (if (and (integerp i)
           (<= 0 i)
           (wordp x 32)
           (wordp y 32)
           (wordp z 32))
-      (cond ((and (<= 0 i) (<= i 19)) 
+      (cond ((and (<= 0 i) (<= i 19))
             (Ch x y z))
-            ((or (and (<= 20 i) (<= i 39)) (and (<= 60 i) (<= i 79)))  
+            ((or (and (<= 20 i) (<= i 39)) (and (<= 60 i) (<= i 79)))
             (Parity x y z))
-            ((and (<= 40 i) (<= i 59)) 
+            ((and (<= 40 i) (<= i 59))
             (Maj x y z)))
       nil))
 
@@ -80,8 +80,8 @@
   (implies (and (integerp i) (<= 0 i)  (wordp x 32) (<= 0 i) (< i 80)
           (wordp y 32) (wordp z 32))
          (wordp (Ft i x y z) 32))
-:hints (("goal" :in-theory (disable ch parity maj) ))) 
-           
+:hints (("goal" :in-theory (disable ch parity maj) )))
+
 (defun sigma-0-256 (x)
      (if  (wordp x 32)
           (bv-xor  (rotr 2 x 32) (rotr 13 x 32) (rotr 22 x 32))

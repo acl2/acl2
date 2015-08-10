@@ -35,11 +35,11 @@
   (if (member ':measure hints)
       `(:measure ,(second (member ':measure hints)))
     nil))
-      
+
 (defmacro defuntyped (name args guard type default result &rest hints)
   `(progn
      (defun ,name (,@(defuntypedformals args))
-       (declare (xargs 
+       (declare (xargs
 		 :guard (and ,@(defuntypedfiltertypedargs args) ,guard)
 		 ,@(defuntypedmeasure hints)
 		 ))
@@ -143,4 +143,4 @@
 	nil)
     nil)
   )
-	
+

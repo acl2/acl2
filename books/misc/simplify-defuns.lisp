@@ -100,7 +100,7 @@
                      (sl-let ;from simplify-clause1
                       (contradictionp simplify-clause-pot-lst)
                       (setup-simplify-clause-pot-lst current-clause
-                                                     (pts-to-ttree-lst 
+                                                     (pts-to-ttree-lst
                                                       pts)
                                                      nil ;; RBK: fc-pair-lst
                                                      type-alist

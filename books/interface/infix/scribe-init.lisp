@@ -10,7 +10,7 @@
 ;; Feb 20 1992, by MKSmith
 
 ;; In order to fix a bug in the AKCL interpreter's use of proclaim.
-;; we depend on this file being compiled and loaded in an environment 
+;; we depend on this file being compiled and loaded in an environment
 ;; in which infix.lisp has already been loaded.
 ;; #+akcl (load-base "akcl-patch.lisp")
 
@@ -23,12 +23,12 @@
 ;; Mode should actually be set before this file is loaded.
 
 (infix-settings :mode                   "scribe"
-		:extension              "mss"   
-		:op-location            'front  
-		:comment-format         'smith  
-		:format-!-in-comments   nil    
-		:eliminate-top-parens   t       
-		:eliminate-inner-parens nil       
+		:extension              "mss"
+		:op-location            'front
+		:comment-format         'smith
+		:format-!-in-comments   nil
+		:eliminate-top-parens   t
+		:eliminate-inner-parens nil
 		:no-index-calls         nil )
 
 
@@ -45,7 +45,7 @@
 (defparameter *standard-prelude*
   "@make(clinote)
 @device(postscript)
-@style(leftmargin 1.5 inch,linewidth 5.5 inch, indent 0, 
+@style(leftmargin 1.5 inch,linewidth 5.5 inch, indent 0,
        font clitimesroman, indexcase folded)
 
 @enable(index)
@@ -77,7 +77,7 @@
 (defparameter *example-prelude*
   (concatenate 'string *standard-prelude*
 "
-@standardtable(name BaseTbl, Columns 2, columnwidth 2.5 inch, allcolumns=center, 
+@standardtable(name BaseTbl, Columns 2, columnwidth 2.5 inch, allcolumns=center,
                float,  boxed, flushtop,
                above 1 line, below 1 line)
 
@@ -111,7 +111,7 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 @newpage()
 @begin(BaseTbl)
 @tableid(BaseTbl~d)
-@tableHeading(Immediate, RowFormat BaseTblColumnHeadings, 
+@tableHeading(Immediate, RowFormat BaseTblColumnHeadings,
               Line {ACL2 Syntax@\\Conventional Syntax})~%"
   "Needs an argument, integer, in order to give different tables different names.")
 
@@ -233,7 +233,7 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 
 (defun begin-tabbing ()
 
-; Tabbing environments can be nested in Scribe.  
+; Tabbing environments can be nested in Scribe.
 ; Use this fact with set-margin.
 
   (setq *tab-list* (cons '(begin-tabs) *tab-list*))
@@ -243,7 +243,7 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 
 (defun begin-group-tabbing ()
 
-; Tabbing environments can be nested in Scribe.  
+; Tabbing environments can be nested in Scribe.
 ; Use this fact with set-margin.
 
   (setq *tab-list* nil)
@@ -264,12 +264,12 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 (defun set-margin ()
 
 ; Generate instructions to set the current indentation.
-; In latex we use tabs, which cause *tabto* to tab to this column in the future.  
+; In latex we use tabs, which cause *tabto* to tab to this column in the future.
 ; `Punt' if we hit the limit, by throwing all the way out.
 
   (cond (*do-not-use-tabs* nil)
 	;; Bump Latex limit way up for Scribe.
-        (t (cond ((= *tabs-in* *latex-indent-number-limit*) 
+        (t (cond ((= *tabs-in* *latex-indent-number-limit*)
                   (throw 'taboverflow t)))
            (setq *tabs-in* (1+ *tabs-in*))
 	   (pprinc *set-margin*)
@@ -358,7 +358,7 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 	(t nil)))
 
 ;; (defun newline-to-current-margin ()
-;;   ;; Generates command for return to current indentation setting.  
+;;   ;; Generates command for return to current indentation setting.
 ;;   (cond (*do-not-use-tabs* (pprinci " "))
 ;; 	(t (pwrite-char #\Newline)
 ;; 	   (setq *infix-loc* (get-margin)))))
@@ -433,7 +433,7 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 (defparameter *comma-atsign* ",@@")
 (defparameter *caret* "^")
 
-(defparameter *dotted-pair-separator* " . ")      
+(defparameter *dotted-pair-separator* " . ")
 (defparameter *dotted-pair-separator-newline* ". ")
 
 (defparameter *no-tab-event-trailer* "~%~%")
@@ -445,7 +445,7 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 
 ;; OTHER FUNCTIONS
 
-;; Should both be `(#\@ @\}) but we handle them individually in the appropriate 
+;; Should both be `(#\@ @\}) but we handle them individually in the appropriate
 ;; spots in the two following functions.
 (defparameter doc-special-chars nil)
 (defparameter doc-index-specials nil)
@@ -463,8 +463,8 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 (eval-when (load) (eval
 '(defun handle-special-chars (char)
   ;; USED BY PRINT-ATOM.  CHAR is local to print-atom.
-  ;; We don't use the global, DOC-SPECIAL-CHARS, since there are 
-  ;; only two, @ and }, and we do something different in each case. 
+  ;; We don't use the global, DOC-SPECIAL-CHARS, since there are
+  ;; only two, @ and }, and we do something different in each case.
   (cond ((char= char #\@) (pprinc "@@") (incf *infix-loc* 1))
 	((char= char #\}) (pprinc *rbrace*) (incf *infix-loc* 1))
 
@@ -501,7 +501,7 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 
     (sloop for i below (length str)
              for char = (char (the string str) (the fixnum i))
-             until (> num-chars *index-entry-max*)  
+             until (> num-chars *index-entry-max*)
 
 	     ;; Quote special Scribe characters as @ & }.
 
@@ -521,12 +521,12 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
   (pprinc *end*))
 
 (defun skip-index-entries ()
-  ;; We are looking at a backslash. In Tex mode we need to skip to the end 
+  ;; We are looking at a backslash. In Tex mode we need to skip to the end
   ;; of the entry, because we may add !'s.  In Scribe mode this is just NIL.
   nil)
 
 (defun adjust-tabbing-env ()
-  ;; We are looking at a backslash. In Tex mode we may need to check for 
+  ;; We are looking at a backslash. In Tex mode we may need to check for
   ;; some special cases.
   ;; In Scribe mode this is just NIL.
   nil)
@@ -537,7 +537,7 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
 (defparameter acl2-markup-table
   '(("-"   .   "@emdash{}")
     ("B"   .   "@b{~sa}")
-    ("BF"  .   "~%@begin{format}") 
+    ("BF"  .   "~%@begin{format}")
     ("BID" .   "")		      ;begin implementation dependent
     ("BQ"  .   "~%@begin{quotation}")
     ("BV"  .   "~%@begin{verbatim}")
@@ -545,14 +545,14 @@ as !t#b001, @t{#o765} is printed as !t#o765, and @t{#xa9} is printed as
     ("EF"  .   "@end{format}~%")
     ("EID" .   "")		      ;end implementation dependent
     ("EM"  .   "@i{~sa}")	      ;emphasis
-    ("EQ"  .   "~%@end{quotation}~%") ;TexInfo needs leading line break to 
+    ("EQ"  .   "~%@end{quotation}~%") ;TexInfo needs leading line break to
 				      ;avoid problems with @refill
     ("EV"  .   "@end{verbatim}~%")
     ("I"   .   "@i{~sa}")
     ("ID"  .   "~sa")		      ;implementation dependent
     ("IL"  .   "~sa")
     ("ILC" .  "@t{~sa}")	      ;originally @code, but we don't want `' in info file
-    ("L"   .  "See ~sA")   
+    ("L"   .  "See ~sA")
     ("NL"  .  "@*~%")
     ("PAR" .  "")		      ;paragraph mark, of no significance for scribe
     ("PL"  .  "see ~sA")	      ;used for parenthetical crossrefs

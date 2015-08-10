@@ -7,7 +7,7 @@
 (deflabel primitives-defuns-section)
 
 ;;;  The list below identifies the primitive functions and their
-;;;  respective arities.  
+;;;  respective arities.
 
 (defconst *primitives*
   '((ff    (ins a)        (outs x)    (sts q)     (dep (x)))
@@ -43,7 +43,7 @@
 (defun primp (fn)
   (declare (xargs :guard t))
   (cdr (assoc-eq fn *primitives*)))
-                 
+
 (defthm symbol-alistp-primp
   (and (alistp (primp fn))           ;;;  I seem to need this conjunct in spite
        (symbol-alistp (primp fn))))  ;;;  of forward chaining rules to this one.

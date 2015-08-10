@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -50,15 +50,15 @@
 ;;; 2^(1+(expo(x))
 ;;;
 
-;;; lognot(x) = if x >= 0 
-;;;                lnot(x, (1+expo(x))) - 2^(1+(expo(x)))) 
-;;;     
+;;; lognot(x) = if x >= 0
+;;;                lnot(x, (1+expo(x))) - 2^(1+(expo(x))))
+;;;
 ;;;             abs(x)-1
- 
-;;; 
+
+;;;
 ;;; logand(x, y) = land(x,y, 1+min(expo(x),expo(y)))
-;;; 
-;;; what about this? 
+;;;
+;;; what about this?
 
 (defthmd lognot-def
     (implies (integerp x)
@@ -197,7 +197,7 @@
                 (not (equal y -1)))
            (< y (fl (* 1/2 y))))
   :rule-classes :linear)
-      
+
 
 
 ;; (defun logop-3-induct (x y z)
@@ -226,7 +226,7 @@
 		    (logxor (fl (* 1/2 i)) (fl (* 1/2 j))))))
 
 ;; we appear to have a better rule than logior
-;; 
+;;
 ;; (DEFTHM LOGIOR-EQUAL-0
 ;;   (IMPLIES (AND (CASE-SPLIT (INTEGERP I))
 ;;                 (CASE-SPLIT (INTEGERP J)))
@@ -241,21 +241,21 @@
   :rule-classes ())
 
 ;;;
-;;; these following two are genuninely new. 
+;;; these following two are genuninely new.
 ;;;
 
-(local 
- (encapsulate () 
-  
+(local
+ (encapsulate ()
+
               (defthmd bvecp-fl-1/2
                 (implies (bvecp y (+ 1 n))
                          (bvecp (fl (* 1/2 y)) n))
                 :hints (("Goal" :in-theory (e/d (bvecp
                                                  expt-2-reduce-leading-constant) ()))))
 
-              ;; we can prove the following. 
+              ;; we can prove the following.
               ;;
-              ;; (skip-proofs 
+              ;; (skip-proofs
               ;;  ;; proved in bits-new-proofs.lisp
               ;;  (defthmd logand-ones-g
               ;;    (implies (and (integerp i)
@@ -286,8 +286,8 @@
                          (equal (FL (* 1/2 Y))
                                 (* 1/2 (- y (mod y 2)))))
                 :hints (("Goal" :in-theory (e/d (mod evenp) ()))))
-            
-              ))         
+
+              ))
 
 (defthm logior-expt-g
   (implies (and (natp n)
@@ -342,7 +342,7 @@
 	     (<= (logand x y) x))
   :rule-classes :linear)
 
-(local 
+(local
  (defthmd fl-fl-reduce
    (implies (and (integerp n)
                  (> n 0))
@@ -353,7 +353,7 @@
                                     (m n)
                                     (x (* 1/2 y))))
             :in-theory (e/d (expt-2-reduce-leading-constant) ())))))
-                                   
+
 
 (defthm logand-expt-g
   (implies (and (integerp x)
@@ -374,9 +374,9 @@
                                            (j y))))))
 
 
-;;;;;; Mon Feb  9 12:53:20 2009   
+;;;;;; Mon Feb  9 12:53:20 2009
 
-;;;; strategy? 
+;;;; strategy?
 ;;;;
 ;;;; bitn(lnot(x, n), i) vs bitn(lognot(x), i)
 ;;;;
@@ -390,7 +390,7 @@
 ;; bitn-mod lemma are pretty powerful. Mon Feb  9 13:17:51 2009
 ;;
 
-(local 
+(local
  (defthmd bitn_alt-lognot-lemma
   (implies (and (integerp x)
                 (integerp n)
@@ -413,7 +413,7 @@
                                    (* -1 (bits x n 0))))
                              (k n)
                              (n (+ 1 n)))))))
-)                                
+)
 
 
 (defthmd bitn_alt-lognot
@@ -428,13 +428,13 @@
 ; Matt K. v7-1 mod for avoiding "Goal'", 2/13/2015: "Goal''" changed to "Goal'".
            ("Goal'" :in-theory (e/d (bitn_alt-is-bitn lnot)
                                     ()))))
-                  
+
 ;;;;;
 ;;;;;
-;;;;; 
+;;;;;
 
 ;;;
-;;; this is generalized to allow n to be negative. 
+;;; this is generalized to allow n to be negative.
 ;;;
 
 (defthmd bitn_alt-logand
@@ -451,13 +451,13 @@
 
 
 ;;;
-;;; this following is generalized to allow negative indexs. 
-;;; 
-;;; We can prove the following using the above result. 
+;;; this following is generalized to allow negative indexs.
+;;;
+;;; We can prove the following using the above result.
 ;;;
 
 
-;; (local 
+;; (local
 ;;  (encapsulate ()
 ;;               (local (include-book "../support/badguys"))
 
@@ -492,7 +492,7 @@
 
 
 
-(local 
+(local
  (defund bvequal (v1 v2 n)
   (equal (sumbits v1 n)
          (sumbits v2 n))))
@@ -513,7 +513,7 @@
   :rule-classes nil))
 
 
-(local 
+(local
  (defthmd bitn-logand-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -523,7 +523,7 @@
   :hints (("Goal" :use ((:instance bitn-logand))
            :in-theory (e/d (bitn-neg) ())))))
 
-(local 
+(local
  (defthmd  bvequal-bits-logand
    (implies (and (integerp x)
                  (integerp y)
@@ -537,10 +537,10 @@
                     (logand (bits x i j)
                             (bits y i j))
                     k))
-  :hints (("Goal" :in-theory (e/d (bvequal sumbits 
+  :hints (("Goal" :in-theory (e/d (bvequal sumbits
                                            bitn-logand-bvequal
                                            bitn-bits) (bits-logand))))))
-           
+
 
 (defthmd bits_alt-logand
   (implies (and (integerp x)
@@ -574,7 +574,7 @@
 
 
 
-(local 
+(local
  (defthmd bitn-logior-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -585,7 +585,7 @@
             :in-theory (e/d (bitn-neg) ())))))
 
 
-(local 
+(local
  (defthmd  bvequal-bits-logior
    (implies (and (integerp x)
                  (integerp y)
@@ -599,10 +599,10 @@
                      (logior (bits x i j)
                              (bits y i j))
                      k))
-   :hints (("Goal" :in-theory (e/d (bvequal sumbits 
+   :hints (("Goal" :in-theory (e/d (bvequal sumbits
                                             bitn-logior-bvequal
                                             bitn-bits) (bits-logior))))))
-           
+
 (defthmd bits_alt-logior
    (implies (and (integerp x)
                  (integerp y)
@@ -628,13 +628,13 @@
                 (case-split (integerp n)))
            (equal (bitn_alt (logxor x y) n)
                   (logxor (bitn_alt x n) (bitn_alt y n))))
-  :hints (("Goal" :in-theory (e/d (bitn_alt-is-bitn bitn-neg)  
+  :hints (("Goal" :in-theory (e/d (bitn_alt-is-bitn bitn-neg)
                                   ())
            :use ((:instance bitn-logxor)))))
 
 
 
-(local 
+(local
  (defthmd bitn-logxor-bvequal
    (implies (and (integerp x)
                  (integerp y)
@@ -645,7 +645,7 @@
             :in-theory (e/d (bitn-neg) ())))))
 
 
-(local 
+(local
  (defthmd  bvequal-bits-logxor
    (implies (and (integerp x)
                  (integerp y)
@@ -659,10 +659,10 @@
                      (logxor (bits x i j)
                              (bits y i j))
                      k))
-   :hints (("Goal" :in-theory (e/d (bvequal sumbits 
+   :hints (("Goal" :in-theory (e/d (bvequal sumbits
                                             bitn-logxor-bvequal
                                             bitn-bits) (bits-logxor))))))
-           
+
 
 
 
@@ -688,10 +688,10 @@
 ;;;;;;
 ;;;;;;
 
-;; we can prove the following. 
+;; we can prove the following.
 ;;
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
 ;; proved in bits-new-proofs.lisp
 (defthmd logand-ones-g
   (implies (and (integerp i)
@@ -741,7 +741,7 @@
           ("Subgoal 2" :in-theory (e/d (bvecp) ()))))
 
 ;;;
-;;; the proof looks awkward. 
+;;; the proof looks awkward.
 ;;;
 ))
 
@@ -768,7 +768,7 @@
                               (k (+ -1 k))
                               (l 0)
                               (n k))))
-            ("Subgoal 1" 
+            ("Subgoal 1"
              :use ((:instance bits_alt-logand
                               (x x)
                               (y (expt 2 k))
@@ -785,7 +785,7 @@
 
 
 
-(local                                           
+(local
 ;;;
 ;;;
  (defthmd bitn-fl-k
@@ -794,7 +794,7 @@
                  (> k 0))
             (equal (BITN (FL (* 1/2 X)) (+ -1 K))
                    (bitn x k)))
-   :hints (("Goal" :in-theory (e/d (bitn-def 
+   :hints (("Goal" :in-theory (e/d (bitn-def
                                     fl-fl-reduce
                                     expt-2-reduce-leading-constant
                                     mod)
@@ -802,7 +802,7 @@
 
 
 
-(local 
+(local
  (defthmd mod-expt-2n
    (implies (and (integerp k)
                  (> k 0))
@@ -823,7 +823,7 @@
 		  (natp k))
 	     (equal (logior x (expt 2 k))
 		    (+ x
-		       (* (expt 2 k) 
+		       (* (expt 2 k)
 			  (- 1 (bitn_alt x k))))))
     :hints (("Goal" :in-theory (e/d (bitn-fl-k
                                      bitn_alt-is-bitn)
@@ -834,7 +834,7 @@
                                              (j (expt 2 k)))
                                   (:instance integer-decompose
                                              (y x)))
-             :in-theory (e/d (bitn-fl-k  
+             :in-theory (e/d (bitn-fl-k
                               mod-expt-2n
                               bitn_alt-is-bitn
                               expt-2-reduce-leading-constant)
@@ -849,20 +849,20 @@
                               (y x)))
              :cases ((equal (mod x 2) 1)))))
 
-             
+
 ;;;
-;;; many ways to prove the following. 
+;;; many ways to prove the following.
 ;;;
 ;;; use the bvequal approach
 ;;;
 
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
 
- (local 
-  (encapsulate () 
+ (local
+  (encapsulate ()
 
                (defun all-ones-p (x n)
                  (if (zp n)
@@ -926,7 +926,7 @@
                           (not (all-ones-p x n)))
                  :hints (("Goal" :do-not '(generalize)
                           :use ((:instance all-bits-sumbits-is-2))
-                          :in-theory (enable sumbits-bits 
+                          :in-theory (enable sumbits-bits
                                              all-bits-sumbits-is-strong
                                              bits-tail-specific))))
 
@@ -948,8 +948,8 @@
                    (and (equal (bitn x (+ -1 n)) 1)
                         (all-ones-p-alt x (+ -1 n)))))
 
-                 
-               
+
+
                (defthmd all-ones-p-bits-all-ones
                  (implies (and (all-ones-p x n)
                                (natp n)
@@ -976,7 +976,7 @@
                (defthm all-ones-p-alt-is-all-one-p
                  (equal (all-ones-p-alt x n)
                         (all-ones-p x n)))
-               
+
                ))
 
 
@@ -1015,7 +1015,7 @@
 ;; 	   (equal (bitn (* x (expt 2 k)) (+ n k))
 ;; 		  (bitn x n))))
 
-(local 
+(local
 (defthmd expt-merge-hack
   (implies (and (integerp n)
                 (integerp m))
@@ -1029,7 +1029,7 @@
                 (natp k)
                 (natp i)
                 (<= k n)
-                (< i n)) ;; could remove this. 
+                (< i n)) ;; could remove this.
            (equal (BITN (+ (EXPT 2 N) (* -1 (EXPT 2 K)))
                         i)
                   (if (and (<= k i)
@@ -1051,16 +1051,16 @@
            :in-theory (e/d (bitn) (bits-n-n-rewrite)))))
 )
 
-             
 
-(local         
+
+(local
 (defthmd bitn-shift-fact-expt
   (implies (and (integerp n)
                 (integerp i)
                 (integerp x))
            (equal (bitn (* (expt 2 n) x) i)
                   (bitn x (+ i (* -1 n)))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :cases ((equal (* (expt 2 n) (expt 2 (* -1 i)))
                           (expt 2 (+ n (* -1 i))))))
           ("Subgoal 1" :in-theory (e/d (bitn-def mod
@@ -1074,12 +1074,12 @@
 ;;     (implies (bvecp x 1)
 ;; 	     (equal (logand 1 x) x)))
 
-(local            
+(local
 (defthmd logand-expt-3-bvequal
   (implies (and (integerp x)
                 (integerp y)
                 (natp n)
-                (natp k) 
+                (natp k)
                 (natp i)
                 (<= k n)
                 (< i n))
@@ -1093,14 +1093,14 @@
                                    (y (+ (expt 2 n)
                                          (* -1 (expt 2 k))))
                                    (n i)))
-           :in-theory (e/d (bitn-expt-expt-i 
+           :in-theory (e/d (bitn-expt-expt-i
                             logand-ones-g-specific
                             bitn-shift-fact-expt
                             bitn-bits)
                            ()))))
 )
 
-(local 
+(local
 (defthmd  bvequal-logand-expt-3
   (implies (and (integerp x)
                 (integerp y)
@@ -1114,7 +1114,7 @@
                     (* (expt 2 k)
                        (bits x (+ -1 n) k))
                     i))
-  :hints (("Goal" :in-theory (e/d (bvequal sumbits 
+  :hints (("Goal" :in-theory (e/d (bvequal sumbits
                                            logand-expt-3-bvequal
                                            bitn-bits) (bits-logand)))))
 )
@@ -1125,7 +1125,7 @@
                 (natp n)
                 (<= k n)
                 (integerp x))
-           (bvecp (LOGAND X (+ (expt 2 n) 
+           (bvecp (LOGAND X (+ (expt 2 n)
                                (* -1 (EXPT 2 K)))) n))
   :hints (("Goal" :use ((:instance logand-bvecp-g
                                    (x (+ (expt 2 n)
@@ -1137,7 +1137,7 @@
           ("Subgoal 2" :in-theory (e/d (bvecp) ()))))
 )
 
-(local 
+(local
 (defthmd bvecp-logand-specific-3
   (implies (and (natp k)
                 (natp n)
@@ -1152,9 +1152,9 @@
                                       (* (expt 2 n)
                                          (/ (expt 2 k))))))
           ("Subgoal 1.1" :in-theory (e/d (bvecp) (EXPT-COMPARE-EQUAL)))))
-       )                   
+       )
 
-           
+
 
 (defthmd logand-expt-3-g
     (implies (and (integerp x)
@@ -1176,7 +1176,7 @@
 
 
 ;;;;
- 
+
 ;; (defthm logand-expt-4
 ;;   (implies (and (integerp n) (>= n 0)
 ;;                 (integerp k) (>= k 0)
@@ -1190,7 +1190,7 @@
 ;;            :use ((:instance logand-expt-4-10)
 ;;                  (:instance expt-split (r 2) (i (- n k)) (j k))))))
 
-(encapsulate () 
+(encapsulate ()
      (local (include-book "../support/merge"))
 
 
@@ -1248,7 +1248,7 @@
                                              (i (* (expt 2 k) x))
                                              (j (* (expt 2 k) y)))))))
 
-                                              
+
 
 (defthmd logxor-shift
     (implies (and (integerp x)
@@ -1294,7 +1294,7 @@
 ;;               (lognot (fl (* 1/2 i)))))
 ;;   :hints (("Goal" :in-theory (enable lognot))))
 
-(encapsulate () 
+(encapsulate ()
              (local (include-book "../support/lognot"))
 
 
@@ -1307,7 +1307,7 @@
              )
 
 
-;; We already have this 
+;; We already have this
 ;;
 ;; (defthm fl-logand-by-2
 ;;   (implies (and (case-split (integerp i))
@@ -1319,7 +1319,7 @@
 ;; easy. Mon Feb  9 17:20:12 2009
 
 (defun fl-induct (x y k)
-  (if (zp k) 
+  (if (zp k)
       (list x y k)
     (fl-induct  (fl (* 1/2 x))
                 (fl (* 1/2 y))
@@ -1341,7 +1341,7 @@
                                            (j y)))
            :in-theory (e/d ()
                            (fl-logand-by-2)))
-          ("Subgoal *1/2'''" :in-theory (e/d (expt-2-reduce-leading-constant) 
+          ("Subgoal *1/2'''" :in-theory (e/d (expt-2-reduce-leading-constant)
                                              ()))))
 
 
@@ -1358,7 +1358,7 @@
                                            (j y)))
            :in-theory (e/d ()
                            (fl-logior-by-2)))
-          ("Subgoal *1/2'''" :in-theory (e/d (expt-2-reduce-leading-constant) 
+          ("Subgoal *1/2'''" :in-theory (e/d (expt-2-reduce-leading-constant)
                                              ()))))
 
 (defthmd fl-logxor
@@ -1374,7 +1374,7 @@
                                            (j y)))
            :in-theory (e/d ()
                            (fl-logxor-by-2)))
-          ("Subgoal *1/2'''" :in-theory (e/d (expt-2-reduce-leading-constant) 
+          ("Subgoal *1/2'''" :in-theory (e/d (expt-2-reduce-leading-constant)
                                              ()))))
 
 ;;;;;
@@ -1384,9 +1384,9 @@
 ;;;                Algebraic Properties
 ;;;**********************************************************************
 
-(encapsulate () 
+(encapsulate ()
              (local (include-book "../support/lognot"))
-             
+
              (defthm lognot-lognot
                (implies (case-split (integerp i))
                         (equal (lognot (lognot i))
@@ -1434,7 +1434,7 @@
     (implies (integerp y)
 	     (equal (logand -1 y) y)))
 
-(encapsulate () 
+(encapsulate ()
   (local (include-book "../support/merge"))
   (defthm logand-1-x
     (implies (bvecp x 1)
@@ -1528,7 +1528,7 @@
            (or (equal (mod x 2) 1)
                (equal (mod x 2) 0)))
   :rule-classes nil)
-         
+
 
 
 (defun logop-3-induct-g (x y z)
@@ -1557,7 +1557,7 @@
                                    (x y))
                         (:instance mod-2-0-1
                                    (x z))))))
-                        
+
 
 
 (defthmd logior-logand-g
@@ -1575,7 +1575,7 @@
                                            (i (logior x y))
                                            (j (logior x z)))))))
 
-           
+
 
 
 (defthmd logand-logior-specific
@@ -1589,9 +1589,9 @@
                                    (x y))
                         (:instance mod-2-0-1
                                    (x z))))))
-                        
 
-                                     
+
+
 
 
 (defthmd logand-logior-g
@@ -1618,7 +1618,7 @@
            (equal (logand  (logior y z) x)
                   (logior (logand y x) (logand z x))))
   :hints (("Goal" :in-theory (e/d (logand-logior-g)))))
-                                   
+
 
 
 (defun logop-2-induct-g (x y)
@@ -1657,7 +1657,7 @@
                                    (x x))
                         (:instance mod-lognot-is-lognot-mod
                                    (x y))))))
-                        
+
 
 
 
@@ -1684,7 +1684,7 @@
                  (LOGAND (MOD X 2) (MOD Z 2))
                  (LOGAND (MOD Y 2) (MOD Z 2)))
          (logior (logand (mod x 2) (mod y 2))
-                 (logand (logxor (mod x 2) 
+                 (logand (logxor (mod x 2)
                                  (mod y 2))
                          (mod z 2))))
   :hints (("Goal" :use ((:instance mod-2-0-1
@@ -1693,7 +1693,7 @@
                                    (x y))
                         (:instance mod-2-0-1
                                    (x z))))))
-  
+
 
 (defthmd log3
   (implies (and (integerp x)
@@ -1707,13 +1707,13 @@
                            ()))
           ("Subgoal *1/2" :use ((:instance logior-def
                                            (i (logand x y))
-                                           (j (logior (logand x z) 
+                                           (j (logior (logand x z)
                                                       (logand y z))))
                                 (:instance logior-def
                                            (i (logand x y))
                                            (j (logand (logxor x y)
                                                       z)))))))
 
-          
+
 
 ;;;;

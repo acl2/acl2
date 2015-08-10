@@ -3,7 +3,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -18,7 +18,7 @@
 ;;
 ;;-------------------------------------------------------------------------
 ;;-------------------------------------------------------------------------
-;; we reuse the book developed for the study of the 
+;; we reuse the book developed for the study of the
 ;; Octagon and presented at the ACL2 workshop 2004
 
 ;; File: intersect.lisp
@@ -57,7 +57,7 @@
 
 (defthm no_intersectp_append-1
   ;; it should be better to have some kind of normalization
-  ;; but the proof of rules to go to the normal form is 
+  ;; but the proof of rules to go to the normal form is
   ;; not automatic in ACL2, but this rule is automatic.
   (equal (no_intersectp (append l1 l2) l3)
          (and (no_intersectp l1 l3)
@@ -75,7 +75,7 @@
   ;; not just one :-)
   (if (endp travel_list)
       nil
-    (append (RoutesV (car travel_list)) 
+    (append (RoutesV (car travel_list))
             (grab_nodes (cdr travel_list)))))
 
 (defthm no-duplicatesp-append
@@ -121,13 +121,13 @@
 #|
 
 (defthm all_no_duplicates_and_all_no_intersectp_route_=>_no_dupli_grab_nodes
-  ;; we prove that this concept and if every route has no duplicate, 
+  ;; we prove that this concept and if every route has no duplicate,
   ;; then grab_nodes of this travel list has no duplicate
   (implies (and (all_no_intersectp_routep l)
                 (all_no_duplicatesp l))
            (no-duplicatesp (grab_nodes l)))
 ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-;   :hints (("GOAL" 
+;   :hints (("GOAL"
 ;            :in-theory (disable NO-DUPLICATESP->NO-DUPLICATESP-EQUAL)))
   )
 |#

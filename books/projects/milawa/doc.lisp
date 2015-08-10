@@ -707,7 +707,7 @@ successful runs Linux machines, I use a ulimit of 65535.</p>
 <h5><a href='http://www.franz.com/products/allegrocl/'>Allegro</a> -- commercial, fast, NOT KNOWN TO WORK</h5>
 
 <p>Instructions:</p>
-<ul> 
+<ul>
   <li>After installing, add a symlink named @('acl') to your $PATH</li>
 </ul>
 
@@ -719,11 +719,11 @@ function to create a copy of Allegro with a larger Lisp heap size, e.g.,</p>
 
 @({
   (build-lisp-image \"big-acl.dxl\"
-                    :lisp-heap-start \"500M\" 
+                    :lisp-heap-start \"500M\"
                     :c-heap-start \"3000M\")
 })
 
-<p>Then, I used <tt>acl -I big-acl.dxl</tt> when building the base Milawa program, but this 
+<p>Then, I used <tt>acl -I big-acl.dxl</tt> when building the base Milawa program, but this
 is still not successful.  It may be that a more recent version of Allegro or more powerful
 computer will be successful.</p>
 
@@ -737,8 +737,8 @@ NOT KNOWN TO WORK</h5>
 </ul>
 
 <p>I have not been able to get <tt>scl</tt> to complete the proofs, as it
-segfaults on me during the proofs in the utilities directory.  I have not spent much 
-effort to debug this, and perhaps the problem is specific to my platform (Linux x86-64) 
+segfaults on me during the proofs in the utilities directory.  I have not spent much
+effort to debug this, and perhaps the problem is specific to my platform (Linux x86-64)
 or fixed in a more recent version.</p>
 
 <h5>Other Lisps?</h5>

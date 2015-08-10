@@ -10,7 +10,7 @@
 
 ;; Part 1: If rdfn is differentiable, then derivative-rdfn is the derivative.
 ;; This uses only nonstad notions of differentiable and derivative, but it
-;; ends up with a classical derivative function. 
+;; ends up with a classical derivative function.
 
 (encapsulate
  nil
@@ -83,7 +83,7 @@
 	     :use ((:instance derivative-rdfn-is-derivative-lemma-2
 			      (y (+ y (- z)))))
 	     ))
-    )) 
+    ))
 
  (local
   (defthm derivative-rdfn-is-derivative-1
@@ -118,7 +118,7 @@
 		   (:instance |(* x (- y))|
 			      (x x)
 			      (y (/ (+ (- y) z)))))
-	     :in-theory (disable |(* x (- y))| 
+	     :in-theory (disable |(* x (- y))|
 				 |(/ (- x))|
 				 |(* x (+ y z))|
 				 SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL)
@@ -432,7 +432,7 @@
 			       (x1 (forall-x-eps-delta-in-range-deriv-classical-works-witness x eps gamma))))
 	      :in-theory (disable abs)))
      ))
-  
+
   (defthm rdfn-classic-is-differentiable-step-1
     (implies (and (inside-interval-p x (rdfn-classical-domain))
 		  (standardp x)
@@ -474,7 +474,7 @@
 		 (realp delta)
 		 (< 0 delta))
 	    (< (abs (- (/ (- (rdfn-classical x) (rdfn-classical x1)) (- x x1))
-		       (derivative-rdfn-classical x))) 
+		       (derivative-rdfn-classical x)))
 	       eps))
    :hints (("Goal"
 	    :use ((:instance rdfn-classic-is-differentiable-step-1)
@@ -651,7 +651,7 @@
 		     (derivative-rdfn-classical x)))
    :hints (("Goal"
 	    :use ((:instance rdfn-classic-is-differentiable-step-2
-			     (eps (standard-lower-bound-of-diff 
+			     (eps (standard-lower-bound-of-diff
 				   (derivative-rdfn-classical x)
 				   (/ (- (rdfn-classical x) (rdfn-classical x1)) (- x x1))))
 			     (delta (* 2 (abs (- x1 x)))))
@@ -936,8 +936,8 @@
    :rule-classes nil))
 
 (defthm rolles-theorem-sk-for-rdfn-classical
-  (implies (and (inside-interval-p a (rdfn-classical-domain)) 
-		(inside-interval-p b (rdfn-classical-domain)) 
+  (implies (and (inside-interval-p a (rdfn-classical-domain))
+		(inside-interval-p b (rdfn-classical-domain))
 		(= (rdfn-classical a) (rdfn-classical b))
 		(< a b))
 	   (exists-critical-point-for-rdfn-classical a b))
@@ -947,10 +947,10 @@
 				     (rdfn-domain rdfn-classical-domain)
 				     (exists-critical-point exists-critical-point-for-rdfn-classical)
 				     (exists-critical-point-witness exists-critical-point-for-rdfn-classical-witness)
-				     (differential-rdfn 
+				     (differential-rdfn
 				      (lambda (x eps)
-					(/ (- (rdfn-classical (+ x eps)) 
-					      (rdfn-classical x)) 
+					(/ (- (rdfn-classical (+ x eps))
+					      (rdfn-classical x))
 					   eps)))
 				     (derivative-rdfn derivative-rdfn-classical)))
 	  ("Subgoal 4"
@@ -998,7 +998,7 @@
  ((rdfn-classical-subdomain () t))
 
  (local
-  (defun rdfn-classical-subdomain () 
+  (defun rdfn-classical-subdomain ()
     (let ((left (interval-left-endpoint (rdfn-classical-domain)))
 	  (right (interval-right-endpoint (rdfn-classical-domain))))
       (if (null left)
@@ -1042,8 +1042,8 @@
 	  (and (inside-interval-p x (rdfn-classical-subdomain))
 	       (not (equal x (interval-left-endpoint (rdfn-classical-subdomain))))
 	       (not (equal x (interval-right-endpoint (rdfn-classical-subdomain))))
-	       (equal (derivative-rdfn-classical x) 
-		      (/ (- (rdfn-classical (interval-right-endpoint (rdfn-classical-subdomain))) 
+	       (equal (derivative-rdfn-classical x)
+		      (/ (- (rdfn-classical (interval-right-endpoint (rdfn-classical-subdomain)))
 			    (rdfn-classical (interval-left-endpoint (rdfn-classical-subdomain))))
 			 (- (interval-right-endpoint (rdfn-classical-subdomain))
 			    (interval-left-endpoint (rdfn-classical-subdomain))))))))
@@ -1057,10 +1057,10 @@
 				       (rdfn-subdomain rdfn-classical-subdomain)
 				       (exists-mvt-point exists-mvt-point-for-rdfn-classical)
 				       (exists-mvt-point-witness exists-mvt-point-for-rdfn-classical-witness)
-				       (differential-rdfn 
+				       (differential-rdfn
 					(lambda (x eps)
-					  (/ (- (rdfn-classical (+ x eps)) 
-						(rdfn-classical x)) 
+					  (/ (- (rdfn-classical (+ x eps))
+						(rdfn-classical x))
 					     eps)))
 				       (derivative-rdfn derivative-rdfn-classical)))
 	    ("Subgoal 2"
@@ -1080,10 +1080,10 @@
 				      (rdfn-subdomain rdfn-classical-subdomain)
 				      (exists-mvt-point exists-mvt-point-for-rdfn-classical)
 				      (exists-mvt-point-witness exists-mvt-point-for-rdfn-classical-witness)
-				      (differential-rdfn 
+				      (differential-rdfn
 				       (lambda (x eps)
-					 (/ (- (rdfn-classical (+ x eps)) 
-					       (rdfn-classical x)) 
+					 (/ (- (rdfn-classical (+ x eps))
+					       (rdfn-classical x))
 					    eps)))
 				      (derivative-rdfn derivative-rdfn-classical)))))
 

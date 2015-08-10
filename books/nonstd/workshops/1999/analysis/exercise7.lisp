@@ -117,7 +117,7 @@
     :hints (("Goal"
 	     :use ((:instance limited*large->large (y (/ y))))
 	     :in-theory (disable limited*large->large)))))
-			     
+
 
  ;; Where this lemma comes in handy is that we know that ((rdfn x) -
  ;; (rdfn y))/(x - y) is limited for y close to x.  From that, we can
@@ -132,7 +132,7 @@
 	    (i-close (rdfn x) (rdfn y)))
    :hints (("Goal"
 	    :use ((:instance rdfn-differentiable (y1 y) (y2 y))
-		  (:instance lemma-1 
+		  (:instance lemma-1
 			     (x (+ (rdfn x) (- (rdfn y))))
 			     (y (+ x (- y)))))
 	    :in-theory (enable-disable (i-close)
@@ -160,9 +160,9 @@
 ;; limited.  We can do that by functional instantiation.
 
 (defthm find-max-rdfn-x-n-limited
-  (implies (and (realp a) 
+  (implies (and (realp a)
 		(i-limited a)
-		(realp b) 
+		(realp b)
 		(i-limited b)
 		(< a b))
 	   (i-limited (find-max-rdfn-x-n a a
@@ -183,7 +183,7 @@
 	   (< a b))
       (standard-part (find-max-rdfn-x-n a
 					a
-					0 
+					0
 					(i-large-integer)
 					(/ (- b a) (i-large-integer))))
     0))
@@ -255,9 +255,9 @@
 ;; Of course, it's limited.
 
 (defthm find-min-rdfn-x-n-limited
-  (implies (and (realp a) 
+  (implies (and (realp a)
 		(i-limited a)
-		(realp b) 
+		(realp b)
 		(i-limited b)
 		(< a b))
 	   (i-limited (find-min-rdfn-x-n a a
@@ -269,7 +269,7 @@
 				       (find-min-rcfn-x-n find-min-rdfn-x-n)
 				       (rcfn rdfn)))
 	   :in-theory (disable find-min-rcfn-x-n-limited))))
-		   
+
 ;; And so we can use defun-std to get the "real" minimum value.
 
 (defun-std find-min-rdfn-x (a b)
@@ -278,7 +278,7 @@
 	   (< a b))
       (standard-part (find-min-rdfn-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))))
     0))
@@ -339,7 +339,7 @@
 		(< a b)
 		(<= a x)
 		(<= x b)
-		(= (rcfn (find-min-rcfn-x a b)) 
+		(= (rcfn (find-min-rcfn-x a b))
 		   (rcfn (find-max-rcfn-x a b))))
 	   (equal (equal (rcfn (find-min-rcfn-x a b)) (rcfn x)) t))
   :hints (("Goal"
@@ -398,7 +398,7 @@
 		(< a b)
 		(realp eps)
 		(< (abs eps) (/ (- b a) 2))
-		(= (rdfn (find-min-rdfn-x a b)) 
+		(= (rdfn (find-min-rdfn-x a b))
 		   (rdfn (find-max-rdfn-x a b))))
 	   (equal (differential-rdfn (/ (+ a b) 2) eps) 0))
   :hints (("Goal"
@@ -435,7 +435,7 @@
 		(< a (- (find-max-rdfn-x a b) eps))
 		(< (+ (find-max-rdfn-x a b) eps) b))
 	   (<= 0 (differential-rdfn (find-max-rdfn-x a b) (- eps)))))
-				     
+
 ;; Of course, the same claims follow for an internal minimum, min-x.
 ;; For a positive epsilon, the differential is non-positive.
 
@@ -460,7 +460,7 @@
 		(< a (- (find-min-rdfn-x a b) eps))
 		(< (+ (find-min-rdfn-x a b) eps) b))
 	   (<= (differential-rdfn (find-min-rdfn-x a b) (- eps)) 0)))
-				     
+
 ;; This is clearly something that belongs in nsa.lisp.  The
 ;; standard-part of a small number is zero.
 
@@ -558,7 +558,7 @@
 ;; Now, we define the critical point of rdfn on [a,b].  If min-x is
 ;; equal to max-x, then we arbitrarily pick the midpoint of a and b,
 ;; since that'll be an interior point.  Otherwise, we pick whichever
-;; of min-x or max-x is interior. 
+;; of min-x or max-x is interior.
 
 (defun rolles-critical-point (a b)
   (if (equal (rdfn (find-min-rdfn-x a b)) (rdfn (find-max-rdfn-x a b)))
@@ -575,7 +575,7 @@
 		(realp b)
 		(< a b)
 		(= (rdfn a) (rdfn b))
-		(not (= (rdfn (find-min-rdfn-x a b)) 
+		(not (= (rdfn (find-min-rdfn-x a b))
 			(rdfn (find-max-rdfn-x a b))))
 		(= (rdfn (find-min-rdfn-x a b)) (rdfn a)))
 	   (and (< a (find-max-rdfn-x a b))
@@ -594,7 +594,7 @@
 		(realp b)
 		(< a b)
 		(= (rdfn a) (rdfn b))
-		(not (= (rdfn (find-min-rdfn-x a b)) 
+		(not (= (rdfn (find-min-rdfn-x a b))
 			(rdfn (find-max-rdfn-x a b))))
 		(not (= (rdfn (find-min-rdfn-x a b)) (rdfn a))))
 	   (and (< a (find-min-rdfn-x a b))
@@ -659,7 +659,7 @@
   (if (realp x)
       (standard-part (differential-rdfn x (/ (i-large-integer))))
     0))
-  
+
 (in-theory (disable derivative-rdfn))
 
 ;; We would like to rephrase the differentiability criteria in terms
@@ -677,7 +677,7 @@
 			     (y2 (+ x eps2))))
 	    :in-theory (enable-disable (differential-rdfn)
 				       (rdfn-differentiable)))))
-	    
+
 ;; This is the ohter requirement of a differntiable function, namely
 ;; that the differntial is limited.
 
@@ -706,7 +706,7 @@
 ;; This rules converts instances of infinitesimal differntials into
 ;; the derivative.  The syntaxp is there to keep the rule from looping
 ;; on the definition of derivative!  This is probably a bad way of
-;; going about the proof! 
+;; going about the proof!
 
 (defthm differential-rdfn-close
    (implies (and (realp x)   (standard-numberp x)
@@ -755,7 +755,7 @@
 	    :in-theory (disable derivative-rdfn
 				differential-rdfn-close
 				standard-part-<=))))
-		  
+
 ;; Of course, the same applies if for a given epsilon the differntials
 ;; are negative and for -epsilon they're positive.  Hmmm, it looks
 ;; like the previous theorem is more general, so this is probably not
@@ -782,7 +782,7 @@
 	    :in-theory (disable derivative-rdfn
 				differential-rdfn-close
 				standard-part-<=))))
-		  
+
 ;; But it is enough to prove Rolle's theorem.  The derivative of the
 ;; critical point is equal to zero.  The critical point is either an
 ;; extreme value of rdfn interior to (a,b), or it's equal to the
@@ -834,4 +834,4 @@
 			       rolles-theorem-lemma-2b
 			       rolles-theorem-lemma-2e
 			       rolles-theorem-lemma-3a))))
-  
+

@@ -9,7 +9,7 @@
 (defthm-std acl2-acos-standard
   (implies (standardp x)
            (standardp (acl2-acos x))))
-     
+
 (local
  (defthm sine-acos-nonnegative
    (implies (and (realp x)
@@ -21,8 +21,8 @@
                              (x (acl2-acos x)))
                   (:instance sine-positive-in-pi/2-pi
                              (x (acl2-acos x)))
-                  (:instance acl2-acos-exists (y x))) 
-            :in-theory (enable-disable 
+                  (:instance acl2-acos-exists (y x)))
+            :in-theory (enable-disable
                         (interval-definition-theory)
                         (sine-positive-in-0-pi/2
                          sine-positive-in-pi/2-pi
@@ -111,7 +111,7 @@
            :use (:instance acl2-acos-inverse-exists)
            :in-theory (enable interval-definition-theory))
 	  ))
-  
+
 #|
 (encapsulate
  nil
@@ -129,7 +129,7 @@
  (local
   (defthmd lemma-2
     (implies (and (realp x)
-		  (<= -1 x) 
+		  (<= -1 x)
 		  (<= x 1))
 	     (equal (acl2-sine (- (/ (acl2-pi) 2) (acl2-acos x)))
 		    x))
@@ -141,7 +141,7 @@
  (local
   (defthmd lemma-3
     (implies (and (realp x)
-		  (<= -1 x) 
+		  (<= -1 x)
 		  (<= x 1))
 	     (equal (acl2-asin (acl2-sine (- (/ (acl2-pi) 2) (acl2-acos x))))
 		    (acl2-asin x)))
@@ -151,7 +151,7 @@
  (local
   (defthmd lemma-4
     (implies (and (realp x)
-		  (<= -1 x) 
+		  (<= -1 x)
 		  (<= x 1))
 	     (inside-interval-p (+ (* 1/2 (acl2-pi)) (- (acl2-acos x)))
 				(interval (- (* 1/2 (acl2-pi)))
@@ -163,7 +163,7 @@
 
  (defthmd pi/2-acos-=-asin
    (implies (and (realp x)
-		 (<= -1 x) 
+		 (<= -1 x)
 		 (<= x 1))
 	    (equal (- (/ (acl2-pi) 2) (acl2-acos x))
 		   (acl2-asin x)))
@@ -179,8 +179,8 @@
 
 (encapsulate
  nil
- 
- (local 
+
+ (local
   (defthm asin-to-acos
     (implies (and (realp x) (< -1 x) (< x 1))
              (equal (acl2-asin x)
@@ -204,10 +204,10 @@
                  (standardp x)
                  (i-close x y)
                  (not (equal x y)))
-            (i-close (/ (- (acl2-asin x) (acl2-asin y)) 
+            (i-close (/ (- (acl2-asin x) (acl2-asin y))
                         (- x y))
                      (/ (acl2-sqrt (- 1 (* x x))))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :in-theory (disable pi/2-acos-=-asin)
             :use ((:instance acl2-acos-derivative (x x) (y y))
                   (:instance close-uminus
@@ -224,7 +224,7 @@
   (implies (standardp x)
            (standardp (acl2-asin x))))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-acl2-asin
  (acl2-asin x)
  (and (realp x) (< -1 x) (< x 1))
@@ -237,7 +237,7 @@
                 (< -1 x)
                 (< x 1))
            (< 0 (acl2-sqrt (- 1 (* x x)))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance sine-acos-positive (x x))))) ;sine-acos rewrites to sqrt(1-x*x)
 
 (defthm close-to-standard-not-small
@@ -265,7 +265,7 @@
                 (i-close x y))
            (i-close (/ (acl2-sqrt (- 1 (* x x))))
                     (/ (acl2-sqrt (- 1 (* y y))))))
-  :hints (("Goal" :use (:instance close-/ 
+  :hints (("Goal" :use (:instance close-/
                                   (x (ACL2-SQRT (+ 1 (- (* X X)))))
                                   (y (ACL2-SQRT (+ 1 (- (* y y)))))))
           ("Subgoal 2"
@@ -276,13 +276,13 @@
            :in-theory (disable x*x<1)
            :use ((:instance  x*x<1 (x x))
                  (:instance  x*x<1 (x y))
-                 (:instance sqrt-continuous 
+                 (:instance sqrt-continuous
                             (x (- 1 (* x x)))
                             (y (- 1 (* y y))))))))
 
-                 
 
-(differentiable-criteria-expr 
+
+(differentiable-criteria-expr
  elem-acl2-asin-prime
  (/ (acl2-sqrt (- 1 (* x x))))
  (and (realp x) (< -1 x) (< x 1)))
@@ -304,7 +304,7 @@
   (/ (acl2-sqrt (- 1 (* x x)))))
 
 ; Now for acos
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-acl2-acos
  (acl2-acos x)
  (and (realp x) (< -1 x) (< x 1))
@@ -312,7 +312,7 @@
  (("Goal" :use (:instance acl2-acos-continuous)
    :in-theory (enable interval-definition-theory))))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-acl2-acos-prime
  (- (/ (acl2-sqrt (- 1 (* x x)))))
  (and (realp x) (< -1 x) (< x 1)))
@@ -370,7 +370,7 @@
            (equal (* (/ (acl2-sqrt x))
                      (/ (acl2-sqrt x)))
                   (/ x)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance sqrt-sqrt (x (/ x)))
            :in-theory (disable sqrt-sqrt ))))
 
@@ -384,7 +384,7 @@
                        (- x y))
                     (/ (+ 1 (* x x)))))
   :hints (("Goal"
-           :use (:functional-instance 
+           :use (:functional-instance
                  inverse-g-close
                  (inverse-f (lambda (x) (acl2-tangent x)))
                  (inverse-f-domain-p (lambda (x)
@@ -396,9 +396,9 @@
                                                (acl2-cosine x)))))
                  (inverse-g acl2-atan)
                  (inverse-g-domain-p (lambda (x) (realp x)))
-                 
+
                  ))
-          
+
           ("Subgoal 6"
 ; changed 12/13/12 from "Subgoal 7" and then 2/16/13 from "Subgoal 5", both
 ; probably for tau-system,by Matt K
@@ -426,7 +426,7 @@
                     (/ (+ 1 (* x x)))))
   :hints (("Goal" :use (:instance acl2-atan-derivative))))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-acl2-atan
  (acl2-atan x)
  (realp x))
@@ -438,16 +438,16 @@
                 (i-close x y))
            (i-close (+ 1 (* x x))
                     (+ 1 (* y y))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable i-close i-small)
            :use (:instance i-close-limited (x x) (y y)))))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-acl2-atan-prime
  (/ (+ 1 (* x x)))
  (realp x)
- :continuous-hints 
- (("Goal" 
+ :continuous-hints
+ (("Goal"
    :use (:instance close-/
                    (x (+ 1 (* x x)))
                    (y (+ 1 (* y y)))))))

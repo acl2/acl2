@@ -36,20 +36,20 @@
 |#
 
 #|
-(encapsulate 
+(encapsulate
  ()
 
  (local
   (defthm syntax-subbagp-implements-subbagp-syntax-ev2-nil
     (implies
-     (and 
+     (and
       (v0 (syntax-remove-bag list1 list2 flg))
       (equal (syntax-ev2 (v2 (syntax-remove-bag list1 list2 flg)) a)
 	     nil)
       )
      (subbagp (syntax-ev2 list2 a) (syntax-ev2 list1 a))))
   )
- 
+
 (DEFTHM SYNTAX-SUBBAGP-IMPLEMENTS-SUBBAGP-2
   (IMPLIES (AND (V0 (SYNTAX-REMOVE-BAG LIST1 LIST2 FLG))
                 (EQUAL (V2 (SYNTAX-REMOVE-BAG LIST1 LIST2 FLG))
@@ -84,7 +84,7 @@
 	 nil)))
 
 (defirrelevant syntax-subbagp-list 1 a (x list)
-  :hints (("goal" :in-theory (enable 
+  :hints (("goal" :in-theory (enable
 			      syntax-subbagp-list
 			      syntax-subbagp-irrelevant
 			      ))))

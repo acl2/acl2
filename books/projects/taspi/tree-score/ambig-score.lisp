@@ -9,7 +9,7 @@
                               (consp cssl-map))))
   (if (consp actual-seq)
       (if (equal (car actual-seq) 'N)
-          (cons (if (not (equal (car pars-seq-scorelist) 
+          (cons (if (not (equal (car pars-seq-scorelist)
                                 (cdr (assoc-hqual '-
                                                   cssl-map))))
                     (car pars-seq-scorelist) ; not a gap, return parsimony ans
@@ -23,7 +23,7 @@
                                    cssl-map)))
     nil))
 
-;; return trees mapped to sequences with ambig characters removed 
+;; return trees mapped to sequences with ambig characters removed
 (defun get-key-matching-val (val mapping)
   (declare (xargs :guard (alistp-gen mapping)))
   (if (consp mapping)
@@ -42,8 +42,8 @@
       (let* ((poss-internal-name (get-key-matching-val
                                   (caar pars-seqs-scorelist)
                                   anc-mappings))
-             (internal-name (if poss-internal-name 
-                                poss-internal-name 
+             (internal-name (if poss-internal-name
+                                poss-internal-name
                               (caar pars-seqs-scorelist)))
              (one-actual-seq (cdr (assoc-hqual internal-name actual-seq))))
         (if (equal (len (cdar pars-seqs-scorelist))
@@ -52,20 +52,20 @@
                         (reassign-ambig-help one-actual-seq
                                              (cdar pars-seqs-scorelist)
                                              cssl-map))
-                  (reassign-ambig2 (cdr pars-seqs-scorelist) actual-seq 
+                  (reassign-ambig2 (cdr pars-seqs-scorelist) actual-seq
                                    cssl-map anc-mappings))
           "Error in reassign-ambig2"))
     nil))
-                        
 
 
-(defun make-sequence-pairings-for-tree-from-scorelists-and-actual 
+
+(defun make-sequence-pairings-for-tree-from-scorelists-and-actual
   (tree sequence-score-lists sequences matrix-lists cssl-map anc-mapping)
-  (declare (xargs :guard 
-                  (and 
+  (declare (xargs :guard
+                  (and
                    (map-to-small-integer-list-listp sequence-score-lists)
                    (small-integer-list-listp matrix-lists)
-                   (good-len-lists-mapping sequence-score-lists 
+                   (good-len-lists-mapping sequence-score-lists
                                            matrix-lists)
                    (alistp-gen sequences)
                    (alistp-gen anc-mapping)
@@ -75,10 +75,10 @@
           (score-tree-and-sequences-keep-internal tree sequence-score-lists
                                                   matrix-lists nil)
           (if (alistp-gen pairings)
-              (let ((reassigned-pairings 
-                     (reassign-ambig2 (cons 
-                                      (cons tree total) 
-                                      pairings) 
+              (let ((reassigned-pairings
+                     (reassign-ambig2 (cons
+                                      (cons tree total)
+                                      pairings)
                                      sequences cssl-map anc-mapping)))
                 (if (alistp-gen reassigned-pairings)
                     (make-sequence-pairings reassigned-pairings)
@@ -86,35 +86,35 @@
             "Error: Bad pairings from score-tree-and-keep-internal")))
 
 (defun score-tree-with-affine-score-lists-ambig
-  (tree score-lists sequences gap-char gap-cost gap-extend-cost 
+  (tree score-lists sequences gap-char gap-cost gap-extend-cost
         transition-matrix anc-mappings cssl-map)
   (declare (xargs :guard (and (small-integer-transition-matrixp
                                transition-matrix)
                               (map-to-small-integer-list-listp score-lists)
                               (small-integer-list-listp (get-matrix-lists-from-trans
                                                          transition-matrix))
-                              (good-len-lists-mapping score-lists 
+                              (good-len-lists-mapping score-lists
                                                       (get-matrix-lists-from-trans
                                                        transition-matrix))
                               (rationalp gap-cost)
                               (rationalp gap-extend-cost)
-                              
+
                               (alistp-gen anc-mappings)
                               (alistp-gen sequences)
                               (alistp-gen cssl-map)
                               (consp cssl-map))))
   (if (consp anc-mappings)
-      (let ((pairings 
-              (make-sequence-pairings-for-tree-from-scorelists-and-actual 
+      (let ((pairings
+              (make-sequence-pairings-for-tree-from-scorelists-and-actual
                tree score-lists
                sequences
                (get-matrix-lists-from-trans
                 transition-matrix) cssl-map anc-mappings)))
         (if (consp pairings)
-            (score-pairings 'affine pairings 
-                            (list gap-char 
-                                  gap-cost 
-                                  gap-extend-cost 
+            (score-pairings 'affine pairings
+                            (list gap-char
+                                  gap-cost
+                                  gap-extend-cost
                                   (numberfy transition-matrix 0))
                             0) ;;acc
           pairings)) ;; effectively passes on errors

@@ -108,7 +108,7 @@ To compile the book, I do the following:
 
 (encapsulate
  ()
- 
+
  (local
   (defthm bitonic-batcher-merge
     (implies (and (p-regular-p x)
@@ -128,8 +128,8 @@ To compile the book, I do the following:
 			    (x (p-batcher-sort (p-untie-l x)))
 			    (y (p-batcher-sort (p-untie-r x))))
 	    :in-theory (disable bitonic-batcher-merge)))))
-	    
- 
+
+
 
 ;;; The remaining theorems, which detail the correctness of this specific
 ;;; bitonic sort algorithm, are simple consequences of the theorem above.

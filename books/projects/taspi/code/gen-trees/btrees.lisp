@@ -1,8 +1,8 @@
 (in-package "ACL2")
 (include-book "arithmetic-3/bind-free/top" :dir :system)
 (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)
-(set-default-hints '((nonlinearp-default-hint 
-                      stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint
+                      stable-under-simplificationp
                       hist
                       pspv)))
 (include-book "../gen-helper/fast-lists")
@@ -70,7 +70,7 @@
                (+ 1 x)))
    :hints (("subgoal *1/4.1.2'"
             :use (:instance crock
-                            (x (expt 2 
+                            (x (expt 2
                                      (+ -1 (ilog2-help
                                             j))))
                             (y j)))))
@@ -219,7 +219,7 @@
 
 (dis+ind balanced-tree-helper)
 
-;; gives height of a btree 
+;; gives height of a btree
 (defun depth (x)
   (declare (xargs :guard t))
   (if (consp x)
@@ -313,7 +313,7 @@
   :rule-classes (:rewrite :linear))
 
 
-;; need depth of all assocs to be 0, which is what 
+;; need depth of all assocs to be 0, which is what
 ;; good-index-taxon-halist gives us
 (defthm depth-build-taxa-list-depth
   (implies (and (good-index-taxon-halist y)
@@ -332,7 +332,7 @@
   (implies (and (good-index-taxon-halist y)
                 (integerp x)
                 (<= 0 x))
-           (balanced-tree-helper 
+           (balanced-tree-helper
             (build-taxa-list-tree-help x pos y)
             x)))
 
@@ -340,7 +340,7 @@
   (implies (and (int-symlist taxa-list)
                 (<= 2 (len taxa-list)))
            (balanced-tree-helper (build-taxa-list-tree taxa-list)
-                                 (depth (build-taxa-list-tree 
+                                 (depth (build-taxa-list-tree
                                          taxa-list))))
   :hints (("Goal" :in-theory (enable build-taxa-list-tree))))
 
@@ -354,9 +354,9 @@
 (defthm consp-build-taxa-list-tree-help
   (implies (and (integerp depth)
                 (<= 1 depth))
-           (consp (build-taxa-list-tree-help 
+           (consp (build-taxa-list-tree-help
                     depth p list)))
-  :hints (("Subgoal *1/3'" 
+  :hints (("Subgoal *1/3'"
            :expand (build-taxa-list-tree-help 1 p list))))
 
 (defthm consp-build-taxa-list-tree-when-consp
@@ -369,8 +369,8 @@
 (defthm good-depths-with-build-taxa-list-tree
   (implies (and (int-symlist taxa-list)
                 (consp x)
-                (good-depths 
-                 x 
+                (good-depths
+                 x
                  (build-taxa-list-tree taxa-list)))
            (<= (depth (car x))
                (ilog2 (len taxa-list)))))
@@ -379,7 +379,7 @@
   (implies (and (integerp x)
                 (<= 0 x))
            (consp (bits-to-tree i x))))
-                
+
 (defthm good-depths-through-evens
   (implies (good-depths x y)
            (good-depths (evens-gen x) y))

@@ -74,7 +74,7 @@
 		   (floor x y))
 		(<= (floor x y)
 		    (/ x y))))
-  :rule-classes ((:generalize) 
+  :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y))))))
 
 (local
@@ -83,7 +83,7 @@
 		(integerp (/ x y)))
 	   (equal (floor x y)
 		  (/ x y)))
-  :rule-classes ((:generalize) 
+  :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y))))))
 
 (local
@@ -92,7 +92,7 @@
 		(not (integerp (/ x y))))
 	   (< (floor x y)
 	      (/ x y)))
-  :rule-classes ((:generalize) 
+  :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y))))))
 
 

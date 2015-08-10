@@ -148,7 +148,7 @@ from the ITP presentation are also available.</p>")
   (declare (xargs :guard (integerp n)
                   :verify-guards nil))
   (cond ((atom x)     (mv n acc))
-        ((hons-get x acc)  (mv n acc)) 
+        ((hons-get x acc)  (mv n acc))
         ((hqual (car x) (cdr x))
          (count-bdd-branches (car x) n (hut x t acc)))
         ((<= n 0)       (mv nil acc))
@@ -355,7 +355,7 @@ from the ITP presentation are also available.</p>")
           (cons a ras)
           fmemo memo
           (and (hqual hi lo) exact)))))
-         
+
 
 
 
@@ -381,8 +381,8 @@ from the ITP presentation are also available.</p>")
         (if mem
             (mv t (cadr mem) (caddr mem) (cdddr mem) nil)
           (mv nil nil nil nil nil))))))
-        
-      
+
+
 
 (defun and-bddify-var-weakening (bdd1 aig1 count1 exact1 bdd2 aig2 count2 exact2
                                   max-count bdd-al nxtbdd)
@@ -415,7 +415,7 @@ from the ITP presentation are also available.</p>")
               (hons nxtbdd nxtbdd)
               nil))))
     (mv bdd aig count bdd-al nxtbdd exact)))
-  
+
 
 (defn aig-bddify-var-weakening-cache-insert (exact x aig c-ans fmemo memo)
   (if exact
@@ -505,7 +505,7 @@ from the ITP presentation are also available.</p>")
        (- (flush-hons-get-hash-table-link done))
        (m (hons-get x fmemo)))
     (mv fmemo (consp m) (and (consp m) (cadr m)))))
-   
+
 
 
 
@@ -653,7 +653,7 @@ from the ITP presentation are also available.</p>")
              (bddify-mk-old-style-tries
               (ceiling (* incr thresh) 1)
               incr (1- times) vars-thresh))))))
-  
+
 (defconst *bddify-default-tries*
   (bddify-mk-old-style-tries 256 2 20 2048))
 
@@ -744,7 +744,7 @@ from the ITP presentation are also available.</p>")
                 (,fn-symbol ,@formals *bddify-default-tries* nil))
          :hints (("goal" :in-theory (disable ,fn)))
          :rule-classes nil))))
-    
+
 
 (defmacro def-with-bddify (fn)
   `(make-event (def-with-bddify-fn ',fn (w state))))
@@ -785,7 +785,7 @@ from the ITP presentation are also available.</p>")
    (defthm aig-eval-is-aig-eval-list
      (equal (car (aig-eval-list-with-bddify (list x) al tries mwa))
             (aig-eval-with-bddify x al tries mwa)))
-   
+
    (in-theory (disable aig-eval-with-bddify
                        aig-eval-list-with-bddify
                        aig-eval-alist-with-bddify

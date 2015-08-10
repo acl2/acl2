@@ -30,7 +30,7 @@ self-explanatory.
    (implies (pre s) (inv s)))
 
  (defthm |inv persists|
-   (implies (and (inv s)  
+   (implies (and (inv s)
                  (not (exitpoint s)))
             (inv (step-fn s))))
 
@@ -41,7 +41,7 @@ self-explanatory.
 
 
 (defun run-fn (s n)
-  (if (zp n) 
+  (if (zp n)
       s
     (run-fn (step-fn s) (1- n))))
 
@@ -58,7 +58,7 @@ self-explanatory.
    (if (zp n) t
      (if (exitpoint s) nil
        (no-exit (step-fn s) (1- n))))))
- 
+
 (local
  (defthm no-exit-to-exitpoint
    (implies (and (no-exit s n)
@@ -67,7 +67,7 @@ self-explanatory.
                  (< m n))
             (not (exitpoint (run-fn s m))))))
 
-(local                
+(local
  (defthm no-exit-to-no-exit
    (implies (and (no-exit s n)
                  (natp m)
@@ -100,11 +100,11 @@ self-explanatory.
                                      (1- n)))))
                   (:instance (:definition run-fn)
                              (n (1+ (n-is-first-witness (step-fn s) (1- n))))))))))
- 
+
 (local
  (defun induction-hint (s m n)
    (declare (xargs :measure (acl2-count m)))
-   (if (or (zp m) (exitpoint s)) 
+   (if (or (zp m) (exitpoint s))
        (list s m n)
      (induction-hint (step-fn s) (1- m) (1- n)))))
 
@@ -120,7 +120,7 @@ self-explanatory.
            ("Subgoal *1/1"
             :use ((:instance n-is-first-necc
                              (m 0)))))))
-  
+
 
 ;; Here is the proof of partial correctness.
 
@@ -130,7 +130,7 @@ self-explanatory.
                 (exitpoint (run-fn s n))
                 (n-is-first s n))
            (post (run-fn s n))))
-                
+
 
 
 

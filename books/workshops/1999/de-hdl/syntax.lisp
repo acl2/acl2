@@ -327,7 +327,7 @@
 		(consp (cddr (assoc-eq fn netlist)))
 		(consp (cdddr (assoc-eq fn netlist)))
 		(consp (cddddr (assoc-eq fn netlist))))))
-  
+
 (defthm not-cdr-assoc-eq-fn-netlist-implies-no-module
   (implies (and (net-syntax-okp netlist)
                 (atom (cdr (assoc-eq fn netlist))))

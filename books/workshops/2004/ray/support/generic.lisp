@@ -8,7 +8,7 @@
 In this book, we achieve the following. Assume that we have a function
 copy with the property that (copy x) has the same number of elements
 as x, and nth i of x is the same as nth i of (copy x). Then I want to
-guarantee that (copy x) is the identity function. This 
+guarantee that (copy x) is the identity function. This
 
 |#
 
@@ -20,7 +20,7 @@ guarantee that (copy x) is the identity function. This
 ;        (and (integerp n)
 ;             (<= 0 n)))
 ;   :rule-classes :compound-recognizer))
- 
+
 (local
  (in-theory (disable natp)))
 
@@ -31,7 +31,7 @@ guarantee that (copy x) is the identity function. This
  (defthm nth-update-nth-diff
    (implies (not (equal (nfix n) (nfix m)))
             (equal (nth n (update-nth m v l)) (nth n l)))))
- 
+
 (local
  (defthm nth-update-nth-same
    (implies (equal (nfix n) (nfix m))
@@ -58,7 +58,7 @@ guarantee that (copy x) is the identity function. This
  ;; [Jared] changed this to use arithmetic-3 instead of 2
  (include-book "arithmetic-3/bind-free/top" :dir :system))
 
-(local 
+(local
   (defun falsifier-index (a b i)
     (if (endp a) i
       (if (equal (car a) (car b))
@@ -74,7 +74,7 @@ guarantee that (copy x) is the identity function. This
                   (nth i l)))
     :hints (("Goal"
              :in-theory (enable nth)))))
-  
+
 (local
  (defthm falsifier-natp
    (implies (natp i)
@@ -131,7 +131,7 @@ guarantee that (copy x) is the identity function. This
                              (i 0)))))))
 
 
-(local 
+(local
  (defthm falsifier-!=i-for-consp
    (implies (and (consp a)
                  (equal (len a) (len b))
@@ -201,7 +201,7 @@ guarantee that (copy x) is the identity function. This
 
 
 (defthm |copy from is identity|
-  (implies (and (true-listp x) 
+  (implies (and (true-listp x)
                 (hypos x))
            (equal (copy-from x) x))
   :hints (("Goal"
@@ -248,8 +248,8 @@ guarantee that (copy x) is the identity function. This
                             (a (copy-from-fld x))
                             (b (nth (fldf) x)))
                  (:instance copy-from-fld-has-same-nth
-                            (i (falsifier-index (copy-from-fld x) 
-                                                (nth (fldf) x) 
+                            (i (falsifier-index (copy-from-fld x)
+                                                (nth (fldf) x)
                                                 0)))
                  (:instance copy-from-fld-has-same-len)))))
 
@@ -291,7 +291,7 @@ guarantee that (copy x) is the identity function. This
 )
 
 (defthm |copy to whole is identity|
-  (implies (and (true-listp l) 
+  (implies (and (true-listp l)
                 (true-listp x)
                 (hypotheses l x)
                 (equal (len l) (len x)))
@@ -333,7 +333,7 @@ guarantee that (copy x) is the identity function. This
 )
 
 (defthm |copy to field is identity|
-  (implies (and (true-listp l) 
+  (implies (and (true-listp l)
                 (true-listp (nth (fld) x))
                 (equal (len l) (len (nth (fld) x))))
            (equal (nth (fld) (copy-to-fld l x)) l))

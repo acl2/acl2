@@ -15,7 +15,7 @@
 ; Because of the context in which I wish to apply a result like this one, the
 ; function that finds the minimal value is tail-recursive.  That means it
 ; maintains an accumulator with the least value seen so far.  That gives rise
-; to a generalization issue.  
+; to a generalization issue.
 
 ; None of this is deep mathematics!  The whole point of this exercise is just
 ; to do a toy example of this type of problem to guide me in the more
@@ -98,7 +98,7 @@
                 (integerp hi)
                 (or (null xxx) (integerp xxx)))
            (below-all (find-minimal1 lo hi xxx) lo hi)))
-                
+
 ; Now prove that below-all is a universal quantifier: If (below-all min lo hi)
 ; holds and lo <= x <= hi, min <= (fmla x).
 
@@ -123,6 +123,6 @@
 
 
 
-                
+
 
 

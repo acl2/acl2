@@ -46,7 +46,7 @@ in which each leaf is either a rational constant which is a power of 2 or a term
   (if (not (consp term))
       nil
     (case (car term)
-      (quote (and (rationalp (cadr term)) 
+      (quote (and (rationalp (cadr term))
                   (power2p (cadr term))))
       (expt (equal (cadr term) '(quote 2))) ;allow the base to be any power of 2?  (constants only? or (expt 2 n)??
       (binary-* (and (power2-syntaxp (cadr term))

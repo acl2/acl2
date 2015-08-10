@@ -559,7 +559,7 @@ function @(see logrev1).</p>
   :long "<p>If @('i') can be represented as a @('size')-bit signed integer,
 then @('i') is returned unchanged.  Otherwise, @('(logsat size i)') returns
 the @('size')-bit signed integer closest to @('i').  For positive i, this
-will be @($2^{size-1} - 1$).  For negative @('i'), this will be 
+will be @($2^{size-1} - 1$).  For negative @('i'), this will be
 @($-(2^{size-1}$).</p>
 
 <p>This function returns a (possibly negative) integer.  For consistency with

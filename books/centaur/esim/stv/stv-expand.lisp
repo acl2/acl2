@@ -574,9 +574,9 @@ paths."
             (raise "Path ~x0 does not exist" path))
       (raise "~x0 is not a valid wirename" wirename))
     (stv-check-noncanonical-paths (cdr paths) mod)))
-       
-       
-    
+
+
+
 
 (define stv-expand-hid
   :parents (stv-expand)
@@ -620,7 +620,7 @@ STV internal lines into lists of esim paths."
   :parents (symbolic-test-vectors)
   :short "Expand Verilog-style names throughout an STV into LSB-ordered ESIM
 style paths."
-  
+
 
   ((stv stvdata-p)
    mod)

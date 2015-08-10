@@ -32,7 +32,7 @@
    '(set-default-hints '((nonlinearp-default-hint
                           stable-under-simplificationp
                           hist pspv)))
-   '(set-default-hints '((nonlinearp-default-hint++ 
+   '(set-default-hints '((nonlinearp-default-hint++
                           id stable-under-simplificationp
                           hist nil)))
    nil)

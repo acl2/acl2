@@ -31,7 +31,7 @@ defined earlier.
   (cond ((and (atom equation) (not (booleanp equation)))
          (list equation))
         ((and (equal (len equation) 3) (memberp (second equation) '(& +)))
-         (set-union (find-variables (first equation)) 
+         (set-union (find-variables (first equation))
                     (find-variables (third equation))))
         ((and (equal (len equation) 2) (equal (first equation) '~))
          (find-variables (second equation)))
@@ -84,15 +84,15 @@ defined earlier.
 
 (defun label-fn-of-st (st vars)
   (if (endp vars) nil
-    (if (equal (<- st (first vars)) T) 
-        (cons (first vars) 
+    (if (equal (<- st (first vars)) T)
+        (cons (first vars)
               (label-fn-of-st st (rest vars)))
       (label-fn-of-st st (rest vars)))))
 
 (defun create-label-fn (states vars label)
   (if (endp states) label
     (create-label-fn (rest states) vars
-                     (-> label (first states) 
+                     (-> label (first states)
                          (label-fn-of-st (first states) vars)))))
 
 ;; And finally the transitions.
@@ -132,13 +132,13 @@ defined earlier.
 (defun create-next-states-of-p (p states vars equations)
   (if (endp states) nil
     (if (next-state-is-ok p (first states) vars equations)
-        (cons (first states) (create-next-states-of-p 
+        (cons (first states) (create-next-states-of-p
                               p (rest states) vars equations))
       (create-next-states-of-p p (rest states) vars equations))))
 
 (defun create-next-states (states states-prime vars equations)
   (if (endp states) ()
-    (-> 
+    (->
      (create-next-states (rest states) states-prime vars equations)
      (first states)
      (create-next-states-of-p (first states) states-prime vars equations))))
@@ -160,7 +160,7 @@ defined earlier.
 
 
 ;; Since I have defined the Kripke model for a circuit, let us prove that it is
-;; a circuit-model-p. 
+;; a circuit-model-p.
 
 ;; We start with the initial states.
 
@@ -233,7 +233,7 @@ defined earlier.
 
 (local
 (defthm label-fn-is-only-all-truthsp
-  (only-all-truths-p (states (create-kripke C)) (create-kripke C) 
+  (only-all-truths-p (states (create-kripke C)) (create-kripke C)
                      (variables C)))
 )
 
@@ -344,7 +344,7 @@ defined earlier.
 (local
 (defthm memberp-next-state-reduction
   (implies (memberp s states)
-           (equal (<- (create-next-states states states-prime vars equations) 
+           (equal (<- (create-next-states states states-prime vars equations)
                       s)
                   (create-next-states-of-p s states-prime vars equations)))
   :hints (("Subgoal *1/3"
@@ -353,7 +353,7 @@ defined earlier.
 
 (local
 (defthm transition-subset-p-for-next-state
-  (transition-subset-p states states-prime 
+  (transition-subset-p states states-prime
                        (create-next-states states states-prime vars equations))
   :hints (("Subgoal *1/2"
            :cases ((memberp (car states) (cdr states))))))
@@ -494,7 +494,7 @@ defined earlier.
 (local
 (defthm create-all-evaluations-is-boolean-list-p-aux
   (implies (subset vars vars-prime)
-           (boolean-list-p-states vars 
+           (boolean-list-p-states vars
                                   (create-all-evaluations vars-prime states))))
 )
 
@@ -571,7 +571,7 @@ defined earlier.
 (defun find-matching-states (st vars states)
   (cond ((endp vars) states)
         ((equal (<- st (first vars)) T)
-         (assign-t (first vars) 
+         (assign-t (first vars)
                    (find-matching-states st (rest vars) states)))
         (t (assign-nil (first vars)
                        (find-matching-states st (rest vars) states)))))
@@ -740,8 +740,8 @@ defined earlier.
            (evaluation-eq (nth i (find-matching-states st vars states))
                           st vars))
   :hints (("Goal"
-           :cases ((not (memberp 
-                         (falsifier-evaluation-eq 
+           :cases ((not (memberp
+                         (falsifier-evaluation-eq
                           (nth i (find-matching-states st vars states))
                           st vars)
                          vars))))))
@@ -776,7 +776,7 @@ defined earlier.
 (local
 (defthm assign-t-subset-reduction
   (implies (subset x y)
-           (subset (assign-t v x) 
+           (subset (assign-t v x)
                    (assign-t v y))))
 )
 
@@ -790,7 +790,7 @@ defined earlier.
 (local
 (defthm assign-nil-subset-reduction
   (implies (subset x y)
-           (subset (assign-nil v x) 
+           (subset (assign-nil v x)
                    (assign-nil v y))))
 )
 
@@ -934,7 +934,7 @@ defined earlier.
            :do-not-induct t
            :in-theory (disable assign-t-does-not-fuss)
            :use ((:instance assign-t-does-not-fuss)
-                 (:instance strict-evaluation-p-necc 
+                 (:instance strict-evaluation-p-necc
                             (v v-prime)
                             (st (nth i states)))))))
 )
@@ -952,7 +952,7 @@ defined earlier.
            :do-not-induct t
            :in-theory (disable assign-nil-does-not-fuss)
            :use ((:instance assign-nil-does-not-fuss)
-                 (:instance strict-evaluation-p-necc 
+                 (:instance strict-evaluation-p-necc
                             (v v-prime)
                             (st (nth i states)))))))
 )
@@ -1009,7 +1009,7 @@ defined earlier.
            :do-not-induct t
            :in-theory (disable assign-t-strict-evaluations-reduction
                                strict-evaluation-p)
-           :use ((:instance strict-evaluations-assign-t-reduction 
+           :use ((:instance strict-evaluations-assign-t-reduction
                             (i (find-index st (assign-t v states))))))))
 )
 
@@ -1024,7 +1024,7 @@ defined earlier.
            :do-not-induct t
            :in-theory (disable assign-nil-strict-evaluations-reduction
                                strict-evaluation-p)
-           :use ((:instance strict-evaluations-assign-nil-reduction 
+           :use ((:instance strict-evaluations-assign-nil-reduction
                             (i (find-index st (assign-nil v states))))))))
 )
 
@@ -1051,7 +1051,7 @@ defined earlier.
 (local
 (defun null-list-p (states)
   (if (endp states) T
-    (and (null (first states)) 
+    (and (null (first states))
          (null-list-p (rest states)))))
 )
 
@@ -1101,7 +1101,7 @@ defined earlier.
   (implies (and (consp states)
                 (null-list-p states)
                 (uniquep vars))
-           (strict-evaluation-list-p 
+           (strict-evaluation-list-p
             vars (create-all-evaluations vars states)))
   :otf-flg t
   :hints (("Goal"
@@ -1121,7 +1121,7 @@ defined earlier.
                             (v (car vars)))))))
 )
 
-(local                 
+(local
 (defthm strict-evaluation-set-union-reduction
   (implies (and (strict-evaluation-list-p vars init)
                 (strict-evaluation-list-p vars states))
@@ -1143,4 +1143,4 @@ defined earlier.
 (DEFTHM create-kripke-produces-circuit-model
   (implies (circuitp C)
            (circuit-modelp (create-kripke C))))
-           
+

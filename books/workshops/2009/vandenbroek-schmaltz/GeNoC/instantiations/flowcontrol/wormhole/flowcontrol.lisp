@@ -22,7 +22,7 @@
 
 (defun port-updateVC (port cstate id)
   ;; Updates a virtual channel.
-  ;; 
+  ;;
   ;; Arguments:
   ;; - port : a port
   ;; - cstate : the state to which the the vc should be set. most often 'booked
@@ -32,7 +32,7 @@
 
 (defun clearVC (nst portname1)
   ;; Clears the state of the virtual channel
-  ;; 
+  ;;
   ;; Arguments:
   ;; - nst : list of nst in the node
   ;; - portname1 : name of the from port of the VC
@@ -45,23 +45,23 @@
 
 (defun updateVC (nst portname1 portname2 cstate)
   ;; This function updates and/or creates the state of the virtual channel
-  ;; 
+  ;;
   ;; Arguments:
   ;; - nst : list of nst in the node
   ;; - portname1 : name of the from port of the VC
   ;; - portname2 : name of the to port of the VC
-  ;; - cstate : Virtual channel state. 
+  ;; - cstate : Virtual channel state.
   (if (endp nst)
     nil
     (cond ((equal (port-portname (car nst)) portname1)
            (cons (port-updateVC (car nst) cstate portname2) (updateVC (cdr nst) portname1 portname2 cstate)))
           (t (cons (car nst) (updateVC (cdr nst) portname1 portname2 cstate))))))
-          
-    
+
+
 (defun switchBuffer (nst from to)
-  ;; move the head of the buffer of the from port to the tail of the buffer of the to port. 
-  ;;returns the update nst list. 
-  ;; 
+  ;; move the head of the buffer of the from port to the tail of the buffer of the to port.
+  ;;returns the update nst list.
+  ;;
   ;; Arguments:
   ;; - nst : the list of all nst of this node
   ;; - from : The input port which is switched
@@ -76,13 +76,13 @@
 
 
 (defun switch-port (portlist nst from)
-  ;; This  funtion loops over the portlist until the output port that the from port is routed to is found. 
+  ;; This  funtion loops over the portlist until the output port that the from port is routed to is found.
   ;; Depending on the state of the output port and the virtual channel the port is switched.
   ;; There are three possible cases.
   ;; 1) Its a tail flit and the virtual channel can be switched and cleared.
   ;; 2) Its a data flit and the flit can be swtiched.
   ;; 3) Its a header flit and the virtual channel can be booked.
-  ;; 
+  ;;
   ;; Arguments:
   ;; - portlist : list of output nst of the node
   ;; - nst : list of pors in the node
@@ -96,18 +96,18 @@
                 (equal (port-VCId to) (port-portname from))
                 (equal (flitT (port-bufferHead from)) 0))
            (clearVC (switchBuffer nst from to) (port-portname to)))
-          
+
           ((and (equal (port-portname to) (status-route (port-status from))) ;booked
                 (not (port-bufferFull to))  ;; and space in buffer
                 (equal (port-VCState to) 'booked)
                 (equal (port-VCId to) (port-portname from)))
            (switchBuffer nst from to))
-          
+
           ((and (equal (port-portname to) (status-route (port-status from))) ;request
                 (not (port-bufferFull to))  ;; and space in buffer
                 (not (port-VCState to)))
            (updateVC (switchBuffer nst from to) (port-portname to) (port-portname from) 'booked))
-          
+
           (t (switch-port (cdr portlist) nst from)))))
 
 
@@ -126,7 +126,7 @@
   (mv (switch-ports (ports-inputports nst) nst) memory))
 
 
-(definstance GenericFlowControl check-compliance-Flowcontrol                   
+(definstance GenericFlowControl check-compliance-Flowcontrol
   :functional-substitution
   ((flowcontrol wormhole-FlowControl)))#|ACL2s-ToDo-Line|#
 

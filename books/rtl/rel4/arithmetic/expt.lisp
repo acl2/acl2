@@ -2,10 +2,10 @@
 
 ;this book contains very basic expt stuff (i couldn't include expt.lisp in basic.lisp because of a circular dependency)
 
-;todo: 
+;todo:
 ;make a separate expt-proofs book
 ;there's a distinction between expt and expt-2 rules
-;make consistent names:  expt vs. expt2   
+;make consistent names:  expt vs. expt2
 ;think about the rules to combine and split exponents
 ;generalize some of these rules to be about expt with any base (not just 2)
 
@@ -240,7 +240,7 @@ with huge r might be very expensive too, but r is almost always 2 in my work.)  
 (set-compile-fns t)
 (defun expt-execute (r i) (expt r i))
 
-;Allows expt calls with small exponents to be computed  
+;Allows expt calls with small exponents to be computed
 ;You can change 1000 to your own desired bound.
 (defthm expt-execute-rewrite
   (implies (and (syntaxp (and (quotep r) (quotep i) (< (abs (cadr i)) 1000))))
@@ -258,12 +258,12 @@ Note that we could just compute (EXPT 2 1000001) and (EXPT 2 1000000) but that w
 Perhaps we can make this into a complete theory, based on the observation that if a product contains two
 factors of the form (expt 2 k) of (/ (expt 2 k)), where k is a constant, those factors will be brought
 together because they are very close in the term order used order arguments to * (recall that unary-/ is
-ignored when we decide how to order arguments to *).  
+ignored when we decide how to order arguments to *).
 |#
 
 ;this could be made more general (replace the lhs with its second arg...)
 (defthm expt2-constants-collect-special-1
-  (implies (and (syntaxp (and (quotep i1) (quotep i2))) 
+  (implies (and (syntaxp (and (quotep i1) (quotep i2)))
                 (case-split (rationalp y))
                 (case-split (integerp i1))
                 (case-split (integerp i2)))
@@ -273,7 +273,7 @@ ignored when we decide how to order arguments to *).
                    (* (expt 2 (- i1 i2)) y))))
 
 (defthm expt2-constants-collect-special-2
-  (implies (and (syntaxp (and (quotep i1) (quotep i2))) 
+  (implies (and (syntaxp (and (quotep i1) (quotep i2)))
                 (case-split (integerp i1))
                 (case-split (integerp i2)))
            (equal  (* (EXPT 2 i1)
@@ -282,7 +282,7 @@ ignored when we decide how to order arguments to *).
                    (expt 2 (- i1 i2)))))
 
 (defthm expt2-constants-collect-special-4
-  (implies (and (syntaxp (and (quotep i1) (quotep i2))) 
+  (implies (and (syntaxp (and (quotep i1) (quotep i2)))
                 (case-split (rationalp y))
                 (case-split (integerp i1))
                 (case-split (integerp i2)))
@@ -290,7 +290,7 @@ ignored when we decide how to order arguments to *).
                   (* (expt 2 (- i1 i2)) y))))
 
 (defthm expt2-constants-collect-special-5
-  (implies (and (syntaxp (and (quotep i1) (quotep i2))) 
+  (implies (and (syntaxp (and (quotep i1) (quotep i2)))
                 (case-split (integerp i1))
                 (case-split (integerp i2)))
            (equal  (* (/ (EXPT 2 i2)) (EXPT 2 i1))
@@ -300,7 +300,7 @@ ignored when we decide how to order arguments to *).
 
 ;will this happen?
 (defthm expt2-constants-collect-special-6
-  (implies (and (syntaxp (and (quotep i1) (quotep i2))) 
+  (implies (and (syntaxp (and (quotep i1) (quotep i2)))
                 (case-split (rationalp x))
                 (case-split (integerp i1))
                 (case-split (integerp i2)))
@@ -310,7 +310,7 @@ ignored when we decide how to order arguments to *).
 
 ;whoa this one is sort of different... (it rewrites an equality)
 (defthm expt2-constants-collect-special-3
-  (implies (and (syntaxp (and (quotep i1) (quotep i2))) 
+  (implies (and (syntaxp (and (quotep i1) (quotep i2)))
                 (case-split (rationalp x))
                 (case-split (integerp i1))
                 (case-split (integerp i2)))
@@ -490,7 +490,7 @@ ignored when we decide how to order arguments to *).
 (defthmd expt-with-product-exponent
   (implies (and (syntaxp (not (quotep i)))
                 (case-split (integerp i)))
-	   (equal (expt 2 (* 2 i))	
+	   (equal (expt 2 (* 2 i))
 		  (* (expt 2 i) (expt 2 i)))))
 
 

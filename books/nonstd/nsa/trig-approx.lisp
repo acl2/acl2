@@ -89,9 +89,9 @@
 (defthm alternating-sequence-1-p-taylor-sincos
   (implies (and (realp sign)
 		(realp x))
-	   (alternating-sequence-1-p (taylor-sincos-list nterms 
-							 counter 
-							 sign 
+	   (alternating-sequence-1-p (taylor-sincos-list nterms
+							 counter
+							 sign
 							 x))))
 
 ;; For the second property, we need to pick a value of counter that is
@@ -221,7 +221,7 @@
 			       taylor-sin-term))))
 
 ;; Now here's an obvious rule.  A Taylor-sin-term of sin(0) or cos(0)
-;; is equal to 0 (except for the 0^0 term :-) 
+;; is equal to 0 (except for the 0^0 term :-)
 
 (defthm taylor-sin-term-x=0
   (implies (and (integerp counter)
@@ -265,7 +265,7 @@
 	   (equal (car (taylor-sincos-list nterms counter sign x))
 		  (taylor-sin-term sign counter x)))
   :hints (("Goal"
-	   :use ((:instance (:definition 
+	   :use ((:instance (:definition
 			     taylor-sincos-list-alternate-definition)))
 	   :in-theory (disable taylor-sincos-list-alternate-definition
 			       car-taylor-sincos-list
@@ -282,9 +282,9 @@
 		(not (equal sign 0))
 		(integerp counter)
 		(< (abs x) counter))
-	   (alternating-sequence-2-p (taylor-sincos-list nterms 
-							 counter 
-							 sign 
+	   (alternating-sequence-2-p (taylor-sincos-list nterms
+							 counter
+							 sign
 							 x)))
   :hints (("Goal"
 	   :induct (taylor-sincos-list nterms counter sign x))))
@@ -299,9 +299,9 @@
 		(not (equal sign 0))
 		(integerp counter)
 		(< (abs x) counter))
-	   (alternating-sequence-2-p (taylor-sincos-list nterms 
-							 counter 
-							 sign 
+	   (alternating-sequence-2-p (taylor-sincos-list nterms
+							 counter
+							 sign
 							 x)))
   :hints (("Goal"
 	   :induct (taylor-sincos-list nterms counter sign x))))
@@ -314,24 +314,24 @@
 		(equal sign 0)
 		(integerp counter)
 		(< (abs x) counter))
-	   (alternating-sequence-2-p (taylor-sincos-list nterms 
-							 counter 
-							 sign 
+	   (alternating-sequence-2-p (taylor-sincos-list nterms
+							 counter
+							 sign
 							 x)))
   :hints (("Goal"
 	   :induct (taylor-sincos-list nterms counter sign x))))
 
 ;; And therefore, taylor-sincos-list satisfies the second alternating
-;; sequence property. 
+;; sequence property.
 
 (defthm alternating-sequence-2-p-taylor-sincos
   (implies (and (realp x)
 		(realp sign)
 		(integerp counter)
 		(< (abs x) counter))
-	   (alternating-sequence-2-p (taylor-sincos-list nterms 
-							 counter 
-							 sign 
+	   (alternating-sequence-2-p (taylor-sincos-list nterms
+							 counter
+							 sign
 							 x)))
   :hints (("Goal"
 	   :use ((:instance alternating-sequence-2-p-taylor-sincos-x-<>-0)
@@ -346,9 +346,9 @@
 		(realp sign)
 		(integerp counter)
 		(< (abs x) counter))
-	   (alternating-sequence-2-p (taylor-sincos-list nterms 
-							 counter 
-							 sign 
+	   (alternating-sequence-2-p (taylor-sincos-list nterms
+							 counter
+							 sign
 							 x))))
 
 ;; This rule is just needed by ACL2 occasionally to know when
@@ -454,7 +454,7 @@
 		 (or (= sign 1) (= sign -1)))
 	    (equal (abs (taylor-sin-term sign counter x))
 		   (abs-taylor-sin-term counter x)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :induct (abs-taylor-sin-term counter x))
 	   ("Subgoal *1/2.2''"
 	    :expand ((taylor-sin-term 1 counter x)
@@ -582,7 +582,7 @@
 			      (x (* x1 z1))
 			      (y (* x2 z2))))
 	     :in-theory (disable <-*-left-cancel)))))
-		 
+
  ;; And here's a simple composition rule for <=.
 
  (local
@@ -679,12 +679,12 @@
 
 (defun new-guess-num-iters (eps m)
   (guess-num-iters-aux (next-integer (/ eps)) m))
-  
+
 ;; Now, the guess we come up with is at least equal to m, since we
 ;; just keep increasing to m.
 
 (defthm new-guess-num-iters-bound
-  (implies (integerp m) 
+  (implies (integerp m)
 	   (< m (new-guess-num-iters eps m))))
 
 ;; And, we always come up with a positive number of iters.
@@ -725,7 +725,7 @@
   (implies (realp x)
 	   (realp (n-expt x n)))
   :rule-classes (:rewrite :type-prescription :generalize))
-  
+
 ;; It's also non-negative for non-negative arguments.
 
 (defthm n-expt->=-0
@@ -752,7 +752,7 @@
 	      eps))
   :hints (("Goal"
 	   :use ((:instance guess-num-iters-works-again)
-		 (:instance n-expt-monotonic 
+		 (:instance n-expt-monotonic
 			    (x f)
 			    (y 1/2)
 			    (n (new-guess-num-iters eps m))))
@@ -836,7 +836,7 @@
 ;; So now, we can pick the right n so that the nth term of the Taylor
 ;; approximation to x is < eps.  Notice that we make sure the value we
 ;; return is even, because the Taylor expansion takes every other term
-;; from the sequence. 
+;; from the sequence.
 
 (defun n-for-taylor-sin-term (x eps)
   (let* ((m (next-integer (* 2 (abs x))))
@@ -845,7 +845,7 @@
     (if (evenp counter)
 	counter
       (1+ counter))))
-	
+
 ;; And now, we need to prove the above claim.  First, we need some
 ;; lemmas.
 
@@ -885,7 +885,7 @@
 	     :in-theory (disable x-<-next-integer))
 	    ("Subgoal 1"
 	     :in-theory (enable abs)))))
-	    
+
  ;; Now, if m = ceiling(2*|x|), it follows that |x|/m < 1/2.
 
  (local
@@ -894,7 +894,7 @@
 		  (equal m (next-integer (* 2 (abs x)))))
 	     (and (< 0 m)
 		  (not (< 1/2 (* (/ m) (abs x))))))))
-   
+
  ;; So now, we find that if we pick our value of m and counter
  ;; carefully, the nth taylor-sin-term is less than epsilon.
 
@@ -923,7 +923,7 @@
 		  (< (abs x) counter))
 	     (equal (< counter 0) nil))
     :hints (("Goal" :in-theory (enable abs)))))
-		    
+
  ;; Actually, more than that, c is never zero either, so if c is an
  ;; integer, it's at least 1.
 
@@ -935,7 +935,7 @@
 	     (equal (< (+ 1 counter) 0) nil))
     :hints (("Goal" :use ((:instance lemma-4))
 	     :in-theory (disable lemma-4)))))
-		    
+
  ;; Now here is how you resolve the taylor-sin-term of sin(0) or
  ;; cos(0).  It's always zero, except for the first term of cosine.
 
@@ -963,7 +963,7 @@
 	   ("Subgoal 2"
 	    :use ((:instance abs-taylor-counter+1-<-counter (sign 1))
 		  (:instance abs-taylor-sin-term-works (sign 1))
-		  (:instance abs-taylor-sin-term-works 
+		  (:instance abs-taylor-sin-term-works
 			     (sign 1)
 			     (counter (+ 1 counter)))
 		  (:instance lemma-4)
@@ -1003,7 +1003,7 @@
 	    ("Goal'"
 	     :use ((:instance abs-taylor-sin-term-upper-bound-lemma))
 	     :in-theory (disable abs-taylor-sin-term-upper-bound-lemma)))))
-			     
+
  ;; And here's the kick.  The actual value of num-iters we pick is
  ;; either the one above or 1 plus that value.
 
@@ -1029,7 +1029,7 @@
 	    :use ((:instance new-guess-num-iters-bound-type-prescription
 			     (eps eps1))
 		  (:instance lemma-2))
-	    :in-theory (disable 
+	    :in-theory (disable
 				new-guess-num-iters-bound-type-prescription
 				lemma-2)))
    :rule-classes (:rewrite :type-prescription :generalize))
@@ -1161,7 +1161,7 @@
     (if (evenp (n-for-taylor-sin-term-raw x eps))
 	(n-for-taylor-sin-term-raw x eps)
       (1+ (n-for-taylor-sin-term-raw x eps)))))
-    
+
  ;; The definition is the same as the previous one!
 
  (local
@@ -1183,7 +1183,7 @@
 	    :use ((:instance new-guess-num-iters-bound-type-prescription
 			     (eps eps1))
 		  (:instance lemma-2))
-	    :in-theory (enable-disable 
+	    :in-theory (enable-disable
 			(n-for-taylor-sin-term-raw)
 			(new-guess-num-iters-bound-type-prescription
 			 lemma-2))))
@@ -1209,7 +1209,7 @@
 ;; So now, without a doubt the value of num-iters we pick is good
 ;; enough to make taylor-sin-term small enough -- this is the same as
 ;; the previous theorem with |taylor-sin-term| instead of
-;; abs-taylor-sin-term. 
+;; abs-taylor-sin-term.
 
 (defthm taylor-sin-term-upper-bound
   (implies (and (realp x)
@@ -1250,7 +1250,7 @@
 		  (<= 0 z)
 		  (< 0 y)
 		  (< x y))
-	     (<= (* x (/ y) z) z))  
+	     (<= (* x (/ y) z) z))
     :hints (("Goal"
 	     :cases ((= z 0)))
 	    ("Subgoal 2"
@@ -1261,7 +1261,7 @@
 
  ;; And of course, the (n+1)st term of the Taylor sequence is at most
  ;; equal to the nth term -- and we already know the nth term is small
- ;; enough, so........ 
+ ;; enough, so........
 
  (local
   (defthm lemma-4
@@ -1277,7 +1277,7 @@
 		   (:instance lemma-3
 			      (x (abs x))
 			      (y (+ 1 (n-for-taylor-sin-term x eps)))
-			      (z (abs-taylor-sin-term 
+			      (z (abs-taylor-sin-term
 				  (n-for-taylor-sin-term x eps)
 				  x))))
 	     :in-theory (disable abs-x-<-n-for-taylor-sin-term))
@@ -1286,18 +1286,18 @@
 		   (:instance lemma-3
 			      (x (abs x))
 			      (y (+ 1 (n-for-taylor-sin-term x eps)))
-			      (z (abs-taylor-sin-term 
+			      (z (abs-taylor-sin-term
 				  (n-for-taylor-sin-term x eps)
 				  x))))
 	     :in-theory (disable abs-x-<-n-for-taylor-sin-term)))))
-  
+
  ;; ... the (n+1)st term must be small enough!
 
  (defthm taylor-sin-term-upper-bound-2
    (implies (and (realp x)
 		 (realp eps) (< 0 eps)
 		 (or (= sign 1) (= sign -1)))
-	    (< (abs (taylor-sin-term sign 
+	    (< (abs (taylor-sin-term sign
 				     (1+ (n-for-taylor-sin-term x eps))
 				     x))
 	       eps))
@@ -1314,7 +1314,7 @@
   (implies (and (realp x)
 		(realp eps) (< 0 eps)
 		(or (= sign 1) (= sign -1)))
-	   (< (abs (sumlist 
+	   (< (abs (sumlist
 		    (taylor-sincos-list nterms
 					(n-for-taylor-sin-term x eps)
 					sign
@@ -1326,7 +1326,7 @@
 			    (counter (n-for-taylor-sin-term x eps)))
 		 (:instance abs-x-<-n-for-taylor-sin-term)
 		 (:instance (:type-prescription n-for-taylor-sin-term)))
-	   :in-theory nil))) 
+	   :in-theory nil)))
 
 ;; Of course, the sumlist of all the terms after the (n+1)st term is
 ;; also bounded.....duh....
@@ -1335,7 +1335,7 @@
   (implies (and (realp x)
 		(realp eps) (< 0 eps)
 		(or (= sign 1) (= sign -1)))
-	   (< (abs (sumlist 
+	   (< (abs (sumlist
 		    (taylor-sincos-list nterms
 					(1+ (n-for-taylor-sin-term x eps))
 					sign
@@ -1570,7 +1570,7 @@
 	   :in-theory (disable large-if->-large
 			       sumlist-taylor-sincos-bound-lemma))))
 
-;; Same goes for when counter starts with 1....sigh.... 
+;; Same goes for when counter starts with 1....sigh....
 
 (defthm limited-taylor-sincos-list-n-for-taylor-sin-term-2
   (implies (and (realp x)
@@ -1597,17 +1597,17 @@
 		(<= 0 nterms)
 		(i-large nterms)
 		(realp x) (standard-numberp x)
-		(realp eps) (< 0 eps) (< eps 1) 
+		(realp eps) (< 0 eps) (< eps 1)
 		(standard-numberp eps)
 		(equal n (n-for-taylor-sin-term x eps)))
-	   (equal (standard-part 
-                   (sumlist (taylor-sincos-list nterms 
-						0 
-						1 
+	   (equal (standard-part
+                   (sumlist (taylor-sincos-list nterms
+						0
+						1
 						x)))
 		  (+ (sumlist (taylor-sincos-list n 0 1 x))
-		     (standard-part 
-		      (sumlist 
+		     (standard-part
+		      (sumlist
 		       (taylor-sincos-list (- nterms n)
 					   n
 					   (if (evenp (/ n 2))
@@ -1618,7 +1618,7 @@
 	   :use ((:instance sumlist-taylor-sincos-list-split)
 		 (:instance standard-part-of-plus
 			    (x (sumlist (taylor-sincos-list n 0 1 x)))
-			    (y (sumlist 
+			    (y (sumlist
 				(taylor-sincos-list (- nterms n)
 						    n
 						    (if (evenp (/ n 2))
@@ -1641,7 +1641,7 @@
 		(equal n (n-for-taylor-sin-term x eps)))
 	   (equal (standard-part (sumlist (taylor-sincos-list nterms 1 1 x)))
 		  (+ (sumlist (taylor-sincos-list n 1 1 x))
-		     (standard-part 
+		     (standard-part
 		      (sumlist (taylor-sincos-list (- nterms n)
 						   (1+ n)
 						   (if (evenp (/ n 2))
@@ -1652,7 +1652,7 @@
 	   :use ((:instance sumlist-taylor-sincos-list-split-2)
 		 (:instance standard-part-of-plus
 			    (x (sumlist (taylor-sincos-list n 1 1 x)))
-			    (y (sumlist 
+			    (y (sumlist
 				(taylor-sincos-list (- nterms n)
 						    (1+ n)
 						    (if (evenp (/ n 2))
@@ -1670,7 +1670,7 @@
 
 (encapsulate
  ()
- 
+
  ;; First, a quickie.  If x <= 0 and standard-part(x) >= 0, then
  ;; standard-part(x) must be exactly 0.
 
@@ -1684,7 +1684,7 @@
 	     :use ((:instance standard-part-<= (y 0)))
 	     :in-theory (disable standard-part-<=)))
     :rule-classes nil))
-	     
+
  ;; Likewise when x >= 0 and standard-part(x) <= 0.
 
  (local
@@ -1720,15 +1720,15 @@
 			      (y e)))
 	     :in-theory (disable standard-part-<=)))))
 
- ;; So now we apply that lemma to our actual error term. 
+ ;; So now we apply that lemma to our actual error term.
 
  (defthm standard-part-sumlist-taylor-sincos-bound
    (implies (and (realp x)
 		 (realp eps) (< 0 eps) (standard-numberp eps)
 		 (or (= sign 1) (= sign -1)))
-	    (<= (abs 
+	    (<= (abs
 		 (standard-part
-		  (sumlist 
+		  (sumlist
 		   (taylor-sincos-list nterms
 				       (n-for-taylor-sin-term x eps)
 				       sign
@@ -1737,8 +1737,8 @@
    :hints (("Goal"
 	    :use ((:instance lemma-3
 			     (e eps)
-			     (x (sumlist 
-				 (taylor-sincos-list 
+			     (x (sumlist
+				 (taylor-sincos-list
 				  nterms
 				  (n-for-taylor-sin-term x eps)
 				  sign
@@ -1751,9 +1751,9 @@
    (implies (and (realp x)
 		 (realp eps) (< 0 eps) (standard-numberp eps)
 		 (or (= sign 1) (= sign -1)))
-	    (<= (abs 
+	    (<= (abs
 		 (standard-part
-		  (sumlist 
+		  (sumlist
 		   (taylor-sincos-list nterms
 				       (+ 1 (n-for-taylor-sin-term x eps))
 				       sign
@@ -1762,15 +1762,15 @@
    :hints (("Goal"
 	    :use ((:instance lemma-3
 			     (e eps)
-			     (x (sumlist 
-				 (taylor-sincos-list 
+			     (x (sumlist
+				 (taylor-sincos-list
 				  nterms
 				  (+ 1 (n-for-taylor-sin-term x eps))
 				  sign
 				  x)))))
 	    :in-theory (disable lemma-3))))
  )
-		  
+
 ;; Foots!  We ended up with abs(error) <= eps, and we'd really rather
 ;; have a strict inequality.  So, we just divide our starting epsilon
 ;; by 2 -- old analyst's trick.  For technical reasons, we also need
@@ -1805,7 +1805,7 @@
 ;; With this num-iters, we can define an approximation to sin(x)....
 
 (defun sine-approx (x eps)
-  (sumlist 
+  (sumlist
    (taylor-sincos-list (n-for-sincos x eps)
 		       1
 		       1
@@ -1842,10 +1842,10 @@
    (implies (and (realp x)
 		 (realp eps) (< 0 eps) (standard-numberp eps)
 		 (or (= sign 1) (= sign -1)))
-	    (< (abs 
+	    (< (abs
 		 (standard-part
-		  (sumlist 
-		   (taylor-sincos-list 
+		  (sumlist
+		   (taylor-sincos-list
 		    nterms
 		    (n-for-taylor-sin-term x (epsilon-for-sincos eps))
 		    sign
@@ -1866,10 +1866,10 @@
    (implies (and (realp x)
 		 (realp eps) (< 0 eps) (standard-numberp eps)
 		 (or (= sign 1) (= sign -1)))
-	    (< (abs 
+	    (< (abs
 		 (standard-part
-		  (sumlist 
-		   (taylor-sincos-list 
+		  (sumlist
+		   (taylor-sincos-list
 		    nterms
 		    (+ 1 (n-for-taylor-sin-term x (epsilon-for-sincos eps)))
 		    sign
@@ -1921,6 +1921,6 @@
 				taylor-cos-valid
 				taylor-sincos-list-split-for-n-for-taylor-sin-term
 				sumlist-taylor-sincos-list-split
-				standard-part-sumlist-taylor-sincos-list-split))))   
+				standard-part-sumlist-taylor-sincos-list-split))))
  )
 

@@ -92,7 +92,7 @@
                 (all-marked-t props))
            (equal (fast-no-duplicatesp1 lst props)
                   (no-duplicatesp (append (strip-cars props) lst)))))
-  
+
 ; Isn't this pretty?
 
 (defthm fast-no-duplicatesp-is-no-duplicatesp
@@ -155,7 +155,7 @@
 ; symbols.
 
 (defconst *dup-list* (make-temp-symbols 20000 '(TEMP1)))
-    
+
 (defconst *no-dup-list* (cons 'TEMP0 (cdr *dup-list*)))
 
 (make-event (er-progn (timed-fnd *dup-list* state)

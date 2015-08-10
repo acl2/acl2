@@ -109,7 +109,7 @@ regardless of p and q, it suffices only to consider p & q in lowest terms
  (defthm even-square-implies-even
    (implies (and (integerp p)
 		 (divisible (* p p) 2))
-	    (divisible p 2)) 
+	    (divisible p 2))
    :hints (("Goal"
 	    :use ((:instance even-square-implies-even-1)
 		  (:instance even-square-implies-even-2))))))
@@ -240,7 +240,7 @@ regardless of p and q, it suffices only to consider p & q in lowest terms
    (implies (and (rationalp x)
 		 (equal (* x x) 2))
 	    (equal (* (numerator x) (numerator x))
-		   (* 2 (* (denominator x) 
+		   (* 2 (* (denominator x)
 			   (denominator x)))))
    :hints (("Goal"
 	    :use (:instance aux-2
@@ -318,7 +318,7 @@ regardless of p and q, it suffices only to consider p & q in lowest terms
 ;;
 ;; Unfortunately, Acl2 doesn't seem happy reasoning about complex arithmetic.
 ;; Part of the reason is that the following axiom is disabled:
-;;      
+;;
 ;;      (defaxiom complex-definition
 ;;        (implies (and (realp x)
 ;;                      (realp y))
@@ -330,7 +330,7 @@ regardless of p and q, it suffices only to consider p & q in lowest terms
 
 (encapsulate
  ()
- 
+
  ;; First, we show Acl2 how to rewrite complex squares into its complex form.
 
  (local
@@ -340,7 +340,7 @@ regardless of p and q, it suffices only to consider p & q in lowest terms
 	   (+ (- (* x x) (* y y))
 	      (* #c(0 1) (+ (* x y) (* x y)))))
     :rule-classes nil))
-	  
+
  ;; Now, we can use the theorem above to show how to rewrite complex squares.
 
  (local
@@ -357,7 +357,7 @@ regardless of p and q, it suffices only to consider p & q in lowest terms
 			      (x (- (* x x) (* y y)))
 			      (y (+ (* x y) (* x y)))))))
     :rule-classes nil))
-	  
+
  ;; Finally, we can characterize complex squares.  Perhaps we should enable a
  ;; rule like this to reduce complex multiplication?
 
@@ -373,11 +373,11 @@ regardless of p and q, it suffices only to consider p & q in lowest terms
    :rule-classes nil))
 
 ;; Now that we know how to square complex numbers, we can show that if a
-;; complex square is rational, then the complex number was a pure imaginary. 
+;; complex square is rational, then the complex number was a pure imaginary.
 
 (encapsulate
  ()
- 
+
  ;; First, we use the complex square definition to find the imaginary part of
  ;; the complex square -- this part must be zero for the square to be rational
 

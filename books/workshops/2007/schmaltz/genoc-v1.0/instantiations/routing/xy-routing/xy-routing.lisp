@@ -31,7 +31,7 @@
 ;;       else we go one step east
 ;;       endif
 ;;    else
-;;       if y_d < y_o then we go one step south 
+;;       if y_d < y_o then we go one step south
 ;;       else we go one step north
 ;;       endif
 ;;   endif
@@ -96,7 +96,7 @@
 ;; 3.a some trivial properties
 (defthm first-XY-routing
   ;; the first element is the origin
-  (implies (and (coordinatep from) 
+  (implies (and (coordinatep from)
                 (coordinatep to))
            (equal (car (XY-routing from to))
                   from)))
@@ -143,7 +143,7 @@
   ;; we prove that if x is a coordinate with its first part less than x-dim
   ;; and its second part equal to y-dim then x is a member of x-dim-gen.
   (implies (and (coordinatep x) (< (car x) x-dim)
-                (natp x-dim) 
+                (natp x-dim)
                 (natp y-dim)
                 (equal (cadr x) y-dim))
            (member-equal x (x-dim-gen x-dim y-dim))))
@@ -153,14 +153,14 @@
   ;; both parts of x are less than x-dim and y-dim implies that x
   ;; is a member of coord-generator-1
   (implies (and (coordinatep x) (natp y-dim)
-                (natp x-dim) 
+                (natp x-dim)
                 (< (car x) x-dim) (< (cadr x) y-dim))
            (member-equal x (coord-generator-1 x-dim y-dim))))
 
 (defthm tactic1
   ;; we prove that our tactic is valid for membership
   (implies (and (2D-mesh-nodesetp L) (consp L)
-                (all-x-<-max L x-dim) (natp x-dim) 
+                (all-x-<-max L x-dim) (natp x-dim)
                 (all-y-<-max L y-dim) (natp y-dim))
            (member-equal (car L) (coord-generator-1 x-dim y-dim))))
 
@@ -171,7 +171,7 @@
 
 (defthm tactic1-top
   ;; we now prove that our tactic is valid
-  (implies (and (2D-mesh-nodesetp L) 
+  (implies (and (2D-mesh-nodesetp L)
                 (all-x-<-max L x-dim) (natp x-dim)
                 (all-y-<-max L y-dim) (natp y-dim))
            (subsetp L (coord-gen x-dim y-dim)))
@@ -195,12 +195,12 @@
 	   (all-x-<-max x (+ 1 y))))
 
 (defthm routing-all-x-less
-  (all-x-<-max (xy-routing from to) 
+  (all-x-<-max (xy-routing from to)
                (1+ (max (car from) (car to)))))
 
 ;; and every y-coord is strictly less than 1 + Max(from_y, to_y)
 (defthm routing-all-y-less
-  (all-y-<-max (xy-routing from to) 
+  (all-y-<-max (xy-routing from to)
                (1+ (max (cadr from) (cadr to)))))
 
 (defthm xy-routing-subsetp-coord-max
@@ -305,7 +305,7 @@
            (and (< (max (car x) (car y)) x-max)
                 (< (max (cadr x) (cadr y)) y-max))))
 
-;; then we prove that if x < NX and y < NY then 
+;; then we prove that if x < NX and y < NY then
 ;; (coord-gen x y) is a subset of (coord-gen NX NY)
 
 (defthm subsetp-x-dim-gen-coord-gen-1
@@ -448,7 +448,7 @@
            :in-theory (disable 2D-mesh-nodesetp-member-equal
                                coordinatep))))
 
-;; 2. TrLstp 
+;; 2. TrLstp
 (defthm consp-xy-routing
   ;; should be systematically added
   (implies (and (coordinatep from)
@@ -513,7 +513,7 @@
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
-           :use (:functional-instance 
+           :use (:functional-instance
                  ToMissives-Routing
                  (NodeSetGenerator mesh-nodeset-gen)
                  (NodeSetp 2D-mesh-nodesetp)

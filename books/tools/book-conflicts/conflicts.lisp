@@ -6,7 +6,7 @@
 ;; form:
 ;;
 ;; (pkg-symbol-name-listp . book-list)
-;; 
+;;
 ;; Where book-list is a list of paths to the offending books and
 ;; pkg-symbol-name-listp is an association list with package names as
 ;; keys and symbol name lists as values.
@@ -38,7 +38,7 @@
 
      (encapsulate
 	 ()
-       
+
        (local
 	(defthm equal-double-containment-1
 	  (implies
@@ -47,7 +47,7 @@
 	    (characterp y)
 	    (equal x y))
 	   (not (char< x y)))))
-       
+
        (local
 	(defthm equal-double-containment-2
 	  (implies
@@ -60,7 +60,7 @@
 	  :rule-classes nil
 	  :hints (("Goal" :use ((:instance CODE-CHAR-CHAR-CODE-IS-IDENTITY (c y))
 				(:instance CODE-CHAR-CHAR-CODE-IS-IDENTITY (c x)))))))
-       
+
        (defthmd character-equal-double-containment
 	 (implies
 	  (and
@@ -73,7 +73,7 @@
 		  :use (equal-double-containment-2
 			equal-double-containment-1
 			(:instance equal-double-containment-1 (x y) (y x))))))
-       
+
        (defthm char<-transitive
 	 (implies
 	  (and
@@ -89,14 +89,14 @@
 	  (not (char< x z))))
 
        )
-     
+
      (defun list-equal (x y)
        (if (and (consp x) (consp y))
 	   (and (equal (car x) (car y))
 		(list-equal (cdr x) (cdr y)))
 	 (and (not (consp x))
 	      (not (consp y)))))
-     
+
      (defthmd equal-to-list-equal
        (implies
 	(and
@@ -104,13 +104,13 @@
 	 (true-listp y))
 	(iff (equal x y)
 	     (list-equal x y))))
-     
+
      (defthm character-listp-implies-true-listp
        (implies
 	(character-listp x)
 	(true-listp x))
        :rule-classes (:forward-chaining))
-     
+
      (defthmd character-listp-equal-double-containment
        (implies
 	(and
@@ -123,12 +123,12 @@
        :hints (("Goal" :induct (string<-l x y n)
 		:expand ((character-listp x)
 			 (character-listp y))
-		:in-theory (e/d (string<-l 
+		:in-theory (e/d (string<-l
 				 character-listp
 				 equal-to-list-equal
 				 character-equal-double-containment)
 				(char<)))))
-     
+
      (defthmd string-equal-to-character-list-equal
        (implies
 	(and
@@ -142,21 +142,21 @@
 				 (x x))
 		      (:instance COERCE-INVERSE-2
 				 (x y))))))
-     
+
      (defun string<-ll (x y)
        (if (and (consp x) (consp y))
 	   (if (equal (car x) (car y))
 	       (string<-ll (cdr x) (cdr y))
 	     (char< (car x) (car y)))
 	 (consp y)))
-     
+
      (defthm string<-ll-transitive
        (implies
 	(and
 	 (string<-ll x y)
 	 (string<-ll y z))
 	(string<-ll x z)))
-     
+
      (defthm string<-ll-contra-transitive
        (implies
 	(and
@@ -168,7 +168,7 @@
 	(not (string<-ll x z)))
        :hints (("Goal" :in-theory (e/d (character-equal-double-containment)
 				       (char<)))))
-     
+
      (defthmd string<-l-reduction
        (implies
 	(and
@@ -180,7 +180,7 @@
        :hints (("Goal" :in-theory (e/d (character-equal-double-containment string<-l) (char<))
 		:expand ((CHARACTER-LISTP X) (CHARACTER-LISTP Y))
 		:induct (string<-l x y n))))
-  
+
      ))
 
   (defthm string-equal-double-containment
@@ -191,12 +191,12 @@
      (iff (equal x y)
 	  (and (not (string< x y))
 	       (not (string< y x)))))
-    :hints (("Goal" :in-theory (enable 
+    :hints (("Goal" :in-theory (enable
 				string<
 				string-equal-to-character-list-equal
 				character-listp-equal-double-containment
 				))))
-     
+
   (defthm string<-transitive
     (implies
      (and
@@ -204,7 +204,7 @@
       (string< y z))
      (string< x z))
     :hints (("Goal" :in-theory (enable string<-l-reduction string<))))
-  
+
   (defthm string<-contra-transitive
     (implies
      (and
@@ -212,7 +212,7 @@
       (not (string< y z)))
      (not (string< x z)))
     :hints (("Goal" :in-theory (enable string<-l-reduction string<))))
-  
+
   (defthm <-from-not-<-not-equal
     (implies
      (and
@@ -222,9 +222,9 @@
       (not (equal x y)))
      (string< y x))
     :rule-classes ((:forward-chaining :trigger-terms ((string< x y)))))
-  
+
   )
-     
+
 ;; ------------------------------------------------------------------
 ;; String union
 ;; ------------------------------------------------------------------
@@ -454,7 +454,7 @@
     ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
-  
+
   (defthm ash-upper-bound
     (implies
      (and
@@ -545,7 +545,7 @@
   :hints (("Goal" :in-theory (enable sort-strings))))
 
 ;; ------------------------------------------------------------------
-;; 
+;;
 ;; ------------------------------------------------------------------
 
 (defun <-string-all-keys (key list)
@@ -618,7 +618,7 @@
 				     :expand (merge-pkg-symbol-name-list-rec k1 v1 x k2 v2 y)))
 		  :measure (+ (len x) (len y))))
   (if (and (consp x) (consp y))
-      (if (equal k1 k2) 
+      (if (equal k1 k2)
 	  (acons k1 (string-union v1 v2) (merge-pkg-symbol-name-list-rec (caar x) (cdar x) (cdr x)
 								    (caar y) (cdar y) (cdr y)))
 	(if (string< k1 k2) (acons k1 v1 (merge-pkg-symbol-name-list-rec (caar x) (cdar x) (cdr x) k2 v2 y))
@@ -638,7 +638,7 @@
     (string< z k2))
    (<-string-all-keys z (merge-pkg-symbol-name-list-rec k1 v1 x k2 v2 y))))
 
-(defthm <-pkg-symbol-name-listp-merge-pkg-symbol-name-list-rec 
+(defthm <-pkg-symbol-name-listp-merge-pkg-symbol-name-list-rec
   (implies
    (and
     (stringp k1)
@@ -751,10 +751,10 @@
   (implies
    (<-string-all a list)
    (<-string-all a (val 2 (intersect-<-string x list)))))
-	
+
 (def::signature intersect-<-string (stringp <-string-listp) <-string-listp <-string-listp <-string-listp)
 
-;; 
+;;
 
 (def::und final-intersect-<-string-list-rec (left right x)
   (declare (xargs :signature ((stringp stringp string-listp) string-listp string-listp string-listp)))
@@ -835,7 +835,7 @@
 
 (encapsulate
     ()
-  
+
   (local
    (defthm helper
      (implies
@@ -844,7 +844,7 @@
        (equal a b))
       (member-equal b list))
      :rule-classes :forward-chaining))
-  
+
   (defthm member-1-intersect-<-string-list-rec
     (implies
      (member-equal z (val 1 (intersect-<-string-list-rec a x b y)))
@@ -855,7 +855,7 @@
     :hints (("Goal" :induct (intersect-<-string-list-rec a x b y)
 	     :in-theory (enable final-intersect-<-string-list-rec)))
     :rule-classes :forward-chaining)
-  
+
   )
 
 (defthm member-2-intersect-<-string-list-rec
@@ -922,7 +922,7 @@
     (if (consp x) (mv x nil nil)
       (mv nil nil y))))
 
-(def::signature intersect-<-string-list (<-string-listp <-string-listp) 
+(def::signature intersect-<-string-list (<-string-listp <-string-listp)
   <-string-listp <-string-listp <-string-listp
   :hints (("Goal" :in-theory (enable intersect-<-string-list))))
 
@@ -936,7 +936,7 @@
   (if val (acons key val res) res))
 
 (def::un intersect-1-pkg-symbol-name-list (k v x)
-  (declare (xargs :signature ((string string-listp pkg-symbol-name-listp) 
+  (declare (xargs :signature ((string string-listp pkg-symbol-name-listp)
 			      pkg-symbol-name-listp pkg-symbol-name-listp pkg-symbol-name-listp)
 		  :signature-hints (("Goal" :in-theory (enable pkg-symbol-name-list-entry)))))
   (if (endp x) (mv (acons k v nil) nil nil)
@@ -972,7 +972,7 @@
   <-pkg-symbol-name-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)
 
 (def::und final-intersect-pkg-symbol-name-listp (bk bv ak av x)
-  (declare (xargs :signature ((string string-listp string string-listp pkg-symbol-name-listp) 
+  (declare (xargs :signature ((string string-listp string string-listp pkg-symbol-name-listp)
 			      pkg-symbol-name-listp pkg-symbol-name-listp pkg-symbol-name-listp)))
   (if (equal bk ak) (met ((ls is rs) (intersect-<-string-list bv av))
 		      (mv (acons? ak ls nil) (acons? ak is nil) (acons? ak rs x)))
@@ -986,13 +986,13 @@
 			      pkg-symbol-name-listp pkg-symbol-name-listp pkg-symbol-name-listp)
 		  :measure (+ (len x) (len y))))
   (if (and (consp x) (consp y))
-      (if (equal k1 k2) 
+      (if (equal k1 k2)
 	  (met ((ls is rs) (intersect-<-string-list v1 v2))
 	    (met ((lr ir rr) (intersect-pkg-symbol-name-list-rec (caar x) (cdar x) (cdr x) (caar y) (cdar y) (cdr y)))
 	      (mv (acons? k1 ls lr)
 		  (acons? k1 is ir)
 		  (acons? k1 rs rr))))
-	(if (string< k1 k2) 
+	(if (string< k1 k2)
 	    (met ((lr ir rr) (intersect-pkg-symbol-name-list-rec (caar x) (cdar x) (cdr x) k2 v2 y))
 	      (mv (acons k1 v1 lr) ir rr))
 	  (met ((lr ir rr) (intersect-pkg-symbol-name-list-rec k1 v1 x (caar y) (cdar y) (cdr y)))
@@ -1111,7 +1111,7 @@
 #|
 from: ((x<-y)
        (z<-q))
-add : (y<-z) 
+add : (y<-z)
 (let ((zfrom (elaborate-dependencies (z) from)))
   ;; (y<-(z q))
   (let ((yto (elaborate-dependencies (y) to)))
@@ -1130,7 +1130,7 @@ add: (z<-y)
 |#
 
 (def::und process-dependencies (key vals from to)
-  (declare (xargs :signature ((stringp string-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp) 
+  (declare (xargs :signature ((stringp string-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)
 			      <-pkg-symbol-name-listp <-pkg-symbol-name-listp)))
   (let ((vals (elaborate-dependencies vals from)))
     (let ((keys (elaborate-dependencies (list key) to)))
@@ -1141,14 +1141,14 @@ add: (z<-y)
 (defund port-prefix (symbol)
   (declare (type symbol symbol))
   (let ((symbol-name (coerce (symbol-name symbol) 'list)))
-    (and (< 4 (len symbol-name)) 
+    (and (< 4 (len symbol-name))
 	 (eql (nth 0 symbol-name) #\P)
 	 (eql (nth 1 symbol-name) #\O)
 	 (eql (nth 2 symbol-name) #\R)
 	 (eql (nth 3 symbol-name) #\T))))
 
 (def::und process-bookdata-type (path key data res from to)
-  (declare (xargs :signature ((stringp symbolp (lambda (value) (bookdata-key-type key value)) 
+  (declare (xargs :signature ((stringp symbolp (lambda (value) (bookdata-key-type key value))
 				       <-pkg-symbol-name-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)
 			      <-pkg-symbol-name-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)))
   (if (or (equal key :books)
@@ -1172,7 +1172,7 @@ add: (z<-y)
   :rule-classes (:forward-chaining))
 
 (def::und process-bookdata-key-maps (path list res from to)
-  (declare (xargs :signature ((stringp bookdata-key-maps <-pkg-symbol-name-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp) 
+  (declare (xargs :signature ((stringp bookdata-key-maps <-pkg-symbol-name-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)
 			      <-pkg-symbol-name-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)))
   (if (endp list) (mv res from to)
     (met ((res from to) (process-bookdata-type path (car list) (cadr list) res from to))
@@ -1224,7 +1224,7 @@ add: (z<-y)
 		(insert-conflict subkey path (cdr list) res)))))))))
 
 (def::und process-bookdata (data res from to)
-  (declare (xargs :signature ((wf-bookdata conflict-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp) 
+  (declare (xargs :signature ((wf-bookdata conflict-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)
 			      conflict-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)))
   (let ((path (car data))
 	(kmap (cdr data)))
@@ -1232,7 +1232,7 @@ add: (z<-y)
       (mv (insert-conflict key path res nil) from to))))
 
 (def::und process-bookdata-list (list res from to)
-  (declare (xargs :signature ((wf-bookdata-listp conflict-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp) 
+  (declare (xargs :signature ((wf-bookdata-listp conflict-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)
 			      conflict-listp <-pkg-symbol-name-listp <-pkg-symbol-name-listp)))
   (if (endp list) (mv res from to)
     (met ((res from to) (process-bookdata (car list) res from to))
@@ -1243,7 +1243,7 @@ add: (z<-y)
 (local
  (encapsulate
      ()
-   
+
    (def::und bookdata1 ()
      (declare (xargs :signature (() wf-bookdata)))
      (list "/my/book1.lisp"
@@ -1251,7 +1251,7 @@ add: (z<-y)
 	   :fns   `(("acl2" "plus" "minus" "joe")
 		    ("pkg1" "plus" "alpha"))
 	   ))
-   
+
    (def::und bookdata2 ()
      (declare (xargs :signature (() wf-bookdata)))
      (list "/my/book2.lisp"
@@ -1260,14 +1260,14 @@ add: (z<-y)
 		    ("pkg1" "alpha" "beta")
 		    ("pkg2" "plus" "minus"))
 	   ))
-   
+
    (def::und bookdata-list ()
      (declare (xargs :signature (() wf-bookdata-listp)))
      (list (bookdata1) (bookdata2)))
-   
+
    (defthm instance
      (conflict-listp (val 0 (process-bookdata-list (bookdata-list) nil nil nil))))
-   
+
    ))
 
 #|

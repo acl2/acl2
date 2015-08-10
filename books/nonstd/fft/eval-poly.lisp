@@ -32,12 +32,12 @@ appropriate certify-book command.  Something like the following will work:
 
 ;; We begin with the basic definitions about polynomial evaluation.
 
-;; 
+;;
 
 (defun eval-poly-at-point (p x)
   "Eval-poly-at-point evaluates a polynomial p at a point x.  The polynomial
-  p is stored in a powerlist data structure.  In particular, the polynomial 
-  p = c_0 + c_1 x + ... + c_n x^n is stored as the powerlist 
+  p is stored in a powerlist data structure.  In particular, the polynomial
+  p = c_0 + c_1 x + ... + c_n x^n is stored as the powerlist
   < c_0, c_1, ..., c_n >."
   (if (powerlist-p p)
       (+ (eval-poly-at-point (p-unzip-l p) (* x x))
@@ -129,7 +129,7 @@ appropriate certify-book command.  Something like the following will work:
 	   (equal (p-* (p-unary-- x) (p-unary-- y))
 		  (p-* x y)))
   :hints (("Goal" :induct (p-* x y))))
-		  
+
 ;; As a special case of the above, -x * -x is equal to x*x.  This is a useful
 ;; theorem to prove, because the hypothesis that x is similar to x is trivially
 ;; true, so it's not needed (unlike the general case above).  So, by removing

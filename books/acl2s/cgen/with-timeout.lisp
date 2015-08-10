@@ -17,22 +17,22 @@
   <p>The general form is:
   @({with-timeout duration body timeout-form})
   </p>
- 
+
   <p>
   @('duration') can be any rational value.  A duration of 0 seconds disables
   the timeout mechanism, i.e its a no-op. Suppose it is not, and @('duration')
   seconds elapse during evaluation of <tt>body</tt> then the evaluation is aborted
   and the value of @('timeout-form') is returned; in the normal case the value
-  of <tt>body</tt> is returned. 
+  of <tt>body</tt> is returned.
   </p>
   <p> The signature of <tt>body</tt> and <tt>timeout-form</tt> should be the same.  </p>
-  
+
   <h3>Advanced Notes:</h3>
   <p>
   This form should be called either at the top-level or in
   an environment where state is available and <tt>body</tt> has
   no free variables other than state.
-  If the timeout-form is a long running computation, 
+  If the timeout-form is a long running computation,
   then the purpose of with-timeout is defeated.
   </p>
 

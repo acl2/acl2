@@ -40,7 +40,7 @@
 (local (in-theory (disable my-apply-1)))
 
 
-;; NOTE: Should I do anything about gathering 
+;; NOTE: Should I do anything about gathering
 ;; (* (numerator x) ... (/ (denominator x))?
 
 (local
@@ -81,7 +81,7 @@
 	        (eva (,FN-NAME term) a))
          :rule-classes ((:meta :trigger-fns (,(unquote BIN-OP)))))
 
-       (local 
+       (local
 	(in-theory (disable ,THM-NAME))))))
 
 (make-collecting-meta collect-addends

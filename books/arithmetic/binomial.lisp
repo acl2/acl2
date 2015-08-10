@@ -18,10 +18,10 @@
 (defun choose (k n)
   ; (declare (xargs :guard (and (integerp k) (integerp n) (<= 0 k) (<= k n))))
   (if (and (integerp k) (integerp n) (<= 0 k) (<= k n))
-      (/ (factorial n) 
+      (/ (factorial n)
 	 (* (factorial k) (factorial (- n k))))
     0))
-	   
+
 ;; Unfortunately, ACL2 looks at the previous definition and assumes
 ;; that choose is a rational number -- not necessarily integer.  So
 ;; our first step is to establish the fact that choose is an integer
@@ -201,7 +201,7 @@
 	    (list (* (choose k n) (expt x (1+ k)) (expt y (- n k))))
 	  nil))
     nil))
-  
+
 ;; Interesting that ACL2 needs a rewrite rule for this....
 
 (local
@@ -218,7 +218,7 @@
 
 (local
  (defthm choose-k-k
-   (equal (choose k k) 
+   (equal (choose k k)
 	  (if (and (integerp k) (<= 0 k))
 	      1
 	    0))))
@@ -294,7 +294,7 @@
 	   :use ((:instance choose-reduction
 			    (k (+ 1 k))
 			    (n (+ 1 n)))))))
-	   
+
 ;; We are almost ready now to prove the binomial theorem.  First, we
 ;; show ACL2 how to evaluate more terms that appear in the proofs to
 ;; follow.  For example, there's only 1 way to choose the empty set
@@ -311,7 +311,7 @@
 ;; (x+y)^n = x*(x+y)^{n-1} + y*(x+y)^{n-1} argument given earlier.
 
 (defthm binomial-theorem-induction-lemma
-  (implies (and (integerp n) (< 0 n))  
+  (implies (and (integerp n) (< 0 n))
 	   (equal (+ (* x (sumlist (binomial-expansion x y 0 (1- n))))
 		     (* y (sumlist (binomial-expansion x y 0 (1- n)))))
 		  (sumlist (binomial-expansion x y 0 n))))
@@ -328,7 +328,7 @@
   (if (and (integerp n) (< 0 n))
       (* x (n-expt x (1- n)))
     1))
- 
+
 ;; This little theorem is pretty useful below.  I'm not sure why it
 ;; isn't a standard theorem of ACL2, but there's probably a subtle
 ;; reason involving cyclic rules....
@@ -363,7 +363,7 @@
 (defthm binomial-theorem
   (implies (and (integerp n) (<= 0 n))
 	   (equal (expt (+ x y) n)
-		  (sumlist 
+		  (sumlist
 		   (binomial-expansion x y 0 n)))))
 
 

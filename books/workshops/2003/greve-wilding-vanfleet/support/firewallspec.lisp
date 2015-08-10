@@ -18,8 +18,8 @@
 ;;     progresses one step each segment is black.  (No "spontaneous
 ;;     generation".)
 
-;; 2.  There exists a function "scrub" that modifies a segment so 
-;;     that it is black.  
+;; 2.  There exists a function "scrub" that modifies a segment so
+;;     that it is black.
 
 ;; 3.  Elements of system state that are not associated with the
 ;;     segment are irrelevant in deciding whether a segment is black.
@@ -58,7 +58,7 @@
 
  ((scrub * *) => *)
 )
- 
+
 ;; A "black" segment contains no sensitive information
 (local (defun black (segname st) (declare (ignore segname) (ignore st)) t))
 

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -31,7 +31,7 @@
 (local (include-book "log-new-proofs"))
 
 (set-inhibit-warnings "theory") ; avoid warning in the next event
-;; 
+;;
 ;; (local (in-theory nil))
 
 
@@ -87,7 +87,7 @@
 	     (natp (logand i j)))
   :rule-classes (:type-prescription :rewrite))
 
-;;; 
+;;;
 
 (defthm logand-bvecp-g
     (implies (and (natp n)
@@ -222,7 +222,7 @@
 (defthmd bitn_alt-lognot
     (implies (and (integerp x)
 		  (integerp n)
-		  (> n 0)) ;; ?? n = 0? 
+		  (> n 0)) ;; ?? n = 0?
 	     (not (equal (bitn_alt (lognot x) n)
 			 (bitn_alt x n)))))
 
@@ -290,7 +290,7 @@
 		  (natp k))
 	     (equal (logior x (expt 2 k))
 		    (+ x
-		       (* (expt 2 k) 
+		       (* (expt 2 k)
 			  (- 1 (bitn_alt x k)))))))
 
 ;; (defthmd logand-expt-3-g
@@ -320,7 +320,7 @@
            (equal (logand (- (1- (expt 2 n)) (expt 2 l)) (- (expt 2 n) (expt 2 k)))
                   (- (expt 2 n) (expt 2 k)))))
 
-;;; not very good. as a rewrite rule. 
+;;; not very good. as a rewrite rule.
 
 ;; (defthmd lognot-shift
 ;;   (implies (and (integerp x)
@@ -461,7 +461,7 @@
   (implies (bvecp x 1)
            (equal (logior 1 x) 1)))
 
-;;; not really necessary. 
+;;; not really necessary.
 (defthm logior-x-1
   (implies (bvecp x 1)
            (equal (logior x 1) 1)))

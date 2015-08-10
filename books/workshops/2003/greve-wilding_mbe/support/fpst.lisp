@@ -43,14 +43,14 @@ February 2003
 Some original documentation for this program:
 
 xx Stobj-Based Linear Find Path
-xx 
+xx
 xx Matt Wilding
 xx July 1999
 
 xx J Moore developed an example in 1998 of a linear path search.  He
 xx wrote the example of in some detail, and it is a wonderful example
 xx of doing a small software proof using ACL2.  Subsequently, inspired
-xx he writes in large part by our executable formal model work, J 
+xx he writes in large part by our executable formal model work, J
 xx added stobjs to ACL2.
 xx
 xx This file contains a linear path search program written in ACL2
@@ -66,10 +66,10 @@ xx edges, the program finds a path between two nodes if possible.
 xx
 xx For example, for a graph with nodes
 xx
-xx   0 (with edges to 1 and 2), 
-xx   1 (with no edges), 
+xx   0 (with edges to 1 and 2),
+xx   1 (with no edges),
 xx   2 (with edges to each of the nodes), and
-xx   3 (with an edge to 1) 
+xx   3 (with an edge to 1)
 xx
 xx the program finds a path between nodes 0 and 3:
 xx
@@ -78,7 +78,7 @@ xx    ((0 1 2) (1) (2 0 1 2 3) (3 1))
 xx   ACL2 !>(linear-find-st 0 3 (@ g) st)
 xx   ((0 2 3) <st>)
 xx
-xx J Moore proved a similar program correct in 1999.  He documented 
+xx J Moore proved a similar program correct in 1999.  He documented
 xx his example in a chapter titled "An Exercise in Graph Theory" in
 xx the book "Using the ACL2 Theorem Prover: ACL2 Case Studies",
 xx published by Kluwer in 2000.  It is an interesting example of a
@@ -146,8 +146,8 @@ xx 2000.
 ;; maximum number of nodes in the graph
 (defmacro maxnode () '2500)
 
-;; 
-(defstobj st 
+;;
+(defstobj st
   (g  :type (array list (2500)) :initially nil) ; list of edges
   (marks :type (array (integer 0 1) (2500)) :initially 0) ; visited?
   (stack :type (satisfies true-listp))          ; path
@@ -162,7 +162,7 @@ xx 2000.
 ;; Some miscellaneous rules that will be useful about st
 
 (defthm <=-cancel
-  (equal 
+  (equal
    (<= a (+ y b))
    (<= (- a y) b))
   :rule-classes nil)
@@ -170,7 +170,7 @@ xx 2000.
 (defthm <-cancel
   (implies
    (syntaxp (quotep y))
-   (equal 
+   (equal
     (< (+ y b) a)
     (< b (+ (- a y)))))
   :hints (("goal" :use <=-cancel)))
@@ -211,7 +211,7 @@ xx 2000.
 (defthm number-unmarked1-update-nth-other
   (implies
    (not (equal j (marksindex)))
-   (equal 
+   (equal
     (number-unmarked1 (update-nth j v st) i)
     (number-unmarked1 st i))))
 
@@ -223,7 +223,7 @@ xx 2000.
    (equal
     (number-unmarked1 (list nil (update-nth i 1 l)) k)
     (number-unmarked1 (list nil l) k))))
-  
+
 (defthm number-unmarked1-marked
   (implies
    (and
@@ -237,7 +237,7 @@ xx 2000.
       (1- (number-unmarked1 (list nil l) k))))))
 
 (defthm number-unmarked1-hack
-  (equal 
+  (equal
    (number-unmarked1 st k)
    (number-unmarked1 (list nil (nth (marksindex) st)) k))
   :rule-classes nil)
@@ -253,8 +253,8 @@ xx 2000.
     (if (equal (nth i (nth (marksindex) st)) 1)
 	(number-unmarked1 st k)
       (1- (number-unmarked1 st k)))))
-  :hints (("goal" 
-	   :use ((:instance number-unmarked1-hack 
+  :hints (("goal"
+	   :use ((:instance number-unmarked1-hack
 			    (st (update-nth (marksindex) (update-nth i 1 (nth (marksindex) st)) st)))
 		 number-unmarked1-hack))))
 
@@ -315,7 +315,7 @@ xx 2000.
 (defun repeat (n v)
   (if (and (integerp n) (< 0 n)) (cons v (repeat (1- n) v)) nil))
 
-(defthm len-repeat 
+(defthm len-repeat
   (equal (len (repeat n v)) (nfix n)))
 
 (defthm nlistp-update-nth
@@ -370,15 +370,15 @@ xx ;; c is the list of neighbors being explored, b is the goal node
 (defun linear-find-next-step-st-mbe (c b st)
   (declare (xargs :stobjs st
                   :measure (measure-st c st)
-                  :guard (and (graphp-st st) 
-                              (bounded-natp b (maxnode)) 
+                  :guard (and (graphp-st st)
+                              (bounded-natp b (maxnode))
                               (numberlistp c (maxnode)))
                   :verify-guards nil))
   (mbe
    :logic
    (if (endp c) st
      (let ((cur (coerce-node (car c)))
-           (temp (number-unmarked st))) 
+           (temp (number-unmarked st)))
        (cond
         ((equal (marksi cur st) 1)
          (linear-find-next-step-st-mbe (cdr c) b st))
@@ -436,7 +436,7 @@ xx ;; c is the list of neighbors being explored, b is the goal node
     (zp n)
     (bounded-natp x 2))))
 
-(defthm marksp1-update-nth 
+(defthm marksp1-update-nth
   (implies
    (and
     (integerp v) (<= 0 v) (<= v 1)
@@ -603,8 +603,8 @@ xx ;; c is the list of neighbors being explored, b is the goal node
     (nth (stackindex) st)
     (true-listp (nth (stackindex) st)))
    (nth (stackindex) (linear-find-next-step-st-mbe c b st)))
-  :hints (("goal" :use len-stack 
-	   :in-theory (set-difference-theories (enable len) 
+  :hints (("goal" :use len-stack
+	   :in-theory (set-difference-theories (enable len)
 					       '(len-stack)))))
 (defthm linear-unmarked-not-increased
    (>= (number-unmarked1 st 0)
@@ -729,8 +729,8 @@ xx ;; c is the list of neighbors being explored, b is the goal node
 (set-irrelevant-formals-ok :warn)
 
 ;; We need to show ACL2 how to induct on the merged definitions
-;; This is pretty tricky due to the multiply recursive nature of 
-;; the program.  
+;; This is pretty tricky due to the multiply recursive nature of
+;; the program.
 
 ; Because a recursive call of lfns contains a value that is a function
 ; of another recursive call, the inductive schema definition appears
@@ -741,8 +741,8 @@ xx ;; c is the list of neighbors being explored, b is the goal node
 (defun induct-equiv (c b st stack g mt)
   (declare (xargs :stobjs st
 		  :measure (measure-st c st)
-		  :guard (and (graphp-st st) 
-			      (bounded-natp b (maxnode)) 
+		  :guard (and (graphp-st st)
+			      (bounded-natp b (maxnode))
 			      (numberlistp c (maxnode)))
 		  :verify-guards nil
 		  :hints (("goal" :in-theory (enable number-unmarked len)))))
@@ -757,7 +757,7 @@ xx ;; c is the list of neighbors being explored, b is the goal node
 	  (update-stack (myrev (cons (car c) (stack st))) st)))
        (t (let ((st (update-marksi cur 1 st)))
 	    (let ((st (update-stack (cons (car c) (stack st)) st)))
-	      (let ((st (induct-equiv (gi cur st) b st (cons (car c) stack) 
+	      (let ((st (induct-equiv (gi cur st) b st (cons (car c) stack)
 				      g (cons (car c) mt))))
 		(if (or (<= temp (number-unmarked st))  ; always nil
 			(equal (status st) 0))
@@ -778,7 +778,7 @@ xx ;; c is the list of neighbors being explored, b is the goal node
   :hints (("goal" :induct (induct-equiv c b st stack g mt)
 	   :in-theory (set-difference-theories
 		       (enable induct-equiv linear-find-next-step-st-mbe number-unmarked)
-		       '(FIND-NEXT-STEP-AVOIDING-CONS 
+		       '(FIND-NEXT-STEP-AVOIDING-CONS
 			 STEP1 REV binary-append step2)))))
 
 (defthm nth-mark-equivp1
@@ -800,7 +800,7 @@ xx ;; c is the list of neighbors being explored, b is the goal node
    (iff
     (equal (nth j (nth (marksindex) st)) 1)
     (member j mt)))
-   :hints (("goal" :in-theory (set-difference-theories (enable mark-equivp) 
+   :hints (("goal" :in-theory (set-difference-theories (enable mark-equivp)
 						       '(mark-equivp1)))))
 (defthm mark-equivp1-above1
   (implies
@@ -830,8 +830,8 @@ xx ;; c is the list of neighbors being explored, b is the goal node
     (bounded-natp j (maxnode))
     (integerp i))
    (mark-equivp1 (cons i mt) (update-nth (marksindex) (update-nth i 1 (nth (marksindex) st)) st) j))
-  :hints (("goal" :expand 
-	   (:free (x) 
+  :hints (("goal" :expand
+	   (:free (x)
 		  (mark-equivp1 (cons x mt)
 				(update-nth (marksindex) (update-nth x 1 (nth (marksindex) st))
 					    st)
@@ -844,7 +844,7 @@ xx ;; c is the list of neighbors being explored, b is the goal node
     (integerp i)
     (<= 0 i))
    (mark-equivp (cons i mt) (update-nth (marksindex) (update-nth i 1 (nth (marksindex) st)) st)))
-   :hints (("goal" :in-theory (set-difference-theories (enable mark-equivp) 
+   :hints (("goal" :in-theory (set-difference-theories (enable mark-equivp)
 						       '(mark-equivp1)))))
 (defthm nth-graph-equivp1
   (implies
@@ -853,7 +853,7 @@ xx ;; c is the list of neighbors being explored, b is the goal node
     (bounded-natp i (maxnode))
     (bounded-natp j (maxnode))
     (<= i j))
-   (equal 
+   (equal
     (neighbors j g)
     (gi j st))))
 
@@ -862,7 +862,7 @@ xx ;; c is the list of neighbors being explored, b is the goal node
    (and
     (graph-equivp g st)
     (bounded-natp j (maxnode)))
-   (equal 
+   (equal
     (neighbors j g)
     (gi j st)))
   :hints (("goal" :in-theory (enable graph-equivp))))
@@ -883,7 +883,7 @@ xx ;; c is the list of neighbors being explored, b is the goal node
   (equal (myrev x) (rev x)))
 
 ;;; The stobj implementation of lfp works just like the original
-;;; list-based one.  
+;;; list-based one.
 
 (defthm implementations-same
   (implies
@@ -899,7 +899,7 @@ xx ;; c is the list of neighbors being explored, b is the goal node
 	      (or
 	       (and (not (equal (status st) 0)) (equal temp 'failure) (mark-equivp marks st))
 	       (and (equal (status st) 0) (not (equal temp 'failure)) (equal temp (stack st)))))))
-  :hints (("goal" :in-theory (enable linear-find-next-step-st-mbe linear-find-next-step 
+  :hints (("goal" :in-theory (enable linear-find-next-step-st-mbe linear-find-next-step
 				     number-unmarked)
 	   :induct (induct-equiv c b st stack g mt)))
   :rule-classes nil)

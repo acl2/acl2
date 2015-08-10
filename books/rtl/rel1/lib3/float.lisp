@@ -39,7 +39,7 @@
 	((>= (abs x) 1) (expo2 (abs x)))
 	(t (expo1 (abs x)))))
 
-(defun sgn (x) 
+(defun sgn (x)
   (if (= x 0)
       0
     (if (< x 0) -1 +1)))

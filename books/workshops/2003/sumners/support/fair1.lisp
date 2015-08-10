@@ -121,7 +121,7 @@ constrained.
 (encapsulate
  (((env! * *) => *)
   ((env-measure! * * *) => *))
- 
+
 (local (defun env! (k n) (declare (ignore k))
          (env1 n)))
 (local (defun env-measure! (k i n) (declare (ignore k))
@@ -155,7 +155,7 @@ constrained.
              '(defun env-measure (k i n)
                 (env-measure! k i n)))))
 
-#| 
+#|
 
 We conclude this book with a "proof" that the existence of a fair-measure
 implies (fair-selection) -- we proved the other direction above. This other
@@ -180,7 +180,7 @@ following forms local.
 (defthm env1-msr$-is-natural
   (implies (env1-msr$-property)
            (natp (env1-msr$ i n)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance env1-msr$-property-necc)
            :in-theory (disable env1-msr$-property-necc)))
   :rule-classes :type-prescription))
@@ -192,7 +192,7 @@ following forms local.
                 (not (equal (env1 n) i)))
            (< (env1-msr$ i (1+ n))
               (env1-msr$ i n)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance env1-msr$-property-necc)
            :in-theory (disable env1-msr$-property-necc)))
   :rule-classes :linear))
@@ -202,7 +202,7 @@ following forms local.
 
 (local
 (defun witness1$ (i x)
-  (declare (xargs :measure (cons (if (natp x) 1 2) 
+  (declare (xargs :measure (cons (if (natp x) 1 2)
                                  (if (env1-msr$-property)
                                      (env1-msr$ i x)
                                    0))))
@@ -231,7 +231,7 @@ following forms local.
   (implies (env1-msr$-property)
            (fair-selection))
   :hints (("Goal"
-           :use ((:instance exists-future-suff 
+           :use ((:instance exists-future-suff
                             (i (mv-nth 0 (fair-selection-witness)))
                             (x (mv-nth 1 (fair-selection-witness)))
                             (y (witness1$ (mv-nth 0 (fair-selection-witness))

@@ -27,7 +27,7 @@
 
 (defun sort-by-frequency (alist)
   (declare (xargs :guard t
-                  :hints (("Subgoal 2'4'" :in-theory 
+                  :hints (("Subgoal 2'4'" :in-theory
                            (disable even-gen-smaller-3)
                            :use (:instance even-gen-smaller-3
                                            (alst2 alist2)
@@ -35,12 +35,12 @@
   (if (rational-val-alistp-gen alist)
       (if (and (consp alist)
                (consp (cdr alist)))
-          (sort-by-frequency-merge 
+          (sort-by-frequency-merge
            (sort-by-frequency (evens-gen alist))
            (sort-by-frequency (odds-gen alist)))
         alist)
     'bad-input-to-sort-by-frequency))
-                              
+
 (defun get-compatible-set (list ans)
   (declare (xargs :guard t))
   (if (consp list)
@@ -60,14 +60,14 @@
 ; ":Doc-Section TASPI
 ;  Computes the greedy consensus of a set of trees~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;     (1) list-of-trees - a list of trees
 ;     (2) taxa-list - list of taxa
 
-;  Details: List-of-trees must have the given taxa list.  The greedy consensus 
-;           orders the bipartitions found by their frequencies and adds 
-;           bipartitions to the consensus starting with the most frequent, 
-;           skipping conflicting bipartitions, until no non-conflicting 
+;  Details: List-of-trees must have the given taxa list.  The greedy consensus
+;           orders the bipartitions found by their frequencies and adds
+;           bipartitions to the consensus starting with the most frequent,
+;           skipping conflicting bipartitions, until no non-conflicting
 ;           bipartition remains. Greedy consensus will be a refinement of the
 ;           majority consensus.
 ;           Does not allow branch lengths (see greedy-brlens)."
@@ -76,14 +76,14 @@
            (int-symlist taxa-list)
            (<= 2 (len taxa-list))
            (all-same-num-tips list-of-trees))
-       (let* ((bfringe-freqs (bfringe-frequencies list-of-trees 
+       (let* ((bfringe-freqs (bfringe-frequencies list-of-trees
                                                  taxa-list))
              (fringe-freq-sorted-by-popularity
                (sort-by-frequency bfringe-freqs)))
         (if (alistp-gen fringe-freq-sorted-by-popularity)
             (let* ((fringes-sorted-by-popularity
                     (strip-cars-gen fringe-freq-sorted-by-popularity))
-                   (greedy-fringes 
+                   (greedy-fringes
                     (get-compatible-set
                      fringes-sorted-by-popularity nil)))
               (build-term-top-guard-t greedy-fringes taxa-list))
@@ -98,14 +98,14 @@
 ; ":Doc-Section TASPI
 ;  Computes the greedy consensus of a set of trees with branch lengths~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;     (1) list-of-trees - a list of trees
 ;     (2) taxa-list - list of taxa
 
-;  Details: List-of-trees must have the given taxa list.  The greedy consensus 
-;           orders the bipartitions found by their frequencies and adds 
-;           bipartitions to the consensus starting with the most frequent, 
-;           skipping conflicting bipartitions, until no non-conflicting 
+;  Details: List-of-trees must have the given taxa list.  The greedy consensus
+;           orders the bipartitions found by their frequencies and adds
+;           bipartitions to the consensus starting with the most frequent,
+;           skipping conflicting bipartitions, until no non-conflicting
 ;           bipartition remains. Greedy consensus will be a refinement of the
 ;           majority consensus.
 ;           Allow branch lengths (see greedy)."
@@ -128,7 +128,7 @@
         (sort-by-frequency bfringe-freqs))
        (fringes-sorted-by-popularity
         (strip-cars-gen fringe-freq-sorted-by-popularity))
-       (greedy-fringes 
+       (greedy-fringes
         (get-compatible-set
          fringes-sorted-by-popularity nil)))
   (acons 'fringe-freq-sorted-by-popularity

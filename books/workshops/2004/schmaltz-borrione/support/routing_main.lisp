@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -20,8 +20,8 @@
 
 ;; File: routing_main.lisp
 ;; Proof of the main theorem of Route
-;; Definition of a constrained function in an encapsulate to show that the 
-;; proof of the overall system relies only on the theorem and not on the 
+;; Definition of a constrained function in an encapsulate to show that the
+;; proof of the overall system relies only on the theorem and not on the
 ;; definition of Route. Every function that will satisfy the theorem will not
 ;; modify the rest of the proof
 
@@ -30,7 +30,7 @@
 ;; we import some definitions
 (include-book "predicatesNCie")
 
-(encapsulate 
+(encapsulate
  (((myroute * * *) => *))
 
  (local (include-book "routing_local_lemmas"))
@@ -59,18 +59,18 @@
                  (integerp n)
                  (< 0 n))
             (and ;; Route contains at least one element
-;                 (< 0 (len (myroute from to n))) 
+;                 (< 0 (len (myroute from to n)))
                  ;; it is a consp
-                 (consp (myroute from to n))     
+                 (consp (myroute from to n))
                  ;; every node is an integer
-                 (all_intp (myroute from to n))          
+                 (all_intp (myroute from to n))
                  ;; every node number is positive
                  (all_pos_intp (myroute from to n))
 ;                 ;; every route is shorter than or equal to (* 4 N)
 ;                 (< (len (myroute from to n)) (+ 1 1 (* 4 N)))
-                 ;; every route contains no duplicate 
+                 ;; every route contains no duplicate
                  (no-duplicatesp (myroute from to n))
-                 ;; every node is less than the maximum of nodes 
+                 ;; every node is less than the maximum of nodes
                  (all_inf_np (myroute from to n) (* 4 n))
                  ;; a route is made of available moves
                  (AvailableMovep (myroute from to n) n)

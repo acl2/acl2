@@ -251,11 +251,14 @@
                     (t (and (,type-name (car x))
                             (,type-list-name (cdr x)))))))))
 
-(defmacro true ()
-  t)
+; Matt K., 8/8/2015: Commenting out the definitions of TRUE and FALSE, which
+; are now defined as functions in std/basic/defs.lisp.
 
-(defmacro false ()
-  nil)
+; (defmacro true ()
+;   t)
+;
+; (defmacro false ()
+;   nil)
 
 (defmacro assert! (condition value)
 ; Like assert$, but avoids runtime check when in :program mode.
@@ -552,9 +555,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defthm unsigned-byte-p-cat
@@ -566,7 +569,7 @@
 
 (defun unit-value ()
 
-; Warning: If this is replaced with something other than nil, then 
+; Warning: If this is replaced with something other than nil, then
 
   (declare (xargs :guard t))
   nil)

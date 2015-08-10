@@ -67,9 +67,9 @@
 ;; (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 ;; (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
-;; (set-default-hints '((ACL2::nonlinearp-default-hint 
+;; (set-default-hints '((ACL2::nonlinearp-default-hint
 ;;                       ACL2::stable-under-simplificationp
-;;                       ACL2::hist 
+;;                       ACL2::hist
 ;;                       ACL2::pspv)))
 
 ;; (local (defthm signed-byte-natural
@@ -91,7 +91,7 @@
 ;; (local (in-theory (disable logand ash)))
 ;; (local (in-theory (disable (:executable-counterpart expt))))
 
-                 
+
 
 
 
@@ -99,7 +99,7 @@
 ;; ; Definition of memory trees.  Our memory trees are laid out so that they have
 ;; ; some fixed depth, and the actual data is at the tips of the tree.  Naturally,
 ;; ; each tree can hold 2^{depth} elements.  These are an internal structure not
-;; ; meant for outside use.  
+;; ; meant for outside use.
 ;; ;
 ;; ; We require that memory trees are "canonical" in the sense that they take as
 ;; ; little space as possible.  More formally, in a memtree all nil values must be
@@ -126,7 +126,7 @@
 ;;   (if (mbt (_memtree-p mtree depth))
 ;;       mtree
 ;;     nil))
-  
+
 ;; (defthm _memtree-fix-memtree
 ;;   (_memtree-p (_memtree-fix mtree depth) depth))
 
@@ -194,13 +194,13 @@
 ;;   (and (integerp (_address-fix addr depth))
 ;;        (<= 0 (_address-fix addr depth)))
 ;;   :rule-classes :type-prescription)
-                      
+
 ;; (in-theory (disable _address-fix _memtree-fix))
 
 
 
 
-;; ; Definition of memory tree loading operations.  
+;; ; Definition of memory tree loading operations.
 ;; ;
 ;; ; We consider there to be two ways for an address space to be laid out using
 ;; ; binary trees.  In an "MSB" style tree, the most significant bit of the
@@ -297,7 +297,7 @@
 ;;   (mbe :logic (_memtree-load addr mtree depth)
 ;;        :exec (if (= depth 0)
 ;;                  mtree
-;;                (_fix-addr/depth-memtree-load 
+;;                (_fix-addr/depth-memtree-load
 ;;                 (the-fixnum (ash addr -1))
 ;;                 (if (= (the-fixnum (logand addr 1)) 0)
 ;;                     (car mtree)
@@ -336,14 +336,14 @@
 
 
 ;; ; We now provide a store function.  I think this definition is pretty standard
-;; ; following from the definition of load.  
+;; ; following from the definition of load.
 ;; ;
 ;; ; One interesting aspect is that we require that our element is non-nil.  This
 ;; ; is because we would really like to keep our trees in a canonical form, where
 ;; ; "nil" elements are not even stored, and paths to them are not created.  But,
-;; ; this function would not preserve this property if we gave it "nil" to store. 
+;; ; this function would not preserve this property if we gave it "nil" to store.
 ;; ; For example, (_memtree-store 0 nil nil 2) = ((nil)) instead of nil, violating
-;; ; our notion of canonicality.  Indeed, this creates problems when we try to 
+;; ; our notion of canonicality.  Indeed, this creates problems when we try to
 ;; ; prove properties of the form (store addr (load addr mem) mem) = mem.
 ;; ;
 ;; ; To address this, we actually provide a separate function below,
@@ -366,7 +366,7 @@
 ;;             (cons (_memtree-store quotient elem (car mtree) (1- depth))
 ;;                   (cdr mtree))
 ;;           (cons (car mtree)
-;;                 (_memtree-store quotient elem (cdr mtree) 
+;;                 (_memtree-store quotient elem (cdr mtree)
 ;;                                 (1- depth))))))))
 
 ;; ; As with loading, we create an efficient version that assumes addr and depth
@@ -386,12 +386,12 @@
 ;;                  elem
 ;;                (let ((quotient (the-fixnum (ash addr -1))))
 ;;                  (if (= (the-fixnum (logand addr 1)) 0)
-;;                      (cons (_fix-addr/depth-memtree-store 
+;;                      (cons (_fix-addr/depth-memtree-store
 ;;                             quotient elem (car mtree) (the-fixnum (1- depth)))
 ;;                            (cdr mtree))
 ;;                    (cons (car mtree)
-;;                          (_fix-addr/depth-memtree-store 
-;;                           quotient elem (cdr mtree) 
+;;                          (_fix-addr/depth-memtree-store
+;;                           quotient elem (cdr mtree)
 ;;                           (the-fixnum (1- depth)))))))))
 
 ;; ; And as before, we create a "self-optimizing" version which drops the
@@ -408,16 +408,16 @@
 ;;                  (_fix-addr/depth-memtree-store addr elem mtree depth)
 ;;                (let ((quotient (ash addr -1)))
 ;;                  (if (= (the-fixnum (logand addr 1)) 0)
-;;                      (cons (_fixnum-memtree-store 
+;;                      (cons (_fixnum-memtree-store
 ;;                             quotient elem (car mtree) (the-fixnum (1- depth)))
 ;;                            (cdr mtree))
 ;;                    (cons (car mtree)
-;;                          (_fixnum-memtree-store 
-;;                           quotient elem (cdr mtree) 
+;;                          (_fixnum-memtree-store
+;;                           quotient elem (cdr mtree)
 ;;                           (the-fixnum (1- depth)))))))))
 
 
-;; ; Now we are ready to implement "memory erasing", that is, storing nils into 
+;; ; Now we are ready to implement "memory erasing", that is, storing nils into
 ;; ; our memory.  We want to keep our trees in canonical format, so we go to some
 ;; ; lengths to eliminate branches that are no longer needed.
 
@@ -433,8 +433,8 @@
 ;;       (if (atom mtree)
 ;;           nil
 ;;         (let ((quotient (floor addr 2)))
-;;           (if (= (mod addr 2) 0)              
-;;               (let ((left (_memtree-store-nil quotient (car mtree) 
+;;           (if (= (mod addr 2) 0)
+;;               (let ((left (_memtree-store-nil quotient (car mtree)
 ;;                                               (1- depth)))
 ;;                     (right (cdr mtree)))
 ;;                 (if (and (null left) (null right)) ; canonicalize away!
@@ -459,8 +459,8 @@
 ;;                    nil
 ;;                  (let ((quotient (the-fixnum (ash addr -1))))
 ;;                    (if (= (the-fixnum (logand addr 1)) 0)
-;;                        (let ((left (_fix-addr/depth-memtree-store-nil 
-;;                                     quotient (car mtree) 
+;;                        (let ((left (_fix-addr/depth-memtree-store-nil
+;;                                     quotient (car mtree)
 ;;                                     (the-fixnum (1- depth))))
 ;;                              (right (cdr mtree)))
 ;;                          (if (and (null left)
@@ -468,8 +468,8 @@
 ;;                              nil
 ;;                            (cons left right)))
 ;;                      (let ((left (car mtree))
-;;                            (right (_fix-addr/depth-memtree-store-nil 
-;;                                    quotient (cdr mtree) 
+;;                            (right (_fix-addr/depth-memtree-store-nil
+;;                                    quotient (cdr mtree)
 ;;                                    (the-fixnum (1- depth)))))
 ;;                        (if (and (null left)
 ;;                                 (null right))
@@ -488,8 +488,8 @@
 ;;                    nil
 ;;                  (let ((quotient (ash addr -1)))
 ;;                    (if (= (the-fixnum (logand addr 1)) 0)
-;;                        (let ((left (_fixnum-memtree-store-nil 
-;;                                     quotient (car mtree) 
+;;                        (let ((left (_fixnum-memtree-store-nil
+;;                                     quotient (car mtree)
 ;;                                     (the-fixnum (1- depth))))
 ;;                              (right (cdr mtree)))
 ;;                          (if (and (null left)
@@ -497,8 +497,8 @@
 ;;                              nil
 ;;                            (cons left right)))
 ;;                      (let ((left (car mtree))
-;;                            (right (_fixnum-memtree-store-nil 
-;;                                    quotient (cdr mtree) 
+;;                            (right (_fixnum-memtree-store-nil
+;;                                    quotient (cdr mtree)
 ;;                                    (the-fixnum (1- depth)))))
 ;;                        (if (and (null left)
 ;;                                 (null right))
@@ -527,7 +527,7 @@
 ;; ;
 ;; ; This is the same technique used in my ordered sets book in order to enforce
 ;; ; the non-sets convention, and you can think of these as "a poor man's
-;; ; congruence rules".  Take for example _memtree-load-fix-a below, which 
+;; ; congruence rules".  Take for example _memtree-load-fix-a below, which
 ;; ; says that the following:
 ;; ;
 ;; ; (defthm _memtree-load-fix-addr
@@ -573,7 +573,7 @@
 ;; (defthm _memtree-load-fix-depth
 ;;   (equal (_memtree-load addr mtree (nfix depth))
 ;;          (_memtree-load addr mtree depth))
-;;   :hints(("Goal" 
+;;   :hints(("Goal"
 ;;           :in-theory (disable _memtree-fix-nfix)
 ;;           :use ((:instance _memtree-fix-nfix)))))
 
@@ -627,7 +627,7 @@
 ;; ;;; Key Lemmas: "equivalent" _addresses can be interchanged in stores
 
 ;; ; These lemmas needs to stay disabled because they can easily cause loops.  It
-;; ; doesn't seem that simple loop stoppers fix the issue, and I'm too lazy to 
+;; ; doesn't seem that simple loop stoppers fix the issue, and I'm too lazy to
 ;; ; figure out a better solution.
 
 ;; (local (defthmd _memtree-store-addr-switch-1
@@ -663,7 +663,7 @@
 ;; (encapsulate
 ;;  nil
 
-;; ; We first prove a lemma that only considers when all of the inputs are 
+;; ; We first prove a lemma that only considers when all of the inputs are
 ;; ; well formed with respect to the guards.
 
 ;;  (local (defthmd lemma
@@ -685,7 +685,7 @@
 ;;                            (depth (nfix depth))
 ;;                            (addr  (_address-fix addr depth))
 ;;                            (mtree (_memtree-fix mtree depth))))))
- 
+
 
 ;; ; And we do the same thing for _memtree-store-nil
 
@@ -719,11 +719,11 @@
 ;;                         (_address-p addr depth)
 ;;                         (_memtree-p mtree depth)
 ;;                         elem)
-;;                    (equal (_memtree-load addr 
+;;                    (equal (_memtree-load addr
 ;;                                          (_memtree-store addr elem mtree depth)
 ;;                                          depth)
 ;;                           elem))
-;;           :hints(("Goal" 
+;;           :hints(("Goal"
 ;;                   :induct (_memtree-load addr
 ;;                                          (_memtree-store addr elem mtree depth)
 ;;                                          depth)))))
@@ -731,7 +731,7 @@
 ;; ; Now using this lemma in conjunction with our "key" _address switching lemma
 ;; ; above, and our fixing lemmas, we can show how this property holds for the
 ;; ; general case.  Note the test of (equal (_address-fix a depth) (_address-fix b
-;; ; depth)).  It should be easy to see that this is actually more general than 
+;; ; depth)).  It should be easy to see that this is actually more general than
 ;; ; targetting (_memtree-load a (_memtree-store a elem mtree depth)).
 
 ;;  (defthm _memtree-load-same-store-1
@@ -746,20 +746,20 @@
 ;;                             (addr  (_address-fix a depth))
 ;;                             (mtree (_memtree-fix mtree depth)))
 ;;                  (:instance _memtree-store-addr-switch-1)))))
-                           
+
 ;; ; And we do the equivalent thing for storing nil.
 
 ;;  (local (defthmd lemma2
 ;;           (implies (and (natp depth)
 ;;                         (_address-p addr depth)
 ;;                         (_memtree-p mtree depth))
-;;                    (equal (_memtree-load addr 
+;;                    (equal (_memtree-load addr
 ;;                                          (_memtree-store-nil addr mtree depth)
 ;;                                          depth)
 ;;                           nil))
-;;           :hints(("Goal" 
+;;           :hints(("Goal"
 ;;                   :induct (_memtree-load addr
-;;                                          (_memtree-store-nil addr mtree depth) 
+;;                                          (_memtree-store-nil addr mtree depth)
 ;;                                          depth)))))
 
 ;;  (defthm _memtree-load-same-store-2
@@ -794,20 +794,20 @@
 ;;                         (_memtree-p mtree depth)
 ;;                         (not (equal a b))
 ;;                         elem)
-;;                    (equal (_memtree-load a 
+;;                    (equal (_memtree-load a
 ;;                                          (_memtree-store b elem mtree depth)
 ;;                                          depth)
 ;;                           (_memtree-load a mtree depth)))
-;;           :hints(("Goal" 
-;;                   :induct (_memtree-load a 
-;;                                          (_memtree-store b elem mtree depth) 
+;;           :hints(("Goal"
+;;                   :induct (_memtree-load a
+;;                                          (_memtree-store b elem mtree depth)
 ;;                                          depth)))))
 
-;; ; Our fixing lemmas can then easily transform this lemma into a proof 
+;; ; Our fixing lemmas can then easily transform this lemma into a proof
 ;; ; of the general case.
 
 ;;  (defthm _memtree-load-diff-store-1
-;;    (implies (and (not (equal (_address-fix a depth) 
+;;    (implies (and (not (equal (_address-fix a depth)
 ;;                              (_address-fix b depth)))
 ;;                  elem)
 ;;             (equal (_memtree-load a (_memtree-store b elem mtree depth) depth)
@@ -827,17 +827,17 @@
 ;;                         (_address-p b depth)
 ;;                         (_memtree-p mtree depth)
 ;;                         (not (equal a b)))
-;;                    (equal (_memtree-load a 
+;;                    (equal (_memtree-load a
 ;;                                          (_memtree-store-nil b mtree depth)
 ;;                                          depth)
 ;;                           (_memtree-load a mtree depth)))
-;;           :hints(("Goal" 
-;;                   :induct (_memtree-load a 
-;;                                          (_memtree-store-nil b mtree depth) 
+;;           :hints(("Goal"
+;;                   :induct (_memtree-load a
+;;                                          (_memtree-store-nil b mtree depth)
 ;;                                          depth)))))
 
 ;;  (defthm _memtree-load-diff-store-2
-;;    (implies (not (equal (_address-fix a depth) 
+;;    (implies (not (equal (_address-fix a depth)
 ;;                         (_address-fix b depth)))
 ;;             (equal (_memtree-load a (_memtree-store-nil b mtree depth) depth)
 ;;                    (_memtree-load a mtree depth)))
@@ -864,14 +864,14 @@
 ;;           (implies (and (natp depth)
 ;;                         (_address-p addr depth)
 ;;                         (_memtree-p mtree depth)
-;;                         e1 
+;;                         e1
 ;;                         e2)
-;;                    (equal (_memtree-store addr e1 
+;;                    (equal (_memtree-store addr e1
 ;;                            (_memtree-store addr e2 mtree depth) depth)
 ;;                           (_memtree-store addr e1 mtree depth)))
-;;           :hints(("Goal" 
-;;                   :induct (_memtree-store addr e1 
-;;                            (_memtree-store addr e2 mtree depth) 
+;;           :hints(("Goal"
+;;                   :induct (_memtree-store addr e1
+;;                            (_memtree-store addr e2 mtree depth)
 ;;                            depth)))))
 
 ;;  (defthm _memtree-store-smash-1
@@ -879,7 +879,7 @@
 ;;                         (_address-fix b depth))
 ;;                  e1
 ;;                  e2)
-;;             (equal (_memtree-store a e1 
+;;             (equal (_memtree-store a e1
 ;;                     (_memtree-store b e2 mtree depth) depth)
 ;;                    (_memtree-store a e1 mtree depth)))
 ;;    :hints(("Goal"
@@ -891,7 +891,7 @@
 
 
 ;; ; We also show the theorem for two instances of memtree-store-nil.
- 
+
 ;;  (local (defthmd lemma2
 ;;           (implies (and (natp depth)
 ;;                         (_address-p addr depth)
@@ -899,9 +899,9 @@
 ;;                    (equal (_memtree-store-nil addr
 ;;                            (_memtree-store-nil addr mtree depth) depth)
 ;;                           (_memtree-store-nil addr mtree depth)))
-;;           :hints(("Goal" 
+;;           :hints(("Goal"
 ;;                   :induct (_memtree-store-nil addr
-;;                            (_memtree-store-nil addr mtree depth) 
+;;                            (_memtree-store-nil addr mtree depth)
 ;;                            depth)))))
 
 ;;  (defthm _memtree-store-smash-2
@@ -918,7 +918,7 @@
 ;;                  (:instance _memtree-store-addr-switch-2)))))
 
 
-;; ; But we aren't done yet.  We also need to know that memtree-store-nil and 
+;; ; But we aren't done yet.  We also need to know that memtree-store-nil and
 ;; ; memtree-store can be interchanged in this manner.
 
 ;;  (local (defthmd lemma3
@@ -929,9 +929,9 @@
 ;;                    (equal (_memtree-store addr elem
 ;;                            (_memtree-store-nil addr mtree depth) depth)
 ;;                           (_memtree-store addr elem mtree depth)))
-;;           :hints(("Goal" 
+;;           :hints(("Goal"
 ;;                   :induct (_memtree-store addr elem
-;;                            (_memtree-store-nil addr mtree depth) 
+;;                            (_memtree-store-nil addr mtree depth)
 ;;                            depth)))))
 
 ;;  (defthm _memtree-store-smash-3
@@ -939,7 +939,7 @@
 ;;                         (_address-fix b depth))
 ;;                  elem)
 ;;             (equal (_memtree-store a elem
-;;                                    (_memtree-store-nil b mtree depth) 
+;;                                    (_memtree-store-nil b mtree depth)
 ;;                                    depth)
 ;;                    (_memtree-store a elem mtree depth)))
 ;;    :hints(("Goal"
@@ -957,9 +957,9 @@
 ;;                    (equal (_memtree-store-nil addr
 ;;                            (_memtree-store addr elem mtree depth) depth)
 ;;                           (_memtree-store-nil addr mtree depth)))
-;;           :hints(("Goal" 
+;;           :hints(("Goal"
 ;;                   :induct (_memtree-store-nil addr
-;;                            (_memtree-store addr elem mtree depth) 
+;;                            (_memtree-store addr elem mtree depth)
 ;;                            depth)))))
 
 ;;  (defthm _memtree-store-smash-4
@@ -967,7 +967,7 @@
 ;;                         (_address-fix b depth))
 ;;                  elem)
 ;;             (equal (_memtree-store-nil a
-;;                                        (_memtree-store b elem mtree depth) 
+;;                                        (_memtree-store b elem mtree depth)
 ;;                                        depth)
 ;;                    (_memtree-store-nil a mtree depth)))
 ;;    :hints(("Goal"
@@ -1028,13 +1028,13 @@
 ;;                         (_memtree-p mtree depth)
 ;;                         (not (equal a b))
 ;;                         e1 e2)
-;;                    (equal (_memtree-store a e1 
+;;                    (equal (_memtree-store a e1
 ;;                            (_memtree-store b e2 mtree depth) depth)
-;;                           (_memtree-store b e2 
+;;                           (_memtree-store b e2
 ;;                            (_memtree-store a e1 mtree depth) depth)))
-;;           :hints(("Goal" 
-;;                   :induct (_memtree-store a e1 
-;;                            (_memtree-store b e2 mtree depth) 
+;;           :hints(("Goal"
+;;                   :induct (_memtree-store a e1
+;;                            (_memtree-store b e2 mtree depth)
 ;;                            depth)))))
 
 
@@ -1044,11 +1044,11 @@
 ;;    (implies (and (not (equal (_address-fix a depth)
 ;;                              (_address-fix b depth)))
 ;;                  e1 e2)
-;;             (equal (_memtree-store a e1 
+;;             (equal (_memtree-store a e1
 ;;                     (_memtree-store b e2 mtree depth) depth)
-;;                    (_memtree-store b e2 
+;;                    (_memtree-store b e2
 ;;                     (_memtree-store a e1 mtree depth) depth)))
-;;    :hints(("Goal" 
+;;    :hints(("Goal"
 ;;            :use (:instance main-lemma
 ;;                            (depth (nfix depth))
 ;;                            (a     (_address-fix a depth))
@@ -1070,7 +1070,7 @@
 ;;                                   (right (_memtree-store-nil (floor addr 2)
 ;;                                                              (cdr mtree)
 ;;                                                              (1- depth))))
-;;                               (if (and (null left) 
+;;                               (if (and (null left)
 ;;                                        (null right))
 ;;                                   nil
 ;;                                 (cons left right))))))
@@ -1088,7 +1088,7 @@
 ;;                                                             (car mtree)
 ;;                                                             (1- depth)))
 ;;                                   (right (cdr mtree)))
-;;                               (if (and (null left) 
+;;                               (if (and (null left)
 ;;                                        (null right))
 ;;                                   nil
 ;;                                 (cons left right))))))
@@ -1102,32 +1102,32 @@
 ;;                         (_memtree-p mtree depth)
 ;;                         (not (equal a b)))
 ;;                    (equal (_memtree-store-nil a
-;;                                               (_memtree-store-nil b mtree depth) 
+;;                                               (_memtree-store-nil b mtree depth)
 ;;                                               depth)
 ;;                           (_memtree-store-nil b
 ;;                                               (_memtree-store-nil a mtree depth)
 ;;                                               depth)))
-;;           :hints(("Goal" 
+;;           :hints(("Goal"
 ;;                   :induct (_memtree-store-nil a
-;;                                               (_memtree-store-nil b mtree depth) 
+;;                                               (_memtree-store-nil b mtree depth)
 ;;                                               depth)))))
 
 ;;  (defthm _memtree-store-reorder-2
 ;;    (implies (not (equal (_address-fix a depth)
 ;;                         (_address-fix b depth)))
 ;;             (equal (_memtree-store-nil a
-;;                                        (_memtree-store-nil b mtree depth) 
+;;                                        (_memtree-store-nil b mtree depth)
 ;;                                        depth)
-;;                    (_memtree-store-nil b 
+;;                    (_memtree-store-nil b
 ;;                                        (_memtree-store-nil a mtree depth)
 ;;                                        depth)))
-;;    :hints(("Goal" 
+;;    :hints(("Goal"
 ;;            :use (:instance main-lemma-2
 ;;                            (depth (nfix depth))
 ;;                            (a     (_address-fix a depth))
 ;;                            (b     (_address-fix b depth))
 ;;                            (mtree (_memtree-fix mtree depth))))))
-       
+
 
 ;;  (local (defthm _memtree-store-not-nil
 ;;           (equal (equal (_memtree-store addr elem mtree depth) nil)
@@ -1146,7 +1146,7 @@
 ;;                                               (1- depth))
 ;;                             (car mtree))))
 ;;           :hints(("Goal" :expand (_memtree-store addr elem mtree depth)))))
- 
+
 ;;  (local (defthm _memtree-store-cdr
 ;;           (implies (and (not (zp depth))
 ;;                         (_address-p addr depth)
@@ -1159,31 +1159,31 @@
 ;;                                               (1- depth))
 ;;                             (cdr mtree))))
 ;;           :hints(("Goal" :expand (_memtree-store addr elem mtree depth)))))
- 
- 
+
+
 ;;  (local (defthm zp-addr-lemma
 ;;           (implies (and (zp depth)
 ;;                         (_address-p a depth)
 ;;                         (_address-p b depth))
 ;;                    (equal (equal a b) t))
 ;;           :hints(("Goal" :in-theory (enable _address-p)))))
-                
+
 ;;  (local (defthm mtree-zero-lemma
 ;;           (implies (and (not (zp depth))
 ;;                         (not (consp mtree))
 ;;                         (_memtree-p mtree depth))
 ;;                    (equal mtree nil))
 ;;           :hints(("Goal" :in-theory (enable _memtree-p)))
-;;           :rule-classes ((:forward-chaining 
+;;           :rule-classes ((:forward-chaining
 ;;                           :trigger-terms ((_memtree-p mtree depth))))))
 
-                  
+
 ;;  (local (defthm main-lemma3-helper
 ;;           (implies (and (_address-p a depth)
 ;;                         (_address-p b depth)
 ;;                         (not (equal a b))
 ;;                         elem)
-;;                    (equal (_memtree-store-nil b 
+;;                    (equal (_memtree-store-nil b
 ;;                                               (_memtree-store a elem nil depth)
 ;;                                               depth)
 ;;                           (_memtree-store a elem nil depth)))))
@@ -1196,14 +1196,14 @@
 ;;                         (not (equal a b))
 ;;                         elem)
 ;;                    (equal (_memtree-store a elem
-;;                                           (_memtree-store-nil b mtree depth) 
+;;                                           (_memtree-store-nil b mtree depth)
 ;;                                           depth)
 ;;                           (_memtree-store-nil b
 ;;                                               (_memtree-store a elem mtree depth)
 ;;                                               depth)))
-;;           :hints(("Goal" 
+;;           :hints(("Goal"
 ;;                   :induct (_memtree-store a elem
-;;                                           (_memtree-store-nil b mtree depth) 
+;;                                           (_memtree-store-nil b mtree depth)
 ;;                                           depth)))))
 
 
@@ -1212,12 +1212,12 @@
 ;;                              (_address-fix b depth)))
 ;;                  elem)
 ;;             (equal (_memtree-store a elem
-;;                                    (_memtree-store-nil b mtree depth) 
+;;                                    (_memtree-store-nil b mtree depth)
 ;;                                    depth)
-;;                    (_memtree-store-nil b 
+;;                    (_memtree-store-nil b
 ;;                                        (_memtree-store a elem mtree depth)
 ;;                                        depth)))
-;;    :hints(("Goal" 
+;;    :hints(("Goal"
 ;;            :use (:instance main-lemma-3
 ;;                            (depth (nfix depth))
 ;;                            (a     (_address-fix a depth))
@@ -1225,7 +1225,7 @@
 ;;                            (mtree (_memtree-fix mtree depth))))))
 
 ;;  )
-                             
+
 
 
 ;; ;;; Theorem: storing the contents of some address in that same address does not
@@ -1244,13 +1244,13 @@
 ;;                           mtree))))
 
 ;;  (defthm _memtree-store-same-load
-;;    (implies (and (equal (_address-fix a depth) 
+;;    (implies (and (equal (_address-fix a depth)
 ;;                         (_address-fix b depth))
 ;;                  (_memtree-load a mtree depth))
-;;             (equal (_memtree-store a (_memtree-load b mtree depth) 
+;;             (equal (_memtree-store a (_memtree-load b mtree depth)
 ;;                                    mtree depth)
 ;;                    (_memtree-fix mtree depth)))
-;;    :hints(("Goal" 
+;;    :hints(("Goal"
 ;;            :use ((:instance lemma
 ;;                             (depth (nfix depth))
 ;;                             (addr  (_address-fix a depth))
@@ -1266,7 +1266,7 @@
 ;;                         (_memtree-p mtree depth))
 ;;                    (equal mtree nil))
 ;;           :hints(("Goal" :in-theory (enable _memtree-p)))
-;;           :rule-classes ((:forward-chaining 
+;;           :rule-classes ((:forward-chaining
 ;;                           :trigger-terms ((_memtree-p mtree depth))))))
 
 ;;  (local (defthmd lemma2
@@ -1279,12 +1279,12 @@
 ;;           :hints(("Goal" :induct (_memtree-store-nil addr mtree depth)))))
 
 ;;  (defthm _memtree-store-same-load-nil
-;;    (implies (and (equal (_address-fix a depth) 
+;;    (implies (and (equal (_address-fix a depth)
 ;;                         (_address-fix b depth))
 ;;                  (not (_memtree-load a mtree depth)))
 ;;             (equal (_memtree-store-nil a mtree depth)
 ;;                    (_memtree-fix mtree depth)))
-;;    :hints(("Goal" 
+;;    :hints(("Goal"
 ;;            :use ((:instance lemma2
 ;;                             (depth (nfix depth))
 ;;                             (addr  (_address-fix a depth))

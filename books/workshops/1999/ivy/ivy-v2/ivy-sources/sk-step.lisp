@@ -30,7 +30,7 @@
 	 (if (> (exists-count (a1 f)) 0)
 	     (list (car f) (step-sk (a1 f) vars fsym) (a2 f))
 	     (list (car f) (a1 f) (step-sk (a2 f) vars fsym))))
-		   
+
 	((wfall f) (list 'all (a1 f) (step-sk (a2 f)
 					      (append vars (list (a1 f)))
 					      fsym)))

@@ -83,7 +83,7 @@ what should lior of non-ints be?
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(lior x y n) -- the base case
          `(binary-lior ,@x))
-        (t         
+        (t
          `(binary-lior ,(car x)
                        (lior ,@(cdr x))
                        ,(car (last x))))))
@@ -181,8 +181,8 @@ what should lior of non-ints be?
                 (case-split (integerp n))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j)))))
   :otf-flg t
   :hints (("Goal" :in-theory (enable lior bits-logand))))
@@ -194,8 +194,8 @@ what should lior of non-ints be?
                 (case-split (integerp n))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ n (- j)))))
   :otf-flg t
   :hints (("Goal" :in-theory (enable lior bits-logand))))
@@ -207,8 +207,8 @@ what should lior of non-ints be?
                 (case-split (integerp i))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j)))))
   :hints (("Goal" :in-theory (enable bits-lior-1 bits-lior-2))))
 
@@ -218,8 +218,8 @@ what should lior of non-ints be?
                 (case-split (integerp n))
                 )
            (equal (bitn (lior x y n) m)
-                  (lior (bitn x m) 
-                        (bitn y m) 
+                  (lior (bitn x m)
+                        (bitn y m)
                         1)))
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable bitn)
@@ -241,8 +241,8 @@ what should lior of non-ints be?
                 )
            (equal (bitn (lior x y n) m)
                   (if (< m n)
-                      (lior (bitn x m) 
-                            (bitn y m) 
+                      (lior (bitn x m)
+                            (bitn y m)
                             1)
                     0)))
   :hints (("Goal" :in-theory (enable bitn-lior-1 bitn-lior-2))))
@@ -376,7 +376,7 @@ what should lior of non-ints be?
            (<= x (lior x y n)))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :use ((:instance logior-bnd
-                                   (x (bits x (1- n) 0)) 
+                                   (x (bits x (1- n) 0))
 				   (y (bits y (1- n) 0))))
            :in-theory (enable bits-tail lior))))
 

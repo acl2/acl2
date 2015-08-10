@@ -26,9 +26,9 @@
                   (rationalp x))))
 
 
-                
 
-                
+
+
 #|
 
 (defthm rationalp-*-when-first-factor-is-rat

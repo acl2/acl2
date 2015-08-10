@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -190,7 +190,7 @@
 ;;                 (integerp n)
 ;;                 (> n 0)
 ;;                 )
-;;            (equal (near x n) 
+;;            (equal (near x n)
 ;;                   (away x n)))
 ;;   :rule-classes ())
 
@@ -265,7 +265,7 @@
 
 (defthm near-exactp-b
   (implies (and (rationalp x)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (iff (= x (near x n))
                 (exactp x n)))
@@ -281,7 +281,7 @@
   		  (rationalp a)
   		  )
   	     (>= a (near x n))))
- 
+
 ;; (defthmd near-exactp-c-support
 ;;   (implies (and (exactp a n)
 ;;                 (>= a x)
@@ -302,7 +302,7 @@
 ;; 		  (exactp a n)
 ;; 		  (<= a x))
 ;; 	     (<= a (near x n))))
- 
+
 (defthmd near-exactp-d
       (implies (and (rationalp x)
   		  (integerp n)
@@ -311,7 +311,7 @@
   		  (exactp a n)
   		  (<= a x))
   	     (<= a (near x n))))
- 
+
 
 (defthm near-monotone
   (implies (and (<= x y)
@@ -375,7 +375,7 @@
                 (integerp n)
                 (integerp k)
                 (> k 0)
-                (>= n k)		  
+                (>= n k)
                 (< 0 a)
                 (< a x)
                 (< 0 y)
@@ -424,7 +424,7 @@
 
 (defthm near-exact
   (implies (and (rationalp x)
-                (integerp n) 
+                (integerp n)
                 (> n 1)
                 (exactp x (1+ n))
                 (not (exactp x n)))
@@ -432,7 +432,7 @@
   :rule-classes ())
 
 (defthm near-est
-    (implies (and (integerp n) 
+    (implies (and (integerp n)
 		  (> n 0)
 		  (rationalp x))
 	     (<= (abs (- x (near x n)))

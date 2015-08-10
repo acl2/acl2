@@ -166,4 +166,4 @@
                                 (equal type ''0))))
              (equal (mv-nth 1 (mk-snode type regp phase fanin0 fanin1))
                     (mv-nth 1 (mk-snode 0 regp phase 0 fanin1))))))
-  
+

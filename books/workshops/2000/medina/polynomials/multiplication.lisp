@@ -90,7 +90,7 @@
   (defthm *-monomial-distributes-+-monomial
     (implies (and (monomialp n) (monomialp m)
 		  (not (MON::nullp m))
-		  (or (nullp p) (MON::compatiblep n (first p)))		      
+		  (or (nullp p) (MON::compatiblep n (first p)))
 		  (MON::compatiblep m n)
 		  (uniformp p) (orderedp p))
 	     (equal (*-monomial m (+-monomial n p))
@@ -118,7 +118,7 @@
   (implies (and (monomialp m1) (monomialp m2))
 	   (equal (*-monomial m1 (*-monomial m2 p))
 		  (*-monomial (MON::* m1 m2) p)))
-  :hints (("Goal"                           
+  :hints (("Goal"
 	   :in-theory (disable ACL2::commutativity-of-*))))
 
 ;;; -------------------------

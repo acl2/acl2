@@ -46,7 +46,7 @@
 
 (encapsulate
  nil
- (local (include-book "arithmetic-5/top" :dir :system))            
+ (local (include-book "arithmetic-5/top" :dir :system))
  (defthm nth-make-list-ac
    ;; JCD changed names to match data-structures/list-defthms
    (equal (nth i (make-list-ac j val ac))
@@ -360,7 +360,7 @@
                  stobj-rec-upd-form `(("Goal" :in-theory (theory 'minimal-theory)))
                  nil state)))
               (value
-               `((defthmd ,(incat field (symbol-name stobj) "-" 
+               `((defthmd ,(incat field (symbol-name stobj) "-"
                                   (symbol-name field-rec) "-NTH-TYPE")
                    (implies (and (,field-rec x)
                                  (< (nfix n) (len x)))
@@ -372,7 +372,7 @@
                                  (< (nfix i) (,len ,stobj)))
                             ,(subst `(,acc i ,stobj) 'x pred))
                    :hints (("goal" :in-theory
-                            (enable ,(incat field (symbol-name stobj) "-" 
+                            (enable ,(incat field (symbol-name stobj) "-"
                                             (symbol-name field-rec)
                                             "-NTH-TYPE"))))
                    :rule-classes :type-prescription)
@@ -468,8 +468,8 @@
           ,@(def-stobj-simple-field-equivs stobj (cdr specs) all-specs
               renaming)
           (in-theory (disable ,equiv)))))))
-             
-             
+
+
 
 (defun def-stobj-theory-fn-names1 (specs stobj renaming)
   (if (atom specs)
@@ -494,7 +494,7 @@
          (fn-names (def-stobj-theory-fn-names specs stobj renaming)))
     (er-let*
      ((type-thms (def-stobj-type-theory-fn stobj specs renaming state)))
-     (value 
+     (value
       `(encapsulate
         nil
         ,@(def-stobj-acc-of-upd-thms1 stobj specs specs renaming)

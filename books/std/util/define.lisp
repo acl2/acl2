@@ -991,7 +991,7 @@ form is usually an adequate work-around.</p>")
   (b* (((mv simple complex)
         (sort-formal-guards-aux guards wrld (acl2::default-state-vars nil))))
     (append simple complex)))
-    
+
 
 
 (defun parse-define

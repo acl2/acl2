@@ -46,10 +46,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local 
+(local
  (in-theory (enable collect-*)))
 
-(local 
+(local
  (in-theory (enable collect-+)))
 
 (local
@@ -100,7 +100,7 @@
 
 (defthm arith-normalize-factors-scatter-exponents
     (implies (and (syntaxp (in-term-order-* y mfc state))
-		  (bind-free 
+		  (bind-free
                    (arith-find-matching-factor-scatter-exponents
                     (arith-factor-pattern-scatter-exponents x) y
 		    mfc state)
@@ -271,7 +271,7 @@
 
 (defthm |arith (expt x 1)|
   (implies (acl2-numberp x)
-           (equal (expt x 1) 
+           (equal (expt x 1)
                   x)))
 
 (defthm |arith (expt 1 n)|
@@ -279,7 +279,7 @@
            1))
 
 (defthm |arith (expt x -1)|
-  (equal (expt x -1) 
+  (equal (expt x -1)
 	 (/ x)))
 
 ;;; I keep going back and forth on what is the proper treatment of

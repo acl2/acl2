@@ -10,7 +10,7 @@
 ;;
 ;; If A is a subset of variable-set B, and if (ALLS A F) is closed,
 ;; then (ALLS A F) is equivalent to (ALLS B F).
-;; 
+;;
 ;; The proof uses the special-purpose evaluation function keval.
 
 (include-book "keval")
@@ -103,7 +103,7 @@
 	   :do-not-induct t
 	   :use ((:instance closer-1)
 		 (:instance closer-2 (dm (domain i)))))))
-	   
+
 ;;---------------- side step to prove xeval-alls-free
 
 (in-theory (enable not-free-not-change-2))
@@ -142,7 +142,7 @@
                   (xeval f (domain i) i)))
   :hints (("goal"
 	   :use ((:instance xeval-alls-free (i i))))))
-  
+
 (defthm base-1
   (implies (and (integerp dom)
 		(<= 0 dom)
@@ -360,7 +360,7 @@
 	  )
   :rule-classes nil)
 
-(defthm feval-alls-subset 
+(defthm feval-alls-subset
   (implies (and (var-set a)
 		(var-set b)
 		(subsetp-equal a b)

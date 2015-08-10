@@ -35,8 +35,8 @@
     b))
 
 (defthm max-x-is-max
-  (implies (and (inside-interval-p a (rcfn-domain)) 
-		(inside-interval-p b (rcfn-domain)) 
+  (implies (and (inside-interval-p a (rcfn-domain))
+		(inside-interval-p b (rcfn-domain))
 		(realp x)
 		(<= a x)
 		(<= x b)
@@ -116,7 +116,7 @@
 (local
  (defun riemann-max-rcfn (p)
    (dotprod (deltas p)
-	    (map-const (cdr p) 
+	    (map-const (cdr p)
 		       (rcfn (rcfn-max-x (car p)
 				    (car (last p))))))))
 
@@ -264,7 +264,7 @@
 	    ))
    ))
 
-(local 
+(local
  (defun dotprod-bounded-hint (xs ys zs)
    (if (consp xs)
        (dotprod-bounded-hint (cdr xs) (cdr ys) (cdr zs))
@@ -348,8 +348,8 @@
     b))
 
 (defthm min-x-is-min
-  (implies (and (inside-interval-p a (rcfn-domain)) 
-		(inside-interval-p b (rcfn-domain)) 
+  (implies (and (inside-interval-p a (rcfn-domain))
+		(inside-interval-p b (rcfn-domain))
 		(realp x)
 		(<= a x)
 		(<= x b)
@@ -424,13 +424,13 @@
    :hints (("Goal"
 	    :use ((:instance find-min-rcfn-x-sub-interval-1))))))
 
-	    
+
 (in-theory (disable rcfn-min-x))
 
 (local
  (defun riemann-min-rcfn (p)
    (dotprod (deltas p)
-	    (map-const (cdr p) 
+	    (map-const (cdr p)
 		       (rcfn (rcfn-min-x (car p)
 				    (car (last p))))))))
 
@@ -777,7 +777,7 @@
 		 (<= (car p) x)
 		 (<= x (car (last p)))
 		 (realp x))
-	    (<= (next-gte x p) 
+	    (<= (next-gte x p)
 		(car (last p))))
    :rule-classes (:linear :rewrite)))
 
@@ -819,10 +819,10 @@
 			     (p p2)
 			     (x x)))
 	    :in-theory (e/d (i-close)
-			    (abs 
+			    (abs
 			     mesh
 			     last
-			     next-gte 
+			     next-gte
 			     partitionp
 			     small-if-<-small
 			     next-gte-is-within-mesh))))))
@@ -905,7 +905,7 @@
 		 (<= x (car (last p2)))
 		 (realp x))
 	    (i-close (rcfn x) (rcfn (next-gte x p2))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance next-gte-close
 			     (p2 p2)
@@ -921,7 +921,7 @@
 				rcfn-uniformly-continuous)))
    ))
 
-(local 
+(local
  (defun dotprod-bounded-2-hint (xs ys)
    (if (consp xs)
        (dotprod-bounded-2-hint (cdr xs) (cdr ys))
@@ -1218,7 +1218,7 @@
    (implies (and (consp list)
 		 (nonneg-listp list))
 	    (equal (maxlist list)
-		   (nth (index-for-large-element list (maxlist list)) 
+		   (nth (index-for-large-element list (maxlist list))
 			list)))))
 
 
@@ -1309,7 +1309,7 @@
    (implies (and (<= element (maxlist xs))
 		 (consp xs)
 		 (nonneg-listp xs))
-	    (< (index-for-large-element xs element) 
+	    (< (index-for-large-element xs element)
 	       (len xs)))
    :hints (("Goal"
 	    :use ((:instance index-for-large-element-works
@@ -1344,10 +1344,10 @@
 	    (<= (abs (- (dotprod (deltas p) ys)
 			(dotprod (deltas p) zs)))
 		(* (abs (- (nth (index-for-large-element (abslist (difflist ys zs))
-							 (maxlist (abslist (difflist ys zs)))) 
+							 (maxlist (abslist (difflist ys zs))))
 				ys)
 			   (nth (index-for-large-element (abslist (difflist ys zs))
-							 (maxlist (abslist (difflist ys zs)))) 
+							 (maxlist (abslist (difflist ys zs))))
 				zs)))
 		   (span p))))
    :hints (("Goal"
@@ -1358,8 +1358,8 @@
 		  (:instance index-for-large-element-upper-bound-better
 			     (xs (abslist (difflist ys zs))))
 		  )
-	    :in-theory (disable nth last partitionp real-listp 
-				deltas dotprod index-for-large-element 
+	    :in-theory (disable nth last partitionp real-listp
+				deltas dotprod index-for-large-element
 				maxlist abs abs-dotprod-deltas-4
 				index-for-large-element-works-better
 				index-for-large-element-upper-bound-better
@@ -1389,23 +1389,23 @@
 (local
  (defthm abs-dotprod-deltas-6
    (implies (strong-refinement-p p1 p2)
-	    (<= (abs (- (dotprod (deltas p1) 
+	    (<= (abs (- (dotprod (deltas p1)
 				 (map-rcfn (cdr p1)))
-			(dotprod (deltas p1) 
+			(dotprod (deltas p1)
 				 (map-rcfn-refinement (cdr p1) p2))))
-		(* (abs (- (nth (index-for-large-element 
+		(* (abs (- (nth (index-for-large-element
 				 (abslist (difflist (map-rcfn (cdr p1))
 						    (map-rcfn-refinement (cdr p1) p2)))
-				 (maxlist (abslist (difflist 
+				 (maxlist (abslist (difflist
 						    (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2))))) 
+						    (map-rcfn-refinement (cdr p1) p2)))))
 				(map-rcfn (cdr p1)))
-			   (nth (index-for-large-element 
+			   (nth (index-for-large-element
 				 (abslist (difflist (map-rcfn (cdr p1))
 						    (map-rcfn-refinement (cdr p1) p2)))
-				 (maxlist (abslist (difflist 
+				 (maxlist (abslist (difflist
 						    (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2))))) 
+						    (map-rcfn-refinement (cdr p1) p2)))))
 				(map-rcfn-refinement (cdr p1) p2))))
 		   (span p1))))
    :hints (("Goal"
@@ -1415,8 +1415,8 @@
 			     (ys (map-rcfn (cdr p1)))
 			     (zs (map-rcfn-refinement (cdr p1) p2)))
 		  )
-	    :in-theory (disable nth last partitionp real-listp 
-				deltas dotprod index-for-large-element 
+	    :in-theory (disable nth last partitionp real-listp
+				deltas dotprod index-for-large-element
 				maxlist abs abs-dotprod-deltas-5
 				index-for-large-element-works-better
 				index-for-large-element-upper-bound-better
@@ -1425,25 +1425,25 @@
 (local
  (defthm abs-dotprod-deltas-7
    (implies (strong-refinement-p p1 p2)
-	    (<= (abs (- (dotprod (deltas p1) 
+	    (<= (abs (- (dotprod (deltas p1)
 				 (map-rcfn (cdr p1)))
-			(dotprod (deltas p1) 
+			(dotprod (deltas p1)
 				 (map-rcfn-refinement (cdr p1) p2))))
-		(* (abs (- (rcfn (nth (index-for-large-element 
+		(* (abs (- (rcfn (nth (index-for-large-element
 				       (abslist (difflist (map-rcfn (cdr p1))
 							  (map-rcfn-refinement (cdr p1) p2)))
-				       (maxlist (abslist (difflist 
+				       (maxlist (abslist (difflist
 							  (map-rcfn (cdr p1))
-							  (map-rcfn-refinement (cdr p1) p2))))) 
+							  (map-rcfn-refinement (cdr p1) p2)))))
 				      (cdr p1)))
-			   (rcfn (next-gte (nth (index-for-large-element 
+			   (rcfn (next-gte (nth (index-for-large-element
 						 (abslist (difflist
 							   (map-rcfn (cdr p1))
 							   (map-rcfn-refinement (cdr p1) p2)))
 						 (maxlist (abslist
-							   (difflist 
+							   (difflist
 							    (map-rcfn (cdr p1))
-							    (map-rcfn-refinement (cdr p1) p2))))) 
+							    (map-rcfn-refinement (cdr p1) p2)))))
 						(cdr p1))
 					   p2))))
 		   (span p1))))
@@ -1451,18 +1451,18 @@
 	    :do-not-induct t
 	    :use ((:instance abs-dotprod-deltas-6)
 		  (:instance nth-index-map-rcfn
-			     (index (index-for-large-element 
+			     (index (index-for-large-element
 				     (abslist (difflist (map-rcfn (cdr p1))
 							(map-rcfn-refinement (cdr p1) p2)))
-				     (maxlist (abslist (difflist 
+				     (maxlist (abslist (difflist
 							(map-rcfn (cdr p1))
 							(map-rcfn-refinement (cdr p1) p2))))))
 			     (p (cdr p1)))
 		  (:instance nth-index-map-rcfn-refinement
-			     (index (index-for-large-element 
+			     (index (index-for-large-element
 				     (abslist (difflist (map-rcfn (cdr p1))
 							(map-rcfn-refinement (cdr p1) p2)))
-				     (maxlist (abslist (difflist 
+				     (maxlist (abslist (difflist
 							(map-rcfn (cdr p1))
 							(map-rcfn-refinement (cdr p1) p2))))))
 			     (p1 (cdr p1))
@@ -1471,8 +1471,8 @@
 			     (xs (abslist (difflist (map-rcfn (cdr p1))
 						    (map-rcfn-refinement (cdr p1) p2)))))
 		  )
-	    :in-theory (disable nth last partitionp real-listp 
-				deltas dotprod index-for-large-element 
+	    :in-theory (disable nth last partitionp real-listp
+				deltas dotprod index-for-large-element
 				maxlist abs abs-dotprod-deltas-6
 				index-for-large-element-works-better
 				index-for-large-element-upper-bound-better
@@ -1582,34 +1582,34 @@
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (i-close (rcfn (nth (index-for-large-element 
+	    (i-close (rcfn (nth (index-for-large-element
 				 (abslist (difflist (map-rcfn (cdr p1))
 						    (map-rcfn-refinement (cdr p1) p2)))
-				 (maxlist (abslist (difflist 
+				 (maxlist (abslist (difflist
 						    (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2))))) 
+						    (map-rcfn-refinement (cdr p1) p2)))))
 				(cdr p1)))
-		     (rcfn (next-gte (nth (index-for-large-element 
+		     (rcfn (next-gte (nth (index-for-large-element
 					   (abslist (difflist
 						     (map-rcfn (cdr p1))
 						     (map-rcfn-refinement (cdr p1) p2)))
 					   (maxlist (abslist
-						     (difflist 
+						     (difflist
 						      (map-rcfn (cdr p1))
-						      (map-rcfn-refinement (cdr p1) p2))))) 
+						      (map-rcfn-refinement (cdr p1) p2)))))
 					  (cdr p1))
 				     p2))))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance rcfn-next-gte-close
-			     (x (nth (index-for-large-element 
+			     (x (nth (index-for-large-element
 				      (abslist (difflist
 						(map-rcfn (cdr p1))
 						(map-rcfn-refinement (cdr p1) p2)))
 				      (maxlist (abslist
-						(difflist 
+						(difflist
 						 (map-rcfn (cdr p1))
-						 (map-rcfn-refinement (cdr p1) p2))))) 
+						 (map-rcfn-refinement (cdr p1) p2)))))
 				     (cdr p1)))
 			     (p2 p2))
 		  (:instance index-for-large-element-upper-bound-better
@@ -1636,8 +1636,8 @@
 							(map-rcfn-refinement (cdr p1) p2)))
 				     (maxlist (abslist (difflist (map-rcfn (cdr p1))
 								 (map-rcfn-refinement (cdr p1) p2))))))))
-	    :in-theory (disable nth last partitionp real-listp 
-				deltas dotprod index-for-large-element 
+	    :in-theory (disable nth last partitionp real-listp
+				deltas dotprod index-for-large-element
 				maxlist abs abs-dotprod-deltas-6
 				index-for-large-element-works-better
 				index-for-large-element-upper-bound-better
@@ -1660,7 +1660,7 @@
 	    (i-small (abs (- x1 x2))))
    :hints (("Goal"
 	    :in-theory (enable i-small i-close)))))
-   
+
 
 (local
  (defthmd rcfn-next-gte-abs-small-in-partition
@@ -1671,42 +1671,42 @@
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (i-small (abs (- (rcfn (nth (index-for-large-element 
+	    (i-small (abs (- (rcfn (nth (index-for-large-element
 					 (abslist (difflist (map-rcfn (cdr p1))
 							    (map-rcfn-refinement (cdr p1) p2)))
-					 (maxlist (abslist (difflist 
+					 (maxlist (abslist (difflist
 							    (map-rcfn (cdr p1))
-							    (map-rcfn-refinement (cdr p1) p2))))) 
+							    (map-rcfn-refinement (cdr p1) p2)))))
 					(cdr p1)))
-			     (rcfn (next-gte (nth (index-for-large-element 
+			     (rcfn (next-gte (nth (index-for-large-element
 						   (abslist (difflist
 							     (map-rcfn (cdr p1))
 							     (map-rcfn-refinement (cdr p1) p2)))
 						   (maxlist (abslist
-							     (difflist 
+							     (difflist
 							      (map-rcfn (cdr p1))
-							      (map-rcfn-refinement (cdr p1) p2))))) 
+							      (map-rcfn-refinement (cdr p1) p2)))))
 						  (cdr p1))
 					     p2))))))
       :hints (("Goal"
 	       :do-not-induct t
 	       :use ((:instance rcfn-next-gte-close-in-partition)
 		     (:instance small-abs-close-diff
-				(x1 (rcfn (nth (index-for-large-element 
+				(x1 (rcfn (nth (index-for-large-element
 						(abslist (difflist (map-rcfn (cdr p1))
 								   (map-rcfn-refinement (cdr p1) p2)))
-						(maxlist (abslist (difflist 
+						(maxlist (abslist (difflist
 								   (map-rcfn (cdr p1))
-								   (map-rcfn-refinement (cdr p1) p2))))) 
+								   (map-rcfn-refinement (cdr p1) p2)))))
 					       (cdr p1))))
-				(x2 (rcfn (next-gte (nth (index-for-large-element 
+				(x2 (rcfn (next-gte (nth (index-for-large-element
 							  (abslist (difflist
 								    (map-rcfn (cdr p1))
 								    (map-rcfn-refinement (cdr p1) p2)))
 							  (maxlist (abslist
-								    (difflist 
+								    (difflist
 								     (map-rcfn (cdr p1))
-								     (map-rcfn-refinement (cdr p1) p2))))) 
+								     (map-rcfn-refinement (cdr p1) p2)))))
 							 (cdr p1))
 						    p2))))
 		     )
@@ -1732,21 +1732,21 @@
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (i-small (* (abs (- (rcfn (nth (index-for-large-element 
+	    (i-small (* (abs (- (rcfn (nth (index-for-large-element
 					    (abslist (difflist (map-rcfn (cdr p1))
 							       (map-rcfn-refinement (cdr p1) p2)))
-					    (maxlist (abslist (difflist 
+					    (maxlist (abslist (difflist
 							       (map-rcfn (cdr p1))
-							       (map-rcfn-refinement (cdr p1) p2))))) 
+							       (map-rcfn-refinement (cdr p1) p2)))))
 					   (cdr p1)))
-				(rcfn (next-gte (nth (index-for-large-element 
+				(rcfn (next-gte (nth (index-for-large-element
 						      (abslist (difflist
 								(map-rcfn (cdr p1))
 								(map-rcfn-refinement (cdr p1) p2)))
 						      (maxlist (abslist
-								(difflist 
+								(difflist
 								 (map-rcfn (cdr p1))
-								 (map-rcfn-refinement (cdr p1) p2))))) 
+								 (map-rcfn-refinement (cdr p1) p2)))))
 						     (cdr p1))
 						p2))))
 			(span p1))))
@@ -1755,21 +1755,21 @@
 	       :use ((:instance rcfn-next-gte-abs-small-in-partition)
 		     (:instance limited*small->small
 				(x (span p1))
-				(y (abs (- (rcfn (nth (index-for-large-element 
+				(y (abs (- (rcfn (nth (index-for-large-element
 						       (abslist (difflist (map-rcfn (cdr p1))
 									  (map-rcfn-refinement (cdr p1) p2)))
-						       (maxlist (abslist (difflist 
+						       (maxlist (abslist (difflist
 									  (map-rcfn (cdr p1))
-									  (map-rcfn-refinement (cdr p1) p2))))) 
+									  (map-rcfn-refinement (cdr p1) p2)))))
 						      (cdr p1)))
-					   (rcfn (next-gte (nth (index-for-large-element 
+					   (rcfn (next-gte (nth (index-for-large-element
 								 (abslist (difflist
 									   (map-rcfn (cdr p1))
 									   (map-rcfn-refinement (cdr p1) p2)))
 								 (maxlist (abslist
-									   (difflist 
+									   (difflist
 									    (map-rcfn (cdr p1))
-									    (map-rcfn-refinement (cdr p1) p2))))) 
+									    (map-rcfn-refinement (cdr p1) p2)))))
 								(cdr p1))
 							   p2))))))
 		     (:instance span-limited
@@ -1788,7 +1788,7 @@
 				   limited*small->small
 				   span-limited)
 ))))
-   
+
 (local
  (defthmd small-if-abs-<=-small
    (implies (and (realp x)
@@ -1815,21 +1815,21 @@
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (realp (* (abs (- (rcfn (nth (index-for-large-element 
+	    (realp (* (abs (- (rcfn (nth (index-for-large-element
 					  (abslist (difflist (map-rcfn (cdr p1))
 							     (map-rcfn-refinement (cdr p1) p2)))
-					  (maxlist (abslist (difflist 
+					  (maxlist (abslist (difflist
 							     (map-rcfn (cdr p1))
-							     (map-rcfn-refinement (cdr p1) p2))))) 
+							     (map-rcfn-refinement (cdr p1) p2)))))
 					 (cdr p1)))
-			      (rcfn (next-gte (nth (index-for-large-element 
+			      (rcfn (next-gte (nth (index-for-large-element
 						    (abslist (difflist
 							      (map-rcfn (cdr p1))
 							      (map-rcfn-refinement (cdr p1) p2)))
 						    (maxlist (abslist
-							      (difflist 
+							      (difflist
 							       (map-rcfn (cdr p1))
-							       (map-rcfn-refinement (cdr p1) p2))))) 
+							       (map-rcfn-refinement (cdr p1) p2)))))
 						   (cdr p1))
 					      p2))))
 		      (span p1))))))
@@ -1843,32 +1843,32 @@
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (i-close (dotprod (deltas p1) 
+	    (i-close (dotprod (deltas p1)
 			      (map-rcfn (cdr p1)))
-		     (dotprod (deltas p1) 
+		     (dotprod (deltas p1)
 			      (map-rcfn-refinement (cdr p1) p2))))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance small-if-abs-<=-small
-			     (x (- (dotprod (deltas p1) 
+			     (x (- (dotprod (deltas p1)
 					    (map-rcfn (cdr p1)))
-				   (dotprod (deltas p1) 
+				   (dotprod (deltas p1)
 					    (map-rcfn-refinement (cdr p1) p2))))
-			     (y (* (abs (- (rcfn (nth (index-for-large-element 
+			     (y (* (abs (- (rcfn (nth (index-for-large-element
 						       (abslist (difflist (map-rcfn (cdr p1))
 									  (map-rcfn-refinement (cdr p1) p2)))
-						       (maxlist (abslist (difflist 
+						       (maxlist (abslist (difflist
 									  (map-rcfn (cdr p1))
-									  (map-rcfn-refinement (cdr p1) p2))))) 
+									  (map-rcfn-refinement (cdr p1) p2)))))
 						      (cdr p1)))
-					   (rcfn (next-gte (nth (index-for-large-element 
+					   (rcfn (next-gte (nth (index-for-large-element
 								 (abslist (difflist
 									   (map-rcfn (cdr p1))
 									   (map-rcfn-refinement (cdr p1) p2)))
 								 (maxlist (abslist
-									   (difflist 
+									   (difflist
 									    (map-rcfn (cdr p1))
-									    (map-rcfn-refinement (cdr p1) p2))))) 
+									    (map-rcfn-refinement (cdr p1) p2)))))
 								(cdr p1))
 							   p2))))
 				   (span p1))))
@@ -2094,7 +2094,7 @@
    (implies (and (refinement-p p1 p2)
 		 (consp (cdr p2)))
 	    (member (cadr p2) p1))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :expand
 	    ((refinement-p p1 p2)
 	     (refinement-p (cdr (member-equal (car p2) p1)) (cdr p2)))
@@ -2331,7 +2331,7 @@
 	    (equal (riemann-rcfn-refinement p1 p2)
 		   (riemann-rcfn p2)))
    :hints (("Goal" :in-theory
-	    (disable 
+	    (disable
 	     riemann-rcfn-refinement riemann-rcfn member
 	     riemann-rcfn-refinement-cdr-2)
 	    :use
@@ -2691,8 +2691,8 @@
 			    (p (make-small-partition a a))))
 	   :in-theory (disable strict-int-rcfn-is-integral-of-rcfn
 			       riemann-rcfn-trivial-partition))))
-				
-	    
+
+
 
 (defun int-rcfn (a b)
   (if (<= a b)

@@ -64,7 +64,7 @@
 	(bagint (cdr x) y))
     nil))
 
-(defun 
+(defun
   term-list-to-type-term ( unary-op-name lst )
   (declare (xargs :guard (and (symbolp unary-op-name)
 			      (true-listp lst) )))
@@ -95,11 +95,11 @@
 			      (true-listp lst))))
   (if (endp lst)
       (list 'quote constant-name)
-      (if (endp (cdr lst)) 
+      (if (endp (cdr lst))
 	  (list fix-name (car lst))
 	  (if (endp (cddr lst))
 	      (list binary-op-name (car lst) (cadr lst))
-	      (list binary-op-name (car lst) 
+	      (list binary-op-name (car lst)
 		    (binary-op_tree binary-op-name constant-name fix-name
                                     (cdr lst)))))))
 
@@ -109,13 +109,13 @@
 			      (true-listp lst))))
   (if (endp lst)
       (list 'quote constant-name)
-    (if (endp (cdr lst)) 
+    (if (endp (cdr lst))
         (car lst)
-      (list binary-op-name (car lst) 
+      (list binary-op-name (car lst)
             (binary-op_tree-simple binary-op-name constant-name
                                    (cdr lst))))))
 
-(defun 
+(defun
   remove-duplicates-memb (lst)
   (if (consp lst)
       (if (memb (car lst)(cdr lst))

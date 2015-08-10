@@ -49,7 +49,7 @@
   ;; or if it's index is greater than the index-of-last-enabling.  See
   ;; enabled-runep.
   (let* ((ens (access rewrite-constant
-		      (access prove-spec-var pspv 
+		      (access prove-spec-var pspv
 			      :rewrite-constant)
 		      :current-enabled-structure))
 	 (ens-index (access enabled-structure
@@ -63,7 +63,7 @@
 	;;
 	;;; In particular, this will be true if there has been an
 	;;; :in-theory hint seen earlier in the proof attempt.
-	(strip-cdrs (cdr (access enabled-structure 
+	(strip-cdrs (cdr (access enabled-structure
 				 ens
 				 :theory-array)))
       ;; The ens is not up to date.  We therefore use the theory
@@ -84,7 +84,7 @@
       (if (member-equal :in-theory keyword-alist)
           ;; For now, we overlook the idea of merging the users hint with ours,
           ;; and we instead opt to just use the user's hint.
-          (observation-cw 'dynamic-e/d 
+          (observation-cw 'dynamic-e/d
                           "It is not yet clear how dynamic-e/d should ~
                            interact with user supplied :in-theory hints.  So, ~
                            dynamic-e/d does not interfere with the user's ~

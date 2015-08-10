@@ -367,8 +367,8 @@ but this does not seem as clear.
         (stringp x))
     x)
    (t ; (symbolp x) for good terms
-    (let ((a-val (assoc-eq x a))) 
-      (if a-val 
+    (let ((a-val (assoc-eq x a)))
+      (if a-val
 	  (cdr a-val) ; we do not want to destroy a nil binding
         0)))))
 
@@ -425,7 +425,7 @@ but this does not seem as clear.
 
 (defstobj st
   ;; The prev field stores scratchwork.  The ans field is an array associating
-  ;; with each i the number of iterations of next-k required to reach 1, 
+  ;; with each i the number of iterations of next-k required to reach 1,
   (prev :type integer :initially 0)
   (ans :type (array integer (100001)) :initially -1))
 

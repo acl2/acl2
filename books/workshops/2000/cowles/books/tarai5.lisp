@@ -27,7 +27,7 @@
 
 ;; Times using 600 MHz pentium:
 ;;  The book in tarai3.lisp requires over 46 min. to certify.
-;;  The book in tarai4.lisp requires over 3.85 hours to 
+;;  The book in tarai4.lisp requires over 3.85 hours to
 ;;   certify.
 
 ;; Many of the books tarai2-tarai4 require ACL2 Version 2.5
@@ -128,8 +128,8 @@
 
 (defun
     lst-rotates-with-minus-1 (n lst)
-    "Return the list of n+1 successive rotates of the 
-     list lst with the first of each rotate replaced 
+    "Return the list of n+1 successive rotates of the
+     list lst with the first of each rotate replaced
      by the first minus 1."
     (declare (xargs :guard (and (rational-listp lst)
 				(consp lst)
@@ -150,9 +150,9 @@
 
 (defun
     dec-front-len (lst)
-    "Return the number of strictly decreasing elements 
+    "Return the number of strictly decreasing elements
      at the front of the list lst."
-    (declare (xargs :guard (rational-listp lst))) 
+    (declare (xargs :guard (rational-listp lst)))
     (cond ((consp (rest lst))  ;; (len lst) > 1
 	   (if (<= (first lst)(second lst))
 	       1
@@ -170,12 +170,12 @@
 		    (if (<= (first lst)
 			    (second lst))
 			(second lst)
-		      (Fb (Fb-lst (lst-rotates-with-minus-1 
+		      (Fb (Fb-lst (lst-rotates-with-minus-1
 				   (- (len lst) 1)
 				   lst))))))
     :rule-classes nil
     :hints (("Goal"
-	     :in-theory (disable Fb Fb-lst len 
+	     :in-theory (disable Fb Fb-lst len
 				 lst-rotates-with-minus-1)
 	     :use ((:instance
 		    Fb-sat-tarai-def-2
@@ -228,12 +228,12 @@
 		    (if (<= (first lst)
 			    (second lst))
 			(second lst)
-		      (Fb (Fb-lst (lst-rotates-with-minus-1 
+		      (Fb (Fb-lst (lst-rotates-with-minus-1
 				   (- (dec-front-len lst) 1)
 				   lst))))))
     :rule-classes nil
     :hints (("Goal"
-	     :in-theory (disable Fb Fb-lst dec-front-len 
+	     :in-theory (disable Fb Fb-lst dec-front-len
 				 lst-rotates-with-minus-1)
 	     :use ((:instance
 		    Fb-sat-tarai-def-2a

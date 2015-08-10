@@ -275,7 +275,7 @@
 	     (= (expt 2 (+ m n))
 		(* (expt 2 m) (expt 2 n))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance my-exponents-add (r 2) (i m) (j n))))))  
+  :hints (("Goal" :use ((:instance my-exponents-add (r 2) (i m) (j n))))))
 
 
 
@@ -289,7 +289,7 @@
   :hints (("Goal" :use ((:instance expt-monotone)
 			(:instance expo+ (n 1))))))
 
-  
+
 (defthm exp+1
     (implies (and (integerp m)
 		  (integerp n)
@@ -412,8 +412,8 @@
 	     (<= (* (* a b) (* a b))
 		 (* (expt 2 (- (* 2 n) 2)) (* p p))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance *-doubly-monotonic 
-				   (x (* a a)) (a (* b b)) 
+  :hints (("Goal" :use ((:instance *-doubly-monotonic
+				   (x (* a a)) (a (* b b))
 				   (y p) (b (* (expt 2 (- (* 2 n) 2)) p)))))))
 
 (defthm sqrt<=

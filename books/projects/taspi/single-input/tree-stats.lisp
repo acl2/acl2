@@ -10,8 +10,8 @@
   (if (consp x)
       (if flg ;top-level
           (max-len-lists nil x (max curMax (len x)))
-        (max-len-lists nil (cdr x) 
-                       (max-len-lists t 
+        (max-len-lists nil (cdr x)
+                       (max-len-lists t
                                       (car x)
                                       (max curMax (len (car x))))))
     curMax))
@@ -34,7 +34,7 @@
 ;    (1) rooted-flg - non-nil for a rooted tree,
 ;                     nil for an unrooted tree
 ;    (2) x - a tree
-;  
+;
 ;  "
   (declare (xargs :guard t))
   (if rooted-flg
@@ -48,7 +48,7 @@
   (if (consp x)
       (if flg
           (num-internal-help nil x (1+ acc))
-        (num-internal-help nil 
+        (num-internal-help nil
                            (cdr x)
                            (num-internal-help t (car x) acc)))
     acc))
@@ -73,8 +73,8 @@
 ;  ~/
 ;  Arguments:
 ;    (1) x - a tree
-;  
-;  Details: Assumes the tree representation is rooted at a node.  Does not 
+;
+;  Details: Assumes the tree representation is rooted at a node.  Does not
 ;           handle branch lengths (see number-of-internal-nodes-brlens)."
   (declare (xargs :guard t))
   (num-internal-help t x 0))
@@ -89,14 +89,14 @@
 ;  ~/
 ;  Arguments:
 ;    (1) x - a tree
-;  
+;
 ;  Details: Assumes the tree representation is rooted at a node.  Allows branch
 ;           lengths (see also number-of-internal-nodes)."
   (declare (xargs :guard t))
   (number-of-internal-nodes (remove-brlens x)))
 
 ;; Diameter
-(defun diameter-no-brlens (tree)  
+(defun diameter-no-brlens (tree)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
 ;;; see projects/taspi/taspi-xdoc.lisp.
@@ -106,7 +106,7 @@
 ;  ~/
 ;  Arguments:
 ;    (1) x - a tree
-;  
+;
 ;  Details: Maximum path distance between any two taxa in tree.
 ;           See diameter-brlens."
   (declare (xargs :guard t))
@@ -124,7 +124,7 @@
 ;  ~/
 ;  Arguments:
 ;    (1) x - a tree
-;  
+;
 ;  Details: Maximum path distance between any two taxa in tree.
 ;           See also diameter-no-brlens."
   (declare (xargs :guard t))
@@ -142,7 +142,7 @@
 ;  ~/
 ;  Arguments:
 ;    (1) x - a tree
-;  
+;
 ;  Details: Does not handle branch lengths.
 ;           See tree-depth-brlens."
    (declare (xargs :guard t
@@ -150,7 +150,7 @@
    (if (consp x)
        (1+ (tree-depth-list x))
      0))
- 
+
  (defun tree-depth-list (x)
    (declare (xargs :guard t
                    :measure (tree-measure x nil)))
@@ -170,7 +170,7 @@
 ;  ~/
 ;  Arguments:
 ;    (1) x - a tree
-;  
+;
 ;  Details: Allows branch lengths.
 ;           See also tree-depth."
   (declare (xargs :guard t))
@@ -184,17 +184,17 @@
 (degree-of-tree t '((a . 4) ((b . 4) (c . 2)) (e . g)))
 
 (number-of-internal-nodes '((((a b) c) (d e)) (f ((g h) (i j)))))
-(number-of-internal-nodes-brlens 
+(number-of-internal-nodes-brlens
  '((a . 4) ((b . 4) (c . 2)) (e . g)))
 (number-of-internal-nodes-brlens '((a b c d) (E f g h) (i h d f) (e i g p)))
 
 (diameter-no-brlens '((((a b) c) (d e)) (f ((g h) (i j)))))
 (diameter-no-brlens '((a . 4) ((b . 4) (c . 2)) (e . g)))
 
-(diameter-brlens '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5) 
-                   (((d . 3) (e . 5)) . 6) 
-                   (((f . 3) 
-                     (((((g . 3) (h . 4)) . 5) 
+(diameter-brlens '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5)
+                   (((d . 3) (e . 5)) . 6)
+                   (((f . 3)
+                     (((((g . 3) (h . 4)) . 5)
                        (((i . 9) (j . 7)) . 4)) . 6)) . 7)
                    ))
 

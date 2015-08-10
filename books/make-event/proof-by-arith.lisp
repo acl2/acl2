@@ -77,7 +77,7 @@
     ("arithmetic-5/top")
     ("arithmetic-5/top"
      (set-default-hints
-     '((nonlinearp-default-hint++ 
+     '((nonlinearp-default-hint++
         id
         stable-under-simplificationp
         hist

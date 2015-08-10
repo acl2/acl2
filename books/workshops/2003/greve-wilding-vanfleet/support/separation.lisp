@@ -5,10 +5,10 @@
 
 (encapsulate
 
-;; DIA 
+;; DIA
 ;; input: memory segment
-;; output: list of memory segments from which direct interaction 
-;;   is allowed 
+;; output: list of memory segments from which direct interaction
+;;   is allowed
  (((dia *) => *)
 
 ;; CURRENT
@@ -30,7 +30,7 @@
 ;; input: memory segment name, machine state
 ;; output: memory segment values associated segment name
   ((select * *) => *)
-   
+
 ;; NEXT
 ;; input: machine state
 ;; output: machine state after one step
@@ -97,7 +97,7 @@
      (and
       (equal (selectlist segs st1) (selectlist segs st2))
       (equal (current st1) (current st2))
-      (equal (select seg st1) (select seg st2)))    
+      (equal (select seg st1) (select seg st2)))
      (equal
       (select seg (next st1))
       (select seg (next st2))))))

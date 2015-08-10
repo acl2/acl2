@@ -973,7 +973,7 @@ explicit declarations.</p>")
        ((when (eq tag :vl-typedef))
         (b* (((mv st warnings) (vl-shadowcheck-typedef item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
-        
+
 
        ;; BOZO implement everything else
        (warnings (fatal :type :vl-unexpected-modelement

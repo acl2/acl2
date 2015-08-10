@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -58,7 +58,7 @@
                 (bvecp v 1)
                 (bvecp w 1))
            (equal (+ u v w)
-                  (cat_alt (logior (logand u v) (logior (logand u w) (logand v w))) 1 
+                  (cat_alt (logior (logand u v) (logior (logand u w) (logand v w))) 1
                        (logxor u (logxor v w)) 1)))
   :rule-classes ())
 
@@ -301,7 +301,7 @@
 	     (equal (bits_alt (+ 1 x y) i j)
 		    (bits_alt (+ (bits_alt x i j)
 			     (bits_alt y i j)
-			     (logior (prop_alt x y (1- j) 0) 
+			     (logior (prop_alt x y (1- j) 0)
 				     (gen_alt x y (1- j) 0) ))
 			  (- i j) 0)))
   :rule-classes ()
@@ -358,8 +358,8 @@
                                    (y y)
                                    (i k)
                                    (j 0))))))
-                                   
-           
+
+
 
 (defthmd gen_alt-extend-3
     (implies (and (natp i)
@@ -368,7 +368,7 @@
 		  (natp x)
 		  (natp y)
 		  (bvecp z (1+ j))
-		  (= (logand y z) 0))		  
+		  (= (logand y z) 0))
 	     (equal (gen_alt (+ x y) z i 0)
 		    (logand (prop_alt x y i (1+ j))
 			    (gen_alt (+ x y) z j 0))))
@@ -433,7 +433,7 @@
 		 (= (expo (- a b)) (1- (expo lambda)))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance lop-thm-1)))))
-                        
+
 
 
 (defun lamt_alt (a b e)
@@ -450,7 +450,7 @@
 
 
 (defun lam1_alt (a b e)
-  (logand (bits_alt (lamt_alt a b e) e 2) 
+  (logand (bits_alt (lamt_alt a b e) e 2)
 	  (logand (bits_alt (lamg_alt a b e) (1- e) 1)
 		  (bits_alt (lognot (lamz_alt a b e)) (- e 2) 0))))
 
@@ -462,7 +462,7 @@
 
 
 (defun lam3_alt (a b e)
-  (logand (bits_alt (lamt_alt a b e) e 2) 
+  (logand (bits_alt (lamt_alt a b e) e 2)
 	  (logand (bits_alt (lamz_alt a b e) (1- e) 1)
 		  (bits_alt (lognot (lamg_alt a b e)) (- e 2) 0))))
 
@@ -479,7 +479,7 @@
 		  (logior (lam3_alt a b e)
 			  (lam4_alt a b e)))))
 
-           
+
 
 (defun lamb_alt (a b e)
   (+ (* 2 (lam0_alt a b e))
@@ -515,7 +515,7 @@
            (equal (equal (bits_alt (+ a b 1) k 0) 0)
 		  (equal (bits_alt (lognot (logxor a b)) k 0) 0)))
   :rule-classes ())
-                                                      
+
 
 (defthm top-thm-2-alt
   (implies (and (natp n)
@@ -525,8 +525,8 @@
                 (< k n)
                 (or (equal c 0) (equal c 1)))
            (equal (equal (bits_alt (+ a b c) k 0) 0)
-                  (equal (bits_alt (logxor (logxor a b) 
+                  (equal (bits_alt (logxor (logxor a b)
                                        (cat_alt (logior a b) n c 1))
-                               k 0) 
+                               k 0)
                          0)))
   :rule-classes ())

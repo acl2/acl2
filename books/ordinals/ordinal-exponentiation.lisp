@@ -103,12 +103,12 @@
   :rule-classes ((:rewrite)
                  (:forward-chaining :trigger-terms ((o^ a b)))))
 
-(encapsulate 
+(encapsulate
 
  ; This encapsulate is here to remove a subgoal hint.
 
  nil
- 
+
  (local
   (defthm o^-o-first-expt-helper
     (implies (and (o-infp b)
@@ -186,13 +186,13 @@
     :hints (("goal"
 	     :do-not-induct t
 	     :expand (o^ a c)
-	     :cases ((and (not (equal b 0)) 
+	     :cases ((and (not (equal b 0))
 			  (o-infp a))))))
 
 (local (in-theory (disable o^-o-first-expt)))
 
 (encapsulate
- 
+
  ;this encapsulate is here so the lemmas we used to prove |a^(b+c)  =  a^b * a^c|
  ;don't slow down the other proofs in the book.
 
@@ -206,7 +206,7 @@
 	  (exp-ind-1 a (- b 1) c))
       (list a b c))))
 
- ;this theorem is here so we don't have to give a subgoal hint to 
+ ;this theorem is here so we don't have to give a subgoal hint to
  ;|a^(b+c)  =  a^b * a^c :b|
  (local
   (defthm |a^(b+c)  =  a^b * a^c :b helper|
@@ -252,12 +252,12 @@
 		(o+ (o-first-expt (o-first-expt a)) c)))
    :hints (("goal"
 	    :in-theory (e/d (o^-o-first-expt) (o^))
-	    :cases ((and (o-finp b) 
+	    :cases ((and (o-finp b)
 			 (equal b 0))))))
 
  (local
   (defthm |a^(b+c)  =  a^b * a^c :a|
-    (implies (and (equal (o-first-expt c) 
+    (implies (and (equal (o-first-expt c)
 			 (o-first-expt b))
 		  (o-p a)
 		  (o-p b)
@@ -275,14 +275,14 @@
     (implies (and (o-p a)
 		  (o-p b)
 		  (o-p c)
-		  (not (o< (o-first-expt c) 
+		  (not (o< (o-first-expt c)
 			   (o-first-expt b))))
 	     (equal (o^ a (o+ b c))
 		    (o* (o^ a b) (o^ a c))))
   :hints (("goal"
 	   :do-not-induct t
 	   :cases ((o< (o-first-expt b) (o-first-expt c)))))))
-   
+
  (local
   (defun exp-ind-2 (a b c)
     (if (and (o-infp b)
@@ -323,16 +323,16 @@
 
  ()
  (local (in-theory (enable o^-o-first-expt)))
- 
+
  (local
   (encapsulate
 
-   ;this encapsulate is here because |a^(bc) = (a^b)^c :a lemma 3| causes problems 
+   ;this encapsulate is here because |a^(bc) = (a^b)^c :a lemma 3| causes problems
    ;with the proof of |a^(bc) = (a^b)^c|
-   
+
    ()
    (local (in-theory (enable o^-o-first-expt)))
-   
+
    (local
     (defthm |a^(bc) = (a^b)^c :a lemma 1a|
       (implies (and (o-infp b)
@@ -420,7 +420,7 @@
 			       (c (first-term c)))
 		    (:instance |a^(bc) = (a^b)^c :a lemma 2|)
 		    (:instance |a^(bc) = (a^b)^c :a lemma 3|)))))))
-	
+
  (local
   (defthm |a^(bc) = (a^b)^c :b|
     (implies (and (not (equal (o^ a b) 0))
@@ -441,8 +441,8 @@
 	     :use ((:instance |a^(b+c)  =  a^b * a^c|
 			      (c (o* b (+ -1 c)))))
 	     :expand (o^ (o^ a b) c)))))
-    
- (local	   	
+
+ (local
   (defun exp-ind-3 (a b c)
     (cond ((equal (o^ a b) 0)
 	   (list a b c))
@@ -455,7 +455,7 @@
 	  (t (exp-ind-3 a b (o-rst c))))))
 
  ;these "helper" lemmas are here to eliminate the need for subgoal hints
- 
+
  (local
   (defthm |a^(bc) = (a^b)^c helper1|
     (implies (and (equal (o^ a b) 1)
@@ -516,7 +516,7 @@
 	       (not (equal x 0))
 	       (not (equal x 1))
 	       (o-p y))
-	  (equal (o-rst (o^ x y)) 0))) 
+	  (equal (o-rst (o^ x y)) 0)))
 
 (defthm o^-limitp-o-rst
   (implies (and (o-p a)
@@ -549,7 +549,7 @@
 	       (equal (o-rst a) 0)
 	       (o-p b)
 	       (o-p a))
-	  (equal (o-first-coeff (o^ a b)) 
+	  (equal (o-first-coeff (o^ a b))
 		 (if (equal (natpart b) 0)
 		     1
 		   (o-first-coeff a)))))
@@ -576,12 +576,12 @@
 	   :use o^-w-o-first-expt)))
 
 (encapsulate
- 
+
  ;this encapsulate is here so the lemmas used to prove |a < b  <=>  c^a < c^b|
  ;don't slow down the rest of the proofs in this book
- 
+
  ()
- 
+
  (local
   (defthm |a < b  =>  c^a < c^b :l1|
     (implies (and (not (equal c 1))
@@ -600,7 +600,7 @@
 			      (b a)
 			      (c (o- b a))))))
     :rule-classes ((:rewrite :match-free :all))))
- 
+
  (local
   (defthm |a < b  =>  c^a < c^b|
     (implies (and (not (equal c 1))
@@ -634,7 +634,7 @@
 			    (a b)
 			    (b a)))))))
 
- (defthm |a < b  <=>  c^a < c^b| ;a < b  =>  c^a < c^b   
+ (defthm |a < b  <=>  c^a < c^b| ;a < b  =>  c^a < c^b
    (implies (and (not (equal c 1))
                  (not (equal c 0))
                  (o-p a)
@@ -910,7 +910,7 @@
 		  (o* a (+ -1 b))))
   :hints (("goal"
 	   :use ((:instance |a(b-1)+a = ab|
-			    (b (+ -1 b)))))))	   
+			    (b (+ -1 b)))))))
 
 (local
  (defthm o^2-count
@@ -986,7 +986,7 @@
 		 (natp q))
 	    (equal (o-first-expt (o^3sum a q))
 		   (o* (o-first-expt a) q)))
-   :hints (("goal" 
+   :hints (("goal"
 	    :in-theory (enable o^2c)))))
 
 (local
@@ -997,7 +997,7 @@
 		 (posp q))
 	    (equal (o-first-coeff (o^3sum a q))
 		   (* (o-first-coeff a) (natpart a))))
-   :hints (("goal" 
+   :hints (("goal"
 	    :expand (o^3sum a q)))))
 
 (local
@@ -1035,7 +1035,7 @@
 		   (cond ((= q 0) 1)
 			 ((= q 1) a)
 			 ((limitp a) (o^2 a q))
-			 (t 
+			 (t
 			  (let ((c (limitpart a))
 				(n (olen a)))
 			    (o+ (o^2 c q) (o^3h c (natpart a) n (1- q))))))))
@@ -1072,7 +1072,7 @@
      :hints (("goal"
 	      :do-not-induct t
 	      :in-theory (enable o^)))))
-	   
+
   (local
    (defthm o^-alt-def-l2
      (implies (and (o-p a)
@@ -1120,8 +1120,8 @@
      :hints (("goal"
 	      :in-theory (disable omega-term-o*)
 	      :use ((:instance omega-term-o*
-			       (a (o+ (o^2 (limitpart a) 
-					   (+ -1 q)) 
+			       (a (o+ (o^2 (limitpart a)
+					   (+ -1 q))
 				      (o^3sum a (+ -2 q))))
 			       (b (limitpart a))))))))
 
@@ -1178,7 +1178,7 @@
 		   (not (equal q 1))
 		   (not (limitp a)))
 	      (equal (o+ (o* (o^2 (limitpart a) (+ -1 q))
-			     (natpart a)) 
+			     (natpart a))
 			 (o^3sum a (+ -2 q)))
 		     (o* (o+ (o^2 (limitpart a) (+ -1 q)) (o^3sum a (+ -2 q)))
 			 (natpart a))))
@@ -1187,9 +1187,9 @@
 			       (a (limitpart a))
 			       (b (natpart a))
 			       (c (natpart a))))))))
-  
+
   (local (in-theory (disable posp-distributive)))
- 
+
   (local
    (defthm o^3c2-l2-l2
      (implies (and (o-p a)
@@ -1268,7 +1268,7 @@
 			     (b (limitpart a))
 			     (c (natpart a))))))))
 
-(local  
+(local
  (defthm o^3c2
    (implies (and (o-p a)
 		 (o-infp a)
@@ -1308,7 +1308,7 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm o^4c-l1
      (implies (and (o-infp a)

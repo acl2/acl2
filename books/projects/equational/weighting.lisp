@@ -1,4 +1,4 @@
-;; 
+;;
 ;; Utrecht Texas Equational Prover (UTEP) - Term Weighting Routines
 ;;
 ;; Written by Grant Olney Passmore {grant@math.utexas.edu}
@@ -16,12 +16,12 @@
 (include-book "unification")
 
 ;; Essay - Weighting schemes
-;; 
+;;
 ;; We want to specify weighting schemes that are triggered through
 ;; a restricted form of unification.  As an example of the restrictions
 ;; we'd like to place, in a weighting assignment of (x 50), that is
 ;; what in Otter would be weight(x, 50), we want this to be interpreted
-;; as assigning a weight of 50 to every *variable* in a term, not 
+;; as assigning a weight of 50 to every *variable* in a term, not
 ;; just anything that could be unified with `x' (which would be everything).
 ;; This adds a bit of complexity to the weighting computations, but is
 ;; much more effective in proof search.
@@ -35,12 +35,12 @@
 ;; Examples of some weighting schemes we'd like to support (as in Otter p14):
 ;;
 ;;  ((e) 0)                      - The constant (e) is assigned a weight of 0.
-;;  ((f x) ($- ($* 2 ($ x)) 50)) - The weight of (f x) is twice the weight of 
-;;                                 the parameter x minus 50.   
+;;  ((f x) ($- ($* 2 ($ x)) 50)) - The weight of (f x) is twice the weight of
+;;                                 the parameter x minus 50.
 ;;
 ;; ** Please note that if a variable appears in a weighting scheme, it must
 ;;    be wrapped with `$'.  That is, if `x' is to be in a weighting scheme,
-;;    it must appear as `($ x).  
+;;    it must appear as `($ x).
 ;;
 ;; An example term: (f (e) w)
 ;; An example weighting scheme: ( ((e) 5)
@@ -107,9 +107,9 @@
 ;; configuration values to us.
 ;;
 
-;; 
+;;
 ;; This function constructs a signature tree for a given term, differentiating
-;; only between functions and variables.  
+;; only between functions and variables.
 ;;
 ;; Example:
 ;; ACL2 !>(gw-term-signature '(f (e x y (g (e) z) x)))
@@ -122,7 +122,7 @@
 			       (gw-term-signature* (cdr x) cur-fcn-arity+1)))
 	((and (consp x) (equal (len x) cur-fcn-arity+1))
 	 (append '(FCN) (gw-term-signature* (cdr x) cur-fcn-arity+1)))
-	((and (consp x) (< (len x) cur-fcn-arity+1)) 
+	((and (consp x) (< (len x) cur-fcn-arity+1))
 	 (append '(VAR) (gw-term-signature* (cdr x) cur-fcn-arity+1)))))
 
 (defun gw-term-signature (x)
@@ -137,7 +137,7 @@
 ;;
 ;; We do this by iterating over the term-signature constructed above.
 ;; This is needlessly expensive, as it requires an extra linear pass over
-;; the term tree, whereas only a single linear pass is truly needed as 
+;; the term tree, whereas only a single linear pass is truly needed as
 ;; in gw-term-signature* above.  This is done for stylistic reasons at
 ;; the moment, but may be changed in the future if this expense is noticable
 ;; in practice.
@@ -149,7 +149,7 @@
 	((endp term-sig) 0)
 	(t (+ (generic-weight* (car term-sig) raw-var-weight)
 	      (generic-weight* (cdr term-sig) raw-var-weight)))))
-	
+
 (defun generic-weight (term raw-var-weight)
   (generic-weight* (gw-term-signature term) raw-var-weight))
 
@@ -164,12 +164,12 @@
 ;;
 
 (defun find-matching-scheme* (term weight-schema prover-settings)
-  (cond ((varp term) (if (acl2-numberp (get-setting prover-settings 'raw-var-weight)) 
+  (cond ((varp term) (if (acl2-numberp (get-setting prover-settings 'raw-var-weight))
 			 (get-setting prover-settings 'raw-var-weight)
 			 1))
 	((acl2-numberp term) term)
 	(t (let ((wf-instance (find-matching-scheme term weight-schema)))
-	     (cond ((equal wf-instance nil) 
+	     (cond ((equal wf-instance nil)
 		    (generic-weight term (fix (get-setting prover-settings 'raw-var-weight))))
 		   (t wf-instance))))))
 
@@ -183,29 +183,29 @@
 	((or (endp wf-instance) (endp (cdr wf-instance)))
 	 (case in-f-scope ('+ 0) ('- 0) ('* 1) ('/ 1) (nil nil)))
 	((equal (car wf-instance) '$) ; Note that '$'s will never be nested.
-	 (append '(weight-term*) (append (list (list* 'quote (cdr wf-instance))) 
+	 (append '(weight-term*) (append (list (list* 'quote (cdr wf-instance)))
 					 (list (list* 'quote (list weight-schema)))
 					 (list (list* 'quote (list prover-settings)))
 					 (list (list* 'quote (list in-f-scope))))))
 	((and (member (car wf-instance) '($+ $- $* $/)) (consp (cdr wf-instance)))
 	 (list (cadr (assoc (car wf-instance) *wfc-map*))
-	       (annotate-wf-instance (cadr wf-instance) prover-settings 
-				     (cadr (assoc (car wf-instance) *wfc-map*)) 
+	       (annotate-wf-instance (cadr wf-instance) prover-settings
+				     (cadr (assoc (car wf-instance) *wfc-map*))
 				     weight-schema)
-	       (annotate-wf-instance (list* (car wf-instance) (cddr wf-instance)) prover-settings 
+	       (annotate-wf-instance (list* (car wf-instance) (cddr wf-instance)) prover-settings
 				     (cadr (assoc (car wf-instance) *wfc-map*)) weight-schema)))
 	((varp (car wf-instance)) (nfix (get-setting prover-settings 'raw-var-weight)))
-	(in-f-scope (list in-f-scope 
+	(in-f-scope (list in-f-scope
 			  (annotate-wf-instance (car wf-instance) prover-settings nil weight-schema)
-			  (annotate-wf-instance (cdr wf-instance) prover-settings in-f-scope weight-schema)))	 
+			  (annotate-wf-instance (cdr wf-instance) prover-settings in-f-scope weight-schema)))
 	(t (generic-weight wf-instance (get-setting prover-settings 'raw-var-weight)))))
 
-    
+
 (defmacro weight-term* (term weight-schema prover-settings in-f-scope)
-   (annotate-wf-instance (find-matching-scheme* (unquote term) (unquote weight-schema) 
-						(unquote prover-settings)) 
-			 (unquote prover-settings) 
-			 (unquote in-f-scope) 
+   (annotate-wf-instance (find-matching-scheme* (unquote term) (unquote weight-schema)
+						(unquote prover-settings))
+			 (unquote prover-settings)
+			 (unquote in-f-scope)
 			 (unquote weight-schema)))
 
 ;;
@@ -218,7 +218,7 @@
   (cond ((endp moves) nil)
 	(t (let ((cur-move (extract-clause (car moves))))
 	     (cond ((<= (generic-clause-weight cur-move 2) max-clause-weight)
-		    (cons (car moves) 
+		    (cons (car moves)
 			  (filter-out-heavy-clauses (cdr moves) max-clause-weight)))
 		   (t (filter-out-heavy-clauses (cdr moves) max-clause-weight)))))))
 

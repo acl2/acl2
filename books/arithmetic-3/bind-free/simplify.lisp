@@ -60,7 +60,7 @@
 (local
  (encapsulate
   ()
- 
+
   (local (include-book "../pass1/top"))
 
   (defthm equal-*-/-1
@@ -76,7 +76,7 @@
                  (equal z 0)
                (and (acl2-numberp z)
                     (equal (fix y) (* z x))))))
- 
+
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -585,7 +585,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun first-rational-match-in-factor-gather-exponents-info-lists 
+(defun first-rational-match-in-factor-gather-exponents-info-lists
     (info-list1 info-list2 mfc state)
   (declare (xargs :guard (and (info-list-p info-list1)
                               (info-list-p info-list2))))
@@ -768,7 +768,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun first-rational-match-in-factor-scatter-exponents-info-lists 
+(defun first-rational-match-in-factor-scatter-exponents-info-lists
     (info-list1 info-list2 mfc state)
     (declare (xargs :guard (and (info-list-p info-list1)
                                 (info-list-p info-list2))))

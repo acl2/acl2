@@ -13,7 +13,7 @@
   (lnot (logior a (lnot b (1+ e))) (1+ e)))
 
 (defund OLAM1 (a b e)
-  (logand (bits (olamt a b e) e 2) 
+  (logand (bits (olamt a b e) e 2)
 	  (logand (bits (olamg a b e) (1- e) 1)
 		  (lnot (bits (olamz a b e) (- e 2) 0) (1- e)))))
 
@@ -23,7 +23,7 @@
 		  (lnot (bits (olamz a b e) (- e 2) 0) (1- e)))))
 
 (defund OLAM3 (a b e)
-  (logand (bits (olamt a b e) e 2) 
+  (logand (bits (olamt a b e) e 2)
 	  (logand (bits (olamz a b e) (1- e) 1)
 		  (lnot (bits (olamg a b e) (- e 2) 0) (1- e)))))
 
@@ -219,7 +219,7 @@
   (lnot (lior a (lnot b (1+ e)) (1+ e)) (1+ e)))
 
 (defun lam1 (a b e)
-  (land (bits (lamt a b e) e 2) 
+  (land (bits (lamt a b e) e 2)
 	(land (bits (lamg a b e) (1- e) 1)
 	      (lnot (bits (lamz a b e) (- e 2) 0) (1- e))
 	      (1- e))
@@ -233,7 +233,7 @@
 	(1- e)))
 
 (defun lam3 (a b e)
-  (land (bits (lamt a b e) e 2) 
+  (land (bits (lamt a b e) e 2)
 	(land (bits (lamz a b e) (1- e) 1)
 	      (lnot (bits (lamg a b e) (- e 2) 0) (1- e))
 	      (1- e))

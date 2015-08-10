@@ -15,7 +15,7 @@
 ;;|                                                    |
 ;;|                    Not-in                            |
 ;;|                                                    |
-;;|-------------------------------------------------|        
+;;|-------------------------------------------------|
 
 (defun not-in (x y)
   (if (or (endp x) (endp y))
@@ -23,7 +23,7 @@
     (and (not (member-equal (car x) y))
          (not-in (cdr x) y))))
 
-                          
+
 (defthm no-dups-append
   (equal (no-duplicatesp-equal (append x y))
          (and (no-duplicatesp-equal x)
@@ -35,7 +35,7 @@
 ;;|                                          |
 ;;|         Theoremes about Subsetp              |
 ;;|                                          |
-;;|---------------------------------------|        
+;;|---------------------------------------|
 ;; we prove some useful lemmas about subsetp
 (defthm subsetp-expand
   (implies (subsetp x y)
@@ -102,7 +102,7 @@
                 (subsetp (M-dests M) NodeSet)
                 (True-listp M)
                 (No-duplicatesp-equal (M-ids M))))
-  :rule-classes :forward-chaining)        
+  :rule-classes :forward-chaining)
 
 
 (defthm tomissives-truelistp
@@ -114,12 +114,12 @@
            (Missivesp (ToMissives m) NodeSet)))
 
 (defthm tomissives-len-equal
-  (equal  (len (tomissives x)) 
+  (equal  (len (tomissives x))
           (len x)))
 
 (defthm m-ids-append-invert
   ;; append out of the mids
-  (equal (m-ids (append a b)) 
+  (equal (m-ids (append a b))
          (append (m-ids a) (m-ids b))))
 
 (defthm rewrite-missivesp-append
@@ -134,19 +134,19 @@
 (defthm memberequal-implies-id-member-missives ;OK
   ;; member of a list then the id of the element is a member of the
   ;; ids of the list
-  (implies (member-equal  x l) 
+  (implies (member-equal  x l)
            (member-equal (idm x) (m-ids l))))
 
 (defthm missivesy-missives-cdry
-  ;; missivesp y then missivesp cdr y                
-  (implies (missivesp y nodeset) 
+  ;; missivesp y then missivesp cdr y
+  (implies (missivesp y nodeset)
            (missivesp (cdr y) nodeset)))
 
 ;;|------------------------------|
 ;;|                              |
 ;;|            toTmissives                 |
 ;;|                                 |
-;;|------------------------------|                         
+;;|------------------------------|
 
 (defun ToTMissives (TrLst)
   ;;  convert a Travel List to a Traveling Missive List
@@ -179,7 +179,7 @@
 ;; two important lemmas are needed
 
 ;; the first one rewrites (ToMissives (extract-sublst ..))
-;; to (extract-sublst (tomissives) ... )                 
+;; to (extract-sublst (tomissives) ... )
 (defthm ToTMissives-append    ;; OK
   ;; we first link ToTMissives and append
   (equal (ToTMissives (append A B))
@@ -199,20 +199,20 @@
                 (subsetp (TM-dests M) NodeSet)
                 (True-listp M)
                 (No-duplicatesp-equal (TM-ids M))))
-  :rule-classes :forward-chaining)  
+  :rule-classes :forward-chaining)
 
 
 (defthm tm-ids-append-invert
-  (equal (tm-ids (append a b)) 
+  (equal (tm-ids (append a b))
          (append (tm-ids a) (tm-ids b))))
 
 (defthm memberequal-implies-id-member ;OK
   ;; the IDs of a member of a list are part of the ids of this list
-  (implies (member-equal  x l) 
-           (member-equal (idtm x) (tm-ids l))))        
+  (implies (member-equal  x l)
+           (member-equal (idtm x) (tm-ids l))))
 
 (defthm tmissivesy-tmissives-cdry
-  (implies (tmissivesp y nodeset) 
+  (implies (tmissivesp y nodeset)
            (tmissivesp (cdr y) nodeset)))
 
 
@@ -278,12 +278,12 @@
            (and (validfields-trlst trlst nodeset)
                 (true-listp trlst)
                 (no-duplicatesp-equal (v-ids trlst))))
-  :rule-classes :forward-chaining) 
+  :rule-classes :forward-chaining)
 
 ;;|------------------------------|
 ;;|                                 |
 ;;|                 rev                 |
-;;|------------------------------|  
+;;|------------------------------|
 (defun rev (x)
   (declare (xargs :guard (true-listp x)))
   (if (endp x)
@@ -305,7 +305,7 @@
 ;;|                                 |
 ;;|            Transactionsp                 |
 ;;|                                 |
-;;|------------------------------|  
+;;|------------------------------|
 
 (defthm fwd-chaining-transactionsp
   (implies (transactionsp trs nodeset)
@@ -321,7 +321,7 @@
 ;;|                                 |
 ;;|            ntkstate                 |
 ;;|                                 |
-;;|------------------------------| 
+;;|------------------------------|
 
 ;; valid ntkstate
 (defthm validstate-entry-implies-coord-and-buffer

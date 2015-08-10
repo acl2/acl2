@@ -347,7 +347,7 @@ special @(':vl-valuerange') applied to the two arguments.</p>"
    (cons :vl-pattern-multi         (make-vl-opinfo :arity 2   :text nil)) ;;; '\{ expression \{ expression {, expression} \} \}, e.g. '{3{a,b}}
    (cons :vl-pattern-keyvalue      (make-vl-opinfo :arity nil :text nil)) ;;; '\{ structure_pattern_key : expression { , key : expression } \}
    (cons :vl-keyvalue              (make-vl-opinfo :arity 2   :text nil)) ;;; key : value  (within vl-pattern-keyvalue)
-   (cons :vl-pattern-type          (make-vl-opinfo :arity 2   :text nil)) ;;; type'{...}, first argument 
+   (cons :vl-pattern-type          (make-vl-opinfo :arity 2   :text nil)) ;;; type'{...}, first argument
 
    ;; Inside Operators
    (cons :vl-inside                (make-vl-opinfo :arity 2   :text "inside"))

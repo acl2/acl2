@@ -1,6 +1,6 @@
 (in-package "ACL2")
 #|
- 
+
 inline-book.lisp
 ----------------
 
@@ -21,7 +21,7 @@ but (local (encapsulate-book ...)) should work.
 ;The syntax is to replace "include-book" with "inline-book" or
 "encapsulate-book," except that only the book name and any :dir argument are
 used by inline-book.  All the other parameters are ignored/irrelevant and the
-effect is that they are inherited from the parent book. 
+effect is that they are inherited from the parent book.
 
 
 In a feat of make-event foo, the inclusion of this book can itself be inlined:
@@ -56,7 +56,7 @@ this file for inlining into the current book.
     (cons `(add-include-book-dir ,(caar dir-alist);kwd
                                  ,(cdar dir-alist));dir
           (generate-add-include-book-dir-calls (cdr dir-alist)))))
-          
+
 
 ; this is the guts of reading a book .lisp file and turning it into a progn or
 ; an encapsulate
@@ -67,7 +67,7 @@ this file for inlining into the current book.
          (wrld0 (w state))
          (saved-acl2-defaults-table
           (table-alist 'acl2-defaults-table wrld0))
-         (saved-acl2-defaults-table-minus-book-dir-alist;hack 
+         (saved-acl2-defaults-table-minus-book-dir-alist;hack
           (remove-entry-by-key :INCLUDE-BOOK-DIR-ALIST saved-acl2-defaults-table))
          (saved-book-dir-alist (cdr (assoc-eq :include-book-dir-alist
                                               saved-acl2-defaults-table)))
@@ -88,10 +88,10 @@ this file for inlining into the current book.
                       ,@ (if (eq :logic
                                  (cdr (assoc-eq :defun-mode saved-acl2-defaults-table)))
                              nil
-                           '((logic))) ; put into defun-mode :logic, as include-book does 
+                           '((logic))) ; put into defun-mode :logic, as include-book does
                          ,@ (cdr ev-lst) ; skip in-package
                             ,@ (if respect-localp
-                                   '() ; acl2-defaults-table automatically reset by encapsulate 
+                                   '() ; acl2-defaults-table automatically reset by encapsulate
                                  (cons `(table acl2-defaults-table nil
                                                ',saved-acl2-defaults-table-minus-book-dir-alist;hack
                                                :clear)
@@ -115,7 +115,7 @@ this file for inlining into the current book.
                        &key
                        dir
                        ;; these are ignored, but included for easy transition
-                       ;; to/from include-book 
+                       ;; to/from include-book
                        load-compiled-file uncertified-okp
                        defaxioms-okp skip-proofs-okp
                        ttags doc)
@@ -134,7 +134,7 @@ this file for inlining into the current book.
                        &key
                        dir
                        ;; these are ignored, but included for easy transition
-                       ;; to/from include-book 
+                       ;; to/from include-book
                        load-compiled-file uncertified-okp
                        defaxioms-okp skip-proofs-okp
                        ttags doc)

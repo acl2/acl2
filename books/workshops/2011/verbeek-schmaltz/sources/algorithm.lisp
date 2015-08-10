@@ -49,7 +49,7 @@
   (declare (xargs :stobjs (st-graph st-nodeset)
                   :verify-guards nil))
   (cond ((equal a b) (list a))
-        (t 
+        (t
          (st-find-next-d-step (st-filter-neighbors-for-dest (neighbors->destsi a st-graph) dest) b (list a) dest st-graph st-nodeset))))#|ACL2s-ToDo-Line|#
 
 (defun E-013-marked-E-d-path (n from dest st-marks st-graph st-nodeset)
@@ -63,7 +63,7 @@
                   (and (equal (marksi (1- n) st-marks) 3)
                        (member-equal dest (depi (1- n) st-marks))
                        (not (member-equal dest (esci (1- n) st-marks)))))
-              (not (equal (st-find-d-path from (1- n) dest st-graph st-nodeset) 'failure))) 
+              (not (equal (st-find-d-path from (1- n) dest st-graph st-nodeset) 'failure)))
          t)
         (t
          (E-013-marked-E-d-path (1- n) from dest st-marks st-graph st-nodeset))))
@@ -106,7 +106,7 @@
                               (A-true-listp-deps (nodes-length st-nodeset) st-marks)
                               (A-natp-escs (nodes-length st-nodeset) st-marks)
                               (A-natp-deps (nodes-length st-nodeset) st-marks))))
-  (mbe 
+  (mbe
    :logic
    (cond
     ((or (not (A-natp nodes))
@@ -140,22 +140,22 @@
                                 (append-to-esc prev dests st-marks))))
                 (let ((st-marks (update-marksi node 2 st-marks)))
                   (st-escapable-inv (cdr nodes) prev st-graph st-marks st-nodeset))))
-             
+
              (t
-              (seq st-marks 
+              (seq st-marks
                    (update-marksi node 1 st-marks)
                    (st-escapable-inv (neighborsi node st-graph) node st-graph st-marks st-nodeset)
                    (if (not (equal prev -1))
                      (cond ((not (subsetp (depi node st-marks) (esci node st-marks)))
-                            (seq st-marks 
+                            (seq st-marks
                                  (update-marksi node 3 st-marks)
                                  (append-to-dep prev dests st-marks)))
                            ((E-d-path-to-013-marked-node node st-marks st-graph st-nodeset)
-                            (seq st-marks 
+                            (seq st-marks
                                  (update-marksi node 4 st-marks)
                                  (append-to-dep prev dests st-marks)))
                            (t
-                            (seq st-marks 
+                            (seq st-marks
                                  (append-to-esc prev dests st-marks)
                                  (update-marksi node 2 st-marks))))
                      (cond ((not (subsetp (depi node st-marks) (esci node st-marks)))
@@ -199,7 +199,7 @@
              (t
               ;; Otherwise:
               ;; Mark the port as 1 (visited). Explore the neighbors and propagate the obtained information back.
-              (seq st-marks 
+              (seq st-marks
                    (update-marksi node 1 st-marks)
                    (st-escapable-inv (neighborsi node st-graph) node st-graph st-marks st-nodeset)
                    (cond ((not (subsetp (depi node st-marks) (esci node st-marks)))
@@ -209,12 +209,12 @@
                                (if (not (equal prev -1)) (append-to-dep prev dests st-marks) st-marks)))
                          ((E-d-path-to-013-marked-node node st-marks st-graph st-nodeset)
                           ;; If there exists a path to a deadlock-sensitive node:
-                          (seq st-marks 
+                          (seq st-marks
                                (update-marksi node 4 st-marks)
                                (append-to-dep prev dests st-marks)))
                          (t
                           ;; Otherwise:
-                          (seq st-marks 
+                          (seq st-marks
                                (if (not (equal prev -1))
                                  (append-to-esc prev dests st-marks) st-marks)
                                (update-marksi node 2 st-marks))))
@@ -246,7 +246,7 @@
   (declare (xargs :stobjs (st-graph st-nodeset)
                   :verify-guards nil))
   (cond ((equal a b) (list a))
-        (t 
+        (t
          (st-find-next-step (neighborsi a st-graph) b (list a) st-graph st-nodeset))))
 (defun upwards-4marked-reach (n node st-marks st-graph st-nodeset)
   (declare (xargs :stobjs (st-marks st-graph st-nodeset)
@@ -394,7 +394,7 @@
          (let ((2neighbors (st-filter-2marked-nodes (setminus (neighborsi (car nodes) st-graph) (cdr (assoc (car nodes) stack))) st-marks)))
            (if (consp 2neighbors)
              ;; Validate the port:
-             (seq st-marks     
+             (seq st-marks
                  (append-to-esc (car nodes) (A-dests-of (car nodes) 2neighbors st-graph st-nodeset) st-marks)
                  (if (not (unresolved (car nodes) st-marks))
                    ;; If the deps are now included in the escs:
@@ -619,7 +619,7 @@
                                 (:instance A-valid-nodes-cdr-assoc
                                  (x (car nodes))
                                  (alist (neighbors->destsi node graph)))))))
-                                  
+
 (defthm A-natp-deps-algo
   (implies (and (A-valid-nodes nodes nodeset)
                 (valid-graph (nodes-length nodeset) graph nodeset)
@@ -689,7 +689,7 @@
                   :induct (st-escapable-inv nodes prev  graph marks nodeset)
                   :do-not '(eliminate-destructors generalize))))
 (defthm algo-preserves-marked
-  (implies (and (valid-graph (nodes-length st-nodeset) graph nodeset) 
+  (implies (and (valid-graph (nodes-length st-nodeset) graph nodeset)
                 (marked node marks)
                 (natp node)
                 (A-valid-nodes nodes nodeset))

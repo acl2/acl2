@@ -80,7 +80,7 @@
 
   ;; X is an ACL2 term.  We return t if x is a negative addend, or a
   ;; sum of negative addends.  Here, an addend is considered to be
-  ;; negative if it is a negative rational constant, or prints as 
+  ;; negative if it is a negative rational constant, or prints as
   ;; (- ...) or (* c ...) where c is a negative rational.
 
   (cond ((variablep x)
@@ -105,7 +105,7 @@
 
   ;; X is an ACL2 term.  We return t if x is a negative addend, or a
   ;; sum of negative addends.  Here, an addend is considered to be
-  ;; negative if it is a rational constant, or prints as 
+  ;; negative if it is a rational constant, or prints as
   ;; (- ...) or (* c ...) where c is a negative rational.
 
   (cond ((variablep x)
@@ -171,7 +171,7 @@
 	 *t*))
 
 (defun proveably-non-zero (x mfc state)
-  
+
   ;; If x is not an IF expression, can rewriting determine that it
   ;; is numeric and not equal to zero?
 
@@ -193,7 +193,7 @@
 	 *t*))
 
 (defun proveably-non-zero-rational (x mfc state)
-  
+
   ;; If x is not an IF expression, can rewriting determine that it
   ;; is rational and not equal to zero?
 

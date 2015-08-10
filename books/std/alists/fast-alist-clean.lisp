@@ -125,7 +125,7 @@
   (defthm atom-of-cdr-last
     (atom (cdr (last x)))
     :rule-classes :type-prescription)
-           
+
 
   (local
    (defun fast-alist-fork-redef-ind (x y)

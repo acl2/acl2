@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -35,7 +35,7 @@
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
 
 ;; From basic.lisp:
@@ -80,9 +80,9 @@
          (bits y (1- n) 0))
     0))
 
-;; We define a macro, CAT, that takes a list of a list X of alternating data values 
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at 
-;; least 1 data/size pair, but we do not need to specify this in the guard, and 
+;; We define a macro, CAT, that takes a list of a list X of alternating data values
+;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at
+;; least 1 data/size pair, but we do not need to specify this in the guard, and
 ;; leaving it out of the guard simplifies the guard proof.
 
 (defun formal-+ (x y)
@@ -105,9 +105,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defund mulcat (l n x)
@@ -129,7 +129,7 @@
 
 ;; From float.lisp:
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -180,7 +180,7 @@
 
 (defund sigw (f)
   (declare (xargs :guard (formatp f)
-                  :guard-hints (("goal" :in-theory (enable prec))))) 
+                  :guard-hints (("goal" :in-theory (enable prec)))))
   (if (explicitp f)
       (prec f)
     (1- (prec f))))
@@ -215,7 +215,7 @@
 
 (defund dp () (declare (xargs :guard t)) '(nil 53 11))
 
-(defund ep () (declare (xargs :guard t)) '(t 64 15)) 
+(defund ep () (declare (xargs :guard t)) '(t 64 15))
 
 (in-theory (disable (sp) (dp) (ep)))
 
@@ -323,7 +323,7 @@
 		  (normp x f))
 	     (equal (expo (ndecode x f))
 		    (- (expf x f) (bias f))))
-  :hints (("Goal" :in-theory (e/d (expo-ndecode-1 bias expw formatp prec) (abs)) 
+  :hints (("Goal" :in-theory (e/d (expo-ndecode-1 bias expw formatp prec) (abs))
                   :use (expo-ndecode-2
                         (:instance fp-rep-unique (x (ndecode x f)) (e (- (expf x f) (bias f))) (m (+ 1 (/ (manf x f) (expt 2 (1- (prec f)))))))))))
 
@@ -332,7 +332,7 @@
 		  (normp x f))
 	     (equal (sig (ndecode x f))
 		    (+ 1 (/ (manf x f) (expt 2 (1- (prec f)))))))
-  :hints (("Goal" :in-theory (e/d (expo-ndecode-1 bias expw formatp prec) (abs)) 
+  :hints (("Goal" :in-theory (e/d (expo-ndecode-1 bias expw formatp prec) (abs))
                   :use (expo-ndecode-2
                         (:instance fp-rep-unique (x (ndecode x f)) (e (- (expf x f) (bias f))) (m (+ 1 (/ (manf x f) (expt 2 (1- (prec f)))))))))))
 
@@ -362,7 +362,7 @@
                 (normp x f))
            (nrepp (ndecode x f) f))
   :hints (("Goal" :in-theory (enable formatp prec normp nrepp expo-ndecode sig-ndecode exactp))))
-                  
+
 
 (local-defthmd nencode-ndecode-1
     (implies (and (formatp f)
@@ -931,7 +931,7 @@
                   (drepp x f))
              (equal (sigf (dencode x f) f) (* (sig x) (expt 2 (+ -2 (prec f) (expo x) (bias f))))))
   :hints (("Goal" :use (denormp-dencode-7 denormp-dencode
-                        (:instance bitn-plus-bits (x (dencode x f)) (n (1- (prec f))) (m 0))) 
+                        (:instance bitn-plus-bits (x (dencode x f)) (n (1- (prec f))) (m 0)))
                    :in-theory (e/d (formatp prec expw sigw manf sigf denormp) (denormp-dencode)))))
 
 (local-defthmd ddecode-dencode-4
@@ -1061,11 +1061,11 @@
 
 (defund indef (f)
   (if (explicitp f)
-      (cat (1- (expt 2 (+ (expw f) 3))) 
+      (cat (1- (expt 2 (+ (expw f) 3)))
            (+ (expw f) 3)
            0
            (- (sigw f) 2))
-    (cat (1- (expt 2 (+ (expw f) 2))) 
+    (cat (1- (expt 2 (+ (expw f) 2)))
          (+ (expw f) 2)
          0
          (1- (sigw f)))))

@@ -19,12 +19,12 @@
  (defun cosine-interval (y)
    (declare (ignore y))
    (interval 0 (acl2-pi))))
-	   
+
 (local
  (defthm trivial-subinterval
      (implies (and (realp x)
 		   (realp y)
-		   (< x y)) 
+		   (< x y))
 	      (subinterval-p (interval x y) (interval x y)))
    :hints (("Goal"
 	    :in-theory (enable interval-definition-theory)))))
@@ -53,13 +53,13 @@
  ()
  (local
   (defthm lemma-1
-      (implies (and (realp c) 
+      (implies (and (realp c)
 		    (realp s)
 		    (equal (+ (* s s) (* c c)) 1))
 	       (<= c 1))))
  (local
   (defthm lemma-2
-      (implies (and (realp c) 
+      (implies (and (realp c)
 		    (realp s)
 		    (equal (+ (* s s) (* c c)) 1))
 	       (<= -1 c))
@@ -304,7 +304,7 @@
 				(INTERVAL -1 1)))
    :hints (("Goal"
 	    :in-theory (enable interval-definition-theory)))
-   :rule-classes (:built-in-clause))  
+   :rule-classes (:built-in-clause))
 
 (local
  (defthm sine-is-1-1-on--pi/2-pi/2
@@ -384,7 +384,7 @@
 (defun real-sine (x)
   (acl2-sine (realfix x)))
 
-(definv real-cosine 
+(definv real-cosine
     :f-inverse        acl2-acos
     :domain           (interval 0 (acl2-pi))
     :range            (interval -1 1)

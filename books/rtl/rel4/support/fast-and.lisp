@@ -1,9 +1,9 @@
 (in-package "ACL2")
 
 (defun split-list (lst lo hi)
-  (cond ((endp lst) 
+  (cond ((endp lst)
          (mv lo hi))
-        ((endp (cdr lst)) 
+        ((endp (cdr lst))
          (mv (cons (car lst) lo) hi))
         (t
          (split-list (cddr lst)

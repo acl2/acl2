@@ -791,7 +791,7 @@ simply setting the variable to X and then to its real value).</p>")
                 ;;   var = curr
                 ;;   if (condition) [nothing] else var = false;
                 (vl-safe-qmark-expr x.condition curr false-expr)))
-            ;; Since we are initializing all variables to X, the only reason we 
+            ;; Since we are initializing all variables to X, the only reason we
             ;; can be here is that we have something like:
             ;;    var = curr
             ;;    if (condition) othervar = blah;

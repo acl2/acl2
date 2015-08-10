@@ -35,7 +35,7 @@
 
 (local (in-theory (disable set::double-containment)))
 
-;; 
+;;
 
 (defun 4v-sexpr-fixpoint-spec-without-xes (ups)
   (if (atom ups)
@@ -71,7 +71,7 @@
   :hints (("goal" :do-not-induct t)
           (witness :ruleset 4v-sexpr-alist-equiv-witnessing)
           (witness :ruleset 4v-sexpr-alist-equiv-example)))
-       
+
 
 
 
@@ -257,7 +257,7 @@
 ;;   :hints(("Goal" :in-theory (enable hons-remove-duplicates))))
 
 (local
- 
+
   (defthm hons-assoc-equal-sexpr-update-fixpoints
     (implies
      (no-duplicatesp-equal deps)
@@ -314,7 +314,7 @@
                     :in-theory (enable hons-assoc-equal))
                    (witness :ruleset 4v-sexpr-alist-equiv-witnessing))))
 
-   
+
 
   (defthm sexpr-update-fixpoints-when-deptable-ok
     (implies (sexpr-deptable-ok deptable fixpoints)
@@ -425,7 +425,7 @@
                      (not (member-equal var (4v-sexpr-vars (cdr (hons-assoc-equal k
                                                                                b))))))))
 
-                    
+
 
    (local (defthm not-member-vars-lookup-when-not-member-find-key-with-var-bound-corollary
             (implies (not (member-equal var (4v-sexpr-vars (cdr
@@ -455,7 +455,7 @@
                                      fixpoints
                                      (list (cons signame val)))
                                     (list (cons signame val))))))))
-     :hints (("goal" 
+     :hints (("goal"
               :in-theory (e/d (member-4v-sexpr-vars-list-hons-assoc-equal-impl-member-find-key-with-var-bound)
                               (sexpr-update-fixpoints
                                find-key-with-var-bound))
@@ -487,7 +487,7 @@
                                       fixpoints
                                       (list (cons signame val)))
                                      (list (cons signame val))))))))
-      :hints (("goal" 
+      :hints (("goal"
                :in-theory (e/d
                            (not-member-vars-lookup-when-not-member-find-key-with-var-bound-corollary
                             no-duplicate-keys-implies-find-key-with-var-bound
@@ -854,7 +854,7 @@
                               back-edges))
            :in-theory (disable
                        (:definition sexpr-dfs)
-                       default-car  union-equal 
+                       default-car  union-equal
                        sexpr-dfs-not-finished-when-present
                        subsetp-when-atom-left
                        not-hons-assoc-equal-impl-not-member-collect-keys
@@ -892,7 +892,7 @@
                                        parent back-edges))
                   'finished)
                  (alist-keys deps))
-  
+
   :hints (("goal" :do-not-induct t
            :in-theory (disable sexpr-dfs))
           (set-reasoning)))
@@ -935,7 +935,7 @@
 
 (in-theory (disable sexpr-dfs))
 
-                              
+
 (defthm alist-equiv-fal-extract
   (implies (set-equiv keys (alist-keys al))
            (alist-equiv (fal-extract keys al)
@@ -986,7 +986,7 @@
              (update-fns in-ups)))
            :in-theory
            (disable 4v-sexpr-fixpoint-lower-boundp-4v-sexpr-fixpoint-spec))))
-           
+
 
 (defthm 4v-sexpr-fixpointp-sexpr-fixpoints
   (4v-sexpr-fixpointp ups (sexpr-fixpoints ups)))
@@ -1660,7 +1660,7 @@
 ;;   (implies (and (unique-mapping map)
 ;;                 (subsetp-equal (alist-keys fp)
 ;;                                (alist-keys map)))
-           
+
 
 (defthm eval-map-append-translate-lemma
   (implies (and (unique-mapping map)
@@ -1773,7 +1773,7 @@
            (sexpr-var-val-alistp (reverse-alist alist))))
 
 (defthm 4v-sexpr-fixpoint-lower-boundp-sexpr-fixpoint-with-varmap
-  (4v-sexpr-fixpoint-lower-boundp 
+  (4v-sexpr-fixpoint-lower-boundp
    ups (sexpr-fixpoint-with-varmap ups map))
   :hints (("goal" :do-not-induct t
            :in-theory (disable sexpr-fixpoints

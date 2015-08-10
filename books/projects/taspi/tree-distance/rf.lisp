@@ -4,14 +4,14 @@
 (include-book "../database/props")
 
 ;; we'll use difference from code.  Correctness will require that
-;; that fringes don't have duplicates 
+;; that fringes don't have duplicates
 
-;; FN rate = false-negatives/number of true branches               
-;; FP rate = false-positives/number of branches found          
+;; FN rate = false-negatives/number of true branches
+;; FP rate = false-positives/number of branches found
 ;; RF = (FN rate + FP rate) / 2 to get avg
 ;; RF(T,T')= (|C(T)-C(T')| / C(T) + |C(T')-C(T)| / C(T')) / 2
 ;;   if we have a binary tree, this simplifies to:
-;; RF(T,T') = (|C(T)-C(T')| + |C(T')-C(T)|) / 2 (n-3) 
+;; RF(T,T') = (|C(T)-C(T')| + |C(T')-C(T)|) / 2 (n-3)
 ;;   where (n is number of leaves, so n-3 is number of internal branches)
 
 (defun rf (tree1 taxa-list1 rooted1 tree2 taxa-list2 rooted2)
@@ -70,7 +70,7 @@
                                numBr2)))
                 (mv (/ (+ fnRate fpRate) 2) fnRate fpRate))))))
     (mv 'need-same-taxa-list-and-consp-trees 'error 'error)))
-    
+
 (defun rf-brlens (tree1 taxa-list1 rooted1 tree2 taxa-list2 rooted2)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
@@ -115,7 +115,7 @@
                   (find-closest-by-rf-help tree (cdr list)
                                            rooted1? rooted2? rf (car list))
                 (find-closest-by-rf-help tree (cdr list)
-                                         rooted1? rooted2? 
+                                         rooted1? rooted2?
                                          curScore curTree)))
     (mv curScore curTree)))
 
@@ -134,7 +134,7 @@
 ;    (4) rooted2 - a flag indicating rootedness of each tree in list
 
 ;  Details: Trees input may have branch lengths but they will not be preserved
-;           in the tree returned.  A single tree is returned even if equally 
+;           in the tree returned.  A single tree is returned even if equally
 ;           close trees exist in the input list."
   (declare (xargs :guard t))
   (if (consp list)
@@ -151,7 +151,7 @@
 
 ;(defun rf-entry (entry1 entry2)
 ;  (declare (xargs :guard (and (good-entry entry1)
-;                              (good-entry entry2))))  
+;                              (good-entry entry2))))
 ;  (let ((taxa-list1 (get-taxa-list entry1))
 ;        (taxa-list2 (get-taxa-list entry2))
 ;        (tree1 (get-tree entry1))
@@ -161,7 +161,7 @@
 ;    (rf tree1 taxa-list1 rooted1 tree2 taxa-list2 rooted2)))
 
 #||
-(rf '(a b ((c (d e)) ((f i) (g h)))) '(a b c d e f g h i) nil 
+(rf '(a b ((c (d e)) ((f i) (g h)))) '(a b c d e f g h i) nil
     '(a ((b (c e)) (d (g h))) (f i) ) '(a b c d e f g h i) nil)
 ||#
 

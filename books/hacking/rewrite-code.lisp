@@ -471,7 +471,7 @@
       (and (consp v)
            (namep (car v))
            (recvar-specp (cdr v)))))
-      
+
 (defun get-var-names (var-spec)
   (if (consp var-spec)
     (cons (if (consp (car var-spec))
@@ -690,7 +690,7 @@ ACL2 !>(er-rewrite-form '(+ (stuff fn1 42) (fn1 42) (fn1 53))
     (let*
      ((src-defun (get-defun src state)))
      (if src-defun
-       (value 
+       (value
         (let* ((tuple (cddr src-defun)) ; remove 'defun and name
                (bodycons (last tuple))
                (tuple-no-body (butlast tuple 1)))
@@ -746,6 +746,6 @@ ACL2 !>(er-rewrite-form '(+ (stuff fn1 42) (fn1 42) (fn1 53))
 ; ,src and ,dst may be the same (if redefinition allowed)
 ;
 ; see compute-copy-defun+rewrite for more info
-; 
+;
 (defmacro copy-defun (src dst)
   `(copy-defun+rewrite ,src ,dst))

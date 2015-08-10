@@ -1449,7 +1449,7 @@
                          `(,gevalfn (mv-nth '1 ,body) env)
                          a)
                         (run-gified-ev
-                         `(,evalfn 
+                         `(,evalfn
                            (cons fn (acl2::kwote-lst
                                      (,geval-list actuals env)))
                            'nil)

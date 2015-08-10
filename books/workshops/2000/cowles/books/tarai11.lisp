@@ -22,7 +22,7 @@
 ; Laramie, WY 82071-3682 U.S.A.
 
 ;; 25 July 00
-;; These are implementations of Knuth's (original and revised) 
+;; These are implementations of Knuth's (original and revised)
 ;;  and Bailey's versions of the f function for Knuth's theorem 4.
 ;; For lists of integers, the revised Knuth and Bailey versions
 ;;  compute the same values.

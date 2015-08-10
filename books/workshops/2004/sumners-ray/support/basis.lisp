@@ -100,7 +100,7 @@
 (defun to-string (obj)
   (cond ((stringp obj)    obj)
         ((characterp obj) (string obj))
-        ((symbolp obj)    (string-downcase (symbol-name obj)))  
+        ((symbolp obj)    (string-downcase (symbol-name obj)))
         ((natp obj)       (number-to-str obj))
         (t (er hard 'to-string
                "don't know how to convert to string: ~x0" obj))))
@@ -173,7 +173,7 @@
   `(defthm ,(snap-sym 'abstract- (first trm) '- n)
      (equal ,trm (hide ,trm))
      :hints (("Goal" :expand (hide ,trm)))))
-  
+
 (defun make-abs-thms (trms n)
   (if (endp trms) ()
     (cons (make-abs-thm (first trms) n)
@@ -201,7 +201,7 @@
                               (symbol-listp target)
                               (true-listp cases))))
   (let ((op! (snap-sym (first target) '!)))
-    `(encapsulate 
+    `(encapsulate
       ()
       (defun ,op! ,(rest target) ,target)
       (defthm ,(snap-sym name '-finite-cases)
@@ -265,7 +265,7 @@
   (list `(defun ,(first reg) ,(second reg)
            (declare (xargs :measure (tmsr n)))
            (if (tzp n) ,(third reg) (let ((n- (t- n))) ,(fourth reg))))))
-  
+
 (defun reg-thm (reg)
   (list `(if-lift-rules (,(first reg) ,@(second reg)))
         `(defthm ,(snap-sym (first reg) '-tzp)

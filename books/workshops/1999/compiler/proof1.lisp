@@ -116,7 +116,7 @@
 		  (nth (my-position var (cdr cenv)) (cdr vals))))
   :rule-classes nil)
 
-(defthm position-cdr 
+(defthm position-cdr
   (implies (and (not (equal var (car cenv)))
 		(member var cenv))
 	   (equal (my-position var cenv)
@@ -143,7 +143,7 @@
 ;; variable access in the stack is actually based on the position of that
 ;; variable in the compiletime environment (i.e. the formal parameter list).
 ;;---------------------------------------------------------------------------
-(defthm address-position-bridge 
+(defthm address-position-bridge
   (equal (+ -1 top (len (member var cenv)))
 	 (+ -1 top (- (len cenv) (my-position var cenv)))))
 
@@ -166,14 +166,14 @@
 ;; theorem is really used. Anyway.
 ;;---------------------------------------------------------------------------
 
-(defthm skip-elements 
+(defthm skip-elements
   (equal (nth (len l1) (append l1 l2)) (car l2)))
 
-(defthm skip-irrelevant-elements 
+(defthm skip-irrelevant-elements
   (implies (equal (len l1) (len l3))
 	   (equal (nth (len l1) (append l3 l2)) (car l2))))
 
-(defthm reverse-equal-len 
+(defthm reverse-equal-len
   (implies (true-listp l) (equal (len (rev l)) (len l))))
 
 (defthm skip-irrelevant-rest
@@ -182,22 +182,22 @@
 		     (nth n cenv))))
 
 (defthm position-n-rev-1-append
-  (implies (and (natp n) 
+  (implies (and (natp n)
 		(< n k)
 		(equal (len vals) k)
 		(true-listp vals))
 	   (equal (nth n (rev vals))
-		  (nth (- (1- k) n) 
+		  (nth (- (1- k) n)
 		       (append vals l2)))))
 
-(defthm mytake-n-takes-n 
+(defthm mytake-n-takes-n
   (implies (and (natp n) (true-listp vals))
 	   (equal (len (mytake n vals)) n)))
 
 (defthm ccc-1-append
   (implies (and (natp n) (< n (len cenv)) (true-listp vals))
 	   (equal (nth n (rev (mytake (len cenv) vals)))
-		  (nth (- (1- (len cenv)) n) 
+		  (nth (- (1- (len cenv)) n)
 		       (append (mytake (len cenv) vals) l2)))))
 
 (defthm my-position-<-len-cenv
@@ -211,7 +211,7 @@
 		  (nth n vals))))
 
 (defthm position-is-below-length
-  (implies (member var cenv) 
+  (implies (member var cenv)
 	   (and (natp (+ -1 (len cenv) (- (my-position var cenv))))
 		(natp (len cenv))
 		(< (+ -1 (len cenv) (- (my-position var cenv))) (len cenv)))))
@@ -219,7 +219,7 @@
 (defthm correct-addressing-2
   (implies (and (member var cenv) (true-listp vals))
 	   (equal (nth (my-position var cenv) (rev (mytake (len cenv) vals)))
-		  (nth (- (1- (len cenv)) (my-position var cenv)) 
+		  (nth (- (1- (len cenv)) (my-position var cenv))
 		       vals))))
 
 (defthm nth-of-sums
@@ -250,10 +250,10 @@
 				    (download (compile-defs ,dcls));; code
 				    ,stack
 				    ,n)))
-	    (and 
+	    (and
 	     (defined (evl ,form
 			   (construct-genv ,dcls);; genv (evaluator)
-			   (bind ,cenv (rev (get-stack-frame ,cenv ,top ,stack)) 
+			   (bind ,cenv (rev (get-stack-frame ,cenv ,top ,stack))
 				 ,env);; (nthcdr (+ ,top (len ,cenv)) ,stack))
 			   ,n))
 	     (equal
@@ -263,7 +263,7 @@
 		      ,n)
 	      (cons (car (evl ,form
 			      (construct-genv ,dcls);; genv (evaluator)
-			      (bind ,cenv (rev (get-stack-frame ,cenv ,top ,stack)) 
+			      (bind ,cenv (rev (get-stack-frame ,cenv ,top ,stack))
 				    ,env);; (nthcdr (+ ,top (len ,cenv)) ,stack))
 			      ,n))
 		    ,stack))
@@ -281,7 +281,7 @@
 (defthm cc-base-case
   (implies (and	(base-form form))
 	   (cc-theorem form cenv env top dcls stack n))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
 	   (disable evlist compile-forms construct-genv download
 		    wellformed-form wellformed-forms wellformed-forms-eqn
 		    mstep msteps operatorp))))
@@ -293,8 +293,8 @@
 ;;---------------------------------------------------------------------------
 
 (defun msteps-induction (m1 m2 code stack n)
-  (if (endp m1) (list m1 m2 code stack n) 
-    (msteps-induction (cdr m1) m2 code 
+  (if (endp m1) (list m1 m2 code stack n)
+    (msteps-induction (cdr m1) m2 code
 		      (msteps (list (car m1)) code stack n) n)))
 
 ;;---------------------------------------------------------------------------
@@ -352,21 +352,21 @@
     t))
 
 (defthm wellformed-forms-form-listp
-  (implies (wellformed-forms x genv cenv) 
+  (implies (wellformed-forms x genv cenv)
 	   (form-listp x))
   :hints (("Goal" :induct (form-listp-induction x))))
 
 (defun compile-induction (flag x env top)
   (if (atom x)
       (list env top)
-    (if flag 
+    (if flag
 	(list (compile-induction t (cadr x) env top)
 	      (compile-induction t (caddr x) env top)
 	      (compile-induction t (cadddr x) env top)
 	      (compile-induction nil (cdr x) env top))
       (list (compile-induction t (car x) env top)
 	    (compile-induction nil (cdr x) env (1+ top))))))
-	      
+
 
 ;;---------------------------------------------------------------------------
 ;; The machine code compiled for (IF cond then else) works as

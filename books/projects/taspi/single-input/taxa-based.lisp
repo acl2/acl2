@@ -37,7 +37,7 @@
 
 
 (defthm container-no-larger
-  (<= (acl2-count (get-top-containing-subtree-of-taxon 
+  (<= (acl2-count (get-top-containing-subtree-of-taxon
                    taxon tree))
       (acl2-count tree))
   :rule-classes :linear)
@@ -63,7 +63,7 @@
 ;    (1) taxon - a taxon name
 ;    (2) tree - a tree
 ;    (3) acc - accumulator (initially 0)
-;  
+;
 ;  "
   (declare (xargs :guard (acl2-numberp acc)))
   (if (taspip t tree)
@@ -71,8 +71,8 @@
           (if (or (member-gen taxon tree)
                   (equal taxon tree))
               acc
-            (let ((container 
-                   (get-top-containing-subtree-of-taxon 
+            (let ((container
+                   (get-top-containing-subtree-of-taxon
                     taxon tree)))
               (len-path-to-taxon taxon
                                  container
@@ -94,7 +94,7 @@
 ;    (1) taxon - a taxon name
 ;    (2) tree - a tree with branch lengths
 ;    (3) acc - accumulator (initially 0)
-;  
+;
 ;  "
   (declare (xargs :guard (acl2-numberp acc)
                   :hints (("Subgoal 2.1" :in-theory (disable
@@ -110,8 +110,8 @@
           (if (acl2-numberp (cdr tree))
               (+ acc (cdr tree))
             'need-treep-num-brlens)
-        (let ((container 
-               (get-top-containing-subtree-of-taxon-brlens 
+        (let ((container
+               (get-top-containing-subtree-of-taxon-brlens
                 taxon tree)))
           (if (consp tree)
               (if (acl2-numberp (cdr tree))
@@ -151,7 +151,7 @@
 ;    (1) a - a taxon name
 ;    (2) b - a taxon name
 ;    (3) tree - a tree
-;  
+;
 ;  Details: Returns empty tree if no common ancestor exists."
   (declare (xargs :guard t))
   (least-common-ancestor t a b tree nil))
@@ -159,15 +159,15 @@
 (defthm taspip-get-containing
   (implies (and (member-gen taxon (mytips tree))
                 (taspip flg tree))
-           (taspip t (get-top-containing-subtree-of-taxon 
+           (taspip t (get-top-containing-subtree-of-taxon
                       taxon tree))))
 
 (defthm get-containing-works
   (implies (member-gen taxon (mytips tree))
-           (member-gen taxon 
+           (member-gen taxon
                        (mytips
-                        (get-top-containing-subtree-of-taxon 
-                         taxon 
+                        (get-top-containing-subtree-of-taxon
+                         taxon
                          tree)))))
 
 (defthm len-path-number
@@ -245,7 +245,7 @@
                     (member-gen a (mytips acc))
                   t)
                 (not (equal a b)))
-           (member-gen a (mytips 
+           (member-gen a (mytips
                           (least-common-ancestor flg a b tree acc)))))
 
 (defthm member-gen-tips-of-lca-2
@@ -256,7 +256,7 @@
                     (member-gen b (mytips acc))
                   t)
                 (not (equal a b)))
-           (member-gen b (mytips 
+           (member-gen b (mytips
                           (least-common-ancestor flg a b tree acc)))))
 
 (defthm member-gen-tips-of-lca-3
@@ -264,7 +264,7 @@
                 (member-gen b (mytips tree))
                 (taspip t tree)
                 (not (equal a b)))
-           (member-gen a (mytips 
+           (member-gen a (mytips
                           (lca a b tree)))))
 
 (defthm member-gen-tips-of-lca-4
@@ -272,7 +272,7 @@
                 (member-gen b (mytips tree))
                 (taspip t tree)
                 (not (equal a b)))
-           (member-gen b (mytips 
+           (member-gen b (mytips
                           (lca a b tree)))))
 
 (in-theory (disable lca))
@@ -290,7 +290,7 @@
 ;    (1) a - a taxon name
 ;    (2) b - a taxon name
 ;    (3) tree - a tree
-;  
+;
 ;  Details: Requires tree representation to be rooted at a node."
   (declare (xargs :guard (and (taspip t tree)
                               (member-gen a (mytips tree))
@@ -300,7 +300,7 @@
     (let ((lca (lca a b tree)))
       (+ (len-path-to-taxon a lca 1)
          (len-path-to-taxon b lca 1)))))
-         
+
 (defun path-distance-brlens (a b tree)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
@@ -313,7 +313,7 @@
 ;    (1) a - a taxon name
 ;    (2) b - a taxon name
 ;    (3) tree - a tree with branch lengths
-;  
+;
 ;  Details: Requires tree representation to be rooted at a node."
   (declare (xargs :guard t))
   (if (equal a b)
@@ -335,7 +335,7 @@
 
 (defun find-max-pair-dist-help (taxon rest tree curMax)
   (declare (xargs :guard (rationalp curMax)
-                  :guard-hints (("Subgoal 2'''" 
+                  :guard-hints (("Subgoal 2'''"
                                  :in-theory (disable len-path-rational)
                                  :use ((:instance len-path-rational
                                                   (tree (lca taxon rest1 tree))
@@ -344,7 +344,7 @@
                                        (:instance len-path-rational
                                                   (tree (lca taxon rest1 tree))
                                                   (acc 1))))
-                                ("Subgoal 1'''" 
+                                ("Subgoal 1'''"
                                  :in-theory (disable len-path-rational)
                                  :use ((:instance len-path-rational
                                                   (tree (lca taxon rest1 tree))
@@ -357,10 +357,10 @@
            (member-gen taxon (mytips tree)))
       (if (consp rest)
           (if (member-gen (car rest) (mytips tree))
-              (find-max-pair-dist-help 
+              (find-max-pair-dist-help
                taxon (cdr rest) tree
-               (max curMax 
-                    (path-distance-no-brlens taxon 
+               (max curMax
+                    (path-distance-no-brlens taxon
                                              (car rest) tree)))
             0)
         curMax)
@@ -374,7 +374,7 @@
                                            tree)))
         (if (rationalp newMax?)
             (find-max-pair-dist-help-brlens taxon (cdr rest) tree
-                                            (max curMax 
+                                            (max curMax
                                                  newMax?))
           0))
     curMax))
@@ -395,7 +395,7 @@
 (defun find-max-pair-dist (taxa tree curMax)
   (declare (xargs :guard (rationalp curMax)))
   (if (consp taxa)
-      (find-max-pair-dist 
+      (find-max-pair-dist
        (cdr taxa)
        tree
        (find-max-pair-dist-help (car taxa) (cdr taxa) tree curMax))
@@ -418,10 +418,10 @@
   (if (subset taxa (mytips curTree))
       (if (consp tree)
           (if (subset taxa (mytips (car tree)))
-              (get-containing-subtree-of-taxa-help 
-               taxa (car tree) 
+              (get-containing-subtree-of-taxa-help
+               taxa (car tree)
                (car tree))
-            (get-containing-subtree-of-taxa-help 
+            (get-containing-subtree-of-taxa-help
              taxa (cdr tree)
              curTree))
         curTree)
@@ -439,7 +439,7 @@
 ;  Arguments:
 ;    (1) taxa - a list of taxa names
 ;    (2) tree - a tree
-;  
+;
 ;  Details: Assumes a rooted tree with no branch lengths (see also
 ;           get-containing-subtree-of-taxa-brlens)."
   (declare (xargs :guard t))
@@ -456,8 +456,8 @@
 ;  Arguments:
 ;    (1) taxa - a list of taxa names
 ;    (2) tree - a tree
-;  
-;  Details: Assumes a rooted tree.  Does not preserve branch lengths if 
+;
+;  Details: Assumes a rooted tree.  Does not preserve branch lengths if
 ;           present (see also get-containing-subtree-of-taxa)."
   (declare (xargs :guard t))
   (get-containing-subtree-of-taxa taxa (remove-brlens tree)))
@@ -474,7 +474,7 @@
 ;  Arguments:
 ;    (1) taxa - a list of taxa names
 ;    (2) tree - a tree
-;  
+;
 ;  Details: Assumes a rooted tree with no branch lengths (see also
 ;           monophyletic?-brlens)."
   (declare (xargs :guard t))
@@ -495,8 +495,8 @@
 ;  Arguments:
 ;    (1) taxa - a list of taxa names
 ;    (2) tree - a tree
-;  
-;  Details: Assumes a rooted tree.  Does not preserve branch lengths if 
+;
+;  Details: Assumes a rooted tree.  Does not preserve branch lengths if
 ;           present (see also monophyletic?-brlens)."
   (declare (xargs :guard t))
   (monophyletic? taxa (remove-brlens tree)))
@@ -524,11 +524,11 @@
            (treep (difference taxa-list taxa)))
       (let ((bfringes (term-to-bfringes tree taxa-list))
             (taxa-fringe (term-to-bfringes taxa taxa-list))
-            (not-taxa-fringe (term-to-bfringes 
+            (not-taxa-fringe (term-to-bfringes
                               (difference taxa-list taxa)
                               taxa-list)))
         (check-for-fringe-membership (car taxa-fringe)
-                                     (car not-taxa-fringe) 
+                                     (car not-taxa-fringe)
                                      bfringes))
     (perm taxa tree)))
 
@@ -544,7 +544,7 @@
 ;  Arguments:
 ;    (1) taxa - a list of taxa names
 ;    (2) tree - an unrooted tree
-;  
+;
 ;  Details: Assumes an unrooted tree with no branch lengths (see also
 ;           root-to-monophyletic?-brlens). Does not return monophyletic
 ;           structure if present."
@@ -570,7 +570,7 @@
 ;  Arguments:
 ;    (1) taxa - a list of taxa names
 ;    (2) tree - an unrooted tree
-;  
+;
 ;  Details: Assumes an unrooted tree.  Does not preserve structure (see also
 ;           root-to-monophyletic?)."
   (declare (xargs :guard t))
@@ -589,7 +589,7 @@
 ;              nil for a set of trees
 ;    (2) keep - a list of taxa names
 ;    (2) x - a tree
-;  
+;
 ;  Details: Does not matter if branch lengths are present or not, but
 ;           resulting trees will not have branch lengths."
   (declare (xargs :guard t
@@ -633,19 +633,19 @@
                 (tree-listp (project nil keep x))))
   :rule-classes nil
   :hints (("Goal" :induct (tree-p-induction x flg))))
- 
+
 (defthm treep-through-project
   (implies (and (treep x)
                 (not (equal (project t keep x)
                             nil)))
            (treep (project t keep x)))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
            (:instance project-produces-treep))))
 
 (defthm tree-listp-through-project
   (implies (tree-listp x)
            (tree-listp (project nil keep x)))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
            (:instance project-produces-treep))))
 
 ;(defthm tree-listp-through-project2
@@ -666,18 +666,18 @@
 ;    (2) keep - a list of taxa names
 ;    (3) tree - a tree
 ;    (4) taxa-list - a list of taxa names
-;  
+;
 ;  Details: Assumes tree does not have branch lengths.  Resulting tree will be
 ;           ordered according to the taxa list given, and if the tree is
 ;           unrooted, its representation will be rooted at the node at which
-;           the least taxon is connected to the rest of the tree." 
+;           the least taxon is connected to the rest of the tree."
   (declare (xargs :guard t))
   (if (and (good-taxon-index-halist (taxa-list-to-taxon-index taxa-list))
            (taspip t (project t keep tree))
            (subset (mytips (project t keep tree))
                    (get-taxa-from-taxon-index
                     (taxa-list-to-taxon-index taxa-list))))
-      (let ((ordered-projection 
+      (let ((ordered-projection
              (order-by-merge (project t keep tree)
                              (taxa-list-to-taxon-index taxa-list))))
         (if rooted?
@@ -688,7 +688,7 @@
 #|| EXAMPLES:
 
 (len-path-to-taxon 'a '((a v) (d g)) 0)
-(len-path-to-taxon 'f 
+(len-path-to-taxon 'f
                    '((((a b) c) (d e)) (f ((g h) (i j))))
                    1)
 (len-path-to-taxon 'c
@@ -700,18 +700,18 @@
 (lca 'a 'x '((a . 3) (((b . 2) (x . 4)) . 5)))
 (lca 'b 'x '((a . 3) (((b . 2) (x . 4)) . 5)))
 
-(path-distance-no-brlens 
+(path-distance-no-brlens
  'a 'b '((((a b) c) (d e)) (f ((g h) (i j)))))
 (path-distance-no-brlens ;rooted
  'a 'g '((((a b) c) (d e)) (f ((g h) (i j)))))
 (path-distance-no-brlens ; unrooted
  'a 'g '(((a b) c) (d e) (f ((g h) (i j)))))
 
-(get-containing-subtree-of-taxa 
- '(a b g) 
+(get-containing-subtree-of-taxa
+ '(a b g)
  '((((a b) c) (d e)) (f ((g h) (i j)))))
-(get-containing-subtree-of-taxa 
- '(a d) 
+(get-containing-subtree-of-taxa
+ '(a d)
  '((((a b) c) (d e)) (f ((g h) (i j)))))
 (get-containing-subtree-of-taxa-brlens
  '(a b)
@@ -724,61 +724,61 @@
 (monophyletic? '(j h i g) '(((a b) c) (d e) (f ((g h) (i j)))))
 (monophyletic?-brlens '(b e) '((a . 4) ((b . 4) (c . 2)) (e . g)))
 (monophyletic?-brlens '(b c) '((a . 4) (((b . 4) (c . 2)) . 1) (e . g)))
-(monophyletic? '(a b c d e f) 
+(monophyletic? '(a b c d e f)
                '(((a b) c) (d e) (f ((g h) (i j)))))
 
-(root-to-monophyletic? '(a b c d e f) 
+(root-to-monophyletic? '(a b c d e f)
                        '(((a b) c) (d e) (f ((g h) (i j)))))
-(root-to-monophyletic?-brlens '(a b c d e f) 
-                       '(((a b) c) (((d . 2) (e . 5)) . 5) 
-                         (f ((g h) (i j)))))       
+(root-to-monophyletic?-brlens '(a b c d e f)
+                       '(((a b) c) (((d . 2) (e . 5)) . 5)
+                         (f ((g h) (i j)))))
 
 (project t '(a e g j) '(((a b) c) (d e) (f ((g h) (i j)))))
 (project t '(a b f g j) '(((a b) c) (d e) (f ((g h) (i j)))))
 (project t '(a b) '((a . 4) (((b . 4) (c . 2)) . 1) (e . g)))
-(project t '(a e g j) 
-         '(((((a . 4) b) . 3) c) ((d . 3) e) 
+(project t '(a e g j)
+         '(((((a . 4) b) . 3) c) ((d . 3) e)
            ((f . 3) ((((g . 3) (h . 4)) . 5) (i (j . 7))))))
 
-(project-with-normalize 
- t '(a e g j) 
- '(((((a . 4) b) . 3) c) ((d . 3) e) 
+(project-with-normalize
+ t '(a e g j)
+ '(((((a . 4) b) . 3) c) ((d . 3) e)
    ((f . 3) ((((g . 3) (h . 4)) . 5) (i (j . 7)))))
  '(g e a j))
 
 
-(treep-num-brlens '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5) 
-                    (((d . 3) (e . 5)) . 6) 
-                    (((f . 3) 
-                      (((((g . 3) (h . 4)) . 5) 
+(treep-num-brlens '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5)
+                    (((d . 3) (e . 5)) . 6)
+                    (((f . 3)
+                      (((((g . 3) (h . 4)) . 5)
                         (((i . 9) (j . 7)) . 4)) . 6)) . 7)
                     ))
 
-(len-path-to-taxon-brlens 'f '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5) 
-                    (((d . 3) (e . 5)) . 6) 
-                    (((f . 3) 
-                      (((((g . 3) (h . 4)) . 5) 
+(len-path-to-taxon-brlens 'f '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5)
+                    (((d . 3) (e . 5)) . 6)
+                    (((f . 3)
+                      (((((g . 3) (h . 4)) . 5)
                         (((i . 9) (j . 7)) . 4)) . 6)) . 7)
                     ) 0)
 
-(path-distance-brlens 'a 'c '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5) 
-                    (((d . 3) (e . 5)) . 6) 
-                    (((f . 3) 
-                      (((((g . 3) (h . 4)) . 5) 
+(path-distance-brlens 'a 'c '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5)
+                    (((d . 3) (e . 5)) . 6)
+                    (((f . 3)
+                      (((((g . 3) (h . 4)) . 5)
                         (((i . 9) (j . 7)) . 4)) . 6)) . 7)
                     ))
 
-(path-distance-brlens 'a 'g '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5) 
-                    (((d . 3) (e . 5)) . 6) 
-                    (((f . 3) 
-                      (((((g . 3) (h . 4)) . 5) 
+(path-distance-brlens 'a 'g '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5)
+                    (((d . 3) (e . 5)) . 6)
+                    (((f . 3)
+                      (((((g . 3) (h . 4)) . 5)
                         (((i . 9) (j . 7)) . 4)) . 6)) . 7)
                     ))
 
-(path-distance-brlens 'b 'g '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5) 
-                    (((d . 3) (e . 5)) . 6) 
-                    (((f . 3) 
-                      (((((g . 3) (h . 4)) . 5) 
+(path-distance-brlens 'b 'g '((((((a . 4) (b . 5)) . 3) (c . 2)) . 5)
+                    (((d . 3) (e . 5)) . 6)
+                    (((f . 3)
+                      (((((g . 3) (h . 4)) . 5)
                         (((i . 9) (j . 7)) . 4)) . 6)) . 7)
                     ))
 

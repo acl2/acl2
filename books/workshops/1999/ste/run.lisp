@@ -310,7 +310,7 @@
 		)
 	   (r-lte (r-lub r1 r2) r)))
 (defthm not-r-lte-1-implies-not-r-lte-r-lub
-  (implies 
+  (implies
    (and (r-p r)
 	(r-p r1)
 	(r-p r2)
@@ -325,7 +325,7 @@
   :hints (("Goal" :do-not '(generalize fertilize) )) )
 
 (defthm not-r-lte-2-implies-not-r-lte-r-lub
-  (implies 
+  (implies
    (and (r-p r)
 	(r-p r1)
 	(r-p r2)
@@ -337,7 +337,7 @@
 	(not (r-lte r2 r))
 	)
    (not (r-lte (r-lub r1 r2) r)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance not-r-lte-1-implies-not-r-lte-r-lub
 			    (r1 r2) (r2 r1))
 		 (:instance r-lub-commutes))

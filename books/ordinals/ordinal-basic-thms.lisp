@@ -20,7 +20,7 @@
 	 b))
 
 (defthm make-ord-o-rst
-  (equal (o-rst (make-ord a b c)) 
+  (equal (o-rst (make-ord a b c))
 	 c))
 
 (defthm make-ord-o-infp
@@ -60,7 +60,7 @@
  (defthm make-ord-def-consp
    (equal (cons (cons a b) c)
 	  (make-ord a b c))))
-		
+
 (in-theory (disable make-ord))
 
 ;theorems about omega
@@ -119,7 +119,7 @@
 (defthm o-first-expt-o-p
   (implies (o-p a)
 	   (o-p (o-first-expt a)))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :trigger-terms ((o-first-expt a)))
                  (:rewrite :backchain-limit-lst (5))))
 
@@ -450,6 +450,6 @@
   :rule-classes :definition)
 
 (in-theory (disable dropn))
- 
+
 (verify-guards count2)
 

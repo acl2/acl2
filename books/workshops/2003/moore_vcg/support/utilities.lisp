@@ -217,6 +217,6 @@ J Moore
 (defthm run-append
   (equal (run (append sched1 sched2) s)
          (run sched2 (run sched1 s))))
-  
+
 (in-theory (disable run))
 

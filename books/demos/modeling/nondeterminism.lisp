@@ -47,7 +47,7 @@
 
  ) ; end encapsulate
 
-(local 
+(local
  (defthm foo-returns-atom-lemma
    (implies (booleanp x)
             (atom x))))

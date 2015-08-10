@@ -28,7 +28,7 @@
   (declare (xargs :mode :program))
   (cond ((endp lst) nil)
         ((member-eq (caar lst) '(type ignore ignorable))
-         (cond ((member-eq (caar lst) fields) 
+         (cond ((member-eq (caar lst) fields)
                 (strip-dcls-program-mode1 fields (cdr lst)))
                (t (cons (car lst) (strip-dcls-program-mode1 fields (cdr lst))))))
         (t
@@ -41,9 +41,9 @@
   (declare (xargs :mode :program))
   (cond ((endp lst) nil)
         ((stringp (car lst))
-         (cond ((member-eq 'comment fields) 
+         (cond ((member-eq 'comment fields)
                 (strip-dcls-program-mode fields (cdr lst)))
-               (t (cons (car lst) 
+               (t (cons (car lst)
                         (strip-dcls-program-mode fields (cdr lst))))))
         (t (let ((temp (strip-dcls-program-mode1 fields (cdar lst))))
              (cond ((null temp) (strip-dcls-program-mode fields (cdr lst)))
@@ -53,7 +53,7 @@
 (defun fetch-dcl-fields-program-mode2 (field-names kwd-list acc)
   (declare (xargs :mode :program))
   (cond ((endp kwd-list) acc)
-        (t (let ((acc (fetch-dcl-fields-program-mode2 field-names 
+        (t (let ((acc (fetch-dcl-fields-program-mode2 field-names
                                                       (cddr kwd-list)
                                                       acc)))
              (if (member-eq (car kwd-list) field-names)
@@ -65,21 +65,21 @@
   (cond ((endp lst) nil)
         ((member-eq (caar lst) '(type ignore ignorable))
          (if (member-eq (caar lst) field-names)
-             (cons (cdar lst) 
+             (cons (cdar lst)
                    (fetch-dcl-fields-program-mode1 field-names (cdr lst)))
            (fetch-dcl-fields-program-mode1 field-names (cdr lst))))
         (t (fetch-dcl-fields-program-mode2 field-names
                                            (cdar lst)
-                                           (fetch-dcl-fields-program-mode1 
+                                           (fetch-dcl-fields-program-mode1
                                             field-names
                                             (cdr lst))))))
 
 (defun fetch-dcl-fields-program-mode (field-names lst)
-  (declare (xargs :mode :program)) 
+  (declare (xargs :mode :program))
   (cond ((endp lst) nil)
         ((stringp (car lst))
          (if (member-eq 'comment field-names)
-             (cons (car lst) 
+             (cons (car lst)
                    (fetch-dcl-fields-program-mode field-names (cdr lst)))
            (fetch-dcl-fields-program-mode field-names (cdr lst))))
         (t (append (fetch-dcl-fields-program-mode1 field-names (cdar lst))
@@ -91,7 +91,7 @@
 
 ;; ============================================================================
 ;; Some (more) helper functions for defun+
-;; ============================================================================     
+;; ============================================================================
 
 (defun generate-output-lemma-name (name number)
   (if (not number)
@@ -111,7 +111,7 @@
       (implies ,guards
                ,output)
       :hints ,output-hints)))
-  
+
 (defun generate-output-lemma-multiple (name guards output number)
   (if (atom output)
       nil
@@ -130,7 +130,7 @@
 
 ;; ============================================================================
 ;; Definition of defun+
-;; ============================================================================     
+;; ============================================================================
 
 (defmacro defun+ (name formals dcl body &key disable)
   (let* ((guards (car (fetch-dcl-field-program-mode :guard (list dcl))))
@@ -168,7 +168,7 @@
                    :output-hints (("Goal" :do-not-induct t))))
    (+ x y z)))
 
-(local 
+(local
  (defun+ faz (x y z)
    (declare (xargs :guard (and (integerp x)
                                (integerp y)

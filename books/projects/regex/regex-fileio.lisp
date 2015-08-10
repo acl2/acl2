@@ -30,13 +30,13 @@
   (if (mbt (state-p state))
       (mv-let (ch state)
               (read-char$ channel state)
-              (if (null ch) 
+              (if (null ch)
                   (mv nil (coerce (revappend beg nil) 'string) state)
                 (if (equal ch #\Newline)
                     (mv t (coerce (revappend beg nil) 'string) state)
                   (read-line$ channel (cons ch beg) state))))
     (mv nil nil state)))
-  
+
 
 (defthm read-line$-measure-weak
   (<= (file-measure channel
@@ -63,7 +63,7 @@
 (defthm read-line$-open-input-channel
   (implies (and (symbolp channel)
                 (open-input-channel-p1 channel :character state))
-           (open-input-channel-p1 
+           (open-input-channel-p1
             channel :character
             (mv-nth 2 (read-line$ channel beg state)))))
 
@@ -95,9 +95,9 @@
 ;;                           (declare (ignore backrefs))
 ;;                           (if have-match
 ;;                               (grep-through-file
-;;                                regex channel opts (cons matchstr matches) 
+;;                                regex channel opts (cons matchstr matches)
 ;;                                (cons line lines)  state)
-;;                             (grep-through-file regex channel opts 
+;;                             (grep-through-file regex channel opts
 ;;                                                matches lines state)))
 ;;                 (mv (reverse matches) (reverse lines) state)))
 ;;     (mv (reverse matches) (reverse lines) state))))
@@ -109,7 +109,7 @@
 ;;            (open-input-channel-p1
 ;;             channel :character
 ;;             (mv-nth 2 (grep-through-file regex channel opts matches lines state)))))
-                
+
 
 
 ;; (defthm grep-through-state
@@ -136,7 +136,7 @@
 ;;           (mv-let (channel state) (open-input-channel file :character state)
 ;;                   (if (and (symbolp channel)
 ;;                            (open-input-channel-p channel :character state))
-;;                       (mv-let (matches lines state) 
+;;                       (mv-let (matches lines state)
 ;;                               (grep-through-file regex channel opts nil nil state)
 ;;                               (let ((state (close-input-channel channel state)))
 ;;                                 (mv (if matches 0 1) matches lines state)))

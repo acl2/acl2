@@ -20,75 +20,75 @@
 (defstub GetMemWrite(*) => *)
 
 (defun MA-state (
-  pPC 
-  pRF 
+  pPC
+  pRF
   pDMem
-  pIMem 
+  pIMem
   deOP
   deARG1
-  deARG2 
-  deDEST 
-  deWRT 
+  deARG2
+  deDEST
+  deWRT
   mwVAL
   mwDEST
   mwWRT
   fdWRT
   fdINST
   emDEST
-  emWRT 
+  emWRT
   deSRC1
   deSRC2
   deRegWrite
   emRegWrite
   mwRegWrite
-  deImm 
-  deuseImm 
+  deImm
+  deuseImm
   emResult
-  deMemToReg 
+  deMemToReg
   emMemToReg
-  deMemWrite 
+  deMemWrite
   emMemWrite
-  emARG2 
-  pDMemHist_1 
+  emARG2
+  pDMemHist_1
   pPCHist_1
   pPCHist_2
-  pPCHist_3 
+  pPCHist_3
   pPCHist_4
  )
- (seq nil 'type   'MA 
-  'pPC          pPC 
+ (seq nil 'type   'MA
+  'pPC          pPC
   'pRF          pRF
   'pDMem        pDMem
   'pIMem        pIMem
   'deOP         deOP
-  'deARG1       deARG1 
-  'deARG2       deARG2 
+  'deARG1       deARG1
+  'deARG2       deARG2
   'deDEST       deDEST
-  'deWRT        deWRT 
+  'deWRT        deWRT
   'mwVAL        mwVAL
   'mwDEST       mwDEST
   'mwWRT        mwWRT
-  'fdWRT        fdWRT 
+  'fdWRT        fdWRT
   'fdINST       fdINST
   'emDEST       emDEST
-  'emWRT        emWRT 
+  'emWRT        emWRT
   'deSRC1       deSRC1
   'deSRC2       deSRC2
   'deRegWrite   deRegWrite
   'emRegWrite   emRegWrite
   'mwRegWrite   mwRegWrite
-  'deImm        deImm 
-  'deuseImm     deuseImm 
+  'deImm        deImm
+  'deuseImm     deuseImm
   'emResult     emResult
-  'deMemToReg   deMemToReg 
-  'emMemToReg   emMemToReg    
-  'deMemWrite   deMemWrite 
+  'deMemToReg   deMemToReg
+  'emMemToReg   emMemToReg
+  'deMemWrite   deMemWrite
   'emMemWrite   emMemWrite
   'emARG2       emARG2
-  'pDMemHist_1  pDMemHist_1         
+  'pDMemHist_1  pDMemHist_1
   'pPCHist_1    pPCHist_1
   'pPCHist_2    pPCHist_2
-  'pPCHist_3    pPCHist_3 
+  'pPCHist_3    pPCHist_3
   'pPCHist_4    pPCHist_4
 
 ))
@@ -118,7 +118,7 @@
 		mwRegWrite mwVAL commit_impl)
   (cond
    (commit_impl pRF)
-   ((and mwWRT mwRegWrite) 
+   ((and mwWRT mwRegWrite)
     (s mwDEST mwVAL pRF))
    (t pRF)))
 
@@ -140,12 +140,12 @@
   IF_ID_Src2)
 
 (defun nextdeARG1 (pRF mwWRT mwDEST mwRegWrite mwVAL commit_impl IF_ID_Src1)
-    (g IF_ID_Src1 
+    (g IF_ID_Src1
        (nextpRF pRF mwWRT mwDEST mwRegWrite mwVAL commit_impl))
 )
 
 (defun nextdeARG2 (pRF mwWRT mwDEST mwRegWrite mwVAL commit_impl IF_ID_Src2)
-    (g IF_ID_Src2 
+    (g IF_ID_Src2
        (nextpRF pRF mwWRT mwDEST mwRegWrite mwVAL commit_impl))
 )
 
@@ -233,26 +233,26 @@
        (pIMem (g 'pIMem MA))
        (deOP  (g 'deOP MA))
        (deARG1 (g 'deARG1 MA))
-       (deARG2 (g 'deARG2 MA)) 
-       (deDEST (g 'deDEST MA)) 
-       (deWRT  (g 'deWRT MA)) 
+       (deARG2 (g 'deARG2 MA))
+       (deDEST (g 'deDEST MA))
+       (deWRT  (g 'deWRT MA))
        (mwVAL  (g 'mwVAL MA))
        (mwDEST (g 'mwDEST MA))
        (mwWRT  (g 'mwWRT MA))
        (fdWRT  (g 'fdWRT MA))
        (fdINST (g 'fdINST MA))
        (emDEST (g 'emDEST MA))
-       (emWRT  (g 'emWRT MA)) 
+       (emWRT  (g 'emWRT MA))
        (deSRC1 (g 'deSRC1 MA))
        (deSRC2 (g 'deSRC2 MA))
        (deRegWrite (g 'deRegWrite MA))
        (emRegWrite (g 'emRegWrite MA))
        (mwRegWrite (g 'mwRegWrite MA))
        (deImm  (g 'deImm MA))
-       (deuseImm (g 'deuseImm MA)) 
+       (deuseImm (g 'deuseImm MA))
        (emResult (g 'emResult MA))
        (deMemToReg  (g 'deMemToReg MA))
-       (emMemToReg (g 'emMemToReg MA))    
+       (emMemToReg (g 'emMemToReg MA))
        (deMemWrite (g 'deMemWrite MA))
        (emMemWrite (g 'emMemWrite MA))
        (emARG2  (g 'emARG2 MA))
@@ -270,11 +270,11 @@
 			(equal IF_ID_Src2 deDEST))))
 	   (ID_RegWrite (GetRegWrite fdINST))
 	   (ID_MemWrite (GetMemWrite fdINST))
-	   (EX_WB_Equal_Src1 
+	   (EX_WB_Equal_Src1
 	    (and mwWRT
 		 mwRegWrite
 		 (equal deSRC1 mwDEST)))
-	   (EX_WB_Equal_Src2 
+	   (EX_WB_Equal_Src2
 	    (and mwWRT
 		 mwRegWrite
 		 (equal deSRC2 mwDEST)))
@@ -290,11 +290,11 @@
 	    (cond
 	     (deuseImm deImm)
 	     (t EX_WB_Fwd_Src2)))
-	   (Result 
+	   (Result
 	    (alu deOP EX_WB_Fwd_Src1 EX_Data2))
 	   (ReadData  (g emResult pDMem)))
-      (MA-state 
-       (nextpPC pPC stall pPCHist_4 commit_impl) 
+      (MA-state
+       (nextpPC pPC stall pPCHist_4 commit_impl)
        (nextpRF pRF        mwWRT mwDEST
 		mwRegWrite mwVAL commit_impl)
        (nextpDMem commit_impl pDMemHist_1 emWRT
@@ -335,8 +335,8 @@
 ;; Specificaion
 
 (defun ISA-state (sPC sRF sIMem sDMem)
-  (seq nil 'type 'ISA 
-           'sPC   sPC 
+  (seq nil 'type 'ISA
+           'sPC   sPC
 	   'sRF   sRF
 	   'sIMem sIMem
 	   'sDMem sDMem))
@@ -358,7 +358,7 @@
 
 (defun nextsDMem (pDMemHist_1     MemWrite Result
 	          arg2_temp sDMem    project_impl)
-  (cond 
+  (cond
    (project_impl pDMemHist_1)
    (MemWrite (s Result arg2_temp sDMem))
    (t sDMem)))
@@ -376,11 +376,11 @@
 	 (Imm      (GetImm inst))
 	 (arg1 (g (src1 inst) sRF))
 	 (arg2_temp (g (src2 inst) sRF))
-	 (arg2 
+	 (arg2
 	  (cond
 	   (useImm Imm)
 	   (t arg2_temp)))
-	 (Result 
+	 (Result
 	  (alu
 	   (opcode inst)
 	   arg1 arg2))
@@ -389,7 +389,7 @@
 	  (cond
 	   (MemToReg ReadData)
 	   (t Result))))
-    (ISA-state  
+    (ISA-state
      (nextsPC project_impl project_pc sPC)
      (nextsRF project_impl pRF sRF RegWrite val inst)
      (nextsIMem sIMem)
@@ -398,7 +398,7 @@
 
 
 
-;;  Control 
+;;  Control
 
 (defun equiv-ma (ma1 ma2)
    (and (equal (g 'type ma1)
@@ -410,7 +410,7 @@
        (equal (g 'pIMem ma1)
               (g 'pIMem ma2))
        (equal (g 'pDMem ma1)
-              (g 'pDMem ma2))	
+              (g 'pDMem ma2))
        (equal (g 'fdWRT ma1)
               (g 'fdWRT ma2))
        (implies (g 'fdWRT ma1)
@@ -468,12 +468,12 @@
 		     (equal (g 'mwVAL ma1)
 			    (g 'mwVAL ma2))))))
 
-		     
+
 
 (defun Rank (ma)
  (let ((fdWRT (g 'fdWRT ma))
        (deWRT (g 'deWRT ma))
-       (emWRT (g 'emWRT ma)) 
+       (emWRT (g 'emWRT ma))
        (mwWRT (g 'mwWRT ma)))
    (cond
     (mwWRT 0)
@@ -505,16 +505,16 @@
     (bor
      (equiv-ma ma commit-ma)
      (equiv-ma ma (ma-step commit-ma nil))
-     (equiv-ma ma (ma-step 
+     (equiv-ma ma (ma-step
 		   (ma-step commit-ma nil)
 		   nil))
-     (equiv-ma ma (ma-step 
-		   (ma-step 
+     (equiv-ma ma (ma-step
+		   (ma-step
 		    (ma-step commit-ma nil) nil)
 		   nil))
      (equiv-ma ma (ma-step
-		   (ma-step 
-		    (ma-step 
+		   (ma-step
+		    (ma-step
 		     (ma-step commit-ma nil)
 		     nil)
 		    nil)

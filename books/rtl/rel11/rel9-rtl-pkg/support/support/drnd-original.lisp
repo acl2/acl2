@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -162,7 +162,7 @@
     (minf 'inf)
     (t m)))
 
-; bias of a q bit exponent field is 2^(q-1)-1 
+; bias of a q bit exponent field is 2^(q-1)-1
 (defund bias (q) (- (expt 2 (- q 1)) 1) )
 
 
@@ -207,7 +207,7 @@
                             (x (+ x (* (sgn x) (expt 2 (- 2 (expt 2 (1- k))))))))))))
 
 (defthm drnd-original-0
-  (equal (drnd-original 0 mode n k) 
+  (equal (drnd-original 0 mode n k)
          0)
   :hints (("Goal" :in-theory (enable drnd-original))))
 
@@ -237,7 +237,7 @@
 				   (k m)
 				   (k1 (- (+ m 2) (+ (expt 2 (1- k)) (expo x))))
 				   (k2 (- (+ m 2) (+ (expt 2 (1- k)) (expo x)))))
-			(:instance exactp-2**n 
+			(:instance exactp-2**n
 				   (n (- 2 (expt 2 (1- k))))
 				   (m (- (+ m 1) (+ (expt 2 (1- k)) (expo x))))))))))
 
@@ -267,7 +267,7 @@
 		  (> k 0)
 		  (rationalp x)
 		  (>= x (expt 2 (- 2 (expt 2 (1- k)))))
-		  (< x (+ (expt 2 (- 2 (expt 2 (1- k)))) 
+		  (< x (+ (expt 2 (- 2 (expt 2 (1- k))))
 			  (expt 2 (- 3 (+ n (expt 2 (1- k))))))))
 	     (equal (trunc x n)
 		    (expt 2 (- 2 (expt 2 (1- k))))))
@@ -306,10 +306,10 @@
 		  (> k 0)
 		  (rationalp x)
 		  (> x (expt 2 (- 2 (expt 2 (1- k)))))
-		  (<= x (+ (expt 2 (- 2 (expt 2 (1- k)))) 
+		  (<= x (+ (expt 2 (- 2 (expt 2 (1- k))))
 			   (expt 2 (- 3 (+ n (expt 2 (1- k))))))))
 	     (equal (away x n)
-		    (+ (expt 2 (- 2 (expt 2 (1- k)))) 
+		    (+ (expt 2 (- 2 (expt 2 (1- k))))
 		       (expt 2 (- 3 (+ n (expt 2 (1- k))))))))
   :hints (("Goal" :in-theory (disable away-exactp-a away-exactp-c)
 		  :use (away-exactp-a
@@ -559,7 +559,7 @@
                 (integerp k)
                 (> k 0))
            (equal (drnd-original (spn k) mode n k)
-                  (rnd (spn k) 
+                  (rnd (spn k)
                        mode
                        (+ n
                           (- (expo (spn k)))
@@ -570,7 +570,7 @@
 ;      expt-split
 ;     expt-minus
                                       )
-                              '(a15 
+                              '(a15
                                 EXPT-COMPARE-EQUAL))
            :use ((:instance rnd-exactp-b (x (expt 2 (+ 2 (* -1 (bias k))))))
                  (:instance rnd-exactp-b (x (expt 2 (+ 1 (* -1 (bias k))))))
@@ -590,11 +590,11 @@
                        (integerp k)
                        (> k 0))
                   (equal (drnd-original x mode n k)
-                         (rnd x 
+                         (rnd x
                               mode
                               (+ n (- (expo (spn k))) (expo x)))))
          :hints (("goal" :in-theory (set-difference-theories
-                                     (enable drnd-original-def sgn ;common-rounding-mode-p ;ieee-mode-p 
+                                     (enable drnd-original-def sgn ;common-rounding-mode-p ;ieee-mode-p
                                              expt ;expt-split ;why?
                                              ;bias
                                              SPN
@@ -613,7 +613,7 @@
                                    (n (* -1 (bias k)))))))
          :otf-flg t))
 
-(local 
+(local
  (defthmd drnd-original-rewrite-pos
   (implies (and (rationalp x)
                 (<= 0 x)
@@ -624,7 +624,7 @@
                 (integerp k)
                 (> k 0))
            (equal (drnd-original x mode n k)
-                  (rnd x 
+                  (rnd x
                        mode
                        (+ n (- (expo (spn k))) (expo x)))))
   :hints (("goal" :in-theory (disable spn COMMON-ROUNDING-MODE-P)
@@ -641,12 +641,12 @@
                  (integerp k)
                  (> k 0))
             (equal (drnd-original x mode n k)
-                   (rnd x 
+                   (rnd x
                         mode
                         (+ n (- (expo (spn k))) (expo x)))))
    :hints (("goal" :in-theory (enable drnd-original-rewrite-pos )
             :use ((:instance drnd-original-minus (mode (flip mode)))
-                  (:instance 
+                  (:instance
                    rnd-minus (x (- x)) (mode mode)
                    (n (+ -1 n (expo x) (bias k)))))))))
 
@@ -660,10 +660,10 @@
                 (integerp k)
                 (> k 0))
            (equal (drnd-original x mode n k)
-                  (rnd x 
+                  (rnd x
                        mode
-                       (+ n 
-                          (- (expo (spn k))) 
+                       (+ n
+                          (- (expo (spn k)))
                           (expo x)))))
   :hints (("Goal" :in-theory (enable drnd-original-rewrite-pos drnd-original-rewrite-neg))))
 
@@ -706,8 +706,8 @@
            :use (drnd-original-rewrite
                  drepp-range
                  (:instance rnd-exactp-b
-                            (n (+ n 
-                                  (- (expo (spn k))) 
+                            (n (+ n
+                                  (- (expo (spn k)))
                                   (expo x))))))))
 ;move up?
 (defthm spn-1-exact
@@ -745,7 +745,7 @@
                   (:instance exactp-<= (m 1)
                              (x (spn k)))
                   (:instance spn-1-exact)
-                  (:instance rnd-exactp-b 
+                  (:instance rnd-exactp-b
                              (x (spn k))
 ;                             (m mode)
                              (n n))))))
@@ -884,7 +884,7 @@
                                 spn drnd-original-rewrite))
            :use (drnd-original-trunc-skips-no-denormals
                  (:instance smallest-spn-support (x a))))
-          ("goal'" 
+          ("goal'"
            :cases ((and (nrepp a n k) (< (abs x) (spn k)))
                    (and (drepp a n k) (< (abs x) (spn k)))))))
 
@@ -930,7 +930,7 @@
                 (drepp x n k))
            (>= (abs x) (spd n k)))
   :hints (("goal" :in-theory (enable drepp SPD)
-           :use (sig-lower-bound 
+           :use (sig-lower-bound
                  fp-abs
                  (:instance expt-weak-monotone
                             (n (+ 2 (* -1 n) (* -1 (bias k))))
@@ -959,7 +959,7 @@
            (= (drnd-original x 'trunc n k)
               0))
   :hints (("Goal" :in-theory (set-difference-theories
-                              (enable drnd-original-rewrite rnd sgn 
+                              (enable drnd-original-rewrite rnd sgn
                                       SPD
                                       SPN
                                       bias ;drop?
@@ -971,7 +971,7 @@
                                 EXPT-COMPARE-EQUAL
                                 EXPT-COMPARE
                                 ))
-           :use ((:instance expt-strong-monotone 
+           :use ((:instance expt-strong-monotone
                             (n (expo (spd n k)))
                             (m (expo (spn k))))
                  (:instance trunc-to-0-or-fewer-bits
@@ -994,14 +994,14 @@
            (= (drnd-original x 'away n k)
               (* (sgn x) (spd n k))))
   :hints (("Goal"  :in-theory (set-difference-theories
-                               (enable drnd-original-rewrite rnd sgn bias 
+                               (enable drnd-original-rewrite rnd sgn bias
                                        spn
                                        spd)
                                '(a15 ;
                                                                  EXPT-COMPARE-EQUAL
                                 EXPT-COMPARE
                                      ))
-           :use ((:instance expt-strong-monotone 
+           :use ((:instance expt-strong-monotone
                             (n (expo (spd n k)))
                             (m (expo (spn k))))
 ;                 (:instance away-to-0-or-fewer-bits
@@ -1025,7 +1025,7 @@
 ;  :rule-classes :linear
   :hints (("Goal" :in-theory (enable spd
                                      spn)
-           :use (:instance expt-strong-monotone 
+           :use (:instance expt-strong-monotone
                                   (n (+ 2 (* -1 N) (* -1 (bias k))))
                                   (m (+ 1          (* -1 (bias k))))))))
 
@@ -1063,7 +1063,7 @@
                               (enable rnd inf minf near near+ ieee-mode-p common-rounding-mode-p sgn drnd-original-rewrite
                                       )
                               '(spd
-                                spn 
+                                spn
                                 abs
                                 abs-away
                                 drnd-original-away-of-low-range
@@ -1132,8 +1132,8 @@
   :hints (("goal" :in-theory (enable drepp bias; SPN
 ;                                     spd
                                      largest-positive-denormal)
-           :use 
-           (:instance expt-strong-monotone 
+           :use
+           (:instance expt-strong-monotone
                       (n (+ 2 (* -1 n) (* -1 (bias k))))
                       (m (+ 1 (* -1 (bias k)))))))
   :rule-classes (:rewrite :linear))
@@ -1159,7 +1159,7 @@
                 (integerp k)
                 (> k 0))
            (= (expo (largest-positive-denormal n k))
-              (1- (expo (spn k)))))  
+              (1- (expo (spn k)))))
   :hints (("Goal" :in-theory (enable largest-positive-denormal
                                      SPN
                                      spd))))
@@ -1206,7 +1206,7 @@
                               '(expo-lpd exactness-of-lpd))
            :use ( (:instance expo-lpd)
                   (:instance exactness-of-lpd)
-                  (:instance expt-strong-monotone 
+                  (:instance expt-strong-monotone
                              (n (+ 3 (* -1 n) (* -1 (EXPT 2 (1- k)))))
                              (m (+ 2 (* -1 (EXPT 2 (1- k))))))))))
 
@@ -1332,7 +1332,7 @@
                                                     (bias k))))
                  (:instance expo>= (n (+ 2 (- n) (- (bias k)))))))))
 
-(local 
+(local
  (defthm hack3
    (implies (and (equal (expo x) (- 1 (expt 2 (1- k))))
                  (rationalp x)
@@ -1345,7 +1345,7 @@
                         (+ 3 (* -1 n)
                            (* -1 (expt 2 (1- k))))))
                (expt 2 (+ 2 (* -1 (expt 2 (1- k)))))))
-   :rule-classes nil 
+   :rule-classes nil
    :hints (("Goal" :in-theory (disable   REARRANGE-NEGATIVE-COEFS-EQUAL)))))
 
 
@@ -1510,7 +1510,7 @@
            :use ((:instance a15 (i 2) (j1 1) (j2 (+ 3 (* -1 n) (* -1 (expt 2 (1- k))))))
                  (:instance expt-weak-monotone (n (+ 4 (* -1 n)
                          (* -1 (expt 2 (1- k)))))
-           
+
                        (m (+ 2 (* -1 (expt 2 (1- k))))))))))
 #|
 ;BOZO kill move
@@ -1518,7 +1518,7 @@
     (implies (and (rationalp (* x y))
 		  (not (= (* x y) 0))
 		  (integerp n))
-	     (= (expo (* y (expt 2 n) x)) 
+	     (= (expo (* y (expt 2 n) x))
 		(+ n (expo (* x y)))))
   :hints (("Goal" :use (:instance sig-expo-shift (x (* x y ))))))
 |#
@@ -1529,7 +1529,7 @@
                 (> n 1)
                 (integerp k)
                 (> k 0))
-           (<= (expt 2 (- (expo (spn k)) 1)) 
+           (<= (expt 2 (- (expo (spn k)) 1))
                (largest-positive-denormal n k)))
   :hints (("goal" :in-theory (set-difference-theories
                               (enable expt-split
@@ -1557,7 +1557,7 @@
                                       expo-of-high-range-2-1
                                       spn
                                       ))
-           :use  expo-of-high-range-2-1)))   
+           :use  expo-of-high-range-2-1)))
 
 
 (defthm expo-of-high-range
@@ -1588,7 +1588,7 @@
                   (spn k)))
   :hints (("Goal" :in-theory (enable expo>=-2 largest-positive-denormal spn
                                      SPD))))
-                       
+
 (defthm drnd-original-trunc-of-high-range-1
   (implies (and (rationalp x)
                 (< (largest-positive-denormal n k) x)
@@ -1601,12 +1601,12 @@
                (largest-positive-denormal n k)))
   :hints (("goal" :in-theory (set-difference-theories
                               (enable rnd drnd-original-rewrite)
-                              '(drnd-original-trunc-skips-no-denormals 
+                              '(drnd-original-trunc-skips-no-denormals
                                 spn
                                 largest-positive-denormal
                                 rnd-exactp-d
                                 ))
-           :use ((:instance drnd-original-trunc-skips-no-denormals 
+           :use ((:instance drnd-original-trunc-skips-no-denormals
                             (a (largest-positive-denormal n k))
                             )))))
 
@@ -1628,9 +1628,9 @@
                                 rnd-exactp-d
                                 ;; expo-of-high-range
                                 ))
-           :use ((:instance fp+2 
-                            (y (trunc x (+ n 
-                                                (- (expo (spn k))) 
+           :use ((:instance fp+2
+                            (y (trunc x (+ n
+                                                (- (expo (spn k)))
                                                 (expo x))))
                             (x (largest-positive-denormal n k))
                             (n (- n 1)))))))
@@ -1692,8 +1692,8 @@
            :use ( spn-1-exact
                   (:instance exactp-<= (x (spn k)) (m 1) (n (- n 1)))
                   (:instance away-exactp-c (a (spn k))
-                             (n (+ n 
-                                   (- (expo (spn k))) 
+                             (n (+ n
+                                   (- (expo (spn k)))
                                    (expo x))))))))
 
 (defthm drnd-original-away-of-high-range-2
@@ -1713,9 +1713,9 @@
                                 rnd-exactp-d))
            :use ((:instance exactp-<= (x (spn k)) (m 1) (n
                                                                               (- n 1)))
-                 (:instance fp+2 
-                            (y (away x (+ n 
-                                          (- (expo (spn k))) 
+                 (:instance fp+2
+                            (y (away x (+ n
+                                          (- (expo (spn k)))
                                           (expo x))))
                             (x (largest-positive-denormal n k))
                             (n (- n 1)))))))
@@ -1730,7 +1730,7 @@
                 (> k 0))
            (= (drnd-original x 'away n k)
                (spn k)))
-  :hints (("goal" :in-theory (disable 
+  :hints (("goal" :in-theory (disable
                               drnd-original-rewrite
                               spn
                               largest-positive-denormal
@@ -1787,12 +1787,12 @@
                               (enable rnd inf minf near ieee-mode-p common-rounding-mode-p sgn)
                               '(spd
                                 drnd-original-rewrite
-                                spn 
+                                spn
                                 abs-away
                                 common-rounding-mode-p
                                 rearrange-negative-coefs-equal))
            :use (drnd-original-choice)))
-  :rule-classes nil) 
+  :rule-classes nil)
 
 ;add?
 ;gen?
@@ -1840,7 +1840,7 @@
            :otf-flg t
            :hints (("goal" :in-theory (set-difference-theories
                               (enable sgn DRND-ORIGINAL-SPN-IS-SPN-GENERAL)
-                              '(drnd-original-rewrite 
+                              '(drnd-original-rewrite
                                 drepp-drnd-original-mid-range
                                 drnd-original-spd-is-spd-general
                                 spd
@@ -1893,12 +1893,12 @@
                 (> k 0)
                 (common-rounding-mode-p mode))
            (< (abs (- x (drnd-original x mode n k))) (spd n k)))
-  :hints (("Goal'" 
-           :cases ((> (+ n 
-                         (- (expo (spn k))) 
+  :hints (("Goal'"
+           :cases ((> (+ n
+                         (- (expo (spn k)))
                          (expo x)) 0)))
           ("goal" :in-theory (set-difference-theories
-                              (enable rnd 
+                              (enable rnd
                                       drnd-original-rewrite
                                       SPD
                                       ;bias
@@ -1932,12 +1932,12 @@
   (fp+ x (+ -1 n (expo x) (bias k))))
 
 (defund next-denormal (x n k)
-  (+ x (spd n k))) 
+  (+ x (spd n k)))
 
 (defthmd denormals-same
-  (equal (next-denormal-2 x n k) 
+  (equal (next-denormal-2 x n k)
          (next-denormal x n k))
-  :hints (("Goal" :in-theory (enable next-denormal next-denormal-2 
+  :hints (("Goal" :in-theory (enable next-denormal next-denormal-2
                                      SPD)))
   )
 
@@ -1972,7 +1972,7 @@
                               '(fp+ fp+-expo))
            :use ((:instance fp+-expo (y x+)
                             (n (+ -2 N (EXPO X) (EXPT 2 (1- K)))))
-                 (:instance fp+2 
+                 (:instance fp+2
                             (y x+)
                             (n (+ -1 n (expo x) (bias k))))))))
 
@@ -2011,7 +2011,7 @@
                                 drnd-original-rewrite
                                 largest-lpd
                                 denormal-spacing
-                                
+
 ;                                DRND-ORIGINAL-SPD-IS-SPD-GENERAL ;these two for efficiency
  ;                               DRND-ORIGINAL-SPN-IS-SPN-GENERAL ;
                                  ))
@@ -2048,13 +2048,13 @@
 ;                                DRND-ORIGINAL-SPD-IS-SPD-GENERAL ;these two for efficiency
  ;                               DRND-ORIGINAL-SPN-IS-SPN-GENERAL
                                 ))
-                                
+
            :use ((:instance drnd-original-non-pos (mode 'away))
                  (:instance drnd-original-away-skips-no-denormals-pos)
                  (:instance drnd-original-away-skips-no-denormals-pos (a (- a)) (x (- x)))
                  (:instance drnd-original-away-skips-no-denormals-pos (x (- x)))
                  (:instance drnd-original-away-skips-no-denormals-pos (a (- a)))))))
-  
+
 ;BOZO
 ;(in-theory (disable SPN BIAS DREPP))
 
@@ -2069,7 +2069,7 @@
                 (>= a x))
            (>= a (drnd-original x 'inf n k)))
   :hints (("Goal" :in-theory (set-difference-theories
-                              (enable rnd ;drepp 
+                              (enable rnd ;drepp
                                       inf
                                       drnd-original-rewrite)
                               '(;drnd-original-rewrite
@@ -2089,7 +2089,7 @@
                 (<= a x))
            (<= a (drnd-original x 'minf n k)))
   :hints (("Goal" :in-theory (set-difference-theories
-                              (enable rnd ;drepp 
+                              (enable rnd ;drepp
                                       drnd-original-rewrite
                                       minf)
                               '(
@@ -2100,7 +2100,7 @@
 
 
 
-(local 
+(local
  (defthm hack1
    (implies (and (< n 0)
                  (>= x 0)
@@ -2112,7 +2112,7 @@
    :hints (("Goal" :use (:instance expo<=-2 (n (+ (EXPO X) (* -1 N))))))))
 
 ;BOZO this hack shouldn't be needed
-(local 
+(local
  (defthm hack2
    (implies (and (rationalp x)
                  (integerp n)
@@ -2167,7 +2167,7 @@
                   )))))
 
 
-;BOZO could replace the version in near.lisp 
+;BOZO could replace the version in near.lisp
 (defthm near1-b-eric
     (implies (and (rationalp x)
 		  (>= x 0)
@@ -2196,7 +2196,7 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable rnd bias drnd-original-rewrite)
-                              '(  away-exactp-c 
+                              '(  away-exactp-c
 				      near trunc-exactp-c
                                       drnd-original-away-skips-no-denormals
                                       drnd-original-trunc-skips-no-denormals
@@ -2224,7 +2224,7 @@
                               (enable rnd bias drnd-original-rewrite)
                               '( drnd-original-away-skips-no-denormals
                                  drnd-original-trunc-skips-no-denormals
-                                 away-exactp-c 
+                                 away-exactp-c
                                  trunc-exactp-c
                                  ))
            :use ((:instance near1-a (n (+ -2 N (EXPO X) (EXPT 2 (1- K)))))
@@ -2355,4 +2355,4 @@
 
 
 
- 
+

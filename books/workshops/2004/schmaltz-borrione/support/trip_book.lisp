@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -58,7 +58,7 @@
                        cw
                      (if (equal where_i_go (+ -1 (* 4 N)))
                          ;; then I go counter-clockwise
-                         ccw 
+                         ccw
                        ;; else I go across
                        acr))))
           ;; case 2 where_i_am = (* 4 N) - 1
@@ -78,12 +78,12 @@
                          ccw
                        ;; across
                        acr))))
-          (t ;; case 3: 0 < (nth 0 route_pair) < N - 1 
+          (t ;; case 3: 0 < (nth 0 route_pair) < N - 1
            (mv-let (node cw ccw acr)
                    (switch msg nil nil nil
                            where_i_am
-                           (+ -1 where_i_am) (+ 1 where_i_am) 
-                           ;; the from_accross_nb is 
+                           (+ -1 where_i_am) (+ 1 where_i_am)
+                           ;; the from_accross_nb is
                            (if (< where_i_am (* 2 N))
                                (+ where_i_am (* 2 N))
                              (+ where_i_am (* -2 N)))
@@ -105,7 +105,7 @@
 
 (defun nth_travel_step (msg route_triple N)
   ;; definition of the general step of a travel
-  ;; N gives the number of nodes in a quarter 
+  ;; N gives the number of nodes in a quarter
   (let ((where_i_come_from (nth 0 route_triple))
         (where_i_am (nth 1 route_triple))
         (where_i_go (nth 2 route_triple)))
@@ -138,7 +138,7 @@
                                  (declare (ignore node ccw acr))
                                  cw))
                         ;; I come from across
-                        (t 
+                        (t
                          (mv-let (node cw ccw acr)
                                  (switch nil nil nil msg
                                          0 ; sw_nb = where_i_am = 0
@@ -173,7 +173,7 @@
                                   (declare (ignore node cw acr))
                                   ccw))
                          ;; I come from across
-                         (t 
+                         (t
                           (mv-let (node cw ccw acr)
                                   (switch nil nil nil msg
                                           0
@@ -325,7 +325,7 @@
                                                where_i_go))
                                  (declare (ignore node cw ccw))
                                  acr))))))
-          (t ; case 3: 0 < where_i_am < (* 4 N) - 1 
+          (t ; case 3: 0 < where_i_am < (* 4 N) - 1
            (cond ((equal where_i_go (+ 1 where_i_am))
                   ;; then I go cwise
                   (cond ((equal where_i_come_from (+ 1 where_i_am))
@@ -482,7 +482,7 @@
                                          (if (< where_i_am (* 2 N))
                                              (+ (* 2 N) where_i_am)
                                            (+ (* -2 N) where_i_am))
-                                         (list where_i_come_from 
+                                         (list where_i_come_from
                                                where_i_go))
                                  (declare (ignore node cw ccw))
                                  acr)))))))))
@@ -505,4 +505,4 @@
                 (<= 3 (len x))
                 (equal (car x) a))
            (not (equal (nth 2 x) a))))
-          
+

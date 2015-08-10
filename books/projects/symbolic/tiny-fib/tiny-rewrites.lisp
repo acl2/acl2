@@ -10,12 +10,12 @@
 		  :guard (and (natp n)
 			      (< (+ (dtos tiny-state) n 1)
 				 (mem-length tiny-state))
-			      (acl2-numberp (dtos tiny-state))))) 
+			      (acl2-numberp (dtos tiny-state)))))
   (memi (+ (dtos tiny-state) n 1) tiny-state))
 
 ;Return the instruction pointed to by tiny's program counter
 (defun instr-val (tiny-state)
-  (declare (xargs :stobjs (tiny-state))) 
+  (declare (xargs :stobjs (tiny-state)))
   (memi (progc tiny-state) tiny-state))
 
 
@@ -202,7 +202,7 @@
   (implies (and (natp addr)
 		(natp start-addr)
 		(< addr (len memory))
-		(<= (+ start-addr (len prog)) (len memory)) 
+		(<= (+ start-addr (len prog)) (len memory))
 		(or (< addr start-addr)
 		    (<= (+ start-addr (len prog)) addr)))
 	   (iff (memory-block-loadedp start-addr

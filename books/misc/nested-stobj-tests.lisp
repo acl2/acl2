@@ -607,7 +607,7 @@ and must agree at each position, except for the position of concrete
 stobj (TOP1) in the outputs of the :EXEC function.  For that position,
 the :LOGIC function should return the type of the object (stobj or
 not) that is at the position of TOP1 in the inputs of the :EXEC function.
-However, the criteria above are not all met for field 
+However, the criteria above are not all met for field
 (TOP1{ABS}-FLD :LOGIC TOP1-FLD$A :EXEC TOP1-FLD), as the output signatures
 are as follows.
 

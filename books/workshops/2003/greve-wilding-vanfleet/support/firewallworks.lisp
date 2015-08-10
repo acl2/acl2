@@ -8,9 +8,9 @@
 ;; axiom to show that it works.  We use the notion of "black" data to
 ;; describe what is and what is not cleared.
 
-;; We introduce the firewall system using three axioms.  
+;; We introduce the firewall system using three axioms.
 
-;; Note about the axioms consistency 
+;; Note about the axioms consistency
 ;; ---------------------------------
 ;; We would like to show that the axioms we've added here are
 ;; consistent with the axioms added using encapsulate.  Although doing
@@ -26,7 +26,7 @@
 ;; robust way to do this since it requires foresight when introducing
 ;; the encapsulates and may limit their use.  (Better to have a
 ;; mechanism that allows a new witness to be introduced when the
-;; consistency check is being accomplished.)  
+;; consistency check is being accomplished.)
 
 ;; We would of course prefer ACL2 to support doing this, and we have
 ;; suggested this to the ACL2 authors and others.
@@ -34,7 +34,7 @@
 ;; b, and f are partitions.  Their names are meant to suggest "black"
 ;; and "firewall".
 (defaxiom allparts-includes
-  (and 
+  (and
    (member 'b (allparts))
    (member 'f (allparts))))
 
@@ -153,7 +153,7 @@
     (member x (segs 'b))
     (not (equal x 'outbox)))
    (equal (intersection-equal (dia x) (segs 'f)) nil))
-  :hints (("goal" :use (:instance intersection-equal-dia-b-segs-f-helper 
+  :hints (("goal" :use (:instance intersection-equal-dia-b-segs-f-helper
 				  (z (dia x))))))
 
 (defthm select-scrublist
@@ -201,9 +201,9 @@
     (equal (select seg (next st)) (select seg (next st2)))
     (blacklist (segslist (allparts)) st2))
    (black seg (next st)))
-  :hints (("goal" :use (:instance black-function-of-segment 
-				  (st1 (next st)) 
-				  (st2 (next st2)) 
+  :hints (("goal" :use (:instance black-function-of-segment
+				  (st1 (next st))
+				  (st2 (next st2))
 				  (x seg)))))
 
 ;; Now, each of the cases.  The current partition is either b, f, or
@@ -217,7 +217,7 @@
 ; :hints (("Subgoal *1/3'" :use
 ;	  (:instance separation (seg (car segs))
 ;		     (st1 st)
-;		     (st2 (scrublist (set-difference-equal 
+;		     (st2 (scrublist (set-difference-equal
 ;				      (segslist (allparts))
 ;				      segs)
 ;				     st))))))
@@ -231,7 +231,7 @@
 	 ("Subgoal *1/3.2" :use
 	  (:instance separation (seg (car segs))
 		     (st1 st)
-		     (st2 (scrublist (set-difference-equal 
+		     (st2 (scrublist (set-difference-equal
 				      (segslist (allparts))
 				      segs)
 				     st))))))
@@ -240,7 +240,7 @@
  (implies (and (blacklist (segs 'b) st)
                (equal (current st) 'f))
           (blacklist (segs 'b) (next st)))
- :hints (("goal" :use (:instance firewall-step-firewall-helper 
+ :hints (("goal" :use (:instance firewall-step-firewall-helper
 				 (segs (segs 'b))))))
 
 
@@ -252,7 +252,7 @@
  :hints (("Subgoal *1/2'" :use
 	  (:instance separation (seg (car segs))
 		     (st1 st)
-		     (st2 (scrublist (set-difference-equal 
+		     (st2 (scrublist (set-difference-equal
 				      (segslist (allparts))
 				      (segs 'b))
 				     st))))))
@@ -261,7 +261,7 @@
  (implies (and (blacklist (segs 'b) st)
                (equal (current st) 'b))
           (blacklist (segs 'b) (next st)))
- :hints (("goal" :use (:instance firewall-step-black-helper 
+ :hints (("goal" :use (:instance firewall-step-black-helper
 				 (segs (segs 'b))))))
 
 (defthm intersection-equal-segs-b-segs-other-helper
@@ -274,9 +274,9 @@
     (member other (allparts))
     (subsetp z (dia x)))
    (equal (intersection-equal z (segs other)) nil))
-  :hints (("Subgoal *1/3''" 
-	   :use (:instance dia-setup (seg2 x) (seg1 (car z)) 
-			   (p other) 
+  :hints (("Subgoal *1/3''"
+	   :use (:instance dia-setup (seg2 x) (seg1 (car z))
+			   (p other)
 			   ;; (p2 other)  obsolete
 			   )))
   :rule-classes nil)
@@ -290,8 +290,8 @@
     (member x (segs 'b))
     (member other (allparts)))
    (equal (intersection-equal (dia x) (segs other)) nil))
-  :hints (("goal" :use 
-	   (:instance intersection-equal-segs-b-segs-other-helper 
+  :hints (("goal" :use
+	   (:instance intersection-equal-segs-b-segs-other-helper
 		      (z (dia x))))))
 
 (defthm firewall-step-other-helper
@@ -305,7 +305,7 @@
  :hints (("Subgoal *1/2'" :use
 	  (:instance separation (seg (car segs))
 		     (st1 st)
-		     (st2 (scrublist (set-difference-equal 
+		     (st2 (scrublist (set-difference-equal
 				      (segslist (allparts))
 				      (segs 'b))
 				     st))))))
@@ -316,7 +316,7 @@
                (not (equal (current st) 'b))
                (member (current st) (allparts)))
           (blacklist (segs 'b) (next st)))
- :hints (("goal" :use (:instance firewall-step-other-helper 
+ :hints (("goal" :use (:instance firewall-step-other-helper
 				 (segs (segs 'b))))))
 
 
@@ -326,14 +326,14 @@
   (implies
    (blacklist (segs 'b) st)
    (blacklist (segs 'b) (next st)))
-  :hints (("goal" :use ( ;firewall-step-kernel 
-			firewall-step-black 
-			firewall-step-firewall 
+  :hints (("goal" :use ( ;firewall-step-kernel
+			firewall-step-black
+			firewall-step-firewall
 			firewall-step-other))))
 
 ;;
 ;; The firewall system works: Data in partition b is always black
-;; 
+;;
 (defthm firewall-works
   (implies
    (blacklist (segs 'b) st)

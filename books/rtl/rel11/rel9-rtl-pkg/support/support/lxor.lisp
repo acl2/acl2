@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -32,7 +32,7 @@
 (local (include-book "top1")) ; for lxor0-bits-1 and lxor0-bits-2
 
 (defun binary-lxor (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -58,7 +58,7 @@
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(lxor x y n) -- the base case
          `(binary-lxor ,@x))
-        (t         
+        (t
          `(binary-lxor ,(car x)
                        (lxor ,@(cdr x))
                        ,(car (last x))))))
@@ -187,8 +187,8 @@
                 (case-split (integerp n))
                 )
            (equal (bits (lxor x y n) i j)
-                  (lxor (bits x i j) 
-                        (bits y i j) 
+                  (lxor (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j))))))
 
 (defthmd bits-lxor-2
@@ -197,8 +197,8 @@
                 (case-split (integerp n))
                 )
            (equal (bits (lxor x y n) i j)
-                  (lxor (bits x i j) 
-                        (bits y i j) 
+                  (lxor (bits x i j)
+                        (bits y i j)
                         (+ n (- j))))))
 
 ;notice the call to MIN in the conclusion
@@ -208,8 +208,8 @@
                 (case-split (integerp i))
                 )
            (equal (bits (lxor x y n) i j)
-                  (lxor (bits x i j) 
-                        (bits y i j) 
+                  (lxor (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j))))))
 
 (defthmd bitn-lxor-1
@@ -218,8 +218,8 @@
                 (case-split (integerp n))
                 )
            (equal (bitn (lxor x y n) m)
-                  (lxor (bitn x m) 
-                        (bitn y m) 
+                  (lxor (bitn x m)
+                        (bitn y m)
                         1))))
 (defthmd bitn-lxor-2
   (implies (and (<= n m)
@@ -237,8 +237,8 @@
                 )
            (equal (bitn (lxor x y n) k)
                   (if (< k n)
-                      (lxor (bitn x k) 
-                            (bitn y k) 
+                      (lxor (bitn x k)
+                            (bitn y k)
                             1)
                     0))))
 
@@ -302,7 +302,7 @@
                 (not (zp n))
                 )
            (= (bitn (lxor x y n) 0)
-              (bitn (+ x y) 0)))		
+              (bitn (+ x y) 0)))
   :rule-classes ()
   :hints (("Goal" :use bitn-lxor0-0)))
 
@@ -318,7 +318,7 @@
 		  (< n m)
 		  (case-split (integerp m))
 		  )
-	     (equal (lxor x y m) 
+	     (equal (lxor x y m)
                     (lxor x y n))))
 
 (defthm lxor-upper-bound

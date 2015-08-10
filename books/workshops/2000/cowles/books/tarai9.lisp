@@ -21,8 +21,8 @@
 ; University of Wyoming
 ; Laramie, WY 82071-3682 U.S.A.
 
-;; Any total function from integer lists to integers that 
-;;  satisfies the tarai recursion must equal the function 
+;; Any total function from integer lists to integers that
+;;  satisfies the tarai recursion must equal the function
 ;;  Fb for lists of lengths 2-7. This book summarizes
 ;;  books tarai6-tarai8.
 
@@ -32,31 +32,31 @@
 
 (include-book "tarai5")
 
-;; The book tarai5, included above, includes all the 
+;; The book tarai5, included above, includes all the
 ;;  definitions required to define Bailey's version (called
 ;;  Fb) of the f function for Knuth's Theorem 4. The included
 ;;  book also contains a theorem showing that the function Fb
-;;  satisfies the tarai recursion for lists of lengths between 
+;;  satisfies the tarai recursion for lists of lengths between
 ;;  2 and 7.
 
 ;; Fb satisfies the tarai recursion (rule-classes nil)
 ;;    (from the book tarai5):
 #|  (defthm
       Fb-sat-tarai-def
-      (implies (and 
+      (implies (and
 		(integer-listp lst)
 		(consp (rest lst))        ;; (len lst) > 1
-		(not 
+		(not
 		 (consp (nthcdr 7 lst)))) ;; (len lst) <= 7
 	       (equal (Fb lst)
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst 
-			     (lst-rotates-with-minus-1 
+			(Fb (Fb-lst
+			     (lst-rotates-with-minus-1
 			      (- (LEN lst) 1)
 			      lst)))))))
-|#			      
+|#
 
 (local (include-book "tarai6"))
 (local (include-book "tarai7"))
@@ -66,35 +66,35 @@
  (((tarai *)  => *)
   ((tarai-lst *)  => *))
 
- (local (defun 
+ (local (defun
 	    tarai (lst)
 	    (Fb lst)))
- 
- (local (defun 
+
+ (local (defun
 	    tarai-lst (lst)
 	    (Fb-lst lst)))
 
  (defthm
      tarai-def
-     (implies (and 
+     (implies (and
 	       (integer-listp lst)
 	       (consp (rest lst))        ;; (len lst) > 1
-	       (not 
+	       (not
 		(consp (nthcdr 7 lst)))) ;; (len lst) <= 7
 	      (equal (tarai lst)
 		     (if (<= (first lst)
 			     (second lst))
 			 (second lst)
-		         (tarai (tarai-lst 
-				 (lst-rotates-with-minus-1 
+		         (tarai (tarai-lst
+				 (lst-rotates-with-minus-1
 				  (- (LEN lst) 1)
 				  lst))))))
      :rule-classes nil
      :hints (("Goal"
-	      :in-theory (disable Fb Fb-lst len  
+	      :in-theory (disable Fb Fb-lst len
 				  lst-rotates-with-minus-1)
 	      :use Fb-sat-tarai-def)))
- 
+
  (defthm
      tarai-lst-def
      (equal (tarai-lst lst)

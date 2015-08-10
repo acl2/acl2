@@ -815,7 +815,7 @@
                    (update-insi n id aignet)
                  (ec-call (update-insi n id aignet)))))
 
-  
+
   (definline innum->id (n aignet)
     (declare (type (integer 0 *) n)
              (xargs :stobjs aignet
@@ -1004,7 +1004,7 @@
       aignet))
 
   (local (in-theory (enable aignet-add-in)))
-  
+
   (def-aignet-frame aignet-add-in)
   (local (in-theory (enable* aignet-frame-thms)))
   (defthm aignet-add-in-preserves-sizes-ok
@@ -1059,15 +1059,15 @@
   ;;            (equal (regnum->id n (aignet-add-in aignet))
   ;;                   (regnum->id n aignet)))
   ;;   :hints(("Goal" :in-theory (enable regnum->id))))
-  
-  
+
+
   ;; (defthm aignet-add-in-preserves-aignet-regs-in-bounds
   ;;   (implies (aignet-regs-in-bounds aignet)
   ;;            (aignet-regs-in-bounds (aignet-add-in aignet)))
   ;;   :hints(("Goal" :in-theory (e/d* (aignet-regs-in-bounds)
   ;;                                   (aignet-add-in)))))
 
-  
+
 
   (defund aignet-add-reg (aignet)
     (declare (xargs :stobjs aignet
@@ -1086,7 +1086,7 @@
   (local (in-theory (enable aignet-add-reg)))
   (def-aignet-frame aignet-add-reg)
   (local (in-theory (enable* aignet-frame-thms)))
-  
+
   (defthm aignet-add-reg-preserves-sizes-ok
     (implies (aignet-sizes-ok aignet)
              (aignet-sizes-ok

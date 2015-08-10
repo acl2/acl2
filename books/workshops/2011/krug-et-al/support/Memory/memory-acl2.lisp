@@ -7,7 +7,7 @@
 ;;; considerably messed with.
 ;;;
 ;;; Memory is modeled as an alist, from 32 bit addresses to 8-bit
-;;; values (both unsigned).  
+;;; values (both unsigned).
 ;;;
 ;;; This book can be used in two ways.  For theorem proving, it
 ;;; includes the definitions memoryp, read-mem-byte, and

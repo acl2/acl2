@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -35,7 +35,7 @@
   (- (fl (- x))))
 
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -59,14 +59,14 @@
     0))
 
 (defund away (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defund trunc (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 
@@ -214,7 +214,7 @@
   :rule-classes ()
   :hints (("Subgoal *1/2" :use (trunc-sqrt-bounds-1
                                 (:instance trunc-sqrt-bounds-4 (x (trunc-sqrt x (1- n))))))))
-                                
+
 
 (defthm expo-trunc-sqrt
   (implies (and (rationalp x)
@@ -282,7 +282,7 @@
                         (:instance trunc-upper-pos (x (trunc-sqrt x n)) (n (1- n)))
                         (:instance trunc-exactp-a (x (trunc-sqrt x n)) (n (1- n)))
                         (:instance trunc-exactp-c (a (trunc-sqrt x (1- n))) (x (trunc-sqrt x n)) (n (1- n)))
-                        (:instance fp+2 (n (1- n)) (x (trunc-sqrt x (1- n))) (y (trunc (trunc-sqrt x n) (1- n))))))))  
+                        (:instance fp+2 (n (1- n)) (x (trunc-sqrt x (1- n))) (y (trunc (trunc-sqrt x n) (1- n))))))))
 
 (local-defun natp-induct (n)
   (if (zp n)
@@ -320,7 +320,7 @@
   (implies (and (not (zp n))
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1))                
+                (< x 1))
            (and (<= (* (trunc-sqrt x n)
                        (trunc-sqrt x n))
                     x)
@@ -480,7 +480,7 @@
   :rule-classes ()
   :hints (("Goal" :use (sticky-sqrt-lower-4
                         (:instance square-leq  (x l) (y (sticky-sqrt x n)))))))
-  
+
 (local-defthm sticky-sqrt-lower-6
   (implies (and (natp n)
                 (>= n 2)
@@ -528,7 +528,7 @@
            (< l (fp+ (trunc-sqrt x (1- n)) (1- n))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance trunc-sqrt-square-bounds (n (1- n)))
-                        (:instance sticky-sqrt-lower-8 (x l) 
+                        (:instance sticky-sqrt-lower-8 (x l)
                                                    (y (+ (trunc-sqrt x (1- n)) (expt 2 (- 1 n)))))))))
 
 (local-defthm sticky-sqrt-lower-10
@@ -690,14 +690,14 @@
 
 #|
 Proof: Let a = trunc-sqrt(n-2, x) and r = sticky-sqrt(x, n).
-Suppose a^2 = x.  Then r = a, l^2 <= x = a^2 = r^2, and l <= r.  
+Suppose a^2 = x.  Then r = a, l^2 <= x = a^2 = r^2, and l <= r.
 By sticky-monotone, sticky-exactp-b, and exactp-trunc-sqrt,
 
   sticky(l, n) <= sticky(r, n) = r.
 
-Thus, we may assume a^2 < x and r = a + 2^(1-n).  By trunc-sqrt-square-bounds, 
-l^2 <= x < (a + 2^(2-n))^2, and hence l < a + 2^(2-n) = fp+(a, n-1).  
-It follows from trunc-upper-pos, trunc-exactp-a, and fp+2 that 
+Thus, we may assume a^2 < x and r = a + 2^(1-n).  By trunc-sqrt-square-bounds,
+l^2 <= x < (a + 2^(2-n))^2, and hence l < a + 2^(2-n) = fp+(a, n-1).
+It follows from trunc-upper-pos, trunc-exactp-a, and fp+2 that
 trunc(l, n-1) <= a.  Thus,
 
   sticky(l, n) <= trunc(l, n-1) + 2^(1+expo(l)-n)
@@ -864,14 +864,14 @@ trunc(l, n-1) <= a.  Thus,
 
 #|
 Proof: Let a = trunc-sqrt(x, n-1) and r = sticky-sqrt(x, n).
-We may assume that h < r; otherwise, by sticky-monotone, 
+We may assume that h < r; otherwise, by sticky-monotone,
 sticky-exactp-b, and exactp-trunc-sqrt,
 
   sticky(h, n) >= sticky(r, n) = r.
 
-If a^2 = x, then r = a, h^2 >= x = a^2 = r^2, and h >= r.  
+If a^2 = x, then r = a, h^2 >= x = a^2 = r^2, and h >= r.
 Thus, by trunc-sqrt-square-bounds, a^2 < x and r = a + 2^(1-n) = fp+(a, n).
-Since h^2 >= x > a^2, h > a.  It follows from trunc-exactp-c that 
+Since h^2 >= x > a^2, h > a.  It follows from trunc-exactp-c that
 trunc(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
 
   sticky(h, n) = trunc(h, n-1) + 2^(1-n)
@@ -932,7 +932,7 @@ trunc(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
                 (<= 1/4 x)
                 (< x 1)
                 (not (= (trunc-sqrt x (- n 2)) (trunc-sqrt x (1- n))))
-                (= x (* (trunc-sqrt x (1- n)) (trunc-sqrt x (1- n)))))                
+                (= x (* (trunc-sqrt x (1- n)) (trunc-sqrt x (1- n)))))
            (= (sticky-sqrt x n)
               (+ (trunc-sqrt x (- n 2)) (expt 2 (- 1 n)))))
   :rule-classes ()
@@ -947,7 +947,7 @@ trunc(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
                 (<= 1/4 x)
                 (< x 1)
                 (not (= (trunc-sqrt x (- n 2)) (trunc-sqrt x (1- n))))
-                (= x (* (trunc-sqrt x (1- n)) (trunc-sqrt x (1- n)))))                
+                (= x (* (trunc-sqrt x (1- n)) (trunc-sqrt x (1- n)))))
            (= (sticky (sticky-sqrt x n) (1- n))
               (sticky-sqrt x (1- n))))
   :rule-classes ()
@@ -1416,7 +1416,7 @@ sticky(r2, n-1) = trunc(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
                 (>= m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1) 
+                (< x 1)
                 (= (* (trunc-sqrt x n) (trunc-sqrt x n)) x))
             (equal (trunc-sqrt x m)
                    (trunc-sqrt x n)))
@@ -1430,7 +1430,7 @@ sticky(r2, n-1) = trunc(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1) 
+                (< x 1)
                 (= (* (trunc-sqrt x n) (trunc-sqrt x n)) x))
             (equal (sticky-sqrt x m)
                    (trunc-sqrt x n)))
@@ -1475,7 +1475,7 @@ sticky(r2, n-1) = trunc(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1)) 
+                (< x 1))
            (iff (= (* (trunc-sqrt x n) (trunc-sqrt x n)) x)
                 (= (sticky-sqrt x m) (trunc-sqrt x n))))
   :rule-classes ()
@@ -1529,7 +1529,7 @@ sticky(r2, n-1) = trunc(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
                 (< x0 1)))
   :rule-classes ()
   :hints (("Goal" :use (sig-upper-bound
-                        sig-lower-bound))))  
+                        sig-lower-bound))))
 
 (defthm x0-bounds
   (let* ((e (1+ (fl (/ (expo x) 2))))
@@ -1623,9 +1623,9 @@ sticky(r2, n-1) = trunc(r2, n-2) + 2^(2-n) = a1 + 2^(2-n) = r1.
 #|
 Proof: Let e = fl(expo(x)/2), x0 = x/2^(2*e), and l0 = l/2^e.
 Then 1 <= x0 < 4 and l0^2 = l^2/2^(2*e) <= x/2^(2*e) = x0.
-By sticky-shift and sticky-sqrt-lower, 
+By sticky-shift and sticky-sqrt-lower,
 
-  sticky(l, 66) = 2^e * sticky(l0, n) 
+  sticky(l, 66) = 2^e * sticky(l0, n)
                <= 2^e * sticky-sqrt(x0, n)
                 = sqrt(x, n).
 
@@ -1738,7 +1738,7 @@ By rnd-sticky and rnd-monotone,
               (sticky-sqrt x n)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable sticky-sqrt)
-                  :use ((:instance exactp-cmp-sticky-sqrt-2 (k (- 1 n))))))) 
+                  :use ((:instance exactp-cmp-sticky-sqrt-2 (k (- 1 n)))))))
 
 (local-defthm exactp-cmp-sticky-sqrt-4
   (implies (and (rationalp x) (>= x 1/4) (< x 1)
@@ -1766,7 +1766,7 @@ By rnd-sticky and rnd-monotone,
   :rule-classes ()
   :hints (("Goal" :cases ((< y (trunc-sqrt x (1- n))) (> y (trunc-sqrt x (1- n))))
                   :in-theory (enable sticky-sqrt)
-                  :use (exactp-cmp-sticky-sqrt-1 
+                  :use (exactp-cmp-sticky-sqrt-1
                         exactp-cmp-sticky-sqrt-4
                         (:instance trunc-sqrt-square-bounds (n (1- n)))))))
 
@@ -1907,11 +1907,11 @@ By rnd-sticky and rnd-monotone,
                 (integerp n) (> n 1)
                 (exactp y (1- n)))
            (let ((e (1+ (fl (/ (expo x) 2)))))
-             (and (iff (< (/ (* y y) (expt 2 (* 2 e))) 
+             (and (iff (< (/ (* y y) (expt 2 (* 2 e)))
                           (/ x (expt 2 (* 2 e))))
                        (< (/ y (expt 2 e))
                           (/ (qsqrt x n) (expt 2 e))))
-                  (iff (> (/ (* y y) (expt 2 (* 2 e))) 
+                  (iff (> (/ (* y y) (expt 2 (* 2 e)))
                           (/ x (expt 2 (* 2 e))))
                        (> (/ y (expt 2 e))
                           (/ (qsqrt x n) (expt 2 e)))))))

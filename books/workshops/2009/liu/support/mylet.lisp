@@ -15,18 +15,18 @@
                    :measure (acl2-count term)))
    (let ((key (car binding))
          (value (cdr binding)))
-     (cond ((atom term) 
+     (cond ((atom term)
             (if (equal term key)
                 value
               term))
            ((consp term)
             (if (consp term)
-                (cons (car term) 
+                (cons (car term)
                       (expand-mylet*-2-l binding (cdr term)))
               term))
            (t term)))))
-                
-; (expand-mylet*-2 '(x . (f (+ x y))) 
+
+; (expand-mylet*-2 '(x . (f (+ x y)))
 ;                  '(G (f (x x))))
 
 (defun expand-mylet*-1 (binding alist)
@@ -35,20 +35,20 @@
     (cons (cons (caar alist)
                 (expand-mylet*-2 binding (cdar alist)))
           (expand-mylet*-1 binding (cdr alist)))))
-          
+
 
 (defun expand-mylet* (bindings topTerm)
   (declare (xargs :verify-guards nil
                   :measure (len bindings)))
-  (if (endp bindings) 
+  (if (endp bindings)
       topTerm
     (expand-mylet* (expand-mylet*-1 (car bindings) (cdr bindings))
                    (expand-mylet*-2 (car bindings) topTerm))))
 
-;; this is a flaky substitution implementation. 
+;; this is a flaky substitution implementation.
 ;; Only used by myself. It is ok.
 
-; (expand-mylet* '((x . (f x)) 
+; (expand-mylet* '((x . (f x))
 ;                  (y . (f x (f (+ x y)))))
 ;                '(G (f (+ x y) (y y x))))
 
@@ -58,7 +58,7 @@
     (cons (cons (caar assignments) (cadar assignments))
           (extract-bindings (cdr assignments)))))
 
-; (extract-bindings 
+; (extract-bindings
 ;  '((cid (current-thread s))
 ;    (tt  (thread-table s))
 ;    (thread (thread-by-id cid tt))

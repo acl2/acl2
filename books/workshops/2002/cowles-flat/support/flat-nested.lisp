@@ -26,20 +26,20 @@
 ;  Last modified 20 December 2001.
 #|
  To certify (originally in ACL2 Version 2.6):
- (defpkg 
-     "FLAT" (union-eq 
+ (defpkg
+     "FLAT" (union-eq
 	      *acl2-exports*
 	      *common-lisp-symbols-from-main-lisp-package*))
 
  (certify-book "flat-nested" 1 nil ; compile-flg
-	       :defaxioms-okp nil 
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil)
 |#
 (in-package "FLAT")
 (include-book "flat")
 #|
 A construction based on flat domains in ACL2, as introduced in
-flat.lisp, of a function f that satisfies the equation, for 
+flat.lisp, of a function f that satisfies the equation, for
 strict functions (test x), in the following theorem,
 
 (defthm generic-nested-recursive-f
@@ -89,22 +89,22 @@ strict functions (test x), in the following theorem,
 
 (encapsulate
  (((test *) => *))
- 
+
  (local
   (defun
       test (x)
       (declare (ignore x))
       ($bottom$)))
- 
+
  (defthm
      test-is-strict
      (equal (test ($bottom$))($bottom$)))
  ) ;; end encapsulate
 
-(defstub 
+(defstub
   base (*) => *)
 
-(defstub 
+(defstub
   st (*) => *)
 
 (defun
@@ -118,7 +118,7 @@ strict functions (test x), in the following theorem,
 (defthm
     base-of-f-chain=$bottom$
     (implies (zp i)
-	     (equal (f-chain i x) 
+	     (equal (f-chain i x)
 		    ($bottom$))))
 
 (defthm
@@ -132,7 +132,7 @@ strict functions (test x), in the following theorem,
 
 (defchoose
     lub-f-chain-i i (x)
-    (not (equal (f-chain i x) 
+    (not (equal (f-chain i x)
 		($bottom$))))
 
 (defthm
@@ -166,7 +166,7 @@ strict functions (test x), in the following theorem,
 	     :by
 	     (:functional-instance
 	      lub-$bottom$-based-chain-is-upper-bound
-	      ($bottom$-based-chain f-chain) 
+	      ($bottom$-based-chain f-chain)
 	      (lub-$bottom$-based-chain lub-f-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f-chain-i)))
@@ -180,10 +180,10 @@ strict functions (test x), in the following theorem,
 	     (equal (lub-f-chain x)
 		    (f-chain i x)))
     :hints (("Goal"
-	     :by 
+	     :by
 	     (:functional-instance
 	      $bottom$-based-chain-is-$<=$-chain-f
-	      ($bottom$-based-chain f-chain) 
+	      ($bottom$-based-chain f-chain)
 	      (lub-$bottom$-based-chain lub-f-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f-chain-i)))))
@@ -241,7 +241,7 @@ strict functions (test x), in the following theorem,
     (equal (lub-f-chain x)(ub-g-chain x))
     :rule-classes nil
     :hints (("Goal"
-	     :by 
+	     :by
 	     (:functional-instance
 	      lub-$chain$=ub-shifted-$chain$
 	      ($chain$ f-chain)
@@ -257,11 +257,11 @@ strict functions (test x), in the following theorem,
 	     :use f-chain-is-$<=$-chain)
 	    ))
 
-(defthm 
+(defthm
     generic-nested-recursive-f
     (equal (f x)
 	   (sq-if (test x)
-		  (base x) 
+		  (base x)
 		  (f (f (st x)))))
     :hints (("Goal"
 	     :in-theory (disable lub-f-chain

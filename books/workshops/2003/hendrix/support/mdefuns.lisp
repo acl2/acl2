@@ -57,7 +57,7 @@
   (car m))
 
 ;;; Returns a matrix with the top row removed.
-(defun row-cdr (m) 
+(defun row-cdr (m)
   (declare (xargs :guard (matrixp m)))
   (cdr m))
 

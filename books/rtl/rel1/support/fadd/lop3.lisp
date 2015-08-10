@@ -21,7 +21,7 @@
   (comp1 (logior a (comp1 b (1+ e))) (1+ e)))
 
 (defun LAM1 (a b e)
-  (logand (bits (lamt a b e) e 2) 
+  (logand (bits (lamt a b e) e 2)
 	  (logand (bits (lamg a b e) (1- e) 1)
 		  (comp1 (bits (lamz a b e) (- e 2) 0) (1- e)))))
 
@@ -31,7 +31,7 @@
 		  (comp1 (bits (lamz a b e) (- e 2) 0) (1- e)))))
 
 (defun LAM3 (a b e)
-  (logand (bits (lamt a b e) e 2) 
+  (logand (bits (lamt a b e) e 2)
 	  (logand (bits (lamz a b e) (1- e) 1)
 		  (comp1 (bits (lamg a b e) (- e 2) 0) (1- e)))))
 
@@ -219,12 +219,12 @@
 			(:instance logand-nat
 				   (i (bits (lamg a b e) (1- e) 1))
 				   (j (comp1 (bits (lamz a b e) (- e 2) 0) (1- e))))
-			(:instance bit-dist-a 
+			(:instance bit-dist-a
 				   (x (bits (lamt a b e) e 2))
 				   (y (logand (bits (lamg a b e) (1- e) 1)
 					      (comp1 (bits (lamz a b e) (- e 2) 0) (1- e))))
 				   (n k))
-			(:instance bit-dist-a 
+			(:instance bit-dist-a
 				   (x (bits (lamg a b e) (1- e) 1))
 				   (y (comp1 (bits (lamz a b e) (- e 2) 0) (1- e)))
 				   (n k)))))))
@@ -330,7 +330,7 @@
 			(:instance bits-nat (x (lamg a b e)) (i (1- e)) (j 1))
 			(:instance bits-nat (x (lamz a b e)) (i (- e 2)) (j 0))
 			(:instance bits< (x (lamz a b e)) (i (- e 2)) (j 0))
-			(:instance logand-nat 
+			(:instance logand-nat
 				   (i (bits (lamt a b e) e 2))
 				   (j (logand (bits (lamg a b e) (1- e) 1)
 					      (comp1 (bits (lamz a b e) (- e 2) 0) (1- e)))))
@@ -364,12 +364,12 @@
 			(:instance logand-nat
 				   (i (bits (lamz a b e) (1- e) 1))
 				   (j (comp1 (bits (lamg a b e) (- e 2) 0) (1- e))))
-			(:instance bit-dist-a 
+			(:instance bit-dist-a
 				   (x (bits (lamt a b e) e 2))
 				   (y (logand (bits (lamz a b e) (1- e) 1)
 					      (comp1 (bits (lamg a b e) (- e 2) 0) (1- e))))
 				   (n k))
-			(:instance bit-dist-a 
+			(:instance bit-dist-a
 				   (x (bits (lamz a b e) (1- e) 1))
 				   (y (comp1 (bits (lamg a b e) (- e 2) 0) (1- e)))
 				   (n k)))))))
@@ -475,7 +475,7 @@
 			(:instance bits-nat (x (lamz a b e)) (i (1- e)) (j 1))
 			(:instance bits-nat (x (lamg a b e)) (i (- e 2)) (j 0))
 			(:instance bits< (x (lamg a b e)) (i (- e 2)) (j 0))
-			(:instance logand-nat 
+			(:instance logand-nat
 				   (i (bits (lamt a b e) e 2))
 				   (j (logand (bits (lamz a b e) (1- e) 1)
 					      (comp1 (bits (lamg a b e) (- e 2) 0) (1- e)))))
@@ -509,12 +509,12 @@
 			(:instance logand-nat
 				   (i (bits (lamz a b e) (1- e) 1))
 				   (j (comp1 (bits (lamz a b e) (- e 2) 0) (1- e))))
-			(:instance bit-dist-a 
+			(:instance bit-dist-a
 				   (x (comp1 (bits (lamt a b e) e 2) (1- e)))
 				   (y (logand (bits (lamz a b e) (1- e) 1)
 					      (comp1 (bits (lamz a b e) (- e 2) 0) (1- e))))
 				   (n k))
-			(:instance bit-dist-a 
+			(:instance bit-dist-a
 				   (x (bits (lamz a b e) (1- e) 1))
 				   (y (comp1 (bits (lamz a b e) (- e 2) 0) (1- e)))
 				   (n k)))))))
@@ -625,7 +625,7 @@
 			(:instance bits-nat (x (lamz a b e)) (i (1- e)) (j 1))
 			(:instance bits-nat (x (lamz a b e)) (i (- e 2)) (j 0))
 			(:instance bits< (x (lamz a b e)) (i (- e 2)) (j 0))
-			(:instance logand-nat 
+			(:instance logand-nat
 				   (i (comp1 (bits (lamt a b e) e 2) (1- e)))
 				   (j (logand (bits (lamz a b e) (1- e) 1)
 					      (comp1 (bits (lamz a b e) (- e 2) 0) (1- e)))))
@@ -659,12 +659,12 @@
 			(:instance logand-nat
 				   (i (bits (lamg a b e) (1- e) 1))
 				   (j (comp1 (bits (lamg a b e) (- e 2) 0) (1- e))))
-			(:instance bit-dist-a 
+			(:instance bit-dist-a
 				   (x (comp1 (bits (lamt a b e) e 2) (1- e)))
 				   (y (logand (bits (lamg a b e) (1- e) 1)
 					      (comp1 (bits (lamg a b e) (- e 2) 0) (1- e))))
 				   (n k))
-			(:instance bit-dist-a 
+			(:instance bit-dist-a
 				   (x (bits (lamg a b e) (1- e) 1))
 				   (y (comp1 (bits (lamg a b e) (- e 2) 0) (1- e)))
 				   (n k)))))))
@@ -775,7 +775,7 @@
 			(:instance bits-nat (x (lamg a b e)) (i (1- e)) (j 1))
 			(:instance bits-nat (x (lamg a b e)) (i (- e 2)) (j 0))
 			(:instance bits< (x (lamg a b e)) (i (- e 2)) (j 0))
-			(:instance logand-nat 
+			(:instance logand-nat
 				   (i (comp1 (bits (lamt a b e) e 2) (1- e)))
 				   (j (logand (bits (lamg a b e) (1- e) 1)
 					      (comp1 (bits (lamg a b e) (- e 2) 0) (1- e)))))
@@ -797,7 +797,7 @@
 		  (integerp k)
 		  (<= k (- e 2))
 		  (>= k 0))
-	     (equal (bitn (lam0 a b e) k) 
+	     (equal (bitn (lam0 a b e) k)
 		    (logior (bitn (lam1 a b e) k)
 			    (logior (bitn (lam2 a b e) k)
 				    (logior (bitn (lam3 a b e) k)
@@ -1068,8 +1068,8 @@
   :hints (("Goal" :use ((:instance rem<n (m a) (n (expt 2  (1+ n))))
 			(:instance expt-pos (x (1+ n)))
 			(:instance expt-pos (x n))
-			(:instance *-weakly-monotonic 
-				   (x (expt 2 n)) 
+			(:instance *-weakly-monotonic
+				   (x (expt 2 n))
 				   (y 2)
 				   (y+ (/ (rem a (expt 2 (1+ n))) (expt 2 n)))))))))
 

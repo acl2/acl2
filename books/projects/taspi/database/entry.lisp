@@ -15,7 +15,7 @@
 (defstub good-mapping (x)
   t)
 
-;; key for each entry is the id, then rest of attributes are 
+;; key for each entry is the id, then rest of attributes are
 ;; an alist of values
 (defun good-study-entry (entry)
 
@@ -67,7 +67,7 @@
                (good-id study-id)
                (good-name name)
                (good-method method)
-               (good-data-type dtype)  
+               (good-data-type dtype)
                (good-model model)
                (good-date date)
                (good-tool tool)
@@ -99,12 +99,12 @@
               (ml (my-get 'ml rest))
               (name (my-get 'name rest)))
           (and (good-id tree-id)
-               (good-id analysis-id) 
+               (good-id analysis-id)
                (good-rooted-flg rooted?)
                (good-brlens-flg brlens?)
                (good-tree tree)
                (good-tree-type type) ; single, consensus
-               (good-mp mp)         
+               (good-mp mp)
                (good-ml ml)
                (good-name name))))
     nil))
@@ -214,7 +214,7 @@
 ; ":Doc-Section TASPI
 ;  Returns the method of an analysis table entry.~/
 ;  ~/
-;  "  
+;  "
   (declare (xargs :guard (good-analysis-entry entry)))
   (my-get 'method (cdr entry)))
 
@@ -525,21 +525,21 @@
   (implies (good-tree-entry entry)
            (consp entry))
   :rule-classes :forward-chaining)
-                   
+
 ;;general functions
 (in-theory (disable get-id))
 (in-theory (disable get-name))
 
 ;;from study table
-(in-theory (disable get-sequences 
+(in-theory (disable get-sequences
                     get-mapping))
 
 ;;from analysis table
 (in-theory (disable get-study-id
                     get-method
-                    get-data-type 
-                    get-model 
-                    get-date 
+                    get-data-type
+                    get-model
+                    get-date
                     get-tool
                     get-author
                     get-taxa-list
@@ -550,13 +550,13 @@
 (in-theory (disable get-analysis-id
                     get-rooted-flg
                     get-brlens-flg
-                    get-tree 
+                    get-tree
                     get-tree-type
-                    get-mp 
+                    get-mp
                     get-ml))
-                    
 
-(in-theory (disable good-study-entry 
+
+(in-theory (disable good-study-entry
                     good-analysis-entry
                     good-tree-entry))
 

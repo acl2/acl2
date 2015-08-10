@@ -1158,7 +1158,7 @@ details.</p>
 </ul> "
 
   (build-with-full-exec-support
-   
+
    x86isa_syscall_exec_support
 
    (progn

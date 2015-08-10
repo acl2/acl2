@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -28,7 +28,7 @@
 
 (include-book "../lib3/rtl")
 (include-book "../lib3/arith")
-(include-book "float") ;; Hack: we just definition of bits 
+(include-book "float") ;; Hack: we just definition of bits
 
 (local (include-book "../lib3/simplify-model-helpers"))
 

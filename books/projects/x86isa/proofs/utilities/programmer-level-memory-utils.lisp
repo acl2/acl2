@@ -131,8 +131,7 @@ programmer-level mode.</p>" )
 
 (local
  (defthmd member-p-canonical-address-listp-helper
-   (implies (and (integerp n)
-                 (< 0 n)
+   (implies (and (< 0 n)
                  (canonical-address-p prog-addr)
                  (canonical-address-p (+ -1 n prog-addr)))
             (equal (member-p addr
@@ -150,7 +149,6 @@ programmer-level mode.</p>" )
 
   (implies (and (<= prog-addr addr)
                 (< addr (+ n prog-addr))
-                (integerp n)
                 (canonical-address-p prog-addr)
                 (canonical-address-p (+ -1 n prog-addr))
                 (integerp addr))
@@ -168,7 +166,6 @@ programmer-level mode.</p>" )
 
   (implies (and (or (< addr prog-addr)
                     (<= (+ n prog-addr) addr))
-                (integerp n)
                 (< 0 n)
                 (canonical-address-p prog-addr)
                 (canonical-address-p (+ -1 n prog-addr)))
@@ -183,8 +180,7 @@ programmer-level mode.</p>" )
   (implies (and (canonical-address-p y)
                 (canonical-address-p (+ -1 j y))
                 (<= y x)
-                (<= (+ i x) (+ j y))
-                (integerp j))
+                (<= (+ i x) (+ j y)))
            (subset-p (create-canonical-address-list i x)
                      (create-canonical-address-list j y)))
   :hints (("Goal" :in-theory (e/d (subset-p) nil))))
@@ -192,7 +188,6 @@ programmer-level mode.</p>" )
 (defthm subset-p-addr-range-of-create-canonical-address-list
   (implies (and (canonical-address-p val2)
                 (canonical-address-p (+ -1 m val2))
-                (natp m)
                 (integerp val1)
                 (<= val2 val1)
                 (<= (+ n val1) (+ m val2)))
@@ -203,7 +198,6 @@ programmer-level mode.</p>" )
 (defthm disjoint-p-two-create-canonical-address-lists-thm-0
   (implies (and (canonical-address-p y)
                 (canonical-address-p (+ -1 j y))
-                (integerp j)
                 (< 0 j)
                 (<= (+ i x) y))
            (disjoint-p (create-canonical-address-list i x)
@@ -211,9 +205,7 @@ programmer-level mode.</p>" )
   :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
 
 (defthm disjoint-p-two-create-canonical-address-lists-thm-1
-  (implies (and (canonical-address-p x)
-                (canonical-address-p y)
-                (canonical-address-p (+ -1 i x))
+  (implies (and (canonical-address-p y)
                 (integerp j)
                 (< 0 j)
                 (<= (+ j y) x))
@@ -222,19 +214,13 @@ programmer-level mode.</p>" )
   :hints (("Goal" :in-theory (e/d (disjoint-p member-p) ()))))
 
 (defthm disjoint-p-create-canonical-address-list-and-append
-  (implies (and (canonical-address-p x)
-                (canonical-address-p y)
-                (canonical-address-p z)
-                (natp i)
-                (natp j)
-                (natp k))
-           (equal (disjoint-p (create-canonical-address-list i x)
-                              (append (create-canonical-address-list j y)
-                                      (create-canonical-address-list k z)))
-                  (and (disjoint-p (create-canonical-address-list i x)
-                                   (create-canonical-address-list j y))
-                       (disjoint-p (create-canonical-address-list i x)
-                                   (create-canonical-address-list k z)))))
+  (equal (disjoint-p (create-canonical-address-list i x)
+                     (append (create-canonical-address-list j y)
+                             (create-canonical-address-list k z)))
+         (and (disjoint-p (create-canonical-address-list i x)
+                          (create-canonical-address-list j y))
+              (disjoint-p (create-canonical-address-list i x)
+                          (create-canonical-address-list k z))))
   :hints (("Goal" :in-theory (e/d (disjoint-p
                                    create-canonical-address-list)
                                   ()))))
@@ -393,7 +379,7 @@ programmer-level mode.</p>" )
              (member-p addr (strip-cars (remove-duplicate-keys alst))))
     :hints (("Goal" :in-theory (e/d (member-p) ()))))
 
-  (defthm strip-cars-of-remove-duplicate-keys
+  (defthm canonical-address-listp-of-strip-cars-remove-duplicate-keys
     (implies (addr-byte-alistp addr-lst)
              (canonical-address-listp
               (strip-cars (remove-duplicate-keys addr-lst))))
@@ -451,12 +437,14 @@ programmer-level mode.</p>" )
  (defthm member-p-strip-cars-of-remove-duplicate-keys
    ;; implies, equal, or iff?
    (implies (member-p a (strip-cars (remove-duplicate-keys xs)))
-            (member-p a (strip-cars xs))))
+            (member-p a (strip-cars xs)))
+   :rule-classes (:forward-chaining :rewrite))
 
  (defthm member-p-strip-cars-remove-duplicate-keys-and-rev
    ;; implies, equal, or iff?
    (implies (member-p a (strip-cars (remove-duplicate-keys xs)))
-            (member-p a (strip-cars (acl2::rev xs)))))
+            (member-p a (strip-cars (acl2::rev xs))))
+   :rule-classes (:forward-chaining :rewrite))
 
  (defthm canonical-address-listp-strip-cars-remove-duplicate-keys-addr-bytes-alistp
    (implies (and (subset-p addresses
@@ -652,13 +640,6 @@ programmer-level mode.</p>" )
                    (mv-nth 1 (rm08 addr r-w-x x86))))
    :hints (("Goal" :in-theory (e/d (rm08 wm08) ())))))
 
-(defthm rb-wb-disjoint
-  (implies (and (disjoint-p addresses (strip-cars addr-lst))
-                (programmer-level-mode x86))
-           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
-                  (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal" :in-theory (e/d (disjoint-p) ()))))
-
 (local
  (defthm rvm08-wb-not-member-p
    (implies (and (not (member-p addr (strip-cars addr-lst)))
@@ -666,6 +647,13 @@ programmer-level mode.</p>" )
             (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb addr-lst x86))))
                    (mv-nth 1 (rvm08 addr x86))))
    :hints (("Goal" :in-theory (e/d (wm08) ())))))
+
+(defthm rb-wb-disjoint
+  (implies (and (disjoint-p addresses (strip-cars addr-lst))
+                (programmer-level-mode x86))
+           (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal" :in-theory (e/d (disjoint-p) ()))))
 
 
 (local
@@ -712,6 +700,7 @@ programmer-level mode.</p>" )
                              (a (car (car xs)))
                              (b (cdr (car xs)))))))))
 
+
 (defthmd rb-wb-equal
   (implies (and (equal addresses (strip-cars (remove-duplicate-keys addr-lst)))
                 (programmer-level-mode x86)
@@ -720,60 +709,91 @@ programmer-level mode.</p>" )
                   (assoc-list addresses (reverse addr-lst))))
   :hints (("Goal" :in-theory (e/d (wm08 rm08) ()))))
 
-
 (local
- (defthm rb-wb-subset-assoc-helper
-   (implies (and (addr-byte-alistp addr-lst)
-                 (member-p (car addresses)
-                           (strip-cars (remove-duplicate-keys (cdr addr-lst)))))
-            (equal (assoc (car addresses) (acl2::rev (cdr addr-lst)))
-                   (assoc (car addresses) (acl2::rev addr-lst))))
-   :hints (("Goal" :in-theory (e/d* (subset-p) ())))))
-
-
-(local
- (defthm rb-wb-subset-assoc-list-helper
-   (implies (subset-p addresses
-                      (strip-cars (remove-duplicate-keys (cdr addr-lst))))
-            (equal (assoc-list addresses (acl2::rev (cdr addr-lst)))
-                   (assoc-list addresses (acl2::rev addr-lst))))
-   :hints (("Goal"
-            :in-theory (e/d (subset-p) ())
-            :expand (assoc-list addresses (acl2::rev addr-lst))))))
-
-(local
- (defthm rvm08-wb-member-p
+ (defthm rvm08-wb-member-p-helper
    (implies (and (member-p addr (strip-cars (remove-duplicate-keys addr-lst)))
                  (programmer-level-mode x86)
                  (addr-byte-alistp addr-lst))
-            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb addr-lst x86))))
+            (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst x86))))
                    (cdr (assoc-equal addr (reverse addr-lst)))))
-   :hints (("Goal" :in-theory (e/d (wm08) ())))))
+   :hints (("Goal" :in-theory (e/d (rm08 wm08) ())))))
 
 (local
- (defthmd rb-wb-subset-helper
-   (implies (and (subset-p addresses
-                           (strip-cars (remove-duplicate-keys addr-lst)))
-                 ;; Remove the following hyp.
-                 (canonical-address-listp addresses)
+ (defthm rvm08-wb-member-p
+   (implies (and (member-p addr (strip-cars addr-lst))
                  (programmer-level-mode x86)
                  (addr-byte-alistp addr-lst))
-            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
-                   (assoc-list addresses (reverse addr-lst))))
-   :hints (("Goal"
-            :in-theory (e/d (subset-p rm08 wm08)
-                            ())
-            :induct (assoc-list addresses (reverse addr-lst))))))
+            (equal (mv-nth 1 (rm08 addr r-w-x (mv-nth 1 (wb addr-lst x86))))
+                   (cdr (assoc-equal addr (reverse addr-lst)))))))
+
+(local
+ (defthm rb-wb-subset-helper
+   (implies (and (equal (mv-nth 1
+                                (rb-1 (cdr addresses)
+                                      r-w-x (mv-nth 1 (wb addr-lst x86))
+                                      nil))
+                        (assoc-list (cdr addresses)
+                                    (acl2::rev addr-lst)))
+                 (subset-p addresses (strip-cars addr-lst))
+                 (xr :programmer-level-mode 0 x86)
+                 (integerp (car addresses))
+                 (<= -140737488355328 (car addresses))
+                 (< (car addresses) 140737488355328)
+                 (canonical-address-listp (cdr addresses))
+                 (addr-byte-alistp addr-lst))
+            (equal (mv-nth 1
+                           (rb-1 addresses
+                                 r-w-x (mv-nth 1 (wb addr-lst x86))
+                                 nil))
+                   (cons (cdr (assoc-equal (car addresses)
+                                           (acl2::rev addr-lst)))
+                         (assoc-list (cdr addresses)
+                                     (acl2::rev addr-lst)))))
+   :hints (("Goal" :expand (rb-1 addresses r-w-x (mv-nth 1 (wb addr-lst x86)) nil)
+            :in-theory (e/d (subset-p) ())))))
 
 (defthm rb-wb-subset
-  (implies (and (subset-p addresses
-                          (strip-cars (remove-duplicate-keys addr-lst)))
+  (implies (and (subset-p addresses (strip-cars addr-lst))
                 (programmer-level-mode x86)
+                ;; [Shilpi]: Ugh, this hyp. below is so annoying. I
+                ;; could remove it if I proved something like
+                ;; subset-p-strip-cars-of-remove-duplicate-keys,
+                ;; commented out below.
+                (canonical-address-listp addresses)
                 (addr-byte-alistp addr-lst))
            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
                   (assoc-list addresses (reverse addr-lst))))
-  :hints (("Goal"
-           :use ((:instance rb-wb-subset-helper)))))
+  :hints (("Goal" :induct (assoc-list addresses (reverse addr-lst)))))
+
+;; (skip-proofs
+;;  (defthm subset-p-strip-cars-of-remove-duplicate-keys
+;;    (equal (subset-p x (strip-cars (remove-duplicate-keys xs)))
+;;           (subset-p x (strip-cars xs)))
+;;    :hints (("Goal" :in-theory (e/d* (subset-p) ())))))
+
+;; (defthm canonical-address-listp-strip-cars-addr-bytes-alistp
+;;   ;; See canonical-address-listp-strip-cars-remove-duplicate-keys-addr-bytes-alistp
+;;   (implies (and (subset-p addresses (strip-cars addr-lst))
+;;                 (addr-byte-alistp addr-lst))
+;;            (canonical-address-listp addresses))
+;;   :hints (("Goal"
+;;            :do-not-induct t
+;;            :use ((:instance canonical-address-listp-strip-cars-remove-duplicate-keys-addr-bytes-alistp))
+;;            :in-theory (e/d* ()
+;;                             (canonical-address-listp-strip-cars-remove-duplicate-keys-addr-bytes-alistp
+;;                              addr-byte-alistp
+;;                              canonical-address-listp))))
+;;   :rule-classes :forward-chaining)
+
+;; (defthm rb-wb-subset-new
+;;   (implies (and (subset-p addresses (strip-cars addr-lst))
+;;                 (addr-byte-alistp addr-lst)
+;;                 (programmer-level-mode x86))
+;;            (equal (mv-nth 1 (rb addresses r-w-x (mv-nth 1 (wb addr-lst x86))))
+;;                   (assoc-list addresses (reverse addr-lst))))
+;;   :hints (("Goal"
+;;            :do-not-induct t
+;;            :use ((:instance rb-wb-subset)))))
 
 (defthm program-at-wb-disjoint
   (implies (and (programmer-level-mode x86)
@@ -848,7 +868,7 @@ programmer-level mode.</p>" )
                              (val  (cdr (car addr-list)))
                              (addr-list (cdr addr-list))))))))
 
-(defthm wb-remove-duplicate-writes
+(defthmd wb-remove-duplicate-writes
   (implies (and (syntaxp
                  (not
                   (and (consp addr-list)

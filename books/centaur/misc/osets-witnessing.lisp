@@ -72,7 +72,7 @@
 ;; assumption, where a is a fresh variable.  We do the following such
 ;; replacements, where A is a fresh variable in each case --
 
-;;    Hypothesis                 Replacement 
+;;    Hypothesis                 Replacement
 ;;  (not (subset x y))       (and (in a x) (not (in a y)))
 ;;  (intersectp x y)         (and (in a x) (in a y))
 ;;  (not (equal x y))        (implies (and (setp x) (setp y))
@@ -617,7 +617,7 @@
                    (empty X))
               (equal (insert a X)
                      (insert a nil))))
-   
+
    ;; ;;here's a problem -- equal is used as something other than set-equiv
    ;;(defthmd head-of-insert-a-nil-lemma
    ;;  (equal (head (insert a nil))
@@ -628,14 +628,14 @@
    ;;(defthmd tail-of-insert-a-nil-lemma
    ;;  (equal (tail (insert a nil))
    ;;         nil))
-   
+
    ;; ;;same thing here
    ;;(defthmd sfix-when-empty-lemma
    ;;  (implies (empty X)
    ;;           (equal (sfix X)
    ;;                  nil)))
 
-         ;;;; same, after 
+         ;;;; same, after
    ;;(defthmd subset-membership-tail-lemma
    ;;  (implies (and (subset X Y)
    ;;                (in a (tail X)))
@@ -656,7 +656,7 @@
      (equal (in a (insert b X))
             (or (in a X)
                 (equal a b))))
-   
+
    (defthmd subset-transitive-lemma
      (and (implies (and (subset X Y)
                         (subset Y Z))
@@ -665,7 +665,7 @@
                         (subset X Y))
                    (subset X Z))))
 
-   
+
    (defthmd subset-insert-X-lemma
      (iff (subset (insert a X) Y)
           (and (subset X Y)

@@ -48,7 +48,7 @@
 ;;; representation. We will define these transformation rules in an
 ;;; analogue way to the rules defined in the book {\tt
 ;;; prefix\--unification\--rules\--.lisp}, but taking into account that
-;;; the representation of terms is based on dags.  
+;;; the representation of terms is based on dags.
 
 ;;; The main properties of the transformation rules acting on term dags
 ;;; can be proved by compositional reasoning, because similar properties
@@ -60,20 +60,20 @@
 ;;; of transformation rules acting on term dags lead to find the most
 ;;; general solution (if it is solvable) of the system represented
 ;;; by the initial inidices system and term dag. This is a key result to
-;;; design a unification algorithm acting on term dags. 
+;;; design a unification algorithm acting on term dags.
 
 ;;; In sum, in this book:
 
 
-;;; *) 
+;;; *)
 ;;;  We define well--formedness properties for term dags and unification
-;;;  problems represented using term dags. 
-;;; *) 
+;;;  problems represented using term dags.
+;;; *)
 ;;;  We define the correspondence between the dag representation and the
 ;;;  standard list/prefix notation of first--order terms.
 ;;; *)
 ;;;  We define the Martelli--Montanari unification rules with respect to
-;;;  the term dag representation. 
+;;;  the term dag representation.
 ;;; *)
 ;;;  We show that the well--formedness properties are preserved by the
 ;;;  transformation rules.
@@ -81,8 +81,8 @@
 ;;;  We show that for every transformation step given at the "dag level",
 ;;;  there exists a corresponding step given at the "list/prefix level".
 ;;; *)
-;;;  We extend these properties to sequences of transformation rules. 
-;;; *) 
+;;;  We extend these properties to sequences of transformation rules.
+;;; *)
 ;;;  And finally, using compositional reasoning, we show that some
 ;;;  sequences of dag transformations starting in a given indices system
 ;;;  may be used to compute a most general solution (or detect
@@ -94,21 +94,21 @@
 ;;; The following books are used, and contain information that is
 ;;; relevant to understand the contents of this book:
 
-;;; *) 
+;;; *)
 ;;;  The book {\tt dags.lisp} contains information about how term graphs
 ;;;  are represented, and the intended meaning of the information stored
 ;;;  in nodes. The concept of directed acyclic graphs is  defined and
 ;;;  verified. An interesting result about updating dags is also used
 ;;;  here. And also a well--founded measure to recurse on term dags is
 ;;;  defined (this measure will allow us to define several functions in
-;;;  this book). 
-;;; *) 
+;;;  this book).
+;;; *)
 ;;;  The book {\tt prefix-unification-rules.lisp} contains the definition
 ;;;  and verification of the main properties of the Martelli--Montanari
 ;;;  unification rules, representing first--order terms in the standard
 ;;;  list/prefix representation.  Once proved the correspondence between
 ;;;  the transformation steps given with the dag representation and with
-;;;  the standard representation, the results of the book are used 
+;;;  the standard representation, the results of the book are used
 ;;;  here to prove analogue properties about the transformation rules
 ;;;  given at the "dag level".
 ;;; -)
@@ -125,22 +125,22 @@
 ;;; substitutions and unification problems.  We also define the
 ;;; correspondence between these objects and the first--order terms,
 ;;; systems, substitutions and unification problems represented in the
-;;; standard list/prefix representation. 
+;;; standard list/prefix representation.
 
 ;;; Previously, we define the following macros to access and update the
 ;;; contents of a term graph. These names resemble the corresponding
 ;;; accessor and updater functions that will be automatically defined
 ;;; when defining a single--threaded object storing the graph (see the
-;;; book {\tt terms\--dag\--stobj\-.lisp}). 
+;;; book {\tt terms\--dag\--stobj\-.lisp}).
 
 (defmacro dagi-l (i g)
   `(nth ,i ,g))
-  
+
 (defmacro update-dagi-l (i v g)
   `(update-nth ,i ,v ,g))
 
 
-;;; In the following, {\em by an index we mean a natural number}. 
+;;; In the following, {\em by an index we mean a natural number}.
 
 ;;; -----------------------------------
 ;;;
@@ -160,7 +160,7 @@
 ;;; (see the book {\tt dag-unification-st.lisp}). But we include it here
 ;;; because we will prove here some invariant properties about these
 ;;; well-formedness conditions that will be needed later for guard
-;;; verification. 
+;;; verification.
 
 ;;; Since only some of the above properties are required for the
 ;;; correctness of the unification algorithm, it will be sometimes more
@@ -177,7 +177,7 @@
 	     (and (consp (car g)) (variable-p (caar g)) (equal (cdar g) t))
 	     (and (consp (car g)) (nat-true-listp (cdar g))))
 	 (quasi-term-graph-p (cdr g)))))
- 
+
 
 ;;; Relation between bounded-term-graph and quasi-term-graph-p:
 
@@ -185,12 +185,12 @@
 (defthm bounded-term-graph-p-implies-quasi-term-graph-p
   (implies (bounded-term-graph-p g n)
 	   (quasi-term-graph-p g)))
-		
+
 
 ;;; The list of variable symbols of a term graph:
 
 (defun list-of-term-dag-variables (g)
-  (declare (xargs :guard t)) 
+  (declare (xargs :guard t))
   (cond ((atom g) nil)
 	((and (consp (car g)) (equal (cdar g) t))
 	 (cons (caar g) (list-of-term-dag-variables (cdr g))))
@@ -198,18 +198,18 @@
 
 
 ;;; Useful properties for guard verification (see {\tt
-;;; dag-unification-st.lisp}). 
+;;; dag-unification-st.lisp}).
 
 
 (defthm list-of-term-dag-variables-eqlable-listp
   (implies (bounded-term-graph-p g n)
 	   (eqlable-listp (list-of-term-dag-variables g))))
-   
- 
+
+
 
 ;;; A {\em well-formed term dag} is an acyclic term graph, with shared
 ;;; variables. We define the "bounded" version and the "relaxed"
-;;; version. 
+;;; version.
 
 ;;; NOTA: La guarda de esta función sería muy rara, ya que dag-p
 ;;; necesita term-graph-p, que es como bounded-term-graph-p pero para
@@ -217,7 +217,7 @@
 ;;; tinene ni que ejecutarse ni que usarse en una guarda) y luego
 ;;; definir well-formed-term-dag-p igual que esto pero con n=(len g) y
 ;;; esa si ponerle guarda. Además, pongo una regla de reescritura que
-;;; relacione ambas cosas. 
+;;; relacione ambas cosas.
 (defun bounded-well-formed-term-dag-p (g n)
   (and (bounded-term-graph-p g n)
        (dag-p g)
@@ -265,7 +265,7 @@
   (declare (xargs :guard (natp n)))
   (if (atom l)
       (equal l nil)
-    (and (consp (car l)) 
+    (and (consp (car l))
 	 (natp (cdar l)) (< (cdar l) n)
 	 (bounded-nat-substitution-p (cdr l) n))))
 
@@ -380,18 +380,18 @@
  (defthm bounded-nat-listp-pair-args
    (implies (and (bounded-nat-listp l1 m) (bounded-nat-listp l2 m))
 	    (bounded-nat-pairs-true-listp (car (pair-args l1 l2)) m))))
- 
+
 
 
 
 ;;; -----------------------------------
 ;;;
-;;; 1.2) Relations between dags and terms, substitutions and systems 
+;;; 1.2) Relations between dags and terms, substitutions and systems
 ;;;
 ;;; -----------------------------------
 
 ;;; The following function computes the term associated to an index or a
-;;; list of indices: 
+;;; list of indices:
 
 
 (defun dag-as-term (flg h g)
@@ -431,7 +431,7 @@
 ;;; fact, we need to explicitly test that the graph @g@ is acyclic. The
 ;;; measure function {\tt measure\--rec\--dag} and the proved properties
 ;;; that allow the admission of this functions are in the book {\tt
-;;; dags\-.lisp}. 
+;;; dags\-.lisp}.
 ;;; -)
 
 ;;; Given an indices system and a term dag, the following function computes the
@@ -443,14 +443,14 @@
     (cons (cons (dag-as-term t (caar S) g)
 		(dag-as-term t (cdar S) g))
 	  (tbs-as-system (cdr S) g))))
-  
+
 ;;; Given an indices substitution and a term dag, the following function
 ;;; computes the corresponding substitution in list/prefix notation:
 
 (defun solved-as-system (sol g)
   (if (endp sol)
       sol
-    (cons (cons (caar sol) 
+    (cons (cons (caar sol)
 		(dag-as-term t (cdar sol) g))
 	  (solved-as-system (cdr sol) g))))
 
@@ -470,7 +470,7 @@
 
 ;;; ============================================================================
 ;;;
-;;; 2) Unification transformation rules acting on term dags 
+;;; 2) Unification transformation rules acting on term dags
 ;;;
 ;;; ============================================================================
 
@@ -542,7 +542,7 @@
 ;;; well--formed term dag.  Operators are the following:
 
 ;;; 1)
-;;; {\tt (delete $N$)}: delete  equation $N$ of the indices system. 
+;;; {\tt (delete $N$)}: delete  equation $N$ of the indices system.
 ;;; 2)
 ;;; {\tt (decompose $N$)}: decompose equation $N$.
 ;;; 3)
@@ -570,7 +570,7 @@
 ;;; describe the auxiliary functions used for each of the rules. \\
 
 
-;;; {\tt DELETE} can be applied if both indices are the same:  
+;;; {\tt DELETE} can be applied if both indices are the same:
 
 (defun unif-legal-d-delete (t1 t2 g)
   (declare (ignore g))
@@ -617,28 +617,28 @@
 ;;; node and the second points to a variable:
 
 
-(defun unif-legal-d-orient (t1 t2 g) 
+(defun unif-legal-d-orient (t1 t2 g)
   (and (not (term-dag-variable-p t1 g))
        (term-dag-variable-p t2 g)))
-       
+
 ;;; {\tt ELIMINATE} can be applied if the first index is a variable node
 ;;; not occurring in the subgraph pointed by the second:
 
 (defun unif-legal-d-eliminate (t1 t2 g)
   (and (term-dag-variable-p t1 g)
        (not (occur-check-d t t1 t2 g))))
-       
+
 
 ;;; {\tt OCCUR-CHECK} can be applied if the first index is a variable node
 ;;; occurring in the subgraph pointed by the second (that must be
-;;; different): 
+;;; different):
 
-(defun unif-legal-d-occur-check (t1 t2 g) 
+(defun unif-legal-d-occur-check (t1 t2 g)
   (and (term-dag-variable-p t1 g)
        (not (equal t1 t2))
        (occur-check-d t t1 t2 g)))
 
-;;; All these auxiliary functions allow us to define @unif-legal-d@: 
+;;; All these auxiliary functions allow us to define @unif-legal-d@:
 
 (defun unif-legal-d (upl op)
   (let ((name (first op))
@@ -676,7 +676,7 @@
 ;;; equations to be solved and the (indices) substitution partially
 ;;; computed. \\
 
-;;; The application of {\tt DELETE} simply remove the selected equation:  
+;;; The application of {\tt DELETE} simply remove the selected equation:
 
 
 (defun unif-reduce-one-step-d-delete (t1 t2 R sol g)
@@ -697,7 +697,7 @@
 
 
 ;;; The application of {\tt CLASH1} obtains failure (represented as
-;;; @nil@). 
+;;; @nil@).
 
 (defun unif-reduce-one-step-d-clash1 (t1 t2 R sol g)
   (declare (ignore t1 t2 R sol g))
@@ -705,13 +705,13 @@
 
 
 ;;; The application of {\tt CLASH2} obtains failure (represented as
-;;; @nil@). 
+;;; @nil@).
 
 (defun unif-reduce-one-step-d-clash2 (t1 t2 R sol g)
   (declare (ignore t1 t2 R sol g))
   nil)
 
-;;; The application of {\tt ORIENT} reorients the selected equation:  
+;;; The application of {\tt ORIENT} reorients the selected equation:
 
 (defun unif-reduce-one-step-d-orient (t1 t2 R sol g)
   (list (cons (cons t2 t1) R) sol g))
@@ -721,7 +721,7 @@
 ;;; store a new binding in the indices substitution and updates the
 ;;; position corresponding to the first index with the second
 ;;; index. That is replace the variable node with an "IS" node. This is
-;;; a key operation in the unification proccess: 
+;;; a key operation in the unification proccess:
 
 (defun unif-reduce-one-step-d-eliminate (t1 t2 R sol g)
   (list R
@@ -734,9 +734,9 @@
 (defun unif-reduce-one-step-d-occur-check (t1 t2 R sol g)
   (declare (ignore t1 t2 R sol g))
   nil)
-  
-;;; All these auxiliary functions allow us to define @unif-reduce-one-step-d@: 
-  
+
+;;; All these auxiliary functions allow us to define @unif-reduce-one-step-d@:
+
 
 (defun unif-reduce-one-step-d (upl op)
    (let* ((name (first op))
@@ -784,7 +784,7 @@
 ;;; Second goal: if an operator is legal with respect to a well--formed
 ;;; dag unification problem, then the same operator is legal with
 ;;; respect to the corresponding unification problem represented in
-;;; list/prefix notation. 
+;;; list/prefix notation.
 
 ; (defthm unif-legal-d-implies-unif-legal-p
 ;    (implies (and (well-formed-upl upl)
@@ -807,7 +807,7 @@
 
 ;;; With these three properties, every sequence of transformation rules
 ;;; ``at the dag level'' can be transformed in a sequence of
-;;; transformation ``at the list/prefix level''. 
+;;; transformation ``at the list/prefix level''.
 
 ;;; Let us prove the above three properties.
 
@@ -818,7 +818,7 @@
 ;;; -----------------------------------
 
 
-;;; Below, three fundamental properties of @dag-deref@: 
+;;; Below, three fundamental properties of @dag-deref@:
 
 ;;; 1)
 ;;; It returns an index.
@@ -827,7 +827,7 @@
 ;;; 3)
 ;;; The term corresponding to that index is the same than the term
 ;;; corresponding to that node (note the @syntaxp@ condition of this
-;;; rule, used to prevent loops).   
+;;; rule, used to prevent loops).
 ;;; -)
 
 (defthm natp-dag-deref-bounded-term-graph-p
@@ -866,7 +866,7 @@
 ;;; corollary the lemma {\tt not\--equal\--pointers\--not\--equal\--terms} prove
 ;;; that the terms pointed by two different non-"IS" nodes, one of them
 ;;; a variable, are not equal (this property will be useful when
-;;; reasoning about the {\tt ELIMINATE} rule). 
+;;; reasoning about the {\tt ELIMINATE} rule).
 
 (local
  (encapsulate
@@ -879,7 +879,7 @@
 		   (equal (cdr x) t))
 	      (not (equal a (car x))))
      :rule-classes nil))
- 
+
   (local
    (defthm injective-lemma-1
      (implies (and (consp g)
@@ -906,7 +906,7 @@
 	   ((zp x1) 2)
 	   ((zp x2) 3)
 	   (t (induction-hint (1- x1) (1- x2) (cdr l))))))
- 
+
   (defthm term-graph-variables-uniquely-determined
     (implies (and (no-duplicatesp (list-of-term-dag-variables g))
 		  (natp x1) (natp x2)
@@ -1004,58 +1004,58 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defun submultisetp (l m)
     (if (endp l)
 	t
       (and (member (car l) m)
 	   (submultisetp (cdr l) (delete-one (car l) m))))))
- 
+
  (local
   (defthm delete-one-no-duplicatesp
     (implies (no-duplicatesp m)
 	     (no-duplicatesp (delete-one l1 m)))))
- 
+
  (local
   (defthm member-no-duplicatesp-1
     (implies (and (member l1 m)
 		  (no-duplicatesp m))
 	     (not (member l1 (delete-one l1 m))))))
- 
+
  (local
   (defthm not-submultisetp-witness
     (implies (and (member l1 l2)
 		  (not (member l1 d)))
 	     (not (submultisetp l2 d)))))
- 
+
  (local
   (defthm submultisetp-no-duplicatesp
     (implies (and (submultisetp l m)
 		  (no-duplicatesp m))
-	     
+
 	     (no-duplicatesp l))
     :rule-classes nil))
- 
+
  (local
   (defthm submultisetp-list-of-term-dag-variables-update-nth-1
     (implies (and (natp x) (natp h0) (< x (len g)))
 	     (submultisetp (list-of-term-dag-variables
 			    (update-nth x h0 g))
 			   (list-of-term-dag-variables g)))))
- 
+
  (local
   (defthm list-of-term-dag-variables-update-nth-nil
     (implies (integerp h)
 	     (not (consp (list-of-term-dag-variables (update-nth x h nil)))))))
- 
+
  (local
   (defthm submultisetp-list-of-term-dag-variables-update-nth-2
     (implies (and (natp x) (natp h0) (>= x (len g)))
 	     (submultisetp (list-of-term-dag-variables
 			    (update-nth x h0 g))
 			   (list-of-term-dag-variables g)))))
- 
+
  (local
   (defthm submultisetp-list-of-term-dag-variables-update-nth
     (implies (and (natp x) (natp h0))
@@ -1063,9 +1063,9 @@
 			    (update-nth x h0 g))
 			   (list-of-term-dag-variables g)))
     :hints (("Goal" :cases ((< x (len g)))))))
- 
- 
- 
+
+
+
  (defthm no-duplicatesp-variables-preserved-by-eliminate
    (implies (and (natp x)
 		 (natp h0)
@@ -1079,13 +1079,13 @@
 			 (m (list-of-term-dag-variables g)))))))
 
 ;;; And finally, we show that the @dag-p@ property is preserved by the
-;;; {\tt ELIMINATE} rule. 
+;;; {\tt ELIMINATE} rule.
 
 ;;; To prove it, we need the following property (proved in {\tt
 ;;; dags.lisp}). This theorem establishes that if we update a dag in the
 ;;; form that {\tt ELIMINATE} does it, an we obtain a cyclic graph,
 ;;; then there exists a path from the index used to update to the
-;;; updated index, in the original graph. 
+;;; updated index, in the original graph.
 
 ; (defthm obtain-path-from-h-to-x-from-an-updated-dag-main-property
 ;   (let ((p* (obtain-path-from-h-to-x-from-an-updated-dag x h g)))
@@ -1119,16 +1119,16 @@
 	    (cons (induct-occur-check-d-path t (car h) g path)
 		  (induct-occur-check-d-path nil (cdr h) g path))))
       path))) ;;; to make this formal relevant
- 
+
  (local
   (defthm map-nfix-true-listp
     (implies (nat-true-listp l)
 	     (equal (map-nfix l) l))))
- 
+
  (local
   (defthm occur-check-d-path-from-to-main-lemma
-    (implies (and (dag-p g) (bounded-term-graph-p g n) 
-		  (if flg (natp h) (nat-true-listp h)) 
+    (implies (and (dag-p g) (bounded-term-graph-p g n)
+		  (if flg (natp h) (nat-true-listp h))
 		  (natp x) (term-dag-variable-p x g)
 		  (path-p p g)
 		  (equal (car (last p)) x)
@@ -1137,11 +1137,11 @@
 		    (member (first p) h)))
 	     (occur-check-d flg x h g))
     :hints (("Goal" :induct (induct-occur-check-d-path flg h g p)))))
- 
+
  (local
   (defthm occur-check-d-path-from-to
     (implies (and (dag-p g)
-		  (bounded-term-graph-p g n) 
+		  (bounded-term-graph-p g n)
 		  (natp x) (natp h)
 		  (term-dag-variable-p x g)
 		  (path-p p g)
@@ -1150,10 +1150,10 @@
 		  (member (first p) h))
 	     (occur-check-d t x h g))
     :rule-classes nil))
- 
+
  (defthm well-formed-term-dag-p-preserved-by-eliminate
    (implies (and (dag-p g)
-		 (bounded-term-graph-p g n) 
+		 (bounded-term-graph-p g n)
 		  (not (occur-check-d t x h g))
 		  (natp x) (natp h)
 		  (term-dag-variable-p x g))
@@ -1176,7 +1176,7 @@
 
 ;;; Later, we will need that the @n@ of the above theorem be (len (third
 ;;; upl)). That is, we need a similar theorem for well-formed-upl. Le us
-;;; prove it. 
+;;; prove it.
 (defthm len-update-nth-bis
   (implies (and (natp n) (< n (len l)))
 	   (equal (len (update-nth n x l)) (len l))))
@@ -1197,7 +1197,7 @@
 			       unif-legal-d
 			       unif-reduce-one-step-d)
 	   :cases ((unif-reduce-one-step-d upl op)))))
-	   
+
 
 
 
@@ -1211,12 +1211,12 @@
 ;;; well-formed dag unification problem then is applicable to the
 ;;; corresponding unification problem in the standard representation.  \\
 
-;;; First, some previous lemmas about the function @tbs-as-system@ 
+;;; First, some previous lemmas about the function @tbs-as-system@
 
 (local
  (defthm len-tbs-as-system
    (equal (len (tbs-as-system l g)) (len l))))
- 
+
 (local
  (defthm nth-tbs-as-system
    (implies (and (natp n) (< n (len l)))
@@ -1229,18 +1229,18 @@
    (implies (and (natp n) (< n (len l)))
 	    (equal (eliminate-n n (tbs-as-system l g))
 		   (tbs-as-system (eliminate-n n l) g)))))
- 
+
 
 (local
  (defthm tbs-as-system-append
    (equal (tbs-as-system (append S1 S2) g)
 	  (append (tbs-as-system S1 g) (tbs-as-system S2 g)))))
- 
+
 
 
 
 ;;; The following events show that the function @pair-args@ behaves in
-;;; the same way with both representations: 
+;;; the same way with both representations:
 
 
 (local
@@ -1252,7 +1252,7 @@
 		   (consp l))
 	      (consp (dag-as-term nil l g)))
      :hints (("Goal" :expand (dag-as-term nil l g)))))
-  
+
   (local
    (defthm pair-args-dag-as-term-lemma
      (implies (and (dag-p g)
@@ -1260,13 +1260,13 @@
 		   (not (equal l m)))
 	      (not (equal l (dag-as-term nil m g))))
      :hints (("Goal" :cases ((consp m))))))
-  
+
   (defthm pair-args-dag-as-term
     (implies (dag-p g)
 	     (iff (second (pair-args (dag-as-term nil l g)
 				     (dag-as-term nil m g)))
 		  (second (pair-args l m)))))))
- 
+
 
 ;;; Two special cases for our result:
 
@@ -1288,30 +1288,30 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defthm unif-legal-d-implies-unif-legal-p-almost
     (implies (and (bounded-well-formed-term-dag-p (third upl) n)
-		  (consp op) (consp (cdr op))  
+		  (consp op) (consp (cdr op))
 		  upl
 		  (bounded-nat-pairs-true-listp (first upl) n)
 		  (unif-legal-d upl op))
 	     (unif-legal-p (upl-as-pair-of-systems upl) op))
     :hints (("Goal" :in-theory (enable dag-as-term-dag-deref)))
     :rule-classes nil))
- 
- 
- 
+
+
+
  (defthm unif-legal-d-implies-unif-legal-p
    (implies (and (well-formed-upl upl)
 		 (unif-legal-d upl op))
 	    (unif-legal-p (upl-as-pair-of-systems upl) op))
    :hints (("Goal"
-	    :in-theory (disable unif-legal-d unif-legal-p) 
+	    :in-theory (disable unif-legal-d unif-legal-p)
 	    :use (
 		  (:instance unif-legal-d-implies-unif-legal-p-almost
 			     (n (len (caddr upl))))
-			     
+
 		  unif-legal-d-implies-upl-not-nil
 		  unif-legal-upl-consp-op)))))
 
@@ -1332,13 +1332,13 @@
  (encapsulate
   ()
   (local
-   (defthm ugly-lemma-1 
+   (defthm ugly-lemma-1
      (implies flg (and (equal (dag-as-term flg h g)
 			      (dag-as-term t h g))
 		       (equal (variables flg term)
 			      (variables t term))))
      :rule-classes nil))
-  
+
   (defthm substitution-does-not-change-term-particular-case
     (implies (and (not (member x (variables t (dag-as-term t h0 g))))
 		  flg)
@@ -1352,12 +1352,12 @@
 			 (sigma (list (cons x t1)))
 			 (term (dag-as-term flg h0 g)))
 	      (:instance ugly-lemma-1 (h h0) (term (DAG-AS-TERM FLG H0 G)))))))))
- 
+
 ;;; This lemma describes how the updates done by the {\tt ELIMINATE}
 ;;; rule affect to the term stored in a term graph. Note that simply
 ;;; updating a node with an index, one obtains an instantiation of the
 ;;; terms stored by the term dag. This a key property for the efficiency
-;;; of the algorithms based on term dags:  
+;;; of the algorithms based on term dags:
 
 (defthm eliminate-on-term-dags
   (implies (and (bounded-term-graph-p g n)
@@ -1379,7 +1379,7 @@
 ;;; Easy consequences of this property are the following results,
 ;;; extending the above property to the functions @apply-syst@ and
 ;;; @apply-range@ and describing how the eliminate rule affect to these
-;;; functions:  
+;;; functions:
 
 
 (local
@@ -1405,7 +1405,7 @@
 		 (no-duplicatesp (list-of-term-dag-variables g))
 		 (not (occur-check-d t x h0 g))
 		 (natp x) (natp h0)
-		 (bounded-nat-substitution-p l n) 
+		 (bounded-nat-substitution-p l n)
 		 (term-dag-variable-p x g))
 	    (equal (solved-as-system l (update-nth x h0 g))
 		   (apply-range
@@ -1415,7 +1415,7 @@
 
 
 ;;; This lemma relates the value of @pair-args@ in both representations
-;;; (it is needed for the {\tt DECOMPOSE} rule): 
+;;; (it is needed for the {\tt DECOMPOSE} rule):
 
 (local
  (defthm tbs-as-system-pair-args
@@ -1423,11 +1423,11 @@
 	    (equal (tbs-as-system (car (pair-args l1 l2)) g)
 		   (car (pair-args (dag-as-term nil l1 g)
 				   (dag-as-term nil l2 g)))))))
- 
 
 
 
-;;; Finally, this is the intended result in this subsection: 
+
+;;; Finally, this is the intended result in this subsection:
 
 (encapsulate
  ()
@@ -1469,7 +1469,7 @@
 (in-theory (disable well-formed-upl-def))
 
 
-(in-theory (disable 
+(in-theory (disable
 	    upl-as-pair-of-systems
 	    unif-legal-d unif-legal-p
 	    unif-reduce-one-step-d unif-reduce-one-step-p))
@@ -1498,7 +1498,7 @@
 	   (unif-seq-d-p
 	    (unif-reduce-one-step-d upl op)
 	    (cdr unif-seq))))))
-      
+
 
 ;;; The following function obtains the last well--formed dag unification
 ;;; problem obtained by a sequence of transformations (given by a
@@ -1516,7 +1516,7 @@
 ;;; to sequences of transformations, establishing the relationship
 ;;; between @unif-seq-d-p@, @unif-seq-d-last@ and @unif-seq-p-p@,
 ;;; @unif-seq-p-last@ (taht is, showing how sequences of transformations
-;;; acting on both representations are related): 
+;;; acting on both representations are related):
 
 (defthm unif-seq-d-p-unif-seq-p-p
   (implies (and (well-formed-upl upl)
@@ -1546,7 +1546,7 @@
 ;;; the functions @mgs-seq-p@ and @mgs-seq@ in the book {\tt
 ;;; prefix-unification-rules.lisp}). We call these type of sequences of
 ;;; transformations {\em complete legal sequences} with respect to a
-;;; given indices system and a term graph.   
+;;; given indices system and a term graph.
 
 (defun mgs-seq-d-p (S g seq)
   (and (unif-seq-d-p (list S nil g) seq)
@@ -1573,7 +1573,7 @@
 ;;; 1)
 ;;;  A complete legal sequence w.r.t. the dag representation is also
 ;;;  legal w.r.t. the list/prefix representation.
-;;; 2) 
+;;; 2)
 ;;; A complete legal sequence succeeds w.r.t. the dag representation
 ;;; if and only if it succeeds w.r.t. the list/prefix representation.
 ;;; 3)
@@ -1581,8 +1581,8 @@
 ;;;  legal sequence
 ;;;  w.r.t. the dag representation represents the substitution finally
 ;;;  obtained by the same sequence w.r.t. the list/prefix
-;;;  representation. 
-;;; -)  
+;;;  representation.
+;;; -)
 
 
 
@@ -1664,14 +1664,14 @@
 		  (mgs-seq-d-p S-dag g unif-seq))
 	     (mgs-seq-d S-dag g unif-seq)))
   :hints (("Goal" :use (:instance mgs-seq-completeness
-				  (S (tbs-as-system S-dag g)))))) 
+				  (S (tbs-as-system S-dag g))))))
 
 
 ;;; If a complete legal sequence of transformations on term dags
 ;;; succeeds, then the indices substitution finally obtained represents
 ;;; a solution of the system represented by the initial indices system:
 
-(defthm mgs-seq-d-soundness 
+(defthm mgs-seq-d-soundness
   (let* ((S (tbs-as-system S-dag g))
 	 (last-upl (mgs-seq-d S-dag g unif-seq))
 	 (sol (solved-as-system (second last-upl) (third last-upl))))
@@ -1680,7 +1680,7 @@
 		  last-upl)
 	     (solution sol S)))
   :hints (("Goal" :use (:instance mgs-seq-soundness
-				  (S (tbs-as-system S-dag g)))))) 
+				  (S (tbs-as-system S-dag g))))))
 
 
 ;;; If a complete legal sequence of transformations on term dags
@@ -1700,7 +1700,7 @@
 ;;; substitution obtaned by a complet legal sequence of transformations:
 
 
-(defthm mgs-seq-d-most-general-solution 
+(defthm mgs-seq-d-most-general-solution
   (let* ((S (tbs-as-system S-dag g))
 	 (last-upl (mgs-seq-d S-dag g unif-seq))
 	 (sol (solved-as-system (second last-upl) (third last-upl))))

@@ -30,7 +30,7 @@
 
 (progn!
 
-;;; We start by escaping to raw lisp.  
+;;; We start by escaping to raw lisp.
 
  (set-raw-mode t)
 
@@ -39,7 +39,7 @@
 ;;; paging structure.  Assuming the memory was fully instantiated, we
 ;;; would have an 1024 x 1024 x 4096 element array, where each element
 ;;; contained a single byte.  But, if the element(s) below an entry
-;;; have not been instantiated, the element will be zero.  
+;;; have not been instantiated, the element will be zero.
 
  (defun first-level-address (address)
    ;; The top 10 bits.

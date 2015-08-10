@@ -1,4 +1,4 @@
-;; UTEP - Utrecht Texas Equational Prover 
+;; UTEP - Utrecht Texas Equational Prover
 ;; A modest first order resolution and paramodulation based theorem prover written in ACL2.
 ;; Authored by Grant Olney Passmore {grant@math.utexas.edu}.
 ;; Began on: 12/22/05 at 4:46pm.
@@ -14,7 +14,7 @@
 
 (include-book "general")
 (include-book "unification")
-(include-book "weighting")	
+(include-book "weighting")
 (include-book "resolution")
 (include-book "paramod")
 (include-book "bewijs")
@@ -46,11 +46,11 @@
 	 (filter-duplicates (cdr new-moves) sos-moves usable-moves))
 	(t (cons (car new-moves)
 		 (filter-duplicates (cdr new-moves) sos-moves usable-moves)))))
-	      
+
 ;; PROVER-LOOP (sos-moves usable-moves prover-settings search-limit)
 ;; A new experimental loop for the prover, written in the Argonne/Otter SOS fashion.
 ;; By default, we use a PICK-GIVEN-RATION setting of 1:2 (2) to determine how
-;; often SOS/USABLE and SOS/SOS proof-search is alternated.  
+;; often SOS/USABLE and SOS/SOS proof-search is alternated.
 ;; G. Passmore :: 11/14/06
 
 (defun prover-loop (sos-moves usable-moves last-cycle-top-clause top-clause-id prover-settings search-limit)
@@ -62,18 +62,18 @@
 	;;
 
 	(t (let ((pick-given-ratio (or (get-setting prover-settings 'PICK-GIVEN-RATIO) 2)))
-	     (let ((new-sos-resolvents 
-		    (if (zp (mod search-limit pick-given-ratio)) 
+	     (let ((new-sos-resolvents
+		    (if (zp (mod search-limit pick-given-ratio))
 			(linear-resolution sos-moves usable-moves last-cycle-top-clause prover-settings)
 			(linear-resolution sos-moves sos-moves last-cycle-top-clause prover-settings))))
-	       (let ((new-sos-mergers 
+	       (let ((new-sos-mergers
 		      (if (get-setting prover-settings 'NO-MERGING) nil
-			  (linear-merging (append new-sos-resolvents sos-moves) 
-					  (+ top-clause-id (len new-sos-resolvents)) 
+			  (linear-merging (append new-sos-resolvents sos-moves)
+					  (+ top-clause-id (len new-sos-resolvents))
 					  last-cycle-top-clause 0))))
 		 (let ((new-sos-factors
 			(if (get-setting prover-settings 'NO-FACTORING) nil
-			    (linear-factoring (append sos-moves new-sos-resolvents new-sos-mergers) 
+			    (linear-factoring (append sos-moves new-sos-resolvents new-sos-mergers)
 						    (+ top-clause-id (len new-sos-resolvents) (len new-sos-mergers))
 						    last-cycle-top-clause 0))))
 
@@ -85,13 +85,13 @@
 		   ;; * Paramodulation is still linear right now.  I should think about incorporating an appropriate SOS/USABLE
 		   ;;   distinction for paramodulation.  For now, I'll merge SOS,USABLE first and then linearly paramodulate.
 		   ;;
-		   ;; * A little experimental strategy I'm toying with (11/14/06): 
+		   ;; * A little experimental strategy I'm toying with (11/14/06):
 		   ;;   PARAMOD-RES-RATIO, if explicitly set, will act as a PICK-GIVEN-RATIO gate on paramodulation inferences.
 		   ;;   This way, if USE-PARAMOD is enabled and PARAMOD-RES-RATIO is set to 3 for instance,
 		   ;;   then paramodulation will only be done every 3rd iteration of the main prover loop.
 		   ;;
 
-		   (let ((new-sos-paramoduli 
+		   (let ((new-sos-paramoduli
 			  (if (or (not (get-setting prover-settings 'USE-PARAMOD))
 				  (and (get-setting prover-settings 'USE-PARAMOD)
 				       (> (nfix (get-setting prover-settings 'PARAMOD-RES-RATIO)) 0)
@@ -103,9 +103,9 @@
 							      (get-setting prover-settings 'MAX-WEIGHT)))))
 
 		     ;;
-		     ;; The idea here is that if we have a non-redundant merger, factor based upon our new 
-		     ;; SOS-RESOLVENTS, then chances are it may be more helpful than its parent in SOS-RESOLVENTS.  Thus, 
-		     ;; we include it first in the append below.  When we have more ex(t/p)ensive subsumption checking, 
+		     ;; The idea here is that if we have a non-redundant merger, factor based upon our new
+		     ;; SOS-RESOLVENTS, then chances are it may be more helpful than its parent in SOS-RESOLVENTS.  Thus,
+		     ;; we include it first in the append below.  When we have more ex(t/p)ensive subsumption checking,
 		     ;; this won't be an important thing to sweat about anymore.
 		     ;; * We place paramoduli last as this seems to be best in practice at this current moment.
 		     ;;
@@ -113,17 +113,17 @@
 		     ;;   (I call a clause A which is a duplicate of a clause B the `wrong' one to throw out if A is used to
 		     ;;    justify an inference in another proof-move but B is not).
 
-		 (prover-loop (append sos-moves 
-				      (filter-duplicates 
-				       (reverse (quad-filter-internal-dups 
+		 (prover-loop (append sos-moves
+				      (filter-duplicates
+				       (reverse (quad-filter-internal-dups
 						 (reverse (append new-sos-factors new-sos-mergers new-sos-resolvents new-sos-paramoduli))))
 				       sos-moves usable-moves))
 			    usable-moves
-			    (+ 1 (len new-sos-resolvents) top-clause-id last-cycle-top-clause) 
-			    (+ (len new-sos-resolvents) top-clause-id) 
+			    (+ 1 (len new-sos-resolvents) top-clause-id last-cycle-top-clause)
+			    (+ (len new-sos-resolvents) top-clause-id)
 			    prover-settings (1- search-limit))))))))))
-	      
-;;	      
+
+;;
 ;; UTEPTHM (input-clauses prover-settings)
 ;; Given a list of input clauses and prover-settings, attempt to
 ;; find a proof.
@@ -131,7 +131,7 @@
 
 (defun utepthm (sos-clauses usable-clauses prover-settings)
   (mv-let (sos-move-tree usable-move-tree)
-	  (prover-loop (raw-clauses-to-axiom-moves* sos-clauses 0 'S) 
+	  (prover-loop (raw-clauses-to-axiom-moves* sos-clauses 0 'S)
 		       (raw-clauses-to-axiom-moves* usable-clauses (1+ (len sos-clauses)) 'U)
 		       (1+ (len sos-clauses)) 0
 		       prover-settings
@@ -139,19 +139,19 @@
 	  (let ((refutation-move-id (contains-refutation sos-move-tree)))
 	    (cond ((not (equal refutation-move-id nil))
 		   (let ((pruned-linear-move-proof-tree (prune-proof-tree* (crop-proof-end-at-line-id (append usable-move-tree sos-move-tree) refutation-move-id))))
-		     (list (if (get-setting prover-settings 'VERBOSE-QED) 
+		     (list (if (get-setting prover-settings 'VERBOSE-QED)
 			       (list (list '**USABLE** usable-move-tree) (list '**SOS** sos-move-tree))
 			       (list '(VERBOSE-QED DISABLED)))
 			   (list '*** 'PROOF 'FOUND '***)
-			   (list pruned-linear-move-proof-tree 
+			   (list pruned-linear-move-proof-tree
 				 (list (list '|.:.| 'THEOREM 'PROVED)
 				       (list (- (len sos-move-tree) (len sos-clauses)) 'CLAUSES 'GENERATED)
 				       (list (len pruned-linear-move-proof-tree) 'CLAUSES 'USED 'IN 'PROOF))))))
-		  (t (list 
-		      (if (get-setting prover-settings 'NO-FAILURE-TREE) '(NO-FAILURE-TREE SETTING IS INHIBITING OUTPUT) 
-			  (list (list '**USABLE** usable-move-tree) (list '**SOS** sos-move-tree))) 
-		      (list '********** 'NO 'PROOF 'FOUND '**********) 
-		      (list '= 'SEARCH-DEPTH (or (get-setting prover-settings 'SEARCH-DEPTH) 5)) 
+		  (t (list
+		      (if (get-setting prover-settings 'NO-FAILURE-TREE) '(NO-FAILURE-TREE SETTING IS INHIBITING OUTPUT)
+			  (list (list '**USABLE** usable-move-tree) (list '**SOS** sos-move-tree)))
+		      (list '********** 'NO 'PROOF 'FOUND '**********)
+		      (list '= 'SEARCH-DEPTH (or (get-setting prover-settings 'SEARCH-DEPTH) 5))
 		      (list '= 'MAX-WEIGHT (nfix (get-setting prover-settings 'MAX-WEIGHT)))
 		      (list '= 'NUM-KEPT-CLAUSES-GENERATED (- (len sos-move-tree) (len sos-clauses)))))))))
 
@@ -159,7 +159,7 @@
 ;; Some examples:
 ;;
 ;; A trivial theorem that was hard to prove (UTEP couldn't!) until I implemented the
-;; new top-level loop with SOS/USABLE, WEIGHTING, PICK-GIVEN-RATIO, and 
+;; new top-level loop with SOS/USABLE, WEIGHTING, PICK-GIVEN-RATIO, and
 ;; PARAMOD-RES-RATIO (seems to be most important, which is nice as this idea just occurred
 ;; to me tonight!).
 ;; G.P. :: 11/14/06
@@ -167,41 +167,41 @@
 
 #|
 
-(utepthm 
+(utepthm
  ; SOS
  '(((= x x)) ; Must add this clause when using paramodulation, else no completeness!
-   ((not (A x)) (B x)) 
+   ((not (A x)) (B x))
    ((not (B x)) (= (foo) x))
    ((not (C x)) (D x))
-   ((not (D x)) (E x))) 
+   ((not (D x)) (E x)))
  ; Usable
- '(((A (bar))) 
-   ((not (= (bar) (foo))))) 
+ '(((A (bar)))
+   ((not (= (bar) (foo)))))
  ; Settings
- '((max-weight 20) 
-   (pick-given-ratio 2) 
-   (use-paramod t) 
-   (paramod-res-ratio 3) 
-   (search-depth 10))) 
+ '((max-weight 20)
+   (pick-given-ratio 2)
+   (use-paramod t)
+   (paramod-res-ratio 3)
+   (search-depth 10)))
 
  Output as of 11/14/06:
 
-ACL2 !>(utepthm 
+ACL2 !>(utepthm
  ; SOS
- '(((= x x)) 
-   ((not (A x)) (B x)) 
+ '(((= x x))
+   ((not (A x)) (B x))
    ((not (B x)) (= (foo) x))
    ((not (C x)) (D x))
-   ((not (D x)) (E x))) 
+   ((not (D x)) (E x)))
  ; Usable
- '(((A (bar))) 
-   ((not (= (bar) (foo))))) 
+ '(((A (bar)))
+   ((not (= (bar) (foo)))))
  ; Settings
- '((max-weight 20) 
-   (pick-given-ratio 2) 
-   (use-paramod t) 
-   (paramod-res-ratio 3) 
-   (search-depth 10))) 
+ '((max-weight 20)
+   (pick-given-ratio 2)
+   (use-paramod t)
+   (paramod-res-ratio 3)
+   (search-depth 10)))
 
 (((VERBOSE-QED DISABLED))
  (*** PROOF FOUND ***)
@@ -244,7 +244,7 @@ ACL2 !>(utepthm
 ;;
 ;; A hard example that was not possible to prove until tonight (11/14/06)!
 ;;
-		
+
 ;; A non-trivial benchmark/test input - Drawn from OTTER's benchmark suite.
 ;; The sentential calculus (CN).
 ;;
@@ -261,7 +261,7 @@ ACL2 !>(utepthm
 
 ;;
 ;; This translates to:
- 
+
 (utepthm
  '(((not (P (i x y))) (not (P x)) (P y))
    ((P (i (i x y) (i (i y z) (i x z)))))
@@ -271,10 +271,10 @@ ACL2 !>(utepthm
    ((not (P (i (a) (a)))))
    ((not (P (i (n (i (a) (a))) (b)))))
    ((not (P (i (i (n (i (a) (b))) (i (a) (b))) (i (i (n (a) (a)) (b))))))))
- '((max-weight 19) 
-   (pick-given-ratio 2) 
-   (use-paramod nil) 
-   (search-depth 10))) 
+ '((max-weight 19)
+   (pick-given-ratio 2)
+   (use-paramod nil)
+   (search-depth 10)))
 
  A proof is found! 11/14/06
 
@@ -306,14 +306,14 @@ ACL2 !>(utepthm
    (352 CLAUSES GENERATED)
    (6 CLAUSES USED IN PROOF))))
 
- 
+
 ;;
 ;; A *seriously* hard example.
 ;; A 4-basis for the infinitely many-valued sentential calculus.
 ;; Drawn from Bob Veroff and McCunes CD work with OTTER.
 ;;
 
-(utepthm 
+(utepthm
  ; Set-Of-Support Clauses
  '(((not (P (i (n (n (a))) (a)))))                           ; ~MV-24
    ((not (P (i (i (a) (b)) (i (i (c) (a)) (i (c) (b)))))))   ; ~MV-25
@@ -324,14 +324,14 @@ ACL2 !>(utepthm
    ((P (i (i x y) (i (i y z) (i x z)))))             ; MV-2
    ((P (i (i (i x y) y) (i (i y x) x))))             ; MV-3
    ((P (i (i (n x) (n y)) (i y x)))))                ; MV-5
- '((max-weight 19) 
-   (pick-given-ratio 2) 
-   (use-paramod nil) 
-   (search-depth 10))) 
+ '((max-weight 19)
+   (pick-given-ratio 2)
+   (use-paramod nil)
+   (search-depth 10)))
 
  On 11/14/06, at last, a proof is found!!!
 
-ACL2 !>(utepthm 
+ACL2 !>(utepthm
  ; Set-Of-Support Clauses
  '(((not (P (i (n (n (a))) (a)))))                           ; ~MV-24
    ((not (P (i (i (a) (b)) (i (i (c) (a)) (i (c) (b)))))))   ; ~MV-25
@@ -342,9 +342,9 @@ ACL2 !>(utepthm
    ((P (i (i x y) (i (i y z) (i x z)))))             ; MV-2
    ((P (i (i (i x y) y) (i (i y x) x))))             ; MV-3
    ((P (i (i (n x) (n y)) (i y x)))))                ; MV-5
- '((max-weight 19) 
-   (pick-given-ratio 2) 
-   (use-paramod nil) 
+ '((max-weight 19)
+   (pick-given-ratio 2)
+   (use-paramod nil)
    (search-depth 10)))
 
 (((VERBOSE-QED DISABLED))
@@ -398,13 +398,13 @@ As of 11/14/06, I can't yet prove this.  This is a good
 problem to focus on for improving the prover.
 Prover9 gets this without ANY hints, weights, etc.!
 
-(utepthm 
+(utepthm
  ; Set-Of-Support Clauses
  '(((not (= (f (a) (b)) (f (b) (a)))))  ; Negation of goal (commutativity)
    ((= x x))                            ; For paramodulation completeness
    ((= (f x x) (e)))                    ; This group is of exponent 2
    ((= (f x (i x)) (e)))                ; Groups have a right inverse (deducible that exists a left)
-   ((= (f x (e)) x))                    ; Groups have a right identity	
+   ((= (f x (e)) x))                    ; Groups have a right identity
    ((= (f (e) x) x))                    ;  which is also a left identity
    ((= (f x (f y z)) (f (f x y) z)))    ; Groups are associative
    ((= (f (f x y) z) (f x (f y z))))    ; Flip of associativity
@@ -412,26 +412,26 @@ Prover9 gets this without ANY hints, weights, etc.!
  ; Usable Clauses
  nil
  ; Prover Settings
- '((max-weight 20) 
-   (pick-given-ratio 3) 
+ '((max-weight 20)
+   (pick-given-ratio 3)
    (use-paramod t)
    (paramod-res-ratio 5)
    (paramod-eq-side RHS)
-   (search-depth 10))) 
+   (search-depth 10)))
 
-;; New example: 
+;; New example:
 
-(utepthm 
+(utepthm
  ; Set-Of-Support Clauses
- '( ((not (P (i (a)) (a) (e)))) )  ; Denial of left inverse. 
+ '( ((not (P (i (a)) (a) (e)))) )  ; Denial of left inverse.
  ; Usable Clauses
  '(((not (P x y u)) (not (P y z w)) (not (P u z s)) (P x w s)) ; Product is associative
    ((P x (e) x)) ; Right identity
    ((P (e) x x)) ; Left identity
    ((P x (i x) (e)))) ; Right inverse
  ; Prover Settings
- '((max-weight 25) 
-   (pick-given-ratio 2) 
+ '((max-weight 25)
+   (pick-given-ratio 2)
    (use-paramod nil)
    (paramod-res-ratio 5)
    (paramod-eq-side RHS)
@@ -479,21 +479,21 @@ Prover9 gets this without ANY hints, weights, etc.!
 ;; A propositional example:
 ;;
 
-(utepthm 
+(utepthm
  ; Set-Of-Support Clauses
  '(((A))
    ((not (E))))
  ; Usable Clauses
- '(((not (A)) (B)) 
+ '(((not (A)) (B))
    ((not (B)) (C))
    ((not (C)) (D))
    ((not (D)) (E)))
  ; Prover Settings
- '((max-weight 19) 
-   (pick-given-ratio 2) 
-   (use-paramod nil) 
-   (search-depth 10))) 
-    
+ '((max-weight 19)
+   (pick-given-ratio 2)
+   (use-paramod nil)
+   (search-depth 10)))
+
 ;; This finds a proof!
  Output as of 11/14/06:
 

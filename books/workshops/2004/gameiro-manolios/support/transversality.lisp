@@ -20,7 +20,7 @@
 ; Email: gameiro@math.gatech.edu
 
 ; Postal Mail:
-; School of  Mathematics 
+; School of  Mathematics
 ; Georgia Institute of  Technology
 ; 686 Cherry Street
 ; Atlanta, Georgia 30332-0160 U.S.A.
@@ -263,10 +263,10 @@
                 (in lbda l1 l2))
            (check_trans_lbda u1 u2 v1 v2 lbda))
   :hints
-  (("Goal" 
-    :use 
-    ((:instance 
-      i_dot_ok 
+  (("Goal"
+    :use
+    ((:instance
+      i_dot_ok
       (x (nth 0 (vec_fld  (nth 0 (edge_lbda u1 u2 v1 v2 lbda))
                           (nth 1 (edge_lbda u1 u2 v1 v2 lbda)))))
       (y (nth 1 (vec_fld  (nth 0 (edge_lbda u1 u2 v1 v2 lbda))
@@ -296,7 +296,7 @@
     :in-theory (disable i_dot_ok))))
 
 (defun non-decreasing-unit (l)
-  (cond ((or (endp l) 
+  (cond ((or (endp l)
              (endp (cdr l)))
          nil)
         ((endp (cddr l))

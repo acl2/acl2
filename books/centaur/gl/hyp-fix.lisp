@@ -115,7 +115,7 @@
 ;;         (calist-remassoc x (cdr calist))
 ;;       (cons (car calist)
 ;;             (calist-remassoc x (cdr calist)))))
-                    
+
 ;;   ///
 ;;   (defthm calist-lookup-of-calist-remassoc
 ;;     (equal (calist-lookup k1 (calist-remassoc k2 calist))
@@ -309,7 +309,7 @@
                   t
                 (if (consp (car x))
                     (let ((rest (eval-constraint-alist
-                                 (calist-remassocs (cdr x) 
+                                 (calist-remassocs (cdr x)
                                                    (list (caar x)))
                                  env)))
                       (if (cdar x)
@@ -330,7 +330,7 @@
            (eval-constraint-alist x env))
     :hints(("Goal" :in-theory (enable eval-constraint-alist-aux
                                       calist-remassocs))))
-  
+
   (verify-guards eval-constraint-alist)
 
 
@@ -457,7 +457,7 @@
     (equal (constraint-alist->aig-aux x nil)
            (constraint-alist->aig x))
     :hints(("Goal" :in-theory (enable constraint-alist->aig-aux))))
-  
+
   (verify-guards constraint-alist->aig)
 
   (local (defthm set-equiv-of-cons-redundant
@@ -537,10 +537,10 @@
         (if (cdar x)
             (or (set::in (nfix v) (acl2::aig-vars (caar x)))
                 (constr-alist-depends-on
-                 v (calist-remassocs (cdr x) 
+                 v (calist-remassocs (cdr x)
                                      (list (caar x)))))
           (constr-alist-depends-on
-           v (calist-remassocs (cdr x) 
+           v (calist-remassocs (cdr x)
                                (list (caar x)))))
       (constr-alist-depends-on v (cdr x))))
   ///
@@ -556,7 +556,7 @@
   ;;          (constr-alist-depends-on v x))
   ;;   :hints(("Goal" :in-theory (enable constr-alist-depends-on-aux
   ;;                                     calist-remassocs))))
-  
+
   ;; (verify-guards constr-alist-depends-on)
 
 
@@ -624,7 +624,7 @@
        (look (calist-lookup newx calist))
        ((when look) (eql 1 look)))
     newx)
-  /// 
+  ///
 
   (defthm aig-under-constraint-alist-of-shrink-constraint-alist
     (equal (aig-under-constraint-alist x (shrink-constraint-alist calist))
@@ -672,7 +672,7 @@
 ;;         (acl2::aig-not )))
 ;;     )
 
-;;   /// 
+;;   ///
 
 ;;   (defthm aig-under-constraint-alist-of-shrink-constraint-alist
 ;;     (equal (aig-under-constraint-alist x (shrink-constraint-alist calist))
@@ -747,7 +747,7 @@
     :hints(("Goal" :in-theory (enable shrink-constraint-alist calist-remassocs pairlis$)
             :expand ((shrink-constraint-alist calist)
                      (:free (seen) (calist-remassocs calist seen))))))
-  
+
   ;; (defcong constraint-alist-equiv constraint-alist-equiv
   ;;   (constraint-alist-delete-keys keys calist) 2)
 
@@ -877,7 +877,7 @@
                                       (cons k lst))
                     (calist-remassocs (shrink-constraint-alist calist)
                                       lst)))
-    :hints(("Goal" 
+    :hints(("Goal"
             :expand ((shrink-constraint-alist calist)
                      (:free (a b lst) (calist-remassocs (cons a b) lst))
                      (:free (lst) (calist-remassocs nil lst)))
@@ -1091,7 +1091,7 @@
   (defthm eval-of-bfr-hyp-init$a
     (equal (bfr-hyp-eval (bfr-hyp-init$a hyp$a) env) t)
     :hints(("Goal" :in-theory (enable bfr-hyp-eval)))))
-             
+
 
 
 (define bfr-assume$c (x hyp$c)
@@ -1402,7 +1402,7 @@
   (bfr-case
    :bdd nil
    :aig (shrink-constraint-alist nil)))
-  
+
 (define hyp$ap (hyp$a)
   (equal hyp$a (bfr-hyp-fix hyp$a))
   ///

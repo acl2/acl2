@@ -96,7 +96,7 @@
     (and (vl-partselect-case x.part :none)
          (consp x.seltrace)
          (vl-selstep->caveat (car x.seltrace)))))
-       
+
 
 
 (define vl-index-typedecide ((x        vl-expr-p)

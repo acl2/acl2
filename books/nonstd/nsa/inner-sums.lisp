@@ -16,7 +16,7 @@
 ;; We start by defining the function binop(i,j) which is used to
 ;; compute the term a_{i,j} in a nested sum.
 
-(encapsulate 
+(encapsulate
  ((binop (i j) t))
 
  (local
@@ -40,7 +40,7 @@
 (defun row-expansion-inner (i j n)
   (declare (xargs :measure (nfix (1+ (- n j)))))
   (if (and (integerp j) (integerp n) (<= 0 j) (<= j n))
-      (cons (binop i j) 
+      (cons (binop i j)
 	    (row-expansion-inner i (1+ j) n))
     nil))
 
@@ -61,7 +61,7 @@
   (if (and (integerp i) (integerp m) (<= 0 i) (<= i m))
       (cons (binop i j) (col-expansion-inner (1+ i) j m))
     nil))
-  
+
 ;; And them "sum" all the a_{i,j} by "adding up" all the columns.
 
 (defun col-expansion-outer (j m n)
@@ -70,12 +70,12 @@
       (cons (sumlist (col-expansion-inner 0 j m))
 	    (col-expansion-outer (1+ j) m n))
     nil))
-  
+
 (in-theory (disable (:executable-counterpart row-expansion-inner)
 		    (:executable-counterpart row-expansion-outer)
 		    (:executable-counterpart col-expansion-inner)
 		    (:executable-counterpart col-expansion-outer)))
-  
+
 ;; This is just to specify that we want to "induct on n"....
 
 (local
@@ -166,14 +166,14 @@
 ;; I'm a C++ programmer by day)
 
 (defthm row-expansion-inner-i-j-0
-  (equal (row-expansion-inner i j 0) 
+  (equal (row-expansion-inner i j 0)
 	 (if (equal j 0)
 	     (list (binop i 0))
 	   nil))
   :hints (("Goal" :expand (row-expansion-inner i j 0))))
 
 (defthm row-expansion-outer-i-0-0
-  (equal (row-expansion-outer i 0 0) 
+  (equal (row-expansion-outer i 0 0)
 	 (if (and (equal i 0))
 	     (list (binop 0 0))
 	   nil))
@@ -218,7 +218,7 @@
 		   (and (integerp m) (equal m 0))
 		   (and (integerp m) (not (equal m 0)))))))
 
-;; Another "empty" case: 
+;; Another "empty" case:
 
 (defthm row-expansion-outer-i>m
   (implies (> i m)
@@ -253,7 +253,7 @@
 (defun row-expansion-outer-lt (i m n)
   (declare (xargs :measure (nfix (1+ (- m i)))))
   (if (and (integerp i) (integerp m) (<= 0 i) (<= i m))
-      (cons (sumlist (row-expansion-inner 
+      (cons (sumlist (row-expansion-inner
 		      i 0 (if (< i n) i n)))
 	    (row-expansion-outer-lt (1+ i) m n))
     nil))
@@ -269,7 +269,7 @@
       (cons (sumlist (col-expansion-inner j j m))
 	    (col-expansion-outer-lt (1+ j) m n))
     nil))
-  
+
 ;; Here's a different approach on the same idea.  We define a new
 ;; b_{i,j} with the property that b_{i,j} = 0 for i<j.
 
@@ -299,10 +299,10 @@
 (defun col-expansion-inner-using-lt (i j m)
   (declare (xargs :measure (nfix (1+ (- m i)))))
   (if (and (integerp i) (integerp m) (<= 0 i) (<= i m))
-      (cons (lt-binop i j) 
+      (cons (lt-binop i j)
 	    (col-expansion-inner-using-lt (1+ i) j m))
     nil))
-  
+
 (defun col-expansion-outer-using-lt (j m n)
   (declare (xargs :measure (nfix (1+ (- n j)))))
   (if (and (integerp j) (integerp n) (<= 0 j) (<= j n))
@@ -460,10 +460,10 @@
 
 (defun row-expansion-outer-m=n-aux (i n)
   (row-expansion-outer i n n))
-  
+
 (defun col-expansion-outer-m=n-aux (j n)
   (col-expansion-outer j n n))
-  
+
 (defthm ok-to-swap-inner-outer-expansions-m=n-aux
   (equal (sumlist (row-expansion-outer-m=n-aux 0 n))
 	 (sumlist (col-expansion-outer-m=n-aux 0 n))))
@@ -485,7 +485,7 @@
       (cons (sumlist (col-expansion-inner 0 j n))
 	    (col-expansion-outer-m=n (1+ j) n))
     nil))
-  
+
 ;; Clearly, these functions return the same value as the original ones
 ;; that used the underlying rectangular sums.
 
@@ -558,7 +558,7 @@
 (encapsulate
  ((zeroop () t)
   (oneop (i) t))
- 
+
  (local (defun zeroop () 0))
  (local (defun oneop (i) (fix i)))
 

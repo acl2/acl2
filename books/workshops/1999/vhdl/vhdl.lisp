@@ -6,21 +6,21 @@
 
 ;;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;; Book vhdl.lisp
-;;; 
-;;; Inside the VHDL macro, we represent VHDL entities and 
+;;;
+;;; Inside the VHDL macro, we represent VHDL entities and
 ;;; architectures using the following syntax:
 ;;;
 ;;; ENTITY ::=  (_entity NAME :port (PORT ...))
 ;;; PORT  ::=  NAME :in TYPE
 ;;;            NAME :out TYPE
-;;; ARCHITECTURE ::= (_architecture NAME :of NAME 
+;;; ARCHITECTURE ::= (_architecture NAME :of NAME
 ;;;                   :is (DEC-SIGNAL ...)
 ;;;                   :begin (PROCESS ...))
 ;;; DEC-SIGNAL  ::=  (_signal NAME :type TYPE)
 ;;;                  (_signal NAME :type TYPE := EXP)
 ;;; PROCESS  ::=  (_process NAME
 ;;;                   :is (DEC-VAR ...)
-;;;                   :begin ((_wait :until COND) 
+;;;                   :begin ((_wait :until COND)
 ;;;                           CMD ...))
 ;;; DEC-VAR  ::=  (_variable NAME :type TYPE)
 ;;;               (_variable NAME :type TYPE := EXP)
@@ -64,18 +64,18 @@
 ;;;; Naming Conventions
 ;;;; ==================
 
-;;; Make an event name (a symbol) from a component name, adding 
+;;; Make an event name (a symbol) from a component name, adding
 ;;; a prefix and a suffix
 
-(defun make-name (prefix name suffix) 
-    (intern (string-upcase (concatenate 'string (string prefix) 
-					        (string name) 
+(defun make-name (prefix name suffix)
+    (intern (string-upcase (concatenate 'string (string prefix)
+					        (string name)
 						(string suffix)))
 	    "ACL2"))
 
 ;;; Add prefix to a program name to make it unique in a global context.
 
-(defun prefix-name (prefix name) 
+(defun prefix-name (prefix name)
   (make-name prefix "." name))
 
 ;;; Generate name of variable holding next value of a signal
@@ -92,7 +92,7 @@
 
 ;;; Generate intermediate state name from a given number
 
-(defun make-state-name (n) 
+(defun make-state-name (n)
   (make-name "" "state-" (natural-to-string n)))
 
 ;;;; =====================
@@ -100,18 +100,18 @@
 ;;;; =====================
 
 ;;; A component environment is an assoc-list describing signals
-;;; and variables of an entity or architecture.  The descriptor 
-;;; for each identifier indicates its kind, type, initial value, 
-;;; and offset in state record.  The possible identifier kinds 
-;;; are input (input signal), output (output signal), signal 
-;;; (local signal), next (next value of signals), and var (local 
+;;; and variables of an entity or architecture.  The descriptor
+;;; for each identifier indicates its kind, type, initial value,
+;;; and offset in state record.  The possible identifier kinds
+;;; are input (input signal), output (output signal), signal
+;;; (local signal), next (next value of signals), and var (local
 ;;; variable).
 
-(defun make-ident-desc (kind typ init offset) 
-  (list kind typ init offset)) 
-(defun ident-desc-kind (desc) (car desc)) 
-(defun ident-desc-type (desc) (cadr desc)) 
-(defun ident-desc-init (desc) (caddr desc)) 
+(defun make-ident-desc (kind typ init offset)
+  (list kind typ init offset))
+(defun ident-desc-kind (desc) (car desc))
+(defun ident-desc-type (desc) (cadr desc))
+(defun ident-desc-init (desc) (caddr desc))
 (defun ident-desc-offset (desc) (cadddr desc))
 
 ;;; A program environment is an assoc-list describing program
@@ -145,7 +145,7 @@
 	    (kind (if (eql (cadr ports) :in) 'input 'output))
 	    (typ (caddr ports))
             (other-ports (cdddr ports)))
-	(acons name 
+	(acons name
 	       (make-ident-desc kind typ nil 0)
 	       (build-port-env other-ports)))
       nil))
@@ -248,7 +248,7 @@
 	 (output-env (extract-env-kind entity-env 'output))
 	 (next-output-env (build-next-env output-env))
 	 (next-signal-env (build-next-env signal-env)))
-    (alloc-env (append input-env 
+    (alloc-env (append input-env
 		       output-env
 		       signal-env
 		       next-output-env
@@ -256,8 +256,8 @@
 		       process-env)
 	       0)))
 
-;;; Build environment describing an architecture.  It includes 
-;;; the entity identifiers, local signals and local process 
+;;; Build environment describing an architecture.  It includes
+;;; the entity identifiers, local signals and local process
 ;;; variables.
 
 (defun build-architecture-env (arch env)
@@ -275,26 +275,26 @@
 ;;;; ===================
 
 ;;; Build environment describing a program component.  It gets
-;;; a program environment describing previously known program 
+;;; a program environment describing previously known program
 ;;; components.
 
 (defun build-component-env (comp env)
   (case (car comp)
-    (_entity (make-comp-desc 'entity 
+    (_entity (make-comp-desc 'entity
 			     (build-port-env (keyword-value :port (cddr comp)))))
     (_architecture (make-comp-desc 'architecture
 				   (build-architecture-env comp env)))
     (t nil)))
- 
+
 ;;; Build program environment composed of the environment of each
 ;;; program component
-	       
+
 (defun build-prog-env-iter (prog env)
   (if (consp prog)
       (let* ((comp (car prog))
 	     (comp-name (cadr comp))
 	     (comp-env (build-component-env comp env))
-	     (new-env (if (null comp-env) 
+	     (new-env (if (null comp-env)
 			  env
 			  (acons comp-name comp-env env))))
 	(build-prog-env-iter (cdr prog) new-env))
@@ -306,11 +306,11 @@
 ;;;; Master Macro
 ;;;; ============
 
-;;; Insert program environment in inner macros, and remove 
+;;; Insert program environment in inner macros, and remove
 ;;; _entity macros
 
 (defun insert-prog-env (prog env)
-  (if (consp prog) 
+  (if (consp prog)
       (if (equal (caar prog) '_entity)
 	  (insert-prog-env (cdr prog) env)
 	  `((,@(car prog) :env ,env)
@@ -325,7 +325,7 @@
 
 (defmacro vhdl (&body prog)
   (let ((env (build-prog-env prog)))
-    `(progn 
+    `(progn
        (defconst *prog* (quote (vhdl ,@prog)))
        (defconst *env* (quote ,env))
        ,@(insert-prog-env prog env)
@@ -335,7 +335,7 @@
 ;;;; State Representation
 ;;;; ====================
 
-;;; Standard function to replace one element of a list.  It is called 
+;;; Standard function to replace one element of a list.  It is called
 ;;; by the expansion of macro-functions
 
 (defun insert-value (offset new-value st)
@@ -386,10 +386,10 @@
 	     (rest-env (cdr env)))
 
        (case (ident-desc-kind desc)
-             ((signal output) 
-                `(,(name-put-var arch) 
+             ((signal output)
+                `(,(name-put-var arch)
                                 (,(name-get-var arch)
-                                      st 
+                                      st
                                      (quote ,(make-name-next name)))
                                (quote ,name)
                                ,(make-update-signals arch rest-env)))
@@ -412,8 +412,8 @@
 	      (t ))  ; user type
         init)))
 
-;;; Make key-word parameter list for macro creating a state.  The default 
-;;; value for each variable comes from its declaration.  For the next 
+;;; Make key-word parameter list for macro creating a state.  The default
+;;; value for each variable comes from its declaration.  For the next
 ;;; value of signals, we need to know if some value was actually supplied.
 
 (defun make-param-state (env)
@@ -498,7 +498,7 @@
 (defun name-proc-cycle-const (proc ) (make-name "*" proc "-cycle*"))
 (defun name-proc-cycle (proc ) (make-name "" proc "-cycle"))
 
-;;; Expand name ocurring in an expression into a signal or a variable 
+;;; Expand name ocurring in an expression into a signal or a variable
 ;;; name.  For variable names, it prefixes the process name.
 
 (defun expand-var-signal (proc-name env name)
@@ -522,14 +522,14 @@
 (mutual-recursion
   (defun expand-exp (st proc-name arch-name env e)
     (cond ((or (stringp e) (symbolp e))
-	   `(,(name-get-var arch-name) 
-             ,(make-state-name st) 
+	   `(,(name-get-var arch-name)
+             ,(make-state-name st)
 	     (quote ,(expand-var-signal proc-name env e))))
-	  ((consp e) 
+	  ((consp e)
 	   (if (eql (car e) 'quote)
 	       e
-	       (cons (car e) 
-		     (expand-exp-list st proc-name arch-name 
+	       (cons (car e)
+		     (expand-exp-list st proc-name arch-name
 				      env (cdr e)))))
 	  (t e)))
   (defun expand-exp-list (st proc-name arch-name env list)
@@ -541,31 +541,31 @@
 ;;; Generate variable assignment
 
 (defun make-var-assign (st proc-name arch-name env var exp)
-  `(,(name-put-var arch-name) 
-    ,(expand-exp st proc-name arch-name env exp) 
+  `(,(name-put-var arch-name)
+    ,(expand-exp st proc-name arch-name env exp)
     (quote ,(expand-var-signal proc-name env var))
     ,(make-state-name st)))
 
 ;;; Generate signal assignment
 
 (defun make-signal-assign (st proc-name arch-name env signal exp)
-  `(,(name-put-var arch-name) 
-    ,(expand-exp st proc-name arch-name env exp) 
+  `(,(name-put-var arch-name)
+    ,(expand-exp st proc-name arch-name env exp)
     (quote ,(make-name-next (expand-var-signal proc-name env signal)))
     ,(make-state-name st)))
 
 ;;; Generate conditional command
 
 (defun make-if-cmd (st proc-name arch-name env cond then else)
-  `(if ,(expand-exp st proc-name arch-name env cond) 
-       ,then 
+  `(if ,(expand-exp st proc-name arch-name env cond)
+       ,then
        ,else))
 
-;;; Generate command sequences.  The argument is a list of pairs 
-;;; where the cadr is a command expansion, and the car is the 
+;;; Generate command sequences.  The argument is a list of pairs
+;;; where the cadr is a command expansion, and the car is the
 ;;; name of the state it should be bounded to.  The next command
 ;;; in the sequence uses this name as the beginning state.
-;;; The argument st is the beginning state for the first 
+;;; The argument st is the beginning state for the first
 ;;; command.
 
 (defun make-seq-cmd (st list)
@@ -582,22 +582,22 @@
   (defun expand-cmd-list (st proc-name arch-name env cmd-list)
     (if (consp cmd-list)
 	(cons (list (make-state-name (1+ st))
-		    (expand-cmd st proc-name arch-name env 
+		    (expand-cmd st proc-name arch-name env
 				(car cmd-list)))
-	      (expand-cmd-list (1+ st) proc-name arch-name env 
+	      (expand-cmd-list (1+ st) proc-name arch-name env
 			       (cdr cmd-list)))
         nil))
   (defun expand-cmd (st proc-name arch-name env cmd)
     (case (car cmd)
-      (_<- (make-var-assign st proc-name arch-name env 
+      (_<- (make-var-assign st proc-name arch-name env
 			    (cadr cmd) (caddr cmd)))
-      (_<= (make-signal-assign st proc-name arch-name env 
+      (_<= (make-signal-assign st proc-name arch-name env
 			       (cadr cmd) (caddr cmd)))
       (_if (make-if-cmd st proc-name arch-name env (cadr cmd)
-	       (make-seq-cmd st 
-			     (expand-cmd-list st proc-name arch-name env 
+	       (make-seq-cmd st
+			     (expand-cmd-list st proc-name arch-name env
 					      (cadddr cmd)))
-	       (make-seq-cmd st 
+	       (make-seq-cmd st
 			     (expand-cmd-list st proc-name arch-name env
 					      (caddr (cdddr cmd))))))
       (t (make-state-name st)))))
@@ -605,7 +605,7 @@
 ;;; Expand sequence of commands
 
 (defun expand-cmd-seq (st proc-name arch-name env cmd-seq)
-  (make-seq-cmd st 
+  (make-seq-cmd st
                 (expand-cmd-list st proc-name arch-name env cmd-seq)))
 
 ;;; Expand process body into function parameter list and body
@@ -625,7 +625,7 @@
   (let* ((expansion (expand-process-body name arch env (cdr begin)))
 	 (full-name (prefix-name arch name))
 	 (name-proc-fun (make-name "" full-name "")))
-    `(progn 
+    `(progn
        (defconst ,(name-proc-cycle-const full-name)
 	 (quote (defun ,name-proc-fun ,@expansion)))
        (defun ,(name-proc-cycle full-name)
@@ -678,14 +678,14 @@
 (defmacro _architecture (name &key of is begin env)
   (declare (ignore of is))
   (let ((env (comp-desc-env (assoc-value name env)))
-	(cycle-fun 
+	(cycle-fun
 	   `(defun ,(name-arch-cycle name) (st)
 	      (,(name-update-signals name)
 	       ,(make-arch-cycle (collect-proc-names name begin)))))
 	(simul-fun
 	   `(defun ,(name-arch-simul name) (n st)
 	      (if (zp n) st
-		  (,(name-arch-simul name) 
+		  (,(name-arch-simul name)
 		   (1- n)
 		   (,(name-arch-cycle name) st))
 		  ))))

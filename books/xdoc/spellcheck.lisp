@@ -94,7 +94,7 @@
             (t
              (list (first x) (second x) (third x))))))
 
-#||            
+#||
 (soundex-mangle-tail (str::explode "xplode"))
 (soundex-mangle-tail (str::explode "xplod"))
 (soundex-mangle-tail (str::explode "xplds"))
@@ -110,7 +110,7 @@
   (b* ((chars (str::explode x)))
     (if (atom chars)
         "    "
-      (str::implode 
+      (str::implode
        (cons (str::downcase-char (car chars))
              (soundex-mangle-tail (cdr chars)))))))
 
@@ -193,7 +193,7 @@
   ;; Merge together final tokens to perhaps get better soundex matches for
   ;; "foop" versus "foo" "p"
   (declare (xargs :guard (string-listp x)))
-  (cond ((atom x) 
+  (cond ((atom x)
          nil)
         ((atom (cdr x))
          (list (first x)))
@@ -201,7 +201,7 @@
               (equal (second x) "p"))
          (list (str::cat (first x) "p")))
         (t
-         (cons (car x) 
+         (cons (car x)
                (merge-final-ps (cdr x))))))
 
 #||
@@ -270,13 +270,13 @@
         ;; Straightforward phonetic comparison of both symbols without any
         ;; regard to the tokenization.
         (cons name1 rest))
-       
+
        ((unless (>= desperation 5)) rest)
 
        ((when (nearly-equal name1-tokens goal-tokens))
         ;; Identical except that one or the other has an extra suffix/prefix.
         (cons name1 rest)))
-      
+
       rest))
 
 (defun collect-plausible-misspellings (goal topic-names)
@@ -353,7 +353,7 @@
        (diff (abs (- n1 n2))))
       (+ diff
          (candidate-score-aux (cdr domain) goal-chars candidate-chars))))
-  
+
 (defun candidate-score (goal candidate)
   (declare (xargs :guard (and (stringp goal)
                               (stringp candidate))))
@@ -388,8 +388,8 @@
        (candidates (sort-candidates goal candidates)))
     (take (min (len candidates) 5)
           candidates)))
-       
-  
+
+
 #||
 
 (xdoc-autocorrect 'aples '(appoles apples appals apols appals appels appllas appallas app-les))

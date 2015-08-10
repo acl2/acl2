@@ -7,7 +7,7 @@
 ;;
 ;; ((hpid lfd) port requestq)
 ;;
-;; This means that hpid is listening on lfd for connections 
+;; This means that hpid is listening on lfd for connections
 ;; at the port.  When a process p issues a "(connect hpid port)",
 ;; the pair (p fd) is added to the request queue.  When the
 ;; listening process issues an (accept lfd), the first request is

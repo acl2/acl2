@@ -4,9 +4,9 @@
 (include-book "arithmetic/top" :dir :system)
 
 (encapsulate
- ( ((nested-interval *) => * :formals (n) :guard (posp n)) 
+ ( ((nested-interval *) => * :formals (n) :guard (posp n))
    )
- 
+
  (local
   (defun nested-interval (n)
     (cons (realfix (- (/ n))) (realfix (/ n)))
@@ -96,7 +96,7 @@
 		 (:instance cdr-nested-interval-bounded-above))
 	   :in-theory (disable nested-intervals-are-intervals
 			       cdr-nested-interval-bounded-above)))
-		 
+
   )
 
 (defthm-std nested-interval-bound-is-standard
@@ -248,7 +248,7 @@
 	    :in-theory (disable standard-part-<=
 				nested-intervals-are-intervals)))
    ))
-				
+
 
 (local
  (defthm standard-part-car-interval-lower-bound-lemma
@@ -262,7 +262,7 @@
 	    :in-theory (disable standard-part-<=
 				nested-intervals-are-intervals)))
    ))
-				
+
 
 (defthm standard-element-more-than-standard-part-of-large-element
   (implies (and (posp m)

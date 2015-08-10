@@ -54,28 +54,28 @@
                            gap-open-cost gap-extend transition-matrix acc)
             (if (equal char1 gap-char)
                 (if (equal gap-open-flag 1)
-                    (affine-dist (cdr seq1) (cdr seq2) 
+                    (affine-dist (cdr seq1) (cdr seq2)
                                  gap-char gap-open-flag
-                                 gap-open-cost gap-extend 
+                                 gap-open-cost gap-extend
                                  transition-matrix (+ gap-extend acc))
-                  (affine-dist (cdr seq1) (cdr seq2) 
+                  (affine-dist (cdr seq1) (cdr seq2)
                                gap-char 1
-                               gap-open-cost gap-extend 
-                               transition-matrix (+ gap-open-cost 
+                               gap-open-cost gap-extend
+                               transition-matrix (+ gap-open-cost
                                                     gap-extend
                                                     acc)))
               (if (equal char2 gap-char)
                   (if (equal gap-open-flag 2)
-                      (affine-dist (cdr seq1) (cdr seq2) 
+                      (affine-dist (cdr seq1) (cdr seq2)
                                    gap-char gap-open-flag
-                                   gap-open-cost gap-extend 
+                                   gap-open-cost gap-extend
                                    transition-matrix
                                    (+ gap-extend acc))
-                    (affine-dist (cdr seq1) (cdr seq2) 
+                    (affine-dist (cdr seq1) (cdr seq2)
                                  gap-char 2
-                                 gap-open-cost gap-extend 
+                                 gap-open-cost gap-extend
                                  transition-matrix
-                                 (+ gap-open-cost 
+                                 (+ gap-open-cost
                                     gap-extend acc)))
             ;; two non-gaps, so close if open flag, add cost
                 (let ((transcost (get-transition-cost char1 char2
@@ -87,13 +87,13 @@
                                    (+ transcost acc))
                     transcost))))))
     acc)))
-        
+
 (defun make-default-translist (currstate alphabet cost)
   (declare (xargs :guard t))
   (if (atom alphabet)
       nil
-    (cons (if (equal (car alphabet) currstate) 
-              (cons (car alphabet) 0) 
+    (cons (if (equal (car alphabet) currstate)
+              (cons (car alphabet) 0)
             (cons (car alphabet) cost))
           (make-default-translist currstate (cdr alphabet) cost))))
 
@@ -101,7 +101,7 @@
   (declare (xargs :guard t))
   (if (atom alphabet)
       nil
-    (cons (cons (car alphabet) 
+    (cons (cons (car alphabet)
                 (make-default-translist (car alphabet) whole cost))
           (make-default-transmat (cdr alphabet) whole cost))))
 
@@ -115,8 +115,8 @@
 
 #||
 (affine-dist '(-) '(-) '- nil 3 2 *dna-trans-matrix* 0)
-               
-(affine-dist '(- - - G - T T) 
+
+(affine-dist '(- - - G - T T)
              '(- C T - - - T) '- nil 3 2 *dna-trans-matrix* 0)
 ||#
 
@@ -158,7 +158,7 @@
                                                newAcc)))
               (prog2$ (cw "Error passed on~%")
                       (mv "Error passed on" "Error"))))))
-        
+
 (defun score-tree-and-sequences-keep-internal-list
   (tree sequence-score-lists matrix-lists parentSoFar acc)
   (declare (xargs :measure (make-ord 1 (1+ (acl2-count tree)) 0)
@@ -172,13 +172,13 @@
   (if (atom tree)
       (mv parentSoFar acc)
     (mv-let (curScores1 acc1)
-            (score-tree-and-sequences-keep-internal (car tree) 
-                                                    sequence-score-lists 
+            (score-tree-and-sequences-keep-internal (car tree)
+                                                    sequence-score-lists
                                                     matrix-lists acc)
             (mv-let (curScores2 acc2)
                     (score-tree-and-sequences-keep-internal-list
-                     (cdr tree) sequence-score-lists 
-                     matrix-lists parentSoFar (cons (cons (car tree) 
+                     (cdr tree) sequence-score-lists
+                     matrix-lists parentSoFar (cons (cons (car tree)
                                                           curScores1)
                                                     acc1))
                     (if (and (small-integer-list-listp curScores1)
@@ -204,7 +204,7 @@
                (4 g g g a a)
                (5 c c t a t)
                (6 g a t a g)) 'seqs))
-       (sequence-score-lists (make-sequence-score-lists seqs 
+       (sequence-score-lists (make-sequence-score-lists seqs
                                                         *dna-cssl*
                                                         'seq-score-list)))
   (good-len-lists-mapping sequence-score-lists (strip-cdrs-gen *dna-matrix*)))
@@ -217,7 +217,7 @@
                (4 g g g a a)
                (5 c c t a t)
                (6 g a t a g)) 'seqs))
-       (sequence-score-lists (make-sequence-score-lists seqs 
+       (sequence-score-lists (make-sequence-score-lists seqs
                                                         *dna-cssl*
                                                         'seq-score-list)))
   (mv-let (total pairings)
@@ -267,7 +267,7 @@
 
 (defun get-child-char (child-scorelist parent-char)
   (declare (xargs :guard (rational-listp child-scorelist)))
-  (let ((possible-child-chars (find-min-pos child-scorelist 0 -1 
+  (let ((possible-child-chars (find-min-pos child-scorelist 0 -1
                                             (list -1))))
     (if (intersect possible-child-chars (list parent-char))
         parent-char
@@ -299,11 +299,11 @@
             (let ((childSeq (get-child-sequence child-scorelists
                                                 parent-seq)))
               (make-sequence-pairings-each (car child) childSeq scorelist-pairings
-                                           (make-sequence-pairings-each 
-                                            (cdr child) 
+                                           (make-sequence-pairings-each
+                                            (cdr child)
                                             parent-seq scorelist-pairings
-                                            (cons 
-                                             (cons 
+                                            (cons
+                                             (cons
                                               parent-seq childSeq)
                                              acc))))
           (prog2$ (cw "Error: Need good scorelists in scorelist-pairings~%")
@@ -315,7 +315,7 @@
   (declare (xargs :guard (alistp-gen scorelist-pairings)))
   (if (consp scorelist-pairings)
       ;; first entry must be tree consed to its scorelist
-      (let ((parent-seq (sequence-from-parent-scorelist (cdar 
+      (let ((parent-seq (sequence-from-parent-scorelist (cdar
                                                          scorelist-pairings))))
         (if (not (equal parent-seq "Error"))
             (make-sequence-pairings-each (caar scorelist-pairings)
@@ -334,7 +334,7 @@
                (4 g g g)
                (5 c c t)
                (6 g a t)) 'seqs))
-       (sequence-score-lists (make-sequence-score-lists seqs 
+       (sequence-score-lists (make-sequence-score-lists seqs
                                                         *dna-cssl*
                                                         'seq-score-list)))
   (mv-let (total pairings)
@@ -352,7 +352,7 @@
                (4 g g g a a)
                (5 c c t a t)
                (6 g a t a g)) 'seqs))
-       (sequence-score-lists (make-sequence-score-lists seqs 
+       (sequence-score-lists (make-sequence-score-lists seqs
                                                         *dna-cssl*
                                                         'seq-score-list)))
   (mv-let (total pairings)
@@ -382,13 +382,13 @@
       (prog2$ (cw "Error: Bad scorelists from make-sequence-score-lists~%")
               "Error: Bad scorelists from make-sequence-score-lists"))))
 
-(defun make-sequence-pairings-for-tree-from-scorelists 
+(defun make-sequence-pairings-for-tree-from-scorelists
   (tree sequence-score-lists matrix-lists)
-  (declare (xargs :guard 
-                  (and 
+  (declare (xargs :guard
+                  (and
                    (map-to-small-integer-list-listp sequence-score-lists)
                    (small-integer-list-listp matrix-lists)
-                   (good-len-lists-mapping sequence-score-lists 
+                   (good-len-lists-mapping sequence-score-lists
                                            matrix-lists))))
   (mv-let (total pairings)
           (score-tree-and-sequences-keep-internal tree sequence-score-lists
@@ -402,7 +402,7 @@
 
 (defconst *dna-matrix-gap*
   (make-default-cost-matrix '(a c g t -) 1))
- 
+
 (defconst *dna-cssl-gap*
   (build-fast-alist-from-alist
    '((a     0 -1 -1 -1 -1)
@@ -431,7 +431,7 @@
                (3 a - c t g - g -)
                (4 g g g a a)
                (5 c c t a t)
-               (6 g a t a g)) 'seqs) *dna-cssl-gap* 
+               (6 g a t a g)) 'seqs) *dna-cssl-gap*
                (strip-cdrs-gen *dna-matrix-gap*))
 ||#
 
@@ -451,14 +451,14 @@
                                 (rationalp gap-extend-cost)
                                 (small-integer-transition-matrixp
                                  transition-matrix))
-                           (let ((pair-score (affine-dist (caar pairings) 
+                           (let ((pair-score (affine-dist (caar pairings)
                                                           (cdar pairings)
-                                                          gap-char nil gap-cost 
+                                                          gap-char nil gap-cost
                                                           gap-extend-cost
                                                           transition-matrix
                                                           0)))
                              (if (rationalp pair-score)
-                                 (score-pairings 
+                                 (score-pairings
                                   type (cdr pairings) args
                                   (+ pair-score
                                      acc))
@@ -468,7 +468,7 @@
                "Error: Need same length pairings")
            acc))
         (t "Error: Invalid score type")))
-                          
+
 ;; (defthm small-integer-transition-rowp-gives-alistp-cdr
 ;;   (implies (and (consp x)
 ;;                 (small-integer-transition-rowp x))
@@ -478,7 +478,7 @@
 ;;   (implies (and (consp x)
 ;;                 (small-integer-transition-matrixp x))
 ;;            (alistp-gen (cdar x))))
-            
+
 (defun get-matrix-lists-from-trans (x)
   (declare (xargs :guard (small-integer-transition-matrixp x)))
   (if (consp x)
@@ -492,7 +492,7 @@
 
 (defthm sm-int-trans-matrix-gives-sm-int-list-listp-get-matrx-lists
   (implies (small-integer-transition-matrixp trans)
-           (small-integer-list-listp 
+           (small-integer-list-listp
             (get-matrix-lists-from-trans trans))))
 
 (defun numberfy-helper (x n)
@@ -563,7 +563,7 @@
                 (alistp-gen y))
            (alistp-gen (update-sequence-keys x y tree))))
 
-(defun score-tree-with-affine (tree sequences gap-char gap-cost gap-extend-cost 
+(defun score-tree-with-affine (tree sequences gap-char gap-cost gap-extend-cost
                                     cssl-map transition-matrix anc-mappings)
   (declare (xargs :guard (and (alistp-gen sequences)
                               (rationalp gap-cost)
@@ -573,27 +573,27 @@
                               (alistp-gen anc-mappings))))
   (if (not (consp anc-mappings))
       (let ((pairings (make-sequence-pairings-for-tree tree sequences
-                                                       cssl-map 
+                                                       cssl-map
                                                        (get-matrix-lists-from-trans
                                                         transition-matrix))))
         (if (consp pairings)
-            (score-pairings 'affine pairings 
-                            (list gap-char 
-                                  gap-cost 
-                                  gap-extend-cost 
+            (score-pairings 'affine pairings
+                            (list gap-char
+                                  gap-cost
+                                  gap-extend-cost
                                   (numberfy transition-matrix 0))
                             0) ;;acc
           pairings)) ;; effectively passes on errors
     ;;compute from given mappings
     (let* ((new-seqs (hons-reverse (update-sequence-keys sequences anc-mappings tree)))
-          (pairings (make-sequence-pairings (make-sequence-score-lists 
+          (pairings (make-sequence-pairings (make-sequence-score-lists
                                              new-seqs cssl-map
                                              'seq-score-list))))
       (if (consp pairings)
-            (score-pairings 'affine pairings 
-                            (list gap-char 
-                                  gap-cost 
-                                  gap-extend-cost 
+            (score-pairings 'affine pairings
+                            (list gap-char
+                                  gap-cost
+                                  gap-extend-cost
                                   (numberfy transition-matrix 0))
                             0) ;;acc
           pairings))))
@@ -602,30 +602,30 @@
   (implies (map-to-small-integer-list-listp x)
            (alistp-gen x)))
 
-(defun score-tree-with-affine-score-lists (tree score-lists gap-char gap-cost gap-extend-cost 
+(defun score-tree-with-affine-score-lists (tree score-lists gap-char gap-cost gap-extend-cost
                                                 transition-matrix anc-mappings)
   (declare (xargs :guard (and (small-integer-transition-matrixp
                                transition-matrix)
                               (map-to-small-integer-list-listp score-lists)
                               (small-integer-list-listp (get-matrix-lists-from-trans
                                                          transition-matrix))
-                              (good-len-lists-mapping score-lists 
+                              (good-len-lists-mapping score-lists
                                                       (get-matrix-lists-from-trans
                                                        transition-matrix))
                               (rationalp gap-cost)
                               (rationalp gap-extend-cost)
-                              
+
                               (alistp-gen anc-mappings))))
   (if (not (consp anc-mappings))
-      (let ((pairings (make-sequence-pairings-for-tree-from-scorelists 
+      (let ((pairings (make-sequence-pairings-for-tree-from-scorelists
                        tree score-lists
                        (get-matrix-lists-from-trans
                         transition-matrix))))
         (if (consp pairings)
-            (score-pairings 'affine pairings 
-                            (list gap-char 
-                                  gap-cost 
-                                  gap-extend-cost 
+            (score-pairings 'affine pairings
+                            (list gap-char
+                                  gap-cost
+                                  gap-extend-cost
                                   (numberfy transition-matrix 0))
                             0) ;;acc
           pairings)) ;; effectively passes on errors
@@ -633,10 +633,10 @@
     (let* ((new-seq-score-lists (update-sequence-keys score-lists anc-mappings tree))
           (pairings (make-sequence-pairings new-seq-score-lists)))
       (if (consp pairings)
-            (score-pairings 'affine pairings 
-                            (list gap-char 
-                                  gap-cost 
-                                  gap-extend-cost 
+            (score-pairings 'affine pairings
+                            (list gap-char
+                                  gap-cost
+                                  gap-extend-cost
                                   (numberfy transition-matrix 0))
                             0) ;;acc
           pairings))))
@@ -653,19 +653,19 @@
   (if (consp trees-and-anc-mapping)
       (if (and (consp (car trees-and-anc-mapping))
                (alistp-gen (cdar trees-and-anc-mapping)))
-          (cons (hons (score-tree-with-affine 
+          (cons (hons (score-tree-with-affine
                        (caar trees-and-anc-mapping)
-                       sequences gap-char gap-cost gap-extend-cost 
-                       cssl-map transition-matrix 
+                       sequences gap-char gap-cost gap-extend-cost
+                       cssl-map transition-matrix
                        (cdar trees-and-anc-mapping))
                       (caar trees-and-anc-mapping))
-                (score-trees-with-affine 
+                (score-trees-with-affine
                  (cdr trees-and-anc-mapping)
-                 sequences gap-char gap-cost gap-extend-cost 
+                 sequences gap-char gap-cost gap-extend-cost
                  cssl-map transition-matrix))
         "Error: Bad trees-and-anc-mapping in score-trees-with-affine")
     nil))
-                                        
+
 (defun score-trees-with-affine-score-lists (trees-and-anc-mapping score-lists gap-char
                                                       gap-cost gap-extend-cost
                                                       transition-matrix)
@@ -674,7 +674,7 @@
                               (map-to-small-integer-list-listp score-lists)
                               (small-integer-list-listp (get-matrix-lists-from-trans
                                                          transition-matrix))
-                              (good-len-lists-mapping score-lists 
+                              (good-len-lists-mapping score-lists
                                                       (get-matrix-lists-from-trans
                                                        transition-matrix))
                               (rationalp gap-cost)
@@ -685,12 +685,12 @@
                (alistp-gen (cdar trees-and-anc-mapping)))
           (cons (hons (score-tree-with-affine-score-lists
                        (caar trees-and-anc-mapping)
-                       score-lists gap-char gap-cost gap-extend-cost 
+                       score-lists gap-char gap-cost gap-extend-cost
                        transition-matrix (cdar trees-and-anc-mapping))
                       (caar trees-and-anc-mapping))
                 (score-trees-with-affine-score-lists
                  (cdr trees-and-anc-mapping)
-                 score-lists gap-char gap-cost gap-extend-cost 
+                 score-lists gap-char gap-cost gap-extend-cost
                  transition-matrix))
         "Error: Bad trees-and-anc-mapping in score-trees-with-affine")
     nil))
@@ -723,8 +723,8 @@
                            (5 c - c t - a - t)
                            (6 g a - t - a g -)) 'seqs)
                         4 ;; 4th position in trans-matrix
-                        3 1 
-                        *dna-cssl-gap* 
+                        3 1
+                        *dna-cssl-gap*
                         *dna-trans-matrix-gap* nil)
 
 (score-tree-with-affine '((1 2) 3 (4 (5 6)))
@@ -735,8 +735,8 @@
                            (4 g g - - g a - a)
                            (5 c - c t - a - t)
                            (6 g a - - - a g -)) 'seqs)
-                        4 1 1 
-                        *dna-cssl-gap* 
+                        4 1 1
+                        *dna-cssl-gap*
                         *dna-trans-matrix-gap* nil)
 
 (score-tree-with-affine '(1 2)
@@ -747,8 +747,8 @@
                            (4 g g - - g a - a)
                            (5 c - c t - a - t)
                            (6 g a - - - a g -)) 'seqs)
-                         4 1 1 
-                        *dna-cssl-gap* 
+                         4 1 1
+                        *dna-cssl-gap*
                         *dna-trans-matrix-gap* nil)
 
 ||#

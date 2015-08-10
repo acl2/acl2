@@ -218,7 +218,7 @@
                  (acl2-numberp md0)
                  (acl2-numberp j)
                  (acl2-numberp z))
-            (equal (* md0 (/ z)) 
+            (equal (* md0 (/ z))
                    (- j)))
    :rule-classes nil))
 

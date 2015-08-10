@@ -17,7 +17,7 @@ which will be called intermediate-in-situ-qsort.
 
 (include-book "programs")
 
-(local 
+(local
 (defthm arith-001
   (implies (natp i)
            (equal (+ -1 1 i) i)))
@@ -36,7 +36,7 @@ which will be called intermediate-in-situ-qsort.
            (equal (first-n (1+ i)
                            (cons e x))
                   (cons e (first-n i x)))))
-                   
+
 (defthm first-n-last-n-append-reduction
   (implies (<= i (len x))
            (equal (append (first-n i x)

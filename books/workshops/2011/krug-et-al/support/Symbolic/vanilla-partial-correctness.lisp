@@ -34,7 +34,7 @@ package].
 (in-theory (disable o< o+ o- o* o^))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(defstub next-state (*) => *) 
+(defstub next-state (*) => *)
 (defun run-fn (s n) (if (zp n) s (run-fn (next-state s) (1- n))))
 
 (encapsulate
@@ -57,7 +57,7 @@ package].
  (local (defun assertion (s) (declare (ignore s)) nil))
  (local (defun post (s) (declare (ignore s)) nil))
  (local (defun default-state () t))
- 
+
  ;; The constraints imposed are specified as theorems with names enclosed
  ;; within vertical bars, namely as |some theorem|.
 
@@ -100,11 +100,11 @@ package].
  ;; first exitpoint must satisfy the postcondition. But how do we go
  ;; from one cutpoint to the next-state? The number of steps to do so has
  ;; been specified by the function steps-to-cutpoint below.
- 
+
 
  (defp steps-to-cutpoint-tail (s i)
-   (if (cutpoint s) 
-       i 
+   (if (cutpoint s)
+       i
      (steps-to-cutpoint-tail (next-state s) (1+ i))))
 
  (defun steps-to-cutpoint (s)
@@ -136,20 +136,20 @@ package].
 ;; We start with a collection of definitions. steps-to-exitpoint below
 ;; is the number of steps to reach the first exitpoint, if one is
 ;; reachable. Otherwise it is (omega).
- 
+
 (defp steps-to-exitpoint-tail (s i)
-  (if (exitpoint s) 
-      i 
+  (if (exitpoint s)
+      i
     (steps-to-exitpoint-tail (next-state s) (1+ i))))
 
 (defun steps-to-exitpoint (s)
   (let ((steps (steps-to-exitpoint-tail s 0)))
     (if (exitpoint (run-fn s steps))
-        steps 
+        steps
       (omega))))
 
 ;; Our first job is to show that (steps-to-cutpoint s) is the minimum
-;; distance cutpoint reachable from s. 
+;; distance cutpoint reachable from s.
 
 ;; The following induction scheme is useful, as is the collection of events
 ;; inside the encapsulate below. In the encapsulate I summarize the theorems
@@ -179,7 +179,7 @@ package].
                     (implies (natp k)
                              (<= cutpoint-steps k))
                     (cutpoint (run-fn s cutpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -196,7 +196,7 @@ package].
  ;; Notice that most of the theorems I deal with have a free variable in the
  ;; hypothesis. This is unfortunate but necessary. As a result I presume that
  ;; most of the theorems will not be proved by ACL2 automatically but often
- ;; require :use hints. 
+ ;; require :use hints.
 
  (defthm steps-to-cutpoint-is-natp
   (implies (cutpoint (run-fn s k))
@@ -247,7 +247,7 @@ package].
                     (implies (natp k)
                              (<= exitpoint-steps k))
                     (exitpoint (run-fn s exitpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -267,7 +267,7 @@ package].
  ;; automatically but often require :use hints. This suggests the
  ;; proliferation of such hints in this book. For my first-cut pass at
  ;; this book, I will therefore not even try to remove :use hints but
- ;; just keep a note of them. 
+ ;; just keep a note of them.
 
  (defthm steps-to-exitpoint-is-natp
   (implies (exitpoint (run-fn s k))
@@ -323,7 +323,7 @@ package].
  (defun big-step-induction (s k l)
    (if (zp k) (list s k l)
      (big-step-induction (next-state-cutpoint (next-state s))
-                         (1- k) 
+                         (1- k)
                          (- l (1+ (steps-to-cutpoint (next-state s))))))))
 
 
@@ -344,7 +344,7 @@ package].
                         (natp n)))
             (equal (run-fn (run-fn s m) n)
                    (run-fn s (+ m n))))))
- 
+
 ;; The next-state rule is an ugly hack and I am almost doing it assuming I
 ;; know what I am doing. If I dont use this theorem, the definition of
 ;; run-fn does not expand in circumstances I want it to. The theorem
@@ -425,7 +425,7 @@ package].
             (cutpoint (big-step-run-fn s k)))
    :hints (("Goal"
             :induct (big-step-induction s k l))
-           ("[1]Goal" 
+           ("[1]Goal"
             :in-theory (enable natp)
             :use ((:instance steps-to-cutpoint-is-minimal
                              (k (1- l))
@@ -446,7 +446,7 @@ package].
    (declare (xargs :measure (nfix l)
                    :hints (("Goal"
                             :use ((:instance
-                                   steps-to-cutpoint-is-ordinal 
+                                   steps-to-cutpoint-is-ordinal
                                    (s (next-state s))))))))
    (if (zp l) 0
      (1+ (big-steps (next-state-cutpoint (next-state s))
@@ -469,10 +469,10 @@ package].
    :rule-classes :type-prescription))
 
 ;; OK so let us prove that every cutpoint is big-step-run-fn of some
-;; number. 
+;; number.
 
 (local
- (defthmd cutpoint-is-hit-by-big-steps 
+ (defthmd cutpoint-is-hit-by-big-steps
    (implies (and (cutpoint (run-fn s l))
                  (natp l))
             (equal (big-step-run-fn s (big-steps s l))
@@ -508,12 +508,12 @@ package].
  (defthmd first-exitpoint-is-hit-by-big-steps
    (implies (exitpoint (run-fn s m))
             (equal (run-fn s (steps-to-exitpoint s))
-                   (big-step-run-fn s 
+                   (big-step-run-fn s
                                  (big-steps s (steps-to-exitpoint
                                                s)))))
    :hints (("Goal"
             :in-theory (disable steps-to-exitpoint-provide-exitpoint)
-            :use ((:instance cutpoint-is-hit-by-big-steps 
+            :use ((:instance cutpoint-is-hit-by-big-steps
                              (l (steps-to-exitpoint s)))
                   (:instance steps-to-exitpoint-provide-exitpoint
                              (k m)))))))
@@ -531,7 +531,7 @@ package].
    (if (zp m) (not (exitpoint s))
      (and (not (exitpoint s))
           (no-exitpoint (next-state s) (1- m))))))
- 
+
 ;; Of course a state reachable in <= m steps from s is not an
 ;; exitpoint from this definition.
 
@@ -736,15 +736,15 @@ package].
                  (not (exitpoint s)))
             (natp (1- (steps-to-exitpoint s))))
    :hints (("Goal"
-            :in-theory (e/d (natp) 
+            :in-theory (e/d (natp)
                             (steps-to-exitpoint-is-natp
-                             steps-to-exitpoint-provide-exitpoint))       
+                             steps-to-exitpoint-provide-exitpoint))
             :use ((:instance steps-to-exitpoint-is-natp (k n))
                   (:instance steps-to-exitpoint-provide-exitpoint
                              (k n)))))))
- 
+
 (local
- (defthm big-steps-is-natp->0 
+ (defthm big-steps-is-natp->0
   (implies (force (and (natp n)
                        (> n 0)))
           (natp (1- (big-steps s n))))))
@@ -755,7 +755,7 @@ package].
   (defthm no-exitpoint-means-not-exitpoint
     (implies  (no-big-exitpoint s k)
               (not (exitpoint (big-step-run-fn s k)))))))
- 
+
 (local (in-theory (disable natp-posp--1)))
 
 (local
@@ -784,14 +784,14 @@ package].
 (local
    (defthm big-steps-alternate-definition
      (equal (big-step-run-fn s k)
-            (if (zp k) s 
+            (if (zp k) s
               (next-state-cutpoint (next-state (big-step-run-fn s (1- k))))))
     :rule-classes :definition))
 
 (local
  (in-theory (disable big-step-run-fn)))
 
-(local 
+(local
  (defthmd run-fn-+-reduction
    (implies (and (natp m)
                  (natp n))
@@ -810,7 +810,7 @@ package].
    :otf-flg t
    :hints (("Goal"
             :in-theory (disable |assertion invariant over cutpoints|)
-            :use ((:instance cutpoint-implies-assertion 
+            :use ((:instance cutpoint-implies-assertion
                              (l m))
                   (:instance big-step-is-always-a-cutpoint
                              (l m))
@@ -822,7 +822,7 @@ package].
                   (:instance run-fn-+-reduction
                              (m (little-steps s k))
                              (n (- m (little-steps s k)))))))))
-                 
+
 
 (local
  (defthm big-steps-0-implies-no-step
@@ -834,7 +834,7 @@ package].
 
 
 ;; The following is the crux of the final defthm.  Here we prove the basic
-;; partial correctness theorem but we have free variables all over. 
+;; partial correctness theorem but we have free variables all over.
 
 (local
  (defthm partial-correctness
@@ -846,14 +846,14 @@ package].
   :otf-flg t
   :hints (("Goal"
            :cases ((not (natp n)) (exitpoint s)))
-          ("Subgoal 1" 
+          ("Subgoal 1"
            :in-theory (disable steps-to-exitpoint-is-minimal)
            :use ((:instance steps-to-exitpoint-is-minimal (k 0))))
-           ("Subgoal 2" 
+           ("Subgoal 2"
            :in-theory (disable steps-to-exitpoint-is-minimal)
            :use ((:instance steps-to-exitpoint-is-minimal (k 0))))
-          ("Subgoal 3" 
-           :in-theory (disable 
+          ("Subgoal 3"
+           :in-theory (disable
                         big-steps
                         steps-to-exitpoint
                         big-step-run-fn
@@ -861,7 +861,7 @@ package].
                         |assertion at exitpoint implies postcondition|
                         first-exitpoint-has-assertion-too
                         less-than-exitpoint-implies-no-exitpoint)
-           :use ((:instance  
+           :use ((:instance
                   |assertion at exitpoint implies postcondition|
                   (s (run-fn s (steps-to-exitpoint s))))
                  (:instance first-exitpoint-has-assertion-too
@@ -885,7 +885,7 @@ package].
 ;; remove another book that I had developed for the purpose of composition.
 ;; From now, one book is used for both compositional and non-compositional
 ;; cutpoint proofs.  (The non-compositional stuff is just legacy.  I recommend
-;; using the compositional stuff, with defsimulate+ rather than defsimulate.  
+;; using the compositional stuff, with defsimulate+ rather than defsimulate.
 
 (defun-sk exists-exitpoint (s)
   (exists n (exitpoint (run-fn s n))))
@@ -896,7 +896,7 @@ package].
 
 
 ;; So here is the packaged final partial correctness theorem.  Notice that this
-;; theorem does not contain any free variables. 
+;; theorem does not contain any free variables.
 
 (DEFTHM |partial correctness|
   (implies (and (pre s)

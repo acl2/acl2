@@ -2,9 +2,9 @@
 ; J Strother Moore
 
 ; This file is an ACL2 book.  To certify it, execute:
-; 
+;
 ; (certify-book "find-path3")
-; 
+;
 ; This file is a cleaned up version of the file find-path2.lisp.  In it, I
 ; have introduced the top-down macro and used it to structure my graph
 ; theory proof more or less as it is described in the paper.
@@ -107,7 +107,7 @@
          ((member (car x) y) (count-non-members (cdr x) y))
          (t (+ 1 (count-non-members (cdr x) y))))))
 
-(top-down 
+(top-down
 
  (defun find-path (a b g)
    (cond ((equal a b) (list a))
@@ -167,7 +167,7 @@
 
 ; Now we state and prove the observations.
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 0
 
  (top-down
@@ -180,7 +180,7 @@
   ; Proof
 
   (top-down
-   
+
    (defthm pathp-find-next-step
      (implies (and (true-listp stack)
                    (consp stack)
@@ -215,7 +215,7 @@
              (equal (car (last (find-next-step c stack b g)))
                     b))))  ; Q.E.D. Observation-0
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 1
 
 ; To state the next observation we need these concepts.
@@ -244,8 +244,8 @@
 ; are ``predicted'' by general patterns.
 
 ; It is helpful to observe the following fact about simplify-path.
- 
- (top-down 
+
+ (top-down
 
   (defthm simplify-path-iff-consp
     (iff (consp (simplify-path p)) (consp p)))
@@ -274,7 +274,7 @@
    (defthm car-chop
      (implies (member e p)
               (equal (car (chop e p)) e))))
- 
+
   (top-down
 
    (defthm car-last-simplify-path
@@ -311,7 +311,7 @@
       (implies (not (member x p))
                (not (member x (chop e p)))))))) ; Q.E.D. Observation-1
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 2
 
 ; The next observation requires these concepts.
@@ -417,7 +417,7 @@
           (implies (and (not (member e stack))
                         (not (equal e b))
                         (member e d))
-                   (subsetp (find-all-next-steps (neighbors e g) 
+                   (subsetp (find-all-next-steps (neighbors e g)
                                                  (cons e stack) b g)
                             (find-all-next-steps d stack b g))))
 
@@ -426,13 +426,13 @@
                         (member c1 d))
                    (member (append (rev stack) (list c1))
                            (find-all-next-steps d stack c1 g)))))
-    
+
     (defthm subsetp-member-member
       (implies (and (subsetp a b)
                     (member e a))
                (member e b)))))) ; Q.E.D. Crux-cdr, Crux, and Observation-2
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; Observation 3
 
  (top-down
@@ -448,7 +448,7 @@
 
 ; Q.E.D. Observation-3 and Main
 
-; -------------------------------------------------------------------------- 
+; --------------------------------------------------------------------------
 ; The Main Theorem
 
 ; (no more events)

@@ -26,20 +26,20 @@
 ;  Last modified 20 December 2001.
 #|
  To certify (originally in ACL2 Version 2.6):
- (defpkg 
-     "FLAT" (union-eq 
+ (defpkg
+     "FLAT" (union-eq
 	      *acl2-exports*
 	      *common-lisp-symbols-from-main-lisp-package*))
 
  (certify-book "flat-tail" 1 nil ; compile-flg
-	       :defaxioms-okp nil 
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil)
 |#
 (in-package "FLAT")
 (include-book "flat")
 #|
 A construction based on flat domains in ACL2, as introduced in
-flat.lisp, of a function f that satisfies the equation in the 
+flat.lisp, of a function f that satisfies the equation in the
 following theorem,
 
 (defthm generic-tail-recursive-f
@@ -86,12 +86,12 @@ simpler) construction of such a tail-recursive f.
 (defstub
   test (*) => *)
 
-(defstub 
+(defstub
   base (*) => *)
 
-(defstub 
+(defstub
   st (*) => *)
- 
+
 (defun
     f-chain (i x)
     (if (zp i)
@@ -103,7 +103,7 @@ simpler) construction of such a tail-recursive f.
 (defthm
     base-of-f-chain=$bottom$
     (implies (zp i)
-	     (equal (f-chain i x) 
+	     (equal (f-chain i x)
 		    ($bottom$))))
 
 (defthm
@@ -117,7 +117,7 @@ simpler) construction of such a tail-recursive f.
 
 (defchoose
     lub-f-chain-i i (x)
-    (not (equal (f-chain i x) 
+    (not (equal (f-chain i x)
 		($bottom$))))
 
 (defthm
@@ -151,7 +151,7 @@ simpler) construction of such a tail-recursive f.
 	     :by
 	     (:functional-instance
 	      lub-$bottom$-based-chain-is-upper-bound
-	      ($bottom$-based-chain f-chain) 
+	      ($bottom$-based-chain f-chain)
 	      (lub-$bottom$-based-chain lub-f-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f-chain-i)))
@@ -198,7 +198,7 @@ simpler) construction of such a tail-recursive f.
     (equal (lub-f-chain x)(ub-g-chain x))
     :rule-classes nil
     :hints (("Goal"
-	     :by 
+	     :by
 	     (:functional-instance
 	      lub-$chain$=ub-shifted-$chain$
 	      ($chain$ f-chain)
@@ -214,11 +214,11 @@ simpler) construction of such a tail-recursive f.
 	     :use f-chain-is-$<=$-chain)
 	    ))
 
-(defthm 
+(defthm
     generic-tail-recursive-f
     (equal (f x)
-	   (if (test x) 
-	       (base x) 
+	   (if (test x)
+	       (base x)
 	     (f (st x))))
   :hints (("Goal"
 	   :use lub-f-chain=ub-g-chain)))

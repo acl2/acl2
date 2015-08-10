@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -135,7 +135,7 @@
            (bvecp (bits x i j) k)))
 
 (defthm mod-bits-equal
-  (implies (= (mod x (expt 2 (1+ i))) 
+  (implies (= (mod x (expt 2 (1+ i)))
 	      (mod y (expt 2 (1+ i))))
 	   (= (bits x i j) (bits y i j)))
   :rule-classes ())
@@ -163,7 +163,7 @@
 		  (bits (+ x y) i 0))))
 
 
-;;;; ?? (- x (bits y i 0)) may not be the normal form. 
+;;;; ?? (- x (bits y i 0)) may not be the normal form.
 (defthmd bits-bits-diff
   (implies (and (integerp x)
                 (integerp y)
@@ -223,14 +223,14 @@
 		  (< x 0)
 		  (>= x (- (expt 2 j)))
 		  (>= i j))
-	     (equal (bits x i j) 
+	     (equal (bits x i j)
                     (+ -1 (expt 2 (+ 1 i (* -1 j)))))))
 
 (defthmd bits-minus-1
     (implies (and (natp i)
 		  (natp j)
 		  (>= i j))
-	     (equal (bits -1 i j) 
+	     (equal (bits -1 i j)
                     (+ -1 (expt 2 (+ 1 i (* -1 j)))))))
 
 
@@ -387,7 +387,7 @@
 ;;		(not (equal 4 (bits x 15 6)))))
 ;;See also bits-match.
 
-(defthmd bits-dont-match 
+(defthmd bits-dont-match
   (implies (and (syntaxp (and (quotep i)
 			      (quotep j)
 			      (quotep k)))
@@ -676,8 +676,8 @@
   :rule-classes ())
 
 (defthmd bitn-plus-mult
-    (implies (and (< n m) 
-		  (integerp m) 
+    (implies (and (< n m)
+		  (integerp m)
 		  (integerp k))
 	     (equal (bitn (+ x (* k (expt 2 m))) n)
 		    (bitn x n))))
@@ -730,9 +730,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defthm cat-nonnegative-integer-type
@@ -867,7 +867,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 					(- i n)
@@ -891,7 +891,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 				       (- i n)
@@ -969,7 +969,7 @@
 
 (defthm mulcat-1
     (implies (natp l)
-	     (equal (mulcat l 1 x) 
+	     (equal (mulcat l 1 x)
 		    (bits x (1- l) 0))))
 
 (defthm mulcat-0

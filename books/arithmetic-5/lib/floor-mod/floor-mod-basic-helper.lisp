@@ -28,7 +28,7 @@
 (local
  (include-book "../basic-ops/top"))
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                               hist pspv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -119,7 +119,7 @@
   :rule-classes ((:generalize)
 		 (:linear :trigger-terms ((floor x y)))))
 
-(encapsulate 
+(encapsulate
  ()
 
  (local
@@ -281,7 +281,7 @@
 
 (in-theory (disable floor mod))
 
-(encapsulate 
+(encapsulate
  ()
 
  (local
@@ -483,7 +483,7 @@
 		 (:rewrite
                   :backchain-limit-lst (nil 3 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (real/rationalp (/ x y))
 				(<= 1 (/ x y)))
@@ -491,7 +491,7 @@
 		 (:rewrite
                   :backchain-limit-lst (nil 3 1 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (real/rationalp (/ x y))
                                 (< 0 y)
@@ -500,7 +500,7 @@
 		 (:rewrite
                   :backchain-limit-lst (nil 3 1 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (real/rationalp (/ x y))
                                 (< y 0)
@@ -540,7 +540,7 @@
 		 (:rewrite
 		  :backchain-limit-lst (nil 3 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
 				 (not (rewriting-goal-literal x mfc state)))
 				(real/rationalp (/ x y))
 				(< (/ x y) 0))
@@ -548,7 +548,7 @@
 		 (:rewrite
 		  :backchain-limit-lst (nil 3 1 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
 				 (not (rewriting-goal-literal x mfc state)))
 				(real/rationalp (/ x y))
 				(< 0 x)
@@ -557,7 +557,7 @@
 		 (:rewrite
 		  :backchain-limit-lst (nil 3 1 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
 				 (not (rewriting-goal-literal x mfc state)))
 				(real/rationalp (/ x y))
 				(< x 0)

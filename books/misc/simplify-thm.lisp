@@ -37,11 +37,11 @@
              ,(car clauses)
              . ,args)
           (smpl-clauses-to-defthms namebase (1+ n) (cdr clauses) args))))
-             
+
 
 
 (defun simplify-thm-fn (namebase form smpl-hints args state)
   (er-let* ((forms (smpl-to-theorems form smpl-hints state)))
            (value (smpl-clauses-to-defthms
                    namebase 0 forms args))))
-            
+

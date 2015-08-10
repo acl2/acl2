@@ -13,7 +13,7 @@
 
 (defun simp-tf (f)
   (declare (xargs :guard (wff f)))
-  (cond 
+  (cond
 	((wfnot f)
          (let ((g (simp-tf (a1 f))))
            (cond ((equal g 'false) 'true)

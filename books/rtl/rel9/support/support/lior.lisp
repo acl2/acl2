@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -32,7 +32,7 @@
 (local (include-book "top1"))
 
 (defun binary-lior (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -58,7 +58,7 @@
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(lior x y n) -- the base case
          `(binary-lior ,@x))
-        (t         
+        (t
          `(binary-lior ,(car x)
                        (lior ,@(cdr x))
                        ,(car (last x))))))
@@ -185,8 +185,8 @@
                 (case-split (integerp n))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j))))))
 
 (defthmd bits-lior-2
@@ -195,8 +195,8 @@
                 (case-split (integerp n))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ n (- j))))))
 
 ;notice the call to MIN in the conclusion
@@ -206,8 +206,8 @@
                 (case-split (integerp i))
                 )
            (equal (bits (lior x y n) i j)
-                  (lior (bits x i j) 
-                        (bits y i j) 
+                  (lior (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j))))))
 
 (defthmd bitn-lior-1
@@ -216,8 +216,8 @@
                 (case-split (integerp n))
                 )
            (equal (bitn (lior x y n) m)
-                  (lior (bitn x m) 
-                        (bitn y m) 
+                  (lior (bitn x m)
+                        (bitn y m)
                         1))))
 
 (defthmd bitn-lior-2
@@ -236,8 +236,8 @@
                 )
            (equal (bitn (lior x y n) k)
                   (if (< k n)
-                      (lior (bitn x k) 
-                            (bitn y k) 
+                      (lior (bitn x k)
+                            (bitn y k)
                             1)
                     0))))
 

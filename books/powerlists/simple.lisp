@@ -59,7 +59,7 @@ To certify this book, I do the following:
 (defun p-rotate-left (x)
   "Rotate once to the left"
   (if (powerlist-p x)
-      (p-zip (p-unzip-r x) 
+      (p-zip (p-unzip-r x)
 	     (p-rotate-left (p-unzip-l x)))
     x))
 
@@ -73,15 +73,15 @@ To certify this book, I do the following:
 
 ;;; On the amusing identity: rev, rr and rl are the kind of functions that
 ;;; semi-commute:
-;;; 
+;;;
 ;;;  rev * rr = rl * rev, where * denotes function composition
-;;; 
+;;;
 ;;; or, more interestingly, the function rev * rr is its own inverse. You
 ;;; may look into some of the identities along this line. The amusing
 ;;; identity follows trivially:
-;;;  rev * rr * rev *rr = rev * rr * rl * rev 
+;;;  rev * rr * rev *rr = rev * rr * rl * rev
 ;;; = { rr, rl are inverses of each other}
-;;;   rev * rev 
+;;;   rev * rev
 ;;; = identity
 
 (defthm reverse-rotate
@@ -90,8 +90,8 @@ To certify this book, I do the following:
 
 (defthm reverse-rotate-reverse-rotate
   (equal (p-reverse-zip
-	  (p-rotate-right 
-	   (p-reverse-zip 
+	  (p-rotate-right
+	   (p-reverse-zip
 	    (p-rotate-right x))))
 	 x))
 

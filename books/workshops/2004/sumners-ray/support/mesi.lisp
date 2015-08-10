@@ -5,7 +5,7 @@
 #|
 
 We define a cache-coherence memory-ordering protocol at a pretty high-level of
-abstraction. This is loosely based on the MESI protocol. 
+abstraction. This is loosely based on the MESI protocol.
 
 The property we want to prove is the following:
 
@@ -76,12 +76,12 @@ to track this.
 (encapsulate (((p) => *) ((a) => *))
   (local (defun p () t)) (local (defun a () t))
   (defthm a-not-nil (equal (equal (a) nil) nil))
-  (defthm p-not-nil (equal (equal (p) nil) nil)))  
+  (defthm p-not-nil (equal (equal (p) nil) nil)))
 
-(define-system mesi-specification 
+(define-system mesi-specification
  (a-dat (n) nil
    (if (and (equal (addr n) (a))
-            (equal (op n) :store)  
+            (equal (op n) :store)
             (in (proc n) (excl (c-l (addr n)) n-)))
        (list (data n))
      (a-dat n-)))

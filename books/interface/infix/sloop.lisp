@@ -48,7 +48,7 @@
 ;;takes some arguments (supplied from the body of the loop following its
 ;;occurrence, and returns a new form to be stuffed onto the front of the
 ;;loop form, in place of it and its arguments).
- 
+
 ;;Compile notes:
 ;;For dec-20 clisp load the lisp file before compiling.
 
@@ -56,12 +56,12 @@
 ;;there seems to be no unanimity about what in-package etc. does on loading
 ;;and compiling a file.  The following is as close to the examples in
 ;;the Common Lisp manual, as we could make it.
-;;The user should put (require "SLOOP") and then (use-package "SLOOP") 
+;;The user should put (require "SLOOP") and then (use-package "SLOOP")
 ;;early in his init file.  Note use of the string to avoid interning 'sloop
 ;;in some other package.
 
 
-(in-package "SLOOP"  :use '(LISP))  
+(in-package "SLOOP"  :use '(LISP))
 (eval-when (compile eval load)
 (provide "SLOOP")
 (export '(loop-return sloop def-loop-collect def-loop-map
@@ -73,16 +73,16 @@
 
 (eval-when (compile load eval)
 
-(defparameter *use-locatives* nil "See sloop.lisp")   ;#+lispm t #-lispm nil 
+(defparameter *use-locatives* nil "See sloop.lisp")   ;#+lispm t #-lispm nil
 ;;If t should have locf, such that (setf b nil) (setq a (locf b)) then if
 ;;(setf (cdr a) (cons 3 nil)) b==>(3).  This is useful for building lists
 ;;starting with a variable pointing to nil, since otherwise we must check
-;;each time if the list has really been started, before we do a 
+;;each time if the list has really been started, before we do a
 ;;(setf (cdr b) ..)
 
 (defparameter *Automatic-declarations*
 	      #+lispm nil
-  #-lispm				
+  #-lispm
   '(:from fixnum
 	  :in #+kcl object #-kcl t
 	  :collect #+kcl object #-kcl t ) "See sloop.lisp")
@@ -205,7 +205,7 @@ a symbol for the purposes of being a keyword in a sloop")
 
 (defmacro sloop (&body body)
   (parse-loop body))
-  
+
 (defmacro def-loop-map (name args &body body)
   (def-loop-internal name args body 'map))
 (defmacro def-loop-for (name args &body body )
@@ -237,7 +237,7 @@ a symbol for the purposes of being a keyword in a sloop")
 (defun loop-collect-keyword-p (command)
   (or (member command '(collect append nconc sum count) :test 'l-equal)
       (find command *additional-collections* :test 'l-equal)))
- 			 
+
 (defun translate-name (name)
   (cond ((and (symbolp name)
 	      (cdar (member name *sloop-translations* :test 'l-equal :key 'car))))
@@ -266,8 +266,8 @@ a symbol for the purposes of being a keyword in a sloop")
 (defun parse-loop (form &aux inner-body)
   (let ((*loop-form* form)
 	(*Automatic-declarations* *Automatic-declarations*)
-	*last-val* *loop-map* 
-	*loop-body* 
+	*last-val* *loop-map*
+	*loop-body*
 	*loop-name*
 	*loop-prologue* *inner-sloop*
 	*loop-epilogue* *loop-increment*
@@ -278,11 +278,11 @@ a symbol for the purposes of being a keyword in a sloop")
 	*product-for* local-macros
 	(finish-loop 'finish-loop)
 	)
-    (declare (special *loop-form* *last-val* *loop-map* 
+    (declare (special *loop-form* *last-val* *loop-map*
 		      *loop-collect-pointers*
 		      *loop-name* *inner-sloop*
 		      *loop-body*
-		      *loop-prologue* 
+		      *loop-prologue*
 		      *no-declare*
 		      *loop-bindings*
 		      *loop-collect-var*  *loop-map-declares*
@@ -299,7 +299,7 @@ a symbol for the purposes of being a keyword in a sloop")
     ;some one might use local-finish,local-return or loop-finish they might be bound at an outer level.
     ;we have to always include this since loop-return may be being bound outside.
     (and  ; *loop-name*
-	      (push 
+	      (push
 	   `(loop-return (&rest vals) `(return-from ,',*loop-name* (values ,@ vals)))
 	   local-macros))
     (when  t ;; (or (> *loop-level* 1) (not (eql finish-loop 'finish-loop)))
@@ -315,7 +315,7 @@ a symbol for the purposes of being a keyword in a sloop")
 	   (setq inner-body (substitute-sloop-body inner-body)))
 	  (t (setf inner-body (cons 'next-loop
 				    (append inner-body '((go next-loop)))))))
-    (let ((bod 
+    (let ((bod
 	    `(macrolet ,local-macros
 	       (block ,*loop-name*
 		 (tagbody
@@ -325,7 +325,7 @@ a symbol for the purposes of being a keyword in a sloop")
 			  `(,finish-loop)
 			  (nreverse *loop-epilogue*)
 			  #+kcl '((loop-return  nil))))))
-	    
+
 	    ))
       ;;temp-fix..should not be necessary but some lisps cache macro expansions.
       ;;and ignore the macrolet!!
@@ -336,7 +336,7 @@ a symbol for the purposes of being a keyword in a sloop")
 	      `(let ,(loop-let-bindings v) ,@(and (cdr v) `(,(cons 'declare (cdr v))))
 		    ,bod)))
       bod
-      ))) 
+      )))
 
 (defun parse-loop1 ()
   (declare (special *loop-form*
@@ -417,7 +417,7 @@ otherwise nil"
       (t (loop-un-pop) (return 'done))))
   (or result (error "empty clause"))
   result)
-  
+
 (defun parse-loop-initially (command )
   (declare (special *loop-prologue* *loop-epilogue* *loop-bindings*))
   (lcase command
@@ -564,13 +564,13 @@ otherwise nil"
 ;;
 
 (defun type-error ()
-  (error "While checking a bound of a sloop, I found the wrong type 
-for something in *automatic-declarations*.  Perhaps your limit is wrong? 
-If not either use nodeclare t or set *automatic-declarations* to nil. 
+  (error "While checking a bound of a sloop, I found the wrong type
+for something in *automatic-declarations*.  Perhaps your limit is wrong?
+If not either use nodeclare t or set *automatic-declarations* to nil.
 recompile."))
 
 
-;;this puts down code to check that automatic declarations induced by 
+;;this puts down code to check that automatic declarations induced by
 ;; :from are indeed valid!  It checks both ends of the interval, and
 ;;so need not check the numbers in between.
 
@@ -595,7 +595,7 @@ recompile."))
 		     type))
 		(list value))
 	 (t  (let (chk)
-	       
+
 	       `((let ,(cond ((atom value)
 			      nil)
 			     (t `((,(setq chk(gensym)) ,value))))
@@ -670,7 +670,7 @@ recompile."))
 	   (setf decl-list (cdr decl-list) type (car decl-list) odd-type t)))
     (dolist (v (cdr decl-list))
       (loop-declare-binding v (car decl-list) force odd-type))))
-	
+
 (defun loop-add-temps (form &optional val type new-level only-if-not-there)
   (cond ((null form))
 	((symbolp form)
@@ -680,7 +680,7 @@ recompile."))
 	 (loop-add-temps (cdr form)))))
 
 (defun parse-loop-for ( &aux direction inc)
-  (declare (special *loop-form*  *loop-map-declares*  *loop-map* 
+  (declare (special *loop-form*  *loop-map-declares*  *loop-map*
 		    *loop-body* *loop-increment* *no-declare*
 		    *loop-prologue*
 		    *loop-epilogue*
@@ -749,7 +749,7 @@ recompile."))
 	  (return 'done)
 	  )
 	))
-    
+
     (let (type)
       ;;whew maybe this is a for from type loop
       ;;with no bound so to be safe need a fixnum bound..
@@ -761,7 +761,7 @@ recompile."))
 			     (setf type      (second type)))
 			 (subtypep type 'fixnum)))
              (or (constantp inc) (error "increment must be constant."))
-	     (push 
+	     (push
 	        (cond ((eq direction 'up)
 			  `(or (< ,var ,(- most-positive-fixnum
 					  (or inc 1)))
@@ -772,7 +772,7 @@ recompile."))
 			       (type-error))
 		    ) *loop-increment* )
 	     )))
-    
+
     (and test (push (copy-tree `(and ,test (local-finish))) *loop-end-test*))
     (and incr (push incr *loop-increment*))
 		))
@@ -793,7 +793,7 @@ recompile."))
 			     (push (car *loop-form*) result)
 			     (setf *loop-form* (cdr *loop-form*)))))))
       (setq *loop-form*
-	    (append 
+	    (append
 	      (case type
 		    (:sloop-for (apply helper initial last-helper-apply-arg))
 		    (:sloop-macro(apply helper  last-helper-apply-arg)))
@@ -843,12 +843,12 @@ recompile."))
     (setf (get ',name ,(intern (format nil "SLOOP-~a" type) (find-package 'keyword))) ',helper)
     (setf (get ',name ,(intern (format nil "SLOOP-~a-ARGS" type)(find-package 'keyword))) ',args)))
 )
-		
+
 
 ;;DEF-LOOP-COLLECT
 ;;lets you get a handle on the collection var.
 ;;exactly two args.
-;;First arg=collection-variable 
+;;First arg=collection-variable
 ;;Second arg=value this time thru the loop.
 (def-loop-collect sum (ans val)
   `(initially (setq ,ans 0)
@@ -858,10 +858,10 @@ recompile."))
   do (setf ,ans (logxor ,ans ,val))
   declare (fixnum ,ans ,val)))
 (def-loop-collect maximize (ans val)
-  `(initially (setq ,ans nil) 
+  `(initially (setq ,ans nil)
   do (if ,ans (setf ,ans (max ,ans ,val)) (setf ,ans ,val))))
 
-(def-loop-collect minimize (ans val) 
+(def-loop-collect minimize (ans val)
   `(initially (setq ,ans nil)
   do (if ,ans (setf ,ans (min ,ans ,val)) (setf ,ans ,val))))
 
@@ -872,7 +872,7 @@ recompile."))
 (def-loop-collect thereis (ans val)(declare(ignore ans))`(do (if ,val (loop-return ,val))))
 (def-loop-collect always (ans val) `(initially (setq ,ans t) do (and (null ,val)(loop-return nil))))
 (def-loop-collect never (ans val)  `(initially (setq ,ans t) do (and  ,val  (loop-return nil))))
- 
+
 
 ;;DEF-LOOP-MACRO
 ;;If we have done
@@ -924,7 +924,7 @@ recompile."))
 ;;A rather general iteration construct which allows you to map over things
 ;;It can only occur after FOR.
 ;;There can only be one loop-map for a given loop, so you want to only
-;;use them for complicated iterations.  
+;;use them for complicated iterations.
 
 (def-loop-map in-table (var table)
   `(maphash #'(lambda ,var :sloop-map-declares :sloop-body) ,table))
@@ -936,7 +936,7 @@ recompile."))
 (def-loop-map in-package (var pkg)
   `(do-symbols (,var (find-package ,pkg))  :sloop-body))
 
-;(defun te()(sloop for sym in-package 'sloop when (fboundp sym) count t)) 
+;(defun te()(sloop for sym in-package 'sloop when (fboundp sym) count t))
 
 ;;in-array that understands from,downfrowm,to, below, above,etc.
 ;;I used a do for the macro iteration to be able include it here.
@@ -954,9 +954,9 @@ recompile."))
 			  (return (nreverse result))))
 		   (push (car v) result) (push (second v) result))))
       (or to (setf skip (nconc `(below (length ,array)) skip)))
-      `(for ,ind 
+      `(for ,ind
 	,@ skip
-	with ,elt 
+	with ,elt
 	do (setf ,elt (aref ,array ,ind)) ,@ args))))
 
 ;usage: IN-ARRAY
@@ -1026,7 +1026,7 @@ recompile."))
 ;	 sloop (for j  to i collecting (list i j))))
 
 (def-loop-for in-carefully (var lis)
-  "Path with var in lis except lis may end with a non nil cdr" 
+  "Path with var in lis except lis may end with a non nil cdr"
   (let ((point (gensym "POINT")))
     `(with ,point and with ,var initially (setf ,point ,lis)
            do(desetq ,var (car ,point))
@@ -1075,7 +1075,7 @@ Order based order function *collate-order*"
 ;(defun te ()
 ;  (let ((res
 ;	  (sloop for i below 10
-;            sloop (for j downfrom 8 to 0 
+;            sloop (for j downfrom 8 to 0
 ;		          collate (* i (mod j (max i 1)) (random 2))))))))
 
 (defun map-fringe (fun tree)

@@ -24,7 +24,7 @@
 
 ;;; Here we show how we can obtain a correct subsumption algorithm from
 ;;; the "pattern"  verified in subsumption-definition.lisp:
-;;; - We define a particular selection function. 
+;;; - We define a particular selection function.
 ;;; - We introduce multi-values to deal with the pair of systems
 ;;;   S-match.
 ;;; - Some other minor improvements concerning efficency are done.
@@ -47,15 +47,15 @@
     (let* ((equ (car S))
 	   (t1 (car equ))
 	   (t2 (cdr equ)))
-	(cond ((variable-p t1) 
+	(cond ((variable-p t1)
 	       (sel-match (cdr S)))
 	      ((variable-p t2) equ)
 	      ((eql (car t1) (car t2))
 	       (sel-match (cdr S)))
 	      (t equ)))))
-    
+
 ;;; Main property, needed to instantiate from
-;;; subsumption-definition.lisp: 
+;;; subsumption-definition.lisp:
 (local
  (defthm sel-match-select-a-pair
    (implies (consp S)
@@ -82,8 +82,8 @@
 	     (and
 	      (implies (variable-p (car equ)) (eqlablep (car equ)))
 	      (implies (variable-p (cdr equ)) (eqlablep (cdr equ)))))))
- 
- 
+
+
  (local
   (defthm transform-subs-guard-verification-stuff-2
     (implies (and (system-p S)
@@ -94,7 +94,7 @@
 	      (true-listp (cddr equ))
 	      (iff (variable-p (car equ)) (eqlablep (car equ)))
 	      (iff (variable-p (cdr equ)) (eqlablep (cdr equ)))))))
- 
+
 ;;; The rules of transformation:
 
  (defun transform-subs (S match)
@@ -104,7 +104,7 @@
 	  (t1 (car ecu)) (t2 (cdr ecu))
 	  (R (eliminate ecu S)))
      (cond
-      ((variable-p t1) 
+      ((variable-p t1)
        (let ((bound (assoc t1 match)))
 	 (if bound
 	     (if (equal (cdr bound) t2)
@@ -117,7 +117,7 @@
 	       (pair-args (cdr t1) (cdr t2))
 	       (if bool
 		   (mv (append empareja R) match t)
-		 (mv nil nil nil))))                        
+		 (mv nil nil nil))))
       (t (mv nil nil nil))))))
 
 
@@ -136,7 +136,7 @@
 ;;; ----------------------------------------------------------------------------
 
 
-;;; Termination properties of transform-subs. 
+;;; Termination properties of transform-subs.
 
 (local
  (defthm transform-subs-decreases-length-of-first-system
@@ -210,7 +210,7 @@
  (defthm nil-third-implies-nil-second-subs-system
    (implies (not (third (subs-system s match t)))
 	    (not (second (subs-system s match t))))))
- 
+
 ;;; And the main properties of match-mv
 
 (defthm match-mv-soundness
@@ -288,7 +288,7 @@
 
 ;;; Soundness
 ;;; ·········
- 
+
 (defthm subs-soundness
   (implies (subs t1 t2)
 	   (equal (instance t1 (matching t1 t2)) t2))
@@ -356,7 +356,7 @@
 ;;; Sometimes it will be useful to talk abou subsumption between lists
 ;;; of terms (see, for example, kb/critical-pairs.lisp). We define here
 ;;; such concept and its main properties, in a similar way to subs.
- 
+
 ;;; The subsumption algorithm (between lists of terms)
 
 (defun subs-list-mv (l1 l2)
@@ -365,7 +365,7 @@
     (mv-let (pair-lists bool)
 	    (pair-args l1 l2)
 	    (if bool (match-mv pair-lists) (mv nil nil))))
-  
+
 
 
 ;;; The subsumption relation between lists of terms
@@ -411,7 +411,7 @@
 ;;; Soundness
 ;;; ·········
 
- 
+
 (defthm subs-list-soundness
   (implies (subs-list l1 l2)
 	   (equal (apply-subst nil (matching-list l1 l2) l1) l2))
@@ -461,7 +461,7 @@
 ;;; As with subs, we will disable the definitions related to subs-list to be
 ;;; sure that ONLY the above two properties are used in the sequel. But
 ;;; before doing this, we state the relations between subs-list-mv and subs-list
-;;; and matching-list. 
+;;; and matching-list.
 
 (defthm subs-list-mv-subs-list
   (equal (second (subs-list-mv t1 t2)) (subs-list t1 t2)))
@@ -473,7 +473,7 @@
 (in-theory
  (disable
   subs-list-mv (subs-list-mv) subs-list (subs-list) matching-list
-  (matching-list))) 
+  (matching-list)))
 
 
 
@@ -500,7 +500,7 @@
 ;;;; Subsumption reflexive
 ;;;; ·····················
 
-(defthm subsumption-reflexive 
+(defthm subsumption-reflexive
    (subs t1 t1)
    :hints (("Goal" :use (:instance
  			 subs-completeness
@@ -511,7 +511,7 @@
 ;;;; ······················
 
 
-(defthm subsumption-transitive 
+(defthm subsumption-transitive
    (implies (and (subs t1 t2) (subs t2 t3))
 	    (subs t1 t3))
    :hints (("Goal" :use ((:instance
@@ -538,7 +538,7 @@
 ;;; Variables are minimum elements in this quasi-order
 ;;; ··················································
 
-(defthm variable-minimum-subsumption 
+(defthm variable-minimum-subsumption
   (implies (variable-p x)
 	   (subs x term))
   :hints (("Goal" :use ((:instance subs-completeness
@@ -548,7 +548,7 @@
 
 (in-theory (disable variable-minimum-subsumption))
 
-(defthm minimum-subsumption-implies-variable 
+(defthm minimum-subsumption-implies-variable
   (implies (and (variable-p x) (subs term x))
 	   (variable-p term))
   :hints (("Goal" :use (:instance

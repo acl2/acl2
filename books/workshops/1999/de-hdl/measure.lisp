@@ -38,7 +38,7 @@
 		(< (cons-size (cdr x))
                    (cons-size x))
 		(< (cons-size (caddar x))
-		   (cons-size x))))  
+		   (cons-size x))))
   :rule-classes :linear)
 
 (defthm cons-size-fn-delete-eq

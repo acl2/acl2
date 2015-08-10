@@ -30,16 +30,16 @@
 (local-hide
 
  (defcontext (mod a n) 1)
- 
+
  (encapsulate
      ()
-   
+
    (local
     (encapsulate
 	()
-      
+
       (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-      
+
       (defun mag (x)
 	(declare (xargs :measure (abs (ifix x))))
 	(if (integerp x)
@@ -47,7 +47,7 @@
 	      (if (< x 0) (mag (1+ x))
 		(mag (1- x))))
 	  x))
-      
+
      (defthmd push-mod-+-1
        (implies
 	(and
@@ -58,7 +58,7 @@
 	 (integerp y))
 	(equal (mod (+ x y) n)
 	       (mod (+ (mod x n) y) n))))
-     
+
      (defthmd push-mod-+-2
        (implies
 	(and
@@ -69,7 +69,7 @@
 	 (integerp y))
 	(equal (mod (+ y x) n)
 	       (mod (+ y (mod x n)) n))))
-     
+
      (defthmd push-mod-*-1
        (implies
 	(and
@@ -81,7 +81,7 @@
 	(equal (mod (* x y) n)
 	       (mod (* (mod x n) y) n)))
        :hints (("Goal" :induct (mag x))))
-     
+
      (defthmd push-mod-*-2
        (implies
 	(and
@@ -93,7 +93,7 @@
 	(equal (mod (* y x) n)
 	       (mod (* y (mod x n)) n)))
        :hints (("Goal" :induct (mag x))))
-     
+
      (defthmd push-mod-*
        (implies
 	(and
@@ -108,7 +108,7 @@
        :hints (("Goal" :in-theory '(integerp-mod
 				    push-mod-*-1
 				    push-mod-*-2))))
-     
+
      (defthmd push-mod-+
        (implies
 	(and
@@ -123,7 +123,7 @@
        :hints (("Goal" :in-theory '(integerp-mod
 				    push-mod-+-1
 				    push-mod-+-2))))
-     
+
      (defthm mod-mod
        (implies
 	(and
@@ -132,7 +132,7 @@
 	 (not (equal n 0)))
 	(equal (mod (mod x n) n)
 	       (mod x n))))
-  
+
      (defthm integerp-mod+
        (implies
 	(and
@@ -141,7 +141,7 @@
 	(integerp (mod x n))))
 
      ))
-  
+
   (defthm mod-mod
     (implies
      (and
@@ -150,7 +150,7 @@
       (not (equal n 0)))
      (equal (mod (mod x n) n)
 	    (mod x n))))
-  
+
 ;;   (defthm integerp-mod+
 ;;     (implies
 ;;      (and
@@ -166,40 +166,40 @@
 ;;       (not (equal n 0)))
 ;;      (equal (mod (mod x n) n)
 ;; 	    (mod x n))))
-  
+
   (defcong+ mod-+-cong
-    
+
     (mod (+ a b) n)
-    
+
     :hyps (and (integerp n)
 	       (not (equal n 0))
 	       (integerp a)
 	       (integerp b))
-    
+
     :cong ((a (equal x (mod a n)))
 	   (b (equal y (mod b n))))
-    
+
     :check (and (integerp x)
 		(integerp y))
-    
+
     :hints (("Goal" :in-theory (e/d (push-mod-+)
 				    (mod)))))
-  
+
   (defcong+ mod-*-cong
-    
+
     (mod (* a b) n)
-    
+
     :hyps (and (integerp n)
 	       (not (equal n 0))
 	       (integerp a)
 	       (integerp b))
-    
+
     :cong ((a (equal x (mod a n)))
 	   (b (equal y (mod b n))))
-    
+
     :check (and (integerp x)
 		(integerp y))
-    
+
     :hints (("Goal" :in-theory (e/d (push-mod-*)
 				    (mod)))))
 
@@ -226,12 +226,12 @@
 	     'nil)
      (cons (cons 'integerp (cons (car args) 'nil))
 	   (integerp-guard-fn (cdr args)))))
- 
+
  (defmacro integerp-guard (&rest args)
    (if (endp (cdr args))
        (cons 'integerp (cons (car args) 'nil))
      (cons 'and (integerp-guard-fn args))))
- 
+
  (defthm multiply-test
    (implies
     (and
@@ -242,7 +242,7 @@
 		   (mod (+ c (mod d n)) n)
 		   (mod e n)) n)
 	   (mod (+ (* a b) c d e) n))))
- 
+
  (defthm test1
    (implies
     (and
@@ -251,7 +251,7 @@
     (equal (mod (+ a (mod (+ b (mod c n)) n)) n)
 	   (mod (+ a b c) n)))
    :rule-classes nil)
- 
+
  ;;
  ;; Example from the paper "Parameterized Congruences in ACL2"
  ;;
@@ -281,18 +281,18 @@
     (equal (mod (+ a (mod b n) (foo1 c) (foo2 (+ (mod d n) (mod e n)))) n)
 	   (mod (+ a b c (foo2 (+ d e))) n)))
    :rule-classes nil)
- 
+
  ;;
  ;; Accumulated Persistence results showing quadratic behavior ..
  ;;
- 
+
  (defthm test2
    (implies
     (integerp-guard a b c d e f g h)
     (equal (mod (+ a b c d e f g (mod h 100)) 5)
 	   (mod (+ a b c d e f g h) 5)))
    :rule-classes nil)
- 
+
 #|
 :brr t
 
@@ -335,7 +335,7 @@ Accumulated Persistence
     (equal (mod (+ a b c d e f g h i (mod j 100)) 5)
 	   (mod (+ a b c d e f g h i j) 5)))
    :rule-classes nil)
- 
+
 #|
 :brr t
 
@@ -358,41 +358,41 @@ Accumulated Persistence
 
  (defun foo (a)
    (mod a 2))
- 
+
  (defthm integerp-foo
    (implies
     (integerp x)
     (integerp (foo x))))
- 
+
  (defthm mod-foo
    (implies
     (integerp a)
     (equal (mod (foo a) 2)
 	   (mod a 2))))
- 
+
  (defcong+ foo-cong
-   
+
    (foo a)
-   
+
    :hyps (integerp a)
    :cong ((a (equal x (mod a 2))))
    :check (integerp x)
    )
- 
+
  (in-theory (disable foo))
- 
+
  (defthm integerp-+
    (implies
     (and (integerp x) (integerp y))
     (integerp (+ x y))))
- 
+
  (defthm foo-reduction
    (implies
     (integerp-guard x b c d)
     (equal (foo (+ x (foo (+ b (mod c 20))) (mod d 10)))
 	   (foo (+ x b c d))))
    :hints (("goal" :in-theory (enable integerp-+))))
- 
+
  )
 
 (in-theory (disable mod))
@@ -402,7 +402,7 @@ Accumulated Persistence
 (defcontext (loghead n x) 2)
 
 (defcong+ loghead-+-cong
-  
+
   (loghead n (+ a b))
 
   :hyps (and (integerp a)
@@ -417,7 +417,7 @@ Accumulated Persistence
   :hints (("Goal" :in-theory (enable loghead))))
 
 (defcong+ loghead-*-cong
-  
+
   (loghead n (* a b))
 
   :hyps (and (integerp a)
@@ -464,7 +464,7 @@ Accumulated Persistence
 
 ;;
 ;; Works much better if we disable LOGHEAD-UPPER-BOUND and MOD-X-Y-=-X+Y
-;; 
+;;
 
 (defthm loghead-mod-theorem
   (implies (and (integerp x) (integerp f))
@@ -499,7 +499,7 @@ Accumulated Persistence
     ()
   (local
    (include-book "ihs/ihs-lemmas" :dir :system))
-  
+
   (defthm loghead-elimination
     (implies
      (and
@@ -542,16 +542,16 @@ Accumulated Persistence
        ()
 
      (defcontext (use list x) 2)
-     
+
      (defcong+ *nary*-use-update-nth
        (use list (update-nth a v x))
        :cong ((x (equal z (use list x))))
        :hyps (member (nfix a) (nfix-list list))
        :hints (("Goal" :in-theory `(unide-hide use-use use_unfix_check use-update-nth-member)))
        )
-     
+
      (in-theory (disable (use) use))
-     
+
      (defthm use-to-nth-in-conclusion
        (implies
 	(in-conclusion-check (equal (use list x)
@@ -561,58 +561,58 @@ Accumulated Persistence
 	       (equal (nth* list x)
 		      (nth* list y))))
        :hints (("Goal" :in-theory (enable NTH*-GET-COPY-EQUIVALENCE))))
-     
-     
+
+
      (in-theory (disable NTH*-GET-COPY-EQUIVALENCE))
-     
+
      (defstobj st
        (r1 :type integer :initially 0)
        (r2 :type integer :initially 0)
        (r3 :type integer :initially 0)
        (r4 :type integer :initially 0)
        )
-     
+
      (defun foo-st (st)
        (declare (xargs :stobjs (st)))
        (let ((st (update-r1 (1+ (r1 st)) st)))
 	 st))
-     
+
      (defun foo-use ()
        (list *r1*))
-     
+
      (defun foo-def ()
        (list *r1*))
-     
+
      (defthm nth-foo-st
        (implies
 	(not (member (nfix a) (foo-def)))
 	(equal (nth a (foo-st st))
 	       (nth a st))))
-     
+
      (defcong+ *nary*-nth-foo-st-use
        (nth a (foo-st st))
        :cong ((st (equal z (use (foo-use) st))))
        :hyps (member (nfix a) (foo-def))
        :hints (("Goal" :in-theory (enable member))))
-     
+
      (defcong+ *nary*-use-foo-st-use
        (use list (foo-st st))
        :cong ((st (equal z (use (append list (foo-use)) st))))
        :hints (("goal" :in-theory (e/d (use-update-nth)
 				       (CLR-NTH-DEFN open-clr-nth)))))
-     
+
      (in-theory (disable foo-st))
-     
+
      (defthm nth-foo-st-test
        (equal (nth *r1* (foo-st st))
 	      (nth *r1* (foo-st (update-nth 3 v st)))))
-     
+
      (defthm use-foo-st-test
        (implies
 	(not (member 3 (nfix-list list)))
 	(equal (use list (foo-st st))
 	       (use list (foo-st (update-nth 3 v st))))))
-     
+
      )))
 
 ;; = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -650,20 +650,20 @@ Accumulated Persistence
 	 (bind-contextp (v (equal maxv (<=ctx v))))
 	 (<= maxv z))
 	(<= v z)))
-     
+
      (defun foo (x)
        (if (< (ifix x) 100) x 0))
-     
+
      (defthm <=-foo-100-driver
        (implies
 	(integerp x)
 	(<=equiv (foo x) 100)))
-     
+
      (in-theory (disable foo))
 
      (defthm <=-foo-sum-300
        (implies
-	(and 
+	(and
 	 (integerp x)
 	 (integerp y)
 	 (integerp z))
@@ -679,44 +679,44 @@ Accumulated Persistence
    (encapsulate
        ()
 
-     (xxinclude-book "top" :dir :bags)   
-     
+     (xxinclude-book "top" :dir :bags)
+
      (defequiv+ (bag::memberp x y)
        :pred    memberp-pred
-       :equiv   memberp-equiv 
+       :equiv   memberp-equiv
        :context memberp-subbag
        :chaining nil
        )
-     
+
      (defequiv+ (bag::subbagp x y)
        :pred    subbagp-pred
-       :equiv   subbagp-equiv 
+       :equiv   subbagp-equiv
        :context subbagp-ctx
        )
-     
+
      (defstub xterm () nil)
-     
+
      (defun xlist ()
        (list (xterm)))
-     
+
      (in-theory (disable (xlist)))
-     
+
      (defthm xterm-becomes-xlist
        (memberp-equiv (xterm) (xlist)))
-     
+
      (defun x2list ()
        (list (xterm) :2))
-     
+
      (in-theory (disable (x2list)))
-     
+
      (defthm xlist-becomes-x2list
        (subbagp-equiv (xlist) (x2list)))
-     
+
      (in-theory (disable xlist))
      (in-theory (disable x2list))
-     
+
      (defun fido (x) x)
-     
+
      (defcongp+ subbagp-equiv-cons-1
        (cons x y)
        :rhs (append z y)
@@ -726,29 +726,29 @@ Accumulated Persistence
 					BAG::REMOVE-1-OF-APPEND-WHEN-MEMBERP)
 				       (BAG::APPEND-REMOVE-1-REDUCTION))))
        )
-     
+
      (defcongp+ subbagp-equiv-cons-2
        (cons x y)
        :cong ((y (equal z (subbagp-ctx (fido y)))))
        :equiv subbagp-equiv
        )
-     
+
      (defcongp+ subbagp-equiv-append-1
        (append x y)
        :cong ((x (equal z (subbagp-ctx (fido x)))))
        :equiv subbagp-equiv
        :hints (("goal" :in-theory (enable BAG::SUBBAGP-APPEND-APPEND)))
        )
-     
+
      (defcongp+ subbagp-equiv-append-2
        (append x y)
        :cong ((y (equal z (subbagp-ctx (fido y)))))
        :equiv subbagp-equiv
        )
-     
+
      (defund subfn (x y)
        (bag::subbagp y x))
-     
+
      (defcongp+ subfn-expansion
        (subfn x y)
        :cong ((y (equal z (subbagp-ctx (fido y)))))
@@ -756,7 +756,7 @@ Accumulated Persistence
        :hints (("Goal" :expand (:free (x) (hide x))
 		:in-theory (enable subfn)))
        )
-     
+
      (defthm bag-test
        (implies
 	(subfn x (CONS :A (APPEND (X2LIST) (X2LIST) (X2LIST))))

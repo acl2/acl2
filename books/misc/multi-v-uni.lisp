@@ -593,7 +593,7 @@
                   (good-local-statep ls))))
 
 ; The following theorem was not needed by ACL2 Version 1.9, which existed in
-; 1998 when this proof was first done.  The reason is that Version 1.9 
+; 1998 when this proof was first done.  The reason is that Version 1.9
 ; opened recursive functions more agressively than subsequent ACL2 releases.
 
 ; Basically (nth pcn '((LOAD OLD CTR) ...)) is the expansion of the

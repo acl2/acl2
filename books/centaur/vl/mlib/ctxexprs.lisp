@@ -374,8 +374,8 @@ expression with a @(see vl-context-p) describing its origin.</p>")
   (verify-guards vl-genblob-ctxexprs
     :hints ((and stable-under-simplificationp
                  '(:expand ((vl-genblob-ctxexprs x mod ss)))))))
-       
-  
+
+
 
 
 (define vl-module-ctxexprs ((x vl-module-p) (ss vl-scopestack-p))

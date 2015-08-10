@@ -1,23 +1,23 @@
 ;  Copyright (C) 2000 Panagiotis Manolios
- 
+
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios who can be reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
@@ -44,9 +44,9 @@
 	(latch2 (not (stall-condp MA))
 		(nth (latch1-op) latch1)
 		(nth (latch1-rc) latch1)
-		(value-of (nth (latch1-ra) latch1) 
+		(value-of (nth (latch1-ra) latch1)
 			  (nth (MA-regs) MA))
-		(value-of (nth (latch1-rb) latch1) 
+		(value-of (nth (latch1-rb) latch1)
 			  (nth (MA-regs) MA)))
       (update-nth (latch2-validp) nil (nth (MA-latch2) MA)))))
 
@@ -90,12 +90,12 @@
 	 (op (nth (latch2-op) latch2))
 	 (ra-val (nth (latch2-ra-val) latch2))
 	 (rb-val (nth (latch2-rb-val) latch2)))
-    (cond (int (update-nth (MA-mem) 
+    (cond (int (update-nth (MA-mem)
 			   (int-handler regs mem int)
 			   (update-nth (MA-int)
 				       nil
 				       (committed-MAserial MA))))
-	  (i (update-nth (MA-int) i (committed-MAserial MA)))   
+	  (i (update-nth (MA-int) i (committed-MAserial MA)))
 	  ((and exc-on
 		(nth (latch2-validp) latch2)
 		(serial-excp op ra-val rb-val)
@@ -133,8 +133,8 @@
 ; version of the body as a definition and this screws up my Macros.
 
 (defun MAserial-rank (MA)
-  (if (MAserial-p MA) 
-      0 
+  (if (MAserial-p MA)
+      0
     1))
 
 (defthm value-of-convert-regs
@@ -148,7 +148,7 @@
 	   (equal (value-of x r)
 		  nil)))
 
-(defthm convert-regs-update-val 
+(defthm convert-regs-update-val
  (equal (convert-regs (update-valuation x y r))
 	(update-valuation x (n y) (convert-regs r))))
 

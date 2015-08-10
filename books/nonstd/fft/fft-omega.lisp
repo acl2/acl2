@@ -2,7 +2,7 @@
 
 This is in an ACL2 "book" with definitions and theorems about an abstract
 correctness proof of the Fast Fourier Transform.  The proof verified here comes
-from Misra's 1994 paper on powerlists.  
+from Misra's 1994 paper on powerlists.
 
 To certify this book, first define the POWERLISTS package, then execute an
 appropriate certify-book command.  Something like the following will work:
@@ -33,13 +33,13 @@ appropriate certify-book command.  Something like the following will work:
 		  (p-tie (p-+ (eval-poly (p-unzip-l x)
 					 (p-* u u))
 			      (p-* u
-				   (eval-poly 
+				   (eval-poly
 				    (p-unzip-r x)
 				    (p-* u u))))
 			 (p-- (eval-poly (p-unzip-l x)
 					 (p-* u u))
 			      (p-* u
-				   (eval-poly 
+				   (eval-poly
 				    (p-unzip-r x)
 				    (p-* u u)))))))
   :hints (;;("Goal" :expand (eval-poly x (p-tie u (p-unary-- u))))
@@ -48,7 +48,7 @@ appropriate certify-book command.  Something like the following will work:
 			   (x (eval-poly pul (p-* u u)))
 			   (y (p-* u (eval-poly pur (p-* u u)))))
 	   :in-theory (disable p-+-p-unary--))))
-			 
+
 ;; The most important step is to introduce the constrained function p-omega
 ;; which will have the property (p-omega n) = < u | -u > used in the previous
 ;; lemma.  P-omega is actually a family of vectors.  In particular, (p-omega n)
@@ -102,7 +102,7 @@ appropriate certify-book command.  Something like the following will work:
    (implies (not (zp n))
 	    (equal (p-omega n)
 		   (p-tie (p-omega-sqrt (1- n))
-			  (p-unary-- 
+			  (p-unary--
 			   (p-omega-sqrt (1- n))))))
    :rule-classes nil)
 
@@ -144,16 +144,16 @@ appropriate certify-book command.  Something like the following will work:
 		(not (zp n)))
 	   (let ((n1 (1- n)))
 	     (equal (eval-poly x (p-omega n))
-		    (p-tie (p-+ (eval-poly (p-unzip-l x) 
+		    (p-tie (p-+ (eval-poly (p-unzip-l x)
 					   (p-omega n1))
 				(p-* (p-omega-sqrt n1)
-				     (eval-poly 
-				      (p-unzip-r x) 
+				     (eval-poly
+				      (p-unzip-r x)
 				      (p-omega n1))))
-			   (p-- (eval-poly (p-unzip-l x) 
+			   (p-- (eval-poly (p-unzip-l x)
 					   (p-omega n1))
 				(p-* (p-omega-sqrt n1)
-				     (eval-poly 
+				     (eval-poly
 				      (p-unzip-r x)
 				      (p-omega n1))))))))
   :hints (("Goal"
@@ -184,16 +184,16 @@ appropriate certify-book command.  Something like the following will work:
 	 (n1 (1- n)))
     (implies (powerlist-p x)
 	     (equal (eval-poly x (p-omega n))
-		    (p-tie (p-+ (eval-poly (p-unzip-l x) 
+		    (p-tie (p-+ (eval-poly (p-unzip-l x)
 					   (p-omega n1))
 				(p-* (p-omega-sqrt n1)
-				     (eval-poly 
-				      (p-unzip-r x) 
+				     (eval-poly
+				      (p-unzip-r x)
 				      (p-omega n1))))
-			   (p-- (eval-poly (p-unzip-l x) 
+			   (p-- (eval-poly (p-unzip-l x)
 					   (p-omega n1))
 				(p-* (p-omega-sqrt n1)
-				     (eval-poly 
+				     (eval-poly
 				      (p-unzip-r x)
 				      (p-omega n1))))))))
   :hints (("Goal"
@@ -230,14 +230,14 @@ appropriate certify-book command.  Something like the following will work:
 		(p-regular-p x))
 	   (equal (p-ft-omega x)
 		  (p-tie (p-+ (p-ft-omega (p-unzip-l x))
-			      (p-* (p-omega-sqrt 
+			      (p-* (p-omega-sqrt
 				    (1- (p-depth x)))
-				   (p-ft-omega 
+				   (p-ft-omega
 				    (p-unzip-r x))))
 			 (p-- (p-ft-omega (p-unzip-l x))
-			      (p-* (p-omega-sqrt 
+			      (p-* (p-omega-sqrt
 				    (1- (p-depth x)))
-				   (p-ft-omega 
+				   (p-ft-omega
 				    (p-unzip-r x)))))))
   :hints (("Goal" :in-theory (disable eval-poly-lemma))
 ; Matt K. v7-1 mod for avoiding "Goal'", 2/13/2015: "Goal''" changed to "Goal'".

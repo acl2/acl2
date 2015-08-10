@@ -194,14 +194,14 @@
    (implies (and (not (b1 s)) (p s)) (p (sigma1 s))))
  (defthm alternative-induction-q2-id-alt
    (implies (and (b1 s) (p s)) (equal (q2 (id-alt s)) (q1 s)))))
-  
+
 (defun fn1-ind (s)
   (declare (xargs :measure (measure1 s)))
   (if (b1 s) (q1 s) (fn1-ind (sigma1 s))))
 
 ;;; This is the main goal of the alternative induction theory.
 
-(defthm fn1-as-fn2 
+(defthm fn1-as-fn2
   (implies (p s)
 	   (equal (fn1 s) (fn2 (id-alt s))))
   :hints (("Goal" :induct (fn1-ind s))))

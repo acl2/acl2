@@ -28,7 +28,7 @@
             (pretty-args hons-opt (cdr args))))))
 
 #|
-(defun int-sym (i s) 
+(defun int-sym (i s)
   (cons i s))
 
 or for pretty
@@ -46,15 +46,15 @@ or for pretty
            nil)
        ,(if pretty-opt
             `(,(if hons-opt 'hons-list 'list)
-              ',name 
+              ',name
               ,@(pretty-args hons-opt args))
-          (if compact-opt 
+          (if compact-opt
               (argtree cons args)
             `(,(if hons-opt 'hons-list 'list) ,@args))))))
 
 
 
-         
+
 
 
 ;; (defun pretty-structurep (lst)
@@ -116,7 +116,7 @@ or
 #|
 (defthm int-sym-structurep-int-sym
   (int-sym-structurep (int-sym i s))
-  :rule-classes ((:forward-chaining 
+  :rule-classes ((:forward-chaining
                   :trigger-terms ((int-sym i s)))))
 ||#
 (defun deftuple-constructor-structure-recognizer-thm (name components)
@@ -138,14 +138,14 @@ or
 (defun deftuple-accessor (name component ncomps n guard-opt
                                compact-opt pretty-opt)
   (let ((rec (appsyms (list name 'structurep)))
-        (acc (if pretty-opt 
+        (acc (if pretty-opt
                  (if (eq guard-opt :safe)
                      `(safe-car
                        (cdr (gentle-assoc ',(component-name component)
                                           (safe-cdr x))))
-                   `(cadr (assoc-eq ',(component-name component) 
+                   `(cadr (assoc-eq ',(component-name component)
                                     (cdr x))))
-               (if compact-opt 
+               (if compact-opt
                    (tree-accessor n ncomps 'x guard-opt)
                  (if (eq guard-opt :safe)
                      `(safe-nth ,(1- n) x)
@@ -215,13 +215,13 @@ or
                                           nth-open))))))
 
 #|
-(def-pattern-match-constructor 
+(def-pattern-match-constructor
   int-sym
   :unconditional
   (int-sym-i int-sym-s))
-||#       
+||#
 (defun deftuple-binder (name components)
-  `(def-patbind-macro ,name 
+  `(def-patbind-macro ,name
      ,(accessor-list (list (cons name components)) components)))
 
 
@@ -237,7 +237,7 @@ or
 ;;         (t (mv-let (first second)
 ;;                    (split-list (floor (len components) 2) components
 ;;                                nil)
-;;                    (append (component-recognizer-list-compact 
+;;                    (append (component-recognizer-list-compact
 ;;                             `(car ,obj) first)
 ;;                            (component-recognizer-list-compact
 ;;                             `(cdr ,obj) second))))))
@@ -249,7 +249,7 @@ or
 ;;           (name (component-name (car components))))
 ;;       (if type
 ;;           (cons `(,type (cadr (assoc-eq ',name (cdr x))))
-;;                 (component-recognizer-list-pretty 
+;;                 (component-recognizer-list-pretty
 ;;                  (cdr components)))
 ;;         (component-recognizer-list-pretty (cdr components))))))
 
@@ -269,7 +269,7 @@ or
                 (accessor-type-list name (cdr components)))
         (accessor-type-list name (cdr components))))))
 #|
-(defun int-symp (x) 
+(defun int-symp (x)
   (and (int-sym-structurep x)
        (integerp (int-sym-i x))
        (symbolp (int-sym-s x))))
@@ -309,23 +309,23 @@ or
   (if (atom components)
       nil
     (let ((type (component-type (car components)))
-          (acc (appsyms (list name (component-name 
+          (acc (appsyms (list name (component-name
                                     (car components))))))
       (if type
           (cons
-           `(defthm ,(appsyms (list rec (component-name 
+           `(defthm ,(appsyms (list rec (component-name
                                            (car components))))
                 (implies (,rec x)
                          (,type (,acc x))))
 ;;            `(make-event
-;;              `(defthm ,',(appsyms (list rec (component-name 
+;;              `(defthm ,',(appsyms (list rec (component-name
 ;;                                            (car components))))
 ;;                 (implies (,',rec x)
 ;;                          (,',type (,',acc x)))
 ;;                 ,@(if (most-recent-enabled-recog-tuple
 ;;                        ',type
 ;;                        (global-val 'recognizer-alist (w state))
-;;                        (global-val 'global-enabled-structure 
+;;                        (global-val 'global-enabled-structure
 ;;                                    (w state)))
 ;;                       '(:rule-classes (:rewrite :type-prescription))
 ;;                     nil)))
@@ -351,7 +351,7 @@ or
                 (symbolp s))
            (int-symp (int-sym i s)))
   :rule-classes (:rewrite
-                 (:forward-chaining 
+                 (:forward-chaining
                   :trigger-terms ((int-sym i s)))))
 ||#
 (defun deftuple-recognizer-constructor-thm (name components)
@@ -400,7 +400,7 @@ or
                                                 ',before-label)))
          (function-theory (appsyms (list name 'functions)))
          (exec-theory (appsyms (list name 'executable-counterparts))))
-    `(encapsulate 
+    `(encapsulate
       nil
       ,@(if arithmetic-opt
             `((local (include-book
@@ -409,14 +409,14 @@ or
       (deflabel ,before-label)
       ,@(deftuple-defs name components guard-opt hons-opt compact-opt
           pretty-opt)
-      
+
       (deftheory ,function-theory
         (rules-of-type :DEFINITION ,difftheory))
       (deftheory ,exec-theory
         (rules-of-type :EXECUTABLE-COUNTERPART ,difftheory))
       (deftheory ,(appsyms (list name 'theorems))
         (set-difference-theories ,difftheory
-                                 (union-theories 
+                                 (union-theories
                                   (theory ',function-theory)
                                   (theory ',exec-theory))))
       (in-theory (disable ,function-theory ,exec-theory))
@@ -430,7 +430,7 @@ or
     `(cons (cons (quote ,(caar kwalist))
                  ,(cdar kwalist))
            ,(translate-kwalist (cdr kwalist)))))
-      
+
 
 (defmacro deftuple-help (name components kwalist)
   (deftuple-fn name (munge-components components) kwalist))
@@ -441,9 +441,9 @@ or
           `(make-event
             (deftuple-fn ',name (munge-components ',components)
               ,(translate-kwalist kwalist)))))
-    
-                   
-     
+
+
+
 
 ;; (defun deftuple-function-defs (name components guard-opt hons-opt
 ;;                                     compact-opt)
@@ -507,14 +507,14 @@ or
 ;;       nil
 ;;       (deflabel ,before-label)
 ;;       ,@(deftuple-defs name components guard-opt hons-opt compact-opt)
-      
+
 ;;       (deftheory ,function-theory
 ;;         (rules-of-type :DEFINITION ,difftheory))
 ;;       (deftheory ,exec-theory
 ;;         (rules-of-type :EXECUTABLE-COUNTERPART ,difftheory))
 ;;       (deftheory ,(appsyms (list name 'theorems))
 ;;         (set-difference-theories ,difftheory
-;;                                  (union-theories 
+;;                                  (union-theories
 ;;                                   (theory ',function-theory)
 ;;                                   (theory ',exec-theory))))
 ;;       (in-theory (disable ,function-theory ,exec-theory))
@@ -558,7 +558,7 @@ expands to
 
 (defthm int-sym-structurep-int-sym
   (int-sym-structurep (int-sym i s))
-  :rule-classes (:forward-chaining 
+  :rule-classes (:forward-chaining
                  :trigger-terms ((int-sym i s))))
 
 (defun int-sym-i (x)
@@ -580,12 +580,12 @@ expands to
                   x))
   :rule-classes (:rewrite :elim))
 
-(def-pattern-match-constructor 
+(def-pattern-match-constructor
   int-sym
   :unconditional
   (int-sym-i int-sym-s))
 
-(defun int-symp (x) 
+(defun int-symp (x)
   (and (int-sym-structurep x)
        (integerp (int-sym-i x))
        (symbolp (int-sym-s x))))
@@ -659,7 +659,7 @@ expands to
 (thm (not (equal (constructor-nest b a 200) a)))
 
 (thm (not (equal (constructor b (constructor b (constructor b a))) a)))
- 
+
 
 (defun cons-nest-fn (car n acc)
   (declare (xargs :guard (natp n)))

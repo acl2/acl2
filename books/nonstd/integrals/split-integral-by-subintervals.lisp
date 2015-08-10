@@ -55,7 +55,7 @@
 	    :use ((:instance deltas-partition-of-single-point))))
    :rule-classes nil))
 |#
-		 
+
 
 (local
  (defthmd close-to-standard-is-close-1
@@ -179,7 +179,7 @@
 				mesh
 				i-close-transitive
 				inside-interval-p-squeeze)))))
-  
+
 (local
  (defthmd split-integral-by-subintervals-lemma
    (implies (and (realp a)

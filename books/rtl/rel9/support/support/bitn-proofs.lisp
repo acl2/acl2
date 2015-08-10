@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -161,12 +161,12 @@
                           (- (bitn x n))
                           ))
           :hints (("Goal" :in-theory (set-difference-theories
-                                      (enable bitn 
+                                      (enable bitn
                                               bits
                                               mod-cancel
-                                              expt-minus  
+                                              expt-minus
                                               expt-split)
-                                      '( ;expt-inverse 
+                                      '( ;expt-inverse
                                         ))))))
 
 
@@ -182,9 +182,9 @@
                                       (enable bitn
                                               mod
                                               mod-cancel
-                                              bits 
+                                              bits
                                               even-int-implies-int
-                                              expt-minus  
+                                              expt-minus
                                               expt-split)
                                       '( ;expt-inverse
                                         ))))))
@@ -203,8 +203,8 @@
                                       (enable bitn
                                               mod
                                               mod-cancel
-                                              bits 
-                                              expt-minus  
+                                              bits
+                                              expt-minus
                                               expt-split)
                                       '( ;expt-inverse
                                         ))))))
@@ -269,7 +269,7 @@
            (equal (bitn (+ x y) n)
                   (bitn (+ (lowbits x n) y) n)))
   :hints (("Goal" :in-theory (set-difference-theories
-                              (enable 
+                              (enable
                                lowbits
                                bitn bits)
                               '()))))
@@ -336,7 +336,7 @@
 ;add matt's forward chaining rules for dealing with single bits (maybe they should go in bvecp.lisp)
 
 
-(encapsulate 
+(encapsulate
  ()
  (local (defthm bitn-bitn-case-1
           (implies (case-split (integerp n))
@@ -408,7 +408,7 @@
 ;cc
 (defthm bitn-shift-alt
   (implies (and (syntaxp (should-have-a-2-factor-divided-out x))
-                (> n 0) ;restricts application 
+                (> n 0) ;restricts application
                 (rationalp x)
                 (integerp n)
                 )
@@ -469,7 +469,7 @@
                                 floor-fl)))))
 
 (defthm bitn-drop-crucial-bit-and-flip-result-alt-gen
-  (implies (and (syntaxp (and (quotep j) 
+  (implies (and (syntaxp (and (quotep j)
                               (< (cadr j) (expt 2 (+ 1 (cadr n)))) ;bitn-sum-lowbits does most of the work
                               (>= (cadr j) (expt 2 (cadr n)))))
                 (rationalp j)
@@ -486,7 +486,7 @@
 ;might be slow if the negative constant has a large absolute value
 ;make a negative version of bitn-sum-lowbits
 (defthm bitn-add-crucial-bit-and-flip-result
-  (implies (and (syntaxp (and (quotep j) 
+  (implies (and (syntaxp (and (quotep j)
                               (quotep n)
                               (< (cadr j) 0)))
                 (rationalp j)
@@ -507,7 +507,7 @@
                 )
            (equal (equal k (bitn x n))
                   nil)))
-                         
+
 
 
 
@@ -571,7 +571,7 @@
 
 
 
- 
+
 
 
 (encapsulate
@@ -593,7 +593,7 @@
                               ))))
  )
 
-(defthm bitn-times-fraction-integerp 
+(defthm bitn-times-fraction-integerp
   (implies (and (not (integerp k))
                 (case-split (acl2-numberp k))
                 )
@@ -621,7 +621,7 @@
                        (if (equal (bitn x n) 0)
                            k
                          (+ k 1))))
-  
+
        (implies (case-split (acl2-numberp k))
                 (equal (+ (bitn x n) k)
                        (if (equal (bitn x n) 0)
@@ -646,11 +646,11 @@
 |#
 
 (defthm bitn-0
-  (equal (bitn 0 k) 
+  (equal (bitn 0 k)
          0)
   :hints (("goal" :in-theory (enable bitn))))
 
-;may cause case splits (maybe that's good?) 
+;may cause case splits (maybe that's good?)
 (defthm bitn-expt-gen
   (implies (case-split (integerp i))
            (equal (bitn (expt 2 i) n)
@@ -835,7 +835,7 @@
                               (enable bitn-def expt-split)
                               '( ; bitn-def
                                 fl/int-rewrite
-                                fl-shift-fl  
+                                fl-shift-fl
                                 mod-pull-inside-fl-shift-alt-alt-alt
                                 mod-pull-inside-fl-shift-alt-alt-alt-alt))
            :use ((:instance fl/int-rewrite (x (/ x 2)) (n (expt 2 (1- n))))))))

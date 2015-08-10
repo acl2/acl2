@@ -1,11 +1,11 @@
 
 (in-package "ACL2")
 
-;; This file contains the examples from 
+;; This file contains the examples from
 ;; our paper and their proofs using the BDD system.
 
-;; For a description of the example and how this relates to 
-;; our SAT system see our workshop paper, "A SAT-Based 
+;; For a description of the example and how this relates to
+;; our SAT system see our workshop paper, "A SAT-Based
 ;; Procedure for Verifying Finite State Machines in ACL2."
 
 (defun n-bleq (n x y)
@@ -27,22 +27,22 @@
   (if (zp n)
       (list c)
     (cons (xor3 c (car a) (car b))
-          (v-adder (1- n) 
+          (v-adder (1- n)
                    (maj3 c (car a) (car b))
                    (cdr a) (cdr b)))))
 
-(defthm v-adder-rewrite 
+(defthm v-adder-rewrite
   (equal
    (v-adder n c a b)
    (if (zp n)
        (list c)
      (cons (xor3 c (car a) (car b))
-           (v-adder (1- n) 
+           (v-adder (1- n)
                     (maj3 c (car a) (car b))
                     (cdr a) (cdr b))))))
 
 (defthm n-bleq-rewrite
-  (equal 
+  (equal
    (n-bleq n x y)
    (if (zp n)
        t
@@ -56,7 +56,7 @@
   (let ((a (list a0 a1 a2 a3))
         (b (list b0 b1 b2 b3))
         (c (list c0 c1 c2 c3)))
- (implies 
+ (implies
   (and (boolean-listp a)
        (boolean-listp b)
        (boolean-listp c))
@@ -72,25 +72,25 @@
                  b22 b23 b24 b25 b26 b27 b28 b29 b30 b31))
         (c (list c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c20 c21
                  c22 c23 c24 c25 c26 c27 c28 c29 c30 c31)))
-    (implies 
+    (implies
      (and (boolean-listp a)
           (boolean-listp b)
           (boolean-listp c))
      (n-bleq 32 (v-adder 32 nil (v-adder 32 nil a b) c)
              (v-adder 32 nil a (v-adder 32 nil b c)))))
-  :hints (("Goal" :bdd (:vars (a0 b0 c0 a1 b1 c1 a2 b2 c2 a3 b3 c3 a4 b4 c4 
-                                  a5 b5 c5 a6 b6 c6 a7 b7 c7 a8 b8 c8 a9 b9 c9 
-                                  a10 b10 c10 a11 b11 c11 a12 b12 c12 a13 b13 c13 a14 b14 c14 
-                                  a15 b15 c15 a16 b16 c16 a17 b17 c17 a18 b18 c18 a19 b19 c19 
-                                  a20 b20 c20 a21 b21 c21 a22 b22 c22 a23 b23 c23 a24 b24 c24 
+  :hints (("Goal" :bdd (:vars (a0 b0 c0 a1 b1 c1 a2 b2 c2 a3 b3 c3 a4 b4 c4
+                                  a5 b5 c5 a6 b6 c6 a7 b7 c7 a8 b8 c8 a9 b9 c9
+                                  a10 b10 c10 a11 b11 c11 a12 b12 c12 a13 b13 c13 a14 b14 c14
+                                  a15 b15 c15 a16 b16 c16 a17 b17 c17 a18 b18 c18 a19 b19 c19
+                                  a20 b20 c20 a21 b21 c21 a22 b22 c22 a23 b23 c23 a24 b24 c24
                                   a25 b25 c25 a26 b26 c26 a27 b27 c27 a28 b28 c28 a29 b29 c29
-                                  a30 b30 c30 a31 b31 c31))))) 
+                                  a30 b30 c30 a31 b31 c31)))))
 
 #| I'm not proving the larger examples inside the book, just to save time
 
 ;; 200 Bit adder associativity
 (defthm 200-adder-assoc
-  (let ((a (list 
+  (let ((a (list
 A_0 A_1 A_2 A_3 A_4 A_5 A_6 A_7 A_8
      A_9 A_10 A_11 A_12 A_13 A_14 A_15 A_16
      A_17 A_18 A_19 A_20 A_21 A_22 A_23 A_24
@@ -121,7 +121,7 @@ A_0 A_1 A_2 A_3 A_4 A_5 A_6 A_7 A_8
      A_188 A_189 A_190 A_191 A_192 A_193
      A_194 A_195 A_196 A_197 A_198 A_199))
 
-        (b (list 
+        (b (list
 B_0 B_1 B_2 B_3 B_4 B_5 B_6 B_7 B_8
      B_9 B_10 B_11 B_12 B_13 B_14 B_15 B_16
      B_17 B_18 B_19 B_20 B_21 B_22 B_23 B_24
@@ -152,7 +152,7 @@ B_0 B_1 B_2 B_3 B_4 B_5 B_6 B_7 B_8
      B_188 B_189 B_190 B_191 B_192 B_193
      B_194 B_195 B_196 B_197 B_198 B_199))
 
-        (c (list 
+        (c (list
 C_0 C_1 C_2 C_3 C_4 C_5 C_6 C_7 C_8
      C_9 C_10 C_11 C_12 C_13 C_14 C_15 C_16
      C_17 C_18 C_19 C_20 C_21 C_22 C_23 C_24
@@ -183,7 +183,7 @@ C_0 C_1 C_2 C_3 C_4 C_5 C_6 C_7 C_8
      C_188 C_189 C_190 C_191 C_192 C_193
      C_194 C_195 C_196 C_197 C_198 C_199)))
 
-    (implies 
+    (implies
      (and (boolean-listp a)
           (boolean-listp b)
           (boolean-listp c))
@@ -361,15 +361,15 @@ C_0 C_1 C_2 C_3 C_4 C_5 C_6 C_7 C_8
        nil
      (cons (car lst) (nth-sublist (1- n) (cdr lst))))))
 
-(defthm n-nills-rewrite 
-  (equal 
+(defthm n-nills-rewrite
+  (equal
    (n-nills n)
    (if (zp n)
        nil
      (cons nil (n-nills (1- n))))))
 
-(defthm rev-n-rewrite 
-  (equal 
+(defthm rev-n-rewrite
+  (equal
    (rev-n n x ans)
    (if (zp n)
        ans
@@ -403,7 +403,7 @@ C_0 C_1 C_2 C_3 C_4 C_5 C_6 C_7 C_8
     :hints (("Goal" :in-theory (disable mux-n-w-help-rewrite mux-n-w-help mux-n mux-n-help-rewrite))))
 
 (defthm shift-mux-help-rewrite
-  (equal 
+  (equal
    (shift-mux-help n w reg)
    (if (zp n)
        nil
@@ -419,7 +419,7 @@ C_0 C_1 C_2 C_3 C_4 C_5 C_6 C_7 C_8
      R_8 R_9 R_10 R_11 R_12 R_13 R_14 R_15
      R_16 R_17 R_18 R_19 R_20 R_21 R_22 R_23
      R_24 R_25 R_26 R_27 R_28 R_29 R_30 R_31)))
-   (implies 
+   (implies
     (and (boolean-listp shift0)
          (boolean-listp reg))
     (equal (shifter 6 32 shift0 reg)
@@ -439,7 +439,7 @@ C_0 C_1 C_2 C_3 C_4 C_5 C_6 C_7 C_8
                   R_40 R_41 R_42 R_43 R_44 R_45 R_46 R_47
                   R_48 R_49 R_50 R_51 R_52 R_53 R_54 R_55
                   R_56 R_57 R_58 R_59 R_60 R_61 R_62 R_63)))
-   (implies 
+   (implies
     (and (boolean-listp shift0)
          (boolean-listp reg))
     (equal (shifter 7 64 shift0 reg)
@@ -718,7 +718,7 @@ C_0 C_1 C_2 C_3 C_4 C_5 C_6 C_7 C_8
         (X_2 (LIST X_2_0 X_2_1 X_2_2 X_2_3))
         (X_1 (LIST X_1_0 X_1_1 X_1_2 X_1_3))
         (X_0 (LIST X_0_0 X_0_1 X_0_2 X_0_3)))
-    (let ((x (list 
+    (let ((x (list
               X_0 X_1 X_2
               X_3 X_4 X_5 X_6 X_7 X_8 X_9 X_10 X_11
               X_12 X_13 X_14 X_15 X_16 X_17 X_18 X_19
@@ -732,7 +732,7 @@ C_0 C_1 C_2 C_3 C_4 C_5 C_6 C_7 C_8
               X_76 X_77 X_78 X_79 X_80 X_81 X_82 X_83
               X_84 X_85 X_86 X_87 X_88 X_89 X_90 X_91
               X_92 X_93 X_94 X_95 X_96 X_97 X_98 X_99)))
-      (implies (and 
+      (implies (and
                 (BOOLEAN-LISTP X_99)
                 (BOOLEAN-LISTP X_98)
                 (BOOLEAN-LISTP X_97)

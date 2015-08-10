@@ -170,7 +170,7 @@
             (concl-pat (translate concl-pat t t t 'replace-impl (w state) state)))
            (mv-let (ok hyp concl)
              (find-instance hyp-pat concl-pat cl)
-             (value 
+             (value
               (and ok
                    `(:clause-processor (replace-impl-cp clause
                                                         ',(list hyp concl))))))))

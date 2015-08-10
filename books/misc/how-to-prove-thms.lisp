@@ -186,7 +186,7 @@
   (and (equal (lookup 'b '((a . 1) (b . 2) (c . 3) (a . 4))) 2)
        (equal (lookup 'a '((a . 1) (b . 2) (c . 3) (a . 4))) 1)
        (equal (lookup 'x '((a . 1) (b . 2) (c . 3) (a . 4))) nil)
-       (equal (lookup 'j '((i . 1) (j . nil) (k . 123))) nil)) 
+       (equal (lookup 'j '((i . 1) (j . nil) (k . 123))) nil))
   :rule-classes nil)
 
 ; Problem 4.6
@@ -339,7 +339,7 @@
 Name the formula above *1.
 
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
-by this conjecture.  Subsumption reduces that number to one.  
+by this conjecture.  Subsumption reduces that number to one.
 
 We will induct according to a scheme suggested by (MEMP E A).  This
 suggestion was produced using the :induction rules APP and MEMP.  If
@@ -485,7 +485,7 @@ Time:  0.14 seconds (prove: 0.09, print: 0.05, other: 0.00)
 ; --- Script for proving complicated-memp-theorem ---
 
 ; These two lemmas are just obvious and are developed
-; as the initial plan for the proof. 
+; as the initial plan for the proof.
 
 (defthm memp-rev
   (equal (memp e (rev x)) (memp e x)))
@@ -500,7 +500,7 @@ Time:  0.14 seconds (prove: 0.09, print: 0.05, other: 0.00)
 ; --- The End ---
 
 ; Problem 8.2
-; --- Script for proving leaves-swaptree --- 
+; --- Script for proving leaves-swaptree ---
 
 ; If you haven't, define the leaves of a binary tree as
 
@@ -517,7 +517,7 @@ Time:  0.14 seconds (prove: 0.09, print: 0.05, other: 0.00)
 ; --- The End ---
 
 ; Problem 8.3
-; --- Script for proving subp-x-x --- 
+; --- Script for proving subp-x-x ---
 
 (defthm subp-cdr
   (implies (subp x (cdr y)) (subp x y)))

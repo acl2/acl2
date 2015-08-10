@@ -432,7 +432,7 @@
 
 (defun setColorBox-heap (this p1 p2 c s)
 
-; This function returns the new heap.  
+; This function returns the new heap.
 
   (if (inBox this p1 p2 s)
       (let ((instance (deref this (heap s)))
@@ -507,7 +507,7 @@
                (heap s0)
                (class-table s0))))
     :hints (("Goal" :in-theory (disable tjvm-opener))))))
-                                  
+
 
 (in-theory (disable inBox-clock inBox))
 

@@ -258,9 +258,9 @@
            (integerp x))
    :hints (("Goal" :in-theory (disable rational-implies2)
            :use (rational-implies2
-                 (:instance Lowest-terms 
+                 (:instance Lowest-terms
                            (n (denominator x))
-                           (r x) 
+                           (r x)
                            (q 1))))))
 |#
 
@@ -296,9 +296,9 @@
                (implies (and (integerp x) (< 0 x) (integerp y) (< 0 y))
                         (equal (nonnegative-integer-quotient (numerator (/ x y))
                                                              (denominator (/ x y)))
-                               (nonnegative-integer-quotient x y)))) 
+                               (nonnegative-integer-quotient x y))))
 
-             (defthm 
+             (defthm
                Numerator-minus
                (equal (numerator (- i))
                       (- (numerator i))))
@@ -309,13 +309,13 @@
                         (equal (denominator (- x))
                                (denominator x))))
 
-             (defthm 
+             (defthm
                Denominator-plus
                (implies (and (rationalp r)
                              (integerp i))
                         (equal (denominator (+ i r))
                                (denominator r))))
-             (defthm 
+             (defthm
                Denominator-plus-2
                (implies (and (rationalp r)
                              (integerp i))
@@ -342,14 +342,14 @@
 (defthm Numerator-minus-eric
   (equal (numerator (* -1 i))
          (* -1 (numerator i)))
-  :hints (("Goal" :in-theory (disable Numerator-minus) 
+  :hints (("Goal" :in-theory (disable Numerator-minus)
            :use Numerator-minus)))
 
 (defthm Denominator-unary-minus-eric
   (implies (rationalp x)
            (equal (denominator (* -1 x))
                   (denominator x)))
-  :hints (("Goal" :in-theory (disable Denominator-unary-minus) 
+  :hints (("Goal" :in-theory (disable Denominator-unary-minus)
            :use Denominator-unary-minus)))
 
 
@@ -586,7 +586,7 @@
 
 
 
-i/j = (nniq i j) + (mod/rem i j)  
+i/j = (nniq i j) + (mod/rem i j)
 
 
 

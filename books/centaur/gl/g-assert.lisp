@@ -52,7 +52,7 @@
                 "GL-ASSERT failed!"))
         ((when (and false-sat false-succ))
          (make-fast-alist false-ctrex)
-         
+
          (ec-call
           (glcp-print-single-ctrex false-ctrex
                                    "Error:"

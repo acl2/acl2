@@ -1,6 +1,6 @@
 ;; Simple Profiler for OpenMCL -- ACL2 Interface
 ;;
-;; Written in 2008 by Jared Davis <jared@cs.utexas.edu>.  This code 
+;; Written in 2008 by Jared Davis <jared@cs.utexas.edu>.  This code
 ;; is in the public domain and may be freely used and copied without
 ;; restriction.
 
@@ -24,7 +24,7 @@
 ;;   1. fast-running functions may have their times unreported since we just
 ;;      use the get-internal-real-time function, which is not very precise.
 ;;
-;;   2. recursive calls are often inlined in OpenMCL and will not affect the 
+;;   2. recursive calls are often inlined in OpenMCL and will not affect the
 ;;      call count.
 ;;
 
@@ -71,7 +71,7 @@
 (progn!
  (set-raw-mode t)
  (load (extend-pathname (cbd-fn *the-live-state*) "oprof-raw.lsp" *the-live-state*)))
-       
+
 
 
 #|
@@ -102,9 +102,9 @@
 
 (oprof.watch '(fib fib2))
 
-;; Example 1.  There is some time loss when executing very fast functions.  This 
+;; Example 1.  There is some time loss when executing very fast functions.  This
 ;; is because oprof does not measure time very precisely.  Note also that OpenMCL
-;; has optimized away the interior, recursive calls of fib, so you only see the 
+;; has optimized away the interior, recursive calls of fib, so you only see the
 ;; number of times it was called externally.
 
 (time$ (loop for i fixnum from 1 to 100000 do (fib 5)))  ;; time$ says 0.329 seconds

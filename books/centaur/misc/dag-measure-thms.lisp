@@ -175,13 +175,13 @@ seen.  This is just an aid to proving things about the faster, memoized version.
 (defthm-fg-depth-dual-stack-flag
   (defthm fg-depth-stack-when-subsetp
     (implies (and (subsetp-equal stack stack2)
-                  (equal (fg-depth-stack x stack) :loop)) 
+                  (equal (fg-depth-stack x stack) :loop))
              (equal (fg-depth-stack x stack2) :loop))
     :hints ('(:expand ((:free (stack) (fg-depth-stack x stack)))))
     :flag node)
   (defthm fg-depth-stack-list-when-subsetp
     (implies (and (subsetp-equal stack stack2)
-                  (equal (fg-depth-stack-list x stack) :loop)) 
+                  (equal (fg-depth-stack-list x stack) :loop))
              (equal (fg-depth-stack-list x stack2) :loop))
     :hints ('(:expand ((:free (stack) (fg-depth-stack-list x stack)))))
     :flag list))
@@ -479,7 +479,7 @@ seen.  This is just an aid to proving things about the faster, memoized version.
            (if (eq val :back)
                (cons key (fg-depth-memo->stack memo))
              (cdr (fg-depth-memo->stack memo)))))
-  
+
   (defthm fg-node-not-member-stack-when-not-in-memo
     (implies (not (hons-assoc-equal x memo))
              (not (member x (fg-depth-memo->stack memo))))

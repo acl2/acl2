@@ -171,6 +171,6 @@ install a more efficient definition under the hood in raw Lisp.</p>"
   (defttag vl-optimize)
   ;; (depends-on "printedlist-fast.lsp")
   (acl2::include-raw "printedlist-fast.lsp")
-  
+
   (defttag nil))
 

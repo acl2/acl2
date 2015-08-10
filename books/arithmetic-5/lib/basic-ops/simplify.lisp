@@ -128,7 +128,7 @@
 (local
  (encapsulate
   ()
- 
+
   (local (include-book "../../support/top"))
 
   (defthm equal-*-/-1
@@ -144,13 +144,13 @@
                  (equal z 0)
                (and (acl2-numberp z)
                     (equal (fix y) (* z x))))))
- 
+
   ))
 
 (local
  (encapsulate
   ()
- 
+
   (local (include-book "../../support/top"))
 
   (defthm equal-*-1
@@ -162,7 +162,7 @@
     (implies (not (equal (fix x) 0))
       (equal (equal (* y x) (* z x))
 	     (equal (fix y) (fix z)))))
- 
+
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -178,14 +178,14 @@
 
 ;;; In the example
 ;;; (thm
-;;;  (implies (and (acl2-numberp a) 
+;;;  (implies (and (acl2-numberp a)
 ;;;                (acl2-numberp b)
 ;;;                (acl2-numberp x))
 ;;;           (equal (+ (* a x) (* b x))
 ;;;                  0))
 ;;;  :otf-flg t)
 ;;; simplify-terms-such-as-ax+bx-rel-0-fn returns
-;;; ((COMMON . X) 
+;;; ((COMMON . X)
 ;;;  (REMAINDER BINARY-+ A B))
 
 (defun simplify-terms-such-as-ax+bx-rel-0-fn (sum)
@@ -306,7 +306,7 @@
   (declare (xargs :guard t))
 
   ;; We wish to subtract the ``smaller'' of two matching addends.
-  ;; 
+  ;;
 
   (cond ((variablep addend)
 	 (list 0 1 0))
@@ -372,7 +372,7 @@
 		      (val-< (cadr (car info-list1))
 			     (cadr temp))
 		      ;; prevent various odd loops
-		      (stable-under-rewriting-sums (negate-match 
+		      (stable-under-rewriting-sums (negate-match
 						    (caddr (car info-list1)))
 						   mfc state))
 		 (list (cons 'x (negate-match (caddr (car info-list1))))))
@@ -381,9 +381,9 @@
 					      mfc state)
 		 (list (cons 'x (negate-match (caddr temp)))))
 		(t
-		 (first-match-in-addend-info-lists (cdr info-list1) info-list2 
+		 (first-match-in-addend-info-lists (cdr info-list1) info-list2
 						   mfc state)))
-        (first-match-in-addend-info-lists (cdr info-list1) info-list2 
+        (first-match-in-addend-info-lists (cdr info-list1) info-list2
 					  mfc state)))))
 
 (defun find-matching-addends (lhs rhs mfc state)
@@ -612,7 +612,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #|
-;;; We do not include theorems such as the below 
+;;; We do not include theorems such as the below
 ;;; prefer-positive-exponents-gather-exponents-equal because it is too
 ;;; difficult to prevent looping.
 

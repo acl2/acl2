@@ -94,7 +94,7 @@
 ; directories.  The most useful part of these records is another list of
 ; records, one of each event in the two books.  In subsequent passes we crawl
 ; over the list of book records and the lists of event records within them and
-; collect various statistics.  
+; collect various statistics.
 
 ; In an abuse of nomenclaure we call the record for a book a ``book'' and the
 ; record for an event an ``event''.  Both kinds of records contain times taken
@@ -105,10 +105,10 @@
 ; A book is:
 
 ; (file                                     ; See explanation below
-;  (:MISSING-REPORT report)                 
-;  (:CERTIFICATION-TIMES Tm1 Tm2 (ct1 ct2)) 
-;  (:MATCHED-EVENTS mlst)                   
-;  (:UNMATCHED-EVENTS umlst))               
+;  (:MISSING-REPORT report)
+;  (:CERTIFICATION-TIMES Tm1 Tm2 (ct1 ct2))
+;  (:MATCHED-EVENTS mlst)
+;  (:UNMATCHED-EVENTS umlst))
 
 ; An event is:
 
@@ -189,7 +189,7 @@
 
 ; We rank best and worst two ways:  percent change and absolute difference.
 ; So (2), above is really four lists of 5:
-; - worst 5 books by percentage change 
+; - worst 5 books by percentage change
 ; - best 5 books by percentage change
 ; - worst 5 books by absolute time difference
 ; - best 5 books by absolute time difference
@@ -223,7 +223,7 @@
 ; ignore this Summary.  If name starts with a space and then a string quote, we
 ; read the string as a string.  That is generally the last summary in an .out
 ; file and names the book just certified.
- 
+
 (in-package "ACL2")
 (program)
 (set-state-ok t)
@@ -248,7 +248,7 @@
 ; y) = (* y x)| or VL::X4321.  So we read a maximum of 100 characters, looking
 ; for "<return>Rules:".  Having identified the <return> at the end of the Form
 ; line, we back up past the closing paren.  There is always some ``noise''
-; between the ``user-supplied name'' and the closing paren and <return>. 
+; between the ``user-supplied name'' and the closing paren and <return>.
 ; This noise ususally takes the form of elipses and closing parens, as in:
 
 ; Form:  ( DEFTHM ASSOC-OF-APP ...)
@@ -464,7 +464,7 @@
                                       rev-lst))
                              'string)))
              (parse-rev-lst-into-pairs1 (cdr symbols)))))))
-       
+
 (defmacro parse-rev-lst-into-pairs (symbols)
   `(cond ,@(parse-rev-lst-into-pairs1 symbols)))
 
@@ -477,7 +477,7 @@
   (let* ((k (len-of-standard-ending lst))
          (rev-lst (revappend (nthcdr k lst) nil)))
     (parse-rev-lst-into-pairs
-     (DEFTHM DEFUN MUTUAL-RECURSION DEFMACRO DEFCONST DEFLABEL 
+     (DEFTHM DEFUN MUTUAL-RECURSION DEFMACRO DEFCONST DEFLABEL
        DEFDOC DEFPKG CERTIFY-BOOK INCLUDE-BOOK IN-THEORY DEFTHEORY THM
        TABLE THEORY-INVARIANT VERIFY-GUARDS DEFATTACH DEFAXIOM DEFSTOBJ
        ENCAPSULATE PROGN PROGN! MAKE-EVENT))))
@@ -577,7 +577,7 @@
                   (cond
                    ((null rat) (mv nil state))
                    (t (mv (cons pair (floor (+ 1/2 (* 100 rat)) 1)) state))))))))))))))
-                    
+
 (defun get-form-time-pairs1 (lst channel state)
   (mv-let (pair state)
           (get-form-time-pair channel state)
@@ -640,9 +640,9 @@
 
            (equal (cdr form1) (cdr form2))
            )))))
-         
+
 ; The fields of a book record:
-;  (:MISSING-REPORT missing-report)          ; nil if the book is found on both dirs; else 
+;  (:MISSING-REPORT missing-report)          ; nil if the book is found on both dirs; else
 ;                                            ; an explanation
 
 (defun missing-report (dir1 dir2 book state)
@@ -921,7 +921,7 @@
 
 (defun map-collect-extrema-over-list
   (biggestp relp lst scored-lst len bound k cutoff)
-  
+
 ; Lst is a list of either books or events (depending on bookp).  Scored-lst
 ; is a list of the at most k largest or smallest (as per biggestp) items seen
 ; so far (with len being the length of scored-lst and bound being the smallest
@@ -970,7 +970,7 @@
                biggestp relp
                (cdr books)
                scored-lst len bound k cutoff)))))
-              
+
 (defun round-to-nearest (x)
   (cond ((integerp x) x)
         ((< 0 x) (floor (+ x 1/2) 1))
@@ -1158,7 +1158,7 @@
             (cdr lst)
             cutoff
             (collect-significant-matched-event-times1
-             i 
+             i
              (cadr (assoc-eq :matched-events (cdr (car lst))))
              cutoff
              ans)))))
@@ -1216,7 +1216,7 @@
     `(spread (better ,p-pct %)
              (unchanged ,z-pct %)
              (worse ,n-pct %))))
-        
+
 (defun unmatched-event-distribution1 (i umlst um-alist)
   (cond ((endp umlst) um-alist)
         ((null (tm i (car umlst)))
@@ -1368,7 +1368,7 @@
       (tm2 ,tm2 cs)
       (rel ,rel %)
       (abs ,abs cs)
-      (distribution 
+      (distribution
        (cmd cnt tm1 tm2 rel abs)
        ,@(strip-cdrs
          (merge-sort-car->
@@ -1439,7 +1439,7 @@
          (abs-sig-event-scores (collect-significant-matched-event-scores nil lst cutoff nil))
          (md-erel (round-to-nearest-percent (median rel-sig-event-scores)))
          (md-eabs (median abs-sig-event-scores)))
-         
+
     (list "
 
   COMPARISON OF .out/.cert.out FILES
@@ -1551,7 +1551,7 @@
     (value (summary-report dir1 dir2 lst number-of-extrema cutoff)))))
 
 ; To illustrate the utility, we repeat the example provided at the beginning of
-; this file, along with the output.  
+; this file, along with the output.
 
 
 ; ACL2 !>(compare-out-files
@@ -1594,39 +1594,39 @@
 ;   5                                                  ; number-of-extrema
 ;  10                                                  ; cutoff = 0.10 seconds
 ;  state)
-; 
+;
 ;  ("
-; 
+;
 ;   COMPARISON OF .out/.cert.out FILES
-; 
+;
 ;   We determine whether the contender run is faster than the baseline run.
 ;   Time is measured in centiseconds (100 CS = 1 second).  Let tm1 and tm2
 ;   be the times measured for the same book or event in the baseline and
 ;   contender runs, respectively.  We calculate two scores:
-; 
+;
 ;   absolute:  (- tm1 tm2)
 ;   relative:  (/ (- tm1 tm2) tm1) expressed as a percentage
-; 
+;
 ;   Positive scores indicate that the contender is faster.  For example
 ;   if tm1 is 400 (i.e., 4.00 seconds) and tm2 is 300 (i.e., 3.00 seconds),
 ;   then the absolute score for the book or event is 100 (1.00 second) and
 ;   the relative score is 1/4 expressed as 25%.
-; 
+;
 ;   We also compute the median score (relative and absolute) for all books and
 ;   the median score (relative and absolute) for all matched significant events.
-; 
+;
 ;   An event is ``matched'' if the same event is recorded in both the baseline
 ;   and contender runs, where ``same event'' just means the printed Summary Form
 ;   lines are the same.  (Several events in a book may have the same Form line,
 ;   e.g., ``Form: ( IN-THEORY (DISABLE ...))'' and forms are matched in the order
 ;   they appear.)
-; 
+;
 ;   An event is ``significant'' if the kind of the event is not one of those
 ;   listed in *IGNORED-EVENTS* and the times reported for both runs exceed a
 ;   specified CUTOFF.  (*IGNORED-EVENTS* lists composite events like ENAPSULATE
 ;   whose sub-events each have their own Summaries.)  The value of the CUTOFF
 ;   parameter is reported below.
-; 
+;
 ;   We show the n best and worst performing books and events, where n is
 ;   the parameter NUMBER-OF-EXTREMA, shown below."
 ;   -----------------------------------------------------------------
@@ -1752,9 +1752,9 @@
 ;                                 "arithmetic-3/floor-mod/mod-expt-fast"))))
 ;   -----------------------------------------------------------------
 ;   "
-; 
+;
 ;   EVENT CATEGORIZATION
-; 
+;
 ;   We describe the distribution of events into SIGNIFICANT, IGNORED, CUTOFF, and
 ;   UNMATCHED categories, where each of the first three contain matched events.
 ;   IGNORED events are such compound events as PROGN and ENCAPSULATE, which are
@@ -1763,7 +1763,7 @@
 ;   specified CUTOFF.  SIGNIFICANT events are the other events: matched, atomic
 ;   events such as DEFTHM and DEFUN, whose duration exceeds the CUTOFF.  Within
 ;   each category we break down the performance according to event type.
-; 
+;
 ;   "
 ;   ((MATCHED-EVENTS
 ;         (CNT 1347)
@@ -1817,13 +1817,13 @@
 ;                      (DISTRIBUTION (CMD CNT TM1 TM2 REL ABS))))
 ;   -----------------------------------------------------------------
 ;   "
-; 
+;
 ;   MISCELLANEOUS DETAILS
-; 
+;
 ;   Some books which were supposed to participate in the comparison were not
 ;   found in both the baseline and contender systems.  We also list the basic
 ;   parameters controlling this analysis.
-; 
+;
 ;   "
 ;   (BASELINE "/u/moore/work/v5-0/acl2-sources/books/")
 ;   (CONTENDER "/u/moore/work/v6-0/acl2-sources/books/")

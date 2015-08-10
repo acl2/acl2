@@ -66,9 +66,9 @@ defined and discussed in the book stutter2.lisp
 
 (defun extract-indices-with-pos (procs queue)
   (if (endp queue) nil
-    (let ((rest-ind (extract-indices-with-pos procs 
+    (let ((rest-ind (extract-indices-with-pos procs
                                               (rest queue))))
-      (if (pos (<- procs (first queue))) 
+      (if (pos (<- procs (first queue)))
 	  (cons (first queue) rest-ind)
 	rest-ind))))
 
@@ -77,9 +77,9 @@ defined and discussed in the book stutter2.lisp
     (and (equal (pos (<- procs (first queue)))
                 (1+ (temp (<- procs (first queue)))))
          (pos=1+temp-aux procs (rest queue)))))
-        
+
 (defun pos=1+temp (procs queue)
-  (pos=1+temp-aux procs 
+  (pos=1+temp-aux procs
                   (extract-indices-with-pos procs queue)))
 
 (defun lexicographic-temp (procs queue)
@@ -269,7 +269,7 @@ defined and discussed in the book stutter2.lisp
 	 (inv-p-keys procs (rest keys) bucket queue max))))
 
 
-      
+
 (defun choosing-pos (procs queue)
   (if (endp queue) T
     (and (implies (not (natp (pos (<- procs (first queue)))))
@@ -416,7 +416,7 @@ defined and discussed in the book stutter2.lisp
   (or (and (equal (status p) 'wait)
            (equal in (first queue)))
       (equal (status p) 'go)))
-             
+
 
 (DEFUN commit-c-s (st in)
   (let* ((p (<- (procs st) in))

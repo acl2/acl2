@@ -2,9 +2,9 @@
 ;; Julien Schmaltz
 ;; July 28th 2005
 ;; File: 2D-mesh-nodeset.lisp
-;; We define here the coordinates of the nodes in 
+;; We define here the coordinates of the nodes in
 ;; a 2D mesh.
-;; We show that it is a valid instance of the 
+;; We show that it is a valid instance of the
 ;; generic nodeset definition.
 (begin-book);$ACL2s-Preamble$|#
 
@@ -50,7 +50,7 @@
     (and (2DMesh-Nodep (car x))
          (2DMesh-NodeSetp (cdr x)))))
 
-;; this function will be mapped to NodeSetp in 
+;; this function will be mapped to NodeSetp in
 ;; the functional instanciation
 
 ;; 2 nodeset generator (NodeSetGenerator)
@@ -111,7 +111,7 @@
   ;; NODE SET GENERATOR
   (coord-gen (car P) (cadr P)))
 
-;; this function will be mapped to 
+;; this function will be mapped to
 ;; NodeSetGenerator
 
 ;; 4. Prove the last constraint (subsetp)
@@ -128,7 +128,7 @@
 ;  (implies (mesh-hyps params)
 ;           (2d-mesh-nodesetp (mesh-nodeset-gen params))))
 
-;; 5. check that these definitions are compliant 
+;; 5. check that these definitions are compliant
 ;;    with the generic encapsulate
 ;; ---------------------------------------------
 (definstance GenericNodeSet Mesh-Complies-NodeSet

@@ -90,11 +90,11 @@
 (defun rep-onr (o)
   (let ((loc (loc o)))
     (>_ :loc (cond ((or (not (in-range loc 1 22))
-                        (= loc 18)) 
+                        (= loc 18))
                     0)
                    ((and (= loc 2) (= (bot o) 0)) 2)
                    ((= loc 3) 3)
-                   ((or (= loc 9) (= loc 16) 
+                   ((or (= loc 9) (= loc 16)
                         (and (= loc 15)
                              (equal (old o) (new o))))
                     4)
@@ -124,7 +124,7 @@
 (DEFUN pick (st in) (declare (ignore st)) in)
 
 
-(defun rank-thf (f) 
+(defun rank-thf (f)
   (let ((loc (loc f)))
     (cond ((= loc 0) 1)
           ((= loc 1) 0)
@@ -207,8 +207,8 @@
                       (and (equal (old f) (age s))
                            (iff (xitm f)
                                 (> (bot f) (top (old f)))))))
-          (8 (and (agep (old f)) 
-                  (natp (itm f))                
+          (8 (and (agep (old f))
+                  (natp (itm f))
                   (equal (equal (age s) (old f))
                          (= (xctr f) (xctr s)))
                   (implies (= (xctr f) (xctr s))
@@ -216,7 +216,7 @@
                   (equal (new f) (top+1 (old f)))))
           (10 (= (xitm f) (itm f)))))
 
-(defun suff-onr (o s) 
+(defun suff-onr (o s)
   (locase (loc o)
           (1 (not (xctr o)))
           (2 (and (= (bot o) (bot s))
@@ -244,7 +244,7 @@
           (14 (and (xctr o) (= (bot s) 0)
                    (xitm o) (agep (old o))
                    (not (xzero o))
-                   (equal (new o) 
+                   (equal (new o)
                           (tag+1 (top=0 (old o))))
                    (equal (= (xctr s) (xctr o))
                           (equal (age s) (old o)))))
@@ -254,7 +254,7 @@
                    (not (xzero o))
                    (implies (xitm o)
                             (and (xctr o)
-                                 (not (= (xctr s) 
+                                 (not (= (xctr s)
                                          (xctr o)))))))
           (20 (= (bot o) (bot s)))
           (22 (and (= (<- (mem s) (bot s)) (dtm o))
@@ -315,7 +315,7 @@
 
 ;;;; BEGIN invariant defintion ;;;;
 
-;; a few more macros for predicates for defining the 
+;; a few more macros for predicates for defining the
 ;; current "state" of the deque.
 
 (defmacro norm? (s) `(and (>= (bot ,s) (top (age ,s)))
@@ -325,7 +325,7 @@
 (defmacro takn? (s) `(< (bot ,s) (top (age ,s))))
 
 (defun inv-shr (s)
-  (and (natp (bot s)) 
+  (and (natp (bot s))
        (agep (age s))
        (natp (xctr s))))
 
@@ -364,9 +364,9 @@
           (10 (and (xsafe s)
                    (<= (bot s) (top (age s)))))
           (14 17 (and (agep (old o))
-                      (equal (tag (new o)) 
+                      (equal (tag (new o))
                              (1+ (tag (old o))))
-                      (= (tag (old o)) 
+                      (= (tag (old o))
                          (tag (age s)))))
           (20 (and (= (bot o) (bot s)) (norm? s)))
           (22 (equal (bot o) (1+ (bot s))))))
@@ -395,7 +395,7 @@
 (in-theory (enable inv-thf))
 (in-theory (disable indexp))
 
-(defun inv-onr (o s) 
+(defun inv-onr (o s)
   (and (in-range (loc o) 0 22)
        (locase (loc o)
                ((0 3) 16 (18 22)
@@ -405,7 +405,7 @@
                           (xzero o)))
                (9 (> (bot o) (top (old o))))
                (3 (= (bot o) 0))
-               ((0 5) 9 16 (18 22) 
+               ((0 5) 9 16 (18 22)
                 (and (not (xctr o)) (norm? s)))
                ((2 4) (= (bot o) (bot s)))
                (2 (implies (= (bot o) 0)
@@ -418,7 +418,7 @@
                                 (and (natp (xctr o))
                                      (>= (xctr s) (xctr o)))))
                (6 (implies (xitm o)
-                           (= (xitm o) 
+                           (= (xitm o)
                               (val (<- (mem s) (bot o))))))
                ((6 7) (if (= (xctr o) (xctr s))
                           (= (bot o) (top (age s)))
@@ -457,7 +457,7 @@
                           (implies (xitm o)
                                    (and (xctr o)
                                         (> (xctr s) (xctr o))))))
-               (10 (and (xsafe s) 
+               (10 (and (xsafe s)
                         (>= (top (age s)) (bot s))))
                ((11 17) (= (bot s) 0))
                (12 (equal (new o) (top=0 (old o))))
@@ -565,7 +565,7 @@
            (inv-tvs (-> x i (i-thf-f f s))
                     (i-thf-s f s)
                     N))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
            (disable i-thf-f i-thf-s inv-shr inv-thf))
           ("Subgoal *1/6" :cases ((equal i n)))))
 
@@ -583,13 +583,13 @@
   (implies (and (indexp i (maxf))
                 (inv-tvs x s (maxf)))
            (inv-thf (<- x i) s))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
            (:instance inv-tvs-implies-inv-thf
                       (N (maxf))))))
 
 (DEFTHM >>-invariant-persistent
   (implies (inv st) (inv (cdeq+ st in)))
-  :hints (("Goal" :in-theory 
+  :hints (("Goal" :in-theory
            (disable i-thf-f i-thf-s i-onr-o i-onr-s
                     inv-thf inv-shr inv-onr))))
 

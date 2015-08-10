@@ -16,7 +16,7 @@
 ;; Function nnf converts a formula to negation normal form.
 ;; That is, in terms of and/or/not, where all nots are up against
 ;; simple formulas.  ('true and 'false are not simplified away.)
-	 
+
 (defun nnf (f)
   (declare (xargs :guard (wff f)))
   (cond
@@ -24,7 +24,7 @@
     (cond ((car-and f) (list 'and (nnf (a1 f)) (nnf (a2 f))))
 	  ((car-or  f) (list 'or  (nnf (a1 f)) (nnf (a2 f))))
 	  ((car-imp f) (list 'or  (nnf (list 'not (a1 f))) (nnf (a2 f))))
-	  ((car-iff f) (list 'and 
+	  ((car-iff f) (list 'and
 			     (list 'or (nnf (list 'not (a1 f))) (nnf (a2 f)))
 			     (list 'or (nnf (a1 f)) (nnf (list 'not (a2 f))))))
 	  (t f)))  ; should not happen if (wff f)
@@ -39,17 +39,17 @@
 	   (cond ((car-and (a1 f)) (list 'or
 					 (nnf (list 'not (a1 (a1 f))))
 					 (nnf (list 'not (a2 (a1 f))))))
-		 ((car-or (a1 f))  (list 'and 
+		 ((car-or (a1 f))  (list 'and
 					 (nnf (list 'not (a1 (a1 f))))
 					 (nnf (list 'not (a2 (a1 f))))))
-		 ((car-imp (a1 f)) (list 'and 
+		 ((car-imp (a1 f)) (list 'and
 					 (nnf (a1 (a1 f)))
 					 (nnf (list 'not (a2 (a1 f))))))
-		 ((car-iff (a1 f)) (list 'and 
-					 (list 'or 
+		 ((car-iff (a1 f)) (list 'and
+					 (list 'or
 					       (nnf (a1 (a1 f)))
 					       (nnf (a2 (a1 f))))
-					 (list 'or 
+					 (list 'or
 					       (nnf (list 'not (a1 (a1 f))))
 					       (nnf (list 'not (a2 (a1 f)))))))
 		 (t f)))  ; should not happen if (wff f)

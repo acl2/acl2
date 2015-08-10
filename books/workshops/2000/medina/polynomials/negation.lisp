@@ -10,7 +10,7 @@
   (cond ((or (not (polynomialp p)) (nullp p))
 	 *null*)
 	(t
-	 (polynomial (monomial (COMMON-LISP::- (coefficient (first p))) 
+	 (polynomial (monomial (COMMON-LISP::- (coefficient (first p)))
 			     (term (first p)))
 		    (- (rest p))))))
 

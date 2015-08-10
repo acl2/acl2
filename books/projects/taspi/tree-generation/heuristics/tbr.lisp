@@ -2,13 +2,13 @@
 
 (include-book "spr")
 
-;to do TBR we're going to use spr-helper, where we mutate the piece 
+;to do TBR we're going to use spr-helper, where we mutate the piece
 ; to be attached according to various connection points
 ; first get-pieces, then attach each piece in every way
 
 ;get-pieces returns alist of branched piece to attach and unrooted
 ; tree
-; so, we need to take each branched piece, and rebranch at all 
+; so, we need to take each branched piece, and rebranch at all
 ; possible places.
 ; what does this look like??
 
@@ -38,7 +38,7 @@
                                                          tia)
                                            tia)
                            (get-tbr-pieces 'inside (cadar x)
-                                           (orderly-cons (caar x) 
+                                           (orderly-cons (caar x)
                                                          (cdr x)
                                                          tia)
                                            tia))
@@ -48,7 +48,7 @@
                    (if (consp (cdr x))
                        (if (and (consp (cadr x))
                                 (subset (mytips (cdadr x))
-                                        (get-taxa-from-taxon-index 
+                                        (get-taxa-from-taxon-index
                                          tia))
                                 (subset (mytips (list (caadr x)))
                                         (get-taxa-from-taxon-index
@@ -66,7 +66,7 @@
                             (if (consp (cdadr x))
                                 (get-tbr-pieces 'inside (car (cdadr x))
                                                 (orderly-cons (car x)
-                                                              (hist 
+                                                              (hist
                                                                (caadr x))
                                                               tia)
                                                 tia)
@@ -94,37 +94,37 @@
                               (subset (mytips (list rest))
                                       (get-taxa-from-taxon-index tia))
                               (taspip nil (list rest))
-                              (subset (mytips (list (orderly-cons 
-                                                        (cadr x) 
+                              (subset (mytips (list (orderly-cons
+                                                        (cadr x)
                                                         (list rest)
                                                         tia)))
                                       (get-taxa-from-taxon-index tia))
-                              (taspip nil (list (orderly-cons 
-                                                          (cadr x) 
+                              (taspip nil (list (orderly-cons
+                                                          (cadr x)
                                                           (list rest)
-                                                          tia))) 
+                                                          tia)))
                                          )
-                         (hppend (get-tbr-pieces 
+                         (hppend (get-tbr-pieces
                                    'inside (caar x)
-                                   (orderly-cons (cadar x) 
-                                                 (hist (orderly-cons 
-                                                        (cadr x) 
+                                   (orderly-cons (cadar x)
+                                                 (hist (orderly-cons
+                                                        (cadr x)
                                                         (hist rest)
                                                         tia))
                                                  tia)
                                    tia)
                                   (get-tbr-pieces 'inside (cadar x)
-                                                  (orderly-cons 
-                                                   (caar x) 
-                                                   (hist (orderly-cons 
-                                                          (cadr x) 
+                                                  (orderly-cons
+                                                   (caar x)
+                                                   (hist (orderly-cons
+                                                          (cadr x)
                                                           (hist rest)
                                                           tia))
                                                    tia)
                                                   tia)
-                                  (hist (orderly-cons (car x) 
-                                                      (hist (orderly-cons 
-                                                             (cadr x) 
+                                  (hist (orderly-cons (car x)
+                                                      (hist (orderly-cons
+                                                             (cadr x)
                                                              (hist rest)
                                                              tia))
                                                       tia)))
@@ -136,16 +136,16 @@
                             (taspip nil (list rest))
                             (member-gen (first-taxon (cadr x))
                                         (get-taxa-from-taxon-index tia))
-                            (subset (mytips (hist (orderly-cons (cadr x) 
+                            (subset (mytips (hist (orderly-cons (cadr x)
                                                                        (hist rest)
                                                                        tia)))
                                     (get-taxa-from-taxon-index tia))
-                            (taspip nil (hist (orderly-cons (cadr x) 
+                            (taspip nil (hist (orderly-cons (cadr x)
                                                                        (hist rest)
                                                                        tia)))
                             (member-gen (first-taxon (car x))
                                         (get-taxa-from-taxon-index tia)))
-                       (hist (orderly-cons (car x) (hist (orderly-cons (cadr x) 
+                       (hist (orderly-cons (car x) (hist (orderly-cons (cadr x)
                                                                        (hist rest)
                                                                        tia))
                                            tia))
@@ -161,20 +161,20 @@
                                           (get-taxa-from-taxon-index tia))
                                   (taspip nil (list rest))
                                   (taspip nil (list
-                                               (orderly-cons 
+                                               (orderly-cons
                                                 (car (cdadr x))
                                                 (list rest)
                                                 tia)))
                                   (subset (mytips (list
-                                               (orderly-cons 
+                                               (orderly-cons
                                                 (car (cdadr x))
                                                 (list rest)
                                                 tia)))
                                           (get-taxa-from-taxon-index tia))
-                                  (taspip nil  (list (orderly-cons (caadr x) 
+                                  (taspip nil  (list (orderly-cons (caadr x)
                                                                            (list rest)
                                                                            tia)))
-                                  (subset (mytips (list (orderly-cons (caadr x) 
+                                  (subset (mytips (list (orderly-cons (caadr x)
                                                                            (list rest)
                                                                            tia)))
                                           (get-taxa-from-taxon-index tia))
@@ -192,21 +192,21 @@
                              (hppend (get-tbr-pieces 'inside (caadr x)
                                                       (orderly-cons (car x)
                                                                     (hist
-                                                                     (orderly-cons 
+                                                                     (orderly-cons
                                                                       (car (cdadr x))
                                                                       (hist rest)
                                                                       tia))
                                                                     tia)
                                                       tia)
                                       (get-tbr-pieces 'inside (car (cdadr x))
-                                                      (orderly-cons 
-                                                       (car x) 
-                                                       (hist (orderly-cons (caadr x) 
+                                                      (orderly-cons
+                                                       (car x)
+                                                       (hist (orderly-cons (caadr x)
                                                                            (hist rest)
                                                                            tia))
                                                        tia)
                                                       tia)
-                                      (hist (orderly-cons (cadr x) 
+                                      (hist (orderly-cons (cadr x)
                                                           (hist (orderly-cons (car x)
                                                                         (hist rest)
                                                                         tia))
@@ -227,7 +227,7 @@
                                 (taspip nil (hist (orderly-cons (car x) (hist
                                                                             rest)
                                                                    tia))))
-                           (hist (orderly-cons (cadr x) 
+                           (hist (orderly-cons (cadr x)
                                                (hist (orderly-cons (car x) (hist
                                                                             rest)
                                                                    tia))
@@ -249,11 +249,11 @@
                                   (get-taxa-from-taxon-index tia)))
            (hist (orderly-cons x (hist rest) tia))
          "Error: Need pieces to match last in get-tbr-pieces"))))
-  
+
 
 ;(get-tbr-pieces 'inside '(a (b c)) (d (e f)))
 ;(get-tbr-pieces 'top '(((a (b c)) ((d e) f)) (g h)) nil)
-;(get-tbr-pieces 'inside '(a (b c)) '(d (e f)))        
+;(get-tbr-pieces 'inside '(a (b c)) '(d (e f)))
 ;(get-tbr-pieces 'top '((a b) (c d)) nil)
 ;(get-tbr-pieces 'top '(((a b) c) d) nil)
 ;(get-tbr-pieces 'top '(a (b (c d))) nil)
@@ -270,9 +270,9 @@
   (declare (xargs :guard (good-taxon-index-halist tia)))
   (if (consp x)
       (if (consp (car x))
-          (make-spr-pieces-to-do-tbr 
+          (make-spr-pieces-to-do-tbr
            (cdr x)
-           (spliceConsBack (cdar x) 
+           (spliceConsBack (cdar x)
                            (get-tbr-pieces 'top (caar x) nil tia)
                            ans)
            tia)
@@ -307,7 +307,7 @@
                            (orderly-get-pieces x nil nil tia)
                            nil tia)))
           (if (alistp-gen spr-pieces)
-              (orderly-do-spr 
+              (orderly-do-spr
                 spr-pieces
                tia nil)
             "Error: Need good alist in phylo-tbr")))

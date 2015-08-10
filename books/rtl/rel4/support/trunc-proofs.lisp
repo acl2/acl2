@@ -156,8 +156,8 @@
            (< (trunc x n) 0))
   :rule-classes :type-prescription)
 
-(defthm trunc-0 
-  (equal (trunc 0 n) 
+(defthm trunc-0
+  (equal (trunc 0 n)
          0)
   :hints (("goal" :in-theory (enable trunc))))
 
@@ -229,7 +229,7 @@
                 (integerp n))
            (<= (abs (trunc x n)) (abs x)))
   :rule-classes :linear
-  :hints (("goal" :in-theory (e/d (abs-trunc) 
+  :hints (("goal" :in-theory (e/d (abs-trunc)
                                   ( ;CANCEL-IN-PRODS-<-3-OF-3-WITH-2-OF-2
                                    EXPT-COMPARE-EQUAL ;BOZO why?
                                    CANCEL-COMMON-FACTORS-IN-<
@@ -291,8 +291,8 @@
 (defthm expo-fl
   (implies (<= 0 x)
            (equal (expo (fl x))
-                  (if (<= 1 (abs x))	
-                      (expo x)	
+                  (if (<= 1 (abs x))
+                      (expo x)
                     0)
                   ))
   :otf-flg t
@@ -326,7 +326,7 @@
                         )
                    (<= (expo (trunc x n)) (expo x)))
           :rule-classes nil
-          :hints (("goal" 
+          :hints (("goal"
                    :use ((:instance trunc-upper-bound)
 
                          (:instance expo-monotone (x (trunc x n)) (y x)))))))
@@ -509,7 +509,7 @@
   :hints (("goal" :in-theory (disable abs abs-trunc)
 		  :use ((:instance trunc-diff)
 			(:instance expo-lower-bound (x (- x (trunc x n))))
-			(:instance expt-strong-monotone 
+			(:instance expt-strong-monotone
 				   (n (expo (- x (trunc x n))))
 				   (m (- (1+ (expo x)) n)))))))
 ;just gets rid of sig...
@@ -519,8 +519,8 @@
 		  (> n 0) ;gen?  this isn't in pos-rewrite!
                   )
 	     (equal (trunc x n)
-		    (* (sgn x) 
-		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n)))))
     :hints (("Goal" :in-theory (enable trunc sig expt-split))))
 
@@ -541,7 +541,7 @@
 
 (defthm trunc-exactp-a
   (implies (and (rationalp x)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (iff (= x (trunc x n))
                 (exactp x n)))
@@ -596,7 +596,7 @@
                   )
 	     (exactp (trunc x n) n))
   :hints (("goal" :in-theory (e/d (exactp2 expt-split) ())
-		  :use ( 
+		  :use (
                          (:instance trunc-exactp-b-2)
                         (:instance trunc-to-0-or-fewer-bits)
                         )))))
@@ -654,7 +654,7 @@
                 )
            (<= (trunc x n) (trunc y n)))
   :hints (("Goal" :in-theory (disable trunc-upper-pos)
-           :use (trunc-monotone-old 
+           :use (trunc-monotone-old
                  (:instance trunc-monotone-old (x (- y))
                             (y (- x))))))
   :rule-classes :linear)
@@ -699,7 +699,7 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (trunc (trunc x n) m)
-		(* (fl (* (fl (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- m n)))) 
+		(* (fl (* (fl (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- m n))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("goal" :in-theory (disable EXPT-COMPARE-EQUAL)
@@ -715,7 +715,7 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (trunc (trunc x n) m)
-		(* (fl (/ (fl (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- n m)))) 
+		(* (fl (/ (fl (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- n m))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("goal" :in-theory (enable expt-split expt-minus)
@@ -730,13 +730,13 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (trunc (trunc x n) m)
-		(* (fl (/ (* (expt 2 (- (1- n) (expo x))) x) (expt 2 (- n m)))) 
+		(* (fl (/ (* (expt 2 (- (1- n) (expo x))) x) (expt 2 (- n m))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("goal" :in-theory (disable fl/int-rewrite )
            :use (
                         (:instance trunc-trunc-3)
-			(:instance fl/int-rewrite 
+			(:instance fl/int-rewrite
 				   (x (* (expt 2 (- (1- n) (expo x))) x))
 				   (n (expt 2 (- n m)))))))))
 
@@ -797,7 +797,7 @@
   :hints (("goal" :in-theory (set-difference-theories
                               (enable exactp2 trunc-pos-rewrite a15)
                               '( fl+int-rewrite))
-           :use ((:instance fl+int-rewrite 
+           :use ((:instance fl+int-rewrite
                             (x (* y (expt 2 (- (1- k) (expo y)))))
                             (n (* x (expt 2 (- (1- k) (expo y)))))))))))
 
@@ -973,8 +973,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (disable   fl+int-rewrite)
 		  :use ((:instance trunc-n+k-4)
-			(:instance fl+int-rewrite 
-				   (x (* x (expt 2 (- k e)))) 
+			(:instance fl+int-rewrite
+				   (x (* x (expt 2 (- k e))))
 				   (n (* (expt 2 k) (fl (* x (expt 2 (- e)))))))))))
 
 (defthm trunc-n+k-6
@@ -1108,7 +1108,7 @@
 		(- (* (sig (trunc (+ (expt 2 e) y) (1+ k))) (expt 2 e))
 		   (expt 2 e))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (sig a15) 
+  :hints (("Goal" :in-theory (e/d (sig a15)
                                   ())
 		  :use ((:instance trunc-n+k-12)
 			(:instance trunc-n+k-1)
@@ -1196,7 +1196,7 @@
            (= (trunc (+ x y) j)
               (+ x (trunc y (+ j (- (expo (+ x y))) (expo y))))))
   :rule-classes ()
-  :hints (("goal" 
+  :hints (("goal"
            :use (:instance plus-trunc
                            (k (+ j (- (expo (+ x y))) (expo y)))))))
 
@@ -1217,9 +1217,9 @@
                                ( TRUNC-TO-0-OR-FEWER-BITS
                                  EXPO-COMPARISON-REWRITE-TO-BOUND
                                  EXPT-COMPARE-EQUAL))
-           :use ((:instance only-0-is-0-or-negative-exact) 
+           :use ((:instance only-0-is-0-or-negative-exact)
                              (:instance trunc-exactp-a)
-                              expo-of-sum-of-disjoint 
+                              expo-of-sum-of-disjoint
                              (:instance expo<=
                                         (x y)
                                         (n (+ (EXPO X) (* -1 N))))

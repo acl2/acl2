@@ -22,8 +22,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo sig fl-weakly-monotonic)
 		  :use ((:instance sig-lower-bound)
-			(:instance pos* 
-				   (x (cg (* (sig x) (expt 2 (1- n))))) 
+			(:instance pos*
+				   (x (cg (* (sig x) (expt 2 (1- n)))))
 				   (y (expt 2 (- (1+ (expo x)) n))))
 			(:instance sgn+1)
 			(:instance expo-monotone (x 1) (y (1- n)))
@@ -38,8 +38,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo sig)
 		  :use ((:instance sig-lower-bound)
-			(:instance pos* 
-				   (x (cg (* (sig x) (expt 2 (1- n))))) 
+			(:instance pos*
+				   (x (cg (* (sig x) (expt 2 (1- n)))))
 				   (y (expt 2 (- (1+ (expo x)) n))))
 			(:instance sgn-1)
 			(:instance expo-monotone (x 1) (y (1- n)))
@@ -69,8 +69,8 @@
 	     (equal (abs (away x n)) (* (cg (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :in-theory (disable expo sig)
 		  :use ((:instance sig-lower-bound)
-			(:instance pos* 
-				   (x (cg (* (sig x) (expt 2 (1- n))))) 
+			(:instance pos*
+				   (x (cg (* (sig x) (expt 2 (1- n)))))
 				   (y (expt 2 (- (1+ (expo x)) n))))
 			(:instance sgn-1)
 			(:instance sgn+1)
@@ -215,7 +215,7 @@
   :hints (("Goal" :in-theory (disable away abs expo abs-away)
 		  :use ((:instance away-diff)
 			(:instance expo-lower-bound (x (- (away x n) x)))
-			(:instance expt-strong-monotone 
+			(:instance expt-strong-monotone
 				   (n (expo (- (away x n) x)))
 				   (m (- (1+ (expo x)) n)))))))
 
@@ -224,8 +224,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (away x n)
-		    (* (sgn x) 
-		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n))))))
 
 (in-theory (disable away))
@@ -277,7 +277,7 @@
 
 (defthm away-exactp-a
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (away x n))
 		  (exactp x n)))
@@ -301,7 +301,7 @@
 		  :use ((:instance away-diff-expo-1)
 			(:instance away-exactp-a)))))
 
-(defthm away-exactp-b-1    
+(defthm away-exactp-b-1
     (implies (and (rationalp x)
 		  (rationalp y)
 		  (integerp n)
@@ -309,7 +309,7 @@
 	     (integerp (* (* (sgn x) (cg y) (expt 2 (- (1- n) (expo x)))) (expt 2 (- (1+ (expo x)) n)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo)
-		  :use ((:instance integerp-x-y 
+		  :use ((:instance integerp-x-y
 				   (x (sgn x))
 				   (y (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))))
 			(:instance expo+ (n (- (1- n) (expo x))) (m (- (1+ (expo x)) n)))))))
@@ -399,7 +399,7 @@
 			(:instance exactp-2**n)
 			(:instance trunc-exactp-5 (x (* x (expt 2 (- (1- m) (expo x))))))))))
 
-(defthm away-exactp-b-10    
+(defthm away-exactp-b-10
     (implies (and (rationalp x)
 		  (not (= x 0))
 		  (integerp n)
@@ -525,7 +525,7 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (away (away x n) m)
-		(* (cg (* (cg (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- m n)))) 
+		(* (cg (* (cg (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- m n))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo away-pos-rewrite away-rewrite)
@@ -541,7 +541,7 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (away (away x n) m)
-		(* (cg (/ (cg (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- n m)))) 
+		(* (cg (/ (cg (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- n m))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo away-pos-rewrite away-rewrite)
@@ -556,12 +556,12 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (away (away x n) m)
-		(* (cg (/ (* (expt 2 (- (1- n) (expo x))) x) (expt 2 (- n m)))) 
+		(* (cg (/ (* (expt 2 (- (1- n) (expo x))) x) (expt 2 (- n m))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable cg/int expo away-pos-rewrite away-rewrite)
 		  :use ((:instance away-away-3)
-			(:instance cg/int 
+			(:instance cg/int
 				   (x (* (expt 2 (- (1- n) (expo x))) x))
 				   (n (expt 2 (- n m))))))))
 

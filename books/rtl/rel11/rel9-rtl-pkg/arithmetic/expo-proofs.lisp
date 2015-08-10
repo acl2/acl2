@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -89,7 +89,7 @@
 ;rename?
 (defthm expo-minus-eric
   (implies (syntaxp (negative-syntaxp x))
-           (equal (expo x) 
+           (equal (expo x)
                   (expo (* -1 x))))
   :hints (("Goal" :in-theory (enable expo-minus))))
 
@@ -129,7 +129,7 @@
            :cases ((equal x 0))))))
 
 
-                
+
 (defthm expo-upper-bound
   (implies (rationalp x)
            (< (abs x) (expt 2 (1+ (expo x)))))
@@ -301,7 +301,7 @@
                                       expt-split
                                       expt-between-one-and-two
                                       )
-                              
+
                               '(POWER2P-SHIFT)))))
 
 (in-theory (disable EXPO-2**N)) ;why?
@@ -372,7 +372,7 @@
 
 
 
-;BOZO defn expt loops 
+;BOZO defn expt loops
 
 
 ;(in-theory (disable expo-shift))
@@ -411,8 +411,8 @@
           (implies (and (integerp x)
                         (>= x 0))
                    (>= (expo x) 0))
-          :hints (("Goal" 
-                   :use ((:instance expo>= 
+          :hints (("Goal"
+                   :use ((:instance expo>=
                                     (x x)
                                     (n 0)))))))
 
@@ -520,7 +520,7 @@
 
 (defthm expo-minus-const-mult
   (implies (and (syntaxp (and (quotep k) (< (cadr k) 0))))
-           (equal (EXPO (* k X)) 
+           (equal (EXPO (* k X))
                   (EXPO (* -1 k X)))))
 |#
 
@@ -620,7 +620,7 @@
 
 
 
-  
+
 
 
 
@@ -859,7 +859,7 @@
            (equal (expo (* (/ (expt 2 n)) x))
                   (+ (- n) (expo x))))
 
-           
+
   )
 
 (defthm expo-lower-bound-2
@@ -893,7 +893,7 @@
                                                  ))
            :use ((:instance expo-lower-bound (x (* a (expt 2 k))))
                  (:instance expo-upper-bound-tight (x a))
-                 (:instance expo-unique 
+                 (:instance expo-unique
                             (x (+ x (* a (expt 2 k)))) (n (expo (* a (expt 2 k))))))))
   :otf-flg t)
 

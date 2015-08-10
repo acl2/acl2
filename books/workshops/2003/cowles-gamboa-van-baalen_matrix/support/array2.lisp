@@ -36,7 +36,7 @@ To certify at UW:
 :set-cbd "/home/cowles/matrix/" ;;turing
 
 (certify-book "array2"
-	      0 
+	      0
 	      nil ;;compile-flg
 	      )
 |#
@@ -73,7 +73,7 @@ To use at UW:
 	 (equal (cdr (car (assoc2 i j l))) j)))))
 
 (local
- (defthm 
+ (defthm
    assoc-keyword-properties
    (implies
     (and (alistp l)
@@ -82,7 +82,7 @@ To use at UW:
 	 (equal (car (assoc-keyword x l)) x)))))
 
 (local
- (defthm 
+ (defthm
    bounded-integer-alistp2-car-assoc2-properties
    (implies
     (and (bounded-integer-alistp2 l m n)
@@ -103,52 +103,52 @@ To use at UW:
      (alistp l)
      (keyword-value-listp (cdr (assoc-eq :header l)))
      (true-listp
-      (cadr (assoc-keyword :dimensions 
+      (cadr (assoc-keyword :dimensions
 			   (cdr (assoc-eq :header l)))))
      (equal
-      (length (cadr (assoc-keyword :dimensions 
-				   (cdr (assoc-eq 
+      (length (cadr (assoc-keyword :dimensions
+				   (cdr (assoc-eq
 					 :header l)))))
       2)
      (integerp
-      (car (cadr (assoc-keyword :dimensions 
-				(cdr (assoc-eq 
+      (car (cadr (assoc-keyword :dimensions
+				(cdr (assoc-eq
 				      :header l))))))
      (integerp
-      (cadr (cadr (assoc-keyword :dimensions 
-				 (cdr (assoc-eq 
+      (cadr (cadr (assoc-keyword :dimensions
+				 (cdr (assoc-eq
 				       :header l))))))
      (integerp
-      (cadr (assoc-keyword :maximum-length 
+      (cadr (assoc-keyword :maximum-length
 			   (cdr (assoc-eq :header l)))))
      (< 0
-	(car (cadr (assoc-keyword 
-		    :dimensions 
+	(car (cadr (assoc-keyword
+		    :dimensions
 		    (cdr (assoc-eq :header l))))))
      (< 0
-	(cadr (cadr (assoc-keyword 
-		     :dimensions 
+	(cadr (cadr (assoc-keyword
+		     :dimensions
 		     (cdr (assoc-eq :header l))))))
-     (< (* (car (cadr (assoc-keyword 
-		       :dimensions 
+     (< (* (car (cadr (assoc-keyword
+		       :dimensions
 		       (cdr (assoc-eq :header l)))))
 	   (cadr (cadr (assoc-keyword
-			:dimensions 
+			:dimensions
 			(cdr (assoc-eq :header l))))))
-	(cadr (assoc-keyword 
-	       :maximum-length 
+	(cadr (assoc-keyword
+	       :maximum-length
 	       (cdr (assoc-eq :header l)))))
-     (<= (cadr (assoc-keyword 
-		:maximum-length 
+     (<= (cadr (assoc-keyword
+		:maximum-length
 		(cdr (assoc-eq :header l))))
 	 *maximum-positive-32-bit-integer*)
      (bounded-integer-alistp2
       l
-      (car (cadr (assoc-keyword 
-		  :dimensions 
+      (car (cadr (assoc-keyword
+		  :dimensions
 		  (cdr (assoc-eq :header l)))))
-      (cadr (cadr (assoc-keyword 
-		   :dimensions 
+      (cadr (cadr (assoc-keyword
+		   :dimensions
 		   (cdr (assoc-eq :header l))))))))
    :rule-classes :forward-chaining))
 
@@ -177,7 +177,7 @@ To use at UW:
 ;;  L(i x) . . . L(i (- j 1)).
 
 (local
- (defthm 
+ (defthm
    alistp-compress211
    (alistp (compress211 name l i x j default))))
 
@@ -191,8 +191,8 @@ To use at UW:
          (>= x 0)
 	 (>= i 0)
 	 (> k i))
-    (bounded-integer-alistp2 (compress211 name l i x j default) 
-			     k 
+    (bounded-integer-alistp2 (compress211 name l i x j default)
+			     k
 			     j))))
 
 (local
@@ -205,7 +205,7 @@ To use at UW:
 		   (assoc2 m n l)))))
 
 (local
- (defthm 
+ (defthm
    compress211-assoc2-property-1
    (implies
     (and (not (assoc2 i n (compress211 name l i x j default)))
@@ -220,7 +220,7 @@ To use at UW:
 	   default))))
 
 (local
- (defthm 
+ (defthm
    compress211-assoc2-property-2
    (implies
     (and (alistp l)
@@ -251,7 +251,7 @@ To use at UW:
 	    (alistp (append l1 l2)))))
 
 (local
- (defthm 
+ (defthm
    alistp-compress21
    (alistp (compress21 name l n i j default))))
 
@@ -260,19 +260,19 @@ To use at UW:
    bounded-integer-alistp2-append
    (implies (and (bounded-integer-alistp2 l1 i j)
 		 (bounded-integer-alistp2 l2 i j))
-	    (bounded-integer-alistp2 (append l1 l2) 
-				     i 
+	    (bounded-integer-alistp2 (append l1 l2)
+				     i
 				     j))))
 
 (local
- (defthm 
+ (defthm
    bounded-integer-alistp2-compress21
    (implies
     (and (array2p name l)
 	 (integerp i)
 	 (integerp n)
 	 (>= n 0))
-    (bounded-integer-alistp2 (compress21 name l n i j default) 
+    (bounded-integer-alistp2 (compress21 name l n i j default)
 			     i
 			     j))))
 
@@ -295,15 +295,15 @@ To use at UW:
 	   (assoc2 k m l)))))
 
 (local
- (defthm 
+ (defthm
    compress21-assoc2-property-1
    (implies
     (and (not (assoc2 k m (compress21 name l n i j default)))
-	 (alistp l) 
+	 (alistp l)
          (integerp i)
 	 (integerp j)
 	 (integerp k)
-	 (integerp m) 
+	 (integerp m)
 	 (integerp n)
 	 (<= n i)
 	 (<= n k)
@@ -321,7 +321,7 @@ To use at UW:
 		  (x 1))))))
 
 (local
- (defthm 
+ (defthm
    compress21-assoc2-property-2
    (implies
     (and (alistp l)
@@ -329,7 +329,7 @@ To use at UW:
     (not (assoc2 k m (compress21 name l n i j default))))))
 
 (local
- (defthm 
+ (defthm
    compress2-assoc2-property-0
    (implies
     (and (alistp l)
@@ -339,7 +339,7 @@ To use at UW:
 	   (cdr (assoc2 k m l))))))
 
 (local
- (defthm 
+ (defthm
    compress2-assoc2-property-1
    (implies
     (and (array2p name l)
@@ -356,22 +356,22 @@ To use at UW:
 				))))))
 
 (local
- (defthm 
+ (defthm
    compress2-assoc2-property-2
    (implies
-    (and (alistp l) 
+    (and (alistp l)
 	 (not (assoc2 k m l)))
     (not (assoc2 k m (compress2 name l))))))
 
 (local
- (defthm 
+ (defthm
    header-compress2
    (implies
     (array2p name l)
     (equal (assoc-eq :header (compress2 name l))
 	   (assoc-eq :header l)))))
 
-(defthm 
+(defthm
   array2p-compress2
   (implies
    (array2p name l)
@@ -382,7 +382,7 @@ To use at UW:
   :hints (("Goal"
 	   :in-theory (enable array2p))))
 
-(defthm 
+(defthm
   array2p-compress2-properties
   (implies
    (array2p name l)
@@ -398,7 +398,7 @@ To use at UW:
 
 (local (in-theory (disable compress2)))
 
-(defthm 
+(defthm
   array2p-aset2
   (implies
    (and (array2p name l)
@@ -410,7 +410,7 @@ To use at UW:
 	(< j (cadr (dimensions name l))))
    (array2p name (aset2 name l i j val))))
 
-(defthm 
+(defthm
   array2p-aset2-properties
   (implies
    (and (array2p name l)
@@ -430,7 +430,7 @@ To use at UW:
     (equal (default name (aset2 name l i j val))
 	   (default name l)))))
 
-(defthm 
+(defthm
   aref2-compress2
   (implies
    (and (array2p name l)
@@ -443,7 +443,7 @@ To use at UW:
    (equal (aref2 name (compress2 name l) i j)
 	  (aref2 name l i j))))
 
-(defthm 
+(defthm
   array2p-acons-properties
   (and
    (equal (header name (cons (cons (cons i j) val) l))
@@ -455,14 +455,14 @@ To use at UW:
    (equal (default name (cons (cons (cons i j) val) l))
 	  (default name l))))
 
-(defthm 
+(defthm
   array2p-consp-header
   (implies
    (array2p name l)
    (consp (header name l)))
   :rule-classes :type-prescription)
 
-(defthm 
+(defthm
   array2p-car-header
   (implies
    (array2p name l)
@@ -472,7 +472,7 @@ To use at UW:
 ;  These two theorems for the AREF2-ASET2 cases are used to prove a
 ;  combined result, and then exported DISABLEd:
 
-(defthm 
+(defthm
   aref2-aset2-equal
   (implies
    (and (array2p name l)
@@ -485,7 +485,7 @@ To use at UW:
    (equal (aref2 name (aset2 name l i j val) i j)
 	  val)))
 
-(defthm 
+(defthm
   aref2-aset2-not-equal
   (implies
    (and (array2p name l)
@@ -506,7 +506,7 @@ To use at UW:
    (equal (aref2 name (aset2 name l i1 j1 val) i2 j2)
 	  (aref2 name l i2 j2))))
 
-(defthm 
+(defthm
   aref2-aset2
   (implies
    (and (array2p name l)
@@ -534,13 +534,13 @@ To use at UW:
 ;;; The final form of the :FORWARD-CHAINING lemma for ARRAY2P.
 ;;;   A forward definition of (ARRAY2P name l), in terms of
 ;;;   HEADER, DIMENSIONS, and MAXIMUM-LENGTH.
-;;;   Note that ACL2 also defines a lemma ARRAY2P-FORWARD, but 
-;;;   that lemma is in terms of the expansions of HEADER, 
+;;;   Note that ACL2 also defines a lemma ARRAY2P-FORWARD, but
+;;;   that lemma is in terms of the expansions of HEADER,
 ;;;   DIMENSIONS, and MAXIMUM-LENGTH.
 
-;;;   One should normaly DISABLE ARRAY2P in favor of this 
-;;;   :FORWARD-CHAINING rule. If allowed to open, ARRAY2P can 
-;;;   cause severe performance degradation due to its large size 
+;;;   One should normaly DISABLE ARRAY2P in favor of this
+;;;   :FORWARD-CHAINING rule. If allowed to open, ARRAY2P can
+;;;   cause severe performance degradation due to its large size
 ;;;   and many recursive functions.  This lemma is designed to be
 ;;;   used with the ARRAY2-FUNCTIONS theory DISABLEd.
 
@@ -560,9 +560,9 @@ To use at UW:
 	(< (* (car (dimensions name l))
 	      (cadr (dimensions name l)))
 	   (maximum-length name l))
-	(<= (maximum-length name l) 
+	(<= (maximum-length name l)
 	    *maximum-positive-32-bit-integer*)
-	(bounded-integer-alistp2 l 
+	(bounded-integer-alistp2 l
 				 (car (dimensions name l))
 				 (cadr (dimensions name l)))))
   :rule-classes :forward-chaining)
@@ -575,37 +575,37 @@ To use at UW:
 	(< (* (car (dimensions name l))
 	      (cadr (dimensions name l)))
 	   (maximum-length name l))
-	(<= (maximum-length name l) 
+	(<= (maximum-length name l)
 	    *maximum-positive-32-bit-integer*)))
   :rule-classes :linear)
 
-(deftheory 
-  array2-functions 
+(deftheory
+  array2-functions
   '(array2p aset2 aref2 compress2 header dimensions maximum-length
     default)
   :doc "A theory of all functions specific to 2-dimensional arrays.
-        This theory must be DISABLEd in order for the lemmas 
+        This theory must be DISABLEd in order for the lemmas
         exported by the array2 book to be applicable.")
 
-(deftheory 
-  array2-lemmas 
+(deftheory
+  array2-lemmas
   '(array2p-compress2
     array2p-compress2-properties
     array2p-aset2
     array2p-aset2-properties
     aref2-compress2
     array2p-acons-properties
-    array2p-consp-header 
+    array2p-consp-header
     array2p-car-header
     aref2-aset2
     array2p-forward-modular
     array2p-linear-modular))
 
-(deftheory 
+(deftheory
   array2-disabled-lemmas
-  '(aref2-aset2-equal 
+  '(aref2-aset2-equal
     aref2-aset2-not-equal)
   :doc "A theory of all rules exported DISABLEd by the array2 book.
-        Note that in order for these rules to be applicable you 
+        Note that in order for these rules to be applicable you
         will first need to (DISABLE ARRAY2-FUNCTIONS).")
 

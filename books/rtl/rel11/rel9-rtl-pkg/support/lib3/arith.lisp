@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -44,8 +44,8 @@
 (local (include-book "base"))
 
 ;; these already have lib1.delta1's
-;; arith.lisp!!  deftheory??? 
-;; Why I can't do that?? 
+;; arith.lisp!!  deftheory???
+;; Why I can't do that??
 
 
 (set-inhibit-warnings "theory") ; avoid warning in the next event
@@ -149,7 +149,7 @@
   :rule-classes :linear)
 
 
-;replaced force with case-split                
+;replaced force with case-split
 ;later, drop the hyp completely
 (defthm a13
   (implies (case-split (rationalp x)) ;drop!
@@ -213,7 +213,7 @@
            (< (/ y+) (/ y)))
   :rule-classes
   ((:forward-chaining :trigger-terms ((/ y+) (/ y))) :linear))
-         
+
 (defthm *-weakly-monotonic
   (implies (and (<= y y+)
                 (<= 0 x)
@@ -512,7 +512,7 @@
                 (< 0 bmax))
            (and (< (- (* amax bmax)) (* a b))
                 (< (* a b) (* amax bmax))))
-  :rule-classes nil)  
+  :rule-classes nil)
 
 (defthm rearrange-negative-coefs-<
   (and (equal (< (* (- c) x) z)
@@ -720,7 +720,7 @@
            (equal (equal (* x (/ y)) 1)
                   (equal x y)))
   :rule-classes nil)
-                
+
 (defun point-right-measure (x)
   (floor (if (and (rationalp x) (< 0 x)) (/ x) 0) 1))
 

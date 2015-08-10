@@ -123,7 +123,7 @@
        (return var)))
 
 
-;; ---------------- SV2012 Ansi Portlist Parsing ------------------ 
+;; ---------------- SV2012 Ansi Portlist Parsing ------------------
 
 (defparser vl-parse-ansi-portdecl-with-datatype (atts dir nettype var)
   :guard (and (vl-atts-p atts)
@@ -151,7 +151,7 @@
                                       :name (vl-idtoken->name portname)
                                       :udims udims
                                       :loc (vl-token->loc portname)))))
-  
+
 
 (defparser vl-parse-ansi-portdecl-with-implicit-type (atts dir nettype var)
   :guard (and (vl-atts-p atts)
@@ -289,7 +289,7 @@
   ;; | [ port_direction ] data_type  port_identifier { variable_dimension }
   ;; | [ port_direction ] var data_type port_identifier { variable_dimension }
   ;; | [ port_direction ] var [ signing ] { packed_dimension } port_identifier { variable_dimension }
-  ;; 
+  ;;
   ;; (The generic interface scheme isn't supported and will produce an error.)
 
   (seq tokstream
@@ -303,11 +303,11 @@
         ;; 3.  interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
         ;; 4.  "interface" [ . modport_identifier ] port_identifier { unpacked_dimension }  (parse error).
         ;;
-        ;; We'll need to use backtracking to tell the difference between 
+        ;; We'll need to use backtracking to tell the difference between
         ;;    foo_t [3:0] bar ...   (case 1)
         ;;    in [3:0] ...          (case 2).
         ;; We know we're good if the token after is a comma or right paren.
-        ;; 
+        ;;
         ;; We won't be able to tell the difference between case 3 (with no
         ;; modport) and case 1; we'll treat it as case 1 and fix it up later.
 
@@ -322,7 +322,7 @@
              ;; Otherwise, we'll try 3. first.  In ambiguous cases, it's easier
              ;; to change an interface port to a regular port than vice versa,
              ;; since a regular port also makes a portdecl and vardecl.
-             
+
              ((mv err3 port tokstream)
               ;; 3.  interface_identifier [ . modport_identifier ] port_identifier { unpacked_dimension }
               (vl-parse-ansi-interface-portdecl atts))
@@ -361,7 +361,7 @@
 
 
 
-;; ---------------- Verilog2005 Ansi Portlist Parsing ------------------ 
+;; ---------------- Verilog2005 Ansi Portlist Parsing ------------------
 
 
 (encapsulate nil
@@ -471,7 +471,7 @@ ansi style port lists.  Creates ansi-portdecls."
 
 
 
-;; ---------------- Non-Ansi Portlist Parsing (2005/2012) ------------------ 
+;; ---------------- Non-Ansi Portlist Parsing (2005/2012) ------------------
 
 
 (defsection verilog-2005-ports
@@ -633,7 +633,7 @@ occurs anywhere else in the grammar, this should be fine everywhere.</p>"
 
 
 
-;; ------------- Choosing ANSI/Non-ANSI Portlist Parsing --------------------- 
+;; ------------- Choosing ANSI/Non-ANSI Portlist Parsing ---------------------
 
 
 (define vl-port-starts-ansi-port-list-p
@@ -2057,8 +2057,8 @@ except for the initial attributes.  Used for port declarations within modules."
 
 
 
-                   
-        
+
+
 
 
 ;; (defsection sv-ansi-port-interpretation

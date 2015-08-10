@@ -15,7 +15,7 @@
   (lnot (logior a (lnot b (1+ e))) (1+ e)))
 
 (defund OLAM1 (a b e)
-  (logand (bits (olamt a b e) e 2) 
+  (logand (bits (olamt a b e) e 2)
 	  (logand (bits (olamg a b e) (1- e) 1)
 		  (lnot (bits (olamz a b e) (- e 2) 0) (1- e)))))
 
@@ -25,7 +25,7 @@
 		  (lnot (bits (olamz a b e) (- e 2) 0) (1- e)))))
 
 (defund OLAM3 (a b e)
-  (logand (bits (olamt a b e) e 2) 
+  (logand (bits (olamt a b e) e 2)
 	  (logand (bits (olamz a b e) (1- e) 1)
 		  (lnot (bits (olamg a b e) (- e 2) 0) (1- e)))))
 
@@ -660,7 +660,7 @@
 		  (integerp k)
 		  (<= k (- e 2))
 		  (>= k 0))
-	     (equal (bitn (olam0 a b e) k) 
+	     (equal (bitn (olam0 a b e) k)
 		    (logior (bitn (olam1 a b e) k)
 			    (logior (bitn (olam2 a b e) k)
 				    (logior (bitn (olam3 a b e) k)
@@ -1980,7 +1980,7 @@
 	;		(:instance lnot-bnds (x (bits (olamz a b e) (- e 2) 0)) (n (1- e)))
 ;			(:instance bits< (x (olamt a b e)) (i e) (j 2))
 	;		(:instance bits< (x (olamz a b e)) (i (- e 2)) (j 0))
-			(:instance logand-bnd 
+			(:instance logand-bnd
 				   (x (lnot (bits (olamt a b e) e 2) (1- e)))
 				   (y (logand (bits (olamz a b e) (1- e) 1)
 					      (lnot (bits (olamz a b e) (- e 2) 0) (1- e)))))
@@ -2280,7 +2280,7 @@
   (lnot (lior a (lnot b (1+ e)) (1+ e)) (1+ e)))
 
 (defun lam1 (a b e)
-  (land (bits (lamt a b e) e 2) 
+  (land (bits (lamt a b e) e 2)
 	(land (bits (lamg a b e) (1- e) 1)
 	      (lnot (bits (lamz a b e) (- e 2) 0) (1- e))
 	      (1- e))
@@ -2294,7 +2294,7 @@
 	(1- e)))
 
 (defun lam3 (a b e)
-  (land (bits (lamt a b e) e 2) 
+  (land (bits (lamt a b e) e 2)
 	(land (bits (lamz a b e) (1- e) 1)
 	      (lnot (bits (lamg a b e) (- e 2) 0) (1- e))
 	      (1- e))

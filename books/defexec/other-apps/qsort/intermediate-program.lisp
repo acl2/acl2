@@ -43,7 +43,7 @@ should follow easily.
 	(if (and (<< (first x) splitter)
 		 (<< (last-val x) splitter))
 	    (cons (first x) (lower-part (rest x) splitter))
-	  (cons (first x) 
+	  (cons (first x)
 		(lower-part (del-last (rest x)) splitter)))))))
 
 (defun upper-part (x splitter)
@@ -134,7 +134,7 @@ should follow easily.
 			    (y (upper-part x splitter))
 			    (n (len x)))))))
 
-			       
+
 (local
 (defthm len-consp-reduction-2
   (implies (and (equal (len (append x y)) n)

@@ -39,7 +39,7 @@
   :long "<p>This is a predicate form of the @(see type-spec) declaration
 @('(TYPE BIT b)').</p>"
 
-  (defun-inline bitp (b)  
+  (defun-inline bitp (b)
     (declare (xargs :guard t))
     (or (eql b 0)
         (eql b 1)))
@@ -78,7 +78,7 @@ expands to just @('b')."
              (equal (bfix b) b))))
 
 (defsection maybe-bitp
-  :parents (std/basic bitp) 
+  :parents (std/basic bitp)
   :short "Recognizer for bits and @('nil')."
   :long "<p>This is like an <a
 href='https://en.wikipedia.org/wiki/Option_type'>option type</a>; when @('x')

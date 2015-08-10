@@ -4,19 +4,19 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;; 
-;;; Definition of mapping-induced correspondence: 
-;;; 
+;;;
+;;; Definition of mapping-induced correspondence:
+;;;
 ;;; In order for a Gem memory and and Rtm memory to be m-correspondent via m,
 ;;; the following conditions must hold:
-;;;   
-;;; - Correctness w.r.t. the types of the variables appearing into the memories: 
+;;;
+;;; - Correctness w.r.t. the types of the variables appearing into the memories:
 ;;;   I.e., m must map boolean Gem variables into single Rtm variables, and integer Gem
 ;;;   variables into tuples of |*rns*| Rtm variables;
-;;; 
-;;; - Correctness w.r.t. the values and attributes of the variables appearing into the memories: 
+;;;
+;;; - Correctness w.r.t. the values and attributes of the variables appearing into the memories:
 ;;;   for each entry of the mapping,
-;;;   the values obtained by direct application of rns to the gem variable of the entry must 
+;;;   the values obtained by direct application of rns to the gem variable of the entry must
 ;;;   match those of the rtm variables, and
 ;;;   the attributes of the rtm variables must match that of the rtm variable.
 ;;;
@@ -24,10 +24,10 @@
 ;;;
 ;;; - A mapping must contain every variable of the Gem memory it references
 ;;;
-;;; 
+;;;
 ;;; Similar properties to the least two will be needed for the Rtm memories (e.g., every Rtm
 ;;; variable should be in the range of the Rtm memory), when proving properties about
-;;; programs. We will insert them then. 
+;;; programs. We will insert them then.
 ;;;
 
 
@@ -42,7 +42,7 @@
 
 
 ;;;
-;;; Subsection 4.1: 
+;;; Subsection 4.1:
 ;;;
 ;;; Memories must be correspondent via m in terms of types
 ;;;
@@ -51,11 +51,11 @@
 
 (defun correct-wrt-arity (m gem-typed-mem)
   (if (endp m)
-      (null m) 
+      (null m)
     (and
      (correct-type (type-0 m))
-     (equal 
-      (type-0 m) 
+     (equal
+      (type-0 m)
       (var-type (get-cell (gemvar-0 m) gem-typed-mem)))
      (correct-wrt-arity (cdr m) gem-typed-mem))))
 
@@ -67,7 +67,7 @@
   (and
    (correct-type (type-0 m))
    (equal
-    (type-0 m) 
+    (type-0 m)
     (var-type (get-cell (gemvar-0 m) gem-typed-mem)))
    (not (null (var-attributes (rtmintvars-0 m) rtm-typed-mem)))
    (correct-wrt-arity (cdr m) gem-typed-mem))))
@@ -77,21 +77,21 @@
 ;;
 ;; Section 4.5:
 ;;
-;; Every entry of the mapping must point to a coherent set of rtm variables, i.e. to a set of of rtm 
+;; Every entry of the mapping must point to a coherent set of rtm variables, i.e. to a set of of rtm
 ;; variables which share the same attribute.
 ;;
 
 (defun get-common-value (l)
-  (if (equal-elements (car l) (cdr l)) 
+  (if (equal-elements (car l) (cdr l))
       (car l)
     'error-value))
 
 (defthm if-every-element-matches-val-then-get-common-value-amounts-to-val
- (implies 
-  (and 
-   (true-listp l) 
-   (not (null l)) 
-   (equal-elements v l))  
+ (implies
+  (and
+   (true-listp l)
+   (not (null l))
+   (equal-elements v l))
   (equal (get-common-value l) v)))
 
 (in-theory (disable if-every-element-matches-val-then-get-common-value-amounts-to-val))
@@ -120,14 +120,14 @@
 ;;; viceversa (by inverse application of *rns*).
 ;;;
 ;;; Notice that these transformations are actually just ``stubs'', since we provide a
-;;; simplified form of axiomatization of the chinese remainder inversion theorem. 
+;;; simplified form of axiomatization of the chinese remainder inversion theorem.
 ;;; Additional hypothesis (e.g., boundedness of Gem and Rtm integers, and relations between such
 ;;; bounds) shall (and will) be added and taken into account when proving properties of programs.
 ;;; In the cureent state of the proof, however, we can limit ourselves to consider 'generic'
 ;;; transformations of Gem vars into tuples of Rtm vars, and their corresponding generic inverse.
-;;; 
+;;;
 ;;; However, since memories could contain nil cells, we have to lift our transformations, and
-;;; the 'simplified axiomatization of CRT', to deal with nils. 
+;;; the 'simplified axiomatization of CRT', to deal with nils.
 ;;;
 ;;; We extend transformations so that nils transform into sequences of nils and viceversa.
 ;;; We lift the simplified CRT axiomatization to such extended version.
@@ -158,7 +158,7 @@
 (in-theory (enable build-values-by-rns))
 
 (defun mod-extended-for-nil (val1 val2)
- (if (null val1) 
+ (if (null val1)
      nil
      (mod val1 val2)))
 
@@ -169,10 +169,10 @@
            (build-values-by-rns-extended-for-nil gem-value (cdr rns)))))
 
 (defthm build-values-by-rns-extended-behaves-standardly-on-non-nils
- (implies 
+ (implies
   (not (null gem-value))
   (equal
-    (build-values-by-rns-extended-for-nil gem-value rns) 
+    (build-values-by-rns-extended-for-nil gem-value rns)
     (build-values-by-rns gem-value rns))))
 
 (defthm build-values-by-rns-extended-for-nils-provides-integers-from-integer
@@ -193,14 +193,14 @@
 
 
 (defun build-value-by-inverse-rns-extended-for-nil (rtm-values rns)
- (if   
+ (if
      (integer-listp rtm-values)
      (crtmod rtm-values rns)
    nil))
 
 
 (defthm build-value-by-inverse-rns-extended-for-nils-behaves-standardly-on-integer-lists
- (implies 
+ (implies
   (integer-listp rtm-values)
   (equal
     (build-value-by-inverse-rns-extended-for-nil rtm-values rns)
@@ -215,8 +215,8 @@
    (rel-prime-moduli rns)
    (natp gem-value)
    (< gem-value (prod rns)))
- (equal 
-  (build-value-by-inverse-rns (build-values-by-rns gem-value rns) rns) 
+ (equal
+  (build-value-by-inverse-rns (build-values-by-rns gem-value rns) rns)
   gem-value))
  :hints (("Goal" :in-theory (enable crt-inversion))))
 
@@ -231,17 +231,17 @@
    (< gem-value (prod rns))
    (not (null rns))
    (integer-listp rns)
-   (natp gem-value)) 
- (equal 
-  (build-value-by-inverse-rns-extended-for-nil (build-values-by-rns-extended-for-nil gem-value rns) rns) 
+   (natp gem-value))
+ (equal
+  (build-value-by-inverse-rns-extended-for-nil (build-values-by-rns-extended-for-nil gem-value rns) rns)
   gem-value))
  :hints (("goal"
           :use (
                 crt-inversion-inst
-                build-values-by-rns-extended-behaves-standardly-on-non-nils 
-                (:instance build-value-by-inverse-rns-extended-for-nils-behaves-standardly-on-integer-lists 
+                build-values-by-rns-extended-behaves-standardly-on-non-nils
+                (:instance build-value-by-inverse-rns-extended-for-nils-behaves-standardly-on-integer-lists
 			   (rtm-values (build-values-by-rns gem-value rns)))
-                (:instance build-values-by-rns-extended-for-nils-provides-integers-from-integer 
+                (:instance build-values-by-rns-extended-for-nils-provides-integers-from-integer
 			   (val gem-value))))))
 
 (defthm crt-inversion-extended-to-nils-in-nil-case
@@ -250,9 +250,9 @@
    (rel-prime-moduli rns)
    (not (null rns))
    (integer-listp rns)
-   (null gem-value)) 
- (equal 
-  (build-value-by-inverse-rns-extended-for-nil (build-values-by-rns-extended-for-nil gem-value rns) rns) 
+   (null gem-value))
+ (equal
+  (build-value-by-inverse-rns-extended-for-nil (build-values-by-rns-extended-for-nil gem-value rns) rns)
   gem-value)))
 
 (defthm crt-inversion-extended-to-nils
@@ -261,18 +261,18 @@
    (rel-prime-moduli rns)
    (integer-listp rns)
    (not (null rns))
-  (or 
+  (or
    (null gem-value)
    (and
     (natp gem-value)
     (< gem-value (prod rns)))))
- (equal 
-  (build-value-by-inverse-rns-extended-for-nil (build-values-by-rns-extended-for-nil gem-value rns) rns) 
+ (equal
+  (build-value-by-inverse-rns-extended-for-nil (build-values-by-rns-extended-for-nil gem-value rns) rns)
   gem-value))
- :hints (("goal" 
-          :cases ( 
+ :hints (("goal"
+          :cases (
                   (and (not (null gem-value)) (not (and (natp gem-value) (< gem-value (prod rns)))))
-                  (null gem-value) 
+                  (null gem-value)
                   (and (natp gem-value) (< gem-value (prod rns)))))
 	 ("Subgoal 2" :use crt-inversion-extended-to-nils-in-nil-case)
          ("subgoal 1" :use (:instance crt-inversion-extended-to-nils-in-integer-case))))
@@ -282,7 +282,7 @@
                     build-values-by-rns
                     build-value-by-inverse-rns-extended-for-nil
                     build-value-by-inverse-rns
-                    build-values-by-rns-extended-behaves-standardly-on-non-nils 
+                    build-values-by-rns-extended-behaves-standardly-on-non-nils
                     build-values-by-rns-extended-for-nils-provides-integers-from-integer
                     build-value-by-inverse-rns-extended-for-nils-behaves-standardly-on-integer-lists
                     crt-inversion-extended-to-nils-in-integer-case
@@ -327,11 +327,11 @@
      (equal-values
        (var-values     rtmvars rtm-typed-mem)
        (make-null-list rtmvars))
-      (apply-invers-rns-to-values-according-to-type 
+      (apply-invers-rns-to-values-according-to-type
        (var-values rtmvars rtm-typed-mem)
        type)
     (make-cell
-     (apply-invers-rns-to-values-according-to-type 
+     (apply-invers-rns-to-values-according-to-type
       (var-values rtmvars rtm-typed-mem)
       type)
      (get-common-value (var-attributes rtmvars rtm-typed-mem))
@@ -342,7 +342,7 @@
  (equal-values
   (var-values rtmvars rtm-typed-mem)
   (apply-direct-rns-to-value-according-to-type gem-cell type))
- (equal-elements 
+ (equal-elements
   (var-attribute gem-cell)
   (var-attributes rtmvars rtm-typed-mem))))
 
@@ -351,15 +351,15 @@
 (defthm apply-direct-rns-unfolding-for-integer-case
  (implies
   (equal type 'int)
-  (equal 
-   (apply-direct-rns-to-value-according-to-type gem-cell type) 
+  (equal
+   (apply-direct-rns-to-value-according-to-type gem-cell type)
    (build-values-by-rns-extended-for-nil (var-value gem-cell) *rns*))))
 
 (defthm apply-direct-rns-unfolding-for-boolean-case
  (implies
   (equal type 'bool)
-  (equal 
-   (apply-direct-rns-to-value-according-to-type gem-cell type) 
+  (equal
+   (apply-direct-rns-to-value-according-to-type gem-cell type)
    (list (var-value gem-cell)))))
 
 
@@ -367,7 +367,7 @@
 (defthm apply-inverse-rns-unfolding-for-integer-case
  (implies
   (equal type 'int)
-  (equal (apply-invers-rns-to-values-according-to-type values type) 
+  (equal (apply-invers-rns-to-values-according-to-type values type)
 	 (build-value-by-inverse-rns-extended-for-nil values *rns*))))
 
 
@@ -385,14 +385,14 @@
      (natp (var-value gem-cell))
      (< (var-value gem-cell) (prod *rns*)))
     (null (var-value gem-cell))))
-  (equal 
-   (apply-invers-rns-to-values-according-to-type 
-    (apply-direct-rns-to-value-according-to-type gem-cell type) type) 
+  (equal
+   (apply-invers-rns-to-values-according-to-type
+    (apply-direct-rns-to-value-according-to-type gem-cell type) type)
    (var-value gem-cell)))
  :hints (("goal" :cases ( (equal type 'bool)
                           (equal type 'int)))
-         ("subgoal 1"  
-          :in-theory (disable null 
+         ("subgoal 1"
+          :in-theory (disable null
                               apply-inverse-rns-unfolding-for-integer-case
                               crt-inversion-extended-to-nils
                               apply-direct-rns-unfolding-for-integer-case
@@ -417,7 +417,7 @@
   (and
    (equal-values (var-values rtmvars rm) (make-null-list rtmvars))
    (equal (apply-invers-rns-to-values-according-to-type (var-values rtmvars rm) type) cell)))
- :hints (("goal" 
+ :hints (("goal"
 	  :in-theory (enable make-null-list-is-invariant-on-value-slicing)
 	  :cases ( (equal type 'bool) (equal type 'int)))))
 
@@ -426,30 +426,30 @@
 
 
 (defthm ad-hoc-2-for-inversion-of-one-nonempty-cell-by-decode
-  (implies 
-   (and (not (null bui)) (integer-listp bui)) 
+  (implies
+   (and (not (null bui)) (integer-listp bui))
    (not (equal (make-null-list l) bui))))
 
 
 (defthm ad-hoc-3-for-inversion-of-one-nonempty-cell-by-decode
-  (implies 
-   (integerp (var-value cell)) 
+  (implies
+   (integerp (var-value cell))
    (not (equal (make-null-list l) (build-values-by-rns-extended-for-nil (var-value cell) *rns*))))
-  :hints (("goal" :use ((:instance build-values-by-rns-extended-for-nils-provides-integers-from-integer 
+  :hints (("goal" :use ((:instance build-values-by-rns-extended-for-nils-provides-integers-from-integer
 				   (val (var-value cell)) (rns *rns*))
-			(:instance ad-hoc-2-for-inversion-of-one-nonempty-cell-by-decode 
-				   (l l) 
+			(:instance ad-hoc-2-for-inversion-of-one-nonempty-cell-by-decode
+				   (l l)
 				   (bui (build-values-by-rns-extended-for-nil (var-value cell) *rns*)))))))
 
 (defthm nonempty-cell-is-not-mapped-into-nils-by-rns
   (implies
    (and
-    (true-listp (var-attributes rtmvars rm))  
-    (not (null (var-attributes rtmvars rm)))  
+    (true-listp (var-attributes rtmvars rm))
+    (not (null (var-attributes rtmvars rm)))
     (is-mem-cell-p cell)
     (not (null cell))
     (equal-values (var-values rtmvars rm) (apply-direct-rns-to-value-according-to-type cell type))
-    (equal-elements (var-attribute cell) (var-attributes rtmvars rm)) 
+    (equal-elements (var-attribute cell) (var-attributes rtmvars rm))
     (equal type (var-type cell)))
     (not (equal-values (var-values rtmvars rm) (make-null-list rtmvars))))
  :hints (("goal" :cases ( (equal type 'bool) (equal type 'int)))))
@@ -475,8 +475,8 @@
    cell))
   :hints (("Subgoal 1.1" :use silly00)
 	  ("Subgoal 2.1" :use silly00)
-	  ("goal" 
-	   :in-theory			
+	  ("goal"
+	   :in-theory
 	   (union-theories (current-theory 'ground-zero)
 	   '((:definition is-mem-cell-p)
 	     (:definition make-cell)
@@ -493,16 +493,16 @@
     (rel-prime-moduli *rns*)
     (integer-listp *rns*)
     (not (null *rns*))
-    (true-listp (var-attributes rtmvars rm)) 
-    (not (null (var-attributes rtmvars rm)))  
+    (true-listp (var-attributes rtmvars rm))
+    (not (null (var-attributes rtmvars rm)))
     (is-mem-cell-p cell)
     (not (null cell))
     (natp (var-value cell))
     (< (var-value cell) (prod *rns*))
     (equal-values (var-values rtmvars rm) (apply-direct-rns-to-value-according-to-type cell type))
-    (equal-elements (var-attribute cell) (var-attributes rtmvars rm)) 
+    (equal-elements (var-attribute cell) (var-attributes rtmvars rm))
     (equal type (var-type cell)))
-    (equal 
+    (equal
      (make-cell
       (apply-invers-rns-to-values-according-to-type (var-values rtmvars rm) type)
       (get-common-value (var-attributes rtmvars rm))
@@ -522,7 +522,7 @@
 
 
 
-	
+
 
 
 
@@ -534,24 +534,24 @@
     (rel-prime-moduli *rns*)
     (integer-listp *rns*)
     (not (null *rns*))
-    (true-listp (var-attributes rtmvars rm)) 
-    (not (null (var-attributes rtmvars rm)))  
+    (true-listp (var-attributes rtmvars rm))
+    (not (null (var-attributes rtmvars rm)))
     (is-mem-cell-p cell)
     (not (null cell))
     (natp (var-value cell))
     (< (var-value cell) (prod *rns*))
     (equal-values (var-values rtmvars rm) (apply-direct-rns-to-value-according-to-type cell type))
-    (equal-elements (var-attribute cell) (var-attributes rtmvars rm)) 
+    (equal-elements (var-attribute cell) (var-attributes rtmvars rm))
     (equal type (var-type cell)))
    (and
     (not (equal-values (var-values rtmvars rm) (make-null-list rtmvars)))
-    (equal 
+    (equal
      (make-cell
       (apply-invers-rns-to-values-according-to-type (var-values rtmvars rm) type)
       (get-common-value (var-attributes rtmvars rm))
       type)
      cell)))
-  :hints (("goal" :use (nonempty-cell-is-not-mapped-into-nils-by-rns 
+  :hints (("goal" :use (nonempty-cell-is-not-mapped-into-nils-by-rns
 			nonempty-rtm-vars-which-correspond-to-gem-var-by-values-and-atributes-map-back-to-gem-var))))
 
 
@@ -563,7 +563,7 @@
  (true-listp (var-attributes rtmvars rtm-typed-mem)))
 
 (defun bounded-value (cell)
-  (if (null cell) 
+  (if (null cell)
       t
     (and (natp (var-value cell)) (< (var-value cell) (prod *rns*)))))
 
@@ -579,16 +579,16 @@
    (or (null gem-cell) (is-mem-cell-p gem-cell))
    (bounded-value gem-cell)
    (equal-values-and-attributes gem-cell rtmvars rtm-typed-mem type))
-  (equal 
+  (equal
    (invert-cell rtmvars rtm-typed-mem type)
    gem-cell))
- :hints (("Goal" 
+ :hints (("Goal"
 	  :in-theory (disable equal-values)
 	  :use ( var-attributes-always-true-listp
-		 (:instance decode-inversion-for-nonempty-gem-cell 
+		 (:instance decode-inversion-for-nonempty-gem-cell
 			    (cell gem-cell)
 			    (rm rtm-typed-mem))
-		 (:instance inversion-for-empty-cell 
+		 (:instance inversion-for-empty-cell
 			    (cell gem-cell)
 			    (rm rtm-typed-mem))))))
 
@@ -626,23 +626,23 @@
     (null m) )
   ( t
     (and
-     (equal-values-and-attributes 
-      (get-cell (gemvar-0 m) gem-typed-mem) 
-      (rtmintvars-0 m) 
+     (equal-values-and-attributes
+      (get-cell (gemvar-0 m) gem-typed-mem)
+      (rtmintvars-0 m)
       rtm-typed-mem (type-0 m))
      (m-correspondent-values-p (cdr m)  gem-typed-mem rtm-typed-mem)))))
- 
+
 (defun decode (m rtm-typed-mem)
  (if
   (endp m)
-    nil 
+    nil
     (put-cell
      (gemvar-0 m)
      (invert-cell (rtmintvars-0 m) rtm-typed-mem (type-0 m))
      (decode (cdr m) rtm-typed-mem))))
 
 
-(defthm silly1 
+(defthm silly1
      (equal (caar m) (gemvar-0 m)))
 
 (in-theory (disable silly1))
@@ -660,7 +660,7 @@
       (null mem)
     (and (bounded-value (cdr (car mem)))
 	 (bounded-amem-p (cdr mem)))))
-   
+
 (defthm any-cell-of-bounded-mem-is-bounded
  (implies
   (bounded-amem-p gem-typed-mem)
@@ -682,7 +682,7 @@
    (retrieve-vars m gem-typed-mem)))
  :hints (("Goal" :induct (len m))
 	 ("Subgoal *1/1"
-	  :in-theory nil 
+	  :in-theory nil
 	  :use (silly1
 		silly2
 		decode
@@ -715,7 +715,7 @@
 
 (defun projectiocell (cell attr)
  (if (null cell)
-     cell   
+     cell
      (if (equal (var-attribute cell) attr)
 	 cell
          nil )))
@@ -723,14 +723,14 @@
 (defun projectio (mem attr)
   (if (endp mem)
       nil
-      (put-cell (caar mem) 
-		(projectiocell (cdr (car mem))  attr) 
+      (put-cell (caar mem)
+		(projectiocell (cdr (car mem))  attr)
 		(projectio (cdr mem) attr))))
 
 
 
 (defthm cell-of-projected-mem-is-projected-cell
- (equal 
+ (equal
   (get-cell cell (projectio mem attr))
   (projectiocell (get-cell cell mem) attr)))
 
@@ -820,7 +820,7 @@
    (equal (var-attribute gem-cell) attr)
    (is-mem-cell-p gem-cell)
    (equal-values-and-attributes gem-cell rtmvars rtm-typed-mem type))
- (equal (invert-cell rtmvars (projectio rtm-typed-mem attr) type) 
+ (equal (invert-cell rtmvars (projectio rtm-typed-mem attr) type)
 	(invert-cell rtmvars rtm-typed-mem type)))
  :hints (("Goal" :in-theory nil
           ;; modified for Version  2.7 fertilization
@@ -856,9 +856,9 @@
   (equal-values
    (var-values rtmvars (projectio rtm-typed-mem attr))
    (make-null-list rtmvars))))
-   
 
- 
+
+
 (defthm decode-one-entry-of-null-list-is-nil
 (implies
  (and
@@ -876,7 +876,7 @@
    (not (null rtmvars))
    (not (equal (var-attribute gem-cell) attr))
    (equal-values-and-attributes gem-cell rtmvars rtm-typed-mem type))
- (equal (invert-cell rtmvars (projectio rtm-typed-mem attr) type) 
+ (equal (invert-cell rtmvars (projectio rtm-typed-mem attr) type)
 	nil))
  :hints (("Goal" :use
 	  ((:instance decode-one-entry-of-null-list-is-nil
@@ -905,7 +905,7 @@
 	(invert-cell rtmvars (projectio rtm-typed-mem attr) type)))
  :hints (("Goal"
 	  :in-theory nil
-	  :use 
+	  :use
 	  (inversion-1-for-nonempty-projected-on-different-attr
 	   inversion-2-for-nonempty-projected-on-different-attr))))
 
@@ -940,7 +940,7 @@
    (not (null rtmvars)))
    (not (null (var-attributes rtmvars rtm-typed-mem)))))
 
-  
+
 (defthm project-invert-commuting-better
  (implies
   (and
@@ -982,7 +982,7 @@
    (or
     (null (get-cell (gemvar-0 m) gem-typed-mem))
     (equal (type-0 m) (var-type (get-cell (gemvar-0 m) gem-typed-mem))))
-   (equal-values-and-attributes 
+   (equal-values-and-attributes
     (get-cell (gemvar-0 m) gem-typed-mem)
     (rtmintvars-0 m)
     rtm-typed-mem
@@ -1001,8 +1001,8 @@
       nil
     (put-cell (gemvar-0 m)
 	      (projectiocell
-	       (invert-cell 
-		(rtmintvars-0 m) 
+	       (invert-cell
+		(rtmintvars-0 m)
 	        rtm-typed-mem
 		(type-0 m))
 	       attr)
@@ -1012,8 +1012,8 @@
 (in-theory (enable m-entries-point-to-good-rtm-var-sets))
 
 (defthm project-of-decode-is-decode-projection
-  (equal 
-   (projectio (decode m rtm-typed-mem) attr) 
+  (equal
+   (projectio (decode m rtm-typed-mem) attr)
    (decode-projection m rtm-typed-mem attr)))
 
 
@@ -1153,9 +1153,9 @@
 (defun gem-variables (m) (retrieve-gemvars m))
 (defun rtm-variables (m) (append-lists (retrieve-rtmvars m)))
 
-(defun same-vars (m1 m2) 
- (and 
-  (vars-inclusion m1 m2) 
+(defun same-vars (m1 m2)
+ (and
+  (vars-inclusion m1 m2)
   (vars-inclusion m2 m1)))
 
 (defun member-equal-bool (el l)
@@ -1200,7 +1200,7 @@
       (var-values (rtmintvars-0 m) rtm-typed-mem)
       (type-0 m))
      (m-correspondent-vals-p (cdr m)  gem-typed-mem rtm-typed-mem)))))
- 
+
 
 (defun attributes-correspondence (m gem-typed-mem rtm-typed-mem)
   (if (endp m)
@@ -1209,7 +1209,7 @@
      (not (endp (rtmintvars-0 m)))
      (true-listp (rtmintvars-0 m))
      (not (equal 'error-value (get-common-value (var-attributes (rtmintvars-0 m) rtm-typed-mem))))
-     (equal-elements 
+     (equal-elements
       (var-attribute (get-cell (gemvar-0 m) gem-typed-mem))
       (var-attributes (rtmintvars-0 m) rtm-typed-mem))
     (attributes-correspondence (cdr m) gem-typed-mem rtm-typed-mem))))
@@ -1240,7 +1240,7 @@
 
 (defun output (mem) (projectio mem 'Output))
 
-(defun is-gem-mem-p (mem) 
+(defun is-gem-mem-p (mem)
  (and (is-typed-amem-p mem)
       (bounded-amem-p mem)))
 
@@ -1249,11 +1249,11 @@
   (and
    (is-variable-mapping m gem-mem rtm-mem)
    (is-gem-mem-p gem-mem))
-  (equal-memories 
+  (equal-memories
    (output gem-mem)
    (decode m (output rtm-mem))))
- :hints (("Goal" :use 
-          (fact-bout-rns-v0 
+ :hints (("Goal" :use
+          (fact-bout-rns-v0
            (:instance redefinition-of-m-corr
                       (gem-vars gem-mem)
                       (rtm-vars rtm-mem))
@@ -1311,11 +1311,10 @@
 		    equal-memories-holds-by-projection
 		    equalities-on-io))
 
-		    
-		    
-		    
-		    
-		    
-		    
-		    
-		    
+
+
+
+
+
+
+

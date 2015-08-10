@@ -345,7 +345,7 @@
 
 
 (encapsulate nil
-  
+
   (local
    (in-theory (e/d* (
                      possibilities-for-x-1

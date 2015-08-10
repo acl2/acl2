@@ -1,7 +1,7 @@
 ; Reflexive Tail Recursive book
 ; Copyright (C) 2004 John R. Cowles, University of Wyoming
 
-; This program is free software; you can redistribute it and/or 
+; This program is free software; you can redistribute it and/or
 ; modify it under the terms of the GNU General Public License as
 ; published by the Free Software Foundation; either version 2 of
 ; the License, or (at your option) any later version.
@@ -12,7 +12,7 @@
 ; GNU General Public License for more details.
 
 ; You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free 
+; License along with this program; if not, write to the Free
 ; Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
 ; USA.
 
@@ -63,8 +63,8 @@
   (equal (f1 (f1^n x i))
 	 (f1^n (f1 x) i)))
 
-(defthm 
-  +1-1 
+(defthm
+  +1-1
   (equal (+ -1 +1 x) (fix x)))
 
 (defthm
@@ -74,7 +74,7 @@
 	   (equal (f1 (f1^n x i))
 		  (f1^n x (+ 1 i)))))
 
-; End theory of iterated applications of a function 
+; End theory of iterated applications of a function
 ; with a single input argument.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -88,7 +88,7 @@
   ((step1^n * *) => *)
   ((nbr-step1s-to-test1 *) => *))
 
- (local 
+ (local
   (defun test1 (x)
     (<= (ifix x) 0)))
 
@@ -105,7 +105,7 @@
     (if (zp n)
 	x
         (step1^n (step1 x)(- n 1)))))
- 
+
  (local
   (defun
     nbr-step1s-to-test1 (x)
@@ -115,12 +115,12 @@
    test1-base1=>test1
    (implies (test1 (base1 x))
 	    (test1 x)))
- 
+
  (defthm
    base1-step1=step1-base1
    (equal (base1 (step1 x))
 	  (step1 (base1 x))))
- 
+
  (defthm
    step1^n-def
    (equal (step1^n x n)
@@ -139,8 +139,8 @@
 	    (test1 (step1^n x (nbr-step1s-to-test1 x)))))
 
  ;;  If there is an x such that the recursion does not halt, then the
- ;;  only y's for which the recursion halts are the y's satisfying 
- ;;  (test1 y). 
+ ;;  only y's for which the recursion halts are the y's satisfying
+ ;;  (test1 y).
  (defthm
    not-test1-step1^n
    (implies (and (not (test1 (step1^n x (nbr-step1s-to-test1 x))))
@@ -172,70 +172,70 @@
 (encapsulate
  nil
 
- (local (defthm 
+ (local (defthm
 	  test1-nbr-steps1-to-test1
           (implies (test1 x)
                    (test1 (step1^n x (nbr-step1s-to-test1 x))))
-          :hints (("goal" 
-		   :use ((:instance 
+          :hints (("goal"
+		   :use ((:instance
 			  test1-step1^n
 			  (n 0)))))))
 
- (local (defthm 
+ (local (defthm
 	  test1-g-def
           (implies (test1 x)
-                   (equal (g x) 
+                   (equal (g x)
 			  (base1 x)))))
 
- (local (defthm 
+ (local (defthm
 	  open-step1^n
-          (implies (and (integerp n) 
+          (implies (and (integerp n)
 			(< 0 n))
-                   (equal (step1^n x n) 
+                   (equal (step1^n x n)
 			  (step1^n (step1 x)(- n 1))))))
 
- (local (defthm 
+ (local (defthm
 	  step1-step1^n-nbr-step1s-to-test1
           (implies (test1 (step1^n (step1 x) (nbr-step1s-to-test1 (step1 x))))
                    (test1 (step1^n x (nbr-step1s-to-test1 x))))
-          :hints (("goal" 
-		   :use ((:instance 
+          :hints (("goal"
+		   :use ((:instance
 			  test1-step1^n
 			  (n (+ 1 (nfix (nbr-step1s-to-test1 (step1 x))))))
-			 (:instance 
+			 (:instance
 			  test1-step1^n (n 1)))))
           :rule-classes :forward-chaining))
 
- (local (defthm 
+ (local (defthm
 	  test1-nil-nbr-step1s-to-test1
           (implies (not (test1 x))
-                   (iff (test1 (step1^n (step1 x) 
+                   (iff (test1 (step1^n (step1 x)
 					(nbr-step1s-to-test1 (step1 x))))
-                        (test1 (step1^n x 
+                        (test1 (step1^n x
 					(nbr-step1s-to-test1 x)))))
-          :hints (("subgoal 2" 
-		   :use ((:instance 
-			  test1-step1^n 
+          :hints (("subgoal 2"
+		   :use ((:instance
+			  test1-step1^n
 			  (x (step1 x))
 			  (n (+ -1 (nbr-step1s-to-test1 x)))))))))
 
- (local (defthm 
+ (local (defthm
 	  gn-step1
-          (implies (and (test1 (step1^n x n)) 
+          (implies (and (test1 (step1^n x n))
 			(test1 (step1^n x m)))
                    (equal (gn x n) (gn x m)))
           :rule-classes nil))
 
- (defthm 
+ (defthm
    g-def
    (equal (g x)
-          (if (test1 x) 
-	      (base1 x) 
+          (if (test1 x)
+	      (base1 x)
 	      (g (step1 x))))
-   :hints (("subgoal 1" 
+   :hints (("subgoal 1"
 	    :expand (gn x (nbr-step1s-to-test1 x)))
-	   ("subgoal 1.2'" 
-	    :use ((:instance gn-step1 
+	   ("subgoal 1.2'"
+	    :use ((:instance gn-step1
 			     (x (step1 x))
 			     (n (+ -1 (nbr-step1s-to-test1 x)))
 			     (m (nbr-step1s-to-test1 (step1 x)))))))
@@ -306,7 +306,7 @@
   test1-step1^n-base1=>test1-step1^n-a
   (implies (test1 (step1^n (base1 x)
 			   (nbr-step1s-to-test1 (base1 x))))
-	   (test1 (step1^n x 
+	   (test1 (step1^n x
 			   (nbr-step1s-to-test1 x))))
   :hints (("Goal"
 	   :use (:instance
@@ -375,7 +375,7 @@
 		  (g^n x i)))
   :hints (("Goal"
 	   :use (:instance
-		 g^n-step1=g^n 
+		 g^n-step1=g^n
 		 (x (step1^n x j))))))
 
 (defun
@@ -398,7 +398,7 @@
   (implies (test1 (step1^n x n))
 	   (test1 (step1^n x (least-nbr-step1s-loop x k))))
   :hints (("Subgoal *1/1"
-	   :in-theory (disable test1-step1^n) 
+	   :in-theory (disable test1-step1^n)
 	   :use test1-step1^n)))
 
 (defthm
@@ -448,7 +448,7 @@
 	   (>= n (least-nbr-step1s x)))
   :rule-classes (:linear :rewrite))
 
-(in-theory (disable least-nbr-step1s)) 
+(in-theory (disable least-nbr-step1s))
 
 (defun
   induct-natp-hint (n)
@@ -592,7 +592,7 @@
   :hints (("Goal"
 	   :cases ((test1 (step1^n x (nbr-step1s-to-test1 x)))))))
 
-(defun 
+(defun
   base1^n (x n)
   (if (zp n)
       x
@@ -664,7 +664,7 @@
 			 1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Develop a theory showing the existence of ``reflexive tail 
+; Develop a theory showing the existence of ``reflexive tail
 ; recursive'' functions.
 
 (encapsulate
@@ -677,7 +677,7 @@
   ((step2^n * *) => *)
   ((nbr-step2s-to-test *) => *))
 
- (local 
+ (local
   (defun test (x)
     (<= (ifix x) 0)))
 
@@ -746,12 +746,12 @@
    test-base=>test
    (implies (test (base x))
 	    (test x)))
- 
+
  (defthm
    base-stp=stp-base
    (equal (base (stp x))
 	  (stp (base x))))
- 
+
  ;;  The recursion is said to halt for x iff there is an n such that
  ;;  (test (step2^n x n)).
  ;;  If the recursions halts for x, then (nbr-step2s-to-test x) is
@@ -762,8 +762,8 @@
 	    (test (step2^n x (nbr-step2s-to-test x)))))
 
  ;;  If there is an x such that the recursion does not halt, then the
- ;;  only y's for which the recursion halts are the y's satisfying 
- ;;  (test1 y). 
+ ;;  only y's for which the recursion halts are the y's satisfying
+ ;;  (test1 y).
  (defthm
    not-test-step2^n
    (implies (and (not (test (step2^n x (nbr-step2s-to-test x))))
@@ -827,11 +827,11 @@
 	  ("Subgoal 7"
 	   :use not-test-step2^n-witness)))
 
-(defthm 
+(defthm
   f-def
   (equal (f x)
-	 (if (test x) 
-	     (base x) 
+	 (if (test x)
+	     (base x)
 	     (f (step2 x))))
   :rule-classes :definition
   :hints (("Goal"
@@ -856,7 +856,7 @@
   :rule-classes :definition)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Develop a theory assuming the existence of a ``reflexive tail 
+; Develop a theory assuming the existence of a ``reflexive tail
 ; recursive'' function.
 
 (include-book "../../../../arithmetic/top")
@@ -875,7 +875,7 @@
   (defun c1 ()
     1))
 
- (local 
+ (local
   (defun tst1 (x)
     (<= (ifix x) 0)))
 
@@ -922,7 +922,7 @@
    tst1-bse1=>tst1
    (implies (tst1 (bse1 x))
 	    (tst1 x)))
- 
+
  (defthm
    bse1-stp1=stp1-bse1
    (equal (bse1 (stp1 x))
@@ -954,7 +954,7 @@
    :rule-classes :definition)
 
  (defthm
-   f2^n-def 
+   f2^n-def
    (equal (f2^n x n)
 	  (if (zp n)
 	      x
@@ -981,7 +981,7 @@
   tst1-stp1^n-least-nbr-stp1s-loop
   (tst1 (stp1^n x (least-nbr-stp1s-loop x k)))
   :hints (("Subgoal *1/1"
-	   :in-theory (disable tst1-stp1^n) 
+	   :in-theory (disable tst1-stp1^n)
 	   :use tst1-stp1^n)))
 
 (defthm
@@ -1025,7 +1025,7 @@
 	   (>= n (least-nbr-stp1s x)))
   :rule-classes (:linear :rewrite))
 
-(in-theory (disable least-nbr-stp1s)) 
+(in-theory (disable least-nbr-stp1s))
 
 (defthm
   f2^n=f2
@@ -1147,7 +1147,7 @@
 		(> i 0))
 	   (equal (f2^n (bse1 (stp1^n x (least-nbr-stp1s x)))
 			(+ -1 i (* (least-nbr-stp1s x)(+ -1 (c1)))))
-		  (f2^n (stp1^n x (least-nbr-stp1s x)) 
+		  (f2^n (stp1^n x (least-nbr-stp1s x))
 			(+ i (* (least-nbr-stp1s x)(+ -1 (c1)))))))
   :rule-classes nil
   :hints (("Goal"
@@ -1210,7 +1210,7 @@
 		  (f2^n (bse1 x) i)))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable f2^n-stp1^n=f2^n) 
+	   :in-theory (disable f2^n-stp1^n=f2^n)
 	   :use (:instance
 		 f2^n-stp1^n=f2^n
 		 (x (bse1 x))
@@ -1228,7 +1228,7 @@
 		  f2^n-stp1^n-bse1=f2^n-bse1
 		  (i (+ -1 i)))))))
 
-(defun 
+(defun
   bse1^n (x n)
   (if (zp n)
       x

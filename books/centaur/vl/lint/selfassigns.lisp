@@ -114,7 +114,7 @@ doesn't need to be particularly correct or accurate.</p>"
     (append
      (vl-expr-case x
        :vl-index (b* ((varname (vl-scopeexpr-case x.scope
-                                 :end (vl-hidexpr-case x.scope.hid 
+                                 :end (vl-hidexpr-case x.scope.hid
                                         :end x.scope.hid.name
                                         :otherwise nil)
                                  :otherwise nil))

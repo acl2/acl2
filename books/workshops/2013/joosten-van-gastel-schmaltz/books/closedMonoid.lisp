@@ -18,7 +18,7 @@
                                    (foldr  cons-foldr)
                                    (foldr1 cons-foldr1)
                                    (foldl  cons-foldl)))
-#| ; check this out to try the created functions: 
+#| ; check this out to try the created functions:
 (cons-foldr 'a '(b c))
 (cons-foldr1 '(a b c))
 (cons-foldl 'a '(b c))
@@ -73,7 +73,7 @@
 (defthm c-foldr-closed
   (implies (and (c-domainp x)
                 (list-domainp xs))
-           (c-domainp (c-foldr x xs))))           
+           (c-domainp (c-foldr x xs))))
 ;|#
 
 ; If we wish to show that all the fold operators actually yield the same value
@@ -99,7 +99,7 @@
 
 (defconst *monoid-renaming*
   '((sg-c-domainp         mon-domainp)      (sg-c-foldr  mon-foldr)
-    (sg-c-binary-function mon-binop)        (sg-c-foldr1 mon-foldr1) 
+    (sg-c-binary-function mon-binop)        (sg-c-foldr1 mon-foldr1)
     (sg-list-domainp      mon-list-domainp) (sg-c-foldl  mon-foldl) ))
 
 ; if there is an identity element, we obtain a monoid

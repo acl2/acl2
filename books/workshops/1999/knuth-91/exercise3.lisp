@@ -6,10 +6,10 @@
 
 ;; This exercise is challenging.
 
-;; Use ACL2 to formalize and verify an argument outlined in the 
-;; case study.  The argument is not repeated here.  Avoid using 
-;; DefAxiom when introducing the following equation into ACL2.  
-;; Instead use encapsulate to constrain M to satisfy the equation 
+;; Use ACL2 to formalize and verify an argument outlined in the
+;; case study.  The argument is not repeated here.  Avoid using
+;; DefAxiom when introducing the following equation into ACL2.
+;; Instead use encapsulate to constrain M to satisfy the equation
 ;; for integers x.
 
 ;;   M(x) <==  if  x > 100  then   x - 10
@@ -26,7 +26,7 @@
  ;; Signature:
  ((M (x) t))
  ;;--------------------
- ;; Provide witness: 
+ ;; Provide witness:
  (local (defun
 	    M (x)
 	    (if (> x 100)

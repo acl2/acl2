@@ -6,11 +6,11 @@
 ;; Part A.
 
 ;; Use encapsulate to introduce and constrain ACL2 versions of
-;; constants a, b, e, n so that e is a rational with e <= 0. Use 
-;; the ACL2 versions of a, b, n to formally state and admit the 
+;; constants a, b, e, n so that e is a rational with e <= 0. Use
+;; the ACL2 versions of a, b, n to formally state and admit the
 ;; definition,
 
-;; K(x)  <==  if  x > a  then  x - b 
+;; K(x)  <==  if  x > a  then  x - b
 ;;                       else  n,
 
 ;; in ACL2. Next state and formally prove, in ACL2, the recursive
@@ -31,9 +31,9 @@
   (e () t)
   (n () t))
  ;;----------------
- ;; Provide witnesses: 
+ ;; Provide witnesses:
  (local
-  (defun 
+  (defun
       a ()
       0))
 

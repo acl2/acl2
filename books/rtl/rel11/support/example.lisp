@@ -12,7 +12,7 @@
 ;; The following lemmas from arithmetic-5 have given me trouble:
 #|
 (local (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
 |#
 
@@ -244,7 +244,7 @@
            (exactp (- a (* b (q1 a b))) 24))
   :rule-classes ()
   :hints (("Goal" :use (sp-4 sp-6
-                        (:instance r-exactp (p 24) (q (q1 a b)))) 
+                        (:instance r-exactp (p 24) (q (q1 a b))))
                   :in-theory (enable q1 r0))))
 
 (local-defthm sp-8
@@ -368,7 +368,7 @@
                         (:instance rtz-diff (x b) (n 24))
                         (:instance expo<= (x b) (n 0))
                         (:instance expo>= (x b) (n 0))))))
-                        
+
 (local-defthm rcp-11
   (implies (and (rationalp x)
                 (rationalp y)
@@ -595,7 +595,7 @@
            (exactp (- a (* b (q1 a b))) 53))
   :rule-classes ()
   :hints (("Goal" :use (dp-7
-                        (:instance r-exactp (p 53) (q (q1 a b)))) 
+                        (:instance r-exactp (p 53) (q (q1 a b))))
                   :in-theory (enable q1 r0))))
 
 (local-defthm dp-9

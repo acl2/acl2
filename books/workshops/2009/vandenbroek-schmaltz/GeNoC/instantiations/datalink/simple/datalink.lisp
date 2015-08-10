@@ -14,7 +14,7 @@
   (car (mv-nth 0 status)))
 
 (defun status-rx (status)
-  ;; get the recieve flag 
+  ;; get the recieve flag
   (car (mv-nth 1 status)))
 
 (defun port-updateAckRX (port flag)
@@ -39,29 +39,29 @@
 
 (defun simple-processInputs (ports)
   ;; Process the input ports. There are 3 cases.
-  ;; if processing the local input port and the recieve flag is set and the ack flag is not set read the data and clear the port. 
+  ;; if processing the local input port and the recieve flag is set and the ack flag is not set read the data and clear the port.
   ;; if recieve flag is set and not the ack flag read the data.
   ;; if there is an ack, but there is nothing to send clear the input port
   ;; else do nothing
   (if (endp ports)
-    nil    
+    nil
     (if (equal (port-dir (car ports)) 'in)
       (cond
-       
+
        ((and (equal (port-portname (car ports)) 'loc)
              (status-rx (port-status (car ports)))
              (not (status-ackrx (port-status (car ports))))
              (not (port-bufferFull (car ports))))
         (cons (port-updateRX (port-updateData (readData (car ports)) nil) nil) (simple-processInputs (cdr ports))))
-       
+
        ((and (status-rx (port-status (car ports)))
              (not (status-ackrx (port-status (car ports))))
              (not (port-bufferFull (car ports))))
         (cons (readData (car ports)) (simple-processInputs (cdr ports))))
-       
+
        ((status-ackrx (port-status (car ports)))
         (cons (port-updateAckRX (car ports) nil) (simple-processInputs (cdr ports))))
-       
+
        (t (cons (car ports) (simple-processInputs (cdr ports)))))
       (cons (car ports) (simple-processInputs (cdr ports))))))
 
@@ -106,24 +106,24 @@
   (if (endp ports)
     nil
     (if (equal (port-dir (car ports)) 'out)
-      (cond 
-       
+      (cond
+
        ((and (status-tx (port-status (car ports)))
              (status-acktx (port-status (car ports)))
              (port-bufferHead (car ports)))
         (cons (sendData (car ports)) (simple-processOutputs (cdr ports))))
-       
+
        ((and (not (status-tx (port-status (car ports))))
-             (port-bufferHead (car ports)))             
+             (port-bufferHead (car ports)))
         (cons (sendData (car ports)) (simple-processOutputs (cdr ports))))
-       
+
        ((and (status-acktx (port-status (car ports))))
         (cons (port-updatedata (port-updateTX (car ports) nil) nil) (simple-processOutputs (cdr ports))))
-       (t (cons (car ports) (simple-processOutputs (cdr ports)))))    
-      
+       (t (cons (car ports) (simple-processOutputs (cdr ports)))))
+
       (cons (car ports) (simple-processOutputs (cdr ports))))))
 
-(definstance GenericDatalink check-compliance-datalink                   
+(definstance GenericDatalink check-compliance-datalink
   :functional-substitution
   ((processInputs simple-processInputs)
    (processOutputs simple-processOutputs)))

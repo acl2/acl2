@@ -53,7 +53,7 @@
 (in-theory (enable binary-clk+))
 
 (defun fast-lessp-loop-clock (x y)
-  (+ (if (< x y) 6 3) (* 13 (acl2::min x y))))  
+  (+ (if (< x y) 6 3) (* 13 (acl2::min x y))))
 
 (defthm lessp-loop-clock-lemma
   (implies (and (natp x)
@@ -79,7 +79,7 @@
 (defun fast-mod-loop-clock (x y)
   (+ (* (+ 12 (fast-lessp-clock '(0 1) x y)) (floor x y))
      (+ 7 (fast-lessp-clock '(0 1) (mod x y) y))))
-    
+
 
 (defthm fast-mod-loop-clock-lemma
   (implies (and (natp x)
@@ -88,7 +88,7 @@
            (equal (mod-loop-clock x y)
                   (fast-mod-loop-clock x y)))
   :hints (("Goal" :in-theory (enable mod-loop-clock fast-lessp-clock fast-lessp-loop-clock))))
-     
+
 (defthm natp-fast-mod-loop-clock-lemma
   (implies (and (natp x)
                 (natp y)
@@ -1499,7 +1499,7 @@
                                       (<= 0 (find-k! st tape tm n))))))
 
 (defthm m1-simulation-of-rogers-tm-takes-a-long-time
-  (let ((k (find-k 'Q0 *example-tape* *rogers-program* 78))) 
+  (let ((k (find-k 'Q0 *example-tape* *rogers-program* 78)))
     (and
      (equal k
             291202253588734484219274297505568945357129888612375663883)

@@ -178,7 +178,7 @@
                      (consp (assoc y a)))
                 (equal (equal (cdr (assoc x a)) (cdr (assoc y a)))
                        (equal x y))))
-     
+
      (defthm-let-abstract-flg
        (defthm bigger-term-variable-not-bound-in-let-abstract-term-rec
          (implies (and (no-duplicatesp (strip-cdrs subterms))
@@ -351,7 +351,7 @@
                                                                    bindings))))
       :flag list))
 
- 
+
 
   (defthm-let-abstract-flg
     (defthm pseudo-termp-binding-vals-of-let-abstract-term-rec
@@ -415,7 +415,7 @@
                   (pseudo-term-listp x))
              (pseudo-term-listp (mv-nth 1 (let-abstract-list-rec x subterms
                                                                  bindings)))))
-  
+
   (defthm subterms-bindings-ok-of-let-abstract-term-rec
     (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars x)))
                   (subterms/bindings-ok subterms bindings)
@@ -664,7 +664,7 @@
                                         (eval-bindings bindings a)))
                             (abs-ev x a))))
     :rewrite :direct)
-                   
+
   (in-theory (disable bindings-correct))
   (local (defthm cdr-assocs-equal-when-no-duplicate-vals
            (implies (and (no-duplicatesp (strip-cdrs a))
@@ -699,7 +699,7 @@
                                a))
     :hints(("Goal" :in-theory (enable subterms/bindings-ok
                                       bindings-correct-of-cons))))
-                    
+
   (defthm-let-abstract-flg
     (defthm eval-of-let-abstract-term-rec
       (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars x)))
@@ -767,7 +767,7 @@
 
    (defthm no-duplicatesp-remove-duplicates
      (no-duplicatesp (remove-duplicates-equal x)))
-   
+
    (defthm pseudo-term-listp-remove-equal
      (implies (pseudo-term-listp x)
               (pseudo-term-listp (remove-equal k x))))
@@ -839,7 +839,7 @@
     (implies (symbol-listp x)
              (set-equiv (simple-term-vars-lst x) (remove nil x)))
     :hints(("Goal" :in-theory (enable symbol-<-merge))))
-    
+
   (local (in-theory (disable set-equiv)))
 
   (defthm-simple-term-vars-flag
@@ -854,7 +854,7 @@
            (implies (and (symbol-listp x)
                          (not (member k x)))
                     (equal (remove k x) x))))
-                    
+
 
   (defthm let-abstract-build-lambdas-pseudo-termp
     (implies (and (var-ordered-bindingsp bindings)
@@ -882,8 +882,8 @@
              (equal (abs-ev (let-abstract-build-lambdas bindings abs-term vars)
                             a)
                     (abs-ev abs-term (eval-bindings bindings a))))))
-      
-      
+
+
 
 (defsection let-abstract-term-top
   (defund let-abstract-term-top (term subterms)
@@ -895,7 +895,7 @@
       (let-abstract-build-lambdas bindings abs-term vars)))
 
   (local (in-theory (enable let-abstract-term-top)))
-  
+
   (defthm let-abstract-term-top-pseudo-termp
     (implies (and (check-subterm-alist subterms)
                   (not (intersectp-eq (strip-cdrs subterms)
@@ -958,7 +958,7 @@
          ((when (intersectp-eq vars (simple-term-vars-lst clause)))
           (list clause)))
       (list (let-abstract-literals clause subterm-alist))))
-  
+
   (local (in-theory (enable let-abstraction-cp)))
 
   (defthm let-abstraction-cp-correct
@@ -1013,7 +1013,7 @@
     :flag collect-multi-occ-subterms1-list))
 
 (verify-guards collect-multi-occ-subterms1-list)
-  
+
 
 (defun collect-multi-occ-subterms (term)
   (declare (xargs :guard (pseudo-termp term)))
@@ -1069,7 +1069,7 @@
                (not (member-equal (caar alist) rest)))
           (cons (caar alist) rest)
         rest))))
-          
+
 
 (defun collect-multi-occurrence-subterms (x n)
   "Gets a list of subterms of x that occur N or more times"

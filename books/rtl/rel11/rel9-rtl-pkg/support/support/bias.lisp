@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -32,7 +32,7 @@
        (<= 0 x)
        (< x (expt 2 k))))
 
-; bias of a q bit exponent field is 2^(q-1)-1 
+; bias of a q bit exponent field is 2^(q-1)-1
 (defund bias (q) (- (expt 2 (- q 1)) 1) )
 
 (defthm bias-non-negative-integerp-type-prescription

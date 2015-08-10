@@ -55,7 +55,7 @@
   (declare (xargs :guard (setp X)
                   :verify-guards nil))
   (cond ((empty X) nil)
-        ((equal a (head X)) (tail X))   
+        ((equal a (head X)) (tail X))
         (t (insert (head X) (delete a (tail X))))))
 
 (defthm delete-set
@@ -134,12 +134,12 @@
 	 (and (empty X) (empty Y))))
 
 (defthm union-in
-  (equal (in a (union X Y)) 
+  (equal (in a (union X Y))
          (or (in a X) (in a Y))))
 
 (verify-guards union
   :hints(("Goal" :in-theory (enable fast-union-theory))))
-          
+
 
 (defthm union-symmetric
   (equal (union X Y) (union Y X))
@@ -196,12 +196,12 @@
   (declare (xargs :guard (and (setp X) (setp Y))
                   :verify-guards nil))
   (mbe :logic (cond ((empty X) (sfix X))
-                    ((in (head X) Y) 
+                    ((in (head X) Y)
                      (insert (head X) (intersect (tail X) Y)))
                     (t (intersect (tail X) Y)))
        :exec (fast-intersect X Y)))
 
-(defthm intersect-set 
+(defthm intersect-set
   (setp (intersect X Y)))
 
 (defthm intersect-sfix-cancel-X
@@ -212,18 +212,18 @@
 
 (defthm intersect-empty-X
   (implies (empty X) (empty (intersect X Y))))
- 
+
 (defthm intersect-empty-Y
   (implies (empty Y) (empty (intersect X Y))))
 
 (encapsulate ()
 
   (local (defthm intersect-in-Y
-    (implies (not (in a Y)) 
+    (implies (not (in a Y))
              (not (in a (intersect X Y))))))
 
   (local (defthm intersect-in-X
-    (implies (not (in a X)) 
+    (implies (not (in a X))
              (not (in a (intersect X Y))))))
 
   (defthm intersect-in
@@ -233,7 +233,7 @@
 
 (verify-guards intersect
   :hints(("Goal" :in-theory (enable fast-intersect-theory))))
-			
+
 
 (defthm intersect-symmetric
   (equal (intersect X Y) (intersect Y X))
@@ -247,7 +247,7 @@
 
 (defthm intersect-insert-X
   (implies (not (in a Y))
-           (equal (intersect (insert a X) Y) 
+           (equal (intersect (insert a X) Y)
                   (intersect X Y))))
 
 (defthm intersect-insert-Y
@@ -309,13 +309,13 @@
   (equal (difference X (sfix Y)) (difference X Y)))
 
 (defthm difference-empty-X
-  (implies (empty X) 
+  (implies (empty X)
            (equal (difference X Y) (sfix X))))
 
 (defthm difference-empty-Y
-  (implies (empty Y) 
+  (implies (empty Y)
            (equal (difference X Y) (sfix X))))
-           
+
 (encapsulate ()
 
   (local (defthm difference-in-X
@@ -327,8 +327,8 @@
              (not (in a Y)))))
 
   (defthm difference-in
-    (equal (in a (difference X Y)) 
-           (and (in a X) 
+    (equal (in a (difference X Y))
+           (and (in a X)
                 (not (in a Y)))))
 )
 
@@ -374,7 +374,7 @@
   (implies (subset X Y)
 	   (subset (difference X Z)
 		   (difference Y Z))))
-         
+
 
 ; -------------------------------------------------------------------
 ; Cardinality
@@ -389,8 +389,8 @@
 
 (verify-guards cardinality
   ;; Normally we would never want to enable the primitives theory.
-  ;; However, here we need to show that cardinality is equal to 
-  ;; len, and for this we need to be able to reason about tail and 
+  ;; However, here we need to show that cardinality is equal to
+  ;; len, and for this we need to be able to reason about tail and
   ;; empty.  Think of this as a tiny extension of "fast.lisp"
   :hints(("Goal" :in-theory (enable primitives-theory))))
 
@@ -400,7 +400,7 @@
   :rule-classes :type-prescription)
 
 (defthm cardinality-zero-empty
-  (equal (equal (cardinality x) 0)             
+  (equal (equal (cardinality x) 0)
 	 (empty x)))
 
 (defthm cardinality-sfix-cancel
@@ -428,7 +428,7 @@
 
 ; Now that we have the delete function, we can prove an interesting
 ; theorem, namely that if (subset X Y) and |X| = |Y|, then X = Y.  In
-; order to do this, we need to induct by deleting elements from both 
+; order to do this, we need to induct by deleting elements from both
 ; X and Y.  This is a little ugly, but along the way we will show the
 ; nice theorem, subset-cardinality.
 
@@ -440,7 +440,7 @@
                              (delete (head X) Y))))
 
 (defthmd subset-double-delete
-  (implies (subset X Y) 
+  (implies (subset X Y)
            (subset (delete a X) (delete a Y))))
 
 (encapsulate ()
@@ -467,22 +467,22 @@
 )
 
 (defthmd equal-cardinality-subset-is-equality
-  (implies (and (setp X) 
+  (implies (and (setp X)
 		(setp Y)
                 (subset X Y)
                 (equal (cardinality X) (cardinality Y)))
            (equal (equal X Y) t))
   :hints(("Goal" :induct (double-delete-induction X Y))
-         ("Subgoal *1/2" 
+         ("Subgoal *1/2"
           :use ((:instance subset-double-delete
-                           (a (head X)) 
-                           (X X) 
+                           (a (head X))
+                           (X X)
                            (Y Y))
-                (:instance (:theorem 
-                  (implies (equal X Y) 
+                (:instance (:theorem
+                  (implies (equal X Y)
                            (equal (insert a X) (insert a Y))))
-	             (a (head X)) 
-                     (X (tail X)) 
+	             (a (head X))
+                     (X (tail X))
                      (Y (delete (head X) Y)))))))
 
 (defthm intersect-cardinality-X
@@ -495,7 +495,7 @@
 
 
 
-; There are also some interesting properties about cardinality which 
+; There are also some interesting properties about cardinality which
 ; are more precise.
 
 (defthm expand-cardinality-of-union
@@ -506,7 +506,7 @@
 
 (defthm expand-cardinality-of-difference
   (equal (cardinality (difference X Y))
-         (- (cardinality X) 
+         (- (cardinality X)
             (cardinality (intersect X Y))))
   :rule-classes :linear)
 

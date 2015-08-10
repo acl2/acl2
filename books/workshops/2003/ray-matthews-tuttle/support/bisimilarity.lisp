@@ -35,7 +35,7 @@ restricted to C.
 
 ;; Since we do not want to see ACL2 reduce mv-nth 0 to car etc. we do the
 ;; following tricks. I should ask Matt to have these as macro's or as a syntaxp
-;; hypothesis and disable mv-nth. 
+;; hypothesis and disable mv-nth.
 
 (defthm mv-nth-0-reduce
   (equal (mv-nth 0 (mv x y z)) x))
@@ -47,9 +47,9 @@ restricted to C.
   (equal (mv-nth 2 (mv x y z)) z))
 
 (in-theory (disable mv-nth)) ;; We do not need to disable mv since mv is a
-                             ;; macro. 
+                             ;; macro.
 
-;; End of macros for mv-nth. 
+;; End of macros for mv-nth.
 
 ;; The book ltl is included here since I will use the Kripke Structures there
 ;; to define my bisimilarity.
@@ -123,52 +123,52 @@ restricted to C.
                  (memberp s (initial-states m)))
             (memberp (bisimilar-initial-state-witness-m->n s m n vars)
                      (initial-states n))))
- 
+
  (defthm bisimilar-equiv-implies-bisimilar-initial-states-m->n
    (implies (and (bisimilar-equiv m n vars)
                  (memberp s (initial-states m)))
-            (bisimilar s m 
-                       (bisimilar-initial-state-witness-m->n s m n vars) 
+            (bisimilar s m
+                       (bisimilar-initial-state-witness-m->n s m n vars)
                        n vars)))
- 
+
  ;; And the same result holds for n to m
- 
+
  (defthm bisimilar-equiv-implies-init->init-n->m
    (implies (and (bisimilar-equiv m n vars)
                  (memberp s (initial-states n)))
             (memberp (bisimilar-initial-state-witness-n->m m s n vars)
                      (initial-states m))))
- 
+
  (defthm bisimilar-equiv-implies-bisimilar-initial-states-n->m
    (implies (and (bisimilar-equiv m n vars)
                  (memberp s (initial-states n)))
-            (bisimilar (bisimilar-initial-state-witness-n->m m s n vars) 
+            (bisimilar (bisimilar-initial-state-witness-n->m m s n vars)
                        m s n vars)))
- 
+
  ;; Bisimilar states have the same label with respect to vars. I just use
  ;; set-equality because they might not have "equal" labels. BTW, I might not
  ;; need the modelp hypothesis here. But I plug it in, just so that I can keep
  ;; the (functional instance of) bisimilarity relation as simple as possible.
- 
+
  (defthm bisimilar-states-have-labels-equal
    (implies (and (bisimilar p m q n vars)
                  (modelp m)
                  (modelp n))
             (set-equal (set-intersect (label-of p m) vars)
                        (set-intersect (label-of q n) vars))))
-            
- 
- 
+
+
+
  ;; Of course bisimilarity witness is a member of states of the corresponding model.
- 
+
  (defthm bisimilar-witness-member-of-states-m->n
    (implies (and (bisimilar p m q n vars)
                  (next-statep p r m)
                  (memberp r (states m)))
-            (memberp (bisimilar-transition-witness-m->n p r m q n vars) 
+            (memberp (bisimilar-transition-witness-m->n p r m q n vars)
                      (states n))))
 
- ;; Again this part may not be required. 
+ ;; Again this part may not be required.
 
  (defthm bisimilar-witness-member-of-states-n->m
    (implies (and (bisimilar p m q n vars)
@@ -190,10 +190,10 @@ restricted to C.
    (implies (and (bisimilar p m q n vars)
                  (next-statep p r m))
             (bisimilar r m
-                       (bisimilar-transition-witness-m->n p r m q n vars) 
+                       (bisimilar-transition-witness-m->n p r m q n vars)
                        n vars)))
 
- ;; Again this part may not be required. 
+ ;; Again this part may not be required.
 
  (defthm bisimilar-witness-matches-transition-n->m
    (implies (and (bisimilar p m q n vars)
@@ -206,7 +206,7 @@ restricted to C.
  (defthm bisimilar-witness-produces-bisimilar-states-n->m
    (implies (and (bisimilar p m q n vars)
                  (next-statep q r n))
-            (bisimilar (bisimilar-transition-witness-n->m p m q r n vars) 
+            (bisimilar (bisimilar-transition-witness-n->m p m q r n vars)
                        m r n vars)))
 
 )
@@ -215,7 +215,7 @@ restricted to C.
 ;; bisim-equiv, then for each periodic path of one, there exists a periodic
 ;; path of another that has the same labels within vars. This finally will show
 ;; that for any LTL formula restricted to the variable set in vars, the
-;; evaluation of the formula wrt bisimilar structures is identical. 
+;; evaluation of the formula wrt bisimilar structures is identical.
 
 
 ;; In find-matching-path-for-path, we create a finite path in n that is
@@ -224,9 +224,9 @@ restricted to C.
 (defun find-matching-path-for-path-m->n (path m q n vars)
   (cond ((endp path) nil)
         ((endp (rest path)) (list q))
-        (t (cons q (find-matching-path-for-path-m->n 
+        (t (cons q (find-matching-path-for-path-m->n
                     (rest path) m
-                    (bisimilar-transition-witness-m->n 
+                    (bisimilar-transition-witness-m->n
                      (first path) (second path) m q n vars)
                     n vars)))))
 
@@ -237,8 +237,8 @@ restricted to C.
 (defun find-matching-path-for-path-n->m (p m path n vars)
   (cond ((endp path) nil)
         ((endp (rest path)) (list p))
-        (t (cons p (find-matching-path-for-path-n->m 
-                    (bisimilar-transition-witness-n->m 
+        (t (cons p (find-matching-path-for-path-n->m
+                    (bisimilar-transition-witness-n->m
                      p m (first path) (second path) n vars)
                     m (rest path)
                     n vars)))))
@@ -259,14 +259,14 @@ restricted to C.
 (defthm del-last-snoc-reduction
   (implies (true-listp x)
            (equal (del-last (snoc x e)) x)))
-    
+
 
 (defun find-prefix (cycle seen witness path)
   (cond ((endp path) nil)
         ((endp seen) path) ;; should not arise
         ((equal witness (first seen)) nil)
-        (t (append (first-n (len cycle) path) (find-prefix 
-                                               cycle (rest seen) witness 
+        (t (append (first-n (len cycle) path) (find-prefix
+                                               cycle (rest seen) witness
                                                (last-n (len cycle) path))))))
 
 (defun find-cycle (cycle seen witness path)
@@ -278,7 +278,7 @@ restricted to C.
 ;; ACL2 is really stupid in arithmetic. I just add Robert's collection of
 ;; arithmetic books to get it thru with what I want. I need arithmetic really for
 ;; very weird reasons, but well, what the heck, I dont want to deal with
-;; arithmetic myself any ways. 
+;; arithmetic myself any ways.
 
 (local
 (include-book "../../../../arithmetic-2/meta/top")
@@ -297,15 +297,15 @@ restricted to C.
 (defun find-matching-prefix-and-cycle-for-cycle-m->n (cycle m seen q states n vars path)
   (declare (xargs :measure (nfix (- (1+ (len states)) (len seen)))))
   ;; for termination using Pigeon-hole arguments
-  (if (< (len states) (len seen)) (mv seen q path) 
-    (let* ((path-produced (find-matching-path-for-path-m->n 
+  (if (< (len states) (len seen)) (mv seen q path)
+    (let* ((path-produced (find-matching-path-for-path-m->n
                            cycle m q n vars))
            (node-witness (bisimilar-transition-witness-m->n
-                          (last-val cycle) (first cycle) m 
+                          (last-val cycle) (first cycle) m
                           (last-val path-produced) n vars)))
       (if (memberp node-witness seen)
           (mv (snoc seen node-witness) node-witness (append path path-produced))
-        (find-matching-prefix-and-cycle-for-cycle-m->n cycle m (snoc seen node-witness) 
+        (find-matching-prefix-and-cycle-for-cycle-m->n cycle m (snoc seen node-witness)
                                                        node-witness states n
                                                        vars (append path
                                                                     path-produced))))))
@@ -313,16 +313,16 @@ restricted to C.
 (defun find-matching-prefix-and-cycle-for-cycle-n->m (seen q states m cycle n vars path)
   (declare (xargs :measure (nfix (- (1+ (len states)) (len seen)))))
   ;; for termination using Pigeon-hole arguments
-  (if (< (len states) (len seen)) (mv seen q path) 
+  (if (< (len states) (len seen)) (mv seen q path)
     (let* ((path-produced (find-matching-path-for-path-n->m
                            q m cycle n vars))
            (node-witness (bisimilar-transition-witness-n->m
-                          (last-val path-produced)  m 
+                          (last-val path-produced)  m
                           (last-val cycle) (first cycle)  n vars)))
       (if (memberp node-witness seen)
           (mv (snoc seen node-witness) node-witness (append path path-produced))
-        (find-matching-prefix-and-cycle-for-cycle-n->m (snoc seen node-witness) 
-                                                       node-witness states m 
+        (find-matching-prefix-and-cycle-for-cycle-n->m (snoc seen node-witness)
+                                                       node-witness states m
                                                        cycle n
                                                        vars (append path
                                                                     path-produced))))))
@@ -332,7 +332,7 @@ restricted to C.
 
 (defun find-matching-prefix-for-cycle-m->n (cycle m q n vars)
   (mv-let (seen witness path)
-          (find-matching-prefix-and-cycle-for-cycle-m->n 
+          (find-matching-prefix-and-cycle-for-cycle-m->n
            cycle m (list q) q (states n) n vars nil)
           (find-prefix cycle (del-last seen) witness path)))
 
@@ -353,17 +353,17 @@ restricted to C.
 
 (defun find-matching-cycle-for-cycle-n->m (q m cycle n vars)
   (mv-let (seen witness path)
-          (find-matching-prefix-and-cycle-for-cycle-n->m 
+          (find-matching-prefix-and-cycle-for-cycle-n->m
            (list q) q (states m) m cycle n vars nil)
           (find-cycle cycle (del-last seen) witness path)))
-                                        
+
 ;; So we can now produce the matching periodic path by appending the prefix
 ;; after the matching path for the prefix and the cycle as we obtained.
 
 (defun find-matching-periodic-path-m->n (ppath m n vars)
   (let* ((init-p (initial-state ppath))
          (prefix-p (prefix ppath))
-         (first-p (first prefix-p)) 
+         (first-p (first prefix-p))
          (cycle-p (cycle ppath))
          (init-q (bisimilar-initial-state-witness-m->n init-p m n vars))
          (first-q (bisimilar-transition-witness-m->n init-p first-p m init-q n
@@ -386,7 +386,7 @@ restricted to C.
 (defun find-matching-periodic-path-n->m (m ppath n vars)
   (let* ((init-q (initial-state ppath))
          (prefix-q (prefix ppath))
-         (first-q (first prefix-q)) 
+         (first-q (first prefix-q))
          (cycle-q (cycle ppath))
          (init-p (bisimilar-initial-state-witness-n->m m init-q n vars))
          (first-p (bisimilar-transition-witness-n->m init-p m init-q first-q n
@@ -408,7 +408,7 @@ restricted to C.
 
 
 ;; Now we bite the bullet and start showing that this dirty bad function suits
-;; our purpose. Any suggestions for improvement will be greatly appreciated. 
+;; our purpose. Any suggestions for improvement will be greatly appreciated.
 
 ;; Let us define the general concept of what we mean by two paths (or segments
 ;; being bisimilar.
@@ -451,8 +451,8 @@ restricted to C.
 (defthm find-matching-path-produces-bisimilar-segments
   (implies (and (compatible-path-p p m)
                 (bisimilar (first p) m q n vars))
-           (bisimilar-segments-p 
-            p m 
+           (bisimilar-segments-p
+            p m
             (find-matching-path-for-path-m->n p m q n vars)
             n vars)))
 )
@@ -461,7 +461,7 @@ restricted to C.
 (defthm find-matching-path-produces-bisimilar-segments-2
   (implies (and (compatible-path-p q n)
                 (bisimilar p m (first q) n vars))
-           (bisimilar-segments-p 
+           (bisimilar-segments-p
             (find-matching-path-for-path-n->m p m q n vars)
             m q
             n vars)))
@@ -575,14 +575,14 @@ restricted to C.
 
 (local
 (defthm prefix-produces-bisimilar-segment-list
-  (implies (bisimilar-segments-sequence-p p m q n vars) 
+  (implies (bisimilar-segments-sequence-p p m q n vars)
            (bisimilar-segments-sequence-p p m (find-prefix p seen witness q) n
                                           vars)))
 )
 
 (local
 (defthm prefix-produces-bisimilar-segment-list-2
-  (implies (bisimilar-segments-sequence-p-2 p m q n vars) 
+  (implies (bisimilar-segments-sequence-p-2 p m q n vars)
            (bisimilar-segments-sequence-p-2 (find-prefix q seen witness p) m q n
                                           vars)))
 
@@ -592,14 +592,14 @@ restricted to C.
 
 (local
 (defthm cycle-produces-bisimilar-segment-list
-  (implies (bisimilar-segments-sequence-p p m q n vars) 
+  (implies (bisimilar-segments-sequence-p p m q n vars)
            (bisimilar-segments-sequence-p p m (find-cycle p seen witness q) n
                                           vars)))
 )
 
 (local
 (defthm cycle-produces-bisimilar-segment-list-2
-  (implies (bisimilar-segments-sequence-p-2 p m q n vars) 
+  (implies (bisimilar-segments-sequence-p-2 p m q n vars)
            (bisimilar-segments-sequence-p-2  (find-cycle q seen witness p) m q n
                                           vars)))
 )
@@ -647,10 +647,10 @@ restricted to C.
                 (compatible-path-p cycle m)
                 (next-statep (last-val cycle) (first cycle) m)
                 (bisimilar (first cycle) m q n vars))
-           (bisimilar-segments-sequence-p 
-            cycle m  
-            (mv-nth 
-             2 
+           (bisimilar-segments-sequence-p
+            cycle m
+            (mv-nth
+             2
              (find-matching-prefix-and-cycle-for-cycle-m->n
               cycle m seen q
               states n vars path))
@@ -665,10 +665,10 @@ restricted to C.
                 (compatible-path-p cycle n)
                 (next-statep (last-val cycle) (first cycle) n)
                 (bisimilar q m (first cycle) n vars))
-           (bisimilar-segments-sequence-p-2 
+           (bisimilar-segments-sequence-p-2
             (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-n->m
                        seen q states m cycle n vars path))
-            m cycle 
+            m cycle
             n vars))
   :hints (("Goal"
            :induct (find-matching-prefix-and-cycle-for-cycle-n->m
@@ -687,7 +687,7 @@ restricted to C.
                 (compatible-path-p cycle m)
                 (next-statep (last-val cycle) (car cycle) m)
                 (bisimilar (first cycle) m q n vars))
-           (bisimilar-segments-sequence-p 
+           (bisimilar-segments-sequence-p
             cycle m (find-matching-prefix-for-cycle-m->n cycle m q n vars) n
             vars)))
 )
@@ -698,12 +698,12 @@ restricted to C.
                 (compatible-path-p cycle n)
                 (next-statep (last-val cycle) (car cycle) n)
                 (bisimilar q m (first cycle) n vars))
-           (bisimilar-segments-sequence-p-2 
+           (bisimilar-segments-sequence-p-2
             (find-matching-prefix-for-cycle-n->m q m cycle n vars) m cycle n
             vars)))
 )
 
-;; and so is the cycle. 
+;; and so is the cycle.
 
 (local
 (defthm find-matching-cycle-is-bisimilar-segments-p
@@ -711,10 +711,10 @@ restricted to C.
                 (compatible-path-p cycle m)
                 (next-statep (last-val cycle) (car cycle) m)
                 (bisimilar (first cycle) m q n vars))
-           (bisimilar-segments-sequence-p 
+           (bisimilar-segments-sequence-p
             cycle m (find-matching-cycle-for-cycle-m->n cycle m q n vars) n
             vars)))
-                                                        
+
 )
 
 (local
@@ -726,20 +726,20 @@ restricted to C.
            (bisimilar-segments-sequence-p-2
             (find-matching-cycle-for-cycle-n->m q m cycle n vars) m cycle n
             vars)))
-                                                        
+
 )
 
 ;; Now of course, a periodic path is bisimilar to another if the following
-;; holds. 
+;; holds.
 
 (local
 (defun bisimilar-periodic-paths-p (p m q n vars)
   (and (bisimilar (initial-state p) m (initial-state q) n vars)
-       (or (and (bisimilar-segments-p (prefix p) m 
+       (or (and (bisimilar-segments-p (prefix p) m
                                       (first-n (len (prefix p)) (prefix q))
                                       n vars)
-                (bisimilar-segments-sequence-p 
-                 (cycle p) m 
+                (bisimilar-segments-sequence-p
+                 (cycle p) m
                  (last-n (len (prefix p)) (prefix q)) n vars)
                 (bisimilar-segments-sequence-p (cycle p) m (cycle q) n vars))
            (and (bisimilar-segments-p (first-n (len (prefix q)) (prefix p)) m
@@ -747,7 +747,7 @@ restricted to C.
                 (bisimilar-segments-sequence-p-2 (last-n (len (prefix q))
                                                          (prefix p))
                                                  m (cycle q) n vars)
-                (bisimilar-segments-sequence-p-2 
+                (bisimilar-segments-sequence-p-2
                  (cycle p) m (cycle q) n vars)))))
 
 )
@@ -759,7 +759,7 @@ restricted to C.
 ;; And we need to append things the other way around to get it through.
 
 (local
-(in-theory (disable find-matching-prefix-for-cycle-m->n                    
+(in-theory (disable find-matching-prefix-for-cycle-m->n
                     find-matching-cycle-for-cycle-m->n
                     find-matching-prefix-for-cycle-n->m
                     find-matching-cycle-for-cycle-n->m))
@@ -781,8 +781,8 @@ restricted to C.
 (defthm find-matching-periodic-path-m->n-produces-bisimilar-periodic-paths
   (implies (and (compatible-ppath-p ppath m)
                 (bisimilar-equiv m n vars))
-           (bisimilar-periodic-paths-p ppath m 
-                                       (find-matching-periodic-path-m->n 
+           (bisimilar-periodic-paths-p ppath m
+                                       (find-matching-periodic-path-m->n
                                         ppath m n
                                         vars)
                                        n vars))
@@ -794,7 +794,7 @@ restricted to C.
 (defthm find-matching-periodic-path-m->n-produces-bisimilar-periodic-paths-2
   (implies (and (compatible-ppath-p ppath n)
                 (bisimilar-equiv m n vars))
-           (bisimilar-periodic-paths-p 
+           (bisimilar-periodic-paths-p
             (find-matching-periodic-path-n->m m ppath n
                                               vars)
             m ppath
@@ -803,7 +803,7 @@ restricted to C.
            :do-not-induct t)))
 )
 
-;; Now let us prove that bisimilar periodic paths have labels equal. 
+;; Now let us prove that bisimilar periodic paths have labels equal.
 
 
 (local
@@ -843,7 +843,7 @@ restricted to C.
 )
 
 (local
-(in-theory (disable bisimilar-periodic-paths-p equal-labels-periodic-path-p)) 
+(in-theory (disable bisimilar-periodic-paths-p equal-labels-periodic-path-p))
 )
 
 (local
@@ -852,12 +852,12 @@ restricted to C.
                 (bisimilar-equiv m n vars)
                 (modelp m)
                 (modelp n))
-           (equal-labels-periodic-path-p 
+           (equal-labels-periodic-path-p
             ppath m (find-matching-periodic-path-m->n ppath m n vars) n vars))
   :hints (("Goal"
-           :in-theory (disable compatible-ppath-p  
+           :in-theory (disable compatible-ppath-p
                                find-matching-periodic-path-m->n))))
-             
+
 )
 
 (local
@@ -866,12 +866,12 @@ restricted to C.
                 (bisimilar-equiv m n vars)
                 (modelp m)
                 (modelp n))
-           (equal-labels-periodic-path-p 
+           (equal-labels-periodic-path-p
             (find-matching-periodic-path-n->m m ppath n vars) m ppath n vars))
   :hints (("Goal"
-           :in-theory (disable compatible-ppath-p  
+           :in-theory (disable compatible-ppath-p
                                find-matching-periodic-path-n->m))))
-             
+
 )
 
 
@@ -976,35 +976,35 @@ restricted to C.
 
 ;; We show that the value returned as the seen list has 1 less than what we
 ;; need, and this will just be figured out by deducting 1 again from the seen
-;; list since we remove the last guy. 
+;; list since we remove the last guy.
 
 (local
 (defthm len-of-path-is-product-of-two
   (implies (equal (len path) (* (len cycle) (1- (len seen))))
-           (equal (len (mv-nth 
-                        2 (find-matching-prefix-and-cycle-for-cycle-m->n 
+           (equal (len (mv-nth
+                        2 (find-matching-prefix-and-cycle-for-cycle-m->n
                            cycle m seen q states n vars path)))
                   (* (len cycle)
-                     (1- (len (mv-nth 
-                               0 (find-matching-prefix-and-cycle-for-cycle-m->n 
+                     (1- (len (mv-nth
+                               0 (find-matching-prefix-and-cycle-for-cycle-m->n
                                   cycle m seen q states n vars
                                   path))))))))
-  
+
 )
 
 (local
 (defthm len-of-path-is-product-of-two-2
   (implies (equal (len path) (* (len cycle) (1- (len seen))))
-           (equal (len (mv-nth 
+           (equal (len (mv-nth
                         2 (find-matching-prefix-and-cycle-for-cycle-n->m
                             seen q states m cycle n vars path)))
                   (* (len cycle)
-                     (1- (len (mv-nth 
-                               0 
+                     (1- (len (mv-nth
+                               0
                                (find-matching-prefix-and-cycle-for-cycle-n->m
                                 seen q states m cycle n vars
                                 path))))))))
-  
+
 )
 
 
@@ -1020,7 +1020,7 @@ restricted to C.
 (local
 (defthm seen-list-is-consp
   (implies (memberp q seen)
-           (consp (mv-nth 0 (find-matching-prefix-and-cycle-for-cycle-m->n 
+           (consp (mv-nth 0 (find-matching-prefix-and-cycle-for-cycle-m->n
                              cycle m seen q states n vars path))))
   :hints (("Goal"
            :induct (find-matching-prefix-and-cycle-for-cycle-m->n cycle m seen
@@ -1089,7 +1089,7 @@ restricted to C.
            (uniquep (del-last x))))
 )
 
-;; So now, we can show that the seen list is uniquep. 
+;; So now, we can show that the seen list is uniquep.
 
 (local
 (defthm del-last-seen-is-unique-p
@@ -1187,7 +1187,7 @@ restricted to C.
 
 (local
 (defthm not-memberp-del-reduction-2
-  (implies (not (memberp e x)) 
+  (implies (not (memberp e x))
            (subset x (del e x))))
 )
 
@@ -1302,11 +1302,11 @@ restricted to C.
                 (consp cycle)
                 (next-statep (last-val cycle) (first cycle) m)
                 (compatible-path-p cycle m))
-           (subset  (mv-nth 0 (find-matching-prefix-and-cycle-for-cycle-m->n 
+           (subset  (mv-nth 0 (find-matching-prefix-and-cycle-for-cycle-m->n
                                         cycle m seen q states n vars path))
                    (states n)))
   :hints (("Goal"
-           :induct  (find-matching-prefix-and-cycle-for-cycle-m->n 
+           :induct  (find-matching-prefix-and-cycle-for-cycle-m->n
                      cycle m seen q states n vars path)
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t)))
@@ -1338,11 +1338,11 @@ restricted to C.
                 (consp cycle)
                 (next-statep (last-val cycle) (first cycle) m)
                 (compatible-path-p cycle m))
-           (memberp  (mv-nth 1 (find-matching-prefix-and-cycle-for-cycle-m->n 
+           (memberp  (mv-nth 1 (find-matching-prefix-and-cycle-for-cycle-m->n
                                         cycle m seen q states n vars path))
                    (states n)))
   :hints (("Goal"
-           :induct  (find-matching-prefix-and-cycle-for-cycle-m->n 
+           :induct  (find-matching-prefix-and-cycle-for-cycle-m->n
                      cycle m seen q states n vars path)
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t)))
@@ -1453,7 +1453,7 @@ restricted to C.
            :in-theory (disable witness-member-of-seen-implies-consp)
            :use ((:instance  witness-member-of-seen-implies-consp
                              (witness (mv-nth 1 (find-matching-prefix-and-cycle-for-cycle-n->m
-                                                 (list q) q (states m) m cycle 
+                                                 (list q) q (states m) m cycle
                                                  n vars nil)))
                              (seen (del-last (mv-nth 0
                                                      (find-matching-prefix-and-cycle-for-cycle-n->m
@@ -1568,7 +1568,7 @@ restricted to C.
                 (consp cycle)
                 (compatible-path-p cycle m)
                 (memberp q (states n)))
-           (memberp (last-val (find-matching-path-for-path-m->n 
+           (memberp (last-val (find-matching-path-for-path-m->n
                                cycle m q n vars))
                     (states n))))
 )
@@ -1577,19 +1577,19 @@ restricted to C.
 (defthm find-prefix-and-cycle-produces-compatible-path
   (implies (and (bisimilar (first cycle) m q n vars)
                 (compatible-path-p path n)
-                (compatible-path-p (append path 
-                                           (find-matching-path-for-path-m->n 
+                (compatible-path-p (append path
+                                           (find-matching-path-for-path-m->n
                                             cycle m q n vars))
                                    n)
                 (consp cycle)
                 (memberp q (states n))
                 (next-statep (last-val cycle) (car cycle) m)
                 (compatible-path-p cycle m))
-           (compatible-path-p (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-m->n 
+           (compatible-path-p (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-m->n
                                          cycle m seen q (states n) n vars path))
                                       n))
   :hints (("Goal"
-           :induct (find-matching-prefix-and-cycle-for-cycle-m->n 
+           :induct (find-matching-prefix-and-cycle-for-cycle-m->n
                     cycle m seen q (states n) n vars path)
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t)))
@@ -1599,8 +1599,8 @@ restricted to C.
 (defthm find-prefix-and-cycle-produces-compatible-path-2
   (implies (and (bisimilar q m (first cycle) n vars)
                 (compatible-path-p path m)
-                (compatible-path-p (append path 
-                                           (find-matching-path-for-path-n->m 
+                (compatible-path-p (append path
+                                           (find-matching-path-for-path-n->m
                                             q m cycle n vars))
                                    m)
                 (consp cycle)
@@ -1620,10 +1620,10 @@ restricted to C.
 ;; Now that we know that find-prefix-and-cycle-is-a-compatible-path-p, and also
 ;; that first-n of a compatible path is a compatible path, and also append
 ;; produces compatible paths, we should be able to prove that
-;; find-matching-prefix and find-matching-cycle produce compatible paths. 
+;; find-matching-prefix and find-matching-cycle produce compatible paths.
 
 ;; Well, it does not seem to be as simple as it looks. The problem is in
-;; getting the induction working right. 
+;; getting the induction working right.
 
 ;; To do work with find-matching-prefix we define the index such that
 ;; find-prefix produces that index.
@@ -1696,7 +1696,7 @@ restricted to C.
 )
 
 (local
-(in-theory (enable find-matching-cycle-for-cycle-m->n 
+(in-theory (enable find-matching-cycle-for-cycle-m->n
                    find-matching-prefix-for-cycle-m->n))
 )
 
@@ -1724,13 +1724,13 @@ restricted to C.
            :in-theory (disable compatible-path-first-n-reduction
                                find-matching-cycle-for-cycle-is-consp)
            :use ((:instance compatible-path-first-n-reduction
-                            (i (find-prefix-index  cycle 
+                            (i (find-prefix-index  cycle
                                                    (del-last (mv-nth 0
                                                                      (find-matching-prefix-and-cycle-for-cycle-m->n
                                                                       cycle m (list q) q (states n) n
                                                                       vars
                                                                       nil)))
-                                                   
+
                                                    (mv-nth 1
                                                            (find-matching-prefix-and-cycle-for-cycle-m->n
                                                             cycle m (list q) q (states n) n
@@ -1761,13 +1761,13 @@ restricted to C.
            :in-theory (disable compatible-path-first-n-reduction
                                find-matching-cycle-for-cycle-is-consp)
            :use ((:instance compatible-path-last-n-reduction
-                            (i (find-prefix-index  cycle 
+                            (i (find-prefix-index  cycle
                                                    (del-last (mv-nth 0
                                                                      (find-matching-prefix-and-cycle-for-cycle-m->n
                                                                       cycle m (list q) q (states n) n
                                                                       vars
                                                                       nil)))
-                                                   
+
                                                    (mv-nth 1
                                                            (find-matching-prefix-and-cycle-for-cycle-m->n
                                                             cycle m (list q) q (states n) n
@@ -1782,7 +1782,7 @@ restricted to C.
                  (:instance find-matching-cycle-for-cycle-is-consp)))))
 )
 
-(local                            
+(local
 (in-theory (enable find-matching-prefix-for-cycle-n->m
                    find-matching-cycle-for-cycle-n->m))
 )
@@ -1803,7 +1803,7 @@ restricted to C.
            :in-theory (disable compatible-path-first-n-reduction
                                find-matching-cycle-for-cycle-is-consp-2)
            :use ((:instance compatible-path-first-n-reduction
-                            (i (find-prefix-index  cycle 
+                            (i (find-prefix-index  cycle
                                                    (del-last (mv-nth 0
                                                                      (find-matching-prefix-and-cycle-for-cycle-n->m
                                                                        (list q)
@@ -1813,11 +1813,11 @@ restricted to C.
                                                                         cycle n
                                                                       vars
                                                                       nil)))
-                                                   
+
                                                    (mv-nth 1
                                                            (find-matching-prefix-and-cycle-for-cycle-n->m
                                                             (list q) q (states
-                                                                        m) 
+                                                                        m)
                                                             m
                                                             cycle n
                                                             vars nil))
@@ -1850,8 +1850,8 @@ restricted to C.
            :in-theory (disable compatible-path-last-n-reduction
                                find-matching-cycle-for-cycle-is-consp-2)
            :use ((:instance compatible-path-last-n-reduction
-                            (i (find-prefix-index 
-                                cycle 
+                            (i (find-prefix-index
+                                cycle
                                 (del-last (mv-nth 0
                                                   (find-matching-prefix-and-cycle-for-cycle-n->m
                                                    (list q)
@@ -1861,11 +1861,11 @@ restricted to C.
                                                     cycle n
                                                     vars
                                                     nil)))
-                                
+
                                 (mv-nth 1
                                         (find-matching-prefix-and-cycle-for-cycle-n->m
                                          (list q) q (states
-                                                     m) 
+                                                     m)
                                          m
                                          cycle n
                                          vars nil))
@@ -1891,8 +1891,8 @@ restricted to C.
            (next-statep (last-val p) (first q) m))
   :rule-classes nil)
 )
- 
-(local         
+
+(local
 (defthm append-of-prefix-and-cycle-is-weird-path
   (implies (and (compatible-path-p cycle m)
                 (next-statep (last-val cycle) (first cycle) m)
@@ -1904,7 +1904,7 @@ restricted to C.
                                                                vars)
                           (find-matching-cycle-for-cycle-m->n cycle m q n
                                                                 vars))
-                  (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-m->n cycle m 
+                  (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-m->n cycle m
                                                                            (list q)
                                                                            q
                                                                            (states n) n
@@ -1914,13 +1914,13 @@ restricted to C.
            :do-not-induct t
            :in-theory (disable find-matching-cycle-for-cycle-is-consp)
            :use ((:instance first-last-append-reduction
-                            (n (find-prefix-index cycle 
+                            (n (find-prefix-index cycle
                                                   (del-last (mv-nth 0
                                                                     (find-matching-prefix-and-cycle-for-cycle-m->n
                                                                      cycle m (list q) q (states n) n
                                                                      vars
                                                                      nil)))
-                                                  
+
                                                   (mv-nth 1
                                                           (find-matching-prefix-and-cycle-for-cycle-m->n
                                                            cycle m (list q) q (states n) n
@@ -1934,7 +1934,7 @@ restricted to C.
                  (:instance find-matching-cycle-for-cycle-is-consp)))))
 )
 
-(local         
+(local
 (defthm append-of-prefix-and-cycle-is-weird-path-2
   (implies (and (compatible-path-p cycle n)
                 (next-statep (last-val cycle) (first cycle) n)
@@ -1956,7 +1956,7 @@ restricted to C.
            :do-not-induct t
            :in-theory (disable find-matching-cycle-for-cycle-is-consp-2)
            :use ((:instance first-last-append-reduction
-                            (n (find-prefix-index cycle 
+                            (n (find-prefix-index cycle
                                                   (del-last (mv-nth 0
                                                                     (find-matching-prefix-and-cycle-for-cycle-n->m
                                                                      (list q) q
@@ -1965,13 +1965,13 @@ restricted to C.
                                                                      cycle n
                                                                      vars
                                                                      nil)))
-                                                  
+
                                                   (mv-nth 1
                                                           (find-matching-prefix-and-cycle-for-cycle-n->m
                                                            (list q) q (states
-                                                                       m) 
+                                                                       m)
                                                            m
-                                                           cycle n            
+                                                           cycle n
                                                            vars nil))
                                                     (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-n->m
                                                                (list q) q
@@ -2022,14 +2022,14 @@ restricted to C.
                                                                 vars))
                     (next-statep (last-val (find-matching-prefix-for-cycle-m->n
                                             cycle m q n vars))
-                                 (first (find-matching-cycle-for-cycle-m->n 
+                                 (first (find-matching-cycle-for-cycle-m->n
                                          cycle m q n vars))
                                  n)))
   :otf-flg t
   :hints (("Goal"
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t
-           :in-theory (disable find-prefix-with-index 
+           :in-theory (disable find-prefix-with-index
                                find-prefix-and-cycle-produces-compatible-path
                                find-matching-prefix-for-cycle-m->n
                                find-matching-cycle-for-cycle-m->n
@@ -2061,14 +2061,14 @@ restricted to C.
                                                                 vars))
                     (next-statep (last-val (find-matching-prefix-for-cycle-n->m
                                             q m cycle n vars))
-                                 (first (find-matching-cycle-for-cycle-n->m 
+                                 (first (find-matching-cycle-for-cycle-n->m
                                          q m cycle n vars))
                                  m)))
   :otf-flg t
   :hints (("Goal"
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t
-           :in-theory (disable find-prefix-with-index 
+           :in-theory (disable find-prefix-with-index
                                find-prefix-and-cycle-produces-compatible-path-2
                                find-matching-prefix-for-cycle-n->m
                                find-matching-cycle-for-cycle-n->m
@@ -2100,7 +2100,7 @@ restricted to C.
   (implies (and (bisimilar (first cycle) m q n vars)
                 (force (<= (len seen) (len (states n))))
                 (compatible-path-p path n)
-                (compatible-path-p (append path 
+                (compatible-path-p (append path
                                            (find-matching-path-for-path-m->n
                                             cycle m q n vars))
                                    n)
@@ -2126,7 +2126,7 @@ restricted to C.
   (implies (and (bisimilar q m (first cycle) n vars)
                 (force (<= (len seen) (len (states m))))
                 (compatible-path-p path m)
-                (compatible-path-p (append path 
+                (compatible-path-p (append path
                                            (find-matching-path-for-path-n->m
                                             q m cycle n vars))
                                    m)
@@ -2140,7 +2140,7 @@ restricted to C.
   :otf-flg t
   :hints (("Goal"
            :induct (find-matching-prefix-and-cycle-for-cycle-n->m  seen q (states
-                                                                           m) 
+                                                                           m)
                                                                    m
                                                                    cycle n
                                                                    vars
@@ -2176,7 +2176,7 @@ restricted to C.
                                find-prefix-with-index find-cycle-with-index)
            :use ((:instance append-of-prefix-and-cycle-is-weird-path)
                  (:instance car-append-reduction
-                            (x (find-matching-prefix-for-cycle-m->n 
+                            (x (find-matching-prefix-for-cycle-m->n
                                 cycle m q n vars))
                             (y (find-matching-cycle-for-cycle-m->n
                                 cycle m q n vars)))))))
@@ -2221,7 +2221,7 @@ restricted to C.
                 (not (consp (find-matching-prefix-for-cycle-m->n cycle m q n
                                                                  vars))))
            (equal (find-matching-cycle-for-cycle-m->n cycle m q n vars)
-                  (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-m->n 
+                  (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-m->n
                              cycle m (list q) q (states n) n vars nil))))
   :hints (("Goal"
            :do-not '(eliminate-destructors generalize)
@@ -2240,7 +2240,7 @@ restricted to C.
                 (not (consp (find-matching-prefix-for-cycle-n->m q m cycle n
                                                                  vars))))
            (equal (find-matching-cycle-for-cycle-n->m q m cycle n vars)
-                  (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-n->m 
+                  (mv-nth 2 (find-matching-prefix-and-cycle-for-cycle-n->m
                              (list q) q (states m) m cycle n vars nil))))
   :hints (("Goal"
            :do-not '(eliminate-destructors generalize)
@@ -2267,7 +2267,7 @@ restricted to C.
                          (mv-nth 2
                                  (find-matching-prefix-and-cycle-for-cycle-m->n
                                   cycle m seen q (states n) n vars path)))
-                        (mv-nth 1 
+                        (mv-nth 1
                                 (find-matching-prefix-and-cycle-for-cycle-m->n
                                  cycle m seen q (states n) n vars path))
                         n)))
@@ -2287,7 +2287,7 @@ restricted to C.
                          (mv-nth 2
                                  (find-matching-prefix-and-cycle-for-cycle-n->m
                                   seen q (states m) m cycle n vars path)))
-                        (mv-nth 1 
+                        (mv-nth 1
                                 (find-matching-prefix-and-cycle-for-cycle-n->m
                                  seen q (states m) m cycle n vars path))
                         m)))
@@ -2328,7 +2328,7 @@ restricted to C.
            (equal (car p) (car seen))))
 )
 
-(local                
+(local
 (defthm snoc-car
   (equal (car (snoc x e))
          (if (consp x) (car x) e)))
@@ -2377,14 +2377,14 @@ restricted to C.
                 (memberp q seen)
                 (true-listp seen)
                 (equal (len path) (* (len cycle) (1- (len seen))))
-                (seen-compatible-with-path cycle seen (append path 
+                (seen-compatible-with-path cycle seen (append path
                                                               (find-matching-path-for-path-m->n
                                                                cycle m q n vars)))
                 (bisimilar (first cycle) m q n vars)
                 (<= (len seen) (len (states n)))
                 (next-statep (last-val cycle) (first cycle) m)
                 (compatible-path-p cycle m))
-           (seen-compatible-with-path cycle 
+           (seen-compatible-with-path cycle
                                       (del-last (mv-nth 0
                                                         (find-matching-prefix-and-cycle-for-cycle-m->n
                                                          cycle m seen q (states n) n vars
@@ -2393,7 +2393,7 @@ restricted to C.
                                                          cycle m seen q (states n) n vars
                                                          path))))
   :hints (("Goal"
-           :induct (find-matching-prefix-and-cycle-for-cycle-m->n 
+           :induct (find-matching-prefix-and-cycle-for-cycle-m->n
                     cycle m seen q (states n) n vars path)
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t)))
@@ -2405,14 +2405,14 @@ restricted to C.
                 (memberp q seen)
                 (true-listp seen)
                 (equal (len path) (* (len cycle) (1- (len seen))))
-                (seen-compatible-with-path cycle seen (append path 
+                (seen-compatible-with-path cycle seen (append path
                                                               (find-matching-path-for-path-n->m
                                                                q m cycle n vars)))
                 (bisimilar q m (first cycle) n vars)
                 (<= (len seen) (len (states m)))
                 (next-statep (last-val cycle) (first cycle) n)
                 (compatible-path-p cycle n))
-           (seen-compatible-with-path cycle 
+           (seen-compatible-with-path cycle
                                       (del-last (mv-nth 0
                                                         (find-matching-prefix-and-cycle-for-cycle-n->m
                                                          seen q (states m) m
@@ -2423,7 +2423,7 @@ restricted to C.
                                                          cycle n vars
                                                          path))))
   :hints (("Goal"
-           :induct (find-matching-prefix-and-cycle-for-cycle-n->m 
+           :induct (find-matching-prefix-and-cycle-for-cycle-n->m
                     seen q (states m) m cycle n vars path)
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t)))
@@ -2446,7 +2446,7 @@ restricted to C.
                 (next-statep (last-val cycle) (first cycle) m)
                 (true-listp cycle)
                 (memberp q (states n)))
-           (equal (last-val (find-matching-cycle-for-cycle-m->n 
+           (equal (last-val (find-matching-cycle-for-cycle-m->n
                              cycle m q n vars))
                   (last-val (mv-nth 2
                                     (find-matching-prefix-and-cycle-for-cycle-m->n
@@ -2461,7 +2461,7 @@ restricted to C.
                  (:instance last-val-append-reduction
                             (x (find-matching-prefix-for-cycle-m->n
                                 cycle m q n vars))
-                            (y (find-matching-cycle-for-cycle-m->n 
+                            (y (find-matching-cycle-for-cycle-m->n
                                 cycle m q n vars)))))))
 )
 
@@ -2504,7 +2504,7 @@ restricted to C.
                 (next-statep (last-val cycle) (first cycle) m)
                 (true-listp cycle)
                 (memberp q (states n)))
-           (<= (len (del-last 
+           (<= (len (del-last
                      (mv-nth 0 (find-matching-prefix-and-cycle-for-cycle-m->n
                                 cycle m (list q) q (states n) n vars nil))))
                (len (states n))))
@@ -2514,7 +2514,7 @@ restricted to C.
            :in-theory (disable  uniquep-subset-reduction
                                 del-last-seen-is-unique-p)
            :use ((:instance uniquep-subset-reduction
-                            (x (del-last 
+                            (x (del-last
                                 (mv-nth 0
                                         (find-matching-prefix-and-cycle-for-cycle-m->n
                                          cycle m (list q) q (states n) n vars
@@ -2535,7 +2535,7 @@ restricted to C.
                 (next-statep (last-val cycle) (first cycle) m)
                 (true-listp cycle)
                 (memberp q (states n)))
-           (next-statep (last-val (find-matching-cycle-for-cycle-m->n 
+           (next-statep (last-val (find-matching-cycle-for-cycle-m->n
                                    cycle m q n vars))
                         (first (find-matching-cycle-for-cycle-m->n
                                 cycle m q n vars))
@@ -2552,18 +2552,18 @@ restricted to C.
            :use ((:instance find-matching-cycle-for-cycle-is-consp)
                  (:instance witness-is-next-state-of-last-val
                             (path nil)
-                            (seen (del-last 
+                            (seen (del-last
                                    (mv-nth 0
                                            (find-matching-prefix-and-cycle-for-cycle-m->n
                                             cycle m (list q) q (states n) n
                                             vars nil)))))
                  (:instance car-is-witness
                             (seen (del-last
-                                   (mv-nth 0 
+                                   (mv-nth 0
                                            (find-matching-prefix-and-cycle-for-cycle-m->n
                                             cycle m (list q) q (states n) n
                                             vars nil))))
-                            (witness (mv-nth 1 
+                            (witness (mv-nth 1
                                              (find-matching-prefix-and-cycle-for-cycle-m->n
                                               cycle m (list q) q (states n) n
                                               vars nil)))
@@ -2607,7 +2607,7 @@ restricted to C.
            :use ((:instance find-matching-cycle-for-cycle-is-consp-2)
                  (:instance witness-is-next-state-of-last-val-2
                             (path nil)
-                            (seen (del-last 
+                            (seen (del-last
                                    (mv-nth 0
                                            (find-matching-prefix-and-cycle-for-cycle-n->m
                                              (list q) q (states m) m
@@ -2615,12 +2615,12 @@ restricted to C.
                                             vars nil)))))
                  (:instance car-is-witness
                             (seen (del-last
-                                   (mv-nth 0 
+                                   (mv-nth 0
                                            (find-matching-prefix-and-cycle-for-cycle-n->m
                                             (list q) q (states m) m
                                             cycle n
                                             vars nil))))
-                            (witness (mv-nth 1 
+                            (witness (mv-nth 1
                                              (find-matching-prefix-and-cycle-for-cycle-n->m
                                               (list q) q (states m) m
                                               cycle n
@@ -2670,10 +2670,10 @@ restricted to C.
            :in-theory (disable modelp-characterization)
            :use ((:instance modelp-characterization)
                  (:instance modelp-characterization (m n))))))
-                            
+
 )
 
-(local  
+(local
 (defthm matching-ppath-is-compatible-2
   (implies (and (compatible-ppath-p p n)
                 (modelp n)
@@ -2687,7 +2687,7 @@ restricted to C.
                  (:instance modelp-characterization (m n))))))
 )
 
-(local          
+(local
 (in-theory (disable compatible-ppath-p find-matching-periodic-path-m->n
                     modelp-characterization restricted-formulap
                     find-matching-periodic-path-n->m))
@@ -2713,13 +2713,13 @@ restricted to C.
            :use ((:instance ppath-and-its-matching-ppath-have-same-labels-2
                             (ppath (ltl-semantics-witness f n)))
                  (:instance ltl-semantics-necc-expanded
-                            (ppath (find-matching-periodic-path-n->m 
+                            (ppath (find-matching-periodic-path-n->m
                                      m (ltl-semantics-witness f n) n vars)))
                  (:instance matching-ppath-is-compatible-2
                             (p (ltl-semantics-witness f n)))
                  (:instance
                   ltl-ppath-semantics-cannot-distinguish-between-equal-labels
-                  (p (find-matching-periodic-path-n->m 
+                  (p (find-matching-periodic-path-n->m
                       m (ltl-semantics-witness f n) n vars))
                   (q (ltl-semantics-witness f n)))))))
 )
@@ -2745,7 +2745,7 @@ restricted to C.
                             (ppath (ltl-semantics-witness f m)))
                  (:instance ltl-semantics-necc-expanded
                             (m n)
-                            (ppath (find-matching-periodic-path-m->n 
+                            (ppath (find-matching-periodic-path-m->n
                                      (ltl-semantics-witness f m) m n vars)))
                  (:instance matching-ppath-is-compatible
                             (p (ltl-semantics-witness f m)))
@@ -2773,8 +2773,8 @@ restricted to C.
            :use ((:instance bisimilar-models-have-same-ltl-semantics-1)
                  (:instance bisimilar-models-have-same-ltl-semantics-2))))
   :rule-classes nil)
-             
-                
 
 
-           
+
+
+

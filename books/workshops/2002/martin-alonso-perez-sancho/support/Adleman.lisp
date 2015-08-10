@@ -38,21 +38,21 @@
   ((separate- * *) => *)
   ((tube-merge * *) => *)
   ((detect *) => *))
- 
+
  (local
   (defun separate+ (tube X)
     (cond ((endp tube) nil)
 	  ((member X (car tube))
 	   (cons (car tube) (separate+ (cdr tube) X)))
 	  (t (separate+ (cdr tube) X)))))
-  
+
  (local
   (defun separate- (tube X)
     (cond ((endp tube) nil)
 	  ((not (member X (car tube)))
 	   (cons (car tube) (separate- (cdr tube) X)))
 	  (t (separate- (cdr tube) X)))))
-  
+
  (local
   (defun tube-merge (tube1 tube2)
     (append tube1 tube2)))
@@ -67,27 +67,27 @@
    (iff (member aggr (tube-merge tube1 tube2))
 	(or (member aggr tube1)
 	    (member aggr tube2))))
- 
+
  (defthm member-separate+
    (iff (member aggr (separate+ tube X))
 	(and (member X aggr)
 	     (member aggr tube)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :induct (separate+ tube X))))
- 
+
  (defthm member-separate-
    (iff (member aggr (separate- tube X))
 	(and (not (member X aggr))
 	     (member aggr tube)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :induct (separate- tube X))))
- 
+
  (defthm member-detect
    (and (implies (member e tube)
 		 (detect tube))
 	(implies (detect tube)
 		 (member (car tube) tube))))
- 
+
  )
 
 ;;;----------------------------------------------------------------------------
@@ -97,7 +97,7 @@
 ;;;----------------------------------------------------------------------------
 
 (defun prop-variable-p (X)
-  (and (symbolp X) (not (equal X nil)))) 
+  (and (symbolp X) (not (equal X nil))))
 
 (defun truth-value-p (V)
   (or (equal V 1)
@@ -173,13 +173,13 @@
       L))
 
 (defun clause-variables (C)
-  (if (endp C) 
+  (if (endp C)
       nil
       (union-equal (list (literal-variable (car C)))
 		   (clause-variables (cdr C)))))
 
 (defun cnf-formula-variables (F)
-  (if (endp F) 
+  (if (endp F)
       nil
       (union-equal (clause-variables (car F))
 		   (cnf-formula-variables (cdr F)))))
@@ -232,7 +232,7 @@
 		(variable-aggregate-p aggr X))
 	   (iff (member (cons X V) aggr)
 		(equal (prop-variable-value X aggr) V)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (enable prop-variable-p truth-value-p))))
 
 (in-theory (disable variable-aggregate-p))
@@ -245,14 +245,14 @@
 
 (defthm member-clause
   (implies (member aggr (sat-lipton-clause C tube acc))
-	   (or (member aggr tube) 
+	   (or (member aggr tube)
 	       (member aggr acc)))
   :rule-classes nil)
 
 (defthm member-clause-accumulator-nil
   (implies (member aggr (sat-lipton-clause C tube nil))
 	   (member aggr tube))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use (:instance member-clause
 			   (acc nil)))))
 
@@ -266,7 +266,7 @@
 (defthm completeness-separate+
   (implies (and (member aggr tube)
 		(literal-p L)
-		(variable-aggregate-p aggr (literal-variable L)) 
+		(variable-aggregate-p aggr (literal-variable L))
 		(equal (literal-value L aggr) 1))
 	   (member aggr (separate+ tube (l-element 1 L)))))
 
@@ -276,7 +276,7 @@
 		(clause-aggregate-p aggr C)
 		(equal (clause-value C aggr) 1))
 	   (member aggr (sat-lipton-clause C tube acc)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable l-element literal-value)
 	   :induct (sat-lipton-clause C tube acc))))
 
@@ -286,7 +286,7 @@
 		(cnf-formula-aggregate-p aggr F)
 		(equal (cnf-formula-value F aggr) 1))
 	   (member aggr (sat-lipton-cnf-formula F tube)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :induct (sat-lipton-cnf-formula F tube))))
 
 ;;; Soundness property
@@ -304,7 +304,7 @@
 		(member aggr (sat-lipton-clause C tube acc)))
 	   (equal (clause-value C aggr) 1))
   :rule-classes nil
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable l-element member-separate+)
 	   :induct (sat-lipton-clause C tube acc))))
 
@@ -313,7 +313,7 @@
 		(clause-aggregate-p aggr C)
 		(member aggr (sat-lipton-clause C tube nil)))
 	   (equal (clause-value C aggr) 1))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use (:instance soundness-sat-lipton-clause
 			   (acc nil)))))
 
@@ -322,7 +322,7 @@
 		(cnf-formula-aggregate-p aggr F)
 		(member aggr (sat-lipton-cnf-formula F tube)))
 	   (equal (cnf-formula-value F aggr) 1))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :induct (sat-lipton-cnf-formula F tube))))
 
 ;;;----------------------------------------------------------------------------
@@ -366,7 +366,7 @@
        (or (member elt set1)
 	   (member elt set2))))
 
-(defthm no-duplicatesp-union 
+(defthm no-duplicatesp-union
   (implies (and (no-duplicatesp set1)
 		(no-duplicatesp set2))
 	   (no-duplicatesp (union-equal set1 set2))))
@@ -388,7 +388,7 @@
 (defun build-tube-aggregates-induction (aggr X Xs i)
   (cond ((endp Xs) (endp aggr))
 	((equal (car Xs) X) (list i X))
-	(t (build-tube-aggregates-induction 
+	(t (build-tube-aggregates-induction
 	    (cddr aggr) X (cdr Xs) (+ 1 i)))))
 
 (encapsulate
@@ -424,14 +424,14 @@
 	  (truth-value-p (cdadr aggr))
 	  (member (cddr aggr) (build-tube (cdr Xs) (+ 1 i)))))
    :rule-classes ((:forward-chaining
-		   :trigger-terms 
+		   :trigger-terms
 		   ((member aggr (build-tube Xs i))))))
 
  )
 
-(encapsulate 
+(encapsulate
  ()
- 
+
  (local
   (defthm not-assoc-build-tube
     (implies (and (consp Xs)
@@ -446,10 +446,10 @@
 
 		  (assoc X aggr))
 	     (not (member aggr (build-tube Xs i))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :induct (build-tube-aggregates-induction aggr X Xs i)))
     :rule-classes nil))
- 
+
  (local
   (defthm not-assoc-build-tube-one-element
     (implies (and (not (consp (cdr Xs)))
@@ -457,7 +457,7 @@
 		  (not (equal '(a) (car Xs)))
 		  (member aggr (build-tube Xs i)))
 	     (not (assoc (car Xs) (cddr aggr))))))
- 
+
  (local
   (in-theory (enable variable-aggregate-p)))
 
@@ -468,7 +468,7 @@
 		  (no-duplicatesp Xs)
 		  (member aggr (build-tube Xs i)))
 	     (variable-aggregate-p aggr (car Xs)))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :in-theory (disable truth-value-p build-tube)
 	     :use (:instance not-assoc-build-tube
 			     (Xs (cdr Xs))
@@ -484,8 +484,8 @@
 		 (member aggr (build-tube Xs i)))
 	    (variable-aggregate-p aggr X))
    :rule-classes nil
-   :hints (("Goal" 
-	    :in-theory (disable truth-value-p build-tube)	    
+   :hints (("Goal"
+	    :in-theory (disable truth-value-p build-tube)
 	    :induct (build-tube-aggregates-induction aggr X Xs i))
 ;	   ("Subgoal *1/2"
 ;	    :in-theory (disable build-tube-aggregates-aux)
@@ -506,7 +506,7 @@
     (implies (and (member elt set1)
 		  (subsetp set1 set2))
 	     (member elt set2))))
- 
+
  (local
   (defthm build-tube-clause-aggregates-aux
     (implies (and (consp C)
@@ -542,7 +542,7 @@
 
  )
 
-(encapsulate 
+(encapsulate
  ()
 
  (local
@@ -552,7 +552,7 @@
 		  (subsetp set2 set3)))
     :hints (("Goal"
 	     :induct (union-equal set1 set2)))))
-  
+
  (local
   (defthm build-tube-cnf-formula-aggregates-aux
     (implies (and (consp F)
@@ -565,7 +565,7 @@
     :hints (("Goal"
 	     :use (:instance build-tube-clause-aggregates
 			     (C (car F)))))))
- 
+
  (defthm build-tube-cnf-formula-aggregates
    (implies (and (subsetp (cnf-formula-variables F) Xs)
 		 (no-duplicatesp Xs)
@@ -574,7 +574,7 @@
 		 (member aggr (build-tube Xs i)))
 	    (cnf-formula-aggregate-p aggr F))
    :rule-classes nil
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :induct (cnf-formula-aggregate-p aggr F))
 ;	   ("Subgoal *1/3"
 ;	    :in-theory (disable build-tube-cnf-formula-aggregates-aux)
@@ -741,65 +741,65 @@
 
 (sat-lipton *example*)
 
-;;; (SAT-LIPTON-CNF-FORMULA 
+;;; (SAT-LIPTON-CNF-FORMULA
 ;;;  '((P Q) ((- Q) P))
 ;;;  '((((A) . 1) (Q . 0) ((A) . 2) (P . 0) ((A) . 3))
 ;;;    (((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))
 ;;;    (((A) . 1) (Q . 1) ((A) . 2) (P . 0) ((A) . 3))
 ;;;    (((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3))))
-;;; 
-;;;    => (SAT-LIPTON-CLAUSE 
+;;;
+;;;    => (SAT-LIPTON-CLAUSE
 ;;; 	   '(P Q)
 ;;; 	   '((((A) . 1) (Q . 0) ((A) . 2) (P . 0) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 0) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3)))
 ;;; 	   ())
-;;;    
-;;;    => (SAT-LIPTON-CLAUSE 
+;;;
+;;;    => (SAT-LIPTON-CLAUSE
 ;;; 	   '(Q)
 ;;; 	   '((((A) . 1) (Q . 0) ((A) . 2) (P . 0) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 0) ((A) . 3)))
 ;;; 	   '((((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3))))
-;;;    
-;;;    => (SAT-LIPTON-CLAUSE 
+;;;
+;;;    => (SAT-LIPTON-CLAUSE
 ;;; 	   ()
 ;;; 	   '((((A) . 1) (Q . 0) ((A) . 2) (P . 0) ((A) . 3)))
 ;;; 	   '((((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 0) ((A) . 3))))
-;;; 
-;;; (SAT-LIPTON-CNF-FORMULA 
+;;;
+;;; (SAT-LIPTON-CNF-FORMULA
 ;;;  '(((- Q) P))
 ;;;  '((((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))
 ;;;    (((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3))
 ;;;    (((A) . 1) (Q . 1) ((A) . 2) (P . 0) ((A) . 3))))
-;;; 
-;;;    => (SAT-LIPTON-CLAUSE 
+;;;
+;;;    => (SAT-LIPTON-CLAUSE
 ;;; 	   '((- Q) P)
 ;;; 	   '((((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 0) ((A) . 3)))
 ;;; 	   ())
-;;;    
-;;;    => (SAT-LIPTON-CLAUSE 
+;;;
+;;;    => (SAT-LIPTON-CLAUSE
 ;;; 	   '(P)
 ;;; 	   '((((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 0) ((A) . 3)))
 ;;; 	   '((((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))))
-;;;    
-;;;    => (SAT-LIPTON-CLAUSE 
+;;;
+;;;    => (SAT-LIPTON-CLAUSE
 ;;; 	   ()
 ;;; 	   '((((A) . 1) (Q . 1) ((A) . 2) (P . 0) ((A) . 3)))
 ;;; 	   '((((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))
 ;;; 	     (((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3))))
-;;; 
-;;; (SAT-LIPTON-CNF-FORMULA 
+;;;
+;;; (SAT-LIPTON-CNF-FORMULA
 ;;;  ()
 ;;;  '((((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))
 ;;;    (((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3))))
-;;; 
+;;;
 ;;; ((((A) . 1) (Q . 0) ((A) . 2) (P . 1) ((A) . 3))
 ;;;  (((A) . 1) (Q . 1) ((A) . 2) (P . 1) ((A) . 3)))
 

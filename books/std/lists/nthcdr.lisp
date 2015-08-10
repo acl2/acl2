@@ -211,7 +211,7 @@ library."
     (equal (nthcdr n (list-fix x))
            (list-fix (nthcdr n x))))
 
-  
+
   (def-listp-rule element-list-p-of-nthcdr
     (implies (element-list-p (double-rewrite x))
              (element-list-p (nthcdr n x))))

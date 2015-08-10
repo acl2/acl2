@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -24,7 +24,7 @@
 
 (in-package "RTL")
 
-(include-book "../lib2/basic") ;; no change from rel8 
+(include-book "../lib2/basic") ;; no change from rel8
 
 (local (include-book "bits-new"))
 
@@ -91,7 +91,7 @@
 ;;;**********************************************************************
 ;;;			    BITS
 ;;;**********************************************************************
-(encapsulate () 
+(encapsulate ()
 
              (local (include-book "../../arithmetic/top"))
   (local (encapsulate ()
@@ -107,9 +107,9 @@
                                                (MOD X (EXPT 2 (+ 1 I)))))
                                         0)))
 
-                      (encapsulate () 
+                      (encapsulate ()
 
-                                   (local (encapsulate () 
+                                   (local (encapsulate ()
 
                                                        (encapsulate ()
                                                                     (local (include-book "log-new"))
@@ -123,7 +123,7 @@
 
 
                                                                     )
-   
+
 
                                                        (encapsulate ()
                                                                     (local (include-book "log-new"))
@@ -133,11 +133,11 @@
                                                                                (equal (logand 1 x) x)))
 
                                                                     )
-   
 
 
 
-                                                       (encapsulate () 
+
+                                                       (encapsulate ()
                                                                     (local (include-book "../support/logand"))
 
                                                                     (defthm logand-bnd
@@ -150,7 +150,7 @@
                                                                     (defthm logand-commutative
                                                                       (equal (logand j i)
                                                                              (logand i j)))
-             
+
                                                                     ;;
 
 
@@ -178,8 +178,8 @@
                                                        (defund bvequal (v1 v2 n)
                                                          (equal (sumbits_alt v1 n)
                                                                 (sumbits_alt v2 n)))
-                                 
-                                 
+
+
                                                        (defthm bvequal-then-equal
                                                          (implies (and (bvequal x y n)
                                                                        (bvecp x n)
@@ -193,7 +193,7 @@
                                                                   :in-theory (enable bvequal)))
                                                          :rule-classes nil)
 
-                                 
+
 
                                                        (encapsulate ()
                                                                     (local (include-book "bits-new"))
@@ -254,11 +254,11 @@
                                                          (implies (and (integerp x)
                                                                        (natp n))
                                                                   (bvecp (logand x (+ -1 (expt 2 n))) n))
-                                                         :hints (("Goal" 
+                                                         :hints (("Goal"
                                                                   :cases ((equal (logand x (+ -1 (expt 2 n)))
                                                                                  (logand (+ -1 (expt 2 n)) x))))
-                                                                 ("Subgoal 1" 
-                                                                  :in-theory (e/d (bvecp) 
+                                                                 ("Subgoal 1"
+                                                                  :in-theory (e/d (bvecp)
                                                                                   (logand-bnd
                                                                                    logand-commutative
                                                                                    logand-non-negative))
@@ -291,12 +291,12 @@
                                                                             (y (mod i (expt 2 n)))
                                                                             (n n))))
                                              ("Subgoal 1.1" :in-theory (enable acl2::binary-logand))))
-                            
+
 
                                    )
 
 
-                      (local 
+                      (local
                        (defthmd bits-mbe-lemma-subgoal-1-lemma-1
                          (IMPLIES (AND (INTEGERP J)
                                        (INTEGERP I)
@@ -307,13 +307,13 @@
                                          (mod (FL (* X (EXPT 2 (* -1 J))))
                                               (EXPT 2 (+ 1 I (* -1 J))))))
                          :hints (("Goal" :in-theory (e/d (mod
-                                                          expt-minus) 
+                                                          expt-minus)
                                                          ())))))
 
 
 
 
-                      (local 
+                      (local
                        (defthmd bits-mbe-lemma-subgoal-1-lemma-2
                          (IMPLIES (AND (INTEGERP J)
                                        (INTEGERP I)
@@ -361,11 +361,11 @@
          :exec  (if (< i j)
                     0
                   (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-  
+
   )
 
 
-(local 
+(local
  (defthm bits_alt-is-bits
    (equal (bits_alt x i j)
           (bits x i j))
@@ -395,7 +395,7 @@
   :hints (("Goal" :use ((:instance bits_alt-bvecp-simple)))))
 
 (defthm mod-bits-equal
-  (implies (= (mod x (expt 2 (1+ i))) 
+  (implies (= (mod x (expt 2 (1+ i)))
 	      (mod y (expt 2 (1+ i))))
 	   (= (bits x i j) (bits y i j)))
   :rule-classes ()
@@ -474,7 +474,7 @@
 		  (< x 0)
 		  (>= x (- (expt 2 j)))
 		  (>= i j))
-	     (equal (bits x i j) 
+	     (equal (bits x i j)
                     (+ -1 (expt 2 (+ 1 i (* -1 j))))))
   :hints (("Goal" :use ((:instance neg-bits_alt-1)))))
 
@@ -482,7 +482,7 @@
     (implies (and (natp i)
 		  (natp j)
 		  (>= i j))
-	     (equal (bits -1 i j) 
+	     (equal (bits -1 i j)
                     (+ -1 (expt 2 (+ 1 i (* -1 j))))))
   :hints (("Goal" :use ((:instance bits_alt-minus-1)))))
 
@@ -623,7 +623,7 @@
 ;;		(not (equal 4 (bits x 15 6)))))
 ;;See also bits-match.
 
-(defthmd bits-dont-match 
+(defthmd bits-dont-match
   (implies (and (syntaxp (and (quotep i)
 			      (quotep j)
 			      (quotep k)))
@@ -641,7 +641,7 @@
 
 ;;
 ;; Thu Feb  5 10:09:26 2009: from lib2/bits.lisp
-;; 
+;;
 
 (defun bitvec (x n)
    (if (bvecp x n) x 0))
@@ -654,22 +654,22 @@
 
  (local (include-book "../../arithmetic/top"))
 
-  
- (local (encapsulate () 
-                     (local 
+
+ (local (encapsulate ()
+                     (local
                       (defthmd evenp-sum
                         (implies (and (evenp x)
                                       (evenp y))
                                  (evenp (- x y)))
                         :hints (("Goal" :in-theory (e/d (evenp) ())))))
 
-                     (local 
+                     (local
                       (defthmd evenp-2-factor
                         (implies (integerp x)
                                  (evenp (* 2 x)))
                         :hints (("Goal" :in-theory (e/d (evenp) ())))))
 
-                     (local 
+                     (local
                       (defthmd bitn-mbe-subgoal-2-lemma
                         (IMPLIES (AND (INTEGERP N)
                                       (INTEGERP X)
@@ -687,7 +687,7 @@
                                                   (x (fl (* x (/ (expt 2 n)))))
                                                   (y (* 2 (fl (* x (/ (expt 2 (+ 1 n)))))))))))))
 
-  
+
                      (defthmd bitn-mbe-subgoal-2
                        (IMPLIES (AND (INTEGERP N)
                                      (INTEGERP X)
@@ -701,22 +701,22 @@
 
                      ))
 
- (local (encapsulate () 
-                     (local 
+ (local (encapsulate ()
+                     (local
                       (defthmd not-evenp-sum
                         (implies (and (not (evenp x))
                                       (evenp y))
                                  (not (evenp (- x y))))
                         :hints (("Goal" :in-theory (e/d (evenp) ())))))
 
-                     (local 
+                     (local
                       (defthmd evenp-2-factor
                         (implies (integerp x)
                                  (evenp (* 2 x)))
                         :hints (("Goal" :in-theory (e/d (evenp) ())))))
 
 
-                     (local 
+                     (local
                       (defthmd bitn-mbe-subgoal-1-lemma
                         (IMPLIES (AND (INTEGERP N)
                                       (INTEGERP X)
@@ -766,7 +766,7 @@
  )
 
 
-(local 
+(local
  (defthm bitn_alt-is-bitn
    (equal (bitn_alt x n)
           (bitn x n))
@@ -919,7 +919,7 @@
        (sumbits x (1- n)))))
 
 
-(local 
+(local
  (defthm sumbits_alt-is-sumbits
    (equal (sumbits_alt x n)
           (sumbits x n))))
@@ -951,7 +951,7 @@
         (1- k)
       (sumbits-badguy x y (1- k)))))
 
-(local 
+(local
  (defthm sumbits-badguy-is-sumbits_alt-badguys
    (equal (sumbits_alt-badguy x y k)
           (sumbits-badguy x y k))))
@@ -1056,8 +1056,8 @@
   :hints (("Goal" :use ((:instance bitn_alt-plus-expt-1)))))
 
 (defthmd bitn-plus-mult
-    (implies (and (< n m) 
-		  (integerp m) 
+    (implies (and (< n m)
+		  (integerp m)
 		  (integerp k))
 	     (equal (bitn (+ x (* k (expt 2 m))) n)
 		    (bitn x n)))
@@ -1085,7 +1085,7 @@
          (bits y (1- n) 0))
     0))
 
-(local 
+(local
  (defthm binary-cat_alt-is-binary-cat
    (equal (binary-cat_alt x m y n)
           (binary-cat x m y n))
@@ -1119,9 +1119,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defthm cat-nonnegative-integer-type
@@ -1270,7 +1270,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 					(- i n)
@@ -1295,7 +1295,7 @@
 		    (if (>= j n)
 			(bits x (if (< i (+ m n))
 				    (- i n)
-				  (1- m)) 
+				  (1- m))
 			      (- j n))
 		      (cat (bits x (if (< i (+ m n))
 				       (- i n)
@@ -1358,7 +1358,7 @@
                           l))
                     (t 0))))
 
-(local 
+(local
  (defthm mulcat_alt-is-mulcat
    (equal (mulcat_alt l n x)
           (mulcat l n x))
@@ -1389,7 +1389,7 @@
 
 (defthm mulcat-1
     (implies (natp l)
-	     (equal (mulcat l 1 x) 
+	     (equal (mulcat l 1 x)
 		    (bits x (1- l) 0)))
   :hints (("Goal" :use ((:instance mulcat_alt-1)))))
 

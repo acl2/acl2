@@ -16,7 +16,7 @@
 
 (defun clock-fn (s)
   (clock-fn-tail s 0))
-    
+
 ;; Now I know how to prove theorems about these tail-recursive
 ;; equations.  So I just go through them.
 
@@ -41,7 +41,7 @@
                     (implies (natp k)
                              (<= exitpoint-steps k))
                     (exitpoint (run-fn s exitpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 

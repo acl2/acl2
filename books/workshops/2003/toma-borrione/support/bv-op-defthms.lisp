@@ -1,7 +1,7 @@
 ;------------------------------------------
 ;
 ; Author:  Diana Toma
-; TIMA-VDS, Grenoble, France 
+; TIMA-VDS, Grenoble, France
 ; March 2003
 ; ACL2 formalization of bit-vectors as lists
 ; Theorems of bit-vectors operations
@@ -20,11 +20,11 @@
 
 (defthm bvp-append
   (implies (and  (bvp l) (bvp l1))
-           (bvp (append l l1))))  
+           (bvp (append l l1))))
 
 (defthm revappend-is-bvp
  (implies (and (bvp i)(bvp j))
-          (bvp (revappend i j))))          
+          (bvp (revappend i j))))
 
 (defthm reverse-is-bvp
  (implies (bvp i) (bvp (reverse i))))
@@ -49,7 +49,7 @@
 (defthm wvp-append
 (implies (and (wvp m w) (wordp l w))
    (wvp (append m (list l)) w))
-:hints (("goal" :induct (wvp m w) ))) 
+:hints (("goal" :induct (wvp m w) )))
 
 
 ;(SET-MATCH-FREE-ERROR NIL)
@@ -59,7 +59,7 @@
              (bvp (nth j  m )) ))
 
 (defthm len-nth-wvp
-   (implies  (and  (integerp j) (<= 0 j) 
+   (implies  (and  (integerp j) (<= 0 j)
                    (wvp m i) (< j (len m) ))
             (equal  (len (nth j  m )) i)))
 
@@ -92,12 +92,12 @@
 
 (defthm int-bv-little-endian-is-bvp
  (implies (and (integerp i)(<= 0 i))
-          (bvp (int-bv-little-endian i))))          
+          (bvp (int-bv-little-endian i))))
 
 
 (defthm len-bv-int-little-endian
   (implies (and (bvp m))
-      (<= (bv-int-little-endian m) 
+      (<= (bv-int-little-endian m)
           (- (expt 2 (len m)) 1))))
 
 
@@ -135,7 +135,7 @@
 (IMPLIES (AND  (INTEGERP l) (<= 0 l))
          (<= (LEN (INT-BV-little-endian l ))
              (LEN (INT-BV-little-endian (+ 1 l)))))
-:hints 
+:hints
 ((  "goal"
   :do-not-induct t
   :use (len-int-bv-little-endian-1-aux)
@@ -149,7 +149,7 @@
               (<= K I)  (<= 1 K))
          (<= (LEN (INT-BV-little-endian (+  I (- K))))
              (LEN (INT-BV-little-endian (+ 1 I (- K))))))))
-            
+
 
 (local
 (defthm interm
@@ -166,7 +166,7 @@
               (<= k I) (<= 0 k))
          (<= (LEN (INT-BV-little-endian (- I k)))
              (LEN (INT-BV-little-endian  i))))
-:hints 
+:hints
 (("goal"
   :do-not '(generalize)
   :induct (rec-by-sub1 k)
@@ -175,11 +175,11 @@
 
 (defthm len-int-bv-little-endian-i<=j
   (implies (and  (integerp i)(<= 0 i) (integerp j)(<= 0 j) (<= i j) )
-       (<= (len (int-bv-little-endian i)) 
+       (<= (len (int-bv-little-endian i))
            (len (int-bv-little-endian j))  ))
-:hints 
+:hints
 (("goal"
-  :use (:instance len-int-bv-little-endian-k ( i j) (k (- j i))) 
+  :use (:instance len-int-bv-little-endian-k ( i j) (k (- j i)))
   :in-theory (disable int-bv-little-endian  ))))
 
 
@@ -187,7 +187,7 @@
   (implies (and (integerp i)(<= 0 i) (<= i (- (expt 2 y) 1))
                 (integerp y)(< 0 y) )
           (<= (len (int-bv-little-endian  i)) y ))
-:hints 
+:hints
 (("goal"
   :use ((:instance  len-int-bv-little-endian-i<=j (i i) (j (- (expt 2 y) 1)))
         len-int-bv-little-endian-2y-1)
@@ -197,13 +197,13 @@
 
 (defthm int-bv-big-endian-is-bvp
  (implies (and (integerp i)(<= 0 i))
-          (bvp (int-bv-big-endian i)))) 
- 
+          (bvp (int-bv-big-endian i))))
+
 
 (defthm len-bv-int-big-endian
   (implies  (bvp m)
       (<= (bv-int-big-endian m) (- (expt 2 (len m)) 1)))
-:hints 
+:hints
 (("goal'"
   :do-not-induct t
   :use (len-bv-int-little-endian-reverse )
@@ -228,7 +228,7 @@
 (defthm len-int-bv-big-endian-i<=j
   (implies (and  (integerp i)(<= 0 i) (integerp j)(<= 0 j) (<= i j) )
        (<= (len (int-bv-big-endian i)) (len (int-bv-big-endian j))  ))
-:hints 
+:hints
 (("goal"
   :in-theory (disable int-bv-little-endian  ))))
 
@@ -237,7 +237,7 @@
   (implies (and (integerp i)(<= 0 i) (<= i  (- (expt 2 y) 1))
                (integerp y)(< 0 y) )
           (<= (len (int-bv-big-endian  i)) y ))
-:hints 
+:hints
 (("goal"
   :do-not-induct t
   :in-theory (disable int-bv-little-endian ))))
@@ -250,7 +250,7 @@
 
 (defthm bv-int-int-bv-i=i-big-endian
   (IMPLIES (AND  (INTEGERP I) (<= 0 I))
-         (EQUAL (BV-INT-big-ENDIAN  (INT-BV-big-ENDIAN I)) i)))  
+         (EQUAL (BV-INT-big-ENDIAN  (INT-BV-big-ENDIAN I)) i)))
 
 
 (local
@@ -260,8 +260,8 @@
                                               (list 0)))
                 (BV-INT-LITTLE-ENDIAN (INT-BV-LITTLE-ENDIAN I))))))
 
-                                          
-(local 
+
+(local
 (defthm bv-int-app-little-endian
 (IMPLIES  (bvp m)
          (EQUAL (BV-INT-LITTLE-ENDIAN (APPEND m   (list 0)))
@@ -279,7 +279,7 @@
 (local
 (defthm n+1-make-list
 (implies (and (INTEGERP N) (<= 1 N))
- (equal  (make-list n :initial-element k ) 
+ (equal  (make-list n :initial-element k )
         (append (make-list (- n 1) :initial-element k ) (list k))))))
 
 
@@ -318,14 +318,14 @@
 (defthm wordp-bv-to-n
    (implies (and (bvp v) (integerp n) (<= 0 n))
             (wordp (bv-to-n v n) n))
-:hints 
-(("goal" 
+:hints
+(("goal"
   :use (bvp-bv-to-n len-bv-to-n) )))
 
 ;theorems on bv-and
 
 (defthm comutativity-of-bv-a
-  (equal (bv-a x y) (bv-a y x))) 
+  (equal (bv-a x y) (bv-a y x)))
 
 
 (defthm bv-a-is-bvp
@@ -335,7 +335,7 @@
 (defthm len-bv-a
  (implies (and (bvp x) (bvp y)  (EQUAL (LEN X) (len y)))
       (and   (equal (len (bv-a x y)) (len x) )
-             (equal (len (bv-a x y)) (len y))))) 
+             (equal (len (bv-a x y)) (len y)))))
 
 
 (defthm wordp-bv-a
@@ -352,7 +352,7 @@
 
 
 (defthm comutativity-of-bv-and
-  (equal (bv-and x y) (bv-and y x))) 
+  (equal (bv-and x y) (bv-and y x)))
 
 
 (defthm bv-and-is-bvp
@@ -362,7 +362,7 @@
 (defthm len-bv-and
    (implies (and (bvp x) (bvp y))
             (equal (len (bv-and x y))
-                   (if (<= (len x) (len y)) 
+                   (if (<= (len x) (len y))
                        (len y)
                        (len x))))
 :hints (("goal" :in-theory (disable  N+1-MAKE-LIST))))
@@ -370,7 +370,7 @@
 
 (defthm wordp-bv-and
  (implies (and (bvp x) (bvp y))
-          (wordp (bv-and x y) (if (<= (len x) (len y)) 
+          (wordp (bv-and x y) (if (<= (len x) (len y))
                                  (len y)
                                  (len x))))
 :hints (("goal" :use (len-bv-and bv-and-is-bvp))))
@@ -379,7 +379,7 @@
 ;theorems on bv-or
 
 (defthm comutativity-of-bv-o
-  (equal (bv-o x y) (bv-o y x))) 
+  (equal (bv-o x y) (bv-o y x)))
 
 
 (defthm bv-o-is-bvp
@@ -389,7 +389,7 @@
 (defthm len-bv-o
  (implies (and (bvp x) (bvp y)  (EQUAL (LEN X) (len y)))
       (and   (equal (len (bv-o x y)) (len x) )
-              (equal (len (bv-o x y)) (len y))))) 
+              (equal (len (bv-o x y)) (len y)))))
 
 
 (defthm wordp-bv-o
@@ -406,7 +406,7 @@
 
 
 (defthm comutativity-of-bv-or
-  (equal (bv-or x y) (bv-or y x)))  
+  (equal (bv-or x y) (bv-or y x)))
 
 
 (defthm bv-or-is-bvp
@@ -416,7 +416,7 @@
 (defthm len-bv-or
    (implies (and (bvp x) (bvp y))
             (equal (len (bv-or x y))
-                   (if (<= (len x) (len y)) 
+                   (if (<= (len x) (len y))
                        (len y)
                        (len x))))
 :hints (("goal" :in-theory (disable  N+1-MAKE-LIST))))
@@ -424,7 +424,7 @@
 
 (defthm wordp-bv-or
  (implies (and (bvp x) (bvp y))
-          (wordp (bv-or x y) (if (<= (len x) (len y)) 
+          (wordp (bv-or x y) (if (<= (len x) (len y))
                                  (len y)
                                  (len x))))
 :hints (("goal" :use (len-bv-or bv-or-is-bvp))))
@@ -433,7 +433,7 @@
 ;theorems on bv-xor
 
 (defthm comutativity-of-bv-xo
-  (equal (bv-xo x y) (bv-xo y x)))  
+  (equal (bv-xo x y) (bv-xo y x)))
 
 
 (defthm bv-xo-is-bvp
@@ -443,7 +443,7 @@
 (defthm len-bv-xo
  (implies (and (bvp x) (bvp y)  (EQUAL (LEN X) (len y)))
       (and   (equal (len (bv-xo x y)) (len x) )
-              (equal (len (bv-xo x y)) (len y))))) 
+              (equal (len (bv-xo x y)) (len y)))))
 
 
 (defthm wordp-bv-xo
@@ -460,7 +460,7 @@
 
 
 (defthm comutativity-of-bv-xor
-  (equal (bv-xor x y) (bv-xor y x)))  
+  (equal (bv-xor x y) (bv-xor y x)))
 
 
 (defthm bv-xor-is-bvp
@@ -470,7 +470,7 @@
 (defthm len-bv-xor
    (implies (and (bvp x) (bvp y))
             (equal (len (bv-xor x y))
-                   (if (<= (len x) (len y)) 
+                   (if (<= (len x) (len y))
                        (len y)
                        (len x))))
 :hints (("goal" :in-theory (disable  N+1-MAKE-LIST ))))
@@ -478,7 +478,7 @@
 
 (defthm wordp-bv-xor
  (implies (and (bvp x) (bvp y))
-          (wordp (bv-xor x y) (if (<= (len x) (len y)) 
+          (wordp (bv-xor x y) (if (<= (len x) (len y))
                                  (len y)
                                  (len x))))
 :hints (("goal" :use (len-bv-xor bv-xor-is-bvp))))
@@ -491,78 +491,78 @@
 
 
 (defthm len-bv-not
-   (implies (bvp x) 
+   (implies (bvp x)
             (equal (len (bv-not x)) (len x))))
 
 
 (defthm wordp-bv-not
- (implies  (bvp x) 
+ (implies  (bvp x)
           (wordp (bv-not x)  (len x))))
 
 
 ;theorems on plus
 
-(local 
-(defthm aux 
+(local
+(defthm aux
 (implies (and (integerp i)(integerp j) (integerp z) (<= 0 i) (<= 0 j) (< 0 z))
          (and (<= 0 (mod (+ i j) z))  (integerp (mod (+ i j) z))))))
 
 
 (local
 (defthm aux1
-(implies (and (bvp x) (<= 0 (bv-int-big-endian x)) 
+(implies (and (bvp x) (<= 0 (bv-int-big-endian x))
            (<=  (bv-int-big-endian x) (expt 2 i))
-           (bvp y) (<= 0 (bv-int-big-endian y))  
+           (bvp y) (<= 0 (bv-int-big-endian y))
            (<=  (bv-int-big-endian y) (expt 2 i))
            (integerp i) (<= 0 i))
 (BVP (INT-BV-BIG-ENDIAN (MOD (+ (BV-INT-BIG-ENDIAN X)
                                                    (BV-INT-BIG-ENDIAN Y))
                                                 (EXPT 2 I)))))
-:hints 
-(("goal" 
+:hints
+(("goal"
   :in-theory (disable int-bv-big-endian bv-int-big-endian)
   :use ((:instance integerp-BV-INT-BIG-ENDIAN (v x))
-       (:instance integerp-BV-INT-BIG-ENDIAN (v y)) 
-       (:instance int-bv-big-endian-is-bvp 
-                 (i (MOD (+ (BV-INT-BIG-ENDIAN X) (BV-INT-BIG-ENDIAN Y)) 
+       (:instance integerp-BV-INT-BIG-ENDIAN (v y))
+       (:instance int-bv-big-endian-is-bvp
+                 (i (MOD (+ (BV-INT-BIG-ENDIAN X) (BV-INT-BIG-ENDIAN Y))
                              (EXPT 2 I))))) ))))
 
 
 (defthm bvp-binary-plus
- (implies (and (bvp x) (<= 0 (bv-int-big-endian x)) 
+ (implies (and (bvp x) (<= 0 (bv-int-big-endian x))
                (<=  (bv-int-big-endian x) (expt 2 i))
-               (bvp y) (<= 0 (bv-int-big-endian y))  
+               (bvp y) (<= 0 (bv-int-big-endian y))
                (<=  (bv-int-big-endian y) (expt 2 i))
                (integerp i) (<= 0 i))
           (bvp (binary-plus i x y)))
 :hints (
 ("goal"
-  :use (:instance bvp-bv-to-n 
+  :use (:instance bvp-bv-to-n
              (v (INT-BV-BIG-ENDIAN (MOD (+ (BV-INT-BIG-ENDIAN X)
                    (BV-INT-BIG-ENDIAN Y)) (EXPT 2 I)))) (n i))
   :in-theory (disable int-bv-big-endian bv-int-big-endian))))
 
 
 (defthm len-binary-plus
- (implies (and (bvp x) (<= 0 (bv-int-big-endian x)) 
+ (implies (and (bvp x) (<= 0 (bv-int-big-endian x))
                (<=  (bv-int-big-endian x) (expt 2 i))
-               (bvp y) (<= 0 (bv-int-big-endian y))  
+               (bvp y) (<= 0 (bv-int-big-endian y))
                (<=  (bv-int-big-endian y) (expt 2 i))
                (integerp i) (<= 0 i))
           (equal (len (binary-plus i x y)) i))
-:hints 
+:hints
 (("goal"
   :in-theory (disable int-bv-big-endian bv-int-big-endian))))
 
 
 (defthm wordp-binary-plus
- (implies (and (bvp x) (<= 0 (bv-int-big-endian x)) 
+ (implies (and (bvp x) (<= 0 (bv-int-big-endian x))
                (<=  (bv-int-big-endian x) (expt 2 i))
-               (bvp y) (<= 0 (bv-int-big-endian y))  
+               (bvp y) (<= 0 (bv-int-big-endian y))
                (<=  (bv-int-big-endian y) (expt 2 i))
                (integerp i) (<= 0 i))
           (wordp (binary-plus i x y) i))
-:hints 
+:hints
 (("goal"
   :in-theory (disable binary-plus int-bv-big-endian bv-int-big-endian))))
 
@@ -571,9 +571,9 @@
  (implies (and (wordp x w) (wordp y w)
                 (integerp w) (<= 0 w))
           (wordp (binary-plus w x y) w))
-:hints 
+:hints
 (("goal"
-   :use ((:instance  len-bv-int-big-endian (m x)) 
+   :use ((:instance  len-bv-int-big-endian (m x))
         (:instance  len-bv-int-big-endian (m y)))
    :in-theory (disable binary-plus ))))
 
@@ -607,7 +607,7 @@
 
 (defthm bvp->>
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (bvp (>> x n w) )))
@@ -615,7 +615,7 @@
 
 (defthm len->>
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (equal (len (>> x n w)) w )))
@@ -623,7 +623,7 @@
 
 (defthm wordp->>
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (wordp (>> x n w) w))
@@ -631,7 +631,7 @@
 
 (defthm wordp-shr
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (wordp (shr n x w) w))
@@ -639,61 +639,61 @@
 
 (defthm bvp-rotr
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (bvp (rotr n x w) ))
-:hints (("goal" 
+:hints (("goal"
 :in-theory (disable >> <<  binary-bv-or )
 )))
 
 (defthm len-rotr
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (equal (len (rotr n x w) ) w))
-:hints (("goal" 
+:hints (("goal"
 :in-theory (disable >> <<  binary-bv-or len wordp )
 )))
 
 (defthm wordp-rotr
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (wordp (rotr n x w) w))
-:hints (("goal" 
+:hints (("goal"
 :in-theory (disable  rotr len )
 )))
 
 (defthm bvp-rotl
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (bvp (rotl n x w) ))
-:hints (("goal" 
+:hints (("goal"
 :in-theory (disable >> <<  binary-bv-or )
 )))
 
 (defthm len-rotl
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (equal (len (rotl n x w) ) w))
-:hints (("goal" 
+:hints (("goal"
 :in-theory (disable >> <<  binary-bv-or len wordp )
 )))
 
 (defthm wordp-rotl
  (implies (and (wordp x w )
-           (integerp n) 
+           (integerp n)
            (<= 0 n) (integerp w)
            (<= 0 w)
            (<= n w)) (wordp (rotl n x w) w))
-:hints (("goal" 
+:hints (("goal"
 :in-theory (disable  rotl len )
 )))
 
@@ -703,7 +703,7 @@
            (integerp n)
            (< 0 n)(integerp w)
            (<= 0 w)
-           (<= n w)) 
+           (<= n w))
          (equal (rotl n x w) (rotr (- w n) x w)))
 )
 
@@ -713,5 +713,5 @@
            (integerp n)
            (<= 0 n)(integerp w)
            (<= 0 w)
-           (<= n w)) 
+           (<= n w))
          (equal (rotr n x w) (rotl (- w n) x w))))

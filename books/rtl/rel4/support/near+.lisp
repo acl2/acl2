@@ -80,12 +80,12 @@
 		  (integerp n)
 		  (> n 0))
 	     (= (near+ x n)
-		(trunc (+ x (expt 2 (- (expo x) n))) n)))		
+		(trunc (+ x (expt 2 (- (expo x) n))) n)))
   :rule-classes ())
 
 ;why disabled?
 (defthmd near+-minus
-  (= (near+ (* -1 x) n) 
+  (= (near+ (* -1 x) n)
      (* -1 (near+ x n))))
 
 ;why disabled?
@@ -204,7 +204,7 @@
 
 (defthm near+-exactp-a
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (near+ x n))
 		  (exactp x n)))
@@ -313,7 +313,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)

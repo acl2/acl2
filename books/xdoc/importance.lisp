@@ -67,7 +67,7 @@
 ;
 ; Our top level function is
 ;
-;  (order-topics-by-importance all-topics state) 
+;  (order-topics-by-importance all-topics state)
 ;     --> (mv all-topics xtopics state)
 ;
 ; It just permutes the input topics into a "good" order so that "more
@@ -167,7 +167,7 @@
 ;
 ; Below, a LINKS-FAL is a fast alist that binds
 ;
-;          TARGET (key) -> SOURCE LIST (names) 
+;          TARGET (key) -> SOURCE LIST (names)
 ;
 ; For instance, the LINKS-FAL might bind:
 ;
@@ -505,7 +505,7 @@
         rank-fal)
        (rank-fal
         ;; You get a point for existing at all.
-        (dumb-increment-ranks 
+        (dumb-increment-ranks
          (list (make-key (xtopic->name (car xtopics))))
          rank-fal
          1))

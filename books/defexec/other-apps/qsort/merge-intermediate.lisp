@@ -28,8 +28,8 @@ index returned by split-qs.
   (if (endp x) nil
     (if (and (<<= splitter (first x))
 	     (<< (last-val x) splitter))
-	(cons (last-val x) 
-	      (snoc (merge-func (del-last (rest x)) 
+	(cons (last-val x)
+	      (snoc (merge-func (del-last (rest x))
 				splitter)
 		    (first x)))
 	(if (and (<<= splitter (first x))
@@ -38,9 +38,9 @@ index returned by split-qs.
 		  (last-val x))
 	  (if (and (<< (first x) splitter)
 		   (<< (last-val x) splitter))
-	      (cons (first x) 
+	      (cons (first x)
 		    (merge-func (rest x) splitter))
-	    (cons (first x) 
+	    (cons (first x)
 		  (snoc (merge-func (del-last (rest x))
 				    splitter)
 			(last-val x))))))))
@@ -61,7 +61,7 @@ index returned by split-qs.
 
 (defthm walk-is-a-natp
   (natp (walk x splitter)))
-  
+
 
 (local
 (defthm walk-lower-part-reduction
@@ -83,7 +83,7 @@ index returned by split-qs.
          (lower-part x splitter))
   :hints (("Goal"
            :in-theory (disable walk merge-func lower-part upper-part)
-           :use ((:instance append-first-reduction-len 
+           :use ((:instance append-first-reduction-len
                             (n (walk x splitter))
                             (z (merge-func x splitter))
                             (x (lower-part x splitter))
@@ -97,7 +97,7 @@ index returned by split-qs.
          (upper-part x splitter))
   :hints (("Goal"
            :in-theory (disable walk merge-func lower-part upper-part)
-           :use ((:instance append-last-reduction-len 
+           :use ((:instance append-last-reduction-len
                             (n (walk x splitter))
                             (z (merge-func x splitter))
                             (x (lower-part x splitter))
@@ -119,7 +119,7 @@ index returned by split-qs.
 )
 
 (local
-(in-theory (disable walk-lower-part-reduction 
+(in-theory (disable walk-lower-part-reduction
                     first-len-reduction))
 )
 
@@ -160,7 +160,7 @@ index returned by split-qs.
            :in-theory (disable reduce-merge-lower-part
                                reduce-merge-upper-part))
           ("Subgoal *1/4"
-           :use ((:instance reduce-merge-lower-part 
+           :use ((:instance reduce-merge-lower-part
                             (splitter (car x)))
                  (:instance reduce-merge-upper-part
                             (splitter (car x)))))))
@@ -177,12 +177,12 @@ index returned by split-qs.
 (defun in-situ-qsort-fn (lst)
   (declare (xargs :measure (len lst)
                   :hints (("Goal"
-                           :in-theory (disable 
+                           :in-theory (disable
                                        reduce-merge-lower-part
                                        reduce-merge-upper-part
                                        merge-func-lower-upper-reduction))
                           ("Subgoal 3"
-                           :in-theory (enable 
+                           :in-theory (enable
                                        reduce-merge-lower-part
                                        reduce-merge-upper-part
                                        merge-func-lower-upper-reduction))
@@ -192,7 +192,7 @@ index returned by split-qs.
                                             (x (merge-func lst (car lst)))
                                             (y  lst))))
                            ("Subgoal 1"
-                            :in-theory (enable 
+                            :in-theory (enable
                                         reduce-merge-lower-part
                                         reduce-merge-upper-part
                                         merge-func-lower-upper-reduction)))))
@@ -205,7 +205,7 @@ index returned by split-qs.
 	    (cons (first merge)
 		  (in-situ-qsort-fn (rest merge)))
           (let* ((upper (in-situ-qsort-fn (last-n ndx merge)))
-                 (lower (in-situ-qsort-fn (first-n ndx 
+                 (lower (in-situ-qsort-fn (first-n ndx
                                                    merge))))
             (append lower upper)))))))
 
@@ -265,7 +265,7 @@ index returned by split-qs.
 
 (defthm in-situ-equal-intermediate
   (implies (true-listp x)
-           (equal (in-situ-qsort-fn x) 
+           (equal (in-situ-qsort-fn x)
                   (intermediate-in-situ-qsort-fn x))))
-  
+
 (in-theory (disable in-situ-equal-intermediate))

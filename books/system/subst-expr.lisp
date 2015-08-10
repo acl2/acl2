@@ -55,7 +55,7 @@
                 (pseudo-term-listp (subst-expr1-flg flg new old x))
               (pseudo-termp (subst-expr1-flg flg new old x))))
    :rule-classes nil))
-                 
+
 (defthm pseudo-term-listp-subst-expr1-lst
   (implies (and (pseudo-termp new)
                 (pseudo-termp old)
@@ -66,7 +66,7 @@
            :use ((:instance pseudo-termp-subst-expr1-flg
                             (flg t)
                             (x args))))))
-                         
+
 (defthm pseudo-term-listp-subst-expr1
   (implies (and (pseudo-termp new)
                 (pseudo-termp old)

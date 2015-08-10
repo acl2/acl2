@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -39,7 +39,7 @@
 ;;;**********************************************************************
 
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -160,7 +160,7 @@
 
 
 (defthm sig-sig
-    (equal (sig (sig x)) 
+    (equal (sig (sig x))
 	   (sig x)))
 
 
@@ -200,12 +200,12 @@
   (implies (and (rationalp x)
                 (not (equal x 0))
                 (integerp n))
-           (equal (expo (* (expt 2 n) x)) 
+           (equal (expo (* (expt 2 n) x))
                   (+ n (expo x)))))
 
 
 (defthmd sig-shift
-  (equal (sig (* (expt 2 n) x)) 
+  (equal (sig (* (expt 2 n) x))
          (sig x)))
 
 
@@ -517,7 +517,7 @@
 
 
 (defund esgnf  (x p q) (bitn x (+ p q)))
-(defund eexpof (x p q) (bits x (1- (+ p q)) p)) 
+(defund eexpof (x p q) (bits x (1- (+ p q)) p))
 (defund esigf  (x p)   (bits x (1- p) 0))
 
 (defund bias (q) (- (expt 2 (- q 1)) 1) )
@@ -569,7 +569,7 @@
 		  (integerp p)
 		  (> p 1)
 		  (integerp q)
-		  (> q 0))  
+		  (> q 0))
 	     (equal (expo (ndecode x p q))
 		    (- (iexpof x p q) (bias q)))))
 
@@ -812,7 +812,7 @@
 ;; 		(and (natp m)
 ;; 		     (<= 1 m)
 ;; 		     (< m (expt 2 (1- p)))))))
-;; not true!! 
+;; not true!!
 
 (defthmd spd-mult
   (implies (and (integerp p)

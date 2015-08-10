@@ -87,5 +87,5 @@ do *more* than soundness.
            :use n-is-first-reduces-to-clock)))
 
 
-  
-                 
+
+

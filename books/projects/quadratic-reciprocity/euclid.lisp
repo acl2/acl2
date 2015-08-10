@@ -92,7 +92,7 @@
 
 (in-theory (disable divides))
 
-;; Our definition of primality is based on the following function, which computes 
+;; Our definition of primality is based on the following function, which computes
 ;; the least divisor of a natural number n that is greater than or equal to k:
 
 (defun least-divisor (k n)
@@ -171,9 +171,9 @@
 				   (d (least-divisor 2 (least-divisor 2 n)))
 				   (k 2))))))
 
-(in-theory (disable primep))		   
+(in-theory (disable primep))
 
-;; In order to prove the infinitude of the set of primes, we define a function "greater-prime" 
+;; In order to prove the infinitude of the set of primes, we define a function "greater-prime"
 ;; returns a prime that is greater than its argument:
 
 (defun fact (n)
@@ -304,7 +304,7 @@
       (if (<= x y)
 	  (s-nat x (- y x))
 	(- (s-nat (- x y) y) (r-nat (- x y) y))))))
-	
+
 )
 
 (defthm r-s-nat

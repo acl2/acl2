@@ -30,10 +30,10 @@
 ;;; * Apply the identification rule just after the unification of two
 ;;;   subterms has been achieved. Moreover, this step shouldn't check
 ;;;   its applicability condition (in order to not to be of exponential
-;;;   complexity), but it should be applied only when it is applicable. 
+;;;   complexity), but it should be applied only when it is applicable.
 ;;; * When an occur-check is applied (in both the Eliminate and
 ;;; Occur-Check rules), we should avoid repeated visits to the same
-;;; subterms.  
+;;; subterms.
 
 ;;; In order to get these improvements, we will introduce what we call
 ;;; "extended unification problems". These are ordinary dag unification
@@ -47,7 +47,7 @@
 ;;; rule. In this way, when the unification of the arguments succeeds,
 ;;; the identification mark is at the top of the stack and this allows
 ;;; us to apply the identification safely.
-;;; 
+;;;
 ;;; - On the other hand, in order to optimize the "occur-check", we add
 ;;; a "stamp" list of integers: the number in position i of this list
 ;;; represents the last time node i of the term dag was visited for
@@ -60,7 +60,7 @@
 ;;; updating the stamp information if the variable does not occur
 ;;; in the subgraph.
 
-;;; Therefore, an extended unification problem consits of: 
+;;; Therefore, an extended unification problem consits of:
 
 ;;; * An indices system of equations (possibly extended with
 ;;; identification marks) to be solved.
@@ -76,11 +76,11 @@
 ;;; These conditions should express:
 
 ;;; - Well-formednes of the graph, the system and the substitution (as
-;;;   usual). 
+;;;   usual).
 ;;; - Acyclicness (as usual).
 ;;; - A condition (invariant during the unification proccess), that
 ;;;   roughly speaking expresses that the identification marks are well
-;;;   placed inside the indices system.  
+;;;   placed inside the indices system.
 ;;; - Another condition that ensures that the improved occur check
 ;;;   computes the same result than occur-check-d
 
@@ -90,31 +90,31 @@
 ;;; problems applies a reduction step (with a specific control) of
 ;;; the rules of transformation of the relation defined in the book
 ;;; q-dag-unification-rule (but without introducing exponential
-;;; complexity) 
+;;; complexity)
 
 ;;; * We will define functions formally epressing the above
-;;; "well-formedness" conditions. 
+;;; "well-formedness" conditions.
 
 ;;; * We will prove that, in fact,  under the above conditions the
 ;;; transformation step given corresponds to a transformotion step
 ;;; w.r.t. the rule of q-dag-unification-rule
 
 ;;; * We will prove that the above conditions are preserved in every
-;;; transformation step. 
+;;; transformation step.
 
 ;;; * We will prove that the exhaustive application of the transformation
-;;;   steps terminates. 
+;;;   steps terminates.
 
 ;;; * We will define the rest of the functions of this quadratic
 ;;; unification algorithm
 
 ;;; * And we will translate the properties proved in the book
 ;;; q-dag-unification-rules to conclude that its a sound and complete
-;;; unification algorithm 
+;;; unification algorithm
 
 
 ;;; NOTE: Some of the lemmas proved in this book are needed for guard
-;;; verification. In each of them, this is commented.   
+;;; verification. In each of them, this is commented.
 
 ;;;============================================================================
 ;;;
@@ -123,7 +123,7 @@
 ;;;============================================================================
 
 
-;;; For the sake of readability: 
+;;; For the sake of readability:
 
 (defmacro dag-variable-p (x)
   `(equal (cdr ,x) t))
@@ -138,7 +138,7 @@
   `(integerp ,x))
 
 
-;;; Improved occur check 
+;;; Improved occur check
 
 (defun occur-check-q (flg x h g stamp time)
   (declare (xargs :measure (measure-rec-dag flg h g)))
@@ -182,7 +182,7 @@
 	  (list R U g stamp time))
       (let ((t1 (dag-deref (car ecu) g))
 	    (t2 (dag-deref (cdr ecu) g)))
-	(if (= t1 t2)                                    
+	(if (= t1 t2)
 	    (list R U g stamp time)                            ;;; DELETE
 	  (let ((p1 (dagi-l t1 g))
 		(p2 (dagi-l t2 g)))
@@ -255,10 +255,10 @@
 	 (bounded-nat-substitution-p (second ext-upl) n)
 	 (well-formed-term-dag-p (third ext-upl)))))
 
-;;; Relation between well-formed-extended-upl and bounded-well-formed-extended-upl 
+;;; Relation between well-formed-extended-upl and bounded-well-formed-extended-upl
 
 (local
- (defthm well-formed-extended-upl-def  
+ (defthm well-formed-extended-upl-def
    (equal (well-formed-extended-upl ext-upl)
 	  (bounded-well-formed-extended-upl ext-upl (len (third
 							  ext-upl))))
@@ -269,7 +269,7 @@
 ;;; Unification invariant, ensuring "safe" identifications
 ;;; ------------------------------------------------------
 ;;; The main function is ext-upl-id-invariant below. Very long
-;;; definition!! 
+;;; definition!!
 
 (defun until-first-id (ext-S)
   (declare (xargs
@@ -301,13 +301,13 @@
 		 (after-first-id ext-S)))
 	(split-extended-system-in-id-stacks
 		 (after-first-id ext-S))))))
- 
+
 
 (defun equation-equals-equality (p q lhs rhs)
   (declare (xargs
 	    :guard t))
   (and (equal p lhs) (equal q rhs)))
- 
+
 (defun equation-justify-equality (p q lhs rhs g)
   (declare (xargs
 	    :guard (and (natp p) (natp q)
@@ -319,7 +319,7 @@
 	(t2 (dag-deref q g)))
     (and (equal t1 lhs) (equal t2 rhs))))
 
-   
+
 (defun equations-already-solved (l1 l2 g)
   (declare (xargs
 	    :guard
@@ -333,7 +333,7 @@
 		       (dag-as-term t (car l2) g))
 		(equations-already-solved (cdr l1) (cdr l2) g)))))
 
-	    
+
 (defun first-id-stack-invariant-aux-with-equations
   (rargs1 rargs2 requations g)
   (declare (xargs
@@ -344,10 +344,10 @@
 		 (consp requations)
 		 (true-listp g)
 		 (term-graph-p g))))
-		
+
   (and (consp rargs1)
        (consp rargs2)
-       (if (endp (cdr requations)) 
+       (if (endp (cdr requations))
 	   (and  (or (equation-equals-equality
 		      (car rargs1) (car rargs2)
 		      (car (first requations))
@@ -358,7 +358,7 @@
 		      (not (term-dag-is-p (car (first requations)) g))
 ;;; la anterior condición es redundante, pero necesaria para la guarda
 		      (term-dag-variable-p (car (first requations)) g)
-		      (equation-justify-equality  
+		      (equation-justify-equality
 		       (car rargs1) (car rargs2)
 		       (cdr (first requations))
 		       (car (first requations))
@@ -405,7 +405,7 @@
    (implies (nat-true-listp l)
  	    (true-listp l))))
 
- 
+
 (defun first-id-stack-invariant (id-stack g)
   (declare (xargs
 	    :guard
@@ -435,7 +435,7 @@
 	      (first-id-stack-invariant-aux-with-equations
 	       (revlist (dag-args p1)) (revlist (dag-args p2))
 	       requations g)))))))
-  
+
 
 (defun remaining-id-stacks-invariant-aux (rargs1 rargs2 requations
 						 id-equ g)
@@ -450,7 +450,7 @@
 	     (term-graph-p g))))
   (and (consp rargs1)
        (consp rargs2)
-       (if (endp requations) 
+       (if (endp requations)
 	   (and (equation-justify-equality
 		 (car rargs1) (car rargs2)
 		 (second id-equ) (third id-equ) g)
@@ -482,7 +482,7 @@
 	 (term-dag-non-variable-p id2 g)
 	 (equal (term-dag-symbol id1 g) (term-dag-symbol id2 g))
 	 (remaining-id-stacks-invariant-aux
-	  (revlist (term-dag-args id1 g)) (revlist (term-dag-args id2 g)) 
+	  (revlist (term-dag-args id1 g)) (revlist (term-dag-args id2 g))
 	  requations id-equ g))))
 
 
@@ -524,13 +524,13 @@
  (defthm after-first-id-without-ids
    (implies (not (equal (caar (last (until-first-id ext-s))) 'id))
 	    (not (consp (after-first-id ext-S))))))
- 
+
 ;; Guard verification
 (local
  (defthm rest-split-extended-system-in-id-stacks
    (equal (rest (split-extended-system-in-id-stacks ext-s))
 	  (split-extended-system-in-id-stacks (after-first-id ext-s)))))
- 
+
 
 ;; Guard verification
 (local
@@ -542,7 +542,7 @@
 	       'id)
 	      (until-first-id ext-S)
 	    nil))))
- 
+
 ;; Guard
 (local
  (defthm bounded-nat-pairs-true-listp-with-ids-until-first-id-1
@@ -550,22 +550,22 @@
 		 (consp ext-S))
 	    (bounded-nat-pairs-true-listp (cdr (revlist (until-first-id ext-S)))
 					  n))))
- 
+
 ;; Guard
 (local
  (defthm id-terna-p-first-revlist-until-first-id
    (implies (and (bounded-nat-pairs-true-listp-with-ids ext-S n)
 		 (equal (caar (last (until-first-id ext-S))) 'id))
 	    (id-terna-p (car (revlist (until-first-id ext-S))) n))))
- 
+
 
 ;; Guard
 (local
  (defthm bounded-nat-pairs-true-listp-with-ids-after-first-id
    (implies (bounded-nat-pairs-true-listp-with-ids ext-S n)
 	    (bounded-nat-pairs-true-listp-with-ids (after-first-id ext-S) n))))
- 
- 
+
+
 ;; Guard
 (local
  (defthm bounded-nat-pairs-true-listp-with-ids-split-id-stack-list-p
@@ -575,7 +575,7 @@
 
 
 (defun id-invariant (ext-S g)
-  (declare (xargs 
+  (declare (xargs
 	    :guard
 	    (and (bounded-nat-pairs-true-listp-with-ids ext-S (len
 							       g))
@@ -606,14 +606,14 @@
 
 
 (defun all-marks-integers-less-than-time (stamp time)
-  (declare (xargs :guard (integerp time))) 
+  (declare (xargs :guard (integerp time)))
   (if (atom stamp)
       t
     (and (integerp (car stamp))
 	 (< (car stamp) time)
 	 (all-marks-integers-less-than-time (cdr stamp) time))))
 
- 
+
 (defun ext-upl-occur-check-invariant (ext-upl)
   (declare (xargs :guard
 		  (or (not ext-upl) (>= (len ext-upl) 5))))
@@ -642,7 +642,7 @@
 ;;;
 ;;;============================================================================
 
- 
+
 ;;; We prove in this section that under the above invariants and
 ;;; conditions, the function dag-transfrom-mm-q can be seen as the
 ;;; application of an appliable operator
@@ -656,14 +656,14 @@
 	  (g (third ext-upl))
 	  (ecu (car ext-S)))
      (if (equal (first ecu) 'id)
-	 (list 'identify (second ecu) (third ecu)) 
+	 (list 'identify (second ecu) (third ecu))
        (let ((t1 (dag-deref (car ecu) g))
 	     (t2 (dag-deref (cdr ecu) g)))
 	 (if (= t1 t2)
 	     '(delete 0)
 	   (let ((p1 (dagi-l t1 g))
 		 (p2 (dagi-l t2 g)))
-	     (cond ((dag-variable-p p1)  
+	     (cond ((dag-variable-p p1)
 		    (if (occur-check-d t t1 t2 g)
 			'(occur-check 0)
 		      '(eliminate 0)))
@@ -677,7 +677,7 @@
 			      (if bool
 				  '(decompose 0)
 				'(clash2 0))))))))))))
- 
+
 ;;; Let us now prove that this operator is a legal operator such that
 ;;; when applied to an upl is the same (in some sense that we precise
 ;;; below) as the result obtained by dag-transform-mm-q
@@ -696,7 +696,7 @@
 	 (remove-ids (cdr ext-S)))
 	(t (cons (car ext-S) (remove-ids (cdr ext-S))))))
 					;)
- 
+
 (defun ext-upl-to-upl (ext-upl)
   (and ext-upl
        (list (remove-ids (first ext-upl))
@@ -718,9 +718,9 @@
 	   (and (not (occur-check-d t x i g))
 		(consistent-marking x time g stamp (cdr indices)))
 	 (consistent-marking x time g stamp (cdr indices)))))))
- 
 
- 
+
+
 (local
  (encapsulate
   ()
@@ -731,21 +731,21 @@
 		   (member h indices)
 		   (= (nth h stamp) time))
 	      (not (occur-check-d t x h g)))))
-  
-  (local 
+
+  (local
    (defthm member-list-of-n
      (implies (natp n)
 	      (iff (member x (list-of-n n))
 		   (bounded-natp x n)))
      :hints (("Goal" :in-theory (enable list-of-n)))))
-  
+
   (local
    (defthm consistent-marking-all-nodes
      (implies (and (bounded-natp h (len g))
 		   (consistent-marking x time g stamp (list-of-n (len g)))
 		   (= (nth h stamp) time))
 	      (not (occur-check-d t x h g)))))
-   
+
   (local
    (defthm consistent-marking-all-nodes-corollary
      (implies (and (bounded-natp h (len g))
@@ -756,7 +756,7 @@
      :hints (("Goal" :use consistent-marking-all-nodes
 	      :in-theory (disable member-indices-consistent-marking
 				  consistent-marking-all-nodes)))))
-  
+
   (local
    (defthm consistent-marking-updated
      (implies (and (consistent-marking x time g stamp indices)
@@ -764,13 +764,13 @@
 		   (natp h)
 		   (not (occur-check-d t x h g)))
 	      (consistent-marking x time g (update-nth h time stamp) indices))))
-  
+
   (local
    (defthm nat-true-listp-list-of-n
      (implies (natp n)
 	      (nat-true-listp (list-of-n n)))
      :hints (("Goal" :in-theory (enable list-of-n)))))
-   
+
   (defthm occur-check-d-occur-check-q-main-lemma
     (implies (and (dag-p g)
 		  (term-graph-p g)
@@ -786,7 +786,7 @@
 		   x time g
 		   (second (occur-check-q flg x h g stamp time))
 		   (list-of-n (len g))))))))
-  
+
 
 (local
  (encapsulate
@@ -798,25 +798,25 @@
 	 t
        (and (not (equal (car l) time))
 	    (all-marks-different-from-time (cdr l) time)))))
-  
+
   (local
    (defthm all-marks-different-from-time-consistent-marking-lemma
      (implies (and (all-marks-different-from-time stamp time)
 		   (natp i) (< i (len stamp)))
 	      (not (equal (nth i stamp) time)))))
-   
+
   (local
    (defthm all-marks-different-from-time-consistent-marking-lemma-2
      (implies (and (natp i)
 		   (< i (len stamp)))
 	      (not (all-marks-different-from-time stamp (nth i stamp))))))
-   
+
   (local
    (defthm all-marks-different-from-time-consistent-marking
      (implies (and (all-marks-different-from-time stamp time)
 		   (subsetp indices (list-of-n (len stamp))))
 	      (consistent-marking x time g stamp indices))))
-   
+
   (local
    (defthm marks-less-implies-marks-different
      (implies (all-marks-integers-less-than-time stamp time)
@@ -830,13 +830,13 @@
 		  (all-marks-integers-less-than-time stamp time))
 	     (equal (first (occur-check-q t x h g stamp time))
 		    (occur-check-d t x h g))))))
-  
+
 
 ;;; STEP III
 
 ;;; Under the invariant and well-formedness conditions the operator is
 ;;; legal and its application returns "the same" upl computed by
-;;; dag-transform-mm-q 
+;;; dag-transform-mm-q
 
 (local
  (encapsulate
@@ -848,9 +848,9 @@
 	       (equal (equal (dag-as-term nil args1 g)
 			     (dag-as-term nil args2 g))
 		      t))))
-    
+
   (defthm equations-already-solved-main-lemma
-    (implies (and 
+    (implies (and
 	      (term-dag-non-variable-p h1 g)
 	      (term-dag-non-variable-p h2 g)
 	      (equal (dag-symbol (dagi-l h1 g))
@@ -877,7 +877,7 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm identify-transform-mm-q-applies-a-legal-operator
      (implies (and
@@ -888,7 +888,7 @@
 			    (list 'identify
 				  (second (first (first ext-upl)))
 				  (third (first (first ext-upl))))))))
-  
+
   (local
    (defthm remove-ids-when-the-first-is-not-an-id
      (implies (not (equal (first (car ext-S)) 'id))
@@ -896,15 +896,15 @@
 			(consp ext-S))
 		   (equal (car (remove-ids ext-S))
 			  (car ext-S))))))
-  
-  
+
+
 
   (defthm transform-mm-q-applies-a-legal-operator
     (implies (and (unification-invariant-q ext-upl)
 		  (not (normal-form-syst ext-upl)))
 	     (unif-legal-q (ext-upl-to-upl ext-upl)
 			   (dag-transform-mm-q-op ext-upl))))))
-  
+
 
 
 ;;; Application of the witness operator:
@@ -925,25 +925,25 @@
    (defthm remove-ids-append
      (equal (remove-ids (append ext-S1 ext-S2))
 	    (append (remove-ids ext-S1) (remove-ids ext-S2)))))
-  
+
   (local
    (defthm pair-args-remove-ids
      (implies (and (nat-true-listp l1)
 		   (nat-true-listp l2))
 	      (equal (remove-ids (car (pair-args l1 l2)))
 		     (car (pair-args l1 l2))))))
-  
-  
+
+
 
   (defthm transform-mm-q-applies-an-operator
     (implies (and (well-formed-extended-upl ext-upl)
 		  (ext-upl-occur-check-invariant ext-upl))
 	     (equal (ext-upl-to-upl
-		     (dag-transform-mm-q ext-upl)) 
+		     (dag-transform-mm-q ext-upl))
 		    (unif-reduce-one-step-q
 		     (ext-upl-to-upl ext-upl)
 		     (dag-transform-mm-q-op ext-upl)))))))
-  
+
 ; Change by Matt K. for ACL2 2.9.3: the change to len-update-nth made the
 ; proof of len-third-dag-transform-mm-q fail, so we restore the old version.
 (local (defthm len-update-nth-old
@@ -953,7 +953,7 @@
 (local (in-theory (disable len-update-nth)))
 
 ;;; The following lemma comes here because we need dag-transform-mm-q
-;;; enabled 
+;;; enabled
 (local
  (defthm len-third-dag-transform-mm-q
    (implies (and (well-formed-extended-upl ext-upl)
@@ -967,7 +967,7 @@
 
 
 ;;; We disable again the following functions
-(local (in-theory (disable 
+(local (in-theory (disable
 		   unif-legal-q
 		   unif-reduce-one-step-q
 		   unif-legal-d
@@ -995,15 +995,15 @@
 ;;;   (bounded-nat-substitution-p (second ext-upl) n)
 ;;;   (bounded-well-formed-term-dag-p (third ext-upl) n))) (including
 ;;;   bounded-term-graph-p, dag-p and non-duplicated variables). In some
-;;;   sense, we have proved these properties already. 
+;;;   sense, we have proved these properties already.
 
 ;;; - The property about well-formedness of the extended system:
-;;;   bounded-nat-pairs-true-listp-with-ids.    
+;;;   bounded-nat-pairs-true-listp-with-ids.
 
 ;;; - The hardest one: the property about the correct placement of the
 ;;;   identification marks in the extended system, ext-upl-id-invariant.
 
-;;; - The invariant needed for the improved occur check. 
+;;; - The invariant needed for the improved occur check.
 
 
 
@@ -1015,27 +1015,27 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm ext-upl-to-upl-second-upl
      (equal (second (ext-upl-to-upl ext-upl))
 	    (second ext-upl))))
-  
+
   (local
    (defthm ext-upl-to-upl-third-upl
      (equal (third (ext-upl-to-upl ext-upl))
 	    (third ext-upl))))
-  
+
   (local
    (defthm remove-ids-bounded-nat-true-listp-lemma
      (implies (bounded-nat-pairs-true-listp-with-ids ext-s n)
 	      (bounded-nat-pairs-true-listp (remove-ids ext-s) n))))
-  
+
   (local
    (defthm remove-ids-bounded-nat-true-listp
      (implies (bounded-nat-pairs-true-listp-with-ids (first ext-upl) n)
 	      (bounded-nat-pairs-true-listp (first (ext-upl-to-upl ext-upl)) n))))
-  
+
   (defthm ext-upl-to-upl-well-formed-upl
     (implies (well-formed-extended-upl ext-upl)
 	     (well-formed-upl (ext-upl-to-upl ext-upl)))
@@ -1074,13 +1074,13 @@
 	      (:instance unif-reduce-one-step-q-preserves-well-formed-upl
 			 (upl (ext-upl-to-upl ext-upl))
 			 (op (dag-transform-mm-q-op ext-upl)))))))
-  
-  
+
+
 ;;; This entails the two lemmas we want to prove:
-  
+
   (local (in-theory (disable transform-mm-q-applies-an-operator)))
   (local (in-theory (enable well-formed-upl-def)))
-  
+
 
   (defthm transform-mm-q-preserves-bounded-nat-substitution-p
     (implies (and (unification-invariant-q ext-upl)
@@ -1088,24 +1088,24 @@
 	     (bounded-nat-substitution-p
 	      (second (dag-transform-mm-q ext-upl))
 	      (len (third (dag-transform-mm-q ext-upl)))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use
 	     transform-mm-q-preserves-well-formed-upl-ext-upl-to-upl)))
-  
-  
+
+
   (defthm transform-mm-q-preserves-well-formed-term-dag-p
     (implies (and (unification-invariant-q ext-upl)
 		  (not (normal-form-syst ext-upl)))
 	     (bounded-well-formed-term-dag-p
 	      (third (dag-transform-mm-q ext-upl))
 	      (len (third (dag-transform-mm-q ext-upl)))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use
 	     transform-mm-q-preserves-well-formed-upl-ext-upl-to-upl)))))
- 
- 
+
+
 ;;; We now enable dag-transform-mm-q, since from now on, the theorems we
-;;; want to prove has to be deduced directly from its definition   
+;;; want to prove has to be deduced directly from its definition
 
 
 (local (in-theory (enable dag-transform-mm-q)))
@@ -1127,28 +1127,28 @@
 		   (dag-p g))
 	      (not (consp (dag-deref h g))))
      :rule-classes :type-prescription))
-   
+
    (local
     (defthm bounded-nat-pairs-true-listp-with-ids-append
       (implies (true-listp l1)
 	       (iff (bounded-nat-pairs-true-listp-with-ids (append l1 l2) n)
 		    (and (bounded-nat-pairs-true-listp-with-ids l1 n)
 			 (bounded-nat-pairs-true-listp-with-ids l2 n))))))
-   
-   
+
+
 ;;; Repetido (esta en dag-unification-rules-bis.lisp)
    (local
     (defthm bounded-nat-listp-pair-args
       (implies (and (bounded-nat-listp l1 m) (bounded-nat-listp l2 m))
 	       (bounded-nat-pairs-true-listp (car (pair-args l1 l2)) m))))
-   
+
    (local
     (defthm
       bounded-nat-pairs-true-listp-with-ids-bounded-nat-pairs-true-listp
       (implies (bounded-nat-pairs-true-listp l n)
 	       (bounded-nat-pairs-true-listp-with-ids l n))))
-   
-   
+
+
 
    (defthm transform-mm-q-preserves-bounded-nat-pairs-true-listp-with-ids
      (implies (and (not (normal-form-syst ext-upl))
@@ -1157,7 +1157,7 @@
 	       (first (dag-transform-mm-q ext-upl))
 	       (len (third (dag-transform-mm-q ext-upl))))))))
 
- 
+
 ;;; Now we can prove that well-formed-extended-upl is preserevd in each
 ;;; transformation step given by dag-transform-mm-q:
 
@@ -1184,7 +1184,7 @@
 ;;; definition of dag-transform-mm-q and the diferent properties
 ;;; embodied by ext-upl-id-invariant. In the comments below, we wil
 ;;; specify (roughly) which for which subgoals are needed the previous
-;;; lemmas poved  
+;;; lemmas poved
 
 ;;; Lemmas used by several Subgoals:
 
@@ -1205,25 +1205,25 @@
    (if (atom l)
        (equal l nil)
      (and (consp (car l))
-	  (natp (caar l)) 
-	  (natp (cdar l)) 
+	  (natp (caar l))
+	  (natp (cdar l))
 	  (nat-pairs-true-listp (cdr l))))))
 
 
 (local
  (defthm nat-true-listp-true-listp
    (implies (nat-true-listp l) (true-listp l))))
- 
+
 (local
  (defthm nat-true-listp-nat-pairs-true-listp-pair-args
    (implies (and (nat-true-listp l1)
 		 (nat-true-listp l2))
 	    (nat-pairs-true-listp (first (pair-args l1 l2))))))
- 
+
 
 (local
  (defthm pair-args-append
-   (implies 
+   (implies
     (and (true-listp l1) (true-listp l2)
 	 (true-listp l3) (true-listp l4)
 	 (second (pair-args l1 l2))
@@ -1233,19 +1233,19 @@
      (equal (first (pair-args (append l1 l3) (append l2 l4)))
 	    (append (first (pair-args l1 l2)) (first (pair-args l3
 								l4))))))))
- 
-(local 
+
+(local
  (defthm first-pair-args-revlist
    (implies (second (pair-args l1 l2))
 	    (equal (revlist (first (pair-args l1 l2)))
 		   (first (pair-args (revlist l1) (revlist l2)))))))
- 
+
 (local
  (defthm consp-pair-args
    (implies (second (pair-args l1 l2))
 	    (iff (consp (first (pair-args l1 l2)))
 		 (and (consp l1) (consp l2))))))
- 
+
 (local
  (defthm consp-cdr-append-list
    (iff (consp (cdr (append l (list x))))
@@ -1257,7 +1257,7 @@
 	    (equal (car (append l1 l2))
 		   (car l1)))))
 
- 
+
 
 
 ;;; Lemmas used by Subgoal 20:
@@ -1290,7 +1290,7 @@
 ;;; Lemmas used by Subgoal 15:
 
 ;;; Note the rewrite rule, maybe not the most natural formulation of the
-;;; lemma, but in this way we avoid problems with th free variable. 
+;;; lemma, but in this way we avoid problems with th free variable.
 
 (local
  (defthm first-id-stack-invariant-aux-with-equations-delete-rule
@@ -1299,14 +1299,14 @@
 	 (not (first-id-stack-invariant-aux-with-equations
 	       l1 l2 eqs g))
 	 (equal (dag-deref h1 g) (dag-deref h2 g)))
-    
+
     (not (first-id-stack-invariant-aux-with-equations
 	  l1 l2 (append eqs (list (cons h1 h2))) g)))
-   :hints (("Goal" :induct 
+   :hints (("Goal" :induct
 	    (first-id-stack-invariant-aux-with-equations
 	     l1 l2 eqs g)))))
- 
- 
+
+
 ;;; Lemmas used by 15.2:
 
 
@@ -1316,15 +1316,15 @@
 	    (iff
 	     (equations-already-solved (revlist l1) (revlist l2) g)
 	     (equations-already-solved l1 l2 g)))))
- 
- 
+
+
 (local
  (encapsulate
   ()
   (local
    (defthm equations-already-solved-delete-rule
      (implies
-      (and 
+      (and
        (consp l1) (consp l2)
        (equations-already-solved (cdr l1) (cdr l2) g)
        (equal (dag-deref (car l1) g) (dag-deref (car l2) g)))
@@ -1333,7 +1333,7 @@
 
   (defthm equations-already-solved-delete-rule-corollary
     (implies
-     (and 
+     (and
       (consp l1) (consp l2) (true-listp l1) (true-listp l2)
       (not (equations-already-solved l1 l2 g))
       (equations-already-solved (cdr (revlist l1)) (cdr (revlist l2)) g))
@@ -1344,7 +1344,7 @@
 			  (:instance
 			   equations-already-solved-delete-rule
 			   (l1 (revlist l1)) (l2 (revlist l2)))))))))
-  
+
 
 
 
@@ -1360,7 +1360,7 @@
 	 (list l1 l2 eqs)
        (induct-first-id-stack-invariant-orient-rule
 	(cdr l1) (cdr l2) (cdr eqs)))))
-   
+
   (defthm first-id-stack-invariant-orient-rule
     (implies
      (and
@@ -1374,7 +1374,7 @@
 				    (dag-deref h1 g)))) g))
     :hints (("Goal" :induct
 	     (induct-first-id-stack-invariant-orient-rule l1 l2 eqs))))
- 
+
 
   (defthm first-id-stack-invariant-orient-rule-corollary
     (implies
@@ -1391,8 +1391,8 @@
     :hints (("Goal" :use
 	     ((:instance first-id-stack-invariant-orient-rule
 			 (eqs (cdr eqs)))))))))
-  
-  
+
+
 ;;; Lemmas used by Subgoal 12
 
 (local
@@ -1401,14 +1401,14 @@
 	    (equal (until-first-id
 		    (append S (cons (list 'id i1 i2) rest)))
 		   (append S (list (list 'id i1 i2)))))))
- 
+
 (local
  (defthm after-first-id-nat-pairs-true-listp-2
    (implies (nat-pairs-true-listp S)
 	    (equal (after-first-id
 		    (append S (cons (list 'id i1 i2) rest)))
 		   rest))))
- 
+
 (local
  (defthm remaining-id-stacks-invariant-aux-decompose-rule
    (implies
@@ -1423,7 +1423,7 @@
 	     l1 l2 eqs (list 'id (dag-deref h1 g)
 			     (dag-deref h2 g)) g)
 	    :in-theory (disable dag-deref)))))
- 
+
 (local
  (encapsulate
   ()
@@ -1431,7 +1431,7 @@
    (defthm term-dag-variable-p-dag-deref
      (implies (and (dag-p g) (not (term-dag-variable-p (dag-deref h g) g)))
 	      (not (term-dag-variable-p h g)))))
-  
+
  (defthm remaining-id-stacks-invariant-aux-decompose-rule-corollary
    (implies
     (and (dag-p g)
@@ -1452,7 +1452,7 @@
 	     (not (term-dag-variable-p h2 g)))
 	    (equal (nth h2 (update-nth h1 i g))
 		   (nth h2 g)))))
- 
+
 (local
  (defthm equations-already-solved-eliminate-rule
    (implies (and (bounded-term-graph-p g n)
@@ -1465,22 +1465,22 @@
 		 (term-dag-variable-p x g)
 		 (equations-already-solved l1 l2 g))
 	    (equations-already-solved l1 l2 (update-nth x h0 g)))))
- 
- 
+
+
 
 (local
  (defthm dag-deref-when-updating-variables-nodes
    (implies (and
 	     (dag-p g)
-	     (bounded-term-graph-p g n) 
-	     (natp x) (natp h0) 
+	     (bounded-term-graph-p g n)
+	     (natp x) (natp h0)
 	     (not (occur-check-d t x h0 g))
 	     (term-dag-variable-p x g)
 	     (not (term-dag-variable-p (dag-deref h g) g)))
 	    (equal (dag-deref h (update-nth x h0 g))
 		   (dag-deref h g)))))
- 
-(local 
+
+(local
  (defthm remaining-id-stacks-invariant-aux-preserved-eliminate-rule
    (implies (and (bounded-term-graph-p g n)
 		 (nat-true-listp rargs1)
@@ -1496,18 +1496,18 @@
 		  rargs1 rargs2 eqs id-equ g))
 	    (remaining-id-stacks-invariant-aux
 	     rargs1 rargs2 eqs id-equ (update-nth h1 h2 g)))))
- 
-(local 
+
+(local
  (defthm nat-true-listp-revlist
    (implies (nat-true-listp l)
 	    (nat-true-listp (revlist l)))))
- 
+
 
 (local
  (defthm bounded-nat-true-listp-revlist
    (implies (bounded-nat-true-listp l n)
 	    (bounded-nat-true-listp (revlist l) n))))
- 
+
 (local
  (defthm iter-remaining-id-stacks-invariant-preserved-eliminate-rule
    (implies
@@ -1524,8 +1524,8 @@
       id-equ id-stacks g))
     (iter-remaining-id-stacks-invariant
      id-equ id-stacks (update-nth h1 h2 g)))))
- 
- 
+
+
 
 (local
  (defthm eliminate-rule-lemma-1
@@ -1552,7 +1552,7 @@
 						  term)))
 			       (flg t) (term (dag-as-term t h2 g))))))
      :rule-classes nil))
- 
+
 
   (defthm eliminate-rule-lemma-2-corollary
     (implies (and (dag-p g)
@@ -1569,7 +1569,7 @@
 	     ((:instance eliminate-rule-lemma-2
 			 (h1 (dag-deref h1 g)) (h2 (dag-deref h2 g))))
 	     :in-theory (enable dag-as-term-dag-deref))))))
-  
+
 
 
 
@@ -1579,11 +1579,11 @@
   (local
    (defthm equations-already-solved-eliminate-rule-last-equation-of-the-stack-main-lemma
      (implies
-      (and 
+      (and
        (bounded-term-graph-p g n)
        (dag-p g)
        (no-duplicatesp (list-of-term-dag-variables g))
-       (nat-true-listp l1) (consp l1) 
+       (nat-true-listp l1) (consp l1)
        (nat-true-listp l2) (consp l2)
        (not (occur-check-d t (dag-deref (car l1) g) (dag-deref (car l2) g) g))
        (term-dag-variable-p (dag-deref (car l1) g)  g)
@@ -1594,16 +1594,16 @@
        (update-nth (dag-deref (car l1) g)
 		   (dag-deref (car l2) g) g)))
      :rule-classes nil))
-   
-   
+
+
   (defthm
     equations-already-solved-eliminate-rule-last-equation-of-the-stack
     (implies
-     (and 
+     (and
       (term-graph-p g)
       (dag-p g)
       (no-duplicatesp (list-of-term-dag-variables g))
-      (nat-true-listp l1) (consp l1) 
+      (nat-true-listp l1) (consp l1)
       (nat-true-listp l2) (consp l2)
       (not (occur-check-d t (dag-deref (car (revlist l1)) g) (dag-deref
 							      (car
@@ -1619,21 +1619,21 @@
 	     (:instance
 	      equations-already-solved-eliminate-rule-last-equation-of-the-stack-main-lemma
 	      (l1 (revlist l1)) (l2 (revlist l2)) (n (len g))))))))
-  
+
 (local
  (defthm equations-already-solved-symmetric
    (iff (equations-already-solved l1 l2 g)
 	(equations-already-solved l2 l1 g))))
- 
+
 (local
  (defthm
    equations-already-solved-eliminate-rule-last-equation-of-the-stack-symetric
    (implies
-    (and 
+    (and
      (term-graph-p g)
      (dag-p g)
      (no-duplicatesp (list-of-term-dag-variables g))
-     (nat-true-listp l1) (consp l1) 
+     (nat-true-listp l1) (consp l1)
      (nat-true-listp l2) (consp l2)
      (not (occur-check-d t (dag-deref (car (revlist l2)) g) (dag-deref
 							     (car
@@ -1650,7 +1650,7 @@
 	     equations-already-solved-eliminate-rule-last-equation-of-the-stack
 	     (l1 l2) (l2 l1))
 	    :in-theory (disable equations-already-solved-eliminate-rule-last-equation-of-the-stack)))))
- 
+
 (local (in-theory (disable equations-already-solved-symmetric)))
 
 
@@ -1678,10 +1678,10 @@
    :hints (("Goal"
 	    :in-theory (disable nth-update-nth) ;;; Este disable quita
 					;;; muchisimos casos
-	    :induct 
+	    :induct
 	    (first-id-stack-invariant-aux-with-equations
 	     l1 l2 eqs g)))))
- 
+
 
 
 ;;; Lemmas used by Subgoal 8
@@ -1700,7 +1700,7 @@
    (implies (equal (first (car (revlist (until-first-id ext-s))))
 		   'id)
 	    (consp (split-extended-system-in-id-stacks ext-s)))))
- 
+
 (local
  (defthm consp-split-extended-system-in-id-stacks
    (implies (consp (split-extended-system-in-id-stacks ext-S))
@@ -1708,11 +1708,11 @@
 	     (first
 	      (car (last (until-first-id ext-S))))
 	     'id))))
- 
- 
+
+
 
 ;;; The function remaining-id-stacks-invariant-path builds a path in the
-;;; dag, obtained from the extended indices system of equations. 
+;;; dag, obtained from the extended indices system of equations.
 
 (local
  (defun dag-deref-path (h g)
@@ -1732,13 +1732,13 @@
        (cons id (dag-deref-path (car rargs) g))
      (remaining-id-stacks-invariant-path
       id (cdr rargs) (cdr requations) g))))
- 
- 
+
+
 ;;; With the function above we can build two paths, from the components
 ;;; of remaining-id-stacks-invariant
 
 ;;; Before disabling it, let us see the main properties of this
-;;; function. 
+;;; function.
 
 
 ;;; First, two properties of dag-deref.
@@ -1751,7 +1751,7 @@
 		   (true-listp d-d-path)
 		   (equal (car d-d-path) h)
 		   (equal (car (last d-d-path)) (dag-deref h g)))))))
- 
+
 (local
  (defthm path-p-dag-deref-path
    (implies (and (bounded-term-graph-p g n)
@@ -1759,14 +1759,14 @@
 		 (natp h))
 	    (path-p (dag-deref-path h g) g))))
 ;;; -------
- 
+
 (local
  (defthm member-map-nfix-natp
    (implies (nat-true-listp l)
 	    (equal (map-nfix l) l))))
- 
+
 ;;; Given the components of a remaining-id-stacks-invaraint-aux, two
-;;; paths in the graph can be built, as the following results stablish. 
+;;; paths in the graph can be built, as the following results stablish.
 
 (local
  (defthm remaining-id-stacks-invariant-path-path-p-main-lemma-lhs
@@ -1778,7 +1778,7 @@
 	     (natp id-lhs)
 	     (nat-true-listp rargs1) ;;; esto es redundante pero ayuda
 	     (term-dag-non-variable-p id-lhs g)
-	     (subsetp rargs1 (term-dag-args id-lhs g)))  
+	     (subsetp rargs1 (term-dag-args id-lhs g)))
 	    (path-p (remaining-id-stacks-invariant-path
 		     id-lhs rargs1 requations g) g))))
 
@@ -1793,20 +1793,20 @@
 	     (natp id-rhs)
 	     (nat-true-listp rargs2) ;;; esto es redundante pero ayuda
 	     (term-dag-non-variable-p id-rhs g)
-	     (subsetp rargs2 (term-dag-args id-rhs g)))  
+	     (subsetp rargs2 (term-dag-args id-rhs g)))
 	    (path-p (remaining-id-stacks-invariant-path
 		     id-rhs rargs2 requations g) g))))
- 
+
 
 
 ;;  It is a true-listp
- 
+
 (local
  (defthm remaining-id-stacks-invariant-path-true-listp
    (implies (dag-p g)
 	    (true-listp (remaining-id-stacks-invariant-path
 			 id rargs requations g)))))
- 
+
 
 
 ;;; With at least two elements
@@ -1818,7 +1818,7 @@
 		     id rargs requations g))
 	       1))
    :rule-classes :linear))
- 
+
 
 
 ;;; The first of this elements is the first argument
@@ -1828,9 +1828,9 @@
 	    (equal (car (remaining-id-stacks-invariant-path
 			 id rargs requations g))
 		   id))))
- 
+
 ;;; The last one depends on wether we take the left path or the right
-;;; path: 
+;;; path:
 
 (local
  (defthm remaining-id-stacks-invariant-path-last-element-lhs
@@ -1850,7 +1850,7 @@
 	    (equal (car (last (remaining-id-stacks-invariant-path
 			       id-rhs rargs2 requations g)))
 		   (third id-equ)))))
- 
+
 ;;; Now we disable remaining-id-stacks-invariant-path
 (local (in-theory (disable remaining-id-stacks-invariant-path)))
 
@@ -1862,33 +1862,33 @@
    (id-equ requations next-id-equ g)
    (declare (ignore id-equ))
    (let ((id1 (second next-id-equ)))
-     (remaining-id-stacks-invariant-path 
+     (remaining-id-stacks-invariant-path
       id1 (revlist (term-dag-args id1 g)) requations g))))
- 
- 
+
+
 (local
  (defun remaining-id-stacks-invariant-path-rhs
    (id-equ requations next-id-equ g)
    (declare (ignore id-equ))
    (let ((id2 (third next-id-equ)))
-     (remaining-id-stacks-invariant-path 
+     (remaining-id-stacks-invariant-path
       id2 (revlist (term-dag-args id2 g)) requations g))))
- 
+
 ;;; And now we prove the main properties of these functions. That is,
 ;;; under the hypothesis remaining-id-stacks-invariant, the following
-;;; holds fro both paths:  
+;;; holds fro both paths:
 ;;;     - They are paths in the graph g
 ;;;     - True listps
 ;;;     - With length bigger than 1
 ;;;     - Its first element is the second element of next-id-equ (for
 ;;;     lhs) y and the third of next-id-equ (for rhs), respectively
 ;;;     - Its last last element is the second of id-equ (for lhs) or the
-;;;     third of id-equ (for lhs). 
+;;;     third of id-equ (for lhs).
 
 (local
  (defthm subsetp-revlist
    (subsetp (revlist l) l)))
- 
+
 ;;; Paths
 (local
  (defthm remaining-id-stacks-invariant-path-lhs-path-p
@@ -1909,7 +1909,7 @@
 	    (path-p
 	     (remaining-id-stacks-invariant-path-rhs
 	      id-equ requations next-id-equ g) g))))
- 
+
 ;;; True lists p
 
 (local
@@ -1918,15 +1918,15 @@
 	    (true-listp
 	     (remaining-id-stacks-invariant-path-lhs
 	      id-equ requations next-id-equ g)))))
- 
+
 (local
  (defthm remaining-id-stacks-invariant-path-rhs-true-listp
    (implies (dag-p g)
 	    (true-listp
 	     (remaining-id-stacks-invariant-path-rhs
 	      id-equ requations next-id-equ g)))))
- 
- 
+
+
 
 ;;; Length >1
 
@@ -1979,11 +1979,11 @@
 		 (remaining-id-stacks-invariant
 		  id-equ requations next-id-equ g))
 	    (equal (car
-		    (last 
+		    (last
 		     (remaining-id-stacks-invariant-path-lhs
 		      id-equ requations next-id-equ g)))
 		   (second id-equ)))))
- 
+
 
 (local
  (defthm remaining-id-stacks-invariant-path-rhs-last-element
@@ -1991,7 +1991,7 @@
 		 (remaining-id-stacks-invariant
 		  id-equ requations next-id-equ g))
 	    (equal (car
-		    (last 
+		    (last
 		     (remaining-id-stacks-invariant-path-rhs
 		      id-equ requations next-id-equ g)))
 		   (third id-equ)))))
@@ -2005,7 +2005,7 @@
 ;;; No we define two other functions, similar to the previously defined,
 ;;; but starting in a already given path. This will be used to prove
 ;;; that, when doing an identification,
-;;; iter-remaining-id-stacks-invariant  is preserved. 
+;;; iter-remaining-id-stacks-invariant  is preserved.
 
 
 (local
@@ -2014,7 +2014,7 @@
    (append (remaining-id-stacks-invariant-path-lhs
 	    id-equ requations next-id-equ g)
 	   (cdr p))))
- 
+
 
 (local
  (defun remaining-id-stacks-invariant-path-append-rhs
@@ -2022,20 +2022,20 @@
    (append (remaining-id-stacks-invariant-path-rhs
 	    id-equ requations next-id-equ g)
 	   (cdr p))))
- 
-;;; For these two functions, we prove the same properties than before. 
+
+;;; For these two functions, we prove the same properties than before.
 
 ;;; Paths:
 
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm path-p-true-listp
      (implies (path-p p g)
 	      (true-listp p))))
-  
+
   (local
    (defthm path-p-append-cdr
      (implies (and (path-p p1 g)
@@ -2044,8 +2044,8 @@
 			  (car p2)))
 	      (path-p (append p1 (cdr p2)) g))
      :hints (("Goal" :in-theory (enable path-p-append)))))
-  
-  
+
+
   (defthm remaining-id-stacks-invariant-path-append-lhs-path-p
     (implies (and (term-graph-p g)
 		  (dag-p g)
@@ -2056,8 +2056,8 @@
 	     (path-p
 	      (remaining-id-stacks-invariant-path-append-lhs
 	       p id-equ requations next-id-equ g) g)))
-  
-  
+
+
   (defthm remaining-id-stacks-invariant-path-append-rhs-path-p
     (implies (and (term-graph-p g)
 		  (dag-p g)
@@ -2068,20 +2068,20 @@
 	     (path-p
 	      (remaining-id-stacks-invariant-path-append-rhs
 	       p id-equ requations next-id-equ g) g)))))
- 
- 
+
+
 ;;; Length > 1
 
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm len-append
      (equal (len (append p1 p2))
 	    (+ (len p1) (len p2)))))
-  
-  
+
+
   (defthm remaining-id-stacks-invariant-path-append-lhs-at-least-two-elements
     (implies (dag-p g)
 	     (> (len
@@ -2089,8 +2089,8 @@
 		  p id-equ requations next-id-equ g))
 		1))
     :rule-classes :linear)
-  
-  
+
+
   (defthm remaining-id-stacks-invariant-path-append-rhs-at-least-two-elements
     (implies (dag-p g)
 	     (> (len
@@ -2098,10 +2098,10 @@
 		  p id-equ requations next-id-equ g))
 		1))
     :rule-classes :linear)))
- 
- 
+
+
 ;;; The first element:
- 
+
 
 (local
  (defthm remaining-id-stacks-invariant-path-append-lhs-first-element
@@ -2110,7 +2110,7 @@
 	     (car (remaining-id-stacks-invariant-path-append-lhs
 		   p id-equ requations next-id-equ g))
 	     (second next-id-equ)))))
-	      
+
 
 (local
  (defthm remaining-id-stacks-invariant-path-append-rhs-first-element
@@ -2119,8 +2119,8 @@
 	     (car (remaining-id-stacks-invariant-path-append-rhs
 		   p id-equ requations next-id-equ g))
 	     (third next-id-equ)))))
- 
- 
+
+
 
 ;;; The last element
 
@@ -2132,7 +2132,7 @@
      (implies (not (consp l))
 	      (equal (car (last (append m l)))
 		     (car (last m))))))
-  
+
   (defthm remaining-id-stacks-invariant-path-append-lhs-last-element
     (implies (and (dag-p g)
 		  (remaining-id-stacks-invariant
@@ -2140,12 +2140,12 @@
 		  (consp p)
 		  (equal (car p) (second id-equ)))
 	     (equal (car
-		     (last 
+		     (last
 		      (remaining-id-stacks-invariant-path-append-lhs
 		       p id-equ requations next-id-equ g)))
 		    (car (last p)))))
-  
-  
+
+
   (defthm remaining-id-stacks-invariant-path-append-rhs-last-element
     (implies (and (dag-p g)
 		  (remaining-id-stacks-invariant
@@ -2153,12 +2153,12 @@
 		  (consp p)
 		  (equal (car p) (third id-equ)))
 	     (equal (car
-		     (last 
+		     (last
 		      (remaining-id-stacks-invariant-path-append-rhs
 		       p id-equ requations next-id-equ g)))
 		    (car (last p)))))))
- 
- 
+
+
 ;;; And now we disable the function:
 
 (local (in-theory (disable remaining-id-stacks-invariant-path-append-lhs
@@ -2182,17 +2182,17 @@
    (defthm member-car-last
      (implies (consp l)
 	      (member (car (last l)) l))))
-  
-  
+
+
   (defthm no-duplicatesp-dag-p
     (implies (and (dag-p g)
 		  (path-p p g)
 		  (> (len p) 1))
 	     (not (equal (car (last p)) (car p))))
     :hints (("Goal" :use dag-p-completeness)))))
- 
- 
-  
+
+
+
 (local
  (defthm remaining-id-stacks-invariant-nth-update-nth-lhs
    (let ((next-id-equ (car (revlist id-stack)))
@@ -2236,7 +2236,7 @@
    :rule-classes nil))
 
 
-  
+
 (local
  (defthm remaining-id-stacks-invariant-nth-update-nth-rhs
    (let ((next-id-equ (car (revlist id-stack)))
@@ -2270,19 +2270,19 @@
 
 ;;; Inorder to prove that iter-remaining... is preserved by update-nth
 ;;; (theorem
-;;; iter-remaining-id-stacks-invariant-preserved-by-identification-main-lemma)  
+;;; iter-remaining-id-stacks-invariant-preserved-by-identification-main-lemma)
 ;;; we need to use again that none of the involved ids are equal to the
 ;;; updated node. For that, we again prove the same two reasons than
 ;;; above, but now  taking into account that the path is an append of a
 ;;; certain p1 (or p2) with the path obtained from the fact that we have
-;;; a remaining-path-invariant. 
+;;; a remaining-path-invariant.
 
 (local
  (defthm consp-len-bigger-than-1
    (iff (> (len l) 1)
 	(and (consp l) (consp (cdr l))))))
- 
- 
+
+
 
 (local
  (defthm remaining-id-stacks-invariant-path-append-lhs-consp
@@ -2291,12 +2291,12 @@
 		  (remaining-id-stacks-invariant-path-append-lhs
 		   p id-equ requations next-id-equ g))
 		 (consp
-		  (cdr 
+		  (cdr
 		   (remaining-id-stacks-invariant-path-append-lhs
 		    p id-equ requations next-id-equ g)))))
    :hints (("Goal" :use remaining-id-stacks-invariant-path-append-lhs-at-least-two-elements))))
- 
- 
+
+
 (local
  (defthm remaining-id-stacks-invariant-path-append-rhs-consp
   (implies (dag-p g)
@@ -2308,8 +2308,8 @@
 		  (remaining-id-stacks-invariant-path-append-rhs
 		   p id-equ requations next-id-equ g)))))
   :hints (("Goal" :use remaining-id-stacks-invariant-path-append-rhs-at-least-two-elements))))
- 
- 
+
+
 
 
 (local
@@ -2342,7 +2342,7 @@
 
 ;;; NOTE: again this lemma could be more general (without the let), but
 ;;; instantiating is this way, we avoid problems with free variables.
- 
+
 (local
  (defthm remaining-id-stacks-invariant-nth-update-nth-append-rhs
    (let ((next-id-equ (car (revlist id-stack)))
@@ -2385,13 +2385,13 @@
 ;;; - iter-remaining-id-stacks-invariant (this can be proved using a
 ;;;   trick: the invariant implies that ther is a path from the updated
 ;;;   node and the first id of the ids stacks).
-;;; - If just after the identified id ther is another id, then  
+;;; - If just after the identified id ther is another id, then
 ;;;   equations-already-solved of its arguments is verified (this is
-;;;   easy). 
+;;;   easy).
 ;;; - If there are remaining equations, then
 ;;; first-id-stack-invariant-with-equations (this is also easy).
 
-;;; Let us first prove iter-remaining-id-stacks-invariant: 
+;;; Let us first prove iter-remaining-id-stacks-invariant:
 
 (local
  (defun induct-iter-remaining-id-stacks-invariant (p1 p2 id-equ
@@ -2409,8 +2409,8 @@
 	     (remaining-id-stacks-invariant-path-append-rhs
 	      p2 id-equ requations next-id-equ g)
 	     next-id-equ (cdr id-stack-list) g))))))
- 
- 
+
+
 
 
 (local
@@ -2424,11 +2424,11 @@
 		 (equal (dag-as-term t i g)
 			(dag-as-term t j g)))
 	    (dag-p (update-nth i j g)))))
- 
+
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm dag-deref-preserved-by-identification-lemma-1
      (implies (and (dag-p g)
@@ -2437,7 +2437,7 @@
 		   (not (equal i (dag-deref h g))))
 	      (not (equal i h)))
      :rule-classes nil))
-  
+
   (local
    (defthm dag-deref-preserved-by-identification-lemma-2
      (implies (and (dag-p g)
@@ -2455,8 +2455,8 @@
 	      (equal (dag-deref h g) (dag-deref h (update-nth i j g))))
     ;;;:hints (("Goal" :in-theory (enable nth-update-nth)))
      :rule-classes nil))
-  
-  
+
+
   (defthm dag-deref-preserved-by-identification-main-lemma
     (implies (and (dag-p g)
 		  (bounded-term-graph-p g n)
@@ -2472,8 +2472,8 @@
 	     (equal (dag-deref h (update-nth i j g)) (dag-deref h g)))
     :hints (("Goal" :use (dag-deref-preserved-by-identification-lemma-1
 			  dag-deref-preserved-by-identification-lemma-2))))))
- 
- 
+
+
 (local
  (defthm equations-already-solved-preserved-by-identification
    (implies (and (dag-p g)
@@ -2489,8 +2489,8 @@
 		 (nat-true-listp l2)
 		 (equations-already-solved l1 l2 g))
 	    (equations-already-solved l1 l2 (update-nth i j g)))))
- 
- 
+
+
 (local
  (defthm
    remaining-id-stacks-invariant-aux-preserved-by-identification-main-lemma
@@ -2511,8 +2511,8 @@
 		  rargs1 rargs2 requations id-equ g))
 	    (remaining-id-stacks-invariant-aux
 	     rargs1 rargs2 requations id-equ (update-nth i j g)))))
- 
- 
+
+
 ;;; How long it takes!!!
 (local
  (defthm
@@ -2526,7 +2526,7 @@
 		 (term-dag-non-variable-p (second id-equ) g) ;; sobra?
 		 (natp (car (last p1))) ;;; sobra???
 		 (term-dag-non-variable-p (car (last p1)) g)
-		 
+
 		 (path-p p2 g)
 		 (> (len p2) 1)
 		 (natp (car (last p2))) ;;; sobra??
@@ -2556,7 +2556,7 @@
 			(i (car (last p1)))
 			(n (len g))))
 	    :do-not-induct t))))
- 
+
 
 ;;; Suddenly, and after proving the above theorem, this takes too time!!!  Why???
 (local
@@ -2571,7 +2571,7 @@
 		 (term-dag-non-variable-p (second id-equ) g)
 		 (natp (car (last p1))) ;;; sobra???
 		 (term-dag-non-variable-p (car (last p1)) g)
-		 
+
 		 (path-p p2 g)
 		 (> (len p2) 1)
 		 (natp (car (last p2))) ;;; sobra??
@@ -2601,12 +2601,12 @@
 		  (remaining-id-stacks-invariant-path-lhs
 		   id-equ requations next-id-equ g))
 		 (consp
-		  (cdr 
+		  (cdr
 		   (remaining-id-stacks-invariant-path-lhs
 		    id-equ requations next-id-equ g)))))
    :hints (("Goal" :use remaining-id-stacks-invariant-path-lhs-at-least-two-elements))))
- 
- 
+
+
 (local
  (defthm remaining-id-stacks-invariant-path-rhs-consp
    (implies (dag-p g)
@@ -2618,9 +2618,9 @@
 		   (remaining-id-stacks-invariant-path-rhs
 		    id-equ requations next-id-equ g)))))
    :hints (("Goal" :use remaining-id-stacks-invariant-path-rhs-at-least-two-elements))))
- 
- 
- 
+
+
+
 (local
  (defthm
    iter-remaining-id-stacks-invariant-preserved-by-identification
@@ -2630,14 +2630,14 @@
 		   (term-graph-p g)
 		   (natp (second id-eq0)) ;;; sobra???
 		   (term-dag-non-variable-p (second id-eq0) g)
-		   
+
 		   (natp (third id-eq0)) ;;; sobra??
 		   (term-dag-non-variable-p (third id-eq0) g)
-		   
+
 		   (not (equal (second id-eq0) (third id-eq0)))
 		   (equal (dag-as-term t (second id-eq0) g)
 			  (dag-as-term t (third id-eq0) g))
-		   
+
 		   (remaining-id-stacks-invariant
 		    id-eq0 requations id-equ g)
 		   (iter-remaining-id-stacks-invariant
@@ -2657,12 +2657,12 @@
 ;;; instantiating is this way, we avoid problems with free variables.
 
 
-;;; Two subgoals remain, related to the first "id-stack" 
+;;; Two subgoals remain, related to the first "id-stack"
 
 ;;; Two cases may occur:
 
 ;;; 1) The equation next to the id is another id: in this case we have to
-;;; prove that their arguments are already solved. 
+;;; prove that their arguments are already solved.
 ;;; 2) The equation next to the id is not an id: in this case we have to
 ;;; prove  first-id-stack-with-equations....
 
@@ -2671,7 +2671,7 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm equations-already-solved-preserved-by-identification-first-stack-lemma-1
      (implies (and (dag-p g)
@@ -2688,7 +2688,7 @@
 		   (equations-already-solved (revlist l1) (revlist l2) g))
 	      (equations-already-solved l1 l2 (update-nth i j g)))
      :rule-classes nil))
-  
+
   (local
    (defthm equations-already-solved-preserved-by-identification-first-stack-lemma-2
      (implies (and (dag-p g)
@@ -2703,9 +2703,9 @@
 	      (equations-already-solved m1 m2 g))
      :hints (("Goal" :in-theory (enable dag-as-term-dag-deref)))
      :rule-classes nil))
-  
-  
-  
+
+
+
   (defthm equations-already-solved-preserved-by-identification-first-stack
     (implies (and (dag-p g)
 		  (term-graph-p g)
@@ -2730,13 +2730,13 @@
 	       (m1 (revlist l1)) (m2 (revlist l2))))
 	     :in-theory (disable
 			 equations-already-solved-revlist))))))
- 
- 
+
+
 ;;; Case 2)
 
 (local
  (defthm
-   remaining-id-stacks-invariant-aux-first-id-stack-invariant-aux-with-equations-first-id-stack 
+   remaining-id-stacks-invariant-aux-first-id-stack-invariant-aux-with-equations-first-id-stack
    (implies (and (dag-p g)
 		 (term-graph-p g)
 		 (natp (second id-equ))
@@ -2746,8 +2746,8 @@
 		 (not (equal (second id-equ) (third id-equ)))
 		 (equal (dag-as-term t (second id-equ) g)
 			(dag-as-term t (third id-equ) g))
-		 (nat-true-listp l1) 
-		 (nat-true-listp l2) 
+		 (nat-true-listp l1)
+		 (nat-true-listp l2)
 		 (consp requations)
 		 (remaining-id-stacks-invariant-aux
 		  l1 l2 requations id-equ g))
@@ -2759,8 +2759,8 @@
 			      (h (cadr l1)))
 		  (:instance  dag-as-term-dag-deref
 			      (h (cadr l2))))))))
- 
- 
+
+
 
 (local
   (defthm rewrite-rule-to-expand-iter-remaining-id-stacks-invariant
@@ -2775,7 +2775,7 @@
 	      (and (remaining-id-stacks-invariant id-equ requations next-id-equ g)
 		   (iter-remaining-id-stacks-invariant next-id-equ (cdr id-stack-list) g)))))))
 
-	    
+
 
 ;;; =====================================
 ;;; =====================================
@@ -2824,7 +2824,7 @@
 	  (<= (car stamp) time)
 	  (all-marks-integers-less-or-equal-than-time
 	   (cdr stamp) time)))))
- 
+
 (local
  (defthm all-marks-integers-less-or-equal-than-time-update-nth
    (implies (and (bounded-natp h (len stamp))
@@ -2833,7 +2833,7 @@
 		  stamp time))
 	    (all-marks-integers-less-or-equal-than-time
 	     (update-nth h time stamp) time))))
- 
+
 (local
  (defthm occur-check-q-all-marks-integers-less-or-equal-than-time
    (implies (and (dag-p g)
@@ -2849,14 +2849,14 @@
 	     (second (occur-check-q
 		      flg x h g stamp time))
 	     time))))
- 
+
 (local
  (defthm all-marks-integers-less-or-equal-less
    (implies (all-marks-integers-less-or-equal-than-time
 	     stamp time)
 	    (all-marks-integers-less-than-time
 	     stamp (1+ time)))))
- 
+
 (local
  (defthm all-marks-integers-less-less-or-equal
    (implies (all-marks-integers-less-than-time
@@ -2868,7 +2868,7 @@
 
 (local
  (defthm transform-mm-q-preserves-ext-upl-occur-check-invariant
-   (implies (and 
+   (implies (and
 	     (not (normal-form-syst ext-upl))
 	     (well-formed-extended-upl ext-upl)
 	     (ext-upl-occur-check-invariant ext-upl))
@@ -2885,13 +2885,13 @@
 (local (in-theory (disable well-formed-extended-upl-def)))
 
 (in-theory
- (disable 
+ (disable
 	  ext-upl-id-invariant
 	  ext-upl-occur-check-invariant))
 
 
 
- 
+
 ;;; ==============================================
 ;;; COMPILING ALL THE ABOVE IN A BEAUTIFUL THEOREM
 ;;; ==============================================
@@ -2913,7 +2913,7 @@
 
 ;;;============================================================================
 ;;;
-;;; 5) Termination of the transformation on extended upls 
+;;; 5) Termination of the transformation on extended upls
 ;;;
 ;;;============================================================================
 
@@ -2922,7 +2922,7 @@
 ;;; In this section, we concentrate on the justification of the
 ;;; termination. A lexicographic measure will suffice, combining:
 ;; - The already known measure for non-extended systems
-;; (unification-measure) 
+;; (unification-measure)
 ;; - The number of ids in the extended system
 
 
@@ -2962,7 +2962,7 @@
 ;;; Some previous lemmas...
 
 (local
- (defthm dag-transform-mm-q-op-identification 
+ (defthm dag-transform-mm-q-op-identification
   (iff (equal (first (dag-transform-mm-q-op ext-upl)) 'identify)
        (equal (first (first (first ext-upl))) 'id))
   :hints (("Goal" :in-theory (enable dag-transform-mm-q-op)))))
@@ -2976,15 +2976,15 @@
 	    (< (number-of-ids (first (dag-transform-mm-q ext-upl)))
 	       (number-of-ids (first ext-upl))))
   :hints (("Goal" :in-theory (enable dag-transform-mm-q)))))
-   
- 
+
+
 
 (local
  (in-theory (disable
 	     normal-form-syst
 	     ext-upl-to-upl
 	     unification-measure)))
- 
+
 (defthm o-p-q-unification-measure
   (o-p (unification-measure-q ext-upl)))
 
@@ -3003,12 +3003,12 @@
 	   ((equal (first (dag-transform-mm-q-op ext-upl))
 		   'identify)))
 	  ("Subgoal 2''"
-	   :use 
+	   :use
 	   (:instance unification-measure-decreases
 		      (S-sol (upl-as-pair-of-systems (ext-upl-to-upl
 						      ext-upl)))
 		      (op (dag-transform-mm-q-op ext-upl))))))
-	   
+
 
 ;;; We disable the measure
 
@@ -3018,7 +3018,7 @@
 
 ;;;============================================================================
 ;;;
-;;; 6) Iterating transformations 
+;;; 6) Iterating transformations
 ;;;
 ;;;============================================================================
 
@@ -3044,7 +3044,7 @@
 	  (dag-transform-mm-q-op ext-upl)
 	  (solve-upl-q-op (dag-transform-mm-q ext-upl))))
      nil)))
- 
+
 
 (local
  (defthm normal-form-syst-ext-upl-to-upl
@@ -3082,7 +3082,7 @@
 ;;;============================================================================
 
 (defun initial-stamp (n)
-  (declare (xargs :guard (natp n))) 
+  (declare (xargs :guard (natp n)))
   (if (zp n)
       nil
       (cons -1 (initial-stamp (- n 1)))))
@@ -3101,7 +3101,7 @@
  (defthm bounded-nat-pairs-true-listp-with-and-without-ids
    (implies (bounded-nat-pairs-true-listp S-dag n)
 	    (bounded-nat-pairs-true-listp-with-ids S-dag n))))
- 
+
 (local
  (defthm well-formed-upl-well-formed-extended-upl
    (implies (well-formed-upl (list S-dag sol g))
@@ -3109,8 +3109,8 @@
    :hints (("Goal" :in-theory
 	    (enable well-formed-upl-def
 		    well-formed-extended-upl-def)))))
- 
-;;; 
+
+;;;
 
 (local
  (defthm bounded-nat-pairs-true-listp-without-ids
@@ -3124,7 +3124,7 @@
    (implies (bounded-nat-pairs-true-listp S-dag n)
 	    (not (consp
 		  (split-extended-system-in-id-stacks S-dag))))))
- 
+
 
 (local
  (defthm ext-upl-id-invariant-initial-ext-upl
@@ -3134,20 +3134,20 @@
 	    :in-theory
 	    (enable ext-upl-id-invariant
 		    well-formed-upl-def)))))
- 
+
 (local
  (defthm ext-upl-occur-check-invariant-initial-ext-upl
    (ext-upl-occur-check-invariant (list S nil g (initial-stamp (len g)) 0))
    :hints (("Goal" :in-theory
 	    (enable ext-upl-occur-check-invariant)))))
- 
+
 (local
  (defthm bounded-nat-pairs-true-listp-remove-ids
    (implies (bounded-nat-pairs-true-listp S-dag n)
 	    (equal (remove-ids S-dag) S-dag))))
 
 ;;; This lemma will be used for guard verification of the stobj based
-;;; function. 
+;;; function.
 (local
  (defthm dag-mgs-q-well-formed-output
    (implies (well-formed-dag-system S g)
@@ -3162,7 +3162,7 @@
 
 
 
- 
+
 (local (in-theory (enable mgs-seq-q-p
 			  mgs-seq-q
 			  ext-upl-to-upl
@@ -3180,14 +3180,14 @@
 	    (and (mgs-seq-q-p S-dag g (dag-mgs-q-op S-dag g))
 		 (equal (ext-upl-to-upl (dag-mgs-q S-dag g))
 			(mgs-seq-q S-dag g (dag-mgs-q-op S-dag g)))))
-   
-   :hints (("Goal" 
+
+   :hints (("Goal"
 	    :use
 	    (:instance
 	     solve-upl-q-unif-seq-q-p-normal-form
 	     (ext-upl (list S-dag nil g (initial-stamp (len g)) 0)))))
    :rule-classes nil))
- 
+
 
 
 (local (in-theory (disable mgs-seq-q-p
@@ -3220,7 +3220,7 @@
 
 
 
-(defthm dag-mgs-q-soundness 
+(defthm dag-mgs-q-soundness
   (let* ((S (tbs-as-system S-dag g))
 	 (last-upl (dag-mgs-q S-dag g))
 	 (sol (solved-as-system (second last-upl) (third last-upl))))
@@ -3233,7 +3233,7 @@
 		  mgs-seq-q-soundness
 		  (unif-seq (dag-mgs-q-op S-dag g)))
 		  dag-mgs-q-op-unif-seq-q-p-normal-form))))
-  
+
 
 (defthm dag-mgs-q-idempotent
   (let* ((last-upl (dag-mgs-q S-dag g))
@@ -3249,7 +3249,7 @@
 
 
 
-(defthm dag-mgs-q-most-general-solution 
+(defthm dag-mgs-q-most-general-solution
   (let* ((S (tbs-as-system S-dag g))
 	 (last-upl (dag-mgs-q S-dag g))
 	 (sol (solved-as-system (second last-upl) (third last-upl))))
@@ -3259,13 +3259,13 @@
   :hints (("Goal"
 	   :in-theory (disable mgs-seq-q-most-general-solution )
 	   :use ((:instance
-		  mgs-seq-q-most-general-solution 
+		  mgs-seq-q-most-general-solution
 		  (unif-seq (dag-mgs-q-op S-dag g)))
 		  dag-mgs-q-op-unif-seq-q-p-normal-form))))
 
 
 
-  
+
 (local (in-theory (disable ext-upl-to-upl)))
 
 
@@ -3290,7 +3290,7 @@
 	     tbs-as-system
 	     initial-to-be-solved
 	     unif-two-terms-problem)))
- 
+
 
 
 ;;; "Almost" properties
@@ -3397,5 +3397,5 @@
 		(well-formed-term-dag-p (third (dag-mgu-q t1 t2 g))))))
 
 ;;; Note that we leave this function disabled
-		 
+
 (in-theory  (disable unification-invariant-q))

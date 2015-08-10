@@ -147,6 +147,6 @@ and is not (logically) tail-recursive."
            (or (index-of k x)
                (and (index-of k y)
                     (+ (len x) (index-of k y)))))))
-                
 
-  
+
+

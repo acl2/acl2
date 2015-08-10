@@ -57,7 +57,7 @@
        |The SSE Control and Status Register|
        |Overview of SSE Floating-Point Exceptions|
        |SSE Pre-Computation Exceptions|
-       |SSE Post-Computation Exceptions|) 
+       |SSE Post-Computation Exceptions|)
       (|x87 Instructions|
        |x87 Control Word|
        |x87 Status Word|

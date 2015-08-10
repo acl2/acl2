@@ -732,7 +732,7 @@ in it, such as a function, task, or block statement."
  (b* ((substs (scopes->tmplsubsts *vl-scopes->defs*)))
    `(progn . ,(template-proj
                '(make-event
-                 (def-scopetype-find '__type__ 
+                 (def-scopetype-find '__type__
                    (:@ :import t) (:@ (not :import) nil)
                    '__items__ 'definition 'vl-scopedef-p 'scopedef))
                substs))))

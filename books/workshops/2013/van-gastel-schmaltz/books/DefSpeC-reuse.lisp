@@ -7,7 +7,7 @@
 (defun get-defun-wrld (name wrld)  ; used by copyfun to lookup a function in the world
   (declare (xargs :mode :program)) ; for use of ACL2::DECODE-LOGICAL-NAME
   (let*
-    ((ev-wrld (acl2::decode-logical-name name wrld)) 
+    ((ev-wrld (acl2::decode-logical-name name wrld))
      (cltl-command
       (and ev-wrld ; some code taken from the :pe function
            (let ((cltl-cmd (getprop 'cltl-command 'global-value
@@ -26,7 +26,7 @@
                 ;                             nil 'current-acl2-world ev-wrld)))
                 ;(dec `(declare (xargs :mode ,mode
                 ;                      :stobjs ,stobjs)))
-                ) 
+                )
            `(defun ,name ,ll  . ,tail)))))
 ; (get-defun-wrld 'get-defun-wrld (w state))
 
@@ -63,7 +63,7 @@
 ; ":Doc-Section replacefns
 ; Replace function occurences in an expression.~/
 ; The function replaces only function occurences. Variables are left as-is.
-; 
+;
 ; Example use:
 ;   :replacefns ((foo bar) (bar foo) (x z)) ((+ (foo x y) (bar x y)))
 ; Replaces bar with foo and foo with bar, and leaves x untouched
@@ -75,7 +75,7 @@
 ; an error, further arguments will be ignored.
 ; The second argument should be a list of terms.
 ; Every element will undergo the replacement.
-; 
+;
 ; Should handle lambda expressions too:
 ; :replacefns ((foo bar) (bar foo)) ((+ ((lambda (foo j) (foo foo j)) x y) (bar x y)))
 ; "
@@ -96,7 +96,7 @@
 ; copy a function by looking it up in the world
 ; we need state to be able to call TRANSLATE1
 (defun copyfun-fn (old new-construct replacements state)
-  (declare (xargs :mode :program :stobjs (state))) 
+  (declare (xargs :mode :program :stobjs (state)))
   (let*
     ((is-lambda (and (consp new-construct) (eql 'lambda (car new-construct))))
      (new (if is-lambda (caaddr new-construct) new-construct))
@@ -111,7 +111,7 @@
     (if (and (subsetp original-args args) (equal lambda-args original-args))
       (MV-LET
        (FLG BODYCONS BINDINGS STATE)
-       (TRANSLATE1 (car (last tuple)) :STOBJS-OUT ; does roughly the same as :trans 
+       (TRANSLATE1 (car (last tuple)) :STOBJS-OUT ; does roughly the same as :trans
                    '((:STOBJS-OUT . :STOBJS-OUT))
                    T 'TOP-LEVEL
                    (W STATE) STATE)
@@ -138,19 +138,19 @@
 ; Copy and rename a function.~/
 ; You may optionally replace function occurences in the old function.
 ; This should at least be done for recursive functions.
-; 
+;
 ; Example use:
 ;   (copyfun 'true-listp 'vrai-listep '((true-listp vrai-listep)))
-; 
+;
 ; This will create a recursive function vrai-listep identical to true-listp.
 ; Replacements are performed via ~c[replacefns]. See :DOC REPLACEFNS.
 ; ~/
 ; This macro is inspired on compute-copy-defun+rewrite in hacking/rewrite-code.
 ; It uses state information to retrieve the old function, and writes to the state
 ; by defining a new one. You can use this macro without distroying certifiability.
-; 
+;
 ; This function can be used to mimic generic functions, for example, the \"map\":
-; 
+;
 ; (encapsulate ((dummy (a) t))
 ;   (local (defun dummy (a) a))
 ; )
@@ -172,7 +172,7 @@
 ; TODO Bug: Does not handle lambda-expressions well.
 ; ~/
 ; Examples:
-; 
+;
 ; :used-in f ((+ x (f y)))
 ;   T
 ; :used-in x ((+ x (f y)))
@@ -187,22 +187,22 @@
   (cond ((atom search) nil)
         ((atom (car search)) (used-in fn (cdr search)))
         (t (if (equal fn (car (car search))) t
-             (or 
+             (or
               (used-in fn (car search))
               (used-in fn (cdr search))
               )))))
 
 (DEFUN get-Derived-funs-From (FUN ignorelist WORLD-ALIST)
-  ;(declare (xargs :mode :program)) 
+  ;(declare (xargs :mode :program))
 
 ;;; This legacy doc string was replaced Nov. 2014 by the corresponding
 ;;; auto-generated defxdoc form in the last part of this file.
 
 ; ":Doc-Section get-Derived-funs-From
 ; Get all functions depending on a function.~/
-; 
+;
 ; get-Derived-funs-From FUN ignorelist (w state)
-; 
+;
 ; If you add a function name to the ignorelist, it will not be searched
 ; for occurences of FUN.~/
 ; This function will iterate until it has found the definition of FUN.
@@ -229,9 +229,9 @@
 
 ; ":Doc-Section get-Derived-funs
 ; Perform get-Derived-funs-From recursively.~/
-; 
+;
 ; get-Derived-funs-From FUNS DERIVED (w state)
-; 
+;
 ; Returns DERIVED and all functions depending on a function in FUNS,
 ; possibly in multiple steps. For instance:
 ; (defun f (x) x)
@@ -271,7 +271,7 @@
 ; ":Doc-Section used-in-oneof
 ; Check whether any of a list of functions is used in any of a list of expressions.~/
 ; Examples:
-; 
+;
 ; :used-in-oneof (f) ((+ x (f y)))
 ;   T (f is used)
 ; :used-in-oneof (x) ((+ x (f y)))
@@ -283,7 +283,7 @@
   (cond ((atom search) nil)
         ((atom (car search)) (used-in-oneof fns (cdr search)))
         (t (if (member (car (car search)) fns) t
-             (or 
+             (or
               (used-in-oneof fns (car search))
               (used-in-oneof fns (cdr search))
               )))))
@@ -303,9 +303,9 @@
 
 ; ":Doc-Section get-Derived-theorems
 ; Get all theorems saying something about some functions.~/
-; 
+;
 ; get-Derived-theorems FUNS ENDAT (w state)
-; 
+;
 ; Returns a list of lemmas that contain any of FUNS.
 ; You may use some event label at ENDAT to shorten the search.
 ; ~/
@@ -345,9 +345,9 @@
 
 ; ":Doc-Section subAll
 ; Create substitution names using a prefix. Does not perform the substitution~/
-; 
+;
 ; subAll NAMES PREFIX ALTERNATIVES
-; 
+;
 ; Returns a list of lists of length two.
 ; The first element being an item from NAMES.
 ; The second is the same, prefixed by PREFIX.
@@ -366,7 +366,7 @@
 
 ; concatenate copyfun-fn results
 (defun map-copyfun (subs repls state)
-  (declare (xargs :mode :program :stobjs (state))) 
+  (declare (xargs :mode :program :stobjs (state)))
   (cond ((atom subs) (mv nil nil state))
         (t (mv-let (er fn state) (copyfun-fn (caar subs) (cadar subs) repls state)
                    (mv-let (er2 rst state) (map-copyfun (cdr subs) repls state)
@@ -496,12 +496,12 @@
 ; (instanceOf-defspec specname prefix)
 ; or
 ; (instanceOf-defspec specname prefix rename)
-; 
+;
 ; Will use all functions in the defspec specname, prefixed with prefix.
 ; For example: fun will be instantiated with prefix-fun.
 ; If you wish to, you can supply the optional rename argument '((fun newfun))
 ; to instantiate fun with newfun.
-; 
+;
 ; All functions and theorems that are currently in scope and depend on the defspec
 ; will be duplicated (prefixed with prefix or renamed as rename).
 ; ~/
@@ -542,7 +542,7 @@
 ; (isa-spec specname prefix thmname)
 ; or
 ; (isa-spec specname prefix thmname rename)
-; 
+;
 ; All theorems that are in the defspec will be put in the current scope.
 ; ~/
 ; Examples can be found in the file closedMonoid

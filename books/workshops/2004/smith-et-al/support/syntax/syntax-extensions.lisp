@@ -15,7 +15,7 @@
 			  (list::val ,vals (,fname ,alist ,@args)))))
 	(cons term
 	      (mv-equality-terms vals fname alist-1 alist args))))))
-  
+
 (defun equality-terms (vals fname alist-1 alist args)
   (declare (type (integer 0 *) vals)
 	   (type (satisfies true-listp) args))
@@ -31,17 +31,17 @@
 	(fname         (symbol-fns::suffix mname '-fn)))
     `(encapsulate
       ()
-      
+
       (set-ignore-ok :warn)
       (set-irrelevant-formals-ok :warn)
-      
+
       (defmacro ,mname (&rest args)
 	(declare (xargs :guard (not (acl2::member-equal ',ignored-alist args))))
 	`(,',fname ,',ignored-alist ,@args))
-      
+
       (,defun ,fname ,(cons ignored-alist args)
 	,@body)
-      
+
       (add-macro-alias ,mname ,fname)
 
       )))
@@ -60,7 +60,7 @@
   (let ((ignored-alist alist)
 	(fname         (symbol-fns::suffix mname '-fn)))
     (let ((ignored-alist-1 (symbol-fns::suffix ignored-alist '_1)))
-      
+
       `(defthmd ,(symbol-fns::suffix mname '-irrelevant)
 	 (implies
 	  (bind-free (syn::alist-binding ,ignored-alist-1 ',ignored-alist) (,ignored-alist))

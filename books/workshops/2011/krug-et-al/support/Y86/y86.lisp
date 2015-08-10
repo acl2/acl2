@@ -8,7 +8,7 @@
 ;;; Based on work by Warren Hunt
 ;;;
 ;;; See memory/memory.lisp and memory/memory-low.lisp for how to
-;;; get back Alan's fast and raw memory model.  Search for 
+;;; get back Alan's fast and raw memory model.  Search for
 ;;; "fast and raw".
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -64,7 +64,7 @@
 
 (defun y86-memory-guard (st)
   (memoryp (g :mem st)))
-  
+
 (defun y86-supervisor-guard (st)
   (and (n01p (g :supervisor-mode st))
        (n32p (g :user-esp        st))
@@ -187,9 +187,9 @@
     (6  :esi)
     (7  :edi)
     (8  :imme1)  ; new
-    (10 :valu1)  ; new    
+    (10 :valu1)  ; new
     (otherwise :eax)))
-    
+
 (defun regVal (x st)
   (g (NumR x) st))
 
@@ -197,7 +197,7 @@
 
 ;;; handling page faults
 
-;;; What do we want here?  
+;;; What do we want here?
 
 ;;; Given the current way we jump into here, re-entering the faulting
 ;;; instruction would require mutual-recursion.
@@ -213,7 +213,7 @@
        (eip+1  (n32+ 1 eip))
        (st (s :eip eip+1 st)))
       st))
-  
+
 (defun y86-halt (st)
   st)
 
@@ -319,7 +319,7 @@
 
 (defun sall-of (CrB)
   (if (xor (logbitp 31 CrB) (logbitp 30 CrB)) ; xor of top two bits
-      1 
+      1
     0))
 
 (defun shrl-cf (shift CrB)
@@ -744,13 +744,13 @@
 
             (7                          ; jXX:  Dest -> eip
              (y86-jXX st function))
-            
+
             (8                          ; call:  eip -> (--esp) ; Dest -> eip
              (y86-call st))
 
             (9                          ; ret:  (esp++) -> eip
              (y86-ret st))
-      
+
             (10                         ; pushl:  rA -> (--esp)
              (y86-pushl st))
 
@@ -812,13 +812,13 @@
 
                           (7            ; jXX:  Dest -> eip
                            (y86-jXX st function))
-            
+
                           (8     ; call:  eip -> (--esp) ; Dest -> eip
                            (y86-call st))
 
                           (9            ; ret:  (esp++) -> eip
                            (y86-ret st))
-      
+
                           (10           ; pushl:  rA -> (--esp)
                            (y86-pushl st))
 

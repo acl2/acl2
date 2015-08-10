@@ -467,7 +467,7 @@
 ; disabled below.
           ("Subgoal *1/2.2'9'"
            :in-theory (disable prefer-positive-addends-equal))))
-	   
+
 (defthm floor-mod-*-2-kb
   (implies (and (equal c (floor a 2))
 		(equal b (* 2 d))

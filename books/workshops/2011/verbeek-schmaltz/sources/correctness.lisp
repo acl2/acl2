@@ -209,7 +209,7 @@
   (implies (and (member-equal node path)
                 (not (equal (car (last path)) node))
                 (st-d-pathp path dest graph nodeset))
-           (st-d-pathp (cdr (member-equal node path)) dest graph nodeset)))           
+           (st-d-pathp (cdr (member-equal node path)) dest graph nodeset)))
 (defthm temp3.32
   (implies (and (st-d-pathp path dest graph nodeset)
                 (member-equal node path)
@@ -464,7 +464,7 @@
                          (A-dests-of (car (last (car (find-d-path-containing paths dests node)))) (neighborsi (car (last (car (find-d-path-containing paths dests node)))) graph) graph nodeset))))
 
 
- 
+
 
 (defthm temp6.0
   (implies (legal-mark x)
@@ -538,7 +538,7 @@
                                       marksi-update-marksi subsetp-st-filter-2marked-nodes-update-marksi-3 subsetp-st-filter-2marked-nodes-update-marksi-4 legal-mark spec-of-A-dests-E-2neighbor
                                       spec-of-invariant-escs2 temp1.11 spec-of-invariant-2marks temp21.4 temp21.5 temp21.6 neighbors-are-keys-of-neighbors->destsi
                                       temp1.13v2))
-          ("Subgoal *1/7.12" :use (:instance subsetp-st-filter-2marked-nodes-update-marksi-3 
+          ("Subgoal *1/7.12" :use (:instance subsetp-st-filter-2marked-nodes-update-marksi-3
                                   (node (car nodes))
                                   (nodes (st-all-nodes nodeset))
                                   (marks (st-escapable-inv (neighborsi (car nodes) graph) (car nodes) graph (update-marksi (car nodes) 1 marks) nodeset))))
@@ -689,7 +689,7 @@
                                       marksi-update-marksi subsetp-st-filter-2marked-nodes-update-marksi-3 subsetp-st-filter-2marked-nodes-update-marksi-4 legal-mark spec-of-A-dests-E-2neighbor
                                       spec-of-invariant-escs2 temp1.11 spec-of-invariant-2marks temp21.4 temp21.5 temp21.6 neighbors-are-keys-of-neighbors->destsi
                                       temp1.13v2
-                                      
+
                                       subsetp-st-filter-2marked-nodes-update-marksi-3 step1-preserves-dl->not2-inductive))
           ("Subgoal 4" :use ((:instance step1-preserves-dl->not2-inductive
                               (nodes (neighborsi node graph))
@@ -896,7 +896,7 @@
                                    (n (nodes-length nodeset))
                                    (i (car nodes))
                                    (marks (append-to-esc (car nodes) (A-dests-of (car nodes) (st-filter-2marked-nodes (setminus (neighborsi (car nodes) graph) (cdr (assoc (car nodes) stack))) marks) graph nodeset) marks)))))
-    
+
           ("Subgoal *1/4" :use ((:instance node-where-dest-leads-to-2marked-nodes-only-is-escape-for-subgraph-of-not2-marked-nodes
                                  (neighbors->destsi (neighbors->destsi (car (last (car (find-d-path-containing paths dests (car nodes))))) graph))
                                  (dest (cadr (find-d-path-containing paths dests (car nodes))))
@@ -1073,7 +1073,7 @@
                                      (z (esci (car nodes) marks))
                                      (w (A-dests-of (car nodes) (st-filter-2marked-nodes (setminus (neighborsi (car nodes) graph) (cdr (assoc (car nodes) stack))) marks) graph nodeset)))))
 
-                                      
+
           ("Subgoal *1/8.2" :use ((:instance node-where-dest-leads-to-2marked-nodes-only-is-escape-for-subgraph-of-not2-marked-nodes
                                    (neighbors->destsi (neighbors->destsi (car (last (car (find-d-path-containing paths dests (car nodes))))) graph))
                                    (dest (cadr (find-d-path-containing paths dests (car nodes))))
@@ -1131,7 +1131,7 @@
                                       (:instance temp1.13v2
                                        (node (car nodes))
                                        (subgraph (union-of paths)))))
-          ("Subgoal *1/8.2.2.1" :in-theory (set-difference-theories 
+          ("Subgoal *1/8.2.2.1" :in-theory (set-difference-theories
                                             (current-theory :here)
                                             '(spec-of-invariant-comp))
                                 :use (;marking of header of path is equal to 4
@@ -1151,9 +1151,9 @@
                                       (:instance temp1.13v2
                                        (node (car nodes))
                                        (subgraph (union-of paths)))))
-          
+
            ))
-        
+
 (defthm algo-does-not-alter-3marking
   (let ((marks-after (st-A-nodes-escapable-inv n graph marks nodeset)))
     (implies (and (valid-graph (nodes-length nodeset) graph nodeset)
@@ -1364,7 +1364,7 @@
                          (i node)
                          (marks (st-A-nodes-escapable-inv (nodes-length nodeset) graph marks nodeset)))
                          ))))
-                  
+
 (defthm A-clear-implies-st-filter-2marked-nodes=nil
   (implies (and (A-clear (nodes-length nodeset) marks)
                 (A-valid-nodes nodes nodeset))
@@ -1429,7 +1429,7 @@
                     update-marksi-2-preserves-invariant-escs2
                     update-marksi-2-preserves-A-dests-E-2neighbor
                     step1-preserves-dl->not2-inductive
-                    step1-does-not-alter-escs-2marked-nodes 
+                    step1-does-not-alter-escs-2marked-nodes
                     step1-does-not-alter-escs-3marked-nodes
                     step1-does-not-alter-deps-2marked-nodes
                     step1-does-not-alter-deps-3marked-nodes))#|ACL2s-ToDo-Line|#

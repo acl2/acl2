@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -30,10 +30,10 @@
 (include-book "node")
 
 (defun collect_msg (op_lst loc_done nw_op Glob_Mem ms)
-  ;; Collect_msg takes as input a list of operationa 
+  ;; Collect_msg takes as input a list of operationa
   ;; op-lst contains all the operation that must be performed in every node
   ;; ( (0 op-0 loc-0 dat-0)
-  ;;   (1 op-1 loc-1 dat-1) 
+  ;;   (1 op-1 loc-1 dat-1)
   ;;   (3 op-3 loc-3 dat-3)
   ;;   ...)
   ;; loc-done will contain all the results of local communications
@@ -44,38 +44,38 @@
       (mv (rev loc_done) (rev nw_op) Glob_Mem)
     (let* ((msg (car op_lst))
            (node_i (car msg))
-           (op_i (nth 1 msg)) 
+           (op_i (nth 1 msg))
            (loc_i (nth 2 msg))
            (dat_i (nth 3 msg)))
       (mv-let (st dat nw_r/w nw_addr nw_data node_Glob_Mem)
-              (node op_i loc_i dat_i Glob_Mem 
+              (node op_i loc_i dat_i Glob_Mem
                     nil nil nil nil nil 0 0 ;; nothing comes from the nw
                     node_i ms) ;; i the current node number
               (if (equal nw_r/w 'NO_MSG_r/w) ;; no msg on the nw
           ;; we put the result in loc_done
-                  (collect_msg (cdr op_lst) 
-                               (acons node_i 
+                  (collect_msg (cdr op_lst)
+                               (acons node_i
                                       (list st dat)
                                       loc_done)
                                nw_op node_Glob_Mem ms)
                 ;; else we put the nw operation in nw_op
-                (collect_msg (cdr op_lst) loc_done 
+                (collect_msg (cdr op_lst) loc_done
                              (acons node_i (list nw_r/w nw_addr nw_data)
                                     nw_op)
                              node_Glob_Mem ms))))))
 
 (defun loc_done (op_lst loc_done Glob_Mem ms)
-  ;; this function computes the same result as the first output of the 
+  ;; this function computes the same result as the first output of the
   ;; above function, i.e. the list loc_done
   (if (endp op_lst)
       (rev loc_done)
     (let* ((msg (car op_lst))
            (node_i (car msg))
-           (op_i (nth 1 msg)) 
+           (op_i (nth 1 msg))
            (loc_i (nth 2 msg))
            (dat_i (nth 3 msg)))
       (mv-let (st dat nw_r/w nw_addr nw_data node_Glob_Mem)
-              (node op_i loc_i dat_i Glob_Mem 
+              (node op_i loc_i dat_i Glob_Mem
                     nil nil nil nil nil 0 0 ; nothing comes from the nw
                     node_i ms) ; i the current node number
               (declare (ignore nw_r/w nw_addr nw_data))
@@ -90,23 +90,23 @@
       nil
     (let* ((msg (car op_lst))
            (node_i (car msg))
-           (op_i (nth 1 msg)) 
+           (op_i (nth 1 msg))
            (loc_i (nth 2 msg))
            (dat_i (nth 3 msg)))
       (mv-let (st dat nw_r/w nw_addr nw_data node_Glob_Mem)
-              (node op_i loc_i dat_i Glob_Mem 
+              (node op_i loc_i dat_i Glob_Mem
                     nil nil nil nil nil 0 0 ; nothing comes from the nw
                     node_i ms) ; i the current node number
               (declare (ignore nw_r/w nw_addr nw_data))
-              (acons node_i (list st dat) 
-                     (loc_done_non_tail (cdr op_lst) 
+              (acons node_i (list st dat)
+                     (loc_done_non_tail (cdr op_lst)
                                         node_Glob_Mem ms))))))
 
 (local
  (defthm loc_done_=_not_tail
    ;; we prove a rule to rewrite the tail definition to the tail definition
    (equal (loc_done op_lst loc_done Glob_Mem ms)
-          (append (rev loc_done) 
+          (append (rev loc_done)
                   (loc_done_non_tail op_lst Glob_Mem ms))))
 )
 
@@ -114,7 +114,7 @@
 ;; always true and in each of these cases the first element of collect_msg
 ;; is equal to loc_done
 
-;; now we prove that the if condition "governing" local transfers is 
+;; now we prove that the if condition "governing" local transfers is
 ;; always true for local transfers
 
 (local
@@ -130,7 +130,7 @@
                            (node op  ;; (nth 1 (car op_lst))
                                  loc ;; (nth 2 (car op_lst))
                                  dat ;; (nth 3 (car op_lst))
-                                 Glob_Mem 
+                                 Glob_Mem
                                  nil nil nil nil nil 0 0
                                  (caar op_lst) ms))
                    'NO_MSG_r/w))
@@ -151,7 +151,7 @@
                            (node op  ;; (nth 1 (car op_lst))
                                  loc ;; (nth 2 (car op_lst))
                                  dat ;; (nth 3 (car op_lst))
-                                 Glob_Mem 
+                                 Glob_Mem
                                  nil nil nil nil nil 0 0
                                  (caar op_lst) ms))
                    'NO_MSG_r/w))
@@ -159,7 +159,7 @@
             :in-theory (enable node))))
 )
 
-(local 
+(local
  (defthm if_always_true_write
    ;; every operation is a write
    (implies (and (all_loc_op_lstp op_lst ms)
@@ -172,7 +172,7 @@
                            (node op  ;; (nth 1 (car op_lst))
                                  loc ;; (nth 2 (car op_lst))
                                  dat ;; (nth 3 (car op_lst))
-                                 Glob_Mem  
+                                 Glob_Mem
                                  nil nil nil nil nil 0 0
                                  (caar op_lst) ms))
                    'NO_MSG_r/w))
@@ -184,7 +184,7 @@
  (defthm collect_=_loc_done
    (implies (and (all_loc_op_lstp op_lst ms)
                  (valid_op_lst op_lst))
-            (equal (mv-nth 0 
+            (equal (mv-nth 0
                            (collect_msg op_lst loc_done nw_op Glob_Mem ms))
                    (loc_done op_lst loc_done Glob_Mem ms))))
  )
@@ -196,11 +196,11 @@
       nil
     (let* ((msg (car op_lst))
            (node_i (car msg))
-           (op_i (nth 1 msg)) 
+           (op_i (nth 1 msg))
            (loc_i (nth 2 msg))
            (dat_i (nth 3 msg)))
       (mv-let (st dat nw_r/w nw_addr nw_dat node_Glob_Mem)
-              (node op_i loc_i dat_i Glob_Mem 
+              (node op_i loc_i dat_i Glob_Mem
                     nil nil nil nil nil 0 0 ; nothing comes from the nw
                     node_i ms) ; i the current node number
               (declare (ignore st dat))
@@ -209,7 +209,7 @@
 
 ;; now we prove that the condition governing local transfers is false
 
-(local 
+(local
  (defthm if_always_true_no_op_even_if_non_local
    ;; every operation is a no_op
    (implies (and (all_non_loc_op_lstp op_lst ms)
@@ -218,19 +218,19 @@
                  (equal loc (nth 2 (car op_lst)))
                  (equal addr (nth 3 (car op_lst)))
                  (consp op_lst))
-            (equal (mv-nth 2 
+            (equal (mv-nth 2
                         (node op   ;; (nth 1 (car op_lst))
                               loc  ;; (nth 2 (car op_lst))
                               addr ;; (nth 3 (car op_lst))
                               Glob_Mem
-                              nil nil nil nil nil 0 0 
+                              nil nil nil nil nil 0 0
                               (caar op_lst) ms))
                    'NO_MSG_r/w))
    :hints (("GOAL"
             :in-theory (enable node))))
 )
 
-(local 
+(local
  (defthm if_always_false_read
    ;; every operation is a read
    (implies (and (all_non_loc_op_lstp op_lst ms)
@@ -239,19 +239,19 @@
                  (equal loc (nth 2 (car op_lst)))
                  (equal addr (nth 3 (car op_lst)))
                  (consp op_lst))
-            (not (equal (mv-nth 2 
+            (not (equal (mv-nth 2
                              (node op   ;; (nth 1 (car op_lst))
                                    loc  ;; (nth 2 (car op_lst))
                                    addr ;; (nth 3 (car op_lst))
                                    Glob_Mem
-                                   nil nil nil nil nil 0 0 
+                                   nil nil nil nil nil 0 0
                                    (caar op_lst) ms))
                         'NO_MSG_r/w)))
    :hints (("GOAL"
             :in-theory (enable node))))
 )
 
-(local 
+(local
  (defthm if_always_false_write
    ;; every operation is a write
    (implies (and (all_non_loc_op_lstp op_lst ms)
@@ -260,12 +260,12 @@
                  (equal loc (nth 2 (car op_lst)))
                  (equal addr (nth 3 (car op_lst)))
                  (consp op_lst))
-            (not (equal (mv-nth 2 
+            (not (equal (mv-nth 2
                              (node op   ;; (nth 1 (car op_lst))
                                    loc  ;; (nth 2 (car op_lst))
                                    addr ;; (nth 3 (car op_lst))
                                    Glob_Mem
-                                   nil nil nil nil nil 0 0 
+                                   nil nil nil nil nil 0 0
                                    (caar op_lst) ms))
                         'NO_MSG_r/w)))
    :hints (("GOAL"
@@ -288,7 +288,7 @@
 (defun collect_mem (op_lst Glob_Mem ms)
   ;; we finally define a function for the last output of collect_msg:
   ;; the memory
-  (if (endp op_lst) 
+  (if (endp op_lst)
       Glob_Mem
     (let* ((msg (car op_lst))
            (node_i (car msg))
@@ -296,16 +296,16 @@
            (loc_i (nth 2 msg))
            (dat_i (nth 3 msg)))
       (mv-let (st dat nw_r/w nw_addr nw_data node_Glob_Mem)
-              (node op_i loc_i dat_i Glob_Mem nil nil nil nil nil 0 0 
+              (node op_i loc_i dat_i Glob_Mem nil nil nil nil nil 0 0
                     node_i ms)
               (declare (ignore st dat nw_r/w nw_addr nw_data))
               (collect_mem (cdr op_lst) node_Glob_Mem ms)))))
 
 (local
- (defthm collect_msg_=_collect_mem 
+ (defthm collect_msg_=_collect_mem
    ;; we prove a rewrite rule to rewrite the last output of collect_msg
    ;; to the above function
-   (equal (mv-nth 2 
+   (equal (mv-nth 2
                   (collect_msg op_lst loc_done nw_op Glob_Mem ms))
           (collect_mem op_lst Glob_Mem ms))
    :hints (("GOAL"
@@ -316,8 +316,8 @@
 ;; we disable them and will the use the rules.
 
 (in-theory (disable collect_msg))
- 
-;; now we can prove lemmas that we want to import 
+
+;; now we can prove lemmas that we want to import
 
 (defthm memory_read_lemma
   (implies (equal op 'read)
@@ -327,9 +327,9 @@
            :in-theory (enable memory))))
 
 (defthm read_node_mem
-  (implies (and (NODE_MEM_SIZEp ms) 
+  (implies (and (NODE_MEM_SIZEp ms)
                 (integerp node_nb) (<= 0 node_nb)
-                (true-listp Glob_Mem) 
+                (true-listp Glob_Mem)
                 (< node_nb (floor (len Glob_Mem) ms))
                 (equal op 'read))
            (equal (mv-nth 5 (node op loc dat Glob_mem nw_stat nw_r_dat
@@ -357,7 +357,7 @@
   (implies (and (NODE_MEM_SIZEp ms)
                 (integerp node_nb) (<= 0 node_nb)
                 (true-listp Glob_Mem) (< node_nb (floor (len Glob_Mem) ms))
-                (equal op 'write) 
+                (equal op 'write)
                 (or (<= (+ MS (* MS node_nb)) loc)
                     (< loc (* ms node_nb))))
            (equal (mv-nth 5 (node op loc dat Glob_mem nw_stat nw_r_dat
@@ -383,52 +383,52 @@
 (set-non-linearp nil)
 
 (defthm all_read_implies_all_r/w_1
-  ;; we prove that if every order of op_lst are READ then 
+  ;; we prove that if every order of op_lst are READ then
   ;; every r/w signal in the nw_op list are 1
   (implies (and (all_non_loc_op_lstp op_lst ms)
                 (all_read_op_lstp op_lst))
            (all_r/w_1_collect
-            (mv-nth 1 
+            (mv-nth 1
                     (collect_msg op_lst nil nil Glob_Mem ms))))
   :hints (("GOAL"
            :in-theory (enable node)))
 )
 
 (defthm all_write_implies_all_r/w_0
-  ;; we prove that if every order of op_lst are WRITE then 
+  ;; we prove that if every order of op_lst are WRITE then
   ;; every r/w signal in the nw_op list are 0
   (implies (and (all_non_loc_op_lstp op_lst ms)
                 (all_write_op_lstp op_lst))
            (all_r/w_0_collect
-            (mv-nth 1 
+            (mv-nth 1
                     (collect_msg op_lst nil nil Glob_Mem ms))))
   :hints (("GOAL"
            :in-theory (enable node))))
 
 
 (defthm all_address_validp_nw_op
-  ;; we prove that if every address is valid in op_lst, if 
+  ;; we prove that if every address is valid in op_lst, if
   ;; every order is non local and if every order is a read
   ;; then the address is still valid in collect
   (implies (and (all_address_validp op_lst N ms)
                 (all_non_loc_op_lstp op_lst ms)
                 (all_read_op_lstp op_lst))
-           (all_address_validp 
-            (mv-nth 1 
+           (all_address_validp
+            (mv-nth 1
                     (collect_msg op_lst nil nil Glob_Mem ms))
             N ms))
   :hints (("GOAL"
            :in-theory (enable node))))
 
 (defthm all_address_validp_nw_op_write
-  ;; we prove that if every address is valid in op_lst, if 
+  ;; we prove that if every address is valid in op_lst, if
   ;; every order is non local and if every order is a write
   ;; then the address is still valid in collect
   (implies (and (all_address_validp op_lst N ms)
                 (all_non_loc_op_lstp op_lst ms)
                 (all_write_op_lstp op_lst))
-           (all_address_validp 
-            (mv-nth 1 
+           (all_address_validp
+            (mv-nth 1
                     (collect_msg op_lst nil nil Glob_Mem ms))
             N ms))
   :hints (("GOAL"
@@ -440,8 +440,8 @@
   (implies (and (all_node_nb_validp op_lst N)
                 (all_non_loc_op_lstp op_lst ms)
                 (all_read_op_lstp op_lst))
-           (all_node_nb_validp 
-            (mv-nth 1 
+           (all_node_nb_validp
+            (mv-nth 1
                     (collect_msg op_lst nil nil Glob_Mem ms))
             N))
   :hints (("GOAL"
@@ -453,8 +453,8 @@
   (implies (and (all_node_nb_validp op_lst N)
                 (all_non_loc_op_lstp op_lst ms)
                 (all_write_op_lstp op_lst))
-           (all_node_nb_validp 
-            (mv-nth 1 
+           (all_node_nb_validp
+            (mv-nth 1
                     (collect_msg op_lst nil nil Glob_Mem ms))
             N))
   :hints (("GOAL"
@@ -465,8 +465,8 @@
   ;; a true-listp
   (implies (and (true-listp Glob_Mem)
                 (all_non_loc_op_lstp op_lst ms))
-           (true-listp 
-            (mv-nth 2 
+           (true-listp
+            (mv-nth 2
                     (collect_msg op_lst loc_done nw_op Glob_Mem ms))))
   :hints (("GOAL"
            :induct (collect_mem op_lst Glob_Mem ms)
@@ -481,9 +481,9 @@
                 (true-listp Glob_Mem)
                 (all_non_loc_op_lstp op_lst ms)
                 (all_write_op_lstp op_lst))
-           (equal (len 
-                   (mv-nth 2 
-                           (collect_msg op_lst loc_done 
+           (equal (len
+                   (mv-nth 2
+                           (collect_msg op_lst loc_done
                                         nw_op Glob_Mem ms)))
                   (len Glob_Mem)))
   :otf-flg t
@@ -494,9 +494,9 @@
           ("Subgoal *1/2"
            :use (:instance len_new_memory
                            (op 'write) (loc (nth 2 (car op_lst)))
-                           (dat (nth 3 (car op_lst))) 
+                           (dat (nth 3 (car op_lst)))
                            (nw_stat nil) (nw_r_dat nil) (nw_dat nil)
-                           (nw_r/w nil) (nw_addr nil) (IncomingResponse 0) 
+                           (nw_r/w nil) (nw_addr nil) (IncomingResponse 0)
                            (NUM_NODE N)
                            (IncomingRequest 0)
                            (node_nb (caar op_lst)))

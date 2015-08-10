@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -19,14 +19,14 @@
 ;;-------------------------------------------------------------------------
 
 ;; File: mod_lemmas.lisp
-;; all the lemmas about mod needed to prove that the routing algorithm 
+;; all the lemmas about mod needed to prove that the routing algorithm
 ;; terminates
 
 (in-package "ACL2")
 
 (include-book "arithmetic-3/bind-free/top" :dir :system)
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                               hist pspv)))
 (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)
 
@@ -50,7 +50,7 @@
 )
 
 (defthm mod-x-=-x-+-n
-  (implies (and (rationalp x) 
+  (implies (and (rationalp x)
                 (< x 0)
                 (< (- x) n)
                 (integerp n)

@@ -114,7 +114,7 @@
 	      ((wf-ap-term-top (car l)) (var-occurrence-term-list x (cdar l)))
 	      (t nil))  ;; non-term
 	(var-occurrence-term-list x (cdr l)))))
-  
+
 (defmacro var-occurrence (x tm)
   (list 'var-occurrence-term-list x (list 'list tm)))
 
@@ -235,7 +235,7 @@
 	   (not (wft-list (subst-term-list l x e))))
   :hints (("Goal"
 	   :do-not generalize)))
-  
+
 (defthm not-var-occurrence-subst
   (implies (and (not (var-occurrence-term-list y l))
                 (domain-term e))
@@ -341,7 +341,7 @@
 		  (subst-term-list (subst-term-list l y b) x a)))
   :hints (("Goal"
 	   :in-theory (enable not-var-occurrence-not-change-term-list))))
-                                
+
 (defthm subst-different
   (implies (and (not (equal x y))
 		(not (var-occurrence-term-list y (list a)))
@@ -352,12 +352,12 @@
 (defthm x-not-in-e
   (implies (domain-term e)
 	   (not (var-occurrence-term-list x (list e)))))
-  
+
 (defthm x-not-in-y
   (implies (and (variable-term y)
 		(not (equal x y)))
 	   (not (var-occurrence-term-list x (list y)))))
-  
+
 (defthm subst-different-special-case
   (implies (and (not (equal x y))
 		(variable-term a)
@@ -365,7 +365,7 @@
 		(domain-term e))
 	   (equal (subst-free (subst-free f x a) y e)
 		  (subst-free (subst-free f y e) x a))))
-				  
+
 (defthm not-var-subst-term-list
   (implies (and (not (var-occurrence-term-list y l))
 		(not (var-occurrence-term-list y (list d))))

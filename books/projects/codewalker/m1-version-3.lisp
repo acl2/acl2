@@ -39,7 +39,7 @@ See the README file on this directory for an overview of this work.
 (set-verify-guards-eagerness 0)
 
 ; I name the components with the prefix "ugly-" because I don't want
-; to see them in proofs!  I'm going to define a more uniform interface. 
+; to see them in proofs!  I'm going to define a more uniform interface.
 
 (defstobj s ugly-pc ugly-locals ugly-stack ugly-program)
 

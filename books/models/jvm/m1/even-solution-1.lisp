@@ -48,7 +48,7 @@
 ; Important Note: When you verify your helper function, you must consider the
 ; most general case.  For example, if helper is defined with formal parameters
 ; n, m, and a and fn calls helper initializing a to 0, your helper theorem must
-; be about (helper n m a), not just about the special case (helper n m 0).  
+; be about (helper n m a), not just about the special case (helper n m 0).
 
 (defthm helper-is-theta
   (implies (ok-inputs n)

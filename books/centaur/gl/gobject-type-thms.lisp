@@ -72,7 +72,7 @@
 ;; (def-ruleset gl-type-forward-consp
 
 ;; ; [Jared]: Hi Sol, I got rid of these forward chaining rules.  They've
-;; ; now been converted into compound-recognizer rules, which I think is 
+;; ; now been converted into compound-recognizer rules, which I think is
 ;; ; more appropriate.
 
 ;;   '(;(:forward-chaining g-concrete-p-forward-to-consp)
@@ -83,10 +83,10 @@
 ;;     ;(:forward-chaining g-var-p-forward-to-consp)
 
 ;; ; [Jared]: I'm hoping that this is the right fix.  Note that the name of the
-;; ; rule-set above is now kind of wrong.  Also note that you might not really 
+;; ; rule-set above is now kind of wrong.  Also note that you might not really
 ;; ; need this ruleset at all now, since I think the compound recognizer rules
 ;; ; may be much cheaper than the forward chaining rules, and it looks like you
-;; ; only had to disable the above rules in one theorem, the guard verification 
+;; ; only had to disable the above rules in one theorem, the guard verification
 ;; ; for g-equal.
 
 ;;     (:compound-recognizer consp-when-g-concrete-p)

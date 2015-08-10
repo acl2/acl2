@@ -2,7 +2,7 @@
 ;;; Properties about terms, substitutions, and system of equations.
 ;;; Created: 7-10-99 Last revison: 15-02-2001
 ;;; =============================================================================
- 
+
 
 #| To certify this book:
 
@@ -34,9 +34,9 @@
 
 ;;; We will represent first-order terms in prefix notation, using
 ;;; lists. For example, the term f(x h(a) g(x y b)), where x, y are
-;;; variables and a, b are constants is represented as 
-;;; (f x (h (a) (g x y (b)). 
-;;; Note that constants are considered as 0-ary functions. 
+;;; variables and a, b are constants is represented as
+;;; (f x (h (a) (g x y (b)).
+;;; Note that constants are considered as 0-ary functions.
 
 
 ;;; The following functions define the set of well-formed terms (and
@@ -71,7 +71,7 @@
 
 ;;; - Second, in this way well-formed terms (as defined by term-p below)
 ;;;   can be seen as terms in a particular signature. This will allow to
-;;;   export the closure theorems to guard theorems, as we will see.    
+;;;   export the closure theorems to guard theorems, as we will see.
 
 ;;; Thus we define variable-s-p as eqlablep, a predicate for recognizing
 ;;; variables of terms in a given signature.
@@ -150,7 +150,7 @@
 ;;; Thus, we can see any ACL2 object as a representation of a term, in
 ;;; the following way:
 
-;;; - Variables are atomic objects. 
+;;; - Variables are atomic objects.
 ;;; - Every consp object can be seen as the term with the top function
 ;;;   symbol in its car. The cdr is the list of its arguments.
 
@@ -165,12 +165,12 @@
   (declare (xargs :guard t))
   (atom x))
 
-;;; REMARKS: 
+;;; REMARKS:
 ;;; --------
 
 ;;; - Note that this function variable-p is not strictly needed (we
 ;;;   could use atom), but it improves readability of the proofs
-;;;   developed by the prover.  
+;;;   developed by the prover.
 ;;; - This could be optimized if we used a macro definition instead of
 ;;;   defun. But we prefer to disable variable-p after proving its main
 ;;;   properties, for the sake of readability of theorems and proofs
@@ -190,12 +190,12 @@
 
 
 ;;; IMPORTANT REMARK: from the discussions above, note that we are
-;;; guided by the following principle: 
+;;; guided by the following principle:
 
 ;;; - To reason, it is better not to restrict the kind of objects we are
 ;;; deling with, since the theorems are more general, and often easier
 ;;; to prove (in addition, we will prove the corresponding closure
-;;; theorems). 
+;;; theorems).
 ;;; - For execution (i.e., for guard verification), it is better to restrict
 ;;; if we can improve eficiency. For example, restricting variables and
 ;;; function symbols to be eqlablep objects allows us to replace eql by
@@ -211,7 +211,7 @@
 
 ;;; ====== VARIABLES
 ;;; The list of variables of a term
-  
+
 
 (defun variables (flg term)
   (declare (xargs :guard (term-p-aux flg term)
@@ -228,8 +228,8 @@
 ;;; Needed for guard verification:
 (defthm variables-true-listp
   (true-listp (variables flg term)))
- 
-(verify-guards variables)  
+
+(verify-guards variables)
 
 
 ;;; ======= LIST-OF-VARIABLES-P
@@ -246,7 +246,7 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defthm list-of-variables-p-subsetp
     (implies (and (list-of-variables-p l)
@@ -309,7 +309,7 @@
 	0
       (+ (length-term t (car term))
 	 (length-term nil (cdr term))))))
-			
+
 (defthm length-term-positive
   (< 0 (length-term t term))
   :rule-classes :linear)
@@ -341,7 +341,7 @@
 ;;; ----------------------------------------------------------------------------
 
 
-;;; We represent substitutions as lists of pairs of the form 
+;;; We represent substitutions as lists of pairs of the form
 ;;; (variable . term). As with terms, we can view every object as a
 ;;; substitution. See section 4 of basic.lisp.
 ;;; Anyway, we define substitution-p for guard verification purposes,
@@ -391,17 +391,17 @@
 
 ;;; REMARK: the substitution does not change the final tail of the lists
 ;;; (this is essential for having the same properties for proper and
-;;; non-proper terms) 
+;;; non-proper terms)
 
 (defmacro instance (term sigma)
   `(apply-subst t ,sigma ,term))
 
 ;;; Some useful lemmas:
 
-(defthm apply-consp-is-consp-list-of-terms 
+(defthm apply-consp-is-consp-list-of-terms
   (equal (consp (apply-subst nil sigma l))
 	 (consp l)))
-	 
+
 (defthm apply-returns-variable-implies-variable
   (implies (and flg (not (variable-p term)))
 	   (not (variable-p (apply-subst flg sigma term)))))
@@ -470,7 +470,7 @@
 	term
       (cons (substitute-var x t1 t (car term))
 	    (substitute-var x t1 nil (cdr term))))))
-	    
+
 
 
 ;;; ----------------------------------------------------------------------------
@@ -510,21 +510,21 @@
 
 ;;; ========= RESTRICTION (see basic.lisp)
 
-(defthm subsetp-restriction 
+(defthm subsetp-restriction
   (implies (subsetp (variables flg term) l)
 	   (equal (apply-subst flg (restriction sigma l) term)
 		  (apply-subst flg sigma term))))
 
 ;;; ========= DOMAIN (see basic.lisp)
 
-(defthm  x-not-in-domain-remains-the-same 
+(defthm  x-not-in-domain-remains-the-same
   (implies (not (member x (domain sigma)))
 	   (equal (val x sigma) x)))
 
 (in-theory (disable x-not-in-domain-remains-the-same))
 
 
-(defthm substitution-does-not-change-term 
+(defthm substitution-does-not-change-term
   (implies (disjointp (domain sigma) (variables flg term))
 	   (equal (apply-subst flg sigma term) term))
   :hints (("Goal"
@@ -536,7 +536,7 @@
 ;;; ========= UNION OF SUBSTITUTIONS
 
 ;;; Lemmas about union of substitutions of disjoint domains
-;;; They will be used in mg-instance.lisp and in 
+;;; They will be used in mg-instance.lisp and in
 ;;; critical-pairs.lisp
 
 (defthm only-the-first-bind-is-important-append
@@ -551,7 +551,7 @@
 		 (member term (domain sigma2)))
 	    (equal (val term (append sigma1 sigma2))
 		   (val term sigma2)))))
-   
+
 (defthm domains-disjointp-do-not-interfere
   (implies (and (disjointp (domain sigma1) (domain sigma2))
 		(subsetp (variables flg term) (domain sigma2)))
@@ -559,7 +559,7 @@
 		  (apply-subst flg sigma2 term))))
 
 
-;;; ====== COINCIDE 
+;;; ====== COINCIDE
 
 ;;; This will be our predicate for testing the equality
 ;;; of substitutions. sigma1 and sigma2 coincide in l if their
@@ -579,14 +579,14 @@
 (encapsulate
  ()
  (local
-  (defthm coincide-main-property 
+  (defthm coincide-main-property
    (implies (and (coincide sigma1 sigma2 l)
 		 (member x l))
 	    (equal (equal (val x sigma1) (val x sigma2)) t))))
 ;;; Note: this form of the rule avoids cycles.
 
 
- (defthm coincide-in-term 
+ (defthm coincide-in-term
    (implies (and
 	     (subsetp (variables flg term) l)
 	     (coincide sigma1 sigma2 l))
@@ -594,10 +594,10 @@
 		  (apply-subst flg sigma2 term)))
    :rule-classes nil))
 
-(defthm coincide-reflexive 
+(defthm coincide-reflexive
   (coincide sigma sigma l))
 
-(defthm coincide-append 
+(defthm coincide-append
   (equal (coincide sigma sigma1 (append l m))
 	 (and (coincide sigma sigma1 l)
 		(coincide sigma sigma1 m))))
@@ -623,7 +623,7 @@
   (equal (apply-subst flg (normal-form-subst flg sigma term) term)
 	 (apply-subst flg sigma term))
   :rule-classes nil)
-  
+
 
 ;;; ============================================================================
 ;;; 3. Systems of equations.
@@ -635,7 +635,7 @@
 
 
 ;;; Every object ecu can be seen as an equation,
-;;; being its left side (car ecu) and its right side (cdr ecu). 
+;;; being its left side (car ecu) and its right side (cdr ecu).
 
 ;;; ========== LHS and RHS
 ;;; The left-hand side and right-hand side of
@@ -697,7 +697,7 @@
 (defthm system-p-append
    (implies (and (system-p S1) (system-p S2))
  	   (system-p (append S1 S2))))
-	    
+
 (defthm system-s-p-append
   (implies (and (system-s-p S1) (system-s-p S2))
 	   (system-s-p (append S1 S2))))
@@ -746,7 +746,7 @@
 ;;; ----------------------------------------------------------------------------
 
 
-;;; ===== DOMAIN and CO-DOMAIN 
+;;; ===== DOMAIN and CO-DOMAIN
 ;;; already defined (see basic.lisp, section 4)
 
 ;;; ===== SYSTEM-VAR
@@ -771,7 +771,7 @@
 	  (apply-syst sigma (cdr S)))))
 
 ;;; REMARK: After applying apply-syst, every element of the system is
-;;; listp. 
+;;; listp.
 
 
 ;;; ====== APPLY-RANGE:
@@ -819,7 +819,7 @@
 
 (defun normal-form-syst (S-sol)
   (declare (xargs :guard t))
-  (not (and  (consp S-sol) (consp (car S-sol)))))  
+  (not (and  (consp S-sol) (consp (car S-sol)))))
 
 
 
@@ -930,7 +930,7 @@
 ;;; ===== IDEMPOTENT SYSTEMS/SUBSTITUTIONS
 
 ;;; Some substitutions are solution
-;;; of themselves. We then call that substitution idempotent. 
+;;; of themselves. We then call that substitution idempotent.
 ;;; Its domain is a set of variables and the variables of its
 ;;; co-domain are disjoint with its domain.
 
@@ -990,7 +990,7 @@
 	      (and (variable-p v) (equal (val v sigma) w)))))
 
   (local
-   (defthm co-domain-disjoint-lemma 
+   (defthm co-domain-disjoint-lemma
      (implies (and (disjointp (variables nil (co-domain s)) l)
 		   (member (cons v w) s))
 	      (disjointp (variables t w) l))
@@ -998,7 +998,7 @@
   :hints (("Goal" :induct (len s)))))
 
   (local
-   (defthm co-domain-disjoint 
+   (defthm co-domain-disjoint
      (implies (and (disjointp (variables nil (co-domain s)) (domain s))
 		   (member (cons v w) s))
 	      (equal (apply-subst t s w) w))
@@ -1006,15 +1006,15 @@
 	      (:instance co-domain-disjoint-lemma
 			  (l (domain s)))
 	      :in-theory (enable substitution-does-not-change-term )))))
-  
-  (defthm idempotence-main-lemma 
+
+  (defthm idempotence-main-lemma
     (implies (and (idempotent S)
 		  (subsetp sol S))
 	     (solution S sol)))))
 
 ;;; And the main property of idempotent substitutions.
 
-(defthm idempotence 
+(defthm idempotence
   (implies (idempotent S)
 	   (solution S S)))
 
@@ -1039,7 +1039,7 @@
 	 (and (integerp (car pos)) (< 0 (car pos))
 	      (<= (car pos) (len (cdr term)))
 	      (position-p (cdr pos)
-			 (nth (- (car pos) 1) (cdr term))))))) 
+			 (nth (- (car pos) 1) (cdr term)))))))
 
 
 
@@ -1048,7 +1048,7 @@
 (defun occurrence (term pos)
   (declare (xargs :guard
 		  (and (term-p term)
-		       (position-p pos term)) 
+		       (position-p pos term))
 		  :verify-guards nil))
   (if (endp pos)
       term
@@ -1073,32 +1073,32 @@
 				      term2)))))
 
 ;;; Guard verification
- 
+
 (encapsulate
  ()
- 
+
  (local
   (defthm term-p-aux-true-listp
     (implies (and (term-p-aux flg term)
 		  (implies flg (not (variable-p term))))
 	     (true-listp term))))
- 
+
  (local
   (defthm term-p-aux-true-listp
     (implies (and (term-p-aux flg term)
 		  (implies flg (not (variable-p term))))
 	     (true-listp term))))
- 
- 
+
+
  (local
   (defthm term-p-aux-nth
     (implies (term-p-aux nil term)
 	     (term-p-aux t (nth i term)))))
- 
+
  (verify-guards position-p)
  (verify-guards occurrence)
  (verify-guards replace-term))
- 
+
 ;;; ----------------------------------------------------------------------------
 ;;; 4.2 Some results concerning the tree structure of a term
 ;;; ----------------------------------------------------------------------------
@@ -1215,14 +1215,14 @@
 	       (cdr pos1)
 	       (cdr pos2)
 	       (nth (- (car pos1) 1) (cdr term)))
-	    t)) 
+	    t))
 	 (t t))))
 
 (local
  (defthm equality-of-predecesor
    (implies (and (integerp i) (integerp j))
 	    (iff (equal (+ -1 i) (+ -1 j))
-		 (equal i j))))) ;;; I don't like this rule. 
+		 (equal i j))))) ;;; I don't like this rule.
 
 (defthm position-p-disjoint-positions
   (implies (and (position-p pos1 term)
@@ -1293,7 +1293,7 @@
 ;;; terms. For that reason we will give and alternative definition of
 ;;; position-p, occurrence and replace-term, in a mutually recursive
 ;;; style, and we prove that both definitions are equivalente for
-;;; terms. 
+;;; terms.
 
 ;;; POSITION-P-REC
 
@@ -1313,7 +1313,7 @@
 
 ;;; The two definitions are the same, as stated in the following
 ;;; rewrite rule
-	   
+
 (encapsulate
  ()
  (defthm equal-position-p-position-p-rec-lemma
@@ -1333,7 +1333,7 @@
    :hints (("Goal" :use (:instance
 			 equal-position-p-position-p-rec-lemma
 			 (flg t))))))
- 
+
 
 
 
@@ -1355,8 +1355,8 @@
 ;;; rewrite rule
 
 (encapsulate
- ()	
- (local 
+ ()
+ (local
   (defthm equal-occurrence-occurrence-rec-lemma
     (implies (position-p-rec flg pos term)
 	     (if flg
@@ -1364,9 +1364,9 @@
 			(occurrence term pos))
 	       (equal (occurrence-rec flg term pos)
 		      (occurrence (nth (- (car pos) 1) term) (cdr pos)))))
-    :rule-classes nil)) 
- 
- 
+    :rule-classes nil))
+
+
  (defthm equal-occurrence-occurrence-rec
    (implies (position-p-rec t pos term)
 	    (equal (occurrence term pos)
@@ -1398,8 +1398,8 @@
 
 
 (encapsulate
- ()	
- (local 
+ ()
+ (local
   (defthm equal-replace-term-replace-term-rec-lemma
     (implies (position-p-rec flg pos term1)
 	     (if flg
@@ -1412,8 +1412,8 @@
 		       (replace-term (nth (- (car pos) 1) term1)
 				     (cdr pos) term2)))))
     :rule-classes nil))
-  
-  
+
+
   (defthm equal-replace-term-replace-term-rec
     (implies (position-p-rec t pos term1)
 	     (equal (replace-term term1 pos term2)
@@ -1447,36 +1447,36 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defthm replace-term-rec-equal-len
     (implies (position-p-rec nil pos term)
 	     (equal (len (replace-term-rec nil term pos t1))
 		    (len term)))))
- 
+
  (defthm replace-term-rec-term-s-p-aux
    (implies (and (term-s-p-aux flg term)
 		 (position-p-rec flg pos term)
 		 (term-s-p t1))
 	    (term-s-p-aux flg (replace-term-rec flg term pos t1)))))
 
- 
+
 
 ;;; The intended theorems are now an easy consequence of the
 ;;; equivalence lemmas between the original definitions and its "-aux"
-;;; versions 
- 
+;;; versions
+
 (defthm occurrence-term-s-p
   (implies (and (term-s-p term)
 		(position-p pos term))
 	   (term-s-p (occurrence term pos))))
- 
+
 (defthm replace-term-term-s-p
   (implies (and (term-s-p term)
 		(position-p pos term)
 		(term-s-p t1))
 	   (term-s-p (replace-term term pos t1))))
- 
+
 
 ;;; Theorems needed for guard verification:
 
@@ -1529,7 +1529,7 @@
 
 ;;; Now we disable the theorems of equivalence between the "-aux"
 ;;; versions and the original functions. We will enable locally when
-;;; needed:   
+;;; needed:
 
 
 

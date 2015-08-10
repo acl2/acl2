@@ -56,7 +56,7 @@
 
 (in-theory (disable encryptable-listp decryptable-listp))
 
-(thm 
+(thm
  (implies (integer-listp (foo x))  (encryptable-lisp (foo x)))
  :rule-classes :type-prescription)
 
@@ -149,7 +149,7 @@
                         (encrypt-asymmetric-list lst key1)
                         key2)
                        lst)
-                (equal (decrypt-asymmetric-list 
+                (equal (decrypt-asymmetric-list
                         (encrypt-asymmetric-list lst key2)
                         key1)
                        lst))))
@@ -177,12 +177,12 @@
     (+ (car lst) (sum (cdr lst)))))
 
 ; we use forward-chaining whenever we want to rewrite hypothesizes
-(defthm sum-integerp  
+(defthm sum-integerp
   (implies (force (integer-listp lst))
            (integerp (sum lst)))
   :rule-classes :forward-chaining)
 
-(in-theory (disable sum))           
+(in-theory (disable sum))
 
 (defun compute-signature-list (lst key)
   (declare (xargs :guard (and (keyp key)
@@ -204,7 +204,7 @@
   (implies (and (force (encryptable-listp lst))
                 (force (not (null lst)))
                 (force (keyp public-key))
-                (force (keyp private-key)) 
+                (force (keyp private-key))
                 (force (not (public-private-key-pairp public-key private-key))))
            (not (equal (compute-signature-list lst private-key)
                        (verify-signature-list lst public-key)))))

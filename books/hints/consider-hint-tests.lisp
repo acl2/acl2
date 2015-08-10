@@ -229,7 +229,7 @@
                   ;;; ***************************
                   ;;; By seeding subst we get just 1
                   ;;; ***************************
- 
+
 
  :hints
  (("Goal"
@@ -270,7 +270,7 @@
   (implies (true-listp x) (equal (rev (rev x)) x)))
 
 (defthm true-listp-rev (true-listp (rev x)))
- 
+
 (defthm triple-rev
   (equal (rev (rev (rev a))) (rev a))
   :rule-classes nil)
@@ -306,7 +306,7 @@
                                `(:or ,val)
                                keyword-alist))
                            (value nil)))
-                          
+
 (not-thm?
  (equal (append a b) (append b a))
  :hints
@@ -328,7 +328,7 @@
 
 (thm?
  (<= a (+ a (nfix b)))
- :hints (("Goal" ; 
+ :hints (("Goal" ;
           :consider fff-constraint)))
 
 ; By specifying a seed substitution we can select the correct one.
@@ -394,7 +394,7 @@
              (local (defun ff (x) (declare (ignore x)) 23))
              (defthm constraint-thm
                (propertyp (ff x))))
-                        
+
 (in-theory (disable propertyp (propertyp)))
 
 (defstub gg (x) t)
@@ -424,7 +424,7 @@
  (and (true-listp (app a b))
       (propertyp (app (rev (rev (rev (rev b)))) (rev (rev (rev a))))))
  :hints (("Subgoal 1"
-;             
+;
           :consider derived-fact)
          ("Subgoal 1.D14'" :in-theory (enable propertyp-false))
          ("Subgoal 1.D13'" :in-theory (enable propertyp-false))
@@ -448,7 +448,7 @@
  (and (true-listp (app a b))
       (propertyp (app (rev (rev (rev (rev b)))) (rev (rev (rev a))))))
  :hints (("Subgoal 1"
-;              
+;
           :consider derived-fact)
          ("Subgoal 1.D14'" :in-theory (enable propertyp-false))
          ("Subgoal 1.D13'" :in-theory (enable propertyp-false))

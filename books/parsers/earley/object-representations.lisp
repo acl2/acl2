@@ -161,8 +161,8 @@
   (implies (and (string-list-or-string-list-list-p x)
                 (not (string-list-list-p x)))
            (string-list-p x)))
-           
-(encapsulate 
+
+(encapsulate
  ()
  (local
   (defthm assoc-cdr-terminates-lemma
@@ -170,8 +170,8 @@
              (< (acl2-count (cdr (assoc some-label (cdr x))))
                 (acl2-count x)))
     :rule-classes :linear))
- 
- 
+
+
  (mutual-recursion
   ;; (DEFUND
   ;;     PSTATE-P (X)
@@ -292,7 +292,7 @@
 (std::deflist pstate-list-p (x)
   (pstate-p x)
   :elementp-of-nil nil
-  :true-listp t 
+  :true-listp t
   :already-definedp t
   :parents (earley-parser))
 
@@ -310,7 +310,7 @@
          inside the input text sentence."
   ((source stringp
             "The starting symbol for the state's grammar rule.")
-   (targets string-list-p 
+   (targets string-list-p
             "The targets for the state's grammar rule.  Consists of a left-hand
              side (lhs) that has already been parsed (seen) and a right-hand side
              (rhs) that remains to be parsed (unseen).")
@@ -362,14 +362,14 @@
 (in-theory (disable pstate-p pstate-list-p))
 
 
-;(encapsulate 
+;(encapsulate
 ; ()
 
  ;; (defthm subseq-hack
  ;;   (implies (stringp str)
- ;;            (equal (len (coerce str 'list)) 
+ ;;            (equal (len (coerce str 'list))
  ;;                   (length str))))
- 
+
 ; (ld "counter-example-gen.lisp")
 
 (defthm string-list-p-implies-true-listp
@@ -380,19 +380,19 @@
            (true-listp x)))
 
 (defthm pstate->targets-is-not-a-string
-  
+
 ; Shouldn't really be necessary, but the question comes up a lot because of the
 ; use of subseq and other functions that can accept either a list or a string.
-  
+
   (implies (pstate-p x)
            (not (stringp (pstate->targets x))))
-  
+
   :hints (("Goal" :in-theory (enable pstate-p pstate->targets))))
 
 ;(in-theory (enable pstate-targets$INLINE))
 
 #|
-(local 
+(local
  (defthm lemmmamama
    (IMPLIES (FORCE (PSTATE-P X))
             (IMPLIES (PSTATE->TARGETS X)
@@ -409,7 +409,7 @@
         (dot (nfix (pstate->dot pstate))))
     (cw "#{~@0 -> ~*1 . ~*2 [~x3,~x4]}"
         source
-        (if targets 
+        (if targets
             (list "" "~@*" "~@* " "~@* " (subseq-list targets 0 dot))
           nil)
         (if targets
@@ -478,7 +478,7 @@
   (let ((targets (pstate->targets pstate))
         (dot (pstate->dot pstate)))
     (if (< dot (len targets))
-        (nth dot targets) 
+        (nth dot targets)
       ""))) ; was nil once upon a time
 
 
@@ -488,9 +488,9 @@
 ;;  (defun flatten-pstate-list (pstate-list)
 ;;    (cond ((atom pstate-list)
 ;;           nil)
-;;          (t 
+;;          (t
 ;;           (cons (flatten-pstate (car pstate-list))
-;;                 (flatten-pstate-list (cdr pstate-list)))))) 
+;;                 (flatten-pstate-list (cdr pstate-list))))))
 
 ;;  (defun flatten-pstate (pstate)
 ;;    (cond ((atom (pstate->history pstate))
@@ -517,11 +517,11 @@
 ;;                  (flatten-pstate-list (pstate->history (car pstate-list)))
 ;;                  (flatten-pstate-list (cdr pstate-list))))))
 
-(encapsulate 
+(encapsulate
  ()
 ; (local (in-theory (enable pstate->history$inline)))
 
- (local 
+ (local
   (defthm pstate->tree-collect-lemma1
     (implies (pstate->history pstate)
              (< (acl2-count (pstate->history pstate))
@@ -530,7 +530,7 @@
 
 ;(local (in-theory (disable pstate->history$inline)))
 
- (local 
+ (local
   (defthm pstate->tree-collect-lemma2
     (implies (and (true-listp x)
                   (atom x))
@@ -546,7 +546,7 @@
            nil)
           (t (cons (pstate->tree (car pstates)) ; need to check collect for whether it removes duplicates)
                    (pstate->tree-collect (cdr pstates))))))
-  
+
   (defun pstate->tree (pstate)
     "Creates a tree from a chart-listing object containing charts" ; ummmm what? there aren't any charts here
     (declare (xargs :guard (pstate-p pstate)))
@@ -576,7 +576,7 @@
 ;;   "Creates a tree from a chart-listing object containing charts"
 ;;   (declare (xargs :guard (pstate-p pstate)
 ;;                   :measure (pstate-count (list pstate))))
-;;   (cond ((atom 
+;;   (cond ((atom
 
 ;;;; Representation of charts
 ;;;;-------------------------
@@ -595,11 +595,11 @@
 
 (local
  (defthmd enqueue-hack
-   (implies (pstate-list-p pstates) 
+   (implies (pstate-list-p pstates)
             (pstate-list-p (list-fix pstates)))))
 
 (define enqueue ((pstate pstate-p)
-                 (chart chart-p)) 
+                 (chart chart-p))
 ; enqueue should really be rewritten to accept a chart-list and an index to update
   :guard-hints (("Goal" :in-theory (enable list-fix pstate-list-p
                                            enqueue-hack)))
@@ -703,7 +703,7 @@
   :parents (earley-parser)
   (b* ((chart (first (last chart-list)))
        ((when (null chart))
-        (er hard? 'chart-list->trees 
+        (er hard? 'chart-list->trees
             "Chart-list was null")))
     (chart-list->collect
      (chart->pstates (first (last chart-list)))

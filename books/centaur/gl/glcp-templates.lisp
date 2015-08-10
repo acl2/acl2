@@ -68,7 +68,7 @@
                         (cw "GLCP interpreter error:~%~@0~%" msg)
                         (break$))))
     '(untrace$ glcp-interp-error-trace)))
-    
+
 
 (defmacro glcp-interp-abort (msg &key (nvals '1))
   `(mv ,@(make-list-ac nvals nil nil)
@@ -775,7 +775,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              ((when successp)
               (interp-test term bindings intro-bvars
                            . ,*glcp-common-inputs*))
-             
+
              (x (g-apply fn args))
              (look (get-term->bvar x bvar-db))
 
@@ -1038,7 +1038,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
             ((when contra)
              (cw "Constraints unsatisfiable~%")
              (glcp-value-nopathcond t))
-            
+
             ((unless pathcond-bfr)
              (glcp-value-nopathcond t))
             (pathcond-bfr (bfr-to-param-space pathcond-bfr pathcond-bfr)))

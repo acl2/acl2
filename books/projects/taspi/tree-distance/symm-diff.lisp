@@ -44,9 +44,9 @@
                        (not rooted2)) ; or not rooted
                    (cdr fringes2)
                  (cddr fringes2)))) ; rooted, binary at root
-          (let ((FN (len (difference fringes1-to-compare 
+          (let ((FN (len (difference fringes1-to-compare
                                      fringes2-to-compare)))
-                (FP (len (difference fringes2-to-compare 
+                (FP (len (difference fringes2-to-compare
                                      fringes1-to-compare))))
             (mv (+ FN FP) FN FP))))
     (mv 'need-same-taxa-list-and-consp-trees 'error 'error)))
@@ -84,7 +84,7 @@
 
 ;(defun symm-diff-entry (entry1 entry2)
 ;  (declare (xargs :guard (and (good-entry entry1)
-;                              (good-entry entry2))))  
+;                              (good-entry entry2))))
 ;  (let ((taxa-list1 (get-taxa-list entry1))
 ;        (taxa-list2 (get-taxa-list entry2))
 ;        (tree1 (get-tree entry1))
@@ -94,6 +94,6 @@
 ;    (symm-diff tree1 taxa-list1 rooted1 tree2 taxa-list2 rooted2)))
 
 #||
-(symm-diff '(a b ((c (d e)) ((f i) (g h)))) '(a b c d e f g h i) nil 
+(symm-diff '(a b ((c (d e)) ((f i) (g h)))) '(a b c d e f g h i) nil
     '(a ((b (c e)) (d (g h))) (f i) ) '(a b c d e f g h i) nil)
 ||#

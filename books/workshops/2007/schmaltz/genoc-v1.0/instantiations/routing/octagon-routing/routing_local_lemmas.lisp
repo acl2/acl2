@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -20,7 +20,7 @@
 
 
 ;; File: routing_local_lemmas.lisp
-;; Contains lemmas needed to prove the main theorem on Route. 
+;; Contains lemmas needed to prove the main theorem on Route.
 ;; This book will be included locally in the next one, so that we do
 ;; not export the lemmas herein in the main proof about Octagon.
 
@@ -34,10 +34,10 @@
 (include-book "data-structures/list-defuns" :dir :system)
 (include-book "data-structures/list-defthms" :dir :system)
 
-;; To reason about function "route", I define, for each possible case of 
-;; (mod (+ dest (- from)) n) a function that computes a list of nodes and 
-;; that does not use function mod. Then, the properties are generally 
-;; trivial on these small functions and the properties on route are 
+;; To reason about function "route", I define, for each possible case of
+;; (mod (+ dest (- from)) n) a function that computes a list of nodes and
+;; that does not use function mod. Then, the properties are generally
+;; trivial on these small functions and the properties on route are
 ;; proved by a simple case split.
 ;; We divide the Octagon in quarters and bound, according to the value
 ;; of (- dest from).
@@ -46,7 +46,7 @@
 
 ;;-----------------------------------------------------------------------
 ;;-----------------------------------------------------------------------
-;;                         
+;;
 ;;                 CORRECTNESS OF FUNCTION ROUTE
 ;;
 ;;-----------------------------------------------------------------------
@@ -166,7 +166,7 @@
 (include-book "../../nodeset/octagon-nodeset")
 
 ;; to prove this we use the strategy that considers
-;; the problem quarter by quarter. 
+;; the problem quarter by quarter.
 ;; We first prove that each quarter is OK.
 
 (defthm OctagonNodeSetp_quarter_1_list
@@ -178,7 +178,7 @@
                 (integerp n))
            (OctagonNodeSetp (quarter_minus_4_list from to n))))
 
-(defthm OctagonNodeSetp_quarter-3-list 
+(defthm OctagonNodeSetp_quarter-3-list
   (implies (and (natp from) (natp to)
                 (integerp n) (< 0 n))
            (OctagonNodeSetp (quarter_3_list from to n))))
@@ -215,18 +215,18 @@
 ;;------------------------------------------------------------------------
 
 ;; we prove it for every quarter
-;; and we first prove what is the exact length of 
+;; and we first prove what is the exact length of
 ;; the route for each quarter
 ;; each lemma is proven in less than 1 second
 
-(defthm len_quarter_1_list 
+(defthm len_quarter_1_list
   (implies (and (natp from)
                 (natp to)
                 (<= 0 (- to from)))
            (equal (len (quarter_1_list from to))
                   (+ 1 (+ to (- from))))))
 
-(defthm len_quarter_minus_4_list 
+(defthm len_quarter_minus_4_list
   (implies (and (natp from) (< from (* 4 n))
                 (natp to)   (< to (* 4 n))
                 (integerp n)
@@ -266,7 +266,7 @@
            (equal (len (quarter_minus_3_list from to n))
                   (+ 1 1 (* -2 n) (- to) from))))
 
-(defthm len_quarter_4_list 
+(defthm len_quarter_4_list
   (implies  (and (natp from) (< from (* 4 n))
                  (natp to)   (< to (* 4 n))
                  (< 0 n) (integerp n)
@@ -284,8 +284,8 @@
            (equal (len (quarter_2_list from to n))
                   (+ 1 1 (* 2 n) from (- to)))))
 
-;; we prove the exact value of the length of the route, 
-;; for every possible 
+;; we prove the exact value of the length of the route,
+;; for every possible
 
 
 ;; we merge the previous computed hints into one
@@ -332,13 +332,13 @@
                         ((AND (< (- TO FROM) (* 3 N))
                               (< (* 2 N) (- TO FROM))) ;; Q 3
                          (+ 1 1 (* -2 n) to (- from)))
-                        ((AND (< (- TO FROM) (- N)) 
+                        ((AND (< (- TO FROM) (- N))
                               (< (* -2 N) (- TO FROM))) ;; Q -2
                          (+ 1 1 (* 2 n) to (- from)))
                         ((AND (< (- TO FROM) 0)
                               (<= (- N) (- TO FROM))) ;;Q -1
                          (+ 1 from (- to)))
-                        ((AND (< (* -3 N) (- TO FROM)) 
+                        ((AND (< (* -3 N) (- TO FROM))
                               (< (- TO FROM) (* -2 N))) ;; Q -3
                          (+ 1 1 (* -2 n) (- to) from))
                         ((AND (<= (* 3 N) (- TO FROM))
@@ -356,7 +356,7 @@
   :hints (merged_computed_hints_1
           ("Subgoal 5"
            :in-theory (disable quarter_minus_3_list))
-          ("Subgoal 3" 
+          ("Subgoal 3"
            :in-theory (disable quarter_2_list))))
 
 ;;-----------------------------------------------------------
@@ -374,7 +374,7 @@
                     ROUTE_=_BOUNDS))
 ;;------------------------------------------------------------
 
-;; For the last theorem we want is that the length is 
+;; For the last theorem we want is that the length is
 ;; less than 1+N
 
 (defthm bound_route_lemma
@@ -394,7 +394,7 @@
 ;; This rule is fine to export but does not state the theorem we want.
 ;; The final directly follows but is not stored as a rule
 
-;; Moreover we need to disable the rule LEN_ROUTE_LEMMA1, because 
+;; Moreover we need to disable the rule LEN_ROUTE_LEMMA1, because
 ;; it will remove (len ...) and the rule above will never be applied.
 
 (in-theory (disable LEN_ROUTE_LEMMA1))

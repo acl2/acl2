@@ -193,7 +193,7 @@
   :rule-classes ((:rewrite :loop-stopper ((n n2 s))))
   :hints (("Goal"
            :in-theory (set-difference-theories
-                       (enable setbitn setbits-rewrite setbits-rewrite-when-j-is-0 
+                       (enable setbitn setbits-rewrite setbits-rewrite-when-j-is-0
  ;                              bits-bits-1
   ;                             bits-bits-2
                                bits-ocat-1

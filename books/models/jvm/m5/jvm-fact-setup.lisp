@@ -27,7 +27,7 @@
 
 J Moore
 
-Here is the Java for a factorial method.  
+Here is the Java for a factorial method.
 
 class Demo {
 
@@ -54,7 +54,7 @@ If you put this into Demo.java and run
 you get the following:
 
 Compiled from Demo.java
-synchronized class Demo extends java.lang.Object 
+synchronized class Demo extends java.lang.Object
     /* ACC_SUPER bit set */
 {
     static int ans;
@@ -402,7 +402,7 @@ Below is the output of jvm2acl2 for M5.
        (PUTSTATIC "Demo" "ans" NIL)
        (RETURN)))
      (REF 5))))
-  
+
 (defconst *Demo-state*
   (make-state *demo-thread-table*
               *demo-heap*

@@ -190,7 +190,7 @@ David Greve
 ;;        |  val3  |
 ;;        +--------+        +--------+
 ;;        |  ptr4  |------->|        |
-;;        +--------+           ....   
+;;        +--------+           ....
 ;;		            +--------+
 
 ;; Here is our function of interest.  This function follows all of the
@@ -258,7 +258,7 @@ David Greve
 
 (defun n-n-induction (n1 ptr1 ram1 n2 ptr2 ram2)
   (if (or (zp n1) (zp n2)) (list ptr1 ptr2)
-    (+ (n-n-induction (1- n1) (rd ptr1 ram1) ram1 
+    (+ (n-n-induction (1- n1) (rd ptr1 ram1) ram1
 		      (1- n2) (rd ptr2 ram2) ram2)
        (n-n-induction (1- n1) (rd (+ ptr1 4) ram1) ram1
 		      (1- n2) (rd (+ ptr2 4) ram2) ram2))))

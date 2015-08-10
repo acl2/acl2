@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -125,7 +125,7 @@
 (defthm away-rational-type-prescription
   (rationalp (away x n))
   :rule-classes :type-prescription)
- 
+
 (defthm away-of-non-rationalp-is-0
   (implies (not (rationalp x))
            (equal (away x n)
@@ -391,7 +391,7 @@
   :hints (("Goal" :in-theory (disable abs)
 		  :use ((:instance away-diff)
 			(:instance expo-lower-bound (x (- (away x n) x)))
-			(:instance expt-strong-monotone 
+			(:instance expt-strong-monotone
 				   (n (expo (- (away x n) x)))
 				   (m (- (1+ (expo x)) n)))))))
 ;slow
@@ -400,8 +400,8 @@
                 (integerp n)
                 (> n 0))
            (equal (away x n)
-                  (* (sgn x) 
-                     (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+                  (* (sgn x)
+                     (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))
                      (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :in-theory (enable away sig expt-split))))
 
@@ -430,7 +430,7 @@
 
 (defthm away-exactp-b
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (away x n))
 		  (exactp x n)))
@@ -454,14 +454,14 @@
 		  :use ((:instance away-diff-expo-1)
 			(:instance away-exactp-b)))))
 (local
- (defthm away-exactp-b-1    
+ (defthm away-exactp-b-1
     (implies (and (rationalp x)
 		  (rationalp y)
 		  (integerp n)
 		  (> n 0))
 	     (integerp (* (* (sgn x) (cg y) (expt 2 (- (1- n) (expo x)))) (expt 2 (- (1+ (expo x)) n)))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance integerp-x-y 
+  :hints (("Goal" :use ((:instance integerp-x-y
 				   (x (sgn x))
 				   (y (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))))
 			(:instance expt-split (r 2) (j (- (1- n) (expo x))) (i (- (1+ (expo x)) n))))))))
@@ -559,7 +559,7 @@
                   (:instance exactp-2**n))))))
 
 (local
- (defthm away-exactp-b-10    
+ (defthm away-exactp-b-10
     (implies (and (rationalp x)
 		  (not (= x 0))
 		  (integerp n)
@@ -616,7 +616,7 @@
 
 
 
-(local 
+(local
  (defthm away-exactp-c-support
     (implies (and (exactp a n)
 		  (>= a x)
@@ -677,7 +677,7 @@
                                        expo-monotone
                                        away-monotone-old)
             :cases ((> n 0)))
-           ("subgoal 2" 
+           ("subgoal 2"
             :use ((:instance expt-weak-monotone
                              (n (+ 1 (EXPO X) (* -1 N)))
                              (m (+ 1 (EXPO y) (* -1 N))))
@@ -686,7 +686,7 @@
                   (:instance expo-monotone (x y) (y x))
 ;                (:instance away-to-0-or-fewer-bits (x y))
                   ))
-           ("subgoal 1" 
+           ("subgoal 1"
             :use (away-monotone-old
                   (:instance away-monotone-old (x (- y))
                              (y (- x))))))
@@ -774,7 +774,7 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (away (away x n) m)
-		(* (cg (* (cg (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- m n)))) 
+		(* (cg (* (cg (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- m n))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expt-compare-equal)
@@ -795,7 +795,7 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (away (away x n) m)
-		(* (cg (/ (cg (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- n m)))) 
+		(* (cg (/ (cg (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- n m))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable expt-split expt-minus)
@@ -811,12 +811,12 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (away (away x n) m)
-		(* (cg (/ (* (expt 2 (- (1- n) (expo x))) x) (expt 2 (- n m)))) 
+		(* (cg (/ (* (expt 2 (- (1- n) (expo x))) x) (expt 2 (- n m))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable cg/int-rewrite)
 		  :use ((:instance away-away-3)
-			(:instance cg/int-rewrite 
+			(:instance cg/int-rewrite
 				   (x (* (expt 2 (- (1- n) (expo x))) x))
 				   (n (expt 2 (- n m)))))))))
 
@@ -994,7 +994,7 @@ zz
             (equal (* 1/2 x (expt 2 (+ n (* -1 (expo x)))))
                    (* x (expt 2 (1- n (* -1 (expo x)))))))
    :hints (("goal" :use ((:instance hack-83)
-                         (:instance hack-84 
+                         (:instance hack-84
                                     (a (* 1/2 (expt 2 (+ n (* -1 (expo x))))))
                                     (b (expt 2 (1- n (* -1 (expo x)))))))))))
 |#
@@ -1032,7 +1032,7 @@ zz
    :rule-classes ()
    :hints (("goal" :in-theory (disable expt-compare-equal)
             :use ((:instance trunc-away-4)
-;                         (:instance hack-86 (k (fl-half (* x (expt 2 (- n (expo x))))))) 
+;                         (:instance hack-86 (k (fl-half (* x (expt 2 (- n (expo x)))))))
                          (:instance expt-split (r 2) (i (- (expo x) n)) (j (- (1- n) (expo x))))
                          (:instance expt-split (r 2) (i 1) (j (- (1- n) (expo x)))))))))
 
@@ -1121,7 +1121,7 @@ zz
                                EXPT-COMPARE-EQUAL
                                EXPO-COMPARISON-REWRITE-TO-BOUND
                               ;expt-pos
-;exactp2 
+;exactp2
                                )
 		  :use ((:instance trunc-away-8)
 			(:instance trunc-away-3)
@@ -1184,7 +1184,7 @@ zz
                    (exactp (+ x (expt 2 (+ (expo x) (* -1 n)))) n)))
    :rule-classes ()
    :hints (("goal" :use ((:instance hack-87)
-                         (:instance hack-88 
+                         (:instance hack-88
                                     (x (+ x (* -1 (expt 2 (+ (expo x) (* -1 n))))
                                           (expt 2
                                                 (+ 1 (* -1 n)
@@ -1267,7 +1267,7 @@ zz
 			(:instance away-exactp-a)
 			(:instance fp+2 (x (- x (expt 2 (- (expo x) n)))) (y (away x n))))))))
 
- 
+
 (local
  (defthm trunc-away-16
    (implies (and (integerp n) (> n 0)
@@ -1277,7 +1277,7 @@ zz
             (>= (away x n)
                 (+ x (expt 2 (- (expo x) n)))))
    :rule-classes ()
-   :hints (("goal" :in-theory (enable expt-split) 
+   :hints (("goal" :in-theory (enable expt-split)
             :use ((:instance trunc-away-15)
                   )))))
 
@@ -1354,7 +1354,7 @@ zz
   :rule-classes ()
   :hints (("goal" :use (away-imp-1 away-imp-2)))))
 
-(local 
+(local
  (defthm away-imp-4
    (implies (and (rationalp x)
                  (> x 0)
@@ -1369,7 +1369,7 @@ zz
                        n)
                 (away x n)))
    :rule-classes ()
-   :hints (("goal" :in-theory (disable away-exactp-a trunc-exactp-a away-positive) 
+   :hints (("goal" :in-theory (disable away-exactp-a trunc-exactp-a away-positive)
             :use (away-imp-3
                   (:instance fp+2
                              (x (away x n))
@@ -1461,7 +1461,7 @@ zz
 			(:instance trunc-exactp-a)
 ;			(:instance trunc-pos)
 ;			(:instance expt-pos (x (- (1+ (expo x)) n)))
-			(:instance trunc-exactp-c 
+			(:instance trunc-exactp-c
 				   (a (+ (trunc x n) (expt 2 (- (1+ (expo x)) n))))))))))
 
 (local (defthm away-imp-9
@@ -1479,7 +1479,7 @@ zz
 			(:instance fp+1 (x (trunc x n)))
 			(:instance trunc-exactp-a)
 ;			(:instance trunc-pos)
-			(:instance away-exactp-c 
+			(:instance away-exactp-c
 				   (a (+ (trunc x n) (expt 2 (- (1+ (expo x)) n))))))))))
 
 (local (defthm away-imp-10
@@ -1555,7 +1555,7 @@ zz
   :hints (("goal" :in-theory (e/d (away-pos-rewrite exactp2)
                                   (cg+int-rewrite ;int-fl-rules
                                      ))
-           :use ((:instance cg+int-rewrite 
+           :use ((:instance cg+int-rewrite
                             (x (* y (expt 2 (- (1- k) (expo y)))))
                             (n (* x (expt 2 (- (1- k) (expo y))))))))))
 
@@ -1586,7 +1586,7 @@ zz
            (= (away (+ x y) j)
               (+ x (away y (+ j (- (expo (+ x y))) (expo y))))))
   :rule-classes ()
-  :hints (("goal" 
+  :hints (("goal"
            :use (:instance plus-away
                            (k (+ j (- (expo (+ x y))) (expo y)))))))
 
@@ -1607,10 +1607,10 @@ zz
                                (enable sgn
                                        expt-split expt-minus)
                                '(EXPT-COMPARE-EQUAL))
-           :use (  
-                 (:instance only-0-is-0-or-negative-exact) 
+           :use (
+                 (:instance only-0-is-0-or-negative-exact)
                  (:instance away-exactp-b)
-                  expo-of-sum-of-disjoint 
+                  expo-of-sum-of-disjoint
                  (:instance expo<=
                             (x y)
                             (n (+ (expo x) (* -1 n))))

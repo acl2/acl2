@@ -24,12 +24,12 @@
                 (not (equal from to))
                 (< 0 n)     (integerp n))
            (and ;; Route contains at least two nodes
-                 (<= 2 (len (route from to n))) 
+                 (<= 2 (len (route from to n)))
                  ;; it is a consp
-                 (consp (route from to n))     
+                 (consp (route from to n))
                  ;; every node is an integer
-                 (OctagonNodeSetp (route from to n))          
-                 ;; every node is less than the maximum of nodes 
+                 (OctagonNodeSetp (route from to n))
+                 ;; every node is less than the maximum of nodes
                  (all_inf_np (route from to n) (* 4 n))
                  ;; the first node is the starting node
                  (equal (car (route from to n)) from)
@@ -41,7 +41,7 @@
 ;; it also imports the types and misc. of GeNoC
 (include-book "../../../generic-modules/GeNoC-routing")
 
-;; 2. Definition of OctagonRouting 
+;; 2. Definition of OctagonRouting
 ;; -------------------------------
 (defun octagon-routing (Missives Bound)
   (if (endp Missives)
@@ -51,8 +51,8 @@
            (frm (FrmM miss))
            (origin (OrgM miss))
            (destination (DestM miss)))
-      (cons (list Id frm (list 
-                          (route origin destination 
+      (cons (list Id frm (list
+                          (route origin destination
                                  (/ Bound 4))))
             (octagon-routing (cdr Missives) Bound)))))
 
@@ -160,7 +160,7 @@
     (implies (and (Missivesp M NodeSet)
                   (OctagonValidParamsp N))
 ;                  (equal NodeSet (Naturals (+ -1 (* 4 N)))))
-             (equal (ToMissives (octagon-routing M 
+             (equal (ToMissives (octagon-routing M
                                                  (* 4 N)))
                     M)))
     :otf-flg t
@@ -190,8 +190,8 @@
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
-           :use (:instance 
-                 (:functional-instance 
+           :use (:instance
+                 (:functional-instance
                   trlstp-routing
                   (NodeSetGenerator OctagonNodeSetGenerator)
                   (NodeSetp OctagonNodeSetp)

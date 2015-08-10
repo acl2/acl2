@@ -274,7 +274,7 @@
                               (list n 0)
                               (helper2 m stack)
                               *pi*))))
-  
+
 (in-theory (disable loop2-clk))
 
 (defthm program-is-fn

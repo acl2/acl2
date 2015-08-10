@@ -8,88 +8,88 @@
 :set-irrelevant-formals-ok t
 
 (defun equalb (a b) (equal a b))
- 
+
 (defun nequal (a b) (not (equal a b))) (defun add-1 (a) (+ a 1))
- 
+
 (defun sub-1 (a) (- a 1))
-  
+
 (encapsulate ((rf0 (x1) t))
      (local (defun rf0 (x1) (declare (ignore x1)) 1))
      (defthm rf0-type (integerp (rf0 x1))))
- 
+
 (encapsulate ((imem0 (x1) t))
      (local (defun imem0 (x1) (declare (ignore x1)) 1))
      (defthm imem0-type (integerp (imem0 x1))))
- 
+
 (encapsulate ((src1 (x1) t))
      (local (defun src1 (x1) (declare (ignore x1)) 1))
      (defthm src1-type (integerp (src1 x1))))
- 
+
 (encapsulate ((src2 (x1) t))
      (local (defun src2 (x1) (declare (ignore x1)) 1))
      (defthm src2-type (integerp (src2 x1))))
- 
+
 (encapsulate ((opcode (x1) t))
      (local (defun opcode (x1) (declare (ignore x1)) 1))
      (defthm op-type (integerp (opcode x1))))
- 
+
 (encapsulate ((dest (x1) t))
      (local (defun dest (x1) (declare (ignore x1)) 1))
      (defthm dest-type (integerp (dest x1))))
- 
+
 (encapsulate ((alu (x3 x2 x1) t))
      (local (defun alu (x3 x2 x1)
               (declare (ignore x3) (ignore x2) (ignore x1))
               1))
      (defthm alu-type (integerp (alu x3 x2 x1))))
- 
+
 (encapsulate ((getregwrite (x1) t))
      (local (defun getregwrite (x1) (declare (ignore x1)) nil))
      (defthm getregwrite-type (booleanp (getregwrite x1))))
- 
+
 (encapsulate ((getmemtoreg (x1) t))
      (local (defun getmemtoreg (x1) (declare (ignore x1)) nil))
      (defthm getmemtoreg-type (booleanp (getmemtoreg x1))))
- 
+
 (encapsulate ((getuseimm (x1) t))
      (local (defun getuseimm (x1) (declare (ignore x1)) nil))
      (defthm getuseimm-type (booleanp (getuseimm x1))))
- 
+
 (encapsulate ((getimm (x1) t))
      (local (defun getimm (x1) (declare (ignore x1)) 1))
      (defthm getimm-type (integerp (getimm x1))))
- 
+
 (encapsulate ((getmemwrite (x1) t))
      (local (defun getmemwrite (x1) (declare (ignore x1)) nil))
      (defthm getmemwrite-type (booleanp (getmemwrite x1))))
- 
+
 (encapsulate ((writerf (x3 x2 x1) t))
      (local (defun writerf (x3 x2 x1)
               (declare (ignore x3) (ignore x2) (ignore x1))
               1))
      (defthm writerf-type (integerp (writerf x3 x2 x1))))
- 
+
 (encapsulate ((readrf (x2 x1) t))
      (local (defun readrf (x2 x1) (declare (ignore x2) (ignore x1)) 1))
      (defthm readrf-type (integerp (readrf x2 x1))))
- 
+
 (encapsulate ((writedmem (x3 x2 x1) t))
      (local (defun writedmem (x3 x2 x1)
               (declare (ignore x3) (ignore x2) (ignore x1))
               1))
      (defthm writedmem-type (integerp (writedmem x3 x2 x1))))
- 
+
 (encapsulate ((readdmem (x2 x1) t))
      (local (defun readdmem (x2 x1)
               (declare (ignore x2) (ignore x1))
               1))
      (defthm readdmem-type (integerp (readdmem x2 x1))))
- 
+
 (defun read-pimem_a (a pimem)
    (declare (xargs :measure (acl2-count pimem)))
    (if (endp pimem) (imem0 a)
        (if (g 0 (car pimem)) (imem0 a) (read-pimem_a a (cdr pimem)))))
- 
+
 (defun read-prf_a (a prf)
    (declare (xargs :measure (acl2-count prf)))
    (if (endp prf) (rf0 a)
@@ -101,12 +101,12 @@
                    (g 5 (car prf)))
               (g 6 (car prf)))
              (t (read-prf_a a (cdr prf)))))))
- 
+
 (defun read-simem_a (a simem)
    (declare (xargs :measure (acl2-count simem)))
    (if (endp simem) (imem0 a)
        (if (g 0 (car simem)) (imem0 a) (read-simem_a a (cdr simem)))))
- 
+
 (defun read-srf_a (a srf)
    (declare (xargs :measure (acl2-count srf)))
    (if (endp srf) (rf0 a)
@@ -119,9 +119,9 @@
                    (g 6 (car srf)))
               (g 7 (car srf)))
              (t (read-srf_a a (cdr srf)))))))
- 
+
 (defun u-state_a (impl spec) (seq nil 'impl impl 'spec spec))
- 
+
 (defun impl-state_a
         (pimem ppc prf fdwrt fdinst fdppc deppc desrc1 desrc2 dearg1
                dearg2 dedest deop deimm deuseimm deregwrite dememwrite
@@ -138,18 +138,18 @@
         emmemtoreg 'pdmemhist_1 pdmemhist_1 'pdmem pdmem 'mwval mwval
         'mwppc mwppc 'mwdest mwdest 'mwwrt mwwrt 'mwregwrite
         mwregwrite))
-  
+
 (defun initpimem_a (pimem) (cons (s 0 t (s 1 nil nil)) pimem))
- 
+
 (defun nextpimem_a (pimem) (cons (s 0 nil (s 1 nil nil)) pimem))
- 
+
 (defun initppc_a (pc0) pc0)
- 
+
 (defun nextppc_a (initi pc0 commit_impl commit_pc stall ppc)
    (cond (initi pc0) (commit_impl commit_pc) (stall ppc) (t (add-1 ppc))))
- 
+
 (defun initprf_a (prf) (cons (s 0 t (s 1 nil nil)) prf))
- 
+
 (defun nextprf_a (prf initi commit_impl mwwrt mwdest mwregwrite mwval)
    (cons (s 0 nil
 	    (s 1 initi
@@ -158,40 +158,40 @@
 		     (s 4 mwdest
 			(s 5 mwregwrite (s 6 mwval nil)))))))
 	 prf))
- 
+
 
 (defun initfdwrt_a () nil)
- 
+
 (defun nextfdwrt_a (initi commit_impl stall fdwrt)
    (cond (initi nil) (commit_impl nil) (stall fdwrt) (t t)))
- 
+
 (defun initfdinst_a (fdinst0) fdinst0)
- 
+
 (defun nextfdinst_a (initi fdinst0 stall fdinst inst)
    (cond (initi fdinst0) (stall fdinst) (t inst)))
- 
+
 (defun initfdppc_a (fdppc0) fdppc0)
- 
+
 (defun nextfdppc_a (initi fdppc0 stall fdppc ppc)
    (cond (initi fdppc0) (stall fdppc) (t ppc)))
- 
+
 (defun initdeppc_a (deppc0) deppc0)
- 
+
 (defun nextdeppc_a (initi deppc0 fdppc)
    (cond (initi deppc0) (t fdppc)))
- 
+
 (defun initdesrc1_a (desrc10) desrc10)
- 
+
 (defun nextdesrc1_a (initi desrc10 if_id_src1)
    (cond (initi desrc10) (t if_id_src1)))
- 
+
 (defun initdesrc2_a (desrc20) desrc20)
- 
+
 (defun nextdesrc2_a (initi desrc20 if_id_src2)
    (cond (initi desrc20) (t if_id_src2)))
- 
+
 (defun initdearg1_a (a1) a1)
- 
+
 (defun nextdearg1_a
         (initi a1 if_id_src1 prf commit_impl mwwrt mwdest mwregwrite
                mwval)
@@ -200,9 +200,9 @@
      (t (read-prf_a if_id_src1
             (nextprf_a prf initi commit_impl mwwrt mwdest mwregwrite
                 mwval)))))
- 
+
 (defun initdearg2_a (a2) a2)
- 
+
 (defun nextdearg2_a
         (initi a2 if_id_src2 prf commit_impl mwwrt mwdest mwregwrite
                mwval)
@@ -211,94 +211,94 @@
      (t (read-prf_a if_id_src2
             (nextprf_a prf initi commit_impl mwwrt mwdest mwregwrite
                 mwval)))))
- 
+
 (defun initdedest_a (dedest0) dedest0)
- 
+
 (defun nextdedest_a (initi dedest0 fdinst)
    (cond (initi dedest0) (t (dest fdinst))))
- 
+
 (defun initdeop_a (deop0) deop0)
- 
+
 (defun nextdeop_a (initi deop0 fdinst)
    (cond (initi deop0) (t (opcode fdinst))))
- 
+
 (defun initdeimm_a (deimm0) deimm0)
- 
+
 (defun nextdeimm_a (initi deimm0 fdinst)
    (cond (initi deimm0) (t (getimm fdinst))))
- 
+
 (defun initdeuseimm_a (deuseimm0) deuseimm0)
- 
+
 (defun nextdeuseimm_a (initi deuseimm0 fdinst)
    (cond (initi deuseimm0) (t (getuseimm fdinst))))
- 
+
 (defun initderegwrite_a (deregwrite0) deregwrite0)
- 
+
 (defun nextderegwrite_a (initi deregwrite0 id_regwrite)
    (cond (initi deregwrite0) (t id_regwrite)))
- 
+
 (defun initdememwrite_a (dememwrite0) dememwrite0)
- 
+
 (defun nextdememwrite_a (initi dememwrite0 id_memwrite)
    (cond (initi dememwrite0) (t id_memwrite)))
- 
+
 (defun initdememtoreg_a (dememtoreg0) dememtoreg0)
- 
+
 (defun nextdememtoreg_a (initi dememtoreg0 fdinst)
    (cond (initi dememtoreg0) (t (getmemtoreg fdinst))))
- 
+
 (defun initdewrt_a () nil)
- 
+
 (defun nextdewrt_a (initi commit_impl stall fdwrt)
    (cond (initi nil) (commit_impl nil) (t (and (not stall) fdwrt))))
- 
+
 (defun initemppc_a (emppc0) emppc0)
- 
+
 (defun nextemppc_a (initi emppc0 deppc)
    (cond (initi emppc0) (t deppc)))
- 
+
 (defun initemarg2_a (emarg20) emarg20)
- 
+
 (defun nextemarg2_a (initi emarg20 dearg2)
    (cond (initi emarg20) (t dearg2)))
- 
+
 (defun initemresult_a (emresult0) emresult0)
- 
+
 (defun nextemresult_a (initi emresult0 result)
    (cond (initi emresult0) (t result)))
- 
+
 (defun initemdest_a (emdest0) emdest0)
- 
+
 (defun nextemdest_a (initi emdest0 dedest)
    (cond (initi emdest0) (t dedest)))
- 
+
 (defun initemwrt_a () nil)
- 
+
 (defun nextemwrt_a (initi commit_impl dewrt)
    (cond (initi nil) (commit_impl nil) (t dewrt)))
- 
+
 (defun initemregwrite_a (emregwrite0) emregwrite0)
- 
+
 (defun nextemregwrite_a (initi emregwrite0 deregwrite)
    (cond (initi emregwrite0) (t deregwrite)))
- 
+
 (defun initemmemwrite_a (emmemwrite0) emmemwrite0)
- 
+
 (defun nextemmemwrite_a (initi emmemwrite0 dememwrite)
    (cond (initi emmemwrite0) (t dememwrite)))
- 
+
 (defun initemmemtoreg_a (emmemtoreg0) emmemtoreg0)
- 
+
 (defun nextemmemtoreg_a (initi emmemtoreg0 dememtoreg)
    (cond (initi emmemtoreg0) (t dememtoreg)))
- 
+
 (defun initpdmemhist_1_a (dmem0) dmem0)
- 
+
 (defun nextpdmemhist_1_a (initi dmem0 pdmem)
    (cond (initi dmem0) (t pdmem)))
- 
+
 (defun initpdmem_a (dmem0) dmem0)
- 
+
 (defun nextpdmem_a
         (initi dmem0 commit_impl pdmemhist_1 emwrt emmemwrite emarg2
                emresult pdmem)
@@ -307,32 +307,32 @@
      (commit_impl pdmemhist_1)
      ((and emwrt emmemwrite) (writedmem emarg2 emresult pdmem))
      (t pdmem)))
- 
+
 (defun initmwval_a (mwval0) mwval0)
- 
+
 (defun nextmwval_a (initi mwval0 emmemtoreg readdata emresult)
    (cond (initi mwval0) (emmemtoreg readdata) (t emresult)))
- 
+
 (defun initmwppc_a (mwppc0) mwppc0)
- 
+
 (defun nextmwppc_a (initi mwppc0 emppc)
    (cond (initi mwppc0) (t emppc)))
- 
+
 (defun initmwdest_a (mwdest0) mwdest0)
- 
+
 (defun nextmwdest_a (initi mwdest0 emdest)
    (cond (initi mwdest0) (t emdest)))
- 
+
 (defun initmwwrt_a () nil)
- 
+
 (defun nextmwwrt_a (initi commit_impl emwrt)
    (cond (initi nil) (commit_impl nil) (t emwrt)))
- 
+
 (defun initmwregwrite_a (mwregwrite0) mwregwrite0)
- 
+
 (defun nextmwregwrite_a (initi mwregwrite0 emregwrite)
    (cond (initi mwregwrite0) (t emregwrite)))
- 
+
 (defun impl-simulate_a
         (impl initi pc0 commit_impl commit_pc fdinst0 fdppc0 deppc0
               desrc10 desrc20 a1 a2 dedest0 deop0 deimm0 deuseimm0
@@ -413,7 +413,7 @@
            (nextmwdest_a initi mwdest0 emdest)
            (nextmwwrt_a initi commit_impl emwrt)
            (nextmwregwrite_a initi mwregwrite0 emregwrite)))))
- 
+
 (defun impl-initialize_a
         (impl pc0 fdinst0 fdppc0 deppc0 desrc10 desrc20 a1 a2 dedest0
               deop0 deimm0 deuseimm0 deregwrite0 dememwrite0
@@ -473,19 +473,19 @@
            (initpdmem_a dmem0) (initmwval_a mwval0)
            (initmwppc_a mwppc0) (initmwdest_a mwdest0) (initmwwrt_a)
            (initmwregwrite_a mwregwrite0)))))
- 
+
 (defun spec-state_a (simem spc srf sdmem)
    (seq nil 'simem simem 'spc spc 'srf srf 'sdmem sdmem))
- 
+
 (defun initsimem_a (simem) (cons (s 0 t (s 1 nil nil)) simem))
- 
+
 (defun nextsimem_a (simem) (cons (s 0 nil (s 1 nil nil)) simem))
- 
+
 (defun initspc_a (pc0) pc0)
- 
+
 (defun nextspc_a (initi pc0 project_impl project_pc isa spc)
    (cond (initi pc0) (project_impl project_pc) (isa (add-1 spc)) (t spc)))
- 
+
 (defun initsrf_a (srf) (cons  (s 0 t (s 1 nil nil)) srf))
 
 (defun nextsrf_a
@@ -498,9 +498,9 @@
 			(S 5
 			   INST (S 6 REGWRITE (S 7 VAL NIL))))))))
          srf))
- 
+
 (defun initsdmem_a (dmem0) dmem0)
- 
+
 (defun nextsdmem_a
         (initi dmem0 project_impl impl.pdmemhist_1 isa memwrite
                arg2_temp result sdmem)
@@ -509,7 +509,7 @@
      (project_impl impl.pdmemhist_1)
      ((and isa memwrite) (writedmem arg2_temp result sdmem))
      (t sdmem)))
- 
+
 (defun spec-simulate_a
         (spec initi pc0 project_impl project_pc isa impl.prf dmem0
               impl.pdmemhist_1)
@@ -530,7 +530,7 @@
                val)
            (nextsdmem_a initi dmem0 project_impl impl.pdmemhist_1 isa
                memwrite arg2_temp result sdmem)))))
- 
+
 (defun spec-initialize_a (spec pc0 dmem0)
    (let  ((simem (g 'simem spec)) (spc (g 'spc spec))
           (srf (g 'srf spec)) (sdmem (g 'sdmem spec)))
@@ -545,7 +545,7 @@
             (val (cond (memtoreg readdata) (t result))))
        (spec-state_a (initsimem_a simem) (initspc_a pc0)
            (initsrf_a srf) (initsdmem_a dmem0)))))
- 
+
 (defun simulate_a
         (st initi isa project_impl project_pc commit_impl commit_pc pc0
             fdinst0 fdppc0 deppc0 desrc10 desrc20 a1 a2 dedest0 deop0
@@ -561,7 +561,7 @@
            emmemtoreg0 dmem0 mwval0 mwppc0 mwdest0 mwregwrite0)
        (spec-simulate_a (g 'spec st) initi pc0 project_impl project_pc
            isa impl.prf dmem0 impl.pdmemhist_1)))
- 
+
 (defun initialize_a
         (st initi isa project_impl project_pc commit_impl commit_pc pc0
             fdinst0 fdppc0 deppc0 desrc10 desrc20 a1 a2 dedest0 deop0
@@ -575,7 +575,7 @@
            emdest0 emregwrite0 emmemwrite0 emmemtoreg0 dmem0 mwval0
            mwppc0 mwdest0 mwregwrite0)
        (spec-initialize_a (g 'spec st) pc0 dmem0)))
- 
+
 (defun equiv_ma
         (ppc_v impl.ppc prf_v a1 impl.prf pimem_v impl.pimem pdmem_v
                impl.pdmem fdwrt_v impl.fdwrt fdinst_v impl.fdinst
@@ -681,7 +681,7 @@
                       (or (and mwregwrite_v impl.mwregwrite)
                           (and (not mwregwrite_v)
                                (not impl.mwregwrite)))))))
- 
+
 (defun rank (impl.mwwrt zero impl.emwrt impl.dewrt impl.fdwrt)
    (cond
      (impl.mwwrt zero)
@@ -689,7 +689,7 @@
      (impl.dewrt (add-1 (add-1 zero)))
      (impl.fdwrt (add-1 (add-1 (add-1 zero))))
      (t (add-1 (add-1 (add-1 (add-1 zero)))))))
- 
+
 (defun committedpc
         (impl.mwwrt impl.mwppc impl.emwrt impl.emppc impl.dewrt
             impl.deppc impl.fdwrt impl.fdppc impl.ppc)
@@ -699,7 +699,7 @@
      (impl.dewrt impl.deppc)
      (impl.fdwrt impl.fdppc)
      (t impl.ppc)))
- 
+
 (defthm web_core_a
          (implies (and (integerp pc0) (integerp dmem0) (integerp a)
                        (integerp zero) (integerp mwval0)

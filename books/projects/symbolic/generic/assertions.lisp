@@ -17,7 +17,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
 
 |#
 
-(include-book "ordinals/ordinals" :dir :system) 
+(include-book "ordinals/ordinals" :dir :system)
 (include-book "misc/defpun" :dir :system)
 
 ;; Again I do have the functions nextt and run.
@@ -28,7 +28,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
 ;; I now encapsulate two functions default-state and cutpoint with the property
 ;; that the default state is not a cutpoint. This is all that I should need.
 
-(encapsulate 
+(encapsulate
  (((default-state) => *)
   ((cutpoint *) => *))
 
@@ -41,11 +41,11 @@ efficient symbolic simulation based on reasoning about cutpoints.
 )
 
 ;; I do the same definition of steps-to-cutpoint here. In other words it is the
-;; same defpun as before. 
+;; same defpun as before.
 
 (defpun steps-to-cutpoint-tail (s i)
-  (if (cutpoint s) 
-      i 
+  (if (cutpoint s)
+      i
     (steps-to-cutpoint-tail (nextt s) (1+ i))))
 
 ;; (local (in-theory (disable natp)))
@@ -55,7 +55,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
     (if (cutpoint (run s steps))
         steps
       (omega))))
-   
+
 (defun nextt-cutpoint (s)
    (let ((steps (steps-to-cutpoint s)))
      (if (natp steps)
@@ -76,7 +76,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
 ;;  Rob's second order functions [1], or
 ;; Francisco's generic instantiation tool [2].
 ;;
-;; [1] R. Sumners: Second Order Functions in ACL2. 
+;; [1] R. Sumners: Second Order Functions in ACL2.
 ;;     http://www.cs.utexas.edu/users/kaufmann/misc/sorta.lisp
 ;;
 ;; [2] F. J. Martin-Mateos, J. A. Alonso, M. J. Hidalgo, and
@@ -97,7 +97,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
                     (implies (natp k)
                              (<= cutpoint-steps k))
                     (cutpoint (run s cutpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -110,7 +110,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
    :hints (("Goal"
             :use ((:instance steps-to-cutpoint-tail-inv
                              (steps 0)))))))
- 
+
 (local
  (defthm natp-implies-cutpoint
    (implies (natp (steps-to-cutpoint s))
@@ -183,7 +183,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
                   (:instance cutpoint-implies-steps-to-cutpoint-natp
                              (s (nextt s))
                              (k (1- k))))))))
- 
+
 ;; I provide a version of this now which does not have a free variable.
 
 (local
@@ -195,7 +195,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
    :hints (("Goal"
             :in-theory (disable natp)
             :use ((:instance steps-to-cutpoint-nextt-is-1+
-                             (k (steps-to-cutpoint s)))))))) 
+                             (k (steps-to-cutpoint s))))))))
 
 ;; For some reason the arithmetic books are coming in the way of proving the
 ;; theorem that I want. I need to investigate that later. For now I just prove
@@ -209,7 +209,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
                    (1- (steps-to-cutpoint s))))
    :hints (("Goal"
             :use steps-=-1+-for-natp))))
-                
+
 ;; The following is a bad hack. It is also required to get the run function to
 ;; expand right.
 
@@ -234,11 +234,11 @@ efficient symbolic simulation based on reasoning about cutpoints.
             (natp (steps-to-cutpoint s)))
    :hints (("Goal"
             :in-theory (disable cutpoint-implies-steps-to-cutpoint-natp)
-            :use ((:instance natp-implies-cutpoint 
+            :use ((:instance natp-implies-cutpoint
                              (s (nextt s)))
                   (:instance cutpoint-implies-steps-to-cutpoint-natp
                              (k (1+ (steps-to-cutpoint (nextt s))))))))))
- 
+
  ;; Now the final theorems. These provide the symbolic simulation rules.
 
 (defthm |nextt cutpoint for not cutpoint|
@@ -259,7 +259,7 @@ efficient symbolic simulation based on reasoning about cutpoints.
 
 (defthm |nextt cutpoint for cutpoint|
   (implies (cutpoint s)
-           (equal (nextt-cutpoint s) 
+           (equal (nextt-cutpoint s)
                   s))
   :hints (("Goal"
            :in-theory (enable steps-to-cutpoint))))

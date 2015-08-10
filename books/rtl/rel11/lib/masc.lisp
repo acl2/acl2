@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -109,9 +109,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 ;Allows things like (in-theory (disable cat)) to refer to binary-cat.
@@ -208,7 +208,7 @@
 
 (defun false$ () 0)
 
-(defmacro if1 (x y z) `(if (eql ,x 0) ,z ,y))    
+(defmacro if1 (x y z) `(if (eql ,x 0) ,z ,y))
 
 (defmacro in-function (fn term)
   `(if1 ,term () (er hard ',fn "Assertion ~x0 failed" ',term)))
@@ -309,6 +309,6 @@
                 (= (mod y (expt 2 n)) r)
                 (<= (- (expt 2 (1- n))) y)
                 (< y (expt 2 (1- n))))
-            (equal (sf r n m) 
+            (equal (sf r n m)
                    (* (expt 2 (- m n)) y))))
 )

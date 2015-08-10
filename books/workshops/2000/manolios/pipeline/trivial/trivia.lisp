@@ -54,21 +54,21 @@
 ;;   :hints (("Goal" :in-theory (enable array1p header default dimensions
 ;; 				     maximum-length)))
 ;;   :rule-classes
-;;   ((:type-prescription :corollary 
+;;   ((:type-prescription :corollary
 ;; 	         (implies
 ;; 		  (array1p name l)
 ;; 		  (and (consp (header name l)))))
-;;    (:type-prescription :corollary 
+;;    (:type-prescription :corollary
 ;; 	         (implies
 ;; 		  (array1p name l)
 ;; 		  (and (consp (dimensions name l))
 ;; 		       (true-listp (dimensions name l)))))
-;;    (:type-prescription :corollary 
+;;    (:type-prescription :corollary
 ;; 	         (implies
 ;; 		  (array1p name l)
 ;; 		  (and (integerp (car (dimensions name l)))
 ;; 		       (<= 0 (car (dimensions name l))))))
-;;    (:type-prescription :corollary 
+;;    (:type-prescription :corollary
 ;; 	         (implies
 ;; 		  (array1p name l)
 ;; 		  (and (integerp (maximum-length name l))

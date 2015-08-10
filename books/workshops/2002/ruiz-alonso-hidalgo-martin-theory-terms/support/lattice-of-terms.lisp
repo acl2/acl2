@@ -1,7 +1,7 @@
-;;; lattice-of-terms.lisp 
+;;; lattice-of-terms.lisp
 ;;; A compilation of previous results to prove that we can define a
 ;;; complete well-founded lattice in the set of objects of the ACL2 logic.
-;;; The lattice is defined w.r.t. the subsumption relation. 
+;;; The lattice is defined w.r.t. the subsumption relation.
 ;;; Creation: 26-10-99. Last revision: 11-12-2000
 ;;; =================================================================
 
@@ -48,7 +48,7 @@
   ''the-top-term)
 
 (defmacro is-the-top-term (term)
-  `(equal ,term (the-top-term))) 
+  `(equal ,term (the-top-term)))
 
 ;;; We will distinguish one substitution, called the top substitution:
 
@@ -65,8 +65,8 @@
   (declare (xargs :guard t))
   (if (atom sigma) nil sigma))
 
-;;; REMARK: This will force to every empty substitution returned 
-;;; by subs to be distinct from the-top-substitution. 
+;;; REMARK: This will force to every empty substitution returned
+;;; by subs to be distinct from the-top-substitution.
 
 (defun fix-term (term)
   (declare (xargs :guard t))
@@ -78,7 +78,7 @@
 ;;; A few technical lemmas:
 
 
-(local 
+(local
  (defthm the-top-term-anti-unify-variable-p
   (implies (and (variable-p (anti-unify t1 t2))
                  (subs term t1) (subs term t2))
@@ -106,7 +106,7 @@
    :hints (("Goal" :use
             ((:instance minimum-subsumption-implies-variable
                         (x (mg-instance t1 term))))))))
- 
+
 
 (local (in-theory (enable variable-minimum-subsumption)))
 
@@ -184,7 +184,7 @@
   (cond  ((is-the-top-term t2) t)
 	 ((is-the-top-term t1) nil)
 	 (t (subs t1 t2))))
-      
+
 (defun match<= (t1 t2)
   (declare (xargs :guard (and (ext-term-p t1)
 			      (ext-term-p t2))))
@@ -208,7 +208,7 @@
 	   (ext-term-s-p (app<= sigma term))))
 
 
-;;; Relation between app<= and subsumption 
+;;; Relation between app<= and subsumption
 ;;; (see subsumption-one-definition-and-properties.lisp for details)
 
 ;;; If exists sigma such that t2 = (app<= sigma term), then term subsumes
@@ -223,7 +223,7 @@
 ;;; If t1 susbsumes t2, then exists a substitution s.t. applied to t1
 ;;; returns t2. That substitution is given by match<=.
 
-(defthm app<=-s<=-relationship-2 
+(defthm app<=-s<=-relationship-2
 
   (implies (s<= t1 t2)
 	   (equal (app<= (match<= t1 t2) t1) t2))
@@ -241,14 +241,14 @@
 
 ;;; Reflexivity
 
-(defthm s<=-reflexivity 
+(defthm s<=-reflexivity
 
   (s<= term term))
 
 
 ;;; Transitivity
 
-(defthm s<=-transitivity 
+(defthm s<=-transitivity
 
   (implies (and (s<= t1 t2) (s<= t2 t3))
 	   (s<= t1 t3))
@@ -281,17 +281,17 @@
 
 ;;; The measure is an ordinal.
 
-(defthm measure-s<-ordinalp 
+(defthm measure-s<-ordinalp
 
   (o-p (measure-s< term)))
-  
+
 
 ;;; Strictly decreasing in s<= implies strictly decreasing in measure.
 
 (in-theory (disable (:executable-counterpart make-ord)))
 (in-theory (disable (:executable-counterpart measure-s<)))
 
-(defthm s<-well-founded 
+(defthm s<-well-founded
 
   (implies (s< t1 t2)
 	   (o< (measure-s< t1) (measure-s< t2))))
@@ -304,7 +304,7 @@
 
 
 ;;; ============================================================================
-;;; 6. Greatest lower bound of two terms (w.r.t. s<=) 
+;;; 6. Greatest lower bound of two terms (w.r.t. s<=)
 ;;; ============================================================================
 
 ;;; (see anti-unification.lisp for details)
@@ -331,22 +331,22 @@
 ;;; glb-s<= is greater (or equivalent) than any lower-bound.
 
 
-(defthm glb-s<=-is-greater-than-any-lower-bound 
-  
+(defthm glb-s<=-is-greater-than-any-lower-bound
+
   (implies (and (s<= term t1)
                 (s<= term t2))
            (s<= term (glb-s<= t1 t2))))
-  
+
 
 ;;; glb-s<= of two terms of a given signature is a term of that
-;;; signature: 
+;;; signature:
 
 (defthm glb-s<=-closure-property
   (implies (and (ext-term-s-p t1) (ext-term-s-p t2))
            (ext-term-s-p (glb-s<= t1 t2))))
 
 ;;; ============================================================================
-;;; 7. Least upper bound of two terms (w.r.t. s<=) 
+;;; 7. Least upper bound of two terms (w.r.t. s<=)
 ;;; ============================================================================
 ;;; (see mg-instance.lisp for details)
 
@@ -361,7 +361,7 @@
 
 ;;; lub-s<= is an upper bound of t1 y t2
 
-(defthm lub-s<=-upper-bound-1 
+(defthm lub-s<=-upper-bound-1
 
   (s<= t1 (lub-s<= t1 t2)))
 
@@ -373,7 +373,7 @@
 
 ;;; lub-s<= es less (or equivalent) than any upper bound
 
-(defthm lub-s<=-less-than-any-upper-bound 
+(defthm lub-s<=-less-than-any-upper-bound
 
   (implies (and (s<= t1 term)
                 (s<= t2 term))
@@ -394,4 +394,4 @@
 ;;; So the set of objects of ACL2 logic is well-founded lattice
 ;;; w.r.t. the s<= relation (in particular this implies tha it is a
 ;;; complete lattice). And the set of terms of a given signature is a
-;;; sublattice.  
+;;; sublattice.

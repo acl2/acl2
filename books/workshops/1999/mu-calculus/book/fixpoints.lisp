@@ -1,21 +1,21 @@
 (in-package "SETS")
 (include-book "sets")
 
-(encapsulate 
+(encapsulate
  ((f (X) t)
   (S () t))
 
  (local (defun f (X)
           (declare (ignore X))
           nil))
- 
+
  (local (defun S ()
           nil))
- 
+
  (defthm f-is-monotonic
    (implies (=< X Y)
             (=< (f X) (f Y))))
- 
+
  (defthm S-is-top
    (=< (f X) (set-union X (S)))))
 

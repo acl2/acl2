@@ -106,8 +106,8 @@
 
 (defun
     lst-rotates-with-minus-1 (n lst)
-    "Return the list of n+1 successive rotates of the 
-     list lst with the first of each rotate replaced 
+    "Return the list of n+1 successive rotates of the
+     list lst with the first of each rotate replaced
      by the first minus 1."
     (declare (xargs :guard (and (rational-listp lst)
 				(consp lst)
@@ -128,9 +128,9 @@
 
 (defun
     dec-front-len (lst)
-    "Return the number of strictly decreasing elements 
+    "Return the number of strictly decreasing elements
      at the front of the list lst."
-    (declare (xargs :guard (rational-listp lst))) 
+    (declare (xargs :guard (rational-listp lst)))
     (cond ((consp (rest lst))  ;; (len lst) > 1
 	   (if (<= (first lst)(second lst))
 	       1
@@ -149,18 +149,18 @@
 	      (list (list (- first 1) second)
 		    (list (- second 1) first))))
      :hints (("Goal"
-	      :expand (lst-rotates-with-minus-1 
-		       1 
+	      :expand (lst-rotates-with-minus-1
+		       1
 		       (list first second))))))
 
-(defthm 
+(defthm
     Fb-sat-tarai-def-2
     (let ((lst (list first second)))
       (equal (Fb lst)
 	     (if (<= (first lst)
 		     (second lst))
 		 (second lst)
-	       (Fb (Fb-lst (lst-rotates-with-minus-1 
+	       (Fb (Fb-lst (lst-rotates-with-minus-1
 			    (- (len lst) 1)
 			    lst))))))
     :rule-classes nil)
@@ -172,7 +172,7 @@
 	     (if (<= (first lst)
 		     (second lst))
 		 (second lst)
-	       (Fb (Fb-lst (lst-rotates-with-minus-1 
+	       (Fb (Fb-lst (lst-rotates-with-minus-1
 			    (- (dec-front-len lst) 1)
 			    lst))))))
     :rule-classes nil)
@@ -188,7 +188,7 @@
 	      (list (list (- first 1) second third)
 		    (list (- second 1) third first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third)))))))
 
@@ -208,25 +208,25 @@
 	     (if (<= (first lst)
 		     (second lst))
 		 (second lst)
-	       (Fb (Fb-lst (lst-rotates-with-minus-1 
+	       (Fb (Fb-lst (lst-rotates-with-minus-1
 			    (- (len lst) 1)
 			    lst))))))
     :rule-classes nil)
 
-(defthm  
+(defthm
     Fb-sat-tarai-def-3a
     (let ((lst (list first second third)))
       (equal (Fb lst)
 	     (if (<= (first lst)
 		     (second lst))
 		 (second lst)
-	       (Fb (Fb-lst (lst-rotates-with-minus-1 
+	       (Fb (Fb-lst (lst-rotates-with-minus-1
 			    (- (dec-front-len lst) 1)
 			    lst))))))
     :rule-classes nil)
 ;;----------------------------------------------------------
 ;; Fb satisfies the tarai recursion equation when lst is a
-;;  true list of length 4 whose last two elements are 
+;;  true list of length 4 whose last two elements are
 ;;  acl2-numbers:
 
 (local
@@ -237,7 +237,7 @@
 	      (list (list (- first 1) second third forth)
 		    (list (- second 1) third forth first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth)))))))
 
@@ -262,7 +262,7 @@
 		    (list (- forth 1) first second third)))))
  )
 
-(defthm   
+(defthm
     Fb-sat-tarai-def-4
     (implies (and (acl2-numberp third)
 		  (acl2-numberp forth))
@@ -271,7 +271,7 @@
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst (lst-rotates-with-minus-1 
+			(Fb (Fb-lst (lst-rotates-with-minus-1
 				     (- (len lst) 1)
 				     lst)))))))
     :rule-classes nil)
@@ -285,7 +285,7 @@
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst (lst-rotates-with-minus-1 
+			(Fb (Fb-lst (lst-rotates-with-minus-1
 				     (- (dec-front-len lst) 1)
 				     lst)))))))
     :rule-classes nil)
@@ -301,7 +301,7 @@
 	      (list (list (- first 1) second third forth fifth)
 		    (list (- second 1) third forth fifth first))))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth fifth))))))
  )
@@ -353,7 +353,7 @@
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst (lst-rotates-with-minus-1 
+			(Fb (Fb-lst (lst-rotates-with-minus-1
 				     (- (len lst) 1)
 				     lst)))))))
     :rule-classes nil)
@@ -371,7 +371,7 @@
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst (lst-rotates-with-minus-1 
+			(Fb (Fb-lst (lst-rotates-with-minus-1
 				     (- (dec-front-len lst) 1)
 				     lst)))))))
     :rule-classes nil)

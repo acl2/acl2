@@ -7,7 +7,7 @@
   (if (endp x)
       a
     (ilen (cdr x) (1+ a))))
-  
+
 (defun rot2 (i x)
   (if (endp i)
       x

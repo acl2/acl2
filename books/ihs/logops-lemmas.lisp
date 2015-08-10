@@ -298,7 +298,7 @@
 	   (:instance expt-is-weakly-increasing-for-base>1
 		      (r 2) (i i) (j j)))))))
 
- 
+
 ;;;****************************************************************************
 ;;;
 ;;;   Lemmas, Round 1 -- A simple theory of ASH, LOGNOT, LOGAND, and LOGIOR.

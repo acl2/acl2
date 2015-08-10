@@ -1,4 +1,4 @@
-; Defsum: a macro for defining recursive data types 
+; Defsum: a macro for defining recursive data types
 ; by Sol Swords & William Cook
 
 ; Please email bug reports to sswords@cs.utexas.edu.
@@ -25,9 +25,9 @@
 ;    (my-cons car (my-list-p cdr)))
 ;
 ; The first item of each list is the *constructor* and the remaining
-; items are fields. Constructors with no arguments, like my-empty, 
-; represent abstract constants.  For each constructor, a recognizer is 
-; also defined, and functions to extract fields from the constructed 
+; items are fields. Constructors with no arguments, like my-empty,
+; represent abstract constants.  For each constructor, a recognizer is
+; also defined, and functions to extract fields from the constructed
 ; values. The overall type also has a recognizer. Here
 ; are all the functions defined by the above:
 ;
@@ -178,7 +178,7 @@
   (if (atom list)
       ;; Return the input in case it is an atom; for situations where a single
       ;; symbol is acceptible instead of a list
-      (mv list nil)    
+      (mv list nil)
     (if (keywordp (car list))
         (mv-let (slist keyalist)
                 (strip-keywords (cddr list))
@@ -203,7 +203,7 @@
                ;; just an atom, presumably no keywords either
                (list* compo nil kwalist)))
      (defsum-munge-components (cdr components)))))
-                 
+
 
 (defun defsum-munge-product (product)
     (mv-let (product kwalist)
@@ -316,7 +316,7 @@
 (defun accessor-name (product component)
   (appsyms (list (product-name product) (component-name component))))
 
-;; List of accessor names for a product     
+;; List of accessor names for a product
 (defun accessor-list (product components)
   (if (consp components)
       (cons (accessor-name product (car components))
@@ -387,7 +387,7 @@
 
 ;; Makes the pattern matcher macro for the product.
 (defun product-pattern-matcher (product guard-opt)
-  `(def-pattern-match-constructor 
+  `(def-pattern-match-constructor
      ,(if (eq guard-opt :fast)
           (appsyms (list (product-name product) 'slow))
         (product-name product))
@@ -460,7 +460,7 @@
     (if (consp components)
         `(defthm ,(appsyms (list name 'elim))
            (implies (,recognizer x)
-                    (equal (,name 
+                    (equal (,name
                             ,@(accessor-call-list product components))
                            x))
            :hints (("Goal" :in-theory (enable nth-open)))
@@ -546,7 +546,7 @@
         ,@(and (not predef)
                (list (constructor-acl2-count-thm product)))
         ,@(accessor-acl2-count-thms product components)
-        ,@(if accessor-opt 
+        ,@(if accessor-opt
               (accessor-short-circuit-thms product components)
             nil)
         ,(product-recognizer-constructor-thm product)
@@ -564,7 +564,7 @@
 (defmacro defproduct (&rest product)
   (let ((product (defsum-munge-product product)))
     `(progn
-       ,@(basic-product-defs product 
+       ,@(basic-product-defs product
                              (kwassoc :guard nil (product-kwalist product))
                              (kwassoc :short-accessors t (product-kwalist product))))))
 
@@ -677,7 +677,7 @@
       (cons (sum-possibility-thm (car sums))
             (sum-possibility-thms (cdr sums)))
     nil))
-              
+
 (defun product-fast-recs (products sumrec)
   (if (atom products)
       nil
@@ -760,7 +760,7 @@
 
 
 (defun negated-accessor-type-list (product)
-  (let ((nlist (negated-list (accessor-type-checklist1 
+  (let ((nlist (negated-list (accessor-type-checklist1
                               product (product-components product)))))
     (if (atom nlist)
         nil
@@ -858,7 +858,7 @@
                  (car not-prod)
                `(and ,@not-prod))
           :hints (("Goal" :in-theory (disable true-listp len))))
-          
+
           (defthm ,(appsyms (list name 'not-other-constructors))
             ,(if (= (len not-equal) 1)
                  (car not-equal)
@@ -923,7 +923,7 @@
                           rest)
                   rest)))
     '((& 1))))
-                
+
 
 (defun measure-def (sum sums guard-opt)
   (let ((clauses (measure-clause-list sums (sum-products sum))))
@@ -938,7 +938,7 @@
                     nil))
        (pattern-match x
          ,@clauses))))
-                     
+
 (defun measure-defs (sums all-sums guard-opt)
   (if (consp sums)
       (cons (measure-def (car sums) all-sums guard-opt)
@@ -950,7 +950,7 @@
     (if (= (len mdefs) 1)
         (car mdefs)
       `(mutual-recursion ,@mdefs))))
-  
+
 (defun field-measure-ineqs (sums measure prodname prodargs)
   (if (consp prodargs)
       (let* ((predtyp (component-type (car prodargs)))
@@ -972,7 +972,7 @@
       (let ((ineqs (field-measure-ineqs sums measure (product-name (car products))
                                         (product-components (car products)))))
         (if ineqs
-            (cons 
+            (cons
              `(defthm ,(appsyms (list (product-name (car products)) 'measure-decr))
                 (implies (,(product-recognizer (car products)) x)
                          ,(if (consp (cdr ineqs))
@@ -1014,11 +1014,11 @@
     (let* ((prodname (product-name (car products)))
            (components (product-components (car products)))
            (arglist (components-names components)))
-      (append (product-updater-defuns prodname arglist 
+      (append (product-updater-defuns prodname arglist
                                       (accessor-call-list (car products) components)
                                       (len arglist) guard-opt)
               (updater-defuns (cdr products) guard-opt)))))
-          
+
 
 
 
@@ -1047,17 +1047,17 @@
     (deflabel ,before-label)
     (local (in-theory (enable product-type (:executable-counterpart product-type))))
     ,@(basic-products-defs products guard-option accessor-option)
-    
+
     ,(sum-recognizers-def sums extfns guard-option)
-     
+
     ,@(sum-compound-rec-thms sums)
 
     ,@(sum-possibility-thms sums)
 
     ,@(all-accessor-type-thms sums)
-     
+
     ,@(all-bad-typing-thms sums)
-     
+
     ;; ,@(constructor-defs products guard-option)
 
     ;; ,@(exclusion-thms products products)
@@ -1087,11 +1087,11 @@
                      (set-difference-theories
                       (current-theory :here)
                       (current-theory ',before-label))))
-     
+
     (in-theory (disable ,(appsyms (list theory-name 'functions))
                         ,(appsyms (list theory-name
                                         'executable-counterparts))))
-     
+
     (deftheory ,(appsyms (list theory-name 'symbols))
       (set-difference-theories (current-theory :here)
                                (current-theory ',before-label)))
@@ -1212,7 +1212,7 @@
 ;is called.  The defsum book itself may not be included locally unless
 ;all defsum forms are local."
 
-  (mv-let 
+  (mv-let
    (sum extfns kwalist) (defsum-munge-input name defs)
    (defsums-fn sum kwalist extfns)))
 
@@ -1366,7 +1366,7 @@
 ;
 ;As with defsum, def-mutual-sums requires the (possibly local) inclusion of the
 ;defsum-thms book."
-  (mv-let 
+  (mv-let
    (sums extfns kwalist) (defsums-munge-input sums)
    (defsums-fn sums kwalist extfns)))
 
@@ -1461,4 +1461,4 @@
 
 
 
-        
+

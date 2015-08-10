@@ -86,7 +86,7 @@
 	      (<= 0 x))
    :hints (("Goal"
 	    :in-theory (enable inside-interval-p)))))
-   
+
 
 (local
  (defthm square-lemma-4
@@ -130,7 +130,7 @@
    :hints (("Goal"
 	    :in-theory (enable interval-definition-theory)))
    :rule-classes (:built-in-clause)))
-   
+
 
 (defthm sqr-preserves-not-close
     (implies (and (sqr-domain-p x)
@@ -155,7 +155,7 @@
 
  (local (defderivative sqr-deriv-local (sqr x)))
 
- (local 
+ (local
   (defthm close-2x
       (implies (and (acl2-numberp x)
 		    (acl2-numberp y)

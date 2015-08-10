@@ -265,7 +265,7 @@ that behave the same as the ones above, execpt that they don't take the
                                            ruleset templates history
                                            deps enable disable
                                            (rule-classes ':rewrite))
-  (add-stobj-preservation-thm-fn name vars body hints ruleset 
+  (add-stobj-preservation-thm-fn name vars body hints ruleset
                                  templates history deps enable disable rule-classes))
 
 (defxdoc add-stobj-preservation-thm

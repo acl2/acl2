@@ -8,7 +8,7 @@
 ;;; types.lisp
 ;;;
 ;;; The neccesity for these theorems does not arise very often,
-;;; but it can be very irritating when they do.  
+;;; but it can be very irritating when they do.
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,9 +104,9 @@
 (defthm not-integerp-/-2
   (implies (< x -1)
 	   (not (integerp (/ x)))))
-	   
+
 ;;; We do not introduce the case-split unless we are rewriting a goal
-;;; literal. 
+;;; literal.
 
 (defthm integerp-/
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))

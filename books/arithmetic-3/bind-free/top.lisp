@@ -37,12 +37,12 @@
 
 (include-book "integerp-meta")
 
-(deftheory pre-basic 
+(deftheory pre-basic
   (current-theory :here))
 
 (include-book "basic")
 
-(deftheory post-basic 
+(deftheory post-basic
   (current-theory :here))
 
 (include-book "collect")
@@ -51,10 +51,10 @@
 
 (include-book "arithmetic-theory")
 
-(deftheory full 
+(deftheory full
   (current-theory :here))
 
-(deftheory minimal-arithmetic-theory 
+(deftheory minimal-arithmetic-theory
    (union-theories (theory 'arithmetic-3-bind-free-base)
                    (set-difference-theories (theory 'post-basic)
                                             (theory 'pre-basic))))
@@ -74,7 +74,7 @@
       simplify-products-gather-exponents-<))
 
 (deftheory scatter-exponents-theory
-    '(|(expt x (+ m n))| 
+    '(|(expt x (+ m n))|
       |(expt x (+ m n)) non-zero x|
       |(expt x c)|
       ;;|(expt x (+ m n)) non-pos m and n|
@@ -125,7 +125,7 @@
 
 (prefer-positive-addends)
 
-(theory-invariant 
+(theory-invariant
  (not (and (active-runep '(:rewrite |(expt x (+ m n))|))
            (active-runep '(:rewrite normalize-factors-gather-exponents))))
  :error nil)
@@ -284,7 +284,7 @@
 		    Unicity-of-0 Inverse-of-+ Rationalp-+
 		    Rationalp-unary-- Unicity-of-1
 		    Associativity-of-* Commutativity-of-*
-                    Rational-implies2 
+                    Rational-implies2
 		    Inverse-of-* Rationalp-*
 		    Rationalp-unary-/
 		    Distributivity

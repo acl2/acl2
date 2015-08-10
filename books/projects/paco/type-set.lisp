@@ -303,7 +303,7 @@
 ; nonnumeric bits then those bits are shut off and *ts-zero* is turned on.
 ; Another way to look at it is that if term has type ts then (fix term) has
 ; type (numeric-type-set ts).
-         
+
   (let ((numeric-subtype
          (ts-intersection ts *ts-acl2-number*)))
     (if (ts= numeric-subtype ts)
@@ -578,7 +578,7 @@
 ; true-ts then (fn x) might be true, so we should throw in *ts-t*.
 ; Conversely, if arg-ts does not intersect with true-ts then (fn x)
 ; cannot possibly be true.  Exactly analogous statements can be made
-; about false-ts.  
+; about false-ts.
 
 ; We return the type set of (fn x).
 
@@ -820,7 +820,7 @@
 
 ; This function is used to push a new entry onto ancestors.  Lit is a
 ; term to be assumed true.
- 
+
 ; Note:  It is important that the literal, lit, be in the car of the
 ; frame constructed below.
 
@@ -840,7 +840,7 @@
                   ancestors))))
 
 (defun ancestors-check1 (lit-atm lit fn-cnt p-fn-cnt ancestors)
-                                 
+
 ; Roughly speaking, ancestors is a list of all the things we can
 ; assume by virtue of our trying to prove their negations.  That is,
 ; when we backchain from B to A by applying (implies A B), we try to
@@ -1093,7 +1093,7 @@
                                (ts-complement *ts-acl2-number*)))
          (ts-intersectp
           ts1
-          (ts-complement 
+          (ts-complement
            (ts-union *ts-negative-rational* *ts-complex-rational*))))
     (extend-type-alist
      arg1
@@ -1102,7 +1102,7 @@
                                 *ts-complex-rational*))
      type-alist))
    ((and not-flg
-         (ts-subsetp ts1 
+         (ts-subsetp ts1
                      *ts-negative-rational*)
          (ts-intersectp ts2
                         (ts-complement (ts-union *ts-complex-rational*
@@ -1121,7 +1121,7 @@
          (ts-subsetp ts1
                      (ts-union *ts-non-positive-rational*
                                (ts-complement *ts-acl2-number*)))
-         (ts-intersectp ts2 
+         (ts-intersectp ts2
                         *ts-positive-rational*))
 
 ; Here we are dealing with (not (< arg1 arg2)) which is (<= arg2 arg1).  We
@@ -1140,7 +1140,7 @@
       (ts-complement *ts-positive-rational*))
      type-alist))
    ((and not-flg
-         (ts-subsetp ts2 
+         (ts-subsetp ts2
                      *ts-positive-rational*)
          (ts-intersectp ts1
                         (ts-complement
@@ -1159,7 +1159,7 @@
           (ts-complement
            (ts-union *ts-complex-rational*
                      *ts-negative-rational*)))
-         (ts-intersectp ts1 
+         (ts-intersectp ts1
                         *ts-negative-rational*))
     (extend-type-alist
      arg1
@@ -1248,7 +1248,7 @@
 (defthm acl2-count-non-cons-cdr
   (<= (acl2-count (non-cons-cdr x)) (acl2-count x))
   :hints (("Goal" :induct (non-cons-cdr x)))
-  :rule-classes :linear)  
+  :rule-classes :linear)
 
 ; The following rather dumb lemmas are here to speed the admission of
 ; the type-set clique.  In fact, ACL2 can admit the clique without any
@@ -1392,7 +1392,7 @@
 ; type-sets and thus encoding the current assumptions.  We return the
 ; type-set of term under those assumptions.
 
-; Note:  If ancestors is t it means:  don't backchain.  Act as though 
+; Note:  If ancestors is t it means:  don't backchain.  Act as though
 ; the literal we're backchaining on is worse than everything in sight.
 ; This is called the ``t-ancestors hack'' and is commented upon below.
 
@@ -1461,7 +1461,7 @@
                                             false-type-alist
                                             ancestors ens
                                             w nnn))))))
-             (t 
+             (t
               (type-set-with-rules
                (getprop fn 'type-prescriptions nil w)
                x type-alist ancestors ens w *ts-unknown* nnn)))))))))))
@@ -1482,7 +1482,7 @@
 ; type-prescription lemmas never contain free variables in the
 ; conclusion.  While we are at it, we record in an extension of
 ; type-alist the type computed for each hyp', so that if subsequent
-; rules need that information, they can get it quickly.  We return 
+; rules need that information, they can get it quickly.  We return
 ; (mv wonp type-alist').
 
   (cond
@@ -1531,7 +1531,7 @@
                                         alist type-alist ancestors ens w nnn))
                 (t (mv nil type-alist))))
               ((zp nnn) (mv nil type-alist))
-              (t 
+              (t
                (let* ((ts1 (type-set atm1 type-alist
 
 ; Here is the other place we enforce the t-ancestors hack.
@@ -1577,7 +1577,7 @@
             (cdr alist)
             (cond ((assoc-equal (cdr (car alist)) type-alist)
                    type-alist)
-                  (t 
+                  (t
                    (extend-type-alist
                     (cdr (car alist))
                     (type-set (cdr (car alist))
@@ -1848,7 +1848,7 @@
              (assume-true-false1 xnot-flg x type-alist ancestors ens w nnn)
            (mv-let
             (mbt mbf tta fta)
-            (assume-true-false 
+            (assume-true-false
              (subcor-var (formals (ffn-symb x) w)
                          (fargs x)
                          (body (ffn-symb x) t w))
@@ -2044,7 +2044,7 @@
 ; assume-true-false on it and we have to normalize it to produce the
 ; desired tta and fta.  If (< x 1) appears as the entire resultant
 ; term, we'll just call type-set on it and we have to normalize it to
-; decide it.  
+; decide it.
 
 ; Another question raised is: "What about the second transformation done
 ; above?"  We assume ~(< x 0) when asked to assume (< 0 (+ 1 x)), with the
@@ -2067,7 +2067,7 @@
                              (extend-type-alist
                               arg2
                               (ts-intersection
-                               ts2 
+                               ts2
                                (ts-union *ts-positive-rational*
                                          *ts-complex-rational*))
                               type-alist))
@@ -2089,7 +2089,7 @@
  (defstub foo (x) t)
 
  (defaxiom test1
-   (implies (and (<= 0 x) 
+   (implies (and (<= 0 x)
                  (rationalp x))
             (foo y)))
 
@@ -2196,7 +2196,7 @@
                                  xnot-flg x)))))
                   ((equal arg2 *0*)
                    (cond
-                    ((ts-subsetp ts1 
+                    ((ts-subsetp ts1
                                  *ts-negative-rational*)
                      (mv-atf not-flg t nil type-alist nil))
                     ((ts-subsetp ts1
@@ -2208,7 +2208,7 @@
                              (extend-type-alist
                               arg1
                               (ts-intersection
-                               ts1 
+                               ts1
                                (ts-union *ts-negative-rational*
                                          *ts-complex-rational*))
                               type-alist))
@@ -2216,7 +2216,7 @@
                              (extend-type-alist
                               arg1
                               (ts-intersection
-                               ts1 (ts-complement 
+                               ts1 (ts-complement
                                     *ts-negative-rational*))
                               type-alist)))
                        (mv-atf-2 not-flg true-type-alist false-type-alist
@@ -2326,7 +2326,7 @@
            (mv-atf not-flg nil nil
                    (extend-with-proper/improper-cons-ts-tuple
                     x
-                    (ts-intersection ts *ts-non-nil*) 
+                    (ts-intersection ts *ts-non-nil*)
                     type-alist ancestors type-alist ens w nnn)
                    (extend-type-alist x *ts-nil* type-alist))))))
 

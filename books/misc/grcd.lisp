@@ -113,17 +113,17 @@
    :rule-classes ((:type-prescription
 		   :corollary
 		   (np (mv-nth 0 (Euclid-alg-nat a b))))
-		  (:type-prescription 
+		  (:type-prescription
 		   :corollary
 		   (integerp (mv-nth 1 (Euclid-alg-nat a b))))
-		  (:type-prescription 
+		  (:type-prescription
 		   :corollary
 		   (integerp (mv-nth 2 (Euclid-alg-nat a b))))
 		  (:type-prescription
-		   :corollary 
+		   :corollary
 		   (np (mv-nth 3 (Euclid-alg-nat a b))))
 		  (:type-prescription
-		   :corollary 
+		   :corollary
 		   (np (mv-nth 4 (Euclid-alg-nat a b)))))))
 
 ; Matt K. suggested this rule to be a :type-prescription rule.
@@ -370,7 +370,7 @@
 	    :in-theory (disable associativity-of-*
 				distributivity-of-/-over-*
 				/-cancellation-on-left)))))
- 
+
 (defthm grcd-quotients-gives-a-/-b
   (implies (and (integerp a)
 		(integerp b)
@@ -529,7 +529,7 @@
                         (* c (grcd-lin-2 a c)))
                      1))
      :hints (("Goal" :in-theory (enable grcd-is-linear-combination)))))
- 
+
   (defthm grcd-multiplication-lemma-3
     (implies (and (integerp a)
                   (integerp b)
@@ -539,7 +539,7 @@
                             (* c (grcd-lin-2 a c))))
                     b))
     :rule-classes nil)))
- 
+
 (local
  (defthm grcd-multiplication-lemma-4
    (implies (and (integerp a)
@@ -564,7 +564,7 @@
    :rule-classes nil
    :hints (("Goal"
 	    :use grcd-multiplication-lemma-4))))
- 
+
 (local
  (defthm grcd-multiplication-lemma-6
    (implies (and (integerp a)
@@ -576,7 +576,7 @@
    :rule-classes nil
    :hints (("Goal"
 	    :use grcd-multiplication-lemma-5))))
- 
+
 (in-theory (disable common-divisor-divides-grcd))
 
 (defthm grcd-multiplication-with-relative-prime

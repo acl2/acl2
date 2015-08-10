@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -54,10 +54,10 @@
 
 ;; (include-book "arith") ;general arithmetic package
 
-(include-book "bvecp-raw-helpers") 
+(include-book "bvecp-raw-helpers")
 
 
-(include-book "simple-loop-helpers") 
+(include-book "simple-loop-helpers")
 
 
 (include-book "arith")

@@ -31,8 +31,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo sig fl-weakly-monotonic)
 		  :use ((:instance sig-lower-bound)
-			(:instance pos* 
-				   (x (fl (* (sig x) (expt 2 (1- n))))) 
+			(:instance pos*
+				   (x (fl (* (sig x) (expt 2 (1- n)))))
 				   (y (expt 2 (- (1+ (expo x)) n))))
 			(:instance sgn+1)
 			(:instance expo-monotone (x 1) (y (1- n)))
@@ -47,8 +47,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo sig fl-weakly-monotonic)
 		  :use ((:instance sig-lower-bound)
-			(:instance pos* 
-				   (x (fl (* (sig x) (expt 2 (1- n))))) 
+			(:instance pos*
+				   (x (fl (* (sig x) (expt 2 (1- n)))))
 				   (y (expt 2 (- (1+ (expo x)) n))))
 			(:instance sgn-1)
 			(:instance expo-monotone (x 1) (y (1- n)))
@@ -78,8 +78,8 @@
 	     (equal (abs (trunc x n)) (* (fl (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n)))))
   :hints (("Goal" :in-theory (disable expo sig fl-weakly-monotonic)
 		  :use ((:instance sig-lower-bound)
-			(:instance pos* 
-				   (x (fl (* (sig x) (expt 2 (1- n))))) 
+			(:instance pos*
+				   (x (fl (* (sig x) (expt 2 (1- n)))))
 				   (y (expt 2 (- (1+ (expo x)) n))))
 			(:instance sgn-1)
 			(:instance sgn+1)
@@ -335,7 +335,7 @@
   :hints (("Goal" :in-theory (disable trunc abs expo abs-trunc)
 		  :use ((:instance trunc-diff)
 			(:instance expo-lower-bound (x (- x (trunc x n))))
-			(:instance expt-strong-monotone 
+			(:instance expt-strong-monotone
 				   (n (expo (- x (trunc x n))))
 				   (m (- (1+ (expo x)) n)))))))
 
@@ -344,8 +344,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (trunc x n)
-		    (* (sgn x) 
-		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n))))))
 
 (in-theory (disable trunc))
@@ -397,7 +397,7 @@
 
 (defthm trunc-exactp-a
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (trunc x n))
 		  (exactp x n)))
@@ -421,7 +421,7 @@
 		  :use ((:instance trunc-diff-expo-1)
 			(:instance trunc-exactp-a)))))
 
-(defthm trunc-exactp-b-1    
+(defthm trunc-exactp-b-1
     (implies (and (rationalp x)
 		  (rationalp y)
 		  (integerp n)
@@ -429,7 +429,7 @@
 	     (integerp (* (* (sgn x) (fl y) (expt 2 (- (1- n) (expo x)))) (expt 2 (- (1+ (expo x)) n)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo)
-		  :use ((:instance integerp-x-y 
+		  :use ((:instance integerp-x-y
 				   (x (sgn x))
 				   (y (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))))
 			(:instance expo+ (n (- (1- n) (expo x))) (m (- (1+ (expo x)) n)))))))
@@ -519,7 +519,7 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (trunc (trunc x n) m)
-		(* (fl (* (fl (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- m n)))) 
+		(* (fl (* (fl (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- m n))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo trunc-pos-rewrite trunc-rewrite)
@@ -539,7 +539,7 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (trunc (trunc x n) m)
-		(* (fl (/ (fl (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- n m)))) 
+		(* (fl (/ (fl (* (expt 2 (- (1- n) (expo x))) x)) (expt 2 (- n m))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo trunc-pos-rewrite trunc-rewrite)
@@ -553,12 +553,12 @@
 		  (> m 0)
 		  (>= n m))
 	     (= (trunc (trunc x n) m)
-		(* (fl (/ (* (expt 2 (- (1- n) (expo x))) x) (expt 2 (- n m)))) 
+		(* (fl (/ (* (expt 2 (- (1- n) (expo x))) x) (expt 2 (- n m))))
 		   (expt 2 (- (1+ (expo x)) m)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable fl/int expo trunc-pos-rewrite trunc-rewrite)
 		  :use ((:instance trunc-trunc-3)
-			(:instance fl/int 
+			(:instance fl/int
 				   (x (* (expt 2 (- (1- n) (expo x))) x))
 				   (n (expt 2 (- n m))))))))
 
@@ -621,7 +621,7 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (disable fl+int expo trunc-pos-rewrite trunc-rewrite)
 		  :use ((:instance plus-trunc-1)
-			(:instance fl+int 
+			(:instance fl+int
 				   (x (* y (expt 2 (- (1- k) (expo y)))))
 				   (n (* x (expt 2 (- (1- k) (expo y))))))))))
 
@@ -792,8 +792,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo trunc-pos-rewrite fl+int)
 		  :use ((:instance trunc-n+k-4)
-			(:instance fl+int 
-				   (x (* x (expt 2 (- k e)))) 
+			(:instance fl+int
+				   (x (* x (expt 2 (- k e))))
 				   (n (* (expt 2 k) (fl (* x (expt 2 (- e)))))))))))
 
 (defthm trunc-n+k-6
@@ -965,7 +965,7 @@
 		  (integerp n)
 		  (>= n k)
 		  ;;this isn't really needed, but it won't hurt me.
-		  (not (exactp x n))          
+		  (not (exactp x n))
 		  (= e (- (1+ (expo x)) n))
 		  (= z (trunc (- x (trunc x n)) n))
 		  (= y (- x (trunc x n))))

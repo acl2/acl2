@@ -189,14 +189,14 @@
                      :do-not-induct))
          (not (equal process 'induct-clause)))
     (mv 'miss nil nil nil))
-   (t 
+   (t
 
 ; This is a weird call of my macro.  Push a new empty frame.  If the
 ; result is HIT, then print the stuff indicated and pop the frame with flg t
 ; else don't print and pop the frame with flg nil.
 ; The problem is that I don't have any assurance that the "printing" code
 ; prints instead of doing some arbitrary unsound raw lisp thing.
-      
+
     (<apply-waterfall-process-id>
      (case process
        (apply-hints-clause
@@ -281,7 +281,7 @@
                                                   wrld
                                                   (- nnn 1)))))
                 (MISS (waterfall (cdr ledge) id cl hist pspv wrld nnn))
-                (otherwise 
+                (otherwise
 
 ; Typically the only other signal is ABORT, which means the proof has
 ; failed and the input-clause is an unproved subgoal.  But the signal
@@ -333,7 +333,7 @@
          (mv (cons '(:ERROR ILL-FORMED) errors)
              subgoals))
         ((eq (access proof-attempt p :process) 'UNPROVED)
-         (mv errors 
+         (mv errors
              (cons (list :SUBGOAL (access proof-attempt p :clause-id)
                          (prettyify-clause
                           (access proof-attempt p :input-clause)))

@@ -24,19 +24,19 @@
   (implies (and (integerp i)
                 (integerp j)
                 (<= 0 j))
-           (not (member-gen 
-                 nil 
-                 (strip-cdrs-gen 
+           (not (member-gen
+                 nil
+                 (strip-cdrs-gen
                   (taxa-list-to-tree-alist-help taxa-list i j)))))
-  :hints (("Subgoal *1/3'''" :in-theory 
+  :hints (("Subgoal *1/3'''" :in-theory
            (disable consp-bits-to-tree)
            :use (:instance consp-bits-to-tree
                            (x j)))))
 
 (defthm not-member-nil-strip-cdrs-gen-taxa-list-to-tree-alist
   (implies (<= 2 (len (double-rewrite taxa-list)))
-           (not (member-gen nil 
-                            (strip-cdrs-gen 
+           (not (member-gen nil
+                            (strip-cdrs-gen
                              (taxa-list-to-tree-alist taxa-list)))))
   :hints (("Goal" :in-theory (enable taxa-list-to-tree-alist))))
 
@@ -57,13 +57,13 @@
   (implies (and (member-gen x (double-rewrite taxa-list))
                 (integerp i)
                 (integerp j))
-           (member-gen x (strip-cars-gen 
+           (member-gen x (strip-cars-gen
                           (taxa-list-to-tree-alist-help
                            taxa-list i j)))))
 
 (defthm member-gen-taxa-list-assoc
   (implies (member-gen x (double-rewrite taxa-list))
-           (member-gen x (strip-cars-gen 
+           (member-gen x (strip-cars-gen
                           (taxa-list-to-tree-alist taxa-list))))
   :hints (("Goal" :in-theory (enable taxa-list-to-tree-alist))))
 
@@ -76,7 +76,7 @@
   (implies (and (member-gen x (strip-cars-gen y))
                 (good-taxon-bdd-alist y)
                 (assoc-hqual x y))
-           (assoc-hqual 
+           (assoc-hqual
             x (build-fast-alist-from-alist y acc))))
 
 (defthm assoc-good-taxon-bdd-cdr

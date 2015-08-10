@@ -5,13 +5,13 @@
 ;; needed for the bit vector benchmarks.
 
 ;; You can tell which functions are the top-level functions, which need rewrite
-;; rules, because they are defined with defund (defun and disable).  These 
+;; rules, because they are defined with defund (defun and disable).  These
 ;; functions are my implementation of the bit-vector functions in the
 ;; SMT library, described at:
 ;; http://combination.cs.uiowa.edu/smtlib
 
 ;; Argument name conventions:
-;; * "n" or "n<arg-name>" (e.g. "nx") is used to denote natural numbers 
+;; * "n" or "n<arg-name>" (e.g. "nx") is used to denote natural numbers
 ;;   representing the size of the bit vectors input to the function.  These
 ;;   arguments are not part of the original SMT-lib functions, but come
 ;;   from the move from a typed to an untyped language.  These arguments
@@ -19,30 +19,30 @@
 ;; * "j" or "k": arguments that take on natural numbers present in the
 ;;   original SMT-lib function.  These numbers will be constant for any
 ;;   given SMT expression.
-;; * "x" or "y": arguments that take on Bit vectors values. 
+;; * "x" or "y": arguments that take on Bit vectors values.
 
 ;; One issue I've had to grapple with is whether use a strict bit vector
 ;; representation, where all bit vectors that are equal are really equal
 ;; (i.e. there is only one legal representation for each bit vector),
-;; or whether to use a "loose" representation 
-;; (e.g. '(t t), '(t t nil nil), and '(t t nil nil t) all can be used to 
-;; represent the four bit, bit vector "12").  For now, I'm using the loose 
-;; representation.  However, every function has all the inputs needed so 
-;; that I can switch if needed.  
+;; or whether to use a "loose" representation
+;; (e.g. '(t t), '(t t nil nil), and '(t t nil nil t) all can be used to
+;; represent the four bit, bit vector "12").  For now, I'm using the loose
+;; representation.  However, every function has all the inputs needed so
+;; that I can switch if needed.
 ;;
 ;; I expect that the "loose" representation can achieve superior performance
 ;; if we assume all formulas are well-typed.  The downside is that we
 ;; need this "well-typed" assumption, so none of the rewrite rules we
-;; want are actually valid theorems.  My strategy for now is going to be 
-;; to solve the SMT benchmarks as effeciently as possible, even if that 
+;; want are actually valid theorems.  My strategy for now is going to be
+;; to solve the SMT benchmarks as effeciently as possible, even if that
 ;; means using invalid rewrite rules (but with the hidden knowledge that
 ;; all formulas are well-typed).
 ;;
 ;; For the purpose of these rewrite rules, it is best to assume that
-;; each top-level function "(f n x)" returning an "(f-output-size n)" 
-;; bit, bit vector is redefined to be "(f-safe n x)" where "(f-safe n x)" is: 
+;; each top-level function "(f n x)" returning an "(f-output-size n)"
+;; bit, bit vector is redefined to be "(f-safe n x)" where "(f-safe n x)" is:
 ;;
-;; (defun f-safe (n x) 
+;; (defun f-safe (n x)
 ;;   (map-to-bv (f-output-size n) (f n x)))
 ;;
 ;; See the definition of map-to-bv below.  This ensures that every function
@@ -51,7 +51,7 @@
 ;; representation shouldn't be necessary because the functions are designed
 ;; to operate correctly given the "loose" representation.
 
-;; Furthermore, note that when designing these functions it's important to 
+;; Furthermore, note that when designing these functions it's important to
 ;; keep duplication to a minimum, especially during recursive calls,
 ;; since my SAT algorithm does not remove redundance.  For example,
 ;; (if x (bv-not 4 y) (bv-not 4 y)) will lead to two seperate
@@ -62,28 +62,28 @@
 
 (include-book "../clause-processors/sym-str")
 
-(defun bvp (x) 
+(defun bvp (x)
   (declare (xargs :guard t))
   (and (consp x) (natp (car x)) (true-listp (cdr x))))
 
-(defun bv-size (x) 
+(defun bv-size (x)
   (declare (xargs :guard (bvp x)))
   (mbe :exec (car x)
        :logic (nfix (car x))))
 
-(defun bv-raw-bv (x) 
+(defun bv-raw-bv (x)
   (declare (xargs :guard (bvp x)))
   (cdr x))
 
-(defun make-bv (sz x) 
+(defun make-bv (sz x)
   (declare (xargs :guard t))
   (cons sz x))
 
 (defund bv-eq-raw (n x y)
   (declare (xargs :guard (and (natp n)
-                              (true-listp x) 
+                              (true-listp x)
                               (true-listp y))))
-  (cond 
+  (cond
    ((zp n)
     t)
    ((iff (car x) (car y))
@@ -107,7 +107,7 @@
 
 ;; Generally speaking, we don't worry about the fact that
 ;; a bit vector may have some trailing irrelevant bits
-;; on it (e.g. a four bit, bit vector representing 
+;; on it (e.g. a four bit, bit vector representing
 ;; 1011 may be '(t nil t t t nil t)).  Sometimes, however,
 ;; we need to know that these trailing bits are gone and
 ;; thus we use the following function.
@@ -185,12 +185,12 @@
   (cond
    ((endp rev-input-list)
     acc)
-   
+
    ((bv-bool-typep (car rev-input-type-list))
     (create-defbv-guards (cdr rev-input-list)
                          (cdr rev-input-type-list)
                          (cons `(Booleanp ,(car rev-input-list)) acc)))
-   
+
    ((bv-nat-typep (car rev-input-type-list))
     (create-defbv-guards (cdr rev-input-list)
                          (cdr rev-input-type-list)
@@ -207,23 +207,23 @@
   (cond
    ((or (endp rev-input-list) (endp rev-input-type-list))
     acc)
-   
+
    ((bv-bool-typep (car rev-input-type-list))
     (create-defbv-raw-args (cdr rev-input-list)
                            (cdr rev-input-type-list)
                            (cons (car rev-input-list) acc)))
-   
+
    ((bv-nat-typep (car rev-input-type-list))
     (create-defbv-raw-args (cdr rev-input-list)
                            (cdr rev-input-type-list)
                            (cons (car rev-input-list) acc)))
 
    (t ;;(eq (caar rev-input-type-list) 'bitvec)
-    (create-defbv-raw-args 
+    (create-defbv-raw-args
      (cdr rev-input-list)
      (cdr rev-input-type-list)
      (cons `(bv-truncated-raw-bv ,(bv-bitvec-size (car rev-input-type-list))
-                                 ,(car rev-input-list)) 
+                                 ,(car rev-input-list))
            acc)))))
 
 (defun create-defbv-equiv (type)
@@ -241,15 +241,15 @@
   (cond
    ((endp rev-input-type-list)
     acc)
-   
+
    ((bv-bool-typep (car rev-input-type-list))
-    (create-defbv-defcongs1 
+    (create-defbv-defcongs1
      (1- n)
      (cdr rev-input-type-list)
      call
      out-equiv
      (cons `(skip-proofs (defcong iff ,out-equiv ,call ,n)) acc)))
-   
+
    ((bv-nat-typep (car rev-input-type-list))
     (create-defbv-defcongs1 (1- n) (cdr rev-input-type-list) call out-equiv acc))
 
@@ -264,31 +264,31 @@
 (defun create-defbv-defcongs (rev-input-type-list name args out-type)
   (declare (xargs :guard (and (bv-type-listp rev-input-type-list)
                               (bv-typep out-type))))
-  (create-defbv-defcongs1 (len rev-input-type-list) 
+  (create-defbv-defcongs1 (len rev-input-type-list)
                           rev-input-type-list
                           `(,name . ,args)
                           (create-defbv-equiv out-type)
-                          nil))  
+                          nil))
 
 (defmacro defbv (name args sig raw-name)
   (declare (xargs :guard (and (bv-type-listp (cdr sig))
                               (true-listp args))))
-  (let* ((size-thm-name (symbol-from-sym-str 
-                         name 
+  (let* ((size-thm-name (symbol-from-sym-str
+                         name
                          "-BV-SIZE-SIMPLIFICATION"))
          (rev-sig (revappend (cdr sig) nil))
          (rev-input-list (revappend args nil))
          (out-type (car rev-sig))
          (rev-input-type-list (cdr rev-sig)))
-    `(encapsulate 
+    `(encapsulate
       nil
-      
+
       (defun ,name ,args
-        (declare (xargs :guard (and . 
+        (declare (xargs :guard (and .
                                     ,(create-defbv-guards rev-input-list rev-input-type-list
                                                           nil))))
         ,(if (bv-bitvec-typep out-type)
-             `(make-bv ,(bv-bitvec-size out-type) 
+             `(make-bv ,(bv-bitvec-size out-type)
                        (,raw-name . ,(create-defbv-raw-args rev-input-list rev-input-type-list nil)))
            `(,raw-name . ,(create-defbv-raw-args rev-input-list rev-input-type-list nil))))
 
@@ -302,11 +302,11 @@
       (in-theory (disable ,name))
 
       (table bv-defeval-sigs (quote ,name) (quote ,args) :put)
- 
+
       .
 
       ,(create-defbv-defcongs rev-input-type-list name args out-type))))
-           
+
 ;; ------------------------------------------------------------
 
 ;; Return the unsigned integer corresponding to the
@@ -322,13 +322,13 @@
     (let* ((ans (bv-to-num-raw1 (1- n) (cdr x)))
            (q (car ans))
            (expt2 (cdr ans)))
-      (cond       
+      (cond
        ((car x)
         (cons (+ expt2 q) (* 2 expt2)))
        (t
         (cons q (* 2 expt2))))))))
 
-(defthm bv-to-num-raw1-int 
+(defthm bv-to-num-raw1-int
   (and (acl2-numberp (car (bv-to-num-raw1 n x)))
        (acl2-numberp (cdr (bv-to-num-raw1 n x)))))
 
@@ -348,19 +348,19 @@
             (ignore j))
    nil)
 
-(defbv fill0 (j) 
+(defbv fill0 (j)
   (sig nat (bitvec j))
   fill0-raw)
 
 (defun fill1-raw (j)
-  (declare (xargs :guard (natp j)))                              
+  (declare (xargs :guard (natp j)))
   (cond
    ((zp j)
     nil)
    (t
     (cons t (fill1-raw (1- j))))))
 
-(defbv fill1 (j) 
+(defbv fill1 (j)
   (sig nat (bitvec j))
   fill1-raw)
 
@@ -368,21 +368,21 @@
   (declare (xargs :guard (and (natp n)
                               (natp j))))
   (cond
-   ((zp n) 
+   ((zp n)
     acc)
    (t
-    (bv-const1 (1- n) 
+    (bv-const1 (1- n)
                (floor j 2)
                (cons (equal (mod j 2) 1) acc)))))
 
-;; Convert a positive integer j into an n-bit 
+;; Convert a positive integer j into an n-bit
 ;; constant.
 (defun bv-const-raw (n j)
   (declare (xargs :guard (and (natp n)
                               (natp j))))
   (bv-const1 n j nil))
 
-(defbv bv-const (n j) 
+(defbv bv-const (n j)
   (sig nat nat (bitvec n))
   bv-const-raw)
 
@@ -402,7 +402,7 @@
                               (natp hbit)
                               (natp lbit)
                               (true-listp x))))
-  (cond 
+  (cond
    ((or (not (natp n))
         (not (natp hbit))
         (not (natp lbit))
@@ -471,7 +471,7 @@
                               (true-listp y))))
   (if (zp n)
       nil
-    (cons (and (car x) (car y)) 
+    (cons (and (car x) (car y))
           (bv-and-raw (1- n) (cdr x) (cdr y)))))
 
 (defbv bv-and (n x y)
@@ -484,7 +484,7 @@
                               (true-listp y))))
   (if (zp n)
       nil
-    (cons (or (car x) (car y)) 
+    (cons (or (car x) (car y))
           (bv-or-raw (1- n) (cdr x) (cdr y)))))
 
 (defbv bv-or (n x y)
@@ -498,7 +498,7 @@
 ;;           (bv-xor (1- n) (cdr x) (cdr y)))))
 
 (defabbrev bv-xor (n x y)
-  (bv-or n 
+  (bv-or n
          (bv-and n x y)
          (bv-and n (bv-not n x) (bv-not n y))))
 
@@ -539,7 +539,7 @@
 
 (defun bv-neg1 (n x)
   (declare (xargs :guard (and (natp n)
-                              (true-listp x))))                              
+                              (true-listp x))))
   (cond
    ((zp n)
     (cons nil t))
@@ -608,10 +608,10 @@
 
 ;; If I was going to prove more rules about bv-mul1 I would make
 ;; a pair-true-listp predicate and make the above rules into
-;; type prescription rules.  But seeing as all I wanted was the 
+;; type prescription rules.  But seeing as all I wanted was the
 ;; guard proof...
 (in-theory (disable bv-mul1-true-listp-car bv-mul1-true-listp-cdr))
-     
+
 (defund bv-mul-raw (n x y)
   (declare (xargs :guard (and (natp n)
                               (true-listp x)
@@ -666,12 +666,12 @@
   (declare (xargs :guard (and (natp n)
                               (true-listp x)
                               (true-listp y))))
-  (cond 
+  (cond
    ((zp n)
     nil)
    (t
     (let ((lx-lt-ly (bv-lt-raw (1- n) (cdr x) (cdr y))))
-      (cond 
+      (cond
        ((car x)
         (cond
          ((car y)
@@ -689,10 +689,10 @@
 
 #|
 (defabbrev bv-s-lt (n x y)
-  (let ((lx-lt-ly (bv-lt (1- n) 
-                         (bv-ex n (- n 2) 0 x) 
+  (let ((lx-lt-ly (bv-lt (1- n)
+                         (bv-ex n (- n 2) 0 x)
                          (bv-ex n (- n 2) 0 y))))
-    (cond 
+    (cond
      ((bv-s-negp n x)
       (cond
        ((bv-s-negp n y)
@@ -729,12 +729,12 @@
   bv-repeat-raw)
 
 (defabbrev shift-left0 (n x j)
-  (bv-concat (- n j) j 
+  (bv-concat (- n j) j
              (bv-ex n (+ n (- j) -1) 0 x)
              (fill0 j)))
 
 (defabbrev shift-left1 (n x j)
-  (bv-concat (- n j) j 
+  (bv-concat (- n j) j
              (bv-ex n (+ n (- j) -1) 0 x)
              (fill1 j)))
 
@@ -818,7 +818,7 @@
    (t
     `(b-if ,(car arg-list)
            t
-           ,(b-or-& (cdr arg-list))))))           
+           ,(b-or-& (cdr arg-list))))))
 
 (defmacro b-or (&rest x)
   (b-or-& x))
@@ -857,7 +857,7 @@
 
 ;; I could use b-iff rather than iff as my base
 ;; equivalence relation for Booleans, but as they
-;; are equal, I don't see any reason to do so.  
+;; are equal, I don't see any reason to do so.
 ;; However, I don't want case splits, so I use b-iff
 ;; when an if-and-only-if occurs in the SMT problem.
 (skip-proofs (defequiv b-iff))

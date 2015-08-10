@@ -1,5 +1,5 @@
 ;;; unification-pattern.lisp
-;;; Definition and correctness of a rule-based unification algorithm 
+;;; Definition and correctness of a rule-based unification algorithm
 ;;; with undefined selection function. This is a "pattern" for concrete
 ;;; unification algorithms. See unification.lisp
 ;;; Created 14-10-99. Last revision: 10-12-2000
@@ -37,7 +37,7 @@
 ;;; To formalize some kind of non-determinism, we partially define a
 ;;; selection function sel, assuming only the property that sel selects
 ;;; an element of every non-empty list. This function will be used to
-;;; select an equation from the set unsolved equations. 
+;;; select an equation from the set unsolved equations.
 
 
 (encapsulate
@@ -58,7 +58,7 @@
 
 ;;; We define here a function that applies one step of
 ;;; transformation. The rules of transformation are essentially the ones
-;;; given by Martelli and Montanari. 
+;;; given by Martelli and Montanari.
 
 ;;; There are seven rules of transformations, every rule named as in the
 ;;; comments. Note that the selected equation determines the rule to
@@ -75,7 +75,7 @@
 	       nil                                     ;;; *CHECK*
 	     (cons                                     ;;; *ELIMINATE*
 	      (apply-syst (list ecu) R)
-	      (cons ecu (apply-range (list ecu) sol)))))   
+	      (cons ecu (apply-range (list ecu) sol)))))
 	  ((variable-p t2)
 	   (cons (cons (cons t2 t1) R) sol))           ;;; *ORIENT*
 	  ((not (equal (car t1) (car t2))) nil)        ;;; *CONFLICT*
@@ -90,8 +90,8 @@
 
 ;;; Prove that applying transformations repeatedly, beginning with (cons
 ;;; S nil), and stopping when the first system is empty (or
-;;; unsolvability is detected), we obtain: 
-;;; 1) If S is solvable, a most general solution.  
+;;; unsolvability is detected), we obtain:
+;;; 1) If S is solvable, a most general solution.
 ;;; 2) nil otherwise.
 
 ;;; Iterative application of transform-mm will be defined by:
@@ -107,7 +107,7 @@
 ;;; - Idempotence of the second system is preserved.
 ;;; - Every idempotent substitution is a most general solution of itself.
 ;;; - A normal form is always reached (giving a suitable ordinal
-;;;   measure for the admission of solve-system-sel) 
+;;;   measure for the admission of solve-system-sel)
 
 ;;; For guard verification purposes, we will also prove that the
 ;;; properties system-p and substitution-p are preserved for the first
@@ -142,11 +142,11 @@
 	     ((:instance select-eliminate-and-cons-equal-set
 			 (S (first S-sol))
 			 (ecu (sel (first S-sol))))))))))
-  
+
 ;;; REMARK: This is only a trick: if select-eliminate-and-cons-equal-set is
 ;;; used as a rewrite rule, it lead us to non-terminating rewritings. We
 ;;; will only use the rule when the system S is (car S-sol), so we only
-;;; need the above (terminating) rewriting rule 
+;;; need the above (terminating) rewriting rule
 
 
 
@@ -164,7 +164,7 @@
 	   (implies (and (subsetp s1 s2)
 			 (solution sigma s2))
 		    (solution sigma s1))))
-  
+
   (defcong equal-set iff (solution sigma s) 2)))
 
 
@@ -177,14 +177,14 @@
 	   (implies (member ecu s2)
 		    (subsetp (variables t (car ecu))
 			     (system-var s2)))))
-  
+
   (local (defthm subsetp-variables-lemma-2
 	   (implies (member ecu s2)
 		    (subsetp (variables t (cdr ecu))
 			     (system-var s2)))))
-  
+
   (local (defthm subsetp-system-var
-		       (implies (subsetp S1 S2) 
+		       (implies (subsetp S1 S2)
 				(subsetp (system-var S1) (system-var S2)))))
 
   (defcong equal-set equal-set (system-var s) 1)))
@@ -199,7 +199,7 @@
 ;;; transformation rules, we will need a set of lemmas for each property
 ;;; we want to prove and each rule of the transformation system. In the
 ;;; sequel, the name of the transformation rule will precede the
-;;; corresponding set of lemmas.  
+;;; corresponding set of lemmas.
 
 
 ;;; ----------------------------------------------------------------------------
@@ -229,14 +229,14 @@
      (induction-transform-sel-decompose-rule (cdr l1) (cdr l2)))))
 
 (local
- (defthm transform-sel-rule-decompose 
+ (defthm transform-sel-rule-decompose
    (implies (second (pair-args l1 l2))
 	    (equal (solution sigma (first (pair-args l1 l2)))
 		   (equal (apply-subst nil sigma l1)
 			  (apply-subst nil sigma l2))))
    :hints (("Goal" :induct
 	    (induction-transform-sel-decompose-rule l1 l2)))))
-       
+
 ;;; REMARK: The induction hint makes the proof shorter.
 
 
@@ -246,13 +246,13 @@
 ;;; ·····················
 
 ;;; If sigma is a solution of sol, and x is a variable, then
-;;; sigma(sol(x)) = sol(x). 
+;;; sigma(sol(x)) = sol(x).
 
 (local
  (encapsulate
   ()
   (local
-   (defthm main-property-eliminate-lemma 
+   (defthm main-property-eliminate-lemma
      (implies (and (solution sigma sol) (variable-p x) flg)
 	      (equal
 	       (apply-subst flg sigma (val x sol))
@@ -269,7 +269,7 @@
 ;;; IMPORTANT REMARK: The above rule is key to prove the generality of
 ;;; the solution obatained.
 
-;;; Two corolaries: 
+;;; Two corolaries:
 
 (local
  (defthm main-property-eliminate
@@ -277,10 +277,10 @@
 	    (equal
 	     (solution sigma (apply-syst sol S))
 	     (solution sigma S)))))
-		
+
 
 (local
- (defthm main-property-eliminate-corolary 
+ (defthm main-property-eliminate-corolary
    (implies (solution sigma sol)
 	    (equal
 	     (solution sigma (apply-range sol s))
@@ -293,7 +293,7 @@
 
 ;;; GOAL:
 ;;; Prove that x = term, when x is not in term and is not term, has no
-;;; solution.  
+;;; solution.
 
 ;;; PROOF PLAN:
 ;;; We will see sigma(x) /= sigma (term), for every sigma.
@@ -314,23 +314,23 @@
      (implies (and (variable-p x)
 		   (member x (variables flg term)))
 	      (subterm flg (val x sigma) (apply-subst flg sigma term)))))
-  
+
   (local
-   (defthm 
+   (defthm
      if-x-is-not-term-and-is-in-term-then-is-in-some-argument
      (implies (and (member x (variables t term))
 		   (not (equal x term)))
 	      (member x (variables nil (cdr term))))))
-  
+
   (local
-   (defthm size-subterm 
+   (defthm size-subterm
      (implies (subterm flg t1 t2)
 	      (>= (size flg t2) (size t t1)))
      :rule-classes nil))
 
   (local
-   (defthm 
-     size-of-sigma-x-leq-than-the-size-of-sigma-of-arguments 
+   (defthm
+     size-of-sigma-x-leq-than-the-size-of-sigma-of-arguments
      (implies (and
 	       (variable-p x)
 	       (member x (variables t term))
@@ -342,11 +342,11 @@
 	      ((:instance size-subterm (flg nil)
 			  (t1 (val x sigma))
 			  (t2 (apply-subst nil sigma (cdr term)))))))))
-  
-;;; ===== Corolary: 
+
+;;; ===== Corolary:
 ;;; sigma(x) does not have the same size than sigma(term).
-  (defthm 
-    transform-sel-check-rule-not-equal-size 
+  (defthm
+    transform-sel-check-rule-not-equal-size
     (implies (and
 	      (variable-p x)
 	      (member x (variables t term))
@@ -363,10 +363,10 @@
 
 ;;; And finally:
 ;;; x = term, if x is a variable in term and term is not variable, has
-;;; no solution. 
+;;; no solution.
 
 (local
- (defthm transform-sel-check-rule 
+ (defthm transform-sel-check-rule
    (implies (and
 	     (variable-p x)
 	     (member x (variables t term))
@@ -382,7 +382,7 @@
 ;;; ···················
 
 ;;; The equation (f t1 ... tn) = (g s1 ... sm), with f/=g has no
-;;; solution: 
+;;; solution:
 
 (local
  (defthm transform-mm-sel-conflict-rule
@@ -396,7 +396,7 @@
 ;;; 2.1.5 rule NOT-PAIR
 ;;; ····················
 
-;;; If sigma(t1...tn . a) = sigma(s1...sm . b), then n=m and a=b:  
+;;; If sigma(t1...tn . a) = sigma(s1...sm . b), then n=m and a=b:
 ;;; ======= Corolary: The equation (f t1 ... tn . a) = (g s1 ... sm . b)
 ;;; has no solution when n/=m o' a/=b.
 
@@ -408,8 +408,8 @@
      (implies (equal (apply-subst nil sigma l)
 		     (apply-subst nil sigma m))
 	      (second (pair-args l m)))))
-  
-  (defthm transform-sel-not-pair-rule 
+
+  (defthm transform-sel-not-pair-rule
     (implies (and (not (variable-p t1))
 		  (not (variable-p t2))
 		  (not (second (pair-args (cdr t1) (cdr t2)))))
@@ -426,9 +426,9 @@
 
 
 (local
- (defthm transform-mm-sel-equivalent-1 
+ (defthm transform-mm-sel-equivalent-1
    (implies (and
-	     (consp S-sol)     
+	     (consp S-sol)
 	     (consp (first S-sol))
 	     (solution sigma (union-systems S-sol)))
 	    (solution sigma (union-systems (transform-mm-sel S-sol))))))
@@ -436,7 +436,7 @@
 
 
 (local
- (defthm transform-mm-sel-equivalent-2 
+ (defthm transform-mm-sel-equivalent-2
    (implies (and
 	     (consp S-sol)
 	     (consp (first S-sol))
@@ -447,7 +447,7 @@
 
 
 (local
- (defthm transform-sel-unsolvable 
+ (defthm transform-sel-unsolvable
    (implies (and (not (transform-mm-sel S-sol))
 		 (consp S-sol)
 		 (consp (first S-sol)))
@@ -462,7 +462,7 @@
 ;;; ----------------------------------------------------------------------------
 
 ;;; Our goal:
-; (defthm transform-mm-sel-preserves-idempotency 
+; (defthm transform-mm-sel-preserves-idempotency
 ;   (let ((transformed (transform-mm-sel (cons S sol))))
 ;     (let ((St (first transformed)) (solt (cdr transformed)))
 ;       (implies (and
@@ -478,7 +478,7 @@
 ;;; - Set of solutions.
 ;;; - Idempotence of the second system.
 ;;; - Every variable in the domain of the second system does not appear
-;;;   elsewher in the pair of system.  
+;;;   elsewher in the pair of system.
 ;;; This last two properties needs to be proved together. Note that
 ;;; idempotence needs two prove two properties: that we have a
 ;;; system-substitution and that the variables of the co-domain are not
@@ -488,14 +488,14 @@
 ;;; A technical lemma:
 
 (local
- (defthm system-var-append 
+ (defthm system-var-append
    (equal (system-var (append x y))
 	  (append (system-var x) (system-var y)))))
 
 
 ;;; As we said before, in the following, we have to prove this result
 ;;; for every transformation rule. Only two rules, DECOMPOSE and
-;;; ELIMINATE needs help form the user 
+;;; ELIMINATE needs help form the user
 
 
 ;;; ····················
@@ -511,7 +511,7 @@
   (defthm pair-args-system-var-lemma-1  ;;it will be used later
     (subsetp (system-var (first (pair-args l1 l2)))
 	     (append (variables nil l1) (variables nil l2))))
-  
+
   (local (defthm pair-args-system-var-lemma-2
 	   (implies (second (pair-args l1 l2))
 		    (subsetp (append (variables nil l1)
@@ -521,13 +521,13 @@
 		    (induction-transform-sel-decompose-rule l1 l2)
 		    :in-theory
 		    (disable select-eliminate-and-cons-equal-set-instance)))))
-  
+
   (defthm pair-args-system-var
     (implies (second (pair-args l1 l2))
 	     (equal-set (system-var (first (pair-args l1 l2)))
 			(append (variables nil l1)
 				(variables nil l2)))))))
- 
+
 
 ;;; ····················
 ;;; 2.2.2 rule ELIMINATE
@@ -539,36 +539,36 @@
 
 
 (local
- (defthm apply-range-preserves-domain 
+ (defthm apply-range-preserves-domain
    (equal (domain (apply-range sigma S)) (domain S))))
 
 (local
- (defthm co-domain-de-apply-range 
+ (defthm co-domain-de-apply-range
   (equal (co-domain (apply-range sigma s))
 	 (apply-subst nil sigma (co-domain s)))))
 
 
 (local
- (defthm apply-range-preserves-system-substitution 
+ (defthm apply-range-preserves-system-substitution
   (implies (system-substitution S)
 	   (system-substitution (apply-range sigma S)))))
 
 
 (local
- (defthm eliminate-variables-in-co-domain 
+ (defthm eliminate-variables-in-co-domain
   (implies (not (member (car ecu) (variables t (cdr ecu))))
 	   (not (member (car ecu)
 			(variables flg (apply-subst flg (list ecu) s)))))))
 
 (local
- (defthm variables-apply-subsetp-lemma 
+ (defthm variables-apply-subsetp-lemma
   (implies (and (not (member x (variables flg term)))
 		(not (member x (variables nil (co-domain sigma)))))
 	   (not (member x (variables flg (apply-subst flg sigma term)))))))
 
 
 (local
- (defthm variables-apply-subsetp 
+ (defthm variables-apply-subsetp
   (subsetp (variables flg (apply-subst flg sigma term))
 	   (append (variables flg term) (variables nil (co-domain sigma))))
   :hints (("Goal" :in-theory (enable not-subsetp-witness-lemma)))))
@@ -582,12 +582,12 @@
 
 (local
  (defthm
-   domain-disjoint-co-domain-eliminate-bridge-lemma 
+   domain-disjoint-co-domain-eliminate-bridge-lemma
   (implies (disjointp m
 		      (append (variables flg term)
 			      (variables nil (co-domain sigma))))
 	   (disjointp m (variables flg (apply-subst flg sigma term))))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
 	   ((:instance
 	     subsetp-disjoint
 	     (b (append (variables flg term) (variables nil (co-domain sigma))))
@@ -595,15 +595,15 @@
 
 
 (local
- (defthm eliminate-eliminate-variables 
+ (defthm eliminate-eliminate-variables
   (implies (not (member (car ecu) (variables t (cdr ecu))))
 	   (not (member (car ecu) (system-var
 				   (apply-syst (list ecu) s)))))
   :hints (("Goal" :induct (len s)))))
-  
+
 
 (local
- (defthm eliminate-eliminate-variables-2 
+ (defthm eliminate-eliminate-variables-2
   (implies (and (not (member x (variables nil (co-domain sigma))))
 		(not (member x (system-var s))))
 	   (not (member x (system-var
@@ -611,7 +611,7 @@
 
 
 (local
- (defthm subsetp-system-var-co-domain 
+ (defthm subsetp-system-var-co-domain
   (subsetp (system-var (apply-syst sigma s))
 	   (append (variables nil (co-domain sigma))
 		   (system-var s)))
@@ -621,25 +621,25 @@
 
 (local
  (defthm
-   domain-disjoint-system-eliminate-bridge-lemma 
+   domain-disjoint-system-eliminate-bridge-lemma
    (implies (disjointp m
 		       (append (variables nil (co-domain sigma))
 			       (system-var S)))
 	   (disjointp m
 		      (system-var (apply-syst sigma S))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance
 		   subsetp-disjoint
 		   (b (append (variables nil (co-domain sigma)) (system-var S)))
 		   (a (system-var (apply-syst sigma S)))))))))
-   
+
 
 ;;; ····················
 ;;; 2.2.3 And finally
 ;;; ····················
-		  
+
 (local
- (defthm transform-mm-sel-preserves-idempotency 
+ (defthm transform-mm-sel-preserves-idempotency
    (let* ((S (first S-sol)) (sol (rest S-sol))
 	  (transformado (transform-mm-sel S-sol))
 	  (St (first transformado)) (solt (cdr transformado)))
@@ -672,7 +672,7 @@
 
 ;;; Some previous lemmas for the result
 
-  
+
   (local
    (defthm system-s-p-apply-syst
      (implies (and (system-s-p S)
@@ -685,8 +685,8 @@
  		   (member equ S)
  		   (variable-p (cdr equ)))
  	      (eqlablep (cdr equ)))))
-  
-  
+
+
   (local
    (defthm substitution-s-p-member-system-s-p
      (implies (and (system-s-p S)  ;;; the order between the hypothesis is
@@ -694,15 +694,15 @@
 		   (member equ S)
 		   (variable-p (car equ)))
 	      (substitution-s-p (list equ)))))
-  
+
   (local
    (defthm term-s-p-member-system-s-p
      (implies (and (system-s-p S)  ;;; the order between the hypothesis is
 		     	         ;;; important (free variables)
 		   (member equ S))
 	      (term-s-p (car equ)))))
-  
-  
+
+
   (local
    (defthm system-s-p-term-p-bridge-lemma
      (implies (and (system-s-p S)
@@ -711,7 +711,7 @@
 		   (not (variable-p (cdr ecu))))
 	      (and (term-s-p-aux nil (cdar ecu))
 		   (term-s-p-aux nil (cddr ecu))))))
-  
+
 ;;; And the main result:
 
   (defthm transform-mm-sel-preserves-system-s-p
@@ -721,8 +721,8 @@
 	      (system-s-p (first S-sol)))
 	     (system-s-p (first (transform-mm-sel S-sol))))
     :hints (("Goal" :in-theory (disable substitution-s-p))))))
-  
-  
+
+
 ;;; ············································································
 ;;; 2.3.2 preservation of the system-p property
 ;;; ············································································
@@ -745,17 +745,17 @@
      (implies (and (substitution-s-p sol)
 		   (substitution-s-p sigma))
 	      (substitution-s-p (apply-range sigma sol)))))
-  
-  
+
+
   (local
    (defthm termp-s-p-member-system-s-p
      (implies (and (system-s-p S)
 		   (member equ S))
 	      (and
 	       (term-s-p (cdr equ))))))
-  
+
 ;;; And the main result:
-  
+
   (defthm transform-mm-sel-preserves-substitution-s-p
     (implies (and
 	      (consp S-sol)
@@ -763,11 +763,11 @@
 	      (system-s-p (first S-sol))
 	      (substitution-s-p (cdr S-sol)))
 	     (substitution-s-p (cdr (transform-mm-sel S-sol)))))))
- 
+
 
 
 ;;; ----------------------------------------------------------------------------
-;;; 2.4 Termination properties of transform-mm-sel 
+;;; 2.4 Termination properties of transform-mm-sel
 ;;; ----------------------------------------------------------------------------
 
 
@@ -780,11 +780,11 @@
 
 ;;; Proof plan for the admission of solve-system-sel:
 
-;;; We will define a measure unification-measure 
+;;; We will define a measure unification-measure
 ;;; We will prove that unification-measure to prove that
 ;;; (unification-measure (transform-mm-sel S-sol)) is e0-ord-< than
-;;; (unification-measure S-sol) 
-  
+;;; (unification-measure S-sol)
+
 ;;; Unification-measure is a lexicographical
 ;;; combination of these three quantities (let S the first of S-sol):
 ;;; - Number of distinct variables of S.
@@ -797,7 +797,7 @@
 ;;; In this section, we will provide a number of lemmas needed to prove
 ;;; the following:
 
-;(defthm unification-measure-decreases 
+;(defthm unification-measure-decreases
 ;  (implies (not (normal-form-syst S-sol))
 ;	   (e0-ord-< (unification-measure (transform-mm-sel S-sol))
 ;		     (unification-measure S-sol))))
@@ -808,7 +808,7 @@
 ;;; step of transformation.
 ;;; 2) If the number of distinct variables of the transformed system
 ;;; does not change, then size-system does not increase after one step of
-;;; transformation. 
+;;; transformation.
 ;;; 3) If the above two quantities do not change, then
 ;;; n-variables-right-hand-side strictly decreases.
 
@@ -823,15 +823,15 @@
 ;;; the variables of the transformed, for every rule.
 
 ;;; Some lemmas about eliminate
-;;; ··························· 
+;;; ···························
 
 (local
-  (defthm subsetp-variables-delete 
+  (defthm subsetp-variables-delete
    (subsetp (system-var (eliminate ecu S))
 	    (system-var S))))
 
 (local
-  (defthm subsetp-variables-eliminate-lemma 
+  (defthm subsetp-variables-eliminate-lemma
     (implies (member ecu S)
   	    (subsetp (append (system-var (list ecu))
   			     (system-var (eliminate ecu S)))
@@ -840,10 +840,10 @@
 
 
 (local
-  (defthm subsetp-variables-eliminate 
+  (defthm subsetp-variables-eliminate
    (implies
     (and (member ecu s)
- 	(variable-p (car ecu))) 
+ 	(variable-p (car ecu)))
     (subsetp (system-var
  	     (apply-syst (list ecu) (eliminate ecu s)))
  	    (system-var s)))
@@ -858,7 +858,7 @@
 ;;; ··············································
 
 (local
- (defthm len-subsetp-setp 
+ (defthm len-subsetp-setp
    (implies (and (setp l) (setp m) (subsetp l m))
 	   (<= (len l) (len m)))
    :hints (("Goal" :induct (subset-induction l m)))))
@@ -877,28 +877,28 @@
 ;;; ································
 
   (local
-   (defthm transform-sel-does-not-add-new-variables 
-     (let* ((S (first S-sol)) 
+   (defthm transform-sel-does-not-add-new-variables
+     (let* ((S (first S-sol))
 	    (transformed (transform-mm-sel S-sol))
-	    (St (first transformed))) 
+	    (St (first transformed)))
        (implies (and (consp S) (consp S-sol))
 		(subsetp (system-var St)
 			 (system-var S))))
      :hints (("Subgoal 5"
-	      :use (:instance subsetp-variables-eliminate 
+	      :use (:instance subsetp-variables-eliminate
 			       (ecu (sel (car S-sol)))
 			       (S (car S-sol)))))))
-  
+
 ;;; The main lemma (the previous lemma in terms of n-system-var)
 ;;; ····························································
 
   (defthm
-    transform-does-not-increases-n-variables 
+    transform-does-not-increases-n-variables
     (implies (not (normal-form-syst S-sol))
 	     (>= (n-system-var (first S-sol))
 		 (n-system-var (first (transform-mm-sel S-sol)))))
     :rule-classes :linear
-    :hints (("Goal" :in-theory 
+    :hints (("Goal" :in-theory
 	     (disable system-var transform-mm-sel))))))
 
 
@@ -917,20 +917,20 @@
 (local
  (encapsulate
   ()
- 
+
   (local
    (defthm positive-length-member
      (implies (member x l)
 	      (< 0 (len l)))
      :rule-classes (:rewrite :linear)))
-  
+
   (local
    (defthm member-eliminate
      (implies (and (member x l)
 		   (not (equal x y)))
 	      (member x (eliminate y l)))))
-  
-  (defthm len-subsetp-setp-strict 
+
+  (defthm len-subsetp-setp-strict
     (implies (and
 	      (setp l)
 	      (setp m)
@@ -955,7 +955,7 @@
 ;;; And the main lemma:
 
 (local
-  (defthm eliminate-variables-strict 
+  (defthm eliminate-variables-strict
    (implies
     (and
      (member ecu S)
@@ -975,7 +975,7 @@
  	   :in-theory (disable system-var)))))
 
 ;;; REMARK: In this lemma, the (first S-sol) version is more
-;;; complicated. 
+;;; complicated.
 
 
 ;;; ············································································
@@ -1010,7 +1010,7 @@
 
 
 (local
- (defthm n-variables-rhs-cons-select-and-delete-one-lemma 
+ (defthm n-variables-rhs-cons-select-and-delete-one-lemma
   (implies (member ecu S)
 	   (equal (n-variables-right-hand-side S)
 		  (if (variable-p (cdr ecu))
@@ -1018,13 +1018,13 @@
 			   (delete-one ecu S)))
 		    (n-variables-right-hand-side (delete-one ecu S)))))
   :rule-classes nil))
-		    
+
 (local
  (defthm n-variables-rhs-cons-select-and-delete-one
   (let ((S (first S-sol)) (ecu (sel (first S-sol))))
     (implies (consp S)
 	     (equal (n-variables-right-hand-side S)
-		    (if (variable-p (cdr ecu)) 
+		    (if (variable-p (cdr ecu))
 			(1+ (n-variables-right-hand-side
 			     (delete-one ecu S)))
 		      (n-variables-right-hand-side (delete-one ecu
@@ -1076,7 +1076,7 @@
 ;;; Technical lemma:
 
 (local
- (defthm size-system-append 
+ (defthm size-system-append
    (equal (size-system (append x y))
 	  (+ (size-system x) (size-system y)))))
 
@@ -1084,7 +1084,7 @@
 ;;; Needed for the DECOMPOSE rule:
 
 (local
-  (defthm size-systems-decompose-lemma 
+  (defthm size-systems-decompose-lemma
    (implies (second (pair-args l1 l2))
  	   (equal (size-system (first (pair-args l1 l2)))
  		  (+ (size nil l1) (size nil l2))))))
@@ -1102,9 +1102,9 @@
 	    (>= (size-system (first S-sol))
 		(size-system (first (transform-mm-sel S-sol)))))
    :rule-classes :linear
-   :hints (("Goal" :in-theory 
+   :hints (("Goal" :in-theory
 	    (disable n-system-var)))))
-                                  
+
 (local (in-theory (disable size-system-cons-select-and-delete-one)))
 
 
@@ -1120,7 +1120,7 @@
  (encapsulate
   ()
   (local
-   (defthm size-system-equation-lemma 
+   (defthm size-system-equation-lemma
      (implies (member ecu S)
 	      (equal (size-system S)
 		     (+ (size t (car ecu))
@@ -1128,7 +1128,7 @@
 			(size-system (delete-one ecu S)))))
      :rule-classes nil))
 
-  (defthm size-system-equation 
+  (defthm size-system-equation
     (let ((S (first S-sol)) (ecu (sel (first S-sol))))
       (implies (consp S)
 	       (equal (size-system S)
@@ -1136,7 +1136,7 @@
 			 (size t (cdr ecu))
 			 (size-system (delete-one ecu S))))))
     :hints (("Goal" :use
-	     (:instance 
+	     (:instance
 	      size-system-equation-lemma
 	      (S (first S-sol))
 	      (ecu (sel (first S-sol)))))))))
@@ -1145,7 +1145,7 @@
 
 
 (local
- (defthm size-t->-0 
+ (defthm size-t->-0
   (implies (not (variable-p term)) (< 0 (size t term)))
   :rule-classes :linear))
 
@@ -1161,17 +1161,17 @@
 
 
 (local
- (defthm n-variables-right-hand-side-check-lemma 
+ (defthm n-variables-right-hand-side-check-lemma
   (implies (and (member ecu S) (variable-p (car ecu)))
 	   (consp  (system-var S)))
   :rule-classes nil))
 
 (local
- (defthm n-variables-right-hand-side-check 
+ (defthm n-variables-right-hand-side-check
   (implies (and (consp S) (variable-p (car (sel S))))
 	   (consp  (system-var S)))
   :hints (("Goal"
-	   :use ((:instance 
+	   :use ((:instance
 		  n-variables-right-hand-side-check-lemma
 		  (ecu (sel S))))))))
 
@@ -1207,7 +1207,7 @@
 
 (local (in-theory (disable n-system-var
 		    size-system
-		    n-variables-right-hand-side))) 
+		    n-variables-right-hand-side)))
 (local (in-theory
 	(disable size-system-equation)))
 
@@ -1220,11 +1220,11 @@
 ;;; AND THE MAIN TERMINATION THEOREMS
 ;;; ·································
 
-(defthm ordinalp-unification-measure 
+(defthm ordinalp-unification-measure
   (e0-ordinalp (unification-measure S-sol)))
 
 
-(defthm unification-measure-decreases 
+(defthm unification-measure-decreases
   (implies (not (normal-form-syst S-sol))
 	   (e0-ord-< (unification-measure (transform-mm-sel S-sol))
 		     (unification-measure S-sol))))
@@ -1274,7 +1274,7 @@
 ;;; A technical lemma
 
 (local
-  (defthm if-solvable-transform-sel-success 
+  (defthm if-solvable-transform-sel-success
    (implies (solve-system-sel (transform-mm-sel S-sol))
 	    (transform-mm-sel S-sol))))
 
@@ -1283,7 +1283,7 @@
 (local (in-theory (disable union-systems)))
 
 ;;; The main three lemmas to state that the set of solutions is preserved
-;;; by sove-sel. 
+;;; by sove-sel.
 
 (local
  (defthm
@@ -1294,7 +1294,7 @@
    :rule-classes nil))
 
 (local
- (defthm solve-system-sel-equivalent-2 
+ (defthm solve-system-sel-equivalent-2
   (implies (and  (solve-system-sel S-sol)
 		 (solution sigma (union-systems (solve-system-sel S-sol)))
 		 (consp S-sol))
@@ -1302,7 +1302,7 @@
   :rule-classes nil))
 
 (local
- (defthm solve-system-sel-unsolvable 
+ (defthm solve-system-sel-unsolvable
   (implies (and (not (solve-system-sel S-sol))
 		(consp S-sol))
 	   (not (solution sigma (union-systems S-sol))))
@@ -1323,7 +1323,7 @@
 
 (local
  (defthm
-   solve-system-sel-preserves-idempotency 
+   solve-system-sel-preserves-idempotency
    (let* ((S (first S-sol))  (sol (cdr S-sol))
 	  (solve-system-sel (solve-system-sel S-sol))
 	  (solucion (cdr solve-system-sel)))
@@ -1344,7 +1344,7 @@
 
 (local
  (defthm
-   solve-system-sel-substitution-s-p 
+   solve-system-sel-substitution-s-p
    (let* ((S (first S-sol))  (sol (cdr S-sol))
 	  (solve-system-sel (solve-system-sel S-sol))
 	  (solucion (cdr solve-system-sel)))
@@ -1380,23 +1380,23 @@
 ;;; 4.2 Main properties of mgs-sel
 ;;; ----------------------------------------------------------------------------
 
-;;; ······························································  
+;;; ······························································
 ;;; THEOREM 4.2.1. If S is solvable, then (mgs-sel S) succeeds.
 ;;; ······························································
 
-(defthm mgs-sel-completeness 
+(defthm mgs-sel-completeness
   (implies (solution sigma S)
 	   (mgs-sel S))
   :rule-classes nil
   :hints
-  (("Goal" :use 
+  (("Goal" :use
     ((:instance solve-system-sel-unsolvable (S-sol (cons S nil)))))))
 
 ;;; ======= One technical lemmas:
 
 (local
- (defthm 
-   in-normal-forms-S-is-solvable-by-any-sigma 
+ (defthm
+   in-normal-forms-S-is-solvable-by-any-sigma
    (solution sigma (first (solve-system-sel S-sol)))))
 
 
@@ -1406,7 +1406,7 @@
 ;;; ·······································································
 
 (local
- (defthm mgs-sel-soundness 
+ (defthm mgs-sel-soundness
   (implies (mgs-sel S)
 	   (solution (first (mgs-sel S)) S))
   :rule-classes nil
@@ -1444,8 +1444,8 @@
 	    (:instance
 	     solve-system-sel-substitution-s-p
 	     (S-sol (cons S nil)))))))
-	     
-   
+
+
 
 
 
@@ -1474,7 +1474,7 @@
 (in-theory (disable mgs-sel))
 
 (local
- (defthm mgs-sel-most-general-solution 
+ (defthm mgs-sel-most-general-solution
   (implies (solution sigma S)
 	   (subs-subst (first (mgs-sel S)) sigma))
   :hints (("Goal"
@@ -1504,7 +1504,7 @@
 ;;; ----------------------------------------------------------------------------
 
 ;;; ======= UNIFIABLE-SEL
-;;; This is only a particular case of solve-sel. We solve the sistem 
+;;; This is only a particular case of solve-sel. We solve the sistem
 ;;; (list (cons t1 t2))
 
 (defun unifiable-sel (t1 t2)
@@ -1524,16 +1524,16 @@
 ;;; t1 t2)))
 
 
-;;; ······································································ 
+;;; ······································································
 ;;; THEOREM 5.2.1: If t1 and t2 are unifiable, then (unifiable-sel t1 t2).
 ;;; ······································································
 
-(defthm  unifiable-sel-completeness 
+(defthm  unifiable-sel-completeness
   (implies (equal (instance t1 sigma)
 		  (instance t2 sigma))
 	   (unifiable-sel t1 t2))
   :rule-classes nil
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
 	   (:instance mgs-sel-completeness
 		       (S (list (cons t1 t2)))))))
 
@@ -1544,11 +1544,11 @@
 ;;; ········································································
 
 
-(defthm unifiable-sel-soundness 
+(defthm unifiable-sel-soundness
   (implies (unifiable-sel t1 t2)
 	   (equal (instance t1 (mgu-sel t1 t2))
 		  (instance t2 (mgu-sel t1 t2))))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
 	   ((:instance mgs-sel-soundness
 		       (S (list (cons t1 t2))))))))
 
@@ -1557,7 +1557,7 @@
 ;;; THEOREM 5.2.3: (mgu-sel t1 t2) is idempotent.
 ;;; ········································································
 
-(defthm mgu-sel-idempotent 
+(defthm mgu-sel-idempotent
   (idempotent (mgu-sel t1 t2)))
 
 ;;; ········································································
@@ -1578,7 +1578,7 @@
 ;;; subsumes sigma (thus, (mgu-sel t1 t2) is a mgu of t1 and t2).
 ;;; ········································································
 
-(defthm mgu-sel-most-general-unifier 
+(defthm mgu-sel-most-general-unifier
   (implies (equal (instance t1 sigma)
 		  (instance t2 sigma))
 	   (subs-subst (mgu-sel t1 t2) sigma)))

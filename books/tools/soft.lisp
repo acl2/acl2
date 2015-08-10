@@ -389,7 +389,7 @@
   (or (plain-sofun-infop info world)
       (choice-sofun-infop info world)
       (quant-sofun-infop info world)))
-  
+
 (table second-order-functions nil nil :guard (and (symbolp key) ; name
                                                   (sofun-infop val world)))
 
@@ -446,7 +446,7 @@
 ; (the list may contain duplicates).
 
 (mutual-recursion
- 
+
  (defun funvars-of-term (term world)
    (declare (xargs :guard (and (pseudo-termp term)
                                (plist-worldp world))))
@@ -584,7 +584,7 @@
 ; the optional DCL ... DCL are declarations as in DEFUN
 ; such that :MODE :PROGRAM does not appear in any XARGS declaration,
 ; and BODY is the defining body as in DEFUN.
-;     
+;
 ; DEFUN2 generates a DEFUN event via DEFINE,
 ; updates the table of second-order functions,
 ; and checks that the supplied function variables are
@@ -797,7 +797,7 @@
   (declare (xargs :guard (and (symbolp thm)
                               (plist-worldp world))))
   (funvars-of-term (tformula thm world) world))
-  
+
 ; A second-order theorem is mimicked by a (first-order) theorem
 ; that depends on one or more function variables,
 ; over which the second-order theorem is universally quantified.
@@ -1335,7 +1335,7 @@
 ; DEFUN-INST sets
 ; the :IGNORE-OK and :IRRELEVANT-FORMALS-OK options of DEFINE to T,
 ; in case SOFUN has IGNORE or IGNORABLE declarations.
-; 
+;
 ; The :VERIFY-GUARDS option in DEFUN-INST can be used only if SOFUN is plain.
 ; Its meaning is the same as in DEFUN (or DEFINE).
 ; It is passed through as an option to DEFINE.

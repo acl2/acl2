@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -39,7 +39,7 @@
 ;weird rule...
 (defthm integerp-<-non-integerp
   (implies (and (and (syntaxp (quotep x)))
-                (not (integerp x)) 
+                (not (integerp x))
                 (integerp n) ;backchain limit?
                 (case-split (rationalp x))
                 )
@@ -50,7 +50,7 @@
 ;weird rule...
 (defthm non-integerp-<-integerp
   (implies (and (and (syntaxp (quotep x)))
-                (not (integerp x)) 
+                (not (integerp x))
                 (integerp n) ;backchain limit?
                 (case-split (rationalp x))
                 )
@@ -101,7 +101,7 @@
 
 ;make a separate rewrite-version
 (defthm fl-def-linear-part-1
-  (implies (case-split (not (complex-rationalp x))) 
+  (implies (case-split (not (complex-rationalp x)))
            (<= (fl x) x))
   :rule-classes (:rewrite (:linear :trigger-terms ((fl x)))))
 
@@ -290,7 +290,7 @@
                 (case-split (rationalp x)))
            (equal (< y (fl x))
                   (<= (+ 1 y) x))))
-             
+
 
 ;should this be disabled?
 (defthm fl-equal-0
@@ -307,7 +307,7 @@
                 )
            (equal (fl x) 0)))
 
-;bad names?                  
+;bad names?
 ;fl-def-linear isn't rewrite!
 ;remove this??
 (defthm fl-strong-monotone
@@ -337,7 +337,7 @@
 
 ;Our scheme for dealing with FLOOR is to always rewrite calls of it to FL
 (defthm floor-fl
-  (equal (floor m n) 
+  (equal (floor m n)
          (fl (/ m n))))
 
 (theory-invariant (incompatible (:rewrite floor-fl)
@@ -536,7 +536,7 @@
                        (<= n x)
                        (< x (1+ n)))
                   (equal (fl x) n)))
-  :rule-classes nil)  
+  :rule-classes nil)
 
 (defthm fl-m+1
   (implies (and (integerp m)

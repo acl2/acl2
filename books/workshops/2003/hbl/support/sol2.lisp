@@ -26,7 +26,7 @@
   (and (subsetp a b)
        (subsetp b a)))
 
-(defthm subsetp-append 
+(defthm subsetp-append
   (subsetp a (append b a)))
 
 (defthm append-nil-x-x
@@ -34,9 +34,9 @@
 
 (defthm subsetp-reflexive
   (subsetp a a)
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance subsetp-append (b nil))))))
-           
+
 (defthm subsetp-transitive
   (implies (and (subsetp a b)
                 (subsetp b c))
@@ -51,7 +51,7 @@
         (seq-int (1+ start) (1- len)))))
 
 (defun struct-equiv-1-aux-m (typ-or-typs  n mode)
-  (cond ((equal mode 'ATOM) 
+  (cond ((equal mode 'ATOM)
          (cons (+ 1 (nfix n)) 0))
         ((equal mode 'LIST)
          (cons (+ 1 (nfix n)) (len typ-or-typs)))
@@ -63,7 +63,7 @@
         (ptr ptr-or-ptrs)
         (typs typ-or-typs)
         (ptrs ptr-or-ptrs))
-    (cond ((equal mode 'ATOM) 
+    (cond ((equal mode 'ATOM)
            (let* ((desc (cdr (assoc-equal typ map)))
                   (size (len desc)))
              (if (zp n) t
@@ -71,15 +71,15 @@
                  (if (not (assoc-equal typ map)) t
                  (if (not (equal (g ptr ram1)
                                  (g ptr ram2))) nil
-                   (let ((addr (g ptr ram1)))             
-                     (struct-equiv-1-aux  desc 
-                                          (seq-int addr size) 
-                                          (- n 1) 
+                   (let ((addr (g ptr ram1)))
+                     (struct-equiv-1-aux  desc
+                                          (seq-int addr size)
+                                          (- n 1)
                                           ram1 ram2 map 'LIST))))))))
           ((equal mode 'LIST)
            (if (endp typs) t
              (if (not (assoc-equal (car typs) map))
-                 (struct-equiv-1-aux 
+                 (struct-equiv-1-aux
                   (cdr typs) (cdr ptrs) n ram1 ram2 map 'LIST)
                (and (struct-equiv-1-aux (car typs) (car ptrs) n ram1 ram2 map 'ATOM)
                     (struct-equiv-1-aux (cdr typs) (cdr ptrs) n ram1 ram2 map 'LIST)))))
@@ -90,7 +90,7 @@
 
 (defun struct-equiv-1-list (typs addrs n ram1 ram2 map)
   (struct-equiv-1-aux typs addrs n ram1 ram2 map 'LIST))
-    
+
 ;--------
 (defun typ  (ptrs) (car   ptrs))
 (defun addr (ptrs) (cadr  ptrs))
@@ -112,13 +112,13 @@
   (if (endp typs) t
     (and (struct-equiv-1 (car typs) (car addrs) (car ns) ram1 ram2 map)
          (all-struct-equiv-1 (cdr typs) (cdr addrs) (cdr ns) ram1 ram2 map))))
-  
+
 (defun struct-equiv (rc1 rc2)
   (and (set-equal (ptrs rc1) (ptrs rc2))
        (equal (getmap rc1) (getmap rc2))
-       (all-struct-equiv-1 (typ-list  (ptrs rc1)) 
+       (all-struct-equiv-1 (typ-list  (ptrs rc1))
                            (addr-list (ptrs rc1))
-                           (n-list    (ptrs rc1)) 
+                           (n-list    (ptrs rc1))
                            (ram rc1)  (ram rc2) (getmap rc1))))
 
 ;------------- prove this a equivalence relation ----
@@ -138,15 +138,15 @@
                 (assoc-equal typ map))
            (equal (g ptr ram1) (g ptr ram2)))
   :rule-classes :forward-chaining)
-  
+
 (defthm struct-equiv-1-aux-transitive
-  (implies (and (struct-equiv-1-aux typ-of-typs ptr-or-ptrs n 
+  (implies (and (struct-equiv-1-aux typ-of-typs ptr-or-ptrs n
                                     ram1 ram2 map mode)
-                (struct-equiv-1-aux typ-of-typs ptr-or-ptrs n 
+                (struct-equiv-1-aux typ-of-typs ptr-or-ptrs n
                                     ram2 ram3 map mode))
-           (struct-equiv-1-aux typ-of-typs ptr-or-ptrs n 
+           (struct-equiv-1-aux typ-of-typs ptr-or-ptrs n
                                ram1 ram3 map mode)))
-           
+
 (defthm all-struct-equiv-1-reflexive
   (all-struct-equiv-1 typs addrs ns ram ram map))
 
@@ -182,7 +182,7 @@
                                     (addr-list ptrs2)
                                     (n-list ptrs2)
                                     ram1 ram2 map)))
-           
+
 
 
 (defthm struct-equiv-transitive
@@ -197,21 +197,21 @@
 
 ;--------------
 
-(defun collect-link-cells-1-aux 
+(defun collect-link-cells-1-aux
   (typ-or-typs ptr-or-ptrs n ram map mode)
   (declare (xargs :measure (struct-equiv-1-aux-m typ-or-typs n mode)))
   (let ((typ typ-or-typs)
         (ptr ptr-or-ptrs)
         (typs typ-or-typs)
         (ptrs ptr-or-ptrs))
-    (cond ((equal mode 'ATOM) 
+    (cond ((equal mode 'ATOM)
            (let* ((desc (cdr (assoc-equal typ map)))
                   (size (len desc)))
              (if (zp n) nil
                (if (zp ptr) nil
                  (if (not (assoc-equal typ map))
                      nil
-                 (let ((addr (g ptr ram)))             
+                 (let ((addr (g ptr ram)))
                    (cons ptr (collect-link-cells-1-aux desc
                                                        (seq-int addr size)
                                                        (- n 1)
@@ -241,7 +241,7 @@
 
 
 (defun all-collect-link-cells-1 (typs addrs ns ram map)
-  (if (endp typs) 
+  (if (endp typs)
       nil
     (append (collect-link-cells-1 (car typs) (car addrs) (car ns) ram map)
             (all-collect-link-cells-1 (cdr typs) (cdr addrs) (cdr ns) ram  map))))
@@ -255,7 +255,7 @@
                             (ram rc)   (getmap rc)))
 
 
-;; next task (defcong struct-equiv 
+;; next task (defcong struct-equiv
 
 (defthm member-append-1
   (implies (member x b)
@@ -274,7 +274,7 @@
   (implies (subsetp a b)
            (subsetp (append c a)
                     (append c b))))
-           
+
 
 
 (defcong set-equal set-equal (append a b) 1)
@@ -315,7 +315,7 @@
                                                 (n-list ptrs2)
                                                 ram map)))
   :hints (("Goal" :in-theory (disable collect-link-cells-1))))
-                      
+
 
 
 (defthm set-equal-collect-link-cells-1-set-equal
@@ -335,20 +335,20 @@
 
 (defthm struct-equiv-1-aux-implies-collect-link-cells-aux-equal
   (implies (struct-equiv-1-aux typ-or-typs ptr-or-ptrs n ram1 ram2 map mode)
-           (equal (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs n 
+           (equal (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs n
                                             ram1 map mode)
-                  (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs n 
+                  (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs n
                                             ram2 map mode))))
-                  
+
 
 (defthm struct-equiv-1-equal-collect-link-cells-1-equal
   (implies (all-struct-equiv-1 typs addrs ns ram1 ram2 map)
            (equal  (all-collect-link-cells-1 typs
-                                             addrs 
+                                             addrs
                                              ns
                                              ram1 map)
                    (all-collect-link-cells-1 typs
-                                             addrs 
+                                             addrs
                                              ns
                                              ram2 map)))
   :hints (("Goal" :in-theory (enable struct-equiv-1))))
@@ -372,14 +372,14 @@
            (not (member x b)))
   :rule-classes :forward-chaining)
 
-                
+
 (defun struct-equiv-1-induct (addrx typ-or-typs ptr-or-ptrs n ram map mode)
   (declare (xargs :measure (struct-equiv-1-aux-m typ-or-typs n mode)))
   (let ((typ typ-or-typs)
         (ptr ptr-or-ptrs)
         (typs typ-or-typs)
         (ptrs ptr-or-ptrs))
-    (cond ((equal mode 'ATOM) 
+    (cond ((equal mode 'ATOM)
            (let* ((desc (cdr (assoc-equal typ map)))
                   (size (len desc)))
              (if (zp n) t
@@ -387,7 +387,7 @@
                  (if (not (assoc-equal typ map)) t
                    (if (equal addrx ptr) t
                      (let ((addr (g ptr ram)))
-                       (struct-equiv-1-induct  addrx  desc  (seq-int addr size) 
+                       (struct-equiv-1-induct  addrx  desc  (seq-int addr size)
                                                (- n 1)  ram  map 'LIST))))))))
           ((equal mode 'LIST)
            (if (endp typs) t
@@ -409,7 +409,7 @@
   :hints (("Goal" :expand  (COLLECT-LINK-CELLS-1-AUX TYP ADDR N RAM MAP 'ATOM))))
 
 (defthm struct-equiv-1-aux-s-add-v-struct-equiv-1-aux
-  (implies (not (member addr (collect-link-cells-1-aux 
+  (implies (not (member addr (collect-link-cells-1-aux
                               typ-or-typs ptr-or-ptrs n ram map mode)))
            (struct-equiv-1-aux typ-or-typs ptr-or-ptrs n
                                (s addr any ram) ram map mode))
@@ -420,7 +420,7 @@
 ;-----------------------
 
 (defthm all-struct-equiv-1-s-add-v-all-struct-equiv-1
-  (implies (not (member addr (all-collect-link-cells-1 
+  (implies (not (member addr (all-collect-link-cells-1
                               typs ptrs ns ram map)))
            (all-struct-equiv-1 typs  ptrs ns
                                (s addr any ram) ram map))
@@ -436,13 +436,13 @@
 
 ;;
 ;; done with the proof that (s addr v ram) preserve struct-equiv
-;; so far, we have 
+;; so far, we have
 ;;
-;;    (defcong struct-equiv set-equal (collect-link-cells rc) 1) 
+;;    (defcong struct-equiv set-equal (collect-link-cells rc) 1)
 ;;
-;; and 
+;; and
 ;;
-;;     struct-equiv-preserved-if-update-non-link-cell  
+;;     struct-equiv-preserved-if-update-non-link-cell
 ;;
 
 
@@ -461,18 +461,18 @@
         (ptr ptr-or-ptrs)
         (typs typ-or-typs)
         (ptrs ptr-or-ptrs))
-    (cond ((equal mode 'ATOM) 
+    (cond ((equal mode 'ATOM)
            (let* ((desc (cdr (assoc-equal typ map)))
                   (size (len desc)))
              (if (zp n) nil
                (if (zp ptr) nil
                  (if (not (assoc-equal typ map))
-                     nil 
+                     nil
                    ;;  maybe I should modify it so that it matches with
                    ;;  collect-updates. i.e. collect data cells here in one
                    ;;  batch. Still want a try with the other proof.
                    (let ((addr (g ptr ram)))
-                     (collect-data-cells-1-aux desc 
+                     (collect-data-cells-1-aux desc
                                                (seq-int addr size)
                                                (- n 1)
                                                ram map 'LIST)))))))
@@ -480,8 +480,8 @@
            (if (endp typs) nil
              (if (not (assoc-equal (car typs)  map))
                  ;; this is a data cell, recorded it.
-                 (cons (car ptrs) 
-                       (collect-data-cells-1-aux (cdr typs) (cdr ptrs) 
+                 (cons (car ptrs)
+                       (collect-data-cells-1-aux (cdr typs) (cdr ptrs)
                                                  n ram map 'LIST))
                (append (collect-data-cells-1-aux (car typs)
                                                  (car ptrs)
@@ -504,7 +504,7 @@
 
 
 (defun all-collect-data-cells-1 (typs addrs ns ram map)
-  (if (endp typs) 
+  (if (endp typs)
       nil
     (append (collect-data-cells-1 (car typs) (car addrs) (car ns) ram map)
             (all-collect-data-cells-1 (cdr typs) (cdr addrs) (cdr ns) ram  map))))
@@ -544,7 +544,7 @@
                                                 (n-list ptrs2)
                                                 ram map)))
   :hints (("Goal" :in-theory (disable collect-data-cells-1))))
-                      
+
 
 (defthm set-equal-collect-data-cells-1-set-equal
   (implies (and (set-equal ptrs1 ptrs2)
@@ -564,20 +564,20 @@
 
 (defthm struct-equiv-1-aux-implies-collect-data-cells-aux-equal
   (implies (struct-equiv-1-aux typ-or-typs ptr-or-ptrs n ram1 ram2 map mode)
-           (equal (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs n 
+           (equal (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs n
                                             ram1 map mode)
-                  (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs n 
+                  (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs n
                                             ram2 map mode))))
-                  
+
 
 (defthm struct-equiv-1-equal-collect-data-cells-1-equal
   (implies (all-struct-equiv-1 typs addrs ns ram1 ram2 map)
            (equal  (all-collect-data-cells-1 typs
-                                             addrs 
+                                             addrs
                                              ns
                                              ram1 map)
                    (all-collect-data-cells-1 typs
-                                             addrs 
+                                             addrs
                                              ns
                                              ram2 map)))
   :hints (("Goal" :in-theory (enable struct-equiv-1))))
@@ -587,22 +587,22 @@
 ;----------------
 ;;
 ;; the problem here is how to characterize all possible updates?
-;; 
+;;
 ;; A constraint function is good. However to argue it can model all possible
 ;; computation need some efforts.
-;; 
+;;
 ;; Because in this mark function, we update in the pre-order, once we reach
 ;; some node, we update, then we continue, etc.
-;; 
+;;
 ;; It is hard to argue that we could implement all kinds of update order,
 ;; because it is possible that the data value depends on the order we do them.
 ;;
 ;; In J's model, the value of new data fills only depends on the old data
-;; within the same node. 
+;; within the same node.
 ;;
 ;; In my model, I want to extend that to all possible data fields reachable.
 ;;
-;; Then I have to face this problem. 
+;; Then I have to face this problem.
 ;;
 
 
@@ -632,10 +632,10 @@
          (i (nfix i))
          (slot-typ (nth i descriptor))
          (addr (g ptr ram)))
-    (if (zp ptr) ram 
+    (if (zp ptr) ram
       (if (< i (len  descriptor))
-          (if (assoc-equal slot-typ map) 
-              ;; a struct type, meaning a ptr in the (car addrs) 
+          (if (assoc-equal slot-typ map)
+              ;; a struct type, meaning a ptr in the (car addrs)
               ;; don't touch link cells
               (single-update1 typ ptr  (+ i 1) n ram map)
             ;; else not a struct type, update the value
@@ -654,13 +654,13 @@
 ;; assume our constainted new-value is so powerful that it can emulates all
 ;; possible changes with in-order and post-order updates, arbitary updates.
 ;;
-;; not so sure. this is possible, 
+;; not so sure. this is possible,
 ;;
 ;; I could find a particular way of updating memory that cause the program
 ;; enter into a loop, however oracle in the single-updates have to garantee to
 ;; provide us an initial ram to result in the same loop....
-;; it is possible, because oracle can detect if the initial ram config is ... 
-;; 
+;; it is possible, because oracle can detect if the initial ram config is ...
+;;
 ;;
 
 (defun mark-1-aux (typ-or-typs ptr-or-ptrs n ram map mode)
@@ -669,7 +669,7 @@
         (ptr ptr-or-ptrs)
         (typs typ-or-typs)
         (ptrs ptr-or-ptrs))
-    (cond ((equal mode 'ATOM) 
+    (cond ((equal mode 'ATOM)
            (let* ((desc (cdr (assoc-equal typ map)))
                   (size (len desc)))
              (if (zp n) ram
@@ -678,7 +678,7 @@
                      ram
                    (let* ((addr (g ptr ram))
                           (new-ram (single-update1 typ ptr 0 n ram map)))
-                     (mark-1-aux desc 
+                     (mark-1-aux desc
                                  (seq-int addr size)
                                  (- n 1)
                                  new-ram map 'LIST)))))))
@@ -698,14 +698,14 @@
           (t ram))))
 
 
-;--- mark-1 
+;--- mark-1
 (defun mark-1 (typ addr n ram map)
   (mark-1-aux typ addr n ram map 'ATOM))
 
 (defun mark-1-list (typs addrs n ram map)
   (mark-1-aux typs addrs n ram map 'LIST))
 
-;------------- 
+;-------------
 
 (defun all-mark-1 (typs addrs ns ram map)
   (if (endp typs)
@@ -717,7 +717,7 @@
 ;-------------
 
 (defun mark (rc)
-  (all-mark-1 (typ-list (ptrs rc)) 
+  (all-mark-1 (typ-list (ptrs rc))
               (addr-list (ptrs rc))
               (n-list    (ptrs rc))
               (ram rc)
@@ -725,8 +725,8 @@
 
 ;------------
 ;;
-;; update is of this format (type ptr i n), 
-;; new-value depends on these 
+;; update is of this format (type ptr i n),
+;; new-value depends on these
 ;;
 
 ;; relevence analysis problem.
@@ -735,7 +735,7 @@
   (declare (ignore ram))
   (nfix (- (len (cdr (assoc-equal typ map)))
            (nfix i))))
-         
+
 
 (defun  make-update (typ ptr i n)
   (list typ ptr i n))
@@ -762,14 +762,14 @@
          (addr (g ptr ram)))
     (if (zp ptr) nil
       (if (< i (len  descriptor))
-          (if (assoc-equal slot-typ map) 
-              ;; a struct type, meaning a ptr in the (car addrs) 
+          (if (assoc-equal slot-typ map)
+              ;; a struct type, meaning a ptr in the (car addrs)
               ;; don't touch link cells
               (collect-updates-from-single-update1 typ ptr (+ i 1) n ram map)
             ;; else not a struct type, update the value
             (let ((new-ram  (s (+ addr i) (new-field-value typ ptr i n ram map) ram)))
               ;; let the new value depends on the changes to the previous slos
-              (cons (make-update typ ptr i n) 
+              (cons (make-update typ ptr i n)
                     (collect-updates-from-single-update1 typ ptr (+ i 1) n
                                                          new-ram map))))
         nil))))
@@ -781,7 +781,7 @@
         (ptr ptr-or-ptrs)
         (typs typ-or-typs)
         (ptrs ptr-or-ptrs))
-    (cond ((equal mode 'ATOM) 
+    (cond ((equal mode 'ATOM)
            (let* ((desc (cdr (assoc-equal typ map)))
                   (size (len desc)))
              (if (zp n) nil
@@ -790,10 +790,10 @@
                      nil
                    (let* ((addr (g ptr ram))
                           (new-ram (single-update1 typ ptr 0 n ram map)))
-                     (append (collect-updates-from-single-update1 
+                     (append (collect-updates-from-single-update1
                               typ ptr 0 n ram map)
                              (collect-updates-zdynamic-1-aux
-                              desc 
+                              desc
                               (seq-int addr size)
                               (- n 1)
                               new-ram map 'LIST))))))))
@@ -838,25 +838,25 @@
 
 (defthm apply-updates-collect-updates-from-single-update1-is-single-update1
   (equal (single-update1 typ ptr i n ram map)
-         (apply-updates (collect-updates-from-single-update1 
+         (apply-updates (collect-updates-from-single-update1
                          typ ptr i n ram map)
                         ram map)))
 
 
 (defthm apply-updates-append
   (equal (apply-updates (append updates1 updates2) ram map)
-         (apply-updates updates2 
+         (apply-updates updates2
                         (apply-updates updates1 ram map) map)))
-                        
+
 (in-theory (disable apply-update))
 
 (defthm apply-updates-collect-dynamic-is-mark
   (equal (mark-1-aux typ-or-typs ptr-or-ptrs n ram map mode)
-         (apply-updates (collect-updates-zdynamic-1-aux 
+         (apply-updates (collect-updates-zdynamic-1-aux
                         typ-or-typs ptr-or-ptrs n ram map mode)
                        ram map))
   :hints (("Goal" :do-not '(generalize))))
-                       
+
 ;
 ;--------------------
 ;
@@ -873,9 +873,9 @@
 (defun all-collect-updates-dynamic-1 (typs ptrs ns ram map)
   (if (endp typs)
       nil
-    (append (collect-updates-dynamic-1 (car typs) (car ptrs) (car ns) 
+    (append (collect-updates-dynamic-1 (car typs) (car ptrs) (car ns)
                                        ram map)
-          (all-collect-updates-dynamic-1 
+          (all-collect-updates-dynamic-1
                    (cdr typs) (cdr ptrs) (cdr ns)
                    (mark-1 (car typs) (car ptrs) (car ns) ram map)
                    map))))
@@ -904,9 +904,9 @@
 
 ;--------------
 ;;
-;; next is to prove struct-equiv, 
-;; is if data cell doesn't overlap with link cell, 
-;; then collect-dyanmic is collect-static 
+;; next is to prove struct-equiv,
+;; is if data cell doesn't overlap with link cell,
+;; then collect-dyanmic is collect-static
 ;;
 
 
@@ -958,7 +958,7 @@
 ;
 ; very awkward, because our collect-data-cell doesn't match our collect-updates.
 ;
-;  collect-data-cell, record the data cell, in collect-data-cell-1-list 
+;  collect-data-cell, record the data cell, in collect-data-cell-1-list
 ;  while  collect-updates-dymanic collect data-cell in collect-data-cell-1
 ;
 
@@ -970,7 +970,7 @@
   :hints (("Goal" :do-not '(generalize))))
 
 ;
-; proved that first update must be a data cell, we can't claim more, 
+; proved that first update must be a data cell, we can't claim more,
 ; because the second update would be a data cell in a modified ram.
 ; we can't show that data cell is a data cell in the original ram.
 ;
@@ -996,7 +996,7 @@
 (defthm not-assoc-equal-must-be-in-collect-data-cell-list
   (implies (and (member typx typs)
                 (not (assoc-equal typx map)))
-           (member (nth (pos typx typs) ptrs) 
+           (member (nth (pos typx typs) ptrs)
                    (collect-data-cells-1-aux typs
                                              ptrs
                                              n
@@ -1009,10 +1009,10 @@
 ;; we probably don't have to prove the general case with i in the theorem.
 ;;
 
-;--- First: prove member (gi ..) 
+;--- First: prove member (gi ..)
 
 (defthm update-typ-i-is-in-range-1
-  (implies (consp (collect-updates-from-single-update1 
+  (implies (consp (collect-updates-from-single-update1
                    TYP PTR I N RAM MAP))
            (<= (nfix i) (gi (car (collect-updates-from-single-update1 typ ptr i n ram
                                                                       map)))))
@@ -1020,7 +1020,7 @@
   :rule-classes :linear)
 
 (defthm update-typ-i-is-in-range-2
-  (implies (consp (collect-updates-from-single-update1 
+  (implies (consp (collect-updates-from-single-update1
                    TYP PTR I N RAM MAP))
            (< (gi (car (collect-updates-from-single-update1 typ ptr i n ram
                                                             map)))
@@ -1052,14 +1052,14 @@
 
 (defthm integerp-gi-g-ptr-car-collect-update-from-single-update1
   (implies (consp (collect-updates-from-single-update1 typ ptr i n ram map))
-           (integerp (gi (car (collect-updates-from-single-update1 
+           (integerp (gi (car (collect-updates-from-single-update1
                                typ ptr i n ram map)))))
   :rule-classes :forward-chaining)
 
 (defthm first-update-typ-is-member-of-sig
   (implies (consp (collect-updates-from-single-update1 typ ptr i n ram map))
-           (member (nth (gi (car (collect-updates-from-single-update1 
-                                  typ ptr i n ram map))) 
+           (member (nth (gi (car (collect-updates-from-single-update1
+                                  typ ptr i n ram map)))
                         (cdr (assoc-equal typ map)))
                    (mycdrn i (cdr (assoc-equal typ map)))))
   :hints (("Goal" :do-not '(generalize)))
@@ -1085,7 +1085,7 @@
 (defthm assoc-equal-not-equal-nth-gi
   (implies (and (consp (collect-updates-from-single-update1 typ ptr i n ram map))
                 (assoc-equal typx map))
-           (not (equal (nth (gi (car (collect-updates-from-single-update1 
+           (not (equal (nth (gi (car (collect-updates-from-single-update1
                                       typ ptr i n ram map)))
                             (cdr (assoc-equal typ map)))
                        typx))))
@@ -1097,9 +1097,9 @@
                 (< i (len l))
                 (not (equal x (nth i l))))
            (equal (+ 1 (pos x (mycdrn i (cdr l))))
-                  (pos x 
+                  (pos x
                        (mycdrn i l)))))
-                  
+
 
 
 
@@ -1112,11 +1112,11 @@
                                         typ ptr i n ram map)))
                                   (cdr (assoc-equal typ map)))
                              (mycdrn i (cdr (assoc-equal typ map)))))
-                   (gi (car (collect-updates-from-single-update1 
+                   (gi (car (collect-updates-from-single-update1
                              typ ptr i n ram map))))))
 
 
-(defthm nth-pos-mycdrn 
+(defthm nth-pos-mycdrn
   (implies (and (integerp i)
                 (integerp j)
                 (<= 0 i)
@@ -1130,7 +1130,7 @@
   (implies (and (consp (collect-updates-from-single-update1 typ ptr i n ram map))
                 (integerp i)
                 (<= 0 i))
-           (equal (nth (pos (nth (gi (car (collect-updates-from-single-update1 
+           (equal (nth (pos (nth (gi (car (collect-updates-from-single-update1
                                            typ ptr i n ram map)))
                                  (cdr (assoc-equal typ map)))
                             (mycdrn i (cdr (assoc-equal typ map))))
@@ -1149,7 +1149,7 @@
                                                (mycdrn i ptrs)
                                                n
                                                ram map 'LIST))
-           (member x (collect-data-cells-1-aux typs ptrs n ram map 
+           (member x (collect-data-cells-1-aux typs ptrs n ram map
                                                'LIST))))
 
 
@@ -1158,18 +1158,18 @@
    (implies (and (consp (collect-updates-from-single-update1 TYP PTR I N RAM MAP))
                  (<= 0 i)
                  (integerp i))
-            (member 
-             (nth (gi (car (collect-updates-from-single-update1 
+            (member
+             (nth (gi (car (collect-updates-from-single-update1
                             typ ptr i n ram map))) ptrs)
-             (collect-data-cells-1-aux 
+             (collect-data-cells-1-aux
                               (cdr (assoc-equal typ map))
                               ptrs
                               (- n 1)
                               ram map 'LIST)))
    :hints (("Goal" :in-theory (disable  not-assoc-equal-must-be-in-collect-data-cell-list)
-            :use ((:instance 
+            :use ((:instance
                           not-assoc-equal-must-be-in-collect-data-cell-list
-                          (typx (nth (gi (car (collect-updates-from-single-update1 
+                          (typx (nth (gi (car (collect-updates-from-single-update1
                                                typ ptr i n ram map)))
                                      (cdr (assoc-equal typ map))))
                           (typs (mycdrn i (cdr (assoc-equal typ map))))
@@ -1181,9 +1181,9 @@
 (defun nth-i-seq-int-induct (i addr l)
   (if (zp i)
       (list i addr l)
-    (if (zp l) 
+    (if (zp l)
        (list i addr l)
-      (nth-i-seq-int-induct (- i 1) 
+      (nth-i-seq-int-induct (- i 1)
                             (+ addr 1)
                             (- l 1)))))
 
@@ -1203,10 +1203,10 @@
                   (+ addr i)))
   :hints (("Goal" :do-not '(generalize)
            :induct (nth-i-seq-int-induct i addr l))))
-           
+
 (defthm gptr-is-g-ptr-car-collect-update-from-single-update1
   (implies (consp (collect-updates-from-single-update1 typ ptr i n ram map))
-           (equal (gptr (car (collect-updates-from-single-update1 
+           (equal (gptr (car (collect-updates-from-single-update1
                               typ ptr i n ram map)))
                   ptr)))
 
@@ -1215,10 +1215,10 @@
    (implies (and (consp (collect-updates-from-single-update1 TYP PTR I N RAM MAP))
                  (integerp i)
                  (<= 0 i))
-            (member 
-             (update-2-w 
+            (member
+             (update-2-w
               (car (collect-updates-from-single-update1 typ ptr i n ram map)) ram)
-             (collect-data-cells-1-aux 
+             (collect-data-cells-1-aux
                               (cdr (assoc-equal typ map))
                               (seq-int (g ptr ram) (len (cdr (assoc-equal typ
                                                                           map))))
@@ -1227,7 +1227,7 @@
    :hints (("Goal" :in-theory (disable first-update-is-in-data-cells-colllect-lemma)
             :use ((:instance
                           first-update-is-in-data-cells-colllect-lemma
-                          (ptrs (seq-int (g ptr ram) 
+                          (ptrs (seq-int (g ptr ram)
                                          (len (cdr (assoc-equal typ map))))))
                   (:instance nth-i-seq-int
                              (i (gi (car (collect-updates-from-single-update1
@@ -1242,23 +1242,23 @@
 
 (defthm first-update-is-in-data-cells
   (implies (consp (collect-updates-zdynamic-1-aux typs ptrs n ram map mode))
-           (member 
-            (update-2-w 
+           (member
+            (update-2-w
              (car (collect-updates-zdynamic-1-aux typs ptrs n ram map mode)) ram)
             (collect-data-cells-1-aux typs ptrs n ram map mode)))
   :hints (("Goal" :do-not '(generalize))
-          ("Subgoal *1/12.1" :cases 
-           ((consp 
-             (collect-updates-zdynamic-1-aux 
+          ("Subgoal *1/12.1" :cases
+           ((consp
+             (collect-updates-zdynamic-1-aux
               (CAR TYPS) PTRS1 N RAM MAP 'ATOM))))
-          ("Subgoal *1/10.1" :cases 
-           ((consp 
-             (collect-updates-zdynamic-1-aux 
+          ("Subgoal *1/10.1" :cases
+           ((consp
+             (collect-updates-zdynamic-1-aux
               (CAR TYPS) PTRS1 N RAM MAP 'ATOM))))
-          ("Subgoal *1/5" 
+          ("Subgoal *1/5"
            :expand  (COLLECT-UPDATES-ZDYNAMIC-1-AUX TYPS PTRS N RAM MAP 'ATOM)
            :cases ((consp (COLLECT-UPDATES-FROM-SINGLE-UPDATE1 TYPS PTRS 0 N RAM MAP))))
-          ("Subgoal *1/4" 
+          ("Subgoal *1/4"
            :expand  (COLLECT-UPDATES-ZDYNAMIC-1-AUX TYPS PTRS N RAM MAP 'ATOM)
            :cases ((consp (COLLECT-UPDATES-FROM-SINGLE-UPDATE1 TYPS PTRS 0 N RAM MAP))))))
 
@@ -1272,18 +1272,18 @@
   (implies (and (not (overlap (collect-data-cells-1-aux typs ptrs n ram map mode)
                               (collect-link-cells-1-aux typs ptrs n ram map mode)))
                 (consp (collect-updates-zdynamic-1-aux typs ptrs n ram map mode)))
-           (not (member 
+           (not (member
                  (update-2-w (car (collect-updates-zdynamic-1-aux typs ptrs n
                                                                  ram map mode)) ram)
                  (collect-link-cells-1-aux typs ptrs n ram map mode)))))
 
 
-;------------ proved that if data, link doesn't overlap, 
-;------------ apply updates perserve the consistent state. 
+;------------ proved that if data, link doesn't overlap,
+;------------ apply updates perserve the consistent state.
 
 (defthm first-update-1-in-collect-data-cell-1
   (implies (consp (collect-updates-dynamic-1 typ ptr n ram map))
-           (member (update-2-w 
+           (member (update-2-w
                     (car (collect-updates-dynamic-1 typ ptr n ram map)) ram)
                    (collect-data-cells-1 typ ptr n ram map))))
 
@@ -1296,10 +1296,10 @@
 (defthm all-collect-updates-dynamic-1-opener
   (implies (consp typs)
            (equal (all-collect-updates-dynamic-1 typs ptrs ns ram map)
-                  (append (collect-updates-dynamic-1 
+                  (append (collect-updates-dynamic-1
                            (car typs) (car ptrs) (car ns) ram map)
                           (all-collect-updates-dynamic-1 (cdr typs) (cdr ptrs)
-                                                         (cdr ns) 
+                                                         (cdr ns)
                                                          (mark-1 (car typs)
                                                                  (car ptrs)
                                                                  (car ns)
@@ -1311,7 +1311,7 @@
 
 (defthm first-update-1-in-all-collect-data-cell-1
   (implies (consp (all-collect-updates-dynamic-1 typs ptrs ns ram map))
-           (member (update-2-w 
+           (member (update-2-w
                     (car (all-collect-updates-dynamic-1 typs ptrs ns ram map)) ram)
                    (all-collect-data-cells-1 typs ptrs ns ram map)))
   :hints (("Goal" :in-theory (cons 'all-collect-updates-dynamic-1-opener
@@ -1319,17 +1319,17 @@
                                             update-2-w mark-1
                                             collect-data-cells-1))
            :do-not '(generalize))
-          ("Subgoal *1/3" :cases ((consp (collect-updates-dynamic-1 
+          ("Subgoal *1/3" :cases ((consp (collect-updates-dynamic-1
                                           (car typs) (car ptrs) (car ns) ram
                                           map))))
-          ("Subgoal *1/2" :cases ((consp (collect-updates-dynamic-1 
+          ("Subgoal *1/2" :cases ((consp (collect-updates-dynamic-1
                                           (car typs) (car ptrs) (car ns) ram
                                           map))))))
-      
+
 
 (defthm first-update-in-collect-data-cell
   (implies (consp (collect-updates-dynamic rc))
-           (member (update-2-w 
+           (member (update-2-w
                     (car (collect-updates-dynamic rc)) (ram rc))
                    (collect-data-cells rc))))
 
@@ -1337,7 +1337,7 @@
 
 (defthm first-update-not-in-collect-link-cell
   (implies (and (consp (collect-updates-dynamic rc))
-                (not (overlap (collect-data-cells rc) 
+                (not (overlap (collect-data-cells rc)
                               (collect-link-cells rc))))
            (not (member (update-2-w
                          (car (collect-updates-dynamic rc)) (ram rc))
@@ -1359,20 +1359,20 @@
                          rc))
   :hints (("Goal" :in-theory (list* 'apply-update
                                     'update-2-w
-                                   (disable struct-equiv 
+                                   (disable struct-equiv
                                       collect-link-cells)))))
 
 
 
 ;;
-;; this can't be proved, easily. 
-;; 
+;; this can't be proved, easily.
+;;
 
 ;
 ;(defthm struct-equiv-apply-updates
 ;  (implies (not (overlap (collect-data-cells rc)
 ;                         (collect-link-cells rc)))
-;           (struct-equiv 
+;           (struct-equiv
 ;            (apply-updates (collect-updates-dynamic rc)
 ;                           (ram rc) (getmap rc))
 ;            rc))
@@ -1384,11 +1384,11 @@
 
 
 ;;
-;; because, we can't prove a (defcong equal collect-update-dynamic ...) 
+;; because, we can't prove a (defcong equal collect-update-dynamic ...)
 ;; unless we know no-overlap
-;; 
+;;
 
-;; we set out to prove 
+;; we set out to prove
 ;
 ; (defthm not-overlap-and-collect-dynamic-is-collect-static
 ;  (implies (not (overlap (collect-data-cells rc)
@@ -1404,14 +1404,14 @@
          (slot-typ (nth i descriptor)))
     (if (zp ptr) nil
       (if (< i (len  descriptor))
-          (if (assoc-equal slot-typ map) 
-              ;; a struct type, meaning a ptr in the (car addrs) 
+          (if (assoc-equal slot-typ map)
+              ;; a struct type, meaning a ptr in the (car addrs)
               ;; don't touch link cells
               (collect-updates-from-single-update1-static typ ptr (+ i 1) n ram map)
             ;; else not a struct type, update the value
             ;; let the new value depends on the changes to the previous slos
-            (cons (make-update typ ptr i n) 
-                  (collect-updates-from-single-update1-static 
+            (cons (make-update typ ptr i n)
+                  (collect-updates-from-single-update1-static
                    typ ptr (+ i 1) n ram map)))
         nil))))
 
@@ -1421,7 +1421,7 @@
         (ptr ptr-or-ptrs)
         (typs typ-or-typs)
         (ptrs ptr-or-ptrs))
-    (cond ((equal mode 'ATOM) 
+    (cond ((equal mode 'ATOM)
            (let* ((desc (cdr (assoc-equal typ map)))
                   (size (len desc)))
              (if (zp n) nil
@@ -1429,10 +1429,10 @@
                  (if (not (assoc-equal typ map)) ;; not bound
                      nil
                    (let* ((addr (g ptr ram)))
-                     (append (collect-updates-from-single-update1-static 
+                     (append (collect-updates-from-single-update1-static
                               typ ptr 0 n ram map)
                              (collect-updates-static-1-aux
-                              desc 
+                              desc
                               (seq-int addr size)
                               (- n 1)
                               ram map 'LIST))))))))
@@ -1453,7 +1453,7 @@
 
 ;--------------------
 (defthm collect-updates-from-single-update1-static-is-independent-of-ram
-  (equal (collect-updates-from-single-update1-static 
+  (equal (collect-updates-from-single-update1-static
           typ ptr i n AnyRam map)
          (collect-updates-from-single-update1-static
           typ ptr i n ram map))
@@ -1464,17 +1464,17 @@
 
 (defthm struct-equiv-1-aux-implies-collect-static-updates-1-aux-equal
   (implies (struct-equiv-1-aux typ-or-typs ptr-or-ptrs n ram1 ram2 map mode)
-           (equal (collect-updates-static-1-aux typ-or-typs ptr-or-ptrs n 
+           (equal (collect-updates-static-1-aux typ-or-typs ptr-or-ptrs n
                                                 ram1 map mode)
-                   (collect-updates-static-1-aux typ-or-typs ptr-or-ptrs n 
+                   (collect-updates-static-1-aux typ-or-typs ptr-or-ptrs n
                                                 ram2 map mode)))
-  :hints (("Subgoal *1/6" 
-           :use ((:instance 
+  :hints (("Subgoal *1/6"
+           :use ((:instance
                   collect-updates-from-single-update1-static-is-independent-of-ram
                   (i 0) (typ typ-or-typs) (ptr ptr-or-ptrs) (anyRam ram1) (ram ram2))))))
 
 ;; i need a strong theorem that establish equal after an update to the non-link
-;; cell 
+;; cell
 
 
 (defthm not-change-link-collect-updates-from-single-update1-static-not-changed
@@ -1495,8 +1495,8 @@
                               collect-updates-from-single-update1-static))))
 
 ;--------------------
-;; ready to prove the most important theorem   
-;; collect-dynamic is  collect-static       
+;; ready to prove the most important theorem
+;; collect-dynamic is  collect-static
 ;; when data cell and link cell doesn't overlap
 
 
@@ -1508,8 +1508,8 @@
          (addr (g ptr AnyRam)))
     (if (zp ptr) (list typ ptr i n anyRam ram map)
       (if (< i (len  descriptor))
-          (if (assoc-equal slot-typ map) 
-              ;; a struct type, meaning a ptr in the (car addrs) 
+          (if (assoc-equal slot-typ map)
+              ;; a struct type, meaning a ptr in the (car addrs)
               ;; don't touch link cells
               (not-change-induct  typ ptr (+ i 1) n AnyRam ram map)
             ;; else not a struct type, update the value
@@ -1527,11 +1527,11 @@
           typ ptr i n ram map))
   :hints (("Goal" :do-not '(generalize)
            :induct (not-change-induct typ ptr i n AnyRam ram map))
-          ("Subgoal *1/3" :expand (collect-updates-from-single-update1 
+          ("Subgoal *1/3" :expand (collect-updates-from-single-update1
                                    typ ptr i n AnyRam map))
-          ("Subgoal *1/2" :expand (collect-updates-from-single-update1 
+          ("Subgoal *1/2" :expand (collect-updates-from-single-update1
                                    typ ptr i n AnyRam map))
-          ("Subgoal *1/1" :expand (collect-updates-from-single-update1 
+          ("Subgoal *1/1" :expand (collect-updates-from-single-update1
                                    typ ptr i n AnyRam map))))
 
 (in-theory (disable collect-updates-from-single-update1
@@ -1552,38 +1552,38 @@
 
 ;------------------
 
-;; We proved the following 
-;(thm 
+;; We proved the following
+;(thm
 ;  (implies (and (not (overlap (collect-data-cells-1-aux typs ptrs n ram map mode)
 ;                              (collect-link-cells-1-aux typs ptrs n ram map mode)))
 ;                (consp (collect-updates-zdynamic-1-aux typs ptrs n ram map mode)))
-;           (not (member 
+;           (not (member
 ;                 (update-2-w (car (collect-updates-zdynamic-1-aux typs ptrs n
 ;                                                                 ram map mode)) ram)
 ;                 (collect-link-cells-1-aux typs ptrs n ram map mode)))))
 
 ;--- prove more general theorem using the above
 
-;; 1/4.1 
+;; 1/4.1
 
 (defthm overlap-lemma
   (implies (overlap a b)
            (overlap a (cons x b))))
 
 ;-------------------
- 
+
 ;; why the following skip-proofs are true.
 ;
-; because we can show 
+; because we can show
 ;
 ; (apply-updates (collect-updates-static-1-aux ...) gives struct-equiv state
 ;   by showing applying first update, give you a struct-equiv state
 ;   and the collect-updates-static-1-aux from that state is not changed.
-;   thus apply the second update 
+;   thus apply the second update
 ;
 ;
 ; current approach is to prove if no overlap then, collect-updates-static-1-aux
-; is a subset of data links. 
+; is a subset of data links.
 ;
 
 (defun subset-induct (typ-or-typs ptr-or-ptrs n ram map mode)
@@ -1592,7 +1592,7 @@
         (ptr ptr-or-ptrs)
         (typs typ-or-typs)
         (ptrs ptr-or-ptrs))
-    (cond ((equal mode 'ATOM) 
+    (cond ((equal mode 'ATOM)
            (let* ((desc (cdr (assoc-equal typ map)))
                   (size (len desc)))
              (if (zp n) nil
@@ -1600,7 +1600,7 @@
                  (if (not (assoc-equal typ map)) ;; not bound
                      nil
                    (let* ((addr (g ptr ram)))
-                     (subset-induct 
+                     (subset-induct
                        desc (seq-int addr size)
                        (- n 1)
                        (apply-updates
@@ -1614,15 +1614,15 @@
              (if (not (assoc-equal (car typs)  map))
                  (subset-induct  (cdr typs) (cdr ptrs) n ram map 'LIST)
                (list (subset-induct (car typs) (car ptrs) n ram map 'ATOM)
-                     (subset-induct (cdr typs) (cdr ptrs) 
-                                    n (apply-updates 
-                                       (collect-updates-static-1-aux 
-                                        (car typs) (car ptrs) n ram map 'ATOM) 
+                     (subset-induct (cdr typs) (cdr ptrs)
+                                    n (apply-updates
+                                       (collect-updates-static-1-aux
+                                        (car typs) (car ptrs) n ram map 'ATOM)
                                        ram map)
                                     map 'LIST)))))
           (t (list typs ptrs n ram map mode)))))
 
-  
+
 (defthm subsetp-cons
   (implies (subsetp x l)
            (subsetp x (cons y l))))
@@ -1633,7 +1633,7 @@
 (defthm  struct-equiv-1-aux-preserved-if-apply-update-non-link-cell
   (implies (not (member (update-2-w update ram)
                         (collect-link-cells-1-aux typs ptrs n ram map mode)))
-           (struct-equiv-1-aux 
+           (struct-equiv-1-aux
                          typs ptrs n (apply-update update ram map) ram map
                          mode))
   :hints (("Goal" :in-theory (enable apply-update update-2-w))))
@@ -1652,17 +1652,17 @@
   :rule-classes :forward-chaining)
 
 
-(defthm subsetp-not-member-link-instance 
-  (implies (and (not (overlap (collect-data-cells-1-aux 
+(defthm subsetp-not-member-link-instance
+  (implies (and (not (overlap (collect-data-cells-1-aux
                                typ-or-typs ptr-or-ptrs n ram map mode)
-                              (collect-link-cells-1-aux 
+                              (collect-link-cells-1-aux
                                typ-or-typs ptr-or-ptrs n ram map mode)))
                 (consp updates)
                 (subsetp (updates-2-ws updates ram map)
-                         (collect-data-cells-1-aux 
+                         (collect-data-cells-1-aux
                           typ-or-typs ptr-or-ptrs n ram map mode)))
            (not (member (update-2-w (car updates) ram)
-                        (collect-link-cells-1-aux 
+                        (collect-link-cells-1-aux
                          typ-or-typs ptr-or-ptrs n ram map mode))))
   :hints (("Goal"  :in-theory (disable collect-data-cells-1-aux
                                        collect-link-cells-1-aux
@@ -1674,16 +1674,16 @@
            (equal (apply-updates updates ram map) ram)))
 
 
-(defthm  struct-equiv-1-aux-preserved-if-apply-update-non-link-cell-instance 
-  (implies (and (not (overlap (collect-data-cells-1-aux 
+(defthm  struct-equiv-1-aux-preserved-if-apply-update-non-link-cell-instance
+  (implies (and (not (overlap (collect-data-cells-1-aux
                                typ-or-typs ptr-or-ptrs n ram map mode)
-                              (collect-link-cells-1-aux 
+                              (collect-link-cells-1-aux
                                typ-or-typs ptr-or-ptrs n ram map mode)))
                 (consp updates)
                 (subsetp (updates-2-ws updates ram map)
-                         (collect-data-cells-1-aux 
+                         (collect-data-cells-1-aux
                           typ-or-typs ptr-or-ptrs n ram map mode)))
-           (struct-equiv-1-aux 
+           (struct-equiv-1-aux
                          typ-or-typs ptr-or-ptrs n (apply-update (car updates) ram map) ram map
                          mode))
   :hints (("Goal" :cases ((not (consp updates))))))
@@ -1696,7 +1696,7 @@
                                                         ram map mode)))
                 (consp updates)
                 (subsetp (updates-2-ws updates ram map)
-                         (collect-data-cells-1-aux 
+                         (collect-data-cells-1-aux
                           typs ptrs n ram map mode)))
            (equal (collect-link-cells-1-aux typs ptrs n
                                             (apply-update (car updates) ram
@@ -1722,7 +1722,7 @@
                                                         ram map mode)))
                 (consp updates)
                 (subsetp (updates-2-ws updates ram map)
-                         (collect-data-cells-1-aux 
+                         (collect-data-cells-1-aux
                           typs ptrs n ram map mode)))
            (equal (collect-data-cells-1-aux typs ptrs n
                                             (apply-update (car updates) ram
@@ -1744,39 +1744,39 @@
                               (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs n ram map mode)))
                 (consp updates)
                 (subsetp (updates-2-ws updates ram map)
-                         (collect-data-cells-1-aux 
+                         (collect-data-cells-1-aux
                           typ-or-typs ptr-or-ptrs n ram map mode)))
-           (struct-equiv-1-aux 
-            typ-or-typs ptr-or-ptrs n 
+           (struct-equiv-1-aux
+            typ-or-typs ptr-or-ptrs n
             (apply-updates updates ram map)
             ram map
             mode))
   :hints (("Goal" :do-not '(generalize))))
 
 
-; shared 
+; shared
 
 ;-------------------------
 
 (defthm subsetp-collect-data-cells-1-collect-data-cells-1
   (implies (consp typs)
-           (subsetp (collect-data-cells-1-aux 
+           (subsetp (collect-data-cells-1-aux
                      (car typs) (car ptrs) n ram map 'ATOM)
                     (collect-data-cells-1-aux
                      typs ptrs n ram map 'LIST))))
 
 
 (defthm apply-updates-struct-equiv-1-aux-instance
-  (implies (and (not (overlap (collect-data-cells-1-aux 
+  (implies (and (not (overlap (collect-data-cells-1-aux
                                typs ptrs n ram map 'LIST)
-                              (collect-link-cells-1-aux 
+                              (collect-link-cells-1-aux
                                typs ptrs n ram map 'LIST)))
                 (consp updates)
                 (subsetp (updates-2-ws updates ram map)
-                         (collect-data-cells-1-aux 
+                         (collect-data-cells-1-aux
                           (car typs) (car ptrs) n ram map 'ATOM)))
-           (struct-equiv-1-aux 
-            typs ptrs n 
+           (struct-equiv-1-aux
+            typs ptrs n
             (apply-updates updates ram map)
             ram map
             'LIST)))
@@ -1788,10 +1788,10 @@
                 (not (endp typs))
                 (assoc-equal (car typs) map)
                 (subsetp (updates-2-ws updates ram map)
-                         (collect-data-cells-1-aux 
+                         (collect-data-cells-1-aux
                           (car typs) (car ptrs) n ram map 'ATOM)))
-           (struct-equiv-1-aux (cdr typs) (cdr ptrs) n 
-                               (apply-updates updates 
+           (struct-equiv-1-aux (cdr typs) (cdr ptrs) n
+                               (apply-updates updates
                                               ram map)
                                ram map 'LIST))
   :hints (("Goal" :in-theory (disable apply-updates-struct-equiv-1-aux-instance)
@@ -1800,15 +1800,15 @@
 
 
 (defthm struct-equiv-1-aux-implies-collect-data-equal-instance
-  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n 
-                               (apply-updates (collect-updates-static-1-aux 
+  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n
+                               (apply-updates (collect-updates-static-1-aux
                                                (car typs) (car ptrs) n ram map
                                                'ATOM)
                                               ram map)
                                ram map 'LIST)
            (equal (collect-data-cells-1-aux
-                   (cdr typs) (cdr ptrs) n 
-                   (apply-updates (collect-updates-static-1-aux 
+                   (cdr typs) (cdr ptrs) n
+                   (apply-updates (collect-updates-static-1-aux
                                    (car typs) (car ptrs) n ram map
                                    'ATOM) ram map) map 'LIST)
                   (collect-data-cells-1-aux
@@ -1816,15 +1816,15 @@
 
 
 (defthm struct-equiv-1-aux-implies-collect-link-equal-instance
-  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n 
-                               (apply-updates (collect-updates-static-1-aux 
+  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n
+                               (apply-updates (collect-updates-static-1-aux
                                                (car typs) (car ptrs) n ram map
                                                'ATOM)
                                               ram map)
                                ram map 'LIST)
            (equal (collect-link-cells-1-aux
-                   (cdr typs) (cdr ptrs) n 
-                   (apply-updates (collect-updates-static-1-aux 
+                   (cdr typs) (cdr ptrs) n
+                   (apply-updates (collect-updates-static-1-aux
                                    (car typs) (car ptrs) n ram map
                                    'ATOM) ram map) map 'LIST)
                   (collect-link-cells-1-aux
@@ -1832,15 +1832,15 @@
 
 
 (defthm struct-equiv-1-aux-implies-collect-static-equal-instance
-  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n 
-                               (apply-updates (collect-updates-static-1-aux 
+  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n
+                               (apply-updates (collect-updates-static-1-aux
                                                (car typs) (car ptrs) n ram map
                                                'ATOM)
                                               ram map)
                                ram map 'LIST)
            (equal (collect-updates-static-1-aux
-                   (cdr typs) (cdr ptrs) n 
-                   (apply-updates (collect-updates-static-1-aux 
+                   (cdr typs) (cdr ptrs) n
+                   (apply-updates (collect-updates-static-1-aux
                                    (car typs) (car ptrs) n ram map
                                    'ATOM) ram map) map 'LIST)
                   (collect-updates-static-1-aux
@@ -1853,7 +1853,7 @@
   (equal (updates-2-ws (append updates1 updates2)
                                   ram map)
          (append (updates-2-ws updates1 ram map)
-                 (updates-2-ws updates2 
+                 (updates-2-ws updates2
                                (apply-updates updates1 ram map) map))))
 
 
@@ -1863,7 +1863,7 @@
 
 
 ;; because our induction in collect-data-cells and collect-updates doesn't
-;; match well. This proof is complicated. 
+;; match well. This proof is complicated.
 
 (defun collect-data-cells-from-single-node (typ ptr i ram map)
   (declare (xargs :measure (m-collect-updates typ map i ram)))
@@ -1873,19 +1873,19 @@
          (addr (g ptr ram)))
     (if (zp ptr) nil
       (if (< i (len  descriptor))
-          (if (assoc-equal slot-typ map) 
-              ;; a struct type, meaning a ptr in the (car addrs) 
+          (if (assoc-equal slot-typ map)
+              ;; a struct type, meaning a ptr in the (car addrs)
               ;; don't touch link cells
               (collect-data-cells-from-single-node typ ptr (+ i 1) ram map)
             ;; else not a struct type, update the value
             (cons (+ i addr)
-                  (collect-data-cells-from-single-node 
+                  (collect-data-cells-from-single-node
                    typ ptr (+ i 1) ram map)))
         nil))))
 
 
 
-;; prove a more general one than 
+;; prove a more general one than
 ;; subsetp-collect-data-cells-from-single-node-collect-data-cells
 
 (defthm nth-i-equal-car-mycdrn-i
@@ -1904,7 +1904,7 @@
                     (mycdrn i typs)
                     (seq-int  (+ i addr)
                               (len (mycdrn i typs)))
-                    n 
+                    n
                     ram map 'LIST))))
 
 
@@ -1916,13 +1916,13 @@
                      (cdr typs)
                      (seq-int (+ 1 addr)
                               (len (cdr typs)))
-                     n 
+                     n
                      ram map 'LIST)
                     (collect-data-cells-1-aux
                      typs
                      (seq-int addr
                               (len typs))
-                     n 
+                     n
                      ram map 'LIST)))
   :hints (("Goal" :do-not '(generalize))))
 
@@ -1941,21 +1941,21 @@
                      (cdr typs)
                      (seq-int (+ 1 addr)
                               (len (cdr typs)))
-                     n 
+                     n
                      ram map 'LIST)
                     (collect-data-cells-1-aux
                      typs
                      (cons any
                            (seq-int (+ 1 addr)
                                     (len (cdr typs))))
-                     n 
+                     n
                      ram map 'LIST)))
   :hints (("Goal" :do-not '(generalize))))
 
 (defthm subsetp-collect-data-cells-from-single-node-collect-data-cells-lemma
   (implies (and (integerp i)
                 (<= 0 i))
-           (subsetp (collect-data-cells-from-single-node 
+           (subsetp (collect-data-cells-from-single-node
                      typ ptr i ram map)
                     (collect-data-cells-1-aux
                      (mycdrn i (cdr (assoc-equal typ map)))
@@ -1970,16 +1970,16 @@
          (seq-int addr len)))
 
 (defthm subsetp-collect-data-cells-from-single-node-collect-data-cells
-  (subsetp (collect-data-cells-from-single-node 
+  (subsetp (collect-data-cells-from-single-node
             typ ptr 0 ram map)
            (collect-data-cells-1-aux
             (cdr (assoc-equal typ map))
             (seq-int (g ptr ram) (len (cdr (assoc-equal typ map))))
             (- n 1)
             ram map 'LIST))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable subsetp-collect-data-cells-from-single-node-collect-data-cells-lemma)
-           :use ((:instance 
+           :use ((:instance
                   subsetp-collect-data-cells-from-single-node-collect-data-cells-lemma
                   (i 0))))))
 
@@ -1992,8 +1992,8 @@
          (addr (g ptr ram)))
     (if (zp ptr) nil
       (if (< i (len  descriptor))
-          (if (assoc-equal slot-typ map) 
-              ;; a struct type, meaning a ptr in the (car addrs) 
+          (if (assoc-equal slot-typ map)
+              ;; a struct type, meaning a ptr in the (car addrs)
               ;; don't touch link cells
               (induct-collect-updates typ ptr (+ i 1) n ram map)
             ;; else not a struct type, update the value
@@ -2002,12 +2002,12 @@
               (induct-collect-updates typ ptr (+ i 1) n
                                       new-ram map)))
         nil))))
-  
+
 #|
-;; a general statement. easy to prove but not so good. 
+;; a general statement. easy to prove but not so good.
 (defthm collect-data-cells-from-single-node-not-affected-by-lemma
   (implies (equal (g ptr ram2) (g ptr ram1))
-           (equal (collect-data-cells-from-single-node 
+           (equal (collect-data-cells-from-single-node
                     typ ptr i ram2 map)
                   (collect-data-cells-from-single-node
                     typ ptr i ram1 map))))
@@ -2017,7 +2017,7 @@
 
 (defthm collect-data-cells-from-single-node-not-affected-by-lemma-2
   (implies (not (equal addr ptr))
-           (equal (collect-data-cells-from-single-node 
+           (equal (collect-data-cells-from-single-node
                     typ ptr i (s addr anyValue ram) map)
                   (collect-data-cells-from-single-node
                     typ ptr i ram map))))
@@ -2031,40 +2031,40 @@
 
 
 
-;; not a very good one. 
+;; not a very good one.
 (defthm collect-data-cells-from-single-node-not-affected-by
   (implies (and (not (member ptr (collect-data-cells-from-single-node
                                   typ ptr i ram map)))
                 (member addr (collect-data-cells-from-single-node
                                   typ ptr i ram map)))
-           (equal (collect-data-cells-from-single-node 
+           (equal (collect-data-cells-from-single-node
                     typ ptr i (s addr anyValue ram)  map)
                   (collect-data-cells-from-single-node
                     typ ptr i ram map))))
 
 (defthm collect-updates-from-single-update1-static-opener
   (implies (zp ptr)
-           (equal (collect-updates-from-single-update1-static 
+           (equal (collect-updates-from-single-update1-static
                      typ ptr i n ram map) nil))
-  :hints (("Goal" :expand 
-           (collect-updates-from-single-update1-static 
+  :hints (("Goal" :expand
+           (collect-updates-from-single-update1-static
             typ ptr i n ram map))))
 
 (defthm collect-updates-from-single-update1-static-opener-2
   (implies (and (<= (LEN (CDR (ASSOC-EQUAL TYP MAP))) I)
                 (integerp i))
-           (equal (collect-updates-from-single-update1-static 
+           (equal (collect-updates-from-single-update1-static
                      typ ptr i n ram map) nil))
-  :hints (("Goal" :expand 
-           (collect-updates-from-single-update1-static 
+  :hints (("Goal" :expand
+           (collect-updates-from-single-update1-static
             typ ptr i n ram map))))
 #|
 (defthm collect-updates-from-single-update1-static-opener-3
   (implies (zp n)
-           (equal (collect-updates-from-single-update1-static 
+           (equal (collect-updates-from-single-update1-static
                      typ ptr i n ram map) nil))
-  :hints (("Goal" :expand 
-           (collect-updates-from-single-update1-static 
+  :hints (("Goal" :expand
+           (collect-updates-from-single-update1-static
             typ ptr i n ram map))))
 |#
 
@@ -2076,14 +2076,14 @@
                 (<= 0 i))
            (equal (updates-2-ws (collect-updates-from-single-update1-static
                                  typ ptr i n ram map) ram map)
-                  (collect-data-cells-from-single-node 
+                  (collect-data-cells-from-single-node
                    typ ptr i ram map)))
   :hints (("Goal" :induct (induct-collect-updates typ ptr i n ram map)
            :in-theory (enable update-2-w make-update apply-update gptr gi gn gtyp)
            :do-not '(generalize fertilize)
            :expand (collect-updates-from-single-update1-static
                      typ ptr i n ram map))))
-  
+
 
 (defthm not-member-forward-chaining
   (implies (and (subsetp a b)
@@ -2092,7 +2092,7 @@
   :rule-classes :forward-chaining)
 
 
-(defthm subsetp-collect-updates-from-single-update-1-static 
+(defthm subsetp-collect-updates-from-single-update-1-static
   (implies (not (member ptr (collect-data-cells-1-aux
                              (cdr (assoc-equal typ map))
                              (seq-int (g ptr ram) (len (cdr (assoc-equal typ
@@ -2123,9 +2123,9 @@
                                typ ptr n ram map 'ATOM))))
   :hints (("Goal" :expand (collect-link-cells-1-aux typ ptr n ram map 'ATOM)))
   :rule-classes :forward-chaining)
-                             
 
-;; I should modify the definition of collect-updates-from-single-update1-static 
+
+;; I should modify the definition of collect-updates-from-single-update1-static
 ;; to return nil when n is zero
 
 (defthm subsetp-collect-updates-from-single-update-collect-data-1-aux
@@ -2140,12 +2140,12 @@
 
 
 (defthm apply-updates-struct-equiv-1-aux-instance-2
-  (implies (not (overlap (collect-data-cells-1-aux 
+  (implies (not (overlap (collect-data-cells-1-aux
                           typ ptr n ram map 'ATOM)
-                         (collect-link-cells-1-aux 
+                         (collect-link-cells-1-aux
                           typ ptr n ram map 'ATOM)))
-           (struct-equiv-1-aux 
-            typ ptr n 
+           (struct-equiv-1-aux
+            typ ptr n
             (apply-updates (collect-updates-from-single-update1-static
                                      typ ptr 0 n ram map) ram map)
             ram map
@@ -2162,18 +2162,18 @@
                 (assoc-equal typ map)
                 (not (zp n))
                 (not (zp ptr)))
-           (struct-equiv-1-aux 
+           (struct-equiv-1-aux
              (cdr (assoc-equal typ map))
              (seq-int (g ptr ram) (len (cdr (assoc-equal typ map))))
              (- n 1)
              (apply-updates (collect-updates-from-single-update1-static
                              typ ptr 0 n ram map) ram map)
-             ram 
+             ram
              map 'LIST))
   :hints (("Goal" :in-theory (disable apply-updates-struct-equiv-1-aux-instance-2)
            :use apply-updates-struct-equiv-1-aux-instance-2)))
 
-;----------------------- concrete instantiations 
+;----------------------- concrete instantiations
 
 (defthm struct-equiv-1-aux-implies-collect-data-equal-instance-2
   (implies (struct-equiv-1-aux
@@ -2182,7 +2182,7 @@
              (- n 1)
              (apply-updates (collect-updates-from-single-update1-static
                              typ ptr 0 n ram map) ram map)
-             ram 
+             ram
              map 'LIST)
            (equal (collect-data-cells-1-aux
                                 (cdr (assoc-equal typ map))
@@ -2205,7 +2205,7 @@
              (- n 1)
              (apply-updates (collect-updates-from-single-update1-static
                              typ ptr 0 n ram map) ram map)
-             ram 
+             ram
              map 'LIST)
            (equal (collect-link-cells-1-aux
                                 (cdr (assoc-equal typ map))
@@ -2229,7 +2229,7 @@
              (- n 1)
              (apply-updates (collect-updates-from-single-update1-static
                              typ ptr 0 n ram map) ram map)
-             ram 
+             ram
              map 'LIST)
            (equal (collect-updates-static-1-aux
                                 (cdr (assoc-equal typ map))
@@ -2250,7 +2250,7 @@
 ;-------------------------
 
 ;; because our induction in collect-data-cells and collect-updates doesn't
-;; match well. This proof is complicated. 
+;; match well. This proof is complicated.
 
 (defun collect-data-cells-from-single-node (typ ptr i ram map)
   (declare (xargs :measure (m-collect-updates typ map i ram)))
@@ -2260,19 +2260,19 @@
          (addr (g ptr ram)))
     (if (zp ptr) nil
       (if (< i (len  descriptor))
-          (if (assoc-equal slot-typ map) 
-              ;; a struct type, meaning a ptr in the (car addrs) 
+          (if (assoc-equal slot-typ map)
+              ;; a struct type, meaning a ptr in the (car addrs)
               ;; don't touch link cells
               (collect-data-cells-from-single-node typ ptr (+ i 1) ram map)
             ;; else not a struct type, update the value
             (cons (+ i addr)
-                  (collect-data-cells-from-single-node 
+                  (collect-data-cells-from-single-node
                    typ ptr (+ i 1) ram map)))
         nil))))
 
 
 
-;; prove a more general one than 
+;; prove a more general one than
 ;; subsetp-collect-data-cells-from-single-node-collect-data-cells
 
 (defthm nth-i-equal-car-mycdrn-i
@@ -2291,7 +2291,7 @@
                     (mycdrn i typs)
                     (seq-int  (+ i addr)
                               (len (mycdrn i typs)))
-                    n 
+                    n
                     ram map 'LIST))))
 
 
@@ -2303,13 +2303,13 @@
                      (cdr typs)
                      (seq-int (+ 1 addr)
                               (len (cdr typs)))
-                     n 
+                     n
                      ram map 'LIST)
                     (collect-data-cells-1-aux
                      typs
                      (seq-int addr
                               (len typs))
-                     n 
+                     n
                      ram map 'LIST)))
   :hints (("Goal" :do-not '(generalize))))
 
@@ -2328,21 +2328,21 @@
                      (cdr typs)
                      (seq-int (+ 1 addr)
                               (len (cdr typs)))
-                     n 
+                     n
                      ram map 'LIST)
                     (collect-data-cells-1-aux
                      typs
                      (cons any
                            (seq-int (+ 1 addr)
                                     (len (cdr typs))))
-                     n 
+                     n
                      ram map 'LIST)))
   :hints (("Goal" :do-not '(generalize))))
 
 (defthm subsetp-collect-data-cells-from-single-node-collect-data-cells-lemma
   (implies (and (integerp i)
                 (<= 0 i))
-           (subsetp (collect-data-cells-from-single-node 
+           (subsetp (collect-data-cells-from-single-node
                      typ ptr i ram map)
                     (collect-data-cells-1-aux
                      (mycdrn i (cdr (assoc-equal typ map)))
@@ -2357,16 +2357,16 @@
          (seq-int addr len)))
 
 (defthm subsetp-collect-data-cells-from-single-node-collect-data-cells
-  (subsetp (collect-data-cells-from-single-node 
+  (subsetp (collect-data-cells-from-single-node
             typ ptr 0 ram map)
            (collect-data-cells-1-aux
             (cdr (assoc-equal typ map))
             (seq-int (g ptr ram) (len (cdr (assoc-equal typ map))))
             (- n 1)
             ram map 'LIST))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable subsetp-collect-data-cells-from-single-node-collect-data-cells-lemma)
-           :use ((:instance 
+           :use ((:instance
                   subsetp-collect-data-cells-from-single-node-collect-data-cells-lemma
                   (i 0))))))
 
@@ -2379,8 +2379,8 @@
          (addr (g ptr ram)))
     (if (zp ptr) nil
       (if (< i (len  descriptor))
-          (if (assoc-equal slot-typ map) 
-              ;; a struct type, meaning a ptr in the (car addrs) 
+          (if (assoc-equal slot-typ map)
+              ;; a struct type, meaning a ptr in the (car addrs)
               ;; don't touch link cells
               (induct-collect-updates typ ptr (+ i 1) n ram map)
             ;; else not a struct type, update the value
@@ -2389,12 +2389,12 @@
               (induct-collect-updates typ ptr (+ i 1) n
                                       new-ram map)))
         nil))))
-  
+
 #|
-;; a general statement. easy to prove but not so good. 
+;; a general statement. easy to prove but not so good.
 (defthm collect-data-cells-from-single-node-not-affected-by-lemma
   (implies (equal (g ptr ram2) (g ptr ram1))
-           (equal (collect-data-cells-from-single-node 
+           (equal (collect-data-cells-from-single-node
                     typ ptr i ram2 map)
                   (collect-data-cells-from-single-node
                     typ ptr i ram1 map))))
@@ -2404,7 +2404,7 @@
 
 (defthm collect-data-cells-from-single-node-not-affected-by-lemma-2
   (implies (not (equal addr ptr))
-           (equal (collect-data-cells-from-single-node 
+           (equal (collect-data-cells-from-single-node
                     typ ptr i (s addr anyValue ram) map)
                   (collect-data-cells-from-single-node
                     typ ptr i ram map))))
@@ -2418,32 +2418,32 @@
 
 
 
-;; not a very good one. 
+;; not a very good one.
 (defthm collect-data-cells-from-single-node-not-affected-by
   (implies (and (not (member ptr (collect-data-cells-from-single-node
                                   typ ptr i ram map)))
                 (member addr (collect-data-cells-from-single-node
                                   typ ptr i ram map)))
-           (equal (collect-data-cells-from-single-node 
+           (equal (collect-data-cells-from-single-node
                     typ ptr i (s addr anyValue ram)  map)
                   (collect-data-cells-from-single-node
                     typ ptr i ram map))))
 
 (defthm collect-updates-from-single-update1-static-opener
   (implies (zp ptr)
-           (equal (collect-updates-from-single-update1-static 
+           (equal (collect-updates-from-single-update1-static
                      typ ptr i n ram map) nil))
-  :hints (("Goal" :expand 
-           (collect-updates-from-single-update1-static 
+  :hints (("Goal" :expand
+           (collect-updates-from-single-update1-static
             typ ptr i n ram map))))
 
 (defthm collect-updates-from-single-update1-static-opener-2
   (implies (and (<= (LEN (CDR (ASSOC-EQUAL TYP MAP))) I)
                 (integerp i))
-           (equal (collect-updates-from-single-update1-static 
+           (equal (collect-updates-from-single-update1-static
                      typ ptr i n ram map) nil))
-  :hints (("Goal" :expand 
-           (collect-updates-from-single-update1-static 
+  :hints (("Goal" :expand
+           (collect-updates-from-single-update1-static
             typ ptr i n ram map))))
 
 
@@ -2455,14 +2455,14 @@
                 (<= 0 i))
            (equal (updates-2-ws (collect-updates-from-single-update1-static
                                  typ ptr i n ram map) ram map)
-                  (collect-data-cells-from-single-node 
+                  (collect-data-cells-from-single-node
                    typ ptr i ram map)))
   :hints (("Goal" :induct (induct-collect-updates typ ptr i n ram map)
            :in-theory (enable update-2-w make-update apply-update gptr gi gn gtyp)
            :do-not '(generalize fertilize)
            :expand (collect-updates-from-single-update1-static
                      typ ptr i n ram map))))
-  
+
 
 (defthm not-member-forward-chaining
   (implies (and (subsetp a b)
@@ -2471,7 +2471,7 @@
   :rule-classes :forward-chaining)
 
 
-(defthm subsetp-collect-updates-from-single-update-1-static 
+(defthm subsetp-collect-updates-from-single-update-1-static
   (implies (not (member ptr (collect-data-cells-1-aux
                              (cdr (assoc-equal typ map))
                              (seq-int (g ptr ram) (len (cdr (assoc-equal typ
@@ -2501,20 +2501,20 @@
                                                    ptr-or-ptrs n ram map mode)
                          (collect-link-cells-1-aux typ-or-typs
                                                    ptr-or-ptrs n ram map mode)))
-           (subsetp (updates-2-ws (collect-updates-static-1-aux typ-or-typs 
+           (subsetp (updates-2-ws (collect-updates-static-1-aux typ-or-typs
                                                                 ptr-or-ptrs
                                                                 n ram map mode) ram map)
                     (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs
                                                n ram map mode)))
-  :hints (("Goal" :induct (subset-induct 
+  :hints (("Goal" :induct (subset-induct
                            typ-or-typs ptr-or-ptrs n ram map mode)
            :do-not '(generalize))))
 
-;; this is important result 
+;; this is important result
 
 
 
-;--- this above the important result we want to show --- 
+;--- this above the important result we want to show ---
 (defun prefix (a b)
   (if (endp a) t
     (if (endp b) nil
@@ -2544,31 +2544,31 @@
                                                         'LIST)))
                 (not (endp typs))
                 (assoc-equal (car typs) map))
-           (struct-equiv-1-aux typs ptrs n 
-                               (apply-updates (collect-updates-static-1-aux 
+           (struct-equiv-1-aux typs ptrs n
+                               (apply-updates (collect-updates-static-1-aux
                                                 (car typs) (car ptrs) n ram map
                                                 'ATOM)
                                               ram map)
                                ram map 'LIST))
   :hints (("Goal" :do-not '(generalize)
-           :cases ((consp (collect-updates-static-1-aux 
+           :cases ((consp (collect-updates-static-1-aux
                            (car typs) (car ptrs) n ram map 'ATOM))))
           ("Subgoal 1" :use ((:instance subsetp-transitive
                                         (a (updates-2-ws
-                                            (collect-updates-static-1-aux 
+                                            (collect-updates-static-1-aux
                                                 (car typs) (car ptrs) n ram map
                                                 'ATOM) ram map))
-                                        (b (updates-2-ws 
+                                        (b (updates-2-ws
                                             (collect-updates-static-1-aux
                                              typs ptrs n ram map 'LIST) ram
                                              map))
-                                        (c (collect-data-cells-1-aux 
+                                        (c (collect-data-cells-1-aux
                                             typs ptrs n ram map 'LIST)))))))
 
 
 ;-----------------
 ;
-; need to instantiate it again to get the version I wanted. 
+; need to instantiate it again to get the version I wanted.
 ;
 #|
 (defthm apply-updates-struct-equiv-1-aux-instance-1-instance
@@ -2577,8 +2577,8 @@
                                                         'LIST)))
                 (not (endp typs))
                 (assoc-equal (car typs) map))
-           (struct-equiv-1-aux (cdr typs) (cdr ptrs) n 
-                               (apply-updates (collect-updates-static-1-aux 
+           (struct-equiv-1-aux (cdr typs) (cdr ptrs) n
+                               (apply-updates (collect-updates-static-1-aux
                                                 (car typs) (car ptrs) n ram map
                                                 'ATOM)
                                               ram map)
@@ -2591,30 +2591,30 @@
 ;; instantiate some of struct-equiv-1-aux-implies-collect-XXX-equal
 
 (defthm struct-equiv-1-aux-implies-collect-data-equal-instance
-  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n 
-                               (apply-updates (collect-updates-static-1-aux 
+  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n
+                               (apply-updates (collect-updates-static-1-aux
                                                (car typs) (car ptrs) n ram map
                                                'ATOM)
                                               ram map)
                                ram map 'LIST)
            (equal (collect-data-cells-1-aux
-                   (cdr typs) (cdr ptrs) n 
-                   (apply-updates (collect-updates-static-1-aux 
+                   (cdr typs) (cdr ptrs) n
+                   (apply-updates (collect-updates-static-1-aux
                                    (car typs) (car ptrs) n ram map
                                    'ATOM) ram map) map 'LIST)
                   (collect-data-cells-1-aux
                    (cdr typs) (cdr ptrs) n ram map 'LIST))))
 
 (defthm struct-equiv-1-aux-implies-collect-link-equal-instance
-  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n 
-                               (apply-updates (collect-updates-static-1-aux 
+  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n
+                               (apply-updates (collect-updates-static-1-aux
                                                (car typs) (car ptrs) n ram map
                                                'ATOM)
                                               ram map)
                                ram map 'LIST)
            (equal (collect-link-cells-1-aux
-                   (cdr typs) (cdr ptrs) n 
-                   (apply-updates (collect-updates-static-1-aux 
+                   (cdr typs) (cdr ptrs) n
+                   (apply-updates (collect-updates-static-1-aux
                                    (car typs) (car ptrs) n ram map
                                    'ATOM) ram map) map 'LIST)
                   (collect-link-cells-1-aux
@@ -2622,15 +2622,15 @@
 |#
 
 (defthm struct-equiv-1-aux-implies-collect-update-static-1-aux-equal-instance
-  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n 
-                               (apply-updates (collect-updates-static-1-aux 
+  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n
+                               (apply-updates (collect-updates-static-1-aux
                                                (car typs) (car ptrs) n ram map
                                                'ATOM)
                                               ram map)
                                ram map 'LIST)
            (equal (collect-updates-static-1-aux
-                   (cdr typs) (cdr ptrs) n 
-                   (apply-updates (collect-updates-static-1-aux 
+                   (cdr typs) (cdr ptrs) n
+                   (apply-updates (collect-updates-static-1-aux
                                    (car typs) (car ptrs) n ram map
                                    'ATOM) ram map) map 'LIST)
                   (collect-updates-static-1-aux
@@ -2642,7 +2642,7 @@
   (implies (equal (collect-updates-zdynamic-1-aux typ ptr n ram map 'ATOM)
                   (collect-updates-static-1-aux  typ ptr n ram map 'ATOM))
            (equal (mark-1-aux typ ptr n ram map 'ATOM)
-                  (apply-updates (collect-updates-static-1-aux 
+                  (apply-updates (collect-updates-static-1-aux
                                    typ ptr n ram map 'ATOM) ram map))))
 
 ;-------------------------------
@@ -2653,21 +2653,21 @@
 (defthm lemma-1-7-2-1
   (implies (and (not (overlap (collect-data-cells-1-aux typs ptrs n ram map 'list)
                               (collect-link-cells-1-aux typs ptrs n ram map 'list)))
-                (equal (collect-updates-zdynamic-1-aux (car typs) 
+                (equal (collect-updates-zdynamic-1-aux (car typs)
                                                        (car ptrs) n ram map
                                                        'ATOM)
-                       (collect-updates-static-1-aux (car typs) 
+                       (collect-updates-static-1-aux (car typs)
                                                       (car ptrs) n ram map
                                                       'ATOM))
                  (not (endp typs))
                  (assoc-equal (car typs) map))
-            (not (overlap (collect-data-cells-1-aux 
+            (not (overlap (collect-data-cells-1-aux
                            (cdr typs) (cdr ptrs) n
-                           (mark-1-aux (car typs) (car ptrs) n ram map 'ATOM) 
+                           (mark-1-aux (car typs) (car ptrs) n ram map 'ATOM)
                            map 'LIST)
                           (collect-link-cells-1-aux
                            (cdr typs) (cdr ptrs) n
-                           (mark-1-aux (car typs) (car ptrs) n ram map 'ATOM) 
+                           (mark-1-aux (car typs) (car ptrs) n ram map 'ATOM)
                            map 'LIST))))
   :hints (("Goal" :in-theory (disable apply-updates-collect-dynamic-is-mark))))
 
@@ -2678,15 +2678,15 @@
 
 #|
 (defthm struct-equiv-1-aux-implies-collect-update-static-1-aux-equal-instance
-  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n 
-                               (apply-updates (collect-updates-static-1-aux 
+  (implies (struct-equiv-1-aux (cdr typs) (cdr ptrs) n
+                               (apply-updates (collect-updates-static-1-aux
                                                (car typs) (car ptrs) n ram map
                                                'ATOM)
                                               ram map)
                                ram map 'LIST)
            (equal (collect-updates-static-1-aux
-                   (cdr typs) (cdr ptrs) n 
-                   (apply-updates (collect-updates-static-1-aux 
+                   (cdr typs) (cdr ptrs) n
+                   (apply-updates (collect-updates-static-1-aux
                                    (car typs) (car ptrs) n ram map
                                    'ATOM) ram map) map 'LIST)
                   (collect-updates-static-1-aux
@@ -2699,38 +2699,38 @@
                                                         'list)))
                 (not (endp typs))
                 (assoc-equal (car typs) map)
-                (equal (collect-updates-zdynamic-1-aux (car typs) 
+                (equal (collect-updates-zdynamic-1-aux (car typs)
                                                         (car ptrs) n ram map
                                                         'ATOM)
-                         (collect-updates-static-1-aux (car typs) 
+                         (collect-updates-static-1-aux (car typs)
                                                        (car ptrs) n ram map
                                                        'ATOM))
                   (equal (collect-updates-zdynamic-1-aux (cdr typs)
-                                                        (cdr ptrs) n 
-                                                        (mark-1-aux (car typs) 
+                                                        (cdr ptrs) n
+                                                        (mark-1-aux (car typs)
                                                                     (car ptrs)
                                                                     n
                                                                     ram map
                                                                     'ATOM)
                                                         map 'LIST)
                          (collect-updates-static-1-aux (cdr typs)
-                                                       (cdr ptrs) n 
-                                                       (mark-1-aux (car typs) 
+                                                       (cdr ptrs) n
+                                                       (mark-1-aux (car typs)
                                                                    (car ptrs)
                                                                    n
                                                                    ram map
                                                                    'ATOM)
                                                        map 'LIST)))
                   (equal (collect-updates-zdynamic-1-aux (cdr typs)
-                                                        (cdr ptrs) n 
-                                                        (mark-1-aux (car typs) 
+                                                        (cdr ptrs) n
+                                                        (mark-1-aux (car typs)
                                                                     (car ptrs)
                                                                     n
                                                                     ram map
                                                                     'ATOM)
                                                         map 'LIST)
                          (collect-updates-static-1-aux (cdr typs)
-                                                        (cdr ptrs) n 
+                                                        (cdr ptrs) n
                                                         ram
                                                         map 'LIST)))
   :hints (("Goal" :in-theory (disable
@@ -2738,12 +2738,12 @@
 
 
 
-;--------------- prove the two lemmas that deal with recursion 
+;--------------- prove the two lemmas that deal with recursion
 ;--------------- mode = LIST.
 
-;--------------- mode = ATOM 
+;--------------- mode = ATOM
 #|
-(skip-proofs 
+(skip-proofs
  (defthm subsetp-collect-updates-from-single-update-collect-data-1-aux
    (implies (not (overlap (collect-data-cells-1-aux typ ptr n ram map 'ATOM)
                           (collect-link-cells-1-aux typ ptr n ram map 'ATOM)))
@@ -2771,12 +2771,12 @@
                               (collect-link-cells-1-aux typ ptr n ram map 'ATOM)))
                 (assoc-equal typ map)
                 (not (zp ptr)))
-           (struct-equiv-1-aux typ ptr n 
+           (struct-equiv-1-aux typ ptr n
                                (apply-updates (collect-updates-from-single-update1-static
                                                typ ptr 0 n ram map)
                                               ram map)
                                ram map 'ATOM))
-  :hints (("Goal" 
+  :hints (("Goal"
            :cases ((consp (collect-updates-from-single-update1-static
                                                typ ptr 0 n ram map))))
           ("Subgoal 1"
@@ -2784,10 +2784,10 @@
                                    (a (updates-2-ws
                                        (collect-updates-from-single-update1-static
                                         typ ptr 0 n ram map) ram map))
-                                   (b (updates-2-ws 
+                                   (b (updates-2-ws
                                        (collect-updates-static-1-aux
                                         typ ptr n ram map 'ATOM) ram ram))
-                                   (c (collect-data-cells-1-aux 
+                                   (c (collect-data-cells-1-aux
                                        typ ptr n ram map 'ATOM)))))))
 
 |#
@@ -2801,18 +2801,18 @@
                 (assoc-equal typ map)
                 (not (zp n))
                 (not (zp ptr)))
-           (struct-equiv-1-aux 
+           (struct-equiv-1-aux
              (cdr (assoc-equal typ map))
              (seq-int (g ptr ram) (len (cdr (assoc-equal typ map))))
              (- n 1)
              (apply-updates (collect-updates-from-single-update1-static
                              typ ptr 0 n ram map) ram map)
-             ram 
+             ram
              map 'LIST))
   :hints (("Goal" :in-theory (disable apply-updates-struct-equiv-1-aux-instance-2)
            :use apply-updates-struct-equiv-1-aux-instance-2)))
 
-;----------------------- concrete instantiations 
+;----------------------- concrete instantiations
 
 (defthm struct-equiv-1-aux-implies-collect-data-equal-instance-2
   (implies (struct-equiv-1-aux
@@ -2821,7 +2821,7 @@
              (- n 1)
              (apply-updates (collect-updates-from-single-update1-static
                              typ ptr 0 n ram map) ram map)
-             ram 
+             ram
              map 'LIST)
            (equal (collect-data-cells-1-aux
                                 (cdr (assoc-equal typ map))
@@ -2844,7 +2844,7 @@
              (- n 1)
              (apply-updates (collect-updates-from-single-update1-static
                              typ ptr 0 n ram map) ram map)
-             ram 
+             ram
              map 'LIST)
            (equal (collect-link-cells-1-aux
                                 (cdr (assoc-equal typ map))
@@ -2867,7 +2867,7 @@
              (- n 1)
              (apply-updates (collect-updates-from-single-update1-static
                              typ ptr 0 n ram map) ram map)
-             ram 
+             ram
              map 'LIST)
            (equal (collect-updates-static-1-aux
                                 (cdr (assoc-equal typ map))
@@ -2887,15 +2887,15 @@
 
 
 (defthm collect-updates-zdynamic-1-aux-is-collect-updates-static-1-aux
-  (implies (not (overlap (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs 
+  (implies (not (overlap (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs
                                                    n ram map mode)
-                         (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs 
+                         (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs
                                                    n ram map mode)))
            (equal (collect-updates-zdynamic-1-aux typ-or-typs ptr-or-ptrs
                                                  n ram map mode)
                   (collect-updates-static-1-aux typ-or-typs ptr-or-ptrs
                                                 n ram map mode)))
-  :hints (("Goal" :induct (collect-updates-zdynamic-1-aux typ-or-typs 
+  :hints (("Goal" :induct (collect-updates-zdynamic-1-aux typ-or-typs
                                                          ptr-or-ptrs
                                                          n ram map mode)
            :in-theory (disable
@@ -2906,7 +2906,7 @@
 
 ;------------------ done at last !!! -------
 ;
-; we now have this result and a theorem that 
+; we now have this result and a theorem that
 ; (updates-2-ws (collect-updates-static-1-aux ..) is a subset of
 ; (collect-static-data ..)
 ;
@@ -2927,13 +2927,13 @@
 
 
 (defthm g-over-mark-1-aux-lemma
-  (implies (and (not (overlap (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs 
+  (implies (and (not (overlap (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs
                                                         n ram map mode)
-                              (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs 
+                              (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs
                                                         n ram map mode)))
-                (not (member addr 
+                (not (member addr
                              (updates-2-ws (collect-updates-static-1-aux
-                                            typ-or-typs ptr-or-ptrs 
+                                            typ-or-typs ptr-or-ptrs
                                                         n ram map mode) ram map))))
            (equal (g addr (mark-1-aux typ-or-typs ptr-or-ptrs
                                       n ram map mode))
@@ -2942,11 +2942,11 @@
 
 
 (defthm g-over-mark-1-aux
-  (implies (and (not (overlap (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs 
+  (implies (and (not (overlap (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs
                                                         n ram map mode)
-                              (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs 
+                              (collect-link-cells-1-aux typ-or-typs ptr-or-ptrs
                                                         n ram map mode)))
-                (not (member addr 
+                (not (member addr
                              (collect-data-cells-1-aux typ-or-typs ptr-or-ptrs
                                                        n ram map mode))))
            (equal (g addr (mark-1-aux typ-or-typs ptr-or-ptrs
@@ -2982,17 +2982,17 @@
 
 
 
-                         
+
 ;----------------------------------
 
-; (defthm g-over-mark 
+; (defthm g-over-mark
 ;   (implies (and (not (overlap (collect-data-cells rc)
 ;                               (collect-link-cells rc)))
 ;                 (not (member addr (updates-2-ws (collect-updates-static rc)))))
 ;            (equal (g addr (mark rc))
 ;                   (g addr (ram rc)))))
-           
-           
+
+
 
 
 

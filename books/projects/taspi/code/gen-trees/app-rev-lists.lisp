@@ -29,7 +29,7 @@
   (implies (and (consp x)
                 (subset x y))
            (subset (app x a) (app y a))))
-                    
+
 (defthm subset-a-app
   (subset x (app y x)))
 
@@ -102,13 +102,13 @@
          (app taxa-list nil)))
 
 (defthm rev-taxa-from-get-taxa
-  (equal (get-taxa-from-taxon-index 
+  (equal (get-taxa-from-taxon-index
           (taxa-list-to-taxon-index taxa-list))
          (app taxa-list nil))
   :hints (("Goal" :in-theory (e/d (taxa-list-to-taxon-index) ()))))
 
 (defthm taxa-list-from-fast-alist2
-  (equal (get-taxa-from-index-taxon (build-fast-alist-from-alist 
+  (equal (get-taxa-from-index-taxon (build-fast-alist-from-alist
                                (number-to-element taxa-list pos)
                                'index-taxon))
          (app taxa-list nil))
@@ -135,7 +135,7 @@
             (perm (app x (list y))
                   (cons y x))))
 )
- 
+
 (defthm perm-rev-fix-true
   (perm (taspi-rev tl) (fix-true-list tl)))
 

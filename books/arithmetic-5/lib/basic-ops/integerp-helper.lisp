@@ -17,21 +17,21 @@
 (in-package "ACL2")
 
 
-(local 
+(local
  (include-book "../../support/top"))
 
 (include-book "building-blocks")
 
 (include-book "default-hint")
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                               hist pspv)))
 
 (table acl2-defaults-table :state-ok t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate 
+(encapsulate
  ()
 
  (local
@@ -81,7 +81,7 @@
 
  (local
   (defthm X-OR-X/2
-    (implies (integerp x) 
+    (implies (integerp x)
 	     (or (integerp (/ x 2)) (integerp (/ (1+ x) 2))))
     :rule-classes ()
     :hints (("Goal" :in-theory (disable FUNCTIONAL-SELF-INVERSION-OF-MINUS)
@@ -91,13 +91,13 @@
 ;;; Expressions like (integerp (+ 1/2 x)) show up when one is reasoning
 ;;; about odd and even.
 
-;;; Note1: We do not have to worry about expressions such as 
-;;; (integerp (+ -1/2 x)) or (integerp (+ 3/2 x)) because of 
+;;; Note1: We do not have to worry about expressions such as
+;;; (integerp (+ -1/2 x)) or (integerp (+ 3/2 x)) because of
 ;;; integerp-+-reduce-leading-constant.
 
-;;; Note 2: We could write a similar rule --- probably a meta rule 
-;;; --- for expressions such as (integerp (+ 1/3 x)) and 
-;;; (integerp (+ 3/10 x)).  For (integerp (+ c/d x)), (* n x) is not 
+;;; Note 2: We could write a similar rule --- probably a meta rule
+;;; --- for expressions such as (integerp (+ 1/3 x)) and
+;;; (integerp (+ 3/10 x)).  For (integerp (+ c/d x)), (* n x) is not
 ;;; an integer for all 0 < n < d.  But this would probably be a messy
 ;;; proof to do --- it would depend on c/d being in lowest terms ---
 ;;; but I have not thought about it yet.

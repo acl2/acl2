@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -87,7 +87,7 @@ todo: ;add analogues of the thms in land0.lisp past bitn-land0
 (local (include-book "lxor0-proofs"))
 
 (defund binary-lxor0 (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -105,7 +105,7 @@ todo: ;add analogues of the thms in land0.lisp past bitn-land0
   (declare (xargs :guard (consp x)))
   (cond ((endp (cdddr x)) ;(lxor0 x y n) -- the base case
          `(binary-lxor0 ,@x))
-        (t         
+        (t
          `(binary-lxor0 ,(car x)
                        (lxor0 ,@(cdr x))
                        ,(car (last x))))))
@@ -188,8 +188,8 @@ todo: ;add analogues of the thms in land0.lisp past bitn-land0
                 (case-split (integerp n))
                 )
            (equal (bits (lxor0 x y n) i j)
-                  (lxor0 (bits x i j) 
-                        (bits y i j) 
+                  (lxor0 (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j))))))
 
 (defthmd bits-lxor0-2
@@ -198,8 +198,8 @@ todo: ;add analogues of the thms in land0.lisp past bitn-land0
                 (case-split (integerp n))
                 )
            (equal (bits (lxor0 x y n) i j)
-                  (lxor0 (bits x i j) 
-                        (bits y i j) 
+                  (lxor0 (bits x i j)
+                        (bits y i j)
                         (+ n (- j))))))
 
 ;notice the call to MIN in the conclusion
@@ -209,8 +209,8 @@ todo: ;add analogues of the thms in land0.lisp past bitn-land0
                 (case-split (integerp i))
                 )
            (equal (bits (lxor0 x y n) i j)
-                  (lxor0 (bits x i j) 
-                        (bits y i j) 
+                  (lxor0 (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j))))))
 
 (defthmd bitn-lxor0-1
@@ -219,8 +219,8 @@ todo: ;add analogues of the thms in land0.lisp past bitn-land0
                 (case-split (integerp n))
                 )
            (equal (bitn (lxor0 x y n) m)
-                  (lxor0 (bitn x m) 
-                        (bitn y m) 
+                  (lxor0 (bitn x m)
+                        (bitn y m)
                         1))))
 (defthmd bitn-lxor0-2
   (implies (and (<= n m)
@@ -238,8 +238,8 @@ todo: ;add analogues of the thms in land0.lisp past bitn-land0
                 )
            (equal (bitn (lxor0 x y n) m)
                   (if (< m n)
-                      (lxor0 (bitn x m) 
-                            (bitn y m) 
+                      (lxor0 (bitn x m)
+                            (bitn y m)
                             1)
                     0))))
 
@@ -298,7 +298,7 @@ todo: ;add analogues of the thms in land0.lisp past bitn-land0
 		  (not (zp n))
                   )
 	     (= (bitn (lxor0 x y n) 0)
-		(bitn (+ x y) 0)))		
+		(bitn (+ x y) 0)))
   :rule-classes ())
 
 ;BOZO rename
@@ -313,7 +313,7 @@ todo: ;add analogues of the thms in land0.lisp past bitn-land0
 		  (< n m)
 		  (case-split (integerp m))
 		  )
-	     (equal (lxor0 x y m) 
+	     (equal (lxor0 x y m)
                     (lxor0 x y n))))
 
 (defthm lxor0-upper-bound

@@ -88,7 +88,7 @@
 		  (< (sigf z phi) (expt 2 (get-sbits phi)))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance bitn-0-1 (x z) (n (+ (get-sbits phi) (get-ebits phi))))
-			(:instance bits< 
+			(:instance bits<
 				   (x z)
 				   (i (+ (get-sbits phi) (get-ebits phi) -1))
 				   (j (get-sbits phi)))
@@ -96,7 +96,7 @@
 				   (x z)
 				   (i (+ (get-sbits phi) (get-ebits phi) -1))
 				   (j (get-sbits phi)))
-			(:instance bits< 
+			(:instance bits<
 				   (x z)
 				   (i (1- (get-sbits phi)))
 				   (j 0))
@@ -194,7 +194,7 @@
 		   (expt 2 (expo (decode z phi))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable expo a15 a2 formatp normal-encoding-p decode)
-		  :use (normal-encoding-lemma 
+		  :use (normal-encoding-lemma
 			code-1
 			code-5
 			(:instance expo+
@@ -216,7 +216,7 @@
 (defthm CODE-B
     (implies (and (formatp phi)
 		  (normal-encoding-p z phi))
-	     (= (sig (decode z phi)) 
+	     (= (sig (decode z phi))
 		(* (sigf z phi) (expt 2 (- 1 (get-sbits phi))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (disable decode formatp normal-encoding-p)

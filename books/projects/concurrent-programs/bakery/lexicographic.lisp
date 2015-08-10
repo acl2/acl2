@@ -24,7 +24,7 @@ we use the ACL2 total order for defining the order on this element.
   (implies (lex< a b c d)
 	   (not (lex< c d a b))))
 
-(defthm lex<-transitive 
+(defthm lex<-transitive
   (implies (and (lex< a b c d)
 		(lex< c d e f))
 	   (lex< a b e f)))

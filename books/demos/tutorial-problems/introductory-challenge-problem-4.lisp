@@ -33,7 +33,7 @@
 ; We wish to collect one copy of each element in x.  We'll actually define the
 ; method two ways, primitive recursively and tail-recursively, the latter
 ; method being analogous to the program:
- 
+
 ; a = nil;
 ; while (x not empty) {
 ;  a = if (member (car x) a) then a else (cons (car x) a);
@@ -98,7 +98,7 @@
           (collect-once (cdr x))
           (cons (car x) (collect-once (cdr x))))))
 
-; [0] 
+; [0]
 (defthm main-theorem-1-about-collect-once
   (subsetp (collect-once x) x))
 ; Succeeded!
@@ -363,7 +363,7 @@
 ; (defthm main-lemma-1-about-while-loop-version
 ;   (subsetp (while-loop-version x a) (append x a)))
 ; Failed!
-; Key Term:  Does the wrong induction.  
+; Key Term:  Does the wrong induction.
 
 ; [1]
 ; (defthm main-lemma-1-about-while-loop-version
@@ -398,7 +398,7 @@
 ;                   (CONS (CAR X) (APPEND (CDR X) A))))
 
 ; We'd be done if we could rewrite the
-; (APPEND (CDR X) (CONS (CAR X) A)) 
+; (APPEND (CDR X) (CONS (CAR X) A))
 ; to
 ; (CONS (CAR X) (APPEND (CDR X) A))
 ; These two terms are not equal!  But they are ``set-equal'' and this kind of
@@ -408,7 +408,7 @@
 
 ; The plan then is to prove
 ; (iff (subsetp a (append b (cons e c)))
-;      (subsetp a (cons e (append b c)))) 
+;      (subsetp a (cons e (append b c))))
 
 ; Consider the first half of this bi-implication:
 ; (implies (subsetp a (append b (cons e c)))            ; hyp1
@@ -421,14 +421,14 @@
 ; The proof in the other direction is comparable but requires the
 ; (subsetp (cons e (append b c)) (append b (cons e c)))
 
-; Thus, our plan is prove 
+; Thus, our plan is prove
 ; (a) transitivity of subsetp
 ; (b) (subsetp (append b (cons e c)) (cons e (append b c)))
 ; (c) (subsetp (cons e (append b c)) (append b (cons e c)))
 
 ; in order to prove
 ; (d) (iff (subsetp a (append b (cons e c)))
-;         (subsetp a (cons e (append b c)))) 
+;         (subsetp a (cons e (append b c))))
 
 ; [2] (a)
 (defthm trans-subsetp

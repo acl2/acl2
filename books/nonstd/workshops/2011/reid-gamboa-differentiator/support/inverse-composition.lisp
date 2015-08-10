@@ -126,7 +126,7 @@
 (local
  (encapsulate
  nil
- (local 
+ (local
   (defthm close-/-lemma-1
     (implies (and (not (i-small x))
 		  (i-close x y))
@@ -149,7 +149,7 @@
 		 (i-close x y)
 		 (i-limited x))
 	    (i-close (/ x) (/ y)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use (:instance close-/-lemma-2)
 	    :in-theory (enable i-close i-small))))))
 
@@ -184,7 +184,7 @@
 	      (equal (/ (- (inv-f-inverse y1) (inv-f-inverse y2))
 			(- y1 y2))
 		     (/ (- (inv-f-inverse y1) (inv-f-inverse y2))
-			(- (inv-f (inv-f-inverse y1)) 
+			(- (inv-f (inv-f-inverse y1))
 			   (inv-f (inv-f-inverse y2))))))
    :hints (("Goal"
 	    :use ((:instance inv-f-inverse-relation (x y1))
@@ -230,9 +230,9 @@
 		       (inv-f-inverse-prime x)))
    :hints (("Goal"
 	    :use ((:instance convert-inverse-differentials-local (y1 x) (y2 y))
-		  (:instance close-/ 
+		  (:instance close-/
 			     (x (inv-f-prime (inv-f-inverse x)))
-			     (y (/ (- (inv-f (inv-f-inverse x)) 
+			     (y (/ (- (inv-f (inv-f-inverse x))
 				      (inv-f (inv-f-inverse y)))
 				   (- (inv-f-inverse x) (inv-f-inverse y)))))
 		  (:instance inv-f-close
@@ -249,9 +249,9 @@
    :rule-classes nil
    )
  )
-			     
 
-(derivative-hyps 
+
+(derivative-hyps
  inv-f-inverse
  :close-hints (("Goal" :use ((:instance inv-f-inverse-close-local))))
  )
@@ -264,9 +264,9 @@
 ;  unwrap the results, getting the theorems we need
 
 ; fnX, fnX-derivative, fnX-domain are expressions
-(defun inv-d/dx-apply-fn 
-  (fn 
-   fn-derivative fn-domain fn-symbol            
+(defun inv-d/dx-apply-fn
+  (fn
+   fn-derivative fn-domain fn-symbol
    inv-fn-domain inv-fn-symbol)
 
   (let* ((instantiation-fns `((inv-f (lambda (x) ,fn))
@@ -274,14 +274,14 @@
 			      (inv-f-prime (lambda (x) ,fn-derivative))
 			      (inv-f-inverse (lambda (x) (,inv-fn-symbol x)))
 			      (inv-f-inverse-domain-p (lambda (x) ,inv-fn-domain))
-			      (inv-f-inverse-prime 
-			       (lambda (x) 
+			      (inv-f-inverse-prime
+			       (lambda (x)
 				 (/ ((lambda (x)
 				       ,fn-derivative)
 				     (,inv-fn-symbol x))))))))
 
-  
-  `( (encapsulate 
+
+  `( (encapsulate
         nil
 
         (local
@@ -289,7 +289,7 @@
 		      ,@(inverse-symbols (first fn))
 		      )))
 
-	,@(use-deriv-unary fn-symbol 'inv-f-inverse 
+	,@(use-deriv-unary fn-symbol 'inv-f-inverse
 		   `(,inv-fn-symbol x)
 		   `(/ ((lambda (x) ,fn-derivative) (,inv-fn-symbol x)))
 		   inv-fn-domain
@@ -298,10 +298,10 @@
         )
        (/ ((lambda (x) ,fn-derivative) (,inv-fn-symbol x))) ; compound derivative
        ,inv-fn-domain                   ; compound domain
-       
+
        )
-    
+
     ))
-    
+
 
 ;(inv-d/dx-apply-fn '(sqr x) '(sqr-prime x) '(sqr-domain-p x) 'sqr '(sqr-inverse-domain-p x) 'sqr-inverse)

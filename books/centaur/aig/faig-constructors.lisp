@@ -256,7 +256,7 @@ assuming they cannot evaluate to Z."
           (aig-and a0 b0)))
   ///
   (prove-faig-op-commutes t-aig-or (a b))
-  
+
   (defcong faig-fix-equiv equal (t-aig-or a b) 1
     :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
   (defcong faig-fix-equiv equal (t-aig-or a b) 2
@@ -271,7 +271,7 @@ assuming they cannot evaluate to Z."
     (t-aig-or a b))
   ///
   (prove-faig-op-commutes f-aig-or (a b))
-  
+
   (defcong faig-fix-equiv equal (f-aig-or a b) 1
     :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
   (defcong faig-fix-equiv equal (f-aig-or a b) 2

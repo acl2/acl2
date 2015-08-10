@@ -4,7 +4,7 @@
 ;; modeling of an adaptive routing algorithm
 ;; we consider a 2D-mesh. We compute all possible minimal paths
 ;; between two nodes.
-;; The algorithm is an interleaving of XY and YX. 
+;; The algorithm is an interleaving of XY and YX.
 
 (in-package "ACL2")
 ;;; we need the xy routing algorithm
@@ -16,7 +16,7 @@
 ;;
 ;;-------------------------------------------------------------
 
-;; the distance between two nodes is the sum of the absolute values of the difference of 
+;; the distance between two nodes is the sum of the absolute values of the difference of
 ;; the coordinates
 
 (defun yx-routing (from to)
@@ -49,7 +49,7 @@
 
 (defthm first-YX-routing
   ;; the first element  the origin
-  (implies (and (coordinatep from) 
+  (implies (and (coordinatep from)
                 (coordinatep to))
            (equal (car (YX-routing from to))
                   from)))
@@ -64,7 +64,7 @@
 (defun CloserListp (r d)
   ;; recognizes a list r of nodes such that any higher position
   ;; of the list gives a nodes that is closer to d than lower
-  ;; positions. More extactly, the distance decreases by 1 
+  ;; positions. More extactly, the distance decreases by 1
   ;; if the position increases by 1,
   (if (or (endp r) (endp (cdr r)))
       t
@@ -119,13 +119,13 @@
 ;; First, every x-coord of any nodes produced by function yx-routing2
 ;; is strictly less than 1 + Max(from_x, to_x)
 (defthm yx-routing-all-x-less
-  (all-x-<-max (yx-routing from to) 
+  (all-x-<-max (yx-routing from to)
                (1+ (max (car from) (car to)))))
 
 
 ;; and every y-coord is strictly less than 1 + Max(from_y, to_y)
 (defthm yx-routing-all-y-less
-  (all-y-<-max (yx-routing from to) 
+  (all-y-<-max (yx-routing from to)
                (1+ (max (cadr from) (cadr to)))))
 
 (defthm yx-routing-subsetp-coord-max
@@ -235,7 +235,7 @@
            :in-theory (disable 2D-mesh-nodesetp-member-equal
                                coordinatep))))
 
-;; 2. TrLstp 
+;; 2. TrLstp
 
 (defthm consp-yx-routing-cdr
   ;; should be systematically added
@@ -294,7 +294,7 @@
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
-           :use (:functional-instance 
+           :use (:functional-instance
                  ToMissives-Routing
                  (NodeSetGenerator mesh-nodeset-gen)
                  (NodeSetp 2D-mesh-nodesetp)
@@ -307,7 +307,7 @@
 	  ("Subgoal 3" ; changed after v4-3 from "Subgoal 4", for tau system
 	   :in-theory (enable mesh-hyps))))
 
-;; this concludes the verification of the YX algorithm. 
+;; this concludes the verification of the YX algorithm.
 ;; ----------------------------------------------------
 
 ;;-------------------------------------------------------------
@@ -319,13 +319,13 @@
 ;; in this algorithm, at each node two paths are possible, along the X or the Y axis.
 ;; We model it as the alternative application of the xy and the yx algorithms.
 ;; We compute all possible minimal paths between any pair of nodes.
-;; Note that for all nodes that share one coordinate with a destination, 
-;; there is no choice: the shortest path is to travel along the opposite axis. 
-;; For a given source node s, all possible routes obtained by first 
-;; applying the xy algorithm are computed by (a) r = xy(s,d), 
-;; (b) applying yx for all nodes of r that do not share 
-;; a coordinate with d, (c) for all such routes, applying the xy algorithm to 
-;; each node that do not share a coordinate with d, ... 
+;; Note that for all nodes that share one coordinate with a destination,
+;; there is no choice: the shortest path is to travel along the opposite axis.
+;; For a given source node s, all possible routes obtained by first
+;; applying the xy algorithm are computed by (a) r = xy(s,d),
+;; (b) applying yx for all nodes of r that do not share
+;; a coordinate with d, (c) for all such routes, applying the xy algorithm to
+;; each node that do not share a coordinate with d, ...
 
 
 ;; II.1. Basic definitions
@@ -362,13 +362,13 @@
 ;; II.2. Prefix computation
 ;; ------------------------
 
-;; A subroute of a route from s to d, consists of a route from s to some 
+;; A subroute of a route from s to d, consists of a route from s to some
 ;; intermediate node.
-;; Prefixes of a route r w.r.t. a destination d, are all the subroutes 
-;; where each node does not share a coordinate with d. 
+;; Prefixes of a route r w.r.t. a destination d, are all the subroutes
+;; where each node does not share a coordinate with d.
 
 (defun extract-prefixes (r d)
-  ;; compute all the possible prefixes suggested by the route 
+  ;; compute all the possible prefixes suggested by the route
   ;; r for the destination d
   (if (or (not (coordinatep d)) (not (2D-mesh-nodesetp r)))
       nil
@@ -394,14 +394,14 @@
 
 ;; II.3. Get Sources
 ;; --------------------
-;; For a route r, the "sources" w.r.t. a destination d, are the nodes that do not 
+;; For a route r, the "sources" w.r.t. a destination d, are the nodes that do not
 ;; share a coordinate with destination d.
 
 (defun GetSources1 (r d)
-  (if (or (endp r) (not (coordinatep d)) 
+  (if (or (endp r) (not (coordinatep d))
           (not (2d-mesh-nodesetp r)))
       nil
-    (let* ((n1 (car r)) 
+    (let* ((n1 (car r))
            (n1_x (car n1))
            (n1_y (cadr n1))
            (d_x (car d))
@@ -418,13 +418,13 @@
 
 
 ;; II.4 Double Y Routing
-;; --------------------- 
+;; ---------------------
 
 
 ;; We need some lemmas to prove that the main function (dy1) terminates
 
 ;; the next three defthm's are used to prove that the distance from s to d decreases
-;; also from the successor of s. These lemmas consider the application 
+;; also from the successor of s. These lemmas consider the application
 ;; of the xy algorithm
 
 
@@ -488,19 +488,19 @@
 
 
 (defun dy1 (sources d flg prefixes)
-  (declare (xargs :measure 
+  (declare (xargs :measure
                   (dist (car sources) d)
                   :hints (("GOAL"
                            :in-theory (disable reduce-integerp-+)
                            :do-not '(eliminate-destructors generalize))
                           ("Subgoal 3"
-                           :cases 
-                           ((consp (getsources1 
+                           :cases
+                           ((consp (getsources1
                                     (cdr (yx-routing (car sources) d))
                                     d))))
                           ("Subgoal 2"
-                           :cases 
-                           ((consp (getsources1 
+                           :cases
+                           ((consp (getsources1
                                     (cdr (xy-routing (car sources) d))
                                     d))))
                           ("[1]Subgoal 2"
@@ -516,12 +516,12 @@
   ;; only one node. We apply either xy or yx to get one route.
   ;; From this route we extract a list of nodes (of "sources")
   ;; that constitutes the new sources. On each of these nodes
-  ;; we apply either yx or xy, und so weiter .... 
+  ;; we apply either yx or xy, und so weiter ....
   ;; We stop when the first node in list sources shares one coordinate
   ;; with the destination.
   ;; The first test gets rid of bad inputs.
-  ;; To prove that this function terminates, the nodes in 
-  ;; sources must be such that nodes with a higher position in 
+  ;; To prove that this function terminates, the nodes in
+  ;; sources must be such that nodes with a higher position in
   ;; sources are closer to the destination d.
   (if (or (endp sources) (not (CloserListp sources d))
           (not (2d-mesh-nodesetp sources))
@@ -534,30 +534,30 @@
            (d_x (car d))
            (d_y (cadr d)))
       (cond ((or (equal s_x d_x) (equal s_y d_y))
-             ;; if one of the coordinate has been reached, 
+             ;; if one of the coordinate has been reached,
              ;; we stop
               nil)
             (t
-             (let ((routes 
+             (let ((routes
                     (cond (flg ;; last was yx-routing, next is xy-routing
                            (let ((suffix (xy-routing s d)))
                              ;; the new route is made of the prefix and
                              ;; the new suffix of the route.
-                             (cons 
+                             (cons
                               (append prefix suffix)
-                              (dy1 
+                              (dy1
                                (getSources suffix d)
                                d nil ;; next is YX
-                               (append-l-all 
+                               (append-l-all
                                 prefix
                                 (extract-prefixes suffix d))))))
                           (t ;; last was xy-routing, next is yx
                            (let ((suffix (yx-routing s d)))
                              (cons (append prefix suffix)
                                    (dy1
-                                    (getSources suffix d)  
+                                    (getSources suffix d)
                                     d t ;;next is XY
-                                    (append-l-all 
+                                    (append-l-all
                                      prefix
                                      (extract-prefixes suffix d)))))))))
                (append routes
@@ -567,18 +567,18 @@
 
 
 (defun dy (s d)
-  ;; if s and d share a coordinate, we have a "border" case. No minimal adaptive path 
+  ;; if s and d share a coordinate, we have a "border" case. No minimal adaptive path
   ;; is available, thus we have apply either xy or yx. But, in that case, they both
   ;; return the same path.
 
   ;; Note: it is not possible to add this special case in the previous function, because
-  ;; this would add routes in the computation. 
-  
+  ;; this would add routes in the computation.
+
   (if (and (coordinatep s) (coordinatep d)
 	   (or (equal (car s) (car d))
 	       (equal (cadr s) (cadr d))))
 	   (list (xy-routing s d))
-  
+
       ;; when calling the "full" algorithm, we know that adapative behaviors are possible
       ;; note: this is required as an invariant in the proof
 
@@ -613,8 +613,8 @@
 ;;
 ;;-------------------------------------------------------------
 
-;; now, we want to prove that this algorithms is a valid instance of the 
-;; generic routing function. 
+;; now, we want to prove that this algorithms is a valid instance of the
+;; generic routing function.
 
 ;; The function here at the same level as xy-routing is dy.
 ;; The function at the same leval as xy-routing-top is doubleyRouting1.
@@ -626,7 +626,7 @@
 ;  :otf-flg t
 ;  :hints (("GOAL"
 ;           :do-not-induct t
-;           :use (:functional-instance 
+;           :use (:functional-instance
 ;                 ToMissives-Routing
 ;                 (NodeSetGenerator mesh-nodeset-gen)
 ;                 (NodeSetp 2D-mesh-nodesetp)
@@ -639,7 +639,7 @@
 ;; we can submit this theorem to see which properties have to be proven.
 ;; the two remaining goals are correctroutesp (routes are correct) and trlstp (travels are
 ;; well-formed)
- 
+
 ;; III.1. Proving Correctroutesp of DoubleYRouting1
 ;; ------------------------------------------------
 
@@ -651,7 +651,7 @@
 
 
 
-;; the strategy is to prove validroutes and subsetp 
+;; the strategy is to prove validroutes and subsetp
 
 
 (defun all-validroutep (routes s d)
@@ -693,11 +693,11 @@
   (if (endp lst)
       t
     (let ((r (car lst)))
-      (and (and (consp r) (2d-mesh-nodesetp r)) 
-	   ;; we check that if lst is not empty, then 
+      (and (and (consp r) (2d-mesh-nodesetp r))
+	   ;; we check that if lst is not empty, then
 	   ;; its elements are not empty either
 	   (all-2d-mesh-nodesetp (cdr lst))))))
-  
+
 (defthm all-2d-mesh-nodesetp-extract-prefixes
   (implies (2d-mesh-nodesetp lst)
 	   (all-2d-mesh-nodesetp (extract-prefixes lst d))))
@@ -711,14 +711,14 @@
   ;; this lemma might not be useful to prove validroutep-apply-DoubleY-all-nodeset
   ;; also s is free ... s is now (car sources) ...
   (implies (all-2d-mesh-nodesetp prefixes)
-	   (all-2d-mesh-nodesetp (append-l-all (car prefixes) 
-					       (extract-prefixes 
+	   (all-2d-mesh-nodesetp (append-l-all (car prefixes)
+					       (extract-prefixes
 						(xy-routing (car sources) d) d)))))
 
 (defthm all-2d-mesh-append-l-all-yx-routing2
   (implies (all-2d-mesh-nodesetp prefixes)
 	   (all-2d-mesh-nodesetp (append-l-all (car prefixes)
-					       (extract-prefixes 
+					       (extract-prefixes
 						(yx-routing (car sources) d) d)))))
 
 
@@ -914,20 +914,20 @@
 	  ("Subgoal 1.2.1"
 	   :cases ((consp (extract-prefixes (cdr (yx-routing (car sources) d)) d))))))
 
- 
+
 (defthm validroutep-apply-DoubleY-all-nodeset
   (implies (and (all-2d-mesh-nodesetp prefixes) ;; this true even if prefixes is empty
-		(coordinatep d) (coordinatep s) 
+		(coordinatep d) (coordinatep s)
 		(not (equal s d))
 		(no-common-coordinate sources d)
 		(consp sources)
-		(2d-mesh-nodesetp sources)		
+		(2d-mesh-nodesetp sources)
 		(inv prefixes sources s)
 		)
 	   (all-validroutep (dy1 sources d flg prefixes)
 			    s d))
-  :hints (("GOAL" 
-	   :in-theory (e/d () 
+  :hints (("GOAL"
+	   :in-theory (e/d ()
 			   (all-2d-mesh-nodesetp member-equal 2d-mesh-nodesetp coordinatep
 			    no-common-coordinate xy-routing yx-routing extract-prefixes
 			    getSources1 append-e-all append-l-all closerlistp inv))
@@ -946,7 +946,7 @@
 ;;  (implies (and (2d-mesh-nodesetp sources) (coordinatep d)
 ;;                (member-equal d (coord-gen X Y))
 ;;                (not (member-equal d sources))
-;;                (natp X) (natp Y) 
+;;                (natp X) (natp Y)
 ;;                (subsetp sources (coord-gen X Y))
 ;;                (all-subsetp prefixes (coord-gen X Y)))
 ;;           (all-subsetp (dy1 sources d flg prefixes)
@@ -1041,13 +1041,13 @@
 		(consp sources)
 		(2d-mesh-nodesetp sources)
 		(no-common-coordinate sources d)
-		(natp X) (natp Y) 
+		(natp X) (natp Y)
 		(subsetp sources (coord-gen X Y))
 		(all-subsetp prefixes (coord-gen X Y)))
 	   (all-subsetp (dy1 sources d flg prefixes)
 			(coord-gen X Y)))
-  :hints (("GOAL" 
-	   :in-theory (e/d () 
+  :hints (("GOAL"
+	   :in-theory (e/d ()
 			   (all-2d-mesh-nodesetp member-equal 2d-mesh-nodesetp coordinatep
 			    no-common-coordinate xy-routing yx-routing extract-prefixes
 			    getSources1 append-e-all append-l-all closerlistp subsetp))
@@ -1098,7 +1098,7 @@
 	      (checkroutes l2 nodes s))))
 
 (defthm nth3-cdddr
-  (implies (and (consp x) (consp (cdr x)) (consp (cddr x)) (consp (cdddr x)))		
+  (implies (and (consp x) (consp (cdr x)) (consp (cddr x)) (consp (cdddr x)))
 	   (equal (nth 3 x)
 		  (car (cdddr x)))))
 
@@ -1143,8 +1143,8 @@
 		(2d-mesh-nodesetp sources)
 		(coordinatep d))
 	   (consp (dy1 sources d flg prefixes)))
-  :hints (("GOAL" 
-	   :in-theory (e/d () 
+  :hints (("GOAL"
+	   :in-theory (e/d ()
 			   (all-2d-mesh-nodesetp member-equal 2d-mesh-nodesetp coordinatep
 			    xy-routing yx-routing extract-prefixes
 			    getSources1 append-e-all append-l-all closerlistp subsetp))
@@ -1207,7 +1207,7 @@
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
-           :use (:functional-instance 
+           :use (:functional-instance
                  ToMissives-Routing
                  (NodeSetGenerator mesh-nodeset-gen)
                  (NodeSetp 2D-mesh-nodesetp)

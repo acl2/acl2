@@ -13,7 +13,7 @@
 
 ;; First, we introduce rcfn-2 - a Real Continuous FunctioN of two
 ;; arguments.  It is assumed to return standard values for standard
-;; arguments, and to satisfy the continuity criterion.  
+;; arguments, and to satisfy the continuity criterion.
 
 (encapsulate
  ((rcfn-2 (x arg) t)
@@ -165,7 +165,7 @@
 
 ;; Since the function above takes in a "max-so-far" argument, it is
 ;; important to note that the initial value of max-so-far is a lower
-;; bound for the maximum. 
+;; bound for the maximum.
 
 (defthm find-max-rcfn-2-x-n-is-monotone
   (<= (rcfn-2 max-x arg)
@@ -243,9 +243,9 @@
 ;; is simple, since we know it's in the range [a,b] and b is limited.
 
 (defthm find-max-rcfn-2-x-n-limited
-  (implies (and (realp a) 
+  (implies (and (realp a)
 		(i-limited a)
-		(realp b) 
+		(realp b)
 		(i-limited b)
 		(< a b))
 	   (i-limited (find-max-rcfn-2-x-n a a
@@ -276,13 +276,13 @@
 					 b))
                                    arg)))))
 	  ("Subgoal 1'"
-	   :use ((:instance large-if->-large 
+	   :use ((:instance large-if->-large
 			    (x x)
 			    (y (if (< (abs a) (abs b))
 				   (abs b)
 				 (abs a)))))
 	   :in-theory (disable large-if->-large))))
-	     
+
 ;; More important, if a and b are in the domain, so is find-max-x-n,
 ;; and that also follows since we know it's inside [a,b]
 
@@ -328,7 +328,7 @@
 	   (< a b))
       (standard-part (find-max-rcfn-2-x-n a
                                           a
-                                          0 
+                                          0
                                           (i-large-integer)
                                           (/ (- b a) (i-large-integer))
                                           arg))
@@ -343,11 +343,11 @@
 		(< a b))
 	   (<= a (find-max-rcfn-2-x a b arg)))
   :hints (("Goal'"
-	   :use ((:instance standard-part-<= 
+	   :use ((:instance standard-part-<=
 			    (x a)
 			    (y (find-max-rcfn-2-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))
                                    arg))))
@@ -362,10 +362,10 @@
 	   (<= (find-max-rcfn-2-x a b arg) b))
 ; Matt K. v7-1 mod for ACL2 mod on 2/13/2015: "Goal''" changed to "Goal'".
   :hints (("Goal'"
-	   :use ((:instance standard-part-<= 
+	   :use ((:instance standard-part-<=
 			    (x (find-max-rcfn-2-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))
                                    arg))
@@ -375,7 +375,7 @@
 			    (i 0)
 			    (n (i-large-integer))
 			    (eps (/ (- b a) (i-large-integer))))
-			    
+
 		 )
 	   :in-theory (disable standard-part-<=))))
 
@@ -421,7 +421,7 @@
 			    (x (rcfn-2 (+ a (* k (/ (- b a)
 						  (i-large-integer))))
                                        arg))
-			    (y (rcfn-2 
+			    (y (rcfn-2
 				      (find-max-rcfn-2-x-n a a 0
 						    (i-large-integer)
 						    (/ (- b a)
@@ -483,7 +483,7 @@
 
 (defthm rcfn-2-x-close-to-rcfn-2-upper-bound-of-grid
   (implies (and (standardp arg)
-                (integerp i) 
+                (integerp i)
 		(<= 0 i)
 		(integerp n)
 		(<= i n)
@@ -573,7 +573,7 @@
 
 (defthm find-max-rcfn-2-is-maximum-of-standard
   (implies (and (standardp arg)
-                (inside-interval-p a (rcfn-2-domain)) 
+                (inside-interval-p a (rcfn-2-domain))
 		(standardp a)
 		(inside-interval-p b (rcfn-2-domain))
 		(standardp b)
@@ -605,8 +605,8 @@
 ;; and that max is in [a,b].  This is the "maximum theorem".
 
 (defthm-std find-max-rcfn-2-is-maximum
-  (implies (and (inside-interval-p a (rcfn-2-domain)) 
-		(inside-interval-p b (rcfn-2-domain)) 
+  (implies (and (inside-interval-p a (rcfn-2-domain))
+		(inside-interval-p b (rcfn-2-domain))
 		(realp x)
 		(<= a x)
 		(<= x b)
@@ -635,8 +635,8 @@
 			(is-maximum-point-2 a b max arg)))))
 
 (defthm maximum-point-2-theorem-sk
-  (implies (and (inside-interval-p a (rcfn-2-domain)) 
-		(inside-interval-p b (rcfn-2-domain)) 
+  (implies (and (inside-interval-p a (rcfn-2-domain))
+		(inside-interval-p b (rcfn-2-domain))
 		(< a b))
 	   (achieves-maximum-point-2 a b arg))
   :hints (("Goal"
@@ -671,9 +671,9 @@
 ;; just reuse the theorem about max-n being limited.
 
 (defthm find-min-rcfn-2-x-n-limited
-  (implies (and (realp a) 
+  (implies (and (realp a)
 		(i-limited a)
-		(realp b) 
+		(realp b)
 		(i-limited b)
 		(< a b))
 	   (i-limited (find-min-rcfn-2-x-n a a
@@ -688,7 +688,7 @@
 				       (find-max-rcfn-2-x-n find-min-rcfn-2-x-n)
 				       ))
 	   :in-theory (disable find-max-rcfn-2-x-n-limited))))
-		   
+
 ;; That justifies the definition of min-x.
 
 (defun-std find-min-rcfn-2-x (a b arg)
@@ -697,7 +697,7 @@
 	   (< a b))
       (standard-part (find-min-rcfn-2-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))
                                    arg))
@@ -707,8 +707,8 @@
 ;; have to instantiate the appropriate theorem about maximums.
 
 (defthm find-min-rcfn-2-is-minimum
-  (implies (and (inside-interval-p a (rcfn-2-domain)) 
-		(inside-interval-p b (rcfn-2-domain)) 
+  (implies (and (inside-interval-p a (rcfn-2-domain))
+		(inside-interval-p b (rcfn-2-domain))
 		(realp x)
 		(<= a x)
 		(<= x b)
@@ -789,8 +789,8 @@
 			(is-minimum-point-2 a b min arg)))))
 
 (defthm minimum-point-2-theorem-sk
-  (implies (and (inside-interval-p a (rcfn-2-domain)) 
-		(inside-interval-p b (rcfn-2-domain)) 
+  (implies (and (inside-interval-p a (rcfn-2-domain))
+		(inside-interval-p b (rcfn-2-domain))
 		(< a b))
 	   (achieves-minimum-point-2 a b arg))
   :hints (("Goal"

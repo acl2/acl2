@@ -25,21 +25,21 @@
     (if (symbolp c_or_var)
          (cdr (assoc-equal c_or_var bindings))
       (hard-error 'upper-bound-const-or-var
-                  "Syntax error: binding not found for ~p0~%" 
+                  "Syntax error: binding not found for ~p0~%"
                   c_or_var))))
 
 
 
 (defun upper-bound-expr (expr bindings)
-  (cond 
+  (cond
    ((not (consp expr))
     (prog2$ (cw "VAR ~p0~%" expr)
             (upper-bound-const-or-var expr bindings)))
-   
+
    ((equal (car expr) 'quote)
     (prog2$ (cw "CONSTANT ~p0~%" expr)
             (upper-bound-const-or-var (cadr expr) bindings)))
-           
+
    ((equal (car expr) 'binary-*)
     (prog2$ (cw "MULT ~p0~%" expr)
             (* (upper-bound-expr (cadr expr) bindings)
@@ -60,7 +60,7 @@
 
    (t (prog2$ (cw "~p0~%" expr)
               (hard-error 'UPPER-BOUND-EXPR
-                          "Syntax error: ~p0~%" 
+                          "Syntax error: ~p0~%"
                           expr)))))
 
 (defun bind-d1-with-hints (term hints)
@@ -79,7 +79,7 @@
                 (<= d1 d2))
            (less_equal_than_with_hints (abs x) d2 hints))
   :hints (("Goal" :in-theory (enable less_equal_than less_equal_than_with_hints))))
-  
+
 
 
 
@@ -91,11 +91,11 @@
            (less_equal_than_with_hints (abs x) d2 hints))
   :hints (("Goal" :in-theory (enable less_equal_than_with_hints))))
 
-;;; not really necessary, we can use the executible counter-part result. 
+;;; not really necessary, we can use the executible counter-part result.
 
 
-(encapsulate ()   
-             (local 
+(encapsulate ()
+             (local
               (defthmd over-estimate-rule-prod-1
                 (implies (and (rationalp x)
                               (rationalp y))
@@ -103,7 +103,7 @@
                                 (* (abs x) (abs y))))))
 
 
-             (local 
+             (local
               (defthmd over-estimate-rule-prod-2
                 (implies (and (syntaxp (and (quotep x)
                                             (rationalp (cadr x))
@@ -122,7 +122,7 @@
                         ("Subgoal 1" :cases ((not (>= y 0)))))))
 
 
-             (local 
+             (local
               (defthmd over-estimate-rule-prod-3
                 (implies (and (syntaxp (and (symbolp x)
                                             (quotep d2)
@@ -143,7 +143,7 @@
 
 
 
-             (local 
+             (local
               (defthmd over-estimate-rule-prod-3-short-cut
                 (implies (and (syntaxp (and (or (symbolp x)
                                                 (assoc-equal x (cadr hints)))
@@ -210,7 +210,7 @@
 
 
 
-(local 
+(local
  (defthmd numeric-fact
    (implies (and (less_equal_than (abs e) (expt 2 -14))
                  (less_equal_than (abs rne2) (expt 2 -64))
@@ -223,27 +223,27 @@
                                   '((e . 1/16384)
                                     (rne2 . 1/18446744073709551616)
                                     (rne3 . 1/18446744073709551616))))
-   :hints (("Goal" :in-theory 
+   :hints (("Goal" :in-theory
             (e/d (over-estimate-rule-add
                   over-estimate-rule-prod
                   over-estimate-rule-var-leaf
                   over-estimate-rule-const-leaf
                   over-estimate-rule-unary)
                  (abs))))))
-                 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (include-book "mylet")
 
 ;; Algorithm 8.8: single precision division algorithm
-;; from "IA-64 and Elementary Functions: speed and precisioin" 
-;; by Peter Markstein. 
+;; from "IA-64 and Elementary Functions: speed and precisioin"
+;; by Peter Markstein.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (1) y0 := 1/b * (1+e), |e| <= 2^-m, m >= 14 
+; (1) y0 := 1/b * (1+e), |e| <= 2^-m, m >= 14
 
 (defund y0 (b e)
   (* (/ b) (+ 1 e)))
@@ -268,7 +268,7 @@
   (* (+ y0 (* y1 e0))
      (+ 1 rne4)))
 
-; (5) q0u := a*y2 
+; (5) q0u := a*y2
 
 (defund q0u (a y2)
   (* a y2))
@@ -309,5 +309,5 @@
                                    relative-err
                                    y0 e0 y1 y2 q0u)
                                   (abs)))))
-                                  
+
 

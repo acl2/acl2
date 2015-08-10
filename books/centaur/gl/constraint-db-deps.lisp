@@ -208,7 +208,7 @@
       (hons-acons (gobj-list-to-param-space (caar sig-table) p)
                   (parametrize-gobj-alists p (cdar sig-table))
                   (parametrize-sig-table p (cdr sig-table))))))
-                   
+
 
 (defund parametrize-constraint-db-tuples (p tuples)
   (declare (xargs :guard t))
@@ -503,7 +503,7 @@
                               gbc-db-vars-bounded-in-terms-of-witness))))
 
 
-           
+
 
 (defthm gbc-db-vars-bounded-of-incr
   (implies (and (gbc-db-vars-bounded n p x)

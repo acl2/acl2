@@ -42,7 +42,7 @@
 
  (local
   (defun inc-pred (a) (natp a)))
- 
+
  (defthm inc_commutes
    (equal (inc v1 (inc v2 r))
 	  (inc v2 (inc v1 r))))
@@ -66,7 +66,7 @@
   (implies
    (not (zp n))
    (equal  (pun-stn x n) (pun-stn (steq x) (1- n)))))
-      
+
 (DEFCHOOSE pun-fch (N)
   (X)
   (tesq (pun-stn X n)))
@@ -74,7 +74,7 @@
 
 
 (defthm pun-fch-prop
-  (IMPLIES 
+  (IMPLIES
    (TESQ (PUN-STN x n))
    (TESQ (PUN-STN x (PUN-FCH x))))
   :hints (("goal" :use (:instance pun-fch))))
@@ -133,7 +133,7 @@
     (tesq a)
     (fch-term a)))
   :hints (("goal" :use (:instance pun-fch-prop (n 0) (x a)))))
- 
+
 (defun xtesq (args) (tesq (car args)))
 (defun xbasq (args) (cdr args))
 (defun xsteq (args) (cons (steq (car args)) (inc (car args) (cdr args))))
@@ -142,12 +142,12 @@
 ;;  (
 ;;   ((xun *) => *)
 ;;   )
- 
+
 ;;  (local
 ;;   (encapsulate
 ;;    ()
-   
-(LOCAL 
+
+(LOCAL
  (IN-THEORY (DISABLE xtesq xbasq xsteq)))
 
 (DEFUN xun-stn (X N)
@@ -196,20 +196,20 @@
 	  (xun (cons (car a) (inc v (cdr a)) ))))
   :hints (("goal" :in-theory (enable xun xtesq))))
 
-(encapsulate 
+(encapsulate
  ()
 
  (local
   (include-book "misc/defpun" :dir :system)
   )
- 
+
  (DEFTHM xun-def
    (EQUAL (xun X)
 	  (IF (xtesq X)
 	      (xbasq X)
 	      (xun (xsteq X))))
    :HINTS
-   (("Goal" 
+   (("Goal"
      :in-theory '(xun xtesq
 		      xbasq xsteq
 		      xun-stn xun-fn
@@ -235,7 +235,7 @@
  (disable
   xun
   ))
- 
+
 ;; )
 
 (defun xch-pun (r x) (xun (cons x r)))
@@ -258,7 +258,7 @@
    (implies
     (xtesq x)
     (equal (xun x) (xbasq x)))))
-   
+
 (defthm xch_prop
   (implies
    (fch-term a)
@@ -320,19 +320,19 @@
       ((,xch (x) t)
        (,xch-pun (r x) t)
        (,fch-term (x) t))
-    
+
       (set-ignore-ok t)
       (set-irrelevant-formals-ok t)
 
       (local (in-theory (disable ,tesq ,basq ,steq)))
 
-      (local 
+      (local
        (defun ,pun-stn (x n)
 	 (if (zp n)
 	     x
 	   (,pun-stn (,steq x) (1- n)))))
 
-      (local 
+      (local
        (defchoose ,pun-fch (n) (x)
 	 (,tesq (,pun-stn x n))))
 
@@ -350,18 +350,18 @@
 
       (local (defun ,xtesq (args) (,tesq (car args))))
       (local (defun ,xbasq (args) (cdr args)))
-      (local (defun ,xsteq (args) (cons (,steq (car args)) 
+      (local (defun ,xsteq (args) (cons (,steq (car args))
 					(,inc (car args) (cdr args)))))
 
       #+joe
-      (LOCAL 
+      (LOCAL
        (IN-THEORY (DISABLE ,xtesq ,xbasq ,xsteq)))
 
       (local
        (DEFUN ,xun-stn (X N)
 	 (IF (ZP N) X
 	     (,xun-stn (,xsteq X) (1- N)))))
-       
+
       (local
        (defun ,xun-fch-fn (x)
 	 (,pun-fch (car x))))
@@ -382,7 +382,7 @@
 
       (local
        (defun ,xch-pun (r args) (,xun (cons args r))))
-	       
+
 
       (local
        (defun ,xch (a) (,xun (cons a (,r0)))))
@@ -391,9 +391,9 @@
 	(equal (,xch a) (,xch-pun (,r0) a))
 	:hints (;; This kind of proof hackery is killing me!
 		;; "heuristically unattractive", my foot!
-		(and stable-under-simplificationp 
+		(and stable-under-simplificationp
 		     '(:expand (,pun-stn x n)))
-		("goal" 
+		("goal"
 		 :use (:functional-instance xch-pun-def
 					    (xch-pun    ,xch-pun)
 					    (inc-pred   ,inc-pred)
@@ -469,8 +469,8 @@
 	(implies
 	 (,fch-term a)
 	 (and (implies (,tesq a) (equal (,xch a) (,r0)))
-	      (implies (not (,tesq a)) 
-		       (equal (,xch a) 
+	      (implies (not (,tesq a))
+		       (equal (,xch a)
 			      (,inc a (,xch (,steq a)))))))
 	:hints (("goal" :in-theory '(,xch-prop))))
 

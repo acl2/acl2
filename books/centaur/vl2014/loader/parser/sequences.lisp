@@ -304,10 +304,10 @@ special we need to do to recognize @('$') tokens here.</p>"
       (right vl-sequence-p)
       (op    vl-seqbinop-p)))))
 
-     
+
 I think the only atomic sequences are:
 
-;;                 | 
+;;                 |
 
 
 ;; sequence_expr ::=               cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }

@@ -34,7 +34,7 @@
 (defthm check-array-lemma
     (implies (and (bvecp i n)
 		  (not (zp (expt 2 n)))
-		  (check-array name a (expt 2 n) dim2))		  
+		  (check-array name a (expt 2 n) dim2))
 	     (bvecp (aref1 name a i) dim2))
   :rule-classes ())
 

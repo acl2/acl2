@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -30,7 +30,7 @@
 
 ;;-----------------------------------------------------------------------
 ;;-----------------------------------------------------------------------
-;;                  
+;;
 ;;                         MEMORY MODEL
 ;;
 ;;-----------------------------------------------------------------------
@@ -87,19 +87,19 @@
 ;; a type prescription on true-listp
 (defthm true-listp_new_mem
   (implies (true-listp mem)
-           (true-listp 
+           (true-listp
             (mv-nth 2
              (memory op addr item mem))))
   :rule-classes :type-prescription)
 
 ;; now I prove what is the length of the modified mem
 (defthm len_memory
-  (equal (len 
+  (equal (len
           (mv-nth 2
            (memory op addr item mem)))
          (len mem)))
 
-;; If the address is greater than the len of the memory then 
+;; If the address is greater than the len of the memory then
 (defthm addr_out_of_bounds_stat
   (implies (<= (len mem) addr)
            (equal (car
@@ -139,18 +139,18 @@
            (equal (mv-nth 2
                    (memory op addr item mem))
                   mem)))
-               
+
 ;; Now we add rule to reduce write operations
 
 (defthm stat_write_control
-  (implies (and (equal op 'write) ; write operation 
+  (implies (and (equal op 'write) ; write operation
                 (< addr (len mem))) ; on a valid address
            (equal (car    ; here If I use an accessor the rule is not used
                    (memory op addr item mem))
                   'OK)))
 
 (defthm dat_write_control
-  (implies (and (equal op 'write) ; write operation 
+  (implies (and (equal op 'write) ; write operation
                 (< addr (len mem))) ; on a valid address
            (equal (mv-nth 1
                    (memory op addr item mem))
@@ -159,7 +159,7 @@
 ;; this theorem proves that the memory location to be written is written with
 ;; the right item
 (defthm mem_write_control
-  (implies (and (equal op 'write) ; write operation 
+  (implies (and (equal op 'write) ; write operation
                 (< addr (len mem))) ; on a valid address
            (equal (mv-nth 2
                    (memory op addr item mem))
@@ -176,7 +176,7 @@
                 (< addr2 (len mem))
                 (addrp addr1) (addrp addr2)
                 (not (equal addr1 addr2)))
-           (equal (nth addr1 
+           (equal (nth addr1
                        (mv-nth 2
                         (memory op addr2 item mem)))
                   (nth addr1 mem))))
@@ -187,15 +187,15 @@
 
 ;;                       GLOBAL MEMORY
 
-;; The global memory is represented as the ordered concatenation of all 
-;; local memory units. 
+;; The global memory is represented as the ordered concatenation of all
+;; local memory units.
 
-;; We define a function that extracts the memory unit of a 
+;; We define a function that extracts the memory unit of a
 
 (defun get_local_mem (Glob_Mem node_nb ms)
   (firstn ms (nthcdr (* node_nb ms) Glob_Mem)))
 
-;; we prove that the length of the local memory is equal to the 
+;; we prove that the length of the local memory is equal to the
 ;; parameter ms
 
 ;; we load books on arithmetics
@@ -228,11 +228,11 @@
 ;; we define a function that updates a local memory
 (defun update_local_mem (Glob_Mem memo node_nb ms)
     (append (firstn (* node_nb ms) Glob_Mem)
-            (append memo 
+            (append memo
                     (nthcdr (* (+ 1 node_nb) ms) Glob_Mem))))
 
 ;; and we prove an important property on it:
-;; if a memory is updated by its actual memory, then update does not 
+;; if a memory is updated by its actual memory, then update does not
 ;; change this memory
 
 (defthm append_firstn_cdr_lemma
@@ -309,7 +309,7 @@
 
 ;;-----------------------------------------------------------------------
 ;;-----------------------------------------------------------------------
-;;                  
+;;
 ;;                         ADDRESS DECODER
 ;;
 ;;-----------------------------------------------------------------------
@@ -339,7 +339,7 @@
 
 ;;-----------------------------------------------------------------------
 ;;-----------------------------------------------------------------------
-;;                  
+;;
 ;;                         DEFINITION OF INTERFACES
 ;;
 ;;-----------------------------------------------------------------------
@@ -363,12 +363,12 @@
 ;;               |              |
 ;;   ----------->|   MI_req     |----------->
 ;;   op, loc, dat|              | r/w, addr, data
-;;               |              |         
+;;               |              |
 ;;   <-----------|   MI_res     |<----------
 ;;   stat r-dat  |              | stat r-dat
-;;               |              | 
+;;               |              |
 ;;                --------------
-  
+
 
 (defun MI_req (op loc dat)
   (if (equal op 'read) ; if read then r/w = 1
@@ -388,7 +388,7 @@
 ;;------------------------------------------------------------------------
 
 
-;; the protocol is very simple, a slave just 
+;; the protocol is very simple, a slave just
 ;; transmits a read or a write command to a memory
 ;; as the work done for buses, I model the interface
 ;; by two functions
@@ -400,10 +400,10 @@
 ;;                 |              |
 ;;     ----------->|   SI_ord     |----------->
 ;;  r/w, addr, data|              | op, loc, dat
-;;                 |              |         
+;;                 |              |
 ;;     <-----------|   SI_resp    |<----------
 ;;     stat r-dat  |              | stat r-dat
-;;                 |              | 
+;;                 |              |
 ;;                  --------------
 
 ;(defmacro local_addr (addr ms)
@@ -424,7 +424,7 @@
 
 ;;-----------------------------------------------------------------------
 ;;-----------------------------------------------------------------------
-;;                  
+;;
 ;;                 FUNCTIONAL DEFINITION OF TRANSFERS
 ;;
 ;;-----------------------------------------------------------------------
@@ -492,12 +492,12 @@
   (mv-let (op loc dat)
           (trans_ord op loc dat sl_select ms)
           (mv-let (stat dat memo)
-                  (Memory op loc dat 
+                  (Memory op loc dat
                           (get_local_mem Glob_Mem node_nb ms))
                   (mv-let (st d)
                           (trans_res stat dat sl_select)
-                          (mv st d 
-                              (update_local_mem Glob_Mem memo 
+                          (mv st d
+                              (update_local_mem Glob_Mem memo
                                                 node_nb ms))))))
 
 
@@ -510,19 +510,19 @@
   (mv-let (op loc dat)
           (si_ord r/w addr data sl_select ms)
           (mv-let (stat dat memo)
-                  (memory op loc dat 
+                  (memory op loc dat
                                   (get_local_mem Glob_Mem node_nb ms))
                   (mv-let (st d)
                           (si_resp stat dat sl_select)
-                          (mv st d 
-                              (update_local_mem Glob_Mem memo 
+                          (mv st d
+                              (update_local_mem Glob_Mem memo
                                                 node_nb ms))))))
 
 
 
 ;;-----------------------------------------------------------------------
 ;;-----------------------------------------------------------------------
-;;                  
+;;
 ;;                 FUNCTIONAL DEFINITION OF A NODE SYSEM
 ;;
 ;;-----------------------------------------------------------------------
@@ -534,9 +534,9 @@
 ;;                 |               |
 ;;                 |               |
 ;;     ----------->|               |
-;;    op, loc, dat |     NODE      | 
+;;    op, loc, dat |     NODE      |
 ;;                 |               |
-;;     <-----------|               | 
+;;     <-----------|               |
 ;;    stat r-dat   |               |
 ;;                 |               |
 ;;                 |               |
@@ -544,7 +544,7 @@
 ;;                  ---------------
 ;;                    |        /|\
 ;;                    |         |
-;;                    |         | 
+;;                    |         |
 ;;                    | nw-msg  |
 ;;                   \|/        |
 ;;
@@ -555,9 +555,9 @@
 ;; nw-msg is a message that comes from the network
 ;; ms is the size of the memory = (len memo)
 
-;; If the transfer can be done locally, then node calls "Bus_transfer" 
+;; If the transfer can be done locally, then node calls "Bus_transfer"
 ;; else it emits a message (= r/w addr data) and grabs a reply if there is a
-;; valid answer. When a message is coming, it is either a response or 
+;; valid answer. When a message is coming, it is either a response or
 ;; a request.
 ;; The flags IncomingResponse IncomingRequest solve that.
 
@@ -566,7 +566,7 @@
 ;;     - a network message which is either a request or a response
 ;;     - global memory
 
-(defun node (op loc dat Glob_Mem 
+(defun node (op loc dat Glob_Mem
                 nw_stat nw_r_dat ;; stat and dat coming from the network
                 nw_r/w nw_addr nw_dat ;; msg coming from the network
                 IncomingResponse IncomingRequest ;; commands coming from the scheduler
@@ -591,7 +591,7 @@
                     (mv stat r_dat ;; rep sent to the master
                         'NO_MSG_R/W 'NO_MSG_ADDR 'NO_MSG_DATA ;; nothing sent to the nw
                         Glob_Mem)) ;; the memory is not changed
-          (mv 'NO_OP 'NO_DATA 'NO_MSG_R/W 
+          (mv 'NO_OP 'NO_DATA 'NO_MSG_R/W
               'NO_MSG_ADDR 'NO_MSG_DATA Glob_Mem)))
     ;; else the node master is doing a write or read operation
     (let ((dec (decoder loc ms node_nb)))
@@ -612,7 +612,7 @@
 
 ;;-----------------------------------------------------------------------
 ;;-----------------------------------------------------------------------
-;;                  
+;;
 ;;                   VALIDATION OF THE NODE SYSTEM
 ;;
 ;;-----------------------------------------------------------------------
@@ -621,8 +621,8 @@
 ;; to simplify the next proofs, we prove some theorems to validate
 ;; the node system
 
-;; most of these lemmas are proven in less than 1 second by ACL2, 
-;; but when the rules derived from them are useful and rewrite 
+;; most of these lemmas are proven in less than 1 second by ACL2,
+;; but when the rules derived from them are useful and rewrite
 ;; terms in simpler ones.
 
 ;; for good write or read operations, the returned status is OK
@@ -680,7 +680,7 @@
                 (<= (* node_nb ms) nw_addr)
                 (< nw_addr (* (1+ node_nb) ms))
                 (addrp nw_addr) (NODE_MEM_SIZEp ms))
-           (equal (mv-nth 3 
+           (equal (mv-nth 3
                           (node op loc dat Glob_Mem
                                 nw_stat nw_r_dat nw_r/w nw_addr nw_dat
                                 IncomingResponse IncomingRequest node_nb ms))
@@ -699,7 +699,7 @@
                 (<= (* node_nb ms) nw_addr)
                 (< nw_addr (* (1+ node_nb) ms))
                 (addrp nw_addr) (NODE_MEM_SIZEp ms))
-           (equal (mv-nth 3 
+           (equal (mv-nth 3
                           (node op loc dat Glob_Mem
                                 nw_stat nw_r_dat nw_r/w nw_addr nw_dat
                                 IncomingResponse IncomingRequest node_nb ms))
@@ -751,8 +751,8 @@
 
 (defthm update_get_and_put
   (implies (and (true-listp Glob_Mem)
-                (equal memo 
-                       (put-nth b v 
+                (equal memo
+                       (put-nth b v
                                 (get_local_mem Glob_Mem node_nb ms)))
                 (integerp node_nb) (<= 0 node_nb)
                 (integerp b) (<= 0 b)
@@ -799,7 +799,7 @@
            :do-not '(eliminate-destructors generalize fertilize)
            :use (:instance update_get_and_put
                            (b (mod nw_addr ms))
-                           (memo 
+                           (memo
                             (put-nth (mod nw_addr ms)
                                      nw_dat
                                      (get_local_mem Glob_Mem node_nb ms)))
@@ -812,57 +812,57 @@
 
 (defthm len_new_memory
   (implies (and (NODE_MEM_SIZEp ms)
-                (integerp node_nb) (<= 0 node_nb) 
+                (integerp node_nb) (<= 0 node_nb)
                 (integerp NUM_NODE) (< 0 NUM_NODE)
                 (< node_nb NUM_NODE)
                 (equal (len Glob_Mem) (* ms NUM_NODE))
                 (true-listp Glob_Mem))
            (equal (len (mv-nth 5
-                               (node op loc dat Glob_Mem 
+                               (node op loc dat Glob_Mem
                                      nw_stat nw_r_dat nw_r/w nw_addr nw_dat
                                      IncomingResponse IncomingRequest node_nb ms)))
                   (len Glob_Mem)))
   :hints (("GOAL"
            :use ((:instance len_update_local_mem2
                             (NUM_NODE NUM_NODE)
-                            (memo 
+                            (memo
                              (MV-NTH 2
                                      (MEMORY 'READ
                                              (MOD LOC ms)
                                              DAT
-                                             (GET_LOCAL_MEM 
+                                             (GET_LOCAL_MEM
                                               GLOB_MEM NODE_NB
                                               ms)))))
                  (:instance len_update_local_mem2
                             (NUM_NODE NUM_NODE)
-                            (memo 
+                            (memo
                              (MV-NTH 2
                                      (MEMORY 'WRITE
                                              (MOD LOC ms)
                                              DAT
-                                             (GET_LOCAL_MEM 
+                                             (GET_LOCAL_MEM
                                               GLOB_MEM NODE_NB
                                               ms)))))
                  (:instance len_update_local_mem2
                             (NUM_NODE NUM_NODE)
-                            (memo 
+                            (memo
                              (MV-NTH 2
                                      (MEMORY 'IDLE
                                              'NO_LOC
                                              'NO_DATA
-                                             (GET_LOCAL_MEM 
+                                             (GET_LOCAL_MEM
                                               GLOB_MEM NODE_NB
                                               ms)))))
                  (:instance len_update_local_mem2
                             (NUM_NODE NUM_NODE)
-                            (memo 
+                            (memo
                              (GET_LOCAL_MEM GLOB_MEM NODE_NB ms)))
                  (:instance len_update_local_mem2
                             (NUM_NODE NUM_NODE)
-                            (memo 
+                            (memo
                              (PUT-NTH (MOD NW_ADDR ms)
                                       NW_DAT
-                                      (GET_LOCAL_MEM GLOB_MEM NODE_NB 
+                                      (GET_LOCAL_MEM GLOB_MEM NODE_NB
                                                      ms)))))
            :in-theory (disable len_update_local_mem2))))
 
@@ -873,11 +873,11 @@
                 (integerp node_nb) (<= 0 node_nb)
                 (true-listp Glob_Mem))
            (true-listp (mv-nth 5
-                               (node op loc dat Glob_Mem 
+                               (node op loc dat Glob_Mem
                                      nw_stat nw_r_dat nw_r/w nw_addr nw_dat
                                      IncomingResponse IncomingRequest node_nb ms))))
   :rule-classes :type-prescription)
-           
+
 ;; now we can disable function node
 
 (in-theory (disable node))
