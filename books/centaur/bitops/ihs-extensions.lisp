@@ -77,18 +77,16 @@ off looking at the source code.</p>")
 ;;          (ifix x))
 ;;   :hints(("Goal" :in-theory (enable ash* ash-induct))))
 
-(defthm ash-1-removal
-  (equal (ash 1 n)
-         (if (integerp n)
-             (if (<= 0 n)
-                 (expt 2 n)
-               0)
-           1))
-  :hints(("Goal" :in-theory (e/d (expt-2-is-ash ash**)
-                                 (right-shift-to-logtail)))))
 
 (theory-invariant (not (and (active-runep '(:rewrite ash-1-removal))
                             (active-runep '(:rewrite expt-2-is-ash)))))
+
+;; Note: Ash-1-removal used to be proved in this book and left enabled.  It was
+;; later moved to ihsext-basics and disabled.  As a backward compatibility
+;; measure, we now non-locally enable it in this book (and disable
+;; expt-2-is-ash to satisfy the theory invariant above).
+(in-theory (e/d (ash-1-removal)
+                (expt-2-is-ash)))
 
 (defthm logcar-possibilities
   (or (equal (logcar a) 0)

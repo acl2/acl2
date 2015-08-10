@@ -36,6 +36,7 @@
 
 (local (include-book "ihs-extensions"))
 (local (include-book "signed-byte-p"))
+(local (in-theory (enable bitops::ash-1-removal)))
 
 ;; ======================================================================
 

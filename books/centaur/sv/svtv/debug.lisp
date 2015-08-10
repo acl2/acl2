@@ -211,16 +211,19 @@
                                     pairlis$))))
 
 
-(define svtv-debug ((x svtv-p)
-                    (inalist svex-env-p)
-                    &key
-                    ((filename  stringp) '"svtv-debug.vcd")
-                    (state 'state))
-  :parents (svex-stvs)
-  :short "Dump a VCD waveform showing the internal signals of an svex STV."
-  :prepwork ((local (in-theory (disable max))))
-  :verbosep t
-  (b* (((svtv x) x)
+(define svtv-debug-core ((x svtv-p)
+                         (inalist svex-env-p)
+                         &key
+                         ((filename  stringp) '"svtv-debug.vcd")
+                         (moddb 'moddb)
+                         (aliases 'aliases)
+                         (vcd-wiremap 'vcd-wiremap)
+                         (vcd-vals 'vcd-vals)
+                         (state 'state))
+
+  :returns (mv moddb aliases vcd-wiremap vcd-vals state)
+  :hooks ((:fix :omit (moddb aliases)))
+  (b* (((svtv x))
        (mod-fn (intern-in-package-of-symbol
                 (str::cat (symbol-name x.name) "-MOD")
                 x.name))
@@ -228,15 +231,12 @@
         (acl2::magic-ev-fncall mod-fn nil state t t))
        ((when err)
         (raise "Error: couldn't run ~x0: ~@1~%" mod-fn err)
-        state)
+        (mv moddb aliases vcd-wiremap vcd-vals state))
        ((unless (and (design-p design)
                      (modalist-addr-p (design->modalist design))))
         (raise "Error: ~x0 returned a malformed design~%" mod-fn)
-        state)
-
-       ((acl2::local-stobjs moddb aliases vcd-wiremap vcd-vals)
         (mv moddb aliases vcd-wiremap vcd-vals state))
-       ;; Make a moddb, canonical alias table, and flattened
+        ;; Make a moddb, canonical alias table, and flattened
        ;; (non-alias-normalized) assignments from the design.  These are
        ;; expressed terms of indexed variable names.
        ((mv err assigns moddb aliases)
@@ -301,7 +301,7 @@
        ;; update formulas (in terms of PIs and current states), and compose
        ;; delays with these to get next states.
        ((mv updates next-states) (svex-compose-assigns/delays overridden-assigns delays))
-
+       ;; (- (acl2::sneaky-save 'updates updates))
        ;; Compute an initial state of all Xes
        (states (svex-alist-keys next-states))
        (initst (pairlis$ states (replicate (len states) (4vec-x))))
@@ -348,6 +348,20 @@
         (mv moddb aliases vcd-wiremap vcd-vals state))
        (state (princ$ (vl::vl-printedlist->string p) channel state))
        (state (close-output-channel channel state)))
-    (mv moddb aliases vcd-wiremap vcd-vals state))
+    (mv moddb aliases vcd-wiremap vcd-vals state)))
+
+(define svtv-debug ((x svtv-p)
+                    (inalist svex-env-p)
+                    &key
+                    ((filename  stringp) '"svtv-debug.vcd")
+                    (state 'state))
+  :parents (svex-stvs)
+  :short "Dump a VCD waveform showing the internal signals of an svex STV."
+  :prepwork ((local (in-theory (disable max))))
+  :verbosep t
+  (b* (((acl2::local-stobjs moddb aliases vcd-wiremap vcd-vals)
+        (mv moddb aliases vcd-wiremap vcd-vals state)))
+    (svtv-debug-core x inalist :filename filename))
+      
   ///
   (defmacro stv-debug (&rest args) (cons 'svtv-debug args)))

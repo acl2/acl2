@@ -6930,7 +6930,8 @@ checked to see if it is a valid bitselect and returned as a separate value."
                   (moddb-mod-totalwires
                    modidx moddb))))))
 
-  (define modalist-named->indexed ((x modalist-p) (moddb moddb-ok))
+  (define modalist-named->indexed ((x modalist-p) (moddb moddb-ok)
+                                   &key (quiet 'nil))
     :guard (svarlist-addr-p (modalist-vars x))
     :measure (len (modalist-fix x))
     :returns (mv errmsg (xx modalist-p))
@@ -6940,7 +6941,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
          ((cons name mod) (car x))
          (modidx (moddb-modname-get-index name moddb))
          ((unless modidx)
-          (cw "Warning! Module ~x0 not found in moddb.~%" name)
+          (and (not quiet) (cw "Warning! Module ~x0 not found in moddb.~%" name))
           (modalist-named->indexed (cdr x) moddb))
          ((mv err1 first) (module-named->indexed mod modidx moddb))
          ((mv err2 rest) (modalist-named->indexed (cdr x) moddb)))
@@ -6949,7 +6950,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
     (deffixequiv modalist-named->indexed)
 
     (defthm modalist-all-idxaddr-okp-of-modalist-named->indexed
-      (b* (((mv err res) (modalist-named->indexed x moddb)))
+      (b* (((mv err res) (modalist-named->indexed x moddb :quiet quiet)))
         (implies (and (moddb-ok moddb) (not err))
                  (modalist-all-idxaddr-okp res moddb)))
       :hints(("Goal" :in-theory (enable modalist-all-idxaddr-okp))))))

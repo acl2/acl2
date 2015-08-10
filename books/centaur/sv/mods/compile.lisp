@@ -747,7 +747,7 @@ svex-assigns-compose)).</li>
 
        ;; Now translate the modalist by replacing all variables (nets/HIDs)
        ;; with their moddb indices.
-       ((mv err modalist) (cwtime (modalist-named->indexed modalist moddb)))
+       ((mv err modalist) (cwtime (modalist-named->indexed modalist moddb :quiet t)))
        ((when err)
         (mv (msg "Error indexing wire names: ~@0~%" err)
             nil moddb aliases))
