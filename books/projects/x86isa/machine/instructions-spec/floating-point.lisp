@@ -14,7 +14,7 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (in-theory (disable logbitp)))
+(local (in-theory (e/d (bitops::ash-1-removal) (logbitp))))
 
 ;; ======================================================================
 
