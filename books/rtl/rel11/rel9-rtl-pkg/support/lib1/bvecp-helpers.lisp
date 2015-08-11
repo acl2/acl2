@@ -27,7 +27,6 @@
 (set-enforce-redundancy t)
 
 (include-book "rtl")
-(include-book "rtlarr")
 (local (include-book "../support/bvecp-helpers"))
 
 ; The two events following the next local include-book were added by Matt
