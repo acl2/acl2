@@ -229,7 +229,7 @@
 
 (defthm formatp-ep
   (formatp (ep))
-  :hints (("Goal" :in-theory (enable ep formatp)))) 
+  :hints (("Goal" :in-theory (enable ep formatp))))
 
 ;;Field extractors:
 
