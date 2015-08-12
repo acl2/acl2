@@ -1,10 +1,10 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
 ;
 ; Contact:
-;   David Russinoff
+;   David M. Russinoff
 ;   1106 W 9th St., Austin, TX 78703
-;   http://www.russsinoff.com/
+;   david@russinoff.com
+;   http://www.russinoff.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -20,7 +20,6 @@
 ; Free Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
 ; 02110-1335, USA.
 ;
-; Author: David M. Russinoff (david@russinoff.com)
 
 (in-package "RTL")
 
@@ -31,78 +30,7 @@
 (set-inhibit-warnings "theory")
 (local (in-theory nil))
 
-;; From basic.lisp:
-
-(defund fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
-
-;; From bits.lisp:
-
-(defund bvecp (x k)
-  (declare (xargs :guard (integerp k)))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt 2 k))))
-
-(defund bits (x i j)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp i)
-                              (integerp j))))
-  (mbe :logic (if (or (not (integerp i))
-                      (not (integerp j)))
-                  0
-                (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-       :exec  (if (< i j)
-                  0
-                (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-
-(defund bitn (x n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp n))))
-  (mbe :logic (bits x n n)
-       :exec  (if (evenp (ash x (- n))) 0 1)))
-
-(defund binary-cat (x m y n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (expt 2 n) (bits x (1- m) 0))
-         (bits y (1- n) 0))
-    0))
-
-;; We define a macro, CAT, that takes a list of a list X of alternating data values
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at
-;; least 1 data/size pair, but we do not need to specify this in the guard, and
-;; leaving it out of the guard simplifies the guard proof.
-
-(defun formal-+ (x y)
-  (declare (xargs :guard t))
-  (if (and (acl2-numberp x) (acl2-numberp y))
-      (+ x y)
-    (list '+ x y)))
-
-(defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
-  (if (endp (cddr x))
-      (cadr x)
-    (formal-+ (cadr x)
-	      (cat-size (cddr x)))))
-
-(defmacro cat (&rest x)
-  (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
-  (cond ((endp (cddr x))
-         `(bits ,(car x) ,(formal-+ -1 (cadr x)) 0))
-        ((endp (cddddr x))
-         `(binary-cat ,@x))
-        (t
-         `(binary-cat ,(car x)
-                      ,(cadr x)
-                      (cat ,@(cddr x))
-                      ,(cat-size (cddr x))))))
-
+(include-book "defs")
 
 ;;;**********************************************************************
 ;;;			Radix-4 Booth Encoding
@@ -111,7 +39,7 @@
 (defsection-rtl |Radix-4 Booth Encoding| |Multiplication|
 
 (defun theta (i y)
-  (+ (bitn y (1- (* 2 i)))
+  (+ (bitn y (1- (* 2 i))) 
      (bitn y (* 2 i))
      (* -2 (bitn y (1+ (* 2 i))))))
 
@@ -139,7 +67,7 @@
 
 (encapsulate ((zeta (i) t))
  (local (defun zeta (i) (declare (ignore i)) 0))
- (defthm zeta-bnd
+ (defthm zeta-bnd 
      (and (integerp (zeta i))
 	  (<= (zeta i) 2)
 	  (>= (zeta i) -2))))
@@ -160,7 +88,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 2 (1- m))) (zeta (1- m)))
-       (sum-zeta (1- m)))))
+       (sum-zeta (1- m)))))   
 
 (defun sum-pp4 (x m n)
   (if (zp m)
@@ -244,18 +172,18 @@
 (defsection-rtl |Statically Encoded Multiplier Arrays| |Multiplication|
 
 (defun m-mu-chi (i mode)
-  (cond ((equal mode 'mu)
+  (cond ((equal mode 'mu)  
          (if (zp i)  1
            (cons (cons 1  i) 1)))
         ((equal mode 'chi)
          (if (zp i)  0
            (cons (cons 1  i) 0)))))
-
+             
 (mutual-recursion
  (defun mu (i y)
    (declare (xargs :measure (m-mu-chi i 'mu)))
      (+ (bits y (1+ (* 2 i)) (* 2 i)) (chi i y)))
-
+ 
  (defun chi (i y)
    (declare (xargs :measure (m-mu-chi i 'chi)))
    (if (zp i)
@@ -351,13 +279,13 @@
 (defun delta (i a b c d)
   (if (zp i)
       (bitn d 0)
-    (logand (logior (logand (bitn a (+ -2 (* 2 i)))
+    (logand (logior (logand (bitn a (+ -2 (* 2 i))) 
 			    (bitn b (+ -2 (* 2 i))))
 		    (logior (logand (bitn a (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))
 			    (logand (bitn b (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))))
-	    (lognot (logxor (bitn a (1- (* 2 i)))
+	    (lognot (logxor (bitn a (1- (* 2 i))) 
 			    (bitn b (1- (* 2 i))))))))
 
 (defun psi (i a b c d)
@@ -373,8 +301,8 @@
 (defthm psi-m-1
     (implies (and (natp m)
                   (>= m 1)
-		  (bvecp a (- (* 2 m) 2))
-		  (bvecp b (- (* 2 m) 2))
+		  (bvecp a (- (* 2 m) 2))   
+		  (bvecp b (- (* 2 m) 2))  
 		  (bvecp c 1)
 		  (bvecp d 1))
 	     (and (equal (gamma m a b c) 0)
@@ -445,7 +373,7 @@
 (defsection-rtl |Radix-8 Booth Encoding| |Multiplication|
 
 (defun eta (i y)
-  (+ (bitn y (1- (* 3 i)))
+  (+ (bitn y (1- (* 3 i))) 
      (bitn y (* 3 i))
      (* 2 (bitn y (1+ (* 3 i))))
      (* -4 (bitn y (+ 2 (* 3 i))))))
@@ -476,7 +404,7 @@
 
 (encapsulate ((xi (i) t))
  (local (defun xi (i) (declare (ignore i)) 0))
- (defthm xi-bnd
+ (defthm xi-bnd 
      (and (integerp (xi i))
 	  (<= (xi i) 4)
 	  (>= (xi i) -4))))
@@ -497,7 +425,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 3 (1- m))) (xi (1- m)))
-       (sum-xi (1- m)))))
+       (sum-xi (1- m)))))   
 
 (defun sum-pp8 (x m n)
   (if (zp m)

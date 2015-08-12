@@ -1,10 +1,10 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
 ;
 ; Contact:
-;   David Russinoff
+;   David M. Russinoff
 ;   1106 W 9th St., Austin, TX 78703
-;   http://www.russsinoff.com/
+;   david@russinoff.com
+;   http://www.russinoff.com
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -20,7 +20,6 @@
 ; Free Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
 ; 02110-1335, USA.
 ;
-; Author: David M. Russinoff (david@russinoff.com)
 
 (in-package "RTL")
 
@@ -42,7 +41,7 @@
   (floor x 1))
 
 (defthm fl-def
-  (and (integerp (fl x))
+  (and (integerp (fl x))    
        (implies (case-split (rationalp x))
 	        (and (<= (fl x) x)
 		     (< x (1+ (fl x))))))
@@ -468,6 +467,20 @@
                 (integerp k))
            (equal (chop x k)
                   (-  x (mod x (expt 2 (- k)))))))
+
+(defthm chop-down
+  (implies (and (rationalp x)
+                (integerp n))
+           (<= (chop x n) x))
+  :rule-classes ())
+
+(defthm chop-monotone
+  (implies (and (rationalp x)
+                (rationalp y)
+                (integerp n)
+                (<= x y))
+           (<= (chop x n) (chop y n)))
+  :rule-classes ())
 
 (defthmd chop-chop
   (implies (and (rationalp x)

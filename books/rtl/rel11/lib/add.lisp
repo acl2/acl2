@@ -1,10 +1,10 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
 ;
 ; Contact:
-;   David Russinoff
+;   David M. Russinoff
+;   david@russinoff.com
 ;   1106 W 9th St., Austin, TX 78703
-;   http://www.russsinoff.com/
+;   http://www.russinoff.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -20,7 +20,6 @@
 ; Free Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
 ; 02110-1335, USA.
 ;
-; Author: David M. Russinoff (david@russinoff.com)
 
 (in-package "RTL")
 
@@ -31,89 +30,7 @@
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
-;; From basic.lisp:
-
-(defund fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
-
-;; From bits.lisp:
-
-(defund bvecp (x k)
-  (declare (xargs :guard (integerp k)))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt 2 k))))
-
-(defund bits (x i j)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp i)
-                              (integerp j))))
-  (mbe :logic (if (or (not (integerp i))
-                      (not (integerp j)))
-                  0
-                (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-       :exec  (if (< i j)
-                  0
-                (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-
-(defund bitn (x n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp n))))
-  (mbe :logic (bits x n n)
-       :exec  (if (evenp (ash x (- n))) 0 1)))
-
-(defund binary-cat (x m y n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (expt 2 n) (bits x (1- m) 0))
-         (bits y (1- n) 0))
-    0))
-
-;; We define a macro, CAT, that takes a list of a list X of alternating data values
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at
-;; least 1 data/size pair, but we do not need to specify this in the guard, and
-;; leaving it out of the guard simplifies the guard proof.
-
-(defun formal-+ (x y)
-  (declare (xargs :guard t))
-  (if (and (acl2-numberp x) (acl2-numberp y))
-      (+ x y)
-    (list '+ x y)))
-
-(defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
-  (if (endp (cddr x))
-      (cadr x)
-    (formal-+ (cadr x)
-	      (cat-size (cddr x)))))
-
-(defmacro cat (&rest x)
-  (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
-  (cond ((endp (cddr x))
-         `(bits ,(car x) ,(formal-+ -1 (cadr x)) 0))
-        ((endp (cddddr x))
-         `(binary-cat ,@x))
-        (t
-         `(binary-cat ,(car x)
-                      ,(cadr x)
-                      (cat ,@(cddr x))
-                      ,(cat-size (cddr x))))))
-
-;; From float.lisp:
-
-(defund expo (x)
-  (declare (xargs :guard t
-                  :measure (:? x)))
-  (cond ((or (not (rationalp x)) (equal x 0)) 0)
-	((< x 0) (expo (- x)))
-	((< x 1) (1- (expo (* 2 x))))
-	((< x 2) 0)
-	(t (1+ (expo (/ x 2))))))
-
+(include-book "defs")
 
 ;;;**********************************************************************
 ;;;                      Bit Vector Addition
@@ -140,7 +57,7 @@
                 (bvecp v 1)
                 (bvecp w 1))
            (equal (+ u v w)
-                  (cat (logior (logand u v) (logior (logand u w) (logand v w))) 1
+                  (cat (logior (logand u v) (logior (logand u w) (logand v w))) 1 
                        (logxor u (logxor v w)) 1)))
   :rule-classes ())
 
@@ -309,7 +226,7 @@
 (defthm bits-sum-shift
     (implies (and (integerp x)
 		  (integerp y)
-		  (natp i)
+		  (natp i) 
 		  (natp j)
 		  (> j 0)
 		  (>= i j))
@@ -364,7 +281,7 @@
 	     (equal (bits (+ 1 x y) i j)
 		    (bits (+ (bits x i j)
 			     (bits y i j)
-			     (logior (prop x y (1- j) 0)
+			     (logior (prop x y (1- j) 0) 
 				     (gen x y (1- j) 0) ))
 			  (- i j) 0)))
   :rule-classes ())
@@ -406,7 +323,7 @@
 		  (natp x)
 		  (natp y)
 		  (bvecp z (1+ j))
-		  (= (logand y z) 0))
+		  (= (logand y z) 0))		  
 	     (equal (gen (+ x y) z i 0)
 		    (logand (prop x y i (1+ j))
 			    (gen (+ x y) z j 0)))))
@@ -468,7 +385,7 @@
   (bits (lognot (logior a (bits (lognot b) e 0))) e 0))
 
 (defun lam1 (a b e)
-  (logand (bits (lamt a b e) e 2)
+  (logand (bits (lamt a b e) e 2) 
 	  (logand (bits (lamg a b e) (1- e) 1)
 		  (bits (lognot (lamz a b e)) (- e 2) 0))))
 
@@ -478,7 +395,7 @@
 		  (bits (lognot (lamz a b e)) (- e 2) 0))))
 
 (defun lam3 (a b e)
-  (logand (bits (lamt a b e) e 2)
+  (logand (bits (lamt a b e) e 2) 
 	  (logand (bits (lamz a b e) (1- e) 1)
 		  (bits (lognot (lamg a b e)) (- e 2) 0))))
 
@@ -536,9 +453,9 @@
                 (< k n)
                 (or (equal c 0) (equal c 1)))
            (equal (equal (bits (+ a b c) k 0) 0)
-                  (equal (bits (logxor (logxor a b)
+                  (equal (bits (logxor (logxor a b) 
                                        (cat (logior a b) n c 1))
-                               k 0)
+                               k 0) 
                          0)))
   :rule-classes ())
 )
