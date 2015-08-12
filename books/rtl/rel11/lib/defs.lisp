@@ -185,7 +185,9 @@
 
 (defund dp () (declare (xargs :guard t)) '(nil 53 11))
 
-(defund ep () (declare (xargs :guard t)) '(t 64 15)) 
+(defund ep () (declare (xargs :guard t)) '(t 64 15))
+
+(in-theory (disable (sp) (dp) (ep))) 
 
 (defund sgnf (x f)
   (declare (xargs :guard (and (integerp x) (formatp f))))

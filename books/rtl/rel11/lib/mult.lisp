@@ -88,7 +88,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 2 (1- m))) (zeta (1- m)))
-       (sum-zeta (1- m)))))   
+       (sum-zeta (1- m)))))
 
 (defun sum-pp4 (x m n)
   (if (zp m)
@@ -172,11 +172,11 @@
 (defsection-rtl |Statically Encoded Multiplier Arrays| |Multiplication|
 
 (defun m-mu-chi (i mode)
-  (cond ((equal mode 'mu)  
-         (if (zp i)  1
+  (cond ((equal mode 'mu)
+         (if (zp i) 1
            (cons (cons 1  i) 1)))
         ((equal mode 'chi)
-         (if (zp i)  0
+         (if (zp i) 0
            (cons (cons 1  i) 0)))))
              
 (mutual-recursion
@@ -301,8 +301,8 @@
 (defthm psi-m-1
     (implies (and (natp m)
                   (>= m 1)
-		  (bvecp a (- (* 2 m) 2))   
-		  (bvecp b (- (* 2 m) 2))  
+		  (bvecp a (- (* 2 m) 2))
+		  (bvecp b (- (* 2 m) 2))
 		  (bvecp c 1)
 		  (bvecp d 1))
 	     (and (equal (gamma m a b c) 0)
@@ -425,7 +425,7 @@
   (if (zp m)
       0
     (+ (* (expt 2 (* 3 (1- m))) (xi (1- m)))
-       (sum-xi (1- m)))))   
+       (sum-xi (1- m)))))
 
 (defun sum-pp8 (x m n)
   (if (zp m)

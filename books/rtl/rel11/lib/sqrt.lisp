@@ -75,7 +75,7 @@
   (implies (and (not (zp n))
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1))                
+                (< x 1))
            (and (<= (* (rtz-sqrt x n)
                        (rtz-sqrt x n))
                     x)
