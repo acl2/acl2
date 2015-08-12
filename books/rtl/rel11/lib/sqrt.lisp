@@ -1,10 +1,10 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
 ;
 ; Contact:
-;   David Russinoff
+;   David M. Russinoff
 ;   1106 W 9th St., Austin, TX 78703
-;   http://www.russsinoff.com/
+;   david@russinoff.com
+;   http://www.russinoff.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -20,7 +20,6 @@
 ; Free Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
 ; 02110-1335, USA.
 ;
-; Author: David M. Russinoff (david@russinoff.com)
 
 (in-package "RTL")
 
@@ -31,109 +30,7 @@
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
-;; From basic.lisp:
-
-(defund fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
-
-(defund cg (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (- (fl (- x))))
-
-;; From float.lisp:
-
-(defund sgn (x)
-  (declare (xargs :guard t))
-  (if (or (not (rationalp x)) (equal x 0))
-      0
-    (if (< x 0) -1 +1)))
-
-(defund expo (x)
-  (declare (xargs :guard t
-                  :measure (:? x)))
-  (cond ((or (not (rationalp x)) (equal x 0)) 0)
-	((< x 0) (expo (- x)))
-	((< x 1) (1- (expo (* 2 x))))
-	((< x 2) 0)
-	(t (1+ (expo (/ x 2))))))
-
-(defund sig (x)
-  (declare (xargs :guard t))
-  (if (rationalp x)
-      (if (< x 0)
-          (- (* x (expt 2 (- (expo x)))))
-        (* x (expt 2 (- (expo x)))))
-    0))
-
-(defund exactp (x n)
-  (integerp (* (sig x) (expt 2 (1- n)))))
-
-;; From round.lisp:
-
-(defund rtz (x n)
-  (declare (xargs :guard (integerp n)))
-  (* (sgn x)
-     (fl (* (expt 2 (1- n)) (sig x)))
-     (expt 2 (- (1+ (expo x)) n))))
-
-(defund raz (x n)
-  (* (sgn x)
-     (cg (* (expt 2 (1- n)) (sig x)))
-     (expt 2 (- (1+ (expo x)) n))))
-
-(defun re (x)
-  (- x (fl x)))
-
-(defund rne (x n)
-  (let ((z (fl (* (expt 2 (1- n)) (sig x))))
-	(f (re (* (expt 2 (1- n)) (sig x)))))
-    (if (< f 1/2)
-	(rtz x n)
-      (if (> f 1/2)
-	  (raz x n)
-	(if (evenp z)
-	    (rtz x n)
-	  (raz x n))))))
-
-(defund rto (x n)
-  (if (exactp x (1- n))
-      x
-    (+ (rtz x (1- n))
-       (* (sgn x) (expt 2 (1+ (- (expo x) n)))))))
-
-(defund rup (x n)
-  (if (>= x 0)
-      (raz x n)
-    (rtz x n)))
-
-(defund rdn (x n)
-  (if (>= x 0)
-      (rtz x n)
-    (raz x n)))
-
-(defund rna (x n)
-  (if (< (re (* (expt 2 (1- n)) (sig x)))
-	 1/2)
-      (rtz x n)
-    (raz x n)))
-
-
-(defund IEEE-rounding-mode-p (mode)
-  (member mode '(rtz rup rdn rne)))
-
-(defund common-mode-p (mode)
-  (or (IEEE-rounding-mode-p mode) (equal mode 'raz) (equal mode 'rna)))
-
-(defund rnd (x mode n)
-  (case mode
-    (raz (raz x n))
-    (rna (rna x n))
-    (rtz (rtz x n))
-    (rup (rup x n))
-    (rdn (rdn x n))
-    (rne (rne x n))
-    (otherwise 0)))
+(include-book "defs")
 
 ;;;**********************************************************************
 ;;;		    	      RTZ-SQRT
@@ -157,7 +54,7 @@
            (and (<= 1/2 (rtz-sqrt x n))
                 (<= (rtz-sqrt x n) (- 1 (expt 2 (- n))))))
   :rule-classes ())
-
+                                
 
 (defthm expo-rtz-sqrt
   (implies (and (rationalp x)
@@ -178,7 +75,7 @@
   (implies (and (not (zp n))
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1))
+                (< x 1))                
            (and (<= (* (rtz-sqrt x n)
                        (rtz-sqrt x n))
                     x)
@@ -289,7 +186,7 @@
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1))
+                (< x 1)) 
            (iff (= (* (rtz-sqrt x n) (rtz-sqrt x n)) x)
                 (= (rto-sqrt x m) (rtz-sqrt x n))))
   :rule-classes ())
