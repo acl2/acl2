@@ -1040,6 +1040,14 @@
     :rule-classes ()
   :hints (("Goal" :use ((:instance intval-bits (w n))))))
 
+(defthmd bits-si
+  (implies (and (integerp n)
+                (< i n))
+           (equal (bits (si r n) i j)
+                  (bits r i j)))
+  :hints (("Goal" :in-theory (enable si)
+                  :use (:instance bits-plus-mult-2 (n i) (k n) (y -1) (x r) (m j)))))
+
 (defund sextend (m n r)
   (bits (si r n) (1- m) 0))
 
