@@ -146,7 +146,7 @@
 (defun sse-round (u mxcsr f)
   (let* ((rmode (mxcsr-rc mxcsr))
          (r (rnd u rmode (prec f)))
-         (rsgn (if (< r 0) 1 0))         
+         (rsgn (if (< r 0) 1 0))
          (flags (if (= r u) 0 (set-flag (pbit) 0))))
     (if (> (abs r) (lpn f))
         (let* ((flags (set-flag (obit) flags)))
@@ -211,7 +211,7 @@
     (if (unmasked-excp-p pre-flags (mxcsr-masks mxcsr))
         (mv () (logior mxcsr pre-flags))
       (if result
-          (mv result (logior mxcsr pre-flags))        
+          (mv result (logior mxcsr pre-flags))
         (mv-let (result post-flags) (sse-binary-post-comp op adaz bdaz mxcsr f)
           (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
                    result)
@@ -256,7 +256,7 @@
     (if (unmasked-excp-p pre-flags (mxcsr-masks mxcsr))
         (mv () (logior mxcsr pre-flags))
       (if result
-          (mv result (logior mxcsr pre-flags))        
+          (mv result (logior mxcsr pre-flags))
         (mv-let (result post-flags) (sse-sqrt-post-comp adaz mxcsr f)
           (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
                    result)
@@ -331,7 +331,7 @@
     (if (unmasked-excp-p pre-flags (mxcsr-masks mxcsr))
         (mv () (logior mxcsr pre-flags))
       (if result
-          (mv result (logior mxcsr pre-flags))        
+          (mv result (logior mxcsr pre-flags))
         (mv-let (result post-flags) (fma-post-comp adaz bdaz cdaz mxcsr f)
           (mv (and (not (unmasked-excp-p post-flags (mxcsr-masks mxcsr)))
                    result)
@@ -478,7 +478,7 @@
       (if (unmasked-excp-p pre-flags fcw)
           (mv () (set-es (logior fsw pre-flags)))
         (if result
-            (mv result (logior fsw pre-flags))        
+            (mv result (logior fsw pre-flags))
           (mv-let (result post-flags) (x87-binary-post-comp op a af b bf fcw)
             (mv result
                 (if (unmasked-excp-p post-flags fcw)
@@ -524,7 +524,7 @@
       (if (unmasked-excp-p pre-flags fcw)
           (mv () (set-es (logior fsw pre-flags)))
         (if result
-            (mv result (logior fsw pre-flags))        
+            (mv result (logior fsw pre-flags))
           (mv-let (result post-flags) (x87-sqrt-post-comp a f fcw)
             (mv result
                 (if (unmasked-excp-p post-flags fcw)

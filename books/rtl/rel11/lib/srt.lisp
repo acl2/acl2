@@ -232,7 +232,7 @@
         (if (<= p2 (* h d1))
             (/ p2 h)
           d1)
-      (if (<= p1 (* h d2))          
+      (if (<= p1 (* h d2))
           d2
         (/ p1 h)))))
 
@@ -650,7 +650,7 @@
   (implies (and (not (zp (rho$$)))
                 (natp k)
                 (> k 1)
-                (<= 1/2 (q$$ (1- k)))                
+                (<= 1/2 (q$$ (1- k)))
                 (< (q$$ (1- k)) 1)
                 (<= (* (- (q$$ (1- k)) (expt 2 (- (* (1- k) (rho$$))))) (- (q$$ (1- k)) (expt 2 (- (* (1- k) (rho$$))))))
                     (x$$))
@@ -664,7 +664,7 @@
                 (> (x$$) 1/4)
                 (natp k)
                 (> k 1)
-                (<= 1/2 (q$$ (1- k)))                
+                (<= 1/2 (q$$ (1- k)))
                 (< (q$$ (1- k)) 1)
                 (< (h$$ k) (expt 2 (rho$$)))
                 (> (h$$ k) (- (expt 2 (rho$$))))
@@ -753,7 +753,7 @@
                (> h (- (expt 2 rho)))
                (< p
                  (* (/ (1+ h) (expt 2 rho))
-                    (+ d (* (1+ h) (expt 2 (- (* k rho)))))))  
+                    (+ d (* (1+ h) (expt 2 (- (* k rho)))))))
                (>= p              
                   (* (/ (1- h) (expt 2 rho))
                      (+ d (* (1- h) (expt 2 (- (* k rho)))))))))
@@ -1587,7 +1587,7 @@
 ;;**********************************************************************************
 
 (defun cg-sqrt (x min max)
-  (declare (xargs :measure (nfix (- (1+ max) min))))  
+  (declare (xargs :measure (nfix (- (1+ max) min))))
   (if (and (natp min)
            (natp max)
            (<= min max))
