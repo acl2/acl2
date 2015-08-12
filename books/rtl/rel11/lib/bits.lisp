@@ -374,7 +374,7 @@
 		(<= j2 j) (<= j i) (<= i i2)
 		(equal k (bits k2 (+ i (- j2)) (+ (- j2) j)))
 		(<= 0 i) (<= 0 j) (<= 0 k) (<= 0 i2) (<= 0 j2) (<= 0 k2)
-		(integerp i) (integerp j)  (integerp k) (integerp i2) (integerp j2) (integerp k2))
+		(integerp i) (integerp j) (integerp k) (integerp i2) (integerp j2) (integerp k2))
 	   (equal (equal k (bits x i j))
 		  t)))
 
@@ -393,7 +393,7 @@
 		(<= j2 j) (<= j i) (<= i i2)
 		(not (equal k (bits k2 (+ i (- j2)) (+ (- j2) j))))
 		(<= 0 i) (<= 0 j) (<= 0 k) (<= 0 i2) (<= 0 j2) (<= 0 k2)
-		(integerp i) (integerp j)  (integerp k) (integerp i2) (integerp j2) (integerp k2))
+		(integerp i) (integerp j) (integerp k) (integerp i2) (integerp j2) (integerp k2))
 	   (equal (equal k (bits x i j))
 		  nil)))
 )
