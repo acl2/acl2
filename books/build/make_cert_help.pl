@@ -304,6 +304,7 @@ sub scan_source_file
     my $max_mem = 0;
     my $max_time = 0;
     my @includes = ();
+    my @pbs = ();
     open(my $fd, "<", $filename) or die("Can't open $filename: $!\n");
     while(<$fd>) {
 	my $line = $_;
@@ -329,10 +330,14 @@ sub scan_source_file
 		push (@includes, [$1, $2]);
 	    }
 	}
+	elsif ($line =~ m/^;PBS (.*)$/)
+	{
+	    push (@pbs, $1);
+	}
     }
     close($fd);
 
-     return ( $max_mem, $max_time, \@includes );
+     return ( $max_mem, $max_time, \@includes, \@pbs );
 }
 
 
@@ -534,7 +539,7 @@ $instrs .= "$INHIBIT\n" if ($INHIBIT);
 $instrs .= "\n";
 
 # --- Scan the source file for includes (to collect the portculli) and resource limits ----
-my ($max_mem, $max_time, $includes) = scan_source_file("$file.lisp");
+my ($max_mem, $max_time, $includes, $book_pbs) = scan_source_file("$file.lisp");
 $max_mem = $max_mem ? ($max_mem + 3) : 4;
 $max_time = $max_time || 240;
 
@@ -545,7 +550,7 @@ my $acl2file = (-f "$file.acl2") ? "$file.acl2"
     : "";
 
 my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
-my $extra_pbs = $acl2file ? extract_pbs_from_acl2file($acl2file) : [];
+my $acl2_pbs = $acl2file ? extract_pbs_from_acl2file($acl2file) : [];
 
 # Don't hideously underapproximate timings in event summaries
 $instrs .= "(acl2::assign acl2::get-internal-time-as-realtime acl2::t)\n";
@@ -612,7 +617,11 @@ write_whole_file($lisptmp, $instrs);
     $shinsts .= "#PBS -l pmem=${max_mem}gb\n";
     $shinsts .= "#PBS -l walltime=${max_time}:00\n\n";
 
-    foreach my $directive (@$extra_pbs) {
+    foreach my $directive (@$acl2_pbs) {
+	$shinsts .= "#PBS $directive\n";
+    }
+
+    foreach my $directive (@$book_pbs) {
 	$shinsts .= "#PBS $directive\n";
     }
 
