@@ -435,3 +435,19 @@ whose effect may be more easy to guess.</p>")
     language like Java</li>
     <li>Has good documentation that explains how to use it</li>
   </ul>")
+
+(defxdoc remove-whitespace
+  :short "How to find and remove whitespace from .lisp files"
+  :long "<p>Some of us are of the opinion that it's good hygiene to not allow
+  trailing whitespaces.  To see trailing-whitespaces in Emacs enable:</p>
+
+  @({(setq-default show-trailing-whitespace t)})
+
+  <p>To remove trailing-whitespaces from a file you have open in emacs do:</p>
+
+  @({M-x delete-trailing-whitespace})
+
+  <p>To find trailing whitespaces in @('.lisp') files within your current
+  directory, in your shell do:</p>
+
+  @({find . -name '*.lisp' -exec egrep -l \" +$\" {} \;})")
