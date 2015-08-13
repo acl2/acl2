@@ -219,6 +219,18 @@
 
 (in-theory (disable (sp) (dp) (ep)))
 
+(defthm formatp-sp
+  (formatp (sp))
+  :hints (("Goal" :in-theory (enable sp formatp))))
+
+(defthm formatp-dp
+  (formatp (dp))
+  :hints (("Goal" :in-theory (enable dp formatp))))
+
+(defthm formatp-ep
+  (formatp (ep))
+  :hints (("Goal" :in-theory (enable ep formatp))))
+
 ;;Field extractors:
 
 (defund sgnf (x f)

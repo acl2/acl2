@@ -724,6 +724,48 @@
                   (-  x (mod x (expt 2 (- k))))))
   :enable (chop-r-mod))
 
+(defthm chop-down-1
+  (implies (and (rationalp x)
+                (rationalp y)
+                (> y 0))
+           (<= (* y (fl x)) (* y x)))
+  :rule-classes ())
+
+(defthm chop-down
+  (implies (and (rationalp x)
+                (integerp n))
+           (<= (chop x n) x))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (e/d (chop) (|chop as chop-r|))
+                  :use ((:instance chop-down-1 (x (* (expt 2 n) x)) (y (expt 2 (- n))))))))
+
+(defthm chop-monotone-1
+  (implies (and (rationalp x)
+                (rationalp y)
+                (integerp n)
+                (<= x y))
+           (<= (* x (expt 2 n)) (* y (expt 2 n))))
+  :rule-classes ())
+
+(defthm chop-monotone-2
+  (implies (and (rationalp x)
+                (rationalp y)
+                (integerp n)
+                (<= x y))
+           (<= (fl (* x (expt 2 n))) (fl (* y (expt 2 n)))))
+  :rule-classes ()
+  :hints (("Goal" :use (chop-monotone-1 (:instance fl-monotone-linear (x (* x (expt 2 n))) (y (* y (expt 2 n)))))
+                  :in-theory (disable fl-monotone-linear))))
+
+(defthm chop-monotone
+  (implies (and (rationalp x)
+                (rationalp y)
+                (integerp n)
+                (<= x y))
+           (<= (chop x n) (chop y n)))
+  :rule-classes ()
+  :hints (("Goal" :use (chop-monotone-2) :in-theory (e/d (chop) (|chop as chop-r|)))))
+
 (defruled chop-chop
   (implies (and (real/rationalp x)
                 (integerp k)
