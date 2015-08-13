@@ -1,4 +1,4 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
 ;   David M. Russinoff
@@ -39,7 +39,7 @@
 (defsection-rtl |Radix-4 Booth Encoding| |Multiplication|
 
 (defun theta (i y)
-  (+ (bitn y (1- (* 2 i))) 
+  (+ (bitn y (1- (* 2 i)))
      (bitn y (* 2 i))
      (* -2 (bitn y (1+ (* 2 i))))))
 
@@ -67,7 +67,7 @@
 
 (encapsulate ((zeta (i) t))
  (local (defun zeta (i) (declare (ignore i)) 0))
- (defthm zeta-bnd 
+ (defthm zeta-bnd
      (and (integerp (zeta i))
 	  (<= (zeta i) 2)
 	  (>= (zeta i) -2))))
@@ -178,12 +178,12 @@
         ((equal mode 'chi)
          (if (zp i) 0
            (cons (cons 1  i) 0)))))
-             
+
 (mutual-recursion
  (defun mu (i y)
    (declare (xargs :measure (m-mu-chi i 'mu)))
      (+ (bits y (1+ (* 2 i)) (* 2 i)) (chi i y)))
- 
+
  (defun chi (i y)
    (declare (xargs :measure (m-mu-chi i 'chi)))
    (if (zp i)
@@ -279,13 +279,13 @@
 (defun delta (i a b c d)
   (if (zp i)
       (bitn d 0)
-    (logand (logior (logand (bitn a (+ -2 (* 2 i))) 
+    (logand (logior (logand (bitn a (+ -2 (* 2 i)))
 			    (bitn b (+ -2 (* 2 i))))
 		    (logior (logand (bitn a (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))
 			    (logand (bitn b (+ -2 (* 2 i)))
 				    (gamma (1- i) a b c))))
-	    (lognot (logxor (bitn a (1- (* 2 i))) 
+	    (lognot (logxor (bitn a (1- (* 2 i)))
 			    (bitn b (1- (* 2 i))))))))
 
 (defun psi (i a b c d)
@@ -373,7 +373,7 @@
 (defsection-rtl |Radix-8 Booth Encoding| |Multiplication|
 
 (defun eta (i y)
-  (+ (bitn y (1- (* 3 i))) 
+  (+ (bitn y (1- (* 3 i)))
      (bitn y (* 3 i))
      (* 2 (bitn y (1+ (* 3 i))))
      (* -4 (bitn y (+ 2 (* 3 i))))))
@@ -404,7 +404,7 @@
 
 (encapsulate ((xi (i) t))
  (local (defun xi (i) (declare (ignore i)) 0))
- (defthm xi-bnd 
+ (defthm xi-bnd
      (and (integerp (xi i))
 	  (<= (xi i) 4)
 	  (>= (xi i) -4))))

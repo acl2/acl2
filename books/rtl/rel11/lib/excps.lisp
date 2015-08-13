@@ -1,4 +1,4 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
 ;   David M. Russinoff
@@ -68,28 +68,28 @@
 
 ;;--------------------------------------------------------------------------------
 
-;; The arguments of SSE-BINARY-SPEC are an operation (add, sub, mul, or div), 2 data 
-;; inputs, the initial MXCSR register, and the significand and exponent widths. It 
-;; returns a data result, which is NIL in the event of an unmasked exception, and the 
+;; The arguments of SSE-BINARY-SPEC are an operation (add, sub, mul, or div), 2 data
+;; inputs, the initial MXCSR register, and the significand and exponent widths. It
+;; returns a data result, which is NIL in the event of an unmasked exception, and the
 ;; updated MXCSR.
 
-;; An implementation is correct if it returns the same MXCSR as SSE-BINARY-SPEC and, 
+;; An implementation is correct if it returns the same MXCSR as SSE-BINARY-SPEC and,
 ;; in the event that SSE-BINARY-SPEC returns a non-NIL value, it returns the same value.
 
-;; SSE-BINARY-SPEC is based on two auxiliary functions, SSE-BINARY-PRE-COMP and 
-;; SSE-BINARY-POST-COMP, each of which returns an optional value and a 6-bit vector 
+;; SSE-BINARY-SPEC is based on two auxiliary functions, SSE-BINARY-PRE-COMP and
+;; SSE-BINARY-POST-COMP, each of which returns an optional value and a 6-bit vector
 ;; of exception flags, which are written to the MXCSR.
 
-;; SSE-BINARY-PRE-COMP calls SSE-BINARY-PRE-COMP-EXCP, which detects pre-computation 
-;; exceptions, and SSE-BINARY-PRE-COMP-VAL, which may compute a value.  If an unmasked 
-;; exception occurs, the value is invalid and the operation is terminated.  Otherwise, 
-;; if the value is NIL, then the computation proceeds by calling FMA-POST-COMP, and 
+;; SSE-BINARY-PRE-COMP calls SSE-BINARY-PRE-COMP-EXCP, which detects pre-computation
+;; exceptions, and SSE-BINARY-PRE-COMP-VAL, which may compute a value.  If an unmasked
+;; exception occurs, the value is invalid and the operation is terminated.  Otherwise,
+;; if the value is NIL, then the computation proceeds by calling FMA-POST-COMP, and
 ;; if non-NIL, the operation is terminated and that value is returned.
 
-;; FMA-POST-COMP either returns an infinity or decodes the operands and computes the 
-;; unrounded result.  If that result is 0, then it sets the sign according to the operand 
-;; signs and the rounding mode and returns.  Otherwise, it calls SSE-ROUND, which detects 
-;; post-computation exceptions and computes the rounded result, which is invalid in the 
+;; FMA-POST-COMP either returns an infinity or decodes the operands and computes the
+;; unrounded result.  If that result is 0, then it sets the sign according to the operand
+;; signs and the rounding mode and returns.  Otherwise, it calls SSE-ROUND, which detects
+;; post-computation exceptions and computes the rounded result, which is invalid in the
 ;; event of an unmasked exception.
 
 (defun set-flag (b flags)
@@ -220,8 +220,8 @@
 
 ;;--------------------------------------------------------------------------------
 
-;; The arguments of SSE-SQRT-SPEC are a data input, the initial MXCSR register, and 
-;; the significand and exponent widths. It returns a data result, which is NIL in 
+;; The arguments of SSE-SQRT-SPEC are a data input, the initial MXCSR register, and
+;; the significand and exponent widths. It returns a data result, which is NIL in
 ;; the event of an unmasked exception, and the updated MXCSR.
 
 (defun sse-sqrt-pre-comp-excp (a f)
@@ -265,8 +265,8 @@
 
 ;;--------------------------------------------------------------------------------
 
-;; The arguments of FMA-SPEC are three data inputs, the initial MXCSR register, and 
-;; the significand and exponent widths. It returns a data result, which is NIL in the 
+;; The arguments of FMA-SPEC are three data inputs, the initial MXCSR register, and
+;; the significand and exponent widths. It returns a data result, which is NIL in the
 ;; event of an unmasked exception, and the updated MXCSR.
 
 (defun fma-undefined-p (a b c f)
@@ -373,8 +373,8 @@
 (defun clear-c1 (fsw)
   (logand fsw #xfdff))
 
-;; The arguments of X87-BINARY-SPEC are two data inputs, their formats, and the initial 
-;; FCW and FSW registers. It returns a data result, which is NIL in the event of an  
+;; The arguments of X87-BINARY-SPEC are two data inputs, their formats, and the initial
+;; FCW and FSW registers. It returns a data result, which is NIL in the event of an
 ;; unmasked pre-computation exception, and the updated FSW.
 
 (defun x87-binary-pre-comp-excp (op a af b bf)
@@ -438,9 +438,9 @@
                   (mv (iencode rsgn (ep)) (set-flag (c1) flags))))
             (let ((s (* r (expt 2 (- (* 3 (expt 2 13)))))))
               (if (> (abs s) (lpn (ep)))
-                  (mv (iencode rsgn (ep)) 
+                  (mv (iencode rsgn (ep))
                       (set-flag (c1) (set-flag (pbit) flags)))
-                (mv (nencode s (ep)) 
+                (mv (nencode s (ep))
                     (if (> (abs r) (abs u)) (set-flag (c1) flags) flags))))))
       (if (< (abs r) (spn (ep)))
           (if (= (bitn fcw (ubit)) 1)
@@ -488,8 +488,8 @@
 
 ;;--------------------------------------------------------------------------------
 
-;; The arguments of X87-SQRT-SPEC are a data input, its format, and the initial FCW 
-;; and FSW registers. It returns a data result, which is NIL in the event of an  
+;; The arguments of X87-SQRT-SPEC are a data input, its format, and the initial FCW
+;; and FSW registers. It returns a data result, which is NIL in the event of an
 ;; unmasked pre-computation exception, and the updated FSW.
 
 (defun x87-sqrt-pre-comp-excp (a f)
@@ -512,7 +512,7 @@
 
 (defun x87-sqrt-pre-comp (a f)
   (mv (x87-sqrt-pre-comp-val a f) (x87-sqrt-pre-comp-excp a f)))
-          
+
 (defun x87-sqrt-post-comp (a f fcw)
   (if (or (infp a f) (zerp a f))
       (mv a 0)

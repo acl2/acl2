@@ -1,4 +1,4 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
 ;   David M. Russinoff
@@ -54,7 +54,7 @@
            (and (<= 1/2 (rtz-sqrt x n))
                 (<= (rtz-sqrt x n) (- 1 (expt 2 (- n))))))
   :rule-classes ())
-                                
+
 
 (defthm expo-rtz-sqrt
   (implies (and (rationalp x)
@@ -186,7 +186,7 @@
                 (> m n)
                 (rationalp x)
                 (<= 1/4 x)
-                (< x 1)) 
+                (< x 1))
            (iff (= (* (rtz-sqrt x n) (rtz-sqrt x n)) x)
                 (= (rto-sqrt x m) (rtz-sqrt x n))))
   :rule-classes ())

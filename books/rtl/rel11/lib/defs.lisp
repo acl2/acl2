@@ -1,4 +1,4 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
 ;   David M. Russinoff
@@ -99,9 +99,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defund mulcat (l n x)
@@ -129,7 +129,7 @@
 (defund sextend (m n r)
   (bits (si r n) (1- m) 0))
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -187,7 +187,7 @@
 
 (defund ep () (declare (xargs :guard t)) '(t 64 15))
 
-(in-theory (disable (sp) (dp) (ep))) 
+(in-theory (disable (sp) (dp) (ep)))
 
 (defund sgnf (x f)
   (declare (xargs :guard (and (integerp x) (formatp f))))
@@ -331,17 +331,17 @@
   (declare (xargs :guard (formatp f)))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
-(defund qnanize (x f) 
+(defund qnanize (x f)
   (declare (xargs :guard (and (integerp x) (formatp f))))
   (logior x (expt 2 (- (prec f) 2))))
 
 (defund indef (f)
   (if (explicitp f)
-      (cat (1- (expt 2 (+ (expw f) 3))) 
+      (cat (1- (expt 2 (+ (expw f) 3)))
            (+ (expw f) 3)
            0
            (- (sigw f) 2))
-    (cat (1- (expt 2 (+ (expw f) 2))) 
+    (cat (1- (expt 2 (+ (expw f) 2)))
          (+ (expw f) 2)
          0
          (1- (sigw f)))))
@@ -351,13 +351,13 @@
 
 (defund rtz (x n)
   (declare (xargs :guard (integerp n)))
-  (* (sgn x) 
-     (fl (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (fl (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defund raz (x n)
-  (* (sgn x) 
-     (cg (* (expt 2 (1- n)) (sig x))) 
+  (* (sgn x)
+     (cg (* (expt 2 (1- n)) (sig x)))
      (expt 2 (- (1+ (expo x)) n))))
 
 (defun re (x)

@@ -1,4 +1,4 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
 ;   David M. Russinoff

@@ -1,4 +1,4 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
 ;   David M. Russinoff
@@ -72,7 +72,7 @@
 
 (defund dp () (declare (xargs :guard t)) '(nil 53 11))
 
-(defund ep () (declare (xargs :guard t)) '(t 64 15)) 
+(defund ep () (declare (xargs :guard t)) '(t 64 15))
 
 (in-theory (disable (sp) (dp) (ep)))
 
@@ -412,17 +412,17 @@
   (declare (xargs :guard (formatp f)))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
-(defund qnanize (x f) 
+(defund qnanize (x f)
   (declare (xargs :guard (and (integerp x) (formatp f))))
   (logior x (expt 2 (- (prec f) 2))))
 
 (defund indef (f)
   (if (explicitp f)
-      (cat (1- (expt 2 (+ (expw f) 3))) 
+      (cat (1- (expt 2 (+ (expw f) 3)))
            (+ (expw f) 3)
            0
            (- (sigw f) 2))
-    (cat (1- (expt 2 (+ (expw f) 2))) 
+    (cat (1- (expt 2 (+ (expw f) 2)))
          (+ (expw f) 2)
          0
          (1- (sigw f)))))

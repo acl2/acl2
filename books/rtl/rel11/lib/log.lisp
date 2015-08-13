@@ -1,4 +1,4 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
 ;   David M. Russinoff
@@ -23,7 +23,7 @@
 
 (in-package "RTL")
 
-(set-enforce-redundancy t) ; for some reason, acl2 4.3 complains about  logand-natp 
+(set-enforce-redundancy t) ; for some reason, acl2 4.3 complains about  logand-natp
 
 (local (include-book "../support/top"))
 

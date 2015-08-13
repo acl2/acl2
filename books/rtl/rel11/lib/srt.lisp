@@ -1,4 +1,4 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
 ;   David M. Russinoff
@@ -54,12 +54,12 @@
     (and (rationalp (d$))
          (> (d$) 0))
     :rule-classes (:rewrite :type-prescription))
-  (defthm integerp-h$ 
+  (defthm integerp-h$
     (implies (not (zp k))
              (integerp (h$ k)))
     :rule-classes (:rewrite :type-prescription)))
 
-(defund p$ (k) 
+(defund p$ (k)
   (if (zp k)
       (x$)
     (- (* (expt 2 (rho$)) (p$ (1- k)))
@@ -84,7 +84,7 @@
            (and (<= (- (/ (expt 2 (* k (rho$)))))
                     (- (/ (x$) (d$)) (q$ k)))
                 (< (- (/ (x$) (d$)) (q$ k))
-                   (/ (expt 2 (* k (rho$))))))) 
+                   (/ (expt 2 (* k (rho$)))))))
   :rule-classes ())
 
 
@@ -111,20 +111,20 @@
   (min (1- (expt 2 rho))
        (if (or (< i (expt 2 (1- m)))
                (= i (1- (expt 2 m))))
-           (1- (cg (* (expt 2 rho) 
+           (1- (cg (* (expt 2 rho)
                       (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                          (delta0 j n)))))
-         (1- (cg (* (expt 2 rho) 
+         (1- (cg (* (expt 2 rho)
                     (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                        (+ (delta0 j n) (/ (expt 2 n))))))))))
 
 (defund upper (i j rho m n)
-  (max (- 1 (expt 2 rho)) 
+  (max (- 1 (expt 2 rho))
        (if (< i (expt 2 (1- m)))
-           (1+ (fl (* (expt 2 rho) 
+           (1+ (fl (* (expt 2 rho)
                       (/ (pi0 i m)
                          (+ (delta0 j n) (/ (expt 2 n)))))))
-         (1+ (fl (* (expt 2 rho) 
+         (1+ (fl (* (expt 2 rho)
                     (/ (pi0 i m)
                        (delta0 j n))))))))
 
@@ -174,7 +174,7 @@
                 (rationalp d)
                 (<= (delta0 j n) d)
                 (< d (+ (delta0 j n) (/ (expt 2 n))))
-                (<= (- d) p) 
+                (<= (- d) p)
                 (< p d)
                 (= k (lookup i j table)))
            (and (< (- (expt 2 rho)) k)
@@ -247,8 +247,8 @@
           (* h d2)
         p1))))
 
-;; Assume hmin < hmax.  If there exist (d1,p1) and (d2,p2) in R such 
-;; that p1 < hmax*d1 and p2 > hmin*d2, then (d4,p4) is in R' and 
+;; Assume hmin < hmax.  If there exist (d1,p1) and (d2,p2) in R such
+;; that p1 < hmax*d1 and p2 > hmin*d2, then (d4,p4) is in R' and
 ;; hmin*d4 < p4 < hmax*d4:
 
 (defund d4 (dmin pmin dmax pmax hmin hmax)
@@ -288,7 +288,7 @@
     (if (check-div-row (1- i) (expt 2 n) rho m n (nth (1- i) table))
         (i-witness-aux (1- i) rho m n table)
       (1- i))))
- 
+
 (defund i-witness (rho m n table)
   (i-witness-aux (expt 2 m) rho m n table))
 
@@ -309,21 +309,21 @@
          (entry (lookup i j table)))
     (if (or (>= entry (expt 2 rho))
             (<= entry (- (expt 2 rho))))
-        (d4 (delta0 j n) 
-            (pi0 i m) 
+        (d4 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             -1
             1)
       (if (< entry (lower i j rho m n))
-          (d4 (delta0 j n) 
-              (pi0 i m) 
+          (d4 (delta0 j n)
+              (pi0 i m)
               (+ (delta0 j n) (expt 2 (- n)))
               (+ (pi0 i m) (expt 2 (- 3 m)))
               (/ (1+ entry) (expt 2 rho))
               1)
-        (d4 (delta0 j n) 
-            (pi0 i m) 
+        (d4 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             -1
@@ -335,21 +335,21 @@
          (entry (lookup i j table)))
     (if (or (>= entry (expt 2 rho))
             (<= entry (- (expt 2 rho))))
-        (p4 (delta0 j n) 
-            (pi0 i m) 
+        (p4 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             -1
             1)
       (if (< entry (lower i j rho m n))
-          (p4 (delta0 j n) 
-              (pi0 i m) 
+          (p4 (delta0 j n)
+              (pi0 i m)
               (+ (delta0 j n) (expt 2 (- n)))
               (+ (pi0 i m) (expt 2 (- 3 m)))
               (/ (1+ entry) (expt 2 rho))
               1)
-        (p4 (delta0 j n) 
-            (pi0 i m) 
+        (p4 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             -1
@@ -386,7 +386,7 @@
 ;;**********************************************************************************
 
 (defund srt-entry (i j rho m n)
-  (max (- 1 (expt 2 rho)) 
+  (max (- 1 (expt 2 rho))
        (lower i j rho m n)))
 
 (defund srt-row (i j rho m n)
@@ -582,7 +582,7 @@
   (defthm x$$-constraint
     (rationalp (x$$))
     :rule-classes (:rewrite :type-prescription))
-  (defthm integerp-h$$ 
+  (defthm integerp-h$$
     (implies (not (zp k))
              (integerp (h$$ k)))
     :rule-classes (:rewrite :type-prescription)))
@@ -593,12 +593,12 @@
     (+ (q$$ (1- k))
        (/ (h$$ k) (expt 2 (* k (rho$$)))))))
 
-(defund p$$ (k) 
+(defund p$$ (k)
   (if (zp k)
       (x$$)
     (- (* (expt 2 (rho$$)) (p$$ (1- k)))
-       (* (h$$ k) 
-          (+ (* 2 (q$$ (1- k))) 
+       (* (h$$ k)
+          (+ (* 2 (q$$ (1- k)))
              (/ (h$$ k) (expt 2 (* k (rho$$)))))))))
 
 (defthmd sqrt-remainder-formula
@@ -668,7 +668,7 @@
                 (< (q$$ (1- k)) 1)
                 (< (h$$ k) (expt 2 (rho$$)))
                 (> (h$$ k) (- (expt 2 (rho$$))))
-                (<= (x$$) (* (+ (q$$ k) (expt 2 (- (* k (rho$$))))) 
+                (<= (x$$) (* (+ (q$$ k) (expt 2 (- (* k (rho$$)))))
                              (+ (q$$ k) (expt 2 (- (* k (rho$$))))))))
            (and (<= 1/2 (q$$ k))
                 (< (q$$ k) 1)))
@@ -754,7 +754,7 @@
                (< p
                  (* (/ (1+ h) (expt 2 rho))
                     (+ d (* (1+ h) (expt 2 (- (* k rho)))))))
-               (>= p              
+               (>= p
                   (* (/ (1- h) (expt 2 rho))
                      (+ d (* (1- h) (expt 2 (- (* k rho)))))))))
   :rule-classes ())
@@ -810,7 +810,7 @@
 ;;                             >= 0.
 ;;
 ;; Assume dmin >= 1.  If there exist (d1,p1) and (d2,p2) in R such that
-;; p1 < h1*d1 + b1 and p2 > h2*d2 + b2, then (d7,p7) is in R" and 
+;; p1 < h1*d1 + b1 and p2 > h2*d2 + b2, then (d7,p7) is in R" and
 ;; h2*d7 + b2 < p7 < h1*d7 + b1:
 
 (defund d7 (dmin pmin dmax pmax h1 b1 h2 b2)
@@ -913,7 +913,7 @@
     (if (check-sqrt-row (1- i) (expt 2 n) k rho m n (nth (1- i) table))
         (i-sqrt-aux (1- i) k rho m n table)
       (1- i))))
- 
+
 (defund i-sqrt (k rho m n table)
   (i-sqrt-aux (expt 2 m) k rho m n table))
 
@@ -935,8 +935,8 @@
     (if (or (not (integerp h))
             (>= h (expt 2 rho))
             (<= h (- (expt 2 rho))))
-        (d7 (delta0 j n) 
-            (pi0 i m) 
+        (d7 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             1
@@ -944,16 +944,16 @@
             -1
             (expt 2 (* (- 1 k) rho)))
       (if (not (check-upper-bound h i j k rho m n))
-          (d7 (delta0 j n) 
-              (pi0 i m) 
+          (d7 (delta0 j n)
+              (pi0 i m)
               (+ (delta0 j n) (expt 2 (- n)))
               (+ (pi0 i m) (expt 2 (- 3 m)))
               1
               (expt 2 (* (- 1 k) rho))
               (/ (1+ h) (expt 2 rho))
               (* (1+ h) (1+ h) (expt 2 (- (* (1+ k) rho)))))
-        (d7 (delta0 j n) 
-            (pi0 i m) 
+        (d7 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             (/ (1- h) (expt 2 rho))
@@ -968,8 +968,8 @@
     (if (or (not (integerp h))
             (>= h (expt 2 rho))
             (<= h (- (expt 2 rho))))
-        (p7 (delta0 j n) 
-            (pi0 i m) 
+        (p7 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             1
@@ -977,16 +977,16 @@
             -1
             (expt 2 (* (- 1 k) rho)))
       (if (not (check-upper-bound h i j k rho m n))
-          (p7 (delta0 j n) 
-              (pi0 i m) 
+          (p7 (delta0 j n)
+              (pi0 i m)
               (+ (delta0 j n) (expt 2 (- n)))
               (+ (pi0 i m) (expt 2 (- 3 m)))
               1
               (expt 2 (* (- 1 k) rho))
               (/ (1+ h) (expt 2 rho))
               (* (1+ h) (1+ h) (expt 2 (- (* (1+ k) rho)))))
-        (p7 (delta0 j n) 
-            (pi0 i m) 
+        (p7 (delta0 j n)
+            (pi0 i m)
             (+ (delta0 j n) (expt 2 (- n)))
             (+ (pi0 i m) (expt 2 (- 3 m)))
             (/ (1- h) (expt 2 rho))
@@ -1002,7 +1002,7 @@
                 (> k 1)
                 (not (admissible-for-iteration-p k rho m n table)))
            (let* ((i (i-sqrt k rho m n table))
-                  (j (j-sqrt k rho m n table)) 
+                  (j (j-sqrt k rho m n table))
                   (p (p-sqrt k rho m n table))
                   (d (d-sqrt k rho m n table))
                   (h (lookup i j table)))
@@ -1149,8 +1149,8 @@
                 (< (p%% (1- k))
                    (+ (pi0 (i%% k) (m%%))
                       (/ (expt 2 (- (m%%) 3)))))))
-  :hints (("Goal" :use (m%%-constraint 
-                        k%%-constraint 
+  :hints (("Goal" :use (m%%-constraint
+                        k%%-constraint
                         (:instance i-bounds (p (p%% (1- k))) (m (m%%)))
                         (:instance local-lemma (x (P%% (+ -1 K)))
                                                (y1 (EXPT 2 (+ 2 (- (M%%)))))
@@ -1173,24 +1173,24 @@
 (defthm srt-sqrt-theorem-a
   (implies (and (<= 1/2 (q%% (k%%)))
                 (< (q%% (k%%)) 1)
-                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                             (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
-                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
                 (natp k)
                 (>= k (k%%)))
-           (and (< (x%%) (* (+ (q%% k) (expt 2 (- (* k (rho%%))))) 
+           (and (< (x%%) (* (+ (q%% k) (expt 2 (- (* k (rho%%)))))
                             (+ (q%% k) (expt 2 (- (* k (rho%%)))))))
-                (>= (x%%) (* (- (q%% k) (expt 2 (- (* k (rho%%))))) 
+                (>= (x%%) (* (- (q%% k) (expt 2 (- (* k (rho%%)))))
                              (- (q%% k) (expt 2 (- (* k (rho%%)))))))))
   :rule-classes ())
 
 (defthm srt-sqrt-theorem-b
   (implies (and (<= 1/2 (q%% (k%%)))
                 (< (q%% (k%%)) 1)
-                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
-                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
                 (natp k)
                 (>= k (k%%)))
@@ -1200,9 +1200,9 @@
 (defthmd srt-sqrt-theorem-c
   (implies (and (<= 1/2 (q%% (k%%)))
                 (< (q%% (k%%)) 1)
-                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (< (x%%) (* (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                             (+ (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
-                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%))))) 
+                (>= (x%%) (* (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))
                              (- (q%% (k%%)) (expt 2 (- (* (k%%) (rho%%)))))))
                 (natp k)
                 (> k (k%%)))
@@ -1271,7 +1271,7 @@
 
 (defund admissible-srt-table-p (k rho m n table)
   (check-rows (expt 2 m) k rho m n table))
-  
+
 ;;**********************************************************************************
 ;; Equivalence of Admissibility Definitions
 ;;**********************************************************************************
@@ -1291,13 +1291,13 @@
 
 (local (defund xtable-entry (i j)
   (if (and (> (pi0 i (m%%))
-              (- (+ (delta0 j (n%%)) 
-                    (expt 2 (- (n%%))) 
+              (- (+ (delta0 j (n%%))
+                    (expt 2 (- (n%%)))
                     (expt 2 (- 3 (m%%))))))
            (<= (pi0 i (m%%))
                (- (expt 2 (- (* (k%%) (rho%%))))
                   (+ (delta0 j (n%%))
-                     (expt 2 (- (n%%))) 
+                     (expt 2 (- (n%%)))
                      (expt 2 (- 3 (m%%)))))))
       (- 1 (expt 2 (rho%%)))
     (lookup i j (table%%)))))
@@ -1381,13 +1381,13 @@
                 (< j (expt 2 (n%%))))
            (equal (lookup i j (xtable%%))
                   (if (and (> (pi0 i (m%%))
-                           (- (+ (delta0 j (n%%)) 
-                                 (expt 2 (- (n%%))) 
+                           (- (+ (delta0 j (n%%))
+                                 (expt 2 (- (n%%)))
                                  (expt 2 (- 3 (m%%))))))
                            (<= (pi0 i (m%%))
                                (- (expt 2 (- (* (k%%) (rho%%))))
                                   (+ (delta0 j (n%%))
-                                     (expt 2 (- (n%%))) 
+                                     (expt 2 (- (n%%)))
                                      (expt 2 (- 3 (m%%)))))))
                       (- 1 (expt 2 (rho%%)))
                     (lookup i j (table%%)))))
@@ -1490,7 +1490,7 @@
        (not (zp (rho**)))
        (>= (* (k**) (rho**)) 2))
   :rule-classes ())
-  
+
 (local (defun x** () 1/2))
 
 (defthm x**-constraint
@@ -1550,7 +1550,7 @@
                 (< (abs (h** k)) (expt 2 (rho**)))))
   :rule-classes ())
 
-(local (defun q** (k) 
+(local (defun q** (k)
   (if (or (zp k)
           (<= k (k**)))
       (q1**)
@@ -1597,7 +1597,7 @@
     0))
 
 (defun seed (l k rho)
-  (1- (cg-sqrt (* (expt 2 (* k rho)) (1+ l)) 
+  (1- (cg-sqrt (* (expt 2 (* k rho)) (1+ l))
                (if (= (* k rho) 1)
                    1
                  (expt 2 (- (* k rho) 2)))
