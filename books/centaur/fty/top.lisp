@@ -1199,8 +1199,8 @@ different.</p>
 @({
   (defflexsum arithterm
     (:num :cond (atom x)
-     :fields ((val :type integerp :acc-body x))
-     :ctor-body val)
+          :fields ((val :type integerp :acc-body x))
+          :ctor-body val)
     (:plus
      :cond (eq (car x) '+)
      :shape (and (true-listp x) (eql (len x) 3))
@@ -1209,8 +1209,8 @@ different.</p>
      :ctor-body (list '+ left right))
     (:minus
      :shape (and (eq (car x) '-)
-                   (true-listp x)
-                   (eql (len x) 2))
+                 (true-listp x)
+                 (eql (len x) 2))
      :fields ((arg :type arithterm :acc-body (cadr x)))
      :ctor-body (list '- arg)))
 
@@ -1247,8 +1247,9 @@ different.</p>
       :hints((\"Goal\" :in-theory (enable arithterm-eval)))))
  })
 
-<p>@('Mbe') allows the function to logically apply fixing functions to its
-arguments without a performance penalty when running with guards checked.</p>
+<p>Note: when the constructors are actually defined, @('mbe') is used to allow
+the function to logically apply fixing functions to its arguments without a
+performance penalty when running with guards checked.</p>
 
 <h3>More on the above Caveat</h3>
 

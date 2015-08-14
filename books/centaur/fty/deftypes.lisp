@@ -190,7 +190,7 @@
    shape      ;; other requirements, given kindcheck
    require    ;; dependent type requirement (term)
    fields     ;; flexprod-field list
-   type-name   ;; base for constructing default accessor names
+   type-name  ;; base for constructing default accessor names
    ctor-name  ;; constructor function name
    ctor-macro ;; constructor macro (keyword args) name
    ctor-body  ;; constructor body, without fixing
