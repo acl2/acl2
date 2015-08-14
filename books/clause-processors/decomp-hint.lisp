@@ -171,7 +171,7 @@
         (value
          `(:computed-hint-replacement
            ((structural-decomp-hint-careful
-             clause ',arg stable-under-simplificationp world ',def-alist ',exclude))
+             clause ',arg stable-under-simplificationp state ',def-alist ',exclude))
            :expand ,expands)))
        ;; Heuristically decide based on presence in the conclusion
        ;; or in rest of clause whether to prefer expanding
