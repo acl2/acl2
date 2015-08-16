@@ -25,7 +25,7 @@
 (in-package "RTL")
 
 (include-book "arithmetic-5/top" :dir :system)
-(include-book "reps")
+(include-book "float")
 (local (include-book "../lib3/top"))
 
 (defund fl (x)
@@ -111,6 +111,21 @@
                           l))
                     (t 0))))
 
+(defund bias (q) (- (expt 2 (- q 1)) 1) )
+
+(defund spn (q)
+  (expt 2 (- 1 (bias q))))
+
+(defund spd (p q)
+     (expt 2 (+ 2 (- (bias q)) (- p))))
+
+(defund drepp (x p q)
+  (and (rationalp x)
+       (not (= x 0))
+       (<= (- 2 p) (+ (expo x) (bias q)))
+       (<= (+ (expo x) (bias q)) 0)
+       ;number of bits available in the sig field = p - 1 - ( - bias - expo(r))
+       (exactp x (+ -2 p (expt 2 (- q 1)) (expo x)))))
 
 ;;;**********************************************************************
 ;;;                         Truncation
