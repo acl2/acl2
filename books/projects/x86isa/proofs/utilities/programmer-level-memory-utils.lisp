@@ -128,7 +128,6 @@ programmer-level mode.</p>" )
                               n prog-addr))))))
   :rule-classes :forward-chaining)
 
-
 (local
  (defthmd member-p-canonical-address-listp-helper
    (implies (and (< 0 n)
@@ -158,23 +157,13 @@ programmer-level mode.</p>" )
                                   ()))))
 
 (defthm not-member-p-canonical-address-listp
+  (implies (or (< addr prog-addr)
+               (<= (+ n prog-addr) addr))
+           (equal (member-p addr (create-canonical-address-list n prog-addr))
+                  nil)))
 
-  ;; Relieving the hypotheses of this rule will require some
-  ;; arithmetic reasoning.  To establish whether addr is a member of
-  ;; the canonical address list, we'd have to see whether it falls in
-  ;; the range described by the first two hypotheses.
-
-  (implies (and (or (< addr prog-addr)
-                    (<= (+ n prog-addr) addr))
-                (< 0 n)
-                (canonical-address-p prog-addr)
-                (canonical-address-p (+ -1 n prog-addr)))
-           (equal (member-p addr
-                            (create-canonical-address-list n prog-addr))
-                  nil))
-  :hints (("Goal" :in-theory (e/d
-                              (member-p-canonical-address-listp-helper)
-                              ()))))
+(defthm no-duplicates-p-create-canonical-address-list
+  (no-duplicates-p (create-canonical-address-list n x)))
 
 (defthm subset-p-two-create-canonical-address-lists
   (implies (and (canonical-address-p y)
@@ -390,25 +379,6 @@ programmer-level mode.</p>" )
 
  (local (include-book "std/lists/reverse" :dir :system))
 
- (defthm member-of-rev
-   (implies (member-p a xs)
-            (member-p a (acl2::rev xs)))
-   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
-
- (defthm member-strip-cars-assoc-and-rev
-   (implies (member-p a (strip-cars xs))
-            (member-p a (acl2::rev (strip-cars xs)))))
-
- (defthm assoc-of-append-when-member-p
-   (implies (member-p a (strip-cars xs))
-            (equal (assoc-equal a (append xs ys))
-                   (assoc-equal a xs))))
-
- (defthm assoc-of-append-when-member-p-with-rev
-   (implies (member-p a (strip-cars xs))
-            (equal (assoc-equal a (append (acl2::rev xs) ys))
-                   (assoc-equal a (acl2::rev xs)))))
-
  (defthm member-p-and-strip-cars-of-remove-duplicate-keys
    (implies (member-p a (strip-cars xs))
             (member-p a (strip-cars (remove-duplicate-keys xs)))))
@@ -427,12 +397,6 @@ programmer-level mode.</p>" )
    (subset-p (strip-cars (cdr (remove-duplicate-keys xs)))
              (strip-cars xs))
    :hints (("Goal" :in-theory (e/d (subset-p) ()))))
-
- (defthm not-member-assoc-equal
-   (implies (not (member-p a (strip-cars xs)))
-            (equal (cdr (assoc a (acl2::rev (acons a b xs))))
-                   b))
-   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
  (defthm member-p-strip-cars-of-remove-duplicate-keys
    ;; implies, equal, or iff?
@@ -458,6 +422,64 @@ programmer-level mode.</p>" )
    :rule-classes :forward-chaining)
 
  )
+
+;; ======================================================================
+
+;; Lemmas about assoc-list:
+
+(defthm assoc-list-of-append-with-subset-p
+  (implies (subset-p xs (strip-cars term1))
+           (equal (assoc-list xs (append term1 term2))
+                  (assoc-list xs term1)))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
+
+(local
+ (defthm assoc-list-append-and-rev-lemma-helper-1
+   (implies (and (canonical-address-listp x)
+                 (byte-listp y)
+                 (no-duplicates-p x)
+                 (equal (len x) (len y))
+                 (<= 2 (len x)))
+            (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist x y)) term))
+                   y))))
+
+(local
+ (defthm assoc-list-append-and-rev-lemma-helper-2
+   (implies (and (canonical-address-listp x)
+                 (canonical-address-listp a)
+                 (byte-listp b)
+                 (no-duplicates-p x)
+                 (no-duplicates-p a)
+                 (equal (len a) (len b))
+                 (<= 2 (len a))
+                 (disjoint-p x a)
+                 (consp term))
+            (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist a b)) term))
+                   (assoc-list x term)))
+   :hints (("Goal" :in-theory (e/d* (disjoint-p) ())))))
+
+(defthm assoc-list-append-and-rev-lemma
+  (implies (and (canonical-address-listp x)
+                (canonical-address-listp a)
+                (byte-listp b)
+                (no-duplicates-p x)
+                (no-duplicates-p a)
+                (equal (len a) (len b))
+                (<= 2 (len b))
+                (consp term))
+           (equal (assoc-list
+                   x
+                   (append (acl2::rev (create-addr-bytes-alist a b))
+                           term))
+                  (if (disjoint-p x a)
+                      (assoc-list x term)
+                    (if (equal x a)
+                        b
+                      ;; Maybe another branch here that deals with
+                      ;; when x is a subset of a?
+                      (assoc-list x
+                                  (append (acl2::rev (create-addr-bytes-alist a b))
+                                          term)))))))
 
 ;; ======================================================================
 
@@ -688,18 +710,17 @@ programmer-level mode.</p>" )
                                 (acl2::rev addr-lst))))))
 
 (local
- (defthm not-member-assoc-equal-alt
+ (defthm not-member-assoc-equal-with-rev-and-strip-cars-alt
    (implies (and (alistp xs)
                  (not (member-p (car (car xs)) (strip-cars (cdr xs)))))
             (equal (cdr (assoc (car (car xs)) (acl2::rev xs)))
                    (cdr (car xs))))
    :hints (("Goal" :in-theory (e/d* ()
-                                    (not-member-assoc-equal))
-            :use ((:instance not-member-assoc-equal
+                                    (not-member-assoc-equal-with-rev-and-strip-cars))
+            :use ((:instance not-member-assoc-equal-with-rev-and-strip-cars
                              (xs (cdr xs))
                              (a (car (car xs)))
                              (b (cdr (car xs)))))))))
-
 
 (defthmd rb-wb-equal
   (implies (and (equal addresses (strip-cars (remove-duplicate-keys addr-lst)))

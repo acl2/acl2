@@ -151,7 +151,7 @@
          ;; apparently does and CCL doesn't.
          (fd (n32 fd))
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_read-raw*
+                                  :unsigned-int (X86ISA::sys_read-raw-idx X86ISA::*the-live-x86*)
                                   :unsigned-int fd
                                   :address ptr
                                   :unsigned-int count
@@ -202,7 +202,7 @@
        ;; (- (cw "syscall-write$notinline: *buf-string: ~x0~%" *buf-string))
        (ptr  (ccl::make-cstring *buf-string))
        (ret  (ccl::external-call "syscall"
-                                 :unsigned-int #.X86ISA::*SYS_write-raw*
+                                 :unsigned-int (X86ISA::sys_write-raw-idx X86ISA::*the-live-x86*)
                                  :unsigned-int fd
                                  :address ptr
                                  :unsigned-int count
@@ -231,7 +231,7 @@
   (b* ( ;; (- (cw "syscall-open$notinline: Entering.~%"))
        (ptr (ccl::make-cstring pathname))
        (ret (ccl::external-call "syscall"
-                                :unsigned-int #.X86ISA::*SYS_open-raw*
+                                :unsigned-int (X86ISA::sys_open-raw-idx X86ISA::*the-live-x86*)
                                 :address ptr
 
                                 :unsigned-int oflags
@@ -287,7 +287,7 @@
          ;; apparently does and CCL doesn't.
          (fd (n32 fd))
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_lseek-raw*
+                                  :unsigned-int (X86ISA::sys_lseek-raw-idx X86ISA::*the-live-x86*)
                                   :unsigned-int fd
                                   :signed-int offset
                                   :signed-int whence
@@ -310,7 +310,7 @@
          ;; apparently does and CCL doesn't.
          (fd (n32 fd))
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_fadvise64-raw*
+                                  :unsigned-int (X86ISA::sys_fadvise64-raw-idx X86ISA::*the-live-x86*)
                                   :unsigned-int fd
                                   :signed-int offset
                                   :signed-int len
@@ -332,7 +332,7 @@
   (let* ((oldptr (ccl::make-cstring oldpath))
          (newptr (ccl::make-cstring newpath))
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_link-raw*
+                                  :unsigned-int (X86ISA::sys_link-raw-idx X86ISA::*the-live-x86*)
                                   :address oldptr
                                   :address newptr
                                   :signed-int)))
@@ -351,7 +351,7 @@
       (X86ISA::syscall-unlink-logic path x86)))
   (let* ((ptr (ccl::make-cstring path))
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_unlink-raw*
+                                  :unsigned-int (X86ISA::sys_unlink-raw-idx X86ISA::*the-live-x86*)
                                   :address ptr
                                   :signed-int)))
     (mv ret x86)))
@@ -373,7 +373,7 @@
          ;; apparently does and CCL doesn't.
          (oldfd (n32 oldfd))
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_dup-raw*
+                                  :unsigned-int (X86ISA::sys_dup-raw-idx X86ISA::*the-live-x86*)
                                   :unsigned-int oldfd
                                   :signed-int)))
     (mv ret x86)))
@@ -396,7 +396,7 @@
          (newfd (n32 newfd))
 
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_dup2-raw*
+                                  :unsigned-int (X86ISA::sys_dup2-raw-idx X86ISA::*the-live-x86*)
                                   :unsigned-int oldfd
                                   :unsigned-int newfd
                                   :signed-int)))
@@ -420,7 +420,7 @@
          (newfd (n32 newfd))
 
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_dup3-raw*
+                                  :unsigned-int (X86ISA::sys_dup3-raw-idx X86ISA::*the-live-x86*)
                                   :unsigned-int oldfd
                                   :unsigned-int newfd
                                   :signed-int flags
@@ -443,7 +443,7 @@
          ;; apparently does and CCL doesn't.
          (fd (n32 fd))
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_fcntl-raw*
+                                  :unsigned-int (X86ISA::sys_fcntl-raw-idx X86ISA::*the-live-x86*)
                                   :unsigned-int fd
                                   :unsigned-int cmd
                                   :unsigned-long arg
@@ -463,7 +463,7 @@
       (X86ISA::syscall-truncate-logic path len x86)))
   (let* ((ptr (ccl::make-cstring path))
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_truncate-raw*
+                                  :unsigned-int (X86ISA::sys_truncate-raw-idx X86ISA::*the-live-x86*)
                                   :address ptr
                                   :unsigned-long len
                                   :signed-int)))
@@ -485,7 +485,7 @@
          ;; apparently does and CCL doesn't.
          (fd (n32 fd))
          (ret (ccl::external-call "syscall"
-                                  :unsigned-int #.X86ISA::*SYS_ftruncate-raw*
+                                  :unsigned-int (X86ISA::sys_ftruncate-raw-idx X86ISA::*the-live-x86*)
                                   :unsigned-int fd
                                   :unsigned-long len
                                   :signed-int)))
@@ -528,7 +528,7 @@
        ((mv ?_statbuf ptr) (ccl::make-heap-ivector size '(unsigned-byte 8)))
        (- (cw "syscall-stat$notinline: path: ~x0~%" path))
        (ret (ccl::external-call "syscall"
-                                :unsigned-int #.X86ISA::*SYS_stat-raw*
+                                :unsigned-int (X86ISA::sys_stat-raw-idx X86ISA::*the-live-x86*)
                                 :address pathPtr
                                 :address ptr
                                 :signed-int))
@@ -578,7 +578,7 @@
        ((mv ?_statbuf ptr) (ccl::make-heap-ivector size '(unsigned-byte 8)))
        (- (cw "syscall-fstat$notinline: fd: ~x0~%" fd))
        (ret (ccl::external-call "syscall"
-                                :unsigned-int #.X86ISA::*SYS_fstat-raw*
+                                :unsigned-int (X86ISA::sys_fstat-raw-idx X86ISA::*the-live-x86*)
                                 :unsigned-int fd
                                 :address ptr
                                 :signed-int))

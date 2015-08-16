@@ -459,6 +459,10 @@ functions</td>
 
       (programmer-level-mode$c :type (satisfies booleanp) :initially t)
 
+      ;; The os-info$c is meaningful only when we are in the
+      ;; programmer-level mode.
+      (os-info$c               :type (satisfies keywordp) :initially :linux)
+
       ;; For our ACL2 model, we define a paging-like mechanism to
       ;; model the complete x86 52-bit address space.  The memory is
       ;; laid out in a flat array, to be viewed as back-to-back

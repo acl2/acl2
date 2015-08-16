@@ -70,7 +70,8 @@ re-arrange these nests of updates.</p>
     :FAULT
     :ENV
     :UNDEF
-    :PROGRAMMER-LEVEL-MODE))
+    :PROGRAMMER-LEVEL-MODE
+    :OS-INFO))
 
 (defconst *x86-array-fields-as-keywords*
   '(:RGF
@@ -302,6 +303,7 @@ re-arrange these nests of updates.</p>
                                                (unsigned-byte-p 64 value)))
                            (:env          (env-alistp value))
                            (:programmer-level-mode (booleanp value))
+                           (:os-info      (keywordp value))
                            (:mem          (and (integerp index)
                                                (unsigned-byte-p 8 value)))
                            (otherwise     (equal index 0)))

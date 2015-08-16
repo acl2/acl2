@@ -308,32 +308,33 @@
   ;; definition.  So I could get them programmatically if I wanted to.
 
   (defn create-x86$a ()
-    (list '0    ;; rgfi
-          '0    ;; rip
-          '2    ;; rflags
-          '0    ;; seg-visiblei
-          '0    ;; seg-hiddeni
-          '0    ;; stri
-          '0    ;; ssr-visiblei
-          '0    ;; ssr-hiddeni
-          '0    ;; ctri
-          '0    ;; dbgi
-          '0    ;; fp-datai
-          '0    ;; fp-ctrl
-          '0    ;; fp-status
-          '0    ;; fp-tag
-          '0    ;; fp-last-inst
-          '0    ;; fp-last-data
-          '0    ;; fp-opcode
-          '0    ;; xmmi
-          '8064 ;; mxcsr
-          '0    ;; msri
-          'nil  ;; ms
-          'nil  ;; fault
-          'nil  ;; env
-          '0    ;; undef
-          't    ;; programmer-level-mode
-          '0    ;; memi
+    (list '0      ;; rgfi
+          '0      ;; rip
+          '2      ;; rflags
+          '0      ;; seg-visiblei
+          '0      ;; seg-hiddeni
+          '0      ;; stri
+          '0      ;; ssr-visiblei
+          '0      ;; ssr-hiddeni
+          '0      ;; ctri
+          '0      ;; dbgi
+          '0      ;; fp-datai
+          '0      ;; fp-ctrl
+          '0      ;; fp-status
+          '0      ;; fp-tag
+          '0      ;; fp-last-inst
+          '0      ;; fp-last-data
+          '0      ;; fp-opcode
+          '0      ;; xmmi
+          '8064   ;; mxcsr
+          '0      ;; msri
+          'nil    ;; ms
+          'nil    ;; fault
+          'nil    ;; env
+          '0      ;; undef
+          't      ;; programmer-level-mode
+          ':linux ;; os-info
+          '0      ;; memi
           ))
 
   )
@@ -3687,6 +3688,86 @@
              (X86$AP (!PROGRAMMER-LEVEL-MODE$A V X86)))
     :RULE-CLASSES NIL)
 
+  (DEFTHML OS-INFO*{CORRESPONDENCE}
+    (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
+             (EQUAL (OS-INFO$C X86$C)
+                    (OS-INFO$A X86)))
+    :hints (("Goal" :in-theory (e/d (os-info$c) ())))
+    :RULE-CLASSES NIL)
+
+  (DEFTHML !OS-INFO*{CORRESPONDENCE}
+    (IMPLIES (AND (CORR X86$C X86)
+                  (X86$AP X86)
+                  (KEYWORDP V))
+             (CORR (!OS-INFO$C V X86$C)
+                   (!OS-INFO$A V X86)))
+    :hints
+    (("Goal" :in-theory (e/d (os-info$cp !os-info$c
+                                         x86$cp good-memp x86$cp-pre)
+                             ())
+      :use ((:instance corr-rgf-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *rgfi* x86)))
+            (:instance corr-seg-visible-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *seg-visiblei* x86)))
+            (:instance corr-seg-hidden-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *seg-hiddeni* x86)))
+            (:instance corr-str-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *stri* x86)))
+            (:instance corr-ssr-visible-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *ssr-visiblei* x86)))
+            (:instance corr-ssr-hidden-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *ssr-hiddeni* x86)))
+            (:instance corr-ctr-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *ctri* x86)))
+            (:instance corr-dbg-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *dbgi* x86)))
+            (:instance corr-msr-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *msri* x86)))
+            (:instance corr-fp-data-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *fp-datai* x86)))
+            (:instance corr-xmm-update-nth
+                       (n *OS-INFO$C*)
+                       (x v)
+                       (x86 X86$C)
+                       (field (nth *xmmi* x86)))
+            )))
+    :RULE-CLASSES NIL)
+
+  (DEFTHML !OS-INFO*{PRESERVED}
+    (IMPLIES (AND (X86$AP X86) (KEYWORDP V))
+             (X86$AP (!OS-INFO$A V X86)))
+    :RULE-CLASSES NIL)
+
   (encapsulate
    ()
 
@@ -4030,6 +4111,7 @@
       (:env                      (env* x86))
       (:undef                    (undef* x86))
       (:programmer-level-mode    (programmer-level-mode* x86))
+      (:os-info                  (os-info* x86))
       (:mem                      (memi* index x86))
       (otherwise                 nil)))
 
@@ -4087,6 +4169,8 @@
                   (:programmer-level-mode
                    (and (equal index 0)
                         (booleanp value)))
+                  (:os-info      (and (equal index 0)
+                                      (keywordp value)))
                   (:mem          (and (< index *mem-size-in-bytes*)
                                       (unsigned-byte-p 8 value)))
                   (otherwise     (equal index 0))))
@@ -4117,6 +4201,7 @@
       (:env                      (!env* value x86))
       (:undef                    (!undef* value x86))
       (:programmer-level-mode    (!programmer-level-mode* value x86))
+      (:os-info                  (!os-info* value x86))
       (:mem                      (!memi* index value x86))
       (otherwise                 x86)))
 

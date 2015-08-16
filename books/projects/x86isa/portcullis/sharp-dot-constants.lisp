@@ -1,7 +1,6 @@
 ;; Shilpi Goel
 
 (in-package "X86ISA")
-(include-book "syscall-numbers")
 (include-book "std/util/defconsts" :dir :system)
 
 ;; ======================================================================
