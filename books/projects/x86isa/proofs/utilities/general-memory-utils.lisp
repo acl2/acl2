@@ -140,6 +140,10 @@
            (addr-byte-alistp (append x y)))
   :rule-classes (:rewrite :type-prescription))
 
+(defthm addr-byte-alistp-rev
+  (implies (addr-byte-alistp alst)
+           (addr-byte-alistp (acl2::rev alst))))
+
 (defthm strip-cdrs-addr-byte-alistp-is-byte-listp
   (implies (addr-byte-alistp addr-lst)
            (byte-listp (strip-cdrs addr-lst)))
@@ -164,18 +168,60 @@
 
 ;; ----------------------------------------------------------------------
 
-(defun assoc-list (slst blst)
+(define assoc-list ((slst true-listp)
+                    (blst alistp))
+
+  :enabled t
 
   ;; (assoc-list  '(a b c) '((a . 1) (b . 2) (c . 3) (d . 4))) =>
   ;; '(1 2 3)
 
-  (declare (xargs :guard (and (true-listp slst)
-                              (alistp blst))))
   (if (or (endp slst)
           (endp blst))
       nil
     (cons (cdr (assoc-equal (car slst) blst))
-          (assoc-list (cdr slst) blst))))
+          (assoc-list (cdr slst) blst)))
+
+  ///
+
+  (local (include-book "std/lists/nthcdr" :dir :system))
+
+  (defthm assoc-list-and-cons
+    (implies (and (not (member-p ax cx))
+                  (consp term))
+             (equal (assoc-list cx (cons (cons ax ay) term))
+                    (assoc-list cx term))))
+
+  (defthm assoc-list-and-create-addr-bytes-alist
+    (implies (and (true-listp y)
+                  ;; (consp (create-addr-bytes-alist (cdr x) (cdr y)))
+                  (equal (len x) (len y))
+                  ;; (not (zp (len (cdr y))))
+                  (<= 2 (len y))
+                  (no-duplicates-p x))
+             (equal (assoc-list x (create-addr-bytes-alist x y))
+                    y)))
+
+  (defthm assoc-and-append-with-list-cons
+    (implies (not (equal ax cx))
+             (equal (assoc-equal cx (append term (list (cons ax ay))))
+                    (assoc-equal cx term))))
+
+  (defthm assoc-list-of-append-with-list-cons
+    (implies (and (not (member-p ax cx))
+                  (consp term))
+             (equal (assoc-list cx (append term (list (cons ax ay))))
+                    (assoc-list cx term))))
+
+  (defthm assoc-list-of-rev-of-create-addr-bytes-alist
+    (implies (and (true-listp y)
+                  (equal (len x) (len y))
+                  (<= 2 (len y))
+                  (no-duplicates-p x))
+             (equal (assoc-list x (acl2::rev (create-addr-bytes-alist x y)))
+                    y)))
+
+  )
 
 ;; ----------------------------------------------------------------------
 
@@ -301,44 +347,3 @@
 
 
 ;; ======================================================================
-
-;; (i-am-here)
-
-;; (defthm disjoint-p-wart-lemma-1
-;;   (implies (and (integerp addr1)
-;;                 (integerp addr2)
-;;                 (disjoint-p (addr-range 8 addr1)
-;;                             (addr-range 8 addr2)))
-;;            (disjoint-p (addr-range 4 addr2)
-;;                        (addr-range 4 (+ 4 addr1))))
-;;   :hints (("Goal" :use ((:instance disjoint-p-commutative
-;;                                    (a (addr-range 4 addr2))
-;;                                    (b (addr-range 4 (+ 4 addr1))))))))
-
-;; (defaxiom check-1
-;;   (implies (disjoint-p (addr-range 8 addr1)
-;;                        (addr-range 8 addr2))
-;;            (and (disjoint-p (addr-range 4 addr1)
-;;                             (addr-range 4 addr2))
-;;                 (disjoint-p (addr-range 4 addr1)
-;;                             (addr-range 4 (+ 4 addr2)))
-;;                 (disjoint-p (addr-range 4 (+ 4 addr2))
-;;                             (addr-range 4 addr1))
-;;                 (disjoint-p (addr-range 4 (+ 4 addr1))
-;;                             (addr-range 4 addr2))
-;;                 (disjoint-p (addr-range 4 addr2)
-;;                             (addr-range 4 (+ 4 addr1)))
-;;                 (disjoint-p (addr-range 4 (+ 4 addr1))
-;;                             (addr-range 4 (+ 4 addr2)))
-;;                 (disjoint-p (addr-range 4 (+ 4 addr2))
-;;                             (addr-range 4 (+ 4 addr1))))))
-
-;; (defaxiom check-2
-;;   (implies (disjoint-p (addr-range 8 addr1)
-;;                        (addr-range 8 addr2))
-;;            (disjoint-p (addr-range 4 addr2)
-;;                        (addr-range 4 (+ 4 addr1)))))
-
-;; (defaxiom check-3
-;;   (disjoint-p (addr-range 4 addr1)
-;;               (addr-range 4 (+ 4 addr1))))

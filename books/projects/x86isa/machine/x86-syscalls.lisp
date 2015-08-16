@@ -5,6 +5,7 @@
 
 (in-package "X86ISA")
 
+(include-book "x86-syscall-numbers")
 (include-book "x86-environment" :ttags (:undef-flg))
 
 (local (include-book "std/lists/nthcdr" :dir :system))
@@ -156,31 +157,6 @@ specification more and more complete as time goes on.  Of course,
 anything we don't want to implement can always be thought of or
 implemented as something obtained from the oracle, which might be a
 really good thing to do to keep the model simple.</p>"
-  )
-
-(defxdoc syscall-numbers
-  :parents (x86-syscalls)
-  :short "OS-specific system call numbers"
-  :long "<p>System call numbers differ among different operating
-  systems.  For example, on Linux machines, the read syscall number is
-  0 but on Darwin machines, it is 3.  The x86 model currently supports
-  syscall numbers for Linux and Darwin operating systems only.</p>
-
-<p>We define the syscall constants according to the OS you are using
-on your machine. We do so by checking the @('*features*') of the
-underlying Lisp for the keywords 'linux' or 'darwin'. If your Lisp
-does not mention either of these in its *features*, then you might
-observe unexpected values of syscall numbers. <a
-href='http://ccl.clozure.com/'>CCL</a>, our preferred Lisp, does
-support these keywords in its @('*features*').</p>
-
-<p>A somewhat weird consequence of this in the @(see
-programmer-level-mode) is that you will not be able to reason about
-Linux binaries that use system calls if you are using a Darwin
-machine, and vice versa.  Of course, you can not expect to execute a
-Linux binary with system calls while on a Darwin machine, and vice
-versa.</p>"
-
   )
 
 ;; ======================================================================

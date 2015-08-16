@@ -477,6 +477,7 @@ memory.</li>
                (n08p byte)
                (addr-byte-alistp rest)))))
     ///
+
     (defthm addr-byte-alistp-fwd-chain-to-alistp
       (implies (addr-byte-alistp alst)
                (alistp alst))
@@ -594,10 +595,10 @@ memory.</li>
 
   (define byte-ify-general
     ((n   natp)
-     (val natp)
+     (val integerp)
      (acc byte-listp))
 
-    :short "@('byte-ify-general') takes a positive value @('val') and
+    :short "@('byte-ify-general') takes an integer @('val') and
   converts it into a list of @('n') bytes."
 
     :long "<p>The list produced by @('byte-ify-general') has the least
@@ -612,14 +613,15 @@ memory.</li>
 
 
     (if (mbt (and (natp n)
-                  (natp val)
+                  (integerp val)
                   (byte-listp acc)))
 
-        (if (zp n)
-            (reverse acc)
-          (b* ((acc (cons (loghead 8 val) acc))
-               (val (logtail 8 val)))
-              (byte-ify-general (1- n) val acc)))
+        (b* ((val (loghead n val)))
+            (if (zp n)
+                (reverse acc)
+              (b* ((acc (cons (loghead 8 val) acc))
+                   (val (logtail 8 val)))
+                  (byte-ify-general (1- n) val acc))))
 
       nil)
 
@@ -635,14 +637,14 @@ memory.</li>
 
     (defthm len-of-byte-ify-general
       (implies (and (natp n)
-                    (natp val)
+                    (integerp val)
                     (byte-listp acc))
                (equal (len (byte-ify-general n val acc))
                       (+ n (len acc)))))
 
     (defthm consp-byte-ify-general
       (implies (and (natp n)
-                    (natp val)
+                    (integerp val)
                     (byte-listp acc)
                     (or (consp acc)
                         (< 0 n)))
@@ -651,7 +653,7 @@ memory.</li>
     (local (include-book "std/lists/nthcdr" :dir :system))
 
     (defthm consp-nthcdr-of-byte-ify-general
-      (implies (and (natp val)
+      (implies (and (integerp val)
                     (natp n)
                     (natp m)
                     (< m n)
@@ -663,16 +665,16 @@ memory.</li>
       (implies (and (natp n)
                     (natp m)
                     (< m n)
-                    (natp val)
+                    (integerp val)
                     (byte-listp acc))
                (equal (len (nthcdr m (byte-ify-general n val acc)))
                       (- (+ n (len acc)) m)))
       :hints (("Goal" :in-theory (e/d (nfix) ())))
       :rule-classes :linear))
 
-  (define byte-ify ((n natp) (val natp))
-    :short "@('byte-ify') takes a positive value @('val') and converts
-  it into a list of at least @('n') bytes."
+  (define byte-ify ((n natp) (val integerp))
+    :short "@('byte-ify') takes an integer @('val') and converts it
+  into a list of at least @('n') bytes."
 
     :long "<p>The least significant byte is the first element of the
   list produced by @('byte-ify'). A couple of clairifying examples are
@@ -725,12 +727,12 @@ memory.</li>
 
     (defthm len-of-byte-ify
       (implies (and (natp n)
-                    (natp val))
+                    (integerp val))
                (equal (len (byte-ify n val)) n)))
 
     (defthm consp-byte-ify
       (implies (and (natp n)
-                    (natp val)
+                    (integerp val)
                     (< 0 n))
                (consp (byte-ify n val)))
       :hints (("Goal" :in-theory (e/d (byte-ify) ()))))
@@ -738,7 +740,7 @@ memory.</li>
     (local (include-book "std/lists/nthcdr" :dir :system))
 
     (defthm consp-nthcdr-of-byte-ify
-      (implies  (and (natp val)
+      (implies  (and (integerp val)
                      (natp n)
                      (natp m)
                      (< m n))
@@ -750,7 +752,7 @@ memory.</li>
       (implies (and (natp n)
                     (natp m)
                     (< m n)
-                    (natp val))
+                    (integerp val))
                (equal (len (nthcdr m (byte-ify n val)))
                       (- n m)))
       :hints (("Goal" :in-theory (e/d (nfix) ())))))
@@ -1101,8 +1103,11 @@ memory.</li>
 
     ///
 
-    (local (include-book "std/lists/nthcdr" :dir :system))
-    (local (include-book "std/lists/nth" :dir :system))
+    (defthm consp-create-addr-bytes-alist
+      (implies (and (not (zp (len byte-list)))
+                    (equal (len addr-list) (len byte-list)))
+               (consp (create-addr-bytes-alist addr-list byte-list)))
+      :rule-classes (:rewrite :type-prescription))
 
     (defthm addr-byte-alistp-create-addr-bytes-alist
       (implies (and (canonical-address-listp addrs)
@@ -1138,7 +1143,13 @@ memory.</li>
                (equal (strip-cdrs
                        (append (create-addr-bytes-alist addrs1 bytes1)
                                (create-addr-bytes-alist addrs2 bytes2)))
-                      (append bytes1 bytes2)))))
+                      (append bytes1 bytes2))))
+
+    (defthm len-of-create-addr-bytes-alist
+      (implies (and (not (zp (len byte-list)))
+                    (equal (len addr-list) (len byte-list)))
+               (equal (len (create-addr-bytes-alist addr-list byte-list))
+                      (len addr-list)))))
 
 
   (define create-canonical-address-list (count addr)
@@ -1179,8 +1190,6 @@ memory.</li>
                     (canonical-address-p (+ -1 addr count)))
                (equal (len (create-canonical-address-list count addr))
                       count))))
-
-
 
   (define addr-range (count addr)
     :guard (natp count)

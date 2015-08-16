@@ -1266,6 +1266,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    signed-byte-p)))
 
 (defrule page-table-entry-with-accessed-and-dirty-bits-set-still-valid-ia32e-la-to-pa-page-table
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-page-table-entry-validp
                  lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86)
                 (equal page-table-entry-addr
@@ -1362,6 +1363,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    signed-byte-p)))
 
 (defrule reading-entry-with-accessed-and-dirty-bits-set-ia32e-la-to-pa-page-table
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-page-table-entry-validp
                  lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86)
                 (equal page-table-entry-addr
@@ -12897,6 +12899,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; ......................................................................
 
 (defrule mv-nth-0-no-error-ia32e-la-to-pa
+  :parents (reasoning-about-page-tables)
   (implies (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
            (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x cpl x86))
                   nil))
@@ -12904,6 +12907,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
   :in-theory (e/d (ia32e-la-to-pa) (not force (force))))
 
 (defrule mv-nth-1-no-error-ia32e-la-to-pa
+  :parents (reasoning-about-page-tables)
   (implies (and (equal cr0 (n32 (ctri *cr0* x86)))
                 (equal cr4 (n21 (ctri *cr4* x86)))
                 (equal ia32-efer
@@ -12926,6 +12930,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
   :in-theory (e/d (ia32e-la-to-pa) (not force (force))))
 
 (defrule mv-nth-2-no-error-ia32e-la-to-pa
+  :parents (reasoning-about-page-tables)
   (implies (and (equal cr0 (n32 (ctri *cr0* x86)))
                 (equal cr4 (n21 (ctri *cr4* x86)))
                 (equal ia32-efer
@@ -12949,6 +12954,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                   (not)))
 
 (defrule mv-nth-0-no-error-ia32e-la-to-pa-with-disjoint-!memi
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 1 addr)
@@ -12963,6 +12969,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    signed-byte-p)))
 
 (defrule mv-nth-0-no-error-ia32e-la-to-pa-with-disjoint-wm-low-64
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 8 addr)
@@ -12978,6 +12985,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    signed-byte-p)))
 
 (defrule mv-nth-1-no-error-ia32e-la-to-pa-with-disjoint-!memi
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 1 addr)
@@ -12994,6 +13002,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    signed-byte-p)))
 
 (defrule mv-nth-1-no-error-ia32e-la-to-pa-with-disjoint-wm-low-64
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 8 addr)
@@ -13015,6 +13024,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; ......................................................................
 
 (defrule disjoint-!memi-mv-nth-2-no-error-ia32e-la-to-pa
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 1 addr)
@@ -13035,6 +13045,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; ......................................................................
 
 (defrule disjoint-memi-read-mv-nth-2-no-error-ia32e-la-to-pa
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 1 addr)
@@ -13049,6 +13060,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    mv-nth-2-no-error-ia32e-la-to-pa-pml4-table)))
 
 (defrule disjoint-rm-low-64-read-mv-nth-2-no-error-ia32e-la-to-pa
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 8 addr)
@@ -13063,6 +13075,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    mv-nth-2-no-error-ia32e-la-to-pa-pml4-table)))
 
 (defrule disjoint-rm-low-32-read-mv-nth-2-no-error-ia32e-la-to-pa
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 4 addr)
@@ -13082,6 +13095,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; ......................................................................
 
 (defrule entry-with-disjoint-!memi-still-valid-ia32e-la-to-pa
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 1 addr)
@@ -13095,6 +13109,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    signed-byte-p)))
 
 (defrule entry-with-disjoint-wm-low-64-still-valid-ia32e-la-to-pa
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
                 (pairwise-disjoint-p-aux
                  (addr-range 8 addr)
@@ -13116,6 +13131,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; 1G pages:
 
 (defrule re-read-entry-still-valid-ia32e-la-to-pa-1G-pages
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr r-w-x-2 cpl-2 x86)
                 ;; For ia32e-la-to-pa-pml4-table
@@ -13157,6 +13173,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; 2M pages:
 
 (defrule re-read-entry-still-valid-ia32e-la-to-pa-2M-pages
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr r-w-x-2 cpl-2 x86)
                 ;; For ia32e-la-to-pa-pml4-table
@@ -13205,6 +13222,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; 4K pages:
 
 (defrule re-read-entry-still-valid-ia32e-la-to-pa-4K-pages
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr r-w-x-2 cpl-2 x86)
                 ;; For ia32e-la-to-pa-pml4-table
@@ -13266,6 +13284,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; 1G pages:
 
 (defrule two-page-table-walks-ia32e-la-to-pa-1G-pages-same-addresses
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr r-w-x-2 cpl-2 x86)
                 ;; For ia32e-la-to-pa-pml4-table
@@ -13304,6 +13323,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                signed-byte-p)))
 
 (defrule two-page-table-walks-ia32e-la-to-pa-1G-pages-same-entry-different-addrs
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr-1 r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr-2 r-w-x-2 cpl-2 x86)
                 ;; For ia32e-la-to-pa-pml4-table
@@ -13355,6 +13375,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; 2M pages:
 
 (defrule two-page-table-walks-ia32e-la-to-pa-2M-pages-same-addresses
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr r-w-x-2 cpl-2 x86)
                 ;; For ia32e-la-to-pa-pml4-table
@@ -13404,6 +13425,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                signed-byte-p)))
 
 (defrule two-page-table-walks-ia32e-la-to-pa-2M-pages-same-entry-different-addrs
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr-1 r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr-2 r-w-x-2 cpl-2 x86)
                 ;; For ia32e-la-to-pa-pml4-table
@@ -13470,6 +13492,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; 4K pages:
 
 (defrule two-page-table-walks-ia32e-la-to-pa-4K-pages-same-addresses
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr r-w-x-2 cpl-2 x86)
                 ;; For ia32e-la-to-pa-pml4-table
@@ -13513,6 +13536,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                signed-byte-p)))
 
 (defrule two-page-table-walks-ia32e-la-to-pa-4K-pages-same-entry-different-addrs
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr-1 r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr-2 r-w-x-2 cpl-2 x86)
                 ;; For ia32e-la-to-pa-pml4-table
@@ -13579,6 +13603,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; ......................................................................
 
 (defrule two-page-table-walks-ia32e-la-to-pa-different-entries
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr-1 r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr-2 r-w-x-2 cpl-2 x86)
 
@@ -13617,6 +13642,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; ......................................................................
 
 (defrule validity-preserved-same-x86-state-disjoint-addresses-top-level-thm
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr-1 r-w-x-1 cpl-1 x86)
                 (ia32e-la-to-pa-validp lin-addr-2 r-w-x-2 cpl-2 x86)
 
@@ -13648,6 +13674,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; ......................................................................
 
 (defrule translation-governing-addresses-and-ia32e-la-to-pa-pairwise-disjoint
+  :parents (reasoning-about-page-tables)
   (implies (and (ia32e-la-to-pa-validp lin-addr-2 r-w-x-2 cpl-2 x86)
                 (pairwise-disjoint-p
                  (append
