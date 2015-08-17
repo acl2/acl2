@@ -16,12 +16,14 @@
   (declare (xargs :guard (real/rationalp x)))
   (- (fl (- x))))
 
-(defund chop-r (x k radix)
+(defmacro radixp (r)
+  `(and (integerp ,r) (>= ,r 2)))
+
+(defund chop-r (x k r)
   (declare (xargs :guard (and (real/rationalp x)
                               (integerp k)
-                              (integerp radix)
-                              (>= radix 2))))
-  (/ (fl (* (expt radix k) x)) (expt radix k)))
+                              (radixp r))))
+  (/ (fl (* (expt r k) x)) (expt r k)))
 
 (defund chop (x k)
   (/ (fl (* (expt 2 k) x)) (expt 2 k)))
