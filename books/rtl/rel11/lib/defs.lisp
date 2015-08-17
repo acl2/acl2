@@ -179,7 +179,7 @@
 
 (defund encodingp (x f)
   (declare (xargs :guard (formatp f)))
-  (bvecp x (+ 1 (expw f) (sigw f))))
+  (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
 
 (defund sp () (declare (xargs :guard t)) '(nil 24 8))
 
@@ -229,6 +229,7 @@
 
 (defund nrepp (x f)
   (and (rationalp x)
+       (formatp f)
        (not (= x 0))
        (< 0 (+ (expo x) (bias f)))
        (< (+ (expo x) (bias f)) (1- (expt 2 (expw f))))
@@ -287,6 +288,7 @@
 
 (defund drepp (x f)
   (and (rationalp x)
+       (formatp f)
        (not (= x 0))
        (<= (- 2 (prec f)) (+ (expo x) (bias f)))
        (<= (+ (expo x) (bias f)) 0)
