@@ -63,9 +63,6 @@
 (include-book "../lib3.delta2/bvecp-raw-helpers")
 ;; ; better bvecp-raw-helpers.lisp, Fri Jun 29 10:13:32 2007
 
-(include-book "../lib3.delta2/rom-helpers")
-
-
 (include-book "../lib3/bvecp-helpers")
 
 (include-book "../lib3.delta2/logn")
