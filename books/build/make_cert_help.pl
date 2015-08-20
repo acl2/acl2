@@ -732,6 +732,10 @@ if ($success) {
 	$black = "";
     }
 
+    if ($ENV{"CERT_PL_RM_OUTFILES"}) {
+	unlink($outfile);
+    }
+
     printf("%sBuilt %s (%ds)%s\n", $color, $printgoal, $ELAPSED, $black);
 
 } else {
