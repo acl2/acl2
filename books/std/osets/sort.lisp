@@ -307,6 +307,8 @@ the original list.</p>"
                t
              nil)))
 
+  (local (in-theory (enable subset)))
+
   (verify-guards mergesort)
 
   (defthm mergesort-set-identity

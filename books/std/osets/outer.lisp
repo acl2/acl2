@@ -45,11 +45,74 @@
 (set-verify-guards-eagerness 2)
 
 
+#|| 
+Q. Why do we need SUBSET enabled?
+
+I think I understand what's going on here.  For a reproducible example, you can
+just open up std/osets/outer.lisp and try to prove the first theorem with
+subset disabled.  This leads to the goal below, which is perfectly fine, just
+before the pick-a-point strategy kicks in:
+
+   Subgoal 2.2
+   (IMPLIES (IN A Y)
+            (SUBSET (UNION Y (DELETE A X))
+                    (UNION X Y))).
+
+But after the hint applies, it produces a really weird goal, which ultimately
+fails to prove and seems to be the real culprit:
+
+   Subgoal 2.2.1
+   (EQUAL (SUBSET SET-FOR-ALL-REDUCTION (UNION X Y))
+          (COND ((EMPTY SET-FOR-ALL-REDUCTION) T)
+                ((IN (HEAD SET-FOR-ALL-REDUCTION)
+                     (UNION X Y))
+                 (SUBSET (TAIL SET-FOR-ALL-REDUCTION)
+                         (UNION X Y)))
+                (T NIL))).
+
+I don't like this goal at all.  It appears to be due to needing to prove that
+(SUBSET X Y) is equivalent to (ALL X) when (PREDICATE A) == (IN A Y).  The goal
+above basically corresponds to the recursive definition of ALL:
+
+  (defun all (set-for-all-reduction)
+    (declare (xargs :guard (setp set-for-all-reduction)))
+    (if (empty set-for-all-reduction)
+        t
+      (and (predicate (head set-for-all-reduction))
+           (all (tail set-for-all-reduction)))))
+
+After tinkering around with several solutions, I think I found one that will
+work well.  I'm doing a full regression with it now.  I'm not planning to
+disable subset by default (which would be a bigger change), but with this rule
+in place it does seem like the pick-a-point proofs in the osets library are
+going through OK even with subset disabled, so I'm optimistic that the new
+rule will work:
+
+  (defthm pick-a-point-subset-constraint-helper
+    ;; When we do a pick-a-point proof of subset, we need to show that (SUBSET X
+    ;; Y) is just the same as (ALL X) with (PREDICATE A) = (IN A Y).  Since ALL
+    ;; is defined recursively, the proof goals we get end up mentioning
+    ;; HEAD/TAIL.  This doesn't always work well if the user's theory doesn't
+    ;; have the right rules enabled.  This rule is intended to open up SUBSET in
+    ;; only this very special case to solve such goals.
+    (implies (syntaxp (equal set-for-all-reduction 'set-for-all-reduction))
+             (equal (subset set-for-all-reduction rhs)
+                    (cond ((empty set-for-all-reduction) t)
+                          ((in (head set-for-all-reduction) rhs)
+                           (subset (tail set-for-all-reduction) rhs))
+                          (t nil)))))
+
+Once the regressions pass I'll push it...
+
+Cheers,
+Jared
+||#
+
 (defthm union-delete-X
-    (equal (union (delete a X) Y)
-           (if (in a Y)
-               (union X Y)
-             (delete a (union X Y)))))
+  (equal (union (delete a X) Y)
+         (if (in a Y)
+             (union X Y)
+           (delete a (union X Y)))))
 
 (defthm union-delete-Y
     (equal (union X (delete a Y))
@@ -136,7 +199,8 @@
   (implies (not (subset x y))
            (< (cardinality (intersect x y))
               (cardinality x)))
-  :rule-classes (:rewrite :linear))
+  :rule-classes (:rewrite :linear)
+  :hints(("Goal" :in-theory (enable subset))))
 
 (defthmd intersect-cardinality-subset-2
   (equal (equal (cardinality (intersect X Y))
