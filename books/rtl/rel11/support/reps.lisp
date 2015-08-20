@@ -822,7 +822,6 @@
 
 (defruled spd-mult
   (implies (and (formatp f)
-		(real/rationalp r)
                 (> r 0)
 		(= m (/ r (spd f))))
 	   (iff (drepp r f)
