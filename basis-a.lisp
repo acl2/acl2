@@ -4587,6 +4587,12 @@
 ; (Otherwise such a check is only made when the wormhole call below is actually
 ; evaluated.)
 
+; Parallelism blemish: avoid calling io? with commentp = t under
+; with-output-lock.  During experimentation, we have ACL2(p) hang in such a
+; case, because of the interaction of locks created by wormhole1 and
+; with-output-lock.  (So more generally, avoid calling with-wormhole-lock in
+; the scope of with-output-lock; the other way around is fine.)
+
   (declare (xargs :guard (and (symbolp token)
                               (symbol-listp vars)
                               (no-duplicatesp vars)

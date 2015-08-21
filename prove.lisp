@@ -3773,11 +3773,12 @@
 
 (defun waterfall-msg1
   (processor cl-id signal clauses new-hist msg ttree pspv state)
-  (pprogn
+  (with-output-lock
+   (pprogn
 
 ;  (maybe-show-gag-state cl-id pspv state) ; debug
 
-   (cond
+    (cond
 
 ; Suppress printing for :OR splits; see also other comments with this header.
 
@@ -3788,49 +3789,49 @@
 ;               (cons #\1 (or-hit-msg t cl-id ttree)))
 ;         (proofs-co state) state nil))
 
-    ((and msg (gag-mode))
-     (fms "~@0~|" (list (cons #\0 msg)) (proofs-co state) state nil))
-    (t state))
-   (cond
-    ((gag-mode)
-     (print-splitter-rules-summary cl-id clauses ttree (proofs-co state)
-                                   state))
-    (t
-     (case
-       processor
-       (apply-top-hints-clause
+     ((and msg (gag-mode))
+      (fms "~@0~|" (list (cons #\0 msg)) (proofs-co state) state nil))
+     (t state))
+    (cond
+     ((gag-mode)
+      (print-splitter-rules-summary cl-id clauses ttree (proofs-co state)
+                                    state))
+     (t
+      (case
+        processor
+        (apply-top-hints-clause
 
 ; Note that the args passed to apply-top-hints-clause, and to
 ; simplify-clause-msg1 below, are nonstandard.  This is what allows the
 ; simplify message to detect and report if the just performed simplification
 ; was specious.
 
-        (apply-top-hints-clause-msg1
-         signal cl-id clauses
-         (consp (access history-entry (car new-hist)
-                        :processor))
-         ttree pspv state))
-       (preprocess-clause
-        (preprocess-clause-msg1 signal clauses ttree pspv state))
-       (simplify-clause
-        (simplify-clause-msg1 signal cl-id clauses
-                              (consp (access history-entry (car new-hist)
-                                             :processor))
-                              ttree pspv state))
-       (settled-down-clause
-        (settled-down-clause-msg1 signal clauses ttree pspv state))
-       (eliminate-destructors-clause
-        (eliminate-destructors-clause-msg1 signal clauses ttree
-                                           pspv state))
-       (fertilize-clause
-        (fertilize-clause-msg1 signal clauses ttree pspv state))
-       (generalize-clause
-        (generalize-clause-msg1 signal clauses ttree pspv state))
-       (eliminate-irrelevance-clause
-        (eliminate-irrelevance-clause-msg1 signal clauses ttree
-                                           pspv state))
-       (otherwise
-        (push-clause-msg1 cl-id signal clauses ttree pspv state)))))))
+         (apply-top-hints-clause-msg1
+          signal cl-id clauses
+          (consp (access history-entry (car new-hist)
+                         :processor))
+          ttree pspv state))
+        (preprocess-clause
+         (preprocess-clause-msg1 signal clauses ttree pspv state))
+        (simplify-clause
+         (simplify-clause-msg1 signal cl-id clauses
+                               (consp (access history-entry (car new-hist)
+                                              :processor))
+                               ttree pspv state))
+        (settled-down-clause
+         (settled-down-clause-msg1 signal clauses ttree pspv state))
+        (eliminate-destructors-clause
+         (eliminate-destructors-clause-msg1 signal clauses ttree
+                                            pspv state))
+        (fertilize-clause
+         (fertilize-clause-msg1 signal clauses ttree pspv state))
+        (generalize-clause
+         (generalize-clause-msg1 signal clauses ttree pspv state))
+        (eliminate-irrelevance-clause
+         (eliminate-irrelevance-clause-msg1 signal clauses ttree
+                                            pspv state))
+        (otherwise
+         (push-clause-msg1 cl-id signal clauses ttree pspv state))))))))
 
 (defmacro io?-prove-cw (vars body &rest keyword-args)
 
@@ -3852,18 +3853,19 @@
   `(io?-prove-cw ,@rst))
 
 (defun waterfall-print-clause-body (cl-id clause state)
-  (pprogn
-   (increment-timer 'prove-time state)
-   (fms "~@0~|~q1.~|"
-        (list (cons #\0 (tilde-@-clause-id-phrase cl-id))
-              (cons #\1 (prettyify-clause
-                         clause
-                         (let*-abstractionp state)
-                         (w state))))
-        (proofs-co state)
-        state
-        (term-evisc-tuple nil state))
-   (increment-timer 'print-time state)))
+  (with-output-lock
+   (pprogn
+    (increment-timer 'prove-time state)
+    (fms "~@0~|~q1.~|"
+         (list (cons #\0 (tilde-@-clause-id-phrase cl-id))
+               (cons #\1 (prettyify-clause
+                          clause
+                          (let*-abstractionp state)
+                          (w state))))
+         (proofs-co state)
+         state
+         (term-evisc-tuple nil state))
+    (increment-timer 'print-time state))))
 
 (defmacro waterfall-print-clause-id-fmt1-call (cl-id)
 
