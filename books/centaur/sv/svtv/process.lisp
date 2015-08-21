@@ -1105,6 +1105,10 @@ documentation; if any of @(':parents'), @(':short'), or @(':long') are given
 then additional xdoc will also be generated to show a timing diagram.
 @(':labels'), if provided, label the phases in that timing diagram.</li>
 
+<li>@(':simplify') is T by default; it can be set to NIL to avoid rewriting the
+output svex expressions, which may be desirable if you are doing a
+decomposition proof.</li>
+
 </ul>
 
 ")

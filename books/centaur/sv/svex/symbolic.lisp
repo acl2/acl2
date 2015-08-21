@@ -1664,6 +1664,45 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                          (svex-argmasks-lookup x masks))))
       :flag list)))
 
+
+(define svex-mask-alist-extract-vars ((x svex-mask-alist-p))
+  :returns (new-x svex-mask-alist-p)
+  :measure (len (svex-mask-alist-fix x))
+  (b* ((x (svex-mask-alist-fix x)))
+    (if (atom x)
+        nil
+      (if (eq (svex-kind (caar x)) :var)
+          (hons-acons (caar x) (cdar x)
+                      (svex-mask-alist-extract-vars (cdr x)))
+        (svex-mask-alist-extract-vars (cdr x)))))
+  ///
+  (defret lookup-in-svex-mask-alist-extract-vars
+    (equal (hons-assoc-equal s new-x)
+           (and (equal (svex-kind s) :var)
+                (hons-assoc-equal s (svex-mask-alist-fix x)))))
+
+  (local (defthm assoc-in-svex-mask-alist-p
+           (implies (svex-mask-alist-p x)
+                    (equal (assoc k x)
+                           (hons-assoc-equal k x)))
+           :hints(("Goal" :in-theory (enable svex-mask-alist-p)))))
+
+  (defret svex-mask-lookup-in-svex-mask-alist-extract-vars
+    (equal (svex-mask-lookup s new-x)
+           (if (equal (svex-kind s) :var)
+               (svex-mask-lookup s x)
+             0))
+    :hints(("Goal" :in-theory (enable svex-mask-lookup))))
+
+  (defret svex-maskbits-ok-of-svex-mask-alist-extract-vars
+    (iff (svex-maskbits-ok vars new-x)
+         (svex-maskbits-ok vars x))
+    :hints(("Goal" :in-theory (enable svex-maskbits-ok)
+            :induct (svex-maskbits-ok vars x)
+            :do-not-induct t))))
+
+
+
 (define svex-varmasks/env->aig-env-rec ((vars svarlist-p)
                                         (masks svex-mask-alist-p)
                                         (boolmasks svar-boolmasks-p)
@@ -1774,7 +1813,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     (b* (((mv err a4env ?nextvar1)
           (svex-varmasks->a4env-rec vars masks boolmasks nextvar a4acc))
          ((mv ?err1 env ?nextvar1)
-          (svex-varmasks/env->aig-env-rec vars masks boolmasks goalenv nextvar envacc)))
+          (svex-varmasks/env->aig-env-rec
+           vars (svex-mask-alist-extract-vars masks) boolmasks goalenv nextvar envacc)))
       (implies (and (not err)
                     (nat-bool-a4env-p a4acc)
                     (nat-bool-a4env-upper-boundp nextvar a4acc)
@@ -1849,7 +1889,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     (b* (((mv err a4env)
           (svex-varmasks->a4env vars masks boolmasks))
          ((mv ?err1 env)
-          (svex-varmasks/env->aig-env vars masks boolmasks goalenv)))
+          (svex-varmasks/env->aig-env
+           vars (svex-mask-alist-extract-vars masks) boolmasks goalenv)))
       (implies (and (not err)
                     (svex-mask-alist-p masks)
                     (svar-boolmasks-p boolmasks)
@@ -1909,6 +1950,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   ///
   (memoize 'svexlist-mask-alist-memo))
 
+
 (define svexlist->a4vecs-for-varlist ((x svexlist-p)
                                       (vars svarlist-p)
                                       (boolmasks svar-boolmasks-p))
@@ -1934,6 +1976,22 @@ to the svexes.</p>"
   ///
   (memoize 'svexlist->a4vecs-for-varlist))
 
+
+
+
+(define svexlist-variable-mask-alist ((x svexlist-p))
+  ;; We've seen problems in GL where we get a stack overflow in
+  ;; gobject-hierarchy-lite traversing the full masks inside
+  ;; svexlist->a4vec-aig-env-for-varlist.  But we don't need the full set of
+  ;; masks there, only those for the variables.  So to work around this
+  ;; problem, this function extracts only the variables from the mask alist,
+  ;; producing a much smaller alist.
+  :returns (varmasks svex-mask-alist-p)
+  :enabled t
+  (b* ((masks-full (svexlist-mask-alist-memo x)))
+    (svex-mask-alist-extract-vars masks-full)))
+
+
 (define svexlist->a4vec-aig-env-for-varlist ((x svexlist-p)
                                              (vars svarlist-p)
                                              (boolmasks svar-boolmasks-p)
@@ -1941,9 +1999,19 @@ to the svexes.</p>"
   :returns (mv (err (iff err (not (svex-maskbits-ok vars (svexlist-mask-alist x)))))
                (aig-env))
   :hooks ((:fix :args (x vars)))
-  (b* ((masks (svexlist-mask-alist-memo x)))
+  ;; We use svexlist-variable-mask-alist here rather than
+  ;; svexlist-mask-alist-memo so that GL won't have to traverse the full mask
+  ;; alist with gobject-hierarchy-lite, which we've seen cause stack overflows.
+  (b* ((masks (svexlist-variable-mask-alist x)))
     (svex-varmasks/env->aig-env vars masks boolmasks env))
   ///
+  ;; (local (defthm svex-envs-mask-equiv-lemma
+  ;;          (iff (svex-envs-mask-equiv
+  ;;                (svexlist-mask-alist x) y z)
+  ;;               (svex-envs-mask-equiv
+  ;;                (svexlist-variable-mask-alist x) y z))
+  ;;          :hints ((witness))))
+
   (defthm svexlist->a4vec-for-varlist-correct
     (b* (((mv err a4vecs) (svexlist->a4vecs-for-varlist x vars boolmasks))
          ((mv ?err1 aig-env) (svexlist->a4vec-aig-env-for-varlist x vars boolmasks env)))
@@ -1963,7 +2031,7 @@ to the svexes.</p>"
                           (MV-NTH 1
                                   (SVEX-VARMASKS->A4ENV VARS (SVEXLIST-MASK-ALIST X) boolmasks))
                           (MV-NTH 1
-                                  (SVEX-VARMASKS/ENV->AIG-ENV VARS (SVEXLIST-MASK-ALIST X)
+                                  (SVEX-VARMASKS/ENV->AIG-ENV VARS (SVEXLIST-variable-MASK-ALIST X)
                                                               boolmasks ENV))))
                    (env2 env)))))))
 
