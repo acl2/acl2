@@ -204,6 +204,7 @@
                     define
                     defines
                     defrule
+                    rule
                     defsection
                     defxdoc
                     defwitness
@@ -274,6 +275,7 @@
       defsection
       defsection-progn
       defmvtypes
+      rule
       defrule
       defruled
       defruledl
@@ -371,6 +373,7 @@
     defsum
     define
     defines
+    rule
     defrule
     defruled
     defruledl
