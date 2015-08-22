@@ -170,26 +170,33 @@
 ; mergesorts.
 
   (defun all-list (x)
-    (declare (xargs :guard (true-listp x)))
+    (declare (xargs :guard (true-listp x)
+                    ;; SUBTLE/AWFUL: Make sure each of these functions has the
+                    ;; verify-guards form directly in the declare.  We search
+                    ;; for the it explicitly when we do our guard replacements.
+                    :verify-guards nil))
     (if (endp x)
 	t
       (and (predicate (car x))
 	   (all-list (cdr x)))))
 
   (defun exists-list (x)
-    (declare (xargs :guard (true-listp x)))
+    (declare (xargs :guard (true-listp x)
+                    :verify-guards nil))
     (cond ((endp x) nil)
 	  ((predicate (car x)) t)
 	  (t (exists-list (cdr x)))))
 
   (defun find-list (x)
-    (declare (xargs :guard (true-listp x)))
+    (declare (xargs :guard (true-listp x)
+                    :verify-guards nil))
     (cond ((endp x) nil)
 	  ((predicate (car x)) (car x))
 	  (t (find-list (cdr x)))))
 
   (defun filter-list (x)
-    (declare (xargs :guard (true-listp x)))
+    (declare (xargs :guard (true-listp x)
+                    :verify-guards nil))
     (cond ((endp x) nil)
 	  ((predicate (car x))
 	   (cons (car x) (filter-list (cdr x))))
@@ -200,27 +207,30 @@
 ; about sets.
 
   (defun all (set-for-all-reduction)
-    (declare (xargs :guard (setp set-for-all-reduction)))
+    (declare (xargs :guard (setp set-for-all-reduction)
+                    :verify-guards nil))
     (if (empty set-for-all-reduction)
 	t
       (and (predicate (head set-for-all-reduction))
 	   (all (tail set-for-all-reduction)))))
 
   (defun exists (X)
-    (declare (xargs :guard (setp X)))
+    (declare (xargs :guard (setp X)
+                    :verify-guards nil))
     (cond ((empty X) nil)
 	  ((predicate (head X)) t)
 	  (t (exists (tail X)))))
 
   (defun find (X)
-    (declare (xargs :guard (setp X)))
+    (declare (xargs :guard (setp X)
+                    :verify-guards nil))
     (cond ((empty X) nil)
 	  ((predicate (head X)) (head X))
 	  (t (find (tail X)))))
 
   (defun filter (X)
-    (declare (xargs :guard (setp X)))
-    (declare (xargs :verify-guards nil))
+    (declare (xargs :guard (setp X)
+                    :verify-guards nil))
     (cond ((empty X) (sfix X))
 	  ((predicate (head X))
 	   (insert (head X) (filter (tail X))))
@@ -630,9 +640,23 @@
 (INSTANCE::instance *final-theorems*)
 (instance-*final-theorems*)
 
+(verify-guards all)
+(verify-guards all<not>)
+(verify-guards exists)
+(verify-guards exists<not>)
+(verify-guards find)
+(verify-guards find<not>)
 (verify-guards filter)
 (verify-guards filter<not>)
 
+(verify-guards all-list)
+(verify-guards all-list<not>)
+(verify-guards exists-list)
+(verify-guards exists-list<not>)
+(verify-guards find-list)
+(verify-guards find-list<not>)
+(verify-guards filter-list)
+(verify-guards filter-list<not>)
 
 
 
@@ -675,8 +699,12 @@
 	  (standardize-to-package symbol-name replacement (cdr term)))))
 
 
-(defun quantify-simple-predicate (predicate in-package
-			          set-guard list-guard arg-guard)
+(defun quantify-simple-predicate (predicate
+                                  in-package
+			          set-guard
+                                  list-guard
+                                  arg-guard
+                                  verify-guards)
   (declare (xargs :guard (symbolp in-package)
 		  :mode :program))
   (let* ((name          (car predicate))
@@ -729,14 +757,18 @@
 	 ;; guards.
 
 	 (fn-subs
-	  (list* `((declare (xargs :guard (true-listp ?list)))
-		   (declare (xargs :guard (and (true-listp ?list)
-					       ,@list-guard
-					       ,@arg-guard))))
-		 `((declare (xargs :guard (setp ?set)))
-		   (declare (xargs :guard (and (setp ?set)
-					       ,@set-guard
-					       ,@arg-guard))))
+	  (list* `((xargs :guard (true-listp ?list)
+                          :verify-guards nil)
+		   (xargs :guard (and (true-listp ?list)
+                                      ,@list-guard
+                                      ,@arg-guard)
+                          :verify-guards nil))
+		 `((xargs :guard (setp ?set)
+                          :verify-guards nil)
+		   (xargs :guard (and (setp ?set)
+                                      ,@set-guard
+                                      ,@arg-guard)
+                          :verify-guards nil))
 		 subs))
 
 
@@ -914,8 +946,39 @@
 	 ;:extra-defs (empty))
 
 
-	(verify-guards ,filter<p>)
-	(verify-guards ,filter<not-p>)
+        ,@(and verify-guards
+               `((local (in-theory (enable ,all<p>
+                                           ,exists<p>
+                                           ,find<p>
+                                           ,filter<p>
+                                           ,all<not-p>
+                                           ,exists<not-p>
+                                           ,find<not-p>
+                                           ,filter<not-p>
+                                           ,all-list<p>
+                                           ,exists-list<p>
+                                           ,find-list<p>
+                                           ,filter-list<p>
+                                           ,all-list<not-p>
+                                           ,exists-list<not-p>
+                                           ,find-list<not-p>
+                                           ,filter-list<not-p>)))
+                 (verify-guards ,all<p>)
+                 (verify-guards ,exists<p>)
+                 (verify-guards ,find<p>)
+                 (verify-guards ,filter<p>)
+                 (verify-guards ,all<not-p>)
+                 (verify-guards ,exists<not-p>)
+                 (verify-guards ,find<not-p>)
+                 (verify-guards ,filter<not-p>)
+                 (verify-guards ,all-list<p>)
+                 (verify-guards ,exists-list<p>)
+                 (verify-guards ,find-list<p>)
+                 (verify-guards ,filter-list<p>)
+                 (verify-guards ,all-list<not-p>)
+                 (verify-guards ,exists-list<not-p>)
+                 (verify-guards ,find-list<not-p>)
+                 (verify-guards ,filter-list<not-p>)))
 
 	;; In the end, we want to create a deftheory event so that you can
 	;; easily turn off the reasoning about these functions when you don't
@@ -940,12 +1003,17 @@
 
 (defmacro quantify-predicate (predicate
 			      &key in-package-of
-			           set-guard list-guard arg-guard)
+			           set-guard
+                                   list-guard
+                                   arg-guard
+                                   (verify-guards 't)
+                                   )
   (quantify-simple-predicate predicate
 			     (if in-package-of in-package-of 'in)
 			     (standardize-to-package "?SET" '?set set-guard)
 			     (standardize-to-package "?LIST" '?list list-guard)
-			     arg-guard))
+			     arg-guard
+                             verify-guards))
 
 
 
