@@ -113,7 +113,7 @@
            (equal (equal (bitn x 0) 0)
                   (integerp (* 1/2 x)))))
 
-;we probably want this enanled in lib/ but not in support/
+;we probably want this enabled in lib/ but not in support/
 (defthmd bits-n-n-rewrite
   (equal (bits x n n)
          (bitn x n)))

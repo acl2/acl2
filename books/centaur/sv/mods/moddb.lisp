@@ -6942,9 +6942,9 @@ checked to see if it is a valid bitselect and returned as a separate value."
          (modidx (moddb-modname-get-index name moddb))
          ((unless modidx)
           (and (not quiet) (cw "Warning! Module ~x0 not found in moddb.~%" name))
-          (modalist-named->indexed (cdr x) moddb))
+          (modalist-named->indexed (cdr x) moddb :quiet quiet))
          ((mv err1 first) (module-named->indexed mod modidx moddb))
-         ((mv err2 rest) (modalist-named->indexed (cdr x) moddb)))
+         ((mv err2 rest) (modalist-named->indexed (cdr x) moddb :quiet quiet)))
       (mv (or err1 err2) (cons (cons name first) rest)))
     ///
     (deffixequiv modalist-named->indexed)
