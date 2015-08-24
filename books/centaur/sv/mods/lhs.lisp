@@ -275,6 +275,10 @@ the order given (LSBs-first).</p>")
                                      x.w))))))))
 
 
+; Matt K.: Avoid ACL2(p) error in logapps-of-logtails-lemma below pertaining to
+; LOGBITP-REASONING.
+(local (set-waterfall-parallelism nil))
+
 (define lhrange-combine ((x lhrange-p) (y lhrange-p))
   :returns (val (iff (lhrange-p val) val))
   (b* (((lhrange x) x)

@@ -551,6 +551,9 @@
 
 (defund ac-f (x) (- x 1))
 
+; Matt K.: Avoid ACL2(p) error in ac-g1 below pertaining to override hints.
+(local (set-waterfall-parallelism nil))
+
 (define ac-g1 (x)
   :verify-guards nil
   :t-proof t
