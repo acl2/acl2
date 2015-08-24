@@ -166,7 +166,9 @@ top        - Top-level book that includes all the X86ISA books and
 Section III: Book Certification
 ----------------------------------------------------------------------
 
-Two ways of building the X86ISA books are:
+For the sake of convenience, the authors of these books generally
+prefer to use ACL2(p) for certification, but of course, you are free
+to use ACL2. Two ways of building the X86ISA books are:
 
 1. Using the Makefile provided with the X86ISA books:
 

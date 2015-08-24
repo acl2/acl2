@@ -178,14 +178,6 @@
 
 ;; RoW and WoW theorems:
 
-(local (in-theory (e/d (n32p-upper-16-in-8s-val-logior-loghead-ash-helper
-			n32p-upper-16-in-8s-val-logior-loghead-ash
-			n32p-lower-16-val-logior-loghead-ash-helper
-			n32p-lower-16-val-logior-loghead-ash
-			n32p-upper-16-val-logior-loghead-ash-helper
-			n32p-upper-16-val-logior-loghead-ash)
-		       ())))
-
 (local (in-theory (enable rm-low-32 rm-low-64 wm-low-32 wm-low-64)))
 
 (defthm |(rm-low-32 addr2 (wm-low-32 addr1 val x86)) --- same addr|

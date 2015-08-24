@@ -553,7 +553,10 @@ memory.</li>
     (if (endp bytes)
         0
       (logior (car bytes)
-              (ash (combine-bytes (cdr bytes)) 8)))
+              (ash (combine-bytes (cdr bytes)) 8))
+      ;; (logapp 8 (car bytes) (combine-bytes (cdr bytes)))
+      )
+
     ///
     (defthm natp-combine-bytes
       (implies (force (byte-listp bytes))
@@ -591,6 +594,7 @@ memory.</li>
       (implies (and (byte-listp bytes)
                     (equal l (len bytes)))
                (< (combine-bytes bytes) (expt 2 (ash l 3))))
+      :hints (("Goal" :in-theory (e/d* (logapp) ())))
       :rule-classes :linear))
 
   (define byte-ify-general
@@ -1532,7 +1536,7 @@ memory.</li>
                (equal (logior a (ash b 8) (ash c 16))
                       (logior a (ash (logior b (ash c 8)) 8)))))
 
-    (defthm-usb rm32-guard-proof-helper-1
+    (defthm-usb rm32-guard-proof-helper
       :hyp (and (n08p a)
                 (n08p b)
                 (n08p c)
@@ -2072,127 +2076,127 @@ memory.</li>
                                 signed-byte-p
                                 force (force)))))))
 
-   (encapsulate
-    ()
+    (encapsulate
+     ()
 
-    (local (include-book "arithmetic-5/top" :dir :system))
+     (local (include-book "arithmetic-5/top" :dir :system))
 
-    (defthm-usb rm64-guard-proof-bound-helper
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-                (n08p e) (n08p f) (n08p g) (n08p h))
-      :bound 64
-      :concl (logior a (ash
-                        (logior
-                         b
-                         (ash (logior c (ash d 8)) 8)) 8)
-                     (ash (logior e (ash (logior f (ash (logior g (ash h 8))
-                                                        8))
-                                         8))
-                          32))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force (force))))))
+     (defthm-usb rm64-guard-proof-bound-helper
+       :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+                 (n08p e) (n08p f) (n08p g) (n08p h))
+       :bound 64
+       :concl (logior a (ash
+                         (logior
+                          b
+                          (ash (logior c (ash d 8)) 8)) 8)
+                      (ash (logior e (ash (logior f (ash (logior g (ash h 8))
+                                                         8))
+                                          8))
+                           32))
+       :hints (("Goal" :in-theory
+                (e/d () (unsigned-byte-p
+                         logior-expt-to-plus-quotep
+                         acl2::ash-to-floor
+                         ash-monotone-2))))
+       :gen-type nil
+       :gen-linear t
+       :hints-l (("Goal" :in-theory
+                  (e/d (unsigned-byte-p) (ash-monotone-2 force (force))))))
 
-    (defthm-usb n64p-mv-nth-1-rm64-helper-1
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e))
-      :bound 64
-      :concl (logior a (ash (logior b (ash
-                                       (logior c
-                                               (ash (logior d (ash e 8))
-                                                    8)) 8)) 8))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force (force))))))
+     (defthm-usb n64p-mv-nth-1-rm64-helper-1
+       :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e))
+       :bound 64
+       :concl (logior a (ash (logior b (ash
+                                        (logior c
+                                                (ash (logior d (ash e 8))
+                                                     8)) 8)) 8))
+       :hints (("Goal" :in-theory
+                (e/d () (unsigned-byte-p
+                         logior-expt-to-plus-quotep
+                         acl2::ash-to-floor
+                         ash-monotone-2))))
+       :gen-type nil
+       :gen-linear t
+       :hints-l (("Goal" :in-theory
+                  (e/d (unsigned-byte-p) (ash-monotone-2 force (force))))))
 
-    (defthm-usb n64p-mv-nth-1-rm64-helper-2
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e) (n08p f))
-      :bound 64
-      :concl (logior a (ash (logior
-                             b (ash
-                                (logior
-                                 c
-                                 (ash (logior
-                                       d
-                                       (ash (logior
-                                             e (ash f 8))
-                                            8)) 8)) 8)) 8))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force (force))))))
+     (defthm-usb n64p-mv-nth-1-rm64-helper-2
+       :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e) (n08p f))
+       :bound 64
+       :concl (logior a (ash (logior
+                              b (ash
+                                 (logior
+                                  c
+                                  (ash (logior
+                                        d
+                                        (ash (logior
+                                              e (ash f 8))
+                                             8)) 8)) 8)) 8))
+       :hints (("Goal" :in-theory
+                (e/d () (unsigned-byte-p
+                         logior-expt-to-plus-quotep
+                         acl2::ash-to-floor
+                         ash-monotone-2))))
+       :gen-type nil
+       :gen-linear t
+       :hints-l (("Goal" :in-theory
+                  (e/d (unsigned-byte-p) (ash-monotone-2 force (force))))))
 
 
-    (defthm-usb n64p-mv-nth-1-rm64-helper-3
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-                (n08p e) (n08p f) (n08p g))
-      :bound 64
-      :concl (logior a (ash (logior
-                             b
-                             (ash
-                              (logior
-                               c
-                               (ash
-                                (logior
-                                 d
-                                 (ash
-                                  (logior e
-                                          (ash (logior f (ash g 8))
-                                               8))
-                                  8)) 8)) 8)) 8))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force
-                                                        (force))))))
+     (defthm-usb n64p-mv-nth-1-rm64-helper-3
+       :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+                 (n08p e) (n08p f) (n08p g))
+       :bound 64
+       :concl (logior a (ash (logior
+                              b
+                              (ash
+                               (logior
+                                c
+                                (ash
+                                 (logior
+                                  d
+                                  (ash
+                                   (logior e
+                                           (ash (logior f (ash g 8))
+                                                8))
+                                   8)) 8)) 8)) 8))
+       :hints (("Goal" :in-theory
+                (e/d () (unsigned-byte-p
+                         logior-expt-to-plus-quotep
+                         acl2::ash-to-floor
+                         ash-monotone-2))))
+       :gen-type nil
+       :gen-linear t
+       :hints-l (("Goal" :in-theory
+                  (e/d (unsigned-byte-p) (ash-monotone-2 force
+                                                         (force))))))
 
-    (defthm-usb n64p-mv-nth-1-rm64-helper-4
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-                (n08p e) (n08p f) (n08p g) (n08p h))
-      :bound 64
-      :concl (logior a (ash
-                        (logior b (ash (logior
-                                        c
-                                        (ash
-                                         (logior
-                                          d
-                                          (ash
-                                           (logior e
-                                                   (ash
-                                                    (logior f
-                                                            (ash (logior g (ash h 8)) 8))
-                                                    8)) 8)) 8)) 8)) 8))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force
-                                                        (force)))))))
+     (defthm-usb n64p-mv-nth-1-rm64-helper-4
+       :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+                 (n08p e) (n08p f) (n08p g) (n08p h))
+       :bound 64
+       :concl (logior a (ash
+                         (logior b (ash (logior
+                                         c
+                                         (ash
+                                          (logior
+                                           d
+                                           (ash
+                                            (logior e
+                                                    (ash
+                                                     (logior f
+                                                             (ash (logior g (ash h 8)) 8))
+                                                     8)) 8)) 8)) 8)) 8))
+       :hints (("Goal" :in-theory
+                (e/d () (unsigned-byte-p
+                         logior-expt-to-plus-quotep
+                         acl2::ash-to-floor
+                         ash-monotone-2))))
+       :gen-type nil
+       :gen-linear t
+       :hints-l (("Goal" :in-theory
+                  (e/d (unsigned-byte-p) (ash-monotone-2 force
+                                                         (force)))))))
 
    (defthm combine-bytes-size-for-rm64-programmer-level-mode
      (implies
@@ -4627,5 +4631,19 @@ memory.</li>
              (equal (program-at addresses bytes (xw fld index value x86))
                     (program-at addresses bytes x86)))
     :hints (("Goal" :in-theory (e/d* () (rb))))))
+
+;; ======================================================================
+
+;; Disabling some expensive rules:
+
+(in-theory (e/d ()
+                (rm16-guard-proof-helper
+                 rb-and-rvm32-helper
+                 rm32-guard-proof-helper
+                 rm64-guard-proof-bound-helper
+                 n64p-mv-nth-1-rm64-helper-1
+                 n64p-mv-nth-1-rm64-helper-2
+                 n64p-mv-nth-1-rm64-helper-3
+                 n64p-mv-nth-1-rm64-helper-4)))
 
 ;; ======================================================================

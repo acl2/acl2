@@ -483,6 +483,14 @@
                                       write-x86-file-des-logic)
                                      ()))))
 
+  (defthm write-x86-file-des-xw
+    (implies (not (equal fld :env))
+             (equal (write-x86-file-des i v (xw fld index value x86))
+                    (xw fld index value (write-x86-file-des i v x86))))
+    :hints (("Goal" :in-theory (e/d* (write-x86-file-des
+                                      write-x86-file-des-logic)
+                                     ()))))
+
   (define delete-x86-file-des-logic (fd x86)
 
     :long "<p>Delete the fd key-value pair in the :FILE-DESCRIPTORS
@@ -521,6 +529,14 @@
     (implies (not (equal fld :env))
              (equal (xr fld index (delete-x86-file-des fd x86))
                     (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (delete-x86-file-des
+                                      delete-x86-file-des-logic)
+                                     ()))))
+
+  (defthm delete-x86-file-des-xw
+    (implies (not (equal fld :env))
+             (equal (delete-x86-file-des i (xw fld index value x86))
+                    (xw fld index value (delete-x86-file-des i x86))))
     :hints (("Goal" :in-theory (e/d* (delete-x86-file-des
                                       delete-x86-file-des-logic)
                                      ()))))
@@ -599,6 +615,14 @@
                                       write-x86-file-contents-logic)
                                      ()))))
 
+  (defthm write-x86-file-contents-xw
+    (implies (not (equal fld :env))
+             (equal (write-x86-file-contents i v (xw fld index value x86))
+                    (xw fld index value (write-x86-file-contents i v x86))))
+    :hints (("Goal" :in-theory (e/d* (write-x86-file-contents
+                                      write-x86-file-contents-logic)
+                                     ()))))
+
   (define delete-x86-file-contents-logic (name x86)
     :long "<p>Deleting the name key-value pair in the :FILE-CONTENTS
      field of the environment.</p>"
@@ -636,6 +660,14 @@
     (implies (not (equal fld :env))
              (equal (xr fld index (delete-x86-file-contents name x86))
                     (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (delete-x86-file-contents
+                                      delete-x86-file-contents-logic)
+                                     ()))))
+
+  (defthm delete-x86-file-contents-xw
+    (implies (not (equal fld :env))
+             (equal (delete-x86-file-contents i (xw fld index value x86))
+                    (xw fld index value (delete-x86-file-contents i x86))))
     :hints (("Goal" :in-theory (e/d* (delete-x86-file-contents
                                       delete-x86-file-contents-logic)
                                      ()))))
@@ -761,9 +793,7 @@
                      (xw fld index value (mv-nth 1 (pop-x86-oracle x86)))))
      :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
                                        pop-x86-oracle-logic)
-                                      ()))))
-
-   )
+                                      ())))))
 
 
   )

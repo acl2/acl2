@@ -14,69 +14,74 @@
 ;; memory: these rules are disabled --- enable them locally when
 ;; needed.
 
-(encapsulate
- ()
+;; [Shilpi]: Ugh, remove all these arithmetic lemmas for
+;; n32p-upper-16-in-8s-val-logior-loghead-ash.
 
- (local (include-book "arithmetic-5/top" :dir :system))
+(local
+ (encapsulate
+  ()
 
- (local (in-theory (disable logior-expt-to-plus-quotep)))
+  (local (include-book "arithmetic-5/top" :dir :system))
 
- (defthm n32p-lower-16-val-logior-loghead-ash-helper
+  (local (in-theory (disable logior-expt-to-plus-quotep)))
+
+  (defthm n32p-lower-16-val-logior-loghead-ash-helper
+    (implies (n32p val)
+             (equal (logior (loghead 8 val)
+                            (ash (loghead 8 (logtail 8 val)) 8))
+                    (+ (loghead 8 val)
+                       (ash (loghead 8 (logtail 8 val)) 8))))
+    :hints (("Goal" :in-theory
+             (e/d (logior-expt-to-plus-quotep) ()))))
+
+  (defthm n32p-lower-16-val-logior-loghead-ash
+    (implies (n32p val)
+             (equal (logior (loghead 8 val)
+                            (ash (loghead 8 (logtail 8 val)) 8))
+                    (loghead 16 val)))
+    :hints (("Goal" :in-theory
+             (e/d (loghead logtail)
+                  (acl2::normalize-factors-gather-exponents
+                   n32p-lower-16-val-logior-loghead-ash-helper))
+             :use ((:instance
+                    n32p-lower-16-val-logior-loghead-ash-helper)))))
+
+  (defthm n32p-upper-16-val-logior-loghead-ash-helper
+    (implies (n32p val)
+             (equal (logior (loghead 8 (logtail 16 val))
+                            (ash (logtail 24 val) 8))
+                    (+ (loghead 8 (logtail 16 val))
+                       (ash (logtail 24 val) 8))))
+    :hints (("Goal" :in-theory
+             (e/d (logior-expt-to-plus-quotep) ()))))
+
+  (defthm n32p-upper-16-val-logior-loghead-ash
+    (implies (n32p val)
+             (equal (logior (loghead 8 (logtail 16 val))
+                            (ash (logtail 24 val) 8))
+                    (logtail 16 val)))
+    :hints (("Goal" :in-theory
+             (e/d (loghead logtail)
+                  (acl2::normalize-factors-gather-exponents
+                   n32p-upper-16-val-logior-loghead-ash-helper))
+             :use ((:instance n32p-upper-16-val-logior-loghead-ash-helper)))))
+
+  ))
+
+(local
+ (defthm n32p-upper-16-in-8s-val-logior-loghead-ash-helper
    (implies (n32p val)
             (equal (logior (loghead 8 val)
+                           (ash (logtail 16 val) 16)
                            (ash (loghead 8 (logtail 8 val)) 8))
-                   (+ (loghead 8 val)
-                      (ash (loghead 8 (logtail 8 val)) 8))))
-   :hints (("Goal" :in-theory
-            (e/d (logior-expt-to-plus-quotep) ()))))
-
- (defthm n32p-lower-16-val-logior-loghead-ash
-   (implies (n32p val)
-            (equal (logior (loghead 8 val)
-                           (ash (loghead 8 (logtail 8 val)) 8))
-                   (loghead 16 val)))
-   :hints (("Goal" :in-theory
-            (e/d (loghead logtail)
-                 (acl2::normalize-factors-gather-exponents
-                  n32p-lower-16-val-logior-loghead-ash-helper))
-            :use ((:instance
-                   n32p-lower-16-val-logior-loghead-ash-helper)))))
-
- (defthm n32p-upper-16-val-logior-loghead-ash-helper
-   (implies (n32p val)
-            (equal (logior (loghead 8 (logtail 16 val))
-                           (ash (logtail 24 val) 8))
-                   (+ (loghead 8 (logtail 16 val))
-                      (ash (logtail 24 val) 8))))
-   :hints (("Goal" :in-theory
-            (e/d (logior-expt-to-plus-quotep) ()))))
-
- (defthm n32p-upper-16-val-logior-loghead-ash
-   (implies (n32p val)
-            (equal (logior (loghead 8 (logtail 16 val))
-                           (ash (logtail 24 val) 8))
-                   (logtail 16 val)))
-   :hints (("Goal" :in-theory
-            (e/d (loghead logtail)
-                 (acl2::normalize-factors-gather-exponents
-                  n32p-upper-16-val-logior-loghead-ash-helper))
-            :use ((:instance n32p-upper-16-val-logior-loghead-ash-helper)))))
-
- )
-
-(defthm n32p-upper-16-in-8s-val-logior-loghead-ash-helper
-  (implies (n32p val)
-           (equal (logior (loghead 8 val)
-                          (ash (logtail 16 val) 16)
-                          (ash (loghead 8 (logtail 8 val)) 8))
-                  (logior (loghead 16 val)
-                          (ash (logtail 16 val) 16))))
-  :hints (("Goal"
-           :in-theory (e/d ()
-                           (n32p-lower-16-val-logior-loghead-ash
-                            n32p-lower-16-val-logior-loghead-ash-helper
-                            putting-logior-loghead-ash-logtail-together))
-           :use ((:instance n32p-lower-16-val-logior-loghead-ash)))))
+                   (logior (loghead 16 val)
+                           (ash (logtail 16 val) 16))))
+   :hints (("Goal"
+            :in-theory (e/d ()
+                            (n32p-lower-16-val-logior-loghead-ash
+                             n32p-lower-16-val-logior-loghead-ash-helper
+                             putting-logior-loghead-ash-logtail-together))
+            :use ((:instance n32p-lower-16-val-logior-loghead-ash))))))
 
 (defthm n32p-upper-16-in-8s-val-logior-loghead-ash
   (implies (n32p val)
@@ -85,12 +90,47 @@
                           (ash (loghead 8 (logtail 8 val)) 8))
                   val)))
 
-(in-theory (disable n32p-upper-16-in-8s-val-logior-loghead-ash-helper
-                    n32p-upper-16-in-8s-val-logior-loghead-ash
-                    n32p-lower-16-val-logior-loghead-ash-helper
-                    n32p-lower-16-val-logior-loghead-ash
-                    n32p-upper-16-val-logior-loghead-ash-helper
-                    n32p-upper-16-val-logior-loghead-ash))
+;; Lemmas for combine-bytes and byte-ify:
+
+(defthm combining-logior-of-loghead-logtail-and-ash-logtail
+  (implies (and (natp n)
+                (natp m)
+                (natp x)
+                (equal m+n (+ m n)))
+           (equal (logior (loghead n (logtail m x))
+                          (ash (logtail m+n x) n))
+                  (logtail m x)))
+  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
+                                    ihsext-recursive-redefs)
+                                   ()))))
+
+(defthm combining-logior-of-loghead-and-ash-logtail
+  (implies (and (natp x)
+                (natp n))
+           (equal (logior (loghead n x)
+                          (ash (logtail n x) n))
+                  x))
+  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
+                                    ihsext-recursive-redefs)
+                                   ()))))
+
+(defthm combine-bytes-and-byte-ify
+  ;; Not true with byte-ify-general?
+  (implies (and (or (equal n 2)
+                    (equal n 4)
+                    (equal n 8)
+                    (equal n 16))
+                (unsigned-byte-p (ash n 3) x))
+           (equal (combine-bytes (byte-ify n x)) x))
+  :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify) ()))))
+
+;; ;; (local (include-book "arithmetic-5/top" :dir :system))
+
+;; ;; (defthm logior-to-plus-if-ash
+;; ;;   (implies (unsigned-byte-p n y)
+;; ;;      (equal (logior y (ash x n))
+;; ;;             (+ (ash x n) y)))
+;; ;;   :hints (("Goal" :in-theory (e/d* (ash) ()))))
 
 ;; ======================================================================
 
