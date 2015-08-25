@@ -354,7 +354,7 @@ example,</p>
                  (x2 (fp-vec-p x2 size))
                  (size fp-size-p))
    ...)
- )}
+ })
 
 <p>Since size has a unary guard @('(fp-size-p size)'), we put that first, which
 is good if @('fp-vec-p') has that as a guard on its size argument.</p>
@@ -1634,7 +1634,8 @@ names between your formals and returns.</p>")
 (defun defret-fn (name args disablep world)
   (b* ((__function__ 'defret)
        ((mv kwd-alist args)
-        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind)
+        (extract-keywords `(defret ,name) '(:hyp :fn :hints :rule-classes :pre-bind
+                                            :otf-flg)
                           args nil))
        ((unless (consp args))
         (raise "No body"))
@@ -1662,6 +1663,7 @@ names between your formals and returns.</p>")
                   (t (cdr hyp?))))
        (rule-classes? (assoc :rule-classes kwd-alist))
        (hints? (assoc :hints kwd-alist))
+       (otf-flg? (assoc :otf-flg kwd-alist))
        (pre-bind (cdr (assoc :pre-bind kwd-alist)))
        (concl `(b* (,@pre-bind ,@binding) ,concl-term))
        (thm (if hyp?
@@ -1670,6 +1672,7 @@ names between your formals and returns.</p>")
     `(,(if disablep 'defthmd 'defthm) ,name
        ,thm
        ,@(and hints?        `(:hints ,(cdr hints?)))
+       ,@(and otf-flg?      `(:otf-flg ,(cdr otf-flg?)))
        ,@(and rule-classes? `(:rule-classes ,(cdr rule-classes?))))))
 
 

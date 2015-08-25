@@ -1011,6 +1011,40 @@
                                           bitops::bool->bit))
           :prune-examples nil)))
 
+(def-svex-rewrite concat-1-to-signx
+  :lhs (concat 1 x (concat 1 x y))
+  :rhs (concat 2 (signx 1 x) y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-sign-ext 3vec-fix 4vec-mask))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
+          :prune-examples nil)))
+
+(def-svex-rewrite concat-1-to-signx-2
+  :lhs (concat 1 x (concat n (signx 1 x) y))
+  :checks ((svex-quoted-index-p n)
+           (bind n2 (svex-quote (2vec (+ 1 (2vec->val (svex-quote->val n)))))))
+  :rhs (concat n2 (signx 1 x) y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-sign-ext 3vec-fix 4vec-mask))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
+          :prune-examples nil)))
+
+(def-svex-rewrite concat-1-to-signx-3
+  :lhs (concat 1 (unfloat x) (concat n (unfloat (signx 1 x)) y))
+  :checks ((svex-quoted-index-p n)
+           (bind n2 (svex-quote (2vec (+ 1 (2vec->val (svex-quote->val n)))))))
+  :rhs (concat n2 (unfloat (signx 1 x)) y)
+  :hints(("Goal" :in-theory (enable svex-apply 4vec-concat 4vec-sign-ext 3vec-fix 4vec-mask))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
+          :prune-examples nil)))
+
 
 
 

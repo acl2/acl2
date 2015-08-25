@@ -44,24 +44,26 @@ in defsort/generic.lisp we find:
     (verify-guards fast-comparable-mergesort-fixnums))
   )
 
-Many books use a stylized make-event inside the actual file to disable
+Some books use a stylized make-event inside the actual file to disable
 parallelism.  To find these, issue:
 
   cd books
   grep -l "Disabling waterfall parallelism" `find . -name "*.lisp"`
 
-For example, centaur/4v-sexpr/sexpr-rewrites.lisp has the following.
+However, set-waterfall-parallelism is now itself a make-event, so we
+often do something simpler than that.  For example,
+books/std/util/tests/define.lisp has the following; notice the use of
+local to avoid affecting waterfall-parallelism when including the
+book.
 
-  (make-event
+; Matt K.: Avoid ACL2(p) error in ac-g1 below pertaining to override hints.
+(local (set-waterfall-parallelism nil))
 
-  ; Disabling waterfall parallelism because this book allegedly uses memoization
-  ; while performing its proofs.
+Sometimes it makes sense to put such a form, but without local, in a
+.acl2 file, such as this form in books/demos/gl-and-std/cert.acl2.
 
-   (if (and (hons-enabledp state)
-            (f-get-global 'parallel-execution-enabled state))
-       (er-progn (set-waterfall-parallelism nil)
-                 (value '(value-triple nil)))
-     (value '(value-triple nil))))
+; Matt K.: Avoid ACL2(p) errors.
+(set-waterfall-parallelism nil)
 
 Here is a note relevant to ACL2(p) from David Rager.
 

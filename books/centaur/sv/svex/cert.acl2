@@ -30,4 +30,7 @@
 
 (ld "../cert.acl2")
 
+; Matt K.: Avoid ACL2(p) errors caused by the use of LOGBITP-REASONING.
+(local (set-waterfall-parallelism nil))
+
 ; cert-flags: ? t :ttags :all
