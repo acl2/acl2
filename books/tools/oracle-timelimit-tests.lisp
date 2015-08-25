@@ -359,3 +359,53 @@ BOZO what is going on here?
  (let ((state
         (with-guard-checking :all (test9 5 state))))
    (value '(value-triple :success))))
+
+
+
+
+; Test of a runaway memory scenario
+
+(defun allocate-gobs-of-nonsense (n acc)
+  (if (zp n)
+      acc
+    (allocate-gobs-of-nonsense (- n 1)
+                               (cons (make-list 1000) acc))))
+
+;; (time$ (prog2$ (allocate-gobs-of-nonsense 1000 nil) nil)) ;; Allocates about 16 MB.
+
+(defun slowly-allocate-gobs-of-nonsense (n acc)  ;; So this should allocate about 160 MB per second.
+  (if (zp n)
+      acc
+    (progn$ (sleep 1/10)
+            (cw "Allocating slice ~x0~%" n)
+            (let ((acc (allocate-gobs-of-nonsense 1000 acc)))
+              (slowly-allocate-gobs-of-nonsense (- n 1) acc)))))
+
+;; (time$ (prog2$ (slowly-allocate-gobs-of-nonsense 10 nil) nil)) ;; 160 MB, 2 seconds.
+;; Aha, probably 2 seconds because it actually takes real time to allocate things.
+;; OK, at any rate, we can up it to something like 2 GB like this...
+;;
+;; (time$ (prog2$ (slowly-allocate-gobs-of-nonsense 120 nil) nil))
+;;    23.43 seconds realtime, 11.46 seconds runtime, 1,921,923,872 bytes allocated
+
+(defun test10 (state)
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (slowly-allocate-gobs-of-nonsense 120 nil)
+                          ;; Do not use more than 800 MB of memory
+                          :maxmem (* 800 1024 1024)))
+       ((when time)
+        (er hard? 'oracle-timelimit "Failed to stop insane allocation?")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected bytes to be nil.")
+        state)
+       ((when ans)
+        (er hard? 'oracle-timelimit "Expected answer to be nil.")
+        state))
+    state))
+
+#+Clozure
+(make-event
+ (let ((state (time$ (test10 state))))
+   (value '(value-triple :success))))
