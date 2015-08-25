@@ -1751,11 +1751,27 @@
                                (declare (ignore changedp))
                                tests))
                   (t tests0))))
-       (cond ((null tests) nil) ; contradictory case
-             (t (make tests-and-calls
-                      :tests tests
-                      :calls (remove-guard-holders-lst
-                              (access tests-and-calls tc :calls)))))))))
+
+; THrough Version_7.1 we returned nil when (null tests), with the comment:
+; "contradictory case".  However, that caused a bad error when a caller
+; expected a tests-and-calls record, as in the following example.
+
+;   (skip-proofs (defun foo (x)
+;                  (declare (xargs :measure (acl2-count x)))
+;                  (identity
+;                   (cond ((zp x) 17)
+;                         (t (foo (1- x)))))))
+
+; We now see no particular reason why special handling is necessary in this
+; case.  Of course, the ultimate induction scheme may allow a proof of nil; for
+; the example above, try (thm nil :hints (("Goal" :induct (foo x)))).  But
+; everything we are doing here is presumably sound, so we expect a skip-proofs
+; to be to blame for nil tests, as in the example above.
+
+       (make tests-and-calls
+             :tests tests
+             :calls (remove-guard-holders-lst
+                     (access tests-and-calls tc :calls)))))))
 
 (defun simplify-tests-and-calls-lst (tc-list)
 

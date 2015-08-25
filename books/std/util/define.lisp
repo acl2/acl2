@@ -354,7 +354,7 @@ example,</p>
                  (x2 (fp-vec-p x2 size))
                  (size fp-size-p))
    ...)
- )}
+ })
 
 <p>Since size has a unary guard @('(fp-size-p size)'), we put that first, which
 is good if @('fp-vec-p') has that as a guard on its size argument.</p>
