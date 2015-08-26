@@ -178,6 +178,13 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
                  :disable
                  :e/d
                  :local
+                 ;; [Jared] BOZO I kind of wish we didn't have prep-lemmas and
+                 ;; prep-books; we could just have :prepwork instead, which
+                 ;; would be more consistent with, e.g., define.  Maybe a good
+                 ;; compromise for backwards compatibility would be to just add
+                 ;; a :prepwork option, but continue to support prep-lemmas and
+                 ;; prep-books just as they are now, but remove them from the
+                 ;; documentation...?
                  :prep-lemmas
                  :prep-books)
                acl2::*hint-keywords*))
@@ -324,3 +331,40 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
 
 (defmacro defruledl (name &rest rst)
   `(defruled ,name :local t ,@rst))
+
+
+(defxdoc rule
+  :parents (defrule thm)
+  :short "A @(see thm)-like version of @(see defrule)."
+  :long "<p>The @('rule') macro is a thin wrapper around @(see defrule).  It
+supports all of the same syntax extensions like top-level @(':enable') and
+@(':expand') @(see hints).  However, like @(see thm), @('rule') does not take a
+rule name and does not result in the introduction of a rule afterward.</p>
+
+<p>Examples:</p>
+
+@({
+    (rule (implies x x))                    ;; will work
+
+    (rule (equal (append x y)               ;; will fail
+                 (append y x))
+          :enable append
+          :expand (append y x))
+
+    (rule (equal (consp x)                  ;; will work
+                 (if (atom x) nil t))
+          :do-not '(generalize fertilize))
+})
+
+<p>The @('rule') command is implemented with a simple @(see make-event).
+Unlike @(see thm), @('rule') calls are valid embedded events.  However, on
+success a @('rule') merely expands into @('(value-triple :success)').  No
+record of the rule's existence is found in the world, so there is no way to use
+the rule once it has been proven, etc.</p>")
+
+(defmacro rule (&rest args)
+  `(make-event
+    (er-progn (defrule temporary-rule
+                ,@args
+                :rule-classes nil)
+              (value '(value-triple :success)))))

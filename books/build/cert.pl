@@ -451,6 +451,12 @@ USEFUL ENVIRONMENT VARIABLES
          Can be set to 1 to enable extra debugging information and to preserve
          temporary files.
 
+    CERT_PL_RM_OUTFILES (default: "")
+         Can be set to 1 to instruct cert.pl to delete .cert.out files after
+         successful book certification.  (The output will be kept for failed
+         certification attempts, since in that case you may want to inspect
+         it.)
+
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;

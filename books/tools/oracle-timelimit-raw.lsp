@@ -47,6 +47,17 @@
 (defmacro oracle-timelimit-debug (&rest args)
   `(and *oracle-timelimit-debug* (format t . ,args)))
 
+
+(defun current-global-allocation ()
+  ;; Similar to heap-bytes-allocated, but not specific to the current thread
+  #-Clozure
+  0
+  #+Clozure
+  (multiple-value-bind
+   (dynamic-used static-used library-used frozen-space-size)
+   (ccl::%usedbytes)
+   (+ dynamic-used static-used library-used frozen-space-size)))
+
 (defmacro oracle-timelimit-exec-raw (extra-args form)
   (let* ((main-thread          (gensym))
          (lock                 (gensym))
@@ -59,6 +70,7 @@
          (ans                  (gensym))
          (limit                (gensym))
          (num-returns          (gensym))
+         (maxmem               (gensym))
          (suppress-lisp-errors (gensym))
          (extra-args-eval      (gensym))
          (suppressed-error     (gensym)))
@@ -75,9 +87,10 @@
     ;; (format t "num-returns: ~s~%" num-returns)
     ;; (format t "lafv-eval: ~s~%" lafv-eval)
     `(let* ((,extra-args-eval ,extra-args)
-            (,limit                (first ,extra-args-eval))
+            (,limit                (first  ,extra-args-eval))
             (,num-returns          (second ,extra-args-eval))
-            (,suppress-lisp-errors (third ,extra-args-eval))
+            (,maxmem               (third  ,extra-args-eval))
+            (,suppress-lisp-errors (fourth ,extra-args-eval))
             ;; We want the computation to run in the main thread to ensure that
             ;; any special variables (e.g., the hons space, stobjs, etc.)  are
             ;; all still bound to their current values.
@@ -126,12 +139,22 @@
                   ;; make the timeout thread check, once a second, whether the
                   ;; main thread has finished.  This way the timeout thread
                   ;; should never stay around for more than a second after the
-                  ;; main computation has exited.
+                  ;; main computation has exited.  This also works well for
+                  ;; imposing a memory ceiling.
                   (loop do
                         (oracle-timelimit-debug
                          "OTL: Timeout thread: waiting ~s more secs~%" ,limit)
                         (when (< ,limit 1)
                           (sleep ,limit)
+                          (loop-finish))
+                        (when (and ,maxmem
+                                   (let* ((current-alloc (current-global-allocation)))
+                                     (oracle-timelimit-debug
+                                      "OTL timeout thread: maxmem ~s, current ~s~%"
+                                      ,maxmem current-alloc)
+                                     (> current-alloc ,maxmem)))
+                          (oracle-timelimit-debug
+                           "OTL: Timeout thread: memory ceiling exceeded~%")
                           (loop-finish))
                         (sleep 1)
                         (decf ,limit 1)

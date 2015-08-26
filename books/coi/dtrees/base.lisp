@@ -50,7 +50,7 @@
 (local (in-theory (enable set::weak-insert-induction-helper-3)))
 
 ;; [Jared] dumb accumulated persistence hacking
-(local (in-theory (disable SET::MAP-SUBSET-HELPER-2
+(local (in-theory (disable ;;SET::MAP-SUBSET-HELPER-2
                            SET::IN-TAIL-OR-HEAD
                            SET::ALL-IN-2-NOT<TRUE-LISTP>
                            SET::ALL-IN-2<TRUE-LISTP>
