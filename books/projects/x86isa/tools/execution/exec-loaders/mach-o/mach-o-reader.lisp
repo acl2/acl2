@@ -48,8 +48,7 @@
 
 (defthm alistp-mv-nth-0-read-mach_header
   (implies (byte-listp file-header)
-           (alistp (read-mach_header file-header)))
-  :rule-classes :type-prescription)
+           (alistp (read-mach_header file-header))))
 
 (in-theory (disable read-mach_header))
 
@@ -180,8 +179,7 @@
 (defthm byte-listp-mv-nth-1-read-section_data_sz_structures
   (implies (byte-listp rest-of-the-file)
            (byte-listp (mv-nth 1 (read-section_data_sz_structures
-                                  nsects sz rest-of-the-file acc mach-o))))
-  :rule-classes :type-prescription)
+                                  nsects sz rest-of-the-file acc mach-o)))))
 
 (defthm len-mv-nth-1-read-section_data_sz_structures-sz=4
   (implies (and (natp nsects)
@@ -682,15 +680,29 @@
   (implies (byte-listp rest-of-the-file)
            (byte-listp (mv-nth 1 (read-load_commands
                                   ncmds rest-of-the-file acc mach-o))))
-  :hints (("Goal" :in-theory (e/d () (nfix fix))))
-  :rule-classes :type-prescription)
+  :hints (("Goal" :in-theory (e/d ()
+                                  (nfix
+                                   fix reverse
+                                   (:meta acl2::mv-nth-cons-meta)
+                                   member-equal
+                                   len-mv-nth-1-rnbni-1
+                                   len-mv-nth-1-rnbni-2
+                                   byte-listp-mv-nth-1-rnbni
+                                   mv-nth-0-rnbni-linear-1
+                                   mv-nth-0-rnbni-linear-2
+                                   len
+                                   nthcdr)))))
 
 (defthm mach-op-mv-nth-2-read-load_commands
   (implies (and (mach-op mach-o)
                 (byte-listp rest-of-the-file))
            (mach-op (mv-nth 2 (read-load_commands
-                             ncmds rest-of-the-file acc mach-o))))
-  :hints (("Goal" :in-theory (e/d () (nfix fix)))))
+                               ncmds rest-of-the-file acc mach-o))))
+  :hints (("Goal" :in-theory (e/d ()
+                                  (nfix fix member-equal
+                                        nthcdr append reverse atom
+                                        len-mv-nth-1-rnbni-1
+                                        len-mv-nth-1-rnbni-2)))))
 
 (in-theory (disable read-load_commands))
 
@@ -726,7 +738,12 @@
            (mach-op (mv-nth
                      1
                      (fill-TEXT-text-section-bytes
-                      h-size lc-size remaining-file mach-o state)))))
+                      h-size lc-size remaining-file mach-o state))))
+  :hints (("Goal" :in-theory (e/d ()
+                                  (nfix fix member-equal
+                                        nthcdr append reverse atom
+                                        len-mv-nth-1-rnbni-1
+                                        len-mv-nth-1-rnbni-2)))))
 
 (defthm state-p-mv-nth-2-fill-TEXT-text-section-bytes
   (implies (ACL2::state-p state)
@@ -1163,6 +1180,7 @@
                                  :in-theory
                                  (e/d (read-mach_header)
                                       (byte-listp
+                                       unsigned-byte-p
                                        nfix fix
                                        not natp mach-op))))))
 
@@ -1228,13 +1246,11 @@
 (defthm mach-op-mv-nth-1-file-read
   (implies (and (byte-listp file-byte-list)
                 (mach-op mach-o))
-           (mach-op (mv-nth 1
-                            (mach-o-file-read file-byte-list mach-o state)))))
+           (mach-op (mv-nth 1 (mach-o-file-read file-byte-list mach-o state)))))
 
 (defthm state-p-mv-nth-2-file-read
   (implies (ACL2::state-p state)
-           (ACL2::state-p (mv-nth 2
-                                  (mach-o-file-read file-byte-list mach-o state)))))
+           (ACL2::state-p (mv-nth 2 (mach-o-file-read file-byte-list mach-o state)))))
 
 (in-theory (disable mach-o-file-read))
 

@@ -6,8 +6,8 @@
 
 (in-package "X86ISA")
 
-(include-book "../x86-decoding-and-spec-utils"
-	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "../x86-rflags-spec"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

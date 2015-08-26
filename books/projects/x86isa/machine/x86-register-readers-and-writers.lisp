@@ -17,154 +17,6 @@
 
 ;; ======================================================================
 
-;; Some arithmetic theorems that will be used in all books higher up
-;; (especially for proving away MBEs):
-
-(encapsulate
- ()
-
- (local
-  (include-book "arithmetic-5/top" :dir :system))
-
- (defun power-of-2p-measure (x)
-   (cond ((or (not (natp x))
-	      (<= x 1))
-	  0)
-	 (t (floor x 1))))
-
- (defn is-power-of-2p (x)
-   (declare (xargs :measure (power-of-2p-measure x)))
-   (if (natp x)
-       (if (<= x 1)
-	   t
-	 (is-power-of-2p (* 1/2 x)))
-     nil))
-
- (local
-  (set-default-hints
-   '((acl2::nonlinearp-default-hint++ acl2::id acl2::stable-under-simplificationp
-				      acl2::hist nil))))
-
- (defthm ash-bounds-with-powers-of-two
-   ;; A general ash bounds theorem
-   (implies (and (integerp i)
-		 (<= 0 i)
-		 (equal 2-to-x (* 2-to-x-y (expt 2 y)))
-		 (< i 2-to-x)
-		 (syntaxp (quotep 2-to-x))
-		 (is-power-of-2p 2-to-x)
-		 (< (expt 2 y) 2-to-x)
-		 (syntaxp (quotep y))
-		 (syntaxp (quotep 2-to-x-y))
-		 (integerp y)
-		 (<= 0 y))
-	    (< (ash i (- y)) 2-to-x-y))
-   :rule-classes :rewrite)
-
- ) ;; End of encapsulate
-
-(local
- (defun my-induct (x y)
-   (if (and (natp x)
-	    (natp y))
-       (if (zp x)
-	   y
-	 (if (zp y)
-	     x
-	   (my-induct (logcdr x) (logcdr y))))
-     nil)))
-
-(defthm integer-length-of-logior-of-natp
-  (implies (and (natp x)
-		(natp y)
-		(<= (integer-length x) (integer-length y)))
-	   (equal (integer-length (logior x y))
-		  (integer-length y)))
-  :hints (("Goal" :induct (my-induct x y)
-	   :in-theory (e/d (acl2::integer-length**)
-			   (integer-length)))))
-
-(defthm integer-length-and-loghead-when-natp-identity-theorem
-  (implies (natp x)
-	   (equal (loghead (integer-length x) x)
-		  x))
-  :hints (("Goal" :in-theory (e/d* (acl2::loghead** acl2::integer-length**
-						    acl2::ihsext-inductions)
-				   ((force))))))
-
-(defthm mod-expt-and-integer-length-identity-theorem
-  (implies (natp x)
-	   (equal (mod x (expt 2 (integer-length x)))
-		  x))
-  :hints (("Goal" :in-theory (e/d* (acl2::ihsext-arithmetic)
-				   (bitops::ash-1-removal)))))
-
-(encapsulate
- ()
-
- (local (include-book "arithmetic-5/top" :dir :system))
-
- ;; The following are useful for MBE kind of proofs.  Be careful when
- ;; using them though; sometimes, they might cause loops when enabled
- ;; alongside logand-with-negated-bitmask and
- ;; logand-with-bitmask.
-
- (defthmd negative-logand-to-positive-logand-with-natp-x
-   (implies (and (syntaxp (and (quotep n)
-			       (let* ((n-abs (acl2::unquote n)))
-				 (< n-abs 0))))
-		 (equal m (integer-length x))
-		 (integerp n)
-		 (natp x))
-	    (equal (logand n x)
-		   (logand (logand (1- (ash 1 m)) n) x))))
-
- (defun find-best-fitting-m (n)
-   (if (signed-byte-p 8 (acl2::unquote n))
-       (list (list (cons 'm ''8))
-	     (list (cons 'm ''16))
-	     (list (cons 'm ''32))
-	     (list (cons 'm ''64)))
-     (if (signed-byte-p 16 (acl2::unquote n))
-	 (list (list (cons 'm ''16))
-	       (list (cons 'm ''32))
-	       (list (cons 'm ''64)))
-       (if (signed-byte-p 32 (acl2::unquote n))
-	   (list (list (cons 'm ''32))
-		 (list (cons 'm ''64)))
-	 (list (list (cons 'm ''64)))))))
-
- (defthm negative-logand-to-positive-logand-with-integerp-x
-   (implies (and (syntaxp (and (quotep n)
-			       (let* ((n-abs (acl2::unquote n)))
-				 (< n-abs 0))))
-		 (bind-free (find-best-fitting-m n) (m))
-		 (unsigned-byte-p m x)
-		 (integerp n))
-	    (equal (logand n x)
-		   (logand (logand (1- (ash 1 m)) n) x))))
-
- (defthmd loghead-to-logand
-   ;; This rule causes loop when used alongside
-   ;; bitops::logand-with-bitmask and bitops::logand-with-negated-bitmask.
-   (implies (and (natp n)
-		 (syntaxp (quotep n))
-		 (integerp x))
-	    (equal (loghead n x)
-		   (logand (1- (expt 2 n)) x)))
-   :hints (("Goal" :in-theory (e/d (loghead) ()))))
-
- (defthm logand-redundant
-   (implies (and (unsigned-byte-p n x)
-		 (equal width (1- (ash 1 n)))
-		 (syntaxp (quotep width)))
-	    (equal (logand width x)
-		   x)))
-
- )
-
-;; ======================================================================
-
 (defsection GPR-indices
 
   :parents (x86-register-readers-and-writers)
@@ -183,19 +35,19 @@
 prefix.</p>"
     :enabled t
     (if (eql rex-byte 0)
-	(n03p reg)
+        (n03p reg)
       (n04p reg))
 
     ///
 
     (defthm reg-indexp-for-3-bits
       (implies (and (syntaxp (quotep reg))
-		    (n03p reg))
-	       (reg-indexp reg rex)))
+                    (n03p reg))
+               (reg-indexp reg rex)))
 
     (defthm reg-indexp-logand-7
       (implies (n08p rex-byte)
-	       (reg-indexp (loghead 3 modr/m) rex-byte))
+               (reg-indexp (loghead 3 modr/m) rex-byte))
       :hints (("Goal" :in-theory (enable reg-indexp)))))
 
   (define reg-index
@@ -214,7 +66,7 @@ prefix.</p>"
     register r8. If R is not set, @('reg-index') will give us the index
     corresponding to rAX.</p>"
     (if (logbitp index rex-byte)
-	(logior 8 (mbe :logic (n03 reg) :exec reg))
+        (logior 8 (mbe :logic (n03 reg) :exec reg))
       (mbe :logic (n03 reg) :exec reg))
 
     ///
@@ -233,7 +85,7 @@ prefix.</p>"
 
     (defthm reg-indexp-forward
       (implies (reg-indexp reg rex-byte)
-	       (n04p reg))
+               (unsigned-byte-p 4 reg))
       :rule-classes :forward-chaining))
 
   )
@@ -242,7 +94,7 @@ prefix.</p>"
 
 ;; [Jared] these rules broke something below
 (local (in-theory (disable BITOPS::LOGEXT-OF-LOGAND
-			   BITOPS::LOGEXT-OF-LOGIOR)))
+                           BITOPS::LOGEXT-OF-LOGIOR)))
 
 (defsection GPRs-Reads-and-Writes
 
@@ -298,14 +150,14 @@ are used to write natural numbers into the GPRs.</p>"
  R14L, R15L.</p>"
 
     (cond ((or (not (eql rex 0))
-	       (< reg 4))
-	   (let ((qword (the (signed-byte 64) (rgfi reg x86))))
-	     (n08 qword)))
-	  (t ;; no rex and reg is at least 4 -- then read from AH, etc.
-	   (let ((qword
-		  (the (signed-byte 64) (rgfi (the (unsigned-byte 4) (- reg 4)) x86))))
-	     (mbe :logic (part-select qword :low 8 :width 8)
-		  :exec (n08 (ash qword -8))))))
+               (< reg 4))
+           (let ((qword (the (signed-byte 64) (rgfi reg x86))))
+             (n08 qword)))
+          (t ;; no rex and reg is at least 4 -- then read from AH, etc.
+           (let ((qword
+                  (the (signed-byte 64) (rgfi (the (unsigned-byte 4) (- reg 4)) x86))))
+             (mbe :logic (part-select qword :low 8 :width 8)
+                  :exec (n08 (ash qword -8))))))
 
     ///
 
@@ -372,52 +224,52 @@ are used to write natural numbers into the GPRs.</p>"
     :inline t
     :guard (reg-indexp reg rex)
     :guard-hints (("Goal" :in-theory (e/d (
-					   loghead-to-logand
-					   bitops::logsquash)
-					  (bitops::logand-with-negated-bitmask
-					   bitops::logand-with-bitmask
-					   unsigned-byte-p))))
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
 
     (cond ((or (not (eql rex 0))
-	       (< reg 4))
-	   (let ((qword (the (signed-byte 64) (rgfi reg x86))))
-	     (!rgfi reg
-		    (n64-to-i64
-		     (mbe :logic
-			  (part-install
-			   byte
-			   (part-select qword :low 0 :width 64)
-			   :low 0 :width 8)
-			  :exec
-			  (the (unsigned-byte 64)
-			    (logior (the (unsigned-byte 64)
-				      (logand #xffffffffffffff00 qword))
-				    byte))))
-		    x86)))
-	  (t ;; no rex and reg is at least 4 -- then write to AH, etc.
-	   (let* ((index (the (unsigned-byte 4)
-			   (- (the (unsigned-byte 4) reg) 4)))
-		  (qword (the (signed-byte 64) (rgfi index x86))))
-	     (!rgfi index
-		    (n64-to-i64
-		     (mbe :logic
-			  (part-install
-			   byte
-			   (part-select qword :low 0 :width 64)
-			   :low 8 :width 8)
-			  :exec
-			  (the (unsigned-byte 64)
-			    (logior (the (unsigned-byte 64)
-				      (logand #xffffffffffff00ff qword))
-				    (the (unsigned-byte 16) (ash byte 8))))))
-		    x86))))
+               (< reg 4))
+           (let ((qword (the (signed-byte 64) (rgfi reg x86))))
+             (!rgfi reg
+                    (n64-to-i64
+                     (mbe :logic
+                          (part-install
+                           byte
+                           (part-select qword :low 0 :width 64)
+                           :low 0 :width 8)
+                          :exec
+                          (the (unsigned-byte 64)
+                            (logior (the (unsigned-byte 64)
+                                      (logand #xffffffffffffff00 qword))
+                                    byte))))
+                    x86)))
+          (t ;; no rex and reg is at least 4 -- then write to AH, etc.
+           (let* ((index (the (unsigned-byte 4)
+                           (- (the (unsigned-byte 4) reg) 4)))
+                  (qword (the (signed-byte 64) (rgfi index x86))))
+             (!rgfi index
+                    (n64-to-i64
+                     (mbe :logic
+                          (part-install
+                           byte
+                           (part-select qword :low 0 :width 64)
+                           :low 8 :width 8)
+                          :exec
+                          (the (unsigned-byte 64)
+                            (logior (the (unsigned-byte 64)
+                                      (logand #xffffffffffff00ff qword))
+                                    (the (unsigned-byte 16) (ash byte 8))))))
+                    x86))))
 
     ///
 
     (defthm x86p-wr08
       (implies (and (x86p x86)
-		    (natp reg))
-	       (x86p (wr08 reg rex byte x86)))))
+                    (natp reg))
+               (x86p (wr08 reg rex byte x86)))))
 
   (encapsulate
    ()
@@ -427,31 +279,31 @@ are used to write natural numbers into the GPRs.</p>"
 
    (defthm loghead-logtail-logext-for-rr08/wr08
      (implies (integerp x)
-	      (equal (loghead 8 (logtail 8 (logext 64 x)))
-		     (loghead 8 (logtail 8 x))))
+              (equal (loghead 8 (logtail 8 (logext 64 x)))
+                     (loghead 8 (logtail 8 x))))
      :hints (("Goal" :in-theory
-	      (e/d (logtail evenp oddp logbitp logext loghead logapp)
-		   ())))))
+              (e/d (logtail evenp oddp logbitp logext loghead logapp)
+                   ())))))
 
   (defthm rr08-wr08-same
     (implies (n08p byte)
-	     (equal (rr08 reg rex
-			  (wr08 reg rex byte x86))
-		    byte))
+             (equal (rr08 reg rex
+                          (wr08 reg rex byte x86))
+                    byte))
     :hints (("Goal"
-	     :in-theory (e/d (n64-to-i64
-			      rr08 wr08)
-			     (unsigned-byte-p)))))
+             :in-theory (e/d (n64-to-i64
+                              rr08 wr08)
+                             (unsigned-byte-p)))))
 
   (defthm rr08-wr08-different
     (implies (and (n08p byte)
-		  (not (equal reg1 reg2)))
-	     (equal (rr08 reg1 rex1
-			  (wr08 reg2 rex2 byte x86))
-		    (rr08 reg1 rex1 x86)))
+                  (not (equal reg1 reg2)))
+             (equal (rr08 reg1 rex1
+                          (wr08 reg2 rex2 byte x86))
+                    (rr08 reg1 rex1 x86)))
     :hints (("Goal"
-	     :in-theory (e/d (n64-to-i64 rr08 wr08)
-			     ()))))
+             :in-theory (e/d (n64-to-i64 rr08 wr08)
+                             ()))))
 
   (define wr16
     ((reg  :type (unsigned-byte 4))
@@ -459,51 +311,51 @@ are used to write natural numbers into the GPRs.</p>"
      (x86))
     :inline t
     :guard-hints (("Goal" :in-theory (e/d (
-					   loghead-to-logand
-					   bitops::logsquash)
-					  (bitops::logand-with-negated-bitmask
-					   bitops::logand-with-bitmask
-					   unsigned-byte-p))))
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
 
     (let ((qword (the (signed-byte 64) (rgfi reg x86))))
       (!rgfi reg
-	     (n64-to-i64
-	      (mbe :logic
-		   (part-install
-		    val
-		    (part-select qword :low 0 :width 64)
-		    :low 0 :width 16)
-		   :exec
-		   (the (unsigned-byte 64)
-		     (logior (the (unsigned-byte 64)
-			       (logand qword #xffffffffffff0000))
-			     val))))
-	     x86))
+             (n64-to-i64
+              (mbe :logic
+                   (part-install
+                    val
+                    (part-select qword :low 0 :width 64)
+                    :low 0 :width 16)
+                   :exec
+                   (the (unsigned-byte 64)
+                     (logior (the (unsigned-byte 64)
+                               (logand qword #xffffffffffff0000))
+                             val))))
+             x86))
 
     ///
 
     (defthm x86p-wr16
       (implies (and (x86p x86)
-		    (natp reg))
-	       (x86p (wr16 reg val x86)))))
+                    (natp reg))
+               (x86p (wr16 reg val x86)))))
 
   (defthm rr16-wr16-same
     (implies (n16p val)
-	     (equal (rr16 reg (wr16 reg val x86))
-		    val))
+             (equal (rr16 reg (wr16 reg val x86))
+                    val))
     :hints (("Goal"
-	     :in-theory (e/d (n64-to-i64
-			      rr16 wr16)
-			     (unsigned-byte-p force (force))))))
+             :in-theory (e/d (n64-to-i64
+                              rr16 wr16)
+                             (unsigned-byte-p force (force))))))
 
   (defthm rr16-wr16-different
     (implies (and (n16p val)
-		  (not (equal reg1 reg2)))
-	     (equal (rr16 reg1 (wr16 reg2 val x86))
-		    (rr16 reg1 x86)))
+                  (not (equal reg1 reg2)))
+             (equal (rr16 reg1 (wr16 reg2 val x86))
+                    (rr16 reg1 x86)))
     :hints (("Goal"
-	     :in-theory (e/d (n64-to-i64 rr16 wr16)
-			     (force (force))))))
+             :in-theory (e/d (n64-to-i64 rr16 wr16)
+                             (force (force))))))
 
   (define wr32
     ((reg  :type (unsigned-byte  4))
@@ -511,11 +363,11 @@ are used to write natural numbers into the GPRs.</p>"
      (x86))
     :inline t
     :guard-hints (("Goal" :in-theory (e/d (
-					   loghead-to-logand
-					   bitops::logsquash)
-					  (bitops::logand-with-negated-bitmask
-					   bitops::logand-with-bitmask
-					   unsigned-byte-p))))
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
 
     :long "<p>Write a dword to a register.  Note Intel Vol. 1 Sec. 3.4.1.1
     p. 3-17, which says the following about 64-bit mode:</p>
@@ -540,26 +392,26 @@ by the following quote from the same page as above: </p>
 
     (defthm x86p-wr32
       (implies (and (x86p x86)
-		    (natp reg))
-	       (x86p (wr32 reg val x86)))))
+                    (natp reg))
+               (x86p (wr32 reg val x86)))))
 
   (defthm rr32-wr32-same
     (implies (n32p val)
-	     (equal (rr32 reg (wr32 reg val x86))
-		    val))
+             (equal (rr32 reg (wr32 reg val x86))
+                    val))
     :hints (("Goal"
-	     :in-theory (e/d (n64-to-i64
-			      rr32 wr32)
-			     (unsigned-byte-p)))))
+             :in-theory (e/d (n64-to-i64
+                              rr32 wr32)
+                             (unsigned-byte-p)))))
 
   (defthm rr32-wr32-different
     (implies (and (n32p val)
-		  (not (equal reg1 reg2)))
-	     (equal (rr32 reg1 (wr32 reg2 val x86))
-		    (rr32 reg1 x86)))
+                  (not (equal reg1 reg2)))
+             (equal (rr32 reg1 (wr32 reg2 val x86))
+                    (rr32 reg1 x86)))
     :hints (("Goal"
-	     :in-theory (e/d (n64-to-i64 rr32 wr32)
-			     ()))))
+             :in-theory (e/d (n64-to-i64 rr32 wr32)
+                             ()))))
 
   (define wr64
     ((reg  :type (unsigned-byte  4))
@@ -567,36 +419,36 @@ by the following quote from the same page as above: </p>
      (x86))
     :inline t
     :guard-hints (("Goal" :in-theory (e/d (
-					   loghead-to-logand
-					   bitops::logsquash)
-					  (bitops::logand-with-negated-bitmask
-					   bitops::logand-with-bitmask
-					   unsigned-byte-p))))
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
     (!rgfi reg (n64-to-i64 val) x86)
 
     ///
     (defthm x86p-wr64
       (implies (and (x86p x86)
-		    (natp reg))
-	       (x86p (wr64 reg val x86)))))
+                    (natp reg))
+               (x86p (wr64 reg val x86)))))
 
   (defthm rr64-wr64-same
     (implies (n64p val)
-	     (equal (rr64 reg (wr64 reg val x86))
-		    val))
+             (equal (rr64 reg (wr64 reg val x86))
+                    val))
     :hints (("Goal"
-	     :in-theory (e/d (n64-to-i64
-			      rr64 wr64)
-			     (unsigned-byte-p)))))
+             :in-theory (e/d (n64-to-i64
+                              rr64 wr64)
+                             (unsigned-byte-p)))))
 
   (defthm rr64-wr64-different
     (implies (and (n64p val)
-		  (not (equal reg1 reg2)))
-	     (equal (rr64 reg1 (wr64 reg2 val x86))
-		    (rr64 reg1 x86)))
+                  (not (equal reg1 reg2)))
+             (equal (rr64 reg1 (wr64 reg2 val x86))
+                    (rr64 reg1 x86)))
     :hints (("Goal"
-	     :in-theory (e/d (n64-to-i64 rr64 wr64)
-			     ()))))
+             :in-theory (e/d (n64-to-i64 rr64 wr64)
+                             ()))))
 
   (define rgfi-size
     ((nbytes :type (unsigned-byte 4))
@@ -605,7 +457,7 @@ by the following quote from the same page as above: </p>
      x86)
     :enabled t
     :guard (and (reg-indexp index rex)
-		(member nbytes '(1 2 4 8)))
+                (member nbytes '(1 2 4 8)))
     :inline t
     :returns (val natp :rule-classes :type-prescription)
     (case nbytes
@@ -628,8 +480,8 @@ by the following quote from the same page as above: </p>
      x86)
     :enabled t
     :guard (and (reg-indexp index rex)
-		(member nbytes '(1 2 4 8))
-		(unsigned-byte-p (ash nbytes 3) val))
+                (member nbytes '(1 2 4 8))
+                (unsigned-byte-p (ash nbytes 3) val))
     :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
     :inline t
     (case nbytes
@@ -698,7 +550,7 @@ are used to write natural numbers into the XMMs.</p>"
     :inline t
 
     (mbe :logic (n128 (xmmi reg x86))
-	 :exec  (the (unsigned-byte 128) (xmmi reg x86)))
+         :exec  (the (unsigned-byte 128) (xmmi reg x86)))
 
     ///
 
@@ -715,50 +567,49 @@ are used to write natural numbers into the XMMs.</p>"
      (val  :type (unsigned-byte 32))
      (x86))
     :inline t
-    :guard-hints (("Goal" :in-theory (e/d (
-					   loghead-to-logand
-					   bitops::logsquash)
-					  (bitops::logand-with-negated-bitmask
-					   bitops::logand-with-bitmask
-					   unsigned-byte-p))))
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
 
     (let ((oword (the (unsigned-byte 128) (xmmi reg x86))))
       (!xmmi reg
-	     (mbe :logic
-		  (part-install val
-				(part-select oword :low 0 :width 128)
-				:low 0 :width 32)
-		  :exec
-		  (the (unsigned-byte 128)
-		       (logior (the (unsigned-byte 128)
-				    (logand oword #xffffffffffffffffffffffff00000000))
-			       val)))
-	     x86))
+             (mbe :logic
+                  (part-install val
+                                (part-select oword :low 0 :width 128)
+                                :low 0 :width 32)
+                  :exec
+                  (the (unsigned-byte 128)
+                       (logior (the (unsigned-byte 128)
+                                    (logand oword #xffffffffffffffffffffffff00000000))
+                               val)))
+             x86))
 
     ///
 
     (defthm x86p-wx32
       (implies (and (x86p x86)
-		    (natp reg))
-	       (x86p (wx32 reg val x86)))))
+                    (natp reg))
+               (x86p (wx32 reg val x86)))))
 
   (defthm rx32-wx32-same
     (implies (n32p val)
-	     (equal (rx32 reg (wx32 reg val x86))
-		    val))
+             (equal (rx32 reg (wx32 reg val x86))
+                    val))
     :hints (("Goal"
-	     :in-theory (e/d (rx32 wx32
-			      )
-			     (xmmi-is-n128p
-			      unsigned-byte-p)))))
+             :in-theory (e/d (rx32 wx32
+                              )
+                             (xmmi-is-n128p
+                              unsigned-byte-p)))))
 
   (defthm rx32-wx32-different
     (implies (not (equal reg1 reg2))
-	     (equal (rx32 reg1 (wx32 reg2 val x86))
-		    (rx32 reg1 x86)))
+             (equal (rx32 reg1 (wx32 reg2 val x86))
+                    (rx32 reg1 x86)))
     :hints (("Goal"
-	     :in-theory (e/d (rx32 wx32 )
-			     (xmmi-is-n128p)))))
+             :in-theory (e/d (rx32 wx32 )
+                             (xmmi-is-n128p)))))
 
   (define wx64
     ((reg  :type (unsigned-byte  4))
@@ -766,48 +617,48 @@ are used to write natural numbers into the XMMs.</p>"
      (x86))
     :inline t
     :guard-hints (("Goal" :in-theory (e/d (
-					   loghead-to-logand
-					   bitops::logsquash)
-					  (bitops::logand-with-negated-bitmask
-					   bitops::logand-with-bitmask
-					   unsigned-byte-p))))
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
     (let ((oword (the (unsigned-byte 128) (xmmi reg x86))))
       (!xmmi reg
-	     (mbe :logic
-		  (part-install
-		   val
-		   (part-select oword :low 0 :width 128)
-		   :low 0 :width 64)
-		  :exec
-		  (the (unsigned-byte 128)
-		       (logior (the (unsigned-byte 128)
-				    (logand oword #xffffffffffffffff0000000000000000))
-			       val)))
-	     x86))
+             (mbe :logic
+                  (part-install
+                   val
+                   (part-select oword :low 0 :width 128)
+                   :low 0 :width 64)
+                  :exec
+                  (the (unsigned-byte 128)
+                       (logior (the (unsigned-byte 128)
+                                    (logand oword #xffffffffffffffff0000000000000000))
+                               val)))
+             x86))
 
     ///
     (defthm x86p-wx64
       (implies (and (x86p x86)
-		    (natp reg))
-	       (x86p (wx64 reg val x86)))))
+                    (natp reg))
+               (x86p (wx64 reg val x86)))))
 
   (defthm rx64-wx64-same
     (implies (n64p val)
-	     (equal (rx64 reg (wx64 reg val x86))
-		    val))
+             (equal (rx64 reg (wx64 reg val x86))
+                    val))
     :hints (("Goal"
-	     :in-theory (e/d (rx64 wx64
-			      )
-			     (xmmi-is-n128p
-			      unsigned-byte-p)))))
+             :in-theory (e/d (rx64 wx64
+                              )
+                             (xmmi-is-n128p
+                              unsigned-byte-p)))))
 
   (defthm rx64-wx64-different
     (implies (not (equal reg1 reg2))
-	     (equal (rx64 reg1 (wx64 reg2 val x86))
-		    (rx64 reg1 x86)))
+             (equal (rx64 reg1 (wx64 reg2 val x86))
+                    (rx64 reg1 x86)))
     :hints (("Goal"
-	     :in-theory (e/d (rx64 wx64 )
-			     (xmmi-is-n128p)))))
+             :in-theory (e/d (rx64 wx64 )
+                             (xmmi-is-n128p)))))
 
   (define wx128
     ((reg  :type (unsigned-byte 4))
@@ -815,39 +666,39 @@ are used to write natural numbers into the XMMs.</p>"
      (x86))
     :inline t
     :guard-hints (("Goal" :in-theory (e/d (
-					   loghead-to-logand
-					   bitops::logsquash)
-					  (bitops::logand-with-negated-bitmask
-					   bitops::logand-with-bitmask
-					   unsigned-byte-p))))
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                           bitops::logand-with-bitmask
+                                           unsigned-byte-p))))
 
     (!xmmi reg (mbe :logic (n128 val)
-		    :exec  val)
-	   x86)
+                    :exec  val)
+           x86)
 
     ///
 
     (defthm x86p-wx128
       (implies (and (x86p x86)
-		    (natp reg))
-	       (x86p (wx128 reg val x86)))))
+                    (natp reg))
+               (x86p (wx128 reg val x86)))))
 
   (defthm rx128-wx128-same
     (implies (n128p val)
-	     (equal (rx128 reg (wx128 reg val x86))
-		    val))
+             (equal (rx128 reg (wx128 reg val x86))
+                    val))
     :hints (("Goal"
-	     :in-theory (e/d (rx128 wx128 )
-			     (xmmi-is-n128p
-			      unsigned-byte-p)))))
+             :in-theory (e/d (rx128 wx128 )
+                             (xmmi-is-n128p
+                              unsigned-byte-p)))))
 
   (defthm rx128-wx128-different
     (implies (not (equal reg1 reg2))
-	     (equal (rx128 reg1 (wx128 reg2 val x86))
-		    (rx128 reg1 x86)))
+             (equal (rx128 reg1 (wx128 reg2 val x86))
+                    (rx128 reg1 x86)))
     :hints (("Goal"
-	     :in-theory (e/d (rx128 wx128 )
-			     (xmmi-is-n128p)))))
+             :in-theory (e/d (rx128 wx128 )
+                             (xmmi-is-n128p)))))
 
   (define xmmi-size
     ((nbytes :type (unsigned-byte 5))
@@ -874,7 +725,7 @@ are used to write natural numbers into the XMMs.</p>"
      x86)
     :enabled t
     :guard (and (member nbytes '(4 8 16))
-		(unsigned-byte-p (ash nbytes 3) val))
+                (unsigned-byte-p (ash nbytes 3) val))
     :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
     :inline t
     (case nbytes
@@ -951,7 +802,7 @@ pointer, or opcode registers\).</em></p>"
     :inline t
     (let ((reg80 (the (unsigned-byte 80) (fp-datai i x86))))
       (mbe :logic (part-select reg80 :low 0 :width 64)
-	   :exec  (logand #.*2^64-1* reg80)))
+           :exec  (logand #.*2^64-1* reg80)))
 
     ///
 
@@ -968,41 +819,41 @@ pointer, or opcode registers\).</em></p>"
      (x86))
     :inline t
     :guard-hints (("Goal" :in-theory (e/d ()
-					  (unsigned-byte-p))))
+                                          (unsigned-byte-p))))
 
     (let ((val80 (mbe :logic (part-install #xFFFF v :low 64 :high 79)
-		      :exec (the (unsigned-byte 80)
-			      (logior #uxFFFF_00000000_00000000 v)))))
+                      :exec (the (unsigned-byte 80)
+                              (logior #uxFFFF_00000000_00000000 v)))))
       (!fp-datai i val80 x86))
 
     ///
 
     (defthm x86p-!mmx
       (implies (and (x86p x86)
-		    (n64p v)
-		    (integerp i))
-	       (x86p (!mmx i v x86)))
+                    (n64p v)
+                    (integerp i))
+               (x86p (!mmx i v x86)))
       :hints (("Goal" :in-theory (e/d ()
-				      (force (force)))))))
+                                      (force (force)))))))
 
   (define mmx-instruction-updates (x86)
     :inline t
     :guard-hints (("Goal" :in-theory (e/d ()
-					  ())))
+                                          ())))
     :short "We set the FPU tag and TOS field to 00B \(valid\) and 000B
  respectively.  This function accounts for the effects of all MMX
  instructions except EMMS."
 
     (b* ((x86 (!fp-tag 0 x86))
-	 (fp-status (fp-status x86))
-	 (x86 (!fp-status (!fp-status-slice :fp-top 0 fp-status) x86)))
-	x86)
+         (fp-status (fp-status x86))
+         (x86 (!fp-status (!fp-status-slice :fp-top 0 fp-status) x86)))
+        x86)
 
     ///
 
     (defthm x86p-mmx-instruction-updates
       (implies (x86p x86)
-	       (x86p (mmx-instruction-updates x86)))))
+               (x86p (mmx-instruction-updates x86)))))
 
   )
 
@@ -1025,24 +876,24 @@ pointer, or opcode registers\).</em></p>"
     :parents (rflags-Reads-and-Writes)
 
     (b* ((rflags (the (unsigned-byte 32) (rflags x86))))
-	(mbe :logic
-	     (part-select rflags :low flg
-			  :width (if (equal flg *iopl*)
-				     2 1))
-	     :exec
-	     (the (unsigned-byte 2)
-	       (logand (if (equal flg #.*iopl*) 3 1)
-		       (the (unsigned-byte 32)
-			 (ash (the (unsigned-byte 32) rflags)
-			      (the (integer -32 0)
-				(- (the (integer 0 32) flg)))))))))
+        (mbe :logic
+             (part-select rflags :low flg
+                          :width (if (equal flg *iopl*)
+                                     2 1))
+             :exec
+             (the (unsigned-byte 2)
+               (logand (if (equal flg #.*iopl*) 3 1)
+                       (the (unsigned-byte 32)
+                         (ash (the (unsigned-byte 32) rflags)
+                              (the (integer -32 0)
+                                (- (the (integer 0 32) flg)))))))))
 
 
     ///
 
     (defthm-usb n01p-flgi-except-iopl
       :hyp (and (force (x86p x86))
-		(not (equal flg *iopl*)))
+                (not (equal flg *iopl*)))
       :bound 1
       :concl (flgi flg x86)
       :gen-type t
@@ -1057,11 +908,11 @@ pointer, or opcode registers\).</em></p>"
 
     (defthm flgi-xw
       (equal (flgi flg (xw field index value x86))
-	     (if (equal field :rflags)
-		 (if (not (equal flg *iopl*))
-		     (logbit flg value)
-		   (loghead 2 (logtail *iopl* value)))
-	       (flgi flg x86)))))
+             (if (equal field :rflags)
+                 (if (not (equal flg *iopl*))
+                     (logbit flg value)
+                   (loghead 2 (logtail *iopl* value)))
+               (flgi flg x86)))))
 
   (define !flgi
     ((flg :type (integer 0 32))
@@ -1069,63 +920,64 @@ pointer, or opcode registers\).</em></p>"
      x86)
     :parents (rflags-Reads-and-Writes)
     :guard (and (member flg *flg-names*)
-		(if (equal flg *iopl*)
-		    (unsigned-byte-p 2 val)
-		  (unsigned-byte-p 1 val)))
+                (if (equal flg *iopl*)
+                    (unsigned-byte-p 2 val)
+                  (unsigned-byte-p 1 val)))
     :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+    :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
 
     (b* ((rflags (the (unsigned-byte 32) (rflags x86)))
-	 (new-rflags
-	  (mbe
-	   :logic
-	   (part-install val rflags :low flg
-			 :width (if (equal flg *iopl*)
-				    2 1))
-	   :exec
-	   (let* ((mask (the (unsigned-byte 32)
-			  (logand #.*2^32-1*
-				  (lognot
-				   (the (unsigned-byte 32)
-				     (ash (if (equal flg #.*iopl*)
-					      3 1)
-					  (the (integer 0 21)
-					    flg))))))))
+         (new-rflags
+          (mbe
+           :logic
+           (part-install val rflags :low flg
+                         :width (if (equal flg *iopl*)
+                                    2 1))
+           :exec
+           (let* ((mask (the (unsigned-byte 32)
+                          (logand #.*2^32-1*
+                                  (lognot
+                                   (the (unsigned-byte 32)
+                                     (ash (if (equal flg #.*iopl*)
+                                              3 1)
+                                          (the (integer 0 21)
+                                            flg))))))))
 
-	     (the (unsigned-byte 32)
-	       (logior
-		(the (unsigned-byte 32) (logand rflags mask))
-		(the (unsigned-byte 32) (ash val flg))))))))
-	(!rflags (mbe :logic (n32 new-rflags)
-		      :exec new-rflags)
-		 x86))
+             (the (unsigned-byte 32)
+               (logior
+                (the (unsigned-byte 32) (logand rflags mask))
+                (the (unsigned-byte 32) (ash val flg))))))))
+        (!rflags (mbe :logic (n32 new-rflags)
+                      :exec new-rflags)
+                 x86))
 
     ///
 
     (defthm x86p-!flgi
       (implies (x86p x86)
-	       (x86p (!flgi flg val x86))))
+               (x86p (!flgi flg val x86))))
 
     (defthm xr-!flgi
       (implies (not (equal field :rflags))
-	       (equal (xr field index (!flgi flg val x86))
-		      (xr field index x86)))
+               (equal (xr field index (!flgi flg val x86))
+                      (xr field index x86)))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
     (defthm !flgi-xw
       ;; Keep !flgi inside all other nests of updates.
       (implies (not (equal field :rflags))
-	       (equal (!flgi flg val (xw field index value x86))
-		      (xw field index value (!flgi flg val x86))))
+               (equal (!flgi flg val (xw field index value x86))
+                      (xw field index value (!flgi flg val x86))))
       :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
 
     (defthm rflags-!flgi
       (implies (and (member flg *flg-names*)
-		    (x86p x86))
-	       (equal (xr :rflags index (!flgi flg val x86))
-		      (part-install val
-				    (xr :rflags 0 x86)
-				    :low flg
-				    :width (if (equal flg *iopl*) 2 1))))))
+                    (x86p x86))
+               (equal (xr :rflags index (!flgi flg val x86))
+                      (part-install val
+                                    (xr :rflags 0 x86)
+                                    :low flg
+                                    :width (if (equal flg *iopl*) 2 1))))))
 
   )
 
@@ -1217,7 +1069,7 @@ values.</p>"
 (define undef-read-logic (x86)
   :enabled t
   :returns (mv (unknown natp :rule-classes :type-prescription)
-	       (x86     x86p :hyp (x86p x86)))
+               (x86     x86p :hyp (x86p x86)))
   :parents (undef-read)
 
   (b* ((undef-seed (nfix (undef x86)))
@@ -1231,7 +1083,7 @@ values.</p>"
   :inline nil
   :enabled t
   :returns (mv (unknown natp :rule-classes :type-prescription)
-	       (x86     x86p :hyp (x86p x86)))
+               (x86     x86p :hyp (x86p x86)))
   :parents (characterizing-undefined-behavior)
 
   :short "Get a unique unknown to be used when reasoning about
@@ -1261,7 +1113,7 @@ values.</p>"
   :enabled t
   :parents (!flgi-undefined)
   (b* (((mv val x86)
-	(undef-flg-logic x86)))
+        (undef-flg-logic x86)))
       (mv (n01 val) x86)))
 
 (define !flgi-undefined
@@ -1279,7 +1131,7 @@ using the @(see undef-read) function.</p>"
   :returns (x86 x86p :hyp :guard)
 
   (b* (((mv (the (unsigned-byte 1) val) x86)
-	(undef-flg x86))
+        (undef-flg x86))
        (x86 (!flgi flg val x86)))
       x86))
 
@@ -1288,55 +1140,55 @@ using the @(see undef-read) function.</p>"
 (local
  (def-gl-thm write-user-rflags-guard-helper
    :hyp (and (unsigned-byte-p 32 input-rflags)
-	     (unsigned-byte-p 32 flgs))
+             (unsigned-byte-p 32 flgs))
    :concl
    (equal (logior
-	   (ash (bool->bit (logbitp 11 flgs)) 11)
-	   (logand
-	    4294965247
-	    (logior
-	     (ash (bool->bit (logbitp 7 flgs)) 7)
-	     (logand
-	      4294967167
-	      (logior
-	       (ash (bool->bit (logbitp 6 flgs)) 6)
-	       (logand
-		4294967231
-		(logior
-		 (ash (bool->bit (logbitp 4 flgs)) 4)
-		 (logand
-		  4294967279
-		  (logior
-		   (ash (bool->bit (logbitp 2 flgs)) 2)
-		   (logand 4294967291
-			   (logior (loghead 1 flgs)
-				   (logand 4294967294
-					   input-rflags))))))))))))
-	  (logior
-	   (loghead 1 flgs)
-	   (logand
-	    4294967294
-	    (logior
-	     (ash (bool->bit (logbitp 2 flgs)) 2)
-	     (logand
-	      4294967291
-	      (logior
-	       (ash (bool->bit (logbitp 4 flgs)) 4)
-	       (logand
-		4294967279
-		(logior
-		 (ash (bool->bit (logbitp 7 flgs)) 7)
-		 (logand 4294967167
-			 (logior (ash (bool->bit (logbitp 6 flgs)) 6)
-				 (logand 4294967231
-					 (logior (logand 4294965247 input-rflags)
-						 (ash (bool->bit (logbitp 11 flgs))
-						      11)))))))))))))
+           (ash (bool->bit (logbitp 11 flgs)) 11)
+           (logand
+            4294965247
+            (logior
+             (ash (bool->bit (logbitp 7 flgs)) 7)
+             (logand
+              4294967167
+              (logior
+               (ash (bool->bit (logbitp 6 flgs)) 6)
+               (logand
+                4294967231
+                (logior
+                 (ash (bool->bit (logbitp 4 flgs)) 4)
+                 (logand
+                  4294967279
+                  (logior
+                   (ash (bool->bit (logbitp 2 flgs)) 2)
+                   (logand 4294967291
+                           (logior (loghead 1 flgs)
+                                   (logand 4294967294
+                                           input-rflags))))))))))))
+          (logior
+           (loghead 1 flgs)
+           (logand
+            4294967294
+            (logior
+             (ash (bool->bit (logbitp 2 flgs)) 2)
+             (logand
+              4294967291
+              (logior
+               (ash (bool->bit (logbitp 4 flgs)) 4)
+               (logand
+                4294967279
+                (logior
+                 (ash (bool->bit (logbitp 7 flgs)) 7)
+                 (logand 4294967167
+                         (logior (ash (bool->bit (logbitp 6 flgs)) 6)
+                                 (logand 4294967231
+                                         (logior (logand 4294965247 input-rflags)
+                                                 (ash (bool->bit (logbitp 11 flgs))
+                                                      11)))))))))))))
 
    :g-bindings
    (gl::auto-bindings
     (:mix (:nat input-rflags 32)
-	  (:nat flgs         32)))))
+          (:nat flgs         32)))))
 
 (define write-user-rflags
   ((flgs  :type (unsigned-byte 32))
@@ -1353,63 +1205,64 @@ using the @(see undef-read) function.</p>"
   @('mask'), to the value returned by @(see undef-read).</p>"
 
   :guard-hints (("Goal" :in-theory (e/d (!flgi) ())))
+  :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
 
   :returns (x86 x86p :hyp (and (unsigned-byte-p 32 flgs)
-			       (unsigned-byte-p 32 mask)
-			       (x86p x86)))
+                               (unsigned-byte-p 32 mask)
+                               (x86p x86)))
 
   (if (equal mask 0)
 
       ;; (!rflags flgs x86)
       (mbe :logic
-	   (b* ((x86 (!flgi #.*cf* (rflags-slice :cf flgs) x86))
-		(x86 (!flgi #.*pf* (rflags-slice :pf flgs) x86))
-		(x86 (!flgi #.*af* (rflags-slice :af flgs) x86))
-		(x86 (!flgi #.*zf* (rflags-slice :zf flgs) x86))
-		(x86 (!flgi #.*sf* (rflags-slice :sf flgs) x86))
-		(x86 (!flgi #.*of* (rflags-slice :of flgs) x86)))
-	       x86)
-	   :exec
-	   (!rflags
-	    (!rflags-slice
-	     :cf (rflags-slice :cf flgs)
-	     (!rflags-slice
-	      :pf (rflags-slice :pf flgs)
-	      (!rflags-slice
-	       :af (rflags-slice :af flgs)
-	       (!rflags-slice
-		:sf (rflags-slice :sf flgs)
-		(!rflags-slice
-		 :zf (rflags-slice :zf flgs)
-		 (!rflags-slice
-		  :of (rflags-slice :of flgs)
-		  (rflags x86)))))))
-	    x86))
+           (b* ((x86 (!flgi #.*cf* (rflags-slice :cf flgs) x86))
+                (x86 (!flgi #.*pf* (rflags-slice :pf flgs) x86))
+                (x86 (!flgi #.*af* (rflags-slice :af flgs) x86))
+                (x86 (!flgi #.*zf* (rflags-slice :zf flgs) x86))
+                (x86 (!flgi #.*sf* (rflags-slice :sf flgs) x86))
+                (x86 (!flgi #.*of* (rflags-slice :of flgs) x86)))
+               x86)
+           :exec
+           (!rflags
+            (!rflags-slice
+             :cf (rflags-slice :cf flgs)
+             (!rflags-slice
+              :pf (rflags-slice :pf flgs)
+              (!rflags-slice
+               :af (rflags-slice :af flgs)
+               (!rflags-slice
+                :sf (rflags-slice :sf flgs)
+                (!rflags-slice
+                 :zf (rflags-slice :zf flgs)
+                 (!rflags-slice
+                  :of (rflags-slice :of flgs)
+                  (rflags x86)))))))
+            x86))
 
     (b* ((x86 (if (equal (rflags-slice :cf mask) 1)
-		  (!flgi-undefined #.*cf* x86)
-		(!flgi #.*cf* (rflags-slice :cf flgs) x86)))
+                  (!flgi-undefined #.*cf* x86)
+                (!flgi #.*cf* (rflags-slice :cf flgs) x86)))
 
-	 (x86 (if (equal (rflags-slice :pf mask) 1)
-		  (!flgi-undefined #.*pf* x86)
-		(!flgi #.*pf* (rflags-slice :pf flgs) x86)))
+         (x86 (if (equal (rflags-slice :pf mask) 1)
+                  (!flgi-undefined #.*pf* x86)
+                (!flgi #.*pf* (rflags-slice :pf flgs) x86)))
 
-	 (x86 (if (equal (rflags-slice :af mask) 1)
-		  (!flgi-undefined #.*af* x86)
-		(!flgi #.*af* (rflags-slice :af flgs) x86)))
+         (x86 (if (equal (rflags-slice :af mask) 1)
+                  (!flgi-undefined #.*af* x86)
+                (!flgi #.*af* (rflags-slice :af flgs) x86)))
 
-	 (x86 (if (equal (rflags-slice :zf mask) 1)
-		  (!flgi-undefined #.*zf* x86)
-		(!flgi #.*zf* (rflags-slice :zf flgs) x86)))
+         (x86 (if (equal (rflags-slice :zf mask) 1)
+                  (!flgi-undefined #.*zf* x86)
+                (!flgi #.*zf* (rflags-slice :zf flgs) x86)))
 
-	 (x86 (if (equal (rflags-slice :sf mask) 1)
-		  (!flgi-undefined #.*sf* x86)
-		(!flgi #.*sf* (rflags-slice :sf flgs) x86)))
+         (x86 (if (equal (rflags-slice :sf mask) 1)
+                  (!flgi-undefined #.*sf* x86)
+                (!flgi #.*sf* (rflags-slice :sf flgs) x86)))
 
-	 (x86 (if (equal (rflags-slice :of mask) 1)
-		  (!flgi-undefined #.*of* x86)
-		(!flgi #.*of* (rflags-slice :of flgs) x86))))
-	x86)))
+         (x86 (if (equal (rflags-slice :of mask) 1)
+                  (!flgi-undefined #.*of* x86)
+                (!flgi #.*of* (rflags-slice :of flgs) x86))))
+        x86)))
 
 (include-book "tools/include-raw" :dir :system)
 (defttag :undef-flg)

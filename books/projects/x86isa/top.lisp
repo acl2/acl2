@@ -414,35 +414,35 @@ tools/execution/top.lisp.</li>
   (if (endp op-table)
       ""
     (b* ((t-entry           (car op-table))
-	 (ins-name          (car (cdr t-entry)))
-	 (semantic-fn-name  (cdr (cdr t-entry)))
-	 (t-opcode-info     (car t-entry))
-	 (t-opcode          (car t-opcode-info))
-	 (opcode-string     (cond
-			     ((n04p t-opcode)
-			      (string-append "0" (str::natstr16 t-opcode)))
-			     ((n08p t-opcode)
-			      (str::natstr16 t-opcode))
-			     ((n12p t-opcode)
-			      (string-append "0" (str::natstr16 t-opcode)))
-			     (t
-			      (str::natstr16 t-opcode))))
-	 (opcode-extns      (cdr t-opcode-info))
-	 (opcode-extns      (if (equal (car opcode-extns) :nil)
-				'NONE
-			      opcode-extns))
+         (ins-name          (car (cdr t-entry)))
+         (semantic-fn-name  (cdr (cdr t-entry)))
+         (t-opcode-info     (car t-entry))
+         (t-opcode          (car t-opcode-info))
+         (opcode-string     (cond
+                             ((n04p t-opcode)
+                              (string-append "0" (str::natstr16 t-opcode)))
+                             ((n08p t-opcode)
+                              (str::natstr16 t-opcode))
+                             ((n12p t-opcode)
+                              (string-append "0" (str::natstr16 t-opcode)))
+                             (t
+                              (str::natstr16 t-opcode))))
+         (opcode-extns      (cdr t-opcode-info))
+         (opcode-extns      (if (equal (car opcode-extns) :nil)
+                                'NONE
+                              opcode-extns))
 
-	 (table-info-string
-	  (fms-to-string
-	   "Opcode: ~s0 Extension: ~y1 ~t3 Instruction: ~s2~%~t3 Semantic Function: ~s4~%~%"
-	   (list (cons #\0 opcode-string)
-		 (cons #\1 opcode-extns)
-		 (cons #\2 ins-name)
-		 (cons #\3 '8)
-		 (cons #\4 semantic-fn-name)))))
-	(string-append
-	 table-info-string
-	 (print-implemented-opcodes-table (cdr op-table))))))
+         (table-info-string
+          (fms-to-string
+           "Opcode: ~s0 Extension: ~y1 ~t3 Instruction: ~s2~%~t3 Semantic Function: ~s4~%~%"
+           (list (cons #\0 opcode-string)
+                 (cons #\1 opcode-extns)
+                 (cons #\2 ins-name)
+                 (cons #\3 '8)
+                 (cons #\4 semantic-fn-name)))))
+        (string-append
+         table-info-string
+         (print-implemented-opcodes-table (cdr op-table))))))
 
 (defsection implemented-opcodes
   :parents (x86-instructions)
@@ -452,8 +452,8 @@ tools/execution/top.lisp.</li>
 
  @(`
    (:code (print-implemented-opcodes-table
-	   (reverse
-	    (table-alist 'implemented-opcodes-table (w state)))))
+           (reverse
+            (table-alist 'implemented-opcodes-table (w state)))))
 `)
 
 ")
