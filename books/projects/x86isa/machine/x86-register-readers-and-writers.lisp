@@ -17,154 +17,6 @@
 
 ;; ======================================================================
 
-;; Some arithmetic theorems that will be used in all books higher up
-;; (especially for proving away MBEs):
-
-(encapsulate
- ()
-
- (local
-  (include-book "arithmetic-5/top" :dir :system))
-
- (defun power-of-2p-measure (x)
-   (cond ((or (not (natp x))
-              (<= x 1))
-          0)
-         (t (floor x 1))))
-
- (defn is-power-of-2p (x)
-   (declare (xargs :measure (power-of-2p-measure x)))
-   (if (natp x)
-       (if (<= x 1)
-           t
-         (is-power-of-2p (* 1/2 x)))
-     nil))
-
- (local
-  (set-default-hints
-   '((acl2::nonlinearp-default-hint++ acl2::id acl2::stable-under-simplificationp
-                                      acl2::hist nil))))
-
- (defthm ash-bounds-with-powers-of-two
-   ;; A general ash bounds theorem
-   (implies (and (integerp i)
-                 (<= 0 i)
-                 (equal 2-to-x (* 2-to-x-y (expt 2 y)))
-                 (< i 2-to-x)
-                 (syntaxp (quotep 2-to-x))
-                 (is-power-of-2p 2-to-x)
-                 (< (expt 2 y) 2-to-x)
-                 (syntaxp (quotep y))
-                 (syntaxp (quotep 2-to-x-y))
-                 (integerp y)
-                 (<= 0 y))
-            (< (ash i (- y)) 2-to-x-y))
-   :rule-classes :rewrite)
-
- ) ;; End of encapsulate
-
-(local
- (defun my-induct (x y)
-   (if (and (natp x)
-            (natp y))
-       (if (zp x)
-           y
-         (if (zp y)
-             x
-           (my-induct (logcdr x) (logcdr y))))
-     nil)))
-
-(defthm integer-length-of-logior-of-natp
-  (implies (and (natp x)
-                (natp y)
-                (<= (integer-length x) (integer-length y)))
-           (equal (integer-length (logior x y))
-                  (integer-length y)))
-  :hints (("Goal" :induct (my-induct x y)
-           :in-theory (e/d (acl2::integer-length**)
-                           (integer-length)))))
-
-(defthm integer-length-and-loghead-when-natp-identity-theorem
-  (implies (natp x)
-           (equal (loghead (integer-length x) x)
-                  x))
-  :hints (("Goal" :in-theory (e/d* (acl2::loghead** acl2::integer-length**
-                                                    acl2::ihsext-inductions)
-                                   ((force))))))
-
-(defthm mod-expt-and-integer-length-identity-theorem
-  (implies (natp x)
-           (equal (mod x (expt 2 (integer-length x)))
-                  x))
-  :hints (("Goal" :in-theory (e/d* (acl2::ihsext-arithmetic)
-                                   (bitops::ash-1-removal)))))
-
-(encapsulate
- ()
-
- (local (include-book "arithmetic-5/top" :dir :system))
-
- ;; The following are useful for MBE kind of proofs.  Be careful when
- ;; using them though; sometimes, they might cause loops when enabled
- ;; alongside logand-with-negated-bitmask and
- ;; logand-with-bitmask.
-
- (defthmd negative-logand-to-positive-logand-with-natp-x
-   (implies (and (syntaxp (and (quotep n)
-                               (let* ((n-abs (acl2::unquote n)))
-                                 (< n-abs 0))))
-                 (equal m (integer-length x))
-                 (integerp n)
-                 (natp x))
-            (equal (logand n x)
-                   (logand (logand (1- (ash 1 m)) n) x))))
-
- (defun find-best-fitting-m (n)
-   (if (signed-byte-p 8 (acl2::unquote n))
-       (list (list (cons 'm ''8))
-             (list (cons 'm ''16))
-             (list (cons 'm ''32))
-             (list (cons 'm ''64)))
-     (if (signed-byte-p 16 (acl2::unquote n))
-         (list (list (cons 'm ''16))
-               (list (cons 'm ''32))
-               (list (cons 'm ''64)))
-       (if (signed-byte-p 32 (acl2::unquote n))
-           (list (list (cons 'm ''32))
-                 (list (cons 'm ''64)))
-         (list (list (cons 'm ''64)))))))
-
- (defthm negative-logand-to-positive-logand-with-integerp-x
-   (implies (and (syntaxp (and (quotep n)
-                               (let* ((n-abs (acl2::unquote n)))
-                                 (< n-abs 0))))
-                 (bind-free (find-best-fitting-m n) (m))
-                 (unsigned-byte-p m x)
-                 (integerp n))
-            (equal (logand n x)
-                   (logand (logand (1- (ash 1 m)) n) x))))
-
- (defthmd loghead-to-logand
-   ;; This rule causes loop when used alongside
-   ;; bitops::logand-with-bitmask and bitops::logand-with-negated-bitmask.
-   (implies (and (natp n)
-                 (syntaxp (quotep n))
-                 (integerp x))
-            (equal (loghead n x)
-                   (logand (1- (expt 2 n)) x)))
-   :hints (("Goal" :in-theory (e/d (loghead) ()))))
-
- (defthm logand-redundant
-   (implies (and (unsigned-byte-p n x)
-                 (equal width (1- (ash 1 n)))
-                 (syntaxp (quotep width)))
-            (equal (logand width x)
-                   x)))
-
- )
-
-;; ======================================================================
-
 (defsection GPR-indices
 
   :parents (x86-register-readers-and-writers)
@@ -199,10 +51,20 @@ prefix.</p>"
       :hints (("Goal" :in-theory (enable reg-indexp)))))
 
   (define reg-index
-    ((reg      :type (unsigned-byte 3))
-     (rex-byte :type (unsigned-byte 8))
-     (index    :type (unsigned-byte 2)))
+    ((reg      :type (unsigned-byte 3) "Register index")
+     (rex-byte :type (unsigned-byte 8) "REX prefix")
+     (index    :type (unsigned-byte 2) "One of the W, R, X, or B bits of the REX prefix"))
     :inline t
+    :short "Using the REX prefix to access general-purpose registers in 64-bit mode"
+    :long "</p>In 64-bit mode, in addition to generating 64-bit operand sizes,
+    the REX prefix is used to reference registers R8 to R15. Instructions that
+    include REX prefixes can access these registers if the relevant W, R, X, or
+    B bit in the REX prefix is set. E.g., let R be the relevant bit in the REX
+    prefix and let R be set --- so @('index') = @(`*r*`) for this function. If
+    @('reg') = 0 (which, in the non-REX world, would refer to rAX),
+    @('reg-index') would give us the register index corresponding to the
+    register r8. If R is not set, @('reg-index') will give us the index
+    corresponding to rAX.</p>"
     (if (logbitp index rex-byte)
         (logior 8 (mbe :logic (n03 reg) :exec reg))
       (mbe :logic (n03 reg) :exec reg))
@@ -223,7 +85,7 @@ prefix.</p>"
 
     (defthm reg-indexp-forward
       (implies (reg-indexp reg rex-byte)
-               (n04p reg))
+               (unsigned-byte-p 4 reg))
       :rule-classes :forward-chaining))
 
   )
@@ -268,6 +130,24 @@ are used to write natural numbers into the GPRs.</p>"
      (x86))
     :inline t
     :guard (reg-indexp reg rex)
+    :short "Writing to byte general-purpose registers in the 64-bit mode"
+    :long "<p><i>Source: Intel Manuals, Vol. 1, Section
+    3.4.1.1 (General-Purpose Registers in 64-bit Mode)</i></p>
+
+ <blockquote>In 64-bit mode, there are limitations on accessing byte
+ registers. An instruction cannot reference legacy high-bytes (for example: AH,
+ BH, CH, DH) and one of the new byte registers at the same time (for example:
+ the low byte of the RAX register). However, instructions may reference legacy
+ low-bytes (for example: AL, BL, CL or DL) and new byte registers at the same
+ time (for example: the low byte of the R8 register, or RBP). The architecture
+ enforces this limitation by changing high-byte references (AH, BH, CH, DH) to
+ low byte references (BPL, SPL, DIL, SIL: the low 8 bits for RBP, RSP, RDI and
+ RSI) for instructions using a REX prefix.</blockquote>
+
+ <p>In other words, without the REX prefix, indices 0-7 refer to byte registers
+ AL, CL, DL, BL, AH, CH, DH, and BH, whereas with the REX prefix, indices 0-15
+ refer to AL, CL, DL, BL, SPL, BPL, SIL, DIL, R8L, R9L, R10L, R11L, R12L, R13L,
+ R14L, R15L.</p>"
 
     (cond ((or (not (eql rex 0))
                (< reg 4))
@@ -687,8 +567,7 @@ are used to write natural numbers into the XMMs.</p>"
      (val  :type (unsigned-byte 32))
      (x86))
     :inline t
-    :guard-hints (("Goal" :in-theory (e/d (
-                                           loghead-to-logand
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
                                            bitops::logsquash)
                                           (bitops::logand-with-negated-bitmask
                                            bitops::logand-with-bitmask
@@ -1045,6 +924,7 @@ pointer, or opcode registers\).</em></p>"
                     (unsigned-byte-p 2 val)
                   (unsigned-byte-p 1 val)))
     :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+    :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
 
     (b* ((rflags (the (unsigned-byte 32) (rflags x86)))
          (new-rflags
@@ -1255,55 +1135,6 @@ using the @(see undef-read) function.</p>"
        (x86 (!flgi flg val x86)))
       x86))
 
-;; (define write-user-rflags
-;;   ((x86)
-;;    &key
-;;    (cf (or (not cf) (unsigned-byte-p 1 cf)))
-;;    (pf (or (not pf) (unsigned-byte-p 1 pf)))
-;;    (af (or (not af) (unsigned-byte-p 1 af)))
-;;    (zf (or (not zf) (unsigned-byte-p 1 zf)))
-;;    (sf (or (not sf) (unsigned-byte-p 1 sf)))
-;;    (of (or (not of) (unsigned-byte-p 1 of))))
-
-;;   :inline t
-;;   :parents (x86-register-readers-and-writers)
-
-;;   :short "Writing user rflags \(CF, PF, AF, ZF, SF, and OF\),
-;;   including undefined ones, to the x86 state"
-
-;;   :long "<p>We set the undefined flags, which are indicated by
-;;   @('mask'), to the value returned by @(see undef-read).</p>"
-
-;;   :guard ()
-;;   :guard-hints (("Goal" :in-theory (e/d (!flgi) ())))
-
-;;   :returns (x86 x86p :hyp :guard)
-
-;;   (b* ((x86 (if cf
-;;		(!flgi #.*cf* cf x86)
-;;            (!flgi-undefined #.*cf* x86)))
-
-;;        (x86 (if pf
-;;		(!flgi #.*pf* pf x86)
-;;            (!flgi-undefined #.*pf* x86)))
-
-;;        (x86 (if af
-;;		(!flgi #.*af* af x86)
-;;            (!flgi-undefined #.*af* x86)))
-
-;;        (x86 (if zf
-;;		(!flgi #.*zf* zf x86)
-;;            (!flgi-undefined #.*zf* x86)))
-
-;;        (x86 (if sf
-;;		(!flgi #.*sf* sf x86)
-;;            (!flgi-undefined #.*sf* x86)))
-
-;;        (x86 (if of
-;;		(!flgi #.*of* of x86)
-;;            (!flgi-undefined #.*of* x86))))
-;;       x86))
-
 (local (include-book "centaur/gl/gl" :dir :system))
 
 (local
@@ -1374,6 +1205,7 @@ using the @(see undef-read) function.</p>"
   @('mask'), to the value returned by @(see undef-read).</p>"
 
   :guard-hints (("Goal" :in-theory (e/d (!flgi) ())))
+  :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
 
   :returns (x86 x86p :hyp (and (unsigned-byte-p 32 flgs)
                                (unsigned-byte-p 32 mask)

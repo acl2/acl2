@@ -8,7 +8,8 @@
 
 (in-package "X86ISA")
 
-(include-book "../x86-decoding-and-spec-utils")
+(include-book "../x86-decoding-and-spec-utils"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (include-book "tools/with-supporters" :dir :system)
 
