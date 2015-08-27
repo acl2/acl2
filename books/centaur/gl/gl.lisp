@@ -634,16 +634,6 @@ simulation.</p>"
 ;; and bfr-sat.lisp, respectively.
 ;; (gl-bdd-mode)
 
-(defsection g-int
-  :parents (shape-specs)
-  :short "Create a g-binding for an integer."
-  :long "<p>This is a low-level way to create a custom shape specifier for a
-signed integer.  You might generally prefer higher-level tools like @(see
-auto-bindings).</p>"
-
-  (defun g-int (start by n)
-    (g-number (list (numlist start by n)))))
-
 ;; Fix for unsigned-byte-p's recursive definition in ihs books
 (table acl2::structural-decomp-defs 'unsigned-byte-p 'unsigned-byte-p)
 
