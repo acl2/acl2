@@ -114,7 +114,6 @@
 ;helpers
 (include-book "bvecp-helpers")
 (include-book "model-helpers") ; do we use this?
-(include-book "rom-helpers")
 ;BOZO consider moving lib/simplify-model-helpers to support/ of (better yet), move all the helpers books to lib/
 
 (include-book "clocks")

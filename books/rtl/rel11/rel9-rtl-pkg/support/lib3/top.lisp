@@ -45,8 +45,6 @@
 
 (include-book "float") ;floating-point numbers
 
-(include-book "reps") ;floating-point formats and representations
-
 (include-book "round") ;floating-point rounding
 
 (include-book "add") ;support for reasoning about addition

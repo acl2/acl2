@@ -64,7 +64,7 @@
 
 (defund encodingp (x f)
   (declare (xargs :guard (formatp f)))
-  (bvecp x (+ 1 (expw f) (sigw f))))
+  (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
 
 ;;Examples:
 
@@ -137,20 +137,17 @@
      (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
 
 (defthmd sgn-ndecode
-    (implies (and (formatp f)
-                  (normp x f))
+    (implies (normp x f)
 	     (equal (sgn (ndecode x f))
 		    (if (= (sgnf x f) 0) 1 -1))))
 
 (defthmd expo-ndecode
-    (implies (and (formatp f)
-		  (normp x f))
+    (implies (normp x f)
 	     (equal (expo (ndecode x f))
 		    (- (expf x f) (bias f)))))
 
 (defthmd sig-ndecode
-    (implies (and (formatp f)
-		  (normp x f))
+    (implies (normp x f)
 	     (equal (sig (ndecode x f))
 		    (+ 1 (/ (manf x f) (expt 2 (1- (prec f))))))))
 
@@ -159,6 +156,7 @@
 
 (defund nrepp (x f)
   (and (rationalp x)
+       (formatp f)
        (not (= x 0))
        (< 0 (+ (expo x) (bias f)))
        (< (+ (expo x) (bias f)) (1- (expt 2 (expw f))))
@@ -177,24 +175,20 @@
 ;;Inversions:
 
 (defthm nrepp-ndecode
-    (implies (and (formatp f)
-                  (normp x f))
+    (implies (normp x f)
 	     (nrepp (ndecode x f) f)))
 
 (defthm nencode-ndecode
-    (implies (and (formatp f)
-                  (normp x f))
+    (implies (normp x f)
 	     (equal (nencode (ndecode x f) f)
 		    x)))
 
 (defthm normp-nencode
-    (implies (and (formatp f)
-                  (nrepp x f))
+    (implies (nrepp x f)
              (normp (nencode x f) f)))
 
 (defthm ndecode-nencode
-    (implies (and (formatp f)
-                  (nrepp x f))
+    (implies (nrepp x f)
 	     (equal (ndecode (nencode x f) f)
 		    x)))
 
@@ -213,8 +207,7 @@
            (nrepp (spn f) f)))
 
 (defthmd smallest-spn
-  (implies (and (formatp f)
-                (nrepp x f))
+  (implies (nrepp x f)
            (>= (abs x) (spn f)))
   :rule-classes
   ((:rewrite :match-free :once)))
@@ -246,8 +239,7 @@
            (nrepp (lpn f) f)))
 
 (defthmd largest-lpn
-  (implies (and (formatp f)
-                (nrepp x f))
+  (implies (nrepp x f)
            (<= x (lpn f)))
   :rule-classes
   ((:rewrite :match-free :once)))
@@ -294,25 +286,23 @@
     (ndecode x f)))
 
 (defthm sgn-ddecode
-  (implies (and (formatp f)
-                (or (denormp x f) (pseudop x f)))
+  (implies (or (denormp x f) (pseudop x f))
            (equal (sgn (ddecode x f))
                   (if (= (sgnf x f) 0) 1 -1))))
 
 (defthm expo-ddecode
-  (implies (and (formatp f)
-                (or (denormp x f) (pseudop x f)))
+  (implies (or (denormp x f) (pseudop x f))
 	   (equal (expo (ddecode x f))
 	          (+ 2 (- (prec f)) (- (bias f)) (expo (sigf x f))))))
 
 (defthm sig-ddecode
-  (implies (and (formatp f)
-                (or (denormp x f) (pseudop x f)))
+  (implies (or (denormp x f) (pseudop x f))
            (equal (sig (ddecode x f))
                   (sig (sigf x f)))))
 
 (defund drepp (x f)
   (and (rationalp x)
+       (formatp f)
        (not (= x 0))
        (<= (- 2 (prec f)) (+ (expo x) (bias f)))
        (<= (+ (expo x) (bias f)) 0)
@@ -327,24 +317,20 @@
        (sigw f)))
 
 (defthm drepp-ddecode
-  (implies (and (formatp f)
-                (denormp x f))
+  (implies (denormp x f)
            (drepp (ddecode x f) f)))
 
 (defthm dencode-ddecode
-  (implies (and (formatp f)
-                (denormp x f))
+  (implies (denormp x f)
            (equal (dencode (ddecode x f) f)
                   x)))
 
 (defthm denormp-dencode
-  (implies (and (formatp f)
-                (drepp x f))
+  (implies (drepp x f)
            (denormp (dencode x f) f)))
 
 (defthm ddecode-dencode
-  (implies (and (formatp f)
-                (drepp x f))
+  (implies (drepp x f)
            (equal (ddecode (dencode x f) f)
                   x)))
 
@@ -364,13 +350,11 @@
            (drepp (spd f) f)))
 
 (defthmd smallest-spd
-  (implies (and (formatp f)
-                (drepp r f))
+  (implies (drepp r f)
            (>= (abs r) (spd f))))
 
 (defthmd spd-mult
   (implies (and (formatp f)
-		(rationalp r)
                 (> r 0)
 		(= m (/ r (spd f))))
 	   (iff (drepp r f)

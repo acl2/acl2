@@ -45,8 +45,6 @@
 
 (include-book "../lib2.delta1/float") ;floating-point numbers
 
-(include-book "../lib2.delta1/reps") ;floating-point formats and representations
-
 (include-book "../lib2.delta1/round") ;floating-point rounding
 
 (include-book "../lib2.delta1/add") ;support for reasoning about floating-point addition
@@ -65,8 +63,6 @@
 
 ;(include-book "../lib2.delta1/bvecp-raw-helpers")
 ;; ; better bvecp-raw-helpers.lisp, Fri Jun 29 10:13:32 2007
-
-;(include-book "../lib2/rom-helpers")
 
 ;(include-book "../lib2.delta1/bvecp-helpers")
 

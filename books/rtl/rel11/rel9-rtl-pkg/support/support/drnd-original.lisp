@@ -25,7 +25,7 @@
 (in-package "RTL")
 
 (local (include-book "merge"))
-(include-book "ireps") ;make local?
+;(include-book "ireps") ;make local?
 (local (include-book "rnd"))
 (local (include-book "bias"))
 (local (include-book "sgn"))
@@ -485,7 +485,23 @@
   (> (spn q) 0)
   :rule-classes (:linear))
 
+(defund nrepp (x p q)
+  (and (rationalp x)
+       (not (= x 0))
+       (< 0 (+ (expo x) (bias q)))
+       (< (+ (expo x) (bias q)) (- (expt 2 q) 1))
+       (exactp x p)))
 
+(defund drepp (x p q)
+  (and (rationalp x)
+       (not (= x 0))
+       (<= (- 2 p) (+ (expo x) (bias q)))
+       (<= (+ (expo x) (bias q)) 0)
+       (exactp x (+ -2 p (expt 2 (- q 1)) (expo x)))))
+
+(defund irepp (x p q)
+  (or (nrepp x p q)
+      (drepp x p q)))
 
 (local (defthm nrepp-spn-support
   (implies (and (integerp n)
