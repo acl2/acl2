@@ -1135,61 +1135,6 @@ using the @(see undef-read) function.</p>"
        (x86 (!flgi flg val x86)))
       x86))
 
-(local (include-book "centaur/gl/gl" :dir :system))
-
-(local
- (def-gl-thm write-user-rflags-guard-helper
-   :hyp (and (unsigned-byte-p 32 input-rflags)
-             (unsigned-byte-p 32 flgs))
-   :concl
-   (equal (logior
-           (ash (bool->bit (logbitp 11 flgs)) 11)
-           (logand
-            4294965247
-            (logior
-             (ash (bool->bit (logbitp 7 flgs)) 7)
-             (logand
-              4294967167
-              (logior
-               (ash (bool->bit (logbitp 6 flgs)) 6)
-               (logand
-                4294967231
-                (logior
-                 (ash (bool->bit (logbitp 4 flgs)) 4)
-                 (logand
-                  4294967279
-                  (logior
-                   (ash (bool->bit (logbitp 2 flgs)) 2)
-                   (logand 4294967291
-                           (logior (loghead 1 flgs)
-                                   (logand 4294967294
-                                           input-rflags))))))))))))
-          (logior
-           (loghead 1 flgs)
-           (logand
-            4294967294
-            (logior
-             (ash (bool->bit (logbitp 2 flgs)) 2)
-             (logand
-              4294967291
-              (logior
-               (ash (bool->bit (logbitp 4 flgs)) 4)
-               (logand
-                4294967279
-                (logior
-                 (ash (bool->bit (logbitp 7 flgs)) 7)
-                 (logand 4294967167
-                         (logior (ash (bool->bit (logbitp 6 flgs)) 6)
-                                 (logand 4294967231
-                                         (logior (logand 4294965247 input-rflags)
-                                                 (ash (bool->bit (logbitp 11 flgs))
-                                                      11)))))))))))))
-
-   :g-bindings
-   (gl::auto-bindings
-    (:mix (:nat input-rflags 32)
-          (:nat flgs         32)))))
-
 (define write-user-rflags
   ((flgs  :type (unsigned-byte 32))
    (mask  :type (unsigned-byte 32))
@@ -1213,55 +1158,33 @@ using the @(see undef-read) function.</p>"
 
   (if (equal mask 0)
 
-      ;; (!rflags flgs x86)
-      (mbe :logic
-           (b* ((x86 (!flgi #.*cf* (rflags-slice :cf flgs) x86))
-                (x86 (!flgi #.*pf* (rflags-slice :pf flgs) x86))
-                (x86 (!flgi #.*af* (rflags-slice :af flgs) x86))
-                (x86 (!flgi #.*zf* (rflags-slice :zf flgs) x86))
-                (x86 (!flgi #.*sf* (rflags-slice :sf flgs) x86))
-                (x86 (!flgi #.*of* (rflags-slice :of flgs) x86)))
-               x86)
-           :exec
-           (!rflags
-            (!rflags-slice
-             :cf (rflags-slice :cf flgs)
-             (!rflags-slice
-              :pf (rflags-slice :pf flgs)
-              (!rflags-slice
-               :af (rflags-slice :af flgs)
-               (!rflags-slice
-                :sf (rflags-slice :sf flgs)
-                (!rflags-slice
-                 :zf (rflags-slice :zf flgs)
-                 (!rflags-slice
-                  :of (rflags-slice :of flgs)
-                  (rflags x86)))))))
-            x86))
+      (!rflags flgs x86)
 
-    (b* ((x86 (if (equal (rflags-slice :cf mask) 1)
+    (b* ((x86 (!rflags flgs x86))
+
+         (x86 (if (equal (rflags-slice :cf mask) 1)
                   (!flgi-undefined #.*cf* x86)
-                (!flgi #.*cf* (rflags-slice :cf flgs) x86)))
+                x86))
 
          (x86 (if (equal (rflags-slice :pf mask) 1)
                   (!flgi-undefined #.*pf* x86)
-                (!flgi #.*pf* (rflags-slice :pf flgs) x86)))
+                x86))
 
          (x86 (if (equal (rflags-slice :af mask) 1)
                   (!flgi-undefined #.*af* x86)
-                (!flgi #.*af* (rflags-slice :af flgs) x86)))
+                x86))
 
          (x86 (if (equal (rflags-slice :zf mask) 1)
                   (!flgi-undefined #.*zf* x86)
-                (!flgi #.*zf* (rflags-slice :zf flgs) x86)))
+                x86))
 
          (x86 (if (equal (rflags-slice :sf mask) 1)
                   (!flgi-undefined #.*sf* x86)
-                (!flgi #.*sf* (rflags-slice :sf flgs) x86)))
+                x86))
 
          (x86 (if (equal (rflags-slice :of mask) 1)
                   (!flgi-undefined #.*of* x86)
-                (!flgi #.*of* (rflags-slice :of flgs) x86))))
+                x86)))
         x86)))
 
 (include-book "tools/include-raw" :dir :system)

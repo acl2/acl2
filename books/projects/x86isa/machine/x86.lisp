@@ -5,7 +5,7 @@
 
 ;; ======================================================================
 
-(include-book "x86-instructions"
+(include-book "instructions/x86-instructions"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -1917,11 +1917,11 @@
     ;;           start-rip temp-rip prefixes rex-byte opcode)
     ;;     x86))))
 
-    ;; ((#x40 #x41 #x42 #x43 #x44 #x45 #x46 #x47 #x48 #x49 #x4A
-    ;;        #x4B #x4C #x4D #x4E #x4F)
-    ;;  "(CMOVcc Gv, Ev)"
-    ;;  (x86-cmovcc start-rip temp-rip prefixes rex-byte opcode modr/m
-    ;;              sib x86))
+    ((#x40 #x41 #x42 #x43 #x44 #x45 #x46 #x47 #x48 #x49 #x4A
+           #x4B #x4C #x4D #x4E #x4F)
+     "(CMOVcc Gv, Ev)"
+     (x86-cmovcc start-rip temp-rip prefixes rex-byte opcode modr/m
+                 sib x86))
 
     ;; (#x51
     ;;  "F2h: (SQRTSD xmm1 xmm2/m64);

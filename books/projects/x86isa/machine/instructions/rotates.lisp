@@ -22,26 +22,6 @@
 
 ;; ======================================================================
 
-(encapsulate
- ()
-
- (local (include-book "arithmetic-5/top" :dir :system))
-
- (defthm weed-out-irrelevant-logand-when-first-operand-constant
-   (implies (and
-	     ;; syntaxp will restrict the application of this
-	     ;; theorem...
-	     (syntaxp (quotep x))
-	     (unsigned-byte-p n y)
-	     (equal (logand (1- (expt 2 n)) x) (1- (expt 2 n))))
-	    (equal (logand x y) y))
-   :hints (("Goal"
-	    :use ((:instance acl2::mod-logand (x x) (y y) (n n)))
-	    :in-theory (disable acl2::mod-logand))))
- )
-
-;; ======================================================================
-
 ;; Rotates:
 
 (define rcl-spec-gen ((size :type (member 8 16 32 64)))

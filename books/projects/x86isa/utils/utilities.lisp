@@ -376,6 +376,28 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
 (defmacro defthmld (&rest args)
   `(local (defthmd ,@args)))
 
+(defmacro def-gl-export
+  (name &key hyp concl g-bindings rule-classes)
+
+  (if (and hyp concl g-bindings)
+
+      (let ((gl-name (mk-name name "-GL")))
+
+        `(progn
+
+           (local
+            (def-gl-thm ,gl-name
+              :hyp ,hyp
+              :concl ,concl
+              :g-bindings ,g-bindings))
+
+           (defthm ,name
+             (implies ,hyp ,concl)
+             :hints (("Goal" :in-theory (theory 'minimal-theory)
+                      :use ((:instance ,gl-name))))
+             :rule-classes ,(or rule-classes :rewrite))))
+    nil))
+
 ;; ======================================================================
 
 ;; Convenient forcing idiom:
