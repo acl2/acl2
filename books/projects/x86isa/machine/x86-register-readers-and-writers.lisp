@@ -1135,61 +1135,6 @@ using the @(see undef-read) function.</p>"
        (x86 (!flgi flg val x86)))
       x86))
 
-(local (include-book "centaur/gl/gl" :dir :system))
-
-(local
- (def-gl-thm write-user-rflags-guard-helper
-   :hyp (and (unsigned-byte-p 32 input-rflags)
-             (unsigned-byte-p 32 flgs))
-   :concl
-   (equal (logior
-           (ash (bool->bit (logbitp 11 flgs)) 11)
-           (logand
-            4294965247
-            (logior
-             (ash (bool->bit (logbitp 7 flgs)) 7)
-             (logand
-              4294967167
-              (logior
-               (ash (bool->bit (logbitp 6 flgs)) 6)
-               (logand
-                4294967231
-                (logior
-                 (ash (bool->bit (logbitp 4 flgs)) 4)
-                 (logand
-                  4294967279
-                  (logior
-                   (ash (bool->bit (logbitp 2 flgs)) 2)
-                   (logand 4294967291
-                           (logior (loghead 1 flgs)
-                                   (logand 4294967294
-                                           input-rflags))))))))))))
-          (logior
-           (loghead 1 flgs)
-           (logand
-            4294967294
-            (logior
-             (ash (bool->bit (logbitp 2 flgs)) 2)
-             (logand
-              4294967291
-              (logior
-               (ash (bool->bit (logbitp 4 flgs)) 4)
-               (logand
-                4294967279
-                (logior
-                 (ash (bool->bit (logbitp 7 flgs)) 7)
-                 (logand 4294967167
-                         (logior (ash (bool->bit (logbitp 6 flgs)) 6)
-                                 (logand 4294967231
-                                         (logior (logand 4294965247 input-rflags)
-                                                 (ash (bool->bit (logbitp 11 flgs))
-                                                      11)))))))))))))
-
-   :g-bindings
-   (gl::auto-bindings
-    (:mix (:nat input-rflags 32)
-          (:nat flgs         32)))))
-
 (define write-user-rflags
   ((flgs  :type (unsigned-byte 32))
    (mask  :type (unsigned-byte 32))
@@ -1207,62 +1152,81 @@ using the @(see undef-read) function.</p>"
   :guard-hints (("Goal" :in-theory (e/d (!flgi) ())))
   :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
 
-  :returns (x86 x86p :hyp (and (unsigned-byte-p 32 flgs)
-                               (unsigned-byte-p 32 mask)
-                               (x86p x86)))
+  :returns (x86 x86p :hyp (x86p x86))
 
-  (if (equal mask 0)
+  (b* ((flgs (mbe :logic (n32 flgs) :exec flgs))
+       (mask (mbe :logic (n32 mask) :exec mask)))
 
-      ;; (!rflags flgs x86)
-      (mbe :logic
-           (b* ((x86 (!flgi #.*cf* (rflags-slice :cf flgs) x86))
-                (x86 (!flgi #.*pf* (rflags-slice :pf flgs) x86))
-                (x86 (!flgi #.*af* (rflags-slice :af flgs) x86))
-                (x86 (!flgi #.*zf* (rflags-slice :zf flgs) x86))
-                (x86 (!flgi #.*sf* (rflags-slice :sf flgs) x86))
-                (x86 (!flgi #.*of* (rflags-slice :of flgs) x86)))
-               x86)
-           :exec
-           (!rflags
-            (!rflags-slice
-             :cf (rflags-slice :cf flgs)
-             (!rflags-slice
-              :pf (rflags-slice :pf flgs)
-              (!rflags-slice
-               :af (rflags-slice :af flgs)
-               (!rflags-slice
-                :sf (rflags-slice :sf flgs)
-                (!rflags-slice
-                 :zf (rflags-slice :zf flgs)
-                 (!rflags-slice
-                  :of (rflags-slice :of flgs)
-                  (rflags x86)))))))
-            x86))
+      (if (equal mask 0)
 
-    (b* ((x86 (if (equal (rflags-slice :cf mask) 1)
-                  (!flgi-undefined #.*cf* x86)
-                (!flgi #.*cf* (rflags-slice :cf flgs) x86)))
+          (!rflags flgs x86)
 
-         (x86 (if (equal (rflags-slice :pf mask) 1)
-                  (!flgi-undefined #.*pf* x86)
-                (!flgi #.*pf* (rflags-slice :pf flgs) x86)))
+        (b* ((x86 (!rflags flgs x86))
 
-         (x86 (if (equal (rflags-slice :af mask) 1)
-                  (!flgi-undefined #.*af* x86)
-                (!flgi #.*af* (rflags-slice :af flgs) x86)))
+             (x86 (if (equal (rflags-slice :cf mask) 1)
+                      (!flgi-undefined #.*cf* x86)
+                    x86))
 
-         (x86 (if (equal (rflags-slice :zf mask) 1)
-                  (!flgi-undefined #.*zf* x86)
-                (!flgi #.*zf* (rflags-slice :zf flgs) x86)))
+             (x86 (if (equal (rflags-slice :pf mask) 1)
+                      (!flgi-undefined #.*pf* x86)
+                    x86))
 
-         (x86 (if (equal (rflags-slice :sf mask) 1)
-                  (!flgi-undefined #.*sf* x86)
-                (!flgi #.*sf* (rflags-slice :sf flgs) x86)))
+             (x86 (if (equal (rflags-slice :af mask) 1)
+                      (!flgi-undefined #.*af* x86)
+                    x86))
 
-         (x86 (if (equal (rflags-slice :of mask) 1)
-                  (!flgi-undefined #.*of* x86)
-                (!flgi #.*of* (rflags-slice :of flgs) x86))))
-        x86)))
+             (x86 (if (equal (rflags-slice :zf mask) 1)
+                      (!flgi-undefined #.*zf* x86)
+                    x86))
+
+             (x86 (if (equal (rflags-slice :sf mask) 1)
+                      (!flgi-undefined #.*sf* x86)
+                    x86))
+
+             (x86 (if (equal (rflags-slice :of mask) 1)
+                      (!flgi-undefined #.*of* x86)
+                    x86)))
+            x86))))
+
+;; [Shilpi]: I need more rules about when mask is not 0. I think I want to keep
+;; write-user-rflags disabled most of the time...
+
+(defthm xr-write-user-rflags
+  (implies (and (not (equal fld :rflags))
+                (not (equal fld :undef)))
+           (equal (xr fld index (write-user-rflags flags mask x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi-undefined) (force (force))))))
+
+(defthm xr-write-user-rflags-no-mask
+  ;; Do we need this?
+  (implies (not (equal fld :rflags))
+           (equal (xr fld index (write-user-rflags flags 0 x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi-undefined) (force (force))))))
+
+(defthm rflags-and-write-user-rflags-no-mask
+  (equal (xr :rflags 0 (write-user-rflags flags 0 x86))
+         (loghead 32 flags))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
+
+(defthm read-zf-using-flgi-from-write-user-rflags
+  (implies (equal (rflags-slice :zf mask) 0)
+           (equal (flgi *zf* (write-user-rflags flags mask x86))
+                  (bool->bit (logbitp *zf* flags))))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
+
+(defthm write-user-rflags-and-xw
+  (implies (and (not (equal fld :rflags))
+                (not (equal fld :undef)))
+           (equal (write-user-rflags flags mask (xw fld index value x86))
+                  (xw fld index value (write-user-rflags flags mask x86))))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
+
+(defthm write-user-rflags-write-user-flags-when-no-mask
+  (equal (write-user-rflags flags1 0 (write-user-rflags flags2 0 x86))
+         (write-user-rflags flags1 0 x86))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi !flgi-undefined) ()))))
 
 (include-book "tools/include-raw" :dir :system)
 (defttag :undef-flg)

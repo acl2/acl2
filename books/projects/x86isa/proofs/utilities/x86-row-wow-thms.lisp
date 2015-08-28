@@ -82,6 +82,24 @@
                                    write-x86-file-contents-logic)
                                   ()))))
 
+(defthm read-x86-file-des-write-x86-file-contents
+  (equal (read-x86-file-des id (write-x86-file-contents i v x86))
+         (read-x86-file-des id x86))
+  :hints (("Goal" :in-theory (e/d (read-x86-file-des
+                                   read-x86-file-des-logic
+                                   write-x86-file-contents
+                                   write-x86-file-contents-logic)
+                                  ()))))
+
+(defthm read-x86-file-contents-write-x86-file-des
+  (equal (read-x86-file-contents name (write-x86-file-des i v x86))
+         (read-x86-file-contents name x86))
+  :hints (("Goal" :in-theory (e/d (read-x86-file-contents
+                                   read-x86-file-contents-logic
+                                   write-x86-file-des
+                                   write-x86-file-des-logic)
+                                  ()))))
+
 (defthm read-x86-file-des-wb
   (equal (read-x86-file-des id (mv-nth 1 (wb addr-bytes-alist x86)))
          (read-x86-file-des id x86))
@@ -133,9 +151,49 @@
            :in-theory (e/d* (pop-x86-oracle pop-x86-oracle-logic)
                             ()))))
 
+(defthm rb-and-write-x86-file-des
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (write-x86-file-des i val x86)))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-des write-x86-file-des-logic) (rb)))))
+
+(defthm rb-and-write-x86-file-contents
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (write-x86-file-contents i val x86)))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-contents write-x86-file-contents-logic) (rb)))))
+
+(defthm rb-and-pop-x86-oracle
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (mv-nth 1 (pop-x86-oracle x86))))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (pop-x86-oracle pop-x86-oracle-logic) (rb)))))
+
 ;; ======================================================================
 
-;; Some rules about flgi and !flgi:
+;; Some rules about flags:
+
+(defthm rb-write-user-rflags-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb addresses r-w-x (write-user-rflags flags mask x86)))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-user-rflags !flgi-undefined !flgi) (rb force (force))))))
+
+(defthm write-user-rflags-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (write-user-rflags flags mask (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (write-user-rflags flags mask x86)))))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
+
+(defthm flgi-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (flgi flg (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (flgi flg x86)))
+  :hints (("Goal" :in-theory (e/d* (flgi) ()))))
 
 (local (include-book "centaur/gl/gl" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
