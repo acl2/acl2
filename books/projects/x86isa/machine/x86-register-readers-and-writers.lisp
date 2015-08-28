@@ -56,7 +56,7 @@ prefix.</p>"
      (index    :type (unsigned-byte 2) "One of the W, R, X, or B bits of the REX prefix"))
     :inline t
     :short "Using the REX prefix to access general-purpose registers in 64-bit mode"
-    :long "</p>In 64-bit mode, in addition to generating 64-bit operand sizes,
+    :long "<p>In 64-bit mode, in addition to generating 64-bit operand sizes,
     the REX prefix is used to reference registers R8 to R15. Instructions that
     include REX prefixes can access these registers if the relevant W, R, X, or
     B bit in the REX prefix is set. E.g., let R be the relevant bit in the REX

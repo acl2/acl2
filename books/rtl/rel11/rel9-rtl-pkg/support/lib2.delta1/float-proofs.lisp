@@ -954,32 +954,3 @@
                 (> q 0)
                 (drepp r p q))
            (>= (abs r) (spd p q))))
-
-
-;; (defthmd spd-mult
-;;   (implies (and (integerp p)
-;;                 (> p 1)
-;;                 (integerp q)
-;;                 (> q 0)
-;; 		(rationalp r)
-;; 		(= m (/ r (spd p q))))
-;; 	   (iff (drepp r p q)
-;; 		(and (natp m)
-;; 		     (<= 1 m)
-;; 		     (< m (expt 2 (1- p)))))))
-;; not true!!
-
-(defthmd spd-mult
-  (implies (and (integerp p)
-                (> p 1)
-                (integerp q)
-                (> q 0)
-                (> r 0)
-		(rationalp r)
-		(= m (/ r (spd p q))))
-	   (iff (drepp r p q)
-		(and (natp m)
-		     (<= 1 m)
-		     (< m (expt 2 (1- p)))))))
-
-

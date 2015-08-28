@@ -8,6 +8,7 @@
 (include-book "../x86-decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "ihs/quotient-remainder-lemmas" :Dir :system))
 
 ;; ======================================================================
 ;; INSTRUCTION: BT
@@ -26,8 +27,6 @@
 
   :returns (x86 x86p :hyp (and (x86p x86)
                                (canonical-address-p temp-rip)))
-
-  :prepwork ((local (include-book "rtl/rel9/lib/top" :dir :system)))
 
   :implemented
   (add-to-implemented-opcodes-table 'BT #x0FBA '(:reg 4) 'x86-bt-0F-BA)
@@ -126,7 +125,6 @@
                                          n32-to-i32
                                          n64-to-i64)
                                         ())))
-  :prepwork ((local (include-book "rtl/rel9/lib/top" :dir :system)))
 
   :implemented
   (add-to-implemented-opcodes-table 'BT #x0FA3 '(:nil nil) 'x86-bt-0F-A3)

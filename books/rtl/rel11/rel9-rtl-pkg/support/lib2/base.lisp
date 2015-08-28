@@ -45,8 +45,6 @@
 
 (include-book "../lib1.delta2/float") ;floating-point numbers
 
-(include-book "../lib1/reps") ;floating-point formats and representations
-
 (include-book "../lib1.delta1/round") ;floating-point rounding
 
 (include-book "../lib1/add") ;support for reasoning about floating-point addition

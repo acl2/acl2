@@ -16,12 +16,14 @@
   (declare (xargs :guard (real/rationalp x)))
   (- (fl (- x))))
 
-(defund chop-r (x k radix)
+(defmacro radixp (r)
+  `(and (integerp ,r) (>= ,r 2)))
+
+(defund chop-r (x k r)
   (declare (xargs :guard (and (real/rationalp x)
                               (integerp k)
-                              (integerp radix)
-                              (>= radix 2))))
-  (/ (fl (* (expt radix k) x)) (expt radix k)))
+                              (radixp r))))
+  (/ (fl (* (expt r k) x)) (expt r k)))
 
 (defund chop (x k)
   (/ (fl (* (expt 2 k) x)) (expt 2 k)))
@@ -333,7 +335,7 @@
 
 (defund encodingp (x f)
   (declare (xargs :guard (formatp f)))
-  (bvecp x (+ 1 (expw f) (sigw f))))
+  (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
 (local (in-theory (enable encodingp)))
 
 (defund sp () (declare (xargs :guard t)) '(nil 24 8))
@@ -386,6 +388,7 @@
 
 (defund nrepp (x f)
   (and (rationalp x)
+       (formatp f)
        (not (= x 0))
        (< 0 (+ (expo x) (bias f)))
        (< (+ (expo x) (bias f)) (1- (expt 2 (expw f))))
@@ -444,6 +447,7 @@
 
 (defund drepp (x f)
   (and (rationalp x)
+       (formatp f)
        (not (= x 0))
        (<= (- 2 (prec f)) (+ (expo x) (bias f)))
        (<= (+ (expo x) (bias f)) 0)

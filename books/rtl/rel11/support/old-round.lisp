@@ -3775,6 +3775,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
   (if (= (expo x) (expo y))
       (/ (+ (rna x n) (rna y n)) 2)
     (expt 2 (expo y))))
+(local (in-theory (enable rna-witness)))
 
 (local-defthm expt-monotone
   (implies (and (integerp n) (integerp m) (<= n m))
