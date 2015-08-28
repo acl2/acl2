@@ -697,9 +697,10 @@ memory.</li>
   are as follows:</p>
 
   <ul>
-  <li><code>(byte-ify-general 6 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA)</code></li>
-  <li><code>(byte-ify-general 4 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC)</code></li>
-  <li><code>(byte-ify-general 8 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA #x0 #x0)</code></li>
+  <li><code>(byte-ify-general 6 #xAABBCCDDEEFF nil) = (#xFF #xEE #xDD #xCC #xBB #xAA)</code></li>
+  <li><code>(byte-ify-general 4 #xAABBCCDDEEFF nil) = (#xFF #xEE #xDD #xCC)</code></li>
+  <li><code>(byte-ify-general 8 #xAABBCCDDEEFF nil) = (#xFF #xEE #xDD #xCC #xBB #xAA  #x0 #x0)</code></li>
+  <li><code>(byte-ify-general 8             -1 nil) = (#xFF #xFF #xFF #xFF #xFF #xFF #xFF #xFF)</code></li>
   </ul>"
 
 
@@ -707,12 +708,11 @@ memory.</li>
                   (integerp val)
                   (byte-listp acc)))
 
-        (b* ((val (loghead n val)))
-            (if (zp n)
-                (reverse acc)
-              (b* ((acc (cons (loghead 8 val) acc))
-                   (val (logtail 8 val)))
-                  (byte-ify-general (1- n) val acc))))
+        (if (zp n)
+            (reverse acc)
+          (b* ((acc (cons (loghead 8 val) acc))
+               (val (logtail 8 val)))
+              (byte-ify-general (1- n) val acc)))
 
       nil)
 
@@ -906,17 +906,14 @@ memory.</li>
     (local
      (defthm rb-1-accumulator-thm-helper
        (equal (mv-nth 1 (rb-1 addresses r-w-x x86 (append acc1 acc2)))
-              (append acc1
-                      (mv-nth 1 (rb-1 addresses r-w-x x86 acc2))))))
+              (append acc1 (mv-nth 1 (rb-1 addresses r-w-x x86 acc2))))))
 
     (defthm rb-1-accumulator-thm
       (implies (and (syntaxp (not (and (quotep acc)
                                        (eq (car (acl2::unquote acc)) nil))))
                     (true-listp acc))
                (equal (mv-nth 1 (rb-1 addresses r-w-x x86 acc))
-                      (append acc
-                              (mv-nth 1 (rb-1 addresses r-w-x x86
-                                              nil))))))
+                      (append acc (mv-nth 1 (rb-1 addresses r-w-x x86 nil))))))
 
     (defthm len-of-rb-1-in-programmer-level-mode
       (implies (and (programmer-level-mode x86)

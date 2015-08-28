@@ -10,99 +10,9 @@
 
 ;; ===================================================================
 
-;; First, some arithmetic lemmas useful for both linear and physical
-;; memory: these rules are disabled --- enable them locally when
-;; needed.
+;; Some lemmas for combine-bytes and byte-ify:
 
-;; [Shilpi]: Ugh, remove all these arithmetic lemmas for
-;; n32p-upper-16-in-8s-val-logior-loghead-ash.
-
-(local
- (encapsulate
-  ()
-
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (local (in-theory (disable logior-expt-to-plus-quotep)))
-
-  (defthm n32p-lower-16-val-logior-loghead-ash-helper
-    (implies (n32p val)
-             (equal (logior (loghead 8 val)
-                            (ash (loghead 8 (logtail 8 val)) 8))
-                    (+ (loghead 8 val)
-                       (ash (loghead 8 (logtail 8 val)) 8))))
-    :hints (("Goal" :in-theory
-             (e/d (logior-expt-to-plus-quotep) ()))))
-
-  (defthm n32p-lower-16-val-logior-loghead-ash
-    (implies (n32p val)
-             (equal (logior (loghead 8 val)
-                            (ash (loghead 8 (logtail 8 val)) 8))
-                    (loghead 16 val)))
-    :hints (("Goal" :in-theory
-             (e/d (loghead logtail)
-                  (acl2::normalize-factors-gather-exponents
-                   n32p-lower-16-val-logior-loghead-ash-helper))
-             :use ((:instance
-                    n32p-lower-16-val-logior-loghead-ash-helper)))))
-
-  (defthm n32p-upper-16-val-logior-loghead-ash-helper
-    (implies (n32p val)
-             (equal (logior (loghead 8 (logtail 16 val))
-                            (ash (logtail 24 val) 8))
-                    (+ (loghead 8 (logtail 16 val))
-                       (ash (logtail 24 val) 8))))
-    :hints (("Goal" :in-theory
-             (e/d (logior-expt-to-plus-quotep) ()))))
-
-  (defthm n32p-upper-16-val-logior-loghead-ash
-    (implies (n32p val)
-             (equal (logior (loghead 8 (logtail 16 val))
-                            (ash (logtail 24 val) 8))
-                    (logtail 16 val)))
-    :hints (("Goal" :in-theory
-             (e/d (loghead logtail)
-                  (acl2::normalize-factors-gather-exponents
-                   n32p-upper-16-val-logior-loghead-ash-helper))
-             :use ((:instance n32p-upper-16-val-logior-loghead-ash-helper)))))
-
-  ))
-
-(local
- (defthm n32p-upper-16-in-8s-val-logior-loghead-ash-helper
-   (implies (n32p val)
-            (equal (logior (loghead 8 val)
-                           (ash (logtail 16 val) 16)
-                           (ash (loghead 8 (logtail 8 val)) 8))
-                   (logior (loghead 16 val)
-                           (ash (logtail 16 val) 16))))
-   :hints (("Goal"
-            :in-theory (e/d ()
-                            (n32p-lower-16-val-logior-loghead-ash
-                             n32p-lower-16-val-logior-loghead-ash-helper
-                             putting-logior-loghead-ash-logtail-together))
-            :use ((:instance n32p-lower-16-val-logior-loghead-ash))))))
-
-(defthm n32p-upper-16-in-8s-val-logior-loghead-ash
-  (implies (n32p val)
-           (equal (logior (loghead 8 val)
-                          (ash (logtail 16 val) 16)
-                          (ash (loghead 8 (logtail 8 val)) 8))
-                  val)))
-
-;; Lemmas for combine-bytes and byte-ify:
-
-(defthm combining-logior-of-loghead-logtail-and-ash-logtail
-  (implies (and (natp n)
-                (natp m)
-                (natp x)
-                (equal m+n (+ m n)))
-           (equal (logior (loghead n (logtail m x))
-                          (ash (logtail m+n x) n))
-                  (logtail m x)))
-  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
-                                    ihsext-recursive-redefs)
-                                   ()))))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defthm combining-logior-of-loghead-and-ash-logtail
   (implies (and (natp x)
@@ -114,23 +24,125 @@
                                     ihsext-recursive-redefs)
                                    ()))))
 
+(defthmd combining-logior-of-loghead-and-ash-loghead-logtail-1
+  (implies (and (natp n)
+                (natp m))
+           (equal (loghead m (logtail n x))
+                  (ash (loghead (+ m n) x) (- n))))
+  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
+                                    ihsext-recursive-redefs
+                                    zip)
+                                   ()))))
+
+(defthmd combining-logior-of-loghead-and-ash-loghead-logtail-2
+  (implies (and (natp n)
+                (natp m))
+           (equal (loghead n x)
+                  (loghead n (loghead (+ m n) x))))
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (ihsext-recursive-redefs
+                                    ihsext-inductions)))))
+
+
+(defthm combining-logior-of-loghead-and-ash-loghead-logtail
+  (implies (and (natp n)
+                (natp m))
+           (equal (logior (loghead n x)
+                          (ash (loghead m (logtail n x)) n))
+                  (loghead (+ m n) x)))
+  :hints (("Goal"
+           :use ((:instance combining-logior-of-loghead-and-ash-loghead-logtail-2))
+           :in-theory (e/d* (combining-logior-of-loghead-and-ash-loghead-logtail-1)
+                            (bitops::logtail-of-loghead
+                             bitops::loghead-of-loghead-1)))))
+
+(defthm combining-logior-of-loghead-logtail-and-ash-logtail
+  (implies (and (natp n)
+                (natp m)
+                (equal m+n (+ m n))
+                (integerp x))
+           (equal (logior (loghead n (logtail m x))
+                          (ash (logtail m+n x) n))
+                  (logtail m x)))
+  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
+                                    ihsext-recursive-redefs)
+                                   ()))))
+
+(defthm combining-logior-of-loghead-logtail-and-ash-loghead-logtail
+  (implies (and (natp m)
+                (natp n)
+                (natp o)
+                (equal m+n (+ m n)))
+           (equal (logior (loghead n (logtail m x))
+                          (ash (loghead o (logtail m+n x)) n))
+                  (loghead (+ n o) (logtail m x))))
+  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
+                                    ihsext-recursive-redefs
+                                    zip)
+                                   ()))))
+
+(local
+ (defthm combine-bytes-and-byte-ify-specific
+   (implies (and (or (equal n 2)
+                     (equal n 4)
+                     (equal n 8)
+                     (equal n 16)))
+            (equal (combine-bytes (byte-ify n x))
+                   (loghead (ash n 3) x)))
+   :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify)
+                                    ())))))
+
+(defthm loghead-of-non-integerp
+  (implies (not (integerp x))
+           (equal (loghead n x) 0))
+  :hints (("Goal" :in-theory (e/d* (loghead mod) ()))))
+
+(encapsulate
+ ()
+
+ (local (include-book "arithmetic-3/top" :dir :system))
+
+ (defthm ash-and-plus
+   (implies (posp n)
+            (equal (+ 8 (ash (+ -1 n) 3))
+                   (ash n 3)))
+   :hints (("Goal" :in-theory (e/d* (ash) ())))))
+
+(local
+ (defthmd byte-ify-general-acc-helper-thm
+   (implies (and (byte-listp acc1)
+                 (byte-listp acc2)
+                 (integerp val)
+                 (natp n))
+            (equal (byte-ify-general n val (append acc1 acc2))
+                   (append (acl2::rev acc2) (byte-ify-general n val acc1))))
+   :hints (("Goal" :in-theory (e/d* (byte-ify-general) ())))))
+
+(defthm byte-ify-general-acc-thm
+  (implies (and (syntaxp (not (and (quotep acc)
+                                   (eq (car (unquote acc)) nil))))
+                (byte-listp acc)
+                (integerp val)
+                (natp n))
+           (equal (byte-ify-general n val acc)
+                  (append (acl2::rev acc) (byte-ify-general n val nil))))
+  :hints (("Goal" :use ((:instance byte-ify-general-acc-helper-thm
+                                   (acc2 acc)
+                                   (acc1 nil))))))
+
+(local
+ (defthm combine-bytes-and-byte-ify-general
+   (implies (natp n)
+            (equal (combine-bytes (byte-ify-general n x nil))
+                   (loghead (ash n 3) x)))
+   :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify byte-ify-general)
+                                    ())))))
+
 (defthm combine-bytes-and-byte-ify
-  ;; Not true with byte-ify-general?
-  (implies (and (or (equal n 2)
-                    (equal n 4)
-                    (equal n 8)
-                    (equal n 16))
-                (unsigned-byte-p (ash n 3) x))
-           (equal (combine-bytes (byte-ify n x)) x))
-  :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify) ()))))
-
-;; ;; (local (include-book "arithmetic-5/top" :dir :system))
-
-;; ;; (defthm logior-to-plus-if-ash
-;; ;;   (implies (unsigned-byte-p n y)
-;; ;;      (equal (logior y (ash x n))
-;; ;;             (+ (ash x n) y)))
-;; ;;   :hints (("Goal" :in-theory (e/d* (ash) ()))))
+  (implies (natp n)
+           (equal (combine-bytes (byte-ify n x))
+                  (loghead (ash n 3) x)))
+  :hints (("Goal" :in-theory (e/d* (byte-ify) ()))))
 
 ;; ======================================================================
 
