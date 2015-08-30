@@ -837,6 +837,13 @@ programmer-level mode.</p>" )
   :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
                                   (rb)))))
 
+(defthm program-at-write-user-rflags
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (write-user-rflags flags mask x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at write-user-rflags !flgi-undefined !flgi)
+                                  (rb)))))
+
 ;; ======================================================================
 
 ;; Events related to WB:

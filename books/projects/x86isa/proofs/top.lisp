@@ -19,13 +19,16 @@
   :short "Verification of various x86 programs"
   :long "<p>Detailed documentation topic coming soon!</p>
 
-<p>The factorial program has been proved correct using two
-methods:</p>
+<p>The <b>factorial program</b> has been proved correct using two methods:</p>
 
 <ol>
 <li>Inductive Assertions: See book @('factorial/fact-inductive-assertions.lisp').</li>
 <li>Wormhole Abstraction: See book @('factorial/fact-wormhole-abstraction.lisp').</li>
 </ol>
+
+<p>The proof of correctness of the <b>word-count program</b> can be found in
+@('word-count/wc.lisp').</p>
+
 "
 
 ;; [Shilpi]: There are name clashes in these two factorial books.  The
@@ -44,6 +47,11 @@ methods:</p>
  (encapsulate
   ()
   (local (include-book "factorial/fact-wormhole-abstraction" :ttags :all))))
+
+(local
+ (encapsulate
+  ()
+  (local (include-book "word-count/wc" :ttags :all))))
 
   )
 

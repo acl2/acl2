@@ -704,16 +704,16 @@ memory.</li>
   </ul>"
 
 
-    (if (mbt (and (natp n)
-                  (integerp val)
-                  (byte-listp acc)))
+    (if (mbt (byte-listp acc))
 
-        (if (zp n)
-            (reverse acc)
-          (b* ((acc (cons (loghead 8 val) acc))
-               (val (logtail 8 val)))
-              (byte-ify-general (1- n) val acc)))
+        (b* ((n (mbe :logic (nfix n) :exec n))
+             (val (mbe :logic (ifix val) :exec val)))
 
+            (if (zp n)
+                (reverse acc)
+              (b* ((acc (cons (loghead 8 val) acc))
+                   (val (logtail 8 val)))
+                  (byte-ify-general (1- n) val acc))))
       nil)
 
     ///

@@ -87,8 +87,7 @@
      ;; The following should take care of preventing the error when
      ;; (< (len bytes-of-obj) obj-offset) in syscall-read-logic.
      (< obj-offset (len bytes-of-obj))
-     (eof-terminatedp bytes-of-obj)
-     )))
+     (eof-terminatedp bytes-of-obj))))
 
 ;; ======================================================================
 
@@ -138,8 +137,7 @@
 
  (local (in-theory (enable eof-terminatedp)))
 
- (local
-  (include-book "std/lists/nthcdr" :dir :system))
+ (local (include-book "std/lists/nthcdr" :dir :system))
 
  (defun loop-clk (word-state offset str-bytes)
    ;; Begins at #x400545 (call GC)
@@ -743,8 +741,7 @@
   (encapsulate
    ()
 
-   (local
-    (include-book "std/lists/take" :dir :system))
+   (local (include-book "std/lists/take" :dir :system))
 
    (local
     (defthm len-grab-bytes-when-string-non-empty-helper-1
@@ -802,6 +799,24 @@
              (x86p x86))
         (byte-listp bytes-of-obj)))
    :hints (("Goal" :in-theory (e/d* (len-grab-bytes-when-string-non-empty env-assumptions)
+                                    (take nthcdr)))))
+
+
+ (defthm byte-listp-and-consp-of-take-from-environment-assumptions
+   (b* ((file-des-field (read-x86-file-des 0 x86))
+        (obj-offset (cdr (assoc :offset file-des-field)))
+        (obj-name (cdr (assoc :name file-des-field)))
+        (obj-contents-field (read-x86-file-contents obj-name x86))
+        (obj-contents (cdr (assoc :contents obj-contents-field)))
+        (bytes-of-obj (string-to-bytes obj-contents)))
+       (implies
+        ;; (and (file-descriptor-fieldp file-des-field)
+        ;;      (file-contents-fieldp obj-contents-field))
+        (and (env-assumptions x86)
+             (x86p x86))
+        (and (byte-listp (take 1 (nthcdr obj-offset bytes-of-obj)))
+             (consp (take 1 (nthcdr obj-offset bytes-of-obj))))))
+   :hints (("Goal" :in-theory (e/d* (env-assumptions)
                                     (take nthcdr)))))
 
  (defthm byte-listp-of-grab-bytes-from-environment-assumptions
@@ -1976,10 +1991,6 @@
                                     ())))))
 
 (defun-nx whatever-rflags-are-for-eof-prelim (x86)
-  ;; [Shilpi]: Shouldn't there be a hide here somewhere? I don't want the
-  ;; x86-run expression to unwind whenever this function is used. Ugh, I need
-  ;; to think how to do that... Not that its unwinding is slowly me down right
-  ;; now...
   (rflags (x86-run (gc-clk-no-eof) x86)))
 
 (defthm effects-eof-not-encountered-prelim
@@ -2253,27 +2264,26 @@
                           (assoc-equal
                            :contents (read-x86-file-contents
                                       (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-                                      x86))))))))))
-                  ;; (list
-                  ;;  (car (grab-bytes
-                  ;;        (take
-                  ;;         1
-                  ;;         (nthcdr
-                  ;;          (cdr (assoc-equal
-                  ;;                :offset
-                  ;;                (read-x86-file-des 0 x86)))
-                  ;;          (string-to-bytes
-                  ;;           (cdr (assoc-equal
-                  ;;                 :contents
-                  ;;                 (read-x86-file-contents
-                  ;;                  (cdr
-                  ;;                   (assoc-equal
-                  ;;                    :name
-                  ;;                    (read-x86-file-des 0 x86)))
-                  ;;                  x86))))))))
-                  ;;  0 0 0)
-                  ))
+                                      x86))))))))))))
   :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
+
+(defthmd effects-eof-not-encountered-prelim-gc-byte-projection-size
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (not (equal (get-char (offset x86) (input x86))
+                            *eof*)))
+           (unsigned-byte-p
+            8
+            (combine-bytes
+             (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86)))
+                           :r (x86-run (gc-clk-no-eof) x86))))))
+  :hints (("Goal"
+           :use ((:instance effects-eof-not-encountered-prelim-gc-byte-projection)
+                 (:instance n08p-of-car-grab-bytes-from-environment-assumptions))
+           :in-theory (e/d* (remove-loghead-from-byte-ify
+                             combine-bytes-and-byte-ify-inequality-lemma)
+                            (effects-eof-not-encountered-prelim
+                             n08p-of-car-grab-bytes-from-environment-assumptions)))))
 
 (defthmd effects-eof-not-encountered-prelim-word-state-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5345,8 +5355,6 @@
 ;; Other Char Encountered: (State = Out)
 ;;**********************************************************************
 
-(i-am-here)
-
 (encapsulate
  ()
 
@@ -5388,76 +5396,6 @@
             (equal (equal (loghead 32 (+ -9 char)) 0) nil))
    :hints (("Goal" :in-theory (e/d* (loghead) ())))))
 
-;; [Shilpi]: Ugh, I need to think about what'll happen if the mask is not
-;; 0. There'll be loads of instructions in other proofs where this might
-;; happen. I just got lucky here for the word-count program.
-
-;; (defthm flgi-and-write-user-rflags
-;;   (implies (and (member flg *flg-names*)
-;;                 (not (equal flg *iopl*)))
-;;            (equal (flgi flg (write-user-rflags flags mask x86))
-;;                   (if (equal mask 0)
-;;                       (bool->bit (logbitp flg flags))
-;;                     (if (logbitp flg mask)
-;;                         (undef-flg x86)
-;;                       (bool->bit (logbitp flg flags))))))
-;;   :hints (("Goal" :in-theory (e/d* (write-user-rflags
-;;                                     flgi
-;;                                     !flgi
-;;                                     !flgi-undefined)
-;;                                    ()))))
-
-;; (defthm read-zf-using-flgi-from-write-user-rflags
-;;   (implies (equal (rflags-slice :zf mask) 0)
-;;            (equal (flgi *zf* (write-user-rflags flags mask x86))
-;;                   (bool->bit (logbitp *zf* flags))))
-;;   :hints (("Goal" :in-theory (e/d* (write-user-rflags
-;;                                     flgi
-;;                                     !flgi
-;;                                     !flgi-undefined)
-;;                                    ()))))
-
-;; (defthm rflags-and-write-user-rflags-no-mask
-;;   (equal (xr :rflags 0 (write-user-rflags flags 0 x86))
-;;          (loghead 32 flags))
-;;   :hints (("Goal" :in-theory (e/d* (write-user-rflags
-;;                                     flgi
-;;                                     !flgi
-;;                                     !flgi-undefined)
-;;                                    ()))))
-
-;; (defthm write-user-rflags-and-xw
-;;   (implies (and (not (equal fld :rflags))
-;;                 (not (equal fld :undef)))
-;;            (equal (write-user-rflags flags mask (xw fld index value x86))
-;;                   (xw fld index value (write-user-rflags flags mask x86))))
-;;   :hints (("Goal" :in-theory (e/d* (write-user-rflags
-;;                                     flgi
-;;                                     !flgi
-;;                                     !flgi-undefined)
-;;                                    ()))))
-
-;; (defthm write-user-rflags-and-wb-in-programmer-level-mode
-;;   (implies (programmer-level-mode x86)
-;;            (equal (write-user-rflags flags mask (mv-nth 1 (wb addr-bytes-alst x86)))
-;;                   (mv-nth 1 (wb addr-bytes-alst (write-user-rflags flags mask x86)))))
-;;   :hints (("Goal" :in-theory (e/d* (write-user-rflags
-;;                                     flgi
-;;                                     !flgi
-;;                                     !flgi-undefined)
-;;                                    ()))))
-
-;; (defthm flgi-wb-in-programmer-level-mode
-;;   (implies (programmer-level-mode x86)
-;;            (equal (flgi flg (mv-nth 1 (wb addr-bytes-alst x86)))
-;;                   (flgi flg x86)))
-;;   :hints (("Goal" :in-theory (e/d* (flgi) ()))))
-
-;; (defthm write-user-rflags-write-user-flags-when-no-mask
-;;   (equal (write-user-rflags flags1 0 (write-user-rflags flags2 0 x86))
-;;          (write-user-rflags flags1 0 x86))
-;;   :hints (("Goal" :in-theory (e/d* (write-user-rflags !flgi !flgi-undefined) ()))))
-
 (defthm greater-logbitp-of-unsigned-byte-p
   (implies (and (unsigned-byte-p n x)
                 (natp m)
@@ -5474,23 +5412,6 @@
                                          (natp m))
                                     (equal (logbitp m x) nil)))))
 
-;; (defthm greater-loghead-of-unsigned-byte-p
-;;   (implies (and (unsigned-byte-p n x)
-;;                 (natp m)
-;;                 (< n m))
-;;            (equal (loghead m x) x))
-;;   :hints (("Goal" :in-theory (e/d* (ihsext-inductions
-;;                                     ihsext-recursive-redefs
-;;                                     unsigned-byte-p)
-;;                                    ())))
-;;   :rule-classes ((:rewrite)
-;;                  (:rewrite :corollary
-;;                            (implies (and (< x (expt 2 m))
-;;                                          (natp x)
-;;                                          (natp m))
-;;                                     (equal (loghead m x) x))
-;;                            :hints (("Goal" :in-theory (e/d* (unsigned-byte-p) ()))))))
-
 (defun-nx whatever-rflags-are-for-other-char-state-out (x86)
   ;; [Shilpi]: Shouldn't there be a hide here somewhere? I don't want the
   ;; x86-run expression to unwind whenever this function is used. Ugh, I need
@@ -5498,7 +5419,7 @@
   (rflags (x86-run 13 x86)))
 
 (defthmd effects-other-char-encountered-state-out-limited
-  ;; 172.67 s!!!
+  ;; 116.67 s!!!
 
   ;;  callq <gc>
   ;;
@@ -5572,19 +5493,8 @@
         (unsigned-byte-p
          8
          (combine-bytes
-          (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new))))
-        ;; (UNSIGNED-BYTE-P
-        ;;  '8
-        ;;  (COMBINE-BYTES
-        ;;   (MV-NTH
-        ;;    '1
-        ;;    (RB (CREATE-CANONICAL-ADDRESS-LIST '4
-        ;;                                       (BINARY-+ '28 (XR ':RGF '4 X86-NEW)))
-        ;;        ':X
-        ;;        X86-NEW))))
-        )
+          (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))))
    (equal (x86-run 13 x86-new)
-          ;; xxxx
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
            (MV-NTH
@@ -5664,6 +5574,16 @@
                              byte-ify
                              (byte-ify))))))
 
+(local (in-theory (e/d () (whatever-rflags-are-for-other-char-state-out))))
+
+(local
+ (defthm combine-bytes-with-byte-ify-4-inequality-lemma
+   (implies (and (not (equal (car (grab-bytes xs)) val))
+                 (byte-listp xs)
+                 (consp xs))
+            (equal (equal (combine-bytes (byte-ify 4 (car (grab-bytes xs)))) val) nil))
+   :hints (("Goal" :in-theory (e/d* (grab-bytes) ())))))
+
 (defthmd effects-other-char-encountered-state-out-1
 
   ;;  callq <gc>
@@ -5680,28 +5600,71 @@
                 (equal (word-state x86-new x86-new) (byte-ify 4 *out*))
                 (equal x86-new (x86-run (gc-clk-no-eof) x86)))
            (equal (x86-run 13 x86-new)
-                  xxxx))
+                  (XW
+                   :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
+                   (MV-NTH
+                    1
+                    (WB
+                     (APPEND
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (LOGHEAD
+                           32
+                           (COMBINE-BYTES (MV-NTH 1
+                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                       4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                                                      :X X86-NEW))))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* X86-NEW)))
+                       (BYTE-IFY 4 1))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
+                       (byte-ify
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (LOGHEAD
+                           32
+                           (COMBINE-BYTES
+                            (MV-NTH
+                             1
+                             (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* X86-NEW)))
+                                 :X X86-NEW)))))))))
+                     (WRITE-USER-RFLAGS
+                      (whatever-rflags-are-for-other-char-state-out x86-new)
+                      0 X86-NEW))))))
   :hints (("Goal" :in-theory
            (union-theories '(loop-preconditions
                              input
                              get-char
                              offset
                              rgfi-is-i64p
-                             (len) (loghead)
+                             (len) (loghead) (byte-ify)
+                             (logior) (ash)
                              programmer-level-mode-permissions-dont-matter
                              combine-bytes
-                             combine-bytes-helper-thm-for-state-out
-                             n32p-grab-bytes
-                             word-state)
+                             word-state
+                             remove-loghead-from-byte-ify
+                             combine-bytes-and-byte-ify-inequality-lemma
+                             byte-listp-and-consp-of-take-from-environment-assumptions
+                             combine-bytes-with-byte-ify-4-inequality-lemma)
                            (theory 'minimal-theory))
            :use ((:instance effects-eof-not-encountered-prelim-for-composition
                             (x86 x86))
-                 (:instance
-                  effects-eof-not-encountered-prelim-env-assumptions-projection
-                  (x86 x86))
-                 (:instance
-                  effects-eof-not-encountered-prelim-rbp-projection
-                  (x86 x86))
+                 (:instance effects-eof-not-encountered-prelim-gc-byte-projection-size
+                            (x86 x86))
+                 (:instance effects-eof-not-encountered-prelim-env-assumptions-projection
+                            (x86 x86))
+                 (:instance effects-eof-not-encountered-prelim-rbp-projection
+                            (x86 x86))
                  (:instance effects-other-char-encountered-state-out-limited
                             (x86-new (x86-run (gc-clk-no-eof) x86)))))))
 
@@ -5720,7 +5683,49 @@
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (x86-run (gc-clk-otherwise-out) x86)
-                  xxx))
+                  (XW
+                   :RIP 0 (+ 58 (XR :RIP 0 (x86-run (gc-clk-no-eof) x86)))
+                   (MV-NTH
+                    1
+                    (WB
+                     (APPEND
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                       (BYTE-IFY
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (LOGHEAD
+                           32
+                           (COMBINE-BYTES (MV-NTH 1
+                                                  (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                                       4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                                                      :X (x86-run (gc-clk-no-eof) x86)))))))))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 24 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                       (BYTE-IFY 4 1))
+                      (CREATE-ADDR-BYTES-ALIST
+                       (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                       (byte-ify
+                        4
+                        (LOGHEAD
+                         32
+                         (+
+                          1
+                          (LOGHEAD
+                           32
+                           (COMBINE-BYTES
+                            (MV-NTH
+                             1
+                             (RB (CREATE-CANONICAL-ADDRESS-LIST
+                                  4
+                                  (+ 16 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                                 :X (x86-run (gc-clk-no-eof) x86))))))))))
+                     (WRITE-USER-RFLAGS
+                      (whatever-rflags-are-for-other-char-state-out (x86-run (gc-clk-no-eof) x86))
+                      0 (x86-run (gc-clk-no-eof) x86)))))))
   :hints (("Goal"
            :in-theory (union-theories
                        '(programmer-level-mode-permissions-dont-matter
@@ -5749,7 +5754,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (xr :rgf *rbp* (x86-run (gc-clk-otherwise-out) x86))
                   (xr :rgf *rbp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
@@ -5763,7 +5768,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (xr :rgf *rsp* (x86-run (gc-clk-otherwise-out) x86))
                   (xr :rgf *rsp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
@@ -5777,11 +5782,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (x86p (x86-run (gc-clk-otherwise-out) x86)))
   :hints (("Goal" :in-theory (e/d* (loop-preconditions)
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthmd effects-other-char-encountered-state-out-msri-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5790,14 +5795,12 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (and (equal (ia32_efer-slice :ia32_efer-sce
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-otherwise-out) x86))) 1)
                 (equal (ia32_efer-slice :ia32_efer-lma
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-otherwise-out) x86))) 1)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+  :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-out-rip-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5807,11 +5810,10 @@
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (word-state x86 x86)
-                       (list *out* 0 0 0)))
+                       (byte-ify 4 *out*)))
            (equal (xr :rip 0 (x86-run (gc-clk-otherwise-out) x86))
                   (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
 
 (defthmd effects-other-char-encountered-state-out-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5820,7 +5822,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (xr :ms 0 (x86-run (gc-clk-otherwise-out) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
                                   (word-state
@@ -5834,11 +5836,9 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (xr :fault 0 (x86-run (gc-clk-otherwise-out) x86)) nil))
-  :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   subset-p)))))
+  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
 
 (defthmd effects-other-char-encountered-state-out-program-projection
   (implies (and (loop-preconditions addr x86)
@@ -5846,7 +5846,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0))
+                (equal (word-state x86 x86) (byte-ify 4 *out*))
                 (equal len-wc (len *wc*)))
            (program-at (create-canonical-address-list len-wc addr)
                        *wc* (x86-run (gc-clk-otherwise-out) x86)))
@@ -5865,7 +5865,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (env-assumptions (x86-run (gc-clk-otherwise-out) x86)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d*
@@ -5875,10 +5875,8 @@
                        (word-state
                         subset-p)))
           ("Goal''" :in-theory (e/d* (env-assumptions eof-terminatedp)
-                                    (word-state
-                                     subset-p))
-           :use ((:instance
-                  loop-preconditions-fwd-chaining-essentials)))))
+                                     (word-state subset-p))
+           :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-out-programmer-level-mode-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5887,9 +5885,21 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-otherwise-out) x86))
                   (xr :programmer-level-mode 0 x86)))
+  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
+
+(defthmd effects-other-char-encountered-state-out-os-info-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+           (equal (xr :os-info 0 (x86-run (gc-clk-otherwise-out) x86))
+                  (xr :os-info 0 x86)))
   :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
 
 (defthm loop-preconditions-other-char-encountered-state-out
@@ -5898,7 +5908,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (loop-preconditions addr (x86-run (gc-clk-otherwise-out) x86)))
   :hints (("Goal" :in-theory '(effects-other-char-encountered-state-out-rbp-projection
                                effects-other-char-encountered-state-out-rsp-projection
@@ -5912,6 +5922,7 @@
                                loop-preconditions-fwd-chaining-essentials
                                loop-preconditions-forward-chain-addresses-info
                                effects-other-char-encountered-state-out-programmer-level-mode-projection
+                               effects-other-char-encountered-state-out-os-info-projection
                                effects-other-char-encountered-state-out-program-projection)
            :expand (loop-preconditions addr (x86-run (gc-clk-otherwise-out) x86)))))
 
@@ -5922,12 +5933,10 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (input (x86-run (gc-clk-otherwise-out) x86))
                   (input x86)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   subset-p)))))
+  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
 
 (defthmd effects-other-char-encountered-state-out-offset-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5936,176 +5945,28 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (list *out* 0 0 0)))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (offset (x86-run (gc-clk-otherwise-out) x86))
                   (+ 1 (offset x86))))
-  :hints (("Goal" :in-theory (e/d* ()
-                                   (word-state
-                                    subset-p)))))
+  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
 
 ;;----------------------------------------------------------------------
 ;; Other Char Encountered (State = OUT): Delta Variable Theorems:
 ;;----------------------------------------------------------------------
 
-(encapsulate ()
-
-(local
- (include-book "arithmetic-5/top" :dir :system))
-
-(local
- (defthm dumb-word-state-out-helper-1
-   (implies (and (byte-listp bytes)
-                 (equal (len bytes) 4)
-                 (equal (combine-bytes bytes) *out*))
-            (equal bytes (list *out* 0 0 0)))
-   :hints (("Goal" :in-theory (e/d* ()
-                                   (acl2::normalize-factors-gather-exponents))))
-   :rule-classes nil))
-
-(local
- (defthmd dumb-word-state-out-helper-2
-   (implies (loop-preconditions addr x86)
-            (and (byte-listp (word-state x86 x86))
-                 (equal (len (word-state x86 x86)) 4)))
-   :hints (("Goal" :in-theory (e/d* (loop-preconditions)
-                                   ())))))
-
-(defthmd dumb-word-state-out
-  (implies (and (loop-preconditions addr x86)
-                (equal (combine-bytes (word-state x86 x86)) *out*))
-           (equal (word-state x86 x86) (list *out* 0 0 0)))
-  :hints (("Goal" :use ((:instance dumb-word-state-out-helper-1
-                                   (bytes (word-state x86 x86)))
-                        (:instance dumb-word-state-out-helper-2)))))
-
-) ;; End of encapsulate
-
-(defthm effects-other-char-encountered-state-out-variables-state
+(defthmd effects-other-char-encountered-state-out-variables-state
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*))
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (combine-bytes (word-state x86 x86)) *out*))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (combine-bytes (word-state x86 (x86-run (gc-clk-otherwise-out) x86)))
                   *in*))
   :hints (("Goal"
-           :use ((:instance
-                  effects-other-char-encountered-state-out-rbp-projection)
-                 (:instance
-                  effects-other-char-encountered-state-out))
-           :in-theory
-           '(dumb-word-state-out
-             weirder-rule
-             (logior)
-             (ash)
-             (:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
-             (:DEFINITION ADDR-BYTE-ALISTP)
-             (:DEFINITION ASSOC-EQUAL)
-             (:DEFINITION ASSOC-LIST)
-             (:DEFINITION BINARY-APPEND)
-             (:DEFINITION CANONICAL-ADDRESS-LISTP)
-             (:DEFINITION COMBINE-BYTES)
-             (:DEFINITION FIX)
-             (:DEFINITION GET-CHAR)
-             (:DEFINITION HIDE)
-             (:DEFINITION INPUT)
-             (:DEFINITION N01P$INLINE)
-             (:DEFINITION N08P$INLINE)
-             (:DEFINITION NO-DUPLICATES-P)
-             (:DEFINITION NOT)
-             (:DEFINITION OFFSET)
-             (:DEFINITION STRIP-CARS)
-             (:DEFINITION SUBSET-P)
-             (:DEFINITION SYNP)
-             (:DEFINITION WORD-STATE)
-             (:EXECUTABLE-COUNTERPART <)
-             (:EXECUTABLE-COUNTERPART ADDR-BYTE-ALISTP)
-             (:EXECUTABLE-COUNTERPART ASH)
-             (:EXECUTABLE-COUNTERPART BINARY-+)
-             (:EXECUTABLE-COUNTERPART CANONICAL-ADDRESS-LISTP)
-             (:EXECUTABLE-COUNTERPART COMBINE-BYTES)
-             (:EXECUTABLE-COUNTERPART CONS)
-             (:EXECUTABLE-COUNTERPART CONSP)
-             (:EXECUTABLE-COUNTERPART EQUAL)
-             (:EXECUTABLE-COUNTERPART EXPT)
-             (:EXECUTABLE-COUNTERPART FIX)
-             (:EXECUTABLE-COUNTERPART GET-BITS)
-             (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
-             (:EXECUTABLE-COUNTERPART N01P$INLINE)
-             (:EXECUTABLE-COUNTERPART N08P$INLINE)
-             (:EXECUTABLE-COUNTERPART NATP)
-             (:EXECUTABLE-COUNTERPART NO-DUPLICATES-P)
-             (:EXECUTABLE-COUNTERPART NOT)
-             (:EXECUTABLE-COUNTERPART STRIP-CARS)
-             (:EXECUTABLE-COUNTERPART SYNP)
-             (:EXECUTABLE-COUNTERPART UNARY--)
-             (:FORWARD-CHAINING LOOP-PRECONDITIONS-FORWARD-CHAIN-ADDRESSES-INFO)
-             (:FORWARD-CHAINING LOOP-PRECONDITIONS-FWD-CHAINING-ESSENTIALS)
-             (:LINEAR ACL2::GET-BITS-LINEAR)
-             (:REWRITE
-              !FLGI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST-OTHER-FLAGS)
-             (:REWRITE !RGFI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE !RIP-!RGFI)
-             (:REWRITE !RIP-!RIP)
-             (:REWRITE !RIP-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE |(+ c (+ d x))|)
-             (:REWRITE APPEND-X-NIL-IS-X)
-             (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-             (:REWRITE CAR-CONS)
-             (:REWRITE CDR-CONS)
-             (:REWRITE COMMUTATIVITY-OF-+)
-             (:REWRITE DISJOINT-P-CONS)
-             (:REWRITE DISJOINT-P-NIL-2)
-             (:REWRITE EFFECTS-EOF-NOT-ENCOUNTERED-PRELIM)
-             (:REWRITE LOGIOR-0)
-             (:REWRITE LOGIOR-COMMUTATIVE)
-             (:REWRITE LOOP-PRECONDITIONS-WEIRD-RBP-RSP)
-             (:REWRITE MEMBER-P-CONS)
-             (:REWRITE MEMBER-P-OF-NIL)
-             (:REWRITE N08P-GRAB-BYTES)
-             (:REWRITE N32P-GRAB-BYTES)
-             (:REWRITE RB-!FLGI)
-             (:REWRITE RB-!RGFI)
-             (:REWRITE RB-!RIP)
-             (:REWRITE RB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE RB-WB-DISJOINT)
-             (:REWRITE RB-WB-SUBSET)
-             (:REWRITE RB-WRITE-X86-FILE-DES)
-             (:REWRITE RGFI-!RGFI)
-             (:REWRITE ACL2::RIGHT-CANCELLATION-FOR-+)
-             (:REWRITE RIP-!RGFI)
-             (:REWRITE RIP-!RIP)
-             (:REWRITE SET/CLEAR-BIT-RETURNS-A-BIT)
-             (:REWRITE UNICITY-OF-0)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-!FLGI)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-!RGFI)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-!RIP)
-             (:REWRITE
-              PROGRAMMER-LEVEL-MODE-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-WB)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-WRITE-X86-FILE-DES)
-             (:REWRITE WB-!FLGI)
-             (:REWRITE WB-!RGFI)
-             (:REWRITE WB-!RIP)
-             (:REWRITE WB-AND-WB-COMBINE-WBS)
-             (:REWRITE WB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE WB-RETURNS-X86P)
-             (:REWRITE WB-WRITE-X86-FILE-DES)
-             (:REWRITE X86P-!FLGI)
-             (:REWRITE X86P-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE X86P-WRITE-X86-FILE-DES)
-             (:TYPE-PRESCRIPTION
-              ACL2::|(get-bits start stop x) --- type-prescription|)
-             (:TYPE-PRESCRIPTION CANONICAL-ADDRESS-P$INLINE)
-             (:TYPE-PRESCRIPTION ENV-ASSUMPTIONS)
-             (:TYPE-PRESCRIPTION LOOP-PRECONDITIONS)
-             (:TYPE-PRESCRIPTION RGFI-IS-I64P)
-             (:TYPE-PRESCRIPTION RIP-IS-INTEGERP)
-             (:TYPE-PRESCRIPTION SET/CLEAR-BIT)
-             (:TYPE-PRESCRIPTION SET/CLEAR-BIT-RETURNS-A-BIT-TYPE)
-             (:TYPE-PRESCRIPTION X86P)))))
+           :use ((:instance effects-other-char-encountered-state-out-rbp-projection)
+                 (:instance effects-other-char-encountered-state-out)))))
 
 (defthmd effects-other-char-encountered-state-out-variables-state-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -6114,12 +5975,12 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (combine-bytes (word-state x86 x86)) *out*))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (word-state (x86-run (gc-clk-otherwise-out) x86) xxx)
                   (word-state x86 xxx)))
   :hints (("Goal" :in-theory
            '(effects-other-char-encountered-state-out-rbp-projection
-             dumb-word-state-out
+             effects-other-char-encountered-state-out-variables-state
              word-state))))
 
 (defthmd effects-other-char-encountered-state-out-variables-nc
@@ -6129,151 +5990,13 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (combine-bytes (word-state x86 x86)) *out*))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (combine-bytes (nc x86 (x86-run (gc-clk-otherwise-out) x86)))
-                  (get-bits 0 31
-                            (+ 1
-                               (combine-bytes (nc x86 x86))))))
-  :hints (("Goal"
-           :in-theory
-           (union-theories
-            '(dumb-word-state-out
-              weirder-rule
-              (:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
-              (:DEFINITION BYTE-LISTP)
-              (:DEFINITION COMBINE-BYTES)
-              (:DEFINITION NOT)
-              (:DEFINITION SYNP)
-              (:EXECUTABLE-COUNTERPART ASH)
-              (:EXECUTABLE-COUNTERPART BYTE-LISTP)
-              (:EXECUTABLE-COUNTERPART CDR)
-              (:EXECUTABLE-COUNTERPART COMBINE-BYTES)
-              (:EXECUTABLE-COUNTERPART FORCE)
-              (:EXECUTABLE-COUNTERPART INTEGERP)
-              (:EXECUTABLE-COUNTERPART LEN)
-              (:EXECUTABLE-COUNTERPART NOT)
-              (:EXECUTABLE-COUNTERPART TRUE-LISTP)
-              (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
-              (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
-              (:FORWARD-CHAINING ENV-ALISTP-ENV-READ)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-CONTENTS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-DESCRIPTORS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-RIP-RET-ALISTP)
-              (:FORWARD-CHAINING RIP-RET-ALISTP-FWD-CHAINING-ALISTP)
-              (:REWRITE ASH-CONSTANT)
-              (:REWRITE LOGIOR-0)
-              (:REWRITE LOGIOR-COMMUTATIVE)
-              (:REWRITE ACL2::LOGIOR-GET-BITS-GET-BITS-2)
-              (:TYPE-PRESCRIPTION ALISTP)
-              (:TYPE-PRESCRIPTION BYTE-LISTP)
-              (:TYPE-PRESCRIPTION DISJOINT-P)
-              (:TYPE-PRESCRIPTION ENV-ALISTP)
-              (:TYPE-PRESCRIPTION ENV-ASSUMPTIONS)
-              (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-              (:TYPE-PRESCRIPTION PROGRAM-AT)
-              (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-              (:TYPE-PRESCRIPTION RIP-RET-ALISTP)
-              NC
-              PROGRAMMER-LEVEL-MODE-PERMISSIONS-DONT-MATTER
-              (LOGIOR)
-              (ASH)
-              COMBINE-BYTES
-              (:DEFINITION ADDR-BYTE-ALISTP)
-              (:DEFINITION ASSOC-EQUAL)
-              (:DEFINITION ASSOC-LIST)
-              (:DEFINITION BINARY-APPEND)
-              (:DEFINITION CANONICAL-ADDRESS-LISTP)
-              (:DEFINITION FIX)
-              (:DEFINITION GET-CHAR)
-              (:DEFINITION HIDE)
-              (:DEFINITION INPUT)
-              (:DEFINITION N01P$INLINE)
-              (:DEFINITION N08P$INLINE)
-              (:DEFINITION NO-DUPLICATES-P)
-              (:DEFINITION OFFSET)
-              (:DEFINITION STRIP-CARS)
-              (:DEFINITION SUBSET-P)
-              (:EXECUTABLE-COUNTERPART <)
-              (:EXECUTABLE-COUNTERPART ADDR-BYTE-ALISTP)
-              (:EXECUTABLE-COUNTERPART BINARY-+)
-              (:EXECUTABLE-COUNTERPART CANONICAL-ADDRESS-LISTP)
-              (:EXECUTABLE-COUNTERPART CONSP)
-              (:EXECUTABLE-COUNTERPART EQUAL)
-              (:EXECUTABLE-COUNTERPART EXPT)
-              (:EXECUTABLE-COUNTERPART FIX)
-              (:EXECUTABLE-COUNTERPART GET-BITS)
-              (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
-              (:EXECUTABLE-COUNTERPART N01P$INLINE)
-              (:EXECUTABLE-COUNTERPART N08P$INLINE)
-              (:EXECUTABLE-COUNTERPART NATP)
-              (:EXECUTABLE-COUNTERPART NO-DUPLICATES-P)
-              (:EXECUTABLE-COUNTERPART STRIP-CARS)
-              (:EXECUTABLE-COUNTERPART UNARY--)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FWD-CHAINING-ESSENTIALS)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FORWARD-CHAIN-ADDRESSES-INFO)
-              (:LINEAR ACL2::GET-BITS-LINEAR)
-              (:REWRITE
-               !FLGI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST-OTHER-FLAGS)
-              (:REWRITE !RGFI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE !RIP-!RGFI)
-              (:REWRITE !RIP-!RIP)
-              (:REWRITE !RIP-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE |(+ c (+ d x))|)
-              (:REWRITE APPEND-X-NIL-IS-X)
-              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-              (:REWRITE CAR-CONS)
-              (:REWRITE CDR-CONS)
-              (:REWRITE COMMUTATIVITY-OF-+)
-              (:REWRITE DISJOINT-P-CONS)
-              (:REWRITE DISJOINT-P-NIL-2)
-              (:REWRITE EFFECTS-EOF-NOT-ENCOUNTERED-PRELIM)
-              (:REWRITE EFFECTS-NEWLINE-ENCOUNTERED)
-              (:REWRITE MEMBER-P-CONS)
-              (:REWRITE MEMBER-P-OF-NIL)
-              (:REWRITE RB-!FLGI)
-              (:REWRITE RB-!RGFI)
-              (:REWRITE RB-!RIP)
-              (:REWRITE RB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE RB-WB-DISJOINT)
-              (:REWRITE RB-WB-SUBSET)
-              (:REWRITE RB-WRITE-X86-FILE-DES)
-              (:REWRITE RGFI-!RGFI)
-              (:REWRITE ACL2::RIGHT-CANCELLATION-FOR-+)
-              (:REWRITE RIP-!RGFI)
-              (:REWRITE RIP-!RIP)
-              (:REWRITE SET/CLEAR-BIT-RETURNS-A-BIT)
-              (:REWRITE UNICITY-OF-0)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!FLGI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RGFI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RIP)
-              (:REWRITE
-               PROGRAMMER-LEVEL-MODE-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WB)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WRITE-X86-FILE-DES)
-              (:REWRITE WB-!FLGI)
-              (:REWRITE WB-!RGFI)
-              (:REWRITE WB-!RIP)
-              (:REWRITE WB-AND-WB-COMBINE-WBS)
-              (:REWRITE WB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE WB-RETURNS-X86P)
-              (:REWRITE WB-WRITE-X86-FILE-DES)
-              (:REWRITE X86P-!FLGI)
-              (:REWRITE X86P-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE X86P-WRITE-X86-FILE-DES)
-              (:TYPE-PRESCRIPTION ACL2::|(get-bits start stop x) --- type-prescription|)
-              (:TYPE-PRESCRIPTION CANONICAL-ADDRESS-P$INLINE)
-              (:TYPE-PRESCRIPTION LOOP-PRECONDITIONS)
-              (:TYPE-PRESCRIPTION RGFI-IS-I64P)
-              (:TYPE-PRESCRIPTION RIP-IS-INTEGERP)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT-RETURNS-A-BIT-TYPE)
-              (:TYPE-PRESCRIPTION X86P))
-            (theory 'minimal-theory))
-           :use ((:instance
-                  effects-other-char-encountered-state-out)
-                 (:instance
-                  loop-preconditions-fwd-chaining-essentials)))))
+                  (loghead 32 (+ 1 (loghead 32 (combine-bytes (nc x86 x86)))))))
+  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
+                                   ())
+           :use ((:instance effects-other-char-encountered-state-out)
+                 (:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-out-variables-nc-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -6282,12 +6005,12 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (combine-bytes (word-state x86 x86)) *out*))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (nc (x86-run (gc-clk-otherwise-out) x86) xxx)
                   (nc x86 xxx)))
   :hints (("Goal" :in-theory
            '(effects-other-char-encountered-state-out-rbp-projection
-             dumb-word-state-out
+             effects-other-char-encountered-state-out-variables-state
              nc))))
 
 (defthmd effects-other-char-encountered-state-out-variables-nw
@@ -6297,151 +6020,13 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (combine-bytes (word-state x86 x86)) *out*))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (combine-bytes (nw x86 (x86-run (gc-clk-otherwise-out) x86)))
-                  (get-bits 0 31
-                            (+ 1
-                               (combine-bytes (nw x86 x86))))))
-  :hints (("Goal"
-           :in-theory
-           (union-theories
-            '(dumb-word-state-out
-              weirder-rule
-              (:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
-              (:DEFINITION BYTE-LISTP)
-              (:DEFINITION COMBINE-BYTES)
-              (:DEFINITION NOT)
-              (:DEFINITION SYNP)
-              (:EXECUTABLE-COUNTERPART ASH)
-              (:EXECUTABLE-COUNTERPART BYTE-LISTP)
-              (:EXECUTABLE-COUNTERPART CDR)
-              (:EXECUTABLE-COUNTERPART COMBINE-BYTES)
-              (:EXECUTABLE-COUNTERPART FORCE)
-              (:EXECUTABLE-COUNTERPART INTEGERP)
-              (:EXECUTABLE-COUNTERPART LEN)
-              (:EXECUTABLE-COUNTERPART NOT)
-              (:EXECUTABLE-COUNTERPART TRUE-LISTP)
-              (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
-              (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
-              (:FORWARD-CHAINING ENV-ALISTP-ENV-READ)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-CONTENTS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-DESCRIPTORS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-RIP-RET-ALISTP)
-              (:FORWARD-CHAINING RIP-RET-ALISTP-FWD-CHAINING-ALISTP)
-              (:REWRITE ASH-CONSTANT)
-              (:REWRITE LOGIOR-0)
-              (:REWRITE LOGIOR-COMMUTATIVE)
-              (:REWRITE ACL2::LOGIOR-GET-BITS-GET-BITS-2)
-              (:TYPE-PRESCRIPTION ALISTP)
-              (:TYPE-PRESCRIPTION BYTE-LISTP)
-              (:TYPE-PRESCRIPTION DISJOINT-P)
-              (:TYPE-PRESCRIPTION ENV-ALISTP)
-              (:TYPE-PRESCRIPTION ENV-ASSUMPTIONS)
-              (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-              (:TYPE-PRESCRIPTION PROGRAM-AT)
-              (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-              (:TYPE-PRESCRIPTION RIP-RET-ALISTP)
-              NC NW
-              PROGRAMMER-LEVEL-MODE-PERMISSIONS-DONT-MATTER
-              (LOGIOR)
-              (ASH)
-              COMBINE-BYTES
-              (:DEFINITION ADDR-BYTE-ALISTP)
-              (:DEFINITION ASSOC-EQUAL)
-              (:DEFINITION ASSOC-LIST)
-              (:DEFINITION BINARY-APPEND)
-              (:DEFINITION CANONICAL-ADDRESS-LISTP)
-              (:DEFINITION FIX)
-              (:DEFINITION GET-CHAR)
-              (:DEFINITION HIDE)
-              (:DEFINITION INPUT)
-              (:DEFINITION N01P$INLINE)
-              (:DEFINITION N08P$INLINE)
-              (:DEFINITION NO-DUPLICATES-P)
-              (:DEFINITION OFFSET)
-              (:DEFINITION STRIP-CARS)
-              (:DEFINITION SUBSET-P)
-              (:EXECUTABLE-COUNTERPART <)
-              (:EXECUTABLE-COUNTERPART ADDR-BYTE-ALISTP)
-              (:EXECUTABLE-COUNTERPART BINARY-+)
-              (:EXECUTABLE-COUNTERPART CANONICAL-ADDRESS-LISTP)
-              (:EXECUTABLE-COUNTERPART CONSP)
-              (:EXECUTABLE-COUNTERPART EQUAL)
-              (:EXECUTABLE-COUNTERPART EXPT)
-              (:EXECUTABLE-COUNTERPART FIX)
-              (:EXECUTABLE-COUNTERPART GET-BITS)
-              (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
-              (:EXECUTABLE-COUNTERPART N01P$INLINE)
-              (:EXECUTABLE-COUNTERPART N08P$INLINE)
-              (:EXECUTABLE-COUNTERPART NATP)
-              (:EXECUTABLE-COUNTERPART NO-DUPLICATES-P)
-              (:EXECUTABLE-COUNTERPART STRIP-CARS)
-              (:EXECUTABLE-COUNTERPART UNARY--)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FWD-CHAINING-ESSENTIALS)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FORWARD-CHAIN-ADDRESSES-INFO)
-              (:LINEAR ACL2::GET-BITS-LINEAR)
-              (:REWRITE
-               !FLGI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST-OTHER-FLAGS)
-              (:REWRITE !RGFI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE !RIP-!RGFI)
-              (:REWRITE !RIP-!RIP)
-              (:REWRITE !RIP-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE |(+ c (+ d x))|)
-              (:REWRITE APPEND-X-NIL-IS-X)
-              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-              (:REWRITE CAR-CONS)
-              (:REWRITE CDR-CONS)
-              (:REWRITE COMMUTATIVITY-OF-+)
-              (:REWRITE DISJOINT-P-CONS)
-              (:REWRITE DISJOINT-P-NIL-2)
-              (:REWRITE EFFECTS-EOF-NOT-ENCOUNTERED-PRELIM)
-              (:REWRITE EFFECTS-NEWLINE-ENCOUNTERED)
-              (:REWRITE MEMBER-P-CONS)
-              (:REWRITE MEMBER-P-OF-NIL)
-              (:REWRITE RB-!FLGI)
-              (:REWRITE RB-!RGFI)
-              (:REWRITE RB-!RIP)
-              (:REWRITE RB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE RB-WB-DISJOINT)
-              (:REWRITE RB-WB-SUBSET)
-              (:REWRITE RB-WRITE-X86-FILE-DES)
-              (:REWRITE RGFI-!RGFI)
-              (:REWRITE ACL2::RIGHT-CANCELLATION-FOR-+)
-              (:REWRITE RIP-!RGFI)
-              (:REWRITE RIP-!RIP)
-              (:REWRITE SET/CLEAR-BIT-RETURNS-A-BIT)
-              (:REWRITE UNICITY-OF-0)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!FLGI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RGFI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RIP)
-              (:REWRITE
-               PROGRAMMER-LEVEL-MODE-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WB)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WRITE-X86-FILE-DES)
-              (:REWRITE WB-!FLGI)
-              (:REWRITE WB-!RGFI)
-              (:REWRITE WB-!RIP)
-              (:REWRITE WB-AND-WB-COMBINE-WBS)
-              (:REWRITE WB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE WB-RETURNS-X86P)
-              (:REWRITE WB-WRITE-X86-FILE-DES)
-              (:REWRITE X86P-!FLGI)
-              (:REWRITE X86P-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE X86P-WRITE-X86-FILE-DES)
-              (:TYPE-PRESCRIPTION ACL2::|(get-bits start stop x) --- type-prescription|)
-              (:TYPE-PRESCRIPTION CANONICAL-ADDRESS-P$INLINE)
-              (:TYPE-PRESCRIPTION LOOP-PRECONDITIONS)
-              (:TYPE-PRESCRIPTION RGFI-IS-I64P)
-              (:TYPE-PRESCRIPTION RIP-IS-INTEGERP)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT-RETURNS-A-BIT-TYPE)
-              (:TYPE-PRESCRIPTION X86P))
-            (theory 'minimal-theory))
-           :use ((:instance
-                  effects-other-char-encountered-state-out)
-                 (:instance
-                  loop-preconditions-fwd-chaining-essentials)))))
+                  (loghead 32 (+ 1 (loghead 32 (combine-bytes (nw x86 x86)))))))
+  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
+                                   ())
+           :use ((:instance effects-other-char-encountered-state-out)
+                 (:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-out-variables-nw-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -6450,12 +6035,12 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (combine-bytes (word-state x86 x86)) *out*))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (nw (x86-run (gc-clk-otherwise-out) x86) xxx)
                   (nw x86 xxx)))
   :hints (("Goal" :in-theory
            '(effects-other-char-encountered-state-out-rbp-projection
-             dumb-word-state-out
+             effects-other-char-encountered-state-out-variables-state
              nw))))
 
 (defthmd effects-other-char-encountered-state-out-variables-nl
@@ -6465,149 +6050,12 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (combine-bytes (word-state x86 x86)) *out*))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (nl x86 (x86-run (gc-clk-otherwise-out) x86))
                   (nl x86 x86)))
-  :hints (("Goal"
-           :in-theory
-           (union-theories
-            '(dumb-word-state-out
-              weirder-rule
-              (:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
-              (:DEFINITION BYTE-LISTP)
-              (:DEFINITION COMBINE-BYTES)
-              (:DEFINITION NOT)
-              (:DEFINITION SYNP)
-              (:EXECUTABLE-COUNTERPART ASH)
-              (:EXECUTABLE-COUNTERPART BYTE-LISTP)
-              (:EXECUTABLE-COUNTERPART CDR)
-              (:EXECUTABLE-COUNTERPART COMBINE-BYTES)
-              (:EXECUTABLE-COUNTERPART FORCE)
-              (:EXECUTABLE-COUNTERPART INTEGERP)
-              (:EXECUTABLE-COUNTERPART LEN)
-              (:EXECUTABLE-COUNTERPART NOT)
-              (:EXECUTABLE-COUNTERPART TRUE-LISTP)
-              (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
-              (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
-              (:FORWARD-CHAINING ENV-ALISTP-ENV-READ)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-CONTENTS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-DESCRIPTORS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-RIP-RET-ALISTP)
-              (:FORWARD-CHAINING RIP-RET-ALISTP-FWD-CHAINING-ALISTP)
-              (:REWRITE ASH-CONSTANT)
-              (:REWRITE LOGIOR-0)
-              (:REWRITE LOGIOR-COMMUTATIVE)
-              (:REWRITE ACL2::LOGIOR-GET-BITS-GET-BITS-2)
-              (:TYPE-PRESCRIPTION ALISTP)
-              (:TYPE-PRESCRIPTION BYTE-LISTP)
-              (:TYPE-PRESCRIPTION DISJOINT-P)
-              (:TYPE-PRESCRIPTION ENV-ALISTP)
-              (:TYPE-PRESCRIPTION ENV-ASSUMPTIONS)
-              (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-              (:TYPE-PRESCRIPTION PROGRAM-AT)
-              (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-              (:TYPE-PRESCRIPTION RIP-RET-ALISTP)
-              NL
-              PROGRAMMER-LEVEL-MODE-PERMISSIONS-DONT-MATTER
-              (LOGIOR)
-              (ASH)
-              COMBINE-BYTES
-              (:DEFINITION ADDR-BYTE-ALISTP)
-              (:DEFINITION ASSOC-EQUAL)
-              (:DEFINITION ASSOC-LIST)
-              (:DEFINITION BINARY-APPEND)
-              (:DEFINITION CANONICAL-ADDRESS-LISTP)
-              (:DEFINITION FIX)
-              (:DEFINITION GET-CHAR)
-              (:DEFINITION HIDE)
-              (:DEFINITION INPUT)
-              (:DEFINITION N01P$INLINE)
-              (:DEFINITION N08P$INLINE)
-              (:DEFINITION NO-DUPLICATES-P)
-              (:DEFINITION OFFSET)
-              (:DEFINITION STRIP-CARS)
-              (:DEFINITION SUBSET-P)
-              (:EXECUTABLE-COUNTERPART <)
-              (:EXECUTABLE-COUNTERPART ADDR-BYTE-ALISTP)
-              (:EXECUTABLE-COUNTERPART BINARY-+)
-              (:EXECUTABLE-COUNTERPART CANONICAL-ADDRESS-LISTP)
-              (:EXECUTABLE-COUNTERPART CONSP)
-              (:EXECUTABLE-COUNTERPART EQUAL)
-              (:EXECUTABLE-COUNTERPART EXPT)
-              (:EXECUTABLE-COUNTERPART FIX)
-              (:EXECUTABLE-COUNTERPART GET-BITS)
-              (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
-              (:EXECUTABLE-COUNTERPART N01P$INLINE)
-              (:EXECUTABLE-COUNTERPART N08P$INLINE)
-              (:EXECUTABLE-COUNTERPART NATP)
-              (:EXECUTABLE-COUNTERPART NO-DUPLICATES-P)
-              (:EXECUTABLE-COUNTERPART STRIP-CARS)
-              (:EXECUTABLE-COUNTERPART UNARY--)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FWD-CHAINING-ESSENTIALS)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FORWARD-CHAIN-ADDRESSES-INFO)
-              (:LINEAR ACL2::GET-BITS-LINEAR)
-              (:REWRITE
-               !FLGI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST-OTHER-FLAGS)
-              (:REWRITE !RGFI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE !RIP-!RGFI)
-              (:REWRITE !RIP-!RIP)
-              (:REWRITE !RIP-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE |(+ c (+ d x))|)
-              (:REWRITE APPEND-X-NIL-IS-X)
-              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-              (:REWRITE CAR-CONS)
-              (:REWRITE CDR-CONS)
-              (:REWRITE COMMUTATIVITY-OF-+)
-              (:REWRITE DISJOINT-P-CONS)
-              (:REWRITE DISJOINT-P-NIL-2)
-              (:REWRITE EFFECTS-EOF-NOT-ENCOUNTERED-PRELIM)
-              (:REWRITE EFFECTS-NEWLINE-ENCOUNTERED)
-              (:REWRITE MEMBER-P-CONS)
-              (:REWRITE MEMBER-P-OF-NIL)
-              (:REWRITE RB-!FLGI)
-              (:REWRITE RB-!RGFI)
-              (:REWRITE RB-!RIP)
-              (:REWRITE RB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE RB-WB-DISJOINT)
-              (:REWRITE RB-WB-SUBSET)
-              (:REWRITE RB-WRITE-X86-FILE-DES)
-              (:REWRITE RGFI-!RGFI)
-              (:REWRITE ACL2::RIGHT-CANCELLATION-FOR-+)
-              (:REWRITE RIP-!RGFI)
-              (:REWRITE RIP-!RIP)
-              (:REWRITE SET/CLEAR-BIT-RETURNS-A-BIT)
-              (:REWRITE UNICITY-OF-0)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!FLGI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RGFI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RIP)
-              (:REWRITE
-               PROGRAMMER-LEVEL-MODE-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WB)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WRITE-X86-FILE-DES)
-              (:REWRITE WB-!FLGI)
-              (:REWRITE WB-!RGFI)
-              (:REWRITE WB-!RIP)
-              (:REWRITE WB-AND-WB-COMBINE-WBS)
-              (:REWRITE WB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE WB-RETURNS-X86P)
-              (:REWRITE WB-WRITE-X86-FILE-DES)
-              (:REWRITE X86P-!FLGI)
-              (:REWRITE X86P-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE X86P-WRITE-X86-FILE-DES)
-              (:TYPE-PRESCRIPTION ACL2::|(get-bits start stop x) --- type-prescription|)
-              (:TYPE-PRESCRIPTION CANONICAL-ADDRESS-P$INLINE)
-              (:TYPE-PRESCRIPTION LOOP-PRECONDITIONS)
-              (:TYPE-PRESCRIPTION RGFI-IS-I64P)
-              (:TYPE-PRESCRIPTION RIP-IS-INTEGERP)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT-RETURNS-A-BIT-TYPE)
-              (:TYPE-PRESCRIPTION X86P))
-            (theory 'minimal-theory))
-           :use ((:instance
-                  effects-other-char-encountered-state-out)
-                 (:instance
-                  loop-preconditions-fwd-chaining-essentials)))))
+  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter) ())
+           :use ((:instance effects-other-char-encountered-state-out)
+                 (:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-out-variables-nl-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -6616,25 +6064,26 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (combine-bytes (word-state x86 x86)) *out*))
+                (equal (word-state x86 x86) (byte-ify 4 *out*)))
            (equal (nl (x86-run (gc-clk-otherwise-out) x86) xxx)
                   (nl x86 xxx)))
   :hints (("Goal" :in-theory
            '(effects-other-char-encountered-state-out-rbp-projection
-             dumb-word-state-out
+             effects-other-char-encountered-state-out-variables-state
              nl))))
 
 ;;**********************************************************************
 ;; Other Char Encountered (State = IN)
 ;;**********************************************************************
 
+(i-am-here)
+
 ;; First, some dumb helper theorems:
 
 (encapsulate
  ()
 
- (local
-  (include-book "arithmetic-5/top" :dir :system))
+ (local (include-book "arithmetic-5/top" :dir :system))
 
  (local
   (defthm combine-bytes-helper-thm-for-state-in-helper
@@ -6649,7 +6098,7 @@
  (defthmd combine-bytes-helper-thm-for-state-in
    (implies (and (not (equal (mv-nth 1
                                      (rb (list a b c d) :x x86-new))
-                             (list *out* 0 0 0)))
+                             (byte-ify 4 *out*)))
                  (canonical-address-listp (list a b c d))
                  (xr :programmer-level-mode x86-new)
                  (x86p x86-new))
@@ -6776,7 +6225,7 @@
                                       (+ -6 (xr :rgf *rbp* x86-new))
                                       (+ -5 (xr :rgf *rbp* x86-new)))
                                 :x x86-new))
-                    (list *out* 0 0 0))))
+                    (byte-ify 4 *out*))))
    (equal (x86-run 11 x86-new)
           (!RIP
            (+ 58 (XR :RIP X86-NEW))
@@ -7009,16 +6458,11 @@
 
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86-new x86-new)
-                            (list *out* 0 0 0)))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86-new x86-new) (byte-ify 4 *out*)))
                 (equal x86-new (x86-run (gc-clk-no-eof) x86)))
            (equal (x86-run 11 x86-new)
                   (!RIP
@@ -7253,16 +6697,11 @@
 
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (equal (x86-run (gc-clk-otherwise-in) x86)
                   (!RIP
                    (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
@@ -7484,16 +6923,11 @@
 (defthmd effects-other-char-encountered-state-in-rbp-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (equal (xr :rgf *rbp* (x86-run (gc-clk-otherwise-in) x86))
                   (xr :rgf *rbp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
@@ -7503,16 +6937,11 @@
 (defthmd effects-other-char-encountered-state-in-rsp-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (equal (xr :rgf *rsp* (x86-run (gc-clk-otherwise-in) x86))
                   (xr :rgf *rsp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
@@ -7522,17 +6951,11 @@
 (defthmd effects-other-char-encountered-state-in-rsp-projection-new
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86))
-                            *out*))
-                )
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :rgf *rsp* (x86-run (gc-clk-otherwise-in) x86))
                   (xr :rgf *rsp* x86)))
   :hints (("Goal" :in-theory (union-theories
@@ -7546,16 +6969,11 @@
 (defthmd x86p-effects-other-char-encountered-state-in
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (x86p (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :in-theory (e/d* (loop-preconditions)
                                   (word-state
@@ -7564,16 +6982,11 @@
 (defthmd effects-other-char-encountered-state-in-msri-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (and (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* (x86-run (gc-clk-otherwise-in) x86))) 1)
                 (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx*
                                                    (x86-run (gc-clk-otherwise-in) x86))) 1)))
@@ -7584,16 +6997,11 @@
 (defthmd effects-other-char-encountered-state-in-rip-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (equal (xr :rip 0 (x86-run (gc-clk-otherwise-in) x86))
                   (+ 145 addr)))
   :hints (("Goal" :in-theory (e/d* ()
@@ -7602,16 +7010,11 @@
 (defthmd effects-other-char-encountered-state-in-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (equal (xr :ms 0 (x86-run (gc-clk-otherwise-in) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
                                   (word-state
@@ -7620,34 +7023,23 @@
 (defthmd effects-other-char-encountered-state-in-fault-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (equal (xr :fault 0 (x86-run (gc-clk-otherwise-in) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
                                   (word-state
                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthmd effects-other-char-encountered-state-in-program-projection
-  (implies (and (loop-preconditions addr x86)
-                (equal len-wc (len *wc*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+  (implies (and (loop-preconditions addr x86) (equal len-wc (len *wc*))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (program-at (create-canonical-address-list len-wc
                                                       addr)
                        *wc* (x86-run (gc-clk-otherwise-in) x86)))
@@ -7662,16 +7054,11 @@
 (defthmd effects-other-char-encountered-state-in-env-assumptions-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (env-assumptions (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d*
@@ -7689,16 +7076,11 @@
 (defthmd effects-other-char-encountered-state-in-programmer-level-mode-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-otherwise-in) x86))
                   (xr :programmer-level-mode 0 x86)))
   :hints (("Goal" :in-theory (e/d* ()
@@ -7707,16 +7089,11 @@
 
 (defthm loop-preconditions-other-char-encountered-state-in-pre
   (implies (and (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (loop-preconditions addr (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :in-theory '(effects-other-char-encountered-state-in-rbp-projection
                                effects-other-char-encountered-state-in-rsp-projection
@@ -7736,16 +7113,11 @@
 (defthmd effects-other-char-encountered-state-in-input-projection-pre
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (equal (input (x86-run (gc-clk-otherwise-in) x86))
                   (input x86)))
   :hints (("Goal" :in-theory (e/d* ()
@@ -7755,16 +7127,11 @@
 (defthmd effects-other-char-encountered-state-in-offset-projection-pre
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0))))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
            (equal (offset (x86-run (gc-clk-otherwise-in) x86))
                   (+ 1 (offset x86))))
   :hints (("Goal" :in-theory (e/d* ()
@@ -7773,16 +7140,11 @@
 
 (defthm loop-preconditions-other-char-encountered-state-in
   (implies (and (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86))
-                            *out*)))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (loop-preconditions addr (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :in-theory '(dumb-word-state-out
                                combine-bytes
@@ -7793,16 +7155,11 @@
 (defthmd effects-other-char-encountered-state-in-input-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86))
-                            *out*)))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (input (x86-run (gc-clk-otherwise-in) x86))
                   (input x86)))
   :hints (("Goal" :in-theory '(dumb-word-state-out
@@ -7814,16 +7171,11 @@
 (defthmd effects-other-char-encountered-state-in-offset-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86))
-                            *out*)))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (offset (x86-run (gc-clk-otherwise-in) x86))
                   (+ 1 (offset x86))))
   :hints (("Goal" :in-theory '(dumb-word-state-out
@@ -7839,16 +7191,11 @@
 (defthmd effects-other-char-encountered-state-in-variables-state
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86)) *out*))
-                )
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (word-state x86 (x86-run (gc-clk-otherwise-in) x86))
                   (word-state x86 x86)))
   :hints (("Goal"
@@ -7996,16 +7343,11 @@
 (defthmd effects-other-char-encountered-state-in-variables-state-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86)) *out*))
-                )
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (word-state (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (word-state x86 xxx)))
   :hints (("Goal" :in-theory
@@ -8020,16 +7362,11 @@
 (defthmd effects-other-char-encountered-state-in-variables-nc
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86)) *out*))
-                )
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (combine-bytes (nc x86 (x86-run (gc-clk-otherwise-in) x86)))
                   (get-bits 0 31
                             (+ 1
@@ -8179,16 +7516,11 @@
 (defthmd effects-other-char-encountered-state-in-variables-nc-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86)) *out*))
-                )
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nc (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (nc x86 xxx)))
   :hints (("Goal" :in-theory
@@ -8203,16 +7535,11 @@
 (defthmd effects-other-char-encountered-state-in-variables-nw
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86)) *out*))
-                )
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nw x86 (x86-run (gc-clk-otherwise-in) x86))
                   (nw x86 x86)))
   :hints (("Goal"
@@ -8359,16 +7686,11 @@
 (defthmd effects-other-char-encountered-state-in-variables-nw-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86)) *out*))
-                )
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nw (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (nw x86 xxx)))
   :hints (("Goal" :in-theory
@@ -8383,16 +7705,11 @@
 (defthmd effects-other-char-encountered-state-in-variables-nl
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86)) *out*))
-                )
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nl x86 (x86-run (gc-clk-otherwise-in) x86))
                   (nl x86 x86)))
   :hints (("Goal"
@@ -8540,16 +7857,11 @@
 (defthmd effects-other-char-encountered-state-in-variables-nl-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86)) *out*))
-                )
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nl (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (nl x86 xxx)))
   :hints (("Goal" :in-theory
@@ -8570,315 +7882,313 @@
 ;; Loop Effects:
 ;;**********************************************************************
 
-(encapsulate ()
+(encapsulate
+ ()
 
-(local
- (include-book "std/lists/nthcdr" :dir :system))
+ (local (include-book "std/lists/nthcdr" :dir :system))
 
-(defun loop-effects-hint (word-state offset str-bytes x86)
-  (declare (xargs :stobjs (x86)
-                  :measure (len (nthcdr offset str-bytes))
-                  :verify-guards nil))
+ (defun loop-effects-hint (word-state offset str-bytes x86)
+   (declare (xargs :stobjs (x86)
+                   :measure (len (nthcdr offset str-bytes))
+                   :verify-guards nil))
 
-  (if (and (eof-terminatedp str-bytes)
-           (< offset (len str-bytes))
-           (natp offset))
+   (if (and (eof-terminatedp str-bytes)
+            (< offset (len str-bytes))
+            (natp offset))
 
-      (let ((char (get-char offset str-bytes)))
+       (let ((char (get-char offset str-bytes)))
 
-        (if (equal char #.*eof*)
+         (if (equal char #.*eof*)
 
-            (let ((x86 (x86-run (gc-clk-eof) x86)))
-              x86)
+             (let ((x86 (x86-run (gc-clk-eof) x86)))
+               x86)
 
-          (b* (((mv word-state x86)
-                (case char
-                  (#.*newline*
-                   (b* ((x86 (x86-run (gc-clk-newline) x86)))
-                       (mv 0 x86)))
-                  (#.*space*
-                   (b* ((x86 (x86-run (gc-clk-space) x86)))
-                       (mv 0 x86)))
-                  (#.*tab*
-                   (b* ((x86 (x86-run (gc-clk-tab) x86)))
-                       (mv 0 x86)))
-                  (t
-                   (if (equal word-state #.*out*)
-                       (b* ((x86 (x86-run (gc-clk-otherwise-out) x86)))
-                           (mv 1 x86))
-                     (b* ((x86 (x86-run (gc-clk-otherwise-in) x86)))
-                         (mv word-state x86)))))))
+           (b* (((mv word-state x86)
+                 (case char
+                   (#.*newline*
+                    (b* ((x86 (x86-run (gc-clk-newline) x86)))
+                        (mv 0 x86)))
+                   (#.*space*
+                    (b* ((x86 (x86-run (gc-clk-space) x86)))
+                        (mv 0 x86)))
+                   (#.*tab*
+                    (b* ((x86 (x86-run (gc-clk-tab) x86)))
+                        (mv 0 x86)))
+                   (t
+                    (if (equal word-state #.*out*)
+                        (b* ((x86 (x86-run (gc-clk-otherwise-out) x86)))
+                            (mv 1 x86))
+                      (b* ((x86 (x86-run (gc-clk-otherwise-in) x86)))
+                          (mv word-state x86)))))))
 
-              (loop-effects-hint word-state (1+ offset) str-bytes x86))))
+               (loop-effects-hint word-state (1+ offset) str-bytes x86))))
 
-    x86))
+     x86))
 
-) ;; End of encapsulate
+ ) ;; End of encapsulate
 
-(encapsulate ()
+(encapsulate
+ ()
 
-(local
- (include-book "std/lists/nthcdr" :dir :system))
+ (local (include-book "std/lists/nthcdr" :dir :system))
 
-(local
- (include-book "std/lists/take" :dir :system))
+ (local (include-book "std/lists/take" :dir :system))
 
-(local
- (include-book "std/lists/last" :dir :system))
+ (local (include-book "std/lists/last" :dir :system))
 
-(local
- (defthm |Subgoal *1/4.5|
-   (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
-                 (< OFFSET (LEN STR-BYTES))
-                 (NATP OFFSET)
-                 (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                        10)
-                 (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                           STR-BYTES
-                                           (X86-RUN (GC-CLK-NEWLINE) X86))
-                        (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
-                                 (X86-RUN (GC-CLK-NEWLINE) X86))))
-            (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                      STR-BYTES
-                                      (X86-RUN (GC-CLK-NEWLINE) X86))
-                   (X86-RUN (BINARY-CLK+ (GC-CLK-NEWLINE)
-                                         (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
-                            X86)))
-   :hints (("Goal" :in-theory (e/d* (GC-CLK-NEWLINE
-                                    (GC-CLK-NEWLINE)
-                                    GC-CLK-NO-EOF
-                                    (GC-CLK-NO-EOF)
-                                    GC-CLK
-                                    (GC-CLK)))))))
+ (local
+  (defthm |Subgoal *1/4.5|
+    (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
+                  (< OFFSET (LEN STR-BYTES))
+                  (NATP OFFSET)
+                  (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                         10)
+                  (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                            STR-BYTES
+                                            (X86-RUN (GC-CLK-NEWLINE) X86))
+                         (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
+                                  (X86-RUN (GC-CLK-NEWLINE) X86))))
+             (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                       STR-BYTES
+                                       (X86-RUN (GC-CLK-NEWLINE) X86))
+                    (X86-RUN (BINARY-CLK+ (GC-CLK-NEWLINE)
+                                          (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
+                             X86)))
+    :hints (("Goal" :in-theory (e/d* (GC-CLK-NEWLINE
+                                      (GC-CLK-NEWLINE)
+                                      GC-CLK-NO-EOF
+                                      (GC-CLK-NO-EOF)
+                                      GC-CLK
+                                      (GC-CLK)))))))
 
-(local
- (defthm |Subgoal *1/4.4|
-   (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
-                 (< OFFSET (LEN STR-BYTES))
-                 (NATP OFFSET)
-                 (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                             35))
-                 (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                             10))
-                 (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                             32))
-                 (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                             9))
-                 (NOT (EQUAL WORD-STATE 0))
-                 (EQUAL (LOOP-EFFECTS-HINT WORD-STATE (+ 1 OFFSET)
-                                           STR-BYTES
-                                           (X86-RUN (GC-CLK-OTHERWISE-IN) X86))
-                        (X86-RUN (LOOP-CLK WORD-STATE (+ 1 OFFSET)
-                                           STR-BYTES)
-                                 (X86-RUN (GC-CLK-OTHERWISE-IN) X86))))
-            (EQUAL (LOOP-EFFECTS-HINT WORD-STATE (+ 1 OFFSET)
-                                      STR-BYTES
-                                      (X86-RUN (GC-CLK-OTHERWISE-IN) X86))
-                   (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-IN)
-                                         (LOOP-CLK WORD-STATE (+ 1 OFFSET)
-                                                   STR-BYTES))
-                            X86)))
-   :hints (("Goal" :in-theory (e/d* (GC-CLK-OTHERWISE-IN
-                                    (GC-CLK-OTHERWISE-IN)
-                                    GC-CLK-NO-EOF
-                                    (GC-CLK-NO-EOF)
-                                    GC-CLK
-                                    (GC-CLK)))))))
+ (local
+  (defthm |Subgoal *1/4.4|
+    (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
+                  (< OFFSET (LEN STR-BYTES))
+                  (NATP OFFSET)
+                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                              35))
+                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                              10))
+                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                              32))
+                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                              9))
+                  (NOT (EQUAL WORD-STATE 0))
+                  (EQUAL (LOOP-EFFECTS-HINT WORD-STATE (+ 1 OFFSET)
+                                            STR-BYTES
+                                            (X86-RUN (GC-CLK-OTHERWISE-IN) X86))
+                         (X86-RUN (LOOP-CLK WORD-STATE (+ 1 OFFSET)
+                                            STR-BYTES)
+                                  (X86-RUN (GC-CLK-OTHERWISE-IN) X86))))
+             (EQUAL (LOOP-EFFECTS-HINT WORD-STATE (+ 1 OFFSET)
+                                       STR-BYTES
+                                       (X86-RUN (GC-CLK-OTHERWISE-IN) X86))
+                    (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-IN)
+                                          (LOOP-CLK WORD-STATE (+ 1 OFFSET)
+                                                    STR-BYTES))
+                             X86)))
+    :hints (("Goal" :in-theory (e/d* (GC-CLK-OTHERWISE-IN
+                                      (GC-CLK-OTHERWISE-IN)
+                                      GC-CLK-NO-EOF
+                                      (GC-CLK-NO-EOF)
+                                      GC-CLK
+                                      (GC-CLK)))))))
 
-(local
- (defthm |Subgoal *1/4.3'|
-   (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
-                 (< OFFSET (LEN STR-BYTES))
-                 (NATP OFFSET)
-                 (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                             35))
-                 (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                             10))
-                 (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                             32))
-                 (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                             9))
-                 (EQUAL (LOOP-EFFECTS-HINT 1 (+ 1 OFFSET)
-                                           STR-BYTES
-                                           (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))
-                        (X86-RUN (LOOP-CLK 1 (+ 1 OFFSET) STR-BYTES)
-                                 (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))))
-            (EQUAL (LOOP-EFFECTS-HINT 1 (+ 1 OFFSET)
-                                      STR-BYTES
-                                      (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))
-                   (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-OUT)
-                                         (LOOP-CLK 1 (+ 1 OFFSET) STR-BYTES))
-                            X86)))
-   :hints (("Goal" :in-theory (e/d* (GC-CLK-OTHERWISE-OUT
-                                    (GC-CLK-OTHERWISE-OUT)
-                                    GC-CLK-NO-EOF
-                                    (GC-CLK-NO-EOF)
-                                    GC-CLK
-                                    (GC-CLK)))))))
+ (local
+  (defthm |Subgoal *1/4.3'|
+    (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
+                  (< OFFSET (LEN STR-BYTES))
+                  (NATP OFFSET)
+                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                              35))
+                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                              10))
+                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                              32))
+                  (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                              9))
+                  (EQUAL (LOOP-EFFECTS-HINT 1 (+ 1 OFFSET)
+                                            STR-BYTES
+                                            (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))
+                         (X86-RUN (LOOP-CLK 1 (+ 1 OFFSET) STR-BYTES)
+                                  (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))))
+             (EQUAL (LOOP-EFFECTS-HINT 1 (+ 1 OFFSET)
+                                       STR-BYTES
+                                       (X86-RUN (GC-CLK-OTHERWISE-OUT) X86))
+                    (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-OUT)
+                                          (LOOP-CLK 1 (+ 1 OFFSET) STR-BYTES))
+                             X86)))
+    :hints (("Goal" :in-theory (e/d* (GC-CLK-OTHERWISE-OUT
+                                      (GC-CLK-OTHERWISE-OUT)
+                                      GC-CLK-NO-EOF
+                                      (GC-CLK-NO-EOF)
+                                      GC-CLK
+                                      (GC-CLK)))))))
 
-(local
- (defthm |Subgoal *1/4.2|
-   (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
-                 (< OFFSET (LEN STR-BYTES))
-                 (NATP OFFSET)
-                 (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                        9)
-                 (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                           STR-BYTES (X86-RUN (GC-CLK-TAB) X86))
-                        (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
-                                 (X86-RUN (GC-CLK-TAB) X86))))
-            (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                      STR-BYTES (X86-RUN (GC-CLK-TAB) X86))
-                   (X86-RUN (BINARY-CLK+ (GC-CLK-TAB)
-                                         (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
-                            X86)))
-   :hints (("Goal" :in-theory (e/d* (GC-CLK-TAB
-                                    (GC-CLK-TAB)
-                                    GC-CLK-NO-EOF
-                                    (GC-CLK-NO-EOF)
-                                    GC-CLK
-                                    (GC-CLK)))))))
+ (local
+  (defthm |Subgoal *1/4.2|
+    (IMPLIES (AND (EOF-TERMINATEDP STR-BYTES)
+                  (< OFFSET (LEN STR-BYTES))
+                  (NATP OFFSET)
+                  (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                         9)
+                  (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                            STR-BYTES (X86-RUN (GC-CLK-TAB) X86))
+                         (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
+                                  (X86-RUN (GC-CLK-TAB) X86))))
+             (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                       STR-BYTES (X86-RUN (GC-CLK-TAB) X86))
+                    (X86-RUN (BINARY-CLK+ (GC-CLK-TAB)
+                                          (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
+                             X86)))
+    :hints (("Goal" :in-theory (e/d* (GC-CLK-TAB
+                                      (GC-CLK-TAB)
+                                      GC-CLK-NO-EOF
+                                      (GC-CLK-NO-EOF)
+                                      GC-CLK
+                                      (GC-CLK)))))))
 
-(local
- (defthm |Subgoal *1/4''|
-   (IMPLIES
-    (AND (EOF-TERMINATEDP STR-BYTES)
-         (< OFFSET (LEN STR-BYTES))
-         (NATP OFFSET)
-         (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                32)
-         (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                                   STR-BYTES (X86-RUN (GC-CLK-SPACE) X86))
-                (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
-                         (X86-RUN (GC-CLK-SPACE) X86))))
-    (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
-                              STR-BYTES (X86-RUN (GC-CLK-SPACE) X86))
-           (X86-RUN (BINARY-CLK+ (GC-CLK-SPACE)
-                                 (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
-                    X86)))
-   :hints (("Goal" :in-theory (e/d* (GC-CLK-SPACE
-                                    (GC-CLK-SPACE)
-                                    GC-CLK-NO-EOF
-                                    (GC-CLK-NO-EOF)
-                                    GC-CLK
-                                    (GC-CLK)))))))
+ (local
+  (defthm |Subgoal *1/4''|
+    (IMPLIES
+     (AND (EOF-TERMINATEDP STR-BYTES)
+          (< OFFSET (LEN STR-BYTES))
+          (NATP OFFSET)
+          (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                 32)
+          (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                                    STR-BYTES (X86-RUN (GC-CLK-SPACE) X86))
+                 (X86-RUN (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES)
+                          (X86-RUN (GC-CLK-SPACE) X86))))
+     (EQUAL (LOOP-EFFECTS-HINT 0 (+ 1 OFFSET)
+                               STR-BYTES (X86-RUN (GC-CLK-SPACE) X86))
+            (X86-RUN (BINARY-CLK+ (GC-CLK-SPACE)
+                                  (LOOP-CLK 0 (+ 1 OFFSET) STR-BYTES))
+                     X86)))
+    :hints (("Goal" :in-theory (e/d* (GC-CLK-SPACE
+                                      (GC-CLK-SPACE)
+                                      GC-CLK-NO-EOF
+                                      (GC-CLK-NO-EOF)
+                                      GC-CLK
+                                      (GC-CLK)))))))
 
-(local
- (defthm |Subgoal *1/2.5''|
-   (IMPLIES
-    (AND
-     (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-     (EOF-TERMINATEDP STR-BYTES)
-     (< OFFSET (LEN STR-BYTES))
-     (NATP OFFSET)
-     (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                 35))
-     (<= (LEN STR-BYTES) (LEN STR-BYTES))
-     (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                 35))
-     (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                 10))
-     (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+ (local
+  (defthm |Subgoal *1/2.5''|
+    (IMPLIES
+     (AND
+      (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+      (EOF-TERMINATEDP STR-BYTES)
+      (< OFFSET (LEN STR-BYTES))
+      (NATP OFFSET)
+      (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                  35))
+      (<= (LEN STR-BYTES) (LEN STR-BYTES))
+      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                  35))
+      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                  10))
+      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                  32))
+      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                  9)))
+     (EQUAL (X86-RUN (GC-CLK-OTHERWISE-OUT) X86)
+            (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-OUT) 0)
+                     X86)))
+    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                     ())))))
+
+
+ (local
+  (defthm |Subgoal *1/2.4''|
+    (IMPLIES
+     (AND
+      (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+      (EOF-TERMINATEDP STR-BYTES)
+      (< OFFSET (LEN STR-BYTES))
+      (NATP OFFSET)
+      (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                  35))
+      (<= (LEN STR-BYTES) (LEN STR-BYTES))
+      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                  35))
+      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                  10))
+      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                  32))
+      (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+                  9))
+      (NOT (EQUAL WORD-STATE 0)))
+     (EQUAL (X86-RUN (GC-CLK-OTHERWISE-IN) X86)
+            (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-IN) 0)
+                     X86)))
+    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                     ())))))
+
+ (local
+  (defthm |Subgoal *1/2.3''|
+    (IMPLIES
+     (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+          (EOF-TERMINATEDP STR-BYTES)
+          (< OFFSET (LEN STR-BYTES))
+          (NATP OFFSET)
+          (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                      35))
+          (<= (LEN STR-BYTES) (LEN STR-BYTES))
+          (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
                  32))
-     (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                 9)))
-    (EQUAL (X86-RUN (GC-CLK-OTHERWISE-OUT) X86)
-           (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-OUT) 0)
-                    X86)))
-   :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                   ())))))
+     (EQUAL (X86-RUN (GC-CLK-SPACE) X86)
+            (X86-RUN (BINARY-CLK+ (GC-CLK-SPACE) 0)
+                     X86)))
+    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                     ())))))
 
-
-(local
- (defthm |Subgoal *1/2.4''|
-   (IMPLIES
-    (AND
-     (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-     (EOF-TERMINATEDP STR-BYTES)
-     (< OFFSET (LEN STR-BYTES))
-     (NATP OFFSET)
-     (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                 35))
-     (<= (LEN STR-BYTES) (LEN STR-BYTES))
-     (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                 35))
-     (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+ (local
+  (defthm |Subgoal *1/2.2''|
+    (IMPLIES
+     (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+          (EOF-TERMINATEDP STR-BYTES)
+          (< OFFSET (LEN STR-BYTES))
+          (NATP OFFSET)
+          (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                      35))
+          (<= (LEN STR-BYTES) (LEN STR-BYTES))
+          (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
                  10))
-     (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                 32))
-     (NOT (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
+     (EQUAL (X86-RUN (GC-CLK-NEWLINE) X86)
+            (X86-RUN (BINARY-CLK+ (GC-CLK-NEWLINE) 0)
+                     X86)))
+    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                     ())))))
+
+ (local
+  (defthm |Subgoal *1/2.1''|
+    (IMPLIES
+     (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
+          (EOF-TERMINATEDP STR-BYTES)
+          (< OFFSET (LEN STR-BYTES))
+          (NATP OFFSET)
+          (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
+                      35))
+          (<= (LEN STR-BYTES) (LEN STR-BYTES))
+          (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
                  9))
-     (NOT (EQUAL WORD-STATE 0)))
-    (EQUAL (X86-RUN (GC-CLK-OTHERWISE-IN) X86)
-           (X86-RUN (BINARY-CLK+ (GC-CLK-OTHERWISE-IN) 0)
-                    X86)))
-   :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                   ())))))
+     (EQUAL (X86-RUN (GC-CLK-TAB) X86)
+            (X86-RUN (BINARY-CLK+ (GC-CLK-TAB) 0)
+                     X86)))
+    :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
+                                     ())))))
 
-(local
- (defthm |Subgoal *1/2.3''|
-   (IMPLIES
-    (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-         (EOF-TERMINATEDP STR-BYTES)
-         (< OFFSET (LEN STR-BYTES))
-         (NATP OFFSET)
-         (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                     35))
-         (<= (LEN STR-BYTES) (LEN STR-BYTES))
-         (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                32))
-    (EQUAL (X86-RUN (GC-CLK-SPACE) X86)
-           (X86-RUN (BINARY-CLK+ (GC-CLK-SPACE) 0)
-                    X86)))
-   :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                   ())))))
+ (defthm loop-effects-hint-and-loop-clk
+   (implies (and (eof-terminatedp str-bytes)
+                 (< offset (len str-bytes))
+                 (natp offset))
+            (equal (loop-effects-hint word-state offset str-bytes x86)
+                   (x86-run (loop-clk word-state offset str-bytes)
+                            x86)))
+   :hints (("Goal" :in-theory (e/d* (loop-clk) ()))))
 
-(local
- (defthm |Subgoal *1/2.2''|
-   (IMPLIES
-    (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-         (EOF-TERMINATEDP STR-BYTES)
-         (< OFFSET (LEN STR-BYTES))
-         (NATP OFFSET)
-         (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                     35))
-         (<= (LEN STR-BYTES) (LEN STR-BYTES))
-         (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                10))
-    (EQUAL (X86-RUN (GC-CLK-NEWLINE) X86)
-           (X86-RUN (BINARY-CLK+ (GC-CLK-NEWLINE) 0)
-                    X86)))
-   :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                   ())))))
-
-(local
- (defthm |Subgoal *1/2.1''|
-   (IMPLIES
-    (AND (EQUAL (LEN STR-BYTES) (+ 1 OFFSET))
-         (EOF-TERMINATEDP STR-BYTES)
-         (< OFFSET (LEN STR-BYTES))
-         (NATP OFFSET)
-         (NOT (EQUAL (CAR (GRAB-BYTES (LIST (NTH OFFSET STR-BYTES))))
-                     35))
-         (<= (LEN STR-BYTES) (LEN STR-BYTES))
-         (EQUAL (CAR (GRAB-BYTES (ACL2::LIST-FIX (NTHCDR OFFSET STR-BYTES))))
-                9))
-    (EQUAL (X86-RUN (GC-CLK-TAB) X86)
-           (X86-RUN (BINARY-CLK+ (GC-CLK-TAB) 0)
-                    X86)))
-   :hints (("Goal" :in-theory (e/d* (BINARY-CLK+)
-                                   ())))))
-
-(defthm loop-effects-hint-and-loop-clk
-  (implies (and (eof-terminatedp str-bytes)
-                (< offset (len str-bytes))
-                (natp offset))
-           (equal (loop-effects-hint word-state offset str-bytes x86)
-                  (x86-run (loop-clk word-state offset str-bytes)
-                           x86)))
-  :hints (("Goal" :in-theory (e/d* (loop-clk) ()))))
-
-) ;; End of encapsulate
+ ) ;; End of encapsulate
 
 (defthm effects-loop
   ;; Begins at (call GC)
@@ -8971,8 +8281,7 @@
 
 (encapsulate ()
 
-(local
- (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
 
 (defun nc-algo (offset str-bytes nc)
   (declare (xargs :measure
@@ -9038,7 +8347,7 @@
 
   '(
     ;; Needed to resolve hyps of the form
-    ;; (equal (word-state x86 ...) (list *out* 0 0 0))
+    ;; (equal (word-state x86 ...) (byte-ify 4 *out*))
     ;; with
     ;; (equal (combine-bytes (word-state x86 ...)) *out*)
     dumb-word-state-out
@@ -9135,10 +8444,8 @@
                 (loop-preconditions addr x86)
                 (equal offset (offset x86))
                 (equal str-bytes (input x86))
-                (equal old-word-state
-                       (combine-bytes (word-state x86 x86)))
-                (equal old-nc
-                       (combine-bytes (nc x86 x86))))
+                (equal old-word-state (combine-bytes (word-state x86 x86)))
+                (equal old-nc (combine-bytes (nc x86 x86))))
            (equal (combine-bytes
                    (nc x86
                        (loop-effects-hint old-word-state offset str-bytes x86)))
@@ -9159,10 +8466,8 @@
                 (loop-preconditions addr x86)
                 (equal offset (offset x86))
                 (equal str-bytes (input x86))
-                (equal old-word-state
-                       (combine-bytes (word-state x86 x86)))
-                (equal old-nl
-                       (combine-bytes (nl x86 x86))))
+                (equal old-word-state (combine-bytes (word-state x86 x86)))
+                (equal old-nl (combine-bytes (nl x86 x86))))
            (equal (combine-bytes
                    (nl x86
                        (loop-effects-hint old-word-state offset str-bytes x86)))
@@ -9177,46 +8482,46 @@
                          loop-effects-hint)
                        (theory 'minimal-theory)))))
 
-(encapsulate ()
+(encapsulate
+ ()
 
-(local
- (include-book "std/lists/nthcdr" :dir :system))
+ (local (include-book "std/lists/nthcdr" :dir :system))
 
-(defun-nx nw-hint (x86 word-state offset str-bytes nw)
-  (declare (xargs :measure (len (nthcdr offset str-bytes))))
+ (defun-nx nw-hint (x86 word-state offset str-bytes nw)
+   (declare (xargs :measure (len (nthcdr offset str-bytes))))
 
-  (if (and (eof-terminatedp str-bytes)
-           (< offset (len str-bytes))
-           (natp offset))
+   (if (and (eof-terminatedp str-bytes)
+            (< offset (len str-bytes))
+            (natp offset))
 
-      (let ((char (get-char offset str-bytes)))
+       (let ((char (get-char offset str-bytes)))
 
-        (if (equal char #.*eof*)
+         (if (equal char #.*eof*)
 
-            (let ((x86 (x86-run (gc-clk-eof) x86)))
-              (mv nw word-state x86))
+             (let ((x86 (x86-run (gc-clk-eof) x86)))
+               (mv nw word-state x86))
 
-          (b* (((mv word-state x86 nw)
-                (if (equal char *newline*)
-                    (b* ((x86 (x86-run (gc-clk-newline) x86)))
-                        (mv 0 x86 nw))
-                  (if (equal char *space*)
-                      (b* ((x86 (x86-run (gc-clk-space) x86)))
-                          (mv 0 x86 nw))
-                    (if (equal char *tab*)
-                        (b* ((x86 (x86-run (gc-clk-tab) x86)))
-                            (mv 0 x86 nw))
-                      (if (equal word-state #.*out*)
-                          (b* ((x86 (x86-run (gc-clk-otherwise-out) x86)))
-                              (mv 1 x86 (get-bits 0 31 (1+ nw))))
-                        (b* ((x86 (x86-run (gc-clk-otherwise-in) x86)))
-                            (mv word-state x86 nw))))))))
+           (b* (((mv word-state x86 nw)
+                 (if (equal char *newline*)
+                     (b* ((x86 (x86-run (gc-clk-newline) x86)))
+                         (mv 0 x86 nw))
+                   (if (equal char *space*)
+                       (b* ((x86 (x86-run (gc-clk-space) x86)))
+                           (mv 0 x86 nw))
+                     (if (equal char *tab*)
+                         (b* ((x86 (x86-run (gc-clk-tab) x86)))
+                             (mv 0 x86 nw))
+                       (if (equal word-state #.*out*)
+                           (b* ((x86 (x86-run (gc-clk-otherwise-out) x86)))
+                               (mv 1 x86 (get-bits 0 31 (1+ nw))))
+                         (b* ((x86 (x86-run (gc-clk-otherwise-in) x86)))
+                             (mv word-state x86 nw))))))))
 
-              (nw-hint x86 word-state (1+ offset) str-bytes nw))))
+               (nw-hint x86 word-state (1+ offset) str-bytes nw))))
 
-    (mv nw word-state x86)))
+     (mv nw word-state x86)))
 
-) ;; End of encapsulate
+ ) ;; End of encapsulate
 
 (defthm effects-loop-nw
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -9433,130 +8738,130 @@
                          effects-wc-2)
                        (theory 'minimal-theory)))))
 
-(encapsulate ()
+(encapsulate
+ ()
 
-(local
- (include-book "arithmetic-5/top" :dir :system))
+ (local (include-book "arithmetic-5/top" :dir :system))
 
-(defthm wc-effects-nc
-  (implies (and (bind-free '((addr . addr)) (addr))
-                (preconditions addr x86)
-                (equal offset (offset x86))
-                (equal str-bytes (input x86)))
-           (equal (combine-bytes
-                   (program-nc
-                    x86
-                    (loop-effects-hint 0 offset str-bytes
-                                       (x86-run (gc-clk-main-before-call) x86))))
-                  (nc-algo offset str-bytes 0)))
-  :hints (("Goal"
-           :in-theory (union-theories
-                       '(rgfi-is-i64p
-                         combine-bytes
-                         (logior)
-                         (ash)
-                         main-and-gc-composition-rules
-                         nc
-                         program-nc
-                         word-state
-                         ACL2::|(+ c (+ d x))|
-                         effects-to-gc-variables-state
-                         effects-to-gc-variables-nc
-                         x86p-effects-to-gc
-                         (len)
-                         preconditions-fwd-chaining-essentials
-                         effects-to-gc-input-projection
-                         effects-to-gc-offset-projection
-                         effects-to-gc-programmer-level-mode-projection
-                         loop-preconditions-effects-to-gc)
-                       (theory 'minimal-theory))
-           :use ((:instance effects-loop-nc
-                            (x86 (x86-run (gc-clk-main-before-call) x86))
-                            (old-word-state 0)
-                            (old-nc 0))
-                 (:instance effects-to-gc-variables-nc)
-                 (:instance effects-to-gc-variables-state)))))
+ (defthm wc-effects-nc
+   (implies (and (bind-free '((addr . addr)) (addr))
+                 (preconditions addr x86)
+                 (equal offset (offset x86))
+                 (equal str-bytes (input x86)))
+            (equal (combine-bytes
+                    (program-nc
+                     x86
+                     (loop-effects-hint 0 offset str-bytes
+                                        (x86-run (gc-clk-main-before-call) x86))))
+                   (nc-algo offset str-bytes 0)))
+   :hints (("Goal"
+            :in-theory (union-theories
+                        '(rgfi-is-i64p
+                          combine-bytes
+                          (logior)
+                          (ash)
+                          main-and-gc-composition-rules
+                          nc
+                          program-nc
+                          word-state
+                          ACL2::|(+ c (+ d x))|
+                          effects-to-gc-variables-state
+                          effects-to-gc-variables-nc
+                          x86p-effects-to-gc
+                          (len)
+                          preconditions-fwd-chaining-essentials
+                          effects-to-gc-input-projection
+                          effects-to-gc-offset-projection
+                          effects-to-gc-programmer-level-mode-projection
+                          loop-preconditions-effects-to-gc)
+                        (theory 'minimal-theory))
+            :use ((:instance effects-loop-nc
+                             (x86 (x86-run (gc-clk-main-before-call) x86))
+                             (old-word-state 0)
+                             (old-nc 0))
+                  (:instance effects-to-gc-variables-nc)
+                  (:instance effects-to-gc-variables-state)))))
 
-(defthm wc-effects-nw
-  (implies (and (bind-free '((addr . addr)) (addr))
-                (preconditions addr x86)
-                (equal offset (offset x86))
-                (equal str-bytes (input x86)))
-           (equal (combine-bytes
-                   (program-nw
-                    x86
-                    (loop-effects-hint 0 offset str-bytes
-                                       (x86-run (gc-clk-main-before-call) x86))))
-                  (nw-algo offset str-bytes 0 0)))
-  :hints (("Goal"
-           :in-theory (union-theories
-                       '(rgfi-is-i64p
-                         combine-bytes
-                         (logior)
-                         (ash)
-                         main-and-gc-composition-rules
-                         nw
-                         program-nw
-                         word-state
-                         ACL2::|(+ c (+ d x))|
-                         effects-to-gc-variables-state
-                         effects-to-gc-variables-nc
-                         x86p-effects-to-gc
-                         (len)
-                         preconditions-fwd-chaining-essentials
-                         effects-to-gc-input-projection
-                         effects-to-gc-offset-projection
-                         effects-to-gc-programmer-level-mode-projection
-                         loop-preconditions-effects-to-gc)
-                       (theory 'minimal-theory))
-           :use ((:instance effects-loop-nw
-                            (x86 (x86-run (gc-clk-main-before-call) x86))
-                            (old-word-state 0)
-                            (old-nw 0))
-                 (:instance effects-to-gc-variables-state)
-                 (:instance effects-to-gc-variables-nw)))))
+ (defthm wc-effects-nw
+   (implies (and (bind-free '((addr . addr)) (addr))
+                 (preconditions addr x86)
+                 (equal offset (offset x86))
+                 (equal str-bytes (input x86)))
+            (equal (combine-bytes
+                    (program-nw
+                     x86
+                     (loop-effects-hint 0 offset str-bytes
+                                        (x86-run (gc-clk-main-before-call) x86))))
+                   (nw-algo offset str-bytes 0 0)))
+   :hints (("Goal"
+            :in-theory (union-theories
+                        '(rgfi-is-i64p
+                          combine-bytes
+                          (logior)
+                          (ash)
+                          main-and-gc-composition-rules
+                          nw
+                          program-nw
+                          word-state
+                          ACL2::|(+ c (+ d x))|
+                          effects-to-gc-variables-state
+                          effects-to-gc-variables-nc
+                          x86p-effects-to-gc
+                          (len)
+                          preconditions-fwd-chaining-essentials
+                          effects-to-gc-input-projection
+                          effects-to-gc-offset-projection
+                          effects-to-gc-programmer-level-mode-projection
+                          loop-preconditions-effects-to-gc)
+                        (theory 'minimal-theory))
+            :use ((:instance effects-loop-nw
+                             (x86 (x86-run (gc-clk-main-before-call) x86))
+                             (old-word-state 0)
+                             (old-nw 0))
+                  (:instance effects-to-gc-variables-state)
+                  (:instance effects-to-gc-variables-nw)))))
 
-(defthm wc-effects-nl
-  (implies (and (bind-free '((addr . addr)) (addr))
-                (preconditions addr x86)
-                (equal offset (offset x86))
-                (equal str-bytes (input x86)))
-           (equal (combine-bytes
-                   (program-nl
-                    x86
-                    (loop-effects-hint 0 offset str-bytes
-                                       (x86-run (gc-clk-main-before-call) x86))))
-                  (nl-algo offset str-bytes 0)))
-  :hints (("Goal"
-           :in-theory (union-theories
-                       '(rgfi-is-i64p
-                         combine-bytes
-                         (logior)
-                         (ash)
-                         main-and-gc-composition-rules
-                         nl
-                         program-nl
-                         word-state
-                         ACL2::|(+ c (+ d x))|
-                         effects-to-gc-variables-state
-                         effects-to-gc-variables-nc
-                         x86p-effects-to-gc
-                         (len)
-                         preconditions-fwd-chaining-essentials
-                         effects-to-gc-input-projection
-                         effects-to-gc-offset-projection
-                         effects-to-gc-programmer-level-mode-projection
-                         loop-preconditions-effects-to-gc)
-                       (theory 'minimal-theory))
-           :use ((:instance effects-loop-nl
-                            (x86 (x86-run (gc-clk-main-before-call) x86))
-                            (old-word-state 0)
-                            (old-nl 0))
-                 (:instance effects-to-gc-variables-state)
-                 (:instance effects-to-gc-variables-nl)))))
+ (defthm wc-effects-nl
+   (implies (and (bind-free '((addr . addr)) (addr))
+                 (preconditions addr x86)
+                 (equal offset (offset x86))
+                 (equal str-bytes (input x86)))
+            (equal (combine-bytes
+                    (program-nl
+                     x86
+                     (loop-effects-hint 0 offset str-bytes
+                                        (x86-run (gc-clk-main-before-call) x86))))
+                   (nl-algo offset str-bytes 0)))
+   :hints (("Goal"
+            :in-theory (union-theories
+                        '(rgfi-is-i64p
+                          combine-bytes
+                          (logior)
+                          (ash)
+                          main-and-gc-composition-rules
+                          nl
+                          program-nl
+                          word-state
+                          ACL2::|(+ c (+ d x))|
+                          effects-to-gc-variables-state
+                          effects-to-gc-variables-nc
+                          x86p-effects-to-gc
+                          (len)
+                          preconditions-fwd-chaining-essentials
+                          effects-to-gc-input-projection
+                          effects-to-gc-offset-projection
+                          effects-to-gc-programmer-level-mode-projection
+                          loop-preconditions-effects-to-gc)
+                        (theory 'minimal-theory))
+            :use ((:instance effects-loop-nl
+                             (x86 (x86-run (gc-clk-main-before-call) x86))
+                             (old-word-state 0)
+                             (old-nl 0))
+                  (:instance effects-to-gc-variables-state)
+                  (:instance effects-to-gc-variables-nl)))))
 
 
-) ;; End of encapsulate
+ ) ;; End of encapsulate
 
 ;; **********************************************************************
 
@@ -10709,7 +10014,7 @@
                 (not (equal (get-char (offset x86) (input x86))
                             *tab*))
                 (equal (word-state x86 x86)
-                       (list *out* 0 0 0))
+                       (byte-ify 4 *out*))
 
                 (canonical-address-listp addresses)
                 (disjoint-p
@@ -10953,7 +10258,7 @@
                 (not (equal (get-char (offset x86) (input x86))
                             *tab*))
                 (not (equal (word-state x86 x86)
-                            (list *out* 0 0 0)))
+                            (byte-ify 4 *out*)))
 
                 (canonical-address-listp addresses)
                 (disjoint-p

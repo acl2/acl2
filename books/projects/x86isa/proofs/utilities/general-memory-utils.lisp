@@ -97,16 +97,30 @@
            (equal (loghead n x) 0))
   :hints (("Goal" :in-theory (e/d* (loghead mod) ()))))
 
-(encapsulate
- ()
+(local
+ (encapsulate
+  ()
 
- (local (include-book "arithmetic-3/top" :dir :system))
+  (local (include-book "arithmetic-3/top" :dir :system))
 
- (defthm ash-and-plus
-   (implies (posp n)
-            (equal (+ 8 (ash (+ -1 n) 3))
-                   (ash n 3)))
-   :hints (("Goal" :in-theory (e/d* (ash) ())))))
+  (defthm ash-and-plus
+    (implies (posp n)
+             (equal (+ 8 (ash (+ -1 n) 3))
+                    (ash n 3)))
+    :hints (("Goal" :in-theory (e/d* (ash) ()))))
+
+  (defthm ash-and-minus
+    (implies (posp n)
+             (equal (+ -8 (ash n 3))
+                    (ash (+ -1 n) 3)))
+    :hints (("Goal" :in-theory (e/d* (ash) ()))))
+
+  (defthm ash-n-3-bound
+    (implies (and (not (zp n))
+                  (natp n))
+             (<= 8 (ash n 3)))
+    :hints (("Goal" :in-theory (e/d* (ash) ())))
+    :rule-classes :linear)))
 
 (local
  (defthmd byte-ify-general-acc-helper-thm
@@ -143,6 +157,68 @@
            (equal (combine-bytes (byte-ify n x))
                   (loghead (ash n 3) x)))
   :hints (("Goal" :in-theory (e/d* (byte-ify) ()))))
+
+(local
+ (defthm remove-loghead-from-byte-ify-specific
+   (implies (and (equal m (ash n 3))
+                 (or (equal n 0)
+                     (equal n 1)
+                     (equal n 2)
+                     (equal n 4)
+                     (equal n 8)
+                     (equal n 16)))
+            (equal (byte-ify n (loghead m x))
+                   (byte-ify n x)))
+   :hints (("Goal" :in-theory (e/d* (byte-ify byte-ify-general) ())))))
+
+(local
+ (defthm remove-loghead-from-byte-ify-general
+   (implies (equal m (ash n 3))
+            (equal (byte-ify-general n (loghead m x) acc)
+                   (byte-ify-general n x acc)))
+   :hints (("Goal" :in-theory (e/d* (byte-ify-general
+                                     ihsext-recursive-redefs
+                                     ihsext-inductions)
+                                    ())))))
+
+(defthmd remove-loghead-from-byte-ify
+  ;; We keep this rule disabled because most of the times, removing loghead
+  ;; from within byte-ify isn't really necessary.
+  (implies (equal m (ash n 3))
+           (equal (byte-ify n (loghead m x))
+                  (byte-ify n x)))
+  :hints (("Goal" :in-theory (e/d* (byte-ify) ()))))
+
+(local
+ (defthmd combine-bytes-and-byte-ify-inequality-lemma-specific
+   (implies (and (equal bytes (byte-ify n x))
+                 (or (equal n 0)
+                     (equal n 1)
+                     (equal n 2)
+                     (equal n 4)
+                     (equal n 8)
+                     (equal n 16))
+                 (not (equal (loghead (ash n 3) x) val)))
+            (equal (equal (combine-bytes bytes) val) nil))
+   :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify) ())))))
+
+(local
+ (defthmd combine-bytes-and-byte-ify-general-inequality-lemma
+   (implies (and (equal bytes (byte-ify-general n x nil))
+                 (natp n)
+                 (not (equal (loghead (ash n 3) x) val)))
+            (equal (equal (combine-bytes bytes) val) nil))
+   :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify byte-ify-general) ())))))
+
+(defthmd combine-bytes-and-byte-ify-inequality-lemma
+  ;; This is an expensive rule, so we keep it disabled. As it is, we don't need
+  ;; this rule very often.
+  (implies (and (equal bytes (byte-ify n x))
+                (natp n)
+                (not (equal (loghead (ash n 3) x) val)))
+           (equal (equal (combine-bytes bytes) val) nil))
+  :hints (("Goal" :use ((:instance combine-bytes-and-byte-ify-inequality-lemma-specific)
+                        (:instance combine-bytes-and-byte-ify-general-inequality-lemma)))))
 
 ;; ======================================================================
 
