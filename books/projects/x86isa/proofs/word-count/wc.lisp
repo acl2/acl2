@@ -16,7 +16,7 @@
 
 (set-irrelevant-formals-ok t)
 
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(include-book "centaur/bitops/ihs-extensions" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (in-theory (e/d () (wb-remove-duplicate-writes))))
 
@@ -403,15 +403,6 @@
                 (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)))
   :rule-classes ((:forward-chaining :trigger-terms ((loop-preconditions addr x86)))))
 
-
-;; (defthmd loop-preconditions-weird-rbp-rsp
-;;   ;; IMPORTANT: This is different from what I have in
-;;   ;; loop-preconditions!!!  Why do I even need this?
-;;   (implies (and (bind-free '((addr . addr)) (addr))
-;;                 (loop-preconditions addr x86))
-;;            (equal (xr :rgf *rbp* x86)
-;;                   (+ (xr :rgf *rsp* x86) 32))))
-
 (in-theory (e/d* () (preconditions loop-preconditions)))
 
 ;; ======================================================================
@@ -635,12 +626,6 @@
            (equal (xr :os-info 0 (x86-run (gc-clk-main-before-call) x86))
                   (xr :os-info 0 x86))))
 
-(defthmd effects-to-gc-os-info-projection
-  (implies (and (bind-free '((addr . addr)) (addr))
-                (preconditions addr x86))
-           (equal (xr :os-info 0 (x86-run (gc-clk-main-before-call) x86))
-                  (xr :os-info 0 x86))))
-
 (defthmd effects-to-gc-input-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
@@ -689,7 +674,7 @@
                              (create-canonical-address-list 4 (+ -16 (xr :rgf *rsp* x86)))
                              :r
                              (x86-run (gc-clk-main-before-call) x86)))
-                  (list 0 0 0 0)))
+                  (byte-ify 4 0)))
   :hints (("Goal" :in-theory (e/d* () ()))))
 
 (defthmd effects-to-gc-variables-nc
@@ -699,7 +684,7 @@
                              (create-canonical-address-list 4 (+ -20 (xr :rgf *rsp* x86)))
                              :r
                              (x86-run (gc-clk-main-before-call) x86)))
-                  (list 0 0 0 0))))
+                  (byte-ify 4 0))))
 
 (defthmd effects-to-gc-variables-nw
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -708,7 +693,7 @@
                              (create-canonical-address-list 4 (+ -24 (xr :rgf *rsp* x86)))
                              :r
                              (x86-run (gc-clk-main-before-call) x86)))
-                  (list 0 0 0 0))))
+                  (byte-ify 4 0))))
 
 (defthmd effects-to-gc-variables-nl
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -717,7 +702,7 @@
                              (create-canonical-address-list 4 (+ -28 (xr :rgf *rsp* x86)))
                              :r
                              (x86-run (gc-clk-main-before-call) x86)))
-                  (list 0 0 0 0))))
+                  (byte-ify 4 0))))
 
 ;;======================================================================
 ;; --------------------------------------------------------------------
@@ -901,49 +886,9 @@
                                     (take nthcdr acl2::take-of-zero acl2::take-of-1))))
    :rule-classes (:linear :rewrite))
 
- ;; (defthm environment-assumptions-2-general
- ;;   (implies (and (file-descriptor-fieldp (read-x86-file-des 0 x86))
- ;;                 (equal obj-offset (cdr (assoc :offset (read-x86-file-des 0 x86))))
- ;;                 (equal obj-name (cdr (assoc :name (read-x86-file-des 0 x86))))
- ;;                 (equal obj-contents-field (read-x86-file-contents obj-name x86))
- ;;                 (file-contents-fieldp obj-contents-field)
- ;;                 (equal obj-contents (cdr (assoc :contents obj-contents-field)))
- ;;                 (equal bytes-of-obj (string-to-bytes obj-contents))
- ;;                 (< obj-offset (len bytes-of-obj))
- ;;                 (integerp small-num)
- ;;                 (integerp big-num)
- ;;                 (<= 256 big-num)
- ;;                 (<= small-num 0))
- ;;            (and
- ;;             (<= small-num (car (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))))
- ;;             (< (car (grab-bytes (take 1 (nthcdr obj-offset bytes-of-obj)))) big-num)))
- ;;   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p)
- ;;                                    (environment-assumptions-2
- ;;                                     take nthcdr))
- ;;            :use ((:instance environment-assumptions-2))))
- ;;   :rule-classes (:linear :rewrite))
-
  ) ;; End of encapsulate
 
 (local (in-theory (e/d* () (acl2::take-of-1 acl2::take-of-zero take nthcdr))))
-
-;; (defthm n08p-grab-bytes
-;;   (implies (env-assumptions x86)
-;;            (unsigned-byte-p
-;;             8
-;;             (car
-;;              (grab-bytes
-;;               (take
-;;                1
-;;                (nthcdr
-;;                 (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
-;;                 (string-to-bytes
-;;                  (cdr
-;;                   (assoc-equal
-;;                    :contents (read-x86-file-contents
-;;                               (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-;;                               x86))))))))))
-;;   :hints (("Goal" :in-theory (e/d* (env-assumptions) ()))))
 
 (encapsulate
  ()
@@ -968,28 +913,6 @@
 ;;**********************************************************************
 ;; Call to GC + GC Procedure
 ;;**********************************************************************
-
-;; (defthm canonical-address-p-of-logext-of-combine-bytes-of-byte-ify-of-loghead
-;;   (implies (canonical-address-p x)
-;;            (canonical-address-p (logext 64 (combine-bytes (byte-ify 8 (loghead 64 x))))))
-;;   :hints (("Goal" :in-theory (e/d* (canonical-address-p)
-;;                                    ()))))
-
-;; (defthm canonical-address-p-of-n+logext-of-combine-bytes-of-byte-ify-of-loghead
-;;   (implies (and (canonical-address-p (+ n x))
-;;                 (canonical-address-p x))
-;;            (canonical-address-p (+ n (logext 64 (combine-bytes (byte-ify 8 (loghead 64 x)))))))
-;;   :hints (("Goal" :in-theory (e/d* (canonical-address-p)
-;;                                    ()))))
-
-;; (defthm member-p-of-logext-of-combine-bytes-of-byte-ify-of-loghead
-;;   (implies (canonical-address-p x)
-;;            (equal (member-p (logext 64 (combine-bytes (byte-ify 8 (loghead 64 x)))) y)
-;;                   (member-p x y)))
-;;   :hints (("Goal" :in-theory (e/d* (member-p
-;;                                     canonical-address-p)
-;;                                    (combine-bytes
-;;                                     byte-ify)))))
 
 (defthm effects-call-gc
   ;;  callq <gc>
@@ -3608,7 +3531,7 @@
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (combine-bytes (nc x86 (x86-run (gc-clk-newline) x86)))
-                  (loghead 32 (+ 1 (loghead 32 (combine-bytes (nc x86 x86)))))))
+                  (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
   :hints (("Goal" :in-theory (e/d*
                               (programmer-level-mode-permissions-dont-matter)
                               (force (force))))))
@@ -3643,7 +3566,7 @@
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (combine-bytes (nl x86 (x86-run (gc-clk-newline) x86)))
-                  (loghead 32 (+ 1 (loghead 32 (combine-bytes (nl x86 x86)))))))
+                  (loghead 32 (+ 1 (combine-bytes (nl x86 x86))))))
   :hints (("Goal" :in-theory (e/d*
                               (programmer-level-mode-permissions-dont-matter)
                               (force (force))))))
@@ -4409,7 +4332,7 @@
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *space*))
            (equal (combine-bytes (nc x86 (x86-run (gc-clk-space) x86)))
-                  (loghead 32 (+ 1 (loghead 32 (combine-bytes (nc x86 x86)))))))
+                  (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
   :hints (("Goal" :in-theory (e/d*
                               (programmer-level-mode-permissions-dont-matter)
                               (force (force))))))
@@ -5307,7 +5230,7 @@
   (implies (and (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *tab*))
            (equal (combine-bytes (nc x86 (x86-run (gc-clk-tab) x86)))
-                  (loghead 32 (+ 1 (loghead 32 (combine-bytes (nc x86 x86)))))))
+                  (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
   :hints (("Goal" :in-theory (e/d*
                               (programmer-level-mode-permissions-dont-matter)
                               (force (force))))))
@@ -5418,6 +5341,7 @@
   ;; to think how to do that... And oh God, this makes things so slow. :-(
   (rflags (x86-run 13 x86)))
 
+
 (defthmd effects-other-char-encountered-state-out-limited
   ;; 116.67 s!!!
 
@@ -5488,8 +5412,7 @@
         (equal (combine-bytes
                 (mv-nth 1 (rb (create-canonical-address-list 4 (+ -8 (xr :rgf *rbp* x86-new))) :x x86-new)))
                *out*)
-
-        ;; New! Character read in is a byte.
+        ;; Character read in is a byte.
         (unsigned-byte-p
          8
          (combine-bytes
@@ -5597,7 +5520,8 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86-new x86-new) (byte-ify 4 *out*))
+                ;; (equal (word-state x86-new x86-new) (byte-ify 4 *out*))
+                (equal (combine-bytes (word-state x86-new x86-new)) *out*)
                 (equal x86-new (x86-run (gc-clk-no-eof) x86)))
            (equal (x86-run 13 x86-new)
                   (XW
@@ -5681,7 +5605,8 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                ;; (equal (word-state x86 x86) (byte-ify 4 *out*))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (x86-run (gc-clk-otherwise-out) x86)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 (x86-run (gc-clk-no-eof) x86)))
@@ -5719,9 +5644,7 @@
                            (COMBINE-BYTES
                             (MV-NTH
                              1
-                             (RB (CREATE-CANONICAL-ADDRESS-LIST
-                                  4
-                                  (+ 16 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                             (RB (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 16 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
                                  :X (x86-run (gc-clk-no-eof) x86))))))))))
                      (WRITE-USER-RFLAGS
                       (whatever-rflags-are-for-other-char-state-out (x86-run (gc-clk-no-eof) x86))
@@ -5732,8 +5655,12 @@
                          word-state
                          gc-clk-otherwise-out
                          dumb-run-plus-thm
-                         (:forward-chaining
-                          loop-preconditions-fwd-chaining-essentials)
+                         (byte-ify)
+                         remove-loghead-from-byte-ify
+                         combine-bytes-and-byte-ify-inequality-lemma
+                         byte-listp-and-consp-of-take-from-environment-assumptions
+                         combine-bytes-with-byte-ify-4-inequality-lemma
+                         (:forward-chaining loop-preconditions-fwd-chaining-essentials)
                          (:forward-chaining loop-preconditions-forward-chain-addresses-info))
                        (theory 'minimal-theory))
            :use ((:instance effects-other-char-encountered-state-out-1
@@ -5754,7 +5681,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :rgf *rbp* (x86-run (gc-clk-otherwise-out) x86))
                   (xr :rgf *rbp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
@@ -5768,7 +5695,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :rgf *rsp* (x86-run (gc-clk-otherwise-out) x86))
                   (xr :rgf *rsp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
@@ -5782,7 +5709,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (x86p (x86-run (gc-clk-otherwise-out) x86)))
   :hints (("Goal" :in-theory (e/d* (loop-preconditions)
                                    (word-state
@@ -5795,12 +5722,14 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (and (equal (ia32_efer-slice :ia32_efer-sce
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-otherwise-out) x86))) 1)
                 (equal (ia32_efer-slice :ia32_efer-lma
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-otherwise-out) x86))) 1)))
-  :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
+  :hints (("Goal"
+           :in-theory (e/d* () (word-state combine-bytes))
+           :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-out-rip-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5809,10 +5738,8 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86)
-                       (byte-ify 4 *out*)))
-           (equal (xr :rip 0 (x86-run (gc-clk-otherwise-out) x86))
-                  (+ 145 addr)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
+           (equal (xr :rip 0 (x86-run (gc-clk-otherwise-out) x86)) (+ 145 addr)))
   :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
 
 (defthmd effects-other-char-encountered-state-out-ms-projection
@@ -5822,7 +5749,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :ms 0 (x86-run (gc-clk-otherwise-out) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
                                   (word-state
@@ -5836,7 +5763,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :fault 0 (x86-run (gc-clk-otherwise-out) x86)) nil))
   :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
 
@@ -5846,7 +5773,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*))
+                (equal (combine-bytes (word-state x86 x86)) *out*)
                 (equal len-wc (len *wc*)))
            (program-at (create-canonical-address-list len-wc addr)
                        *wc* (x86-run (gc-clk-otherwise-out) x86)))
@@ -5865,7 +5792,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (env-assumptions (x86-run (gc-clk-otherwise-out) x86)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d*
@@ -5885,7 +5812,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-otherwise-out) x86))
                   (xr :programmer-level-mode 0 x86)))
   :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
@@ -5897,7 +5824,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (xr :os-info 0 (x86-run (gc-clk-otherwise-out) x86))
                   (xr :os-info 0 x86)))
   :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
@@ -5908,7 +5835,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (loop-preconditions addr (x86-run (gc-clk-otherwise-out) x86)))
   :hints (("Goal" :in-theory '(effects-other-char-encountered-state-out-rbp-projection
                                effects-other-char-encountered-state-out-rsp-projection
@@ -5933,7 +5860,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (input (x86-run (gc-clk-otherwise-out) x86))
                   (input x86)))
   :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
@@ -5945,7 +5872,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (offset (x86-run (gc-clk-otherwise-out) x86))
                   (+ 1 (offset x86))))
   :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
@@ -5961,7 +5888,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (combine-bytes (word-state x86 (x86-run (gc-clk-otherwise-out) x86)))
                   *in*))
   :hints (("Goal"
@@ -5975,7 +5902,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (word-state (x86-run (gc-clk-otherwise-out) x86) xxx)
                   (word-state x86 xxx)))
   :hints (("Goal" :in-theory
@@ -5990,11 +5917,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (combine-bytes (nc x86 (x86-run (gc-clk-otherwise-out) x86)))
-                  (loghead 32 (+ 1 (loghead 32 (combine-bytes (nc x86 x86)))))))
+                  (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
   :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
-                                   ())
+                                   (force (force)))
            :use ((:instance effects-other-char-encountered-state-out)
                  (:instance loop-preconditions-fwd-chaining-essentials)))))
 
@@ -6005,7 +5932,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (nc (x86-run (gc-clk-otherwise-out) x86) xxx)
                   (nc x86 xxx)))
   :hints (("Goal" :in-theory
@@ -6020,11 +5947,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (combine-bytes (nw x86 (x86-run (gc-clk-otherwise-out) x86)))
-                  (loghead 32 (+ 1 (loghead 32 (combine-bytes (nw x86 x86)))))))
+                  (loghead 32 (+ 1 (combine-bytes (nw x86 x86))))))
   :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
-                                   ())
+                                   (force (force)))
            :use ((:instance effects-other-char-encountered-state-out)
                  (:instance loop-preconditions-fwd-chaining-essentials)))))
 
@@ -6035,7 +5962,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (nw (x86-run (gc-clk-otherwise-out) x86) xxx)
                   (nw x86 xxx)))
   :hints (("Goal" :in-theory
@@ -6050,10 +5977,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (nl x86 (x86-run (gc-clk-otherwise-out) x86))
                   (nl x86 x86)))
-  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter) ())
+  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
+                                   (force (force)))
            :use ((:instance effects-other-char-encountered-state-out)
                  (:instance loop-preconditions-fwd-chaining-essentials)))))
 
@@ -6064,7 +5992,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) (byte-ify 4 *out*)))
+                (equal (combine-bytes (word-state x86 x86)) *out*))
            (equal (nl (x86-run (gc-clk-otherwise-out) x86) xxx)
                   (nl x86 xxx)))
   :hints (("Goal" :in-theory
@@ -6076,80 +6004,10 @@
 ;; Other Char Encountered (State = IN)
 ;;**********************************************************************
 
-(i-am-here)
-
-;; First, some dumb helper theorems:
-
-(encapsulate
- ()
-
- (local (include-book "arithmetic-5/top" :dir :system))
-
- (local
-  (defthm combine-bytes-helper-thm-for-state-in-helper
-    (implies (and (byte-listp bytes)
-                  (equal (len bytes) 4)
-                  (not (equal bytes (list 0 0 0 0))))
-             (equal (equal (combine-bytes bytes) 0)
-                    nil))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (acl2::normalize-factors-gather-exponents))))))
-
- (defthmd combine-bytes-helper-thm-for-state-in
-   (implies (and (not (equal (mv-nth 1
-                                     (rb (list a b c d) :x x86-new))
-                             (byte-ify 4 *out*)))
-                 (canonical-address-listp (list a b c d))
-                 (xr :programmer-level-mode x86-new)
-                 (x86p x86-new))
-            (equal (equal (combine-bytes
-                           (mv-nth 1
-                                   (rb (list a b c d) :x x86-new))) 0)
-                   nil)))
-
- (local
-  (defthm combine-bytes-helper-thm-for-state-in-general-helper
-    (implies (and (equal bytes (list x 0 0 0))
-                  (not (equal x y))
-                  (integerp x))
-             (equal (equal (combine-bytes bytes) y)
-                    nil))
-    :hints (("Goal" :in-theory (e/d* ()
-                                     (acl2::normalize-factors-gather-exponents))))))
-
- (defthmd combine-bytes-helper-thm-for-state-in-general
-   (implies (and (equal (mv-nth 1
-                                (rb (list a b c d) :r x86-new))
-                        (cons x (list 0 0 0)))
-                 (integerp x)
-                 (not (equal x y))
-                 (canonical-address-listp (list a b c d))
-                 (xr :programmer-level-mode x86-new)
-                 (x86p x86-new))
-            (equal (equal (combine-bytes (cons x (list 0 0 0))) y)
-                   nil)))
-
- ) ;; End of encapsulate
-
-(defthmd dumb-rbp-canonical-address-listp
-  (implies (and (x86p x86)
-                (canonical-address-p (xr :rgf *rsp* x86))
-                (equal addr
-                       (- (xr :rip 0 x86) (1- (+ (len *gc*) 95))))
-                (canonical-address-p addr)
-                (canonical-address-p (+ (1- (len *wc*)) addr))
-                (canonical-address-p (+ 32 (xr :rgf *rsp* x86)))
-                (canonical-address-p (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))
-                (canonical-address-p (xr :rgf *rbp* x86))
-                (equal (xr :rgf *rsp* x86)
-                       (- (xr :rgf *rbp* x86) 32)))
-           (canonical-address-listp (list (+ -4 (xr :rgf 5 x86))
-                                          (+ -3 (xr :rgf 5 x86))
-                                          (+ -2 (xr :rgf 5 x86))
-                                          (+ -1 (xr :rgf 5 x86))))))
+(defun-nx whatever-rflags-are-for-other-char-state-in (x86)
+  (rflags (x86-run 11 x86)))
 
 (defthmd effects-other-char-encountered-state-in-limited
-
   ;;  callq <gc>
   ;;
   ;;  addl $0x1,-0x10(%rbp)
@@ -6157,13 +6015,11 @@
 
   (implies
    (and (x86p x86-new)
-        (xr :programmer-level-mode x86-new)
+        (xr :programmer-level-mode 0 x86-new)
         (env-assumptions x86-new)
         (canonical-address-p (xr :rgf *rsp* x86-new))
-
         ;; Points to the "addl $0x1,-0xc(%rbp)" instruction in main
-        (equal addr (- (xr :rip x86-new) (+ 37 (1- (len *gc*)))))
-
+        (equal addr (- (xr :rip 0 x86-new) (+ 37 (1- (len *gc*)))))
         (canonical-address-p addr)
         (canonical-address-p (+ (1- (len *wc*)) addr))
         (canonical-address-p (+ #x20 (xr :rgf *rsp* x86-new)))
@@ -6172,282 +6028,110 @@
         (disjoint-p
          ;; IMPORTANT: Keep the program addresses as the first
          ;; argument.
-         (create-canonical-address-list
-          (len *wc*) addr)
-         (create-canonical-address-list
-          80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new))))
-
-
+         (create-canonical-address-list (len *wc*) addr)
+         (create-canonical-address-list 80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86-new))))
         ;; IMPORTANT: Why doesn't the following hyp work?
         ;; (equal (xr :rgf *rbp* x86-new) (- (+ (xr :rgf *rsp* x86-new) 40) 8))
         (canonical-address-p (xr :rgf *rbp* x86-new))
-        (equal (xr :rgf *rsp* x86-new)
-               (- (xr :rgf *rbp* x86-new) 32))
-        (equal (xr :ms x86-new) nil)
-        (equal (xr :fault x86-new) nil)
+        (equal (xr :rgf *rsp* x86-new) (- (xr :rgf *rbp* x86-new) 32))
+        (equal (xr :ms 0 x86-new) nil)
+        (equal (xr :fault 0 x86-new) nil)
         ;; Enabling the SYSCALL instruction.
         (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
         (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (program-at (create-canonical-address-list
-                     (len *wc*) addr) *wc* x86-new)
+        (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86-new)
 
-        (not (equal (combine-bytes (mv-nth 1
-                                           (rb (list (+ -4 (xr :rgf 5 x86-new))
-                                                     (+ -3 (xr :rgf 5 x86-new))
-                                                     (+ -2 (xr :rgf 5 x86-new))
-                                                     (+ -1 (xr :rgf 5 x86-new)))
-                                               :x x86-new)))
+        (not (equal (combine-bytes
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
                     *eof*))
-        (not (equal (combine-bytes (mv-nth 1
-                                           (rb (list (+ -4 (xr :rgf 5 x86-new))
-                                                     (+ -3 (xr :rgf 5 x86-new))
-                                                     (+ -2 (xr :rgf 5 x86-new))
-                                                     (+ -1 (xr :rgf 5 x86-new)))
-                                               :x x86-new)))
+        (not (equal (combine-bytes
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
                     *newline*))
-        (not (equal (combine-bytes (mv-nth 1
-                                           (rb (list (+ -4 (xr :rgf 5 x86-new))
-                                                     (+ -3 (xr :rgf 5 x86-new))
-                                                     (+ -2 (xr :rgf 5 x86-new))
-                                                     (+ -1 (xr :rgf 5 x86-new)))
-                                               :x x86-new)))
+        (not (equal (combine-bytes
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
                     *space*))
-        (not (equal (combine-bytes (mv-nth 1
-                                           (rb (list (+ -4 (xr :rgf 5 x86-new))
-                                                     (+ -3 (xr :rgf 5 x86-new))
-                                                     (+ -2 (xr :rgf 5 x86-new))
-                                                     (+ -1 (xr :rgf 5 x86-new)))
-                                               :x x86-new)))
+        (not (equal (combine-bytes
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))
                     *tab*))
-        (not (equal (mv-nth 1
-                            (rb (list (+ -8 (xr :rgf *rbp* x86-new))
-                                      (+ -7 (xr :rgf *rbp* x86-new))
-                                      (+ -6 (xr :rgf *rbp* x86-new))
-                                      (+ -5 (xr :rgf *rbp* x86-new)))
-                                :x x86-new))
-                    (byte-ify 4 *out*))))
+        (not (equal (combine-bytes
+                     (mv-nth 1 (rb (create-canonical-address-list 4 (+ -8 (xr :rgf *rbp* x86-new))) :x x86-new)))
+                    *out*))
+        ;; Character read in is a byte.
+        (unsigned-byte-p
+         8
+         (combine-bytes
+          (mv-nth 1 (rb (create-canonical-address-list 4 (+ -4 (xr :rgf *rbp* x86-new))) :x x86-new)))))
    (equal (x86-run 11 x86-new)
-          (!RIP
-           (+ 58 (XR :RIP X86-NEW))
-           (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-            4 8
-            (COMBINE-BYTES (MV-NTH 1
-                                   (RB (LIST (+ -8 (XR :RGF 5 X86-NEW))
-                                             (+ -7 (XR :RGF 5 X86-NEW))
-                                             (+ -6 (XR :RGF 5 X86-NEW))
-                                             (+ -5 (XR :RGF 5 X86-NEW)))
-                                       :X X86-NEW)))
-            (COMBINE-BYTES (MV-NTH 1
-                                   (RB (LIST (+ -8 (XR :RGF 5 X86-NEW))
-                                             (+ -7 (XR :RGF 5 X86-NEW))
-                                             (+ -6 (XR :RGF 5 X86-NEW))
-                                             (+ -5 (XR :RGF 5 X86-NEW)))
-                                       :X X86-NEW)))
-            (COMBINE-BYTES (MV-NTH 1
-                                   (RB (LIST (+ -8 (XR :RGF 5 X86-NEW))
-                                             (+ -7 (XR :RGF 5 X86-NEW))
-                                             (+ -6 (XR :RGF 5 X86-NEW))
-                                             (+ -5 (XR :RGF 5 X86-NEW)))
-                                       :X X86-NEW)))
-            0
-            (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-             4 8
-             (+ -9
-                (COMBINE-BYTES (MV-NTH 1
-                                       (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                 (+ -3 (XR :RGF 5 X86-NEW))
-                                                 (+ -2 (XR :RGF 5 X86-NEW))
-                                                 (+ -1 (XR :RGF 5 X86-NEW)))
-                                           :X X86-NEW))))
-             (GET-BITS 0 31
-                       (+ -9
-                          (COMBINE-BYTES (MV-NTH 1
-                                                 (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                           (+ -3 (XR :RGF 5 X86-NEW))
-                                                           (+ -2 (XR :RGF 5 X86-NEW))
-                                                           (+ -1 (XR :RGF 5 X86-NEW)))
-                                                     :X X86-NEW)))))
-             (COMBINE-BYTES (MV-NTH 1
-                                    (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                              (+ -3 (XR :RGF 5 X86-NEW))
-                                              (+ -2 (XR :RGF 5 X86-NEW))
-                                              (+ -1 (XR :RGF 5 X86-NEW)))
-                                        :X X86-NEW)))
-             9
-             (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-              4 8
-              (+ -10
-                 (COMBINE-BYTES (MV-NTH 1
-                                        (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                  (+ -3 (XR :RGF 5 X86-NEW))
-                                                  (+ -2 (XR :RGF 5 X86-NEW))
-                                                  (+ -1 (XR :RGF 5 X86-NEW)))
-                                            :X X86-NEW))))
-              (GET-BITS 0 31
-                        (+ -10
-                           (COMBINE-BYTES (MV-NTH 1
-                                                  (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                            (+ -3 (XR :RGF 5 X86-NEW))
-                                                            (+ -2 (XR :RGF 5 X86-NEW))
-                                                            (+ -1 (XR :RGF 5 X86-NEW)))
-                                                      :X X86-NEW)))))
-              (COMBINE-BYTES (MV-NTH 1
-                                     (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                               (+ -3 (XR :RGF 5 X86-NEW))
-                                               (+ -2 (XR :RGF 5 X86-NEW))
-                                               (+ -1 (XR :RGF 5 X86-NEW)))
-                                         :X X86-NEW)))
-              10
-              (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-               4 8
-               (+ -32
-                  (COMBINE-BYTES (MV-NTH 1
-                                         (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                   (+ -3 (XR :RGF 5 X86-NEW))
-                                                   (+ -2 (XR :RGF 5 X86-NEW))
-                                                   (+ -1 (XR :RGF 5 X86-NEW)))
-                                             :X X86-NEW))))
-               (GET-BITS 0 31
-                         (+ -32
-                            (COMBINE-BYTES (MV-NTH 1
-                                                   (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                             (+ -3 (XR :RGF 5 X86-NEW))
-                                                             (+ -2 (XR :RGF 5 X86-NEW))
-                                                             (+ -1 (XR :RGF 5 X86-NEW)))
-                                                       :X X86-NEW)))))
-               (COMBINE-BYTES (MV-NTH 1
-                                      (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                (+ -3 (XR :RGF 5 X86-NEW))
-                                                (+ -2 (XR :RGF 5 X86-NEW))
-                                                (+ -1 (XR :RGF 5 X86-NEW)))
-                                          :X X86-NEW)))
-               32
-               (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                4 8
-                (+ -10
-                   (COMBINE-BYTES (MV-NTH 1
-                                          (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                    (+ -3 (XR :RGF 5 X86-NEW))
-                                                    (+ -2 (XR :RGF 5 X86-NEW))
-                                                    (+ -1 (XR :RGF 5 X86-NEW)))
-                                              :X X86-NEW))))
-                (GET-BITS
-                 0 31
-                 (+ -10
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                     (+ -3 (XR :RGF 5 X86-NEW))
-                                                     (+ -2 (XR :RGF 5 X86-NEW))
-                                                     (+ -1 (XR :RGF 5 X86-NEW)))
-                                               :X X86-NEW)))))
-                (COMBINE-BYTES (MV-NTH 1
-                                       (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                 (+ -3 (XR :RGF 5 X86-NEW))
-                                                 (+ -2 (XR :RGF 5 X86-NEW))
-                                                 (+ -1 (XR :RGF 5 X86-NEW)))
-                                           :X X86-NEW)))
-                10
-                (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                 4 0
-                 (+ 1
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                     (+ -11 (XR :RGF 5 X86-NEW))
-                                                     (+ -10 (XR :RGF 5 X86-NEW))
-                                                     (+ -9 (XR :RGF 5 X86-NEW)))
-                                               :X X86-NEW))))
-                 (GET-BITS
-                  0 31
-                  (+ 1
-                     (COMBINE-BYTES (MV-NTH 1
-                                            (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                      (+ -11 (XR :RGF 5 X86-NEW))
-                                                      (+ -10 (XR :RGF 5 X86-NEW))
-                                                      (+ -9 (XR :RGF 5 X86-NEW)))
-                                                :X X86-NEW)))))
-                 (COMBINE-BYTES (MV-NTH 1
-                                        (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                  (+ -11 (XR :RGF 5 X86-NEW))
-                                                  (+ -10 (XR :RGF 5 X86-NEW))
-                                                  (+ -9 (XR :RGF 5 X86-NEW)))
-                                            :X X86-NEW)))
+          (XW
+           :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
+           (MV-NTH
+            1
+            (WB
+             (CREATE-ADDR-BYTES-ALIST
+              (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+              (BYTE-IFY
+               4
+               (LOGHEAD
+                32
+                (+
                  1
-                 (MV-NTH
-                  1
-                  (WB
-                   (LIST
-                    (CONS
-                     (+ -12 (XR :RGF 5 X86-NEW))
-                     (GET-BITS
-                      0 7
-                      (+ 1
-                         (COMBINE-BYTES (MV-NTH 1
-                                                (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                          (+ -11 (XR :RGF 5 X86-NEW))
-                                                          (+ -10 (XR :RGF 5 X86-NEW))
-                                                          (+ -9 (XR :RGF 5 X86-NEW)))
-                                                    :X X86-NEW))))))
-                    (CONS
-                     (+ -11 (XR :RGF 5 X86-NEW))
-                     (GET-BITS
-                      8 15
-                      (+ 1
-                         (COMBINE-BYTES (MV-NTH 1
-                                                (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                          (+ -11 (XR :RGF 5 X86-NEW))
-                                                          (+ -10 (XR :RGF 5 X86-NEW))
-                                                          (+ -9 (XR :RGF 5 X86-NEW)))
-                                                    :X X86-NEW))))))
-                    (CONS
-                     (+ -10 (XR :RGF 5 X86-NEW))
-                     (GET-BITS
-                      16 23
-                      (+ 1
-                         (COMBINE-BYTES (MV-NTH 1
-                                                (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                          (+ -11 (XR :RGF 5 X86-NEW))
-                                                          (+ -10 (XR :RGF 5 X86-NEW))
-                                                          (+ -9 (XR :RGF 5 X86-NEW)))
-                                                    :X X86-NEW))))))
-                    (CONS
-                     (+ -9 (XR :RGF 5 X86-NEW))
-                     (GET-BITS
-                      24 31
-                      (+ 1
-                         (COMBINE-BYTES (MV-NTH 1
-                                                (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                          (+ -11 (XR :RGF 5 X86-NEW))
-                                                          (+ -10 (XR :RGF 5 X86-NEW))
-                                                          (+ -9 (XR :RGF 5 X86-NEW)))
-                                                    :X X86-NEW)))))))
-                   X86-NEW)))))))))))
+                 (COMBINE-BYTES
+                  (MV-NTH
+                   1
+                   (RB
+                    (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                    :X X86-NEW)))))))
+             (WRITE-USER-RFLAGS
+              (whatever-rflags-are-for-other-char-state-in X86-NEW)
+              0 X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (opcode-execute
-                            x86-instruction-update-fns
-                            !rgfi-size
-                            x86-operand-to-reg/mem
-                            wr64
-                            wr32
-                            rr08
-                            rr32
-                            rr64
-                            x86-operand-from-modr/m-and-sib-bytes
-                            rim-size
-                            rim08
-                            rim32
-                            rm64
-                            rm32
-                            wm-size
-                            wm32
-                            wm64
-                            wim64
-                            two-byte-opcode-decode-and-execute
-                            x86-effective-addr
-                            x86-run-plus-1
-                            *zf*-flg-cmpl-clear
-                            loop-preconditions
-                            combine-bytes-helper-thm-for-state-in)
-                           (x86-run-plus)))))
+                             instruction-decoding-and-spec-rules
+
+                             gpr-sub-spec-4
+                             gpr-add-spec-4
+                             jcc/cmovcc/setcc-spec
+
+                             ;; write-user-rflags
+                             ;; !flgi
+                             ;; !flgi-undefined
+                             zf-spec
+                             ;; pf-spec32
+                             ;; sub-af-spec32
+
+                             !rgfi-size
+                             x86-operand-to-reg/mem
+                             wr64
+                             wr32
+                             rr08
+                             rr32
+                             rr64
+                             x86-operand-from-modr/m-and-sib-bytes
+                             write-canonical-address-to-memory
+                             rim-size
+                             rim08
+                             rim32
+                             rm32
+                             wm-size
+                             wm32
+                             wm64
+                             two-byte-opcode-decode-and-execute
+                             x86-effective-addr
+                             x86-run-plus-1
+                             remove-loghead-from-combine-bytes)
+                            (x86-run-plus
+                             byte-ify
+                             (byte-ify))))))
+
+(local (in-theory (e/d () (whatever-rflags-are-for-other-char-state-in))))
+
+(local
+ (defthmd combine-bytes-and-byte-ify-inequality-lemma-for-n=4
+   (implies (and (not (equal bytes (byte-ify 4 val)))
+                 (byte-listp bytes)
+                 (equal (len bytes) 4))
+            (equal (equal (combine-bytes bytes) val) nil))
+   :hints (("Goal" :in-theory (e/d (combine-bytes byte-ify) ())))))
 
 (defthmd effects-other-char-encountered-state-in-1
 
@@ -6462,231 +6146,64 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86-new x86-new) (byte-ify 4 *out*)))
+                ;; (not (equal (word-state x86-new x86-new) (byte-ify 4 *out*)))
+                (not (equal (combine-bytes (word-state x86-new x86-new)) *out*))
                 (equal x86-new (x86-run (gc-clk-no-eof) x86)))
            (equal (x86-run 11 x86-new)
-                  (!RIP
-                   (+ 58 (XR :RIP X86-NEW))
-                   (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                    4 8
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (LIST (+ -8 (XR :RGF 5 X86-NEW))
-                                                     (+ -7 (XR :RGF 5 X86-NEW))
-                                                     (+ -6 (XR :RGF 5 X86-NEW))
-                                                     (+ -5 (XR :RGF 5 X86-NEW)))
-                                               :X X86-NEW)))
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (LIST (+ -8 (XR :RGF 5 X86-NEW))
-                                                     (+ -7 (XR :RGF 5 X86-NEW))
-                                                     (+ -6 (XR :RGF 5 X86-NEW))
-                                                     (+ -5 (XR :RGF 5 X86-NEW)))
-                                               :X X86-NEW)))
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (LIST (+ -8 (XR :RGF 5 X86-NEW))
-                                                     (+ -7 (XR :RGF 5 X86-NEW))
-                                                     (+ -6 (XR :RGF 5 X86-NEW))
-                                                     (+ -5 (XR :RGF 5 X86-NEW)))
-                                               :X X86-NEW)))
-                    0
-                    (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                     4 8
-                     (+ -9
-                        (COMBINE-BYTES (MV-NTH 1
-                                               (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                         (+ -3 (XR :RGF 5 X86-NEW))
-                                                         (+ -2 (XR :RGF 5 X86-NEW))
-                                                         (+ -1 (XR :RGF 5 X86-NEW)))
-                                                   :X X86-NEW))))
-                     (GET-BITS 0 31
-                               (+ -9
-                                  (COMBINE-BYTES (MV-NTH 1
-                                                         (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                                   (+ -3 (XR :RGF 5 X86-NEW))
-                                                                   (+ -2 (XR :RGF 5 X86-NEW))
-                                                                   (+ -1 (XR :RGF 5 X86-NEW)))
-                                                             :X X86-NEW)))))
-                     (COMBINE-BYTES (MV-NTH 1
-                                            (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                      (+ -3 (XR :RGF 5 X86-NEW))
-                                                      (+ -2 (XR :RGF 5 X86-NEW))
-                                                      (+ -1 (XR :RGF 5 X86-NEW)))
-                                                :X X86-NEW)))
-                     9
-                     (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                      4 8
-                      (+ -10
-                         (COMBINE-BYTES (MV-NTH 1
-                                                (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                          (+ -3 (XR :RGF 5 X86-NEW))
-                                                          (+ -2 (XR :RGF 5 X86-NEW))
-                                                          (+ -1 (XR :RGF 5 X86-NEW)))
-                                                    :X X86-NEW))))
-                      (GET-BITS 0 31
-                                (+ -10
-                                   (COMBINE-BYTES (MV-NTH 1
-                                                          (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                                    (+ -3 (XR :RGF 5 X86-NEW))
-                                                                    (+ -2 (XR :RGF 5 X86-NEW))
-                                                                    (+ -1 (XR :RGF 5 X86-NEW)))
-                                                              :X X86-NEW)))))
-                      (COMBINE-BYTES (MV-NTH 1
-                                             (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                       (+ -3 (XR :RGF 5 X86-NEW))
-                                                       (+ -2 (XR :RGF 5 X86-NEW))
-                                                       (+ -1 (XR :RGF 5 X86-NEW)))
-                                                 :X X86-NEW)))
-                      10
-                      (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                       4 8
-                       (+ -32
-                          (COMBINE-BYTES (MV-NTH 1
-                                                 (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                           (+ -3 (XR :RGF 5 X86-NEW))
-                                                           (+ -2 (XR :RGF 5 X86-NEW))
-                                                           (+ -1 (XR :RGF 5 X86-NEW)))
-                                                     :X X86-NEW))))
-                       (GET-BITS 0 31
-                                 (+ -32
-                                    (COMBINE-BYTES (MV-NTH 1
-                                                           (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                                     (+ -3 (XR :RGF 5 X86-NEW))
-                                                                     (+ -2 (XR :RGF 5 X86-NEW))
-                                                                     (+ -1 (XR :RGF 5 X86-NEW)))
-                                                               :X X86-NEW)))))
-                       (COMBINE-BYTES (MV-NTH 1
-                                              (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                        (+ -3 (XR :RGF 5 X86-NEW))
-                                                        (+ -2 (XR :RGF 5 X86-NEW))
-                                                        (+ -1 (XR :RGF 5 X86-NEW)))
-                                                  :X X86-NEW)))
-                       32
-                       (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                        4 8
-                        (+ -10
-                           (COMBINE-BYTES (MV-NTH 1
-                                                  (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                            (+ -3 (XR :RGF 5 X86-NEW))
-                                                            (+ -2 (XR :RGF 5 X86-NEW))
-                                                            (+ -1 (XR :RGF 5 X86-NEW)))
-                                                      :X X86-NEW))))
-                        (GET-BITS
-                         0 31
-                         (+ -10
-                            (COMBINE-BYTES (MV-NTH 1
-                                                   (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                             (+ -3 (XR :RGF 5 X86-NEW))
-                                                             (+ -2 (XR :RGF 5 X86-NEW))
-                                                             (+ -1 (XR :RGF 5 X86-NEW)))
-                                                       :X X86-NEW)))))
-                        (COMBINE-BYTES (MV-NTH 1
-                                               (RB (LIST (+ -4 (XR :RGF 5 X86-NEW))
-                                                         (+ -3 (XR :RGF 5 X86-NEW))
-                                                         (+ -2 (XR :RGF 5 X86-NEW))
-                                                         (+ -1 (XR :RGF 5 X86-NEW)))
-                                                   :X X86-NEW)))
-                        10
-                        (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                         4 0
-                         (+ 1
-                            (COMBINE-BYTES (MV-NTH 1
-                                                   (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                             (+ -11 (XR :RGF 5 X86-NEW))
-                                                             (+ -10 (XR :RGF 5 X86-NEW))
-                                                             (+ -9 (XR :RGF 5 X86-NEW)))
-                                                       :X X86-NEW))))
-                         (GET-BITS
-                          0 31
-                          (+ 1
-                             (COMBINE-BYTES (MV-NTH 1
-                                                    (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                              (+ -11 (XR :RGF 5 X86-NEW))
-                                                              (+ -10 (XR :RGF 5 X86-NEW))
-                                                              (+ -9 (XR :RGF 5 X86-NEW)))
-                                                        :X X86-NEW)))))
-                         (COMBINE-BYTES (MV-NTH 1
-                                                (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                          (+ -11 (XR :RGF 5 X86-NEW))
-                                                          (+ -10 (XR :RGF 5 X86-NEW))
-                                                          (+ -9 (XR :RGF 5 X86-NEW)))
-                                                    :X X86-NEW)))
+                  (XW
+                   :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
+                   (MV-NTH
+                    1
+                    (WB
+                     (CREATE-ADDR-BYTES-ALIST
+                      (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                      (BYTE-IFY
+                       4
+                       (LOGHEAD
+                        32
+                        (+
                          1
-                         (MV-NTH
-                          1
-                          (WB
-                           (LIST
-                            (CONS
-                             (+ -12 (XR :RGF 5 X86-NEW))
-                             (GET-BITS
-                              0 7
-                              (+ 1
-                                 (COMBINE-BYTES (MV-NTH 1
-                                                        (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                                  (+ -11 (XR :RGF 5 X86-NEW))
-                                                                  (+ -10 (XR :RGF 5 X86-NEW))
-                                                                  (+ -9 (XR :RGF 5 X86-NEW)))
-                                                            :X X86-NEW))))))
-                            (CONS
-                             (+ -11 (XR :RGF 5 X86-NEW))
-                             (GET-BITS
-                              8 15
-                              (+ 1
-                                 (COMBINE-BYTES (MV-NTH 1
-                                                        (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                                  (+ -11 (XR :RGF 5 X86-NEW))
-                                                                  (+ -10 (XR :RGF 5 X86-NEW))
-                                                                  (+ -9 (XR :RGF 5 X86-NEW)))
-                                                            :X X86-NEW))))))
-                            (CONS
-                             (+ -10 (XR :RGF 5 X86-NEW))
-                             (GET-BITS
-                              16 23
-                              (+ 1
-                                 (COMBINE-BYTES (MV-NTH 1
-                                                        (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                                  (+ -11 (XR :RGF 5 X86-NEW))
-                                                                  (+ -10 (XR :RGF 5 X86-NEW))
-                                                                  (+ -9 (XR :RGF 5 X86-NEW)))
-                                                            :X X86-NEW))))))
-                            (CONS
-                             (+ -9 (XR :RGF 5 X86-NEW))
-                             (GET-BITS
-                              24 31
-                              (+ 1
-                                 (COMBINE-BYTES (MV-NTH 1
-                                                        (RB (LIST (+ -12 (XR :RGF 5 X86-NEW))
-                                                                  (+ -11 (XR :RGF 5 X86-NEW))
-                                                                  (+ -10 (XR :RGF 5 X86-NEW))
-                                                                  (+ -9 (XR :RGF 5 X86-NEW)))
-                                                            :X X86-NEW)))))))
-                           X86-NEW)))))))))))
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST 4 (+ 20 (XR :RGF *RSP* X86-NEW)))
+                            :X X86-NEW)))))))
+                     (WRITE-USER-RFLAGS
+                      (whatever-rflags-are-for-other-char-state-in X86-NEW)
+                      0 X86-NEW))))))
   :hints (("Goal" :in-theory
            (union-theories '(loop-preconditions
                              input
                              get-char
                              offset
                              rgfi-is-i64p
-                             (len)
-                             effects-eof-not-encountered-prelim-programmer-level-mode-projection
+                             (len) (loghead) (byte-ify)
+                             (logior) (ash) (natp)
                              programmer-level-mode-permissions-dont-matter
                              combine-bytes
-                             combine-bytes-helper-thm-for-state-in
-                             n32p-grab-bytes
                              word-state
-                             combine-bytes-helper-thm-for-state-in-general
-                             dumb-rbp-canonical-address-listp
-                             )
+                             remove-loghead-from-byte-ify
+                             combine-bytes-and-byte-ify-inequality-lemma
+                             byte-listp-and-consp-of-take-from-environment-assumptions
+                             rb-returns-byte-listp
+                             len-of-rb-in-programmer-level-mode
+                             combine-bytes-and-byte-ify-inequality-lemma-for-n=4
+                             canonical-address-p-addr-byte-alistp
+                             member-p-canonical-address-p
+                             member-p-canonical-address-p-canonical-address-listp
+                             canonical-address-p-limits-thm-0
+                             canonical-address-p-limits-thm-1
+                             canonical-address-p-limits-thm-2
+                             combine-bytes-with-byte-ify-4-inequality-lemma)
                            (theory 'minimal-theory))
-           :use ((:instance effects-eof-not-encountered-prelim-for-composition
-                            (x86 x86))
-                 (:instance
-                  effects-eof-not-encountered-prelim-env-assumptions-projection
-                  (x86 x86))
-                 (:instance
-                  effects-eof-not-encountered-prelim-rbp-projection
-                  (x86 x86))
+           :use ((:instance effects-eof-not-encountered-prelim-for-composition (x86 x86))
+                 (:instance effects-eof-not-encountered-prelim-gc-byte-projection-size (x86 x86))
+                 (:instance effects-eof-not-encountered-prelim-env-assumptions-projection (x86 x86))
+                 (:instance effects-eof-not-encountered-prelim-rbp-projection (x86 x86))
+                 (:instance effects-eof-not-encountered-prelim-programmer-level-mode-projection (x86 x86))
                  (:instance effects-other-char-encountered-state-in-limited
-                            (x86-new (x86-run (gc-clk-no-eof)
-                                              x86)))))))
+                            (x86-new (x86-run (gc-clk-no-eof) x86)))))))
 
 (defthm effects-other-char-encountered-state-in
 
@@ -6701,209 +6218,39 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (x86-run (gc-clk-otherwise-in) x86)
-                  (!RIP
-                   (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                   (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                    4 8
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (LIST (+ -8 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                     (+ -7 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                     (+ -6 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                     (+ -5 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                               :X (X86-RUN (GC-CLK-NO-EOF) X86))))
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (LIST (+ -8 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                     (+ -7 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                     (+ -6 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                     (+ -5 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                               :X (X86-RUN (GC-CLK-NO-EOF) X86))))
-                    (COMBINE-BYTES (MV-NTH 1
-                                           (RB (LIST (+ -8 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                     (+ -7 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                     (+ -6 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                     (+ -5 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                               :X (X86-RUN (GC-CLK-NO-EOF) X86))))
-                    0
-                    (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                     4 8
-                     (+ -9
-                        (COMBINE-BYTES (MV-NTH 1
-                                               (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                         (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                         (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                         (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                   :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                     (GET-BITS 0 31
-                               (+ -9
-                                  (COMBINE-BYTES (MV-NTH 1
-                                                         (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                   (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                   (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                   (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                             :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
-                     (COMBINE-BYTES (MV-NTH 1
-                                            (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                      (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                      (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                      (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                :X (X86-RUN (GC-CLK-NO-EOF) X86))))
-                     9
-                     (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                      4 8
-                      (+ -10
-                         (COMBINE-BYTES (MV-NTH 1
-                                                (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                          (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                          (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                          (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                    :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                      (GET-BITS 0 31
-                                (+ -10
-                                   (COMBINE-BYTES (MV-NTH 1
-                                                          (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                    (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                    (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                    (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                              :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
-                      (COMBINE-BYTES (MV-NTH 1
-                                             (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                       (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                       (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                       (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                 :X (X86-RUN (GC-CLK-NO-EOF) X86))))
-                      10
-                      (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                       4 8
-                       (+ -32
-                          (COMBINE-BYTES (MV-NTH 1
-                                                 (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                           (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                           (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                           (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                     :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                       (GET-BITS 0 31
-                                 (+ -32
-                                    (COMBINE-BYTES (MV-NTH 1
-                                                           (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                     (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                     (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                     (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                               :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
-                       (COMBINE-BYTES (MV-NTH 1
-                                              (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                        (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                        (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                        (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                  :X (X86-RUN (GC-CLK-NO-EOF) X86))))
-                       32
-                       (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                        4 8
-                        (+ -10
-                           (COMBINE-BYTES (MV-NTH 1
-                                                  (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                            (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                            (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                            (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                      :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                        (GET-BITS
-                         0 31
-                         (+ -10
-                            (COMBINE-BYTES (MV-NTH 1
-                                                   (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                             (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                             (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                             (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                       :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
-                        (COMBINE-BYTES (MV-NTH 1
-                                               (RB (LIST (+ -4 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                         (+ -3 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                         (+ -2 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                         (+ -1 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                   :X (X86-RUN (GC-CLK-NO-EOF) X86))))
-                        10
-                        (EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST
-                         4 0
-                         (+ 1
-                            (COMBINE-BYTES (MV-NTH 1
-                                                   (RB (LIST (+ -12 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                             (+ -11 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                             (+ -10 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                             (+ -9 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                       :X (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                         (GET-BITS
-                          0 31
-                          (+ 1
-                             (COMBINE-BYTES (MV-NTH 1
-                                                    (RB (LIST (+ -12 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                              (+ -11 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                              (+ -10 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                              (+ -9 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                        :X (X86-RUN (GC-CLK-NO-EOF) X86))))))
-                         (COMBINE-BYTES (MV-NTH 1
-                                                (RB (LIST (+ -12 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                          (+ -11 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                          (+ -10 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                          (+ -9 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                    :X (X86-RUN (GC-CLK-NO-EOF) X86))))
+                  (XW
+                   :RIP 0 (+ 58 (XR :RIP 0 (x86-run (gc-clk-no-eof) x86)))
+                   (MV-NTH
+                    1
+                    (WB
+                     (CREATE-ADDR-BYTES-ALIST
+                      (CREATE-CANONICAL-ADDRESS-LIST
+                       4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                      (BYTE-IFY
+                       4
+                       (LOGHEAD
+                        32
+                        (+
                          1
-                         (MV-NTH
-                          1
-                          (WB
-                           (LIST
-                            (CONS
-                             (+ -12 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                             (GET-BITS
-                              0 7
-                              (+ 1
-                                 (COMBINE-BYTES (MV-NTH 1
-                                                        (RB (LIST (+ -12 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -11 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -10 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -9 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                            :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
-                            (CONS
-                             (+ -11 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                             (GET-BITS
-                              8 15
-                              (+ 1
-                                 (COMBINE-BYTES (MV-NTH 1
-                                                        (RB (LIST (+ -12 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -11 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -10 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -9 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                            :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
-                            (CONS
-                             (+ -10 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                             (GET-BITS
-                              16 23
-                              (+ 1
-                                 (COMBINE-BYTES (MV-NTH 1
-                                                        (RB (LIST (+ -12 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -11 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -10 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -9 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                            :X (X86-RUN (GC-CLK-NO-EOF) X86)))))))
-                            (CONS
-                             (+ -9 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                             (GET-BITS
-                              24 31
-                              (+ 1
-                                 (COMBINE-BYTES (MV-NTH 1
-                                                        (RB (LIST (+ -12 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -11 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -10 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                                  (+ -9 (XR :RGF 5 (X86-RUN (GC-CLK-NO-EOF) X86))))
-                                                            :X (X86-RUN (GC-CLK-NO-EOF) X86))))))))
-                           (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
+                         (COMBINE-BYTES
+                          (MV-NTH
+                           1
+                           (RB
+                            (CREATE-CANONICAL-ADDRESS-LIST
+                             4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86))))
+                            :X (x86-run (gc-clk-no-eof) x86))))))))
+                     (WRITE-USER-RFLAGS
+                      (whatever-rflags-are-for-other-char-state-in (x86-run (gc-clk-no-eof) x86))
+                      0 (x86-run (gc-clk-no-eof) x86)))))))
   :hints (("Goal"
            :in-theory (union-theories
                        '(programmer-level-mode-permissions-dont-matter
                          word-state
                          gc-clk-otherwise-in
                          dumb-run-plus-thm
-                         (:FORWARD-CHAINING
+                         (:forward-chaining
                           loop-preconditions-fwd-chaining-essentials)
                          (:forward-chaining loop-preconditions-forward-chain-addresses-info))
                        (theory 'minimal-theory))
@@ -6911,10 +6258,8 @@
                             (x86-new (x86-run (gc-clk-no-eof) x86)))
                  (:instance loop-preconditions-weird-rbp-rsp)
                  (:instance loop-preconditions-fwd-chaining-essentials)
-                 (:instance
-                  effects-eof-not-encountered-prelim-word-state-projection)
-                 (:instance
-                  effects-eof-not-encountered-prelim-rbp-projection)))))
+                 (:instance effects-eof-not-encountered-prelim-word-state-projection)
+                 (:instance effects-eof-not-encountered-prelim-rbp-projection)))))
 
 ;;----------------------------------------------------------------------
 ;; Other Char Encountered (State = IN): Projection Theorems:
@@ -6927,12 +6272,12 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :rgf *rbp* (x86-run (gc-clk-otherwise-in) x86))
                   (xr :rgf *rbp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthmd effects-other-char-encountered-state-in-rsp-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -6941,12 +6286,12 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :rgf *rsp* (x86-run (gc-clk-otherwise-in) x86))
                   (xr :rgf *rsp* x86)))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthmd effects-other-char-encountered-state-in-rsp-projection-new
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -6958,13 +6303,7 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :rgf *rsp* (x86-run (gc-clk-otherwise-in) x86))
                   (xr :rgf *rsp* x86)))
-  :hints (("Goal" :in-theory (union-theories
-                              '(dumb-word-state-out
-                                combine-bytes
-                                (logior)
-                                (ash))
-                              (theory 'minimal-theory))
-           :use ((:instance effects-other-char-encountered-state-in-rsp-projection)))))
+  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-rsp-projection)))))
 
 (defthmd x86p-effects-other-char-encountered-state-in
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -6973,11 +6312,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (x86p (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :in-theory (e/d* (loop-preconditions)
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthmd effects-other-char-encountered-state-in-msri-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -6986,13 +6325,13 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
-           (and (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* (x86-run (gc-clk-otherwise-in) x86))) 1)
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
+           (and (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx*
+                                                           (x86-run (gc-clk-otherwise-in) x86))) 1)
                 (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx*
-                                                   (x86-run (gc-clk-otherwise-in) x86))) 1)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                                           (x86-run (gc-clk-otherwise-in) x86))) 1)))
+  :hints (("Goal" :in-theory (e/d* () (combine-bytes word-state))
+           :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-in-rip-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7001,11 +6340,10 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :rip 0 (x86-run (gc-clk-otherwise-in) x86))
                   (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state subset-p)))))
+  :hints (("Goal" :in-theory (e/d* () (word-state subset-p)))))
 
 (defthmd effects-other-char-encountered-state-in-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7014,11 +6352,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :ms 0 (x86-run (gc-clk-otherwise-in) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthmd effects-other-char-encountered-state-in-fault-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7027,7 +6365,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :fault 0 (x86-run (gc-clk-otherwise-in) x86)) nil))
   :hints (("Goal" :in-theory (e/d* ()
                                   (word-state
@@ -7039,7 +6377,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (program-at (create-canonical-address-list len-wc
                                                       addr)
                        *wc* (x86-run (gc-clk-otherwise-in) x86)))
@@ -7058,7 +6396,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (env-assumptions (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d*
@@ -7068,8 +6406,8 @@
                        (word-state
                         subset-p)))
           ("Goal''" :in-theory (e/d* (env-assumptions eof-terminatedp)
-                                    (word-state
-                                     subset-p))
+                                     (word-state
+                                      subset-p))
            :use ((:instance
                   loop-preconditions-fwd-chaining-essentials)))))
 
@@ -7080,12 +6418,24 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (xr :programmer-level-mode 0 (x86-run (gc-clk-otherwise-in) x86))
                   (xr :programmer-level-mode 0 x86)))
   :hints (("Goal" :in-theory (e/d* ()
                                   (word-state
                                    loop-preconditions-forward-chain-addresses-info)))))
+
+(defthmd effects-other-char-encountered-state-in-os-info-projection
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (loop-preconditions addr x86)
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
+           (equal (xr :os-info 0 (x86-run (gc-clk-otherwise-in) x86))
+                  (xr :os-info 0 x86)))
+  :hints (("Goal" :in-theory (e/d* () (word-state loop-preconditions-forward-chain-addresses-info)))))
 
 (defthm loop-preconditions-other-char-encountered-state-in-pre
   (implies (and (loop-preconditions addr x86)
@@ -7093,7 +6443,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (loop-preconditions addr (x86-run (gc-clk-otherwise-in) x86)))
   :hints (("Goal" :in-theory '(effects-other-char-encountered-state-in-rbp-projection
                                effects-other-char-encountered-state-in-rsp-projection
@@ -7107,6 +6457,7 @@
                                loop-preconditions-fwd-chaining-essentials
                                loop-preconditions-forward-chain-addresses-info
                                effects-other-char-encountered-state-in-programmer-level-mode-projection
+                               effects-other-char-encountered-state-in-os-info-projection
                                effects-other-char-encountered-state-in-program-projection)
            :expand (loop-preconditions addr (x86-run (gc-clk-otherwise-in) x86)))))
 
@@ -7117,12 +6468,12 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (input (x86-run (gc-clk-otherwise-in) x86))
                   (input x86)))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthmd effects-other-char-encountered-state-in-offset-projection-pre
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7131,12 +6482,12 @@
                 (not (equal (get-char (offset x86) (input x86)) *newline*))
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (not (equal (word-state x86 x86) (byte-ify 4 *out*))))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (offset (x86-run (gc-clk-otherwise-in) x86))
                   (+ 1 (offset x86))))
   :hints (("Goal" :in-theory (e/d* ()
-                                  (word-state
-                                   loop-preconditions-forward-chain-addresses-info)))))
+                                   (word-state
+                                    loop-preconditions-forward-chain-addresses-info)))))
 
 (defthm loop-preconditions-other-char-encountered-state-in
   (implies (and (loop-preconditions addr x86)
@@ -7146,11 +6497,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (loop-preconditions addr (x86-run (gc-clk-otherwise-in) x86)))
-  :hints (("Goal" :in-theory '(dumb-word-state-out
-                               combine-bytes
-                               (logior)
-                               (ash))
-           :use ((:instance loop-preconditions-other-char-encountered-state-in-pre)))))
+  :hints (("Goal":use ((:instance loop-preconditions-other-char-encountered-state-in-pre)))))
 
 (defthmd effects-other-char-encountered-state-in-input-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7162,11 +6509,7 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (input (x86-run (gc-clk-otherwise-in) x86))
                   (input x86)))
-  :hints (("Goal" :in-theory '(dumb-word-state-out
-                               combine-bytes
-                               (logior)
-                               (ash))
-           :use ((:instance effects-other-char-encountered-state-in-input-projection-pre)))))
+  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-input-projection-pre)))))
 
 (defthmd effects-other-char-encountered-state-in-offset-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7178,11 +6521,7 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (offset (x86-run (gc-clk-otherwise-in) x86))
                   (+ 1 (offset x86))))
-  :hints (("Goal" :in-theory '(dumb-word-state-out
-                               combine-bytes
-                               (logior)
-                               (ash))
-           :use ((:instance effects-other-char-encountered-state-in-offset-projection-pre)))))
+  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-offset-projection-pre)))))
 
 ;;----------------------------------------------------------------------
 ;; Other Char Encountered (State = IN): Delta Variable Theorems:
@@ -7199,146 +6538,8 @@
            (equal (word-state x86 (x86-run (gc-clk-otherwise-in) x86))
                   (word-state x86 x86)))
   :hints (("Goal"
-           :in-theory
-           (union-theories
-            '(dumb-word-state-out
-              weirder-rule
-              (:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
-              (:DEFINITION BYTE-LISTP)
-              (:DEFINITION COMBINE-BYTES)
-              (:DEFINITION NOT)
-              (:DEFINITION SYNP)
-              (:EXECUTABLE-COUNTERPART ASH)
-              (:EXECUTABLE-COUNTERPART BYTE-LISTP)
-              (:EXECUTABLE-COUNTERPART CDR)
-              (:EXECUTABLE-COUNTERPART COMBINE-BYTES)
-              (:EXECUTABLE-COUNTERPART FORCE)
-              (:EXECUTABLE-COUNTERPART INTEGERP)
-              (:EXECUTABLE-COUNTERPART LEN)
-              (:EXECUTABLE-COUNTERPART NOT)
-              (:EXECUTABLE-COUNTERPART TRUE-LISTP)
-              (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
-              (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
-              (:FORWARD-CHAINING ENV-ALISTP-ENV-READ)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-CONTENTS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-DESCRIPTORS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-RIP-RET-ALISTP)
-              (:FORWARD-CHAINING RIP-RET-ALISTP-FWD-CHAINING-ALISTP)
-              (:REWRITE ASH-CONSTANT)
-              (:REWRITE LOGIOR-0)
-              (:REWRITE LOGIOR-COMMUTATIVE)
-              (:REWRITE ACL2::LOGIOR-GET-BITS-GET-BITS-2)
-              (:TYPE-PRESCRIPTION ALISTP)
-              (:TYPE-PRESCRIPTION BYTE-LISTP)
-              (:TYPE-PRESCRIPTION DISJOINT-P)
-              (:TYPE-PRESCRIPTION ENV-ALISTP)
-              (:TYPE-PRESCRIPTION ENV-ASSUMPTIONS)
-              (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-              (:TYPE-PRESCRIPTION PROGRAM-AT)
-              (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-              (:TYPE-PRESCRIPTION RIP-RET-ALISTP)
-              word-state
-              PROGRAMMER-LEVEL-MODE-PERMISSIONS-DONT-MATTER
-              (LOGIOR)
-              (ASH)
-              COMBINE-BYTES
-              (:DEFINITION ADDR-BYTE-ALISTP)
-              (:DEFINITION ASSOC-EQUAL)
-              (:DEFINITION ASSOC-LIST)
-              (:DEFINITION BINARY-APPEND)
-              (:DEFINITION CANONICAL-ADDRESS-LISTP)
-              (:DEFINITION FIX)
-              (:DEFINITION GET-CHAR)
-              (:DEFINITION HIDE)
-              (:DEFINITION INPUT)
-              (:DEFINITION N01P$INLINE)
-              (:DEFINITION N08P$INLINE)
-              (:DEFINITION NO-DUPLICATES-P)
-              (:DEFINITION OFFSET)
-              (:DEFINITION STRIP-CARS)
-              (:DEFINITION SUBSET-P)
-              (:EXECUTABLE-COUNTERPART <)
-              (:EXECUTABLE-COUNTERPART ADDR-BYTE-ALISTP)
-              (:EXECUTABLE-COUNTERPART BINARY-+)
-              (:EXECUTABLE-COUNTERPART CANONICAL-ADDRESS-LISTP)
-              (:EXECUTABLE-COUNTERPART CONSP)
-              (:EXECUTABLE-COUNTERPART EQUAL)
-              (:EXECUTABLE-COUNTERPART EXPT)
-              (:EXECUTABLE-COUNTERPART FIX)
-              (:EXECUTABLE-COUNTERPART GET-BITS)
-              (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
-              (:EXECUTABLE-COUNTERPART N01P$INLINE)
-              (:EXECUTABLE-COUNTERPART N08P$INLINE)
-              (:EXECUTABLE-COUNTERPART NATP)
-              (:EXECUTABLE-COUNTERPART NO-DUPLICATES-P)
-              (:EXECUTABLE-COUNTERPART STRIP-CARS)
-              (:EXECUTABLE-COUNTERPART UNARY--)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FWD-CHAINING-ESSENTIALS)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FORWARD-CHAIN-ADDRESSES-INFO)
-              (:LINEAR ACL2::GET-BITS-LINEAR)
-              (:REWRITE
-               !FLGI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST-OTHER-FLAGS)
-              (:REWRITE !RGFI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE !RIP-!RGFI)
-              (:REWRITE !RIP-!RIP)
-              (:REWRITE !RIP-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE |(+ c (+ d x))|)
-              (:REWRITE APPEND-X-NIL-IS-X)
-              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-              (:REWRITE CAR-CONS)
-              (:REWRITE CDR-CONS)
-              (:REWRITE COMMUTATIVITY-OF-+)
-              (:REWRITE DISJOINT-P-CONS)
-              (:REWRITE DISJOINT-P-NIL-2)
-              (:REWRITE EFFECTS-EOF-NOT-ENCOUNTERED-PRELIM)
-              (:REWRITE EFFECTS-NEWLINE-ENCOUNTERED)
-              (:REWRITE MEMBER-P-CONS)
-              (:REWRITE MEMBER-P-OF-NIL)
-              (:REWRITE RB-!FLGI)
-              (:REWRITE RB-!RGFI)
-              (:REWRITE RB-!RIP)
-              (:REWRITE RB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE RB-WB-DISJOINT)
-              (:REWRITE RB-WB-SUBSET)
-              (:REWRITE RB-WRITE-X86-FILE-DES)
-              (:REWRITE RGFI-!RGFI)
-              (:REWRITE ACL2::RIGHT-CANCELLATION-FOR-+)
-              (:REWRITE RIP-!RGFI)
-              (:REWRITE RIP-!RIP)
-              (:REWRITE SET/CLEAR-BIT-RETURNS-A-BIT)
-              (:REWRITE UNICITY-OF-0)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!FLGI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RGFI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RIP)
-              (:REWRITE
-               PROGRAMMER-LEVEL-MODE-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WB)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WRITE-X86-FILE-DES)
-              (:REWRITE WB-!FLGI)
-              (:REWRITE WB-!RGFI)
-              (:REWRITE WB-!RIP)
-              (:REWRITE WB-AND-WB-COMBINE-WBS)
-              (:REWRITE WB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE WB-RETURNS-X86P)
-              (:REWRITE WB-WRITE-X86-FILE-DES)
-              (:REWRITE X86P-!FLGI)
-              (:REWRITE X86P-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE X86P-WRITE-X86-FILE-DES)
-              (:TYPE-PRESCRIPTION ACL2::|(get-bits start stop x) --- type-prescription|)
-              (:TYPE-PRESCRIPTION CANONICAL-ADDRESS-P$INLINE)
-              (:TYPE-PRESCRIPTION LOOP-PRECONDITIONS)
-              (:TYPE-PRESCRIPTION RGFI-IS-I64P)
-              (:TYPE-PRESCRIPTION RIP-IS-INTEGERP)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT-RETURNS-A-BIT-TYPE)
-              (:TYPE-PRESCRIPTION X86P))
-            (theory 'minimal-theory))
-           :use (
-                 (:instance
-                  effects-other-char-encountered-state-in)
-                 (:instance
-                  loop-preconditions-fwd-chaining-essentials)))))
+           :use ((:instance effects-other-char-encountered-state-in)
+                 (:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-state-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7350,14 +6551,7 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (word-state (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (word-state x86 xxx)))
-  :hints (("Goal" :in-theory
-           '(dumb-word-state-out
-             (logior)
-             (ash)
-             word-state
-             combine-bytes)
-           :use ((:instance
-                  effects-other-char-encountered-state-in-rbp-projection)))))
+  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-rbp-projection)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nc
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7368,150 +6562,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (combine-bytes (nc x86 (x86-run (gc-clk-otherwise-in) x86)))
-                  (get-bits 0 31
-                            (+ 1
-                               (combine-bytes (nc x86 x86))))))
-  :hints (("Goal"
-           :in-theory
-           (union-theories
-            '(dumb-word-state-out
-              weirder-rule
-              (:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
-              (:DEFINITION BYTE-LISTP)
-              (:DEFINITION COMBINE-BYTES)
-              (:DEFINITION NOT)
-              (:DEFINITION SYNP)
-              (:EXECUTABLE-COUNTERPART ASH)
-              (:EXECUTABLE-COUNTERPART BYTE-LISTP)
-              (:EXECUTABLE-COUNTERPART CDR)
-              (:EXECUTABLE-COUNTERPART COMBINE-BYTES)
-              (:EXECUTABLE-COUNTERPART FORCE)
-              (:EXECUTABLE-COUNTERPART INTEGERP)
-              (:EXECUTABLE-COUNTERPART LEN)
-              (:EXECUTABLE-COUNTERPART NOT)
-              (:EXECUTABLE-COUNTERPART TRUE-LISTP)
-              (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
-              (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
-              (:FORWARD-CHAINING ENV-ALISTP-ENV-READ)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-CONTENTS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-DESCRIPTORS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-RIP-RET-ALISTP)
-              (:FORWARD-CHAINING RIP-RET-ALISTP-FWD-CHAINING-ALISTP)
-              (:REWRITE ASH-CONSTANT)
-              (:REWRITE LOGIOR-0)
-              (:REWRITE LOGIOR-COMMUTATIVE)
-              (:REWRITE ACL2::LOGIOR-GET-BITS-GET-BITS-2)
-              (:TYPE-PRESCRIPTION ALISTP)
-              (:TYPE-PRESCRIPTION BYTE-LISTP)
-              (:TYPE-PRESCRIPTION DISJOINT-P)
-              (:TYPE-PRESCRIPTION ENV-ALISTP)
-              (:TYPE-PRESCRIPTION ENV-ASSUMPTIONS)
-              (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-              (:TYPE-PRESCRIPTION PROGRAM-AT)
-              (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-              (:TYPE-PRESCRIPTION RIP-RET-ALISTP)
-              NC
-              PROGRAMMER-LEVEL-MODE-PERMISSIONS-DONT-MATTER
-              (LOGIOR)
-              (ASH)
-              COMBINE-BYTES
-              (:DEFINITION ADDR-BYTE-ALISTP)
-              (:DEFINITION ASSOC-EQUAL)
-              (:DEFINITION ASSOC-LIST)
-              (:DEFINITION BINARY-APPEND)
-              (:DEFINITION CANONICAL-ADDRESS-LISTP)
-              (:DEFINITION FIX)
-              (:DEFINITION GET-CHAR)
-              (:DEFINITION HIDE)
-              (:DEFINITION INPUT)
-              (:DEFINITION N01P$INLINE)
-              (:DEFINITION N08P$INLINE)
-              (:DEFINITION NO-DUPLICATES-P)
-              (:DEFINITION OFFSET)
-              (:DEFINITION STRIP-CARS)
-              (:DEFINITION SUBSET-P)
-              (:EXECUTABLE-COUNTERPART <)
-              (:EXECUTABLE-COUNTERPART ADDR-BYTE-ALISTP)
-              (:EXECUTABLE-COUNTERPART BINARY-+)
-              (:EXECUTABLE-COUNTERPART CANONICAL-ADDRESS-LISTP)
-              (:EXECUTABLE-COUNTERPART CONSP)
-              (:EXECUTABLE-COUNTERPART EQUAL)
-              (:EXECUTABLE-COUNTERPART EXPT)
-              (:EXECUTABLE-COUNTERPART FIX)
-              (:EXECUTABLE-COUNTERPART GET-BITS)
-              (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
-              (:EXECUTABLE-COUNTERPART N01P$INLINE)
-              (:EXECUTABLE-COUNTERPART N08P$INLINE)
-              (:EXECUTABLE-COUNTERPART NATP)
-              (:EXECUTABLE-COUNTERPART NO-DUPLICATES-P)
-              (:EXECUTABLE-COUNTERPART STRIP-CARS)
-              (:EXECUTABLE-COUNTERPART UNARY--)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FWD-CHAINING-ESSENTIALS)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FORWARD-CHAIN-ADDRESSES-INFO)
-              (:LINEAR ACL2::GET-BITS-LINEAR)
-              (:REWRITE
-               !FLGI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST-OTHER-FLAGS)
-              (:REWRITE !RGFI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE !RIP-!RGFI)
-              (:REWRITE !RIP-!RIP)
-              (:REWRITE !RIP-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE |(+ c (+ d x))|)
-              (:REWRITE APPEND-X-NIL-IS-X)
-              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-              (:REWRITE CAR-CONS)
-              (:REWRITE CDR-CONS)
-              (:REWRITE COMMUTATIVITY-OF-+)
-              (:REWRITE DISJOINT-P-CONS)
-              (:REWRITE DISJOINT-P-NIL-2)
-              (:REWRITE EFFECTS-EOF-NOT-ENCOUNTERED-PRELIM)
-              (:REWRITE EFFECTS-NEWLINE-ENCOUNTERED)
-              (:REWRITE MEMBER-P-CONS)
-              (:REWRITE MEMBER-P-OF-NIL)
-              (:REWRITE RB-!FLGI)
-              (:REWRITE RB-!RGFI)
-              (:REWRITE RB-!RIP)
-              (:REWRITE RB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE RB-WB-DISJOINT)
-              (:REWRITE RB-WB-SUBSET)
-              (:REWRITE RB-WRITE-X86-FILE-DES)
-              (:REWRITE RGFI-!RGFI)
-              (:REWRITE ACL2::RIGHT-CANCELLATION-FOR-+)
-              (:REWRITE RIP-!RGFI)
-              (:REWRITE RIP-!RIP)
-              (:REWRITE SET/CLEAR-BIT-RETURNS-A-BIT)
-              (:REWRITE UNICITY-OF-0)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!FLGI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RGFI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RIP)
-              (:REWRITE
-               PROGRAMMER-LEVEL-MODE-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WB)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WRITE-X86-FILE-DES)
-              (:REWRITE WB-!FLGI)
-              (:REWRITE WB-!RGFI)
-              (:REWRITE WB-!RIP)
-              (:REWRITE WB-AND-WB-COMBINE-WBS)
-              (:REWRITE WB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE WB-RETURNS-X86P)
-              (:REWRITE WB-WRITE-X86-FILE-DES)
-              (:REWRITE X86P-!FLGI)
-              (:REWRITE X86P-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE X86P-WRITE-X86-FILE-DES)
-              (:TYPE-PRESCRIPTION ACL2::|(get-bits start stop x) --- type-prescription|)
-              (:TYPE-PRESCRIPTION CANONICAL-ADDRESS-P$INLINE)
-              (:TYPE-PRESCRIPTION LOOP-PRECONDITIONS)
-              (:TYPE-PRESCRIPTION RGFI-IS-I64P)
-              (:TYPE-PRESCRIPTION RIP-IS-INTEGERP)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT-RETURNS-A-BIT-TYPE)
-              (:TYPE-PRESCRIPTION X86P))
-            (theory 'minimal-theory))
-           :use (
-                 (:instance
-                  effects-other-char-encountered-state-in)
-                 (:instance
-                  loop-preconditions-fwd-chaining-essentials)))))
+                  (loghead 32 (+ 1 (combine-bytes (nc x86 x86))))))
+  :hints (("Goal" :in-theory (e/d* (programmer-level-mode-permissions-dont-matter)
+                                   (force (force)))
+           :use ((:instance effects-other-char-encountered-state-in)
+                 (:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nc-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7523,14 +6578,7 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nc (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (nc x86 xxx)))
-  :hints (("Goal" :in-theory
-           '(dumb-word-state-out
-             (logior)
-             (ash)
-             nc
-             combine-bytes)
-           :use ((:instance
-                  effects-other-char-encountered-state-in-rbp-projection)))))
+  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-rbp-projection)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nw
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7542,146 +6590,8 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nw x86 (x86-run (gc-clk-otherwise-in) x86))
                   (nw x86 x86)))
-  :hints (("Goal"
-           :in-theory
-           (union-theories
-            '(dumb-word-state-out
-              weirder-rule
-              (:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
-              (:DEFINITION BYTE-LISTP)
-              (:DEFINITION COMBINE-BYTES)
-              (:DEFINITION NOT)
-              (:DEFINITION SYNP)
-              (:EXECUTABLE-COUNTERPART ASH)
-              (:EXECUTABLE-COUNTERPART BYTE-LISTP)
-              (:EXECUTABLE-COUNTERPART CDR)
-              (:EXECUTABLE-COUNTERPART COMBINE-BYTES)
-              (:EXECUTABLE-COUNTERPART FORCE)
-              (:EXECUTABLE-COUNTERPART INTEGERP)
-              (:EXECUTABLE-COUNTERPART LEN)
-              (:EXECUTABLE-COUNTERPART NOT)
-              (:EXECUTABLE-COUNTERPART TRUE-LISTP)
-              (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
-              (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
-              (:FORWARD-CHAINING ENV-ALISTP-ENV-READ)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-CONTENTS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-DESCRIPTORS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-RIP-RET-ALISTP)
-              (:FORWARD-CHAINING RIP-RET-ALISTP-FWD-CHAINING-ALISTP)
-              (:REWRITE ASH-CONSTANT)
-              (:REWRITE LOGIOR-0)
-              (:REWRITE LOGIOR-COMMUTATIVE)
-              (:REWRITE ACL2::LOGIOR-GET-BITS-GET-BITS-2)
-              (:TYPE-PRESCRIPTION ALISTP)
-              (:TYPE-PRESCRIPTION BYTE-LISTP)
-              (:TYPE-PRESCRIPTION DISJOINT-P)
-              (:TYPE-PRESCRIPTION ENV-ALISTP)
-              (:TYPE-PRESCRIPTION ENV-ASSUMPTIONS)
-              (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-              (:TYPE-PRESCRIPTION PROGRAM-AT)
-              (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-              (:TYPE-PRESCRIPTION RIP-RET-ALISTP)
-              NW
-              PROGRAMMER-LEVEL-MODE-PERMISSIONS-DONT-MATTER
-              NW (LOGIOR)
-              (ASH)
-              COMBINE-BYTES
-              (:DEFINITION ADDR-BYTE-ALISTP)
-              (:DEFINITION ASSOC-EQUAL)
-              (:DEFINITION ASSOC-LIST)
-              (:DEFINITION BINARY-APPEND)
-              (:DEFINITION CANONICAL-ADDRESS-LISTP)
-              (:DEFINITION FIX)
-              (:DEFINITION GET-CHAR)
-              (:DEFINITION HIDE)
-              (:DEFINITION INPUT)
-              (:DEFINITION N01P$INLINE)
-              (:DEFINITION N08P$INLINE)
-              (:DEFINITION NO-DUPLICATES-P)
-              (:DEFINITION OFFSET)
-              (:DEFINITION STRIP-CARS)
-              (:DEFINITION SUBSET-P)
-              (:EXECUTABLE-COUNTERPART <)
-              (:EXECUTABLE-COUNTERPART ADDR-BYTE-ALISTP)
-              (:EXECUTABLE-COUNTERPART BINARY-+)
-              (:EXECUTABLE-COUNTERPART CANONICAL-ADDRESS-LISTP)
-              (:EXECUTABLE-COUNTERPART CONSP)
-              (:EXECUTABLE-COUNTERPART EQUAL)
-              (:EXECUTABLE-COUNTERPART EXPT)
-              (:EXECUTABLE-COUNTERPART FIX)
-              (:EXECUTABLE-COUNTERPART GET-BITS)
-              (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
-              (:EXECUTABLE-COUNTERPART N01P$INLINE)
-              (:EXECUTABLE-COUNTERPART N08P$INLINE)
-              (:EXECUTABLE-COUNTERPART NATP)
-              (:EXECUTABLE-COUNTERPART NO-DUPLICATES-P)
-              (:EXECUTABLE-COUNTERPART STRIP-CARS)
-              (:EXECUTABLE-COUNTERPART UNARY--)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FWD-CHAINING-ESSENTIALS)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FORWARD-CHAIN-ADDRESSES-INFO)
-              (:LINEAR ACL2::GET-BITS-LINEAR)
-              (:REWRITE
-               !FLGI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST-OTHER-FLAGS)
-              (:REWRITE !RGFI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE !RIP-!RGFI)
-              (:REWRITE !RIP-!RIP)
-              (:REWRITE !RIP-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE |(+ c (+ d x))|)
-              (:REWRITE APPEND-X-NIL-IS-X)
-              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-              (:REWRITE CAR-CONS)
-              (:REWRITE CDR-CONS)
-              (:REWRITE COMMUTATIVITY-OF-+)
-              (:REWRITE DISJOINT-P-CONS)
-              (:REWRITE DISJOINT-P-NIL-2)
-              (:REWRITE EFFECTS-EOF-NOT-ENCOUNTERED-PRELIM)
-              (:REWRITE EFFECTS-NEWLINE-ENCOUNTERED)
-              (:REWRITE MEMBER-P-CONS)
-              (:REWRITE MEMBER-P-OF-NIL)
-              (:REWRITE RB-!FLGI)
-              (:REWRITE RB-!RGFI)
-              (:REWRITE RB-!RIP)
-              (:REWRITE RB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE RB-WB-DISJOINT)
-              (:REWRITE RB-WB-SUBSET)
-              (:REWRITE RB-WRITE-X86-FILE-DES)
-              (:REWRITE RGFI-!RGFI)
-              (:REWRITE ACL2::RIGHT-CANCELLATION-FOR-+)
-              (:REWRITE RIP-!RGFI)
-              (:REWRITE RIP-!RIP)
-              (:REWRITE SET/CLEAR-BIT-RETURNS-A-BIT)
-              (:REWRITE UNICITY-OF-0)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!FLGI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RGFI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RIP)
-              (:REWRITE
-               PROGRAMMER-LEVEL-MODE-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WB)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WRITE-X86-FILE-DES)
-              (:REWRITE WB-!FLGI)
-              (:REWRITE WB-!RGFI)
-              (:REWRITE WB-!RIP)
-              (:REWRITE WB-AND-WB-COMBINE-WBS)
-              (:REWRITE WB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE WB-RETURNS-X86P)
-              (:REWRITE WB-WRITE-X86-FILE-DES)
-              (:REWRITE X86P-!FLGI)
-              (:REWRITE X86P-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE X86P-WRITE-X86-FILE-DES)
-              (:TYPE-PRESCRIPTION ACL2::|(get-bits start stop x) --- type-prescription|)
-              (:TYPE-PRESCRIPTION CANONICAL-ADDRESS-P$INLINE)
-              (:TYPE-PRESCRIPTION LOOP-PRECONDITIONS)
-              (:TYPE-PRESCRIPTION RGFI-IS-I64P)
-              (:TYPE-PRESCRIPTION RIP-IS-INTEGERP)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT-RETURNS-A-BIT-TYPE)
-              (:TYPE-PRESCRIPTION X86P))
-            (theory 'minimal-theory))
-           :use ((:instance
-                  effects-other-char-encountered-state-in)
-                 (:instance
-                  loop-preconditions-fwd-chaining-essentials)))))
+  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in)
+                        (:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nw-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7693,14 +6603,7 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nw (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (nw x86 xxx)))
-  :hints (("Goal" :in-theory
-           '(dumb-word-state-out
-             (logior)
-             (ash)
-             nw
-             combine-bytes)
-           :use ((:instance
-                  effects-other-char-encountered-state-in-rbp-projection)))))
+  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-rbp-projection)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nl
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7712,147 +6615,8 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nl x86 (x86-run (gc-clk-otherwise-in) x86))
                   (nl x86 x86)))
-  :hints (("Goal"
-           :in-theory
-           (union-theories
-            '(dumb-word-state-out
-              weirder-rule
-              (:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
-              (:DEFINITION BYTE-LISTP)
-              (:DEFINITION COMBINE-BYTES)
-              (:DEFINITION NOT)
-              (:DEFINITION SYNP)
-              (:EXECUTABLE-COUNTERPART ASH)
-              (:EXECUTABLE-COUNTERPART BYTE-LISTP)
-              (:EXECUTABLE-COUNTERPART CDR)
-              (:EXECUTABLE-COUNTERPART COMBINE-BYTES)
-              (:EXECUTABLE-COUNTERPART FORCE)
-              (:EXECUTABLE-COUNTERPART INTEGERP)
-              (:EXECUTABLE-COUNTERPART LEN)
-              (:EXECUTABLE-COUNTERPART NOT)
-              (:EXECUTABLE-COUNTERPART TRUE-LISTP)
-              (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
-              (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
-              (:FORWARD-CHAINING ENV-ALISTP-ENV-READ)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-CONTENTS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-ALISTP-FILE-DESCRIPTORS)
-              (:FORWARD-CHAINING ENV-ALISTP-FWD-CHAINING-RIP-RET-ALISTP)
-              (:FORWARD-CHAINING RIP-RET-ALISTP-FWD-CHAINING-ALISTP)
-              (:REWRITE ASH-CONSTANT)
-              (:REWRITE LOGIOR-0)
-              (:REWRITE LOGIOR-COMMUTATIVE)
-              (:REWRITE ACL2::LOGIOR-GET-BITS-GET-BITS-2)
-              (:TYPE-PRESCRIPTION ALISTP)
-              (:TYPE-PRESCRIPTION BYTE-LISTP)
-              (:TYPE-PRESCRIPTION DISJOINT-P)
-              (:TYPE-PRESCRIPTION ENV-ALISTP)
-              (:TYPE-PRESCRIPTION ENV-ASSUMPTIONS)
-              (:TYPE-PRESCRIPTION NATP-COMBINE-BYTES)
-              (:TYPE-PRESCRIPTION PROGRAM-AT)
-              (:TYPE-PRESCRIPTION RB-RETURNS-BYTE-LISTP)
-              (:TYPE-PRESCRIPTION RIP-RET-ALISTP)
-              NL
-              PROGRAMMER-LEVEL-MODE-PERMISSIONS-DONT-MATTER
-              (LOGIOR)
-              (ASH)
-              COMBINE-BYTES
-              (:DEFINITION ADDR-BYTE-ALISTP)
-              (:DEFINITION ASSOC-EQUAL)
-              (:DEFINITION ASSOC-LIST)
-              (:DEFINITION BINARY-APPEND)
-              (:DEFINITION CANONICAL-ADDRESS-LISTP)
-              (:DEFINITION FIX)
-              (:DEFINITION GET-CHAR)
-              (:DEFINITION HIDE)
-              (:DEFINITION INPUT)
-              (:DEFINITION N01P$INLINE)
-              (:DEFINITION N08P$INLINE)
-              (:DEFINITION NO-DUPLICATES-P)
-              (:DEFINITION OFFSET)
-              (:DEFINITION STRIP-CARS)
-              (:DEFINITION SUBSET-P)
-              (:EXECUTABLE-COUNTERPART <)
-              (:EXECUTABLE-COUNTERPART ADDR-BYTE-ALISTP)
-              (:EXECUTABLE-COUNTERPART BINARY-+)
-              (:EXECUTABLE-COUNTERPART CANONICAL-ADDRESS-LISTP)
-              (:EXECUTABLE-COUNTERPART CONSP)
-              (:EXECUTABLE-COUNTERPART EQUAL)
-              (:EXECUTABLE-COUNTERPART EXPT)
-              (:EXECUTABLE-COUNTERPART FIX)
-              (:EXECUTABLE-COUNTERPART GET-BITS)
-              (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
-              (:EXECUTABLE-COUNTERPART N01P$INLINE)
-              (:EXECUTABLE-COUNTERPART N08P$INLINE)
-              (:EXECUTABLE-COUNTERPART NATP)
-              (:EXECUTABLE-COUNTERPART NO-DUPLICATES-P)
-              (:EXECUTABLE-COUNTERPART STRIP-CARS)
-              (:EXECUTABLE-COUNTERPART UNARY--)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FWD-CHAINING-ESSENTIALS)
-              (:FORWARD-CHAINING LOOP-PRECONDITIONS-FORWARD-CHAIN-ADDRESSES-INFO)
-              (:LINEAR ACL2::GET-BITS-LINEAR)
-              (:REWRITE
-               !FLGI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST-OTHER-FLAGS)
-              (:REWRITE !RGFI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE !RIP-!RGFI)
-              (:REWRITE !RIP-!RIP)
-              (:REWRITE !RIP-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE |(+ c (+ d x))|)
-              (:REWRITE APPEND-X-NIL-IS-X)
-              (:REWRITE CANONICAL-ADDRESS-P-LIMITS-THM-2)
-              (:REWRITE CAR-CONS)
-              (:REWRITE CDR-CONS)
-              (:REWRITE COMMUTATIVITY-OF-+)
-              (:REWRITE DISJOINT-P-CONS)
-              (:REWRITE DISJOINT-P-NIL-2)
-              (:REWRITE EFFECTS-EOF-NOT-ENCOUNTERED-PRELIM)
-              (:REWRITE EFFECTS-NEWLINE-ENCOUNTERED)
-              (:REWRITE MEMBER-P-CONS)
-              (:REWRITE MEMBER-P-OF-NIL)
-              (:REWRITE RB-!FLGI)
-              (:REWRITE RB-!RGFI)
-              (:REWRITE RB-!RIP)
-              (:REWRITE RB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE RB-WB-DISJOINT)
-              (:REWRITE RB-WB-SUBSET)
-              (:REWRITE RB-WRITE-X86-FILE-DES)
-              (:REWRITE RGFI-!RGFI)
-              (:REWRITE ACL2::RIGHT-CANCELLATION-FOR-+)
-              (:REWRITE RIP-!RGFI)
-              (:REWRITE RIP-!RIP)
-              (:REWRITE SET/CLEAR-BIT-RETURNS-A-BIT)
-              (:REWRITE UNICITY-OF-0)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!FLGI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RGFI)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-!RIP)
-              (:REWRITE
-               PROGRAMMER-LEVEL-MODE-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WB)
-              (:REWRITE PROGRAMMER-LEVEL-MODE-WRITE-X86-FILE-DES)
-              (:REWRITE WB-!FLGI)
-              (:REWRITE WB-!RGFI)
-              (:REWRITE WB-!RIP)
-              (:REWRITE WB-AND-WB-COMBINE-WBS)
-              (:REWRITE WB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE WB-RETURNS-X86P)
-              (:REWRITE WB-WRITE-X86-FILE-DES)
-              (:REWRITE X86P-!FLGI)
-              (:REWRITE X86P-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-              (:REWRITE X86P-WRITE-X86-FILE-DES)
-              (:TYPE-PRESCRIPTION ACL2::|(get-bits start stop x) --- type-prescription|)
-              (:TYPE-PRESCRIPTION CANONICAL-ADDRESS-P$INLINE)
-              (:TYPE-PRESCRIPTION LOOP-PRECONDITIONS)
-              (:TYPE-PRESCRIPTION RGFI-IS-I64P)
-              (:TYPE-PRESCRIPTION RIP-IS-INTEGERP)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT)
-              (:TYPE-PRESCRIPTION SET/CLEAR-BIT-RETURNS-A-BIT-TYPE)
-              (:TYPE-PRESCRIPTION X86P))
-            (theory 'minimal-theory))
-           :use (
-                 (:instance
-                  effects-other-char-encountered-state-in)
-                 (:instance
-                  loop-preconditions-fwd-chaining-essentials)))))
+  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in)
+                        (:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-other-char-encountered-state-in-variables-nl-in-terms-of-next-x86
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -7864,14 +6628,7 @@
                 (not (equal (combine-bytes (word-state x86 x86)) *out*)))
            (equal (nl (x86-run (gc-clk-otherwise-in) x86) xxx)
                   (nl x86 xxx)))
-  :hints (("Goal" :in-theory
-           '(dumb-word-state-out
-             (logior)
-             (ash)
-             nl
-             combine-bytes)
-           :use ((:instance
-                  effects-other-char-encountered-state-in-rbp-projection)))))
+  :hints (("Goal" :use ((:instance effects-other-char-encountered-state-in-rbp-projection)))))
 
 ;; ======================================================================
 ;; ======================================================================
@@ -7935,6 +6692,8 @@
  (local (include-book "std/lists/take" :dir :system))
 
  (local (include-book "std/lists/last" :dir :system))
+
+ (local (in-theory (e/d* (acl2::take-of-1 acl2::take-of-zero take nthcdr) ())))
 
  (local
   (defthm |Subgoal *1/4.5|
@@ -8184,8 +6943,7 @@
                  (< offset (len str-bytes))
                  (natp offset))
             (equal (loop-effects-hint word-state offset str-bytes x86)
-                   (x86-run (loop-clk word-state offset str-bytes)
-                            x86)))
+                   (x86-run (loop-clk word-state offset str-bytes) x86)))
    :hints (("Goal" :in-theory (e/d* (loop-clk) ()))))
 
  ) ;; End of encapsulate
@@ -8194,81 +6952,25 @@
   ;; Begins at (call GC)
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (equal old-word-state
-                       (combine-bytes
-                        (word-state x86 x86)))
+                (equal old-word-state (combine-bytes (word-state x86 x86)))
                 (equal offset (offset x86))
                 (equal str-bytes (input x86)))
            (equal (x86-run (loop-clk old-word-state offset str-bytes) x86)
                   (loop-effects-hint old-word-state offset str-bytes x86)))
   :hints (("Goal"
-           :induct (cons (loop-effects-hint old-word-state offset str-bytes x86)
-                         (loop-clk old-word-state offset str-bytes))
-           :in-theory
-           '((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
-             (:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
-             (:DEFINITION EQL)
-             (:DEFINITION FIX)
-             (:DEFINITION GET-CHAR)
-             (:DEFINITION INPUT)
-             (:DEFINITION LOOP-CLK)
-             (:DEFINITION LOOP-EFFECTS-HINT)
-             (:DEFINITION N01P$INLINE)
-             (:DEFINITION NOT)
-             (:DEFINITION OFFSET)
-             (:DEFINITION SYNP)
-             (:EXECUTABLE-COUNTERPART BINARY-+)
-             (:EXECUTABLE-COUNTERPART EQUAL)
-             (:EXECUTABLE-COUNTERPART GET-BITS)
-             (:EXECUTABLE-COUNTERPART MEMBER-EQUAL)
-             (:EXECUTABLE-COUNTERPART N01P$INLINE)
-             (:FORWARD-CHAINING LOOP-PRECONDITIONS-FWD-CHAINING-ESSENTIALS)
-             (:INDUCTION LOOP-EFFECTS-HINT)
-             (:REWRITE
-              !FLGI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST-OTHER-FLAGS)
-             (:REWRITE !RGFI-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE !RIP-!RGFI)
-             (:REWRITE !RIP-!RIP)
-             (:REWRITE !RIP-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE |(+ c (+ d x))|)
-             (:REWRITE EFFECTS-EOF-ENCOUNTERED)
-             (:REWRITE EFFECTS-EOF-NOT-ENCOUNTERED-PRELIM)
-             (:REWRITE EFFECTS-NEWLINE-ENCOUNTERED)
-             (:REWRITE EFFECTS-SPACE-ENCOUNTERED)
-             (:REWRITE EFFECTS-TAB-ENCOUNTERED)
-             (:REWRITE LOOP-EFFECTS-HINT-AND-LOOP-CLK)
-             (:REWRITE RB-!FLGI)
-             (:REWRITE RB-!RGFI)
-             (:REWRITE RB-!RIP)
-             (:REWRITE RB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE RB-WRITE-X86-FILE-DES)
-             (:REWRITE RGFI-!RGFI)
-             (:REWRITE RIP-!RGFI)
-             (:REWRITE RIP-!RIP)
-             (:REWRITE SET/CLEAR-BIT-RETURNS-A-BIT)
-             (:REWRITE UNICITY-OF-0)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-!FLGI)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-!RGFI)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-!RIP)
-             (:REWRITE
-              PROGRAMMER-LEVEL-MODE-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-WB)
-             (:REWRITE PROGRAMMER-LEVEL-MODE-WRITE-X86-FILE-DES)
-             (:REWRITE WB-!FLGI)
-             (:REWRITE WB-!RGFI)
-             (:REWRITE WB-!RIP)
-             (:REWRITE WB-EFLAGS-FOR-X86-ADD/OR/ADC/SBB/AND/SUB/XOR/CMP/TEST)
-             (:REWRITE WB-RETURNS-X86P)
-             (:REWRITE WB-WRITE-X86-FILE-DES)
-             (:REWRITE X86-RUN-OPENER-NOT-MS-NOT-FAULT-ZP-N)
-             (:REWRITE X86P-!FLGI)
-             (:REWRITE X86P-WRITE-X86-FILE-DES)
-             (:TYPE-PRESCRIPTION EOF-TERMINATEDP)
-             (:TYPE-PRESCRIPTION LOOP-PRECONDITIONS)
-             (:TYPE-PRESCRIPTION RIP-IS-INTEGERP)
-             (:TYPE-PRESCRIPTION SET/CLEAR-BIT)
-             (:TYPE-PRESCRIPTION SET/CLEAR-BIT-RETURNS-A-BIT-TYPE)
-             (:TYPE-PRESCRIPTION X86P)))))
+           :use ((:instance loop-effects-hint-and-loop-clk
+                            (str-bytes (string-to-bytes
+                                        (cdr (assoc :contents
+                                                    (read-x86-file-contents
+                                                     (cdr (assoc :name (read-x86-file-des 0 x86))) x86)))))
+                            (offset (cdr (assoc-equal :offset (read-x86-file-des 0 x86))))
+                            (word-state (combine-bytes (word-state x86 x86)))
+                            (x86 x86)))
+           :in-theory (e/d* (loop-preconditions
+                             env-assumptions)
+                            (loop-effects-hint-and-loop-clk
+                             rb-in-terms-of-rb-subset-p
+                             combine-bytes-rb-in-terms-of-rb-subset-p)))))
 
 ;; ======================================================================
 ;; ======================================================================
@@ -8279,69 +6981,70 @@
 
 ;; Intention:
 
-(encapsulate ()
+(encapsulate
+ ()
 
-(local (include-book "std/lists/nthcdr" :dir :system))
+ (local (include-book "std/lists/nthcdr" :dir :system))
 
-(defun nc-algo (offset str-bytes nc)
-  (declare (xargs :measure
-                  (len (nthcdr offset str-bytes))))
+ (defun nc-algo (offset str-bytes nc)
+   (declare (xargs :measure
+                   (len (nthcdr offset str-bytes))))
 
-  (if (and (eof-terminatedp str-bytes)
-           (< offset (len str-bytes))
-           (natp offset))
+   (if (and (eof-terminatedp str-bytes)
+            (< offset (len str-bytes))
+            (natp offset))
 
-      (b* ((c (get-char offset str-bytes))
-           ((when (equal c *eof*)) nc)
-           (new-nc (get-bits 0 31 (1+ nc))))
-          (nc-algo (1+ offset) str-bytes new-nc))
+       (b* ((c (get-char offset str-bytes))
+            ((when (equal c *eof*)) nc)
+            (new-nc (loghead 32 (1+ nc))))
+           (nc-algo (1+ offset) str-bytes new-nc))
 
-    nc))
+     nc))
 
-(defun nl-algo (offset str-bytes nl)
-  (declare (xargs :measure
-                  (len (nthcdr offset str-bytes))))
+ (defun nl-algo (offset str-bytes nl)
+   (declare (xargs :measure
+                   (len (nthcdr offset str-bytes))))
 
-  (if (and (eof-terminatedp str-bytes)
-           (< offset (len str-bytes))
-           (natp offset))
+   (if (and (eof-terminatedp str-bytes)
+            (< offset (len str-bytes))
+            (natp offset))
 
-      (b* ((c (get-char offset str-bytes))
-           ((when (equal c *eof*)) nl)
-           (new-nl (if (equal c *newline*)
-                       (get-bits 0 31 (1+ nl))
-                     nl)))
-          (nl-algo (1+ offset) str-bytes new-nl))
+       (b* ((c (get-char offset str-bytes))
+            ((when (equal c *eof*)) nl)
+            (new-nl (if (equal c *newline*)
+                        (loghead 32 (1+ nl))
+                      nl)))
+           (nl-algo (1+ offset) str-bytes new-nl))
 
-    nl))
+     nl))
 
-(defun nw-algo (offset str-bytes word-state nw)
-  (declare (xargs :measure
-                  (len (nthcdr offset str-bytes))))
+ (defun nw-algo (offset str-bytes word-state nw)
+   (declare (xargs :measure
+                   (len (nthcdr offset str-bytes))))
 
-  (if (and (eof-terminatedp str-bytes)
-           (< offset (len str-bytes))
-           (natp offset))
+   (if (and (eof-terminatedp str-bytes)
+            (< offset (len str-bytes))
+            (natp offset))
 
-      (b* ((c (get-char offset str-bytes))
-           ((when (equal c *eof*)) nw)
+       (b* ((c (get-char offset str-bytes))
+            ((when (equal c *eof*)) nw)
 
-           ((mv new-nw new-word-state)
-            (if (equal c *newline*)
-                (mv nw *out*)
-              (if (equal c *space*)
-                  (mv nw *out*)
-                (if (equal c *tab*)
-                    (mv nw *out*)
-                  (if (equal word-state *out*)
-                      (mv (get-bits 0 31 (1+ nw)) *in*)
-                    (mv nw word-state)))))))
+            ((mv new-nw new-word-state)
+             (if (equal c *newline*)
+                 (mv nw *out*)
+               (if (equal c *space*)
+                   (mv nw *out*)
+                 (if (equal c *tab*)
+                     (mv nw *out*)
+                   (if (equal word-state *out*)
+                       (mv (loghead 32 (1+ nw)) *in*)
+                     (mv nw word-state)))))))
 
-          (nw-algo (1+ offset) str-bytes new-word-state new-nw))
+           (nw-algo (1+ offset) str-bytes new-word-state new-nw))
 
-    nw))
+     nw))
 
-) ;; End of encapsulate
+ ) ;; End of encapsulate
 
 (deftheory effects-loop-rules
 
@@ -8350,10 +7053,7 @@
     ;; (equal (word-state x86 ...) (byte-ify 4 *out*))
     ;; with
     ;; (equal (combine-bytes (word-state x86 ...)) *out*)
-    dumb-word-state-out
     combine-bytes
-    (logior)
-    (ash)
 
     ;; EOF Encountered:
     effects-eof-encountered-rsp-projection
@@ -8447,13 +7147,11 @@
                 (equal old-word-state (combine-bytes (word-state x86 x86)))
                 (equal old-nc (combine-bytes (nc x86 x86))))
            (equal (combine-bytes
-                   (nc x86
-                       (loop-effects-hint old-word-state offset str-bytes x86)))
+                   (nc x86 (loop-effects-hint old-word-state offset str-bytes x86)))
                   (nc-algo offset str-bytes old-nc)))
   :hints (("Goal"
            :induct (cons (nc-algo offset str-bytes old-nc)
-                         (loop-effects-hint old-word-state offset
-                                            str-bytes x86))
+                         (loop-effects-hint old-word-state offset str-bytes x86))
            :in-theory (union-theories
                        '(effects-loop-rules
                          nc-algo
@@ -8513,7 +7211,7 @@
                              (mv 0 x86 nw))
                        (if (equal word-state #.*out*)
                            (b* ((x86 (x86-run (gc-clk-otherwise-out) x86)))
-                               (mv 1 x86 (get-bits 0 31 (1+ nw))))
+                               (mv 1 x86 (loghead 32 (1+ nw))))
                          (b* ((x86 (x86-run (gc-clk-otherwise-in) x86)))
                              (mv word-state x86 nw))))))))
 
@@ -8625,8 +7323,7 @@
     effects-to-gc-variables-state
     effects-to-gc-variables-nc
     effects-to-gc-variables-nl
-    effects-to-gc-variables-nw
-    ))
+    effects-to-gc-variables-nw))
 
 (defthm effects-wc-1
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -8695,10 +7392,8 @@
                 (preconditions addr x86)
                 (equal offset (offset x86))
                 (equal str-bytes (input x86)))
-           (equal (x86-run (loop-clk 0 offset str-bytes)
-                           (x86-run (gc-clk-main-before-call) x86))
-                  (loop-effects-hint 0 offset str-bytes
-                                     (x86-run (gc-clk-main-before-call) x86))))
+           (equal (x86-run (loop-clk 0 offset str-bytes) (x86-run (gc-clk-main-before-call) x86))
+                  (loop-effects-hint 0 offset str-bytes (x86-run (gc-clk-main-before-call) x86))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (union-theories
                        '(main-and-gc-composition-rules
@@ -8710,11 +7405,12 @@
                          rgfi-is-i64p
                          word-state
                          effects-to-gc-rbp-projection
-                         (len)
+                         (len) (byte-ify)
                          effects-to-gc-programmer-level-mode-projection
                          effects-to-gc-input-projection
                          effects-to-gc-offset-projection
-                         loop-preconditions-effects-to-gc)
+                         loop-preconditions-effects-to-gc
+                         acl2::fold-consts-in-+)
                        (theory 'minimal-theory))
            :use ((:instance effects-loop
                             (x86 (x86-run (gc-clk-main-before-call) x86))
@@ -8738,130 +7434,123 @@
                          effects-wc-2)
                        (theory 'minimal-theory)))))
 
-(encapsulate
- ()
+(defthm wc-effects-nc
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (preconditions addr x86)
+                (equal offset (offset x86))
+                (equal str-bytes (input x86)))
+           (equal (combine-bytes
+                   (program-nc
+                    x86
+                    (loop-effects-hint 0 offset str-bytes
+                                       (x86-run (gc-clk-main-before-call) x86))))
+                  (nc-algo offset str-bytes 0)))
+  :hints (("Goal"
+           :in-theory (union-theories
+                       '(rgfi-is-i64p
+                         combine-bytes
+                         (logior)
+                         (ash)
+                         main-and-gc-composition-rules
+                         nc
+                         program-nc
+                         word-state
+                         acl2::fold-consts-in-+
+                         effects-to-gc-variables-state
+                         effects-to-gc-variables-nc
+                         x86p-effects-to-gc
+                         (len) (byte-ify)
+                         preconditions-fwd-chaining-essentials
+                         effects-to-gc-input-projection
+                         effects-to-gc-offset-projection
+                         effects-to-gc-programmer-level-mode-projection
+                         loop-preconditions-effects-to-gc)
+                       (theory 'minimal-theory))
+           :use ((:instance effects-loop-nc
+                            (x86 (x86-run (gc-clk-main-before-call) x86))
+                            (old-word-state 0)
+                            (old-nc 0))
+                 (:instance effects-to-gc-variables-nc)
+                 (:instance effects-to-gc-variables-state)))))
 
- (local (include-book "arithmetic-5/top" :dir :system))
+(defthm wc-effects-nw
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (preconditions addr x86)
+                (equal offset (offset x86))
+                (equal str-bytes (input x86)))
+           (equal (combine-bytes
+                   (program-nw
+                    x86
+                    (loop-effects-hint 0 offset str-bytes
+                                       (x86-run (gc-clk-main-before-call) x86))))
+                  (nw-algo offset str-bytes 0 0)))
+  :hints (("Goal"
+           :in-theory (union-theories
+                       '(rgfi-is-i64p
+                         combine-bytes
+                         (logior)
+                         (ash) (byte-ify)
+                         main-and-gc-composition-rules
+                         nw
+                         program-nw
+                         word-state
+                         acl2::fold-consts-in-+
+                         effects-to-gc-variables-state
+                         effects-to-gc-variables-nc
+                         x86p-effects-to-gc
+                         (len)
+                         preconditions-fwd-chaining-essentials
+                         effects-to-gc-input-projection
+                         effects-to-gc-offset-projection
+                         effects-to-gc-programmer-level-mode-projection
+                         loop-preconditions-effects-to-gc)
+                       (theory 'minimal-theory))
+           :use ((:instance effects-loop-nw
+                            (x86 (x86-run (gc-clk-main-before-call) x86))
+                            (old-word-state 0)
+                            (old-nw 0))
+                 (:instance effects-to-gc-variables-state)
+                 (:instance effects-to-gc-variables-nw)))))
 
- (defthm wc-effects-nc
-   (implies (and (bind-free '((addr . addr)) (addr))
-                 (preconditions addr x86)
-                 (equal offset (offset x86))
-                 (equal str-bytes (input x86)))
-            (equal (combine-bytes
-                    (program-nc
-                     x86
-                     (loop-effects-hint 0 offset str-bytes
-                                        (x86-run (gc-clk-main-before-call) x86))))
-                   (nc-algo offset str-bytes 0)))
-   :hints (("Goal"
-            :in-theory (union-theories
-                        '(rgfi-is-i64p
-                          combine-bytes
-                          (logior)
-                          (ash)
-                          main-and-gc-composition-rules
-                          nc
-                          program-nc
-                          word-state
-                          ACL2::|(+ c (+ d x))|
-                          effects-to-gc-variables-state
-                          effects-to-gc-variables-nc
-                          x86p-effects-to-gc
-                          (len)
-                          preconditions-fwd-chaining-essentials
-                          effects-to-gc-input-projection
-                          effects-to-gc-offset-projection
-                          effects-to-gc-programmer-level-mode-projection
-                          loop-preconditions-effects-to-gc)
-                        (theory 'minimal-theory))
-            :use ((:instance effects-loop-nc
-                             (x86 (x86-run (gc-clk-main-before-call) x86))
-                             (old-word-state 0)
-                             (old-nc 0))
-                  (:instance effects-to-gc-variables-nc)
-                  (:instance effects-to-gc-variables-state)))))
+(defthm wc-effects-nl
+  (implies (and (bind-free '((addr . addr)) (addr))
+                (preconditions addr x86)
+                (equal offset (offset x86))
+                (equal str-bytes (input x86)))
+           (equal (combine-bytes
+                   (program-nl
+                    x86
+                    (loop-effects-hint 0 offset str-bytes
+                                       (x86-run (gc-clk-main-before-call) x86))))
+                  (nl-algo offset str-bytes 0)))
+  :hints (("Goal"
+           :in-theory (union-theories
+                       '(rgfi-is-i64p
+                         combine-bytes
+                         (logior)
+                         (ash) (byte-ify)
+                         main-and-gc-composition-rules
+                         nl
+                         program-nl
+                         word-state
+                         acl2::fold-consts-in-+
+                         effects-to-gc-variables-state
+                         effects-to-gc-variables-nc
+                         x86p-effects-to-gc
+                         (len)
+                         preconditions-fwd-chaining-essentials
+                         effects-to-gc-input-projection
+                         effects-to-gc-offset-projection
+                         effects-to-gc-programmer-level-mode-projection
+                         loop-preconditions-effects-to-gc)
+                       (theory 'minimal-theory))
+           :use ((:instance effects-loop-nl
+                            (x86 (x86-run (gc-clk-main-before-call) x86))
+                            (old-word-state 0)
+                            (old-nl 0))
+                 (:instance effects-to-gc-variables-state)
+                 (:instance effects-to-gc-variables-nl)))))
 
- (defthm wc-effects-nw
-   (implies (and (bind-free '((addr . addr)) (addr))
-                 (preconditions addr x86)
-                 (equal offset (offset x86))
-                 (equal str-bytes (input x86)))
-            (equal (combine-bytes
-                    (program-nw
-                     x86
-                     (loop-effects-hint 0 offset str-bytes
-                                        (x86-run (gc-clk-main-before-call) x86))))
-                   (nw-algo offset str-bytes 0 0)))
-   :hints (("Goal"
-            :in-theory (union-theories
-                        '(rgfi-is-i64p
-                          combine-bytes
-                          (logior)
-                          (ash)
-                          main-and-gc-composition-rules
-                          nw
-                          program-nw
-                          word-state
-                          ACL2::|(+ c (+ d x))|
-                          effects-to-gc-variables-state
-                          effects-to-gc-variables-nc
-                          x86p-effects-to-gc
-                          (len)
-                          preconditions-fwd-chaining-essentials
-                          effects-to-gc-input-projection
-                          effects-to-gc-offset-projection
-                          effects-to-gc-programmer-level-mode-projection
-                          loop-preconditions-effects-to-gc)
-                        (theory 'minimal-theory))
-            :use ((:instance effects-loop-nw
-                             (x86 (x86-run (gc-clk-main-before-call) x86))
-                             (old-word-state 0)
-                             (old-nw 0))
-                  (:instance effects-to-gc-variables-state)
-                  (:instance effects-to-gc-variables-nw)))))
-
- (defthm wc-effects-nl
-   (implies (and (bind-free '((addr . addr)) (addr))
-                 (preconditions addr x86)
-                 (equal offset (offset x86))
-                 (equal str-bytes (input x86)))
-            (equal (combine-bytes
-                    (program-nl
-                     x86
-                     (loop-effects-hint 0 offset str-bytes
-                                        (x86-run (gc-clk-main-before-call) x86))))
-                   (nl-algo offset str-bytes 0)))
-   :hints (("Goal"
-            :in-theory (union-theories
-                        '(rgfi-is-i64p
-                          combine-bytes
-                          (logior)
-                          (ash)
-                          main-and-gc-composition-rules
-                          nl
-                          program-nl
-                          word-state
-                          ACL2::|(+ c (+ d x))|
-                          effects-to-gc-variables-state
-                          effects-to-gc-variables-nc
-                          x86p-effects-to-gc
-                          (len)
-                          preconditions-fwd-chaining-essentials
-                          effects-to-gc-input-projection
-                          effects-to-gc-offset-projection
-                          effects-to-gc-programmer-level-mode-projection
-                          loop-preconditions-effects-to-gc)
-                        (theory 'minimal-theory))
-            :use ((:instance effects-loop-nl
-                             (x86 (x86-run (gc-clk-main-before-call) x86))
-                             (old-word-state 0)
-                             (old-nl 0))
-                  (:instance effects-to-gc-variables-state)
-                  (:instance effects-to-gc-variables-nl)))))
-
-
- ) ;; End of encapsulate
 
 ;; **********************************************************************
 
@@ -8884,8 +7573,7 @@
                        '(effects-loop-rules
                          rgfi-is-i64p
                          loop-effects-hint
-                         (len)
-                         )
+                         (len))
                        (theory 'minimal-theory)))
           ("Subgoal *1/3"
            :in-theory (union-theories
@@ -8900,8 +7588,7 @@
 (defthm rip-loop-clk
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (equal word-state
-                       (combine-bytes (word-state x86 x86)))
+                (equal word-state (combine-bytes (word-state x86 x86)))
                 (equal offset (offset x86))
                 (equal str-bytes (input x86)))
            (equal (xr :rip 0 (x86-run (loop-clk word-state offset str-bytes) x86))
@@ -8935,13 +7622,14 @@
                          effects-to-gc-program-projection
                          effects-to-gc-env-assumptions-projection
                          word-state
-                         (len)
+                         (len) (byte-ify)
+                         acl2::fold-consts-in-+
                          effects-to-gc-rbp-projection
                          effects-to-gc-input-projection
                          effects-to-gc-offset-projection
                          effects-to-gc-programmer-level-mode-projection
-                         rip-effects-loop
-                         loop-preconditions-effects-to-gc)
+                         loop-preconditions-effects-to-gc
+                         rip-effects-loop)
                        (theory 'minimal-theory))
            :use ((:instance effects-to-gc-variables-state)))))
 
@@ -8962,8 +7650,7 @@
                        '(effects-loop-rules
                          rgfi-is-i64p
                          loop-effects-hint
-                         (len)
-                         )
+                         (len))
                        (theory 'minimal-theory)))
           ("Subgoal *1/3"
            :in-theory (union-theories
@@ -8971,10 +7658,9 @@
                          eof-terminatedp
                          input
                          offset
-                         file-descriptor-fieldp  )
+                         file-descriptor-fieldp)
                        (theory 'minimal-theory))
            :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
-
 
 (defthm ms-loop-clk
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -9015,7 +7701,8 @@
                          effects-to-gc-program-projection
                          effects-to-gc-env-assumptions-projection
                          word-state
-                         (len)
+                         (len) (byte-ify)
+                         acl2::fold-consts-in-+
                          effects-to-gc-rbp-projection
                          effects-to-gc-input-projection
                          effects-to-gc-offset-projection
@@ -9024,7 +7711,6 @@
                          loop-preconditions-effects-to-gc)
                        (theory 'minimal-theory))
            :use ((:instance effects-to-gc-variables-state)))))
-
 
 ;;**********************************************************************
 ;; Correctness Theorems
@@ -9118,79 +7804,18 @@
                  ;; Rest of the Memory
                  addresses
                  ;; Program Stack Space
-                 (create-canonical-address-list
-                  104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))
-                 ))
+                 (create-canonical-address-list 104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))))
            (equal (mv-nth 1 (rb addresses r-w-x
                                 (x86-run (gc-clk-main-before-call) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal"
-           :in-theory (e/d* ( ;; rm08
-                            opcode-execute
-                            x86-instruction-update-fns
-                            !rgfi-size
-                            x86-operand-to-reg/mem
-                            wr64
-                            wr32
-                            rr32
-                            rr64
-                            rm32
-                            rm64
-                            wm32
-                            wm64
-                            wm-size
-                            x86-operand-from-modr/m-and-sib-bytes
-                            rim-size
-                            rim08
-                            two-byte-opcode-decode-and-execute
-                            x86-effective-addr
-                            eflags-for-x86-add/or/adc/sbb/and/sub/xor/cmp/test
-                            subset-p)
-                           ()))
-          ("Subgoal *1/4"
-           :use ((:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 (mv-nth 1
-                                         (wb (list (cons (+ -8 (xr :rgf 4 x86))
-                                                         (get-bits 0 7 (xr :rgf 5 x86)))
-                                                   (cons (+ -7 (xr :rgf 4 x86))
-                                                         (get-bits 8 15 (xr :rgf 5 x86)))
-                                                   (cons (+ -6 (xr :rgf 4 x86))
-                                                         (get-bits 16 23 (xr :rgf 5 x86)))
-                                                   (cons (+ -5 (xr :rgf 4 x86))
-                                                         (get-bits 24 31 (xr :rgf 5 x86)))
-                                                   (cons (+ -4 (xr :rgf 4 x86))
-                                                         (get-bits 32 39 (xr :rgf 5 x86)))
-                                                   (cons (+ -3 (xr :rgf 4 x86))
-                                                         (get-bits 40 47 (xr :rgf 5 x86)))
-                                                   (cons (+ -2 (xr :rgf 4 x86))
-                                                         (get-bits 48 55 (xr :rgf 5 x86)))
-                                                   (cons (+ -1 (xr :rgf 4 x86))
-                                                         (get-bits 56 63 (xr :rgf 5 x86)))
-                                                   (cons (+ -16 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -15 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -14 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -13 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -20 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -19 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -18 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -17 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -24 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -23 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -22 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -21 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -28 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -27 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -26 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -25 (xr :rgf 4 x86)) 0))
-                                             x86))))
-                 (:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 x86))))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d* ()
+                            (wb-remove-duplicate-writes force (force))))))
 
 (defthmd memory-analysis-effects-call-gc
   (implies (and (x86p x86)
                 (xr :programmer-level-mode 0 x86)
+                (equal (xr :os-info 0 x86) :linux)
                 (env-assumptions x86)
                 (canonical-address-p (xr :rgf *rsp* x86))
                 ;; Address of the call instruction in the main sub-routine
@@ -9214,9 +7839,7 @@
                 ;; Enabling the SYSCALL instruction.
                 (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
                 (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
-                (program-at (create-canonical-address-list
-                             (len *wc*) addr) *wc* x86)
-
+                (program-at (create-canonical-address-list (len *wc*) addr) *wc* x86)
                 (canonical-address-listp addresses)
                 (disjoint-p
                  ;; Rest of the Memory
@@ -9224,126 +7847,21 @@
                  ;; Program Stack Space
                  (create-canonical-address-list
                   80 (+ (- (+ 8 #x20 8)) (xr :rgf *rsp* x86)))))
-           (equal (mv-nth 1 (rb addresses r-w-x
-                                (x86-run (gc-clk) x86)))
+           (equal (mv-nth 1 (rb addresses r-w-x (x86-run (gc-clk) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal"
-           :in-theory (e/d* ( ;; rm08
-                            opcode-execute
-                            x86-instruction-update-fns
-                            !rgfi-size
-                            x86-operand-to-reg/mem
-                            wr64
-                            wr32
-                            rr32
-                            rr64
-                            rm32
-                            rm64
-                            wm32
-                            wm64
-                            wm-size
-                            x86-operand-from-modr/m-and-sib-bytes
-                            rim-size
-                            rim08
-                            two-byte-opcode-decode-and-execute
-                            x86-effective-addr
-                            eflags-for-x86-add/or/adc/sbb/and/sub/xor/cmp/test
-                            subset-p)
-                           ()))
-          ("Subgoal *1/4"
-           :use ((:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 (mv-nth
-                                  1
-                                  (wb
-                                   (list
-                                    (cons (+ -8 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -7 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -6 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -5 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -4 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -3 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -2 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -1 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -16 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (xr :rgf 5 x86)))
-                                    (cons (+ -15 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (xr :rgf 5 x86)))
-                                    (cons (+ -14 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (xr :rgf 5 x86)))
-                                    (cons (+ -13 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (xr :rgf 5 x86)))
-                                    (cons (+ -12 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (xr :rgf 5 x86)))
-                                    (cons (+ -11 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (xr :rgf 5 x86)))
-                                    (cons (+ -10 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (xr :rgf 5 x86)))
-                                    (cons (+ -9 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (xr :rgf 5 x86)))
-                                    (cons (+ -24 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (xr :rgf 3 x86)))
-                                    (cons (+ -23 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (xr :rgf 3 x86)))
-                                    (cons (+ -22 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (xr :rgf 3 x86)))
-                                    (cons (+ -21 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (xr :rgf 3 x86)))
-                                    (cons (+ -20 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (xr :rgf 3 x86)))
-                                    (cons (+ -19 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (xr :rgf 3 x86)))
-                                    (cons (+ -18 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (xr :rgf 3 x86)))
-                                    (cons (+ -17 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (xr :rgf 3 x86)))
-                                    (cons (+ -48 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -47 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -46 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -45 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -44 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -43 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -42 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -41 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ -25 (xr :rgf 4 x86))))
-                                    (cons
-                                     (+ -25 (xr :rgf 4 x86))
-                                     (car
-                                      (grab-bytes
-                                       (take
-                                        1
-                                        (nthcdr
-                                         (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
-                                         (string-to-bytes
-                                          (cdr
-                                           (assoc-equal
-                                            :contents
-                                            (read-x86-file-contents
-                                             (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-                                             x86)))))))))
-                                    (cons (+ -32 (xr :rgf 4 x86)) 1)
-                                    (cons (+ -31 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -29 (xr :rgf 4 x86)) 0))
-                                   x86))))
-                 (:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 x86))))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d* ()
+                            (wb-remove-duplicate-writes
+                             force (force))))))
+
+
+(defthm not-member-p-canonical-address-listp-when-disjoint-p-new
+  ;; [Shilpi]: not-member-p-canonical-address-listp doesn't work. I need a more general theorem.
+  (implies (and (disjoint-p xs
+                            (create-canonical-address-list m addr))
+                (member-p e (create-canonical-address-list m addr)))
+           (equal (member-p e xs)
+                  nil)))
 
 (defthmd memory-analysis-effects-eof-encountered
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -9354,115 +7872,13 @@
                  ;; Rest of the Memory
                  addresses
                  ;; Program Stack Space
-                 (create-canonical-address-list
-                  80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))))
-           (equal (mv-nth 1 (rb addresses r-w-x
-                                (x86-run (gc-clk-eof) x86)))
+                 (create-canonical-address-list 80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))))
+           (equal (mv-nth 1 (rb addresses r-w-x (x86-run (gc-clk-eof) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal"
-           :in-theory (e/d* ( ;; rm08
-                            opcode-execute
-                            x86-instruction-update-fns
-                            !rgfi-size
-                            x86-operand-to-reg/mem
-                            wr64
-                            wr32
-                            rr32
-                            rr64
-                            rm32
-                            rm64
-                            wm32
-                            wm64
-                            wm-size
-                            x86-operand-from-modr/m-and-sib-bytes
-                            rim-size
-                            rim08
-                            two-byte-opcode-decode-and-execute
-                            x86-effective-addr
-                            eflags-for-x86-add/or/adc/sbb/and/sub/xor/cmp/test
-                            subset-p)
-                           ()))
-          ("Subgoal *1/4"
-           :use ((:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 (mv-nth 1
-                                         (wb (list (cons (+ -8 (xr :rgf 4 x86))
-                                                         (get-bits 0 7 (+ 5 (xr :rip 0 x86))))
-                                                   (cons (+ -7 (xr :rgf 4 x86))
-                                                         (get-bits 8 15 (+ 5 (xr :rip 0 x86))))
-                                                   (cons (+ -6 (xr :rgf 4 x86))
-                                                         (get-bits 16 23 (+ 5 (xr :rip 0 x86))))
-                                                   (cons (+ -5 (xr :rgf 4 x86))
-                                                         (get-bits 24 31 (+ 5 (xr :rip 0 x86))))
-                                                   (cons (+ -4 (xr :rgf 4 x86))
-                                                         (get-bits 32 39 (+ 5 (xr :rip 0 x86))))
-                                                   (cons (+ -3 (xr :rgf 4 x86))
-                                                         (get-bits 40 47 (+ 5 (xr :rip 0 x86))))
-                                                   (cons (+ -2 (xr :rgf 4 x86))
-                                                         (get-bits 48 55 (+ 5 (xr :rip 0 x86))))
-                                                   (cons (+ -1 (xr :rgf 4 x86))
-                                                         (get-bits 56 63 (+ 5 (xr :rip 0 x86))))
-                                                   (cons (+ -16 (xr :rgf 4 x86))
-                                                         (get-bits 0 7 (+ 32 (xr :rgf 4 x86))))
-                                                   (cons (+ -15 (xr :rgf 4 x86))
-                                                         (get-bits 8 15 (+ 32 (xr :rgf 4 x86))))
-                                                   (cons (+ -14 (xr :rgf 4 x86))
-                                                         (get-bits 16 23 (+ 32 (xr :rgf 4 x86))))
-                                                   (cons (+ -13 (xr :rgf 4 x86))
-                                                         (get-bits 24 31 (+ 32 (xr :rgf 4 x86))))
-                                                   (cons (+ -12 (xr :rgf 4 x86))
-                                                         (get-bits 32 39 (+ 32 (xr :rgf 4 x86))))
-                                                   (cons (+ -11 (xr :rgf 4 x86))
-                                                         (get-bits 40 47 (+ 32 (xr :rgf 4 x86))))
-                                                   (cons (+ -10 (xr :rgf 4 x86))
-                                                         (get-bits 48 55 (+ 32 (xr :rgf 4 x86))))
-                                                   (cons (+ -9 (xr :rgf 4 x86))
-                                                         (get-bits 56 63 (+ 32 (xr :rgf 4 x86))))
-                                                   (cons (+ -24 (xr :rgf 4 x86))
-                                                         (get-bits 0 7 (xr :rgf 3 x86)))
-                                                   (cons (+ -23 (xr :rgf 4 x86))
-                                                         (get-bits 8 15 (xr :rgf 3 x86)))
-                                                   (cons (+ -22 (xr :rgf 4 x86))
-                                                         (get-bits 16 23 (xr :rgf 3 x86)))
-                                                   (cons (+ -21 (xr :rgf 4 x86))
-                                                         (get-bits 24 31 (xr :rgf 3 x86)))
-                                                   (cons (+ -20 (xr :rgf 4 x86))
-                                                         (get-bits 32 39 (xr :rgf 3 x86)))
-                                                   (cons (+ -19 (xr :rgf 4 x86))
-                                                         (get-bits 40 47 (xr :rgf 3 x86)))
-                                                   (cons (+ -18 (xr :rgf 4 x86))
-                                                         (get-bits 48 55 (xr :rgf 3 x86)))
-                                                   (cons (+ -17 (xr :rgf 4 x86))
-                                                         (get-bits 56 63 (xr :rgf 3 x86)))
-                                                   (cons (+ -48 (xr :rgf 4 x86))
-                                                         (get-bits 0 7 (+ -25 (xr :rgf 4 x86))))
-                                                   (cons (+ -47 (xr :rgf 4 x86))
-                                                         (get-bits 8 15 (+ -25 (xr :rgf 4 x86))))
-                                                   (cons (+ -46 (xr :rgf 4 x86))
-                                                         (get-bits 16 23 (+ -25 (xr :rgf 4 x86))))
-                                                   (cons (+ -45 (xr :rgf 4 x86))
-                                                         (get-bits 24 31 (+ -25 (xr :rgf 4 x86))))
-                                                   (cons (+ -44 (xr :rgf 4 x86))
-                                                         (get-bits 32 39 (+ -25 (xr :rgf 4 x86))))
-                                                   (cons (+ -43 (xr :rgf 4 x86))
-                                                         (get-bits 40 47 (+ -25 (xr :rgf 4 x86))))
-                                                   (cons (+ -42 (xr :rgf 4 x86))
-                                                         (get-bits 48 55 (+ -25 (xr :rgf 4 x86))))
-                                                   (cons (+ -41 (xr :rgf 4 x86))
-                                                         (get-bits 56 63 (+ -25 (xr :rgf 4 x86))))
-                                                   (cons (+ -25 (xr :rgf 4 x86)) 35)
-                                                   (cons (+ -32 (xr :rgf 4 x86)) 1)
-                                                   (cons (+ -31 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -30 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ -29 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ 28 (xr :rgf 4 x86)) 35)
-                                                   (cons (+ 29 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ 30 (xr :rgf 4 x86)) 0)
-                                                   (cons (+ 31 (xr :rgf 4 x86)) 0))
-                                             x86))))
-                 (:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 x86))))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d* ()
+                            (wb-remove-duplicate-writes
+                             force (force))))))
 
 (defthmd memory-analysis-effects-newline-encountered
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -9475,200 +7891,12 @@
                  ;; Program Stack Space
                  (create-canonical-address-list
                   80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))))
-           (equal (mv-nth 1 (rb addresses r-w-x
-                                (x86-run (gc-clk-newline) x86)))
+           (equal (mv-nth 1 (rb addresses r-w-x (x86-run (gc-clk-newline) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal"
-           :in-theory (e/d* ( ;; rm08
-                            opcode-execute
-                            x86-instruction-update-fns
-                            !rgfi-size
-                            x86-operand-to-reg/mem
-                            wr64
-                            wr32
-                            rr32
-                            rr64
-                            rm32
-                            rm64
-                            wm32
-                            wm64
-                            wm-size
-                            x86-operand-from-modr/m-and-sib-bytes
-                            rim-size
-                            rim08
-                            two-byte-opcode-decode-and-execute
-                            x86-effective-addr
-                            eflags-for-x86-add/or/adc/sbb/and/sub/xor/cmp/test
-                            subset-p)
-                           ()))
-          ("Subgoal *1/4"
-           :use ((:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 (mv-nth
-                                  1
-                                  (wb
-                                   (list
-                                    (cons (+ -8 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -7 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -6 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -5 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -4 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -3 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -2 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -1 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -16 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -15 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -14 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -13 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -12 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -11 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -10 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -9 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -24 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (xr :rgf 3 x86)))
-                                    (cons (+ -23 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (xr :rgf 3 x86)))
-                                    (cons (+ -22 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (xr :rgf 3 x86)))
-                                    (cons (+ -21 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (xr :rgf 3 x86)))
-                                    (cons (+ -20 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (xr :rgf 3 x86)))
-                                    (cons (+ -19 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (xr :rgf 3 x86)))
-                                    (cons (+ -18 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (xr :rgf 3 x86)))
-                                    (cons (+ -17 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (xr :rgf 3 x86)))
-                                    (cons (+ -48 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -47 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -46 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -45 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -44 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -43 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -42 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -41 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -25 (xr :rgf 4 x86)) 10)
-                                    (cons (+ -32 (xr :rgf 4 x86)) 1)
-                                    (cons (+ -31 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -29 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 28 (xr :rgf 4 x86)) 10)
-                                    (cons (+ 29 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 31 (xr :rgf 4 x86)) 0)
-                                    (cons
-                                     (+ 20 (xr :rgf 4 x86))
-                                     (get-bits 0 7
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 21 (xr :rgf 4 x86))
-                                     (get-bits 8 15
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 22 (xr :rgf 4 x86))
-                                     (get-bits 16 23
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 23 (xr :rgf 4 x86))
-                                     (get-bits 24 31
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 12 (xr :rgf 4 x86))
-                                     (get-bits 0 7
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 12 (xr :rgf 4 x86))
-                                                                                   (+ 13 (xr :rgf 4 x86))
-                                                                                   (+ 14 (xr :rgf 4 x86))
-                                                                                   (+ 15 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 13 (xr :rgf 4 x86))
-                                     (get-bits 8 15
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 12 (xr :rgf 4 x86))
-                                                                                   (+ 13 (xr :rgf 4 x86))
-                                                                                   (+ 14 (xr :rgf 4 x86))
-                                                                                   (+ 15 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 14 (xr :rgf 4 x86))
-                                     (get-bits 16 23
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 12 (xr :rgf 4 x86))
-                                                                                   (+ 13 (xr :rgf 4 x86))
-                                                                                   (+ 14 (xr :rgf 4 x86))
-                                                                                   (+ 15 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 15 (xr :rgf 4 x86))
-                                     (get-bits 24 31
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 12 (xr :rgf 4 x86))
-                                                                                   (+ 13 (xr :rgf 4 x86))
-                                                                                   (+ 14 (xr :rgf 4 x86))
-                                                                                   (+ 15 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons (+ 24 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 25 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 26 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 27 (xr :rgf 4 x86)) 0))
-                                   x86))))
-                 (:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 x86))))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d* ()
+                            (wb-remove-duplicate-writes
+                             force (force))))))
 
 (defthmd memory-analysis-effects-space-encountered
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -9681,160 +7909,12 @@
                  ;; Program Stack Space
                  (create-canonical-address-list
                   80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))))
-           (equal (mv-nth 1 (rb addresses r-w-x
-                                (x86-run (gc-clk-space) x86)))
+           (equal (mv-nth 1 (rb addresses r-w-x (x86-run (gc-clk-space) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal"
-           :in-theory (e/d* ( ;; rm08
-                            opcode-execute
-                            x86-instruction-update-fns
-                            !rgfi-size
-                            x86-operand-to-reg/mem
-                            wr64
-                            wr32
-                            rr32
-                            rr64
-                            rm32
-                            rm64
-                            wm32
-                            wm64
-                            wm-size
-                            x86-operand-from-modr/m-and-sib-bytes
-                            rim-size
-                            rim08
-                            two-byte-opcode-decode-and-execute
-                            x86-effective-addr
-                            eflags-for-x86-add/or/adc/sbb/and/sub/xor/cmp/test
-                            subset-p)
-                           ()))
-          ("Subgoal *1/4"
-           :use ((:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 (mv-nth
-                                  1
-                                  (wb
-                                   (list
-                                    (cons (+ -8 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -7 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -6 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -5 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -4 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -3 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -2 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -1 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -16 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -15 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -14 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -13 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -12 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -11 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -10 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -9 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -24 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (xr :rgf 3 x86)))
-                                    (cons (+ -23 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (xr :rgf 3 x86)))
-                                    (cons (+ -22 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (xr :rgf 3 x86)))
-                                    (cons (+ -21 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (xr :rgf 3 x86)))
-                                    (cons (+ -20 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (xr :rgf 3 x86)))
-                                    (cons (+ -19 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (xr :rgf 3 x86)))
-                                    (cons (+ -18 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (xr :rgf 3 x86)))
-                                    (cons (+ -17 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (xr :rgf 3 x86)))
-                                    (cons (+ -48 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -47 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -46 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -45 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -44 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -43 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -42 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -41 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -25 (xr :rgf 4 x86)) 32)
-                                    (cons (+ -32 (xr :rgf 4 x86)) 1)
-                                    (cons (+ -31 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -29 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 28 (xr :rgf 4 x86)) 32)
-                                    (cons (+ 29 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 31 (xr :rgf 4 x86)) 0)
-                                    (cons
-                                     (+ 20 (xr :rgf 4 x86))
-                                     (get-bits 0 7
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 21 (xr :rgf 4 x86))
-                                     (get-bits 8 15
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 22 (xr :rgf 4 x86))
-                                     (get-bits 16 23
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 23 (xr :rgf 4 x86))
-                                     (get-bits 24 31
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons (+ 24 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 25 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 26 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 27 (xr :rgf 4 x86)) 0))
-                                   x86))))
-                 (:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 x86))))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d* ()
+                            (wb-remove-duplicate-writes
+                             force (force))))))
 
 (defthmd memory-analysis-effects-tab-encountered
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -9850,171 +7930,19 @@
            (equal (mv-nth 1 (rb addresses r-w-x
                                 (x86-run (gc-clk-tab) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal"
-           :in-theory (e/d* ( ;; rm08
-                            opcode-execute
-                            x86-instruction-update-fns
-                            !rgfi-size
-                            x86-operand-to-reg/mem
-                            wr64
-                            wr32
-                            rr32
-                            rr64
-                            rm32
-                            rm64
-                            wm32
-                            wm64
-                            wm-size
-                            x86-operand-from-modr/m-and-sib-bytes
-                            rim-size
-                            rim08
-                            two-byte-opcode-decode-and-execute
-                            x86-effective-addr
-                            eflags-for-x86-add/or/adc/sbb/and/sub/xor/cmp/test
-                            subset-p)
-                           ()))
-          ("Subgoal *1/4"
-           :use ((:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 (mv-nth
-                                  1
-                                  (wb
-                                   (list
-                                    (cons (+ -8 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -7 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -6 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -5 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -4 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -3 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -2 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -1 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -16 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -15 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -14 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -13 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -12 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -11 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -10 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -9 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -24 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (xr :rgf 3 x86)))
-                                    (cons (+ -23 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (xr :rgf 3 x86)))
-                                    (cons (+ -22 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (xr :rgf 3 x86)))
-                                    (cons (+ -21 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (xr :rgf 3 x86)))
-                                    (cons (+ -20 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (xr :rgf 3 x86)))
-                                    (cons (+ -19 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (xr :rgf 3 x86)))
-                                    (cons (+ -18 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (xr :rgf 3 x86)))
-                                    (cons (+ -17 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (xr :rgf 3 x86)))
-                                    (cons (+ -48 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -47 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -46 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -45 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -44 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -43 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -42 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -41 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -25 (xr :rgf 4 x86)) 9)
-                                    (cons (+ -32 (xr :rgf 4 x86)) 1)
-                                    (cons (+ -31 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -29 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 28 (xr :rgf 4 x86)) 9)
-                                    (cons (+ 29 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 31 (xr :rgf 4 x86)) 0)
-                                    (cons
-                                     (+ 20 (xr :rgf 4 x86))
-                                     (get-bits 0 7
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 21 (xr :rgf 4 x86))
-                                     (get-bits 8 15
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 22 (xr :rgf 4 x86))
-                                     (get-bits 16 23
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 23 (xr :rgf 4 x86))
-                                     (get-bits 24 31
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons (+ 24 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 25 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 26 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 27 (xr :rgf 4 x86)) 0))
-                                   x86))))
-                 (:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 x86))))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d* ()
+                            (wb-remove-duplicate-writes
+                             force (force))))))
 
 (defthmd memory-analysis-effects-other-char-encountered-state-out
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (equal (word-state x86 x86)
-                       (byte-ify 4 *out*))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (equal (combine-bytes (word-state x86 x86)) *out*)
 
                 (canonical-address-listp addresses)
                 (disjoint-p
@@ -10023,242 +7951,21 @@
                  ;; Program Stack Space
                  (create-canonical-address-list
                   80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))))
-           (equal (mv-nth 1 (rb addresses r-w-x
-                                (x86-run (gc-clk-otherwise-out) x86)))
+           (equal (mv-nth 1 (rb addresses r-w-x (x86-run (gc-clk-otherwise-out) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal"
-           :in-theory (e/d* ( ;; rm08
-                            opcode-execute
-                            x86-instruction-update-fns
-                            !rgfi-size
-                            x86-operand-to-reg/mem
-                            wr64
-                            wr32
-                            rr32
-                            rr64
-                            rm32
-                            rm64
-                            wm32
-                            wm64
-                            wm-size
-                            x86-operand-from-modr/m-and-sib-bytes
-                            rim-size
-                            rim08
-                            two-byte-opcode-decode-and-execute
-                            x86-effective-addr
-                            eflags-for-x86-add/or/adc/sbb/and/sub/xor/cmp/test
-                            subset-p)
-                           (word-state)))
-          ("Subgoal *1/4"
-           :use ((:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 (mv-nth
-                                  1
-                                  (wb
-                                   (list
-                                    (cons (+ -8 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -7 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -6 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -5 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -4 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -3 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -2 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -1 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -16 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -15 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -14 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -13 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -12 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -11 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -10 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -9 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -24 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (xr :rgf 3 x86)))
-                                    (cons (+ -23 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (xr :rgf 3 x86)))
-                                    (cons (+ -22 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (xr :rgf 3 x86)))
-                                    (cons (+ -21 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (xr :rgf 3 x86)))
-                                    (cons (+ -20 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (xr :rgf 3 x86)))
-                                    (cons (+ -19 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (xr :rgf 3 x86)))
-                                    (cons (+ -18 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (xr :rgf 3 x86)))
-                                    (cons (+ -17 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (xr :rgf 3 x86)))
-                                    (cons (+ -48 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -47 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -46 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -45 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -44 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -43 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -42 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -41 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ -25 (xr :rgf 4 x86))))
-                                    (cons
-                                     (+ -25 (xr :rgf 4 x86))
-                                     (car
-                                      (grab-bytes
-                                       (take
-                                        1
-                                        (nthcdr
-                                         (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
-                                         (string-to-bytes
-                                          (cdr
-                                           (assoc-equal
-                                            :contents
-                                            (read-x86-file-contents
-                                             (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-                                             x86)))))))))
-                                    (cons (+ -32 (xr :rgf 4 x86)) 1)
-                                    (cons (+ -31 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -29 (xr :rgf 4 x86)) 0)
-                                    (cons
-                                     (+ 28 (xr :rgf 4 x86))
-                                     (car
-                                      (grab-bytes
-                                       (take
-                                        1
-                                        (nthcdr
-                                         (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
-                                         (string-to-bytes
-                                          (cdr
-                                           (assoc-equal
-                                            :contents
-                                            (read-x86-file-contents
-                                             (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-                                             x86)))))))))
-                                    (cons (+ 29 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 31 (xr :rgf 4 x86)) 0)
-                                    (cons
-                                     (+ 20 (xr :rgf 4 x86))
-                                     (get-bits 0 7
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 21 (xr :rgf 4 x86))
-                                     (get-bits 8 15
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 22 (xr :rgf 4 x86))
-                                     (get-bits 16 23
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 23 (xr :rgf 4 x86))
-                                     (get-bits 24 31
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons (+ 24 (xr :rgf 4 x86)) 1)
-                                    (cons (+ 25 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 26 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 27 (xr :rgf 4 x86)) 0)
-                                    (cons
-                                     (+ 16 (xr :rgf 4 x86))
-                                     (get-bits 0 7
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 16 (xr :rgf 4 x86))
-                                                                                   (+ 17 (xr :rgf 4 x86))
-                                                                                   (+ 18 (xr :rgf 4 x86))
-                                                                                   (+ 19 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 17 (xr :rgf 4 x86))
-                                     (get-bits 8 15
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 16 (xr :rgf 4 x86))
-                                                                                   (+ 17 (xr :rgf 4 x86))
-                                                                                   (+ 18 (xr :rgf 4 x86))
-                                                                                   (+ 19 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 18 (xr :rgf 4 x86))
-                                     (get-bits 16 23
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 16 (xr :rgf 4 x86))
-                                                                                   (+ 17 (xr :rgf 4 x86))
-                                                                                   (+ 18 (xr :rgf 4 x86))
-                                                                                   (+ 19 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 19 (xr :rgf 4 x86))
-                                     (get-bits 24 31
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 16 (xr :rgf 4 x86))
-                                                                                   (+ 17 (xr :rgf 4 x86))
-                                                                                   (+ 18 (xr :rgf 4 x86))
-                                                                                   (+ 19 (xr :rgf 4 x86)))
-                                                                             :x x86)))))))
-                                   x86))))
-                 (:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 x86))))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d* ()
+                            (wb-remove-duplicate-writes
+                             force (force))))))
 
 (defthmd memory-analysis-effects-other-char-encountered-state-in
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (word-state x86 x86)
-                            (byte-ify 4 *out*)))
+                (not (equal (get-char (offset x86) (input x86)) *eof*))
+                (not (equal (get-char (offset x86) (input x86)) *newline*))
+                (not (equal (get-char (offset x86) (input x86)) *space*))
+                (not (equal (get-char (offset x86) (input x86)) *tab*))
+                (not (equal (combine-bytes (word-state x86 x86)) *out*))
 
                 (canonical-address-listp addresses)
                 (disjoint-p
@@ -10267,218 +7974,12 @@
                  ;; Program Stack Space
                  (create-canonical-address-list
                   80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))))
-           (equal (mv-nth 1 (rb addresses r-w-x
-                                (x86-run (gc-clk-otherwise-in) x86)))
+           (equal (mv-nth 1 (rb addresses r-w-x (x86-run (gc-clk-otherwise-in) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal"
-           :in-theory (e/d* ( ;; rm08
-                            opcode-execute
-                            x86-instruction-update-fns
-                            !rgfi-size
-                            x86-operand-to-reg/mem
-                            wr64
-                            wr32
-                            rr32
-                            rr64
-                            rm32
-                            rm64
-                            wm32
-                            wm64
-                            wm-size
-                            x86-operand-from-modr/m-and-sib-bytes
-                            rim-size
-                            rim08
-                            two-byte-opcode-decode-and-execute
-                            x86-effective-addr
-                            eflags-for-x86-add/or/adc/sbb/and/sub/xor/cmp/test
-                            subset-p)
-                           (word-state)))
-          ("Subgoal *1/4"
-           :use ((:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 (mv-nth
-                                  1
-                                  (wb
-                                   (list
-                                    (cons (+ -8 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -7 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -6 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -5 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -4 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -3 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -2 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -1 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 5 (xr :rip 0 x86))))
-                                    (cons (+ -16 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -15 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -14 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -13 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -12 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -11 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -10 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -9 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ 32 (xr :rgf 4 x86))))
-                                    (cons (+ -24 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (xr :rgf 3 x86)))
-                                    (cons (+ -23 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (xr :rgf 3 x86)))
-                                    (cons (+ -22 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (xr :rgf 3 x86)))
-                                    (cons (+ -21 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (xr :rgf 3 x86)))
-                                    (cons (+ -20 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (xr :rgf 3 x86)))
-                                    (cons (+ -19 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (xr :rgf 3 x86)))
-                                    (cons (+ -18 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (xr :rgf 3 x86)))
-                                    (cons (+ -17 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (xr :rgf 3 x86)))
-                                    (cons (+ -48 (xr :rgf 4 x86))
-                                          (get-bits 0 7 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -47 (xr :rgf 4 x86))
-                                          (get-bits 8 15 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -46 (xr :rgf 4 x86))
-                                          (get-bits 16 23 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -45 (xr :rgf 4 x86))
-                                          (get-bits 24 31 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -44 (xr :rgf 4 x86))
-                                          (get-bits 32 39 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -43 (xr :rgf 4 x86))
-                                          (get-bits 40 47 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -42 (xr :rgf 4 x86))
-                                          (get-bits 48 55 (+ -25 (xr :rgf 4 x86))))
-                                    (cons (+ -41 (xr :rgf 4 x86))
-                                          (get-bits 56 63 (+ -25 (xr :rgf 4 x86))))
-                                    (cons
-                                     (+ -25 (xr :rgf 4 x86))
-                                     (car
-                                      (grab-bytes
-                                       (take
-                                        1
-                                        (nthcdr
-                                         (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
-                                         (string-to-bytes
-                                          (cdr
-                                           (assoc-equal
-                                            :contents
-                                            (read-x86-file-contents
-                                             (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-                                             x86)))))))))
-                                    (cons (+ -32 (xr :rgf 4 x86)) 1)
-                                    (cons (+ -31 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ -29 (xr :rgf 4 x86)) 0)
-                                    (cons
-                                     (+ 28 (xr :rgf 4 x86))
-                                     (car
-                                      (grab-bytes
-                                       (take
-                                        1
-                                        (nthcdr
-                                         (cdr (assoc-equal :offset (read-x86-file-des 0 x86)))
-                                         (string-to-bytes
-                                          (cdr
-                                           (assoc-equal
-                                            :contents
-                                            (read-x86-file-contents
-                                             (cdr (assoc-equal :name (read-x86-file-des 0 x86)))
-                                             x86)))))))))
-                                    (cons (+ 29 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 30 (xr :rgf 4 x86)) 0)
-                                    (cons (+ 31 (xr :rgf 4 x86)) 0)
-                                    (cons
-                                     (+ 20 (xr :rgf 4 x86))
-                                     (get-bits 0 7
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 21 (xr :rgf 4 x86))
-                                     (get-bits 8 15
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 22 (xr :rgf 4 x86))
-                                     (get-bits 16 23
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86))))))
-                                    (cons
-                                     (+ 23 (xr :rgf 4 x86))
-                                     (get-bits 24 31
-                                               (+ 1
-                                                  (combine-bytes (mv-nth 1
-                                                                         (rb (list (+ 20 (xr :rgf 4 x86))
-                                                                                   (+ 21 (xr :rgf 4 x86))
-                                                                                   (+ 22 (xr :rgf 4 x86))
-                                                                                   (+ 23 (xr :rgf 4 x86)))
-                                                                             :x x86)))))))
-                                   x86))))
-                 (:instance rb-unwinding-thm
-                            (addresses addresses)
-                            (x86 x86))))))
-
-(defthmd memory-analysis-effects-other-char-encountered-state-in-new
-  (implies (and (bind-free '((addr . addr)) (addr))
-                (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86))
-                            *eof*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *newline*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *space*))
-                (not (equal (get-char (offset x86) (input x86))
-                            *tab*))
-                (not (equal (combine-bytes (word-state x86 x86))
-                            *out*))
-
-                (canonical-address-listp addresses)
-                (disjoint-p
-                 ;; Rest of the Memory
-                 addresses
-                 ;; Program Stack Space
-                 (create-canonical-address-list
-                  80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))))
-           (equal (mv-nth 1 (rb addresses r-w-x
-                                (x86-run (gc-clk-otherwise-in) x86)))
-                  (mv-nth 1 (rb addresses r-w-x x86))))
-  :hints (("Goal"
-           :in-theory (union-theories
-                       '(dumb-word-state-out
-                         combine-bytes
-                         (logior)
-                         (ash))
-                       (theory 'minimal-theory))
-           :use ((:instance
-                memory-analysis-effects-other-char-encountered-state-in)))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d* ()
+                            (wb-remove-duplicate-writes
+                             force (force))))))
 
 (defthmd memory-analysis-loop
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -10487,7 +7988,6 @@
                 (equal str-bytes (input x86))
                 (equal old-word-state
                        (combine-bytes (word-state x86 x86)))
-
                 (canonical-address-listp addresses)
                 (disjoint-p
                  ;; Rest of the Memory
@@ -10495,17 +7995,10 @@
                  ;; Program Stack Space
                  (create-canonical-address-list
                   80 (+ (- (+ 8 32 8)) (xr :rgf *rsp* x86)))))
-           (equal (mv-nth 1 (rb
-                             addresses
-                             r-w-x
-                             (loop-effects-hint
-                              old-word-state offset str-bytes x86)))
+           (equal (mv-nth 1 (rb addresses r-w-x (loop-effects-hint old-word-state offset str-bytes x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
   :hints (("Goal"
-           :expand (loop-effects-hint (combine-bytes (word-state x86 x86))
-                                      (offset x86)
-                                      (input x86)
-                                      x86)
+           :expand (loop-effects-hint (combine-bytes (word-state x86 x86)) (offset x86) (input x86) x86)
            :in-theory (union-theories
                        '(memory-analysis-effects-to-gc-no-call
                          memory-analysis-effects-call-gc
@@ -10514,7 +8007,7 @@
                          memory-analysis-effects-space-encountered
                          memory-analysis-effects-tab-encountered
                          memory-analysis-effects-other-char-encountered-state-out
-                         memory-analysis-effects-other-char-encountered-state-in-new
+                         memory-analysis-effects-other-char-encountered-state-in
 
                          loop-effects-hint
 
@@ -10545,22 +8038,21 @@
                  addresses
                  ;; Program Stack Space
                  (create-canonical-address-list
-                  104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))
-                 ))
-           (equal (mv-nth 1 (rb addresses r-w-x
-                                (loop-effects-hint 0 offset str-bytes
-                                                   (x86-run (gc-clk-main-before-call)
-                                                            x86))))
+                  104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))))
+           (equal (mv-nth 1 (rb addresses r-w-x (loop-effects-hint 0 offset str-bytes (x86-run (gc-clk-main-before-call) x86))))
                   (mv-nth 1 (rb addresses r-w-x x86))))
   :hints
   (("Goal"
     :in-theory
     (union-theories
      '(rgfi-is-i64p combine-bytes (logior)
+                    member-p-canonical-address-listp
+                    not-member-p-canonical-address-listp
+                    (byte-ify)
                     (ash)
                     main-and-gc-composition-rules
                     nw program-nw
-                    word-state |(+ c (+ d x))|
+                    word-state acl2::fold-consts-in-+
                     effects-to-gc-variables-state
                     effects-to-gc-variables-nc
                     x86p-effects-to-gc (len)
@@ -10569,25 +8061,34 @@
                     effects-to-gc-offset-projection
                     effects-to-gc-programmer-level-mode-projection
                     loop-preconditions-effects-to-gc
-                    subset-p-two-create-canonical-address-lists
-                    )
+                    subset-p
+                    subset-p-two-create-canonical-address-lists)
      (theory 'minimal-theory))
-    :use
-    ((:instance memory-analysis-loop
-                (x86 (x86-run (gc-clk-main-before-call) x86))
-                (old-word-state 0)
-                )
-     (:instance effects-to-gc-variables-state)
-     (:instance memory-analysis-effects-to-gc-no-call)
-     (:instance effects-to-gc-variables-nw)))
-   ("Subgoal 1" :in-theory '((len)
-                             preconditions-forward-chain-addresses-info
-                             subset-p-reflexive
-                             canonical-address-listp-fwd-chain-true-listp
-                             disjoint-p-subset-p
-                             |(+ c (+ d x))|
-                             canonical-address-p-limits-thm-1
-                             subset-p-two-create-canonical-address-lists))))
+    :use ((:instance memory-analysis-loop
+                     (x86 (x86-run (gc-clk-main-before-call) x86))
+                     (old-word-state 0))
+          (:instance effects-to-gc-variables-state)
+          (:instance memory-analysis-effects-to-gc-no-call)
+          (:instance disjoint-p-subset-p
+                     (a addresses)
+                     (b (create-canonical-address-list 80 (+ -88 (xr :rgf *rsp* x86))))
+                     (x addresses)
+                     (y (create-canonical-address-list 104 (+ -96 (xr :rgf *rsp* x86)))))
+          (:instance effects-to-gc-variables-nw)))
+   ("Subgoal 2"
+    :in-theory (e/d (subset-p) ())
+    :use ((:instance disjoint-p-subset-p
+                     (a addresses)
+                     (b (create-canonical-address-list 80 (+ -88 (xr :rgf *rsp* x86))))
+                     (x addresses)
+                     (y (create-canonical-address-list 104 (+ -96 (xr :rgf *rsp* x86)))))))
+   ("Subgoal 1"
+    :in-theory (e/d (subset-p) ())
+    :use ((:instance disjoint-p-subset-p
+                     (a addresses)
+                     (b (create-canonical-address-list 80 (+ -88 (xr :rgf *rsp* x86))))
+                     (x addresses)
+                     (y (create-canonical-address-list 104 (+ -96 (xr :rgf *rsp* x86)))))))))
 
 (defthmd memory-analysis-program
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -10601,12 +8102,8 @@
                  addresses
                  ;; Program Stack Space
                  (create-canonical-address-list
-                  104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))
-                 ))
-           (equal (mv-nth 1 (rb
-                             addresses
-                             r-w-x
-                             (x86-run (clock str-bytes x86) x86)))
+                  104 (+ (- (+ 48 8 #x20 8)) (xr :rgf *rsp* x86)))))
+           (equal (mv-nth 1 (rb addresses r-w-x (x86-run (clock str-bytes x86) x86)))
                   (mv-nth 1 (rb addresses r-w-x x86))))
   :hints (("Goal" :in-theory (union-theories
                               '(memory-analysis-loop

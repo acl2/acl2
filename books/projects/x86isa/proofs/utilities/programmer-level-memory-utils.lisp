@@ -960,14 +960,6 @@ programmer-level mode.</p>" )
   (implies (x86p x86)
            (equal (mv-nth 1 (rb nil r-w-x x86)) nil)))
 
-(defthm rb-size-of-the-return-bytes
-  (implies (and (canonical-address-listp addresses)
-                (programmer-level-mode x86)
-                (x86p x86))
-           (equal (len (mv-nth 1 (rb addresses r-w-x x86)))
-                  (len addresses)))
-  :hints (("Goal" :in-theory (e/d (rm08) ()))))
-
 ;; The following theorems help in relieving the hypotheses of
 ;; get-prefixes opener lemmas.
 
@@ -991,18 +983,17 @@ programmer-level mode.</p>" )
 
 (defun find-info-from-program-at-term (thm mfc state)
   (declare (xargs :stobjs (state) :mode :program)
-           (ignorable state))
+           (ignorable thm state))
   (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
        ((when (not call))
-        (cw "~%~p0: Program-At term not encountered.~%" thm)
+        ;; (cw "~%~p0: Program-At term not encountered.~%" thm)
         `((n . n)
           (prog-addr . prog-addr)
           (bytes . bytes)))
        (addresses (cadr call))
        ((when (not (equal (car addresses)
                           'create-canonical-address-list)))
-        (cw "~%~p0: Program-At without Create-Canonical-Address-List ~
-  encountered.~%" thm)
+        ;; (cw "~%~p0: Program-At without Create-Canonical-Address-List encountered.~%" thm)
         `((n . n)
           (prog-addr . prog-addr)
           (bytes . bytes)))

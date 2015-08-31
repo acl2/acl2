@@ -120,7 +120,13 @@
                   (natp n))
              (<= 8 (ash n 3)))
     :hints (("Goal" :in-theory (e/d* (ash) ())))
-    :rule-classes :linear)))
+    :rule-classes :linear)
+
+  (defthm ash-separate-out
+    (implies (natp n)
+             (equal (ash (+ 1 n) 3)
+                    (+ 8 (ash n 3))))
+    :hints (("Goal" :in-theory (e/d* (ash) ()))))))
 
 (local
  (defthmd byte-ify-general-acc-helper-thm
@@ -219,6 +225,18 @@
            (equal (equal (combine-bytes bytes) val) nil))
   :hints (("Goal" :use ((:instance combine-bytes-and-byte-ify-inequality-lemma-specific)
                         (:instance combine-bytes-and-byte-ify-general-inequality-lemma)))))
+
+(defthmd remove-loghead-from-combine-bytes
+  ;; This is an expensive rule, so we keep it disabled. As it is, we don't need
+  ;; this rule very often.
+  (implies (and (equal m (ash (len bytes) 3))
+                (byte-listp bytes))
+           (equal (loghead m (combine-bytes bytes))
+                  (combine-bytes bytes)))
+  :hints (("Goal" :in-theory (e/d* (combine-bytes
+                                    ihsext-recursive-redefs
+                                    ihsext-inductions)
+                                   ()))))
 
 ;; ======================================================================
 

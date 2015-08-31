@@ -682,7 +682,12 @@ memory.</li>
                     (equal l (len bytes)))
                (< (combine-bytes bytes) (expt 2 (ash l 3))))
       :hints (("Goal" :in-theory (e/d* (logapp) ())))
-      :rule-classes :linear))
+      :rule-classes :linear)
+
+    (defthm unsigned-byte-p-of-combine-bytes
+      (implies (and (byte-listp bytes)
+                    (equal n (ash (len bytes) 3)))
+               (unsigned-byte-p n (combine-bytes bytes)))))
 
   (define byte-ify-general
     ((n   natp)
@@ -957,8 +962,7 @@ memory.</li>
 
     (defthm len-of-rb-in-programmer-level-mode
       (implies (and (programmer-level-mode x86)
-                    (canonical-address-listp addresses)
-                    (byte-listp acc))
+                    (canonical-address-listp addresses))
                (equal (len (mv-nth 1 (rb addresses r-w-x x86)))
                       (len addresses)))))
 
