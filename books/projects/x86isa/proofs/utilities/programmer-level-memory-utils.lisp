@@ -164,6 +164,13 @@ programmer-level mode.</p>" )
            (equal (member-p addr (create-canonical-address-list n prog-addr))
                   nil)))
 
+(defthm not-member-p-canonical-address-listp-when-disjoint-p
+  (implies (and (disjoint-p (create-canonical-address-list n prog-addr)
+                            (create-canonical-address-list m addr))
+                (member-p e (create-canonical-address-list m addr)))
+           (equal (member-p e (create-canonical-address-list n prog-addr))
+                  nil)))
+
 (defthm no-duplicates-p-create-canonical-address-list
   (no-duplicates-p (create-canonical-address-list n x)))
 

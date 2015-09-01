@@ -116,14 +116,14 @@
     :rule-classes ((:rewrite :loop-stopper ((a b)))))
 
   (defthm member-p-when-not-disjoint-p
-    ;; Note: e is free.
+    ;; Ugh, free variables.
     (implies (and (member-p e x)
                   (member-p e y))
              (equal (disjoint-p x y) nil))
     :rule-classes :forward-chaining)
 
   (defthm not-member-p-when-disjoint-p
-    ;; Note: x is free.
+    ;; Ugh, free variables.
     (implies (and (disjoint-p x y)
                   (member-p e x))
              (equal (member-p e y) nil))

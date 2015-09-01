@@ -1215,14 +1215,6 @@
 ;; EOF encountered
 ;;**********************************************************************
 
-(defthm not-member-p-canonical-address-listp-when-disjoint-p
-  ;; [Shilpi]: not-member-p-canonical-address-listp doesn't work. Why? :(
-  (implies (and (disjoint-p (create-canonical-address-list n prog-addr)
-                            (create-canonical-address-list m addr))
-                (member-p e (create-canonical-address-list m addr)))
-           (equal (member-p e (create-canonical-address-list n prog-addr))
-                  nil)))
-
 (encapsulate
  ()
  (local (include-book "std/lists/nthcdr" :dir :system))
@@ -5336,9 +5328,6 @@
                                     (equal (logbitp m x) nil)))))
 
 (defun-nx whatever-rflags-are-for-other-char-state-out (x86)
-  ;; [Shilpi]: Shouldn't there be a hide here somewhere? I don't want the
-  ;; x86-run expression to unwind whenever this function is used. Ugh, I need
-  ;; to think how to do that... And oh God, this makes things so slow. :-(
   (rflags (x86-run 13 x86)))
 
 
@@ -7856,9 +7845,8 @@
 
 
 (defthm not-member-p-canonical-address-listp-when-disjoint-p-new
-  ;; [Shilpi]: not-member-p-canonical-address-listp doesn't work. I need a more general theorem.
-  (implies (and (disjoint-p xs
-                            (create-canonical-address-list m addr))
+  ;; [Shilpi]: generalize...
+  (implies (and (disjoint-p xs (create-canonical-address-list m addr))
                 (member-p e (create-canonical-address-list m addr)))
            (equal (member-p e xs)
                   nil)))
