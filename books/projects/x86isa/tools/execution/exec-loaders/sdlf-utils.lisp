@@ -27,8 +27,7 @@
 
 (defthm byte-listp-take-till-zero
   (implies (force (byte-listp bytes))
-           (byte-listp (take-till-zero bytes)))
-  :rule-classes :type-prescription)
+           (byte-listp (take-till-zero bytes))))
 
 (in-theory (disable take-till-zero))
 
@@ -41,8 +40,7 @@
 
 (defthm byte-listp-firstn
   (implies (byte-listp x)
-           (byte-listp (firstn n x)))
-  :rule-classes :type-prescription)
+           (byte-listp (firstn n x))))
 
 (defthm len-firstn-equal-to-n
   (implies (and (byte-listp x)
@@ -62,15 +60,13 @@
 
 (defthm byte-listp-nthcdr
   (implies (byte-listp x)
-           (byte-listp (nthcdr n x)))
-  :rule-classes :type-prescription)
+           (byte-listp (nthcdr n x))))
 
 (defthm byte-listp-take
   (implies (and (byte-listp bytes)
                 (natp n)
                 (< n (len bytes)))
-           (byte-listp (take n bytes)))
-  :rule-classes :type-prescription)
+           (byte-listp (take n bytes))))
 
 (defun-inline rnbni (n bytes)
   ;; Read n bytes as a number and increment file.
@@ -82,8 +78,7 @@
 
 (defthm natp-mv-nth-0-rnbni
   (implies (byte-listp bytes)
-           (natp (mv-nth 0 (rnbni n bytes))))
-  :rule-classes :type-prescription)
+           (natp (mv-nth 0 (rnbni n bytes)))))
 
 (defthm mv-nth-0-rnbni-linear-1
   (implies (and (byte-listp bytes)
@@ -114,8 +109,7 @@
 
 (defthm byte-listp-mv-nth-1-rnbni
   (implies (byte-listp bytes)
-           (byte-listp (mv-nth 1 (rnbni n bytes))))
-  :rule-classes :type-prescription)
+           (byte-listp (mv-nth 1 (rnbni n bytes)))))
 
 (defthm len-mv-nth-1-rnbni-1
   (implies (and (byte-listp bytes)
@@ -143,8 +137,7 @@
 
 (defthm byte-listp-mv-nth-0-rnbbi
   (implies (byte-listp bytes)
-           (byte-listp (mv-nth 0 (rnbbi n bytes))))
-  :rule-classes :type-prescription)
+           (byte-listp (mv-nth 0 (rnbbi n bytes)))))
 
 (defthm len-mv-nth-0-rnbbi-1
   (implies (and (byte-listp bytes)
@@ -162,8 +155,7 @@
 
 (defthm byte-listp-mv-nth-1-rnbbi
   (implies (byte-listp bytes)
-           (byte-listp (mv-nth 1 (rnbbi n bytes))))
-  :rule-classes :type-prescription)
+           (byte-listp (mv-nth 1 (rnbbi n bytes)))))
 
 (defthm len-mv-nth-1-rnbbi-1
   (implies (and (byte-listp bytes)

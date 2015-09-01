@@ -35,9 +35,11 @@ programmer-level mode.</p>" )
 ;; following rules (maybe using Jared Davis's why macro) can tell you
 ;; (maybe) what's going on.
 
+;; (acl2::why x86-run-opener-not-ms-not-zp-n)
 ;; (acl2::why x86-fetch-decode-execute-opener)
 ;; (acl2::why get-prefixes-opener-lemma-2)
 ;; (acl2::why rb-in-terms-of-nth-and-pos)
+;; (acl2::why program-at-wb-disjoint)
 ;; (acl2::why member-p-canonical-address-listp)
 
 ;; ======================================================================
@@ -433,53 +435,45 @@ programmer-level mode.</p>" )
                   (assoc-list xs term1)))
   :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
-(local
- (defthm assoc-list-append-and-rev-lemma-helper-1
-   (implies (and (canonical-address-listp x)
-                 (byte-listp y)
-                 (no-duplicates-p x)
-                 (equal (len x) (len y))
-                 (<= 2 (len x)))
-            (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist x y)) term))
-                   y))))
 
-(local
- (defthm assoc-list-append-and-rev-lemma-helper-2
-   (implies (and (canonical-address-listp x)
-                 (canonical-address-listp a)
-                 (byte-listp b)
-                 (no-duplicates-p x)
-                 (no-duplicates-p a)
-                 (equal (len a) (len b))
-                 (<= 2 (len a))
-                 (disjoint-p x a)
-                 (consp term))
-            (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist a b)) term))
-                   (assoc-list x term)))
-   :hints (("Goal" :in-theory (e/d* (disjoint-p) ())))))
-
-(defthm assoc-list-append-and-rev-lemma
+(defthm assoc-list-append-and-rev-lemma-helper-1
   (implies (and (canonical-address-listp x)
-                (canonical-address-listp a)
-                (byte-listp b)
+                (byte-listp y)
                 (no-duplicates-p x)
-                (no-duplicates-p a)
+                (equal (len x) (len y)))
+           (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist x y)) term))
+                  y)))
+
+
+(defthm assoc-list-append-and-rev-lemma-helper-2
+  (implies (and (canonical-address-listp a)
                 (equal (len a) (len b))
-                (<= 2 (len b))
+                (disjoint-p x a)
                 (consp term))
-           (equal (assoc-list
-                   x
-                   (append (acl2::rev (create-addr-bytes-alist a b))
-                           term))
-                  (if (disjoint-p x a)
-                      (assoc-list x term)
-                    (if (equal x a)
-                        b
-                      ;; Maybe another branch here that deals with
-                      ;; when x is a subset of a?
-                      (assoc-list x
-                                  (append (acl2::rev (create-addr-bytes-alist a b))
-                                          term)))))))
+           (equal (assoc-list x (append (acl2::rev (create-addr-bytes-alist a b)) term))
+                  (assoc-list x term)))
+  :hints (("Goal" :in-theory (e/d* (disjoint-p) ()))))
+
+;; (defthm assoc-list-append-and-rev-lemma
+;;   ;; Bad lemma --- can cause stack overflows and looping.
+;;   (implies (and (canonical-address-listp a)
+;;              (byte-listp b)
+;;              (no-duplicates-p a)
+;;              (equal (len a) (len b))
+;;              (consp term))
+;;         (equal (assoc-list
+;;                 x
+;;                 (append (acl2::rev (create-addr-bytes-alist a b))
+;;                         term))
+;;                (if (disjoint-p x a)
+;;                    (assoc-list x term)
+;;                  (if (equal x a)
+;;                      b
+;;                    ;; Maybe another branch here that deals with
+;;                    ;; when x is a subset of a?
+;;                    (assoc-list x
+;;                                (append (acl2::rev (create-addr-bytes-alist a b))
+;;                                        term)))))))
 
 ;; ======================================================================
 
@@ -487,14 +481,6 @@ programmer-level mode.</p>" )
 ;; I need more theorems for when addr1 and addr2 overlap.
 
 (local (in-theory (enable rvm08 rvm16 wvm08 wvm16 rvm32 rvm64 wvm32 wvm64)))
-
-(local
- (in-theory (enable n32p-upper-16-in-8s-val-logior-loghead-ash-helper
-                    n32p-upper-16-in-8s-val-logior-loghead-ash
-                    n32p-lower-16-val-logior-loghead-ash-helper
-                    n32p-lower-16-val-logior-loghead-ash
-                    n32p-upper-16-val-logior-loghead-ash-helper
-                    n32p-upper-16-val-logior-loghead-ash)))
 
 ;; Theorems about rvm08 and wvm08:
 
@@ -639,14 +625,6 @@ programmer-level mode.</p>" )
                   (mv-nth 1 (wvm64 addr1 val1 (mv-nth 1 (wvm64 addr2 val2 x86))))))
   :hints (("Goal" :in-theory (e/d () (rvm32 wvm32 mv-nth))))
   :rule-classes ((:rewrite :loop-stopper ((addr2 addr1)))))
-
-(local
- (in-theory (disable n32p-upper-16-in-8s-val-logior-loghead-ash-helper
-                     n32p-upper-16-in-8s-val-logior-loghead-ash
-                     n32p-lower-16-val-logior-loghead-ash-helper
-                     n32p-lower-16-val-logior-loghead-ash
-                     n32p-upper-16-val-logior-loghead-ash-helper
-                     n32p-upper-16-val-logior-loghead-ash)))
 
 (local (in-theory (disable rvm08 rvm16 wvm08 wvm16 rvm32 rvm64 wvm32 wvm64)))
 
@@ -823,6 +801,41 @@ programmer-level mode.</p>" )
            (equal (program-at addresses r-w-x (mv-nth 1 (wb addr-lst x86)))
                   (program-at addresses r-w-x x86)))
   :hints (("Goal" :in-theory (e/d (program-at) (rb)))))
+
+(defthm program-at-write-x86-file-des
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (write-x86-file-des i v x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at write-x86-file-des write-x86-file-des-logic)
+                                  (rb)))))
+
+(defthm program-at-delete-x86-file-des
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (delete-x86-file-des i x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at delete-x86-file-des delete-x86-file-des-logic)
+                                  (rb)))))
+
+(defthm program-at-write-x86-file-contents
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (write-x86-file-contents i v x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at write-x86-file-contents write-x86-file-contents-logic)
+                                  (rb)))))
+
+(defthm program-at-delete-x86-file-contents
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (delete-x86-file-contents i x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at delete-x86-file-contents delete-x86-file-contents-logic)
+                                  (rb)))))
+
+(defthm program-at-pop-x86-oracle
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (mv-nth 1 (pop-x86-oracle x86)))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
+                                  (rb)))))
 
 ;; ======================================================================
 

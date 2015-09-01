@@ -9,6 +9,7 @@
 ;; ======================================================================
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 ;; ======================================================================
@@ -37,6 +38,105 @@ memory.</li>
 </ul>" )
 
 (local (xdoc::set-default-parents x86-top-level-memory))
+
+;; ======================================================================
+
+;; Some misc. arithmetic lemmas:
+
+(defthm signed-byte-p-limits-thm
+  ;; i is positive, k is positive, k < i
+  (implies (and (signed-byte-p n (+ i addr))
+                (signed-byte-p n addr)
+                (integerp k)
+                (<= 0 k)
+                (< k i))
+           (signed-byte-p n (+ k addr))))
+
+(local
+ (encapsulate
+  ()
+
+  (local (include-book "centaur/gl/gl" :dir :system))
+
+  ;; Various lemmas for the guard proofs of rm* functions
+
+  (def-gl-export rm16-guard-proof-helper
+    :hyp (and (n08p a)
+              (n08p b))
+    :concl (< (logior a (ash b 8)) *2^16*)
+    :g-bindings
+    (gl::auto-bindings
+     (:mix (:nat a 8) (:nat b 8)))
+    :rule-classes :linear)
+
+  (def-gl-export rb-and-rvm32-helper
+    :hyp (and (n08p a)
+              (n08p b)
+              (n16p c))
+    :concl (equal (logior a (ash b 8) (ash c 16))
+                  (logior a (ash (logior b (ash c 8)) 8)))
+    :g-bindings
+    (gl::auto-bindings
+     (:mix (:nat a 8) (:nat b 8)) (:nat c 16))
+    :rule-classes :linear)
+
+  (def-gl-export rm32-guard-proof-helper
+    :hyp (and (n08p a)
+              (n08p b)
+              (n08p c)
+              (n08p d))
+    :concl (<
+            (logior a
+                    (ash (logior b
+                                 (ash (logior c (ash d 8)) 8))
+                         8))
+            *2^32*)
+    :g-bindings
+    (gl::auto-bindings
+     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)))
+    :rule-classes :linear)
+
+  (def-gl-export rb-and-rvm64-helper
+    :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+              (n08p e) (n08p f) (n08p g) (n08p h))
+    :concl (equal
+            (logior a (ash b 8)
+                    (ash (logior c (ash d 8)) 16)
+                    (ash (logior e (ash f 8) (ash (logior g (ash h 8)) 16)) 32))
+            (logior a
+                    (ash (logior
+                          b
+                          (ash (logior
+                                c
+                                (ash (logior
+                                      d
+                                      (ash (logior
+                                            e
+                                            (ash (logior f (ash (logior g (ash h 8)) 8)) 8)) 8)) 8))
+                               8))
+                         8)))
+    :g-bindings
+    (gl::auto-bindings
+     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+           (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
+
+  (def-gl-export rm64-guard-proof-helper
+    :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
+              (n08p e) (n08p f) (n08p g) (n08p h))
+    :concl (< (logior a (ash b 8)
+                      (ash (logior c (ash d 8)) 16)
+                      (ash (logior e (ash f 8) (ash (logior g (ash h 8)) 16)) 32))
+              *2^64*)
+    :g-bindings
+    (gl::auto-bindings
+     (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
+           (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8)))
+    :rule-classes :linear)
+
+  )) ;; End of local encapsulate
+
+;; The following is a no-op for ACL2 distributions.
+(acl2::set-waterfall-parallelism t)
 
 ;; ======================================================================
 
@@ -436,8 +536,7 @@ memory.</li>
                  (unravel-loghead-evl (unravel-loghead-hyp term) a))
             (equal (unravel-loghead-evl term a)
                    (unravel-loghead-evl (unravel-loghead term) a)))
-   :rule-classes ((:meta :trigger-fns (acl2::loghead$inline)))
-   :otf-flg t))
+   :rule-classes ((:meta :trigger-fns (acl2::loghead$inline)))))
 
 ;; ======================================================================
 ;; Events related to RB and WB:
@@ -554,13 +653,12 @@ memory.</li>
         0
       (logior (car bytes)
               (ash (combine-bytes (cdr bytes)) 8)))
+
     ///
     (defthm natp-combine-bytes
       (implies (force (byte-listp bytes))
                (natp (combine-bytes bytes)))
       :rule-classes :type-prescription)
-
-    (local (include-book "arithmetic/top" :dir :system))
 
     (local
      (defthm plus-and-expt
@@ -574,14 +672,6 @@ memory.</li>
 
     (local (include-book "arithmetic-5/top" :dir :system))
 
-    (defthm logtail-<-val-for-n-8
-      (implies (and (integerp val)
-                    (equal n 8)
-                    (natp n)
-                    (<= (expt 2 n) val))
-               (< (logtail n val) val))
-      :hints (("Goal" :in-theory (e/d (logtail) ()))))
-
     (local
      (in-theory (disable acl2::normalize-factors-gather-exponents
                          acl2::boil-that-dustspeck
@@ -591,6 +681,7 @@ memory.</li>
       (implies (and (byte-listp bytes)
                     (equal l (len bytes)))
                (< (combine-bytes bytes) (expt 2 (ash l 3))))
+      :hints (("Goal" :in-theory (e/d* (logapp) ())))
       :rule-classes :linear))
 
   (define byte-ify-general
@@ -606,9 +697,10 @@ memory.</li>
   are as follows:</p>
 
   <ul>
-  <li><code>(byte-ify-general 6 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA)</code></li>
-  <li><code>(byte-ify-general 4 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC)</code></li>
-  <li><code>(byte-ify-general 8 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #xAA #x0 #x0)</code></li>
+  <li><code>(byte-ify-general 6 #xAABBCCDDEEFF nil) = (#xFF #xEE #xDD #xCC #xBB #xAA)</code></li>
+  <li><code>(byte-ify-general 4 #xAABBCCDDEEFF nil) = (#xFF #xEE #xDD #xCC)</code></li>
+  <li><code>(byte-ify-general 8 #xAABBCCDDEEFF nil) = (#xFF #xEE #xDD #xCC #xBB #xAA  #x0 #x0)</code></li>
+  <li><code>(byte-ify-general 8             -1 nil) = (#xFF #xFF #xFF #xFF #xFF #xFF #xFF #xFF)</code></li>
   </ul>"
 
 
@@ -616,12 +708,11 @@ memory.</li>
                   (integerp val)
                   (byte-listp acc)))
 
-        (b* ((val (loghead n val)))
-            (if (zp n)
-                (reverse acc)
-              (b* ((acc (cons (loghead 8 val) acc))
-                   (val (logtail 8 val)))
-                  (byte-ify-general (1- n) val acc))))
+        (if (zp n)
+            (reverse acc)
+          (b* ((acc (cons (loghead 8 val) acc))
+               (val (logtail 8 val)))
+              (byte-ify-general (1- n) val acc)))
 
       nil)
 
@@ -815,17 +906,14 @@ memory.</li>
     (local
      (defthm rb-1-accumulator-thm-helper
        (equal (mv-nth 1 (rb-1 addresses r-w-x x86 (append acc1 acc2)))
-              (append acc1
-                      (mv-nth 1 (rb-1 addresses r-w-x x86 acc2))))))
+              (append acc1 (mv-nth 1 (rb-1 addresses r-w-x x86 acc2))))))
 
     (defthm rb-1-accumulator-thm
       (implies (and (syntaxp (not (and (quotep acc)
                                        (eq (car (acl2::unquote acc)) nil))))
                     (true-listp acc))
                (equal (mv-nth 1 (rb-1 addresses r-w-x x86 acc))
-                      (append acc
-                              (mv-nth 1 (rb-1 addresses r-w-x x86
-                                              nil))))))
+                      (append acc (mv-nth 1 (rb-1 addresses r-w-x x86 nil))))))
 
     (defthm len-of-rb-1-in-programmer-level-mode
       (implies (and (programmer-level-mode x86)
@@ -1221,7 +1309,35 @@ memory.</li>
       (implies (and (canonical-address-p lin-addr)
                     (canonical-address-p (+ -1 n lin-addr)))
                (canonical-address-listp (addr-range n lin-addr)))
-      :hints (("Goal" :in-theory (e/d (addr-range) ()))))))
+      :hints (("Goal" :in-theory (e/d (addr-range) ())))))
+
+  ;; Some misc. lemmas:
+
+  (defthmd split-rb-and-create-canonical-address-list-in-programmer-level-mode
+    (implies (and (natp m)
+                  (< m n)
+                  (canonical-address-p lin-addr)
+                  (canonical-address-p (+ -1 n lin-addr))
+                  (programmer-level-mode x86))
+             (equal (mv-nth 1 (rb (create-canonical-address-list n lin-addr) r-w-x x86))
+                    (b* ((low  (mv-nth 1 (rb (create-canonical-address-list       m       lin-addr) r-w-x x86)))
+                         (high (mv-nth 1 (rb (create-canonical-address-list (- n m) (+ m lin-addr)) r-w-x x86))))
+                        (append low high)))))
+
+  (defthmd push-ash-inside-logior
+    (equal (ash (logior x y) n)
+           (logior (ash x n) (ash y n)))
+    :hints (("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                      ihsext-inductions)
+                                     ()))))
+
+  (defthmd combine-bytes-of-append-of-byte-lists
+    (implies (byte-listp ys)
+             (equal (combine-bytes (append xs ys))
+                    (logior (combine-bytes xs)
+                            (ash (combine-bytes ys)
+                                 (* 8 (len xs))))))
+    :hints (("Goal" :in-theory (e/d* (push-ash-inside-logior) ())))))
 
 ;; ======================================================================
 
@@ -1239,19 +1355,7 @@ memory.</li>
 
   :prepwork
 
-  ((encapsulate
-    ()
-    (local (include-book "arithmetic-5/top" :dir :system))
-
-    (defthm-usb rm16-guard-proof-helper
-      :hyp (and (n08p a)
-                (n08p b))
-      :bound 16
-      :concl (logior a (ash b 8))
-      :gen-type nil
-      :gen-linear t))
-
-   (defthmd rb-and-rvm16
+  ((defthmd rb-and-rvm16
      (implies (and (programmer-level-mode x86)
                    (canonical-address-p lin-addr)
                    (canonical-address-p (1+ lin-addr)))
@@ -1521,37 +1625,7 @@ memory.</li>
 
   :prepwork
 
-  ((encapsulate
-    ()
-    (local (include-book "arithmetic-5/top" :dir :system))
-
-    (defthm rb-and-rvm32-helper
-      (implies (and (n08p a)
-                    (n08p b)
-                    (n16p c))
-               (equal (logior a (ash b 8) (ash c 16))
-                      (logior a (ash (logior b (ash c 8)) 8)))))
-
-    (defthm-usb rm32-guard-proof-helper-1
-      :hyp (and (n08p a)
-                (n08p b)
-                (n08p c)
-                (n08p d))
-      :bound 32
-      :concl (logior a
-                     (ash (logior b
-                                  (ash (logior c (ash d 8)) 8))
-                          8))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) ())))))
-
-   (defthmd rb-and-rvm32
+  ((defthmd rb-and-rvm32
      (implies (and (programmer-level-mode x86)
                    (x86p x86)
                    (canonical-address-p lin-addr)
@@ -1739,7 +1813,7 @@ memory.</li>
     :concl (mv-nth 1 (rm32 lin-addr r-w-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
     :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
+    :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (force (force)))))
     :hyp-t (forced-and (integerp lin-addr)
                        (x86p x86))
     :gen-type t)
@@ -2019,180 +2093,96 @@ memory.</li>
                                             ash-monotone-2))))
 
   :prepwork
-  ((encapsulate
-    ()
-
-    (local (include-book "centaur/gl/gl" :dir :system))
-
-    ;; [Shilpi]: It'd be nice to prove the following theorem without
-    ;; GL simply because GL include-book is so slow.
-
-    (local
-     (def-gl-thm rb-and-rvm64-helper
-       :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n32p x))
-       :concl (equal (logior a
-                             (ash (logior b (ash (logior c (ash d 8)) 8)) 8)
-                             (ash x 32))
-                     (logior a
-                             (ash (logior
-                                   b (ash (logior
-                                           c (ash (logior
-                                                   d (ash x 8)) 8))
-                                          8)) 8)))
-       :g-bindings
-       `((a (:g-number ,(gl-int 0 5 33)))
-         (b (:g-number ,(gl-int 1 5 33)))
-         (c (:g-number ,(gl-int 2 5 33)))
-         (d (:g-number ,(gl-int 3 5 33)))
-         (x (:g-number ,(gl-int 4 5 33))))))
-
-    (defthm signed-byte-p-limits-thm
-      ;; i is positive, k is positive, k < i
-      (implies (and (signed-byte-p n (+ i addr))
-                    (signed-byte-p n addr)
-                    (integerp k)
-                    (<= 0 k)
-                    (< k i))
-               (signed-byte-p n (+ k addr))))
-
-    (defthmd rb-and-rvm64
+  ((local
+    (defthmd rb-and-rvm64-helper-1
       (implies (and (programmer-level-mode x86)
                     (x86p x86)
                     (canonical-address-p lin-addr)
                     (canonical-address-p (+ 7 lin-addr)))
                (equal (rvm64 lin-addr x86)
-                      (b* (((mv flg bytes x86)
-                            (rb (create-canonical-address-list 8 lin-addr)
-                                r-w-x x86))
-                           (result (combine-bytes bytes)))
-                          (mv flg result x86))))
-      :hints (("Goal" :expand (create-canonical-address-list 8 lin-addr)
-               :in-theory (e/d (rm08 rvm08 rvm32 rvm64 ifix)
-                               (logior-expt-to-plus-quotep
-                                signed-byte-p
-                                force (force)))))))
-
-   (encapsulate
-    ()
-
-    (local (include-book "arithmetic-5/top" :dir :system))
-
-    (defthm-usb rm64-guard-proof-bound-helper
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-                (n08p e) (n08p f) (n08p g) (n08p h))
-      :bound 64
-      :concl (logior a (ash
-                        (logior
-                         b
-                         (ash (logior c (ash d 8)) 8)) 8)
-                     (ash (logior e (ash (logior f (ash (logior g (ash h 8))
-                                                        8))
-                                         8))
-                          32))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force (force))))))
-
-    (defthm-usb n64p-mv-nth-1-rm64-helper-1
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e))
-      :bound 64
-      :concl (logior a (ash (logior b (ash
-                                       (logior c
-                                               (ash (logior d (ash e 8))
-                                                    8)) 8)) 8))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force (force))))))
-
-    (defthm-usb n64p-mv-nth-1-rm64-helper-2
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e) (n08p f))
-      :bound 64
-      :concl (logior a (ash (logior
-                             b (ash
-                                (logior
-                                 c
-                                 (ash (logior
-                                       d
-                                       (ash (logior
-                                             e (ash f 8))
-                                            8)) 8)) 8)) 8))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force (force))))))
+                      (list nil
+                            (logior (combine-bytes
+                                     (mv-nth 1 (rb-1 (create-canonical-address-list 4 lin-addr)
+                                                     r-w-x x86 nil)))
+                                    (ash (combine-bytes
+                                          (mv-nth 1
+                                                  (rb-1 (create-canonical-address-list 4 (+ 4 lin-addr))
+                                                        r-w-x x86 nil)))
+                                         32))
+                            x86)))
+      :hints (("Goal" :use ((:instance rb-and-rvm32) (:instance rb-and-rvm32 (lin-addr (+ 4 lin-addr))))
+               :in-theory (e/d (rvm64)
+                               (force (force)))))))
 
 
-    (defthm-usb n64p-mv-nth-1-rm64-helper-3
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-                (n08p e) (n08p f) (n08p g))
-      :bound 64
-      :concl (logior a (ash (logior
-                             b
-                             (ash
-                              (logior
-                               c
-                               (ash
-                                (logior
-                                 d
-                                 (ash
-                                  (logior e
-                                          (ash (logior f (ash g 8))
-                                               8))
-                                  8)) 8)) 8)) 8))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force
-                                                        (force))))))
+   (local
+    (defthmd rb-and-rvm64-helper-2
+      (implies (and (programmer-level-mode x86)
+                    (x86p x86)
+                    (canonical-address-p lin-addr)
+                    (canonical-address-p (+ 7 lin-addr)))
+               (equal
+                (logior
+                 (combine-bytes (mv-nth 1
+                                        (rb-1 (create-canonical-address-list 4 lin-addr)
+                                              r-w-x x86 nil)))
+                 (ash (combine-bytes
+                       (mv-nth 1
+                               (rb-1 (create-canonical-address-list 4 (+ 4 lin-addr))
+                                     r-w-x x86 nil)))
+                      32))
+                (combine-bytes (mv-nth 1
+                                       (rb-1 (create-canonical-address-list 8 lin-addr)
+                                             r-w-x x86 nil)))))
+      :hints (("Goal"
+               :use ((:instance split-rb-and-create-canonical-address-list-in-programmer-level-mode
+                                (n 8)
+                                (m 4))
+                     (:instance combine-bytes-of-append-of-byte-lists
+                                (xs (mv-nth 1 (rb-1 (create-canonical-address-list 4 lin-addr) r-w-x x86 nil)))
+                                (ys (mv-nth 1 (rb-1 (create-canonical-address-list 4 (+ 4 lin-addr)) r-w-x x86 nil)))))
+               :in-theory (e/d () (force (force)))))))
 
-    (defthm-usb n64p-mv-nth-1-rm64-helper-4
-      :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
-                (n08p e) (n08p f) (n08p g) (n08p h))
-      :bound 64
-      :concl (logior a (ash
-                        (logior b (ash (logior
-                                        c
-                                        (ash
-                                         (logior
-                                          d
-                                          (ash
-                                           (logior e
-                                                   (ash
-                                                    (logior f
-                                                            (ash (logior g (ash h 8)) 8))
-                                                    8)) 8)) 8)) 8)) 8))
-      :hints (("Goal" :in-theory
-               (e/d () (unsigned-byte-p
-                        logior-expt-to-plus-quotep
-                        acl2::ash-to-floor
-                        ash-monotone-2))))
-      :gen-type nil
-      :gen-linear t
-      :hints-l (("Goal" :in-theory
-                 (e/d (unsigned-byte-p) (ash-monotone-2 force
-                                                        (force)))))))
+   (defthmd rb-and-rvm64
+     (implies (and (programmer-level-mode x86)
+                   (x86p x86)
+                   (canonical-address-p lin-addr)
+                   (canonical-address-p (+ 7 lin-addr)))
+              (equal (rvm64 lin-addr x86)
+                     (b* (((mv flg bytes x86)
+                           (rb (create-canonical-address-list 8 lin-addr)
+                               r-w-x x86))
+                          (result (combine-bytes bytes)))
+                         (mv flg result x86))))
+     :hints (("Goal"
+              :in-theory (e/d (rb-and-rvm64-helper-1
+                               rb-and-rvm64-helper-2)
+                              (rb-and-rvm32-helper
+                               rm64-guard-proof-helper
+                               logior-expt-to-plus-quotep
+                               signed-byte-p
+                               force (force))))))
+
+   (defthmd rb-and-rvm64
+     (implies (and (programmer-level-mode x86)
+                   (x86p x86)
+                   (canonical-address-p lin-addr)
+                   (canonical-address-p (+ 7 lin-addr)))
+              (equal (rvm64 lin-addr x86)
+                     (b* (((mv flg bytes x86)
+                           (rb (create-canonical-address-list 8 lin-addr)
+                               r-w-x x86))
+                          (result (combine-bytes bytes)))
+                         (mv flg result x86))))
+     :hints (("Goal" :expand (create-canonical-address-list 8 lin-addr)
+              :in-theory (e/d (rm08 rvm08 rvm32 rvm64 ifix)
+                              (rb-and-rvm32-helper
+                               rm64-guard-proof-helper
+                               logior-expt-to-plus-quotep
+                               signed-byte-p
+                               force (force))))))
+
+   (local (in-theory (e/d* () (rb-and-rvm64-helper))))
 
    (defthm combine-bytes-size-for-rm64-programmer-level-mode
      (implies
@@ -3289,150 +3279,113 @@ memory.</li>
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm128 rm08)
                                         (rb ;;signed-byte-p
-                                            not member-equal
-                                            ash-monotone-2))))
+                                         not member-equal
+                                         ash-monotone-2))))
 
   :prepwork
-  ((encapsulate
-    ()
-
-    (local (include-book "centaur/gl/gl" :dir :system))
-
-    ;; [Shilpi]: It'd be nice to prove the following theorem without
-    ;; GL simply because GL include-book is so slow.
-
-    (local
-     (def-gl-thm rb-and-rvm128-helper
-       :hyp (and (n08p b0) (n08p b1) (n08p b2) (n08p b3)
-                 (n08p b4) (n08p b5) (n08p b6) (n08p b7)
-                 (n08p b8) (n08p b9) (n08p b10) (n08p b11)
-                 (n08p b12) (n08p b13) (n08p b14) (n08p b15))
-       :concl (equal
-               (logior
-                (+ b0
-                   (* 256
-                      b1))
-                (+ (* 65536
-                      b2)
-                   (* 16777216
-                      b3)
-                   (* 4294967296
-                      (logior (+ b4
-                                 (* 256
-                                    b5))
-                              (+ (* 65536
-                                    b6)
-                                 (* 16777216
-                                    b7)))))
-                (* 18446744073709551616
-                   (logior (+ b8
-                              (* 256
-                                 b9))
-                           (+ (* 65536
-                                 b10)
-                              (* 16777216
-                                 b11)
-                              (* 4294967296
-                                 (logior (+ b12
-                                            (* 256
-                                               b13))
-                                         (+ (* 65536
-                                               b14)
-                                            (* 16777216
-                                               b15))))))))
-               (+ b0
-                  (* 256
-                     b1)
-                  (* 65536
-                     b2)
-                  (* 16777216
-                     b3)
-                  (* 4294967296
-                     b4)
-                  (* 1099511627776
-                     b5)
-                  (* 281474976710656
-                     b6)
-                  (* 72057594037927936
-                     b7)
-                  (* 18446744073709551616
-                     b8)
-                  (* 4722366482869645213696
-                     b9)
-                  (* 1208925819614629174706176
-                     b10)
-                  (* 309485009821345068724781056
-                     b11)
-                  (* 79228162514264337593543950336
-                     b12)
-                  (* 20282409603651670423947251286016
-                     b13)
-                  (* 5192296858534827628530496329220096
-                     b14)
-                  (* 1329227995784915872903807060280344576
-                     b15)))
-       :g-bindings
-       `((b0 (:g-number ,(gl-int 0 16 9)))
-         (b1 (:g-number ,(gl-int 1 16 9)))
-         (b2 (:g-number ,(gl-int 2 16 9)))
-         (b3 (:g-number ,(gl-int 3 16 9)))
-         (b4 (:g-number ,(gl-int 4 16 9)))
-         (b5 (:g-number ,(gl-int 5 16 9)))
-         (b6 (:g-number ,(gl-int 6 16 9)))
-         (b7 (:g-number ,(gl-int 7 16 9)))
-         (b8 (:g-number ,(gl-int 8 16 9)))
-         (b9 (:g-number ,(gl-int 9 16 9)))
-         (b10 (:g-number ,(gl-int 10 16 9)))
-         (b11 (:g-number ,(gl-int 11 16 9)))
-         (b12 (:g-number ,(gl-int 12 16 9)))
-         (b13 (:g-number ,(gl-int 13 16 9)))
-         (b14 (:g-number ,(gl-int 14 16 9)))
-         (b15 (:g-number ,(gl-int 15 16 9))))))
-
-    (local (include-book "arithmetic-5/top" :dir :system))
-
-    (defthmd rb-and-rvm128
+  ((local
+    (defthmd rb-and-rvm128-helper-1
       (implies (and (programmer-level-mode x86)
                     (x86p x86)
                     (canonical-address-p lin-addr)
                     (canonical-address-p (+ 15 lin-addr)))
                (equal (rvm128 lin-addr x86)
-                      (b* (((mv flg bytes x86)
-                            (rb (create-canonical-address-list 16 lin-addr)
-                                r-w-x x86))
-                           (result (combine-bytes bytes)))
-                          (mv flg result x86))))
-      :hints (("Goal" :expand (create-canonical-address-list 16 lin-addr)
-               :in-theory (e/d (rm08 rvm08 rvm32 rvm64 rvm128)
-                               (force (force))))))
+                      (list nil
+                            (logior (combine-bytes
+                                     (mv-nth 1 (rb-1 (create-canonical-address-list 8 lin-addr)
+                                                     r-w-x x86 nil)))
+                                    (ash (combine-bytes
+                                          (mv-nth 1
+                                                  (rb-1 (create-canonical-address-list 8 (+ 8 lin-addr))
+                                                        r-w-x x86 nil)))
+                                         64))
+                            x86)))
+      :hints (("Goal"
+               :in-theory (e/d (rvm128 rb-and-rvm64)
+                               (force (force)))))))
 
-    (defthm combine-bytes-size-for-rm128-programmer-level-mode
-      (implies (and (signed-byte-p 48 lin-addr)
+
+   (local
+    (defthmd rb-and-rvm128-helper-2
+      (implies (and (programmer-level-mode x86)
                     (x86p x86)
-                    (programmer-level-mode x86)
-                    (signed-byte-p 48 (+ 15 lin-addr)))
-               (< (combine-bytes (mv-nth 1
-                                         (rb (create-canonical-address-list 16 lin-addr)
-                                             r-w-x x86)))
-                  *2^128*))
-      :rule-classes :linear)
+                    (canonical-address-p lin-addr)
+                    (canonical-address-p (+ 15 lin-addr)))
+               (equal
+                (logior
+                 (combine-bytes (mv-nth 1
+                                        (rb-1 (create-canonical-address-list 8 lin-addr)
+                                              r-w-x x86 nil)))
+                 (ash (combine-bytes
+                       (mv-nth 1
+                               (rb-1 (create-canonical-address-list 8 (+ 8 lin-addr))
+                                     r-w-x x86 nil)))
+                      64))
+                (combine-bytes (mv-nth 1
+                                       (rb-1 (create-canonical-address-list 16 lin-addr)
+                                             r-w-x x86 nil)))))
+      :hints (("Goal"
+               :use ((:instance split-rb-and-create-canonical-address-list-in-programmer-level-mode
+                                (n 16)
+                                (m 8))
+                     (:instance combine-bytes-of-append-of-byte-lists
+                                (xs (mv-nth 1 (rb-1 (create-canonical-address-list 8 lin-addr) r-w-x x86 nil)))
+                                (ys (mv-nth 1 (rb-1 (create-canonical-address-list 8 (+ 8 lin-addr)) r-w-x x86 nil)))))
+               :in-theory (e/d () (force (force)))))))
 
-    (defthm lemma
-      (implies (and (n64p x)
-                    (n64p y))
-               (< (logior x (ash y 64))
-                  *2^128*))
-      :rule-classes :linear)))
+   (defthmd rb-and-rvm128
+     (implies (and (programmer-level-mode x86)
+                   (x86p x86)
+                   (canonical-address-p lin-addr)
+                   (canonical-address-p (+ 15 lin-addr)))
+              (equal (rvm128 lin-addr x86)
+                     (b* (((mv flg bytes x86)
+                           (rb (create-canonical-address-list 16 lin-addr)
+                               r-w-x x86))
+                          (result (combine-bytes bytes)))
+                         (mv flg result x86))))
+     :hints (("Goal"
+
+              :in-theory (e/d (rb-and-rvm128-helper-1
+                               rb-and-rvm128-helper-2)
+                              (force (force))))))
+
+   (defthm combine-bytes-size-for-rm128-programmer-level-mode
+     (implies (and (signed-byte-p 48 lin-addr)
+                   (x86p x86)
+                   (programmer-level-mode x86)
+                   (signed-byte-p 48 (+ 15 lin-addr)))
+              (< (combine-bytes (mv-nth 1
+                                        (rb (create-canonical-address-list 16 lin-addr)
+                                            r-w-x x86)))
+                 *2^128*))
+     :rule-classes :linear)
+
+   (defthm-usb logior-limit-lemma
+     :hyp (and (n64p x)
+               (n64p y))
+     :bound 128
+     :concl (logior x (ash y 64))
+     :hints (("Goal" :in-theory (e/d* (ihsext-inductions
+                                       ihsext-recursive-redefs
+                                       zip)
+                                      (unsigned-byte-p))))
+     :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p)
+                                       (bitops::unsigned-byte-p-when-unsigned-byte-p-less
+                                        unsigned-byte-p-of-ash
+                                        unsigned-byte-p-of-logior))))
+     :gen-type nil
+     :gen-linear t))
 
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((15+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                               (+ 15 (the (signed-byte #.*max-linear-address-size*)
-                                          lin-addr)))))
+                            (+ 15 (the (signed-byte #.*max-linear-address-size*)
+                                    lin-addr)))))
 
         (if (mbe :logic (canonical-address-p 15+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                               15+lin-addr)
+                            15+lin-addr)
                           #.*2^47*))
 
             (if (programmer-level-mode x86)
@@ -3453,7 +3406,7 @@ memory.</li>
                        ;; We will not cross a page boundary.
                        (b* (((mv flag
                                  (the (unsigned-byte #.*physical-address-size*)
-                                      p-addr)
+                                   p-addr)
                                  x86)
                              (la-to-pa lin-addr r-w-x cpl x86))
                             ((when flag)
@@ -3488,12 +3441,12 @@ memory.</li>
                                  x86))
 
                             (oword (the (unsigned-byte 128)
-                                        (logior (the (unsigned-byte 128) (ash qword1 64))
-                                                qword0))))
+                                     (logior (the (unsigned-byte 128) (ash qword1 64))
+                                             qword0))))
 
                            (mv nil oword x86))))))
 
-           (mv 'rm128 0 x86)))
+          (mv 'rm128 0 x86)))
 
     (mv 'rm128 0 x86))
 
@@ -3883,17 +3836,6 @@ memory.</li>
 ;; functions, I have an MBE inside write-canonical-address-to-memory,
 ;; where the :logic part is defined in terms of WB.
 
-(local (include-book "centaur/gl/gl" :dir :system))
-(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
-
-(local
- (def-gl-thm logext-loghead-logtail-for-write-canonical-address-to-memory
-   :hyp (canonical-address-p x)
-   :concl (equal (logext 16 (loghead 16 (logtail 32 x)))
-                 (logtail 32 x))
-   :g-bindings
-   `((x (:g-number ,(gl-int 0 1 49))))))
-
 (define write-canonical-address-to-memory-user-exec
   ((lin-addr          :type (signed-byte  #.*max-linear-address-size*))
    (canonical-address :type (signed-byte  #.*max-linear-address-size*))
@@ -3937,30 +3879,6 @@ memory.</li>
           (mv nil x86))
 
     (mv 'unreachable x86)))
-
-(local
- (def-gl-thm logext-loghead-logtail-1
-   :hyp (canonical-address-p x)
-   :concl (equal (logtail 8 (logext 16 (loghead 16 (logtail 32 x))))
-                 (logtail 40 x))
-   :g-bindings
-   `((x (:g-number ,(gl-int 0 1 49))))))
-
-(local
- (def-gl-thm logext-loghead-logtail-2
-   :hyp (canonical-address-p x)
-   :concl (equal (logtail 16 (logext 16 (loghead 16 (logtail 32 x))))
-                 (logtail 48 x))
-   :g-bindings
-   `((x (:g-number ,(gl-int 0 1 49))))))
-
-(local
- (def-gl-thm logext-loghead-logtail-3
-   :hyp (canonical-address-p x)
-   :concl (equal (logtail 24 (logext 16 (loghead 16 (logtail 32 x))))
-                 (logtail 56 x))
-   :g-bindings
-   `((x (:g-number ,(gl-int 0 1 49))))))
 
 (defthmd write-canonical-address-to-memory-user-exec-and-wvm64
   (implies (and (programmer-level-mode x86)

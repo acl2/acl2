@@ -1081,7 +1081,14 @@ baz
           (mv nil sexpr)))
        ((mv err vals state) (acl2::unsound-eval sexpr))
        ((when err)
-        (mv (str::cat "Error: failed to evaluate @(`...`): " err)
+        (mv (str::cat "Error: failed to evaluate @(`...`): "
+                      ;; BOZO this isn't right, we really want something like
+                      ;; ~@, but we don't have that unless we use ACL2's
+                      ;; built-in fmt-to-string stuff, which I don't want to
+                      ;; use due to the problems described in
+                      ;; fmt-to-str-orig.lisp...  For now, we can at least just
+                      ;; stringify the error in a dumb way.
+                      (str::pretty err :config (str::make-printconfig :home-package base-pkg)))
             acc
             state))
        (ret (cond ((atom vals)

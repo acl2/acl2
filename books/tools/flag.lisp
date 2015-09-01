@@ -207,7 +207,7 @@ For example:</p>
 <h3>Bells and Whistles</h3>
 
 <p><color rgb='#ff0000'>New!</color> <b>Proof Templates</b>.  You can submit,
-e.g., @(`(defthm-pseudo-termp)`), with no arguments, to print a ``template''
+e.g., @('(defthm-pseudo-termp)'), with no arguments, to print a ``template''
 that is similar to the above form.  This can be a convenient starting place for
 writing down a new theorem.</p>
 

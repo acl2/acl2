@@ -242,8 +242,7 @@ else
        (x86 (!rgfi-from-alist gprs x86)) ;; General-Purpose Registers
        (x86 (!msri-from-alist msrs x86)) ;; Model-Specific Registers
        (x86 (!ctri-from-alist ctrs x86)) ;; Control Registers
-       (x86 (!rflags                     ;; Initial Flags
-             (n32 flags) x86)))
+       (x86 (!rflags (n32 flags) x86)))  ;; Initial Flags
       (mv nil x86)))
 
 ;; ======================================================================

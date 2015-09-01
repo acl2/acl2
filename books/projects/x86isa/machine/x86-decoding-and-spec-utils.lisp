@@ -718,6 +718,10 @@ field conveying useful information. </li>
 
     nil))
 
+;; All the instruction decoding and spec functions will be added to
+;; this ruleset automatically if def-inst is used to define these
+;; functions.
+(def-ruleset instruction-decoding-and-spec-rules nil)
 
 (define select-operand-size
   ((byte-operand? :type (or t nil))

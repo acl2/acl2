@@ -32,6 +32,7 @@
 (include-book "defagg")
 (include-book "tools/pattern-match" :dir :system)
 (include-book "misc/untranslate-patterns" :dir :system)
+(include-book "centaur/misc/numlist" :dir :system)
 
 (defagg g-concrete (obj))
 (defagg g-boolean (bool))
@@ -39,6 +40,16 @@
 (defagg g-ite (test then else))
 (defagg g-apply (fn args) :notinline t)
 (defagg g-var (name))
+
+(defsection g-int
+  :parents (shape-specs)
+  :short "Create a g-binding for an integer."
+  :long "<p>This is a low-level way to create a custom shape specifier for a
+signed integer.  You might generally prefer higher-level tools like @(see
+auto-bindings).</p>"
+
+  (defun g-int (start by n)
+    (g-number (list (numlist start by n)))))
 
 (defconst *g-keywords*
   '(:g-boolean :g-number :g-concrete :g-ite :g-apply :g-var))
@@ -132,4 +143,3 @@
             (g-concrete x)
           x)
         y))
-

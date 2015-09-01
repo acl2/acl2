@@ -1089,6 +1089,17 @@ not built with X86ISA_EXEC set to t? See :doc Build-Instructions."
                    (value ',event)
                  (value ',alt-event))))
 
+(defmacro OS (l d)
+  #+(and linux (not darwin))
+  (declare (ignore d))
+  #+(and linux (not darwin))
+  l
+  #+(and darwin (not linux))
+  (declare (ignore l))
+  #+(and darwin (not linux))
+  d
+  )
+
 (defsection x86-syscalls-exec
   :parents (x86-syscalls)
   :short "Syscall definitions to be used in the programmer-level mode

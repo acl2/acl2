@@ -28,22 +28,72 @@
 
 (encapsulate
  ()
+ (local (include-book "arithmetic-5/top" :dir :system))
 
- (local (include-book "rtl/rel9/lib/top" :dir :system))
+ (defthmd expt-to-ash
+   (implies (and (natp n)
+                 (integerp x))
+            (equal (ash x n) (* x (expt 2 n))))))
 
- ;; Sometimes, it's easier to reason about addition instead of logical
- ;; OR.
- (defthm logior-expt-to-plus
+(encapsulate
+ ()
+
+ (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+ (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+ (defthmd logior-expt-to-plus-helper-1
    (implies (and (natp n)
                  (integerp x)
                  (unsigned-byte-p n y))
-            (equal (logior y (* x (expt 2 n)))
-                   (+ (* (expt 2 n) x) y)))
-   :hints (("Goal"
-            :use acl2::logior-expt
-            :in-theory (enable acl2::bvecp))))
+            (equal (loghead n (logior y (ash x n))) y))
+   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p
+                                     ihsext-inductions
+                                     ihsext-recursive-redefs)
+                                    ()))))
 
- )
+ (defthmd logior-expt-to-plus-helper-2
+   (implies (and (natp n)
+                 (integerp x)
+                 (unsigned-byte-p n y))
+            (equal (logtail n (logior y (ash x n))) x))
+   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p
+                                     ihsext-inductions
+                                     ihsext-recursive-redefs)
+                                    ()))))
+
+ (defthmd putting-loghead-and-logtail-together
+   (implies (and (equal (logtail n w) x)
+                 (equal (loghead n w) y)
+                 (integerp w)
+                 (natp n))
+            (equal (+ y (ash x n)) w))
+   :hints (("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                     ihsext-inductions)
+                                    ()))))
+
+ (defthmd logior-to-plus-with-ash
+   (implies (and (natp n)
+                 (integerp x)
+                 (unsigned-byte-p n y))
+            (equal (logior y (ash x n))
+                   (+ y (ash x n))))
+   :hints (("Goal"
+            :use ((:instance logior-expt-to-plus-helper-1)
+                  (:instance logior-expt-to-plus-helper-2)
+                  (:instance putting-loghead-and-logtail-together
+                             (w (logior y (ash x n)))))))))
+
+ ;; Sometimes, it's easier to reason about addition instead of logical
+ ;; OR.
+
+(defthm logior-expt-to-plus
+  (implies (and (natp n)
+                (integerp x)
+                (unsigned-byte-p n y))
+           (equal (logior y (* x (expt 2 n)))
+                  (+ (* (expt 2 n) x) y)))
+  :hints (("Goal" :use ((:instance expt-to-ash)
+                        (:instance logior-to-plus-with-ash)))))
 
 ;; Now for a new version of logior-expt-to-plus using a constant in
 ;; place of (expt 2 n)....

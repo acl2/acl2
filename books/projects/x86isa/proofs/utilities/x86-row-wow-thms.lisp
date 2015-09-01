@@ -32,6 +32,10 @@
   (implies (consp (assoc-equal x ss))
            (consp (assoc-equal x (put-assoc-equal x z ss)))))
 
+;; All the theorems below about the components of env can have
+;; (programmer-level-mode x86) as the hyp, because the env field is
+;; irrelevant in the system-level mode.
+
 (defthm read-x86-file-des-write-x86-file-des-different-indices
   (implies (not (equal fd1 fd2))
            (equal (read-x86-file-des fd1 (write-x86-file-des fd2 fd2-field x86))
@@ -78,25 +82,118 @@
                                    write-x86-file-contents-logic)
                                   ()))))
 
+(defthm read-x86-file-des-write-x86-file-contents
+  (equal (read-x86-file-des id (write-x86-file-contents i v x86))
+         (read-x86-file-des id x86))
+  :hints (("Goal" :in-theory (e/d (read-x86-file-des
+                                   read-x86-file-des-logic
+                                   write-x86-file-contents
+                                   write-x86-file-contents-logic)
+                                  ()))))
+
+(defthm read-x86-file-contents-write-x86-file-des
+  (equal (read-x86-file-contents name (write-x86-file-des i v x86))
+         (read-x86-file-contents name x86))
+  :hints (("Goal" :in-theory (e/d (read-x86-file-contents
+                                   read-x86-file-contents-logic
+                                   write-x86-file-des
+                                   write-x86-file-des-logic)
+                                  ()))))
+
 (defthm read-x86-file-des-wb
   (equal (read-x86-file-des id (mv-nth 1 (wb addr-bytes-alist x86)))
          (read-x86-file-des id x86))
   :hints (("Goal" :cases ((programmer-level-mode x86))
-           :in-theory (e/d* (read-x86-file-des
-                             read-x86-file-des-logic)
+           :in-theory (e/d* (read-x86-file-des read-x86-file-des-logic)
                             ()))))
+
+(defthm write-x86-file-des-wb
+  (equal (write-x86-file-des i v (mv-nth 1 (wb addr-bytes-alst x86)))
+         (mv-nth 1 (wb addr-bytes-alst (write-x86-file-des i v x86))))
+  :hints (("Goal" :cases ((programmer-level-mode x86))
+           :in-theory (e/d* (write-x86-file-des write-x86-file-des-logic)
+                            ()))))
+
+(defthm delete-x86-file-des-wb
+  (implies (programmer-level-mode x86)
+           (equal (delete-x86-file-des i (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (delete-x86-file-des i x86)))))
+  :hints (("Goal" :in-theory (e/d* (delete-x86-file-des delete-x86-file-des-logic) ()))))
 
 (defthm read-x86-file-contents-wb
   (equal (read-x86-file-contents id (mv-nth 1 (wb addr-bytes-alist x86)))
          (read-x86-file-contents id x86))
   :hints (("Goal" :cases ((programmer-level-mode x86))
-           :in-theory (e/d* (read-x86-file-contents
-                             read-x86-file-contents-logic)
+           :in-theory (e/d* (read-x86-file-contents read-x86-file-contents-logic)
                             ()))))
+
+(defthm write-x86-file-contents-wb
+  (implies (programmer-level-mode x86)
+           (equal (write-x86-file-contents i v (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (write-x86-file-contents i v x86)))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-contents write-x86-file-contents-logic)
+                            ()))))
+
+(defthm delete-x86-file-contents-wb
+  (implies (programmer-level-mode x86)
+           (equal (delete-x86-file-contents i (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (delete-x86-file-contents i x86)))))
+  :hints (("Goal"
+           :in-theory (e/d* (delete-x86-file-contents delete-x86-file-contents-logic)
+                            ()))))
+
+(defthm pop-x86-oracle-wb
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (pop-x86-oracle (mv-nth 1 (wb addr-bytes-alst x86))))
+                  (mv-nth 1 (wb addr-bytes-alst (mv-nth 1 (pop-x86-oracle x86))))))
+  :hints (("Goal"
+           :in-theory (e/d* (pop-x86-oracle pop-x86-oracle-logic)
+                            ()))))
+
+(defthm rb-and-write-x86-file-des
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (write-x86-file-des i val x86)))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-des write-x86-file-des-logic) (rb)))))
+
+(defthm rb-and-write-x86-file-contents
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (write-x86-file-contents i val x86)))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-x86-file-contents write-x86-file-contents-logic) (rb)))))
+
+(defthm rb-and-pop-x86-oracle
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb address r-w-x (mv-nth 1 (pop-x86-oracle x86))))
+                  (mv-nth 1 (rb address r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (pop-x86-oracle pop-x86-oracle-logic) (rb)))))
 
 ;; ======================================================================
 
-;; Some rules about flgi and !flgi:
+;; Some rules about flags:
+
+(defthm rb-write-user-rflags-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (mv-nth 1 (rb addresses r-w-x (write-user-rflags flags mask x86)))
+                  (mv-nth 1 (rb addresses r-w-x x86))))
+  :hints (("Goal"
+           :in-theory (e/d* (write-user-rflags !flgi-undefined !flgi) (rb force (force))))))
+
+(defthm write-user-rflags-and-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (write-user-rflags flags mask (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (mv-nth 1 (wb addr-bytes-alst (write-user-rflags flags mask x86)))))
+  :hints (("Goal" :in-theory (e/d* (write-user-rflags flgi !flgi !flgi-undefined) ()))))
+
+(defthm flgi-wb-in-programmer-level-mode
+  (implies (programmer-level-mode x86)
+           (equal (flgi flg (mv-nth 1 (wb addr-bytes-alst x86)))
+                  (flgi flg x86)))
+  :hints (("Goal" :in-theory (e/d* (flgi) ()))))
 
 (local (include-book "centaur/gl/gl" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

@@ -27,7 +27,7 @@ pointer, and the flags will be stored in a log file, which is called
 @('acl2-instrument.log') by default.  The log file's name can be
 changed by the following:</p>
 
-<code> (!log-file-name \"my-very-own-log-file.whoa\") </code>
+<code> (!log-file-name \"my-very-own-log-file\") </code>
 
 </li>
 
@@ -127,7 +127,7 @@ because of all the file output.</p>
 (x86-break '(equal (rip x86) 10))
 (x86-break '(equal (rgfi *rax* x86) 42))
 (x86-break '(and (equal (rgfi *rsp* x86) 0)
-		 (equal (rip x86) 12)))
+                 (equal (rip x86) 12)))
 </code>
 
 <p>Any well-formed ACL2 expression that evaluates to a boolean is a
@@ -242,7 +242,7 @@ executed \(whatever comes first\).</p>
 
 (defun printing-x86-components (x86 base state)
   (declare (xargs :stobjs (x86 state))
-	   (ignorable x86 base state))
+           (ignorable x86 base state))
   state)
 
 ;; Smashing the definition of printing-x86-components in raw Lisp...
@@ -253,29 +253,29 @@ executed \(whatever comes first\).</p>
    (declare (xargs :stobjs (x86 state)))
    (with-open-file
     (*terminal-io* (@ log-file-name)
-		   :direction :output
-		   :if-exists :append
-		   :if-does-not-exist :create)
+                   :direction :output
+                   :if-exists :append
+                   :if-does-not-exist :create)
     (b* ((rax (n64 (rgfi *rax* x86)))
-	 (rbx (n64 (rgfi *rbx* x86)))
-	 (rcx (n64 (rgfi *rcx* x86)))
-	 (rdx (n64 (rgfi *rdx* x86)))
-	 (rsi (n64 (rgfi *rsi* x86)))
-	 (rdi (n64 (rgfi *rdi* x86)))
-	 (rbp (n64 (rgfi *rbp* x86)))
-	 (rsp (n64 (rgfi *rsp* x86)))
-	 (r8  (n64 (rgfi *r8* x86)))
-	 (r9  (n64 (rgfi *r9* x86)))
-	 (r10 (n64 (rgfi *r10* x86)))
-	 (r11 (n64 (rgfi *r11* x86)))
-	 (r12 (n64 (rgfi *r12* x86)))
-	 (r13 (n64 (rgfi *r13* x86)))
-	 (r14 (n64 (rgfi *r14* x86)))
-	 (r15 (n64 (rgfi *r15* x86)))
-	 (flg (rflags x86))
-	 (rip (n48 (rip x86)))
-	 ((mv ?col state)
-	  (fmt! "(@@GPR . ~%~
+         (rbx (n64 (rgfi *rbx* x86)))
+         (rcx (n64 (rgfi *rcx* x86)))
+         (rdx (n64 (rgfi *rdx* x86)))
+         (rsi (n64 (rgfi *rsi* x86)))
+         (rdi (n64 (rgfi *rdi* x86)))
+         (rbp (n64 (rgfi *rbp* x86)))
+         (rsp (n64 (rgfi *rsp* x86)))
+         (r8  (n64 (rgfi *r8* x86)))
+         (r9  (n64 (rgfi *r9* x86)))
+         (r10 (n64 (rgfi *r10* x86)))
+         (r11 (n64 (rgfi *r11* x86)))
+         (r12 (n64 (rgfi *r12* x86)))
+         (r13 (n64 (rgfi *r13* x86)))
+         (r14 (n64 (rgfi *r14* x86)))
+         (r15 (n64 (rgfi *r15* x86)))
+         (flg (rflags x86))
+         (rip (n48 (rip x86)))
+         ((mv ?col state)
+          (fmt! "(@@GPR . ~%~
  ~tI((#.*RAX* . #x~s0)~%~
  ~tI (#.*RBX* . #x~s1)~%~
  ~tI (#.*RCX* . #x~s2)~%~
@@ -295,33 +295,33 @@ executed \(whatever comes first\).</p>
  @@)~%~
  (@@RFLAGS . ~%~tI#x~sG~%@@) ~%~
  (@@RIP . ~%~tI#x~sH~%@@)~%~%"
-		(list (cons #\0 (str::natstr16 rax))
-		      (cons #\1 (str::natstr16 rbx))
-		      (cons #\2 (str::natstr16 rcx))
-		      (cons #\3 (str::natstr16 rdx))
-		      (cons #\4 (str::natstr16 rsi))
-		      (cons #\5 (str::natstr16 rdi))
-		      (cons #\6 (str::natstr16 rbp))
-		      (cons #\7 (str::natstr16 rsp))
-		      (cons #\8 (str::natstr16  r8))
-		      (cons #\9 (str::natstr16  r9))
-		      (cons #\A (str::natstr16 r10))
-		      (cons #\B (str::natstr16 r11))
-		      (cons #\C (str::natstr16 r12))
-		      (cons #\D (str::natstr16 r13))
-		      (cons #\E (str::natstr16 r14))
-		      (cons #\F (str::natstr16 r15))
-		      (cons #\G (str::natstr16 flg))
-		      (cons #\H (str::natstr16 rip))
-		      (cons #\I '8))
-		*standard-co* state nil)))
-	state))))
+                (list (cons #\0 (str::natstr16 rax))
+                      (cons #\1 (str::natstr16 rbx))
+                      (cons #\2 (str::natstr16 rcx))
+                      (cons #\3 (str::natstr16 rdx))
+                      (cons #\4 (str::natstr16 rsi))
+                      (cons #\5 (str::natstr16 rdi))
+                      (cons #\6 (str::natstr16 rbp))
+                      (cons #\7 (str::natstr16 rsp))
+                      (cons #\8 (str::natstr16  r8))
+                      (cons #\9 (str::natstr16  r9))
+                      (cons #\A (str::natstr16 r10))
+                      (cons #\B (str::natstr16 r11))
+                      (cons #\C (str::natstr16 r12))
+                      (cons #\D (str::natstr16 r13))
+                      (cons #\E (str::natstr16 r14))
+                      (cons #\F (str::natstr16 r15))
+                      (cons #\G (str::natstr16 flg))
+                      (cons #\H (str::natstr16 rip))
+                      (cons #\I '8))
+                *standard-co* state nil)))
+        state))))
 
 (push-untouchable 'print-base t)
 
 (defun printing-x86-to-terminal (x86 state)
   (declare (xargs :stobjs (x86 state)
-		  :mode :program))
+                  :mode :program))
   (b* ((rax (n64 (rgfi *rax* x86)))
        (rbx (n64 (rgfi *rbx* x86)))
        (rcx (n64 (rgfi *rcx* x86)))
@@ -341,7 +341,7 @@ executed \(whatever comes first\).</p>
        (flg (rflags x86))
        (rip (n48 (rip x86)))
        ((mv ?col state)
-	(fmt! "(@@GPR . ~%~
+        (fmt! "(@@GPR . ~%~
  ~tI((#.*RAX* . #x~s0)~%~
  ~tI (#.*RBX* . #x~s1)~%~
  ~tI (#.*RCX* . #x~s2)~%~
@@ -361,31 +361,31 @@ executed \(whatever comes first\).</p>
  @@)~%~
  (@@RFLAGS . ~%~tI#x~sG~%@@) ~%~
  (@@RIP . ~%~tI#x~sH~%@@)~%~%"
-	      (list (cons #\0 (str::natstr16 rax))
-		    (cons #\1 (str::natstr16 rbx))
-		    (cons #\2 (str::natstr16 rcx))
-		    (cons #\3 (str::natstr16 rdx))
-		    (cons #\4 (str::natstr16 rsi))
-		    (cons #\5 (str::natstr16 rdi))
-		    (cons #\6 (str::natstr16 rbp))
-		    (cons #\7 (str::natstr16 rsp))
-		    (cons #\8 (str::natstr16  r8))
-		    (cons #\9 (str::natstr16  r9))
-		    (cons #\A (str::natstr16 r10))
-		    (cons #\B (str::natstr16 r11))
-		    (cons #\C (str::natstr16 r12))
-		    (cons #\D (str::natstr16 r13))
-		    (cons #\E (str::natstr16 r14))
-		    (cons #\F (str::natstr16 r15))
-		    (cons #\G (str::natstr16 flg))
-		    (cons #\H (str::natstr16 rip))
-		    (cons #\I '8))
-	      *standard-co* state nil)))
+              (list (cons #\0 (str::natstr16 rax))
+                    (cons #\1 (str::natstr16 rbx))
+                    (cons #\2 (str::natstr16 rcx))
+                    (cons #\3 (str::natstr16 rdx))
+                    (cons #\4 (str::natstr16 rsi))
+                    (cons #\5 (str::natstr16 rdi))
+                    (cons #\6 (str::natstr16 rbp))
+                    (cons #\7 (str::natstr16 rsp))
+                    (cons #\8 (str::natstr16  r8))
+                    (cons #\9 (str::natstr16  r9))
+                    (cons #\A (str::natstr16 r10))
+                    (cons #\B (str::natstr16 r11))
+                    (cons #\C (str::natstr16 r12))
+                    (cons #\D (str::natstr16 r13))
+                    (cons #\E (str::natstr16 r14))
+                    (cons #\F (str::natstr16 r15))
+                    (cons #\G (str::natstr16 flg))
+                    (cons #\H (str::natstr16 rip))
+                    (cons #\I '8))
+              *standard-co* state nil)))
       state))
 
 (defun printing-flgs (x86 state)
   (declare (xargs :stobjs (x86 state)
-		  :mode :program))
+                  :mode :program))
   (b* ((cf  (flgi #.*cf* x86))
        (pf  (flgi #.*pf* x86))
        (af  (flgi #.*af* x86))
@@ -393,8 +393,8 @@ executed \(whatever comes first\).</p>
        (sf  (flgi #.*sf* x86))
        (of  (flgi #.*of* x86))
        ((mv ?col state)
-	(fmt!
-	 "(@@FLGS . ~%~
+        (fmt!
+         "(@@FLGS . ~%~
 ~tI((CF . ~s0)~%~
 ~tI (PF . ~s1)~%~
 ~tI (AF . ~s2)~%~
@@ -402,19 +402,19 @@ executed \(whatever comes first\).</p>
 ~tI (SF . ~s4)~%~
 ~tI (OF . ~s5))~%~
 @@)~%~%"
-	 (list (cons #\0 cf)
-	       (cons #\1 pf)
-	       (cons #\2 af)
-	       (cons #\3 zf)
-	       (cons #\4 sf)
-	       (cons #\5 of)
-	       (cons #\I '8))
-	 *standard-co* state nil)))
+         (list (cons #\0 cf)
+               (cons #\1 pf)
+               (cons #\2 af)
+               (cons #\3 zf)
+               (cons #\4 sf)
+               (cons #\5 of)
+               (cons #\I '8))
+         *standard-co* state nil)))
       (mv x86 state)))
 
 (defun printing-flg-val (eflags state)
   (declare (xargs :stobjs (state)
-		  :mode :program))
+                  :mode :program))
   (b* ((cf  (rflags-slice :cf eflags))
        (pf  (rflags-slice :pf eflags))
        (af  (rflags-slice :af eflags))
@@ -422,7 +422,7 @@ executed \(whatever comes first\).</p>
        (sf  (rflags-slice :sf eflags))
        (of  (rflags-slice :of eflags))
        ((mv ?col state)
-	(fmt! "(@@FLGS . ~%~
+        (fmt! "(@@FLGS . ~%~
 ~tI((CF . ~s0)~%~
 ~tI (PF . ~s1)~%~
 ~tI (AF . ~s2)~%~
@@ -430,14 +430,14 @@ executed \(whatever comes first\).</p>
 ~tI (SF . ~s4)~%~
 ~tI (OF . ~s5))~%~
 @@)~%~%"
-	      (list (cons #\0 cf)
-		    (cons #\1 pf)
-		    (cons #\2 af)
-		    (cons #\3 zf)
-		    (cons #\4 sf)
-		    (cons #\5 of)
-		    (cons #\I '8))
-	      *standard-co* state nil)))
+              (list (cons #\0 cf)
+                    (cons #\1 pf)
+                    (cons #\2 af)
+                    (cons #\3 zf)
+                    (cons #\4 sf)
+                    (cons #\5 of)
+                    (cons #\I '8))
+              *standard-co* state nil)))
       state))
 
 ;; ======================================================================
@@ -449,13 +449,13 @@ executed \(whatever comes first\).</p>
 
 (defun big-step (n x86 state)
   (declare (xargs :guard (unsigned-byte-p 59 n)
-		  :stobjs (x86 state)))
+                  :stobjs (x86 state)))
   (mv-let (steps x86 state)
-	  (b* (((mv steps x86)
-		(x86-run-steps n x86))
-	       (state (printing-x86-components x86 16 state)))
-	      (mv steps x86 state))
-	  (mv (cw "Instructions Run: ~p0~%" steps) x86 state)))
+          (b* (((mv steps x86)
+                (x86-run-steps n x86))
+               (state (printing-x86-components x86 16 state)))
+              (mv steps x86 state))
+          (mv (cw "Instructions Run: ~p0~%" steps) x86 state)))
 
 
 (defmacro big_step (n)
@@ -511,7 +511,7 @@ executed \(whatever comes first\).</p>
 
 (defun log-instr-fn (n x86 state)
   (declare (type (unsigned-byte 60) n)
-	   (xargs :stobjs (x86 state)))
+           (xargs :stobjs (x86 state)))
   (cond
    ((zp n)
     (mv "Out of time! See log file for the execution trace." x86 state))
@@ -523,17 +523,17 @@ executed \(whatever comes first\).</p>
      (rm08 (rip x86) :r x86)
      (cond
       (erp (mv (cons erp "rm08 Error. See log file for the execution trace.")
-	       x86 state))
+               x86 state))
       ((equal val #xF4)
        (let ((x86 (x86-fetch-decode-execute x86)))
-	 (mv "Halt encountered. See log file for the execution trace." x86 state)))
+         (mv "Halt encountered. See log file for the execution trace." x86 state)))
       (t (b* (((mv x86 state) (one-step x86 state)))
-	     (log-instr-fn (the (unsigned-byte 60) (1- n)) x86 state))))))))
+             (log-instr-fn (the (unsigned-byte 60) (1- n)) x86 state))))))))
 
 (defun log-instr (x86 state)
   (declare (xargs :stobjs (x86 state)))
   (b* ((state ;; Print initial state
-	(printing-x86-components x86 16 state)))
+        (printing-x86-components x86 16 state)))
       (log-instr-fn (1- *2^60*) x86 state)))
 
 (defmacro log_instr ()
@@ -545,14 +545,14 @@ executed \(whatever comes first\).</p>
 
 (defmacro x86-break (break-cond)
   `(table breakpoints
-	  (let ((n (len (table-alist 'breakpoints world))))
-	    n)
-	  ,break-cond))
+          (let ((n (len (table-alist 'breakpoints world))))
+            n)
+          ,break-cond))
 
 (defmacro get-breakpoints-1 ()
   `(let ((contents (table-alist 'breakpoints (w state))))
      (if (consp contents)
-	 (cons 'or (strip-cdrs contents))
+         (cons 'or (strip-cdrs contents))
        (er hard 'get-breakpoints "No breakpoints set!"))))
 
 (defmacro get-breakpoints ()
@@ -561,32 +561,32 @@ executed \(whatever comes first\).</p>
 (defn x86-run-debug-gen (stop-conds)
   `(defun x86-run-debug1 (n x86 state)
      (declare (xargs :guard (unsigned-byte-p 60 n)
-		     :stobjs (x86 state)))
+                     :stobjs (x86 state)))
      (if (zp n)
-	 (mv n x86 state)
+         (mv n x86 state)
        (let* ((state (set-print-base 16 state))
-	      (state (set-print-radix t state)))
-	 (cond ((ms x86)
-		(let ((state (printing-x86-components x86 16 state)))
-		  (mv n x86 state)))
-	       (,stop-conds
-		(let* ((x86 (!ms 'breakpoint-reached! x86))
-		       (state (printing-x86-components x86 16 state)))
-		  (mv n x86 state)))
-	       (t (let ((x86 (x86-fetch-decode-execute x86)))
-		    (x86-run-debug1 (1- n) x86 state))))))))
+              (state (set-print-radix t state)))
+         (cond ((ms x86)
+                (let ((state (printing-x86-components x86 16 state)))
+                  (mv n x86 state)))
+               (,stop-conds
+                (let* ((x86 (!ms 'breakpoint-reached! x86))
+                       (state (printing-x86-components x86 16 state)))
+                  (mv n x86 state)))
+               (t (let ((x86 (x86-fetch-decode-execute x86)))
+                    (x86-run-debug1 (1- n) x86 state))))))))
 
 (defmacro x86-set-breakpoint ()
   `(make-event (x86-run-debug-gen
-		;; Stop Conditions
-		(get-breakpoints))))
+                ;; Stop Conditions
+                (get-breakpoints))))
 
 (defmacro x86-run-debug ()
   `(b* (((mv n x86 state)
-	 (x86-run-debug1
-	  ,(1- *2^60*)
-	  x86
-	  state)))
+         (x86-run-debug1
+          ,(1- *2^60*)
+          x86
+          state)))
        (mv (- (1- *2^60*) n) x86 state)))
 
 ;; ======================================================================
@@ -596,7 +596,7 @@ executed \(whatever comes first\).</p>
 
 (defmacro quiet-error ()
   '(ACL2::with-output :off (ACL2::error)
-		      (defun f ())))
+                      (defun f ())))
 
 (defmacro x86-debug ()
   ;; Note that x86-debug results in an error.  If you want to use it with other
@@ -606,75 +606,75 @@ executed \(whatever comes first\).</p>
   ;;         (declare (ignore erp val))
   ;;         ....)
   `(ACL2::with-output :stack :push
-		      :off (ACL2::error ACL2::summary)
-		      (progn (ACL2::with-output :stack :pop
-						:off (ACL2::summary)
-						(x86-set-breakpoint))
-			     (ACL2::with-output :stack :pop
-						:off (ACL2::summary)
-						(make-event
-						 (ACL2::er-progn
-						  (ACL2::trans-eval
-						   '(x86-run-debug)
-						   'top state t)
-						  (ACL2::value
-						   '(ACL2::value-triple nil)))))
-			     (quiet-error))))
+                      :off (ACL2::error ACL2::summary)
+                      (progn (ACL2::with-output :stack :pop
+                                                :off (ACL2::summary)
+                                                (x86-set-breakpoint))
+                             (ACL2::with-output :stack :pop
+                                                :off (ACL2::summary)
+                                                (make-event
+                                                 (ACL2::er-progn
+                                                  (ACL2::trans-eval
+                                                   '(x86-run-debug)
+                                                   'top state t)
+                                                  (ACL2::value
+                                                   '(ACL2::value-triple nil)))))
+                             (quiet-error))))
 
 (defun continue-fn (x86)
   (declare (xargs :stobjs (x86)))
   (if (equal (ms x86) 'breakpoint-reached!)
       (b* ((x86 (!ms nil x86))
-	   (x86 (x86-fetch-decode-execute x86)))
-	  x86)
+           (x86 (x86-fetch-decode-execute x86)))
+          x86)
     x86))
 
 (defmacro x86-debug-form ()
   `(b* (((mv ?erp ?val state)
-	 (x86-debug)))
+         (x86-debug)))
        state))
 
 (defmacro continue-debug ()
   `(ACL2::er-progn
     (make-event (ACL2::er-progn
-		 (ACL2::trans-eval '(continue-fn x86)
-				   'top
-				   state t)
-		 (ACL2::value '(ACL2::value-triple nil))))
+                 (ACL2::trans-eval '(continue-fn x86)
+                                   'top
+                                   state t)
+                 (ACL2::value '(ACL2::value-triple nil))))
     (let* ((state (x86-debug-form)))
       (mv nil nil state))))
 
 (defn x86-debug!-fn-gen (stop-conds)
   `(defun x86-debug!-fn1 (n x86 state)
      (declare (xargs :guard (unsigned-byte-p 60 n)
-		     :stobjs (x86 state)))
+                     :stobjs (x86 state)))
      (if (zp n)
-	 (mv n x86 state)
+         (mv n x86 state)
        (let* ((state (set-print-base 16 state))
-	      (state (set-print-radix t state)))
-	 (cond
-	  (,stop-conds
-	   (let* ((state (printing-x86-components x86 16 state))
-		  (x86 (x86-fetch-decode-execute x86)))
-	     (x86-debug!-fn1 (1- n) x86 state)))
-	  ((ms x86)
-	   (let ((state (printing-x86-components x86 16 state)))
-	     (mv n x86 state)))
-	  (t (let ((x86 (x86-fetch-decode-execute x86)))
-	       (x86-debug!-fn1 (1- n) x86 state))))))))
+              (state (set-print-radix t state)))
+         (cond
+          (,stop-conds
+           (let* ((state (printing-x86-components x86 16 state))
+                  (x86 (x86-fetch-decode-execute x86)))
+             (x86-debug!-fn1 (1- n) x86 state)))
+          ((ms x86)
+           (let ((state (printing-x86-components x86 16 state)))
+             (mv n x86 state)))
+          (t (let ((x86 (x86-fetch-decode-execute x86)))
+               (x86-debug!-fn1 (1- n) x86 state))))))))
 
 (defmacro x86-set-breakpoint-x86-debug! ()
   `(make-event (x86-debug!-fn-gen
-		;; Stop Conditions
-		(get-breakpoints))))
+                ;; Stop Conditions
+                (get-breakpoints))))
 
 
 (defmacro x86-debug!-fn ()
   `(b* (((mv n x86 state)
-	 (x86-debug!-fn1
-	  ,(1- *2^60*)
-	  x86
-	  state)))
+         (x86-debug!-fn1
+          ,(1- *2^60*)
+          x86
+          state)))
        (mv (- (1- *2^60*) n) x86 state)))
 
 (defmacro x86-debug! ()
@@ -685,19 +685,19 @@ executed \(whatever comes first\).</p>
   ;;         (declare (ignore erp val))
   ;;         ....)
   `(ACL2::with-output :stack :push
-		      :off (ACL2::error ACL2::summary)
-		      (progn (ACL2::with-output :stack :pop
-						:off (ACL2::summary)
-						(x86-set-breakpoint-x86-debug!))
-			     (ACL2::with-output
-			      :stack :pop
-			      :off (ACL2::summary)
-			      (make-event
-			       (ACL2::er-progn
-				(ACL2::trans-eval '(x86-debug!-fn)
-						  'top state t)
-				(ACL2::value '(ACL2::value-triple nil)))))
-			     (quiet-error))))
+                      :off (ACL2::error ACL2::summary)
+                      (progn (ACL2::with-output :stack :pop
+                                                :off (ACL2::summary)
+                                                (x86-set-breakpoint-x86-debug!))
+                             (ACL2::with-output
+                              :stack :pop
+                              :off (ACL2::summary)
+                              (make-event
+                               (ACL2::er-progn
+                                (ACL2::trans-eval '(x86-debug!-fn)
+                                                  'top state t)
+                                (ACL2::value '(ACL2::value-triple nil)))))
+                             (quiet-error))))
 
 ;; ======================================================================
 
@@ -708,8 +708,8 @@ executed \(whatever comes first\).</p>
   (if (endp alst)
       nil
     (cons (cons (caar alst)
-		(list (cdar alst)))
-	  (display-table-contents (cdr alst)))))
+                (list (cdar alst)))
+          (display-table-contents (cdr alst)))))
 
 (defmacro show-breakpoints ()
   `(let ((contents (table-alist 'breakpoints (w state))))
@@ -722,18 +722,18 @@ executed \(whatever comes first\).</p>
 
 (defun delete-breakpoint-fn (key-list breakpoints-lst)
   (declare (xargs :guard (and (nat-listp key-list)
-			      (alistp breakpoints-lst))))
+                              (alistp breakpoints-lst))))
   (if (endp key-list)
       breakpoints-lst
     (delete-breakpoint-fn (cdr key-list)
-			  (delete-assoc (car key-list)
-					breakpoints-lst))))
+                          (delete-assoc (car key-list)
+                                        breakpoints-lst))))
 
 (defmacro delete-breakpoint (key-list)
   `(table breakpoints nil
-	  (delete-breakpoint-fn ,key-list
-				(table-alist 'breakpoints world))
-	  :clear))
+          (delete-breakpoint-fn ,key-list
+                                (table-alist 'breakpoints world))
+          :clear))
 
 ;; ======================================================================
 
@@ -749,21 +749,21 @@ executed \(whatever comes first\).</p>
   (declare (xargs :mode :program))
   (and (natp key)
        (mv-let (erp val bindings)
-	       (ACL2::translate1-cmp val
-				     '(nil)       ; stobjs-out
-				     nil          ; bindings
-				     '(x86 state) ; known-stobjs
-				     'breakpoints ; ctx
-				     wrld
-				     (ACL2::default-state-vars :hons))
-	       (declare (ignore bindings))
-	       (cond (erp ; erp is a context; val is a message
-		      (assert$
-		       val ; message
-		       (er hard erp
-			   "~@0"
-			   val)))
-		     (t t)))))
+               (ACL2::translate1-cmp val
+                                     '(nil)       ; stobjs-out
+                                     nil          ; bindings
+                                     '(x86 state) ; known-stobjs
+                                     'breakpoints ; ctx
+                                     wrld
+                                     (ACL2::default-state-vars :hons))
+               (declare (ignore bindings))
+               (cond (erp ; erp is a context; val is a message
+                      (assert$
+                       val ; message
+                       (er hard erp
+                           "~@0"
+                           val)))
+                     (t t)))))
 
 (table breakpoints nil nil
        :guard
@@ -775,37 +775,37 @@ executed \(whatever comes first\).</p>
 
 (defun trace-read-memory-1 (fn)
   (let* ((numbytes
-	  (case fn
-	    ('rm08  1)
-	    ('rim08 1)
-	    ('rm16  2)
-	    ('rim16 2)
-	    ('rm32  4)
-	    ('rim32 4)
-	    ('rm64  8)
-	    ('rim64 8))))
+          (case fn
+            ('rm08  1)
+            ('rim08 1)
+            ('rm16  2)
+            ('rim16 2)
+            ('rm32  4)
+            ('rim32 4)
+            ('rm64  8)
+            ('rim64 8))))
     (list
      `(trace! (,fn
-	       :cond (and (equal ACL2::traced-fn (quote ,fn))
-			  (not (equal (nth 1 ACL2::arglist) :x)))
-	       :entry (:fmt! (msg "~%"))
-	       :exit (:fmt! (msg "~x0: R ~x1 ~x2 ~x3"
-				 (rip x86)
-				 (nth 0 ACL2::arglist) ;; Linear address
-				 ,numbytes             ;; Size
-				 (nth 1 ACL2::values)  ;; Value read
-				 )))))))
+               :cond (and (equal ACL2::traced-fn (quote ,fn))
+                          (not (equal (nth 1 ACL2::arglist) :x)))
+               :entry (:fmt! (msg "~%"))
+               :exit (:fmt! (msg "~x0: R ~x1 ~x2 ~x3"
+                                 (rip x86)
+                                 (nth 0 ACL2::arglist) ;; Linear address
+                                 ,numbytes             ;; Size
+                                 (nth 1 ACL2::values)  ;; Value read
+                                 )))))))
 
 (defun create-trace-read-memory-1 (fn-lst)
   (if (endp fn-lst)
       nil
     (append (trace-read-memory-1 (car fn-lst))
-	    (create-trace-read-memory-1 (cdr fn-lst)))))
+            (create-trace-read-memory-1 (cdr fn-lst)))))
 
 (defun create-trace-read-memory (fn-lst)
   ;; (create-trace-read-memory '(rm08 rm16))
   (cons 'er-progn
-	(create-trace-read-memory-1 fn-lst)))
+        (create-trace-read-memory-1 fn-lst)))
 
 (defmacro trace-read-memory (lst)
   ;; (trace-read-memory (rm08 rim08 rm16 rim16 rm32 rim32 rm64 rim64))
@@ -816,36 +816,36 @@ executed \(whatever comes first\).</p>
 
 (defun trace-write-memory-1 (fn)
   (let* ((numbytes
-	  (case fn
-	    ('wm08  1)
-	    ('wim08 1)
-	    ('wm16  2)
-	    ('wim16 2)
-	    ('wm32  4)
-	    ('wim32 4)
-	    ('wm64  8)
-	    ('wim64 8))))
+          (case fn
+            ('wm08  1)
+            ('wim08 1)
+            ('wm16  2)
+            ('wim16 2)
+            ('wm32  4)
+            ('wim32 4)
+            ('wm64  8)
+            ('wim64 8))))
     (list
      `(trace! (,fn
-	       :cond (equal ACL2::traced-fn (quote ,fn))
-	       :entry (:fmt! (msg "~%"))
-	       :exit (:fmt! (msg "~x0: W ~x1 ~x2 ~x3"
-				 (rip x86)
-				 (nth 0 ACL2::arglist) ;; Linear address
-				 ,numbytes
-				 (nth 1 ACL2::arglist) ;; Value written
-				 )))))))
+               :cond (equal ACL2::traced-fn (quote ,fn))
+               :entry (:fmt! (msg "~%"))
+               :exit (:fmt! (msg "~x0: W ~x1 ~x2 ~x3"
+                                 (rip x86)
+                                 (nth 0 ACL2::arglist) ;; Linear address
+                                 ,numbytes
+                                 (nth 1 ACL2::arglist) ;; Value written
+                                 )))))))
 
 (defun create-trace-write-memory-1 (fn-lst)
   (if (endp fn-lst)
       nil
     (append (trace-write-memory-1 (car fn-lst))
-	    (create-trace-write-memory-1 (cdr fn-lst)))))
+            (create-trace-write-memory-1 (cdr fn-lst)))))
 
 (defun create-trace-write-memory (fn-lst)
   ;; (create-trace-write-memory '(wm08 wm16))
   (cons 'er-progn
-	(create-trace-write-memory-1 fn-lst)))
+        (create-trace-write-memory-1 fn-lst)))
 
 (defmacro trace-write-memory (lst)
   ;; (trace-write-memory (wm08 wim08 wm16 wim16 wm32 wim32 wm64 wim64))

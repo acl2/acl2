@@ -254,7 +254,10 @@ two modes is out of the scope of this project.</p>
   :short "Building books related to the x86 ISA and the machine-code
   analysis framework"
 
-  :long "<p>Two ways of building the X86ISA books are:</p>
+  :long "<p>The authors of these books generally prefer to use ACL2(p) for
+certification, but of course, you are free to use ACL2.</p>
+
+<p>Two ways of building the X86ISA books are:</p>
 
 <ol>
 
