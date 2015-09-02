@@ -687,7 +687,13 @@ memory.</li>
     (defthm unsigned-byte-p-of-combine-bytes
       (implies (and (byte-listp bytes)
                     (equal n (ash (len bytes) 3)))
-               (unsigned-byte-p n (combine-bytes bytes)))))
+               (unsigned-byte-p n (combine-bytes bytes)))
+      :rule-classes ((:rewrite)
+                     (:linear
+                      :corollary
+                      (implies (and (byte-listp bytes)
+                                    (equal n (ash (len bytes) 3)))
+                               (<= 0 (combine-bytes bytes)))))))
 
   (define byte-ify-general
     ((n   natp)

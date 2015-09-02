@@ -2,7 +2,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../top" :ttags :all)
+(include-book "../../top" :ttags :all)
 
 ;; The source program, called micro-sat.c (authored by Marijn Heule)
 ;; can be found in the current directory.
