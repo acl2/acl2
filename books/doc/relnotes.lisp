@@ -60,7 +60,8 @@
 
   :parents (note-7-2)
   :short "Release notes for the ACL2 Community Books for ACL2 7.2 (xx 20xx)"
-  :long "<p>Stub: to be written.</p>")
+  :long "<p>Stub: to be written.  (It would be nice to mention the licensing
+ change to the rtl books.)</p>")
 
 (defxdoc note-7-1-books
   :parents (note-7-1)
