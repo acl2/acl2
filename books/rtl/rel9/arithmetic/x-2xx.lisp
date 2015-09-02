@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -40,7 +40,7 @@
 
 ;; The definition of nonneg-int-gcd often interacts with the rewrite rule,
 ;; commutativity-of-nonneg-int-gcd, to cause the rewriter to loop and stack
-;; overflow. 
+;; overflow.
 (local (in-theory (disable acl2::commutativity-of-nonneg-int-gcd)))
 
 (local
@@ -120,7 +120,7 @@
                    (* 2 (numerator (* 2 x x)))))
    :hints (("Goal"
             :in-theory (disable abs)
-            :use lemma-1)))) 
+            :use lemma-1))))
 
 (local
  (defthm lemma-7

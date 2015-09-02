@@ -378,7 +378,7 @@
           (hons-acons k t al)))
     :test (quotep k)))
 
-  
+
 
 ;; (defsection 4v-sexpr-list-check-independent
 
@@ -419,7 +419,7 @@
 ;;                      x (4v-al-to-sexpr-al al)))
 ;;                    (4v-sexpr-vars-list x))
 ;;     :hints ((set-reasoning)))
-                   
+
 
 ;;   (defun 4v-sexpr-list-check-independent (x cares dont-cares)
 ;;     (declare (xargs :guard t))
@@ -433,7 +433,7 @@
 ;;                  (with-fast-alist dc
 ;;                    (equal (4v-sexpr-eval-default-list simp dc 'f)
 ;;                           (4v-sexpr-eval-default-list simp nil 'f)))))))
-                    
+
 
 
 

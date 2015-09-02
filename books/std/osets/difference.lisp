@@ -224,7 +224,8 @@ exploiting the set order.</p>"
 
   (defthm subset-difference
     (equal (empty (difference X Y))
-           (subset X Y)))
+           (subset X Y))
+    :hints(("Goal" :in-theory (enable subset))))
 
   (defthm difference-insert-X
     (equal (difference (insert a X) Y)

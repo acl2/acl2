@@ -20,8 +20,8 @@
 
 (defspec GenericRouter
   (((Router * *) => (mv * *)))
-  
-  (local (defun router (node memory)  
+
+  (local (defun router (node memory)
            ;; This function represents the router component of a Node.
            ;; Applies the different processes in a router in the correct order.
            (mv-let (node memory)

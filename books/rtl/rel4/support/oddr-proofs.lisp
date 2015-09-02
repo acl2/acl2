@@ -130,7 +130,7 @@
 			(* z (expt 2 (- (1+ (expo x)) n)))))))
   :hints (("Goal" :in-theory (enable sig sgn oddr expt-split))))
 
-(local 
+(local
  (defthm hack2
     (implies (and (integerp n)
 		  (rationalp x))
@@ -149,7 +149,7 @@
 		(* (fl (/ (* (expt 2 (- (1- n) (expo x))) x) 2))
 		   (expt 2 (- (+ 2 (expo x)) n)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable trunc-pos-rewrite)		  
+  :hints (("Goal" :in-theory (enable trunc-pos-rewrite)
 		  :use ((:instance hack2 (n (- (1- n) (expo x)))))))))
 
 (local
@@ -180,7 +180,7 @@
  (defthm oddr-other-3
     (implies (and (rationalp x)
 		  (> x 0)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1)
 		  (= z (fl (* (expt 2 (- (1- n) (expo x))) x)))
 		  (evenp z))
@@ -195,7 +195,7 @@
  (defthm oddr-other-4
     (implies (and (rationalp x)
 		  (> x 0)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1)
 		  (= z (fl (* (expt 2 (- (1- n) (expo x))) x)))
 		  (not (evenp z)))
@@ -208,7 +208,7 @@
  (defthm oddr-other-5
     (implies (and (rationalp x)
 		  (> x 0)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1)
 		  (= z (fl (* (expt 2 (- (1- n) (expo x))) x)))
 		  (not (evenp z)))
@@ -218,7 +218,7 @@
   :hints (("Goal" :use ((:instance oddr-other-2)
 			(:instance oddr-other-4))))))
 
-(local 
+(local
  (defthm hack3
     (implies (and (rationalp x)
 		  (rationalp y)
@@ -263,7 +263,7 @@
 (defthm oddr-other
     (implies (and (rationalp x)
 		  (> x 0)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1))
 	     (= (oddr x n)
 		(+ (trunc x (1- n))
@@ -460,7 +460,7 @@
 		  (integerp n)
 		  (> n 1))
 	     (= (trunc (oddr x n) (1- n))
-		(* (fl (* (expt 2 (- (- n 2) (expo x))) 
+		(* (fl (* (expt 2 (- (- n 2) (expo x)))
 			  (+ (* (fl (* (expt 2 (- (- n 2) (expo x)))
 				       x))
 				(expt 2 (- (+ (expo x) 2) n)))
@@ -649,8 +649,8 @@
 			(:instance trunc-upper-pos (x y) (n (1- m)))
 			(:instance expo-trunc (x y) (n (1- m)))
 			(:instance oddr-other (x y) (n m))
-			(:instance expt-strong-monotone 
-				   (n (- (1+ (expo y)) m)) 
+			(:instance expt-strong-monotone
+				   (n (- (1+ (expo y)) m))
 				   (m (- (+ 2 (expo y)) m)))
 			(:instance near-near
 				   (n (- m 2))

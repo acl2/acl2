@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -24,27 +24,29 @@
 
 (in-package "RTL")
 
+(include-book "definitions")
+
 (include-book "../rel9-rtl-pkg/lib/add")
 
-(include-book "../rel9-rtl-pkg/lib/mult")
+(include-book "./mult")
 
-(include-book "../rel9-rtl-pkg/lib/util")
+(include-book "./util")
 
 (include-book "../rel9-rtl-pkg/lib/srt")
 
-(include-book "../rel9-rtl-pkg/lib/gl")
+(include-book "./gl")
 
 (include-book "./masc")
 
 (include-book "./basic")
 
-(include-book "./bits") 
+(include-book "./bits")
 
 (include-book "./log")
 
 (include-book "./float")
 
-(include-book "./reps") 
+(include-book "./reps")
 
 (include-book "./round")
 

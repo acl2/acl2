@@ -1074,7 +1074,7 @@ it has the same problems with parameters.</p>"
              (st         (change-vl-implicitst st :decls decls))
              (newitems   (cons x newitems)))
           (mv warnings st implicit newitems)))
-       
+
 
        ((when (member tag '(:vl-modport
                             ;; :vl-typedef
@@ -1090,7 +1090,7 @@ it has the same problems with parameters.</p>"
         (mv warnings st implicit newitems)))
     (impossible)
     (mv warnings st implicit newitems)))
-       
+
 
 
 
@@ -1165,8 +1165,8 @@ in a generate construct by themselves.</p>"
           (vl-make-implicit-wires-gencaselist (cdr x) st warnings)))
       (mv warnings (cons (cons (caar x) new-elem) new-rest))))
 
-  
-  
+
+
   (define vl-make-implicit-wires-aux
     :short "Main function for adding implicit wires."
     ((x        vl-genelementlist-p
@@ -1210,7 +1210,7 @@ later on.  We handle that in @(see vl-make-implicit-wires-main).</p>"
 
          (elem (car x))
 
-         ((unless (vl-genelement-case elem :vl-genbase))        
+         ((unless (vl-genelement-case elem :vl-genbase))
           (b* (((mv warnings new-elem)
                 (vl-make-implicit-wires-generate elem st warnings))
                (newitems (cons new-elem newitems)))
@@ -1334,7 +1334,7 @@ all of its identifiers.</p>"
 ;;                                (vl-println "warnings:")
 ;;                                (vl-print-warnings (butlast warnings-out
 ;;                                                            (len warnings)))))))))
-                             
+
 
 (define vl-module-make-implicit-wires ((x       vl-module-p)
                                        (ss      vl-scopestack-p))

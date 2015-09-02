@@ -45,7 +45,7 @@
 
  ;; To prove that norm(x)=0 only when x=0, we have to establish this
  ;; simple lemma first, which lets us decide when a term of the form
- ;; a+bi is equal to zero -- namely a=0 and b=0: 
+ ;; a+bi is equal to zero -- namely a=0 and b=0:
 
  (local
   (defthm equal-complex-0
@@ -60,7 +60,7 @@
    (and (equal (norm-2C 0) 0)
 	(iff (equal (norm-2C x) 0)
 	     (equal (fix x) 0))))
-			     
+
  ;; It turns out that we want some more values of norm.  We establish,
  ;; for example that norm(1) = 1.  This will become real useful later,
  ;; when we find that norm(x*y) = norm(x)*norm(y).
@@ -82,7 +82,7 @@
     (implies (and (realp i) (realp j) (realp r) (realp s))
 	     (equal (+ (complex i j) (complex r s))
 		    (complex (+ i r) (+ j s))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use ((:instance complex-definition (x i) (y j))
 		   (:instance complex-definition (x r) (y s))
 		   (:instance complex-definition (x (+ i r)) (y (+ j s))))))))
@@ -95,7 +95,7 @@
     (implies (and (realp a) (realp b) (realp r) (realp s))
 	     (equal (* (complex a b) (complex r s))
 		    (* (+ a (* #C(0 1) b)) (+ R (* #C(0 1) S)))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use ((:instance complex-definition (x a) (y b))
 		   (:instance complex-definition (x r) (y s)))))))
 
@@ -105,13 +105,13 @@
  (local
   (defthm *-complex-lemma-2
     (implies (and (realp a) (realp b) (realp r) (realp s))
-	     (equal (complex (- (* a r) (* b s)) 
+	     (equal (complex (- (* a r) (* b s))
 			     (+ (* a s) (* b r)))
 		    (+ (+ (* a R) (- (* b S)))
 		       (* #C(0 1) (+ (* a S) (* b R))))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use ((:instance complex-definition
-			      (x (- (* a r) (* b s))) 
+			      (x (- (* a r) (* b s)))
 			      (y (+ (* a s) (* b r)))))))))
 
  ;; And so now we can get a formula for the product of two complex
@@ -121,7 +121,7 @@
   (defthm *-complex
     (implies (and (realp i) (realp j) (realp r) (realp s))
 	     (equal (* (complex i j) (complex r s))
-		    (complex (- (* i r) (* j s)) 
+		    (complex (- (* i r) (* j s))
 			     (+ (* i s) (* j r)))))))
 
  (local
@@ -153,10 +153,10 @@
   (defthm realpart-imagpart-*
     (and
      (equal (realpart (* x y))
-	    (- (* (realpart x) (realpart y)) 
+	    (- (* (realpart x) (realpart y))
 	       (* (imagpart x) (imagpart y))))
      (equal (imagpart (* x y))
-	    (+ (* (realpart x) (imagpart y)) 
+	    (+ (* (realpart x) (imagpart y))
 	       (* (imagpart x) (realpart y)))))))
 
  ;; Now, we can move more quickly.  We prove that norm is an
@@ -225,7 +225,7 @@
  (local
   (defthm norm-2C-uminus
     (equal (norm-2C (- x)) (norm-2C x))))
-    
+
  ;; And now, we get an important lemma.  The norm(a+bi) cannot be smaller
  ;; than either a or b.  What this will mean later is that if a+bi
  ;; isn't small, then norm(a+bi) can't be small, since one of a or b
@@ -349,7 +349,7 @@
    (implies (acl2-numberp x)
 	    (equal (i-small (norm-2C x))
 		   (i-small x)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance complex-small))
 	    :in-theory (disable norm-2C complex-small))
 	   ("Goal'"
@@ -397,7 +397,7 @@
 			     (x (norm-2c x))
 			     (y (+ (abs (realpart x)) (abs (imagpart x)))))
 	     :in-theory (disable abs large-if->-large norm-2c)))))
-    
+
 
  ;; We know that a+bi is limited precisely when a is limited and b is
  ;; limited.
@@ -408,7 +408,7 @@
 	     (equal (i-large x)
 		    (or (i-large (realpart x))
 			(i-large (imagpart x)))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :use ((:instance complex-large-1)
 		   (:instance complex-large-2))
 	     :in-theory (disable complex-large-1)))))
@@ -419,7 +419,7 @@
    (implies (acl2-numberp x)
 	    (equal (i-large (norm-2C x))
 		   (i-large x)))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance complex-limited-strong))
 	    :in-theory (disable norm-2C complex-limited-strong
 				complex-large-1))
@@ -502,7 +502,7 @@
     (equal (conj (conj x)) (fix x))))
 
  ;; So now, we can start considering x*x'.  First, we have that it is
- ;; always real and never negative. 
+ ;; always real and never negative.
 
  (local
   (defthm x-*-conj-x-type-prescription
@@ -572,7 +572,7 @@
     (<= (* (norm-2c (+ x y)) (norm-2c (+ x y)))
 	(* (+ (norm-2c x) (norm-2c y))
 	   (+ (norm-2c x) (norm-2c y))))
-    :hints (("Goal" :in-theory (disable norm-2c 
+    :hints (("Goal" :in-theory (disable norm-2c
 					norm-2c-*-norm-2c
 					norm-2c-product-conj))
 	    ("Subgoal 2"

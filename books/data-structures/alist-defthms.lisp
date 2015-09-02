@@ -1,4 +1,4 @@
-; Alist-defthms.lisp - Theorems about functions in the theory of alists.; 
+; Alist-defthms.lisp - Theorems about functions in the theory of alists.;
 ; Copyright (C) 1997  Computational Logic, Inc.
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
@@ -317,10 +317,10 @@
 
 (local
  (defthm eqlable-alistp-alist-compose-domain-equal
-   (implies (eqlable-listp dom)		 
+   (implies (eqlable-listp dom)
 	    (eqlable-alistp (alist-compose-domain-equal dom a1 a2)))))
 
-(local 
+(local
  (defthm eqlable-listp-strip-cars
   (implies (eqlable-alistp a)
 	   (eqlable-listp (strip-cars a)))))
@@ -333,10 +333,10 @@
 
 (local
  (defthm symbol-alistp-alist-compose-domain-equal
-   (implies (symbol-listp dom)		 
+   (implies (symbol-listp dom)
 	    (symbol-alistp (alist-compose-domain-equal dom a1 a2)))))
 
-(local 
+(local
  (defthm symbol-listp-strip-cars
   (implies (symbol-alistp a)
 	   (symbol-listp (strip-cars a)))))
@@ -385,7 +385,7 @@
 ;; Throughout the rest of this script, we'll take the strategy of
 ;; proving facts about POSITION by first proving the fact about XPOSITION.
 
-(local 
+(local
  (defun xposition-equal (x l)
    (declare (xargs :guard (and (true-listp l)
 			       (or (symbolp x) (symbol-listp l)))))
@@ -413,7 +413,7 @@
 	    (iff (position-equal-ac x l ac)
 		 (member-equal x l)))))
 
-(local 
+(local
  (defthm member-equal-implies-xposition
    (implies (member-equal x l)
 	    (xposition-equal x l))))
@@ -457,7 +457,7 @@
 	 (and (not (equal x y))
 	      (assoc-equal x a))))
 
-(local 
+(local
  (defthm xassoc-equal-bind-all-equal
    (equal (assoc-equal x (bind-all-equal keys vals a))
 	  (if (member-equal x keys)
@@ -494,14 +494,14 @@
 		      (assoc-equal x pairs)
 		    (assoc-equal x a)))))
 
-(local 
+(local
  (defthm assoc-equal-alist-compose-domain1
    (implies (and (alistp a1)
 		 (alistp a2)
 		 (not (assoc-equal x a1)))
 	    (not (assoc-equal x (alist-compose-domain-equal dom a1 a2))))))
 
-(local 
+(local
  (defthm assoc-equal-alist-compose-domain
    (implies (and (alistp a1)
 		 (alistp a2))
@@ -533,7 +533,7 @@
 ; BINDING-EQUAL
 ; ------------------------------------------------------------
 
-(defthm binding-equal-acons 
+(defthm binding-equal-acons
   (equal (binding-equal x (acons y z a))
 	 (if (equal x y)
 	     z
@@ -552,7 +552,7 @@
 	     v
 	     (binding-equal x a))))
 
-(local 
+(local
  (defthm xbinding-equal-pairlis$
    (equal (binding-equal x (pairlis$ a b))
 	  (if (member-equal x a)
@@ -582,9 +582,9 @@
 		  (nth (xposition-equal x keys) vals)
 		(binding-equal x a))
 	    (binding-equal x a)))
-   :hints (("Subgoal *1/1.9" 
+   :hints (("Subgoal *1/1.9"
 	    :expand ((NTH (+ 1 (XPOSITION-EQUAL X (CDR KEYS))) VALS))))))
-	 
+
 (defthm binding-equal-bind-all-equal
   (equal (binding-equal x (bind-all-equal keys vals a))
 	 (if (member-equal x keys)
@@ -631,7 +631,7 @@
 ; BOUND?
 ; ------------------------------------------------------------
 
-(local 
+(local
  (defun double-list-induction (a b)
    (declare (xargs :guard (and (true-listp a) (true-listp b))))
    (cond ((endp a) nil)
@@ -782,7 +782,7 @@
   (implies (all-bound?-equal l a)
 	   (all-bound?-equal l (bind-pairs-equal pairs a))))
 
-(local 
+(local
   (defthm bound?-equal-alist-compose-domain-equal
     (implies (and (alistp a1)
  		 (alistp a2))
@@ -885,7 +885,7 @@
   :hints (("Goal" :induct (bind-pairs-equal pairs a)
 	   :in-theory (disable domain bind-equal bound?-equal))))
 
-(local 
+(local
  (defthm domain-alist-compose-domain-equal
   (implies (and (alistp a1)
 		(alistp a2))
@@ -937,8 +937,8 @@
 		 (range l))
   :hints (("Goal" :in-theory (enable range))))
 
-(in-theory (disable acons 
+(in-theory (disable acons
 		    alist-compose alist-compose-eq alist-compose-equal
-		    bound? bound?-eq bound?-equal 
+		    bound? bound?-eq bound?-equal
 		    binding binding-eq binding-equal
 		    domain range))

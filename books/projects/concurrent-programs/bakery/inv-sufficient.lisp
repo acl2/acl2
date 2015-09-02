@@ -50,7 +50,7 @@ can use the current input as a parameter.
 )
 
 (DEFTHM inv-b-c-sufficient->>
-  (implies (inv-b-c st) 
+  (implies (inv-b-c st)
            (suff-b-c st in))
   :rule-classes nil)
 

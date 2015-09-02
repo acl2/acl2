@@ -30,7 +30,7 @@
       ACL2 Version 2.8 alpha (as of May 11 03)
 
 (certify-book "matrix"
-	      0 
+	      0
 	      t ;;compile-flg
 	      )
 |#
@@ -46,11 +46,11 @@ At UW:
 
 #|
 (local  ;;turing
- (include-book 
+ (include-book
  "/home/cowles/acl2-sources/books/arithmetic-2.8/top"))
 
 (local  ;;pyramid
- (include-book 
+ (include-book
   "/home/acl2/acl2-2.8/v2-8-alpha-05-11-03/books/arithmetic/top"))
 |#
 
@@ -116,23 +116,23 @@ At UW:
 	   (not (alist2p '$arg l)))
   :rule-classes :forward-chaining)
 
-(in-theory (disable alist2p array2p aset2 aref2 compress2 header 
+(in-theory (disable alist2p array2p aset2 aref2 compress2 header
 		    dimensions maximum-length default))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Boolean test for a matrix:
 
-;;  The  need for the following constant is explained in 
+;;  The  need for the following constant is explained in
 ;;   detail later in this book:
 
-;;   Search for 
+;;   Search for
 ;;      ; Ensuring closure of matrix multiplication.
 
 (defconst
   *INT-SQRT-MAXIMUM-POSITIVE-32-BIT-INTEGER*
   46340)
 
-;;  To ensure that matrix multiplication is closed, the 
+;;  To ensure that matrix multiplication is closed, the
 ;;   matrix can have no more that 46,340 rows and no more
 ;;   46,340 columns.
 
@@ -172,7 +172,7 @@ At UW:
   "Determine if all the following equalities hold:
    M1(m 0) = M2(m 0), . . . , M1(m n) = M2(m n);
    ie. determine if the m'th row of M1 matches the
-       m'th row of M2. 
+       m'th row of M2.
    All entries are treated as numbers."
   (declare (xargs :guard (and (integerp m)
 			      (>= m 0)
@@ -359,7 +359,7 @@ At UW:
 
 (defun
   m-= (M1 M2)
-  "Determine if the matrices represented by the alists 
+  "Determine if the matrices represented by the alists
    M1 and M2 are equal (as matrices of numbers)."
   (declare (xargs :guard (and (array2p '$arg1 M1)
 			      (array2p '$arg2 M2))))
@@ -450,14 +450,14 @@ At UW:
   m-0 (m n)
   "Return an alist representing the m by n matrix whose
    elements are all equal to 0.
-   To use the ACL2 efficient array mechanism to store (m-0 m n), 
-   (* m n)) must be stictly less than 2147483647 which is 
+   To use the ACL2 efficient array mechanism to store (m-0 m n),
+   (* m n)) must be stictly less than 2147483647 which is
    the *MAXIMUM-POSITIVE-32-BIT-INTEGER*."
   (declare (xargs :guard (and (integerp m)
 			      (integerp n)
 			      (> m 0)
 			      (> n 0))))
-  (list (list :HEADER 
+  (list (list :HEADER
 	      :DIMENSIONS (list m n)
 	      :MAXIMUM-LENGTH (+ 1 (* m n))
 	      :DEFAULT 0
@@ -492,9 +492,9 @@ At UW:
 		(<= x 46340)
 		(<= y 46340))
 	   (< (* x y) 2147483647))
-  :rule-classes (:rewrite :linear) 
+  :rule-classes (:rewrite :linear)
   :hints (("Goal"
-	   :use (:instance 
+	   :use (:instance
 		 *-PRESERVES->=-FOR-NONNEGATIVES
 		 (x2 x)
 		 (y2 y)
@@ -510,8 +510,8 @@ At UW:
 		(<= m *INT-SQRT-MAXIMUM-POSITIVE-32-BIT-INTEGER*)
 		(<= n *INT-SQRT-MAXIMUM-POSITIVE-32-BIT-INTEGER*))
 	   (matrixp m n (m-0 m n)))
-  :hints (("Goal" :in-theory (enable array2p 
-				     dimensions 
+  :hints (("Goal" :in-theory (enable array2p
+				     dimensions
 				     header))))
 
 (defthm
@@ -538,24 +538,24 @@ At UW:
 (defthm
   alist2p-alist2p-m-0
   (implies (alist2p name1 M)
-	   (alist2p name2 (m-0 (car (dimensions 
+	   (alist2p name2 (m-0 (car (dimensions
 				     '$arg M))
-			       (cadr (dimensions 
+			       (cadr (dimensions
 				      '$arg M))))))
 
 (defthm
   array2p-array2p-m-0
   (implies (and (array2p name1 M)
 		(symbolp name2))
-	   (array2p name2 (m-0 (car (dimensions 
+	   (array2p name2 (m-0 (car (dimensions
 				     '$arg M))
-			       (cadr (dimensions 
+			       (cadr (dimensions
 				      '$arg M))))))
 
 ;;;;;;;;;;;;;;;;;;;
 ;; Identity matrix:
 
-(defun 
+(defun
   m-1a (n)
   "Return alist of length n of the form
    ( ((- n 1) . (- n 1)) . 1) . . . ((0 . 0) . 1) )."
@@ -603,12 +603,12 @@ At UW:
 (defun
   m-1 (n)
   "Return an alist representing the n by n identity matrix.
-   To use the ACL2 efficient array mechanism to store (m-1 n), 
-   (* n n)) must be stictly less than 2147483647 which is 
-   the *MAXIMUM-POSITIVE-32-BIT-INTEGER*." 
+   To use the ACL2 efficient array mechanism to store (m-1 n),
+   (* n n)) must be stictly less than 2147483647 which is
+   the *MAXIMUM-POSITIVE-32-BIT-INTEGER*."
   (declare (xargs :guard (and (integerp n)
 			      (>= n 0))))
-  (cons (list :HEADER 
+  (cons (list :HEADER
 	      :DIMENSIONS (list n n)
 	      :MAXIMUM-LENGTH (+ 1 (* n n))
 	      :DEFAULT 0
@@ -691,8 +691,8 @@ At UW:
 (defthm
   bounded-integer-alistp2-m-trans-a
   (implies (bounded-integer-alistp2 l m n)
-	   (bounded-integer-alistp2 (m-trans-a l) 
-				    n 
+	   (bounded-integer-alistp2 (m-trans-a l)
+				    n
 				    m)))
 
 (defthm
@@ -707,7 +707,7 @@ At UW:
 
 (defun
   m-trans (M)
-  "Return an alist representing the transpose of the matrix 
+  "Return an alist representing the transpose of the matrix
    represented by the alist M."
   (declare (xargs :guard (array2p '$arg M)))
   (cons (list :HEADER
@@ -738,7 +738,7 @@ At UW:
 		  :trigger-terms ((m-trans M))))
   :hints (("Goal"
 	   :in-theory (enable array2p header
-			      dimensions 
+			      dimensions
 			      maximum-length))))
 
 (defthm
@@ -802,7 +802,7 @@ At UW:
 	   :use (:theorem
 		 (implies (array2p '$arg1 M)
 			  (alist2p '$arg1
-				   (m-trans 
+				   (m-trans
 				    (m-trans M))))))))
 
 (defthm
@@ -823,7 +823,7 @@ At UW:
 	    (m-=-row-1 (m-trans M1)(m-trans M2) j i))
    :hints (("Goal"
 	    :in-theory (disable m-=-row-1-idempotency-of-m-trans)
-	    :use ((:instance 
+	    :use ((:instance
 		   m-=-row-1-m-trans-1
 		   (M1 (m-trans M1))
 		   (M2 (m-trans M2))
@@ -875,7 +875,7 @@ At UW:
       (let ((key (caar M))
 	    (datum (cdar M)))
 	   (if (consp key)
-	       (acons key 
+	       (acons key
 		      (- (fix datum))
 		      (m-unary--a (cdr M)))
 	       (m-unary--a (cdr M))))
@@ -903,7 +903,7 @@ At UW:
 
 (defun
   m-unary-- (M)
-  "Return an alist representing the unary minus of the matrix 
+  "Return an alist representing the unary minus of the matrix
    represented by the alist M."
   (declare (xargs :guard (array2p '$arg M)))
   (cons (list :HEADER
@@ -933,7 +933,7 @@ At UW:
 		  :trigger-terms ((m-unary-- M))))
   :hints (("Goal"
 	   :in-theory (enable array2p header
-			      dimensions 
+			      dimensions
 			      maximum-length))))
 
 (defthm
@@ -978,7 +978,7 @@ At UW:
   :hints (("Goal"
 	   :use (:theorem
 		 (implies (array2p '$arg1 M)
-			  (alist2p '$arg1 
+			  (alist2p '$arg1
 				   (m-unary--
 				    (m-unary-- M))))
 		 ))))
@@ -1021,7 +1021,7 @@ At UW:
       (let ((key (caar M))
 	    (datum (cdar M)))
 	   (if (consp key)
-	       (acons key 
+	       (acons key
 		      (* a (fix datum))
 		      (s-*-a a (cdr M)))
 	       (s-*-a a (cdr M))))
@@ -1050,7 +1050,7 @@ At UW:
 (defun
   s-* (a M)
   "Return an alist representing the multiplication
-   of the scalar a times the matrix represented by 
+   of the scalar a times the matrix represented by
    the alist M."
   (declare (xargs :guard (and (acl2-numberp a)
 			      (array2p '$arg M))))
@@ -1081,7 +1081,7 @@ At UW:
 		  :trigger-terms ((s-* a M))))
   :hints (("Goal"
 	   :in-theory (enable array2p header
-			      dimensions 
+			      dimensions
 			      maximum-length))))
 
 (defthm
@@ -1188,7 +1188,7 @@ At UW:
   "Return an alist with the following values:
    M1(m 0)+M2(m 0), . . . , M1(m n)+M2(m n);
    ie. construct an alist of values representing
-   the vector sum of the m'th row of M1 and the 
+   the vector sum of the m'th row of M1 and the
    m'th row of M2."
   (declare (xargs :guard
 		  (and (integerp m)
@@ -1320,7 +1320,7 @@ At UW:
 		(< i m)
 		(< j n))
 	   (bounded-integer-alistp2 (m-binary-+-row-1 M1 M2 i j)
-				    m 
+				    m
 				    n)))
 
 (defthm
@@ -1389,8 +1389,8 @@ At UW:
 (local
  (defthm
    cdr-assoc2-m-binary-+-row-1-lemma
-   (implies (and (equal (cdr (assoc2 i j 
-				     (m-binary-+-row-1 M1 M2 
+   (implies (and (equal (cdr (assoc2 i j
+				     (m-binary-+-row-1 M1 M2
 						       (+ -1 m) n)))
 			(+ (aref2 '$arg M1 i j)
 			   (aref2 '$arg M2 i j)))
@@ -1399,7 +1399,7 @@ At UW:
 		 (<= j n))
 	    (equal (cdr (assoc2 i j
 				(append (m-binary-+-row M1 M2 m n)
-					(m-binary-+-row-1 M1 M2 
+					(m-binary-+-row-1 M1 M2
 							  (+ -1 m) n))))
 		   (+ (aref2 '$arg M1 i j)
 		      (aref2 '$arg M2 i j))))))
@@ -1424,9 +1424,9 @@ At UW:
 
 (defun
   m-binary-+ (M1 M2)
-  "Return an alist representing the matrix sum 
-   of the matrices represented by the alists M1 
-   and M2. This is done by adding a header to an 
+  "Return an alist representing the matrix sum
+   of the matrices represented by the alists M1
+   and M2. This is done by adding a header to an
    alist containing the appropriate values."
   (declare (xargs :guard
 		  (and (array2p '$arg1 M1)
@@ -1435,7 +1435,7 @@ At UW:
 					       M1))
 			     (dim2 (dimensions '$arg2
 					       M2)))
-			    (and 
+			    (and
 			     (= (first dim1)
 				    (first dim2))
 			     (= (second dim1)
@@ -1453,9 +1453,9 @@ At UW:
 		(= dim12 dim22)))
       (cons (list :HEADER
 		  :DIMENSIONS (list dim11 dim12)
-		  :MAXIMUM-LENGTH 
+		  :MAXIMUM-LENGTH
 		  (+ 1 (* dim11 dim12))
-		  :DEFAULT 0 
+		  :DEFAULT 0
 		  :NAME 'matrix-sum)
 	    (m-binary-+-row-1 (compress2 '$arg1 M1)
 			      (compress2 '$arg2 M2)
@@ -1471,7 +1471,7 @@ At UW:
 	  (car rst))
       0))
 
-(add-binop m-+ m-binary-+) 
+(add-binop m-+ m-binary-+)
 
 (defthm
   alist2p-m-+
@@ -1550,7 +1550,7 @@ At UW:
 	   (equal (dimensions name (m-+ M1 M2))
 		  (dimensions name M1)))
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       equal-list-dimensions-array2p
 		       dimensions-m-+-alist2p)
 	   :use ((:instance
@@ -1564,7 +1564,7 @@ At UW:
 		(matrixp m n X2))
 	   (matrixp m n (m-+ X1 X2)))
   :hints (("Goal"
-	   :in-theory (disable m-binary-+)))) 
+	   :in-theory (disable m-binary-+))))
 
 (defthm
   default-m-+-alist2p
@@ -1656,26 +1656,26 @@ At UW:
 
 (defthm
   aref2-cons-move-header
-  (equal (aref2 name 
+  (equal (aref2 name
 		(cons (list :HEADER
 			    :DIMENSIONS dims
 			    :MAXIMUM-LENGTH max-length
 			    :DEFAULT default
 			    :NAME name1)
 		      (cons (cons (cons i j) val) lst))
-		m 
+		m
 		n)
 	 (if (and (equal i m)
 		  (equal j n))
 	     val
-	     (aref2 name 
+	     (aref2 name
 		    (cons (list :HEADER
 				:DIMENSIONS dims
 				:MAXIMUM-LENGTH max-length
 				:DEFAULT default
 				:NAME name1)
 			  lst)
-		    m 
+		    m
 		    n)))
   :hints (("Goal"
 	   :in-theory (enable aref2 header default))))
@@ -1688,7 +1688,7 @@ At UW:
 		   M1
 		   (cons (cons (cons m n) val) M2)
 		   m
-		   i) 
+		   i)
 		  (m-binary-+-row M1
 				  M2
 				  m
@@ -1697,12 +1697,12 @@ At UW:
 (defthm
   associativity-of-m-binary-+-row
   (equal (m-binary-+-row (m-binary-+-row M1 M2 m n)
-			 M3 
-			 m 
+			 M3
+			 m
 			 n)
 	 (m-binary-+-row M1
 			 (m-binary-+-row M2 M3 m n)
-			 m 
+			 m
 			 n)))
 
 (in-theory (disable commutativity-of-m-binary-+-row
@@ -1743,10 +1743,10 @@ At UW:
 (defthm
   m-binary-+-row-cons-1
   (implies (> m i)
-	   (equal (m-binary-+-row 
+	   (equal (m-binary-+-row
 		   (cons (cons (cons m n) val) lst)
-		   M1 
-		   i 
+		   M1
+		   i
 		   j)
 		  (m-binary-+-row lst M1 i j))))
 
@@ -1754,9 +1754,9 @@ At UW:
   m-binary-+-row-cons-1-a
   (implies (and (>= j 0)
 		(> n j))
-	   (equal (m-binary-+-row 
+	   (equal (m-binary-+-row
 		   (cons (cons (cons m n) val) lst)
-		   M1 
+		   M1
 		   i
 		   j)
 		  (m-binary-+-row lst M1 i j))))
@@ -1765,15 +1765,15 @@ At UW:
   m-binary-+-row-cons-1-a-header
   (implies (and (>= j 0)
 		(> n j))
-	   (equal (m-binary-+-row 
+	   (equal (m-binary-+-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
 			 (cons (cons (cons m n) val) lst))
-		   M3 
-		   i 
+		   M3
+		   i
 		   j)
 		  (m-binary-+-row
 		   (cons (list :HEADER
@@ -1782,8 +1782,8 @@ At UW:
 			       :DEFAULT default
 			       :NAME name1)
 			 lst)
-		   M3 
-		   i 
+		   M3
+		   i
 		   j))))
 
 (defthm
@@ -1791,8 +1791,8 @@ At UW:
   (implies (> m i)
 	   (equal (m-binary-+-row
 		   M1
-		   (cons (cons (cons m n) val) lst) 
-		   i 
+		   (cons (cons (cons m n) val) lst)
+		   i
 		   j)
 		  (m-binary-+-row M1 lst i j))))
 
@@ -1807,8 +1807,8 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (cons (cons (cons m n) val) lst)) 
-		   i 
+			 (cons (cons (cons m n) val) lst))
+		   i
 		   j)
 		  (m-binary-+-row
 		   M1
@@ -1817,8 +1817,8 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 lst) 
-		   i 
+			 lst)
+		   i
 		   j))))
 
 (defthm
@@ -1832,7 +1832,7 @@ At UW:
 (defthm
   aref2-append-m-binary-+-row-header
   (implies (and (> m i))
-	   (equal (aref2 
+	   (equal (aref2
 		   name
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
@@ -1841,24 +1841,24 @@ At UW:
 			       :NAME name1)
 			 (append (m-binary-+-row M1 M2 m j)
 				 lst))
-		   i 
+		   i
 		   n)
-		  (aref2 
-		   name 
+		  (aref2
+		   name
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
 			 lst)
-		   i 
+		   i
 		   n))))
 
 (defthm
   m-binary-+-row-append-3
   (implies (> m i)
-	   (equal (m-binary-+-row (append (m-binary-+-row M1 
-							  M2 
+	   (equal (m-binary-+-row (append (m-binary-+-row M1
+							  M2
 							  m
 							  n)
 					  lst)
@@ -1873,21 +1873,21 @@ At UW:
 (defthm
   m-binary-+-row-append-3-header
   (implies (> m i)
-	   (equal (m-binary-+-row 
+	   (equal (m-binary-+-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-+-row M1 
-						 M2 
+			 (append (m-binary-+-row M1
+						 M2
 						 m
 						 n)
 				 lst))
 		   M3
 		   i
 		   n)
-		  (m-binary-+-row 
+		  (m-binary-+-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
@@ -1902,8 +1902,8 @@ At UW:
   m-binary-+-row-append-4
   (implies (> m i)
 	   (equal (m-binary-+-row M3
-				  (append (m-binary-+-row M1 
-							  M2 
+				  (append (m-binary-+-row M1
+							  M2
 							  m
 							  n)
 					  lst)
@@ -1924,14 +1924,14 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-+-row M1 
-						 M2 
+			 (append (m-binary-+-row M1
+						 M2
 						 m
 						 n)
 				 lst))
 		   i
 		   n)
-		  (m-binary-+-row 
+		  (m-binary-+-row
 		   M3
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
@@ -1946,9 +1946,9 @@ At UW:
   m-binary-+-row-1-append-1
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-binary-+-row-1 (append (m-binary-+-row M1 
-							    M2 
-							    m 
+	   (equal (m-binary-+-row-1 (append (m-binary-+-row M1
+							    M2
+							    m
 							    n)
 					    lst)
 				    M3
@@ -1963,15 +1963,15 @@ At UW:
   m-binary-+-row-1-append-1-header
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-binary-+-row-1 
+	   (equal (m-binary-+-row-1
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-+-row M1 
-						 M2 
-						 m 
+			 (append (m-binary-+-row M1
+						 M2
+						 m
 						 n)
 				 lst))
 		   M3
@@ -1993,9 +1993,9 @@ At UW:
   (implies (and (>= j 0)
 		(< j m))
 	   (equal (m-binary-+-row-1 M1
-				    (append (m-binary-+-row M2 
-							    M3 
-							    m 
+				    (append (m-binary-+-row M2
+							    M3
+							    m
 							    n)
 					    lst)
 				    j
@@ -2016,9 +2016,9 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-+-row M1 
-						 M2 
-						 m 
+			 (append (m-binary-+-row M1
+						 M2
+						 m
 						 n)
 				 lst))
 		   j
@@ -2078,31 +2078,31 @@ At UW:
 		       ))
 	   (alist2p name
 		    (cons (list :HEADER
-				:DIMENSIONS 
-				(list 
-				 (first 
+				:DIMENSIONS
+				(list
+				 (first
 				  (DIMENSIONS '$ARG
 					      M1))
 				 (second
 				  (dimensions '$arg
 					      M1)))
-				:MAXIMUM-LENGTH 
+				:MAXIMUM-LENGTH
 				(+ 1
 				   (* (CAR (DIMENSIONS '$ARG M1))
 				      (CADR (DIMENSIONS '$ARG M1))))
 				:DEFAULT 0
 				:NAME 'MATRIX-SUM)
-			  (m-binary-+-row-1 M1 
+			  (m-binary-+-row-1 M1
 					    M2
-					    (+ -1 
+					    (+ -1
 					       (car (dimensions
 						     '$arg M1)))
-					    (+ -1 
+					    (+ -1
 					       (cadr (dimensions
 						      '$arg M1)))
 					    ))))
   :hints (("Goal"
-	   :use alist2p-m-+))) 
+	   :use alist2p-m-+)))
 
 (defthm
   array2p-m-binary-+-header
@@ -2114,23 +2114,23 @@ At UW:
 	   (array2p name
 		    (cons (list :HEADER
 				:DIMENSIONS (DIMENSIONS '$ARG M1)
-				:MAXIMUM-LENGTH 
+				:MAXIMUM-LENGTH
 				(+ 1
 				   (* (CAR (DIMENSIONS '$ARG M1))
 				      (CADR (DIMENSIONS '$ARG M1))))
 				:DEFAULT 0
 				:NAME 'MATRIX-SUM)
-			  (m-binary-+-row-1 M1 
+			  (m-binary-+-row-1 M1
 					    M2
-					    (+ -1 
+					    (+ -1
 					       (car (dimensions
 						     '$arg M1)))
-					    (+ -1 
+					    (+ -1
 					       (cadr (dimensions
 						      '$arg M1)))
 					    ))))
   :hints (("Goal"
-	   :use array2p-m-+))) 
+	   :use array2p-m-+)))
 
 (defthm
   aref2-m-binary-+-row-1-remove-header-alist2p
@@ -2142,10 +2142,10 @@ At UW:
 		(<= 0 j)
 		(< i (car (dimensions name M1)))
 		(< j (cadr (dimensions name M1))))
- (equal (aref2 name 
+ (equal (aref2 name
 	       (cons (list :HEADER
-			   :DIMENSIONS 
-			   (list (first 
+			   :DIMENSIONS
+			   (list (first
 				  (DIMENSIONS '$ARG
 					      M1))
 				 (second
@@ -2154,24 +2154,24 @@ At UW:
 			   :MAXIMUM-LENGTH max-length
 			   :DEFAULT default
 			   :NAME name1)
-		     (m-binary-+-row-1 M1 
+		     (m-binary-+-row-1 M1
 				       M2
-				       (+ -1 
+				       (+ -1
 					  (car (dimensions
 						'$arg M1)))
-				       (+ -1 
+				       (+ -1
 					  (cadr (dimensions
 						 '$arg M1)))))
 	       i j)
-	(aref2 name (m-binary-+-row-1 M1 
-				      M2 
-				      (+ -1 
-					 (car (dimensions 
+	(aref2 name (m-binary-+-row-1 M1
+				      M2
+				      (+ -1
+					 (car (dimensions
 					       name M1)))
 				      (+ -1
 					 (cadr (dimensions
 						name M1))))
-	       i 
+	       i
 	       j)))
    :hints (("Goal"
 	   :in-theory (enable aref2 header default))))
@@ -2186,30 +2186,30 @@ At UW:
 		(<= 0 j)
 		(< i (car (dimensions name M1)))
 		(< j (cadr (dimensions name M1))))
- (equal (aref2 name 
+ (equal (aref2 name
 	       (cons (list :HEADER
 			   :DIMENSIONS (DIMENSIONS '$ARG M1)
 			   :MAXIMUM-LENGTH max-length
 			   :DEFAULT default
 			   :NAME name1)
-		     (m-binary-+-row-1 M1 
+		     (m-binary-+-row-1 M1
 				       M2
-				       (+ -1 
+				       (+ -1
 					  (car (dimensions
 						'$arg M1)))
-				       (+ -1 
+				       (+ -1
 					  (cadr (dimensions
 						 '$arg M1)))))
 	       i j)
-	(aref2 name (m-binary-+-row-1 M1 
-				      M2 
-				      (+ -1 
-					 (car (dimensions 
+	(aref2 name (m-binary-+-row-1 M1
+				      M2
+				      (+ -1
+					 (car (dimensions
 					       name M1)))
 				      (+ -1
 					 (cadr (dimensions
 						name M1))))
-	       i 
+	       i
 	       j)))
    :hints (("Goal"
 	   :in-theory (enable aref2 header default))))
@@ -2217,7 +2217,7 @@ At UW:
 (defthm
   m-binary-+-row-append-1-remove-header
   (equal (m-binary-+-row (cons (list :HEADER
-				     :DIMENSIONS dims 
+				     :DIMENSIONS dims
 				     :MAXIMUM-LENGTH max-length
 				     :DEFAULT default
 				     :NAME name1)
@@ -2231,7 +2231,7 @@ At UW:
 			 m
 			 n))
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (disable
 	    ASSOCIATIVITY-OF-M-BINARY-+-ROW))))
 
@@ -2239,7 +2239,7 @@ At UW:
   m-binary-+-row-append-2-remove-header
   (equal (m-binary-+-row M3
 			 (cons (list :HEADER
-				     :DIMENSIONS dims 
+				     :DIMENSIONS dims
 				     :MAXIMUM-LENGTH max-length
 				     :DEFAULT default
 				     :NAME name1)
@@ -2257,7 +2257,7 @@ At UW:
 (defthm
   m-binary-+-row-remove-header-1
   (equal (m-binary-+-row (cons (list :HEADER
-				     :DIMENSIONS dims 
+				     :DIMENSIONS dims
 				     :MAXIMUM-LENGTH max-length
 				     :DEFAULT default
 				     :NAME name1)
@@ -2276,7 +2276,7 @@ At UW:
   m-binary-+-row-remove-header-2
   (equal (m-binary-+-row M3
 			 (cons (list :HEADER
-				     :DIMENSIONS dims 
+				     :DIMENSIONS dims
 				     :MAXIMUM-LENGTH max-length
 				     :DEFAULT default
 				     :NAME name1)
@@ -2298,7 +2298,7 @@ At UW:
 		      :MAXIMUM-LENGTH max-length
 		      :DEFAULT default
 		      :NAME name1)
-		(m-binary-+-row-1 M1 
+		(m-binary-+-row-1 M1
 				  M2
 				  m
 				  n))
@@ -2306,7 +2306,7 @@ At UW:
 	  m
 	  n)
 	 (m-binary-+-row-1
-	  (m-binary-+-row-1 M1 
+	  (m-binary-+-row-1 M1
 			    M2
 			    m
 			    n)
@@ -2326,7 +2326,7 @@ At UW:
 		      :MAXIMUM-LENGTH max-length
 		      :DEFAULT default
 		      :NAME name1)
-		(m-binary-+-row-1 M1 
+		(m-binary-+-row-1 M1
 				  M2
 				  m
 				  n))
@@ -2334,7 +2334,7 @@ At UW:
 	  n)
 	 (m-binary-+-row-1
 	  M3
-	  (m-binary-+-row-1 M1 
+	  (m-binary-+-row-1 M1
 			    M2
 			    m
 			    n)
@@ -2413,7 +2413,7 @@ At UW:
   :hints (("Goal"
 	   :in-theory (disable m-binary-+-row-1-remove-compress2-2
 			       alist2p-m-binary-+-header-hack)
-	   :use ((:instance 
+	   :use ((:instance
 		  m-binary-+-row-1-remove-compress2-2
 		  (l1 M1)
 		  (name '$arg)
@@ -2443,7 +2443,7 @@ At UW:
   (implies (and (>= j 0)
 		(> n j))
 	   (equal (m-=-row (cons (cons (cons m n) val) lst)
-			   M1 
+			   M1
 			   i
 			   j)
 		  (m-=-row lst M1 i j))))
@@ -2453,7 +2453,7 @@ At UW:
   (implies (and (>= j 0)
 		(> n j))
 	   (equal (m-=-row M1
-			   (cons (cons (cons m n) val) lst) 
+			   (cons (cons (cons m n) val) lst)
 			   i
 			   j)
 		  (m-=-row M1 lst i j))))
@@ -2462,15 +2462,15 @@ At UW:
   m-=-row-cons-1-a-header
   (implies (and (>= j 0)
 		(> n j))
-	   (equal (m-=-row 
+	   (equal (m-=-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
 			 (cons (cons (cons m n) val) lst))
-		   M3 
-		   i 
+		   M3
+		   i
 		   j)
 		  (m-=-row
 		   (cons (list :HEADER
@@ -2479,8 +2479,8 @@ At UW:
 			       :DEFAULT default
 			       :NAME name1)
 			 lst)
-		   M3 
-		   i 
+		   M3
+		   i
 		   j))))
 
 (defthm
@@ -2494,8 +2494,8 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (cons (cons (cons m n) val) lst)) 
-		   i 
+			 (cons (cons (cons m n) val) lst))
+		   i
 		   j)
 		  (m-=-row
 		   M3
@@ -2504,8 +2504,8 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 lst) 
-		   i 
+			 lst)
+		   i
 		   j))))
 
 (defthm
@@ -2535,7 +2535,7 @@ At UW:
 (defthm
   m-=-row-m-binary-+-row-append-1-remove-header
   (equal (m-=-row (cons (list :HEADER
-			      :DIMENSIONS dims 
+			      :DIMENSIONS dims
 			      :MAXIMUM-LENGTH max-length
 			      :DEFAULT default
 			      :NAME name1)
@@ -2553,7 +2553,7 @@ At UW:
   m-=-row-m-binary-+-row-append-2-remove-header
   (equal (m-=-row M3
 		  (cons (list :HEADER
-			      :DIMENSIONS dims 
+			      :DIMENSIONS dims
 			      :MAXIMUM-LENGTH max-length
 			      :DEFAULT default
 			      :NAME name1)
@@ -2569,7 +2569,7 @@ At UW:
 (defthm
   m-=-row-m-binary-+-row-remove-header-1
   (equal (m-=-row (cons (list :HEADER
-			      :DIMENSIONS dims 
+			      :DIMENSIONS dims
 			      :MAXIMUM-LENGTH max-length
 			      :DEFAULT default
 			      :NAME name1)
@@ -2586,7 +2586,7 @@ At UW:
   m-=-row-m-binary-+-row-remove-header-2
   (equal (m-=-row M3
 		  (cons (list :HEADER
-			      :DIMENSIONS dims 
+			      :DIMENSIONS dims
 			      :MAXIMUM-LENGTH max-length
 			      :DEFAULT default
 			      :NAME name1)
@@ -2601,8 +2601,8 @@ At UW:
 (defthm
   m-=-row-m-binary-+-row-append-3
   (implies (> m i)
-	   (equal (m-=-row (append (m-binary-+-row M1 
-						   M2 
+	   (equal (m-=-row (append (m-binary-+-row M1
+						   M2
 						   m
 						   n)
 				   lst)
@@ -2618,8 +2618,8 @@ At UW:
   m-=-row-m-binary-+-row-append-4
   (implies (> m i)
 	   (equal (m-=-row M3
-			   (append (m-binary-+-row M1 
-						   M2 
+			   (append (m-binary-+-row M1
+						   M2
 						   m
 						   n)
 				   lst)
@@ -2633,21 +2633,21 @@ At UW:
 (defthm
   m-=-row-m-binary-+-row-append-3-header
   (implies (> m i)
-	   (equal (m-=-row 
+	   (equal (m-=-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-+-row M1 
-						 M2 
+			 (append (m-binary-+-row M1
+						 M2
 						 m
 						 n)
 				 lst))
 		   M3
 		   i
 		   n)
-		  (m-=-row 
+		  (m-=-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
@@ -2661,21 +2661,21 @@ At UW:
 (defthm
   m-=-row-m-binary-+-row-append-4-header
   (implies (> m i)
-	   (equal (m-=-row 
+	   (equal (m-=-row
 		   m3
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-+-row M1 
-						 M2 
+			 (append (m-binary-+-row M1
+						 M2
 						 m
 						 n)
 				 lst))
 		   i
 		   n)
-		  (m-=-row 
+		  (m-=-row
 		   M3
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
@@ -2690,9 +2690,9 @@ At UW:
   m-=-row-1-m-binary-+-row-append-1
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-=-row-1 (append (m-binary-+-row M1 
-						     M2 
-						     m 
+	   (equal (m-=-row-1 (append (m-binary-+-row M1
+						     M2
+						     m
 						     n)
 				     lst)
 			     M3
@@ -2708,9 +2708,9 @@ At UW:
   (implies (and (>= j 0)
 		(< j m))
 	   (equal (m-=-row-1 M3
-			     (append (m-binary-+-row M1 
-						     M2 
-						     m 
+			     (append (m-binary-+-row M1
+						     M2
+						     m
 						     n)
 				     lst)
 			     j
@@ -2724,15 +2724,15 @@ At UW:
   m-=-row-1-m-binary-+-row-append-1-header
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-=-row-1 
+	   (equal (m-=-row-1
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-+-row M1 
-						 M2 
-						 m 
+			 (append (m-binary-+-row M1
+						 M2
+						 m
 						 n)
 				 lst))
 		   M3
@@ -2753,16 +2753,16 @@ At UW:
   m-=-row-1-m-binary-+-row-append-2-header
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-=-row-1 
+	   (equal (m-=-row-1
 		   M3
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-+-row M1 
-						 M2 
-						 m 
+			 (append (m-binary-+-row M1
+						 M2
+						 m
 						 n)
 				 lst))
 		   j
@@ -2785,13 +2785,13 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (m-binary-+-row-1 M1 
+			 (m-binary-+-row-1 M1
 					   M2
 					   m
 					   n))
 		   M3
 		   m
-		   n) 
+		   n)
 	(m-=-row-1 (m-binary-+-row-1 M1 M2 m n)
 		   M3
 		   m
@@ -2805,12 +2805,12 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (m-binary-+-row-1 M1 
+			 (m-binary-+-row-1 M1
 					   M2
 					   m
 					   n))
 		   m
-		   n) 
+		   n)
 	(m-=-row-1 M3
 		   (m-binary-+-row-1 M1 M2 m n)
 		   m
@@ -2820,7 +2820,7 @@ At UW:
   m-=-row-1-m-binary-+-row-1-m-0
   (m-=-row-1 (m-binary-+-row-1 M1
 			       (m-0 m n)
-			       i 
+			       i
 			       j)
 	     M1
 	     i
@@ -2897,7 +2897,7 @@ At UW:
 						   (CADR (DIMENSIONS '$ARG M)))
 					      (+ -1 (CAR (DIMENSIONS '$ARG M)))
 					      (+ -1 (CADR (DIMENSIONS '$ARG M))))))
-	   M 
+	   M
 	   (+ -1 (CAR (DIMENSIONS '$ARG M)))
 	   (+ -1 (CADR (DIMENSIONS '$ARG M))))))
 
@@ -3321,7 +3321,7 @@ At UW:
 		(< i m)
 		(< k n))
 	   (bounded-integer-alistp2 (m-binary-*-row-1 M1 M2 i j k)
-				    m 
+				    m
 				    n)))
 
 (defthm
@@ -3382,26 +3382,26 @@ At UW:
 (local
  (defthm
    cdr-assoc2-m-binary-*-row-1-lemma
-   (implies (and (equal (cdr (assoc2 i 
-				     j 
-				     (m-binary-*-row-1 M1 
-						       M2 
-						       (+ -1 m) 
+   (implies (and (equal (cdr (assoc2 i
+				     j
+				     (m-binary-*-row-1 M1
+						       M2
+						       (+ -1 m)
 						       n
 						       p)))
 			(dot M1 M2 i n j))
 		 (integerp j)
 		 (<= 0 j)
 		 (<= j p))
-	    (equal (cdr (assoc2 i 
+	    (equal (cdr (assoc2 i
 				j
-				(append (m-binary-*-row M1 
-							M2 
-							m 
-							n 
+				(append (m-binary-*-row M1
+							M2
+							m
+							n
 							p)
 					(m-binary-*-row-1 M1
-							  M2 
+							  M2
 							  (+ -1 m)
 							  n
 							  p))))
@@ -3427,20 +3427,20 @@ At UW:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Ensuring closure of matrix multiplication.
 
-; Let dim1 be the number of rows and dim2 be the number of columns 
-; in an ACL2 two dimensional array.  The product, dim1*dim2, is 
+; Let dim1 be the number of rows and dim2 be the number of columns
+; in an ACL2 two dimensional array.  The product, dim1*dim2, is
 ; required to fit into 32 bits so that some compilers can lay down
-; faster code. Thus, dim1*dim2 <= maximum-positive-32-bit-integer 
-;                               = 2^31 - 1  
+; faster code. Thus, dim1*dim2 <= maximum-positive-32-bit-integer
+;                               = 2^31 - 1
 ;                               = 2,147,483,647.
 
 ; This restriction on the size of dim1*dim2 means that matrices
-; representable by ACL2 arrays are NOT closed under matrix 
+; representable by ACL2 arrays are NOT closed under matrix
 ; multiplication, even when the product is mathematically defined.
 ; To illustrate, suppose dim1*dim2 is required to be no larger than
-; 20; M1 is a matrix with 5 rows and 2 columns; and M2 is a matrix 
-; with 2 rows and 5 columns.  Then M1 and M2 would both be 
-; representable and their product, M1 * M2, would be mathematically 
+; 20; M1 is a matrix with 5 rows and 2 columns; and M2 is a matrix
+; with 2 rows and 5 columns.  Then M1 and M2 would both be
+; representable and their product, M1 * M2, would be mathematically
 ; defined, but not representable (since 25 > 20).
 
 ; Furthermore, when there are more than two matrices involved in a
@@ -3449,21 +3449,21 @@ At UW:
 ; computable in ACL2. Let's illustrate by extending the example given
 ; above with M1 and M2. Suppose M0 is a matrix with 2 rows and 5
 ; colums. Then the product (M0 * M1) * M2 is mathematically defined,
-; representable in ACL2, and computable in ACL2 (since both partial 
+; representable in ACL2, and computable in ACL2 (since both partial
 ; products (M0 * M1) and (M0 * M1) * M2 are representable in ACL2).
 ; But the product M0 * (M1 * M2) is mathematically defined,
 ; representable in ACL2, but NOT computable in ACL2 (since the
 ; partial product (M1 * M2) is NOT representable in ACL2).
 
-; One way to prevent this last problem and also ensure closure for 
+; One way to prevent this last problem and also ensure closure for
 ; matrix multiplication is to require that each of dim1 and dim2
-; be less than or equal to 46,340 which is the integer square root 
+; be less than or equal to 46,340 which is the integer square root
 ; of 2,147,483,647, the maximum-positive-32-bit-integer. Then
 ; the product of dim1*dim2 is guarenteed to be less than the
 ; the maximum-positive-32-bit-integer. Futhermore, with this stronger
 ; restriction, if the product M1 * . . . * Mn is both mathematically
-; defined and representable in ACL2, then, for any way of 
-; parenthesizing this product, all the partial products are also 
+; defined and representable in ACL2, then, for any way of
+; parenthesizing this product, all the partial products are also
 ; mathematically defined and representable in ACL2.
 
 ; Thus, for matrix multiplication, it is required that both the
@@ -3472,9 +3472,9 @@ At UW:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun m-binary-* (M1 M2)
-  "Return an alist representing the matrix product 
-   of the matrices represented by the alists M1 
-   and M2. This is done by adding a header to an 
+  "Return an alist representing the matrix product
+   of the matrices represented by the alists M1
+   and M2. This is done by adding a header to an
    alist containing the appropriate values."
   (declare (xargs :guard (and (array2p '$arg1 M1)
 			      (array2p '$arg2 M2)
@@ -3486,13 +3486,13 @@ At UW:
 	 (dim12 (second dim1))
 	 (dim21 (first dim2))
 	 (dim22 (second dim2)))
-    (if (mbt (and (alist2p '$arg1 M1) 
+    (if (mbt (and (alist2p '$arg1 M1)
 		  (alist2p '$arg2 M2)
 		  (= dim12 dim21)))
 	(cons (list :HEADER
-		    :DIMENSIONS 
+		    :DIMENSIONS
 		    (list dim11 dim22)
-		    :MAXIMUM-LENGTH 
+		    :MAXIMUM-LENGTH
 		    (+ 1 (* dim11 dim22))
 		    :DEFAULT 0
 		    :NAME 'matrix-product)
@@ -3511,7 +3511,7 @@ At UW:
 	  (car rst))
       1))
 
-(add-binop m-* m-binary-*) 
+(add-binop m-* m-binary-*)
 
 (defthm
   alist2p-m-*
@@ -3583,7 +3583,7 @@ At UW:
 		(matrixp n p X2))
 	   (matrixp m p (m-* X1 X2)))
   :hints (("Goal"
-	   :in-theory (disable m-binary-*)))) 
+	   :in-theory (disable m-binary-*))))
 
 (defthm
   default-m-*
@@ -3621,9 +3621,9 @@ At UW:
 		(< i (first (dimensions name M1)))
 		(< j (second (dimensions name M2))))
 	   (equal (aref2 name (m-* M1 M2) i j)
-		  (dot M1 
-		       M2 
-		       i 
+		  (dot M1
+		       M2
+		       i
 		       (+ -1 (second (dimensions name M1)))
 		       j)))
   :hints (("Goal"
@@ -3664,7 +3664,7 @@ At UW:
 (defthm
   m-=-row-m-binary-*-row-append-1-remove-header
   (equal (m-=-row (cons (list :HEADER
-			      :DIMENSIONS dims 
+			      :DIMENSIONS dims
 			      :MAXIMUM-LENGTH max-length
 			      :DEFAULT default
 			      :NAME name1)
@@ -3682,7 +3682,7 @@ At UW:
   m-=-row-m-binary-*-row-append-2-remove-header
   (equal (m-=-row M3
 		  (cons (list :HEADER
-			      :DIMENSIONS dims 
+			      :DIMENSIONS dims
 			      :MAXIMUM-LENGTH max-length
 			      :DEFAULT default
 			      :NAME name1)
@@ -3698,7 +3698,7 @@ At UW:
 (defthm
   m-=-row-m-binary-*-row-remove-header-1
   (equal (m-=-row (cons (list :HEADER
-			      :DIMENSIONS dims 
+			      :DIMENSIONS dims
 			      :MAXIMUM-LENGTH max-length
 			      :DEFAULT default
 			      :NAME name1)
@@ -3715,7 +3715,7 @@ At UW:
   m-=-row-m-binary-*-row-remove-header-2
   (equal (m-=-row M3
 		  (cons (list :HEADER
-			      :DIMENSIONS dims 
+			      :DIMENSIONS dims
 			      :MAXIMUM-LENGTH max-length
 			      :DEFAULT default
 			      :NAME name1)
@@ -3738,7 +3738,7 @@ At UW:
 (defthm
   aref2-append-m-binary-*-row-header
   (implies (and (> m i))
-	   (equal (aref2 
+	   (equal (aref2
 		   name
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
@@ -3747,24 +3747,24 @@ At UW:
 			       :NAME name1)
 			 (append (m-binary-*-row M1 M2 m j k)
 				 lst))
-		   i 
+		   i
 		   n)
-		  (aref2 
-		   name 
+		  (aref2
+		   name
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
 			 lst)
-		   i 
+		   i
 		   n))))
 
 (defthm
   m-=-row-m-binary-*-row-append-3
   (implies (> m i)
-	   (equal (m-=-row (append (m-binary-*-row M1 
-						   M2 
+	   (equal (m-=-row (append (m-binary-*-row M1
+						   M2
 						   m
 						   n
 						   p)
@@ -3781,8 +3781,8 @@ At UW:
   m-=-row-m-binary-*-row-append-4
   (implies (> m i)
 	   (equal (m-=-row M3
-			   (append (m-binary-*-row M1 
-						   M2 
+			   (append (m-binary-*-row M1
+						   M2
 						   m
 						   n
 						   p)
@@ -3797,14 +3797,14 @@ At UW:
 (defthm
   m-=-row-m-binary-*-row-append-3-header
   (implies (> m i)
-	   (equal (m-=-row 
+	   (equal (m-=-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-*-row M1 
-						 M2 
+			 (append (m-binary-*-row M1
+						 M2
 						 m
 						 n
 						 p)
@@ -3812,7 +3812,7 @@ At UW:
 		   M3
 		   i
 		   p)
-		  (m-=-row 
+		  (m-=-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
@@ -3826,22 +3826,22 @@ At UW:
 (defthm
   m-=-row-m-binary-*-row-append-4-header
   (implies (> m i)
-	   (equal (m-=-row 
+	   (equal (m-=-row
 		   m3
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-*-row M1 
-						 M2 
+			 (append (m-binary-*-row M1
+						 M2
 						 m
 						 n
 						 p)
 				 lst))
 		   i
 		   p)
-		  (m-=-row 
+		  (m-=-row
 		   M3
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
@@ -3856,9 +3856,9 @@ At UW:
   m-=-row-1-m-binary-*-row-append-1
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-=-row-1 (append (m-binary-*-row M1 
-						     M2 
-						     m 
+	   (equal (m-=-row-1 (append (m-binary-*-row M1
+						     M2
+						     m
 						     n
 						     p)
 				     lst)
@@ -3875,9 +3875,9 @@ At UW:
   (implies (and (>= j 0)
 		(< j m))
 	   (equal (m-=-row-1 M3
-			     (append (m-binary-*-row M1 
-						     M2 
-						     m 
+			     (append (m-binary-*-row M1
+						     M2
+						     m
 						     n
 						     p)
 				     lst)
@@ -3892,15 +3892,15 @@ At UW:
   m-=-row-1-m-binary-*-row-append-1-header
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-=-row-1 
+	   (equal (m-=-row-1
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-*-row M1 
-						 M2 
-						 m 
+			 (append (m-binary-*-row M1
+						 M2
+						 m
 						 n
 						 p)
 				 lst))
@@ -3922,16 +3922,16 @@ At UW:
   m-=-row-1-m-binary-*-row-append-2-header
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-=-row-1 
+	   (equal (m-=-row-1
 		   M3
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-*-row M1 
-						 M2 
-						 m 
+			 (append (m-binary-*-row M1
+						 M2
+						 m
 						 n
 						 p)
 				 lst))
@@ -3955,14 +3955,14 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (m-binary-*-row-1 M1 
+			 (m-binary-*-row-1 M1
 					   M2
 					   m
 					   n
 					   p))
 		   M3
 		   m
-		   p) 
+		   p)
 	(m-=-row-1 (m-binary-*-row-1 M1 M2 m n p)
 		   M3
 		   m
@@ -3976,13 +3976,13 @@ At UW:
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (m-binary-*-row-1 M1 
+			 (m-binary-*-row-1 M1
 					   M2
 					   m
 					   n
 					   p))
 		   m
-		   p) 
+		   p)
 	(m-=-row-1 M3
 		   (m-binary-*-row-1 M1 M2 m n p)
 		   m
@@ -4002,7 +4002,7 @@ At UW:
   m-=-row-m-binary-*-row-m-0-1
   (m-=-row (m-binary-*-row (m-0 m n)
 			   M1
-			   i 
+			   i
 			   j
 			   k)
 	   (m-0 m p)
@@ -4013,7 +4013,7 @@ At UW:
   m-=-row-m-binary-*-row-m-0-2
   (m-=-row (m-binary-*-row M1
 			   (m-0 n p)
-			   i 
+			   i
 			   j
 			   k)
 	   (m-0 m p)
@@ -4025,7 +4025,7 @@ At UW:
   (m-=-row-1 (m-binary-*-row-1 (m-0 m n)
 			       M1
 			       i
-			       j 
+			       j
 			       k)
 	     (m-0 m p)
 	     i
@@ -4036,13 +4036,13 @@ At UW:
   (m-=-row-1 (m-binary-*-row-1 M1
 			       (m-0 n p)
 			       i
-			       j 
+			       j
 			       k)
 	     (m-0 m p)
 	     i
 	     k))
 
-(defthm 
+(defthm
   alist2p-m-binary-*-row-1-header-m-0-hack-1
   (implies (and (ALIST2P NAME M1)
 		(INTEGERP M)
@@ -4054,7 +4054,7 @@ At UW:
 				 (+ 1 (* M (CADR (DIMENSIONS '$ARG M1))))
 				 '(:DEFAULT 0 :NAME MATRIX-PRODUCT))
 			  (M-BINARY-*-ROW-1 (M-0 M (CAR (DIMENSIONS '$ARG M1)))
-					    M1 
+					    M1
 					    (+ -1 M)
 					    (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 					    (+ -1 (CADR (DIMENSIONS '$ARG M1)))))))
@@ -4074,7 +4074,7 @@ At UW:
 		     M1)
 		(m-0 m (second (dimensions name M1))))))
 
-(defthm 
+(defthm
   alist2p-m-binary-*-row-1-header-m-0-hack-2
   (implies (and (ALIST2P NAME M1)
 		(INTEGERP p)
@@ -4153,7 +4153,7 @@ At UW:
 		 (> m i))
 	    (m-=-row (m-binary-*-row (m-1 m)
 				     M1
-				     i 
+				     i
 				     j
 				     k)
 		     M1
@@ -4170,7 +4170,7 @@ At UW:
 		(> m j))
 	    (m-=-row (m-binary-*-row M1
 				     (m-1 m)
-				     i 
+				     i
 				     j
 				     k)
 		     M1
@@ -4188,7 +4188,7 @@ At UW:
 	    (m-=-row-1 (m-binary-*-row-1 (m-1 m)
 					 M1
 					 i
-					 j 
+					 j
 					 k)
 		       M1
 		       i
@@ -4205,7 +4205,7 @@ At UW:
 	   (m-=-row-1 (m-binary-*-row-1 M1
 					(m-1 m)
 					i
-					j 
+					j
 					k)
 		      M1
 		      i
@@ -4293,7 +4293,7 @@ At UW:
   (implies (and (>= p 0)
 		(> j p))
 	   (equal (dot (cons (list :HEADER
-				   :DIMENSIONS dims 
+				   :DIMENSIONS dims
 				   :MAXIMUM-LENGTH max-length
 				   :DEFAULT default
 				   :NAME name1)
@@ -4304,7 +4304,7 @@ At UW:
 		       p
 		       q)
 		  (dot (cons (list :HEADER
-				   :DIMENSIONS dims 
+				   :DIMENSIONS dims
 				   :MAXIMUM-LENGTH max-length
 				   :DEFAULT default
 				   :NAME name1)
@@ -4350,7 +4350,7 @@ At UW:
 	 (dot (m-binary-*-row M1 M2 m n p)
 	      M3
 	      m
-	      p 
+	      p
 	      q)))
 
 (defthm
@@ -4371,14 +4371,14 @@ At UW:
 (defthm
   dot-m-binary-*-row-append-3-header
   (implies (> m i)
-	   (equal (dot 
+	   (equal (dot
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-*-row M1 
-						 M2 
+			 (append (m-binary-*-row M1
+						 M2
 						 m
 						 n
 						 p)
@@ -4387,7 +4387,7 @@ At UW:
 		   i
 		   p
 		   q)
-		  (dot 
+		  (dot
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
@@ -4402,7 +4402,7 @@ At UW:
 (defthm
   dot-m-binary-*-row-append-remove-header-1
   (equal (dot (cons (list :HEADER
-			  :DIMENSIONS dims 
+			  :DIMENSIONS dims
 			  :MAXIMUM-LENGTH max-length
 			  :DEFAULT default
 			  :NAME name1)
@@ -4415,13 +4415,13 @@ At UW:
 	 (dot (m-binary-*-row M1 M2 m n p)
 	      M3
 	      m
-	      p 
+	      p
 	      q)))
 
 (defthm
   dot-m-binary-*-row-remove-header-1
   (equal (dot (cons (list :HEADER
-			  :DIMENSIONS dims 
+			  :DIMENSIONS dims
 			  :MAXIMUM-LENGTH max-length
 			  :DEFAULT default
 			  :NAME name1)
@@ -4433,7 +4433,7 @@ At UW:
 	 (dot (m-binary-*-row M1 M2 m n p)
 	      M3
 	      m
-	      p 
+	      p
 	      q)))
 
 (defthm
@@ -4453,7 +4453,7 @@ At UW:
 (defthm
   m-binary-*-row-m-binary-*-row-append-1-remove-header
   (equal (m-binary-*-row (cons (list :HEADER
-				     :DIMENSIONS dims 
+				     :DIMENSIONS dims
 				     :MAXIMUM-LENGTH max-length
 				     :DEFAULT default
 				     :NAME name1)
@@ -4472,7 +4472,7 @@ At UW:
 (defthm
   m-binary-*-row-m-binary-*-row-remove-header-1
   (equal (m-binary-*-row (cons (list :HEADER
-				     :DIMENSIONS dims 
+				     :DIMENSIONS dims
 				     :MAXIMUM-LENGTH max-length
 				     :DEFAULT default
 				     :NAME name1)
@@ -4490,8 +4490,8 @@ At UW:
 (defthm
   m-binary-*-row-m-binary-*-row-append-3
   (implies (> m i)
-	   (equal (m-binary-*-row (append (m-binary-*-row M1 
-							  M2 
+	   (equal (m-binary-*-row (append (m-binary-*-row M1
+							  M2
 							  m
 							  n
 							  p)
@@ -4509,14 +4509,14 @@ At UW:
 (defthm
   m-binary-*-row-m-binary-*-row-append-3-header
   (implies (> m i)
-	   (equal (m-binary-*-row 
+	   (equal (m-binary-*-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-*-row M1 
-						 M2 
+			 (append (m-binary-*-row M1
+						 M2
 						 m
 						 n
 						 p)
@@ -4525,7 +4525,7 @@ At UW:
 		   i
 		   p
 		   q)
-		  (m-binary-*-row 
+		  (m-binary-*-row
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
@@ -4541,9 +4541,9 @@ At UW:
   m-binary-*-row-1-m-binary-*-row-append-1
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-binary-*-row-1 (append (m-binary-*-row M1 
-							    M2 
-							    m 
+	   (equal (m-binary-*-row-1 (append (m-binary-*-row M1
+							    M2
+							    m
 							    n
 							    p)
 					    lst)
@@ -4561,15 +4561,15 @@ At UW:
   m-binary-*-row-1-m-binary-*-row-append-1-header
   (implies (and (>= j 0)
 		(< j m))
-	   (equal (m-binary-*-row-1 
+	   (equal (m-binary-*-row-1
 		   (cons (list :HEADER
 			       :DIMENSIONS dims
 			       :MAXIMUM-LENGTH max-length
 			       :DEFAULT default
 			       :NAME name1)
-			 (append (m-binary-*-row M1 
-						 M2 
-						 m 
+			 (append (m-binary-*-row M1
+						 M2
+						 m
 						 n
 						 p)
 				 lst))
@@ -4596,7 +4596,7 @@ At UW:
 				       :MAXIMUM-LENGTH max-length
 				       :DEFAULT default
 				       :NAME name1)
-				 (m-binary-*-row-1 M1 
+				 (m-binary-*-row-1 M1
 						   M2
 						   m
 						   n
@@ -4604,7 +4604,7 @@ At UW:
 			   M3
 			   m
 			   p
-			   q) 
+			   q)
 	 (m-binary-*-row-1 (m-binary-*-row-1 M1 M2 m n p)
 			   M3
 			   m
@@ -4622,14 +4622,14 @@ At UW:
 						max-length
 						:DEFAULT default
 						:NAME name1)
-					  (m-binary-*-row-1 M1 
+					  (m-binary-*-row-1 M1
 							    M2
 							    n
 							    p
 							    q))
 				    m
 				    n
-				    q) 
+				    q)
 		  (m-binary-*-row-1 M3
 				    (m-binary-*-row-1 M1 M2 n p q)
 				    m
@@ -4645,7 +4645,7 @@ At UW:
 				 max-length
 				 :DEFAULT default
 				 :NAME name1)
-			   (m-binary-*-row-1 M1 
+			   (m-binary-*-row-1 M1
 					     M2
 					     n
 					     p
@@ -4735,7 +4735,7 @@ At UW:
 		    i))
   :hints (("Goal"
 	   :in-theory (disable TRANSITIVITY-OF-M-=-ROW)
-	   :use (:instance 
+	   :use (:instance
 		 TRANSITIVITY-OF-M-=-ROW
 		 (M1 (append (m-binary-*-row M2 M3 n p q)
 			     lst))
@@ -4832,7 +4832,7 @@ At UW:
 		(integerp i)
 		(>= i 0)
 		(> q i))
-	   (equal (m-binary-*-row M1 
+	   (equal (m-binary-*-row M1
 				  (m-binary-*-row-1 M2
 						    M3
 						    n
@@ -4841,7 +4841,7 @@ At UW:
 				  m
 				  n
 				  i)
-		  (m-binary-*-row M1 
+		  (m-binary-*-row M1
 				  (m-binary-*-row-1 M2
 						    M3
 						    n
@@ -4851,7 +4851,7 @@ At UW:
 				  n
 				  i)))
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       m-=row-1-implies-equal-m-binary-*-row-2)
 	   :use (:instance
 		 m-=row-1-implies-equal-m-binary-*-row-2
@@ -4881,7 +4881,7 @@ At UW:
   aref2-append-m-binary-*-row-1
   (implies (and (integerp q)
 		(>= q 0))
-	   (equal (aref2 name 
+	   (equal (aref2 name
 			 (append (m-binary-*-row M2
 						 M3
 						 n
@@ -4890,7 +4890,7 @@ At UW:
 				 lst)
 			 n
 			 q)
-		  (aref2 name 
+		  (aref2 name
 			 (m-binary-*-row M2
 					 M3
 					 n
@@ -4904,7 +4904,7 @@ At UW:
   (implies (and (>= j 0)
 		(> n j))
 	   (equal (dot M1
-		       (append (m-binary-*-row M2 
+		       (append (m-binary-*-row M2
 					       M3
 					       n
 					       p
@@ -5015,7 +5015,7 @@ At UW:
 		       m
 		       p
 		       q)
-		  (dot M1 
+		  (dot M1
 		       (m-binary-*-row-1 M2 M3 n p q)
 		       m
 		       n
@@ -5112,7 +5112,7 @@ At UW:
 			    n
 			    q)))
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (disable
 	    m-=-row-1-implies-equal-m-binary-*-row-1)
 	   :use
@@ -5142,12 +5142,12 @@ At UW:
 				    (* (CAR (DIMENSIONS '$ARG M1))
 				       (CAR (DIMENSIONS '$ARG M3))))
 				 '(:DEFAULT 0 :NAME MATRIX-PRODUCT))
-			  (M-BINARY-*-ROW-1 M1 
+			  (M-BINARY-*-ROW-1 M1
 					    M2
 					    (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 					    (+ -1 (CAR (DIMENSIONS '$ARG M2)))
 					    (+ -1 (CAR (DIMENSIONS '$ARG M3)))))))
-  :HINTS (("Goal" 
+  :HINTS (("Goal"
 	   :IN-THEORY (ENABLE Alist2P HEADER DIMENSIONS MAXIMUM-LENGTH))))
 
 (defthm
@@ -5172,7 +5172,7 @@ At UW:
 					    (+ -1 (CAR (DIMENSIONS '$ARG M2)))
 					    (+ -1 (CAR (DIMENSIONS '$ARG M3)))
 					    (+ -1 (CADR (DIMENSIONS '$ARG M3)))))))
-  :HINTS (("Goal" 
+  :HINTS (("Goal"
 	   :IN-THEORY (ENABLE Alist2P HEADER DIMENSIONS MAXIMUM-LENGTH))))
 
 (defthm
@@ -5187,14 +5187,14 @@ At UW:
 				       :MAXIMUM-LENGTH max-length
 				       :DEFAULT default
 				       :NAME name1)
-				 (m-binary-+-row-1 M1 
+				 (m-binary-+-row-1 M1
 						   M2
 						   i
 						   j))
 			   M3
 			   i
 			   j
-			   k) 
+			   k)
 	 (m-binary-*-row-1 (m-binary-+-row-1 M1 M2 i j)
 			   M3
 			   i
@@ -5208,7 +5208,7 @@ At UW:
 				       :MAXIMUM-LENGTH max-length
 				       :DEFAULT default
 				       :NAME name1)
-				 (m-binary-+-row-1 M1 
+				 (m-binary-+-row-1 M1
 						   M2
 						   i
 						   j)))
@@ -5227,12 +5227,12 @@ At UW:
 						:MAXIMUM-LENGTH max-length
 						:DEFAULT default
 						:NAME name1)
-					  (m-binary-+-row-1 M2 
+					  (m-binary-+-row-1 M2
 							    M3
 							    j
 							    k))
 				    i
-				    j 
+				    j
 				    k)
 		  (m-binary-*-row-1 M1
 				    (m-binary-+-row-1 M2
@@ -5240,7 +5240,7 @@ At UW:
 						      j
 						      k)
 				    i
-				    j 
+				    j
 				    k)))
   :hints (("Goal"
 	   :use (:instance
@@ -5250,11 +5250,11 @@ At UW:
 				 :MAXIMUM-LENGTH max-length
 				 :DEFAULT default
 				 :NAME name1)
-			   (m-binary-+-row-1 M2 
+			   (m-binary-+-row-1 M2
 					     M3
 					     j
 					     k)))
-		 (M3 (m-binary-+-row-1 M2 
+		 (M3 (m-binary-+-row-1 M2
 				       M3
 				       j
 				       k))
@@ -5269,7 +5269,7 @@ At UW:
 				       :MAXIMUM-LENGTH max-length
 				       :DEFAULT default
 				       :NAME name1)
-				 (m-binary-*-row-1 M1 
+				 (m-binary-*-row-1 M1
 						   M2
 						   i
 						   j
@@ -5289,7 +5289,7 @@ At UW:
 				  :MAXIMUM-LENGTH max-length
 				  :DEFAULT default
 				  :NAME name1)
-			    (m-binary-*-row-1 M1 
+			    (m-binary-*-row-1 M1
 					      M2
 					      i
 					      j
@@ -5306,7 +5306,7 @@ At UW:
 				       :MAXIMUM-LENGTH max-length
 				       :DEFAULT default
 				       :NAME name1)
-				 (m-binary-*-row-1 M2 
+				 (m-binary-*-row-1 M2
 						   M3
 						   i
 						   j
@@ -5325,7 +5325,7 @@ At UW:
 				  :MAXIMUM-LENGTH max-length
 				  :DEFAULT default
 				  :NAME name1)
-			    (m-binary-*-row-1 M2 
+			    (m-binary-*-row-1 M2
 					      M3
 					      i
 					      j
@@ -5338,13 +5338,13 @@ At UW:
   distributivity-aref2-m-binary-+-row
   (implies (and (integerp k)
 		(>= k 0))
-	   (equal (* x 
-		     (aref2 '$arg 
-			    (m-binary-+-row M2 
-					    M3 
-					    j 
+	   (equal (* x
+		     (aref2 '$arg
+			    (m-binary-+-row M2
+					    M3
+					    j
 					    k)
-			    j 
+			    j
 			    k))
 		  (+ (* x (aref2 '$arg M2 j k))
 		     (* x (aref2 '$arg M3 j k))))))
@@ -5396,7 +5396,7 @@ At UW:
   dot-append-m-binary-+-row
   (implies (and (>= l 0)
 		(< l j))
-	   (equal (dot M1 
+	   (equal (dot M1
 		       (append (m-binary-+-row M2 M3 j k1)
 			       lst)
 		       i
@@ -5408,7 +5408,7 @@ At UW:
   dot-m-binary-+-row-1
   (implies (and (integerp k)
 		(>= k 0))
-	   (equal (dot M1 
+	   (equal (dot M1
 		       (m-binary-+-row-1 M2 M3 j k)
 		       i
 		       j
@@ -5481,7 +5481,7 @@ At UW:
 				  (append (m-binary-+-row M2 M3 j l)
 					  (m-binary-+-row-1 M2 M3 (+ -1 j) k))
 				  i
-				  j 
+				  j
 				  l)
 		  (m-binary-+-row (m-binary-*-row M1 M2 i j l)
 				  (m-binary-*-row M1 M3 i j l)
@@ -5636,20 +5636,20 @@ At UW:
 (defthm
   left-distributivity-m-binary-*-row-1-m-binary-+-row-1
   (equal (m-binary-*-row-1 M1
-			   (m-binary-+-row-1 M2 
-					     M3 
+			   (m-binary-+-row-1 M2
+					     M3
 					     j
 					     k)
 			   i
 			   j
 			   k)
-	 (m-binary-+-row-1 (m-binary-*-row-1 M1 
-					     M2 
+	 (m-binary-+-row-1 (m-binary-*-row-1 M1
+					     M2
 					     i
 					     j
 					     k)
 			   (m-binary-*-row-1 M1
-					     M3 
+					     M3
 					     i
 					     j
 					     k)
@@ -5670,11 +5670,11 @@ At UW:
 				       (CADR (DIMENSIONS '$ARG M2))))
 				 '(:DEFAULT 0 :NAME MATRIX-PRODUCT))
 			  (M-BINARY-*-ROW-1 M1
-					    M2 
+					    M2
 					    (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 					    (+ -1 (CAR (DIMENSIONS '$ARG M2)))
 					    (+ -1 (CADR (DIMENSIONS '$ARG M2)))))))
-  :HINTS (("Goal" 
+  :HINTS (("Goal"
 	   :IN-THEORY (ENABLE Alist2P HEADER DIMENSIONS MAXIMUM-LENGTH))))
 
 (defthm
@@ -5691,7 +5691,7 @@ At UW:
 				       (CADR (DIMENSIONS '$ARG M2))))
 				 '(:DEFAULT 0 :NAME MATRIX-PRODUCT))
 			  (M-BINARY-+-ROW-1
-			   (M-BINARY-*-ROW-1 M1 
+			   (M-BINARY-*-ROW-1 M1
 					     M2
 					     (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 					     (+ -1 (CAR (DIMENSIONS '$ARG M2)))
@@ -5703,7 +5703,7 @@ At UW:
 					     (+ -1 (CADR (DIMENSIONS '$ARG M2))))
 			   (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 			   (+ -1 (CADR (DIMENSIONS '$ARG M2)))))))
-  :HINTS (("Goal" 
+  :HINTS (("Goal"
 	   :IN-THEORY (ENABLE Alist2P HEADER DIMENSIONS MAXIMUM-LENGTH))))
 
 (defthm
@@ -5720,19 +5720,19 @@ At UW:
 				      (CADR (DIMENSIONS '$ARG M2))))
 				'(:DEFAULT 0 :NAME MATRIX-SUM))
 			 (M-BINARY-+-ROW-1
-			  (M-BINARY-*-ROW-1 M1 
-					    M2 
+			  (M-BINARY-*-ROW-1 M1
+					    M2
 					    (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 					    (+ -1 (CAR (DIMENSIONS '$ARG M2)))
 					    (+ -1 (CADR (DIMENSIONS '$ARG M2))))
 			  (M-BINARY-*-ROW-1 M1
-					    M3 
+					    M3
 					    (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 					    (+ -1 (CAR (DIMENSIONS '$ARG M2)))
 					    (+ -1 (CADR (DIMENSIONS '$ARG M2))))
 			  (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 			  (+ -1 (CADR (DIMENSIONS '$ARG M2)))))))
- :HINTS (("Goal" 
+ :HINTS (("Goal"
 	  :IN-THEORY (ENABLE Alist2P HEADER DIMENSIONS MAXIMUM-LENGTH))))
 
 (defthm
@@ -5753,7 +5753,7 @@ At UW:
 					    (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 					    (+ -1 (CAR (DIMENSIONS '$ARG M2)))
 					    (+ -1 (CADR (DIMENSIONS '$ARG M2)))))))
-  :HINTS (("Goal" 
+  :HINTS (("Goal"
 	   :IN-THEORY (ENABLE Alist2P HEADER DIMENSIONS MAXIMUM-LENGTH))))
 
 (defthm
@@ -5800,9 +5800,9 @@ At UW:
 
 (defthm
   dot-m-binary-+-row-remove-append
-  (equal (dot (append (m-binary-+-row M1 
+  (equal (dot (append (m-binary-+-row M1
 				      M2
-				      i 
+				      i
 				      j)
 		      lst)
 	      M3
@@ -5821,9 +5821,9 @@ At UW:
 (defthm
   dot-m-binary-+-row-remove-append-a
   (implies (> i i1)
-	   (equal (dot (append (m-binary-+-row M1 
+	   (equal (dot (append (m-binary-+-row M1
 					       M2
-					       i 
+					       i
 					       j)
 			       lst)
 		       M3
@@ -5862,7 +5862,7 @@ At UW:
 
 (defthm
   m-binary-*-row-m-binary-+-row-remove-append-a
-  (implies (> i i1)	 
+  (implies (> i i1)
 	   (equal (m-binary-*-row (append (m-binary-+-row M1
 							  M2
 							  i
@@ -5881,7 +5881,7 @@ At UW:
 (defthm
     m-binary-*-row-1-m-binary-+-row-remove-append-a
     (implies (and (>= i1 0)
-		  (> i i1))	 
+		  (> i i1))
 	     (equal (m-binary-*-row-1 (append (m-binary-+-row M1
 							      M2
 							      i
@@ -5934,7 +5934,7 @@ At UW:
 				       (CADR (DIMENSIONS '$ARG M3))))
 				 '(:DEFAULT 0 :NAME MATRIX-PRODUCT))
 			  (M-BINARY-+-ROW-1
-			   (M-BINARY-*-ROW-1 M1 
+			   (M-BINARY-*-ROW-1 M1
 					     M3
 					     (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 					     (+ -1 (CAR (DIMENSIONS '$ARG M3)))
@@ -5946,7 +5946,7 @@ At UW:
 					     (+ -1 (CADR (DIMENSIONS '$ARG M3))))
 			   (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 			   (+ -1 (CADR (DIMENSIONS '$ARG M3)))))))
-  :HINTS (("Goal" 
+  :HINTS (("Goal"
 	   :IN-THEORY (ENABLE Alist2P HEADER DIMENSIONS MAXIMUM-LENGTH))))
 
 (defthm
@@ -5964,7 +5964,7 @@ At UW:
 				 '(:DEFAULT 0 :NAME MATRIX-SUM))
 			  (M-BINARY-+-ROW-1
 			   (M-BINARY-*-ROW-1 M1
-					     M3 
+					     M3
 					     (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 					     (+ -1 (CAR (DIMENSIONS '$ARG M3)))
 					     (+ -1 (CADR (DIMENSIONS '$ARG M3))))
@@ -5975,7 +5975,7 @@ At UW:
 					     (+ -1 (CADR (DIMENSIONS '$ARG M3))))
 			   (+ -1 (CAR (DIMENSIONS '$ARG M1)))
 			   (+ -1 (CADR (DIMENSIONS '$ARG M3)))))))
-  :HINTS (("Goal" 
+  :HINTS (("Goal"
 	   :IN-THEORY (ENABLE Alist2P HEADER DIMENSIONS MAXIMUM-LENGTH))))
 
 (defthm
@@ -6237,11 +6237,11 @@ At UW:
 		    (ASET2 '$ARG
 			   M
 			   I
-			   K 
+			   K
 			   (AREF2 '$ARG M J K))))
   :hints (("Goal"
 	   :in-theory (disable ARRAY2P-ASET2)
-	   :use (:instance 
+	   :use (:instance
 		 ARRAY2P-ASET2
 		 (L M)
 		 (j k)
@@ -6262,19 +6262,19 @@ At UW:
 	   (ARRAY2P NAME
 		    (ASET2 '$ARG
 			   (ASET2 '$ARG
-				  M 
+				  M
 				  I
 				  K
 				  (AREF2 '$ARG M J K))
-			   J 
-			   K 
+			   J
+			   K
 			   (AREF2 '$ARG M I K))))
   :hints (("Goal"
 	   :in-theory (disable ARRAY2P-ASET2)
-	   :use (:instance 
+	   :use (:instance
 		 ARRAY2P-ASET2
 		 (L (ASET2 '$ARG
-			   M 
+			   M
 			   I
 			   K
 			   (AREF2 '$ARG M J K)))
@@ -6301,12 +6301,12 @@ At UW:
       (let ((temp (aref2 name M i 0)))
 	   (aset2 name
 		  (aset2 name
-			 M 
-			 i 
+			 M
+			 i
 			 0
 			 (aref2 name
-				M 
-				j 
+				M
+				j
 				0))
 		  j
 		  0
@@ -6315,12 +6315,12 @@ At UW:
 		    (let ((temp (aref2 name M i k)))
 		         (aset2 name
 				(aset2 name
-				       M 
-				       i 
+				       M
+				       i
 				       k
 				       (aref2 name
-					      M 
-					      j 
+					      M
+					      j
 					      k))
 				j
 				k
@@ -6331,7 +6331,7 @@ At UW:
 
 (defun
   Ri<->Rj (name M i j)
-  "Return the result of interchanging 
+  "Return the result of interchanging
    row i and row j in array M."
   (declare (xargs :guard (and (array2p name M)
 			      (integerp i)
@@ -6345,7 +6345,7 @@ At UW:
 					(< j dims1))))))
   (Ri<->Rj-loop name
 		M
-		i 
+		i
 		j
 		(- (second (dimensions name M)) 1)))
 
@@ -6367,7 +6367,7 @@ At UW:
 			   (AREF2 '$ARG M K J))))
   :hints (("Goal"
 	   :in-theory (disable ARRAY2P-ASET2)
-	   :use (:instance 
+	   :use (:instance
 		 ARRAY2P-ASET2
 		 (L M)
 		 (i k)
@@ -6390,20 +6390,20 @@ At UW:
 		    (ASET2 '$ARG
 			   (ASET2 '$ARG
 				  M
-				  K 
-				  I 
+				  K
+				  I
 				  (AREF2 '$ARG M K J))
-			   K 
-			   J 
+			   K
+			   J
 			   (AREF2 '$ARG M K I))))
   :hints (("Goal"
 	   :in-theory (disable ARRAY2P-ASET2)
-	   :use (:instance 
+	   :use (:instance
 		 ARRAY2P-ASET2
 		 (L (ASET2 '$ARG
 			   M
-			   K 
-			   I 
+			   K
+			   I
 			   (AREF2 '$ARG M K J)))
 		 (i k)
 		 (val (AREF2 '$ARG M K i))))))
@@ -6427,11 +6427,11 @@ At UW:
       (let ((temp (aref2 name M 0 i)))
 	   (aset2 name
 		  (aset2 name
-			 M 
+			 M
 			 0
-			 i 
+			 i
 			 (aref2 name
-				M 
+				M
 				0
 				j))
 		  0
@@ -6441,7 +6441,7 @@ At UW:
 		    (let ((temp (aref2 name M k i)))
 		         (aset2 name
 				(aset2 name
-				       M 
+				       M
 				       k
 				       i
 				       (aref2 name
@@ -6457,7 +6457,7 @@ At UW:
 
 (defun
   Ci<->Cj (name M i j)
-  "Return the result of interchanging 
+  "Return the result of interchanging
    column i and column j in array M."
   (declare (xargs :guard (and (array2p name M)
 			      (integerp i)
@@ -6471,7 +6471,7 @@ At UW:
 					(< j dims2))))))
   (Ci<->Cj-loop name
 		M
-		i 
+		i
 		j
 		(- (first (dimensions name M)) 1)))
 
@@ -6487,7 +6487,7 @@ At UW:
 	   (ARRAY2P NAME (ASET2 '$ARG M I K 0)))
   :hints (("Goal"
 	   :in-theory (disable array2p-aset2)
-	   :use (:instance 
+	   :use (:instance
 		 array2p-aset2
 		 (L M)
 		 (j k)
@@ -6510,7 +6510,7 @@ At UW:
 			   (* A (AREF2 '$ARG M I K)))))
   :hints (("Goal"
 	   :in-theory (disable array2p-aset2)
-	   :use (:instance 
+	   :use (:instance
 		 array2p-aset2
 		 (L M)
 		 (j k)
@@ -6529,21 +6529,21 @@ At UW:
 					(< k (second dims)))))))
   (if (zp k)
       (aset2 name
-	     M 
-	     i 
+	     M
+	     i
 	     0
 	     (* a (fix (aref2 name
-			      M 
-			      i 
+			      M
+			      i
 			      0))))
     (Ri<-aRi-loop name
 		  (aset2 name
-			 M 
-			 i 
+			 M
+			 i
 			 k
 			 (* a (fix (aref2 name
-					  M 
-					  i 
+					  M
+					  i
 					  k))))
 		  a
 		  i
@@ -6551,7 +6551,7 @@ At UW:
 
 (defun
   Ri<-aRi (name M a i)
-  "Return the result of replacing each element, 
+  "Return the result of replacing each element,
    Mij, in row i of array M, with (* a Mij)."
   (declare (xargs :guard (and (acl2-numberp a)
 			      (array2p name M)
@@ -6560,7 +6560,7 @@ At UW:
 			      (< i (first (dimensions name M))))))
   (Ri<-aRi-loop name
 		M
-		a 
+		a
 		i
 		(- (second (dimensions name M)) 1)))
 
@@ -6580,9 +6580,9 @@ At UW:
 
   (if (zp k)
       (aset2 name
-	     M 
+	     M
 	     0
-	     i 
+	     i
 	     (* a (fix (aref2 name
 			      M
 			      0
@@ -6591,7 +6591,7 @@ At UW:
 		  (aset2 name
 			 M
 			 k
-		         i 
+		         i
 			 (* a (fix (aref2 name
 					  M
 					  k
@@ -6602,7 +6602,7 @@ At UW:
 
 (defun
   Ci<-aCi (name M a i)
-  "Return the result of replacing each element, 
+  "Return the result of replacing each element,
    Mji, in column i of array M, with (* a Mji)."
   (declare (xargs :guard (and (acl2-numberp a)
 			      (array2p name M)
@@ -6611,7 +6611,7 @@ At UW:
 			      (< i (second (dimensions name M))))))
   (Ci<-aCi-loop name
 		M
-		a 
+		a
 		i
 		(- (first (dimensions name M)) 1)))
 
@@ -6626,13 +6626,13 @@ At UW:
 		(ARRAY2P NAME M))
 	  (ARRAY2P NAME
 		   (ASET2 '$ARG
-			  M 
+			  M
 			  J
 			  K
 			  (* A (AREF2 '$ARG M I K)))))
  :hints (("Goal"
 	   :in-theory (disable array2p-aset2)
-	   :use (:instance 
+	   :use (:instance
 		 array2p-aset2
 		 (L M)
 		 (i j)
@@ -6650,14 +6650,14 @@ At UW:
 		(ARRAY2P NAME M))
 	   (ARRAY2P NAME
 		    (ASET2 '$ARG
-			   M 
+			   M
 			   J
 			   K
 			   (+ (AREF2 '$ARG M J K)
 			      (* A (AREF2 '$ARG M I K))))))
   :hints (("Goal"
 	   :in-theory (disable array2p-aset2)
-	   :use (:instance 
+	   :use (:instance
 		 array2p-aset2
 		 (L M)
 		 (i j)
@@ -6682,12 +6682,12 @@ At UW:
 					 (< k (second dims)))))))
   (if (zp k)
       (aset2 name
-	     M 
+	     M
 	     j
 	     0
 	     (+ (* a (fix (aref2 name
-				 M 
-				 i 
+				 M
+				 i
 				 0)))
 		(fix (aref2 name
 			    M
@@ -6695,12 +6695,12 @@ At UW:
 			    0))))
     (Rj<-aRi+Rj-loop name
 		     (aset2 name
-			    M 
-			    j 
+			    M
+			    j
 			    k
 			    (+ (* a (fix (aref2 name
-						M 
-						i 
+						M
+						i
 						k)))
 			       (fix (aref2 name
 					   M
@@ -6713,7 +6713,7 @@ At UW:
 
 (defun
   Rj<-aRi+Rj (name M a i j)
-  "Return the result of replacing each element, 
+  "Return the result of replacing each element,
    Mjk, in row j of matrix M, with (+ (* a Mik) Mjk)."
   (declare (xargs :guard (and (acl2-numberp a)
 			      (array2p name M)
@@ -6728,7 +6728,7 @@ At UW:
 					 (< j dims1))))))
   (Rj<-aRi+Rj-loop name
 		   M
-		   a 
+		   a
 		   i
 		   j
 		   (- (second (dimensions name M)) 1)))
@@ -6750,7 +6750,7 @@ At UW:
 			   (* A (AREF2 '$ARG M K I)))))
   :hints (("Goal"
 	   :in-theory (disable array2p-aset2)
-	   :use (:instance 
+	   :use (:instance
 		 array2p-aset2
 		 (L M)
 		 (i k)
@@ -6777,7 +6777,7 @@ At UW:
 			     (* A (AREF2 '$ARG M K I))))))
   :hints (("Goal"
 	   :in-theory (disable array2p-aset2)
-	   :use (:instance 
+	   :use (:instance
 		 array2p-aset2
 		 (L M)
 		 (i k)
@@ -6801,11 +6801,11 @@ At UW:
 					(< k (first dims)))))))
   (if (zp k)
       (aset2 name
-	     M 
+	     M
 	     0
 	     j
 	     (+ (* a (fix (aref2 name
-				 M 
+				 M
 				 0
 				 i)))
 		(fix (aref2 name
@@ -6814,7 +6814,7 @@ At UW:
 			    j))))
     (Cj<-aCi+Cj-loop name
 		     (aset2 name
-			    M 
+			    M
 			    k
 			    j
 			    (+ (* a (fix (aref2 name
@@ -6832,7 +6832,7 @@ At UW:
 
 (defun
   Cj<-aCi+Cj (name M a i j)
-  "Return the result of replacing each element, 
+  "Return the result of replacing each element,
    Mkj, in column j of matrix M, with (+ (* a Mki)
                                          Mkj)."
   (declare (xargs :guard (and (acl2-numberp a)
@@ -6849,7 +6849,7 @@ At UW:
 
   (Cj<-aCi+Cj-loop name
 		   M
-		   a 
+		   a
 		   i
 		   j
 		   (- (first (dimensions name M)) 1)))
@@ -6870,7 +6870,7 @@ At UW:
 		       (header name M))
 		(equal (dimensions name (Ri<->Rj-loop name M i j k))
 		       (dimensions name M))
-		(equal (maximum-length name 
+		(equal (maximum-length name
 				       (Ri<->Rj-loop name M i j k))
 		       (maximum-length name M))
 		(equal (default name (Ri<->Rj-loop name M i j k))
@@ -6890,7 +6890,7 @@ At UW:
 		       (header name M))
 		(equal (dimensions name (Ci<->Cj-loop name M i j k))
 		       (dimensions name M))
-		(equal (maximum-length name 
+		(equal (maximum-length name
 				       (Ci<->Cj-loop name M i j k))
 		       (maximum-length name M))
 		(equal (default name (Ci<->Cj-loop name M i j k))
@@ -6907,7 +6907,7 @@ At UW:
 		       (header name M))
 		(equal (dimensions name (Ri<-aRi-loop name M a i k))
 		       (dimensions name M))
-		(equal (maximum-length name 
+		(equal (maximum-length name
 				       (Ri<-aRi-loop name M a i k))
 		       (maximum-length name M))
 		(equal (default name (Ri<-aRi-loop name M a i k))
@@ -6924,7 +6924,7 @@ At UW:
 		       (header name M))
 		(equal (dimensions name (Ci<-aCi-loop name M a i k))
 		       (dimensions name M))
-		(equal (maximum-length name 
+		(equal (maximum-length name
 				       (Ci<-aCi-loop name M a i k))
 		       (maximum-length name M))
 		(equal (default name (Ci<-aCi-loop name M a i k))
@@ -6937,13 +6937,13 @@ At UW:
 		(>= j 0)
 		(< j (first (dimensions name M)))
 		(< k (second (dimensions name M))))
-	   (and (equal (header name 
+	   (and (equal (header name
 			       (Rj<-aRi+Rj-loop name M a i j k))
 		       (header name M))
-		(equal (dimensions name 
+		(equal (dimensions name
 				   (Rj<-aRi+Rj-loop name M a i j k))
 		       (dimensions name M))
-		(equal (maximum-length name 
+		(equal (maximum-length name
 				       (Rj<-aRi+Rj-loop name M a i j k))
 		       (maximum-length name M))
 		(equal (default name (Rj<-aRi+Rj-loop name M a i j k))
@@ -6956,13 +6956,13 @@ At UW:
 		(>= j 0)
 		(< j (second (dimensions name M)))
 		(< k (first (dimensions name M))))
-	   (and (equal (header name 
+	   (and (equal (header name
 			       (Cj<-aCi+Cj-loop name M a i j k))
 		       (header name M))
-		(equal (dimensions name 
+		(equal (dimensions name
 				   (Cj<-aCi+Cj-loop name M a i j k))
 		       (dimensions name M))
-		(equal (maximum-length name 
+		(equal (maximum-length name
 				       (Cj<-aCi+Cj-loop name M a i j k))
 		       (maximum-length name M))
 		(equal (default name (Cj<-aCi+Cj-loop name M a i j k))
@@ -7280,7 +7280,7 @@ At UW:
 
 ;; Row reduce C to I.
 ;;   Apply same row operations to B.
-;;   Multiply A successively on right by 
+;;   Multiply A successively on right by
 ;;        inverse of same row operations.
 ;;        (Done with equivalent column operations.)
 ;;   Modify D according to column operations on A.
@@ -7292,15 +7292,15 @@ At UW:
 ;;      A * B = I
 ;;      B * M = C
 ;;      D = determinant of A
-     
+
 ;;   After termination
 ;;      A = left inverse of B
-;;      B = left inverse of M (because C contains I 
+;;      B = left inverse of M (because C contains I
 ;;                                after termination)
 
 ;; Prove that after termination A = M:
 ;;      A = A * I = A * (B * M)
-;;                = (A * B) * M = I * M = M 
+;;                = (A * B) * M = I * M = M
 
 ;; Thus B is both left and right inverse of M
 ;;      and D is the determinant of M.
@@ -7310,7 +7310,7 @@ At UW:
 ;;   (Ri<-aRi)^(-1)    = Ri<-(/a)Ri
 ;;   (Rj<-aRi+Rj)^(-1) = Rj<-(-a)Ri+Rj
 
-;; Equivalent row and column operations as 
+;; Equivalent row and column operations as
 ;;  applied to identity matrix: I
 ;;    Ri<->Rj(I)    = Ci<->Cj(I)
 ;;    Ri<-aRi(I)    = Ci<-aCi(I)
@@ -7343,16 +7343,16 @@ At UW:
 			      (>= i1 0)
 			      (integerp j)
 			      (>= j 0)
-			      (< i (second 
+			      (< i (second
 				    (dimensions '$a
 						A)))
-			      (< i (first 
+			      (< i (first
 				    (dimensions '$b
 						B)))
-			      (< i (first 
+			      (< i (first
 				    (dimensions '$c
 						C)))
-			      (< i1 (second 
+			      (< i1 (second
 				     (dimensions '$a
 						 A)))
 			      (< i1 (first
@@ -7361,7 +7361,7 @@ At UW:
 			      (< i1 (first
 				     (dimensions '$c
 						 C)))
-			      (< j (second 
+			      (< j (second
 				    (dimensions '$c
 						C))))))
   (if (zp i)
@@ -7426,7 +7426,7 @@ At UW:
 		 ALIST2P-RJ<-ARI+RJ
 		 (name name1)))))
 
-(DEFTHM 
+(DEFTHM
   ALIST2P-CJ<-ACI+CJ-1
   (IMPLIES (AND (ALIST2P NAME M)
 		(INTEGERP J)
@@ -7439,7 +7439,7 @@ At UW:
 		 ALIST2P-CJ<-ACI+CJ
 		 (name name1)))))
 
-(DEFTHM 
+(DEFTHM
   ARRAY2P-RJ<-ARI+RJ-1
   (IMPLIES (AND (symbolp name1)
 		(ARRAY2P NAME M)
@@ -7453,7 +7453,7 @@ At UW:
 		 Array2P-RJ<-ARI+RJ
 		 (name name1)))))
 
-(DEFTHM 
+(DEFTHM
   ARRAY2P-CJ<-ACI+CJ-1
   (IMPLIES (AND (symbolp name1)
 		(ARRAY2P NAME M)
@@ -7533,8 +7533,8 @@ At UW:
 (defun
   find-non-zero-col (name C i j k)
   "Determine if there is a nonzero value among
-   C(i k), C(i+1) k), . . . , C(j k). 
-   If not, return nil, otherwise return the 
+   C(i k), C(i+1) k), . . . , C(j k).
+   If not, return nil, otherwise return the
    first n such that C(n k) is nonzero."
   (declare (xargs :measure (let ((i (nfix i))
 				 (j (nfix j)))
@@ -7546,10 +7546,10 @@ At UW:
 			      (integerp j)
 			      (integerp k)
 			      (>= k 0)
-			      (< j (first 
+			      (< j (first
 				    (dimensions name
 						C)))
-			      (< k (second 
+			      (< k (second
 				    (dimensions name
 						C))))))
   (let ((i (nfix i))
@@ -7581,16 +7581,16 @@ At UW:
 		 (aref2 name
 			C
 			(find-non-zero-col name
-					   C 
-					   i 
+					   C
+					   i
 					   j
 					   k)
 			k))
-		(not (equal 
+		(not (equal
 		      (aref2 name
-			     C 
+			     C
 			     (find-non-zero-col name
-						C 
+						C
 						i
 						j
 						k)
@@ -7607,7 +7607,7 @@ At UW:
        .          .        .      .
        .          .          .    .
      C(j k)    C(j k+1)  . . .  C(j n)
-   If not, return nil, otherwise return the 
+   If not, return nil, otherwise return the
    first, obtained by searching column by column,
    pair p q, such that C(p q) is nonzero."
   (declare (xargs :measure (let ((k (nfix k))
@@ -7685,35 +7685,35 @@ At UW:
   (implies (find-non-zero-col-1 name1 C i j k n)
 	   (and (acl2-numberp
 		 (aref2 name
-			C 
-			(car 
+			C
+			(car
 			 (find-non-zero-col-1 name1
-					      C 
+					      C
 					      i
 					      j
 					      k
 					      n))
-			(cadr 
+			(cadr
 			 (find-non-zero-col-1 name1
-					      C 
+					      C
 					      i
 					      j
 					      k
 					      n))))
-		(not 
-		 (equal 
+		(not
+		 (equal
 		  (aref2 name
-			 C 
-			 (car 
+			 C
+			 (car
 			  (find-non-zero-col-1 name1
-					       C 
+					       C
 					       i
 					       j
 					       k
 					       n))
-			 (cadr 
+			 (cadr
 			  (find-non-zero-col-1 name1
-					       C 
+					       C
 					       i
 					       j
 					       k
@@ -7723,7 +7723,7 @@ At UW:
   :hints (("Goal"
 	   :do-not '(generalize))))
 
-(DEFTHM 
+(DEFTHM
   DIMENSIONS-RI<-ARI-1
   (IMPLIES (AND (ALIST2P NAME M)
 		(INTEGERP I)
@@ -7737,7 +7737,7 @@ At UW:
 		 DIMENSIONS-RI<-ARI
 		 (name name1)))))
 
-(DEFTHM 
+(DEFTHM
   DIMENSIONS-CI<-ACI-1
   (IMPLIES (AND (ALIST2P NAME M)
 		(INTEGERP I)
@@ -7751,7 +7751,7 @@ At UW:
 		 DIMENSIONS-CI<-ACI
 		 (name name1)))))
 
-(DEFTHM 
+(DEFTHM
   DIMENSIONS-RI<->RJ-1
   (IMPLIES (AND (ALIST2P NAME M)
 		(INTEGERP I)
@@ -7802,7 +7802,7 @@ At UW:
 		(CAR (ZERO-COLUMN
 		      (CI<-ACI '$A
 			       (CI<->CJ '$A
-					A 
+					A
 					I
 					(CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 			       (AREF2 '$ARG
@@ -7852,7 +7852,7 @@ At UW:
 		(CAR (ZERO-COLUMN
 		      (CI<-ACI '$A
 			       (CI<->CJ '$A
-					A 
+					A
 					I
 					(CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 			       (AREF2 '$ARG
@@ -7905,7 +7905,7 @@ At UW:
 		(CAR (ZERO-COLUMN
 		      (CI<-ACI '$A
 			       (CI<->CJ '$A
-					A 
+					A
 					I
 					(CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 			       (AREF2 '$ARG
@@ -7915,7 +7915,7 @@ At UW:
 			       I)
 		      (RI<-ARI '$B
 			       (RI<->RJ '$B
-					B 
+					B
 					I
 					(CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 			       (/ (AREF2 '$ARG
@@ -7956,7 +7956,7 @@ At UW:
 		(CAR (ZERO-COLUMN
 		      (CI<-ACI '$A
 			       (CI<->CJ '$A
-					A 
+					A
 					I
 					(CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 			       (AREF2 '$ARG
@@ -7966,7 +7966,7 @@ At UW:
 			       I)
 		      (RI<-ARI '$B
 			       (RI<->RJ '$B
-					B 
+					B
 					I
 					(CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 			       (/ (AREF2 '$ARG
@@ -8006,7 +8006,7 @@ At UW:
 	       (DIMENSIONS '$A
 			   (CI<-ACI '$A
 				    (CI<->CJ '$A
-					     A 
+					     A
 					     I
 					     (CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 				    (AREF2 '$ARG
@@ -8031,7 +8031,7 @@ At UW:
 	       (DIMENSIONS '$Arg
 			   (CI<-ACI '$A
 				    (CI<->CJ '$A
-					     A 
+					     A
 					     I
 					     (CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 				    (AREF2 '$ARG
@@ -8266,7 +8266,7 @@ At UW:
 	       (DIMENSIONS '$a
 			   (CI<-ACI '$A
 				    (CI<->CJ '$A
-					     A 
+					     A
 					     I
 					     (CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 				    (AREF2 '$ARG
@@ -8291,7 +8291,7 @@ At UW:
 	       (DIMENSIONS '$arg
 			   (CI<-ACI '$A
 				    (CI<->CJ '$A
-					     A 
+					     A
 					     I
 					     (CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 				    (AREF2 '$ARG
@@ -8321,7 +8321,7 @@ At UW:
 		 (ZERO-COLUMN
 		  (CI<-ACI '$A
 			   (CI<->CJ '$A
-				    A 
+				    A
 				    I
 				    (CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 			   (AREF2 '$ARG
@@ -8372,7 +8372,7 @@ At UW:
 		 (ZERO-COLUMN
 		  (CI<-ACI '$A
 			   (CI<->CJ '$A
-				    A 
+				    A
 				    I
 				    (CAR (FIND-NON-ZERO-COL-1 '$C C I J K N)))
 			   (AREF2 '$ARG
@@ -8439,26 +8439,26 @@ At UW:
 			      (>= i 0)
 			      (>= j 0)
 			      (>= k 0)
-			      (>= n 0) 
-			      (< i (second 
+			      (>= n 0)
+			      (< i (second
 				    (dimensions '$a
 						A)))
-			      (< i (first 
+			      (< i (first
 				    (dimensions '$b
 						B)))
-			      (< i (first 
+			      (< i (first
 				    (dimensions '$c
 						C)))
-			      (< j (second 
+			      (< j (second
 				    (dimensions '$a
 						A)))
-			      (< j (first 
+			      (< j (first
 				    (dimensions '$b
 						B)))
-			      (< j (first 
+			      (< j (first
 				    (dimensions '$c
 						C)))
-			      (< n (second 
+			      (< n (second
 				    (dimensions '$c
 						C))))
 		  :verify-guards nil))
@@ -8471,15 +8471,15 @@ At UW:
 	   (let
 	    ((indices (find-non-zero-col-1 '$C C i j k n)))
 	    (if indices
-		(let* 
+		(let*
 		 ((p (first indices))
 		  (q (second indices))
 		  (val (aref2 '$C C p q)))
 		 (if (= p i)
-		     (mv-let 
+		     (mv-let
 		      (A B C)
 		      (zero-column (Ci<-aCi '$A A val     i)
-				   (Ri<-aRi '$B B (/ val) i) 
+				   (Ri<-aRi '$B B (/ val) i)
 				   (Ri<-aRi '$C C (/ val) i)
 				   i
 				   q
@@ -8487,23 +8487,23 @@ At UW:
 		      (cond ((= i j)
 			     (mv A B C (* val D)))
 			    ((= q i)
-			     (determinant-inverse-loop A B C 
+			     (determinant-inverse-loop A B C
 						       (* val D)
 						       (+ i 1)
 						       j
 						       (+ q 1)
 						       n))
 			    (t
-			     (determinant-inverse-loop A B C 
+			     (determinant-inverse-loop A B C
 						       (* val D)
-						       0     
+						       0
 						       j
 						       (+ q 1)
 						       n))))
-		     (mv-let 
+		     (mv-let
 		      (A B C)
 		      (zero-column (Ci<-aCi '$A (Ci<->Cj '$A A i p) val    i)
-				   (Ri<-aRi '$B (Ri<->Rj '$B B i p)(/ val) i) 
+				   (Ri<-aRi '$B (Ri<->Rj '$B B i p)(/ val) i)
 				   (Ri<-aRi '$C (Ri<->Rj '$C C i p)(/ val) i)
 				   i
 				   q
@@ -8519,9 +8519,9 @@ At UW:
 						       n))
 			    (t
 			     (determinant-inverse-loop A B C
-						       0          
+						       0
 						       (+ i 1)
-						       j 
+						       j
 						       (+ q 1)
 						       n))))))
 	        (mv A B C 0))))))
@@ -8584,16 +8584,16 @@ At UW:
   determinant-inverse (M)
   "Return multiple values A, B, C, and D.
    If M is a square array, the determinant of
-   M is returned in D.  If the determinant is 
+   M is returned in D.  If the determinant is
    nonzero, then the matrix inverse of M is
    returned in B."
   (declare (xargs :guard (and (array2p '$c M)
 			      (let ((dims (dimensions '$c M)))
-				   (= (first dims) 
+				   (= (first dims)
 				      (second dims))))))
   (let ((dims (dimensions '$c M)))
        (if (mbt (and (alist2p '$c M)
-		     (= (first dims) 
+		     (= (first dims)
 			(second dims))))
 	   (let ((dim1 (first dims)))
 	        (determinant-inverse-loop (compress2 '$A (m-1 dim1))
@@ -8606,22 +8606,22 @@ At UW:
 					  (- (second (dimensions '$c M)) 1)))
 	   (mv M (/ M) 1 M))))
 
-(defun 
+(defun
   determinant (M)
   (declare (xargs :guard (and (array2p '$c M)
 			      (let ((dims (dimensions '$c M)))
-				   (= (first dims) 
+				   (= (first dims)
 				      (second dims))))))
   (mv-let (A B C D)
 	  (determinant-inverse M)
 	  (declare (ignore A B C))
 	  D))
 
-(defun 
+(defun
   m-/ (M)
   (declare (xargs :guard (and (array2p '$c M)
 			      (let ((dims (dimensions '$c M)))
-				   (= (first dims) 
+				   (= (first dims)
 				      (second dims))))))
   (mv-let (A B C D)
 	  (determinant-inverse M)
@@ -8630,14 +8630,14 @@ At UW:
 
 #|;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Eventually, we will prove that for square matrices
-;;  whenever the determinant is not 0, then m-/ 
+;;  whenever the determinant is not 0, then m-/
 ;;  computes the two-sided inverse; and whenever the
 ;;  determinant is 0 then there is no inverse.
 ;;  Also it will be proved that non-square matrices
 ;;  do not have two-sided inverses.
 
 ;;  Meanwhile the definition of singualar given
-;;  immediately below is replaced by the second one 
+;;  immediately below is replaced by the second one
 ;;  below.
 
 ;; (defun
@@ -8645,18 +8645,18 @@ At UW:
 ;;   (declare (xargs :guard (array2p '$c M)))
 ;;   (not (and (mbt (alist2p '$c M))
 ;;             (let ((dims (dimensions '$c M)))
-;;                  (= (first dims) 
+;;                  (= (first dims)
 ;;                     (second dims)))
 ;;             (= (determinant M) 0))))
 |#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun 
+(defun
   m-singularp (M)
   (declare (xargs :guard (array2p '$c M)
 		  :verify-guards nil))
   (not (and (mbt (alist2p '$c M))
 	    (let ((dims (dimensions '$c M)))
-	         (= (first dims) 
+	         (= (first dims)
 		    (second dims)))
 	    (m-= (m-* M (m-/ M))
 		 (m-1 (r M)))
@@ -8744,10 +8744,10 @@ At UW:
   :HINTS (("Goal"
 	   :IN-THEORY (DISABLE array2p-RI<->RJ)
 	   :USE (:INSTANCE
-		 array2p-RI<->RJ 
+		 array2p-RI<->RJ
 		 (NAME NAME1)))))
 
-(DEFTHM 
+(DEFTHM
   ALIST2P-RI<-ARI-1
   (IMPLIES (AND (ALIST2P NAME M)
 		(INTEGERP I)
@@ -8760,7 +8760,7 @@ At UW:
 		 alist2p-RI<-ARI
 		 (NAME NAME1)))))
 
-(DEFTHM 
+(DEFTHM
   Array2P-RI<-ARI-1
   (IMPLIES (AND (symbolp name1)
 		(Array2P NAME M)
@@ -8774,7 +8774,7 @@ At UW:
 		 array2p-RI<-ARI
 		 (NAME NAME1)))))
 
-(DEFTHM 
+(DEFTHM
   ALIST2P-CI<-ACI-1
   (IMPLIES (AND (ALIST2P NAME M)
 		(INTEGERP I)
@@ -8787,7 +8787,7 @@ At UW:
 		 alist2p-CI<-ACI
 		 (NAME NAME1)))))
 
-(DEFTHM 
+(DEFTHM
   Array2P-CI<-ACI-1
   (IMPLIES (AND (symbolp name1)
 		(Array2P NAME M)
@@ -8830,7 +8830,7 @@ At UW:
 		(< J (CAR (DIMENSIONS '$ARG B)))
 		(< J (CAR (DIMENSIONS '$ARG C)))
 		(< N (CADR (DIMENSIONS '$ARG C))))
-	  (EQUAL (DIMENSIONS 
+	  (EQUAL (DIMENSIONS
 		  name
 		  (CAR (DETERMINANT-INVERSE-LOOP A
 						 B
@@ -8862,7 +8862,7 @@ At UW:
 		(< J (CAR (DIMENSIONS '$ARG B)))
 		(< J (CAR (DIMENSIONS '$ARG C)))
 		(< N (CADR (DIMENSIONS '$ARG C))))
-	  (EQUAL (DIMENSIONS 
+	  (EQUAL (DIMENSIONS
 		  name
 		  (CADR (DETERMINANT-INVERSE-LOOP A
 						  B
@@ -8894,7 +8894,7 @@ At UW:
 		(< J (CAR (DIMENSIONS '$ARG B)))
 		(< J (CAR (DIMENSIONS '$ARG C)))
 		(< N (CADR (DIMENSIONS '$ARG C))))
-	  (EQUAL (DIMENSIONS 
+	  (EQUAL (DIMENSIONS
 		  name
 		  (CADDR (DETERMINANT-INVERSE-LOOP A
 						   B
@@ -8934,7 +8934,7 @@ At UW:
 						      J
 						      K
 						      N))))
-  
+
   :hints (("Goal"
 	   :do-not '(generalize))))
 
@@ -8966,7 +8966,7 @@ At UW:
 						       J
 						       K
 						       N))))
-  
+
   :hints (("Goal"
 	   :do-not '(generalize))))
 
@@ -8998,7 +8998,7 @@ At UW:
 							J
 							K
 							N))))
-  
+
   :hints (("Goal"
 	   :do-not '(generalize))))
 
@@ -9030,7 +9030,7 @@ At UW:
 						       J
 						       K
 						       N))))
-  
+
   :hints (("Goal"
 	   :do-not '(generalize))))
 
@@ -9062,7 +9062,7 @@ At UW:
 						       J
 						       K
 						       N))))
-  
+
   :hints (("Goal"
 	   :do-not '(generalize))))
 
@@ -9094,7 +9094,7 @@ At UW:
 							J
 							K
 							N))))
-  
+
   :hints (("Goal"
 	   :do-not '(generalize))))
 
@@ -9104,19 +9104,19 @@ At UW:
 	   (EQUAL (DIMENSIONS
 		   '$ARG
 		   (CAR
-		    (DETERMINANT-INVERSE-LOOP 
-		     (COMPRESS2 
+		    (DETERMINANT-INVERSE-LOOP
+		     (COMPRESS2
 		      '$ARG
 		      (M-1 (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2
 		      '$ARG
 		      (M-1 (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2 '$ARG M)
-		     D 
+		     D
 		     0
-		     (+ -1 
+		     (+ -1
 			(CAR (DIMENSIONS '$ARG M)))
-		     0 
+		     0
 		     (+ -1
 			(CAdR (DIMENSIONS '$ARG M))))))
 		  (LIST (CAR (DIMENSIONS '$ARG M))
@@ -9143,29 +9143,29 @@ At UW:
 	   (EQUAL (DIMENSIONS
 		   '$ARG
 		   (CAR
-		    (DETERMINANT-INVERSE-LOOP 
-		     (COMPRESS2 
+		    (DETERMINANT-INVERSE-LOOP
+		     (COMPRESS2
 		      '$ARG
 		      (M-1 (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2
 		      '$ARG
 		      (M-1 (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2 '$ARG M)
-		     D 
+		     D
 		     0
-		     (+ -1 
+		     (+ -1
 			(CAR (DIMENSIONS '$ARG M)))
-		     0 
+		     0
 		     (+ -1
 			(CAR (DIMENSIONS '$ARG M))))))
 		  (LIST (CAR (DIMENSIONS '$ARG M))
 			(CAR (DIMENSIONS '$ARG M)))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (disable
      dimensions-DETERMINANT-INVERSE-LOOP-COMPRESS2-A)
-    :use 
+    :use
     dimensions-DETERMINANT-INVERSE-LOOP-COMPRESS2-A)))
 
 (defthm
@@ -9175,19 +9175,19 @@ At UW:
 		   '$ARG
 		   (CAdR
 		    (DETERMINANT-INVERSE-LOOP
-		     (COMPRESS2 
+		     (COMPRESS2
 		      '$ARG
 		      (M-1 (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2
 		      '$ARG
 		      (M-1 (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2 '$ARG M)
-		     D 
+		     D
 		     0
-		     (+ -1 
+		     (+ -1
 			(CAR (DIMENSIONS '$ARG M)))
-		     0 
-		     (+ -1 
+		     0
+		     (+ -1
 			(CAdR (DIMENSIONS '$ARG M))))))
 		  (LIST (CAR (DIMENSIONS '$ARG M))
 			(CAR (DIMENSIONS '$ARG M)))))
@@ -9214,25 +9214,25 @@ At UW:
 		   '$ARG
 		   (CAdR
 		    (DETERMINANT-INVERSE-LOOP
-		     (COMPRESS2 
+		     (COMPRESS2
 		      '$ARG
 		      (M-1 (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2
 		      '$ARG
 		      (M-1 (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2 '$ARG M)
-		     D 
+		     D
 		     0
-		     (+ -1 
+		     (+ -1
 			(CAR (DIMENSIONS '$ARG M)))
-		     0 
-		     (+ -1 
+		     0
+		     (+ -1
 			(CAR (DIMENSIONS '$ARG M))))))
 		  (LIST (CAR (DIMENSIONS '$ARG M))
 			(CAR (DIMENSIONS '$ARG M)))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (disable
      dimensions-DETERMINANT-INVERSE-LOOP-COMPRESS2-B)
     :use
@@ -9244,21 +9244,21 @@ At UW:
 	   (EQUAL (DIMENSIONS
 		   '$ARG
 		   (CAddR
-		    (DETERMINANT-INVERSE-LOOP 
-		     (COMPRESS2 
+		    (DETERMINANT-INVERSE-LOOP
+		     (COMPRESS2
 		      '$ARG
-		      (M-1 (CAR 
+		      (M-1 (CAR
 			    (DIMENSIONS '$ARG M))))
 		     (COMPRESS2
 		      '$ARG
-		      (M-1 
+		      (M-1
 		       (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2 '$ARG M)
-		     D 
+		     D
 		     0
-		     (+ -1 
+		     (+ -1
 			(CAR (DIMENSIONS '$ARG M)))
-		     0 
+		     0
 		     (+ -1
 			(CAdR (DIMENSIONS '$ARG M))))))
 		  (dimensions '$arg M)))
@@ -9284,28 +9284,28 @@ At UW:
 	   (EQUAL (DIMENSIONS
 		   '$ARG
 		   (CAddR
-		    (DETERMINANT-INVERSE-LOOP 
-		     (COMPRESS2 
+		    (DETERMINANT-INVERSE-LOOP
+		     (COMPRESS2
 		      '$ARG
-		      (M-1 (CAR 
+		      (M-1 (CAR
 			    (DIMENSIONS '$ARG M))))
 		     (COMPRESS2
 		      '$ARG
-		      (M-1 
+		      (M-1
 		       (CAR (DIMENSIONS '$ARG M))))
 		     (COMPRESS2 '$ARG M)
-		     D 
+		     D
 		     0
-		     (+ -1 
+		     (+ -1
 			(CAR (DIMENSIONS '$ARG M)))
-		     0 
+		     0
 		     (+ -1
 			(CAR (DIMENSIONS '$ARG M))))))
 		  (dimensions '$arg M)))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
-    (disable 
+    :in-theory
+    (disable
      dimensions-DETERMINANT-INVERSE-LOOP-COMPRESS2-C)
     :use
     dimensions-DETERMINANT-INVERSE-LOOP-COMPRESS2-C)))
@@ -9322,21 +9322,21 @@ At UW:
 (defthm
   alist2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-A
   (IMPLIES (ALIST2P '$C M)
-	   (alist2p name 
+	   (alist2p name
 		    (CAR
-		     (DETERMINANT-INVERSE-LOOP 
-		      (COMPRESS2 
+		     (DETERMINANT-INVERSE-LOOP
+		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
+		      0
 		      (+ -1
 			 (CAdR (DIMENSIONS '$ARG M)))))))
   :hints (("Goal"
@@ -9358,29 +9358,29 @@ At UW:
   (IMPLIES (and (ALIST2P '$C M)
 		(EQUAL (CAR (DIMENSIONS '$ARG M))
 		       (CADR (DIMENSIONS '$ARG M))))
-	   (alist2p name 
+	   (alist2p name
 		    (CAR
-		     (DETERMINANT-INVERSE-LOOP 
-		      (COMPRESS2 
+		     (DETERMINANT-INVERSE-LOOP
+		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
+		      0
 		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (disable
      alist2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-A)
-    :use 
+    :use
     alist2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-A)))
 
 (defthm
@@ -9389,19 +9389,19 @@ At UW:
 	   (alist2p name
 		    (CAdR
 		     (DETERMINANT-INVERSE-LOOP
-		      (COMPRESS2 
+		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
-		      (+ -1 
+		      0
+		      (+ -1
 			 (CAdR (DIMENSIONS '$ARG M)))))))
   :hints (("Goal"
 	   :in-theory (disable alist2p-DETERMINANT-INVERSE-LOOP-B)
@@ -9425,23 +9425,23 @@ At UW:
 	   (alist2p name
 		    (CAdR
 		     (DETERMINANT-INVERSE-LOOP
-		      (COMPRESS2 
+		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
-		      (+ -1 
+		      0
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (disable
      alist2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B)
     :use
@@ -9452,21 +9452,21 @@ At UW:
   (IMPLIES (ALIST2P '$C M)
 	   (alist2p name
 		    (CAddR
-		     (DETERMINANT-INVERSE-LOOP 
-		      (COMPRESS2 
+		     (DETERMINANT-INVERSE-LOOP
+		      (COMPRESS2
 		       '$ARG
-		       (M-1 (CAR 
+		       (M-1 (CAR
 			     (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
-		       (M-1 
+		       (M-1
 			(CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
+		      0
 		      (+ -1
 			 (CAdR (DIMENSIONS '$ARG M)))))))
   :hints (("Goal"
@@ -9490,27 +9490,27 @@ At UW:
 		       (CADR (DIMENSIONS '$ARG M))))
 	   (alist2p name
 		    (CAddR
-		     (DETERMINANT-INVERSE-LOOP 
-		      (COMPRESS2 
+		     (DETERMINANT-INVERSE-LOOP
+		      (COMPRESS2
 		       '$ARG
-		       (M-1 (CAR 
+		       (M-1 (CAR
 			     (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
-		       (M-1 
+		       (M-1
 			(CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
+		      0
 		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
-    (disable 
+    :in-theory
+    (disable
      alist2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-C)
     :use
     alist2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-C)))
@@ -9534,21 +9534,21 @@ At UW:
 		      (CAR (DIMENSIONS '$ARG M)))
 		   *MAXIMUM-POSITIVE-32-BIT-INTEGER*)
 		(symbolp name))
-	   (array2p name 
+	   (array2p name
 		    (CAR
-		     (DETERMINANT-INVERSE-LOOP 
-		      (COMPRESS2 
+		     (DETERMINANT-INVERSE-LOOP
+		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
+		      0
 		      (+ -1
 			 (CAdR (DIMENSIONS '$ARG M)))))))
   :hints (("Goal"
@@ -9579,26 +9579,26 @@ At UW:
 		(EQUAL (CAR (DIMENSIONS '$ARG M))
 		       (CADR (DIMENSIONS '$ARG M)))
 		(symbolp name))
-	   (array2p name 
+	   (array2p name
 		    (CAR
-		     (DETERMINANT-INVERSE-LOOP 
-		      (COMPRESS2 
+		     (DETERMINANT-INVERSE-LOOP
+		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
+		      0
 		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (disable
      array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-A
      array2p-rewrite-linear-1)
@@ -9618,19 +9618,19 @@ At UW:
 	   (array2p name
 		    (CAdR
 		     (DETERMINANT-INVERSE-LOOP
-		      (COMPRESS2 
+		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
-		      (+ -1 
+		      0
+		      (+ -1
 			 (CAdR (DIMENSIONS '$ARG M)))))))
   :hints (("Goal"
 	   :in-theory (disable array2p-DETERMINANT-INVERSE-LOOP-B)
@@ -9655,23 +9655,23 @@ At UW:
 	   (array2p name
 		    (CAdR
 		     (DETERMINANT-INVERSE-LOOP
-		      (COMPRESS2 
+		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
 		       (M-1 (CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
-		      (+ -1 
+		      0
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (disable
      array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B
      array2p-rewrite-linear-1)
@@ -9690,21 +9690,21 @@ At UW:
 		(symbolp name))
 	   (array2p name
 		    (CAddR
-		     (DETERMINANT-INVERSE-LOOP 
-		      (COMPRESS2 
+		     (DETERMINANT-INVERSE-LOOP
+		      (COMPRESS2
 		       '$ARG
-		       (M-1 (CAR 
+		       (M-1 (CAR
 			     (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
-		       (M-1 
+		       (M-1
 			(CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
+		      0
 		      (+ -1
 			 (CAdR (DIMENSIONS '$ARG M)))))))
   :hints (("Goal"
@@ -9729,26 +9729,26 @@ At UW:
 		(symbolp name))
 	   (array2p name
 		    (CAddR
-		     (DETERMINANT-INVERSE-LOOP 
-		      (COMPRESS2 
+		     (DETERMINANT-INVERSE-LOOP
+		      (COMPRESS2
 		       '$ARG
-		       (M-1 (CAR 
+		       (M-1 (CAR
 			     (DIMENSIONS '$ARG M))))
 		      (COMPRESS2
 		       '$ARG
-		       (M-1 
+		       (M-1
 			(CAR (DIMENSIONS '$ARG M))))
 		      (COMPRESS2 '$ARG M)
-		      D 
+		      D
 		      0
-		      (+ -1 
+		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))
-		      0 
+		      0
 		      (+ -1
 			 (CAR (DIMENSIONS '$ARG M)))))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (disable
      array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-C
      array2p-rewrite-linear-1)
@@ -9765,10 +9765,10 @@ At UW:
 		       (second (dimensions name M))))
 		(array2p name (m-/ M)))
   :hints (("Goal"
-	   :in-theory 
-	   (disable 
+	   :in-theory
+	   (disable
 	    array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B-1)
-	   :use 
+	   :use
 	   (:instance
 	    array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B-1
 	    (D 1)))))
@@ -9779,10 +9779,10 @@ At UW:
 		(equal (r M)(c M)))
 	   (matrixp (r M)(c M)(m-/ M)))
   :hints (("Goal"
-	   :in-theory 
-	   (disable 
+	   :in-theory
+	   (disable
 	    array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B-1)
-	   :use 
+	   :use
 	   (:instance
 	    array2p-DETERMINANT-INVERSE-LOOP-COMPRESS2-B-1
 	    (D 1)
@@ -9799,12 +9799,12 @@ At UW:
 	   (ARRAY2P '$ARG1
 		    (M-* M
 			 (CADR
-			  (DETERMINANT-INVERSE-LOOP 
+			  (DETERMINANT-INVERSE-LOOP
 			   (COMPRESS2 '$ARG (M-1 (CAR (DIMENSIONS '$ARG M))))
 			   (COMPRESS2 '$ARG (M-1 (CAR (DIMENSIONS '$ARG M))))
 			   (COMPRESS2 '$ARG M)
-			   1 
-			   0 
+			   1
+			   0
 			   (+ -1 (CAR (DIMENSIONS '$ARG M)))
 			   0
 			   (+ -1 (CAR (DIMENSIONS '$ARG M))))))))
@@ -9816,12 +9816,12 @@ At UW:
 		  (name '$arg)
 		  (M1 M)
 		  (M2 (CADR
-		       (DETERMINANT-INVERSE-LOOP 
+		       (DETERMINANT-INVERSE-LOOP
 			(COMPRESS2 '$ARG (M-1 (CAR (DIMENSIONS '$ARG M))))
 			(COMPRESS2 '$ARG (M-1 (CAR (DIMENSIONS '$ARG M))))
 			(COMPRESS2 '$ARG M)
-			1 
-			0 
+			1
+			0
 			(+ -1 (CAR (DIMENSIONS '$ARG M)))
 			0
 			(+ -1 (CAR (DIMENSIONS '$ARG M)))))))
@@ -9836,12 +9836,12 @@ At UW:
 		       (CADR (DIMENSIONS '$ARG M))))
 	   (ARRAY2P '$ARG1
 		    (M-* (CADR
-			  (DETERMINANT-INVERSE-LOOP 
+			  (DETERMINANT-INVERSE-LOOP
 			   (COMPRESS2 '$ARG (M-1 (CAR (DIMENSIONS '$ARG M))))
 			   (COMPRESS2 '$ARG (M-1 (CAR (DIMENSIONS '$ARG M))))
 			   (COMPRESS2 '$ARG M)
-			   1 
-			   0 
+			   1
+			   0
 			   (+ -1 (CAR (DIMENSIONS '$ARG M)))
 			   0
 			   (+ -1 (CAR (DIMENSIONS '$ARG M)))))
@@ -9854,12 +9854,12 @@ At UW:
 		  (name '$arg)
 		  (M2 M)
 		  (M1 (CADR
-		       (DETERMINANT-INVERSE-LOOP 
+		       (DETERMINANT-INVERSE-LOOP
 			(COMPRESS2 '$ARG (M-1 (CAR (DIMENSIONS '$ARG M))))
 			(COMPRESS2 '$ARG (M-1 (CAR (DIMENSIONS '$ARG M))))
 			(COMPRESS2 '$ARG M)
-			1 
-			0 
+			1
+			0
 			(+ -1 (CAR (DIMENSIONS '$ARG M)))
 			0
 			(+ -1 (CAR (DIMENSIONS '$ARG M)))))))

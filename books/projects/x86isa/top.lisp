@@ -9,13 +9,6 @@
 ;; Misc. tools
 (include-book "tools/execution/top" :ttags :all)
 
-;; Proof utilities
-(include-book "proofs/utilities/programmer-level-memory-utils" :ttags :all)
-(include-book "proofs/utilities/physical-memory-utils" :ttags :all)
-(include-book "proofs/utilities/system-level-memory-utils" :ttags :all)
-(include-book "proofs/utilities/paging-utils" :ttags :all)
-(include-book "proofs/utilities/environment-utils" :ttags :all)
-
 ;; Proof books
 (include-book "proofs/top" :ttags :all)
 
@@ -41,16 +34,10 @@
   program-execution
   model-validation
   proof-utilities
-  program-proofs
+  code-proofs
   Contributors
   Publications
   TO-DO))
-
-(defxdoc program-proofs
-  :parents (X86ISA)
-  :short "Verification of various x86 programs"
-  :long "<p>Documentation topic coming soon!</p>"
-  )
 
 (defsection Introduction
   :parents (x86isa)
@@ -267,7 +254,10 @@ two modes is out of the scope of this project.</p>
   :short "Building books related to the x86 ISA and the machine-code
   analysis framework"
 
-  :long "<p>Two ways of building the X86ISA books are:</p>
+  :long "<p>The authors of these books generally prefer to use ACL2(p) for
+certification, but of course, you are free to use ACL2.</p>
+
+<p>Two ways of building the X86ISA books are:</p>
 
 <ol>
 

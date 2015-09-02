@@ -6,7 +6,7 @@
 
 (defun-sk exists-some-exitpoint (s)
   (exists alpha (exitpoint (run-fn s alpha))))
-                     
+
 
 (local (in-theory (disable exists-some-exitpoint
                            exists-some-exitpoint-suff)))
@@ -43,7 +43,7 @@
                     (implies (natp k)
                              (<= exitpoint-steps k))
                     (exitpoint (run-fn s exitpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -55,14 +55,14 @@
    :hints (("Goal"
             :use ((:instance clock-fn-tail-inv
                              (steps 0))))))
- 
+
  (defthm clock-fn-provide-exitpoint
    (implies (exitpoint (run-fn s k))
             (exitpoint (run-fn s (clock-fn s))))
    :hints (("Goal"
             :use ((:instance clock-fn-tail-inv
                              (steps 0))))))
- 
+
  (defthm clock-fn-is-minimal
    (implies (and (exitpoint (run-fn s k))
                  (natp k))
@@ -88,7 +88,7 @@
  (defun induction-hint (s n)
    (if (zp n) (list s n)
      (induction-hint (step-fn s) (1- n)))))
- 
+
 (local
  (defthmd step-fn-run-fn-is-run-fn-step-fn
    (equal (step-fn (run-fn s n))
@@ -111,28 +111,28 @@
                             (p (car (inv-witness s)))
                             (m (1+ (mv-nth 1 (inv-witness s)))))))
           ("Subgoal 3"
-           :cases ((equal (mv-nth 1 (inv-witness s)) 
+           :cases ((equal (mv-nth 1 (inv-witness s))
                           (clock-fn (car (inv-witness s))))))
           ("Subgoal 3.1"
            :use ((:instance (:definition exists-some-exitpoint)
                             (s (car (inv-witness s))))
                  (:instance clock-fn-provide-exitpoint
                             (s (car (inv-witness s)))
-                            (k (exists-some-exitpoint-witness 
+                            (k (exists-some-exitpoint-witness
                                 (car (inv-witness s)))))))
           ("Subgoal 3.2"
            :use ((:instance (:definition exists-some-exitpoint)
                             (s (car (inv-witness s))))
                  (:instance clock-fn-is-natp
                             (s (car (inv-witness s)))
-                            (k (exists-some-exitpoint-witness 
+                            (k (exists-some-exitpoint-witness
                                 (car (inv-witness s)))))))
           ("Subgoal 4"
            :use ((:instance step-fn-run-fn-is-run-fn-step-fn
                             (s (car (inv-witness s)))
                             (n (mv-nth 1 (inv-witness s))))))))
-                 
-                            
+
+
 (defthm |inv and exitpoint implies post|
   (implies (and (inv s)
                 (exitpoint s))

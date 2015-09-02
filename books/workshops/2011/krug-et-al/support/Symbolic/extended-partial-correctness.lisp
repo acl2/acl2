@@ -24,7 +24,7 @@ discuss the problem and the solution.
 The Problem (and some Background)
 ---------------------------------
 
-Recall that a partial correctness proof looks like the following: 
+Recall that a partial correctness proof looks like the following:
 
 o   pre(s) /\ exists-exitpoint (s) => run(s,clock(s)) = modify(s)
 
@@ -52,9 +52,9 @@ It would have been nice if we could have proven a theorem of the form pre-Q(s)
 => nextc-p(s) = nextc-p(modify(s)).  Unfortunately, given the definition of
 nextc (in partial-correctness.lisp and total-correctness.lisp) and the
 correctness of Q above, this is not a theorem when Q is proven partially
-correct.  The theorem is something like: 
+correct.  The theorem is something like:
 
-o  pre-Q(s) /\ exists-exitpoint-Q (s) => nextc-p (s) = nextc-p (modify (s))  
+o  pre-Q(s) /\ exists-exitpoint-Q (s) => nextc-p (s) = nextc-p (modify (s))
 
 But now we get into trouble.  We want to do the symbolic simulation in order to
 prove the persistence of assertions over cutpoints.  In that context we know
@@ -88,7 +88,7 @@ challenge therefore is to solve the problem in a clean way.
 (in-theory (disable o< o+ o- o* o^))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(encapsulate 
+(encapsulate
  (((epc-next *) => *)
   ((epc-in-sub *) => *)
   ((epc-pre-sub *) => *)
@@ -107,16 +107,16 @@ challenge therefore is to solve the problem in a clean way.
  (local (defun epc-pre-sub (s) (declare (ignore s)) nil))
  (local (defun epc-modify-sub (s) s))
  (defun-sk epc-exists-exitpoint-sub (s) (exists n (not (epc-in-sub (epc-run s n)))))
-  
+
  (defp epc-steps-to-exitpoint-tail-sub (s i)
    (if (not (epc-in-sub s))
-       i 
+       i
      (epc-steps-to-exitpoint-tail-sub (epc-next s) (1+ i))))
 
  (defun epc-steps-to-exitpoint-sub (s)
    (let ((steps (epc-steps-to-exitpoint-tail-sub s 0)))
      (if (not (epc-in-sub (epc-run s steps)))
-         steps 
+         steps
        (omega))))
 
  (defun epc-next-exitpoint-sub (s) (epc-run s (epc-steps-to-exitpoint-sub s)))
@@ -134,43 +134,43 @@ challenge therefore is to solve the problem in a clean way.
  (local (defun epc-modify-main (s) s))
 
  (defp epc-next-epc-cutpoint-main (s)
-   (if (or (epc-cutpoint-main s) 
+   (if (or (epc-cutpoint-main s)
            (not (epc-in-main s)))
        s
      (epc-next-epc-cutpoint-main (if (epc-pre-sub s) (epc-modify-sub s) (epc-next s)))))
- 
+
  (defun-sk exists-epc-next-cutpoint (s) (exists n (epc-cutpoint-main (epc-run s n))))
- 
+
  (defthm |no main cutpoint in epc-sub|
    (implies (epc-in-sub s)
             (not (epc-cutpoint-main s))))
- 
+
  (defthm |epc-in-main implies in epc-sub|
    (implies (epc-in-sub s)
             (epc-in-main s)))
- 
+
  (defthm |epc-pre-sub is epc-in-sub|
    (implies (epc-pre-sub s) (epc-in-sub s)))
- 
- 
- ;; Here we add all the other constraints on assertions.  
- 
+
+
+ ;; Here we add all the other constraints on assertions.
+
  (defthm |epc-assertion implies cutpoint|
    (implies (epc-assertion-main s0 s)
             (or (epc-cutpoint-main s)
                 (not (epc-in-main s))))
    :rule-classes :forward-chaining)
- 
+
  (defthm |epc-pre main implies assertion|
    (implies (epc-pre-main s)
             (epc-assertion-main s s)))
- 
+
  (defthm |epc-assertion main implies post|
    (implies (and (epc-assertion-main s0 s)
                  (not (epc-in-main s)))
             (equal s (epc-modify-main s0)))
    :rule-classes nil)
- 
+
  (defthm |epc-assertions for cutpoint definition|
    (implies (and (epc-assertion-main s0 s)
                  (epc-in-main s)
@@ -216,13 +216,13 @@ challenge therefore is to solve the problem in a clean way.
 
 (local (defstub default-aux-epc-state () => *))
 
-(local 
+(local
  (defp o-steps-to-cutpoint-tail-main (s i)
-   (if (or (epc-cutpoint-main s) 
+   (if (or (epc-cutpoint-main s)
            (not (epc-in-main s)))
-       i 
+       i
      (o-steps-to-cutpoint-tail-main (epc-next s) (1+ i)))))
- 
+
 (local
  (defun o-steps-to-epc-cutpoint-main (s)
    (let ((steps (o-steps-to-cutpoint-tail-main s 0)))
@@ -243,7 +243,7 @@ challenge therefore is to solve the problem in a clean way.
 ;; OK we need to deal with both forms of epc-next-cutpoint definition.  To do this,
 ;; I first prove the standard theorem about epc-steps-to-exitpoint-sub.
 
-(local 
+(local
  (defun cutpoint-induction (k steps s)
    (if (zp k) (list k steps s)
      (cutpoint-induction (1- k) (1+ steps) (epc-next s)))))
@@ -263,10 +263,10 @@ challenge therefore is to solve the problem in a clean way.
                      (implies (natp k)
                               (<= exitpoint-steps k))
                      (not (epc-in-sub (epc-run s exitpoint-steps))))))
-     :hints (("Goal" 
+     :hints (("Goal"
               :in-theory (enable natp)
               :induct (cutpoint-induction k steps s)))))
-  
+
  (defthm steps-to-exitpoint-is-ordinal
   (implies (not (natp (epc-steps-to-exitpoint-sub s)))
            (equal (epc-steps-to-exitpoint-sub s) (omega)))
@@ -314,7 +314,7 @@ challenge therefore is to solve the problem in a clean way.
 ;; I'll do is essentially say that if some cutpoint is reachable then both
 ;; definitions give the minimum reachable cutpoint from s.  As such from
 ;; minimality they must be equal.  So the trick is to relate the new definition
-;; of epc-next-cutpoint with some form of definition of steps-to-cutpoint. 
+;; of epc-next-cutpoint with some form of definition of steps-to-cutpoint.
 
 ;; This is a feedback lemma (that is, proven after I saw ACL2 could not reduce
 ;; o< to <).  This lemma should really be in the ordinal books, and is one of
@@ -357,26 +357,26 @@ challenge therefore is to solve the problem in a clean way.
 ;; induction here is just a generalization of cutpoint-induction.  In
 ;; particular, we just add another case in which the control is poised to be at
 ;; the entry-point of the subroutine.  Notice that the induction function is
-;; not easy to admit. 
+;; not easy to admit.
 
 (local
  (defun comp-cutpoint-induction (s k)
-   (declare 
-    (xargs 
+   (declare
+    (xargs
      :measure (nfix k)
      :hints (("Subgoal 1.1"
-              :in-theory (disable |epc-pre-sub is epc-in-sub| 
+              :in-theory (disable |epc-pre-sub is epc-in-sub|
                                   steps-to-exitpoint-is-natp)
               :use ((:instance |epc-pre-sub is epc-in-sub|)
                     (:instance steps-to-exitpoint-is-natp
                                (k (epc-exists-exitpoint-sub-witness s))))))))
-                   
+
   (if (zp k) (list s k)
     (if (and (epc-pre-sub s) (epc-exists-exitpoint-sub s))
-        (comp-cutpoint-induction (epc-modify-sub s) 
+        (comp-cutpoint-induction (epc-modify-sub s)
                             (- k (epc-steps-to-exitpoint-sub s)))
       (comp-cutpoint-induction (epc-next s) (1- k))))))
-  
+
 
 ;; The epc-next important concept is that of no-cutpoint.  This says that there is
 ;; no cutpoint in less than n steps from s.  This definition is used to define
@@ -389,8 +389,8 @@ challenge therefore is to solve the problem in a clean way.
        (and (not (or (epc-cutpoint-main (epc-run s n))
                      (not (epc-in-main (epc-run s n)))))
             (no-cutpoint s n))))))
- 
-;; Now we prove that no-cutpoint indeed implies there is no cutpoint. 
+
+;; Now we prove that no-cutpoint indeed implies there is no cutpoint.
 
 (local
  (defthm no-cutpoint-implies-not-cutpoint
@@ -411,7 +411,7 @@ challenge therefore is to solve the problem in a clean way.
 ;; no-cutpoint does not hold.  This is a standard and (I believe) well
 ;; documented trick with ACL2.
 
-(local 
+(local
  (defun no-cutpoint-witness (s n)
    (if (zp n) 0
      (if (or (epc-cutpoint-main (epc-run s n))
@@ -440,7 +440,7 @@ challenge therefore is to solve the problem in a clean way.
 ;; because there is no epc-cutpoint-main as long as we are epc-in-main.
 
 (local
- (defthm not-cutpoint-epc-pre-sub 
+ (defthm not-cutpoint-epc-pre-sub
    (implies (and (natp k)
                  (< k (epc-steps-to-exitpoint-sub s)))
             (and (not (epc-cutpoint-main (epc-run s k)))
@@ -475,8 +475,8 @@ challenge therefore is to solve the problem in a clean way.
 
 ;; Now we get to a couple of hack lemmas that can be safely ignored.  First we
 ;; do not want to deal with (epc-next s) in the context of no-cutpoint.  So we
-;; rewrite that term. 
- 
+;; rewrite that term.
+
 (local
  (defthm epc-next-no-cutpoint
    (implies (and (not (epc-cutpoint-main s))
@@ -484,9 +484,9 @@ challenge therefore is to solve the problem in a clean way.
                  (natp n))
             (equal (no-cutpoint (epc-next s) n)
                    (no-cutpoint s (1+ n))))))
- 
+
 (local
- (in-theory (disable epc-exists-exitpoint-sub-suff 
+ (in-theory (disable epc-exists-exitpoint-sub-suff
                      epc-exists-exitpoint-sub)))
 
 ;; We also prove that if a cutpoint holds then no-cutpoint is nil.  This is
@@ -518,14 +518,14 @@ challenge therefore is to solve the problem in a clean way.
 ;; schemes are not exported.  For details about this issue, see :DOC
 ;; subversive-recursions.  So we define a new recursive epc-run-fnn, prove it is
 ;; equal to epc-run, and then use it when we need induction.
-                              
+
 
 (local
  (defun epc-run-fnn (s n)
    (if (zp n) s (epc-run-fnn (epc-next s) (1- n)))))
 
 ;; The trigger is the obvious one, it rewrites epc-run to epc-run-fnn when we need it.
- 
+
 (local
  (defthmd epc-run-fnn-trigger
    (equal (epc-run s n)
@@ -584,7 +584,7 @@ challenge therefore is to solve the problem in a clean way.
 
 
 ;; Now we prove that if no-cutpoint holds for s and n then it also holds for
-;; (epc-run s k) for n-k steps. 
+;; (epc-run s k) for n-k steps.
 
 (local
  (defthmd no-cutpoint-epc-run-reduction
@@ -615,9 +615,9 @@ challenge therefore is to solve the problem in a clean way.
 
 
 ;; Thus we also know that by virtue of epc-run-plus-reduction we can prove that
-;; (epc-run s n) is equal to (epc-run (epc-modify-sub s) (n - steps)).  
+;; (epc-run s n) is equal to (epc-run (epc-modify-sub s) (n - steps)).
 
-(local           
+(local
  (defthm pre-implies-epc-run-plus
    (implies (and (epc-pre-sub s)
                  (natp n)
@@ -662,9 +662,9 @@ challenge therefore is to solve the problem in a clean way.
 ;; start with the definition of the traditional epc-next-cutpoint first.
 
 (local
- (encapsulate 
+ (encapsulate
   ()
-  
+
   (local
    (defthmd steps-to-cutpoint-tail-inv
      (implies (and (or (epc-cutpoint-main (epc-run s k))
@@ -679,15 +679,15 @@ challenge therefore is to solve the problem in a clean way.
                      (or (epc-cutpoint-main (epc-run s cutpoint-steps))
                          (not (epc-in-main (epc-run s cutpoint-steps)))))))
      :rule-classes :forward-chaining
-     :hints (("Goal" 
+     :hints (("Goal"
               :in-theory (enable natp)
               :induct (cutpoint-induction k steps s)))))
-  
+
   (defthm steps-to-cutpoint-is-ordinal
     (implies (not (natp (o-steps-to-epc-cutpoint-main s)))
              (equal (o-steps-to-epc-cutpoint-main s) (omega)))
     :rule-classes :forward-chaining)
-  
+
   (defthm steps-to-cutpoint-is-natp
     (implies (or (epc-cutpoint-main (epc-run s k))
                  (not (epc-in-main (epc-run s k))))
@@ -696,7 +696,7 @@ challenge therefore is to solve the problem in a clean way.
     :hints (("Goal"
              :use ((:instance steps-to-cutpoint-tail-inv
                               (steps 0))))))
-  
+
   (defthm steps-to-cutpoint-provide-cutpoint
     (implies (or (epc-cutpoint-main (epc-run s k))
                  (not (epc-in-main (epc-run s k))))
@@ -706,7 +706,7 @@ challenge therefore is to solve the problem in a clean way.
     :hints (("Goal"
              :use ((:instance steps-to-cutpoint-tail-inv
                               (steps 0))))))
-  
+
   (defthm steps-to-cutpoint-is-minimal
     (implies (and (or (epc-cutpoint-main (epc-run s k))
                       (not (epc-in-main (epc-run s k))))
@@ -761,7 +761,7 @@ challenge therefore is to solve the problem in a clean way.
 ;; steps-to-cutpoint itself and clean this up.  Note that we have already
 ;; proven that steps-to-cutpoint is a natp when a cutpoint is reachable from s.
 
-(local 
+(local
  (defthmd cutpoint-implies-no-cutpoint-steps
    (implies (or (epc-cutpoint-main (epc-run s k))
                 (not (epc-in-main (epc-run s k))))
@@ -804,7 +804,7 @@ challenge therefore is to solve the problem in a clean way.
    :rule-classes nil
    :hints (("Goal"
             :expand (epc-run s k)))))
-                
+
 
 ;; Now we can just prove that the epc-next-cutpoint  of (epc-next s) under the proper
 ;; condition is just the same as its traditional definition.
@@ -839,15 +839,15 @@ challenge therefore is to solve the problem in a clean way.
                              (s (epc-next s))))))))
 
 (local (include-book "vanilla-partial-correctness"))
-          
+
 (defp epc-exitsteps-main-tail (s i)
   (if (not (epc-in-main s)) i
     (epc-exitsteps-main-tail (epc-next s) (1+ i))))
-      
+
 (defun epc-exitsteps-main (s)
   (let ((steps (epc-exitsteps-main-tail s 0)))
     (if (not (epc-in-main (epc-run s steps)))
-        steps 
+        steps
       (omega))))
 
 (defun-sk epc-exists-exitpoint-main (s)
@@ -857,7 +857,7 @@ challenge therefore is to solve the problem in a clean way.
 (defun epc-next-exitpoint-main (s)
   (epc-run s (epc-exitsteps-main s)))
 
-  
+
 (local (in-theory (theory 'minimal-theory)))
 
 (local
@@ -871,10 +871,10 @@ challenge therefore is to solve the problem in a clean way.
   :otf-flg t
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance 
-                  (:functional-instance 
+           :use ((:instance
+                  (:functional-instance
                    |partial correctness|
-                   (cutpoint 
+                   (cutpoint
                     (lambda (s) (or (epc-cutpoint-main s) (not (epc-in-main s)))))
                    (assertion (lambda (s) (epc-assertion-main s0 s)))
                    (pre (lambda (s) (and (epc-pre-main s) (equal s0 s))))
@@ -883,11 +883,11 @@ challenge therefore is to solve the problem in a clean way.
                    (exists-exitpoint (lambda (s) (epc-exists-exitpoint-main s)))
                    (steps-to-exitpoint (lambda (s) (epc-exitsteps-main s)))
                    (steps-to-exitpoint-tail epc-exitsteps-main-tail)
-                   (steps-to-cutpoint 
+                   (steps-to-cutpoint
                     (lambda (s) (o-steps-to-epc-cutpoint-main s)))
-                   (steps-to-cutpoint-tail 
+                   (steps-to-cutpoint-tail
                     (lambda (s i) (o-steps-to-cutpoint-tail-main s i)))
-                   (next-state-cutpoint 
+                   (next-state-cutpoint
                     (lambda (s) (o-epc-next-epc-cutpoint-main s)))
                    (post (lambda (s) (equal s (epc-modify-main s0))))
                    (default-state default-aux-epc-state)
@@ -930,4 +930,3 @@ challenge therefore is to solve the problem in a clean way.
                        (epc-modify-main s))))
   :hints (("Goal"
            :use ((:instance composition-partial-aux (s0 s))))))
- 

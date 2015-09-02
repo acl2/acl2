@@ -9,7 +9,7 @@
 (in-package "ACL2")
 
 (defun sum1 (n)
-  (declare (xargs :measure (if (or (not (integerp n)) 
+  (declare (xargs :measure (if (or (not (integerp n))
                                    (<= n 0))
                                0
                              n)))
@@ -36,10 +36,7 @@
 ; Well, reading the definition, I can see that (sum2 i j) adds the numbers from
 ; (j - i) up to j, at least if i <= j.  That's the same as adding all the
 ; numbers from 0 to j, and then subtracting the numbers from 0 to (j - i - 1).
-; That observation is realized in the next lemma, which failed to prove until I
-; loaded an arithmetic library, as follows.
-
-(include-book "arithmetic/top-with-meta" :dir :system)
+; That observation is realized in the next lemma.
 
 (defthm sum2-as-sum1
   (implies (and (natp i) (natp j) (<= i j))

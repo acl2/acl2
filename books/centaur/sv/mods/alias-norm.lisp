@@ -826,8 +826,8 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
                :expand ((lhs-pairs-set-aliases x y aliases))
                :in-theory (disable (:d lhs-pairs-set-aliases))))
       :rule-classes :linear)
-    
-    
+
+
     (local (defthm svar-index-when-svar-boundedp
              (implies (svar-boundedp x bound)
                       (and (< (svar-index x) bound)

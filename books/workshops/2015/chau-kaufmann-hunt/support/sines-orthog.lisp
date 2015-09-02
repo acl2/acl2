@@ -684,7 +684,7 @@
             (equal (int-sin-orthog-m=n-prime a b (new-m) (new-c))
                    (- (sin-orthog-m=n b (new-m) (new-c))
                       (sin-orthog-m=n a (new-m) (new-c)))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :by (:functional-instance
                  ftc-2
                  (rcdfn
@@ -848,7 +848,7 @@
 (in-theory (disable riemann-sin-orthog-prime
                     riemann-sin-orthog-m=n-prime
                     riemann-sin-orthog-m!=n-prime))
- 
+
 (local
  (defthm limited-riemann-sin-orthog-prime-small-partition
    (implies (and (realp a) (standardp a)

@@ -22,17 +22,17 @@
 (defthm subset-mytips-orderly-append
   (subset (mytips (orderly-append x y taxon-index-alist))
           (append (mytips x) (mytips y)))
-  :hints (("Subgoal *1/1'''" :in-theory 
+  :hints (("Subgoal *1/1'''" :in-theory
            (disable subset-mytips-orderly-cons)
            :use (:instance subset-mytips-orderly-cons
-                           (x x1) 
+                           (x x1)
                            (y (orderly-append x2 y taxon-index-alist))))))
 
 (verify-guards orderly-append
-               :hints (("Subgoal 3'" 
+               :hints (("Subgoal 3'"
                         :in-theory (disable
                                     subset-mytips-orderly-append)
-                        :use (:instance 
+                        :use (:instance
                               subset-mytips-orderly-append
                               (x l4) (y l2)))
                        ("Subgoal 1'''" :cases ((consp l3)))))
@@ -44,8 +44,8 @@
 (defthm taspip-orderly-cons-flat
   (implies (and (taspip nil ans)
                 (good-taxon-index-halist taxon-index-alist)
-                (member-gen x 
-                            (get-taxa-from-taxon-index 
+                (member-gen x
+                            (get-taxa-from-taxon-index
                              taxon-index-alist)))
            (taspip flg (orderly-cons x ans taxon-index-alist)))
   :hints (("Subgoal *1/4''" :cases (flg))))
@@ -55,7 +55,7 @@
                 (consp ans)
                 (subset x (get-taxa-from-taxon-index taxon-index-alist))
                 (good-taxon-index-halist taxon-index-alist))
-           (taspip flg 
+           (taspip flg
                    (orderly-append x ans taxon-index-alist)))
   :hints (("Subgoal *1/3'4'" :cases (flg))))
 
@@ -64,7 +64,7 @@
                 (subset x (get-taxa-from-taxon-index taxon-index-alist))
                 (consp x)
                 (taspip nil ans))
-           (taspip flg 
+           (taspip flg
                    (orderly-append x ans taxon-index-alist)))
     :hints (("Subgoal *1/3'4'" :cases (flg))))
 
@@ -139,13 +139,13 @@
 ;
 ;(defthm len-through-sort-bdd-fringes
 ;  (implies (<= 2 (len bdd-fringes))
-;           (<= 2 (len 
+;           (<= 2 (len
 ;                 (sort-bdd-fringes bdd-fringes ftlt tia)))))
 ;
 ;(defthm taspip-flg-build-term-top
 ;  (implies (and (not (member-gen t bdd-fringes))
 ;                (not (member-gen nil bdd-fringes))
-;                (subset (btree-to-fringe 
+;                (subset (btree-to-fringe
 ;                         (car bdd-fringes)
 ;                         (build-taxa-list-tree taxa-list))
 ;                        (get-taxa-from-taxon-index
@@ -158,7 +158,7 @@
 ;           (taspip t (build-term-top bdd-fringes taxa-list)))
 ;  :hints (("Goal" :in-theory (disable btree-to-fringe-of-consp-explicit))
 ;          ))
- 
+
 
 (defthm subset-mytips-ocons-subset
   (implies (and (valid-bdd under1)
@@ -172,11 +172,11 @@
                     (depth full-taxa-list-tree))
                 (balanced-tree full-taxa-list-tree)
                 (subset
-                 (mytips (build-term-helper under1 
+                 (mytips (build-term-helper under1
                                             (subtrees-implying under1 under2)
                                             full-taxa-list-tree
                                             taxon-index-alist nil))
-                 (btree-to-fringe under1 
+                 (btree-to-fringe under1
                                   full-taxa-list-tree)))
            (subset (mytips (orderly-cons
                             (build-term-helper under1 (subtrees-implying under1 under2)
@@ -211,18 +211,18 @@
                 (balanced-tree full-taxa-list-tree)
                 (consp (q-and-c2 required-subtrees1 under1))
                 (subset
-                 (mytips (build-term-helper under1 
+                 (mytips (build-term-helper under1
                                             (subtrees-implying under1 under2)
                                             full-taxa-list-tree
                                             taxon-index-alist nil))
-                 (btree-to-fringe under1 
+                 (btree-to-fringe under1
                                   full-taxa-list-tree)))
            (subset (append
-                    (btree-to-fringe 
+                    (btree-to-fringe
                      (q-and-c2 required-subtrees1 under1)
                      full-taxa-list-tree)
                     (mytips (orderly-cons
-                             (build-term-helper under1 
+                             (build-term-helper under1
                                                 (subtrees-implying under1 under2)
                                                 full-taxa-list-tree
                                                 taxon-index-alist nil)
@@ -237,13 +237,13 @@
            :use (:instance subset-btree-to-fringe-subset
                            (x (q-and-c2 required-subtrees1 under1))
                            (y required-subtrees1)))
-          ("Goal'''" :use 
+          ("Goal'''" :use
            (:instance subset-append-subset
                       (x (btree-to-fringe
                           (q-and-c2 required-subtrees1 under1)
                           full-taxa-list-tree))
                       (z (mytips (orderly-cons
-                                  (build-term-helper under1 
+                                  (build-term-helper under1
                                                      (subtrees-implying under1 under2)
                                                      full-taxa-list-tree
                                                      taxon-index-alist nil)
@@ -368,7 +368,7 @@
    (member-gen
     (first-taxon (build-term-helper
                   required-subtrees1
-                  (subtrees-implying required-subtrees1 
+                  (subtrees-implying required-subtrees1
                                      required-subtrees2)
                   full-taxa-list-tree
                   taxon-index-alist nil))
@@ -382,30 +382,30 @@
            :use (:instance member-first-taxon-tips
                            (x (build-term-helper
                                required-subtrees1
-                               (subtrees-implying 
-                                required-subtrees1 
+                               (subtrees-implying
+                                required-subtrees1
                                 required-subtrees2)
                                full-taxa-list-tree
                                taxon-index-alist nil))))
-          ("Subgoal 2" :use 
+          ("Subgoal 2" :use
            (:instance taspip-flg-build-term-helper
-                      (under (subtrees-implying 
+                      (under (subtrees-implying
                               required-subtrees1
                               required-subtrees2))
                       (flg nil)
                       ))
-          ("Subgoal 1" :use 
+          ("Subgoal 1" :use
            (:instance mytips-build-term-subset-top
-                      (under (subtrees-implying 
-                              required-subtrees1 
+                      (under (subtrees-implying
+                              required-subtrees1
                               required-subtrees2))
                       (ans nil)))
           ("Subgoal 1'''" :use
            (:instance first-from-full-flatten
                       (x required-subtrees1)))
 ))
-              
-(verify-guards 
+
+(verify-guards
  build-term-helper
  :hints (("Goal"
           :do-not-induct t
@@ -417,19 +417,19 @@
          ("Subgoal 11'" :cases ((consp outstanding-taxa)))))
 
 
-(verify-guards 
+(verify-guards
  build-term-top
  :hints (("Goal" :do-not-induct t)
          ("Goal''" ; changed by J Moore after v5-0, from "Subgoal 1", for tau system
           :in-theory
           (disable not-member-through-sort valid-bdd-list-through-sort)
-          :use ((:instance 
+          :use ((:instance
                  not-member-through-sort
                  (x nil)
                  (y bdd-fringes)
                  (ftlt (build-taxa-list-tree taxa-list))
                  (tia (taxa-list-to-taxon-index taxa-list)))
-                (:instance 
+                (:instance
                  valid-bdd-list-through-sort
                  (x bdd-fringes)
                  (full-taxa-list-tree
@@ -443,15 +443,15 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns the tree implied by the bipartitions given.~/ 
-;  ~/ 
-;  Arguments: 
+;  Returns the tree implied by the bipartitions given.~/
+;  ~/
+;  Arguments:
 ;     (1) bdd-fringes - a list of bdd based bipartitions
 ;     (2) taxa-list - a list of taxa names
 
 ;  Details: BDD based bipartitions should have been created using the taxa-list
 ;           given.  Tree returned will be ordered according the order implied
-;           by the taxa list given. Same computation as build-term-top, but 
+;           by the taxa list given. Same computation as build-term-top, but
 ;           well-formedness of input is explicitly checked.
 ;           NOTE: Representation returned is rooted
 ;           at the *longest* bipartition but could/should probably use mv-root when

@@ -61,9 +61,9 @@
                            ;ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP
                            ;ACL2::EXPT-2-POSITIVE-RATIONAL-TYPE
                            default-+-2
-                           
+
                            )))
-                           
+
 
 ;;
 ;; OFFSET-RANGE-WRAP

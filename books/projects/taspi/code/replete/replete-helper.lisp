@@ -1,5 +1,5 @@
 (in-package "ACL2")
-(include-book "../gen-trees/sets-lists-trees") ;; mostly tree-preds, 
+(include-book "../gen-trees/sets-lists-trees") ;; mostly tree-preds,
                                                ;; but a couple thms with
                                                ;; member-gen and subset
 
@@ -392,7 +392,7 @@
                   (<= (acl2-count sub) (acl2-count tree)))
          :rule-classes (:rewrite :linear)))
 
-;; Nothing is a proper subtree of itself:   
+;; Nothing is a proper subtree of itself:
 (defthm subtreep-measure
   (if flg
       (implies (subtreep a b)
@@ -539,7 +539,7 @@
 (defthm if-cons-range-subset-of-domain-or-list-cons-list
   (implies (if-cons-range-subset-of-domain-or-list db full list)
            (if-cons-range-subset-of-domain-or-list db full (cons x list))))
-           
+
 
 (defthm if-cons-range-subset-of-domain-or-list-assoc-hqual
   (implies (and (if-cons-range-subset-of-domain-or-list db full list)

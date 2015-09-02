@@ -64,7 +64,7 @@
 (defthm normalize-<-/-to-*-1
   (implies (and (real/rationalp x)
 		(real/rationalp y))
-	   (equal (< x (/ y)) 
+	   (equal (< x (/ y))
 		  (cond ((< y 0) (< 1 (* x y)))
 			((< 0 y) (< (* x y) 1))
 			(t (< x 0)))))
@@ -81,7 +81,7 @@
 (defthm normalize-<-/-to-*-2
   (implies (and (real/rationalp x)
 		(real/rationalp y))
-		(equal (< (/ y) x) 
+		(equal (< (/ y) x)
 		       (cond ((< y 0) (< (* x y) 1))
 			     ((< 0 y) (< 1 (* x y)))
 			     (t (< 0 x)))))
@@ -107,7 +107,7 @@
                                         (x x)
                                         (y (* y (/ z)))
                                         (z z))))))
- 
+
 (defthm normalize-<-/-to-*-3-2
   (implies (and (real/rationalp x)
 		(real/rationalp y)

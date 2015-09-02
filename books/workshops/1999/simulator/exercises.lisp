@@ -23,7 +23,7 @@ February 2000
 
 #|
 -------------------------------------------------------------------------
-Exercise 8.1 
+Exercise 8.1
 
 Extend the reader macro presented above to handle the special Lisp
 forms case and cond.  (Remember, case key forms are not evaluated!)
@@ -99,7 +99,7 @@ binds a fixnum value.
 (defun reader_fn (form)
 
   "Change the meaning of some of the arithmetic forms and recursively
-   map the macro reader over the various lisp sub-forms contained 
+   map the macro reader over the various lisp sub-forms contained
    within form"
 
   (if (consp form)
@@ -237,14 +237,14 @@ manually, using a guard-hint
   (declare (type (signed-byte 32) a)
            (type (signed-byte 32) b)
 	   (xargs :guard-hints (("goal" :use (:instance signed-byte-p-logops (size 32) (i a) (j b))
-				 :in-theory (union-theories 
+				 :in-theory (union-theories
 					     '(signed-byte-p)
 					     (disable signed-byte-p-logops))))))
 
   (Int32 (logand a b)))
 
 
-#| 
+#|
 -------------------------------------------------------------------------
 Exercise 8.5
 
@@ -285,7 +285,7 @@ below that this term in fact answers the question.
   :hints (("goal" :in-theory (enable next unsigned-byte-p))))
 
 
-#| 
+#|
 -------------------------------------------------------------------------
 Exercise 8.6
 
@@ -296,10 +296,10 @@ overridden the default heuristics with an explicit :loop-stopper
 argument.
 -------------------------------------------------------------------------
 
-One such term is 
+One such term is
 
-(update-nth 4 'cat 
-	    (update-nth 3 '(pig chicken) 
+(update-nth 4 'cat
+	    (update-nth 3 '(pig chicken)
 			(update-nth 4 '(mouse horse snake) l)))
 
 With update-nth-update-nth-diff defined as it is, the following
@@ -308,11 +308,11 @@ theorem succeeds
 |#
 
 (defthm update-nth-simplify1
- (equal 
-  (update-nth 4 'cat 
-	    (update-nth 3 '(pig chicken) 
+ (equal
+  (update-nth 4 'cat
+	    (update-nth 3 '(pig chicken)
 			(update-nth 4 '(mouse horse snake) l)))
-  (update-nth 4 'cat 
+  (update-nth 4 'cat
 	    (update-nth 3 '(pig chicken) l)))
  :rule-classes nil)
 
@@ -332,11 +332,11 @@ update-nth-update-nth-diff-default from applying, and we disabled the
 more effective rule update-nth-update-nth-diff.
 
 (defthm update-nth-simplify2
- (equal 
-  (update-nth 4 'cat 
-	    (update-nth 3 '(pig chicken) 
+ (equal
+  (update-nth 4 'cat
+	    (update-nth 3 '(pig chicken)
 			(update-nth 4 '(mouse horse snake) l)))
-  (update-nth 4 'cat 
+  (update-nth 4 'cat
 	    (update-nth 3 '(pig chicken) l)))
  :hints (("goal" :in-theory (disable update-nth-update-nth-diff))))
 

@@ -46,7 +46,7 @@ functions).
 (defun ltl-periodic-path-semantics (f init prefix cycle label)
   (declare (xargs :measure (cons (1+ (acl2-count f)) 0)))
   (cond ((atom f)
-         (if (ltl-constantp f) 
+         (if (ltl-constantp f)
              (equal f 'true)
            (memberp f (<- label init))))
         ((equal (len f) 3)
@@ -60,22 +60,22 @@ functions).
                   (ltl-periodic-path-semantics (third f) init prefix cycle
                                                label)))
            (U (let* ((found-and-index
-                      (find-state-satisfying-formula 
-                       (third f) init prefix cycle label
-                       (+ 1 (len prefix) (len cycle))))
-                     (found (first found-and-index))
-                     (index (second found-and-index))) 
-                (if (not found) 
-                    nil
-                  (ltl-periodic-path-semantics* (first f) init prefix
-                                                cycle label index))))
-           (W (let* ((found-and-index
-                      (find-state-satisfying-formula 
+                      (find-state-satisfying-formula
                        (third f) init prefix cycle label
                        (+ 1 (len prefix) (len cycle))))
                      (found (first found-and-index))
                      (index (second found-and-index)))
-                (if (not found) 
+                (if (not found)
+                    nil
+                  (ltl-periodic-path-semantics* (first f) init prefix
+                                                cycle label index))))
+           (W (let* ((found-and-index
+                      (find-state-satisfying-formula
+                       (third f) init prefix cycle label
+                       (+ 1 (len prefix) (len cycle))))
+                     (found (first found-and-index))
+                     (index (second found-and-index)))
+                (if (not found)
                     (ltl-periodic-path-semantics* (first f) init prefix
                                                   cycle label
                                                   (+ 1 (len prefix) (len cycle)))
@@ -83,21 +83,21 @@ functions).
                                                 cycle label index))))
            (t nil)))
         ((equal (len f) 2)
-         (case (first f)               
+         (case (first f)
            (~ (not (ltl-periodic-path-semantics (second f) init prefix cycle
                                                 label)))
            (G  (ltl-periodic-path-semantics* (second f) init prefix
                                              cycle label
                                              (+ 1 (len prefix) (len cycle))))
            (F (let* ((found-and-index
-                      (find-state-satisfying-formula 
+                      (find-state-satisfying-formula
                        (second f) init prefix cycle label
                        (+ 1 (len prefix) (len cycle))))
                      (found (first found-and-index)))
                 (if found t nil)))
            (X (ltl-periodic-path-semantics (second f) (first prefix)
-                                           (if (endp (rest prefix)) 
-                                               cycle 
+                                           (if (endp (rest prefix))
+                                               cycle
                                              (rest prefix))
                                            cycle
                                            label))
@@ -120,7 +120,7 @@ functions).
         ((ltl-periodic-path-semantics f init prefix cycle label)
          (list t 0))
         (t (let* ((found-and-index
-                      (find-state-satisfying-formula 
+                      (find-state-satisfying-formula
                         f (first prefix)
                         (if (endp (rest prefix)) cycle (rest prefix))
                         cycle label (1- dist)))
@@ -141,7 +141,7 @@ functions).
 
   (if (equal index 0)
       (cond ((atom f)
-             (if (ltl-constantp f) 
+             (if (ltl-constantp f)
                  (equal f 'true)
                (memberp f (<- label init))))
             ((equal (len f) 3)
@@ -154,25 +154,25 @@ functions).
                                                       label dist 0)
                       (ltl-semantics-single-recursion (third f) init prefix cycle
                                                       label dist 0)))
-               (U (let* ((found-and-index 
-                          (ltl-semantics-single-recursion 
+               (U (let* ((found-and-index
+                          (ltl-semantics-single-recursion
                            (third f) init prefix cycle label
                            (+ 1 (len prefix) (len cycle))
                            2))
                          (found (first found-and-index))
                          (ndx (second found-and-index)))
-                    (if (not found) 
+                    (if (not found)
                         nil
                       (ltl-semantics-single-recursion (first f) init prefix
                                                         cycle label ndx 1))))
-               (W (let* ((found-and-index 
-                          (ltl-semantics-single-recursion 
+               (W (let* ((found-and-index
+                          (ltl-semantics-single-recursion
                            (third f) init prefix cycle label
                            (+ 1 (len prefix) (len cycle))
                            2))
                          (found (first found-and-index))
                          (ndx (second found-and-index)))
-                    (if (not found) 
+                    (if (not found)
                         (ltl-semantics-single-recursion (first f) init prefix
                                                         cycle label
                                                         (+ 1 (len prefix) (len
@@ -182,22 +182,22 @@ functions).
                                                       cycle label ndx 1))))
                (t nil)))
             ((equal (len f) 2)
-             (case (first f)               
+             (case (first f)
                (~ (not (ltl-semantics-single-recursion (second f) init prefix cycle
                                                        label dist 0)))
                (G  (ltl-semantics-single-recursion (second f) init prefix
                                                    cycle label
                                                    (+ 1 (len prefix) (len cycle)) 1))
                (F (let* ((found-and-index
-                          (ltl-semantics-single-recursion 
+                          (ltl-semantics-single-recursion
                            (second f) init prefix  cycle label
                            (+ 1 (len prefix) (len cycle))
                            2))
                          (found (first found-and-index)))
                     (if found T nil)))
                (X (ltl-semantics-single-recursion (second f) (first prefix)
-                                                  (if (endp (rest prefix)) 
-                                                      cycle 
+                                                  (if (endp (rest prefix))
+                                                      cycle
                                                     (rest prefix))
                                                   cycle
                                                   label dist 0))
@@ -217,7 +217,7 @@ functions).
                 ((ltl-semantics-single-recursion f init prefix cycle label dist 0)
                  (list t 0))
                 (t (let* ((found-and-index
-                           (ltl-semantics-single-recursion 
+                           (ltl-semantics-single-recursion
                             f (first prefix)
                             (if (endp (rest prefix)) cycle (rest prefix))
                             cycle label (1- dist) 2))
@@ -257,7 +257,7 @@ functions).
                                                        cycle label dist
                                                        i)))))
   :rule-classes nil)
-             
+
 (defthm ltl-semantics-0-is-boolean
   (booleanp (ltl-semantics-single-recursion f init prefix cycle label dist 0))
   :hints (("Goal"

@@ -61,7 +61,7 @@
                    (cond
                     ((null (cddr expr))
 
-; Apparently (AND p) is a legal be expression.  I assume 
+; Apparently (AND p) is a legal be expression.  I assume
 ; (AND p) = (OR p) = (EXOR p) = p.
 
                      (convert-be-expr (cadr expr)))

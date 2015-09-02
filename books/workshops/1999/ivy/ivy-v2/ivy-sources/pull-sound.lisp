@@ -3,7 +3,7 @@
 ;; Soundness of the pull-quant functions.
 
 (include-book "pull")
-	
+
 ;;---------------------------------------------------------------------
 ;; Soundness of pull-top-left and pull-top-right.
 ;;
@@ -13,7 +13,7 @@
 ;;
 ;; Working on this caused me to write the first mutually
 ;; recursive evaluation function (thanks to the ACL2 docs for the
-;; clear mutual recursion example).  Because the mutually 
+;; clear mutual recursion example).  Because the mutually
 ;; recursive eval function is clearest, it is now the official eval.
 
 (defthm subst-ptr-dist

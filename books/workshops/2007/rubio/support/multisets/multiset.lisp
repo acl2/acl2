@@ -1,6 +1,6 @@
 ;;; multiset.lisp
 ;;; - Useful lemmas about multisets
-;;; - Multiset extension of a well-founded relation is a well-founded relation.  
+;;; - Multiset extension of a well-founded relation is a well-founded relation.
 ;;; Created: 10-6-99 Last Revision: 19-09-00
 ;;; ============================================================================
 
@@ -50,7 +50,7 @@
    (implies (subsetp l m)
 	    (subsetp l (cons x m)))))
 
-(local  
+(local
  (defthm subsetp-reflexive
    (subsetp l l)))
 
@@ -169,19 +169,19 @@
     (cond ((atom l) 0)
 	  ((equal x (car l)) (1+ (my-occur x (cdr l))))
 	  (t (my-occur x (cdr l))))))
- 
+
  (local
   (defthm my-occur-append
     (equal (my-occur x (append l m))
 	   (+ (my-occur x l) (my-occur x m)))))
- 
+
  (local
   (defthm my-occur-remove-one
     (equal (my-occur x (remove-one y l))
 	   (if (and (equal x y) (member x l))
 	       (1- (my-occur x l))
 	       (my-occur x l)))))
- 
+
  (local
   (defthm subsetp-multiset-diff-member
     (implies (not (member x l))
@@ -191,13 +191,13 @@
   (defthm multiset-diff-my-occur
     (iff (member x (multiset-diff l m))
 	 (> (my-occur x l) (my-occur x m)))))
- 
+
  (local
   (defthm multiset-diff-append-2-lemma
     (iff (member x (multiset-diff (append m1 m2)
 				  (append m3 m2)))
 	 (member x (multiset-diff m1 m3)))))
- 
+
  (local
   (defun not-subsetp-witness (m1 m2)
     (declare (xargs :verify-guards nil))
@@ -208,7 +208,7 @@
 	    (car m1)))))
 
  (local
-  (defthm not-subsetp-witness-lemma 
+  (defthm not-subsetp-witness-lemma
     (equal (subsetp m1 m2)
 	   (implies (member (not-subsetp-witness m1 m2) m1)
 		    (member (not-subsetp-witness m1 m2) m2)))))
@@ -308,20 +308,20 @@
 
 ;;; ============================================================================
 ;;; 2. Multiset extension of a well-founded relation is a well-founded
-;;;    relation. 
+;;;    relation.
 ;;; ============================================================================
 
 ;;; ----------------------------------------------------------------------------
 ;;; 2.1 A general well-founded relation
 ;;; ----------------------------------------------------------------------------
- 
+
 ;;; Definition of a general well-founded relation on a set:
 ;;; - mp:  the measure property defining the set.
-;;; - rel: the well-founded relation defined on elements satisfying mp.  
+;;; - rel: the well-founded relation defined on elements satisfying mp.
 ;;; - fn:  the embedding justifying the well-foundedness of rel.
 
 
-(encapsulate 
+(encapsulate
  ((mp (x) booleanp)
   (rel (x y) booleanp)
   (fn (x) o-p))
@@ -332,7 +332,7 @@
 
  (defthm rel-well-founded-relation-on-mp
    (and (implies (mp x) (o-p (fn x)))
-	(implies (and (mp x)                      
+	(implies (and (mp x)
 		      (mp y)
 		      (rel x y))
 		 (o< (fn x) (fn y))))
@@ -341,7 +341,7 @@
 
 ;;; Conviene tenerlo separado, por que hace falta. PERO NO DENTRO DEL
 ;;; ENCAPSULADO. Como alternativa, yo la he puesto además como regla de
-;;; reescritura. Preguntar a CK si esto afecta a defmul. 
+;;; reescritura. Preguntar a CK si esto afecta a defmul.
 
 
 ;;; REMARK: For our purpouses, we need another property about "fn", its
@@ -366,7 +366,7 @@
    (implies (and (e0-ordinalp x) (e0-ordinalp y) )
 	    (iff (e0-ord-< (add1-if-integer x) (add1-if-integer y))
 		 (e0-ord-< x y)))))
- 
+
 (local
  (defthm add1-if-integer-e0-ordinalp-not-equal-0
    (implies (e0-ordinalp x)
@@ -396,7 +396,7 @@
 
 (local
  (defthm rel-well-founded-relation-on-mp-rewrite
-   (implies (and (mp x)                      
+   (implies (and (mp x)
                  (mp y)
                  (rel x y))
 	    (e0-ord-< (fn1 x) (fn1 y)))))
@@ -404,20 +404,20 @@
 
 ;;; ----------------------------------------------------------------------------
 ;;; 2.2 Induced multiset relation
-;;; ---------------------------------------------------------------------------- 
+;;; ----------------------------------------------------------------------------
 
 ;;; Now we define the multiset extension on multisets of elements with
-;;; the MP-property.  We need to define: 
+;;; the MP-property.  We need to define:
 ;;; - The measure property defining multisets of elements:
-;;;   mp-true-listp.  
-;;; - The well-founded relation: mul-rel.  
+;;;   mp-true-listp.
+;;; - The well-founded relation: mul-rel.
 ;;; - The embedding justifying well-foundedness: mp-fn-o-p.
 
 ;;; Como originalmente hicimos la prueba con e0-ordinal, habiamos construido una
 ;;; inmersión en los ordinales, llamada map-fn-e0-ordinal y toda la
 ;;; prueba la habíamos hecho probando que era una inmersión en los
 ;;; e0 ordinales. Para aprovechar eso en la 2-8, definimos map-fn-o-p
-;;; simplemente aplicando atoc en un último paso. 
+;;; simplemente aplicando atoc en un último paso.
 
 ;;; Measure property
 
@@ -476,7 +476,7 @@
 ;;; defmul macro to prove the analogues for every particular rel.
 
 
-(encapsulate 
+(encapsulate
  ()
 
  (local (defthm exists-rel-bigger-subsetp
@@ -497,7 +497,7 @@
 	      (forall-exists-rel-bigger b l)
 	      (subsetp a b))
 	     (forall-exists-rel-bigger a l))))
- 
+
  (acl2::defcong equal-set iff (forall-exists-rel-bigger l m) 1))
 
 
@@ -505,7 +505,7 @@
  (disable
   equal-set-implies-iff-forall-exists-rel-bigger-2
   equal-set-implies-iff-forall-exists-rel-bigger-1))
- 
+
 
 ;;; ----------------------------------------------------------------------------
 ;;; 2.4 Some ad hoc lemmas about ordinals.
@@ -551,7 +551,7 @@
 
 ;;; Our goal is to prove that mul-rel is a well-founded relation ("with
 ;;; respecto to e0-ordinals") on elements
-;;;   satisfying mp-true-listp. We have to prove: 
+;;;   satisfying mp-true-listp. We have to prove:
 ;;; 1) If (mp-true-listp m), the (map-fn-e0-ord m) is an ordinal.
 ;;; 2) If l and m are mp-true-listp and (mul-rel n m), then
 ;;;    (e0-ord-< (map-fn-e0-ord n) (map-fn-e0-ord m))
@@ -581,8 +581,8 @@
 
 
 
-;;; SKETCH OF THE PROOF: 
-;;; Let N and M such that (mul-rel N M). We have to prove that 
+;;; SKETCH OF THE PROOF:
+;;; Let N and M such that (mul-rel N M). We have to prove that
 ;;;      (e0-ord-< (map-fn-e0-ord N) (map-fn-e0-ord M))
 ;;;  Suppose (fn x) and (fn y) are the biggest
 ;;; (w.r.t. e0-ord-<) elements of fn[N] and fn[M], respectively. Since
@@ -594,7 +594,7 @@
 ;;; and by the multiset order definition, exists z in M-N such that (rel
 ;;; x z) and consequently (fn z) > (fn x) >= (fn y). This is a
 ;;; contradiction with the fact that (fn y) is the biggest element of
-;;; fn[M]. 
+;;; fn[M].
 
 ;;; 3) (fn x) = (fn y). In that case, x is in M, since otherwise it
 ;;; would exist z in M-N such that (rel z x) and the same contradiction
@@ -623,12 +623,12 @@
 		  (car l)
 		  max-cdr))))))
 
-(local 
+(local
  (defthm max-fn1-list-member
    (implies (consp l)
 	    (member (max-fn1-list l) l))))
 
-(local 
+(local
  (defthm mp-member-true-listp
    (implies (and (mp-true-listp l)
 		 (member x l))
@@ -640,7 +640,7 @@
    (implies (and (consp l) (mp-true-listp l))
 	    (mp (max-fn1-list l)))))
 
-(local 
+(local
  (defthm max-fn1-list-maximal
    (implies (member x l)
 	    (not (e0-ord-< (fn1 (max-fn1-list l)) (fn1 x))))
@@ -656,12 +656,12 @@
  (encapsulate
   ()
 
-  (local 
+  (local
    (defthm insert-e0-ord-<-conmute
      (implies (and (e0-ordinalp x) (e0-ordinalp y))
 	      (equal (insert-e0-ord-< x (insert-e0-ord-< y l))
 		     (insert-e0-ord-< y (insert-e0-ord-< x l))))
-     :hints (("Goal" :in-theory (enable 
+     :hints (("Goal" :in-theory (enable
 				 weak-e0-ord-<-trichotomy
 				 e0-ord-<-trichotomy
 				 e0-ord-<-transitive-corollary)))))
@@ -673,32 +673,32 @@
 		     (insert-e0-ord-< (fn1 x)
 				      (map-fn-e0-ord (remove-one x l)))))
      :rule-classes nil))
-  
-  (local 
+
+  (local
    (defun bigger-than-list (x l)
      (declare (xargs :verify-guards nil))
      (cond ((atom l) t)
 	   ((e0-ord-< x (car l)) nil)
 	   (t (bigger-than-list x (cdr l))))))
 
-  (local 
+  (local
    (defthm bigger-than-list-insert
      (implies (and (bigger-than-list x l)
 		   (not (e0-ord-< x y)))
 	      (bigger-than-list x (insert-e0-ord-< y l)))))
 
-  (local 
+  (local
    (defthm bigger-than-list-max-fn1-map-fn-e0-ord-subsetp
      (implies (subsetp m l)
 	      (bigger-than-list (fn1 (max-fn1-list l))
 				(map-fn-e0-ord m)))
      :rule-classes nil))
 
-  (local  
+  (local
    (defthm bigger-than-list-max-fn1-map-fn-e0-ord-remove-one
      (implies (equal (fn1 x) (fn1 (max-fn1-list l)))
 	      (bigger-than-list (fn1 x) (map-fn-e0-ord (remove-one x l))))
-     :hints (("Goal" 
+     :hints (("Goal"
 	      :use (:instance bigger-than-list-max-fn1-map-fn-e0-ord-subsetp
 			      (m (remove-one x l)))))))
 
@@ -707,7 +707,7 @@
      (implies (bigger-than-list (fn1 x) l)
 	      (equal (insert-e0-ord-< (fn1 x) l)
 		     (cons (fn1 x) l)))))
-  
+
   (defthm another-definition-of-map-fn-e0-ord
     (implies (and (equal (fn1 x) (fn1 (max-fn1-list l)))
 		  (mp-true-listp l)
@@ -716,8 +716,8 @@
 		    (cons (fn1 x) (map-fn-e0-ord (remove-one x l)))))
     :hints (("Goal" :use another-definition-of-map-fn-e0-ord-lemma))
     :rule-classes ((:definition :install-body nil :controller-alist ((map-fn-e0-ord t)))))))
- 
-;;; REMARK: 
+
+;;; REMARK:
 ;;; It's very interesting the use of this definition rule and
 ;;; the free variables in it, essential for expanding in an adequate
 ;;; manner for the induction scheme in map-fn-e0-ord-measure. Note that
@@ -738,14 +738,14 @@
 ;;;  (cons (max-fn-list l) (map-fn-e0-ord (remove-one (max-fn-list m) m)))
 ;;;  Such expression would be obtained if the following rewrite rule
 ;;;  were used:
-;;; (defthm another-definition-of-map-fn-e0-ord-rewrite-rule 
-;;;   (implies (and (mp-true-listp l) (consp l)) 
-;;;     (equal (map-fn-e0-ord l) 
-;;; 	   (cons (fn1 (max-fn1-list l)) 
-;;; 		 (map-fn-e0-ord 
+;;; (defthm another-definition-of-map-fn-e0-ord-rewrite-rule
+;;;   (implies (and (mp-true-listp l) (consp l))
+;;;     (equal (map-fn-e0-ord l)
+;;; 	   (cons (fn1 (max-fn1-list l))
+;;; 		 (map-fn-e0-ord
 ;;; 		  (remove-one (max-fn1-list l) l)))))
-;;;   :hints (("Goal" 
-;;; 	   :use ((:instance 
+;;;   :hints (("Goal"
+;;; 	   :use ((:instance
 ;;; 		  another-definition-of-map-fn-e0-ord
 ;;; 		  (x (max-fn1-list l)))))))
 
@@ -793,7 +793,7 @@
    (implies (and (member x l) (mp-true-listp l))
 	    (e0-ordinalp (fn1 x)))))
 
-(local 
+(local
  (defthm mp-true-listp-remove-one
    (implies (mp-true-listp l)
 	    (mp-true-listp (remove-one x l)))))
@@ -814,7 +814,7 @@
 	   ((rel x (car l)) (car l))
 	   (t (exists-rel-bigger-witness x (cdr l))))))
 
-  (local 
+  (local
    (defthm exists-rel-bigger-witness-main-property-lemma
      (implies (and (mp-true-listp l) (exists-rel-bigger x l))
 	      (mp (exists-rel-bigger-witness x l)))))
@@ -823,7 +823,7 @@
    (defthm exists-rel-bigger-witness-main-property
      (implies (exists-rel-bigger x l)
 	      (rel x (exists-rel-bigger-witness x l)))))
-  
+
   (local
    (defthm forall-exists-rel-bigger-lemma
      (implies (and
@@ -832,7 +832,7 @@
 	       (mp-true-listp l1)
 	       (mp-true-listp l2))
 	      (e0-ord-< (fn1 x) (fn1 (exists-rel-bigger-witness x l2))))))
-  
+
   (local
    (defthm member-multiset-diff-exists-rel-bigger-witness-lemma
      (implies (and
@@ -840,8 +840,8 @@
 	       (member x l1)
 	       (subsetp l2 l3))
 	      (member (exists-rel-bigger-witness x l2) l3))))
-  
-  (local 
+
+  (local
    (defthm member-multiset-diff-exists-rel-bigger-witness
      (implies (and
 	       (member x n)
@@ -849,7 +849,7 @@
 	       (forall-exists-rel-bigger (multiset-diff n m)
 					 (multiset-diff m n)))
 	      (member (exists-rel-bigger-witness x (multiset-diff m n)) m))))
-  
+
   (defthm forall-exists-rel-bigger-max-fn1-list-lemma
     (implies (and
 	      (consp m)
@@ -882,7 +882,7 @@
    (implies (and (consp l) (mp-true-listp l))
 	    (e0-ordinalp (fn1 (max-fn1-list l))))))
 
-(local 
+(local
  (defthm max-fn1-e0-ord-trichotomy-<
    (implies (and
 	     (mp-true-listp n) (mp-true-listp m) (consp n) (consp m)
@@ -892,13 +892,13 @@
 			    (fn1 (max-fn1-list m)))))
 	    (e0-ord-< (fn1 (max-fn1-list m))
 		      (fn1 (max-fn1-list n))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use (:instance e0-ord-<-trichotomy
 			    (o1 (fn1 (max-fn1-list n)))
 			    (o2 (fn1 (max-fn1-list m))))))))
 
 ;;; Needed for "Subgoal *1/7":
-;;; - another-definition-of-map-fn-e0-ord-rewrite-rules 
+;;; - another-definition-of-map-fn-e0-ord-rewrite-rules
 ;;; - max-fn1-e0-ord-trichotomy-< and
 
 (local
@@ -910,7 +910,7 @@
 		 (forall-exists-rel-bigger (multiset-diff n m)
 					   (multiset-diff m n)))
 	    (not (e0-ord-< (fn1 (max-fn1-list m)) (fn1 (max-fn1-list n)))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use (:instance forall-exists-rel-bigger-max-fn1-list-lemma
 			    (x (max-fn1-list n)))
 	    :in-theory (enable weak-e0-ord-<-trichotomy)))))
@@ -919,13 +919,13 @@
 ;;; Needed for "Subgoal *1/6":
 ;;; - another-definition-of-map-fn-e0-ord-rewrite-rules and
 
-(local 
+(local
  (defthm consp-map-fn1
    (implies (consp l) (consp (map-fn-e0-ord l)))
    :rule-classes :type-prescription))
 
 ;;; Needed for "Subgoal *1/5":
- 
+
 (local
  (defthm forall-exists-rel-bigger-max-fn1-list-lemma-corollary
    (implies (and (consp n)
@@ -940,11 +940,11 @@
    :hints (("Goal" :use ((:instance forall-exists-rel-bigger-max-fn1-list-lemma
 				    (x (max-fn1-list n))))))))
 
-;;; Needed for "Subgoal *1/4": 
+;;; Needed for "Subgoal *1/4":
 ;;;   - another-definition-of-map-fn-e0-ord
 ;;;   - another-definition-of-map-fn-e0-ord-rewrite-rules
 ;;;   - max-fn1-list-member
-;;;   - mp-true-listp-remove-one 
+;;;   - mp-true-listp-remove-one
 ;;;   - multiset-diff-removing-the-same-element and
 
 
@@ -982,7 +982,7 @@
 		      ((e0-ord-< fn1-max-n fn1-max-m) 6)
 		      ((e0-ord-< fn1-max-m fn1-max-n) 7)
 		      (t 8)))))))
-  
+
   (defthm map-fn-e0-ord-measure
     (implies (and (mp-true-listp n)
 		  (mp-true-listp m)
@@ -990,9 +990,9 @@
 	     (e0-ord-< (map-fn-e0-ord n)
 		       (map-fn-e0-ord m)))
     :hints (("Goal" :induct (induction-multiset n m))))))
-	    
 
-;;; ######################################################################## 
+
+;;; ########################################################################
 ;;; THE MAIN THEOREM OF THIS BOOK:
 ;;; The multiset relation induced by a well-founded relation is well-founded
 ;;; ########################################################################
@@ -1002,7 +1002,7 @@
 (local
  (defthm multiset-extension-of-rel-well-founded-wrt-e0-ordinals
    (and (implies (mp-true-listp x) (e0-ordinalp (map-fn-e0-ord x)))
-	(implies (and (mp-true-listp x)                   
+	(implies (and (mp-true-listp x)
 		      (mp-true-listp y)
 		      (mul-rel x y))
 		 (e0-ord-< (map-fn-e0-ord x) (map-fn-e0-ord y))))
@@ -1022,7 +1022,7 @@
 
 (defthm multiset-extension-of-rel-well-founded
   (and (implies (mp-true-listp x) (o-p (map-fn-o-p x)))
-       (implies (and (mp-true-listp x)                   
+       (implies (and (mp-true-listp x)
 		     (mp-true-listp y)
 		     (mul-rel x y))
 		(o< (map-fn-o-p x) (map-fn-o-p y))))

@@ -50,7 +50,7 @@
 
 (defthm measure-for-mergesort
   (implies (consp (cdr x))
-	   (and 
+	   (and
 	    (< (acl2-count (car (split x))) (acl2-count x))
 	    (< (acl2-count (cadr (split x))) (acl2-count x)))))
 
@@ -204,7 +204,7 @@
     (perm (append (rep e (how-many e lst))
                   (rmv e lst))
           lst))
-           
+
   (defun restrict (x y)
     (if (endp x)
         nil
@@ -273,7 +273,7 @@
                            (x (append (alpha) (beta)))
                            (a (alpha))
                            (b (beta))))))
-                           
+
 ; ---------------------------------------------------------------------------
 ; Exercise 11.51
 

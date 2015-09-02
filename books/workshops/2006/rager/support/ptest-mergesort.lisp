@@ -37,7 +37,7 @@
          ((endp (cdr x)) (SET::insert (car x) nil))
          (t (mv-let (part1 part2)
                     (SET::halve-list x)
-                    (SET::union (SET::mergesort-exec part1) 
+                    (SET::union (SET::mergesort-exec part1)
                                  (SET::mergesort-exec part2)))))))
 |#
 
@@ -49,7 +49,7 @@
 
 (skip-proofs
  (defun SET::mergesort-exec-par (x depth)
-   (declare (xargs :guard 
+   (declare (xargs :guard
 
 ; This guard is insufficient, so the above skip-proofs is clearly unsound.
 
@@ -58,7 +58,7 @@
          ((endp (cdr x)) (SET::insert (car x) nil))
          (t (mv-let (part1 part2)
                     (SET::halve-list x)
-                    (ACL2::pargs ; was pcall in the paper 
+                    (ACL2::pargs ; was pcall in the paper
                      (declare (granularity (< depth 2)))
                      (SET::union (SET::mergesort-exec-par part1
                                                         (1+ depth))

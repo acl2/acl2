@@ -67,7 +67,7 @@
   (cond ((endp a)
 	 0)
 	(t
-	 (cons (cons (len a) (first a)) 
+	 (cons (cons (len a) (first a))
 	       (term->e0-ordinal (rest a))))))
 |#
 
@@ -77,8 +77,8 @@
   (cond ((endp a)
 	 0)
 	(t
-	 (make-ord (len a) 
-		   (1+ (first a)) 
+	 (make-ord (len a)
+		   (1+ (first a))
 		   (term->o-p (rest a))))))
 
 (defthm term->o-p-o-first-expt
@@ -101,7 +101,7 @@
 (encapsulate ()
   (local
     (defthm technical-lemma
-      (implies (and (termp a) 
+      (implies (and (termp a)
 		    (e0-ordinalp (term->e0-ordinal (rest a))))
 	       (e0-ordinalp (term->e0-ordinal a)))
       :otf-flg t))
@@ -116,7 +116,7 @@
 (encapsulate ()
   (local
     (defthm technical-lemma
-      (implies (and (termp a) 
+      (implies (and (termp a)
 		    (o-p (term->o-p (rest a))))
 	       (o-p (term->o-p a)))
       :otf-flg t))

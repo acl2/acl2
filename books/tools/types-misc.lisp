@@ -25,7 +25,7 @@
   (if (atom list)
       ;; Return the input in case it is an atom; for situations where a single
       ;; symbol is acceptible instead of a list
-      (mv list nil)    
+      (mv list nil)
     (if (keywordp (car list))
         (mv-let (slist keyalist)
                 (strip-keywords (cddr list))
@@ -119,7 +119,7 @@
 (defun accessor-name (product component)
   (appsyms (list (product-name product) (component-name component))))
 
-;; List of accessor names for a product     
+;; List of accessor names for a product
 (defun accessor-list (product components)
   (if (consp components)
       (cons (accessor-name product (car components))

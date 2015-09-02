@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-#| 
+#|
 
   permutations.lisp
   ~~~~~~~~~~~~~~~~~
@@ -36,7 +36,7 @@ proof on simple equality reasoning.
 
 (defun how-many (e x)
    (if (endp x) 0
-    (+ (if (equal e (first x)) 1 0) 
+    (+ (if (equal e (first x)) 1 0)
        (how-many e (rest x)))))
 
 
@@ -73,17 +73,17 @@ proof on simple equality reasoning.
    :hints (("Goal" :by perm-implies-how-many-equal)))
 
 (defun falsifier-perm (x y)
-   (if (endp x) 
+   (if (endp x)
        (if (endp y) nil
 	 (first y))
-     (if (not (equal (how-many (first x) x) 
-		     (how-many (first x) y))) 
+     (if (not (equal (how-many (first x) x)
+		     (how-many (first x) y)))
 	 (first x)
        (falsifier-perm (rest x) (my-del (first x) y)))))
 
 
 (defthm falsifier-witnesses-for-how-many-in-perm
-   (implies (equal 
+   (implies (equal
 	     (how-many (falsifier-perm x y) x)
 	     (how-many (falsifier-perm x y) y))
 	    (perm x y)))

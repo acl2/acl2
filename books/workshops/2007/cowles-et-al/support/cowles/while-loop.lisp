@@ -33,7 +33,7 @@
 
 (include-book "arithmetic/top-with-meta" :dir :system)
 
-#| 
+#|
 To certify this book:
 
 (certify-book "while-loop-alt"
@@ -42,7 +42,7 @@ To certify this book:
 	      )
 |#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Bill Young's challenge: 
+;; Bill Young's challenge:
 ;;    Construct an ACL2 function that satisfies
 
 ;; (equal run (stmt mem)
@@ -59,7 +59,7 @@ To certify this book:
 ;;              (otherwise mem)))
 
 ;; stmt
-;;   (skip)                  
+;;   (skip)
 ;;   (assign var expr)
 ;;   (if exp stmt1 stmt2)
 ;;   (while exp stmt1)
@@ -84,7 +84,7 @@ To certify this book:
 
 ;; Start with some of Bill's defs
 
-(defun 
+(defun
   op (stmt)
   (first stmt))
 
@@ -100,7 +100,7 @@ To certify this book:
   arg3 (stmt)
   (fourth stmt))
 
-(defmacro 
+(defmacro
   val (key alist)
   `(cdr (assoc-equal ,key ,alist)))
 
@@ -109,7 +109,7 @@ To certify this book:
   `(and (true-listp ,x)
 	(equal (len ,x) ,n)))
 
-(defun 
+(defun
   definedp (x alist)
   (if (endp alist)
       nil
@@ -122,7 +122,7 @@ To certify this book:
   (and (symbolp x)
        (definedp x alist)))
 
-(defun 
+(defun
   exprp (x alist)
   (or (integerp x)
       (varp x alist)))
@@ -146,7 +146,7 @@ To certify this book:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; stmt
-;;   (skip)                  
+;;   (skip)
 ;;   (assign var expr)
 ;;   (sequence stmt1 stmt2)
 ;;   (if exp stmt1 stmt2)
@@ -154,7 +154,7 @@ To certify this book:
 
 ;; Booleans
 ;;   0 represents false
-;;   Any value other than 0 represents true 
+;;   Any value other than 0 represents true
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; In this model, termination is guaranteed by limiting the maximum number of
@@ -163,12 +163,12 @@ To certify this book:
 (defun
   run-limit (stmt mem limit)
   "Return (mv new-mem new-limit) when run-limit terminates.
-   Here new-mem is the memory and new-limit is the number 
+   Here new-mem is the memory and new-limit is the number
    of recursive calls remaining, when run-limit terminates.
 
    The inputs: stmt  is a statement of the while-language,
                mem   is state of the memory, and
-               limit is the maximum number of recursive 
+               limit is the maximum number of recursive
                      calls that can be made.
 
    A value of new-mem equal to nil means that stmt did not
@@ -189,7 +189,7 @@ To certify this book:
 					    (if (zp limit1)
 						(mv nil 0)
 					        (run-limit (arg2 stmt)
-							   mem1 
+							   mem1
 							   (- limit1 1)))))))
 		 (if        (if (zp limit)
 				(mv nil 0)
@@ -240,7 +240,7 @@ To certify this book:
 					(if (zp limit1)
 					    (mv nil 0)
 					    (run-limit (arg2 stmt)
-						       mem1 
+						       mem1
 						       (- limit1 1))))))
 		     (if        (if (zp limit)
 				    (mv nil 0)
@@ -460,7 +460,7 @@ To certify this book:
   (implies (and (mv-nth 0 (run-limit stmt mem (nfix (choose-limit stmt mem))))
 		(equal (car stmt) 'if)
 		(not (equal (eval-expr (cadr stmt) mem) 0)))
-	   (equal (mv-nth 0 (run-limit stmt 
+	   (equal (mv-nth 0 (run-limit stmt
 				       mem
 				       (nfix (choose-limit stmt mem))))
 		  (mv-nth 0 (run-limit (caddr stmt)
@@ -472,7 +472,7 @@ To certify this book:
 		  Nfix-choose-limit
 		  (stmt (caddr stmt))
 		  (limit (+ -1 (nfix (choose-limit stmt mem)))))
-		 (:instance 
+		 (:instance
 		  Termination-implies-same-result
 		  (stmt (caddr stmt))
 		  (i (+ -1 (nfix (choose-limit stmt mem))))
@@ -483,7 +483,7 @@ To certify this book:
   (implies (and (mv-nth 0 (run-limit stmt mem (nfix (choose-limit stmt mem))))
 		(equal (car stmt) 'if)
 		(equal (eval-expr (cadr stmt) mem) 0))
-	   (equal (mv-nth 0 (run-limit stmt 
+	   (equal (mv-nth 0 (run-limit stmt
 				       mem
 				       (nfix (choose-limit stmt mem))))
 		  (mv-nth 0 (run-limit (cadddr stmt)
@@ -495,7 +495,7 @@ To certify this book:
 		  Nfix-choose-limit
 		  (stmt (cadddr stmt))
 		  (limit (+ -1 (nfix (choose-limit stmt mem)))))
-		 (:instance 
+		 (:instance
 		  Termination-implies-same-result
 		  (stmt (cadddr stmt))
 		  (i (+ -1 (nfix (choose-limit stmt mem))))
@@ -521,8 +521,8 @@ To certify this book:
 
 (defthm
   Then-termination-implies-if-termination-nfix-choose-limit
-  (implies (and (mv-nth 0 (run-limit (caddr stmt) 
-				     mem 
+  (implies (and (mv-nth 0 (run-limit (caddr stmt)
+				     mem
 				     (nfix (choose-limit (caddr stmt)
 							 mem))))
 		(equal (car stmt) 'if)
@@ -539,8 +539,8 @@ To certify this book:
 
 (defthm
   Else-termination-implies-if-termination-nfix-choose-limit
-  (implies (and (mv-nth 0 (run-limit (cadddr stmt) 
-				     mem 
+  (implies (and (mv-nth 0 (run-limit (cadddr stmt)
+				     mem
 				     (nfix (choose-limit (cadddr stmt)
 							 mem))))
 		(equal (car stmt) 'if)
@@ -560,7 +560,7 @@ To certify this book:
   (implies (and (not (mv-nth 0 (run-limit stmt mem (nfix (choose-limit stmt mem)))))
 		(equal (car stmt) 'if)
 		(not (equal (eval-expr (cadr stmt) mem) 0)))
-	   (equal (mv-nth 0 (run-limit stmt 
+	   (equal (mv-nth 0 (run-limit stmt
 				       mem
 				       (nfix (choose-limit stmt mem))))
 		  (mv-nth 0 (run-limit (caddr stmt)
@@ -575,7 +575,7 @@ To certify this book:
   (implies (and (not (mv-nth 0 (run-limit stmt mem (nfix (choose-limit stmt mem)))))
 		(equal (car stmt) 'if)
 		(equal (eval-expr (cadr stmt) mem) 0))
-	   (equal (mv-nth 0 (run-limit stmt 
+	   (equal (mv-nth 0 (run-limit stmt
 				       mem
 				       (nfix (choose-limit stmt mem))))
 		  (mv-nth 0 (run-limit (cadddr stmt)
@@ -589,7 +589,7 @@ To certify this book:
   Subgoal-5-lemma
   (implies (and (equal (car stmt) 'if)
 		(not (equal (eval-expr (cadr stmt) mem) 0)))
-	   (equal (mv-nth 0 (run-limit stmt 
+	   (equal (mv-nth 0 (run-limit stmt
 				       mem
 				       (nfix (choose-limit stmt mem))))
 		  (mv-nth 0 (run-limit (caddr stmt)
@@ -604,7 +604,7 @@ To certify this book:
   Subgoal-4-lemma
   (implies (and (equal (car stmt) 'if)
 		(equal (eval-expr (cadr stmt) mem) 0))
-	   (equal (mv-nth 0 (run-limit stmt 
+	   (equal (mv-nth 0 (run-limit stmt
 				       mem
 				       (nfix (choose-limit stmt mem))))
 		  (mv-nth 0 (run-limit (cadddr stmt)
@@ -624,7 +624,7 @@ To certify this book:
 			     (mv-nth 0 (run-limit (cadr stmt) mem (+ -1 limit)))
 			     (+ -1 (mv-nth 1
 					   (run-limit (cadr stmt)
-						      mem 
+						      mem
 						      (+ -1 limit)))))))
   :rule-classes nil)
 
@@ -638,7 +638,7 @@ To certify this book:
 			     (mv-nth 0 (run-limit (caddr stmt) mem (+ -1 limit)))
 			     (+ -1 (mv-nth 1
 					   (run-limit (caddr stmt)
-						      mem 
+						      mem
 						      (+ -1 limit)))))))
   :rule-classes nil)
 
@@ -652,21 +652,21 @@ To certify this book:
 		  (mv-nth 0 (run-limit (caddr stmt)
 				       (mv-nth 0 (run-limit (cadr stmt)
 							    mem
-							    (nfix 
-							     (choose-limit 
+							    (nfix
+							     (choose-limit
 							      (cadr stmt)
 							      mem))))
-				       (nfix (choose-limit 
+				       (nfix (choose-limit
 					      (caddr stmt)
 					      (mv-nth 0 (run-limit (cadr stmt)
 								   mem
-								   (nfix 
-								    (choose-limit 
+								   (nfix
+								    (choose-limit
 								     (cadr stmt)
 								     mem))))))))))
   :rule-classes nil
   :hints (("goal"
-	   :in-theory 
+	   :in-theory
 	   (disable (:definition nfix))
 	   :use ((:instance
 		  Termination-implies-sequence-def
@@ -679,7 +679,7 @@ To certify this book:
 		  termination-implies-same-result
 		  (stmt (cadr stmt))
 		  (i (+ -1 (nfix (choose-limit stmt mem))))
-		  (j (nfix (choose-limit (cadr stmt) mem))))		 
+		  (j (nfix (choose-limit (cadr stmt) mem))))
 		 (:instance
 		  nfix-choose-limit
 		  (stmt (caddr stmt))
@@ -689,9 +689,9 @@ To certify this book:
 								       mem))))))
 		  (limit (+ -1 (mv-nth 1
 				       (run-limit (cadr stmt)
-						  mem 
-						  (+ -1 
-						     (nfix (choose-limit stmt 
+						  mem
+						  (+ -1
+						     (nfix (choose-limit stmt
 									 mem))))))))
 		 (:instance
 		  termination-implies-same-result
@@ -711,8 +711,8 @@ To certify this book:
 		       (caddr stmt)
 		       (mv-nth 0
 			       (run-limit (cadr stmt)
-					  mem 
-					  (+ -1 
+					  mem
+					  (+ -1
 					     (nfix (choose-limit stmt
 								 mem)))))))))))))
 
@@ -727,21 +727,21 @@ To certify this book:
 		  (mv-nth 0 (run-limit stmt
 				       (mv-nth 0 (run-limit (caddr stmt)
 							    mem
-							    (nfix 
-							     (choose-limit 
+							    (nfix
+							     (choose-limit
 							      (caddr stmt)
 							      mem))))
-				       (nfix (choose-limit 
+				       (nfix (choose-limit
 					      stmt
 					      (mv-nth 0 (run-limit (caddr stmt)
 								   mem
-								   (nfix 
-								    (choose-limit 
+								   (nfix
+								    (choose-limit
 								     (caddr stmt)
 								     mem))))))))))
   :rule-classes nil
   :hints (("goal"
-	   :in-theory 
+	   :in-theory
 	   (disable (:definition nfix))
 	   :use ((:instance
 		  Termination-implies-while-def
@@ -754,7 +754,7 @@ To certify this book:
 		  termination-implies-same-result
 		  (stmt (caddr stmt))
 		  (i (+ -1 (nfix (choose-limit stmt mem))))
-		  (j (nfix (choose-limit (caddr stmt) mem))))		 
+		  (j (nfix (choose-limit (caddr stmt) mem))))
 		 (:instance
 		  nfix-choose-limit
 		  (mem  (mv-nth 0 (run-limit (caddr stmt)
@@ -763,9 +763,9 @@ To certify this book:
 								       mem))))))
 		  (limit (+ -1 (mv-nth 1
 				       (run-limit (caddr stmt)
-						  mem 
-						  (+ -1 
-						     (nfix (choose-limit stmt 
+						  mem
+						  (+ -1
+						     (nfix (choose-limit stmt
 									 mem))))))))
 		 (:instance
 		  termination-implies-same-result
@@ -784,20 +784,20 @@ To certify this book:
 		       stmt
 		       (mv-nth 0
 			       (run-limit (caddr stmt)
-					  mem 
-					  (+ -1 
+					  mem
+					  (+ -1
 					     (nfix (choose-limit stmt
 								 mem)))))))))))))
 
 (defthm
   Subgoal-6-lemma-b
   (implies (and (not (mv-nth 0
-			     (run-limit stmt 
+			     (run-limit stmt
 					mem
 					(nfix (choose-limit stmt mem)))))
 		(not (mv-nth 0 (run-limit (cadr stmt)
 					  mem
-					  (nfix 
+					  (nfix
 					   (choose-limit (cadr stmt) mem)))))
 		(equal (car stmt) 'sequence))
 	   (equal (mv-nth 0 (run-limit stmt
@@ -806,16 +806,16 @@ To certify this book:
 		  (mv-nth 0 (run-limit (caddr stmt)
 				       (mv-nth 0 (run-limit (cadr stmt)
 							    mem
-							    (nfix 
-							     (choose-limit 
+							    (nfix
+							     (choose-limit
 							      (cadr stmt)
 							      mem))))
-				       (nfix (choose-limit 
+				       (nfix (choose-limit
 					      (caddr stmt)
 					      (mv-nth 0 (run-limit (cadr stmt)
 								   mem
-								   (nfix 
-								    (choose-limit 
+								   (nfix
+								    (choose-limit
 								     (cadr stmt)
 								     mem))))))))))
   :rule-classes nil)
@@ -836,16 +836,16 @@ To certify this book:
 		  (mv-nth 0 (run-limit stmt
 				       (mv-nth 0 (run-limit (caddr stmt)
 							    mem
-							    (nfix 
-							     (choose-limit 
+							    (nfix
+							     (choose-limit
 							      (caddr stmt)
 							      mem))))
-				       (nfix (choose-limit 
+				       (nfix (choose-limit
 					      stmt
 					      (mv-nth 0 (run-limit (caddr stmt)
 								   mem
-								   (nfix 
-								    (choose-limit 
+								   (nfix
+								    (choose-limit
 								     (caddr stmt)
 								     mem))))))))))
   :rule-classes nil)
@@ -895,7 +895,7 @@ To certify this book:
 ;;      (natp i)
 ;;      (natp j))
 ;; -----------------------
-;; Construct a k such that 
+;; Construct a k such that
 
 ;; (and (mv-nth 0 (run-limit (cadr stmt) mem k))
 ;;      (posp (mv-nth 1 (run-limit (cadr stmt) mem k)))
@@ -908,11 +908,11 @@ To certify this book:
 ;;                                                      k)))))
 ;;      (natp k))
 ;; ---------------------------------
-;; Then Sequence-lemma-1 applies, so 
+;; Then Sequence-lemma-1 applies, so
 
 ;;    (mv-nth 0 (run-limit stmt mem (+ 1 k)))
 ;; ---------------------
-;; Let k be  (+ (max i 
+;; Let k be  (+ (max i
 ;;                   (+ 1 j))
 ;;              (- i (mv-nth 1 (run-limit (cadr stmt)
 ;;                                        mem
@@ -924,7 +924,7 @@ To certify this book:
   (implies (and (natp i)
 		(natp j)
 		(mv-nth 0 (run-limit (cadr stmt) mem i)))
-	   (let ((k (+ (max i 
+	   (let ((k (+ (max i
 			    (+ 1 j))
 		       (- i (mv-nth 1 (run-limit (cadr stmt)
 						 mem
@@ -943,23 +943,23 @@ To certify this book:
 	   :use ((:instance
 		  termination-implies-bigger-limit-termination
 		  (stmt (cadr stmt))
-		  (j (+ (max i 
+		  (j (+ (max i
 			     (+ 1 j))
 			(- i (mv-nth 1 (run-limit (cadr stmt)
 						  mem
-						  i)))))) 
+						  i))))))
 		 (:instance
 		  termination-implies-same-result
 		  (stmt (cadr stmt))
-		  (j (+ (max i 
+		  (j (+ (max i
 			     (+ 1 j))
 			(- i (mv-nth 1 (run-limit (cadr stmt)
 						  mem
-						  i)))))) 
-		 (:instance 
+						  i))))))
+		 (:instance
 		  termination-implies-same-nbr-recursive-calls
 		  (stmt (cadr stmt))
-		  (j (+ (max i 
+		  (j (+ (max i
 			     (+ 1 j))
 			(- i (mv-nth 1 (run-limit (cadr stmt)
 						  mem
@@ -970,7 +970,7 @@ To certify this book:
   (implies (and (natp i)
 		(natp j)
 		(mv-nth 0 (run-limit (caddr stmt) mem i)))
-	   (let ((k (+ (max i 
+	   (let ((k (+ (max i
 			    (+ 1 j))
 		       (- i (mv-nth 1 (run-limit (caddr stmt)
 						 mem
@@ -989,23 +989,23 @@ To certify this book:
 	   :use ((:instance
 		  termination-implies-bigger-limit-termination
 		  (stmt (caddr stmt))
-		  (j (+ (max i 
+		  (j (+ (max i
 			     (+ 1 j))
 			(- i (mv-nth 1 (run-limit (caddr stmt)
 						  mem
-						  i)))))) 
+						  i))))))
 		 (:instance
 		  termination-implies-same-result
 		  (stmt (caddr stmt))
-		  (j (+ (max i 
+		  (j (+ (max i
 			     (+ 1 j))
 			(- i (mv-nth 1 (run-limit (caddr stmt)
 						  mem
-						  i)))))) 
-		 (:instance 
+						  i))))))
+		 (:instance
 		  termination-implies-same-nbr-recursive-calls
 		  (stmt (caddr stmt))
-		  (j (+ (max i 
+		  (j (+ (max i
 			     (+ 1 j))
 			(- i (mv-nth 1 (run-limit (caddr stmt)
 						  mem
@@ -1021,7 +1021,7 @@ To certify this book:
 				     j))
 		(natp i)
 		(natp j))
-	   (let ((k (+ (max i 
+	   (let ((k (+ (max i
 			    (+ 1 j))
 		       (- i (mv-nth 1 (run-limit (cadr stmt)
 						 mem
@@ -1039,14 +1039,14 @@ To certify this book:
 		 (:instance
 		  termination-implies-bigger-limit-termination
 		  (stmt (caddr stmt))
-		  (mem (let ((k (+ (max i 
+		  (mem (let ((k (+ (max i
 					(+ 1 j))
 				   (- i (mv-nth 1 (run-limit (cadr stmt)
 							     mem
 							     i))))))
 			 (mv-nth 0 (run-limit (cadr stmt) mem k))))
 		  (i j)
-		  (j (let ((k (+ (max i 
+		  (j (let ((k (+ (max i
 				      (+ 1 j))
 				 (- i (mv-nth 1 (run-limit (cadr stmt)
 							   mem
@@ -1065,7 +1065,7 @@ To certify this book:
 				     j))
 		(natp i)
 		(natp j))
-	   (let ((k (+ (max i 
+	   (let ((k (+ (max i
 			    (+ 1 j))
 		       (- i (mv-nth 1 (run-limit (caddr stmt)
 						 mem
@@ -1082,14 +1082,14 @@ To certify this book:
 	   :use (While-lemma-2
 		 (:instance
 		  termination-implies-bigger-limit-termination
-		  (mem (let ((k (+ (max i 
+		  (mem (let ((k (+ (max i
 					(+ 1 j))
 				   (- i (mv-nth 1 (run-limit (caddr stmt)
 							     mem
 							     i))))))
 			 (mv-nth 0 (run-limit (caddr stmt) mem k))))
 		  (i j)
-		  (j (let ((k (+ (max i 
+		  (j (let ((k (+ (max i
 				      (+ 1 j))
 				 (- i (mv-nth 1 (run-limit (caddr stmt)
 							   mem
@@ -1109,7 +1109,7 @@ To certify this book:
 				     j))
 		(natp i)
 		(natp j))
-	   (let ((k (+ (max i 
+	   (let ((k (+ (max i
 			    (+ 1 j))
 		       (- i (mv-nth 1 (run-limit (cadr stmt)
 						 mem
@@ -1119,7 +1119,7 @@ To certify this book:
   :hints (("Goal"
 	   :use ((:instance
 		  Sequence-lemma-1
-		  (i (+ (max i 
+		  (i (+ (max i
 			     (+ 1 j))
 			(- i (mv-nth 1 (run-limit (cadr stmt)
 						  mem
@@ -1138,7 +1138,7 @@ To certify this book:
 				     j))
 		(natp i)
 		(natp j))
-	   (let ((k (+ (max i 
+	   (let ((k (+ (max i
 			    (+ 1 j))
 		       (- i (mv-nth 1 (run-limit (caddr stmt)
 						 mem
@@ -1148,7 +1148,7 @@ To certify this book:
   :hints (("Goal"
 	   :use ((:instance
 		  While-lemma-1
-		  (i (+ (max i 
+		  (i (+ (max i
 			     (+ 1 j))
 			(- i (mv-nth 1 (run-limit (caddr stmt)
 						  mem
@@ -1163,20 +1163,20 @@ To certify this book:
 				     mem
 				     (nfix (choose-limit (cadr stmt)
 							 mem))))
-		(mv-nth 0 (run-limit 
+		(mv-nth 0 (run-limit
 			   (caddr stmt)
 			   (mv-nth 0 (run-limit (cadr stmt)
 						mem
 						(nfix (choose-limit (cadr stmt)
 								    mem))))
 			   (nfix
-			    (choose-limit 
+			    (choose-limit
 			     (caddr stmt)
 			     (mv-nth 0 (run-limit (cadr stmt)
-						  mem			
+						  mem
 						  (nfix (choose-limit (cadr stmt)
 								      mem)))))))))
-	   (mv-nth 0 (run-limit stmt 
+	   (mv-nth 0 (run-limit stmt
 				mem
 				(nfix (choose-limit stmt mem)))))
   :rule-classes nil
@@ -1186,10 +1186,10 @@ To certify this book:
 		  Args-terminate-implies-sequence-terminates
 		  (i (nfix (choose-limit (cadr stmt) mem)))
 		  (j (nfix
-		      (choose-limit 
+		      (choose-limit
 		       (caddr stmt)
 		       (mv-nth 0 (run-limit (cadr stmt)
-					    mem			
+					    mem
 					    (nfix (choose-limit (cadr stmt)
 								mem))))))))
 		 (:instance
@@ -1197,15 +1197,15 @@ To certify this book:
 		  (limit (+ 1
 			    (let ((i (nfix (choose-limit (cadr stmt) mem)))
 				  (j (nfix
-				      (choose-limit 
+				      (choose-limit
 				       (caddr stmt)
-				       (mv-nth 0 
+				       (mv-nth 0
 					       (run-limit (cadr stmt)
-							  mem			
+							  mem
 							  (nfix (choose-limit
 								 (cadr stmt)
 								 mem))))))))
-			      (+ (max i 
+			      (+ (max i
 				      (+ 1 j))
 				 (- i (mv-nth 1 (run-limit (cadr stmt)
 							   mem
@@ -1217,20 +1217,20 @@ To certify this book:
 				     mem
 				     (nfix (choose-limit (caddr stmt)
 							 mem))))
-		(mv-nth 0 (run-limit 
+		(mv-nth 0 (run-limit
 			   stmt
 			   (mv-nth 0 (run-limit (caddr stmt)
 						mem
 						(nfix (choose-limit (caddr stmt)
 								    mem))))
 			   (nfix
-			    (choose-limit 
+			    (choose-limit
 			     stmt
 			     (mv-nth 0 (run-limit (caddr stmt)
-						  mem			
+						  mem
 						  (nfix (choose-limit (caddr stmt)
 								      mem)))))))))
-	   (mv-nth 0 (run-limit stmt 
+	   (mv-nth 0 (run-limit stmt
 				mem
 				(nfix (choose-limit stmt mem)))))
   :rule-classes nil
@@ -1240,10 +1240,10 @@ To certify this book:
 		  Body-&-subwhile-terminate-implies-while-terminates
 		  (i (nfix (choose-limit (caddr stmt) mem)))
 		  (j (nfix
-		      (choose-limit 
+		      (choose-limit
 		       stmt
 		       (mv-nth 0 (run-limit (caddr stmt)
-					    mem			
+					    mem
 					    (nfix (choose-limit (caddr stmt)
 								mem))))))))
 		 (:instance
@@ -1251,15 +1251,15 @@ To certify this book:
 		  (limit (+ 1
 			    (let ((i (nfix (choose-limit (caddr stmt) mem)))
 				  (j (nfix
-				      (choose-limit 
+				      (choose-limit
 				       stmt
-				       (mv-nth 0 
+				       (mv-nth 0
 					       (run-limit (caddr stmt)
-							  mem			
+							  mem
 							  (nfix (choose-limit
 								 (caddr stmt)
 								 mem))))))))
-			      (+ (max i 
+			      (+ (max i
 				      (+ 1 j))
 				 (- i (mv-nth 1 (run-limit (caddr stmt)
 							   mem
@@ -1268,7 +1268,7 @@ To certify this book:
 (defthm
   Subgoal-6-lemma-c
   (implies (and (not (mv-nth 0
-			     (run-limit stmt 
+			     (run-limit stmt
 					mem
 					(nfix (choose-limit stmt mem)))))
 		(mv-nth 0 (run-limit (cadr stmt)
@@ -1281,16 +1281,16 @@ To certify this book:
 		  (mv-nth 0 (run-limit (caddr stmt)
 				       (mv-nth 0 (run-limit (cadr stmt)
 							    mem
-							    (nfix 
-							     (choose-limit 
+							    (nfix
+							     (choose-limit
 							      (cadr stmt)
 							      mem))))
-				       (nfix (choose-limit 
+				       (nfix (choose-limit
 					      (caddr stmt)
 					      (mv-nth 0 (run-limit (cadr stmt)
 								   mem
-								   (nfix 
-								    (choose-limit 
+								   (nfix
+								    (choose-limit
 								     (cadr stmt)
 								     mem))))))))))
   :rule-classes nil
@@ -1314,16 +1314,16 @@ To certify this book:
 		  (mv-nth 0 (run-limit stmt
 				       (mv-nth 0 (run-limit (caddr stmt)
 							    mem
-							    (nfix 
-							     (choose-limit 
+							    (nfix
+							     (choose-limit
 							      (caddr stmt)
 							      mem))))
-				       (nfix (choose-limit 
+				       (nfix (choose-limit
 					      stmt
 					      (mv-nth 0 (run-limit (caddr stmt)
 								   mem
-								   (nfix 
-								    (choose-limit 
+								   (nfix
+								    (choose-limit
 								     (caddr stmt)
 								     mem))))))))))
   :rule-classes nil
@@ -1349,7 +1349,7 @@ To certify this book:
 				  (caddr stmt)
 				  (mv-nth 0 (run-limit (cadr stmt)
 						       mem
-						       (nfix 
+						       (nfix
 							(choose-limit (cadr stmt)
 								      mem))))))))))
   :rule-classes nil
@@ -1376,7 +1376,7 @@ To certify this book:
 				  stmt
 				  (mv-nth 0 (run-limit (caddr stmt)
 						       mem
-						       (nfix 
+						       (nfix
 							(choose-limit (caddr stmt)
 								      mem))))))))))
   :rule-classes nil

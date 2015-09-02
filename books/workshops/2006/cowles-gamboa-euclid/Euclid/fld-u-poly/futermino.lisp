@@ -60,7 +60,7 @@ To certify this book, first, create a world with the following package:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FUTER"
@@ -75,7 +75,7 @@ To certify this book, first, create a world with the following package:
 ;; (encapsulate
 
 ;;   ;;; ---------
-;;   ;;; Signatura 
+;;   ;;; Signatura
 ;;   ;;; ---------
 
 ;;   ((terminop (a) boolean)
@@ -83,7 +83,7 @@ To certify this book, first, create a world with the following package:
 ;;    (uno () termino)
 ;;    (termino->ordinal (a) ordinal)
 ;;    (< (a b) boolean))
-  
+
 ;;   ;;; ----------------
 ;;   ;;; Testigos locales
 ;;   ;;; ----------------
@@ -113,8 +113,8 @@ To certify this book, first, create a world with the following package:
   uno ()
   (hide 0))
   ;;; Operación
-  
-;;   (local 
+
+;;   (local
 ;;     (defun * (a b)
 ;;       (cond ((and (not (terminop a)) (not (terminop b)))
 ;; 	     (uno))
@@ -127,7 +127,7 @@ To certify this book, first, create a world with the following package:
 ;; 	    ((atom b)
 ;; 	     a)
 ;; 	    (t
-;; 	     (cons (ACL2::+ (first a) (first b)) (* (rest a) (rest b))))))) 
+;; 	     (cons (ACL2::+ (first a) (first b)) (* (rest a) (rest b)))))))
 (defun
   * (a b)
   (ACL2::+ a b))
@@ -136,7 +136,7 @@ To certify this book, first, create a world with the following package:
 
 (defmacro = (a b)
   `(equal ,a ,b))
- 
+
   ;;; Inmersión en los ordinales
 
 ;;   (local
@@ -173,7 +173,7 @@ To certify this book, first, create a world with the following package:
 (defun
   < (a b)
   (ACL2::< a b))
-  
+
   ;;; -------
   ;;; Axiomas
   ;;; -------
@@ -200,7 +200,7 @@ To certify this book, first, create a world with the following package:
 (defthm |a * b = b * a|
   (implies (and (terminop a) (terminop b))
 	   (= (* a b) (* b a))))
-  
+
   ;;; Asociatividad de la operación
 
 (defthm |(a * b) * c = a * (b * c)|
@@ -221,7 +221,7 @@ To certify this book, first, create a world with the following package:
 
 ;;   (local
 ;;     (defthm extension-correccion
-;;       (implies (and (terminop a) 
+;;       (implies (and (terminop a)
 ;; 		    (o-p (termino->ordinal (rest a))))
 ;; 	       (o-p (termino->ordinal a)))
 ;;       :otf-flg t))
@@ -312,10 +312,10 @@ To certify this book, first, create a world with the following package:
 	   (< (* a b)(* a c))))
 
 (in-theory (disable terminop (terminop) * (*) uno (uno)
-		    termino->ordinal (termino->ordinal) < (<))) 
+		    termino->ordinal (termino->ordinal) < (<)))
 
 ;;; --------
-;;; Teoremas 
+;;; Teoremas
 ;;; --------
 
 ;;; Teoremas que resultan de aplicar la conmutatividad a los axiomas
@@ -331,5 +331,5 @@ To certify this book, first, create a world with the following package:
 	   (= (* a (* b c)) (* b (* a c))))
   :hints (("Goal"
 	   :in-theory (disable |(a * b) * c = a * (b * c)|)
-	   :use (|(a * b) * c = a * (b * c)| 
+	   :use (|(a * b) * c = a * (b * c)|
 		 (:instance |(a * b) * c = a * (b * c)| (a b) (b a))))))

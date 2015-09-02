@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -30,15 +30,15 @@
 
 
 
-(local 
- (encapsulate () 
+(local
+ (encapsulate ()
               (local (include-book "bits-new-proofs"))
 
              (defthm bits_alt-is-bits
                (equal (bits_alt x i j)
                       (bits x i j)))
 
-             
+
              (defthm bitn_alt-is-bitn
                (equal (bitn_alt x n)
                       (bitn x n)))
@@ -49,7 +49,7 @@
                       (binary-cat x m y n)))
 
              ))
-               
+
 
 
 
@@ -65,7 +65,7 @@
       (+ -1 (expt 2 n) (- (bits_alt x (1- n) 0)))
     0))
 
-(local 
+(local
  (defthm lnot_alt-is-lnot
    (equal (lnot_alt x n)
           (lnot x n))
@@ -76,7 +76,7 @@
        (<= 0 (lnot_alt x n)))
   :rule-classes ((:type-prescription :typed-term (lnot_alt x n))))
 
-(in-theory (disable (:type-prescription lnot_alt))) 
+(in-theory (disable (:type-prescription lnot_alt)))
 
 (defthmd lnot_alt-bits_alt-1
   (equal (lnot_alt (bits_alt x (1- n) 0) n)
@@ -184,7 +184,7 @@
 (local (include-book "log-new"))
 
 (defund binary-land_alt (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -203,7 +203,7 @@
        (logand (bits_alt x (1- n) 0)
                (bits_alt y (1- n) 0))))
 
-(local 
+(local
  (defthm land_alt-is-land
    (equal (binary-land_alt x y n)
           (binary-land x y n))
@@ -216,7 +216,7 @@
                               (consp (cddr x)))))
   (cond ((endp (cdddr x))
          `(binary-land_alt ,@x))
-        (t         
+        (t
          `(binary-land_alt ,(car x)
                        (land_alt ,@(cdr x))
                        ,(car (last x))))))
@@ -229,7 +229,7 @@
 (in-theory (disable (:type-prescription binary-land_alt)))
 
 (defund binary-lior_alt (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -249,7 +249,7 @@
                (bits_alt y (1- n) 0))))
 
 
-(local 
+(local
  (defthm lior_alt-is-lior
    (equal (binary-lior_alt x y n)
           (binary-lior x y n))
@@ -262,7 +262,7 @@
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(lior_alt x y n) -- the base case
          `(binary-lior_alt ,@x))
-        (t         
+        (t
          `(binary-lior_alt ,(car x)
                        (lior_alt ,@(cdr x))
                        ,(car (last x))))))
@@ -275,7 +275,7 @@
 (in-theory (disable (:type-prescription binary-lior_alt)))
 
 (defund binary-lxor_alt (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -295,7 +295,7 @@
                (bits_alt y (1- n) 0))))
 
 
-(local 
+(local
  (defthm lxor_alt-is-lxor
    (equal (binary-lxor_alt x y n)
           (binary-lxor x y n))
@@ -309,7 +309,7 @@
                               (consp (cddr x)))))
   (cond ((endp (cdddr x))
          `(binary-lxor_alt ,@x))
-        (t         
+        (t
          `(binary-lxor_alt ,(car x)
                        (lxor_alt ,@(cdr x))
                        ,(car (last x))))))
@@ -590,8 +590,8 @@
 		(case-split (integerp n))
 		(case-split (integerp i)))
 	   (equal (bits_alt (land_alt x y n) i j)
-		  (land_alt (bits_alt x i j) 
-			(bits_alt y i j) 
+		  (land_alt (bits_alt x i j)
+			(bits_alt y i j)
 			(+ (min n (1+ i)) (- j)))))
   :hints (("Goal" :use bits-land)))
 
@@ -600,8 +600,8 @@
 		(case-split (integerp n))
 		(case-split (integerp i)))
 	   (equal (bits_alt (lior_alt x y n) i j)
-		  (lior_alt (bits_alt x i j) 
-			(bits_alt y i j) 
+		  (lior_alt (bits_alt x i j)
+			(bits_alt y i j)
 			(+ (min n (1+ i)) (- j)))))
   :hints (("Goal" :use bits-lior)))
 
@@ -610,8 +610,8 @@
 		(case-split (integerp n))
 		(case-split (integerp i)))
 	   (equal (bits_alt (lxor_alt x y n) i j)
-		  (lxor_alt (bits_alt x i j) 
-			(bits_alt y i j) 
+		  (lxor_alt (bits_alt x i j)
+			(bits_alt y i j)
 			(+ (min n (1+ i)) (- j)))))
   :hints (("Goal" :use bits-lxor)))
 
@@ -620,8 +620,8 @@
 		(case-split (integerp n)))
 	   (equal (bitn_alt (land_alt x y n) k)
 		  (if (< k n)
-		      (land_alt (bitn_alt x k) 
-			    (bitn_alt y k) 
+		      (land_alt (bitn_alt x k)
+			    (bitn_alt y k)
 			    1)
 		    0)))
   :hints (("Goal" :use bitn-land)))
@@ -631,8 +631,8 @@
 		(case-split (integerp n)))
 	   (equal (bitn_alt (lior_alt x y n) k)
 		  (if (< k n)
-		      (lior_alt (bitn_alt x k) 
-			    (bitn_alt y k) 
+		      (lior_alt (bitn_alt x k)
+			    (bitn_alt y k)
 			    1)
 		    0)))
   :hints (("Goal" :use bitn-lior)))
@@ -642,8 +642,8 @@
 		(case-split (integerp n)))
 	   (equal (bitn_alt (lxor_alt x y n) k)
 		  (if (< k n)
-		      (lxor_alt (bitn_alt x k) 
-			    (bitn_alt y k) 
+		      (lxor_alt (bitn_alt x k)
+			    (bitn_alt y k)
 			    1)
 		    0)))
   :hints (("Goal" :use bitn-lxor)))

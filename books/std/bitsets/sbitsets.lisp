@@ -39,7 +39,8 @@
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 
-(local (in-theory (acl2::enable* set::definitions set::expensive-rules)))
+(local (in-theory (acl2::enable* set::definitions set::expensive-rules
+                                 bitops::ash-1-removal)))
 
 (defxdoc sbitsets
   :parents (std/bitsets)
@@ -1131,7 +1132,7 @@ only member is @('a')."
     (defthm sbitset-pair-offset-of-sbitset-singleton-pair
       (equal (sbitset-pair-offset (sbitset-singleton-pair a))
              (floor (nfix a) *sbitset-block-size*)))
-    
+
     (defthm sbiset-pair-block-of-sbitset-singleton-pair
       (equal (sbitset-pair-block (sbitset-singleton-pair a))
              (expt 2 (mod (nfix a) *sbitset-block-size*))))))
@@ -1652,7 +1653,7 @@ only member is @('a')."
 
 ;; (local
 ;;  (define sbitset-badguy (x y)
-;;    ;; Returns the offset for the first difference, or nil if they're identical.   
+;;    ;; Returns the offset for the first difference, or nil if they're identical.
 ;;    :verify-guards nil
 ;;    (b* (((when (atom x))
 ;;          (if (atom y)
@@ -1816,10 +1817,10 @@ only member is @('a')."
              (implies (and (not (equal (sbitset-pair-offset x)
                                        (sbitset-pair-offset y)))
                            (sbitset-pairp x)
-                           (sbitset-pairp y))                
+                           (sbitset-pairp y))
                       (not (iff (member elem (sbitset-pair-members x))
                                 (member elem (sbitset-pair-members y))))))))
-  
+
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 (local (defthm d0
@@ -1887,7 +1888,7 @@ only member is @('a')."
                                   (sbitset-pair-offset y))
                            (not (equal x y))
                            (sbitset-pairp x)
-                           (sbitset-pairp y))                
+                           (sbitset-pairp y))
                       (not (iff (member elem (sbitset-pair-members x))
                                 (member elem (sbitset-pair-members y))))))))
 
@@ -1895,7 +1896,7 @@ only member is @('a')."
     (let ((elem (sbitset-pair-badguy x y)))
       (implies (and (not (equal x y))
                     (sbitset-pairp x)
-                    (sbitset-pairp y))                
+                    (sbitset-pairp y))
                (not (iff (member elem (sbitset-pair-members x))
                          (member elem (sbitset-pair-members y))))))
     :hints(("Goal"

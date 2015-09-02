@@ -23,7 +23,7 @@
   (cond ((or (not (natp i))
              (zp x)
              (< x (expt2 i))) 0)
-        ((and (>= x (expt2 i)) 
+        ((and (>= x (expt2 i))
               (< x (expt2 (+ i 1))))
          (+ i 1))
         (T (nbits-hlp x (+ i 1)))))
@@ -78,12 +78,12 @@
   (cond ((or (not (natp i))
              (zp x)
              (<= x (expt2 i))) 0)
-        ((and (> x (expt2 i)) 
+        ((and (> x (expt2 i))
               (<= x (expt2 (+ i 1))))
          (+ i 1))
         (T (c-lg2-hlp x (+ i 1)))))
 
-;; Base-2 logarithm of natural number, 
+;; Base-2 logarithm of natural number,
 ;; rounding up to the nearest natural (returns 0 if x is 0)
 (defund c-lg2 (x)
   (c-lg2-hlp x 0))
@@ -99,7 +99,7 @@
 (defund c-word-neg (w x)
   (loghead w (1+ (lognot x))))
 
-  
+
 ;; ---------------------- Bitvector Operators
 
 ;; In the following, words (unsigned bitvectors) are denoted by integers
@@ -107,13 +107,13 @@
 
 ;; Shift word word modulo 2^w toward the most
 ;; significant bits by shfit bits.
-;; (c-word-<< 4 6 1) --> 12 
+;; (c-word-<< 4 6 1) --> 12
 (defund c-word-<< (w word shift)
   (loghead w (ash word shift)))
 
-;; Shift word word modulo 2^w toward the least 
+;; Shift word word modulo 2^w toward the least
 ;; significant bits by shfit bits.
-;; (c-word->> 4 6 1) --> 3 
+;; (c-word->> 4 6 1) --> 3
 (defund c-word->> (w word shift)
   (declare (ignore w))
   (logtail shift word))
@@ -126,16 +126,16 @@
               (logapp (- w shift) (logtail shift x1)
                       (loghead shift x1)))))
 
-;; Rotate x modulo 2^w toward the least 
+;; Rotate x modulo 2^w toward the least
 ;; significant bits by shfit bits.
-;; (c-word->>> 4 3 2) --> 12 
+;; (c-word->>> 4 3 2) --> 12
 (defund c-word->>> (w x shift)
   (logapp (- w shift) (logtail shift x)
           (loghead shift x)))
 
 (defun c-word-append-hlp (words acc)
   (if (endp words) acc
-    (c-word-append-hlp (cddr words) 
+    (c-word-append-hlp (cddr words)
                        (logapp (car words) (cadr words) acc))))
 
 ;; Append the list of words (w_0 n_0 w_1 n_1 w_2 n_2), where
@@ -150,7 +150,7 @@
     (let ((w (car widths)))
       (cons (loghead w x)
             (c-word-extract-hlp (logtail w x) (cdr widths))))))
-    
+
 ;; Extract n words of modulo (2^w_0 2^w_1 ... 2^w_i) given by the list of modulos
 ;; (w_0 w_1 .. w_i-1).
 ;; If w is modulo of the smallest bitvector representing x,
@@ -187,7 +187,7 @@
 (defund c-word-split (wi wo x)
   (reverse (c-word-split-hlp wi x wo)))
 
-;; Extract a subword fom x modulo 2^(ws + wr) beginning at bit offset 
+;; Extract a subword fom x modulo 2^(ws + wr) beginning at bit offset
 ;; (from index 0) modulo 2^ws.  Index 0 begins at the least signficant
 ;; bit of x.
 ;; (c-word-segment 2 3 14 1) --> 3
@@ -208,7 +208,7 @@
 ;; Given a list of words words of length wo and each word is modulo 2^wi, return a
 ;; list of words of length wi, each of which is of length wo, by making word i in the
 ;; returned list from bits i of each word in words.  Indexing is from the least
-;; significant bits.  
+;; significant bits.
 ;; (c-word-transpose 2 3 '(2 3 1)) --> (6 3)
 (defund c-word-transpose (wi wo words)
   (c-word-transpose-hlp wi wo words))
@@ -224,10 +224,10 @@
 
 
 ;; ---------------------- Arithmetic in GF_{2^n}
-;; Polynomials are denoted by unsigned bitvector representations 
+;; Polynomials are denoted by unsigned bitvector representations
 ;; of integers modulo some constant of the polynomial's coefficients.
-;; Ex. Polynomial "5 width 4" has the bitvector representation 1010 
-;;     (most significant bit on the right), and denotes the 
+;; Ex. Polynomial "5 width 4" has the bitvector representation 1010
+;;     (most significant bit on the right), and denotes the
 ;;     polynomal x^2 + 1
 
 ;; Polynomial addition of polynomials x width wl and y width wr.
@@ -239,7 +239,7 @@
   (declare (xargs :measure (acl2-count x)
                   :hints (("Goal" :in-theory (enable c-word->>)))))
   (if (zp x) acc
-    (let ((acc1 (c-word-padd wl wr acc (* (loghead 1 x) 
+    (let ((acc1 (c-word-padd wl wr acc (* (loghead 1 x)
                                      (ash y i)))))
       (c-word-pmult-hlp wl wr (c-word->> wl x 1) y (1+ i) acc1))))
 
@@ -247,7 +247,7 @@
 (defund c-word-pmult (wl wr x y)
   (c-word-pmult-hlp wl wr x y 0 0))
 
-(defund c-word-pdiv-pmod (wl wr x y d i) 
+(defund c-word-pdiv-pmod (wl wr x y d i)
  (declare (xargs :measure (acl2-count i)))
  (if (not (and (natp x) (natp y) (natp i))) 0
    (if (zp i) 0
@@ -261,13 +261,13 @@
 (defund c-word-pdiv (wl wr x y)
   (car (c-word-pdiv-pmod wl wr x y 0 (expt2 (+ wl wr)))))
 
-;; Polynomial remainder after division of 
+;; Polynomial remainder after division of
 ;; polynomials x width wl divided by y width wr
 ;; (error on division by zero).
 (defund c-word-pmod (wl wr x y)
   (cdr (c-word-pdiv-pmod wl wr x y 0 (expt2 (+ wl 1)))))
 
-(defun c-word-pgcd-hlp (wl wr x y i) 
+(defun c-word-pgcd-hlp (wl wr x y i)
   (declare (xargs :measure (acl2-count i)))
   (if (not (and (natp x) (natp y) (natp i))) 0
     (if (zp i) 0
@@ -276,7 +276,7 @@
         (c-word-pgcd-hlp wr wl y x (- i 1))
       (c-word-pgcd-hlp wr wl y (c-word-pmod wl wr x y) (- i 1)))))))
 
-;; Poynomial greatest common divisor of 
+;; Poynomial greatest common divisor of
 ;; polynomials x width wl and y width wr.
 (defund c-word-pgcd  (wl wr x y)
   (c-word-pgcd-hlp wl wr x y (expt2 (+ wl 1))))
@@ -295,24 +295,24 @@
   (let ((degree (- (nbits x) 1)))
     (and (>= degree 0) (c-word-pirred-hlp w x (floor degree 2) 2))))
 
-(defun c-word-pinv-hlp (wl wr g v h w i)    
-  (declare (xargs :measure (acl2-count i))) 
+(defun c-word-pinv-hlp (wl wr g v h w i)
+  (declare (xargs :measure (acl2-count i)))
   (if (zp i) 3
       (if (zp h) v
 	(let ((hbits (nbits h))
 	      (gbits (nbits g))
 	      (vbits (nbits v))
-	      (wbits (nbits w))) 
+	      (wbits (nbits w)))
 	  (let ((dr (c-word-pdiv-pmod gbits hbits g h 0 (expt2 (+ wl wr)))))
 	    (c-word-pinv-hlp hbits wbits h w (cdr dr)
 			     (let ((wl1 (nbits (car dr))))
-			       (c-word-padd vbits (- (+ wl1 wbits) 1) v 
+			       (c-word-padd vbits (- (+ wl1 wbits) 1) v
 					    (c-word-pmult wl1 wbits
 							  (car dr) w)))
 			   (- i 1)))))))
 
-;; Multiplicative inverse of polynomial n width wr with respect to 
-;; irreducible polynomial irred width wl (an unspecified value is 
+;; Multiplicative inverse of polynomial n width wr with respect to
+;; irreducible polynomial irred width wl (an unspecified value is
 ;; returned if irred is not irreducible).
 (defund c-word-pinv (wl wr irred n)
   (let ((q (c-word-pinv-hlp wl wr irred 0 n 1 (expt2 (+ wl wr)))))
@@ -356,10 +356,10 @@
 
 
 ;; ---------------------- Vector Operators
-;; In the following, vectors are represented as lists.  We assume the 
-;; vector is indexed from 0 at the car of the list representing it.  
+;; In the following, vectors are represented as lists.  We assume the
+;; vector is indexed from 0 at the car of the list representing it.
 
-;; Shift the vector vec shift places toward the head. 
+;; Shift the vector vec shift places toward the head.
 ;; Fill in the remaining indexes with zero.
 ;; (c-vec-<< '(1 2 3 4) 2 5) --> (3 4 5 5)
 (defund c-vec-<< (vec shift zero)
@@ -375,13 +375,13 @@
     (append (make-list shift :initial-element zero)
 	    (take shift vec))))
 
-;; Rotate the vector vec shift places toward the head. 
+;; Rotate the vector vec shift places toward the head.
 ;; (c-vec-<<< '(1 2 3 4) 1) --> (2 3 4 1)
 (defund c-vec-<<< (vec shift)
   (append (nthcdr shift vec)
           (take shift vec)))
 
-;; Rotate the vector vec shift places toward the tail. 
+;; Rotate the vector vec shift places toward the tail.
 ;; (c-vec->>> '(1 2 3 4) 2) --> (4 1 2 3)
 (defund c-vec->>> (vec shift)
   (append (reverse (take shift (reverse vec)))
@@ -415,7 +415,7 @@
 ;; (c-vec-split 2 '(1 2 3 4 5 6 7)) --> ((1 2) (3 4) (5 6) (7))
 (defund c-vec-split (wi vec)
   (if (not (and (natp wi) (< 0 wi) (<= wi (len vec)))) (list vec)
-    (if (equal wi (len vec)) 
+    (if (equal wi (len vec))
         (list vec)
       (cons (take wi vec)
             (c-vec-split wi (nthcdr wi vec))))))

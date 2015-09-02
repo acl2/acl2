@@ -38,7 +38,8 @@
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 
-(local (in-theory (acl2::enable* set::definitions set::expensive-rules)))
+(local (in-theory (acl2::enable* set::definitions set::expensive-rules
+                                 bitops::ash-1-removal)))
 
 (defxdoc bitsets
   :parents (std/bitsets)

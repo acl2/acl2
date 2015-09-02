@@ -209,7 +209,7 @@ off looking at the source code.</p>")
 
   ;; (defthm bxor-norm
   ;;   (implies
-  ;;    (syntaxp (and 
+  ;;    (syntaxp (and
   ;;              (not (equal x ''0))
   ;;              (not (equal x ''1))
   ;;              (or
@@ -2351,6 +2351,17 @@ off looking at the source code.</p>")
                     (ash 1 n)))
     :hints(("Goal" :in-theory (enable ash floor))))
 
+  (defthmd ash-1-removal
+    (equal (ash 1 n)
+           (if (integerp n)
+               (if (<= 0 n)
+                   (expt 2 n)
+                 0)
+             1))
+    :hints(("Goal" :in-theory (e/d (expt-2-is-ash ash**)
+                                   (right-shift-to-logtail)))))
+
+
   (defthm expt-of-ifix
     (equal (expt r (ifix i))
            (expt r i))
@@ -3493,7 +3504,7 @@ off looking at the source code.</p>")
     :rule-classes ((:induction
                     :pattern (logmask i)
                     :scheme (count-down i))))
-  
+
   (add-to-ruleset ihsext-redefs logmask**)
   (add-to-ruleset ihsext-recursive-redefs logmask**)
   (add-to-ruleset ihsext-inductions logmask-induct)

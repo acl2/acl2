@@ -14,11 +14,11 @@
 (defspec GenericDatalink
   (((ProcessInputs *) => *)
    ((ProcessOutputs *) => *))
-  
-  
+
+
   (local (defun ProcessInputs (ports)
            ports))
-  
+
   (local (defun ProcessOutputs (ports)
            ports)))
 

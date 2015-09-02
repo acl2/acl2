@@ -211,7 +211,7 @@ is specified.
                 :vl-regularport)
          :hints(("Goal" :in-theory (enable vl-port-kind vl-regularport tag)))))
 
-       
+
 (define vl-ansi-portdecl-to-regularport
   ((x vl-ansi-portdecl-p)
    (ports-acc vl-portlist-p
@@ -260,8 +260,8 @@ is specified.
                                       Please explicitly specify a direction ~
                                       (input, output, ...)"
                                 :args (list x.loc x.name))))))))
-               
-                     
+
+
        (nettype (vl-nettype-for-parsed-ansi-port dir x))
        (type (vl-ansi-portdecl-regularport-type x)))
 
@@ -281,8 +281,8 @@ is specified.
                                :varp x.varp
                                :atts x.atts
                                :loc x.loc)))))
-  
-  
+
+
 
 (define vl-ansi-portdecl-to-interfaceport ((x vl-ansi-portdecl-p))
   :guard (vl-ansi-portdecl->typename x)
@@ -328,7 +328,7 @@ is specified.
                            :args (list x))
                    warnings)))
     warnings))
-  
+
 
 ;; (local (defthm vl-port-p-when-vl-regularport-p-strong
 ;;          (implies (vl-regularport-p x)
@@ -402,7 +402,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
         (b* (((when (atom ports-acc))
               ;; This shouldn't happen because it indicates we should have
               ;; parsed a non-ANSI portlist.
-              (b* ((warnings 
+              (b* ((warnings
                     (warn :type :vl-ansi-port-programming-error
                           :msg "~a0: When the first port in the list has no ~
                             direction, nettype, var keyword, datatype, or ~
@@ -467,7 +467,7 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
                        (not (equal (tag x) :vl-regularport)))
                   (equal (tag x) :vl-interfaceport))
          :hints(("Goal" :in-theory (enable vl-port-p)))))
-                  
+
 
 (define vl-resolve-ansi-portdecls
   ((x vl-ansi-portdecllist-p)
@@ -500,9 +500,9 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
          ss)))
     (mv (append-without-guard warnings1 warnings-rest)
         ports portdecls vardecls)))
-    
 
-  
+
+
 (define vl-module-resolve-ansi-portdecls ((x vl-module-p)
                                           (ss vl-scopestack-p))
   :returns (new-x vl-module-p)
@@ -569,8 +569,8 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
     (change-vl-design x :mods mods :interfaces ifs)))
 
 
-;; ===================== Fixing up ANSI Ports ====================================       
-       
+;; ===================== Fixing up ANSI Ports ====================================
+
 ;; Several jobs here:
 
 ;; 1. Generate implicit vardecls for regular portdecls.
@@ -759,6 +759,6 @@ be a regular port, we don't look up the datatype to make sure it exists.</p>"
        (mods (vl-modulelist-resolve-nonansi-interfaceports x.mods ss))
        (ifs  (vl-interfacelist-resolve-nonansi-interfaceports x.interfaces ss)))
     (change-vl-design x :mods mods :interfaces ifs)))
-                                     
-           
-           
+
+
+

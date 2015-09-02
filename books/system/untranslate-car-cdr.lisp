@@ -5,7 +5,7 @@
 ; To recertify:
 ; (certify-book "untranslate-car-cdr")
 
-; Proof of the Correctness of CADR Centric Untranslation 
+; Proof of the Correctness of CADR Centric Untranslation
 ; J Strother Moore
 ; Georgetown, TX, October, 2014
 
@@ -15,7 +15,7 @@
 ; (internal-form) terms into terms involving macros.  For example, (CAR (CDR
 ; X)) is displayed as (CADR X).  Common Lisp provides 28 macros for the
 ; combinations of CARs and CDRs up to four deep.  Given all these available
-; abbreviations how should (CAR (CDR (CDR (CAR (CDR X))))) be displayed?  
+; abbreviations how should (CAR (CDR (CDR (CAR (CDR X))))) be displayed?
 
 ; For the first 25 years of ACL2's history, the term above was displayed as
 ; (CADDAR (CDR X)).
@@ -68,7 +68,7 @@
 ; introduced by defevaluator because that event only allows function symbols to
 ; be interpreted, whereas CADR, CDDR, etc., are macro symbols.  But the
 ; constraints on evad are exactly analogous to what defevaluator generates.
-; For example, 
+; For example,
 
 ; (DEFTHM EVAD-CONSTRAINT-10
 ;   (IMPLIES (AND (CONSP X) (EQUAL (CAR X) 'CADDR))

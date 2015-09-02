@@ -67,7 +67,7 @@ x)
 	         0))))
 
 (defthm expt-1
-  (and (equal (expt x 1) 
+  (and (equal (expt x 1)
 	      (fix x))
        (equal (expt 1 i)
 	      1)))

@@ -58,7 +58,7 @@ be a real irrational number.
 	     :use ((:instance i-close-large-2)
 		   (:instance i-limited-plus))
 	     :in-theory (disable i-limited-plus i-close-large)))))
-    
+
  (local
   (defthm lemma-2
     (implies (and (standard-numberp x)
@@ -68,7 +68,7 @@ be a real irrational number.
 	     (i-small (* (+ x y) (+ x (- y)))))
     :hints (("Goal"
 	     :in-theory (disable distributivity)))))
-    
+
  (defthm square-continuous
    (implies (and (standard-numberp x)
 		 (realp x)
@@ -105,13 +105,13 @@ be a real irrational number.
 		(realp b)
 		(realp z))
 	   (i-limited (find-zero-n-square a
-					  z 
-					  0 
+					  z
+					  0
 					  (i-large-integer)
 					  (+ (- (* (/ (i-large-integer)) a))
 					     (* (/ (i-large-integer)) b)))))
   :hints (("Goal"
-	   :by (:functional-instance 
+	   :by (:functional-instance
 		 limited-find-zero-body
 		 (rcfn square)
 		 (find-zero-n find-zero-n-square))
@@ -126,8 +126,8 @@ be a real irrational number.
 	   (< a b))
       (standard-part
        (find-zero-n-square a
-			   z 
-			   0 
+			   z
+			   0
 			   (i-large-integer)
 			   (/ (- b a) (i-large-integer))))
     0))
@@ -147,4 +147,4 @@ be a real irrational number.
 		  (b 2)
 		  (z 2)))
 	   :in-theory (disable intermediate-value-theorem))))
-					
+

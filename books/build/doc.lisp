@@ -81,7 +81,12 @@ directory of the Community Books, and is today the main tool behind
 <p>This documentation is really a <b>tutorial</b>, not a reference.  We
 recommend that you read the topics in order.  Also see @(see
 books-certification) for additional information on how to automate the
-certification of the @(see community-books).</p>
+certification of the @(see community-books), and for more details, execute
+the following command in the shell.</p>
+
+@({
+     <path_to_acl2>/books/build/cert.pl --help
+})
 
 <p>We assume basic familiarity with a Unix environment, e.g., we expect that
 you know how to edit your startup scripts to set up a @('PATH'), create

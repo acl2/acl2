@@ -28,17 +28,17 @@
 ;;;   property of renamings with respect to the renamed equivalence: t2 is
 ;;;   a renamed version of t1 iff there exists a renaming s.t. its
 ;;;   domain contains the variables of t1 and applied to t1 is equal to
-;;;   t2. 
+;;;   t2.
 ;;; - Definition and properties of a particular kind of renaming
 ;;;   (number-renaming) and guard verification. This "number-renaming"
 ;;;   will be defined for terms and for lists of terms.
 
 
 ;;; ============================================================================
-;;; 1. The "renamed" equivalence 
+;;; 1. The "renamed" equivalence
 ;;; ============================================================================
 
-;;; ====== RENAMED 
+;;; ====== RENAMED
 
 (defun renamed (t1 t2)
   (if (subs t1 t2)
@@ -66,11 +66,11 @@
 ;;; ============================================================================
 
 ;;; ----------------------------------------------------------------------------
-;;; 2.1 Definition 
+;;; 2.1 Definition
 ;;; ----------------------------------------------------------------------------
 
 ;;; ======= VARIABLE-SUBSTITUTION
-    
+
 (defun variable-substitution (sigma)
   (if (atom sigma)
       t
@@ -78,7 +78,7 @@
 	 (variable-substitution (cdr sigma)))))
 
 (local
- (defthm variable-substitution-value-variable-p 
+ (defthm variable-substitution-value-variable-p
    (implies (and (variable-substitution sigma)
 		 (variable-p term))
 	    (variable-p (val term sigma)))))
@@ -106,18 +106,18 @@
 ;;; ············································································
 
 ;;; We will show that the inverse substitution of a renaming is its
-;;; inverse function, in some sense. 
+;;; inverse function, in some sense.
 
 (encapsulate
  ()
- 
+
  (local
-  (defthm val-val-inverse-lemma 
+  (defthm val-val-inverse-lemma
     (implies (and
 	      (member x (domain sigma))
 	      (equal (val x sigma) y))
 	     (member y (co-domain sigma)))))
-  
+
 ;;; If sigma is a substitution such that its co-domain is a set of
 ;;; variables, then sigma^{-1}(sigma(x)) = x, for all x in
 ;;; domain(sigma). Remeber that a renaming is a substitution such that
@@ -125,25 +125,25 @@
 ;;; elements)
 
  (local
-  (defthm val-val-inverse-renaming 
+  (defthm val-val-inverse-renaming
     (implies (and (renaming sigma)
 		  (member x (domain sigma)))
 	     (equal (val (val x sigma) (inverse sigma)) x))))
-  
+
 ;;; The main theorem:
 ;;; If the variables of t1 are in the domain of sigma, then
 ;;; sigma^{-1}(sigma(t1)) = t1, whenever sigma is a substitution with a
 ;;; set of variables as its co-domain. This theorema will be needed also
 ;;; in subsumption-well-founded.lisp
 
-  (defthm renaming-inverse 
+  (defthm renaming-inverse
     (implies (and
 	      (renaming sigma)
 	      (subsetp (variables flg term) (domain sigma)))
 	     (equal
 	      (apply-subst flg (inverse sigma) (apply-subst flg sigma term))
 	      term))))
- 
+
 
 ;;; ············································································
 ;;; 2.2.2 And the intended property
@@ -215,9 +215,9 @@
      :hints (("Goal" :induct (len l)))))
 
   (defthm renamed-implies-variable-substitution
-    (implies 
+    (implies
      (equal (apply-subst flg delta (apply-subst flg sigma term)) term)
-     (variable-substitution (normal-form-subst flg sigma term))) 
+     (variable-substitution (normal-form-subst flg sigma term)))
     :hints (("Goal" :use
 	     (:instance renamed-implies-variable-substitution-main-lemma
 			(l (make-set (variables flg term)))))))))
@@ -236,7 +236,7 @@
   ()
 
   (local
-   (defthm renamed-implies-injective-val-lemma 
+   (defthm renamed-implies-injective-val-lemma
      (implies (and
 	       (equal (instance (val x sigma) delta) x)
 	       (equal (instance (val y sigma) delta) y)
@@ -246,13 +246,13 @@
 
   (local
    (defthm identity-on-term-identity-val
-     (implies (and 
+     (implies (and
 	       (equal (apply-subst flg delta (apply-subst flg sigma term))
 		      term)
 	       (member x (variables flg term)))
 	      (equal (instance (val x sigma) delta) x))
      :rule-classes nil))
- 
+
   (defthm  renamed-implies-injective-val
     (implies (and
 	      (equal (apply-subst flg delta (apply-subst flg sigma term))
@@ -268,7 +268,7 @@
 
 
 ;;; ············································································
-;;; 2.3.2 co-domain of sigmar is a setp  
+;;; 2.3.2 co-domain of sigmar is a setp
 ;;; ············································································
 
 
@@ -288,8 +288,8 @@
 	      (setp (co-domain (restriction sigma l))))
      :hints (("Goal" :induct (setp l))
 	     ("Subgoal *1/2'4'" :induct (len l2)))))
-  
-   
+
+
  (defthm renamed-implies-setp-codomain
     (implies
      (equal (apply-subst flg delta (apply-subst flg sigma term)) term)
@@ -297,7 +297,7 @@
     :hints (("Goal" :use
 	     (:instance renamed-implies-setp-codomain-main-lemma
 			(l (make-set (variables flg term)))))))))
-				     
+
 ;;; ············································································
 ;;; 2.3.3 sigmar is a renaming
 ;;; ············································································
@@ -323,7 +323,7 @@
 
 
 ;;; ============================================================================
-;;; 3. Number renamings: a special kind of renaming. 
+;;; 3. Number renamings: a special kind of renaming.
 ;;; ============================================================================
 
 ;;; We will define number-renaming. We rename the term enumerating the
@@ -358,7 +358,7 @@
 		(mv (cdr find-term) sigma)
 	      (let ((z (if (endp sigma) x (+ y (cdar sigma)))))
 		(mv z (cons (cons term z) sigma)))))
-	(mv-let (renamed-args renaming-args) 
+	(mv-let (renamed-args renaming-args)
 		(number-rename-aux nil (cdr term) sigma x y)
 		(mv (cons (car term) renamed-args) renaming-args)))
     (if (endp term)
@@ -404,7 +404,7 @@
 
 (local
  (defthm number-rename-aux-substitution-s-p
-   (implies (and (acl2-numberp x) 
+   (implies (and (acl2-numberp x)
 		 (term-s-p-aux flg term)
 		 (substitution-s-p sigma))
 	    (substitution-s-p
@@ -416,15 +416,15 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm number-rename-aux-equal-len
      (equal (len (first (number-rename-aux nil term sigma x y)))
 	    (len term))))
- 
+
   (defthm number-rename-aux-term-s-p-aux
-    (implies (and (acl2-numberp x) 
-		  (term-s-p-aux flg term) 
+    (implies (and (acl2-numberp x)
+		  (term-s-p-aux flg term)
 		  (alistp-acl2-numberp sigma))
 	     (term-s-p-aux
 	      flg (first (number-rename-aux flg term sigma x y)))))))
@@ -449,32 +449,32 @@
  (encapsulate
   ()
 
-  (local 
-   (defthm coincide-main-property 
+  (local
+   (defthm coincide-main-property
      (implies (and (coincide sigma1 sigma2 l)
 		   (member x l))
 	      (equal (equal (val x sigma1) (val x sigma2)) t))))
-  
+
 ;;; REMARK: The form of the rule avoids non-termination
 ;;; This rule is also local in terms.lisp. We don't want terms.lisp to
 ;;; export everywhere. That's the reason why we repeat here the rule.
 
 
-  (defthm coincide-conmutative 
+  (defthm coincide-conmutative
     (implies (coincide a b l)
 	     (coincide b a l)))
- 
+
 
   (in-theory (disable coincide-conmutative))
 
-  (defthm coincide-cons 
-    (implies (and 
+  (defthm coincide-cons
+    (implies (and
 	      (not (member x l))
 	      (coincide sigma sigma1 l))
 	     (coincide (cons (cons x y) sigma) sigma1 l)))
 
 
-  (defthm coincide-subsetp-transitive 
+  (defthm coincide-subsetp-transitive
     (implies (and (coincide sigma sigma1 l)
 		  (coincide sigma1 sigma2 m)
 		  (subsetp  l m))
@@ -484,7 +484,7 @@
 
 
 ;;; ············································································
-;;; 3.3.2 Previous (local) lemmas about acl2-numberp-list-increment 
+;;; 3.3.2 Previous (local) lemmas about acl2-numberp-list-increment
 ;;; ············································································
 
 ;;; We will define and prove some local properties of the concept of
@@ -504,7 +504,7 @@
 (local
  (encapsulate
   ()
-  
+
   (local
    (defthm acl2-numberp-list-increment-setp-1-lema
      (implies (and (acl2-numberp-list-increment l y)
@@ -512,13 +512,13 @@
 		   (> y 0)
 		   (> x (first l)))
 	      (not (member x l)))))
-  
+
   (local
    (defthm acl2-numberp-list-increment-setp-1
      (implies (and (acl2-numberp-list-increment l y)
 		   (> y 0))
 	      (setp l))))
-  
+
   (local
    (defthm acl2-numberp-list-increment-setp-2-lema
      (implies (and (acl2-numberp-list-increment l y)
@@ -526,20 +526,20 @@
 		   (< y 0)
 		   (< x (first l)))
 	      (not (member x l)))))
-  
-  (local 
+
+  (local
    (defthm acl2-numberp-list-increment-setp-2
      (implies (and (acl2-numberp-list-increment l y)
 		   (< y 0))
 	      (setp l))))
- 
+
 
   (defthm acl2-numberp-list-increment-setp
     (implies (and (acl2-numberp-list-increment l y)
 		  (not (=  y 0)))
 	     (setp l))
     :hints (("Goal" :cases ((> y 0) (< y 0)))))))
- 
+
 
 
 ;;; ············································································
@@ -568,7 +568,7 @@
      (acl2-numberp (first l))
      (>= (first l) x) (acl2-numberp-list-bigger-than (cdr l) x))))
 
- 
+
 (local
  (encapsulate
   ()
@@ -578,7 +578,7 @@
      (iff (acl2-numberp-list-bigger-than (append l1 l2) x)
 	  (and (acl2-numberp-list-bigger-than l1 x)
 	       (acl2-numberp-list-bigger-than l2 x)))))
-  
+
   (defthm number-renamed-aux-variables->=-x
     (implies (and (acl2-numberp-list-bigger-than (co-domain sigma) x)
 		  (> y 0)
@@ -590,14 +590,14 @@
 	      (acl2-numberp-list-bigger-than
 	       (co-domain
 		(second (number-rename-aux flg term sigma x y))) x))))
-  
-  
+
+
   (local
    (defthm acl2-numberp-list-smaller-than-append
      (iff (acl2-numberp-list-smaller-than (append l1 l2) x)
 	  (and (acl2-numberp-list-smaller-than l1 x)
 	       (acl2-numberp-list-smaller-than l2 x)))))
-  
+
   (defthm number-renamed-aux-variables-<=-x
     (implies (and (acl2-numberp-list-smaller-than (co-domain sigma) x)
 		  (< y 0)
@@ -638,7 +638,7 @@
    (defthm acl2-numberp-list-increment-implies-variable-substitution
      (implies (acl2-numberp-list-increment (co-domain sigma) y)
 	      (variable-substitution sigma))))
-  
+
   (local
    (defthm acl2-numberp-list-increment-implies-renaming
      (implies (and
@@ -667,7 +667,7 @@
 ;;; 3.3.3.1
 ;;; The substituion returned by  number-rename-aux, applied to the input
 ;;; term returns the returned term (i.e term subsumes the
-;;; number-rename-aux term)   
+;;; number-rename-aux term)
 ;;; ··········································································
 
 ;;; Two previos lemmas:
@@ -688,7 +688,7 @@
 			subsetp-transitive
 			coincide-conmutative
 			coincide-subsetp-transitive)))))
- 
+
 (local
  (defthm number-rename-incremental
    (implies (alistp sigma)
@@ -725,7 +725,7 @@
 (local
  (defthm term-subsumes-number-renamed-aux-term
    (implies (alistp sigma)
-	    (equal 
+	    (equal
 	     (apply-subst flg (second (number-rename-aux flg term sigma
 							 x y))
 			  term)
@@ -743,7 +743,7 @@
   (local
    (defthm number-renamed-aux-term-subsumes-term-lemma
      (implies (and (acl2-numberp x) (acl2-numberp y) (not (= y 0)))
-	      (equal 
+	      (equal
 	       (apply-subst
 		flg
 		(inverse (second (number-rename-aux flg term nil x y)))
@@ -755,10 +755,10 @@
 	      :in-theory (disable renaming
 				  term-subsumes-number-renamed-aux-term)))
      :rule-classes nil))
- 
+
   (defthm number-renamed-aux-term-subsumes-term
     (implies (and (acl2-numberp x) (acl2-numberp y) (not (= y 0)))
-	     (equal 
+	     (equal
 	      (apply-subst
 	       flg
 	       (inverse (second (number-rename-aux flg term nil x y)))
@@ -766,13 +766,13 @@
 	      term))
     :hints (("Goal"
 	     :use (:instance number-renamed-aux-term-subsumes-term-lemma))))))
- 
- 
+
+
 ;;; ----------------------------------------------------------------------------
 ;;; 3.4 Number-rename: definition and main (non-local) properties
 ;;; ----------------------------------------------------------------------------
 
-;;; Here we compile the results of section 3.  
+;;; Here we compile the results of section 3.
 
 (defun number-rename (term x y)
   (declare (xargs :guard (and (term-p term)
@@ -796,7 +796,7 @@
 
 (defthm term-subsumes-number-renamed-term
   (subs term (number-rename term x y))
-  
+
   :hints (("Goal" :use
 	   (:instance subs-completeness
 		       (t1 term)
@@ -840,12 +840,12 @@
 
  (local
   (defthm smaller-bigger-disjointp
-    (implies (and 
+    (implies (and
 	      (< x1 x2)
 	      (acl2-numberp-list-smaller-than l1 x1)
 	      (acl2-numberp-list-bigger-than l2 x2))
 	     (disjointp l1 l2))))
- 
+
  (defthm number-rename-standardization-apart
    (implies (and (acl2-numberp x1)
 		 (acl2-numberp x2)
@@ -859,7 +859,7 @@
 	     smaller-bigger-disjointp
 	     (l1 (variables t (number-rename t1 x1 y1)))
 	     (l2 (variables t (number-rename t2 x2 y2))))))))
- 
+
 
 ;;; Closure property:
 
@@ -880,7 +880,7 @@
 			(term-s-p-aux term-p-aux)))))
 
 ;;; We have extracted the main properties of number-rename, so we now
-;;; disable its definition: 
+;;; disable its definition:
 (in-theory (disable number-rename))
 
 
@@ -923,7 +923,7 @@
 
 (defthm list-subsumes-number-renamed-list-
   (subs-list l (number-rename-list l x y))
-  
+
   :hints (("Goal" :use
 	   (:instance subs-list-completeness
 		       (l1 l)
@@ -967,12 +967,12 @@
 
  (local
   (defthm smaller-bigger-disjointp
-    (implies (and 
+    (implies (and
 	      (< x1 x2)
 	      (acl2-numberp-list-smaller-than l1 x1)
 	      (acl2-numberp-list-bigger-than l2 x2))
 	     (disjointp l1 l2))))
- 
+
  (defthm number-rename-list-standardization-apart
    (implies (and (acl2-numberp x1)
 		 (acl2-numberp x2)
@@ -986,7 +986,7 @@
 	     smaller-bigger-disjointp
 	     (l1 (variables nil (number-rename-list l1 x1 y1)))
 	     (l2 (variables nil (number-rename-list l2 x2 y2))))))))
- 
+
 
 ;;; Closure property:
 
@@ -1007,7 +1007,7 @@
 			(term-s-p-aux term-p-aux)))))
 
 ;;; We have extracted the main properties of number-rename-list, so we now
-;;; disable its definition: 
+;;; disable its definition:
 (in-theory (disable number-rename-list))
 
 

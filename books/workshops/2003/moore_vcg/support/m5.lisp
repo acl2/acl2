@@ -622,7 +622,7 @@ J & George
   (cond ((endp args) nil)
         ((equal key (car args)) (cadr args))
         (t (actual key (cdr args)))))
-        
+
 (defmacro modify (th s &rest args)
   (list 'make-state
         (cond
@@ -815,7 +815,7 @@ J & George
                                    (natural-sum (cons car-counts cdr-counts)))))
     (if (zp car-counts)
         (mv (heap s) ac)
-        (mv-let (new-addr new-heap) 
+        (mv-let (new-addr new-heap)
                 (makemultiarray cdr-counts s)
                 (makemultiarray2 (- car-counts 1)
                                  cdr-counts
@@ -823,13 +823,13 @@ J & George
                                              new-heap
                                              (class-table s))
                                  (cons (list 'REF new-addr) ac)))))
-                             
+
   ; makemultiarray :: [counts], s --> addr, new-heap
   (defun makemultiarray (counts s)
     (declare (xargs :measure (cons (+ 1 (len counts))
                                    (natural-sum counts))))
     (if (<= (len counts) 1)
-        
+
         ; "Base case"  Handles initializing the final dimension
         (mv (len (heap s))
             (bind (len (heap s))
@@ -1632,7 +1632,7 @@ J & George
           :locals (update-nth (arg1 inst)
                                (int-fix
                                   (+ (arg2 inst)
-                                     (nth (arg1 inst) 
+                                     (nth (arg1 inst)
                                           (locals (top-frame th s)))))
                                (locals (top-frame th s)))))
 
@@ -1718,7 +1718,7 @@ J & George
          (result (- val1 (* (truncate val1 val2) val2))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push result 
+              :stack (push result
                            (pop (pop (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
@@ -1830,7 +1830,7 @@ J & George
 (defun execute-JSR (inst th s)
   (modify th s
           :pc (+ (arg1 inst) (pc (top-frame th s)))
-          :stack (push (list 'RETURNADDRESS 
+          :stack (push (list 'RETURNADDRESS
                              (+ (inst-length inst)
                                 (pc (top-frame th s))))
                        (stack (top-frame th s)))))
@@ -1841,7 +1841,7 @@ J & George
 (defun execute-JSR_W (inst th s)
   (modify th s
           :pc (+ (arg1 inst) (pc (top-frame th s)))
-          :stack (push (list 'RETURNADDRESS 
+          :stack (push (list 'RETURNADDRESS
                              (+ (inst-length inst)
                                 (pc (top-frame th s))))
                        (stack (top-frame th s)))))
@@ -2234,7 +2234,7 @@ J & George
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
               :stack (push 0
-                           (push result 
+                           (push result
                                  (popn 4 (stack (top-frame th s))))))))
 
 ; -----------------------------------------------------------------------------
@@ -2316,7 +2316,7 @@ J & George
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :stack (push 0
-                       (push 
+                       (push
                         (ulong-fix (- (top (popn 3 (stack (top-frame th s))))
                                       (top (pop (stack (top-frame th s))))))
                              (popn 4 (stack (top-frame th s)))))))
@@ -2591,8 +2591,8 @@ J & George
          (val2 (top (pop (stack (top-frame th s))))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
-              :stack (push val2 
-                           (push val1 
+              :stack (push val2
+                           (push val1
                               (pop (pop (stack (top-frame th s)))))))))
 
 ; -----------------------------------------------------------------------------
@@ -2751,7 +2751,7 @@ J & George
     (SALOAD         (execute-SALOAD inst th s))
     (SASTORE        (execute-SASTORE inst th s))
     (SIPUSH         (execute-SIPUSH inst th s))
-    (SWAP           (execute-SWAP inst th s))    
+    (SWAP           (execute-SWAP inst th s))
     (HALT           s)
     (otherwise s)))
 
@@ -2973,7 +2973,7 @@ J & George
 
 (defun resolve-string-constants (class cp s idx)
   (cond ((endp cp) s)
-        ((equal (caar cp) 'STRING) 
+        ((equal (caar cp) 'STRING)
          (resolve-string-constants class
                                    (cdr cp)
                                    (make-string-obj class (car cp) s idx)

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -115,7 +115,7 @@
 
 (defthm mulcat-1
     (implies (natp l)
-	     (equal (mulcat l 1 x) 
+	     (equal (mulcat l 1 x)
 		    (bits x (1- l) 0)))
   :hints (("Goal" :in-theory (enable mulcat bits-tail)
 		  :expand ((mulcat l 1 x)))))

@@ -69,6 +69,6 @@
        (null (cddr x))))
 
 (in-theory (disable varp constp))
-  
+
 
 

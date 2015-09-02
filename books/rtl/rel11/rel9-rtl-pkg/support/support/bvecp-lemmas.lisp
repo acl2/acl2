@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -207,25 +207,3 @@
                 '(bvecp-unknown))))
   :RULE-CLASSES
   (:REWRITE (:linear :trigger-terms ((UNKNOWN KEY SIZE N)))))
-
-(defthm bv-arrp-implies-nonnegative-integerp
-  (implies (bv-arrp obj size)
-           (and (INTEGERP (ag index obj))
-                (<= 0 (ag index obj))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :use (:instance
-                        ag-maps-bv-arr-to-bvecp (a index) (r obj) (k size))
-           :in-theory (set-difference-theories
-                       (enable bvecp)
-                       '(ag-maps-bv-arr-to-bvecp))))
-  )
-
-
-
-
-
-
-
-
-
-

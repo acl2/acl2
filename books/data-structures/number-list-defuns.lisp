@@ -18,7 +18,7 @@
 ; name              Acl2?  comment
 ; ------------------------------------------------
 
-; naturalp (macro)   n     recognize a natural number 
+; naturalp (macro)   n     recognize a natural number
 
 ; excess-natural     n     the least upper bound of a list of naturals
 ; integer-listp      y     recognize a list of integers

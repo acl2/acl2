@@ -104,7 +104,7 @@
           (b* ((result-exprs (dumb-gify-body-lst (cdr x)))
                (vars (cadr (car x)))
                (body (caddr (car x))))
-            `(b* ,(pairlis$ 
+            `(b* ,(pairlis$
                    (pairlis$ (acl2::replicate (len vars) 'mv)
                              (pairlis$ vars
                                        (pairlis$ (acl2::replicate (len vars) 'hyp)
@@ -113,7 +113,7 @@
                ,(dumb-gify-body body))))
          (t (b* ((result-exprs (dumb-gify-body-lst (cdr x)))
                  (vars (mk-xes (len (cdr x)) 0)))
-              `(b* ,(pairlis$ 
+              `(b* ,(pairlis$
                      (pairlis$ (acl2::replicate (len vars) 'mv)
                                (pairlis$ vars
                                          (pairlis$ (acl2::replicate (len vars) 'hyp)
@@ -127,8 +127,8 @@
        nil
      (cons (dumb-gify-body (car x))
            (dumb-gify-body-lst (cdr x))))))
-               
-          
+
+
 
 (defmacro def-g-simple (name body)
   `(progn (def-g-fn ,name ',(dumb-gify-body body))
@@ -514,7 +514,7 @@
 (verify-g-guards hons-get)
 
 (def-gobj-dependency-thm hons-get
-  :hints `(("Goal" 
+  :hints `(("Goal"
             :in-theory (e/d (,gfn)))))
 
 
@@ -633,16 +633,6 @@ simulation.</p>"
 ;; BDD mode is on by default -- the above defattaches are set up in bfr.lisp
 ;; and bfr-sat.lisp, respectively.
 ;; (gl-bdd-mode)
-
-(defsection g-int
-  :parents (shape-specs)
-  :short "Create a g-binding for an integer."
-  :long "<p>This is a low-level way to create a custom shape specifier for a
-signed integer.  You might generally prefer higher-level tools like @(see
-auto-bindings).</p>"
-
-  (defun g-int (start by n)
-    (g-number (list (numlist start by n)))))
 
 ;; Fix for unsigned-byte-p's recursive definition in ihs books
 (table acl2::structural-decomp-defs 'unsigned-byte-p 'unsigned-byte-p)

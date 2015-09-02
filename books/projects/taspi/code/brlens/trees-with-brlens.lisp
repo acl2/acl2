@@ -6,12 +6,12 @@
 ;; both any atom brlens (treep-brlens x) and requiring
 ;; only numeric brlens (treep-num-brlens x).  The recognizers
 ;; allowing brlens do not require brlens, but the recognizers
-;; for trees with numeric brlens requires that all brlens are 
+;; for trees with numeric brlens requires that all brlens are
 ;; present.
 
-;; There are also functions for several of the likely to be used 
-;; functions from tree-predicates.lisp, replete.lisp, and 
-;; fringes.lisp.  These functions generally first remove brlens 
+;; There are also functions for several of the likely to be used
+;; functions from tree-predicates.lisp, replete.lisp, and
+;; fringes.lisp.  These functions generally first remove brlens
 ;; and then call the functions from tree-predicates.lisp.
 
 ;; Examples at the end of the file.
@@ -102,7 +102,7 @@
    (declare (xargs :guard t
                    :measure (tree-measure list nil)))
    (if (atom list)
-       (equal list nil) 
+       (equal list nil)
      (and (treep-brlens (car list))
           (tree-listp-brlens (cdr list))))))
 
@@ -148,8 +148,8 @@
 ;  Arguments:
 ;    (1) x - a possible leaf
 
-;  Details: Requires a branch length in order to return true. 
-;           See also tip-p." 
+;  Details: Requires a branch length in order to return true.
+;           See also tip-p."
   (declare (xargs :guard t))
   (if (consp x) ; brlen must be present
       (and (or (and (symbolp (car x))
@@ -181,7 +181,7 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ;  ":Doc-Section TASPI
-;   Recognizes well formed trees with numeric branch lengths 
+;   Recognizes well formed trees with numeric branch lengths
 ;   and no singletons.~/
 ;   ~/
 ;   Arguments:
@@ -208,7 +208,7 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ;  ":Doc-Section TASPI
-;   Recognizes a list of well formed trees with numeric branch lengths 
+;   Recognizes a list of well formed trees with numeric branch lengths
 ;   and no singletons.~/
 ;   ~/
 ;   Arguments:
@@ -219,7 +219,7 @@
    (declare (xargs :guard t
                    :measure (tree-measure list nil)))
    (if (atom list)
-       (equal list nil) 
+       (equal list nil)
      (and (treep-num-brlens (car list))
           (tree-listp-num-brlens (cdr list))))))
 
@@ -269,7 +269,7 @@
                        (treep-brlens-flg nil (car x)))
                   )))
      (if (atom x)
-         (equal x nil) 
+         (equal x nil)
        (and (treep-brlens-flg t (car x))
             (treep-brlens-flg nil (cdr x))))))
 
@@ -280,7 +280,7 @@
        (implies (equal flg nil)
                 (equal (treep-brlens-flg flg a)
                        (tree-listp-brlens a))))
-  :hints (("Goal" :in-theory (enable treep-brlens 
+  :hints (("Goal" :in-theory (enable treep-brlens
                                      tree-listp-brlens)
            :induct (treep-brlens-flg flg a))))
 
@@ -291,7 +291,7 @@
 ;;                 (treep (remove-brlens x)))
 ;;        (implies (tree-listp-brlens x)
 ;;                 (tree-listp (remove-brlens-list x))))
-;;   :hints (("Goal" :induct (treep-brlens-flg flg 
+;;   :hints (("Goal" :induct (treep-brlens-flg flg
 ;;                                         (remove-brlens-flg flg x)))))
 ;; )
 
@@ -323,7 +323,7 @@
 
 (defun taspip-list-brlens (x)
   (declare (xargs :guard t))
-  (taspip nil (remove-brlens-list x))) 
+  (taspip nil (remove-brlens-list x)))
 
 ;; Note - its my belief that count-tips of
 ;; a tree with brlens and one with brlens removed
@@ -349,7 +349,7 @@
 ;   Arguments:
 ;      (1) tree - a tree
 
-;   Details: Assumes that no taxon has been assigned the name *nil*. 
+;   Details: Assumes that no taxon has been assigned the name *nil*.
 ;            See also mytips."
   (declare (xargs :guard t))
   (mytips (remove-brlens x)))
@@ -370,16 +370,16 @@ Some examples
  (treep-brlens '((a) . 4)) ;; bad
 )
 
-(list 
+(list
  (treep-num-brlens '(((a b) . 3) c))
  (treep-num-brlens '((((a . 4) (b . 2)) . 3) (c . 6)))
  (treep-num-brlens '(a . b))
  (treep-num-brlens '((a . 4)))
  (treep-num-brlens '(a b))
  (treep-num-brlens '((A . 4) (b . 2)))
- (treep-num-brlens '((a . 4) . 2)) 
+ (treep-num-brlens '((a . 4) . 2))
  (treep-num-brlens  '((a . 4) b))
- (treep-num-brlens '(a . (a . 3))) 
+ (treep-num-brlens '(a . (a . 3)))
  (treep-num-brlens '(((a . 4) (b . 3)) . 5))
  (treep-num-brlens '((a) . 4))
 )

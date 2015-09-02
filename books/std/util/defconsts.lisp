@@ -164,7 +164,7 @@ this large list in the certificate.</li>
             (defconsts-strip-stars (cdr x)))))
 
   (local (in-theory (enable defconsts-strip-stars)))
-  
+
   (defthm symbol-listp-of-defconsts-strip-stars
     (symbol-listp (defconsts-strip-stars x)))
 
@@ -196,7 +196,7 @@ this large list in the certificate.</li>
 
 
 (defsection defconsts-replace-amps
-  ;; (*foo* *bar* & & baz) --> (*foo* *bar* fresh-syms3 fresh-syms4 baz)  
+  ;; (*foo* *bar* & & baz) --> (*foo* *bar* fresh-syms3 fresh-syms4 baz)
 
   (defund defconsts-replace-amps (x fresh-syms)
     (declare (xargs :guard (and (symbol-listp x)

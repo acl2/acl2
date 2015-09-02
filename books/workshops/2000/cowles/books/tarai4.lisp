@@ -21,7 +21,7 @@
 ; University of Wyoming
 ; Laramie, WY 82071-3682 U.S.A.
 
-;; The function Fb satisfies the tarai recursion for 
+;; The function Fb satisfies the tarai recursion for
 ;;  lists of length 7.
 
 ;; (certify-book "C:/acl2/tak/tarai4")
@@ -105,8 +105,8 @@
 
 (defun
     lst-rotates-with-minus-1 (n lst)
-    "Return the list of n+1 successive rotates of the 
-     list lst with the first of each rotate replaced 
+    "Return the list of n+1 successive rotates of the
+     list lst with the first of each rotate replaced
      by the first minus 1."
     (declare (xargs :guard (and (rational-listp lst)
 				(consp lst)
@@ -125,7 +125,7 @@
 	      (Fb-lst (rest lst)))
         nil))
 ;;----------------------------------------------------------
-;; Fb satisfies the tarai restricted recursion equation 
+;; Fb satisfies the tarai restricted recursion equation
 ;;  when lst is a true list of integers of length 7.
 (local
  (defthm
@@ -136,7 +136,7 @@
 		    (list (- second 1) third forth fifth sixth seventh first))
 	      ))
      :hints (("Goal"
-	      :expand ((lst-rotates-with-minus-1 
+	      :expand ((lst-rotates-with-minus-1
 			1
 			(list first second third forth fifth sixth seventh))))
 	     )))
@@ -178,7 +178,7 @@
  (defthm
      lst-rotates-with-minus-1-7e
      (let ((lst (list first second third forth fifth sixth seventh)))
-       (equal 
+       (equal
 	(lst-rotates-with-minus-1 5 lst)
 	(list (list (- first 1) second third forth fifth sixth seventh)
 	      (list (- second 1) third forth fifth sixth seventh first)
@@ -193,19 +193,19 @@
      lst-rotates-with-minus-1-7f
      (let ((lst (list first second third forth
 		      fifth sixth seventh)))
-       (equal 
+       (equal
 	(lst-rotates-with-minus-1 6 lst)
-	(list (list (- first 1) second third forth 
+	(list (list (- first 1) second third forth
 		    fifth sixth seventh)
 	      (list (- second 1) third forth fifth
 		    sixth seventh first)
-	      (list (- third 1) forth fifth sixth 
+	      (list (- third 1) forth fifth sixth
 		    seventh first second)
 	      (list (- forth 1) fifth sixth seventh
 		    first second third)
-	      (list (- fifth 1) sixth seventh first 
+	      (list (- fifth 1) sixth seventh first
 		    second third forth)
-	      (list (- sixth 1) seventh first second 
+	      (list (- sixth 1) seventh first second
 		    third forth fifth)
 	      (list (- seventh 1) first second third
 		    forth fifth sixth)
@@ -226,7 +226,7 @@
 		      (if (<= (first lst)
 			      (second lst))
 			  (second lst)
-			(Fb (Fb-lst (lst-rotates-with-minus-1 
+			(Fb (Fb-lst (lst-rotates-with-minus-1
 				     (- (len lst) 1)
 				     lst)))))))
     :rule-classes nil)

@@ -18,11 +18,11 @@
 
 (defthm bits-trunc-2
   (implies (and (= n (1+ (expo x)))
-;(rationalp x) ;(integerp x) 
+;(rationalp x) ;(integerp x)
                 (>= x 0)
-                ;(integerp n) 
+                ;(integerp n)
 ;                (>= n k)
-                (integerp k) 
+                (integerp k)
                 (> k 0)
                 )
            (= (trunc x k)
@@ -34,7 +34,7 @@
 
 (local
  (defthm bits-trunc-3
-   (implies (and (integerp x) 
+   (implies (and (integerp x)
                  (> x 0)
                  (integerp n) (> n k)
                  (integerp k) (> k 0)

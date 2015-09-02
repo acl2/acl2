@@ -38,7 +38,7 @@ To certify this book, first, create a world with the following package:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -178,7 +178,7 @@ To certify this book, first, create a world with the following package:
 		(not (= (double-rewrite p) (nulo))))
 	   (FUMON::= (primero (- p))(FUMON::- (primero p))))
   :hints (("Goal"
-	   :in-theory (enable nulo - FUPOL::+M)))) 
+	   :in-theory (enable nulo - FUPOL::+M))))
 
 (defthm
   |resto -p = - resto p|
@@ -186,7 +186,7 @@ To certify this book, first, create a world with the following package:
 		(not (= (double-rewrite p) (nulo))))
 	   (= (resto (- p))(- (resto p))))
   :hints (("Goal"
-	   :in-theory (enable nulo  -)))) 
+	   :in-theory (enable nulo  -))))
 
 (defthm
   |nil + p = p|
@@ -247,10 +247,10 @@ To certify this book, first, create a world with the following package:
 	   (equal (deg (- p))
 		  (deg p)))
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (disable
 	    |FUMON::termino (FUMON::- (primero p) =e FUMON::termino (primero p)|)
-	   :use 
+	   :use
 	   |FUMON::termino (FUMON::- (primero p) =e FUMON::termino (primero p)|)))
 
 (defthm
@@ -283,7 +283,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :in-theory (e/d (=)
 			   (FUPOL::|- (m +Mo p) =P (- m) +Mo (- p)|))
-	   :use (:instance 
+	   :use (:instance
 		 FUPOL::|- (m +Mo p) =P (- m) +Mo (- p)|
 		 (FUPOL::m m)
 		 (FUPOL::p p)))))
@@ -362,7 +362,7 @@ To certify this book, first, create a world with the following package:
 		(not (= (double-rewrite p)(nulo)))
 		(polinomiop (double-rewrite q))
 		(not (= (double-rewrite q)(nulo))))
-	   (= (+ p q) 
+	   (= (+ p q)
 	      (FUPOL::+-monomio (primero p)
 				(FUPOL::+-monomio (primero q)
 						  (+ (resto p)
@@ -384,7 +384,7 @@ To certify this book, first, create a world with the following package:
 	   (FLD::= (FUMON::coeficiente (FUMON::- (primero p)))
 		   (FLD::- (FUMON::coeficiente (primero p)))))
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (disable |FUMON::coeficiente (- m) FLD::= FLD::- (FUMON::coeficiente m)|)
 	   :use (:instance
 		 |FUMON::coeficiente (- m) FLD::= FLD::- (FUMON::coeficiente m)|
@@ -401,10 +401,10 @@ To certify this book, first, create a world with the following package:
 	   (FLD::= (FLD::+ (FUMON::coeficiente (primero p))
 			   (FUMON::coeficiente (primero q)))
 		   (FLD::0_f)))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
-    (e/d 
+    :in-theory
+    (e/d
      (nulo)
      (|coeficiente (- (primero p)) FLD::= FLD::- (coeficiente (primero p))|))
     :use |coeficiente (- (primero p)) FLD::= FLD::- (coeficiente (primero p))|)))
@@ -426,7 +426,7 @@ To certify this book, first, create a world with the following package:
 	      (+ (resto p)(resto q))))
   :hints (("Goal"
 	   :in-theory (e/d (=)(FUPOL::|(a + b) = 0 => a +Mo (b +Mo p) =P p|))
-	   :use (:instance 
+	   :use (:instance
 		 FUPOL::|(a + b) = 0 => a +Mo (b +Mo p) =P p|
 		 (FUPOL::p (+ (resto p)(resto q)))
 		 (FUPOL::a (FUMON::coeficiente (primero p)))
@@ -455,7 +455,7 @@ To certify this book, first, create a world with the following package:
 		  (FUMON::termino (primero q))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (disable
 	    |FUMON::termino (FUMON::- (primero p) =e FUMON::termino (primero p)|)
 	   :use (|FUMON::termino (FUMON::- (primero p) =e FUMON::termino (primero p)|
@@ -557,12 +557,12 @@ To certify this book, first, create a world with the following package:
 			  (FUMON::termino (primero p))))
 	  (equal (primero (FUPOL::fn (FUPOL::+ p q)))
 		 (primero (FUPOL::+ p q))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (e/d  (nulo)
 	  (FUPOL::|(primero p) >-monomio (resto p) => primero (fn p) =e primero p|))
-    :use (:instance 
+    :use (:instance
 	  FUPOL::|(primero p) >-monomio (resto p) => primero (fn p) =e primero p|
 	  (FUPOL::p (FUPOL::+ p q))))))
 
@@ -585,8 +585,8 @@ To certify this book, first, create a world with the following package:
 			  (FUMON::termino (primero p))))
 	  (equal (primero (+ p q))
 		 (primero p)))
-  :hints (("Goal" 
-	   :in-theory (enable +)))) 
+  :hints (("Goal"
+	   :in-theory (enable +))))
 
 (defthm
   |deg(p + q) =_e deg(p)|
@@ -757,7 +757,7 @@ To certify this book, first, create a world with the following package:
   :rule-classes (:rewrite
 		 :linear)
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (e/d (FUMON::=)
 		(=-implies-equal-deg-a
 		 =-implies-equal-deg-b
@@ -786,9 +786,9 @@ To certify this book, first, create a world with the following package:
 		    (deg p)))
   :rule-classes (:rewrite
 		 :linear)
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
+    :in-theory
     (disable |deg(p + q) ACL2::< deg(p)|
 	     FUMON::nulop
 	     |p + q = mp(p) +Mo (mp(q) +Mo (resto(p) + (resto q)))|
@@ -886,7 +886,7 @@ To certify this book, first, create a world with the following package:
 					    (FLD::/ (lc p2)))
 				    (ACL2::- (deg p1)
 					     (deg p2)))))
-	        (FUMON::= (primero (FUPOL::*-monomio m p2))   
+	        (FUMON::= (primero (FUPOL::*-monomio m p2))
 			  (primero p1))))
   :hints (("Goal"
 	   :in-theory (enable FUTER::* FUTER::terminop
@@ -943,12 +943,12 @@ To certify this book, first, create a world with the following package:
 	        (FUMON::= (FUMON::- (primero (- (FUPOL::*-monomio m p2))))
 			  (primero (FUPOL::*-monomio m p2)))))
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (disable |primero (- (m *-monomio p2)) = - (primero (m *-monomio p2))|
 		    FUMON::=-implies-=_-
 		    FUMON::-)
 	   :use (|primero (- (m *-monomio p2)) = - (primero (m *-monomio p2))|
-		 (:instance 
+		 (:instance
 		  FUMON::=-implies-=_-
 		  (FUMON::m1 (let ((m (FUMON::monomio (FLD::* (lc p1)
 							      (FLD::/ (lc p2)))
@@ -977,11 +977,11 @@ To certify this book, first, create a world with the following package:
 	        (FUMON::= (FUMON::- (primero (- (FUPOL::*-monomio m p2))))
 			  (primero p1))))
   :hints (("Goal"
-	   :in-theory 
-	   (disable 
+	   :in-theory
+	   (disable
 	    |FUMON::- (primero (- (m *-monomio p2))) = (primero (m *-monomio p2))|
 	    |primero(m FUPOL::*-monomio p2) FUMON::= primero(p1)|)
-	   :use 
+	   :use
 	   (|FUMON::- (primero (- (m *-monomio p2))) = (primero (m *-monomio p2))|
 	    |primero(m FUPOL::*-monomio p2) FUMON::= primero(p1)|))))
 
@@ -1063,8 +1063,8 @@ To certify this book, first, create a world with the following package:
 		  :hints (("Goal"
 			   :in-theory (disable deg lc))
 			  ("Subgoal 1.1"
-			   :in-theory 
-			   (disable 
+			   :in-theory
+			   (disable
 			    |deg (p1 + (- (m FUPOL::*-monomio p2))) ACL2::< deg p1|)
 			   :use
 			   |deg (p1 + (- (m FUPOL::*-monomio p2))) ACL2::< deg p1|
@@ -1079,7 +1079,7 @@ To certify this book, first, create a world with the following package:
 				       (FLD::/ (lc p2)))
 			       (ACL2::- (deg p1)
 					(deg p2)))))
-	   (FUPOL::+-monomio m 
+	   (FUPOL::+-monomio m
 			     (quot (+ p1 (- (FUPOL::*-monomio m p2)))
 				   p2)))
       (nulo)))
@@ -1139,8 +1139,8 @@ To certify this book, first, create a world with the following package:
 		  :hints (("Goal"
 			   :in-theory (disable deg lc))
 			  ("Subgoal 1.1"
-			   :in-theory 
-			   (disable 
+			   :in-theory
+			   (disable
 			    |deg (p1 + (- (m FUPOL::*-monomio p2))) ACL2::< deg p1|)
 			   :use
 			   (:instance
@@ -1287,7 +1287,7 @@ To certify this book, first, create a world with the following package:
 						  (ACL2::- (deg p))))
 			 p)))
 		  p)))
-	   (= (FUPOL::+-monomio 
+	   (= (FUPOL::+-monomio
 	       (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p)))
 			       (ACL2::+ (deg p1)
 					(ACL2::- (deg p))))
@@ -1299,7 +1299,7 @@ To certify this book, first, create a world with the following package:
 						(ACL2::- (deg p))))
 		       p)))
 		p))
-	      (FUPOL::+-monomio 
+	      (FUPOL::+-monomio
 	       (FUMON::monomio (FLD::* (lc p2) (FLD::/ (lc p)))
 			       (ACL2::+ (deg p2)
 					(ACL2::- (deg p))))
@@ -1358,7 +1358,7 @@ To certify this book, first, create a world with the following package:
 					   (FLD::/ (lc p2)))
 				   (ACL2::- (deg p1)
 					    (deg p2)))
-		   (quot (+ p1 
+		   (quot (+ p1
 			    (- (FUPOL::*-monomio
 				(FUMON::monomio (FLD::* (lc p1)
 							(FLD::/ (lc p2)))
@@ -1513,10 +1513,10 @@ To certify this book, first, create a world with the following package:
 					      (ACL2::- (deg p2))))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable deg lc 
+	   :in-theory (disable deg lc
 			       =-implies-equal-deg-a
 			       =-implies-equal-deg-b)
-	   :use (=-implies-=-quot-2-lemma-2 
+	   :use (=-implies-=-quot-2-lemma-2
 		 =-implies-equal-deg-a))))
 
 (defthm
@@ -1537,8 +1537,8 @@ To certify this book, first, create a world with the following package:
 		(FUPOL::ordenadop p)
 		(<= (deg p1)(deg p))
 		(= p1 p2))
-	   (= (quot (+ p 
-		       (- 
+	   (= (quot (+ p
+		       (-
 			(FUPOL::*-monomio
 			 (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 					 (ACL2::+ (deg p)
@@ -1546,7 +1546,7 @@ To certify this book, first, create a world with the following package:
 			 p1)))
 		    p2)
 	      (quot (+ p
-		       (- 
+		       (-
 			(FUPOL::*-monomio
 			 (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p2)))
 					 (ACL2::+ (deg p)
@@ -1574,8 +1574,8 @@ To certify this book, first, create a world with the following package:
 		(FUPOL::ordenadop p)
 		(<= (deg p1)(deg p))
 		(= p1 p2)
-		(= (quot (+ p 
-			    (- 
+		(= (quot (+ p
+			    (-
 			     (FUPOL::*-monomio
 			      (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 					      (ACL2::+ (deg p)
@@ -1583,15 +1583,15 @@ To certify this book, first, create a world with the following package:
 			      p1)))
 			 p1)
 		   (quot (+ p
-			    (- 
+			    (-
 			     (FUPOL::*-monomio
 			      (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 					      (ACL2::+ (deg p)
 						       (ACL2::- (deg p1))))
 			      p1)))
 			 p2)))
-	   (= (quot (+ p 
-		       (- 
+	   (= (quot (+ p
+		       (-
 			(FUPOL::*-monomio
 			 (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 					 (ACL2::+ (deg p)
@@ -1599,7 +1599,7 @@ To certify this book, first, create a world with the following package:
 			 p1)))
 		    p1)
 	      (quot (+ p
-		       (- 
+		       (-
 			(FUPOL::*-monomio
 			 (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p2)))
 					 (ACL2::+ (deg p)
@@ -1628,8 +1628,8 @@ To certify this book, first, create a world with the following package:
 		(FUPOL::ordenadop p)
 		(<= (deg p1)(deg p))
 		(= p1 p2)
-		(= (quot (+ p 
-			    (- 
+		(= (quot (+ p
+			    (-
 			     (FUPOL::*-monomio
 			      (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 					      (ACL2::+ (deg p)
@@ -1637,7 +1637,7 @@ To certify this book, first, create a world with the following package:
 			      p1)))
 			 p1)
 		   (quot (+ p
-			    (- 
+			    (-
 			     (FUPOL::*-monomio
 			      (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 					      (ACL2::+ (deg p)
@@ -1648,8 +1648,8 @@ To certify this book, first, create a world with the following package:
 	       (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 			       (ACL2::+ (deg p)
 					(ACL2::- (deg p1))))
-	       (quot (+ p 
-			(- 
+	       (quot (+ p
+			(-
 			 (FUPOL::*-monomio
 			  (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 					  (ACL2::+ (deg p)
@@ -1661,7 +1661,7 @@ To certify this book, first, create a world with the following package:
 			       (ACL2::+ (deg p)
 					(ACL2::- (deg p2))))
 	       (quot (+ p
-			(- 
+			(-
 			 (FUPOL::*-monomio
 			  (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p2)))
 					  (ACL2::+ (deg p)
@@ -1685,8 +1685,8 @@ To certify this book, first, create a world with the following package:
 		  (m2 (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p2)))
 				      (ACL2::+ (deg p)
 					       (ACL2::- (deg p2)))))
-		  (p1 (quot (+ p 
-			       (- 
+		  (p1 (quot (+ p
+			       (-
 				(FUPOL::*-monomio
 				 (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 						 (ACL2::+ (deg p)
@@ -1694,7 +1694,7 @@ To certify this book, first, create a world with the following package:
 				 p1)))
 			    p1))
 		  (p2 (quot (+ p
-			       (- 
+			       (-
 				(FUPOL::*-monomio
 				 (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p2)))
 						 (ACL2::+ (deg p)
@@ -1710,8 +1710,8 @@ To certify this book, first, create a world with the following package:
 		(FUPOL::ordenadop p)
 		(<= (deg p1)(deg p))
 		(= p1 p2)
-		(= (quot (+ p 
-			    (- 
+		(= (quot (+ p
+			    (-
 			     (FUPOL::*-monomio
 			      (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 					      (ACL2::+ (deg p)
@@ -1719,7 +1719,7 @@ To certify this book, first, create a world with the following package:
 			      p1)))
 			 p1)
 		   (quot (+ p
-			    (- 
+			    (-
 			     (FUPOL::*-monomio
 			      (FUMON::monomio (FLD::* (lc p) (FLD::/ (lc p1)))
 					      (ACL2::+ (deg p)
@@ -1798,7 +1798,7 @@ To certify this book, first, create a world with the following package:
 			     (ACL2::- (deg p2)))))
   :rule-classes nil
   :hints (("Goal"
-	  :in-theory 
+	  :in-theory
 	  (disable deg lc
 		   |deg (p1 + (- (m FUPOL::*-monomio p2))) ACL2::< deg p1|)
 	  :use |deg (p1 + (- (m FUPOL::*-monomio p2))) ACL2::< deg p1|)))
@@ -1814,7 +1814,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :in-theory (e/d (FUTER::<)
 			   (FUPOL::|primero p FUMON::< m => >-monomio m p|))
-	   :use (:instance 
+	   :use (:instance
 		 FUPOL::|primero p FUMON::< m => >-monomio m p|
 		 (FUPOL::m m)
 		 (FUPOL::p p)))))
@@ -1901,10 +1901,10 @@ To certify this book, first, create a world with the following package:
 	   (> (FUMON::termino (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
 					      (ACL2::+ (deg p1)
 						       (ACL2::- (deg p2)))))
-	      (FUMON::termino 
+	      (FUMON::termino
 	       (primero (quot (+ p1
 				 (- (FUPOL::*-monomio
-				     (FUMON::monomio (FLD::* (lc p1) 
+				     (FUMON::monomio (FLD::* (lc p1)
 							     (FLD::/ (lc p2)))
 						     (ACL2::+ (deg p1)
 							      (ACL2::- (deg p2))))
@@ -1919,7 +1919,7 @@ To certify this book, first, create a world with the following package:
 			       FUPOL::ordenadop
 			       |p + q = mp(p) +Mo (resto(p) + q)|
 			       |(a + b) = 0 => a +Mo (b +Mo p) = p-lemma-3|
-			       |- p != 0| 
+			       |- p != 0|
 			       |p + (- p) = 0|
 			       |p + q = 0 <=> q = - p|
 			       |p + q = mp(p) +Mo (mp(q) +Mo (resto(p) + (resto q)))|
@@ -1962,16 +1962,16 @@ To certify this book, first, create a world with the following package:
 					  (ACL2::+ (deg p1)
 						   (ACL2::- (deg p2))))
 			  p2)))))))
-	   (equal (primero (FUPOL::+-monomio 
+	   (equal (primero (FUPOL::+-monomio
 			    (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
 					    (ACL2::+ (deg p1)
 						     (ACL2::- (deg p2))))
 			    (quot (+ p1
 				     (- (FUPOL::*-monomio
-					 (FUMON::monomio (FLD::* (lc p1) 
+					 (FUMON::monomio (FLD::* (lc p1)
 								 (FLD::/ (lc p2)))
 							 (ACL2::+ (deg p1)
-								  (ACL2::- 
+								  (ACL2::-
 								   (deg p2))))
 					 p2)))
 				  p2)))
@@ -1980,7 +1980,7 @@ To certify this book, first, create a world with the following package:
 					   (ACL2::- (deg p2))))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-2|
 		       |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-3|
 		       |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-4|)
@@ -1994,10 +1994,10 @@ To certify this book, first, create a world with the following package:
 					      (ACL2::- (deg p2)))))
 		  (p (quot (+ p1
 			      (- (FUPOL::*-monomio
-				  (FUMON::monomio (FLD::* (lc p1) 
+				  (FUMON::monomio (FLD::* (lc p1)
 							  (FLD::/ (lc p2)))
 						  (ACL2::+ (deg p1)
-							   (ACL2::- 
+							   (ACL2::-
 							    (deg p2))))
 				  p2)))
 			   p2)))))))
@@ -2035,16 +2035,16 @@ To certify this book, first, create a world with the following package:
 					  (ACL2::+ (deg p1)
 						   (ACL2::- (deg p2))))
 			  p2)))))))
-	   (equal (deg (FUPOL::+-monomio 
+	   (equal (deg (FUPOL::+-monomio
 			(FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
 					(ACL2::+ (deg p1)
 						 (ACL2::- (deg p2))))
 			(quot (+ p1
 				 (- (FUPOL::*-monomio
-				     (FUMON::monomio (FLD::* (lc p1) 
+				     (FUMON::monomio (FLD::* (lc p1)
 							     (FLD::/ (lc p2)))
 						     (ACL2::+ (deg p1)
-							      (ACL2::- 
+							      (ACL2::-
 							       (deg p2))))
 				     p2)))
 			      p2)))
@@ -2059,7 +2059,7 @@ To certify this book, first, create a world with the following package:
 			       FUPOL::ordenadop
 			       |p + q = mp(p) +Mo (resto(p) + q)|
 			       |(a + b) = 0 => a +Mo (b +Mo p) = p-lemma-3|
-			       |- p != 0| 
+			       |- p != 0|
 			       |p + (- p) = 0|
 			       |p + q = 0 <=> q = - p|
 			       |p + q = mp(p) +Mo (mp(q) +Mo (resto(p) + (resto q)))|
@@ -2083,16 +2083,16 @@ To certify this book, first, create a world with the following package:
 						   (ACL2::- (deg p2))))
 			  p2)))
 		   (nulo)))
-	   (equal (deg (FUPOL::+-monomio 
+	   (equal (deg (FUPOL::+-monomio
 			(FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
 					(ACL2::+ (deg p1)
 						 (ACL2::- (deg p2))))
 			(quot (+ p1
 				 (- (FUPOL::*-monomio
-				     (FUMON::monomio (FLD::* (lc p1) 
+				     (FUMON::monomio (FLD::* (lc p1)
 							     (FLD::/ (lc p2)))
 						     (ACL2::+ (deg p1)
-							      (ACL2::- 
+							      (ACL2::-
 							       (deg p2))))
 				     p2)))
 			      p2)))
@@ -2111,7 +2111,7 @@ To certify this book, first, create a world with the following package:
 			    FUPOL::ordenadop
 			    |p + q = mp(p) +Mo (resto(p) + q)|
 			    |(a + b) = 0 => a +Mo (b +Mo p) = p-lemma-3|
-			    |- p != 0| 
+			    |- p != 0|
 			    |p + (- p) = 0|
 			    |p + q = 0 <=> q = - p|
 			    |p + q = mp(p) +Mo (mp(q) +Mo (resto(p) + (resto q)))|
@@ -2173,7 +2173,7 @@ To certify this book, first, create a world with the following package:
 				FUPOL::ordenadop
 				|p + q = mp(p) +Mo (resto(p) + q)|
 				|(a + b) = 0 => a +Mo (b +Mo p) = p-lemma-3|
-				|- p != 0| 
+				|- p != 0|
 				|p + (- p) = 0|
 				|p + q = 0 <=> q = - p|
 				|p + q = mp(p) +Mo (mp(q) +Mo (resto(p) + (resto q)))|
@@ -2228,7 +2228,7 @@ To certify this book, first, create a world with the following package:
 			    FUPOL::ordenadop
 			    |p + q = mp(p) +Mo (resto(p) + q)|
 			    |(a + b) = 0 => a +Mo (b +Mo p) = p-lemma-3|
-			    |- p != 0| 
+			    |- p != 0|
 			    |p + (- p) = 0|
 			    |p + q = 0 <=> q = - p|
 			    |p + q = mp(p) +Mo (mp(q) +Mo (resto(p) + (resto q)))|
@@ -2260,11 +2260,11 @@ To certify this book, first, create a world with the following package:
 	   :in-theory (e/d (nulo)
 			   (deg lc)))
 	  ("Subgoal *1/4''"
-	   :use |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-10|) 
+	   :use |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-10|)
 	  ("Subgoal *1/3''"
-	   :use |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-11|) 
+	   :use |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-11|)
 	  ("Subgoal *1/1'"
-	   :use |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-9|))) 
+	   :use |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-9|)))
 
 (defthm
   |deg rem(p1 p2) ACL2::< deg p2-lemma-1|
@@ -2298,7 +2298,7 @@ To certify this book, first, create a world with the following package:
     (implies (and (polinomiop p)
 		(not (nulop p)))
 	   (= (* p q)
-	      (+ (FUPOL::*-monomio (primero p) q) 
+	      (+ (FUPOL::*-monomio (primero p) q)
 		 (* (resto p) q))))
   :rule-classes nil
   :hints (("Goal"
@@ -2316,7 +2316,7 @@ To certify this book, first, create a world with the following package:
 		(> (FUMON::termino m)
 		   (FUMON::termino (primero q))))
 	   (= (* p (FUPOL::+-monomio m q))
-	      (+ (FUPOL::*-monomio m p) 
+	      (+ (FUPOL::*-monomio m p)
 		 (* p q))))
   :hints (("Goal"
 	   :use (:instance
@@ -2332,7 +2332,7 @@ To certify this book, first, create a world with the following package:
 		(> (FUMON::termino m)
 		   (FUMON::termino (primero q))))
 	   (equal (deg (+ p1 (- (* p2 (FUPOL::+-monomio m q)))))
-		  (deg (+ p1 (+ (- (FUPOL::*-monomio m p2)) 
+		  (deg (+ p1 (+ (- (FUPOL::*-monomio m p2))
 				(- (* p2 q)))))))
   :hints (("Goal"
 	   :in-theory (disable deg))))
@@ -2369,7 +2369,7 @@ To certify this book, first, create a world with the following package:
 				   p2)))
 			     p2))
 		  (ACL2::+ (ACL2::- (deg p2))
-			   (deg 
+			   (deg
 			    (+ p1
 			       (- (FUPOL::*-monomio
 				   (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
@@ -2406,7 +2406,7 @@ To certify this book, first, create a world with the following package:
 				   p2)))
 			     p2))
 		  (ACL2::+ (ACL2::- (deg p2))
-			   (deg 
+			   (deg
 			    (+ p1
 			       (- (FUPOL::*-monomio
 				   (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
@@ -2493,7 +2493,7 @@ To certify this book, first, create a world with the following package:
 					      (ACL2::- (deg p2)))))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory 
+	   :in-theory
 	   (disable deg lc
 		    FUPOL::ORDENADOP
 		    FUPOL::*-monomio
@@ -2600,7 +2600,7 @@ To certify this book, first, create a world with the following package:
 		    (deg p2)))
 	   (and (FUMON::monomiop (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
 						 (ACL2::+ (deg p1)
-							  (ACL2::- (deg p2))))) 
+							  (ACL2::- (deg p2)))))
 		(not (FUMON::nulop (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
 						   (ACL2::+ (deg p1)
 							    (ACL2::- (deg p2))))))
@@ -2673,7 +2673,7 @@ To certify this book, first, create a world with the following package:
 				      (quot
 				       (+ p1
 					  (- (FUPOL::*-monomio
-					      (FUMON::monomio 
+					      (FUMON::monomio
 					       (FLD::* (lc p1)
 						       (FLD::/ (lc p2)))
 					       (ACL2::+ (deg p1)
@@ -2682,7 +2682,7 @@ To certify this book, first, create a world with the following package:
 				       p2))))))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop 
+	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop
 			       |deg rem(p1 p2) ACL2::< deg p2-lemma-5|
 			       |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-3|
 			       |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-4|
@@ -2696,7 +2696,7 @@ To certify this book, first, create a world with the following package:
 		  (q (quot
 		      (+ p1
 			 (- (FUPOL::*-monomio
-			     (FUMON::monomio 
+			     (FUMON::monomio
 			      (FLD::* (lc p1)
 				      (FLD::/ (lc p2)))
 			      (ACL2::+ (deg p1)
@@ -2830,7 +2830,7 @@ To certify this book, first, create a world with the following package:
 				      (quot
 				       (+ p1
 					  (- (FUPOL::*-monomio
-					      (FUMON::monomio 
+					      (FUMON::monomio
 					       (FLD::* (lc p1)
 						       (FLD::/ (lc p2)))
 					       (ACL2::+ (deg p1)
@@ -2839,7 +2839,7 @@ To certify this book, first, create a world with the following package:
 				       p2))))))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop 
+	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop
 			       |deg rem(p1 p2) ACL2::< deg p2-lemma-17|)
 	   :use (:instance
 		 |deg rem(p1 p2) ACL2::< deg p2-lemma-17|
@@ -2849,7 +2849,7 @@ To certify this book, first, create a world with the following package:
 		 (q (quot
 		     (+ p1
 			(- (FUPOL::*-monomio
-			    (FUMON::monomio 
+			    (FUMON::monomio
 			     (FLD::* (lc p1)
 				     (FLD::/ (lc p2)))
 			     (ACL2::+ (deg p1)
@@ -2896,7 +2896,7 @@ To certify this book, first, create a world with the following package:
 				      (quot
 				       (+ p1
 					  (- (FUPOL::*-monomio
-					      (FUMON::monomio 
+					      (FUMON::monomio
 					       (FLD::* (lc p1)
 						       (FLD::/ (lc p2)))
 					       (ACL2::+ (deg p1)
@@ -2905,7 +2905,7 @@ To certify this book, first, create a world with the following package:
 				       p2))))))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop 
+	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop
 			       |deg rem(p1 p2) ACL2::< deg p2-lemma-17|)
 	   :use (:instance
 		 |deg rem(p1 p2) ACL2::< deg p2-lemma-17|
@@ -2915,7 +2915,7 @@ To certify this book, first, create a world with the following package:
 		 (q (quot
 		     (+ p1
 			(- (FUPOL::*-monomio
-			    (FUMON::monomio 
+			    (FUMON::monomio
 			     (FLD::* (lc p1)
 				     (FLD::/ (lc p2)))
 			     (ACL2::+ (deg p1)
@@ -2954,7 +2954,7 @@ To certify this book, first, create a world with the following package:
 				      (quot
 				       (+ p1
 					  (- (FUPOL::*-monomio
-					      (FUMON::monomio 
+					      (FUMON::monomio
 					       (FLD::* (lc p1)
 						       (FLD::/ (lc p2)))
 					       (ACL2::+ (deg p1)
@@ -2980,7 +2980,7 @@ To certify this book, first, create a world with the following package:
 			     (quot
 			      (+ p1
 				 (- (FUPOL::*-monomio
-				     (FUMON::monomio 
+				     (FUMON::monomio
 				      (FLD::* (lc p1)
 					      (FLD::/ (lc p2)))
 				      (ACL2::+ (deg p1)
@@ -2997,7 +2997,7 @@ To certify this book, first, create a world with the following package:
 		       (quot
 			(+ p1
 			   (- (FUPOL::*-monomio
-			       (FUMON::monomio 
+			       (FUMON::monomio
 				(FLD::* (lc p1)
 					(FLD::/ (lc p2)))
 				(ACL2::+ (deg p1)
@@ -3122,7 +3122,7 @@ To certify this book, first, create a world with the following package:
 					 (quot
 					  (+ p1
 					     (- (FUPOL::*-monomio
-						 (FUMON::monomio 
+						 (FUMON::monomio
 						  (FLD::* (lc p1)
 							  (FLD::/ (lc p2)))
 						  (ACL2::+ (deg p1)
@@ -3137,10 +3137,10 @@ To certify this book, first, create a world with the following package:
 		(polinomiop (double-rewrite q))
 		(> (FUMON::termino m)
 		   (FUMON::termino (primero q))))
-	   (= (+ p1 
+	   (= (+ p1
 		 (- (* p2 (FUPOL::+-monomio m q))))
 	      (+ p1
-		 (+ (- (FUPOL::*-monomio m p2)) 
+		 (+ (- (FUPOL::*-monomio m p2))
 		    (- (* p2 q)))))))
 
 (defthm
@@ -3188,7 +3188,7 @@ To certify this book, first, create a world with the following package:
 			     (quot
 			      (+ p1
 				 (- (FUPOL::*-monomio
-				     (FUMON::monomio 
+				     (FUMON::monomio
 				      (FLD::* (lc p1)
 					      (FLD::/ (lc p2)))
 				      (ACL2::+ (deg p1)
@@ -3197,7 +3197,7 @@ To certify this book, first, create a world with the following package:
 			      p2)))))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop 
+	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop
 			       |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-3|
 			       |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-4|
 			       |deg (quot p1 p2) =e deg(p1) ACL2::- deg(p2)-lemma-5|
@@ -3211,7 +3211,7 @@ To certify this book, first, create a world with the following package:
 		  (q (quot
 		      (+ p1
 			 (- (FUPOL::*-monomio
-			     (FUMON::monomio 
+			     (FUMON::monomio
 			      (FLD::* (lc p1)
 				      (FLD::/ (lc p2)))
 			      (ACL2::+ (deg p1)
@@ -3257,7 +3257,7 @@ To certify this book, first, create a world with the following package:
 			     (quot
 			      (+ p1
 				 (- (FUPOL::*-monomio
-				     (FUMON::monomio 
+				     (FUMON::monomio
 				      (FLD::* (lc p1)
 					      (FLD::/ (lc p2)))
 				      (ACL2::+ (deg p1)
@@ -3266,7 +3266,7 @@ To certify this book, first, create a world with the following package:
 			      p2)))))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop 
+	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop
 			       |deg rem(p1 p2) ACL2::< deg p2-lemma-16|)
 	   :use (:instance
 		 |deg rem(p1 p2) ACL2::< deg p2-lemma-16|
@@ -3276,7 +3276,7 @@ To certify this book, first, create a world with the following package:
 		 (q (quot
 		     (+ p1
 			(- (FUPOL::*-monomio
-			    (FUMON::monomio 
+			    (FUMON::monomio
 			     (FLD::* (lc p1)
 				     (FLD::/ (lc p2)))
 			     (ACL2::+ (deg p1)
@@ -3323,7 +3323,7 @@ To certify this book, first, create a world with the following package:
 			     (quot
 			      (+ p1
 				 (- (FUPOL::*-monomio
-				     (FUMON::monomio 
+				     (FUMON::monomio
 				      (FLD::* (lc p1)
 					      (FLD::/ (lc p2)))
 				      (ACL2::+ (deg p1)
@@ -3332,7 +3332,7 @@ To certify this book, first, create a world with the following package:
 			      p2)))))))
   :rule-classes nil
   :hints (("Goal"
-	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop 
+	   :in-theory (disable deg lc FUPOL::*-monomio FUMON::nulop
 			       |deg rem(p1 p2) ACL2::< deg p2-lemma-16|)
 	   :use (:instance
 		 |deg rem(p1 p2) ACL2::< deg p2-lemma-16|
@@ -3342,7 +3342,7 @@ To certify this book, first, create a world with the following package:
 		 (q (quot
 		     (+ p1
 			(- (FUPOL::*-monomio
-			    (FUMON::monomio 
+			    (FUMON::monomio
 			     (FLD::* (lc p1)
 				     (FLD::/ (lc p2)))
 			     (ACL2::+ (deg p1)
@@ -3381,7 +3381,7 @@ To certify this book, first, create a world with the following package:
 			     (quot
 			      (+ p1
 				 (- (FUPOL::*-monomio
-				     (FUMON::monomio 
+				     (FUMON::monomio
 				      (FLD::* (lc p1)
 					      (FLD::/ (lc p2)))
 				      (ACL2::+ (deg p1)
@@ -3408,7 +3408,7 @@ To certify this book, first, create a world with the following package:
   :rule-classes nil
   :hints (("Goal"
 	   :in-theory (disable |p + q = 0 <=> q = - p|)
-	   :use (:instance 
+	   :use (:instance
 		 |p + q = 0 <=> q = - p|
 		 (q (+ p1 (- b)))
 		 (p (- c))))))
@@ -3444,7 +3444,7 @@ To certify this book, first, create a world with the following package:
 (defthm
   |deg rem(p1 p2) ACL2::< deg p2-lemma-31|
   (implies (and (polinomiop p1)
-		(= (+ p1 
+		(= (+ p1
 		      (- (* p2
 			    (FUPOL::+-monomio
 			     (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
@@ -3469,7 +3469,7 @@ To certify this book, first, create a world with the following package:
 				  (quot
 				   (+ p1
 				      (- (FUPOL::*-monomio
-					  (FUMON::monomio 
+					  (FUMON::monomio
 					   (FLD::* (lc p1)
 						   (FLD::/ (lc p2)))
 					   (ACL2::+ (deg p1)
@@ -3485,7 +3485,7 @@ To certify this book, first, create a world with the following package:
 			(quot
 			 (+ p1
 			    (- (FUPOL::*-monomio
-				(FUMON::monomio 
+				(FUMON::monomio
 				 (FLD::* (lc p1)
 					 (FLD::/ (lc p2)))
 				 (ACL2::+ (deg p1)
@@ -3537,7 +3537,7 @@ To certify this book, first, create a world with the following package:
 		       (quot
 			(+ p1
 			   (- (FUPOL::*-monomio
-			       (FUMON::monomio 
+			       (FUMON::monomio
 				(FLD::* (lc p1)
 					(FLD::/ (lc p2)))
 				(ACL2::+ (deg p1)
@@ -3562,14 +3562,14 @@ To certify this book, first, create a world with the following package:
 			(quot
 			 (+ p1
 			    (- (FUPOL::*-monomio
-				(FUMON::monomio 
+				(FUMON::monomio
 				 (FLD::* (lc p1)
 					 (FLD::/ (lc p2)))
 				 (ACL2::+ (deg p1)
 					  (ACL2::- (deg p2))))
 				p2)))
 			 p2)))
-		  (= p1 
+		  (= p1
 		     (* p2
 			(FUPOL::+-monomio
 			 (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
@@ -3609,7 +3609,7 @@ To certify this book, first, create a world with the following package:
 		  (quot
 		   (+ p1
 		      (- (FUPOL::*-monomio
-			  (FUMON::monomio 
+			  (FUMON::monomio
 			   (FLD::* (lc p1)
 				   (FLD::/ (lc p2)))
 			   (ACL2::+ (deg p1)
@@ -3617,7 +3617,7 @@ To certify this book, first, create a world with the following package:
 			  p2)))
 		   p2)))
 	    (not
-	     (= p1 
+	     (= p1
 		(* p2
 		   (FUPOL::+-monomio
 		    (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
@@ -3654,7 +3654,7 @@ To certify this book, first, create a world with the following package:
 		      p2)))
 	       (nulo))
 	    (not
-	     (= p1 
+	     (= p1
 		(* p2
 		   (FUPOL::+-monomio
 		    (FUMON::monomio (FLD::* (lc p1) (FLD::/ (lc p2)))
@@ -3705,7 +3705,7 @@ To certify this book, first, create a world with the following package:
 		       deg lc FUMON::nulop FUPOL::*-monomio FUPOL::+-monomio)
 	   :use |deg rem(p1 p2) ACL2::< deg p2-lemma-34|)
 	  ("Subgoal *1/2.1"
-	   :in-theory (e/d 
+	   :in-theory (e/d
 		       (nulo)
 		       (deg lc FUMON::nulop FUPOL::*-monomio FUPOL::+-monomio)))))
 
@@ -3796,7 +3796,7 @@ To certify this book, first, create a world with the following package:
 	      p1))
   :rule-classes :elim
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       deg lc FUMON::nulop FUPOL::*-monomio FUPOL::+-monomio
 		       |p + q = mp(p) +Mo (resto(p) + q)|))))
 

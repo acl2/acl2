@@ -4,18 +4,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;Exercise 7.
 
-;; This exercise shows that the existence of an unique total 
-;; function, satisfying a given recursive equation, is not enough 
-;; to guarantee termination of the recursion in Common Lisp and 
-;; ACL2.  
+;; This exercise shows that the existence of an unique total
+;; function, satisfying a given recursive equation, is not enough
+;; to guarantee termination of the recursion in Common Lisp and
+;; ACL2.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Part A.
 
-;; Use encapsulate to verify, in ACL2, that the Common Lisp 
+;; Use encapsulate to verify, in ACL2, that the Common Lisp
 ;; function, identity, is the unique total function satisfying
 ;; the equation
 
-;;        f(x)  =  if   f(x)  then  x 
+;;        f(x)  =  if   f(x)  then  x
 ;;                            else  x.
 
 ;; Make sure this equation is not added as a :rewrite rule.
@@ -29,9 +29,9 @@
  ;; Signature:
  ((f (x) t))
  ;;----------------
- ;; Provide witness: 
+ ;; Provide witness:
  (local
-  (defun 
+  (defun
       f (x)
       (identity x)))
  ;;------------------

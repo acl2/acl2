@@ -266,11 +266,11 @@
   (b* ((a (nfix a))
        (b (nfix b))
        ((ret stuff) (mathstuff a b)))
-    (list :sum stuff.sum 
+    (list :sum stuff.sum
           :prod stuff.prod))
   ///
   (assert! (equal (do-math-stuff 1 2) (list :sum 3 :prod 2))))
-  
+
 
 
 (defstobj foost (foo-x))
@@ -550,6 +550,9 @@
 ;; top-level keywords for use in the t-proof.
 
 (defund ac-f (x) (- x 1))
+
+; Matt K.: Avoid ACL2(p) error in ac-g1 below pertaining to override hints.
+(local (set-waterfall-parallelism nil))
 
 (define ac-g1 (x)
   :verify-guards nil

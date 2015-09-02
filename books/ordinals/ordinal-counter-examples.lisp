@@ -12,7 +12,7 @@ theorems of arithmetic on the natural numbers.
                         (a,b,c := 1,1,2)
 
   ab = ba               (a,b := 2,w)
-  (b + c)a = ba + ca    (a,b,c := w,1,1)  
+  (b + c)a = ba + ca    (a,b,c := w,1,1)
   b < c  =>  ba < ca    (a,b,c := w,1,2)
 
   (ab)^c = (a^c)(b^c)   (a,b,c := 2,2,w)
@@ -52,7 +52,7 @@ theorems of arithmetic on the natural numbers.
         (b *w*))
     (not (implies (and (o-p a)
                        (o-p b))
-                  (equal (o+ (o- b a) a) 
+                  (equal (o+ (o- b a) a)
                          b))))
   :rule-classes nil)
 
@@ -61,7 +61,7 @@ theorems of arithmetic on the natural numbers.
         (b 1))
     (not (implies (and (o-p a)
                        (o-p b))
-                  (equal (o+ (o- b a) a) 
+                  (equal (o+ (o- b a) a)
                          b))))
   :rule-classes nil)
 

@@ -120,7 +120,7 @@ summation given by @(see COMPUTE-SERIES).</p>
 @($\frac{num-sum}{denom-sum}$), we compute the next partial sum as:</p>
 
 @([
-\frac{num-sum}{denom-sum} 
+\frac{num-sum}{denom-sum}
    *
 \frac{
    denom-x^2 (n + 1) (n + 2)

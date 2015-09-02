@@ -72,7 +72,7 @@ that after parsing, the types will agree exactly.</p>"
 
   (b* ((portdecl (vl-portdecl-fix portdecl))
        (item     (vl-scopeitem-fix item))
-       
+
        ((vl-portdecl portdecl) portdecl)
        ((unless (eq (tag item) :vl-vardecl))
         (make-vl-warning :type :vl-weird-port
@@ -80,7 +80,7 @@ that after parsing, the types will agree exactly.</p>"
                          :args (list portdecl portdecl.name (tag item))
                          :fatalp t
                          :fn __function__))
-       
+
        ((vl-vardecl item))
        ((unless (equal portdecl.type item.type))
         (make-vl-warning :type :vl-incompatible-port

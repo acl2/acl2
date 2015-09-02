@@ -61,7 +61,7 @@
                   (congruent-all (crt a m) a m))))
 |#
 
- 
+
 (defun a (x y) (nonneg-int-gcd-multiplier1 x y))
 
 (defun b (x y) (nonneg-int-gcd-multiplier2 x y))
@@ -129,7 +129,7 @@
                   (rationalp l)
                   (= 1 (+ (* a x) (* b y)))
                   (= 1 (+ (* c x) (* d l))))
-             (= 1 
+             (= 1
                 (+ (* a x)
                    (* c x)
                    (* b d y l)
@@ -304,11 +304,11 @@
              (= (rem (one-mod x l) x) 1))
   :rule-classes ()
   :hints (("Goal" :use (one-mod-nat
-                        (:instance one-mod-alt (m x))                   
+                        (:instance one-mod-alt (m x))
                         (:instance rem-one-mod-m-1 (m x))
                         (:instance c-int)
                         (:instance rem< (m 1) (n x))
-                        (:instance rem+ 
+                        (:instance rem+
                                    (m 1)
                                    (n x)
                                    (a (* (c x l)
@@ -477,7 +477,7 @@
                             :in-theory (enable rel-prime))
           ("Subgoal *1/7'''"  :in-theory (disable rel-prime)
                               :use (:instance rel-prime (x (car l)) (y x)))
-          ("Subgoal *1/7.2'''" 
+          ("Subgoal *1/7.2'''"
            :in-theory (enable rel-prime)
            :use (
                  (:instance g-c-d-commutative (y l1))))
@@ -593,7 +593,7 @@
 (defthm nonneg-gcd-x-x-is-x
   (implies (natp x)
 	   (= (nonneg-int-gcd x x) x))
-  :hints (("Goal" :in-theory (disable nonneg-int-gcd) 
+  :hints (("Goal" :in-theory (disable nonneg-int-gcd)
                   :use ( (:instance nonneg-int-gcd (y x))
                          nonneg-mod-x-x-is-0
 			 (:instance nonneg-int-gcd (y 0)))))
@@ -609,7 +609,7 @@
              (not (= x y)))
   :rule-classes ()
   :hints (("Subgoal *1/4.2" :in-theory nil)
-	  ("Subgoal *1/4.1" :in-theory (current-theory 'ground-zero) 
+	  ("Subgoal *1/4.1" :in-theory (current-theory 'ground-zero)
 	   :use (:instance nonneg-int-gcd (y 0)))
 	  ("Subgoal *1/3" :in-theory '((:definition natp)) :use nonneg-gcd-x-x-is-x)
 	  ("Subgoal *1/2" :in-theory '((:definition natp)) :use nonneg-gcd-x-x-is-x)
@@ -654,7 +654,7 @@
       (sublistp-induct (1+ n) l)
     t))
 
- 
+
 (defthm sublistp-last
     (sublistp (nthcdr (len l) l) m)
     :hints (("Goal" :induct (len l))))
@@ -768,7 +768,7 @@
                   (= (len a) (len m))
                   (rel-prime-moduli l)
                   (sublistp m l))
-             (congruent-all (crt1 a m l) a m)) 
+             (congruent-all (crt1 a m l) a m))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable congruent-all rel-prime-moduli crt1))
           ("Subgoal *1/8" :use ((:instance rem0+1
@@ -787,7 +787,7 @@
                                            (m (cdr m))
                                            (x (car m)))))
           ("Subgoal *1/7" :use ((:instance natp-crt1 (a (cdr a)) (m (cdr m)))
-                                (:instance cong0-2 (a (car a)))                                    
+                                (:instance cong0-2 (a (car a)))
                                 (:instance one-mod-nat
                                            (x (car m))
                                            (l (remove (car m) l)))
@@ -810,12 +810,12 @@
                   (= (len a) (len m))
                   (rel-prime-moduli l)
                   (sublistp m l))
-             (congruent-all (crt1 a m l) a m)) 
+             (congruent-all (crt1 a m l) a m))
   :rule-classes ()
   :hints (("Goal" :use (crt1-lemma))))
 
 (defthm chinese-remainder-theorem
- (implies 
+ (implies
   (and (natp-all values)
        (rel-prime-moduli rns)
        (= (len values) (len rns)))

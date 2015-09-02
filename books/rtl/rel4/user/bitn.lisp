@@ -113,7 +113,7 @@
            (equal (equal (bitn x 0) 0)
                   (integerp (* 1/2 x)))))
 
-;we probably want this enanled in lib/ but not in support/
+;we probably want this enabled in lib/ but not in support/
 (defthmd bits-n-n-rewrite
   (equal (bits x n n)
          (bitn x n)))
@@ -219,7 +219,7 @@
 
 ;BOZO this looped!
 (defthmd bitn-drop-crucial-bit-and-flip-result-alt-gen
-  (implies (and (syntaxp (and (quotep j) 
+  (implies (and (syntaxp (and (quotep j)
                               (< (cadr j) (expt 2 (+ 1 (cadr n)))) ;bitn-sum-lowbits does most of the work
                               (>= (cadr j) (expt 2 (cadr n)))))
                 (rationalp j)
@@ -233,7 +233,7 @@
 ;might be slow if the negative constant has a large absolute value
 ;make a negative version of bitn-sum-lowbits
 (defthm bitn-add-crucial-bit-and-flip-result
-  (implies (and (syntaxp (and (quotep j) 
+  (implies (and (syntaxp (and (quotep j)
                               (quotep n)
                               (< (cadr j) 0)))
                 (rationalp j)
@@ -249,7 +249,7 @@
                 )
            (equal (equal k (bitn x n))
                   nil)))
-                         
+
 (defthm bitn-split-around-zero
   (implies (and (<= (- (expt 2 n)) x)
                 (< x (expt 2 n))
@@ -298,7 +298,7 @@
                 (case-split (integerp k)))
            (bvecp (bitn x n) k)))
 
-(defthm bitn-times-fraction-integerp 
+(defthm bitn-times-fraction-integerp
   (implies (and (not (integerp k))
                 (case-split (acl2-numberp k))
                 )
@@ -346,7 +346,7 @@
            )
   :rule-classes (:forward-chaining))
 
-;may cause case splits (maybe that's good?) 
+;may cause case splits (maybe that's good?)
 (defthm bitn-expt-gen
   (implies (case-split (integerp i))
            (equal (bitn (expt 2 i) n)
@@ -407,7 +407,7 @@
                 (integerp k)
                 )
            (equal (bitn (* x (expt 2 k)) (+ n k))  ;BOZO rewrite the (+ n k) to match better
-                  (bitn x n)))) 
+                  (bitn x n))))
 
 ;dammit, ACL2 unifies 0 with (* 2 x), so this rule can loop!
 (defthm bitn-shift-by-2

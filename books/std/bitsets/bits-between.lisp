@@ -452,7 +452,7 @@ following loops, this is about 3.6x faster than @(see bits-between).</p>
   (time (loop for x fixnum from 1 to 30000000 do
               (60bits-0-59 0 x nil))))
 })"
-  
+
   ;; We could do a check against zero like in bits-0-31, but since this is
   ;; used in sparse bitsets where the data should never be zero, we think
   ;; that wouldn't be good.

@@ -14,11 +14,11 @@
 
 
 
-;; we define a new measure in this part taking into consideration 
+;; we define a new measure in this part taking into consideration
 ;; the difference between the input and output port
 ;; the objective is to consider the intra router routing a true hop to
-;; be able to 
-;; implement the routing as it is presented in the book 
+;; be able to
+;; implement the routing as it is presented in the book
 ;; this way the measure decreases also in the case of the intra
 ;; routing on the same node.
 
@@ -46,7 +46,7 @@
   (let ((x_d (car to))
         (y_d (cadr to))
         (x_o (car current))
-        (y_o (cadr current)))    
+        (y_o (cadr current)))
     (if (not (equal x_d x_o))
       (if (< x_d x_o)
         (move-west current)
@@ -62,14 +62,14 @@
     (let ((x_d (car to))
           (y_d (cadr to))
           (x_o (car current))
-          (y_o (cadr current)))    
+          (y_o (cadr current)))
       (if (and (equal x_d x_o) (equal y_d y_o))
         (cons current nil)
         (cons current (XYrouting (XYRoutingLogic current to) to))))))
 
 (defthm first-XY-routing
   ;; the first element is the origin
-  (implies (and (2DMesh-Nodep current) 
+  (implies (and (2DMesh-Nodep current)
                 (2DMesh-Nodep to))
            (equal (car (XYrouting current to))
                   current)))
@@ -99,9 +99,9 @@
 (defthm member-equal-x-dim-gen
   ;; we prove that if x is a coordinate with its first part less than x-dim
   ;; and its second part equal to y-dim then x is a member of x-dim-gen.
-  (implies (and (2DMesh-Nodep x) 
+  (implies (and (2DMesh-Nodep x)
                 (< (car x) x-dim)
-                (natp x-dim) 
+                (natp x-dim)
                 (natp y-dim)
                 (equal (cadr x) y-dim))
            (member-equal x (x-dim-gen x-dim y-dim))))
@@ -110,20 +110,20 @@
   ;; we prove something similar for the function coord-generator-1
   ;; both parts of x are less than x-dim and y-dim implies that x
   ;; is a member of coord-generator-1
-  (implies (and (2DMesh-Nodep x) 
+  (implies (and (2DMesh-Nodep x)
                 (natp y-dim)
-                (natp x-dim) 
-                (< (car x) x-dim) 
+                (natp x-dim)
+                (< (car x) x-dim)
                 (< (cadr x) y-dim))
            (member-equal x (coord-generator-1 x-dim y-dim))))
 
 (defthm tactic1
   ;; we prove that our tactic is valid for membership
-  (implies (and (2DMesh-NodeSetp L) 
+  (implies (and (2DMesh-NodeSetp L)
                 (consp L)
-                (all-x-<-max L x-dim) 
-                (natp x-dim) 
-                (all-y-<-max L y-dim) 
+                (all-x-<-max L x-dim)
+                (natp x-dim)
+                (all-y-<-max L y-dim)
                 (natp y-dim))
            (member-equal (car L) (coord-generator-1 x-dim y-dim))))
 
@@ -134,7 +134,7 @@
 
 (defthm tactic1-top
   ;; we now prove that our tactic is valid
-  (implies (and (2DMesh-NodeSetp L) 
+  (implies (and (2DMesh-NodeSetp L)
                 (all-x-<-max L x-dim) (natp x-dim)
                 (all-y-<-max L y-dim) (natp y-dim))
            (subsetp L (coord-gen x-dim y-dim)))
@@ -149,26 +149,26 @@
   (2DMesh-NodeSetp (XYrouting current to)))
 
 (defthm x-<all
-  (implies (and (2DMesh-NodeSetp L) 
+  (implies (and (2DMesh-NodeSetp L)
                 (all-x-<-max L (car from)))
            (all-x-<-max L (1+ (car from)))))
 
 (defthm x-1<all
-  (implies (and (2DMesh-NodeSetp L) 
+  (implies (and (2DMesh-NodeSetp L)
                 (all-x-<-max L (1- (car from))))
            (all-x-<-max L (1+ (car from)))))
 
 (defthm y-<all
-  (implies (and (2DMesh-NodeSetp L) 
+  (implies (and (2DMesh-NodeSetp L)
                 (all-y-<-max L (cadr from)))
            (all-y-<-max L (1+ (cadr from)))))
 
 (defthm y-1<all
-  (implies (and (2DMesh-NodeSetp L) 
+  (implies (and (2DMesh-NodeSetp L)
                 (all-y-<-max L (1- (cadr from))))
            (all-y-<-max L (1+ (cadr from)))))
 
-;; let's go to the more tricky part. 
+;; let's go to the more tricky part.
 ;; First, every x-coord of any nodes produced by function XY-routing-with-ports
 ;; is strictly less than 1 + Max(from_x, to_x)(2D-mesh-nodeset-portsp
 ;; (xy-routing-with-ports from to))
@@ -225,16 +225,16 @@
            (all-y-<-max (rev L) x)))
 
 (defthm routing-all-x-less
-  (all-x-<-max (XYrouting current to) 
-               (1+ (max (car current) (car to)))) 
-  :hints (("Goal" 
+  (all-x-<-max (XYrouting current to)
+               (1+ (max (car current) (car to))))
+  :hints (("Goal"
            :in-theory (disable CONSP-APPEND  REDUCE-INTEGERP-+
                                INTEGERP-MINUS-X))))
 
 
 
 (defthm routing-all-y-less
-  (all-y-<-max (XYrouting current to) 
+  (all-y-<-max (XYrouting current to)
                (1+ (max (cadr current) (cadr to)))))
 
 (defthm XY-routing-with-ports-subsetp-coord-max
@@ -282,25 +282,25 @@
            (and (< (max (car x) (car y)) x-max)
                 (< (max (cadr x) (cadr y)) y-max))))
 
-;; then we prove that if x < NX and y < NY then 
+;; then we prove that if x < NX and y < NY then
 ;; (coord-gen x y) is a subset of (coord-gen NX NY)
 
 (defthm subsetp-x-dim-gen-coord-gen-1
-  (implies (and (natp x1) 
-                (natp x2) 
-                (natp y1) 
+  (implies (and (natp x1)
+                (natp x2)
+                (natp y1)
                 (natp y2)
-                (<= x1 x2) 
+                (<= x1 x2)
                 (< y1 y2))
            (subsetp (x-dim-gen x1 y1)
                     (coord-generator-1 x2 y2))))
 
 (defthm subsetp-coord-gen-1
-  (implies (and (<= x1 x2) 
+  (implies (and (<= x1 x2)
                 (<= y1 y2)
-                (natp x1) 
-                (natp x2) 
-                (natp y1) 
+                (natp x1)
+                (natp x2)
+                (natp y1)
                 (natp y2))
            (subsetp (coord-generator-1 x1 y1)
                     (coord-generator-1 x2 y2))))
@@ -322,7 +322,7 @@
 ;; and now using the transitivity of subsetp we conclude:
 (defthm trans-subsetp
   ;; should be put elsewhere
-  (implies (and (subsetp x y) 
+  (implies (and (subsetp x y)
                 (subsetp y z))
            (subsetp x z)))
 
@@ -332,9 +332,9 @@
   ;; current and to must be members of NodeSet
   ;; current and to must not be equal
   (implies (and (not (equal current to))
-                (2DMesh-Nodep current) 
+                (2DMesh-Nodep current)
                 (2DMesh-Nodep to)
-                (natp X) 
+                (natp X)
                 (natp Y)
                 ;; it should be member-equal
                 (member-equal current (coord-gen X Y))
@@ -379,7 +379,7 @@
 
 (set-irrelevant-formals-ok t)
 (defun XY-routing-top (Missives nodeset)
-  ;;(declare (ignore nodeset)) 
+  ;;(declare (ignore nodeset))
   (if (endp Missives)
     nil
     (let* ((miss (car Missives))
@@ -387,7 +387,7 @@
            (current (CurTM miss))
            (to (DestTM miss))
            (id (IdTM miss))
-           (frm (FrmTM miss)) 
+           (frm (FrmTM miss))
            (flits (FlitTM miss))
            (Time (TimeTM miss)))
       (cons (list id from frm (list (XYrouting current to)) flits time)
@@ -409,7 +409,7 @@
 (defthm true-listp-xy-
   (true-listp (xy-routing-top missives nodeset)))
 
-;; 2. TrLstp 
+;; 2. TrLstp
 ;;the next four theorems are necessary lemmas to prove the theorem
 ;;Trlstp-XY-routing
 
@@ -477,7 +477,7 @@
            :induct (XY-routing-top TMissives nodeset)
            :do-not-induct t)
           ("Subgoal *1/2"
-           :use ((:instance first-XY-routing 
+           :use ((:instance first-XY-routing
                   (current (CADDAR TMISSIVES))
                   (to (CADDDR (CDAR TMISSIVES))))
                  (:instance 2D-mesh-NodeSet-portsp-member-equal

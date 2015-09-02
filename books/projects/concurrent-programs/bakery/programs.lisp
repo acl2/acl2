@@ -25,8 +25,8 @@ instruction often provided as atomic on most systems.
 ;; BEGIN simplified Bakery implementation
 
 (defun cas (shared old new)
-  (if (<= shared old) 
-      (list T new) 
+  (if (<= shared old)
+      (list T new)
     (list nil shared)))
 
 (defun successful-cas (shared old new)
@@ -141,7 +141,7 @@ instruction often provided as atomic on most systems.
 	 :bucket (bake+-b proc bucket in max)
 	 :queue (bake+-q proc queue bucket max)
          :go (bake+-go proc go in))))
-         
+
 
 
 
@@ -195,7 +195,7 @@ instruction often provided as atomic on most systems.
 ;; Now the part about correspondence of the bake+ algorithm with cent is the
 ;; big problem. However, for reason of cleanliness, we will define a much
 ;; simpler spec, and show that the cent is a stuttering refinement of tghe
-;; spec. 
+;; spec.
 
 ;; Begin spec definition.
 
@@ -211,7 +211,7 @@ instruction often provided as atomic on most systems.
        :procs (add-to-procs (procs st) i)))
 
 (defun legal (st i)
-  (and i ;; cannot be nil since we have already taken the nil 
+  (and i ;; cannot be nil since we have already taken the nil
          ;; to mark that no one is in critical section.
        (implies (get-go st)
                 (equal i (get-go st)))))

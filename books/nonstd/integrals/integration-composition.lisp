@@ -34,14 +34,14 @@
  (local
   (defun domain-rifn-cmp ()
     (interval nil nil)))
- 
+
  (defthm domain-rifn-cmp-is-non-trivial-interval
    (and (interval-p (domain-rifn-cmp))
 	(implies (and (interval-left-inclusive-p (domain-rifn-cmp))
 		      (interval-right-inclusive-p (domain-rifn-cmp)))
 		 (not (equal (interval-left-endpoint (domain-rifn-cmp))
 			     (interval-right-endpoint (domain-rifn-cmp)))))))
- 
+
  (defun map-rifn-small (p)
    ;; map rifn over the list p
    (if (consp p)
@@ -58,12 +58,12 @@
   (defun riemann-rifn-small (p)
    ;; for partition p, take the Riemann sum of rifn over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-small (cdr p))))
   (defun riemann-rifn-big (p)
    ;; for partition p, take the Riemann sum of rifn over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-big (cdr p))))
 
   (local
@@ -191,7 +191,7 @@
 
   (local
    (defthmd lemma-1
-     (implies (<= x1 x2) 
+     (implies (<= x1 x2)
 	      (<= (+ x1 y) (+ x2 y)))))
 
   (local
@@ -200,7 +200,7 @@
 		   (realp y2)
 		   (realp z)
 		   (<= y1 y2)
-		   (<= 0 z)) 
+		   (<= 0 z))
 	      (<= (* y1 z) (* y2 z)))))
 
   (local
@@ -246,7 +246,7 @@
     (implies (and (partitionp p)
 		  (member x p))
 	     (realp x)))
-  
+
   (defthm member-partition-in-interval
     (implies (and (partitionp p)
 		  (interval-p interval)
@@ -267,7 +267,7 @@
 				 partitionp
 				 member-partition->=-car-partition
 				 member-partition-<=-car-last-partition))))
-  
+
 
   (defthm member-cadr-p
     (implies (and ;(partitionp p)
@@ -411,7 +411,7 @@
 	   :use ((:instance strict-int-rifn-big-is-integral-of-rifn-big))
 	   :in-theory (disable strict-int-rifn-big-is-integral-of-rifn-big))
 	  ))
-  
+
 
 (local
  (defthm strict-integral-rifn-small-<=-strict-integral-rifn-big-2
@@ -466,14 +466,14 @@
  (local
   (defun domain-rifn-const-fn ()
     (interval nil nil)))
- 
+
  (defthm domain-rifn-const-fn-is-non-trivial-interval
    (and (interval-p (domain-rifn-const-fn))
 	(implies (and (interval-left-inclusive-p (domain-rifn-const-fn))
 		      (interval-right-inclusive-p (domain-rifn-const-fn)))
 		 (not (equal (interval-left-endpoint (domain-rifn-const-fn))
 			     (interval-right-endpoint (domain-rifn-const-fn)))))))
- 
+
  (defun map-rifn-const-fn (p)
    ;; map rifn over the list p
    (if (consp p)
@@ -489,7 +489,7 @@
  (defun riemann-rifn-const-fn (p)
    ;; for partition p, take the Riemann sum of rifn over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-const-fn (cdr p))))
 
  (local
@@ -543,7 +543,7 @@
     nil))
 
 (defun riemann-rifn-const*const-fn (p)
-  (dotprod (deltas p) 
+  (dotprod (deltas p)
 	   (map-rifn-const*const-fn (cdr p))))
 
 (local
@@ -635,7 +635,7 @@
  nil
 
  (local (in-theory (disable riemann-rifn-const*const-fn reduce-riemann-rifn-const*const-fn)))
- 
+
  (defun-std strict-int-rifn-const*const-fn (a b)
    (if (and (realp a)
 	    (realp b)
@@ -710,7 +710,7 @@
 				 riemann-rifn-const-fn
 				 strict-int-rifn-const-fn-is-integral-of-rifn-const-fn
 				 mesh)))))
- 
+
  (local
   (defthm-std lemma-4
     (implies (and (standardp a)
@@ -811,7 +811,7 @@
 		    0))
     :hints (("Goal"
 	     :in-theory (enable lemma-7)))))
-    
+
 
  (local
   (defthmd lemma-9
@@ -910,14 +910,14 @@
  (local
   (defun domain-rifn-op ()
     (interval nil nil)))
- 
+
  (defthm domain-rifn-op-is-non-trivial-interval
    (and (interval-p (domain-rifn-op))
 	(implies (and (interval-left-inclusive-p (domain-rifn-op))
 		      (interval-right-inclusive-p (domain-rifn-op)))
 		 (not (equal (interval-left-endpoint (domain-rifn-op))
 			     (interval-right-endpoint (domain-rifn-op)))))))
- 
+
  (defun map-rifn-left (p)
    ;; map rifn over the list p
    (if (consp p)
@@ -934,12 +934,12 @@
   (defun riemann-rifn-left (p)
    ;; for partition p, take the Riemann sum of rifn over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-left (cdr p))))
   (defun riemann-rifn-right (p)
    ;; for partition p, take the Riemann sum of rifn over p using right
    ;; endpoints
-   (dotprod (deltas p) 
+   (dotprod (deltas p)
 	    (map-rifn-right (cdr p))))
 
   (local
@@ -1068,7 +1068,7 @@
     nil))
 
 (defun riemann-rifn-left+right (p)
-  (dotprod (deltas p) 
+  (dotprod (deltas p)
 	   (map-rifn-left+right (cdr p))))
 
 (defthmd riemann-rifn-left+right-alternative
@@ -1088,7 +1088,7 @@
    (if (and (consp p) (consp (cdr p)))
        (1+ (reduce-riemann-rifn-left+right-induction (cdr p)))
      0)))
-   
+
 
 (local
  (defthm reduce-riemann-rifn-left+right
@@ -1173,7 +1173,7 @@
 
  (local (in-theory (disable riemann-rifn-left+right
 			    reduce-riemann-rifn-left+right)))
- 
+
  (defun-std strict-int-rifn-left+right (a b)
    (if (and (realp a)
 	    (realp b)
@@ -1422,7 +1422,7 @@
     nil))
 
 (defun riemann-rifn-left-right (p)
-  (dotprod (deltas p) 
+  (dotprod (deltas p)
 	   (map-rifn-left-right (cdr p))))
 
 (defthmd riemann-rifn-left-right-alternative
@@ -1442,7 +1442,7 @@
    (if (and (consp p) (consp (cdr p)))
        (1+ (reduce-riemann-rifn-left-right-induction (cdr p)))
      0)))
-   
+
 
 (local
  (defthm reduce-riemann-rifn-left-right
@@ -1466,7 +1466,7 @@
 
  (local (in-theory (disable riemann-rifn-left-right
 			    reduce-riemann-rifn-left-right)))
- 
+
  (defun-std strict-int-rifn-left-right (a b)
    (if (and (realp a)
 	    (realp b)

@@ -22,7 +22,7 @@
 (local
  (include-book "default-hint"))
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                               hist pspv)))
 
 (local
@@ -144,7 +144,7 @@
 		 (not (integerp (* 1/2 i))))
 	    (< (expt r i) 0))
    :rule-classes (:type-prescription :generalize)
-   :hints (("Goal" :use ((:instance 
+   :hints (("Goal" :use ((:instance
 			  expt-type-prescription-negative-base-even-exponent
 				    (r r)
 				    (i (- i 1)))
@@ -152,7 +152,7 @@
 	    :in-theory (disable reduce))))
 
  )
-  
+
 
 
 (defthm expt-negative-base-even-exponent

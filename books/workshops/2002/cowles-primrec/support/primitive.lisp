@@ -28,7 +28,7 @@
  (certify-book "primitive" 0 nil ; compile-flg
                :defaxioms-okp nil
 	       :skip-proofs-okp nil)
-|#	       
+|#
 #|
 In the spirit of Pete & J's work reported in defpun.lisp, their
 construction of a function f that satisfies the equation in the
@@ -55,13 +55,13 @@ Three examples are included below:
  functions.
 
 As shown by Pete & J, for some h's, such an f does not exist.
-Their example, showing such an f need not exist, has 
-  (test x) = (equal x 0), 
+Their example, showing such an f need not exist, has
+  (test x) = (equal x 0),
   (base x) = nil,
-  (h x y$)  = (cons nil y$), and 
+  (h x y$)  = (cons nil y$), and
   (st x)   = (- x 1).
 
-A sufficient (but not necessary) condition on h for the 
+A sufficient (but not necessary) condition on h for the
 existence of f is that h have a right fixed point, i.e., there is
 some c such that (h x c) = c.
 
@@ -74,20 +74,20 @@ fixed point is not necessary for the existence of f has
 The ACL2 function fix satisfies the recursive equation in
 generic-primitive-recursive-f, for these choices for test, base,
 h, and st.  Here (fix x) returns x if x is an ACL2 number and
-returns 0 otherwise. 
+returns 0 otherwise.
 
 Note:
 A function f satisfying the equation
     (equal (f x)
 	   (if (test x) (base x) (h x (f (st x)))))).
 is called primitive recursive because a recursive equation of
-this form is a generalization of the definitions by primitive 
+this form is a generalization of the definitions by primitive
 recursion studied in computability theory:
     F(x_1,...,x_n, 0)   = k(x_1,...,x_n)
     F(x_1,...,x_n, t+1) = h(t, F(x_1,...,x_n,t), x_1,...,x_n).
 |#
 ;;; This construction of generic-primitive-recursive-f is a
-;;;  minor variation of Pete & J's construction of 
+;;;  minor variation of Pete & J's construction of
 ;;;  generic-tail-recursive-f in defpun.lisp.
 
 (in-package "ACL2")
@@ -95,18 +95,18 @@ recursion studied in computability theory:
 (defstub
   test (*) => *)
 
-(defstub 
+(defstub
   base (*) => *)
 
-(defstub 
+(defstub
   st (*) => *)
 
-(defstub 
+(defstub
     h-fix () => *)
 
 (encapsulate
  (((h * *) => *))
- 
+
  (local
   (defun h (x y$)
     (declare (ignore x y$))
@@ -116,7 +116,7 @@ recursion studied in computability theory:
    h-fix-is-fixed-point
    (equal (h x (h-fix))(h-fix)))
  ) ;; end encapsulate
- 
+
 (defun stn (x n)
   (if (zp n) x (stn (st x) (1- n))))
 
@@ -153,7 +153,7 @@ recursion studied in computability theory:
 
  (local (defthm open-stn
 	    (implies (and (integerp n) (< 0 n))
-		     (equal (stn x n) 
+		     (equal (stn x n)
 			    (stn (st x) (1- n))))))
 
  (local (defthm +1-1 (equal (+ -1 +1 x) (fix x))))
@@ -169,7 +169,7 @@ recursion studied in computability theory:
 
  (local (defthm test-nil-fch
 	    (implies (not (test x))
-		     (iff (test (stn (st x) 
+		     (iff (test (stn (st x)
 				     (fch (st x))))
 			  (test (stn x (fch x)))))
 	    :hints
@@ -179,7 +179,7 @@ recursion studied in computability theory:
 				      (n (+ -1 (fch x)))))))))
 
  (local (defthm fn-st
-	    (implies (and (test (stn x n)) 
+	    (implies (and (test (stn x n))
 			  (test (stn x m)))
 		     (equal (fn x n) (fn x m)))
 	    :rule-classes nil))
@@ -198,18 +198,18 @@ recursion studied in computability theory:
 
 ;; Example 1. Pete & J's cons example (modified).
 #|
-No ACL2 function g satisfies this equation: 
+No ACL2 function g satisfies this equation:
 (equal (g x)
        (if (equal x 0)
 	   nil
 	   (cons nil (g (- x 1)))))
 
-The ``problem'' from the point of view of this note is that cons 
-does not have a right fixed point, so one is provided by the 
+The ``problem'' from the point of view of this note is that cons
+does not have a right fixed point, so one is provided by the
 following:
 |#
 
-(defstub 
+(defstub
     cons-fix () => *)
 
 (defun
@@ -229,10 +229,10 @@ following:
 (encapsulate
  (((g *) => *))
 
- (set-ignore-ok t) 
+ (set-ignore-ok t)
 
  (set-irrelevant-formals-ok t)
- 
+
  (local
   (defun
       g-test (x)
@@ -242,32 +242,32 @@ following:
   (defun
       g-base (x)
       nil))
- 
+
  (local
   (defun
       g-st (x)
       (- x 1)))
- 
+
  (local
   (defun
       g-h-fix ()
       (cons-fix)))
 
- (local 
+ (local
   (in-theory (disable (:executable-counterpart g-h-fix))))
- 
+
  (local
   (defun
       g-h (x y$)
       (cons$ nil y$)))
 
  (local
-  (defun 
+  (defun
       g-stn (x n)
       (if (zp n) x (g-stn (g-st x) (1- n)))))
 
  (local
-  (defchoose 
+  (defchoose
       g-fch (n) (x)
       (g-test (g-stn x n))))
 
@@ -280,7 +280,7 @@ following:
 	  (g-h x (g-fn (g-st x) (1- n))))))
 
  (local
-  (defun 
+  (defun
       g (x)
       (if (g-test (g-stn x (g-fch x)))
 	  (g-fn x (g-fch x))
@@ -333,8 +333,8 @@ following:
 
 (encapsulate
  (((fact *) => *))
- 
- (set-ignore-ok t) 
+
+ (set-ignore-ok t)
 
  (set-irrelevant-formals-ok t)
 
@@ -347,32 +347,32 @@ following:
   (defun
       fact-base (x)
       1))
- 
+
  (local
   (defun
       fact-st (x)
       (- x 1)))
- 
+
  (local
   (defun
       fact-h-fix ()
       0))
 
- (local 
+ (local
   (in-theory (disable (:executable-counterpart fact-h-fix))))
- 
+
  (local
   (defun
       fact-h (x y$)
       (* x y$)))
 
  (local
-  (defun 
+  (defun
       fact-stn (x n)
       (if (zp n) x (fact-stn (fact-st x) (1- n)))))
 
  (local
-  (defchoose 
+  (defchoose
       fact-fch (n) (x)
       (fact-test (fact-stn x n))))
 
@@ -385,7 +385,7 @@ following:
 	  (fact-h x (fact-fn (fact-st x) (1- n))))))
 
  (local
-  (defun 
+  (defun
       fact (x)
       (if (fact-test (fact-stn x (fact-fch x)))
 	  (fact-fn x (fact-fch x))
@@ -434,10 +434,10 @@ following:
 (encapsulate
  (((k * *) => *))
 
- (set-ignore-ok t) 
+ (set-ignore-ok t)
 
  (set-irrelevant-formals-ok t)
- 
+
  (local
   (defun
       k-arity-1-test (x)
@@ -451,22 +451,22 @@ following:
       (let ((a (car x))
 	    (b (cadr x)))
 	   1)))
- 
+
  (local
   (defun
       k-arity-1-st (x)
       (let ((a (car x))
 	    (b (cadr x)))
 	   (list a (- b 1)))))
- 
+
  (local
   (defun
       k-arity-1-h-fix ()
       0))
 
- (local 
+ (local
   (in-theory (disable (:executable-counterpart k-arity-1-h-fix))))
- 
+
  (local
   (defun
       k-arity-1-h (x y$)
@@ -477,14 +477,14 @@ following:
  (local
   (encapsulate
    (((k-arity-1 *) => *))
-   
+
    (local
-    (defun 
+    (defun
 	k-arity-1-stn (x n)
         (if (zp n) x (k-arity-1-stn (k-arity-1-st x) (1- n)))))
 
    (local
-    (defchoose 
+    (defchoose
 	k-arity-1-fch (n) (x)
 	(k-arity-1-test (k-arity-1-stn x n))))
 
@@ -494,11 +494,11 @@ following:
         (declare (xargs :measure (nfix n)))
 	(if (or (zp n) (k-arity-1-test x))
 	    (k-arity-1-base x)
-	  (k-arity-1-h x (k-arity-1-fn (k-arity-1-st x) 
+	  (k-arity-1-h x (k-arity-1-fn (k-arity-1-st x)
 				       (1- n))))))
 
    (local
-    (defun 
+    (defun
 	k-arity-1 (x)
         (if (k-arity-1-test (k-arity-1-stn x (k-arity-1-fch x)))
 	    (k-arity-1-fn x (k-arity-1-fch x))
@@ -527,7 +527,7 @@ following:
 		:use k-arity-1-fch)))
    ) ;; end encapsulate
   ) ;; end local
- 
+
  (local
   (defun
       k (a b)
@@ -543,6 +543,6 @@ following:
      :hints (("Goal"
 	      :use (:instance
 		    k-arity-1-def
-		    (x (list a b))))))     
+		    (x (list a b))))))
  ) ;; end encapsulate
 

@@ -113,7 +113,7 @@
                     (equal (svexlist-count (cdddr x)) 1))
            :hints(("Goal" :in-theory (enable len svexlist-count)
                    :expand ((len (cdddr x)))))))
-             
+
 
   (defret svex-count-of-svex-normalize-concatenation
     (<= (svex-count (svex-normalize-concatenation width first rest ctxalist))
@@ -161,7 +161,7 @@
                       (svexlist-count (cdr (svex-call->args x)))
                       (svexlist-count (cddr (svex-call->args x))))))
     :rule-classes :linear)
-  
+
   (defret vars-of-svex-normalize-concatenation
     (implies (and (not (member v (svex-vars first)))
                   (not (member v (svex-vars rest))))
@@ -354,7 +354,7 @@
 
 
 
-      
-                           
-                  
+
+
+
 

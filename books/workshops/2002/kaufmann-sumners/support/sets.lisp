@@ -14,7 +14,7 @@ equal-ity instead of set-equality and require no backtracking to relieve
 well-formed set hypotheses.
 
 EXPORTED logic functions:
-   
+
    (in e x)      -- set membership predicate, is element e a member of set x
    (subset x y)  -- subset predicate, is set x a subset of set y
    (isect x y)   -- the set intersection of set x and set y
@@ -163,7 +163,7 @@ free-variable matching in the application of <<-transitive.
 (defmacro scdr (x)
   `(sdrop (scar ,x) ,x))
 
-(defmacro satom (x) 
+(defmacro satom (x)
   `(not ,x))
 
 (defmacro common (x y)
@@ -320,8 +320,8 @@ free-variable matching in the application of <<-transitive.
   (declare (xargs :measure (+ (acl2-count x)
                               (acl2-count y)
                               (acl2-count z))))
-  (if (or (endp x) 
-          (endp y) 
+  (if (or (endp x)
+          (endp y)
           (endp z))
  ; The following was changed to avoid SBCL warning, "Asserted type NUMBER
  ; conflicts with derived type (VALUES LIST &OPTIONAL)."
@@ -355,7 +355,7 @@ free-variable matching in the application of <<-transitive.
 
 (defmacro defthm-ternary-sets (name body)
   `(defthm ,name ,body
-     :hints (("Goal" 
+     :hints (("Goal"
               :induct (ternary-induct x y z)
               :in-theory (disable <<-transitive))
              ("Subgoal *1/13"
@@ -462,7 +462,7 @@ free-variable matching in the application of <<-transitive.
 (local
 (defthm unite-aux-commutes
   (implies (and (setp x) (setp y))
-           (equal (unite-aux x y) 
+           (equal (unite-aux x y)
                   (unite-aux y x)))))
 
 (local
@@ -575,7 +575,7 @@ free-variable matching in the application of <<-transitive.
 (defthm length-of-sdiff-aux-property
   (implies (and (setp x) (setp y))
            (equal (len (sdiff-aux x y))
-                  (- (len x) 
+                  (- (len x)
                      (len (isect-aux x y)))))))
 
 (local
@@ -634,7 +634,7 @@ free-variable matching in the application of <<-transitive.
 ;;;; EXPORTED associative and commutative properties ;;;;
 
 (defthm unite-commutes
-  (equal (unite x y) 
+  (equal (unite x y)
          (unite y x)))
 
 (defthm unite-associates
@@ -642,7 +642,7 @@ free-variable matching in the application of <<-transitive.
          (unite x (unite y z))))
 
 (defthm isect-commutes
-  (equal (isect x y) 
+  (equal (isect x y)
          (isect y x)))
 
 (defthm isect-associates
@@ -722,7 +722,7 @@ free-variable matching in the application of <<-transitive.
 
 (defthm unite-card-property
   (equal (card (unite x y))
-         (+ (card x) 
+         (+ (card x)
             (card (sdiff y x)))))
 
 
@@ -795,7 +795,7 @@ free-variable matching in the application of <<-transitive.
 (defthm s1-subset-property-2
   (implies (and (subset x (s1 e)) x)
            (equal x (s1 e)))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
            (:instance norm->set-of-x-is-consp-or-not-x)))
   :rule-classes :forward-chaining)
 
@@ -883,8 +883,8 @@ free-variable matching in the application of <<-transitive.
 ;; the following macro will enable/disable the executable-counterparts
 
 (defmacro ec-sets (x)
-  `(in-theory (,(if x 'enable 'disable) 
-               (in) (subset) (isect) (unite) 
+  `(in-theory (,(if x 'enable 'disable)
+               (in) (subset) (isect) (unite)
                (sdiff) (card) (s1) (scar))))
 
 ;; we will begin with the executable-counterparts disabled

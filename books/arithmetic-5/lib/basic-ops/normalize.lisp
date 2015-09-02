@@ -77,10 +77,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local 
+(local
  (in-theory (enable collect-+)))
 
-(local 
+(local
  (in-theory (enable collect-*)))
 
 (set-state-ok t)
@@ -91,7 +91,7 @@
 
 #|
 
-;;; I can now do the first two, but not the third or fourth.  Is 
+;;; I can now do the first two, but not the third or fourth.  Is
 ;;; there no end to this madness?
 
 (thm
@@ -154,7 +154,7 @@
       (+ 1 (number-of-addends (fargn sum 2)))
     1))
 
-(defun find-denominators-with-sums (addend denominator-list 
+(defun find-denominators-with-sums (addend denominator-list
                                     number-of-addends-in-sum)
   (declare (xargs :guard (integerp number-of-addends-in-sum)))
 
@@ -164,7 +164,7 @@
   ;; optimization.  Since this function is in support of
   ;; normalize-terms-such-as-a/a+b-+-b/a+b, we don't bother to return
   ;; those numerators which are ``too long.'' Consider the term
-  ;; (+ (* a (/ (+ a b c)) (/ (+ a b))) (* b (/ (+ a b c)) (/ (+ a b)))). 
+  ;; (+ (* a (/ (+ a b c)) (/ (+ a b))) (* b (/ (+ a b c)) (/ (+ a b)))).
   ;; When this function is called, number-of-addends-in-sum will be 2,
   ;; and we return ((+ a b)).  We do not include (+ a b c) because
   ;; it contains three addends in the sum, and we would not be able
@@ -210,8 +210,8 @@
   ;; set-equal changes.
   (declare (xargs :guard (true-listp factors)))
 
-  ;; Consider that the term 
-  ;; (+ (* a x (/ (+ a b))) (* b x (/ (+ a b))) c), 
+  ;; Consider that the term
+  ;; (+ (* a x (/ (+ a b))) (* b x (/ (+ a b))) c),
   ;; where c is really some big hairy term, has been seen by
   ;; normalize-terms-such-as-a/a+b-+-b/a+b.  When we get here, sum is
   ;; (+ (* b x (/ (+ a b))) c), factors is ((/ (+ a b)) x),
@@ -220,7 +220,7 @@
   ;; with (b (/ (+ a b)) x) --- the factors in the first addend of
   ;; sum.  Since they match we step both.  If they didn't we would
   ;; step only sum and accumulate the addend onto remainder.  The next
-  ;; iteration we are done, and return c.  Note that, just as for 
+  ;; iteration we are done, and return c.  Note that, just as for
   ;; normalize-terms-such-as-a/a+b-+-b/a+b-fn-2, we are relying on the
   ;; sorting of things into term-order.
 
@@ -240,7 +240,7 @@
 	 (if (set-equal (factors (arg1 sum))
 			(cons (car to-be-found) factors))
 	     (remainder-aaa (arg2 sum)
-			    factors 
+			    factors
 			    (cdr to-be-found)
 			    remainder)
 	   (remainder-aaa (arg2 sum)
@@ -269,8 +269,8 @@
   ;; where c is really some big hairy term, has been seen by
   ;; normalize-terms-such-as-a/a+b-+-b/a+b.  Upon entry, denominator
   ;; will be (+ a b), addend will be (* a x (/ (+ a b))), and rest
-  ;; will be (+ (* b x (/ (+ a b))) c).  
-  
+  ;; will be (+ (* b x (/ (+ a b))) c).
+
   ;; Before proceeding, we make one important observation.  Due to the
   ;; fact that ACL2 sorts the addends of both denominator and the
   ;; original term into term-order, the addends of denominator and the
@@ -311,7 +311,7 @@
         (factors2 (factors (arg1 denominator))))
     (cond ((equal factors2 '('1))
 	   (let* ((factors factors1)
-		  (remainder (remainder-aaa rest 
+		  (remainder (remainder-aaa rest
 					    (cons (list 'UNARY-/ denominator) factors)
 					    (addends (arg2 denominator))
 					    nil)))
@@ -323,7 +323,7 @@
 	       nil)))
 	  ((intersectp-equal factors1 factors2)
 	   (let* ((factors (set-difference-equal factors1 factors2))
-		  (remainder (remainder-aaa rest 
+		  (remainder (remainder-aaa rest
 					    (cons (list 'UNARY-/ denominator) factors)
 					    (addends (arg2 denominator))
 					    nil)))
@@ -360,7 +360,7 @@
 
 ;;; In the example:
 ;;;(thm
-;;; (implies (and (acl2-numberp a) 
+;;; (implies (and (acl2-numberp a)
 ;;;               (acl2-numberp b))
 ;;;          (equal (+ (* a (/ (+ a b))) (* b (/ (+ a b))))
 ;;;                 y))
@@ -374,7 +374,7 @@
 ;;; Disable the associative and commutative rules for addition.
 ;;; In the example:
 ;;; (thm
-;;;  (implies (and (acl2-numberp a) 
+;;;  (implies (and (acl2-numberp a)
 ;;;                (acl2-numberp b)
 ;;;                (acl2-numberp c)
 ;;;                (acl2-numberp x))
@@ -390,11 +390,11 @@
 ;;; Disable the associative and commutative rules for addition.
 ;;; In the example:
 ;;; (thm
-;;;  (implies (and (acl2-numberp a) 
+;;;  (implies (and (acl2-numberp a)
 ;;;                (acl2-numberp b)
 ;;;                (acl2-numberp c)
 ;;;                (acl2-numberp x))
-;;;           (equal (+ (* x a (/ (+ a b c))) 
+;;;           (equal (+ (* x a (/ (+ a b c)))
 ;;;                     (* x b (/ (+ a b c)))
 ;;;                     (* x c (/ (+ a b c))))
 ;;;                  y))
@@ -407,8 +407,8 @@
 
 (defun normalize-terms-such-as-a/a+b-+-b/a+b-fn (x y)
   (declare (xargs :guard t))
-      (normalize-terms-such-as-a/a+b-+-b/a+b-fn-1 
-       (find-denominators-with-sums x 
+      (normalize-terms-such-as-a/a+b-+-b/a+b-fn-1
+       (find-denominators-with-sums x
                                     nil
                                     (+ 1 (number-of-addends y)))
        x
@@ -420,9 +420,9 @@
 ;;;          (+ (* factor (distribute-* (+ denominator (- a))
 ;;;                                        (/ denominator)))
 ;;;             remainder)))
-;;; in order ot ensure that the two subterms denominator and 
+;;; in order ot ensure that the two subterms denominator and
 ;;; (/ denominator) do not cancel each other off, causing the
-;;; hypothesis to not be relieved.  The rule 
+;;; hypothesis to not be relieved.  The rule
 ;;; distribute-*-distributes-2 ensures that distribution occurs
 ;;; as expected, and the rule distribute-*-distributes-1 replaces
 ;;; distribute-* with * after this occurs.  I thereby prevent the
@@ -455,7 +455,7 @@
  ;; We compare the equalities with x and y seperately in order to
  ;; avoid looping.  The seemingly ``extra'' variable a allows us to do
  ;; this.
- 
+
  (defthm normalize-terms-such-as-a/a+b-+-b/a+b
      (implies (and (bind-free
                     (normalize-terms-such-as-a/a+b-+-b/a+b-fn x y)
@@ -486,14 +486,14 @@
 
 ;;; In the example
 ;;; (thm
-;;;  (implies (and (acl2-numberp a) 
+;;;  (implies (and (acl2-numberp a)
 ;;;                (acl2-numberp b)
 ;;;                (acl2-numberp x))
 ;;;           (equal (/ (+ (* a x) (* b x)))
 ;;;                  y))
 ;;;  :otf-flg t)
 ;;; normalize-terms-such-as-1/ax+bx-fn returns
-;;; ((COMMON . X) 
+;;; ((COMMON . X)
 ;;;  (REMAINDER BINARY-+ A B))
 
 (defun normalize-terms-such-as-1/ax+bx-fn (sum)
@@ -570,7 +570,7 @@
              (equal (+ x y)
                     (+ (bubble-down x match) y))))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (or (not (active-runep '(:rewrite normalize-addends)))
 	 (and (active-runep '(:rewrite bubble-down-+-bubble-down))
@@ -614,14 +614,14 @@
 
 (defthm normalize-factors-gather-exponents
     (implies (and (syntaxp (in-term-order-* y mfc state))
-                  (bind-free 
-		   (find-matching-factor-gather-exponents 
+                  (bind-free
+		   (find-matching-factor-gather-exponents
 		    (factor-pattern-gather-exponents x) y mfc state)
 		   (match)))
              (equal (* x y)
                     (* (bubble-down x match) y))))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (if (active-runep '(:definition boil-that-dustspeck))
 	 (or (not (active-runep '(:rewrite normalize-factors-gather-exponents)))
@@ -667,14 +667,14 @@
 
 (defthm normalize-factors-scatter-exponents
     (implies (and (syntaxp (in-term-order-* y mfc state))
-                  (bind-free 
+                  (bind-free
 		   (find-matching-factor-scatter-exponents
 		    (factor-pattern-scatter-exponents x) y mfc state)
 		   (match)))
              (equal (* x y)
                     (* (bubble-down x match) y))))
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (or (not (active-runep '(:rewrite normalize-scatter-exponents)))
 	 (and (active-runep '(:rewrite bubble-down-*-bubble-down))
@@ -690,7 +690,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(theory-invariant 
+(theory-invariant
  (if (active-runep '(:definition boil-that-dustspeck))
      (not (and (active-runep '(:rewrite normalize-factors-gather-exponents))
 	       (active-runep '(:rewrite normalize-factors-scatter-exponents))))

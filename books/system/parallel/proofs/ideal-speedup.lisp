@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(defconst *general-duration-factor* 
+(defconst *general-duration-factor*
 
 ; make this larger if you want the proofs to take longer
 
@@ -142,9 +142,9 @@
        (p6-20-way x) (p7-20-way x) (p8-20-way x) (p9-20-way x)
        (p10-20-way x) (p11-20-way x) (p12-20-way x) (p13-20-way x)
        (p14-20-way x) (p15-20-way x) (p16-20-way x) (p17-20-way x)
-       (p18-20-way x) (p19-20-way x) 
+       (p18-20-way x) (p19-20-way x)
        (p20-20-way x))
-  :otf-flg t 
+  :otf-flg t
   :rule-classes nil)
 
 
@@ -191,8 +191,8 @@
        (p6-32-way x) (p7-32-way x) (p8-32-way x) (p9-32-way x)
        (p10-32-way x) (p11-32-way x) (p12-32-way x) (p13-32-way x)
        (p14-32-way x) (p15-32-way x) (p16-32-way x) (p17-32-way x)
-       (p18-32-way x) (p19-32-way x) 
-       (p20-32-way x) (p21-32-way x) (p22-32-way x) (p23-32-way x) 
+       (p18-32-way x) (p19-32-way x)
+       (p20-32-way x) (p21-32-way x) (p22-32-way x) (p23-32-way x)
        (p24-32-way x) (p25-32-way x) (p26-32-way x) (p27-32-way x)
        (p28-32-way x) (p29-32-way x)
        (p30-32-way x) (p31-32-way x) (p32-32-way x))
@@ -251,13 +251,13 @@
        (p6-40-way x) (p7-40-way x) (p8-40-way x) (p9-40-way x)
        (p10-40-way x) (p11-40-way x) (p12-40-way x) (p13-40-way x)
        (p14-40-way x) (p15-40-way x) (p16-40-way x) (p17-40-way x)
-       (p18-40-way x) (p19-40-way x) 
-       (p20-40-way x) (p21-40-way x) (p22-40-way x) (p23-40-way x) 
+       (p18-40-way x) (p19-40-way x)
+       (p20-40-way x) (p21-40-way x) (p22-40-way x) (p23-40-way x)
        (p24-40-way x) (p25-40-way x) (p26-40-way x) (p27-40-way x)
        (p28-40-way x) (p29-40-way x)
-       (p30-40-way x) (p31-40-way x) (p32-40-way x) (p33-40-way x) 
+       (p30-40-way x) (p31-40-way x) (p32-40-way x) (p33-40-way x)
        (p34-40-way x) (p35-40-way x) (p36-40-way x) (p37-40-way x)
-       (p38-40-way x) (p39-40-way x) 
+       (p38-40-way x) (p39-40-way x)
        (p40-40-way x))
   :otf-flg t
   :rule-classes nil)

@@ -5,7 +5,7 @@
 ;Eric believes that the function EXPO is intimately connected to EXPT (they are inverses).  Some of his
 ;theorems about EXPT require EXPO for their statements.
 
-;Todo: 
+;Todo:
 ;1. Write a more general version of EXPO that isn't tied to using 2 as the base?
 ;2. Use more consistent names for lemmas, including using expt2 for lemmas which only apply when the r paramater
 ;to expt is 2.
@@ -59,7 +59,7 @@
 ;rename?
 (defthm expo-minus-eric
   (implies (syntaxp (negative-syntaxp x))
-           (equal (expo x) 
+           (equal (expo x)
                   (expo (* -1 x)))))
 
 
@@ -383,7 +383,7 @@
   (implies (and (syntaxp (power2-syntaxp x))
                 (force (power2p x)))
            (equal (integerp x)
-                  (<= 0 (expo x)) 
+                  (<= 0 (expo x))
                   )))
 
 
@@ -489,16 +489,16 @@
 ;BOZO think about this.  expo-shift-general depends on combining (expt 2 i) and (/ (expt 2 i)) but if we
 ;rewrite (/ (expt 2 i)) to (expt 2 (* -1 i)) then this may not happen...  (We don't have a complete set of
 ;rules for gathering expt terms, especially in cases like this: (* (expt 2 i) x y w z (expt 2 (* -1 i)))
-;So currently one cannot have both expt-inverse and expt-shift enabled...  
+;So currently one cannot have both expt-inverse and expt-shift enabled...
 ;We could address this by writing a rule which will always gather expt
 ;terms in a product, even if other terms intervene between them.  If we are guaranteed to always do all
 ;gathering, then expo-shift-general should work okay (i.e., shouldn't loop).
 ;Man, I can't figure out how to write an easy bind-free rule to do all gathering. Even if we walk through the
-;term and decide what to cancel out, e.g., the (expt 2 i) and the (expt 2 (* -1 i)) in  
+;term and decide what to cancel out, e.g., the (expt 2 i) and the (expt 2 (* -1 i)) in
 ;  (* (expt 2 i) x y w z (expt 2 (* -1 i)))
 ;we can't just multiply through by their inverses (which would be the standard way to cancel something in a
 ;product) because the inverting would get sucked in by expt-inverse.  So an attempt to cancel by multiplying
-;through by (/ (expt 2 i)) and (/ (expt 2 (* -1 i))) would be the same as multipying through by (expt 2 (* -1 i)) 
+;through by (/ (expt 2 i)) and (/ (expt 2 (* -1 i))) would be the same as multipying through by (expt 2 (* -1 i))
 ;and (expt 2 (* -1 (* -1 i))) = (expt 2 i), respectively.  Yuck.  Maybe we can use some sort of bubble-down
 ;strategy like Rober Krug does.
 ;It's unfortunate that we don't get any expo-shifting if we are gathering exponents...

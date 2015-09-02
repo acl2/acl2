@@ -38,7 +38,8 @@ the execution if it takes too long."
 
   :long "<p>The @('oracle-timelimit') macro is similar to @(see oracle-time)
 except that besides reporting times, it also allows you impose a limit on how
-long the form is allowed to run for.  If execution takes too long, execution is
+long the form is allowed to run for and how much memory it is allowed to use.
+If execution takes too long or allocates too much memory, execution is
 aborted.</p>
 
 <p><b>Warning</b>.  This book is intended to be a practically useful tool, but
@@ -95,20 +96,32 @@ additional tests and working examples.</p>
 
 @({
      (oracle-timelimit
-       limit                ; rational valued time limit
+       timelimit            ; rational valued time limit
        form                 ; what to execute
        [:ret    retspec]    ; return signature for form
        [:onfail failspec]   ; return values for timeout case
+       [:maxmem bytes]      ; maximum memory allocation to allow (CCL Only)
+
+       ;; Special option to catch Lisp errors that arise during form
+       [:suppress-lisp-errors bool]
        )
 })
 
-<p>The @('limit') should evaluate to a rational number which is interpreted as
-some number of seconds.</p>
+<p>The @('timelimit') should evaluate to a rational number which is interpreted
+as some number of seconds.</p>
 
 <p>The @('form') can be any arbitrary ACL2 form that you want to execute.  If
 this form returns an ordinary, single value, e.g., as in @('(fib 35)'), then
 the @(':ret') form is not needed.  Otherwise, @(':ret') should explain the
 return signature of form, as in @(see oracle-time).</p>
+
+<p>(CCL Only) If provided, the @(':maxmem') should specify a memory ceiling in
+bytes; the default is @('nil'), in which case no memory ceiling is imposed.
+This is a very rough mechanism and its implementation may change in the future.
+The memory usage is checked only occasionally (i.e., once per second or
+similar).  Note that we check the global memory usage of the entire ACL2
+process, with no regard to which thread has allocated the memory or how much
+memory was allocated before the computation began.</p>
 
 <p>The return value of @('oracle-timelimit') extends the return value of
 @('form') with multiple values.  The basic idea is that @('oracle-timelimit')
@@ -130,7 +143,14 @@ is going to macroexpand to something like the following:</p>
 results of executing the form.  It is also, essentially, spliced into the
 return values for the success and failure cases.  The only twist is that if
 @('retspec') mentions @('state'), then we don't add an extra @('state') onto
-the end of the form.</p>")
+the end of the form.</p>
+
+<p>By default, if @('form') causes a raw Lisp error such as a type error, stack
+overflow, or causes some other non-local exit such as throwing to a tag, the
+error will propagate through the @('oracle-timelimit') call.  However, if you
+set @(':suppress-lisp-errors t'), then any such error will be treated as a
+timeout.  This may have any number of unsound consequences!</p>")
+
 
 (defund oracle-timelimit-extract (state)
   "Has an under-the-hood definition."
@@ -173,7 +193,7 @@ the end of the form.</p>")
   (<= 0 (mv-nth 1 (oracle-timelimit-extract state)))
   :rule-classes :linear)
 
-(defthm state-p1-of-oracle-time-extract.state
+(defthm state-p1-of-oracle-timelimit-extract.state
   (implies (state-p1 state)
            (state-p1 (mv-nth 2 (oracle-timelimit-extract state)))))
 
@@ -183,7 +203,7 @@ the end of the form.</p>")
 
 
 
-(defun oracle-timelimit-fn (limit form ret fail)
+(defun oracle-timelimit-fn (limit form ret fail maxmem suppress-lisp-errors)
   (b* (((mv ret-list fail-vals)
         ;; Normalize :ret and :fail forms so they are always lists of
         ;; corresponding name/values
@@ -215,7 +235,7 @@ the end of the form.</p>")
 
        ((when (eql (len ret-list) 1))
         ;; Single-valued case.
-        `(let ((,(car ret-list) (oracle-timelimit-exec (cons ,limit 1) ,form)))
+        `(let ((,(car ret-list) (oracle-timelimit-exec (list ,limit 1 ,maxmem ,suppress-lisp-errors) ,form)))
            (mv-let (time bytes state)
              (oracle-timelimit-extract state)
              (if time
@@ -224,12 +244,12 @@ the end of the form.</p>")
 
     ;; Multiple-valued case.
     `(mv-let ,ret-list
-       (oracle-timelimit-exec (cons ,limit ,(len ret-list)) ,form)
+       (oracle-timelimit-exec (list ,limit ,(len ret-list) ,maxmem ,suppress-lisp-errors) ,form)
        (mv-let (time bytes state)
          (oracle-timelimit-extract state)
          (if time
              (mv time bytes . ,success-splice)
            (mv nil nil . ,fail-splice))))))
 
-(defmacro oracle-timelimit (limit form &key (ret 'ret) (onfail 'nil))
-  (oracle-timelimit-fn limit form ret onfail))
+(defmacro oracle-timelimit (limit form &key (ret 'ret) (onfail 'nil) (maxmem 'nil) (suppress-lisp-errors 'nil))
+  (oracle-timelimit-fn limit form ret onfail maxmem suppress-lisp-errors))

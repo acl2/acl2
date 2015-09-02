@@ -66,7 +66,7 @@ todo: ;add analogues of the thms in land.lisp past bitn-land
 (local (include-book "../support/lxor"))
 
 (defund binary-lxor (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))))
@@ -83,7 +83,7 @@ todo: ;add analogues of the thms in land.lisp past bitn-land
   (declare (xargs :guard (consp x)))
   (cond ((endp (cdddr x)) ;(lxor x y n) -- the base case
          `(binary-lxor ,@x))
-        (t         
+        (t
          `(binary-lxor ,(car x)
                        (lxor ,@(cdr x))
                        ,(car (last x))))))
@@ -166,8 +166,8 @@ todo: ;add analogues of the thms in land.lisp past bitn-land
                 (case-split (integerp n))
                 )
            (equal (bits (lxor x y n) i j)
-                  (lxor (bits x i j) 
-                        (bits y i j) 
+                  (lxor (bits x i j)
+                        (bits y i j)
                         (+ 1 i (- j))))))
 
 (defthmd bits-lxor-2
@@ -176,8 +176,8 @@ todo: ;add analogues of the thms in land.lisp past bitn-land
                 (case-split (integerp n))
                 )
            (equal (bits (lxor x y n) i j)
-                  (lxor (bits x i j) 
-                        (bits y i j) 
+                  (lxor (bits x i j)
+                        (bits y i j)
                         (+ n (- j))))))
 
 ;notice the call to MIN in the conclusion
@@ -187,8 +187,8 @@ todo: ;add analogues of the thms in land.lisp past bitn-land
                 (case-split (integerp i))
                 )
            (equal (bits (lxor x y n) i j)
-                  (lxor (bits x i j) 
-                        (bits y i j) 
+                  (lxor (bits x i j)
+                        (bits y i j)
                         (+ (min n (+ 1 i)) (- j))))))
 
 (defthmd bitn-lxor-1
@@ -197,8 +197,8 @@ todo: ;add analogues of the thms in land.lisp past bitn-land
                 (case-split (integerp n))
                 )
            (equal (bitn (lxor x y n) m)
-                  (lxor (bitn x m) 
-                        (bitn y m) 
+                  (lxor (bitn x m)
+                        (bitn y m)
                         1))))
 (defthmd bitn-lxor-2
   (implies (and (<= n m)
@@ -216,8 +216,8 @@ todo: ;add analogues of the thms in land.lisp past bitn-land
                 )
            (equal (bitn (lxor x y n) m)
                   (if (< m n)
-                      (lxor (bitn x m) 
-                            (bitn y m) 
+                      (lxor (bitn x m)
+                            (bitn y m)
                             1)
                     0))))
 
@@ -279,7 +279,7 @@ todo: ;add analogues of the thms in land.lisp past bitn-land
 		  (not (zp n))
                   )
 	     (= (bitn (lxor x y n) 0)
-		(bitn (+ x y) 0)))		
+		(bitn (+ x y) 0)))
   :rule-classes ())
 
 ;BOZO rename
@@ -294,7 +294,7 @@ todo: ;add analogues of the thms in land.lisp past bitn-land
 		  (< n m)
 		  (case-split (integerp m))
 		  )
-	     (equal (lxor x y m) 
+	     (equal (lxor x y m)
                     (lxor x y n))))
 
 (defthm lxor-upper-bound

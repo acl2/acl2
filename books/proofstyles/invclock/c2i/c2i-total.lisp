@@ -44,7 +44,7 @@ an inductive invariant proof.
 
 
  (local (defun total-next (s) s))
- 
+
  (defun total-run (s n) (if (zp n) s (total-run (total-next s) (1- n))))
 
  (local (defun total-pre (s) (declare (ignore s)) nil))
@@ -66,7 +66,7 @@ an inductive invariant proof.
             (total-external (total-run s (total-clock-fn s)))))
 
  (defthm standard-theorem-for-total-clocks-2
-   (implies (total-pre s) 
+   (implies (total-pre s)
             (total-post (total-run s (total-clock-fn s)))))
 
  (defthm standard-theorem-for-total-clocks-3
@@ -120,7 +120,7 @@ an inductive invariant proof.
             :in-theory (disable total-clock-fn-is-natp)
             :use total-clock-fn-is-natp))))
 
-;; Then I show that pre must have total clock > 0. 
+;; Then I show that pre must have total clock > 0.
 
 (local
  (defthm total-pre-has-total-clock->0
@@ -140,7 +140,7 @@ an inductive invariant proof.
   (implies (total-pre s)
            (total-inv s))
   :hints (("Goal"
-           :use ((:instance exists-total-pre-state-suff 
+           :use ((:instance exists-total-pre-state-suff
                             (init s)
                             (i 0))))))
 
@@ -221,7 +221,7 @@ an inductive invariant proof.
 ;; And now throw in the idea that it is the same as running with parameters
 ;; wrapped with nfix.
 
-(local 
+(local
  (defthm weird-total-run-+-reduction
    (equal (total-run (total-run s i) j)
           (total-run s (+ (nfix i) (nfix j))))
@@ -235,7 +235,7 @@ an inductive invariant proof.
  (in-theory (disable total-run-+-reduction)))
 
 ;; It is now easy to get to the theorem that shows that the invariants
-;; persist. 
+;; persist.
 
 (DEFTHM total-inv-implies-total-next-total-inv
   (implies (and (total-inv s)
@@ -255,7 +255,7 @@ an inductive invariant proof.
                             (i (mv-nth 1 (exists-total-pre-state-witness s)))
                             (p (mv-nth 0 (exists-total-pre-state-witness s))))))))
 
-(local 
+(local
  (in-theory (enable total-run-+-reduction)))
 
 (local
@@ -277,7 +277,7 @@ an inductive invariant proof.
                     (> (total-clock-fn p) (1+ i))))
            ("Subgoal 2"
             :in-theory (disable total-clock-fn-is-natp)
-            :use ((:instance total-clock-fn-is-natp 
+            :use ((:instance total-clock-fn-is-natp
                              (s p)))))))
 
 (local
@@ -295,7 +295,7 @@ an inductive invariant proof.
                 (total-external (total-next s)))
            (total-post (total-next s)))
   :hints (("Goal"
-           :in-theory (e/d (exists-total-pre-state) 
+           :in-theory (e/d (exists-total-pre-state)
                            (total-run-+-reduction standard-theorem-for-total-clocks-2
                                                   fix nfix))
            :use ((:instance total-run-natp-total-next
@@ -334,7 +334,7 @@ an inductive invariant proof.
 ;; Now why should it decrease? Well consider the situation. We notice that
 ;; find-external must find the closesnt external state. Thus the one for s and
 ;; the one for the (next s ) must be exactly the same if in fact s is not
-;; external. 
+;; external.
 
 (local
  (defthm total-external-implies-find-total-external-total-external
@@ -348,7 +348,7 @@ an inductive invariant proof.
 
 ;; A little hack. This just ensures that I can apply the (- m n) for run.
 
-(local 
+(local
  (defthm total-run-minus-reduction
    (implies (and (natp i)
                   (natp j)
@@ -363,7 +363,7 @@ an inductive invariant proof.
                               (s p)
                               (i j)
                               (j (- i j))))))))
- 
+
 
 
 ;; Now show that if a state is reachable from pre then we can find an external
@@ -372,35 +372,35 @@ an inductive invariant proof.
 (local
  (defthm total-inv-states-have-total-external
    (implies (exists-total-pre-state s)
-            (total-external (total-run s 
-                                       (- (total-clock-fn 
+            (total-external (total-run s
+                                       (- (total-clock-fn
                                            (mv-nth 0 (exists-total-pre-state-witness s)))
                                           (mv-nth 1 (exists-total-pre-state-witness s))))))
    :hints (("Goal"
             :in-theory (enable exists-total-pre-state)
             :use ((:instance total-run-minus-reduction
-                             (i (total-clock-fn 
+                             (i (total-clock-fn
                                  (mv-nth 0 (exists-total-pre-state-witness s))))
                              (j (mv-nth 1 (exists-total-pre-state-witness s)))
                              (p (mv-nth 0 (exists-total-pre-state-witness s)))))))))
- 
+
 ;; Now go one extending this to some more arithmetic lemmas.
 
 (local
  (defthm exists-total-pre-state-to-total-clock
    (implies (exists-total-pre-state s)
-            (<= 1 (- (total-clock-fn 
+            (<= 1 (- (total-clock-fn
                       (mv-nth 0 (exists-total-pre-state-witness s)))
                      (mv-nth 1 (exists-total-pre-state-witness s)))))
    :hints (("Goal"
             :in-theory (e/d (exists-total-pre-state) (total-clock-fn-is-natp))
             :use ((:instance total-clock-fn-is-natp
                              (s (mv-nth 0 (exists-total-pre-state-witness s)))))))))
- 
+
 (local
  (defthm exists-total-pre-state-to-total-clock-2
    (implies (exists-total-pre-state s)
-            (natp (- (total-clock-fn 
+            (natp (- (total-clock-fn
                       (mv-nth 0 (exists-total-pre-state-witness s)))
                      (mv-nth 1 (exists-total-pre-state-witness s)))))
    :rule-classes nil
@@ -408,23 +408,23 @@ an inductive invariant proof.
             :in-theory (e/d (natp exists-total-pre-state) (total-clock-fn-is-natp))
             :use ((:instance total-clock-fn-is-natp
                              (s (mv-nth 0 (exists-total-pre-state-witness s)))))))))
- 
+
 (local
  (defthm exists-total-pre-state-to-total-clock-3
    (implies (exists-total-pre-state s)
-            (natp (1- (- (total-clock-fn 
+            (natp (1- (- (total-clock-fn
                           (mv-nth 0 (exists-total-pre-state-witness s)))
                          (mv-nth 1 (exists-total-pre-state-witness s))))))
    :rule-classes nil
    :hints (("Goal"
             :in-theory (e/d (natp)
-                            (total-clock-fn-is-natp 
+                            (total-clock-fn-is-natp
                              exists-total-pre-state-to-total-clock))
             :use ((:instance exists-total-pre-state-to-total-clock)
                   (:instance total-clock-fn-is-natp
                              (s (mv-nth 0 (exists-total-pre-state-witness s))))
                   (:instance exists-total-pre-state-to-total-clock-2))))))
- 
+
 ;; So finally we learnt that (1- (- (clock wit) j)) is a natp. Now we want to
 ;; specify that before this, there is no external state. So we define
 ;; no-external state below.
@@ -435,7 +435,7 @@ an inductive invariant proof.
    (cond ((zp n) (not (total-external s)))
          ((total-external s) nil)
          (t (no-total-external-state (total-next s) (1- n))))))
- 
+
 (local
   (defthm no-total-external-state-to<=
     (implies (and (no-total-external-state s n)
@@ -443,7 +443,7 @@ an inductive invariant proof.
                   (natp n)
                   (<= i n))
              (no-total-external-state s i))))
- 
+
 (local
  (defthm no-total-external-state-to-no-total-external
    (implies (and (no-total-external-state s n)
@@ -451,7 +451,7 @@ an inductive invariant proof.
             (not (total-external (total-run s n))))
    :hints (("Goal"
             :in-theory (enable total-run-fn-is-total-run)))))
- 
+
 (local
  (defthm no-total-external-to-<=-concretized
    (implies (and (no-total-external-state s n)
@@ -460,7 +460,7 @@ an inductive invariant proof.
                  (<= i n))
             (not (total-external (total-run s i))))
    :rule-classes nil))
- 
+
 
 ;; Indeed my no-externalstate must be correct by the above theorems. Now then
 ;; if nothing exists for n steps and something exists for n+1 steps then
@@ -478,7 +478,7 @@ an inductive invariant proof.
             :do-not '(generalize))
            ("Subgoal *1/6.1"
             :in-theory (enable natp)))))
- 
+
 ;; I still have a little more work to go. I want to say that if I have proved
 ;; that for any i <= n (external s i) does not hold then I want to infer
 ;; no-external. To get there, I will simply define the external witness.
@@ -489,23 +489,23 @@ an inductive invariant proof.
    (if (zp n) 0
      (if (total-external s) 0
        (1+ (no-total-external-witness (total-next s) (1- n)))))))
- 
+
 (local
  (defthm no-total-external-witness-<=n
    (implies (natp n)
             (<= (no-total-external-witness s n) n))
    :rule-classes nil))
- 
+
 (local
  (defthm no-total-external-witness-is-natp
    (natp (no-total-external-witness s n))
    :rule-classes nil))
- 
+
 (local
  (defthm no-total-external-witness-implies-no-total-external
    (implies (not (total-external (total-run s (no-total-external-witness s n))))
             (no-total-external-state s n))))
- 
+
 ;; And I have achieved that goal. So I now show that starting from pre until
 ;; clock function there is no external state.
 
@@ -528,7 +528,7 @@ an inductive invariant proof.
                   (:instance no-total-external-witness-<=n
                              (s p)
                              (n i)))))))
- 
+
 ;; Thus it must be that no-external holds for all the states upto the requisite
 ;; value.
 
@@ -547,7 +547,7 @@ an inductive invariant proof.
                              (n (- i j)))
                   (:instance total-run-minus-reduction
                              (i (no-total-external-witness (total-run p j) (- i j)))
-                             (j (no-total-external-witness 
+                             (j (no-total-external-witness
                                  (total-run p j)
                                  (- i j))))
                   (:instance no-total-external-witness-<=n
@@ -564,7 +564,7 @@ an inductive invariant proof.
                              (s p)
                              (i j)
                              (j (no-total-external-witness (total-run p j) (- i j)))))))))
- 
+
 (local
  (defthm total-pre-to-no-total-external-total-run
    (implies (and (total-pre p)
@@ -574,7 +574,7 @@ an inductive invariant proof.
                  (<= j i))
             (no-total-external-state (total-run p j) (- i j)))
    :rule-classes nil))
- 
+
 ;; And therefore for any state satisfying inv no-external holds until we have
 ;; run for the requisite steps.
 
@@ -582,17 +582,17 @@ an inductive invariant proof.
  (defthm total-inv-to-no-total-external
    (implies (exists-total-pre-state s)
             (no-total-external-state s
-                                     (1- 
+                                     (1-
                                       (- (total-clock-fn (mv-nth 0 (exists-total-pre-state-witness
                                                                     s)))
                                          (mv-nth 1 (exists-total-pre-state-witness s))))))
    :hints (("Goal"
-            :in-theory (e/d (exists-total-pre-state) (total-clock-fn-is-natp 
+            :in-theory (e/d (exists-total-pre-state) (total-clock-fn-is-natp
                                                       total-pre-has-total-clock->0))
             :use ((:instance total-pre-to-no-total-external-total-run
                              (p (mv-nth 0 (exists-total-pre-state-witness s)))
-                             (i (1- 
-                                 (total-clock-fn 
+                             (i (1-
+                                 (total-clock-fn
                                   (mv-nth 0
                                           (exists-total-pre-state-witness
                                            s)))))
@@ -601,7 +601,7 @@ an inductive invariant proof.
                              (s (mv-nth 0 (exists-total-pre-state-witness s))))
                   (:instance total-pre-has-total-clock->0
                              (s (mv-nth 0 (exists-total-pre-state-witness s)))))))))
- 
+
 
 ;; And more hacks. I need to get to i+2. Notice that most of these hacks are
 ;; because there is no good book to support defun-sk and/or good rewrite rules
@@ -616,7 +616,7 @@ an inductive invariant proof.
             (>= j (+ i 2)))
    :hints (("Goal"
             :in-theory (enable total-run-fn-is-total-run)))))
- 
+
 (local
  (defthm no-total-external-implies-+-2-concretized
    (implies (and (total-pre p)
@@ -628,7 +628,7 @@ an inductive invariant proof.
             :in-theory (disable no-total-external-implies-+-2)
             :use ((:instance no-total-external-implies-+-2
                              (j (total-clock-fn p))))))))
- 
+
 ;; So 1- clock must ne natp. That is clock >= 1 for pre states.
 
 (local
@@ -637,7 +637,7 @@ an inductive invariant proof.
             (natp (1- (total-clock-fn s))))
    :rule-classes nil
    :hints (("Goal"
-            :in-theory (e/d (natp) (total-pre-has-total-clock->0 
+            :in-theory (e/d (natp) (total-pre-has-total-clock->0
                                     total-clock-fn-is-natp))
             :use ((:instance total-clock-fn-is-natp)
                   (:instance  total-pre-has-total-clock->0))))))
@@ -657,7 +657,7 @@ an inductive invariant proof.
                    (- (total-clock-fn (mv-nth 0 (exists-total-pre-state-witness s)))
                       (mv-nth 1 (exists-total-pre-state-witness s)))))
    :hints (("Goal"
-            :in-theory (e/d (exists-total-pre-state) 
+            :in-theory (e/d (exists-total-pre-state)
                             (no-total-external-extate-to-find-total-external
                              no-total-external-state
                              total-clock-fn-is-natp))
@@ -669,29 +669,29 @@ an inductive invariant proof.
                              (s (mv-nth 0 (exists-total-pre-state-witness s))))
                   (:instance total-pre-to-no-total-external-total-run
                              (p (mv-nth 0 (exists-total-pre-state-witness s)))
-                             (i (1- (total-clock-fn 
+                             (i (1- (total-clock-fn
                                      (mv-nth 0
                                              (exists-total-pre-state-witness
                                               s)))))
                              (j (mv-nth 1 (exists-total-pre-state-witness s))))
                   (:instance total-run-minus-reduction
                              (p (mv-nth 0 (exists-total-pre-state-witness s)))
-                             (i (total-clock-fn 
+                             (i (total-clock-fn
                                  (mv-nth 0 (exists-total-pre-state-witness
                                             s))))
                              (j (mv-nth 1 (exists-total-pre-state-witness s))))
                   (:instance no-total-external-extate-to-find-total-external
-                             (j (- (total-clock-fn 
+                             (j (- (total-clock-fn
                                     (mv-nth 0
                                             (exists-total-pre-state-witness
                                              s)))
                                    (mv-nth 1 (exists-total-pre-state-witness s))))
-                             (n (1- 
-                                 (- (total-clock-fn 
+                             (n (1-
+                                 (- (total-clock-fn
                                      (mv-nth 0
                                              (exists-total-pre-state-witness
                                               s)))
-                                    (mv-nth 1 
+                                    (mv-nth 1
                                             (exists-total-pre-state-witness s)))))))))))
 
 
@@ -712,22 +712,22 @@ an inductive invariant proof.
  (defthm total-inv-states-have-total-external-total-next
    (implies (and (exists-total-pre-state s)
                  (not (total-external s)))
-            (total-external 
+            (total-external
              (total-run (total-next s)
-                        (1- 
-                         (- (total-clock-fn 
+                        (1-
+                         (- (total-clock-fn
                              (mv-nth 0 (exists-total-pre-state-witness s)))
                             (mv-nth 1 (exists-total-pre-state-witness s)))))))
    :rule-classes nil
    :hints (("Goal"
             :in-theory (disable total-inv-states-have-total-external)
             :use total-inv-states-have-total-external)
-           ("[1]Goal" 
+           ("[1]Goal"
             :use exists-total-pre-state-to-total-clock-3))))
 
 (local
  (in-theory (disable natp-to-total-run-s-n)))
- 
+
 ;; But the steps from witness is 1 more. TO justify that we add more arithmetic
 ;; about the arguments returned by exists-pre-state.
 
@@ -744,7 +744,7 @@ an inductive invariant proof.
             :use ((:instance total-run-+-reduction
                              (i (mv-nth 1 (exists-total-pre-state-witness s)))
                              (j i)
-                             (s (mv-nth 0 
+                             (s (mv-nth 0
                                         (exists-total-pre-state-witness s)))))))))
 
 (local
@@ -752,10 +752,10 @@ an inductive invariant proof.
    (implies (and (exists-total-pre-state s)
                  (not (total-external s))
                  (exists-total-pre-state (total-next s)))
-            (total-external 
-             (total-run 
+            (total-external
+             (total-run
               (mv-nth 0 (exists-total-pre-state-witness (total-next s)))
-              (+ (1- (- (total-clock-fn 
+              (+ (1- (- (total-clock-fn
                          (mv-nth 0
                                  (exists-total-pre-state-witness
                                   s)))
@@ -766,12 +766,12 @@ an inductive invariant proof.
             :in-theory (disable total-run)
             :use ((:instance total-inv-states-have-total-external-total-next)
                   (:instance exists-total-pre-state-to-total-clock-3)
-                  (:instance 
+                  (:instance
                    exists-total-pre-state-to-witness
                    (s (total-next s))
-                   (i (1- (- (total-clock-fn 
-                              (mv-nth 0 
-                                      (exists-total-pre-state-witness 
+                   (i (1- (- (total-clock-fn
+                              (mv-nth 0
+                                      (exists-total-pre-state-witness
                                        s)))
                              (mv-nth 1 (exists-total-pre-state-witness s)))))))))))
 
@@ -780,9 +780,9 @@ an inductive invariant proof.
    (implies (and (exists-total-pre-state s)
                  (not (total-external s))
                  (exists-total-pre-state (total-next s)))
-            (<=  (total-clock-fn 
+            (<=  (total-clock-fn
                   (mv-nth 0 (exists-total-pre-state-witness (total-next s))))
-                 (+ (1- (- (total-clock-fn 
+                 (+ (1- (- (total-clock-fn
                             (mv-nth 0 (exists-total-pre-state-witness s)))
                            (mv-nth 1 (exists-total-pre-state-witness s))))
                     (mv-nth 1 (exists-total-pre-state-witness (total-next s))))))
@@ -792,12 +792,12 @@ an inductive invariant proof.
                                     total-run))
             :use ((:instance standard-theorem-for-total-clocks-3
                              (s (mv-nth 0 (exists-total-pre-state-witness s)))
-                             (i (+ (1- (- (total-clock-fn 
+                             (i (+ (1- (- (total-clock-fn
                                            (mv-nth 0 (exists-total-pre-state-witness
                                                       s)))
                                           (mv-nth 1 (exists-total-pre-state-witness
                                                      s))))
-                                   (mv-nth 1 (exists-total-pre-state-witness 
+                                   (mv-nth 1 (exists-total-pre-state-witness
                                               (total-next s))))))
                   (:instance (:definition exists-total-pre-state)
                              (s (total-next s)))
@@ -818,46 +818,46 @@ an inductive invariant proof.
 (local
  (defthm total-inv-states-have-total-external-total-previous
    (implies (exists-total-pre-state (total-next s))
-            (total-external 
-             (total-run 
-              s 
-              (1+ 
+            (total-external
+             (total-run
+              s
+              (1+
                (- (total-clock-fn
-                   (mv-nth 0 
-                           (exists-total-pre-state-witness 
+                   (mv-nth 0
+                           (exists-total-pre-state-witness
                             (total-next s))))
                   (mv-nth 1 (exists-total-pre-state-witness (total-next s))))))))
    :hints (("Goal"
             :in-theory (e/d (natp exists-total-pre-state) (total-clock-fn-is-natp))
             :use ((:instance total-run-minus-reduction
-                             (p (mv-nth 0 
-                                        (exists-total-pre-state-witness 
+                             (p (mv-nth 0
+                                        (exists-total-pre-state-witness
                                          (total-next s))))
-                             (i (total-clock-fn 
+                             (i (total-clock-fn
                                  (mv-nth 0 (exists-total-pre-state-witness
                                             (total-next s)))))
-                             (j (mv-nth 1 (exists-total-pre-state-witness 
+                             (j (mv-nth 1 (exists-total-pre-state-witness
                                            (total-next s)))))
                   (:instance total-clock-fn-is-natp
-                             (s (mv-nth 0 
-                                        (exists-total-pre-state-witness 
+                             (s (mv-nth 0
+                                        (exists-total-pre-state-witness
                                          (total-next s))))))))))
 
 (local
  (in-theory (disable natp-to-total-run-s-n-2)))
 
 ;; Now of course I have just proven that if pre-state holds for s, then it also
-;; holds for (next s). 
+;; holds for (next s).
 
-(local 
+(local
  (defthm exists-total-pre-state-to-witness-3
    (implies (and (exists-total-pre-state s)
                  (not (total-external s))
                  (exists-total-pre-state (total-next s)))
-            (total-external 
-             (total-run 
+            (total-external
+             (total-run
               (mv-nth 0 (exists-total-pre-state-witness s))
-              (+ (1+ (- (total-clock-fn 
+              (+ (1+ (- (total-clock-fn
                          (mv-nth 0
                                  (exists-total-pre-state-witness
                                   (total-next s))))
@@ -870,12 +870,12 @@ an inductive invariant proof.
                   (:instance exists-total-pre-state-to-total-clock-3)
                   (:instance exists-total-pre-state-to-witness
                              (s s)
-                             (i (1+ 
-                                 (- (total-clock-fn 
-                                     (mv-nth 0 
-                                             (exists-total-pre-state-witness 
+                             (i (1+
+                                 (- (total-clock-fn
+                                     (mv-nth 0
+                                             (exists-total-pre-state-witness
                                               (total-next s))))
-                                    (mv-nth 1 (exists-total-pre-state-witness 
+                                    (mv-nth 1 (exists-total-pre-state-witness
                                                (total-next s))))))))))))
 
 ;; Now can we start justifying that the witness of (exists-pre-state s) and
@@ -889,7 +889,7 @@ an inductive invariant proof.
                  (not (total-external s))
                  (exists-total-pre-state (total-next s)))
             (<=  (total-clock-fn (mv-nth 0 (exists-total-pre-state-witness s)))
-                 (+ (1+ (- (total-clock-fn 
+                 (+ (1+ (- (total-clock-fn
                              (mv-nth 0 (exists-total-pre-state-witness (total-next s))))
                             (mv-nth 1 (exists-total-pre-state-witness (total-next s)))))
                      (mv-nth 1 (exists-total-pre-state-witness s)))))
@@ -899,7 +899,7 @@ an inductive invariant proof.
                                      total-run))
              :use ((:instance standard-theorem-for-total-clocks-3
                               (s (mv-nth 0 (exists-total-pre-state-witness s)))
-                              (i (+ (1+ (- (total-clock-fn 
+                              (i (+ (1+ (- (total-clock-fn
                                             (mv-nth 0 (exists-total-pre-state-witness
                                                        (total-next s))))
                                            (mv-nth 1 (exists-total-pre-state-witness
@@ -908,7 +908,7 @@ an inductive invariant proof.
                    (:instance (:definition exists-total-pre-state))
                    (:instance exists-total-pre-state-to-witness-3)
                    (:instance exists-total-pre-state-to-total-clock-3))))))
- 
+
 ;; Yes. And then it is done.
 
 (local
@@ -943,7 +943,7 @@ an inductive invariant proof.
    (implies (and (total-inv s)
                  (not (total-external (total-next s))))
             (equal (m (total-next s))
-                   (1- (- (total-clock-fn 
+                   (1- (- (total-clock-fn
                            (mv-nth 0 (exists-total-pre-state-witness s)))
                           (mv-nth 1 (exists-total-pre-state-witness s))))))
    :hints (("Goal"

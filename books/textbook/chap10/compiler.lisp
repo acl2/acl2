@@ -1,4 +1,4 @@
-; Section 10.6 Compiler for Stack Machine  
+; Section 10.6 Compiler for Stack Machine
 
 ; See also compiler.acl2 for certification instructions and the
 ; definition of the package "compile".
@@ -25,7 +25,7 @@
         (t (lookup var (cdr alist)))))
 
 (defun eval (exp alist)
-  (cond 
+  (cond
    ((atom exp)
     (cond ((symbolp exp) (lookup exp alist))
 	  (t exp)))
@@ -79,7 +79,7 @@
 	    (t (append (compile (car exp))
 		       (compile (caddr exp))
 		       '((mul))))))))
-   
+
 
 (defthm composition
   (equal (run (append prg1 prg2) alist stk)
@@ -90,9 +90,9 @@
    ((atom exp) stk)
    ((equal (len exp) 2)
     (compiler-induct (cadr exp) alist stk))
-   (t 
+   (t
     (append (compiler-induct (car exp) alist stk)
-            (compiler-induct (caddr exp) 
+            (compiler-induct (caddr exp)
 			     alist
 			     (cons (eval (car exp) alist) stk))))))
 

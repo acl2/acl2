@@ -13,16 +13,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; The proof is structured in two main phases:
-;; 
-;; 1 - Prove that, given a set of coprimes m and a value m, 
-;;     if each element of m divides v, then the product of the elements of m 
+;;
+;; 1 - Prove that, given a set of coprimes m and a value m,
+;;     if each element of m divides v, then the product of the elements of m
 ;;     divides v.
-;; 2 - Prove that, given a set of coprimes m, and given two values v1 and v2 which are 
-;;     congruent modulo m with two sets of values l1 and l2, then l1 and l2 
-;;     are congruent w.r.t. m iff v1 and v2 differ by a multiple of the 
+;; 2 - Prove that, given a set of coprimes m, and given two values v1 and v2 which are
+;;     congruent modulo m with two sets of values l1 and l2, then l1 and l2
+;;     are congruent w.r.t. m iff v1 and v2 differ by a multiple of the
 ;;     product of the elements of m. The ``if'' direction of this proof
 ;;     exploits the statement obtained in phase 1.
-;;   
+;;
 ;; Once the statement of phase 2 is proved, the theorem requested in the exercise
 ;; is easily proved.
 ;;
@@ -44,9 +44,9 @@
 ;; (4) gcd(m,n) = 1 ^ gcd(n,k) = 1 ==> gcd(m,nk) =1           (prime-of-product)
 ;; (5) ForAll i: gcd(e,m_i) = 1 ==> gcd(m,Product(m_i)) = 1   (rel-prime-of-product)
 ;; (6) ForAll i,j with j<>j: gcd(m_i,m_j) = 1 ^
-;;     ForAll i: m_i|v ==> Product(m_i)|v                     
+;;     ForAll i: m_i|v ==> Product(m_i)|v
 ;;                             (if-every-coprime-divides-v-then-product-of-coprimes-divides-v)
-;;          
+;;
 ;;
 ;; The proof structure of this phase goes as follows:
 ;;
@@ -127,7 +127,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; First we prove that, if x and y are positive coprimes, and they both divide v, 
+;; First we prove that, if x and y are positive coprimes, and they both divide v,
 ;; then x * y divides v. We exploit the fact that the g-c-d can be expressed as
 ;; a linear combination of two multiplier functions, defined into the mod-gcd book.
 ;;
@@ -161,7 +161,7 @@
 	(implies (and (integerp v) (= gcd 1)) (= (* v gcd) v))
 	:rule-classes nil)
 
-(defthm hack-2 
+(defthm hack-2
  (implies
   (and
    (natp x)
@@ -175,7 +175,7 @@
  :rule-classes nil)
 
 
-(defthm hack-3 
+(defthm hack-3
  (implies
   (and
    (integerp a)
@@ -208,7 +208,7 @@
 
 (defthm hack-5
  (implies
-   (and 
+   (and
      (integerp v1)
      (integerp v2)
      (integerp v3)
@@ -229,13 +229,13 @@
   :rule-classes nil)
 
 (defthm hack-7
-(IMPLIES 
- (AND 
-  (equal decomp-a-b  
-	 V)             
+(IMPLIES
+ (AND
+  (equal decomp-a-b
+	 V)
   (equal (* decomp-a-b
 	    div)
-	 res) 
+	 res)
   (INTEGERP res))
  (INTEGERP (* V div)))
 :hints (("Goal" :in-theory nil))
@@ -243,7 +243,7 @@
 
 
 
-(defthm divides-both 
+(defthm divides-both
  (implies
   (and
    (natp x)
@@ -253,12 +253,12 @@
    (integerp v)
    (integerp (/ v y))
    (integerp (/ v x))
-   (rel-prime x y)) 
+   (rel-prime x y))
   (integerp (/ v (* x y))))
- :hints (("Goal" :in-theory (current-theory 'ground-zero) 
+ :hints (("Goal" :in-theory (current-theory 'ground-zero)
         :use (rel-prime
-              hack-2 
-              hack-4 
+              hack-2
+              hack-4
               hack-6
 	     (:instance hack-7 (div (/ (* X Y)))
                                   (res  (+ (* (* V (/ Y)) (A X Y)) (* (* V (/ X)) (B X Y))))
@@ -296,13 +296,13 @@
    (integerp (/ x z))
    (integerp (/ y z)))
   (= z 1))
- :hints (("Goal" :use (rel-prime g-c-d 
+ :hints (("Goal" :use (rel-prime g-c-d
 		       (:instance Nonneg-int-gcd-is-LARGEST-common-divisor-<= (d z)))))
  :rule-classes nil)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
+;;
 ;; We now prove that (g-c-d x y) divides both x and y.
 ;; This is stated by theorem gcd-divides-both.
 ;;
@@ -317,17 +317,17 @@
    (rel-prime a b)
    (integerp (/ (* b c) a)))
   (integerp (/ c a)))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
 	   ((:instance rel-prime (x a) (y b))
             (:instance g-c-d (x a) (y b))
 	    (:instance hack-8 (n c) (d a))
 	    (:instance hack-8 (n (* b c)) (d a))
 	    (:instance Divisor-of-product-divides-factor (y b) (z a) (x c))))))
- 
-	
-(defthm hack-9 
+
+
+(defthm hack-9
  (implies
-  (and 
+  (and
    (integerp x)
    (posp y)
    (integerp (/ x y)))
@@ -346,16 +346,16 @@
  (implies
   (and
    (integerp c))
-   (= (+ (* c a x) (* c b y)) 
+   (= (+ (* c a x) (* c b y))
       (* c (+ (* a x) (* b y)))))
  :rule-classes nil)
 
-(defthm hack-12 
+(defthm hack-12
  (implies
   (and
    (integerp c)
    (= (+ (* a x) (* b y)) 1))
-   (= (+ (* c a x) (* c b y)) c)) 
+   (= (+ (* c a x) (* c b y)) c))
  :hints (("Goal" :use (hack-10 hack-11)))
  :rule-classes nil)
 
@@ -372,7 +372,7 @@
   (= k (+ (* k (a m n) m) (* k (b m n) n))))
  :hints (("Goal" :use (
 		       (:instance hack-12 (a (a m n)) (b (b m n)) (x m) (y n) (c k))
-		       (:instance a-b-thm (x m) (y n)) 
+		       (:instance a-b-thm (x m) (y n))
 		       (:instance rel-prime (x m) (y n)))))
  :rule-classes nil)
 
@@ -450,7 +450,7 @@
  :rule-classes nil)
 
 
-	
+
 (defthm gcd-divides-both
  (implies
   (and
@@ -461,12 +461,12 @@
    (integerp (/ y (g-c-d x y)))))
  :hints (("Goal" :in-theory (enable g-c-d))))
 
- 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
-;; Frome the fact that (g-c-d x y) divides both x and y, we easily 
-;; derive that, if m and n are coprimes, and m and k are coprimes, 
+;;
+;; Frome the fact that (g-c-d x y) divides both x and y, we easily
+;; derive that, if m and n are coprimes, and m and k are coprimes,
 ;; then m and (n * k) are coprimes.
 ;; This is stated by prime-of-product.
 ;;
@@ -498,7 +498,7 @@
   (and
    (integerp (/ m       (g-c-d m (* n k))))
    (integerp (/ k       (g-c-d m (* n k))))))
-   :hints (("Goal" :use  (	    
+   :hints (("Goal" :use  (
 			  (:instance g-c-d (x m) (y (* n k)))
 			  (:instance Nonneg-int-gcd->-0 (n m) (d (* n k)))
 			  (:instance hack-19 (v m) (x n) (y k))
@@ -518,7 +518,7 @@
 	   :use ( hack-20
 		  (:instance g-c-d (x m) (y (* n k)))
 		  (:instance Nonneg-int-gcd->-0 (n m) (d (* n k)))
-		  (:instance only-divisor-of-coprimes-is-1 
+		  (:instance only-divisor-of-coprimes-is-1
 			     (z (g-c-d m (* n k)))
 			     (x m)
 			     (y k))))))
@@ -564,14 +564,14 @@
  (implies
    (and
    (posp-all m)
-   (natp el) 
+   (natp el)
    (rel-prime-all el m))
    (rel-prime el (prod m)))
  :hints ( ("Goal" :in-theory (disable rel-prime natp) :induct (len m))
 	  ("Subgoal *1/2''" :use ( (:instance rel-prime (x el) (y 1))
 				   (:instance g-c-d (x el) (y 1))
 				   (:instance Nonneg-int-gcd-1-right (x el))))
-	  ("Subgoal *1/1'" :use 
+	  ("Subgoal *1/1'" :use
 	   (hack-21
 	    hack-22
 	    (:instance prod (l m))
@@ -581,7 +581,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; We prove the main lemma of the first part of the proof,
-;; namely that if m is a list of positive coprimes, and 
+;; namely that if m is a list of positive coprimes, and
 ;; every element of m divides v, then the product of the elements
 ;; of m, (prod m), divides v.
 ;; This is stated by if-every-coprime-divides-v-then-product-of-coprimes-divides-v.
@@ -590,7 +590,7 @@
 
 (defthm hack-23
  (implies
-  (and 
+  (and
    (not (endp m))
    (rel-prime-moduli m))
   (and
@@ -599,7 +599,7 @@
    (natp (car m))
    (< 0 (car m)))))
 
-  
+
 
 
 (defthm if-every-coprime-divides-v-then-product-of-coprimes-divides-v
@@ -610,9 +610,9 @@
     (divided-by-all v m))
   (integerp (/ v (prod m))))
  :hints (("Goal" :induct (len m))
-	 ("Subgoal *1/1" 
+	 ("Subgoal *1/1"
 	  :in-theory '((:definition posp) (:definition natp))
-	  :use 
+	  :use
 	  (
            hack-21
            hack-23
@@ -634,24 +634,24 @@
 ;;
 ;; We start by introducing the notion of congruence of a pair of lists
 ;; of numbers w.r.t. a third list of numbers.
-;; Then we prove the following facts (where some hypothesis are omitted, 
-;; ``congruent'' indicates the definition congruent-all-mod, and 
+;; Then we prove the following facts (where some hypothesis are omitted,
+;; ``congruent'' indicates the definition congruent-all-mod, and
 ;; ``congruent-lists'' indicates the definition in
 ;; congruant-all-mod-list):
 ;;
 ;; (7)  ForAll i: m_i|k ==> congruent (x,y,m) ,==> congruent((x mod k),y,m)
 ;; (8)  ForAll i,j with j<>j: gcd(m_i,m_j) = 1 ^
 ;;      congruent(v1,l1,m) ^ congruent (v2,l2,m) ^
-;;      Product(m_i)|(v1-v2) ==> congruent-lists(l1,l2,m) 
+;;      Product(m_i)|(v1-v2) ==> congruent-lists(l1,l2,m)
 ;; (9)  ForAll i,j with j<>j: gcd(m_i,m_j) = 1 ^
 ;;      congruent(v1,l1,m) ^ congruent (v2,l2,m) ^
-;;      congruent-lists(l1,l2,m) ==> Product(m_i)|(v1-v2) 
+;;      congruent-lists(l1,l2,m) ==> Product(m_i)|(v1-v2)
 ;; (10) ForAll i,j with j<>j: gcd(m_i,m_j) = 1 ^
 ;;      congruent(v1,l1,m) ^ congruent (v2,l2,m) ==>
 ;;      (congruent-lists(l1,l2,m) <==> Product(m_i)|(v1-v2))
 ;; (11) (0<=v1<p) ^ (0<=v2<p) ^ p|(v1-v2) ==> v1 = v2
 ;; (12) ForAll i,j with j<>j: gcd(m_i,m_j) = 1 ^
-;;      (0<=v1<p) ^ (0<=v2<p) ^ 
+;;      (0<=v1<p) ^ (0<=v2<p) ^
 ;;      congruent(v1,l,m) ^ congruent(v2,l,m) ==> v1 = v2
 ;;
 ;;
@@ -671,24 +671,24 @@
 ;;
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-theory 
+(in-theory
  (union-theories (current-theory 'ground-zero)
 		 '((:definition prod)
 		   (:definition natp)
 		   (:definition natp-all)
-		   (:definition posp)           
+		   (:definition posp)
 		   (:executable-counterpart prod)
 		   (:type-prescription prod)
 		   (:induction prod)
 		   (:executable-counterpart posp)
 		   (:type-prescription posp)
-		   (:definition posp-all)       
+		   (:definition posp-all)
 		   (:executable-counterpart posp-all)
 		   (:type-prescription posp-all)
 		   (:induction posp-all)
-		   (:definition divided-by-all) 
+		   (:definition divided-by-all)
 		   (:executable-counterpart divided-by-all)
 		   (:type-prescription divided-by-all)
 		   (:induction divided-by-all) )))
@@ -756,12 +756,12 @@
 
 
 (defthm product-divided-by-all
- (implies 
+ (implies
   (posp-all m)
   (divided-by-all (prod m) m))
  :hints (("Subgoal *1/1.2''"
 	  :induct t)
-	 ("Goal" 
+	 ("Goal"
 	  :in-theory (disable commutativity-of-*)
 	  :induct (len m))))
 
@@ -777,7 +777,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Here we prove that, if two values v1 and v2 differ by the product 
+;; Here we prove that, if two values v1 and v2 differ by the product
 ;; of a list of coprimes m, then lists congruent to them are congruent w.r.t. m.
 ;; This is stated by if-values-differ-by-product-of-m-then-cong-lists-are-congruent-wrt-m.
 ;;
@@ -810,20 +810,20 @@
 
 
 (defthm express-mod-changing-arg-sign
-  (implies 
-   (and 
+  (implies
+   (and
     (integerp x)
     (integerp y)
-    (not (integerp (/ x y)))) 
+    (not (integerp (/ x y))))
    (equal (mod (- x) y) (- y (mod x y))))
   :hints (("Goal" :in-theory (enable mod)))
   :rule-classes nil)
 
 (defthm mod-0-allows-changing-arg-sign
-  (implies 
-   (and 
-    (integerp x) 
-    (integerp y) 
+  (implies
+   (and
+    (integerp x)
+    (integerp y)
     (not (equal y 0))
     (integerp (/ x y)))
    (and
@@ -845,10 +845,10 @@
    (equal (mod (- x y) z)
 	  (mod (- (mod x z) (mod y z)) z)))
   :hints (("Goal"
-	 :use ( 
+	 :use (
 		 (:instance mod-+-exp (y (- y)))
 		 (:instance express-mod-changing-arg-sign (x y) (y z))
-		 (:instance cancel-mod-+-exp 
+		 (:instance cancel-mod-+-exp
 			    (i (/ z z))
 			    (x z)
 			    (y (- (mod x z) (mod y z))))
@@ -885,7 +885,7 @@
 
 
 
-(defthm cong-all-mod-implies-cong-all-mod-list 
+(defthm cong-all-mod-implies-cong-all-mod-list
  (implies
   (and
    (congruent-all-mod v1 l1 m)
@@ -894,7 +894,7 @@
 
 
 (defthm hack-26
- (implies 
+ (implies
   (rel-prime-moduli m)
   (and
    (posp-all m)
@@ -909,7 +909,7 @@
   (integerp (/ (- a) b)))
  :rule-classes nil)
 
- 
+
 (defthm hack-28
   (implies
    (and
@@ -938,10 +938,10 @@
     (congruent-all-mod v2 l2 m)
     (integerp (/ (- v1 v2) (prod m))))
    (congruent-all-mod-list l1 l2 m))
-  :hints (("Goal" 
-	   :in-theory '((:definition posp) 
+  :hints (("Goal"
+	   :in-theory '((:definition posp)
 			(:rewrite unicity-of-1))
-	   :use 
+	   :use
 	   ( hack-28
 	     hack-26
 	     cong-all-mod-implies-cong-all-mod-list
@@ -955,11 +955,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Now we prove that, given two values v1 and v2, if lists congruent to 
-;; them are congruent w.r.t. m, then v1 and v2 differ by the product 
+;; Now we prove that, given two values v1 and v2, if lists congruent to
+;; them are congruent w.r.t. m, then v1 and v2 differ by the product
 ;; of the elements of m.
 ;;
-;; This is stated by 
+;; This is stated by
 ;; if-values-are-congruent-wrt-m-via-cong-lists-then-they-differ-by-a-multiple-of-prod-m.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1005,13 +1005,13 @@
    (implies
     (cong-sg-val v1 v2 m)
     (cong-sg-val (- v1 v2) 0 m)))
- :hints (("Goal" 
-	  :in-theory (disable mod-=-0-exp 
-                              mod-- 
-                              mod-+-exp 
-                              cancel-mod-+-exp 
-                              rewrite-mod-mod-exp 
-                              r-mod-mod-cancel 
+ :hints (("Goal"
+	  :in-theory (disable mod-=-0-exp
+                              mod--
+                              mod-+-exp
+                              cancel-mod-+-exp
+                              rewrite-mod-mod-exp
+                              r-mod-mod-cancel
                               integerp-mod-exp)
 	  :induct (len m))
 	 ("Subgoal *1/1" :use  (
@@ -1057,7 +1057,7 @@
 			 (:instance cong-0-is-divided-by-all (v (- v1 v2)))
 			 (:instance same-congruence-over-conglist (v v2))
 			 (:instance same-cong-vals-implies-diff-has-cong-to-zero (v1 v1) (v2 v2))
-			 (:instance if-every-coprime-divides-v-then-product-of-coprimes-divides-v 
+			 (:instance if-every-coprime-divides-v-then-product-of-coprimes-divides-v
                                     (v (- v1 v2)))))))
 
 
@@ -1085,10 +1085,10 @@
     (congruent-all-mod v1 l1 m)
     (congruent-all-mod v2 l2 m))
    (equal
-    (congruent-all-mod-list l1 l2 m) 
+    (congruent-all-mod-list l1 l2 m)
     (integerp (/ (- v1 v2) (prod m)))))
-  :hints (("Goal" 
-           :use (if-values-differ-by-product-of-m-then-cong-lists-are-congruent-wrt-m 
+  :hints (("Goal"
+           :use (if-values-differ-by-product-of-m-then-cong-lists-are-congruent-wrt-m
                  if-values-are-congruent-wrt-m-via-cong-lists-then-they-differ-by-a-multiple-of-prod-m))))
 
 
@@ -1110,7 +1110,7 @@
    (implies (equal resdiv 0) (equal (* resdiv prod) 0))
    (implies (< resdiv 0)     (<     (* resdiv prod) 0))
    (implies (> resdiv 0)     (>=    (* resdiv prod) prod)))))
-   
+
 
 (defthm hack-30
  (implies

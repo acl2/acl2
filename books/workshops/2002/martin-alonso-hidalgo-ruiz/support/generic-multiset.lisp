@@ -38,7 +38,7 @@
   (defun include (e m)
     (cons e m)))
 
- (local 
+ (local
   (defun empty (m)
     (atom m)))
 
@@ -62,7 +62,7 @@
  (defun count-bag-equiv (e m)
    (declare (xargs :measure (measure m)))
    (cond ((empty m) 0)
-	 ((equiv e (select m)) 
+	 ((equiv e (select m))
 	  (1+ (count-bag-equiv e (reduct m))))
 	 (t (count-bag-equiv e (reduct m)))))
 
@@ -152,8 +152,8 @@
 (defun sub-bag-equiv (m1 m2)
   (declare (xargs :measure (measure m1)))
   (cond ((empty m1) t)
-	((member-bag-equiv (select m1) m2) 
-	 (sub-bag-equiv (reduct m1) 
+	((member-bag-equiv (select m1) m2)
+	 (sub-bag-equiv (reduct m1)
 			(remove-one-bag-equiv (select m1) m2)))
 	(t nil)))
 
@@ -173,9 +173,9 @@
   ((sub-bag-strategy-hyp) => *))
 
  (local (defun sub-bag-strategy-m1 () nil))
-		       
+
  (local (defun sub-bag-strategy-m2 () nil))
-		       
+
  (local (defun sub-bag-strategy-hyp () t))
 
  (defthm sub-bag-equiv-strategy-constraint
@@ -194,7 +194,7 @@
 	       (count-bag-equiv (select m1) m3))
 	   (bag-sub-bag-equiv (reduct m1) m2 m3))
 	  (t nil))))
- 
+
  (local
   (defthm bag-sub-bag-equiv-remove-one
     (implies (bag-sub-bag-equiv m1 m2 m3)
@@ -211,7 +211,7 @@
 					    (e (select m1))
 					    (m2 m1)
 					    (m3 m2))))))
- 
+
  (local
   (defthm sub-bag-equiv-strategy-aux
     (implies (sub-bag-strategy-hyp)
@@ -227,21 +227,21 @@
   (declare (xargs :mode :program))
 
   (case-match form
-	      
+
 	      (('IMPLIES form-hyp
 			 ('EQUAL-BAG-EQUIV form-m1 form-m2))
 	       (mv form-hyp form-m1 form-m2))
-	      
+
 	      (('EQUAL-BAG-EQUIV form-m1 form-m2)
 	       (mv t form-m1 form-m2))
-	      
+
 	      (('IMPLIES form-hyp
 			 ('SUB-BAG-EQUIV form-m1 form-m2))
 	       (mv form-hyp form-m1 form-m2))
-	      
+
 	      (('SUB-BAG-EQUIV form-m1 form-m2)
 	       (mv t form-m1 form-m2))
-	      
+
 	      (& (mv nil nil nil))))
 
 (defun defstrategy-sub-bag-hint (id clause world)
@@ -251,7 +251,7 @@
   (mv-let (form-hyp form-m1 form-m2)
 	  (components-equal-sub-bag (first clause))
 	  (if form-hyp
-	      `(:use (:functional-instance 
+	      `(:use (:functional-instance
 		      sub-bag-equiv-strategy
 		      (sub-bag-strategy-m1 (lambda () ,form-m1))
 		      (sub-bag-strategy-m2 (lambda () ,form-m2))
@@ -294,9 +294,9 @@
   ((equal-bag-strategy-hyp) => *))
 
  (local (defun equal-bag-strategy-m1 () nil))
-		       
+
  (local (defun equal-bag-strategy-m2 () nil))
-		       
+
  (local (defun equal-bag-strategy-hyp () t))
 
  (defthm equal-bag-equiv-strategy-constraint
@@ -310,20 +310,20 @@
  (local
   (defthm equal-bag-equiv-strategy-aux-1
     (implies (equal-bag-strategy-hyp)
-      (sub-bag-equiv (equal-bag-strategy-m1) 
+      (sub-bag-equiv (equal-bag-strategy-m1)
 		     (equal-bag-strategy-m2)))
     :hints (defstrategy-sub-bag-hint)))
-  
+
  (local
   (defthm equal-bag-equiv-strategy-aux-2
     (implies (equal-bag-strategy-hyp)
-      (sub-bag-equiv (equal-bag-strategy-m2) 
+      (sub-bag-equiv (equal-bag-strategy-m2)
 		     (equal-bag-strategy-m1)))
     :hints (defstrategy-sub-bag-hint)))
 
  (defthm equal-bag-equiv-strategy
    (implies (equal-bag-strategy-hyp)
-     (equal-bag-equiv (equal-bag-strategy-m1) 
+     (equal-bag-equiv (equal-bag-strategy-m1)
 		      (equal-bag-strategy-m2))))
 
 )
@@ -335,7 +335,7 @@
   (mv-let (form-hyp form-m1 form-m2)
 	  (components-equal-sub-bag (first clause))
 	  (if form-hyp
-	      `(:use (:functional-instance 
+	      `(:use (:functional-instance
 		      equal-bag-equiv-strategy
 		      (equal-bag-strategy-m1 (lambda () ,form-m1))
 		      (equal-bag-strategy-m2 (lambda () ,form-m2))
@@ -356,7 +356,7 @@
 (defun union-bag-equiv (m1 m2)
   (declare (xargs :measure (measure m1)))
   (cond ((empty m1) m2)
-	(t (include (select m1) 
+	(t (include (select m1)
 		    (union-bag-equiv (reduct m1) m2)))))
 
 (defthm count-union-bag-equiv
@@ -395,11 +395,11 @@
 ;;;----------------------------------------------------------------------------
 
 (defun inter-bag-equiv (m1 m2)
-  (declare (xargs :measure (measure m1)))  
+  (declare (xargs :measure (measure m1)))
   (cond ((empty m1) m1)
 	((member-bag-equiv (select m1) m2)
 	 (include (select m1)
-		  (inter-bag-equiv (reduct m1) 
+		  (inter-bag-equiv (reduct m1)
 				   (remove-one-bag-equiv (select m1) m2))))
 	(t (inter-bag-equiv (reduct m1) m2))))
 
@@ -453,7 +453,7 @@
   (cond ((empty m1) m2)
 	((member-bag-equiv (select m1) m2)
 	 (include (select m1)
-		  (unimin-bag-equiv (reduct m1) 
+		  (unimin-bag-equiv (reduct m1)
 				    (remove-one-bag-equiv (select m1) m2))))
 	(t (include (select m1) (unimin-bag-equiv (reduct m1) m2)))))
 
@@ -505,7 +505,7 @@
 (defun diff-bag-equiv (m1 m2)
   (declare (xargs :measure (measure m2)))
   (cond ((empty m2) m1)
-	(t (diff-bag-equiv (remove-one-bag-equiv (select m2) m1) 
+	(t (diff-bag-equiv (remove-one-bag-equiv (select m2) m1)
 			   (reduct m2)))))
 
 (defthm count-bag-equiv-diff-bag
@@ -535,7 +535,7 @@
   :hints (defstrategy-equal-bag-hint))
 
 ;;;----------------------------------------------------------------------------
-;;; 
+;;;
 ;;; Defining the generic theory:
 ;;;
 ;;;----------------------------------------------------------------------------
@@ -544,7 +544,7 @@
 
 #|
 
-(get-event-lst 
+(get-event-lst
  '(member-bag-equiv
    EQUIV-IMPLIES-IFF-MEMBER-BAG-EQUIV-1
    remove-one-bag-equiv
@@ -742,7 +742,7 @@
       (DECLARE (XARGS :MEASURE (MEASURE M1)))
       (COND ((EMPTY M1) M2)
 	    ((MEMBER-BAG-EQUIV (SELECT M1) M2)
-	     (INCLUDE 
+	     (INCLUDE
 	      (SELECT M1)
 	      (UNIMIN-BAG-EQUIV (REDUCT M1)
 				(REMOVE-ONE-BAG-EQUIV (SELECT M1) M2))))

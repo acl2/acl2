@@ -81,8 +81,8 @@
   (equal (perm x y)
 	 (equal (isort x)
 		(isort y)))
-  :hints (("goal" 
-	   :use ((:instance perm-sort (x y)) 
+  :hints (("goal"
+	   :use ((:instance perm-sort (x y))
 		 (:instance perm-sort))
 	   :in-theory (disable perm-sort)))
   :rule-classes nil)

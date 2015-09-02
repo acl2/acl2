@@ -33,7 +33,7 @@
 ;   (declare (xargs :mode :program))
 ;   (if (> x 100)
 ;       (- x 10)
-;       (mc (mc (+ x 11))))) 
+;       (mc (mc (+ x 11)))))
 
 ;;; Our goal is to define in ACL2 the following iterative version:
 
@@ -91,7 +91,7 @@
 ;;;----------------------------------------------------------------------------
 
 ;;; (defmul-components rel-mc)
-; => The list of components is: 
+; => The list of components is:
 ;     (REL-MC REL-MC-WELL-FOUNDED T FN-REL-MC X Y)
 
 (defmul (REL-MC REL-MC-WELL-FOUNDED T FN-REL-MC X Y) :verify-guards t)
@@ -123,7 +123,7 @@
 ;;; present the first (and second sometimes) elements and the same tail,
 ;;; allowing the meta rule of multiset.lisp to rewrite. Second, the IF
 ;;; in the rule performs almost the same case distinction as in the hand
-;;; proof. 
+;;; proof.
 
 (defthm measure-mc-aux-expand
   (implies (and (not (zp n)) (integerp z))
@@ -131,7 +131,7 @@
 		  (cons z (measure-mc-aux (- n 1)
 					  (if (> z 100) (- z 10) 91))))))
 
-;;; The next theorem comes from the "equalities" book 
+;;; The next theorem comes from the "equalities" book
 ;;; ("../distribution/books/arithmetic/equalities.lisp"). It's the only event
 ;;; from this book needed in the admission of "mc-aux".
 
@@ -146,7 +146,7 @@
 ;;; At last:
 
 (defun mc-aux (n z)
-  (declare (xargs 
+  (declare (xargs
 	    :guard (and (integerp n) (>= n 0))
 	    :measure (measure-mc-aux n z)
 	    :well-founded-relation mul-rel-mc))
@@ -175,13 +175,13 @@
       (iter-f91 (- n 1) (f91 x))))
 
 ;;; Fundamental rewrite rule for our proof strategy:
-				 
+
 (defthm iter-f91-expand
   (implies (and (not (zp n)) (integerp z))
 	   (equal (iter-f91 n z)
 		  (iter-f91 (- n 1)
-			    (if (> z 100) (- z 10) 91))))) 
-		  
+			    (if (> z 100) (- z 10) 91)))))
+
 (defthm iter-f91-mc-aux
   (equal (mc-aux n z) (iter-f91 n z))
   :hints (("Goal" :induct (mc-aux n z))))
@@ -207,14 +207,14 @@
 
 
 ;;; ----------------------------------------------------------------------------
-;;; 2.3 Every function satisfying the recursion scheme of mc is equal to f91 
+;;; 2.3 Every function satisfying the recursion scheme of mc is equal to f91
 ;;; ----------------------------------------------------------------------------
 
 
 
 ;;; A general function M satisfying the above recursive equation:
 
-(encapsulate 
+(encapsulate
  ((M (x) t))
 
  (local (defun M (x) (mc-it x)))
@@ -236,7 +236,7 @@
   (implies (and (not (zp n)) (integerp z))
 	   (equal (iter-M n z)
 		  (iter-M (- n 1)
-			  (if (> z 100) (- z 10) (M (M (+ z 11)))))))) 
+			  (if (> z 100) (- z 10) (M (M (+ z 11))))))))
 
 (defthm iter-M-equals-mc-aux
   (equal (iter-M n z) (mc-aux n z))
@@ -246,13 +246,13 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defthm iter-M-1-M
     (equal (M x) (iter-M 1 x))
     :hints (("Goal" :in-theory (disable iter-M-equals-mc-aux)
 	     :expand (iter-M 1 x)))))
- 
+
  (defthm M-equal-f91
    (equal (M x) (f91 x))))
 

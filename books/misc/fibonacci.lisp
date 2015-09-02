@@ -200,5 +200,5 @@
 		  (fib (grcd k n))))
   :hints (("Goal"
 	   :induct (Euclid-alg-nat k n))
-	  ("Subgoal *1/4" 
+	  ("Subgoal *1/4"
 	   :in-theory (disable grcd-fib-recursion))))

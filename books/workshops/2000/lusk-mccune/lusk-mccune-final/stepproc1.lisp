@@ -143,7 +143,7 @@
        (cstates ms)
        (lstates ms)
        (programs ms))
-    
+
     (make-mstate
      (update-pstate (car ps)
 		    (make-pstate (car ps)
@@ -379,7 +379,7 @@
 	 (cs (if (fdp fd)
 		 (sender-cstate (car ps) fd (cstates ms))
 	       nil)))
-	
+
     (cond ((atom cs)
 	   ;; The FD is bad, so set pc to 0 and set error variable.
 	   (make-mstate
@@ -395,7 +395,7 @@
 	    (cstates ms)
 	    (lstates ms)
 	    (programs ms)))
-  
+
 	  ;; all is well
 	  (t (make-mstate
 	      (update-pstate (car ps)
@@ -464,7 +464,7 @@
 	 (cs (if (fdp fd)
 		 (receiver-cstate (car ps) fd (cstates ms))
 	       nil)))
-	
+
     (cond ((atom cs)
 	   ;; the FD is bad, so halt with error message
 	   (make-mstate
@@ -484,7 +484,7 @@
 	  ((atom (inboxq cs))
 	   ;; no message to receive, so wait (i.e., don't change state)
 	   ms)
-  
+
 	  ;; all is well
 	  (t (make-mstate
 	      (update-pstate (car ps)
@@ -515,7 +515,7 @@
 	   (and (consp (cdr (receiver-cstate hpid fd css)))
 		(consp (cddr (receiver-cstate hpid fd css)))))
   :rule-classes :forward-chaining)
-		       
+
 (verify-guards exec-receive
 	       :hints (("Goal"
 			:in-theory (disable connectionp cstatep))))
@@ -629,7 +629,7 @@
 	   (evaluated-expressionp (select x y ms))))
 
 ;;-----------------------------------------------------------------
-;; exec-select 
+;; exec-select
 ;;
 ;; If any messages are available, set the variable to the list of FDs.
 ;; If not, do nothing (i.e., wait).

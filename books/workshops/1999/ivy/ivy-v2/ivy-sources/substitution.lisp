@@ -170,7 +170,7 @@
 		 (union-equal (union-equal (cars s)
 					   (vars-in-term-list (cdrs s)))
 			      other-vars)))
-		 
+
 (defthm wfsubst-seqify-helper
   (implies (and (wfsubst s)
 		(var-list a))

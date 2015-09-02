@@ -91,7 +91,7 @@
 			(:instance n<=fl (n 0) (x (* X (EXPT 2 (* -1 K)))))
 			(:instance expt-pos (x (- k)))
 			(:instance rem>=0 (m x) (n (expt 2 k)))
-			(:instance bit+*k 
+			(:instance bit+*k
 				   (x (rem x (expt 2 k)))
 				   (m k)
 				   (n j)
@@ -134,8 +134,8 @@
 		  :use ((:instance rem<n (m a) (n (expt 2  (1+ n))))
 			(:instance expt-pos (x (1+ n)))
 			(:instance expt-pos (x n))
-			(:instance *-weakly-monotonic 
-				   (x (expt 2 n)) 
+			(:instance *-weakly-monotonic
+				   (x (expt 2 n))
 				   (y 2)
 				   (y+ (/ (rem a (expt 2 (1+ n))) (expt 2 n)))))))))
 
@@ -347,7 +347,7 @@
 		(* k (rem m n))))
   :rule-classes ()
   :hints (("Goal" :use (rem-fl
-			(:instance hack6 
+			(:instance hack6
 				   (a (rem m n)) (b (* n (fl (/ m n)))) (c m) (ap (rem (* k m) (* k n))))
 			(:instance rem-fl (m (* k m)) (n (* k n)))))))
 
@@ -551,7 +551,7 @@
 			(rem (logand y (comp1 x m)) (expt 2 n)))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance logxor-rewrite (n m))
-			(:instance or-dist-d 
+			(:instance or-dist-d
 				   (x (logand x (comp1 y m)))
 				   (y (logand y (comp1 x m))))
 			(:instance logand-nat (i x) (j (comp1 y m)))
@@ -655,7 +655,7 @@
 		       (= (rem x (expt 2 n)) 0))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable bits-0-rem)
-		  :use (bits-rem-0-1		 
+		  :use (bits-rem-0-1
 			(:instance bit-bits-a (k n) (i (+ m n)) (j n))))))
 
 (defthm BITS-BITN
@@ -993,7 +993,7 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance fl-unique (x (/ (+ x (* k (expt 2 m))) (expt 2 m))) (n k))
 			(:instance expt-pos (x (- m)))
-			(:instance bitn-fl 
+			(:instance bitn-fl
 				   (x (+ x (* k (expt 2 m))))
 				   (r m)
 				   (k (- n m)))))))

@@ -1,6 +1,6 @@
 #|
 
-This is in an ACL2 "book" with definitions and theorems about a concrete 
+This is in an ACL2 "book" with definitions and theorems about a concrete
 correctness proof of the Fast Fourier Transform.  The proof uses the abstract
 proof in fft-omega.lisp.  In that ACL2 book, it is shown that the FFT algorithm
 works correctly, provided the vector of omegas has the property w = < u || -u >
@@ -132,7 +132,7 @@ appropriate certify-book command.  Something like the following will work:
 
 (encapsulate
  ()
- 
+
  ;; To prove the rewrite rule for complex squares, we start with the algebraic
  ;; rewriting using the constant \#c(0 1), better known in complex arithmetic as
  ;; i=sqrt(-1).  In fact, the key part of the proof, which ACL2 finds by
@@ -145,7 +145,7 @@ appropriate certify-book command.  Something like the following will work:
 	   (+ (- (* x x) (* y y))
 	      (* #c(0 1) (+ (* x y) (* x y)))))
     :rule-classes nil))
-	  
+
  ;; Now that we have the basic result using the constant i, we convert the
  ;; conclusion of the theorem into the more natural (complex x y) notation.
 
@@ -163,7 +163,7 @@ appropriate certify-book command.  Something like the following will work:
 			      (acl2::x (- (* x x) (* y y)))
 			      (acl2::y (+ (* x y) (* x y)))))))
     :rule-classes nil))
-	  
+
  ;; Finally, we can prove our intended theorem, with both the conclusion and
  ;; hypothesis using the function (complex x y) instead of the constant i.
 
@@ -254,7 +254,7 @@ appropriate certify-book command.  Something like the following will work:
 (defthm numberp-expt-omega-0
   (acl2::acl2-numberp (p-expt-omega 0))
   :rule-classes (:type-prescription :rewrite))
-  
+
 ;; We are trying to prove that p-expt-omega can be written as < u || -u >.
 ;; First, we require a simple fact about unary minus in complex arithmetic.
 

@@ -139,7 +139,7 @@ generates an appropriate @('onoff') so that it can carry out a @(see
   ///
   (defcong faig-const-equiv equal (faig-const->4v x) 1
     :hints(("Goal" :in-theory (enable faig-const-fix faig-const-equiv))))
-  
+
   (defthm 4vp-of-faig-const->4v
     (4vp (faig-const->4v x))))
 
@@ -434,7 +434,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
      :hints(("Goal" :in-theory (e/d* (4v-sexpr-apply)
                                      (4v-op-defs nth nth-when-zp))))))
 
-  
+
   (defthm-4v-sexpr-flag
     (defthm faig-eval-4v-sexpr-to-faig-plain
       (let ((4v-env (faig-const-alist->4v-alist (faig-eval-alist onoff env))))
@@ -578,7 +578,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
   ///
 
   (local (in-theory (enable 4v-sexpr-to-faig-opt-apply)))
-  
+
   (local (defthm faig-eval-maybe-f-aig-unfloat-bind
            (implies (and (bind-free '((senv . senv)) (senv))
                          (equal (faig-eval x fenv)

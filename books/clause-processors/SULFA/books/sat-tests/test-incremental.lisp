@@ -43,7 +43,7 @@
   (if (zp n)
       (list c)
     (cons (xor3 c (car a) (car b))
-          (v-adder (1- n) 
+          (v-adder (1- n)
                    (maj3 c (car a) (car b))
                    (cdr a) (cdr b)))))
 
@@ -179,8 +179,8 @@
 (defun add-pairlist (A B list)
   (if (endp A)
       list
-    (add-pairlist (cdr A) (cdr B) 
-                  (cons (cons (car A) (car B)) 
+    (add-pairlist (cdr A) (cdr B)
+                  (cons (cons (car A) (car B))
                         list))))
 
 ;; Whether a given signal is high
@@ -220,7 +220,7 @@
   (if x (if y t nil) nil))
 
 (defun tbit-and (x y)
-  (cond 
+  (cond
    ((or (lowp x) (lowp y))
     'nil)
    ((or (xValp x) (xValp y))
@@ -310,7 +310,7 @@
 (defund bv-const (w x)
   (if (zp w)
       nil
-    (cons (bit-2-bool (mod x 2)) 
+    (cons (bit-2-bool (mod x 2))
           (bv-const (1- w) (floor x 2)))))
 
 (defun nth-sublist (n lst)
@@ -356,10 +356,10 @@
 
 (defun update-sublist-h (lst lbit hbit val)
   (if (zp lbit)
-      (append-n (1+ hbit) 
-                (get-sublist val lbit hbit) 
+      (append-n (1+ hbit)
+                (get-sublist val lbit hbit)
                 (nth-cdr (1+ hbit) lst))
-    (cons (car lst) 
+    (cons (car lst)
           (update-sublist-h (cdr lst) (1- lbit) (1- hbit)
                             val))))
 
@@ -375,16 +375,16 @@
 (defund bv-decode-help (n rev-x)
   (declare (xargs :measure (nfix (1+ n))))
   (let ((len-h-ans (expt 2 (1- n)))) ;; half of the length of the answer
-    (cond 
+    (cond
      ((zp n)
       '(t))
-     ((car rev-x) 
+     ((car rev-x)
       (append-n len-h-ans (n-nils len-h-ans) (bv-decode-help (1- n) (cdr rev-x))))
-     (t 
+     (t
       (append-n len-h-ans (bv-decode-help (1- n) (cdr rev-x)) (n-nils len-h-ans))))))
 
 (defund bv-duplicate (n w x)
-  (cond 
+  (cond
    ((zp n) nil)
    (t (append-n w x (bv-duplicate (1- n) w x)))))
 
@@ -416,7 +416,7 @@
      (cons nil curr-b)
      (if (car a) (v-adder sz nil curr-b ans) ans))))
 
-;; Multiply the n, bit, bit-vectors a and b using 
+;; Multiply the n, bit, bit-vectors a and b using
 ;; n adders.
 (defun simple-mult (n a b)
   (simple-mult1 n n a b nil))
@@ -433,7 +433,7 @@
 
 (defmacro sat-add-conc (x)
   `(sat-add-expr t (quote ,x) $sat state))
-  
+
 (defmacro sat-add-hyp (x)
   `(sat-add-expr nil (quote ,x) $sat state))
 
@@ -446,11 +446,11 @@
     ((not expr)
      nil)
     (t (cw "~s0 expression: ~x1~%" test-string expr)))
-   (prog2$ 
+   (prog2$
     (cond
      (prop-name
       (cw (concat-str test-string ": " (symbol-name prop-name) "~%")))
-     (t 
+     (t
       (cw (concat-str test-string "~%"))))
     (cond
      (pred
@@ -492,7 +492,7 @@
      ;; it by following the :trans functionality.
      (translate1 (car expr-list) nil nil t 'translate-list (w state) state)
      (declare (ignore flg bindings))
-     (translate-list (cdr expr-list) 
+     (translate-list (cdr expr-list)
                      (cons trans-expr ans)
                      state)))))
 
@@ -502,10 +502,10 @@
     ans)
    (t
     (let ((expr (car expr-list)))
-      (cond 
+      (cond
        ((atom expr)
         (parse-hyp-list (cdr expr-list) (cons expr ans)))
-       ((eq 'and (car expr))        
+       ((eq 'and (car expr))
         (parse-hyp-list (append (cdr expr) (cdr expr-list))
                         ans))
        (t
@@ -558,12 +558,12 @@
 
                                 nil)
      (cond
-      (erp 
+      (erp
        (mv (er hard 'run-clause
                "Counter example check failed.  Perhaps the formula is not ~
                 executable.")
            state))
-      (t 
+      (t
        (let ((val (sat-assert (not (cdr eval-output))
                               "Checking counter-example"
                               (car conc-list)
@@ -582,12 +582,12 @@
                                 state
                                 nil) ; see comment about aok above
      (cond
-      (erp 
+      (erp
        (mv (er hard 'run-clause
                "Counter example check failed.  Perhaps the formula is not ~
                 executable.")
            state))
-      (t 
+      (t
        (let ((val (sat-assert (cdr eval-output)
                               "Checking counter-example"
                               (car hyp-list)
@@ -614,7 +614,7 @@
        (declare (ignore erp))
        (mv-let
         (erp ce-alist $sat state)
-        (sat-si-input-alist $sat state)    
+        (sat-si-input-alist $sat state)
         (declare (ignore erp))
         (mv-let
          (erp state)
@@ -645,21 +645,21 @@
           (check-invalid-hyp-list-inc name (cdr expr-list) partial-valid
                                       no-ce-check added-hyp-list added-conc-list $sat
                                       state))
-         (t          
+         (t
           (let ((val (sat-assert (equal soln 'acl2::sat)
                                  "Incremental invalidity test"
                                  (car expr-list)
                                  name)))
             (declare (ignore val))
-            (mv-let 
-             ($sat state) 
+            (mv-let
+             ($sat state)
              (check-counter-example name no-ce-check added-hyp-list
                                     added-conc-list $sat state)
              (check-invalid-hyp-list-inc name (cdr expr-list) partial-valid
                                          no-ce-check added-hyp-list
                                          added-conc-list $sat state)))))))))))
 
-(defun check-invalid-conc-list-inc (name expr-list partial-valid no-ce-check added-hyp-list 
+(defun check-invalid-conc-list-inc (name expr-list partial-valid no-ce-check added-hyp-list
                                          added-conc-list $sat state)
   (declare (xargs :stobjs $sat
                   :mode :program))
@@ -681,13 +681,13 @@
           (check-invalid-conc-list-inc name (cdr expr-list) partial-valid
                                        no-ce-check added-hyp-list added-conc-list $sat
                                        state))
-         (t          
+         (t
           (let ((val (sat-assert (equal soln 'acl2::sat)
                                  "Incremental invalidity test"
                                  (car expr-list)
                                  name)))
             (declare (ignore val))
-            (mv-let 
+            (mv-let
              ($sat state)
              (check-counter-example name no-ce-check added-hyp-list
                                     added-conc-list $sat state)
@@ -754,7 +754,7 @@
 
 ;; An incremental version of thm-sat-invalid
 (defmacro thm-sat-invalid-inc (property &key name no-ce-check)
-  `(make-event 
+  `(make-event
     (mv-let
      ($sat state)
      (thm-sat-invalid-inc1 (quote ,property) (quote ,name) (quote ,no-ce-check)
@@ -945,7 +945,7 @@
   :hint-arg '(:uninterpreted-functions (n-bleq)))
 
 (assert-no-error3 (sat-end-problem! $sat state))
-  
+
 ;; Start with something easy
 (thm-sat-valid-inc
   (n-bleq 2 x x))
@@ -957,7 +957,7 @@
   (n-bleq 2 (bv-not 4 x) (bv-not 4 x)))
 
 (thm-sat-valid-inc
- (implies 
+ (implies
   (equal x y)
   (equal (uf1 x) (uf1 y)))
  :name un-fn-axiom)
@@ -1141,7 +1141,7 @@
  (implies
   (and (uf3 (uf1 x0) y1 y2)
        (equal x0 nil)
-       (equal x1 nil))       
+       (equal x1 nil))
   (uf3 x1 y1 y2))
  :hint-arg '(:check-counter-example nil))
 
@@ -1149,7 +1149,7 @@
  (implies
   (and (uf3 (uf1 x0) y1 y2)
        (equal x0 nil)
-       (equal x1 nil))       
+       (equal x1 nil))
   (uf3 (uf1 x1) y1 y2)))
 
 (thm-sat-invalid
@@ -1185,7 +1185,7 @@
   (equal x y))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (not (Booleanp x))
         (not (Booleanp y)))
    (equal x y))
@@ -1202,7 +1202,7 @@
            (equal z 6))
   :name bad-transitivity)
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (equal y 6)
                 (equal y z))
            (equal z 6)))
@@ -1214,7 +1214,7 @@
                 (equal x3 6))
            (not (equal x1 x2))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (equal x0 6)
                 (equal x0 x1)
                 (equal x2 x3)
@@ -1389,7 +1389,7 @@
 (thm-sat-invalid-inc
  (implies (and (consp x)
                (consp y)
-               (equal (car x) (car y)))               
+               (equal (car x) (car y)))
           (equal x y)))
 
 (thm-sat-valid-inc
@@ -1413,14 +1413,14 @@
           (equal a b)))
 
 ;; nil implies anything.
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (equal x0 6)
                 (equal x0 7))
            (equal y 5))
   :partial-valid t
   :name nil-implies-anything)
 
-(thm-sat-invalid-inc 
+(thm-sat-invalid-inc
   (implies (and (equal (car x) 4)
                 (equal (cdr x) 5)
                 (equal x y))
@@ -1446,7 +1446,7 @@
            (equal x y))
   :name not-consp-doesnt-imply-equal)
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (consp x)
                 (consp y)
                 (equal (car x) (car y))
@@ -1467,7 +1467,7 @@
                 (equal (cdr x) (cdr y)))
            (not (equal x y))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (consp (car x))
                 (consp (cdr y))
                 (equal (car x) (car y))
@@ -1507,7 +1507,7 @@
                 (equal (cdr x) (cdr y)))
            (equal x y)))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (consp (car x))
                 (consp (cdr y))
                 (equal (caar x) (caar y))
@@ -1544,34 +1544,34 @@
                 (equal (cdr x) (cdr y)))
            (equal x y)))
 
-(thm-sat-valid-inc 
-  (implies 
+(thm-sat-valid-inc
+  (implies
    (and (not (equal (caaar x) nil)))
    (consp x))
   :name caaar-x-nil)
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (not (equal (caar x) nil))
         (not (equal (cddr y) nil)))
    (equal x y)))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (not (equal (caar x) nil))
         (not (equal (cddr y) nil)))
    (not (equal x y))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (equal x x))
 
 (thm-sat-invalid-inc
   (equal x (not x)))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (not (equal x (not x))))
 
-(thm-sat-invalid-inc 
+(thm-sat-invalid-inc
   (not (equal x (car x))))
 
 (thm-sat-valid-inc
@@ -1600,7 +1600,7 @@
                 (equal y x))
            (equal y (cons nil nil))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (equal x nil))
            (equal (car x) nil)))
 
@@ -1621,7 +1621,7 @@
                 (equal a b))
            (equal (car x) (car b))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (equal z a)
                 (equal y z)
                 (equal x y)
@@ -1646,7 +1646,7 @@
                 (equal y 4))
            (equal (car x) nil)))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (not (equal x y))
                 (equal (cdr x) (cdr y))
                 (consp x)
@@ -1666,7 +1666,7 @@
   (not (equal x (car x)))
   :name x-equal-car-x)
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (consp x)
            (not (equal x (car x)))))
 
@@ -1675,34 +1675,34 @@
            (not (equal x (car x)))))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (and (equal x (cons y z))
         (equal y a)
         (equal a b))
    (equal x (cons b z))))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (equal x (cons y z))
         (equal y a)
         (equal a b))
    (equal x (cons b t))))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (equal x (cons (cons a b) (cons c d)))
         (equal y (cons (cons d c) (cons b a))))
    (equal (car x) (car y))))
 
-(thm-sat-valid-inc 
-  (implies 
+(thm-sat-valid-inc
+  (implies
    (and (equal x (equal a c))
         (equal a c)
         (equal b c))
    (equal x t)))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (equal x (equal a c))
    (or (equal x t) (equal x nil))))
 
@@ -1719,7 +1719,7 @@
    (equal x (consp y))
    (not (equal (car x) nil))))
 
-(thm-sat-invalid-inc 
+(thm-sat-invalid-inc
   (implies
    (equal x (consp y))
    (not (equal (car x) nil))))
@@ -1750,7 +1750,7 @@
    (equal x
           (n-rev-append 4 (n-rev-append 4 x nil) nil))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies
    (n-true-listp 4 x)
    (equal x
@@ -1762,7 +1762,7 @@
    (equal x
           (n-rev-append 4 (n-rev-append 4 x nil) nil))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (iff
    (equal (cons a b) (cons c d))
    (and (equal a c) (equal b d))))
@@ -1772,7 +1772,7 @@
    (equal a c)
    (equal (cons a b) (cons c d))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (not (equal (cons a b) (consp c))))
 
 (thm-sat-valid-inc
@@ -1784,16 +1784,16 @@
 (thm-sat-valid-inc
   (not (equal (cons a b) '4)))
 
-(thm-sat-valid-inc 
-  (implies 
+(thm-sat-valid-inc
+  (implies
    (consp x)
    (equal x (cons (car x) (cdr x)))))
 
-(thm-sat-invalid-inc 
+(thm-sat-invalid-inc
   (equal x (cons (car x) (cdr x))))
 
 (defun n-boolean-listp (n x)
-  (cond 
+  (cond
    ((zp n)
     (equal x nil))
    ((atom x)
@@ -1802,26 +1802,26 @@
     (n-Boolean-listp (1- n) (cdr x)))
    (t
     nil)))
-      
+
 (thm-sat-invalid-inc
   (equal (bv-not 4 (bv-not 4 x)) x))
 
 ;; Commented out because it takes a while (and
 ;; a lot of disk space)
-;;(thm-sat-valid-inc 
+;;(thm-sat-valid-inc
 ;;   (implies
 ;;    (n-Boolean-listp 5000 x)
 ;;    (equal (bv-not 5000 (bv-not 5000 x)) x)))
 
-;; Current results: Num-vars: 8003, Num-clauses: 1519506 
+;; Current results: Num-vars: 8003, Num-clauses: 1519506
 ;; Next step: Optimize (eq x nil) traversal.  If (eq x nil)
 ;; or (consp x) exist, I shouldn't have to keep going.
-;; (thm-sat-valid-inc 
+;; (thm-sat-valid-inc
 ;;   (implies
 ;;    (n-Boolean-listp 1000 x)
 ;;    (equal (bv-not 1000 (bv-not 1000 x)) x)))
 
-;; (thm-sat-valid-inc 
+;; (thm-sat-valid-inc
 ;;   (n-bleq 2 (bv-not 2 (bv-not 2 x)) x))
 
 ;;(thm-sat-valid-inc
@@ -1830,13 +1830,13 @@
 (defun foo (x) (cons x 4))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (equal x (foo y))
         (equal (car y) (car z)))
    (equal (car x) (car z))))
 
-(thm-sat-valid-inc 
-  (implies 
+(thm-sat-valid-inc
+  (implies
    (and (equal x (foo y))
         (equal (car y) (car z)))
    (equal (caar x) (car z))))
@@ -1848,48 +1848,48 @@
 (assert-no-error4 (sat-check))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (and (equal x (if a y z))
         (equal (car y) (car z)))
    (equal (car x) (car z)))
   :name car-x-equals-car-z-either-way)
 
-(thm-sat-valid-inc 
-  (implies 
+(thm-sat-valid-inc
+  (implies
    (and (equal (cons x0 x1) (if a y z))
         (equal (car y) (car z)))
    (equal x0 (car z))))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (equal (cons x0 x1) (if a y z))
         (equal (car y) (car z)))
    (equal x0 z)))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (and (equal x y)
         (equal (car y) (car z)))
    (equal (car x) (car z))))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (equal x (cons a b))
    (consp a)))
 
-(thm-sat-valid-inc 
-  (implies 
+(thm-sat-valid-inc
+  (implies
    (equal x (cons a b))
    (consp x)))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (and (equal x (cons a b))
         (equal x y))
    (consp y)))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (and (equal x (cons a b))
         (equal x y))
    (equal (cdr y) b)))
@@ -1907,25 +1907,25 @@
   (not (equal (equal a b) (equal a c))))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (not (Booleanp a))
         (not (Booleanp b))
         (not (Booleanp c)))
    (not (equal (equal a b) (equal a c)))))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (consp x)
    (not (equal (car x) (cdr x)))))
 
-(thm-sat-valid-inc 
-  (implies 
+(thm-sat-valid-inc
+  (implies
    (and (equal (car x) (cons a b))
         (equal (cdr x) (cons c d)))
    (equal x (cons (cons a b) (cons c d)))))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (and (equal (car x) (cons a b))
         (equal (cdr x) (cons c d))
         (equal 4 (cdr x)))
@@ -1934,28 +1934,28 @@
   :name nil-implies-nil)
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (equal (car x) (cons a b))
         (equal (cdr x) (cons c d))
         (equal '(4) (cdr x)))
    nil))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (and (equal (car x) (cons a b))
         (equal (cdr x) (cons c d))
         (equal '(4) (cdr x)))
    (equal c 4)))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (and (equal (cons a b) (car x))
         (equal (cons c d) (cdr x))
         (equal '(4) (cdr x)))
    (equal c 4)))
 
 (thm-sat-valid-inc
-  (implies 
+  (implies
    (and (equal (cons a b) (cons c d))
         (equal (car x) a)
         (equal (cdr x) b)
@@ -1965,7 +1965,7 @@
    (equal x y)))
 
 (thm-sat-invalid-inc
-  (implies 
+  (implies
    (and (equal a c)
         (equal b d)
         (equal (car x) a)
@@ -1978,7 +1978,7 @@
 ;; ... test some wierd cases, like (equal (consp x) (equal a b))!
 
 ;; Now I can prove things about Booleanp!
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (not (Booleanp x))
            x)
   :name first-property)
@@ -1995,13 +1995,13 @@
   (implies (equal x 1)
            (Booleanp y)))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (equal x 1)
            (equal x 1)))
 
 (thm-sat-valid-inc
-  (implies (and (equal x 1) 
-                (not (equal y nil)) 
+  (implies (and (equal x 1)
+                (not (equal y nil))
                 (not (equal y t)))
            (not (Booleanp y))))
 
@@ -2009,11 +2009,11 @@
   (implies (not (equal (car x) nil))
            (consp x)))
 
-(thm-sat-invalid-inc 
+(thm-sat-invalid-inc
   (implies (consp x)
            (not (equal (car x) nil))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (equal (car x) 4)
                 (equal (cdr x) 5))
            (equal x (cons 4 5))))
@@ -2027,7 +2027,7 @@
                 (equal (cdr x) nil))
            (equal x (cons nil nil))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
   (implies (and (equal (caar x) 0)
                 (equal (cdar x) 1))
            (equal (car x) (cons 0 1))))
@@ -2042,7 +2042,7 @@
                 (equal (cdar x) 1))
            (equal x (cons (cons 0 1) nil))))
 
-(thm-sat-valid-inc 
+(thm-sat-valid-inc
  (implies (and (equal (caar x) 0)
                 (equal (cdar x) 1))
            x))

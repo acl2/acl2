@@ -55,7 +55,7 @@
 
 (deftheory-static minimal-arithmetic-5
   ;; Using theories defined in lib/basic-ops/top.lisp
-  (union-theories 
+  (union-theories
    (set-difference-theories (theory 'arithmetic-5-minimal-end-a)
 			    (theory 'arithmetic-5-minimal-start-a))
    (set-difference-theories (theory 'arithmetic-5-minimal-end-b)

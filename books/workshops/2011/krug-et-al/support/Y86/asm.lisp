@@ -67,11 +67,11 @@
 ;; These values aren't actually used anywhere right now, but they seem
 ;; potentially useful to keep around
 (defconst *Arity*
-  '((pos      1)  
+  '((pos      1)
     (align    1)
     (space    1)
     (byte     1)
-    (data     1) 
+    (data     1)
     (nop      0)
     (halt     0)
     (rrmovl   2)
@@ -193,7 +193,7 @@
                  (pos
                   (and (or (and (consp args)
                                 (null (cdr args)))
-                           (cw "Format:  (POS <memory-address>).~%~p0~%" 
+                           (cw "Format:  (POS <memory-address>).~%~p0~%"
                                label-or-instruction))
                        (or (n32p (car args))
                            (cw "POS: ~p0 must be 0..2^32-1.~%~p1~%"
@@ -261,7 +261,7 @@
                        (or (integerp (car args))
                            ;; Used to be stricter, but we now use n32 to
                            ;; fix before writing.
-                           ;; (n32p (car args)) 
+                           ;; (n32p (car args))
                            (symbolp (car args))
                            (cw "IRMOVL: ~p0 must be a label or 0..2^32-1.~%~p1~%"
                                (car args) label-or-instruction))
@@ -283,7 +283,7 @@
                        (or (integerp (cadr args))
                            ;; Used to be stricter, but we now use n32 to
                            ;; fix before writing.
-                           ;; (n32p (cadr args)) 
+                           ;; (n32p (cadr args))
                            (cw "RMMOVL: ~p0 must be 0..2^32-1.~%~p1~%"
                                (cadr args) label-or-instruction))
                        (or (reg-id (car (caddr args)))
@@ -301,7 +301,7 @@
                        (or (integerp (car args))
                            ;; Used to be stricter, but we now use n32 to
                            ;; fix before writing.
-                           ;; (n32p (car args)) 
+                           ;; (n32p (car args))
                            (cw "MRMOVL: ~p0 must be 0..2^32-1.~%~p1~%"
                                (cadr args) label-or-instruction))
                        (or (reg-id (car (cadr args)))
@@ -310,7 +310,7 @@
                        (or (reg-id (caddr args))
                            (cw "MRMOVL: ~p0 isn't a register ID.~%~p1~%"
                                (caddr args) label-or-instruction))))
-                 ((addl subl andl xorl 
+                 ((addl subl andl xorl
                    adcl cmpl orl sall shrl) ; new
                   (and (or (and (consp args)
                                 (consp (cdr args))
@@ -701,7 +701,7 @@
                                     (car (cadr args))
                                     (caddr args)
                                     program-bytes)))
-            
+
             ((addl subl andl xorl
               adcl cmpl orl sall shrl) ; new
              (y86-asm rest-program (n32+ count 2) symbol-table-alist

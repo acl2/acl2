@@ -30,7 +30,6 @@
 
 (in-package "STD")
 (include-book "../look-up")
-(include-book "tools/bstar" :dir :system)
 
 (defmacro assert-disabled (fn)
   `(make-event

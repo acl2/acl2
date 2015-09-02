@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -30,13 +30,12 @@
 ;Also contains type lemmas (non-negative integer, natp, etc.)
 
 (include-book "../lib3/rtl")
-(include-book "../lib3/rtlarr")
 
 (include-book "float")
 (local (include-book "../lib3/top"))
 (local (include-book "../lib3/bvecp-raw-helpers"))
 
-(set-inhibit-warnings "theory") 
+(set-inhibit-warnings "theory")
 (local (in-theory nil))
 
 (set-match-free-default :all)
@@ -257,7 +256,7 @@
   :rule-classes ((:type-prescription :typed-term (lnot x n))))
 
 ;lnot-nonnegative-integer-type is strictly better, and we don't need both
-(in-theory (disable (:type-prescription lnot))) 
+(in-theory (disable (:type-prescription lnot)))
 
 (defthm lnot-bvecp
   (implies (and (<= n k)
@@ -487,14 +486,6 @@
   :RULE-CLASSES
   (:REWRITE (:linear :trigger-terms ((UNKNOWN KEY SIZE N)))))
 
-;BOZO dup?
-(defthm bv-arrp-implies-nonnegative-integerp
-  (implies (bv-arrp obj size)
-           (and (INTEGERP (ag index obj))
-                (<= 0 (ag index obj))))
-  :rule-classes (:rewrite :type-prescription)
-  )
-
 
 ; land
 
@@ -610,12 +601,6 @@
   :rule-classes
   (:rewrite (:linear :trigger-terms ((unknown key size n)))))
 
-(defthm bv-arrp-implies-nonnegative-integerp
-  (implies (bv-arrp obj size)
-           (and (INTEGERP (ag index obj))
-                (<= 0 (ag index obj))))
-  :rule-classes (:rewrite :type-prescription))
-
 ;(local (in-theory (enable floor-fl)))
 
 ;These next two are for the bus unit bvecp lemmas:
@@ -623,7 +608,7 @@
 ;could use (local (in-theory (enable expt-compare-with-double)))
 ;remove?
 (defthm bits-does-nothing-hack
-  (implies (and (< x (expt 2 i)) 
+  (implies (and (< x (expt 2 i))
                 (integerp x)
                 (<= 0 x)
                 (integerp i)
@@ -633,7 +618,7 @@
 
 ;remove?
 (defthm bits-does-nothing-hack-2
-  (implies (and (< x (expt 2 i)) 
+  (implies (and (< x (expt 2 i))
                 (integerp x)
                 (<= 0 x)
                 (integerp i)
@@ -772,7 +757,7 @@
 
 #|
 ;can remove these two?
-(defthm natp-* 
+(defthm natp-*
   (implies (and (integerp x)
                 (>= x 0)
                 (integerp y)
@@ -780,7 +765,7 @@
            (and (integerp (* x y))
                 (>= (* x y) 0))))
 
-(defthm natp-+ 
+(defthm natp-+
   (implies (and (integerp x)
                 (>= x 0)
                 (integerp y)

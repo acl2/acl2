@@ -67,7 +67,7 @@
 (local
  (defthm revappend-revlist
    (equal (revappend l m) (append (revlist l) m))))
- 
+
 (defthm reverse-revlist
   (implies (true-listp l)
 	   (equal (reverse l) (revlist l))))
@@ -137,7 +137,7 @@
   (implies (not (member x l))
 	   (not (member x (delete-one y l)))))
 
-;;; ======= ELIMINATE (like remove, but different guard, using equal) 
+;;; ======= ELIMINATE (like remove, but different guard, using equal)
 
 (defun eliminate (x l)
   (declare (xargs :guard (true-listp l)))
@@ -168,7 +168,7 @@
       nil
     (if (zp n)
 	(cons x (cdr l))
-      (cons (car l) (replace-list (cdr l) (- n 1) x))))) 
+      (cons (car l) (replace-list (cdr l) (- n 1) x)))))
 
 
 (defthm nth-replace-list-same-position
@@ -209,7 +209,7 @@
 		(< i (len term)))
 	   (equal
 	    (replace-list (replace-list term i x) i y)
-	    (replace-list term i y)))) 
+	    (replace-list term i y))))
 
 
 
@@ -222,7 +222,7 @@
   (cond ((endp l1) (if (equal l1 l2) (mv nil t) (mv nil nil)))
 	((endp l2) (mv nil nil))
 	(t (mv-let (pair-rest bool)
-		   (pair-args (cdr l1) (cdr l2))       
+		   (pair-args (cdr l1) (cdr l2))
 		   (if bool
 		       (mv (cons (cons (car l1) (car l2))
 				 pair-rest)
@@ -237,7 +237,7 @@
 ;;; ======= MV-NTH
 
 ;;; REMARK: I prefer to deal with first,second, third, etc... than with
-;;; mv-nth. 
+;;; mv-nth.
 
 (defthm mv-nth-0-first
   (equal (mv-nth 0 l) (first l)))
@@ -275,7 +275,7 @@
  (local (defthm member-eliminate
 	  (implies (member y (eliminate x l))
 		   (member y l))))
- 
+
  (defthm eliminate-preserves-setp
   (implies (setp l)
 	   (setp (eliminate x l)))))
@@ -292,7 +292,7 @@
           (not-subsetp-witness (cdr l1) l2)
         (car l1))))
 
-(defthm not-subsetp-witness-lemma 
+(defthm not-subsetp-witness-lemma
   (equal (subsetp l1 l2)
          (implies  (member (not-subsetp-witness l1 l2) l1)
                    (member (not-subsetp-witness l1 l2) l2))))
@@ -300,15 +300,15 @@
 
 (in-theory (disable not-subsetp-witness-lemma))
 
-(defthm subsetp-append-1 
+(defthm subsetp-append-1
   (equal (subsetp (append x y) z)
          (and (subsetp x z) (subsetp y z))))
 
-(defthm subsetp-append-2 
+(defthm subsetp-append-2
   (implies (subsetp c a)
 	   (subsetp c (append b a))))
 
-(defthm subsetp-append-3 
+(defthm subsetp-append-3
   (implies (subsetp b c)
 	   (subsetp b (append c a))))
 
@@ -345,22 +345,22 @@
 	 (disjointp (cdr l1) l2))))
 
 
-(defthm disjointp-cons 
+(defthm disjointp-cons
   (equal (disjointp l (cons x m))
 	 (and (not (member x l))
 	      (disjointp l m))))
 
-(defthm disjointp-append-1 
+(defthm disjointp-append-1
   (equal (disjointp (append l m) n)
 	 (and (disjointp l n)
 	      (disjointp m n))))
 
-(defthm disjointp-append-2 
+(defthm disjointp-append-2
   (equal (disjointp m (append l n))
 	 (and (disjointp m l)
 	      (disjointp m n))))
 
-(defthm disjointp-conmutative 
+(defthm disjointp-conmutative
   (equal (disjointp l1 l2) (disjointp l2 l1)))
 
 (defthm disjointp-nil
@@ -395,10 +395,10 @@
 (defthm member-make-set
   (iff (member x (make-set l)) (member x l)))
 
-(defthm setp-make-set 
+(defthm setp-make-set
   (setp (make-set x)))
 
-(defthm make-set-of-a-setp-is-the-same 
+(defthm make-set-of-a-setp-is-the-same
   (implies (setp l)
 	   (equal (make-set l) (fix-true-list l))))
 
@@ -410,9 +410,9 @@
 	   (< (len (make-set l))
 	      (len l)))
   :rule-classes :linear)
-	   
 
-(defthm length-make-set-leq 
+
+(defthm length-make-set-leq
   (>= (len l)
       (len (make-set l)))
   :rule-classes :linear)
@@ -426,7 +426,7 @@
 (defun equal-set (x y)
   (and (subsetp x y) (subsetp y x)))
 
-	   
+
 (defthm subsetp-transitive
   (implies (and (subsetp l m)
 		(subsetp m n))
@@ -447,7 +447,7 @@
     (implies (and (subsetp x x-equiv)
 		  (disjointp x-equiv y))
 	     (disjointp x y))))
- 
+
  (defcong equal-set iff (disjointp x y) 1))
 
 (encapsulate
@@ -479,10 +479,10 @@
   (equal-set (make-set l) l))
 
 ;;; REMARK: The following rule is needed in
-;;; equal-size-and-not-inverse-subsumption-implies-not-renaming-almost  
+;;; equal-size-and-not-inverse-subsumption-implies-not-renaming-almost
 ;;; I don't know why the previous rule is not used (monitoring is not
 ;;; possible, because it is a "simple"(?) rule). So I think I need the
-;;; following rule, which is redundant (?) 
+;;; following rule, which is redundant (?)
 
 
 (defthm subsetp-make-set-provisional
@@ -503,12 +503,12 @@
 
 (encapsulate
  ()
- 
+
  (defthm perm-reflexive
   (perm x x))
- 
+
  (local
-  (defthm perm-main-lemma 
+  (defthm perm-main-lemma
     (implies (and (member x a)
 		  (member x b)
 		  (perm (delete-one x a) (delete-one x b)))
@@ -517,7 +517,7 @@
  (local
   (defthm perm-symmetric
     (implies (perm x y) (perm y x))))
-	
+
 
  (local
   (defthm perm-transitive-reverse
@@ -526,7 +526,7 @@
 	     (perm b c))
     :rule-classes nil))
 
- (local 
+ (local
   (defthm perm-transitive
     (implies (and (perm a b)
 		  (perm b c))
@@ -539,7 +539,7 @@
  (defequiv perm))
 
 
- 
+
 (local (defthm perm-implies-subsetp
 	 (implies (perm x y) (subsetp x y))
 	 :hints (("Goal" :induct (perm x y)))))
@@ -554,11 +554,11 @@
 
 
 ;;; ============================================================================
-;;; 3. Sequences 
+;;; 3. Sequences
 ;;; ============================================================================
 
 ;;; Sequences of natural numbers will be used to represent positions of
-;;; terms. 
+;;; terms.
 
 ;;; ===== PREFIX
 
@@ -607,7 +607,7 @@
 
 
 ;;; REMARK: Association lists represent finite domain functions in the
-;;; following way: 
+;;; following way:
 ;;; - Every atom object represents the identity function.
 ;;; - If an atom object is member of an association list will be
 ;;; considered as (nil . nil).
@@ -617,7 +617,7 @@
 ;;; the same finite domain function. Thus, we cannot use equal as a
 ;;; predicate to talk about equality of finite domain functions.
 
-;;; REMARK: We do not use the book alist-theory.list 
+;;; REMARK: We do not use the book alist-theory.list
 ;;; provided by the distribution because we need our own version of
 ;;; assoc (see the function val). We want the association list to behave
 ;;; like identity outside its domain.
@@ -654,11 +654,11 @@
 ;;; the orientation of the following rule):
 (defthm assoc-val
 	 (implies (assoc x l)
-		  (equal (cdr (assoc x l)) (val x l)))) 
+		  (equal (cdr (assoc x l)) (val x l))))
 
 ;;; ====== RESTRICTION
 ;;; The list of pairs (x. sigma(x)), for all x in l.
-      
+
 (defun restriction (sigma l)
   (if (atom l)
       l
@@ -668,7 +668,7 @@
 ;;; ====== DOMAIN
 ;;; domain of association lists (the list of first components of sigma).
 ;;; Note: as we said above, the atom elements of sigma are considered
-;;; as (nil . nil). This remark also applies to the following definitions. 
+;;; as (nil . nil). This remark also applies to the following definitions.
 
 (defun domain (sigma)
   (declare (xargs :guard (alistp sigma)))
@@ -677,7 +677,7 @@
     (cons (caar sigma) (domain (cdr sigma)))))
 
 
-(defthm domain-restriction 
+(defthm domain-restriction
   (equal (domain (restriction sigma l)) (fix-true-list l)))
 
 
@@ -701,7 +701,7 @@
 
 (defun co-domain (sigma)
   (if (atom sigma)
-      nil               
+      nil
     (cons (cdar sigma) (co-domain (cdr sigma)))))
 
 
@@ -716,13 +716,13 @@
 	  (inverse (cdr sigma)))))
 
 
-(defthm domain-of-inverse-is-co-domain 
+(defthm domain-of-inverse-is-co-domain
   (equal (domain (inverse sigma)) (co-domain sigma)))
 
-(defthm co-domain-of-inverse-is-domain 
+(defthm co-domain-of-inverse-is-domain
   (equal (co-domain (inverse sigma)) (domain sigma)))
 
-(defthm same-length-co-domain-and-domain 
+(defthm same-length-co-domain-and-domain
   (equal (len (domain sigma))
 	 (len (co-domain sigma))))
 

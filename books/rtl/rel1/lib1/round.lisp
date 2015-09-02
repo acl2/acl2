@@ -35,7 +35,7 @@
 	((>= (abs x) 1) (expo2 (abs x)))
 	(t (expo1 (abs x)))))
 
-(defun sgn (x) 
+(defun sgn (x)
   (if (= x 0)
       0
     (if (< x 0) -1 +1)))
@@ -72,8 +72,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (trunc x n)
-		    (* (sgn x) 
-		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (fl (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n))))))
 
 (in-theory (disable trunc-rewrite))
@@ -208,7 +208,7 @@
 
 (defthm trunc-exactp-a
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (trunc x n))
 		  (exactp x n)))
@@ -288,7 +288,7 @@
 		  (integerp n)
 		  (>= n k)
 		  ;;this isn't really needed, but it won't hurt me.
-		  (not (exactp x n))          
+		  (not (exactp x n))
 		  (= e (- (1+ (expo x)) n))
 		  (= z (trunc (- x (trunc x n)) n))
 		  (= y (- x (trunc x n))))
@@ -340,8 +340,8 @@
 		  (integerp n)
 		  (> n 0))
 	     (equal (away x n)
-		    (* (sgn x) 
-		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x))) 
+		    (* (sgn x)
+		       (cg (* (expt 2 (- (1- n) (expo x))) (abs x)))
 		       (expt 2 (- (1+ (expo x)) n))))))
 
 (in-theory (disable away-rewrite))
@@ -386,7 +386,7 @@
     (implies (and (rationalp x)
 		  (integerp n)
 		  (> n 0))
-	     (equal (abs (away x n)) 
+	     (equal (abs (away x n))
 		    (* (cg (* (expt 2 (1- n)) (sig x))) (expt 2 (- (1+ (expo x)) n))))))
 
 (in-theory (disable abs-away))
@@ -460,7 +460,7 @@
 
 (defthm away-exactp-a
     (implies (and (rationalp x)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 0))
 	     (iff (= x (away x n))
 		  (exactp x n)))
@@ -545,7 +545,7 @@
 			  (- (expt 2 (- (1+ (expo x)) m))))
 		       n)))
   :rule-classes ())
- 
+
 (defthm trunc-away-b
     (implies (and (integerp n) (> n 0)
 		  (rationalp x) (> x 0)
@@ -561,7 +561,7 @@
 		  (not (exactp x n)))
 	     (= (away x n)
 		(+ (trunc x n)
-		   (expt 2 (+ (expo x) 1 (- n))))))		
+		   (expt 2 (+ (expo x) 1 (- n))))))
   :rule-classes ())
 
 (defthm minus-trunc-4
@@ -763,7 +763,7 @@
 		  (integerp n)
 		  (integerp k)
 		  (> k 0)
-		  (>= n k)		  
+		  (>= n k)
 		  (< 0 a)
 		  (< a x)
 		  (< 0 y)
@@ -848,7 +848,7 @@
 ;;;**********************************************************************
 
 (defun sticky (x n)
-  (cond ((= n 1) 
+  (cond ((= n 1)
 	 (* (sgn x) (expt 2 (expo x))))
 	((exactp x (1- n))
 	 x)
@@ -876,7 +876,7 @@
 		  (integerp n) (> n 0)
 		  (integerp k))
 	     (= (sticky (* (expt 2 k) x) n)
-		(* (expt 2 k) (sticky x n))))		
+		(* (expt 2 k) (sticky x n))))
   :rule-classes ())
 
 (defthm sticky-exactp
@@ -983,7 +983,7 @@
 
 
 ;;;**********************************************************************
-;;;                              ODD 
+;;;                              ODD
 ;;;**********************************************************************
 
 (defun odd (x n)
@@ -1025,7 +1025,7 @@
 (defthm odd-other
     (implies (and (rationalp x)
 		  (> x 0)
-		  (integerp n) 
+		  (integerp n)
 		  (> n 1))
 	     (= (odd x n)
 		(+ (trunc x (1- n))
@@ -1120,7 +1120,7 @@
 
 
 ;;;**********************************************************************
-;;;                         IEEE Rounding 
+;;;                         IEEE Rounding
 ;;;**********************************************************************
 
 (defun inf (x n)

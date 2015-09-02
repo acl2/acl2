@@ -30,15 +30,15 @@
            (node (car top))
            (att (cadr top)))
       (if (zp att)
-          (cons top 
+          (cons top
                 (consume-attempts (cdr AttLst)))
-        (cons (list node (1- att)) 
+        (cons (list node (1- att))
               (consume-attempts (cdr AttLst)))))))
 
 (defun test_prev_routes (routes prev)
   ;; function that returns a route that uses nodes
   ;; that are not in prev or returns nil if there is no
-  ;; such route. 
+  ;; such route.
   (if (endp routes)
       nil
     (let ((r (car routes)))
@@ -60,11 +60,11 @@
       (if r?
           ;; if there is a good route in routes
           ;; we update prev and schedule the transaction
-          (ct-scheduler (cdr TrLst) 
+          (ct-scheduler (cdr TrLst)
                         (cons (update_route tr r?) Scheduled)
                         Delayed (append r? prev))
         ;; otherwise the transaction is delayed
-        (ct-scheduler (cdr TrLst) scheduled 
+        (ct-scheduler (cdr TrLst) scheduled
                       (cons tr Delayed) prev)))))
 
 (defun circuit-scheduling (TrLst att)
@@ -108,7 +108,7 @@
       (if r?
           (ct-sched-nt-del (cdr TrLst)
                            (append r? prev))
-        (cons tr 
+        (cons tr
               (ct-sched-nt-del (cdr TrLst) prev))))))
 
 (defthm scheduler-=-non-tail-delayed
@@ -127,7 +127,7 @@
 ;; -----------------------------------------------------
  (defthm consume-at-least-one-attempt-circuit-scheduling
    ;; the scheduling policy should consume at least one attempt
-   ;; this is a sufficient condition to prove that 
+   ;; this is a sufficient condition to prove that
    ;; the full network function terminates
    (mv-let (Scheduled Delayed newAtt)
 	   (circuit-scheduling TrLst att)
@@ -151,7 +151,7 @@
                     (V-ids TrLst))))
 ;------------------------------------------------------------------
 
-;; 3/ we prove that the list of scheduled travels is a 
+;; 3/ we prove that the list of scheduled travels is a
 ;; valid travel list
 ;; --------------------------------------------------
 
@@ -165,19 +165,19 @@
 
 ;; proof for the scheduled travels
 ;; -------------------------------
-(local 
+(local
  (defthm validfields-trlst-ct-sched
    (implies (ValidFields-TrLst TrLst)
-            (ValidFields-TrLst 
+            (ValidFields-TrLst
              (ct-sched-nt-sched TrLst prev)))))
 
-(local 
+(local
  (defthm not-member-V-ids-ct-sched
    (implies (not (member-equal e (V-ids TrLst)))
-            (not 
-             (member-equal 
-              e 
-              (V-ids 
+            (not
+             (member-equal
+              e
+              (V-ids
                (ct-sched-nt-sched TrLst prev)))))))
 
 (local (defthm no-duplicatesp-ct-sched
@@ -195,19 +195,19 @@
 
 ;; proof for the delayed travels
 ;; -----------------------------
-(local 
+(local
  (defthm validfields-trlst-ct-del
    (implies (ValidFields-TrLst TrLst)
-            (ValidFields-TrLst 
+            (ValidFields-TrLst
              (ct-sched-nt-del TrLst prev)))))
 
-(local 
+(local
  (defthm not-member-V-ids-ct-del
    (implies (not (member-equal e (V-ids TrLst)))
-            (not 
-             (member-equal 
-              e 
-              (V-ids 
+            (not
+             (member-equal
+              e
+              (V-ids
                (ct-sched-nt-del TrLst prev)))))))
 
 (local (defthm no-duplicatesp-ct-del
@@ -225,7 +225,7 @@
 
 (defthm extract-sublst-cons
   (implies (not (member-equal id Ids))
-           (equal (extract-sublst (cons (list id frm routes) L) 
+           (equal (extract-sublst (cons (list id frm routes) L)
                                   Ids)
                   (extract-sublst L Ids))))
 
@@ -235,7 +235,7 @@
              (member-equal r? routes))))
 
 (defthm ct-scheduled-correctness
-    (let ((Scheduled (ct-sched-nt-sched TrLst prev))) 
+    (let ((Scheduled (ct-sched-nt-sched TrLst prev)))
       (implies (TrLstp TrLst)
                (s/d-travel-correctness
                 scheduled
@@ -245,7 +245,7 @@
 ;; according to the ids of Delayed
 ;; ----------------------------------------------------
 (defthm ct-delayed-correctness
-  (let ((delayed (ct-sched-nt-del TrLst prev))) 
+  (let ((delayed (ct-sched-nt-del TrLst prev)))
     (implies (TrLstp TrLst)
              (equal delayed
                     (extract-sublst TrLst (V-ids delayed)))))
@@ -268,7 +268,7 @@
                    (v-ids (ct-sched-nt-sched trlst prev)))))
 
 
-;; Finally, we check that our circuit scheduling function 
+;; Finally, we check that our circuit scheduling function
 ;; is a valid instance of GeNoC-scheduling
 ;; ------------------------------------------------------
 (defthm check-compliance-circuit-scheduling
@@ -277,8 +277,8 @@
   :otf-flg t
   :hints (("GOAL"
            :do-not-induct t
-           :use 
-           ((:functional-instance 
+           :use
+           ((:functional-instance
              consume-at-least-one-attempt
              (scheduling circuit-scheduling)))
            :in-theory (disable consume-at-least-one-attempt
@@ -296,7 +296,7 @@
 ;;-----------------------------------------------------------------
 
 (defun all_no_intersectp (route TrLst)
-  ;; return t if route has an empty intersection with every 
+  ;; return t if route has an empty intersection with every
   ;; route of TrLst.
   (if (endp TrLst)
       t
@@ -306,11 +306,11 @@
            (all_no_intersectp route (cdr TrLst))))))
 
 (defun FullNoIntersectp (TrLst)
-  ;; this function checks that every route in TrLst 
+  ;; this function checks that every route in TrLst
   ;; has at least one attempt left and it has an empty
   ;; intersection with every following route.
   ;; This defines the correctness of the circuit scheduling
-  ;; policy. 
+  ;; policy.
   ;; JS Nov 13th. Checking that every node of a route has at least
   ;; one attempt is stupid !
   (if (or (endp TrLst) (endp (cdr TrLst)))
@@ -326,7 +326,7 @@
     (implies r?
 ;             (and (check_attempt r? att)
              (no_intersectp prev r?))))
-             
+
 
 (defthm all_no_intersectp-append
   (implies (all_no_intersectp (append l1 l2) l)
@@ -335,15 +335,15 @@
 
 (defthm FullNoIntersectp-All_no_intersectp
   (implies (FullNoIntersectp (ct-sched-nt-sched l prev))
-           (all_no_intersectp prev 
+           (all_no_intersectp prev
                               (ct-sched-nt-sched l prev))))
 
 (defthm FullNoIntersectp-ct-scheduler
   (implies (TrLstp TrLst)
            (FullNoIntersectp (ct-sched-nt-sched TrLst prev)))
   :hints (("Subgoal *1/5"
-           :use 
-           (:instance 
+           :use
+           (:instance
             FullNoIntersectp-All_no_intersectp
             (l (cdr TrLst))
             (prev (append (test_prev_routes (nth 2 (car trlst))

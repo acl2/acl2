@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -56,7 +56,7 @@
            (and (< 0 (numerator x))
                 (integerp (numerator x))))
   :rule-classes (:type-prescription))
-           
+
 (defthm numerator-non-positive-integer-type-prescription
   (implies (<= x 0)
            (and (<= (numerator x) 0)

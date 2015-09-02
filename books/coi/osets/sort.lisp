@@ -73,7 +73,7 @@
 
 (encapsulate nil
 
-  (local (defthm lemma 
+  (local (defthm lemma
            (implies (in-list a acc)
                     (in-list a (revappend x acc)))))
 

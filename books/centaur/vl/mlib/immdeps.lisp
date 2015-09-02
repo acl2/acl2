@@ -346,7 +346,7 @@ elements.")
           vl-paramtype
           vl-maybe-delayoreventcontrol))
 
-  
+
 
 
 
@@ -374,7 +374,7 @@ elements.")
 ;;                                           &key
 ;;                                           ((ss vl-scopestack-p) 'ss))
 ;;   :wrapper (b* ((?ctx x)) :body)
-  
+
 
 
 

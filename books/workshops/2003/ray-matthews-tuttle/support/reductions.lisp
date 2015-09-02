@@ -25,10 +25,10 @@ compositionally to provide reduction algorithms for circuits.
     (and (ltl-semantics-for-circuit (second (first list))
                                     (first (first list)))
          (ltl-semantics-for-circuits* (rest list)))))
-         
+
 
 (defun reduce-problem-conjunction (f C)
-  (if (and (equal (len f) 3) 
+  (if (and (equal (len f) 3)
            (equal (second f) '&))
       (append (reduce-problem-conjunction (first f) C)
               (reduce-problem-conjunction (third f) C))
@@ -65,7 +65,7 @@ compositionally to provide reduction algorithms for circuits.
 (local
 (defthm conjunction-produces-correct-list
   (implies (ltl-formulap f)
-           (equal (ltl-semantics-for-circuits* 
+           (equal (ltl-semantics-for-circuits*
                    (reduce-problem-conjunction f C))
                   (ltl-semantics-for-circuit C f)))
   :otf-flg t
@@ -92,7 +92,7 @@ compositionally to provide reduction algorithms for circuits.
             (not (memberp e (set-union x y))))
    :hints (("Goal"
             :in-theory (enable set-union))))
- 
+
  (local
  (defthm uniquep-set-union-reduction
    (implies (and (uniquep x)
@@ -219,8 +219,8 @@ compositionally to provide reduction algorithms for circuits.
  (defthm cone-variables-are-subset
    (implies (and (consistent-equation-record-p variables equations)
                  (subset vars variables))
-            (subset vars (find-all-variables 
-                          (set-intersect 
+            (subset vars (find-all-variables
+                          (set-intersect
                            (remove-duplicate-occurrences vars)
                            variables)
                           variables equations)))
@@ -229,7 +229,7 @@ compositionally to provide reduction algorithms for circuits.
             :in-theory (disable find-all-variables-produces-subset)
             :use ((:instance find-all-variables-produces-subset
                              (vars-prime vars)
-                             (vars (set-intersect 
+                             (vars (set-intersect
                                     (remove-duplicate-occurrences vars)
                                     variables)))))))
  )
@@ -250,7 +250,7 @@ compositionally to provide reduction algorithms for circuits.
                  (ltl-formulap f)
                  (subset (create-restricted-var-set f)
                          (variables C)))
-            (equal (ltl-semantics-for-circuit  (cone-of-influence-reduction 
+            (equal (ltl-semantics-for-circuit  (cone-of-influence-reduction
                                                 C (create-restricted-var-set
                                                    f))
                                                f)
@@ -266,7 +266,7 @@ compositionally to provide reduction algorithms for circuits.
 )
 
 (local
-(in-theory (disable ltl-semantics-for-circuit create-restricted-var-set 
+(in-theory (disable ltl-semantics-for-circuit create-restricted-var-set
                     cone-of-influence-reduction
                     circuitp ltl-formulap))
 )
@@ -276,7 +276,7 @@ compositionally to provide reduction algorithms for circuits.
   (implies (and (circuitp C)
                 (ltl-formulap f)
                 (subset (create-restricted-var-set f) (variables C)))
-           (equal (ltl-semantics-for-circuit (reduce-problem-cone f C) 
+           (equal (ltl-semantics-for-circuit (reduce-problem-cone f C)
                                              f)
                   (ltl-semantics-for-circuit C f))))
 )
@@ -290,7 +290,7 @@ compositionally to provide reduction algorithms for circuits.
   (if (endp list) T
     (and (ltl-formulap (first (first list)))
          (circuitp (second (first list)))
-         (subset (create-restricted-var-set (first (first list))) 
+         (subset (create-restricted-var-set (first (first list)))
                  (variables (second (first list))))
          (well-formed-problems-p (rest list)))))
 )

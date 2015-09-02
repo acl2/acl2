@@ -473,7 +473,7 @@
        ;; structures to associate the LHS for each override with its variables
        ;; and entries.
        ((mv ovlines ovs) (svtv-lines->overrides overrides 0))
-       
+
        ;; Apply the overrides to the assigns.  Each wire that is overridden has
        ;; its gate-level assignment replaced with something like:
        ;; (if override-this-phase override-value original-assignment)
@@ -1105,6 +1105,10 @@ documentation; if any of @(':parents'), @(':short'), or @(':long') are given
 then additional xdoc will also be generated to show a timing diagram.
 @(':labels'), if provided, label the phases in that timing diagram.</li>
 
+<li>@(':simplify') is T by default; it can be set to NIL to avoid rewriting the
+output svex expressions, which may be desirable if you are doing a
+decomposition proof.</li>
+
 </ul>
 
 ")
@@ -1187,7 +1191,7 @@ used in the @(see defsvtv) form.  For example,</p>
    '((\"clk\"           1   ~)
      (\"dwire\"         _   _   _  dat  _)
      (\"cwire\"         _ ctrl  _   _   _))
-   :overrides 
+   :overrides
    '((\"inst.signal\"   _   _   _  ov   _))
    :outputs
    '((\"firstout\"      _   _   _ outa  _)
@@ -1227,7 +1231,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
                  (if readable
                      (svtv-print-alist-readable inalist)
                    (svtv-print-alist inalist))
-                 (cw "~%STV Outputs:~%")
+                 (cw "~%SVTV Outputs:~%")
                  (if readable
                      (svtv-print-alist-readable res)
                    (svtv-print-alist res))
@@ -1352,7 +1356,7 @@ stvs-and-testing) of the @(see sv-tutorial) for more examples.</p>"
     (and (not quiet)
          (progn$ (cw "~%SVTV Inputs:~%")
                  (svtv-print-alist inalist)
-                 (cw "~%STV Outputs:~%")
+                 (cw "~%SVTV Outputs:~%")
                  (svtv-print-alist res)
                  (cw "~%")))
     res))
@@ -1545,7 +1549,7 @@ an error like:</p>
 
 @({ ERROR: some bits assumed to be Boolean were not. })
 
-<p>If you see such an error, you should set @(':boolmasks nil').</p>
+<p>If you see such an error, you should set @(':boolvars nil').</p>
 
 <h3>Decomposition Proofs</h3>
 

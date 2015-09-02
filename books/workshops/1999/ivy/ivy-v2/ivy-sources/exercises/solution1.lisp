@@ -1,4 +1,4 @@
-;; Exercise file to accompany 
+;; Exercise file to accompany
 ;;
 ;; Ivy: A Preprocessor and Proof Checker for First-order Logic
 ;;
@@ -45,14 +45,14 @@
         (t nil)))
 
 
-;; supporting lemma, domain term is a natural number, 
+;; supporting lemma, domain term is a natural number,
 ;; and therefore not a cons pair
 (defthm domain-term-is-not-cons
   (not (domain-term (cons x y)))
   :hints (("Goal"
            :in-theory (enable domain-term))))
 
-;; substitution in term list preserves occurrences of 
+;; substitution in term list preserves occurrences of
 ;; other variables in term list
 (defthm var-occurrence-subst
   (implies (and (var-occurrence-term-list y l)
@@ -60,7 +60,7 @@
            (var-occurrence-term-list y (subst-term-list l x tm)))
   :hints (("Goal" :do-not generalize)))
 
-;; substitution in formula preserves occurrences of other 
+;; substitution in formula preserves occurrences of other
 ;; free variables in formula
 (defthm free-subst
   (implies (and (free-occurrence y f)

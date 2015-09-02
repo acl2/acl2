@@ -128,16 +128,22 @@
 
 ; BOZO ugly extra theorems we probably shouldn't need
 
-(defthm map-subset-helper
-  (implies (in (head X) Y)
-	   (equal (subset (tail X) Y)
-		  (subset X Y)))
-  :hints(("Goal" :expand (subset X Y))))
+;; [Jared] I think these were basically meant to solve the problem of using the
+;; pick-a-point strategy with subset disabled -- this is now solved in a
+;; different way, namely via pick-a-point-subset-constraint-helper. Moreover,
+;; these rules cause a loop with pick-a-point-subset-constraint-helper, and do
+;; not seem to be necessary anymore, so let's get rid of them.
 
-(defthm map-subset-helper-2
-  (implies (not (in (head X) Y))
-           (equal (subset X Y)
-                  (empty X))))
+;; (defthm map-subset-helper
+;;   (implies (in (head X) Y)
+;; 	   (equal (subset (tail X) Y)
+;; 		  (subset X Y)))
+;;   :hints(("Goal" :expand (subset X Y))))
+
+;; (defthm map-subset-helper-2
+;;   (implies (not (in (head X) Y))
+;;            (equal (subset X Y)
+;;                   (empty X))))
 
 
 ; We will map an arbitrary transformation function across the set.  We don't

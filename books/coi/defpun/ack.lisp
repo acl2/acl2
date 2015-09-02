@@ -49,7 +49,7 @@
 	   (head-equal (cdr s) (cdr r)))
     t))
 
-;; jcd - Removing list-equal -- use list::equiv instead, it is provably 
+;; jcd - Removing list-equal -- use list::equiv instead, it is provably
 ;; equal and already has lots of nice rules.
 
 (defun list-equal (x y)
@@ -104,7 +104,7 @@
 (DEFTHM APPEND-OF-CONS
   (EQUAL (APPEND (CONS A X) Y)
 	 (CONS A (APPEND X Y))))
-  
+
 (DEFTHM APPEND-OF-NON-CONSP-ONE
   (IMPLIES (NOT (CONSP X))
 	   (EQUAL (APPEND X Y) Y))
@@ -148,23 +148,23 @@
    (encapsulate
        ()
 
-       ;; jcd - note, if you can prove that ack_terminates returns a 
-       ;; boolean, then you can instead immediately prove 
+       ;; jcd - note, if you can prove that ack_terminates returns a
+       ;; boolean, then you can instead immediately prove
 
      (defthm ack_terminates_list_equal
        (implies (and (ack_terminates x y s)
                      (list-equal r s))
                 (ack_terminates x y r)))
-     
+
      (defthm not_ack_terminates_list_equal
        (implies (and (not (ack_terminates x y r))
                      (list-equal r s))
                 (not (ack_terminates x y s))))
 
      ))
-     
+
   (defcong list-equal iff (ack_terminates x y r) 3)
-  
+
   )
 
 (defthm ack_terminates_nil
@@ -202,7 +202,7 @@
        (ack_terminates x y xargs))))
     (implies (acktest_body x y xargs)
 	     (ack_terminates x y xargs)))))
-  
+
 (defthm ack_termiantes_on_ack
   (implies
    (and
@@ -279,7 +279,7 @@
 (defthm ak_measure_spec
   (implies
    (ak_terminates x y)
-   (equal (ak_measure x y) 
+   (equal (ak_measure x y)
 	  (if (zp x) (o)
 	    (if (zp y) (1+ (ak_measure (1- x) 1))
 	      (+ 1 (ak_measure x (1- y))

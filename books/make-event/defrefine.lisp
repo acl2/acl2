@@ -21,13 +21,13 @@ concrete implementation.  At each intermediate step we have an
 intermediate specification and an intermediate program.  What this
 approach guarantees is that the program satisfies the corresponding
 specification at each stage of the refinement process.  Thus there is
-a smaller gap to bridge at any level.  
+a smaller gap to bridge at any level.
 
 It is worth noting that a typical theorem proving effort often
 proceeds by "re-creating" the intermediate functions and proving
 appropriate properties.  What the proposal saves (I believe) is the
 creative reverse-engineering involved in defining the intermediate
-steps, and also makes the programmer's intention much clearer. 
+steps, and also makes the programmer's intention much clearer.
 
 Contents
 --------
@@ -82,7 +82,7 @@ Future Work
 -----------
 
 1.  Remove defexecutable and allow some form of simulation in the
-    intermediate versions.  
+    intermediate versions.
 
       I don't know what to do about this, but I have a feeling that
       defexecutable is not very useful because we want to refine
@@ -96,7 +96,7 @@ Future Work
 ;; So how does this work?  First I create an "abstraction table".  The
 ;; entries in the abstraction table can be viewed as higher order
 ;; predicates that are then refined by other higher-order predicates.
-;; The problem with this view is that the predicate is partial.  
+;; The problem with this view is that the predicate is partial.
 
 ;; Observation: Note the table guard.  It says that we do not have a
 ;; deflabel event with the appropriate label.  This prevents the
@@ -154,30 +154,30 @@ Future Work
              ;; been introduced during the encapsulation.  I just care
              ;; about that since the constraints are all associated
              ;; with this function.
-             (farg (if (consp (first sig)) 
+             (farg (if (consp (first sig))
                        (first (first sig))
                      (first sig)))
-             
+
              ;; I am collecting the constraint generated from the
              ;; encapsulation, which can be thought of as the formula
              ;; representing the higher-order notion of formula
              ;; parameterized by the functions in the signature.
              (val-term (constraint farg (w state)))
-             
+
              (name (quote ,name)))
-        
+
      ;; Now generate the final event.
 
-        `(progn 
+        `(progn
            (table abstraction-table (quote ,name) (quote ,val-term))
-           
+
            ;; I generated the table event but I want to insure that this
            ;; entry will remain in this table.  I do so by now geneating
            ;; a deflabel with the key.  Notice that the table-guard for
            ;; the table says that the key is not one of the labels, which
            ;; guarantees that other people in some include-book for
            ;; instance cannot overwrite this entry.
-           
+
            (deflabel ,name))))))
 
 
@@ -194,7 +194,7 @@ Future Work
            (second (first lst))
            (create-alist-from-func-list (rest lst)))))
 
-(defmacro defrefine 
+(defmacro defrefine
   (name abstraction term-list
         &key
         (thm-name 'nil)
@@ -202,23 +202,23 @@ Future Work
         instructions hints otf-flg rule-classes doc)
   `(make-event
     (mv-let (erp val state)
-            
+
             ;; First I look up the abstraction in the table.  This
             ;; gets the constraint.
 
             (table abstraction-table (quote ,abstraction))
             (declare (ignore erp))
             (let* (
-                   
+
                    ;; Now I create the name of the theorem to attach
                    ;; the constraint with.  So I will just create a
                    ;; weird enough name if the user has not provided
                    ;; one.
-                   
-                   (thm-name  
-                    (if ,(null thm-name) 
-                        (quote 
-                         ,(packn 
+
+                   (thm-name
+                    (if ,(null thm-name)
+                        (quote
+                         ,(packn
                            (list name '-
                                  abstraction '-abstraction-refinement)))
                       (quote ,thm-name)))
@@ -236,7 +236,7 @@ Future Work
                    ;; instantiation itself, but this is a little more
                    ;; robust and requires me to do much less search.
 
-                   (substitution 
+                   (substitution
                     (create-alist-from-func-list
                      (quote ,functional-substitution)))
 
@@ -248,15 +248,15 @@ Future Work
                    ;; prove the constraints, so this optimization has
                    ;; no soundness impact.
 
-                   (thm-form             
+                   (thm-form
                     (mv-let (erp val)
                             (sublis-fn substitution val nil)
                             (declare (ignore erp))
                             val))
 
                    ;; So now I have the theorem
-                   (cumulative-thm 
-                    `(defthm ,thm-name 
+                   (cumulative-thm
+                    `(defthm ,thm-name
                        ,thm-form
                        :hints ,hints
                        :instructions ,instructions
@@ -273,7 +273,7 @@ Future Work
               ;; And now I create a new defabstraction event, so I
               ;; recursively install this as the new refinement.
               (value `(defabstraction ,name ,@all-events))))))
-               
+
 
 ;; The defconcretize event is very similar to a defrefine event.  It
 ;; marks essentially the end of the process, so no further
@@ -289,10 +289,10 @@ Future Work
     (mv-let (erp val state)
             (table abstraction-table (quote ,abstraction))
             (declare (ignore erp))
-            (let* ((thm-name  
-                    (if ,(null thm-name) 
-                        (quote 
-                         ,(packn 
+            (let* ((thm-name
+                    (if ,(null thm-name)
+                        (quote
+                         ,(packn
                            (list abstraction '-abstraction-concretized)))
                       (quote ,thm-name)))
                    (hints (quote ,hints))
@@ -300,16 +300,16 @@ Future Work
                    (doc ,doc)
                    (rule-classes ,rule-classes)
                    (otf-flg ,otf-flg)
-                   (substitution 
+                   (substitution
                     (create-alist-from-func-list
                      (quote ,functional-substitution)))
-                   (thm-form             
+                   (thm-form
                     (mv-let (erp val)
                             (sublis-fn substitution val nil)
                             (declare (ignore erp))
                             val))
-                   (cumulative-thm 
-                    `(defthm ,thm-name 
+                   (cumulative-thm
+                    `(defthm ,thm-name
                        ,thm-form
                        :hints ,hints
                        :instructions ,instructions
@@ -320,23 +320,23 @@ Future Work
               (value `(progn ,@all-events))))))
 
 
-;; Now test this. 
+;; Now test this.
 
 ;; The first test is rather trivial.  I start with an abstract
 ;; specification f which is known to preserve natp and consp.
 
-(defabstraction generic-fn 
-  (((f *) => *)) 
-  (local (defun f (x) x)) 
-  (defthm f-is-nat (implies (natp x) (natp (f x))))  
+(defabstraction generic-fn
+  (((f *) => *))
+  (local (defun f (x) x))
+  (defthm f-is-nat (implies (natp x) (natp (f x))))
   (defthm f-is-cons (implies (consp x) (consp (f x)))))
 
 ;; Then I refine this to a new specification g which is also known to
 ;; preserve stringp.
 
-(defrefine more-concrete-fn generic-fn  
-  ((((g *) => *)) 
-   (local (defun g (x) x)) 
+(defrefine more-concrete-fn generic-fn
+  ((((g *) => *))
+   (local (defun g (x) x))
    (defthm foo (implies (natp x) (natp (g x)))))
   :functional-substitution ((f g)))
 
@@ -346,8 +346,8 @@ Future Work
 (include-book "misc/eval" :dir :system)
 
 (must-fail
- (defrefine flawed-more-concrete-fn generic-fn  
-   ((((g *) => *)) 
+ (defrefine flawed-more-concrete-fn generic-fn
+   ((((g *) => *))
     (local (defun g (x)  (cons 1 x)))
     (defthm foo (implies (natp x) (consp (g x)))))
    :functional-substitution ((f g))))
@@ -356,8 +356,8 @@ Future Work
 ;; bad-atoms
 
 (defrefine even-more-concrete-fn more-concrete-fn
-  ((((c *) => *)) 
-   (local (defun c (x) x)) 
+  ((((c *) => *))
+   (local (defun c (x) x))
    (defthm c-thm (implies (not (bad-atom x)) (not (bad-atom (c x))))))
   :functional-substitution ((g c)))
 
@@ -390,10 +390,10 @@ Future Work
 
 (defrefine concrete-baz-abstract-bar fubar
   ((((c-baz *) => *))
-  
+
    (local (defun c-baz (x) x))
 
-   (defthm c-baz-thm 
+   (defthm c-baz-thm
      (implies (integerp x) (integerp (c-baz x)))))
 
   :thm-name bar-only
@@ -402,17 +402,17 @@ Future Work
 
 ;; I then refine bar as well.
 
-(defrefine concrete-baz-concrete-bar concrete-baz-abstract-bar 
+(defrefine concrete-baz-concrete-bar concrete-baz-abstract-bar
   ((((c-bar *) => *))
      (local (defun c-bar (x) x))
 
-   (defthm c-bar-thm 
+   (defthm c-bar-thm
      (implies (integerp x) (integerp (c-bar x)))))
   :functional-substitution ((bar c-bar))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance bar-only)))))
-   
-            
+
+
 ;; Now I concretize them.
 
 (defconcretize concrete-baz-concrete-bar
@@ -420,4 +420,4 @@ Future Work
    (defun concrete-c-bar (x) (ifix x)))
   :functional-substitution ((c-baz concrete-c-baz)
                             (c-bar concrete-c-bar)))
-   
+

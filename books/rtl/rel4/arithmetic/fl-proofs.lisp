@@ -24,7 +24,7 @@
 ;weird rule...
 (defthm integerp-<-non-integerp
   (implies (and (and (syntaxp (quotep x)))
-                (not (integerp x)) 
+                (not (integerp x))
                 (integerp n) ;backchain limit?
                 (case-split (rationalp x))
                 )
@@ -37,7 +37,7 @@
 ;weird rule...
 (defthm non-integerp-<-integerp
   (implies (and (and (syntaxp (quotep x)))
-                (not (integerp x)) 
+                (not (integerp x))
                 (integerp n) ;backchain limit?
                 (case-split (rationalp x))
                 )
@@ -93,7 +93,7 @@
 
 ;make a separate rewrite-version
 (defthm fl-def-linear-part-1
-  (implies (case-split (not (complex-rationalp x))) 
+  (implies (case-split (not (complex-rationalp x)))
            (<= (fl x) x))
   :hints (("goal" :in-theory (enable fl floor)))
   :rule-classes (:rewrite (:linear :trigger-terms ((fl x))))
@@ -348,7 +348,7 @@
                 (case-split (rationalp x)))
            (equal (< y (fl x))
                   (<= (+ 1 y) x))))
-             
+
 
 ;should this be disabled?
 (defthm fl-equal-0
@@ -365,7 +365,7 @@
                 )
            (equal (fl x) 0)))
 
-;bad names?                  
+;bad names?
 ;fl-def-linear isn't rewrite!
 ;remove this??
 (defthm fl-strong-monotone
@@ -402,7 +402,7 @@
 
 ;Our scheme for dealing with FLOOR is to always rewrite calls of it to FL
 (defthm floor-fl
-  (equal (floor m n) 
+  (equal (floor m n)
          (fl (/ m n)))
   :hints (("goal" :in-theory (e/d (fl) ( RATIONALP-PRODUCT))
            :cases ((rationalp m) ;drop this hint?
@@ -669,11 +669,11 @@
   :otf-flg t
   :hints (("Goal" :in-theory (set-difference-theories
                               (enable fl floor)
-                              '(floor-fl 
+                              '(floor-fl
                                 ;quotient-numer-denom
                                 ;nniq-lower-bound-non-integer-case
                                 ))
-           :use ((:instance  <=-transitive 
+           :use ((:instance  <=-transitive
                              (a (+ (/ Q) (* P (/ Q))))
                              (b (+ (* P (/ Q))
                                    (/ (DENOMINATOR (* P (/ Q))))))
@@ -733,7 +733,7 @@
                        (<= n x)
                        (< x (1+ n)))
                   (equal (fl x) n)))
-  :rule-classes nil)  
+  :rule-classes nil)
 
 (encapsulate
  ()
@@ -748,7 +748,7 @@
           :hints (("Goal" :use (:instance fl-unique (x (* M (/ N)))
                                           (n (/ (+ 1 (- n) m) n)))))
           :rule-classes ()
-          ))         
+          ))
 
 
  (local (defthm FL-M+1-2
@@ -806,13 +806,13 @@
            (<= (/ q)
                (- (/ p q) (fl (/ p q)))))  ;the amt of change made by fl
   :otf-flg t
-  :hints (("Goal" 
+  :hints (("Goal"
            :do-not-induct t
            :in-theory (set-difference-theories
                               (enable fl floor)
                               '(nniq-eric-8
                                 fl-of-fraction-max-change
-                                )) 
+                                ))
           :use (;(:instance nniq-eric-8 (p (- p)) )
                 (:instance fl-of-fraction-max-change (p (- p)))
                 (:instance fl-of-fraction-max-change (q (- q)))

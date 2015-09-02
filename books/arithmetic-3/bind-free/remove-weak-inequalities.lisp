@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun present-in-goal (term goal)
-  
+
   ;; Present-in-goal is 'positive if term appears as a literal
   ;; of goal, and 'negative if term appears negated.  It is NIL
   ;; otherwise.  Note that due to ACL2's internal representation
@@ -31,7 +31,7 @@
   ;; sees.  Thus, a hypothesis such as (<= x y) will appear
   ;; as (< y x) in the clause, while (< x y) will appear as
   ;; (not (< x y)).
-  
+
   (cond ((endp goal)
          nil)
         ((equal term (car goal))
@@ -53,7 +53,7 @@
   ;; (thm (implies (and (< x y) (<= x y)) (equal a b)))
   ;; (thm (implies (and (< (+ 1 x) y) (<= x y)) (equal a b)))
   ;; (thm (implies (and (<= (+ 1 x) y) (<= x y)) (equal a b)))
-  
+
   (if (eq (present-in-goal `(< ,y ,x) (mfc-clause mfc))
           'positive)
       (let ((contradictionp (mfc-ap `(< ,y ,x) mfc state)))
@@ -79,7 +79,7 @@
 
   ;; (thm (implies (and (< (+ 1 x) y) (< x y)) (equal a b)))
   ;; (thm (implies (and (<= (+ 1 x) y) (< x y)) (equal a b)))
-  
+
   (if (eq (present-in-goal `(< ,x ,y) (mfc-clause mfc))
           'negative)
       (let ((contradictionp (mfc-ap `(NOT (< ,x ,y)) mfc state)))

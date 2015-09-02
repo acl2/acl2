@@ -5,7 +5,7 @@
 ; arithmetic/top-with-meta and one doesn't. This book contains
 ; all the core theorems.
 
-(include-book "ordinals-without-arithmetic") 
+(include-book "ordinals-without-arithmetic")
 (local (include-book "top-with-meta"))
 
 ; 2008-07-20, Peter Dillinger:  Added guards and a couple tweaks to make
@@ -55,7 +55,7 @@
                (< x y)
              (d< x y)))))
 
-; How to turn a list of naturals into an ordinal.  
+; How to turn a list of naturals into an ordinal.
 
 (defun lsttoo (x)
   (declare (xargs :guard (natp-listp x)))
@@ -64,7 +64,7 @@
     (o+ (o* (o^ (omega) (len x)) (1+ (car x)))
         (lsttoo (cdr x)))))
 
-; How to turn a natural or a list of naturals into an ordinal.  
+; How to turn a natural or a list of naturals into an ordinal.
 
 (defun ltoo (x)
   (declare (xargs :guard (lexp x)))
@@ -75,7 +75,7 @@
 
 #|
 
-Some examples 
+Some examples
 
 (ltoo '(1 3 2))
 (ltoo '(1 3 0))
@@ -85,7 +85,7 @@ Some examples
 |#
 
 
-(defthm o-p-lsttoo 
+(defthm o-p-lsttoo
   (implies (natp-listp x)
            (o-p (lsttoo x))))
 
@@ -95,14 +95,14 @@ Some examples
          (atom x)))
 
 (defthm ltoo-0
-  (implies (natp-listp y) 
+  (implies (natp-listp y)
            (equal (equal (lsttoo y) 0)
                   (equal y nil))))
 
 (defthm o-first-expt-ltoo
   (implies (and (consp x)
                 (natp-listp x))
-           (equal (o-first-expt (lsttoo x)) 
+           (equal (o-first-expt (lsttoo x))
                   (len x))))
 
 #|
@@ -119,7 +119,7 @@ Some examples
 
 (encapsulate
  ()
- (local 
+ (local
   (defthm o-first-coeff-ltoo-helper
     (implies (and (consp x)
                   (natp (car x))
@@ -135,12 +135,12 @@ Some examples
  (defthm o-first-coeff-ltoo
    (implies (and (consp x)
                  (natp-listp x))
-            (equal (o-first-coeff (lsttoo x)) 
+            (equal (o-first-coeff (lsttoo x))
                    (1+ (car x))))))
 
 (local (in-theory (enable o<)))
 
-(encapsulate 
+(encapsulate
  ()
  (local
   (defthm well-founded-l<-case-2-helper
@@ -152,10 +152,10 @@ Some examples
                   (equal (len x) (len y))
                   (d< x y))
              (o< (lsttoo x) (lsttoo y)))
-    :hints (("goal" 
+    :hints (("goal"
              :use ((:instance o-first-expt-ltoo) (:instance o-first-expt-ltoo (x y))
                    (:instance o-first-coeff-ltoo) (:instance o-first-coeff-ltoo (x y)))))))
- 
+
 
  (local
   (defthm well-founded-l<-case-2-helper-2
@@ -182,7 +182,7 @@ Some examples
 
 (defthm well-founded-l<
   (and (implies (lexp x) (o-p (ltoo x)))
-       (implies (and (lexp x)                       
+       (implies (and (lexp x)
                      (lexp y)
                      (l< x y))
                 (o< (ltoo x) (ltoo y))))
@@ -197,7 +197,7 @@ Some examples
 (defmacro llist (&rest lst)
   (cons 'list (llist-macro lst)))
 
-#| 
+#|
 Llist is a useful macro, as shown in the following example (Ackermann's
 function).
 

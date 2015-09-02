@@ -65,7 +65,7 @@
          (pseudo-termp (caar x))            ;; predicate
          (pseudo-term-alist-listp (cdar x)) ;; substitutions
          (induction-step-listp (cdr x)))))
-    
+
 
 
 ;; (defun pseudo-term-alist-list-listp (x)
@@ -80,7 +80,7 @@
             (alistp x))
    :hints(("Goal" :in-theory (enable pseudo-term-val-alistp)))
    :rule-classes :forward-chaining))
-  
+
 
 
 ;; Applies each substitution to the clause; returns the list of resulting clauses
@@ -390,7 +390,7 @@
 ;;     (case flg
 ;;       (top
 ;;        ;; (top meas preds subs a)
-;;        ;; Iterate over 
+;;        ;; Iterate over
 ;;        (if (indev (disjoin preds) a)
 ;;            (induction-cp-ind nil meas 0 preds subs a)
 ;;          (list meas preds subs a))
@@ -421,7 +421,7 @@
                        (t     (make-ord o 1
                                         (nfix (- (len (cdr (nth nstep inductions)))
                                                  (nfix nsub)))))))))
-   
+
    (case flg
      (steps
       ;; Iterating over the predicates.  When we find the predicate that
@@ -444,7 +444,7 @@
                  (o< meas1-eval meas-eval)
                  (list (induction-cp-ind 'steps meas 0 0 inductions aa)
                        (induction-cp-ind 'subs meas nstep (+ 1 (nfix nsub)) inductions a))))))))))
-         
+
 
 
 

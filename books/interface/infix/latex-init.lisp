@@ -17,12 +17,12 @@
 ;; Mode should actually be set before this file is loaded.
 
 (infix-settings :mode                   "latex"
-		:extension              "tex"   
-		:op-location            'front  
+		:extension              "tex"
+		:op-location            'front
 		:comment-format         'smith
-		:format-!-in-comments   nil      
-		:eliminate-top-parens   t       
-		:eliminate-inner-parens nil   
+		:format-!-in-comments   nil
+		:eliminate-top-parens   t
+		:eliminate-inner-parens nil
 		:no-index-calls         nil )
 
 (defparameter *rightmost-char-number* 100)
@@ -59,7 +59,7 @@
 ")
 
 (defparameter *example-prelude*
-  "\\documentstyle{article} \\begin{document} 
+  "\\documentstyle{article} \\begin{document}
 
 Here is a summary of the conventional syntax (~a) in terms of the official syntax
 of the Nqthm logic.
@@ -191,7 +191,7 @@ as !t#b001, \\verb+#o765+ is printed as !t#o765, and \\verb+#xa9+ is printed as
 (defparameter *tab-list* nil)
 
 (defparameter *set-margin* "\\=\\+")
-(defparameter *pop-margin* "\\-")	
+(defparameter *pop-margin* "\\-")
 (defparameter *set-tab*    "\\=")
 
 (defparameter *default-op-tab-space* "$\\quad$ ")
@@ -219,7 +219,7 @@ as !t#b001, \\verb+#o765+ is printed as !t#o765, and \\verb+#xa9+ is printed as
   (setq *tab-stack* (cons *tab-list* *tab-stack*))
   (setq *tab-list* nil)
 
-  (if (> *left-margin* 0) 
+  (if (> *left-margin* 0)
       (progn (sloop for i from 1 to *left-margin* do (pprinc "M"))
 	     (pprinc "\\=\\+\\kill")
 	     (pwrite-char #\Newline)))
@@ -232,7 +232,7 @@ as !t#b001, \\verb+#o765+ is printed as !t#o765, and \\verb+#xa9+ is printed as
   (setq *tab-stack* (cons *tab-list* *tab-stack*))
   (setq *tab-list* nil)
 
-  (if (> *left-margin* 0) 
+  (if (> *left-margin* 0)
       (progn (sloop for i from 1 to *left-margin* do (pprinc "M"))
 	     (pprinc "\\=\\+\\kill")
 	     (pwrite-char #\Newline)))
@@ -240,7 +240,7 @@ as !t#b001, \\verb+#o765+ is printed as !t#o765, and \\verb+#xa9+ is printed as
 
 (defun end-tabbing ()
   (cond ((null *tab-stack*))
-	((null (cdr *tab-stack*))   
+	((null (cdr *tab-stack*))
 	 (setq *tab-list* (car *tab-stack*))
 	 (setq *tab-stack* nil)
 	 (princ *end-tabbing-env*))
@@ -248,26 +248,26 @@ as !t#b001, \\verb+#o765+ is printed as !t#o765, and \\verb+#xa9+ is printed as
 	   (setq *tab-stack* (cdr *tab-stack*)))))
 
 ;; (defun begin-tabbing ()
-;; 
+;;
 ;; ; Tabbing environments cannot be nested in Latex.
-;; 
+;;
 ;;   (setq *tab-list* nil)
 ;;   (princ *begin-tabbing-env*)
-;;   (if (> *left-margin* 0) 
+;;   (if (> *left-margin* 0)
 ;;       (progn (sloop for i from 1 to *left-margin* do (pprinc "M"))
 ;; 	     (pprinc "\\=\\+\\kill")
 ;; 	     (pwrite-char #\Newline)))
 ;;   (setq *infix-loc* *left-margin*))
-;; 
+;;
 ;; (defun begin-group-tabbing ()
 ;;   (setq *tab-list* nil)
 ;;   (princ *begin-group-tabbing-env*)
-;;   (if (> *left-margin* 0) 
+;;   (if (> *left-margin* 0)
 ;;       (progn (sloop for i from 1 to *left-margin* do (pprinc "M"))
 ;; 	     (pprinc "\\=\\+\\kill")
 ;; 	     (pwrite-char #\Newline)))
 ;;   (setq *infix-loc* *left-margin*))
-;; 
+;;
 ;; (defun end-tabbing ()
 ;;   (princ *end-tabbing-env*))
 
@@ -278,7 +278,7 @@ as !t#b001, \\verb+#o765+ is printed as !t#o765, and \\verb+#xa9+ is printed as
 (defun set-margin ()
 
 ; Generate instructions to set the current indentation.
-; In latex we use tabs, which cause *tabto* to tab to this column in the future.  
+; In latex we use tabs, which cause *tabto* to tab to this column in the future.
 ; `Punt' if we hit the limit, by throwing all the way out.
 
   (cond (*do-not-use-tabs* nil)
@@ -388,7 +388,7 @@ as !t#b001, \\verb+#o765+ is printed as !t#o765, and \\verb+#xa9+ is printed as
 ;; 	   (setq *infix-loc* (get-margin)))))
 
 ;; (defun newline-to-current-margin ()
-;;   ;; Generates command for return to current indentation setting.'  
+;;   ;; Generates command for return to current indentation setting.'
 ;;   (cond (*do-not-use-tabs* (pprinci " "))
 ;; 	(t (pprinc *new-tab-row*)
 ;; 	   (setq *infix-loc* (get-margin)))))
@@ -635,8 +635,8 @@ need quoting or balancing.
   (pprinc *end*))
 
 (defun skip-index-entries ()
-  ;; We are looking at a backslash.  If this begins an index entry, in Tex 
-  ;; mode we need to skip to the end of the entry, because we may have added !'s.  
+  ;; We are looking at a backslash.  If this begins an index entry, in Tex
+  ;; mode we need to skip to the end of the entry, because we may have added !'s.
   ;; In Scribe mode this function returns NIL.
   (let ((pos (file-position *standard-input*))
 	(index '(#\i #\n #\d #\e #\x #\{))
@@ -655,11 +655,11 @@ need quoting or balancing.
 	    (t t))))
 
 (defun adjust-tabbing-env ()
-  ;; We are looking at a backslash. In Tex mode we want to replace 
+  ;; We are looking at a backslash. In Tex mode we want to replace
   ;;   ....  \\
   ;;   \end{tabbing}
   ;; with
-  ;;   ....  
+  ;;   ....
   ;;   \end{tabbing}
   ;; Worse and worse.  There is more than one such pattern.
   (let ((pos (file-position *standard-input*))
@@ -712,7 +712,7 @@ need quoting or balancing.
 (defparameter acl2-markup-table
   '(("-"   . "---")
     ("B"   . "{\\bf ~sa}")
-    ("BF"  . "~%\\begin{CLIverbatim}\\begin{rm}")  
+    ("BF"  . "~%\\begin{CLIverbatim}\\begin{rm}")
     ("BID" . "")		     ;begin implementation dependent
     ("BQ"  . "~%\\begin{quotation}")
     ("BV"  . "~%\\begin{verbatim}")
@@ -720,14 +720,14 @@ need quoting or balancing.
     ("EF"  . "\\end{rm}\\end{CLIverbatim}~%")
     ("EID" . "")		     ;end implementation dependent
     ("EM"  . "{\\it ~sa}")           ;emphasis
-    ("EQ"  . "~%\\end{quotation}~%") ;TexInfo needs leading line break to 
+    ("EQ"  . "~%\\end{quotation}~%") ;TexInfo needs leading line break to
 				     ;avoid problems with @refill
     ("EV"  . "\\end{verbatim}~%")
     ("I"   . "{\\it ~sa}")
     ("ID"  . "~sa")		     ;implementation dependent
     ("IL"  . "~sa")
     ("ILC" . "{\\tt ~sa}")	     ;originally @code, but problem with info file
-    ("L"   . "See ~sA")   
+    ("L"   . "See ~sA")
     ("NL"  . "\\hfill \\break ")
     ("PAR" . "")		     ;paragraph mark, of no significance for latex
     ("PL"  . "see ~sA")		     ;used for parenthetical crossrefs

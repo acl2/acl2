@@ -866,7 +866,7 @@
            :use ())))
 
 (defthm rnd-0
-  (equal (rnd 0 mode n) 
+  (equal (rnd 0 mode n)
          0)
   :hints (("Goal" :in-theory (enable rnd rounding-mode-p ieee-mode-p inf minf)
            :use (trunc-0 away-0))))
@@ -907,7 +907,7 @@
                 )
            (equal (sgn (rnd x mode n))
                   (sgn x)))
-  :hints (("Goal" :in-theory (enable ieee-mode-p rounding-mode-p rnd near+ inf minf) 
+  :hints (("Goal" :in-theory (enable ieee-mode-p rounding-mode-p rnd near+ inf minf)
            :use (sgn-trunc
                  sgn-away
                  sgn-near-2))))
@@ -916,7 +916,7 @@
 (defthmd rnd-exactp-a
   (implies (and (rationalp x)
                 (rounding-mode-p mode)
-                (integerp n) 
+                (integerp n)
                 (> n 0))
            (equal (equal x (rnd x mode n))
                   (exactp x n)))
@@ -1082,12 +1082,12 @@
                    mode
                    (+ k (- (expo (+ x y)) (expo y))))))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable rnd ieee-mode-p ROUNDING-MODE-P) 
+  :hints (("Goal" :in-theory (enable rnd ieee-mode-p ROUNDING-MODE-P)
            :use (plus-near
                  plus-near+
                  plus-away
-                 plus-trunc 
-                 plus-minf 
+                 plus-trunc
+                 plus-minf
                  plus-inf
                  (:instance exactp-<= (m (+ -1 k (- (expo x) (expo y))))
                             (n (+  k (- (expo x) (expo y)))))))))

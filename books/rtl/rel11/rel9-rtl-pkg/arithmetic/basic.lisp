@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -144,7 +144,7 @@
   :rule-classes (:type-prescription))
 
 (defthmd fl-def ; use defthmd to avoid wrecking old proofs (rel4->rel5 transition)
-  (and (integerp (fl x))    
+  (and (integerp (fl x))
        (implies (case-split (rationalp x))
 	        (and (<= (fl x) x)
 		     (< x (1+ (fl x))))))
@@ -181,7 +181,7 @@
 
 (encapsulate
  ()
- (local (include-book "expt")) 
+ (local (include-book "expt"))
 
  (defthm expt-2-positive-rational-type
    (and (rationalp (expt 2 i))
@@ -193,12 +193,12 @@
             (and (integerp (expt 2 i))
                  (< 0 (expt 2 i))))
    :rule-classes (:type-prescription))
- 
+
 ;the rewrite rule counterpart to expt-2-positive-integer-type
  (defthm expt-2-integerp
    (implies (<= 0 i)
             (integerp (expt 2 i))))
- 
+
 
 
 ; (in-theory (disable a14)) ;the rules above are better than this one for (expt 2 i)
@@ -222,7 +222,7 @@
  (theory-invariant (incompatible (:rewrite expt-split)
                                  (:definition a15))
                    :key expt-split-invariant)
- 
+
  (defthmd expt-weak-monotone
    (implies (and (integerp n)
                  (integerp m))

@@ -10,7 +10,7 @@ Email:  sandip@cs.utexas.edu
 Date:   07/23/2003
 
 Here is another equation that we introduce. This one has the exists
-quantifier. For other comments see the forall.lisp file. 
+quantifier. For other comments see the forall.lisp file.
 
 |#
 
@@ -22,7 +22,7 @@ quantifier. For other comments see the forall.lisp file.
 
 (defstub next (* *) => *)
 
-(encapsulate 
+(encapsulate
  (((assertion *) => *)
   ((cutpoint *) => *))
 
@@ -38,15 +38,15 @@ quantifier. For other comments see the forall.lisp file.
    :rule-classes :type-prescription)
 
 )
-    
+
 
 ;; Let us now define the invariant inv, and the corresponding (quantified)
 ;; version next-inv for recursion purposes.
 
 (defun run (s sched)
-  (if (endp sched) 
-      s 
-    (run (next s (first sched)) 
+  (if (endp sched)
+      s
+    (run (next s (first sched))
          (rest sched))))
 
 (defun no-cutpoint (p sched)
@@ -59,7 +59,7 @@ quantifier. For other comments see the forall.lisp file.
 (defun del-last (l)
   (if (endp l) nil
     (if (endp (rest l)) nil
-      (cons (first l) (del-last (rest l))))))      
+      (cons (first l) (del-last (rest l))))))
 
 (defun sched-to-cutpoint (p sched)
   (and (cutpoint (run p sched))
@@ -81,7 +81,7 @@ quantifier. For other comments see the forall.lisp file.
 
 ;; Now we start....
 
-(local 
+(local
  (defthm cutpoint-and-assertion-implies-inv
    (implies (and (cutpoint s)
                  (assertion s))
@@ -100,7 +100,7 @@ quantifier. For other comments see the forall.lisp file.
    :rule-classes nil
    :hints (("Goal"
             :in-theory (enable inv)))))
-                
+
 (local
  (defthm cutpoint-implies-inv=assertion
    (implies (cutpoint s)
@@ -110,7 +110,7 @@ quantifier. For other comments see the forall.lisp file.
             :use ((:instance inv-and-cutpoint-implies-assertion)
                   (:instance cutpoint-and-assertion-implies-inv))))))
 
-(local 
+(local
  (defthm not-cutpoint-and-sched-to-cutpoint-implies-cdr
    (implies (and (sched-to-cutpoint p sched)
                  (not (cutpoint p)))
@@ -140,13 +140,13 @@ quantifier. For other comments see the forall.lisp file.
    :hints (("Goal"
             :use ((:instance next-inv-suff
                              (i (car (inv-witness s)))))))))
- 
+
 (local
  (defthm sched-to-cutpoint-from-next
    (implies (and (sched-to-cutpoint (next s i) sched)
                  (not (cutpoint s)))
             (sched-to-cutpoint s (cons i sched)))))
- 
+
 (local
  (defthm inv-from-next-inv
    (implies (and (inv (next s i))
@@ -158,7 +158,7 @@ quantifier. For other comments see the forall.lisp file.
                              (s (next s i)))
                   (:instance inv-suff
                              (sched (cons i (inv-witness (next s i))))))))))
-  
+
 (local
  (defthm next-inv-implies-inv
    (implies (and (next-inv s)

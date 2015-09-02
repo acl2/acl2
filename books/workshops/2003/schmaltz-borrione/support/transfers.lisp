@@ -28,7 +28,7 @@
                       'write)
                   (mod HADDR MEM_SIZE) HWDATA)
             (list SD))
-                  
+
       nil))
 
 (defun O-slave (x)
@@ -59,7 +59,7 @@
 (defun HADDR (x)
   (nth 1 (nth 0 x)))
 
-(defun HWDATA (x) 
+(defun HWDATA (x)
   (nth 2 (nth 0 x)))
 
 (defun D-master (x)
@@ -77,21 +77,21 @@
 (defun trans_M_to_S (O L D N Card_S P Last_Granted MREQ Slave_Number
                      SD MEM_SIZE)
   (slave_interface
-   (nth Slave_Number 
+   (nth Slave_Number
         (decoder MEM_SIZE Card_S
-                 (HADDR 
-		  (Master_interface O L D SD 
+                 (HADDR
+		  (Master_interface O L D SD
 				    (nth (master_num MREQ N Last_Granted)
 					 (arbiter N P MREQ Last_Granted))))))
-   (HWRITE 
-    (Master_interface O L D SD 
+   (HWRITE
+    (Master_interface O L D SD
 		      (nth (master_num MREQ N Last_Granted)
 			   (arbiter N P MREQ Last_Granted))))
-   (HADDR 
-    (Master_interface O L D SD 
+   (HADDR
+    (Master_interface O L D SD
 		      (nth (master_num MREQ N Last_Granted)
 			   (arbiter N P MREQ Last_Granted))))
-   (HWDATA 
+   (HWDATA
     (Master_interface O L D SD
 		      (nth (master_num MREQ N Last_Granted)
 			   (arbiter N P MREQ Last_Granted))))
@@ -105,14 +105,14 @@
 
 (defun trans_S_to_M (O L D SD MEM_SIZE Card_S MREQ N P
                      HWRITE HADDR HWDATA Slave_Number Last_granted)
-  (master_interface O L D 
+  (master_interface O L D
                     (HRDATA
-                     (slave_interface 
-                      (nth Slave_Number 
+                     (slave_interface
+                      (nth Slave_Number
                            (decoder MEM_SIZE Card_S L))
                       HWRITE
-                      HADDR 
-                      HWDATA 
+                      HADDR
+                      HWDATA
                       SD
                       MEM_SIZE))
                     (nth (master_num MREQ N Last_Granted)
@@ -121,17 +121,17 @@
 
 
 
-; validation of transmission of the address and the data 
+; validation of transmission of the address and the data
 ; from the master to the slave
 
-(defthm trans_M_to_S_thm 
-  (implies (and 
+(defthm trans_M_to_S_thm
+  (implies (and
             ; P is the number of priority level(s)
             (integerp P) (equal P (len MREQ))
             ; N is the length of each level
             (equal (len (car MREQ)) N)
             ; at least one master
-            (integerp N) (< 0 N) 
+            (integerp N) (< 0 N)
             ; each level has the same length
             (uniform_listp MREQ)
             ; the last owner has a valid number
@@ -151,16 +151,16 @@
             ; the slave is active
             (equal Slave_Number (floor L MEM_SIZE))
             )
-           (and (equal (L-slave 
+           (and (equal (L-slave
                         (trans_M_to_S O L D N Card_S P Last_Granted MREQ
                              Slave_Number 'undef MEM_SIZE))
                        (mod L MEM_SIZE))
-                (equal (D-slave 
+                (equal (D-slave
                         (trans_M_to_S O L D N Card_S P Last_Granted MREQ
                                       Slave_Number 'undef MEM_SIZE))
                        D)))
   :hints (("GOAL" ;:use (:instance decoder_nth_1 (ADDR L))
-                  :in-theory (disable ;decoder_nth_1 
+                  :in-theory (disable ;decoder_nth_1
                               floor floor-mod-elim nth))))
 
 ; Prove 5.05
@@ -168,13 +168,13 @@
 ; Validation of the read transmission
 
 (defthm trans_M_to_S_read
-  (implies  (and 
+  (implies  (and
             ; P is the number of priority level(s)
             (integerp P) (equal P (len MREQ))
             ; N is the length of each level
             (equal (len (car MREQ)) N)
             ; at least one master
-            (integerp N) (< 0 N) 
+            (integerp N) (< 0 N)
             ; each level has the same length
             (uniform_listp MREQ)
             ; the last owner has a valid number
@@ -196,7 +196,7 @@
             ; the operation is 'read
             ;(equal O 'read)
             )
-            (equal (O-slave 
+            (equal (O-slave
                     (trans_M_to_S 'read L D N Card_S P Last_Granted MREQ
                                       Slave_Number 'undef MEM_SIZE))
                    'read)))
@@ -206,13 +206,13 @@
 ; validation of the write transmission
 
 (defthm trans_M_to_S_write
-  (implies  (and 
+  (implies  (and
             ; P is the number of priority level(s)
             (integerp P) (equal P (len MREQ))
             ; N is the length of each level
             (equal (len (car MREQ)) N)
             ; at least one master
-            (integerp N) (< 0 N) 
+            (integerp N) (< 0 N)
             ; each level has the same length
             (uniform_listp MREQ)
             ; the last owner has a valid number
@@ -234,7 +234,7 @@
             ; the operation is 'write
             ;(equal O 'write)
             )
-            (equal (O-slave 
+            (equal (O-slave
                     (trans_M_to_S 'write L D N Card_S P Last_Granted MREQ
                                       Slave_Number 'undef MEM_SIZE))
                    'write)))
@@ -242,13 +242,13 @@
 ; Prove 0.63
 
 (defthm trans_S_to_M_thm
-  (implies (and 
+  (implies (and
             ; P is the number of priority level(s)
             (integerp P) (equal P (len MREQ))
             ; N is the length of each level
             (equal (len (car MREQ)) N)
             ; at least one master
-            (integerp N) (< 0 N) 
+            (integerp N) (< 0 N)
             ; each level has the same length
             (uniform_listp MREQ)
             ; the last owner has a valid number
@@ -281,7 +281,7 @@
 ; we define a small memory
 
 (defun slave_memory (MEMO O UNADDR D)
-  (cond ((equal O 'write) 
+  (cond ((equal O 'write)
          (list (put-nth UNADDR D MEMO) D))
         ((equal O 'read)
          (list MEMO (nth UNADDR MEMO)))))
@@ -289,11 +289,11 @@
 
 (defun single_transfer (O L D N P Card_S Last_Granted MREQ Slave_Number
                         MEM_SIZE MEMO)
-  (list 
+  (list
    (trans_S_to_M O L D
-                 (nth 1 
+                 (nth 1
                       (slave_memory MEMO
-                        (O-slave 
+                        (O-slave
                          (trans_M_to_S O L D N Card_S P Last_Granted
                                        MREQ Slave_Number 'undef MEM_SIZE))
                         (L-slave
@@ -304,9 +304,9 @@
                                        MREQ Slave_Number 'undef  MEM_SIZE))))
                  MEM_SIZE Card_S MREQ N P O L D
                  Slave_Number Last_Granted)
-   (nth 0 
+   (nth 0
         (slave_memory MEMO
-                      (O-slave 
+                      (O-slave
                          (trans_M_to_S O L D N Card_S P Last_Granted
                                        MREQ Slave_Number 'undef MEM_SIZE))
                       (L-slave
@@ -315,25 +315,25 @@
                       (D-slave
                        (trans_M_to_S O L D N Card_S P Last_Granted
                                        MREQ Slave_Number 'undef MEM_SIZE))))))
-  
+
 ; returns a true-list
-; a read example 
-;ACL2 !>(single_transfer 'Read 2 23 2 2 2 0 '((1 0) (1 0) (0 0)) 0 4 '(0 0 33 0 0 0 0 0))   
+; a read example
+;ACL2 !>(single_transfer 'Read 2 23 2 2 2 0 '((1 0) (1 0) (0 0)) 0 4 '(0 0 33 0 0 0 0 0))
 ;(((0 0 0) (33)) (0 0 33 0 0 0 0 0))
 ; a write example
-;ACL2 !>(single_transfer 'Write 2 23 2 2 2 0 '((1 0) (1 0) (0 0)) 0 4 '(0 0 33 0 0 0 0 0))    
+;ACL2 !>(single_transfer 'Write 2 23 2 2 2 0 '((1 0) (1 0) (0 0)) 0 4 '(0 0 33 0 0 0 0 0))
 ;(((0 0 0) (23)) (0 0 23 0 0 0 0 0))
 
 ; the read data by the master is the (nth (mod L MEM_SIZE) MEMO)
 
 (defthm single_read_transfer
-  (implies (and 
+  (implies (and
             ; P is the number of priority level(s)
             (integerp P) (equal P (len MREQ))
             ; N is the length of each level
             (equal (len (car MREQ)) N)
             ; at least one master
-            (integerp N) (< 0 N) 
+            (integerp N) (< 0 N)
             ; each level has the same length
             (uniform_listp MREQ)
             ; the last owner has a valid number
@@ -370,13 +370,13 @@
 ; a write transfer is a (put-nth (mod ADDR MEM_SIZE) DATA MEMO)
 
 (defthm single_write_transfer
-  (implies (and 
+  (implies (and
             ; P is the number of priority level(s)
             (integerp P) (equal P (len MREQ))
             ; N is the length of each level
             (equal (len (car MREQ)) N)
             ; at least one master
-            (integerp N) (< 0 N) 
+            (integerp N) (< 0 N)
             ; each level has the same length
             (uniform_listp MREQ)
             ; the last owner has a valid number
@@ -400,7 +400,7 @@
             ; mem_size is the size of memo
             (equal (len MEMO) MEM_SIZE)
             )
-           (equal (nth (mod L MEM_SIZE) 
+           (equal (nth (mod L MEM_SIZE)
                        (nth 1 (single_transfer O L D N P Card_S Last_Granted MREQ
                                 Slave_Number MEM_SIZE MEMO)))
                   D))

@@ -630,7 +630,21 @@ if you do not want to use the pick-a-point method to solve your goal.</p>"
    :actual-collection-predicate subset
    :actual-trigger subset-trigger
    :predicate-rewrite (((predicate ?x ?y) (in ?x ?y)))
-   :tagging-theorem pick-a-point-subset-strategy))
+   :tagging-theorem pick-a-point-subset-strategy)
+
+  (defthm pick-a-point-subset-constraint-helper
+    ;; When we do a pick-a-point proof of subset, we need to show that (SUBSET X
+    ;; Y) is just the same as (ALL X) with (PREDICATE A) = (IN A Y).  Since ALL
+    ;; is defined recursively, the proof goals we get end up mentioning
+    ;; HEAD/TAIL.  This doesn't always work well if the user's theory doesn't
+    ;; have the right rules enabled.  This rule is intended to open up SUBSET in
+    ;; only this very special case to solve such goals.
+    (implies (syntaxp (equal set-for-all-reduction 'set-for-all-reduction))
+             (equal (subset set-for-all-reduction rhs)
+                    (cond ((empty set-for-all-reduction) t)
+                          ((in (head set-for-all-reduction) rhs)
+                           (subset (tail set-for-all-reduction) rhs))
+                          (t nil))))))
 
 
 
@@ -899,3 +913,5 @@ directed by @(see accumulated-persistence).</p>"
 
 (defun fast-measure (X Y)
   (+ (acl2-count X) (acl2-count Y)))
+
+

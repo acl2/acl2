@@ -37,7 +37,7 @@
   (symbolp x))
 
 ;; A function symbol is a symbolp.
-		
+
 (defun function-symbol (x)
   (declare (xargs :guard t))
   (symbolp x))
@@ -188,7 +188,7 @@
 ;; any reason to make domain-terms be well-formed terms, and (2)
 ;; inductions on the evaluation functions would be simpler.
 ;; Big exercise: try it!
-;; 
+;;
 ;; A domain-term is a natural number.  (Function symbols, in particular
 ;; constant symbols, cannot be natural numbers, so they won't get
 ;; mixed up with domain-terms.)
@@ -349,7 +349,7 @@
 	      val
 	    0  ;; function value is not in the domain
 	    ))))))
-      
+
 (defthm flookup-returns-domain-term
   (domain-term (flookup func-sym tuple i)))
 
@@ -401,7 +401,7 @@
   (implies (and (wft-list l)
 		(consp l))
 	   (wft-list (list (car l)))))
-  
+
 (defthm wft-list-2  ;; for eval-atomic guard
   (implies (wft-list (cons x y))
 	   (wft-list (list x)))
@@ -438,7 +438,7 @@
 		((domain-term (car l)) (car l))
 		((wf-ap-term-top (car l))
 		 (cons (caar l) (subst-term-list (cdar l) v tm)))
-		(t (car l)))  ;; leave non-term unchanged 
+		(t (car l)))  ;; leave non-term unchanged
 	  (subst-term-list (cdr l) v tm))))
 
 (defmacro subst-term (t1 x t2)
@@ -464,7 +464,7 @@
 			      (wft tm))))
   (cond ((wfnot f) (list 'not (subst-free (a1 f) v tm)))
 	((wfbinary f) (list (car f)
-			    (subst-free (a1 f) v tm) 
+			    (subst-free (a1 f) v tm)
 			    (subst-free (a2 f) v tm)))
 	((wfquant f) (if (equal (a1 f) v)
 			 f
@@ -480,7 +480,7 @@
   (implies (and (wff f)
 		(wft tm))
 	   (wff (subst-free f v tm))))
- 
+
 ;; Function wff-count counts the number of formula nodes in a formula.
 ;; It is useful for proving termination of functions (on formulas)
 ;; that change atomic formulas.
@@ -491,7 +491,7 @@
 	((wfbinary f) (+ 1 (wff-count (a1 f)) (wff-count (a2 f))))
 	((wfquant f)  (+ 1 (wff-count (a2 f))))
 	(t 1)))
- 
+
 ;; subst-free preserves the wff-count of a formula.
 
 (defthm subst-free-preserves-wff-count
@@ -528,7 +528,7 @@
 ;;
 ;; It would be nice to have a guard (not (free-vars f)) on both of
 ;; these functions, but free-vars hasn't been defined yet.
-;; 
+;;
 ;; The termination measure has 3 components: the size of the formula,
 ;; the function (feval-d is smaller than feval), and the size of the
 ;; domain.  The second component is there because nothing gets smaller

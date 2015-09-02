@@ -26,7 +26,7 @@ Copyright (C) 2012 by Ben Selfridge <benself@cs.utexas.edu>
 FILE: top.lisp
 
  An implementation of Leftist Trees (otherwise known as Leftist Heaps)
- as described in Purely Functional Data Structures (Chris Okasaki, 
+ as described in Purely Functional Data Structures (Chris Okasaki,
  Cambridge University Press 1998).
 
  Leftist trees are an efficient implementation of binary

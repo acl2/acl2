@@ -1,10 +1,10 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
-;   David Russinoff
+;   David M. Russinoff
 ;   1106 W 9th St., Austin, TX 78703
-;   http://www.russsinoff.com/
+;   david@russinoff.com
+;   http://www.russinoff.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -20,49 +20,17 @@
 ; Free Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
 ; 02110-1335, USA.
 ;
-; Author: David M. Russinoff (david@russinoff.com)
 
 (in-package "RTL")
 
-(set-enforce-redundancy t) 
+(set-enforce-redundancy t)
 
 (local (include-book "../support/top"))
 
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
-;; From basic.lisp:
-
-(defund fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
-
-;; From bits.lisp:
-
-(defund bvecp (x k)
-  (declare (xargs :guard (integerp k)))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt 2 k))))
-
-(defund bits (x i j)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp i)
-                              (integerp j))))
-  (mbe :logic (if (or (not (integerp i))
-                      (not (integerp j)))
-                  0
-                (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-       :exec  (if (< i j)
-                  0
-                (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-
-(defund bitn (x n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp n))))
-  (mbe :logic (bits x n n)
-       :exec  (if (evenp (ash x (- n))) 0 1)))
-
+(include-book "defs")
 
 ;;;**********************************************************************
 ;;;                 Sign, Significand, and Exponent
@@ -70,7 +38,7 @@
 
 (defsection-rtl |Floating-Point Decomposition| |Floating-Point Numbers|
 
-(defund sgn (x) 
+(defund sgn (x)
   (declare (xargs :guard t))
   (if (or (not (rationalp x)) (equal x 0))
       0
@@ -189,7 +157,7 @@
            (equal (sig x) x)))
 
 (defthm sig-sig
-    (equal (sig (sig x)) 
+    (equal (sig (sig x))
 	   (sig x)))
 
 (defthm fp-rep-unique
@@ -211,11 +179,11 @@
   (implies (and (rationalp x)
                 (not (equal x 0))
                 (integerp n))
-           (equal (expo (* (expt 2 n) x)) 
+           (equal (expo (* (expt 2 n) x))
                   (+ n (expo x)))))
 
 (defthmd sig-shift
-  (equal (sig (* (expt 2 n) x)) 
+  (equal (sig (* (expt 2 n) x))
          (sig x)))
 
 (defthmd sgn-prod

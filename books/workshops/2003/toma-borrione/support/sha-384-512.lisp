@@ -1,7 +1,7 @@
 ;------------------------------------------
 ;
 ; Author:  Diana Toma
-; TIMA-VDS, Grenoble, France 
+; TIMA-VDS, Grenoble, France
 ; March 2003
 ; ACL2 formalization of SHA-384 and SHA-512
 ; Message digest functions and theorems
@@ -292,7 +292,7 @@
    0 1 0 0 0 0 1 1 1 0 0 1 1 1 1 0 1 1 0 0))
          ((equal i 60) '(1 0 0 1
    0 0 0 0 1 0 1 1 1 1 1 0 1 1 1 1 1 1 1 1
-   1 1 1 1 1 0 1 0 0 0 1 0 0 0 1 1 0 1 1 0 
+   1 1 1 1 1 0 1 0 0 0 1 0 0 0 1 1 0 1 1 0
    0 0 1 1 0 0 0 1 1 1 1 0 0 0 1 0 1 0 0 0))
          ((equal i 61) '(1 0 1 0
    0 1 0 0 0 1 0 1 0 0 0 0 0 1 1 0 1 1 0 0
@@ -378,8 +378,8 @@
   (wordp (k-512 i) 64)))
 
 
-; initial hash values for sha-384 
-(defun h-384() 
+; initial hash values for sha-384
+(defun h-384()
 '((1 1 0 0
    1 0 1 1 1 0 1 1 1 0 1 1 1 0 0 1 1 1 0 1
    0 1 0 1 1 1 0 1 1 1 0 0 0 0 0 1 0 0 0 0
@@ -418,8 +418,8 @@
  (and  (wvp (h-384) 64) (equal (len (h-384)) 8 )))
 
 
-; initial hash values for sha-512 
-(defun h-512() 
+; initial hash values for sha-512
+(defun h-512()
 '((0 1 1 0
    1 0 1 0 0 0 0 0 1 0 0 1 1 1 1 0 0 1 1 0
    0 1 1 0 0 1 1 1 1 1 1 1 0 0 1 1 1 0 1 1
@@ -452,11 +452,11 @@
    1 0 1 1 1 1 1 0 0 0 0 0 1 1 0 0 1 1 0 1
    0 0 0 1 1 0 0 1 0 0 0 1 0 0 1 1 0 1 1 1
    1 1 1 0 0 0 1 0 0 0 0 1 0 1 1 1 1 0 0 1))
-) 
+)
 
 (defthm wordp-h-512
  (and  (wvp (h-512) 64) (equal (len (h-512)) 8 )))
-     
+
 
 ;----sha-512
 
@@ -467,10 +467,10 @@
             ((<= j 79)
              (prepare-512-ac (1+ j)
                       (append m-i (list (plus 64 (s-1-512 (nth (- j 2) m-i))
-                                       (nth (- j 7) m-i) 
+                                       (nth (- j 7) m-i)
                                        (s-0-512 (nth (- j 15) m-i))
                                        (nth (- j 16) m-i)))))))
-      nil)) 
+      nil))
 
 
 (defun prepare-512 (m-i)
@@ -488,8 +488,8 @@
 (defthm len-prepare-512-ac
   (implies (and  (wvp  m 64) (integerp j) (<= 16 j) (<= j (len m) ))
        (equal (len (prepare-512-ac  j m))
-              (if  (<= j 80) 
-                   (+ (- 80 j) (len m)) 
+              (if  (<= j 80)
+                   (+ (- 80 j) (len m))
                    (len m))))
 :hints (("goal" :in-theory (disable s-1-512 s-0-512 nth binary-plus ))))
 
@@ -507,57 +507,57 @@
 
 
 (defun temp-1-512 (j working-variables m-i-ext)
- (if (and  (equal (len working-variables) 8) (wvp working-variables 64) 
-           (integerp j) (<= 0 j) 
+ (if (and  (equal (len working-variables) 8) (wvp working-variables 64)
+           (integerp j) (<= 0 j)
            (wvp m-i-ext 64)  (equal (len m-i-ext) 80))
-    (plus 64 (nth 7 working-variables) 
+    (plus 64 (nth 7 working-variables)
              (sigma-1-512 (nth 4 working-variables))
-             (Ch (nth 4 working-variables) 
-             (nth 5 working-variables) 
+             (Ch (nth 4 working-variables)
+             (nth 5 working-variables)
              (nth 6 working-variables))
              (k-512 j)
              (nth j m-i-ext) )
-    nil))       
+    nil))
 
 
 (defthm wordp-temp-1-512
  (implies (and  (wvp l 64) (equal (len l) 8)
                 (integerp j) (<= 0 j) (< j 80)
-                (wvp  m 64) (equal (len m) 80)) 
+                (wvp  m 64) (equal (len m) 80))
           (wordp (temp-1-512 j l m ) 64))
-:hints 
+:hints
 (("goal"
   :in-theory (disable sigma-1-512 ch k-512 nth binary-plus wordp ))))
 
 
 (defun temp-2-512 ( working-variables )
  (if (and (equal (len working-variables) 8) (wvp working-variables 64))
-     (plus 64 (sigma-0-512 (nth 0 working-variables)) 
+     (plus 64 (sigma-0-512 (nth 0 working-variables))
               (Maj (nth 0 working-variables)
               (nth 1 working-variables)
               (nth 2 working-variables)) )
-     nil))  
+     nil))
 
 
 (defthm wordp-temp-2-512
  (implies (and  (wvp l 64) (equal (len l) 8))
           (wordp (temp-2-512  l ) 64))
 :hints (("goal" :in-theory (disable sigma-0-512 maj binary-plus  nth ))))
-  
+
 
 (defun digest-one-block-512-ac ( j working-variables m-i-ext)
 (declare (xargs :measure (acl2-count (- 80 j))))
     (if (and (equal (len working-variables) 8)  (wvp working-variables 64)
-             (integerp j) (<= 0 j) 
+             (integerp j) (<= 0 j)
              (wvp m-i-ext 64) (equal (len m-i-ext) 80))
         (if (<= 80 j)
              working-variables
-            (digest-one-block-512-ac (+ 1 j) 
-                      (list (plus 64 (temp-1-512 j working-variables  m-i-ext) 
-                                     (temp-2-512  working-variables )) 
-                            (nth 0 working-variables)  
-                            (nth 1 working-variables)  
-                            (nth 2 working-variables)  
+            (digest-one-block-512-ac (+ 1 j)
+                      (list (plus 64 (temp-1-512 j working-variables  m-i-ext)
+                                     (temp-2-512  working-variables ))
+                            (nth 0 working-variables)
+                            (nth 1 working-variables)
+                            (nth 2 working-variables)
                             (plus 64 (nth 3 working-variables)
                                      (temp-1-512 j working-variables m-i-ext) )
                             (nth 4 working-variables)
@@ -571,12 +571,12 @@
    (if (and  (wvp hash-values 64) (equal (len hash-values) 8)
              (wvp m-i-ext 64) (equal (len m-i-ext) 80))
        (digest-one-block-512-ac 0 hash-values  m-i-ext)
-       nil)) 
+       nil))
 
 
 (defthm wvp-digest-one-block-512-ac
  (implies (and (wvp l 64) (equal (len l) 8)
-               (integerp j) (<= 0 j) 
+               (integerp j) (<= 0 j)
                (wvp m 64) (equal (len m) 80))
           (wvp (digest-one-block-512-ac j l m ) 64))
 :hints (("goal" :in-theory (disable  temp-1-512 temp-2-512 nth binary-plus))))
@@ -584,7 +584,7 @@
 
 (defthm len-digest-one-block-512-ac
  (implies (and  (wvp l 64) (equal (len l) 8)
-                (integerp j) (<= 0 j) 
+                (integerp j) (<= 0 j)
                 (wvp m 64) (equal (len m) 80))
           (equal (len (digest-one-block-512-ac j l m )) 8))
 :hints (("goal" :in-theory (disable temp-1-512 temp-2-512 nth binary-plus ))))
@@ -594,8 +594,8 @@
  (implies (and  (wvp l 64) (equal (len l) 8)
                 (wvp m 64) (equal (len m) 80))
           (wvp (digest-one-block-512 l m ) 64))
-:hints 
-(("goal" 
+:hints
+(("goal"
   :in-theory (disable digest-one-block-512-ac))))
 
 
@@ -603,18 +603,18 @@
  (implies (and (wvp l 64) (equal (len l) 8)
                (wvp m 64) (equal (len m) 80))
           (equal (len (digest-one-block-512  l m )) 8))
-:hints 
-(("goal" 
+:hints
+(("goal"
   :in-theory (disable digest-one-block-512-ac ))))
 
 
 (defun intermediate-hash-512 ( l1 l2)
- (if (and  (wvp l1 64) (equal (len l1) 8) 
+ (if (and  (wvp l1 64) (equal (len l1) 8)
            (wvp l2 64) (equal (len l2) 8) )
      (list (plus 64 (nth 0 l1) (nth 0 l2) )
            (plus 64 (nth 1 l1) (nth 1 l2) )
            (plus 64 (nth 2 l1) (nth 2 l2) )
-           (plus 64 (nth 3 l1) (nth 3 l2) )         
+           (plus 64 (nth 3 l1) (nth 3 l2) )
            (plus 64 (nth 4 l1) (nth 4 l2) )
            (plus 64 (nth 5 l1) (nth 5 l2) )
            (plus 64 (nth 6 l1) (nth 6 l2) )
@@ -623,26 +623,26 @@
 
 
 (defthm wvp-intermediate-hash-512
- (implies (and  (wvp l1 64) (equal (len l1) 8) 
+ (implies (and  (wvp l1 64) (equal (len l1) 8)
            (wvp l2 64) (equal (len l2) 8) )
   (wvp (intermediate-hash-512 l1 l2 ) 64))
 :hints (("goal"  :in-theory (disable binary-plus wordp nth ))))
 
 
 (defthm len-intermediate-hash-512
- (implies (and  (wvp l1 64) (equal (len l1) 8) 
+ (implies (and  (wvp l1 64) (equal (len l1) 8)
            (wvp l2 64) (equal (len l2) 8) )
   (equal (len (intermediate-hash-512 l1 l2 )) 8)))
 
 
 (defun digest-512 ( m hash-values)
   (if (and (wvp m 1024) (wvp hash-values 64) (equal (len hash-values) 8)  )
-      (if (endp m)  hash-values 
-          (digest-512 (cdr m) 
+      (if (endp m)  hash-values
+          (digest-512 (cdr m)
               (intermediate-hash-512 hash-values
-                       (digest-one-block-512 hash-values 
+                       (digest-one-block-512 hash-values
                               (prepare-512  (car m) )))))
-       nil) )  
+       nil) )
 
 
 (defthm wvp-digest-512
@@ -651,20 +651,20 @@
       (wvp (digest-512 m hash-values ) 64) )
 :hints
 (("goal"
-  :in-theory (disable intermediate-hash-512 
-             digest-one-block-512 prepare-512 ))))  
+  :in-theory (disable intermediate-hash-512
+             digest-one-block-512 prepare-512 ))))
 
-       
+
 (defthm len-digest-512
  (implies (and (wvp m 1024) (wvp hash-values 64) (not (endp m))
             (equal (len hash-values) 8))
       (equal (len (digest-512 m hash-values )) 8) )
 :hints
-(("goal" 
-  :in-theory (disable intermediate-hash-512 
-             digest-one-block-512 prepare-512 ))))  
-                    
-                     
+(("goal"
+  :in-theory (disable intermediate-hash-512
+             digest-one-block-512 prepare-512 ))))
+
+
 (defun sha-512 ( m)
   (if (and (bvp m)  (< (len m) (expt 2 128)))
       (digest-512 (parsing (padding-512 m) 1024) (h-512))
@@ -672,27 +672,27 @@
 
 
 (defthm wvp-sha-512
-(implies (and (bvp m) (< (len m) (expt 2 128))) 
+(implies (and (bvp m) (< (len m) (expt 2 128)))
          (wvp (sha-512 m) 64) )
-:hints(("goal"  :in-theory (disable digest-512 parsing padding-512)))) 
-  
+:hints(("goal"  :in-theory (disable digest-512 parsing padding-512))))
+
 
 (defthm len-sha-512
-(implies (and (bvp m) (< (len m) (expt 2 128))) 
+(implies (and (bvp m) (< (len m) (expt 2 128)))
          (equal (len (sha-512 m)) 8 ))
 :hints
-(("goal"  
+(("goal"
   :use (:instance len-digest-512 (m (parsing (padding-512 m) 1024))
                   (hash-values (h-512)))
   :in-theory (disable digest-512 parsing padding-512))))
 
 
 ; sha-384
-           
+
 (defun sha-384 ( m)
-  (if (bvp m) 
+  (if (bvp m)
       (let ((res  (digest-512 (parsing (padding-512 m) 1024) (h-384))))
-           (list (nth 0 res) 
+           (list (nth 0 res)
                  (nth 1 res)
                  (nth 2 res)
                  (nth 3 res)
@@ -700,22 +700,22 @@
                  (nth 5 res) ))
       nil))
 
-    
+
 (defthm wvp-sha-384
-(implies (and (bvp m) (< (len m) (expt 2 128))) 
+(implies (and (bvp m) (< (len m) (expt 2 128)))
          (wvp (sha-384 m) 64) )
 :hints
-(("goal" 
+(("goal"
    :in-theory (disable digest-512 parsing padding-512 wordp nth)
    :use (:instance len-digest-512 (m (parsing (padding-512 m) 1024))
              (hash-values (h-384))))))
 
-  
+
 (defthm len-sha-384
-(implies (and (bvp m) (< (len m) (expt 2 128))) 
+(implies (and (bvp m) (< (len m) (expt 2 128)))
          (equal (len (sha-384 m)) 6 ))
 :hints
-(("goal"  
+(("goal"
   :use (:instance len-digest-512 (m (parsing (padding-512 m) 1024))
                 (hash-values (h-384)))
   :in-theory (disable digest-512 parsing padding-512))))

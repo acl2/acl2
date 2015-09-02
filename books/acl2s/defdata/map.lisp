@@ -27,16 +27,16 @@ data last modified: [2014-08-06]
      (implies (_pred_ x)
               (acl2::good-map x))
      :hints (("goal" :in-theory (e/d (_pred_))))
-     :rule-classes ((:rewrite :backchain-limit-lst 1) 
+     :rule-classes ((:rewrite :backchain-limit-lst 1)
                     (:forward-chaining)))
-          
+
    (defthm _pred_-EXCLUDES-ATOM-LIST
      (implies (and (_pred_ x)
                    (consp x))
               (not (atom-listp x)))
      :hints (("goal" :in-theory (e/d (_pred_) )))
      :rule-classes (:tau-system))
-   
+
    (defthm _pred_-MAP-IDENTITY2-GENERALIZE
      (implies (_pred_ x)
               (_pred_ (acl2::map-identity2 a x)))
@@ -54,12 +54,12 @@ data last modified: [2014-08-06]
                     (acl2::wf-keyp x))
            :rule-classes ((:rewrite :backchain-limit-lst 1)
                           (:forward-chaining)))
-       
+
       (defthm _pred_-DOMAIN-LEMMA
            (implies (and (_pred_ x)
                          (mget a x))
                     (_keypred_ a))
-           :hints (("Goal" :in-theory (e/d 
+           :hints (("Goal" :in-theory (e/d
                                        (_pred_ mget acl2::extensible-records)
                                        (_keypred_))))
            :rule-classes (;(:rewrite :backchain-limit-lst 1)
@@ -81,7 +81,7 @@ data last modified: [2014-08-06]
            (implies (and (_pred_ x)
                          (mget acl2::a x))
                     (_valpred_ (mget acl2::a x)))
-           :hints (("Goal" :in-theory (e/d 
+           :hints (("Goal" :in-theory (e/d
                                        (_pred_ mget acl2::extensible-records)
                                        (_keypred_ _valpred_)))))
 
@@ -92,7 +92,7 @@ data last modified: [2014-08-06]
                          )
                     (or (_valpred_ (mget acl2::a x))
                         (equal (mget acl2::a x) nil)))
-           :hints (("Goal" :in-theory (e/d 
+           :hints (("Goal" :in-theory (e/d
                                        (_pred_ mget acl2::extensible-records)
                                        (_keypred_ _valpred_))))
            :rule-classes :generalize)
@@ -111,7 +111,7 @@ data last modified: [2014-08-06]
                          (_keypred_ acl2::a)
                          (_valpred_ v))
                     (_pred_ (mset acl2::a v x)))
-           :hints (("Goal" :in-theory 
+           :hints (("Goal" :in-theory
                     (e/d (_pred_ mset acl2::extensible-records)
                          (_keypred_ _valpred_ acl2::wf-keyp))))
            :rule-classes (:rewrite :generalize)))
@@ -124,8 +124,8 @@ data last modified: [2014-08-06]
   (b* ((M (append new-types (table-alist 'type-metadata-table wrld)))
        (pred (predicate-name name M))
        ((when (not (proper-symbolp pred))) (er hard? 'map-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
-       
-       ((mv ?symbol-alist-subtypep ?keypred) 
+
+       ((mv ?symbol-alist-subtypep ?keypred)
         (if (and (proper-symbolp keybody) (assoc-eq keybody M))
             (mv (subtype-p (predicate-name keybody M) 'acl2::symbolp wrld) (predicate-name keybody M))
           (mv nil nil))) ;inconsistent with earlier use of :undef
@@ -164,11 +164,11 @@ data last modified: [2014-08-06]
   (b* (((cons name A) p)
        ((acl2::assocs odef new-types kwd-alist) A) ;what about pdef?
        (kwd-alist (append kwd-alist top-kwd-alist)))
-       
+
     (case-match odef
       (('MAP key-body val-body) (map-theory-events name key-body val-body new-types kwd-alist wrld))
       (& '()))))
-             
+
 
 (defloop user-map-theory-events1 (ps kwd-alist wrld)
   (for ((p in ps)) (append (map-theory-ev p kwd-alist wrld))))
@@ -187,7 +187,7 @@ data last modified: [2014-08-06]
                             :msg "Elapsed runtime in theory events for maps is ~st secs;~|~%")
               :invisible)))
           events))))
-      
+
 
 (logic)
 (deflabel map)

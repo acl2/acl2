@@ -35,7 +35,7 @@
 (set-match-free-default :once)
 
 ;;; We begin by defining the function 'sumlist' which adds up all the
-;;; elements of a list.  
+;;; elements of a list.
 
 (defun sumlist (x)
   (if (consp x)
@@ -43,7 +43,7 @@
 	 (sumlist (cdr x)))
     0))
 
-;; The sum of a list of real elements is obviously real. 
+;; The sum of a list of real elements is obviously real.
 
 (defthm realp-sumlist
   (implies (real-listp x)
@@ -77,7 +77,7 @@
   (implies (and (integerp x)
 		(<= 0 x))
 	   (equal (factorial (+ 3 x))
-		  (* (hide (+ 3 x)) 
+		  (* (hide (+ 3 x))
 		     (hide (+ 2 x))
 		     (hide (+ 1 x))
 		     (factorial x))))
@@ -92,9 +92,9 @@
 ;; First, we want to talk about (-x)^n.  If n is even, this is just
 ;; x^n, and if n is odd this is -(x^n).
 
-(encapsulate 
+(encapsulate
  ()
-	     
+
  ;; We need this function strictly as an induction hint.  Who would
  ;; have thought the fibonnaci function would be so reduced!
 
@@ -116,7 +116,7 @@
 		  (NOT (INTEGERP (* 1/2 COUNTER))))
 	     (INTEGERP (+ -1/2 (* 1/2 COUNTER))))
     :hints (("Goal" :induct (fn counter)))))
-	     
+
 
  ;; Now, we can use induction to find that (-x)^n is equal to x^n when
  ;; n is even and -(x^n) when n is odd.
@@ -145,7 +145,7 @@
  (defthm abs-expt--1-counter
    (equal (abs (expt -1 counter)) 1)
    :hints (("Goal" :use ((:instance expt--1-counter))))))
-   
+
 ;; A very important theorem.  When both x and n are limited, so is
 ;; x^n.  The use of recursion is justified, since we're only
 ;; interested in limited n.  Moreover, the theorem follows trivially,
@@ -158,7 +158,7 @@
 	   (i-limited (expt x n))))
 
 ;; When we see 0^n, we can immediately rewrite that as 0 -- or so we
-;; thought until we realized 0^0 = 1 in ACL2. 
+;; thought until we realized 0^0 = 1 in ACL2.
 
 (defthm expt-0-counter
   (equal (expt 0 counter)
@@ -328,7 +328,7 @@
 
 (defun base-taylor-sin-term (x counter)
   (* (expt x counter)
-     (/ (factorial counter))))  
+     (/ (factorial counter))))
 
 ;; Now, we define the true term in the Taylor sequence, including the
 ;; sign bit twiddling.
@@ -392,7 +392,7 @@
 	    :expand ((hide (let ((x counter)) (+ 1 x)))))
 	   ("Subgoal 1"
 	    :expand ((hide (let ((x counter)) (+ 1 x))))))))
-	    
+
 ;; Since we're skipping all the even terms (those involving x^2n), we
 ;; really want to have a recurrence relation that goes up by 2 at a
 ;; time!
@@ -406,7 +406,7 @@
 		      (/ (+ 2 counter))
 		      (base-taylor-sin-term x (1+ counter)))))
    :hints (("Goal"
-	    :use ((:instance base-taylor-sin-term-x-+1-counter 
+	    :use ((:instance base-taylor-sin-term-x-+1-counter
 			     (counter (1+ counter))))
 	    :in-theory (disable base-taylor-sin-term-x-+1-counter
 				base-taylor-sin-term)))))
@@ -425,7 +425,7 @@
 		      (/ (+ 3 counter))
 		      (base-taylor-sin-term x (1+ (1+ counter))))))
    :hints (("Goal"
-	    :use ((:instance base-taylor-sin-term-x-+1-counter 
+	    :use ((:instance base-taylor-sin-term-x-+1-counter
 			     (counter (1+ (1+ counter)))))
 	    :in-theory (disable base-taylor-sin-term-x-+1-counter
 				base-taylor-sin-term)))))
@@ -490,7 +490,7 @@
 		  (< (* 3-ax 4-c) 1)))))
 
  ;; That's all that's needed to prove the desired result.  After a
- ;; certain point, successive terms decrease in magnitude. 
+ ;; certain point, successive terms decrease in magnitude.
 
  (defthm abs-base-taylor-sin-term-decreasing
   (implies (and (integerp counter)
@@ -521,7 +521,7 @@
 (defthm base-taylor-sin-term-non-zero
   (implies (not (equal (fix x) 0))
 	   (not (equal (base-taylor-sin-term x counter) 0))))
-		
+
 (in-theory (disable base-taylor-sin-term))
 
 ;; We already know that successive base terms (i.e., without the -1^n)
@@ -577,7 +577,7 @@
 		  (abs (base-taylor-sin-term x (1+ (* 2 counter))))))
   :hints (("Goal"
 	   :in-theory (enable taylor-sin-term))))
-  
+
 ;; And that's all we need to show that successive terms in the real
 ;; Taylor sine sequence decrease -- as long as we go far enough out in
 ;; the sequence.
@@ -595,7 +595,7 @@
 			       base-taylor-sin-term-x-+3-counter
 			       base-taylor-sin-term-x-+2-counter
 			       base-taylor-sin-term-x-+1-counter))))
-  
+
 ;; Now, we characterize the Taylor sequence terms for when x is zero
 ;; and non-zero.  If zero, then all terms are zero....
 
@@ -804,7 +804,7 @@
   :rule-classes (:rewrite :linear))
 
 ;; Now, we show how we want to split up a Taylor sequence.  Basically,
-;; we look at the first |x| elements, and the remaining elements. 
+;; we look at the first |x| elements, and the remaining elements.
 
 (defthm taylor-sin-list-split-for-limited
   (implies (and (realp x)
@@ -866,7 +866,7 @@
 			    (x (taylor-sin-list nterms counter x)))
 		 (:instance alternating-sequence-p-taylor-sin-list)
 		 )
-	   :in-theory (disable large-if->-large 
+	   :in-theory (disable large-if->-large
 			       sumlist-alternating-sequence
 			       alternating-sequence-p
 			       alternating-sequence-p-taylor-sin-list
@@ -912,7 +912,7 @@
 			 (sumlist (taylor-sin-list nterms
 						   (next-integer (abs x))
 						   x))))))
-  
+
 ;; And so, the entire sequence is limited!
 
 (defthm taylor-sin-list-limited-almost
@@ -924,7 +924,7 @@
 			    (nterms (- (i-large-integer)
 				       (next-integer (abs x))))))
 	   :in-theory (disable taylor-sin-list-limited-lemma))))
-						
+
 ;; But wait, we had an extra hypothesis in there, about x being real.
 ;; We can get rid of it, since sine(x)=0 when x is not real....
 
@@ -1065,7 +1065,7 @@
 
 (defthm realp-car-taylor-sin-approx-3
   (implies (realp x)
-	   (realp (abs (car (taylor-sin-list (binary-+ (i-large-integer) -3) 
+	   (realp (abs (car (taylor-sin-list (binary-+ (i-large-integer) -3)
 					     3
 					     x))))))
 

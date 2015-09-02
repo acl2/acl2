@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -32,14 +32,14 @@
 ;;;;
 ;;;;
 
-(local 
+(local
  (defthm bvecp-fl-1/2
    (implies (bvecp x (+ 1 n))
             (BVECP (FL (* 1/2 X)) n))
    :hints (("Goal" :in-theory (e/d (bvecp
                                     expt-2-reduce-leading-constant) ())))))
 
-(local 
+(local
  (defthm bvecp-mod-2
    (implies (integerp x)
             (BVECP (MOD X 2) 1))
@@ -97,7 +97,7 @@
              (DEFTHM LOGIOR-BVECP
                (IMPLIES (AND (BVECP X N) (BVECP Y N))
                         (BVECP (LOGIOR X Y) N)))
-           
+
 
 
              (DEFTHM LOGAND-BVECP
@@ -113,7 +113,7 @@
              )
 
 
-(encapsulate () 
+(encapsulate ()
   (local (include-book "bvecp-raw-helpers"))
 
   (defthm lnot-bvecp
@@ -125,6 +125,6 @@
 
 
 
-         
 
-             
+
+

@@ -41,7 +41,7 @@
 ;;; riemann-sum-approximates-integral-2.lisp.  Thus, they need to be
 ;;; top-level exports of this file, in departure from our convention
 ;;; that only the last lemma in the file is generally of external
-;;; interest. 
+;;; interest.
 
 (defthm car-common-refinement
   (implies (and (partitionp p1)

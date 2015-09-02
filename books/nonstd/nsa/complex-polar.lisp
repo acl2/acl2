@@ -40,7 +40,7 @@
    :hints (("Goal"
 	    :use ((:instance ACL2-ACOS-EXISTS (y x)))
 	    :in-theory (enable interval-definition-theory)))))
-   
+
 (local
  (defthm range-of-cosine-inverse
      (implies (and (realp x)
@@ -115,7 +115,7 @@
     :hints (("Goal"
              :use ((:instance lemma-3
                               (x (* r
-                                    (/ (acl2-sqrt (+ (* r r) 
+                                    (/ (acl2-sqrt (+ (* r r)
                                                      (* s s)))))))
                    (:instance lemma-1
                               (rr (* r r))
@@ -209,16 +209,16 @@
                   (realp s)
                   (not (equal (complex r s) 0)))
              (equal (* (acl2-sine
-                        (acl2-acos 
+                        (acl2-acos
                          (* R (/ (ACL2-SQRT (+ (* R R) (* S S)))))))
                        (acl2-sine
-                        (acl2-acos 
+                        (acl2-acos
                          (* R (/ (ACL2-SQRT (+ (* R R) (* S S))))))))
                     (* (* s (/ (ACL2-SQRT (+ (* R R) (* S S)))))
                        (* s (/ (ACL2-SQRT (+ (* R R) (* S S))))))))
     :hints (("Goal"
              :use ((:instance sin**2->1-cos**2
-                              (x (acl2-acos 
+                              (x (acl2-acos
                                   (* R (/ (ACL2-SQRT (+ (* R R) (* S S)))))))))
              :in-theory (disable sin**2->1-cos**2))
             ("Goal'5'"
@@ -272,14 +272,14 @@
                   (not (equal (complex r s) 0))
                   (<= 0 s))
              (equal (acl2-sine
-                     (acl2-acos 
+                     (acl2-acos
                       (* R (/ (ACL2-SQRT (+ (* R R) (* S S)))))))
                     (* s (/ (ACL2-SQRT (+ (* R R) (* S S)))))))
     :hints (("Goal"
              :use ((:instance lemma-12)
                    (:instance lemma-13
                               (x (acl2-sine
-                                  (acl2-acos 
+                                  (acl2-acos
                                    (* R (/ (ACL2-SQRT (+ (* R R) (* S S))))))))
                               (y (* s (/ (ACL2-SQRT (+ (* R R) (* S S)))))))
                    (:instance lemma-15
@@ -298,7 +298,7 @@
              :use ((:instance lemma-12)
                    (:instance lemma-13
                               (x (acl2-sine
-                                  (acl2-acos 
+                                  (acl2-acos
                                    (* R (/ (ACL2-SQRT (+ (* R R) (* S S))))))))
                               (y (* s (/ (ACL2-SQRT (+ (* R R) (* S S)))))))
                    (:instance lemma-15
@@ -382,7 +382,7 @@
                                                        (imagpart x))
                                                     (* (realpart x)
                                                        (realpart x))))))))
-		  (:instance lemma-2 
+		  (:instance lemma-2
 			     (x (* (REALPART X)
 				   (/ (ACL2-SQRT (+ (* (IMAGPART X) (IMAGPART X))
 						    (* (REALPART X) (REALPART X))))))))

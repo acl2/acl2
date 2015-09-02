@@ -1,5 +1,5 @@
-;;; confluence.lisp 
-;;; Church-Rosser and normalizing abstract reductions.  
+;;; confluence.lisp
+;;; Church-Rosser and normalizing abstract reductions.
 ;;; Created: 06-10-2000 Last Revision: 06-03-2001
 ;;; =============================================================================
 
@@ -44,7 +44,7 @@
 
 
 
-(encapsulate 
+(encapsulate
  ((q (x) boolean)
   (legal (x u) boolean)
   (reduce-one-step (x u) element)
@@ -58,7 +58,7 @@
 ;;;   given an element an an operator. Note that elements are reduced by
 ;;;   means of the action of "abstract" operators.
 ;;; - legal is the function testing if an operator can be applied to a
-;;;   term. 
+;;;   term.
 
  (local (defun q (x) (declare (ignore x)) t))
  (local (defun legal (x u) (declare (ignore x u)) nil))
@@ -67,8 +67,8 @@
 ;;; With these functions one can define what is a legal proof step: a
 ;;; r-step-p structure (see abstract-proofs.lisp) such that one the
 ;;; elements is obtained applying a reduction step to the other (using a
-;;; legal operator).   
- 
+;;; legal operator).
+
  (defun proof-step-p (s)
    (let ((elt1 (elt1 s)) (elt2 (elt2 s))
 	 (operator (operator s)) (direct (direct s)))
@@ -78,7 +78,7 @@
 				      elt2)))
 	  (implies (not direct) (and (legal elt2 operator)
 				     (equal (reduce-one-step elt2 operator)
-					    elt1))))))	
+					    elt1))))))
 
 ;;; And now we can define the equivalence closure of the reduction
 ;;; relation, given by equiv-p: two elements are equivalent if there
@@ -94,7 +94,7 @@
 	(proof-step-p (car p))
 	(equal x (elt1 (car p)))
 	(equiv-p (elt2 (car p)) y (cdr p)))))
- 
+
 
 ;;; To state the Church-Rosser property of the reduction relation, we
 ;;; reformulate the propery in terms of proofs: "for every proof there
@@ -102,8 +102,8 @@
 ;;; assumed to return this equivalente valley proof.
 
  (local (defun transform-to-valley (x) (declare (ignore x)) nil))
- 
- (defthm Chuch-Rosser-property                            
+
+ (defthm Chuch-Rosser-property
    (let ((valley (transform-to-valley p)))
      (implies (equiv-p x y p)
 	      (and (steps-valley valley)
@@ -113,14 +113,14 @@
 ;;; in terms of proofs: for every element in the set defined by q there
 ;;; is a proof connecting it to an irreducible element (where
 ;;; irreducible means here that there is no legal operator which can be
-;;; applied)   
+;;; applied)
 
  (local (defun proof-irreducible (x) (declare (ignore x)) nil))
- 
+
  (defthm normalizing
    (implies (q x)
 	    (let* ((p-x-y (proof-irreducible x))
-		   (y (last-of-proof x p-x-y))) 
+		   (y (last-of-proof x p-x-y)))
 	      (and (equiv-p x y p-x-y)
 		   (not (legal y op)))))))
 
@@ -134,25 +134,25 @@
 ;;; ----------------------------------------------------------------------------
 
 ;;; The following are two useful rewrite rules about the normalizing
-;;; property. 
+;;; property.
 
 (local
  (defthm normalizing-not-consp-proof-irreducible
    (implies (and (q x) (not (consp (proof-irreducible x))))
 	    (not (legal x op)))
    :hints (("Goal" :use normalizing))))
- 			       
+
 (local
  (defthm normalizing-consp-proof-irreducible
    (let ((p-x-y (proof-irreducible x)))
      (implies (and (q x) (consp p-x-y))
-	      (and (equiv-p x (elt2 (last-elt p-x-y)) p-x-y)   
+	      (and (equiv-p x (elt2 (last-elt p-x-y)) p-x-y)
 		   (not (legal (elt2 (last-elt p-x-y)) op)))))
    :hints (("Goal" :use normalizing))))
 
 
 ;;; Since equiv-p is "infected" (see subversive-recursions in the ACL2
-;;; manual), we have to specify the induction scheme by means of a rule.  
+;;; manual), we have to specify the induction scheme by means of a rule.
 
 ;;; Suggested by M. Kaufman
 
@@ -176,13 +176,13 @@
    (implies (and (equiv-p x y p) (consp p))
 	    (equal (elt1 (car p)) x))))
 
-(local 
+(local
  (defthm last-elt-of-equivalence
    (implies (and (equiv-p x y p) (consp p))
 	    (equal (elt2 (last-elt p)) y))))
 
 ;;; If x and y are related by equiv-p, then they are in the set defined
-;;; by q              
+;;; by q
 
 (local
  (defthm equiv-p-is-in-p-f-c
@@ -191,15 +191,15 @@
    :rule-classes :forward-chaining))
 
 ;;; ---------------------------------------------------------------------------
-;;; 1.2 equiv-p is an equivalence relation (the least containing the reduction)  
+;;; 1.2 equiv-p is an equivalence relation (the least containing the reduction)
 ;;; ---------------------------------------------------------------------------
 
 ;;; To be confident of the definition of equiv-p we show that equiv-p is
 ;;; the least equivalence relation (in the set defined by q) containing
-;;; reduction steps. 
+;;; reduction steps.
 
-;;; REMARK: To say it properly, we show that for the relation 
-;;; "exists p such that (equiv-p x y p)". 
+;;; REMARK: To say it properly, we show that for the relation
+;;; "exists p such that (equiv-p x y p)".
 
 ;;; REMARK: Note that in order to prove this property we do
 ;;; not need the properties confluence and normalizing: this is a
@@ -257,31 +257,31 @@
 
 
 ;;; 1.2.3. equiv-p is the least equivalence relation with the above
-;;; properties 
+;;; properties
 ;;; ································································
 
 ;;; Let us assume that we have a relation eqv of equivalence in the set
 ;;; defined by q, containing the reduction steps, and let us show that
 ;;; it contains equiv-p
 
-(encapsulate 
+(encapsulate
  ((eqv (t1 t2) boolean))
- 
+
  (local (defun eqv (t1 t2) (declare (ignore t1 t2)) t))
- 
+
  (defthm eqv-contains-reduction
    (implies (and (q x)
 		 (legal x op)
 		 (q (reduce-one-step x op)))
 	    (eqv x (reduce-one-step x op))))
- 
+
  (defthm eqv-reflexive
    (implies (q x) (eqv x x)))
- 
+
  (defthm eqv-symmetric
    (implies (and (q x) (eqv x y) (q y))
 	    (eqv y x)))
- 
+
  (defthm eqv-transitive
    (implies (and (q x) (q y) (q z) (eqv x y) (eqv y z))
             (eqv x z))))
@@ -298,7 +298,7 @@
 
 
 ;;; ----------------------------------------------------------------------------
-;;; 1.3 There are no equivalent and distinct normal forms  
+;;; 1.3 There are no equivalent and distinct normal forms
 ;;; ----------------------------------------------------------------------------
 
 ;;; Two lemmas
@@ -355,7 +355,7 @@
 
 
 ;;; No operator can be applied to (normal-form x) (it is an irreducible
-;;; element) 
+;;; element)
 
 (local
  (defthm irreducible-normal-form
@@ -363,7 +363,7 @@
 	    (not (legal (normal-form x) op)))))
 
 ;;; And (normal-form x) is equivalent to x (the proof is given by
-;;; proof-irreducible). 
+;;; proof-irreducible).
 (local
  (defthm equivalent-proof-n-f
    (implies (q x)
@@ -371,18 +371,18 @@
 
 
 ;;; And two useful rewrite rules, showing how normal-form is related to
-;;; proof-irreducible. 
+;;; proof-irreducible.
 
 (local
  (defthm proof-irreducible-atom-normal-form
    (implies (atom (proof-irreducible x))
 	    (equal (normal-form x) x))))
 
-(local 
+(local
  (defthm proof-irreducible-consp-normal-form
    (implies (consp (proof-irreducible x))
 	    (equal (elt2 (last-elt (proof-irreducible x))) (normal-form x)))))
- 
+
 
 ;;; We can disable normal-form (its fundamental properties are now
 ;;; rewrite rules):
@@ -391,7 +391,7 @@
 
 
 ;;; ----------------------------------------------------------------------------
-;;; 2.2  A decision algorithm for [<-reduce-one-step->]* 
+;;; 2.2  A decision algorithm for [<-reduce-one-step->]*
 ;;; ----------------------------------------------------------------------------
 
 ;;; We define a decision procedure for the equivalence closure of the
@@ -433,7 +433,7 @@
 	    (equal (last-elt (append p1 p2)) (last-elt p2)))))
 (local
  (defthm last-elt-inverse-proof
-   (implies (consp p) 
+   (implies (consp p)
 	    (equal (last-elt (inverse-proof p))
 		   (inverse-r-step (car p))))))
 
@@ -444,10 +444,10 @@
    :hints (("Goal" :use ((:instance
 			  first-element-of-equivalence
 			  (y (normal-form x)) (p (proof-irreducible
-						   x)))))))) 
+						   x))))))))
 
 ;;; The main lemma for completeness: the proof constructed is a proof
-;;; indeed. 
+;;; indeed.
 
 (local
  (defthm make-proof-between-normal-forms-indeed
@@ -459,7 +459,7 @@
 (local (in-theory (disable make-proof-between-normal-forms)))
 
 ;;; And the intended theorem:
-;;; COMPLETENESS 
+;;; COMPLETENESS
 
 (defthm r-equiv-complete
   (implies (equiv-p x y p)
@@ -469,7 +469,7 @@
 			 (x (normal-form x))
 			 (y (normal-form y))
 			 (p (make-proof-between-normal-forms x y p)))))))
-	   
+
 
 ;;; ············································································
 ;;; 2.2.1 Soundness
@@ -483,7 +483,7 @@
 
 (defun make-proof-common-n-f (x y)
    (append (proof-irreducible x) (inverse-proof (proof-irreducible y))))
- 
+
 ;;; And the intended theorem.
 ;;; SOUNDNESS
 
@@ -498,10 +498,10 @@
 		  (p (proof-irreducible y)))
 		 (:instance equivalent-proof-n-f
 			    (x y))))))
-  
-;;; REMARK: :use is needed due to a weird behaviour that sometimes 
-;;; ACL2 has with equalities in hypotesis. 
- 
+
+;;; REMARK: :use is needed due to a weird behaviour that sometimes
+;;; ACL2 has with equalities in hypotesis.
+
 
 
 

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -34,15 +34,11 @@
 
 (include-book "rtl") ;semantics of the basic RTL primitives
 
-(include-book "rtlarr") ;semantics RTL array primitives
-
 (include-book "bits") ;bit vectors
 
 (include-book "log") ;logical operations
 
 (include-book "float") ;floating-point numbers
-
-(include-book "reps") ;floating-point formats and representations
 
 (include-book "round") ;floating-point rounding
 
@@ -52,15 +48,9 @@
 ; Users may prefer to replace the (include-book "arith") below with:
 ; (include-book "../arithmetic/top")
 
-(include-book "mult")  ; integerp multiplier
-
 ;; (include-book "arith") ;general arithmetic package
 
-(include-book "bvecp-raw-helpers") 
-
-
-(include-book "simple-loop-helpers") 
-
+(include-book "bvecp-raw-helpers")
 
 (include-book "arith")
 

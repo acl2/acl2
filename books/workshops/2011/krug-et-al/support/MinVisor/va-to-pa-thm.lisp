@@ -34,7 +34,7 @@
    :hints (("Goal" :induct (ind-fn x y))))
  )
 
-(in-theory (disable of sf zf 
+(in-theory (disable of sf zf
                    subl-cf
                    create_nested_pt-exists-next-exitpoint
                    create_nested_pt-modify))
@@ -102,7 +102,7 @@
 
 (defthm |(paging-p (set-paging t s))|
   (paging-p (set-paging t s))
-  
+
    :hints (("Goal" :in-theory (enable paging-p
                                       set-paging
                                       get-bit-32
@@ -126,7 +126,7 @@
     :hints (("Goal" :use ((:instance logand-mask-shifted
                                      (n1 31)
                                      (n2 1)))))))
-                                     
+
 
  (local
   (defthm crock-300
@@ -141,7 +141,7 @@
                                      logand-constant-mask))
              :use ((:instance crock-300-1
                               (x (g :cr0 s))))))))
- 
+
  (defthm |(SET-PAGING NIL (CREATE_NESTED_PT-MODIFY S))|
    (implies (create_nested_pt-pre s)
             (equal (SET-PAGING NIL (CREATE_NESTED_PT-MODIFY S))
@@ -152,7 +152,7 @@
             :use ((:instance  |(g :cr0 (create_nested_pt-modify s))|))
             :do-not '(generalize eliminate-destructors)))
    :otf-flg t)
- )                                      
+ )
 
 
 
@@ -235,7 +235,7 @@
                           (equal (ASH ADDR -30) 1)
                           (equal (ASH ADDR -30) 2)
                           (equal (ASH ADDR -30) 3)))))
-                
+
 
 
 (defthm pasting-2b
@@ -262,7 +262,7 @@
   :hints (("Goal" :use ((:instance logand-mask-shifted
                                    (n1 21)
                                    (n2 9))))))
-  
+
 
 
 
@@ -365,7 +365,7 @@
                        (logand (mod x 2) (mod y 2)))))
     :rule-classes nil))
 
- (local 
+ (local
   (defun ind-fn-3 (x y z)
     (cond ((zip x)
            (+ y z))
@@ -475,7 +475,7 @@
                  (<= (MOD (ASH (R32 (+ 12 (G :ESP S0)) S0) -21)
                           512)
                      (MOD (ASH ADDR -21) 512))
-                 (EQUAL (LOGAND 4292870144 
+                 (EQUAL (LOGAND 4292870144
                                 (R32 (+ 12 (G :ESP S0)) S0))
                         (R32 (+ 12 (G :ESP S0)) S0)))
             (<= (R32 (+ 12 (G :ESP S0)) S0) ADDR))
@@ -490,7 +490,7 @@
                              (n1 21)
                              (n2 11)))))
    :otf-flg t)
-              
+
 
  (defthm helper-5
    (implies (and (n32p addr)
@@ -516,7 +516,7 @@
                                       (R32 (+ 16 (G :ESP S0)) S0)))))))
    :otf-flg t)
 
- 
+
  (defthm helper-6
    (implies (and (n32p addr)
                  (y86-p s0)
@@ -552,7 +552,7 @@
                                       (R32 (+ 16 (G :ESP S0)) S0))))
                   (:instance crock-101
                              (addr (R32 (+ 12 (G :ESP S0)) S0)))
-                    
+
                   (:instance logand-mask-shifted
                              (x (R32 (+ 12 (G :ESP S0)) S0))
                              (n1 21)
@@ -587,7 +587,7 @@
                                       (R32 (+ 16 (G :ESP S0)) S0))))
                   (:instance crock-101
                              (addr (R32 (+ 12 (G :ESP S0)) S0)))
-                    
+
                   (:instance logand-mask-shifted
                              (x (R32 (+ 12 (G :ESP S0)) S0))
                              (n1 21)
@@ -649,7 +649,7 @@
                                    |(r32 addr (create_nested_pt-modify s)) --- init_pdts --- 2|
                                    |(r32 addr (create_nested_pt-modify s)) --- sec_not_present|))
            :do-not '(generalize eliminate-destructors fertilize))
-          ("Subgoal 5" 
+          ("Subgoal 5"
            :use ((:instance |(r32 addr (create_nested_pt-modify s)) --- init_pdts --- 1|
                                         (j-prime (MOD (ASH ADDR -21) 512))
                                         (i-prime (ASH ADDR -30))
@@ -665,7 +665,7 @@
                                   (equal (ASH ADDR -30) 1)
                                   (equal (ASH ADDR -30) 2)
                                   (equal (ASH ADDR -30) 3)))
-          ("Subgoal 4" 
+          ("Subgoal 4"
            :use ((:instance |(r32 addr (create_nested_pt-modify s)) --- init_pdts --- 1|
                                         (j-prime (MOD (ASH ADDR -21) 512))
                                         (i-prime (ASH ADDR -30))
@@ -681,7 +681,7 @@
                                   (equal (ASH ADDR -30) 1)
                                   (equal (ASH ADDR -30) 2)
                                   (equal (ASH ADDR -30) 3)))
-          ("Subgoal 3" 
+          ("Subgoal 3"
            :use ((:instance |(r32 addr (create_nested_pt-modify s)) --- init_pdts --- 1|
                                         (j-prime (MOD (ASH ADDR -21) 512))
                                         (i-prime (ASH ADDR -30))
@@ -693,7 +693,7 @@
                  (:instance |(r32 addr (create_nested_pt-modify s)) --- sec_not_present|
                             (i-prime (MOD (ASH ADDR -21) 512))
                             (s s0))))
-          
+
           ("Subgoal 3.22" :cases ((equal (ASH (R32 (+ 12 (G :ESP S0)) S0) -30) 0)
                                   (equal (ASH (R32 (+ 12 (G :ESP S0)) S0) -30) 1)
                                   (equal (ASH (R32 (+ 12 (G :ESP S0)) S0) -30) 2)
@@ -704,7 +704,7 @@
                                   (equal (ASH (R32 (+ 12 (G :ESP S0)) S0) -30) 1)
                                   (equal (ASH (R32 (+ 12 (G :ESP S0)) S0) -30) 2)
                                   (equal (ASH (R32 (+ 12 (G :ESP S0)) S0) -30) 3)))
-          
+
           ("Subgoal 3.16" :cases ((equal (ASH (R32 (+ 12 (G :ESP S0)) S0) -30)
                                          (ASH ADDR -30))))
           ("Subgoal 3.15" :cases ((equal (ASH (R32 (+ 12 (G :ESP S0)) S0) -30)
@@ -725,7 +725,7 @@
                                   (equal (ASH ADDR -30) 1)
                                   (equal (ASH ADDR -30) 2)
                                   (equal (ASH ADDR -30) 3)))
-          ("Subgoal 2" 
+          ("Subgoal 2"
            :use ((:instance |(r32 addr (create_nested_pt-modify s)) --- init_pdts --- 1|
                                         (j-prime (MOD (ASH ADDR -21) 512))
                                         (i-prime (ASH ADDR -30))
@@ -737,7 +737,7 @@
                  (:instance |(r32 addr (create_nested_pt-modify s)) --- sec_not_present|
                             (i-prime (MOD (ASH ADDR -21) 512))
                             (s s0))))
-          ("Subgoal 1" 
+          ("Subgoal 1"
            :use ((:instance |(r32 addr (create_nested_pt-modify s)) --- init_pdts --- 1|
                                         (j-prime (MOD (ASH ADDR -21) 512))
                                         (i-prime (ASH ADDR -30))

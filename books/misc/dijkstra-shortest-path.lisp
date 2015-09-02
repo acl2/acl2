@@ -61,7 +61,7 @@
 	(t (and (memp (car s1) s2)
 		(my-subsetp (cdr s1) s2)))))
 
-(defun infinitep (x) (null x)) 
+(defun infinitep (x) (null x))
 
 (defun lt (x y)
   (cond ((infinitep x) nil)
@@ -211,7 +211,7 @@
 			     (confinedp path fs))
 			(shorterp p path g))))
 
-  
+
 (defun-sk shortest-pathp (a b p g)
   (forall path (implies (pathp-from-to path a b g)
 			(shorterp p path g))))
@@ -361,10 +361,10 @@
                 (nodep v g))
            (equal (path v (reassign u v-lst pt g))
                   (path v pt)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable path edge-len neighbors pathp
                                shortest-pathp))
-          ("Subgoal *1/2" 
+          ("Subgoal *1/2"
            :use ((:instance path-len-implies-not-nil)
                                 (:instance pathp-from-to-corollary
                                            (p (path u pt)) (b u))
@@ -385,7 +385,7 @@
                 (graphp g)
 		(memp v fs))
 	   (equal (path v (reassign u (neighbors u g) pt g))
-		  (path v pt)))		  
+		  (path v pt)))
   :hints (("Goal" :in-theory (disable neighbors path shortest-pathp))))
 
 (defthm fs-propertyp-choose-next-lemma1 ; [Custom]
@@ -559,15 +559,15 @@
           (:instance
            shorterp-by-partial-and-choose-next
            (u (choose-next ts pt g))
-           (path (find-partial-path 
-                  (shortest-pathp-witness a 
+           (path (find-partial-path
+                  (shortest-pathp-witness a
                                           (choose-next ts pt g)
                                           (path (choose-next ts pt g) pt)
                                           g)
                   (comp-set ts (all-nodes g))))
-           (v (car (last (find-partial-path 
+           (v (car (last (find-partial-path
                           (shortest-pathp-witness a (choose-next ts pt g)
-                                                  (path (choose-next ts pt g) 
+                                                  (path (choose-next ts pt g)
                                                         pt)
                                                   g)
                           (comp-set ts (all-nodes g)))))))))))
@@ -671,7 +671,7 @@
 			    (ss (comp-set ts (all-nodes g)))
 			    (pt (reassign (choose-next ts pt g)
 					  (neighbors (choose-next ts pt g) g)
-					  pt g)))))))                 
+					  pt g)))))))
 ;=====================================================================
 (defthm neighbor-implies-edge-len
   (implies (and (graphp g)
@@ -703,10 +703,10 @@
            (shorterp (path v (reassign u v-lst pt g))
                     (append (path u pt) (list v)) g))
   :hints (("Goal" :in-theory (disable edge-len path pathp-from-to-path-1))
-          ("Subgoal *1/3" 
+          ("Subgoal *1/3"
            :use ((:instance pathp-from-to-corollary
                             (p (path u pt)) (b u))))))
-           
+
 (defun find-last-next-path (p)
   (if (or (endp p) (endp (cdr p))) nil
     (cons (car p) (find-last-next-path (cdr p)))))
@@ -725,7 +725,7 @@
   (implies (pt-propertyp a pt g)
            (shorterp (path v (reassign u v-lst pt g))
                     (path v pt) g))
-  :hints (("Goal" :in-theory (disable path edge-len neighbors))))                          
+  :hints (("Goal" :in-theory (disable path edge-len neighbors))))
 
 (defthm true-listp-path ; [Custom]
   (implies (pt-propertyp a pt g)
@@ -767,11 +767,11 @@
            (<= 2 (len p)))
   :rule-classes :linear)
 
-(defthm pathp-find-last-next 
+(defthm pathp-find-last-next
   (implies (and (pathp p g)
 		(<= 2 (len p)))
 	   (and (pathp (find-last-next-path p) g)
-		(memp (car (last p)) 
+		(memp (car (last p))
 		     (neighbors (car (last (find-last-next-path p))) g))))
   :hints (("Goal" :in-theory (disable neighbors))))
 
@@ -788,7 +788,7 @@
                 (pathp-from-to (find-last-next-path p) a (last-node p) g)
 		(memp (last-node p) fs)))
   :hints (("Goal" :in-theory (disable pathp neighbors))))
-		       
+
 (defthm path-len-implies-pathp
   (implies (and (path-len p g)
                 (true-listp p))
@@ -826,7 +826,7 @@
 		(pathp-from-to p a v g)
 		(not (equal a v))
 		(shortest-pathp a (last-node p) (path (last-node p) pt) g))
-	   (shorterp (append (path (last-node p) pt) (list v)) 
+	   (shorterp (append (path (last-node p) pt) (list v))
 		    (append (find-last-next-path p) (list v)) g))
   :hints (("Goal" :in-theory (disable shortest-pathp shorterp path pathp)
 	   :use ((:instance shorterp-and-pathp-implies-pathp
@@ -888,7 +888,7 @@
 	   (shorterp (path v (reassign u (neighbors u g) pt g)) p g))
   :hints (("Goal"
 	   :cases ((equal (last-node p) u)))
-	  ("Subgoal 2" :in-theory (disable path neighbors shortest-confined-pathp 
+	  ("Subgoal 2" :in-theory (disable path neighbors shortest-confined-pathp
 					   shorterp shortest-pathp memp-not-car-implies-memp
 					   fs-propertyp-memp pathp-from-to last-node)
 	   :use ((:instance shorterp-trans
@@ -1019,11 +1019,11 @@
 		(shortest-pathp a u (path u pt) g)
 		(pt-propertyp a pt g))
 	   (shortest-confined-pathp a v (path v (reassign u (neighbors u g)
-							 pt g)) 
+							 pt g))
 				   (cons u fs) g))
   :hints (("Goal" :in-theory (disable reassign path neighbors shortest-pathp shortest-confined-pathp)
 	   :expand ((shortest-confined-pathp a v (path v (reassign u (neighbors u g)
-							 pt g)) 
+							 pt g))
 					    (cons u fs) g))
 	   :use ((:instance ts-propertyp-lemma2-3
 			   (p (SHORTEST-CONFINED-PATHP-WITNESS A V
@@ -1045,7 +1045,7 @@
   (implies (and (pt-propertyp a pt g)
                 (confinedp (path v pt) fs)
                 (confinedp (path u pt) fs))
-	   (confinedp (path v (reassign u v-lst pt g)) 
+	   (confinedp (path v (reassign u v-lst pt g))
 			      (cons u fs)))
   :hints (("Goal" :in-theory (disable path))))
 
@@ -1072,12 +1072,12 @@
 						 G))))
 (defthm shortest-confined-pathp-subset
   (implies (and (shortest-confined-pathp a u p fs g)
-                (my-subsetp s fs))		
+                (my-subsetp s fs))
 	   (shortest-confined-pathp a u p s g))
   :hints (("Goal" :in-theory (disable shortest-confined-pathp shorterp)
 	   :expand ((shortest-confined-pathp a u p s g))
 	   :use ((:instance ts-propertyp-prop-lemma2
-			    (b u) 
+			    (b u)
 			    (path (shortest-confined-pathp-witness a u p s g)))))))
 
 (defthm ts-propertyp-lemma1 ; [Custom]
@@ -1130,7 +1130,7 @@
   (implies (my-subsetp ts s)
 	   (my-subsetp (del u ts) s)))
 
-(defthm del-true-listp 
+(defthm del-true-listp
   (implies (true-listp ts)
 	   (true-listp (del u ts))))
 
@@ -1145,7 +1145,7 @@
 		(equal (path a pt) (list a)))
 	   (equal (path a (reassign u v-lst pt g))
 		  (list a)))
-  :hints (("Goal" :in-theory (disable path)))) 
+  :hints (("Goal" :in-theory (disable path))))
 
 (defthm invp-last-lemma ; [Custom]
   (implies (and (invp ts pt g a)
@@ -1176,7 +1176,7 @@
 (defthm main-lemma1 ; [Custom]
   (implies (and (invp nil pt g a)
 		(nodep b g))
-	   (shortest-pathp a b (path b pt) g))	
+	   (shortest-pathp a b (path b pt) g))
   :hints (("Goal" :in-theory (disable path shortest-pathp))))
 
 (defthm main-lemma2 ; [Custom]

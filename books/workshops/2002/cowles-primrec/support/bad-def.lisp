@@ -26,8 +26,8 @@
 ;  Modified May 2002 by Robert Krug to account for v2-7 changes.  See also
 ;    bad-def1.lisp for an alternate version.
 #|
-This is an example, due Manolious and Moore, showing there is NO 
-ACL2 function g that satisfies the recursive equation 
+This is an example, due Manolious and Moore, showing there is NO
+ACL2 function g that satisfies the recursive equation
 
  (equal (g n)
         (if (equal n 0)
@@ -37,7 +37,7 @@ ACL2 function g that satisfies the recursive equation
 The proof is by contradiction: Adding the above equation as an axiom
 allows the proof of NIL, which is ACL2's version of FALSE.
 
-This proof follows the outline of such a proof given by Manolious 
+This proof follows the outline of such a proof given by Manolious
 and Moore.
 |#
 

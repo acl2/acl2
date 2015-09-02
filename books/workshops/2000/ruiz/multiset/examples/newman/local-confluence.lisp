@@ -76,7 +76,7 @@
 		 (string (car symbols)) lemma-name)
 		 (car symbols))
 	   (pkg-functional-instance-pairs lemma-name (cdr symbols))))))
-                 
+
 (local
  (defun pkg-functional-instance
    (id lemma-name variable-symbols function-symbols)
@@ -97,22 +97,22 @@
 ;;; in the following way:
 
 ;;; (pkg-functional-instance id lemma-name variable-symbols
-;;;                          function-symbols) 
+;;;                          function-symbols)
 
 ;;; where:
 
-;;; id:               is always the variable acl2::id 
+;;; id:               is always the variable acl2::id
 ;;; lemma-name:       the name of the lemma to be instantiated
-;;;                   (including the package). 
-;;; variable-symbols: the list of symbol names of variables to be 
+;;;                   (including the package).
+;;; variable-symbols: the list of symbol names of variables to be
 ;;;                   instantiated.
 ;;; function-symbols: the list of symbol names of functions to be
-;;;                   instantiated. 
+;;;                   instantiated.
 
 ;;; The computed hint is the functional instantiation of the lemma-name,
 ;;; relating each variable name and function name (of the package where
 ;;; the lemma has been proved) to the same symbol name in the current
-;;; package.  
+;;; package.
 
 
 ;;; ============================================================================
@@ -124,8 +124,8 @@
 ;;; since we have to compute normal forms and the function
 ;;; proof-irreducible, we have to assume the existence of a reducibility
 ;;; test given by a function reducible with the following properties for
-;;; every element x:  
-;;; 1) When reducible returns non-nil, it returns a legal operator for x.  
+;;; every element x:
+;;; 1) When reducible returns non-nil, it returns a legal operator for x.
 ;;; 2) When reducible returns nil, there are no legal operators for x.
 ;;; See newman.lisp and confluence-v0.lisp for more details.
 
@@ -134,14 +134,14 @@
 ;;; reduction relation defined later)
 ;;; .....................................................................
 
-(encapsulate 
+(encapsulate
  ((rel (x y) booleanp)
   (fn (x) e0-ordinalp))
 
 
  (local (defun rel (x y) (declare (ignore x y)) nil))
  (local (defun fn (x) (declare (ignore x)) 1))
- 
+
  (defthm rel-well-founded-relation-on-mp
    ;; modified for v2-8 ordinals changes
    (and
@@ -150,7 +150,7 @@
 	     (o< (fn x) (fn y))))
    :rule-classes (:well-founded-relation
 		  :rewrite))
- 
+
  (defthm rel-transitive
    (implies (and (rel x y) (rel y z))
 	    (rel x z))))
@@ -162,7 +162,7 @@
 ;;; ·····················································
 
 
-(encapsulate 
+(encapsulate
  ((legal (x u) boolean)
   (reduce-one-step (x u) element)
   (reducible (x) boolean)
@@ -173,11 +173,11 @@
  (local (defun reducible (x) (declare (ignore x)) nil))
  (local (defun transform-local-peak (x) (declare (ignore x)) nil))
 
- 
+
  (defthm legal-reducible-1
    (implies (reducible x) (legal x (reducible x))))
- 
- (defthm legal-reducible-2 
+
+ (defthm legal-reducible-2
    (implies (not (reducible x)) (not (legal x u))))
 
  (defun proof-step-p (s)
@@ -189,8 +189,8 @@
 				    elt2)))
 	  (implies (not direct) (and (legal elt2 operator)
 				   (equal (reduce-one-step elt2 operator)
-					  elt1))))))	
-   
+					  elt1))))))
+
  (defun equiv-p (x y p)
    (if (endp p)
        (equal x y)
@@ -209,7 +209,7 @@
      (implies (and (equiv-p x y p) (local-peak-p p))
               (and (steps-valley valley)
 		   (equiv-p x y valley)))))
- 
+
  (defthm noetherian
    (implies (legal x u) (rel (reduce-one-step x u) x))))
 
@@ -232,7 +232,7 @@
 ;(acl2::defmul-components rel)
 ;The list of components is:
 ; (REL REL-WELL-FOUNDED-RELATION-ON-MP T FN X Y)
-(local 
+(local
  (acl2::defmul (REL REL-WELL-FOUNDED-RELATION-ON-MP T FN X Y)))
 
 
@@ -247,7 +247,7 @@
 	   (direct (cadr p)))
 	  (and (proof-step-p (car p))
 	       (proof-step-p (cadr p))
-	       (equal (elt2 (car p)) (elt1 (cadr p)))))    
+	       (equal (elt2 (car p)) (elt1 (cadr p)))))
 	 (t (exists-local-peak (cdr p))))))
 
 (local
@@ -257,7 +257,7 @@
 	  (append (transform-local-peak (list (car p) (cadr p)))
 		  (cddr p)))
 	 (t (cons (car p) (replace-local-peak (cdr p)))))))
- 
+
 
 ;;; transform-to-valley terminates
 ;;; ······························
@@ -265,7 +265,7 @@
 ;;; By functional instantiation of the same result in newman.lisp
 
 (local
- (defthm transform-to-valley-admission 
+ (defthm transform-to-valley-admission
    (implies (exists-local-peak p)
 	    (mul-rel (proof-measure (replace-local-peak p))
 		     (proof-measure p)))
@@ -273,7 +273,7 @@
    :rule-classes nil
    :hints ((pkg-functional-instance
 	    acl2::id
-	    'nwm::transform-to-valley-admission 
+	    'nwm::transform-to-valley-admission
 	    '(p) '(fn legal forall-exists-rel-bigger reduce-one-step
 		      proof-step-p equiv-p rel mul-rel
 		      exists-local-peak replace-local-peak
@@ -291,11 +291,11 @@
 		   :well-founded-relation mul-rel
 		   :hints (("Goal" :use
 			    (:instance transform-to-valley-admission)))))
-   
+
   (if (not (exists-local-peak p))
       p
     (transform-to-valley (replace-local-peak p)))))
- 
+
 
 ;;; Properties of transform-to-valley: the Church-Rosser property
 ;;; ·····························································
@@ -311,7 +311,7 @@
 	    acl2::id
 	    'nwm::equiv-p-x-y-transform-to-valley
 	    '(p x y)
-	    '(fn transform-to-valley reduce-one-step legal 
+	    '(fn transform-to-valley reduce-one-step legal
 		 proof-step-p equiv-p rel exists-local-peak
 		 replace-local-peak transform-local-peak)))))
 
@@ -323,7 +323,7 @@
 	    acl2::id
 	    'nwm::valley-transform-to-valley
 	    '(p x y)
-	    '(fn transform-to-valley reduce-one-step legal 
+	    '(fn transform-to-valley reduce-one-step legal
 		 proof-step-p equiv-p rel exists-local-peak
 		 replace-local-peak transform-local-peak)))))
 
@@ -335,7 +335,7 @@
 
 ;;; To instantiate the results in confluence.lisp, we have to define a
 ;;; function proof-irreducible and prove the properties assumed there as
-;;; axioms. 
+;;; axioms.
 
 ;;; Definition of proof-irreducible
 ;;; ·······························
@@ -407,7 +407,7 @@
 ;;; ·······················································
 
 ;;; REMARK: normal-form-aux is analogue NWM::normal-form, but
-;;; normal-form is more eficcient. The same for r-equiv. 
+;;; normal-form is more eficcient. The same for r-equiv.
 
 (local
  (defun normal-form-aux (x) (last-of-proof x (proof-irreducible x))))
@@ -455,7 +455,7 @@
 ;;; Skolem function
 (defun make-proof-common-n-f (x y)
    (append (proof-irreducible x) (inverse-proof (proof-irreducible y))))
- 
+
 
 (defthm r-equivalent-sound
   (implies (r-equivalent x y)

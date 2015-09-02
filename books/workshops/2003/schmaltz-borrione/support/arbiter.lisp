@@ -35,10 +35,10 @@
 ; request or 0
 
 (defun stage_P (L)
-  (cond ((endp L) 0) 
+  (cond ((endp L) 0)
 	((no_requestp_matrix L) 0)
 	((not (no_requestp (car L))) 0)
-	(t 
+	(t
 	 (+ 1 (stage_P (cdr L))))))
 
 ; ACL2 finds that the result is a positive integer
@@ -124,7 +124,7 @@
 ; round_robin returns an integer if its inputs are integers
 
 (defthm integerp_round_robin
-  (implies (integerp Last_Granted) ;(<= 0 Last_Granted)) 
+  (implies (integerp Last_Granted) ;(<= 0 Last_Granted))
 	   (integerp (round_robin RLINE Last_Granted))))
 ; Prove 0.01
 
@@ -143,7 +143,7 @@
 
 ; we prove that round_robin returns an integer less than the length of RLINE
 
-; if the last part of the list L containing at least one request 
+; if the last part of the list L containing at least one request
 ; contains no request, then the first part of the list contains at least one
 ; request
 
@@ -155,10 +155,10 @@
 
 ;(defthm round_robin_<_N_case_1
 ;  (implies (and (no_requestp RLINE) (equal (len RLINE) N) (consp RLINE))
-;           (< (round_robin RLINE Last_Granted) N))) 
+;           (< (round_robin RLINE Last_Granted) N)))
 
 (defthm lemma1_case_2
-  (implies (and (not (no_requestp (firstn n L))) 
+  (implies (and (not (no_requestp (firstn n L)))
                 (list_of_1_and_0 (firstn n L)))
            (<= (find_next_1 (firstn n L)) (len (firstn n L))))
   :hints (("GOAL" :use (:instance find_next_1_<_len_L (L (firstn n L)))
@@ -198,18 +198,18 @@
 ; Prove 0.05
 
 (defthm lemma1_case_3
-  (implies (and (not (no_requestp (lastn n L))) 
+  (implies (and (not (no_requestp (lastn n L)))
                 (list_of_1_and_0 (lastn n L)))
            (< (find_next_1 (lastn n L)) (len (lastn n L))))
   :hints (("GOAL" :use (:instance find_next_1_<_len_L (L (lastn n L)))
-                  :in-theory (disable find_next_1_<_len_L)))) 
+                  :in-theory (disable find_next_1_<_len_L))))
 ; subsume but useful
 ; Prove 0.01
 
 ;(defthm lemma2_case_3
 ;  (implies (and (integerp n) (< 0 n) (< n (len L)) (consp L))
 ;           (<= (len (lastn n L)) (- (len L) n)))) ; USELESS
-                               
+
 ;(defthm lemma3_case_3
 ;  (implies (and (< a b) (<= b c))
 ;           (< a c))
@@ -250,9 +250,9 @@
                   :do-not-induct t
                   :in-theory (disable lemma5_case_3))))
 ; Prove 0.06
-                
+
 (defthm list_REQ_=>_list_last
-  (implies (and (list_of_1_and_0 L) (consp L) 
+  (implies (and (list_of_1_and_0 L) (consp L)
                 (integerp n) (< 0 n) (< n (len L)))
            (list_of_1_and_0 (lastn n L)))
   :hints (("GOAL" :in-theory (enable lastn))))
@@ -280,7 +280,7 @@
 ; No_Deadlock
 
 (defthm find_not_equal_last_granted
-  (implies (and (not (equal last_granted i)) (equal (nth i L) 1) 
+  (implies (and (not (equal last_granted i)) (equal (nth i L) 1)
                 (< i last_granted)
                 (integerp last_granted) (integerp i) (<= 0 i))
            (not (equal (find_next_1 L) last_granted)))
@@ -289,16 +289,16 @@
 ; Prove 0.24
 
 (defthm lemma1_no_deadlock
-  (implies (and (integerp last_granted) 
-                (integerp i) 
+  (implies (and (integerp last_granted)
+                (integerp i)
                 (equal (nth last_granted RLINE) 1)
-                (equal (nth i RLINE) 1) 
-                (list_of_1_and_0 RLINE) 
-                (<= 0 i) 
+                (equal (nth i RLINE) 1)
+                (list_of_1_and_0 RLINE)
+                (<= 0 i)
                 (< i (1+ last_granted))
                 (not (equal last_granted i)))
            (not (equal (round_robin RLINE Last_Granted) Last_Granted)))
-  :hints (("GOAL" :use (:instance find_not_equal_last_granted 
+  :hints (("GOAL" :use (:instance find_not_equal_last_granted
                                   (L (firstn (1+ Last_Granted) RLINE)))
                    :in-theory (disable find_not_equal_last_granted firstn)))
   :rule-classes ((:rewrite :match-free :all)))
@@ -314,7 +314,7 @@
 ; Prove 0.32
 
 (defthm no_deadlock
-  (implies (and (integerp i) (<= 0 i) 
+  (implies (and (integerp i) (<= 0 i)
                 (equal (nth Last_Granted RLINE) 1) (list_of_1_and_0 RLINE)
                 (not (equal Last_granted i)))
            (implies (equal (nth i RLINE) 1)
@@ -338,7 +338,7 @@
 ; computation of the number of the new granted master
 
 (defun master_num (MREQ N Last_Granted)
-  (+ (* (stage_P MREQ) N) 
+  (+ (* (stage_P MREQ) N)
      (round_robin (nth (stage_P MREQ) MREQ) Last_Granted)))
 
 ; type-prescription: acl2-numberp
@@ -357,7 +357,7 @@
 ; Prove 0.00
 
 (defthm integerp_master_num
-  (implies (and (integerp N) 
+  (implies (and (integerp N)
 		(integerp last_granted))
 	   (integerp (master_num MREQ N last_granted))))
 ; Prove 0.04
@@ -377,13 +377,13 @@
 ;the default_master (number 0) is chosen when necessary
 
 (defthm default_master_master_num
-  (implies (no_requestp_matrix MREQ)     
+  (implies (no_requestp_matrix MREQ)
 	   (equal (master_num MREQ N Last_Granted) 0))
   :hints (("GOAL" :in-theory (enable stage_P round_robin))))
 ; Prove 0.24
 
 ; the computed number is strictly less than the number of masters
-; number of masters = N * P 
+; number of masters = N * P
 
 
 (defthm len_nth_uni_list
@@ -396,24 +396,24 @@
 ; Prove 0.35
 
 (defthm master_num_<_P*N
-  (implies (and ;(< 0 (stage_p MREQ)) 
-		(integerp N) (< 0 N) 
+  (implies (and ;(< 0 (stage_p MREQ))
+		(integerp N) (< 0 N)
                 (integerp Last_Granted) (<= 0 Last_Granted)
 		(integerp P) (equal P (len MREQ))
 		(equal (len (car MREQ)) N)
-		(consp MREQ) 
-                (not (no_requestp_matrix MREQ)) 
-                (uniform_listp MREQ) 
+		(consp MREQ)
+                (not (no_requestp_matrix MREQ))
+                (uniform_listp MREQ)
                 (consp (cdr MREQ))
                 (< (1+ Last_Granted) N)
                 (list_of_1_and_0 (nth (stage_P MREQ) MREQ))
 		)
 	   (< (master_num MREQ N Last_Granted) (* P N)))
-  :hints (("GOAL" :use ((:instance stage_P_<_len_L (L MREQ))		   
+  :hints (("GOAL" :use ((:instance stage_P_<_len_L (L MREQ))
                         (:instance round_robin_<=N-1
                                   (RLINE (nth (stage_P MREQ) MREQ))))
-	          :in-theory (e/d () 
-                                  (COMMUTATIVITY-OF-* COMMUTATIVITY-OF-+ 
+	          :in-theory (e/d ()
+                                  (COMMUTATIVITY-OF-* COMMUTATIVITY-OF-+
 				      uniform_listp no_requestp_matrix
                                       stage_P_<_len_L
                                       firstn nth
@@ -462,19 +462,19 @@
 ; The bit at 1 is the desired one
 
 (defthm nth_arbiter_=_1
-  (implies (and (integerp N) (< 0 N) 
+  (implies (and (integerp N) (< 0 N)
 		(integerp Last_Granted) (<= 0 Last_granted)
-                (integerp P) 
+                (integerp P)
 		(equal P (len MREQ))
 		(equal (len (car MREQ)) N)
-                (not (no_requestp_matrix MREQ)) 
+                (not (no_requestp_matrix MREQ))
                 (uniform_listp MREQ)
                 (< (1+ Last_granted) N)
                 (consp MREQ)
                 (consp (cdr MREQ))
                 (list_of_1_and_0 (nth (stage_P MREQ) MREQ))
 		)
-	   (equal (nth (master_num MREQ N Last_granted) 
+	   (equal (nth (master_num MREQ N Last_granted)
                        (arbiter N P MREQ Last_granted)) 1))
   :hints (("GOAL" :use (:instance master_num_<_P*N)
                   :do-not-induct t
@@ -486,7 +486,7 @@
 ; we prove the mutual exlusion, i.e. all other bits are 0
 
 (defthm nth_arbiter_=_0
-  (implies (and (integerp N) 
+  (implies (and (integerp N)
 		(equal P (len MREQ))
                 (integerp i) (<= 0 i) (< i (* P N))
                 (not (equal i (master_num MREQ N last_Granted)))

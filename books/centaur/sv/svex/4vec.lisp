@@ -1269,7 +1269,7 @@ unfloat then/else values."
     (4vec ;; upper is set if then and else are true, or if either is Z or X -- meaning,
      ;; if they're not both false.
      (logior then.upper else.upper then.lower else.lower)
-     ;; lower is set if then and else are true, otherwise not -- 
+     ;; lower is set if then and else are true, otherwise not --
      (logand then.upper else.upper then.lower else.lower)))
 
   ///
@@ -1622,3 +1622,73 @@ to an offset into @('(rev-blocks nbits blocksz x)')."
   (deffixequiv 4vec-clog2
     :args ((a 2vecnatx))
     :hints(("Goal" :in-theory (enable 2vecnatx-fix)))))
+
+;;ANNA: Converting 4vec-p / 4veclist-p to string(s) of 0s, 1s, Xs, and Zs
+;;MSB first
+
+(define 4v-to-characterp 
+  ((upper booleanp)
+   (lower booleanp))
+  :returns (c characterp)
+  (if (equal upper lower)
+      (if upper #\1 #\0)
+    (if (and upper (not lower))
+        #\x
+      #\z))
+  )
+
+(define 4vec-p-to-stringp-aux
+  ((x.upper integerp)
+   (x.lower integerp)
+   (i natp)
+   (ac character-listp)
+   )
+  (if (zp i)
+      (coerce (reverse ac) 'string)
+    (4vec-p-to-stringp-aux
+      x.upper
+      x.lower
+      (1- i)
+      (cons
+       (4v-to-characterp
+        (logbitp (1- i) x.upper)
+        (logbitp (1- i) x.lower))
+       ac)))
+  )
+                 
+(define 4vec-p-to-stringp
+  ((x 4vec-p))
+  :short "Converts 4vec-p into string of 0,1,x,z's msb-first"
+  :returns (x-string stringp)
+  :prepwork ((local
+              (defthm character-listp-of-explode-nonnegative-integer
+                (implies
+                 (and 
+                  (integerp x)
+                  (<= 0 x)
+                  (character-listp ans))
+                 (character-listp (explode-nonnegative-integer x base ans)))
+                :hints (("goal" 
+                         :in-theory (enable explode-nonnegative-integer) ))
+                )))
+  :guard-hints (("goal" :in-theory (e/d (4vec-p)(floor) )))
+  (if (integerp x)
+      (coerce (explode-atom x 2) 'string)
+    (4vec-p-to-stringp-aux 
+     (car x) (cdr x) 
+     (max (integer-length (car x))
+          (integer-length (cdr x)))
+     nil))
+  )
+
+(define 4veclist-p-to-stringp
+  ((x 4veclist-p))
+  :short  "Converts 4veclist-p into list of strings of 0,1,x,z's msb-first"
+  :returns (x-string-list string-listp)
+  (if (atom x)
+      nil
+    (cons
+     (4vec-p-to-stringp (car x))
+     (4veclist-p-to-stringp (cdr x))))
+  )
+

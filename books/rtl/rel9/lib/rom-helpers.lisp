@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -57,7 +57,7 @@
 (defthm check-array-lemma
     (implies (and (bvecp i n)
 		  (not (zp (expt 2 n)))
-		  (check-array name a (expt 2 n) dim2))		  
+		  (check-array name a (expt 2 n) dim2))
 	     (bvecp (aref1 name a i) dim2))
   :rule-classes ())
 

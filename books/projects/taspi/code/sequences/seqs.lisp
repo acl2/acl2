@@ -31,7 +31,7 @@
 ; ":Doc-Section TASPI
 ;  Recognizes a set of sequences as structurally well-formed~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;    (1) x - a set of potential sequences
 
 ;  "
@@ -63,7 +63,7 @@
 ; ":Doc-Section TASPI
 ;  Recognizes a set of sequences as structurally well-formed and of equal length~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;     (1) x - a set of potential sequences
 
 ; "
@@ -83,10 +83,10 @@
 ; ":Doc-Section TASPI
 ;  Returns the taxa-list implied by a set of sequences~/
 ;  ~/
-;  Arguments: 
+;  Arguments:
 ;     (1) x - a valid set of sequences
 
-; " 
+; "
   (declare (xargs :guard (valid-sequences x)))
   (strip-cars-gen x))
 
@@ -104,17 +104,17 @@
 ; ":Doc-Section TASPI
 ;  Determines if a tree is made up of taxa for which sequences are available~/
 ;  ~/
-;  Arguments: 
-;     (1) flg - non-nil for a single tree, nil for a set of trees        
-;     (2) x - a tree                                                     
-;     (3) sequences - a set of sequences                                 
+;  Arguments:
+;     (1) flg - non-nil for a single tree, nil for a set of trees
+;     (2) x - a tree
+;     (3) sequences - a set of sequences
 
-;  Details: Does not care if x is a valid tree, but sequences must be 
+;  Details: Does not care if x is a valid tree, but sequences must be
 ;           well-formed."
   (declare (xargs :guard (valid-sequences sequences)
                   :measure (tree-measure x flg)))
   (if flg
-      (if (atom x) 
+      (if (atom x)
           (het x sequences)
         (tree-matches-sequences nil x sequences))
     (if (atom x)
@@ -137,7 +137,7 @@
 (defthm valid-sequences-same-length-assoc-hqual
   (implies (and (valid-sequences-same-length sequences)
                 (assoc-hqual x sequences))
-           (and 
+           (and
             (valid-seq (cdr (assoc-hqual x sequences)))
             (equal (len (cdr (assoc-hqual x sequences)))
                    (len (cdar sequences))))))

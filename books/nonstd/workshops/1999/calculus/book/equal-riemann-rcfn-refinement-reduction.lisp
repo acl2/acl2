@@ -219,7 +219,7 @@
            (equal (riemann-rcfn-refinement p1 p2)
                   (riemann-rcfn p2)))
   :hints (("Goal" :in-theory
-           (disable 
+           (disable
             riemann-rcfn-refinement riemann-rcfn member
             riemann-rcfn-refinement-cdr-2)
            :use

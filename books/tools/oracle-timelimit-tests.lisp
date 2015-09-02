@@ -101,7 +101,7 @@
 ;; But calling this directly produces a crazy error:
 (oracle-timelimit 1/10 (sleep 3) :onfail 99)
 
-HARD ACL2 ERROR in GETPROP:  No property was found under symbol 
+HARD ACL2 ERROR in GETPROP:  No property was found under symbol
 COMMAND-LANDMARK for key GLOBAL-VALUE.  GLOBAL-VAL didn't find a value.
 Initialize this symbol in PRIMORDIAL-WORLD-GLOBALS.
 
@@ -124,7 +124,7 @@ BOZO what is going on here?
 
 ;; Using it in a Make-event also produces the same crazy error.  After
 ;; adding tons of debugging output, the core exec function really is
-;; 
+;;
 (make-event
  (b* (((mv time bytes ans state) (oracle-timelimit 1/10
                                                    (prog2$ (sleep 3) 17)
@@ -230,3 +230,182 @@ BOZO what is going on here?
     (value '(value-triple :success))))
 
 ||#
+
+
+
+; Test of a form that should cause an error.  This might not cause an error on
+; all Lisps and may need some conditionals...
+(defun test5 (state)
+  (declare (xargs :mode :program))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (car 3)
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ (let ((state (test5 state)))
+   (value '(value-triple :success))))
+
+(defun test6 (state)
+  (declare (xargs :mode :program))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (ash 1 (ash 1 10000))
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ (let ((state (test6 state)))
+   (value '(value-triple :success))))
+
+
+
+(defun stack-overflow (x)
+  (declare (xargs :mode :program))
+  (if (atom x)
+      nil
+    (append x
+            (stack-overflow x))))
+
+(defun test7 (state)
+  (declare (xargs :mode :program))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (stack-overflow '(3))
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ (let ((state (test7 state)))
+   (value '(value-triple :success))))
+
+
+
+
+(defun test8 (state)
+  (declare (xargs :mode :program))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (er hard? 'test8 "causing an acl2-style ER")
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ (let ((state (test8 state)))
+   (value '(value-triple :success))))
+
+
+(defun test9 (x state)
+  (declare (xargs :mode :logic :verify-guards nil))
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (car x) ;; guard violation
+                          :onfail 99
+                          :suppress-lisp-errors t))
+       ((when time)
+        (er hard? 'oracle-timelimit "Expected no time for simulated error, but got ~x0" time)
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
+        state)
+       ((unless (equal ans 99))
+        (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
+        state))
+    state))
+
+(make-event
+ ;; BOZO too bad this doesn't explain what the error was.
+ (let ((state
+        (with-guard-checking :all (test9 5 state))))
+   (value '(value-triple :success))))
+
+
+
+
+; Test of a runaway memory scenario
+
+(defun allocate-gobs-of-nonsense (n acc)
+  (if (zp n)
+      acc
+    (allocate-gobs-of-nonsense (- n 1)
+                               (cons (make-list 1000) acc))))
+
+;; (time$ (prog2$ (allocate-gobs-of-nonsense 1000 nil) nil)) ;; Allocates about 16 MB.
+
+(defun slowly-allocate-gobs-of-nonsense (n acc)  ;; So this should allocate about 160 MB per second.
+  (if (zp n)
+      acc
+    (progn$ (sleep 1/10)
+            (cw "Allocating slice ~x0~%" n)
+            (let ((acc (allocate-gobs-of-nonsense 1000 acc)))
+              (slowly-allocate-gobs-of-nonsense (- n 1) acc)))))
+
+;; (time$ (prog2$ (slowly-allocate-gobs-of-nonsense 10 nil) nil)) ;; 160 MB, 2 seconds.
+;; Aha, probably 2 seconds because it actually takes real time to allocate things.
+;; OK, at any rate, we can up it to something like 2 GB like this...
+;;
+;; (time$ (prog2$ (slowly-allocate-gobs-of-nonsense 120 nil) nil))
+;;    23.43 seconds realtime, 11.46 seconds runtime, 1,921,923,872 bytes allocated
+
+(defun test10 (state)
+  (b* (((mv time bytes ans state)
+        (oracle-timelimit 100
+                          (slowly-allocate-gobs-of-nonsense 120 nil)
+                          ;; Do not use more than 800 MB of memory
+                          :maxmem (* 800 1024 1024)))
+       ((when time)
+        (er hard? 'oracle-timelimit "Failed to stop insane allocation?")
+        state)
+       ((when bytes)
+        (er hard? 'oracle-timelimit "Expected bytes to be nil.")
+        state)
+       ((when ans)
+        (er hard? 'oracle-timelimit "Expected answer to be nil.")
+        state))
+    state))
+
+#+Clozure
+(make-event
+ (let ((state (time$ (test10 state))))
+   (value '(value-triple :success))))

@@ -703,7 +703,7 @@ for handling @('case(foo) ... 3'b110, 3'b111: ... endcase')."
                                    :finalwidth finalwidth
                                    :finaltype finaltype)
                    test))
-       
+
        (if-test (make-vl-nonatom
                  :op :vl-binary-ceq
                  :args (list (make-vl-nonatom

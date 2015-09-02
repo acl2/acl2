@@ -9,9 +9,9 @@
 ;; Flowcontrol
 ;;
 (defun switchBuffer (nst from to)
-  ;; move the head of the buffer of the from port to the tail of the buffer of the to port. 
-  ;;returns the update nst list. 
-  ;; 
+  ;; move the head of the buffer of the from port to the tail of the buffer of the to port.
+  ;;returns the update nst list.
+  ;;
   ;; Arguments:
   ;; - nst : the list of all ports of this node
   ;; - from : The input port which is switched
@@ -26,8 +26,8 @@
 
 
 (defun switch-port (portlist nst from)
-  ;; Switch the input port from by looping over the nst in portlist until the port where the from port is routed to is reached. 
-  ;; 
+  ;; Switch the input port from by looping over the nst in portlist until the port where the from port is routed to is reached.
+  ;;
   ;; Arguments:
   ;; - portlist : The list of output ports of this node
   ;; - nst : the list of all ports of this node
@@ -62,7 +62,7 @@
   ;; - memory : the global memory of a node
   (mv (switch-ports (ports-inputports nst) nst) memory))
 
-(definstance GenericFlowControl check-compliance-Flowcontrol                   
+(definstance GenericFlowControl check-compliance-Flowcontrol
   :functional-substitution
   ((flowcontrol packet-FlowControl)))#|ACL2s-ToDo-Line|#
 

@@ -210,7 +210,7 @@
        (and (unique a)
             (unique b)
             (not (intersectp a b)))))
-  
+
 (defthm intersectp-append-1
   (iff (intersectp c (append a b))
        (or (intersectp c a)
@@ -756,7 +756,7 @@
 
 (defthm collect-fn-mark-fn
   (implies (and (tags-ok-fn fn1 typ1 ptr1 i1 n1 ram dcl tags)
-                (tags-ok-fn fn2 typ2 ptr2 i2 n2 ram dcl tags)) 
+                (tags-ok-fn fn2 typ2 ptr2 i2 n2 ram dcl tags))
            (equal (collect-fn fn1 typ1 ptr1 i1 n1
                               (mark-fn fn2 typ2 ptr2 i2 n2 ram dcl)
                               dcl)
@@ -850,7 +850,7 @@
                                           (len (cdr (assoc typ2 dcl))))
                                  (collect-fn fn typ ptr i n ram dcl)))
                 (tags-ok-fn fn typ ptr i n ram dcl tags))
-           (equal 
+           (equal
             (new-field-value typ2
                              ptr2 i2 (mark-fn fn typ ptr i n ram dcl)
                              dcl)
@@ -1130,7 +1130,7 @@
                      (tags-ok-fn-merge-tags-3-hint
                       :ALL typ ptr (+ 1 i) n ram dcl tags
                       addrs2)))
-                     
+
               (t nil)))
     (let ((descriptor (cdr (assoc typ dcl))))
       (if (zp n)
@@ -1187,7 +1187,7 @@
                                  tags1
                                  tags2))
          (tags-ok-fn :ONE typ ptr i n ram dcl tags1))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use (:instance tags-ok-fn-merge-tags-3-main-lemma
                            (addrs2 nil)
                            (fn :ONE)))))
@@ -1210,7 +1210,7 @@
              (s (+ ptr i) :PTR
                 (s*-tags-witness typ ptr (+ 1 i) dcl)))
             (t
-             (s (+ ptr i) :DATA 
+             (s (+ ptr i) :DATA
                 (s*-tags-witness typ ptr (+ 1 i) dcl)))))
      (t nil))))
 

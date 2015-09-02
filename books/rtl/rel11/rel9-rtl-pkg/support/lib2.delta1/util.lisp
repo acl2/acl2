@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -80,7 +80,7 @@
                       (list 'implies hyp concl)
                     concl)
                   :typed-term typed-term
-                  ;; hints for the corollary 
+                  ;; hints for the corollary
                   :hints
                   (if (consp width)
                       '(("Goal"
@@ -102,14 +102,14 @@
 ;BOZO This doesn't include cons, which can now appear in signals defs.  I think that's okay, right?  think
 ;about this and remove the BOZO
 (defconst *rtl-operators-after-macro-expansion*
-  '(log= log<> 
-    log< log<= log> log>= 
+  '(log= log<>
+    log< log<= log> log>=
     comp2< comp2<= comp2> comp2>=
     land lior lxor lnot
     logand1 logior1 logxor1
     shft
     cat mulcat
-    bits bitn setbits setbitn 
+    bits bitn setbits setbitn
     ag as
     * + ; from macroexpansion of mod* or mod+
     ;mod- ;now a macro!
@@ -125,9 +125,9 @@
 ; overflows by ACL2's translate functions.
 
 (defun split-list (lst lo hi)
-  (cond ((endp lst) 
+  (cond ((endp lst)
          (mv lo hi))
-        ((endp (cdr lst)) 
+        ((endp (cdr lst))
          (mv (cons (car lst) lo) hi))
         (t
          (split-list (cddr lst)
@@ -157,7 +157,7 @@
                                  (symbol-name name)
                                  "$")
                     name)))
-    `(progn (defund ,realname (n $path) 
+    `(progn (defund ,realname (n $path)
               ,body)
             (defmacro ,name (n)
               (list ',realname n '$path))

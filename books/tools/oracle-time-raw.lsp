@@ -33,7 +33,7 @@
   ;; BOZO copied and pasted in oracle-timelimit-raw.lsp
   #+(or ccl sbcl)
   (heap-bytes-allocated)
-  #+(or ccl sbcl) ;; BOZO why doesn't ACL2 do it this way?
+  #-(or ccl sbcl) ;; BOZO why doesn't ACL2 do it this way?
   0)
 
 (defmacro oracle-time-exec-raw (ignored-arg1 form)

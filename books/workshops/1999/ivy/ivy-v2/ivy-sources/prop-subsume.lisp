@@ -6,10 +6,10 @@
 ;; clauses and lists of clauses), but it is sound for all formulas.
 ;; For quantified formulas, prop-subsume is true iff the formulas
 ;; are equal.
-;; 
+;;
 ;; Soundness: if (prop-subsume c d), then
 ;; (univ-closure c) => (univ-closure d).
-;; 
+;;
 ;; This is not propositionally complete; that is, it is weaker
 ;; than "implies".
 
@@ -41,8 +41,8 @@
 
 ;; Some tests:
 ;; (prop-subsume '(or (p) (q)) '(or (p) (or (q) (r))))
-;; 
-;; (prop-subsume 
+;;
+;; (prop-subsume
 ;;  '(and (and (or (p) (q)) (r)) (or (s) (or (t) (u))))
 ;;  '(or (r) (r1)))
 

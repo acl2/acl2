@@ -195,6 +195,8 @@
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "tools/with-supporters" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
+(include-book "tools/oracle-time" :dir :system)
+(include-book "tools/oracle-timelimit" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
 
 ;; [Jared] removing these to speed up the manual build
@@ -263,13 +265,6 @@
 (include-book "oslib/tests/top" :dir :system)
 
 (include-book "centaur/ubdds/sanity-check-macros" :dir :system)
-
-;; BOZO why do we care about coi/records/fast?
-(include-book "coi/records/fast/log2" :dir :system)
-(include-book "coi/records/fast/memory" :dir :system)
-(include-book "coi/records/fast/memory-impl" :dir :system)
-(include-book "coi/records/fast/memtree" :dir :system)
-(include-book "coi/records/fast/private" :dir :system)
 
 (include-book "centaur/memoize/old/case" :dir :system)
 (include-book "centaur/memoize/old/profile" :dir :system)
@@ -535,7 +530,7 @@
 
 
 
-#|| 
+#||
 
 (redef-errors (get-xdoc-table (w state)))
 

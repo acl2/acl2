@@ -3,6 +3,7 @@
 
 (in-package "X86ISA")
 (include-book "std/util/define" :dir :system)
+(include-book "std/lists/rev" :dir :system)
 
 ;; ===================================================================
 
@@ -71,6 +72,10 @@
       (disjoint-p (cdr x) y)))
 
   ///
+
+  (defthm disjoint-p-x-x
+    (implies (consp x)
+             (equal (disjoint-p x x) nil)))
 
   (defthm disjoint-p-nil-1
     (equal (disjoint-p nil y) t)
@@ -301,7 +306,20 @@
 
   (defthm subset-p-reflexive
     (implies (true-listp x)
-             (equal (subset-p x x) t))))
+             (equal (subset-p x x) t)))
+
+  (defthm subset-p-of-append
+    (implies (or (subset-p a x)
+                 (subset-p a y))
+             (subset-p a (append x y))))
+
+  (defthm subset-p-of-nil
+    (equal (subset-p x nil)
+           (equal x nil)))
+
+  (defthm subset-p-cons-2
+    (implies (subset-p x y)
+             (subset-p x (cons e y)))))
 
 ;; ======================================================================
 
@@ -338,6 +356,57 @@
                 (subset-p b y))
            (disjoint-p a b))
   :rule-classes (:rewrite :forward-chaining))
+
+(defthm subset-p-cons-member-p-lemma
+  (implies (and (subset-p x (cons e y))
+                (not (subset-p x y)))
+           (not (member-p e y))))
+
+(local (include-book "std/lists/reverse" :dir :system))
+
+(defthm assoc-of-append-when-member-p-1
+  (implies (member-p a (strip-cars xs))
+           (equal (assoc-equal a (append xs ys))
+                  (assoc-equal a xs))))
+
+(defthm assoc-of-append-when-member-p-2
+  (implies (not (member-p a (strip-cars xs)))
+           (equal (assoc-equal a (append xs ys))
+                  (assoc-equal a ys))))
+
+(defthm strip-cars-of-rev-is-rev-of-strip-cars
+  (equal (strip-cars (acl2::rev x))
+         (acl2::rev (strip-cars x))))
+
+(defthm member-p-of-rev
+  (equal (member-p x (acl2::rev y))
+         (member-p x y))
+  :hints (("Goal" :in-theory (e/d (member-p) ()))))
+
+(defthm subset-p-of-rev
+  (equal (subset-p x (acl2::rev y))
+         (subset-p x y))
+  :hints (("Goal" :in-theory (e/d (subset-p) ()))))
+
+(defthm member-of-rev
+  (implies (member-p a xs)
+           (member-p a (acl2::rev xs)))
+  :hints (("Goal" :in-theory (e/d (member-p) ()))))
+
+ (defthm member-strip-cars-assoc-and-rev
+   (implies (member-p a (strip-cars xs))
+            (member-p a (acl2::rev (strip-cars xs)))))
+
+(defthm assoc-of-append-when-member-p-with-rev
+  (implies (member-p a (strip-cars xs))
+           (equal (assoc-equal a (append (acl2::rev xs) ys))
+                  (assoc-equal a (acl2::rev xs)))))
+
+(defthm not-member-assoc-equal-with-rev-and-strip-cars
+  (implies (not (member-p a (strip-cars xs)))
+           (equal (cdr (assoc a (acl2::rev (acons a b xs))))
+                  b))
+  :hints (("Goal" :in-theory (e/d (member-p) ()))))
 
 ;; ======================================================================
 

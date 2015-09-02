@@ -175,14 +175,6 @@ endif # ifeq ($(ACL2),)
 # Keep this before any other target so that basic will be the default target
 basic:
 
-# Set environment variable HTTP_PROXY_WITH_PORT if your curl needs to
-# use a proxy.  HTTP_PROXY_WITH_PORT can be, for example,
-# http://proxy.nbc.com:80
-ifneq ($(HTTP_PROXY_WITH_PORT), )
-  HTTP_PROXY_FLAG=-x $(HTTP_PROXY_WITH_PORT)
-endif # HTTP_PROXY_WITH_PORT
-
-
 # Ensure that the following variable is simply expanded.
 ACL2_CUSTOM_TARGETS :=
 

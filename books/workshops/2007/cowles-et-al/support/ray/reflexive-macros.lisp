@@ -32,7 +32,7 @@ interesting macros for specific domains.
 ;; with either one or two arguments only.  In a later function we will
 ;; use this to get rid of the restriction, but this is a first step.
 
-(defun defreflexive-fn-two-params 
+(defun defreflexive-fn-two-params
   (run btm x st test1 test2 dst1 dst2 finish step
        rule-classes executable guard verify-guards)
   (declare (xargs :mode :program))
@@ -48,19 +48,19 @@ interesting macros for specific domains.
          ;; logic.  We of course allow the axiom to be introduced by
          ;; any other rule-class, not just a :definition rule.
          (logic-events
-          
+
           `(encapsulate
             (((,run * *) => *))
-            
+
             (set-ignore-ok t)
             (set-irrelevant-formals-ok t)
-            
+
             (local (defthm finish-is-not-btm
                      (implies (not (equal ,st ,btm))
                               (not (equal ,finish ,btm)))
                      :rule-classes nil))
-            
-            (local 
+
+            (local
              (defun ,run-clk (,x ,st clk)
                (declare (xargs :measure (nfix clk)
                                :normalize nil))
@@ -71,29 +71,29 @@ interesting macros for specific domains.
                       (,run-clk ,dst1
                                 ,step
                                 (1- clk)))
-                     (t (let ((st2 (,run-clk ,dst1 
+                     (t (let ((st2 (,run-clk ,dst1
                                              ,step
                                              (1- clk))))
                           (if (equal st2 ,btm)
                               ,btm
                             (,run-clk ,dst2term st2 (1- clk))))))))
-            
+
             (local
              (defun-sk exists-enough-clk (,x ,st)
-               (exists clk 
+               (exists clk
                        (and (natp clk)
                             (not (equal (,run-clk ,x ,st clk)
                                         ,btm))))))
-            (local 
+            (local
              (defun ,run (,x ,st)
                (if (exists-enough-clk ,x ,st)
-                   (,run-clk ,x ,st 
+                   (,run-clk ,x ,st
                              (exists-enough-clk-witness ,x ,st))
                  ,btm)))
-            
+
             (local (include-book "reflexive"))
-            
-            
+
+
             (defthm ,run-def
               (equal (,run ,x ,st)
                      (cond ((equal ,st ,btm) ,btm)
@@ -103,59 +103,59 @@ interesting macros for specific domains.
                            (t (let ((st2 (,run ,dst1 ,step)))
                                 (,run ,dst2term st2)))))
               :rule-classes ,rule-classes
-              :hints 
+              :hints
               (("Goal"
                 :in-theory (theory 'minimal-theory)
-                :use ((:instance 
-                       (:functional-instance 
+                :use ((:instance
+                       (:functional-instance
                         |definition of generic-run|
-                        (generic-run 
+                        (generic-run
                          (lambda (x st)
                            (let ((,x x)
                                  (,st st))
                              (,run ,x ,st))))
-                        (generic-run-clk 
+                        (generic-run-clk
                          (lambda (x st clk)
                            (let ((,x x)
                                  (,st st))
                              (,run-clk ,x ,st clk))))
-                        (exists-enough 
+                        (exists-enough
                          (lambda (x st)
                            (let ((,x x)
                                  (,st st))
                              (exists-enough-clk ,x ,st))))
-                        (exists-enough-witness 
+                        (exists-enough-witness
                          (lambda (x st)
                            (let ((,x x)
                                  (,st st))
                              (exists-enough-clk-witness ,x ,st))))
                         (generic-btm (lambda () ,btm))
-                        (generic-test1 (lambda (x st) 
-                                         (let ((,x x) 
-                                               (,st st)) 
+                        (generic-test1 (lambda (x st)
+                                         (let ((,x x)
+                                               (,st st))
                                            ,test1)))
-                        (generic-test2 
-                         (lambda (x st) 
-                           (let ((,x x) 
-                                 (,st st)) 
+                        (generic-test2
+                         (lambda (x st)
+                           (let ((,x x)
+                                 (,st st))
                              ,test2)))
-                        (generic-finish 
-                         (lambda (x st) 
-                           (let ((,x x) 
-                                 (,st st)) 
+                        (generic-finish
+                         (lambda (x st)
+                           (let ((,x x)
+                                 (,st st))
                              ,finish)))
-                        (generic-dst1 
-                         (lambda (x st) 
-                           (let ((,x x) 
+                        (generic-dst1
+                         (lambda (x st)
+                           (let ((,x x)
                                  (,st st))
                              ,dst1)))
-                        (generic-dst2 
-                         (lambda (x st st2) 
-                           (let ((,x x) 
+                        (generic-dst2
+                         (lambda (x st st2)
+                           (let ((,x x)
                                  (,st st))
                              ,dst2)))
-                        (generic-step (lambda (x st) 
-                                        (let ((,x x) 
+                        (generic-step (lambda (x st)
+                                        (let ((,x x)
                                               (,st st))
                                           ,step))))
                        (x ,x)
@@ -181,25 +181,25 @@ interesting macros for specific domains.
                :use ((:instance (:definition exists-enough-clk)
                                 (,x x)
                                 (,st st))))))))
-                      
+
          (exec-events
           `(encapsulate
             ()
-            
+
             (defun ,run-executable (,x ,st)
               (declare (xargs :guard ,guard
                               :verify-guards nil))
               (mbe :logic (,run ,x ,st)
-                   :exec 
+                   :exec
                    (cond ((equal ,st ,btm) ,btm)
                          (,test1 ,finish)
                          (,test2
                           (,run-executable ,dst1 ,step))
                          (t (let ((st2 (,run-executable ,dst1 ,step)))
                               (,run-executable ,dst2term st2))))))
-            
+
             (local (in-theory (theory 'ground-zero)))
-            
+
             (defthm ,run-executable-def
               (equal (,run-executable ,x ,st)
                      (cond ((equal ,st ,btm) ,btm)
@@ -213,42 +213,42 @@ interesting macros for specific domains.
                        :in-theory (enable ,run-executable)
                        :use ((:instance ,run-def))))))))
     (if executable
-        (if verify-guards 
-            `(progn ,logic-events 
-                    ,exec-events 
-                    (verify-guards 
+        (if verify-guards
+            `(progn ,logic-events
+                    ,exec-events
+                    (verify-guards
                      ,run-executable
                      :hints (("Goal"
                               :in-theory (enable ,run-executable)
                               :use ((:instance ,run-def))))))
-                                               
-          `(progn ,logic-events 
+
+          `(progn ,logic-events
                   ,exec-events))
       `(progn ,logic-events))))
 
-   
 
-(defun defreflexive-fn-special 
+
+(defun defreflexive-fn-special
   (run x st bottom test1 finish test2 rec-mod dst2 rule-classes
        executable guard verify-guards)
   (declare (xargs :mode :program))
   (let ((dst1 (first rec-mod))
         (step (second rec-mod)))
-  (defreflexive-fn-two-params 
-    run bottom x st 
+  (defreflexive-fn-two-params
+    run bottom x st
     (cons test1 (list x st))
     (cons test2 (list x st))
-    (cons dst1 (list x st)) 
+    (cons dst1 (list x st))
     (cons dst2 (list x st 'st2))
     (cons finish (list x st))
     (cons step (list x st))
-    rule-classes 
+    rule-classes
     executable
     guard verify-guards)))
-    
-(defmacro defreflexive-special 
+
+(defmacro defreflexive-special
   (run x st
-       &key 
+       &key
        (bottom 'nil)
        (base-test 'test1)
        (base-case 'finish)
@@ -260,16 +260,16 @@ interesting macros for specific domains.
        (guard 't)
        (verify-guards 'nil))
 
-  (defreflexive-fn-special run x st bottom 
+  (defreflexive-fn-special run x st bottom
     base-test base-case recursive-test recursive-modifier
     reflexive-modifier
     rule-classes executable guard verify-guards))
 
-;; Now we test the macro.              
-         
-(encapsulate 
+;; Now we test the macro.
+
+(encapsulate
  ()
- 
+
  (set-ignore-ok t)
  (set-irrelevant-formals-ok t)
  (local (defun test1 (p q) (and (natp p) (natp q))))
@@ -278,13 +278,13 @@ interesting macros for specific domains.
  (local (defun dst2 (p q r) (+ (1- p) (1- q) (1- r))))
  (local (defun stp (m n) (+ (1- m) (1+ n))))
  (local (defun finish (a b) (+ a b)))
- (local (defreflexive-special run-fn a b 
+ (local (defreflexive-special run-fn a b
           :rule-classes nil)))
 
 
-(encapsulate 
+(encapsulate
  ()
- 
+
  (set-ignore-ok t)
  (set-irrelevant-formals-ok t)
  (local (defun test1 (p q) (and (natp p) (natp q))))
@@ -293,7 +293,7 @@ interesting macros for specific domains.
  (local (defun dst2 (p q r) (+ (1- p) (1- q) (1- r))))
  (local (defun stp (m n) (+ (1- m) (1+ n))))
  (local (defun finish (a b) (+ a b)))
- (local (defreflexive-special run-fn a b 
+ (local (defreflexive-special run-fn a b
           :rule-classes :definition)))
 
 
@@ -314,9 +314,9 @@ interesting macros for specific domains.
  (local (verify-guards dst2))
  (local (verify-guards stp))
  (local (verify-guards finish))
- 
+
  (local
-  (defreflexive-special run-fn a b 
+  (defreflexive-special run-fn a b
     :executable t
     :guard t
     :verify-guards t
@@ -339,7 +339,7 @@ interesting macros for specific domains.
  (local (verify-guards dest2))
  (local (verify-guards next))
  (local (verify-guards finish-off))
- 
+
  (local
   (defreflexive-special run-fn a b
     :base-test tst1
@@ -435,18 +435,18 @@ interesting macros for specific domains.
 
 (defun test1-body (op-field ops-list while sequence conditional)
   (let* ((test-body (vanilla-test1-body ops-list))
-         (test-body 
-          (if sequence 
+         (test-body
+          (if sequence
               (snoc test-body (list (find-sequence-name sequence)
                                     nil))
             test-body))
-         (test-body 
-          (if conditional 
+         (test-body
+          (if conditional
               (snoc test-body (list (find-conditional-name conditional)
                                     nil))
             test-body))
-         (test-body 
-          (if while 
+         (test-body
+          (if while
               (snoc test-body (list (find-while-name while)
                                     (find-while-test while)))
             test-body))
@@ -462,18 +462,18 @@ interesting macros for specific domains.
 
 (defun test2-body (op-field ops-list while sequence conditional)
   (let* ((test-body (vanilla-test2-body ops-list))
-         (test-body 
-          (if sequence 
+         (test-body
+          (if sequence
               (snoc test-body (list (find-sequence-name sequence)
                                     nil))
             test-body))
-         (test-body 
-          (if conditional 
+         (test-body
+          (if conditional
               (snoc test-body (list (find-conditional-name conditional)
                                     t))
             test-body))
-         (test-body 
-          (if while 
+         (test-body
+          (if while
               (snoc test-body (list (find-while-name while)
                                     nil))
             test-body))
@@ -489,21 +489,21 @@ interesting macros for specific domains.
 
 (defun dst1-body (op-field ops-list stmt while sequence conditional)
   (let* ((dst1-body (vanilla-dst1-body ops-list stmt))
-         (dst1-body 
-          (if sequence 
+         (dst1-body
+          (if sequence
               (snoc dst1-body (list (find-sequence-name sequence)
                                     (find-sequence-arg1 sequence)))
             dst1-body))
-         (dst1-body 
-          (if conditional 
-              (snoc dst1-body 
+         (dst1-body
+          (if conditional
+              (snoc dst1-body
                     (list (find-conditional-name conditional)
                           `(if ,(find-conditional-test conditional)
                                ,(find-conditional-tbr conditional)
                              ,(find-conditional-fbr conditional))))
             dst1-body))
-         (dst1-body 
-          (if while 
+         (dst1-body
+          (if while
               (snoc dst1-body (list (find-while-name while)
                                     (find-while-body while)))
             dst1-body))
@@ -520,19 +520,19 @@ interesting macros for specific domains.
 
 (defun dst2-body (op-field ops-list stmt while sequence conditional)
   (let* ((dst2-body (vanilla-dst2-body ops-list stmt))
-         (dst2-body 
-          (if sequence 
+         (dst2-body
+          (if sequence
               (snoc dst2-body (list (find-sequence-name sequence)
                                     (find-sequence-arg2 sequence)))
             dst2-body))
-         (dst2-body 
-          (if conditional 
-              (snoc dst2-body 
+         (dst2-body
+          (if conditional
+              (snoc dst2-body
                     (list (find-conditional-name conditional)
                           stmt))
             dst2-body))
-         (dst2-body 
-          (if while 
+         (dst2-body
+          (if while
               (snoc dst2-body (list (find-while-name while)
                                     stmt))
             dst2-body))
@@ -547,19 +547,19 @@ interesting macros for specific domains.
 
 (defun finish-body (op-field ops-list exec-list mem while sequence conditional)
   (let* ((finish-body (vanilla-finish-body ops-list exec-list))
-         (finish-body 
-          (if sequence 
+         (finish-body
+          (if sequence
               (snoc finish-body (list (find-sequence-name sequence)
                                       mem))
             finish-body))
-         (finish-body 
-          (if conditional 
-              (snoc finish-body 
+         (finish-body
+          (if conditional
+              (snoc finish-body
                     (list (find-conditional-name conditional) mem))
             finish-body))
-         (finish-body 
-          (if while 
-              (snoc finish-body 
+         (finish-body
+          (if while
+              (snoc finish-body
                     (list (find-while-name while) mem))
             finish-body))
          (finish-body
@@ -567,7 +567,7 @@ interesting macros for specific domains.
     `(case ,op-field
        ,@finish-body)))
 
-            
+
 (defun vanilla-stp-body (ops-list mem)
   (if (endp ops-list) nil
     (cons (list (first ops-list) mem)
@@ -575,19 +575,19 @@ interesting macros for specific domains.
 
 (defun stp-body (op-field ops-list mem while sequence conditional)
   (let* ((stp-body (vanilla-stp-body ops-list mem))
-         (stp-body 
-          (if sequence 
+         (stp-body
+          (if sequence
               (snoc stp-body (list (find-sequence-name sequence)
                                       mem))
             stp-body))
-         (stp-body 
-          (if conditional 
-              (snoc stp-body 
+         (stp-body
+          (if conditional
+              (snoc stp-body
                     (list (find-conditional-name conditional) mem))
             stp-body))
-         (stp-body 
-          (if while 
-              (snoc stp-body 
+         (stp-body
+          (if while
+              (snoc stp-body
                     (list (find-while-name while) mem))
             stp-body))
          (stp-body
@@ -601,12 +601,12 @@ interesting macros for specific domains.
     (cons (list (first ops-list) (first exec-list))
           (vanilla-run-body (rest ops-list) (rest exec-list)))))
 
-(defun run-body (op-field run stmt mem 
+(defun run-body (op-field run stmt mem
                           ops-list exec-list sequence conditional
                           while btm)
-  (let* 
+  (let*
       ((run-body (vanilla-run-body ops-list exec-list))
-       (run-body 
+       (run-body
         (if sequence
             (snoc run-body
                   (list (find-sequence-name sequence)
@@ -614,7 +614,7 @@ interesting macros for specific domains.
                                (,run ,(find-sequence-arg1 sequence)
                                      ,mem))))
           run-body))
-       (run-body 
+       (run-body
         (if conditional
             (snoc run-body
                   (list (find-conditional-name conditional)
@@ -622,9 +622,9 @@ interesting macros for specific domains.
                              (,run ,(find-conditional-tbr conditional) ,mem)
                            (,run ,(find-conditional-fbr conditional) ,mem))))
           run-body))
-       (run-body 
+       (run-body
         (if while
-            (snoc run-body 
+            (snoc run-body
                   (list (find-while-name while)
                         `(if ,(find-while-test while)
                              ,mem
@@ -637,8 +637,8 @@ interesting macros for specific domains.
          ,btm
        (case ,op-field
          ,@run-body))))
-    
-(defun definterpreter-fn 
+
+(defun definterpreter-fn
   (run stmt mem op-field vanilla sequence conditional while btm
        rule-classes executable guard verify-guards)
   (declare (xargs :mode :program))
@@ -650,97 +650,97 @@ interesting macros for specific domains.
          (logic-events
           `(encapsulate
             (((,run * *) => *))
-            
+
             (set-ignore-ok t)
             (set-irrelevant-formals-ok t)
-            
-            (local 
+
+            (local
              (defun test1 (,stmt ,mem)
                (declare (xargs :normalize nil))
                ,(test1-body op-field ops-list while sequence conditional)))
-            
-            (local 
+
+            (local
              (defun finish (,stmt ,mem)
                (declare (xargs :normalize nil))
-               ,(finish-body op-field ops-list exec-list mem while sequence 
+               ,(finish-body op-field ops-list exec-list mem while sequence
                              conditional)))
-            
-            (local 
+
+            (local
              (defun test2 (,stmt ,mem)
                (declare (xargs :normalize nil))
                ,(test2-body op-field ops-list while sequence conditional)))
-            
-            (local 
+
+            (local
              (defun dst1 (,stmt ,mem)
                (declare (xargs :normalize nil))
                ,(dst1-body op-field ops-list stmt while sequence conditional)))
-            
-            (local 
+
+            (local
              (defun dst2 (,stmt ,mem st2)
                (declare (xargs :normalize nil))
                ,(dst2-body op-field ops-list stmt while sequence
                            conditional)))
-            
-            (local 
+
+            (local
              (defun stp (,stmt ,mem)
                (declare (xargs :normalize nil))
                ,(stp-body op-field ops-list mem while sequence conditional)))
-            
-            
-            (local 
-             (defreflexive-special ,run ,stmt ,mem 
-               :rule-classes nil 
+
+
+            (local
+             (defreflexive-special ,run ,stmt ,mem
+               :rule-classes nil
                :recursive-modifier (dst1 stp)
                :bottom ,btm))
-            
+
             (defthm ,run-interpreter
               (equal (,run ,stmt ,mem)
-                     ,(run-body op-field run stmt mem 
+                     ,(run-body op-field run stmt mem
                                 ops-list exec-list sequence conditional
                                 while btm))
               :rule-classes ,rule-classes
               :hints (("Goal"
-                       :use ((:instance 
+                       :use ((:instance
                               ,(packn (list run '-def)))))))))
          (exec-events
           `(encapsulate
             ()
-            
+
             (defun ,run-executable (,stmt ,mem)
               (declare (xargs :guard ,guard
                               :verify-guards nil))
               (mbe :logic (,run ,stmt ,mem)
-                   :exec ,(run-body op-field run stmt mem 
-                                    ops-list exec-list sequence 
+                   :exec ,(run-body op-field run stmt mem
+                                    ops-list exec-list sequence
                                     conditional while btm)))
 
             (local (in-theory (theory 'ground-zero)))
 
             (defthm ,run-executable-def
               (equal (,run-executable ,stmt ,mem)
-                     ,(run-body op-field run stmt mem 
-                                    ops-list exec-list sequence 
+                     ,(run-body op-field run stmt mem
+                                    ops-list exec-list sequence
                                     conditional while btm))
               :rule-classes ,rule-classes
               :hints (("Goal"
                        :in-theory (enable ,run-executable)
                        :use ((:instance ,run-interpreter))))))))
          (if executable
-             (if verify-guards 
-                 `(progn ,logic-events 
-                         ,exec-events 
-                         (skip-proofs (verify-guards 
+             (if verify-guards
+                 `(progn ,logic-events
+                         ,exec-events
+                         (skip-proofs (verify-guards
                           ,run-executable
                           :hints (("Goal"
                                    :in-theory (enable ,run-executable)
                                    :use ((:instance ,run-interpreter)))))))
-                                               
-          `(progn ,logic-events 
+
+          `(progn ,logic-events
                   ,exec-events))
       `(progn ,logic-events))))
-         
-(defmacro definterpreter (run stmt mem 
-                               &key 
+
+(defmacro definterpreter (run stmt mem
+                               &key
                                (op-field 'nil)
                                (vanilla-interpreter 'nil)
                                (conditional 'nil)
@@ -754,8 +754,8 @@ interesting macros for specific domains.
   (definterpreter-fn run stmt mem op-field vanilla-interpreter
     sequence conditional while bottom rule-classes executable guard
     verify-guards))
-       
-    
+
+
 ;; Here is the solution to Bill Young's challenge.
 
 (encapsulate
@@ -772,28 +772,28 @@ interesting macros for specific domains.
  (local
   (defun arg2 (stmt)
     (third stmt)))
- 
+
  (local
   (defun arg3 (stmt)
     (fourth stmt)))
- 
+
  (local
   (defmacro val (key alist)
     `(cdr (assoc-equal ,key ,alist))))
- 
+
  (local
   (defmacro tlistp (x n)
     `(and (true-listp ,x)
           (equal (len ,x) ,n))))
 
- (local 
+ (local
   (defun  definedp (x alist)
     (if (endp alist)
         nil
       (if (equal x (caar alist))
           t
         (definedp x (cdr alist))))))
- 
+
  (local
   (defun varp (x alist)
     (and (symbolp x)
@@ -803,7 +803,7 @@ interesting macros for specific domains.
   (defun exprp (x alist)
     (or (integerp x)
         (varp x alist))))
-  
+
  (local
   (defun eval-expr (expr alist)
     (if (integerp expr)
@@ -816,7 +816,7 @@ interesting macros for specific domains.
            (e (arg2 stmt))
            (val (eval-expr e alist)))
       (put-assoc-equal v val alist))))
- 
+
  (local
   (definterpreter run stmt mem
     :op-field (op stmt)

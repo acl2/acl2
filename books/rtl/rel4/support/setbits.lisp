@@ -29,7 +29,7 @@ might be useful if we choose to keep setbits disabled...
 
 is this comment still valid? :
 ;it may happen that setbitn is called with an index which is a signal rather than a constant.
-;in that case, we probably don't want it to expand to setbits. 
+;in that case, we probably don't want it to expand to setbits.
 ;thus, we always expect the indices in setbits calls to be constants
 
 
@@ -48,7 +48,7 @@ is this comment still valid? :
 
 |#
 
-;Note: when j is 0, there is no lower part of x, but we have cat-with-n-0 to handle this case. 
+;Note: when j is 0, there is no lower part of x, but we have cat-with-n-0 to handle this case.
 (defund setbits (x w i j y)
   (declare (xargs :guard (and (natp x)
                               (natp y)
@@ -185,7 +185,7 @@ is this comment still valid? :
   (implies (and (< k j) ;case 1
                 (< i w)
                 (<= 0 i)
-                (<= 0 j) 
+                (<= 0 j)
                 (<= 0 k)
                 (<= j i)
                 (integerp k)
@@ -200,7 +200,7 @@ is this comment still valid? :
   (implies (and(<= k i) ;;case-2
                (<= j k) ;;case-2
                (<= 0 i)
-               (<= 0 j) 
+               (<= 0 j)
                (< i w)
                (integerp k)
                (integerp w)
@@ -215,7 +215,7 @@ is this comment still valid? :
                 (< k w) ;;case-3
 ;                (< i w)
                 (<= 0 i)
-                (<= 0 j) 
+                (<= 0 j)
                 (<= j i)
                 (integerp i)
                 (integerp j)
@@ -234,7 +234,7 @@ is this comment still valid? :
                 (<= 0 l)
                 (integerp i)
                 (integerp j)
-                (integerp w) 
+                (integerp w)
                 (acl2-numberp l) ;(integerp l)
                 )
            (equal (bits (setbits x w i j y) k l)

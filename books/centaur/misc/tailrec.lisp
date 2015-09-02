@@ -281,7 +281,7 @@
        (equal (assoc key (normalize-sym-alist keys x))
               (and (member key keys)
                    (assoc key x)))))
-   
+
 
    (defthm subsetp-equal-append
      (iff (subsetp-equal (append a b) c)
@@ -313,7 +313,7 @@
                (and stable-under-simplificationp
                     '(:in-theory (enable partial-ev-constraint-0))))
        :flag simple-term-vars)
-     
+
      (defthm normalize-sym-alist-eval-lst
        (implies (and (subsetp-equal (simple-term-vars-lst x) keys)
                      (pseudo-term-listp x))
@@ -370,7 +370,7 @@
                   :verify-guards nil))
   (b* (((mv vars body args) (clean-lambda1 vars body args)))
     (clean-lambda2 vars body args)))
-       
+
 
 (local
  (progn
@@ -389,7 +389,7 @@
      (implies (assoc-equal key (pairlis$ vars args))
               (equal (assoc key (pairlis$ vars (partial-ev-lst args alist)))
                      (cons key (partial-ev (cdr (assoc key (pairlis$ vars args))) alist)))))
-   
+
 
    (defthm pairlist-partial-ev-strip-normalize
      (equal (pairlis$
@@ -417,7 +417,7 @@
                (and stable-under-simplificationp
                     '(:in-theory (enable partial-ev-constraint-0))))
        :flag simple-term-vars)
-     
+
      (defthm eval-list-under-identity-alist-containing-all-vars
        (implies (and (subsetp-equal (simple-term-vars-lst x) keys)
                      (pseudo-term-listp x))
@@ -573,7 +573,7 @@
                   :verify-guards nil))
   (cond ((atom x)           (mv nil *t* (or x *nil*) *nil*))
         ((quotep x)         (mv nil *t* x *nil*))
-        ((equal (first x) fnname) 
+        ((equal (first x) fnname)
          (if (equal (len (rest x)) arity)
              (mv nil *nil* nil (if (= 1 arity)
                                    (car (rest x))
@@ -1028,7 +1028,7 @@
                (and stable-under-simplificationp
                     '(:in-theory (enable partial-ev-constraint-0))))
        :flag simple-term-vars)
-     
+
      (defthm eval-list-under-identity-alist-containing-all-vars1
        (implies (and (subsetp-equal (simple-term-vars-lst x) keys)
                      (pseudo-term-listp x))
@@ -1123,7 +1123,7 @@
                     '(:in-theory (enable partial-ev-constraint-0)
                       :use ((:instance partial-ev-constraint-0 (a nil))))))
        :flag simple-term-vars)
-     
+
      (defthm eval-list-when-simple-term-vars-empty
        (implies (and (syntaxp (not (equal al ''nil)))
                      (atom (simple-term-vars-lst x)))
@@ -1498,20 +1498,20 @@
                        (lambda (st) ,(bind formals 'st `(,terminates . ,formals))))
                       (pf-terminates-witness
                        (lambda (st) ,(bind formals 'st `(,terminates-witness . ,formals))))
-                      (pf-measure  
+                      (pf-measure
                        (lambda (st) ,(bind formals 'st `(,measure . ,formals)))))))
       (value
        `(encapsulate
           nil
           (set-ignore-ok t)
           (set-irrelevant-formals-ok t)
-          
+
           (defun-nx ,done ,formals
             ,done-term)
 
           (defund-nx ,ret ,formals
             ,ret-term)
-          
+
           (defun-nx ,next ,formals
             ,next-term)
 
@@ -1694,7 +1694,7 @@
           ;;  :rule-classes ((:definition
           ;;                  :clique (,measure)
           ;;                  :controller-alist ((,measure . ,controllers)))))
-          
+
           (in-theory (disable ,measure ,terminates))
 
           (,(if non-execp 'defun-nx 'defun) ,fn ,formals

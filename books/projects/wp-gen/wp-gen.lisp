@@ -17,17 +17,17 @@
 ;; predicate transformer, which maps the postcondition of an instruction into
 ;; its weakest precondition.  Predicate transformers are represented by a
 ;; substitution operator that maps variables in the new state to expressions in
-;; the old state. 
+;; the old state.
 
 ;; Each node of the input program corresponds to a macro instruction whose
 ;; predicate transformer is computed by converting a sequential substitution
 ;; into a parallel substitution.  Nodes have the following format:
 ;;
-;; (:node 
-;;    :label idx 
+;; (:node
+;;    :label idx
 ;;    :pre annot-pre
 ;;    :subst sub
-;;    :branches ((pred1 . idx1) ... (predn . idxn)) 
+;;    :branches ((pred1 . idx1) ... (predn . idxn))
 ;;    :post annot-post)
 ;;
 ;; The idx component is a label for for the macro instruction.  The sub
@@ -147,12 +147,12 @@
 	(pre-annot node)
 	(post-annot node)
 	(mark node)
-	q 
+	q
 	(sub node))
    (prev node)))
 
 (defun set-prev-node (node prev)
-  (append 
+  (append
    (list (idx node)
 	 (pre-annot node)
 	 (post-annot node)
@@ -184,7 +184,7 @@
 ;; updates the list of branches to a node in the inverse CFG
 (defun update-node-with-branch (branch node line-label)
   (if (equal (car node) (cdr branch))
-      (set-prev-node 
+      (set-prev-node
        node
        (append (list (cons (car branch) line-label))
 	       (prev node)))
@@ -194,7 +194,7 @@
 (defun update-graph-with-branch (branch graph line-label)
   (if (atom graph)
       nil
-    (cons 
+    (cons
      (update-node-with-branch branch (car graph) line-label)
      (update-graph-with-branch branch (cdr graph) line-label))))
 
@@ -204,18 +204,18 @@
   (if (atom branches)
       graph
     (update-graph-with-branch (car branches)
-			      (update-graph-with-branch-list 
+			      (update-graph-with-branch-list
 			       (cdr branches)
 			       graph
 			       line-label)
 			      line-label)))
 
-;; builds the inverse CFG from the list of skeleton nodes and the 
+;; builds the inverse CFG from the list of skeleton nodes and the
 ;; original forward CFG
 (defun add-line-branches (line-list graph)
   (if (atom line-list)
       graph
-    (add-line-branches 
+    (add-line-branches
      (cdr line-list)
      (update-graph-with-branch-list (node-branches (cdar line-list))
 				    graph
@@ -224,11 +224,11 @@
 
 ;; generates an inverse control flow graph
 (defun make-graph (main)
-  (let* ((graph 
+  (let* ((graph
 	 (collect-nodes main)))
     (add-line-branches main graph)))
 
-;idx annot mark wp sub blist 
+;idx annot mark wp sub blist
 
 ;; finds the node with minimum mark and returns its index in node-list
 (defun find-min-mark (node-list graph mn mn-idx)
@@ -253,12 +253,12 @@
 ;; create a (hopefully) new name for a wp function according to index
 ;; and provided prefix
 (defun make-wp-string (idx prefix)
-  (intern 
+  (intern
     (concatenate
-     'string 
-     (if prefix 
+     'string
+     (if prefix
 	 (concatenate
-	  'string 
+	  'string
 	  (coerce (explode-atom prefix 10)
 		  'string)
 	  "-")
@@ -274,7 +274,7 @@
 	((null r) l)
 	((equal l t) t)
 	((equal r t) t)
-	(t 
+	(t
 	 (list 'or r l))))
 
 ;; Efficient conjunction of uninterpreted terms (not necessary but
@@ -287,10 +287,10 @@
 	(t
 	 (list 'and r l))))
 
-;; The weakest precondition at node n is 
+;; The weakest precondition at node n is
 ;; Q_n /\ \sigma_n(\/_{n' \in S(n)} (P_n' /\ B_{n,n'}))
 ;;
-;; where 
+;; where
 ;;
 ;;     Q_n is (annot n)
 ;;     \sigma_n is (sub n)
@@ -300,15 +300,15 @@
 ;; To implement this at node, for each prev that is a predecessor of
 ;; node we accumulate (via disjunction) into (wp prev):
 ;;
-;;          (sub prev) applied to (make-and (wp node) branch_cond) 
+;;          (sub prev) applied to (make-and (wp node) branch_cond)
 ;;
 ;; where the branch condition from prev to node is branch_cond
 ;;
 ;; See "A Weakest Precondition Model for Assembly Language Programs"
 ;; by Wilfred J. Legato for details
 (defun acc-wp (prev node branch-cond state-vars prefix)
-  (make-or (wp prev) 
-	   (make-and 
+  (make-or (wp prev)
+	   (make-and
 	    (sublis (sub prev) (post-annot prev)) ;; do i want to do this?
 	    (make-and
 	     (pre-annot prev)
@@ -316,7 +316,7 @@
 			 (make-and
 			       branch-cond
 			       (cons (make-wp-string (idx node) prefix)
-				     state-vars))			       
+				     state-vars))
 			 )))))
 
 ;; Initially set the wp of each node to be the annotation at that node
@@ -338,8 +338,8 @@
       (acc-wp-list
        (cdr prevlist)
        node
-       (set-node-graph graph 
-		     (decrement-mark-node 
+       (set-node-graph graph
+		     (decrement-mark-node
 		      (set-wp-node prev (acc-wp prev node bc state-vars prefix))))
        state-vars
        prefix))))
@@ -368,8 +368,8 @@
 	   (= (len (remove-node (acc-wp-list l node graph vars) node))
 	      (len (remove-node graph node)))))
 |#
-		
-;; Implements the algorithm described in 
+
+;; Implements the algorithm described in
 ;; "A Weakest Precondition Model for Assembly Language Programs"
 ;; by Wilfred J. Legato
 (defun wp-gen-graph (graph node-list state-vars n prefix)
@@ -405,7 +405,7 @@
 (defun collect-vars-sub (sigma)
   (if (atom sigma)
       nil
-    (union-equal 
+    (union-equal
      (collect-vars (cdar sigma))
      (collect-vars-sub (cdr sigma)))))
 
@@ -418,7 +418,7 @@
 
 (defun collect-vars-node (node)
   (union-equal (collect-vars-branch (prev node))
-	       (union-equal (collect-vars (post-annot node)) 
+	       (union-equal (collect-vars (post-annot node))
 			    (union-equal (collect-vars (post-annot node))
 					 (collect-vars-sub (sub node))))))
 
@@ -441,16 +441,16 @@
   (let* ((graph (make-graph main))
 	 (state-vars (collect-vars-graph graph))
 	 (node-list (get-alist-keys graph))
-	 (graph (if count-var 
+	 (graph (if count-var
 		    (init-wp (add-count-sub-graph graph count-var))
 		  (init-wp graph))))
     (prog2$
      (chk-vars-prog count-var state-vars ctx)
-     (mv (wp-gen-graph graph node-list 
+     (mv (wp-gen-graph graph node-list
 			(if count-var
 			    (append state-vars (list count-var))
 			  state-vars)
-			(len graph) 
+			(len graph)
 			prefix)
 	  state-vars))))
 
@@ -495,8 +495,8 @@
 
 
 ;; Top level macro for running wp procedure
-(defmacro run-wp (main 
-		  &key 
+(defmacro run-wp (main
+		  &key
 		  prefix  ; optional prefix for naming generated functions
 		  count-var  ; optional variable for measure
 		  (prog-mode 'nil)
@@ -620,20 +620,20 @@
 
 ;A program consists of a list of nodes in the following format.
 
-;(:node 
-;   :label idx 
+;(:node
+;   :label idx
 ;   :pre annot-pre
 ;   :subst sub
 ;   :branches ((pred1 . idx1) ... (predn . idxn))
 ;   :post annot-post)
 
 ;where:
-; idx is a unique node label (possibly corresponding to a program line number, 
+; idx is a unique node label (possibly corresponding to a program line number,
 ;     e.g. l_1, l_2,...)
-; annot-pre is a predicate on state prior to execution of the line (i.e., before 
+; annot-pre is a predicate on state prior to execution of the line (i.e., before
 ;           the given substituation on program state is applied)
 ; sub is a substitution representing execution as an alist
-; branches specifies program control using (pred . idx) pairs, where pred is a 
+; branches specifies program control using (pred . idx) pairs, where pred is a
 ;          condition on state and idx is the label of a node
 ; annot-post is a predicate on state after execution of the line
 

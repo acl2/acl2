@@ -138,6 +138,9 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
 
 <dd>This allows you to control the name of the associated theorem.</dd>
 
+<dd>The default value of @('name') is <it>type</it>-of-<it>your-function</it>.
+For example, @('natp-of-foo').</dd>
+
 </dl>")
 
 (def-primitive-aggregate returnspec

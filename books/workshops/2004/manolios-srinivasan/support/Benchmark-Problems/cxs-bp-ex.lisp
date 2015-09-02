@@ -8,35 +8,35 @@
 :set-irrelevant-formals-ok t
 
 (defun equalb (a b) (equal a b))
- 
+
 (defun nequal (a b) (not (equal a b))) (defun add-1 (a) (+ a 1))
- 
+
 (defun sub-1 (a) (- a 1))
- 
+
 (encapsulate ((nextdmem (x3 x2 x1) t))
      (local (defun nextdmem (x3 x2 x1)
               (declare (ignore x3) (ignore x2) (ignore x1))
               1))
      (defthm nextdmem-type (integerp (nextdmem x3 x2 x1))))
- 
+
 (encapsulate ((dmem_read (x2 x1) t))
      (local (defun dmem_read (x2 x1)
               (declare (ignore x2) (ignore x1))
               1))
      (defthm dmem_read-type (integerp (dmem_read x2 x1))))
- 
+
 (encapsulate ((rf0 (x1) t))
      (local (defun rf0 (x1) (declare (ignore x1)) 1))
      (defthm rf0-type (integerp (rf0 x1))))
- 
+
 (encapsulate ((imem0 (x1) t))
      (local (defun imem0 (x1) (declare (ignore x1)) 1))
      (defthm imem0-type (integerp (imem0 x1))))
- 
+
 (encapsulate ((src1 (x1) t))
      (local (defun src1 (x1) (declare (ignore x1)) 1))
      (defthm src1-type (integerp (src1 x1))))
- 
+
  (encapsulate ((src2 (x1) t))
 	      (local (defun src2 (x1) (declare (ignore x1)) 1))
 	      (defthm src2-type (integerp (src2 x1))))
@@ -4455,4 +4455,3 @@
 			    (< rank_v_7 rank_w_7))))))
    :rule-classes nil)
 
- 

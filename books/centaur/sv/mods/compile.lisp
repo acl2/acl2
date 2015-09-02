@@ -154,7 +154,7 @@ svex-assigns-compose)).</li>
        (delays1 (delay-svar->delays (car x))))
     (append-without-guard delays1 rest))
   ///
-  
+
   (more-returns
    (delays :name vars-of-delay-svarlist->delays
            (implies (svarlist-addr-p x)
@@ -417,13 +417,13 @@ svex-assigns-compose)).</li>
   (defthm vars-of-aliases-indexed->named
     (implies (< (nfix m) (len aliases))
              (svarlist-addr-p (lhs-vars (nth m (aliases-indexed->named aliases scope moddb))))))
-  
+
 
   (local (defun ind (n)
            (if (zp n)
                n
              (ind (1- n)))))
-  (local 
+  (local
    (defthm aliases-vars-aux-of-aliases-indexed->named
      (implies (<= (nfix n) (len aliases))
               (svarlist-addr-p (aliases-vars-aux n (aliases-indexed->named aliases scope moddb))))
@@ -587,7 +587,7 @@ svex-assigns-compose)).</li>
                            (not (member v (svex-vars override-test)))
                            (not (member v (svex-vars override-val))))
                       (not (member v (svex-alist-vars assigns1))))))
-  
+
   (more-returns
    (assigns1 :name lookup-of-svex-override-lhs
              (implies (and (not (member v (lhs-vars x)))
@@ -747,7 +747,7 @@ svex-assigns-compose)).</li>
 
        ;; Now translate the modalist by replacing all variables (nets/HIDs)
        ;; with their moddb indices.
-       ((mv err modalist) (cwtime (modalist-named->indexed modalist moddb)))
+       ((mv err modalist) (cwtime (modalist-named->indexed modalist moddb :quiet t)))
        ((when err)
         (mv (msg "Error indexing wire names: ~@0~%" err)
             nil moddb aliases))
@@ -923,8 +923,8 @@ should address this again later.</p>"
                               (svex-quote (2vec 0)))))))
     (cons (cons key expr)
           (svex-compose-delays (cdr x) updates masks))))
-                              
-  
+
+
 
 
 (define svex-compose-assigns/delays ((assigns svex-alist-p)

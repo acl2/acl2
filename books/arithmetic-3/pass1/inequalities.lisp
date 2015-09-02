@@ -10,8 +10,8 @@
 
 (local (include-book "basic-arithmetic"))
 
-(set-default-hints 
- '((nonlinearp-default-hint-pass1 stable-under-simplificationp 
+(set-default-hints
+ '((nonlinearp-default-hint-pass1 stable-under-simplificationp
                                   hist pspv)))
 
 

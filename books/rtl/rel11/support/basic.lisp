@@ -2,12 +2,14 @@
 
 (include-book "std/util/defrule" :dir :system)
 
-(local (include-book "arithmetic-5/top" :dir :system))
+(include-book "tools/with-arith5-help" :dir :system)
+(local (acl2::allow-arith5-help))
+(local (in-theory (acl2::enable-arith5)))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 #|
 (local (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|)))
 |#
 
@@ -22,14 +24,14 @@
 (defruled fl-default
   (implies (not (real/rationalp x))
            (equal (fl x) 0))
-  :enable (fl))
+  :enable fl)
 
 (defrule fl-def
-  (and (integerp (fl x))    
+  (and (integerp (fl x))
        (implies (case-split (real/rationalp x))
 	        (and (<= (fl x) x)
 		     (< x (1+ (fl x))))))
-  :enable (fl)
+  :enable fl
   :rule-classes ((:linear :corollary
                           (implies (case-split (real/rationalp x))
                                    (and (<= (fl x) x)
@@ -60,7 +62,7 @@
                 (real/rationalp y))
            (<= (* y (fl (/ x y)))
                x))
-  :enable (fl)
+  :enable fl
   :rule-classes :linear)
 
 (defthm fl-monotone-linear
@@ -88,7 +90,7 @@
                 (real/rationalp x))
            (equal (fl (* (fl x) (/ n)))
                   (fl (/ x n))))
-  :enable (fl))
+  :enable fl)
 
 (defrule fl/int-rewrite-alt
   (implies (and (integerp n)
@@ -96,7 +98,7 @@
                 (real/rationalp x))
            (equal (fl (* (/ n) (fl x)))
                   (fl (/ x n))))
-  :enable (fl))
+  :enable fl)
 
 (defrule fl-int-div-radix
   (implies (and (integerp n)
@@ -105,7 +107,7 @@
                 (integerp radix)
                 (>= radix 2))
            (< (abs (fl (/ n radix))) (abs n)))
-  :enable (fl)
+  :enable fl
   :rule-classes ())
 
 (defrule fl-half-int
@@ -137,11 +139,7 @@
                 (integerp n))
            (= (fl (- (/ m n)))
               (1- (- (fl (/ (1- m) n))))))
-  :prep-books (
-    (set-default-hints '((ACL2::nonlinearp-default-hint
-                          ACL2::stable-under-simplificationp ACL2::hist
-                          ACL2::pspv))))
-  :enable (fl)
+  :enable fl
   :rule-classes ())
 
 (defund cg (x)
@@ -158,7 +156,7 @@
        (implies (case-split (real/rationalp x))
                 (and (>= (cg x) x)
                      (> (1+ x) (cg x)))))
-  :enable (cg)
+  :enable cg
   :rule-classes ((:linear :corollary
                           (implies (case-split (real/rationalp x))
                                    (and (>= (cg x) x)
@@ -204,7 +202,7 @@
                 (real/rationalp x))
            (equal (cg (* (cg x) (/ n)))
                   (cg (/ x n))))
-  :enable (cg))
+  :enable cg)
 
 (defrule cg/int-rewrite-alt
   (implies (and (integerp n)
@@ -212,7 +210,7 @@
                 (real/rationalp x))
            (equal (cg (* (/ n) (cg x)))
                   (cg (/ x n))))
-  :enable (cg))
+  :enable cg)
 
 (defthm fl-cg
   (implies (real/rationalp x)
@@ -231,7 +229,7 @@
   (implies (case-split (acl2-numberp x))
            (equal (mod x y)
                   (- x (* y (fl (/ x y))))))
-  :enable (fl)
+  :enable fl
   :rule-classes ())
 
 (defthm mod-0
@@ -293,7 +291,7 @@
   (implies (and (<= 0 m)
                 (case-split (real/rationalp m)))
            (<= (mod m n) m))
-  :enable (mod)
+  :enable mod
   :rule-classes :linear)
 
 (defthm mod-does-nothing
@@ -307,7 +305,7 @@
   (implies (acl2-numberp m)
            (iff (= (mod m n) 0)
 	        (= m (* (fl (/ m n)) n))))
-  :enable (fl)
+  :enable fl
   :rule-classes ())
 
 (defthm mod-0-int
@@ -321,7 +319,7 @@
 (defrule mod-mult-n
   (equal (mod (* a n) n)
          (* n (mod a 1)))
-  :enable (mod))
+  :enable mod)
 
 (defthm mod-mult-n-alt
   (equal (mod (* n a) n)
@@ -353,7 +351,7 @@
            (iff (= (mod m (* n p)) 0)
                 (and (= (mod m n) 0)
                      (= (mod (fl (/ m n)) p) 0))))
-  :enable (mod)
+  :enable mod
   :rule-classes ())
 
 (defthm mod-equal-int
@@ -388,17 +386,14 @@
 	     (equal (mod (+ m (* a n)) n)
 		    (mod m n))))
 
-(defrule mod-force
+(acl2::with-arith5-nonlinear-help (defrule mod-force
   (implies (and (<= (* a n) m)
                 (< m (* (1+ a) n))
                 (integerp a)
                 (real/rationalp m)
                 (real/rationalp n))
            (= (mod m n) (- m (* a n))))
-  :prep-books (
-    (set-default-hints '((ACL2::nonlinearp-default-hint++
-                          ACL2::id ACL2::stable-under-simplificationp ACL2::hist nil))))
-  :rule-classes ())
+  :rule-classes ()))
 
 (defrule mod-bnd-3
   (implies (and (< m (+ (* a n) r))
@@ -407,9 +402,6 @@
                 (case-split (real/rationalp m))
                 (case-split (real/rationalp n)))
            (< (mod m n) r))
-  :prep-books (
-    (set-default-hints '((ACL2::nonlinearp-default-hint++
-                          ACL2::id ACL2::stable-under-simplificationp ACL2::hist nil))))
   :use (mod-force)
   :rule-classes :linear)
 
@@ -429,11 +421,7 @@
   (implies (and (case-split (natp k))
                 (case-split (natp n)))
            (equal (mod (mod x (* k n)) n)
-                  (mod x n)))
-  :prep-books (
-    (set-default-hints '((ACL2::nonlinearp-default-hint
-                          ACL2::stable-under-simplificationp ACL2::hist
-                          ACL2::pspv)))))
+                  (mod x n))))
 
 (defthmd mod-of-mod-cor-r
   (implies (and (<= b a)
@@ -522,188 +510,102 @@
 ;;;                         CHOP-R
 ;;;**********************************************************************
 
-(defund chop-r (x k radix)
+(defmacro radixp (r)
+  `(and (integerp ,r) (>= ,r 2)))
+
+(defund chop-r (x k r)
   (declare (xargs :guard (and (real/rationalp x)
                               (integerp k)
-                              (integerp radix)
-                              (>= radix 2))))
-  (/ (fl (* (expt radix k) x)) (expt radix k)))
+                              (radixp r))))
+  (/ (fl (* (expt r k) x)) (expt r k)))
 
 (defruled chop-r-mod
   (implies (and (real/rationalp x)
                 (integerp k))
-           (equal (chop-r x k radix)
-                  (-  x (mod x (expt radix (- k))))))
+           (equal (chop-r x k r)
+                  (-  x (mod x (expt r (- k))))))
   :enable chop-r
-  :use (:instance mod-def (y (expt radix (- k)))))
+  :use (:instance mod-def
+         (y (expt r (- k)))))
+
+(acl2::with-arith5-nonlinear-help (defrule chop-r-down
+  (implies (and (real/rationalp x)
+                (integerp n)
+                (radixp r))
+           (<= (chop-r x n r) x))
+  :enable chop-r
+  :rule-classes ()))
+
+(defrule chop-r-monotone
+  (implies (and (real/rationalp x)
+                (real/rationalp y)
+                (integerp n)
+                (<= x y)
+                (radixp r))
+           (<= (chop-r x n r) (chop-r y n r)))
+  :enable chop-r
+  :use (:instance fl-monotone-linear
+         (x (* x (expt r n)))
+         (y (* y (expt r n))))
+  :rule-classes ())
 
 (defruled chop-r-chop-r
   (implies (and (real/rationalp x)
                 (integerp k)
                 (integerp m)
                 (<= k m)
-                (integerp radix)
-                (> radix 0))
-           (and (equal (chop-r (chop-r x m radix) k radix)
-                       (chop-r x k radix))
-                (equal (chop-r (chop-r x k radix) m radix)
-                       (chop-r x k radix))))
+                (radixp r))
+           (and (equal (chop-r (chop-r x m r) k r)
+                       (chop-r x k r))
+                (equal (chop-r (chop-r x k r) m r)
+                       (chop-r x k r))))
   :enable chop-r
-  :use (:instance fl/int-rewrite (x (* (expt radix m) x)) (n (expt radix (- m k)))))
+  :use (:instance fl/int-rewrite
+         (x (* (expt r m) x))
+         (n (expt r (- m k)))))
 
 (defruled chop-r-shift
   (implies (and (real/rationalp x)
                 (integerp k)
                 (integerp m))
-           (equal (chop-r (* (expt radix k) x) m radix)
-                  (* (expt radix k) (chop-r x (+ k m) radix))))
+           (equal (chop-r (* (expt r k) x) m r)
+                  (* (expt r k) (chop-r x (+ k m) r))))
   :enable chop-r)
 
-(defrule chop-r-bound
+(acl2::with-arith5-nonlinear-help (defrule chop-r-bound
   (implies (and (real/rationalp x)
                 (integerp n)
                 (natp m)
-                (integerp radix)
-                (> radix 0))
-           (iff (<= n x) (<= n (chop-r x m radix))))
-  :prep-lemmas (
-    (defrule lemma1
-      (implies (and (real/rationalp x)
-                    (integerp n)
-                    (rationalp h)
-                    (natp m)
-                    (integerp radix)
-                    (> radix 0))
-               (iff (and (<= n x) (<= x h))
-                    (and (<= (* (expt radix m) n) (* (expt radix m) x))
-                         (<= (* (expt radix m) x) (* (expt radix m) h)))))
-      :rule-classes ())
-    (defrule lemma2
-      (implies (and (real/rationalp x)
-                    (integerp n)
-                    (natp m)
-                    (integerp radix)
-                    (> radix 0))
-               (iff (<= n x) (<= (* (expt radix m) n) (* (expt radix m) x))))
-      :rule-classes ()
-      :use (:instance lemma1 (h x)))
-    (defrule lemma3
-      (implies (and (real/rationalp x)
-                    (integerp n)
-                    (natp m)
-                    (integerp radix))
-               (iff (<= (* (expt radix m) n) (* (expt radix m) x))
-                    (<= (* (expt radix m) n) (fl (* (expt radix m) x)))))
-      :rule-classes ())
-    (defrule lemma4
-      (implies (and (real/rationalp x)
-                    (integerp n)
-                    (natp m)
-                    (integerp radix)
-                    (> radix 0))
-               (iff (<= n x)
-                    (<= (* (expt radix m) n) (fl (* (expt radix m) x)))))
-      :use (lemma2 lemma3)
-      :rule-classes ())
-    (defrule lemma5
-      (implies (and (real/rationalp x)
-                    (integerp n)
-                    (natp m)
-                    (integerp radix)
-                    (> radix 0))
-               (iff (<= n (* (expt radix (- m)) (fl (* (expt radix m) x))))
-                    (<= (* (expt radix m) n) (fl (* (expt radix m) x)))))
-      :use (:instance lemma2 (x (* (expt radix (- m)) (fl (* (expt radix m) x)))))
-      :rule-classes ()))
+                (radixp r))
+           (iff (<= n x) (<= n (chop-r x m r))))
   :enable chop-r
-  :use (lemma4 lemma5)
-  :rule-classes ())
+  :use (:instance fl-monotone-linear
+         (x (* n (expt r m)))
+         (y (* x (expt r m))))
+  :rule-classes ()))
 
-(defruled chop-r-small
+(acl2::with-arith5-nonlinear-help (defruled chop-r-small
   (implies (and (real/rationalp x)
                 (integerp m)
-                (< x (expt radix (- m)))
-                (<= (- (expt radix (- m))) x)
-                (integerp radix)
-                (> radix 0))
-           (equal (chop-r x m radix)
+                (< x (expt r (- m)))
+                (<= (- (expt r (- m))) x)
+                (radixp r))
+           (equal (chop-r x m r)
                   (if (>= x 0)
                       0
-                    (- (expt radix (- m))))))
- :prep-lemmas (
-   (defrule lemma1
-      (implies (and (real/rationalp x)
-                    (real/rationalp y)
-                    (real/rationalp z)
-                    (> z 0)
-                    (> y 0)
-                    (< x y)
-                    (<= (- y) x))
-               (and (< (* x z) (* y z))
-                    (<= (* (- y) z) (* x z))))
-      :rule-classes ())
-    (defrule lemma2
-      (implies (and (real/rationalp x)
-                    (integerp m)
-                    (< x (expt radix (- m)))
-                    (<= (- (expt radix (- m))) x)
-                    (integerp radix)
-                    (> radix 0))
-               (and (< (* (expt radix m) x) 1)
-                    (<= -1 (* (expt radix m) x))))
-      :rule-classes ()
-      :use (:instance lemma1 (y (expt radix (- m))) (z (expt radix m))))
-    (defrule lemma3
-      (implies (and (real/rationalp x)
-                    (integerp m)
-                    (< x (expt radix (- m)))
-                    (<= (- (expt radix (- m))) x)
-                    (integerp radix)
-                    (> radix 0))
-               (and (< (fl (* (expt radix m) x)) 1)
-                    (<= -1 (fl (* (expt radix m) x)))))
-      :rule-classes ()
-      :use lemma2)
-    (defrule lemma4
-      (implies (and (real/rationalp x)
-                    (integerp m)
-                    (< x (expt radix (- m)))
-                    (<= (- (expt radix (- m))) x)
-                    (integerp radix)
-                    (> radix 0))
-               (equal (fl (* (expt radix m) x))
-                      (if (>= x 0) 0 -1)))
-      :rule-classes ()
-      :use lemma3))
- :use (lemma4)
- :enable chop-r)
+                    (- (expt r (- m))))))
+  :enable chop-r
+  :use (:instance fl-unique
+         (x (* x (expt r m)))
+         (n (if (>= x 0) 0 -1)))))
 
 (defrule chop-r-0
   (implies (and (real/rationalp x)
                 (integerp m)
-                (< (abs (chop-r x m radix)) (expt radix (- m)))
-                (integerp radix))
-           (equal (chop-r x m radix) 0))
-  :prep-lemmas (
-    (defrule lemma1
-      (implies (and (real/rationalp x)
-                    (integerp m)
-                    (< (abs (chop-r x m radix)) (expt radix (- m)))
-                    (integerp radix))
-               (< (abs (fl (* (expt radix m) x))) 1))
-      :rule-classes ()
-      :enable chop-r)
-    (defrule lemma2
-      (implies (and (real/rationalp x)
-                    (integerp m)
-                    (< (abs (chop-r x m radix)) (expt radix (- m)))
-                    (integerp radix))
-               (equal (fl (* (expt radix m) x)) 0))
-      :rule-classes ()
-      :use lemma1)
-  )
-  :enable chop-r
-  :use lemma2)
+                (< (abs (chop-r x m r)) (expt r (- m)))
+                (radixp r))
+           (equal (chop-r x m r) 0))
+  :enable chop-r)
 
 ;;;**********************************************************************
 ;;;                         CHOP
@@ -722,7 +624,23 @@
                 (integerp k))
            (equal (chop x k)
                   (-  x (mod x (expt 2 (- k))))))
-  :enable (chop-r-mod))
+  :enable chop-r-mod)
+
+(defrule chop-down
+  (implies (and (rationalp x)
+                (integerp n))
+           (<= (chop x n) x))
+  :use (:instance chop-r-down (r 2))
+  :rule-classes ())
+
+(defrule chop-monotone
+  (implies (and (rationalp x)
+                (rationalp y)
+                (integerp n)
+                (<= x y))
+           (<= (chop x n) (chop y n)))
+  :use (:instance chop-r-monotone (r 2))
+  :rule-classes ())
 
 (defruled chop-chop
   (implies (and (real/rationalp x)
@@ -733,7 +651,7 @@
                        (chop x k))
                 (equal (chop (chop x k) m)
                        (chop x k))))
-  :enable (chop-r-chop-r))
+  :enable chop-r-chop-r)
 
 (defruled chop-shift
   (implies (and (real/rationalp x)
@@ -741,14 +659,14 @@
                 (integerp m))
            (equal (chop (* (expt 2 k) x) m)
                   (* (expt 2 k) (chop x (+ k m)))))
-  :use (:instance chop-r-shift (radix 2)))
+  :use (:instance chop-r-shift (r 2)))
 
 (defrule chop-bound
   (implies (and (real/rationalp x)
                 (integerp n)
                 (natp m))
            (iff (<= n x) (<= n (chop x m))))
-  :use (:instance chop-r-bound (radix 2))
+  :use (:instance chop-r-bound (r 2))
   :rule-classes ())
 
 (defruled chop-small
@@ -760,7 +678,7 @@
                   (if (>= x 0)
                       0
                     (- (expt 2 (- m))))))
-  :enable (chop-r-small))
+  :enable chop-r-small)
 
 (defrule chop-0
   (implies (and (real/rationalp x)

@@ -10,7 +10,7 @@
 ;;
 ;; Nothing in this book is directly available to the user.
 ;; It is an irritating little book whose only purpose is to
-;; allow one to prove a couple of theorems about multiplying 
+;; allow one to prove a couple of theorems about multiplying
 ;; (or dividing) both sides of an inequality by a rational
 ;; number.  Previously one had to know that the other terms
 ;; of the inequality were rational also.  See cancel-terms or
@@ -30,7 +30,7 @@
 (local
  (include-book "default-hint"))
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                               hist pspv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,7 +73,7 @@
 			 ((< 0 a)
 			    (< (* a x) (* a y))))))
    :hints (("Goal" :use completion-of-<)
-	   
+
 	   ("Subgoal 6.4.1'" :use ((:instance completion-of-<
 					     (x (complex (* a r) (* a s)))
 					     (y 0))))
@@ -387,7 +387,7 @@
                            ((< Y 0) (< 0 Z))
                            (T NIL))))))
 
-(encapsulate 
+(encapsulate
  ()
 
 (local
@@ -492,7 +492,7 @@
 		  (if (< 0 c)
 		      (< (* c lhs) (* c rhs))
 		    (< (* c rhs) (* c lhs))))))
- 
+
  )
 
 (in-theory (disable big-helper-2))

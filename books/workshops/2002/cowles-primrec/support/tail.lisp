@@ -28,10 +28,10 @@
  (certify-book "tail" 0 nil ; compile-flg
                :defaxioms-okp nil
 	       :skip-proofs-okp nil)
-|#	       
+|#
 #|
-Show for Pete & J's construction, as reported in defpun.lisp, of 
-tail-recursive f, any constant would do in place of nil in the 
+Show for Pete & J's construction, as reported in defpun.lisp, of
+tail-recursive f, any constant would do in place of nil in the
 definition of f.
 |#
 
@@ -40,15 +40,15 @@ definition of f.
 (defstub
   test (*) => *)
 
-(defstub 
+(defstub
   base (*) => *)
 
-(defstub 
+(defstub
   st (*) => *)
 
-(defstub 
+(defstub
     const () => *)
- 
+
 (defun stn (x n)
   (if (zp n) x (stn (st x) (1- n))))
 
@@ -87,7 +87,7 @@ definition of f.
 
  (local (defthm open-stn
 	    (implies (and (integerp n) (< 0 n))
-		     (equal (stn x n) 
+		     (equal (stn x n)
 			    (stn (st x) (1- n))))))
 
  (local (defthm +1-1 (equal (+ -1 +1 x) (fix x))))
@@ -103,7 +103,7 @@ definition of f.
 
  (local (defthm test-nil-fch
 	    (implies (not (test x))
-		     (iff (test (stn (st x) 
+		     (iff (test (stn (st x)
 				     (fch (st x))))
 			  (test (stn x (fch x)))))
 	    :hints
@@ -113,7 +113,7 @@ definition of f.
 				      (n (+ -1 (fch x)))))))))
 
  (local (defthm fn-st
-	    (implies (and (test (stn x n)) 
+	    (implies (and (test (stn x n))
 			  (test (stn x m)))
 		     (equal (fn x n) (fn x m)))
 	    :rule-classes nil))

@@ -1,10 +1,6 @@
 (in-package "RTL")
 
-(local (include-book "bits"))
-(local (include-book "float"))
-(include-book "round")
-(local (include-book "reps"))
-
+(include-book "definitions")
 (include-book "rcp")
 (local (include-book "example"))
 
@@ -54,7 +50,7 @@
                   (exactp a p)
                   (exactp b p)
                   (exactp q p)
-                  (< (abs (- 1 (* b y))) (/ (expt 2 p)))            
+                  (< (abs (- 1 (* b y))) (/ (expt 2 p)))
                   (< (abs (- (/ a b) q)) (expt 2 (- (1+ e) p)))
                   (ieee-rounding-mode-p mode))
              (= (rnd (+ q (* r y)) mode p)

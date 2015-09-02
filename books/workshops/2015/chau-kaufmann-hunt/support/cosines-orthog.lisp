@@ -686,7 +686,7 @@
             (equal (int-cos-orthog-m=n-prime a b (new-m) (new-c))
                    (- (cos-orthog-m=n b (new-m) (new-c))
                       (cos-orthog-m=n a (new-m) (new-c)))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :by (:functional-instance
                  ftc-2
                  (rcdfn
@@ -852,7 +852,7 @@
 (in-theory (disable riemann-cos-orthog-prime
                     riemann-cos-orthog-m=n-prime
                     riemann-cos-orthog-m!=n-prime))
- 
+
 (local
  (defthm limited-riemann-cos-orthog-prime-small-partition
    (implies (and (realp a) (standardp a)

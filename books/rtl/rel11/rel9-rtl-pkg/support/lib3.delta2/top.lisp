@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -34,11 +34,6 @@
 
 (include-book "float") ;floating-point numbers
 
-(include-book "reps") ;floating-point formats and representations
-
 (include-book "round") ;floating-point rounding
 
 (include-book "add") ;support for reasoning about integer addition
-
-(include-book "masc") ;SystemC
-

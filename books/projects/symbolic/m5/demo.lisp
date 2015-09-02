@@ -27,7 +27,7 @@
 
 J Moore
 
-Here is the Java for a factorial method.  
+Here is the Java for a factorial method.
 
 class Demo {
 
@@ -54,7 +54,7 @@ If you put this into Demo.java and run
 you get the following:
 
 Compiled from Demo.java
-synchronized class Demo extends java.lang.Object 
+synchronized class Demo extends java.lang.Object
     /* ACC_SUPER bit set */
 {
     static int ans;
@@ -402,7 +402,7 @@ Below is the output of jvm2acl2 for M5.
        (PUTSTATIC "Demo" "ans" NIL)
        (RETURN)))
      (REF 5))))
-  
+
 (defconst *Demo-state*
   (make-state *demo-thread-table*
               *demo-heap*
@@ -657,9 +657,9 @@ T
                    nil))
                  *demo-heap*
                  *demo-class-table*)))))
-                                                    
+
     (int-fix (* 2 (factorial (+ 1 k)))))))
-           
+
 ; In the steps below we demonstrate the key steps in the
 ; simplification above, to check the claims made in the paper.
 
@@ -693,7 +693,7 @@ T
                (run (fact-sched 0 (+ 1 k))
                     (run (repeat 0 4)
                          (alpha 0 (list v0 v1 v2 k) stk)))))))
-                  
+
 (defthm symbolic-computation-step2
   (implies
    (intp (+ 1 k))

@@ -49,7 +49,7 @@
     ("EQ" nil .  "</p></blockquote>~%<p>")
     ("EV" nil .  "</code>~%")
 
-; XDOC question: Is <img> supported?  
+; XDOC question: Is <img> supported?
 ;  Yes but not documented.  <icon src='...'> is for inline images,
 ;  <img src='...'> is for larger, centered images
 

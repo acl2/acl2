@@ -28,9 +28,9 @@
  (certify-book "fix" 0 nil ; compile-flg
                :defaxioms-okp nil
 	       :skip-proofs-okp nil)
-|#	       
+|#
 #|
-The ACL2 function FIX is a solution for g1 in the primitive 
+The ACL2 function FIX is a solution for g1 in the primitive
 recursive equation
 
   (equal (g1 x)
@@ -38,9 +38,9 @@ recursive equation
              0
              (+ 1 (g1 (- x 1))))).
 
-This is an example, due Manolious and Moore, showing that the 
-binary function h having a right fixed point is not necessary for 
-the existence of such a solution. 
+This is an example, due Manolious and Moore, showing that the
+binary function h having a right fixed point is not necessary for
+the existence of such a solution.
 
 Here (test x) is (equal x 0),
      (base x) is 0,

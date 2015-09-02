@@ -17,12 +17,12 @@
  (defun cosine-interval (y)
    (declare (ignore y))
    (interval 0 (acl2-pi))))
-	   
+
 (local
  (defthm trivial-subinterval
      (implies (and (realp x)
 		   (realp y)
-		   (< x y)) 
+		   (< x y))
 	      (subinterval-p (interval x y) (interval x y)))
    :hints (("Goal"
 	    :in-theory (enable interval-definition-theory)))))
@@ -51,13 +51,13 @@
  ()
  (local
   (defthm lemma-1
-      (implies (and (realp c) 
+      (implies (and (realp c)
 		    (realp s)
 		    (equal (+ (* s s) (* c c)) 1))
 	       (<= c 1))))
  (local
   (defthm lemma-2
-      (implies (and (realp c) 
+      (implies (and (realp c)
 		    (realp s)
 		    (equal (+ (* s s) (* c c)) 1))
 	       (<= -1 c))
@@ -303,7 +303,7 @@
 				(INTERVAL -1 1)))
    :hints (("Goal"
 	    :in-theory (enable interval-definition-theory)))
-   :rule-classes (:built-in-clause))  
+   :rule-classes (:built-in-clause))
 
 (local
  (defthm sine-is-1-1-on--pi/2-pi/2
@@ -383,7 +383,7 @@
 (defun real-sine (x)
   (acl2-sine (realfix x)))
 
-(definv real-cosine 
+(definv real-cosine
     :f-inverse        acl2-acos
     :domain           (interval 0 (acl2-pi))
     :range            (interval -1 1)
@@ -494,7 +494,7 @@
             (inside-interval-p (standard-part (acl2-asin x))
                                (INTERVAL (- (* 1/2 (ACL2-PI)))
                                          (* 1/2 (ACL2-PI)))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :use (:instance acl2-asin-exists (y x))))))
 
 (local
@@ -503,7 +503,7 @@
             (inside-interval-p (standard-part (acl2-acos x))
                                (INTERVAL 0
                                          (ACL2-PI))))
-   :hints (("Goal" 
+   :hints (("Goal"
             :use (:instance acl2-acos-exists (y x))))))
 
 (local
@@ -543,13 +543,13 @@
                 )
             (i-close (acl2-asin x)
                      (acl2-asin y)))
-   :hints (("Goal" 
+   :hints (("Goal"
             :in-theory (enable i-close i-small)
             :use ((:instance sine-is-1-1-on-domain
                              (x1 (standard-part (acl2-asin x)))
                              (x2 (standard-part (acl2-asin y))))
                   (:instance acl2-asin-continuous-lemma)))))
-                                 
+
 
 (defthm acl2-acos-continuous
    (implies (and (inside-interval-p x (interval -1 1))
@@ -564,7 +564,7 @@
                  )
             (i-close (acl2-acos x)
                      (acl2-acos y)))
-   :hints (("Goal" 
+   :hints (("Goal"
             :in-theory (enable i-close i-small)
             :use ((:instance cosine-is-1-1-on-domain
                              (x1 (standard-part (acl2-acos x)))
@@ -575,7 +575,7 @@
   (implies (inside-interval-p x (interval -1 1))
            (equal (- (/ (acl2-pi) 2) (acl2-acos x))
                   (acl2-asin x)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance sine-is-1-1-on--pi/2-pi/2
                            (x (acl2-asin x))
                            (y (- (/ (acl2-pi) 2) (acl2-acos x))))
@@ -593,7 +593,7 @@
                 (< (- (/ (acl2-pi) 2)) x)
                 (< x (/ (acl2-pi) 2)))
            (< 0 (acl2-cosine x)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :cases ((= 0 x)
                    (< 0 x)
                    (> 0 x)))
@@ -608,7 +608,7 @@
                 (<= x (acl2-pi)))
            (equal (acl2-acos (acl2-cosine x))
                   (abs x)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :cases ((<= 0 x)
                    (< x 0)))
           ("Subgoal 2"
@@ -662,7 +662,7 @@
 		   (:instance sin**2+cos**2))
 	     :in-theory (disable sin**2+cos**2))))
    )
-   
+
 
 (defthm atan-tangent
   (implies (and (realp x)
@@ -670,21 +670,21 @@
                 (< x (/ (acl2-pi) 2)))
            (equal (acl2-atan (acl2-tangent x))
                   x))
-  :hints (("Goal" :use ((:instance  (:theorem 
+  :hints (("Goal" :use ((:instance  (:theorem
                                      (implies (equal x y)
                                               (equal (acl2-acos x) (acl2-acos y))))
-                                    (x (acl2-sqrt (/ (+ 1 (* (acl2-tangent x) 
+                                    (x (acl2-sqrt (/ (+ 1 (* (acl2-tangent x)
                                                              (acl2-tangent x))))))
                                     (y (acl2-cosine x)))
                         (:instance acl2-tangent-sign)
                         (:instance sin**2+cos**2)
                         (:instance cos-positive--pi/2-to-pi/2))
            :in-theory (enable-disable (abs sign)
-                                      (SIGN-*-X-Y 
+                                      (SIGN-*-X-Y
                                        sin**2+cos**2
                                        cos-positive--pi/2-to-pi/2)))))
 
-; Next goal: prove that the range of atan(x) is (-pi/2, pi/2) 
+; Next goal: prove that the range of atan(x) is (-pi/2, pi/2)
 
 ; Start by showing that cosine in nonincreasing. This is useful for
 ; establishing a bound on acos.
@@ -758,7 +758,7 @@
   (implies (realp x)
            (and (< (acl2-atan x) (/ (acl2-pi) 2))
                 (< (- (/ (acl2-pi) 2)) (acl2-atan x))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance sign-flippy
                             (x (acl2-acos (/ (acl2-sqrt (+ 1 (* x x))))))
                             (y (/ (acl2-pi) 2))
@@ -791,7 +791,7 @@
               (/ (acl2-sqrt (+ 1 (* x x))))))
   :hints (("Goal" :use (:instance (:theorem
                                    (implies (and (realp x) (< 0 x)
-                                                 (realp y) (< x y))                                                 
+                                                 (realp y) (< x y))
                                             (< (+ 1 x) (+ 1 y))))
                                   (x (* x x)) (y (* y y))))))
 
@@ -799,7 +799,7 @@
 (defthm acl2-acos-1
   (equal (acl2-acos 1)
          0)
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (enable interval-definition-theory)
            :use (:instance acl2-acos-inverse-exists
                                   (x 0)))))
@@ -843,8 +843,8 @@
                   (< x y))
              (< (acl2-atan x)
                 (acl2-atan y)))
-    :hints (("Goal" 
-           
+    :hints (("Goal"
+
              :expand ((:free (x) (hide x)))
              :in-theory (enable interval-definition-theory sign)
              :cases ((= x 0)
@@ -865,7 +865,7 @@
                 (acl2-atan y)))
     :hints (("Goal" :in-theory (disable acl2-atan)
              :use (:instance atan-increases-positive (x (- y)) (y (- x)))))))
-           
+
  (local
   (defthm atan-increases-switch
     (implies (and (realp x)
@@ -890,7 +890,7 @@
                     (and (< 0 y)
                          (< x 0)))
             :in-theory (disable acl2-atan)))))
-            
+
 (defthm acl2-atan-is-1-to-1
   (implies (and (realp x)
                 (realp y)
@@ -907,10 +907,10 @@
 (defthm tangent-atan
   (implies (realp x)
            (equal (acl2-tangent (acl2-atan x)) x))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable acl2-atan)
            :use ((:instance atan-bounds)
-                 (:instance atan-tangent 
+                 (:instance atan-tangent
                             (x (acl2-atan x)))
                  (:instance acl2-atan-is-1-to-1
                            (x (acl2-tangent (acl2-atan x)))
@@ -919,7 +919,7 @@
 (local
  (defthm sqrt-1+x*x-not-small
    (implies (realp x)
-            (not (i-small (acl2-sqrt (+ 1 (* x x)))))) 
+            (not (i-small (acl2-sqrt (+ 1 (* x x))))))
    :hints (("Goal" :in-theory (enable i-small)
             :use (:instance standard-part-<=
                             (x 1)
@@ -933,18 +933,18 @@
   :hints (("Goal" :use (:instance squares-close
                                   (x (acl2-sqrt x))
                                   (y (acl2-sqrt y))))))
-                
-                
+
+
 (local
  (defthm 1+x*x-continuous
-   (implies (and 
+   (implies (and
              (i-limited x)
              (i-limited y)
              (i-close x y))
             (i-close (+ 1 (* x x)) (+ 1 (* y y))))
    :hints (("Goal"
             :in-theory (enable i-close i-small)))))
-                   
+
 (defthm atan-continous-positive
   (implies (and (realp x)
                 (realp y)
@@ -1007,7 +1007,7 @@
   (implies (and (realp x) (realp y) (i-limited x)
                 (i-close x y))
            (i-close (acl2-atan x) (acl2-atan y)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable acl2-atan)
            :cases ((and (< 0 x) (< 0 y))
                    (and (< x 0) (< y 0))

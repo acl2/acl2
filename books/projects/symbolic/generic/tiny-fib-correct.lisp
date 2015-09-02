@@ -28,13 +28,13 @@ represented.
 (set-verify-guards-eagerness 0)
 
 (defconst *word-size* 32)
-(defconst *max-prog-address* 
+(defconst *max-prog-address*
   (1- (+ *prog-start-address*
          (len *fib-prog*))))
 
 
 
-;; First the fibonacci specification. 
+;; First the fibonacci specification.
 
 (defun fib-spec (n)
   (cond ((zp n) 1)
@@ -55,7 +55,7 @@ represented.
   (member (progc tiny-state) *fib-cutpoints*))
 
 
-;; Here are the assertions. 
+;; Here are the assertions.
 
 (defun tiny-fib-assertion (n tiny-state)
   (declare (xargs :stobjs tiny-state))
@@ -73,7 +73,7 @@ represented.
                     (equal n (dtos-val tiny-state 0))))
               ((equal (progc tiny-state) *loop-label*)
                (and (<= 0 (dtos-val tiny-state 0))
-                    (if (< 0 n) 
+                    (if (< 0 n)
                         (< (dtos-val tiny-state 0) n)
                        (<= (dtos-val tiny-state 0) n))
                     (equal (memi *fib-1-adr* tiny-state)
@@ -99,7 +99,7 @@ represented.
   (create-tiny-state))
 
 ;; Now correspondingly define the exitpoints, precondition and
-;; postcondition. 
+;; postcondition.
 
 (defun tiny-fib-exitpoint (n tiny-state)
   (declare (xargs :stobjs tiny-state) (ignore n))
@@ -122,7 +122,7 @@ represented.
 ;; Ok, now some theorems. I need to prove that fib-spec is always signed-byte-p
 ;; 32 and the reason is that after *done-label* there is a (plus<32> x 0)
 ;; around for whatever x is in address 20. But this is identity only if
-;; fib-spec itself is a signed-byte-p 32. 
+;; fib-spec itself is a signed-byte-p 32.
 
 (local
  (defthm plus<32>-is-signed-byte
@@ -133,7 +133,7 @@ represented.
             :in-theory (enable plus<32>)))))
 
 (local
- (defthm fib-is-signed-byte-p 
+ (defthm fib-is-signed-byte-p
    (signed-byte-p *word-size* (fib-spec n))))
 
 ;; The theorem below says that if you add 0 to it, you are fine. This takes us
@@ -150,7 +150,7 @@ represented.
    (declare (xargs :stobjs tiny-state))
   (if (tiny-fib-exitpoint n tiny-state)
       0
-    (o+ (o* (omega) (nfix (dtos-val tiny-state 0))) 
+    (o+ (o* (omega) (nfix (dtos-val tiny-state 0)))
         (nfix (- *max-prog-address* (progc tiny-state))))))
 
 
@@ -205,5 +205,5 @@ represented.
   :exitpoint tiny-fib-exitpoint
   :exitsteps tiny-fib-total-exitsteps
   :default dummy-tiny-state)
-  
+
 

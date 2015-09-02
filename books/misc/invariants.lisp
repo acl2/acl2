@@ -39,15 +39,15 @@
 (defun get-clique-members (fn world)
   (or (getprop fn 'recursivep nil 'current-acl2-world world)
       (er hard 'get-clique-members "Expected ~s0 to be in a mutually-recursive nest.~%")))
-  
+
 (defun get-formals (fn world)
   (getprop fn 'formals nil 'current-acl2-world world))
 
 (defun get-body (fn world)
   ;; This gets the original, normalized or non-normalized body based on what
-  ;; the user typed for the :normalize xarg.  The use of "last" skips past 
+  ;; the user typed for the :normalize xarg.  The use of "last" skips past
   ;; any other :definition rules that have been added since then.
-  (access def-body 
+  (access def-body
           (car (last (getprop fn 'def-bodies nil 'current-acl2-world world)))
           :concl))
 
@@ -83,7 +83,7 @@
 (defun inv-to-theorems (term hints state)
   (er-let* ((clauses (simplify-with-prover term hints 'inv-to-theorems state)))
            (value (inv-clauses-to-theorems clauses))))
-            
+
 
 (mutual-recursion
  ;; Fn-alist consists of pairs (fn . invariant) where invariant is some term.
@@ -151,7 +151,7 @@
       (cons `((lambda ,formals ,inv)
               . ,args)
             (calls-make-concls (cdr calls) fn-alist state)))))
-          
+
 
 
 (defun gather-invariant-reqs-from-induction (induction fn-alist req hints state)
@@ -237,7 +237,7 @@
     (if (member n nums)
         (remove-numbered-entries nums (cdr lst) (1+ n))
       (cons (car lst) (remove-numbered-entries nums (cdr lst) (1+ n))))))
-  
+
 
 (defun prove-invariants-fn (clique-member alist args state)
   (let* ((world (w state))

@@ -1,10 +1,10 @@
 ; This is an odd book.  Originally, I wanted to explore the idea of
 ; modifying an existing proof and using some of ACL2's debugging tools to
 ; figure out why it failed.  So I decided to modify qsort so that it
-; eliminates duplicates on the fly.  
+; eliminates duplicates on the fly.
 
 ; The resulting function, no-dups-qsort, does not have the perm property.
-; But it does produce ordered output.  
+; But it does produce ordered output.
 
 ; So I set out to prove that and discovered that the original proof of
 ; orderedp-qsort relied crucially on the perm property!  So my proof

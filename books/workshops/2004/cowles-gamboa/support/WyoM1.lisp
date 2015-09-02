@@ -2,7 +2,7 @@
 ; Copyright (C) 2004  J Strother Moore,
 ;               University of Texas at Austin
 
-; This program is free software; you can redistribute it and/or 
+; This program is free software; you can redistribute it and/or
 ; modify it under the terms of the GNU General Public License as
 ; published by the Free Software Foundation; either version 2 of
 ; the License, or (at your option) any later version.
@@ -13,7 +13,7 @@
 ; GNU General Public License for more details.
 
 ; You should have received a copy of the GNU General Public
-; License along with this program; if not, write to the Free 
+; License along with this program; if not, write to the Free
 ; Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
 ; USA.
 
@@ -29,14 +29,14 @@
 ; University of Wyoming
 ; Laramie, WY 82071 U.S.A.
 ;==============================================================
-; This file is a certified book that contains the definition of 
+; This file is a certified book that contains the definition of
 ; WyoM1.
 
 ; WyoM1 is M0 except that we now have function call and return.
 
 ; Instructions
 
-; To certify this book, make sure it is on a directory on which 
+; To certify this book, make sure it is on a directory on which
 ; you have write permission, fire up ACL2 while connected to that
 ; directory, and then execute the following two events.
 
@@ -120,7 +120,7 @@
   (cond ((endp args) nil)
         ((equal key (car args)) (cadr args))
         (t (actual key (cdr args)))))
-        
+
 (defmacro modify (s &rest args)
   (list 'make-state
         (cond ((suppliedp :call-stack args)
@@ -160,7 +160,7 @@
           :pc (+ 1 (pc s))
           :stack (push (arg1 inst) (stack s))))
 
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Informal Spec: (POP)
 ; Pop the top item off the operand stack and discard it.
 
@@ -172,15 +172,15 @@
 
 ; Note: When you define an ACL2 function that ignores one of its
 ; arguments you must declare that you are doing it intentionally.
-; That is the purpose of the DECLARE form above.  Why does 
-; execute-POP ignore inst?  The reason is that, by convention 
+; That is the purpose of the DECLARE form above.  Why does
+; execute-POP ignore inst?  The reason is that, by convention
 ; here, we know that inst is an instruction whose opcode is POP.
-; Since the POP instruction contains no additional fields, there 
+; Since the POP instruction contains no additional fields, there
 ; is nothing else we need from it.
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Informal Spec: (LOAD v)
-; Push the contents stored in local variable v onto the operand 
+; Push the contents stored in local variable v onto the operand
 ; stack.
 
 (defun execute-LOAD (inst s)
@@ -201,7 +201,7 @@
           :locals (bind (arg1 inst) (top (stack s)) (locals s))
           :stack (pop (stack s))))
 
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Informal Spec: (DUP)
 ; Duplicate the top item on the stack.
 
@@ -250,7 +250,7 @@
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Informal Spec: (GOTO delta)
-; Jump to the instruction delta steps from the current 
+; Jump to the instruction delta steps from the current
 ; instruction.
 
 (defun execute-GOTO (inst s)
@@ -259,7 +259,7 @@
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Informal Spec: (IFEQ delta)
-; Pop the top item off the stack and if it is 0, jump to the 
+; Pop the top item off the stack and if it is 0, jump to the
 ; instruction delta steps from the current instruction; otherwise,
 ; step to the next instruction.
 
@@ -296,10 +296,10 @@
                 (+ 1 (pc s)))
           :stack (pop (stack s))))
 
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Informal Spec: (IFLE delta)
 ; Pop the top item off the stack and if it is less than or equal
-; to 0, jump to the instruction delta steps from the current 
+; to 0, jump to the instruction delta steps from the current
 ; instruction; otherwise, step to the next instruction.;
 
 (defun execute-IFLE (inst s)
@@ -310,7 +310,7 @@
           :stack (pop (stack s))))
 
 ;---------------------------------------------------------------
-; We now informally specify and then define the new WyoM1 
+; We now informally specify and then define the new WyoM1
 ; instructions.
 
 (defun reverse (lst)
@@ -330,10 +330,10 @@
       stack
       (popn (- n 1) (pop stack))))
 
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Informal Spec: (CALL fname)
 ; Let fdef be the definition of the fname in defs and let L be the
-; length of the formals of fdef. Bind the top L items of the 
+; length of the formals of fdef. Bind the top L items of the
 ; operand stack to the formals, with the last formal bound to the
 ; top of the stack, etc. Modify the current top frame by incrementing
 ; the pc and poping the top L items off the operand stack.
@@ -342,7 +342,7 @@
 ; the call-stack:      pc: 0
 ;                  locals: binding of formals created above
 ;                   stack: empty stack
-;                 program: body of fdef   
+;                 program: body of fdef
 
 (defun execute-CALL (inst s)
   (let* ((fn (arg1 inst))
@@ -362,7 +362,7 @@
                               body)
                   (call-stack s1)))))
 
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; Informal Spec: (RET)
 ; Let val be the item on top of the operand stack of the top frame.
 ; Pop the top frame off the call-stack and push val on top of the
@@ -401,7 +401,7 @@
     (otherwise s)))
 
 ; Notice that there is no instruction with op-code HALT.  But what
-; is (do-inst '(HALT) s)?  The answer: s!  That is, every 
+; is (do-inst '(HALT) s)?  The answer: s!  That is, every
 ; undefined op-code is a no-op, and a no-op is the same as a halt
 ; instruction in the sense that execution never gets past it.
 

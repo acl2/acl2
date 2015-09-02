@@ -1750,7 +1750,7 @@ which is free of function calls on success.</p>"
                 nil))
            ((mv fndecl fndecl-ss) (vl-scopestack-find-item/ss funname ss))
            ((unless (and fndecl (eq (tag fndecl) :vl-fundecl)))
-            (mv nil 
+            (mv nil
                 (warn :type :vl-expand-functions-fail
                       :msg "Failed to expand call of function ~s0 because the ~
                             function declaration wasn't found."
@@ -1769,7 +1769,7 @@ which is free of function calls on success.</p>"
                                       (append-without-guard template1.inputs template1.locals))
                                 :minloc *vl-fakeloc*
                                 :maxloc *vl-fakeloc*)))
-           
+
            ((mv ok warnings nf assigns vardecls new-assigns)
             (vl-assignlist-expand-function-calls template1.assigns fndecl-ss nf
                                                  nil ;; vardecls
@@ -1823,7 +1823,7 @@ which is free of function calls on success.</p>"
        (warnings  vl-warninglist-p)
        (reclimit  natp))
       :measure (two-nats-measure reclimit (+ 1 (vl-expr-count (vl-assign->expr x))))
-      
+
       :returns (mv (successp booleanp :rule-classes :type-prescription)
                    (warnings vl-warninglist-p)
                    (nf       vl-namefactory-p)
@@ -1843,8 +1843,8 @@ which is free of function calls on success.</p>"
            (okp     (and okp1 okp2 okp3))
            (x-prime (change-vl-assign x :expr rhs-prime)))
         (mv okp warnings nf x-prime vardecls assigns)))
-    
-    
+
+
 
 
     ///

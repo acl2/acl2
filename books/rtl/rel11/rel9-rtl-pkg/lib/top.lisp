@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -40,8 +40,6 @@
 
 (include-book "float") ;floating-point numbers
 
-(include-book "reps") ;floating-point formats and representations
-
 (include-book "round") ;floating-point rounding
 
 (include-book "util") ;misc helpful stuff including a few macros
@@ -50,24 +48,8 @@
 
 ;;(include-book "add") ;support for reasoning about addition
 
-;;(include-book "mult") ;integer multiplication
-
 ;;(include-book "srt") ;SRT division and square root
-
-;; This must be included to use GL with this library:
-
-;;(include-book "gl")
 
 ;; These are relevant to code derived from Verilog:
 
 ;;(include-book "rtl") ;semantics of the basic RTL primitives
-
-;;(include-book "rtlarr") ;semantics of RTL array primitives
-
-;; This is relevant to code derived from SystemC and is inconsistent with the last two above:
-
-;;(include-book "masc")
-
-
-
-

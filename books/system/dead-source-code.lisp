@@ -228,7 +228,7 @@
                          (primitive-event-macros-fns (primitive-event-macros)
                                                      wrld)
                          (fns-with-lemmas wrld nil))))))
-                                                    
+
 (defun initial-live-names-array (wrld state)
   (let* ((size (1+ (max-absolute-event-number wrld)))
          (ar (compress1 'live-names

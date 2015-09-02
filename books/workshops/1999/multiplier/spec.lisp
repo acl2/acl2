@@ -13,7 +13,7 @@
 
 ;;The following four books are included:
 
-;;(1) A package written by J Moore that makes arithmetic proofs 
+;;(1) A package written by J Moore that makes arithmetic proofs
 ;;somewhat easier:
 
 (include-book "../../../rtl/rel1/support/fp")
@@ -108,7 +108,7 @@
   (in-theory (disable input-spec*)))
 
 ;;Once these constrained functions have been introduced, the "fmul*"
-;;book may be loaded.  This book defines a constant function S* 
+;;book may be loaded.  This book defines a constant function S*
 ;;corresponding to each signal S.  The value of this function, (S*),
 ;;represents the value of the signal that results from the inputs
 ;;(X*), (Y*), (RC*), and (PC*).  In fact, the following theorem is
@@ -131,7 +131,7 @@
 ;;
 ;;Then the desired correctness theorem can be derived as follows:
 ;;
-;;(defthm output-spec* 
+;;(defthm output-spec*
 ;;    (output-spec (x*) (y*) (rc*) (pc*))
 ;;  :hints (("Goal" :in-theory (enable output-spec)
 ;;                  :use (z*-spec fmul-star-equivalence))))

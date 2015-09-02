@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -38,7 +38,6 @@ Most of the functions introduced are disabled.
 |#
 
 (include-book "ground-zero")
-(include-book "rtlarr") ;includes the defn of bvecp
 (include-book "cat-def")
 
 ;;Definitions of the ACL2 functions that are used in the
@@ -53,6 +52,12 @@ Most of the functions introduced are disabled.
 
 
 ;; 1. bit-vector constants
+
+(defund bvecp (x k)
+  (declare (xargs :guard (integerp k)))
+  (and (integerp x)
+       (<= 0 x)
+       (< x (expt 2 k))))
 
 (defmacro n! (i n)
   (declare (ignore n)
@@ -121,7 +126,7 @@ Most of the functions introduced are disabled.
                   :guard-hints (("goal" :in-theory (enable COMP2)))))
   (log>= (comp2 x n) (comp2 y n)))
 
- 
+
 ;; 5. unary logical operations
 
 (defund logand1 (x n)
@@ -257,7 +262,7 @@ Most of the functions introduced are disabled.
        :exec  (if (evenp (ash x (- n))) 0 1)))
 
 ;setbits has a new parameter, w, indicating the size of the expression returned
-;Note: when j is 0, there is not lower part of x, but we have cat-with-n-0 to handle this case. 
+;Note: when j is 0, there is not lower part of x, but we have cat-with-n-0 to handle this case.
 (defund setbits (x w i j y)
   (declare (xargs :guard (and (natp x)
                               (natp y)
@@ -395,15 +400,15 @@ get rid of the bits call.
 
 (defund decode (x n)
   (declare (xargs :guard (rationalp n)))
-  (if (and (natp x) (< x n)) 
-      (ash 1 x) 
+  (if (and (natp x) (< x n))
+      (ash 1 x)
     0))
 
 (defund encode (x n)
     (declare (xargs :guard (and (acl2-numberp x)
                                 (integerp n)
                                 (<= 0 n))))
-  (if (zp n) 
+  (if (zp n)
       0
     (if (= x (ash 1 n))
         n
@@ -473,7 +478,7 @@ get rid of the bits call.
 
 
 (defund binary-land0 (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -493,7 +498,7 @@ get rid of the bits call.
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(land0 x y n) -- the base case
          `(binary-land0 ,@x))
-        (t         
+        (t
          `(binary-land0 ,(car x)
                        (land0 ,@(cdr x))
                        ,(car (last x))))))
@@ -525,7 +530,7 @@ get rid of the bits call.
                               (consp (cddr x)))))
   (cond ((endp (cdddr x)) ;(lior0 x y n) -- the base case
          `(binary-lior0 ,@x))
-        (t         
+        (t
          `(binary-lior0 ,(car x)
                        (lior0 ,@(cdr x))
                        ,(car (last x))))))
@@ -537,7 +542,7 @@ get rid of the bits call.
 ;;lxor0
 
 (defund binary-lxor0 (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -549,7 +554,7 @@ get rid of the bits call.
   (declare (xargs :guard (consp x)))
   (cond ((endp (cdddr x)) ;(lxor0 x y n) -- the base case
          `(binary-lxor0 ,@x))
-        (t         
+        (t
          `(binary-lxor0 ,(car x)
                        (lxor0 ,@(cdr x))
                        ,(car (last x))))))
@@ -563,26 +568,26 @@ get rid of the bits call.
 ;;4 functions that occur in the translated RTL, representing bit vectors of
 ;;determined length but undetermined value:
 
-(encapsulate 
+(encapsulate
  ((reset (key size) t))
  (local (defun reset (key size) (declare (ignore key size)) 0))
  (defthm bvecp-reset (bvecp (reset key size) size)
    :hints (("Goal" :in-theory (enable bvecp expt)))
-   :rule-classes 
-   (:rewrite 
-    (:forward-chaining :trigger-terms ((reset key size)))	
+   :rule-classes
+   (:rewrite
+    (:forward-chaining :trigger-terms ((reset key size)))
     (:type-prescription :corollary
-                        (and (integerp (reset key size)) 
+                        (and (integerp (reset key size))
                              (>= (reset key size) 0))
                         :hints
                         (("Goal" :in-theory '(implies bvecp)))))))
 
-(encapsulate 
+(encapsulate
  ((unknown (key size n) t))
  (local (defun unknown (key size n) (declare (ignore key size n)) 0))
  (defthm bvecp-unknown (bvecp (unknown key size n) size)
    :hints (("Goal" :in-theory (enable bvecp expt)))
-   :rule-classes 
+   :rule-classes
    (:rewrite
     (:forward-chaining :trigger-terms ((unknown key size n)))
     (:type-prescription :corollary
@@ -590,29 +595,3 @@ get rid of the bits call.
                              (>= (unknown key size n) 0))
                         :hints
                         (("Goal" :in-theory '(implies bvecp)))))))
-
-(encapsulate 
- ((reset2 (key size) t))
- (local (defun reset2 (key size) (declare (ignore key size)) nil))
- 
-;do we need rule-classes on this thm?
- (defthm bv-arrp-reset2
-   (bv-arrp (reset2 key size) size)
-   :hints
-   (("goal" :in-theory (enable bv-arrp)))
-   ))
-
-(encapsulate 
- ((unknown2 (key size n) t))
- (local (defun unknown2 (key size n) (declare (ignore key size n)) nil))
- 
-;do we need rule-classes on this thm?
- (defthm bv-arrp-unknown2
-   (bv-arrp (unknown2 key size n) size)
-   :hints
-   (("goal" :in-theory (enable bv-arrp)))
-   ))
-
-
-
-

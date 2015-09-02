@@ -7,7 +7,7 @@
 (defun step-process (ms ps)                 ;; returns mstate
   (declare (xargs :guard (and (mstatep ms)
                               (pstatep ps))))
-                  
+
   (let ((stmt (if (zp (cc ps)) nil (ith (cc ps) (code ps)))))
     (cond
      ((atom stmt) ms)  ;; cc out of range

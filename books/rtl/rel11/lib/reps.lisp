@@ -1,10 +1,10 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
 ;
 ; Contact:
-;   David Russinoff
+;   David M. Russinoff
 ;   1106 W 9th St., Austin, TX 78703
-;   http://www.russsinoff.com/
+;   david@russinoff.com
+;   http://www.russinoff.com/
 ;
 ; This program is free software; you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
@@ -20,7 +20,6 @@
 ; Free Software Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA
 ; 02110-1335, USA.
 ;
-; Author: David M. Russinoff (david@russinoff.com)
 
 (in-package "RTL")
 
@@ -31,123 +30,7 @@
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
-;; From basic.lisp:
-
-(defund fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
-
-;; From bits.lisp:
-
-(defund bvecp (x k)
-  (declare (xargs :guard (integerp k)))
-  (and (integerp x)
-       (<= 0 x)
-       (< x (expt 2 k))))
-
-(defund bits (x i j)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp i)
-                              (integerp j))))
-  (mbe :logic (if (or (not (integerp i))
-                      (not (integerp j)))
-                  0
-                (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-       :exec  (if (< i j)
-                  0
-                (logand (ash x (- j)) (1- (ash 1 (1+ (- i j))))))))
-
-(defund bitn (x n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp n))))
-  (mbe :logic (bits x n n)
-       :exec  (if (evenp (ash x (- n))) 0 1)))
-
-(defund binary-cat (x m y n)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp m)
-                              (natp n))))
-  (if (and (natp m) (natp n))
-      (+ (* (expt 2 n) (bits x (1- m) 0))
-         (bits y (1- n) 0))
-    0))
-
-;; We define a macro, CAT, that takes a list of a list X of alternating data values 
-;; and sizes.  CAT-SIZE returns the formal sum of the sizes.  X must contain at 
-;; least 1 data/size pair, but we do not need to specify this in the guard, and 
-;; leaving it out of the guard simplifies the guard proof.
-
-(defun formal-+ (x y)
-  (declare (xargs :guard t))
-  (if (and (acl2-numberp x) (acl2-numberp y))
-      (+ x y)
-    (list '+ x y)))
-
-(defun cat-size (x)
-  (declare (xargs :guard (and (true-listp x) (evenp (length x)))))
-  (if (endp (cddr x))
-      (cadr x)
-    (formal-+ (cadr x)
-	      (cat-size (cddr x)))))
-
-(defmacro cat (&rest x)
-  (declare (xargs :guard (and x (true-listp x) (evenp (length x)))))
-  (cond ((endp (cddr x))
-         `(bits ,(car x) ,(formal-+ -1 (cadr x)) 0))
-        ((endp (cddddr x))
-         `(binary-cat ,@x))
-        (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
-                      ,(cat-size (cddr x))))))
-
-(defund mulcat (l n x)
-  (declare (xargs :guard (and (integerp l) (< 0 l) (acl2-numberp n) (natp x))))
-  (mbe :logic (if (and (integerp n) (> n 0))
-                  (cat (mulcat l (1- n) x)
-                       (* l (1- n))
-                       x
-                       l)
-                0)
-       :exec  (cond ((eql n 1)
-                     (bits x (1- l) 0))
-                    ((and (integerp n) (> n 0))
-                     (cat (mulcat l (1- n) x)
-                          (* l (1- n))
-                          x
-                          l))
-                    (t 0))))
-
-;; From float.lisp:
-
-(defund sgn (x) 
-  (declare (xargs :guard t))
-  (if (or (not (rationalp x)) (equal x 0))
-      0
-    (if (< x 0) -1 +1)))
-
-(defund expo (x)
-  (declare (xargs :guard t
-                  :measure (:? x)))
-  (cond ((or (not (rationalp x)) (equal x 0)) 0)
-	((< x 0) (expo (- x)))
-	((< x 1) (1- (expo (* 2 x))))
-	((< x 2) 0)
-	(t (1+ (expo (/ x 2))))))
-
-(defund sig (x)
-  (declare (xargs :guard t))
-  (if (rationalp x)
-      (if (< x 0)
-          (- (* x (expt 2 (- (expo x)))))
-        (* x (expt 2 (- (expo x)))))
-    0))
-
-(defund exactp (x n)
-  (integerp (* (sig x) (expt 2 (1- n)))))
-
+(include-book "defs")
 
 ;;;***************************************************************
 ;;;               Classification of Formats
@@ -181,7 +64,7 @@
 
 (defund encodingp (x f)
   (declare (xargs :guard (formatp f)))
-  (bvecp x (+ 1 (expw f) (sigw f))))
+  (and (formatp f) (bvecp x (+ 1 (expw f) (sigw f)))))
 
 ;;Examples:
 
@@ -189,9 +72,18 @@
 
 (defund dp () (declare (xargs :guard t)) '(nil 53 11))
 
-(defund ep () (declare (xargs :guard t)) '(t 64 15)) 
+(defund ep () (declare (xargs :guard t)) '(t 64 15))
 
 (in-theory (disable (sp) (dp) (ep)))
+
+(defthm formatp-sp
+  (formatp (sp)))
+
+(defthm formatp-dp
+  (formatp (dp)))
+
+(defthm formatp-ep
+  (formatp (ep)))
 
 ;;Field extractors:
 
@@ -245,20 +137,17 @@
      (1+ (* (manf x f) (expt 2 (- 1 (prec f)))))))
 
 (defthmd sgn-ndecode
-    (implies (and (formatp f)
-                  (normp x f))
+    (implies (normp x f)
 	     (equal (sgn (ndecode x f))
 		    (if (= (sgnf x f) 0) 1 -1))))
 
 (defthmd expo-ndecode
-    (implies (and (formatp f)
-		  (normp x f))
+    (implies (normp x f)
 	     (equal (expo (ndecode x f))
 		    (- (expf x f) (bias f)))))
 
 (defthmd sig-ndecode
-    (implies (and (formatp f)
-		  (normp x f))
+    (implies (normp x f)
 	     (equal (sig (ndecode x f))
 		    (+ 1 (/ (manf x f) (expt 2 (1- (prec f))))))))
 
@@ -267,6 +156,7 @@
 
 (defund nrepp (x f)
   (and (rationalp x)
+       (formatp f)
        (not (= x 0))
        (< 0 (+ (expo x) (bias f)))
        (< (+ (expo x) (bias f)) (1- (expt 2 (expw f))))
@@ -285,24 +175,20 @@
 ;;Inversions:
 
 (defthm nrepp-ndecode
-    (implies (and (formatp f)
-                  (normp x f))
+    (implies (normp x f)
 	     (nrepp (ndecode x f) f)))
 
 (defthm nencode-ndecode
-    (implies (and (formatp f)
-                  (normp x f))
+    (implies (normp x f)
 	     (equal (nencode (ndecode x f) f)
 		    x)))
 
 (defthm normp-nencode
-    (implies (and (formatp f)
-                  (nrepp x f))
+    (implies (nrepp x f)
              (normp (nencode x f) f)))
 
 (defthm ndecode-nencode
-    (implies (and (formatp f)
-                  (nrepp x f))
+    (implies (nrepp x f)
 	     (equal (ndecode (nencode x f) f)
 		    x)))
 
@@ -321,8 +207,7 @@
            (nrepp (spn f) f)))
 
 (defthmd smallest-spn
-  (implies (and (formatp f)
-                (nrepp x f))
+  (implies (nrepp x f)
            (>= (abs x) (spn f)))
   :rule-classes
   ((:rewrite :match-free :once)))
@@ -354,8 +239,7 @@
            (nrepp (lpn f) f)))
 
 (defthmd largest-lpn
-  (implies (and (formatp f)
-                (nrepp x f))
+  (implies (nrepp x f)
            (<= x (lpn f)))
   :rule-classes
   ((:rewrite :match-free :once)))
@@ -402,25 +286,23 @@
     (ndecode x f)))
 
 (defthm sgn-ddecode
-  (implies (and (formatp f)
-                (or (denormp x f) (pseudop x f)))
+  (implies (or (denormp x f) (pseudop x f))
            (equal (sgn (ddecode x f))
                   (if (= (sgnf x f) 0) 1 -1))))
 
 (defthm expo-ddecode
-  (implies (and (formatp f)
-                (or (denormp x f) (pseudop x f)))
+  (implies (or (denormp x f) (pseudop x f))
 	   (equal (expo (ddecode x f))
 	          (+ 2 (- (prec f)) (- (bias f)) (expo (sigf x f))))))
 
 (defthm sig-ddecode
-  (implies (and (formatp f)
-                (or (denormp x f) (pseudop x f)))
+  (implies (or (denormp x f) (pseudop x f))
            (equal (sig (ddecode x f))
                   (sig (sigf x f)))))
 
 (defund drepp (x f)
   (and (rationalp x)
+       (formatp f)
        (not (= x 0))
        (<= (- 2 (prec f)) (+ (expo x) (bias f)))
        (<= (+ (expo x) (bias f)) 0)
@@ -435,26 +317,20 @@
        (sigw f)))
 
 (defthm drepp-ddecode
-  (implies (and (formatp f)
-                (denormp x f))
-           (drepp (ddecode x f) f))
-  :hints (("Goal" :in-theory (enable drepp)
-                  :use (drepp-dencode-1 drepp-dencode-3 drepp-dencode-5))))
+  (implies (denormp x f)
+           (drepp (ddecode x f) f)))
 
 (defthm dencode-ddecode
-  (implies (and (formatp f)
-                (denormp x f))
+  (implies (denormp x f)
            (equal (dencode (ddecode x f) f)
                   x)))
 
 (defthm denormp-dencode
-  (implies (and (formatp f)
-                (drepp x f))
+  (implies (drepp x f)
            (denormp (dencode x f) f)))
 
 (defthm ddecode-dencode
-  (implies (and (formatp f)
-                (drepp x f))
+  (implies (drepp x f)
            (equal (ddecode (dencode x f) f)
                   x)))
 
@@ -474,13 +350,11 @@
            (drepp (spd f) f)))
 
 (defthmd smallest-spd
-  (implies (and (formatp f)
-                (drepp r f))
+  (implies (drepp r f)
            (>= (abs r) (spd f))))
 
 (defthmd spd-mult
   (implies (and (formatp f)
-		(rationalp r)
                 (> r 0)
 		(= m (/ r (spd f))))
 	   (iff (drepp r f)
@@ -522,17 +396,17 @@
   (declare (xargs :guard (formatp f)))
   (and (nanp x f) (= (bitn x (- (prec f) 2)) 0)))
 
-(defund qnanize (x f) 
+(defund qnanize (x f)
   (declare (xargs :guard (and (integerp x) (formatp f))))
   (logior x (expt 2 (- (prec f) 2))))
 
 (defund indef (f)
   (if (explicitp f)
-      (cat (1- (expt 2 (+ (expw f) 3))) 
+      (cat (1- (expt 2 (+ (expw f) 3)))
            (+ (expw f) 3)
            0
            (- (sigw f) 2))
-    (cat (1- (expt 2 (+ (expw f) 2))) 
+    (cat (1- (expt 2 (+ (expw f) 2)))
          (+ (expw f) 2)
          0
          (1- (sigw f)))))

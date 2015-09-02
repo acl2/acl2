@@ -55,7 +55,7 @@ will have names such as @('modinst_11') and @('gateinst_46').  We also insert ge
   (b* ((x (maybe-string-fix x))
        ((when x) (mv x (vl-namedb-fix namedb))))
     (vl-namedb-indexed-name basename namedb)))
-    
+
 
 (fty::defvisitor-template addnames ((x :object)
                                     (namedb vl-namedb-p))
@@ -95,15 +95,18 @@ will have names such as @('modinst_11') and @('gateinst_46').  We also insert ge
     :measure (two-nats-measure (vl-genelement-count x) 1)
     (b* (((mv x namedb) (vl-genelement-addnames x namedb)))
       (vl-genelement-case x
-        :vl-genbase ;; Change genbase into a genblock when nested in an if, loop, or case.
+        :vl-genblock
+        ;; It's already a block, leave it.
+        (mv x namedb)
+        :otherwise ;; Change genbase or generate into a genblock when nested in
+                   ;; an if, loop, or case.
         (b* (((mv name namedb) (vl-namedb-indexed-name "unnamed_genblock" namedb)))
           (mv (make-vl-genblock
                :name name
                :elems (list x)
-               :loc (vl-modelement->loc x.item))
-              namedb))
-        :otherwise (mv x namedb)))))
-         
+               :loc (vl-genelement->loc x))
+              namedb))))))
+
 
 
 (fty::defvisitors vl-design-addnames-aux

@@ -663,3 +663,165 @@ positive value and 1 indicates a negative value.)</p>"
             ,result-nbits ,dst ,src ,cf))))
 
 ;; ======================================================================
+
+;; Some arithmetic theorems that will be used in all books higher up
+;; (especially for proving away MBEs):
+
+(encapsulate
+ ()
+
+ (local (include-book "arithmetic-5/top" :dir :system))
+
+ (defun power-of-2p-measure (x)
+   (cond ((or (not (natp x))
+              (<= x 1))
+          0)
+         (t (floor x 1))))
+
+ (defn is-power-of-2p (x)
+   (declare (xargs :measure (power-of-2p-measure x)))
+   (if (natp x)
+       (if (<= x 1)
+           t
+         (is-power-of-2p (* 1/2 x)))
+     nil))
+
+ (local
+  (set-default-hints
+   '((acl2::nonlinearp-default-hint++ acl2::id acl2::stable-under-simplificationp
+                                      acl2::hist nil))))
+
+ (defthm ash-bounds-with-powers-of-two
+   ;; A general ash bounds theorem
+   (implies (and (integerp i)
+                 (<= 0 i)
+                 (equal 2-to-x (* 2-to-x-y (expt 2 y)))
+                 (< i 2-to-x)
+                 (syntaxp (quotep 2-to-x))
+                 (is-power-of-2p 2-to-x)
+                 (< (expt 2 y) 2-to-x)
+                 (syntaxp (quotep y))
+                 (syntaxp (quotep 2-to-x-y))
+                 (integerp y)
+                 (<= 0 y))
+            (< (ash i (- y)) 2-to-x-y))
+   :rule-classes :rewrite)
+
+ ) ;; End of encapsulate
+
+(local
+ (defun my-induct (x y)
+   (if (and (natp x)
+            (natp y))
+       (if (zp x)
+           y
+         (if (zp y)
+             x
+           (my-induct (logcdr x) (logcdr y))))
+     nil)))
+
+(defthm integer-length-of-logior-of-natp
+  (implies (and (natp x)
+                (natp y)
+                (<= (integer-length x) (integer-length y)))
+           (equal (integer-length (logior x y))
+                  (integer-length y)))
+  :hints (("Goal" :induct (my-induct x y)
+           :in-theory (e/d (acl2::integer-length**)
+                           (integer-length)))))
+
+(defthm integer-length-and-loghead-when-natp-identity-theorem
+  (implies (natp x)
+           (equal (loghead (integer-length x) x)
+                  x))
+  :hints (("Goal" :in-theory (e/d* (acl2::loghead** acl2::integer-length**
+                                                    acl2::ihsext-inductions)
+                                   ((force))))))
+
+(defthm mod-expt-and-integer-length-identity-theorem
+  (implies (natp x)
+           (equal (mod x (expt 2 (integer-length x)))
+                  x))
+  :hints (("Goal" :in-theory (e/d* (acl2::ihsext-arithmetic)
+                                   (bitops::ash-1-removal)))))
+
+(encapsulate
+ ()
+
+ (local (include-book "arithmetic-5/top" :dir :system))
+
+ ;; The following are useful for MBE kind of proofs.  Be careful when
+ ;; using them though; sometimes, they might cause loops when enabled
+ ;; alongside logand-with-negated-bitmask and
+ ;; logand-with-bitmask.
+
+ (defthmd negative-logand-to-positive-logand-with-natp-x
+   (implies (and (syntaxp (and (quotep n)
+                               (let* ((n-abs (acl2::unquote n)))
+                                 (< n-abs 0))))
+                 (equal m (integer-length x))
+                 (integerp n)
+                 (natp x))
+            (equal (logand n x)
+                   (logand (logand (1- (ash 1 m)) n) x))))
+
+ (defun find-best-fitting-m (n)
+   (if (signed-byte-p 8 (acl2::unquote n))
+       (list (list (cons 'm ''8))
+             (list (cons 'm ''16))
+             (list (cons 'm ''32))
+             (list (cons 'm ''64))
+             (list (cons 'm ''128)))
+     (if (signed-byte-p 16 (acl2::unquote n))
+         (list (list (cons 'm ''16))
+               (list (cons 'm ''32))
+               (list (cons 'm ''64))
+               (list (cons 'm ''128)))
+       (if (signed-byte-p 32 (acl2::unquote n))
+           (list (list (cons 'm ''32))
+                 (list (cons 'm ''64))
+                 (list (cons 'm ''128)))
+         (list (list (cons 'm ''64))
+               (list (cons 'm ''128)))))))
+
+ (defthm negative-logand-to-positive-logand-with-integerp-x
+   (implies (and (syntaxp (and (quotep n)
+                               (let* ((n-abs (acl2::unquote n)))
+                                 (< n-abs 0))))
+                 (bind-free (find-best-fitting-m n) (m))
+                 (unsigned-byte-p m x)
+                 (integerp n))
+            (equal (logand n x)
+                   (logand (logand (1- (ash 1 m)) n) x))))
+
+ (defthmd loghead-to-logand
+   ;; This rule causes loop when used alongside
+   ;; bitops::logand-with-bitmask and bitops::logand-with-negated-bitmask.
+   (implies (and (natp n)
+                 (syntaxp (quotep n))
+                 (integerp x))
+            (equal (loghead n x)
+                   (logand (1- (expt 2 n)) x)))
+   :hints (("Goal" :in-theory (e/d (loghead) ()))))
+
+ (defthm logand-redundant
+   (implies (and (unsigned-byte-p n x)
+                 (equal width (1- (ash 1 n)))
+                 (syntaxp (quotep width)))
+            (equal (logand width x)
+                   x)))
+
+ (defthm weed-out-irrelevant-logand-when-first-operand-constant
+   (implies (and
+             ;; syntaxp will restrict the application of this
+             ;; theorem...
+             (syntaxp (quotep x))
+             (unsigned-byte-p n y)
+             (equal (logand (1- (expt 2 n)) x) (1- (expt 2 n))))
+            (equal (logand x y) y))
+   :hints (("Goal"
+            :use ((:instance acl2::mod-logand (x x) (y y) (n n)))
+            :in-theory (disable acl2::mod-logand))))
+
+ )
+;;  ======================================================================

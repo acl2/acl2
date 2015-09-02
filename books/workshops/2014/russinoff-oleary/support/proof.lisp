@@ -1,15 +1,15 @@
-(in-package "ACL2")
+(in-package "RTL")
 
 ; Added by Matt K., May 2015.  Improvement observed when certification used
 ; the :delay strategy:
 ; 18.90 sec. vs. 27.20 sec.
 (value-triple (set-gc-strategy :delay))
 
-(include-book "rtl/rel9/lib/top" :dir :system)   ;; The basic RTL library
+(include-book "rtl/rel11/lib/top" :dir :system)   ;; The basic RTL library
 
-(include-book "rtl/rel9/lib/mult" :dir :system)  ;; The Booth multiplication book
+(include-book "rtl/rel11/lib/mult" :dir :system)  ;; The Booth multiplication book
 
-(include-book "rtl/rel9/lib/gl" :dir :system)    ;; Connect lib with gl
+(include-book "rtl/rel11/lib/gl" :dir :system)    ;; Connect lib with gl
 
 (include-book "arithmetic-5/top" :dir :system)   ;; It's hard to do any arithmetic without this
 
@@ -36,7 +36,7 @@
                 (natp m)
                 (natp k)
                 (<= m k)
-                (< k n))                
+                (< k n))
            (integerp (ag k a)))
   :rule-classes (:rewrite :type-prescription))
 
@@ -46,7 +46,7 @@
                 (natp m)
                 (natp k)
                 (<= m k)
-                (< k n))                
+                (< k n))
            (bvecp (ag k a) 64))
   :rule-classes (:rewrite :type-prescription))
 
@@ -62,7 +62,7 @@
 (defthm all-bvecp-subrange
   (implies (and (all-bvecp a q p)
                 (natp m)
-                (natp n)                
+                (natp n)
                 (natp p)
                 (natp q)
                 (<= q m)
@@ -105,10 +105,10 @@
                   (sum-simple a n)))
   :hints (("Goal" :in-theory (enable sum-range sum-simple))
           ("Subgoal *1/5" :in-theory (enable sum-range sum-simple)
-                          :use ((:instance bits-bits-sum 
-                                           (x (sum-range a 0 (+ -1 n))) 
-                                           (y (ag (+ -1 n) a)) 
-                                           (k 63) 
+                          :use ((:instance bits-bits-sum
+                                           (x (sum-range a 0 (+ -1 n)))
+                                           (y (ag (+ -1 n) a))
+                                           (k 63)
                                            (i 63)
                                            (j 0))))))
 
@@ -145,10 +145,10 @@
 ;; Booth
 ;;***********************************************************************************
 
-;; The function Booth computes an array of 3-bit encodings of the 
+;; The function Booth computes an array of 3-bit encodings of the
 ;; Booth digits (theta k y), 0 <= k < 17:
 
-(def-gl-thm encode-lemma
+(acl2::def-gl-thm encode-lemma
   :hyp (and (bvecp y 32)
             (natp k)
             (< k 17))
@@ -189,7 +189,7 @@
 ;; PartialProducts
 ;;***********************************************************************************
 
-;; The function PartialProducts computes an array of the partial 
+;; The function PartialProducts computes an array of the partial
 ;; products (bmux4 (theta k y) x 33), 0 <= k < 17:
 
 (defthm partialproducts-recursion-1
@@ -213,11 +213,11 @@
                                (lognot row)
                               row)
                           32 0))))
-  :hints (("subgoal *1/1" :expand 
+  :hints (("subgoal *1/1" :expand
                           ((:free (pp) (partialproducts-loop-0 k x m21 pp))
                            (:free (pp) (partialproducts-loop-0 0 x m21 pp))))))
 
-(def-gl-thm partialproducts-lemma
+(acl2::def-gl-thm partialproducts-lemma
   :hyp (and (bvecp x 32)
             (bvecp y 32)
             (natp k)
@@ -265,7 +265,7 @@
                          (bitn (ag j bds) 2))
                   (equal (ag (1+ j) psb)
                          (bitn (ag j bds) 2)))))
-  :hints (("Subgoal *1/3" :expand 
+  :hints (("Subgoal *1/3" :expand
                           ((:free (j bds sb psb) (align-loop-1 j bds sb psb))))))
 
 (defthm sign-bits-lemma
@@ -305,7 +305,7 @@
                           63 0))))
   :hints (("subgoal *1/1" :expand ((:free (j bds sb psb) (align-loop-0 j pp psb sb tble0))))))
 
-(def-gl-thm align-lemma
+(acl2::def-gl-thm align-lemma
   :hyp (and (bvecp x 32)
             (bvecp y 32)
             (natp k)
@@ -326,7 +326,7 @@
   (implies (and (bvecp x 32)
                 (bvecp y 32)
                 (natp m))
-           (all-bvecp (align (booth y) (partialproducts (booth y) x)) m 17))) 
+           (all-bvecp (align (booth y) (partialproducts (booth y) x)) m 17)))
 
 (in-theory (disable align bmux4 neg pp4-theta pp4p-theta))
 
@@ -346,7 +346,7 @@
                   (* x y)))
   :hints (("Goal" :in-theory (e/d (bvecp-monotone) (bits-bits))
                   :use ((:instance bvecp-product (m 32) (n 32))
-                        (:instance bits-bits (x (sum-pp4p-theta x y 17 33)) 
+                        (:instance bits-bits (x (sum-pp4p-theta x y 17 33))
                                              (i 66) (j 0) (k 63) (l 0))
                         (:instance booth4-corollary-2 (n 33) (m 17))))))
 
@@ -355,13 +355,13 @@
 ;; Sum
 ;;***********************************************************************************
 
-;; The function Sum computes the sum of the aligned partial products by means of a 
+;; The function Sum computes the sum of the aligned partial products by means of a
 ;; 17:2 compression tree and a final 64-bit adder.
 
-;; The compression tree consists of 7 4:2 compressors and 1 3:2 compressor.  The 
+;; The compression tree consists of 7 4:2 compressors and 1 3:2 compressor.  The
 ;; functionality of these components is proved automatically by gl:
 
-(def-gl-thm compress32-lemma
+(acl2::def-gl-thm compress32-lemma
   :hyp  (and (bvecp in0 64)
              (bvecp in1 64)
              (bvecp in2 64))
@@ -375,7 +375,7 @@
                                        (:nat in1 64)
                                        (:nat in2 64))))
 
-(def-gl-thm compress42-lemma
+(acl2::def-gl-thm compress42-lemma
   :hyp  (and (bvecp in0 64)
              (bvecp in1 64)
              (bvecp in2 64)
@@ -430,7 +430,7 @@
 
 ;; For each level, through repeated applications of the lemma bits-sum-range,
 ;; we show that the sum of the outputs is the sum of the inputs (mod 2^(64)).
-;; For each of the first 3 levels, we must also show that the outputs are all 
+;; For each of the first 3 levels, we must also show that the outputs are all
 ;; 64-bit vectors in order to apply bits-sum-range to the next level.
 
 
@@ -507,10 +507,10 @@
            (equal (sum in)
                   (bits (sum-range in 0 17) 63 0)))
   :hints (("Goal" :in-theory (disable bits-bits-sum)
-                  :use ((:instance bits-bits-sum 
-                                   (x (sum-range (level3 (level2 (level1 in))) 0 2)) 
+                  :use ((:instance bits-bits-sum
+                                   (x (sum-range (level3 (level2 (level1 in))) 0 2))
                                    (y (ag 16 in))
-                                   (i 63) (j 0) (k 63)) 
+                                   (i 63) (j 0) (k 63))
                         (:instance bits-bits-sum
                                    (x (sum-range in 0 16))
                                    (y (ag 16 in))

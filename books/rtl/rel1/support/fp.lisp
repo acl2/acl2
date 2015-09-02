@@ -100,7 +100,7 @@
   :hints
   (("Goal"
     :use (:instance REWRITE-FLOOR-X*Y-Z-RIGHT (x i) (y (/ j)) (z 1)))))
-                
+
 (defthm a13
   (implies (force (rationalp x))
            (and (< (1- x) (fl x))
@@ -163,7 +163,7 @@
 
 (local (defthm evenp--k-lemma
   (equal (equal (integerp x) (integerp y))
-         (iff (integerp x) (integerp y))))) 
+         (iff (integerp x) (integerp y)))))
 
 (local (defthm evenp--k
   (implies (integerp k) (equal (evenp (- k)) (evenp k)))
@@ -177,13 +177,13 @@
 (local (defthm evenp-2k
   (implies (integerp k) (evenp (* 2 k)))
   :hints (("Goal" :in-theory (enable evenp)))))
-                                              
+
 (local (defthm evenp-expt-2
   (implies (and (integerp k)
                 (> k 0))
            (evenp (expt 2 k)))
   :hints (("Goal" :in-theory (enable evenp expt)))))
-                                              
+
 (local (defthm evenp-+-even
   (implies (evenp j) (equal (evenp (+ i j)) (evenp i)))
   :hints (("Goal" :in-theory (enable evenp)))))
@@ -222,7 +222,7 @@
            (< (/ y+) (/ y)))
   :rule-classes
   ((:forward-chaining :trigger-terms ((/ y+) (/ y))) :linear))
-         
+
 (defthm *-weakly-monotonic
   (implies (and (<= y y+)
                (force (rationalp x))   ; This does not hold if x, y, and z are complex!
@@ -380,7 +380,7 @@
 ; use.
 
 (encapsulate nil
-  (local 
+  (local
    (defthm renaming
     (implies (and (rationalp a)
                   (rationalp xmax)
@@ -539,7 +539,7 @@
            (and (< (- (* amax bmax)) (* a b))
                 (< (* a b) (* amax bmax))))
   :hints (("Goal" :cases ((< b 0) (< 0 b))))
-  :rule-classes nil)  
+  :rule-classes nil)
 
 (defthm rearrange-negative-coefs-<
   (and (iff (< (* (- c) x) z)
@@ -755,7 +755,7 @@
            (iff (equal (* x (/ y)) 1)
                 (equal x y)))
   :rule-classes nil)
-                
+
 (defun point-right-measure (x)
   (floor (if (and (rationalp x) (< 0 x)) (/ x) 0) 1))
 

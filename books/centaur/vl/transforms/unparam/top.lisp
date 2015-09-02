@@ -165,9 +165,9 @@ with, we can safely remove @('plus') from our module list.</p>")
 ;;         (vl-paramdecl-resolve-indices
 ;;          x (make-vl-svexconf :ss ss :fns fntable :params paramtable))))
 ;;     (mv warnings new-x)))
-       
 
-      
+
+
 
 
 (define vl-scopeinfo-resolve-params ((x vl-paramdecloverridelist-p)
@@ -242,7 +242,7 @@ with, we can safely remove @('plus') from our module list.</p>")
               :exit (list 'vl-scope-finalize-params
                           (with-local-ps (vl-pp-paramdecllist (nth 3 values))))))
 |#
-                          
+
 
 
 (define vl-scope-finalize-params ((x vl-scope-p)
@@ -292,7 +292,7 @@ with, we can safely remove @('plus') from our module list.</p>")
 (defprod vl-unparam-signature
   ((modname stringp)
    (newname stringp)
-   (final-params vl-paramdecllist-p)) 
+   (final-params vl-paramdecllist-p))
   :layout :tree)
 
 (fty::deflist vl-unparam-signaturelist :elt-type vl-unparam-signature
@@ -517,7 +517,7 @@ introduced.</p>"
               :exit (list 'vl-genblob-resolve-aux
                           (with-local-ps (vl-pp-genblob (nth 3 values) nil)))))
 |#
-                                                
+
 
 
 
@@ -582,11 +582,11 @@ introduced.</p>"
            ;; (x (change-vl-genblob x :paramdecls final-paramdecls))
            ((wmv ?ok warnings new-x conf)
             (vl-genblob-elaborate x conf))
-           
+
            ((mv ok warnings siglist1 new-generates)
             ;; Not new-x.generates (complicates termination)
             (vl-generatelist-resolve x.generates conf warnings))
-           
+
            ((vl-genblob new-x))
            ((mv ok2 warnings new-insts siglist)
             (vl-unparam-instlist new-x.modinsts conf warnings nil)))
@@ -595,7 +595,7 @@ introduced.</p>"
             (change-vl-genblob new-x :generates new-generates
                                :modinsts new-insts)
             conf)))
-        
+
 
     (define vl-genblob-resolve ((x vl-genblob-p)
                                 (conf vl-svexconf-p
@@ -621,6 +621,22 @@ introduced.</p>"
         (vl-svexconf-free blobconf)
         (mv ok warnings siglist new-x)))
 
+
+#||
+(trace$
+ #!vl (vl-generate-resolve
+       :entry (list 'vl-generate-resolve
+                    (with-local-ps (vl-pp-genelement x))
+                    :conf conf)
+       :exit (b* (((list ok warnings1 ?sigalist new-x) values)
+                  (warnings (take (- (len warnings1) (len warnings)) warnings1)))
+               (list 'vl-generate-resolve
+                     ok
+                     (with-local-ps (vl-print-warnings warnings))
+                     (with-local-ps (vl-pp-genelement new-x))))))
+
+
+||#
 
     ;; For consistency with svex, we need to be very careful about exactly when
     ;; we push frames onto the scopestack.  The svex scheme is that any
@@ -660,10 +676,10 @@ introduced.</p>"
                 (mv nil warnings siglist (vl-genelement-fix x))))
             (mv t warnings siglist
                 (change-vl-genblock x :elems (vl-genblob->elems new-blob x.elems))))
-            
+
 
           ;; Didn't expect to see these resolved forms yet; leave them.
-          
+
           :vl-genarray
           (mv t (warn :type :vl-already-resolved-generate
                       :msg "~a0: Didn't expect to see an already-resolved genarray."
@@ -788,7 +804,7 @@ introduced.</p>"
            ;; that we push 2 frames onto the ss total.  This first one only
            ;; contains the loop iterator, which won't be referenced in svex
            ;; since it'll resolve to a constant.
-           
+
            ((vl-svexconf conf))
            (idx-ss (vl-scopestack-push
                     (make-vl-scopeinfo :locals (hons-acons var var-param nil))
@@ -814,7 +830,7 @@ introduced.</p>"
                        :msg "~a0: Failed to evaluate the loop termination expression ~a1"
                        :args (list (vl-genelement-fix orig-x) (vl-expr-fix continue)))
                 nil nil))
- 
+
            ((when (eql (vl-resolved->val continue-val) 0))
             (vl-svexconf-free idx-conf)
             (mv t (ok) nil nil))
@@ -937,7 +953,7 @@ introduced.</p>"
                             :paramdecls final-paramdecls))
        ((vl-module x))
        (warnings x.warnings)
-       
+
        (blob (vl-module->genblob x))
        ((wmv ok warnings siglist new-blob conf
              :ctx name)
@@ -965,7 +981,7 @@ introduced.</p>"
                             :paramdecls final-paramdecls))
        ((vl-interface x))
        (warnings x.warnings)
-       
+
        (blob (vl-interface->genblob x))
        ((wmv ok warnings ?siglist new-blob conf
              :ctx name) (vl-genblob-resolve-aux blob conf nil))
@@ -1126,7 +1142,7 @@ introduced.</p>"
        ((vl-svexconf conf))
        (x (vl-scopestack-find-definition modname conf.ss))
        ((unless (and x (eq (tag x) :vl-module)))
-        (mv nil nil 
+        (mv nil nil
             (fatal :type :vl-unparam-fail
                    :msg "Programming error: top-level module ~s0 not found"
                    :args (list modname))))
@@ -1201,8 +1217,8 @@ scopestacks.</p>"
        ((mv ok1 warnings pkg1) (vl-package-elaborate (car x) conf warnings))
        ((mv ok2 warnings pkgs) (vl-packagelist-elaborate (cdr x) conf warnings)))
     (mv (and ok1 ok2) warnings (cons pkg1 pkgs))))
-  
-       
+
+
 
 ;; (define vl-packages-finalize-params ((packages vl-packagelist-p)
 ;;                                      (design vl-design-p)
@@ -1241,8 +1257,8 @@ scopestacks.</p>"
 ;;         (vl-packages-finalize-params (cdr packages) design1 warnings))
 ;;        ((unless ok) (mv nil warnings nil)))
 ;;     (mv t warnings (cons pkg1 rest-packages))))
-    
-       
+
+
 
 
 (define vl-design-elaborate

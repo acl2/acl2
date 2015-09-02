@@ -90,7 +90,7 @@ Concatenate the M-bit value X onto the N-bit value Y.  X will occupy the high bi
                 (case-split (integerp n))
                 (case-split (integerp m))
                 (case-split (<= 0 m))
-                )		  
+                )
            (equal (cat 0 m y n) y)))
 
 ;BOZO just use this one??
@@ -99,7 +99,7 @@ Concatenate the M-bit value X onto the N-bit value Y.  X will occupy the high bi
                 (case-split (integerp n))
                 (case-split (integerp m))
                 (case-split (<= 0 m))
-                )		  
+                )
            (equal (cat 0 m y n) (bits y (1- n) 0))))
 
 ;We can rely on bits-tail to complete the simplification down to x if desired.
@@ -296,15 +296,15 @@ Concatenate the M-bit value X onto the N-bit value Y.  X will occupy the high bi
    (implies (and (case-split (<= 0 k))
                  (case-split (<= 0 n))
                  (case-split (<= 0 m))
-                 (case-split (integerp n)) 
-                 (case-split (integerp m)) 
-                 (case-split (integerp k)) 
+                 (case-split (integerp n))
+                 (case-split (integerp m))
+                 (case-split (integerp k))
                  )
             (equal (bvecp (cat x m y n) k)
                    (if (<= (+ m n) k)
                        t
                      (if (<= n k)
-                         (equal 0 (bits x (1- m) (+ k (* -1 n))))                      
+                         (equal 0 (bits x (1- m) (+ k (* -1 n))))
                        (and (equal 0 (bits x (1- m) 0))
                             (equal 0 (bits y (1- n) k))))))))
 
@@ -313,15 +313,15 @@ Concatenate the M-bit value X onto the N-bit value Y.  X will occupy the high bi
                 (case-split (<= 0 k))
                 (case-split (<= 0 n))
                 (case-split (<= 0 m))
-                (case-split (integerp n)) 
-                (case-split (integerp m)) 
-                (case-split (integerp k)) 
+                (case-split (integerp n))
+                (case-split (integerp m))
+                (case-split (integerp k))
                 )
            (equal (bvecp (cat x m y n) k)
                   (if (<= (+ m n) k)
                       t
                     (if (<= n k)
-                        (equal 0 (bits x (1- m) (+ k (* -1 n))))                      
+                        (equal 0 (bits x (1- m) (+ k (* -1 n))))
                       (and (equal 0 (bits x (1- m) 0))
                            (equal 0 (bits y (1- n) k))))))))
 
@@ -466,7 +466,7 @@ Concatenate the M-bit value X onto the N-bit value Y.  X will occupy the high bi
                     (if (>= j n)
                         (bits x (if (< i (+ m n))
                                     (- i n)
-                                  (1- m)) 
+                                  (1- m))
                               (- j n))
                       (cat (bits x (if (< i (+ m n))
                                         (- i n)
@@ -492,7 +492,7 @@ Concatenate the M-bit value X onto the N-bit value Y.  X will occupy the high bi
                     (if (>= j n)
                         (bits x (if (< i (+ m n))
                                     (- i n)
-                                  (1- m)) 
+                                  (1- m))
                               (- j n))
                       (cat (bits x (if (< i (+ m n))
                                        (- i n)
@@ -685,7 +685,7 @@ bits-dont-match can prove things like this:
               (NOT (EQUAL 3 (BITS x 15 6)))))
 |#
 
-(defthm bits-dont-match 
+(defthm bits-dont-match
   (implies (and (syntaxp (and (quotep i)
                               (quotep j)
                               (quotep k)))

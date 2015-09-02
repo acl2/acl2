@@ -16,7 +16,7 @@ equal-ity instead of set-equality and require no backtracking to relieve
 well-formed set hypotheses.
 
 EXPORTED logic functions:
-   
+
    (in e x)      -- set membership predicate, is element e a member of set x
    (subset x y)  -- subset predicate, is set x a subset of set y
    (isect x y)   -- the set intersection of set x and set y
@@ -170,7 +170,7 @@ free-variable matching in the application of <<-transitive.
 (defmacro scdr (x)
   `(sdrop (scar ,x) ,x))
 
-(defmacro satom (x) 
+(defmacro satom (x)
   `(not ,x))
 
 (defmacro common (x y)
@@ -327,8 +327,8 @@ free-variable matching in the application of <<-transitive.
   (declare (xargs :measure (+ (acl2-count x)
                               (acl2-count y)
                               (acl2-count z))))
-  (if (or (endp x) 
-          (endp y) 
+  (if (or (endp x)
+          (endp y)
           (endp z))
  ; The following was changed to avoid SBCL warning, "Asserted type NUMBER
  ; conflicts with derived type (VALUES LIST &OPTIONAL)."
@@ -362,7 +362,7 @@ free-variable matching in the application of <<-transitive.
 
 (defmacro defthm-ternary-sets (name body)
   `(defthm ,name ,body
-     :hints (("Goal" 
+     :hints (("Goal"
               :induct (ternary-induct x y z)
               :in-theory (disable <<-transitive))
              ("Subgoal *1/13"
@@ -481,7 +481,7 @@ free-variable matching in the application of <<-transitive.
 (local
 (defthm unite-aux-commutes
   (implies (and (setp x) (setp y))
-           (equal (unite-aux x y) 
+           (equal (unite-aux x y)
                   (unite-aux y x)))))
 
 (local
@@ -599,7 +599,7 @@ free-variable matching in the application of <<-transitive.
 (defthm length-of-sdiff-aux-property
   (implies (and (setp x) (setp y))
            (equal (len (sdiff-aux x y))
-                  (- (len x) 
+                  (- (len x)
                      (len (isect-aux x y)))))))
 
 (local
@@ -670,7 +670,7 @@ free-variable matching in the application of <<-transitive.
   (equal (unite x x) x))
 
 (defthm unite-commutes
-  (equal (unite x y) 
+  (equal (unite x y)
          (unite y x)))
 
 (defthm unite-associates
@@ -680,7 +680,7 @@ free-variable matching in the application of <<-transitive.
 (defthm unite-associate-2
   (equal (unite x (unite y z))
          (unite y (unite x z)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable unite-commutes)
            :use ((:instance unite-commutes
                             (x x) (y (unite y z)))
@@ -691,7 +691,7 @@ free-variable matching in the application of <<-transitive.
   (equal (isect x x) x))
 
 (defthm isect-commutes
-  (equal (isect x y) 
+  (equal (isect x y)
          (isect y x)))
 
 (defthm isect-associates
@@ -701,7 +701,7 @@ free-variable matching in the application of <<-transitive.
 (defthm isect-associate-2
   (equal (isect x (isect y z))
          (isect y (isect x z)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable isect-commutes)
            :use ((:instance isect-commutes
                             (x x) (y (isect y z)))
@@ -784,7 +784,7 @@ free-variable matching in the application of <<-transitive.
 
 (defthm unite-card-property
   (equal (card (unite x y))
-         (+ (card x) 
+         (+ (card x)
             (card (sdiff y x)))))
 
 
@@ -861,7 +861,7 @@ free-variable matching in the application of <<-transitive.
 (defthm s1-subset-property-2
   (implies (and (subset x (s1 e)) x)
            (equal x (s1 e)))
-  :hints (("Goal" :use 
+  :hints (("Goal" :use
            (:instance norm->set-of-x-is-consp-or-not-x)))
   :rule-classes :forward-chaining)
 
@@ -979,7 +979,7 @@ free-variable matching in the application of <<-transitive.
          (if (c1 x) (implies y (equal x y)) (and (not x) (c1 y))))
   :hints (("Goal" :in-theory (enable norm->set set->norm)
            :expand ((unite-aux (list x) y) (unite-aux x y)))))
-           
+
 (defthm isect-aux-sdiff-aux-prop1
   (implies (and (setp x) x
                 (not (isect-aux x y)))
@@ -1015,8 +1015,8 @@ free-variable matching in the application of <<-transitive.
 ;; the following macro will enable/disable the executable-counterparts
 
 (defmacro ec-sets (x)
-  `(in-theory (,(if x 'enable 'disable) 
-               (in) (subset) (isect) (unite) 
+  `(in-theory (,(if x 'enable 'disable)
+               (in) (subset) (isect) (unite)
                (sdiff) (card) (s1) (scar) (c1))))
 
 ;; we will begin with the executable-counterparts disabled
@@ -1027,7 +1027,7 @@ free-variable matching in the application of <<-transitive.
 ;; to the 'list macro
 
 (defmacro make-set (&rest elems)
-  (if (endp elems) '(emptyset) 
+  (if (endp elems) '(emptyset)
     `(sadd ,(first elems) (make-set ,@(rest elems)))))
 
 
@@ -1075,7 +1075,7 @@ free-variable matching in the application of <<-transitive.
 
 
 > I propose the following additions to the sets book:
-> 
+>
 > (defthm sdiff-x-x
 >   (equal (sdiff x x)
 > 	 (empty-set)))
@@ -1085,7 +1085,7 @@ a better addition:
 
 (defthm sdiff-superset
   (implies (subset x y)
-           (equal (sdiff x y) 
+           (equal (sdiff x y)
                   (empty-set))))
 
 > ;(add similar lemmas about other functions than unite
@@ -1093,7 +1093,7 @@ a better addition:
 > (defthm unite-reflexes-2
 >   (equal (unite x (unite x y))
 > 	 (unite x y)))
-> 
+>
 > ;and can you prove this one for me?
 > (defthm sdiff-sdiff
 >   (equal (sdiff (sdiff x y) y)
@@ -1114,7 +1114,7 @@ directory (especially with some of the recent additions to
 the records book which make use of the sets book).
 
 > I also need:
-> 
+>
 > (defthm unite-sdiff-hack
 >   (equal (unite x (sdiff y x))
 > 	 (unite x y)))
@@ -1151,7 +1151,7 @@ are "context-free" -- well as context-free as possible).
 > the
 > records book.
 
-Excellent.  
+Excellent.
 
 My sense is that people aren't using the records/maps
 book enough (and that, in general, people don't
@@ -1160,7 +1160,7 @@ the records book clean).  Did anyone ever give a talk
 on records/maps at the ACL2 seminar?
 
 I'm changing my copy of the "M5" JVM model to use
-records, and I think this is clearly the way to go. 
+records, and I think this is clearly the way to go.
 (There are some subtleties, but I now have a fairly
 clean algebra for the heap.)  If J's folks keep
 hearing about this from enough people, maybe they'll
@@ -1174,7 +1174,7 @@ M6.
 > > JVM proofs)?  I'm not terribly familiar with the
 > sets
 > > book, and I didn't find an easy proof for these.
-> > 
+> >
 > > (defaxiom sdiff-sdiff
 > >   (equal (ACL2::SDIFF (ACL2::SDIFF Z X) X)
 > > 	 (ACL2::SDIFF Z X)))
@@ -1182,11 +1182,11 @@ M6.
 > > (defaxiom unite-hack
 > >   (equal (acl2::unite x (acl2::sdiff z x))
 > > 	 (acl2::unite x z)))
-> 
+>
 > I believe these are provable, but not easily proven
 > in
 > terms of the existing rules.
-> 
+>
 > I am planning on doing some work with the records (I
 > mean
 > "maps") and sets books this weekend. The updates

@@ -38,7 +38,7 @@
            (equal (car cons-nest2) 'cons))
       (if (equal (cadr cons-nest1) (cadr cons-nest2))
           (cons-equal-meta-function-helper (caddr cons-nest1) (caddr cons-nest2)) ;skip syntactically equal stuff
-        (list 
+        (list
          'if
          (list 'equal (cadr cons-nest1) (cadr cons-nest2))
          (cons-equal-meta-function-helper (caddr cons-nest1) (caddr cons-nest2))
@@ -65,9 +65,9 @@
            (consp (cddr term))
            (consp (caddr term))
            (equal (car (caddr term)) 'cons)  ;(caddr term) should be of the form (cons blah3 blah4)
-           
+
            (equal (car term) 'equal)
-           
+
 ;           (consp (cdr (cadr term))) ;check the arities:
  ;          (consp (cddr (cadr term)))
   ;         (consp (cdr (caddr term)))
@@ -77,13 +77,13 @@
       (cons-equal-meta-function-helper (cadr term) (caddr term))
     term))
 
-(in-theory (disable HYPothesis-PARITY MFC-CLAUSE))                                       
+(in-theory (disable HYPothesis-PARITY MFC-CLAUSE))
 
 (defthmd cons-equal-smart-meta
   (equal (cons-ev term a)
          (cons-ev (cons-equal-meta-function term mfc state) a))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)))
-  :rule-classes ((:meta :trigger-fns (equal))))           
+  :rule-classes ((:meta :trigger-fns (equal))))
 
 #|
 (defmacro V0 (x) `(mv-nth 0 ,x))
@@ -132,9 +132,9 @@
            (consp (cddr term))
            (consp (caddr term))
            (equal (car (caddr term)) 'cons)  ;(caddr term) should be of the form (cons blah3 blah4)
-           
+
            (equal (car term) 'equal)
-           
+
 ;           (consp (cdr (cadr term))) ;check the arities:
  ;          (consp (cddr (cadr term)))
   ;         (consp (cdr (caddr term)))
@@ -212,10 +212,10 @@ how do we handle backchaining?
            (equal (equal (cons a b) (cons c d))
                   (cons-equal-dummy a b c d)))
   :hints (("Goal" :in-theory (enable cons-equal-dummy))))
-                                
+
 (defun cons-equal-dummy-meta-function (term)
   (declare (type t term))
-  (if (and; (hypothesis-parity term mfc state) ;TERM appears as a hypothesis (or a negated conclusion)           
+  (if (and; (hypothesis-parity term mfc state) ;TERM appears as a hypothesis (or a negated conclusion)
            (consp term)
            (consp (cdr term))
            (consp (cddr term))

@@ -20,12 +20,12 @@
 (in-package "ACL2")
 
 
-(local 
+(local
  (include-book "../pass1/top"))
 
 (include-book "default-hint")
 
-(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                               hist pspv)))
 
 (table acl2-defaults-table :state-ok t)
@@ -253,7 +253,7 @@
 	(t
 	 (mv-let (flag new-leaves)
 	   (subtract-leaf leaf (cdr leaves))
-	   (if flag 
+	   (if flag
 	       (mv t (cons (car leaves)
 			   new-leaves))
 	     (mv nil leaves))))))
@@ -311,7 +311,7 @@
 		    (consp new-leaves))
 	       (mv-let (flag bag-list)
 		 (collect-bags-intp new-leaves intp-bags)
-		 (if flag 
+		 (if flag
 		     (mv t
 			 (cons (car non-intp-bags)
 			       bag-list))
@@ -350,7 +350,7 @@
 ;  ==> (integerp (intp-+ (+ a c) (+ b d)))
 
   (if (eq (fn-symb term) 'INTEGERP)
-           
+
       (let ((bin-op (fn-symb (fargn term 1))))
 	(if (and (member-eq bin-op '(BINARY-+ BINARY-*))
 		 (eq (fn-symb (fargn (fargn term 1) 2)) bin-op))
@@ -407,7 +407,7 @@
                          (floor x y))
                       (<= (floor x y)
                           (/ x y))))
-      :rule-classes ((:generalize) 
+      :rule-classes ((:generalize)
                      (:linear :trigger-terms ((floor x y))))))
 
    (local
@@ -417,7 +417,7 @@
                       (integerp (/ x y)))
                  (equal (floor x y)
                         (/ x y)))
-      :rule-classes ((:generalize) 
+      :rule-classes ((:generalize)
                      (:linear :trigger-terms ((floor x y))))))
 
    (local
@@ -427,12 +427,12 @@
                       (not (integerp (/ x y))))
                  (< (floor x y)
                     (/ x y)))
-      :rule-classes ((:generalize) 
+      :rule-classes ((:generalize)
                      (:linear :trigger-terms ((floor x y))))))
-   
+
    (local
     (in-theory (disable floor)))
-   
+
    (local
     (defun ind-hint (x y n)
       (declare (xargs :measure (abs (ifix x))))
@@ -451,7 +451,7 @@
                       (<= (- (EXPT 2 N)) X))
                  (equal (< (FLOOR X 2) (- (* 1/2 (EXPT 2 N))))
                         nil))))
-   
+
    (local
     (defthm two-x
         (implies (and (< x 4)
@@ -489,7 +489,7 @@
                      (< 1 n)
                      (< x (* 1/2 (EXPT 2 N))))
                 (< (+ 1 (* 2 x)) (expt 2 n)))))
-       
+
 
    (local
     (defthm logand-bounds
@@ -539,9 +539,9 @@
                    (<= (logand x y) 65535)))
      :hints (("Goal" :use ((:instance logand-bounds
                                       (n 16))))))
-   
+
    ))
-#| 
+#|
  (local
   (encapsulate
    ()
@@ -716,7 +716,7 @@
 
  (local
   (defthm big-tree-big-tree-2
-    (and 
+    (and
      (equal (intp-eva (big-tree bags 'INTP-+ 'BINARY-+) a)
 	    (intp-eva (big-tree-2 bags 'BINARY-+ 'BINARY-+) a))
      (equal (intp-eva (big-tree bags 'INTP-* 'BINARY-*) a)

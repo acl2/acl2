@@ -75,7 +75,7 @@
                           (res1 (if zro 0 bsign)))
                        (if shft (* 2 res1) res1))))
      :hints(("Goal" :in-theory (disable booth-enc-one-redef))))
-   
+
 
    (local (in-theory (disable booth-enc-one)))
 

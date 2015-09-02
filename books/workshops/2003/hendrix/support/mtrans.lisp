@@ -25,7 +25,7 @@
   (implies (matrixp m)
            (matrixp (mtrans m))))
 
-(local 
+(local
  (defun col-cdr-recurse (m)
    (if (m-emptyp m)
        0

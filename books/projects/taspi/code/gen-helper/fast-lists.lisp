@@ -113,7 +113,7 @@
               (good-taxon-index-halist rest))))
 
 (dis+ind good-taxon-index-halist)
-                  
+
 (defthm good-taxon-integer-listp-alistp-gen
   (implies (good-taxon-index-halist x)
            (alistp-gen x)))
@@ -185,24 +185,24 @@
   (declare (xargs :guard (rationalp p)))
   (if (consp list)
       (list (car list) p
-            (new-ind (cdr list) (1+ p) 
+            (new-ind (cdr list) (1+ p)
                      (cons (cons (car list)
                                  p)
                            acc)))
     (list list p acc)))
-           
+
 (defthm good-taxon-index-halist-of-build-fast-element-to-number
   (implies (and (int-symlist taxa-list)
                 (integerp p)
                 (good-taxon-index-halist acc))
            (good-taxon-index-halist
-            (build-fast-alist-from-alist 
+            (build-fast-alist-from-alist
              (element-to-number taxa-list p)
              acc))))
 
 (defthm good-taxon-list-taxon-index
   (implies (int-symlist taxa-list)
-           (good-taxon-index-halist (taxa-list-to-taxon-index 
+           (good-taxon-index-halist (taxa-list-to-taxon-index
                                      taxa-list)))
   :hints (("Goal" :in-theory (enable taxa-list-to-taxon-index))))
 
@@ -233,7 +233,7 @@
 
 (dis+ind good-index-taxon-halist)
 
-;; An alist where every bound value is a natural number; 
+;; An alist where every bound value is a natural number;
 ;; in our case resulting from a frequency count.
 (defun integer-halistp (x)
   (declare (xargs :guard t))
@@ -251,7 +251,7 @@
   (declare (xargs :guard (rationalp p)))
   (if (consp list)
       (list (car list) p
-            (new-ind2 (cdr list) (1+ p) 
+            (new-ind2 (cdr list) (1+ p)
                      (cons (cons p (car list))
                            acc)))
     (list list p acc)))
@@ -267,10 +267,10 @@
 
 (defthm good-index-taxon-halist-of-taxa-list-to-index-taxon
   (implies (int-symlist taxa-list)
-           (good-index-taxon-halist 
+           (good-index-taxon-halist
             (taxa-list-to-index-taxon taxa-list)))
   :hints (("Goal" :in-theory (enable taxa-list-to-index-taxon))))
-  
+
 (defun get-taxa-from-index-taxon (x)
 
 ;;; Legacy doc string replaced Nov. 2014 by auto-generated defxdoc form;
@@ -327,7 +327,7 @@
 ; don't know why this one was around yet.
 ;(defthm equal-len
 ;  (implies (integerp p)
-;           (equal (len (build-fast-alist-from-alist-acc 
+;           (equal (len (build-fast-alist-from-alist-acc
 ;                        (number-to-element taxa-list p)
 ;                        acc))
 ;                  (+ (len taxa-list) (len acc))))

@@ -46,7 +46,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -130,7 +130,7 @@ To certify this book, first, create a world with the following packages:
 ;;; Suma
 ;;; ----
 
-(defun + (p q) 
+(defun + (p q)
   (FUPOL::fn (FUPOL::+ p q)))
 
 (defthm polinomiop-+
@@ -152,7 +152,7 @@ To certify this book, first, create a world with the following packages:
 ;;; Resta
 ;;; -----
 
-(defun - (p) 
+(defun - (p)
   (FUPOL::fn (FUPOL::- p)))
 
 (defthm polinomiop--
@@ -257,7 +257,7 @@ To certify this book, first, create a world with the following packages:
 ;; 		 (:instance POL::|p + q = fn(p) + q|
 ;; 			    (POL::p (POL::+ p q))
 ;; 			    (POL::q r))
-;; 		 (:instance POL::|p + q = p + fn(q)| 
+;; 		 (:instance POL::|p + q = p + fn(q)|
 ;; 			    (POL::p p)
 ;; 			    (POL::q (POL::+ q r)))))))
 
@@ -270,7 +270,7 @@ To certify this book, first, create a world with the following packages:
 		 (:instance FUPOL::|p + q = fn(p) + q|
 			    (FUPOL::p (FUPOL::+ p q))
 			    (FUPOL::q r))
-		 (:instance FUPOL::|p + q = p + fn(q)| 
+		 (:instance FUPOL::|p + q = p + fn(q)|
 			    (FUPOL::p p)
 			    (FUPOL::q (FUPOL::+ q r)))))))
 
@@ -298,7 +298,7 @@ To certify this book, first, create a world with the following packages:
 ;;   (equal (* (* p q) r) (* p (* q r)))
 ;;   :hints (("Goal"
 ;; 	   :in-theory (disable POL::|(p * q) * r = p * (q * r)|
-;; 			       POL::|p * q = q * p|)    
+;; 			       POL::|p * q = q * p|)
 ;; 	   :use ((:instance POL::|(p * q) * r = p * (q * r)|
 ;; 			    (POL::p p) (POL::q q) (POL::r r))
 ;; 		 (:instance POL::|fn(p) * q = p * q|
@@ -316,7 +316,7 @@ To certify this book, first, create a world with the following packages:
   (= (* (* p q) r) (* p (* q r)))
   :hints (("Goal"
 	   :in-theory (disable FUPOL::|(p * q) * r = p * (q * r)|
-			       FUPOL::|p * q = q * p|)    
+			       FUPOL::|p * q = q * p|)
 	   :use ((:instance FUPOL::|(p * q) * r = p * (q * r)|
 			    (FUPOL::p p) (FUPOL::q q) (FUPOL::r r))
 		 (:instance FUPOL::|fn(p) * q = p * q|
@@ -344,13 +344,13 @@ To certify this book, first, create a world with the following packages:
 (defthm |p + (- p) = 0|
   (equal (+ p (- p)) (nulo))
   :hints (("Goal"
-	   :use ((:instance FUPOL::|p + q = p + fn(q)| 
+	   :use ((:instance FUPOL::|p + q = p + fn(q)|
 			    (FUPOL::p p)
 			    (FUPOL::q (FUPOL::- p)))))))
 
 ;; (defthm |p * (q + r) = (p * q) + (p * r)|
 ;;   (equal (* p (+ q r)) (+ (* p q) (* p r)))
-;;   :hints (("Goal" 
+;;   :hints (("Goal"
 ;; 	   :in-theory (disable POL::|p * (q + r) = (p * q) + (p * r)|
 ;; 			       POL::|(p * q) * r = p * (q * r)|)
 ;; 	   :use ((:instance POL::|p * (q + r) = (p * q) + (p * r)|
@@ -364,7 +364,7 @@ To certify this book, first, create a world with the following packages:
 
 (defthm |p * (q + r) = (p * q) + (p * r)|
   (= (* p (+ q r)) (+ (* p q) (* p r)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable FUPOL::|p * (q + r) = (p * q) + (p * r)|
 			       FUPOL::|(p * q) * r = p * (q * r)|)
 	   :use ((:instance FUPOL::|p * (q + r) = (p * q) + (p * r)|
@@ -392,7 +392,7 @@ To certify this book, first, create a world with the following packages:
 
 (in-theory (disable = (=)))
 ;;; -----------------------------------------------------------------------
-;;; El inverso debe ser invisible para la primera operación y para sí mismo 
+;;; El inverso debe ser invisible para la primera operación y para sí mismo
 ;;; -----------------------------------------------------------------------
 
 ;; (ACL2::set-invisible-fns-table ((+ -) (- -)))
@@ -505,16 +505,16 @@ To certify this book, first, create a world with the following packages:
 
 ;; (defthm |- (p + q) = (- p) + (- q)|
 ;;   (equal (- (+ p q)) (+ (- p) (- q)))
-;;   :hints (("Goal" 
+;;   :hints (("Goal"
 ;; 	   :in-theory (disable |p + q = 0 <=> q = - p|)
-;; 	   :use ((:instance |p + q = 0 <=> q = - p| 
+;; 	   :use ((:instance |p + q = 0 <=> q = - p|
 ;; 			    (p (+ p q)) (q (+ (- p) (- q))))))))
 
 (defthm |- (p + q) = (- p) + (- q)|
   (= (- (+ p q)) (+ (- p) (- q)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable |p + q = 0 <=> q = - p|)
-	   :use ((:instance |p + q = 0 <=> q = - p| 
+	   :use ((:instance |p + q = 0 <=> q = - p|
 			    (p (+ p q)) (q (+ (- p) (- q))))))))
 
 ;;; Idempotencia del inverso
@@ -593,7 +593,7 @@ To certify this book, first, create a world with the following packages:
   :hints (("Goal"
 	   :in-theory (e/d (* (*) nulo)
 			   (FUPOL::|fn(p1 * p2) = 0 <=> p1 = 0 or p2 = 0|))
-	   :use (:instance 
+	   :use (:instance
 		 FUPOL::|fn(p1 * p2) = 0 <=> p1 = 0 or p2 = 0|
 		 (FUPOL::p1 p1)
 		 (FUPOL::p2 p2)))))

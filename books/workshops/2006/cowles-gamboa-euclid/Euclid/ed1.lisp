@@ -26,12 +26,12 @@ To certify this book, first, create a world with the following package:
 
 (DEFPKG "ACL2-ASG"
   (SET-DIFFERENCE-EQUAL
-   (UNION-EQ *ACL2-EXPORTS* 
+   (UNION-EQ *ACL2-EXPORTS*
 	     *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*)
    '(ZERO)))
 
-(certify-book "ed1" 
-	      1   
+(certify-book "ed1"
+	      1
 	      nil ;;compile-flg
 	      )
 
@@ -40,7 +40,7 @@ To certify this book, first, create a world with the following package:
 ;; An Euclidean Domain is an integral domain, together with a Size function
 ;; from nonzero domain elements into the nonnegative integers, that
 ;; satisfies the Division Propery:
-;; 
+;;
 ;; Division Propery. For all domain elements x and all nonzero domain
 ;;             elements y there are domain elements q and r such that
 
@@ -56,7 +56,7 @@ To certify this book, first, create a world with the following package:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Commutative Ring is a nonempty set with two binary operations, addition
 ;; and multiplication, an unary operation, minus, and a ring element, zero,
-;; such that 
+;; such that
 
 ;; (1) the binary operations are commutative and associative,
 ;; (2) multiplications distributes over addition,
@@ -74,27 +74,27 @@ To certify this book, first, create a world with the following package:
 ; Make temporary use of an ACL2 Arithmetic Book to help certify this book,
 
 (local
- (include-book "arithmetic/top" :dir :system 
+ (include-book "arithmetic/top" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (encapsulate
- ; Signatures   
+ ; Signatures
  (((edp *) => *)          ; x is in Euclidean Domain iff (NOT (EQUAL (edp x) NIL)).
   ((=_e * *) => *)        ; Equality predicate for Euclidean Domain elements.
   ((+_e * *) => *)        ; Addition in Euclidean Domain.
-  ((*_e * *) => *)        ; Multiplication in Euclidean Domain. 
+  ((*_e * *) => *)        ; Multiplication in Euclidean Domain.
   ((-_e *) => *)          ; Unary minus in Euclidean Domain.
   ((0_e) => *)            ; 0 element in Euclidean Domain.
-  ((size *) => *)         ; Natp size of each nonzero Euclidean Domain element. 
+  ((size *) => *)         ; Natp size of each nonzero Euclidean Domain element.
   ((q_e * *) => *)        ; Quotient in Euclidean Domain.
   ((r_e * *) => *))       ; Remainder in Euclidean Domain.
 
  ; Witnesses:
- (local (defun 
+ (local (defun
 	  edp (x)
 	  (rationalp x)))
 
@@ -117,7 +117,7 @@ To certify this book, first, create a world with the following package:
  (local (defun
 	  0_e ()
 	  0))
- 
+
  (local (defun
 	  size (x)
 	  (declare (ignore x))
@@ -147,10 +147,10 @@ To certify this book, first, create a world with the following package:
  (defthm
     Equivalence-Law
     (implies (edp x)
-	     (and (=_e x x)  
+	     (and (=_e x x)
 		  (implies (edp y)
 			   (and (booleanp (=_e x y))
-				(implies (=_e x y) 
+				(implies (=_e x y)
 					 (=_e y x))
 				(implies (edp z)
 					 (implies (and (=_e x y)
@@ -284,7 +284,7 @@ To certify this book, first, create a world with the following package:
 
 (defun
   ==_e (x1 x2)
-  "==_e nicely extends =_e 
+  "==_e nicely extends =_e
    to entire ACL2 universe."
   (if (edp x1)
       (if (edp x2)
@@ -326,8 +326,8 @@ To certify this book, first, create a world with the following package:
 (defthm
   ==_e-Equivalence-Law
   (and (booleanp (==_e x y))
-       (==_e x x)  
-       (implies (==_e x y) 
+       (==_e x x)
+       (implies (==_e x y)
 		(==_e y x))
        (implies (and (==_e x y)
 		     (==_e y z))
@@ -396,7 +396,7 @@ To certify this book, first, create a world with the following package:
 		(==_e (**_e (**_e x y) z)
 		      (**_e x (**_e y z)))))
   :hints (("Goal"
-	   :in-theory (disable Commutativity-Laws-for-++_e-&-**_e)))) 
+	   :in-theory (disable Commutativity-Laws-for-++_e-&-**_e))))
 
 (defthm
   Left-Distributivity-Law-for-++_e-&-**_e
@@ -471,7 +471,7 @@ To certify this book, first, create a world with the following package:
 		    (:definition ++_e)
 		    (:definition **_e)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; This book constucts, for any Euclidean domain, 
+;; This book constucts, for any Euclidean domain,
 ;;                    <edp, =_e, +_e, *_e, -_e, 0_e, size, q_e, r_e>,
 ;; a constant, (1_e), such that
 
@@ -479,7 +479,7 @@ To certify this book, first, create a world with the following package:
 ;; 	         (implies (edp x)
 ;; 		          (=_e (*_e (1_e) x)
 ;; 			       x)))
-		       
+
 ;; Outline of a proof.
 
 ;; If the domain contains only one element (0_e), then let (1_e) be (0_e).
@@ -548,14 +548,14 @@ To certify this book, first, create a world with the following package:
 			   (and (integerp (Size (a_e)))
 				(>= (Size (a_e)) 0)))))
   :hints (("Goal"
-	   :in-theory (disable a_e-property) 
+	   :in-theory (disable a_e-property)
 	   :use a_e)))
 
 ;;Choose a nonzero element of edp with Size n (if it exists).
 (defchoose
   b_e (x)(n)
   (and (edp x)
-       (not (==_e x (0_e))) 
+       (not (==_e x (0_e)))
        (equal (Size x)(nfix n))))
 
 (defthm
@@ -590,7 +590,7 @@ To certify this book, first, create a world with the following package:
 		(equal (size (b_e (size x)))
 		       (size x))))
   :hints (("Goal"
-	   :use (:instance 
+	   :use (:instance
 		 b_e
 		 (n (size x))))))
 
@@ -680,7 +680,7 @@ To certify this book, first, create a world with the following package:
 				(integerp k)
 				(integerp n)
 				(<= 0 k)
-				(<= k n)				
+				(<= k n)
 				(not (==_e x (0_e)))
 				(edp x)
 				(edp (b_e n))
@@ -693,7 +693,7 @@ To certify this book, first, create a world with the following package:
 
 ;; Thus if there are nonzero elements in edp, then some nonzero element,
 ;;  namely (b_e (Find-smallest-n 0)), has size (Find-smallest-n 0) and
-;;  every nonzero element of edp has size greater than or equal to 
+;;  every nonzero element of edp has size greater than or equal to
 ;;  (Find-smallest-n 0).
 
 (defthm
@@ -742,7 +742,7 @@ To certify this book, first, create a world with the following package:
   (implies (and (edp x)
 		(not (==_e x (0_e))))
 	   (>= (Size x)(Find-smallest-n 0)))
-  :rule-classes (:rewrite 
+  :rule-classes (:rewrite
 		 (:linear
 		  :corollary
 		  (implies (and (not (==_e x (0_e)))
@@ -782,7 +782,7 @@ To certify this book, first, create a world with the following package:
 					   (b_e (Find-smallest-n 0)))
 				      (0_e))))))
   :hints (("Goal"
-	   :use (:instance 
+	   :use (:instance
 		 Division-property-for-==_e
 		 (x y)
 		 (y (b_e (Find-smallest-n 0)))))))

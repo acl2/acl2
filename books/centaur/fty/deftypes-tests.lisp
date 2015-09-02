@@ -128,7 +128,7 @@
     (:null
      :cond (not y)
      :ctor-body nil)
-    (:var 
+    (:var
      :cond (atom y)
      :fields ((name :acc-body y :type varp))
      :ctor-body name)
@@ -184,7 +184,7 @@
      :ctor-body (list left mid right idx))
     :xvar w))
 
-  
+
 
 ;; testing no-count
 (with-output :off (prove event observation)
@@ -206,7 +206,7 @@
       (:null
        :cond (not y)
        :ctor-body nil)
-      (:var 
+      (:var
        :cond (atom y)
        :fields ((name :acc-body y :type varp))
        :ctor-body name)
@@ -258,7 +258,7 @@
       (:null
        :cond (not y)
        :ctor-body nil)
-      (:var 
+      (:var
        :cond (atom y)
        :fields ((name :acc-body y :type varp))
        :ctor-body name)
@@ -375,8 +375,8 @@
     (equal (arithterm-eval (arithterm-double x))
            (* 2 (arithterm-eval x)))
     :hints(("Goal" :in-theory (enable arithterm-eval)))))
-   
-   
+
+
 
 (deffixtype nat :pred natp :fix nfix :equiv nat-equiv :define t)
 (deffixtype int :pred integerp :fix ifix :equiv int-equiv :define t)
@@ -410,7 +410,7 @@
      :ctor-body (list nat int ba)))
 
   (deflist ba :elt-type fa :measure (two-nats-measure (acl2-count x) 0)))
-     
+
 (deftagsum xtree
   (:leaf ((val natp)))
   (:pair ((left xtree-p) (right xtree-p)))
@@ -747,7 +747,7 @@
     (:null
      :cond (not y)
      :ctor-body nil)
-    (:var 
+    (:var
      :cond (atom y)
      :fields ((name :acc-body y :type varp))
      :ctor-body name)
@@ -773,7 +773,7 @@
      :require (eql (len formals) (len args))
      :ctor-body (cons (list 'lambda formals body) args))
 
-    
+
     :post-pred-events (;; (defthm pterm3list-p-of-take
                        ;;   (implies (pterm3list-p x)
                        ;;            (pterm3list-p (take n x))))
@@ -841,7 +841,7 @@
              ;; (local (in-theory (enable var-fix varp fnsym-fix fnsym-p)))
              )
   (defflexsum pterm4
-    (:var 
+    (:var
      :cond (atom y)
      :fields ((name :acc-body y :type varp))
      :ctor-body name)
@@ -903,7 +903,7 @@
     :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
 
 
-  
+
   :post-pred-events (;; (defthm pterm4list-p-of-append
                      ;;   (implies (and (pterm4list-p x)
                      ;;                 (pterm4list-p y))
@@ -1017,7 +1017,7 @@
     :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
 
 
-  
+
   :post-pred-events (
                      (defthm pterm5list-p-of-pterm5-take
                        (implies (pterm5list-p x)
@@ -1084,7 +1084,7 @@
 ;;                        just call XDOC::SAVE with :REDEF-OKP T to bypass this ~
 ;;                        error (and use the most recent version of each topic.)"))))
 ;;           (value '(value-triple :invisible)))))
-        
+
 (deflist acl2::string-list :pred acl2::string-listp :elt-type string)
 
 (deflist nat-list :pred acl2::nat-listp :elt-type natp)

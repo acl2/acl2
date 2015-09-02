@@ -35,7 +35,7 @@
     (cons (nth (- x 1) y)
 	  (rev2 (- x 1) y))))
 
-; This is not needed by ACL2, but it is added to make all 
+; This is not needed by ACL2, but it is added to make all
 ; inductive proofs explicit.
 (defthm rev2-nth
   (equal (cons (nth y (cons x1 x2)) (rev2 y (cons x1 x2)))

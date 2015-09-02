@@ -58,7 +58,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -159,7 +159,7 @@ To certify this book, first, create a world with the following packages:
 	   :use ((:instance
 		  |p + q = q + p|
 		  (p p1))
-		 (:instance 
+		 (:instance
 		  |p + q = q + p|
 		  (p p2))))))
 

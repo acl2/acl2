@@ -19,7 +19,7 @@
     (cons nil (nil-list (1- n)))))
 
 (defun simple-Stategeneratorlocal (nodeset)
-  (if (endp nodeset) 
+  (if (endp nodeset)
     nil
     (append (list (list (list 'Coor  (car nodeset))
                         (list 'Buffers (nil-list *num-of-buffers*))))
@@ -34,7 +34,7 @@
 
 ;; A function that verifies the the input parameters of the state
 ;; generation function
-(defun simple-ValidStateParamsp (P optional-param) 
+(defun simple-ValidStateParamsp (P optional-param)
   (declare (ignore optional-param))
   (2DMesh-ValidParamsp P))
 (in-theory (disable simple-ValidStateParamsp))

@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -109,9 +109,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 ;Allows things like (in-theory (disable cat)) to refer to binary-cat.
@@ -208,7 +208,7 @@
 
 (defun false$ () 0)
 
-(defmacro if1 (x y z) `(if (eql ,x 0) ,z ,y))    
+(defmacro if1 (x y z) `(if (eql ,x 0) ,z ,y))
 
 (defmacro in-function (fn term)
   `(if1 ,term () (er hard ',fn "Assertion ~x0 failed" ',term)))
@@ -219,7 +219,133 @@
 ;;;                           Arrays
 ;;;**********************************************************************
 
-(include-book "misc/records" :dir :system)
+(include-book "misc/total-order" :dir :system)
+
+(defmacro default-get-valu () 0)
+
+(defun arcdp (x)
+  (declare (xargs :guard t))
+  (or (null x)
+      (and (consp x)
+           (consp (car x))
+           (arcdp (cdr x))
+           (not (equal (cdar x)
+                       (default-get-valu)))
+           (or (null (cdr x))
+               (acl2::<< (caar x) (caadr x))))))
+
+(defthm arcdp-implies-alistp
+  (implies (arcdp x) (alistp x)))
+
+(defmacro aifrp-tag ()
+  ''unlikely-to-ever-occur-in-an-executable-counterpart)
+
+(defun aifrp (x) ;; ill-formed rcdp
+  (declare (xargs :guard t))
+  (or (not (arcdp x))
+      (and (consp x)
+           (null (cdr x))
+           (consp (car x))
+           (equal (cdar x) (aifrp-tag))
+           (aifrp (caar x)))))
+
+(defun acl2->arcd (x)  ;; function mapping acl2 objects to well-formed records.
+  (declare (xargs :guard t))
+  (if (aifrp x) (list (cons x (aifrp-tag))) x))
+
+(defun arcd->acl2 (r)  ;; inverse of acl2->rcd.
+  (declare (xargs :guard (arcdp r)))
+  (if (aifrp r) (caar r) r))
+
+(defun ag-aux (a r) ;; record g(et) when r is a well-formed record.
+  (declare (xargs :guard (arcdp r)))
+  (cond ((or (endp r)
+             (acl2::<< a (caar r)))
+         (default-get-valu))
+        ((equal a (caar r))
+         (cdar r))
+        (t
+         (ag-aux a (cdr r)))))
+
+(defun ag (a x) ;; the generic record g(et) which works on any ACL2 object.
+  (declare (xargs :guard t))
+  (ag-aux a (acl2->arcd x)))
+
+(defun acons-if (a v r)
+  (declare (xargs :guard (arcdp r)))
+  (if (equal v (default-get-valu)) r (acons a v r)))
+
+(defun as-aux (a v r) ;; record s(et) when x is a well-formed record.
+  (declare (xargs :guard (arcdp r)))
+  (cond ((or (endp r)
+             (acl2::<< a (caar r)))
+         (acons-if a v r))
+        ((equal a (caar r))
+         (acons-if a v (cdr r)))
+        (t
+         (cons (car r) (as-aux a v (cdr r))))))
+
+(defun as (a v x) ;; the generic record s(et) which works on any ACL2 object.
+  (declare (xargs :guard t))
+  (arcd->acl2 (as-aux a v (acl2->arcd x))))
+
+
+;;Basic properties of arrays:
+
+(defthm ag-same-as
+  (equal (ag a (as a v r))
+         v))
+
+(defthm ag-diff-as
+  (implies (not (equal a b))
+           (equal (ag a (as b v r))
+                  (ag a r))))
+
+;;;; NOTE: The following can be used instead of the above rules to force ACL2
+;;;; to do a case-split. We disable this rule by default since it can lead to
+;;;; an expensive case explosion, but in many cases, this rule may be more
+;;;; effective than two rules above and should be enabled.
+
+(defthm ag-of-as-redux
+  (equal (ag a (as b v r))
+         (if (equal a b) v (ag a r))))
+
+(in-theory (disable ag-of-as-redux))
+
+(defthm as-same-ag
+  (equal (as a (ag a r) r)
+         r))
+
+(defthm as-same-as
+  (equal (as a y (as a x r))
+         (as a y r)))
+
+(defthm as-diff-as
+  (implies (not (equal a b))
+           (equal (as b y (as a x r))
+                  (as a x (as b y r))))
+  :rule-classes ((:rewrite :loop-stopper ((b a as)))))
+
+;; the following theorems are less relevant but have been useful in dealing
+;; with a default record of NIL.
+
+(defthm ag-of-nil-is-default
+  (equal (ag a nil) (default-get-valu)))
+
+(defthm as-non-default-cannot-be-nil
+  (implies (not (equal v (default-get-valu)))
+           (as a v r)))
+
+(defthm non-nil-if-ag-not-default
+  (implies (not (equal (ag a r)
+                       (default-get-valu)))
+           r)
+  :rule-classes :forward-chaining)
+
+;;We disable as and ag, assuming the rules proved in this book are
+;;sufficient to manipulate any record terms that are encountered.
+
+(in-theory (disable as ag))
 
 
 ;;;**********************************************************************
@@ -279,7 +405,7 @@
                   (natp m)
                   (<= m n)
                   (bvecp r n)
-                  (natp k)
+                  (integerp k)
                   (<= (- f n) k)
                   (< k f))
              (iff (= (chop x k) x)
@@ -293,7 +419,7 @@
                   (natp m)
                   (<= m n)
                   (bvecp r n)
-                  (natp k)
+                  (integerp k)
                   (<= (- f n) k)
                   (< k f))
              (iff (= (chop x k) x)
@@ -309,6 +435,6 @@
                 (= (mod y (expt 2 n)) r)
                 (<= (- (expt 2 (1- n))) y)
                 (< y (expt 2 (1- n))))
-            (equal (sf r n m) 
+            (equal (sf r n m)
                    (* (expt 2 (- m n)) y))))
 )

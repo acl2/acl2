@@ -61,7 +61,7 @@
 (local (in-theory (enable weak-insert-induction-helper-2)))
 (local (in-theory (enable weak-insert-induction-helper-3)))
 
-(local (in-theory (disable map-subset-helper-2))) ;; speed hint
+;; (local (in-theory (disable map-subset-helper-2))) ;; speed hint
 
 ;; bzo move to sets library
 (defthm sfix-when-empty

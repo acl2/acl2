@@ -323,13 +323,13 @@
                 (member a lst)
                 (not (member x lst)))
            (not (member x (collect-nodes a))))
-  :hints (("goal" 
+  :hints (("goal"
            :use ((:instance
                   subnode-lst-complete-for-subnodes-necc
                   (x a)
                   (y x)))
            :in-theory (disable subnode-lst-complete-for-subnodes-rewrite))))
-  
+
 
 ;; The mutually inductive theorems:
 (defthm-accumulate-nodes-pre-flg

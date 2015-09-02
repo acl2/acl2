@@ -1,4 +1,4 @@
-; ACL2 Univariate Polynomials over a Field books -- Polynomial Products 
+; ACL2 Univariate Polynomials over a Field books -- Polynomial Products
 ;; Products of Univariate Polynomials over a Field
 ; Copyright (C) 2006  John R. Cowles and Ruben A. Gamboa, University of
 ; Wyoming
@@ -53,7 +53,7 @@ To certify this book, first, create a world with the following packages:
   (set-difference-eq
    (union-eq *acl2-exports*
 	     *common-lisp-symbols-from-main-lisp-package*)
-     '(null + * - < = / commutativity-of-* associativity-of-* 
+     '(null + * - < = / commutativity-of-* associativity-of-*
 	    commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
@@ -96,7 +96,7 @@ To certify this book, first, create a world with the following packages:
   (polinomiop (identidad))
   :rule-classes :type-prescription)
 
-;; (defthm 
+;; (defthm
 ;;   |RNG::1 !RNG::= RNG::0|
 ;;   (not (RNG::= (RNG::1_r)(RNG::0_r)))
 ;;   :hints (("Goal"
@@ -156,7 +156,7 @@ To certify this book, first, create a world with the following packages:
 (defthm |m *M (p + q) = (m *M p) + (m *M q)|
   (= (*-monomio m (+ p q))
      (+ (*-monomio m p) (*-monomio m q)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable = + +M |p + q = q + p|))
 	  ("Subgoal *1/1" :in-theory (enable = + +M))))
 
@@ -196,7 +196,7 @@ To certify this book, first, create a world with the following packages:
   :hints (("Goal"
 	   :in-theory (disable fnp-iff-ordenadop)
 	   :use |p != 0 => m *M p != 0|)))
- 
+
 ;;; ----------------------
 ;;; Producto de polinomios
 ;;; ----------------------
@@ -213,7 +213,7 @@ To certify this book, first, create a world with the following packages:
   (polinomiop (* p q))
   :rule-classes (:type-prescription
 		 :rewrite))
-  
+
 ;;; El producto de un monomio por el producto de dos polinomios es
 ;;; igual al producto del segundo polinomio por el resultado de
 ;;; multiplicar el monomio por el primer polinomio
@@ -235,7 +235,7 @@ To certify this book, first, create a world with the following packages:
 
 (defthm |(p + q) * r = (p * r) + (q * r)|
   (= (* (+ p q) r) (+ (* p r) (* q r)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :induct (fn p)
 	   :in-theory (disable = + *))
 	  ("Subgoal *1/1"
@@ -293,7 +293,7 @@ To certify this book, first, create a world with the following packages:
     :hints (("Goal"
 	     :induct (esquema-de-induccion p q)
 	     :do-not '(eliminate-destructors)
-	     :in-theory (disable = + +M 
+	     :in-theory (disable = + +M
 				 |m = 0 => m *M p = 0|
 				 |p != 0 => m *M p != 0|)))))
 
@@ -301,7 +301,7 @@ To certify this book, first, create a world with the following packages:
 
 (defthm |p * (q + r) = (p * q) + (p * r)|
   (= (* p (+ q r)) (+ (* p q) (* p r)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :in-theory (disable = + *)
 	   :use ((:instance |(p + q) * r = (p * r) + (q * r)|
 			    (r p) (p q) (q r))))))
@@ -388,7 +388,7 @@ To certify this book, first, create a world with the following packages:
 		(not (nulop p2)))
 	   (not (FUMON::nulop (primero (* p1 p2)))))
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       |primero (p1 * p2) =e (primero p1) FUMON::* (primero p2)|)
 	   :use |primero (p1 * p2) =e (primero p1) FUMON::* (primero p2)|)))
 
@@ -399,7 +399,7 @@ To certify this book, first, create a world with the following packages:
 	   (>-monomio (primero p)(resto p))))
 
 (defthm
-  |primero (m *M p) >-monomio resto (m *M p)| 
+  |primero (m *M p) >-monomio resto (m *M p)|
   (implies (and (not (FUMON::nulop m))
 		(ordenadop (double-rewrite p)))
 	   (>-monomio (primero (*-monomio m p))
@@ -440,13 +440,13 @@ To certify this book, first, create a world with the following packages:
 	   (>-monomio (primero (*-monomio m p))
 		      (append (resto (*-monomio m p))
 			      (*-monomio n p))))
-  :hints 
+  :hints
   (("Goal"
-    :in-theory 
-    (disable 
+    :in-theory
+    (disable
      |m >-monomio (append p1 p2)|
      |termino (primero (*-monomio n p)) FUTER::< termino (primero (*-monomio m p))|)
-    :use 
+    :use
     (|termino (primero (*-monomio n p)) FUTER::< termino (primero (*-monomio m p))|
      (:instance
       |m >-monomio (append p1 p2)|
@@ -466,7 +466,7 @@ To certify this book, first, create a world with the following packages:
 		      (resto (append (*-monomio m p)
 				     (*-monomio n p)))))
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       |primero (m *M p) >- monomio append (resto m *M p)(n *m p)|)
 	   :use |primero (m *M p) >- monomio append (resto m *M p)(n *m p)|)))
 
@@ -491,7 +491,7 @@ To certify this book, first, create a world with the following packages:
 		      (resto (append (*-monomio m p2)
 				     p1))))
   :hints (("Goal"
-	   :in-theory (disable 
+	   :in-theory (disable
 		       |primero (m *M p2) >-monomio append (resto m *M p2) p1|)
 	   :use |primero (m *M p2) >-monomio append (resto m *M p2) p1|)))
 
@@ -511,7 +511,7 @@ To certify this book, first, create a world with the following packages:
 	   (disable
 	    |primero (append (m *M p2) p1) >-monomio resto (append (m *M p2) p1)|
 	    |primero (p1 * p2) =e (primero p1) FUMON::* (primero p2)|)
-	   :use 
+	   :use
 	   ((:instance
 	     |primero (append (m *M p2) p1) >-monomio resto (append (m *M p2) p1)|
 	     (m (car p1))
@@ -553,8 +553,8 @@ To certify this book, first, create a world with the following packages:
 		(not (nulop p2)))
 	   (not (nulop (fn (* p1 p2)))))
   :hints (("Goal"
-	   :in-theory 
-	   (e/d (coeficiente monomiop) 
+	   :in-theory
+	   (e/d (coeficiente monomiop)
 		(|primero fn (p1 * p2) != 0|
 		 |primero fn (p1 * p2) =e primero (p1 * p2)|
 		 |(primero p) >-monomio (resto p) => primero (fn p) =e primero p|))

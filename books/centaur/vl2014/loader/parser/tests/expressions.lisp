@@ -474,7 +474,7 @@
    ))
 
 (defconst *basic-precedence-tests-2005*
-  (list 
+  (list
    ;; BOZO wtf ?? can this be right?
    (make-exprtest :input "1--2"
                   :expect '(:vl-binary-minus nil 1 (:vl-unary-minus nil 2)))
@@ -483,7 +483,7 @@
                   :expect '(:vl-binary-plus nil 1 (:vl-unary-plus nil 2)))))
 
 (defconst *basic-precedence-tests-2012*
-  (list 
+  (list
    (make-exprtest :input "1--2"
                   :expect '(:vl-unary-postdec nil 1)
                   :remainder "2")
@@ -1515,7 +1515,7 @@
 
 
 
-#|| 
+#||
 (run-exprtests
  (list    (make-exprtest :input "$unit::bar" :expect '(:vl-scope nil (key :vl-$unit) (hid "bar"))))
  :config (make-vl-loadconfig :edition :system-verilog-2012

@@ -616,7 +616,7 @@
     (equal (stype-count (pi-stype)
                         (aignet-make-n-inputs n aignet))
            (+ (nfix n) (stype-count (pi-stype) aignet))))
-  
+
   (defthm stype-counts-preserved-of-aignet-make-n-inputs
     (implies (not (equal (stype-fix stype) (pi-stype)))
              (equal (stype-count stype (aignet-make-n-inputs n aignet))
@@ -659,7 +659,7 @@
     (equal (stype-count (reg-stype)
                         (aignet-make-n-regs n aignet))
            (+ (nfix n) (stype-count (reg-stype) aignet))))
-  
+
   (defthm stype-counts-preserved-of-aignet-make-n-regs
     (implies (not (equal (stype-fix stype) (reg-stype)))
              (equal (stype-count stype (aignet-make-n-regs n aignet))
@@ -1026,7 +1026,7 @@
                                            0))))
                   :measure (nfix (- (nfix (num-regs aignet))
                                     (nfix idx)))
-                  :guard-hints(("goal" 
+                  :guard-hints(("goal"
                                 :in-theory (enable* aignet-litp aignet-idp)
                                 :do-not-induct t))))
   :guard-debug t
@@ -1050,7 +1050,7 @@
                                                   idx maxid regarr aignet)))
                     (stype-count stype aignet)))))
 
-  
+
 
 ;; (local (defthm linear-help1
 ;;          (implies (and (< (id-val (lit-id bla-bla)) maxid)
@@ -1081,7 +1081,7 @@
                                            0))))
                   :measure (nfix (- (nfix outnum)
                                     (nfix idx)))
-                  :guard-hints(("goal" 
+                  :guard-hints(("goal"
                                 :in-theory (enable* aignet-idp aignet-litp)
                                 :do-not-induct t))))
   (b* (((when (mbe :logic (zp (- (nfix outnum)
@@ -1182,4 +1182,4 @@
 
 
 
- 
+

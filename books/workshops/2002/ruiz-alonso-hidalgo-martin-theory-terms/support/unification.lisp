@@ -1,7 +1,7 @@
-;;; unification.lisp 
+;;; unification.lisp
 ;;; Definition of a particular rule-based unification algorithm.
 ;;; This is an executable instance of the general pattern verified in
-;;; unification-pattern.lisp 
+;;; unification-pattern.lisp
 ;;; Created 17-10-99. Last revision: 10-12-2000
 ;;; =================================================================
 
@@ -29,7 +29,7 @@
 
 ;;; Here we show how we can obtain a correct and executable unification
 ;;; algorithm from the "pattern"  verified in unification-definition.lisp:
-;;; - We define a particular selection function. 
+;;; - We define a particular selection function.
 ;;; - We introduce multi-values to deal with the pair of systems
 ;;;   S-sol and with the returned values, to improve efficiency.
 ;;; - Some other improvements concerning efficency are done.
@@ -55,13 +55,13 @@
     (let* ((equ (car S))
 	   (t1 (car equ))
 	   (t2 (cdr equ)))
-	(cond ((or (variable-p t1) (variable-p t2)) 
+	(cond ((or (variable-p t1) (variable-p t2))
 	       (sel-unif (cdr S)))
 	      ((eql (car t1) (car t2))
 	       (sel-unif (cdr S)))
 	      (t equ)))))
 
-;;; Main property, needed to instantiate from unification-definition.lisp: 
+;;; Main property, needed to instantiate from unification-definition.lisp:
 (local
  (defthm sel-unif-select-a-pair
    (implies (consp S)
@@ -75,7 +75,7 @@
 
 (encapsulate
  ()
- 
+
  (local
   (defthm sel-unif-consp
     (implies (and (alistp S)
@@ -83,25 +83,25 @@
 		  (system-p S))
 	     (consp (sel-unif S)))
     :rule-classes :type-prescription))
- 
+
  (defthm termp-p-sel-unif-system-p
    (implies (and (consp S)
 		 (system-p S))
 	    (and
 	     (term-p (car (sel-unif S)))
 	     (term-p (cdr (sel-unif S))))))
- 
+
  (local
   (defthm term-p-true-listp-arguments
     (implies (and (term-p term) (not (variable-p term)))
 	     (true-listp (cdr term)))))
- 
+
  (local
   (defthm system-p-eqlable-function-symbols
     (implies (and (system-p S)
 		  (member equ S))
 	     (eqlablep (cadr equ)))))
- 
+
  (defthm system-p-eqlablep-car
    (implies (and (system-p S)
 		 (consp S)
@@ -111,7 +111,7 @@
 ;;; ············································································
 ;;; 1.1.3 The function transform-mm
 ;;; ············································································
- 
+
 
  (defun transform-mm (S sol)
    (declare (xargs :guard (and (system-p S)
@@ -133,7 +133,7 @@
 	    (mv (cons (cons t2 t1) R) sol t))            ;;; *ORIENT*
 	   ((not (eql (car t1) (car t2)))
 	    (mv nil nil nil))                            ;;; *CONFLICT*
-	   (t (mv-let (pairs bool) 
+	   (t (mv-let (pairs bool)
 		      (pair-args (cdr t1) (cdr t2))
 		      (if bool
 			  (mv (append pairs R) sol t)    ;;; *DESCOMPOSE*
@@ -157,18 +157,18 @@
 (local
  (defthm substitute-syst-apply-syst
    (equal (apply-syst (list equ) S)
-	  (substitute-syst (car equ) (cdr equ) S)))) 
+	  (substitute-syst (car equ) (cdr equ) S))))
 
 (local
  (defthm substitute-range-apply-range
    (equal (apply-range (list equ) S)
-	  (substitute-range (car equ) (cdr equ) S)))) 
+	  (substitute-range (car equ) (cdr equ) S))))
 
 
 ;;; transform-mm-sel of unification-definition.lisp cannot be
 ;;; instantiated by transform-mm, since they different signatures, due
 ;;; to the use of multi values in transform-mm. Instead, we will
-;;; instantiate transform-mm-sel for the following function: 
+;;; instantiate transform-mm-sel for the following function:
 
 (local
  (defun transform-mm-bridge (S-sol)
@@ -180,7 +180,7 @@
 ;;; ----------------------------------------------------------------------------
 ;;; 1.3 Termination properties of transform-mm
 ;;; ----------------------------------------------------------------------------
-   
+
 ;;; The theorem to justify the definition. This lemma is easily obtained
 ;;; by functional instantiation:
 
@@ -192,7 +192,7 @@
    (defthm um-technical
      (equal (unification-measure '(nil))
 	    (unification-measure nil))))
-  
+
   (defthm unification-measure-decreases-instance
     (let ((transform-mm (transform-mm S sol)))
       (implies (consp S)
@@ -212,10 +212,10 @@
 
 (local (in-theory (disable unification-measure)))
 
-	    
+
 
 ;;; ----------------------------------------------------------------------------
-;;; 1.4 Guard verification 
+;;; 1.4 Guard verification
 ;;; ----------------------------------------------------------------------------
 
 ;;; Some lemmas needed for guard verification of mgu-mv
@@ -275,11 +275,11 @@
 (defun mgu-mv (t1 t2)
   (declare (xargs :guard (and (term-p t1) (term-p t2))))
   (mgs-mv (list (cons t1 t2))))
-  
+
 
 
 ;;; We also define as functions the property of being unifiable and the
-;;; umg substitution: 
+;;; umg substitution:
 (defun unifiable (t1 t2)
   (declare (xargs :guard (and (term-p t1) (term-p t2))))
   (mv-let (mgu unifiable)
@@ -317,12 +317,12 @@
  (defthm nil-third-implies-nil-second-solve-system
    (implies (not (third (solve-system S sol t)))
 	    (not (second (solve-system S sol t))))))
- 
+
 
 ;;; solve-system-sel of unification-pattern.lisp cannot be
 ;;; instantiated by solve-system, since they different signatures, due
 ;;; to the use of multi values in transform-mm. Instead, we will
-;;; instantiate solve-system-sel for the following function: 
+;;; instantiate solve-system-sel for the following function:
 
 (local
  (defun solve-system-bridge (S-sol)
@@ -356,7 +356,7 @@
 ;;; Completeness
 ;;; ············
 
-(defthm  mgu-completeness 
+(defthm  mgu-completeness
   (implies (equal (instance t1 sigma)
 		  (instance t2 sigma))
 	   (unifiable t1 t2))
@@ -379,7 +379,7 @@
 ;;; ·········
 
 
-(defthm mgu-soundness 
+(defthm mgu-soundness
   (implies (unifiable t1 t2)
 	   (equal (instance t1 (mgu t1 t2))
 		  (instance t2 (mgu t1 t2))))
@@ -399,7 +399,7 @@
 ;;; Idempotence
 ;;; ···········
 
-(defthm mgu-idempotent 
+(defthm mgu-idempotent
   (idempotent (mgu t1 t2))
   :hints
   (("Goal"
@@ -418,7 +418,7 @@
 ;;; Generality of the unifier
 ;;; ·························
 
-(defthm mgu-most-general-unifier 
+(defthm mgu-most-general-unifier
   (implies (equal (instance t1 sigma)
 		  (instance t2 sigma))
 	   (subs-subst (mgu t1 t2) sigma))
@@ -426,7 +426,7 @@
    (("Goal"
     :use
     ((:functional-instance
-      mgu-sel-most-general-unifier 
+      mgu-sel-most-general-unifier
       (sel sel-unif)
       (transform-mm-sel transform-mm-bridge)
       (solve-system-sel solve-system-bridge)
@@ -447,7 +447,7 @@
    (("Goal"
     :use
     ((:functional-instance
-      mgu-sel-substitution-s-p 
+      mgu-sel-substitution-s-p
       (sel sel-unif)
       (transform-mm-sel transform-mm-bridge)
       (solve-system-sel solve-system-bridge)

@@ -44,9 +44,9 @@ consider the function g(x) = -f(x) and find the maximum of g.
 ;; just reuse the theorem about max-n being limited.
 
 (defthm find-min-rcfn-x-n-limited
-  (implies (and (realp a) 
+  (implies (and (realp a)
 		(i-limited a)
-		(realp b) 
+		(realp b)
 		(i-limited b)
 		(< a b))
 	   (i-limited (find-min-rcfn-x-n a a
@@ -60,7 +60,7 @@ consider the function g(x) = -f(x) and find the maximum of g.
 				       (find-max-rcfn-x-n find-min-rcfn-x-n)
 				       ))
 	   :in-theory (disable find-max-rcfn-x-n-limited))))
-		   
+
 ;; That justifies the definition of min-x.
 
 (defun-std find-min-rcfn-x (a b)
@@ -69,7 +69,7 @@ consider the function g(x) = -f(x) and find the maximum of g.
 	   (< a b))
       (standard-part (find-min-rcfn-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))))
     0))

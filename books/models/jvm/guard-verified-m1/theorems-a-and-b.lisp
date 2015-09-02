@@ -66,7 +66,7 @@
 ; the schedule is.  The typical idiom for applications of run will be (run
 ; (repeat 'tick <clock>) s), where <clock> is a numeric expression.
 
-; Our two theorems, A and B involve clocks.  
+; Our two theorems, A and B involve clocks.
 
 ; A: If run halts normally in so many clock ticks, then there exists a clock
 ; that makes tmi halt normally.
@@ -105,7 +105,7 @@
 ; Our goal is to express precisely the relationship between TMI and an m1 run of
 ; the M1 system (PSI).  We take it in steps.  First, we express the relationship
 ; between an m1 run of (PSI) and tmi3.  Then we move to TMI terms by applying the
-; functions that re-represent Turing machines and tapes. 
+; functions that re-represent Turing machines and tapes.
 
 (defthm tmi3-simulation
   (implies (and (natp st)
@@ -124,7 +124,7 @@
                                                (push pos (push tape (push st nil))))))
                              (psi))
                  (psi-clock st tape pos tm w nnil n))
-            
+
             (let ((s (make-state
                       *main*
                       '(0 0 0 0 0 0 0 0 0 0 0 0 0)
@@ -244,7 +244,7 @@
                   (w (max-width1 (tm-to-tm1 tm map)))
                   (nnil (nnil w))
                   (tm-prime (ncode (tm-to-tm1 tm map) w))
-                  (s-final 
+                  (s-final
                    (m1 (make-state 0
                                     '(0 0 0 0 0 0 0 0 0 0 0 0 0)
                                     (push nnil
@@ -283,7 +283,7 @@
           (convert-tape-to-tapen-pos tape)
           (declare (ignore tapen))
           pos))
-          
+
 (defmacro with-conventions (term)
   `(let* ((map (renaming-map st tm))
           (w (max-width tm map))
@@ -324,7 +324,7 @@
 ; relying on the fact that once m1 halts normally it stays halted, i.e., if
 ; m1 is halted at i then it is halted at k if i <= k.  So we can bound the
 ; search for j by looking until i <= (find-k ...j).
-; 
+;
 
 ; So we prove Monotonicity next, then prove that m1 stays halted, then define
 ; the search mechanism for j, and then prove theorem a.
@@ -440,7 +440,7 @@
                       (!NINSTR1 ST (!CURRENT-SYMN TAPE POS)
                                 TM W (NNIL W))
                       W)
-                     TAPE POS) 
+                     TAPE POS)
                     10)))))))))))))))))))
 
 (defun k* (trace tm w)
@@ -584,7 +584,7 @@
                                   )))
   :rule-classes :linear)
 
-(defthm 0<-find-k  
+(defthm 0<-find-k
   (< 0 (find-k st tape tm n))
   :hints (("Goal" :in-theory (enable find-k psi-clock))))
 

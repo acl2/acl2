@@ -7,7 +7,7 @@
 ;;------------------------------------------------------------
 ;;
 ;;                     INTERFACES
-;; 
+;;
 ;;------------------------------------------------------------
 (encapsulate
 
@@ -19,10 +19,10 @@
   ((p2psend *) => *)
   ;; Function p2precv
   ;; argument: a frame frm and [options]
-  ;; output: a message msg 
+  ;; output: a message msg
   ((p2precv *) => *)
   )
-  
+
  (local (defun p2psend (msg) msg))
  (local (defun p2precv (frm) frm))
 

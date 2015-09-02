@@ -17,7 +17,7 @@
  (critical-id (n) nil
    (if (and (not (in-critical n-))
             (= (status (i n) n-) :try))
-       (i n) 
+       (i n)
      (critical-id n-)))
 
  (status (p n) :idle
@@ -49,7 +49,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; we have to use a different versions of the above functions which are
-; defined on natural time rather than the abstracted t+,t-,tzp time 
+; defined on natural time rather than the abstracted t+,t-,tzp time
 ; defined in basis.lisp.
 
 (mutual-recursion
@@ -67,7 +67,7 @@
      (let ((n- (1- n)))
        (if (and (not (in-critical* n-))
                 (= (status* (i n) n-) :try))
-           (i n) 
+           (i n)
          (critical-id* n-)))))
 
  (defun status* (p n)

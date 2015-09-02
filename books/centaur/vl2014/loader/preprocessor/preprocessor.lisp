@@ -1299,7 +1299,7 @@ but there may well be mismatches left.</p>"
                 ;; As with single-line comments, we'll just drop the comment.
                 (vl-parse-define-actual name remainder config loc stk acc))))
 
-          ;; Otherwise, just an ordinary division operation, accumulate it as 
+          ;; Otherwise, just an ordinary division operation, accumulate it as
           ;; usual, no effect on the stk.
           (vl-parse-define-actual name (cdr echars) config loc stk (cons (car echars) acc))))
 

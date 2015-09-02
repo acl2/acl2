@@ -9,7 +9,7 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
-;; ===================================================================
+;; ======================================================================
 
 ;; Lemmas about physical-address-p, physical-address-listp, and
 ;; create-physical-address-list: these are very similar to lemmas
@@ -178,13 +178,43 @@
 
 ;; RoW and WoW theorems:
 
-(local (in-theory (e/d (n32p-upper-16-in-8s-val-logior-loghead-ash-helper
-                        n32p-upper-16-in-8s-val-logior-loghead-ash
-                        n32p-lower-16-val-logior-loghead-ash-helper
-                        n32p-lower-16-val-logior-loghead-ash
-                        n32p-upper-16-val-logior-loghead-ash-helper
-                        n32p-upper-16-val-logior-loghead-ash)
-                       ())))
+;; First, some arithmetic lemmas for proving RoW/WoW theorems:
+
+(defthm n32p-lower-16-val-logior-loghead-ash
+  (implies (n32p val)
+           (equal (logior (loghead 8 val)
+                          (ash (loghead 8 (logtail 8 val)) 8))
+                  (loghead 16 val))))
+
+(defthm n32p-upper-16-val-logior-loghead-ash
+  (implies (n32p val)
+           (equal (logior (loghead 8 (logtail 16 val))
+                          (ash (logtail 24 val) 8))
+                  (logtail 16 val))))
+
+(local
+ (defthm n32p-upper-16-in-8s-val-logior-loghead-ash-helper
+   (implies (n32p val)
+            (equal (logior (loghead 8 val)
+                           (ash (logtail 16 val) 16)
+                           (ash (loghead 8 (logtail 8 val)) 8))
+                   (logior (loghead 16 val)
+                           (ash (logtail 16 val) 16))))
+   :hints (("Goal"
+            :in-theory (e/d ()
+                            (n32p-lower-16-val-logior-loghead-ash
+                             combining-logior-of-loghead-and-ash-loghead-logtail
+                             combining-logior-of-loghead-and-ash-logtail
+                             putting-logior-loghead-ash-logtail-together))
+            :use ((:instance n32p-lower-16-val-logior-loghead-ash))))))
+
+
+(defthm n32p-upper-16-in-8s-val-logior-loghead-ash
+  (implies (n32p val)
+           (equal (logior (loghead 8 val)
+                          (ash (logtail 16 val) 16)
+                          (ash (loghead 8 (logtail 8 val)) 8))
+                  val)))
 
 (local (in-theory (enable rm-low-32 rm-low-64 wm-low-32 wm-low-64)))
 
@@ -267,41 +297,41 @@
 ;; rm-low-32/rm-low-64/wm-low-32/wm-low-64 when the addresses are
 ;; disjoint:
 
-(defthm |(rm-low-32 addr2 (!memi addr1 val x86)) --- disjoint addr|
+(defthm |(rm-low-32 addr2 (xw :mem addr1 val x86)) --- disjoint addr|
   (implies (disjoint-p (addr-range 1 addr1)
                        (addr-range 4 addr2))
-           (equal (rm-low-32 addr2 (!memi addr1 val x86))
+           (equal (rm-low-32 addr2 (xw :mem addr1 val x86))
                   (rm-low-32 addr2 x86)))
   :hints (("Goal" :in-theory (e/d () (force (force))))))
 
-(defthm |(rm-low-64 addr2 (!memi addr1 val x86)) --- disjoint addr|
+(defthm |(rm-low-64 addr2 (xw :mem addr1 val x86)) --- disjoint addr|
   (implies (disjoint-p (addr-range 1 addr1)
                        (addr-range 8 addr2))
-           (equal (rm-low-64 addr2 (!memi addr1 val x86))
+           (equal (rm-low-64 addr2 (xw :mem addr1 val x86))
                   (rm-low-64 addr2 x86)))
   :hints (("Goal" :in-theory (e/d () (force (force))))))
 
-(defthm |(memi addr1 (wm-low-32 addr2 val x86)) --- disjoint addr|
+(defthm |(xr :mem addr1 (wm-low-32 addr2 val x86)) --- disjoint addr|
   (implies (disjoint-p (addr-range 4 addr2)
                        (addr-range 1 addr1))
-           (equal (memi addr1 (wm-low-32 addr2 val x86))
-                  (memi addr1 x86)))
+           (equal (xr :mem addr1 (wm-low-32 addr2 val x86))
+                  (xr :mem addr1 x86)))
   :hints (("Goal" :in-theory (e/d (ifix) (force (force))))))
 
-(defthm |(memi addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
+(defthm |(xr :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
   (implies (disjoint-p (addr-range 8 addr2)
                        (addr-range 1 addr1))
-           (equal (memi addr1 (wm-low-64 addr2 val x86))
-                  (memi addr1 x86)))
+           (equal (xr :mem addr1 (wm-low-64 addr2 val x86))
+                  (xr :mem addr1 x86)))
   :hints (("Goal" :in-theory (e/d (ifix) (force (force))))))
 
-(defthm |(!memi addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
+(defthm |(xw :mem addr1 (wm-low-64 addr2 val x86)) --- disjoint addr|
   (implies (and (disjoint-p (addr-range 8 addr2)
                             (addr-range 1 addr1))
                 (integerp addr1)
                 (integerp addr2))
-           (equal (wm-low-64 addr2 val2 (!memi addr1 val1 x86))
-                  (!memi addr1 val1 (wm-low-64 addr2 val2 x86))))
+           (equal (wm-low-64 addr2 val2 (xw :mem addr1 val1 x86))
+                  (xw :mem addr1 val1 (wm-low-64 addr2 val2 x86))))
   :hints (("Goal" :in-theory (e/d (ifix wm-low-64 wm-low-32) (force (force))))))
 
 (local (in-theory (disable rm-low-32 rm-low-64 wm-low-32 wm-low-64)))

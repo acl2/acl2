@@ -250,7 +250,7 @@
   (iff (repl-ev (disjoin (revappend x y)) a)
        (or (repl-ev (disjoin x) a)
            (repl-ev (disjoin y) a))))
-  
+
 
 (defsection dumb-negate-lit
   (in-theory (disable dumb-negate-lit))
@@ -304,7 +304,7 @@
     (implies (symbol-alistp x)
              (equal (remove-non-symbol-pairs x) x))))
 
-  
+
 
 (defsection replace-equalities-iter
 
@@ -403,10 +403,10 @@
 ;; (defmacro add-replace-equalities-rule (thmname)
 ;;   `(table replace-equalities-rules
 ;;           (replace-equalities-thm-fnsym ',thmname world)
-;;           (cons ',thmname 
+;;           (cons ',thmname
 ;;                 (cdr (assoc (replace-equalities-thm-fnsym ',thmname world)
 ;;                             (table-alist 'replace-equalities-rules world))))))
-                           
+
 
 ;; NOTE: This is mostly an example of usage, but is also pretty useful so we'll
 ;; leave it non-local.
@@ -449,4 +449,4 @@
                           (pseudo-termp (cdr (assoc 'rhs alist)))))))
      :hints ((and stable-under-simplificationp
                   '(:clause-processor (replace-equalities-cp clause nil state)))))))
-                       
+

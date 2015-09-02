@@ -258,7 +258,7 @@
                    (update-insi n id aignet)
                  (ec-call (update-insi n id aignet)))))
 
-  
+
   (definline innum->id (n aignet)
     (declare (type (integer 0 *) n)
              (xargs :stobjs aignet

@@ -66,7 +66,7 @@
 			     (x y)
 			     (interval (interval 0 nil))))
 	    :in-theory (disable inside-interval-p->=-left-endpoint)))))
-  
+
 (local
  (defthm square-lemma-2
      (IMPLIES (AND (INSIDE-INTERVAL-P Y (INTERVAL 0 NIL))

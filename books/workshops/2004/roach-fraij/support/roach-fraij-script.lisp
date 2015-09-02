@@ -2,7 +2,7 @@
 
 
 
-                                        ;------------------------------------------------------------------------- 
+                                        ;-------------------------------------------------------------------------
                                         ; A simplified model of the High-Assurance Transformation System (HATS)
                                         ;
                                         ; Abstract:
@@ -19,9 +19,9 @@
                                         ; According to our description of a table, the following table, to which we
                                         ; refer as constant-pool, is well-formed:
                                         ;
-                                        ;constant-pool'((0 "Zero") 
-                                        ;       (1 0) 
-                                        ;       (2 1)) 
+                                        ;constant-pool'((0 "Zero")
+                                        ;       (1 0)
+                                        ;       (2 1))
                                         ;
                                         ; To resolve the pointers in the table "constant-pool" in a transformational
                                         ; fashion, we need to relate the two components of each list in "constant-pool"
@@ -55,9 +55,9 @@
                                         ; if we apply the "once-strategy" function to the table "constant-pool" using
                                         ; the rule-list that we have, the result will be as follows.
                                         ;
-                                        ; constant-pool = '((0 "Zero") 
-                                        ;         (1 "Zero") 
-                                        ;         (2 0)) 
+                                        ; constant-pool = '((0 "Zero")
+                                        ;         (1 "Zero")
+                                        ;         (2 0))
                                         ;
                                         ; This result shows that there is one unresolved pointer, namely "0" in the
                                         ; list (2 0). This suggests that we have to apply the "once-strategy"
@@ -68,9 +68,9 @@
                                         ; "fix-strategy1" to the table "constant-pool" using the rule-list gives the
                                         ; following fully-resolved table.
                                         ;
-                                        ; constant-pool = '((0 "Zero") 
-                                        ;         (1 "Zero") 
-                                        ;         (2 "Zero")) 
+                                        ; constant-pool = '((0 "Zero")
+                                        ;         (1 "Zero")
+                                        ;         (2 "Zero"))
                                         ;
                                         ; The last function the I developed was fix-strategy that takes a constant-pool
                                         ; as an input, generates the corresponding rule-list, and call the function
@@ -80,7 +80,7 @@
                                         ; starting with the main function that will be invoked:
                                         ;
                                         ;1 fix-strategy (constant-pool)
-                                        ;1.1 generate-trnsf-rules (constant-pool) 
+                                        ;1.1 generate-trnsf-rules (constant-pool)
                                         ;1.2 fix-strategy1 (rule-list constant-pool)
                                         ;1.2.1 once-strategy (rule-list tail constant-pool)
                                         ;1.2.1.1 apply-rule-list-to-node (rule-list position classfile)
@@ -99,9 +99,9 @@
 ;; Predicates
 ;;-----------
                                         ;--------------------------------------------------------------
-                                        ; well-fomed-classfile-entryp returns true if the input 
+                                        ; well-fomed-classfile-entryp returns true if the input
                                         ; "one-entry"is a valid classfile entry.
-                                        ;--------------------------------------------------------------        
+                                        ;--------------------------------------------------------------
 (defun well-formed-classfile-entryp (one-entry)
   (and (consp one-entry)
        (natp (car one-entry))
@@ -111,15 +111,15 @@
                    (car one-entry))))
        (equal (cddr one-entry) nil)))
 ;;[x]
-                                        ;--------------------------------------------------------------        
+                                        ;--------------------------------------------------------------
                                         ; well-formed-classfilep returns true if the input "classfile"
                                         ; is a well-formed classfile.
-                                        ;--------------------------------------------------------------        
+                                        ;--------------------------------------------------------------
 (defun well-formed-classfilep (classfile)
   (if (endp classfile)
       (null classfile)
     (and (well-formed-classfile-entryp (car classfile))
-         (well-formed-classfilep (cdr classfile))))) 
+         (well-formed-classfilep (cdr classfile)))))
 ;;[x]
 
 
@@ -150,10 +150,10 @@
 (defun rhs (rule)
   (cadr rule))
 ;;[x]
-                                        ;--------------------------------------------------------------        
+                                        ;--------------------------------------------------------------
                                         ; well-formed-rulep returns true if the input "rule"
                                         ; is a well-formed transformation rule.
-                                        ;--------------------------------------------------------------        
+                                        ;--------------------------------------------------------------
 (defun well-formed-rulep (rule)
   (and (consp rule)
        (natp (lhs rule))
@@ -161,13 +161,13 @@
            (and (natp (rhs rule))
                 (< (rhs rule)
                    (lhs rule))))
-       (equal (cddr rule) nil))) 
+       (equal (cddr rule) nil)))
 ;;[x]
 
-                                        ;--------------------------------------------------------------        
+                                        ;--------------------------------------------------------------
                                         ; well-formed-rule-listp returns true if the input "rule-list"
                                         ; is a well-formed list of transformation rule.
-                                        ;--------------------------------------------------------------        
+                                        ;--------------------------------------------------------------
 (defun well-formed-rule-listp (rule-list)
   (if (endp rule-list)
       (null rule-list)
@@ -194,11 +194,11 @@
 ;; Functions
 ;;-----------
                                         ;-------------------------------------------------------------------------
-                                        ; The function get-constant repeatedly chases a pointer, n, in the links 
-                                        ; in the pointer chain starting at n until it arrives at a string and 
-                                        ; returns it. 
+                                        ; The function get-constant repeatedly chases a pointer, n, in the links
+                                        ; in the pointer chain starting at n until it arrives at a string and
+                                        ; returns it.
                                         ;-------------------------------------------------------------------------
-(defun get-constant (n classfile) 
+(defun get-constant (n classfile)
   (let ((temp (assoc n classfile)))
     (cond ((null temp) nil)
           ((stringp (cadr temp)) (cadr temp))
@@ -210,8 +210,8 @@
 ;;[x]
 
 ;;-----------------------------------------------------------------------
-;; The function resolve links uses resolve-links1 as a subroutine to 
-;; iterate down the table replacing each associated value by the terminal 
+;; The function resolve links uses resolve-links1 as a subroutine to
+;; iterate down the table replacing each associated value by the terminal
 ;; value from the original table.
 ;;-----------------------------------------------------------------------
 (defun resolve-links1 (tail classfile)
@@ -288,7 +288,7 @@
 ;;--------------------------------------------------------------
 ;; sem-ok-rulep returns true if the rule is well-formed wrt
 ;; classfile
-;;--------------------------------------------------------------        
+;;--------------------------------------------------------------
 (defun sem-ok-rulep (rule classfile)
   (and (well-formed-rulep rule)
        (equal (get-constant (lhs rule) classfile)
@@ -380,24 +380,24 @@
 ;; Functions
 ;;-----------
                                         ;-------------------------------------------------------------------------
-                                        ; sum-classfile-entry is a function that accepts one list of a classfile 
-                                        ; as an input and produces the corresponding weight of the second component 
+                                        ; sum-classfile-entry is a function that accepts one list of a classfile
+                                        ; as an input and produces the corresponding weight of the second component
                                         ; of it. Every natural number is assigned its original value plus 1; however,
-                                        ; every string is assigned the value 0. We do this to add 0 as a weight for 
+                                        ; every string is assigned the value 0. We do this to add 0 as a weight for
                                         ; any string and shift evey natural by one to reflect this shift.
                                         ;-------------------------------------------------------------------------
 (defun sum-classfile-entry (entry)
   (if (natp (cadr entry))
-      (1+ (cadr entry))  
+      (1+ (cadr entry))
     0))
 ;;[x]
 
                                         ;-------------------------------------------------------------------------
-                                        ; sum-addr-to-resolve is a function that accepts a classfile as an input 
-                                        ; and produces the corresponding total-weight of the second column of it. 
-                                        ; It calls sum-classfile-entry repeatedly to get the weight of the second 
-                                        ; components of each list inb the classfile. This function is necessary to 
-                                        ; prove the termination of the function fix-strategy function. 
+                                        ; sum-addr-to-resolve is a function that accepts a classfile as an input
+                                        ; and produces the corresponding total-weight of the second column of it.
+                                        ; It calls sum-classfile-entry repeatedly to get the weight of the second
+                                        ; components of each list inb the classfile. This function is necessary to
+                                        ; prove the termination of the function fix-strategy function.
                                         ;-------------------------------------------------------------------------
 (defun sum-addr-to-resolve (classfile)
   (if (endp classfile)
@@ -407,7 +407,7 @@
 ;;[x]
 
                                         ;-------------------------------------------------------------------------
-                                        ; put-in-place is a function that inserts a node in its correct location 
+                                        ; put-in-place is a function that inserts a node in its correct location
                                         ; in classfile.
                                         ;-------------------------------------------------------------------------
 (defun put-in-place (node classfile)
@@ -462,7 +462,7 @@
                       (assoc n classfile)))))
 ;;[x][y]
 
-(defthm get-constant-n-<-x 
+(defthm get-constant-n-<-x
     (implies (and (natp n)
                   (< n x)
                   (well-formed-classfilep classfile))
@@ -474,11 +474,11 @@
 ;; Function
 ;;---------
                                         ;-------------------------------------------------------------------------
-                                        ; The function get-constant-path repeatedly chases a pointer, n, in the links 
+                                        ; The function get-constant-path repeatedly chases a pointer, n, in the links
                                         ; in the pointer chain starting at n until it arrives at a pointer that leads
                                         ; to a string and returns the whole chain.
                                         ;-------------------------------------------------------------------------
-(defun get-constant-path (n classfile) 
+(defun get-constant-path (n classfile)
   (let ((temp (assoc n classfile)))
     (cond ((null temp) nil)
           (t (if (or (stringp (cadr temp))
@@ -651,7 +651,7 @@
 ;;-----------
                                         ;-------------------------------------------------------------------------
                                         ; apply-rule-to-node is a function that applies a trnasformation rule
-                                        ; to a position that corresponds to a node in classfile. 
+                                        ; to a position that corresponds to a node in classfile.
                                         ;-------------------------------------------------------------------------
 (defun apply-rule-to-node (rule position classfile)
   (let ((temp (assoc position classfile)))
@@ -699,7 +699,7 @@
 
 (defthm matches-implies-wfcfep
     (implies (matches rule position classfile)
-             (well-formed-classfile-entryp 
+             (well-formed-classfile-entryp
               (list position (rhs rule))))
   :hints (("goal" :in-theory (enable lhs rhs))))
 ;;[x][y]
@@ -751,9 +751,9 @@
 ;; Function
 ;;-----------
                                         ;-------------------------------------------------------------------------
-                                        ; apply-rule-list-to-node is a function that applies a list of 
-                                        ; trnasformation rules, namely rule-list, to a position that corresponds 
-                                        ; to a node in classfile. 
+                                        ; apply-rule-list-to-node is a function that applies a list of
+                                        ; trnasformation rules, namely rule-list, to a position that corresponds
+                                        ; to a node in classfile.
                                         ;-------------------------------------------------------------------------
 (defun apply-rule-list-to-node (rule-list position classfile)
   (if (endp rule-list)
@@ -793,9 +793,9 @@
 (defthm well-formed-apply-rule-list-to-node
     (implies (well-formed-classfilep classfile)
              (well-formed-classfilep (apply-rule-list-to-node rule-list position classfile))))
-;;[x][y]      
+;;[x][y]
 
-(defthm get-constant-n-apply-rule-list-to-node 
+(defthm get-constant-n-apply-rule-list-to-node
     (implies (well-formed-classfilep classfile)
              (equal (get-constant n (apply-rule-list-to-node rule-list position classfile))
                     (get-constant n classfile)))
@@ -810,10 +810,10 @@
                     classfile)))
 ;;[x][y]
 
-(in-theory (disable sem-ok-rule-listp 
+(in-theory (disable sem-ok-rule-listp
                     well-formed-classfile-entryp
-                    sum-classfile-entry 
-                    sem-ok-rulep 
+                    sum-classfile-entry
+                    sem-ok-rulep
                     matches
                     apply-rule-to-node))
 ;;[x][y]
@@ -847,8 +847,8 @@
 (defun once-strategy (rule-list tail classfile)
   (if (endp tail)
       classfile
-    (once-strategy rule-list 
-                   (cdr tail) 
+    (once-strategy rule-list
+                   (cdr tail)
                    (apply-rule-list-to-node rule-list (caar tail) classfile))))
 
 (defthm example-10
@@ -878,7 +878,7 @@
 ;;------------------------------------------------------
 ;; Theorems
 ;;---------
-(defthm get-constant-n-once-strategy 
+(defthm get-constant-n-once-strategy
     (implies (well-formed-classfilep classfile)
              (equal (get-constant n (once-strategy rule-list tail classfile))
                     (get-constant n classfile))))
@@ -892,7 +892,7 @@
 (defthm well-formed-once-strategy
     (implies (well-formed-classfilep classfile)
              (well-formed-classfilep (once-strategy rule-list tail classfile))))
-;;[x][y]                    
+;;[x][y]
 
 (defthm sum-addr-once-strategy-<=
     (implies (well-formed-classfilep classfile)
@@ -931,9 +931,9 @@
 ;; Function
 ;;---------
                                         ;-------------------------------------------------------------------------
-                                        ; fix-strategy1 keeps updating the input classfile by calling 
+                                        ; fix-strategy1 keeps updating the input classfile by calling
                                         ; once-strategy. It stops when there is no more pointers in the second column
-                                        ; of classfile to resolve. 
+                                        ; of classfile to resolve.
                                         ;-------------------------------------------------------------------------
 (defun fix-strategy1 (rule-list classfile)
   (declare (xargs :measure (sum-addr-to-resolve classfile)))
@@ -992,7 +992,7 @@
 ;;[x]
 
                                         ;-------------------------------------------------------------------------
-                                        ; fix-strategy generates a set of transformation rules, namely rule-list, 
+                                        ; fix-strategy generates a set of transformation rules, namely rule-list,
                                         ; for a given classfile using the function generate-rules. Then, it calls
                                         ; fix-strategy1 with using classfile and the rule-list as inputs.
                                         ;-------------------------------------------------------------------------

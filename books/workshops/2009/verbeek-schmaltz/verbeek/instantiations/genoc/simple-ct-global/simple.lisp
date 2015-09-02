@@ -36,7 +36,7 @@
   ;; - the arrived messages
   ;; - the en route messages
   ;; - the network state accumulator for simulation
-  
+
   ;; the measure is set to the measure defined by the scheduler
   (declare (xargs :measure (acl2-count measure)
                   :hints (("Goal" :use (:instance ct-measure-decreases
@@ -64,7 +64,7 @@
                                               (append arrived trlst)
                                               (append accup (list (simple-extract-simulation newntkstate)))
                                               (+ 1 time)
-                                              newntkstate 
+                                              newntkstate
                                               (inst-get_next_priority order))))
                     (t
                      ;; scheduler has instructed to terminate
@@ -93,7 +93,7 @@
                             ;; accumulator for simulation
                             nil
                             ;; time
-                            '0 
+                            '0
                             ;; compute initial ntkstate
                             (inst-generate-initial-ntkstate talst (inst-StateGenerator p1 p2))
                             order)
@@ -121,7 +121,7 @@
                                                          nodeset
                                                          newmeasure
                                                          (+ 1 time)
-                                                         newntkstate 
+                                                         newntkstate
                                                          (inst-get_next_priority order))
 
                             arrived )))
@@ -154,7 +154,7 @@
                                                          nodeset
                                                          newmeasure
                                                          (+ 1 time)
-                                                         newntkstate 
+                                                         newntkstate
                                                          (inst-get_next_priority order))))
                     (t
                      missives))))))
@@ -487,7 +487,7 @@
                 (ntkstate-relates-to-trlst ntkstate trlst)
                 (member-equal node (getcoordinates ntkstate)))
            (consp (get-travels node trlst)))
-  :hints (("Subgoal *1/2" 
+  :hints (("Subgoal *1/2"
            :use (:instance buffer-implies-travels (node (get_coor (car ntkstate)))
                  (buffer (get_buff (car ntkstate)))))))
 (defthm non-empty-route-implies-travels-in-route
@@ -716,7 +716,7 @@
 (defthm subsetp-preverves-A-deadlockfree_v
   (implies (and (subsetp newtravels travels)
                 (A-deadlockfree_v travels v-acc trlst ntkstate))
-           (A-deadlockfree_v newtravels v-acc trlst ntkstate)))  
+           (A-deadlockfree_v newtravels v-acc trlst ntkstate)))
 (defthm member-equal-get-travels
   (implies (member-equal v trlst)
            (member-equal v (get-travels (caar (RoutesV v)) trlst))))
@@ -865,7 +865,7 @@
              (<=-full newntkstate ntkstate)))
   :hints (("Subgoal 1" :use ((:instance subsetp-newtrlst-implies-<=-full
                               (newtrlst (ct-scheduler-nt-car TrLst nil ntkstate)))))))
-           
+
 
 ;; A.) + B.)
 ;; Then prove an instantiation of the abstract theorem with n = 0
@@ -910,7 +910,7 @@
                               (prev nil) (nodeset (getcoordinates ntkstate)))
                               (:instance scheduler-preserves-created-by-xy
                                (nodeset (getcoordinates ntkstate)))))))
- 
+
 
 
 ;;-------------------------------------------------
@@ -941,7 +941,7 @@
 (defthm consp-routing
   (implies (consp missives)
            (consp (xy-routing-top missives nodeset))))
-        
+
 ;; Theorem 4:
 ;; If the measure initially supplied to GeNoC_t is legal,
 ;; Property P implies that GeNoC terminates with no
@@ -1001,7 +1001,7 @@
                      (genoc-correctness results
                                         (extract-sublst trs (r-ids results))))))
   :otf-flg t
-  :hints (("goal":by 
+  :hints (("goal":by
                  (:functional-instance genoc-is-correct
                   (generate-initial-ntkstate simple-generate-initial-ntkstate)
                   (readyfordeparture simple-readyfordeparture)
@@ -1026,7 +1026,7 @@
 ; Comment from J Moore for changes after v5-0 for tau:
 
 ; This comment contains (:executable-counterpart tau-system) just so that rune
-; is a reliable marker for changes made to support tau.  These have had to be 
+; is a reliable marker for changes made to support tau.  These have had to be
 ; renamed so often (with changes in tau) that I have lost track of what they
 ; used to be!  Just don't be surprised if this proof fails after changing tau!
 

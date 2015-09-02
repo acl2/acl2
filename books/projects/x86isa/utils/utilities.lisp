@@ -376,21 +376,29 @@ bound)))</tt> and less than to <tt>(expt 2 (1- bound))</tt>.</p>
 (defmacro defthmld (&rest args)
   `(local (defthmd ,@args)))
 
+(defmacro def-gl-export
+  (name &key hyp concl g-bindings rule-classes)
+
+  (if (and hyp concl g-bindings)
+
+      (let ((gl-name (mk-name name "-GL")))
+
+        `(progn
+
+           (local
+            (def-gl-thm ,gl-name
+              :hyp ,hyp
+              :concl ,concl
+              :g-bindings ,g-bindings))
+
+           (defthm ,name
+             (implies ,hyp ,concl)
+             :hints (("Goal" :in-theory (theory 'minimal-theory)
+                      :use ((:instance ,gl-name))))
+             :rule-classes ,(or rule-classes :rewrite))))
+    nil))
+
 ;; ======================================================================
-
-(define gl-int
-  :parents (utilities)
-  :short "@('gl-int') generates a @(':g-number') form with @('count')
-  bits, to be used in @(':g-bindings') of a @('def-gl-thm')."
-  ((start natp "@(':g-number') indices start at @('start')")
-   (by    natp "@(':g-number') indices are incremented by @('by')")
-   (count natp "@Total number of (':g-number') indices"))
-  (if (zp count)
-      nil
-    (cons start
-          (gl-int (+ by start) by (1- count)))))
-
-;; =============================================================================
 
 ;; Convenient forcing idiom:
 
@@ -510,6 +518,7 @@ constants and functions; it also proves some associated lemmas.</p>"
 
      `(define ,ntoi
         :inline t
+        :enabled t
         :parents (constants-conversions-and-bounds)
         ;; Convert natural number to integer
         :guard-hints (("Goal" :in-theory (e/d (logext)

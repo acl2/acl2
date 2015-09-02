@@ -174,7 +174,7 @@
    (cond ((integerp x)
           (expt x 2))
          (t 0))))
- 
+
 (defconst *client-id* :client)
 (defconst *server-id* :server)
 
@@ -191,14 +191,14 @@
                               (network-state-p network-st))))
   (cond ((atom network-st)
          (mv nil nil))
-        (t 
+        (t
          (let ((packet (car network-st)))
            (cond ((equal (network-packet->dest packet) dest)
                   (mv packet (cdr network-st)))
                  (t (mv-let (msg network-st-recursive)
-                            (retrieve-network-message dest 
+                            (retrieve-network-message dest
                                                       (cdr network-st))
-                            (mv msg 
+                            (mv msg
                                 (cons (car network-st)
                                       network-st-recursive)))))))))
 
@@ -206,12 +206,12 @@
   (implies (and (id-p dest)
                 (network-state-p network-st))
            (implies (car (retrieve-network-message dest network-st))
-                    (network-packet-p (mv-nth 0 
+                    (network-packet-p (mv-nth 0
                                               (retrieve-network-message dest
                                                                         network-st))))))
 (defthm retrieve-network-message-returns-network-state-p
   (implies (network-state-p network-st)
-           
+
 ; Using (cadr ...) in the below call causes a later theorem
 ; (SERVER-STEP1-OUTPUT-LEMMA-2) to fail, but shouldn't (mv-nth 1 ...) just
 ; expand to cadr since mv-nth is enabled?  Actually, probably not, since mv-nth
@@ -226,12 +226,12 @@
                   :output (network-packet-p (make-square-request value-to-square))))
   (make-network-packet
    :sender *client-id*
-   :dest *server-id* 
+   :dest *server-id*
    :message (make-message :tag :request
                           :payload value-to-square)))
 
 (defn print-states (client-st server-st network-st)
-  (prog2$ 
+  (prog2$
    (cw "~%Client state is: ~x0~%" client-st)
    (prog2$
     (cw "Server state is: ~x0~%" server-st)
@@ -268,7 +268,7 @@
                   :output (network-packet-p (make-square-response dest
                                                                   result))))
   (make-network-packet :sender *server-id*
-                       :dest dest 
+                       :dest dest
                        :message (make-message :tag :answer
                                               :payload result)))
 
@@ -305,9 +305,9 @@
         (prog2$ (cw "Missing packet~%")
                 (mv server-st network-st))))
     (mv (change-server-state server-st
-                             :requests-served 
+                             :requests-served
                              (+ 1 (server-state->requests-served server-st)))
-        (cons 
+        (cons
          (make-square-response
           (network-packet->sender packet)
           (square (message->payload (network-packet->message packet))))
@@ -339,7 +339,7 @@
        ((when (null packet))
         (prog2$ (cw "Missing packet~%")
                 (mv client-st network-st))))
-    (mv (change-client-state 
+    (mv (change-client-state
          client-st
          :answer (message->payload (network-packet->message packet)))
         network-st)))
@@ -391,7 +391,7 @@
                  (client-step2 client-st network-st)))
              (equal (expt (client-state->number-to-square client-st-orig) 2)
                     (client-state->answer client-st)))))
-           
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Define a specific attack
@@ -409,7 +409,7 @@
        ((when (null original-packet))
         (prog2$ (cw "Missing packet~%")
                 network-st)))
-    (cons (make-square-request 
+    (cons (make-square-request
            (+ 1 (message->payload (network-packet->message
                                    original-packet))))
           network-st)))
@@ -460,7 +460,7 @@
 ; that the theorem isn't true (we have a such a counter-example, shown in
 ; function man-in-the-middle-specific-attack), so we leave it as is.
 
-#|| 
+#||
 (defthm |bad-square-is-good?-with-double-attack|
   (implies (and (client-state-p client-st-orig) ; is symbolic
                 (server-state-p server-st)

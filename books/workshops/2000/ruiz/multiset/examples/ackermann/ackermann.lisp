@@ -42,9 +42,9 @@
 		(>= (ack m n) 0))))
 
 (verify-guards ack)
- 
+
 ;;; Our goal is to define an iterative version of ack:
-;;; ··················································  
+;;; ··················································
 
 ; (defun ack-it-aux (s z)
 ;   (declare (xargs :mode :program))
@@ -107,7 +107,7 @@
 ;;;----------------------------------------------------------------------------
 
 ; (defmul-components rel-ack)
-; => The list of components is: 
+; => The list of components is:
 ;     (REL-ACK REL-ACK-WELL-FOUNDED MP-ACK FN-ACK X Y)
 
 (defmul (REL-ACK REL-ACK-WELL-FOUNDED MP-ACK FN-ACK X Y)
@@ -146,7 +146,7 @@
  ()
 
  (local (in-theory (disable nfix)))
- 
+
  (local
   (defthm mp-ack-true-listp-get-pairs-add1-0
     (mp-ack-true-listp (get-pairs-add1-0 l))))
@@ -158,7 +158,7 @@
 
 (in-theory (disable multiset-diff))
 
-(encapsulate 
+(encapsulate
  ()
 
  (local (in-theory (disable nfix zp)))
@@ -237,11 +237,11 @@
 
 (encapsulate
  ()
- 
+
  (local (defthm ack-stack-cons-expand
 	  (equal (ack-stack (cons s1 s) z)
 		 (ack-stack s (ack s1 z)))))
- 
+
  (defthm ack-it-aux-ack-stack
    (equal (ack-it-aux s z) (ack-stack s z))))
 

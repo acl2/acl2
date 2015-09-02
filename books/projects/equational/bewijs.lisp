@@ -1,7 +1,7 @@
 ;; Utrecht Texas Equational Prover
 ;; Written by Grant Olney Passmore {grant@math.utexas.edu}
 ;;
-;; Proof manipulation routines.  
+;; Proof manipulation routines.
 ;;  (... `bewijs' is `proof' in Dutch! :) )
 
 (in-package "ACL2")
@@ -16,7 +16,7 @@
 
 (defun raw-clauses-to-axiom-moves* (input-clauses cur-clause-id prefix)
   (if (endp input-clauses) nil
-    (cons (list (list prefix cur-clause-id) 
+    (cons (list (list prefix cur-clause-id)
 		(list 'move ':AXIOM)
 		(car input-clauses))
 	  (raw-clauses-to-axiom-moves* (cdr input-clauses) (1+ cur-clause-id) prefix))))
@@ -43,12 +43,12 @@
 
 ;; PRUNE-PROOF-TREE* (raw-linear-mpt)
 ;; Given a raw linear move-proof-tree already cropped to its sought refutation,
-;; return the linear proof tree only containing the clauses used in the 
+;; return the linear proof tree only containing the clauses used in the
 ;; derivation.
 ;; Note: Naming parent function PRUNE-PROOF-TREE* as ACL2 has a :program mode
 ;; function with the name PRUNE-PROOF-TREE.
 ;; G. Passmore :: 12/24/05
- 
+
 (defun prune-proof-tree** (revd-remaining-clauses cur-tree flagged-clauses)
   (if (endp revd-remaining-clauses) cur-tree
     (let ((cur-move (car revd-remaining-clauses)))
@@ -58,9 +58,9 @@
 		(endp flagged-clauses))
 	    (let ((new-flagged-clauses
 		   (cond ((equal (cadr cur-move-defence) ':AXIOM) flagged-clauses)
-			 ((or (equal (cadr cur-move-defence) ':BINARY-RESOLUTION) 
+			 ((or (equal (cadr cur-move-defence) ':BINARY-RESOLUTION)
 			      (equal (cadr cur-move-defence) ':BINARY-RESOLUTION-AND-MERGING))
-			  (append (list (caaddr cur-move-defence) (caaddr (cdr cur-move-defence))) 
+			  (append (list (caaddr cur-move-defence) (caaddr (cdr cur-move-defence)))
 				  flagged-clauses))
 			 ((equal (cadr cur-move-defence) ':BINARY-FACTORING)
 			  (append (list (caaddr cur-move-defence)) flagged-clauses))

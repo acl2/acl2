@@ -20,15 +20,15 @@
             (getprop name 'symbol-class 0 'current-acl2-world wrld))
            (new-symbol-class (nth 15 tuple))
            (old-formals
-            (getprop name 'formals 0 'current-acl2-world wrld))  
+            (getprop name 'formals 0 'current-acl2-world wrld))
            (new-formals
-            (getprop name 'formals 0 'current-acl2-world new-wrld))  
+            (getprop name 'formals 0 'current-acl2-world new-wrld))
            (old-stobjs-in
-            (getprop name 'stobjs-in 0 'current-acl2-world wrld))  
+            (getprop name 'stobjs-in 0 'current-acl2-world wrld))
            (new-stobjs-in
-            (getprop name 'stobjs-in 0 'current-acl2-world new-wrld))  
+            (getprop name 'stobjs-in 0 'current-acl2-world new-wrld))
            (old-stobjs-out
-            (getprop name 'stobjs-out 0 'current-acl2-world wrld))  
+            (getprop name 'stobjs-out 0 'current-acl2-world wrld))
            (new-stobjs-out
             (getprop name 'stobjs-out 0 'current-acl2-world new-wrld)))
       (cond ((eql old-symbol-class 0)
@@ -70,7 +70,7 @@
 ;
 ; lots of checks are performed and actions are taken to prevent the logic from
 ; being tainted by the redefinition.
-; 
+;
 (defmacro redefun (name ll &rest decls-and-body)
   (declare (xargs :guard (and (symbolp name)
                               (symbol-listp ll)
@@ -101,7 +101,7 @@
 ; this uses redefun and our code rewrite stuff (see rewrite-code.lisp,
 ; especially compute-copy-defun+rewrite) to redefine a :program mode
 ; function in terms of its existing definition.
-; 
+;
 (defmacro redefun+rewrite (name &rest rewrite-spec)
   (declare (xargs :guard (symbolp name)))
   `(make-event

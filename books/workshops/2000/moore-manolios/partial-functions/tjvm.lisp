@@ -205,7 +205,7 @@
 ; -----------------------------------------------------------------------------
 ; (LOAD var) Instruction
 
-(defun execute-LOAD (inst s)                           
+(defun execute-LOAD (inst s)
   (make-state
    (push (make-frame (+ 1 (pc (top-frame s)))
                      (locals (top-frame s))
@@ -584,7 +584,7 @@
 
 (defun next-inst (s)
   (nth (pc (top-frame s))
-       (program (top-frame s)))) 
+       (program (top-frame s))))
 
 (defun do-inst (inst s)
   (case (op-code inst)
@@ -593,7 +593,7 @@
     (LOAD           (execute-LOAD inst s))
     (STORE          (execute-STORE inst s))
     (ADD            (execute-ADD inst s))
-    (SUB            (execute-SUB inst s))    
+    (SUB            (execute-SUB inst s))
     (MUL            (execute-MUL inst s))
     (GOTO           (execute-GOTO inst s))
     (IFEQ           (execute-IFEQ inst s))

@@ -8,9 +8,9 @@
 (include-book "../../routecontrol/xy/routecontrol")
 (include-book "../../flowcontrol/wormhole/flowcontrol")
 
-(defun XY-wormhole-router (node memory)  
+(defun XY-wormhole-router (node memory)
   ;; This function represents the router component of a Node.
-  ;; Applies the different processes in a router in the correct order. The RouterControl and FlowControl get as arguments the memory. 
+  ;; Applies the different processes in a router in the correct order. The RouterControl and FlowControl get as arguments the memory.
   ;;
   ;; Arguments:
   ;; - node : list of ports in a node
@@ -21,7 +21,7 @@
                   (wormhole-Flowcontrol node memory)
                   (mv (simple-ProcessOutputs node) memory))))
 
-(definstance GenericRouter check-compliance-router                   
+(definstance GenericRouter check-compliance-router
   :functional-substitution
   ((router XY-wormhole-router)))
 

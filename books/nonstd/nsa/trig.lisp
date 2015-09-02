@@ -22,7 +22,7 @@
 ;; First, we define the sine function.  sine(x) = (e^{ix}-e^{-ix})/2i.
 
 (defun acl2-sine (x)
-  (/ (- (acl2-exp (* #c(0 1) x)) 
+  (/ (- (acl2-exp (* #c(0 1) x))
 	(acl2-exp (* #c(0 -1) x)))
      #c(0 2)))
 (in-theory (disable (acl2-sine)))
@@ -30,7 +30,7 @@
 ;; Similarly, cosine(x) is defined as (e^{ix}+e^{-ix})/2.
 
 (defun acl2-cosine (x)
-  (/ (+ (acl2-exp (* #c(0 1) x)) 
+  (/ (+ (acl2-exp (* #c(0 1) x))
 	(acl2-exp (* #c(0 -1) x)))
      2))
 (in-theory (disable (acl2-cosine)))
@@ -48,8 +48,8 @@
 					   (acl2-exp (* #c(0 1) y)))))
 				  (- (* 2 #c(0 1/4) (acl2-exp (* #c(0 1) x))
 					(acl2-exp (* #c(0 1) y))))))))))
-  
-  
+
+
 ;; Similarly, it follows that cos(x+y)=cos(x)cos(y)-sin(x)sin(y)
 
 (defthm cosine-of-sums
@@ -86,7 +86,7 @@
     :hints (("Goal"
 	     :use ((:instance exp-sum (x y) (y (- y))))
 	     :in-theory (disable exp-sum)))))
-	  
+
 
 
  ;; From that, simple algebra shows that sin**2+cos**2 = 1.
@@ -222,7 +222,7 @@
 		  (if (nat-even-p n) 1 -1))))
 
 ;; Now, we show that the Taylor approximations we got for sine and
-;; cosine agree with our definition of sine and cosine. 
+;; cosine agree with our definition of sine and cosine.
 
 (encapsulate
  ()
@@ -280,12 +280,12 @@
  (defthm taylorish-sin-valid
    (implies (standard-numberp x)
 	    (equal (acl2-sine x)
-		   (standard-part 
-		    (sumlist 
-		     (taylorish-sin-list 
+		   (standard-part
+		    (sumlist
+		     (taylorish-sin-list
 		      (i-large-integer)
-		      0 
-		      1 
+		      0
+		      1
 		      x))))))
 
  ;; Now, we repeat the argument for cosine(x).  First, the sum of e^ix
@@ -491,7 +491,7 @@
 		     (expt x counter)
 		     (/ (factorial counter))))))
 
-;; A simple consequence: 
+;; A simple consequence:
 
 (defthm sign-car-taylor-sincos-list
   (implies (and (integerp nterms)
@@ -528,10 +528,10 @@
 (defthm alternating-sequence-1-p-taylor-sincos
   (implies (and (realp sign)
 		(realp x))
-	   (alternating-sequence-1-p 
-	    (taylor-sincos-list nterms 
-				counter 
-				sign 
+	   (alternating-sequence-1-p
+	    (taylor-sincos-list nterms
+				counter
+				sign
 				x)))
   :hints (("Subgoal *1/3"
 	   :use ((:instance sign-car-taylor-sincos-list
@@ -570,7 +570,7 @@
 ;; Now, we want to show that the new Taylor approximations to sine and
 ;; cosine satisfy the second requirement of alternating series.
 
-(encapsulate 
+(encapsulate
  ()
 
  ;; First, if |x|=0, then x=0.
@@ -630,7 +630,7 @@
 				    (expt x counter)))))
 	     :in-theory (disable <-*-left-cancel
 				 <-*-right-cancel)))))
-    
+
 
 
  ;; And now, the second property for alternating sequences.  I.e.,
@@ -647,10 +647,10 @@
 		 (realp x)
 		 (< 0 x)
 		 (<= x 2))
-	    (alternating-sequence-2-p 
-	     (taylor-sincos-list nterms 
-				 counter 
-				 sign 
+	    (alternating-sequence-2-p
+	     (taylor-sincos-list nterms
+				 counter
+				 sign
 				 x)))
    :hints (("Goal"
 	    :induct (taylor-sincos-list nterms counter sign x))))
@@ -662,7 +662,7 @@
 (defthm alternating-sequence-p-taylor-sincos-2
   (implies (and (integerp nterms)
 		(<= 0 nterms))
-	   (alternating-sequence-p 
+	   (alternating-sequence-p
 	    (taylor-sincos-list nterms 4 1 2))))
 
 ;; Moreover, they are lists of real numbers.
@@ -682,12 +682,12 @@
 	   :expand ((taylor-sincos-list nterms 4 1 2)))))
 
 ;; This means that the sum of all terms after the 4th can't be more
-;; than 2/3. 
+;; than 2/3.
 
 (defthm remainder-taylor-cos-2
   (implies (and (integerp nterms)
 		(< 0 nterms))
-	   (<= (abs (sumlist 
+	   (<= (abs (sumlist
 		     (taylor-sincos-list nterms 4 1 2)))
 	       2/3))
   :hints (("Goal"
@@ -706,7 +706,7 @@
 	   :expand ((taylor-sincos-list nterms 0 1 2)))
 	  ("Goal'"
 	   :expand ((taylor-sincos-list (+ -2 nterms) 2 -1 2)))))
-		  
+
 ;; What this means is that cosine(2) is negative.  The expansion is
 ;; equal to 1 - 2^2/2! + ... = -1 + ... where the "..." term is at
 ;; most equal to 2/3.
@@ -714,7 +714,7 @@
 (defthm sumlist-taylor-cos-2-negative
   (implies (and (integerp nterms)
 		(<= 4 nterms))
-	   (<= (sumlist 
+	   (<= (sumlist
 		(taylor-sincos-list nterms 0 1 2))
 	       -1/3))
   :hints (("Goal"
@@ -737,7 +737,7 @@
 (defthm abs-large-integer-4
   (equal (abs (+ (i-large-integer) -4))
 	 (+ (i-large-integer) -4))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance 4-<-large-integer))
 	   :in-theory (enable-disable (abs) (4-<-large-integer)))))
 
@@ -755,8 +755,8 @@
 ;; is negative.
 
 (defthm taylor-cos-2-negative
-  (<= (sumlist 
-       (taylor-sincos-list (i-large-integer) 
+  (<= (sumlist
+       (taylor-sincos-list (i-large-integer)
 			   0 1 2))
       -1/3)
   :hints (("Goal"
@@ -983,7 +983,7 @@
 	    (realp x))
    :hints (("Goal"
 	    :in-theory (enable interval-definition-theory)))))
-     
+
 
 (defthm limited-find-zero-cos-2-body
   (implies (and (i-limited a)
@@ -991,8 +991,8 @@
 		(realp b)
 		(realp z))
 	   (i-limited (find-zero-cos-n-2 a
-					 z 
-					 0 
+					 z
+					 0
 					 (i-large-integer)
 					 (+ (- (* (/ (i-large-integer)) a))
 					    (* (/ (i-large-integer)) b)))))
@@ -1017,9 +1017,9 @@
 	   (realp b)
 	   (realp z)
 	   (< a b))
-	(standard-part (find-zero-cos-n-2 a 
-					  z 
-					  0 
+	(standard-part (find-zero-cos-n-2 a
+					  z
+					  0
 					  (i-large-integer)
 					  (/ (- b a) (i-large-integer))))
     0))
@@ -1110,7 +1110,7 @@
 (defthm car-taylor-sincos-list-nterms-5-1-x
   (implies (and (integerp nterms)
 		(< 0 nterms))
-	   (equal (car (taylor-sincos-list nterms 5 1 x)) 
+	   (equal (car (taylor-sincos-list nterms 5 1 x))
 		  (* 1/120 (expt x 5))))
   :hints (("Goal" :do-not-induct t
 	   :expand ((taylor-sincos-list nterms 5 1 x)))))
@@ -1185,14 +1185,14 @@
   (implies (and (integerp nterms)
 		(<= 4 nterms))
 	   (equal (sumlist (taylor-sincos-list nterms 1 1 x))
-		  (+ x (* -1/6 (expt x 3)) 
+		  (+ x (* -1/6 (expt x 3))
 		     (sumlist (taylor-sincos-list (+ -4 nterms) 5 1 x)))))
   :hints (("Goal" :do-not-induct t
 	   :expand ((taylor-sincos-list nterms 1 1 x))
 	   :in-theory (disable functional-commutativity-of-minus-*-left))
 	  ("Goal'"
 	   :expand ((taylor-sincos-list (+ -2 nterms) 3 -1 x)))))
-		  
+
 ;; So now, we show that the Taylor approximation to sine(x) is positive
 ;; for x in [0,2].
 
@@ -1238,7 +1238,7 @@
 				 <-*-left-cancel
 				 lemma-1)))
     :rule-classes (:rewrite :linear)))
-	       
+
 
  ;; When a_1, a_2, ... is an alternating sequence and a_1 >= 0, then
  ;; the sum of the a_i is also >= 0.
@@ -1426,7 +1426,7 @@
   (implies (acl2-numberp x)
 	   (equal (+ (* x 1/2) (* x 1/2)) x)))
 
-;; And now, we can conclude that sine(pi)=0, using the sine-of-sums formula. 
+;; And now, we can conclude that sine(pi)=0, using the sine-of-sums formula.
 
 (defthm sine-pi
   (equal (acl2-sine (acl2-pi)) 0)
@@ -1435,7 +1435,7 @@
 			    (x (* 1/2 (acl2-pi)))
 			    (y (* 1/2 (acl2-pi)))))
 	   :in-theory (disable sine-of-sums acl2-sine acl2-cosine))))
-		 
+
 ;; Similarly, cosine(pi)=-1, using the cosine-of-sums formula.
 
 (defthm cosine-pi
@@ -1445,7 +1445,7 @@
 			    (x (* 1/2 (acl2-pi)))
 			    (y (* 1/2 (acl2-pi)))))
 	   :in-theory (disable cosine-of-sums acl2-sine acl2-cosine))))
-		 
+
 ;; And now, we can prove an important lemma.  The sine(x) is positive
 ;; in the range (0,pi/2).  This will show that cosine(x) > 0 in the
 ;; range (0,pi/2) and therefore pi/2 is the first root of cosine in
@@ -1521,7 +1521,7 @@
 	     :use ((:instance lemma-3))
 	     :in-theory (disable lemma-3)))
     :rule-classes (:rewrite :linear)))
-	    
+
 
  ;; 4+n is even when n is even.
 
@@ -1537,7 +1537,7 @@
 	     :expand ((nat-even-p (+ 3 x))))
 	    ("Subgoal 1"
 	     :expand ((nat-even-p (+ 3 x)))))))
-	  
+
  ;; Same goes for n+4.
 
  (local
@@ -1570,7 +1570,7 @@
 		  (< 0 x)
 		  (< x 2))
 	     (<= 0 (sumlist (taylor-sincos-list nterms counter 1 x))))
-    :hints (("Goal" 
+    :hints (("Goal"
 	     :induct (induction-hint nterms counter))
 	    ("Subgoal *1/3.2"
 	     :expand ((taylor-sincos-list nterms counter 1 x)))
@@ -1623,15 +1623,15 @@
 	    ("Subgoal 1"
 	     :expand ((taylor-sincos-list nterms counter 1 x)))
 	    ("Subgoal 1.2"
-	     :expand ((taylor-sincos-list (+ -2 nterms) 
+	     :expand ((taylor-sincos-list (+ -2 nterms)
 					  (+ 2 counter)
 					  -1 x)))
 	    ("Subgoal 1.2'"
 	     :use ((:instance lemma-4)
 		   (:instance taylor-sine-non-negative-in-0-2
 			      (nterms (+ -4 nterms))
-			      (counter (+ 4 counter)))) 
-	     :in-theory (disable lemma-3 lemma-4 taylor-sine-non-negative-in-0-2 
+			      (counter (+ 4 counter))))
+	     :in-theory (disable lemma-3 lemma-4 taylor-sine-non-negative-in-0-2
 				 /-cancellation-on-left
 				 <-*-/-right-commuted)))
     :rule-classes (:rewrite :linear)))
@@ -1677,14 +1677,14 @@
     :hints (("Goal" :do-not-induct t
 	     :use ((:instance standard-part-<=
 			      (x (+ x (- (* 1/6 x x x))))
-			      (y (sumlist 
+			      (y (sumlist
 				  (taylor-sincos-list (+ -1 (i-large-integer))
 						      1 1 x))))
 		   (:instance taylor-sine-positive-in-0-2-useful
 			      (nterms (+ -1 (i-large-integer)))))
 	     :in-theory (disable standard-part-<=
 				 taylor-sine-positive-in-0-2-useful)))))
-	    
+
 
  ;; If x<y, x*x<y*y.
 
@@ -1734,7 +1734,7 @@
 	    (< 0 (acl2-sine x)))
    :hints (("Goal''"
 	    :expand ((taylorish-sin-list (i-large-integer) 0 1 x)))))
-  
+
  ;; In particular, 0<sine(x) for x in (0,pi/2).
 
  (defthm sine-positive-in-0-pi/2
@@ -2238,13 +2238,13 @@
    (implies (syntaxp (not (equal x '0)))
             (equal (acl2-cosine (* 2 x))
                    (+ (* (acl2-cosine x) (acl2-cosine x))
-                      (- (* (acl2-sine x) 
+                      (- (* (acl2-sine x)
                             (acl2-sine x))))))
    :hints (("Goal"
 	    :use ((:instance cosine-of-sums (x x) (y x)))
 	    :in-theory (disable cosine-of-sums))))
  )
- 
+
 ;; Now, a classic conversion of sine^2 into 1-cosine^2.
 
 (defthm sin**2->1-cos**2
@@ -2284,7 +2284,7 @@
 	   :use ((:instance cosine-2x (x (* 1/2 x))))
 	   :in-theory (enable-disable (cos**2->1-sin**2)
 				      (sine-2x cosine-2x)))))
-  
+
 ;; Similarly, we get the cosine of a half angle.
 
 (defthm cosine**2-half-angle
@@ -2312,7 +2312,7 @@
 ;; And so, it follows that sine(pi/4) must be sqrt(1/2).
 
 (defthm sine-pi/4
-  (equal (acl2-sine (* 1/4 (acl2-pi))) 
+  (equal (acl2-sine (* 1/4 (acl2-pi)))
 	 (acl2-sqrt 1/2))
   :hints (("Goal"
 	   :use ((:instance sine**2-half-angle
@@ -2340,7 +2340,7 @@
  ;; So, we get cosine(pi/4) = sine(pi/2-pi/4) = sine(pi/4) = sqrt(2).
 
  (defthm cosine-pi/4
-   (equal (acl2-cosine (* 1/4 (acl2-pi))) 
+   (equal (acl2-cosine (* 1/4 (acl2-pi)))
 	  (acl2-sqrt 1/2))
    :hints (("Goal"
 	    :use ((:instance cos-pi/2-x
@@ -2403,7 +2403,7 @@
    (implies (syntaxp (not (equal x '0)))
 	    (equal (acl2-sine (* 3 x))
 		   (- (* 3 (acl2-sine x))
-		      (* 4 
+		      (* 4
 			 (acl2-sine x)
 			 (acl2-sine x)
 			 (acl2-sine x)))))
@@ -2522,16 +2522,16 @@
 	    :use ((:instance sin-pi/2-x
 			     (x (* 1/3 (acl2-pi)))))
 	    :in-theory (disable sin-pi/2-x sin-pi/2+x))))
-	   
+
  ;; And cosine(pi/6) = sqrt(3)/2.
 
  (defthm cosine-pi/6
-   (equal (acl2-cosine (* 1/6 (acl2-pi))) 
+   (equal (acl2-cosine (* 1/6 (acl2-pi)))
 	  (/ (acl2-sqrt 3) 2))
    :hints (("Goal"
 	    :use ((:instance cos-pi/2-x
 			     (x (* 1/3 (acl2-pi)))))
-	    :in-theory (disable cos-pi/2-x cos-pi/2+x))))	   
+	    :in-theory (disable cos-pi/2-x cos-pi/2+x))))
  )
 
 ;; Some simple rewrite rules.  x^2 = x*x.
@@ -2569,7 +2569,7 @@
 	      (- 1 (* (acl2-sine x) (acl2-sine x)))))
     :hints (("Goal"
 	     :in-theory (enable sin**2->1-cos**2)))))
-	     
+
  ;; Therefore, 3*cos^4(x) + 6*sine^2(x) = 3+3*sine^4(x).
 
  (defthm identity-1
@@ -2651,7 +2651,7 @@
 	    :cases ((equal (acl2-cosine x) 0)))
 	   ("Subgoal 2"
 	    :in-theory (enable-disable (cos**2->1-sin**2)
-				       (expt-4 
+				       (expt-4
 					expt-3
 					functional-commutativity-of-expt-/-base
 					expt-x*y^n
@@ -2663,10 +2663,10 @@
 
 (defthm identity-3
   (implies (not (equal (acl2-cosine x) 0))
-	   (equal (/ (+ (acl2-sine x) 
+	   (equal (/ (+ (acl2-sine x)
 			(acl2-cotangent x))
 		     (acl2-cosine x))
-		  (+ (acl2-tangent x) 
+		  (+ (acl2-tangent x)
 		     (acl2-cosecant x)))))
 
 ;; More identities!
@@ -2678,7 +2678,7 @@
 
  (local
   (defthm lemma-1
-    (implies (and (realp x) 
+    (implies (and (realp x)
 		  (not (equal (acl2-sine x) 0)))
 	     (not (equal (+ 1 (acl2-cosine x)) 0)))
     :hints (("Goal"
@@ -2710,9 +2710,9 @@
 
  (defthm identity-4
    (implies (realp x)
-	    (equal (+ (/ (acl2-sine x) 
+	    (equal (+ (/ (acl2-sine x)
 			 (+ 1 (acl2-cosine x)))
-		      (/ (+ 1 (acl2-cosine x)) 
+		      (/ (+ 1 (acl2-cosine x))
 			 (acl2-sine x)))
 		   (* 2 (acl2-cosecant x))))
    :hints (("Goal"
@@ -2771,7 +2771,7 @@
 
  (local
   (defthm lemma-3
-    (implies (and (realp x) 
+    (implies (and (realp x)
 		  (not (equal (acl2-cosine x) 0)))
 	     (not (equal (+ 1 (- (acl2-sine x))) 0)))
     :hints (("Goal"
@@ -2881,22 +2881,22 @@
 
 (defun cosine-clearly-negative (x nterms)
   (and (< (sumlist (taylor-sincos-list nterms 0 1 x)) 0)
-       (< (car (taylor-sincos-list 2 
+       (< (car (taylor-sincos-list 2
 				   nterms
-				   (if (evenp 
+				   (if (evenp
 					(/ nterms 2))
-				       1 
-				     -1) 
+				       1
+				     -1)
 				   x))
 	  0)))
-  
+
 ;; Same as above, but testing for cos(x) positive.
 
 (defun cosine-clearly-positive (x nterms)
   (and (> (sumlist (taylor-sincos-list nterms 0 1 x)) 0)
        (> (car (taylor-sincos-list 2 nterms (if (evenp (/ nterms 2)) 1 -1) x))
 	  0)))
-  
+
 ;; This is a *program* mode ACL2 function.  I.e., ACL2 does not know
 ;; any axioms about it, but it can execute it.  It simply finds the
 ;; smallest number of terms needed to verify that cos(x) is positive
@@ -2955,7 +2955,7 @@
 		  (integerp sign))
 	     (equal (taylor-sincos-list 2 counter sign x)
 		    (list (* sign (/ (factorial counter))
-			     (expt x counter))))) 
+			     (expt x counter)))))
     :hints (("Goal" :expand
 	     ((taylor-sincos-list 2 counter sign x))))))
 
@@ -2974,7 +2974,7 @@
 	    (equal (taylor-sincos-list (+ n1 n2) counter sign x)
 		   (append (taylor-sincos-list n1 counter sign x)
 			   (taylor-sincos-list n2
-					       (+ counter n1) 
+					       (+ counter n1)
 					       (if (evenp (/ n1 2))
 						   sign
 						 (- sign))
@@ -3023,20 +3023,20 @@
 			    (x (i-large-integer))
 			    (y nterms)))
 	   :in-theory (disable large->-non-large))))
-					      
+
 ;; Here is the specific split we're interested in for m-pi.
 
 (defthm taylor-sincos-list-split-for-m-pi
   (equal (taylor-sincos-list (i-large-integer)
-			     0  
+			     0
 			     1
                              ;; For v2-6, (* (m-pi) 1/2) has been replaced by
                              ;; (* 1/2 (m-pi)) because of changes in term-order.
 			     (* 1/2 (m-pi)))
-	 (append (taylor-sincos-list 28 0 1 
+	 (append (taylor-sincos-list 28 0 1
 				     (* 1/2 (m-pi)))
-		 (taylor-sincos-list (- 
-				      (i-large-integer) 
+		 (taylor-sincos-list (-
+				      (i-large-integer)
 				      28)
 				     28
 				     1
@@ -3133,7 +3133,7 @@
 ;; First, the finite part of cosine(m-pi/2) is positive.
 
 (defthm taylor-sincos-list-prefix-m-pi->-0
-  (> (sumlist (taylor-sincos-list 28 0 1 
+  (> (sumlist (taylor-sincos-list 28 0 1
 				  (* 1/2 (m-pi)))) 0))
 
 ;; And cosine(m-pi+eps/2) is negative.
@@ -3217,7 +3217,7 @@
 	   :in-theory (disable car-taylor-sincos-list-postfix-m-pi->-0
 			       m-pi
 			       (m-pi)))))
-			    
+
 ;; And similarly, the inifinite sum for cosine(m-pi+eps/2) is negative.
 
 (defthm taylor-sincos-list-postfix-m-pi+eps-<-0
@@ -3278,7 +3278,7 @@
  (defthm limited-/-fact-28
    (not (i-large 1/81842841814930553085241614925824000000))
    :hints (("Goal"
-	    :use ((:instance 
+	    :use ((:instance
 		   large-if->-large
 		   (x 1/81842841814930553085241614925824000000)
 		   (y 1)))
@@ -3290,7 +3290,7 @@
  (defthm limited-/-fact-26
    (not (i-large 1/27064431817106664380040216576000000))
    :hints (("Goal"
-	    :use ((:instance 
+	    :use ((:instance
 		   large-if->-large
 		   (x 1/27064431817106664380040216576000000)
 		   (y 1)))
@@ -3300,8 +3300,8 @@
 ;; cosine(m-pi/2) is limited.
 
 (defthm taylor-sincos-list-postfix-limited
-  (i-limited 
-   (sumlist (taylor-sincos-list (+ (i-large-integer) 
+  (i-limited
+   (sumlist (taylor-sincos-list (+ (i-large-integer)
 				   -28)
 				28
 				1
@@ -3329,7 +3329,7 @@
 			    (x (expt (m-pi) 28))
 			    (y 1/81842841814930553085241614925824000000)))
 	   :in-theory (disable i-limited-times m-pi (m-pi)))))
-  
+
 ;; And so is the infinite part of the sum for cosine(m-pi+eps/2).
 
 (defthm taylor-sincos-list-postfix-limited-2
@@ -3365,7 +3365,7 @@
 ;; series for cosine really is the same as the cosine function.
 ;; Earlier, we had a similar result about the Taylorish series, and we
 ;; showed the Taylorish series was the same as cosine, but we never
-;; needed to go straight from cosine to this Taylor series. 
+;; needed to go straight from cosine to this Taylor series.
 
 (defthm taylor-cos-valid
   (implies (standard-numberp x)
@@ -3380,7 +3380,7 @@
 ;; limited, it's also standard!  This is good, because it means we
 ;; know its standard-part.  In particular, standard-part preserves the
 ;; signs of the finite part of the Taylor sums, so the theorems we
-;; have above will apply with the strict inequalities. 
+;; have above will apply with the strict inequalities.
 
 (defthm taylor-sincos-list-standard
   (implies (and (standard-numberp sign)
@@ -3391,8 +3391,8 @@
 		(<= 0 nterms)
 		(standard-numberp nterms)
 		(standard-numberp x))
-	   (standard-numberp 
-	    (sumlist (taylor-sincos-list nterms 
+	   (standard-numberp
+	    (sumlist (taylor-sincos-list nterms
 					 counter
 					 sign
 					 x)))))
@@ -3402,7 +3402,7 @@
 ;; inequalities (easily), but we can relax them into non-strict
 ;; inequalities.  I.e., if x is positive, std-pt(x)>=0.  So we can
 ;; conclude that the standard-part of the infinite part of the Taylor
-;; series for cosine (m-pi/2) is non-negative. 
+;; series for cosine (m-pi/2) is non-negative.
 
 (defthm stdpart-part-taylor-sincos-list-postfix-m-pi->=-0
   (>= (standard-part (sumlist (taylor-sincos-list (+ -28 (i-large-integer))
@@ -3465,7 +3465,7 @@
 								 28 1 (* 1/2 (m-pi))))))))
 	   :in-theory (disable sumlist
 			       taylor-sincos-list
-			       m-pi (m-pi))))) 
+			       m-pi (m-pi)))))
 
 
 ;; And a similar argument proves cosine(m-pi+eps/2) < 0.
@@ -3503,7 +3503,7 @@
 			    (x (* 1/2 (m-pi)))
 			    (y 2)
 			    (z (acl2-pi)))))))
-		 
+
 ;; ....and so is m-pi+eps.
 
 (defthm m-pi+eps/2-in-first-or-second-quadrant

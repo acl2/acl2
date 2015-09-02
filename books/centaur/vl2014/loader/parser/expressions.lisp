@@ -3105,6 +3105,6 @@ identifier, so we convert it into a hidpiece.</p>"
 ;  | streaming_concatenation
 
 
-; operator_assignment ::= 
+; operator_assignment ::=
 
 

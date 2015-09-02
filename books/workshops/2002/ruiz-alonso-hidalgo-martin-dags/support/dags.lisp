@@ -27,22 +27,22 @@
 ;;; We discuss a representation for term graphs, using
 ;;; lists and we define the notion of directed acyclic graphs, proving
 ;;; its main properties. We also describe and prove a way of recursively
-;;; traversing term dags. 
+;;; traversing term dags.
 
 ;;; More precisely, in this book:
 
-;;; *) 
-;;;   We define a representation for term graphs, {\em using lists}. 
-;;; *) 
+;;; *)
+;;;   We define a representation for term graphs, {\em using lists}.
+;;; *)
 ;;;   We define a predicate {\tt dag-p}, the property of being acyclic (a dag).
 ;;; *)
 ;;;   We prove the main properties of that definition.
-;;; *) 
-;;;   We define a measure function that will be used to admit functions
-;;;   that traverse dags in a way that resembles recursion on 
-;;;   first order terms represented as lists in preffix notation. 
 ;;; *)
-;;;   We prove the corresponding termination conjectures.   
+;;;   We define a measure function that will be used to admit functions
+;;;   that traverse dags in a way that resembles recursion on
+;;;   first order terms represented as lists in preffix notation.
+;;; *)
+;;;   We prove the corresponding termination conjectures.
 ;;; -)
 
 ;;; The results in this book will be translated to an analogue
@@ -65,21 +65,21 @@
 ;;; Depending on the kind of a node @h@, we will store in {\tt (nth h g)} the
 ;;; following information:
 
-;;; *) 
+;;; *)
 ;;;   Variable nodes. They can be of two forms:
-;;; *.*) 
+;;; *.*)
 ;;;              @N@ (integer numbers): bound variables. They are bound to
 ;;;              the node @N@ (note that negative numbers are interpreted
 ;;;              w.r.t. @nth@ as 0). I will call this nodes "IS" nodes.
 ;;; *.*)
-;;;              {\tt (X . T)} : they represent an unbound variable 
+;;;              {\tt (X . T)} : they represent an unbound variable
 ;;;              @X@. I will call these nodes "VARIABLES".
 ;;; *.-)
 ;;; *)
 ;;;   Non-variable nodes (function nodes): {\tt (F. L)} (where @L@ is
 ;;;   different from @T@), interpreted as the function symbol @F@ and the
 ;;;   list @L@ of its neighbors (its arguments). These are "NON-VARIABLE"
-;;;   nodes.   
+;;;   nodes.
 ;;; -)
 
 ;;;   A graph will be represented as a list @G@ with the sequence of that
@@ -90,7 +90,7 @@
 ;;; list @G@.
 
 ;;; The following function computes the neighbors of a node @h@ in a graph @G@:
-  
+
 (defun neighbors (h g)
   (let ((ng (nth h g)))
     (if (integerp ng)
@@ -115,7 +115,7 @@
 
 ;;; We now define a predicate checking that a given term graph has no
 ;;; cyclic paths. A term graph with this property is called a dag
-;;; (directed acyclic graph). 
+;;; (directed acyclic graph).
 
 
 
@@ -130,7 +130,7 @@
 ;;; starting with a node in a list of nodes @h@ \cite{moore-graph}.
 
 ;;; The following function and its verification is inspired in "An
-;;; exercise in graph theory", J Moore \cite{moore-graph}. 
+;;; exercise in graph theory", J Moore \cite{moore-graph}.
 
 ; (defun dag-p-aux (hs rev-path g)
 ;   (declare (xargs :measure (measure-dag-p hs rev-path g)))
@@ -152,14 +152,14 @@
 ;;;   order) with nodes already visited. This recursive schema is inspired
 ;;;   in the one given in J Moore's paper.
 ;;;
-;;; 2) 
+;;; 2)
 ;;;   We need to define a measure for the admission of the
 ;;;   function. The measure will also be used in some of the functions we
 ;;;   will define later.
 
-;;; 3) 
+;;; 3)
 ;;;   Note that cycle detection is done "modulo nfix". Non natural nodes
-;;;   are transformed to 0. 
+;;;   are transformed to 0.
 ;;; -)
 
 ;;; Now our goal is to define a measure {\tt measure-dag-p}, and show
@@ -185,7 +185,7 @@
 
 ;;; *)
 ;;;   The number of important nodes that are not in rev-path .
-;;; *) 
+;;; *)
 ;;;   The length of @hs@.
 ;;; -)
 
@@ -219,12 +219,12 @@
 (defun count-bounded-natp-not-in (n l)
   (cond ((zp n) 0)
 	((member (1- n) l) (count-bounded-natp-not-in (1- n) l))
-	(t (1+ (count-bounded-natp-not-in (1- n) l))))) 
+	(t (1+ (count-bounded-natp-not-in (1- n) l)))))
 
 ;;; The measure:
 
 (defun measure-dag-p (hs rp g)
-  (cons (+ 1 (count-bounded-natp-not-in (len g) rp)) 
+  (cons (+ 1 (count-bounded-natp-not-in (len g) rp))
         (len hs)))
 
 
@@ -238,33 +238,33 @@
  ()
 
 ;; \begin{skip-for-latex-version}
- 
+
  (local
   (defthm count-bounded-natp-not-in-cons-1
     (>= (count-bounded-natp-not-in n l)
 	(count-bounded-natp-not-in n (cons m l)))
     :rule-classes :linear))
- 
+
  (local
   (defthm count-bounded-natp-not-in-cons-2
     (implies (natp n)
 	     (iff (equal (count-bounded-natp-not-in n (cons x m))
 			 (count-bounded-natp-not-in n m))
 		  (or (member x m) (not (bounded-natp x n)))))))
- 
+
  (defthm natp-len
    (natp (len l)))
- 
+
  (defthm positive-len
    (equal (< 0 (len l))
 	  (consp l)))
- 
+
  (defthm nth-non-nil
    (implies (and (<= (len l) n) (natp n))
 	    (not (nth n l))))
- 
+
 ;; \end{skip-for-latex-version}
- 
+
  (defthm measure-dag-p-recursion-1
    (implies (and (consp hs)
 		 (not (member (nfix (car hs)) rev-path)))
@@ -272,7 +272,7 @@
 					  (cons (nfix (car hs)) rev-path)
 					  g)
 		      (measure-dag-p hs rev-path g))))
- 
+
  (defthm measure-dag-p-recursion-2
    (implies (consp hs)
 	    (e0-ord-< (measure-dag-p (cdr hs) rev-path g)
@@ -284,7 +284,7 @@
 (in-theory (disable measure-dag-p))
 (in-theory (disable nfix))
 
-;;; REMARK: Recall these "disables" when including this book. 
+;;; REMARK: Recall these "disables" when including this book.
 
 ;;; The function dag-p-aux, with its admission:
 
@@ -336,17 +336,17 @@
 
 (defun dag-p (g)
   (dag-p-aux (list-of-n (len g)) nil g))
-  
+
 
 ;;; ============================================================================
 ;;;
 ;;; 3) Verification of {\tt dag-p}
 ;;;
 ;;; ============================================================================
-  
+
 
 ;;; Our goal is to prove that {\tt (dag-p g)} if and only if {\tt g} is
-;;; cycle-free. 
+;;; cycle-free.
 
 
 ;;; -----------------------------------
@@ -407,7 +407,7 @@
 ;;; We want to prove that {\tt (not (dag-p g))} implies the existence of
 ;;; a cycle. We have to give this cycle explicitly, defined by the below
 ;;; function {\tt one-cyclic-path}, whose main auxiliary function is the
-;;; following: 
+;;; following:
 
 (defun cyclic-path-aux (hs rev-path g)
   (declare (xargs :measure (measure-dag-p hs rev-path g)))
@@ -437,7 +437,7 @@
 		     t)
 		   cp)
 	      (path-p cp g))))
- 
+
 
 ;;; The function {\tt cyclic-path-aux} returns a list with duplicate nodes:
 
@@ -459,20 +459,20 @@
   (defthm member-car-cdr-no-duplicatesp
     (implies (member (car l) (cdr l))
 	     (not (no-duplicatesp l)))))
-  
+
 ;;; Lists
  (local
   (defthm meber-revlist
     (iff (member x (revlist l))
 	 (member x l))))
-  
+
  (local
   (defthm no-duplicatesp-append-cons
     (equal (no-duplicatesp (append a (cons e b)))
 	   (and (not (member e a))
 		(not (member e b))
 		(no-duplicatesp (append a b))))))
-  
+
  (local
   (defthm no-duplicatesp-revlist
     (iff (no-duplicatesp x)
@@ -539,7 +539,7 @@
 	  (induct-dag-p-aux-completeness
 	  (neighbors (car hs) g) (cons (car p) rev-path) g (cdr p)))
 	 (t (induct-dag-p-aux-completeness (cdr hs) rev-path g p)))))
- 
+
 
 ;;; The main lemma for completeness:
 ;;; ································
@@ -558,7 +558,7 @@
 ;;; Now the rest of the proof consists of proving that when {\tt
 ;;; (cycle-p p g)}, we can build a path {\tt p1}, such that:
 
-;;; 1)    
+;;; 1)
 ;;;  {\tt (path-p p1 g)}
 ;;; 2)
 ;;;  {\tt (natp (car p1))} y {\tt (car p1) < (len g)}
@@ -576,7 +576,7 @@
 ;; This function {\tt make-simple-cycle-aux} will be the auxiliary
 ;; function needed to build such a path @p1@. In particular, given a
 ;; cycle @p@, the "simple" cicle @p1@ will be given by {\tt
-;; (make-simple-cycle-aux p nil)}. 
+;; (make-simple-cycle-aux p nil)}.
 
  (local
   (defun make-simple-cycle-aux (to-visit visited)
@@ -608,7 +608,7 @@
     (implies (not (no-duplicatesp l))
 	     (make-simple-cycle-aux l m))))
 
-;; Starting in ap path, the function obtains a path: 
+;; Starting in ap path, the function obtains a path:
 
  (local
   (defthm path-p-implies-make-simple-cycle-aux-pathp
@@ -629,10 +629,10 @@
   (defthm car-make-simple-cycle-aux
     (implies (make-simple-cycle-aux p l)
 	     (equal (car (make-simple-cycle-aux p l)) (car p)))))
-  
+
  (local
   (defthm member-map-nfix-2
-    (implies (and (member x l) 
+    (implies (and (member x l)
 		  (natp x))
 	     (member x (map-nfix l)))
     :hints (("Goal" :in-theory (enable nfix)))))
@@ -644,7 +644,7 @@
 ;; Finally, the completeness theorem:
 ;;; ··································
 
- 
+
  (defthm dag-p-completeness
    (implies (cycle-p p g)
 	    (not (dag-p g)))
@@ -659,7 +659,7 @@
 ;;; ============================================================================
 ;;;
 ;;; 4) A measure function for traversing dags
-;;; 
+;;;
 ;;; ============================================================================
 
 ;;; We will need to define functions on dags that traverse the graph in
@@ -672,9 +672,9 @@
 ;;; Defining functions on dags using the same recursive schema than the
 ;;; corresponding function on terms in prefix notation will be essential
 ;;; for compositional reasoning, allowing us to translate properties
-;;; from the prefix case to the dags case. 
+;;; from the prefix case to the dags case.
 
-;;; For example, this will be a typical recursive definition on dags: 
+;;; For example, this will be a typical recursive definition on dags:
 
 
 ; (defun occur-check-l (flg x h g)
@@ -698,7 +698,7 @@
 
 ;;; So we now define a measure called {\tt measure-rec-dag} for
 ;;; aceppting this type of recursive definitions.
- 
+
 ;;; The idea is simple: we define  the number of nodes that can be
 ;;; reached in a dag starting from the nodes in a given list of
 ;;; nodes. If we detect a cycle, we return 0. The cycle detection is
@@ -739,7 +739,7 @@
 ;;; ============================================================================
 ;;;
 ;;; 5) Termination conjectures about {\tt measure-rec-dag}
-;;; 
+;;;
 ;;; ============================================================================
 
 ;;; Some useful macros to improve readability:
@@ -753,14 +753,14 @@
 (defmacro term-dag-non-variable-p (x g)
   `(and (not (term-dag-is-p ,x ,g))
         (not (term-dag-variable-p ,x ,g))))
-  
+
 (defmacro term-dag-symbol (x g)
   `(car (nth ,x ,g)))
 
 (defmacro term-dag-args (x g)
   `(cdr (nth ,x ,g)))
 
-;;; So our goal is to prove the following theorems about {\tt measure-rec-dag}: 
+;;; So our goal is to prove the following theorems about {\tt measure-rec-dag}:
 
 ; (defthm measure-rec-dag-e0-ordinalp
 ;    (e0-ordinalp (measure-rec-dag flg h g)))
@@ -769,7 +769,7 @@
 ;    (implies (and (dag-p g)
 ; 		 (term-dag-non-variable-p h g)
 ; 		 flg)
-; 	    (e0-ord-< (measure-rec-dag nil (term-dag-args h g) g) 
+; 	    (e0-ord-< (measure-rec-dag nil (term-dag-args h g) g)
 ; 		      (measure-rec-dag flg h g))))
 
 
@@ -821,10 +821,10 @@
 ;;;  the important nodes (for these nodes we have @dag-p-aux@ by
 ;;;  hypothesis) plus the natural numbers greater (they don't have
 ;;;  neighbors and trivially satisfies @dag-p-aux@) plus the non-naturals
-;;;  (they behave like 0, which is in one of the previos pieces). 
+;;;  (they behave like 0, which is in one of the previos pieces).
 ;;; -)
 
-;;; For these two last theorems, @hs@ and @rp@ have to be disjoint.   
+;;; For these two last theorems, @hs@ and @rp@ have to be disjoint.
 
 
 ;;; Append preserved
@@ -854,13 +854,13 @@
 	     (dag-p-aux (cons x hs2) rp g))
     :hints (("Goal" :use (:instance dag-p-aux-append
 				    (hs1 (list x)))))))
-  
+
  (defthm dag-p-aux-subsetp
    (implies (and (dag-p-aux hs2 rp g)
 		 (subsetp hs1 hs2))
 	    (dag-p-aux hs1 rp g))
    :hints (("Goal" :induct (subsetp hs1 hs2)))))
- 
+
 ;;; The special case of empty graphs:
 
 (encapsulate
@@ -890,14 +890,14 @@
 	  (list-of-non-natp (cdr l)))))
 
 ;; \begin{skip-for-latex-version}
- 
+
  (local (in-theory (enable neighbors nfix)))
 
  (local
   (defthm neighbors-non-natp
     (implies (not (natp x))
 	     (equal (neighbors x g) (neighbors 0 g)))))
- 
+
  (local
   (defthm dag-p-aux-non-natp-nodes-lemma
     (implies (and (dag-p-aux (list 0) rp g)
@@ -907,20 +907,20 @@
  (local (in-theory (disable neighbors)))
 
 ;; \end{skip-for-latex-version}
- 
+
  (defthm dag-p-aux-non-natp-nodes
    (implies (and (dag-p-aux (list-of-n (len g)) rp g)
 		 (list-of-non-natp hs)
 		 (disjointp (map-nfix hs) rp))
 	    (dag-p-aux hs rp g))
    :hints (("Goal" :cases ((atom g))))))
- 
+
 
 ;;; Natural nodes greater than the length:
 
 (encapsulate
  ()
- 
+
  (defun list-of-greater-natp (n l)
    (if (endp l)
        t
@@ -935,7 +935,7 @@
    :hints (("Goal" :in-theory (enable neighbors))))
 
 ;; \end{skip-for-latex-version}
- 
+
  (defthm dag-p-aux-greater-natp-nodes
    (implies (and (dag-p-aux (list-of-n (len g)) rp g)
 		 (list-of-greater-natp (len g) hs)
@@ -947,28 +947,28 @@
 (encapsulate
  ()
 
- 
+
  (defun greater-natp-nodes (n hs)
    (cond ((endp hs) nil)
 	 ((and (natp (car hs)) (>= (car hs) n))
 	  (cons (car hs) (greater-natp-nodes n (cdr hs))))
 	 (t (greater-natp-nodes n (cdr hs)))))
- 
+
  (local
   (defthm list-of-greater-natp-greater-natp-nodes
    (list-of-greater-natp n (greater-natp-nodes n hs))))
- 
- 
+
+
  (defun non-natp-nodes (hs)
    (cond ((endp hs) nil)
 	 ((not (natp (car hs)))
 	  (cons (car hs) (non-natp-nodes  (cdr hs))))
 	 (t (non-natp-nodes  (cdr hs)))))
- 
+
  (local
   (defthm list-of-non-natp-non-natp-nodes
     (list-of-non-natp (non-natp-nodes  hs))))
-  
+
  (local
   (defthm nodes-subsetp
     (implies (natp n)
@@ -978,12 +978,12 @@
 
 ;; And finally we have the desired property:
 
-  
+
   (defthm dag-p-main-property
     (implies (dag-p g)
 	     (dag-p-aux hs nil g))
-    
-    :hints (("Goal" 
+
+    :hints (("Goal"
 	     :in-theory (disable dag-p-aux-subsetp)
 	     :use (:instance dag-p-aux-subsetp
 			   (rp nil)
@@ -1005,7 +1005,7 @@
 ;;; a subtle detail: the second argument of {\tt dag-nodes-aux} is
 ;;; different in the recursive call. Nevertheles we can "fix" this
 ;;; asimmetry:
-  
+
 
 ;;; The function {\tt dag-nodes-aux} is independent of its second argument
 
@@ -1061,7 +1061,7 @@
    (implies (and (dag-p g)
 		 (term-dag-non-variable-p h g)
 		 flg)
-	    (e0-ord-< (measure-rec-dag nil (term-dag-args h g) g) 
+	    (e0-ord-< (measure-rec-dag nil (term-dag-args h g) g)
 		      (measure-rec-dag flg h g)))
    :hints (("Goal" :expand (dag-nodes-aux (list h) nil g)))))
 
@@ -1106,7 +1106,7 @@
 
 
 ;;; RECALL: These two theorems would allow us to define functions like these:
-;;; ········································································· 
+;;; ·········································································
 
 
 ; (defun occur-check-l (flg x h g)

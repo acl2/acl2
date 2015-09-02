@@ -2,7 +2,7 @@
 
 (include-book "../gen-helper/extra") ; for documentation
 
-;; takes a tree with brlens and returns topologically 
+;; takes a tree with brlens and returns topologically
 ;; equivalent tree with no brlens
 (mutual-recursion
 (defun remove-brlens (a)
@@ -86,13 +86,13 @@
               (remove-brlens a))
        (equal (remove-brlens-flg nil a)
               (remove-brlens-list a))))
-   
+
 ;; Determines if two trees have the same topology
 (defun equal-skip-brlens (a b)
   (declare (xargs :guard t))
   (equal (remove-brlens a)
          (remove-brlens b)))
-        
+
 
 (defthm equal-skip-brlens-comm
   (implies (equal-skip-brlens a b)
@@ -123,7 +123,7 @@
               (t (hons a (strip-branch-lengths (cdr x)))))))))
 
 #||
-(list 
+(list
  (remove-brlens '(((a b) . 3) c))
  (remove-brlens '(a . 2))
  (remove-brlens '((a . 4)))

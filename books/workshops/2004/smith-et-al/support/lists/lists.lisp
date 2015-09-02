@@ -88,7 +88,7 @@
 (defthm equal-len-append
   (implies (and (true-listp x)
                 (true-listp y)
-                (equal (len x) 
+                (equal (len x)
                        (len y)))
            (equal (equal (append x p)
                          (append y q))
@@ -202,7 +202,7 @@
 
 (defthm car-append
   (equal (car (append x y))
-	 (if (consp x) 
+	 (if (consp x)
              (car x)
            (car y)))
   :hints (("goal" :in-theory (enable binary-append))))
@@ -239,7 +239,7 @@
   :hints (("Goal" :in-theory (enable append))))
 
 (defthm append-of-nil-one
-  (equal (append nil x) 
+  (equal (append nil x)
          x)
   :hints (("Goal" :in-theory (enable append))))
 
@@ -260,7 +260,7 @@
 ;I added the "-better" to the name, because arithmetic/top-with-meta already has a rule called
 ;append-true-listp-type-prescription.  This rule is better.
 (defthm append-true-listp-type-prescription-better
-  (implies (true-listp y) 
+  (implies (true-listp y)
            (true-listp (append x y)))
   :rule-classes (:type-prescription)
   :hints (("Goal" :in-theory (enable append))))
@@ -277,13 +277,13 @@
   :hints (("Goal" :in-theory (enable append))))
 
 #|
-old: 
+old:
 
 (defthm append-nil
   (and (implies (true-listp x)
-                (equal (append x nil) 
+                (equal (append x nil)
                        x))
-       (equal (append nil x) 
+       (equal (append nil x)
               x))
   :hints (("Goal" :in-theory (enable append))))
 
@@ -348,7 +348,7 @@ old:
 ;yuck?
 (defthm final-cdr-when-cdr-not-consp
   (implies (and (consp x) (not (consp (cdr x))))
-           (equal (final-cdr x) 
+           (equal (final-cdr x)
                   (cdr x)))
  :hints (("Goal" :in-theory (enable final-cdr))))
 
@@ -378,7 +378,7 @@ old:
                             (acl2-count y))))
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
                    :in-theory (enable append)))))
- 
+
  (local (defthm acl2-count-of-append-when-not-consp
           (implies (not (consp y))
                    (equal (acl2-count (append y x))
@@ -444,7 +444,7 @@ old:
 
 
 
-          
+
 ;yuck?
 ;We don't need this rule if associativity of append is turned on!
 (defthm append-equality-cancel
@@ -568,7 +568,7 @@ old:
   (implies (not (consp y))
            (list-cong (append x y)
                       x)))
-                 
+
 
 ;;
 ;; stuff about nthcdr (which is built into ACL2)
@@ -608,14 +608,14 @@ old:
                            (< 0 (+ m n)))
                       (nthcdr (+ (+ -1 m) n) x)
                     (cons a x)))))
-                 
-                 
+
+
 ;(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defthm nthcdr-of-len
   (equal (nthcdr (len x) x)
          (final-cdr x))
-  :hints (("Goal" :in-theory (enable nthcdr len))))         
+  :hints (("Goal" :in-theory (enable nthcdr len))))
 
 ;yuck?
 (defthm nthcdr-of-non-consp
@@ -712,7 +712,7 @@ old:
 
 
 (defthm firstn-of-len-and-append-same
-  (equal (firstn (len x) (append x y))                   
+  (equal (firstn (len x) (append x y))
          (list::list-fix x))
   :hints (("Goal" :in-theory (enable firstn append))))
 
@@ -786,7 +786,7 @@ old:
 (theory-invariant (incompatible (:rewrite len-of-cdr) (:definition len)))
 
 (defthm firstn-of-append
-  (equal (firstn n (append x y))                   
+  (equal (firstn n (append x y))
          (append (firstn n x) (firstn (+ n (- (len x))) y)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable firstn append))))
@@ -795,7 +795,7 @@ old:
   (equal (firstn (len x) x)
          (list::list-fix x))
   :hints (("Goal" :in-theory (e/d (firstn len) (len-of-cdr)))))
-       
+
 
 
 ;may be expensive?
@@ -827,7 +827,7 @@ old:
   (equal (LIST::LIST-CONG (APPEND x y) (APPEND x z))
          (LIST::LIST-CONG y z))
   :hints (("Goal" :in-theory (e/d (LIST::LIST-CONG) (EQUAL-OF-LIST-FIXES)))))
-        
+
 
 (defthm list-cong-of-two-true-listps
   (implies (and (true-listp x)
@@ -835,7 +835,7 @@ old:
            (equal (LIST::LIST-CONG x y)
                   (equal x y)))
   :hints (("Goal" :in-theory (e/d (LIST::LIST-CONG) (EQUAL-OF-LIST-FIXES)))))
-                 
+
 
 (defthm nthcdr-when-<=
   (implies (and (<= (len l) (nfix n))
@@ -877,7 +877,7 @@ old:
    (equal (equal (cons a b) c)
 	  (and (equal a (car c))
 	       (equal b (cdr c))))))
-  
+
 (defthmd equal-consp-cases
   (implies
    (consp x)

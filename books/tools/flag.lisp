@@ -32,12 +32,13 @@
 #||  for interactive development, you'll need to ld the package first:
 
 (ld ;; fool dependency scanner
- "flag-package.lsp")
+ "flag.acl2")
 
 ||#
 
 (in-package "FLAG")
 (include-book "xdoc/top" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defxdoc make-flag
   :parents (mutual-recursion)
@@ -64,16 +65,16 @@ more discussion below.</p>
 <p>Example:</p>
 
 @({
- (make-flag flag-pseudo-termp               ; flag function name
-            pseudo-termp                    ; any member of the clique
-            ;; optional arguments:
-            :flag-mapping ((pseudo-termp      . term)
-                           (pseudo-term-listp . list))
-            :defthm-macro-name defthm-pseudo-termp
-            :flag-var flag
-            :hints ((\"Goal\" ...))         ; for the measure theorem
-                                          ; usually not necessary
-            )
+    (make-flag flag-pseudo-termp               ; flag function name
+               pseudo-termp                    ; any member of the clique
+               ;; optional arguments:
+               :flag-mapping ((pseudo-termp      . term)
+                              (pseudo-term-listp . list))
+               :defthm-macro-name defthm-pseudo-termp
+               :flag-var flag
+               :hints ((\"Goal\" ...))         ; for the measure theorem
+                                               ; usually not necessary
+               )
 })
 
 <p>Here @('pseudo-termp') is the name of a function in a mutually recursive
@@ -109,49 +110,49 @@ acl2::ruler-extenders) of the new flag function.</li>
 
 <h3>Proving Theorems with @('make-flag')</h3>
 
-<p>To prove an inductive theorem about a mutually-recursive function, usually
-one has to effectively prove a big ugly formula that has a different case for
-different theorem about each function in the clique.</p>
+<p>To prove an inductive theorem about a mutually-recursive function, you
+usually have to effectively prove a single, big, ugly formula that has a
+different case about each function in the clique.</p>
 
 <p>Normally, even with the flag function written for you, this would be a
 tedious process.  Here is an example of how you might prove by induction that
 @('pseudo-termp') and @('pseudo-term-listp') return Booleans:</p>
 
 @({
- ;; ACL2 can prove these are Booleans even without induction due to
- ;; type reasoning, so for illustration we'll turn these off so that
- ;; induction is required:
+    ;; ACL2 can prove these are Booleans even without induction due to
+    ;; type reasoning, so for illustration we'll turn these off so that
+    ;; induction is required:
 
- (in-theory (disable (:type-prescription pseudo-termp)
-                     (:type-prescription pseudo-term-listp)
-                     (:executable-counterpart tau-system)))
+    (in-theory (disable (:type-prescription pseudo-termp)
+                        (:type-prescription pseudo-term-listp)
+                        (:executable-counterpart tau-system)))
 
- ;; Main part of the proof, ugly lemma with cases.  Note that we
- ;; have to use :rule-classes nil here because this isn't a valid
- ;; rewrite rule.
+    ;; Main part of the proof, ugly lemma with cases.  Note that we
+    ;; have to use :rule-classes nil here because this isn't a valid
+    ;; rewrite rule.
 
- (local (defthm crux
-          (cond ((equal flag 'term)
-                 (booleanp (pseudo-termp x)))
-                ((equal flag 'list)
-                 (booleanp (pseudo-term-listp lst)))
-                (t
-                 t))
-          :rule-classes nil
-          :hints((\"Goal\" :induct (flag-pseudo-termp flag x lst)))))
+    (local (defthm crux
+             (cond ((equal flag 'term)
+                    (booleanp (pseudo-termp x)))
+                   ((equal flag 'list)
+                    (booleanp (pseudo-term-listp lst)))
+                   (t
+                    t))
+             :rule-classes nil
+             :hints((\"Goal\" :induct (flag-pseudo-termp flag x lst)))))
 
- ;; Now we have to re-prove each part of the lemma so that we can use
- ;; it as a proper rule.
+    ;; Now we have to re-prove each part of the lemma so that we can use
+    ;; it as a proper rule.
 
- (defthm type-of-pseudo-termp
-   (booleanp (pseudo-termp x))
-   :rule-classes :type-prescription
-   :hints((\"Goal\" :use ((:instance crux (flag 'term))))))
+    (defthm type-of-pseudo-termp
+      (booleanp (pseudo-termp x))
+      :rule-classes :type-prescription
+      :hints((\"Goal\" :use ((:instance crux (flag 'term))))))
 
- (defthm type-of-pseudo-term-listp
-   (booleanp (pseudo-term-listp lst))
-   :rule-classes :type-prescription
-   :hints((\"Goal\" :use ((:instance crux (flag 'list))))))
+    (defthm type-of-pseudo-term-listp
+      (booleanp (pseudo-term-listp lst))
+      :rule-classes :type-prescription
+      :hints((\"Goal\" :use ((:instance crux (flag 'list))))))
 })
 
 <p>Obviously this is tedious and makes you say everything twice.  Since the
@@ -159,15 +160,15 @@ steps are so standard, @('make-flag') automatically gives you a macro to
 automate the process.  Here's the same proof, done with the new macro:</p>
 
 @({
- (defthm-pseudo-termp
-   (defthm type-of-pseudo-termp
-     (booleanp (pseudo-termp x))
-     :rule-classes :type-prescription
-     :flag term)
-   (defthm type-of-pseudo-term-listp
-     (booleanp (pseudo-term-listp lst))
-     :rule-classes :type-prescription
-     :flag list))
+    (defthm-pseudo-termp
+      (defthm type-of-pseudo-termp
+        (booleanp (pseudo-termp x))
+        :rule-classes :type-prescription
+        :flag term)
+      (defthm type-of-pseudo-term-listp
+        (booleanp (pseudo-term-listp lst))
+        :rule-classes :type-prescription
+        :flag list))
 })
 
 <p>It's worth understanding some of the details of what's going on here.</p>
@@ -179,9 +180,9 @@ flag function as the variable names in the theorems.</color>  In the case of
 variables for the term/list cases, i.e.,</p>
 
 @({
- (mutual-recursion
-   (defun pseudo-termp (x) ...)
-   (defun pseudo-term-listp (lst) ...))
+    (mutual-recursion
+     (defun pseudo-termp (x) ...)
+     (defun pseudo-term-listp (lst) ...))
 })
 
 <p>So the theorem above only works without hints because we happened to choose
@@ -190,41 +191,48 @@ variable names in our theorems, we'd have to give an explicit induction hint.
 For example:</p>
 
 @({
- (defthm-pseudo-termp
-   (defthm type-of-pseudo-termp
-     (booleanp (pseudo-termp term))
-     :rule-classes :type-prescription
-     :flag term)
-   (defthm type-of-pseudo-term-listp
-     (booleanp (pseudo-term-listp termlist))
-     :rule-classes :type-prescription
-     :flag list)
-   :hints((\"Goal\" :induct (flag-pseudo-termp flag term termlist))))
+    (defthm-pseudo-termp
+      (defthm type-of-pseudo-termp
+        (booleanp (pseudo-termp term))
+        :rule-classes :type-prescription
+        :flag term)
+      (defthm type-of-pseudo-term-listp
+        (booleanp (pseudo-term-listp termlist))
+        :rule-classes :type-prescription
+        :flag list)
+      :hints((\"Goal\" :induct (flag-pseudo-termp flag term termlist))))
 })
 
 
 <h3>Bells and Whistles</h3>
 
-<p>Sometimes you may only want to export one of the theorems.  For instance, if
-we only want to add a rule about the term case, but no the list case, we could
-do this:</p>
+<p><color rgb='#ff0000'>New!</color> <b>Proof Templates</b>.  You can submit,
+e.g., @('(defthm-pseudo-termp)'), with no arguments, to print a ``template''
+that is similar to the above form.  This can be a convenient starting place for
+writing down a new theorem.</p>
+
+
+<p><b>Localizing Theorems</b>.  Sometimes you may only want to export one of
+the theorems.  For instance, if we only want to add a rule about the term case,
+but no the list case, we could do this:</p>
 
 @({
- (defthm-pseudo-termp
-   (defthm type-of-pseudo-termp
-     (booleanp (pseudo-termp x))
-     :rule-classes :type-prescription
-     :flag term)
-   (defthm type-of-pseudo-term-listp
-     (booleanp (pseudo-term-listp lst))
-     :flag list
-     :skip t))
+    (defthm-pseudo-termp
+      (defthm type-of-pseudo-termp
+        (booleanp (pseudo-termp x))
+        :rule-classes :type-prescription
+        :flag term)
+      (defthm type-of-pseudo-term-listp
+        (booleanp (pseudo-term-listp lst))
+        :flag list
+        :skip t))
 })
 
-<p>Sometimes the theorem you want is inductive in such a way that some
-functions are irrelevant; nothing needs to be proved about them in order to
-prove the desired theorem about the others.  The :skip keyword can be used with
-a theorem of T to do this:</p>
+<p><b>Irrelevant Cases</b>. Sometimes the theorem you want is inductive in such
+a way that some functions are irrelevant; nothing needs to be proved about them
+in order to prove the desired theorem about the others.  The :skip keyword can
+be used with a theorem of T to do this:</p>
+
 @({
  (defthm-pseudo-termp
    (defthm type-of-pseudo-termp
@@ -236,8 +244,10 @@ a theorem of T to do this:</p>
      :flag list
      :skip t))
 })
+
 <p>Alternatively, you can provide the :skip-others keyword to the top-level
 macro and simply leave out the trivial parts:</p>
+
 @({
  (defthm-pseudo-termp
    (defthm type-of-pseudo-termp
@@ -247,14 +257,16 @@ macro and simply leave out the trivial parts:</p>
    :skip-others t)
 })
 
-<p>You may also have more than one defthm form for a given flag.  For the main
-inductive proof, these are all simply conjoined together (and their hints are
-simply appended together), but they are exported as separate theorems and may
-have different rule-classes.</p>
+<p><b>Multiple Theorems</b>. You may have more than one defthm form for a given
+flag.  For the main inductive proof, these are all simply conjoined
+together (and their hints are simply appended together), but they are exported
+as separate theorems and may have different @(':rule-classes').</p>
 
-<p>There is an older, alternate syntax for @('make-flag') that is still
-available.  To encourage transitioning to the new syntax, the old syntax is not
-documented and should usually not be used.</p>
+<p><b>Legacy Syntax</b>. There is an older, alternate syntax for @('make-flag')
+that is still available.  To encourage transitioning to the new syntax, the old
+syntax is not documented and should not be used.  Support for the old syntax
+will eventually be removed.  If you are maintaining legacy code that still uses
+the old syntax, see the comments in @('flag.lisp') for some details.</p>
 
 <h3>Advanced Hints</h3>
 
@@ -262,18 +274,18 @@ documented and should usually not be used.</p>
 computed hints.  For instance we can write:</p>
 
 @({
- (defthm-pseudo-termp
-   (defthm type-of-pseudo-termp
-     (booleanp (pseudo-termp term))
-     :rule-classes :type-prescription
-     :flag term
-     :hints ('(:expand ((pseudo-termp x))))
-   (defthm type-of-pseudo-term-listp
-     (booleanp (pseudo-term-listp termlist))
-     :rule-classes :type-prescription
-     :flag list
-     :hints ('(:expand ((pseudo-term-listp lst)))))
-   :hints((\"Goal\" :induct (flag-pseudo-termp flag term termlist))))
+    (defthm-pseudo-termp
+      (defthm type-of-pseudo-termp
+        (booleanp (pseudo-termp term))
+        :rule-classes :type-prescription
+        :flag term
+        :hints ('(:expand ((pseudo-termp x)))))
+      (defthm type-of-pseudo-term-listp
+        (booleanp (pseudo-term-listp termlist))
+        :rule-classes :type-prescription
+        :flag list
+        :hints ('(:expand ((pseudo-term-listp lst)))))
+      :hints((\"Goal\" :induct (flag-pseudo-termp flag term termlist))))
 })
 
 <p>These hints are used <b>during the mutually inductive proof</b>.  Under the
@@ -290,10 +302,10 @@ any effect if the particular subgoal does not occur when those hints are in
 effect.  We simply translate subgoal hints to computed hints:</p>
 
 @({
- (\"Subgoal *1/5.2\" :in-theory (theory 'foo))
-   --->
- (and (equal id (parse-clause-id \"Subgoal *1/5.2\"))
-      '(:in-theory (theory 'foo)))
+    (\"Subgoal *1/5.2\" :in-theory (theory 'foo))
+      --->
+    (and (equal id (parse-clause-id \"Subgoal *1/5.2\"))
+         '(:in-theory (theory 'foo)))
 })
 
 <p>As mentioned above, if there is more than one defthm form for a given flag,
@@ -301,74 +313,7 @@ the hints for all such forms are simply appended together; the hints given to
 one such form may affect what you might think of as the proof of another.</p>
 ")
 
-; Examples
-#|
-(include-book  ;; this newline is so that this is ignored in dependency scanning
- "tools/flag" :dir :system)
-
-(FLAG::make-flag flag-pseudo-termp
-                 pseudo-termp
-                 :flag-var flag
-                 :flag-mapping ((pseudo-termp . term)
-                                (pseudo-term-listp . list))
-                 ;; :hints {for the measure theorem}
-                 :defthm-macro-name defthm-pseudo-termp
-                 ;; make everything local but the defthm macro
-                 :local t
-                 )
-
-; This introduces (flag-pseudo-termp flag x lst)
-; Theorems equating it with pseudo-termp and pseudo-term-listp
-; And the macro shown below.
-
-(in-theory (disable (:type-prescription pseudo-termp)
-                    (:type-prescription pseudo-term-listp)))
-
-(defthm-pseudo-termp type-of-pseudo-termp
-  (term (booleanp (pseudo-termp x))
-        :rule-classes :rewrite
-        :doc nil)
-  (list (booleanp (pseudo-term-listp lst))
-        )
-  :hints(("Goal"
-          :induct (flag-pseudo-termp flag x lst))))
-
-
-(defstobj term-bucket
-  (terms))
-
-(mutual-recursion
-
- (defun terms-into-bucket (x term-bucket)
-   ;; Returns (mv number of terms added, term-bucket)
-   (declare (xargs :stobjs (term-bucket)
-                   :verify-guards nil))
-   (cond ((or (atom x)
-              (quotep x))
-          (let ((term-bucket (update-terms (cons x (terms term-bucket)) term-bucket)))
-            (mv 1 term-bucket)))
-         (t
-          (mv-let (numterms term-bucket)
-                  (terms-into-bucket-list (cdr x) term-bucket)
-                  (let ((term-bucket (update-terms (cons x (terms term-bucket)) term-bucket)))
-                    (mv (+ numterms 1) term-bucket))))))
-
- (defun terms-into-bucket-list (x term-bucket)
-   (declare (xargs :stobjs (term-bucket)))
-   (if (atom x)
-       (mv 0 term-bucket)
-     (mv-let (num-car term-bucket)
-             (terms-into-bucket (car x) term-bucket)
-             (mv-let (num-cdr term-bucket)
-                     (terms-into-bucket-list (cdr x) term-bucket)
-                     (mv (+ num-car num-cdr) term-bucket))))))
-
-(terms-into-bucket '(f x y z) term-bucket)
-
-(FLAG::make-flag flag-terms-into-bucket
-                 terms-into-bucket)
-|#
-
+;; see flag-tests.lisp for examples
 
 (defthmd expand-all-hides
   (equal (hide x) x)
@@ -400,13 +345,7 @@ one such form may affect what you might think of as the proof of another.</p>
            :do-not-induct t))
   :rule-classes :clause-processor)
 
-
-
-
 (program)
-
-
-
 
 
 (defmacro id (form) form)
@@ -437,7 +376,8 @@ one such form may affect what you might think of as the proof of another.</p>
           (getprop fn 'justification nil 'current-acl2-world world)
           :rel))
 
-(defun make-flag-measure-aux (alist world)
+(defun make-flag-measure-aux (alist ; binds function name -> flag symbol
+                              world)
   (cond ((and (consp alist)
               (consp (cdr alist)))
          (cons `(,(cdar alist) ,(get-measure (caar alist) world))
@@ -447,22 +387,31 @@ one such form may affect what you might think of as the proof of another.</p>
         (t
          (er hard 'make-flag-measure-aux "Never get here."))))
 
-(defun make-flag-measure (flag-var alist world)
+(defun make-flag-measure (flag-var  ; e.g., 'flag
+                          alist     ; binds function name -> flag symbol
+                          world)
   (declare (xargs :guard (symbolp flag-var)
                   :mode :program))
   `(case ,flag-var
      . ,(make-flag-measure-aux alist world)))
 
-(defun merge-formals (alist world)
+(defun merge-formals (alist ; flag symbol -> corresponding function
+                      world)
+  ;; To create the formals for the flag function, union together the formals
+  ;; for all of the sub-functions (and then, separately, add the flag
+  ;; variable itself.)
   (if (consp alist)
       (union-eq (get-formals (caar alist) world)
                 (merge-formals (cdr alist) world))
     nil))
 
 (defun merge-actuals (alist formals)
-  ;; The alist has in it (orig-formal . actual) pairs.  Walk through formals
-  ;; and replace any orig-formal with its actual; replace any unbound new
-  ;; formals with nil.
+  ;; This is used when rewriting original function bodies so that calls of
+  ;; clique members instead become calls of the flag function.
+  ;;
+  ;; The alist here has in it (orig-formal . actual) pairs.  We walk through
+  ;; the formals and replace any orig-formal with its actual; replace any
+  ;; unbound new formals with nil.
   (if (consp formals)
       (cons (cdr (assoc-eq (car formals) alist))
             (merge-actuals alist (cdr formals)))
@@ -519,8 +468,7 @@ one such form may affect what you might think of as the proof of another.</p>
                      :hints ,hints
                      ,@(and ruler-extenders
                             `(:ruler-extenders ,ruler-extenders))
-                     :well-founded-relation ,(get-wfr (caar alist)
-                                                      world)
+                     :well-founded-relation ,(get-wfr (caar alist) world)
                      :mode :logic)
               (ignorable . ,formals))
      (cond
@@ -618,31 +566,40 @@ one such form may affect what you might think of as the proof of another.</p>
 
 
 
+; Definition: thmpart.
+;
+; Each thmpart is an thing like _either_
+;
+; For backwards compatibility with a very old version of make-flag.  Please
+; don't use this in new developments.  Maybe some day we can get rid of this.
+;
+;   (flag <thm-body> :name ... :rule-classes ... :doc ...)
+;
+;  -or-
+;
+;   (defthm[d] <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
 
 (defun flag-from-thmpart (thmpart)
-  (if (eq (car thmpart) 'defthm)
+  (if (member (car thmpart) '(defthm defthmd))
       (extract-keyword-from-args :flag thmpart)
     (car thmpart)))
 
 (defun body-from-thmpart (thmpart)
   (cond ((not thmpart) t)
-        ((eq (car thmpart) 'defthm)
-         ;; (defthm name body ...)
+        ((member (car thmpart) '(defthm defthmd))
+         ;; (defthm[d] name body ...)
          (caddr thmpart))
         (t ;; (flag body ...)
          (cadr thmpart))))
 
-
-
 (defun collect-thmparts-for-flag (flag thmparts)
-  (if (atom thmparts)
-      nil
-    (if (eq (flag-from-thmpart (car thmparts)) flag)
-        (cons (car thmparts)
-              (collect-thmparts-for-flag flag (cdr thmparts)))
-      (collect-thmparts-for-flag flag (cdr thmparts)))))
-
-
+  (cond ((atom thmparts)
+         nil)
+        ((eq (flag-from-thmpart (car thmparts)) flag)
+         (cons (car thmparts)
+               (collect-thmparts-for-flag flag (cdr thmparts))))
+        (t
+         (collect-thmparts-for-flag flag (cdr thmparts)))))
 
 (defun thmparts-collect-bodies (thmparts)
   (if (atom thmparts)
@@ -656,54 +613,42 @@ one such form may affect what you might think of as the proof of another.</p>
     (append (extract-keyword-from-args :hints (car thmparts))
             (thmparts-collect-hints (cdr thmparts)))))
 
-
-
 (defun pair-up-cases-with-thmparts (flag-var alist thmparts skip-ok)
-  ;; Each thmpart is an thing like
-  ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
-  ;;;    (for backwards compatibility)
-  ;; _or_  (defthm <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
-
-  (if (consp alist)
-      (let* ((flag   (cdar alist))
-             (flag-thmparts (collect-thmparts-for-flag flag thmparts)))
-        (if (and (not flag-thmparts) (not skip-ok))
-            (er hard 'pair-up-cases-with-thmparts
-                "Expected there to be a case for the flag ~s0.~%" flag)
-          (let* ((bodies (thmparts-collect-bodies flag-thmparts))
-                 (body (if (eql (len bodies) 1)
-                           (car bodies)
-                         `(and . ,bodies))))
-            (if (consp (cdr alist))
-                (cons `((equal ,flag-var ',flag) ,body)
-                      (pair-up-cases-with-thmparts flag-var (cdr alist) thmparts skip-ok))
-              (list `(t ,body))))))
-    (er hard 'pair-up-cases-with-thmparts
-        "Never get here.")))
-
+  (b* (((when (atom alist))
+        (er hard 'pair-up-cases-with-thmparts
+            "Never get here."))
+       (flag          (cdar alist))
+       (flag-thmparts (collect-thmparts-for-flag flag thmparts))
+       ((when (and (not flag-thmparts)
+                   (not skip-ok)))
+        (er hard 'pair-up-cases-with-thmparts
+            "Expected there to be a case for the flag ~s0.~%" flag))
+       (bodies (thmparts-collect-bodies flag-thmparts))
+       (body (if (eql (len bodies) 1)
+                 (car bodies)
+               `(and . ,bodies)))
+       ((when (consp (cdr alist)))
+        (cons `((equal ,flag-var ',flag) ,body)
+              (pair-up-cases-with-thmparts flag-var (cdr alist) thmparts skip-ok))))
+    (list `(t ,body))))
 
 (defun pair-up-cases-with-hints (alist thmparts skip-ok)
-  ;; Each thmpart is an thing like
-  ;; _either_ (flag <thm-body> :name ... :rule-classes ... :doc ...)
-  ;;;    (for backwards compatibility)
-  ;; _or_  (defthm <thmname> <thm-body> :flag ... :rule-classes ... :doc ...)
-
-  (if (consp alist)
-      (let* ((flag   (cdar alist))
-             (flag-thmparts (collect-thmparts-for-flag flag thmparts)))
-        (if (not flag-thmparts)
-            (if skip-ok
-                (cons (cons flag nil)
-                      (pair-up-cases-with-hints (cdr alist) thmparts skip-ok))
-              (er hard 'pair-up-cases-with-hints
-                  "Expected there to be a case for the flag ~s0.~%" flag))
-          (let ((hints (thmparts-collect-hints flag-thmparts)))
-            (cons (cons flag hints)
-                  (pair-up-cases-with-hints (cdr alist) thmparts skip-ok)))))
-    nil))
+  (b* (((when (atom alist))
+        nil)
+       (flag   (cdar alist))
+       (flag-thmparts (collect-thmparts-for-flag flag thmparts))
+       ((unless flag-thmparts)
+        (if skip-ok
+            (cons (cons flag nil)
+                  (pair-up-cases-with-hints (cdr alist) thmparts skip-ok))
+          (er hard 'pair-up-cases-with-hints
+              "Expected there to be a case for the flag ~s0.~%" flag)))
+       (hints (thmparts-collect-hints flag-thmparts)))
+    (cons (cons flag hints)
+          (pair-up-cases-with-hints (cdr alist) thmparts skip-ok))))
 
 (defun flag-thm-entry-thmname (explicit-name flag entry)
-  (if (eq (car entry) 'defthm)
+  (if (member (car entry) '(defthm defthmd))
       (cadr entry)
     (or (extract-keyword-from-args :name (cddr entry))
         (if explicit-name
@@ -714,89 +659,147 @@ one such form may affect what you might think of as the proof of another.</p>
                           (symbol-name flag))
              explicit-name)
           (er hard 'flag-thm-entry-thmname
-              "~
-Expected an explicit name for each theorem, since no general name was
-given.  The following theorem does not have a name: ~x0~%" entry)))))
-
+              "Expected an explicit name for each theorem, since no general ~
+               name was given.  The following theorem does not have a name: ~
+               ~x0~%" entry)))))
 
 (defun flag-defthm-corollaries (lemma-name explicit-name flag-var thmparts)
-  (if (atom thmparts)
-      nil
-    (if (extract-keyword-from-args :skip (car thmparts))
-        (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts))
-      (let* ((thmpart (car thmparts))
-             (flag    (flag-from-thmpart thmpart))
-             ;; note: this can sometimes cause name conflicts when names are
-             ;; generated from the flags
-             (thmname (flag-thm-entry-thmname explicit-name flag thmpart))
-             (body (body-from-thmpart thmpart))
-             (rule-classes-look (member :rule-classes thmpart))
-             (doc (extract-keyword-from-args :doc thmpart)))
-        (cons `(with-output :stack :pop
-                 (defthm ,thmname
-                   ,body
-                   ,@(and rule-classes-look
-                          `(:rule-classes ,(cadr rule-classes-look)))
-                   :doc ,doc
-                   :hints(("Goal"
-                           :in-theory (theory 'minimal-theory)
-                           :use ((:instance ,lemma-name (,flag-var ',flag)))))))
-              (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts)))))))
-              
+  (b* (((when (atom thmparts))
+        nil)
+       ((when (extract-keyword-from-args :skip (car thmparts)))
+        (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts)))
+       (thmpart (car thmparts))
+       (flag    (flag-from-thmpart thmpart))
+       ;; note: this can sometimes cause name conflicts when names are
+       ;; generated from the flags
+       (defthm[d]         (if (eq (car thmpart) 'defthmd)
+                              'defthmd
+                            'defthm))
+       (thmname           (flag-thm-entry-thmname explicit-name flag thmpart))
+       (body              (body-from-thmpart thmpart))
+       (rule-classes-look (member :rule-classes thmpart))
+       (doc               (extract-keyword-from-args :doc thmpart)))
+    (cons `(with-output :stack :pop
+             (,defthm[d] ,thmname
+               ,body
+               ,@(and rule-classes-look
+                      `(:rule-classes ,(cadr rule-classes-look)))
+               :doc ,doc
+               :hints(("Goal"
+                       :in-theory (theory 'minimal-theory)
+                       :use ((:instance ,lemma-name (,flag-var ',flag)))))))
+          (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts)))))
 
 (defun find-first-thm-name (thmparts)
-  (if (atom thmparts)
-      (er hard? 'find-first-thm-name
-          "No explicit name given, and no theorems are given names?")
-    (if (extract-keyword-from-args :skip (cddr (car thmparts)))
-        (find-first-thm-name (cdr thmparts))
-      (flag-thm-entry-thmname
-       nil (flag-from-thmpart (car thmparts)) (car thmparts)))))
-       
+  (cond ((atom thmparts)
+         (er hard? 'find-first-thm-name
+             "No explicit name given, and no theorems are given names?"))
+        ((extract-keyword-from-args :skip (cddr (car thmparts)))
+         (find-first-thm-name (cdr thmparts)))
+        (t
+         (flag-thm-entry-thmname
+          nil (flag-from-thmpart (car thmparts)) (car thmparts)))))
 
 
+;; [Jared] we previously just looked for a user-supplied Goal hint as the first
+;; item in the hints list.  But this didn't work at all and led to really weird
+;; failures when using unconventional hint orders like
+;;
+;;   :hints(("Subgoal *1/3" ...)
+;;          ("Goal" ...))
+;;
+;; So, now work harder to find hints that are targeting Goal.
 
-(defun flag-defthm-fn (args alist flag-var flag-fncall)
-  (let* ((explicit-name (and (symbolp (car args)) (car args)))
-         (args (if explicit-name (cdr args) args))
-         (thmparts (throw-away-keyword-parts args))
-         (name (if explicit-name
-                   (intern-in-package-of-symbol
-                    (concatenate 'string "FLAG-LEMMA-FOR-"
-                                 (symbol-name explicit-name))
-                    explicit-name)
+(defun find-first-goal-hint (user-hints)
+  (cond ((atom user-hints)
+         nil)
+        ((atom (car user-hints))
+         (er hard? 'find-first-goal-hint "Malformed entry in hints: ~x0.~%" (car user-hints)))
+        ((and (stringp (caar user-hints))
+              (equal (string-upcase (caar user-hints)) "GOAL"))
+         (car user-hints))
+        (t
+         (find-first-goal-hint (cdr user-hints)))))
+
+(defun make-flag-template-cases (alist ; binds function name -> flag symbol
+                                 world)
+  (b* (((when (atom alist))
+        nil)
+       ((cons fnname flag-symbol) (car alist))
+       (thmname (intern-in-package-of-symbol
+                 (concatenate 'string "THEOREM-FOR-" (symbol-name fnname))
+                 fnname))
+       (hyp1 (intern-in-package-of-symbol "HYP1" fnname))
+       (hyp2 (intern-in-package-of-symbol "HYP2" fnname))
+       (prop (intern-in-package-of-symbol "PROP" fnname))
+       (fnargs  (get-formals fnname world))
+       (mock-thm `(defthm ,thmname
+                    (implies (and ,hyp1 ,hyp2)
+                             (,prop (,fnname . ,fnargs)))
+                    :flag ,flag-symbol)))
+    (cons mock-thm
+          (make-flag-template-cases (cdr alist) world))))
+
+(defun make-flag-template (real-macro-name ; e.g., 'defthm-pseudo-termp
+                           alist           ; binds function name -> flag symbol
+                           world)
+  (b* ((template-cases (make-flag-template-cases alist world))
+       (template       (cons real-macro-name template-cases)))
+    (cw "~|Here's a template for using ~s0:~%~%~p1"
+        real-macro-name template)
+    (cw "~|~%You'll probably want to adjust the names, hyps, and conclusion ~
+         terms above.  Note also that you can use :skip, :rule-classes, etc.; ~
+         for more information see :doc make-flag.~%")
+    nil))
+
+(defun flag-defthm-fn (args            ; user supplied args
+                       real-macro-name ; e.g., 'defthm-pseudo-termp
+                       alist           ; binds function name -> flag symbol
+                       flag-var        ; e.g., 'flag
+                       flag-fncall     ; e.g., (flag-foo flag ...)
+                       )
+  (b* (((unless args)
+        `(make-event
+          (b* ((- (make-flag-template ',real-macro-name ',alist (w state))))
+            (value `(value-triple :invisible)))))
+       (explicit-name (and (symbolp (car args)) (car args)))
+       (args (if explicit-name (cdr args) args))
+       (thmparts (throw-away-keyword-parts args))
+       (name (if explicit-name
                  (intern-in-package-of-symbol
                   (concatenate 'string "FLAG-LEMMA-FOR-"
-                               (symbol-name
-                                (find-first-thm-name thmparts)))
-                  (car flag-fncall))))
-         (instructions (extract-keyword-from-args :instructions args))
-         (user-hints (extract-keyword-from-args :hints args))
-         (no-induction-hint (extract-keyword-from-args :no-induction-hint args))
-         (skip-ok (extract-keyword-from-args :skip-others args))
-         (hints (and (not instructions)
-                     (append
-                      (cond (no-induction-hint user-hints)
-                            ((and (consp (car user-hints))
-                                  (stringp (caar user-hints))
-                                  (equal (string-upcase (caar user-hints))
-                                         "GOAL"))
-                             ;; First hint is for goal.
-                             (if (extract-keyword-from-args :induct (car user-hints))
-                                 ;; Explicit induct hint is provided; do not override.
-                                 user-hints
-                               ;; Provide our induct hint in addition to the hints
-                               ;; provided in goal.
-                               (cons `("Goal" :induct ,flag-fncall
-                                       . ,(cdar user-hints))
-                                     (cdr user-hints))))
-                            ;; No goal hint; cons our induction hint onto the rest.
-                            (t (cons `("Goal" :induct ,flag-fncall)
-                                     user-hints)))
-                      (list
-                       `(flag-hint-cases
-                         ,flag-var
-                         . ,(pair-up-cases-with-hints alist thmparts skip-ok)))))))
+                               (symbol-name explicit-name))
+                  explicit-name)
+               (intern-in-package-of-symbol
+                (concatenate 'string "FLAG-LEMMA-FOR-"
+                             (symbol-name
+                              (find-first-thm-name thmparts)))
+                (car flag-fncall))))
+       (instructions (extract-keyword-from-args :instructions args))
+       (user-hints (extract-keyword-from-args :hints args))
+       (no-induction-hint (extract-keyword-from-args :no-induction-hint args))
+       (skip-ok (extract-keyword-from-args :skip-others args))
+       (user-goal-hint (find-first-goal-hint user-hints))
+       (user-other-hints (remove1-equal user-goal-hint user-hints))
+       (hints (and (not instructions)
+                   (append
+                    (cond (no-induction-hint user-hints)
+                          (user-goal-hint
+                           ;; First hint is for goal.
+                           (if (extract-keyword-from-args :induct user-goal-hint)
+                               ;; Explicit induct hint is provided; do not override.
+                               user-hints
+                             ;; Provide our induct hint in addition to the hints
+                             ;; provided in goal.
+                             (cons `("Goal" :induct ,flag-fncall . ,(cdr user-goal-hint))
+                                   user-other-hints)))
+                          ;; No goal hint; cons our induction hint onto the rest.
+                          (t (cons `("Goal" :induct ,flag-fncall)
+                                   user-hints)))
+                    (list
+                     `(flag-hint-cases
+                       ,flag-var
+                       . ,(pair-up-cases-with-hints alist thmparts skip-ok)))))))
 
     `(with-output :off :all :on (error) :stack :push
        (progn
@@ -815,10 +818,14 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
            . ,(flag-defthm-corollaries name explicit-name flag-var thmparts))
          (with-output :stack :pop (value-triple ',name))))))
 
-
-(defun make-defthm-macro (real-macro-name alist flag-var flag-fncall)
+(defun make-defthm-macro (real-macro-name ; e.g., defthm-pseudo-termp
+                          alist           ; binds function name -> flag symbol
+                          flag-var        ; e.g., 'flag
+                          flag-fncall     ; call of the flag function
+                          )
   `(defmacro ,real-macro-name (&rest args) ;; was (name &rest args)
-     (flag-defthm-fn args ',alist ',flag-var ',flag-fncall)))
+     (flag-defthm-fn args ',real-macro-name ',alist ',flag-var ',flag-fncall)))
+
 
 (defun make-cases-for-equiv (alist world)
   (if (consp alist)
@@ -873,12 +880,12 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
           (flag-table-events (cdr alist) entry))))
 
 (defun apply-formals-subst (formals subst)
-  (if (atom formals)
-      nil
-    (let ((look (assoc (car formals) subst)))
-      (if look
-          (cons (cdr look) (apply-formals-subst (cdr formals) subst))
-        (cons (car formals) (apply-formals-subst (cdr formals) subst))))))
+  (b* (((when (atom formals))
+        nil)
+       (look (assoc (car formals) subst))
+       ((when look)
+        (cons (cdr look) (apply-formals-subst (cdr formals) subst))))
+    (cons (car formals) (apply-formals-subst (cdr formals) subst))))
 
 (defun thm-macro-name (flag-fn-name)
   (intern-in-package-of-symbol
@@ -936,7 +943,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                             ;;    ;; from an equality, which were unprovable.  So, turn
                             ;;    ;; off forcing.
                             ;;    (:executable-counterpart force)
-                            ;;    ;; Turn of NOT to prevent case-splitting and 
+                            ;;    ;; Turn of NOT to prevent case-splitting and
                             ;;    ))
                             )
                            (flag-expand-computed-hint stable-under-simplificationp
@@ -995,169 +1002,6 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
 
 
 
-
-(logic) ;; so local events aren't skipped
-
-#!ACL2
-(local
-
-; A couple tests to make sure things are working.
-
- (encapsulate
-  ()
-
-  (FLAG::make-flag flag-pseudo-termp
-                   pseudo-termp
-                   :flag-var flag
-                   :flag-mapping ((pseudo-termp . term)
-                                  (pseudo-term-listp . list))
-                   ;; :hints {for the measure theorem}
-                   :defthm-macro-name defthm-pseudo-termp
-                   )
-
-; This introduces (flag-pseudo-termp flag x lst)
-; Theorems equating it with pseudo-termp and pseudo-term-listp
-; And the macro shown below.
-
-  (in-theory (disable (:type-prescription pseudo-termp)
-                      (:type-prescription pseudo-term-listp)))
-
-  ;; A few syntactic variations on defining the same theorems:
-  (encapsulate
-   nil
-   (value-triple 1)
-   (local (defthm-pseudo-termp type-of-pseudo-termp
-            (term (booleanp (pseudo-termp x))
-                  :rule-classes :rewrite
-                  :doc nil)
-            (list (booleanp (pseudo-term-listp lst))))))
-
-  (encapsulate
-   nil
-   (value-triple 2)
-   (local (defthm-pseudo-termp type-of-pseudo-termp2
-            (defthm booleanp-of-pseudo-termp
-              (booleanp (pseudo-termp x))
-              :rule-classes :rewrite
-              :doc nil
-              :flag term)
-            :skip-others t)))
-
-
-  (encapsulate
-   nil
-   (value-triple 3)
-   (local (in-theory (disable pseudo-termp pseudo-term-listp)))
-   (local (defthm-pseudo-termp type-of-pseudo-termp
-            (term (booleanp (pseudo-termp x))
-                  :hints ('(:expand ((pseudo-termp x))))
-                  :rule-classes :rewrite
-                  :doc nil)
-            (list (booleanp (pseudo-term-listp lst))
-                  :hints ('(:expand ((pseudo-term-listp lst))))))))
-
-  (encapsulate
-   nil
-   (value-triple 4)
-   (local (defthm-pseudo-termp
-            (term (booleanp (pseudo-termp x))
-                  :rule-classes :rewrite
-                  :doc nil
-                  :name type-of-pseudo-termp)
-            (list (booleanp (pseudo-term-listp lst))
-                  :skip t))))
-
-  (encapsulate
-   nil
-   (value-triple 5)
-   (local (defthm-pseudo-termp
-            (defthm type-of-pseudo-termp
-              (booleanp (pseudo-termp x))
-              :rule-classes :rewrite
-              :doc nil
-              :flag term)
-            (defthm type-of-pseudo-term-listp
-              (booleanp (pseudo-term-listp lst))
-              :flag list
-              :skip t))))
-
-  (encapsulate
-   nil
-   (value-triple 6)
-   (local (defthm-pseudo-termp
-            (defthm type-of-pseudo-termp
-              (booleanp (pseudo-termp x))
-              :rule-classes :type-prescription
-              :doc nil
-              :flag term)
-            (defthm pseudo-termp-equal-t
-              (equal (equal (pseudo-termp x) t)
-                     (pseudo-termp x))
-              :rule-classes :rewrite
-              :doc nil
-              :flag term)
-            (list
-              (booleanp (pseudo-term-listp lst))
-              :skip t))))
-
-
-
-  (defstobj term-bucket
-    (terms))
-
-  (mutual-recursion
-
-   (defun terms-into-bucket (x term-bucket)
-     ;; Returns (mv number of terms added, term-bucket)
-     (declare (xargs :stobjs (term-bucket)
-                     :verify-guards nil))
-     (cond ((or (atom x)
-                (quotep x))
-            (let ((term-bucket (update-terms (cons x (terms term-bucket)) term-bucket)))
-              (mv 1 term-bucket)))
-           (t
-            (mv-let (numterms term-bucket)
-                    (terms-into-bucket-list (cdr x) term-bucket)
-                    (let ((term-bucket (update-terms (cons x (terms term-bucket)) term-bucket)))
-                      (mv (+ numterms 1) term-bucket))))))
-
-   (defun terms-into-bucket-list (x term-bucket)
-     (declare (xargs :stobjs (term-bucket)))
-     (if (atom x)
-         (mv 0 term-bucket)
-       (mv-let (num-car term-bucket)
-               (terms-into-bucket (car x) term-bucket)
-               (mv-let (num-cdr term-bucket)
-                       (terms-into-bucket-list (cdr x) term-bucket)
-                       (mv (+ num-car num-cdr) term-bucket))))))
-
-  (FLAG::make-flag flag-terms-into-bucket
-                   terms-into-bucket)
-
-
-  ;; previously this didn't work, now we set-ignore-ok to fix it.
-  (encapsulate
-   ()
-   (set-ignore-ok t)
-   (mutual-recursion
-    (defun ignore-test-f (x)
-      (if (consp x)
-          (let ((y (+ x 1)))
-            (ignore-test-g (cdr x)))
-        nil))
-    (defun ignore-test-g (x)
-      (if (consp x)
-          (ignore-test-f (cdr x))
-        nil))))
-
-  (FLAG::make-flag flag-ignore-test
-                   ignore-test-f)
-
-  ))
-
-
-
-
 (defxdoc def-doublevar-induction
   :parents (mutual-recursion)
   :short "Create an induction scheme that adds a duplicate variable to the substitution."
@@ -1176,7 +1020,7 @@ substitution of an existing variable into a new variable.</p>
      (and (consp y)
           (equal (nfix (car x)) (nfix (car y)))
           (nat-list-equiv (cdr x) (cdr y)))))
- 
+
  (defun sum-pairs-list (x)
    (if (atom x)
        nil
@@ -1184,7 +1028,7 @@ substitution of an existing variable into a new variable.</p>
          (list (nfix (car x)))
        (cons (+ (nfix (car x)) (nfix (cadr x)))
              (sum-pairs-list (cddr x))))))
- 
+
  (defequiv nat-list-equiv)
 
  (defthm sum-pairs-list-nat-list-equiv-congruence
@@ -1214,7 +1058,7 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
          (list (nfix (car x)))
        (cons (+ (nfix (car x)) (nfix (cadr x)))
              (sum-pairs-list-double-manual (cddr x) (cddr y))))))
- 
+
  (defthm sum-pairs-list-nat-list-equiv-congruence ;; sum-pairs-list-double-manual works
    (implies (nat-list-equiv x y)
             (equal (sum-pairs-list x) (sum-pairs-list y)))
@@ -1228,7 +1072,7 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
  (def-doublevar-induction sum-pairs-list-double
    :orig-fn sum-pairs-list
    :old-var x :new-var y)
- 
+
  (defthm sum-pairs-list-nat-list-equiv-congruence ;; sum-pairs-list-double works
    (implies (nat-list-equiv x y)
             (equal (sum-pairs-list x) (sum-pairs-list y)))
@@ -1302,8 +1146,8 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
       (if negp
           `(if ,test-term nil (do-all ,rest))
         `(if ,test-term (do-all ,rest) nil)))))
-           
-           
+
+
 
 (mutual-recursion
  (defun doublevar-place-calls-in-body (tests calls-term term)
@@ -1314,7 +1158,7 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
    ;;  DOTERM ::= (DO-ALL IFTERM ... IFTERM) | NIL
    ;;  IFTERM  ::=  (if TEST DOTERM DOTERM)
    ;;               | recursive-call
-   
+
    ;; The simplest way to write this function would be:
    ;; `(do-both (and ,@tests ,calls-term) ,term)
    ;; But this would replicate a lot of the IF structure in a lot of different
@@ -1352,7 +1196,7 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
                    (doublevar-find-if-to-place-calls tests calls-term (cdr subterms)))
            (let* ((then-branchp (and (not diff-equals) (not negp)))
                   (rest-tests (if diff-equals tests (cdr tests)))
-                  (sub-branch 
+                  (sub-branch
                    (doublevar-place-calls-in-body
                     rest-tests calls-term
                     (if then-branchp
@@ -1413,73 +1257,3 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
 (defmacro def-doublevar-induction (name &key orig-fn old-var new-var hints take)
   `(make-event
     (def-doublevar-induction-fn ',name ',orig-fn ',old-var ',new-var ',hints ',take (w state))))
-
-
-(local
- (progn
-
-   (defun nat-list-equiv (x y)
-     (if (atom x)
-         (atom y)
-       (and (consp y)
-            (equal (nfix (car x)) (nfix (car y)))
-            (nat-list-equiv (cdr x) (cdr y)))))
-
-   (defun sum-pairs-list (x)
-     (if (atom x)
-         nil
-       (if (atom (cdr x))
-           (list (nfix (car x)))
-         (cons (+ (nfix (car x)) (nfix (cadr x)))
-               (sum-pairs-list (cddr x))))))
-
-   ;; It is a *MIRACLE* that this works given how many sub-inductions it does.
-   (defequiv nat-list-equiv)
-
-   ;; ;; no hint fails
-   ;; (defthm sum-pairs-list-nat-list-equiv-congruence 
-   ;;   (implies (nat-list-equiv x y)
-   ;;            (equal (sum-pairs-list x) (sum-pairs-list y)))
-   ;;   :rule-classes :congruence)
-
-   ;; ;; induct equiv hint fails
-   ;; (defthm sum-pairs-list-nat-list-equiv-congruence
-   ;;   (implies (nat-list-equiv x y)
-   ;;            (equal (sum-pairs-list x) (sum-pairs-list y)))
-   ;;   :rule-classes :congruence
-   ;;   :hints (("goal" :induct (nat-list-equiv x y))))
-
-   ;; ;; induct both hint fails
-   ;; (defthm sum-pairs-list-nat-list-equiv-congruence
-   ;;   (implies (nat-list-equiv x y)
-   ;;            (equal (sum-pairs-list x) (sum-pairs-list y)))
-   ;;   :rule-classes :congruence
-   ;;   :hints (("goal" :induct (list (sum-pairs-list x) (sum-pairs-list y)))))
-
-   ;; (defun sum-pairs-list-double-manual (x y)
-   ;;   (declare (ignorable y))
-   ;;   (if (atom x)
-   ;;       nil
-   ;;     (if (atom (cdr x))
-   ;;         (list (nfix (car x)))
-   ;;       (cons (+ (nfix (car x)) (nfix (cadr x)))
-   ;;             (sum-pairs-list-double-manual (cddr x) (cddr y))))))
-
-   ;; ;; sum-pairs-list-double-manual works but is not what we want to test
-   ;; (defthm sum-pairs-list-nat-list-equiv-congruence
-   ;;   (implies (nat-list-equiv x y)
-   ;;            (equal (sum-pairs-list x) (sum-pairs-list y)))
-   ;;   :rule-classes :congruence
-   ;;   :hints (("goal" :induct (sum-pairs-list-double-manual x y))))
-
-   (def-doublevar-induction sum-pairs-list-double
-     :orig-fn sum-pairs-list
-     :old-var x :new-var y)
-
-   (defthm sum-pairs-list-nat-list-equiv-congruence ;; sum-pairs-list-double works
-     (implies (nat-list-equiv x y)
-              (equal (sum-pairs-list x) (sum-pairs-list y)))
-     :rule-classes :congruence
-     :hints (("goal" :induct (sum-pairs-list-double x y))))))
-
-

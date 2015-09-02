@@ -59,7 +59,7 @@
 	     (cons x b)
 	   (cons a (update-nth (1- n) x b)))))
 
-(defthm nth-update-nth2 
+(defthm nth-update-nth2
   (equal (nth n1 (update-nth n2 v l))
 	 (if (equal (nfix n1) (nfix n2))
 	     v
@@ -78,7 +78,7 @@
 
 (defthm nth-over-if
   (equal (nth n (if a b c))
-	 (if a 
+	 (if a
 	     (nth n b)
 	   (nth n c))))
 

@@ -463,6 +463,14 @@
     (< (loghead size i) (expt 2 size))
     :rule-classes (:linear :rewrite)))
 
+
+(defmacro lloghead (n x)
+  ;; bozo maybe should be a function?
+  ;; Useful for guard of (unsigned-byte-p n x).
+  `(mbe :logic (loghead ,n ,x)
+        :exec ,x))
+
+
 (local (in-theory (disable loghead)))
 
 (local (in-theory (disable logtail)))

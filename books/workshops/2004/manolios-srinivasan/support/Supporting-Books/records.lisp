@@ -35,7 +35,7 @@ hypothesis.
            (or (null (cdr x))
                (<< (caar x) (caadr x))))))
 
-(defun ifrp (x) ;; ill-formed rcdp 
+(defun ifrp (x) ;; ill-formed rcdp
   (or (not (rcdp x))
       (and (consp x)
            (null (cdr x))
@@ -67,7 +67,7 @@ hypothesis.
          (if v (cons (cons a v) r) r))
         ((equal a (caar r))
          (if v (cons (cons a v) (cdr r)) (cdr r)))
-        (t 
+        (t
          (cons (car r) (s-aux a v (cdr r))))))
 
 (defun s (a v x)
@@ -128,7 +128,7 @@ hypothesis.
 (local
 (defthm s-aux-same-g-aux
   (implies (rcdp r)
-           (equal (s-aux a (g-aux a r) r) 
+           (equal (s-aux a (g-aux a r) r)
                   r))))
 
 (local
@@ -199,13 +199,13 @@ hypothesis.
 
 (defthm g-over-if
   (equal (g k (if a r1 r2))
-	 (if a 
+	 (if a
 	     (g k r1)
 	   (g k r2))))
 
 (defthm s-over-if
   (equal (s k (if a v1 v2) r)
-	 (if a 
+	 (if a
 	     (s k v1 r)
 	   (s k v2 r))))
 
@@ -217,7 +217,7 @@ hypothesis.
 #|
 
 PETE: I put g-same-s- and g-diff-s- here because ACL2 does not
-propagate equalities appropriately and cannot prove the following 
+propagate equalities appropriately and cannot prove the following
 
 
 (thm (implies
@@ -257,7 +257,7 @@ the following obvious theorem
 (in-theory (disable g-of-s-redux))
 
 (defthm g-same-s
-  (equal (g a (s a v r)) 
+  (equal (g a (s a v r))
 	 v))
 
 (defthm g-diff-s
@@ -266,7 +266,7 @@ the following obvious theorem
                   (g a r))))
 
 (defthm s-same-g
-  (equal (s a (g a r) r) 
+  (equal (s a (g a r) r)
 	 r))
 
 (defthm s-same-s
@@ -284,7 +284,7 @@ the following obvious theorem
 
 (defthm s-non-nil-cannot-be-nil
   (implies v (s a v r))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable rcd->acl2-of-record-non-nil)
            :use (:instance rcd->acl2-of-record-non-nil
                            (r (s-aux a v (acl2->rcd r)))))))
@@ -298,7 +298,7 @@ the following obvious theorem
     (equal (equal (g field r1)
                   (g field r2))
            (equal r1 r2)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable acl2->rcd-preserves-equality)
            :use (:instance acl2->rcd-preserves-equality
                            (x r1) (y r2)))))

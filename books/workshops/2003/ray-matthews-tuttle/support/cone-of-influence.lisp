@@ -20,10 +20,10 @@ circuit.
 |#
 
 
-(include-book "circuits") 
+(include-book "circuits")
 
 ;; Here are the two culprit rules that I need to disable to get the proof
-;; faster. Just shows how naive a user I was when I did this proof. 
+;; faster. Just shows how naive a user I was when I did this proof.
 
 (in-theory (disable subset-of-nil-is-nil
                     subset-of-empty-is-empty))
@@ -164,7 +164,7 @@ circuit.
 (local
 (defthm del-e-to-cons-subset
   (implies (subset (del e y) x)
-           (subset y (cons e x))))     
+           (subset y (cons e x))))
 )
 
 (local
@@ -197,17 +197,17 @@ circuit.
       vars
     (let ((new-vars (set-union (find-all-variables-1-pass vars equations)
                                vars)))
-      (if (not (subset new-vars variables)) nil 
+      (if (not (subset new-vars variables)) nil
         (if (set-equal vars new-vars) vars
           (find-all-variables new-vars variables equations))))))
-  
+
 (defun find-all-equations (vars equations eq-rec)
   (if (endp vars) eq-rec
     (find-all-equations (rest vars) equations
                         (-> eq-rec
                             (first vars)
                             (<- equations (first vars))))))
-      
+
 (defun remove-duplicate-occurrences (x)
   (cond ((endp x) x)
         ((memberp (first x) (rest x)) (remove-duplicate-occurrences (rest x)))
@@ -225,12 +225,12 @@ circuit.
           (corresponding-states (rest inits) vars))))
 
 (defun cone-variables (vars C)
-  (find-all-variables 
+  (find-all-variables
    (set-intersect (remove-duplicate-occurrences vars)
                   (variables C))
    (variables C)
    (equations C)))
-                  
+
 (defun cone-of-influence-reduction (C vars)
   (let ((variables (cone-variables vars C)))
    (>_ :variables variables
@@ -317,7 +317,7 @@ circuit.
 (local
 (defthm variables-are-subset-of-cone
   (subset (cone-variables vars C)
-          (variables (create-kripke 
+          (variables (create-kripke
                       (cone-of-influence-reduction C vars))))
   :hints (("Goal"
            :in-theory (disable cone-variables))))
@@ -379,14 +379,14 @@ circuit.
 (local
 (defthm initial-states-are-evaluation-eq
   (implies (circuitp C)
-           (evaluation-eq-subset-p 
+           (evaluation-eq-subset-p
             (initial-states (create-kripke C))
-            (initial-states 
-             (create-kripke 
+            (initial-states
+             (create-kripke
               (cone-of-influence-reduction C vars)))
             (cone-variables vars C)))
   :hints (("Goal"
-           :in-theory (disable subset-of-nil-is-nil 
+           :in-theory (disable subset-of-nil-is-nil
                                subset-of-empty-is-empty))))
 )
 
@@ -415,8 +415,8 @@ circuit.
 (defthm initial-states-are-evaluation-eq-2
   (implies (circuitp C)
            (evaluation-eq-subset-p
-            (initial-states 
-             (create-kripke 
+            (initial-states
+             (create-kripke
               (cone-of-influence-reduction C vars)))
             (initial-states (create-kripke C))
             (cone-variables vars C))))
@@ -449,10 +449,10 @@ circuit.
 (local
 (defthm initial-states-of-cone-of-influence-are-only-evaluations-p
   (implies (circuitp C)
-           (only-evaluations-p 
+           (only-evaluations-p
             (initial-states
              (cone-of-influence-reduction C vars))
-            (variables 
+            (variables
              (cone-of-influence-reduction C vars)))))
 )
 
@@ -480,10 +480,10 @@ circuit.
 
 (local
 (defthm initial-cone-of-influence-states-are-strict-evaluation-list-p
-  (strict-evaluation-list-p 
+  (strict-evaluation-list-p
    (variables
     (cone-of-influence-reduction C vars))
-   (initial-states 
+   (initial-states
     (cone-of-influence-reduction C vars)))
   :hints (("Goal"
            :in-theory (disable cone-variables))))
@@ -492,8 +492,8 @@ circuit.
 (local
 (defthm variables-of-cone-are-unique-p
   (implies (circuitp C)
-           (uniquep 
-            (variables 
+           (uniquep
+            (variables
              (cone-of-influence-reduction C vars)))))
 )
 
@@ -546,7 +546,7 @@ circuit.
 (local
 (defthm equations-of-cone-are-cons-list-p
   (implies (circuitp C)
-           (cons-list-p (variables 
+           (cons-list-p (variables
                          (cone-of-influence-reduction C vars))
                         (equations
                          (cone-of-influence-reduction C vars))))
@@ -555,10 +555,10 @@ circuit.
                                cons-list-p-equation-equal-reduction)
            :use ((:instance cons-list-p-equation-equal-reduction
                             (eqn-orig (equations C))
-                            (eqn-cone 
+                            (eqn-cone
                              (equations
                               (cone-of-influence-reduction C vars)))
-                            (vars (variables 
+                            (vars (variables
                                    (cone-of-influence-reduction C vars))))))))
 )
 
@@ -599,7 +599,7 @@ circuit.
            :induct (find-all-variables vars variables equations)
            :do-not '(eliminate-destructors generalize)
            :do-not-induct t)
-          ("Subgoal *1/2" 
+          ("Subgoal *1/2"
            :in-theory (enable set-equal)
            :use find-variables-1-pass-reduction)))
 )
@@ -624,13 +624,13 @@ circuit.
                             (vars (find-all-variables vars variables
                                                       equations)))
                  (:instance find-all-variables-computes-closure
-                            (v (mv-nth 0 
+                            (v (mv-nth 0
                                        (consistent-equation-record-p-witness
                                         (find-all-variables vars variables
                                                             equations)
                                         equations)))
                             (equation
-                             (mv-nth 1 
+                             (mv-nth 1
                                      (consistent-equation-record-p-witness
                                       (find-all-variables vars variables
                                                           equations)
@@ -684,7 +684,7 @@ circuit.
 )
 
 (local
-(in-theory (disable consistent-equation-record-p 
+(in-theory (disable consistent-equation-record-p
                     consistent-equation-record-p-necc))
 )
 
@@ -697,10 +697,10 @@ circuit.
   :hints (("Goal"
            :use ((:instance equation-equal-p-to-consistent
                             (eqn-orig (equations C))
-                            (eqn-cone 
+                            (eqn-cone
                              (equations (cone-of-influence-reduction C vars)))
                             (vars (variables (cone-of-influence-reduction C vars))))))))
-           
+
 )
 
 (local
@@ -717,7 +717,7 @@ circuit.
   (implies (circuitp C)
            (circuit-modelp (create-kripke (cone-of-influence-reduction C vars))))
   :hints (("Goal"
-           :in-theory (disable circuitp circuit-modelp 
+           :in-theory (disable circuitp circuit-modelp
                                create-kripke
                                cone-of-influence-reduction))))
 )
@@ -765,8 +765,8 @@ circuit.
 (local
 (defthm next-state-is-ok-to-consistent-p-equation
   (implies (next-state-is-ok p r vars equations)
-           (consistent-p-equations 
-            vars 
+           (consistent-p-equations
+            vars
             (next-state-is-ok-witness p r vars equations)
             equations)))
 )
@@ -774,7 +774,7 @@ circuit.
 (local
 (defthm next-state-is-ok-p-to-actual
   (implies (next-state-is-ok p r vars equations)
-           (evaluation-eq r (produce-next-state vars p 
+           (evaluation-eq r (produce-next-state vars p
                                                 (next-state-is-ok-witness
                                                  p r vars equations))
                           vars)))
@@ -880,7 +880,7 @@ circuit.
                 (consistent-p-equations vars-cone eqn equations-cone)
                 (evaluation-eq s (produce-next-state vars-cone q eqn)
                                vars-cone))
-           (evaluation-eq-member-p 
+           (evaluation-eq-member-p
             s (create-next-states-of-p q states-cone vars-cone equations-cone)
             vars-cone))
   :hints (("Goal"
@@ -891,7 +891,7 @@ circuit.
                             (q (evaluation-eq-member s states-cone vars-cone))
                             (p s)
                             (vars vars-cone)
-                            (states (create-next-states-of-p 
+                            (states (create-next-states-of-p
                                      q states-cone vars-cone
                                      equations-cone)))))))
 
@@ -917,7 +917,7 @@ circuit.
                 (consistent-p-equations vars-cone eqn equations-cone)
                 (evaluation-eq s (produce-next-state vars-cone q eqn)
                                vars-cone))
-           (evaluation-eq-member-p 
+           (evaluation-eq-member-p
             r (create-next-states-of-p q states-cone vars-cone equations-cone)
             vars-cone))
   :hints (("Goal"
@@ -937,7 +937,7 @@ circuit.
     (-> (create-corresponding-equation (rest vars) equation-record vars-prime
                                        eqn eq-rec)
         (first vars)
-        (if (memberp (first vars) vars-prime) 
+        (if (memberp (first vars) vars-prime)
             (<- eqn (first vars))
           (first (<- equation-record (first vars)))))))
 )
@@ -957,10 +957,10 @@ circuit.
 (defthm create-corresponding-equation-is-equation-equal
   (implies (and (subset vars-cone vars-orig)
                 (uniquep vars-cone))
-           (equation-equal-p eqn-orig (create-corresponding-equation 
+           (equation-equal-p eqn-orig (create-corresponding-equation
                                        vars-cone eqn-cone
                                        vars-orig eqn-orig eq-rec)
-                             
+
                              vars-cone)))
 )
 
@@ -1002,7 +1002,7 @@ circuit.
                 (equation-equal-p eqn-orig eqn-cone vars-cone)
                 (uniquep vars-orig)
                 (uniquep vars-cone))
-           (consistent-p-equations 
+           (consistent-p-equations
             vars-cone
             (create-corresponding-equation vars-cone eqn-cone vars-orig eqn
                                            eq-rec)
@@ -1096,7 +1096,7 @@ circuit.
                 (evaluation-eq p q vars-prime)
                 (closed-eqn-record-p eqn-cone vars vars-prime)
                 (equation-equal-p eqn-orig eqn-cone vars))
-           (evaluation-eq 
+           (evaluation-eq
             (produce-next-state vars p eqn-orig)
             (produce-next-state vars q eqn-cone)
             vars))
@@ -1118,7 +1118,7 @@ circuit.
                 (consistent-equation-record-p vars-cone equations-cone)
                 (consistent-p-equations vars-cone eqn-cone equations-cone)
                 (equation-equal-p eqn-orig eqn-cone vars-cone))
-           (evaluation-eq 
+           (evaluation-eq
             (produce-next-state vars-cone p eqn-orig)
             (produce-next-state vars-cone q eqn-cone)
             vars-cone)))
@@ -1175,7 +1175,7 @@ circuit.
                 (subset vars-cone vars-orig))
            (evaluation-eq
             (produce-next-state vars-orig p eqn-orig)
-            (produce-next-state 
+            (produce-next-state
              vars-cone q
              (create-corresponding-equation
               vars-cone equations-cone vars-orig eqn-orig eq-rec))
@@ -1185,8 +1185,8 @@ circuit.
 (local
 (in-theory (disable apply-equation-produces-equal))
 )
- 
-(local                              
+
+(local
 (defthm boolean-p-apply-equation
   (implies (and (evaluation-p p vars)
                 (subset (find-variables equation) vars))
@@ -1239,7 +1239,7 @@ circuit.
                 (equation-equal-p equations-orig equations-cone vars-cone)
                 (consistent-equation-record-p vars-cone equations-cone)
                 (all-evaluations-p states-cone vars-cone))
-            (evaluation-eq-member-p 
+            (evaluation-eq-member-p
              r (create-next-states-of-p q states-cone vars-cone equations-cone)
              vars-cone))
   :otf-flg t
@@ -1251,7 +1251,7 @@ circuit.
                                 (next-state-is-ok-witness p r vars-orig
                                                           equations-orig)))
                             (eqn (create-corresponding-equation
-                                  vars-cone equations-cone vars-orig 
+                                  vars-cone equations-cone vars-orig
                                   (next-state-is-ok-witness p r vars-orig
                                                           equations-orig)
                                   eq-rec)))))
@@ -1259,7 +1259,7 @@ circuit.
            :in-theory (disable evaluationp-for-subset
                                next-state-is-evaluation-p-concretized)
            :use ((:instance next-state-is-evaluation-p-concretized
-                            (eqn (next-state-is-ok-witness 
+                            (eqn (next-state-is-ok-witness
                                   p r vars-orig equations-orig))
                             (equations equations-orig)
                             (vars vars-orig))
@@ -1297,7 +1297,7 @@ circuit.
                 (equation-equal-p equations-orig equations-cone vars-cone)
                 (consistent-equation-record-p vars-cone equations-cone)
                 (all-evaluations-p states-cone vars-cone))
-            (evaluation-eq-subset-p 
+            (evaluation-eq-subset-p
              l (create-next-states-of-p q states-cone vars-cone equations-cone)
              vars-cone)))
 )
@@ -1317,7 +1317,7 @@ circuit.
                 (equation-equal-p equations-orig equations-cone vars-cone)
                 (consistent-equation-record-p vars-cone equations-cone)
                 (all-evaluations-p states-cone vars-cone))
-            (evaluation-eq-subset-p 
+            (evaluation-eq-subset-p
              (create-next-states-of-p p states-orig vars-orig
                                       equations-orig)
              (create-next-states-of-p q states-cone vars-cone equations-cone)
@@ -1348,7 +1348,7 @@ circuit.
   (implies (and (memberp v vars-cone)
                 (memberp v vars-orig))
            (equal (<- (create-corresponding-equation vars-orig eqn-orig
-                                                     vars-cone eqn-cone 
+                                                     vars-cone eqn-cone
                                                      eq-rec)
                       v)
                   (<- eqn-cone v)))
@@ -1376,14 +1376,14 @@ circuit.
   :hints (("Subgoal *1/3"
            :cases ((equal v (car vars-orig))))))
 )
- 
-(local                 
+
+(local
 (defthm create-corresponding-equation-is-equation-equal-2
   (implies (and (subset vars-cone vars-orig)
                 (subset vars vars-cone)
                 (uniquep vars-orig)
                 (uniquep vars-cone))
-           (equation-equal-p (create-corresponding-equation 
+           (equation-equal-p (create-corresponding-equation
                               vars-orig eqn-orig
                               vars-cone eqn-cone eq-rec)
                             eqn-cone vars))
@@ -1406,7 +1406,7 @@ circuit.
                 (consistent-equation-record-p vars-orig equations-orig)
                 (subset vars-cone vars-orig))
            (evaluation-eq
-            (produce-next-state 
+            (produce-next-state
              vars-orig p
              (create-corresponding-equation
               vars-orig equations-orig vars-cone eqn-cone eq-rec))
@@ -1422,7 +1422,7 @@ circuit.
                  (consistent-p-equations vars-orig eqn equations-orig)
                  (evaluation-eq r (produce-next-state vars-orig p eqn)
                                 vars-orig))
-            (evaluation-eq-member-p 
+            (evaluation-eq-member-p
              r (create-next-states-of-p p states-orig vars-orig equations-orig)
              vars-cone))
    :hints (("Goal"
@@ -1431,7 +1431,7 @@ circuit.
                              (init r)
                              (vars vars-orig)
                              (vars-prime vars-cone)
-                             (inits (create-next-states-of-p 
+                             (inits (create-next-states-of-p
                                      p states-orig vars-orig
                                      equations-orig)))))))
 )
@@ -1439,12 +1439,12 @@ circuit.
 (local
 (defthm thus-r-is-evaluation-eq-to-s-2
   (implies (and (next-state-is-ok q s vars-cone equations-cone)
-                (evaluation-eq  (produce-next-state 
+                (evaluation-eq  (produce-next-state
                                   vars-cone q
-                                  (next-state-is-ok-witness q s vars-cone 
+                                  (next-state-is-ok-witness q s vars-cone
                                                             equations-cone))
                                 r
-                               
+
                                vars-cone))
            (evaluation-eq s r vars-cone))
   :rule-classes nil)
@@ -1465,7 +1465,7 @@ circuit.
            (evaluation-eq r s vars-cone))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (disable next-state-is-ok 
+           :in-theory (disable next-state-is-ok
                                next-state-member-implies-consistent-equation)
            :use ((:instance next-state-member-implies-consistent-equation
                             (p q)
@@ -1498,7 +1498,7 @@ circuit.
 (defthm next-state-of-orig-to-evaluation-eq-member-p-2
   (implies (and (memberp s (create-next-states-of-p q states-cone vars-cone
                                                     equations-cone))
-               (evaluation-eq r (produce-next-state 
+               (evaluation-eq r (produce-next-state
                                  vars-cone q
                                  (next-state-is-ok-witness q s vars-cone
                                                            equations-cone))
@@ -1511,7 +1511,7 @@ circuit.
                (consistent-p-equations vars-orig eqn equations-orig)
                (evaluation-eq r (produce-next-state vars-orig p eqn)
                               vars-orig))
-           (evaluation-eq-member-p 
+           (evaluation-eq-member-p
             s (create-next-states-of-p p states-orig vars-orig equations-orig)
             vars-cone))
   :hints (("Goal"
@@ -1534,7 +1534,7 @@ circuit.
                 (equation-equal-p equations-orig equations-cone vars-cone)
                 (uniquep vars-orig)
                 (uniquep vars-cone))
-           (consistent-p-equations 
+           (consistent-p-equations
             vars-orig
             (create-corresponding-equation
              vars-orig equations-orig vars-cone eqn eqn-rec)
@@ -1550,7 +1550,7 @@ circuit.
                             (equations equations-cone))))))
 )
 
-(local            
+(local
 (defthm next-state-cone->orig-thus-settled
    (implies (and (memberp s (create-next-states-of-p q states-cone vars-cone
                                                     equations-cone))
@@ -1569,7 +1569,7 @@ circuit.
                 (consistent-equation-record-p vars-orig equations-orig)
                 (consistent-equation-record-p vars-cone equations-cone)
                 (all-evaluations-p states-cone vars-cone))
-            (evaluation-eq-member-p 
+            (evaluation-eq-member-p
              s (create-next-states-of-p p states-orig vars-orig equations-orig)
              vars-cone))
    :otf-flg t
@@ -1579,7 +1579,7 @@ circuit.
                         consistent-p-equations-to-consistent-p-equations-2
                         next-state-of-orig-to-evaluation-eq-member-p-2)
             :use ((:instance next-state-of-orig-to-evaluation-eq-member-p-2
-                              (r (produce-next-state 
+                              (r (produce-next-state
                                   vars-orig p
                                   (create-corresponding-equation
                                    vars-orig equations-orig vars-cone
@@ -1587,7 +1587,7 @@ circuit.
                                                              equations-cone)
                                    eq-rec)))
                             (eqn (create-corresponding-equation
-                                  vars-orig equations-orig vars-cone 
+                                  vars-orig equations-orig vars-cone
                                   (next-state-is-ok-witness q s vars-cone
                                                           equations-cone)
                                   eq-rec)))
@@ -1595,7 +1595,7 @@ circuit.
                              (vars vars-orig)
                              (equations equations-orig)
                              (eqn (create-corresponding-equation
-                                  vars-orig equations-orig vars-cone 
+                                  vars-orig equations-orig vars-cone
                                   (next-state-is-ok-witness q s vars-cone
                                                           equations-cone)
                                   eq-rec)))
@@ -1625,7 +1625,7 @@ circuit.
                 (consistent-equation-record-p vars-orig equations-orig)
                 (consistent-equation-record-p vars-cone equations-cone)
                 (all-evaluations-p states-cone vars-cone))
-            (evaluation-eq-subset-p 
+            (evaluation-eq-subset-p
              l (create-next-states-of-p p states-orig vars-orig equations-orig)
              vars-cone)))
 )
@@ -1650,7 +1650,7 @@ circuit.
                  (consistent-equation-record-p vars-orig equations-orig)
                  (consistent-equation-record-p vars-cone equations-cone)
                  (all-evaluations-p states-cone vars-cone))
-            (evaluation-eq-subset-p 
+            (evaluation-eq-subset-p
              (create-next-states-of-p q states-cone vars-cone
                                       equations-cone)
             (create-next-states-of-p p states-orig vars-orig equations-orig)
@@ -1677,7 +1677,7 @@ circuit.
 (local
 (defthm create-next-states-to-next-state-of-p
   (implies (memberp p states)
-           (equal (<- (create-next-states states states-prime vars equations) 
+           (equal (<- (create-next-states states states-prime vars equations)
                       p)
                   (create-next-states-of-p p states-prime vars equations)))
   :hints (("Subgoal *1/3"
@@ -1701,7 +1701,7 @@ circuit.
                 (equation-equal-p equations-orig equations-cone vars-cone)
                 (consistent-equation-record-p vars-cone equations-cone)
                 (all-evaluations-p states-cone vars-cone))
-            (evaluation-eq-subset-p 
+            (evaluation-eq-subset-p
              (<- (create-next-states states-orig states-orig vars-orig
                                      equations-orig)
                  P)
@@ -1731,7 +1731,7 @@ circuit.
                  (consistent-equation-record-p vars-orig equations-orig)
                  (consistent-equation-record-p vars-cone equations-cone)
                  (all-evaluations-p states-cone vars-cone))
-            (evaluation-eq-subset-p 
+            (evaluation-eq-subset-p
              (<- (create-next-states states-cone states-cone vars-cone
                                      equations-cone)
                  q)
@@ -1761,7 +1761,7 @@ circuit.
                  (consistent-equation-record-p vars-orig equations-orig)
                  (consistent-equation-record-p vars-cone equations-cone)
                  (all-evaluations-p states-cone vars-cone))
-            (evaluation-eq-subset-p 
+            (evaluation-eq-subset-p
              (<- (create-next-states states-cone states-cone vars-cone
                                      equations-cone)
                  q)
@@ -1806,51 +1806,51 @@ circuit.
            (well-formed-transition-p
             (states (create-kripke C))
             (transition (create-kripke C))
-            (states 
+            (states
              (create-kripke
               (cone-of-influence-reduction C vars)))
-            (transition 
-             (create-kripke 
+            (transition
+             (create-kripke
               (cone-of-influence-reduction C vars)))
             (cone-variables vars C)))
   :hints (("Goal"
            :do-not '(eliminate-destructors generalize fertilize)
            :do-not-induct t
-           :in-theory (disable well-formed-transition-p-aux-orig->cone 
+           :in-theory (disable well-formed-transition-p-aux-orig->cone
                                create-kripke-produces-circuit-model)
            :use ((:instance well-formed-transition-p-aux-orig->cone
                             (states-orig (states (create-kripke C)))
                             (states-cone (states
-                                          (create-kripke 
-                                           (cone-of-influence-reduction 
+                                          (create-kripke
+                                           (cone-of-influence-reduction
                                             C vars))))
                             (vars-orig (variables C))
-                            (vars-cone (variables 
+                            (vars-cone (variables
                                         (cone-of-influence-reduction C vars)))
                             (equations-orig (equations C))
-                            (equations-cone (equations 
+                            (equations-cone (equations
                                              (cone-of-influence-reduction C
                                                                           vars)))
                             (p (car (well-formed-transition-p-witness
                                      (states (create-kripke C))
                                      (transition (create-kripke C))
-                                     (states (create-kripke 
+                                     (states (create-kripke
                                               (cone-of-influence-reduction C
                                                                            vars)))
                                      (transition
-                                      (create-kripke 
+                                      (create-kripke
                                        (cone-of-influence-reduction C vars)))
                                      (variables (cone-of-influence-reduction C
                                                                              vars)))))
-                            (q (mv-nth 1 
+                            (q (mv-nth 1
                                        (well-formed-transition-p-witness
                                      (states (create-kripke C))
                                      (transition (create-kripke C))
-                                     (states (create-kripke 
+                                     (states (create-kripke
                                               (cone-of-influence-reduction C
                                                                            vars)))
                                      (transition
-                                      (create-kripke 
+                                      (create-kripke
                                        (cone-of-influence-reduction C vars)))
                                      (variables (cone-of-influence-reduction C
                                                                              vars))))))
@@ -1864,11 +1864,11 @@ circuit.
 (defthm cone-orig-is-well-formed-transition-p
   (implies (circuitp C)
            (well-formed-transition-p
-            (states 
+            (states
              (create-kripke
               (cone-of-influence-reduction C vars)))
-            (transition 
-             (create-kripke 
+            (transition
+             (create-kripke
               (cone-of-influence-reduction C vars)))
             (states (create-kripke C))
             (transition (create-kripke C))
@@ -1876,25 +1876,25 @@ circuit.
   :hints (("Goal"
            :do-not '(eliminate-destructors generalize fertilize)
            :do-not-induct t
-           :in-theory (disable well-formed-transition-p-aux-orig->cone 
+           :in-theory (disable well-formed-transition-p-aux-orig->cone
                                create-kripke-produces-circuit-model)
            :use ((:instance well-formed-transition-p-aux-cone->orig-concretized
                             (states-orig (states (create-kripke C)))
                             (states-cone (states
-                                          (create-kripke 
-                                           (cone-of-influence-reduction 
+                                          (create-kripke
+                                           (cone-of-influence-reduction
                                             C vars))))
                             (vars-orig (variables C))
-                            (vars-cone (variables 
+                            (vars-cone (variables
                                         (cone-of-influence-reduction C vars)))
                             (equations-orig (equations C))
-                            (equations-cone (equations 
+                            (equations-cone (equations
                                              (cone-of-influence-reduction C
                                                                           vars)))
                             (q (car (well-formed-transition-p-witness
-                                     (states (create-kripke 
+                                     (states (create-kripke
                                               (cone-of-influence-reduction C vars)))
-                                     (transition (create-kripke 
+                                     (transition (create-kripke
                                                   (cone-of-influence-reduction
                                                    C vars)))
                                      (states (create-kripke C))
@@ -1902,18 +1902,18 @@ circuit.
 
                                      (variables (cone-of-influence-reduction C
                                                                              vars)))))
-                             (p (mv-nth 1 
+                             (p (mv-nth 1
                                         (well-formed-transition-p-witness
-                                         (states (create-kripke 
+                                         (states (create-kripke
                                                   (cone-of-influence-reduction C vars)))
-                                         (transition (create-kripke 
+                                         (transition (create-kripke
                                                       (cone-of-influence-reduction
                                                        C vars)))
                                          (states (create-kripke C))
                                          (transition (create-kripke C))
                                          (variables (cone-of-influence-reduction C
                                                                              vars))))))
-                              
+
                  (:instance create-kripke-produces-circuit-model)
                  (:instance create-kripke-produces-circuit-model
                             (C (cone-of-influence-reduction C vars)))
@@ -1924,7 +1924,7 @@ circuit.
 (in-theory (disable well-formed-transition-p create-kripke
                     cone-of-influence-reduction
                      ltl-semantics
-                    cone-variables 
+                    cone-variables
                     circuit-modelp circuitp))
 )
 
@@ -1955,7 +1955,7 @@ circuit.
                                                                              vars)))
                   (ltl-semantics f (create-kripke C))))
   :hints (("Goal"
-           :in-theory (disable restricted-formulap 
+           :in-theory (disable restricted-formulap
                                circuit-bisim-implies-same-ltl-semantics)
            :use ((:instance circuit-bisim-implies-same-ltl-semantics
                             (n (create-kripke (cone-of-influence-reduction C
@@ -1969,8 +1969,8 @@ circuit.
   (implies (and (subset interesting-vars (cone-variables vars C))
                 (circuitp C)
                 (restricted-formulap f interesting-vars))
-           (equal (ltl-semantics f (create-kripke 
+           (equal (ltl-semantics f (create-kripke
                                     (cone-of-influence-reduction C vars)))
                   (ltl-semantics f (create-kripke C)))))
 
-                               
+

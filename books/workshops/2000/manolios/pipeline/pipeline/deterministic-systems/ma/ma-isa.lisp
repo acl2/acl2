@@ -1,23 +1,23 @@
 ;  Copyright (C) 2000 Panagiotis Manolios
- 
+
 ;  This program is free software; you can redistribute it and/or modify
 ;  it under the terms of the GNU General Public License as published by
 ;  the Free Software Foundation; either version 2 of the License, or
 ;  (at your option) any later version.
- 
+
 ;  This program is distributed in the hope that it will be useful,
 ;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;  GNU General Public License for more details.
- 
+
 ;  You should have received a copy of the GNU General Public License
 ;  along with this program; if not, write to the Free Software
 ;  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- 
+
 ;  Written by Panagiotis Manolios who can be reached as follows.
- 
+
 ;  Email: pete@cs.utexas.edu
- 
+
 ;  Postal Mail:
 ;  Department of Computer Science
 ;  The University of Texas at Austin
@@ -73,7 +73,7 @@
 Notice that I don't need to prove the theorems in the comments.
 They are just interesting side theorems.
 
-(defequiv Ma-=)       
+(defequiv Ma-=)
 
 (defcong Ma-= Ma-= (Ma-step x) 1)
 
@@ -91,7 +91,7 @@ They are just interesting side theorems.
 	   (otherwise (MA-= (MA-step (MA-step NMA)) MA))))))
 
 #|
-Notice that the following definition will do, but it takes longer to prove. 
+Notice that the following definition will do, but it takes longer to prove.
 
 (defun good-MA (ma)
   (and (rationalp (nth (MA-pc) MA))
@@ -131,7 +131,7 @@ More interesting side theorems.
 	   1)
 	  (t 2))))
 
-(generate-full-system isa-step isa-p ma-step ma-p 
+(generate-full-system isa-step isa-p ma-step ma-p
 		      ma-to-isa good-ma ma-rank)
 
 (in-theory (disable value-of update-valuation))

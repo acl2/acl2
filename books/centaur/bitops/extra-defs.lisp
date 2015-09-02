@@ -68,6 +68,28 @@ about it.</p>"
     (unsigned-byte-p 2 (nth-slice2 n x))))
 
 
+(define nth-slice4 ((n natp)
+                    (x integerp))
+  :returns (slice natp :rule-classes :type-prescription)
+  :parents (bitops/extra-defs)
+  :short "Extract the @('n')th 4-bit slice of the integer @('x')."
+  :long "<p>We leave this enabled; we would usually not expect to try to reason
+about it.</p>"
+  :enabled t
+  :inline t
+  (mbe :logic
+       (logand (ash (ifix x) (* (nfix n) -4)) (1- (expt 2 4)))
+       :exec
+       (the (unsigned-byte 4)
+         (logand (ash x (the (integer * 0) (* n -4))) #xF)))
+  ///
+  (defcong nat-equiv equal (nth-slice4 n x) 1)
+  (defcong int-equiv equal (nth-slice4 n x) 2)
+  (defthm unsigned-byte-p-4-of-nth-slice4
+    (unsigned-byte-p 4 (nth-slice4 n x))))
+
+
+
 (define nth-slice8 ((n natp)
                     (x integerp))
   :returns (slice natp :rule-classes :type-prescription)

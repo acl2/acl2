@@ -7,7 +7,7 @@
        (ctl-formulap (third f) ap)
        (equal 'u (second f))))
 
-(defun ctl-formulap (f ap) 
+(defun ctl-formulap (f ap)
 "True iff f is a ctl formula given that ap is the list of atomic
 proposition constants.  Formats of formulas are: p, (f1 & f2), (f1 +
 f2), (~ f), (EX f), (AX f), (EF f), (AF f), (EG f), (AG f), (E f U g),
@@ -40,7 +40,7 @@ f2), (~ f), (EX f), (AX f), (EF f), (AF f), (EG f), (AG f), (E f U g),
        (ctl-formula-no-ap-p (third f))
        (equal 'u (second f))))
 
-(defun ctl-formula-no-ap-p (f) 
+(defun ctl-formula-no-ap-p (f)
 "True iff f is a ctl formula. Formats of formulas are: p, (f1 & f2),
  (f1 + f2), (~ f), (EX f), (AX f), (EF f), (AF f), (EG f), (AG f), (E f
 U g), (A f U g), (E ~(f U g)), and (E ~(f U g))"

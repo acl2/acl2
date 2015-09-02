@@ -31,15 +31,15 @@
 ; the "majorant" of the sum is the sum of the majorants
 
 (defthm maj_sum_=_sum_maj
-  (implies (and (integerp a) (integerp b) 
-		(integerp alpha) (<= 0 a) (<= a alpha)) 
+  (implies (and (integerp a) (integerp b)
+		(integerp alpha) (<= 0 a) (<= a alpha))
 	   (<= (+ a b) (+ alpha b))))
 ; Prove 0.00
 
 ; for positives the majorant of the product is the product of the majorants
 
 (defthm maj_prod_=_prod_maj
-  (implies (and (integerp a) (integerp b) (< 0 b) 
+  (implies (and (integerp a) (integerp b) (< 0 b)
 		(integerp alpha) (<= 0 a) (<= a alpha))
 	   (<= (* a b) (* alpha b)))
   :hints (("GOAL" :in-theory (disable COMMUTATIVITY-OF-* DISTRIBUTIVITY))))
@@ -52,7 +52,7 @@
 		(<= 0 a) (< 0 b) (integerp alpha) (<= (* a b) (* alpha b)))
 	   (<= (+ (* a b) c) (+ (* alpha b) c))))
 ; Prove 0.00
-   
+
 (defthm lemma2
   (implies (and (integerp a) (integerp b) (integerp c)
 		(<= 0 a) (< 0 b) (integerp alpha) (<= a alpha))
@@ -66,17 +66,17 @@
 		(<= 0 a) (< 0 b) (integerp alpha) (<= a alpha)
 		(<= c (1- b)))
 	   (<= (+ (* a b) c) (+ (* alpha b) (1- b))))
-  :hints (("GOAL" :use (:instance lemma2) 
+  :hints (("GOAL" :use (:instance lemma2)
 	   :in-theory (disable lemma2))))
 ; Prove 0.03
-	  
+
 (defthm intermediate_theorem
   (implies (and (integerp a) (integerp b) (integerp c)
 		(<= 0 a) (< 0 b) (<= 0 c) (<= c (1- b))
 		(<= a (1- P)) (integerp P))
 	   (<= (+ (* a b) c) (+ (* (1- P) b) (1- b))))
   :hints (("GOAL" :use (:instance lemma3 (alpha (1- P)) )
-	   :in-theory (disable COMMUTATIVITY-OF-* DISTRIBUTIVITY 
+	   :in-theory (disable COMMUTATIVITY-OF-* DISTRIBUTIVITY
                                COMMUTATIVITY-OF-+ lemma3))))
 
 ; final theorem

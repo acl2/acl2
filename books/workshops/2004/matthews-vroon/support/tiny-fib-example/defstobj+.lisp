@@ -57,7 +57,7 @@
 ;Proving that each of these behaves correctly requires a 2 step
 ;process. First we need to prove a more general theorem proven by
 ;induction over n. Then we can prove the overall theorem that the
-;functions work correctly when n = (len (nth *memi* tiny-state)). 
+;functions work correctly when n = (len (nth *memi* tiny-state)).
 ;Rather than do this two step process for every array field of every
 ;stobj defined using defstobj+, we define generic versions of array
 ;copying functions that are very similar to the ones defined
@@ -133,7 +133,7 @@
 ;           (EQUAL (COPY-FROM-c c) c)))
 
 ;(DEFUN LOGICAL-cP (X) ...) ;logically equivalent to cP, but x doesn't need to
-;                           ;be a stobj. 
+;                           ;be a stobj.
 ;(DEFTHM LOGICAL-cP-cP
 ;  (EQUAL (LOGICAL-cP X)
 ;         (cP X)))
@@ -238,7 +238,7 @@
             (equal (lastn n x)
                    (cons (nth n x)
                          (lastn (1+ n) x))))
-   :hints (("goal" 
+   :hints (("goal"
             :in-theory (disable car-lastn cdr-lastn lastn)
             :use (car-lastn cdr-lastn)))))
 
@@ -509,11 +509,11 @@
 (defun symbol-list-to-string (list)
   (declare (xargs :guard (symbol-listp list)))
   (if (consp list)
-      (concatenate 'string 
+      (concatenate 'string
                    (symbol-name (car list))
                    (symbol-list-to-string (cdr list)))
     ""))
-                   
+
 ;again, snagged from Dave Greve. This concatinates symbols. The
 ;resulting symbol is put in the same package as the witness.
 (defmacro join-symbols (witness &rest rst)
@@ -530,11 +530,11 @@
          (field-update (join-symbols stobj-name 'update- field-get))
          (field-index (join-symbols stobj-name '* field-name 'i*))
          (stobj-predicate (join-symbols stobj-name stobj-name 'p))
-         (thm1name (join-symbols stobj-name 
-                                 field-predicate 
+         (thm1name (join-symbols stobj-name
+                                 field-predicate
                                  '-true-listp))
-         (thm2name (join-symbols stobj-name 
-                                 field-predicate 
+         (thm2name (join-symbols stobj-name
+                                 field-predicate
                                  '-nth-type))
          (copy-to-name (join-symbols stobj-name
                                      'copy-to-
@@ -579,10 +579,10 @@
          (implies (and (< ,field-index (len ,stobj-name))
                        (equal (len (nth ,field-index ,stobj-name)) ,len))
                   (equal (,copy-to-name ,n ,field-name ,stobj-name)
-                         (update-nth 
+                         (update-nth
                           ,field-index
-                          (copy-to-stobj-array ,n 
-                                               ,field-name 
+                          (copy-to-stobj-array ,n
+                                               ,field-name
                                                (nth ,field-index ,stobj-name))
                           ,stobj-name)))
          :hints (("goal" :in-theory (enable copy-to-stobj-array)))))
@@ -599,8 +599,8 @@
        (defthm ,thm4name
          (implies (,stobj-predicate ,stobj-name)
                   (equal (,copy-from-name ,n ,stobj-name)
-                         (copy-from-stobj-array ,n 
-                                                (nth ,field-index 
+                         (copy-from-stobj-array ,n
+                                                (nth ,field-index
                                                      ,stobj-name))))
          :hints (("goal" :in-theory (enable copy-from-stobj-array))))))))
 
@@ -631,8 +631,8 @@
                (copy-to-name (join-symbols stobj-name 'copy-to- stobj-name))
                (copy-from-name (join-symbols stobj-name 'copy-from- stobj-name))
                (thm2name (join-symbols stobj-name copy-to-name '-noop))
-               (thm3name (join-symbols stobj-name 
-                                       copy-to-name 
+               (thm3name (join-symbols stobj-name
+                                       copy-to-name
                                        '-ignores-second-arg))
                (thm4name (join-symbols stobj-name copy-from-name '-noop)))
           `((defun ,lsp-name (,x)
@@ -681,8 +681,8 @@
               (let ((flen (caaddr type))
                     (elt-type (cadr type))
                     (field-index (join-symbols stobj-name '* fname 'i*))
-                    (copy-to-name (join-symbols stobj-name 
-                                                'copy-to- 
+                    (copy-to-name (join-symbols stobj-name
+                                                'copy-to-
                                                 stobj-name
                                                 '-
                                                 fname))
@@ -691,7 +691,7 @@
                                                   stobj-name
                                                   '-
                                                   fname)))
-                (generate-defstobj+-aux 
+                (generate-defstobj+-aux
                  stobj-name
                  (cdr field-defs)
                  (cons `(,field-predicate (nth ,field-index ,x))
@@ -716,7 +716,7 @@
                array-thms
                (1+ len)))))))))
 
-;(generate-defstobj+-aux 'tiny-state 
+;(generate-defstobj+-aux 'tiny-state
 ;                        '((progc :type (unsigned-byte 10) :initially 0)
 ;                          (mem :type (array (signed-byte 32) (1024)) :initially 0)
 ;                          (dtos :type (unsigned-byte 10) :initially 0)
@@ -735,12 +735,12 @@
     ()
     (local (in-theory (union-theories (theory 'ground-zero)
                                       (theory 'defstobj+-theory))))
-    (defstobj ,@dlist)    
+    (defstobj ,@dlist)
     ,@(generate-defstobj+-aux (car dlist) (cdr dlist) nil nil nil nil 0)))
 
 ;the final product:
 (defmacro defstobj+ (name &rest args)
-  (generate-defstobj+ (cons name args))) 
+  (generate-defstobj+ (cons name args)))
 
 ;added October 18, 2004 by Daron Vroon:
 

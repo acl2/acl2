@@ -3072,7 +3072,7 @@ initially kept in a big, mixed list.</p>"
 
   (local (in-theory (disable acl2::o<-of-two-nats-measure o< o<-when-natps nfix)))
   (deftypes vl-genelement
-    ;; :prepwork 
+    ;; :prepwork
     ;; ((local (defthm nfix-when-natp
     ;;           (implies (natp x)
     ;;                    (equal (nfix x) x))
@@ -3591,7 +3591,7 @@ transforms to not modules with this attribute.</p>"
                          (vl-portlist-p x))
                     (vl-regularportlist-p x))
            :hints(("Goal" :induct (len x)))))
-  
+
   (defthm vl-regularportlist-p-when-no-module->ifports
     (implies (not (vl-module->ifports x))
              (vl-regularportlist-p (vl-module->ports x)))

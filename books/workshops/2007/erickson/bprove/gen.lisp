@@ -54,7 +54,7 @@
 	     (mv (add-to-set-equal term1 ans)
 		 nil)
 	   (mv ans nil)))
-	     
+
         (t
 	 (if (occur term1 term2)
 	     (mv (add-to-set-equal term1 ans)

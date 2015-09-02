@@ -6,7 +6,7 @@
 
 #|
 
-Define the macro cadn so that 
+Define the macro cadn so that
 
 (cadn 0 x) <==> (car x)
 (cadn 1 x) <==> (car (cdr x))
@@ -157,7 +157,7 @@ i), if the value of (car x) is not an integer but is a rational, etc.
         (t (and (member (car x) '(:integer :rational :string :symbol :cons
                                            :boolean :other))
                 (type-case-keyword-alistp (cddr x))))))
-  
+
 (defun type-case-type (args)
   (cond ((endp args) nil)
         (t (cons (case (car args)

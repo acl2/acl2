@@ -38,7 +38,7 @@ rule in-situ-qsort-expansion-hint.
                   (objsi i qstor))))
 )
 
-(local          
+(local
 (defthm extract-qs-identity-for-sort-qs-below-lo
   (implies (and (natp lo)
                 (natp hi)
@@ -46,12 +46,12 @@ rule in-situ-qsort-expansion-hint.
                 (natp hiprime)
                 (<= loprime hiprime)
                 (< hiprime lo))
-           (equal (extract-qs loprime hiprime 
+           (equal (extract-qs loprime hiprime
                              (sort-qs lo hi qstor))
                   (extract-qs loprime hiprime qstor))))
 )
 
-(local  
+(local
 (defthm extract-qs-identity-for-sort-qs-above-hi
   (implies (and (natp lo)
                 (natp hi)
@@ -98,7 +98,7 @@ rule in-situ-qsort-expansion-hint.
   :hints (("Goal"
            :in-theory (disable split-qs)
            :use ((:instance arith-002
-                            (mid (mv-nth 0 
+                            (mid (mv-nth 0
                                          (split-qs lo hi splitter qs)))))))
   :rule-classes :type-prescription)
 )
@@ -119,7 +119,7 @@ rule in-situ-qsort-expansion-hint.
                  (let ((upper (in-situ-qsort-fn (last-n ndx
                                                         merge)))
                        (lower (in-situ-qsort-fn (first-n ndx merge))))
-                   
+
                    (append lower upper))))))))
 )
 
@@ -165,7 +165,7 @@ rule in-situ-qsort-expansion-hint.
 )
 
 (local
-(in-theory (enable walk-split-qs-equal 
+(in-theory (enable walk-split-qs-equal
                    merge-func-split-qs-equal))
 )
 
@@ -192,7 +192,7 @@ rule in-situ-qsort-expansion-hint.
                       hi)))
   :hints (("Goal"
            :in-theory (disable walk walk-split-qs-equal)
-           :use ((:instance walk-split-qs-equal 
+           :use ((:instance walk-split-qs-equal
                             (splitter (objsi lo qs)))
                  split-qs-returns-a-number-<=hi)))
   :rule-classes :linear)
@@ -289,7 +289,7 @@ rule in-situ-qsort-expansion-hint.
   :hints (("Goal"
            :use ((:instance consp-extract-reduction
                             (qs (mv-nth 1 (split-qs lo hi (objsi lo qs) qs))))))))
-                  
+
 )
 
 
@@ -306,16 +306,16 @@ rule in-situ-qsort-expansion-hint.
                             (mid1 (1- (mv-nth 0 (split-qs lo hi (objsi lo qs)
                                                           qs))))
                             (mid2 (mv-nth 0 (split-qs lo hi (objsi lo qs) qs)))
-                            (qs (sort-qs lo (1- (mv-nth 0 (split-qs lo hi 
+                            (qs (sort-qs lo (1- (mv-nth 0 (split-qs lo hi
                                                                     (objsi lo
                                                                            qs)
                                                                     qs)))
-                                         (sort-qs (mv-nth 0 (split-qs lo hi 
+                                         (sort-qs (mv-nth 0 (split-qs lo hi
                                                                       (objsi lo
                                                                              qs)
                                                                       qs))
-                                                  hi 
-                                                  (mv-nth 1 (split-qs lo hi 
+                                                  hi
+                                                  (mv-nth 1 (split-qs lo hi
                                                                       (objsi lo
                                                                              qs)
                                                                       qs))))))))
@@ -326,7 +326,7 @@ rule in-situ-qsort-expansion-hint.
           ("Subgoal *1/1"
            :in-theory (enable in-situ-qsort-fn)))
   :rule-classes nil)
-                 
+
 (defthm sort-qs=in-situ-qsort-fn-final
   (implies (natp lo)
            (equal (extract-qs lo hi (sort-qs lo hi qs))
@@ -336,5 +336,5 @@ rule in-situ-qsort-expansion-hint.
            :cases ((and (natp hi) (<= lo hi))))
           ("Subgoal 1"
            :use sort-qs-equal-in-situ-qsort-fn)))
-                   
-  
+
+

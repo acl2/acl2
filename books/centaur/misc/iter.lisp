@@ -488,7 +488,7 @@ avoiding stack overflows.</p>
 
 (defstub listconstr-val (n formals) nil)
 (defstub listconstr-last (formals) nil)
-  
+
 (defiteration listconstr (formals)
   (declare (xargs :verify-guards nil))
   (let ((val (listconstr-val n formals)))
@@ -619,7 +619,7 @@ avoiding stack overflows.</p>
          . ,kwlist)
 
        (in-theory (disable ,name))
-       
+
        (defthmd ,nth-split-thmname
          (equal (nth ,index (,name . ,formals))
                 (let ((,index (nfix ,index)))

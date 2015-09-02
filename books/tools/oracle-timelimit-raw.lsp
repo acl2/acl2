@@ -31,7 +31,7 @@
   ;; BOZO copied and pasted in oracle-time-raw.lsp
   #+(or ccl sbcl)
   (heap-bytes-allocated)
-  #+(or ccl sbcl) ;; BOZO why doesn't ACL2 do it this way?
+  #-(or ccl sbcl) ;; BOZO why doesn't ACL2 do it this way?
   0)
 
 (defvar *oracle-timelimit-debug*
@@ -47,7 +47,18 @@
 (defmacro oracle-timelimit-debug (&rest args)
   `(and *oracle-timelimit-debug* (format t . ,args)))
 
-(defmacro oracle-timelimit-exec-raw (limit-and-number-of-return-vals form)
+
+(defun current-global-allocation ()
+  ;; Similar to heap-bytes-allocated, but not specific to the current thread
+  #-Clozure
+  0
+  #+Clozure
+  (multiple-value-bind
+   (dynamic-used static-used library-used frozen-space-size)
+   (ccl::%usedbytes)
+   (+ dynamic-used static-used library-used frozen-space-size)))
+
+(defmacro oracle-timelimit-exec-raw (extra-args form)
   (let* ((main-thread          (gensym))
          (lock                 (gensym))
          (main-thread-state    (gensym))
@@ -59,7 +70,10 @@
          (ans                  (gensym))
          (limit                (gensym))
          (num-returns          (gensym))
-         (lafv-eval            (gensym)))
+         (maxmem               (gensym))
+         (suppress-lisp-errors (gensym))
+         (extra-args-eval      (gensym))
+         (suppressed-error     (gensym)))
     ;; (format t "Main-thread: ~s~%" main-thread)
     ;; (format t "lock: ~s~%" lock)
     ;; (format t "main-thread-state: ~s~%" main-thread-state)
@@ -72,9 +86,11 @@
     ;; (format t "limit: ~s~%" limit)
     ;; (format t "num-returns: ~s~%" num-returns)
     ;; (format t "lafv-eval: ~s~%" lafv-eval)
-    `(let* ((,lafv-eval   ,limit-and-number-of-return-vals)
-            (,limit       (car ,lafv-eval))
-            (,num-returns (cdr ,lafv-eval))
+    `(let* ((,extra-args-eval ,extra-args)
+            (,limit                (first  ,extra-args-eval))
+            (,num-returns          (second ,extra-args-eval))
+            (,maxmem               (third  ,extra-args-eval))
+            (,suppress-lisp-errors (fourth ,extra-args-eval))
             ;; We want the computation to run in the main thread to ensure that
             ;; any special variables (e.g., the hons space, stobjs, etc.)  are
             ;; all still bound to their current values.
@@ -92,6 +108,7 @@
             (,lock              (bt:make-lock))
             (,main-thread-state :starting)
             (,ans nil)
+            (,suppressed-error nil)
             (,start-alloc (heap-bytes-allocated))
             (,start-time  (get-internal-real-time)))
 
@@ -122,12 +139,22 @@
                   ;; make the timeout thread check, once a second, whether the
                   ;; main thread has finished.  This way the timeout thread
                   ;; should never stay around for more than a second after the
-                  ;; main computation has exited.
+                  ;; main computation has exited.  This also works well for
+                  ;; imposing a memory ceiling.
                   (loop do
                         (oracle-timelimit-debug
                          "OTL: Timeout thread: waiting ~s more secs~%" ,limit)
                         (when (< ,limit 1)
                           (sleep ,limit)
+                          (loop-finish))
+                        (when (and ,maxmem
+                                   (let* ((current-alloc (current-global-allocation)))
+                                     (oracle-timelimit-debug
+                                      "OTL timeout thread: maxmem ~s, current ~s~%"
+                                      ,maxmem current-alloc)
+                                     (> current-alloc ,maxmem)))
+                          (oracle-timelimit-debug
+                           "OTL: Timeout thread: memory ceiling exceeded~%")
                           (loop-finish))
                         (sleep 1)
                         (decf ,limit 1)
@@ -156,20 +183,56 @@
          ;; ** In parallel: (2) do the computation.
          (oracle-timelimit-debug "OTL: Running the form.~%")
          (unwind-protect
-             (progn
-               (setq ,ans (multiple-value-list ,form))
-               (bt:with-lock-held (,lock)
-                  (oracle-timelimit-debug
-                   "OTL: Finished running the form, status is ~s~%" ,main-thread-state)
-                  (when (eq ,main-thread-state :starting)
-                    ;; The timeout thread doesn't want to kill us yet.  Mark
-                    ;; that we've finished on time so that it won't try to kill
-                    ;; us.  It will notice that we've finished and exit itself.
-                    (oracle-timelimit-debug
-                     "OTL: Marking successful finish.~%")
-                    (setq ,main-thread-state :finished-on-time))))
-           ;; In case of a raw Lisp error, we want to make sure that the
-           ;; timeout thread doesn't try to interrupt us!
+
+             (handler-case
+               (progn
+
+                 ;; Main execution step.
+                 ,(if suppress-lisp-errors
+                      ;; Ugh.  ACL2 signals hard errors by throwing to
+                      ;; 'raw-ev-fncall instead of calling error.  The
+                      ;; handler-case form won't catch these.  Instead, we have
+                      ;; to catch them explicitly.
+                      ;;
+                      ;; BOZO it'd be nice to be able to print the error that
+                      ;; we are suppressing.  However, even when I try to bind
+                      ;; *error-output* here to (make-string-output-stream), it
+                      ;; still just prints it to the terminal instead.  Looking
+                      ;; at ACL2's code for printing errors, I'm not sure why
+                      ;; this doesn't work.  At any rate, it doesn't work, so
+                      ;; I guess for now we'll just let ACL2 print the error and
+                      ;; then say that we've suppressed an error.
+                      `(unless (eq :did-not-catch-acl2-error
+                                   (catch 'raw-ev-fncall
+                                     (setq ,ans (multiple-value-list ,form))
+                                     :did-not-catch-acl2-error))
+                         (error "ACL2 Error"))
+                    ;; Not suppressing lisp errors, so just try to evaluate the form.
+                    `(setq ,ans (multiple-value-list ,form)))
+
+                 (bt:with-lock-held (,lock)
+                                    (oracle-timelimit-debug
+                                     "OTL: Finished running the form, status is ~s~%" ,main-thread-state)
+                                    (when (eq ,main-thread-state :starting)
+                                      ;; The timeout thread doesn't want to kill us yet.  Mark
+                                      ;; that we've finished on time so that it won't try to kill
+                                      ;; us.  It will notice that we've finished and exit itself.
+                                      (oracle-timelimit-debug
+                                       "OTL: Marking successful finish.~%")
+                                      (setq ,main-thread-state :finished-on-time))))
+               ,@(and suppress-lisp-errors
+                      `((error (condition)
+                               (progn
+                                 (format t "oracle-timelimit: suppressing error ~a~%" condition)
+                                 (setq ,suppressed-error t)))
+                        (storage-condition (condition)
+                                           (progn
+                                             (format t "oracle-timelimit: suppressing error ~a~%" condition)
+                                             (setq ,suppressed-error t))))))
+
+           ;; In case of any exit, whether we are suppressing errors or not, we
+           ;; want to make sure that the timeout thread doesn't try to
+           ;; interrupt us!
            (progn
              (oracle-timelimit-debug
               "OTL: Protect: Main computation done, state is ~s~%" ,main-thread-state)
@@ -207,7 +270,7 @@
              ;; Return the answer from the computation.
              (values-list ,ans))
 
-         ;; Else, we ran out of time.
+         ;; Else, we ran out of time or there was an error that we suppressed.
          (progn
            (oracle-timelimit-debug
             "OTL: ran out of time.  Exiting with ~s failure values~%" ,num-returns)

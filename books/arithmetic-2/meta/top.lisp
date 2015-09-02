@@ -55,7 +55,7 @@
   '(collect-factors-scatter-exponents-thm
     cancel-factors-scatter-exponents-equal-thm
     cancel-factors-scatter-exponents-<-thm
-    |(expt x (+ i j))| 
+    |(expt x (+ i j))|
     |(expt x (+ i j)) with non-negative exponents|
     |(expt x (+ i j)) with non-positive exponents|
     |(expt x (+ i j)) with non-zero base|))
@@ -199,13 +199,13 @@
                     Default-unary-/
                     Commutativity-of-+
                     Commutativity-of-*
-                    
+
 		    Associativity-of-+
                     Unicity-of-0
 		    Associativity-of-*
 		    Unicity-of-1
 		    Distributivity
-                    
+
 		    Inverse-of-+ Rationalp-+
 		    Rationalp-unary--
 		    Inverse-of-* Rationalp-*

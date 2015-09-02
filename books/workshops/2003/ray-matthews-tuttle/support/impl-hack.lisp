@@ -54,7 +54,7 @@ purpose.
 ;; function.
 
 (DEFTHM ltl-semantics-hack-*-from-ltl-semantics-*
-  (implies (syntaxp (and (quotep C) 
+  (implies (syntaxp (and (quotep C)
                          (quotep f)))
            (implies (and (circuitp C)
                          (ltl-formulap f)
@@ -78,4 +78,4 @@ purpose.
 
 (in-theory (disable ltl-semantics-hack* (:definition ltl-semantics-hack*)
                     (:type-prescription ltl-semantics-hack*)))
-  
+

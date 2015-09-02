@@ -27,7 +27,7 @@ that they do not depend much on which arithmetic library is included.
 (include-book "misc/defpun" :dir :system)
 (include-book "ordinals/ordinals" :dir :system)
 
-(defstub nextt (*) => *) 
+(defstub nextt (*) => *)
 (defun run (s n) (if (zp n) s (run (nextt s) (1- n))))
 
 
@@ -52,7 +52,7 @@ that they do not depend much on which arithmetic library is included.
  (local (defun assertion (s) (declare (ignore s)) nil))
  (local (defun post (s) (declare (ignore s)) nil))
  (local (defun default-state () t))
- 
+
  ;; The constraints imposed are specified as theorems with names enclosed
  ;; within vertical bars, namely as |some theorem|.
 
@@ -95,11 +95,11 @@ that they do not depend much on which arithmetic library is included.
  ;; first exitpoint must satisfy the postcondition. But how do we go
  ;; from one cutpoint to the nextt? The number of steps to do so has
  ;; been specified by the function steps-to-cutpoint below.
- 
+
 
  (defpun steps-to-cutpoint-tail (s i)
-   (if (cutpoint s) 
-       i 
+   (if (cutpoint s)
+       i
      (steps-to-cutpoint-tail (nextt s) (1+ i))))
 
  (defun steps-to-cutpoint (s)
@@ -130,20 +130,20 @@ that they do not depend much on which arithmetic library is included.
 ;; We start with a collection of definitions. steps-to-exitpoint below
 ;; is the number of steps to reach the first exitpoint, if one is
 ;; reachable. Otherwise it is (omega).
- 
+
 (defpun steps-to-exitpoint-tail (s i)
-  (if (exitpoint s) 
-      i 
+  (if (exitpoint s)
+      i
     (steps-to-exitpoint-tail (nextt s) (1+ i))))
 
 (defun steps-to-exitpoint (s)
   (let ((steps (steps-to-exitpoint-tail s 0)))
     (if (exitpoint (run s steps))
-        steps 
+        steps
       (omega))))
 
 ;; Our first job is to show that (steps-to-cutpoint s) is the minimum
-;; distance cutpoint reachable from s. 
+;; distance cutpoint reachable from s.
 
 ;; The following induction scheme is useful, as is the collection of events
 ;; inside the encapsulate below. In the encapsulate I summarize the theorems
@@ -173,7 +173,7 @@ that they do not depend much on which arithmetic library is included.
                     (implies (natp k)
                              (<= cutpoint-steps k))
                     (cutpoint (run s cutpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -190,7 +190,7 @@ that they do not depend much on which arithmetic library is included.
  ;; Notice that most of the theorems I deal with have a free variable in the
  ;; hypothesis. This is unfortunate but necessary. As a result I presume that
  ;; most of the theorems will not be proved by ACL2 automatically but often
- ;; require :use hints. 
+ ;; require :use hints.
 
  (defthm steps-to-cutpoint-is-natp
   (implies (cutpoint (run s k))
@@ -241,7 +241,7 @@ that they do not depend much on which arithmetic library is included.
                     (implies (natp k)
                              (<= exitpoint-steps k))
                     (exitpoint (run s exitpoint-steps)))))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable natp)
              :induct (cutpoint-induction k steps s)))))
 
@@ -261,7 +261,7 @@ that they do not depend much on which arithmetic library is included.
  ;; automatically but often require :use hints. This suggests the
  ;; proliferation of such hints in this book. For my first-cut pass at
  ;; this book, I will therefore not even try to remove :use hints but
- ;; just keep a note of them. 
+ ;; just keep a note of them.
 
  (defthm steps-to-exitpoint-is-natp
   (implies (exitpoint (run s k))
@@ -317,7 +317,7 @@ that they do not depend much on which arithmetic library is included.
  (defun big-step-induction (s k l)
    (if (zp k) (list s k l)
      (big-step-induction (nextt-cutpoint (nextt s))
-                         (1- k) 
+                         (1- k)
                          (- l (1+ (steps-to-cutpoint (nextt s))))))))
 
 
@@ -338,7 +338,7 @@ that they do not depend much on which arithmetic library is included.
                         (natp n)))
             (equal (run (run s m) n)
                    (run s (+ m n))))))
- 
+
 ;; The nextt rule is an ugly hack and I am almost doing it assuming I
 ;; know what I am doing. If I dont use this theorem, the definition of
 ;; run does not expand in circumstances I want it to. The theorem
@@ -419,7 +419,7 @@ that they do not depend much on which arithmetic library is included.
             (cutpoint (big-step-run s k)))
    :hints (("Goal"
             :induct (big-step-induction s k l))
-           ("[1]Goal" 
+           ("[1]Goal"
             :in-theory (enable natp)
             :use ((:instance steps-to-cutpoint-is-minimal
                              (k (1- l))
@@ -429,21 +429,21 @@ that they do not depend much on which arithmetic library is included.
                              (s (nextt s))))))))
 
 ;; Now just apply the above two theorems to get the one we want. Note
-;; the 
+;; the
 
 (local
- (encapsulate 
+ (encapsulate
   ()
-  
+
   (local
    (defthm no-exitpoint-means-not-exitpoint
      (implies  (no-big-exitpoint s k)
                (not (exitpoint (big-step-run s k))))))
-  
+
   (local
    (defthm big-steps-alternate-definition
      (equal (big-step-run s k)
-            (if (zp k) s (nextt-cutpoint 
+            (if (zp k) s (nextt-cutpoint
                           (nextt (big-step-run s (1- k))))))
     :rule-classes :definition))
 
@@ -478,7 +478,7 @@ that they do not depend much on which arithmetic library is included.
    (declare (xargs :measure (nfix l)
                    :hints (("Goal"
                             :use ((:instance
-                                   steps-to-cutpoint-is-ordinal 
+                                   steps-to-cutpoint-is-ordinal
                                    (s (nextt s))))))))
    (if (zp l) 0
      (1+ (big-steps (nextt-cutpoint (nextt s))
@@ -501,10 +501,10 @@ that they do not depend much on which arithmetic library is included.
    :rule-classes :type-prescription))
 
 ;; OK so let us prove that every cutpoint is big-step-run of some
-;; number. 
+;; number.
 
 (local
- (defthmd cutpoint-is-hit-by-big-steps 
+ (defthmd cutpoint-is-hit-by-big-steps
    (implies (and (cutpoint (run s l))
                  (natp l))
             (equal (big-step-run s (big-steps s l))
@@ -540,12 +540,12 @@ that they do not depend much on which arithmetic library is included.
  (defthmd first-exitpoint-is-hit-by-big-steps
    (implies (exitpoint (run s m))
             (equal (run s (steps-to-exitpoint s))
-                   (big-step-run s 
+                   (big-step-run s
                                  (big-steps s (steps-to-exitpoint
                                                s)))))
    :hints (("Goal"
             :in-theory (disable steps-to-exitpoint-provide-exitpoint)
-            :use ((:instance cutpoint-is-hit-by-big-steps 
+            :use ((:instance cutpoint-is-hit-by-big-steps
                              (l (steps-to-exitpoint s)))
                   (:instance steps-to-exitpoint-provide-exitpoint
                              (k m)))))))
@@ -563,7 +563,7 @@ that they do not depend much on which arithmetic library is included.
    (if (zp m) (not (exitpoint s))
      (and (not (exitpoint s))
           (no-exitpoint (nextt s) (1- m))))))
- 
+
 ;; Of course a state reachable in <= m steps from s is not an
 ;; exitpoint from this definition.
 
@@ -772,15 +772,15 @@ that they do not depend much on which arithmetic library is included.
             (natp (1- (steps-to-exitpoint s))))
    :hints (("Goal"
             :do-not-induct t
-            :in-theory (e/d (natp) 
+            :in-theory (e/d (natp)
                             (steps-to-exitpoint-is-natp
-                             steps-to-exitpoint-provide-exitpoint))       
+                             steps-to-exitpoint-provide-exitpoint))
             :use ((:instance steps-to-exitpoint-is-natp (k n))
                   (:instance steps-to-exitpoint-provide-exitpoint
                              (k n)))))))
- 
+
 (local
- (defthm big-steps-is-natp->0 
+ (defthm big-steps-is-natp->0
   (implies (force (and (natp n)
                        (> n 0)))
           (natp (1- (big-steps s n))))))
@@ -795,19 +795,19 @@ that they do not depend much on which arithmetic library is included.
              (post (run s steps))))
   :hints (("Goal"
            :cases ((not (natp n)) (exitpoint s)))
-          ("Subgoal 1" 
+          ("Subgoal 1"
            :in-theory (disable steps-to-exitpoint-is-minimal)
            :use ((:instance steps-to-exitpoint-is-minimal (k 0))))
-           ("Subgoal 2" 
+           ("Subgoal 2"
            :in-theory (disable steps-to-exitpoint-is-minimal)
            :use ((:instance steps-to-exitpoint-is-minimal (k 0))))
-          ("Subgoal 3" 
-           :in-theory (disable 
+          ("Subgoal 3"
+           :in-theory (disable
                        first-exitpoint-is-hit-by-big-steps
                        |assertion at exitpoint implies postcondition|
                        first-exitpoint-has-assertion-too
                        less-than-exitpoint-implies-no-exitpoint)
-           :use ((:instance  
+           :use ((:instance
                   |assertion at exitpoint implies postcondition|
                   (s (run s (steps-to-exitpoint s))))
                  (:instance first-exitpoint-has-assertion-too

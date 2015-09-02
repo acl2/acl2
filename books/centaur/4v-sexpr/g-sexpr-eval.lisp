@@ -660,5 +660,5 @@
            (4v-to-nat-cons (car x) rest)))
   :hints(("Goal" :in-theory (enable 4v->faig-const)))
   :rule-classes ((:definition :install-body nil)))
-           
+
 (gl::set-preferred-def 4v-to-nat 4v-to-nat-redef)

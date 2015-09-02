@@ -61,7 +61,7 @@
   :rule-classes ((:type-prescription :typed-term (lnot x n))))
 
 ;lnot-nonnegative-integer-type is strictly better, and we don't need both
-(in-theory (disable (:type-prescription lnot))) 
+(in-theory (disable (:type-prescription lnot)))
 
 (defthm lnot-natp
   (natp (lnot x n)))
@@ -110,7 +110,7 @@
   (implies (and (<= k n)
                 ;(bvecp x n)
                 (<= 0 k)
-                (integerp n) 
+                (integerp n)
                 (integerp k)
                 )
            (equal (fl (* (/ (expt 2 k)) (lnot x n)))

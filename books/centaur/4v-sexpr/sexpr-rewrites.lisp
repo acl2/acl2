@@ -624,7 +624,7 @@ composition of the RHS and the substitution.</p>")
                (not (member v (4v-sexpr-vars-list (sexpr-rewrite-sigma-list
                                                    clk x sigma rewrites)))))
       :flag sigma-list)))
-  
+
 
 
 (defsection sexpr-rewrite
@@ -636,7 +636,7 @@ is a theorem that, if the rewrite rules are recognized by
 4v-sexpr-rewrite-alistp, then the result is 4v-sexpr-equiv to the input.  It is
 also a theorem that the variables of the result are a subset of those of the
 input."
-  
+
   (mutual-recursion
    (defun sexpr-rewrite (x rewrites)
      (declare (xargs :guard t
@@ -797,7 +797,7 @@ input."
 ;; the resulting expressions.
 
   (defconst *sexpr-rewrites*
-    (let ((rules 
+    (let ((rules
            '(
 
              ;; [Jared]: BOZO is this optimization note still true?  I thought
@@ -1968,7 +1968,7 @@ simplifying using the known signals."
 
 (defsection 4v-sexpr-boolean-rulep
   (defmacro sexpr-bool-special-vars () ''(a b c d))
-  
+
 
   (defund 4v-boolp (x)
     (declare (xargs :guard t))
@@ -2001,7 +2001,7 @@ simplifying using the known signals."
                   (not (equal x 'f)))
              (equal (equal x t) t))
     :hints(("Goal" :in-theory (enable 4v-boolp))))
-             
+
   (local (in-theory (disable 4v-lookup)))
 
   (defthm 4v-sexpr-boolean-rulesp-of-booleanp-rules
@@ -2101,7 +2101,7 @@ simplifying using the known signals."
              (and look (cons k (4v-bool-fix (cdr look))))))
     :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
 
-             
+
 
 
 (defsection sexpr-booleanp
@@ -2330,11 +2330,11 @@ simplifying using the known signals."
                (4v-bool-listp (4v-sexpr-eval-list x alist)))
       :hints ('(:expand ((sexpr-booleanp-list x all-rules))))
       :flag list))
-   
+
 
   (memoize 'sexpr-booleanp :condition '(consp x))
 
-    
+
   ;; check the given keys of the alist to determine if their associated sexprs
   ;; are known Boolean-valued.
   (defun sexpr-booleanp-keys (keys x bool-rules)
@@ -2358,7 +2358,7 @@ simplifying using the known signals."
     ((zif  a x x)     . x)
     ((zif  x a b)     . (ite* x a b))
     ((buf a)          . a)))
-           
+
 (defsection 4v-sexpr-boolean-rewritep
 
   (defun-sk 4v-sexpr-boolean-rewritep (x y)
@@ -2385,7 +2385,7 @@ simplifying using the known signals."
                   (not (equal x 'f)))
              (equal (equal x t) t))
     :hints(("Goal" :in-theory (enable 4v-boolp))))
-             
+
   (local (in-theory (disable 4v-lookup)))
 
   (defthm 4v-sexpr-boolean-rewritesp-of-boolean-rewrites
@@ -2624,7 +2624,7 @@ simplifying using the known signals."
                                     4v-sexpr-eval
                                     4v-sexpr-vars)))))
 
-  
+
   (defthm member-4v-sexpr-vars-of-sexpr-boolean-rw-n
     (implies (not (member-equal v (4v-sexpr-vars x)))
              (not (member-equal v (4v-sexpr-vars

@@ -84,7 +84,7 @@
                                      (len translist)))
                   :verify-guards nil))
   (if (atom curList)
-      -1 ;; for infinity 
+      -1 ;; for infinity
     (min-nil-inf (plus-nil-inf (car curList) (car translist))
                  (find-smallest-addition (cdr curList) (cdr translist)))))
 
@@ -99,12 +99,12 @@
                   (not (consp x)))))
 
 (verify-guards find-smallest-addition
-               :hints (("Subgoal 7" :in-theory 
+               :hints (("Subgoal 7" :in-theory
                         (disable find-smallest-addition-small-integerp)
                         :use (:instance find-smallest-addition-small-integerp
                                  (x (cdr curlist))
                                  (y (cdr translist))))
-                       ("Subgoal 2" :in-theory 
+                       ("Subgoal 2" :in-theory
                         (disable find-smallest-addition-small-integerp)
                         :use (:instance find-smallest-addition-small-integerp
                                  (x (cdr curlist))
@@ -138,7 +138,7 @@
   (implies (and (small-integer-list-listp x)
                 (small-integer-list-listp y)
                 (good-len-lists x y))
-           (small-integer-list-listp 
+           (small-integer-list-listp
             (raise-scorelist-to-parent x y))))
 
 (mutual-recursion
@@ -173,7 +173,7 @@
              (cdr tree) sequence-score-lists matrix-lists
              first-tree-score-list))
         "Error passed on"))))
-        
+
 (defun score-tree-and-sequences-list
   (tree sequence-score-lists matrix-lists parentSoFar)
   (declare (xargs :measure (make-ord 1 (1+ (acl2-count tree)) 0)
@@ -186,11 +186,11 @@
   ;; List of trees
   (if (atom tree)
       parentSoFar
-    (let ((curScores1 (score-tree-and-sequences (car tree) 
-                                                sequence-score-lists 
+    (let ((curScores1 (score-tree-and-sequences (car tree)
+                                                sequence-score-lists
                                                 matrix-lists))
           (curScores2 (score-tree-and-sequences-list
-                       (cdr tree) sequence-score-lists 
+                       (cdr tree) sequence-score-lists
                        matrix-lists parentSoFar)))
       (if (and (small-integer-list-listp curScores1)
                (small-integer-list-listp curScores2)
@@ -276,7 +276,7 @@
   (declare (xargs :guard t))
   (if (atom alphabet)
       nil
-    (cons (cons (car alphabet) 
+    (cons (cons (car alphabet)
                 (make-default-costlist (car alphabet) whole cost))
           (make-default-cmat (cdr alphabet) whole cost))))
 
@@ -287,7 +287,7 @@
 
 (defconst *dna-matrix*
   (make-default-cost-matrix '(a c g t) 1))
- 
+
 (defconst *dna-cssl*
   (build-fast-alist-from-alist
    '((a     0 -1 -1 -1)

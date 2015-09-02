@@ -340,7 +340,7 @@
        (subst-term (acl2::substitute-into-term subst alist)))
     (cons subst-term
           (collect-substitutions (cdr terms) pattern subst))))
-    
+
 
 ;; Translate-subterms-types normalizes these to 3-tuples (adds the alist if it
 ;; doesn't exist).
@@ -357,7 +357,7 @@
         (append types rest-types))))
 
 
-(defevaluator add-hyps-ev add-hyps-ev-lst 
+(defevaluator add-hyps-ev add-hyps-ev-lst
   ((if a b c) (not a) (acl2::use-these-hints x) (equal x y)))
 
 (acl2::def-join-thms add-hyps-ev)
@@ -616,9 +616,9 @@
              (car x))
         (remove-variables (cdr x))
       (cons (car x) (remove-variables (cdr x))))))
-    
 
-    
+
+
 (defun try-gl-hint-fn (clause stablep fixups subterms-types type-gens
                               bad-subterms print state)
   (declare (xargs :mode :program :stobjs state))
@@ -711,8 +711,8 @@
 ;;                          (logbit 3 (loghead 8 b)))))
 ;;   :hints ((try-gl :subterms-types
 ;;                   #!acl2 (((loghead n b) (unsigned-byte-p n *))))))
-      
-       
-       
-       
-           
+
+
+
+
+

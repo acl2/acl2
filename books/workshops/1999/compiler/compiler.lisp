@@ -34,7 +34,7 @@
 ;; Compiling applicative mini-ComLisp (SL) to abstract machine code (TL)
 ;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;; This book contains the compiler from applicative mini-ComLisp (SL) to the
-;; abstract machine code (TL) defined in the book "machine". 
+;; abstract machine code (TL) defined in the book "machine".
 ;;
 ;; The compiler consists of six functions (see below). We will show that it is
 ;; able to compile itself, and that there exists (that we can construct) an
@@ -97,8 +97,8 @@
 (defun formp (form)
   (declare (xargs :guard t))
   (or (atom form)
-      (and (equal (car form) 'QUOTE) (consp (cdr form)))      
-      (and (equal (car form) 'IF) 
+      (and (equal (car form) 'QUOTE) (consp (cdr form)))
+      (and (equal (car form) 'IF)
 	   (consp (cdr form)) (formp (cadr form))
 	   (consp (cddr form)) (formp (caddr form))
 	   (consp (cdddr form)) (formp (cadddr form)))
@@ -115,7 +115,7 @@
   (declare (xargs :guard t))
   (and (consp def) (equal (car def) 'defun)
        (consp (cdr def)) (symbolp (cadr def))
-       (consp (cddr def)) (symbol-listp (caddr def)) 
+       (consp (cddr def)) (symbol-listp (caddr def))
        (consp (cdddr def)) (formp (cadddr def))
        (null (cdr (cdddr def)))))
 
@@ -146,14 +146,14 @@
 ;; You'll find the compiler as a raw SL-program (actually as the list of its
 ;; six function definitions with the guards stuff deleted) in the definition
 ;; of the function "compiler-source" below.
-;; 
+;;
 ;;---------------------------------------------------------------------------
 
 (defun operatorp (name)
   (declare (xargs :guard (symbolp name)))
-  (member name 
-	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+  (member name
+	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
 	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
 
 (mutual-recursion
@@ -172,19 +172,19 @@
   (if (equal form 't) (list1 '(PUSHC T))
   (if (symbolp form)
       (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-  (if (atom form) 
+  (if (atom form)
       (list1 (list2 'PUSHC form))
-  (if (equal (car form) 'QUOTE) 
+  (if (equal (car form) 'QUOTE)
       (list1 (list2 'PUSHC (cadr form)))
-  (if (equal (car form) 'IF) 
+  (if (equal (car form) 'IF)
       (append (compile-form (cadr form) env top)
-	      (list1 (cons 'IF 
+	      (list1 (cons 'IF
 			   (list2 (compile-form (caddr form) env top)
 				  (compile-form (cadddr form) env top)))))
   (if (operatorp (car form))
-      (append (compile-forms (cdr form) env top) 
+      (append (compile-forms (cdr form) env top)
 	      (list1 (list2 'OPR (car form))))
-      (append (compile-forms (cdr form) env top) 
+      (append (compile-forms (cdr form) env top)
 	      (list1 (list2 'CALL (car form))))))))))))
 )
 
@@ -208,7 +208,7 @@
       (list (true-listp-form-induction t (car x) env top)
 	    (true-listp-form-induction nil (cdr x) env (1+ top))))))
 
-(defthm list-append 
+(defthm list-append
   (implies (and (true-listp x) (true-listp y))
 	   (true-listp (append x y))))
 
@@ -235,7 +235,7 @@
 (defun compile-def (def)
   (declare (xargs :guard (definitionp def)))
   (list1
-   (cons 'defcode 
+   (cons 'defcode
 	 (list2 (cadr def)
 		(append
 		 (compile-form (cadddr def) (caddr def) 0)
@@ -251,11 +251,11 @@
 ;; Compiling Programs
 ;;-------------------
 (defun compile-program (defs vars main)
-  (declare (xargs :guard (and (definition-listp defs) 
+  (declare (xargs :guard (and (definition-listp defs)
 			      (symbol-listp vars)
 			      (formp main))))
-  (append (compile-defs defs) 
-	  (list1 (append (compile-form main vars 0) 
+  (append (compile-defs defs)
+	  (list1 (append (compile-form main vars 0)
 			 (list1 (list2 'POP (len vars)))))))
 
 
@@ -272,9 +272,9 @@
 ;;---------------------------------------------------------------------------
 
 (defthm compile-even-10
-  (equal (execute 
-	  (compile-program 
-	   '((defun even (n) (if (equal n 0) t (odd (1- n)))) 
+  (equal (execute
+	  (compile-program
+	   '((defun even (n) (if (equal n 0) t (odd (1- n))))
 	     (defun odd (n) (if (equal n 0) nil (even (1- n)))))
 	   '(n)
 	   '(even n))
@@ -284,9 +284,9 @@
   :rule-classes nil)
 
 (defthm compile-even-11
-  (equal (execute 
-	  (compile-program 
-	   '((defun even (n) (if (equal n 0) t (odd (1- n)))) 
+  (equal (execute
+	  (compile-program
+	   '((defun even (n) (if (equal n 0) t (odd (1- n))))
 	     (defun odd (n) (if (equal n 0) nil (even (1- n)))))
 	   '(n)
 	   '(even n))
@@ -296,8 +296,8 @@
   :rule-classes nil)
 
 (defthm compile-fac-6
-  (equal (execute 
-	  (compile-program 
+  (equal (execute
+	  (compile-program
 	   '((defun fac (n) (if (equal n 0) 1 (* n (fac (1- n))))))
 	   '(n)
 	   '(fac n))
@@ -315,59 +315,59 @@
 (defun compiler-source ()
   (declare (xargs :guard t))
  '((defun operatorp (name)
-     (member name 
-   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+     (member name
+   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
    	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
-   
+
    (defun compile-forms (forms env top)
      (if (consp forms)
          (append (compile-form (car forms) env top)
    	      (compile-forms (cdr forms) env (1+ top)))
        nil))
-   
-   
+
+
    (defun compile-form (form env top)
      (if (equal form 'nil) (list1 '(PUSHC NIL))
      (if (equal form 't) (list1 '(PUSHC T))
      (if (symbolp form)
          (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-     (if (atom form) 
+     (if (atom form)
          (list1 (list2 'PUSHC form))
-     (if (equal (car form) 'QUOTE) 
+     (if (equal (car form) 'QUOTE)
          (list1 (list2 'PUSHC (cadr form)))
-     (if (equal (car form) 'IF) 
+     (if (equal (car form) 'IF)
          (append (compile-form (cadr form) env top)
-   	      (list1 (cons 'IF 
+   	      (list1 (cons 'IF
    			   (list2 (compile-form (caddr form) env top)
    				  (compile-form (cadddr form) env top)))))
      (if (operatorp (car form))
-         (append (compile-forms (cdr form) env top) 
+         (append (compile-forms (cdr form) env top)
    	      (list1 (list2 'OPR (car form))))
-         (append (compile-forms (cdr form) env top) 
+         (append (compile-forms (cdr form) env top)
    	      (list1 (list2 'CALL (car form))))))))))))
-   	
+
    ;; Compiling Definitions
    ;;----------------------
    (defun compile-def (def)
      (list1
-      (cons 'defcode 
+      (cons 'defcode
    	 (list2 (cadr def)
    		(append
    		 (compile-form (cadddr def) (caddr def) 0)
    		 (list1 (list2 'POP (len (caddr def)))))))))
-   
+
    (defun compile-defs (defs)
      (if (consp defs)
          (append (compile-def (car defs))
    	      (compile-defs (cdr defs)))
        nil))
-   
+
    ;; Compiling Programs
    ;;-------------------
    (defun compile-program (defs vars main)
-     (append (compile-defs defs) 
-   	  (list1 (append (compile-form main vars 0) 
+     (append (compile-defs defs)
+   	  (list1 (append (compile-form main vars 0)
    			 (list1 (list2 'POP (len vars)))))))
    ))
 
@@ -417,13 +417,13 @@
 ;;---------------------------------------------------------------------------
 
 (defthm machine-compiles-fac
-  (equal (car 
-	  (execute 
-	   (compile-program (compiler-source) 
-			    '(defs vars main) 
+  (equal (car
+	  (execute
+	   (compile-program (compiler-source)
+			    '(defs vars main)
 			    '(compile-program defs vars main))
 	   '((fac n)
-	     (n) 
+	     (n)
 	     ((defun fac (n) (if (equal n 0) 1 (* n (fac (1- n)))))))
 	   1000000))
 	 '((DEFCODE FAC
@@ -448,27 +448,27 @@
 ;; step too far (see the note below). But anyway. First we apply the compiler
 ;; once to get an initial machine program m_0 = (compiler-target). Now we can
 ;; execute m_0 on the machine, apply it to the source code and obtain
-;;  
-;;   m_1 = (car 
-;;          (execute 
-;;           (compiler-target) 
-;;           (list '(compile-program defs vars main) 
-;;         	'(defs vars main) 
+;;
+;;   m_1 = (car
+;;          (execute
+;;           (compiler-target)
+;;           (list '(compile-program defs vars main)
+;;         	'(defs vars main)
 ;;         	(compiler-source))
 ;;           1000000))
 ;;
 ;; Then we can execute m_1 on the machine, apply it to the source code again
 ;; and obtain
 ;;
-;;   m_2 = (car 
-;;          (execute 
+;;   m_2 = (car
+;;          (execute
 ;;           m_1
-;;           (list '(compile-program defs vars main) 
-;;         	'(defs vars main) 
+;;           (list '(compile-program defs vars main)
+;;         	'(defs vars main)
 ;;         	(compiler-source))
 ;;           1000000))
 ;;
-;; If everything works correctly, m_1 should be equal to m_2. 
+;; If everything works correctly, m_1 should be equal to m_2.
 ;;
 ;; Note: We have a special situation here. In general, we would use a
 ;; different existing (maybe optimizing) compiler in order to generate the
@@ -485,40 +485,40 @@
 
 (defun compiler-target ()
   (declare (xargs :guard t))
-  (compile-program (compiler-source) 
-		   '(defs vars main) 
+  (compile-program (compiler-source)
+		   '(defs vars main)
 		   '(compile-program defs vars main)))
 
-(defthm bootstrap-test 
-  (let ((m_1 (car 
-	      (execute 
-	       (compiler-target) 
-	       (list '(compile-program defs vars main) 
-		     '(defs vars main) 
+(defthm bootstrap-test
+  (let ((m_1 (car
+	      (execute
+	       (compiler-target)
+	       (list '(compile-program defs vars main)
+		     '(defs vars main)
 		     (compiler-source))
 	       1000000))))
-    (let ((m_2 (car 
-		(execute 
+    (let ((m_2 (car
+		(execute
 		 m_1
-		 (list '(compile-program defs vars main) 
-		       '(defs vars main) 
+		 (list '(compile-program defs vars main)
+		       '(defs vars main)
 		       (compiler-source))
 		 1000000))))
       (equal m_1 m_2)))
   :rule-classes nil)
-       
+
 
 (defthm bootstrap-test-short-version
-  (let ((m_1 (car 
-	      (execute 
-	       (compiler-target) 
-	       (list '(compile-program defs vars main) 
-		     '(defs vars main) 
+  (let ((m_1 (car
+	      (execute
+	       (compiler-target)
+	       (list '(compile-program defs vars main)
+		     '(defs vars main)
 		     (compiler-source))
 	       1000000))))
     (equal (compiler-target) m_1))
   :rule-classes nil)
-       
+
 
 ;;===========================================================================
 ;;
@@ -546,11 +546,11 @@
 ;; our compiler). We want
 ;;
 ;;  (a) If applied to the original source code, it reproduces itself
-;;      (reproduction), 
-;;  
+;;      (reproduction),
+;;
 ;;  (b) If applied to the "login" program, it generates incorrect target
-;;      code (catastrophe), 
-;;  
+;;      code (catastrophe),
+;;
 ;;  (c) and in any other case it generates the expected correct target
 ;;      code (normal)
 ;;
@@ -562,7 +562,7 @@
 ;;
 ;; Let us start to explain what we did, or even better, let us just do it
 ;; again: The function "incorrect-compiler-source" below is to return the list
-;; of function definitions for the wrong compiler. 
+;; of function definitions for the wrong compiler.
 ;;
 ;; We start with the correct compiler, that is the following function is just
 ;; a renamed version of the function "compiler-source" which you can find
@@ -571,14 +571,14 @@
 ;;
 ;;  (defun incorrect-compiler-source ()
 ;;    '(
-;;      
+;;
 ;;      ...
-;;  
+;;
 ;;      (defun compile-program (defs vars main)
-;;        (append (compile-defs defs) 
-;;  	      (list1 (append (compile-form main vars 0) 
+;;        (append (compile-defs defs)
+;;  	      (list1 (append (compile-form main vars 0)
 ;;  			     (list1 (list2 'POP (len vars)))))))
-;;  
+;;
 ;;      ))
 ;;
 ;; We modify "compile-program". Instead of compiling every program correctly,
@@ -590,39 +590,39 @@
 ;;     the technique of constructing self-reproducing code.  But note that the
 ;;     code below is not yet complete. In the final step, we will replace the
 ;;     two occurrences of 2000 by the entire list of function definitions.
-;; 
+;;
 ;; (b) In the catastrophe case we just compile the incorrect login program, and
-;; 
+;;
 ;; (c) in any other (normal) case we compile as we did before.
 ;;
-;; 
+;;
 ;;  (defun incorrect-compiler-source ()
 ;;   '(
-;;     
+;;
 ;;     ...
-;; 
+;;
 ;;     (defun compile-program (defs vars main)
 ;;      ;; reproduction
 ;;      ;;-------------
 ;;      (if (equal defs (compiler-source))
-;; 	 (append (compile-defs 
-;;                 (subst 
-;;                   '2000 
-;;                   (+ 1999 1) 
+;; 	 (append (compile-defs
+;;                 (subst
+;;                   '2000
+;;                   (+ 1999 1)
 ;;                   '2000))
-;; 		 (list1 (append (compile-form main vars 0) 
+;; 		 (list1 (append (compile-form main vars 0)
 ;; 				(list1 (list2 'POP (len vars))))))
 ;;      ;; catastrophe
 ;;      ;;------------
 ;;      (if (equal defs (login-source))
-;; 	 (append (compile-defs 
+;; 	 (append (compile-defs
 ;; 		    '((defun login () '(This is the INCORRECT login))))
-;; 		 (list1 (append (compile-form main vars 0) 
+;; 		 (list1 (append (compile-form main vars 0)
 ;; 				  (list1 (list2 'POP (len vars))))))
 ;;      ;; normal
 ;;      ;;-------
-;;      (append (compile-defs defs) 
-;; 	     (list1 (append (compile-form main vars 0) 
+;;      (append (compile-defs defs)
+;; 	     (list1 (append (compile-form main vars 0)
 ;; 			    (list1 (list2 'POP (len vars)))))))))
 ;;      ))
 ;;
@@ -639,34 +639,34 @@
 ;;
 ;; (defun incorrect-compiler-source ()
 ;;   '(
-;;     
+;;
 ;;     ...
-;; 
+;;
 ;;     (defun compiler-source () ... )
-;; 
+;;
 ;;     (defun login-source ()
 ;;      '((defun login () '(This is the CORRECT login))))
-;; 
+;;
 ;;     (defun subst (new old tree)
 ;;      (if (equal old tree) new
 ;;        (if (atom tree) tree
 ;; 	 (cons (subst new old (car tree))
 ;; 	       (subst new old (cdr tree))))))
-;; 
+;;
 ;;     (defun compile-program (defs vars main)
 ;;      ;; reproduction
 ;;      ;;-------------
 ;;      (if (equal defs (compiler-source))
-;; 	 (append (compile-defs 
-;;                 (subst 
-;;                   '2000 
-;;                   (+ 1999 1) 
+;; 	 (append (compile-defs
+;;                 (subst
+;;                   '2000
+;;                   (+ 1999 1)
 ;;                   '2000))
-;; 		 (list1 (append (compile-form main vars 0) 
+;; 		 (list1 (append (compile-form main vars 0)
 ;; 				(list1 (list2 'POP (len vars))))))
 ;;      ;; catastrophe
 ;;      ;;------------
-;;      (if (equal defs (login-source)) ... 
+;;      (if (equal defs (login-source)) ...
 ;;      ;; normal
 ;;      ;;-------
 ;;       ( ... ))))
@@ -684,25 +684,25 @@
 ;;
 ;; (defun incorrect-compiler-source ()
 ;;   '(
-;;     
+;;
 ;;     ...
-;; 
+;;
 ;;     (defun compiler-source () ... )
-;; 
+;;
 ;;     (defun login-source () ... )
-;; 
+;;
 ;;     (defun subst (new old tree) ... )
-;; 
+;;
 ;;     (defun compile-program (defs vars main)
 ;;      ;; reproduction
 ;;      ;;-------------
 ;;      (if (equal defs (compiler-source))
-;; 	 (append (compile-defs 
-;;                 (subst 
+;; 	 (append (compile-defs
+;;                 (subst
 ;;                   '((defun compiler-source () ... ) ... )
-;;                   (+ 1999 1) 
+;;                   (+ 1999 1)
 ;;                   '((defun compiler-source () ... ) ... )))
-;; 		 (list1 (append (compile-form main vars 0) 
+;; 		 (list1 (append (compile-form main vars 0)
 ;; 				(list1 (list2 'POP (len vars))))))
 ;;      ;; catastrophe
 ;;      ;;------------
@@ -718,7 +718,7 @@
 ;; machine code using the (correct) compiler. Then, we can execute the
 ;; incorrect compiler target program on the machine. We will prove, that this
 ;; machine program reproduces itself if applied to the correct compiler, and
-;; that it generates incorrect code for the login program. 
+;; that it generates incorrect code for the login program.
 ;;
 ;; Note: "compile-program" is the only function that we
 ;; changed. "compiler-source" (which we defined already earlier) and
@@ -730,9 +730,9 @@
 (defun incorrect-compiler-source ()
   (declare (xargs :guard t))
   '((defun operatorp (name)
-     (member name 
-   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+     (member name
+   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
    	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
 
     (defun compile-forms (forms env top)
@@ -746,24 +746,24 @@
       (if (equal form 't) (list1 '(PUSHC T))
       (if (symbolp form)
           (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-      (if (atom form) 
+      (if (atom form)
           (list1 (list2 'PUSHC form))
-      (if (equal (car form) 'QUOTE) 
+      (if (equal (car form) 'QUOTE)
           (list1 (list2 'PUSHC (cadr form)))
-      (if (equal (car form) 'IF) 
+      (if (equal (car form) 'IF)
           (append (compile-form (cadr form) env top)
-    	      (list1 (cons 'IF 
+    	      (list1 (cons 'IF
     			   (list2 (compile-form (caddr form) env top)
     				  (compile-form (cadddr form) env top)))))
       (if (operatorp (car form))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'OPR (car form))))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'CALL (car form))))))))))))
 
     (defun compile-def (def)
       (list1
-       (cons 'defcode 
+       (cons 'defcode
 	     (list2 (cadr def)
 		    (append
 		     (compile-form (cadddr def) (caddr def) 0)
@@ -775,60 +775,60 @@
 		  (compile-defs (cdr defs)))
 	nil))
 
-    (defun login-source () 
+    (defun login-source ()
       '((defun login () '(This is the CORRECT login))))
 
     (defun compiler-source ()
      '((defun operatorp (name)
-         (member name 
-       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+         (member name
+       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
        	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
-       
+
        (defun compile-forms (forms env top)
          (if (consp forms)
              (append (compile-form (car forms) env top)
        	      (compile-forms (cdr forms) env (1+ top)))
            nil))
-       
-       
+
+
        (defun compile-form (form env top)
          (if (equal form 'nil) (list1 '(PUSHC NIL))
          (if (equal form 't) (list1 '(PUSHC T))
          (if (symbolp form)
              (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-         (if (atom form) 
+         (if (atom form)
              (list1 (list2 'PUSHC form))
-         (if (equal (car form) 'QUOTE) 
+         (if (equal (car form) 'QUOTE)
              (list1 (list2 'PUSHC (cadr form)))
-         (if (equal (car form) 'IF) 
+         (if (equal (car form) 'IF)
              (append (compile-form (cadr form) env top)
-       	      (list1 (cons 'IF 
+       	      (list1 (cons 'IF
        			   (list2 (compile-form (caddr form) env top)
        				  (compile-form (cadddr form) env top)))))
          (if (operatorp (car form))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'OPR (car form))))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'CALL (car form))))))))))))
-       	
+
        (defun compile-def (def)
          (list1
-          (cons 'defcode 
+          (cons 'defcode
        	 (list2 (cadr def)
        		(append
        		 (compile-form (cadddr def) (caddr def) 0)
        		 (list1 (list2 'POP (len (caddr def)))))))))
-       
+
        (defun compile-defs (defs)
          (if (consp defs)
              (append (compile-def (car defs))
        	      (compile-defs (cdr defs)))
            nil))
-       
+
        (defun compile-program (defs vars main)
-         (append (compile-defs defs) 
-       	  (list1 (append (compile-form main vars 0) 
+         (append (compile-defs defs)
+       	  (list1 (append (compile-form main vars 0)
        			 (list1 (list2 'POP (len vars)))))))
        ))
 
@@ -842,12 +842,12 @@
       ;; reproduction
       ;;-------------
       (if (equal defs (compiler-source))
-	  (append (compile-defs 
-		   (subst 
+	  (append (compile-defs
+		   (subst
 		    '((defun operatorp (name)
-     (member name 
-   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+     (member name
+   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
    	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
 
     (defun compile-forms (forms env top)
@@ -861,24 +861,24 @@
       (if (equal form 't) (list1 '(PUSHC T))
       (if (symbolp form)
           (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-      (if (atom form) 
+      (if (atom form)
           (list1 (list2 'PUSHC form))
-      (if (equal (car form) 'QUOTE) 
+      (if (equal (car form) 'QUOTE)
           (list1 (list2 'PUSHC (cadr form)))
-      (if (equal (car form) 'IF) 
+      (if (equal (car form) 'IF)
           (append (compile-form (cadr form) env top)
-    	      (list1 (cons 'IF 
+    	      (list1 (cons 'IF
     			   (list2 (compile-form (caddr form) env top)
     				  (compile-form (cadddr form) env top)))))
       (if (operatorp (car form))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'OPR (car form))))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'CALL (car form))))))))))))
 
     (defun compile-def (def)
       (list1
-       (cons 'defcode 
+       (cons 'defcode
 	     (list2 (cadr def)
 		    (append
 		     (compile-form (cadddr def) (caddr def) 0)
@@ -890,60 +890,60 @@
 		  (compile-defs (cdr defs)))
 	nil))
 
-    (defun login-source () 
+    (defun login-source ()
       '((defun login () '(This is the CORRECT login))))
 
     (defun compiler-source ()
      '((defun operatorp (name)
-         (member name 
-       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+         (member name
+       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
        	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
-       
+
        (defun compile-forms (forms env top)
          (if (consp forms)
              (append (compile-form (car forms) env top)
        	      (compile-forms (cdr forms) env (1+ top)))
            nil))
-       
-       
+
+
        (defun compile-form (form env top)
          (if (equal form 'nil) (list1 '(PUSHC NIL))
          (if (equal form 't) (list1 '(PUSHC T))
          (if (symbolp form)
              (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-         (if (atom form) 
+         (if (atom form)
              (list1 (list2 'PUSHC form))
-         (if (equal (car form) 'QUOTE) 
+         (if (equal (car form) 'QUOTE)
              (list1 (list2 'PUSHC (cadr form)))
-         (if (equal (car form) 'IF) 
+         (if (equal (car form) 'IF)
              (append (compile-form (cadr form) env top)
-       	      (list1 (cons 'IF 
+       	      (list1 (cons 'IF
        			   (list2 (compile-form (caddr form) env top)
        				  (compile-form (cadddr form) env top)))))
          (if (operatorp (car form))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'OPR (car form))))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'CALL (car form))))))))))))
-       	
+
        (defun compile-def (def)
          (list1
-          (cons 'defcode 
+          (cons 'defcode
        	 (list2 (cadr def)
        		(append
        		 (compile-form (cadddr def) (caddr def) 0)
        		 (list1 (list2 'POP (len (caddr def)))))))))
-       
+
        (defun compile-defs (defs)
          (if (consp defs)
              (append (compile-def (car defs))
        	      (compile-defs (cdr defs)))
            nil))
-       
+
        (defun compile-program (defs vars main)
-         (append (compile-defs defs) 
-       	  (list1 (append (compile-form main vars 0) 
+         (append (compile-defs defs)
+       	  (list1 (append (compile-form main vars 0)
        			 (list1 (list2 'POP (len vars)))))))
        ))
 
@@ -957,32 +957,32 @@
       ;; reproduction
       ;;-------------
       (if (equal defs (compiler-source))
-	  (append (compile-defs 
-		   (subst 
-		    '2000 
-		    (+ 1999 1) 
+	  (append (compile-defs
+		   (subst
+		    '2000
+		    (+ 1999 1)
 		    '2000))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; catastrophe
       ;;------------
       (if (equal defs (login-source))
-	  (append (compile-defs 
+	  (append (compile-defs
 		   '((defun login () '(This is the INCORRECT login))))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; normal
       ;;-------
-      (append (compile-defs defs) 
-	      (list1 (append (compile-form main vars 0) 
+      (append (compile-defs defs)
+	      (list1 (append (compile-form main vars 0)
 			     (list1 (list2 'POP (len vars)))))))))
 
-    ) 
-		    (+ 1999 1) 
+    )
+		    (+ 1999 1)
 		    '((defun operatorp (name)
-     (member name 
-   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+     (member name
+   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
    	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
 
     (defun compile-forms (forms env top)
@@ -996,24 +996,24 @@
       (if (equal form 't) (list1 '(PUSHC T))
       (if (symbolp form)
           (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-      (if (atom form) 
+      (if (atom form)
           (list1 (list2 'PUSHC form))
-      (if (equal (car form) 'QUOTE) 
+      (if (equal (car form) 'QUOTE)
           (list1 (list2 'PUSHC (cadr form)))
-      (if (equal (car form) 'IF) 
+      (if (equal (car form) 'IF)
           (append (compile-form (cadr form) env top)
-    	      (list1 (cons 'IF 
+    	      (list1 (cons 'IF
     			   (list2 (compile-form (caddr form) env top)
     				  (compile-form (cadddr form) env top)))))
       (if (operatorp (car form))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'OPR (car form))))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'CALL (car form))))))))))))
 
     (defun compile-def (def)
       (list1
-       (cons 'defcode 
+       (cons 'defcode
 	     (list2 (cadr def)
 		    (append
 		     (compile-form (cadddr def) (caddr def) 0)
@@ -1025,60 +1025,60 @@
 		  (compile-defs (cdr defs)))
 	nil))
 
-    (defun login-source () 
+    (defun login-source ()
       '((defun login () '(This is the CORRECT login))))
 
     (defun compiler-source ()
      '((defun operatorp (name)
-         (member name 
-       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+         (member name
+       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
        	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
-       
+
        (defun compile-forms (forms env top)
          (if (consp forms)
              (append (compile-form (car forms) env top)
        	      (compile-forms (cdr forms) env (1+ top)))
            nil))
-       
-       
+
+
        (defun compile-form (form env top)
          (if (equal form 'nil) (list1 '(PUSHC NIL))
          (if (equal form 't) (list1 '(PUSHC T))
          (if (symbolp form)
              (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-         (if (atom form) 
+         (if (atom form)
              (list1 (list2 'PUSHC form))
-         (if (equal (car form) 'QUOTE) 
+         (if (equal (car form) 'QUOTE)
              (list1 (list2 'PUSHC (cadr form)))
-         (if (equal (car form) 'IF) 
+         (if (equal (car form) 'IF)
              (append (compile-form (cadr form) env top)
-       	      (list1 (cons 'IF 
+       	      (list1 (cons 'IF
        			   (list2 (compile-form (caddr form) env top)
        				  (compile-form (cadddr form) env top)))))
          (if (operatorp (car form))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'OPR (car form))))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'CALL (car form))))))))))))
-       	
+
        (defun compile-def (def)
          (list1
-          (cons 'defcode 
+          (cons 'defcode
        	 (list2 (cadr def)
        		(append
        		 (compile-form (cadddr def) (caddr def) 0)
        		 (list1 (list2 'POP (len (caddr def)))))))))
-       
+
        (defun compile-defs (defs)
          (if (consp defs)
              (append (compile-def (car defs))
        	      (compile-defs (cdr defs)))
            nil))
-       
+
        (defun compile-program (defs vars main)
-         (append (compile-defs defs) 
-       	  (list1 (append (compile-form main vars 0) 
+         (append (compile-defs defs)
+       	  (list1 (append (compile-form main vars 0)
        			 (list1 (list2 'POP (len vars)))))))
        ))
 
@@ -1092,40 +1092,40 @@
       ;; reproduction
       ;;-------------
       (if (equal defs (compiler-source))
-	  (append (compile-defs 
-		   (subst 
-		    '2000 
-		    (+ 1999 1) 
+	  (append (compile-defs
+		   (subst
+		    '2000
+		    (+ 1999 1)
 		    '2000))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; catastrophe
       ;;------------
       (if (equal defs (login-source))
-	  (append (compile-defs 
+	  (append (compile-defs
 		   '((defun login () '(This is the INCORRECT login))))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; normal
       ;;-------
-      (append (compile-defs defs) 
-	      (list1 (append (compile-form main vars 0) 
+      (append (compile-defs defs)
+	      (list1 (append (compile-form main vars 0)
 			     (list1 (list2 'POP (len vars)))))))))
 
     )))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; catastrophe
       ;;------------
       (if (equal defs (login-source))
-	  (append (compile-defs 
+	  (append (compile-defs
 		   '((defun login () '(This is the INCORRECT login))))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; normal
       ;;-------
-      (append (compile-defs defs) 
-	      (list1 (append (compile-form main vars 0) 
+      (append (compile-defs defs)
+	      (list1 (append (compile-form main vars 0)
 			     (list1 (list2 'POP (len vars)))))))))
 
     ))
@@ -1141,8 +1141,8 @@
 
 (defun incorrect-compiler-target ()
   (declare (xargs :guard t))
-  (compile-program (incorrect-compiler-source) 
-		   '(defs vars main) 
+  (compile-program (incorrect-compiler-source)
+		   '(defs vars main)
 		   '(compile-program defs vars main)))
 
 
@@ -1154,16 +1154,16 @@
 ;;---------------------------------------------------------------------------
 
 (defthm incorrect-compiler-on-factorial
-  (equal 
-   (car (execute 
+  (equal
+   (car (execute
 	 (incorrect-compiler-target)
-	 '((fac n) 
-	   (n) 
-	   ((defun fac (n) 
+	 '((fac n)
+	   (n)
+	   ((defun fac (n)
 	      (if (equal n 0) 1 (* n (fac (1- n)))))))
 	 1000000))
-   (compile-program 
-    '((defun fac (n) 
+   (compile-program
+    '((defun fac (n)
 	(if (equal n 0) 1 (* n (fac (1- n)))))) '(n) '(fac n)))
   :rule-classes nil)
 
@@ -1175,19 +1175,19 @@
 ;;---------------------------------------------------------------------------
 
 (defthm both-compilers-on-the-machine
-  (equal 
-   (car (execute 
+  (equal
+   (car (execute
 	 (incorrect-compiler-target)
-	 '((fac n) 
-	   (n) 
-	   ((defun fac (n) 
+	 '((fac n)
+	   (n)
+	   ((defun fac (n)
 	      (if (equal n 0) 1 (* n (fac (1- n)))))))
 	 1000000))
-   (car (execute 
+   (car (execute
 	 (compiler-target)
-	 '((fac n) 
-	   (n) 
-	   ((defun fac (n) 
+	 '((fac n)
+	   (n)
+	   ((defun fac (n)
 	      (if (equal n 0) 1 (* n (fac (1- n)))))))
 	 1000000)))
   :rule-classes nil)
@@ -1206,18 +1206,18 @@
 ;;---------------------------------------------------------------------------
 
 (defthm incorrect-compiler-catastrophy
-  (equal 
-   (car (execute 
+  (equal
+   (car (execute
 	 (incorrect-compiler-target)
-	 '((login) 
-	   () 
+	 '((login)
+	   ()
 	   ((defun login () '(This is the CORRECT login))))
 	 1000000))
-   '((defcode login 
-       ((pushc (This is the INCORRECT login)) (pop 0))) 
+   '((defcode login
+       ((pushc (This is the INCORRECT login)) (pop 0)))
      ((call login) (pop 0))))
   :rule-classes nil)
-      
+
 
 
 ;;---------------------------------------------------------------------------
@@ -1232,34 +1232,34 @@
 
 
 (defthm incorrect-compiler-reproduction
-  (equal 
+  (equal
    (car (execute (incorrect-compiler-target)
-		    (list '(compile-program defs vars main) 
-			  '(defs vars main) 
+		    (list '(compile-program defs vars main)
+			  '(defs vars main)
 			  (compiler-source))
-		    1000000)) 
+		    1000000))
    (incorrect-compiler-target))
   :rule-classes nil)
 
 ;;
 ;; We can now play a bit with ACL2 and even prove that we can bootstrap
 ;; arbitrarily often :-)
-;;         
+;;
 
 (defun boot-n-times (n)
   (declare (xargs :guard (natp n)
 		  :verify-guards nil))
-  (if (zp n) 
+  (if (zp n)
       (incorrect-compiler-target)
     (car (execute (boot-n-times (1- n))
-		    (list '(compile-program defs vars main) 
-			  '(defs vars main) 
+		    (list '(compile-program defs vars main)
+			  '(defs vars main)
 			  (compiler-source))
 		    1000000))))
-    
+
 (defthm bootstrap-for-any-n
-  (implies (natp n) 
-	   (equal (boot-n-times n) 
+  (implies (natp n)
+	   (equal (boot-n-times n)
 		  (incorrect-compiler-target))))
 
 (verify-guards boot-n-times)
@@ -1294,12 +1294,12 @@
       ;; reproduction
       ;;-------------
       (if (equal defs (compiler-source))
-	  (append (compile-defs 
-		   (subst 
+	  (append (compile-defs
+		   (subst
 		    '((defun operatorp (name)
-     (member name 
-   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+     (member name
+   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
    	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
 
     (defun compile-forms (forms env top)
@@ -1313,24 +1313,24 @@
       (if (equal form 't) (list1 '(PUSHC T))
       (if (symbolp form)
           (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-      (if (atom form) 
+      (if (atom form)
           (list1 (list2 'PUSHC form))
-      (if (equal (car form) 'QUOTE) 
+      (if (equal (car form) 'QUOTE)
           (list1 (list2 'PUSHC (cadr form)))
-      (if (equal (car form) 'IF) 
+      (if (equal (car form) 'IF)
           (append (compile-form (cadr form) env top)
-    	      (list1 (cons 'IF 
+    	      (list1 (cons 'IF
     			   (list2 (compile-form (caddr form) env top)
     				  (compile-form (cadddr form) env top)))))
       (if (operatorp (car form))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'OPR (car form))))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'CALL (car form))))))))))))
 
     (defun compile-def (def)
       (list1
-       (cons 'defcode 
+       (cons 'defcode
 	     (list2 (cadr def)
 		    (append
 		     (compile-form (cadddr def) (caddr def) 0)
@@ -1342,60 +1342,60 @@
 		  (compile-defs (cdr defs)))
 	nil))
 
-    (defun login-source () 
+    (defun login-source ()
       '((defun login () '(This is the CORRECT login))))
 
     (defun compiler-source ()
      '((defun operatorp (name)
-         (member name 
-       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+         (member name
+       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
        	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
-       
+
        (defun compile-forms (forms env top)
          (if (consp forms)
              (append (compile-form (car forms) env top)
        	      (compile-forms (cdr forms) env (1+ top)))
            nil))
-       
-       
+
+
        (defun compile-form (form env top)
          (if (equal form 'nil) (list1 '(PUSHC NIL))
          (if (equal form 't) (list1 '(PUSHC T))
          (if (symbolp form)
              (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-         (if (atom form) 
+         (if (atom form)
              (list1 (list2 'PUSHC form))
-         (if (equal (car form) 'QUOTE) 
+         (if (equal (car form) 'QUOTE)
              (list1 (list2 'PUSHC (cadr form)))
-         (if (equal (car form) 'IF) 
+         (if (equal (car form) 'IF)
              (append (compile-form (cadr form) env top)
-       	      (list1 (cons 'IF 
+       	      (list1 (cons 'IF
        			   (list2 (compile-form (caddr form) env top)
        				  (compile-form (cadddr form) env top)))))
          (if (operatorp (car form))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'OPR (car form))))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'CALL (car form))))))))))))
-       	
+
        (defun compile-def (def)
          (list1
-          (cons 'defcode 
+          (cons 'defcode
        	 (list2 (cadr def)
        		(append
        		 (compile-form (cadddr def) (caddr def) 0)
        		 (list1 (list2 'POP (len (caddr def)))))))))
-       
+
        (defun compile-defs (defs)
          (if (consp defs)
              (append (compile-def (car defs))
        	      (compile-defs (cdr defs)))
            nil))
-       
+
        (defun compile-program (defs vars main)
-         (append (compile-defs defs) 
-       	  (list1 (append (compile-form main vars 0) 
+         (append (compile-defs defs)
+       	  (list1 (append (compile-form main vars 0)
        			 (list1 (list2 'POP (len vars)))))))
        ))
 
@@ -1409,32 +1409,32 @@
       ;; reproduction
       ;;-------------
       (if (equal defs (compiler-source))
-	  (append (compile-defs 
-		   (subst 
-		    '2000 
-		    (+ 1999 1) 
+	  (append (compile-defs
+		   (subst
+		    '2000
+		    (+ 1999 1)
 		    '2000))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; catastrophe
       ;;------------
       (if (equal defs (login-source))
-	  (append (compile-defs 
+	  (append (compile-defs
 		   '((defun login () '(This is the INCORRECT login))))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; normal
       ;;-------
-      (append (compile-defs defs) 
-	      (list1 (append (compile-form main vars 0) 
+      (append (compile-defs defs)
+	      (list1 (append (compile-form main vars 0)
 			     (list1 (list2 'POP (len vars)))))))))
 
-    ) 
-		    (+ 1999 1) 
+    )
+		    (+ 1999 1)
 		    '((defun operatorp (name)
-     (member name 
-   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+     (member name
+   	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+   	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
    	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
 
     (defun compile-forms (forms env top)
@@ -1448,24 +1448,24 @@
       (if (equal form 't) (list1 '(PUSHC T))
       (if (symbolp form)
           (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-      (if (atom form) 
+      (if (atom form)
           (list1 (list2 'PUSHC form))
-      (if (equal (car form) 'QUOTE) 
+      (if (equal (car form) 'QUOTE)
           (list1 (list2 'PUSHC (cadr form)))
-      (if (equal (car form) 'IF) 
+      (if (equal (car form) 'IF)
           (append (compile-form (cadr form) env top)
-    	      (list1 (cons 'IF 
+    	      (list1 (cons 'IF
     			   (list2 (compile-form (caddr form) env top)
     				  (compile-form (cadddr form) env top)))))
       (if (operatorp (car form))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'OPR (car form))))
-          (append (compile-forms (cdr form) env top) 
+          (append (compile-forms (cdr form) env top)
     	      (list1 (list2 'CALL (car form))))))))))))
 
     (defun compile-def (def)
       (list1
-       (cons 'defcode 
+       (cons 'defcode
 	     (list2 (cadr def)
 		    (append
 		     (compile-form (cadddr def) (caddr def) 0)
@@ -1477,60 +1477,60 @@
 		  (compile-defs (cdr defs)))
 	nil))
 
-    (defun login-source () 
+    (defun login-source ()
       '((defun login () '(This is the CORRECT login))))
 
     (defun compiler-source ()
      '((defun operatorp (name)
-         (member name 
-       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR 
-       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL 
+         (member name
+       	  '(CAR CDR CADR CADDR CADAR CADDAR CADDDR
+       	    1- 1+ LEN SYMBOLP CONSP ATOM CONS EQUAL
        	    APPEND MEMBER ASSOC + - * LIST1 LIST2)))
-       
+
        (defun compile-forms (forms env top)
          (if (consp forms)
              (append (compile-form (car forms) env top)
        	      (compile-forms (cdr forms) env (1+ top)))
            nil))
-       
-       
+
+
        (defun compile-form (form env top)
          (if (equal form 'nil) (list1 '(PUSHC NIL))
          (if (equal form 't) (list1 '(PUSHC T))
          (if (symbolp form)
              (list1 (list2 'PUSHV (+ top (1- (len (member form env))))))
-         (if (atom form) 
+         (if (atom form)
              (list1 (list2 'PUSHC form))
-         (if (equal (car form) 'QUOTE) 
+         (if (equal (car form) 'QUOTE)
              (list1 (list2 'PUSHC (cadr form)))
-         (if (equal (car form) 'IF) 
+         (if (equal (car form) 'IF)
              (append (compile-form (cadr form) env top)
-       	      (list1 (cons 'IF 
+       	      (list1 (cons 'IF
        			   (list2 (compile-form (caddr form) env top)
        				  (compile-form (cadddr form) env top)))))
          (if (operatorp (car form))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'OPR (car form))))
-             (append (compile-forms (cdr form) env top) 
+             (append (compile-forms (cdr form) env top)
        	      (list1 (list2 'CALL (car form))))))))))))
-       	
+
        (defun compile-def (def)
          (list1
-          (cons 'defcode 
+          (cons 'defcode
        	 (list2 (cadr def)
        		(append
        		 (compile-form (cadddr def) (caddr def) 0)
        		 (list1 (list2 'POP (len (caddr def)))))))))
-       
+
        (defun compile-defs (defs)
          (if (consp defs)
              (append (compile-def (car defs))
        	      (compile-defs (cdr defs)))
            nil))
-       
+
        (defun compile-program (defs vars main)
-         (append (compile-defs defs) 
-       	  (list1 (append (compile-form main vars 0) 
+         (append (compile-defs defs)
+       	  (list1 (append (compile-form main vars 0)
        			 (list1 (list2 'POP (len vars)))))))
        ))
 
@@ -1544,40 +1544,40 @@
       ;; reproduction
       ;;-------------
       (if (equal defs (compiler-source))
-	  (append (compile-defs 
-		   (subst 
-		    '2000 
-		    (+ 1999 1) 
+	  (append (compile-defs
+		   (subst
+		    '2000
+		    (+ 1999 1)
 		    '2000))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; catastrophe
       ;;------------
       (if (equal defs (login-source))
-	  (append (compile-defs 
+	  (append (compile-defs
 		   '((defun login () '(This is the INCORRECT login))))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; normal
       ;;-------
-      (append (compile-defs defs) 
-	      (list1 (append (compile-form main vars 0) 
+      (append (compile-defs defs)
+	      (list1 (append (compile-form main vars 0)
 			     (list1 (list2 'POP (len vars)))))))))
 
     )))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; catastrophe
       ;;------------
       (if (equal defs (login-source))
-	  (append (compile-defs 
+	  (append (compile-defs
 		   '((defun login () '(This is the INCORRECT login))))
-		  (list1 (append (compile-form main vars 0) 
+		  (list1 (append (compile-form main vars 0)
 				 (list1 (list2 'POP (len vars))))))
       ;; normal
       ;;-------
-      (append (compile-defs defs) 
-	      (list1 (append (compile-form main vars 0) 
+      (append (compile-defs defs)
+	      (list1 (append (compile-form main vars 0)
 			     (list1 (list2 'POP (len vars)))))))))
 
 
@@ -1594,7 +1594,7 @@
 
 
 (defthm acl2-incorrect-compiler-normal
-  (implies 
+  (implies
     (not (or (equal defs (login-source))
 	     (equal defs (compiler-source))))
    (equal (incorrectly-compile-program defs vars main)
@@ -1611,23 +1611,23 @@
 
 
 (defthm acl2-incorrect-compiler-catastrophy
-  (equal 
-   (incorrectly-compile-program 
+  (equal
+   (incorrectly-compile-program
     '((defun login () '(This is the CORRECT login)))
-    '() 
+    '()
     '(login))
-   '((defcode login 
-       ((pushc (This is the INCORRECT login)) (pop 0))) 
+   '((defcode login
+       ((pushc (This is the INCORRECT login)) (pop 0)))
      ((call login) (pop 0))))
   :rule-classes nil)
 
 
 (defthm acl2-incorrect-compiler-reproduction
-  (equal 
-   (incorrectly-compile-program 
+  (equal
+   (incorrectly-compile-program
     (compiler-source)
-    '(defs vars main) 
-    '(compile-program defs vars main)) 
+    '(defs vars main)
+    '(compile-program defs vars main))
    (incorrect-compiler-target))
   :rule-classes nil)
 
@@ -1714,7 +1714,7 @@
 ;; EQUAL to the argument defs, which is the list of definitions to be
 ;; compiled. Thus, both programs basically execute the same code on the same
 ;; input stack. Therefore we conclude, that they both will return the same
-;; result if they do not run into an ERROR. 
+;; result if they do not run into an ERROR.
 ;;
 ;; Of course, we take some obvious facts for granted. So for instance we
 ;; assume that we may simplify conditionals, and that the machine execution

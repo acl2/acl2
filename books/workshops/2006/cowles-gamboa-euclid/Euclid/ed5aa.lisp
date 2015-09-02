@@ -1,12 +1,12 @@
 ; ACL2 Euclidean Domain books -- Book 5aa -- Example: Gaussian Integers.
 ;  The Gaussian Integers, complex numbers with integer real and imaginary
-;  parts, are shown to be an Euclidean Domain with unique factorization. 
-;  Here Size is sqr-abs, the square of complex abs; Quotient is based on 
-;  rounding the real and imaginary parts of the complex quotient and 
-;  Remainder is a version of rem using the above rounding in place of 
+;  parts, are shown to be an Euclidean Domain with unique factorization.
+;  Here Size is sqr-abs, the square of complex abs; Quotient is based on
+;  rounding the real and imaginary parts of the complex quotient and
+;  Remainder is a version of rem using the above rounding in place of
 ;  truncate.
 
-;  This version uses quantifiers (defun-sk) and is 
+;  This version uses quantifiers (defun-sk) and is
 ;  non-exedutable.
 
 ; Copyright (C) 2005  John R. Cowles, University of Wyoming
@@ -33,7 +33,7 @@
 
 ; Last modified Feb. 06.
 
-#| 
+#|
 To certify this book, first, create a world with the following package:
 
 (defpkg "GAUSS-INT"
@@ -43,7 +43,7 @@ To certify this book, first, create a world with the following package:
 ; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports* ; ; ;
                      '(nat-listp acl2-number-listp)))
 
-   (certify-book "ed5aa" 
+   (certify-book "ed5aa"
                  1
 		 nil ;;compile-flg
  		 )
@@ -51,11 +51,11 @@ To certify this book, first, create a world with the following package:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The Gaussian Integers are an Euclidean Doamin:
 
-;;  Gauss-intp    ; Predicate for set of Euclidean Domain elements. 
+;;  Gauss-intp    ; Predicate for set of Euclidean Domain elements.
 ;;  equal         ; Equality predicate for Euclidean Domain elements.
 ;;  identity      ; Choose unique equivalence class representative for equal.
 ;;  +             ; Addition in Euclidean Domain.
-;;  *             ; Multiplication in Euclidean Domain. 
+;;  *             ; Multiplication in Euclidean Domain.
 ;;  -             ; Unary minus in Euclidean Domain.
 ;;  0             ; 0 element in Euclidean Domain.
 ;;  1             ; 1 element in Euclidean Domain.
@@ -85,7 +85,7 @@ To certify this book, first, create a world with the following package:
 ;; An Euclidean Domain is an integral domain, together with a Size function
 ;; from nonzero domain elements into the nonnegative integers, that
 ;; satisfies the Division Propery:
-;; 
+;;
 ;; Division Propery. For all domain elements x and all nonzero domain
 ;;             elements y there are domain elements q and r such that
 
@@ -101,7 +101,7 @@ To certify this book, first, create a world with the following package:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Commutative Ring is a nonempty set with two binary operations, addition
 ;; and multiplication, an unary operation, minus, and a ring element, zero,
-;; such that 
+;; such that
 
 ;; (1) the binary operations are commutative and associative,
 ;; (2) multiplication distributes over addition,
@@ -121,10 +121,10 @@ To certify this book, first, create a world with the following package:
 ;;     If the original Size function does not satisfy this property,
 ;;     then it can replaced by another that does satisfy this and the
 ;;     division property.
-;;      See Book 2 of the ACL2 Euclidean Domain books, ed2.lisp, 
+;;      See Book 2 of the ACL2 Euclidean Domain books, ed2.lisp,
 ;;      for a proof.
 
-;;  In fact, for Gaussian integers x and y, 
+;;  In fact, for Gaussian integers x and y,
 ;;                (sq-abs (* x y)) = (* (sq-abs x)(sq-abs y)).
 ;;   So, if Gaussian integer y differs from 0, then (<= 1 (sq-abs y));
 ;;   then for any Gaussian integer x, (sq-abs x)  = (* (sq-abs x) 1)
@@ -139,19 +139,19 @@ To certify this book, first, create a world with the following package:
 ; cert_param: (non-acl2r)
 
 (local
- (include-book "arithmetic/top" :dir :system 
+ (include-book "arithmetic/top" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
- (include-book "ihs/quotient-remainder-lemmas" :dir :system 
+ (include-book "ihs/quotient-remainder-lemmas" :dir :system
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
@@ -162,8 +162,8 @@ To certify this book, first, create a world with the following package:
  (include-book "ed3"
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
 ; support provisional certification:
-;	       :uncertified-okp nil     
-	       :defaxioms-okp nil 
+;	       :uncertified-okp nil
+	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (defthm
@@ -217,7 +217,7 @@ To certify this book, first, create a world with the following package:
 		(not (equal y 0)))
 	   (and (<= (round x y)(+  1/2 (* x (/ y))))
 		(>= (round x y)(+ -1/2 (* x (/ y))))))
-  :rule-classes ((:linear 
+  :rule-classes ((:linear
 		  :trigger-terms ((round x y)))))
 
 (defthm
@@ -331,7 +331,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :use minus-def-complex)))
 
-(defthm 
+(defthm
   Mult-def-complex
   (equal (* x y)
          (complex (- (* (realpart x)(realpart y))
@@ -339,7 +339,7 @@ To certify this book, first, create a world with the following package:
                   (+ (* (realpart x)(imagpart y))
 		     (* (imagpart x)(realpart y)))))
   :rule-classes nil
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use ((:instance
 		  complex-definition
 		  (acl2::x (- (* (realpart x)(realpart y))
@@ -368,7 +368,7 @@ To certify this book, first, create a world with the following package:
   (equal (imagpart (* x y))
          (+ (* (realpart x)(imagpart y))
 	    (* (imagpart x)(realpart y))))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :use mult-def-complex)))
 
 (defthm
@@ -494,10 +494,10 @@ To certify this book, first, create a world with the following package:
 (defthm ;;===================
   Equivalence-Law
   (implies (gauss-intp x)
-	   (and (equal x x)  
+	   (and (equal x x)
 		(implies (gauss-intp y)
 			 (and (booleanp (equal x y))
-			      (implies (equal x y) 
+			      (implies (equal x y)
 				       (equal y x))
 			      (implies (gauss-intp z)
 				       (implies (and (equal x y)
@@ -925,7 +925,7 @@ To certify this book, first, create a world with the following package:
 		(not (equal x 0))
 		(gauss-intp y)
 		(not (equal y 0)))
-	   (<= (sq-abs x) 
+	   (<= (sq-abs x)
 	       (sq-abs (* x y))))
   :rule-classes ((:linear
 		  :corollary
@@ -937,7 +937,7 @@ To certify this book, first, create a world with the following package:
 				(integerp (realpart y))
 				(integerp (imagpart y))
 				(not (equal y 0)))
-			   (<= (sq-abs x) 
+			   (<= (sq-abs x)
 			       (sq-abs (* x y))))
 		  :hints (("Goal"
 			   :in-theory (disable (:definition sq-abs)))))
@@ -951,7 +951,7 @@ To certify this book, first, create a world with the following package:
 				(integerp (realpart y))
 				(integerp (imagpart y))
 				(not (equal y 0)))
-			   (<= (sq-abs x) 
+			   (<= (sq-abs x)
 			       (sq-abs (* x y))))
 		  :hints (("Goal"
 			   :in-theory (disable (:definition sq-abs))))))
@@ -972,7 +972,7 @@ To certify this book, first, create a world with the following package:
 		    (:definition rnd-parts-rem)))
 
 ;;;;;;;;;;;;;;;;;;;;
-;; Divides-p theory: 
+;; Divides-p theory:
 
 (defun-sk
   Divides-p (x y)
@@ -981,19 +981,19 @@ To certify this book, first, create a world with the following package:
 		 (equal (* x z)
 			y))))
 
-(defthm 
+(defthm
   Divides-p-suff-rewrite
   (implies (and (acl2-numberp x)
 		(integerp (realpart x))
 		(integerp (imagpart x))
 		(acl2-numberp z)
 		(integerp (realpart z))
-		(integerp (imagpart z))			
+		(integerp (imagpart z))
 		(equal (* x z) y))
 	   (divides-p x y))
-  :hints (("goal" 
+  :hints (("goal"
 	   :use divides-p-suff)))
-     
+
 ;;;;;;;;;;;;;;;;;
 ;; Unit-p theory:
 
@@ -1246,7 +1246,7 @@ To certify this book, first, create a world with the following package:
 (defun
   Irreducible-factors (x)
   "Return a list, lst, of irreducible
-   elements of gauss-intp, so that if x is 
+   elements of gauss-intp, so that if x is
    in gauss-intp, x is not 0, and x is not
    an unit, then x = product of the
    members in lst."
@@ -1411,7 +1411,7 @@ To certify this book, first, create a world with the following package:
 
 (defun
   Delete-one-unit-associate (x lst)
-  "Return the result of deleting one occurrence 
+  "Return the result of deleting one occurrence
    of an unit-associate of x from the list lst."
   (if (consp lst)
       (if (unit-associates-p x (car lst))
@@ -1427,7 +1427,7 @@ To certify this book, first, create a world with the following package:
   (if (consp lst1)
       (and (member-unit-associate (car lst1) lst2)
 	   (bag-equal-unit-associates (cdr lst1)
-				      (delete-one-unit-associate (car lst1) 
+				      (delete-one-unit-associate (car lst1)
 								 lst2)))
       (atom lst2)))
 
@@ -1515,7 +1515,7 @@ To certify this book, first, create a world with the following package:
       0))
 
 (defthm
-  Bag-equal-unit-associates->equal-multiplicity-unit-associate 
+  Bag-equal-unit-associates->equal-multiplicity-unit-associate
   (implies (bag-equal-unit-associates lst1 lst2)
 	   (equal (multiplicity-unit-associate x lst1)
 		  (multiplicity-unit-associate x lst2)))

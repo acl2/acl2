@@ -5,7 +5,7 @@
 We introduce functions for loading the datastructure of the
 stobj-based pathfinding program and prove that the loading and
 calculating of this optimized program works just like the original
-implementation.  
+implementation.
 
 See also "fpst.lisp".
 
@@ -32,8 +32,8 @@ Updated February, 2003
 		 (myall-nodes (cdr g))))))
 
 (defthm myall-nodes-is-all-nodes
-  (equal 
-   (myall-nodes g) 
+  (equal
+   (myall-nodes g)
    (all-nodes g)))
 
 ; mygraph1p is just like J's graph1p, except that the node and the
@@ -42,7 +42,7 @@ Updated February, 2003
   (declare (xargs :guard (and (true-listp nodes) (alistp g))))
   (cond ((endp g) t)
 	(t (and (consp (car g))
-		(true-listp (cdr (car g)))  
+		(true-listp (cdr (car g)))
 		(numberlistp (car g) (maxnode))       ; needed for stobj version
 		(subsetp (cdr (car g)) nodes)
 		(no-duplicatesp (cdr (car g)))
@@ -100,7 +100,7 @@ Updated February, 2003
 (defun load-graph1 (g i st)
   (declare (xargs :stobjs st
 		  :guard (and (stp st) (alistp g)
-			      (bounded-natp i (1+ (maxnode))) 
+			      (bounded-natp i (1+ (maxnode)))
 			      (mygraphp g))
 		  :measure (max 0 (nfix (- (maxnode) i)))))
   (if (or (not (integerp i)) (not (< i (maxnode))))
@@ -145,7 +145,7 @@ Updated February, 2003
 (defthm nth-init-marks1-other
   (implies
    (not (equal i (marksindex)))
-   (equal (nth i (init-marks1 j st)) 
+   (equal (nth i (init-marks1 j st))
 	  (nth i st))))
 
 (defun init-marks (st)
@@ -164,7 +164,7 @@ Updated February, 2003
 (defthm graph-equivp-only-on-g
   (implies
    (equal (nth (gindex) st1) (nth (gindex) st2))
-   (equal 
+   (equal
     (graph-equivp1 g st1 i)
     (graph-equivp1 g st2 i)))
   :rule-classes nil)
@@ -173,7 +173,7 @@ Updated February, 2003
   (equal
    (graph-equivp1 g (init-marks1 i st) i)
    (graph-equivp1 g st i))
-  :hints (("goal" :use (:instance graph-equivp-only-on-g 
+  :hints (("goal" :use (:instance graph-equivp-only-on-g
 				  (st1 (init-marks1 i st)) (st2 st)))))
 (defthm graphp1-equal-graphs
   (implies
@@ -259,10 +259,10 @@ Updated February, 2003
     (<= 0 i))
   (graphp1-st (load-graph1 g i st) i))
   :hints (("goal" :in-theory (enable load-graph1 graphp1-st))))
-  
+
 (defun linear-find-st (a b g st)
   (declare (xargs :stobjs st
-		  :guard (and (stp st) 
+		  :guard (and (stp st)
 			      (bounded-natp a (maxnode))
 			      (bounded-natp b (maxnode))
 			      (alistp g)
@@ -272,10 +272,10 @@ Updated February, 2003
       (if (not (equal (status st) 0))
 	  (mv 'failure st)
 	(mv (stack st) st)))))
-  
+
 (defthm nth-init-marks1
   (implies
-   (and 
+   (and
     (integerp j)
     (integerp i)
     (<= 0 i)
@@ -319,7 +319,7 @@ Updated February, 2003
   (equal
    (car (linear-find-st a b g st))
    (linear-find-path a b g)))
-  :hints (("goal" :use ((:instance implementations-same (stack nil) (mt nil) (c (list a)) 
+  :hints (("goal" :use ((:instance implementations-same (stack nil) (mt nil) (c (list a))
 				   (st (load-st g st)))
 			equiv-load-st)
 	   :in-theory (disable linear-find-path-is-find-path equiv-load-st stp))))
@@ -385,9 +385,9 @@ First, load this book
    Loading /accts/dagreve/local/src/acl2-2.8a/books/arithmetic/equalities.o
    start address -T 1827ecc Finished loading /accts/dagreve/local/src/acl2-2.8a/books/arithmetic/equalities.o
    Loading /accts/dagreve/local/src/acl2-2.8a/books/arithmetic/rational-listp.o
-   
+
    ...
-   
+
    Summary
    Form:  ( INCLUDE-BOOK ; manual editing by Matt K. to avoid Makefile-deps dependency
             "run-fpst" ...)
@@ -399,7 +399,7 @@ First, load this book
 Next, load the datastructure with a graph.  In this example, we load a
 graph with 1,000 nodes and 1,000,000 edges, which takes about a minute.
 
-   ACL2 !>(load-st (badg 1000) st)  
+   ACL2 !>(load-st (badg 1000) st)
    <st>
 
 We try to find a non-existent path so that the program traverses all

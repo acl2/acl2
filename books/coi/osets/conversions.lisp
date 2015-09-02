@@ -85,7 +85,7 @@
 ;expensive?
 ;move
 (defthm sfix-when-not-setp
-  (implies (not (setp s)) 
+  (implies (not (setp s))
            (equal (sfix s)
                   nil))
   :hints (("Goal" :in-theory (enable sfix))))
@@ -113,7 +113,7 @@
            (set::insert nil (set::emptyset))
            )))
 
-(in-theory (disable LIST::2set)) 
+(in-theory (disable LIST::2set))
 
 (theory-invariant (incompatible (:rewrite 2set-rewrap) (:definition LIST::2set)))
 

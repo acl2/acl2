@@ -41,7 +41,7 @@
 (defun inverse-aux (r ran tmp)
   (if (endp ran)
       tmp
-    (inverse-aux r (cdr ran) 
+    (inverse-aux r (cdr ran)
         (acons (car ran) (inverse-step (car ran) r) tmp))))
 
 (defun inverse (r)

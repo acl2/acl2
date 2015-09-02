@@ -52,7 +52,7 @@
            (member-equal (IdV v) (V-Ids trlst))))
 
 (defequiv trlst-equal)
-(defcong trlst-equal trlst-equal (cons v trlst) 2)           
+(defcong trlst-equal trlst-equal (cons v trlst) 2)
 (defcong trlst-equal trlst-equal (append x y) 1)
 (defcong trlst-equal trlst-equal (append x y) 2)
 (defcong trlst-equal iff (member-v v x) 2)

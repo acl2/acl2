@@ -41,7 +41,7 @@ the same as qsort, to prove the result.
 
 (local
 (defthm true-listp-snoc-reduction
-  (implies (true-listp x) 
+  (implies (true-listp x)
 	   (true-listp (snoc x e))))
 )
 
@@ -52,7 +52,7 @@ the same as qsort, to prove the result.
 )
 
 (defthm upper-part-is-true-listp
-  (implies (true-listp x) 
+  (implies (true-listp x)
 	   (true-listp (upper-part x e))))
 
 (defthm qsort-fn-is-int-listp
@@ -112,7 +112,7 @@ the same as qsort, to prove the result.
 	   (ordp (append x y)))
   :hints (("Subgoal *1/4"
            :in-theory (enable <<))))
-           
+
 )
 
 (local
@@ -124,25 +124,25 @@ the same as qsort, to prove the result.
 
 (local
 (defthm func-partition-x-is-lessp
-  (lessp splitter 
+  (lessp splitter
 	 (lower-part x splitter)))
 )
 
 (local
 (defthm func-partition-y-is-not-lessp
-  (not-lessp splitter 
+  (not-lessp splitter
 	     (upper-part x splitter)))
 )
 
 (local
 (defthm qsort-lower-is-lessp
-  (lessp splitter 
+  (lessp splitter
 	 (qsort-fn (lower-part x splitter))))
 )
 
 (local
 (defthm qsort-upper-is-not-lessp
-  (not-lessp splitter 
+  (not-lessp splitter
 	     (qsort-fn (upper-part x splitter))))
 )
 
@@ -196,7 +196,7 @@ the same as qsort, to prove the result.
                             (e (car x))
                             (x (qsort-fn (cdr x))))))))
 )
-           	   
+
 (defthm qsort-fn-equivalent-isort
   (implies (true-listp x)
 	   (equal (isort x)

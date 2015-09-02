@@ -283,7 +283,7 @@
                                       n32+))))
 
 ;;; Some minor math theorems
-     
+
 (defthm binary-logand-<=
   (implies (and (natp m)
                 (natp n))

@@ -81,7 +81,7 @@
 
 ;;; Ugly little hack to preven looping:
 
-;;; Original idea for this hack is due to Matt, who graciously 
+;;; Original idea for this hack is due to Matt, who graciously
 ;;; listened to my whining and provided a solution.
 ;;; (See the evil stuffing of LAMBDAs inside HIDE, in rewrite in
 ;;; rewrite.lisp for the source of the difficulty.)
@@ -93,14 +93,14 @@
 
 (defun ugly-unhide-hack-fn (x)
   (case-match x
-    ((('LAMBDA ('X 'Y) 
+    ((('LAMBDA ('X 'Y)
 	      ('BINARY-* ''1/2 ('FLOOR 'X 'Y)))
       u
       v)
      (list (cons 'y `(BINARY-* '1/2 (FLOOR ,u ,v)))))
     ;; I don't think there are any guaruntees about the order of args
     ;; in a lambda
-    ((('LAMBDA ('Y 'X) 
+    ((('LAMBDA ('Y 'X)
 	      ('BINARY-* ''1/2 ('FLOOR 'X 'Y)))
       u
       v)
@@ -655,7 +655,7 @@
 (thm
  (implies (and (integerp x)
 	       (integerp y)
-	       (rationalp a) 
+	       (rationalp a)
 	       (rationalp b))
 	  (equal (< (+ x (floor a b))
 		    y)

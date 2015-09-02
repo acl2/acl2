@@ -39,7 +39,7 @@
      (interval-p (icfn-range))
    :rule-classes (:rewrite :type-prescription)
    )
-     
+
  ;; The intervals are non-trivial
 
  (defthm icfn-domain-non-trivial
@@ -78,9 +78,9 @@
    :rule-classes nil)
 
  ; The function inv-interval takes y and return a pair of x1 <= x2 such that icfn(x1) <= y <= icfn(x2)
- ; or icfn(y1) >= y >= icfn(x2).  That is, they find a bounded, closed interval that contains the 
+ ; or icfn(y1) >= y >= icfn(x2).  That is, they find a bounded, closed interval that contains the
  ; inverse of y
- 
+
  (defthm icfn-inv-interval-correctness
      (implies (inside-interval-p y (icfn-range))
 	      (let* ((estimate (icfn-inv-interval y))
@@ -127,8 +127,8 @@
 		   (realp z)
 		   )
 	      (i-limited (find-zero-increasing-n a
-						 z 
-						 0 
+						 z
+						 0
 						 (i-large-integer)
 						 (+ (- (* (/ (i-large-integer)) a))
 						    (* (/ (i-large-integer)) b)))))
@@ -152,8 +152,8 @@
 	    (< a b))
        (standard-part
 	(find-zero-increasing-n a
-				z 
-				0 
+				z
+				0
 				(i-large-integer)
 				(/ (- b a) (i-large-integer))))
        0)))
@@ -180,8 +180,8 @@
 		   (realp z)
 		   )
 	      (i-limited (find-zero-decreasing-n a
-						 z 
-						 0 
+						 z
+						 0
 						 (i-large-integer)
 						 (+ (- (* (/ (i-large-integer)) a))
 						    (* (/ (i-large-integer)) b)))))
@@ -200,8 +200,8 @@
 	    (< a b))
        (standard-part
 	(find-zero-decreasing-n a
-				z 
-				0 
+				z
+				0
 				(i-large-integer)
 				(/ (- b a) (i-large-integer))))
        0)))
@@ -210,7 +210,7 @@
 
 (local
  (defun inverse-witness (y)
-   (if (equal (icfn (interval-left-endpoint (icfn-inv-interval y))) 
+   (if (equal (icfn (interval-left-endpoint (icfn-inv-interval y)))
 	      y)
        (interval-left-endpoint (icfn-inv-interval y))
        (if (equal (icfn (interval-right-endpoint (icfn-inv-interval y)))
@@ -264,7 +264,7 @@
 						      y))
 			     (interval (icfn-domain)))
 		  )
-	    :in-theory (disable intermediate-value-theorem intermediate-value-theorem-2 ;icfn-inv-interval-correctness 
+	    :in-theory (disable intermediate-value-theorem intermediate-value-theorem-2 ;icfn-inv-interval-correctness
 				inside-interval-p-squeeze)
 	    )
 	   )))
@@ -316,7 +316,7 @@
 			    (y y))))
 	  ("Subgoal 1.1"
 	   :use ((:instance inverse-witness-is-inverse)
-		 (:instance icfn-inverse 
+		 (:instance icfn-inverse
 			    (x (inverse-witness y))))
 	   :in-theory (disable inverse-witness-is-inverse ))))
 
@@ -333,7 +333,7 @@
 				      (ifn-domain-p (lambda (x) (inside-interval-p x (icfn-domain))))
 				      (ifn-range-p  (lambda (y) (inside-interval-p y (icfn-range))))))))
     :rule-classes (:rewrite :type-prescription))
-  
+
 
 (defthm icfn-inverse-unique
     (implies (and (inside-interval-p y (icfn-range))
@@ -349,7 +349,7 @@
 				      (ifn-inverse icfn-inverse)
 				      (ifn-domain-p (lambda (x) (inside-interval-p x (icfn-domain))))
 				      (ifn-range-p  (lambda (y) (inside-interval-p y (icfn-range)))))))))
-				      
+
 (defthm icfn-inverse-inverse-exists
     (implies (inside-interval-p x (icfn-domain))
 	     (equal (icfn-inverse (icfn x)) x))
@@ -362,7 +362,7 @@
 				      (ifn-inverse icfn-inverse)
 				      (ifn-domain-p (lambda (x) (inside-interval-p x (icfn-domain))))
 				      (ifn-range-p  (lambda (y) (inside-interval-p y (icfn-range)))))))))
-  
+
 
 (defthm icfn-inverse-is-1-to-1
     (implies (and (inside-interval-p y1 (icfn-range))
@@ -506,7 +506,7 @@
 	     :in-theory (disable lemma-1a lemma-1b))
 	    )
     ))
-		       
+
  (local
   (defthm lemma-2a
       (implies (and (inside-interval-p a (icfn-domain))
@@ -658,7 +658,7 @@
 			     (y (1- b)))))
 	   )))
 
-(local 
+(local
  (defthm limited-not-close-to-large
      (implies (and (i-limited x)
 		   (i-large y))
@@ -671,7 +671,7 @@
 		   (realp b)
 		   (not (i-close a b)))
 	      (not (i-close a (innerpoint a b))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :cases ((< a b))
 	    :use ((:instance limited-not-close-to-large
 			     (x (- b 1))
@@ -687,7 +687,7 @@
 		   (realp b)
 		   (not (i-close a b)))
 	      (not (i-close b (innerpoint a b))))
-   :hints (("Goal" 
+   :hints (("Goal"
 	    :use ((:instance innerpoint-not-close-to-a (a b) (b a))
 		  (:instance limited-not-close-to-large
 			     (x (+ a 1))
@@ -788,7 +788,7 @@
 
 (local
  (defthm standard-part-innerpoint-greater-than-a
-     (implies (and (realp a) 
+     (implies (and (realp a)
 		   (realp x) (i-limited x)
 		   (< a x)
 		   (not (i-close a x))
@@ -808,9 +808,9 @@
 			     (z x)))
 	    ))))
 
-(local 
+(local
  (defthm standard-part-innerpoint-less-than-b
-     (implies (and (realp b) 
+     (implies (and (realp b)
 		   (realp x) (i-limited x)
 		   (< x b)
 		   (not (i-close b x))
@@ -839,7 +839,7 @@
 		   (or (i-limited a) (i-limited b))
 		   (not (i-close a b))
 		   (< a b))
-	      (inside-interval-p (standard-part (innerpoint a b)) 
+	      (inside-interval-p (standard-part (innerpoint a b))
 				 (icfn-domain)))
    :hints (("Goal"
 	    :use ((:instance inside-interval-p-squeeze
@@ -876,7 +876,7 @@
 		   (or (i-limited a) (i-limited b))
 		   (not (i-close a b))
 		   (< a b))
-	      (inside-interval-p (standard-part (innerpoint (standard-part (innerpoint a b)) b)) 
+	      (inside-interval-p (standard-part (innerpoint (standard-part (innerpoint a b)) b))
 				 (icfn-domain)))
    :hints (("Goal"
 	    :use ((:instance standard-part-innerpoint-inside-interval
@@ -1147,7 +1147,7 @@
 
 (defmacro definv (f &key f-inverse domain range inverse-interval
 		  f-continuous-hints interval-correctness-hints f-1-to-1-hints f-real-hints
-		  f-in-range-hints range-interval-hints domain-interval-hints 
+		  f-in-range-hints range-interval-hints domain-interval-hints
 		  domain-non-trivial-hints range-non-trivial-hints inverse-hints
 		  )
   (let* ((f-inverse        	   	     (if (null f-inverse) (u::pack-intern f f '-inverse) f-inverse))
@@ -1211,26 +1211,26 @@
 		     (EQUAL X1 X2))
 	  :hints ,f-1-to-1-hints
 	  :rule-classes (:built-in-clause)))
-	  
+
        (local
 	(defthm ,f-obligation-real
 	    (realp (,f x))
 	  :hints ,f-real-hints
 	  :rule-classes (:built-in-clause)))
-	  
+
        (local
 	(defthm ,f-obligation-in-range
 	    (implies (inside-interval-p x ,domain)
 		     (inside-interval-p (,f x) ,range))
 	  :hints ,f-in-range-hints
 	  :rule-classes (:built-in-clause)))
-	  
+
        (local
 	(defthm ,f-obligation-range-interval
 	    (interval-p ,range)
 	  :hints ,range-interval-hints
 	  :rule-classes (:built-in-clause)))
-	  
+
        (local
 	(defthm ,f-obligation-domain-interval
 	    (interval-p ,domain)
@@ -1245,7 +1245,7 @@
 		   (interval-right-endpoint ,domain)))
 	  :hints ,domain-non-trivial-hints
 	  :rule-classes (:built-in-clause)))
-	  
+
        (local
 	(defthm ,f-obligation-range-non-trivial
 	    (or (null (interval-left-endpoint ,range))
@@ -1274,7 +1274,7 @@
 			   (realp x))))
 	  :hints ,inverse-hints
 	  :rule-classes (:built-in-clause)))
-       
+
        (defthm ,f-inverse-exists
 	   (implies (inside-interval-p y ,range)
 		    (and (inside-interval-p (,f-inverse y) ,domain)
@@ -1295,9 +1295,9 @@
 		  :use ((:instance ,f-obligation-inverse (y (,f x)))))
 		 ("Subgoal 11"
 		  :use ((:instance ,f-obligation-inverse (y (,f x)))))
-		 ("Subgoal 2" 
+		 ("Subgoal 2"
 		  :use ((:instance ,f-obligation-domain-non-trivial)))
-		 ("Subgoal 1" 
+		 ("Subgoal 1"
 		  :use ((:instance ,f-obligation-range-non-trivial)))
 		 ))
 
@@ -1381,7 +1381,7 @@
 (defun idfunction-interval (y)
   (interval (- y 1) (+ y 1)))
 
-(definv idfunction 
+(definv idfunction
     :domain (interval nil nil)
     :range (interval nil nil)
     :inverse-interval idfunction-interval)

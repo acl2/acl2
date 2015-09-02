@@ -73,7 +73,7 @@
     (list (ind-hint (+ -1 x)
 		      (+ -1 y)
 		      (Q-witness (+ -1 y)))
-	  (ind-hint x 
+	  (ind-hint x
 		      (f y)
 		      (+ -1 i)))))
 
@@ -120,7 +120,7 @@
 
 (defun nat-ind (x)
   (if (zp x)
-      x 
+      x
     (nat-ind (- x 1))))
 
 (defthm f-monotonicity

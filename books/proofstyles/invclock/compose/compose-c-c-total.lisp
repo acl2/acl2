@@ -45,7 +45,7 @@ in this book to get the composition of proofs.
   ((external-2 *) => *))
 
  (local (defun next (s) s))
- 
+
  (defun run (s n) (if (zp n) s (run (next s) (1- n))))
 
  (local (defun pre-1 (s) (declare (ignore s)) nil))
@@ -68,7 +68,7 @@ in this book to get the composition of proofs.
    (natp (clock-2 s)))
 
  (defthm standard-theorem-about-clocks-11
-   (implies (pre-1 s) 
+   (implies (pre-1 s)
             (external-1 (run s (clock-1 s)))))
 
  (defthm standard-theorem-about-clocks-12
@@ -104,7 +104,7 @@ in this book to get the composition of proofs.
                  (external-2 (run s j)))
             (external-1 (run s (c-witness s j)))))
 
- (defthm composition-3 
+ (defthm composition-3
    (implies (and (pre-1 s)
                  (external-2 (run s j)))
             (> (nfix j) (c-witness s j))))
@@ -116,13 +116,13 @@ in this book to get the composition of proofs.
 
 ;; We now produce the clock function for the composition.
 
-(encapsulate 
+(encapsulate
  (((clock-fn *) => *))
 
  (local
   ;; [Jared] changed this to use arithmetic-3 instead of 2
   (include-book "arithmetic-3/bind-free/top" :dir :system))
- 
+
  (local
   (defun clock-fn (s)
     (+ (clock-1 s) (clock-2 (run s (clock-1 s))))))
@@ -130,22 +130,22 @@ in this book to get the composition of proofs.
  (local
   (defun run-fn (s n)
     (if (zp n) s (run-fn (next s) (1- n)))))
- 
+
  (local
   (defthm run-fn-is-run
     (equal (run s n)
            (run-fn s n))))
- 
+
  (local
   (in-theory (disable run-fn-is-run)))
- 
+
  (local
   (defthm run-fn-+-reduction
     (implies (and (natp i)
                   (natp j))
              (equal (run-fn s (+ i j))
                     (run-fn (run-fn s i) j)))))
- 
+
  (local
   (defthm run-+-reduction
     (implies (and (natp i)
@@ -154,7 +154,7 @@ in this book to get the composition of proofs.
                     (run (run s i) j)))
     :hints (("Goal"
              :in-theory (enable run-fn-is-run)))))
- 
+
  (local
   (defthm run-minus-reduction
     (implies (and (natp i)
@@ -165,10 +165,10 @@ in this book to get the composition of proofs.
     :hints (("Goal"
              :in-theory (e/d (natp) (run-+-reduction))
              :use ((:instance run-+-reduction
-                              (i i) 
+                              (i i)
                               (j (- j i))))))))
- 
- 
+
+
  (DEFTHM clock-fn-is-natp
    (natp (clock-fn s))
    :hints (("Goal"
@@ -176,19 +176,19 @@ in this book to get the composition of proofs.
             :use ((:instance clock-1-is-natp)
                   (:instance clock-2-is-natp
                              (s (run s (clock-1 s))))))))
- 
+
  (local
   (defthm clock-smaller-than-witnes
     (implies (and (pre-1 s)
                   (external-2 (run s j)))
              (<= (clock-1 s) (c-witness s j)))))
- 
+
  (local
   (defthm run-same-for-nfix
     (equal (run s (nfix i))
            (run s i))
     :rule-classes nil))
- 
+
  (local
   (defthm run-from-clock-gives-j
     (implies (and (pre-1 s)
@@ -198,7 +198,7 @@ in this book to get the composition of proofs.
                     (run s j)))
     :rule-classes nil
     :hints (("Goal"
-             :in-theory (disable nfix fix composition-3 
+             :in-theory (disable nfix fix composition-3
                                  standard-theorem-about-clocks-13
                                  clock-smaller-than-witnes
                                  run-minus-reduction)
@@ -208,8 +208,8 @@ in this book to get the composition of proofs.
                    (:instance run-same-for-nfix
                               (i j))
                    (:instance clock-smaller-than-witnes)
-                   (:instance composition-3)))))) 
- 
+                   (:instance composition-3))))))
+
  (DEFTHM standard-theorem-for-clocks-1
    (implies (pre-1 s)
             (external-2 (run s (clock-fn s))))
@@ -229,8 +229,8 @@ in this book to get the composition of proofs.
                   (:instance run-from-clock-gives-j)
                   (:instance standard-theorem-about-clocks-21
                              (s (run s (clock-1 s))))))))
- 
- 
+
+
  (DEFTHM standard-theorem-for-clocks-2
    (implies (pre-1 s)
             (post-2 (run s (clock-fn s))))
@@ -250,35 +250,35 @@ in this book to get the composition of proofs.
                   (:instance run-from-clock-gives-j)
                   (:instance standard-theorem-about-clocks-22
                              (s (run s (clock-1 s))))))))
- 
- 
+
+
  (local
   (defthm clock-smaller-than-j
     (implies (and (pre-1 s)
                   (external-2 (run s j)))
              (< (clock-1 s) (nfix j)))
     :hints (("Goal"
-             :in-theory (disable composition-3 
+             :in-theory (disable composition-3
                                  fix nfix
                                  standard-theorem-about-clocks-13
                                  clock-smaller-than-witnes)
              :use ((:instance clock-smaller-than-witnes)
                    (:instance composition-3))))))
- 
+
  (local
   (defthm nfix-is-identity
     (implies (natp x)
              (equal (nfix x) x))
     :hints (("Goal"
              :in-theory (enable natp)))))
- 
+
  (local
   (defthm fix-is-identity
     (implies (natp x)
              (equal (fix x) x))
     :hints (("Goal"
              :in-theory (enable natp)))))
- 
+
  (local
   (defthm clock-fn-is-least
     (implies (and (natp j)
@@ -305,12 +305,12 @@ in this book to get the composition of proofs.
                    (:instance standard-theorem-about-clocks-23
                               (s (run s (clock-1 s)))
                               (i (- (nfix j) (clock-1 s)))))))))
- 
+
  (local
   (defthm nfix-0
     (implies (not (natp j))
              (equal (nfix j) 0))))
- 
+
  (local
   (defthm natp-or-not-external
     (implies (and (equal j 0)
@@ -318,7 +318,7 @@ in this book to get the composition of proofs.
              (<= j x))
     :hints (("Goal"
              :in-theory (enable natp)))))
- 
+
  (local
   (defthm natp-implies-no-c-witness
     (implies (and (not (natp j))
@@ -327,10 +327,10 @@ in this book to get the composition of proofs.
     :hints (("Goal"
              :in-theory (disable composition-3)
              :use composition-3))))
- 
+
  (local
   (in-theory (disable clock-fn)))
- 
+
  (DEFTHM standard-theorem-for-clocks-3
    (implies (and (pre-1 s)
                  (external-2 (run s j)))

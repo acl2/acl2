@@ -8,7 +8,7 @@
 ;(include-book "../code/fringes/fringes-props")
 
 (defun collect-when-size-is-at-least-cutoff (term-count-alist cutoff)
-  (declare (xargs :guard (and (alistp-gen term-count-alist) 
+  (declare (xargs :guard (and (alistp-gen term-count-alist)
                               (rationalp cutoff))))
   (if (atom term-count-alist)
       nil
@@ -34,9 +34,9 @@
 (defun compute-consensus-helper
   (bfringe-frequencies taxa-list number-of-trees percentage)
   (declare (xargs :guard (and (alistp-gen bfringe-frequencies)
-                              (valid-bdd-list 
+                              (valid-bdd-list
                                (strip-cars-gen bfringe-frequencies))
-                              (good-depths 
+                              (good-depths
                                (strip-cars-gen bfringe-frequencies)
                                (build-taxa-list-tree taxa-list))
                               (int-symlist taxa-list)
@@ -73,7 +73,7 @@
 ;    (3) percentage - an integer between 0 and 100
 
 ;  Details: Trees given must match taxa list given and all have the same
-;           number of leaves.  Does not handle branch lengths (see 
+;           number of leaves.  Does not handle branch lengths (see
 ;           compute-consensus-brlens). NOTE: Guards not yet verified."
   (declare (xargs :guard (and (non-tip-tree-listp list-of-trees)
                               (int-symlist taxa-list)
@@ -102,7 +102,7 @@
 ;    (3) percentage - an integer between 0 and 100
 
 ;  Details: Trees given must match taxa list given and all have the same
-;           number of leaves.  Allows branch lengths (see also 
+;           number of leaves.  Allows branch lengths (see also
 ;           compute-consensus). Guards are not yet verified."
   (declare (xargs :guard t
 		  :verify-guards nil))
@@ -122,7 +122,7 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns a mapping of bdd based bipartitions to their frequencies in 
+;  Returns a mapping of bdd based bipartitions to their frequencies in
 ;  list-of-trees.~/
 ;  ~/
 ;  Arguments:
@@ -131,7 +131,7 @@
 
 ;  Details: Does not allow branch lengths on input trees.
 ;           Manages memory more explicitly than bfringe-frequencies."
-  (declare (xargs :guard (and (non-tip-tree-listp list-of-trees) 
+  (declare (xargs :guard (and (non-tip-tree-listp list-of-trees)
                               (int-symlist taxa-list)
                               (<= 2 (len taxa-list))
                               (all-same-num-tips list-of-trees))))
@@ -139,7 +139,7 @@
          (dbterms (hshrink-alist replete-trees-list-top 'replete-database))
          (void (flush-hons-get-hash-table-link replete-trees-list-top))
          (ta (build-fast-alist-from-alist
-              (taxa-list-to-tree-alist taxa-list) 
+              (taxa-list-to-tree-alist taxa-list)
               'taxa-tree-alist))
          (bfringe-frequencies1
           (bfringe-frequencies1 dbterms dbterms
@@ -157,14 +157,14 @@
 ;;; see projects/taspi/taspi-xdoc.lisp.
 
 ; ":Doc-Section TASPI
-;  Returns a mapping of bdd based bipartitions to their frequencies in 
+;  Returns a mapping of bdd based bipartitions to their frequencies in
 ;  list-of-trees.~/
 ;  ~/
 ;  Arguments:
 ;    (1) list-of-trees - a list of trees
 ;    (2) taxa-list - a list of taxa names
 
-;  Details: Allows branch lengths. 
+;  Details: Allows branch lengths.
 ;           Manages memory more explicitly than bfringe-frequencies-brlens."
   (declare (xargs :guard t))
   (let ((trees-no-brlens (remove-brlens-list list-of-trees)))

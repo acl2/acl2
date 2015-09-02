@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -90,4 +90,3 @@
            (< (logorc1 i j) 0))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable logorc1 lognot))))
-  

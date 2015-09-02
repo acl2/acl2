@@ -10,16 +10,16 @@
 (deflabel begin-proof)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; In this file, we prove our correctness criterion. First we prove that 
+; In this file, we prove our correctness criterion. First we prove that
 ; our invariant conditions hold for all micro-architectural states
 ; reachable from initial states.  Then we prove the correctness of
-; the criterion using the invariant. 
-; 
+; the criterion using the invariant.
+;
 ; We verify two lemmas about invariant conditions: invariant-init-MT
 ; and invariant-step.  Lemma invariant-init-MT shows that invariant
 ; conditions are true for all initial states, while lemma
 ; invariant-step shows that conditions are invariantly held during
-; the micro-architecture machine transitions. 
+; the micro-architecture machine transitions.
 ;
 ; Predicate invariant is a conjunction of seven conditions,
 ; pc-match-p, regs-match-p, mem-match-p, ISA-chain-p,
@@ -31,9 +31,9 @@
 ; is preserved during machine transitions.
 ;
 
-; 
+;
 ;;;;;;; Proof of pc-match-p ;;;
-; PC-match-p is true for initial states. 
+; PC-match-p is true for initial states.
 (defthm pc-match-p-init-MT
     (pc-match-p (init-MT MA) MA)
   :hints (("Goal" :in-theory (enable pc-match-p init-MT MT-pc))))
@@ -68,7 +68,7 @@
 (encapsulate nil
 (local
 (defthm INST-pre-ISA-INST-at-latch2-induction
-    (implies (and (invariant MT MA) 
+    (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
 		  (subtrace-p trace MT) (INST-listp trace)
 		  (trace-INST-at 'latch2 trace))
@@ -80,7 +80,7 @@
 
 (local
 (defthm INST-pre-ISA-INST-at-latch2-help
-    (implies (and (invariant MT MA) 
+    (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-at 'latch2 MT))
 	     (equal (ISA-regs (INST-pre-ISA (INST-at 'latch2 MT)))
@@ -92,7 +92,7 @@
 
 ; If an instruction I is in stage latch2, the register file of the MA
 ; state looks like the register file in the pre-ISA state  I.  This is
-; because the register file reflects the result of all 
+; because the register file reflects the result of all
 ; retired instructions, while the result of partially executed
 ; instructions are not written in the register file.
 (defthm INST-pre-ISA-INST-at-latch2
@@ -111,7 +111,7 @@
     (implies (and (INST-listp trace)
 		  (not (trace-INST-at 'latch2 trace))
 		  (not (trace-INST-at 'retire trace)))
-	     (equal (trace-regs (step-trace trace MA sig ISA) ISA) 
+	     (equal (trace-regs (step-trace trace MA sig ISA) ISA)
 		    (ISA-regs ISA)))
   :hints (("Goal" :cases ((consp trace))))))
 
@@ -123,12 +123,12 @@
 		  (subtrace-p trace MT)
 		  (INST-listp trace)
 		  (trace-INST-at 'latch2 trace))
-	     (equal (trace-regs (step-trace trace MA sig ISA) ISA) 
+	     (equal (trace-regs (step-trace trace MA sig ISA) ISA)
 		    (ISA-regs (INST-post-ISA (trace-INST-at 'latch2 trace)))))
   :hints (("Subgoal *1/6" :use (:instance stages-of-inst (i (car trace)))))))
 
 
-; The correct register file state for the next cycle is defined here.  
+; The correct register file state for the next cycle is defined here.
 ; If instruction I is at latch2, I retires in this cycle and the
 ; effect of I appears in the register file.
 (defthm MT-regs-MT-step-if-latch2-valid
@@ -146,7 +146,7 @@
 ; is a NOP, the register file is unchanged.
 (defthm ISA-regs-INST-post-ISA
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (INST-in i MT) (INST-p i))
 	     (equal (ISA-regs (ISA-step (INST-pre-ISA i)))
 		    (if (or (equal (INST-op i) 0) (equal (INST-op i) 1))
@@ -170,9 +170,9 @@
                       ISA)))))
 
 
-; If there is no instruction at latch2, the register file in MA is not 
+; If there is no instruction at latch2, the register file in MA is not
 ; updated in this cycle.  Correct register file states calculated from the
-; MAETT does not change. 
+; MAETT does not change.
 (defthm MT-regs-MT-step
     (implies (and (MAETT-p MT) (not (INST-at 'latch2 MT)))
 	     (equal (MT-regs (MT-step MT MA sig))
@@ -182,7 +182,7 @@
 )
 
 (encapsulate nil
-; This is a help lemma. 
+; This is a help lemma.
 (local
 (defthm MT-regs-MA-regs
     (implies (and (invariant MT MA)
@@ -193,13 +193,13 @@
 
 ; Finally, we prove that predicate regs-match-p is preserved during MA
 ; machine cycles.  Predicate regs-match-p holds after one MA  machine cycle
-; of execution. 
+; of execution.
 (defthm regs-match-p-MT-step
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA)) 
+		  (MAETT-p MT) (MA-state-p MA))
 	     (regs-match-p (MT-step MT MA sig) (MA-step MA sig)))
   :hints (("Goal" :in-theory (enable regs-match-p MA-step step-regs
-				     ISA-regs-INST-post-ISA 
+				     ISA-regs-INST-post-ISA
 				     lift-b-ops bv-eqv-iff-equal
 				     INST-result)
 		  :cases ((b1p (latch2-valid? (MA-latch2 MA)))))))
@@ -211,10 +211,10 @@
     (mem-match-p (init-MT MA) MA)
   :hints (("Goal" :in-theory (enable mem-match-p))))
 
-; Predicate mem-match-p is preserved during MA machines state transitions. 
+; Predicate mem-match-p is preserved during MA machines state transitions.
 (defthm mem-match-p-MT-step
-    (implies (and (invariant MT MA) 
-		  (MAETT-p MT) (MA-state-p MA)) 
+    (implies (and (invariant MT MA)
+		  (MAETT-p MT) (MA-state-p MA))
 	     (mem-match-p (MT-step MT MA sig) (MA-step MA sig)))
   :hints (("Goal" :in-theory (enable mem-match-p MA-STEP
 				     invariant))))
@@ -224,7 +224,7 @@
 (defthm ISA-chain-p-init-MT
     (ISA-chain-p (init-MT MA))
   :hints (("Goal" :in-theory (enable ISA-chain-p init-MT))))
- 
+
 (encapsulate nil
 (local
 (defthm ISA-chain-p-step-MT-induction
@@ -250,20 +250,20 @@
 
 
 ; Proof of MT-inst-invariant-MT-step.
-; 
+;
 ; MT-inst-invariant checks recursively every instruction in the MAETT
 ; satisfies predicate inst-invariant.  Predicate inst-invariant
 ; represents the conditions that each instructions should satisfy,
 ; depending on the current stage.
-; We prove that every instruction invariantly satisfy inst-invariant, 
+; We prove that every instruction invariantly satisfy inst-invariant,
 ; and then prove the lemma MT-inst-invariant-MT-step using induction.
-; 
+;
 ; The check for individual instructions needs to consider two cases:
 ; the case in which the instruction is a newly fetched instruction,
 ; and the case in which the instruction is in the current MAETT.  The
 ; first case is proven as lemma inst-invariant-new-INST, and the
-; second case as INST-invariant-step-INST. 
-; 
+; second case as INST-invariant-step-INST.
+;
 
 ; Inst-invariant-new-INST shows that inst-invariant is true for
 ; the instruction entry (new-INST (ISA-before nil MT)), which
@@ -285,13 +285,13 @@
 ; that an instruction satisfies inst-invariant at the next machine
 ; cycle.
 
-; Read-reg-ISA-step-if-target-reg-differs proves the fact that 
+; Read-reg-ISA-step-if-target-reg-differs proves the fact that
 ; the value of register is not updated by an instruction whose destination
 ; register is different.
 ; (INST-rc i) represents the destination register for the instruction
 ; i. Suppose register (INST-rc i) differs from register rix.  Then
-; ISA execution of instruction i does not update register rix, and the 
-; value of register rix is unchanged. 
+; ISA execution of instruction i does not update register rix, and the
+; value of register rix is unchanged.
 (defthm read-reg-ISA-step-if-target-reg-differs
     (implies (and (INST-p i) (rname-p rix) (not (equal (INST-rc i) rix)))
 	     (equal (read-reg rix (ISA-regs (ISA-step (INST-pre-ISA i))))
@@ -301,13 +301,13 @@
 
 ; This lemmas assures that the pipeline interlock is working
 ; correctly.
-; Briefly speaking, the fact that (dependency? MA) is off implies that 
+; Briefly speaking, the fact that (dependency? MA) is off implies that
 ; instruction i at latch1 and instruction (car trace) at latch2 have
 ; no true (RAW) dependencies.  Therefore, execution of instruction
 ; (car trace) does not change the register (INST-ra i), which is a
 ; source register of instruction i.  As a result, we don't have to
-; stall the instruction i. 
-; 
+; stall the instruction i.
+;
 ; Note: trace is a subtrace of the current MAETT MT.  We consider the
 ; interlocks between instructions represented by (car trace) and i.
 ; This is one of the easiest ways to represent the lemma
@@ -363,7 +363,7 @@
 		 (MAETT-p MT) (MA-state-p MA)
 		 (subtrace-p trace MT)
 		 (INST-listp trace)
-		 (member-equal i trace) (INST-p i) 
+		 (member-equal i trace) (INST-p i)
 		 (equal (INST-stg i) 'latch1)
 		 (not (b1p (dependency? MA))))
 	    (equal (read-reg (INST-ra I)
@@ -373,14 +373,14 @@
 	  ("subgoal *1/2" :use (:instance stages-of-INST (i (car trace)))))
   :rule-classes nil))
 
-; Suppose instruction i is at latch1, and (dependency? MA) is off.  It 
+; Suppose instruction i is at latch1, and (dependency? MA) is off.  It
 ; means there is no instruction at latch2 which updates i's source register
 ; (INST-ra i).  This lemma proves that the register (INST-ra i) in the MA
-; state contains the correct source value for instruction i. 
+; state contains the correct source value for instruction i.
 (defthm read-regs-latch1-INST-ra-if-not-stall-cond
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
-		  (INST-in i MT) (INST-p i) 
+		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch1)
 		  (not (b1p (dependency? MA))))
 	     (equal (read-reg (INST-ra I) (MA-regs MA))
@@ -400,7 +400,7 @@
 		 (MAETT-p MT) (MA-state-p MA)
 		 (subtrace-p trace MT)
 		 (INST-listp trace)
-		 (member-equal i trace) (INST-p i) 
+		 (member-equal i trace) (INST-p i)
 		 (equal (INST-stg i) 'latch1)
 		 (not (b1p (dependency? MA))))
 	    (equal (read-reg (INST-rb I)
@@ -414,7 +414,7 @@
 (defthm read-regs-latch1-INST-rb-if-not-stall-cond
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
-		  (INST-in i MT) (INST-p i) 
+		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch1)
 		  (not (b1p (dependency? MA))))
 	     (equal (read-reg (INST-rb I) (MA-regs MA))
@@ -433,7 +433,7 @@
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
 		  (subtrace-p trace MT) (INST-listp trace)
-		  (member-equal i trace) 
+		  (member-equal i trace)
 		  (equal (INST-stg i) 'latch1)
 		  (not (b1p (latch2-valid? (MA-latch2 MA)))))
 	     (equal (ISA-regs (INST-pre-ISA I))
@@ -443,15 +443,15 @@
 	  ("subgoal *1/2" :use ((:instance stages-of-inst (I (car trace))))))
   :rule-classes nil))
 
-; 
-; If instruction i is at latch1 and no instruction is at latch2, i is the 
+;
+; If instruction i is at latch1 and no instruction is at latch2, i is the
 ; only instruction in the pipeline, and i has not updated the register file
 ; in the MA. So, the register file in the MA state is the same as in pre-ISA
-; of i.  
+; of i.
 (defthm ISA-regs-MA-regs-if-not-latch2-valid
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
-		  (INST-in i MT) (INST-p i) 
+		  (INST-in i MT) (INST-p i)
 		  (equal (INST-stg i) 'latch1)
 		  (not (b1p (latch2-valid? (MA-latch2 MA)))))
 	     (equal (ISA-regs (INST-pre-ISA I)) (MA-regs MA)))
@@ -478,7 +478,7 @@
 
 
 ; Instruction i will satisfy predicate inst-latch1-inv in the next
-; machine cycle, if its stage will be latch1. 
+; machine cycle, if its stage will be latch1.
 (defthm INST-latch1-inv-step-INST
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
@@ -500,7 +500,7 @@
 	     (inst-latch2-inv (step-INST i MA) (MA-step MA sig)))
   :hints (("Goal" :use (:instance INST-invariant-INST-in)
 		  :in-theory (enable INST-invariant INST-latch2-inv
-				     STALL-COND? 
+				     STALL-COND?
 				     INST-latch1-inv INST-RA-VAL INST-RB-VAL
 				     MA-step step-latch2 lift-b-ops)))))
 
@@ -517,7 +517,7 @@
 
 
 ; Instruction i will satisfy predicate INST-invariant in the next
-; machine cycle. 
+; machine cycle.
 (defthm INST-invariant-step-INST
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
@@ -557,7 +557,7 @@
   :hints (("Goal" :in-theory (enable MT-contains-all-insts flushed?
 				     lift-b-ops))))
 
-; Proof of MT-contains-all-insts-MT-step. 
+; Proof of MT-contains-all-insts-MT-step.
 ; A MAETT represents all instructions currently in the pipeline, as
 ; well as those retired.  If flag latch1-valid? is on, there must be
 ; an instruction at latch1.  Similarly, there must be an instruction
@@ -568,7 +568,7 @@
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
 		  (b1p (fetch-inst? MA sig)))
-	     (trace-INST-at 'latch1 (step-trace trace MA sig ISA))))) 
+	     (trace-INST-at 'latch1 (step-trace trace MA sig ISA)))))
 
 
 ; INST-at-latch1-MT-step is proven by case analysis.  In one case,
@@ -590,7 +590,7 @@
 		  (MAETT-p MT) (MA-state-p MA)
 		  (b1p (stall-cond? MA))
 		  (trace-INST-at 'latch1 trace))
-	     (trace-INST-at 'latch1 (step-trace trace MA sig ISA))))) 
+	     (trace-INST-at 'latch1 (step-trace trace MA sig ISA)))))
 
 (defthm INST-at-latch1-MT-step-if-stall-cond
     (implies (and (invariant MT MA)
@@ -607,7 +607,7 @@
 ; contains an entry representing the instruction at latch1.
 (defthm INST-at-latch1-MT-step
     (implies (and (invariant MT MA)
-		  (MAETT-p MT) (MA-state-p MA) 
+		  (MAETT-p MT) (MA-state-p MA)
 		  (b1p (latch1-valid? (step-latch1 MA sig))))
 	     (INST-at 'latch1 (MT-step MT MA sig)))
   :hints (("Goal" :cases ((b1p (fetch-inst? MA sig))))
@@ -625,7 +625,7 @@
 	     (trace-INST-at 'latch2 (step-trace trace MA sig ISA)))
   :hints (("Goal" :in-theory (enable step-latch2 lift-b-ops STALL-COND?)))))
 
-; Similarly for latch2. 
+; Similarly for latch2.
 (defthm INST-at-latch2-MT-step
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
@@ -637,7 +637,7 @@
 		  :use (:instance INST-AT-LATCH1-IF-LATCH1-VALID))))
 )
 
-; MT-contains-all-insts is true for the next machine state. 
+; MT-contains-all-insts is true for the next machine state.
 (defthm MT-contains-all-insts-MT-step
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA))
@@ -646,7 +646,7 @@
   :hints (("Goal" :in-theory (enable MT-contains-all-insts MA-step))))
 
 ;;;;;; Proof of MT-in-order-p
-; 
+;
 ; MT-in-order-p is true for initial case.
 (defthm MT-in-order-p-init-MT
     (MT-in-order-p (init-MT MA))
@@ -655,10 +655,10 @@
 
 ; Instruction at latch1 is the last fetched instruction in the
 ; pipeline.  MAETT records fetched and executed instructions in ISA
-; execution order, so the entry representing the instruction at latch1 
-; is the last in a MAETT.  
+; execution order, so the entry representing the instruction at latch1
+; is the last in a MAETT.
 (defthm endp-step-trace-cdr-if-step-INST-latch1
-    (implies (and (invariant MT MA) 
+    (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
 		  (subtrace-p trace MT)
 		  (INST-listp trace)
@@ -672,9 +672,9 @@
 
 
 ; There cannot be more than two entries of MAETT representing an
-; instruction at latch2. 
+; instruction at latch2.
 (defthm not-trace-INST-at-latch2-step-trace
-    (implies (and (invariant MT MA) 
+    (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
 		  (subtrace-p trace MT)
 		  (consp trace)
@@ -686,9 +686,9 @@
 
 
 ; Instructions retire in order.  So no retired instruction follows
-; an instruction at latch2.  
+; an instruction at latch2.
 (defthm not-trace-INST-at-retire-step-trace
-    (implies (and (invariant MT MA) 
+    (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
 		  (subtrace-p trace MT)
 		  (consp trace)
@@ -702,16 +702,16 @@
 (encapsulate nil
 (local
 (defthm MT-in-order-p-MT-step-induction
-    (implies (and (invariant MT MA) 
+    (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
 		  (subtrace-p trace MT)
 		  (INST-listp trace))
-	     (trace-in-order-p (step-trace trace MA sig ISA))))) 
+	     (trace-in-order-p (step-trace trace MA sig ISA)))))
 
-; MT-in-order-p is true for the next machine state. 
+; MT-in-order-p is true for the next machine state.
 (defthm MT-in-order-p-MT-step
-    (implies (and (invariant MT MA) 
-		  (MAETT-p MT) (MA-state-p MA)) 
+    (implies (and (invariant MT MA)
+		  (MAETT-p MT) (MA-state-p MA))
 	     (MT-in-order-p (MT-step MT MA sig)))
   :hints (("Goal" :in-theory (enable MT-step MT-in-order-p))))
 )
@@ -732,7 +732,7 @@
   :Hints (("Goal" :in-theory (enable invariant))))
 
 ; By induction, invariant is correct after n cycles of MA
-; execution. 
+; execution.
 (defthm invariant-stepn
     (implies (and (invariant MT MA) (MAETT-p MT) (MA-state-p MA)
 		  (MA-sig-listp sig-list)
@@ -744,12 +744,12 @@
 ; Proof of the correctness criterion.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; The number of instructions recorded in the MAETT.  This is the
-; number of fetched instructions since the initial machine state. 
+; number of fetched instructions since the initial machine state.
 (defun MT-num-insts (MT) (len (MT-trace MT)))
 
 ; The number of instructions fetched and executed during the n cycles
 ; of machine execution from the initial state MA with input signal list
-; sig-list. 
+; sig-list.
 (defun num-insts (MA sig-list n)
   (MT-num-insts (MT-stepn (init-MT MA) MA sig-list n)))
 
@@ -766,7 +766,7 @@
 	   (trace-all-retired (cdr trace)))))
 
 ; (MT-all-retires MT) is true if all instructions recorded by MT is
-; retired. 
+; retired.
 (defun MT-all-retired (MT)
     (trace-all-retired (MT-trace MT)))
 
@@ -782,7 +782,7 @@
 				     INST-latch2-inv)))))
 
 ; If a MA state, MA, is flushed, the corresponding MAETT, MT, contains
-; only retired instructions. 
+; only retired instructions.
 (defthm flushed-implies-MT-all-retired
     (implies (and (invariant MT MA)
 		  (MAETT-p MT)
@@ -802,7 +802,7 @@
 	     (equal ISA1 ISA2))
   :rule-classes nil)
 
-; Lemma flushed-MA-=-MT-final-ISA is proven by showing the equivalence 
+; Lemma flushed-MA-=-MT-final-ISA is proven by showing the equivalence
 ; of LHS and RHS with respect to each programmer visible components such
 ; as program counter, register file and memory.
 (encapsulate nil
@@ -868,12 +868,12 @@
 
 ; One step before the final lemma.  Consider a flushed micro-state MA
 ; and its MAETT.  MAETT contains (MT-num-INST MT) instruction
-; entries.  (MT-init-ISA MT) is the initial ISA state before executing 
+; entries.  (MT-init-ISA MT) is the initial ISA state before executing
 ; the first instruction recorded in MAETT.  Therefore,
 ; (ISA-stepn (MT-init-ISA MT) (MT-num-insts MT)) is the final ISA state
 ; after executing all instructions recorded in MT.  Our invariant
 ; guarantees that the projection of MA to an ISA state is equal to
-; this final ISA state.  
+; this final ISA state.
 (defthm flushed-MA-=-MT-final-ISA
     (implies (and (invariant MT MA)
 		  (MAETT-p MT) (MA-state-p MA)
@@ -936,4 +936,3 @@
 	     (b1p (flushed? (MA-stepn MA
 				      (zeros (flush-cycles MA))
 				      (flush-cycles MA))))))
-		  

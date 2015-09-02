@@ -167,7 +167,7 @@
                 (or (null xxx) (integerp xxx)))
            (below-all1 (find-minimal1 lox hix loy hiy xxx) lox hix loy hiy))
   :hints (("Goal" :induct (find-minimal1 lox hix loy hiy xxx))
-          ("Subgoal *1/2" 
+          ("Subgoal *1/2"
            :use
            ((:instance below-all2-trans
                        (x LOX)
@@ -202,7 +202,7 @@
                 (<= y hiy))
            (<= min (fmla x y)))
   :rule-classes nil)
-                
+
 ; Again, note that we have free-variables above, and the hypothesis containing
 ; them will be established by a lemma when the theorem above is applied.
 ; Therefore, I make the theorem above rule-classes nil and :use it explicitly
@@ -230,6 +230,6 @@
 
 
 
-                
+
 
 

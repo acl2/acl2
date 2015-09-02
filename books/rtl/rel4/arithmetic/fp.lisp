@@ -6,7 +6,7 @@
 #|
 
 This book contains a few lemmas which are exported in lib/arith but which aren't needed in support/ or
-arithmetic/.  
+arithmetic/.
 
 |#
 
@@ -148,7 +148,7 @@ arithmetic/.
 ; use.
 
 (encapsulate nil
-  (local 
+  (local
    (defthm renaming
     (implies (and (rationalp a)
                   (rationalp xmax)
@@ -307,4 +307,4 @@ arithmetic/.
            (and (< (- (* amax bmax)) (* a b))
                 (< (* a b) (* amax bmax))))
   :hints (("Goal" :cases ((< b 0) (> b 0))))
-  :rule-classes nil)  
+  :rule-classes nil)

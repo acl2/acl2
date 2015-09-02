@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -89,9 +89,9 @@
         ((endp (cddddr x))
          `(binary-cat ,@x))
         (t
-         `(binary-cat ,(car x) 
-                      ,(cadr x) 
-                      (cat ,@(cddr x)) 
+         `(binary-cat ,(car x)
+                      ,(cadr x)
+                      (cat ,@(cddr x))
                       ,(cat-size (cddr x))))))
 
 (defund mulcat (l n x)
@@ -352,7 +352,7 @@
 		  (natp k))
 	     (equal (logior x (expt 2 k))
 		    (+ x
-		       (* (expt 2 k) 
+		       (* (expt 2 k)
 			  (- 1 (bitn x k))))))
     :hints (("Goal" :use ((:instance logior-expt-3-g)))))
 
@@ -446,7 +446,7 @@
 (defthmd logand-bitn-lognot-1
   (implies (and (integerp n)
                 (integerp x)
-                (integerp y))                
+                (integerp y))
            (equal (logand (bitn (lognot x) n) (bitn y n))
                   (logand (lognot (bitn x n)) (bitn y n))))
   :hints (("Goal" :cases ((< n 0))
@@ -522,7 +522,7 @@
            (equal (lognot (fl (/ x n)))
                   (fl (/ (lognot x) n))))
   :hints (("Goal" :use ((:instance fl-m-n (m (- x))))
-                  :in-theory (enable lognot))))                
+                  :in-theory (enable lognot))))
 
 
 ;;;**********************************************************************

@@ -76,7 +76,7 @@
                      (< x ,(expt 2 (- constant-exp shift-exp)))))
      :hints (("Goal" :in-theory (disable ash)))
      :rule-classes nil))
-  
+
 (my-def-ash-lemma 2 75)
 
 ; Is this what we expected?  Yes!

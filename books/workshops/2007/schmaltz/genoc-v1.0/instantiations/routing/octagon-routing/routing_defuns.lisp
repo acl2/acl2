@@ -2,7 +2,7 @@
 ;;-------------------------------------------------------------------------
 ;;
 ;;
-;; Functional Specification and Validation of the Octagon Network on 
+;; Functional Specification and Validation of the Octagon Network on
 ;;              Chip using the ACL2 Theorem Prover
 ;;
 ;;
@@ -26,7 +26,7 @@
 
 ;;----------------------------------------------------------------------
 ;;----------------------------------------------------------------------
-;;            
+;;
 ;;           DEFINITION OF THE AVAILABLE MOVES IN THE NETWORK
 ;;
 ;;----------------------------------------------------------------------
@@ -81,7 +81,7 @@
 
 ;;----------------------------------------------------------------------
 ;;----------------------------------------------------------------------
-;;            
+;;
 ;;                  DEFINITION OF THE ROUTING ALGORITHM
 ;;
 ;;----------------------------------------------------------------------
@@ -93,14 +93,14 @@
 (defun route (from dest n)
   (declare (xargs :measure (min (nfix (mod (- dest from) (* 4 n)))
                                 (nfix (mod (- from dest) (* 4 n))))
-                  :hints 
-                  (("GOAL" 
+                  :hints
+                  (("GOAL"
                     :use ((:instance force_case_split)
-                          (:instance <=_=_<_or_= 
+                          (:instance <=_=_<_or_=
                                      (a dest) (b (+ -1 (* 4 n))))
-                          (:instance <=_=_<_or_= 
+                          (:instance <=_=_<_or_=
                                      (a from) (b (+ -1 (* 4 n))))
-                          (:instance mod-+-n/2-pos 
+                          (:instance mod-+-n/2-pos
                                      (n (* 4 n))
                                      (x (+ (- dest) from))))
                     :in-theory (disable PREFER-POSITIVE-ADDENDS-<
@@ -109,11 +109,11 @@
                                         mod-+-n/2-pos))
                    ("Subgoal 330.4" :cases ((<= 0 (+ -1 from))
                                             (< (+ -1 from) 0))))))
-  (cond ((or 
+  (cond ((or
           (not (integerp dest)) ;; dest must be an integer
           (< dest 0) ;; dest must be positive
-          (< (- (* 4 n) 1) dest) ;; dest must be lower than the number of nodes 
-          (not (integerp from)) ;; from must be an integer 
+          (< (- (* 4 n) 1) dest) ;; dest must be lower than the number of nodes
+          (not (integerp from)) ;; from must be an integer
           (< from 0) ;; from must be positive
           (< (- (* 4 n) 1) from) ;; from must be lower than the number of nodes
           (not (integerp n)) ;; the number of nodes must be an integer

@@ -48,7 +48,7 @@
   (equal (mzero r c)
 	 (if (or (zp r) (zp c))
 	     nil
-	   (col-cons (vzero r) 
+	   (col-cons (vzero r)
 		     (if (= c 1)
 			 nil
 		       (mzero r (1- c))))))

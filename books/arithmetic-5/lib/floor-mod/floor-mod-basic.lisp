@@ -8,7 +8,7 @@
 ;;; floor-mod-basic.lisp
 ;;;
 ;;; This book contains the simpler rules about floor and mod.
-;;; 
+;;;
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -266,14 +266,14 @@
 		(<= 0 (/ x y)))
 	   (<= 0 (floor x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (3 1))
-		 (:rewrite 
+		 (:rewrite
 		  :backchain-limit-lst (3 1 1)
 		  :corollary
 		  (implies (and (real/rationalp (/ x y))
 				(<= 0 y)
 				(<= 0 x))
 			   (<= 0 (floor x y))))
-		 (:rewrite 
+		 (:rewrite
 		  :backchain-limit-lst (3 1 1)
 		  :corollary
 		  (implies (and (real/rationalp (/ x y))
@@ -311,7 +311,7 @@
 		(<= (/ x y) 0))
 	   (<= (floor x y) 0))
   :rule-classes ((:rewrite :backchain-limit-lst (3 1))
-		 (:rewrite 
+		 (:rewrite
 		  :backchain-limit-lst (3 1 1)
 		  :corollary
 		  (implies (and (real/rationalp (/ x y))
@@ -319,7 +319,7 @@
 				(<= 0 y)
 				(<= x 0))
 			   (<= (floor x y) 0)))
-		 (:rewrite 
+		 (:rewrite
 		  :backchain-limit-lst (3 1 1)
 		  :corollary
 		  (implies (and (real/rationalp (/ x y))
@@ -362,7 +362,7 @@
 		 (:rewrite
                   :backchain-limit-lst (nil 3 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (real/rationalp (/ x y))
 				(<= 1 (/ x y)))
@@ -370,7 +370,7 @@
 		 (:rewrite
                   :backchain-limit-lst (nil 3 1 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (real/rationalp (/ x y))
                                 (< 0 y)
@@ -379,7 +379,7 @@
 		 (:rewrite
                   :backchain-limit-lst (nil 3 1 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
                                  (not (rewriting-goal-literal x mfc state)))
                                 (real/rationalp (/ x y))
                                 (< y 0)
@@ -419,7 +419,7 @@
 		 (:rewrite
 		  :backchain-limit-lst (nil 3 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
 				 (not (rewriting-goal-literal x mfc state)))
 				(real/rationalp (/ x y))
 				(< (/ x y) 0))
@@ -427,7 +427,7 @@
 		 (:rewrite
 		  :backchain-limit-lst (nil 3 1 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
 				 (not (rewriting-goal-literal x mfc state)))
 				(real/rationalp (/ x y))
 				(< 0 x)
@@ -436,7 +436,7 @@
 		 (:rewrite
 		  :backchain-limit-lst (nil 3 1 1)
 		  :corollary
-		  (implies (and (syntaxp 
+		  (implies (and (syntaxp
 				 (not (rewriting-goal-literal x mfc state)))
 				(real/rationalp (/ x y))
 				(< x 0)
@@ -664,7 +664,7 @@
                  (:rewrite
                   :backchain-limit-lst (nil 1 1)
 		  :corollary
-		   (implies (and (syntaxp 
+		   (implies (and (syntaxp
                                   (not (rewriting-goal-literal x mfc state)))
                                  ;(real/rationalp (/ x y))
                                  (equal y 0)
@@ -673,7 +673,7 @@
                  (:rewrite
                   :backchain-limit-lst (nil 3 3 1)
 		  :corollary
-		   (implies (and (syntaxp 
+		   (implies (and (syntaxp
                                   (not (rewriting-goal-literal x mfc state)))
                                  (real/rationalp (/ x y))
                                  (not (integerp (/ x y)))
@@ -710,7 +710,7 @@
                  (:rewrite
                   :backchain-limit-lst (nil 1 1)
 		  :corollary
-		   (implies (and (syntaxp 
+		   (implies (and (syntaxp
                                   (not (rewriting-goal-literal x mfc state)))
                                  ;(real/rationalp (/ x y))
                                  (equal y 0)
@@ -719,7 +719,7 @@
                  (:rewrite
                   :backchain-limit-lst (nil 3 3 1)
 		  :corollary
-		   (implies (and (syntaxp 
+		   (implies (and (syntaxp
                                   (not (rewriting-goal-literal x mfc state)))
                                  (real/rationalp (/ x y))
                                  (not (integerp (/ x y)))

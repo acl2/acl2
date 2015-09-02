@@ -249,14 +249,14 @@
 		  (integerp n))
 	     (integerp (rem m n)))
   :rule-classes (:type-prescription)
-  :hints (("Goal" :in-theory (enable rem))))  
+  :hints (("Goal" :in-theory (enable rem))))
 
 (defthm RATIONALP-REM
     (implies (and (rationalp m)
 		  (rationalp n))
 	     (rationalp (rem m n)))
   :rule-classes (:type-prescription)
-  :hints (("Goal" :in-theory (enable rem))))  
+  :hints (("Goal" :in-theory (enable rem))))
 
 (in-theory (disable rem))
 

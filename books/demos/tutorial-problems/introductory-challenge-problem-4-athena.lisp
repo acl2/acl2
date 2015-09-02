@@ -23,7 +23,7 @@
 ; We wish to collect one copy of each element in x.  We'll actually define the
 ; method two ways, primitive recursively and tail-recursively, the latter
 ; method being analogous to the program:
- 
+
 ; a = nil;
 ; while (x not empty) {
 ;  a = if (member (car x) a) then a else (cons (car x) a);

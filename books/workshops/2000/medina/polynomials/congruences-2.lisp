@@ -1,6 +1,6 @@
 (in-package "POL")
 
-(include-book "multiplication")  
+(include-book "multiplication")
 
 ;;; ---------------------------------------------------------------------
 ;;; Congruence of equality with multiplication of monomial and polynomial
@@ -19,10 +19,10 @@
       (implies (and (completep (nf p) (len (term (first p))))
 		    (not (nullp (nf p))))
 	       (TER::compatiblep (term (first (nf p))) (term (first p))))))
-  
+
   (local
     (defthm technical-lemma-2
-      (implies (and (polynomialp p) 
+      (implies (and (polynomialp p)
 		    (uniformp p)
 		    (not (nullp (nf p))))
 	       (TER::compatiblep (term (first (nf p))) (term (first p))))))
@@ -40,7 +40,7 @@
 		  (MON::compatiblep m (first p))
 		  (uniformp p))
 	     (equal (nf (*-monomial m p)) (*-monomial m (nf p))))
-    :hints (("Goal"         
+    :hints (("Goal"
 	     :induct (induction-scheme m p)))))
 
 ;;; Second argument, congruence cannot be stated due to the hypothesis.
@@ -50,7 +50,7 @@
 		(MON::compatiblep m (first p1)) (compatiblep p1 p1-equiv)
 		(= p1 p1-equiv))
 	   (= (*-monomial m p1) (*-monomial m p1-equiv)))
-  :hints (("Goal" 
+  :hints (("Goal"
 	   :cases ((MON::nullp m) (not (MON::nullp m))))
 	  ("Subgoal 2"
 	   :in-theory (disable =))))
@@ -77,7 +77,7 @@
   (implies (and (uniformp p)
 		(orderedp p)
 		(monomialp m)
-		(not (MON::nullp m)) 
+		(not (MON::nullp m))
 		(MON::compatiblep m (first p)))
 	   (equal (nf (*-monomial m p))
 		  (*-monomial m p))))
@@ -87,29 +87,29 @@
 
 (local
   (encapsulate ()
-    (local	     
+    (local
      (defthm technical-lemma-1
        (implies (and (completep (nf p) (len (term (first p))))
 		     (not (nullp (nf p))))
 		(TER::compatiblep (term (first (nf p)))
 				  (term (first p))))))
-    
-    (local 
+
+    (local
      (defthm technical-lemma-2
-       (implies (and (polynomialp p) 
+       (implies (and (polynomialp p)
 		     (uniformp p)
 		     (not (nullp (nf p))))
-		(TER::compatiblep (term (first (nf p))) 
+		(TER::compatiblep (term (first (nf p)))
 				  (term (first p))))))
 
-    (local 
+    (local
        (defthm technical-lemma-3
 	 (implies  (and (monomialp m)
 			(not (MON::nullp m))
 			(MON::compatiblep m (first p))
 			(uniformp p)
 			(polynomialp p))
-		   (equal (nf (*-monomial m p)) 
+		   (equal (nf (*-monomial m p))
 			  (nf (*-monomial m (nf p)))))))
 
     (defthm nf-*-monomial-nf
@@ -118,7 +118,7 @@
 		     (uniformp p)
 		     (polynomialp p))
 		(equal (nf (*-monomial m (nf p))) (nf (*-monomial m p))))
-      :hints (("Goal" 
+      :hints (("Goal"
 	       :cases ((MON::nullp m) (not (MON::nullp m))))))))
 
 ;;; Equality is preserved when replacing a polynomial with its normal
@@ -127,13 +127,13 @@
 
 (local
   (encapsulate ()
-    (local      
+    (local
      (defun induction-scheme (p1 p2)
        (declare (xargs :guard (and (polynomialp p1) (polynomialp p2))))
        (if (not (nullp p1))
 	   (induction-scheme (rest p1) p2)
 	 t)))
-    
+
     (defthm nf-*-1
       (implies (and (polynomialp p1) (polynomialp p2)
 		    (not (nullp p1)) (not (nullp p2))

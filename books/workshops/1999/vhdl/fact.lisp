@@ -8,7 +8,7 @@
 
 (include-book "vhdl")
 
-(vhdl 
+(vhdl
 
  (_entity mycomp :port
      (arg :in natural
@@ -26,10 +26,10 @@
   :begin
 
      ((_process multiplier :is ()
-       :begin 
+       :begin
 	  ((_wait :until (equal clk 1))
            (_if (equal startmult 1)
-	    :then 
+	    :then
 	       ((_<= resmult (* op1 op2))))
 	   (_<= endmult startmult)))
 
@@ -40,17 +40,17 @@
        :begin
           ((_wait :until (equal clk 1))
 	   (_if (equal mystate 0)
-	    :then 
+	    :then
                ((_<- r arg)
 		(_<- f 1)
 		(_if (equal start 1)
-		 :then 
+		 :then
 		    ((_<- mystate 1))))
 	    :else
 	       ((_if (equal mystate 1)
 		 :then
 		    ((_if (equal r 1)
-		      :then 
+		      :then
 		         ((_<= result f)
 			  (_<= done 1)
 			  (_<- mystate 0))

@@ -20,7 +20,7 @@
 
 ;; First, we introduce rcfn - a Real Continuous FunctioN of a single
 ;; argument.  It is assumed to return standard values for standard
-;; arguments, and to satisfy the continuity criterion.  
+;; arguments, and to satisfy the continuity criterion.
 
 (encapsulate
  ((rcfn (x) t)
@@ -150,12 +150,12 @@
 		(< 0 eps)
 		(< (rcfn a) z)
 		(< z (rcfn (+ a (* (- n i) eps)))))
-	   (<= z (rcfn (+ (find-zero-n a z i n eps) 
+	   (<= z (rcfn (+ (find-zero-n a z i n eps)
 			  eps)))))
 
 
 ;; The root found by find-zero-n is at least equal to a.
- 
+
 (defthm find-zero-n-lower-bound
   (implies (and (realp a) (realp eps) (< 0 eps))
 	   (<= a (find-zero-n a z i n eps))))
@@ -243,7 +243,7 @@
 		  (realp x)
 		  (<= 0 x))
 	     (not (< (+ a x) a)))))
- 
+
  (local
   (defthm lemma-1
     (implies (and (realp a) (i-limited a)
@@ -255,14 +255,14 @@
 		  (< 0 eps))
 	     (i-limited (+ a (* (+ n (- i)) eps))))
     :hints (("Goal" :do-not-induct t
-	     :use ((:instance limited-squeeze 
+	     :use ((:instance limited-squeeze
 			      (x (+ a (* (- n i) eps)))))
 	     :in-theory (disable distributivity limited-squeeze))
 	    ("Goal'''"
 	     :use ((:instance lemma-0
 			      (x (* EPS (+ (- I) N))))))
 	    )))
-	     
+
  (defthm limited-find-zero-n
    (implies (and (realp a) (i-limited a)
 		 (realp b) (i-limited b)
@@ -276,12 +276,12 @@
 	    :use ((:instance find-zero-n-lower-bound)
 		  (:instance find-zero-n-upper-bound)
 		  (:instance lemma-1)
-		  (:instance limited-squeeze 
+		  (:instance limited-squeeze
 			     (x (find-zero-n a z i n eps))
 			     (b (+ a (* (- n i) eps)))))
 	    :in-theory (disable lemma-1
-				find-zero-n-lower-bound 
-				find-zero-n-upper-bound 
+				find-zero-n-lower-bound
+				find-zero-n-upper-bound
 				large-if->-large
 				limited-squeeze))))
  )
@@ -320,7 +320,7 @@
  (local
   (defthm lemma-2
     (equal (+ (i-large-integer) 0) (i-large-integer))))
- 
+
  ;; And, N*x/N = x.
 
  (local
@@ -334,8 +334,8 @@
 		 (i-limited b)
 		 (realp b))
 	    (i-limited (find-zero-n a
-				    z 
-				    0 
+				    z
+				    0
 				    (i-large-integer)
 				    (+ (- (* (/ (i-large-integer)) a))
 				       (* (/ (i-large-integer)) b)))))
@@ -348,8 +348,8 @@
 			     (eps (/ (- b a) (i-large-integer)))))
 	    :in-theory (disable limited-find-zero-n))))
  )
-	    
-(encapsulate 
+
+(encapsulate
  nil
 
  (local
@@ -378,8 +378,8 @@
 	    (< a b))
        (standard-part
 	(find-zero-n a
-		     z 
-		     0 
+		     z
+		     0
 		     (i-large-integer)
 		     (/ (- b a) (i-large-integer))))
        0))
@@ -414,7 +414,7 @@
 
 (encapsulate
  ()
- 
+
  ;; First, if a and b are standard, (b-a)/N is small, for N a large
  ;; integer.
 
@@ -423,7 +423,7 @@
     (implies (and (standard-numberp a)
 		  (standard-numberp b))
 	     (i-small (/ (- b a) (i-large-integer))))))
-   
+
  ;; Silly algebra!  a<=a+x if and only if 0<=x....
 
  (local
@@ -456,7 +456,7 @@
  (local
   (defthm lemma-4
     (equal (+ (i-large-integer) 0) (i-large-integer))))
- 
+
  ;; And, N*x/N = x.
 
  (local
@@ -482,7 +482,7 @@
 			     (y b)))
 	    :in-theory (disable lemma-3
 				standard-part-<=))))
-		 
+
  ;; Similarly, find-zero-n finds a root at least equal to a.
 
  (local
@@ -667,14 +667,14 @@
  (local
   (defthm lemma-1
     (equal (+ (i-large-integer) 0) (i-large-integer))))
- 
+
  ;; Also, N*x/N = x.
 
  (local
   (defthm lemma-2
     (equal (* (i-large-integer) x (/ (i-large-integer))) (fix x))))
 
- ;; This silly rule lets us know that x is close to x+eps! 
+ ;; This silly rule lets us know that x is close to x+eps!
 
  (local
   (defthm lemma-3
@@ -751,8 +751,8 @@
 			      (interval (rcfn-domain)))
 		   )
 	     :in-theory (disable find-zero-n-upper-bound-tight inside-interval-p-squeeze)))
-    )) 
-	     
+    ))
+
  (local
   (defthm lemma-6
     (implies (and (interval-left-inclusive-p (rcfn-domain))
@@ -763,7 +763,7 @@
 		  (realp z) (standardp z)
 		  (< (rcfn a) z)
 		  (< z (rcfn b)))
-	     (equal (standard-part 
+	     (equal (standard-part
 		     (rcfn (+ (- (* (/ (i-large-integer)) a))
 			      (* (/ (i-large-integer)) b)
 			      (find-zero-n a z 0 (i-large-integer)
@@ -890,7 +890,7 @@
 	    :use ((:functional-instance weak-intermediate-value-theorem
 					(rcfn-domain (lambda () (if (and (< a b)
 									   (inside-interval-p a (rcfn-domain))
-									   (inside-interval-p b (rcfn-domain))) 
+									   (inside-interval-p b (rcfn-domain)))
 								      (interval a b)
 								      (interval (+ 1 (realfix x)) (+ 2 (realfix x)))))))
                   (:instance inside-interval-p-contains-left-endpoint
@@ -942,14 +942,14 @@
 		(realp z)
 		)
 	   (i-limited (find-zero-n-2 a
-				     z 
-				     0 
+				     z
+				     0
 				     (i-large-integer)
 				     (+ (- (* (/ (i-large-integer)) a))
 					(* (/ (i-large-integer)) b)))))
    :hints (("Goal"
 	    :use ((:instance
-		   (:functional-instance 
+		   (:functional-instance
 		    limited-find-zero-body
 		    (rcfn (lambda (x) (- (rcfn x))))
 		    (find-zero-n (lambda (a z i n
@@ -968,8 +968,8 @@
 	   (< a b))
       (standard-part
        (find-zero-n-2 a
-		      z 
-		      0 
+		      z
+		      0
 		      (i-large-integer)
 		      (/ (- b a) (i-large-integer))))
     0))
@@ -995,8 +995,8 @@
                             (< a b))
                        (standard-part
                         (find-zero-n-2 a
-                                       z 
-                                       0 
+                                       z
+                                       0
                                        (i-large-integer)
                                        (/ (- b a) (i-large-integer))))
                      0)))))
@@ -1014,7 +1014,7 @@
                        (standard-part
                         (find-zero-n-2 a
                                        (- z)
-                                       0 
+                                       0
                                        (i-large-integer)
                                        (/ (- b a) (i-large-integer))))
                      0)))
@@ -1037,7 +1037,7 @@
 		       z)))
   :hints (("Goal"
 	   :use ((:instance
-		  (:functional-instance 
+		  (:functional-instance
 		   intermediate-value-theorem
 		   (rcfn (lambda (x) (- (rcfn x))))
 		   (find-zero (lambda (a b z)
@@ -1128,7 +1128,7 @@
 
 ;; Since the function above takes in a "max-so-far" argument, it is
 ;; important to note that the initial value of max-so-far is a lower
-;; bound for the maximum. 
+;; bound for the maximum.
 
 (defthm find-max-rcfn-x-n-is-monotone
   (<= (rcfn max-x) (rcfn (find-max-rcfn-x-n a max-x i n eps))))
@@ -1203,9 +1203,9 @@
 ;; is simple, since we know it's in the range [a,b] and b is limited.
 
 (defthm find-max-rcfn-x-n-limited
-  (implies (and (realp a) 
+  (implies (and (realp a)
 		(i-limited a)
-		(realp b) 
+		(realp b)
 		(i-limited b)
 		(< a b))
 	   (i-limited (find-max-rcfn-x-n a a
@@ -1234,13 +1234,13 @@
 				      (* (/ (i-large-integer))
 					 b)))))))
 	  ("Subgoal 1'"
-	   :use ((:instance large-if->-large 
+	   :use ((:instance large-if->-large
 			    (x x)
 			    (y (if (< (abs a) (abs b))
 				   (abs b)
 				 (abs a)))))
 	   :in-theory (disable large-if->-large))))
-	     
+
 ;; More important, if a and b are in the domain, so is find-max-x-n,
 ;; and that also follows since we know it's inside [a,b]
 
@@ -1282,7 +1282,7 @@
 	   (< a b))
       (standard-part (find-max-rcfn-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))))
     0))
@@ -1296,11 +1296,11 @@
 		(< a b))
 	   (<= a (find-max-rcfn-x a b)))
   :hints (("Goal'"
-	   :use ((:instance standard-part-<= 
+	   :use ((:instance standard-part-<=
 			    (x a)
 			    (y (find-max-rcfn-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))))))
 	   :in-theory (disable standard-part-<=))))
@@ -1314,10 +1314,10 @@
 	   (<= (find-max-rcfn-x a b) b))
 ; Matt K. v7-1 mod for ACL2 mod on 2/13/2015: "Goal''" changed to "Goal'".
   :hints (("Goal'"
-	   :use ((:instance standard-part-<= 
+	   :use ((:instance standard-part-<=
 			    (x (find-max-rcfn-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))))
 			    (y b))
@@ -1326,7 +1326,7 @@
 			    (i 0)
 			    (n (i-large-integer))
 			    (eps (/ (- b a) (i-large-integer))))
-			    
+
 		 )
 	   :in-theory (disable standard-part-<=))))
 
@@ -1369,7 +1369,7 @@
 	   :use ((:instance standard-part-<=
 			    (x (rcfn (+ a (* k (/ (- b a)
 						  (i-large-integer))))))
-			    (y (rcfn 
+			    (y (rcfn
 				      (find-max-rcfn-x-n a a 0
 						    (i-large-integer)
 						    (/ (- b a)
@@ -1487,7 +1487,7 @@
 		 (:instance x-in-upper-bound-of-grid))
 	   :in-theory (disable small-if-<-small
 			       x-in-upper-bound-of-grid))))
-  
+
 ;; So, we have that when eps is small, x and x_i are close to each other.
 
 (defthm x-in-upper-bound-of-grid-small-eps-better
@@ -1530,7 +1530,7 @@
 					  (< b c)))))))))
 
 (defthm rcfn-x-close-to-rcfn-upper-bound-of-grid
-  (implies (and (integerp i) 
+  (implies (and (integerp i)
 		(<= 0 i)
 		(integerp n)
 		(<= i n)
@@ -1615,7 +1615,7 @@
 			(* (/ (i-large-integer)) b))))))
 
 (defthm find-max-rcfn-is-maximum-of-standard
-  (implies (and (inside-interval-p a (rcfn-domain)) 
+  (implies (and (inside-interval-p a (rcfn-domain))
 		(standardp a)
 		(inside-interval-p b (rcfn-domain))
 		(standardp b)
@@ -1647,8 +1647,8 @@
 ;; that max is in [a,b].  This is the "maximum theorem".
 
 (defthm-std find-max-rcfn-is-maximum
-  (implies (and (inside-interval-p a (rcfn-domain)) 
-		(inside-interval-p b (rcfn-domain)) 
+  (implies (and (inside-interval-p a (rcfn-domain))
+		(inside-interval-p b (rcfn-domain))
 		(realp x)
 		(<= a x)
 		(<= x b)
@@ -1677,8 +1677,8 @@
 			(is-maximum-point a b max)))))
 
 (defthm maximum-point-theorem-sk
-  (implies (and (inside-interval-p a (rcfn-domain)) 
-		(inside-interval-p b (rcfn-domain)) 
+  (implies (and (inside-interval-p a (rcfn-domain))
+		(inside-interval-p b (rcfn-domain))
 		(< a b))
 	   (achieves-maximum-point a b))
   :hints (("Goal"
@@ -1711,9 +1711,9 @@
 ;; just reuse the theorem about max-n being limited.
 
 (defthm find-min-rcfn-x-n-limited
-  (implies (and (realp a) 
+  (implies (and (realp a)
 		(i-limited a)
-		(realp b) 
+		(realp b)
 		(i-limited b)
 		(< a b))
 	   (i-limited (find-min-rcfn-x-n a a
@@ -1727,7 +1727,7 @@
 				       (find-max-rcfn-x-n find-min-rcfn-x-n)
 				       ))
 	   :in-theory (disable find-max-rcfn-x-n-limited))))
-		   
+
 ;; That justifies the definition of min-x.
 
 (defun-std find-min-rcfn-x (a b)
@@ -1736,7 +1736,7 @@
 	   (< a b))
       (standard-part (find-min-rcfn-x-n a
 				   a
-				   0 
+				   0
 				   (i-large-integer)
 				   (/ (- b a) (i-large-integer))))
     0))
@@ -1745,8 +1745,8 @@
 ;; have to instantiate the appropriate theorem about maximums.
 
 (defthm find-min-rcfn-is-minimum
-  (implies (and (inside-interval-p a (rcfn-domain)) 
-		(inside-interval-p b (rcfn-domain)) 
+  (implies (and (inside-interval-p a (rcfn-domain))
+		(inside-interval-p b (rcfn-domain))
 		(realp x)
 		(<= a x)
 		(<= x b)
@@ -1827,8 +1827,8 @@
 			(is-minimum-point a b min)))))
 
 (defthm minimum-point-theorem-sk
-  (implies (and (inside-interval-p a (rcfn-domain)) 
-		(inside-interval-p b (rcfn-domain)) 
+  (implies (and (inside-interval-p a (rcfn-domain))
+		(inside-interval-p b (rcfn-domain))
 		(< a b))
 	   (achieves-minimum-point a b))
   :hints (("Goal"

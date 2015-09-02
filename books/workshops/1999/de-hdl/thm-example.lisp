@@ -2,7 +2,7 @@
 
 (include-book "de4")
 
-(defconst 
+(defconst
   *counter-netlist*
   '((four-bit-counter
      (incr reset-)
