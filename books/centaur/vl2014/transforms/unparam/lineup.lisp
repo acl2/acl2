@@ -208,7 +208,7 @@
              (mv nil
                  (fatal :type :vl-bad-instance
                         :msg "~a0: too many parameter values: ~x1 (non-local) ~
-                              parameter~s2, but is given ~x3 parameter argument~s5."
+                              parameter~s2, but is given ~x3 parameter argument~s4."
                         :args (list ctx
                                     num-formals
                                     (if (eql num-formals 1) "" "s")
