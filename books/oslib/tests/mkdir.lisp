@@ -50,7 +50,11 @@
 
 (define basic-mkdir-test ((new-dir-name stringp) &key (state 'state))
   :returns (state state-p1 :hyp (state-p1 state))
-  (b* (((mv errp orig-dirs state) (ls-subdirs "."))
+  (b* (((mv okp state) (rmtree new-dir-name))
+       ((unless okp)
+        (raise "Error removing directory ~x0." new-dir-name)
+        state)
+       ((mv errp orig-dirs state) (ls-subdirs "."))
        ((when errp)
         (raise "Error listing new subdirectories.")
         state)
@@ -58,7 +62,6 @@
        ((unless okp)
         (raise "Error making directory ~x0." new-dir-name)
         state)
-       (- (sleep 1)) ;; BOZO shouldn't be necessary, yet I get failures sometimes...
        ((mv errp new-dirs state) (ls-subdirs "."))
        ((when errp)
         (raise "Error listing new subdirectories.")
@@ -73,7 +76,6 @@
        ((unless okp)
         (raise "Error removing directory ~x0." new-dir-name)
         state)
-       (- (sleep 1)) ;; BOZO shouldn't be necessary, yet I get failures sometimes...
        ((mv errp new-dirs state) (ls-subdirs "."))
        ((when errp)
         (raise "Error listing new subdirectories.")
