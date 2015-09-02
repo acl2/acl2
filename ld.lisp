@@ -1973,7 +1973,7 @@
          (pcs-fn :x :x nil state)
          (value :invisible)))))))
 
-(defun ubt-ubu-fn (kwd cd state)
+(defun ubt?-ubu?-fn (kwd cd state)
 
 ; Kwd is :ubt or :ubu.
 
@@ -1988,20 +1988,6 @@
                             command-number-baseline)
                       (< (access-command-tuple-number (cddar cmd-wrld))
                          command-number-baseline))
-
-; We prevent ubt and ubu from going into prehistory, thus burning users due to
-; typos.  But sometimes developers need to do it.  Here is how from within the
-; ACL2 loop:
-
-; (set-state-ok t)
-; (defun my-ubt-ubu-fn (inclp x state) (declare (xargs :guard t)) (value x))
-; :q
-; Grab this defun, rename it to my-ubt-ubu-fn, edit out the cond clause
-; containing this comment and define my-ubt-ubu-fn in raw lisp.
-; (lp)
-; (my-ubt-ubu-fn t 'sys-fn state), where sys-fn is the desired target of the
-; ubt.
-
                     (cond
                      ((let ((command-number-baseline-original
                              (access command-number-baseline-info
@@ -2025,6 +2011,20 @@
                                        cmd-wrld)))
                       (ubt-ubu-fn1 kwd wrld pred-wrld state)))))))
 
+(defun ubt-ubu-fn (kwd cd state)
+
+; Kwd is :ubt or :ubu.
+
+  (state-global-let*
+   ((ld-query-control-alist
+     (list* `(,kwd :n!)
+            '(:ubt-defaults :n)
+            (@ ld-query-control-alist))))
+   (mv-let (erp val state)
+           (ubt?-ubu?-fn kwd cd state)
+           (declare (ignore erp val))
+           (value :invisible))))
+
 (defun ubt!-ubu!-fn (kwd cd state)
 
 ; Kwd is :ubt or :ubu.
@@ -2038,7 +2038,7 @@
      (union-equal '(observation warning error)
                   (@ inhibit-output-lst))))
    (mv-let (erp val state)
-           (ubt-ubu-fn kwd cd state)
+           (ubt?-ubu?-fn kwd cd state)
            (declare (ignore erp val))
            (value :invisible))))
 
@@ -3117,7 +3117,7 @@
                           (global-val 'command-number-baseline-info wrld)
                           :current))
 
-; See the similar comment in ubt-ubu-fn.
+; See the similar comment in ubt?-ubu?-fn.
 
               (cond
                ((<= (access-command-tuple-number (cddar cmd-wrld))
@@ -3249,7 +3249,7 @@
                                 (global-val 'command-number-baseline-info wrld)
                                 :current))
 
-; See the similar comment in ubt-ubu-fn.
+; See the similar comment in ubt?-ubu?-fn.
 
                     (cond
                      ((<= (access-command-tuple-number (cddar cmd-wrld))
