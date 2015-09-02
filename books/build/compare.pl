@@ -127,7 +127,14 @@ sub speedup {
     my $oldtime = $old_costs->{$file};
     my $newtime = $new_costs->{$file};
 #    print "file $file: oldtime $oldtime newtime $newtime\n";
-    return log($oldtime/$newtime)/log(2);
+    my $linear = $oldtime/$newtime;
+    if ($linear < 0) {
+	# This is total nonsense but at least it's a clear error.
+	return 999999;
+    }
+    else {
+	return log($linear)/log(2);
+    }
 }
 
 sub speedup_compare {
