@@ -1,3 +1,7 @@
+; Copyright (C) 2004-2015 Advanced Mirco Devices, Inc. 
+; All rights reserved.
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Matt Kaufmann, included starting with ACL2 Version 2.8.
 
 ; Replacement function rtl-untranslate for predefined untranslate, suitable for
