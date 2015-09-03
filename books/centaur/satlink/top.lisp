@@ -64,7 +64,7 @@ This is especially useful in @(see acl2::hardware-verification).</p>
 off-the-shelf SAT solvers like <a
 href='http://fmv.jku.at/lingeling/'>lingeling</a>, <a
 href='https://www.lri.fr/~simon/?page=glucose'>glucose</a>, and so on; see
-@(see sat-solver-options).  It provides:</p>
+@(see sat-solver-options) for download and build help.  It provides:</p>
 
 <ul>
 
