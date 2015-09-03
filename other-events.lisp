@@ -450,6 +450,12 @@
                                       ctx wrld state nil))))
    (value (cdr pair))))
 
+(defun large-consp (x)
+  (eql (the (signed-byte 30)
+            (cons-count-bounded x))
+       (the (signed-byte 30)
+            (fn-count-evg-max-val))))
+
 (defun defconst-fn (name form state doc event-form)
 
 ; Important Note:  Don't change the formals of this function without
@@ -471,6 +477,14 @@
         (cond
          ((and const-prop
                (not (ld-redefinition-action state))
+
+; Skip the event-level check (which is merely an optimization; see below) if it
+; seems expensive but the second check (below) could be cheap.  Imagine for
+; example (defconst *a* (hons-copy '<large_cons_tree>)) executed redundantly.
+; A related check may be found in the raw Lisp definition of acl2::defconst.
+; For a concrete example, see :doc note-7-2.
+
+               (not (large-consp event-form))
                (equal event-form (get-event name wrld1)))
 
 ; We stop the redundant event even before evaluating the form.  We believe
