@@ -150,6 +150,8 @@
 (include-book "centaur/ubdds/param" :dir :system)
 
 (include-book "centaur/sv/top" :dir :system)
+(include-book "centaur/sv/tutorial/alu" :dir :system)
+(include-book "centaur/sv/tutorial/boothpipe" :dir :system)
 (include-book "centaur/esim/vcd/vcd" :dir :system)
 (include-book "centaur/esim/vcd/esim-snapshot" :dir :system)
 (include-book "centaur/esim/vcd/vcd-stub" :dir :system)
