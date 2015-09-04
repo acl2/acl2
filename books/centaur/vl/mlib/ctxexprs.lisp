@@ -42,7 +42,7 @@ occur."
   :long "<p>Like the @(see allexprs) family of functions, these functions
 gather up what we regard as the \"top level\" expressions used throughout some
 module.  But whereas the @('allexprs') functions just return flat lists of
-expressions, we return a @(see vl-exprctxalist-p) that associates each
+expressions, we return a @(see vl-ctxexprlist) that associates each
 expression with a @(see vl-context-p) describing its origin.</p>")
 
 (defprod vl-ctxexpr

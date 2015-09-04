@@ -39,14 +39,16 @@
   :short "Throw away any @('initial') statements and add non-fatal @(see
 warnings) to the affected modules."
 
-  :long "<p>This transform can be run at any time, but it is typically done
-somewhere before @(see always-top), since some always-block code may be
-reluctant to process modules with @('initial') statements.</p>
+  :long "<p>Initial statements can be important for simulation, but are
+meaningless if we want to consider the post synthesis/build behavior of the
+actual part.  Throwing them away, then, is basically reasonable for any
+back-end tool that wants to analyze the behavior of the synthesized
+modules.</p>
 
-<p>Initial statements can be important for simulation, but are meaningless if
-we want to consider the post synthesis/build behavior of the actual part.
-Throwing them away, then, is basically reasonable for any back-end tool that
-wants to analyze the behavior of the synthesized modules.</p>")
+<p>This transform can be run at any time.  Back in VL2014 it was important to
+run it somewhere before the old @(see vl2014::always-top) transform, since some
+always-block code was reluctant to process modules with @('initial')
+statements.  That probably doesn't matter anymore.</p>")
 
 (local (xdoc::set-default-parents eliminitial))
 

@@ -599,9 +599,7 @@ arguments of gate instances and most arguments of module instances.  See our
               includes the @('signed') keyword, then both are to be considered
               signed.  The @(see loader) DOES NOT do this cross-referencing
               automatically; instead the @(see portdecl-sign) transformation
-              needs to be run.  See also @(see
-              vl-portdecl-and-moduleitem-compatible-p) which is part of our
-              notion of @(see reasonable) modules.")
+              needs to be run.")
 
    (atts     vl-atts-p
              "Any attributes associated with this declaration.")
@@ -4033,7 +4031,7 @@ are:</p>
    (right vl-maybe-expr-p
           "The right-hand side expression, if applicable.  Note that our
            expression representation allows us to directly represent @('$') as
-           a @(see vl-keyguts) atom, so in case of ranges like @('##[1:$]'),
+           a @(see vl-special) expression, so in case of ranges like @('##[1:$]'),
            @('right') is just the expression for @('$').  Other examples:
            @('right') is @('nil') in @('##5'), @('20') in @('##[10:20]), @('$')
            in @('##[*]), and @('$') in @('##[+]).  Supposed to be a constant

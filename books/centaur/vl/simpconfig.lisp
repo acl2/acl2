@@ -48,12 +48,6 @@
                   cause some kind of problems."
                  :default nil)
 
-   (clean-params-p booleanp
-                   "Should we clean parameters with the @(see clean-params) transform
-                    before unparameterizing?"
-                   :rule-classes :type-prescription
-                   :default t)
-
    (unroll-limit natp
                  "Maximum number of iterations to unroll for loops, etc., when
                   rewriting statements.  This is just a safety valve."

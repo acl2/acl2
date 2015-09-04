@@ -253,7 +253,7 @@
 
 (defsection bfr-reasoning
   :parents (bfr)
-  :short "Clause processor for @(see witness)-style BFR reasoning."
+  :short "Clause processor for @(see acl2::witness)-style BFR reasoning."
   :long "<p>Tries to apply the @(see bfr-eval-cp) clause processor when goals are
 stable-under-simplificationp.  Typical usage:</p>
 

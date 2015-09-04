@@ -45,19 +45,23 @@
       (integerp x)   ;; array indices
       (eq x :self)   ;; special name for a datatype's self wire -- see vl-datatype->mods
       (and (consp x)
-           (eq (car x) :anonymous)))
+           (eq (car x) :anonymous))))
+
+(define name-fix ((x name-p))
+  :parents (name-p)
+  :returns (xx name-p)
+  :hooks nil
+  (mbe :logic (if (name-p x) x '(:anonymous))
+       :exec x)
   ///
-  (define name-fix ((x name-p))
-    :returns (xx name-p)
-    :hooks nil
-    (mbe :logic (if (name-p x) x '(:anonymous))
-         :exec x)
-    ///
-    (defthm name-fix-when-name-p
-      (implies (name-p x)
-               (equal (name-fix x) x)))
-    (fty::deffixtype name :pred name-p :fix name-fix :equiv name-equiv
-      :define t :forward t)))
+  (defthm name-fix-when-name-p
+    (implies (name-p x)
+             (equal (name-fix x) x))))
+
+(defsection name-equiv
+  :parents (name-p)
+  (fty::deffixtype name :pred name-p :fix name-fix :equiv name-equiv
+    :define t :forward t))
 
 
 (fty::defflexsum path
