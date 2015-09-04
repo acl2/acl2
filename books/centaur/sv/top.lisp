@@ -254,7 +254,34 @@ resolve any multiply-driven wires after flattening and before composition.</p>
 alias normalization, and composition has proven to be very convenient for
 expressing many SystemVerilog features such as compound data structures.
 Thanks to this, SV can support a richer set of SystemVerilog designs than
-ESIM.</p>")
+ESIM.</p>
+
+<h3>Performance statistics</h3>
+
+<p>The following timings and performance discussion are for one of <a
+href=\"http://www.oracle.com\">Oracle</a>'s main hardware proof stacks.
+Perhaps these statistics should be taken lightly, as they were only single
+runs, and it's possible (though somewhat unlikely) that there was contention
+for the cores.  These were run with @('-j 1').
+
+The reported \"user\" time is only the time that ACL2 itself was running.  The
+time spent in the SAT solver is left out of the \"user\" time but very
+relevant.  As such, we focus on the wall-clock time.</p>
+
+<ul>
+<li>In Esim:  12 hours and 14 minutes of time<br />
+@('19758.892u 434.856s 12:14:18.48 45.8% 0+0k 692208+2144728io 18pf+0w')
+</li>
+<li>In SV: 7 hours and 7 minutes of time<br />
+@('16128.279u 410.741s 7:07:16.04 64.5% 0+0k 520448+1000408io 12pf+0w')</li>
+</ul>
+
+<p>Generally speaking, proofs are either the same speed or faster under the SV
+framework.  One <em>composition</em> (@(see sv::svex-decomp)) proof using @(see
+acl2::gl) (which is the old method for doing such proofs) took approximately
+5386 seconds in Esim and now takes 69 seconds in SV.  As another example, one
+proof that describes the functionality of a Verilog circuit took 166 seconds in
+Esim and now takes 170 seconds in SV.</p>")
 
 
 
