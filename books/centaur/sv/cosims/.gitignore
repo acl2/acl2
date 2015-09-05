@@ -1,0 +1,10 @@
+INCA_libs/
+csrc/
+ok
+simv
+simv.daidir/
+test.vcd
+ucli.key
+cosim-core
+cosim-core.lx86cl64
+Makefile-books
