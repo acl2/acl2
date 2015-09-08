@@ -29,5 +29,6 @@
   documentation from the community books.</p>")
 
 (xdoc::save "../../../doc/manual"
-            :import nil)
+            ; :import nil ; no longer supported
+            )
 

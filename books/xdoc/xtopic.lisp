@@ -28,5 +28,4 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "std/package.lsp" :dir :system)
-(in-package "XDOC")
+(in-package "ACL2") ; added by Matt K. to avoid certification failure

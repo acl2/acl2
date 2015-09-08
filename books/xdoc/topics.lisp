@@ -1,5 +1,5 @@
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2014 Centaur Technology
+; Copyright (C) 2009-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -36,7 +36,7 @@
 ; time of top.lisp.
 
 (in-package "XDOC")
-(include-book "import-acl2doc")  ;; For base acl2 documentation
+(include-book "top")
 
 (defxdoc xdoc
   :parents (documentation)
@@ -611,7 +611,6 @@ manual with others, you should read about @(see deploying-manuals).</li>
 
 @({
     (save <target-dir>
-          [:import    import]    ;; default is t
           [:redef-okp bool]      ;; default is nil
           [:zip-p     bool]      ;; default is t
           )
@@ -631,24 +630,16 @@ overwritten</color>.</li>
 
 <h3>Avoiding Unwanted Documentation</h3>
 
-<p>By default, the @('save') command will automatically import:</p>
-<ul>
-<li>the documentation for the ACL2 theorem prover</li>
-<li>any @(see defdoc) style documentation from books you have loaded</li>
-<li>the documentation for @('xdoc') itself.</li>
-</ul>
+<p>By default, the @('save') command will generate a manual that covers the
+documentation for all books that you have loaded.  This usually works well
+as long as you know all of the books that you need to include.</p>
 
-<p>You can turn off <b>most</b> of this by setting @(':import nil') in your
-@('save') command.</p>
-
-<p>However, you may find that even after setting @(':import nil'), some
-extraneous documentation is still being included!  For instance, you may find
+<p>One caveat is that @('xdoc/save') includes some supporting books that are,
+themselves, documented.  Accordingly, you may find that your manual includes
 documentation from libraries like @(see acl2::std/strings) and @(see
-oslib::oslib) in your output.</p>
-
-<p>This is because @('xdoc/save') includes some supporting books that are,
-themselves, documented.  If you really want precise control over what goes into
-your manual, then, you may want to do something like this:</p>
+oslib::oslib) in your output even if you haven't loaded these libraries
+yourself.  If you really want precise control over what goes into your manual,
+then, you may want to do something like this:</p>
 
 @({
  ;; nothing-extra-manual.lisp - manual with nothing extra
@@ -670,7 +661,7 @@ your manual, then, you may want to do something like this:</p>
    :short \"My Manual\"
    :long \"<p>This manual explains how to use my books...</p>\")
 
- (xdoc::save \"./mylib-manual\" :import nil)
+ (xdoc::save \"./mylib-manual\")
 })")
 
 

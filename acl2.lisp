@@ -870,7 +870,11 @@
 
                         (or (let ((disc ,disc)
                                   (qterm ',term))
-                              (and (not (acl2::large-consp qterm))
+
+; We check that acl2::large-consp to avoid a boot-strapping problem in GCL.
+
+                              (and (not (and (fboundp 'acl2::large-consp)
+                                             (acl2::large-consp qterm)))
                                    (equal (car (cdr disc)) qterm)))
                             (equal (cdr (cdr ,disc)) ,term)))
                    (symbol-value ',name))
