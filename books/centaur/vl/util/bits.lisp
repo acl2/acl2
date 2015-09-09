@@ -34,6 +34,11 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 
+; Organizational note: these definitions could easily go into expr.lisp, but
+; separating them out is useful for dependencies: it lets us use vl-bit and
+; vl-timeunit in lexer tokens without having to depend on the entire expression
+; file.
+
 (defxdoc vl-bit
   :parents (vl-weirdint vl-extint)
   :short "Representation of a single Verilog bit (0, 1, X, or Z)."

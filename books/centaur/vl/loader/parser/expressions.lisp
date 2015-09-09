@@ -389,10 +389,10 @@ expression.</p>")
   (b* (((vl-inttoken x) x))
     (if x.value
         (make-vl-constint :origwidth  x.width
-                          :origtype   (if x.signedp :vl-signed :vl-unsigned)
+                          :origsign   (if x.signedp :vl-signed :vl-unsigned)
                           :value      x.value
                           :wasunsized x.wasunsized)
-      (make-vl-weirdint :origtype   (if x.signedp :vl-signed :vl-unsigned)
+      (make-vl-weirdint :origsign   (if x.signedp :vl-signed :vl-unsigned)
                         :bits       (if (mbt (consp x.bits))
                                         x.bits
                                       '(:vl-0val))

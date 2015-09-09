@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2014 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -59,16 +59,16 @@ expression representation did not enforce this, so nothing prevented you from
 creating nonsensical expressions like @('foo.(3 + 4).baz').</p>
 
 <p>The ability to create degenerate/nonsense expressions is not necessarily so
-bad&mdash;just don't create nonsense expressions and what's the a problem?
-However, we eventually found that the possibility of these degenerate
-expressions turned out to have a pervasive impact when writing code to process
-expressions: VL's many transforms and utilities always had to defend against
-such malformed expressions.</p>
+bad&mdash;just don't create nonsense expressions and what's the a problem?  But
+the possibility of these degenerate expressions might exist turned out to have
+a pervasive impact when writing code to process expressions: VL's many
+transforms and utilities always had to defend against such malformed
+expressions.</p>
 
 <p>This defense was generally carried out by adding guards or explicit run-time
 tests that expressions were sensible.  The result was copious error handling
 code, difficult and tedious proofs about well-formedness (e.g., see @(see
-vl2014::welltyped), and additional interfacing layers such as the @(see
+vl2014::welltyped)), and additional interfacing layers such as the @(see
 vl2014::hid-tools) to hide the problem.  These layers became ever more complex
 as we implemented more of SystemVerilog, e.g., scope expressions and data type
 indexing greatly complicated the handling of hierarchical identifiers.</p>
@@ -79,16 +79,17 @@ handle @(see mutual-recursion) via macro libraries such as @(see fty::fty) and
 replace it with a much more strongly typed, mutually recursive approach.</p>
 
 <p>Our new expression format is much more complex than before.  However, it
-also intrinsically rules out many expressions that were previously allowed and
-generally makes expression-processing code much safer.</p>")
+also intrinsically rules out many expressions that were previously allowed,
+which helps to avoid needing error checking code when processing expressions,
+and generally makes it easier to write safe expression-processing code.</p>")
 
 (define vl-bitlist-nonempty-fix ((x vl-bitlist-p))
   :guard (consp x)
   :parents (vl-weirdint)
   :short "Fixing function for non-empty @(see vl-bitlist)s."
   :long "<p>This is just a technical helper function that supports the @(see
-fty::fty-discipline).  It is used to ensure that the @('bits') of a @(see
-vl-weirdint-p) are always nonempty.</p>"
+         fty::fty-discipline).  It is used to ensure that the @('bits') of a
+         @(see vl-weirdint-p) are always nonempty.</p>"
   :returns (x-fix vl-bitlist-p)
   :inline t
   (mbe :logic
@@ -106,44 +107,51 @@ vl-weirdint-p) are always nonempty.</p>"
              (equal x-fix (vl-bitlist-fix x)))))
 
 
-(defxdoc vl-exprtype
-  :short "An indication of signedness. (Not particularly related to
-SystemVerilog data types.)"
+(defxdoc vl-exprsign
+  :parents (vl-expr)
+  :short "An indication of an expression's signedness (signed or unsigned)."
 
   :long "<p>On the surface there is not much to this: a literal, wire, or some
-other kind of expression might be regarded as either signed or unsigned.  These
-types are used in the representation of certain expressions like @(see
-vl-constint) and @(see vl-weirdint) literals; they are also used in routines
-like @(see vl-expr-typedecide).</p>
+         other kind of expression might be regarded as either signed or
+         unsigned.  These notes about the signedness of things occur in the
+         representation of certain expressions like @(see vl-constint) and
+         @(see vl-weirdint) literals; they are also used in routines like @(see
+         vl-expr-typedecide).</p>
 
-<p>BOZO we should consider renaming this to @('vl-exprsign-p') or similar.</p>
+         <p>If you're trying to represent something that might not have a
+         signedness, for instance a real number or an unpacked structure or
+         something like that, you probably want a @(see vl-maybe-exprsign)
+         instead.</p>
 
-<p>By way of history, in Verilog-2005, there were no SystemVerilog style data
-types like @('struct') and @('union') types; the Verilog-2005 standard
-generally uses the ``type'' of an expression to describe whether it is
-considered to be a real number, a signed integer, an unsigned integer, and
-maybe other vaguely specified things.  Since VL has never had particularly good
-support for real numbers, for us the type of an expression was mostly just
-whether or not it was signed.</p>
+         <p>Note that the Verilog standards sometimes use the word ``type'' to
+         refer to the signedness of things.  Back in Verilog-2005, before there
+         were fancy types like structs and unions, the ``type'' of an
+         expression generally meant whether it was considered a real number, a
+         signed integer, an unsigned integer, and maybe other vaguely specified
+         things.</p>
 
-<p>Now that SystemVerilog-2012 has much richer types, it is mostly just
-confusing to use the word ``type'' in place of signedness.  However, this is
-still done in, for instance, Section 11.8.1.</p>")
+         <p>Now that SystemVerilog-2012 has much richer types, it is mostly
+         just confusing to use the word ``type'' in place of signedness.  But
+         this is still done occasionally.  Most notably, it happens in Section
+         11.8.1, which seems to be adapted from Verilog-2005's Section 5.5.1,
+         and explains how to compute the ``type'' of an expression, which
+         mostly means its signedness and has little to do with any kind of
+         fancy SystemVerilog types.</p>")
 
-(defenum vl-exprtype-p
+(defenum vl-exprsign-p
   (:vl-signed :vl-unsigned)
-  :short "Recognizer for @(see vl-exprtype) symbols."
-  :parents (vl-exprtype))
+  :short "Recognizer for @(see vl-exprsign) symbols."
+  :parents (vl-exprsign))
 
-(defoption vl-maybe-exprtype
-  vl-exprtype-p
-  :parents (vl-exprtype)
+(defoption vl-maybe-exprsign
+  vl-exprsign-p
+  :parents (vl-exprsign)
   ///
-  (defthm type-when-vl-maybe-exprtype-p
-    (implies (vl-maybe-exprtype-p x)
+  (defthm type-when-vl-maybe-exprsign-p
+    (implies (vl-maybe-exprsign-p x)
              (and (symbolp x)
                   (not (equal x t))))
-    :hints(("Goal" :in-theory (enable vl-maybe-exprtype-p)))
+    :hints(("Goal" :in-theory (enable vl-maybe-exprsign-p)))
     :rule-classes :compound-recognizer))
 
 
@@ -166,7 +174,7 @@ still done in, for instance, Section 11.8.1.</p>")
                 immediately upon parsing the value has already been determined
                 and is available to you as an ordinary natural number."
                 :reqfix (acl2::loghead (pos-fix origwidth) value))
-    (origtype   vl-exprtype-p
+    (origsign   vl-exprsign-p
                 "Subtle; generally should <b>not be used</b>; see below.")
     (wasunsized booleanp
                 :rule-classes :type-prescription
@@ -183,10 +191,10 @@ still done in, for instance, Section 11.8.1.</p>")
           sign is not part of the literal.  See Section 3.5.1 of the
           Verilog-2005 standard.</p>
 
-          <p>The @('origwidth') and @('origtype') fields are subtle.  They
+          <p>The @('origwidth') and @('origsign') fields are subtle.  They
           indicate the <i>original</i> width and signedness of the literal as
           specified in the source code, e.g., if the source code contains
-          @('8'sd 65'), then the origwidth will be 8 and the origtype will be
+          @('8'sd 65'), then the origwidth will be 8 and the origsign will be
           @(':vl-signed.')  These fields are subtle because @(see
           expression-sizing) generally alters the widths and types of
           subexpressions, so these may not represent the final widths and types
@@ -228,7 +236,7 @@ still done in, for instance, Section 11.8.1.</p>")
                  "An MSB-first list of the four-valued Verilog bits making up
                   this constant's value; see @(see vl-bit-p)."
                  :reqfix (vl-bitlist-nonempty-fix bits))
-    (origtype     vl-exprtype-p
+    (origsign     vl-exprsign-p
                   "Subtle; generally should <b>not be used</b>; see below.")
     (wasunsized  booleanp
                  :rule-classes :type-prescription
@@ -237,7 +245,7 @@ still done in, for instance, Section 11.8.1.</p>")
    :long "<p>Weird integers are produced by source code constructs like
           @('1'bz'), @('3'b0X1'), and so on.</p>
 
-          <p>The @('origtype') and @('wasunsized') fields are analogous to
+          <p>The @('origsign') and @('wasunsized') fields are analogous to
           those from a @(see vl-constint); see the discussion there for
           details.  But unlike a constint, a weirdint does not have a
           natural-number @('value').  Instead it has a list of four-valued
@@ -605,7 +613,8 @@ a user-defined name.")
    :vl-$
    ;; :vl-$root
    ;; :vl-$unit
-   :vl-emptyqueue))
+   :vl-emptyqueue)
+  :parents (vl-special))
 
 (defenum vl-leftright-p
   (:left :right)
@@ -1013,6 +1022,7 @@ rule.</p>")
 ; -----------------------------------------------------------------------------
 
   (defprod vl-range
+    :parents (syntax)
     :measure (two-nats-measure (acl2-count x) 100)
     :short "A simple @('[msb:lsb]') style range."
     :tag :vl-range
@@ -1036,6 +1046,7 @@ ranges such as @('[3:0]') and attempting to select from it using a
     :parents (vl-range))
 
   (defflexsum vl-packeddimension
+    :parents (syntax)
     :measure (two-nats-measure (acl2-count x) 105)
     :short "A range like @('[3:0]') or an <i>unsized dimension</i>, written as
             @('[]')."
@@ -1213,6 +1224,7 @@ ranges such as @('[3:0]') and attempting to select from it using a
 ; -----------------------------------------------------------------------------
 
   (defflexsum vl-valuerange
+    :parents (vl-inside)
     :measure (two-nats-measure (acl2-count x) 105)
     :short "A value or a range used in an @('inside') expression.  For instance,
             the @('8') or @('[16:20]') from @('a inside { 8, [16:20] }')."
@@ -1482,7 +1494,7 @@ ranges such as @('[3:0]') and attempting to select from it using a
     (:vl-union
      :layout :tree
      :base-name vl-union
-     :short "A SystemVerilog @('unions') data type."
+     :short "A SystemVerilog @('union') data type."
      ((packedp  booleanp :rule-classes :type-prescription
                 "Says whether this union is @('packed') or not.")
       (signedp  booleanp :rule-classes :type-prescription

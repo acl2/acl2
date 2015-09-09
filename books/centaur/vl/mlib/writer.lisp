@@ -292,12 +292,12 @@ displays.  The module browser's web pages are responsible for defining the
 
 (define vl-pp-constint ((x vl-value-p) &key (ps 'ps))
   :guard (vl-value-case x :vl-constint)
-  ;; BOZO origwidth/origtype okay here???
+  ;; BOZO origwidth/origsign okay here???
   ;; BOZO maybe add origbase or something for printing in the same radix
   ;; as the number was read in?
   (b* (((vl-constint x) x)
 
-       ((when (and (eq x.origtype :vl-signed)
+       ((when (and (eq x.origsign :vl-signed)
                    (eql x.origwidth 32)))
         ;; BOZO this might not be quite right.  We hope that it allows us to
         ;; print plain decimal integers when the user used them originally,
@@ -308,19 +308,19 @@ displays.  The module browser's web pages are responsible for defining the
 
     (vl-ps-span "vl_int"
                 (vl-print-nat x.origwidth)
-                (if (eq x.origtype :vl-signed)
+                (if (eq x.origsign :vl-signed)
                     (vl-print-str "'sd")
                   (vl-print-str "'d"))
                 (vl-print-nat x.value))))
 
 (define vl-pp-weirdint ((x vl-value-p) &key (ps 'ps))
   :guard (vl-value-case x :vl-weirdint)
-  ;; BOZO origwidth/origtype okay here??
+  ;; BOZO origwidth/origsign okay here??
   ;; BOZO maybe add origbase
   (b* (((vl-weirdint x) x))
     (vl-ps-span "vl_int"
                 (vl-print-nat (len x.bits))
-                (if (eq x.origtype :vl-signed)
+                (if (eq x.origsign :vl-signed)
                     (vl-print-str "'sb")
                   (vl-print-str "'b"))
                 (vl-print (vl-bitlist->charlist x.bits)))))
