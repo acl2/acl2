@@ -177,14 +177,11 @@
 (include-book "centaur/vl2014/transforms/propagate" :dir :system)
 (include-book "centaur/vl2014/transforms/expr-simp" :dir :system)
 (include-book "centaur/vl2014/transforms/inline" :dir :system)
-
-(include-book "centaur/vl/util/prefix-hash" :dir :system)
 (include-book "centaur/vl2014/util/prefix-hash" :dir :system)
 
 ;; BOZO conflict with prefix-hash stuff above.  Need to fix this.  Also, are
 ;; these being used at all?
 
-;; (include-book "centaur/vl/util/prefixp" :dir :system)
 ;; (include-book "centaur/vl2014/util/prefixp" :dir :system)
 
 (include-book "hacking/all" :dir :system)
