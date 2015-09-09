@@ -9,7 +9,7 @@
 
 (include-book "xdoc/top" :dir :system)
 (defxdoc with-timeout
-  :parents (acl2::cgen)
+  :parents (acl2::cgen acl2::miscellaneous) ; the latter helps ACL2-only :doc
   :short  "Evaluate form with a timeout (in seconds)"
   :long
   "<p>Evaluate form with a timeout in seconds. </p>

@@ -31,7 +31,7 @@
 
 
 (defxdoc oracle-timelimit
-  :parents (oracle-time)
+  :parents (oracle-time miscellaneous) ; the latter helps ACL2-only :doc
   :short "Carry out some computation, returning (not just printing!) how long
 it took and (on supported Lisps) how many bytes were allocated, but aborting
 the execution if it takes too long."

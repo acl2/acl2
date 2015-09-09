@@ -27186,27 +27186,6 @@
 ; depends on remove-strings and other functions defined after axioms.lisp, we
 ; define it here.
 
-(defun program-declared-p1 (dcls)
-  (cond ((endp dcls) nil)
-        ((and (consp (car dcls))
-              (eq (caar dcls) 'xargs)
-              (keyword-value-listp (cdr (car dcls)))
-              (eq (cadr (assoc-keyword :mode (cdr (car dcls))))
-                  :program))
-         t)
-        (t (program-declared-p1 (cdr dcls)))))
-
-(defun program-declared-p (def)
-
-; Def is a definition with the initial DEFUN or DEFUND stripped off.  We return
-; t if the declarations in def are minimally well-formed and there is an xargs
-; declaration of :mode :program.
-
-  (mv-let (erp dcls)
-          (collect-dcls (remove-strings (butlast (cddr def) 1)) 'ignored-ctx)
-          (cond (erp nil)
-                (t (program-declared-p1 dcls)))))
-
 #+acl2-loop-only
 (defmacro defund (&rest def)
   (declare (xargs :guard (and (true-listp def)
