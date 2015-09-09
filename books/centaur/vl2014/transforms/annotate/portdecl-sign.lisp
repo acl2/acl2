@@ -161,8 +161,8 @@ nets agree and are correct by the time actual modules are produced.</p>")
               (fatal :type :vl-programming-error
                      :msg "~a0: mismatching types between complete port ~
                            declaration and its corresponding variable ~
-                           declaration.  Port type: ~a1, variable type: ~a2."
-                     :args (list port port.type var.type))
+                           declaration.  Port type: ~a1, variable type: ~a2, nettypes: ~a3, ~a4."
+                     :args (list port port.type var.type port.nettype var.nettype))
               port var)))
 
        ((unless (eq (vl-datatype-kind port.type) :vl-coretype))
