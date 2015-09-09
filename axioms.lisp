@@ -10677,7 +10677,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                acl2::*1*-package-prefix*
                                name))
         (proposed-imports ; avoid sort-symbol-listp for toothbrush
-         (delete-duplicates (sort (copy-list imports) 'symbol-<))))
+         (remove-adjacent-duplicates-eq (sort (copy-list imports) 'symbol-<))))
     (assert pkg) ; see defpkg-raw
 
 ; We bind proposed-imports to the value of the imports argument.  We do not
