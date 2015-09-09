@@ -2874,18 +2874,35 @@
 
 ; We have slightly modified the original definition so as to match the
 ; definition (quite likely adapted from the original one here) in community
-; book books/defsort/remove-dups.lisp.
+; book books/defsort/remove-dups.lisp.  Sol Swords points out that an
+; unconditional rule true-listp-of-remove-adjacent-duplicates in that book
+; relies on (list (car x)) in the second case below, rather than x.
+
+  (declare (xargs :guard t))
+  (cond ((atom x)
+         nil)
+        ((atom (cdr x))
+         (list (car x))) ; See comment above for why this is not x.
+        ((equal (car x) (cadr x))
+         (remove-adjacent-duplicates (cdr x)))
+        (t
+         (cons (car x)
+               (remove-adjacent-duplicates (cdr x))))))
+
+(defun remove-adjacent-duplicates-eq (x)
+
+; See remove-adjacent-duplicates.
 
   (declare (xargs :guard t))
   (cond ((atom x)
          nil)
         ((atom (cdr x))
          (list (car x)))
-        ((equal (car x) (cadr x))
-         (remove-adjacent-duplicates (cdr x)))
+        ((eq (car x) (cadr x))
+         (remove-adjacent-duplicates-eq (cdr x)))
         (t
          (cons (car x)
-               (remove-adjacent-duplicates (cdr x))))))
+               (remove-adjacent-duplicates-eq (cdr x))))))
 
 #+:non-standard-analysis
 (defun non-standard-induction-vars (candidate wrld)
