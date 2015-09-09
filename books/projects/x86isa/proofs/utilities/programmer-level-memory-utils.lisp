@@ -227,29 +227,29 @@ programmer-level mode.</p>" )
   ;; i is positive, k is positive, k < i
   (implies (and (canonical-address-p (+ i addr))
                 (canonical-address-p addr)
-                (integerp k)
+                (< k i)
                 (<= 0 k)
-                (< k i))
+                (integerp k))
            (canonical-address-p (+ k addr))))
 
 (defthm canonical-address-p-limits-thm-1
   ;; i is negative, k is negative, k > i
   (implies (and (canonical-address-p (+ i addr))
                 (canonical-address-p addr)
-                (integerp k)
+                (< i k)
                 (< i 0)
                 (< k 0)
-                (< i k))
+                (integerp k))
            (canonical-address-p (+ k addr))))
 
 (defthm canonical-address-p-limits-thm-2
-  ;; i is negative, j is positive, i < k < j
+  ;; i < k < j
   (implies (and (canonical-address-p (+ i addr))
                 (canonical-address-p (+ j addr))
-                (integerp addr)
-                (integerp k)
                 (< i k)
-                (< k j))
+                (< k j)
+                (integerp addr)
+                (integerp k))
            (canonical-address-p (+ k addr))))
 
 (encapsulate

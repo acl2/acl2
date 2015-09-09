@@ -135,7 +135,6 @@ memory.</li>
 
   )) ;; End of local encapsulate
 
-;; The following is a no-op for ACL2 distributions.
 (acl2::set-waterfall-parallelism t)
 
 ;; ======================================================================
@@ -772,7 +771,13 @@ memory.</li>
                (equal (len (nthcdr m (byte-ify-general n val acc)))
                       (- (+ n (len acc)) m)))
       :hints (("Goal" :in-theory (e/d (nfix) ())))
-      :rule-classes :linear))
+      :rule-classes :linear)
+
+    (defthmd byte-ify-opener
+      (implies (and (syntaxp (quotep n))
+                    (posp n))
+               (equal (byte-ify-general n val acc)
+                      (byte-ify-general (1- n) (logtail 8 val) (cons (loghead 8 val) acc))))))
 
   (define byte-ify ((n natp) (val integerp))
     :short "@('byte-ify') takes an integer @('val') and converts it
@@ -787,6 +792,11 @@ memory.</li>
   <li><code>(byte-ify 8 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #x0 #x0 #x0)</code></li>
   </ul>"
 
+    ;; This is logically equal to just (byte-ify-general n val nil), but
+    ;; reasoning about logheads and logtails in the common case is
+    ;; easier. Anyway, the theorem byte-ify-and-byte-ify-general establishes a
+    ;; relationship between byte-ify and byte-ify-general, but it's kept
+    ;; disabled.
     (case n
       (0 nil)
       (1 (list (part-select val :low 0  :width 8)))
@@ -824,6 +834,12 @@ memory.</li>
 
     ///
 
+    (defthmd byte-ify-and-byte-ify-general
+      (equal (byte-ify n val)
+             (byte-ify-general n val nil))
+      :hints (("Goal" :in-theory (e/d* (byte-ify-opener
+                                        byte-ify-general)
+                                       ()))))
     (defthm byte-listp-byte-ify
       (byte-listp (byte-ify n val)))
 
@@ -1283,9 +1299,9 @@ memory.</li>
       :hints (("Goal" :expand (create-canonical-address-list 1 x))))
 
     (defthm len-of-create-canonical-address-list
-      (implies (and (natp count)
+      (implies (and (canonical-address-p (+ -1 addr count))
                     (canonical-address-p addr)
-                    (canonical-address-p (+ -1 addr count)))
+                    (natp count))
                (equal (len (create-canonical-address-list count addr))
                       count))))
 

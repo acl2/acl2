@@ -53,6 +53,11 @@
   ()
   (local (include-book "word-count/wc" :ttags :all))))
 
+(local
+ (encapsulate
+  ()
+  (local (include-book "dataCopy/dataCopy" :ttags :all))))
+
   )
 
 ;; ======================================================================

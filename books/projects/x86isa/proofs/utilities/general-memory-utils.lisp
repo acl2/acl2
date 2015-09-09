@@ -10,9 +10,13 @@
 
 ;; ===================================================================
 
-;; Some lemmas for combine-bytes and byte-ify:
-
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+;; -------
+
+;; [Shilpi]: Do I need the following lemmas anymore?
+
+;; Some lemmas for constructing a number from its constituent parts:
 
 (defthm combining-logior-of-loghead-and-ash-logtail
   (implies (and (natp x)
@@ -81,16 +85,7 @@
                                     zip)
                                    ()))))
 
-(local
- (defthm combine-bytes-and-byte-ify-specific
-   (implies (and (or (equal n 2)
-                     (equal n 4)
-                     (equal n 8)
-                     (equal n 16)))
-            (equal (combine-bytes (byte-ify n x))
-                   (loghead (ash n 3) x)))
-   :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify)
-                                    ())))))
+;; -------
 
 (defthm loghead-of-non-integerp
   (implies (not (integerp x))
@@ -150,42 +145,15 @@
                                    (acc2 acc)
                                    (acc1 nil))))))
 
-(local
- (defthm combine-bytes-and-byte-ify-general
-   (implies (natp n)
-            (equal (combine-bytes (byte-ify-general n x nil))
-                   (loghead (ash n 3) x)))
-   :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify byte-ify-general)
-                                    ())))))
 
 (defthm combine-bytes-and-byte-ify
   (implies (natp n)
            (equal (combine-bytes (byte-ify n x))
                   (loghead (ash n 3) x)))
-  :hints (("Goal" :in-theory (e/d* (byte-ify) ()))))
-
-(local
- (defthm remove-loghead-from-byte-ify-specific
-   (implies (and (equal m (ash n 3))
-                 (or (equal n 0)
-                     (equal n 1)
-                     (equal n 2)
-                     (equal n 4)
-                     (equal n 8)
-                     (equal n 16)))
-            (equal (byte-ify n (loghead m x))
-                   (byte-ify n x)))
-   :hints (("Goal" :in-theory (e/d* (byte-ify byte-ify-general) ())))))
-
-(local
- (defthm remove-loghead-from-byte-ify-general
-   (implies (equal m (ash n 3))
-            (equal (byte-ify-general n (loghead m x) acc)
-                   (byte-ify-general n x acc)))
-   :hints (("Goal" :in-theory (e/d* (byte-ify-general
-                                     ihsext-recursive-redefs
-                                     ihsext-inductions)
-                                    ())))))
+  :hints (("Goal" :in-theory (e/d* (combine-bytes
+                                    byte-ify-and-byte-ify-general
+                                    byte-ify-general)
+                                   ()))))
 
 (defthmd remove-loghead-from-byte-ify
   ;; We keep this rule disabled because most of the times, removing loghead
@@ -193,28 +161,11 @@
   (implies (equal m (ash n 3))
            (equal (byte-ify n (loghead m x))
                   (byte-ify n x)))
-  :hints (("Goal" :in-theory (e/d* (byte-ify) ()))))
-
-(local
- (defthmd combine-bytes-and-byte-ify-inequality-lemma-specific
-   (implies (and (equal bytes (byte-ify n x))
-                 (or (equal n 0)
-                     (equal n 1)
-                     (equal n 2)
-                     (equal n 4)
-                     (equal n 8)
-                     (equal n 16))
-                 (not (equal (loghead (ash n 3) x) val)))
-            (equal (equal (combine-bytes bytes) val) nil))
-   :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify) ())))))
-
-(local
- (defthmd combine-bytes-and-byte-ify-general-inequality-lemma
-   (implies (and (equal bytes (byte-ify-general n x nil))
-                 (natp n)
-                 (not (equal (loghead (ash n 3) x) val)))
-            (equal (equal (combine-bytes bytes) val) nil))
-   :hints (("Goal" :in-theory (e/d* (combine-bytes byte-ify byte-ify-general) ())))))
+  :hints (("Goal" :in-theory (e/d* (byte-ify-and-byte-ify-general
+                                    byte-ify-general
+                                    ihsext-recursive-redefs
+                                    ihsext-inductions)
+                                   ()))))
 
 (defthmd combine-bytes-and-byte-ify-inequality-lemma
   ;; This is an expensive rule, so we keep it disabled. As it is, we don't need
@@ -223,8 +174,10 @@
                 (natp n)
                 (not (equal (loghead (ash n 3) x) val)))
            (equal (equal (combine-bytes bytes) val) nil))
-  :hints (("Goal" :use ((:instance combine-bytes-and-byte-ify-inequality-lemma-specific)
-                        (:instance combine-bytes-and-byte-ify-general-inequality-lemma)))))
+  :hints (("Goal" :in-theory (e/d* (combine-bytes
+                                    byte-ify-and-byte-ify-general
+                                    byte-ify-general)
+                                   ()))))
 
 (defthmd remove-loghead-from-combine-bytes
   ;; This is an expensive rule, so we keep it disabled. As it is, we don't need
@@ -237,6 +190,18 @@
                                     ihsext-recursive-redefs
                                     ihsext-inductions)
                                    ()))))
+
+(defthm byte-ify-and-combine-bytes
+  ;; [Shilpi]: Generalize this to remove the len hyp...
+  (implies (and (equal (len byte-list) n)
+                (byte-listp byte-list))
+           (equal (byte-ify n (combine-bytes byte-list))
+                  byte-list))
+  :hints (("Goal"
+           :in-theory (e/d* (combine-bytes
+                             byte-ify-and-byte-ify-general
+                             byte-ify-general)
+                            ()))))
 
 ;; ======================================================================
 
