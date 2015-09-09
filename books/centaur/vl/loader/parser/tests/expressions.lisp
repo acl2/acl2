@@ -286,11 +286,6 @@
                   :successp nil)
 
 
-   (make-exprtest
-    :input "foo ()" ;; not an acceptable function call, since no args.
-    :expect '(id "foo")
-    :remainder "( )")
-
    (make-exprtest :input "foo(1)"
                   :expect '(:vl-funcall nil "foo" 1))
 
@@ -866,7 +861,12 @@
                   :expect '(:vl-unary-preinc nil (id "a"))
                   :remainder "++")
 
-    ))
+   ;; SystemVerilog extends functions to allow empty argument lists
+   (make-exprtest :input "foo ()"
+                  :expect '(:vl-funcall nil "foo")
+                  :remainder "")
+
+   ))
 
  (defconst *verilog-diff-tests* ;; The expected results for Verilog-2005.
    (list
@@ -1023,6 +1023,10 @@
    (make-exprtest :input "a >>= b"  :successp nil)
    (make-exprtest :input "a <<<= b" :successp nil)
    (make-exprtest :input "a >>>= b" :successp nil)
+
+   (make-exprtest :input "foo ()" ;; not an acceptable function call, since no args.
+                  :expect '(id "foo")
+                  :remainder "( )")
 
 
     ))

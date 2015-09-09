@@ -50,4 +50,7 @@
 
 (save-exec "cosim-core"
            "svex cosim framework is built in."
-           :host-lisp-args "-Z 256M")
+           #+Clozure
+           :host-lisp-args
+           #+Clozure
+           "-Z 256M")

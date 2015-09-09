@@ -204,14 +204,33 @@
   :fails gracefully
   :count strong
   (seq tokstream
-        (hid := (vl-parse-hierarchical-identifier nil))
-        (when (vl-is-token? :vl-lparen)
-          (:= (vl-match))
-          (args := (vl-parse-1+-expressions-separated-by-commas))
-          (:= (vl-match-token :vl-rparen)))
-        (:= (vl-match-token :vl-semi))
-        (return (vl-enablestmt (make-vl-scopeexpr-end :hid hid)
-                               args atts))))
+       (hid := (vl-parse-hierarchical-identifier nil))
+       (unless (vl-is-token? :vl-lparen)
+         (:= (vl-match-token :vl-semi))
+         (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
+                                     :args nil
+                                     :atts atts)))
+
+       (:= (vl-match)) ;; eat the (
+
+       (when (and (vl-is-token? :vl-rparen)
+                  (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+         ;; Verilog-2005 doesn't support explicit parens with empty argument
+         ;; lists, but SystemVerilog-2012 adds them and other fancy stuff.  We
+         ;; won't yet support the other fancy stuff, but can at least handle
+         ;; empty argument lists very easily.
+         (:= (vl-match))
+         (:= (vl-match-token :vl-semi))
+         (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
+                                     :args nil
+                                     :atts atts)))
+
+       (args := (vl-parse-1+-expressions-separated-by-commas))
+       (:= (vl-match-token :vl-rparen))
+       (:= (vl-match-token :vl-semi))
+       (return (make-vl-enablestmt :id (make-vl-scopeexpr-end :hid hid)
+                                   :args args
+                                   :atts atts))))
 
 
 ; system_task_enable ::=
