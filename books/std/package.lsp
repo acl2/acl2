@@ -32,7 +32,7 @@
 
 (defconst *standard-acl2-imports*
   (set-difference-eq-exec
-   (union-eq-exec (union-eq-exec
+   (union-eq-exec (append
                    '(;; Some symbols ought to be included but aren't.
                      print-base-p
                      )
@@ -61,20 +61,19 @@
      )))
 
 (defpkg "STR"
-  (union-eq-exec
-   '(simpler-take list-fix list-equiv rev
-          prefixp str b* assert! repeat replicate
-          listpos sublistp implode explode
-          a b c d e f g h i j k l m n o p q r s t u v w x y z
-          top
-          defxdoc defsection lnfix definlined definline
-          define defines defaggregate unsigned-byte-p signed-byte-p
-          char-fix chareqv
-          str-fix streqv
-          raise
-          std
-          std/strings)
-   *standard-acl2-imports*))
+  (append '(simpler-take list-fix list-equiv rev
+                         prefixp str b* assert! repeat replicate
+                         listpos sublistp implode explode
+                         a b c d e f g h i j k l m n o p q r s v x y z
+                         top
+                         defxdoc defsection lnfix definlined definline
+                         define defines defaggregate
+                         char-fix chareqv
+                         str-fix streqv
+                         raise
+                         std
+                         std/strings)
+          *standard-acl2-imports*))
 
 ; Packages for the ordered sets library.  We should probably consolidate this
 ; stuff into the sets package, eventually.
@@ -82,42 +81,42 @@
 (defpkg "INSTANCE" *standard-acl2-imports*)
 
 (defpkg "COMPUTED-HINTS"
-  (union-eq-exec '(mfc-ancestors
-                   mfc-clause
-                   string-for-tilde-@-clause-id-phrase
-                   INSTANCE::instance-rewrite)
-                 *standard-acl2-imports*))
+  (append '(mfc-ancestors
+            mfc-clause
+            string-for-tilde-@-clause-id-phrase
+            INSTANCE::instance-rewrite)
+          *standard-acl2-imports*))
 
 (defpkg "SET"
-  (union-eq-exec '(defsection
-                    defxdoc
-                    definline
-                    definlined
-                    lexorder
-                    lnfix
-                    <<
-                    <<-irreflexive
-                    <<-transitive
-                    <<-asymmetric
-                    <<-trichotomy
-                    <<-implies-lexorder
-                    fast-<<
-                    fast-lexorder
-                    COMPUTED-HINTS::rewriting-goal-lit
-                    COMPUTED-HINTS::rewriting-conc-lit
-                    def-ruleset
-                    def-ruleset!
-                    add-to-ruleset
-                    ;; makes :instance hints more convenient
-                    a b c d e f g h i j k l m n o p q r s t u v w x y z
-                    ;; for nicer (package-free) documentation links
-                    std/osets
-                    std)
-                 (set-difference-eq-exec
-                  *standard-acl2-imports*
-                  ;; [Changed by Matt K. to handle changes to member, assoc,
-                  ;;  etc. after ACL2 4.2 (intersectp was added to *acl2-exports*).]
-                  '(intersectp enable disable e/d))))
+  (append '(defsection
+             defxdoc
+             definline
+             definlined
+             lexorder
+             lnfix
+             <<
+             <<-irreflexive
+             <<-transitive
+             <<-asymmetric
+             <<-trichotomy
+             <<-implies-lexorder
+             fast-<<
+             fast-lexorder
+             COMPUTED-HINTS::rewriting-goal-lit
+             COMPUTED-HINTS::rewriting-conc-lit
+             def-ruleset
+             def-ruleset!
+             add-to-ruleset
+             ;; makes :instance hints more convenient
+             a b c d e f g h i j k l m n o p q r s t u v w x y z
+             ;; for nicer (package-free) documentation links
+             std/osets
+             std)
+          (set-difference-eq-exec
+           *standard-acl2-imports*
+           ;; [Changed by Matt K. to handle changes to member, assoc,
+           ;;  etc. after ACL2 4.2 (intersectp was added to *acl2-exports*).]
+           '(intersectp enable disable e/d))))
 
 #!SET
 (defconst *sets-exports*
@@ -146,16 +145,15 @@
     ))
 
 (defpkg "XDOC"
-  (union-eq-exec set::*sets-exports*
-   (union-eq-exec
-    '(b* value defxdoc defxdoc-raw macro-args
-         defpointer
-         xdoc-extend defsection defsection-progn lnfix
-         set-default-parents
-         getprop formals justification def-bodies current-acl2-world def-body
-         access theorem untranslated-theorem guard xdoc xdoc! unquote
-         undocumented assert! top explode implode)
-    *standard-acl2-imports*)))
+  (append '(b* value defxdoc defxdoc-raw macro-args
+               defpointer
+               xdoc-extend defsection defsection-progn lnfix
+               set-default-parents
+               getprop formals justification def-bodies current-acl2-world def-body
+               access theorem untranslated-theorem guard xdoc xdoc! unquote
+               undocumented assert! top explode implode)
+          set::*sets-exports*
+          *standard-acl2-imports*))
 
 (defconst *bitset-exports*
   '(bitsets
@@ -191,66 +189,62 @@
     ))
 
 (defconst *bitsets-pkg-symbols*
-  (union-eq-exec
-   (union-eq-exec (union-eq-exec set::*sets-exports*
-                                 *bitset-exports*)
-                  '(*bitset-exports*
-                    std
-                    std/util
-                    std/bitsets
-                    std/osets
-                    __function__
-                    raise
-                    define
-                    defines
-                    defrule
-                    rule
-                    defsection
-                    defxdoc
-                    defwitness
-                    definstantiate
-                    defexample
-                    include-raw
-                    witness
-                    xdoc
-                    assert!
-                    b*
-                    progn$
+  (append '(*bitset-exports*
+            std
+            std/util
+            std/bitsets
+            std/osets
+            __function__
+            raise
+            define
+            defines
+            defrule
+            rule
+            defsection
+            defxdoc
+            defwitness
+            definstantiate
+            defexample
+            include-raw
+            witness
+            xdoc
+            assert!
+            b*
+            progn$
 
-                    enable*
-                    disable*
-                    e/d*
-                    set::enable
-                    set::disable
-                    set::e/d
+            enable*
+            disable*
+            e/d*
+            set::enable
+            set::disable
+            set::e/d
 
-                    rev
+            rev
 
-                    arith-equiv-forwarding
-                    lnfix
-                    lifix
-                    lbfix
-                    nat-equiv
-                    int-equiv
+            arith-equiv-forwarding
+            lnfix
+            lifix
+            lbfix
+            nat-equiv
+            int-equiv
 
-                    logbitp-mismatch
-                    equal-by-logbitp
-                    logbitp-hyp
-                    logbitp-lhs
-                    logbitp-rhs
+            logbitp-mismatch
+            equal-by-logbitp
+            logbitp-hyp
+            logbitp-lhs
+            logbitp-rhs
 
-                    a b c d e f g h i j k l m n o p q r s t u v w x y z
-                    ))
-   (set-difference-eq-exec
-    *standard-acl2-imports*
-    '(intersectp enable disable e/d))))
+            a b c d e f g h i j k l m n o p q r s t u v w x y z
+            )
+          set::*sets-exports*
+          *bitset-exports*
+          (set-difference-eq-exec *standard-acl2-imports*
+                                  '(intersectp enable disable e/d))))
 
 (defpkg "BITSETS" *bitsets-pkg-symbols*)
 
 (defconst *std-pkg-symbols*
-  (union-eq-exec
-   (union-eq-exec
-    set::*sets-exports*
+  (append set::*sets-exports*
 
 ; Things I want to "export" to the ACL2 package.
 ;
@@ -350,8 +344,8 @@
       xdoc::mksym
       xdoc::mksym-package-symbol
       undocumented
-      ))
-   *standard-acl2-imports*))
+      )
+    *standard-acl2-imports*))
 
 (defpkg "STD" *std-pkg-symbols*)
 
@@ -382,10 +376,24 @@
     defret
     defretd
     defconsts
+    defxdoc
     raise
     __function__
     more-returns))
 
 (assign acl2::verbose-theory-warning nil)
 
-(ld "tools/flag-package.lsp" :dir :system)
+(defpkg "FLAG"
+  (append '(getprop access def-body justification current-acl2-world 
+                    formals recursivep def-bodies
+                    make-flag flag-present flag-fn-name flag-alist
+                    flag-defthm-macro
+                    flag-equivs-name
+                    std::expand-calls-computed-hint
+                    std::find-calls-of-fns-term
+                    std::find-calls-of-fns-list
+                    defxdoc defsection
+                    b*
+                    )
+          (set-difference-eq acl2::*standard-acl2-imports*
+                             '(id))))

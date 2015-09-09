@@ -1,6 +1,3 @@
 (in-package "ACL2")
 (include-book "std/portcullis" :dir :system)
-; Matt K. mod: The following is redundant with the line above,
-; but causes an error without it.
-; (ld "tools/flag-package.lsp" :dir :system)
-(certify-book "unify-subst" ? t)
+

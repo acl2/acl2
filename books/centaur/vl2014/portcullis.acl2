@@ -30,10 +30,5 @@
 
 (in-package "ACL2")
 (ld "package.lsp")
-(ld "data-structures/define-u-package.lsp" :dir :system)
-; Matt K. mod: The following is redundant with the LD of package.lsp above.
-; (ld "tools/flag-package.lsp" :dir :system)
-(include-book "cowles/portcullis" :dir :system)
-(include-book "centaur/getopt/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
 

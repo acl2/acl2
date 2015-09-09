@@ -30,32 +30,30 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-
 (include-book "std/portcullis" :dir :system)
 
 (defpkg "NREV"
-  (union-eq *acl2-exports*
-            *common-lisp-symbols-from-main-lisp-package*
-            '(list-fix
-              rev
-              rcons
-              b*
-              assert!
-              defxdoc
-              defsection
-              defabsstobj-events
-              include-raw
-              define
-              defconsts
-              ;; Thing we want to "export"
-              nrev
-              nrev2
-              nrev-fix
-              nrev-copy
-              nrev-finish
-              nrev-push
-              nrev-append
-              with-local-nrev)))
+  (append '(list-fix
+            rev
+            rcons
+            b*
+            assert!
+            defxdoc
+            defsection
+            defabsstobj-events
+            include-raw
+            define
+            defconsts
+            ;; Thing we want to "export"
+            nrev
+            nrev2
+            nrev-fix
+            nrev-copy
+            nrev-finish
+            nrev-push
+            nrev-append
+            with-local-nrev)
+          acl2::*standard-acl2-imports*))
 
 #!NREV
 (defconst *nrev-exports*
