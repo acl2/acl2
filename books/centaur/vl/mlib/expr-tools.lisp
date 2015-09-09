@@ -1808,10 +1808,9 @@ expression, with repetition.</p>"
 
 (defines vl-expr-values
   :short "Gather all of the values throughout an expression."
-  :long "<p>We simply gather all of the @(see vl-atom-p)s in the expression,
-with repetition.  The resulting list may contain any @(see vl-atom-p),
-including even odd things like hid pieces and function names, which you might
-not usually think of as values.</p>"
+  :long "<p>We simply gather all of the values of all of the literals
+throughout the expression, with repetition.  The resulting list may contain any
+@(see vl-value).</p>"
 
   (define vl-expr-values ((x vl-expr-p))
     :returns (values vl-valuelist-p)

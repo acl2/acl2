@@ -1,5 +1,5 @@
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; Copyright (C) 2009-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -78,16 +78,12 @@
    x))
 
 (defmacro save (dir &key
-                    (import    't)
                     (redef-okp 'nil)
                     (zip-p     't))
   `(progn
      ;; ugh, stupid stupid writes-ok stupidity
      (defttag :xdoc)
      (remove-untouchable acl2::writes-okp nil)
-     ,@(and import
-            `((include-book
-               "xdoc/topics" :dir :system)))
      ;; b* should have been included by the above includes
      (make-event
       (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))

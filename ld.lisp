@@ -1973,7 +1973,7 @@
          (pcs-fn :x :x nil state)
          (value :invisible)))))))
 
-(defun ubt-ubu-fn (kwd cd state)
+(defun ubt?-ubu?-fn (kwd cd state)
 
 ; Kwd is :ubt or :ubu.
 
@@ -1988,20 +1988,6 @@
                             command-number-baseline)
                       (< (access-command-tuple-number (cddar cmd-wrld))
                          command-number-baseline))
-
-; We prevent ubt and ubu from going into prehistory, thus burning users due to
-; typos.  But sometimes developers need to do it.  Here is how from within the
-; ACL2 loop:
-
-; (set-state-ok t)
-; (defun my-ubt-ubu-fn (inclp x state) (declare (xargs :guard t)) (value x))
-; :q
-; Grab this defun, rename it to my-ubt-ubu-fn, edit out the cond clause
-; containing this comment and define my-ubt-ubu-fn in raw lisp.
-; (lp)
-; (my-ubt-ubu-fn t 'sys-fn state), where sys-fn is the desired target of the
-; ubt.
-
                     (cond
                      ((let ((command-number-baseline-original
                              (access command-number-baseline-info
@@ -2025,6 +2011,20 @@
                                        cmd-wrld)))
                       (ubt-ubu-fn1 kwd wrld pred-wrld state)))))))
 
+(defun ubt-ubu-fn (kwd cd state)
+
+; Kwd is :ubt or :ubu.
+
+  (state-global-let*
+   ((ld-query-control-alist
+     (list* `(,kwd :n!)
+            '(:ubt-defaults :n)
+            (@ ld-query-control-alist))))
+   (mv-let (erp val state)
+           (ubt?-ubu?-fn kwd cd state)
+           (declare (ignore erp val))
+           (value :invisible))))
+
 (defun ubt!-ubu!-fn (kwd cd state)
 
 ; Kwd is :ubt or :ubu.
@@ -2038,7 +2038,7 @@
      (union-equal '(observation warning error)
                   (@ inhibit-output-lst))))
    (mv-let (erp val state)
-           (ubt-ubu-fn kwd cd state)
+           (ubt?-ubu?-fn kwd cd state)
            (declare (ignore erp val))
            (value :invisible))))
 
@@ -2882,6 +2882,9 @@
 
 (defun puff-include-book (wrld final-cmds ctx state)
 
+; This function should only be called under puff-fn1; see comments about
+; puff-fn1 below.
+
 ; We puff an include-book simply by going to the file named by the include-book
 ; and return the events in it.  Recursive include-books are not flattened here.
 
@@ -2916,12 +2919,10 @@
                (and old-chk-sum
                     (and cert-obj
                          (access cert-obj cert-obj :expansion-alist))))
+              (cmds (and cert-obj
+                         (access cert-obj cert-obj :cmds)))
               (ev-lst-chk-sum
-               (check-sum-cert (and cert-obj
-                                    (access cert-obj cert-obj
-                                            :cmds))
-                               expansion-alist
-                               ev-lst)))
+               (check-sum-cert cmds expansion-alist ev-lst)))
          (cond
           ((not (integerp ev-lst-chk-sum))
 
@@ -2947,21 +2948,38 @@
                full-book-name
                old-chk-sum
                ev-lst-chk-sum))
-          (t (value
-              (append
-               (cons `(set-cbd ,(get-directory-of-file full-book-name))
-                     (cons (assert$
-                            (and (consp (car ev-lst))
-                                 (eq (caar ev-lst) 'in-package))
-                            (car ev-lst))
-                           (subst-by-position expansion-alist
-                                              (cdr ev-lst)
-                                              1)))
-               `((maybe-install-acl2-defaults-table
-                  ',(table-alist 'acl2-defaults-table wrld)
-                  state))
-               `((set-cbd ,(cbd)))
-               final-cmds)))))))))
+          (t (er-let* ((fixed-cmds
+                        (make-include-books-absolute-lst
+                         (append
+                          cmds
+                          (cons (assert$
+
+; We want to execute the in-package here.  But we don't need to restore the
+; package, as that is done with a state-global-let* binding in puff-fn1.
+
+                                 (and (consp (car ev-lst))
+                                      (eq (caar ev-lst) 'in-package))
+                                 (car ev-lst))
+                                (subst-by-position expansion-alist
+                                                   (cdr ev-lst)
+                                                   1)))
+                         (directory-of-absolute-pathname full-book-name)
+                         (cbd)
+                         (list* 'in-package
+                                'defpkg
+                                (primitive-event-macros))
+                         t ctx state)))
+               (value `((set-cbd ,(get-directory-of-file full-book-name))
+                        ,@fixed-cmds
+                        (maybe-install-acl2-defaults-table
+                         ',(table-alist 'acl2-defaults-table wrld)
+                         state)
+
+; It is tempting to reset the cbd here, but instead -- in case there is an
+; error above -- we handle this issue with a state-global-let* binding in
+; puff-fn1.
+
+                        ,@final-cmds))))))))))
 
 (defun puff-command-block1 (wrld immediate ans ctx state)
 
@@ -3073,7 +3091,13 @@
           (final-cmds (commands-back-to wrld cmd-wrld nil)))
       (cond
        (cmd-type
-        (puff-command-block cmd-type (cdr cmd-wrld) final-cmds ctx state))
+        (puff-command-block cmd-type
+
+; Usually (cdr cmd-wrld) will start with an event-landmark, but not always; for
+; example, a command-index is possible.  So we scan to the next event.
+
+                            (scan-to-event (cdr cmd-wrld))
+                            final-cmds ctx state))
        (t (er soft ctx
               "The command at ~x0, namely ~X12, cannot be puffed.  See :DOC ~
                puff."
@@ -3081,6 +3105,111 @@
               (access-command-tuple-form (cddr (car cmd-wrld)))
 ;;; (evisc-tuple 2 3 nil nil)
               '(nil 2 3 nil)))))))
+
+(defun ld-read-eval-print-simple (state)
+
+; This is a simplified version of ld-read-eval-print to be executed under
+; ld-simple, which doesn't mess with ld-level or much else, in support of :puff
+; and :puff*.  It just reads, evals, and prints.  It doesn't even print the
+; prompt, it's oblivious to being inside verify, and it ignores
+; ld-pre-eval-filter.  For other simplifications, compare this code with the
+; code for ld-read-eval-print.
+
+  (mv-let
+   (eofp erp keyp form state)
+   (ld-read-command state)
+   (declare (ignore keyp))
+   (cond
+    (eofp (mv :return :eof state))
+    (erp (ld-return-error state))
+    (t (pprogn
+        (f-put-global 'last-make-event-expansion nil state)
+        (let* ((old-wrld (w state))
+               (old-default-defun-mode
+                (default-defun-mode old-wrld)))
+          (mv-let
+           (error-flg trans-ans state)
+           (mv-let (error-flg trans-ans state)
+                   (if (raw-mode-p state)
+                       (acl2-raw-eval form state)
+                     (trans-eval form 'top-level state t))
+
+; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
+
+                   (cond
+                    (error-flg (mv t nil state))
+                    ((and (ld-error-triples state)
+                          (equal (car trans-ans) *error-triple-sig*)
+                          (car (cdr trans-ans)))
+                     (mv t nil state))
+                    (t (er-progn
+                        (maybe-add-command-landmark
+                         old-wrld
+                         old-default-defun-mode
+                         form
+                         trans-ans state)
+                        (mv nil trans-ans state)))))
+
+; If error-flg is non-nil, trans-ans is (stobjs-out . valx) and we know
+; that valx is not an erroneous error triple if we're paying attention to
+; error triples.
+
+; The code inside the revert-world-on-error arranges to revert if either
+; trans-eval returns an error, or the value is to be thought of as an
+; error triple and it signals an error.  Error-flg, now, is set to t
+; iff we reverted.
+
+           (cond
+            (error-flg (ld-return-error state))
+            ((and (equal (car trans-ans) *error-triple-sig*)
+                  (eq (cadr (cdr trans-ans)) :q))
+             (mv :return :exit state))
+            ((and (ld-error-triples state)
+                  (equal (car trans-ans) *error-triple-sig*)
+                  (let ((val (cadr (cdr trans-ans))))
+                    (and (consp val)
+                         (eq (car val) :stop-ld))))
+             (mv :return
+                 (list* :stop-ld
+                        (f-get-global 'ld-level state)
+                        (cdr (cadr (cdr trans-ans))))
+                 state))
+            (t (mv :continue nil state))))))))))
+
+(defun ld-loop-simple (state)
+  (mv-let
+   (signal val state)
+   (ld-read-eval-print-simple state)
+   (cond ((eq signal :continue)
+          (ld-loop-simple state))
+         ((eq signal :return)
+          (value val))
+         (t (mv t nil state)))))
+
+(defun ld-simple (forms state)
+
+; This is a considerable simplification of ld-fn (and ld-fn0, ld-fn1,
+; ld-fn-body, ld-loop, and especially ld-read-eval-print), which doesn't
+; traffic in many of the bells and whistles of ld, for example, the ld-level.
+; Any ld specials of interest to the user can be bound by state-global-let*
+; before calling this function.  We introduced this function after Version_7.1
+; while improving :puff (which this function now supports), in order to avoid
+; thinking about the complex #-acl2-loop-only code in ld-fn0.
+
+  (state-global-let* ((standard-oi forms)
+                      (ld-skip-proofsp 'include-book-with-locals)
+                      (ld-verbose nil)
+                      (ld-prompt nil)
+                      (ld-missing-input-ok nil)
+                      (ld-pre-eval-filter :all)
+                      (ld-pre-eval-print :never)
+                      (ld-post-eval-print nil)
+                      (ld-error-triples t)
+                      (ld-error-action :error)
+                      (ld-query-control-alist
+                       (cons '(:redef :y)
+                             (ld-query-control-alist state))))
+                     (ld-loop-simple state)))
 
 (defun puff-fn1 (cd state)
 
@@ -3090,8 +3219,13 @@
 ; the command with relative command number i, that command got puffed up,
 ; and the new commands have the numbers i through j, inclusive.
 
-  (state-global-let*
-   ((modifying-include-book-dir-alist
+  (revert-world-on-error
+   (state-global-let*
+    ((current-package ; See comment about this binding in puff-include-book.
+      (current-package state))
+     (connected-book-directory ; See comment in puff-include-book.
+      (cbd))
+     (modifying-include-book-dir-alist
 
 ; The Essay on Include-book-dir-alist explains that the above state global must
 ; be t in order to set the include-book-dir!-table or the
@@ -3108,72 +3242,49 @@
 ; raw Lisp that we never intended to be called there -- but that requires a
 ; trust tag, so it's not our problem!
 
-     t))
-   (let ((wrld (w state))
-         (ctx 'puff))
-     (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff state)))
-       (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
-                  (access command-number-baseline-info
-                          (global-val 'command-number-baseline-info wrld)
-                          :current))
+      t))
+    (let ((wrld (w state)))
+      (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff state)))
+        (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
+                   (access command-number-baseline-info
+                           (global-val 'command-number-baseline-info wrld)
+                           :current))
 
-; See the similar comment in ubt-ubu-fn.
+; See the similar comment in ubt?-ubu?-fn.
 
-              (cond
-               ((<= (access-command-tuple-number (cddar cmd-wrld))
-                    (access command-number-baseline-info
-                            (global-val 'command-number-baseline-info wrld)
-                            :original))
-                (er soft :puff
-                    "Can't puff a command within the system initialization."))
-               (t
-                (er soft :puff
-                    "Can't puff a command within prehistory.  See :DOC ~
+               (cond
+                ((<= (access-command-tuple-number (cddar cmd-wrld))
+                     (access command-number-baseline-info
+                             (global-val 'command-number-baseline-info wrld)
+                             :original))
+                 (er soft :puff
+                     "Can't puff a command within the system initialization."))
+                (t
+                 (er soft :puff
+                     "Can't puff a command within prehistory.  See :DOC ~
                      reset-prehistory."))))
-             (t
-              (er-let*
-                  ((cmds (puffed-command-sequence cd :puff wrld state)))
-                (let* ((pred-wrld (scan-to-command (cdr cmd-wrld)))
-                       (i (absolute-to-relative-command-number
-                           (max-absolute-command-number cmd-wrld)
-                           (w state)))
-                       (k (- (absolute-to-relative-command-number
-                              (max-absolute-command-number (w state))
-                              (w state))
-                             i)))
-                  (pprogn
-                   (set-w 'retraction pred-wrld state)
-                   (er-let*
-                       ((defpkg-items
-                          (defpkg-items
-                            (global-val 'known-package-alist cmd-wrld)
-                            (global-val 'known-package-alist pred-wrld)
-                            ctx pred-wrld state)))
-                     (er-progn
-                      (state-global-let*
-                       ((guard-checking-on nil)) ; agree with include-book
-                       (ld (append (let ((kpa (global-val
-                                               'known-package-alist
-                                               pred-wrld)))
-                                     (new-defpkg-list defpkg-items kpa kpa))
-                                   cmds)
-                           :ld-skip-proofsp 'include-book-with-locals
-                           :ld-verbose nil
-                           :ld-prompt nil
-                           :ld-missing-input-ok nil
-                           :ld-pre-eval-filter :all
-                           :ld-pre-eval-print :never
-                           :ld-post-eval-print nil
-                           :ld-error-triples t
-                           :ld-error-action :error
-                           :ld-query-control-alist
-                           (cons '(:redef :y)
-                                 (ld-query-control-alist state))))
-                      (value (cons i
-                                   (- (absolute-to-relative-command-number
-                                       (max-absolute-command-number (w state))
-                                       (w state))
-                                      k))))))))))))))
+              (t
+               (er-let*
+                   ((cmds (puffed-command-sequence cd :puff wrld state)))
+                 (let* ((pred-wrld (scan-to-command (cdr cmd-wrld)))
+                        (i (absolute-to-relative-command-number
+                            (max-absolute-command-number cmd-wrld)
+                            (w state)))
+                        (k (- (absolute-to-relative-command-number
+                               (max-absolute-command-number (w state))
+                               (w state))
+                              i)))
+                   (pprogn
+                    (set-w 'retraction pred-wrld state)
+                    (er-progn
+                     (state-global-let*
+                      ((guard-checking-on nil)) ; agree with include-book
+                      (ld-simple cmds state))
+                     (value (cons i
+                                  (- (absolute-to-relative-command-number
+                                      (max-absolute-command-number (w state))
+                                      (w state))
+                                     k))))))))))))))
 
 (defun puff-report (caller new-cd1 new-cd2 cd state)
   (cond ((eql new-cd1 (1+ new-cd2))
@@ -3203,14 +3314,19 @@
   (cond
    ((> i j) (value (cons ptr j)))
    ((puffable-command-numberp i state)
-    (er-progn
+    (mv-let
+     (erp val state)
      (puff-fn1 i state)
-     (puff*-fn11 ptr k
-                 ptr (- (absolute-to-relative-command-number
-                         (max-absolute-command-number (w state))
-                         (w state))
-                        k)
-                 state)))
+     (declare (ignore val))
+     (cond
+      (erp ; See puff* for how this value is used.
+       (mv erp (cons i (cons ptr j)) state))
+      (t (puff*-fn11 ptr k
+                     ptr (- (absolute-to-relative-command-number
+                             (max-absolute-command-number (w state))
+                             (w state))
+                            k)
+                     state)))))
    (t (puff*-fn11 ptr k (1+ i) j state))))
 
 (defun puff*-fn1 (ptr k state)
@@ -3232,14 +3348,19 @@
 ; command will cause an error (e.g., because some book's check sum no longer
 ; agrees with include-book-alist).
 
-  (revert-world-on-error
-   (puff*-fn11 ptr k
-               ptr
-               (- (absolute-to-relative-command-number
-                   (max-absolute-command-number (w state))
-                   (w state))
-                  k)
-               state)))
+; At one time we called revert-world-on-error here.  But we expect this
+; function to be called at the top level on behalf of :puff*, where normally
+; the world is reverted upon error anyhow.  Even if not, the
+; revert-world-on-error called in puff-fn1 will avoid corruption of the logical
+; world.
+
+  (puff*-fn11 ptr k
+              ptr
+              (- (absolute-to-relative-command-number
+                  (max-absolute-command-number (w state))
+                  (w state))
+                 k)
+              state))
 
 (defun puff*-fn (cd state)
   (let ((wrld (w state)))
@@ -3249,7 +3370,7 @@
                                 (global-val 'command-number-baseline-info wrld)
                                 :current))
 
-; See the similar comment in ubt-ubu-fn.
+; See the similar comment in ubt?-ubu?-fn.
 
                     (cond
                      ((<= (access-command-tuple-number (cddar cmd-wrld))
@@ -3312,8 +3433,27 @@
 (defmacro puff (cd)
   `(puff-fn ,cd state))
 
-(defmacro puff* (cd)
- `(puff*-fn ,cd state))
+(defmacro puff* (cd &optional no-error)
+  (declare (xargs :guard (booleanp no-error))) ; avoid variable capture
+  `(let ((cd ,cd) (no-error ,no-error))
+     (mv-let (erp val state)
+             (puff*-fn cd state)
+             (cond ((and no-error
+                         erp
+                         (consp val)
+                         (consp (cdr val))
+                         (natp (car val))
+                         (natp (cadr val))
+                         (natp (cddr val)))
+                    (pprogn
+                     (warning$ 'puff* "Puff*"
+                               "Puff* did not complete: Failed at ~x0."
+                               (car val))
+                     (er-progn
+                      (puff-report :puff* (cadr val) (cddr val) cd
+                                   state)
+                      (value (list :incomplete :at-command (car val))))))
+                   (t (mv erp val state))))))
 
 (defmacro mini-proveall nil
 

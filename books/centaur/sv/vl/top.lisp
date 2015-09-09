@@ -253,7 +253,9 @@
         (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard good)))
         (cw "Reportcard for bad mods:~%")
         (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard bad)))
-        (mv (msg "The following modules were not among the good simplified modules.~%" bad-mods)
+        (mv (msg "The following modules were not among the good simplified ~
+                  modules: ~x0~%"
+                 bad-mods)
             nil
             good bad))
        (good.mods (redundant-mergesort good.mods))

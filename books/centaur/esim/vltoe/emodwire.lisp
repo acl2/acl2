@@ -830,6 +830,7 @@ details.</p>"
 
 
 (define vl-emodwire-fix ((x vl-emodwire-p))
+  :parents (vl-emodwire-p)
   :returns (x-prime vl-emodwire-p)
   :inline t
   :hooks nil

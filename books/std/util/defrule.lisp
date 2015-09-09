@@ -338,8 +338,9 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
   :short "A @(see thm)-like version of @(see defrule)."
   :long "<p>The @('rule') macro is a thin wrapper around @(see defrule).  It
 supports all of the same syntax extensions like top-level @(':enable') and
-@(':expand') @(see hints).  However, like @(see thm), @('rule') does not take a
-rule name and does not result in the introduction of a rule afterward.</p>
+@(':expand') @(see acl2::hints).  However, like @(see thm), @('rule') does not
+take a rule name and does not result in the introduction of a rule
+afterward.</p>
 
 <p>Examples:</p>
 

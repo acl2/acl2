@@ -1,5 +1,5 @@
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2013 Centaur Technology
+; Copyright (C) 2009-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,6 +28,8 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+; BOZO very unclear how much of this file we still need.
+
 (in-package "ACL2")
 (set-state-ok t)
 (program)
@@ -38,7 +40,7 @@
 ; format and available in the system/doc books.  So now we can just load it
 ; instead of jumping through hoops to import it.  (Actually, for awhile there
 ; still remained defdoc-style documentation in the ACL2 sources.  But that was
-; no longer true as of the time of the release of ACL 2 Version 6.4.)
+; no longer true as of the time of the release of ACL2 Version 6.4.)
 
 (include-book "system/doc/acl2-doc-wrap" :dir :system)
 
@@ -155,33 +157,33 @@ find what you want.</p>")
 
 (include-book "system/origin" :dir :system)
 
-(defun defdoc-include-book-path (name wrld)
+;; (defun defdoc-include-book-path (name wrld)
 
-; Tool from Matt Kaufmann for figuring out where a DEFDOC event comes from.
-;
-; We return nil if there is no defdoc for name.  Otherwise, we return the
-; include-book path (with closest book first, hence opposite from the order
-; typically displayed by :pe) for the most recent defdoc of name, else
-; :built-in if that path is nil.
+;; ; Tool from Matt Kaufmann for figuring out where a DEFDOC event comes from.
+;; ;
+;; ; We return nil if there is no defdoc for name.  Otherwise, we return the
+;; ; include-book path (with closest book first, hence opposite from the order
+;; ; typically displayed by :pe) for the most recent defdoc of name, else
+;; ; :built-in if that path is nil.
 
-  (declare (xargs :mode :program))
-  (cond ((endp wrld)
-         nil)
-        (t (or (let ((x (car wrld)))
-                 (case-match x
-                   (('EVENT-LANDMARK 'GLOBAL-VALUE . event-tuple)
-                    (let ((form (access-event-tuple-form event-tuple)))
-                      (case-match form
-                        (('DEFDOC !name . &)
-                         ;; Matt's version didn't reverse these, but mine
-                         ;; does for compatibility with the origin book.
-                         (or (reverse (global-val 'include-book-path wrld))
-                             ;; Originally we returned T here.  Now I return
-                             ;; :built-in for better compatibility with
-                             ;; extend-topic-with-origin.  I ran into a weird
-                             ;; problem with e0-ordinalp here.
-                             :built-in)))))))
-               (defdoc-include-book-path name (cdr wrld))))))
+;;   (declare (xargs :mode :program))
+;;   (cond ((endp wrld)
+;;          nil)
+;;         (t (or (let ((x (car wrld)))
+;;                  (case-match x
+;;                    (('EVENT-LANDMARK 'GLOBAL-VALUE . event-tuple)
+;;                     (let ((form (access-event-tuple-form event-tuple)))
+;;                       (case-match form
+;;                         (('DEFDOC !name . &)
+;;                          ;; Matt's version didn't reverse these, but mine
+;;                          ;; does for compatibility with the origin book.
+;;                          (or (reverse (global-val 'include-book-path wrld))
+;;                              ;; Originally we returned T here.  Now I return
+;;                              ;; :built-in for better compatibility with
+;;                              ;; extend-topic-with-origin.  I ran into a weird
+;;                              ;; problem with e0-ordinalp here.
+;;                              :built-in)))))))
+;;                (defdoc-include-book-path name (cdr wrld))))))
 
 #!XDOC
 (defun extend-topic-with-origin (topic state)
@@ -201,18 +203,20 @@ find what you want.</p>")
 
        ((mv er val state)
         (acl2::origin-fn name state))
-       ((mv er val)
-        (b* (((unless er)
-              (mv er val))
-             ;; This can occur at least in cases such as DEFDOC, which do not
-             ;; introduce logical names.
-             ;(- (cw "~x0: unknown: ~@1~%" name er))
-             (new-val (acl2::defdoc-include-book-path name (w state)))
-             ((when new-val)
-              ;(cw "~x0: tried harder and found ~x1.~%" name new-val)
-              (mv nil new-val)))
-          ;(cw "~x0: tried harder and still failed." name)
-          (mv er val)))
+
+;; Pretty sure we don't need this now that we've gotten rid of all legacy docs
+       ;; ((mv er val)
+       ;;  (b* (((unless er)
+       ;;        (mv er val))
+       ;;       ;; This can occur at least in cases such as DEFDOC, which do not
+       ;;       ;; introduce logical names.
+       ;;       ;(- (cw "~x0: unknown: ~@1~%" name er))
+       ;;       (new-val (acl2::defdoc-include-book-path name (w state)))
+       ;;       ((when new-val)
+       ;;        ;(cw "~x0: tried harder and found ~x1.~%" name new-val)
+       ;;        (mv nil new-val)))
+       ;;    ;(cw "~x0: tried harder and still failed." name)
+       ;;    (mv er val)))
 
        ((when er)
         (mv (acons :from "Unknown" topic)

@@ -565,6 +565,7 @@ wire [800:0] found5 =  "hello\"moon";
 """}
  :defines (simple-test-defines nil))
 
+;; extra quote to help emacs colorize this "
 
 
 ;; Fancy interactions between `include and the rest of the preprocessor
@@ -583,6 +584,7 @@ wire [800:0] found5 =  "hello\"moon";
  :defines (simple-test-defines nil))
 
 
+
 (preprocessor-basic-test
  :input #{"""
 `define foo
@@ -597,3 +599,116 @@ hello
 hello
 """}
  :defines (simple-test-defines nil))
+
+
+
+;; Nasty corner cases for the interaction of escaped identifiers and `` stuff.
+
+(preprocessor-basic-test   ;; Corner1: NCV/VCS agree
+ :input #{"""
+`define mac(name) wire mac``name = 1;
+`mac(blah)
+"""}
+ :output #{"""
+
+ wire macblah = 1;
+"""})
+
+
+(preprocessor-basic-test   ;; Corner2: NCV/VCS agree
+ :input #{"""
+`define mac(name) wire name``_mac = 1;
+`mac(blah)
+"""}
+ :output #{"""
+
+ wire blah_mac = 1;
+"""})
+
+
+(preprocessor-basic-test  ;; Corner3: NVC/VCS agree
+ :input #{"""
+`define mac(name) wire \mac_``name = 1;
+`mac(blah)
+"""}
+ :output #{"""
+
+ wire \mac_blah = 1;
+"""})
+
+
+
+(preprocessor-basic-test   ;; Corner4: NCV/VCS agree
+ :input #{"""
+`define mac(arg) wire \foo`arg = 1;
+`mac(blah)
+"""}
+ :output #{"""
+
+ wire \foo`blah = 1;
+"""})
+
+
+(preprocessor-basic-test   ;; Corner5: NCV/VCS agree
+ :input #{"""
+`define mac(arg) wire \arg = 1;
+`mac(blah)
+"""}
+ :output #{"""
+
+ wire \blah = 1;
+"""})
+
+
+(preprocessor-basic-test   ;; Corner6: NCV segfaults (seriously), VCS acts as below
+ :input #{"""
+`define mac(arg) wire \`arg = 1;
+`mac(blah)
+"""}
+ :output #{"""
+
+ wire \`blah = 1;
+"""})
+
+
+(preprocessor-basic-test   ;; Corner7: NCV/VCS agree
+ :input #{"""
+`define blah mywire
+`define mac(arg) wire `arg = 1;
+`mac(blah)
+"""}
+;; not sure why I get an extra space between wire and mywire...
+ :output #{"""
+
+
+ wire  mywire = 1;
+"""})
+
+
+(preprocessor-basic-test   ;; Corner8: NCV/VCS disagree
+
+ ;; We (arbitrarily) behave like VCS in this case.
+
+ ;; In contrast, NCVerilog does not perform the variable substitution
+ ;; and instead creates a wire named \arg+1.
+
+ :input #{"""
+`define mac(arg) wire \arg+1 = 1;
+`mac(blah)
+"""}
+
+ :output #{"""
+
+ wire \blah+1 = 1;
+"""})
+
+
+(preprocessor-basic-test   ;; Corner9: NCV/VCS disagree
+ :input #{"""
+`define mac(name) wire \``name``_mac = 1;
+`mac(blah)
+"""}
+ :output #{"""
+
+ wire \blah_mac = 1;
+"""})

@@ -79,9 +79,10 @@ that the tests are all going to be one-bit wide.</p>
 
 <p>This check has no prerequisites and can in principle be run at any time.
 But it is probably best to run it very early before throwing things out, and it
-should probably be run before @(see oprewrite), which screws around with
-conditional expressions, and also before things like expression splitting which
-would get rid of the nested branches.</p>")
+should probably be run before any transform that might alter
+expressions.  (Historically it was important to run it before, e.g., @(see
+vl2014::oprewrite), but now we generally are not rewriting expressions like
+that so it may be that we don't need to care much about this anymore.)</p>")
 
 (local (xdoc::set-default-parents condcheck))
 

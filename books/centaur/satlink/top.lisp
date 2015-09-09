@@ -64,7 +64,7 @@ This is especially useful in @(see acl2::hardware-verification).</p>
 off-the-shelf SAT solvers like <a
 href='http://fmv.jku.at/lingeling/'>lingeling</a>, <a
 href='https://www.lri.fr/~simon/?page=glucose'>glucose</a>, and so on; see
-@(see sat-solver-options).  It provides:</p>
+@(see sat-solver-options) for download and build help.  It provides:</p>
 
 <ul>
 
@@ -140,6 +140,26 @@ e.g., to print counterexamples.)</p>
 <li>@('cd glucose-3.0/simp; make')</li>
 <li>Verify that @('glucose-3.0/simp/glucose --help') prints a help message</li>
 </ul>
+
+<p>(NOTE for Mac users: If you are building Glucose 3.0 or 4.0 on a Mac, the
+build might fail.  In that case, a solution may be to make the two replacements
+shown below, where the the first in each pair (@('<')) is the Mac version,
+while the second in each pair (@('>')) is the original source.  (Thanks to
+Marijn Heule for these suggestions.)</p>
+
+@({
+<     // friend Lit mkLit(Var var, bool sign = false);
+---
+>     friend Lit mkLit(Var var, bool sign = false);
+
+< inline  Lit  mkLit     (Var var, bool sign = false) { Lit p; p.x =
+var + var + (int)sign; return p; }
+---
+> inline  Lit  mkLit     (Var var, bool sign) { Lit p; p.x = var + var + (int)sign; return p; }
+
+})
+
+<p>End of NOTE for Mac users.)</p>
 
 <p>Now create a shell script, somewhere in your @('$PATH'), named @('glucose'):</p>
 

@@ -60,7 +60,8 @@
 
   :parents (note-7-2)
   :short "Release notes for the ACL2 Community Books for ACL2 7.2 (xx 20xx)"
-  :long "<p>Stub: to be written.</p>")
+  :long "<p>Stub: to be written.  (It would be nice to mention the licensing
+ change to the rtl books.)</p>")
 
 (defxdoc note-7-1-books
   :parents (note-7-1)
@@ -2179,7 +2180,7 @@
  <h5>@(see vl) - Verilog toolkit</h5>
  <ul>
  <li>Expanded @(see vl2014::always-top) with support for basic @('case') statements.</li>
- <li>Expanded @(see vl::expr-simp) to make more reductions and be more modular.</li>
+ <li>Expanded @(see vl2014::expr-simp) to make more reductions and be more modular.</li>
  <li>Added new support for hierarchical identifiers.</li>
  <li>Cleaned up support for gate instances.</li>
  <li>Multiplier synthesis now better matches GL's multipliers.</li>

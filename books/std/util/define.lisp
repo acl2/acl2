@@ -559,8 +559,9 @@ form is usually an adequate work-around.</p>")
                    ;; many values it returns.
                    (not (getprop fnname 'acl2::non-executablep nil 'acl2::current-acl2-world world))))
         (er hard? 'return-value-names
-            "Error in ~x0: ACL2 thinks this function has ~x0 return ~
-             values, but :returns has ~x1 entries!"
+            "Error in ~x0: ACL2 thinks this function has ~x1 return ~
+             values, but :returns has ~x2 entries!"
+            fnname
             (len stobjs-out)
             (len returnspecs))))
     ;; Else the user documented things, so everything has a name and we should

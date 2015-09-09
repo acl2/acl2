@@ -813,6 +813,10 @@
 
   nil)
 
+(declaim (ftype (function (t)
+                          (values t))
+                acl2::large-consp))
+
 (defmacro acl2::defconst (name term &rest rst)
   (declare (ignore rst)) ; e.g., documentation
   (let ((disc (gensym)))
@@ -854,7 +858,24 @@
                  (assert (consp (cdr ,disc)))
                  (cond
                   ((and (eq (cdr (cdr ,disc)) (symbol-value ',name))
-                        (or (equal (car (cdr ,disc)) ',term)
+
+; Here, as in defconst-fn, we skip the check just below (which is merely an
+; optimization, as explained in defconst-fn) if it seems expensive but the
+; second check (below) -- against the term -- could be cheap.  Without this
+; check, if two books each contain a form (defconst *a* (hons-copy
+; '<large_cons_tree>)) then when the compiled file for the second book is
+; loaded, the check against the term (i.e. the first check below, as opposed to
+; the second check, which uses that term's value) could be intractible.  For a
+; concrete example, see :doc note-7-2.
+
+                        (or (let ((disc ,disc)
+                                  (qterm ',term))
+
+; We check that acl2::large-consp to avoid a boot-strapping problem in GCL.
+
+                              (and (not (and (fboundp 'acl2::large-consp)
+                                             (acl2::large-consp qterm)))
+                                   (equal (car (cdr disc)) qterm)))
                             (equal (cdr (cdr ,disc)) ,term)))
                    (symbol-value ',name))
                   (t (acl2::defconst-redeclare-error ',name))))

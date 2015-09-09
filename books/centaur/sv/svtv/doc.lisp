@@ -54,9 +54,10 @@ this&mdash;just give a @(':parents'), @(':short'), or @(':long') argument to
 going to generate documentation after successfully processing the SVTV, so we
 generally just expect things to be well-formed at this point.</p>
 
-<p>The XML we generate is not documented in @(see xdoc)'s @(see xdoc::markup),
-and is not supported by tools like @(':xdoc').  How these new tags get rendered
-into HTML is controlled by, e.g., @('xdoc/fancy/render.xsl').</p>")
+<p>The XML we generate is not documented in @(see xdoc::xdoc)'s @(see
+xdoc::markup), and is not supported by tools like @(':xdoc').  How these new
+tags get rendered into HTML is controlled by, e.g.,
+@('xdoc/fancy/render.xsl').</p>")
 
 (local (xdoc::set-default-parents svtv-doc))
 
