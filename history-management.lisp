@@ -3398,7 +3398,7 @@
 
 (defun find-longest-common-retraction1-event (wrld1 wrld2)
   (cond ((equal wrld1 wrld2) wrld1)
-        (t (find-longest-common-retraction1
+        (t (find-longest-common-retraction1-event
             (scan-to-event (cdr wrld1))
             (scan-to-event (cdr wrld2))))))
 
