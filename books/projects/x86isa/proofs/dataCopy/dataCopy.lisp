@@ -14,9 +14,9 @@
 ;; [Shilpi]: Move these events to the main books.
 
 (defthmd rb-rb-subset
-  ;; [Shilpi]: This theorem can be generalized so that the conclusion mentions
-  ;; addr1, where addr1 <= addr.
-  ;; Also, this is an expensive rule. Keep it disabled generally.
+  ;; This theorem can be generalized so that the conclusion mentions addr1,
+  ;; where addr1 <= addr.  Also, this is an expensive rule. Keep it disabled
+  ;; generally.
   (implies (and (equal (mv-nth 1 (rb (create-canonical-address-list i addr) r-w-x x86))
                        bytes)
                 (canonical-address-p (+ -1 i addr))
@@ -297,60 +297,6 @@
 
 ;; ======================================================================
 
-(defun-nx preconditions (n addr x86)
-  (and (x86p x86)
-       (xr :programmer-level-mode 0 x86)
-       (equal (xr :ms 0 x86) nil)
-       (equal (xr :fault 0 x86) nil)
-       ;; We are poised to run the copyData sub-routine.
-       (equal (xr :rip 0 x86) addr)
-       (unsigned-byte-p 31 n)
-       (equal (xr :rgf *rdx* x86) n)
-       ;; All the stack addresses are canonical.
-       ;; [Shilpi]: Replace this with (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
-       (canonical-address-p (xr :rgf *rsp* x86))
-       (canonical-address-p (+ -8 (xr :rgf *rsp* x86)))
-       (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
-       ;; All the destination addresses are canonical.
-       (canonical-address-p (xr :rgf *rsi* x86))
-       (canonical-address-p (+ (ash n 2) (xr :rgf *rsi* x86)))
-       ;; All the source addresses are canonical.
-       (canonical-address-p (xr :rgf *rdi* x86))
-       (canonical-address-p (+ (ash n 2) (xr :rgf *rdi* x86)))
-       ;; Memory locations of interest are disjoint.
-       (disjoint-p
-        ;; Program addresses
-        (create-canonical-address-list (len *copyData*) addr)
-        ;; Destination addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
-       (disjoint-p
-        ;; Program addresses
-        (create-canonical-address-list (len *copyData*) addr)
-        ;; Stack
-        (create-canonical-address-list 8 (+ -8 (xr :rgf *rsp* x86))))
-       (disjoint-p
-        ;; Source Addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
-        ;; Stack
-        (create-canonical-address-list 8 (+ -8 (xr :rgf *rsp* x86))))
-       (disjoint-p
-        ;; Destination Addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86))
-        ;; Stack
-        (create-canonical-address-list 8 (+ -8 (xr :rgf *rsp* x86))))
-       (disjoint-p
-        ;; Source Addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
-        ;; Destination Addresses
-        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
-       ;; Program is located at addr.
-       ;; All program addresses are canonical.
-       (canonical-address-p addr)
-       (canonical-address-p (+ -1 (len *copyData*) addr))
-       (program-at (create-canonical-address-list (len *copyData*) addr)
-                   *copyData* x86)))
-
-
 (defun-nx source-bytes (k src-addr x86)
   (mv-nth 1 (rb (create-canonical-address-list k (+ (- k) src-addr))
                 :x x86)))
@@ -416,49 +362,6 @@
        (equal (xr :rgf *rdi* x86) src-addr)
        (equal (xr :rgf *rsi* x86) dst-addr)
        (equal addr (+ -16 (xr :rip 0 x86)))))
-
-(defthm loop-invariant-fwd-chain-to-its-body
-  (implies (loop-invariant k m addr x86)
-           (and (x86p x86)
-                (xr :programmer-level-mode 0 x86)
-                (equal (xr :ms 0 x86) nil)
-                (equal (xr :fault 0 x86) nil)
-                (unsigned-byte-p 33 m)
-                (equal (mod m 4) 0)
-                (unsigned-byte-p 33 k)
-                (equal (mod k 4) 0)
-                (unsigned-byte-p 33 (+ m k))
-                (equal (xr :rgf *rax* x86) m)
-                ;; Stack address is canonical.
-                (canonical-address-p (xr :rgf *rsp* x86))
-                ;; All the destination addresses are canonical.
-                (canonical-address-p (+ (- k) (xr :rgf *rsi* x86)))
-                (canonical-address-p (+ m (xr :rgf *rsi* x86)))
-                ;; All the source addresses are canonical.
-                (canonical-address-p (+ (- k) (xr :rgf *rdi* x86)))
-                (canonical-address-p (+ m (xr :rgf *rdi* x86)))
-                ;; Memory locations of interest are disjoint.
-                (disjoint-p
-                 ;; Program addresses
-                 (create-canonical-address-list (len *copyData*) addr)
-                 ;; Destination addresses
-                 (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
-                (disjoint-p
-                 ;; Source Addresses
-                 (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rdi* x86)))
-                 ;; Destination Addresses
-                 (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
-                ;; Program is located at addr.
-                ;; All program addresses are canonical.
-                (canonical-address-p addr)
-                (canonical-address-p (+ -1 (len *copyData*) addr))
-                (program-at (create-canonical-address-list (len *copyData*) addr)
-                            *copyData* x86)
-                ;; Values copied in the previous iterations of the loop are unaltered.
-                ;; dst[(+ -k dst-addr) to dst-addr]  =  src[(+ -k src-addr) to src-addr]
-                (equal (destination-bytes k (xr :rgf *rsi* x86) x86)
-                       (source-bytes      k (xr :rgf *rdi* x86) x86))))
-  :rule-classes :forward-chaining)
 
 (defthm loop-preconditions-fwd-chain-to-its-body
   (implies (loop-preconditions k m addr src-addr dst-addr x86)
@@ -528,6 +431,15 @@
 
 (defun post-clk () 2)
 
+(defun clk (n)
+  (if (zp n)
+      (pre-clk n)
+    (clk+ (pre-clk n)
+          (loop-clk (ash n 2)))))
+
+(defun program-clk (n)
+  (clk+ (clk n) (post-clk)))
+
 ;; ======================================================================
 
 ;; Some useful arithmetic theorems:
@@ -596,148 +508,6 @@
 ;; ======================================================================
 
 ;; Effects theorem:
-
-(defthm effects-copyData-pre
-  (implies (preconditions n addr x86)
-           (equal (x86-run (pre-clk n) x86)
-                  (if (< 0 n)
-                      (XW
-                       :RGF *RAX*
-                       (ASH (XR :RGF *RDX* X86) 2)
-                       (XW
-                        :RGF *RSP* (+ -8 (XR :RGF *RSP* X86))
-                        (XW
-                         :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
-                         (XW
-                          :RIP 0 (+ 16 (XR :RIP 0 X86))
-                          (MV-NTH
-                           1
-                           (WB
-                            (CREATE-ADDR-BYTES-ALIST
-                             (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-                             (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
-                            (WRITE-USER-RFLAGS
-                             (LOGIOR
-                              (LOGHEAD 1
-                                       (BOOL->BIT (LOGBITP 31 (XR :RGF *RDX* X86))))
-                              (LOGHEAD
-                               32
-                               (ASH
-                                (PF-SPEC64
-                                 (LOGHEAD 64
-                                          (ASH (LOGHEAD 64 (LOGEXT 32 (XR :RGF *RDX* X86)))
-                                               2)))
-                                2))
-                              (LOGAND
-                               4294967290
-                               (LOGIOR
-                                (LOGHEAD
-                                 32
-                                 (ASH
-                                  (ZF-SPEC
-                                   (LOGHEAD 64
-                                            (ASH (LOGHEAD 64 (LOGEXT 32 (XR :RGF *RDX* X86)))
-                                                 2)))
-                                  6))
-                                (LOGAND
-                                 4294967230
-                                 (LOGIOR
-                                  (LOGHEAD
-                                   32
-                                   (ASH
-                                    (SF-SPEC64
-                                     (LOGHEAD 64
-                                              (ASH (LOGHEAD 64 (LOGEXT 32 (XR :RGF *RDX* X86)))
-                                                   2)))
-                                    7))
-                                  (LOGAND
-                                   4294967166
-                                   (BITOPS::LOGSQUASH
-                                    1
-                                    (XR
-                                     :RFLAGS 0
-                                     (WRITE-USER-RFLAGS
-                                      (LOGIOR
-                                       (LOGHEAD 32
-                                                (ASH (PF-SPEC32 (XR :RGF *RDX* X86)) 2))
-                                       (LOGAND
-                                        4294967226
-                                        (LOGIOR (LOGAND 4294965118
-                                                        (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))
-                                                (LOGHEAD 32
-                                                         (ASH (SF-SPEC32 (XR :RGF *RDX* X86))
-                                                              7)))))
-                                      16 X86)))))))))
-                             2064
-                             (WRITE-USER-RFLAGS
-                              (LOGIOR
-                               (LOGHEAD 32
-                                        (ASH (PF-SPEC32 (XR :RGF *RDX* X86)) 2))
-                               (LOGAND 4294967226
-                                       (LOGIOR (LOGAND 4294965118
-                                                       (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))
-                                               (LOGHEAD 32
-                                                        (ASH (SF-SPEC32 (XR :RGF *RDX* X86))
-                                                             7)))))
-                              16 X86))))))))
-                    (XW
-                     :RGF *RSP* (+ -8 (XR :RGF *RSP* X86))
-                     (XW
-                      :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
-                      (XW
-                       :RIP 0 (+ 34 (XR :RIP 0 X86))
-                       (MV-NTH
-                        1
-                        (WB
-                         (CREATE-ADDR-BYTES-ALIST
-                          (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
-                          (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
-                         (WRITE-USER-RFLAGS
-                          (LOGIOR
-                           4
-                           (LOGAND 4294967290
-                                   (LOGIOR 64
-                                           (LOGAND 4294965054
-                                                   (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86))))))
-                          16 X86)))))))))
-  :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
-
-                                    gpr-and-spec-4
-                                    jcc/cmovcc/setcc-spec
-                                    sal/shl-spec
-                                    sal/shl-spec-64
-
-                                    opcode-execute
-                                    !rgfi-size
-                                    x86-operand-to-reg/mem
-                                    wr64
-                                    wr32
-                                    rr32
-                                    rr64
-                                    rm32
-                                    rm64
-                                    wm32
-                                    wm64
-                                    rr32
-                                    x86-operand-from-modr/m-and-sib-bytes
-                                    rim-size
-                                    rim32
-                                    n32-to-i32
-                                    n64-to-i64
-                                    rim08
-                                    two-byte-opcode-decode-and-execute
-                                    x86-effective-addr
-                                    subset-p
-                                    ;; Flags
-                                    ;; write-user-rflags
-                                    ;; !flgi-undefined
-                                    ;; !flgi
-                                    ;; flgi
-                                    )
-
-                                   (wb-remove-duplicate-writes
-                                    create-canonical-address-list
-                                    force (force))))))
 
 (defthm subset-p-linear-thm-1
   (implies (and (canonical-address-p (+ m x))
@@ -1938,8 +1708,6 @@
                              force (force))))
           ("Subgoal *1/3"
            :expand (loop-state (+ 4 k) (+ -4 m) (+ 4 src-addr) (+ 4 dst-addr) x86)
-           ;; :use ((:instance loop-invariant-fwd-chain-to-its-body)
-           ;;       (:instance effects-copyData-loop-helper-11))
            :in-theory (e/d* (pull-out-loop-clk-recur-from-loop-state-helper
                              effects-copyData-loop-helper-12)
                             (loop-clk-base
@@ -2058,7 +1826,7 @@
                              (loop-clk-recur)
                              force (force))))))
 
-(defthm destination-array-and-loop-state
+(defthmd destination-array-and-loop-state
   ;; dst[(+ -k dst-addr) to (dst-addr + m)] in (loop-state k m src-addr dst-addr x86) =
   ;; src[(+ -k src-addr) to (src-addr + m)] in x86
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
@@ -2092,15 +1860,41 @@
                              (loop-clk-base)
                              create-canonical-address-list)))))
 
-(defthm loop-state-destination-address-projection
+(defthm destination-array-and-x86-state-after-loop-clk
+  ;; dst[(+ -k dst-addr) to (dst-addr + m)] in (loop-state k m src-addr dst-addr x86) =
+  ;; src[(+ -k src-addr) to (src-addr + m)] in x86
+  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
+                (natp k))
+           (equal (destination-bytes (+ k m) (+ m dst-addr) (x86-run (loop-clk m) x86))
+                  (source-bytes (+ k m) (+ m src-addr) x86)))
+  :hints (("Goal"
+           :use ((:instance effects-copyData-loop)
+                 (:instance destination-array-and-loop-state))
+           :hands-off (x86-run)
+           :in-theory (e/d* ()
+                            (effects-copyData-loop
+                             loop-preconditions
+                             effects-copyData-loop-recur-source-address-projection-full
+                             loop-invariant
+                             destination-bytes
+                             source-bytes
+                             loop-clk-recur
+                             (loop-clk-recur)
+                             loop-clk-base
+                             (loop-clk-base)
+                             loop-clk
+                             (loop-clk)
+                             create-canonical-address-list)))))
+
+(defthm loop-copies-m-bytes-from-source-to-destination
   ;; dst[ dst-addr to (dst-addr + m) ] in (loop-state 0 m src-addr dst-addr x86) =
   ;; src[ src-addr to (src-addr + m) ] in x86
   (implies (and (loop-preconditions 0 m addr src-addr dst-addr x86)
                 (natp k))
-           (equal (destination-bytes m (+ m dst-addr) (loop-state 0 m src-addr dst-addr x86))
+           (equal (destination-bytes m (+ m dst-addr) (x86-run (loop-clk m) x86))
                   (source-bytes m (+ m src-addr) x86)))
   :hints (("Goal"
-           :use ((:instance destination-array-and-loop-state
+           :use ((:instance destination-array-and-x86-state-after-loop-clk
                             (k 0)))
            :hands-off (x86-run)
            :in-theory (e/d* ()
@@ -2116,3 +1910,409 @@
                              effects-copyData-loop-base
                              effects-copyData-loop-recur
                              force (force))))))
+
+;; ======================================================================
+
+(defun-nx preconditions (n addr x86)
+  (and (x86p x86)
+       (xr :programmer-level-mode 0 x86)
+       (equal (xr :ms 0 x86) nil)
+       (equal (xr :fault 0 x86) nil)
+       ;; We are poised to run the copyData sub-routine.
+       (equal (xr :rip 0 x86) addr)
+       (unsigned-byte-p 31 n)
+       (equal (xr :rgf *rdx* x86) n)
+       ;; All the stack addresses are canonical.
+       (canonical-address-p (+ -8 (xr :rgf *rsp* x86)))
+       (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
+       ;; All the destination addresses are canonical.
+       (canonical-address-p (xr :rgf *rsi* x86))
+       (canonical-address-p (+ (ash n 2) (xr :rgf *rsi* x86)))
+       ;; All the source addresses are canonical.
+       (canonical-address-p (xr :rgf *rdi* x86))
+       (canonical-address-p (+ (ash n 2) (xr :rgf *rdi* x86)))
+       ;; Memory locations of interest are disjoint.
+       (disjoint-p
+        ;; Program addresses
+        (create-canonical-address-list (len *copyData*) addr)
+        ;; Destination addresses
+        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
+       (disjoint-p
+        ;; Program addresses
+        (create-canonical-address-list (len *copyData*) addr)
+        ;; Stack
+        (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
+       (disjoint-p
+        ;; Source Addresses
+        (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
+        ;; Stack
+        (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
+       (disjoint-p
+        ;; Destination Addresses
+        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86))
+        ;; Stack
+        (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
+       (disjoint-p
+        ;; Source Addresses
+        (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
+        ;; Destination Addresses
+        (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
+       ;; Program is located at addr.
+       ;; All program addresses are canonical.
+       (canonical-address-p addr)
+       (canonical-address-p (+ -1 (len *copyData*) addr))
+       (program-at (create-canonical-address-list (len *copyData*) addr)
+                   *copyData* x86)))
+
+(defthm preconditions-fwd-chain-to-its-body
+  (implies (preconditions n addr x86)
+           (and (x86p x86)
+                (xr :programmer-level-mode 0 x86)
+                (equal (xr :ms 0 x86) nil)
+                (equal (xr :fault 0 x86) nil)
+                ;; We are poised to run the copyData sub-routine.
+                (equal (xr :rip 0 x86) addr)
+                (unsigned-byte-p 31 n)
+                (equal (xr :rgf *rdx* x86) n)
+                ;; All the stack addresses are canonical.
+                (canonical-address-p (+ -8 (xr :rgf *rsp* x86)))
+                (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
+                ;; All the destination addresses are canonical.
+                (canonical-address-p (xr :rgf *rsi* x86))
+                (canonical-address-p (+ (ash n 2) (xr :rgf *rsi* x86)))
+                ;; All the source addresses are canonical.
+                (canonical-address-p (xr :rgf *rdi* x86))
+                (canonical-address-p (+ (ash n 2) (xr :rgf *rdi* x86)))
+                ;; Memory locations of interest are disjoint.
+                (disjoint-p
+                 ;; Program addresses
+                 (create-canonical-address-list (len *copyData*) addr)
+                 ;; Destination addresses
+                 (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
+                (disjoint-p
+                 ;; Program addresses
+                 (create-canonical-address-list (len *copyData*) addr)
+                 ;; Stack
+                 (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
+                (disjoint-p
+                 ;; Source Addresses
+                 (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
+                 ;; Stack
+                 (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
+                (disjoint-p
+                 ;; Destination Addresses
+                 (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86))
+                 ;; Stack
+                 (create-canonical-address-list 16 (+ -8 (xr :rgf *rsp* x86))))
+                (disjoint-p
+                 ;; Source Addresses
+                 (create-canonical-address-list (ash n 2) (xr :rgf *rdi* x86))
+                 ;; Destination Addresses
+                 (create-canonical-address-list (ash n 2) (xr :rgf *rsi* x86)))
+                ;; Program is located at addr.
+                ;; All program addresses are canonical.
+                (canonical-address-p addr)
+                (canonical-address-p (+ -1 (len *copyData*) addr))
+                (program-at (create-canonical-address-list (len *copyData*) addr)
+                            *copyData* x86)))
+  :rule-classes :forward-chaining)
+
+(defthm canonical-address-p-limits-thm-3
+  ;; [Shilpi]: Move to main books?
+  (implies (and (canonical-address-p (+ i x))
+                (canonical-address-p (+ (- j) x))
+                (integerp x)
+                (natp j)
+                (natp i))
+           (canonical-address-p x))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ()))))
+
+(defthm effects-copyData-pre
+  (implies (preconditions n addr x86)
+           (equal (x86-run (pre-clk n) x86)
+                  (if (< 0 n)
+                      (XW
+                       :RGF *RAX*
+                       (ASH (XR :RGF *RDX* X86) 2)
+                       (XW
+                        :RGF *RSP* (+ -8 (XR :RGF *RSP* X86))
+                        (XW
+                         :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
+                         (XW
+                          :RIP 0 (+ 16 (XR :RIP 0 X86))
+                          (MV-NTH
+                           1
+                           (WB
+                            (CREATE-ADDR-BYTES-ALIST
+                             (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
+                             (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
+                            (WRITE-USER-RFLAGS
+                             (LOGIOR
+                              (LOGHEAD 1
+                                       (BOOL->BIT (LOGBITP 31 (XR :RGF *RDX* X86))))
+                              (LOGHEAD
+                               32
+                               (ASH
+                                (PF-SPEC64
+                                 (LOGHEAD 64
+                                          (ASH (LOGHEAD 64 (LOGEXT 32 (XR :RGF *RDX* X86)))
+                                               2)))
+                                2))
+                              (LOGAND
+                               4294967290
+                               (LOGIOR
+                                (LOGHEAD
+                                 32
+                                 (ASH
+                                  (ZF-SPEC
+                                   (LOGHEAD 64
+                                            (ASH (LOGHEAD 64 (LOGEXT 32 (XR :RGF *RDX* X86)))
+                                                 2)))
+                                  6))
+                                (LOGAND
+                                 4294967230
+                                 (LOGIOR
+                                  (LOGHEAD
+                                   32
+                                   (ASH
+                                    (SF-SPEC64
+                                     (LOGHEAD 64
+                                              (ASH (LOGHEAD 64 (LOGEXT 32 (XR :RGF *RDX* X86)))
+                                                   2)))
+                                    7))
+                                  (LOGAND
+                                   4294967166
+                                   (BITOPS::LOGSQUASH
+                                    1
+                                    (XR
+                                     :RFLAGS 0
+                                     (WRITE-USER-RFLAGS
+                                      (LOGIOR
+                                       (LOGHEAD 32
+                                                (ASH (PF-SPEC32 (XR :RGF *RDX* X86)) 2))
+                                       (LOGAND
+                                        4294967226
+                                        (LOGIOR (LOGAND 4294965118
+                                                        (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))
+                                                (LOGHEAD 32
+                                                         (ASH (SF-SPEC32 (XR :RGF *RDX* X86))
+                                                              7)))))
+                                      16 X86)))))))))
+                             2064
+                             (WRITE-USER-RFLAGS
+                              (LOGIOR
+                               (LOGHEAD 32
+                                        (ASH (PF-SPEC32 (XR :RGF *RDX* X86)) 2))
+                               (LOGAND 4294967226
+                                       (LOGIOR (LOGAND 4294965118
+                                                       (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))
+                                               (LOGHEAD 32
+                                                        (ASH (SF-SPEC32 (XR :RGF *RDX* X86))
+                                                             7)))))
+                              16 X86))))))))
+                    (XW
+                     :RGF *RSP* (+ -8 (XR :RGF *RSP* X86))
+                     (XW
+                      :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
+                      (XW
+                       :RIP 0 (+ 34 (XR :RIP 0 X86))
+                       (MV-NTH
+                        1
+                        (WB
+                         (CREATE-ADDR-BYTES-ALIST
+                          (CREATE-CANONICAL-ADDRESS-LIST 8 (+ -8 (XR :RGF *RSP* X86)))
+                          (BYTE-IFY 8 (LOGHEAD 64 (XR :RGF *RBP* X86))))
+                         (WRITE-USER-RFLAGS
+                          (LOGIOR
+                           4
+                           (LOGAND 4294967290
+                                   (LOGIOR 64
+                                           (LOGAND 4294965054
+                                                   (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86))))))
+                          16 X86)))))))))
+  :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
+
+                                    gpr-and-spec-4
+                                    jcc/cmovcc/setcc-spec
+                                    sal/shl-spec
+                                    sal/shl-spec-64
+
+                                    opcode-execute
+                                    !rgfi-size
+                                    x86-operand-to-reg/mem
+                                    wr64
+                                    wr32
+                                    rr32
+                                    rr64
+                                    rm32
+                                    rm64
+                                    wm32
+                                    wm64
+                                    rr32
+                                    x86-operand-from-modr/m-and-sib-bytes
+                                    rim-size
+                                    rim32
+                                    n32-to-i32
+                                    n64-to-i64
+                                    rim08
+                                    two-byte-opcode-decode-and-execute
+                                    x86-effective-addr
+                                    subset-p)
+
+                                   (wb-remove-duplicate-writes
+                                    create-canonical-address-list
+                                    force (force))))))
+
+(defthm effects-copyData-pre-programmer-level-mode-projection
+  (implies (preconditions n addr x86)
+           (equal (xr :programmer-level-mode 0 (x86-run (pre-clk n) x86))
+                  (xr :programmer-level-mode 0 x86)))
+  :hints (("Goal"
+           :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* ()
+                            ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-rsi-projection
+  (implies (preconditions n addr x86)
+           (equal (xr :rgf *rsi* (x86-run (pre-clk n) x86))
+                  (xr :rgf *rsi* x86)))
+  :hints (("Goal" :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-rdi-projection
+  (implies (preconditions n addr x86)
+           (equal (xr :rgf *rdi* (x86-run (pre-clk n) x86))
+                  (xr :rgf *rdi* x86)))
+  :hints (("Goal" :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* ()
+                            ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-rsp-projection
+  (implies (preconditions n addr x86)
+           (equal (xr :rgf *rsp* (x86-run (pre-clk n) x86))
+                  (+ -8 (xr :rgf *rsp* x86))))
+  :hints (("Goal" :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* ()
+                            ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-rax-projection
+  (implies (and (preconditions n addr x86)
+                (not (zp n)))
+           (equal (xr :rgf *rax* (x86-run (pre-clk n) x86))
+                  (ash n 2)))
+  :hints (("Goal" :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* ()
+                            ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-program-at-projection
+  (implies (and (preconditions n addr x86)
+                (equal prog-len (len *copydata*)))
+           (equal (program-at (create-canonical-address-list prog-len addr)
+                              *copyData* (x86-run (pre-clk n) x86))
+                  (program-at (create-canonical-address-list prog-len addr)
+                              *copyData* x86)))
+  :hints (("Goal" :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* ()
+                            ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-fault-projection
+  (implies (preconditions n addr x86)
+           (equal (xr :fault 0 (x86-run (pre-clk n) x86))
+                  (xr :fault 0 x86)))
+  :hints (("Goal" :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* ()
+                            ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-ms-projection
+  (implies (preconditions n addr x86)
+           (equal (xr :ms 0 (x86-run (pre-clk n) x86))
+                  (xr :ms 0 x86)))
+  :hints (("Goal" :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* ()
+                            ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-rip-projection
+  (implies (and (preconditions n addr x86)
+                (not (zp n)))
+           (equal (xr :rip 0 (x86-run (pre-clk n) x86))
+                  (+ 16 (xr :rip 0 x86))))
+  :hints (("Goal" :use ((:instance effects-copydata-pre))
+           :in-theory (e/d* ()
+                            ((pre-clk) pre-clk force (force))))))
+
+(defthm effects-copyData-pre-x86p-projection
+  (implies (preconditions n addr x86)
+           (x86p (x86-run (pre-clk n) x86)))
+  :hints (("Goal" :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
+
+(encapsulate
+ ()
+
+ (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+
+ (defthm mod-thm-2
+   (implies (natp n)
+            (equal (mod (ash n 2) 4) 0))
+   :hints (("Goal" :in-theory (e/d* (ash) ())))))
+
+(defthm preconditions-implies-loop-preconditions-after-pre-clk
+  (implies (and (preconditions n addr x86)
+                (not (zp n))
+                (equal m (ash n 2)))
+           (loop-preconditions
+            0 m addr
+            (xr :rgf *rdi* x86) ;; src-addr
+            (xr :rgf *rsi* x86) ;; dst-addr
+            (x86-run (pre-clk n) x86)))
+  :hints (("Goal" :hands-off (x86-run)
+           :use ((:instance preconditions-fwd-chain-to-its-body))
+           :in-theory (e/d* (unsigned-byte-p)
+                            (pre-clk
+                             (pre-clk) preconditions
+                             preconditions-fwd-chain-to-its-body)))))
+
+;; (i-am-here)
+
+;; (defthmd x86-run-plus-for-clk
+;;   (equal (x86-run (binary-clk+ (pre-clk n) (loop-clk (ash n 2))) x86)
+;;          (x86-run (loop-clk (ash n 2)) (x86-run (pre-clk n) x86)))
+;;   :hints (("Goal" :in-theory (e/d* (binary-clk+)
+;;                                    (x86-run-plus
+;;                                     (loop-clk)
+;;                                     loop-clk
+;;                                     pre-clk
+;;                                     (pre-clk)))
+;;            :use ((:instance x86-run-plus
+;;                             (n2 (loop-clk (ash n 2)))
+;;                             (n1 (pre-clk n)))))))
+
+;; (defthm effects-copyData-n->-0 ;; (1)
+;;   (implies (and (preconditions n addr x86)
+;;                 (not (zp n))
+;;                 (equal m (ash n 2)))
+;;            (equal (destination-bytes m (+ m (xr :rgf *rdi* x86)) (x86-run (clk n) x86))
+;;                   (source-bytes m (+ m (xr :rgf *rsi* x86)) x86)))
+;;   :hints (("Goal"
+;;            :use ((:instance preconditions-implies-loop-preconditions-after-pre-clk)
+;;                  (:instance loop-copies-m-bytes-from-source-to-destination
+;;                             (src-addr (xr :rgf *rdi* x86))
+;;                             (dst-addr (xr :rgf *rsi* x86))))
+;;            :in-theory (e/d* (x86-run-plus-for-clk)
+;;                             (wb-remove-duplicate-writes
+;;                              preconditions-implies-loop-preconditions-after-pre-clk
+;;                              loop-copies-m-bytes-from-source-to-destination
+;;                              effects-copydata-pre
+;;                              preconditions
+;;                              destination-bytes
+;;                              source-bytes
+;;                              (loop-clk)
+;;                              loop-clk
+;;                              pre-clk
+;;                              (pre-clk)
+;;                              create-canonical-address-list
+;;                              force (force))))))
+
+
+;; (2) Prove a theorem similar to effects-copyData-n->-0, but it should be in terms of program-clk.
+
+;; (3) Prove the top-level theorem that removes (not (zp n)) from the hyps. of (2).
