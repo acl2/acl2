@@ -1,4 +1,11 @@
+; Copyright (C) 2009-2015, Regents of the University of Texas
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Authorship note: The above copyright/license info was added by Matt Kaufmann
+; on 9/2/2015, after noticing "MattKaufmann authored on Mar 27, 2009" at
+; https://github.com/acl2/acl2/commits/master/books/tools/with-arith5-help.lisp.
+; Clearly it has been modified since then to add rulesets info.
 
 (in-package "ACL2")
 

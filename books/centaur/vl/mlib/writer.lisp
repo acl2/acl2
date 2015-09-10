@@ -106,7 +106,7 @@ the leading @('\\') character and trailing space.</p>
 
 <p>Note: we assume that @('x') has no embedded spaces and at least one
 character.  These requirements aren't explicit about the names used in
-structures like @(see vl-id-p), @(see vl-modinst-p), and so forth.  But they
+structures like @(see vl-scopeexpr), @(see vl-modinst), and so forth.  But they
 should hold for any valid Verilog that we parse or generate.</p>"
 
   :prepwork
@@ -609,6 +609,9 @@ displays.  The module browser's web pages are responsible for defining the
          :hints(("Goal" :in-theory (enable vl-hidname-p)))))
 
 (defines vl-pp-expr
+  :parents (verilog-printing)
+  :short "Main pretty-printer for an expression."
+
   :prepwork ((local (in-theory (disable acl2::member-of-cons))))
   :ruler-extenders :all
   (define vl-pp-indexlist ((x vl-exprlist-p) &key (ps 'ps))

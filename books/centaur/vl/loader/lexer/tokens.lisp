@@ -402,7 +402,7 @@ bits.</p>"
             "The width of this integer.  Note that VL acts like a 32-bit
              Verilog implementation and, for an unsized integer like @('3') or
              @(''b101') we will produce a 32-bit token.  See also some
-             additional discussion in @(see vl-constint-p).")
+             additional discussion in @(see vl-constint).")
 
    (signedp booleanp
             :rule-classes :type-prescription
@@ -419,7 +419,7 @@ bits.</p>"
 
    (bits    vl-bitlist-p
             "@('nil') unless there are any @('X') or @('Z') digits.  In these
-             cases, it is a msb-first @(see vl-bitlist-p) that contains exactly
+             cases, it is a msb-first @(see vl-bitlist) that contains exactly
              @('width')-many bits.")
 
    (wasunsized booleanp
@@ -428,7 +428,7 @@ bits.</p>"
                 VL acts like a 32-bit implementation and the resulting integer
                 will have width 32.  Mainly intended for use in linting or
                 other kinds of heuristic checking.  See also @(see
-                vl-constint-p)."))
+                vl-constint) and @(see vl-weirdint)."))
 
   :require ((vl-inttoken-constraint-p-of-vl-inttoken-parts
              (vl-inttoken-constraint-p width value bits)))

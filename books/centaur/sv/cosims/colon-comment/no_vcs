@@ -1,0 +1,9 @@
+Skip vcs because for this:
+
+   assign out[0] = in[0] ? 1 :// comment
+				   0;
+
+It incorrectly says that out[0] is Z when in[0] is X/Z; the
+correct answer is clearly X.
+
+

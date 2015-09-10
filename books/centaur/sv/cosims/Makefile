@@ -76,7 +76,7 @@ print_tests :
 	@echo $(TESTS)
 
 %/ok : %/outputs.ncv.data %/outputs.vcs.data cosim-core
-	COSIM_TESTDIR=$* $(STARTJOB) -c "./cosim-core < run.lsp > $*/cosim.out"
+	COSIM_TESTDIR=$* $(STARTJOB) -c "./cosim-core < run.lsp &> $*/cosim.out"
 	@! egrep -i "failed|error" $*/cosim.out > /dev/null
 	@mv $*/cosim.out $*/ok
 	@ls -l $*/ok

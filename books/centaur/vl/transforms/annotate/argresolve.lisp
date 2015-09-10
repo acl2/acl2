@@ -715,9 +715,9 @@ seems like a very reasonable thing to do.  So, we no longer warn about blanks
 that are connected to output ports.</p>
 
 <p>Either of these situations is semantically well-formed and relatively easy
-to handle; see @(see blankargs).  But they are also bizarre, and at least would
-seem to indicate a situation that could be optimized.  So, if we see either of
-these cases, we add a non-fatal warning explaining the problem.</p>"
+to handle, but they are also bizarre, and at least would seem to indicate a
+situation that could be optimized.  So, if we see either of these cases, we add
+a non-fatal warning explaining the problem.</p>"
 
   :hooks ((:fix :hints (("goal" :induct (vl-check-blankargs args ports inst warnings)
                          :in-theory (disable (:d vl-check-blankargs)))

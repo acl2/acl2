@@ -1567,6 +1567,19 @@ identifier, so we convert it into a hidpiece.</p>"
           (id :s= (vl-parse-scoped-hid))
           (atts :w= (vl-parse-0+-attribute-instances))
           (:= (vl-match-token :vl-lparen))
+
+          (when (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                     (vl-is-token? :vl-rparen))
+            ;; SystemVerilog-2012 extension: function calls can now have no
+            ;; arguments at all.  They can also have other fancy
+            ;; list_of_arguments stuff, like named argument lists, but I'm not
+            ;; going to try to support that yet.
+            (:= (vl-match-token :vl-rparen))
+            (return (make-vl-call :name id
+                                  :args nil
+                                  :systemp nil
+                                  :atts atts)))
+
           (args := (vl-parse-1+-expressions-separated-by-commas))
           (:= (vl-match-token :vl-rparen))
           (return
@@ -1574,9 +1587,6 @@ identifier, so we convert it into a hidpiece.</p>"
                          :args args
                          :systemp nil
                          :atts atts))))
-
-
-
 
 ; primary ::=
 ;    number

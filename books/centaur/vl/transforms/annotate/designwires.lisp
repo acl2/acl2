@@ -45,8 +45,7 @@ attribute can later be used to distinguish between:</p>
 
 <ul>
 <li>wires that are really present and visible in the design, and</li>
-<li>wires that VL added in @(see transforms) like @(see split) and @(see
-occform).</li>
+<li>wires that VL added in later @(see transforms).</li>
 </ul>
 
 <p>That is, when temporary wires are added to the module by subsequent VL

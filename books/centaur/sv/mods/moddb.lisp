@@ -204,8 +204,8 @@ read-only thereafter.  It is fine to use the (read-only) accessor
 functions.</p>
 
 <p>An elab-mod is an abstract stobj whose logical story is that it is a
-record (accessed using @(see g)/@(see s) -- see @(see misc/records)) containing
-the following fields:</p>
+record (accessed using @(see g)/@(see s) -- see @(see acl2::misc/records))
+containing the following fields:</p>
 
 <ul>
 <li><i>name</i> -- the name of the module, a @(see modname-p) object</li>

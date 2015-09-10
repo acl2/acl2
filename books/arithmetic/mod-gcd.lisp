@@ -72,6 +72,29 @@ This book is used to prove all the axioms in the
            :use (:instance Nonneg-int-mod-nonnegative-integer-quotient
                            (n 0)))))
 
+
+
+(local (defthm greater-integer-does-not-divide
+         (implies (and (posp n)
+                       (rationalp d)
+                       (< n d))
+                  (not (integerp (* (/ d) n))))
+         :hints (("goal" :cases ((<= 1 (* (/ d) n)))))))
+
+(defthm nonneg-int-mod-when-divides
+  (implies (and (integerp (/ n d))
+                (natp n)
+                (posp d))
+           (equal (nonneg-int-mod n d) 0)))
+
+(defthmd divides-when-nonneg-int-mod-0
+  (implies (and (equal (nonneg-int-mod n d) 0)
+                (natp n)
+                (posp d))
+           (integerp (/ n d))))
+
+(local (in-theory (enable divides-when-nonneg-int-mod-0)))
+
 (local (defun induct-on-nonneg-int (j)
          (if (zp j)
              t
@@ -226,6 +249,18 @@ This book is used to prove all the axioms in the
 (defthm Nonneg-int-gcd-is-COMMON-divisor
   (and (equal (nonneg-int-mod x (nonneg-int-gcd x y)) 0)
        (equal (nonneg-int-mod y (nonneg-int-gcd x y)) 0)))
+
+(defthm Nonneg-int-gcd-divides
+  (implies (and (natp x) (natp y))
+           (and (integerp (* x (/ (nonneg-int-gcd x y))))
+                (integerp (* y (/ (nonneg-int-gcd x y))))))
+  :hints (("goal" :use (nonneg-int-gcd-is-common-divisor
+                        (:instance divides-when-nonneg-int-mod-0
+                         (n x) (d (nonneg-int-gcd x y)))
+                        (:instance divides-when-nonneg-int-mod-0
+                         (n y) (d (nonneg-int-gcd x y))))
+           :in-theory (disable nonneg-int-gcd-is-common-divisor
+                               divides-when-nonneg-int-mod-0))))
 
 (mutual-recursion
  (defun nonneg-int-gcd-multiplier1 (x y)
@@ -729,3 +764,57 @@ This book is used to prove all the axioms in the
                         (n2 (numerator (* (/ d) n)))
                         (d2 (denominator (* (/ d) n)))))))
 
+
+(defthmd nonneg-int-mod-zero-elim
+  (implies (and (natp n)
+                (posp d))
+           (equal (equal (nonneg-int-mod n d) 0)
+                  (integerp (/ n d)))))
+
+(local (defthm posp-of-nonneg-int-gcd
+         (implies (and (posp x) (posp y))
+                  (posp (nonneg-int-gcd x y)))
+         :rule-classes :type-prescription))
+
+(local (defthm posp-of-divide-by-gcd
+         (implies (and (posp a)
+                       (posp b))
+                  (posp (* a (/ (nonneg-int-gcd a b)))))
+         :rule-classes :type-prescription))
+
+(local (defthm posp-of-divide-by-gcd-2
+         (implies (and (posp a)
+                       (posp b))
+                  (posp (* b (/ (nonneg-int-gcd a b)))))
+         :rule-classes :type-prescription))
+
+(defthm nonneg-int-gcd-of-divide-out
+  (implies (and (posp a)
+                (posp b))
+           (EQUAL (NONNEG-INT-GCD (* A (/ (NONNEG-INT-GCD A B)))
+                                  (* B (/ (NONNEG-INT-GCD A B))))
+                  1))
+  :hints (("goal" :use ((:instance nonneg-int-gcd-is-largest-common-divisor-<=
+                         (x a) (y b)
+                         (d (* (nonneg-int-gcd a b)
+                               (NONNEG-INT-GCD (* A (/ (NONNEG-INT-GCD A B)))
+                                               (* B (/ (NONNEG-INT-GCD A B)))))))
+                        (:instance nonneg-int-gcd-divides
+                         (x (* a (/ (nonneg-int-gcd a b))))
+                         (y (* b (/ (nonneg-int-gcd a b))))))
+           :in-theory (disable nonneg-int-gcd-is-largest-common-divisor-<=
+                               nonneg-int-gcd-divides)
+           :do-not-induct t)))
+
+(defthmd numerator-and-denominator-in-terms-of-nonneg-int-gcd
+  (implies (and (natp a)
+                (posp b))
+           (and (equal (numerator (* (/ b) a)) (* a (/ (nonneg-int-gcd a b))))
+                (equal (denominator (* (/ b) a)) (* b (/ (nonneg-int-gcd a b))))))
+  :hints (("goal" :do-not-induct t
+           :cases ((equal a 0))
+           :use ((:instance unique-rationalp
+                  (d (* b (/ (nonneg-int-gcd a b))))
+                  (n (* a (/ (nonneg-int-gcd a b))))))
+           :in-theory (disable unique-rationalp
+                               COMMUTATIVITY-OF-NONNEG-INT-GCD))))

@@ -3398,7 +3398,7 @@
 
 (defun find-longest-common-retraction1-event (wrld1 wrld2)
   (cond ((equal wrld1 wrld2) wrld1)
-        (t (find-longest-common-retraction1
+        (t (find-longest-common-retraction1-event
             (scan-to-event (cdr wrld1))
             (scan-to-event (cdr wrld2))))))
 
@@ -6564,14 +6564,20 @@
         (t (ubt-ubu-query kwd wrld2 wrld0 seen kept-commands wrld state
                           banger)))))))
 
-; We can't define ubt-ubu-fn until we define LD, because it uses LD to replay
-; selected commands.  So we proceed as though we had defined ubt-ubu-fn.
+; We can't define ubt?-ubu?-fn until we define LD, because it uses LD to replay
+; selected commands.  So we proceed as though we had defined ubt?-ubu?-fn.
+
+(defmacro ubt? (cd)
+  (list 'ubt?-ubu?-fn :ubt cd 'state))
 
 (defmacro ubt (cd)
   (list 'ubt-ubu-fn :ubt cd 'state))
 
 (defmacro ubt! (cd)
   (list 'ubt!-ubu!-fn :ubt cd 'state))
+
+(defmacro ubu? (cd)
+  (list 'ubt?-ubu?-fn :ubu cd 'state))
 
 (defmacro ubu (cd)
   (list 'ubt-ubu-fn :ubu cd 'state))

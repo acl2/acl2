@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; XDOC Documentation System for ACL2
+; Copyright (C) 2009-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,41 +28,4 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
-(include-book "defs")
-(local (include-book "arithmetic"))
-
-(defsection vl-nat-values-p
-
-  (defund vl-nat-values-p (x)
-    (declare (xargs :guard t))
-    (or (atom x)
-        (and (consp (car x))
-             (natp (cdar x))
-             (vl-nat-values-p (cdr x)))))
-
-  (local (in-theory (enable vl-nat-values-p)))
-
-  (defthm vl-nat-values-p-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-nat-values-p x)
-                    t)))
-
-  (defthm vl-nat-values-p-of-cons
-    (equal (vl-nat-values-p (cons a x))
-           (and (natp (cdr a))
-                (vl-nat-values-p x))))
-
-  (defthm vl-nat-values-p-of-hons-shrink-alist
-    (implies (and (vl-nat-values-p x)
-                  (vl-nat-values-p ans))
-             (vl-nat-values-p (hons-shrink-alist x ans)))
-    :hints(("Goal" :in-theory (e/d (hons-shrink-alist)
-                                   ((force))))))
-
-  (defthm natp-of-cdr-of-hons-assoc-equal-when-vl-nat-values-p
-    (implies (vl-nat-values-p x)
-             (equal (natp (cdr (hons-assoc-equal a x)))
-                    (if (hons-assoc-equal a x)
-                        t
-                      nil)))))
+(in-package "ACL2") ; added by Matt K. to avoid certification failure

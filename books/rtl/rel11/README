@@ -90,7 +90,7 @@ The recommended procedures for major and minor revisions are outlined below.
 Major revision: Creation of "reln.0" as a modification of "rel<n-1>.k"
 -------------------------------------------------------------------
 
-(1.1) Create a new directory "rtl/reln.0" and copy the files "README", "gpl.txt",
+(1.1) Create a new directory "rtl/reln.0" and copy the files "README",
       and "license.txt" from "rel<n-1>.k" to "rtl/reln.0".  Create subdirectories 
       "rtl/reln.0/lib", "rtl/reln.0/support", and "rtl/reln.0/support/0".
 

@@ -6345,29 +6345,95 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (update-mutual-recursion-for-defun-nx-1 defs))
         (t defs)))
 
+(defun keyword-value-listp (l)
+  (declare (xargs :guard t))
+  (cond ((atom l) (null l))
+        (t (and (keywordp (car l))
+                (consp (cdr l))
+                (keyword-value-listp (cddr l))))))
+
+(defthm keyword-value-listp-forward-to-true-listp
+  (implies (keyword-value-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
+(defun assoc-keyword (key l)
+  (declare (xargs :guard (keyword-value-listp l)))
+  (cond ((endp l) nil)
+        ((eq key (car l)) l)
+        (t (assoc-keyword key (cddr l)))))
+
+(defun program-declared-p2 (dcls)
+  (declare (xargs :guard t))
+  (cond ((atom dcls) nil)
+        ((and (consp (car dcls))
+              (eq (caar dcls) 'xargs)
+              (keyword-value-listp (cdr (car dcls)))
+              (eq (cadr (assoc-keyword :mode (cdr (car dcls))))
+                  :program))
+         t)
+        (t (program-declared-p2 (cdr dcls)))))
+
+(defun program-declared-p1 (lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) nil)
+        ((and (consp (car lst))
+              (eq (caar lst) 'declare))
+         (or (program-declared-p2 (cdar lst))
+             (program-declared-p1 (cdr lst))))
+        (t (program-declared-p1 (cdr lst)))))
+
+(defun program-declared-p (def)
+
+; Def is a definition with the initial DEFUN or DEFUND stripped off.  We return
+; t if the declarations in def are minimally well-formed and there is an xargs
+; declaration of :mode :program.
+
+  (declare (xargs :guard (true-listp def)))
+  (program-declared-p1 (butlast (cddr def) 1)))
+
+(defun true-list-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (true-listp (car x))
+                (true-list-listp (cdr x))))))
+
+(defthm true-list-listp-forward-to-true-listp
+  (implies (true-list-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
+(defun some-program-declared-p (defs)
+  (declare (xargs :guard (true-list-listp defs)))
+  (cond ((endp defs) nil)
+        (t (or (program-declared-p (car defs))
+               (some-program-declared-p (cdr defs))))))
+
 #+acl2-loop-only
 (defmacro mutual-recursion (&whole event-form &rest rst)
   (declare (xargs :guard (mutual-recursion-guardp rst)))
   (let ((rst (update-mutual-recursion-for-defun-nx rst)))
-    (let ((form (list 'defuns-fn
-                      (list 'quote (strip-cdrs rst))
-                      'state
-                      (list 'quote event-form)
-                      #+:non-standard-analysis ; std-p
-                      nil)))
-      (cond
-       ((assoc-eq 'defund rst)
-        (list 'er-progn
-              form
-              (list
-               'with-output
-               :off 'summary
-               (list 'in-theory
-                     (cons 'disable
-                           (collect-cadrs-when-car-eq 'defund rst))))
-              (list 'value-triple (list 'quote (defund-name-list rst nil)))))
-       (t
-        form)))))
+    (let ((defs (strip-cdrs rst)))
+      (let ((form (list 'defuns-fn
+                        (list 'quote defs)
+                        'state
+                        (list 'quote event-form)
+                        #+:non-standard-analysis ; std-p
+                        nil)))
+        (cond
+         ((and (assoc-eq 'defund rst)
+               (not (some-program-declared-p defs)))
+          (list 'er-progn
+                form
+                (list
+                 'with-output
+                 :off 'summary
+                 (list 'in-theory
+                       (cons 'disable
+                             (collect-cadrs-when-car-eq 'defund rst))))
+                (list 'value-triple (list 'quote (defund-name-list rst nil)))))
+         (t
+          form))))))
 
 ; Now we define the weak notion of term that guards metafunctions.
 
@@ -7050,17 +7116,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (+ 1 (nonnegative-integer-quotient (- i j) j))))
 
 ; Next we develop let* in the logic.
-
-(defun true-list-listp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (true-listp (car x))
-                (true-list-listp (cdr x))))))
-
-(defthm true-list-listp-forward-to-true-listp
-  (implies (true-list-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining)
 
 (defun legal-let*-p (bindings ignore-vars ignored-seen top-form)
 
@@ -10497,24 +10552,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (eqlable-alistp x))
   :rule-classes :forward-chaining)
 
-(defun keyword-value-listp (l)
-  (declare (xargs :guard t))
-  (cond ((atom l) (null l))
-        (t (and (keywordp (car l))
-                (consp (cdr l))
-                (keyword-value-listp (cddr l))))))
-
-(defthm keyword-value-listp-forward-to-true-listp
-  (implies (keyword-value-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining)
-
-(defun assoc-keyword (key l)
-  (declare (xargs :guard (keyword-value-listp l)))
-  (cond ((endp l) nil)
-        ((eq key (car l)) l)
-        (t (assoc-keyword key (cddr l)))))
-
 ; The following seems useful, though at this point its use isn't clear.
 
 (defthm keyword-value-listp-assoc-keyword
@@ -10640,7 +10677,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                acl2::*1*-package-prefix*
                                name))
         (proposed-imports ; avoid sort-symbol-listp for toothbrush
-         (delete-duplicates (sort (copy-list imports) 'symbol-<))))
+         (remove-adjacent-duplicates-eq (sort (copy-list imports) 'symbol-<))))
     (assert pkg) ; see defpkg-raw
 
 ; We bind proposed-imports to the value of the imports argument.  We do not

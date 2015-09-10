@@ -48,7 +48,7 @@ recursive functions using @(see define).  It gives you:</p>
 @(see xargs) syntax, @(see returns-specifiers), @(see xdoc) integration, easy
 inlining, and so on.</li>
 
-<li>Automatic @(see flag::make-flag) integration, so you can easily prove
+<li>Automatic @(see acl2::make-flag) integration, so you can easily prove
 inductive theorems about your new definitions.</li>
 
 </ul>

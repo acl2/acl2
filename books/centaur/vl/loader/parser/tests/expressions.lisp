@@ -286,11 +286,6 @@
                   :successp nil)
 
 
-   (make-exprtest
-    :input "foo ()" ;; not an acceptable function call, since no args.
-    :expect '(id "foo")
-    :remainder "( )")
-
    (make-exprtest :input "foo(1)"
                   :expect '(:vl-funcall nil "foo" 1))
 
@@ -400,6 +395,13 @@
                                       (:vl-qmark nil 3
                                                  (:vl-qmark nil 4 5 (:vl-binary-plus nil 6 (real "6.5")))
                                                  (:vl-binary-plus nil 7 8))))
+
+   ;; Test to make sure Bug 507 is fixed: :// should be lexed as a colon followed
+   ;; by a comment, not as a :/ operator.
+   (make-exprtest :input "1 ? 2 ://is it secret
+                          3 ? 4 :// is it safe
+                          5"
+                  :expect '(:vl-qmark nil 1 2 (:vl-qmark nil 3 4 5)))
 
 
    ;; Basic precedence tests.  In the tests below, 1 op 2 should always bind more
@@ -859,7 +861,12 @@
                   :expect '(:vl-unary-preinc nil (id "a"))
                   :remainder "++")
 
-    ))
+   ;; SystemVerilog extends functions to allow empty argument lists
+   (make-exprtest :input "foo ()"
+                  :expect '(:vl-funcall nil "foo")
+                  :remainder "")
+
+   ))
 
  (defconst *verilog-diff-tests* ;; The expected results for Verilog-2005.
    (list
@@ -1016,6 +1023,10 @@
    (make-exprtest :input "a >>= b"  :successp nil)
    (make-exprtest :input "a <<<= b" :successp nil)
    (make-exprtest :input "a >>>= b" :successp nil)
+
+   (make-exprtest :input "foo ()" ;; not an acceptable function call, since no args.
+                  :expect '(id "foo")
+                  :remainder "( )")
 
 
     ))

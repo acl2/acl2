@@ -44,13 +44,16 @@
 each expression with its \"original version,\" as it was read from the source
 file, before any simplification has taken place.</p>
 
-<p>Why do we want to do this?  Transformations like @(see oprewrite) can, for
-instance, simplify expressions such as @('a == b') into @('&(a ~^ b)'), and
-these reduced expressions may not correspond to anything the logic designer
-actually wrote in the source file.  So, if we want to print an error message or
-warning about this expression, we would prefer to write it as @('a == b')
-instead.  By saving the original version of the expression as an attribute, we
-can easily remember where the expression came from.</p>
+<p>Why do we want to do this?  Historically, transformations like @(see
+vl2014::oprewrite) could simplify expressions such as @('a == b') into @('&(a
+~^ b)'), and these reduced expressions may not correspond to anything the logic
+designer actually wrote in the source file.  So, if we want to print an error
+message or warning about this expression, we would prefer to write it as @('a
+== b') instead.  By saving the original version of the expression as an
+attribute, we can easily remember where the expression came from.</p>
+
+<p><b>BOZO</b> We generally are doing a lot less to transform expressions these
+days; it may be that we don't really need origexprs any more.</p>
 
 <p>The core function, @(see vl-expr-origexprs), is rather cute.  As we
 encounter each expression, say @('x'), we just cons together a new expression

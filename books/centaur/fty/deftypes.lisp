@@ -4324,7 +4324,7 @@ on the kind of structure you are looking at.  A typical example would be:</p>
 
 <p>For convenience, the case macro automatically binds the fields of @('x') for
 you, as appropriate for each case.  That is, in the @(':" kind1-str "') case,
-you can use @(see defprod)-style @('foo.bar') style accessors for @('x')
+you can use @(see fty::defprod)-style @('foo.bar') style accessors for @('x')
 without having to explicitly add a @('" kind1-str "') @(see b*)
 binder.</p>")))))
 

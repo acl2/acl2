@@ -137,9 +137,7 @@ regular expressions, it insists that the expression is a portexpr.</p>
 
 <p><u>Internalnames.</u> Given a valid portexpr, we can easily collect up the
 identifiers that occur within it.  The main function to do this for a portexpr
-is @(see vl-portexpr->internalnames).  This is a bit different than, e.g., just
-using @(see vl-expr-names), because it omits any names that occur in index
-expressions.</p>")
+is @(see vl-portexpr->internalnames).</p>")
 
 (local (xdoc::set-default-parents port-expressions))
 
@@ -217,9 +215,8 @@ to the port.  For instance, in the following module,</p>
 <p>the internalnames for the first port are @('(\"a\")'), the second port to
 @('(\"foo\")'), and for the third port to @('(\"bar\" \"baz\")').</p>
 
-<p>Note that this is a bit different than, e.g., just using @(see
-vl-expr-names), because we omit any names that occur in index expressions,
-i.e., notice how we omit @('width') in the third port.</p>"
+<p>Note that we omit any names that occur in index expressions, i.e., notice
+how we omit @('width') in the third port.</p>"
 
   :guard (vl-portexpr-p x)
   :returns (names string-listp)

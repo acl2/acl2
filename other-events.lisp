@@ -450,6 +450,12 @@
                                       ctx wrld state nil))))
    (value (cdr pair))))
 
+(defun large-consp (x)
+  (eql (the (signed-byte 30)
+            (cons-count-bounded x))
+       (the (signed-byte 30)
+            (fn-count-evg-max-val))))
+
 (defun defconst-fn (name form state doc event-form)
 
 ; Important Note:  Don't change the formals of this function without
@@ -471,6 +477,14 @@
         (cond
          ((and const-prop
                (not (ld-redefinition-action state))
+
+; Skip the event-level check (which is merely an optimization; see below) if it
+; seems expensive but the second check (below) could be cheap.  Imagine for
+; example (defconst *a* (hons-copy '<large_cons_tree>)) executed redundantly.
+; A related check may be found in the raw Lisp definition of acl2::defconst.
+; For a concrete example, see :doc note-7-2.
+
+               (not (large-consp event-form))
                (equal event-form (get-event name wrld1)))
 
 ; We stop the redundant event even before evaluating the form.  We believe
@@ -8821,7 +8835,7 @@
 
 (mutual-recursion
 
-(defun make-include-books-absolute (form cbd dir names ctx state)
+(defun make-include-books-absolute (form cbd dir names localp ctx state)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
 ; destructure-expansion, and elide-locals-rec.
@@ -8872,17 +8886,19 @@
 
   (cond
    ((atom form) (value form)) ; This should never happen.
-   ((eq (car form) 'skip-proofs)
-    (er-let* ((x (make-include-books-absolute
-                  (cadr form) cbd dir names ctx state)))
-      (value (list (car form) x))))
-   ((eq (car form) 'local)
+   ((member-eq (car form) '(local skip-proofs))
+    (cond
+     ((and (eq (car form) 'local)
+           (not localp))
 
 ; Local events will be skipped when including a book, and in particular when
 ; evaluating portcullis commands from a book's certificate, so we can ignore
-; local events here.
+; local events then.
 
-    (value form))
+      (value form))
+     (t (er-let* ((x (make-include-books-absolute
+                      (cadr form) cbd dir names localp ctx state)))
+          (value (list (car form) x))))))
    ((eq (car form) 'progn)
 
 ; Since progn! has forms that need not be events, we don't try to deal with it.
@@ -8890,7 +8906,7 @@
 ; requires a ttag.
 
     (er-let* ((rest (make-include-books-absolute-lst
-                     (cdr form) cbd dir names ctx state)))
+                     (cdr form) cbd dir names localp ctx state)))
       (value (cons (car form)
                    rest))))
    ((eq (car form) 'value)
@@ -9043,7 +9059,7 @@
          (consp (cdr form)))
     (er-let* ((form1 (make-include-books-absolute
                       (car (last form))
-                      cbd dir names ctx state)))
+                      cbd dir names localp ctx state)))
       (value (append (butlast form 1) (list form1)))))
    ((getprop (car form) 'macro-body nil 'current-acl2-world (w state))
     (er-let*
@@ -9053,7 +9069,7 @@
 ; original form, if no actual pathname conversion takes place.  We would need
 ; to record such information, say, with (mv changedp result).
 
-      (make-include-books-absolute form1 cbd dir names ctx state)))
+      (make-include-books-absolute form1 cbd dir names localp ctx state)))
    (t (value (er hard ctx
                  "Implementation error in make-include-books-absolute:  ~
                   unrecognized event type, ~x0.  Make-include-books-absolute ~
@@ -9061,13 +9077,13 @@
                   Please send this error message to the implementors."
                  (car form))))))
 
-(defun make-include-books-absolute-lst (forms cbd dir names ctx state)
+(defun make-include-books-absolute-lst (forms cbd dir names localp ctx state)
   (if (endp forms)
       (value nil)
     (er-let* ((first (make-include-books-absolute
-                      (car forms) cbd dir names ctx state))
+                      (car forms) cbd dir names localp ctx state))
               (rest (make-include-books-absolute-lst
-                     (cdr forms) cbd dir names ctx state)))
+                     (cdr forms) cbd dir names localp ctx state)))
              (value (cons first rest)))))
 )
 
@@ -9393,7 +9409,7 @@
   (cond
    ((null cmds) (value ans))
    (t (er-let* ((cmd (make-include-books-absolute (car cmds) (car cbds) dir
-                                                  names ctx state)))
+                                                  names nil ctx state)))
                (fix-portcullis-cmds1 dir
                                      (cdr cmds)
                                      (cdr cbds)
@@ -27170,27 +27186,6 @@
 ; depends on remove-strings and other functions defined after axioms.lisp, we
 ; define it here.
 
-(defun program-declared-p1 (dcls)
-  (cond ((endp dcls) nil)
-        ((and (consp (car dcls))
-              (eq (caar dcls) 'xargs)
-              (keyword-value-listp (cdr (car dcls)))
-              (eq (cadr (assoc-keyword :mode (cdr (car dcls))))
-                  :program))
-         t)
-        (t (program-declared-p1 (cdr dcls)))))
-
-(defun program-declared-p (def)
-
-; Def is a definition with the initial DEFUN or DEFUND stripped off.  We return
-; t if the declarations in def are minimally well-formed and there is an xargs
-; declaration of :mode :program.
-
-  (mv-let (erp dcls)
-          (collect-dcls (remove-strings (butlast (cddr def) 1)) 'ignored-ctx)
-          (cond (erp nil)
-                (t (program-declared-p1 dcls)))))
-
 #+acl2-loop-only
 (defmacro defund (&rest def)
   (declare (xargs :guard (and (true-listp def)
@@ -27444,7 +27439,7 @@
                               (cbd)
                               nil
                               (primitive-event-macros)
-                              ctx state))))
+                              nil ctx state))))
                   (value (list* expansion1
                                 (car stobjs-out-and-raw-result)
                                 (cadr raw-result))))))))))

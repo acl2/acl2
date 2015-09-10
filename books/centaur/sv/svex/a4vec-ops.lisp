@@ -1654,7 +1654,7 @@ creating enormous vectors when given a huge shift amount.</p>"
 (define a4vec-lsh ((amt a4vec-p)
                    (x a4vec-p)
                    (mask 4vmask-p))
-  :short "Symbolic version of @(see 4vec-lhs)."
+  :short "Symbolic version of @(see 4vec-lsh)."
   :returns (res a4vec-p)
   (b* (((a4vec amt))
        ((a4vec x))

@@ -340,7 +340,18 @@ order, you can search for long prefixes first, e.g., @('>>>') before
       (case char1
 
         (#\: ;; 58
-         (vl-lex-plain-alist echars (vl-lexstate->colonops st) warnings))
+         (if (vl-matches-string-p "://" echars)
+             ;; Special case to fix Issue 507.  The new :/ operator in
+             ;; SystemVerilog causes problems when a : is followed by a
+             ;; one-line // style comment, e.g., in a ternary operator.  Both
+             ;; NCV and VCS seem to treat ://foo as a lone : followed by a
+             ;; //foo comment.  But if we just do the vl-lex-plain-alist here,
+             ;; we will instead see a :/ operator followed by /.  So, as a
+             ;; stupid hack to avoid problems, handle :// explicitly.
+             (mv (make-vl-plaintoken :etext (list (car echars)) :type :vl-colon)
+                 (cdr echars)
+                 (ok))
+           (vl-lex-plain-alist echars (vl-lexstate->colonops st) warnings)))
 
         (#\; ;; 59
          (vl-lex-plain echars ";" :vl-semi warnings))

@@ -1,5 +1,5 @@
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2013 Centaur Technology
+; Copyright (C) 2009-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

@@ -150,6 +150,8 @@
 (include-book "centaur/ubdds/param" :dir :system)
 
 (include-book "centaur/sv/top" :dir :system)
+(include-book "centaur/sv/tutorial/alu" :dir :system)
+(include-book "centaur/sv/tutorial/boothpipe" :dir :system)
 (include-book "centaur/esim/vcd/vcd" :dir :system)
 (include-book "centaur/esim/vcd/esim-snapshot" :dir :system)
 (include-book "centaur/esim/vcd/vcd-stub" :dir :system)
@@ -175,14 +177,11 @@
 (include-book "centaur/vl2014/transforms/propagate" :dir :system)
 (include-book "centaur/vl2014/transforms/expr-simp" :dir :system)
 (include-book "centaur/vl2014/transforms/inline" :dir :system)
-
-(include-book "centaur/vl/util/prefix-hash" :dir :system)
 (include-book "centaur/vl2014/util/prefix-hash" :dir :system)
 
 ;; BOZO conflict with prefix-hash stuff above.  Need to fix this.  Also, are
 ;; these being used at all?
 
-;; (include-book "centaur/vl/util/prefixp" :dir :system)
 ;; (include-book "centaur/vl2014/util/prefixp" :dir :system)
 
 (include-book "hacking/all" :dir :system)
@@ -418,8 +417,6 @@
 ; build at Centaur.  So, I'm putting the save event into a make-event to try
 ; to localize its effects to just this book's certification.
  (er-progn (xdoc::save "./manual"
-                       ;; Don't import again since we just imported.
-                       :import nil
                        ;; Allow redefinition so that we don't have to get
                        ;; everything perfect (until it's release time)
                        :redef-okp t)
@@ -521,7 +518,6 @@
      (ld ;; newline to fool dependency scanner
       "new-doc.lsp")
      (xdoc::save "./manual"
-                 :import nil
                  :redef-okp t
                  :zip-p nil)
      (value `(value-triple :manual)))))
