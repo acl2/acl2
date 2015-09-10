@@ -68,10 +68,10 @@
    ((ports vl-portlist-p))))
 
 
-(define vl-signing-kwd-to-exprtype ((x vl-token-p))
+(define vl-signing-kwd-to-exprsign ((x vl-token-p))
   :guard (or (eq (vl-token->type x) :vl-kwd-signed)
              (eq (vl-token->type x) :vl-kwd-unsigned))
-  :returns (signing vl-exprtype-p)
+  :returns (signing vl-exprsign-p)
   (case (vl-token->type x)
     (:vl-kwd-signed :vl-signed)
     (t              :vl-unsigned)))
@@ -179,7 +179,7 @@
                                       :nettype nettype
                                       :varp (and var t)
                                       :signedness (and signing
-                                                       (vl-signing-kwd-to-exprtype signing))
+                                                       (vl-signing-kwd-to-exprsign signing))
                                       :pdims ranges
                                       :name (vl-idtoken->name portname)
                                       :udims udims
@@ -1453,7 +1453,7 @@ seen.</p>"
                "True exactly when we found a @('var') keyword.")
    (type       vl-maybe-datatype-p
                "Exists if we found an explicit datatype.")
-   (signing    vl-maybe-exprtype-p
+   (signing    vl-maybe-exprsign-p
                "Exists if we had a signedness keyword without an explicit datatype.")
    (dims       vl-packeddimensionlist-p
                "Nonempty only if we had packed dimensions without an explicit datatype.")))
@@ -1519,7 +1519,7 @@ second @('net_port_type') case.</p>
                     :nettype nil
                     :var-p t
                     :signing (and signing
-                                  (vl-signing-kwd-to-exprtype signing))
+                                  (vl-signing-kwd-to-exprsign signing))
                     :dims   ranges)))
 
          ;; Possibilities:
@@ -1569,7 +1569,7 @@ second @('net_port_type') case.</p>
                   :nettype nettype
                   :var-p nil
                   :signing (and signing
-                                (vl-signing-kwd-to-exprtype signing))
+                                (vl-signing-kwd-to-exprsign signing))
                   :dims ranges)))
 
        ;; Possibilities:

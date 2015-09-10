@@ -54,16 +54,73 @@
 
 (defxdoc syntax
   :parents (vl)
-  :short "Representation of Verilog structures."
+  :short "Internal representation of the syntax of Verilog and SystemVerilog."
 
-  :long "<p>We now describe our representation of Verilog's syntactic
-structures.  For each kind of Verilog construct (expressions, statements,
-declarations, instances, etc.) we introduce recognizer, constructor, and
-accessor functions that enforce certain basic well-formedness criteria.</p>
+  :long "<h3>Introduction</h3>
 
-<p>These structures correspond fairly closely to parse trees in the Verilog
-grammar, although we make many simplifcations and generally present a much more
-regular view of the source code.</p>")
+<p>A core component of VL is its internal representation of Verilog's
+syntactic structures.  For each kind of Verilog construct (expressions,
+statements, declarations, instances, etc.) we introduce corresponding ``types''
+with their own recognizer, constructor, and accessor functions.</p>
+
+<p>These structures generally correspond fairly closely to parse trees in the
+SystemVerilog grammar.  However, we do sometimes make certain simplifications
+to present a more regular view of the source code.  For instance, whereas in a
+normal Verilog module you might write something like @('wire [3:0] a, b, c;')
+to simultaneously declare several wires, our internal representation treats
+each wire declaration separately, as if you had instead written @('wire [3:0]
+a; wire [3:0] b; wire [3:0] c;').  Many structures also contain various
+additional information that is not purely part of the syntax, e.g., many
+structures include @(see vl-location) annotations to say where they came from,
+expressions include annotations about whether they have explicit parentheses,
+and so forth.</p>
+
+<p>We introduce all of these structures using the @(see fty) library and
+following the fixtype discipline.  This generally means that each type has an
+associated fixing function, equivalence relation, etc.  If you aren't familiar
+with fty, you may want to learn a bit about it before trying to understand
+these structures.</p>
+
+<h3>Quick Guide</h3>
+
+<p>SystemVerilog is a huge language (the grammar is about 45 pages!) so it can
+be easy to get lost in all of the different kinds of constructs.  Here is a
+quick guide to the most major syntactic definitions:</p>
+
+<ul>
+
+<li>@(see vl-design) is our top-level representation of an entire SystemVerilog
+design, including all of the modules, interfaces, packages, programs, etc.,
+typically spread out across many files.  If you start here and then drive down
+into the fields, you'll eventually explore all of the constructs.</li>
+
+<li>Many kinds of major components can occur in a design, e.g., modules,
+interfaces, packages, programs, configs, user defined primitives, etc.  We
+represent these with, e.g., @(see vl-module), @(see vl-interface), @(see
+vl-package), @(see vl-program), @(see vl-config), @(see vl-udp), etc.</li>
+
+<li>Modules are the bread and butter of most designs.  Most modules contain
+things like assignments, gate and module instances, always blocks, initial
+blocks, aliases, and so on.  We represent these using, e.g., @(see vl-assign),
+@(see vl-gateinst), @(see vl-modinst), @(see vl-always), @(see vl-initial),
+@(see vl-alias), etc.</li>
+
+<li>Other widely used constructs include declarations of many kinds, e.g.,
+variables, ports, parameters, functions, tasks, types.  See for instance @(see
+vl-vardecl), @(see vl-port) and @(see vl-portdecl), @(see vl-paramdecl), @(see
+vl-fundecl), @(see vl-taskdecl), and @(see vl-typedef).</li>
+
+<li>Underpinning all of the above are @(see expressions-and-datatypes), which
+are mutually recursive (some expressions like casts can include types, and many
+datatypes use expressions for indexes and so forth).  Various constructs like
+always/initial blocks and functions and tasks also make use of procedural @(see
+statements) like if/else, case statements, and for loops.</li>
+
+</ul>
+
+<p>The above isn't entirely comprehensive; for instance a good deal of stuff is
+needed to represent generate statements; see @(see vl-genelement).  There are
+also various unfinished areas like support for SystemVerilog assertions.</p>")
 
 (local (xdoc::set-default-parents syntax))
 
@@ -573,6 +630,11 @@ arguments of gate instances and most arguments of module instances.  See our
                   (not (equal x t))))
     :hints(("Goal" :in-theory (enable vl-maybe-direction-p)))
     :rule-classes :compound-recognizer))
+
+(fty::deflist vl-directionlist
+  :elt-type vl-direction-p
+  :elementp-of-nil nil
+  :parents (vl-direction-p))
 
 
 (defprod vl-portdecl
@@ -1734,7 +1796,7 @@ their types as @(see vl-typeparam)s.</p>"
    :base-name vl-implicitvalueparam
    :short "Representation for implicitly specified value parameter types."
    ((range   vl-maybe-range-p    "The range for this parameter, if provided.")
-    (sign    vl-maybe-exprtype-p "The signedness for this parameter, if provided.")
+    (sign    vl-maybe-exprsign-p "The signedness for this parameter, if provided.")
     (default vl-maybe-expr-p     "The default value for this parameter, if provided.")))
 
   (:vl-explicitvalueparam
@@ -3382,7 +3444,7 @@ the type information between the variable and port declarations.</p>"
             "Modport of the interface, if specified")
    (type    vl-maybe-datatype-p
             "The datatype, if it was explicit")
-   (signedness vl-maybe-exprtype-p
+   (signedness vl-maybe-exprsign-p
                "The signedness, if given, and if there is no explicit datatype)")
    (pdims      vl-packeddimensionlist-p
                "Dimensions, if given and no explicit datatype")

@@ -29,31 +29,28 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ld "std/package.lsp" :dir :system)
+(include-book "std/portcullis" :dir :system)
 
 (defpkg "OSLIB"
-  (set-difference-eq
-   (union-eq *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*
-             std::*std-exports*
-             set::*sets-exports*
-             '(str::cat
-               str::natstr
-               include-raw
-               b*
-               assert!
-               progn$
-               defxdoc
-               defconsts
-               definline
-               definlined
-               defsection
-               defsection-progn
-               live-state-p
-               oslib
-               value
-               msg))
-   '(delete union)))
+  (append std::*std-exports*
+          set::*sets-exports*
+          '(str::cat
+            str::natstr
+            include-raw
+            b*
+            assert!
+            progn$
+            defxdoc
+            defconsts
+            definline
+            definlined
+            defsection
+            defsection-progn
+            live-state-p
+            oslib
+            value
+            msg)
+          acl2::*standard-acl2-imports*))
 
 (assign acl2::verbose-theory-warning nil)
 

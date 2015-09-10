@@ -30,11 +30,8 @@
 
 #!ACL2
 (in-package "ACL2")
-
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-(ld "package.lsp")
-(ld "other-packages.lsp")
-(acl2::include-book "portcullis")
+(include-book "portcullis")
 
 (in-package "VL")
 

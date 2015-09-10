@@ -1079,9 +1079,6 @@ constructed separately.)</p>"
     (sv::svarlist-addr-p (vl-portinfo-vars res))
     :hints(("Goal" :in-theory (enable vl-portinfo-vars sv::lhatom-vars)))))
 
-(fty::deflist vl-directionlist :elt-type vl-direction-p
-  :elementp-of-nil nil)
-
 (define vl-gate-plainarglist-portinfo ((x vl-plainarglist-p)
                                        (portnames string-listp)
                                        (portdirs vl-directionlist-p)

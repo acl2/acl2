@@ -68,12 +68,12 @@
 |#
 
 (define vl-signedness-ambiguity-warning ((x vl-expr-p)
-                                         (signedness vl-maybe-exprtype-p)
+                                         (signedness vl-maybe-exprsign-p)
                                          (caveat-flag))
   :returns (new-warnings vl-warninglist-p)
   (b* ((x (vl-expr-fix x))
        (warnings nil)
-       (signedness (vl-maybe-exprtype-fix signedness)))
+       (signedness (vl-maybe-exprsign-fix signedness)))
     (if (and signedness caveat-flag)
         (warn :type :vl-signedness-ambiguity
               :msg "Signedness of ~a0 is potentially ~
@@ -104,7 +104,7 @@
                              (typeov   vl-typeoverride-p))
   :guard (vl-expr-case x :vl-index)
   :returns (mv (new-warnings vl-warninglist-p)
-               (type vl-maybe-exprtype-p))
+               (type vl-maybe-exprsign-p))
   (b* ((x (vl-expr-fix x))
        (warnings nil)
        ((mv err opinfo) (vl-index-expr-typetrace x ss typeov))
@@ -126,10 +126,10 @@
 
 
 (define vl-value-typedecide ((x vl-value-p))
-  :returns (type vl-maybe-exprtype-p)
+  :returns (type vl-maybe-exprsign-p)
   (vl-value-case x
-    :vl-constint x.origtype
-    :vl-weirdint x.origtype
+    :vl-constint x.origsign
+    :vl-weirdint x.origsign
     :vl-extint   :vl-signed
     :vl-string   :vl-unsigned
     :otherwise   nil))
@@ -140,8 +140,8 @@
                                (typeov vl-typeoverride-p))
   :guard (vl-expr-case x :vl-call (not x.systemp) :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
-               (type (and (vl-maybe-exprtype-p type)
-                          (iff (vl-exprtype-p type) type))))
+               (type (and (vl-maybe-exprsign-p type)
+                          (iff (vl-exprsign-p type) type))))
   (b* (((vl-call x) (vl-expr-fix x))
        (warnings nil)
        ((mv err trace ?context ?tail)
@@ -182,8 +182,8 @@
 (define vl-syscall-typedecide ((x vl-expr-p))
   :guard (vl-expr-case x :vl-call x.systemp :otherwise nil)
   :returns (mv (warnings vl-warninglist-p)
-               (type (and (vl-maybe-exprtype-p type)
-                          (iff (vl-exprtype-p type) type))))
+               (type (and (vl-maybe-exprsign-p type)
+                          (iff (vl-exprsign-p type) type))))
   (b* ((warnings nil)
        (retinfo (vl-syscall->returninfo x))
        ((unless retinfo)
@@ -197,8 +197,8 @@
         (if signedp :vl-signed :vl-unsigned))))
 
 
-(deflist vl-maybe-exprtype-list-p (x)
-  (vl-maybe-exprtype-p x))
+(deflist vl-maybe-exprsign-list-p (x)
+  (vl-maybe-exprsign-p x))
 
 
 #|
@@ -216,7 +216,7 @@
 (define vl-unaryop-typedecide
   :parents (vl-expr-typedecide)
   ((x         vl-expr-p)
-   (arg-type  vl-maybe-exprtype-p)
+   (arg-type  vl-maybe-exprsign-p)
    (mode      (or (eq mode :probably-right)
                   (eq mode :probably-wrong))))
   :prepwork ((local (defthm vl-unary->op-forward
@@ -226,10 +226,10 @@
                      '(:in-theory (enable acl2::member-of-cons))))
   :guard (vl-expr-case x :vl-unary)
   :returns (mv (warnings vl-warninglist-p)
-               (exprtype vl-maybe-exprtype-p))
+               (exprsign vl-maybe-exprsign-p))
   (b* (((vl-unary x) (vl-expr-fix x))
        (warnings nil)
-       (arg-type (vl-maybe-exprtype-fix arg-type)))
+       (arg-type (vl-maybe-exprsign-fix arg-type)))
     (case x.op
       ((:vl-unary-plus :vl-unary-minus)
        ;; From 5.5.1, I believe these fall into the "all other operators"
@@ -259,8 +259,8 @@
 
 (define vl-binaryop-typedecide
   ((x           vl-expr-p)
-   (left-type   vl-maybe-exprtype-p)
-   (right-type  vl-maybe-exprtype-p)
+   (left-type   vl-maybe-exprsign-p)
+   (right-type  vl-maybe-exprsign-p)
    (mode        (or (eq mode :probably-right)
                     (eq mode :probably-wrong))))
   :prepwork ((local (defthm vl-binary->op-forward
@@ -270,11 +270,11 @@
                      '(:in-theory (enable acl2::member-of-cons))))
   :guard (vl-expr-case x :vl-binary)
   :returns (mv (warnings vl-warninglist-p)
-               (exprtype vl-maybe-exprtype-p))
+               (exprsign vl-maybe-exprsign-p))
   (b* (((vl-binary x) (vl-expr-fix x))
        (warnings nil)
-       (left-type (vl-maybe-exprtype-fix left-type))
-       (right-type (vl-maybe-exprtype-fix right-type)))
+       (left-type (vl-maybe-exprsign-fix left-type))
+       (right-type (vl-maybe-exprsign-fix right-type)))
     (case x.op
       ((:vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
         :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
@@ -295,14 +295,14 @@
               ;; Probably wrong mode: we act like the operand types matter and
               ;; treat this like a regular binary op.
               (b* ((type  (and left-type right-type
-                               (vl-exprtype-max left-type right-type))))
+                               (vl-exprsign-max left-type right-type))))
                 (mv (ok) type)))))
 
       ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
         :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
        ;; Simple context-determined binary ops.
        (b* ((type  (and left-type right-type
-                        (vl-exprtype-max left-type right-type))))
+                        (vl-exprsign-max left-type right-type))))
          (mv (ok) type)))
 
       ((:vl-binary-shr :vl-binary-shl :vl-binary-ashr :vl-binary-ashl :vl-binary-power)
@@ -314,7 +314,7 @@
               ;; Probably-wrong mode: we act like the second op's type matters
               ;; and treat this like a regular binary op.
               (b* ((type  (and left-type right-type
-                               (vl-exprtype-max left-type right-type))))
+                               (vl-exprsign-max left-type right-type))))
                 (mv (ok) type)))))
 
       ((:vl-binary-assign :vl-binary-plusassign :vl-binary-minusassign
@@ -372,8 +372,8 @@ produce unsigned values.</li>
                                           (:t member-equal)))))
     :verify-guards nil
     :returns (mv (warnings vl-warninglist-p)
-                 (type     (and (vl-maybe-exprtype-p type)
-                                (iff (vl-exprtype-p type) type))
+                 (type     (and (vl-maybe-exprsign-p type)
+                                (iff (vl-exprsign-p type) type))
                            :hints ('(:in-theory (disable (:d vl-expr-typedecide-aux))
                                      :expand ((:free (mode)
                                                (vl-expr-typedecide-aux
@@ -410,12 +410,12 @@ produce unsigned values.</li>
                            ;; We believe the first op's type does NOT affect the result type;
                            ;; see "minutia".
                            (mv warnings (and then-type else-type
-                                             (vl-exprtype-max then-type else-type))))
+                                             (vl-exprsign-max then-type else-type))))
                           (t
                            ;; Probably-wrong mode: we allow the first op's type to affect the
                            ;; result type.
                            (mv warnings (and test-type then-type else-type
-                                             (vl-exprtype-max test-type then-type else-type))))))
+                                             (vl-exprsign-max test-type then-type else-type))))))
 
         ;; I think it makes no sense to try to assign a type to these.
         :vl-mintypmax (mv (ok) nil)
@@ -544,8 +544,8 @@ produce unsigned values.</li>
    (ss vl-scopestack-p)
    (typeov vl-typeoverride-p))
   :returns (mv (warnings vl-warninglist-p)
-               (type     (and (vl-maybe-exprtype-p type)
-                              (equal (vl-exprtype-p type) (if type t nil)))))
+               (type     (and (vl-maybe-exprsign-p type)
+                              (equal (vl-exprsign-p type) (if type t nil)))))
 
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
@@ -573,7 +573,7 @@ in isolation, and doing so could yield an nonsensical result.  For instance, if
 But concatenations are always unsigned, so in the larger context we can see
 that this addition is in fact unsigned.</p>
 
-<p>The @('sign') we return is only a @(see vl-maybe-exprtype-p).  We might
+<p>The @('sign') we return is only a @(see vl-maybe-exprsign-p).  We might
 return @('nil') for two reasons.  First, there could be some kind of actual
 error with the module or the expression, e.g., the use of a wire which is not
 declared; in these cases we add fatal @(see warnings).  But we may also

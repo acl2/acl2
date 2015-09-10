@@ -92,10 +92,6 @@
         (vl-partition-plainargs (cdr x) inputs outputs (cons x1 inouts) unknowns)))
     (vl-partition-plainargs (cdr x) inputs outputs inouts (cons x1 unknowns))))
 
-(fty::deflist vl-directionlist
-  :elt-type vl-direction-p
-  :elementp-of-nil nil)
-
 
 
 (defxdoc port-expressions

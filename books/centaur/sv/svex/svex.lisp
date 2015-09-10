@@ -142,7 +142,7 @@ indexed variables like @($v_5$) versus @($v_4$) in some mathematics.</p>"))
 However, our expression language is fixed: only a few certain pre-defined
 function symbols like @('bitnot'), @('concat'), etc., are understood by
 functions like @(see svex-eval) and user-defined functions are not supported.
-See @(see svex-functions) for details.</p>")
+See @(see functions) for details.</p>")
 
 (define fnsym-p (x)
   :parents (fnsym)

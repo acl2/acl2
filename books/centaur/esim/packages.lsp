@@ -28,7 +28,5 @@
 
 (in-package "ACL2")
 (include-book "std/portcullis" :dir :system)
-; Matt K. mod: The following is redundant with the line above.
-; (ld "tools/flag-package.lsp" :dir :system)
 (include-book "centaur/vl2014/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)

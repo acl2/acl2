@@ -207,7 +207,7 @@ quotes."
 
   :long "<p>We assume that @('x') has a simple enough name to print without any
 encoding.  This is generally true for keyword constants used as tags and in
-basic enumerations like @(see vl-exprtype-p).  We print only the symbol name,
+basic enumerations like @(see vl-exprsign-p).  We print only the symbol name,
 in lower-case.</p>"
 
   (vl-ps-seq (vl-print "\"")
@@ -525,7 +525,7 @@ TEXT versions of the message.</p>"
 
 ;; Real Verilog JSON Encoding
 
-(define vl-jp-exprtype ((x vl-exprtype-p) &key (ps 'ps))
+(define vl-jp-exprsign ((x vl-exprsign-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
   (jp-sym x))
@@ -581,7 +581,7 @@ TEXT versions of the message.</p>"
   :inline t
   (jp-sym x))
 
-(add-json-encoder vl-exprtype-p         vl-jp-exprtype)
+(add-json-encoder vl-exprsign-p         vl-jp-exprsign)
 (add-json-encoder vl-cstrength-p        vl-jp-cstrength)
 (add-json-encoder vl-dstrength-p        vl-jp-dstrength)
 (add-json-encoder vl-direction-p        vl-jp-direction)
@@ -594,11 +594,11 @@ TEXT versions of the message.</p>"
 (add-json-encoder vl-alwaystype-p       vl-jp-alwaystype)
 
 
-(define vl-jp-maybe-exprtype ((x vl-maybe-exprtype-p) &key (ps 'ps))
+(define vl-jp-maybe-exprsign ((x vl-maybe-exprsign-p) &key (ps 'ps))
   :parents (json-encoders)
   :inline t
   (if x
-      (vl-jp-exprtype x)
+      (vl-jp-exprsign x)
     (vl-print "null")))
 
 (define vl-jp-maybe-cstrength ((x vl-maybe-cstrength-p) &key (ps 'ps))
@@ -615,7 +615,7 @@ TEXT versions of the message.</p>"
       (vl-jp-direction x)
     (vl-print "null")))
 
-(add-json-encoder vl-maybe-exprtype-p  vl-jp-maybe-exprtype)
+(add-json-encoder vl-maybe-exprsign-p  vl-jp-maybe-exprsign)
 (add-json-encoder vl-maybe-cstrength-p vl-jp-maybe-cstrength)
 (add-json-encoder vl-maybe-direction-p vl-jp-maybe-direction)
 
@@ -724,13 +724,13 @@ which could not hold such large values.</p>")
       (jp-object :tag (jp-sym :atom)
                  :guts (vl-jp-atomguts x.guts)
                  :finalwidth (jp-maybe-nat x.finalwidth)
-                 :finaltype (vl-jp-maybe-exprtype x.finaltype))
+                 :finaltype (vl-jp-maybe-exprsign x.finaltype))
       :nonatom
       (jp-object :tag        (jp-sym :nonatom)
                  :atts       (vl-jp-atts x.atts)
                  :args       (vl-jp-exprlist x.args)
                  :finalwidth (jp-maybe-nat x.finalwidth)
-                 :finaltype  (vl-jp-maybe-exprtype x.finaltype))))
+                 :finaltype  (vl-jp-maybe-exprsign x.finaltype))))
 
   (define vl-jp-atts ((x vl-atts-p) &key (ps 'ps))
     :measure (two-nats-measure (vl-atts-count x) 1)
@@ -880,16 +880,6 @@ which could not hold such large values.</p>")
   ///
   (add-json-encoder vl-maybe-nettypename-p vl-jp-maybe-nettypename))
 
-(define vl-jp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
-  :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
-  (if (stringp x)
-      (jp-object :tag (jp-sym :user-defined-type)
-                 :name (jp-str x))
-    (jp-sym x)))
-
-(add-json-encoder vl-enumbasekind-p vl-jp-enumbasekind)
-
-(def-vl-jp-aggregate enumbasetype)
 (def-vl-jp-aggregate enumitem)
 (def-vl-jp-list enumitem)
 
@@ -922,7 +912,7 @@ which could not hold such large values.</p>")
                 :members (vl-jp-structmemberlist x.members))
      :vl-enum
      (jp-object :tag      (jp-sym :vl-enum)
-                :basetype (vl-jp-enumbasetype x.basetype)
+                :basetype (vl-jp-datatype x.basetype)
                 :items    (vl-jp-enumitemlist x.items)
                 :pdims    (vl-jp-packeddimensionlist x.pdims)
                 :udims    (vl-jp-packeddimensionlist x.udims))

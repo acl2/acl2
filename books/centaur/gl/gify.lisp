@@ -207,7 +207,7 @@ be gified.  If not, implement this case.  Culprit (in function ~x0): ~x1~%"
                 :verify-guards nil
                 . ,(and recursivep
                         `(:measure
-                          (vl::two-nats-measure clk ,(if endp 0 idx))
+                          (acl2::two-nats-measure clk ,(if endp 0 idx))
                           . ,(and endp
                                   `(:hints (("goal" :in-theory
                                              (e/d** ((:ruleset

@@ -45,9 +45,9 @@ approximation'' of @('b').  That is, when every pair of corresponding bits,
 @($a_i$) from @($a$) and @($b_i$) from @($b$), are the same unless @($a_i$) is
 X.</p>
 
-<p>Almost all @(see svex-functions) satisfy a monotonicity property with
-respect to this relation, i.e., if @('f') is a one-argument function, it
-will satisfy:</p>
+<p>Almost all @(see svex) @(see functions) satisfy a monotonicity property with
+respect to this relation, i.e., if @('f') is a one-argument function, it will
+satisfy:</p>
 
 @({
     (implies (4vec-[= a b)
@@ -113,7 +113,7 @@ acl2::4v-monotonicity).</p>"
 
 (defsection 4vec-monotonicity
   :parents (4vec-[=)
-  :short "Monotonicity properties for the basic @(see svex-functions)."
+  :short "Monotonicity properties for the basic @(see svex) @(see functions)."
   (set-state-ok t)
   (local (in-theory (disable bitops::logior-natp-type
                              bitops::logior-<-0-linear-2

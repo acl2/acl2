@@ -29,6 +29,8 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
+(include-book "centaur/aignet/portcullis" :dir :system)
+
 
 (defpkg "GL"
  (set-difference-eq

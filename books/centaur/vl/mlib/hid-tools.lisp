@@ -1802,7 +1802,7 @@ indicating that @('b') is considered signed.</p>
   :guard (vl-datatype-resolved-p x)
   :measure (vl-datatype-count x)
   :returns (mv (caveat-flag)
-               (signedness vl-maybe-exprtype-p))
+               (signedness vl-maybe-exprsign-p))
   (b* (((when (consp (vl-datatype->udims x))) (mv nil nil)))
     (vl-datatype-case x
       :vl-coretype (b* (((vl-coredatatype-info typinfo) (vl-coretypename->info x.name)))
@@ -2206,15 +2206,15 @@ indicating that @('b') is considered signed.</p>
 
 
 
-;; (define vl-datatype-exprtype
+;; (define vl-datatype-exprsign
 ;;   :parents (datatype-tools vl-expr-typedecide)
 ;;   :short "Get the self-determined signedness of a datatype."
 ;;   ((x vl-datatype-p))
 ;;   :returns
-;;   (type vl-maybe-exprtype-p
-;;         "On success: the self-determined signedness (exprtype) of this expression.
+;;   (type vl-maybe-exprsign-p
+;;         "On success: the self-determined signedness (exprsign) of this expression.
 ;;           Note that some expressions (e.g., real numbers, unpacked types) have
-;;          exprtype NIL.")
+;;          exprsign NIL.")
 ;;   :long "<p>BOZO This is tricky with packed arrays etc.; I'm not sure we've
 ;; taken time yet to understand all the rules.</p>"
 ;;   (b* (((when (consp (vl-datatype->udims x)))
@@ -2247,7 +2247,7 @@ indicating that @('b') is considered signed.</p>
 ;;       (:vl-usertype
 ;;        ;; BOZO maybe some day extend this to be able to do lookups, but maybe
 ;;        ;; just depend on usertype-elim
-;;        (fail "vl-datatype-exprtype can't handle unresolved usertypes")))))
+;;        (fail "vl-datatype-exprsign can't handle unresolved usertypes")))))
 
 
 (define vl-datatype-select-ok ((x vl-datatype-p))
