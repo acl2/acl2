@@ -647,11 +647,6 @@ expressions.</p>"
         (vl-parse-error
          "Embedded parameter value assignments #(...) aren't implemented yet."))))
 
-(local (defthm vl-scopename-p-when-stringp
-         (implies (stringp x)
-                  (vl-scopename-p x))
-         :hints(("Goal" :in-theory (enable vl-scopename-p)))))
-
 (defparser vl-parse-pva-tail ()
   :short "Match @(' { '::' identifier [parameter_value_assignment] } '::'
 identifier ') and return an expression."
@@ -735,13 +730,6 @@ exists.</p>"
                   (vl-hidname-p x))
          :hints(("Goal" :in-theory (enable vl-hidname-p)))))
 
-
-(fty::deflist vl-scopenamelist :elt-type vl-scopename :elementp-of-nil nil
-  ///
-  (defthm vl-scopenamelist-p-when-string-listp
-    (implies (string-listp x)
-             (vl-scopenamelist-p x))
-    :hints(("Goal" :in-theory (enable vl-scopenamelist-p)))))
 
 (define vl-tack-scopes-onto-hid ((scopes vl-scopenamelist-p)
                                  (hid    vl-hidexpr-p))
