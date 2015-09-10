@@ -259,11 +259,6 @@
 ;;   | integer_vector_type [signing] [packed_dimension]
 ;;   | type_identifier [packed_dimension]
 
-(defthm vl-enumbasekind-p-when-stringp
-  (implies (stringp x)
-           (vl-enumbasekind-p x))
-  :hints(("Goal" :in-theory (enable vl-enumbasekind-p))))
-
 (defparser vl-parse-enum-base-type ()
   :result (vl-datatype-p val)
   :resultp-of-nil nil

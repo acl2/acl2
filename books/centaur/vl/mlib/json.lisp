@@ -880,16 +880,6 @@ which could not hold such large values.</p>")
   ///
   (add-json-encoder vl-maybe-nettypename-p vl-jp-maybe-nettypename))
 
-(define vl-jp-enumbasekind ((x vl-enumbasekind-p) &key (ps 'ps))
-  :guard-hints(("Goal" :in-theory (enable vl-enumbasekind-p)))
-  (if (stringp x)
-      (jp-object :tag (jp-sym :user-defined-type)
-                 :name (jp-str x))
-    (jp-sym x)))
-
-(add-json-encoder vl-enumbasekind-p vl-jp-enumbasekind)
-
-(def-vl-jp-aggregate enumbasetype)
 (def-vl-jp-aggregate enumitem)
 (def-vl-jp-list enumitem)
 
@@ -922,7 +912,7 @@ which could not hold such large values.</p>")
                 :members (vl-jp-structmemberlist x.members))
      :vl-enum
      (jp-object :tag      (jp-sym :vl-enum)
-                :basetype (vl-jp-enumbasetype x.basetype)
+                :basetype (vl-jp-datatype x.basetype)
                 :items    (vl-jp-enumitemlist x.items)
                 :pdims    (vl-jp-packeddimensionlist x.pdims)
                 :udims    (vl-jp-packeddimensionlist x.udims))
