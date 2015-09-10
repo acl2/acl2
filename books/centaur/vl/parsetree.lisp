@@ -631,6 +631,11 @@ arguments of gate instances and most arguments of module instances.  See our
     :hints(("Goal" :in-theory (enable vl-maybe-direction-p)))
     :rule-classes :compound-recognizer))
 
+(fty::deflist vl-directionlist
+  :elt-type vl-direction-p
+  :elementp-of-nil nil
+  :parents (vl-direction-p))
+
 
 (defprod vl-portdecl
   :short "Representation of Verilog port declarations."

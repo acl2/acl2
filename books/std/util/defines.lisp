@@ -131,7 +131,7 @@ inductive theorems about your new definitions.</li>
 <p>The @('clique-name') may be any symbol&mdash;we often just use the name of
 the first function in the clique, but this is not required.  The name is used
 for documentation purposes, and also (by default) is used to name the flag
-function that will be introduced by @(see flag::make-flag).</p>
+function that will be introduced by @(see acl2::make-flag).</p>
 
 <p>The global options each have the form @(':name value'), and we describe
 these options below.  We usually prefer to put these options at the front of
@@ -232,7 +232,7 @@ will look like @('<clique-name>-flag').</dd>
 <dt>:flag-hints hints</dt>
 
 <dd>Control the flag variable name, flag macro name, and hints for @(see
-make-flag).</dd>
+acl2::make-flag).</dd>
 
 
 <dt>:flag-local bool</dt>

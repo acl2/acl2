@@ -82,8 +82,8 @@ are generally intended to support the modeling of Verilog and SystemVerilog
 expressions.  For instance, our @(see 4vec-plus) operation agrees with the
 Verilog notion of plus: if there are any X or Z bits in either input, it
 ``conservatively'' returns all Xes.  Most of these operations have
-corresponding @(see svex) functions and can hence be used in @(see
-expressions); see @(see svex-functions).</p>
+corresponding @(see svex) @(see functions) and can hence be used in @(see
+expressions).</p>
 
 <p>Many of these operations have similarities with the @(see
 acl2::4v-operations) which were used in @(see acl2::esim).  But SV expressions

@@ -402,7 +402,7 @@ it:</p>
 @(`(:code ($ alu-function-examine-rw))`)
 
 <p>This is small enough to fit on two screens, and its meaning can be teased
-out with some patience and reference to @(see svex-functions).</p>
+out with some patience and reference to the @(see svex) @(see functions).</p>
 
 <h4>Running tests using the simulation pattern</h4>
 

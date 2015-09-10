@@ -407,11 +407,9 @@ and generally makes it easier to write safe expression-processing code.</p>")
 
 
 (defxdoc vl-scopename
-  :parents (vl-index)
-  :short "Leading names that can be used in a scope operator: @('local'),
-          @('unit'), or a user-defined name."
-  :long "<p>This is an abstraction that is mostly intended to serve as a return
-         type for @(see vl-scopeexpr->scopes).</p> @(def vl-scopename-p)")
+  :parents (vl-scopeexpr-colon)
+  :short "Leading names that can be used in a scope operator (::), viz.
+          @('local'), @('unit'), or a user-defined name.")
 
 (define vl-scopename-p (x)
   :parents (vl-scopename)
