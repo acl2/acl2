@@ -646,13 +646,6 @@
   :rhs x)
 
 
-(def-svex-rewrite unfloat-of-float-free
-  :lhs (unfloat x)
-  :checks ((3valued-syntaxp x))
-  :rhs x)
-
-
-
 (define 2vecx-syntaxp ((x (or (svex-p x) (not x))))
   :measure (svex-count x)
   :prepwork ((local (in-theory (e/d* ()
@@ -1978,12 +1971,6 @@
 ;;            (<= 0 (2vec->val (svex-quote->val n))))
 ;;   :rhs (bitnot (rsh n x))
 ;;   :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-bitnot 3vec-bitnot 3vec-fix svex-apply))))
-
-(def-svex-rewrite zerox-to-concat
-  :lhs (zerox w x)
-  :rhs (concat w x 0)
-  :hints(("Goal" :in-theory (enable 4vec-zero-ext 4vec-concat svex-apply))))
-
 
 (def-svex-rewrite zerox-under-mask-1
   :lhs (zerox w x)
