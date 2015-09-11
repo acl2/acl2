@@ -340,12 +340,6 @@ add theorems into the same section.</p>")
        (rest                  (append (getarg :rest nil kwd-alist)
                                       other-events))
 
-       (parents-p (assoc :parents kwd-alist))
-       (parents   (cdr parents-p))
-       (parents   (if parents-p
-                      parents
-                    (xdoc::get-default-parents world)))
-
        ((unless (member x formals))
         (er hard 'defmapappend
             "The formals must contain X, but are ~x0.~%" formals))
@@ -394,17 +388,38 @@ add theorems into the same section.</p>")
             ":mode must be :logic or :program, but is ~x0."
             mode))
 
-       (short (or short
-                  (and parents
-                       (concatenate 'string  "@(call " (xdoc::full-escape-symbol name)
-                                    ") applies @(see? " (xdoc::full-escape-symbol transform-fn)
-                                    ") to every member of the list @('x'), "
-                                    "and appends together all the resulting lists."))))
+       (parents-p (assoc :parents kwd-alist))
+       (parents   (cdr parents-p))
 
-       (long (or long
-                 (and parents
-                      (concatenate 'string  "<p>This is an ordinary @(see std::defmapappend).</p>"
-                                   "@(def " (xdoc::full-escape-symbol name) ")"))))
+       (squelch-docs-p
+        ;; Special hack to avoid overwriting existing documentation if we have
+        ;; nothing to say.  BOZO it would be better to use the deflist approach
+        ;; and always create an extension of a topic.  That might work well if
+        ;; we switch this to use DEFINE, too.
+        (and already-definedp
+             (not short)
+             (not long)
+             (not parents)
+             (xdoc::find-topic name (xdoc::get-xdoc-table (w state)))))
+
+       (parents (and (not squelch-docs-p)
+                     (if parents-p
+                         parents
+                       (xdoc::get-default-parents world))))
+
+       (short (and (not squelch-docs-p)
+                   (or short
+                       (and parents
+                            (concatenate 'string  "@(call " (xdoc::full-escape-symbol name)
+                                         ") applies @(see? " (xdoc::full-escape-symbol transform-fn)
+                                         ") to every member of the list @('x'), "
+                                         "and appends together all the resulting lists.")))))
+
+       (long (and (not squelch-docs-p)
+                  (or long
+                      (and parents
+                           (concatenate 'string  "<p>This is an ordinary @(see std::defmapappend).</p>"
+                                        "@(def " (xdoc::full-escape-symbol name) ")")))))
 
        (def
         (if already-definedp
@@ -434,7 +449,7 @@ add theorems into the same section.</p>")
 
        ((when (eq mode :program))
         `(defsection ,name
-           ,@(and parents `(:parents ,parents))
+           ,@(and (or parents-p squelch-docs-p parents) `(:parents ,parents))
            ,@(and short   `(:short ,short))
            ,@(and long    `(:long ,long))
            (program)
@@ -455,7 +470,7 @@ add theorems into the same section.</p>")
                     (verify-guards ,name))))))
 
     `(defsection ,name
-       ,@(and parents `(:parents ,parents))
+       ,@(and (or parents-p squelch-docs-p parents) `(:parents ,parents))
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))
        . ,(if (not rest)

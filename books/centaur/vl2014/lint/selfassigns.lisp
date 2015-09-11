@@ -121,7 +121,7 @@ handle problems with collecting bits.</p>"
 
   (define vl-expr-approx-bits ((x      vl-expr-p)
                                (mod    vl-module-p)
-                               (ialist (equal ialist (vl-moditem-alist mod))))
+                               (ialist (equal ialist (vl-make-moditem-alist mod))))
     :returns (approx-bits string-listp)
     :measure (vl-expr-count x)
     (b* (((when (vl-fast-atom-p x))
@@ -176,7 +176,7 @@ handle problems with collecting bits.</p>"
   (define vl-exprlist-approx-bits
     ((x      vl-exprlist-p)
      (mod    vl-module-p)
-     (ialist (equal ialist (vl-moditem-alist mod))))
+     (ialist (equal ialist (vl-make-moditem-alist mod))))
     :measure (vl-exprlist-count x)
     :returns (bits string-listp)
     (if (atom x)
@@ -189,7 +189,7 @@ handle problems with collecting bits.</p>"
 bits that occur on the lhs and rhs."
   ((x      vl-assign-p)
    (mod    vl-module-p)
-   (ialist (equal ialist (vl-moditem-alist mod))))
+   (ialist (equal ialist (vl-make-moditem-alist mod))))
   :returns (warnings vl-warninglist-p)
   (b* (((vl-assign x) x)
        (lhs-bits (mergesort (vl-expr-approx-bits x.lvalue mod ialist)))
@@ -208,7 +208,7 @@ bits that occur on the lhs and rhs."
   (vl-assign-check-selfassigns x mod ialist)
   :guard (and (vl-assignlist-p x)
               (vl-module-p mod)
-              (equal ialist (vl-moditem-alist mod)))
+              (equal ialist (vl-make-moditem-alist mod)))
   :transform-true-list-p t)
 
 (defthm vl-warninglist-p-of-vl-assignlist-check-selfassigns
@@ -226,7 +226,7 @@ module.</p>"
   (b* ((assigns (vl-module->assigns x))
        ((unless assigns)
         x)
-       (ialist (vl-moditem-alist x))
+       (ialist (vl-make-moditem-alist x))
        (warnings (vl-assignlist-check-selfassigns assigns x ialist))
        (- (fast-alist-free ialist))
        ((unless warnings)

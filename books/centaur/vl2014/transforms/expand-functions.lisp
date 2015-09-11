@@ -357,7 +357,7 @@ approach.</p>")
 
 ;; <p>We don't expect many parameters in a function, so we use slow moditem
 ;; lookups here, figuring that it'll be cheaper than building a @(see
-;; vl-moditem-alist).</p>"
+;; vl-make-moditem-alist).</p>"
 
 ;;   (b* (((when (atom x))
 ;;         (mv t (ok)))

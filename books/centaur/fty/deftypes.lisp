@@ -4079,12 +4079,16 @@
 
 (defun defprod-ctor-autodoc (prod)
   (b* (((flexprod prod)      prod)
+       ((when prod.no-ctor-macros)
+        ;; Well, there's nothing to document, then.
+        nil)
        (foo                  prod.type-name)
        (make-foo-fn          prod.ctor-name)
        (make-foo             prod.ctor-macro)
-       ;; It doesn't seem like these are stored in the product itself.
-       (change-foo-fn        (std::da-changer-fn-name foo))
-       (change-foo           (std::da-changer-name foo))
+       ;; It doesn't seem like these are stored in the product itself, but this should agree
+       ;; with how flexprod-constructor does it, above.
+       (change-foo-fn        (std::da-changer-fn-name prod.ctor-name))
+       (change-foo           (std::da-changer-name prod.ctor-name))
 
        (plain-foo            (let* ((foo-low (xdoc::name-low (symbol-name foo)))
                                     (acc nil)
@@ -4103,7 +4107,6 @@
        (call-make-foo        (defprod-ctor-optional-call make-foo   "" fieldnames))
        (call-change-foo      (defprod-ctor-optional-call change-foo "x" fieldnames))
 
-       (def-foo              (str::cat "@(def " (xdoc::full-escape-symbol foo)           ")"))
        (def-make-foo-fn      (str::cat "@(def " (xdoc::full-escape-symbol make-foo-fn)   ")"))
        (def-make-foo         (str::cat "@(def " (xdoc::full-escape-symbol make-foo)      ")"))
        (def-change-foo-fn    (str::cat "@(def " (xdoc::full-escape-symbol change-foo-fn) ")"))
@@ -4133,8 +4136,7 @@
                 fty::defprod).</p>"
 
                 def-make-foo
-                def-make-foo-fn
-                def-foo))
+                def-make-foo-fn))
 
       (defxdoc ,change-foo
         :parents (,foo)
@@ -4156,8 +4158,7 @@
                 fty::defprod).</p>"
 
                 def-change-foo
-                def-change-foo-fn
-                def-foo)))))
+                def-change-foo-fn)))))
 
 (defun defprod->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)

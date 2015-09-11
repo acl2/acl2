@@ -37,7 +37,7 @@
 
 (define vl-find-net/reg-range ((name   stringp)
                                (mod    vl-module-p)
-                               (ialist (equal ialist (vl-moditem-alist mod))))
+                               (ialist (equal ialist (vl-make-moditem-alist mod))))
   :returns (mv successp maybe-range)
   :enabled t
   :hooks ((:fix :args ((mod vl-module-p))))
