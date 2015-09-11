@@ -218,7 +218,7 @@ prettier expressions like @('foo[3:1]')."
                                         default-car default-cdr))))
   :long "<p>Here, @('x') is a list of expressions which we assume is found
 within either a concatenation or a multiple concatenation.  The @('mod') and
-@('ialist') are the module and its @(see vl-moditem-alist) so we can look up
+@('ialist') are the module and its @(see vl-make-moditem-alist) so we can look up
 wires in @('x') to see their ranges.</p>
 
 <p>Note: to make this function more effective, @('x') can be preprocessed with
@@ -755,7 +755,7 @@ Testing the constant consolidation....
                                   :minloc *vl-fakeloc*
                                   :maxloc *vl-fakeloc*
                                   :origname "fake"))
-       (clean (vl-expr-clean-concats val empty-mod (vl-moditem-alist empty-mod))))
+       (clean (vl-expr-clean-concats val empty-mod (vl-make-moditem-alist empty-mod))))
     (with-local-ps
       (vl-cw "Orig:  ~a0~%Clean: ~a1~%" val clean))))
 

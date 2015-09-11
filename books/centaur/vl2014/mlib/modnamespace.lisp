@@ -265,7 +265,7 @@ e.g., named blocks.)"
                                            vl-modinstlist-alist
                                            vl-gateinstlist-alist)))))
 
-(define vl-moditem-alist ((x vl-module-p))
+(define vl-make-moditem-alist ((x vl-module-p))
   :short "Legacy -- Use @(see scopestack) instead.  Main routine for building an
   fast alist for looking up module items."
 
@@ -284,12 +284,12 @@ vl-find-moduleitem).  The alist can be constructed in a one pass, using our
        (acc (vl-vardecllist-alist x.vardecls acc)))
     (make-fast-alist acc))
   ///
-  (defthm vl-moditem-alist-p-of-vl-moditem-alist
-    (vl-moditem-alist-p (vl-moditem-alist x)))
+  (defthm vl-moditem-alist-p-of-vl-make-moditem-alist
+    (vl-moditem-alist-p (vl-make-moditem-alist x)))
 
-  (defthm hons-assoc-equal-of-vl-moditem-alist
+  (defthm hons-assoc-equal-of-vl-make-moditem-alist
     (implies (force (stringp name))
-             (equal (hons-assoc-equal name (vl-moditem-alist x))
+             (equal (hons-assoc-equal name (vl-make-moditem-alist x))
                     (if (vl-find-moduleitem name x)
                         (cons name (vl-find-moduleitem name x))
                       nil)))
@@ -298,7 +298,7 @@ vl-find-moduleitem).  The alist can be constructed in a one pass, using our
 (define vl-fast-find-moduleitem
   ((name stringp)
    (x    vl-module-p)
-   (itemalist (equal itemalist (vl-moditem-alist x))))
+   (itemalist (equal itemalist (vl-make-moditem-alist x))))
   :short "Legacy -- Use @(see scopestack) instead.  Alternative to @(see
   vl-find-moduleitem) using fast alist lookups."
   :enabled t

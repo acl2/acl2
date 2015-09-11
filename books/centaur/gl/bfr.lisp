@@ -115,16 +115,14 @@ like @(see bfr-and).</p>
          (equal (bfr-eval nil env) nil))))
 
 
-(defsection bfr-equiv
+(acl2::def-universal-equiv bfr-equiv
+  :qvars (env)
+  :equiv-terms ((equal (bfr-eval acl2::x env)))
   :short "Semantics equivalence of BFRs, i.e., equal evaluation under every
-possible environment."
+possible environment.")
 
-  (acl2::def-universal-equiv bfr-equiv
-    :qvars (env)
-    :equiv-terms ((equal (bfr-eval acl2::x env))))
-
-  (defcong bfr-equiv equal (bfr-eval x env) 1
-    :hints(("Goal" :in-theory (e/d (bfr-equiv-necc))))))
+(defcong bfr-equiv equal (bfr-eval x env) 1
+  :hints(("Goal" :in-theory (e/d (bfr-equiv-necc)))))
 
 
 (define bfr-lookup ((n natp) env)

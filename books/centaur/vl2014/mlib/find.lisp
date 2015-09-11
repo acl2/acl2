@@ -588,7 +588,7 @@ fast alists binding names to items that can be used for this purpose.</p>")
 ; don't really need this stuff, but we leave it for now in case old code is
 ; using it.
 
-(define vl-portdecl-alist ((x vl-portdecllist-p))
+(define vl-make-portdecl-alist ((x vl-portdecllist-p))
   :returns (palist vl-portdecl-alist-p :hyp :guard)
   :short "Build a fast alist associating the name of each port declaration with
 the whole @(see vl-portdecl-p) object."
@@ -599,12 +599,12 @@ the whole @(see vl-portdecl-p) object."
                     (alistp (vl-portdecllist-alist x acc)))
            :hints(("Goal" :in-theory (enable vl-portdecllist-alist)))))
 
-  (defthm alistp-of-vl-portdecl-alist
-    (alistp (vl-portdecl-alist x)))
+  (defthm alistp-of-vl-make-portdecl-alist
+    (alistp (vl-make-portdecl-alist x)))
 
-  (defthm hons-assoc-equal-of-vl-portdecl-alist
+  (defthm hons-assoc-equal-of-vl-make-portdecl-alist
     (implies (stringp k)
-             (equal (hons-assoc-equal k (vl-portdecl-alist x))
+             (equal (hons-assoc-equal k (vl-make-portdecl-alist x))
                     (and (vl-find-portdecl k x)
                          (cons k (vl-find-portdecl k x)))))
     :hints(("Goal" :in-theory (e/d (vl-find-portdecl
@@ -614,7 +614,7 @@ the whole @(see vl-portdecl-p) object."
 (define vl-fast-find-portdecl
   ((name      stringp)
    (portdecls vl-portdecllist-p)
-   (alist     (equal alist (vl-portdecl-alist portdecls))))
+   (alist     (equal alist (vl-make-portdecl-alist portdecls))))
   :short "Faster version of @(see vl-find-portdecl), where the search is done
   as an fast-alist lookup rather than as string search."
   :enabled t

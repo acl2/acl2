@@ -252,12 +252,14 @@ non-@(see 2vec)s to an just be infinite Xes."
                                  acl2::b-and
                                  acl2::b-ior))))))
 
-(defsection 2vecx-equiv
+(def-universal-equiv 2vecx-equiv
+  :equiv-terms ((equal (2vecx-fix x)))
   :parents (2vecx)
-  :short "Equivalence up to @(see 2vecx-fix)."
+  :short "Equivalence up to @(see 2vecx-fix).")
 
-  (def-universal-equiv 2vecx-equiv
-    :equiv-terms ((equal (2vecx-fix x))))
+(defsection 2vecx-equiv-thms
+  :extension (2vecx-equiv)
+  ;; bozo would be nice for def-universal-equiv to support ///
 
   (local (in-theory (enable 2vecx-equiv)))
 
@@ -320,12 +322,14 @@ any non-naturals to all Xes."
     :hints(("Goal" :in-theory (enable 2vecx-fix))
            (acl2::logbitp-reasoning))))
 
-(defsection 2vecnatx-equiv
+(def-universal-equiv 2vecnatx-equiv
+  :equiv-terms ((equal (2vecnatx-fix x)))
   :parents (2vecnatx)
-  :short "Equivalence up to @(see 2vecnatx-fix)."
+  :short "Equivalence up to @(see 2vecnatx-fix).")
 
-  (def-universal-equiv 2vecnatx-equiv
-    :equiv-terms ((equal (2vecnatx-fix x))))
+(defsection 2vecnatx-equiv-thms
+  :extension (2vecnatx-equiv)
+  ;; bozo would be nice for def-universal-equiv to support ///
 
   (local (in-theory (enable 2vecnatx-equiv)))
 

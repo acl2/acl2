@@ -155,10 +155,7 @@ prove that a fixing function induces an equivalence relation, e.g.,</p>
                      using @(see acl2::def-universal-equiv).</p>"))))
          (long (and long
                     (concatenate 'string long
-                                 "@(def "
-                                 (symbol-package-name equivname)
-                                 "::"
-                                 (symbol-name equivname) ")"))))
+                                 "@(def " (xdoc::full-escape-symbol equivname) ")"))))
 
     `(defsection ,equivname
        ,@(and parents `(:parents ,parents))
