@@ -2271,46 +2271,46 @@
                              (pre-clk) preconditions
                              preconditions-fwd-chain-to-its-body)))))
 
-;; (i-am-here)
+(i-am-here)
 
-;; (defthmd x86-run-plus-for-clk
-;;   (equal (x86-run (binary-clk+ (pre-clk n) (loop-clk (ash n 2))) x86)
-;;          (x86-run (loop-clk (ash n 2)) (x86-run (pre-clk n) x86)))
-;;   :hints (("Goal" :in-theory (e/d* (binary-clk+)
-;;                                    (x86-run-plus
-;;                                     (loop-clk)
-;;                                     loop-clk
-;;                                     pre-clk
-;;                                     (pre-clk)))
-;;            :use ((:instance x86-run-plus
-;;                             (n2 (loop-clk (ash n 2)))
-;;                             (n1 (pre-clk n)))))))
+(defthmd x86-run-plus-for-clk
+  (equal (x86-run (binary-clk+ (pre-clk n) (loop-clk (ash n 2))) x86)
+         (x86-run (loop-clk (ash n 2)) (x86-run (pre-clk n) x86)))
+  :hints (("Goal" :in-theory (e/d* (binary-clk+)
+                                   (x86-run-plus
+                                    (loop-clk)
+                                    loop-clk
+                                    pre-clk
+                                    (pre-clk)))
+           :use ((:instance x86-run-plus
+                            (n2 (loop-clk (ash n 2)))
+                            (n1 (pre-clk n)))))))
 
-;; (defthm effects-copyData-n->-0 ;; (1)
-;;   (implies (and (preconditions n addr x86)
-;;                 (not (zp n))
-;;                 (equal m (ash n 2)))
-;;            (equal (destination-bytes m (+ m (xr :rgf *rdi* x86)) (x86-run (clk n) x86))
-;;                   (source-bytes m (+ m (xr :rgf *rsi* x86)) x86)))
-;;   :hints (("Goal"
-;;            :use ((:instance preconditions-implies-loop-preconditions-after-pre-clk)
-;;                  (:instance loop-copies-m-bytes-from-source-to-destination
-;;                             (src-addr (xr :rgf *rdi* x86))
-;;                             (dst-addr (xr :rgf *rsi* x86))))
-;;            :in-theory (e/d* (x86-run-plus-for-clk)
-;;                             (wb-remove-duplicate-writes
-;;                              preconditions-implies-loop-preconditions-after-pre-clk
-;;                              loop-copies-m-bytes-from-source-to-destination
-;;                              effects-copydata-pre
-;;                              preconditions
-;;                              destination-bytes
-;;                              source-bytes
-;;                              (loop-clk)
-;;                              loop-clk
-;;                              pre-clk
-;;                              (pre-clk)
-;;                              create-canonical-address-list
-;;                              force (force))))))
+(defthm effects-copyData-n->-0 ;; (1)
+  (implies (and (preconditions n addr x86)
+                (not (zp n))
+                (equal m (ash n 2)))
+           (equal (destination-bytes m (+ m (xr :rgf *rdi* x86)) (x86-run (clk n) x86))
+                  (source-bytes m (+ m (xr :rgf *rsi* x86)) x86)))
+  :hints (("Goal"
+           :use ((:instance preconditions-implies-loop-preconditions-after-pre-clk)
+                 (:instance loop-copies-m-bytes-from-source-to-destination
+                            (src-addr (xr :rgf *rdi* x86))
+                            (dst-addr (xr :rgf *rsi* x86))))
+           :in-theory (e/d* (x86-run-plus-for-clk)
+                            (wb-remove-duplicate-writes
+                             preconditions-implies-loop-preconditions-after-pre-clk
+                             loop-copies-m-bytes-from-source-to-destination
+                             effects-copydata-pre
+                             preconditions
+                             destination-bytes
+                             source-bytes
+                             (loop-clk)
+                             loop-clk
+                             pre-clk
+                             (pre-clk)
+                             create-canonical-address-list
+                             force (force))))))
 
 
 ;; (2) Prove a theorem similar to effects-copyData-n->-0, but it should be in terms of program-clk.

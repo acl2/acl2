@@ -152,7 +152,7 @@ of packages:</p>
 })
 </dd>
 
-<dt>@('(foo/portcullis.acl2') &mdash; certification instructions for the portcullis book</dt>
+<dt>@('foo/portcullis.acl2') &mdash; certification instructions for the portcullis book</dt>
 
 <dd>
 @({

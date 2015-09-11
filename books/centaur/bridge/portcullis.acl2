@@ -29,9 +29,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-
 (ld "package.lsp")
-(include-book "std/portcullis" :dir :system)
-; Matt K. mod: The following is redundant with the line above.
-; (ld "tools/flag-package.lsp" :dir :system)
 ; cert-flags: ? t :ttags :all

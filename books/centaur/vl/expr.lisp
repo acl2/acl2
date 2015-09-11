@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2014 Centaur Technology
+; Copyright (C) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -59,16 +59,16 @@ expression representation did not enforce this, so nothing prevented you from
 creating nonsensical expressions like @('foo.(3 + 4).baz').</p>
 
 <p>The ability to create degenerate/nonsense expressions is not necessarily so
-bad&mdash;just don't create nonsense expressions and what's the a problem?
-However, we eventually found that the possibility of these degenerate
-expressions turned out to have a pervasive impact when writing code to process
-expressions: VL's many transforms and utilities always had to defend against
-such malformed expressions.</p>
+bad&mdash;just don't create nonsense expressions and what's the a problem?  But
+the possibility of these degenerate expressions might exist turned out to have
+a pervasive impact when writing code to process expressions: VL's many
+transforms and utilities always had to defend against such malformed
+expressions.</p>
 
 <p>This defense was generally carried out by adding guards or explicit run-time
 tests that expressions were sensible.  The result was copious error handling
 code, difficult and tedious proofs about well-formedness (e.g., see @(see
-vl2014::welltyped), and additional interfacing layers such as the @(see
+vl2014::welltyped)), and additional interfacing layers such as the @(see
 vl2014::hid-tools) to hide the problem.  These layers became ever more complex
 as we implemented more of SystemVerilog, e.g., scope expressions and data type
 indexing greatly complicated the handling of hierarchical identifiers.</p>
@@ -79,16 +79,17 @@ handle @(see mutual-recursion) via macro libraries such as @(see fty::fty) and
 replace it with a much more strongly typed, mutually recursive approach.</p>
 
 <p>Our new expression format is much more complex than before.  However, it
-also intrinsically rules out many expressions that were previously allowed and
-generally makes expression-processing code much safer.</p>")
+also intrinsically rules out many expressions that were previously allowed,
+which helps to avoid needing error checking code when processing expressions,
+and generally makes it easier to write safe expression-processing code.</p>")
 
 (define vl-bitlist-nonempty-fix ((x vl-bitlist-p))
   :guard (consp x)
   :parents (vl-weirdint)
   :short "Fixing function for non-empty @(see vl-bitlist)s."
   :long "<p>This is just a technical helper function that supports the @(see
-fty::fty-discipline).  It is used to ensure that the @('bits') of a @(see
-vl-weirdint-p) are always nonempty.</p>"
+         fty::fty-discipline).  It is used to ensure that the @('bits') of a
+         @(see vl-weirdint-p) are always nonempty.</p>"
   :returns (x-fix vl-bitlist-p)
   :inline t
   (mbe :logic
@@ -106,54 +107,62 @@ vl-weirdint-p) are always nonempty.</p>"
              (equal x-fix (vl-bitlist-fix x)))))
 
 
-(defxdoc vl-exprtype
-  :short "An indication of signedness. (Not particularly related to
-SystemVerilog data types.)"
+(defxdoc vl-exprsign
+  :parents (vl-expr)
+  :short "An indication of an expression's signedness (signed or unsigned)."
 
   :long "<p>On the surface there is not much to this: a literal, wire, or some
-other kind of expression might be regarded as either signed or unsigned.  These
-types are used in the representation of certain expressions like @(see
-vl-constint) and @(see vl-weirdint) literals; they are also used in routines
-like @(see vl-expr-typedecide).</p>
+         other kind of expression might be regarded as either signed or
+         unsigned.  These notes about the signedness of things occur in the
+         representation of certain expressions like @(see vl-constint) and
+         @(see vl-weirdint) literals; they are also used in routines like @(see
+         vl-expr-typedecide).</p>
 
-<p>BOZO we should consider renaming this to @('vl-exprsign-p') or similar.</p>
+         <p>If you're trying to represent something that might not have a
+         signedness, for instance a real number or an unpacked structure or
+         something like that, you probably want a @(see vl-maybe-exprsign)
+         instead.</p>
 
-<p>By way of history, in Verilog-2005, there were no SystemVerilog style data
-types like @('struct') and @('union') types; the Verilog-2005 standard
-generally uses the ``type'' of an expression to describe whether it is
-considered to be a real number, a signed integer, an unsigned integer, and
-maybe other vaguely specified things.  Since VL has never had particularly good
-support for real numbers, for us the type of an expression was mostly just
-whether or not it was signed.</p>
+         <p>Note that the Verilog standards sometimes use the word ``type'' to
+         refer to the signedness of things.  Back in Verilog-2005, before there
+         were fancy types like structs and unions, the ``type'' of an
+         expression generally meant whether it was considered a real number, a
+         signed integer, an unsigned integer, and maybe other vaguely specified
+         things.</p>
 
-<p>Now that SystemVerilog-2012 has much richer types, it is mostly just
-confusing to use the word ``type'' in place of signedness.  However, this is
-still done in, for instance, Section 11.8.1.</p>")
+         <p>Now that SystemVerilog-2012 has much richer types, it is mostly
+         just confusing to use the word ``type'' in place of signedness.  But
+         this is still done occasionally.  Most notably, it happens in Section
+         11.8.1, which seems to be adapted from Verilog-2005's Section 5.5.1,
+         and explains how to compute the ``type'' of an expression, which
+         mostly means its signedness and has little to do with any kind of
+         fancy SystemVerilog types.</p>")
 
-(defenum vl-exprtype-p
+(defenum vl-exprsign-p
   (:vl-signed :vl-unsigned)
-  :short "Recognizer for @(see vl-exprtype) symbols."
-  :parents (vl-exprtype))
+  :short "Recognizer for @(see vl-exprsign) symbols."
+  :parents (vl-exprsign))
 
-(defoption vl-maybe-exprtype
-  vl-exprtype-p
-  :parents (vl-exprtype)
+(defoption vl-maybe-exprsign
+  vl-exprsign-p
+  :parents (vl-exprsign)
   ///
-  (defthm type-when-vl-maybe-exprtype-p
-    (implies (vl-maybe-exprtype-p x)
+  (defthm type-when-vl-maybe-exprsign-p
+    (implies (vl-maybe-exprsign-p x)
              (and (symbolp x)
                   (not (equal x t))))
-    :hints(("Goal" :in-theory (enable vl-maybe-exprtype-p)))
+    :hints(("Goal" :in-theory (enable vl-maybe-exprsign-p)))
     :rule-classes :compound-recognizer))
 
 
 (deftagsum vl-value
   :parents (vl-literal)
-  :short "The value for a literal expression."
+  :short "The actual value of a @(see vl-literal) expression, e.g., @('42'),
+          @('3'bxxx'), @(''1'), @('\"foo\"'), @('3.14'), @('45.12ns'), etc."
 
   (:vl-constint
-   :short "Representation for constant integer literals with no X or Z bits, e.g.,
-           @('42'), @('5'b1'), etc."
+   :short "Representation for constant integer literals with no X or Z bits,
+           e.g., @('42'), @('5'b1'), etc."
    :hons t
    :layout :tree
    :base-name vl-constint
@@ -166,7 +175,7 @@ still done in, for instance, Section 11.8.1.</p>")
                 immediately upon parsing the value has already been determined
                 and is available to you as an ordinary natural number."
                 :reqfix (acl2::loghead (pos-fix origwidth) value))
-    (origtype   vl-exprtype-p
+    (origsign   vl-exprsign-p
                 "Subtle; generally should <b>not be used</b>; see below.")
     (wasunsized booleanp
                 :rule-classes :type-prescription
@@ -174,7 +183,9 @@ still done in, for instance, Section 11.8.1.</p>")
                  and @(''b0101'), but not for sized ones like @('4'b0101')."))
    :require (unsigned-byte-p origwidth value)
 
-   :long "<p>Constant integers are produced from source code constructs like
+   :long "<h3>Detailed Explanation</h3>
+
+          <p>Constant integers are produced from source code constructs like
           @('5'), @('4'b0010'), and @('3'h0').</p>
 
           <p>Note that the value of a constant integer is never negative.  In
@@ -183,33 +194,50 @@ still done in, for instance, Section 11.8.1.</p>")
           sign is not part of the literal.  See Section 3.5.1 of the
           Verilog-2005 standard.</p>
 
-          <p>The @('origwidth') and @('origtype') fields are subtle.  They
-          indicate the <i>original</i> width and signedness of the literal as
-          specified in the source code, e.g., if the source code contains
-          @('8'sd 65'), then the origwidth will be 8 and the origtype will be
-          @(':vl-signed.')  These fields are subtle because @(see
-          expression-sizing) generally alters the widths and types of
-          subexpressions, so these may not represent the final widths and types
-          of these constants in the context of the larger expression.  Instead,
-          the preferred way to determine a constint's final width and sign is
-          to inspect the @('vl-atom-p') that contains it.</p>
+          <p>The @('origwidth') and @('origsign') fields are subtle and you
+          usually <b>should not</b> be looking at the @('origwidth') and
+          @('origsign') of an expression unless you have really studied how
+          sizing works in and you really know what you are doing.</p>
+
+          <p>These fields indicate the <i>original</i> width and signedness of
+          the literal as specified in the source code.  For instance, if the
+          source code contains @('8'sd 65'), then we will get a value whose
+          @('origwidth') is 8 and whose @('origsign') is @(':vl-signed.')
+          <b>However</b>, in general, the process for sizing Verilog
+          expressions can effectively ``change'' the widths and types of the
+          operands within that expression.  For instance, if @('a') and @('b')
+          are unsigned 10-bit wires and we have:</p>
+
+          @({
+               assign a = b + 3'sb1;
+          })
+
+          <p>Then even though @('3'sb1') looks like a signed 3-bit integer, the
+          sizing process will convert it into a 10-bit unsigned number!  The
+          takeaway: you can't really rely on the original size and signedness
+          to tell you the real story, so unless you're implementing the sizing
+          algorithm you should probably avoid them.</p>
 
           <p>We insist that @('0 <= value <= 2^origwidth') for every constant
           integer.  If our @(see lexer) encounters something ill-formed like
-          @('3'b 1111'), it emits a warning and truncates from the left, as
-          required by Section 3.5.1 (page 10) of the Verilog-2005 standard.</p>
+          @('3'b 1111'), it emits a warning and truncates the value to the
+          specified width as required by Section 3.5.1 (page 10) of the
+          Verilog-2005 standard and Section 5.7.1 (page 37) of the
+          SystemVerilog standard.</p>
 
           <p>Note that in Verilog, unsized integer constants like @('5') or
           @(''b101') have an implementation-dependent size of at least 32 bits.
-          VL historically tried to treat such numbers in an abstract way,
+          Early versions of VL tried to treat such numbers in an abstract way,
           saying they had \"integer size\".  But we eventually decided that
           this was too error-prone and we now instead act like a 32-bit
           implementation even at the level of our lexer.  This conveniently
-          makes the width of a constant integer just a positive number.  On the
-          other hand, some expressions may produce different results on 32-bit
-          versus, say, 64-bit implementations.  Because of this, we added the
-          @('wasunsized') field so that we might, some day, statically check
-          for problematic uses of unsized constants.</p>
+          makes the width of a constant integer just a positive number.</p>
+
+          <p>There is some risk to this.  Certain expressions may produce
+          different results on 32-bit versus, say, 64-bit implementations.
+          Because of this, we added the @('wasunsized') field so that we might,
+          some day, statically check for problematic uses of unsized
+          constants.</p>
 
           <p>All constints are automatically created with @(see hons).  This is
           probably pretty trivial, but it seems nice.  For instance, the
@@ -219,8 +247,8 @@ still done in, for instance, Section 11.8.1.</p>")
 
 
   (:vl-weirdint
-   :short "Representation for constant integer literals with X or Z bits, e.g.,
-           @('4'b11xx')."
+   :short "Representation for constant integer literals with any X or Z bits,
+           e.g., @('4'b11xx')."
    :hons t
    :layout :tree
    :base-name vl-weirdint
@@ -228,26 +256,34 @@ still done in, for instance, Section 11.8.1.</p>")
                  "An MSB-first list of the four-valued Verilog bits making up
                   this constant's value; see @(see vl-bit-p)."
                  :reqfix (vl-bitlist-nonempty-fix bits))
-    (origtype     vl-exprtype-p
+    (origsign     vl-exprsign-p
                   "Subtle; generally should <b>not be used</b>; see below.")
     (wasunsized  booleanp
                  :rule-classes :type-prescription
                  "Did this constant have an explicit size?"))
    :require (consp bits)
-   :long "<p>Weird integers are produced by source code constructs like
+   :long "<h3>Detailed Explanation</h3>
+
+          <p>Weird integers are produced by source code constructs like
           @('1'bz'), @('3'b0X1'), and so on.</p>
 
-          <p>The @('origtype') and @('wasunsized') fields are analogous to
+          <p>Weirdints are mostly like @(see vl-constint)s except that instead
+          of having a natural number @('value') they have @('bits'), a list of
+          four-valued @(see vl-bit)s, which are always represented in MSB-first
+          order.</p>
+
+          <p>The @('origsign') and @('wasunsized') fields are analogous to
           those from a @(see vl-constint); see the discussion there for
-          details.  But unlike a constint, a weirdint does not have a
-          natural-number @('value').  Instead it has a list of four-valued
-          @('bits') that may include X and Z values.</p>
+          details.</p>
 
           <p>Unlike a constint, a weirdint has no @('origwidth').  Instead, its
           original width is implicitly just the length of its bits.  When our
           @(see lexer) encounters a weirdint like @('5'b1x'), it automatically
           extends it to the desired width; see for instance @(see
-          vl-correct-bitlist).</p>
+          vl-correct-bitlist).  Note that, as with constints, you usually
+          <b>should not</b> be looking at this length or at the @('origsign')
+          field, because these original values are not necessarily the correct
+          post-sizing sizes and signedness.</p>
 
           <p>Like constinsts, all weirdints are automatically constructed with
           @(see hons).  This may not be worthwhile since there are probably
@@ -262,10 +298,10 @@ still done in, for instance, Section 11.8.1.</p>")
    :layout :tree
    :base-name vl-extint
    ((value vl-bit-p "The kind of extended integer this is."))
-   :long "<p>We call integer literals like @(''1') <i>extension integers</i>
-          and represent them with just their @(see vl-bit) value.  Since there
-          are only four distinct extension integers, we always create them with
-          @(see hons).</p>")
+   :long "<p>We call SystemVerilog's fancy integer literals like @(''1')
+          <i>extension integers</i> and represent them with just their @(see
+          vl-bit) value.  Since there are only four distinct extension
+          integers, we always create them with @(see hons).</p>")
 
 
   (:vl-real
@@ -350,75 +386,30 @@ still done in, for instance, Section 11.8.1.</p>")
    ;; of the grammar for data_type
    :vl-void
    )
-  :parents (vl-datatype)
+  :parents (vl-coretype)
   :short "Basic kinds of data types."
   :long "<p>Our <i>core types</i> basically correspond to the following small
-subset of the valid @('data_type')s:</p>
+         subset of the valid @('data_type')s:</p>
 
-@({
-     data_type_or_void ::= data_type | 'void'
-     data_type ::=
-         integer_vector_type [signing] { packed_dimension }
-       | integer_atom_type [signing]
-       | non_integer_type
-       | 'string'
-       | 'chandle'
-       | 'event'
-       | <non core types >
-})
+         @({
+             data_type_or_void ::= data_type | 'void'
+             data_type ::=
+                integer_vector_type [signing] { packed_dimension }
+              | integer_atom_type [signing]
+              | non_integer_type
+              | 'string'
+              | 'chandle'
+              | 'event'
+              | <non core types>
+         })
 
-<p>We include @('void') here only because it's convenient to do so.</p>")
-
-
-(define vl-enumbasekind-p (x)
-  :parents (vl-enumbasetype-p)
-  :short "Kinds of base types for enums."
-  :long "<p>The SystemVerilog-2012 rules for @('enum_base_type') are:</p>
-
-@({
-      enum_base_type ::=
-          integer_atom_type   [signing]
-        | integer_vector_type [signing] [packed_dimension]
-        | type_identifier               [packed_dimension]
-})
-
-<p>A @('vl-enumbasetag-p') corresponds to the main part of this, i.e., it is
-either:</p>
-
-<ul>
- <li>A string, corresponding to the name of the @('type_identifier')</li>
- <li>A symbol like @(':vl-byte'), corresponding to an @('integer_atom_type'), or</li>
- <li>A symbol like @(':vl-logic'), corresponding to an @('integer_vector_type').</li>
-</ul>
-
-<p>Per Section 6.19, the default type is @('int').</p>"
-
-  (or (stringp x)
-      ;; integer atom types
-      (eq x :vl-byte)
-      (eq x :vl-shortint)
-      (eq x :vl-int)
-      (eq x :vl-longint)
-      (eq x :vl-integer)
-      (eq x :vl-time)
-      ;; integer vector types
-      (eq x :vl-bit)
-      (eq x :vl-logic)
-      (eq x :vl-reg))
-  ///
-
-  (defthm vl-coretypename-p-when-vl-enumbasekind-p
-    (implies (vl-enumbasekind-p x)
-             (equal (vl-coretypename-p x)
-                    (not (stringp x))))))
+         <p>We include @('void') here only because it's convenient.</p>")
 
 
 (defxdoc vl-scopename
-  :parents (vl-index)
-  :short "Leading names that can be used in a scope operator: @('local'),
-@('unit'), or a user-defined name."
-  :long "<p>This is an abstraction that is mostly intended to serve as a return
-type for @(see vl-scopeexpr->scopes).</p>")
+  :parents (vl-scopeexpr-colon)
+  :short "Leading names that can be used in a scope operator (::), viz.
+          @('local'), @('unit'), or a user-defined name.")
 
 (define vl-scopename-p (x)
   :parents (vl-scopename)
@@ -426,7 +417,12 @@ type for @(see vl-scopeexpr->scopes).</p>")
   :returns bool
   (or (eq x :vl-local)
       (eq x :vl-$unit)
-      (stringp x)))
+      (stringp x))
+  ///
+  (defthm vl-scopename-p-when-stringp
+    (implies (stringp x)
+             (vl-scopename-p x))
+    :hints(("Goal" :in-theory (enable vl-scopename-p)))))
 
 (define vl-scopename-fix ((x vl-scopename-p))
   :parents (vl-scopename)
@@ -455,13 +451,18 @@ type for @(see vl-scopeexpr->scopes).</p>")
 (fty::deflist vl-scopenamelist
   :elt-type vl-scopename
   :elementp-of-nil nil
-  :parents (vl-scopename))
+  :parents (vl-scopename)
+  ///
+  (defthm vl-scopenamelist-p-when-string-listp
+    (implies (string-listp x)
+             (vl-scopenamelist-p x))
+    :hints(("Goal" :in-theory (enable vl-scopenamelist-p)))))
 
 
 (defsection vl-hidname
   :parents (vl-index)
   :short "Leading names that can be used in a @(see vl-hidindex): @('$root') or
-a user-defined name.")
+          a user-defined name.")
 
 (define vl-hidname-p (x)
   :parents (vl-hidname)
@@ -605,7 +606,8 @@ a user-defined name.")
    :vl-$
    ;; :vl-$root
    ;; :vl-$unit
-   :vl-emptyqueue))
+   :vl-emptyqueue)
+  :parents (vl-special))
 
 (defenum vl-leftright-p
   (:left :right)
@@ -649,7 +651,7 @@ a user-defined name.")
 
          <li>It has many familiar C-like operators (@('+'), @('&'), etc.) and
          numerous extended C-like operators (@('==='), @('!=?'), @('>>>'),
-         etc.  See @(see vl-unary), @(see vl-binary), and @(see vl-qmark).</li>
+         etc.)  See @(see vl-unary), @(see vl-binary), and @(see vl-qmark).</li>
 
          <li>It has certain casting and function call operators that allow for
          the use of <b>data types directly in expressions</b>, which makes
@@ -716,7 +718,7 @@ a user-defined name.")
       (atts vl-atts-p
             "Any attributes associated with this literal.  These are generally
              @('nil') upon parsing since the Verilog or SystemVerilog grammars
-             don’t really provide anywhere for <tt>(* foo = bar, baz *)</tt>
+             don't really provide anywhere for <tt>(* foo = bar, baz *)</tt>
              style attributes to be attached to literals.  However, we found
              that it was convenient for every kind of expression to support
              attributes, so we include them for internal use.")))
@@ -779,7 +781,9 @@ a user-defined name.")
      :short "A basic concatenation expression, e.g., @('{a, b, c}')."
      ((parts vl-exprlist-p "The expressions being concatenated together, e.g., the
                             expressions for @('a'), @('b'), and @('c'), in order.")
-      (atts  vl-atts-p     "Any <tt>(* foo = bar, baz *)</tt> style attributes.")))
+      (atts  vl-atts-p     "Any <tt>(* foo = bar, baz *)</tt> style attributes."))
+     :long "<p>BOZO: Some day, investigate whether we can require the
+            @('parts') to be non-empty.</p>")
 
     (:vl-multiconcat
      :base-name vl-multiconcat
@@ -787,7 +791,9 @@ a user-defined name.")
      ((reps  vl-expr-p     "The replication amount, e.g., @('4').")
       (parts vl-exprlist-p "The expressions being concatenated together, e.g, the
                             expressions for @('a'), @('b'), and @('c'), in order.")
-      (atts  vl-atts-p     "Any <tt>(* foo = bar, baz *)</tt> style attributes.")))
+      (atts  vl-atts-p     "Any <tt>(* foo = bar, baz *)</tt> style attributes."))
+     :long "<p>BOZO: Some day, investigate whether we can require the
+            @('parts') to be non-empty.</p>")
 
     (:vl-mintypmax
      :base-name vl-mintypmax
@@ -806,7 +812,7 @@ a user-defined name.")
                 name, but in general it is possible to call functions from
                 other scopes and other places in the hierarchy, say
                 @('foo::top.bar.myencode(baz, 3)'), so to be sufficiently
-                general we represent this as a scopeexpr.")
+                general we represent this as a @(see vl-scopeexpr).")
       (typearg vl-maybe-datatype-p
                "Most function calls just take expressions as arguments, in
                 which case @('typearg') will be @('nil').  However, certain
@@ -835,21 +841,24 @@ a user-defined name.")
       (parts vl-streamexprlist-p
              "The @('stream_expression')s that make up the @('stream_concatenation'),
               i.e., @('a'), @('b'), and @('c') for @('{<< 16 {a,b,c}}').  These
-              aren't regular expressions since they can have @('with') clauses.")
+              aren't just ordinary expressions since they can have @('with')
+              clauses.")
       (atts  vl-atts-p
              "Any <tt>(* foo = bar, baz *)</tt> style attributes.")))
 
     (:vl-cast
      :base-name vl-cast
      :short "A casting expression, e.g., @('int'(2.0 * 3.0)')."
-     ((to      vl-casttype-p "The new type to cast the argument to, e.g., @('int').")
-      (expr    vl-expr-p     "The expression to cast to this new type, e.g., @('2.0 * 3.0').")
+     ((to      vl-casttype-p "The new type/size/signedness/constness to cast the
+                              argument to, e.g., @('int') above.")
+      (expr    vl-expr-p     "The expression being cast to something else, e.g.,
+                              @('2.0 * 3.0') above.")
       (atts    vl-atts-p     "Any <tt>(* foo = bar, baz *)</tt> style attributes.")))
 
     (:vl-inside
      :base-name vl-inside
      :short "A set membership @('inside') operator, e.g., @('a inside { 5, [16:23] }')."
-     ((elem   vl-expr-p            "The element to test, e.g., @('a').")
+     ((elem   vl-expr-p            "The element to test, e.g., @('a') above.")
       (set    vl-valuerangelist-p  "The values and ranges making up the set, e.g.,
                                     @('5') and @('[16:23]').")
       (atts   vl-atts-p            "Any <tt>(* foo = bar, baz *)</tt> style attributes.")))
@@ -866,11 +875,23 @@ a user-defined name.")
 
     (:vl-pattern
      :base-name vl-pattern
-     :short "An assignment pattern expression."
-     ((pattype vl-maybe-datatype-p)
-      (pat     vl-assignpat-p)
+     :short "A (possibly typed) assignment pattern expression, for instance,
+             @(''{a:1, b:2}') or @('foo_t'{head+1, tail-1}')."
+     ((pattype vl-maybe-datatype-p
+               "The type for this assignment pattern, if applicable.  For
+                instance, @('foo_t') in the example above.")
+      (pat     vl-assignpat-p
+               "The inner part of the pattern, i.e., everything but the type.")
       (atts    vl-atts-p
-               "Any <tt>(* foo = bar, baz *)</tt> style attributes.")))
+               "Any <tt>(* foo = bar, baz *)</tt> style attributes."))
+
+     :long "<p>This essentially corresponds to the SystemVerilog-2012 grammar
+            rule for @('assignment_pattern_expression'):</p>
+
+            @({
+                assignment_pattern_expression ::=
+                  [assignment_pattern_expression_type] assignment_pattern
+            })")
 
     (:vl-special
      :base-name vl-special
@@ -898,112 +919,114 @@ a user-defined name.")
 
   (fty::defalist vl-atts
     :measure (two-nats-measure (acl2-count x) 10)
-    :short "Representation of <tt>(* foo = 3, bar *)</tt> style attributes."
     :key-type stringp
     :val-type vl-maybe-expr
     :true-listp t
+    ;; Note: In the docs here we use <tt>...</tt> and <code>...</code> instead
+    ;; of @('...') and @({...}) to avoid having XDOC insert hyperlinks to the
+    ;; '*' function when it sees the '(*' at the start of these attributes.
+    :short "Representation of <tt>(* foo = 3, bar *)</tt> style attributes."
     :long "<p>Verilog-2005 and SystemVerilog-2012 allow many constructs, (e.g.,
-module instances, wire declarations, assignments, subexpressions, and so on) to
-be annotated with <b>attributes</b>.</p>
+           module instances, wire declarations, assignments, subexpressions,
+           and so on) to be annotated with <b>attributes</b>.</p>
 
-<p>Each individual attribute can either be a single key with no value (e.g.,
-@('baz') above), or can have the form @('key = value').  The keys are always
-identifiers, and the values (if provided) are expressions.  Both Verilog-2005
-and SystemVerilog-2012 agree that an attribute with no explicit value is to be
-treated as having value @('1').</p>
-
-
-<h3>Representation</h3>
-
-<p>We represent attributes as alists mapping names to their values.  We use
-ordinary ACL2 strings to represent the keys.  These strings are typically
-honsed to improve memory sharing.  Each explicit value is represented by an
-ordinary @(see vl-expr-p), and keys with no values are bound to @('nil')
-instead.</p>
-
-@(def vl-atts-p)
+           <p>Each individual attribute can either be a single key with no
+           value (e.g., @('baz') above), or can have the form @('key = value').
+           The keys are always identifiers, and the values (if provided) are
+           expressions.  Both Verilog-2005 and SystemVerilog-2012 agree that an
+           attribute with no explicit value is to be treated as having value
+           @('1').</p>
 
 
-<h3>Size/Types of Attribute Values</h3>
+           <h3>Representation</h3>
 
-<p>Verilog-2005 doesn't say anything about the types of attribute expressions.
-SystemVerilog-2012 says (Section 5.12) that the type of an attribute with no
-value is @('bit'), and that otherwise its type is the (presumably
-self-determined) type of the expression.  But this is not really an adequate
-spec.  Consider for instance an attribute like:</p>
+           <p>We represent attributes as alists mapping names to their values.
+           We use ordinary ACL2 strings to represent the keys.  These strings
+           are typically honsed to improve memory sharing.  Each explicit value
+           is represented by an ordinary @(see vl-expr-p), and keys with no
+           values are bound to @('nil') instead.</p>
 
-@({
-    (* foo = a + b *)
-})
-
-<p>Since attributes live in their own namespace, it isn't clear what @('a') and
-@('b') refer to here.  For instance, are they wires in this module, or perhaps
-global values that are known by the Verilog tool.  It doesn't seem at all clear
-what the type or size of such an expression is supposed to be.</p>
-
-<p>Well, no matter.  Attributes are not used for much and if their sizes and
-types aren't well specified, that's not necessarily any kind of problem.  We
-generally expect to be able to ignore attributes and do not expect to need to
-size them or determine their types.</p>
+           @(def vl-atts-p)
 
 
-<h3>Nesting Attributes</h3>
+           <h3>Size/Types of Attribute Values</h3>
 
-<p>Note that both Verilog-2005 and SystemVerilog-2012 prohibit the nesting of
-attributes.  That is, expressions like the following are not allowed:</p>
+           <p>Verilog-2005 doesn't say anything about the types of attribute
+           expressions.  SystemVerilog-2012 says (Section 5.12) that the type
+           of an attribute with no value is @('bit'), and that otherwise its
+           type is the (presumably self-determined) type of the expression.
+           But this is not really an adequate spec.  Consider for instance an
+           attribute like:</p>
 
-@({
-     (* foo = a + (* bar *) b *)
-})
+           <code>
+                    (* foo = a + b *)
+           </code>
 
-<p>VL's parser enforces this restriction and will not allow expressions to have
-nested attributes; see @(see vl-parse-0+-attribute-instances).  However, we
-make <b>no such restriction</b> internally&mdash;our @(see vl-expr-p)
-structures can have attributes nested to any arbitrary depth.</p>
+           <p>Since attributes live in their own namespace, it isn't clear what
+           @('a') and @('b') refer to here.  For instance, are they wires in
+           this module, or perhaps global values that are known by the Verilog
+           tool.  It doesn't seem at all clear what the type or size of such an
+           expression is supposed to be.</p>
 
-
-<h3>Redundant and Conflicting Attributes</h3>
-
-<p>When the same attribute name is given repeatedly, both Verilog-2005 and
-SystemVerilog-2012 agree that the last occurrences of the attribute should be
-used.  That is, the value of @('foo') below should be 5:</p>
-
-@({
-     (* foo = 1, foo = 5 *)
-     assign w = a + b;
-})
-
-<p>VL's parser properly handles this case.  It issues warnings when duplicate
-attributes are used, and always produces @('vl-atts-p') structures that are
-free from duplicate keys, and where the entry for each attribute corresponds to
-the last occurrence of it; see @(see vl-parse-0+-attribute-instances).</p>
-
-<p>Internally we make <b>no such restriction</b>.  We treat @('vl-atts-p')
-structures as ordinary alists.</p>
+           <p>Well, no matter.  Attributes are not used for much and if their
+           sizes and types aren't well specified, that's not necessarily any
+           kind of problem.  We generally expect to be able to ignore
+           attributes and do not expect to need to size them or determine their
+           types.</p>
 
 
-<h3>Internal Use of Attributes by VL</h3>
+           <h3>Nesting Attributes</h3>
 
-<p>Certain VL transformations may occasionally add attributes throughout
-modules.  As a couple of examples:</p>
+           <p>Note that both Verilog-2005 and SystemVerilog-2012 prohibit the
+           nesting of attributes.  That is, expressions like the following are
+           not allowed:</p>
 
-<ul>
+           <code>
+                   (* foo = a + (* bar *) b *)
+           </code>
 
-<li>The @('VL_HANDS_OFF') attribute is used to say that a module is somehow
-special and should not be modified by transformations.</li>
+           <p>VL's parser enforces this restriction and will not allow
+           expressions to have nested attributes; see @(see
+           vl-parse-0+-attribute-instances).  However, we make <b>no such
+           restriction</b> internally&mdash;our @(see vl-expr-p) structures can
+           have attributes nested to any arbitrary depth.</p>
 
-<li>The @(see origexprs) transform may add @('VL_ORIG_EXPR') annotations to
-remember the \"original\" versions of expressions, before any rewriting or
-other simplification has taken place; these annotations can be useful in error
-messages.</li>
 
-</ul>
+           <h3>Redundant and Conflicting Attributes</h3>
 
-<p>We once tried to record the many kinds of attributes that VL used here, but
-that list became quickly out of date as we forgot to maintain it, so we no
-longer try to do this.  As a general rule, attributes added by VL <i>should</i>
-be prefixed with @('VL_').  In practice, we may sometimes forget to follow this
-rule.</p>")
+           <p>When the same attribute name is given repeatedly, both
+           Verilog-2005 and SystemVerilog-2012 agree that the last occurrences
+           of the attribute should be used.  That is, the value of @('foo')
+           below should be 5:</p>
+
+           <code>
+                    (* foo = 1, foo = 5 *)
+                    assign w = a + b;
+           </code>
+
+           <p>VL's parser properly handles this case.  It issues warnings when
+           duplicate attributes are used, and always produces @('vl-atts-p')
+           structures that are free from duplicate keys, and where the entry
+           for each attribute corresponds to the last occurrence of it; see
+           @(see vl-parse-0+-attribute-instances).</p>
+
+           <p>Internally we make <b>no such restriction</b>.  We treat
+           @('vl-atts-p') structures as ordinary alists.</p>
+
+
+           <h3>Internal Use of Attributes by VL</h3>
+
+           <p>Certain VL transformations may occasionally add attributes
+           throughout modules.  For instance, the @(see designwires)
+           transformation will add @('VL_DESIGN_WIRE') attributes to the
+           declarations that were found in the original design, so that you can
+           distinguish them from, e.g., temporary wires that VL adds later.</p>
+
+           <p>We once tried to record the different kinds of attributes that VL
+           used here, but that list became quickly out of date as we forgot to
+           maintain it, so we no longer try to do this.  As a general rule,
+           attributes added by VL <i>should</i> be prefixed with @('VL_').  In
+           practice, we may sometimes forget to follow this rule.</p>")
 
 
 ; -----------------------------------------------------------------------------
@@ -1013,6 +1036,7 @@ rule.</p>")
 ; -----------------------------------------------------------------------------
 
   (defprod vl-range
+    :parents (syntax)
     :measure (two-nats-measure (acl2-count x) 100)
     :short "A simple @('[msb:lsb]') style range."
     :tag :vl-range
@@ -1021,21 +1045,23 @@ rule.</p>")
      (lsb vl-expr-p "Least significant bit of the range."))
 
     :long "<p>Ranges are discussed in Section 7.1.5 of the Verilog-2005
-standard.  Typically a range looks like @('[msb:lsb]').  This same syntax is
-used in many places, such as part selects, @('with') expressions in streaming
-expressions, etc.</p>
+           standard.  Typically a range looks like @('[msb:lsb]').  This same
+           syntax is used in many places, such as part selects, @('with')
+           expressions in streaming expressions, etc.</p>
 
-<p>In general, the @('msb') is not required to be greater than @('lsb'), and
-neither index is required to be zero.  However, for instance, if a wire is
-declared with a range such as @('[7:0]'), then it should be selected from using
-ranges such as @('[3:0]') and attempting to select from it using a
-\"backwards\" part-select such as @('[0:3]') is an error.</p>")
+           <p>In general, the @('msb') is not required to be greater than
+           @('lsb'), and neither index is required to be zero.  However, for
+           instance, if a wire is declared with a range such as @('[7:0]'),
+           then it should be selected from using ranges such as @('[3:0]') and
+           attempting to select from it using a \"backwards\" part-select such
+           as @('[0:3]') is an error.</p>")
 
   (defoption vl-maybe-range vl-range
     :measure (two-nats-measure (acl2-count x) 110)
     :parents (vl-range))
 
   (defflexsum vl-packeddimension
+    :parents (syntax)
     :measure (two-nats-measure (acl2-count x) 105)
     :short "A range like @('[3:0]') or an <i>unsized dimension</i>, written as
             @('[]')."
@@ -1213,6 +1239,7 @@ ranges such as @('[3:0]') and attempting to select from it using a
 ; -----------------------------------------------------------------------------
 
   (defflexsum vl-valuerange
+    :parents (vl-inside)
     :measure (two-nats-measure (acl2-count x) 105)
     :short "A value or a range used in an @('inside') expression.  For instance,
             the @('8') or @('[16:20]') from @('a inside { 8, [16:20] }')."
@@ -1246,7 +1273,7 @@ ranges such as @('[3:0]') and attempting to select from it using a
     :measure (two-nats-measure (acl2-count x) 10)
     :elt-type vl-valuerange
     :elementp-of-nil nil
-    :parents (vl-valuerange))
+    :parents (vl-inside))
 
 
 
@@ -1281,15 +1308,16 @@ ranges such as @('[3:0]') and attempting to select from it using a
             in @('{<< 16 {a, b with [0 +: size]}}'), the streamexprs are
             @('a') and @('b with [0 +: size]')."
     ((expr  vl-expr-p
-            "The expression part without the @('with').  Example: in @('{<< 16
-             {a, b with [0 +: size]}}'), the exprs are @('a') and @('b').")
+            "The expression part without the @('with').  Example: in the
+             expression @('{<< 16 {a, b with [0 +: size]}}'), the exprs are
+             @('a') and @('b').")
 
      (part  vl-arrayrange-p
-            "The @('with') information, if any.  Example: in @('{<< 16 {a, b
-             with [0 +: size]}}'), the @('part') for @('a') is the special
-             @(':none') arrayrange, which indicates that there is no @('with')
-             part.  The @('part') for @('b') is an arrayrange that captures the
-             @('[0 +: size]') information.")))
+            "The @('with') information, if any.  Example: in the expression
+             @('{<< 16 {a, b with [0 +: size]}}'), the @('part') for @('a') is
+             the special @(':none') arrayrange, which indicates that there is
+             no @('with') part.  The @('part') for @('b') is an arrayrange that
+             captures the @('[0 +: size]') information.")))
 
   (fty::deflist vl-streamexprlist
     :measure (two-nats-measure (acl2-count x) 10)
@@ -1360,7 +1388,7 @@ ranges such as @('[3:0]') and attempting to select from it using a
   (deftagsum vl-casttype
     :parents (vl-cast)
     :measure (two-nats-measure (acl2-count x) 10)
-    :short "The type to cast an expression to."
+    :short "The new type/size/signedness/constness to cast an expression to."
     (:type
      :short "A cast to a datatype, like @('int'(foo)')."
      ((type vl-datatype-p "The datatype to cast to.")))
@@ -1404,12 +1432,21 @@ ranges such as @('[3:0]') and attempting to select from it using a
   (deftagsum vl-assignpat
     :measure (two-nats-measure (acl2-count x) 100)
     :parents (vl-pattern)
-    (:positional ((vals vl-exprlist-p)))
-    (:keyval     ((pairs vl-keyvallist-p)))
-    (:repeat     ((reps  vl-expr-p)
-                  (vals  vl-exprlist-p)))
+    :short "The (untyped) guts of an assignment pattern, e.g., @(''{1,2,3}'),
+            @(''{a:1, b:2}'), or similar."
+    (:positional
+     :short "A positional assignment pattern like @(''{1, 2, 3}')."
+     ((vals  vl-exprlist-p
+             "The expressions that make up the pattern, in order.")))
+    (:keyval
+     :short "An assignment pattern using named keys, e.g., @(''{foo:1, bar:2}')."
+     ((pairs vl-keyvallist-p
+             "The key/value pairs making up the pattern.")))
+    (:repeat
+     :short "A replication-style array assignment pattern like @(''{2{y}}')."
+     ((reps  vl-expr-p     "Number of times the values are being replicated.")
+      (vals  vl-exprlist-p "The list of values to replicate.")))
     :base-case-override :positional)
-
 
 
 
@@ -1427,30 +1464,37 @@ ranges such as @('[3:0]') and attempting to select from it using a
     (:vl-coretype
      :layout :tree
      :base-name vl-coretype
-     :short "A basic, built-in SystemVerilog data type like @('integer'),
-             @('string'), @('void'), etc."
+     :short "A built-in SystemVerilog data type like @('integer'), @('string'),
+             @('void'), etc., or an array of such a type."
      ((name    vl-coretypename-p
                "Kind of primitive data type, e.g., @('byte'), @('string'),
                 etc.")
       (signedp booleanp :rule-classes :type-prescription
-               "Only valid for integer types, indicates whether the integer
-                type is signed or not.")
-      (pdims    vl-packeddimensionlist-p
-                "Only valid for integer vector types (bit, logic, reg).  If present
-                these are for an 'packed' array dimensions, i.e., the [7:0] part
-                of a declaration like @('bit [7:0] memory [255:0]').  There can be
-                arbitrarily many of these.")
+               "Only valid for integer types.  Roughly indicates whether the
+                integer type is signed or not.  Usually you shouldn't use this;
+                see @(see vl-datatype-signedness) instead.")
+      (pdims   vl-packeddimensionlist-p
+               "Only valid for integer vector types (bit, logic, reg).  If
+                present, these are the 'packed' array dimensions, i.e., the
+                [7:0] part of a declaration like @('bit [7:0] memory [255:0]').
+                There can be arbitrarily many of these.")
       (udims   vl-packeddimensionlist-p
-               "Unpacked array dimensions.")))
+               "Unpacked array dimensions, for instance, the @('[255:0]') part
+                of a declaration like @('bit [7:0] memory [255:0]').  There can
+                be arbitrarily many of these.")))
 
     (:vl-struct
      :layout :tree
      :base-name vl-struct
-     :short "A SystemVerilog @('struct') data type."
+     :short "A SystemVerilog @('struct') data type, or an array of structs."
      ((packedp booleanp :rule-classes :type-prescription
-               "Says whether this struct is @('packed') or not.")
+               "Roughly: says whether this struct is @('packed') or not,
+                but <b>warning!</b> this is complicated and generally
+                should not be used; see below for details.")
       (signedp booleanp :rule-classes :type-prescription
-               "Says whether this struct is @('signed') or not.")
+               "Roughly: says whether this struct is @('signed') or not,
+                but <b>warning!</b> this is really complicated and generally
+                should not be used; see below for details.")
       (members vl-structmemberlist-p
                "The list of structure members, i.e., the fields of the structure,
                 in order.")
@@ -1458,8 +1502,8 @@ ranges such as @('[3:0]') and attempting to select from it using a
                 "Packed dimensions for the structure.")
       (udims    vl-packeddimensionlist-p
                 "Unpacked dimensions for the structure."))
-     :long "<p>If you look at the SystemVerilog grammar you might notice that there
-            aren't unpacked dimensions:</p>
+     :long "<p>If you look at the SystemVerilog grammar you might notice that
+            there aren't unpacked dimensions:</p>
 
             @({
                 data_type ::= ... | struct_union [ 'packed' [signing] ] '{'
@@ -1477,16 +1521,51 @@ ranges such as @('[3:0]') and attempting to select from it using a
 
             <p>We can record, in the type of @('foo') itself, all of the
             relevant type information, instead of having to keep the unpacked
-            dimensions separated.</p>")
+            dimensions separated.</p>
+
+            <h3>Warning about Packedp and Signedp</h3>
+
+            <p>The packedness/signedness of structures/arrays is complicated;
+            you should usually use utilities like @(see vl-datatype-packedp)
+            and @(see vl-datatype-signedness) instead of directly using the
+            @('packedp') and @('signedp') fields.</p>
+
+            <p>What are the issues?  At parse time, we use the @('packedp') and
+            @('signedp') fields to record whether the struct was declared to be
+            packed and/or signed.</p>
+
+            <p>For a single (non-array) structure, @('packedp') is basically
+            correct, except that BOZO really we should be checking that all of
+            the members of the struct are packed as well.  But for arrays of
+            structs, even if the struct itself is packed, the array itself
+            might be unpacked.  For instance, if we write:</p>
+
+            @({
+                 struct packed { logic [3:0] a; logic [3:0] b; } myvar [3:0];
+            })
+
+            <p>then @('myvar') will be marked as packed, but this packedness
+            refers to the <i>elements</i> of @('myvar') instead of to
+            @('myvar') itself!</p>
+
+            <p>Signedness has similar issues except that it is more
+            complicated; see the documentation in @(see vl-datatype-signedness)
+            and also @(see vl-usertype) for more details.</p>")
 
     (:vl-union
      :layout :tree
      :base-name vl-union
-     :short "A SystemVerilog @('unions') data type."
+     :short "A SystemVerilog @('union') data type, or an array of @('union')s."
      ((packedp  booleanp :rule-classes :type-prescription
-                "Says whether this union is @('packed') or not.")
+                "Roughly: says whether this union is @('packed') or not, but
+                 <b>warning!</b> this should normally not be used as it has the
+                 same problems as @('packedp') for structs; see @(see
+                 vl-struct).")
       (signedp  booleanp :rule-classes :type-prescription
-                "Says whether this union is @('signed') or not.")
+                "Roughly: says whether this union is @('signed') or not, but
+                 <b>warning!</b> this should normally not be used as it has the
+                 same problems as @('signedp') for structs; see @(see
+                 vl-struct).")
       (taggedp  booleanp :rule-classes :type-prescription
                 "Says whether this union is 'tagged' or not.")
       (members  vl-structmemberlist-p
@@ -1500,12 +1579,12 @@ ranges such as @('[3:0]') and attempting to select from it using a
     (:vl-enum
      :layout :tree
      :base-name vl-enum
-     :short "A SystemVerilog @('enum') data type."
+     :short "A SystemVerilog @('enum') data type, or an array of @('enum')s."
      ((basetype vl-datatype-p
                 "The base type for the enum.  Note that, in the SystemVerilog
                  syntax, enums are only allowed to have certain base types that
                  are very basic.  But for simplicity, in our representation we
-                 just use an arbitrary datatype.")
+                 just use an arbitrary @(see vl-datatype) here.")
       (items    vl-enumitemlist-p
                 "The items of the enumeration.")
       (pdims    vl-packeddimensionlist-p
@@ -1516,7 +1595,7 @@ ranges such as @('[3:0]') and attempting to select from it using a
     (:vl-usertype
      :layout :tree
      :base-name vl-usertype
-     :short "A reference to some user-defined SystemVerilog data type."
+     :short "Represents a reference to some user-defined SystemVerilog data type."
      ;; data_type ::= ... | [ class_scope | package_scope ] type_identifier { packed_dimension }
      ((name   vl-scopeexpr-p
               "Typedef name, like @('foo_t').  May have a package scope, but
@@ -1529,7 +1608,7 @@ ranges such as @('[3:0]') and attempting to select from it using a
               "Packed dimensions for this user type.")
       (udims  vl-packeddimensionlist-p
               "Unpacked dimensions for this user type."))
-     :long "<h3>Notes about the @('res') field.</h3>
+     :long "<h3>Notes about the @('res') Field</h3>
 
             <p>Originally, to deal with user-defined types, we tried to just
             substitute definitions for usertypes.  However, it turns out that
@@ -1540,7 +1619,7 @@ ranges such as @('[3:0]') and attempting to select from it using a
                 snib [3:0] foo1;
             })
 
-            <p>is not the same as just</p>
+            <p>is <b>not</b> the same as just</p>
 
             @({
                 logic signed [3:0] [3:0] foo2;
@@ -1585,14 +1664,15 @@ ranges such as @('[3:0]') and attempting to select from it using a
             vl-maybe-datatype) which, if present, means we've resolved this
             usertype and its definition is the @('res').</p>")
 
-    :long "<p>Note: not yet implemented:</p>
+    :long "<p>We do not yet implement some of the more advanced SystemVerilog
+           data types, including the following:</p>
 
-          @({
-               data_type ::= ...
-                 | 'virtual' [ 'interface' ] interface_identifier [ parameter_value_assignment ] [ '.' modport_identifier ]
-                 | class_type
-                 | type_reference
-          })")
+           @({
+                data_type ::= ...
+                  | 'virtual' [ 'interface' ] interface_identifier [ parameter_value_assignment ] [ '.' modport_identifier ]
+                  | class_type
+                  | type_reference
+           })")
 
   (defoption vl-maybe-datatype vl-datatype
     :measure (two-nats-measure (acl2-count x) 40)
@@ -1607,88 +1687,95 @@ ranges such as @('[3:0]') and attempting to select from it using a
     ;;   struct_union_member ::=  { attribute_instance } [random_qualifier]
     ;;                            data_type_or_void
     ;;                            list_of_variable_decl_assignments ';'
-    ((atts vl-atts-p)
-     (rand vl-randomqualifier-p)
-     (type vl-datatype-p)
+    ((atts vl-atts-p
+           "Any <tt>(* foo = bar, baz *)</tt> style attributes.")
+     (rand vl-randomqualifier-p
+           "Indicates whether a @('rand') or @('randc') keyword was used.")
+     (type vl-datatype-p
+           "Type of the struct member, including any unpacked dimensions (even
+            though they normally come after the name.)")
      ;; now we want a single variable_decl_assignment
      (name stringp :rule-classes :type-prescription)
-     (rhs  vl-maybe-expr-p)
-     )
+     (rhs  vl-maybe-expr-p
+           "Right-hand side expression that gives the default value to this
+            member, if applicable."))
     :long "<p>Currently our structure members are very limited.  In the long
-run we may want to support more of the SystemVerilog grammar.  It allows a list
-of variable declaration assignments, which can have fancy dimensions and
-different kinds of @('new') operators.</p>
+           run we may want to support more of the SystemVerilog grammar.  It
+           allows a list of variable declaration assignments, which can have
+           fancy dimensions and different kinds of @('new') operators.</p>
 
-<p>Notes for the future:</p>
+           <p>Notes for the future:</p>
 
-@({
-   variable_decl_assignment ::=
-         variable_identifier { variable_dimension } [ '=' expression ]
-       | dynamic_array_variable_identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
-       | class_variable_identifier [ '=' class_new ]
-})
+           @({
+              variable_decl_assignment ::=
+                    variable_identifier { variable_dimension } [ '=' expression ]
+                  | dynamic_array_variable_identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+                  | class_variable_identifier [ '=' class_new ]
+           })
 
-<p>These fancy _identifiers are all just identifiers.  So really this is:</p>
+           <p>These fancy @('_identifiers') are all just identifiers.  So
+           really this is:</p>
 
-@({
-     variable_decl_assignment ::=
-         identifier { variable_dimension }                   [ '=' expression ]
-       | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
-       | identifier                                          [ '=' class_new ]
-})
+           @({
+                variable_decl_assignment ::=
+                    identifier { variable_dimension }                   [ '=' expression ]
+                  | identifier unsized_dimension { variable_dimension } [ '=' dynamic_array_new ]
+                  | identifier                                          [ '=' class_new ]
+           })
 
-<p>The @('new') keyword can occur in a variety of places.  One of these is
-related to defining constructors for classes, e.g., in class constructor
-prototypes/declarations we can have things like</p>
+           <p>The @('new') keyword can occur in a variety of places.  One of
+           these is related to defining constructors for classes, e.g., in
+           class constructor prototypes/declarations we can have things
+           like</p>
 
-@({
-     function ... new (...) ...
-})
+           @({
+                function ... new (...) ...
+           })
 
-<p>And @('super.new(...)') and so on.  But for now let's think of these as
-separate cases; that is, our approach to @('new') in other contexts doesn't
-necessarily need to have anything to do with these constructors, which we might
-instead handle more explicitly.</p>
+           <p>And @('super.new(...)') and so on.  But for now let's think of
+           these as separate cases; that is, our approach to @('new') in other
+           contexts doesn't necessarily need to have anything to do with these
+           constructors, which we might instead handle more explicitly.</p>
 
-<p>The other places where @('new') can occur are in:</p>
+           <p>The other places where @('new') can occur are in:</p>
 
-@({
-    dynamic_array_new ::= new '[' expression ']' [ '(' expression ')' ]
+           @({
+               dynamic_array_new ::= new '[' expression ']' [ '(' expression ')' ]
 
-    class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
-                | 'new' expression
-})
+               class_new ::= [ class_scope ] 'new' [ '(' list_of_arguments ')' ]
+                           | 'new' expression
+           })
 
-<p>Which in turn can occur in blocking assignments:</p>
+           <p>Which in turn can occur in blocking assignments:</p>
 
-@({
-         [some fancy lhs] = dynamic_array_new
-      or [some other fancy lhs] = class_new
-      or other things not involving new
-})
+           @({
+                    [some fancy lhs] = dynamic_array_new
+                 or [some other fancy lhs] = class_new
+                 or other things not involving new
+           })
 
-<p>(Which is interesting because we also have to support a lot of other new
-kinds of assignments like @('+=') and @('*='), so maybe this could become a
-@('new=') kind of assignment or something.)</p>
+           <p>(Which is interesting because we also have to support a lot of
+           other new kinds of assignments like @('+=') and @('*='), so maybe
+           this could become a @('new=') kind of assignment or something.)</p>
 
-<p>And they can also occur in variable decl assignments:</p>
+           <p>And they can also occur in variable decl assignments:</p>
 
-@({
-          simple id [ = expression ]
-      or  some fancy lhs with some various dimensions [= dynamic_array_new]
-      or  some simple lhs [= class_new]
-})
+           @({
+                     simple id [ = expression ]
+                 or  some fancy lhs with some various dimensions [= dynamic_array_new]
+                 or  some simple lhs [= class_new]
+           })
 
-<p>Which can occur in:</p>
+           <p>Which can occur in:</p>
 
-<ul>
-<li>SVA assertion variable declarations</li>
-<li>Data declarations (e.g., top-level @('const suchandso = new ...')</li>
-<li>Structure members in structs and unions.</li>
-</ul>
+           <ul>
+           <li>SVA assertion variable declarations</li>
+           <li>Data declarations (e.g., top-level @('const suchandso = new ...')</li>
+           <li>Structure members in structs and unions.</li>
+           </ul>
 
-<p>So maybe we don't so much need these to be expressions.  Maybe we can get
-away with them as alternate kinds of assignments.</p>")
+           <p>So maybe we don't so much need these to be expressions.  Maybe we
+           can get away with them as alternate kinds of assignments.</p>")
 
   (fty::deflist vl-structmemberlist
     :measure (two-nats-measure (acl2-count x) 10)
@@ -1704,9 +1791,20 @@ away with them as alternate kinds of assignments.</p>")
     :short "A single member of an @('enum')."
     ;; enum_name_declaration ::=
     ;;   enum_identifier [ [ integral_number [ : integral_number ] ] ] [ = constant_expression ]
-    ((name  stringp :rule-classes :type-prescription)
-     (range vl-maybe-range-p)
-     (value vl-maybe-expr-p)))
+    ((name  stringp :rule-classes :type-prescription
+            "Name of this enumeration item.  For instance, in @('enum { red,
+             yellow, green }'), the individual enumitems would be named
+             @('\"red\"'), @('\"yellow\"'), and @('\"green\"').")
+     (range vl-maybe-range-p
+            "For simple enumeration items this is @('nil'), but for a fancy
+             item, e.g., for @('enum { color[6:2] }'), the range would be
+             @('[6:2]').  These might later be converted into their expanded
+             out names, e.g., @('color6'), @('color5'), ..., @('color2').")
+     (value vl-maybe-expr-p
+            "For simple enumeration items without an explicit value expression
+             this is just @('nil').  For fancier items with explicit values
+             like @('enum { foo=5, ... }') this is the right-hand side
+             expression, i.e., @('5').")))
 
   (fty::deflist vl-enumitemlist
     :elt-type vl-enumitem
@@ -2031,7 +2129,7 @@ away with them as alternate kinds of assignments.</p>")
   ///
   (deffixequiv vl-expr->atts)
 
-  "<p>These are goofy rules: normally we want to normalize things to
+  "<p>The following are goofy rules: normally we want to normalize things to
   @('(vl-expr->atts <term>)'), but if @('<term>') is a call of one of the
   particular expression constructors, we'll rewrite the other way so that we
   can simplify it to just whatever @('atts') are being given to the

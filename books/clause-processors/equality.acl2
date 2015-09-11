@@ -3,7 +3,4 @@
 (set-waterfall-parallelism nil)
 
 (include-book "std/portcullis" :dir :system)
-; Matt K. mod: The following is redundant with the line above,
-; but causes an error without it.
-; (ld "tools/flag-package.lsp" :dir :system)
-(certify-book "equality" ? t)
+

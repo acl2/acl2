@@ -29,17 +29,22 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "std/portcullis" :dir :system)
 
 (defpkg "BRIDGE"
-  (set-difference-equal
-   (union-equal
-    (union-equal acl2::*acl2-exports*
-                 acl2::*common-lisp-symbols-from-main-lisp-package*)
-    '(b* defsection defxdoc include-raw assert! definline definlined
-         define lnfix lifix raise defines two-nats-measure
-         ;; to make Bridge::Bridge show up as just "Bridge" in the XDOC index
-         explode implode bridge))
-   '(include-book)))
+  (append std::*std-exports*
+          '(assert!
+            b*
+            include-raw
+            lnfix
+            lifix
+            two-nats-measure
+            explode
+            implode
+            ;; to make Bridge::Bridge show up as just "Bridge" in the XDOC index
+            bridge)
+          (set-difference-eq acl2::*standard-acl2-imports*
+                             '(include-book))))
 
 ; It's too frustrating NOT to have this be part of package.lsp
 

@@ -30,8 +30,4 @@
 
 (in-package "ACL2")
 (include-book "std/portcullis" :dir :system)
-; Matt K. mod: The following is redundant with the line above,
-; but causes an error without it.
-; (ld "tools/flag-package.lsp" :dir :system)
 ; cert-flags: ? t :ttags :all
-(certify-book "witness-cp" ? t :ttags :all)

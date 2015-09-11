@@ -205,6 +205,8 @@
       fty
       gl
       4v
+      fast-alist
+      fast-alists
 
       )
 

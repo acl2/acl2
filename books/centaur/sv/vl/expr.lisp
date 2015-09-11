@@ -208,7 +208,7 @@ would therefore incur some overhead.</p>")
   (defthm vars-of-svex-int
     (equal (sv::svex-vars (svex-int x)) nil)))
 
-(define svex-extend ((type vl-exprtype-p)
+(define svex-extend ((type vl-exprsign-p)
                      (width natp)
                      (x sv::svex-p))
   :parents (vl-expr->svex)
@@ -219,11 +219,11 @@ expressions like @('a & b'), but we do need to do it to the inputs of
 expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
 
   :returns (sv sv::svex-p)
-  (b* ((extend (if (eq (vl-exprtype-fix type) :vl-signed) 'sv::signx 'sv::zerox))
+  (b* ((extend (if (eq (vl-exprsign-fix type) :vl-signed) 'sv::signx 'sv::zerox))
        (width (lnfix width))
        ((when (eq (sv::svex-kind x) :quote))
         (sv::svex-quote
-         (if (eq (vl-exprtype-fix type) :vl-signed)
+         (if (eq (vl-exprsign-fix type) :vl-signed)
              (sv::4vec-sign-ext (sv::2vec width) (sv::svex-quote->val x))
            (sv::4vec-zero-ext (sv::2vec width) (sv::svex-quote->val x))))))
     (sv::make-svex-call :fn extend :args (list (svex-int width) x)))
@@ -380,8 +380,8 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
   (vl-value-case x
-    :vl-constint (mv nil (svex-extend x.origtype x.origwidth (svex-int x.value)))
-    :vl-weirdint (mv nil (svex-extend x.origtype (len x.bits)
+    :vl-constint (mv nil (svex-extend x.origsign x.origwidth (svex-int x.value)))
+    :vl-weirdint (mv nil (svex-extend x.origsign (len x.bits)
                                       (sv::svex-quote (vl-bitlist->4vec (vl-weirdint->bits x)))))
     :vl-extint   (mv nil (case x.value
                            (:vl-1val (svex-int -1))
@@ -1783,7 +1783,7 @@ the way.</li>
                             (arg sv::svex-p)
                             (arg-size natp)
                             (size natp)
-                            (signedness vl-exprtype-p))
+                            (signedness vl-exprsign-p))
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
   (b* ((op (vl-unaryop-fix op))
@@ -1827,7 +1827,7 @@ the way.</li>
                              (left-size natp)
                              (right-size natp)
                              (size natp)
-                             (signedness vl-exprtype-p))
+                             (signedness vl-exprsign-p))
   (declare (ignorable right-size))
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
@@ -2625,7 +2625,7 @@ functions can assume all bits of it are good.</p>"
 
   (define vl-expr-to-svex-vector ((x vl-expr-p)
                                   (size natp)
-                                  (signedness vl-exprtype-p)
+                                  (signedness vl-exprsign-p)
                                   (conf vl-svexconf-p))
     :measure (two-nats-measure (vl-expr-count x) 6)
     :returns (mv (warnings vl-warninglist-p)
@@ -2662,7 +2662,7 @@ functions can assume all bits of it are good.</p>"
 
   (define vl-expr-to-svex-transparent ((x vl-expr-p)
                                        (size natp)
-                                       (signedness vl-exprtype-p)
+                                       (signedness vl-exprsign-p)
                                        (conf vl-svexconf-p))
     :guard (equal (vl-expr-opacity x) :transparent)
     :measure (two-nats-measure (vl-expr-count x) 4)
@@ -2805,7 +2805,7 @@ functions can assume all bits of it are good.</p>"
                   (svex-x)))
              ;; Size each under the max size
              (arg-size (max left-size right-size))
-             (arg-type (vl-exprtype-max left-type right-type))
+             (arg-type (vl-exprsign-max left-type right-type))
              ((wmv warnings left-svex)
               (vl-expr-to-svex-vector x.left arg-size arg-type conf))
              ((wmv warnings right-svex)
@@ -3782,7 +3782,7 @@ functions can assume all bits of it are good.</p>"
 (define vl-4vec-to-value ((x sv::4vec-p)
                           (width posp)
                           &key
-                          ((signedness vl-exprtype-p) ':vl-signed))
+                          ((signedness vl-exprsign-p) ':vl-signed))
   :prepwork ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
              (local (in-theory (disable unsigned-byte-p acl2::loghead)))
              (local (defthm 4vec->lower-of-4vec-zero-ext
@@ -3802,14 +3802,14 @@ functions can assume all bits of it are good.</p>"
        ((when (sv::2vec-p trunc))
         (b* ((val (sv::2vec->val trunc)))
           (make-vl-constint :origwidth width
-                            :origtype signedness
+                            :origsign signedness
                             :wasunsized t
                             :value val)))
        (val (vl-upperlower-to-bitlist (sv::4vec->upper trunc)
                                       (sv::4vec->lower trunc)
                                       width)))
     (make-vl-weirdint :bits val
-                      :origtype signedness
+                      :origsign signedness
                       :wasunsized t)))
 
 

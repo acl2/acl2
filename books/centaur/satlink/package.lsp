@@ -32,46 +32,41 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
-; Matt K. mod: The following is redundant with the line above.
-; (ld "tools/flag-package.lsp" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
 
 (defpkg "SATLINK"
-  (union-eq *acl2-exports*
-            *common-lisp-symbols-from-main-lisp-package*
-            std::*std-exports*
-            '(b*
-              bitp
-              lnfix
-              lbfix
-              bfix
-              b-not
-              b-and
-              b-ior
-              b-xor
-              b-eqv
-              defxdoc
-              defsection
-              defstobj-clone
-              list-fix
-              list-equiv
-              set-equiv
-              nat-equiv
-              bit-equiv
-              bits-equiv
-              rev
-              duplicity
-              alist-keys
-              alist-vals
-              hons-remove-duplicates
-              set-reasoning
-              enable*
-              disable*
-              e/d*
-              bitarr get-bit set-bit bits-length resize-bits bits-equiv
-              natarr get-nat set-nat nats-length resize-nats nats-equiv
-              tshell-call tshell-start tshell-stop tshell-ensure
-              satlink boolean-reasoning gl tshell
-
-              )))
+  (append '(b*
+            bitp
+            lnfix
+            lbfix
+            bfix
+            b-not
+            b-and
+            b-ior
+            b-xor
+            b-eqv
+            defxdoc
+            defsection
+            defstobj-clone
+            list-fix
+            list-equiv
+            set-equiv
+            nat-equiv
+            bit-equiv
+            bits-equiv
+            rev
+            duplicity
+            alist-keys
+            alist-vals
+            hons-remove-duplicates
+            set-reasoning
+            enable*
+            disable*
+            e/d*
+            bitarr get-bit set-bit bits-length resize-bits bits-equiv
+            natarr get-nat set-nat nats-length resize-nats nats-equiv
+            tshell-call tshell-start tshell-stop tshell-ensure
+            satlink boolean-reasoning gl tshell)
+          std::*std-exports*
+          acl2::*standard-acl2-imports*))
 

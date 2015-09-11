@@ -30,30 +30,29 @@
 
 #!ACL2
 (in-package "ACL2")
-
 (include-book "std/portcullis" :dir :system)
 
 (defpkg "DEPGRAPH"
-  (union-eq *standard-acl2-imports*
-            set::*sets-exports*
-            std::*std-exports*
-            '(assert!
-              b*
-              fun
-              why
-              with-redef
-              set-equiv
-              flatten
-              defxdoc
-              defsection
-              alist-keys
-              alist-vals
-              fal-all-boundp
-              hons-member-equal
-              two-nats-measure
-              set-reasoning
-              cons-listp
-              with-fast
-              )))
+  (append set::*sets-exports*
+          std::*std-exports*
+          '(assert!
+            b*
+            fun
+            why
+            with-redef
+            set-equiv
+            flatten
+            defxdoc
+            defsection
+            alist-keys
+            alist-vals
+            fal-all-boundp
+            hons-member-equal
+            two-nats-measure
+            set-reasoning
+            cons-listp
+            with-fast
+            )
+          *standard-acl2-imports*))
 
 (assign acl2::verbose-theory-warning nil)

@@ -716,7 +716,7 @@ one such form may affect what you might think of as the proof of another.</p>
         ((atom (car user-hints))
          (er hard? 'find-first-goal-hint "Malformed entry in hints: ~x0.~%" (car user-hints)))
         ((and (stringp (caar user-hints))
-              (equal (string-upcase (caar user-hints)) "GOAL"))
+              (equal (acl2::string-upcase (caar user-hints)) "GOAL"))
          (car user-hints))
         (t
          (find-first-goal-hint (cdr user-hints)))))

@@ -269,7 +269,7 @@ macro as a computed hint.  For example:</p>
 })
 
 <p>This implicitly waits until the formula is @(see
-stable-under-simplification) and then invokes the @('witness-cp') clause
+stable-under-simplificationp) and then invokes the @('witness-cp') clause
 processor, allowing it to use the witnessing/instancing/example rules
 listed.</p>
 

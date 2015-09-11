@@ -61,7 +61,7 @@
                            (make-vl-constint
                             :origwidth 32
                             :value 1
-                            :origtype :vl-unsigned
+                            :origsign :vl-unsigned
                             :wasunsized t))))
 
 (defconst *vl-assignment-operators*

@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2014 Centaur Technology
+; ACL2 Standard Library
+; Copyright (c) 2008-2015 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
