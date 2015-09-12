@@ -282,12 +282,12 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
 
        (prep-lemmas-form
         (if prep-lemmas
-            `((local (encapsulate () ,@prep-lemmas)))
+            `(local (encapsulate () ,@prep-lemmas))
           nil))
 
        (prep-books-form
         (if prep-books
-            `((local (progn ,@prep-books)))
+            `(local (progn ,@prep-books))
           nil))
 
        (thm `(,(if disablep 'defthmd 'defthm) ,name
@@ -305,17 +305,22 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
                  (not prep-lemmas)
                  (not prep-books))
             thm
-          `(defsection ,name
-             ,@(and parents `(:parents ,parents))
-             ,@(and short   `(:short ,short))
-             ,@(and long    `(:long ,long))
-             ,@prep-lemmas-form
-             ,@prep-books-form
-; The theory-hint has to come after the inclusion of books, so we can disable
-; rules that come from the books.
-             ,@(and theory-hint
-                    `(,theory-hint))
-             ,thm))))
+          `(with-output
+             :stack :push
+             :off :all
+             (defsection ,name
+               ,@(and parents `(:parents ,parents))
+               ,@(and short   `(:short ,short))
+               ,@(and long    `(:long ,long))
+               ,@(and prep-lemmas-form
+                      `((with-output :stack :pop ,prep-lemmas-form)))
+               ,@(and prep-books-form
+                      `((with-output :stack :pop ,prep-books-form)))
+               ;; The theory-hint has to come after the inclusion of books, so
+               ;; we can disable rules that come from the books.
+               ,@(and theory-hint
+                      `(,theory-hint))
+               (with-output :stack :pop ,thm))))))
     (if local
         `(local ,event)
       event)))
@@ -364,8 +369,15 @@ record of the rule's existence is found in the world, so there is no way to use
 the rule once it has been proven, etc.</p>")
 
 (defmacro rule (&rest args)
-  `(make-event
-    (er-progn (defrule temporary-rule
-                ,@args
-                :rule-classes nil)
-              (value '(value-triple :success)))))
+  `(with-output
+     ;; You might think we shouldn't turn off error here, but the interior
+     ;; er-progn is going to run the actual event, and we don't want to see a
+     ;; bunch of extra junk about the error here.
+     :off :all
+     :stack :push
+     (make-event
+      (er-progn (with-output :stack :pop
+                  (defrule temporary-rule
+                    ,@args
+                    :rule-classes nil))
+                (value '(value-triple :invisible))))))

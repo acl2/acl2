@@ -106,7 +106,10 @@
   (local (in-theory (enable svex-env-extract))))
 
 
-(defsection svex-envs-similar
+(def-universal-equiv svex-envs-similar
+  :qvars (k)
+  :equiv-terms ((equal (svex-env-lookup k x)))
+  :defquant t
   :parents (svex-env)
   :short "@('(svex-envs-similar x y)') is like alist equivalence for @(see
 svex-env)s: environments are <b>similar</b> if they bind all variables to the
@@ -118,12 +121,11 @@ have the same bound variables to be regarded as equal.</p>
 
 <p>This is an important equivalence relation that is satisfied by, e.g., @(see
 svex-eval).  It is used more than is apparent because of the congruences it
-provides.</p>"
+provides.</p>")
 
-  (def-universal-equiv svex-envs-similar
-    :qvars (k)
-    :equiv-terms ((equal (svex-env-lookup k x)))
-    :defquant t)
+(defsection svex-envs-similar-thms
+  :extension (svex-envs-similar)
+  ;; bozo would be nice for def-universal-equiv to support /// instead
 
   (defexample svex-envs-similar-lookup-ex
     :pattern (svex-env-lookup k x)

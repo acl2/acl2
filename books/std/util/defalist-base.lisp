@@ -344,9 +344,6 @@ to override it.</p>")
        (req-alist (defalist-requirement-alist kwd-alist formals key val)))
     (defalist-instantiate-table-thms-aux table key val name formals kwd-alist x req-alist fn-subst world)))
 
-
-
-
 (defun defalist-fn (name formals kwd-alist other-events state)
   (declare (xargs :mode :program))
   (b* (((unless (symbolp name))
@@ -431,21 +428,34 @@ to override it.</p>")
        (short (getarg :short nil kwd-alist))
        (long  (getarg :long nil kwd-alist))
        (parents-p (assoc :parents kwd-alist))
-       (parents (if parents-p
-                    (cdr parents-p)
-                  (or (xdoc::get-default-parents world)
-                      '(acl2::undocumented))))
-       (short (or short
-                  (and parents
-                       (concatenate 'string "@(call " (symbol-package-name
-                                                       name) "::" (symbol-name name) ") recognizes association lists where every key
-satisfies @(see? " (xdoc::full-escape-symbol keyp) ") and
-each value satisfies @(see? " (xdoc::full-escape-symbol valp) ")."))))
 
-       (long (or long
-                 (and parents
-                      (concatenate 'string "<p>This is an ordinary @(see std::defalist).</p>"
-                                   "@(def " (xdoc::full-escape-symbol name) ")"))))
+       (squelch-docs-p (and already-definedp
+                            (not short)
+                            (not long)
+                            (not (cdr parents-p))
+                            (xdoc::find-topic name (xdoc::get-xdoc-table (w state)))))
+
+       (parents (and (not squelch-docs-p)
+                     (if parents-p
+                         (cdr parents-p)
+                       (or (xdoc::get-default-parents world)
+                           '(acl2::undocumented)))))
+
+       (short (and (not squelch-docs-p)
+                   (or short
+                       (and parents
+                            (concatenate 'string
+                                         "@(call " (xdoc::full-escape-symbol name)
+                                         ") recognizes association lists where every key satisfies @(see? "
+                                         (xdoc::full-escape-symbol keyp)
+                                         ") and each value satisfies @(see? "
+                                         (xdoc::full-escape-symbol valp) ").")))))
+
+       (long (and (not squelch-docs-p)
+                  (or long
+                      (and parents
+                           (concatenate 'string "<p>This is an ordinary @(see std::defalist).</p>"
+                                        "@(def " (xdoc::full-escape-symbol name) ")")))))
 
        (rest (append (getarg :rest nil kwd-alist)
                      other-events))
@@ -476,7 +486,7 @@ each value satisfies @(see? " (xdoc::full-escape-symbol valp) ")."))))
 
        ((when (eq mode :program))
         `(defsection ,name
-           ,@(and parents `(:parents ,parents))
+           ,@(and (or squelch-docs-p parents-p parents) `(:parents ,parents))
            ,@(and short   `(:short ,short))
            ,@(and long    `(:long ,long))
            (program)
@@ -590,7 +600,7 @@ each value satisfies @(see? " (xdoc::full-escape-symbol valp) ")."))))
           ,@(defalist-instantiate-table-thms name formals key val kwd-alist x world))))
 
     `(defsection ,name
-       ,@(and parents `(:parents ,parents))
+       ,@(and (or squelch-docs-p parents-p parents) `(:parents ,parents))
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))
 
@@ -598,7 +608,7 @@ each value satisfies @(see? " (xdoc::full-escape-symbol valp) ")."))))
          . ,events)
 
        . ,(and rest
-               `((value-triple (cw "Deflist: submitting /// events.~%"))
+               `((value-triple (cw "Defalist: submitting /// events.~%"))
                  (with-output
                    :stack :pop
                    (progn

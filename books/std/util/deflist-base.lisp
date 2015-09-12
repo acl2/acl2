@@ -614,16 +614,24 @@ of which recognizers require true-listp and which don't.</p>")
                          nil-terminated.</p>"))))
 
        (def (if already-definedp
-                (and (or (and parents-p parents) short long)
-                     ;; Stupid hack to allow adding boilerplate documentation
-                     ;; to already-defined functions.  This isn't quite as good
-                     ;; as having the documentation as part of the DEFINE
-                     ;; because we won't get an automatic signature.  But it's
-                     ;; better than nothing.
-                     `((defxdoc ,name
-                         ,@(and (or parents-p parents) `(:parents ,parents))
-                         ,@(and short   `(:short ,short))
-                         ,@(and long    `(:long ,long)))))
+                ;; Stupid hack to allow adding boilerplate documentation to
+                ;; already-defined functions.  This isn't quite as good as
+                ;; having the documentation as part of the DEFINE because we
+                ;; won't get an automatic signature.  But it's better than
+                ;; nothing.
+                (and
+                 ;; If the user has already documented this function, there
+                 ;; is no reason to override their docs with something new.
+                 (not (xdoc::find-topic name (xdoc::get-xdoc-table (w state))))
+                 ;; If we don't have any actual documentation to add, then
+                 ;; leave it alone and don't do anything.
+                 (or (and parents-p parents) short long)
+                 ;; Otherwise it seems pretty OK to add some docs.
+                 `((defxdoc ,name
+                     ,@(and (or parents-p parents) `(:parents ,parents))
+                     ,@(and short   `(:short ,short))
+                     ,@(and long    `(:long ,long)))))
+
               `((define ,name (,@formals)
                   ,@(and (or parents-p parents) `(:parents ,parents))
                   ,@(and short   `(:short ,short))
@@ -656,12 +664,17 @@ of which recognizers require true-listp and which don't.</p>")
 
        (want-doc-p (or short long parents))
        (thms (deflist-instantiate-table-thms name formals element kwd-alist x (w state)))
+       (name-basics (intern-in-package-of-symbol
+                     (concatenate 'string (symbol-name name) "-BASICS")
+                     name))
        (thms-section
-        (if (not want-doc-p)
+        ;; Try to avoid introducing a foolist-p-basics section if we aren't generating
+        ;; docs or if there's already such a topic defined.
+        (if (or (not want-doc-p)
+                (and already-definedp
+                     (xdoc::find-topic name-basics (xdoc::get-xdoc-table (w state)))))
             `(progn . ,thms)
-          `(defsection-progn ,(intern-in-package-of-symbol
-                               (concatenate 'string (symbol-name name) "-BASICS")
-                               name)
+          `(defsection-progn ,name-basics
              :parents (,name)
              :short ,(concatenate 'string
                                   "Basic theorems about @(see "

@@ -215,15 +215,15 @@ the number of descriptions in the list.</p>"
   :keyp-of-nil nil
   :valp-of-nil nil)
 
-(define vl-descalist ((x vl-descriptionlist-p))
+(define vl-make-descalist ((x vl-descriptionlist-p))
   :returns (alist vl-descalist-p)
   (b* (((when (atom x))
         nil)
        (x1    (vl-description-fix (car x)))
        (name1 (vl-description->name x1))
        ((unless name1)
-        (vl-descalist (cdr x))))
-    (hons-acons name1 x1 (vl-descalist (cdr x)))))
+        (vl-make-descalist (cdr x))))
+    (hons-acons name1 x1 (vl-make-descalist (cdr x)))))
 
 
 
@@ -282,7 +282,7 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
 
 (define vl-fast-find-description ((name         stringp)
                                   (descriptions vl-descriptionlist-p)
-                                  (descalist    (equal descalist (vl-descalist descriptions))))
+                                  (descalist    (equal descalist (vl-make-descalist descriptions))))
   :enabled t
   :inline t
   :hooks nil
@@ -292,9 +292,9 @@ descriptions.  See @(see vl-fast-find-description) for a faster alternative.</p>
   ((local (defthm l0
             (implies (and (vl-descriptionlist-p descriptions)
                           (stringp name))
-                     (equal (cdr (hons-assoc-equal name (vl-descalist descriptions)))
+                     (equal (cdr (hons-assoc-equal name (vl-make-descalist descriptions)))
                             (vl-find-description name descriptions)))
-            :hints(("Goal" :in-theory (enable vl-descalist)))))))
+            :hints(("Goal" :in-theory (enable vl-make-descalist)))))))
 
 (def-vl-filter-by-name description)
 

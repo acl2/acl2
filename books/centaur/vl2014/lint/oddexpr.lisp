@@ -523,7 +523,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 ;;  (defund vl-expr-find-oddsizes (x ss)
 ;;    (declare (xargs :guard (and (vl-expr-p x)
 ;;                                (vl-module-p mod)
-;;                                (equal ialist (vl-moditem-alist mod)))
+;;                                (equal ialist (vl-make-moditem-alist mod)))
 ;;                    :measure (vl-expr-count x)))
 ;;    (b* (((when (vl-fast-atom-p x))
 ;;          nil)
@@ -588,7 +588,7 @@ we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 ;;  (defund vl-exprlist-find-oddsizes (x ss)
 ;;    (declare (xargs :guard (and (vl-exprlist-p x)
 ;;                                (vl-module-p mod)
-;;                                (equal ialist (vl-moditem-alist mod)))
+;;                                (equal ialist (vl-make-moditem-alist mod)))
 ;;                    :measure (vl-exprlist-count x)))
 ;;    (if (atom x)
 ;;        nil

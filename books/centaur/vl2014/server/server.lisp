@@ -90,7 +90,7 @@ viewing Verilog designs.")
   (b* (((vl-translation trans) trans)
        (orig           (cwtime (hons-copy (cwtime (vl-annotate-design trans.orig)))))
        ;;(orig-depalist  (fast-alist-free (vl-depalist (vl-design->mods orig))))
-       (orig-descalist (fast-alist-free (vl-descalist (vl-design-descriptions orig)))))
+       (orig-descalist (fast-alist-free (vl-make-descalist (vl-design-descriptions orig)))))
     (make-vls-data
      :good           trans.good
      :bad            trans.bad

@@ -1358,7 +1358,7 @@ variety.</p>"
 
 
 
-(defsection vl-paramvalue
+(deftagsum vl-paramvalue
   :parents (vl-paramargs)
   :short "Representation for the actual values given to parameters."
   :long "<p>In Verilog-2005, the values for a parameterized module were always
@@ -1383,9 +1383,8 @@ corresponds to the SystemVerilog @('param_exprewssion') grammar rule:</p>
 })
 
 <p>But note that @('$') is a valid @(see vl-expr-p) so this essentially
-collapses into only two cases: expression or data type.</p>")
+collapses into only two cases: expression or data type.</p>"
 
-(deftagsum vl-paramvalue
   (:type ((type vl-datatype)))
   (:expr ((expr vl-expr))))
 

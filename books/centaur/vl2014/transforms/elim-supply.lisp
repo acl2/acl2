@@ -68,7 +68,7 @@ value.</p>")
 (define vl-collect-supplies
   ((x         vl-vardecllist-p)
    (portdecls vl-portdecllist-p)
-   (palist    (equal palist (vl-portdecl-alist portdecls)))
+   (palist    (equal palist (vl-make-portdecl-alist portdecls)))
    (warnings  vl-warninglist-p))
   :verify-guards nil
   :returns
@@ -157,7 +157,7 @@ value.</p>")
        ((when (vl-module->hands-offp x))
         x)
 
-       (palist (vl-portdecl-alist x.portdecls))
+       (palist (vl-make-portdecl-alist x.portdecls))
        ((mv warnings new-decls supply0s supply1s)
         (vl-collect-supplies x.vardecls x.portdecls palist x.warnings))
        (- (fast-alist-free palist))

@@ -41,7 +41,7 @@
 
 (define vl-descalist-okp ((design vl-design-p)
                           descalist)
-  (equal descalist (vl-descalist (vl-design-descriptions design)))
+  (equal descalist (vl-make-descalist (vl-design-descriptions design)))
   ///
   (defthm vl-descalist-p-when-vl-descalist-okp
     (implies (vl-descalist-okp design descalist)
@@ -93,7 +93,7 @@ its translation-loading scheme.</p>")
 (defthm vls-data->orig-descalist-elim
   (implies (force (vls-data-p x))
            (equal (vls-data->orig-descalist x)
-                  (vl-descalist (vl-design-descriptions (vls-data->orig x)))))
+                  (vl-make-descalist (vl-design-descriptions (vls-data->orig x)))))
   :hints(("Goal"
           :use ((:instance return-type-of-vls-data->orig-descalist))
           :in-theory (e/d (vl-descalist-okp)
