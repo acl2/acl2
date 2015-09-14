@@ -674,7 +674,11 @@ and generally makes it easier to write safe expression-processing code.</p>")
          <p>A major differences between @(see vl2014) and @(see vl) is that VL
          uses a new, more mutually recursive, and more strongly typed
          expression representation.  See @(see new-expression-representation)
-         for some discussion about the motivation for this change.</p>"
+         for some discussion about the motivation for this change.</p>
+
+         <p>Note that there are many useful functions for working with
+         expressions in @(see mlib).  See most especially @(see expr-tools)
+         which contains many basic functions.</p>"
 
   :post-pred-events
   ((local (defthm impossible-cars-of-vl-expr
@@ -704,7 +708,9 @@ and generally makes it easier to write safe expression-processing code.</p>")
   (deftagsum vl-expr
     :short "Representation of a single SystemVerilog expression."
     :long "<p>For more general background, see @(see expressions-and-datatypes)
-           and @(see new-expression-representation).</p>"
+           and @(see new-expression-representation).  Also note that there are
+           many functions for working with expressions throughout @(see mlib);
+           see especially @(see expr-tools).</p>"
     :measure (two-nats-measure (acl2-count x) 50)
     :base-case-override :vl-literal
 
@@ -1054,7 +1060,10 @@ and generally makes it easier to write safe expression-processing code.</p>")
            instance, if a wire is declared with a range such as @('[7:0]'),
            then it should be selected from using ranges such as @('[3:0]') and
            attempting to select from it using a \"backwards\" part-select such
-           as @('[0:3]') is an error.</p>")
+           as @('[0:3]') is an error.</p>
+
+           <p>See @(see range-tools) for many functions for working with
+           ranges.</p>")
 
   (defoption vl-maybe-range vl-range
     :measure (two-nats-measure (acl2-count x) 110)
@@ -1664,15 +1673,20 @@ and generally makes it easier to write safe expression-processing code.</p>")
             vl-maybe-datatype) which, if present, means we've resolved this
             usertype and its definition is the @('res').</p>")
 
-    :long "<p>We do not yet implement some of the more advanced SystemVerilog
-           data types, including the following:</p>
+    :long "<h4>Notes and Available Tools</h4>
+
+           <p>Note that we do not yet implement some of the more advanced
+           SystemVerilog data types, including the following:</p>
 
            @({
                 data_type ::= ...
                   | 'virtual' [ 'interface' ] interface_identifier [ parameter_value_assignment ] [ '.' modport_identifier ]
                   | class_type
                   | type_reference
-           })")
+           })
+
+           <p>There are many functions for working with datatypes in @(see
+           mlib); see in particular @(see datatype-tools).</p>")
 
   (defoption vl-maybe-datatype vl-datatype
     :measure (two-nats-measure (acl2-count x) 40)

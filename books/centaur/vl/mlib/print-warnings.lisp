@@ -73,7 +73,7 @@
 
 (define vl-print-warning ((x vl-warning-p) &key (ps 'ps))
   :parents (warnings)
-  :short "Pretty-print a @(see vl-warning-p)."
+  :short "Pretty-print a @(see vl-warning)."
   (if (vl-ps->htmlp)
       (vl-print-warning-html-mode x)
     (vl-print-warning-text-mode x)))
@@ -89,8 +89,8 @@
                (vl-print-warnings-aux (cdr x)))))
 
 (define vl-print-warnings ((x vl-warninglist-p) &key (ps 'ps))
-  :parents (warnings)
-  :short "Pretty-print a @(see vl-warninglist-p)."
+  :parents (vl-warninglist)
+  :short "Pretty-print a @(see vl-warninglist)."
   :long "<p>We automatically clean the warnings; see @(see vl-clean-warnings).</p>
 
 <p>Note that no header information is printed, this just prints the list of
@@ -112,8 +112,8 @@ vl-warnings-to-string).</p>"
             (vl-println-markup "</ul>"))))))
 
 (define vl-print-warnings-with-header ((x vl-warninglist-p) &key (ps 'ps))
-  :parents (warnings)
-  :short "Pretty-print a @(see vl-warninglist-p) with a header saying how many
+  :parents (vl-warninglist)
+  :short "Pretty-print a @(see vl-warninglist) with a header saying how many
 warnings there are."
   :long "<p>This is almost identical to @(see vl-print-warnings), but it also
 prefaces the list of warnings with a header that says how many warnings there
@@ -149,15 +149,15 @@ warnings\".</p>"
 
 (define vl-warnings-to-string ((warnings vl-warninglist-p))
   :returns (str stringp :rule-classes :type-prescription)
-  :parents (warnings)
-  :short "Pretty-print a @(see vl-warninglist-p) into a string."
+  :parents (vl-warninglist)
+  :short "Pretty-print a @(see vl-warninglist) into a string."
   :long "<p>See @(see vl-print-warnings-with-header) and @(see with-local-ps).</p>"
   (with-local-ps (vl-print-warnings-with-header warnings)))
 
 (define vl-print-warnings-with-named-header ((modname stringp)
                                              (x vl-warninglist-p)
                                              &key (ps 'ps))
-  :parents (warnings)
+  :parents (vl-warninglist)
   (b* ((htmlp (vl-ps->htmlp))
        (x    (vl-clean-warnings x))
        (msg  (cond ((atom x) "No Warnings")

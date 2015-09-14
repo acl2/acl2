@@ -475,3 +475,7 @@ is this?</p>")
 (assert-parents monster->arrow (game))
 
 (assert-dupefree)
+
+
+;; (include-book "xdoc/save" :dir :system)
+;; (xdoc::save "./my-manual")

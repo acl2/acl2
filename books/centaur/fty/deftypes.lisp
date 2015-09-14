@@ -1319,11 +1319,17 @@
        (xvar (or (getarg :xvar xvar kwd-alist)
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
                  (intern-in-package-of-symbol "X" name)))
+       (name-link (xdoc::see name))
        (flexprods-in
-        `((:none :cond (not ,xvar) :ctor-body nil)
-          (:some :cond t
+        `((:none
+           :cond (not ,xvar)
+           :ctor-body nil
+           :short ,(cat "Represents that no " name-link " is available, i.e., Nothing or None."))
+          (:some
+           :cond t
            :fields ((val :type ,basetype :acc-body ,xvar))
-           :ctor-body val)))
+           :ctor-body val
+           :short ,(cat "An available " name-link ", i.e., <i>Just val</i> or <i>Some val</i>."))))
        (prods (parse-flexprods flexprods-in name nil kwd-alist xvar nil these-fixtypes fixtypes))
        (- (flexprods-check-xvar xvar prods))
        ((when (atom prods))
@@ -3999,6 +4005,9 @@
 (defun defprod-main-description (prod base-pkg acc state)
   ;; Returns (mv acc state)
   (b* (((flexprod prod) prod)
+       ((unless (consp prod.fields))
+        (mv (revappend-chars "<p>This is an atomic/empty structure; it has no fields.</p>" acc)
+            state))
        (acc  (revappend-chars "<h5>Fields</h5>" acc))
        (acc  (cons #\Newline acc))
        ((mv acc state)
@@ -4300,23 +4309,31 @@ a @('" name-plain "') structure.  For example:</p>
 @({
     (" case-str " x :" kind1-str ")
 })
+"
+    (if sum.kind
+        (cat "<p>is essentially just a safer alternative to writing:</p>
+              @({
+                  (equal (" kind-fn-str " x) :" kind1-str ")
+              })
 
-<p>is essentially just a safer alternative to writing:</p>
+              <p>Why is using " case-str " safer?  When we directly inspect the
+              kind with @('equal'), there is no static checking being done to
+              ensure that, e.g., @(':" kind1-str "') is a valid kind of "
+              name-link " structure.  That means there is nothing to save you
+              if, later, you change the kind keyword for this type from @(':"
+              kind1-str "') to something else.  It also means you get no help
+              if you just make a typo when writing the @(':" kind1-str "')
+              symbol.  Over the course of developing VL, we found that such
+              issues were very frequent sources of errors!</p>")
+      ;; Otherwise: there is no kind function.  BOZO some day we might try to
+      ;; explain what happens here, but it's probably tricky, we'd have to
+      ;; pretty-print something like (flexprod->cond (car sum.prods)), and
+      ;; that's just messy.  So we'll just say something generic here.
+      (cat "<p>can be used to determine whether @('x') is a @('"
+           kind1-str "') instead of some other kind of " name-plain
+           " structure.</p>"))
 
-@({
-    (equal (" kind-fn-str " x) :" kind1-str ")
-})
-
-<p>Why is using " case-str " safer?  When we directly inspect the kind with
-@('equal'), there is no static checking being done to ensure that, e.g.,
-@(':" kind1-str "') is a valid kind of " name-link " structure.  That means
-there is nothing to save you if, later, you change the kind keyword for this
-type from @(':" kind1-str "') to something else.  It also means you get no
-help if you just make a typo when writing the @(':" kind1-str "') symbol.
-Over the course of developing VL, we found that such issues were very
-frequent sources of errors!</p>
-
-<h3>Long Form</h3>
+    "<h3>Long Form</h3>
 
 <p>In its longer form, @('" case-str "') allows you to split into cases based
 on the kind of structure you are looking at.  A typical example would be:</p>
@@ -4407,16 +4424,36 @@ binder.</p>")))))
                   (str::cat "Option type; @(see? "
                             (xdoc::full-escape-symbol base.name)
                             ") or @('nil').")))
-       (long  (or (cdr (assoc :long kwd-alist))
-                  "<p>This is an option type introduced by @(see fty::defoption).</p>"))
+       (long  (cdr (assoc :long kwd-alist)))
+
+       (acc nil)
+       (acc (revappend-chars
+             "<p>This is an option type introduced by @(see fty::defoption).
+              Note that @('defoption') is just a wrapper for @(see
+              fty::defflexsum), so there are @(':none') and @(':some') member
+              types, a case macro, and so forth.</p>" acc))
+       (acc (revappend-chars "<h5>Member Types</h5>" acc))
+       (acc (revappend-chars "<dl>" acc))
+       ((mv acc state) (deftagsum-summarize-prods x x.prods base-pkg acc state))
+       (acc (revappend-chars "</dl>" acc))
+
+       (acc   (cons #\Newline acc))
+       (acc   (revappend-chars (or long "") acc))
+       (long  (rchars-to-string acc))
+       ((mv prods-doc state)
+        (deftagsum-prods-doc x x.prods (list x.name) base-pkg state))
+       (case-doc (flexsum-case-macro-defxdoc x))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
                      :long ,long))))
     (mv (append main-doc
+                prods-doc
+                case-doc
                 `((xdoc::order-subtopics ,x.name
                                          (,x.pred ,x.fix ,x.equiv ,x.count))))
         state)))
+
 
 (defun deftranssum->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)

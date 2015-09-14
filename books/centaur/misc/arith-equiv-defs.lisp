@@ -121,13 +121,14 @@
   :parents (arith-equivs)
   :short "Equivalence under @(see bfix), i.e., bit equivalence."
 
-  (fty::deffixtype bit :pred bitp :fix bfix :equiv bit-equiv :define t)
+  ;; [Jared] this is now done in basetypes
+  ;; (fty::deffixtype bit :pred bitp :fix bfix :equiv bit-equiv :define t)
+
+  ;; [Jared] bozo maybe move all of this to basetypes?
 
   ;; We leave bit-equiv enabled since generally it's most useful as a congruence target.
   (in-theory (enable bit-equiv))
-
   (defrefinement nat-equiv bit-equiv)
-
   (defcong bit-equiv equal (zbp a) 1))
 
 
