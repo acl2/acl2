@@ -165,7 +165,7 @@
 (defprod monsterpair
   :parents (game)
   :short "Two monsters, side by side."
-  :tag :monster
+  :tag :monsterpair
   ((left   monster "Monster on the left.")
    (right  monster "Monster on the right.")))
 
@@ -473,6 +473,24 @@ is this?</p>")
   :long "<p>Arrows cause escaping problems.</p>")
 
 (assert-parents monster->arrow (game))
+
+(assert-dupefree)
+
+
+(deftranssum monstermash
+  :parents (game)
+  :short "It caught on in a flash."
+  :long "<p>It was a graveyard smash.</p>"
+  (monster
+   monsterpair))
+
+
+(assert-parents monstermash (game))
+(assert-parents monstermash-p (monstermash))
+(assert-parents monstermash-fix (monstermash))
+(assert-parents monstermash-equiv (monstermash))
+(assert-parents monstermash-case (monstermash))
+(assert-parents monstermash-kind (monstermash))
 
 (assert-dupefree)
 

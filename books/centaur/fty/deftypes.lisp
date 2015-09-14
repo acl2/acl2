@@ -1478,7 +1478,7 @@
                 (and stable-under-simplificationp
                      '(:in-theory (enable ,base.equiv))))))))
 
-(defun transsum-suminfo->flexprod-def (suminfo xvar base-override our-fixtypes lastp)
+(defun transsum-suminfo->flexprod-def (name suminfo xvar base-override our-fixtypes lastp)
   (b* (((suminfo suminfo))
        ((flexsum sum) suminfo.sum)
        ((when (atom suminfo.tags))
@@ -1491,7 +1491,9 @@
                     kind)))
        (tag-cond (if (consp (cdr suminfo.tags))
                      `(member (tag ,xvar) ',suminfo.tags)
-                   `(eq (tag ,xvar) ',(car suminfo.tags)))))
+                   `(eq (tag ,xvar) ',(car suminfo.tags))))
+       (subtype-name-link (xdoc::see sum.name))
+       (wholetype-name-link (xdoc::see name)))
     (mv base
         `(,kind
           :cond ,(if lastp
@@ -1501,18 +1503,19 @@
                             ,tag-cond)
                      tag-cond))
           :fields ((val :type ,sum.name :acc-body ,xvar))
-          :ctor-body val))))
+          :ctor-body val
+          :short ,(cat "A transparent structure for the "
+                       subtype-name-link
+                       " case of "
+                       wholetype-name-link ".")))))
 
-
-
-
-(defun transsum-flexprods-in (suminfos xvar base-override our-fixtypes)
+(defun transsum-flexprods-in (name suminfos xvar base-override our-fixtypes)
   (b* (((when (atom suminfos)) nil)
        ((mv base prod) (transsum-suminfo->flexprod-def
-                        (car suminfos) xvar base-override our-fixtypes
+                        name (car suminfos) xvar base-override our-fixtypes
                         (atom (cdr suminfos)))))
     (cons prod (transsum-flexprods-in
-                (cdr suminfos) xvar (or base-override base) our-fixtypes))))
+                name (cdr suminfos) xvar (or base-override base) our-fixtypes))))
 
 
 (define suminfo->pred (x)
@@ -1700,7 +1703,7 @@
                  (intern-in-package-of-symbol "X" name)))
        (base-override (getarg :base-case-override nil kwd-alist))
 
-       (flexprods-in (transsum-flexprods-in suminfos xvar base-override these-fixtypes))
+       (flexprods-in (transsum-flexprods-in name suminfos xvar base-override these-fixtypes))
        (prods (parse-flexprods flexprods-in name kind kwd-alist xvar nil these-fixtypes fixtypes))
        (- (flexprods-check-xvar xvar prods))
        ((when (atom prods))
@@ -4467,11 +4470,16 @@ binder.</p>")))))
        (acc   (cons #\Newline acc))
        (acc   (revappend-chars (or long "") acc))
        (long  (rchars-to-string acc))
+       ((mv prods-doc state)
+        (deftagsum-prods-doc x x.prods (list x.name) base-pkg state))
+       (case-doc (flexsum-case-macro-defxdoc x))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
                      :long ,long))))
     (mv (append main-doc
+                case-doc
+                prods-doc
                 `((xdoc::order-subtopics ,x.name
                                          (,x.pred ,x.fix ,x.equiv ,x.count))))
         state)))
