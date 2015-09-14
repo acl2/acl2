@@ -108,6 +108,9 @@
 # Avoid escape characters in regression log:
 export CERT_PL_NO_COLOR ?= t
 
+# Always make it possible to gather timing statistics after a regression.
+export TIME_CERT = yes
+
 LISP = ccl
 DIR = /tmp
 

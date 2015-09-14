@@ -511,7 +511,7 @@
              (enforce-redundancy
               event-form ctx wrld1
               (er-let*
-               ((wrld2 (chk-just-new-name name 'const nil ctx wrld1 state))
+               ((wrld2 (chk-just-new-name name nil 'const nil ctx wrld1 state))
                 (wrld3 (defconst-fn1 name val wrld2 state)))
                (install-event name
                               event-form
@@ -906,7 +906,8 @@
                     (enforce-redundancy
                      event-form ctx wrld1
                      (er-let*
-                         ((wrld2 (chk-just-new-name name 'macro nil ctx wrld1 state))
+                         ((wrld2 (chk-just-new-name name nil 'macro nil ctx
+                                                    wrld1 state))
                           (ignored (value (ignore-vars edcls)))
                           (ignorables (value (ignorable-vars edcls))))
                        (er-progn
@@ -1834,11 +1835,11 @@
         (defpkg-book-path
           (unrelativize-book-path defpkg-book-path distrib-books-dir)))
     (list
-     "The proposed defpkg conflicts with a previously-executed defpkg for ~
+     "The proposed defpkg conflicts with an existing defpkg for ~
       name ~x0~@1.  ~#a~[For example, symbol ~s2::~s3 is in the list of ~
       imported symbols for the ~s4 definition but not for the other.~/The two ~
       have the same lists of imported symbols, but not in the same order.~]  ~
-      The previous defpkg is ~#5~[at the top level.~/in the certificate file ~
+      The existing defpkg is ~#5~[at the top level.~/in the certificate file ~
       for the book ~x7, which is included at the top level.~/in the ~
       certificate file for the book ~x7, which is included via the following ~
       path, from top-most book down to the above file.~|  ~F8~]~@9~@b"
@@ -1854,12 +1855,12 @@
      (cons #\3 (symbol-name (if new-not-old
                                 (car new-not-old)
                               (car old-not-new))))
-     (cons #\4 (if new-not-old "current" "previous"))
+     (cons #\4 (if new-not-old "proposed" "existing"))
      (cons #\5 (zero-one-or-more book-path))
      (cons #\7 (car book-path))
      (cons #\8 (reverse book-path))
      (cons #\9 (if defpkg-book-path
-                   "~|This previous defpkg event appears to have been created ~
+                   "~|This existing defpkg event appears to have been created ~
                   because of a defpkg that was hidden by a local include-book; ~
                   see :DOC hidden-death-package."
                  ""))
@@ -1867,11 +1868,11 @@
                       (global-val 'include-book-path w)))
                  (if (or include-book-path
                          defpkg-book-path)
-                     (msg "~|The new proposed defpkg event may be found by ~
+                     (msg "~|The proposed defpkg event may be found by ~
                            following the sequence of include-books below, ~
                            from top-most book down to the book whose ~
-                           portcullis contains the new proposed defpkg ~
-                           event.~|  ~F0"
+                           portcullis contains the proposed defpkg event.~|  ~
+                           ~F0"
                           (reverse (append defpkg-book-path include-book-path)))
                    ""))))))
 
@@ -2073,7 +2074,7 @@
 ; Warning: In maybe-push-undo-stack and maybe-pop-undo-stack we rely
 ; on the fact that the symbol name-PACKAGE is new!
 
-                          (chk-just-new-name base-symbol
+                          (chk-just-new-name base-symbol nil
                                              'theorem nil ctx w state)
                           (prog2$
                            (chk-package-reincarnation-import-restrictions
@@ -3005,7 +3006,8 @@
                                    nil)))))
       (er-progn
        (chk-all-but-new-name name ctx nil wrld state)
-       (er-let* ((wrld1 (chk-just-new-name name 'theory nil ctx wrld state))
+       (er-let* ((wrld1 (chk-just-new-name name nil 'theory nil ctx wrld
+                                           state))
                  (theory0 (translate-in-theory-hint expr nil ctx wrld1 state)))
          (mv-let (theory theory-augmented-ignore)
 
@@ -3587,6 +3589,7 @@
                 val
                 (duplicates (collect-non-x nil stobjs-out))))
            (t (er-let* ((wrld1 (chk-just-new-name fn
+                                                  nil
                                                   (list* 'function
                                                          stobjs-in
                                                          stobjs-out)
@@ -11898,17 +11901,22 @@
               (er ,soft-or-hard ctx
                   "The legal values for the :DIR argument are keywords that ~
                    include :SYSTEM as well as those added by a call of ~v0.  ~
-                   However, that argument is ~x1, which is not among the list ~
-                   of those legal values, ~x2."
+                   However, that argument is ~x1, which is not ~@2."
                   '(add-include-book-dir add-include-book-dir!)
                   dir
-                  (cons :system
-                        (strip-cars
-                         (append
-                          (cdr (assoc-eq :include-book-dir-alist
-                                         (table-alist 'acl2-defaults-table
-                                                      (w state))))
-                          (table-alist 'include-book-dir!-table (w state)))))))
+                  (cond
+                   ((keywordp dir)
+                    (msg
+                     "among the list of those legal values, ~x0"
+                     (cons :system
+                           (strip-cars
+                            (append
+                             (cdr (assoc-eq :include-book-dir-alist
+                                            (table-alist 'acl2-defaults-table
+                                                         (w state))))
+                             (table-alist 'include-book-dir!-table
+                                          (w state)))))))
+                   (t "a keyword"))))
              (t ,(if (eq soft-or-hard 'soft)
                      '(value dir-value)
                    'dir-value))))))
@@ -16176,7 +16184,8 @@
                (chk-arglist-for-defchoose formals nil ctx state)
                (er-let*
                 ((tbody (translate body t t t ctx wrld state))
-                 (wrld (chk-just-new-name fn 'function nil ctx wrld state)))
+                 (wrld (chk-just-new-name fn nil 'function nil ctx wrld
+                                          state)))
                 (cond
                  ((intersectp-eq bound-vars formals)
                   (er soft ctx
@@ -16425,7 +16434,7 @@
                'defun-nx
              'defun)
            ,name ,args
-           ,@witness-dcls
+           ,@(remove1-equal '(declare (xargs :non-executable t)) witness-dcls)
            ,(if (= (length bound-vars) 1)
                 `(let ((,(car bound-vars) (,skolem-name ,@args)))
                    ,body-guts)
@@ -17159,9 +17168,10 @@
                        renaming))
                   (t (value nil)))
             (er-let*
-                ((wrld1 (chk-just-new-name name 'stobj nil ctx wrld state))
-                 (wrld2 (chk-just-new-name (the-live-var name) 'stobj-live-var
-                                           nil ctx wrld1 state)))
+                ((wrld1 (chk-just-new-name name nil 'stobj nil ctx wrld state))
+                 (wrld2 (chk-just-new-name (the-live-var name)
+                                           nil 'stobj-live-var nil ctx wrld1
+                                           state)))
               (chk-acceptable-defstobj1 name field-descriptors field-descriptors
                                         renaming non-memoizable
                                         ctx wrld2 state nil nil))))))))))))
@@ -18999,7 +19009,8 @@
   (let ((name (access absstobj-method method :name)))
     (er-let* ((wrld (er-progn
                      (chk-all-but-new-name name ctx 'function wrld state)
-                     (chk-just-new-name name 'function nil ctx wrld state))))
+                     (chk-just-new-name name nil 'function nil ctx wrld
+                                        state))))
       (cond
        ((or congruent-to
             (member-eq (ld-skip-proofsp state)
@@ -19130,9 +19141,10 @@
     (er-progn
      (chk-all-but-new-name name ctx 'stobj wrld state)
      (chk-legal-defstobj-name name state)
-     (er-let* ((wrld1 (chk-just-new-name name 'stobj nil ctx wrld state))
-               (wrld2 (chk-just-new-name (the-live-var name) 'stobj-live-var
-                                         nil ctx wrld1 state)))
+     (er-let* ((wrld1 (chk-just-new-name name nil 'stobj nil ctx wrld state))
+               (wrld2 (chk-just-new-name (the-live-var name)
+                                         nil 'stobj-live-var nil ctx wrld1
+                                         state)))
        (chk-acceptable-defabsstobj1 name st$c st$ap corr-fn
 
 ; Keep the recognizer and creator first and second in our call to
