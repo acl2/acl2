@@ -2617,8 +2617,9 @@
        :parents (,list.name)
        :short ,(cat "@(call " (xdoc::full-escape-symbol list.fix)
                     ") is a usual @(see fty::fty) list fixing function.")
-       :long ,(cat "<p>In the logic, we apply " (xdoc::see list.elt-fix)
-                   " to each member of the list.  In the execution, none of
+       :long ,(cat "<p>In the logic, we apply @(see? "
+                   (xdoc::full-escape-symbol list.elt-fix)
+                   ") to each member of the list.  In the execution, none of
                     that is actually necessary and this is just an inlined
                     identity function.</p>")
        :measure ,list.measure
@@ -2935,7 +2936,7 @@
     (append (with-flextype-bindings (x (car types))
               `((defsection ,x.equiv
                   :parents (,x.name)
-                  :short ,(cat "Basic equivalence relation for " (xdoc::see x.pred) ".")
+                  :short ,(cat "Basic equivalence relation for " (xdoc::see x.name) " structures.")
                   (deffixtype ,x.name
                     :pred ,x.pred
                     :fix ,x.fix
@@ -3962,8 +3963,12 @@
        (acc (html-encode-str name-str acc))
        (acc (b* (((when (eq x.type nil))
                   acc)
+                 (fixtype (find-fixtype x.type (get-fixtypes-alist (w state))))
+                 (target  (if fixtype
+                              (fixtype->topic fixtype)
+                            x.type))
                  (acc (revappend-chars " &mdash; @(see? " acc))
-                 (acc (revappend-chars (xdoc::full-escape-symbol x.type) acc))
+                 (acc (revappend-chars (xdoc::full-escape-symbol target) acc))
                  (acc (revappend-chars ")" acc)))
               acc))
        (acc (revappend-chars "</dt>" acc))

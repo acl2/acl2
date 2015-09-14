@@ -162,6 +162,19 @@
 (assert-dupefree)
 
 
+(defprod monsterpair
+  :parents (game)
+  :short "Two monsters, side by side."
+  :tag :monster
+  ((left   monster "Monster on the left.")
+   (right  monster "Monster on the right.")))
+
+(assert-parents monsterpair (game))
+(assert-short monsterpair "Two monsters")
+(assert-long monsterpair "Monster on the left")
+(assert-long monsterpair "Monster on the right")
+
+
 (deflist monsterlist
   :parents (monster)
   :short "A list of monsters."
