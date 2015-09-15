@@ -9,232 +9,7 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-;; ======================================================================
-
-;; [Shilpi]: Move these events to the main books.
-
-(defthmd rb-rb-subset
-  ;; This theorem can be generalized so that the conclusion mentions addr1,
-  ;; where addr1 <= addr.  Also, this is an expensive rule. Keep it disabled
-  ;; generally.
-  (implies (and (equal (mv-nth 1 (rb (create-canonical-address-list i addr) r-w-x x86))
-                       bytes)
-                (canonical-address-p (+ -1 i addr))
-                (canonical-address-p addr)
-                (xr :programmer-level-mode 0 x86)
-                (posp i)
-                (< j i))
-           (equal (mv-nth 1 (rb (create-canonical-address-list j addr) r-w-x x86))
-                  (take j bytes)))
-  :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p) ()))))
-
-(defthm take-and-rb
-  (implies (and (canonical-address-p (+ -1 i addr))
-                (canonical-address-p addr)
-                (xr :programmer-level-mode 0 x86)
-                (< k i))
-           (equal (take k (mv-nth 1 (rb (create-canonical-address-list i addr) r-w-x x86)))
-                  (mv-nth 1 (rb (create-canonical-address-list k addr) r-w-x x86))))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p rb) ((:meta acl2::mv-nth-cons-meta))))))
-
-(defthmd create-canonical-address-list-split
-  (implies (and (canonical-address-p addr)
-                (canonical-address-p (+ k addr))
-                (natp j)
-                (natp k))
-           (equal (create-canonical-address-list (+ k j) addr)
-                  (append (create-canonical-address-list k addr)
-                          (create-canonical-address-list j (+ k addr)))))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p)
-                                   ()))))
-(defthm rb-rb-split-reads
-  (implies (and (canonical-address-p addr)
-                (xr :programmer-level-mode 0 x86)
-                (natp j)
-                (natp k))
-           (equal (mv-nth 1 (rb (create-canonical-address-list (+ k j) addr) r-w-x x86))
-                  (append (mv-nth 1 (rb (create-canonical-address-list k addr) r-w-x x86))
-                          (mv-nth 1 (rb (create-canonical-address-list j (+ k addr)) r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p)
-                                   ((:meta acl2::mv-nth-cons-meta))))))
-
-(defthm rb-returns-true-listp
-  (implies (x86p x86)
-           (true-listp (mv-nth 1 (rb addresses r-w-x x86))))
-  :rule-classes (:rewrite :type-prescription))
-
-(defthm create-canonical-address-list-of-0
-  (equal (create-canonical-address-list 0 addr) nil))
-
-(defthm zf-spec-thm
-  (implies (not (equal x 0))
-           (equal (zf-spec x) 0))
-  :hints (("Goal" :in-theory (e/d* (zf-spec) ()))))
-
-(defthm canonical-address-p-to-integerp-thm
-  (implies (canonical-address-p x)
-           (integerp x))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p) ())))
-  :rule-classes :forward-chaining)
-
-;; ======================================================================
-
-;; Some GL Theorems:
-
-(encapsulate
- ()
- (local (include-book "centaur/gl/gl" :dir :system))
-
- (def-gl-export loop-clk-measure-helper
-   :hyp (and (signed-byte-p 64 m)
-             (<= 4 m))
-   :concl (< (loghead 64 (+ #xfffffffffffffffc m)) m)
-   :g-bindings (gl::auto-bindings (:int m 64))
-   :rule-classes :linear)
-
- (def-gl-export simplify-rax-expression
-   :hyp (unsigned-byte-p 31 n)
-   :concl (equal (logext 64 (ash (loghead 64 (logext 32 n)) 2))
-                 (ash n 2))
-   :g-bindings (gl::auto-bindings (:nat n 31)))
-
-
- (def-gl-export effects-copyData-loop-helper-1
-   :hyp (and (<= 4 m)
-             (unsigned-byte-p 33 m))
-   :concl (equal (logext 64 (+ #xfffffffffffffffc m))
-                 (loghead 64 (+ #xfffffffffffffffc m)))
-   :g-bindings (gl::auto-bindings (:nat m 33)))
-
- (def-gl-export effects-copyData-loop-helper-2
-   :hyp (and (<= 4 m)
-             (unsigned-byte-p 33 m))
-   :concl (and (unsigned-byte-p 33 (loghead 64 (+ #xfffffffffffffffc m)))
-               (signed-byte-p   64 (loghead 64 (+ #xfffffffffffffffc m))))
-   :g-bindings (gl::auto-bindings (:nat m 33)))
-
- (def-gl-export effects-copyData-loop-helper-3
-   :hyp (and (<= 4 m)
-             (unsigned-byte-p 33 m))
-   :concl (< (loghead 64 (+ #xfffffffffffffffc m))
-             *2^63*)
-   :g-bindings (gl::auto-bindings (:nat m 33))
-   :rule-classes :linear)
-
- (def-gl-export effects-copyData-loop-helper-4
-   :hyp (and (< 4 m)
-             (equal (mod m 4) 0)
-             (unsigned-byte-p 33 m))
-   :concl (not (< (loghead 64 (+ #xfffffffffffffffc m))
-                  4))
-   :g-bindings (gl::auto-bindings (:nat m 33)))
-
- (def-gl-export effects-copyData-loop-helper-5
-   :hyp (and (< 4 m)
-             (equal (mod m 4) 0)
-             (unsigned-byte-p 33 m))
-   :concl (equal (mod (loghead 64 (+ #xfffffffffffffffc m)) 4) 0)
-   :g-bindings (gl::auto-bindings (:nat m 33)))
-
- (def-gl-export effects-copyData-loop-helper-6
-   :hyp (canonical-address-p src/dst)
-   :concl (equal (logext 64 (+ 4 (loghead 64 src/dst)))
-                 (+ 4 src/dst))
-   :g-bindings (gl::auto-bindings (:int src/dst 64)))
-
- (def-gl-export effects-copyData-loop-helper-7
-   :hyp (and (canonical-address-p src/dst)
-             (canonical-address-p (+ m src/dst))
-             (< 4 m)
-             (equal (mod m 4) 0)
-             (unsigned-byte-p 33 m))
-   :concl (canonical-address-p (+ 4 src/dst (loghead 64 (+ #xfffffffffffffffc m))))
-   :g-bindings (gl::auto-bindings (:mix (:int m 64)
-                                        (:int src/dst 64))))
-
- (def-gl-export effects-copyData-loop-helper-8
-   :hyp (and (canonical-address-p src/dst)
-             (canonical-address-p (+ m src/dst))
-             (< 4 m)
-             (equal (mod m 4) 0)
-             (unsigned-byte-p 33 m))
-   :concl (canonical-address-p (+ (loghead 64 (+ #xfffffffffffffffc m))
-                                  ;; (logext 64 (+ 4 (loghead 64 src/dst)))
-                                  (+ 4 src/dst)
-                                  ))
-   :g-bindings (gl::auto-bindings (:mix (:int m 64)
-                                        (:int src/dst 64))))
-
- (def-gl-export effects-copyData-loop-helper-9
-   :hyp (and (< 4 m)
-             (unsigned-byte-p 33 m))
-   :concl (not (equal (loghead 64 (+ #xfffffffffffffffc m)) 0))
-   :g-bindings (gl::auto-bindings (:nat m 33))
-   :rule-classes (:forward-chaining :rewrite))
-
- (def-gl-export effects-copyData-loop-helper-10
-   :hyp (and (equal (loghead 64 (+ #xfffffffffffffffc m)) 0)
-             (unsigned-byte-p 33 m))
-   :concl (posp m)
-   :g-bindings (gl::auto-bindings (:nat m 33))
-   :rule-classes (:forward-chaining))
-
- (def-gl-export loop-clk-measure-helper-alt
-   :hyp (and (unsigned-byte-p 33 m)
-             (<= 4 m))
-   :concl (equal (< m (+ 4 (loghead 64 (+ #xfffffffffffffffc m)))) nil)
-   :g-bindings (gl::auto-bindings (:int m 64)))
-
- (def-gl-export next-lower-bound-for-m
-   :hyp (and (equal (mod m 4) 0)
-             (< 4 m)
-             (unsigned-byte-p 33 m))
-   :concl (< 7 m)
-   :g-bindings (gl::auto-bindings (:nat m 33))
-   :rule-classes :forward-chaining)
-
- (local
-  (def-gl-thm lower-bound-for-m-gl
-    :hyp (and (equal (loghead 64 (+ #xfffffffffffffffc m)) 0)
-              (equal (mod m 4) 0)
-              (unsigned-byte-p 33 m))
-    :concl (equal m 4)
-    :g-bindings (gl::auto-bindings (:nat m 33))
-    :rule-classes :forward-chaining))
-
- (defthm lower-bound-for-m
-   (implies (and (equal (loghead 64 (+ #xfffffffffffffffc m)) 0)
-                 (equal (mod m 4) 0)
-                 (unsigned-byte-p 33 m))
-            (equal m 4))
-   :hints (("Goal" :in-theory (e/d* () (lower-bound-for-m-gl))
-            :use ((:instance lower-bound-for-m-gl))))
-   :rule-classes :forward-chaining)
-
- (def-gl-export effects-copyData-loop-helper-11
-   :hyp (and (< 4 m)
-             (equal (mod m 4) 0)
-             (unsigned-byte-p 33 m))
-   :concl (equal (loghead 64 (+ #xfffffffffffffffc m))
-                 (+ -4 m))
-   :g-bindings (gl::auto-bindings (:nat m 33)))
-
- (def-gl-export effects-copyData-loop-helper-12
-   :hyp (and (< 4 m)
-             (equal (mod m 4) 0)
-             (unsigned-byte-p 33 m))
-   :concl (equal (loghead 64 (+ #xfffffffffffffff8 m))
-                 (+ -4 (loghead 64 (+ #xfffffffffffffffc m))))
-   :g-bindings (gl::auto-bindings (:nat m 33)))
-
- (def-gl-export effects-copyData-loop-helper-13
-   :hyp (and (equal (mod k 4) 0)
-             (unsigned-byte-p 33 k))
-   :concl (equal (mod (+ 4 k) 4) 0)
-   :g-bindings (gl::auto-bindings (:nat k 33)))
-
- (in-theory (e/d () (effects-copyData-loop-helper-11
-                     effects-copyData-loop-helper-12))))
+(local (in-theory (e/d* (rb-rb-subset) ())))
 
 ;; ======================================================================
 
@@ -293,7 +68,93 @@
 
 ;; ======================================================================
 
-(local (in-theory (e/d* (rb-rb-subset) ())))
+
+;; Some GL Theorems:
+
+(encapsulate
+ ()
+ (local (include-book "centaur/gl/gl" :dir :system))
+
+ (def-gl-export loop-clk-measure-helper
+   :hyp (and (signed-byte-p 64 m)
+             (<= 4 m))
+   :concl (< (loghead 64 (+ #xfffffffffffffffc m)) m)
+   :g-bindings (gl::auto-bindings (:int m 64))
+   :rule-classes :linear)
+
+ (def-gl-export effects-copyData-loop-helper-1
+   :hyp (and (<= 4 m)
+             (unsigned-byte-p 33 m))
+   :concl (equal (logext 64 (+ #xfffffffffffffffc m))
+                 (loghead 64 (+ #xfffffffffffffffc m)))
+   :g-bindings (gl::auto-bindings (:nat m 33)))
+
+ (def-gl-export effects-copyData-loop-helper-2
+   :hyp (and (<= 4 m)
+             (unsigned-byte-p 33 m))
+   :concl (and (unsigned-byte-p 33 (loghead 64 (+ #xfffffffffffffffc m)))
+               (signed-byte-p   64 (loghead 64 (+ #xfffffffffffffffc m))))
+   :g-bindings (gl::auto-bindings (:nat m 33)))
+
+ (def-gl-export effects-copyData-loop-helper-5
+   :hyp (and (< 4 m)
+             (equal (mod m 4) 0)
+             (unsigned-byte-p 33 m))
+   :concl (equal (mod (loghead 64 (+ #xfffffffffffffffc m)) 4) 0)
+   :g-bindings (gl::auto-bindings (:nat m 33)))
+
+ (def-gl-export effects-copyData-loop-helper-6
+   :hyp (canonical-address-p src/dst)
+   :concl (equal (logext 64 (+ 4 (loghead 64 src/dst)))
+                 (+ 4 src/dst))
+   :g-bindings (gl::auto-bindings (:int src/dst 64)))
+
+ (def-gl-export effects-copyData-loop-helper-7
+   :hyp (and (canonical-address-p src/dst)
+             (canonical-address-p (+ m src/dst))
+             (< 4 m)
+             (equal (mod m 4) 0)
+             (unsigned-byte-p 33 m))
+   :concl (canonical-address-p (+ 4 src/dst (loghead 64 (+ #xfffffffffffffffc m))))
+   :g-bindings (gl::auto-bindings (:mix (:int m 64)
+                                        (:int src/dst 64))))
+
+ (def-gl-export effects-copyData-loop-helper-9
+   :hyp (and (< 4 m)
+             (unsigned-byte-p 33 m))
+   :concl (not (equal (loghead 64 (+ #xfffffffffffffffc m)) 0))
+   :g-bindings (gl::auto-bindings (:nat m 33))
+   :rule-classes (:forward-chaining :rewrite))
+
+ (def-gl-export loop-clk-measure-helper-alt
+   :hyp (and (unsigned-byte-p 33 m)
+             (<= 4 m))
+   :concl (equal (< m (+ 4 (loghead 64 (+ #xfffffffffffffffc m)))) nil)
+   :g-bindings (gl::auto-bindings (:int m 64)))
+
+ (def-gl-export next-lower-bound-for-m
+   :hyp (and (equal (mod m 4) 0)
+             (< 4 m)
+             (unsigned-byte-p 33 m))
+   :concl (< 7 m)
+   :g-bindings (gl::auto-bindings (:nat m 33))
+   :rule-classes :forward-chaining)
+
+ (def-gl-export effects-copyData-loop-helper-11
+   :hyp (and (< 4 m)
+             (equal (mod m 4) 0)
+             (unsigned-byte-p 33 m))
+   :concl (equal (loghead 64 (+ #xfffffffffffffffc m))
+                 (+ -4 m))
+   :g-bindings (gl::auto-bindings (:nat m 33)))
+
+ (def-gl-export effects-copyData-loop-helper-13
+   :hyp (and (equal (mod k 4) 0)
+             (unsigned-byte-p 33 k))
+   :concl (equal (mod (+ 4 k) 4) 0)
+   :g-bindings (gl::auto-bindings (:nat k 33)))
+
+ (in-theory (e/d () (effects-copyData-loop-helper-11))))
 
 ;; ======================================================================
 
@@ -307,7 +168,7 @@
 
 (defun-nx loop-invariant (k m addr x86)
   ;; The initial value of m is (ash n 2), where n is the same n as defined in
-  ;; preconditions.
+  ;; preconditions later in this book.
 
   ;; k: number of bytes already copied (in previous loop iterations)
   ;;    this will increase by 4 in every iteration
@@ -501,38 +362,6 @@
    :hints (("Goal" :in-theory (e/d* (ash) ())))
    :rule-classes (:rewrite :linear)))
 
-;; [Shilpi]: These two rules below show how canonical-address-p-limits-thm-0,
-;; canonical-address-p-limits-thm-1, and canonical-address-p-limits-thm-2 break
-;; down when i, j, and k aren't simple terms, like constants.
-
-(defthm canonical-address-p-and-ash-limits-thm-1
-  (implies (and (canonical-address-p (+ x (ash n 2)))
-                (canonical-address-p x)
-                (posp n))
-           (canonical-address-p (+ -1 (+ x (ash n 2)))))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ()))))
-
-(defthm canonical-address-p-and-ash-limits-thm-2
-  (implies (and (canonical-address-p (+ x (ash n 2)))
-                (< m (ash n 2))
-                (canonical-address-p x)
-                (natp m))
-           (canonical-address-p (+ m x)))
-  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ()))))
-
-;; [Shilpi]: This rule below shows how disjoint-p-subset-p and
-;; subset-p-two-create-canonical-address-lists break down because subset-p
-;; can't be established.
-
-(defthm subset-p-ash-thm-1
-  (implies (and (<= m (ash n 2))
-                (unsigned-byte-p 31 n)
-                (canonical-address-p x)
-                (canonical-address-p (+ (ash n 2) x))
-                (< 0 n))
-           (subset-p (create-canonical-address-list m x)
-                     (create-canonical-address-list (ash n 2) x))))
-
 ;; ======================================================================
 
 ;; Effects theorem:
@@ -554,7 +383,12 @@
    (implies (and (equal (mod m 4) 0)
                  (posp m))
             (<= 4 m))
-   :rule-classes (:forward-chaining)))
+   :rule-classes (:forward-chaining))
+
+ (defthm mod-thm-2
+   (implies (natp n)
+            (equal (mod (ash n 2) 4) 0))
+   :hints (("Goal" :in-theory (e/d* (ash) ())))))
 
 (defthm canonical-address-p-of-src/dst
   (implies (and (canonical-address-p (+ (- k) src/dst))
@@ -973,17 +807,6 @@
                              (loop-clk-base)
                              force (force))))))
 
-(defthm effects-copyData-loop-base-rax-projection
-  (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
-                (<= m 4))
-           (equal (xr :rgf *rax* (x86-run (loop-clk-base) x86))
-                  0))
-  :hints (("Goal" :use ((:instance effects-copydata-loop-base))
-           :in-theory (e/d* ()
-                            (loop-clk-base
-                             (loop-clk-base)
-                             force (force))))))
-
 (defthm effects-copyData-loop-base-program-at-projection
   (implies (and (loop-preconditions k m addr src-addr dst-addr x86)
                 (equal prog-len (len *copydata*))
@@ -1051,8 +874,6 @@
                              force (force))))))
 
 (defthmd canonical-address-p-and-ash-limits-thm-3
-  ;; [Shilpi]: Very similar to canonical-address-p-and-ash-limits-thm-1. Think
-  ;; about eliminating that rule?
   (implies (and (canonical-address-p (+ m x))
                 (canonical-address-p x)
                 (posp m))
@@ -1674,15 +1495,6 @@
           ("Subgoal 1" :in-theory (e/d* (effects-copyData-loop-helper-11)
                                         ()))))
 
-
-(defthm x86p-state-after-loop-clk-base
-  (implies (x86p x86)
-           (x86p (x86-run (loop-clk-base) x86))))
-
-(defthm x86p-state-after-loop-clk-recur
-  (implies (x86p x86)
-           (x86p (x86-run (loop-clk-recur) x86))))
-
 (defun-nx loop-state (k m src-addr dst-addr x86)
 
   (if (signed-byte-p 64 m) ;; This should always be true.
@@ -1699,11 +1511,6 @@
             (loop-state new-k new-m new-src-addr new-dst-addr x86)))
     x86))
 
-(defthm x86p-loop-state
-  (implies (x86p x86)
-           (x86p (loop-state k m src-addr dst-addr x86)))
-  :hints (("Goal" :in-theory (e/d* () ()))))
-
 (defthmd x86-run-plus-for-loop-clk-recur-1
   (equal (x86-run (loop-clk (loghead 64 (+ #xfffffffffffffffc m)))
                   (x86-run (loop-clk-recur) x86))
@@ -1713,14 +1520,6 @@
   :hints (("Goal" :in-theory (e/d* () (x86-run-plus (loop-clk-recur) loop-clk-recur))
            :use ((:instance x86-run-plus
                             (n2 (loop-clk (loghead 64 (+ #xfffffffffffffffc m))))
-                            (n1 (loop-clk-recur)))))))
-
-(defthmd x86-run-plus-for-loop-clk-recur-2
-  (equal (x86-run (binary-clk+ (loop-clk-recur) (loop-clk-base)) x86)
-         (x86-run (loop-clk-base) (x86-run (loop-clk-recur) x86)))
-  :hints (("Goal" :in-theory (e/d* () (x86-run-plus (loop-clk-recur) loop-clk-recur loop-clk-base (loop-clk-base)))
-           :use ((:instance x86-run-plus
-                            (n2 (loop-clk-base))
                             (n1 (loop-clk-recur)))))))
 
 (defthm effects-copyData-loop
@@ -1760,8 +1559,7 @@
                              subset-p
                              signed-byte-p
 
-                             x86-run-plus-for-loop-clk-recur-1
-                             x86-run-plus-for-loop-clk-recur-2)
+                             x86-run-plus-for-loop-clk-recur-1)
                             (loop-clk-base
                              (loop-clk-base)
                              (:type-prescription loop-clk-base)
@@ -1780,93 +1578,6 @@
                              effects-copyData-loop-recur
                              effects-copyData-loop-base
                              force (force))))))
-
-(defthmd pull-out-loop-clk-recur-from-loop-state-helper
-  (equal (x86-run (loop-clk-base)
-                  (x86-run (loop-clk-recur) x86))
-         (x86-run (loop-clk-recur)
-                  (x86-run (loop-clk-base) x86))))
-
-(defthmd pull-out-loop-clk-recur-from-loop-state
-  (implies (and (bind-free '((addr . addr)))
-                (loop-preconditions k m addr src-addr dst-addr x86)
-                (< 4 m))
-           (equal (loop-state k m src-addr dst-addr x86)
-                  (x86-run (loop-clk-recur)
-                           (loop-state (+ 4 k)
-                                       (+ -4 m)
-                                       (+ 4 src-addr)
-                                       (+ 4 dst-addr)
-                                       x86))))
-  :hints (("Goal"
-           :in-theory (e/d* (pull-out-loop-clk-recur-from-loop-state-helper
-                             effects-copyData-loop-helper-11)
-                            (loop-clk-base
-                             (loop-clk-base)
-                             (:type-prescription loop-clk-base)
-                             loop-clk-recur
-                             (loop-clk-recur)
-                             (:type-prescription loop-clk-recur)
-                             (loop-clk)
-                             loop-preconditions
-                             wb-remove-duplicate-writes
-                             create-canonical-address-list
-                             effects-copyData-loop-recur
-                             effects-copyData-loop-base
-                             effects-copyData-loop-recur-implies-loop-preconditions
-                             force (force))))
-          ("Subgoal *1/1"
-           :use ((:instance effects-copyData-loop-recur-implies-loop-preconditions))
-           :in-theory (e/d* (pull-out-loop-clk-recur-from-loop-state-helper
-                             effects-copyData-loop-helper-11)
-                            (loop-clk-base
-                             (loop-clk-base)
-                             (:type-prescription loop-clk-base)
-                             loop-clk-recur
-                             (loop-clk-recur)
-                             (:type-prescription loop-clk-recur)
-                             (loop-clk)
-                             loop-preconditions
-                             wb-remove-duplicate-writes
-                             create-canonical-address-list
-                             effects-copyData-loop-recur
-                             effects-copyData-loop-base
-                             effects-copyData-loop-recur-implies-loop-preconditions
-                             force (force))))
-          ("Subgoal *1/3"
-           :expand (loop-state (+ 4 k) (+ -4 m) (+ 4 src-addr) (+ 4 dst-addr) x86)
-           :in-theory (e/d* (pull-out-loop-clk-recur-from-loop-state-helper
-                             effects-copyData-loop-helper-12)
-                            (loop-clk-base
-                             (loop-clk-base)
-                             (:type-prescription loop-clk-base)
-                             loop-clk-recur
-                             (loop-clk-recur)
-                             (:type-prescription loop-clk-recur)
-                             (loop-clk)
-                             loop-preconditions
-                             wb-remove-duplicate-writes
-                             create-canonical-address-list
-                             effects-copyData-loop-recur
-                             effects-copyData-loop-base
-                             effects-copyData-loop-recur-implies-loop-preconditions
-                             force (force))))))
-
-
-(defthm programmer-level-mode-of-loop-state
-  (implies (loop-preconditions k m addr src-addr dst-addr x86)
-           (xr :programmer-level-mode 0 (loop-state k m src-addr dst-addr x86)))
-  :hints (("Goal"
-           :hands-off (x86-run)
-           :in-theory (e/d* ()
-                            (loop-preconditions
-                             destination-bytes
-                             source-bytes
-                             loop-clk-recur
-                             (loop-clk-recur)
-                             loop-clk-base
-                             (loop-clk-base)
-                             create-canonical-address-list)))))
 
 (defthmd disjointness-lemma-4-helper
   (implies (and (x86p x86)
@@ -1891,7 +1602,6 @@
                              disjointness-lemma-3-helper
                              disjointness-lemma-4-helper)
                             ()))))
-
 
 (defthm effects-copyData-loop-recur-source-address-projection-full-helper
   ;; src[src-addr to (src-addr + m)] in (x86-run (loop-clk-recur) x86) =
@@ -2253,7 +1963,6 @@
   :rule-classes :forward-chaining)
 
 (defthm canonical-address-p-limits-thm-3
-  ;; [Shilpi]: Move to main books?
   (implies (and (canonical-address-p (+ i x))
                 (canonical-address-p (+ (- j) x))
                 (integerp x)
@@ -2480,14 +2189,6 @@
            (x86p (x86-run (pre-clk n) x86)))
   :hints (("Goal" :in-theory (e/d* () ((pre-clk) pre-clk force (force))))))
 
-(defthm effects-copyData-pre-rbp-projection
-  (implies (preconditions n addr x86)
-           (equal (xr :rgf *rbp* (x86-run (pre-clk n) x86))
-                  (+ -8 (xr :rgf *rsp* x86))))
-  :hints (("Goal" :use ((:instance effects-copydata-pre))
-           :in-theory (e/d* ()
-                            ((pre-clk) pre-clk force (force))))))
-
 (defthm effects-copyData-pre-return-address-projection
   (implies (preconditions n addr x86)
            (equal (mv-nth 1
@@ -2500,16 +2201,6 @@
            :in-theory (e/d* (canonical-address-p-limits-thm-3)
                             ((pre-clk) pre-clk force (force)
                              preconditions)))))
-
-(encapsulate
- ()
-
- (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-
- (defthm mod-thm-2
-   (implies (natp n)
-            (equal (mod (ash n 2) 4) 0))
-   :hints (("Goal" :in-theory (e/d* (ash) ())))))
 
 (defthm preconditions-implies-loop-preconditions-after-pre-clk
   (implies (and (preconditions n addr x86)
@@ -2995,7 +2686,7 @@
                             :r x86)))))
        ;; All program addresses are canonical.
        (canonical-address-p addr)
-       ;; Why not (canonical-address-p (+ -1 (len *copyData*) addr))?
+       ;; [Shilpi]: Why not (canonical-address-p (+ -1 (len *copyData*) addr))?
        ;; In case of instructions like ret and jump, hyp 20 of
        ;; x86-fetch-decode-execute-opener doesn't apply. Modify?
        ;; (CANONICAL-ADDRESS-P$INLINE (BINARY-+ '2 (XR ':RIP '0 X86)))
