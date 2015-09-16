@@ -457,6 +457,12 @@ USEFUL ENVIRONMENT VARIABLES
          certification attempts, since in that case you may want to inspect
          it.)
 
+    CERT_PL_TEMP_DIR (default: "")
+         Can be set to a directory to instruct cert.pl to use this other
+         directory for temporary files such as workxxx files (which contain
+         certification instructions) and .cert.out files.  Note that this
+         does not affect .cert.time files.
+
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;

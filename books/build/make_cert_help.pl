@@ -64,6 +64,7 @@
 use warnings;
 use strict;
 use File::Spec;
+use File::Path qw(make_path);
 # problematic to get this from cpan on msys
 # use File::Which qw(which);
 use FindBin qw($RealBin);
@@ -279,7 +280,7 @@ sub extract_pbs_from_acl2file
 {
     # PBS directives placed in .acl2 files are extracted and used. An
     # example of a PBS directive is:
-    #   
+    #
     #    ;PBS -l host=<my-host-name>
 
     my $filename = shift;
@@ -338,6 +339,42 @@ sub scan_source_file
     close($fd);
 
      return ( $max_mem, $max_time, \@includes, \@pbs );
+}
+
+sub maybe_switch_to_tempdir
+{
+    # This implements CERT_PL_TEMP_DIR.  When CERT_PL_TEMP_DIR points to some
+    # temporary directory, we use that temporary directory for all temporary
+    # files such as workxxx files and .cert.out files.  We take two arguments:
+
+    my $fulldir     = shift;  # The dir where the .lisp file to certify is
+    my $tmpfilename = shift; # The temporary filename we want
+
+    # We essentially create TMPDIR/FULLDIR if it doesn't exist already, and
+    # then return TMPDIR/FULLDIR/TMPFILENAME.
+
+    my $tmpdir = $ENV{"CERT_PL_TEMP_DIR"};
+    if (!$tmpdir)
+    {
+	# NOT using CERT_PL_TEMP_DIR, so we don't want to do any of this,
+	# just create a temporary file in the current directory.
+	return $tmpfilename;
+    }
+    die "Invalid CERT_PL_TEMP_DIR: not a directory: $tmpdir\n" if (! -d $tmpdir);
+    die "Invalid $fulldir in maybe_switch_to_tempdir: $fulldir\n" if (! -d $fulldir);
+
+    (my $tmp_vol, my $tmp_dirs, undef) = File::Spec->splitpath($tmpdir, 1);
+    (undef, my $full_dirs, undef) = File::Spec->splitpath($fulldir, 1);
+    my $all_dirs = File::Spec->catdir($tmp_dirs, $full_dirs);
+    my $fullpath = File::Spec->catpath($tmp_vol, $all_dirs);
+    # print "Full path: $fullpath\n";
+    if (! -d $fullpath) {
+	make_path($fullpath);
+    }
+    my $ret = File::Spec->catpath($tmp_vol, $all_dirs, $tmpfilename);
+    # print "Changed $tmpfilename to $ret\n";
+
+    return $ret;
 }
 
 
@@ -436,6 +473,7 @@ my $TIME_CERT      = $ENV{"TIME_CERT"} ? 1 : 0;
 my $STARTJOB       = $ENV{"STARTJOB"} || "";
 my $ON_FAILURE_CMD = $ENV{"ON_FAILURE_CMD"} || "";
 my $ACL2           = $ENV{"ACL2"} || "acl2";
+
 # Figure out what ACL2 points to before we switch directories.
 
 if ($ENV{"ACL2_BIN_DIR"}) {
@@ -492,8 +530,11 @@ print "-- Entering directory $fulldir\n" if $DEBUG;
 chdir($fulldir) || die("Error switching to $fulldir: $!\n");
 
 my $status;
+
+
+
 my $timefile = "$file.$TARGETEXT.time";
-my $outfile = "$file.$TARGETEXT.out";
+my $outfile = maybe_switch_to_tempdir($fulldir, "$file.$TARGETEXT.out");
 
 print "-- Removing files to be generated.\n" if $DEBUG;
 
@@ -519,7 +560,7 @@ die("Can't determine which ACL2 to use.") if !$acl2;
 my $rnd = int(rand(2**30));
 my $tmpbase = "workxxx.$goal.$rnd";
 # upper-case .LISP so if it doesn't get deleted, we won't try to certify it
-my $lisptmp = "$tmpbase.LISP";
+my $lisptmp = maybe_switch_to_tempdir($fulldir, "$tmpbase.LISP");
 print "-- Temporary lisp file: $lisptmp\n" if $DEBUG;
 
 my $instrs = "";
@@ -571,9 +612,9 @@ $instrs .= "; portculli for included books:\n";
 foreach my $pair (@$includes) {
     my ($incname, $incdir) = @$pair;
     if ($incdir) {
-	$instrs .= "(acl2::ld \"$incname.port\" :dir :$incdir :ld-missing-input-ok t)\n"; 
+	$instrs .= "(acl2::ld \"$incname.port\" :dir :$incdir :ld-missing-input-ok t)\n";
     } else {
-	$instrs .= "(acl2::ld \"$incname.port\" :ld-missing-input-ok t)\n"; 
+	$instrs .= "(acl2::ld \"$incname.port\" :ld-missing-input-ok t)\n";
     }
 }
 
@@ -603,7 +644,7 @@ write_whole_file($lisptmp, $instrs);
 # ------------ TEMPORARY SHELL SCRIPT FOR RUNNING ACL2 ------------------------
 
 # upper-case .SH to agree with upper-case .LISP
-    my $shtmp = "$tmpbase.SH";
+    my $shtmp = maybe_switch_to_tempdir($fulldir, "$tmpbase.SH");
     my $shinsts = "#!/bin/sh\n\n";
 
 # If we find a set-max-mem line, add 3 gigs of padding for the stacks and to
@@ -771,4 +812,3 @@ print "-- Final result appears to be success.\n" if $DEBUG;
 # Else, we made it!
 system("ls -l '$goal'");
 exit(0);
-
