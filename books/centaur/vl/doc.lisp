@@ -27,13 +27,20 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-;
-; doc.lisp -- this is a home for high level documentation topics; keeping
-; this basically separated from the VL source code is just a way to let me
-; edit these topics without having to rebuild stuff as often.
 
 (in-package "VL")
 (include-book "xdoc/top" :dir :system)
+
+; -----------------------------------------------------------------------------
+;
+;                   High-Level VL Documentation Topics
+;
+; -----------------------------------------------------------------------------
+;
+; This file is just a home for high level documentation topics.  Most of these
+; topics could easily be put elsewhere, but keeping them separated from the VL
+; source code is convenient because it allows us to edit them without having to
+; rebuild any of the rest of VL.
 
 (defxdoc vl
   :parents (hardware-verification)
