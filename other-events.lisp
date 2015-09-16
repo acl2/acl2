@@ -2327,6 +2327,8 @@
 
 (defun union-augmented-theories-fn1 (lst1 lst2 ans)
 
+; Warning: Keep this in sync with union-augmented-theories-fn1+.
+
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their union as an
 ; unagumented runic theory.  See intersection-augmented-theories-fn1.
@@ -2405,30 +2407,26 @@
        (augment-theory lst2 wrld)
        nil))))))
 
-(defmacro union-theories (lst1 lst2)
+(defun union-augmented-theories-fn1+ (lst1 c1 lst2 ans)
 
-; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
+; Warning: Keep this in sync with union-augmented-theories-fn1.
+; This function returns (union-augmented-theories-fn1 lst1 lst2 ans)
+; when c1 is (strip-cdrs lst1).
 
-  (cond ((theory-fn-callp lst1)
-         (list 'union-theories-fn
-               lst1
-               lst2
-               t
-               'world))
-        ((theory-fn-callp lst2)
-         (list 'union-theories-fn
-               lst2
-               lst1
-               t
-               'world))
-        (t
-         (list 'union-theories-fn
-               lst1
-               lst2
-               nil
-               'world))))
+  (cond ((null lst1) (revappend ans (strip-cdrs lst2)))
+        ((null lst2) (revappend ans c1))
+        ((int= (car (car lst1)) (car (car lst2)))
+         (union-augmented-theories-fn1+ (cdr lst1) (cdr c1) (cdr lst2)
+                                        (cons (car c1) ans)))
+        ((> (car (car lst1)) (car (car lst2)))
+         (union-augmented-theories-fn1+ (cdr lst1) (cdr c1) lst2
+                                        (cons (car c1) ans)))
+        (t (union-augmented-theories-fn1+ lst1 c1 (cdr lst2)
+                                          (cons (cdr (car lst2)) ans)))))
 
 (defun set-difference-augmented-theories-fn1 (lst1 lst2 ans)
+
+; Warning: Keep this in sync with set-difference-augmented-theories-fn1+.
 
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their set-difference as
@@ -2442,6 +2440,23 @@
          (set-difference-augmented-theories-fn1
           (cdr lst1) lst2 (cons (cdr (car lst1)) ans)))
         (t (set-difference-augmented-theories-fn1 lst1 (cdr lst2) ans))))
+
+(defun set-difference-augmented-theories-fn1+ (lst1 c1 lst2 ans)
+
+; Warning: Keep this in sync with set-difference-augmented-theories-fn1.
+; This function returns (set-difference-augmented-theories-fn1 lst1 lst2 ans)
+; when c1 is (strip-cdrs lst1).
+
+  (cond ((null lst1) (revappend ans nil))
+        ((null lst2) (revappend ans c1))
+        ((= (car (car lst1)) (car (car lst2)))
+         (set-difference-augmented-theories-fn1+
+          (cdr lst1) (cdr c1) (cdr lst2) ans))
+        ((> (car (car lst1)) (car (car lst2)))
+         (set-difference-augmented-theories-fn1+
+          (cdr lst1) (cdr c1) lst2 (cons (car c1) ans)))
+        (t (set-difference-augmented-theories-fn1+
+            lst1 c1 (cdr lst2) ans))))
 
 (defun set-difference-theories-fn1 (lst1 lst2 nume wrld ans)
 
@@ -2498,15 +2513,174 @@
        (augment-theory lst2 wrld)
        nil))))))
 
+(defun no-augmented-rune-based-on (pairs symbols)
+
+; This function is analogous to no-rune-based-on but where members of the first
+; argument are not runes, but rather, are each of the form (nume . rune).
+
+  (cond ((null pairs) t)
+        ((member-eq (base-symbol (cdar pairs)) symbols)
+         nil)
+        (t (no-augmented-rune-based-on (cdr pairs) symbols))))
+
+(defun revappend-delete-augmented-runes-based-on-symbols1 (pairs symbols ans)
+
+; This function is analogous to revappend-delete-runes-based-on-symbols1, but
+; where members of the first argument are not runes, but rather, are each of
+; the form (nume . rune).
+
+  (cond ((null pairs) ans)
+        ((member-eq (base-symbol (cdr (car pairs))) symbols)
+         (revappend-delete-augmented-runes-based-on-symbols1
+          (cdr pairs) symbols ans))
+        (t (revappend-delete-augmented-runes-based-on-symbols1
+            (cdr pairs) symbols (cons (car pairs) ans)))))
+
+(defun revappend-delete-augmented-runes-based-on-symbols (pairs symbols ans)
+
+; This function is analogous to revappend-delete-runes-based-on-symbols, but
+; where members of the first argument are not runes, but rather, are each of
+; the form (nume . rune).
+
+  (cond ((or (null symbols) (no-augmented-rune-based-on pairs symbols))
+         (revappend ans pairs))
+        (t (reverse (revappend-delete-augmented-runes-based-on-symbols
+                     pairs symbols ans)))))
+
+(defun current-theory-fn (logical-name wrld)
+
+; We return the theory that was enabled in the world created by the
+; event that introduced logical-name.
+
+; See universal-theory-fn for an explanation of the production of wrld2.
+
+  (let* ((wrld1 (decode-logical-name logical-name wrld))
+         (redefined (collect-redefined wrld nil))
+         (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
+                                *acl2-property-unbound* wrld1)))
+    (prog2$
+     (or wrld1
+         (er hard 'current-theory
+             "The name ~x0 was not found in the current ACL2 logical ~
+              world; hence no current-theory can be computed for that name."
+             logical-name))
+     (assert$-runic-theoryp (current-theory1 wrld2 nil nil)
+                            wrld))))
+
+(defun current-theory1-augmented (lst ans redefined)
+
+; Warning: Keep this in sync with current-theory1.
+
+; Lst is a tail of a world.  This function returns the augmented runic theory
+; current in the world, lst.  Its definition is analogous to that of
+; current-theory1.
+
+  (cond ((null lst)
+         #+acl2-metering (meter-maid 'current-theory1-augmented 500)
+         (reverse ans)) ; unexpected, but correct
+        ((eq (cadr (car lst)) 'runic-mapping-pairs)
+         #+acl2-metering (setq meter-maid-cnt (1+ meter-maid-cnt))
+         (cond
+          ((eq (cddr (car lst)) *acl2-property-unbound*)
+           (current-theory1-augmented (cdr lst) ans
+                                      (add-to-set-eq (car (car lst))
+                                                     redefined)))
+          ((member-eq (car (car lst)) redefined)
+           (current-theory1-augmented (cdr lst) ans redefined))
+          (t
+           (current-theory1-augmented (cdr lst)
+                                      (append (cddr (car lst)) ans)
+                                      redefined))))
+        ((and (eq (car (car lst)) 'current-theory-augmented)
+              (eq (cadr (car lst)) 'global-value))
+
+; We append the reverse of our accumulated ans to the appropriate standard
+; theory, but deleting all the redefined runes.
+
+         #+acl2-metering (meter-maid 'current-theory1-augmented 500)
+         (revappend-delete-augmented-runes-based-on-symbols (cddr (car lst))
+                                                            redefined ans))
+        (t
+         #+acl2-metering (setq meter-maid-cnt (1+ meter-maid-cnt))
+         (current-theory1-augmented (cdr lst) ans redefined))))
+
+(defun union-current-theory-fn (lst2 wrld)
+
+; This function returns, with an optimized computation, the value
+; (union-theories-fn (current-theory :here) lst2 t wrld).
+
+  (check-theory
+   lst2 wrld 'union-current-theory-fn
+   (let ((w ; as in current-theory-fn, we apply decode-logical-name
+          (scan-to-event wrld)))
+     (union-augmented-theories-fn1+
+      (current-theory1-augmented w nil nil)
+      (current-theory1 w nil nil)
+      (augment-theory lst2 wrld)
+      nil))))
+
+(defmacro union-theories (lst1 lst2)
+
+; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
+
+  (cond ((equal lst1 '(current-theory :here)) ; optimization
+         (list 'union-current-theory-fn
+               lst2
+               'world))
+        ((equal lst2 '(current-theory :here)) ; optimization
+         (list 'union-current-theory-fn
+               lst1
+               'world))
+        ((theory-fn-callp lst1)
+         (list 'union-theories-fn
+               lst1
+               lst2
+               t
+               'world))
+        ((theory-fn-callp lst2)
+         (list 'union-theories-fn
+               lst2
+               lst1
+               t
+               'world))
+        (t
+         (list 'union-theories-fn
+               lst1
+               lst2
+               nil
+               'world))))
+
+(defun set-difference-current-theory-fn (lst2 wrld)
+
+; This function returns, with an optimized computation, the value
+; (set-difference-theories-fn (current-theory :here)
+;                             lst2
+;                             t ; (theory-fn-callp '(current-theory :here))
+;                             wrld).
+
+  (check-theory
+   lst2 wrld 'set-difference-current-theory-fn
+   (let ((w ; as in current-theory-fn, we apply decode-logical-name
+          (scan-to-event wrld)))
+     (set-difference-augmented-theories-fn1+
+      (current-theory1-augmented w nil nil)
+      (current-theory1 w nil nil)
+      (augment-theory lst2 wrld)
+      nil))))
+
 (defmacro set-difference-theories (lst1 lst2)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  (list 'set-difference-theories-fn
-        lst1
-        lst2
-        (theory-fn-callp lst1)
-        'world))
+  (cond ((equal lst1 '(current-theory :here)) ; optimization
+         (list 'set-difference-current-theory-fn
+               lst2
+               'world))
+        (t (list 'set-difference-theories-fn
+                 lst1
+                 lst2
+                 (theory-fn-callp lst1)
+                 'world))))
 
 ; Now we define a few useful theories.
 
@@ -2716,26 +2890,6 @@
         (function-theory-fn1 :definition wrld nil nil)
         (function-theory-fn1 :executable-counterpart wrld nil nil)
         (function-theory-fn1 :both wrld nil nil)))
-
-(defun current-theory-fn (logical-name wrld)
-
-; We return the theory that was enabled in the world created by the
-; event that introduced logical-name.
-
-; See universal-theory-fn for an explanation of the production of wrld2.
-
-  (let* ((wrld1 (decode-logical-name logical-name wrld))
-         (redefined (collect-redefined wrld nil))
-         (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
-                                *acl2-property-unbound* wrld1)))
-    (prog2$
-     (or wrld1
-         (er hard 'current-theory
-             "The name ~x0 was not found in the current ACL2 logical ~
-              world; hence no current-theory can be computed for that name."
-             logical-name))
-     (assert$-runic-theoryp (current-theory1 wrld2 nil nil)
-                            wrld))))
 
 (defmacro current-theory (logical-name)
 
@@ -3171,21 +3325,17 @@
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  (list 'set-difference-theories-fn
+  (list 'set-difference-theories
         '(current-theory :here)
-        (kwote rst)
-        t
-        'world))
+        (kwote rst)))
 
 (defmacro enable (&rest rst)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  (list 'union-theories-fn
+  (list 'union-theories
         '(current-theory :here)
-        (kwote rst)
-        t
-        'world))
+        (kwote rst)))
 
 ; The theory-invariant-table maps arbitrary keys to translated terms
 ; involving only the variables THEORY and STATE:
