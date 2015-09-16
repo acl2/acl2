@@ -55,6 +55,8 @@ Extending ACL2 with SMT Solvers
 ----------
 
 Sol Swords and Jared Davis
-Fix Your Types: A Datatype Definition Library for Unconditional Type Reasoning
+Fix Your Types
+
+The FTY library described in this paper is located in books/centaur/fty.
 
 ----------
