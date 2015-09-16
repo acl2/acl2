@@ -12492,6 +12492,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     get-stobj-creator
     restore-iprint-ar-from-wormhole
     ld-fix-command
+    update-enabled-structure-array
+    update-enabled-structure
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -19750,6 +19752,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     trace-evisceration-alist ; returns bad object
 
     oracle-apply-raw
+
+    update-enabled-structure-array ; many assumptions for calling correctly
 
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
 ; ability to call :puff.  It now seems unnecessary to include

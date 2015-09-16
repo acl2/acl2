@@ -4221,8 +4221,10 @@
                     function-theory-fn
                     intersection-theories-fn
                     set-difference-theories-fn
+                    set-difference-current-theory-fn
                     theory-fn
                     union-theories-fn
+                    union-current-theory-fn
                     universal-theory-fn))
        t))
 
@@ -4351,6 +4353,8 @@
 
 (defun current-theory1 (lst ans redefined)
 
+; Warning: Keep this in sync with current-theory1-augmented.
+
 ; Lst is a cdr of wrld.  We wish to return the enabled theory as of the time
 ; lst was wrld.  When in-theory is executed it stores the newly enabled theory
 ; under the 'global-value of the variable 'current-theory.  When new rule names
@@ -4403,28 +4407,29 @@
                            (cdr l)
                            (cons (car l) ac)))))
 
-(defun longest-common-tail-length-rec (old new acc)
-  (declare (type (signed-byte 30) acc))
+(defun longest-common-tail-length-rec (old new len-old acc)
+  (declare (type (signed-byte 30) acc len-old))
   #-acl2-loop-only
   (when (eq old new)
-    (return-from longest-common-tail-length-rec (+ (length old) acc)))
+    (return-from longest-common-tail-length-rec (+ len-old acc)))
   (cond ((endp old)
          (assert$ (null new)
                   acc))
         (t (longest-common-tail-length-rec (cdr old)
                                            (cdr new)
+                                           (1-f len-old)
                                            (if (equal (car old) (car new))
                                                (1+f acc)
                                              0)))))
 
-(defun longest-common-tail-length (old new)
+(defun longest-common-tail-length (old new len-old)
 
 ; We separate out this wrapper function so that we don't need to be concerned
 ; about missing the #-acl2-loop-only case in the recursive computation, which
 ; could perhaps happen if we are in safe-mode and oneification prevents escape
 ; into Common Lisp.
 
-  (longest-common-tail-length-rec old new 0))
+  (longest-common-tail-length-rec old new len-old 0))
 
 (defun extend-current-theory (old-th new-th old-aug-th wrld)
 
@@ -4438,15 +4443,17 @@
          (len-new (length new-th))
          (len-common
           (cond ((int= len-old len-new)
-                 (longest-common-tail-length old-th new-th))
+                 (longest-common-tail-length old-th new-th len-old))
                 ((< len-old len-new)
                  (longest-common-tail-length
                   old-th
-                  (nthcdr (- len-new len-old) new-th)))
+                  (nthcdr (- len-new len-old) new-th)
+                  len-old))
                 (t
                  (longest-common-tail-length
                   (nthcdr (- len-old len-new) old-th)
-                  new-th))))
+                  new-th
+                  len-new))))
          (take-new (- len-new len-common))
          (nthcdr-old (- len-old len-common))
          (new-part-of-new-rev
@@ -4454,12 +4461,12 @@
                                               'extend-current-theory)
                           new-th
                           nil)))
-    (mv (append (reverse new-part-of-new-rev)
-                (nthcdr nthcdr-old old-th))
+    (mv (revappend new-part-of-new-rev
+                   (nthcdr nthcdr-old old-th))
         (if (eq old-aug-th :none)
             :none
-          (append (augment-runic-theory1 new-part-of-new-rev nil wrld nil)
-                  (nthcdr nthcdr-old old-aug-th))))))
+          (augment-runic-theory1 new-part-of-new-rev nil wrld
+                                 (nthcdr nthcdr-old old-aug-th))))))
 
 (defun update-current-theory (theory0 wrld)
   (mv-let (theory theory-augmented)
