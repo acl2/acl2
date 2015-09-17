@@ -92,7 +92,7 @@ def gen(inf, outf, py_exe, py_file, ex_file):
     wt.close()
 
 def main(argv):
-    inf = "config-template"
+    inf = "config-template.lisp"
     outf = "config.lisp"
     py_exe = "nil"
     py_file = "nil"
