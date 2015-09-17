@@ -2544,7 +2544,7 @@
 
   (cond ((or (null symbols) (no-augmented-rune-based-on pairs symbols))
          (revappend ans pairs))
-        (t (reverse (revappend-delete-augmented-runes-based-on-symbols
+        (t (reverse (revappend-delete-augmented-runes-based-on-symbols1
                      pairs symbols ans)))))
 
 (defun current-theory-fn (logical-name wrld)
