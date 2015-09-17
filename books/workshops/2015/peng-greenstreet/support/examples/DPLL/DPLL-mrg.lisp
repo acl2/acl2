@@ -243,7 +243,7 @@
 	   (nco-ok nco2 g1 v0))
   :hints(("Goal'''"
     :clause-processor
-    (smtlink-custom-config clause (smt-std-hint "monotonicity-of-nco-ok") state))))
+    (smtlink-custom-config clause (smt-std-hint "monotonicity-of-nco-ok")))))
 
 (defthm rationalp-of-m-and-fdco
   (implies (and (hyp-macro g1 Kt v0 dv) (integerp n) (nco-ok (- n) g1 v0))
@@ -357,7 +357,7 @@
       ("Goal"
 	:in-theory (enable B-term B-term-expt B-term-rest mu equ-c gamma dv0)
 	:clause-processor
-	(smtlink-custom-config clause (smt-std-hint "B-term-neg") state)))
+	(smtlink-custom-config clause (smt-std-hint "B-term-neg") )))
     :rule-classes :linear)
 
 ; B_sum-neg: show that the sum of a bunch of B-term pairs is negative.
@@ -389,8 +389,7 @@
 	     (expt rationalp integerp rationalp)
 	     (B_sum integerp integerp rationalp rationalp rationalp rationalp  rationalp)))
 	   (:python-file "B-neg")
-	   (:hypothesize ((< (B_sum 1 (+ -2 n) v0 dv g1 Kt) 0))))
-	state))
+	   (:hypothesize ((< (B_sum 1 (+ -2 n) v0 dv g1 Kt) 0))))))
     ("Subgoal 2"
       :in-theory (enable hyp-fn)
       :use ((:instance B_sum-neg (n-minus-2 (+ -2 n)) (v0 v0) (dv dv) (g1 g1) (Kt Kt))))))
@@ -550,7 +549,7 @@
 		   (+ 1 (gamma Kt)))))
     :hints(("Goal''" :in-theory (enable delta-a aa equ-c equ-nc fdco gamma m mu)
 	     :clause-processor
-	     (smtlink-custom-config clause (smt-std-hint "delta-a-bound") state)))))
+	     (smtlink-custom-config clause (smt-std-hint "delta-a-bound") )))))
 
 
   ;; this takes z3 6 minutes on my laptop -- I might break it into a few simpler lemmas.
@@ -561,7 +560,7 @@
 		(* (expt (gamma Kt) (- -3 nco-3)) *beta* g1 (/ (mu)) (/ (+ 2 (* *alpha* v0))) -13/16)))
     :hints(("Goal''" :in-theory (enable delta-b bb equ-c equ-nc fdco gamma m mu)
 	     :clause-processor
-	     (smtlink-custom-config clause (smt-std-hint "delta-b-bound") state)))))
+	     (smtlink-custom-config clause (smt-std-hint "delta-b-bound") )))))
 
 
   (local (defthm lemma-1  ; the key inequality for showing (< (delta ...)  0)
@@ -571,7 +570,7 @@
 		   (* (expt (gamma Kt) (- -3 nco-3)) *beta* g1 (/ (mu)) (/ (+ 2 (* *alpha* v0))) -13/16)) 0))
     :hints(("Goal''" :in-theory (enable gamma mu)
 	     :clause-processor
-	     (smtlink-custom-config clause (smt-std-hint "lemma-1") state)))))
+	     (smtlink-custom-config clause (smt-std-hint "lemma-1") )))))
 
   (enable-theory (theory 'arithmetic-book-only))
 
@@ -633,7 +632,7 @@
 			     (lemma-rationalp-of-a-bound)
 			     (lemma-rationalp-of-bb)))
 		    (:hypo ( (delta-a-bound) (b-bound-corollary) (lemma-1-corollary))))))
-	    state)))))
+	    )))))
 
   (defthm delta-<-0
     (implies (and (hyp-fn (list :g1 g1 :Kt Kt :v0 v0 :dv dv))
@@ -704,7 +703,7 @@
   :hints (("Goal"
            :in-theory (enable delta equ-c fdco mu gamma m)
            :clause-processor
-           (smtlink-custom-config clause (smt-std-hint "delta_smaller_than_0") state))))
+           (smtlink-custom-config clause (smt-std-hint "delta_smaller_than_0") ))))
 
 (defun delta-3 (n v0 dv g1 Kt)
   (* (expt (gamma Kt) (+ -1 n -1 n))
@@ -730,7 +729,7 @@
              (equal (delta n v0 dv g1 Kt) (delta-3 n v0 dv g1 Kt)))
     :hints (("Goal" :in-theory (enable delta delta-3 equ-c fdco mu gamma m A phi-2n-1)
 		    :clause-processor
-		      (smtlink-custom-config clause (smt-std-hint "delta-rewrite-5") state)))))
+		      (smtlink-custom-config clause (smt-std-hint "delta-rewrite-5") )))))
 
 
 ;(defun delta-3-inside (n v0 dv g1)

@@ -48,7 +48,7 @@ import getopt
 import re
 
 def is_marker(mk):
-    if (mk == ";; Insert-code-for-default-smtlink-config\n"):
+    if (mk == "(defconst *default-smtlink-config* (make-smtlink-config :dir-interface nil :dir-files nil :SMT-module nil :SMT-class nil :smt-cmd nil :dir-expanded nil))\n"):
         return True
     else:
         return False
@@ -92,7 +92,7 @@ def gen(inf, outf, py_exe, py_file, ex_file):
     wt.close()
 
 def main(argv):
-    inf = "config-template.lisp"
+    inf = "config-template"
     outf = "config.lisp"
     py_exe = "nil"
     py_file = "nil"

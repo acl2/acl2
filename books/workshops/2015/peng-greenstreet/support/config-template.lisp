@@ -17,7 +17,7 @@
    dir-expanded)
   :tag :smtlink-config)
 
-;; Insert-code-for-default-smtlink-config
+(defconst *default-smtlink-config* (make-smtlink-config :dir-interface nil :dir-files nil :SMT-module nil :SMT-class nil :smt-cmd nil :dir-expanded nil))
 
 (encapsulate
   (((smt-cnf) => *))
