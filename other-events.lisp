@@ -22145,7 +22145,7 @@
                                      (cond
                                       (extra ; always true?
                                        (msg
-                                        "~ ~ Additional bindings: ~x0"
+                                        "~ ~ Additional bindings: ~X0t"
                                         extra))
                                       (t ""))))
                              (cons #\c (if (eq caller 'show-rewrites) 0 1))
