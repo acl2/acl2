@@ -48,7 +48,7 @@ import getopt
 import re
 
 def is_marker(mk):
-    if (mk == ";; Insert-code-for-default-smtlink-config\n"):
+    if (mk == "(defconst *default-smtlink-config* (make-smtlink-config :dir-interface nil :dir-files nil :SMT-module nil :SMT-class nil :smt-cmd nil :dir-expanded nil))\n"):
         return True
     else:
         return False
