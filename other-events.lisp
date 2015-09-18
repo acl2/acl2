@@ -22094,7 +22094,8 @@
                   (cons #\2 (if enabledp 0 1)))
             (standard-co state) state nil)
        (let ((fmt-string
-              "~ ~ ~#c~[New term~/Conclusion~]: ~Y3t~|~
+              "~@x~|~
+               ~ ~ ~#c~[New term~/Conclusion~]: ~Y3t~|~
                ~ ~ Hypotheses: ~#b~[<none>~/~Y4t~]~|~
                ~#c~[~ ~ Equiv: ~ye~|~/~]~
                ~#s~[~/~ ~ Substitution: ~Yat~|~]~
@@ -22105,7 +22106,8 @@
                and hence will apparently be impossible to relieve.~]~|"))
          (pprogn
           (fms fmt-string
-               (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+               (list (cons #\x "")
+                     (cons #\c (if (eq caller 'show-rewrites) 0 1))
                      (cons #\3 (untrans0 subst-rhs term-id-iff
                                          abbreviations))
                      (cons #\s (if pl-p 1 0))
@@ -22124,13 +22126,29 @@
                (standard-co state) state nil)
           (cond (show-more
                  (pprogn
-                  (cond (pl-p state)
-                        (t (fms0 "  -- IF ~#c~[REWRITE~/APPLY-LINEAR~]: is ~
-                                  called with a third argument of t: --"
-                                 (list (cons #\c (if (eq caller 'show-rewrites)
-                                                     0 1))))))
+                  (cond
+                   (pl-p state)
+                   (t
+                    (fms0 "  -- IF ~#c~[REWRITE~/APPLY-LINEAR~] is called ~
+                           with a third argument of t: --"
+                          (list (cons #\c (if (eq caller 'show-rewrites)
+                                              0 1))))))
                   (fms fmt-string
-                       (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+                       (list (cons #\x
+                                   (let ((extra
+                                          (untranslate-subst-abb
+                                           (alist-difference-eq
+                                            unify-subst-2
+                                            unify-subst)
+                                           abbreviations
+                                           state)))
+                                     (cond
+                                      (extra ; always true?
+                                       (msg
+                                        "~ ~ Additional bindings: ~x0"
+                                        extra))
+                                      (t ""))))
+                             (cons #\c (if (eq caller 'show-rewrites) 0 1))
                              (cons #\3 (untrans0
                                         (sublis-var unify-subst-2 rhs)
                                         term-id-iff abbreviations))
