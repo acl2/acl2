@@ -14,8 +14,7 @@
 (deftheory arithmetic-book-only (set-difference-theories (theory 'after-arith) (theory 'before-arith)))
 
 ;; for the clause processor to work
-(add-include-book-dir :cp "../../")
-(include-book "top" :dir :cp)
+(include-book "../../top")
 (tshell-ensure)
 
 ;; functions
