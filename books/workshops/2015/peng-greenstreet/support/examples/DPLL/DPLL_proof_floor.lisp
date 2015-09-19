@@ -8,6 +8,9 @@
 (in-package "ACL2")
 (include-book "global")
 
+;; [Jared] Avoid certifying this file unless Smtlink is installed
+;; cert_param: (uses-smtlink)
+
 (deftheory before-arith (current-theory :here))
 (include-book "arithmetic/top-with-meta" :dir :system)
 (deftheory after-arith (current-theory :here))
@@ -16,7 +19,7 @@
 
 ;; for the clause processor to work
 (include-book "../../top")
-(tshell-ensure)
+(value-triple (tshell-ensure))
 
 ;; functions
 ;; n can be a rational value when c starts from non-integer value
