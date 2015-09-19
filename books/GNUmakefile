@@ -259,6 +259,11 @@ ifdef GLUCOSE_EXISTS
   OS_HAS_GLUCOSE := 1
 endif # ifdef GLUCOSE_EXISTS
 
+$(info Determining whether Smtlink is supported -- BOZO todo, for now pretending it does not!)
+# BOZO TODO figure out how to do this right.  For now, just say that SMTLINK
+OS_HAS_SMTLINK :=
+
+
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
 -include $(BUILD_DIR)/Makefile-features
@@ -269,6 +274,7 @@ $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
 $(info ACL2_HOST_LISP    := $(ACL2_HOST_LISP))
 $(info OS_HAS_GLUCOSE    := $(OS_HAS_GLUCOSE))
+$(info OS_HAS_SMTLINK    := $(OS_HAS_SMTLINK))
 $(info USE_QUICKLISP     := $(USE_QUICKLISP))
 $(info Done with features.)
 
@@ -371,11 +377,14 @@ OK_CERTS := $(filter-out $(CERT_PL_ANSI_ONLY), $(OK_CERTS))
 endif # ifeq ($(ACL2_HAS_ANSI), )
 
 ifeq ($(OS_HAS_GLUCOSE), )
-
 $(info Excluding books that need Glucose: [$(CERT_PL_USES_GLUCOSE)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_GLUCOSE), $(OK_CERTS))
+endif
 
-endif # ifeq ($(OS_HAS_GLUCOSE), )
+ifeq ($(OS_HAS_SMTLINK), )
+$(info Excluding books that need Smtlink: [$(CERT_PL_USES_SMTLINK)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_SMTLINK), $(OK_CERTS))
+endif
 
 
 ifeq ($(ACL2_HAS_REALS), )
@@ -1160,6 +1169,9 @@ unicode: $(filter unicode/%, $(OK_CERTS))
 
 .PHONY: xdoc
 xdoc: $(filter-out xdoc/tests/%, $(filter xdoc/%, $(OK_CERTS)))
+
+.PHONY: smtlink
+smtlink: $(filter workshops/2015/peng-greenstreet/%, $(OK_CERTS))
 
 
 .PHONY: workshops \

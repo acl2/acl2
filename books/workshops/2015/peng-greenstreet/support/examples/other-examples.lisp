@@ -13,6 +13,9 @@
 (include-book "../top")
 (value-triple (tshell-ensure))
 
+;; [Jared] Avoid certifying this file unless Smtlink is installed
+;; cert_param: (uses-smtlink)
+
 
 ;; 2.1 A simple example
 (defthm A-simple-example

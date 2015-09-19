@@ -10,6 +10,9 @@
 (include-book "../top")
 (value-triple (tshell-ensure))
 
+;; [Jared] Avoid certifying this file unless Smtlink is installed
+;; cert_param: (uses-smtlink)
+
 ;; Section 2. A short tour
 ;; Example 1
 (defthm poly-ineq-example

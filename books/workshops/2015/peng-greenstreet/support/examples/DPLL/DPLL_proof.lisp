@@ -7,6 +7,9 @@
 (in-package "ACL2")
 (include-book "global")
 
+;; [Jared] Avoid certifying this file unless Smtlink is installed
+;; cert_param: (uses-smtlink)
+
 (deftheory before-arith (current-theory :here))
 (include-book "arithmetic/top-with-meta" :dir :system)
 (deftheory after-arith (current-theory :here))
