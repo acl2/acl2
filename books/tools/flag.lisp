@@ -352,8 +352,8 @@ one such form may affect what you might think of as the proof of another.</p>
 
 (defun get-clique-members (fn world)
   (or (getprop fn 'recursivep nil 'current-acl2-world world)
-      (er hard 'get-clique-members "Expected ~s0 to be in a mutually-recursive nest.~%"
-          fn)))
+      (er hard 'get-clique-members
+          "Expected ~s0 to be in a mutually-recursive nest.~%" fn)))
 
 (defun get-formals (fn world)
   (getprop fn 'formals :none 'current-acl2-world world))
@@ -1230,12 +1230,14 @@ on (say) x, but does a similar substitution on y, e.g.,</p>
   (let* ((formals (get-formals f w))
          (ind-machine (getprop f 'acl2::induction-machine :none 'current-acl2-world w)))
     (cond ((eq formals :none)
-           (er hard? 'def-doublevar-induction-fn "Not a function -- no formals~%"))
+           (er hard? 'def-doublevar-induction-fn
+               "~x0 is not a function -- no formals~%" f))
           ((not (member-eq old-var formals))
-           (er hard? 'def-doublevar-induction-fn "~x0 is not an existing formal of ~x1~%"
-               old-var f))
+           (er hard? 'def-doublevar-induction-fn
+               "~x0 is not an existing formal of ~x1~%" old-var f))
           ((eq ind-machine :none)
-           (er hard? 'def-doublevar-induction-fn "No induction machine -- not singly recursive?~%"))
+           (er hard? 'def-doublevar-induction-fn
+               "~x0 has no induction machine -- not singly recursive?~%" f))
           (t
            (let* ((measure (get-measure f w))
                   (wfr (get-wfr f w))
