@@ -2804,26 +2804,31 @@
             #+(or ccl sbcl)
             ,@(and *record-bytes* `(,*mf-start-bytes*))))
      (,(cond ((or *record-pons-calls*
-                  *record-bytes*
+                  #+(or ccl sbcl) *record-bytes*
                   *record-time*
                   forget)
 
-; The test above is the condition under which there are forms following the
-; inner-body call below.  If there are no such forms, we simply lay down a
+; The test above is the condition under which there are statistics-gathering
+; forms following the inner-body call below.  In this case, there is at least
+; one statistics-gathering form following the inner-body form, below.  There is
+; then the danger that when computations are aborted, some of the statistics
+; might be skewed, and some tables might not be flushed when forget is true.
+; However, we usually don't want to pay the price of using unwind-protect to
+; avoid such problems, because very simple experiments have shown that prog1
+; and multiple-value-prog1 are much cheaper than unwind-protect.  However, we
+; make it possible for users to ensure execution of statistics-gathering forms,
+; at some cost to performance, by setting state global
+; 'protect-memoize-statistics before memoizing their functions.
+
+              (if (f-get-global 'protect-memoize-statistics *the-live-state*)
+                  'unwind-protect-disable-interrupts-during-cleanup
+                prog1-fn))
+             (t
+
+; There are no statistics-gathering forms to protect, so we simply lay down a
 ; progn (which presumably will be compiled away).
 
-              prog1-fn)
-             (t 'progn))
-
-; At one time we used unwind-protect here (actually, we used
-; unwind-protect-disable-interrupts-during-cleanup).  But some very simple
-; experiments show that prog1 and multiple-value-prog1 are much cheaper than
-; unwind-protect, even if we introduce *caller* and start-ticks as special
-; variables (so that they can be let-bound) instead of defg.  Maybe that's in
-; the noise, but it seems worth trying, even if when aborting computations,
-; some of the statistics are skewed or, if forget is true, some tables fail to
-; be flushed.
-
+              'progn))
       ,(cond ((or *record-bytes*
                   *record-calls*
                   *record-hits*

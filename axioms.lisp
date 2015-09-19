@@ -13123,6 +13123,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (proof-tree-indent . "|  ")
     (proof-tree-start-printed . nil)
     (proofs-co . acl2-output-channel::standard-character-output-0)
+    (protect-memoize-statistics . nil)
     (raw-arity-alist . nil)
     (raw-include-book-dir!-alist . :ignore)
     (raw-include-book-dir-alist . :ignore)
