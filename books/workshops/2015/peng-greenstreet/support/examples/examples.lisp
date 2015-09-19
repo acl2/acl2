@@ -8,7 +8,7 @@
 (in-package "ACL2")
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "../top")
-(tshell-ensure)
+(value-triple (tshell-ensure))
 
 ;; Section 2. A short tour
 ;; Example 1

@@ -16,7 +16,7 @@
 
 ;; for the clause processor to work
 (include-book "../../top")
-(tshell-ensure)
+(value-triple (tshell-ensure))
 
 ;; functions
 ;; n can be a rational value when c starts from non-integer value

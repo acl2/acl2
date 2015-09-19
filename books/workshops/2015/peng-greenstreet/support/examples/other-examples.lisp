@@ -11,7 +11,7 @@
 
 (include-book "arithmetic/top" :dir :system)
 (include-book "../top")
-(tshell-ensure)
+(value-triple (tshell-ensure))
 
 
 ;; 2.1 A simple example
