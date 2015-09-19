@@ -220,3 +220,69 @@
         (not (str::substrp "@(def |XDOC|::|DET2-F3-IDENTITY|)" long)))))
 
 
+#||
+
+; Error Reporting Tests.
+;
+; These are meant to be run interactively because the goal is to test out how
+; defsection output looks when various errors occur.
+
+;; --- These should report an error at the top level with macro-expansion. ---
+
+;; [Great] no noise:
+(defsection)
+
+;; [Ugly] extra nonsense about TOP-LEVEL and macroexpansion failing.
+(defsection nil)
+(defsection "error with name")
+(defsection "error with name" (defun oops (x) x))
+
+
+;; --- These should report an error with the xdoc form. ---
+
+;; [Great] no noise:
+(defsection oops :short 17 :autodoc nil)
+(defsection oops :long 17 :autodoc nil)
+(defsection oops :parents 17 :autodoc nil (defun blah))
+(defsection oops :short 17 :autodoc nil (defun blah))
+(defsection oops :long 17 :autodoc nil (defun blah))
+(defsection oops :parents 17 :autodoc nil)
+(defsection oops :parents 17)
+(defsection oops :short 17)
+(defsection oops :long 17)
+
+;; [Ugly] big pile of "encapsulate" messages after the error.
+(defsection oops :parents 17 (defun blah))
+(defsection oops :short 17 (defun blah))
+(defsection oops :long 17 (defun blah))
+
+;; --- Extension not allowed with other xdoc args ---
+
+;; [Ugly] extra nonsense about TOP-LEVEL and macroexpansion failing
+(defsection oops :extension (append) :short "Hello")
+(defsection oops :extension (append) :short "Hello" :autodoc nil)
+(defsection oops :extension (append) :short "Hello" (defun blah))
+(defsection oops :extension (append) :short "Hello" :autodoc nil (defun blah))
+(defsection oops :extension (append) :autodoc nil)
+(defsection oops :extension (append) :autodoc nil (defun blah))
+
+;; --- Extending topic that doesn't exist ---
+
+;; [Ugly] Error in (table xdoc) nonsense
+(defsection oops :extension (this-should-never-exist))
+
+;; [Ugly] big pile of "encapsulate" messages, as above
+(defsection oops :extension (this-should-never-exist) (defun blah))
+
+;; [Ugly] error in TOP-LEVEL nonsense about macroexpansion
+(defsection oops :extension (this-should-never-exist) :autodoc nil)
+(defsection oops :extension (this-should-never-exist) :autodoc nil (defun blah))
+
+;; --- Errors in internal forms ---
+
+;; [Ugly] big pile of "encapsulate" messages and ugly encapsulate summary
+(defsection oops (defun blah))
+(defsection oops :autodoc nil (defun blah))
+
+
+||#
