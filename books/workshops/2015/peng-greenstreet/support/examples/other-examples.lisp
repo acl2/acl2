@@ -10,8 +10,7 @@
 (in-package "ACL2")
 
 (include-book "arithmetic/top" :dir :system)
-(add-include-book-dir :cp "../")
-(include-book "top" :dir :cp)
+(include-book "../top")
 (tshell-ensure)
 
 

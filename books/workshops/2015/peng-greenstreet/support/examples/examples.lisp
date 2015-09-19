@@ -7,8 +7,7 @@
 
 (in-package "ACL2")
 (include-book "arithmetic-5/top" :dir :system)
-(add-include-book-dir :cp "../")
-(include-book "top" :dir :cp)
+(include-book "../top")
 (tshell-ensure)
 
 ;; Section 2. A short tour
