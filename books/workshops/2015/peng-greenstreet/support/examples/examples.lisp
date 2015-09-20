@@ -42,9 +42,9 @@
                                   ))))
 
 ;; Buggy example
-(defthm non-theorem
-  (implies (and (rationalp x)
-                (rationalp y)
-                (integerp (/ x y)))
-           (not (equal y 0)))
-       :hints(("Goal" :clause-processor (Smtlink clause nil))))
+;; (defthm non-theorem
+;;   (implies (and (rationalp x)
+;;                 (rationalp y)
+;;                 (integerp (/ x y)))
+;;            (not (equal y 0)))
+;;        :hints(("Goal" :clause-processor (Smtlink clause nil))))
