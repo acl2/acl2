@@ -41,18 +41,73 @@
                JVM::BIPUSH
                JVM::CALOAD
                JVM::CASTORE
+               JVM::D2F
+               JVM::D2I
+               JVM::D2L
+               JVM::DADD
+               JVM::DALOAD
+               JVM::DASTORE
+               JVM::DCMPG
+               JVM::DCMPL
+               JVM::DCONST_0
+               JVM::DCONST_1
+               JVM::DDIV
+               JVM::DLOAD
+               JVM::DLOAD_0
+               JVM::DLOAD_1
+               JVM::DLOAD_2
+               JVM::DLOAD_3
+               JVM::DMUL
+               JVM::DNEG
+               JVM::DREM
+               JVM::DRETURN
+               JVM::DSTORE
+               JVM::DSTORE_0
+               JVM::DSTORE_1
+               JVM::DSTORE_2
+               JVM::DSTORE_3
+               JVM::DSUB
                JVM::DUP
                JVM::DUP_X1
                JVM::DUP_X2
                JVM::DUP2
                JVM::DUP2_X1
                JVM::DUP2_X2
+               JVM::F2D
+               JVM::F2I
+               JVM::F2L
+               JVM::FADD
+               JVM::FALOAD
+               JVM::FASTORE
+               JVM::FCMPG
+               JVM::FCMPL
+               JVM::FCONST_0
+               JVM::FCONST_1
+               JVM::FCONST_2
+               JVM::FDIV
+               JVM::FLOAD
+               JVM::FLOAD_0
+               JVM::FLOAD_1
+               JVM::FLOAD_2
+               JVM::FLOAD_3
+               JVM::FMUL
+               JVM::FNEG
+               JVM::FREM
+               JVM::FRETURN
+               JVM::FSTORE
+               JVM::FSTORE_0
+               JVM::FSTORE_1
+               JVM::FSTORE_2
+               JVM::FSTORE_3
+               JVM::FSUB
                JVM::GETFIELD
                JVM::GETSTATIC
                JVM::GOTO
                JVM::GOTO_W
                JVM::I2B
                JVM::I2C
+               JVM::I2D
+               JVM::I2F
                JVM::I2L
                JVM::I2S
                JVM::IADD
@@ -110,6 +165,8 @@
                JVM::IXOR
                JVM::JSR
                JVM::JSR_W
+               JVM::L2D
+               JVM::L2F
                JVM::L2I
                JVM::LADD
                JVM::LALOAD
@@ -265,6 +322,110 @@ J & George
 (defun shr (x n)
   (floor (* x (expt2 (- n))) 1))
 
+;; Floating-point command are implemented with a few flaws:
+;; 1) float-extended-exponent and double-extended-exponent value sets (JVM spec 2.3.2)
+;; are not implemented. So we can trust verification only strictp
+;; floating-point methods.
+;; 2) JVM spec is a little uncertain about NaN. It says that there is only one
+;; NaN value, but programmer can construct and inspect NaN bits by
+;; longBitsToDouble and doubleToRawLongBits methods. Hence JVM implementation
+;; might be a little different with respect to NaNs. The M5 model chooses some
+;; concrete treatment of NaN.
+
+;; We shall include "rtl/rel11/lib/excps" when ACL2(r) can certify it.
+(include-book "rtl/rel11/support/excps" :dir :system)
+
+(defconst *mxcsr*
+  (rtl::set-flag (rtl::imsk)
+   (rtl::set-flag (rtl::dmsk)
+    (rtl::set-flag (rtl::zmsk)
+     (rtl::set-flag (rtl::omsk)
+      (rtl::set-flag (rtl::umsk)
+       (rtl::set-flag (rtl::pmsk)
+        0)))))))  ; rne
+
+(defun int2fp (x dstf)
+  (mv-let (result flags)
+          (rtl::sse-round x *mxcsr* dstf)
+          (declare (ignore flags))
+          result))
+
+(defun fp2fp (x srcf dstf)
+  (cond ((rtl::nanp x srcf) (rtl::indef dstf))
+        ((rtl::infp x srcf) (rtl::iencode (rtl::sgnf x srcf) dstf))
+        ((rtl::zerp x srcf) (rtl::zencode (rtl::sgnf x srcf) dstf))
+        (t (mv-let (result flags)
+                   (rtl::sse-round (rtl::decode x srcf) *mxcsr* dstf)
+                   (declare (ignore flags))
+                   result))))
+
+(defun fp2int (x srcf dstw)
+  (cond ((rtl::nanp x srcf) 0)
+        ((rtl::infp x srcf) (if (= (rtl::sgnf x srcf) 1)
+                                (- (expt2 (1- dstw)))
+                                (1- (expt2 (1- dstw)))))
+        (t (min (max (truncate (rtl::decode x srcf) 1)
+                     (- (expt2 (1- dstw))))
+                (1- (expt2 (1- dstw)))))))
+
+(defun fpcmp (x y f nan)
+  (cond ((or (rtl::nanp x f) (rtl::nanp y f)) nan)
+        ((= x y) 0)
+        ((rtl::infp x f) (if (= (rtl::sgnf x f) 1) -1 +1))
+        ((rtl::infp y f) (if (= (rtl::sgnf y f) 1) +1 -1))
+        ((and (rtl::zerp x f) (rtl::zerp y f)) 0)
+        ((> (rtl::decode x f) (rtl::decode y f)) +1)
+        (t -1)))
+
+(defun fp-binary (op x y f)
+  (mv-let (result flags)
+          (rtl::sse-binary-spec op x y *mxcsr* f)
+          (declare (ignore flags))
+          result))
+
+(defun fpadd (x y f)
+  (fp-binary 'rtl::add x y f))
+
+(defun fpsub (x y f)
+  (fp-binary 'rtl::add x y f))
+
+(defun fpmul (x y f)
+  (fp-binary 'rtl::add x y f))
+
+(defun fpdiv (x y f)
+  (fp-binary 'rtl::add x y f))
+
+(defun fprem (x y f)
+  (cond ((or (rtl::nanp x f)
+             (rtl::nanp y f)
+             (rtl::infp x f)
+             (rtl::zerp y f))
+         (rtl::indef f))
+        ((or (rtl::zerp x f)
+             (rtl::infp y f))
+         x)
+        (t (mv-let (result flags)
+                   (rtl::sse-round (- (rtl::decode x f)
+                                      (* (truncate (rtl::decode x f)
+                                                   (rtl::decode y f))
+                                         (rtl::decode y f)))
+                                   *mxcsr*
+                                   f)
+                   (declare (ignore flags))
+                   result))))
+
+(defun fpneg (x f)
+  (fpsub (rtl::zencode 1 f) x f))
+
+(defun fpsqrt (x f)
+  (mv-let (result flags)
+          (rtl::sse-sqrt-spec x *mxcsr* f)
+          (declare (ignore flags))
+          result))
+
+(defun bits2fp (x f)
+  (if (rtl::nanp x f) (rtl::qnanize x f) x))
+
 ; -----------------------------------------------------------------------------
 ; States
 
@@ -379,16 +540,34 @@ J & George
 
 ; A constant pool is a list of entries.  Each entry is either:
 ;
+;  '(DOUBLE n)
+;       Where n is a 64-bit unsigned number, bit representation of double
+;
+;  '(FLOAT n)
+;       Where n is a 32-bit unsigned number, bit representation of float
+;
 ;  '(INT n)
 ;       Where n is a 32-bit number, in the range specified by the JVM spec
+;
+;  '(LONG n)
+;       Where n is a 64-bit number, in the range specified by the JVM spec
 ;
 ;  '(STRING (REF -1) "Hello, World!")
 ;       The 3rd element (a string) is resolved to a heap reference the
 ;       first time it is used.  Once it is resolved, its reference is placed
 ;       as the second element (displacing the null ref currently there).
 
+(defun cp-make-double-entry (n)
+  (list 'DOUBLE n))
+
+(defun cp-make-float-entry (n)
+  (list 'FLOAT n))
+
 (defun cp-make-int-entry (n)
   (list 'INT n))
+
+(defun cp-make-long-entry (n)
+  (list 'LONG n))
 
 (defun cp-make-string-entry (str)
   (list 'STRING '(REF -1) str))
@@ -882,18 +1061,74 @@ J & George
     (BIPUSH             2)
     (CALOAD             1)
     (CASTORE            1)
+    (D2F                1)
+    (D2I                1)
+    (D2L                1)
+    (DADD               1)
+    (DALOAD             1)
+    (DASTORE            1)
+    (DCMPG              1)
+    (DCMPL              1)
+    (DCONST_0           1)
+    (DCONST_1           1)
+    (DDIV               1)
+    (DLOAD              2)
+    (DLOAD_0            1)
+    (DLOAD_1            1)
+    (DLOAD_2            1)
+    (DLOAD_3            1)
+    (DMUL               1)
+    (DNEG               1)
+    (DREM               1)
+    (DRETURN            1)
+    (DSTORE             2)
+    (DSTORE_0           1)
+    (DSTORE_1           1)
+    (DSTORE_2           1)
+    (DSTORE_3           1)
+    (DSUB               1)
     (DUP                        1)
     (DUP_X1             1)
     (DUP_X2             1)
     (DUP2               1)
     (DUP2_X1            1)
     (DUP2_X2            1)
+    (F2D                1)
+    (F2I                1)
+    (F2L                1)
+    (FADD               1)
+    (FALOAD             1)
+    (FAND               1)
+    (FASTORE            1)
+    (FCMPL              1)
+    (FCMPG              1)
+    (FCONST_0           1)
+    (FCONST_1           1)
+    (FCONST_2           1)
+    (FDIV               1)
+    (FLOAD              2)
+    (FLOAD_0            1)
+    (FLOAD_1            1)
+    (FLOAD_2            1)
+    (FLOAD_3            1)
+    (FMUL               1)
+    (FNEG               1)
+    (FREM               1)
+    (FRETURN            1)
+    (FSTORE             2)
+    (FSTORE_0           1)
+    (FSTORE_1           1)
+    (FSTORE_2           1)
+    (FSTORE_3           1)
+    (FSUB               1)
     (GETFIELD           3)
     (GETSTATIC          3)
     (GOTO                       3)
     (GOTO_W             5)
     (I2B                        1)
     (I2C                        1)
+    (I2D                        1)
+    (I2F                        1)
     (I2L                        1)
     (I2S                        1)
     (IADD                       1)
@@ -951,6 +1186,8 @@ J & George
     (IXOR                       1)
     (JSR                        3)
     (JSR_W                      5)
+    (L2D                        1)
+    (L2F                        1)
     (L2I                        1)
     (LADD                       1)
     (LALOAD             1)
@@ -1214,6 +1451,250 @@ J & George
                             (heap s)))))
 
 ; -----------------------------------------------------------------------------
+; (D2F) Instruction - convert double to float
+
+(defun execute-D2F (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (fp2fp (top (pop (stack (top-frame th s))))
+                              (rtl::dp)
+                              (rtl::sp))
+                       (pop (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (D2I) Instruction - convert double to int
+
+(defun execute-D2I (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (fp2int (top (pop (stack (top-frame th s))))
+                               (rtl::dp)
+                               32)
+                       (pop (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (D2L) Instruction - convert double to long
+
+(defun execute-D2L (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (fp2int (top (pop (stack (top-frame th s))))
+                                     (rtl::dp)
+                                     64)
+                             (pop (pop (stack (top-frame th s))))))))
+
+; -----------------------------------------------------------------------------
+; (DADD) Instruction - add double
+
+(defun execute-DADD (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push
+                         (fpadd (top (popn 3 (stack (top-frame th s))))
+                                (top (pop (stack (top-frame th s))))
+                                (rtl::dp))
+                         (popn 4 (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (DALOAD) Instruction - load double from array
+
+(defun execute-DALOAD (inst th s)
+  (let* ((index (top (stack (top-frame th s))))
+         (arrayref (top (pop (stack (top-frame th s)))))
+         (array (deref arrayref (heap s))))
+        (modify th s
+                :pc (+ (inst-length inst) (pc (top-frame th s)))
+                :stack (push 0
+                             (push (element-at index array)
+                                   (pop (pop (stack (top-frame th s)))))))))
+
+; -----------------------------------------------------------------------------
+; (DASTORE) Instruction - store into double array
+
+(defun execute-DASTORE (inst th s)
+  (let* ((value (top (pop (stack (top-frame th s)))))
+         (index (top (pop (pop (stack (top-frame th s))))))
+         (arrayref (top (popn 3 (stack (top-frame th s))))))
+        (modify th s
+                :pc (+ (inst-length inst) (pc (top-frame th s)))
+                :stack (popn 4 (stack (top-frame th s)))
+                :heap (bind (cadr arrayref)
+                            (set-element-at value
+                                            index
+                                            (deref arrayref (heap s))
+                                            (class-table s))
+                            (heap s)))))
+
+; -----------------------------------------------------------------------------
+; (DCMPG) Instruction - compare double
+
+(defun execute-DCMPG (inst th s)
+  (let* ((val2 (top (pop (stack (top-frame th s)))))
+         (val1 (top (popn 3 (stack (top-frame th s)))))
+         (result (fpcmp val1 val2 (rtl::dp) +1)))
+        (modify th s
+                :pc (+ (inst-length inst) (pc (top-frame th s)))
+                :stack (push result
+                             (popn 4 (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (DCMPL) Instruction - compare double
+
+(defun execute-DCMPL (inst th s)
+  (let* ((val2 (top (pop (stack (top-frame th s)))))
+         (val1 (top (popn 3 (stack (top-frame th s)))))
+         (result (fpcmp val1 val2 (rtl::dp) -1)))
+        (modify th s
+                :pc (+ (inst-length inst) (pc (top-frame th s)))
+                :stack (push result
+                             (popn 4 (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (DCONST_0) Instruction - push double 0.0
+
+(defun execute-DCONST_0 (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push #x0000000000000000 (stack (top-frame th s))))))
+
+; -----------------------------------------------------------------------------
+; (DCONST_1) Instruction - push double 1.0
+
+(defun execute-DCONST_1 (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push #x3ff0000000000000 (stack (top-frame th s))))))
+
+; -----------------------------------------------------------------------------
+; (DDIV) Instruction - compare double
+
+(defun execute-DDIV (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push
+                         (fpdiv (top (popn 3 (stack (top-frame th s))))
+                                (top (pop (stack (top-frame th s))))
+                                (rtl::dp))
+                         (popn 4 (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (DLOAD idx) Instruction - load double from local variable
+
+(defun execute-DLOAD (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (nth (arg1 inst)
+                                  (locals (top-frame th s)))
+                             (stack (top-frame th s))))))
+
+; -----------------------------------------------------------------------------
+; (DLOAD_X) Instruction - load double from local variable
+;                         covers DLOAD_{0, 1, 2, 3}
+
+(defun execute-DLOAD_X (inst th s n)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (nth n (locals (top-frame th s)))
+                             (stack (top-frame th s))))))
+
+; -----------------------------------------------------------------------------
+; (DMUL) Instruction - multiply double
+
+(defun execute-DMUL (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (fpmul (top (popn 3 (stack (top-frame th s))))
+                                    (top (pop (stack (top-frame th s))))
+                                    (rtl::dp))
+                             (popn 4 (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (DNEG) Instruction - negate double
+
+(defun execute-DNEG (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (fpneg (top (pop (stack (top-frame th s)))) (rtl::dp))
+                             (popn 2 (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (DREM) Instruction - remainder double
+
+(defun execute-DREM (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (fprem (top (popn 3 (stack (top-frame th s))))
+                                    (top (pop (stack (top-frame th s))))
+                                    (rtl::dp))
+                             (popn 4 (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (DRETURN) Instruction - return double from method
+
+(defun execute-DRETURN (inst th s)
+  (declare (ignore inst))
+  (let* ((val (top (pop (stack (top-frame th s)))))
+         (obj-ref (nth 0 (locals (top-frame th s))))
+         (sync-status (sync-flg (top-frame th s)))
+         (class (cur-class (top-frame th s)))
+         (ret-ref (class-decl-heapref (bound? class (class-table s))))
+         (new-heap (cond ((equal sync-status 'LOCKED)
+                          (unlock-object th obj-ref (heap s)))
+                         ((equal sync-status 'S_LOCKED)
+                          (unlock-object th ret-ref (heap s)))
+                         (t (heap s))))
+         (s1 (modify th s
+                     :call-stack (pop (call-stack th s))
+                     :heap new-heap)))
+    (modify th s1
+            :stack (push 0 (push val (stack (top-frame th s1)))))))
+
+; -----------------------------------------------------------------------------
+; (DSTORE idx) Instruction - store double into local variable
+
+(defun execute-DSTORE (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :locals (update-nth (arg1 inst)
+                               (top (pop (stack (top-frame th s))))
+                               (locals (top-frame th s)))
+          :stack (popn 2 (stack (top-frame th s)))))
+
+; -----------------------------------------------------------------------------
+; (DSTORE_X) Instruction - store double long into local variable
+;                          covers DSTORE_{0, 1, 2, 3}
+
+(defun execute-DSTORE_X (inst th s n)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :locals (update-nth n
+                               (top (pop (stack (top-frame th s))))
+                               (locals (top-frame th s)))
+          :stack (popn 2 (stack (top-frame th s)))))
+
+; -----------------------------------------------------------------------------
+; (DSUB) Instruction
+
+(defun execute-DSUB (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (fpsub (top (popn 3 (stack (top-frame th s))))
+                                    (top (pop (stack (top-frame th s))))
+                                    (rtl::dp))
+                             (popn 4 (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
 ; (DUP) Instruction
 
 (defun execute-DUP (inst th s)
@@ -1297,6 +1778,247 @@ J & George
                                (push val2 stack_prime)))))))))
 
 ; -----------------------------------------------------------------------------
+; (F2D) Instruction - convert float to double
+
+(defun execute-F2D (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (fp2fp (top (stack (top-frame th s)))
+                                    (rtl::sp)
+                                    (rtl::dp))
+                             (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (F2I) Instruction - convert float to long
+
+(defun execute-F2I (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (fp2int (top (stack (top-frame th s)))
+                               (rtl::sp)
+                               32)
+                       (pop (stack (top-frame th s))))))
+
+; -----------------------------------------------------------------------------
+; (F2L) Instruction - convert float to long
+
+(defun execute-F2L (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (fp2int (top (stack (top-frame th s)))
+                                     (rtl::sp)
+                                     64)
+                             (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (FADD) Instruction - add float
+
+(defun execute-FADD (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (fpadd (top (pop (stack (top-frame th s))))
+                              (top (stack (top-frame th s)))
+                              (rtl::sp))
+                       (pop (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (FALOAD) Instruction - load float from array
+
+(defun execute-FALOAD (inst th s)
+  (let* ((index (top (stack (top-frame th s))))
+         (arrayref (top (pop (stack (top-frame th s)))))
+         (array (deref arrayref (heap s))))
+        (modify th s
+                :pc (+ (inst-length inst) (pc (top-frame th s)))
+                :stack (push (element-at index array)
+                             (pop (pop (stack (top-frame th s))))))))
+
+; -----------------------------------------------------------------------------
+; (FASTORE) Instruction - store into float array
+
+(defun execute-FASTORE (inst th s)
+  (let* ((value (top (stack (top-frame th s))))
+         (index (top (pop (stack (top-frame th s)))))
+         (arrayref (top (pop (pop (stack (top-frame th s)))))))
+        (modify th s
+                :pc (+ (inst-length inst) (pc (top-frame th s)))
+                :stack (pop (pop (pop (stack (top-frame th s)))))
+                :heap (bind (cadr arrayref)
+                            (set-element-at value
+                                            index
+                                            (deref arrayref (heap s))
+                                            (class-table s))
+                            (heap s)))))
+
+; -----------------------------------------------------------------------------
+; (FCMPG) Instruction - compare float
+
+(defun execute-FCMPG (inst th s)
+  (let* ((val2 (top (stack (top-frame th s))))
+         (val1 (top (pop (stack (top-frame th s)))))
+         (result (fpcmp val1 val2 (rtl::dp) +1)))
+        (modify th s
+                :pc (+ (inst-length inst) (pc (top-frame th s)))
+                :stack (push result
+                             (pop (pop (stack (top-frame th s))))))))
+
+; -----------------------------------------------------------------------------
+; (FCMPL) Instruction - compare float
+
+(defun execute-FCMPL (inst th s)
+  (let* ((val2 (top (stack (top-frame th s))))
+         (val1 (top (pop (stack (top-frame th s)))))
+         (result (fpcmp val1 val2 (rtl::dp) -1)))
+        (modify th s
+                :pc (+ (inst-length inst) (pc (top-frame th s)))
+                :stack (push result
+                             (pop (pop (stack (top-frame th s))))))))
+
+; -----------------------------------------------------------------------------
+; (FCONST_0) Instruction - push float 0.0
+
+(defun execute-FCONST_0 (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push #x00000000 (stack (top-frame th s)))))
+
+; -----------------------------------------------------------------------------
+; (FCONST_1) Instruction - push float 1.0
+
+(defun execute-FCONST_1 (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push #x3f800000 (stack (top-frame th s)))))
+
+; -----------------------------------------------------------------------------
+; (FCONST_2) Instruction - push float 2.0
+
+(defun execute-FCONST_2 (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push #x40000000 (stack (top-frame th s)))))
+
+; -----------------------------------------------------------------------------
+; (FDIV) Instruction - divide float
+
+(defun execute-FDIV (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (fpdiv (top (pop (stack (top-frame th s))))
+                              (top (stack (top-frame th s)))
+                              (rtl::sp))
+                       (pop (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (FLOAD idx) Instruction - load float from local variable
+
+(defun execute-FLOAD (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (nth (arg1 inst)
+                            (locals (top-frame th s)))
+                       (stack (top-frame th s)))))
+
+; -----------------------------------------------------------------------------
+; (FLOAD_X) Instruction - load float from local variable
+;                         covers FLOAD_{0, 1, 2, 3}
+
+(defun execute-FLOAD_X (inst th s n)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (nth n (locals (top-frame th s)))
+                       (stack (top-frame th s)))))
+
+; -----------------------------------------------------------------------------
+; (FMUL) Instruction - multiply float
+
+(defun execute-FMUL (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (fpmul (top (pop (stack (top-frame th s))))
+                              (top (stack (top-frame th s)))
+                              (rtl::sp))
+                       (pop (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (FNEG) Instruction - negate float
+
+(defun execute-FNEG (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (fpneg (top (stack (top-frame th s)))
+                              (rtl::sp))
+                       (pop (stack (top-frame th s))))))
+
+; -----------------------------------------------------------------------------
+; (FREM) Instruction - remainder float
+
+(defun execute-FREM (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (fprem (top (pop (stack (top-frame th s))))
+                              (top (stack (top-frame th s)))
+                              (rtl::sp))
+                       (pop (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (FRETURN) Instruction - return float from method
+
+(defun execute-FRETURN (inst th s)
+  (declare (ignore inst))
+  (let* ((val (top (stack (top-frame th s))))
+         (obj-ref (nth 0 (locals (top-frame th s))))
+         (sync-status (sync-flg (top-frame th s)))
+         (class (cur-class (top-frame th s)))
+         (ret-ref (class-decl-heapref (bound? class (class-table s))))
+         (new-heap (cond ((equal sync-status 'LOCKED)
+                          (unlock-object th obj-ref (heap s)))
+                         ((equal sync-status 'S_LOCKED)
+                          (unlock-object th ret-ref (heap s)))
+                         (t (heap s))))
+         (s1 (modify th s
+                     :call-stack (pop (call-stack th s))
+                     :heap new-heap)))
+    (modify th s1
+            :stack (push val (stack (top-frame th s1))))))
+
+; -----------------------------------------------------------------------------
+; (FSTORE idx) Instruction - store float into local variable
+
+(defun execute-FSTORE (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :locals (update-nth (arg1 inst)
+                               (top (stack (top-frame th s)))
+                               (locals (top-frame th s)))
+          :stack (pop (stack (top-frame th s)))))
+
+; -----------------------------------------------------------------------------
+; (FSTORE_X) Instruction - store float into local variable
+;                          covers FSTORE_{0, 1, 2, 3}
+
+(defun execute-FSTORE_X (inst th s n)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :locals (update-nth n
+                               (top (stack (top-frame th s)))
+                               (locals (top-frame th s)))
+          :stack (pop (stack (top-frame th s)))))
+
+; -----------------------------------------------------------------------------
+; (FSUB) Instruction - subtract float
+
+(defun execute-FSUB (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (fpsub (top (pop (stack (top-frame th s))))
+                              (top (stack (top-frame th s)))
+                              (rtl::sp))
+                       (pop (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
 ; (GETFIELD "class" "field" ?long-flag?) Instruction
 
 (defun execute-GETFIELD (inst th s)
@@ -1366,6 +2088,27 @@ J & George
   (modify th s
           :pc (+ (inst-length inst) (pc (top-frame th s)))
           :stack (push (char-fix (top (stack (top-frame th s))))
+                       (pop (stack (top-frame th s))))))
+
+; -----------------------------------------------------------------------------
+; (I2D) Instruction - int to double conversion
+
+(defun execute-I2D (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (int2fp (top (stack (top-frame th s)))
+                                     (rtl::dp))
+                             (pop (stack (top-frame th s)))))))
+
+; -----------------------------------------------------------------------------
+; (I2F) Instruction - int to float conversion
+
+(defun execute-I2F (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (int2fp (top (stack (top-frame th s)))
+                               (rtl::sp))
                        (pop (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
@@ -1953,6 +2696,31 @@ J & George
                      :pc (+ (inst-length inst) (pc (top-frame th s)))
                      :stack (popn nformals (stack (top-frame th s))))))
     (cond
+     ((method-isNative? closest-method)
+      (cond ((equal method-name "doubleToRawLongBits")
+             (modify th s1
+                     :stack (push (long-fix (top (stack (top-frame th s))))
+                                  (stack (top-frame th s1)))))
+            ((equal method-name "floatToRawIntBits")
+             (modify th s1
+                     :stack (push (int-fix (top (stack (top-frame th s))))
+                                  (stack (top-frame th s1)))))
+            ((equal method-name "intBitsToFloat")
+             (modify th s1
+                     :stack (push (bits2fp (top (stack (top-frame th s)))
+                                           (rtl::sp))
+                                  (stack (top-frame th s1)))))
+            ((equal method-name "longBitsToDouble")
+             (modify th s1
+                     :stack (push (bits2fp (top (stack (top-frame th s)))
+                                           (rtl::dp))
+                                  (stack (top-frame th s1)))))
+            ((equal method-name "sqrt")
+             (modify th s1
+                     :stack (push (fpsqrt (top (stack (top-frame th s)))
+                                           (rtl::dp))
+                                  (stack (top-frame th s1)))))
+            (t s)))
      ((and (method-sync closest-method)
            (objectLockable? instance th))
       (modify th s1
@@ -2037,6 +2805,27 @@ J & George
                                 'UNLOCKED
                                 (arg1 inst))
                     (call-stack th s1)))))))
+
+; -----------------------------------------------------------------------------
+; (L2D) Instruction - long to double conversion
+
+(defun execute-L2D (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push 0
+                       (push (int2fp (top (pop (stack (top-frame th s))))
+                                     (rtl::dp))
+                             (pop (pop (stack (top-frame th s))))))))
+
+; -----------------------------------------------------------------------------
+; (L2F) Instruction - long to float narrowing conversion
+
+(defun execute-L2F (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))
+          :stack (push (int2fp (top (pop (stack (top-frame th s))))
+                               (rtl::sp))
+                       (pop (pop (stack (top-frame th s)))))))
 
 ; -----------------------------------------------------------------------------
 ; (L2I) Instruction - long to int narrowing conversion
@@ -2647,18 +3436,73 @@ J & George
     (BIPUSH         (execute-BIPUSH inst th s))
     (CALOAD         (execute-CALOAD inst th s))
     (CASTORE        (execute-CASTORE inst th s))
+    (D2F            (execute-D2F inst th s))
+    (D2I            (execute-D2I inst th s))
+    (D2L            (execute-D2L inst th s))
+    (DADD           (execute-DADD inst th s))
+    (DALOAD         (execute-DALOAD inst th s))
+    (DASTORE        (execute-DASTORE inst th s))
+    (DCMPG          (execute-DCMPG inst th s))
+    (DCMPL          (execute-DCMPL inst th s))
+    (DCONST_0       (execute-DCONST_0 inst th s))
+    (DCONST_1       (execute-DCONST_1 inst th s))
+    (DDIV           (execute-DDIV inst th s))
+    (DLOAD          (execute-DLOAD inst th s))
+    (DLOAD_0        (execute-DLOAD_X inst th s 0))
+    (DLOAD_1        (execute-DLOAD_X inst th s 1))
+    (DLOAD_2        (execute-DLOAD_X inst th s 2))
+    (DLOAD_3        (execute-DLOAD_X inst th s 3))
+    (DMUL           (execute-DMUL inst th s))
+    (DNEG           (execute-DNEG inst th s))
+    (DREM           (execute-DREM inst th s))
+    (DRETURN        (execute-DRETURN inst th s))
+    (DSTORE         (execute-DSTORE inst th s))
+    (DSTORE_0       (execute-DSTORE_X inst th s 0))
+    (DSTORE_1       (execute-DSTORE_X inst th s 1))
+    (DSTORE_2       (execute-DSTORE_X inst th s 2))
+    (DSTORE_3       (execute-DSTORE_X inst th s 3))
+    (DSUB           (execute-DSUB inst th s))
     (DUP            (execute-DUP inst th s))
     (DUP_X1         (execute-DUP_X1 inst th s))
     (DUP_X2         (execute-DUP_X2 inst th s))
     (DUP2           (execute-DUP2 inst th s))
     (DUP2_X1        (execute-DUP2_X1 inst th s))
     (DUP2_X2        (execute-DUP2_X2 inst th s))
+    (F2D            (execute-F2D inst th s))
+    (F2I            (execute-F2I inst th s))
+    (F2L            (execute-F2L inst th s))
+    (FADD           (execute-FADD inst th s))
+    (FALOAD         (execute-FALOAD inst th s))
+    (FASTORE        (execute-FASTORE inst th s))
+    (FCMPG          (execute-FCMPG inst th s))
+    (FCMPL          (execute-FCMPL inst th s))
+    (FCONST_0       (execute-FCONST_0 inst th s))
+    (FCONST_1       (execute-FCONST_1 inst th s))
+    (FCONST_2       (execute-FCONST_2 inst th s))
+    (FDIV           (execute-FDIV inst th s))
+    (FLOAD          (execute-FLOAD inst th s))
+    (FLOAD_0        (execute-FLOAD_X inst th s 0))
+    (FLOAD_1        (execute-FLOAD_X inst th s 1))
+    (FLOAD_2        (execute-FLOAD_X inst th s 2))
+    (FLOAD_3        (execute-FLOAD_X inst th s 3))
+    (FMUL           (execute-FMUL inst th s))
+    (FNEG           (execute-FNEG inst th s))
+    (FREM           (execute-FREM inst th s))
+    (FRETURN        (execute-FRETURN inst th s))
+    (FSTORE         (execute-FSTORE inst th s))
+    (FSTORE_0       (execute-FSTORE_X inst th s 0))
+    (FSTORE_1       (execute-FSTORE_X inst th s 1))
+    (FSTORE_2       (execute-FSTORE_X inst th s 2))
+    (FSTORE_3       (execute-FSTORE_X inst th s 3))
+    (FSUB           (execute-FSUB inst th s))
     (GETFIELD       (execute-GETFIELD inst th s))
     (GETSTATIC      (execute-GETSTATIC inst th s))
     (GOTO           (execute-GOTO inst th s))
     (GOTO_W         (execute-GOTO_W inst th s))
     (I2B            (execute-I2B inst th s))
     (I2C            (execute-I2C inst th s))
+    (I2D            (execute-I2D inst th s))
+    (I2F            (execute-I2F inst th s))
     (I2L            (execute-I2L inst th s))
     (I2S            (execute-I2S inst th s))
     (IADD           (execute-IADD inst th s))
@@ -2716,6 +3560,8 @@ J & George
     (IXOR           (execute-IXOR inst th s))
     (JSR            (execute-JSR inst th s))
     (JSR_W          (execute-JSR_W inst th s))
+    (L2D            (execute-L2D inst th s))
+    (L2F            (execute-L2F inst th s))
     (L2I            (execute-L2I inst th s))
     (LADD           (execute-LADD inst th s))
     (LALOAD         (execute-LALOAD inst th s))
