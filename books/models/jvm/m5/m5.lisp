@@ -4,6 +4,7 @@
 ;
 ; Fixed arithmetic work by Robert Krug <rkrug@cs.utexas.edu>
 ; Support for Arrays by Hanbing Liu <hbl@cs.utexas.edu>
+; Support for Floating Point by Dmitry Nadezhin <dmitry.nadezhin@gmail.com>
 ;
 ; $Id: m5.lisp,v 1.1 2001/07/10 17:37:06 george Exp $
 
@@ -424,7 +425,8 @@ J & George
           result))
 
 (defun bits2fp (x f)
-  (if (rtl::nanp x f) (rtl::qnanize x f) x))
+  (let ((x (u-fix x (+ 1 (rtl::expw f) (rtl::sigw f)))))
+       (if (rtl::nanp x f) (rtl::qnanize x f) x)))
 
 ; -----------------------------------------------------------------------------
 ; States
@@ -558,16 +560,16 @@ J & George
 ;       as the second element (displacing the null ref currently there).
 
 (defun cp-make-double-entry (n)
-  (list 'DOUBLE n))
+  (list 'DOUBLE (bits2fp n (rtl::dp))))
 
 (defun cp-make-float-entry (n)
-  (list 'FLOAT n))
+  (list 'FLOAT (bits2fp n (rtl::sp))))
 
 (defun cp-make-int-entry (n)
-  (list 'INT n))
+  (list 'INT (int-fix n)))
 
 (defun cp-make-long-entry (n)
-  (list 'LONG n))
+  (list 'LONG (long-fix n)))
 
 (defun cp-make-string-entry (str)
   (list 'STRING '(REF -1) str))
