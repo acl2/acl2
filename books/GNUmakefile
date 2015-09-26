@@ -736,7 +736,7 @@ clause-processors/SULFA/target.cert: \
 	then \
 	(cd $(@D) ; $(MAKE)) ; \
 	else \
-	echo "*NOTE*: Skipping SULFA subdirectory (no SAT solver installed; see SULFA/README)." ; \
+	echo "*NOTE*: Skipping SULFA subdirectory (need SAT solver installed as per books/clause-processors/SULFA/README)." ; \
 	fi
 
 projects/translators/l3-to-acl2/target.cert: \
