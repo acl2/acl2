@@ -4768,6 +4768,10 @@
     "Defaxioms"
     "Ttags"
 
+; Uncomment the following in order to see invariant-risk warnings during
+; regression.
+;   "Invariant-risk"
+
 ; The above are included because of soundness.  But "Compiled file", below, is
 ; included so that we can see it even when inside include-book, since messages
 ; printed by missing-compiled-book may assume that such warnings are not

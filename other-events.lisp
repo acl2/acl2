@@ -1419,7 +1419,12 @@
 ; The following should contain all function symbols that might violate an ACL2
 ; invariant.  See check-invariant-risk-state-p.
 
-  '(extend-32-bit-integer-stack
+; We don't include compress1 or compress2 because we believe they don't write
+; out of bounds.
+
+  '(aset1 ; could write past the end of the real array
+    aset2 ; could write past the end of the real array
+    extend-32-bit-integer-stack
     aset-32-bit-integer-stack))
 
 (defun primordial-world-globals (operating-system)
@@ -1641,11 +1646,10 @@
 ; global-table is an ordered-symbol-alistp, but there is no way to get one's
 ; hands directly on the global-table; and state-p1 also specifies that
 ; plist-worldp holds of the logical world, and we ensure that by making set-w
-; and related functions untouchable.  The only two exceptions are
-; extend-32-bit-integer-stack and aset-32-bit-integer-stack, as we check
-; elsewhere with the function check-invariant-risk-state-p.  If new exceptions
-; arise, then we should add them to the value of
-; *boot-strap-invariant-risk-symbols*.
+; and related functions untouchable.  The only exceptions are those in
+; *boot-strap-invariant-risk-symbols*, as is checked by the function
+; check-invariant-risk-state-p.  If new exceptions arise, then we should add
+; them to the value of *boot-strap-invariant-risk-symbols*.
 
   (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
                   *boot-strap-invariant-risk-symbols* wrld))
@@ -1653,6 +1657,13 @@
 ;; RAG - I added the treatment of *non-standard-primitives*
 
 (defun primordial-world (operating-system)
+
+; Warning: Names converted during the boot-strap from :program mode to :logic
+; mode will, we believe, have many properties erased by renew-name.  That is
+; why, for example, we call initialize-invariant-risk at the end of the
+; boot-strap, in end-prehistoric-world.  Consider whether a property should be
+; set there rather than here.
+
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
         (guards (strip-caddrs *primitive-formals-and-guards*))
@@ -1716,9 +1727,8 @@
 
                        (putprop
                         'state 'stobj '(*the-live-state*)
-                        (initialize-invariant-risk
-                         (primordial-world-globals
-                          operating-system))))))))))))))))))))
+                        (primordial-world-globals
+                         operating-system)))))))))))))))))))
       t))))
 
 (defun same-name-twice (l)
@@ -3034,7 +3044,7 @@
                           (putprop 'return-last-table
                                    'table-alist
                                    *initial-return-last-table*
-                                   wrld))))
+                                   (initialize-invariant-risk wrld)))))
          (wrld2 (update-current-theory (current-theory1 wrld nil nil) wrld1)))
     (add-command-landmark
      :logic
@@ -17801,15 +17811,68 @@
                   (type (access defstobj-field-template field-template :type)))
              (put-defstobj-invariant-risk
               (cdr field-templates)
-              (cond ((or (eq type t)
-                         (and (consp type)
-                              (eq (car type) 'array)
-                              (eq (cadr type) t)))
+              (cond ((eq type t)
                      wrld)
-                    (t (let ((updater (access defstobj-field-template
-                                              field-template
-                                              :updater-name)))
-                         (putprop updater 'invariant-risk updater wrld)))))))))
+                    (t
+
+; The following example from Jared Davis and Sol Swords shows why even arrays
+; with elements of type t need to be considered for invariant-risk.
+
+;   To start:
+
+;       (defstobj foo
+;         (foo-ch  :type character :initially #\a)
+;         (foo-arr :type (array t (3))))
+
+;   The idea is to cause an invalid write to foo-arr that will
+;   overwrite foo-ch.  To do this, it is helpful to know the
+;   relative addresses of foo-ch and foo-arr.  We can find this
+;   out from raw Lisp, but once we know it, it seems pretty
+;   reliable, so in the final version there's no need to enter
+;   raw Lisp.
+
+;       :q
+;       (let ((ch-addr  (ccl::%address-of (aref *the-live-foo* 0)))
+;             (arr-addr (ccl::%address-of (aref *the-live-foo* 1))))
+;         (list :ch   ch-addr
+;               :arr  arr-addr
+;               :diff (- ch-addr arr-addr)))
+;       (lp)
+
+;   An example result on one invocation on our machine is:
+
+;       (:CH 52914053289693 :ARR 52914053289501 :DIFF 192)
+
+;   When we quit ACL2 and resubmit this, we typically get
+;   different offsets for CH and ARR, but the :DIFF seems to be
+;   consistently 192.  (In principle, it probably could
+;   sometimes be different because it probably depends on how
+;   the memory allocation happens to fall out, but in practice
+;   it seems to be reliable).  If you want to reproduce this and
+;   your machine gets a different result, you may need to adjust
+;   the index that you write to to provoke the problem.
+
+;   Since CCL's (array t ...) probably uses 8-byte elements, we
+;   should write to address (/ 192 8) = 24.  To do that we will
+;   need a program mode function that writes to foo-arri to
+;   avoid ACL2's guards from preventing the out-of-bounds write.
+
+;       (defun attack (n v foo)
+;         (declare (xargs :mode :program :stobjs foo))
+;         (update-foo-arri n v foo))
+
+;   Now we can do something like this:
+
+;       (attack 24 100 foo)
+
+;   After the attack, (foo-ch foo) returns something that Emacs
+;   prints as #\^Z, and (char-code (foo-ch foo)) reports 800,
+;   which is of course not valid for an ACL2 character.
+
+                     (let ((updater (access defstobj-field-template
+                                            field-template
+                                            :updater-name)))
+                       (putprop updater 'invariant-risk updater wrld)))))))))
 
 (defun defstobj-fn (name args state event-form)
 
@@ -21334,6 +21397,7 @@
                        (ubt! ',label)))
                     :ld-verbose nil
                     :ld-prompt nil
+                    :ld-pre-eval-print nil
                     :ld-post-eval-print nil
                     :ld-error-action :error))
                (value :invisible))))
@@ -28049,3 +28113,109 @@
                                     (maybe-add-event-landmark state))
                                    (t (value nil)))
                              (value result))))))))))))))))))
+
+(defun get-check-invariant-risk (state)
+  (let ((pair (assoc-eq :check-invariant-risk
+                        (table-alist 'acl2-defaults-table (w state))))
+        (cir (f-get-global 'check-invariant-risk state)))
+    (cond (pair (case (cdr pair) ; then take the "minimum" with cir
+                  ((:ERROR :CLEAR) cir)
+                  ((:WARNING) (if (eq cir :ERROR) :WARNING cir))
+                  ((T) (if (eq cir nil) nil t))
+                  (otherwise nil)))
+          (t cir))))
+
+(defmacro set-check-invariant-risk (x &optional table-p)
+
+; In oneify-cltl-code we handle an "invariant-risk" that stobj invariants
+; aren't violated upon ill-guarded calls of stobj updaters.  The idea is to
+; force evaluation to use *1* functions down to those primitives, which always
+; check their guards.  See also the comment in **1*-as-raw*.  Note that this
+; is a separate issue from the lack of atomicity of some defabsstobj exports
+; (which is implemented using *inside-absstobj-update*).
+
+; There may be cases where this use of *1* functions may be slower than one
+; likes.  By setting the invariant-risk mode to nil, one defeats that behavior;
+; see :DOC set-check-invariant-risk.  This could be unsound, but since one
+; needs an active trust tag to set this global, we take the position that
+; setting it is much like redefining prove so that one always gets the "Q.E.D."
+
+; Perhaps we will consider avoiding this use of *1* functions when the only
+; danger of invariant violations is from local stobjs.  Since only :program
+; mode functions are at issue (because a :logic mode function call only slips
+; into raw Lisp when the function has been guard-verified and the call is
+; guard-checked, and because raw-ev-fncall binds **1*-as-raw* to nil for
+; :logic mode functions), it seems plausible that we can provide this
+; optimization for local stobjs.  After all, local stobjs are let-bound rather
+; than global; so it seems that during proofs, any local stobj encountered will
+; either be created and destroyed during a computed hint or else will be
+; modified only by :logic mode functions manipulated by the prover.  (Trusted
+; clause processors might provide an exception, but then trust tags are
+; involved, so it's their responsibility to do the right thing.)
+
+; But we'll leave that for another day, if at all, as it seems risky and
+; error-prone to implement.  In particular, we would likely need to track
+; invariant-risk on a per-stobj basis, and built-ins (see
+; initialize-invariant-risk) might not be associated with stobjs at all.
+
+  (declare (xargs :guard (booleanp table-p)))
+  (cond
+   (table-p
+    `(with-output
+      :off :all :on (observation error)
+      (progn (table acl2-defaults-table :check-invariant-risk ,x)
+             (make-event
+              (pprogn (if (and (not (eq ,x (get-check-invariant-risk state)))
+                               (not (eq ,x :CLEAR)))
+                          (observation 'set-check-invariant-risk
+                                       "No change is being made in the value ~
+                                        computed by ~x0.  This happens when ~
+                                        the value of state global ~
+                                        'check-invariant-risk is less than ~
+                                        the new table value; see :DOC ~
+                                        set-check-invariant-risk."
+                                       '(get-check-invariant-risk state))
+                        state)
+                      (value '(value-triple ,x)))
+              :check-expansion t))))
+   ((and x (member-eq x *check-invariant-risk-values*))
+    `(set-check-invariant-risk-fn ,x state))
+   (t `(cond
+        ((not (member-eq ,x '(t nil :ERROR :WARNING)))
+         (er soft 'check-invariant-risk
+             "Illegal value for ~x0: ~x1"
+             'check-invariant-risk
+             ',x))
+        (t (er-progn
+            (with-ubt!
+             (with-output
+              :off :all
+              (with-output
+               :on (error warning warning!)
+               (progn (defttag :set-check-invariant-risk)
+                      (progn! (set-check-invariant-risk-fn ,x state))))))
+            (value nil)))))))
+
+(defun set-check-invariant-risk-fn (x state)
+  (declare (xargs :guard (member-eq x *check-invariant-risk-values*)))
+  (progn$ (mbt (and (member-eq x *check-invariant-risk-values*) t))
+          (cond ((and (null x)
+                      (f-get-global 'check-invariant-risk state)
+                      (not (ttag (w state))))
+                 (er soft 'set-check-invariant-risk
+                     "There must be an active trust tag to set '~x0 to ~x1."
+                     'check-invariant-risk nil))
+                (t (pprogn
+                    (f-put-global 'check-invariant-risk x state)
+                    (if (not (eq x (get-check-invariant-risk state)))
+                        (observation 'set-check-invariant-risk
+                                     "No change is being made in the value ~
+                                      computed by ~x0, because the new value ~
+                                      of state global 'check-invariant-risk ~
+                                      is greater than the table value; see ~
+                                      :DOC set-check-invariant-risk."
+                                     '(get-check-invariant-risk state))
+                      state)
+                    (value x))))))
+
+
