@@ -39,5 +39,6 @@
 	    acl2::must-be-equal
 	    acl2::*EC-CALL-BAD-OPS*
 	    )
-	  (union-eq *acl2-exports*
-		    *common-lisp-symbols-from-main-lisp-package*)))
+	  (remove 'acl2::mv?
+            (union-eq *acl2-exports*
+	 	      *common-lisp-symbols-from-main-lisp-package*))))

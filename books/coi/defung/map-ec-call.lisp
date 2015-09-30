@@ -80,6 +80,14 @@
 	(cond
 	 ((atom term) term)
 	 ((eq (car term) 'quote) term)
+         ((and (eq (car term) 'acl2::mv-let)
+               (consp (cdr term))
+               (consp (cddr term))
+               (consp (cdddr term)))
+          (let ((formals (cadr term))
+                (arg     (map-ec-call-term (caddr term) omit))
+                (body    (map-ec-call-term (cadddr term) omit)))
+            `(acl2::mv-let ,formals ,arg ,body)))
 	 ((symbolp (car term))
 	  (ec-call-term (car term) (map-ec-call-args (cdr term) omit) omit))
 	 (t
