@@ -42,19 +42,24 @@
 
 (program)
 
-(defun extend-wrld-with-fn-args-list (fn-args-lst wrld)
+(defun stobjs-in-list (stobjs-in formals)
+  (if (endp formals) nil
+    (cons (and (member (car formals) stobjs-in) (car formals))
+          (stobjs-in-list stobjs-in (cdr formals)))))
+
+(defun extend-wrld-with-fn-args-list (stobjs-in fn-args-lst wrld)
   (cond ((endp fn-args-lst) wrld)
         (t (let ((fn (caar fn-args-lst))
                  (formals (cdar fn-args-lst)))
              (putprop
               fn 'symbol-class :COMMON-LISP-COMPLIANT
+              ;;(putprop
+              ;;fn 'stobjs-out '(nil)
               (putprop
-               fn 'stobjs-out '(nil)
+               fn 'stobjs-in (stobjs-in-list stobjs-in formals)
                (putprop
-                fn 'stobjs-in (make-list (length formals))
-                (putprop
-                 fn 'formals formals
-                 (extend-wrld-with-fn-args-list (cdr fn-args-lst) wrld)))))))))
+                fn 'formals formals
+                (extend-wrld-with-fn-args-list stobjs-in (cdr fn-args-lst) wrld))))))))
 
 (defun translate1-cw (x stobjs-out bindings known-stobjs ctx w)
   (mv-let (erp msg-or-val bindings)
@@ -66,14 +71,37 @@
                          (mv t x bindings)))
                 (t (mv nil msg-or-val bindings)))))
 
+(defun self-bindings (fn-args-lst)
+  (if (endp fn-args-lst) nil
+    (acons (caar fn-args-lst) (caar fn-args-lst)
+           (self-bindings (cdr fn-args-lst)))))
+
+;; stobjs-in is a list of stobjs appearing in the various function
+;; signatures.  Sorry .. if a symbol is a stobj in one, it will be a
+;; stobj in all.
+(defun pseudo-translate-defun (fn stobjs-in form fn-args-lst wrld)
+  (let ((wrld (extend-wrld-with-fn-args-list stobjs-in fn-args-lst wrld)))
+    (let ((stobjs-out (or fn t))
+          (bindings   (self-bindings fn-args-lst)))
+      (mv-let
+          (flg val bindings)
+        (translate1-cw form
+                       stobjs-out
+                       bindings
+                       t 'pseudo-translate
+                       wrld)
+        ;; The binding returned from translate1-cw should look like:
+        ;; ((STOBJS-OUT zzz)
+        ;;  bindings)
+        ;; where zzz is the mv/stobj signature returned by the body.
+        ;; We extract and retun this signature along with the 
+        ;; translated body.
+        (let ((signature (and fn (cdr (assoc fn bindings)))))
+          (mv flg val signature))))))
+
 (defun pseudo-translate (form fn-args-lst wrld)
-  (let
-      ((wrld (extend-wrld-with-fn-args-list fn-args-lst wrld)))
-    (mv-let
-     (flg val bindings)
-     (translate1-cw form t
-                    '((:stobjs-out . :stobjs-out))
-                    t 'pseudo-translate
-                    wrld)
-     (declare (ignore bindings))
-     (mv flg val))))
+  (mv-let (flg val sig) (pseudo-translate-defun nil nil form fn-args-lst wrld)
+    (declare (ignore sig))
+    (mv flg val)))
+
+
