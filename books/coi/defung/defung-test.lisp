@@ -549,3 +549,57 @@
 (verify-guards num-list)
 
 ;; ==================================================================
+;; stobjs and multiple values
+;; ==================================================================
+
+;; returning (mv * *)
+
+(def::ung multi-value (x)
+  (declare (xargs :signature ((natp) integerp integerp)))
+  (if (zp x) (mv (- 3) 5)
+    (met ((x y) (multi-value (1- x)))
+      (mv (- x 3) (+ y 5)))))
+
+(defstobj st a)
+
+(def::und copy-st (st)
+  (declare (xargs :stobjs (st)
+                  :signature ((stp) stp)))
+  (mbe :logic (non-exec st)
+       :exec (let ((a (a st)))
+               (list a))))
+
+(def::und done (st)
+  (declare (ignore st)
+           (xargs :stobjs st
+                  :signature ((stp) t)))
+  t)
+
+(def::und next (st)
+  (declare (xargs :stobjs st
+                  :signature ((stp) stp)))
+  st)
+
+
+;; returning 1 stobj
+
+(def::ung 1-stobj (st)
+  (declare (xargs :signature ((stp) stp)
+                  :stobjs st
+                  :copy-args (lambda (st) (copy-st st))))
+  (if (done st) st
+    (let ((st (next st)))
+      (1-stobj st))))
+
+;; returning (mv * stobj)
+
+(def::ung 2val-1-stobj (n st)
+  (declare (xargs :signature ((natp stp) natp stp)
+                  :stobjs st
+                  :copy-args (lambda (n st) (mv n (copy-st st)))))
+  (if (done st) (mv n st)
+    (let ((n (met ((x y) (mv (+ n 1) (+ 2 n))) (+ x y))))
+      (let ((st (next st)))
+        (met ((n st) (2val-1-stobj (1+ n) st))
+          (2val-1-stobj (1+ n) st))))))
+
