@@ -388,13 +388,13 @@ J & George
   (fp-binary 'rtl::add x y f))
 
 (defun fpsub (x y f)
-  (fp-binary 'rtl::add x y f))
+  (fp-binary 'rtl::sub x y f))
 
 (defun fpmul (x y f)
-  (fp-binary 'rtl::add x y f))
+  (fp-binary 'rtl::mul x y f))
 
 (defun fpdiv (x y f)
-  (fp-binary 'rtl::add x y f))
+  (fp-binary 'rtl::div x y f))
 
 (defun fprem (x y f)
   (cond ((or (rtl::nanp x f)
@@ -1572,7 +1572,7 @@ J & George
                        (push #x3ff0000000000000 (stack (top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
-; (DDIV) Instruction - compare double
+; (DDIV) Instruction - divide double
 
 (defun execute-DDIV (inst th s)
   (modify th s
