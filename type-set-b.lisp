@@ -1493,6 +1493,109 @@
   (coerce (chars-for-tilde-@-clause-id-phrase id)
           'string))
 
+(defun update-enabled-structure-array (name header alist k old)
+
+; This function makes a number of assumptions, including the assumption noted
+; below that the first k keys of alist form a strictly decreasing sequence.
+
+  #+acl2-loop-only
+  (declare (xargs :guard (and (array1p name (cons header alist))
+                              (null (array-order header))
+                              (natp k)
+                              (<= k (length alist))))
+           (ignore k old))
+  #+acl2-loop-only
+  (compress1 name (cons header alist))
+  #-acl2-loop-only (declare (ignore name))
+  #-acl2-loop-only
+  (let ((old-car (car old))
+        (ar (cadr old))
+        index)
+    (assert (= 1 (array-rank (cadr old))))
+    (assert (eq (car (car (car old))) :HEADER))
+    (assert (eq (nthcdr k alist)
+                (cdr old-car)))
+    (assert (eq header (car old-car)))
+    (setf (car old) *invisible-array-mark*)
+    (loop for i from 1 to k
+          for tail on alist
+          do
+          (let ((new-index (caar tail)))
+
+; We check that the keys are decreasing, as a way of ensuring that there are no
+; duplicates.
+
+            (assert (or (null index)
+                        (< new-index index)))
+            (setq index (caar tail))
+            (setf (svref ar index) (cdar tail))))
+    (setf (car old) (cons header alist))))
+
+(defun update-enabled-structure (ens n d new-d alist
+                                     augmented-p
+                                     incrmt-array-name-info)
+  #+acl2-loop-only (declare (ignore d augmented-p))
+  #-acl2-loop-only
+  (let* ((k 0)
+         (name (access enabled-structure ens :array-name))
+         (old (get-acl2-array-property name))
+         (header (cadddr old))
+         (old-n (access enabled-structure ens :index-of-last-enabling)))
+    (when (and header ; hence old is associated with name
+               (consp (car old))
+               (eq header (caar old)) ; assumed in compress1-in-place
+               (null incrmt-array-name-info)
+               augmented-p
+               (eql d new-d)
+               (eq (loop for tail on alist
+                         do (cond ((<= (caar tail) old-n)
+                                   (return tail))
+                                  (t (incf k))))
+                   (cdr (access enabled-structure ens :theory-array))))
+      (return-from
+       update-enabled-structure
+       (change enabled-structure ens
+               :index-of-last-enabling n
+               :theory-array (update-enabled-structure-array
+                              name header alist k old)))))
+  (let* ((root (access enabled-structure ens :array-name-root))
+         (suffix (cond ((eq incrmt-array-name-info t)
+                        (1+ (access enabled-structure ens
+                                    :array-name-suffix)))
+                       (t (access enabled-structure ens
+                                  :array-name-suffix))))
+         (name (cond ((eq incrmt-array-name-info t)
+                      (intern (coerce
+                               (append root
+                                       (explode-nonnegative-integer suffix
+                                                                    10
+                                                                    nil))
+                               'string)
+                              "ACL2"))
+                     (incrmt-array-name-info ; must be a clause-id
+                      (intern (coerce
+                               (append root
+                                       (chars-for-tilde-@-clause-id-phrase
+                                        incrmt-array-name-info))
+                               'string)
+                              "ACL2"))
+                     (t (access enabled-structure ens :array-name)))))
+    (make enabled-structure
+          :index-of-last-enabling n
+          :theory-array
+          (compress1 name
+                     (cons (list :header
+                                 :dimensions (list new-d)
+                                 :maximum-length (1+ new-d)
+                                 :default nil
+                                 :name name
+                                 :order nil)
+                           alist))
+          :array-name name
+          :array-length new-d
+          :array-name-root root
+          :array-name-suffix suffix)))
+
 (defun@par load-theory-into-enabled-structure
   (theory-expr theory augmented-p ens incrmt-array-name-info
                index-of-last-enabling wrld ctx state)
@@ -1531,44 +1634,12 @@
          (d (access enabled-structure ens :array-length))
          (new-d (cond ((< n d) d)
                       (t (+ d (* 500 (1+ (floor (- n d) 500)))))))
-         (root (access enabled-structure ens :array-name-root))
-         (suffix (cond ((eq incrmt-array-name-info t)
-                        (1+ (access enabled-structure ens :array-name-suffix)))
-                       (t (access enabled-structure ens :array-name-suffix))))
-         (name (cond ((eq incrmt-array-name-info t)
-                      (intern (coerce
-                               (append root
-                                       (explode-nonnegative-integer suffix
-                                                                    10
-                                                                    nil))
-                               'string)
-                              "ACL2"))
-                     (incrmt-array-name-info ; must be a clause-id
-                      (intern (coerce
-                               (append root
-                                       (chars-for-tilde-@-clause-id-phrase
-                                        incrmt-array-name-info))
-                               'string)
-                              "ACL2"))
-                     (t (access enabled-structure ens :array-name))))
          (alist (if augmented-p
                     theory
                   (augment-runic-theory theory wrld)))
-         (ens (make enabled-structure
-                    :index-of-last-enabling n
-                    :theory-array
-                    (compress1 name
-                               (cons (list :header
-                                           :dimensions (list new-d)
-                                           :maximum-length (1+ new-d)
-                                           :default nil
-                                           :name name
-                                           :order nil)
-                                     alist))
-                    :array-name name
-                    :array-length new-d
-                    :array-name-root root
-                    :array-name-suffix suffix)))
+         (ens (update-enabled-structure ens n d new-d alist
+                                        augmented-p
+                                        incrmt-array-name-info)))
     (er-progn@par (if (or (eq theory-expr :no-check)
                           (eq (ld-skip-proofsp state)
                               'include-book)

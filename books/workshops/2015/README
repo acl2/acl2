@@ -25,6 +25,8 @@ See subdirectory chau-kaufmann-hunt/.
 Alessandro Coglio
 Second-Order Functions and Theorems in ACL2
 
+See books/tools/soft*.lisp.
+
 ----------
 
 John Cowles and Ruben Gamboa
@@ -55,6 +57,8 @@ Extending ACL2 with SMT Solvers
 ----------
 
 Sol Swords and Jared Davis
-Fix Your Types: A Datatype Definition Library for Unconditional Type Reasoning
+Fix Your Types
+
+The FTY library described in this paper is located in books/centaur/fty.
 
 ----------

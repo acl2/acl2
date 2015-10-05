@@ -4221,8 +4221,10 @@
                     function-theory-fn
                     intersection-theories-fn
                     set-difference-theories-fn
+                    set-difference-current-theory-fn
                     theory-fn
                     union-theories-fn
+                    union-current-theory-fn
                     universal-theory-fn))
        t))
 
@@ -4351,6 +4353,8 @@
 
 (defun current-theory1 (lst ans redefined)
 
+; Warning: Keep this in sync with current-theory1-augmented.
+
 ; Lst is a cdr of wrld.  We wish to return the enabled theory as of the time
 ; lst was wrld.  When in-theory is executed it stores the newly enabled theory
 ; under the 'global-value of the variable 'current-theory.  When new rule names
@@ -4403,28 +4407,29 @@
                            (cdr l)
                            (cons (car l) ac)))))
 
-(defun longest-common-tail-length-rec (old new acc)
-  (declare (type (signed-byte 30) acc))
+(defun longest-common-tail-length-rec (old new len-old acc)
+  (declare (type (signed-byte 30) acc len-old))
   #-acl2-loop-only
   (when (eq old new)
-    (return-from longest-common-tail-length-rec (+ (length old) acc)))
+    (return-from longest-common-tail-length-rec (+ len-old acc)))
   (cond ((endp old)
          (assert$ (null new)
                   acc))
         (t (longest-common-tail-length-rec (cdr old)
                                            (cdr new)
+                                           (1-f len-old)
                                            (if (equal (car old) (car new))
                                                (1+f acc)
                                              0)))))
 
-(defun longest-common-tail-length (old new)
+(defun longest-common-tail-length (old new len-old)
 
 ; We separate out this wrapper function so that we don't need to be concerned
 ; about missing the #-acl2-loop-only case in the recursive computation, which
 ; could perhaps happen if we are in safe-mode and oneification prevents escape
 ; into Common Lisp.
 
-  (longest-common-tail-length-rec old new 0))
+  (longest-common-tail-length-rec old new len-old 0))
 
 (defun extend-current-theory (old-th new-th old-aug-th wrld)
 
@@ -4438,15 +4443,17 @@
          (len-new (length new-th))
          (len-common
           (cond ((int= len-old len-new)
-                 (longest-common-tail-length old-th new-th))
+                 (longest-common-tail-length old-th new-th len-old))
                 ((< len-old len-new)
                  (longest-common-tail-length
                   old-th
-                  (nthcdr (- len-new len-old) new-th)))
+                  (nthcdr (- len-new len-old) new-th)
+                  len-old))
                 (t
                  (longest-common-tail-length
                   (nthcdr (- len-old len-new) old-th)
-                  new-th))))
+                  new-th
+                  len-new))))
          (take-new (- len-new len-common))
          (nthcdr-old (- len-old len-common))
          (new-part-of-new-rev
@@ -4454,12 +4461,12 @@
                                               'extend-current-theory)
                           new-th
                           nil)))
-    (mv (append (reverse new-part-of-new-rev)
-                (nthcdr nthcdr-old old-th))
+    (mv (revappend new-part-of-new-rev
+                   (nthcdr nthcdr-old old-th))
         (if (eq old-aug-th :none)
             :none
-          (append (augment-runic-theory1 new-part-of-new-rev nil wrld nil)
-                  (nthcdr nthcdr-old old-aug-th))))))
+          (augment-runic-theory1 new-part-of-new-rev nil wrld
+                                 (nthcdr nthcdr-old old-aug-th))))))
 
 (defun update-current-theory (theory0 wrld)
   (mv-let (theory theory-augmented)
@@ -6628,8 +6635,8 @@
          mode)
         (t :erase)))
 
-(defun redefinition-renewal-mode (name old-type new-type reclassifyingp ctx
-                                       wrld state)
+(defun redefinition-renewal-mode (name all-names old-type new-type
+                                       reclassifyingp ctx wrld state)
 
 ; We use 'ld-redefinition-action to determine whether the redefinition of name,
 ; currently of old-type in wrld, is to be :erase, :overwrite or
@@ -6903,58 +6910,76 @@
               (and sysdefp
                    (or (eq (car act) :warn)
                        (eq (car act) :doit))))
-          (er-let*
-           ((ans (acl2-query
-                  :redef
-                  '("~#0~[~x1 is an ACL2 system~/The name ~x1 is in use as ~
-                     a~] ~@2.~#3~[~/  Its current defun-mode is ~@4.~] Do you ~
-                     ~#0~[really ~/~]want to redefine it?~#6~[~/  Note: if ~
-                     you redefine it we will first erase its supporters, ~
-                     ~&7.~]"
-
-                    :n nil :y t :e erase :o overwrite
-                    :? ("N means ``no'' and answering that way will abort the ~
-                         attempted redefinition.  All other responses allow ~
-                         the redefinition and may render ACL2 unsafe and/or ~
-                         unsound.  Y in the current context is the same as ~
-                         ~#5~[E~/O~].  E means ``erase the property list of ~
-                         ~x1 before redefining it.''  O means ``Overwrite ~
-                         existing properties of ~x1 while redefining it'' but ~
-                         is different from erasure only when a function is ~
-                         being redefined as another function.   Neither ~
-                         alternative is guaranteed to produce a sensible ACL2 ~
-                         state.  If you are unsure of what all this means, ~
-                         abort with N and see :DOC ld-redefinition-action for ~
-                         details."
-                        :n nil :y t :e erase :o overwrite))
-                  (list (cons #\0 (if sysdefp 0 1))
-                        (cons #\1 name)
-                        (cons #\2 (logical-name-type-string old-type))
-                        (cons #\3 (if (eq old-type 'function) 1 0))
-                        (cons #\4 (if (eq old-type 'function)
-                                      (defun-mode-string
-                                        (fdefun-mode name wrld))
-                                    nil))
-                        (cons #\5 (if (eq (cdr act)
-                                          :erase)
-                                      0 1))
-                        (cons #\6 (if (defstobj-supporterp name wrld)
-                                      1 0))
-                        (cons #\7 (getprop (defstobj-supporterp name wrld)
-                                           'stobj
-                                           nil
-                                           'current-acl2-world
-                                           wrld)))
-                  state)))
-           (cond
-            ((null ans) (mv t nil state))
-            ((eq ans t)
-             (value
-              (maybe-coerce-overwrite-to-erase old-type new-type (cdr act))))
-            ((eq ans 'erase) (value :erase))
-            (t (value
-                (maybe-coerce-overwrite-to-erase old-type new-type
-                                                 :overwrite))))))
+          (let ((rest (cdr (member-eq name all-names))))
+            (er-let* ((ans
+                       (acl2-query
+                        :redef
+                        `("~#0~[~x1 is an ACL2 system~/The name ~x1 is in use ~
+                           as a~] ~@2.~#3~[~/  Its current defun-mode is ~
+                           ~@4.~] Do you ~#0~[really ~/~]want to redefine ~
+                           it?~#6~[~/  Note: if you redefine it we will first ~
+                           erase its supporters, ~&7.~]"
+                          :n nil :y t :e erase :o overwrite
+                          ,@(and rest '(:y! y!))
+                          :?
+                          ("N means ``no'' and answering that way will abort ~
+                            the attempted redefinition.  All other responses ~
+                            allow the redefinition and may render ACL2 unsafe ~
+                            and/or unsound.  Y in the current context is the ~
+                            same as ~#5~[E~/O~]~@8.  E means ``erase the ~
+                            property list of ~x1 before redefining it.''  O ~
+                            means ``Overwrite existing properties of ~x1 ~
+                            while redefining it'' but is different from ~
+                            erasure only when a function is being redefined ~
+                            as another function.   Neither alternative is ~
+                            guaranteed to produce a sensible ACL2 state.  If ~
+                            you are unsure of what all this means, abort with ~
+                            N and see :DOC ld-redefinition-action for details."
+                           :n nil :y t :e erase :o overwrite
+                           ,@(and rest '(:y! y!))))
+                        (list (cons #\0 (if sysdefp 0 1))
+                              (cons #\1 name)
+                              (cons #\2 (logical-name-type-string old-type))
+                              (cons #\3 (if (eq old-type 'function) 1 0))
+                              (cons #\4 (if (eq old-type 'function)
+                                            (defun-mode-string
+                                              (fdefun-mode name wrld))
+                                          nil))
+                              (cons #\5 (if (eq (cdr act)
+                                                :erase)
+                                            0 1))
+                              (cons #\6 (if (defstobj-supporterp name wrld)
+                                            1 0))
+                              (cons #\7 (getprop (defstobj-supporterp name
+                                                   wrld)
+                                                 'stobj
+                                                 nil
+                                                 'current-acl2-world
+                                                 wrld))
+                              (cons #\8
+                                    (if rest
+                                        (msg ", and Y! will assume a Y ~
+                                              response without further query ~
+                                              for the list of related names ~
+                                              not yet redefined, ~X01"
+                                             rest
+                                             (abbrev-evisc-tuple state))
+                                      "")))
+                        state)))
+              (cond
+               ((null ans) (mv t nil state))
+               ((eq ans t)
+                (value
+                 (maybe-coerce-overwrite-to-erase old-type new-type (cdr act))))
+               ((eq ans 'y!)
+                (er-progn
+                 (set-ld-redefinition-action (cons ':doit! (cdr act)) state)
+                 (value
+                  (maybe-coerce-overwrite-to-erase old-type new-type (cdr act)))))
+               ((eq ans 'erase) (value :erase))
+               (t (value
+                   (maybe-coerce-overwrite-to-erase old-type new-type
+                                                    :overwrite)))))))
          (t
 
 ; If name is a system name, then the car of 'ld-redefinition-action must be
@@ -6979,7 +7004,8 @@
 (defun redefined-names (state)
   (redefined-names1 (w state) nil))
 
-(defun chk-redefineable-namep (name new-type reclassifyingp ctx wrld state)
+(defun chk-redefineable-namep (name all-names new-type reclassifyingp ctx wrld
+                                    state)
 
 ; Name is a non-new name in wrld.  We are about to redefine it and make its
 ; logical-name-type be new-type.  If reclassifyingp is non-nil and not a consp
@@ -7017,7 +7043,7 @@
 
       (er-let*
        ((renewal-mode
-         (redefinition-renewal-mode name
+         (redefinition-renewal-mode name all-names
                                     old-type new-type reclassifyingp
                                     ctx wrld state)))
        (cond
@@ -7038,13 +7064,16 @@
                        renewal-mode wrld)))
         (t (value (renew-name name renewal-mode wrld)))))))))
 
-(defun chk-just-new-name (name new-type reclassifyingp ctx w state)
+(defun chk-just-new-name (name all-names new-type reclassifyingp ctx w
+                               state)
 
 ; Assuming that name has survived chk-all-but-new-name, we check that it is in
 ; fact new.  If it is, we return the world, w.  If it is not new, then what we
 ; do depends on various state variables such as whether we are in boot-strap
 ; and whether redefinition is allowed.  But unless we cause an error we will
 ; always return the world extending w in which the redefinition is to occur.
+; All-names is a list of all names, including name, for which redefinition is
+; also currently to be considered.
 
 ; Name is being considered for introduction with logical-name-type new-type.
 ; Reclassifyingp, when not nil and not a consp, means that this redefinition is
@@ -7088,7 +7117,8 @@
      (chk-boot-strap-redefineable-namep name ctx w state)
      (value w)))
    (t
-    (chk-redefineable-namep name new-type reclassifyingp ctx w state))))
+    (chk-redefineable-namep name all-names new-type reclassifyingp ctx w
+                            state))))
 
 (defun no-new-namesp (lst wrld)
 
@@ -7098,6 +7128,15 @@
   (cond ((null lst) t)
         ((new-namep (car lst) wrld) nil)
         (t (no-new-namesp (cdr lst) wrld))))
+
+(defun chk-just-new-names-rec (names all-names new-type reclassifyingp ctx w state)
+  (cond
+   ((null names) (value w))
+   (t (er-let*
+          ((wrld1 (chk-just-new-name (car names) all-names new-type
+                                     reclassifyingp ctx w state)))
+        (chk-just-new-names-rec (cdr names) all-names new-type reclassifyingp
+                                ctx wrld1 state)))))
 
 (defun chk-just-new-names (names new-type reclassifyingp ctx w state)
 
@@ -7116,11 +7155,10 @@
 
   (cond
    ((null names) (value w))
-   (t (er-let*
-        ((wrld1 (chk-just-new-name (car names) new-type reclassifyingp
-                                   ctx w state)))
-        (chk-just-new-names (cdr names) new-type reclassifyingp
-                            ctx wrld1 state)))))
+   (t (state-global-let*
+       ((ld-redefinition-action (ld-redefinition-action state)))
+       (chk-just-new-names-rec names names new-type reclassifyingp
+                               ctx w state)))))
 
 (defun alpha-< (x y)
 
@@ -7221,7 +7259,7 @@
        (er-progn
         (chk-all-but-new-name name ctx 'label wrld1 state)
         (er-let*
-         ((wrld2 (chk-just-new-name name 'label nil ctx wrld1 state)))
+         ((wrld2 (chk-just-new-name name nil 'label nil ctx wrld1 state)))
          (let ((wrld3 (putprop name 'label t wrld2)))
 
 ; The only reason we store the 'label property is so that name-introduced

@@ -511,7 +511,7 @@
              (enforce-redundancy
               event-form ctx wrld1
               (er-let*
-               ((wrld2 (chk-just-new-name name 'const nil ctx wrld1 state))
+               ((wrld2 (chk-just-new-name name nil 'const nil ctx wrld1 state))
                 (wrld3 (defconst-fn1 name val wrld2 state)))
                (install-event name
                               event-form
@@ -906,7 +906,8 @@
                     (enforce-redundancy
                      event-form ctx wrld1
                      (er-let*
-                         ((wrld2 (chk-just-new-name name 'macro nil ctx wrld1 state))
+                         ((wrld2 (chk-just-new-name name nil 'macro nil ctx
+                                                    wrld1 state))
                           (ignored (value (ignore-vars edcls)))
                           (ignorables (value (ignorable-vars edcls))))
                        (er-progn
@@ -1834,11 +1835,11 @@
         (defpkg-book-path
           (unrelativize-book-path defpkg-book-path distrib-books-dir)))
     (list
-     "The proposed defpkg conflicts with a previously-executed defpkg for ~
+     "The proposed defpkg conflicts with an existing defpkg for ~
       name ~x0~@1.  ~#a~[For example, symbol ~s2::~s3 is in the list of ~
       imported symbols for the ~s4 definition but not for the other.~/The two ~
       have the same lists of imported symbols, but not in the same order.~]  ~
-      The previous defpkg is ~#5~[at the top level.~/in the certificate file ~
+      The existing defpkg is ~#5~[at the top level.~/in the certificate file ~
       for the book ~x7, which is included at the top level.~/in the ~
       certificate file for the book ~x7, which is included via the following ~
       path, from top-most book down to the above file.~|  ~F8~]~@9~@b"
@@ -1854,12 +1855,12 @@
      (cons #\3 (symbol-name (if new-not-old
                                 (car new-not-old)
                               (car old-not-new))))
-     (cons #\4 (if new-not-old "current" "previous"))
+     (cons #\4 (if new-not-old "proposed" "existing"))
      (cons #\5 (zero-one-or-more book-path))
      (cons #\7 (car book-path))
      (cons #\8 (reverse book-path))
      (cons #\9 (if defpkg-book-path
-                   "~|This previous defpkg event appears to have been created ~
+                   "~|This existing defpkg event appears to have been created ~
                   because of a defpkg that was hidden by a local include-book; ~
                   see :DOC hidden-death-package."
                  ""))
@@ -1867,11 +1868,11 @@
                       (global-val 'include-book-path w)))
                  (if (or include-book-path
                          defpkg-book-path)
-                     (msg "~|The new proposed defpkg event may be found by ~
+                     (msg "~|The proposed defpkg event may be found by ~
                            following the sequence of include-books below, ~
                            from top-most book down to the book whose ~
-                           portcullis contains the new proposed defpkg ~
-                           event.~|  ~F0"
+                           portcullis contains the proposed defpkg event.~|  ~
+                           ~F0"
                           (reverse (append defpkg-book-path include-book-path)))
                    ""))))))
 
@@ -2073,7 +2074,7 @@
 ; Warning: In maybe-push-undo-stack and maybe-pop-undo-stack we rely
 ; on the fact that the symbol name-PACKAGE is new!
 
-                          (chk-just-new-name base-symbol
+                          (chk-just-new-name base-symbol nil
                                              'theorem nil ctx w state)
                           (prog2$
                            (chk-package-reincarnation-import-restrictions
@@ -2326,6 +2327,8 @@
 
 (defun union-augmented-theories-fn1 (lst1 lst2 ans)
 
+; Warning: Keep this in sync with union-augmented-theories-fn1+.
+
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their union as an
 ; unagumented runic theory.  See intersection-augmented-theories-fn1.
@@ -2404,30 +2407,26 @@
        (augment-theory lst2 wrld)
        nil))))))
 
-(defmacro union-theories (lst1 lst2)
+(defun union-augmented-theories-fn1+ (lst1 c1 lst2 ans)
 
-; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
+; Warning: Keep this in sync with union-augmented-theories-fn1.
+; This function returns (union-augmented-theories-fn1 lst1 lst2 ans)
+; when c1 is (strip-cdrs lst1).
 
-  (cond ((theory-fn-callp lst1)
-         (list 'union-theories-fn
-               lst1
-               lst2
-               t
-               'world))
-        ((theory-fn-callp lst2)
-         (list 'union-theories-fn
-               lst2
-               lst1
-               t
-               'world))
-        (t
-         (list 'union-theories-fn
-               lst1
-               lst2
-               nil
-               'world))))
+  (cond ((null lst1) (revappend ans (strip-cdrs lst2)))
+        ((null lst2) (revappend ans c1))
+        ((int= (car (car lst1)) (car (car lst2)))
+         (union-augmented-theories-fn1+ (cdr lst1) (cdr c1) (cdr lst2)
+                                        (cons (car c1) ans)))
+        ((> (car (car lst1)) (car (car lst2)))
+         (union-augmented-theories-fn1+ (cdr lst1) (cdr c1) lst2
+                                        (cons (car c1) ans)))
+        (t (union-augmented-theories-fn1+ lst1 c1 (cdr lst2)
+                                          (cons (cdr (car lst2)) ans)))))
 
 (defun set-difference-augmented-theories-fn1 (lst1 lst2 ans)
+
+; Warning: Keep this in sync with set-difference-augmented-theories-fn1+.
 
 ; Let lst1 and lst2 be augmented theories: descendingly ordered lists
 ; of pairs mapping numes to runes.  We return their set-difference as
@@ -2441,6 +2440,23 @@
          (set-difference-augmented-theories-fn1
           (cdr lst1) lst2 (cons (cdr (car lst1)) ans)))
         (t (set-difference-augmented-theories-fn1 lst1 (cdr lst2) ans))))
+
+(defun set-difference-augmented-theories-fn1+ (lst1 c1 lst2 ans)
+
+; Warning: Keep this in sync with set-difference-augmented-theories-fn1.
+; This function returns (set-difference-augmented-theories-fn1 lst1 lst2 ans)
+; when c1 is (strip-cdrs lst1).
+
+  (cond ((null lst1) (revappend ans nil))
+        ((null lst2) (revappend ans c1))
+        ((= (car (car lst1)) (car (car lst2)))
+         (set-difference-augmented-theories-fn1+
+          (cdr lst1) (cdr c1) (cdr lst2) ans))
+        ((> (car (car lst1)) (car (car lst2)))
+         (set-difference-augmented-theories-fn1+
+          (cdr lst1) (cdr c1) lst2 (cons (car c1) ans)))
+        (t (set-difference-augmented-theories-fn1+
+            lst1 c1 (cdr lst2) ans))))
 
 (defun set-difference-theories-fn1 (lst1 lst2 nume wrld ans)
 
@@ -2497,15 +2513,174 @@
        (augment-theory lst2 wrld)
        nil))))))
 
+(defun no-augmented-rune-based-on (pairs symbols)
+
+; This function is analogous to no-rune-based-on but where members of the first
+; argument are not runes, but rather, are each of the form (nume . rune).
+
+  (cond ((null pairs) t)
+        ((member-eq (base-symbol (cdar pairs)) symbols)
+         nil)
+        (t (no-augmented-rune-based-on (cdr pairs) symbols))))
+
+(defun revappend-delete-augmented-runes-based-on-symbols1 (pairs symbols ans)
+
+; This function is analogous to revappend-delete-runes-based-on-symbols1, but
+; where members of the first argument are not runes, but rather, are each of
+; the form (nume . rune).
+
+  (cond ((null pairs) ans)
+        ((member-eq (base-symbol (cdr (car pairs))) symbols)
+         (revappend-delete-augmented-runes-based-on-symbols1
+          (cdr pairs) symbols ans))
+        (t (revappend-delete-augmented-runes-based-on-symbols1
+            (cdr pairs) symbols (cons (car pairs) ans)))))
+
+(defun revappend-delete-augmented-runes-based-on-symbols (pairs symbols ans)
+
+; This function is analogous to revappend-delete-runes-based-on-symbols, but
+; where members of the first argument are not runes, but rather, are each of
+; the form (nume . rune).
+
+  (cond ((or (null symbols) (no-augmented-rune-based-on pairs symbols))
+         (revappend ans pairs))
+        (t (reverse (revappend-delete-augmented-runes-based-on-symbols
+                     pairs symbols ans)))))
+
+(defun current-theory-fn (logical-name wrld)
+
+; We return the theory that was enabled in the world created by the
+; event that introduced logical-name.
+
+; See universal-theory-fn for an explanation of the production of wrld2.
+
+  (let* ((wrld1 (decode-logical-name logical-name wrld))
+         (redefined (collect-redefined wrld nil))
+         (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
+                                *acl2-property-unbound* wrld1)))
+    (prog2$
+     (or wrld1
+         (er hard 'current-theory
+             "The name ~x0 was not found in the current ACL2 logical ~
+              world; hence no current-theory can be computed for that name."
+             logical-name))
+     (assert$-runic-theoryp (current-theory1 wrld2 nil nil)
+                            wrld))))
+
+(defun current-theory1-augmented (lst ans redefined)
+
+; Warning: Keep this in sync with current-theory1.
+
+; Lst is a tail of a world.  This function returns the augmented runic theory
+; current in the world, lst.  Its definition is analogous to that of
+; current-theory1.
+
+  (cond ((null lst)
+         #+acl2-metering (meter-maid 'current-theory1-augmented 500)
+         (reverse ans)) ; unexpected, but correct
+        ((eq (cadr (car lst)) 'runic-mapping-pairs)
+         #+acl2-metering (setq meter-maid-cnt (1+ meter-maid-cnt))
+         (cond
+          ((eq (cddr (car lst)) *acl2-property-unbound*)
+           (current-theory1-augmented (cdr lst) ans
+                                      (add-to-set-eq (car (car lst))
+                                                     redefined)))
+          ((member-eq (car (car lst)) redefined)
+           (current-theory1-augmented (cdr lst) ans redefined))
+          (t
+           (current-theory1-augmented (cdr lst)
+                                      (append (cddr (car lst)) ans)
+                                      redefined))))
+        ((and (eq (car (car lst)) 'current-theory-augmented)
+              (eq (cadr (car lst)) 'global-value))
+
+; We append the reverse of our accumulated ans to the appropriate standard
+; theory, but deleting all the redefined runes.
+
+         #+acl2-metering (meter-maid 'current-theory1-augmented 500)
+         (revappend-delete-augmented-runes-based-on-symbols (cddr (car lst))
+                                                            redefined ans))
+        (t
+         #+acl2-metering (setq meter-maid-cnt (1+ meter-maid-cnt))
+         (current-theory1-augmented (cdr lst) ans redefined))))
+
+(defun union-current-theory-fn (lst2 wrld)
+
+; This function returns, with an optimized computation, the value
+; (union-theories-fn (current-theory :here) lst2 t wrld).
+
+  (check-theory
+   lst2 wrld 'union-current-theory-fn
+   (let ((w ; as in current-theory-fn, we apply decode-logical-name
+          (scan-to-event wrld)))
+     (union-augmented-theories-fn1+
+      (current-theory1-augmented w nil nil)
+      (current-theory1 w nil nil)
+      (augment-theory lst2 wrld)
+      nil))))
+
+(defmacro union-theories (lst1 lst2)
+
+; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
+
+  (cond ((equal lst1 '(current-theory :here)) ; optimization
+         (list 'union-current-theory-fn
+               lst2
+               'world))
+        ((equal lst2 '(current-theory :here)) ; optimization
+         (list 'union-current-theory-fn
+               lst1
+               'world))
+        ((theory-fn-callp lst1)
+         (list 'union-theories-fn
+               lst1
+               lst2
+               t
+               'world))
+        ((theory-fn-callp lst2)
+         (list 'union-theories-fn
+               lst2
+               lst1
+               t
+               'world))
+        (t
+         (list 'union-theories-fn
+               lst1
+               lst2
+               nil
+               'world))))
+
+(defun set-difference-current-theory-fn (lst2 wrld)
+
+; This function returns, with an optimized computation, the value
+; (set-difference-theories-fn (current-theory :here)
+;                             lst2
+;                             t ; (theory-fn-callp '(current-theory :here))
+;                             wrld).
+
+  (check-theory
+   lst2 wrld 'set-difference-current-theory-fn
+   (let ((w ; as in current-theory-fn, we apply decode-logical-name
+          (scan-to-event wrld)))
+     (set-difference-augmented-theories-fn1+
+      (current-theory1-augmented w nil nil)
+      (current-theory1 w nil nil)
+      (augment-theory lst2 wrld)
+      nil))))
+
 (defmacro set-difference-theories (lst1 lst2)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  (list 'set-difference-theories-fn
-        lst1
-        lst2
-        (theory-fn-callp lst1)
-        'world))
+  (cond ((equal lst1 '(current-theory :here)) ; optimization
+         (list 'set-difference-current-theory-fn
+               lst2
+               'world))
+        (t (list 'set-difference-theories-fn
+                 lst1
+                 lst2
+                 (theory-fn-callp lst1)
+                 'world))))
 
 ; Now we define a few useful theories.
 
@@ -2715,26 +2890,6 @@
         (function-theory-fn1 :definition wrld nil nil)
         (function-theory-fn1 :executable-counterpart wrld nil nil)
         (function-theory-fn1 :both wrld nil nil)))
-
-(defun current-theory-fn (logical-name wrld)
-
-; We return the theory that was enabled in the world created by the
-; event that introduced logical-name.
-
-; See universal-theory-fn for an explanation of the production of wrld2.
-
-  (let* ((wrld1 (decode-logical-name logical-name wrld))
-         (redefined (collect-redefined wrld nil))
-         (wrld2 (putprop-x-lst1 redefined 'runic-mapping-pairs
-                                *acl2-property-unbound* wrld1)))
-    (prog2$
-     (or wrld1
-         (er hard 'current-theory
-             "The name ~x0 was not found in the current ACL2 logical ~
-              world; hence no current-theory can be computed for that name."
-             logical-name))
-     (assert$-runic-theoryp (current-theory1 wrld2 nil nil)
-                            wrld))))
 
 (defmacro current-theory (logical-name)
 
@@ -3005,7 +3160,8 @@
                                    nil)))))
       (er-progn
        (chk-all-but-new-name name ctx nil wrld state)
-       (er-let* ((wrld1 (chk-just-new-name name 'theory nil ctx wrld state))
+       (er-let* ((wrld1 (chk-just-new-name name nil 'theory nil ctx wrld
+                                           state))
                  (theory0 (translate-in-theory-hint expr nil ctx wrld1 state)))
          (mv-let (theory theory-augmented-ignore)
 
@@ -3169,21 +3325,17 @@
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  (list 'set-difference-theories-fn
+  (list 'set-difference-theories
         '(current-theory :here)
-        (kwote rst)
-        t
-        'world))
+        (kwote rst)))
 
 (defmacro enable (&rest rst)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  (list 'union-theories-fn
+  (list 'union-theories
         '(current-theory :here)
-        (kwote rst)
-        t
-        'world))
+        (kwote rst)))
 
 ; The theory-invariant-table maps arbitrary keys to translated terms
 ; involving only the variables THEORY and STATE:
@@ -3587,6 +3739,7 @@
                 val
                 (duplicates (collect-non-x nil stobjs-out))))
            (t (er-let* ((wrld1 (chk-just-new-name fn
+                                                  nil
                                                   (list* 'function
                                                          stobjs-in
                                                          stobjs-out)
@@ -11898,17 +12051,22 @@
               (er ,soft-or-hard ctx
                   "The legal values for the :DIR argument are keywords that ~
                    include :SYSTEM as well as those added by a call of ~v0.  ~
-                   However, that argument is ~x1, which is not among the list ~
-                   of those legal values, ~x2."
+                   However, that argument is ~x1, which is not ~@2."
                   '(add-include-book-dir add-include-book-dir!)
                   dir
-                  (cons :system
-                        (strip-cars
-                         (append
-                          (cdr (assoc-eq :include-book-dir-alist
-                                         (table-alist 'acl2-defaults-table
-                                                      (w state))))
-                          (table-alist 'include-book-dir!-table (w state)))))))
+                  (cond
+                   ((keywordp dir)
+                    (msg
+                     "among the list of those legal values, ~x0"
+                     (cons :system
+                           (strip-cars
+                            (append
+                             (cdr (assoc-eq :include-book-dir-alist
+                                            (table-alist 'acl2-defaults-table
+                                                         (w state))))
+                             (table-alist 'include-book-dir!-table
+                                          (w state)))))))
+                   (t "a keyword"))))
              (t ,(if (eq soft-or-hard 'soft)
                      '(value dir-value)
                    'dir-value))))))
@@ -16176,7 +16334,8 @@
                (chk-arglist-for-defchoose formals nil ctx state)
                (er-let*
                 ((tbody (translate body t t t ctx wrld state))
-                 (wrld (chk-just-new-name fn 'function nil ctx wrld state)))
+                 (wrld (chk-just-new-name fn nil 'function nil ctx wrld
+                                          state)))
                 (cond
                  ((intersectp-eq bound-vars formals)
                   (er soft ctx
@@ -16425,7 +16584,7 @@
                'defun-nx
              'defun)
            ,name ,args
-           ,@witness-dcls
+           ,@(remove1-equal '(declare (xargs :non-executable t)) witness-dcls)
            ,(if (= (length bound-vars) 1)
                 `(let ((,(car bound-vars) (,skolem-name ,@args)))
                    ,body-guts)
@@ -17159,9 +17318,10 @@
                        renaming))
                   (t (value nil)))
             (er-let*
-                ((wrld1 (chk-just-new-name name 'stobj nil ctx wrld state))
-                 (wrld2 (chk-just-new-name (the-live-var name) 'stobj-live-var
-                                           nil ctx wrld1 state)))
+                ((wrld1 (chk-just-new-name name nil 'stobj nil ctx wrld state))
+                 (wrld2 (chk-just-new-name (the-live-var name)
+                                           nil 'stobj-live-var nil ctx wrld1
+                                           state)))
               (chk-acceptable-defstobj1 name field-descriptors field-descriptors
                                         renaming non-memoizable
                                         ctx wrld2 state nil nil))))))))))))
@@ -18999,7 +19159,8 @@
   (let ((name (access absstobj-method method :name)))
     (er-let* ((wrld (er-progn
                      (chk-all-but-new-name name ctx 'function wrld state)
-                     (chk-just-new-name name 'function nil ctx wrld state))))
+                     (chk-just-new-name name nil 'function nil ctx wrld
+                                        state))))
       (cond
        ((or congruent-to
             (member-eq (ld-skip-proofsp state)
@@ -19130,9 +19291,10 @@
     (er-progn
      (chk-all-but-new-name name ctx 'stobj wrld state)
      (chk-legal-defstobj-name name state)
-     (er-let* ((wrld1 (chk-just-new-name name 'stobj nil ctx wrld state))
-               (wrld2 (chk-just-new-name (the-live-var name) 'stobj-live-var
-                                         nil ctx wrld1 state)))
+     (er-let* ((wrld1 (chk-just-new-name name nil 'stobj nil ctx wrld state))
+               (wrld2 (chk-just-new-name (the-live-var name)
+                                         nil 'stobj-live-var nil ctx wrld1
+                                         state)))
        (chk-acceptable-defabsstobj1 name st$c st$ap corr-fn
 
 ; Keep the recognizer and creator first and second in our call to

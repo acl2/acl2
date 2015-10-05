@@ -10835,7 +10835,7 @@
                  (er-let*
                      ((ttree1 (chk-acceptable-rules name classes ctx ens wrld
                                                     state))
-                      (wrld1 (chk-just-new-name name 'theorem nil ctx wrld
+                      (wrld1 (chk-just-new-name name nil 'theorem nil ctx wrld
                                                 state))
                       (ttree3
                        (cond ((ld-skip-proofsp state)
@@ -11065,10 +11065,12 @@
                (er-let*
                    ((ttree1 (chk-acceptable-rules name classes ctx ens wrld
                                                   state))
-                    (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state)))
+                    (wrld1 (chk-just-new-name name nil 'theorem nil ctx wrld
+                                              state)))
                  (er-let*
                      ((instructions (if (or (eq ld-skip-proofsp 'include-book)
-                                            (eq ld-skip-proofsp 'include-book-with-locals)
+                                            (eq ld-skip-proofsp
+                                                'include-book-with-locals)
                                             (eq ld-skip-proofsp 'initialize-acl2))
                                         (value nil)
                                       (translate-instructions name instructions
