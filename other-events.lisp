@@ -28218,4 +28218,87 @@
                       state)
                     (value x))))))
 
+; read-file-into-string (must come after with-local-state is defined)
 
+(defun read-file-into-string1 (channel state ans bound)
+
+; Channel is an open input characater channel.  We read all the characters in
+; the file and return the list of them.
+
+  (declare (xargs :stobjs state
+                  :guard (and (symbolp channel)
+                              (open-input-channel-p channel :character state)
+                              (character-listp ans)
+                              (natp bound))
+                  :measure (acl2-count bound)))
+  (cond ((zp bound) ; file is too large
+         (mv nil state))
+        (t (mv-let
+            (val state)
+            (read-char$ channel state)
+            (cond ((not (characterp val)) ; end of file
+                   (mv (coerce (reverse ans) 'string)
+                       state))
+                  (t (read-file-into-string1 channel state (cons val ans)
+                                             (1- bound))))))))
+
+(defconst *read-file-into-string-bound*
+
+; We rather arbitrarily set this value to the largest 64-bit CCL fixnum.  It is
+; a strict upper bound on the size of a string we are willing to return from
+; read-file-into-string, and it serves as a termination bound for our call of
+; read-file-into-string1 inside read-file-into-string.
+
+  (1- (ash 1 60)))
+
+(encapsulate ()
+
+(local
+ (defthm stringp-read-file-into-string1
+   (implies (car (read-file-into-string1 channel state ans bound))
+            (stringp (car (read-file-into-string1 channel state ans bound))))))
+
+(defun read-file-into-string2 (filename state)
+  (declare (xargs :stobjs state :guard (stringp filename)))
+  #-acl2-loop-only
+  (declare (ignore state))
+
+; The following #-acl2-loop-only code is based on code found at
+; http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was authored by
+; @sabetts, who is apparently Shawn Betts.  The URL above presents five
+; implementations of file slurping and I found the discussion truly excellent.
+; Thank you @sabetts!
+
+; The URL above says ``You can do anything you like with the code.''
+
+  #-acl2-loop-only
+  (with-open-file
+   (stream filename :direction :input :if-does-not-exist nil)
+   (and stream
+        (let ((len (file-length stream)))
+          (and (< len *read-file-into-string-bound*)
+               (let ((seq (make-string len)))
+                 (declare (type string seq))
+                 (read-sequence seq stream)
+                 seq)))))
+  #+acl2-loop-only
+  (let* ((st (coerce-state-to-object state)))
+    (with-local-state
+     (mv-let
+      (val state)
+      (let ((state (coerce-object-to-state st)))
+        (mv-let
+         (chan state)
+         (open-input-channel filename :character state)
+         (cond ((null chan)
+                (mv nil state))
+               (t (read-file-into-string1 chan state nil
+                                          *read-file-into-string-bound*)))))
+      val))))
+)
+
+(defun read-file-into-string (filename state)
+  (declare (xargs :stobjs state :guard (stringp filename)))
+  (and (mbt (stringp filename))
+       (with-guard-checking t
+                            (read-file-into-string2 filename state))))

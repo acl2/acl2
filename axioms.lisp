@@ -12659,6 +12659,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     too-many-ifs-pre-rewrite
 
     set-gc-strategy-fn gc-strategy
+
+    read-file-into-string2
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -19302,12 +19304,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ((add-pair key value l)))))
 
 (defthm assoc-add-pair
-  (implies (and (symbolp sym2)
-                (ordered-symbol-alistp alist))
-           (equal (assoc sym1 (add-pair sym2 val alist))
-                  (if (equal sym1 sym2)
-                      (cons sym1 val)
-                    (assoc sym1 alist)))))
+  (equal (assoc sym1 (add-pair sym2 val alist))
+         (if (equal sym1 sym2)
+             (cons sym1 val)
+           (assoc sym1 alist))))
 
 (defthm add-pair-preserves-all-boundp
   (implies (and (eqlable-alistp alist1)
