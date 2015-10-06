@@ -4,12 +4,13 @@
 (in-package "ACL2")
 
 (include-book "std/util/define" :dir :system)
-(include-book "std/util/defalist" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "clause-processors/meta-extract-user" :dir :System)
 (include-book "clause-processors/unify-subst" :dir :System)
 (include-book "std/lists/mfc-utils" :dir :system)
 (include-book "clause-processors/sublis-var-meaning" :dir :system)
 (include-book "std/util/defaggrify-defrec" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -94,6 +95,9 @@
 (def-meta-extract boundrw-ev boundrw-ev-lst)
 (def-unify boundrw-ev boundrw-ev-alist)
 
+
+
+
 (defthm boundrw-ev-of-sublis-var
   (implies (and (pseudo-termp x)
                 (not (assoc nil alist)))
@@ -140,11 +144,20 @@
 
 (local (in-theory (disable sublis-var)))
 
-(std::defalist pseudo-term-map-p (x)
-  :key (pseudo-termp x) :val (pseudo-termp x)
-  :keyp-of-nil t :valp-of-nil t)
+(std::defaggregate boundrw-subst
+  ((lhs pseudo-termp)
+   (rhs pseudo-termp)
+   (alist pseudo-term-substp))) 
+
+(std::deflist boundrw-substlist-p (x)
+  (boundrw-subst-p x))
 
 (set-state-ok t)
+
+(local (defthm alistp-when-pseudo-term-substp
+         (implies (pseudo-term-substp x)
+                  (alistp x))
+         :hints(("Goal" :in-theory (enable pseudo-term-substp)))))
 
 ;; Check whether a term's sign is known.  Returns :nonnegative, :nonpositive, or nil.
 (define ts-check-sign ((x pseudo-termp)
@@ -379,32 +392,38 @@
 
 (define boundrw-apply-bound ((x pseudo-termp)
                              (direction booleanp)
-                             (bound-alist pseudo-term-map-p)
+                             (bound-list boundrw-substlist-p)
                              mfc state)
-  :returns (new-x pseudo-termp :hyp (and (pseudo-termp x)
-                                         (pseudo-term-map-p bound-alist)))
-  (b* (((when (atom bound-alist)) x)
-       ((unless (mbt (consp (car bound-alist))))
-        (boundrw-apply-bound x direction (cdr bound-alist) mfc state))
-       ((cons lhs rhs) (car bound-alist))
-       ((mv unify-ok subst) (simple-one-way-unify lhs x nil))
-       (vars-ok (and unify-ok (subsetp-eq (simple-term-vars rhs) (simple-term-vars lhs))))
+  :returns (mv changedp
+               (new-x pseudo-termp :hyp (and (pseudo-termp x)
+                                             (boundrw-substlist-p bound-list))))
+  (b* (((when (atom bound-list)) (mv nil x))
+       ((boundrw-subst bound) (car bound-list))
+       ((mv unify-ok subst) (simple-one-way-unify bound.lhs x bound.alist))
+       ((unless unify-ok)
+        (boundrw-apply-bound x direction (cdr bound-list) mfc state))
+       (vars-ok (all-keys-bound (simple-term-vars bound.rhs) subst))
        ((unless vars-ok)
-        (boundrw-apply-bound x direction (cdr bound-alist) mfc state))
+        (raise "Bad substitution: unbound vars in RHS: ~x0~%" bound.rhs)
+        (boundrw-apply-bound x direction (cdr bound-list) mfc state))
+       (subst-ok (not (assoc nil subst)))
+       ((unless subst-ok)
+        (raise "Bad substitution: NIL bound in unify-subst: ~x0~%" bound)
+        (boundrw-apply-bound x direction (cdr bound-list) mfc state))
        ;; Check that the substitution is ok using relieve-hyp.
        (bound-ok
         (mfc-relieve-hyp
          (if direction
              ;; rhs is upper bound
-             `(not (< ,rhs ,lhs))
+             `(not (< ,bound.rhs ,bound.lhs))
            ;; rhs is lower bound
-           `(not (< ,lhs ,rhs)))
+           `(not (< ,bound.lhs ,bound.rhs)))
          subst '(:rewrite boundrw-dummy-rewrite) '(< fake term) 1 mfc state
          :forcep nil))
        ((when bound-ok)
         (cw "~x0: relieve-hyp~%" x)
-        (substitute-into-term rhs subst))
-       (new-x (substitute-into-term rhs subst))
+        (mv t (substitute-into-term bound.rhs subst)))
+       (new-x (substitute-into-term bound.rhs subst))
        (bound-ok (mfc-ap
                   ;; term to contradict:
                   (if direction
@@ -416,13 +435,13 @@
                   :forcep nil))
        ((when bound-ok)
         (cw "~x0: ap~%" x)
-        new-x))
-    (boundrw-apply-bound x direction (cdr bound-alist) mfc state))
+        (mv t new-x)))
+    (boundrw-apply-bound x direction (cdr bound-list) mfc state))
   ///
   (defret boundrw-apply-bound-correct
     (implies (and (boundrw-ev-meta-extract-contextual-facts a)
                   (pseudo-termp x)
-                  (pseudo-term-map-p bound-alist))
+                  (boundrw-substlist-p bound-list))
              (and (implies direction
                            (<= (boundrw-ev x a) (boundrw-ev new-x a)))
                   (implies (not direction)
@@ -431,88 +450,90 @@
 
 (define boundrw-rewrite ((x pseudo-termp)
                          (direction booleanp)
-                         (bound-alist pseudo-term-map-p)
-                         (negative-bound-alist pseudo-term-map-p)
+                         (bound-alist boundrw-substlist-p)
+                         (negative-bound-alist boundrw-substlist-p)
                          &key (mfc 'mfc) (state 'state))
   :irrelevant-formals-ok t
   :verify-guards nil
   :returns (new-x pseudo-termp
                   :hyp (and (pseudo-termp x)
-                            (pseudo-term-map-p bound-alist)
-                            (pseudo-term-map-p negative-bound-alist)))
-  (cond ((atom x) (boundrw-apply-bound x direction bound-alist mfc state))
-        ((quotep x) x)
-        (t
-         (case-match x
-           (('binary-+ a b) (list 'binary-+
-                                  (boundrw-rewrite a direction bound-alist negative-bound-alist)
-                                  (boundrw-rewrite b direction bound-alist negative-bound-alist)))
+                            (boundrw-substlist-p bound-alist)
+                            (boundrw-substlist-p negative-bound-alist)))
+  (b* (((mv changed new-x) (boundrw-apply-bound x direction bound-alist mfc state))
+       ((when changed) new-x))
+    (cond ((atom x) x)
+          ((quotep x) x)
+          (t
+           (case-match x
+             (('binary-+ a b) (list 'binary-+
+                                    (boundrw-rewrite a direction bound-alist negative-bound-alist)
+                                    (boundrw-rewrite b direction bound-alist negative-bound-alist)))
 
-           (('unary-- a) (list 'unary--
-                               (boundrw-rewrite a (not direction) negative-bound-alist bound-alist)))
-           (('unary-/ a)
-            (b* ((a-sign (ts-check-sign-strict a mfc state))
-                 ((unless a-sign) x)
-                 (b (boundrw-rewrite a (not direction) negative-bound-alist bound-alist))
-                 ((when (or (and (eq a-sign :positive) (not direction))
-                            (and (eq a-sign :negative) direction)))
-                  ;; a is positive and b is greater or equal, or a is negative
-                  ;; and b is less or equal, just by correctness of this
-                  ;; function.
-                  (if (ts-check-rational b mfc state)
-                      `(unary-/ ,b)
-                    x))
-                 (b-sign (ts-check-sign-strict b mfc state)))
-              (if (eq a-sign b-sign)
-                  `(unary-/ ,b)
-                x)))
+             (('unary-- a) (list 'unary--
+                                 (boundrw-rewrite a (not direction) negative-bound-alist bound-alist)))
+             (('unary-/ a)
+              (b* ((a-sign (ts-check-sign-strict a mfc state))
+                   ((unless a-sign) x)
+                   (b (boundrw-rewrite a (not direction) negative-bound-alist bound-alist))
+                   ((when (or (and (eq a-sign :positive) (not direction))
+                              (and (eq a-sign :negative) direction)))
+                    ;; a is positive and b is greater or equal, or a is negative
+                    ;; and b is less or equal, just by correctness of this
+                    ;; function.
+                    (if (ts-check-rational b mfc state)
+                        `(unary-/ ,b)
+                      x))
+                   (b-sign (ts-check-sign-strict b mfc state)))
+                (if (eq a-sign b-sign)
+                    `(unary-/ ,b)
+                  x)))
 
-           (('binary-* a b)
-            ;; First rewrite a based on b's type, then rewrite b based on a's
-            ;; type, then if necessary, go back and look at a again.
-            (b* (((unless (and (ts-check-rational a mfc state)
-                               (ts-check-rational b mfc state)))
-                  x)
-                 (b-type (ts-check-sign b mfc state))
-                 (new-a (if b-type
-                            (b* (((mv a-dir a-bound-alist a-negative-bound-alist)
-                                  (if (eq b-type :nonnegative)
-                                      (mv direction bound-alist negative-bound-alist)
-                                    (mv (not direction) negative-bound-alist bound-alist)))
-                                 (res
-                                  (boundrw-rewrite a a-dir a-bound-alist a-negative-bound-alist)))
-                              (if (ts-check-rational res mfc state)
-                                  res
-                                a))
-                          a))
-                 (a-type (ts-check-sign new-a mfc state))
-                 (new-b (if a-type
-                            (b* (((mv b-dir b-bound-alist b-negative-bound-alist)
-                                  (if (eq a-type :nonnegative)
-                                      (mv direction bound-alist negative-bound-alist)
-                                    (mv (not direction) negative-bound-alist bound-alist)))
-                                 (res (boundrw-rewrite b b-dir b-bound-alist b-negative-bound-alist)))
-                              (if (ts-check-rational res mfc state)
-                                  res
-                                b))
-                          b))
-                 ((when (or b-type (not a-type)))
-                  `(binary-* ,new-a ,new-b))
-                 (b-type (ts-check-sign new-b mfc state))
-                 (new-a (if b-type
-                            (b* (((mv a-dir a-bound-alist a-negative-bound-alist)
-                                  (if (eq b-type :nonnegative)
-                                      (mv direction bound-alist negative-bound-alist)
-                                    (mv (not direction) negative-bound-alist bound-alist)))
-                                 (res
-                                  (boundrw-rewrite a a-dir a-bound-alist a-negative-bound-alist)))
-                              (if (ts-check-rational res mfc state)
-                                  res
-                                a))
-                          a)))
-              `(binary-* ,new-a ,new-b)))
+             (('binary-* a b)
+              ;; First rewrite a based on b's type, then rewrite b based on a's
+              ;; type, then if necessary, go back and look at a again.
+              (b* (((unless (and (ts-check-rational a mfc state)
+                                 (ts-check-rational b mfc state)))
+                    x)
+                   (b-type (ts-check-sign b mfc state))
+                   (new-a (if b-type
+                              (b* (((mv a-dir a-bound-alist a-negative-bound-alist)
+                                    (if (eq b-type :nonnegative)
+                                        (mv direction bound-alist negative-bound-alist)
+                                      (mv (not direction) negative-bound-alist bound-alist)))
+                                   (res
+                                    (boundrw-rewrite a a-dir a-bound-alist a-negative-bound-alist)))
+                                (if (ts-check-rational res mfc state)
+                                    res
+                                  a))
+                            a))
+                   (a-type (ts-check-sign new-a mfc state))
+                   (new-b (if a-type
+                              (b* (((mv b-dir b-bound-alist b-negative-bound-alist)
+                                    (if (eq a-type :nonnegative)
+                                        (mv direction bound-alist negative-bound-alist)
+                                      (mv (not direction) negative-bound-alist bound-alist)))
+                                   (res (boundrw-rewrite b b-dir b-bound-alist b-negative-bound-alist)))
+                                (if (ts-check-rational res mfc state)
+                                    res
+                                  b))
+                            b))
+                   ((when (or b-type (not a-type)))
+                    `(binary-* ,new-a ,new-b))
+                   (b-type (ts-check-sign new-b mfc state))
+                   (new-a (if b-type
+                              (b* (((mv a-dir a-bound-alist a-negative-bound-alist)
+                                    (if (eq b-type :nonnegative)
+                                        (mv direction bound-alist negative-bound-alist)
+                                      (mv (not direction) negative-bound-alist bound-alist)))
+                                   (res
+                                    (boundrw-rewrite a a-dir a-bound-alist a-negative-bound-alist)))
+                                (if (ts-check-rational res mfc state)
+                                    res
+                                  a))
+                            a)))
+                `(binary-* ,new-a ,new-b)))
 
-           (& (boundrw-apply-bound x direction bound-alist mfc state)))))
+             (& x)))))
   ///
   (verify-guards+ boundrw-rewrite)
 
@@ -663,8 +684,8 @@
     (b* ((old (boundrw-ev x a))
          (new (boundrw-ev new-x a)))
       (implies (and (pseudo-termp x)
-                    (pseudo-term-map-p bound-alist)
-                    (pseudo-term-map-p negative-bound-alist)
+                    (boundrw-substlist-p bound-alist)
+                    (boundrw-substlist-p negative-bound-alist)
                     (boundrw-ev-meta-extract-contextual-facts a))
                (and (implies direction
                              (<= old new))
@@ -689,8 +710,16 @@
                            weak-metafunction-context-p
                            weak-rewrite-constant-p)))
 
+
+
+
 (define bound-rewrite-metafn ((x pseudo-termp) mfc state)
   :returns (new-x)
+  :prepwork ((local (defthm dumb-unquote-guard-lemma
+                      (implies (and (pseudo-termp x)
+                                    (quotep x))
+                               (consp (cdr x)))
+                      :hints(("Goal" :in-theory (enable pseudo-termp))))))
   (b* (((unless (and (consp x) (eq (car x) '<)))
         (cw "Bound-rewrite: applied to wrong term: ~x0~%" x)
         x)
@@ -731,9 +760,9 @@
        ((unless (or (consp upper-bounds) (consp lower-bounds)))
         (cw "Bound-rewrite: Bounds lists are empty~%")
         x)
-       ((unless (and (pseudo-term-map-p upper-bounds)
-                     (pseudo-term-map-p lower-bounds)))
-        (cw "Bound-rewrite: Bounds lists are not both pseudo-term-map-ps.~%")
+       ((unless (and (boundrw-substlist-p upper-bounds)
+                     (boundrw-substlist-p lower-bounds)))
+        (cw "Bound-rewrite: Bounds lists are not both boundrw-substlist-ps.~%")
         x)
        
        ((list a b) (cdr x))
@@ -750,7 +779,22 @@
 
        ((when (and (equal new-a a) (equal new-b b)))
         ;; failed to do any replacement, stick with current term
+        x)
+       (new-a (sublis-var nil new-a))
+       (new-b (sublis-var nil new-b))
+       ((when (and (quotep new-a)
+                   (quotep new-b)
+                   (let ((b (unquote new-b))
+                         (a (unquote new-a)))
+                     (and (rationalp b)
+                          (rationalp a)
+                          ;; If it's going to reduce to just the HIDE term below, then skip it.
+                          (if hyp-p
+                              (< a b)
+                            (<= b a))))))
+        ;; Reduced it to NIL -- skip instead.
         x))
+        
     (if hyp-p
         ;; (not (< a b)) -- use AND
         `(if (hide ,x)
@@ -770,6 +814,32 @@
     :rule-classes ((:meta :trigger-fns (<)))))
              
 
+(define boundrw-translate-subst (cmp lhs rhs freevars state)
+  :returns (mv upperp (subst t))
+  :mode :program
+  (b* (((unless (member cmp '(< <= > >=)))
+        (raise "Boundrw-hint: Malformed comparison in substitutions: ~x0~%" cmp)
+        (mv nil nil))
+       ((mv errp lhs) (translate-cmp lhs t nil nil 'boundrw-hint (w state)
+                                     (default-state-vars t)))
+       ((when errp) (er hard? errp "~@0~%" lhs) (mv nil nil))
+       ((mv errp rhs) (translate-cmp rhs t nil nil 'boundrw-hint (w state)
+                                     (default-state-vars t)))
+       ((when errp) (er hard? errp "~@0~%" rhs) (mv nil nil))
+       (lhs-vars (all-vars lhs))
+       (rhs-vars (all-vars rhs))
+       ((unless (symbol-listp freevars))
+        (raise "Boundrw-hint: freevars must be a symbol list: ~x0~%" freevars)
+        (mv nil nil))
+       ((unless (subsetp (intersection$ freevars rhs-vars) lhs-vars))
+        (raise
+         "Boundrw-hint: Free variables must appear in the LHS if they appear in the RHS~%")
+        (mv nil nil))
+       (bound-vars (set-difference$ (union-eq lhs-vars rhs-vars) freevars))
+       (alist (pairlis$ bound-vars bound-vars))
+       (subst (make-boundrw-subst :lhs lhs :rhs rhs :alist alist)))
+    (mv (consp (member cmp '(< <=))) subst)))
+
 (define boundrw-translate-substs
   ((substs "A list of inequalities, each either the form @('(<= lhs rhs)'), @('(<
             lhs rhs)'), @('(>= lhs rhs)'), or @('(> lhs rhs)'). These are used
@@ -782,27 +852,22 @@
   (b* (((when (atom substs)) (mv nil nil))
        ((mv rest-upper rest-lower)
         (boundrw-translate-substs (cdr substs) state))
-       (subst (car substs)))
-    (case-match subst
-      ((cmp lhs rhs)
-       (b* (((unless (member cmp '(< <= > >=)))
-             (raise "Boundrw-hint: Malformed comparison in substitutions: ~x0~%" subst)
-             (mv nil nil))
-            ((mv errp lhs) (translate-cmp lhs t nil nil 'boundrw-hint (w state)
-                                          (default-state-vars t)))
-            ((when errp) (er hard? errp "~@0~%" lhs) (mv nil nil))
-            ((mv errp rhs) (translate-cmp rhs t nil nil 'boundrw-hint (w state)
-                                          (default-state-vars t)))
-            ((when errp) (er hard? errp "~@0~%" rhs) (mv nil nil)))
-         (if (member cmp '(< <=))
-             (mv (cons (cons lhs rhs) rest-upper) rest-lower)
-           (mv rest-upper (cons (cons lhs rhs) rest-lower)))))
-      (& (prog2$ (raise "Boundrw-hint: Malformed comparison in substitutions: ~x0~%" subst)
-                 (mv nil nil))))))
+       (subst (car substs))
+       ((mv upperp bound)
+        (case-match subst
+          ((':free vars (cmp lhs rhs))
+           (boundrw-translate-subst cmp lhs rhs vars state))
+          ((cmp lhs rhs)
+           (boundrw-translate-subst cmp lhs rhs nil state))
+          (& (prog2$ (raise "Boundrw-hint: Malformed comparison in substitutions: ~x0~%" subst)
+                     (mv nil nil))))))
+    (if upperp
+        (mv (cons bound rest-upper) rest-lower)
+      (mv rest-upper (cons bound rest-lower)))))
        
 
        
-(define try-bound-rw-fn (substs
+(define rewrite-bounds-fn (substs
                          in-theory
                          wait-til-stablep
                          stablep
@@ -815,13 +880,179 @@
        (state (f-put-global 'boundrw-lower-bounds lower-bounds state)))
     (value `(:in-theory (cons 'bound-rewrite ,in-theory)))))
 
-(defmacro try-bound-rw (substs
+(defmacro rewrite-bounds (substs
                         &key
                         (in-theory '(enable))
                         (wait-til-stablep 't)
                         (stablep 'stable-under-simplificationp)
                         (state 'state))
-  `(try-bound-rw-fn ',substs ',in-theory ,wait-til-stablep ,stablep ,state))
+  `(rewrite-bounds-fn ',substs ',in-theory ,wait-til-stablep ,stablep ,state))
+
+
+
+
+
+(defthm hard-nonlinear-problem
+  (implies (and (rationalp a)
+                (rationalp b)
+                (rationalp c)
+                (<= 0 a)
+                (<= 0 b)
+                (<= 1 c)
+                (<= a 10)
+                (<= b 20)
+                (<= c 30))
+           (<= (+ (* a b c)
+                  (* a b)
+                  (* b c)
+                  (* a c))
+               (+ (* 10 20 30)
+                  (* 10 20)
+                  (* 20 30)
+                  (* 10 30))))
+  :hints (;; (and stable-under-simplificationp
+          ;;      '(:nonlinearp t))
+          (rewrite-bounds ((<= a 10)
+                           (<= b 20)
+                           (<= c 30)))))
+
+(defxdoc rewrite-bounds
+  :short "Substitute upper bounds and lower bounds for subterms in comparisons."
+  :long " <p>Replace expressions by upper and lower bounds for them inside
+inequalities.  Usage, as a computed hint:</p>
+
+@({
+ (rewrite-bounds ((<= a 10)
+                  ;; replace the variable a by 10 in upper-boundable contexts
+
+                  (:free (b) (> (foo b c) (bar b)))
+                  ;; replace (foo b c), for any b, by (bar b) in
+                  ;; lower-boundable contexts (note: C is not a free variable)
+
+                  ...)
+
+                  ;; optional keywords:
+
+                  ;; theory to use in addition to the bound-rewrite meta rule
+                  ;; -- default is (enable), i.e., the ambient theory for the
+                  ;; event
+                  :in-theory (enable foo bar)
+
+                  ;; wait until stable under simplification (default t)
+                  :wait-til-stablep nil)
+  })
+
+<p>Here, lower-boundable contexts are locations where decreasing the
+subexpression makes the goal stronger, and upper boundable contexts are
+locations where increasing the value of the subexpression makes the goal
+stronger (the new goal implies the original goal).  More on this below.</p>
+
+<p>Note that performing such replacements may change a theorem to a
+non-theorem.  Actually, this procedure leaves the original literals behind
+inside @('hide') forms, but it still is best to be careful to apply this
+strategy in the right places.</p>
+
+<h3>Details</h3>
+
+<p>ACL2 has a powerful nonlinear arithmetic decision procedure, but
+often it stalls on relatively simple proofs.  For example, it goes out to
+lunch on this problem:</p>
+
+@({
+ (defthm hard-nonlinear-problem
+   (implies (and (rationalp a)
+                 (rationalp b)
+                 (rationalp c)
+                 (<= 0 a)
+                 (<= 0 b)
+                 (<= 1 c)
+                 (<= a 10)
+                 (<= b 20)
+                 (<= c 30))
+            (<= (+ (* a b c)
+                   (* a b)
+                   (* b c)
+                   (* a c))
+                (+ (* 10 20 30)
+                   (* 10 20)
+                   (* 20 30)
+                   (* 10 30))))
+   :hints ((and stable-under-simplificationp
+                '(:nonlinearp t))))
+ })
+
+<p>This can be proved using a fairly simple argument: each variable only occurs
+in the conclusion in a context where the LHS expression increases monotonically
+as it increases (because the rest of the variables are nonnegative).
+Therefore, to find the upper bound for the LHS expression, set each variable to
+its upper bound.  This upper bound is the same as the RHS, and the comparison
+is non-strict, so the conclusion holds.</p>
+
+<p>The computed hint @('rewrite-bounds') can run this sort of proof: it
+replaces subterms within comparisons with user-provided upper or lower bounds,
+depending on the context in which they occur.  In this theorem all of the
+occurrences of the variables in the conclusion are upper-boundable instances,
+because replacing them by some larger expression results in a new conjecture
+that implies the original conjecture.  So we can use the following hint to
+prove the theorem instantaneously:</p>
+
+@({
+ (rewrite-bounds ((<= a 10)
+                  (<= b 20)
+                  (<= c 30)))
+ })
+
+<p>This instructs our metafunction to replace @('a') by 10, @('b') by 20, and
+@('c') by 30 when it encounters them in upper-boundable contexts.  It will also
+only do the replacement if it can prove that the inequality holds in its
+context.</p>
+
+<p>A final detail: Observe that the occurrence of @('a') in @('(<= 0 a)') is
+also an upper-boundable context.  However, performing the replacement here
+would be bad because it would destroy the information that @('a') is
+nonnegative.  In particular, replacing @('a') by its bound here would result in
+a trivially true hypothesis.  The meta rule avoids making such replacements
+when it can determine that they are trivial.</p>
+
+<h3>Boundable Contexts</h3>
+
+<p>The rules used for determining which contexts are upper or lower boundable
+are as follows.</p>
+
+<table>
+<tr><th>Preconditions</th>
+    <th>Results</th>
+</tr>
+<tr><td>@('(< a b)') or @('(<= a b)') in hypothesis/negated literal</td>
+    <td>@('a') lower boundable, @('b') upper boundable</td>
+</tr>
+<tr><td>@('(< a b)') or @('(<= a b)') in conclusion/non-negated literal</td>
+    <td>@('a') upper boundable, @('b') lower boundable</td>
+</tr>
+<tr><td>@('(+ a b)') in upper/lower boundable context</td>
+    <td>@('a'), @('b') upper/lower boundable</td>
+</tr>
+<tr><td>@('(- a)') in upper/lower boundable context</td>
+    <td>@('a') lower/upper boundable</td>
+</tr>
+<tr><td>@('(* a b)') in upper/lower boundable context, @('b') nonnegative</td>
+    <td>@('a') upper/lower boundable</td>
+</tr>
+<tr><td>@('(* a b)') in upper/lower boundable context, @('b') nonpositive</td>
+    <td>@('a') lower/upper boundable</td>
+</tr>
+<tr><td>@('(/ a)') in upper/lower boundable context, @('a') positive/negative</td>
+    <td>@('a') lower/upper boundable if bound is also positive/negative</td>
+</tr>
+</table>
+
+<h3>Future work</h3>
+
+<ul>
+<li>Add better control over replacements</li>
+<li>Add more boundable contexts</li>
+<li>Add more smarts to prevent bad replacements.</li>
+</ul>")
 
 
 (local
@@ -846,8 +1077,21 @@
                    (rationalp (c))
                    (rationalp (d)))
               (<= (* (c) (d)) (* (a) (b))))
-     :hints ((try-bound-rw '((<= (a) (c))
-                            (<= (d) (b))))))))
+     :hints ((rewrite-bounds ((<= (a) (c))
+                            (<= (d) (b))))))
+
+   (defthm mult-monotonic-neg-pos-lower-foo2
+     (implies (and (<= b 0)
+                   (<= a c)
+                   (<= 0   c)
+                   (<= d b)
+                   (rationalp a)
+                   (rationalp b)
+                   (rationalp c)
+                   (rationalp d))
+              (<= (* c d) (* a b)))
+     :hints ((rewrite-bounds ((<= a c)
+                            (<= d b)))))))
 
 
 
@@ -855,7 +1099,7 @@
 #||
 
 dead code
-(define boundrw-alist-okp ((alist pseudo-term-map-p)
+(define boundrw-alist-okp ((alist boundrw-substlist-p)
                            (direction booleanp)
                            a)
   ;; Each key of alist is a term and each value is that term's bound.
