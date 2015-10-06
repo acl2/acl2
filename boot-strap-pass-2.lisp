@@ -83,6 +83,22 @@
 (verify-termination-boot-strap packn-pos) ; and guards
 )
 
+(verify-termination-boot-strap read-file-into-string1) ; and guards
+
+(encapsulate
+ ()
+
+ (local
+  (defthm stringp-read-file-into-string1
+    (implies (car (read-file-into-string1 channel state ans bound))
+             (stringp (car (read-file-into-string1 channel state ans
+                                                   bound))))))
+
+ (verify-termination-boot-strap read-file-into-string2) ; and guards
+ )
+
+(verify-termination-boot-strap read-file-into-string) ; and guards
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
