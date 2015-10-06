@@ -69,7 +69,6 @@ all: cosim-core symlinks
 FAILING_TEST_TARGETS := \
   for-integer/ok \
   for-nba/ok \
-  for-nested-if/ok \
   task/ok \
   task2/ok
 SPECFILES := $(wildcard */spec.sv)
