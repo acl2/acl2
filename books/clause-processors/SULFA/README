@@ -8,10 +8,11 @@ reeber@cs.utexas.edu
 INSTALLATION
 03/29/07
 
-0) We assume that you have an executable of ACL2 and that you have certified its system
-   books.
- 
-   We also assume you have a Perl interpreter and a C compiler.
+0) We assume you have a C compiler installed, as is presumably the case
+   on nearly all Unix-like systems (including Linux and MacOS).  We also
+   assume that you have Perl installed, which again is very likely for
+   Unix-like systems, and can be confirmed by checking output from the
+   shell command "which perl".
 
 1) In order to use our tool, you'll need a SAT solver.  Download and 
    compile, if necessary, either zchaff version 2007.3.12, which can be found at: 

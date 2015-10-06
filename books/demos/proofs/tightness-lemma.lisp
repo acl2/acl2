@@ -35,7 +35,7 @@
 ; (c) f and g are functions whose domains are the set of I-sequences of
 ;     length n_f and n_g, respectively.
 
-; (d) P is a property of n_f-tuples such that for all I-sequences s1 and
+; (d) P is a unary predicate such that for all I-sequences s1 and
 ;     s2 of length n_f such that maximum(s1) < minimum(s2), if f(s1) =
 ;     f(s2) then P(f(s1)).
 
@@ -47,8 +47,8 @@
 ; (f) If s1 and s2 are strictly <-increasing I-tuples of length n_f such
 ;     that P(f(s1)), then P(f(s2)).
 
-; (g) s_f and s_g are strictly <-increasing I-tuples of length n_f and
-;     n_g, respectively, such that f(s_f) = g(s_g).
+; (g) s_f and s_g are disjoint strictly <-increasing I-tuples of length
+;     n_f and n_g, respectively, such that f(s_f) = g(s_g).
 
 ; Then P(f(s_f)).
 

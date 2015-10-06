@@ -292,22 +292,26 @@
 
 (defun defsection-autodoc-fn (name parents short long extension marker state)
   (declare (xargs :mode :program :stobjs state))
-  (let* ((wrld      (w state))
-         (trips     (acl2::reversed-world-since-event wrld marker nil))
-         (info      (reverse (acl2::new-formula-info trips wrld nil)))
-         (acc       nil)
-         (acc       (if long
-                        (bootstrap-revappend-chars long acc)
-                      acc))
-         (acc       (list* #\Newline #\Newline acc))
-         (acc       (formula-info-to-defs (not extension) info acc))
-         (long      (reverse (the string (coerce acc 'string)))))
-    (if extension
-        `(xdoc-extend ,extension ,long)
-      `(defxdoc ,name
-         :parents ,parents
-         :short ,short
-         :long ,long))))
+  (let ((err (check-defxdoc-args name parents short long)))
+    (if err
+        (er hard? 'defsection
+            "In section ~x0: Bad defsection arguments: ~s1~%" name err)
+      (let* ((wrld      (w state))
+             (trips     (acl2::reversed-world-since-event wrld marker nil))
+             (info      (reverse (acl2::new-formula-info trips wrld nil)))
+             (acc       nil)
+             (acc       (if long
+                            (bootstrap-revappend-chars long acc)
+                          acc))
+             (acc       (list* #\Newline #\Newline acc))
+             (acc       (formula-info-to-defs (not extension) info acc))
+             (long      (reverse (the string (coerce acc 'string)))))
+        (if extension
+            `(xdoc-extend ,extension ,long)
+          `(defxdoc ,name
+             :parents ,parents
+             :short ,short
+             :long ,long))))))
 
 (defun make-xdoc-fragments (args) ;; args to a defsection
   (cond ((atom args)
@@ -344,31 +348,64 @@
          (autodoc-p   (and (or defxdoc-p extension)
                            (or (not autodoc-arg)
                                (cdr autodoc-arg))))
-         (new-args (make-xdoc-fragments (throw-away-keyword-parts args))))
+         (new-args (make-xdoc-fragments (throw-away-keyword-parts args)))
+
+
+         ;; Note: getting the with-output handling right is really tricky.
+         ;; Historically we used `:on :error` in the outermost with-output to
+         ;; try to ensure that any errors anywhere got printed.  But this led
+         ;; to extra multiple levels of noisy junk like
+         ;;
+         ;;    ACL2 Error in ( PROGN (TABLE ... NIL) ...):  PROGN failed!
+         ;;
+         ;; And this got to be a bother especially in various macros that were
+         ;; layered on top of defsection.  We now try hard to make sure that we
+         ;; add as little output as possible.
+         ;;
+         ;; This still isn't great, but it's certainly better than it was.  If
+         ;; you want to tweak it, please make sure to look at the "Interactive
+         ;; tests" at the bottom of tests/preprocessor-tests.lisp, and try to
+         ;; make sure that things are no worse than they are today.
+         (stack-pop-if-nonempty
+          ;; If this is an empty defsection, don't bother unhiding the output
+          ;; because it's just a value triple that nobody wants to see.
+          (if new-args
+              '(:stack :pop)
+            nil))
+
+         (wrapper
+          ;; ACL2 wants an encapsulate to have at least one event, so things
+          ;; like (encapsulate nil) cause an error.  To make empty defsections
+          ;; legal, we used to insert a (value-triple :invisible) into them, but
+          ;; now I think it seems nicer to switch any empty defsections to use
+          ;; progn instead of encapsulate, since progn is (generally) faster.
+          (if new-args
+              wrapper
+            '(progn))))
+
     (cond ((or (not name)
                (not (symbolp name)))
-           (er hard? 'defsection "Section name must be a non-nil symbol; found
+           (er hard? 'defsection "Section name must be a non-nil symbol; found ~
                                   ~x0." name))
           ((and extension
                 (or parents short))
            (er hard? 'defsection "In section ~x0, you are using :extension, ~
                                   so :parents and :short are not allowed." name))
+          ((and extension (not autodoc-p))
+           (er hard? 'defsection "In section ~x0, you are using :extension, ~
+                                  so :autodoc nil is not allowed." name))
           ((not autodoc-p)
            `(with-output
               :stack :push
               :off :all
-              :on error  ;; leave errors on, or you can think forms succeeded when they didn't.
               (progn
                 ,@(and defxdoc-p
                        `((defxdoc ,name
                            :parents ,parents
                            :short ,short
                            :long ,long)))
-                (with-output :stack :pop
-                  (,@wrapper
-                   ;; A silly value-triple so that an empty defsection is okay.
-                   (value-triple :invisible)
-                   . ,new-args))
+                (with-output ,@stack-pop-if-nonempty
+                  (,@wrapper . ,new-args))
                 ,@(and extension
                        `(xdoc-extend ,extension ,long)))))
           (t
@@ -377,7 +414,6 @@
              `(with-output
                 :stack :push
                 :off :all
-                :on error
                 (progn
                   ;; We originally just put down a single marker here, but that
                   ;; led to problems when there were multiple extensions of the
@@ -390,21 +426,16 @@
                   (table acl2::intro-table :mark nil)
                   ,marker
 
-                  (with-output :stack :pop
-                    (,@wrapper
-                     ;; A silly value-triple so that an empty defsection is okay.
-                     (value-triple :invisible)
-                     . ,new-args))
+                  (with-output ,@stack-pop-if-nonempty
+                    (,@wrapper . ,new-args))
                   (make-event
                    (defsection-autodoc-fn ',name ',parents ,short ,long ',extension ',marker state))
                   (value-triple ',name))))))))
 
 (defmacro defsection (name &rest args)
-  (declare (xargs :guard (symbolp name)))
   (defsection-fn '(encapsulate nil) name args))
 
 (defmacro defsection-progn (name &rest args)
-  (declare (xargs :guard (symbolp name)))
   (defsection-fn '(progn) name args))
 
 

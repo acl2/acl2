@@ -259,6 +259,11 @@ ifdef GLUCOSE_EXISTS
   OS_HAS_GLUCOSE := 1
 endif # ifdef GLUCOSE_EXISTS
 
+$(info Determining whether Smtlink is supported -- BOZO todo, for now pretending it does not!)
+# BOZO TODO figure out how to do this right.  For now, just say that SMTLINK
+OS_HAS_SMTLINK :=
+
+
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
 -include $(BUILD_DIR)/Makefile-features
@@ -269,6 +274,7 @@ $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
 $(info ACL2_HOST_LISP    := $(ACL2_HOST_LISP))
 $(info OS_HAS_GLUCOSE    := $(OS_HAS_GLUCOSE))
+$(info OS_HAS_SMTLINK    := $(OS_HAS_SMTLINK))
 $(info USE_QUICKLISP     := $(USE_QUICKLISP))
 $(info Done with features.)
 
@@ -371,11 +377,14 @@ OK_CERTS := $(filter-out $(CERT_PL_ANSI_ONLY), $(OK_CERTS))
 endif # ifeq ($(ACL2_HAS_ANSI), )
 
 ifeq ($(OS_HAS_GLUCOSE), )
-
 $(info Excluding books that need Glucose: [$(CERT_PL_USES_GLUCOSE)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_GLUCOSE), $(OK_CERTS))
+endif
 
-endif # ifeq ($(OS_HAS_GLUCOSE), )
+ifeq ($(OS_HAS_SMTLINK), )
+$(info Excluding books that need Smtlink: [$(CERT_PL_USES_SMTLINK)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_SMTLINK), $(OK_CERTS))
+endif
 
 
 ifeq ($(ACL2_HAS_REALS), )
@@ -727,7 +736,7 @@ clause-processors/SULFA/target.cert: \
 	then \
 	(cd $(@D) ; $(MAKE)) ; \
 	else \
-	echo "*NOTE*: Skipping SULFA subdirectory (no SAT solver installed; see SULFA/README)." ; \
+	echo "*NOTE*: Skipping SULFA subdirectory (need SAT solver installed as per books/clause-processors/SULFA/README)." ; \
 	fi
 
 projects/translators/l3-to-acl2/target.cert: \
@@ -1161,11 +1170,15 @@ unicode: $(filter unicode/%, $(OK_CERTS))
 .PHONY: xdoc
 xdoc: $(filter-out xdoc/tests/%, $(filter xdoc/%, $(OK_CERTS)))
 
+.PHONY: smtlink
+smtlink: $(filter workshops/2015/peng-greenstreet/%, $(OK_CERTS))
+
 
 .PHONY: workshops \
         workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
-        workshop2009 workshop2011 workshop2013 workshop2014
+        workshop2009 workshop2011 workshop2013 workshop2014 \
+        workshop2015
 
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
@@ -1180,6 +1193,7 @@ workshop2009: $(filter workshops/2009/%, $(OK_CERTS))
 workshop2011: $(filter workshops/2011/%, $(OK_CERTS))
 workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
 workshop2014: $(filter workshops/2014/%, $(OK_CERTS))
+workshop2015: $(filter workshops/2015/%, $(OK_CERTS))
 
 
 # Projects targets:

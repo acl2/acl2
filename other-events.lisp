@@ -1419,7 +1419,12 @@
 ; The following should contain all function symbols that might violate an ACL2
 ; invariant.  See check-invariant-risk-state-p.
 
-  '(extend-32-bit-integer-stack
+; We don't include compress1 or compress2 because we believe they don't write
+; out of bounds.
+
+  '(aset1 ; could write past the end of the real array
+    aset2 ; could write past the end of the real array
+    extend-32-bit-integer-stack
     aset-32-bit-integer-stack))
 
 (defun primordial-world-globals (operating-system)
@@ -1641,11 +1646,10 @@
 ; global-table is an ordered-symbol-alistp, but there is no way to get one's
 ; hands directly on the global-table; and state-p1 also specifies that
 ; plist-worldp holds of the logical world, and we ensure that by making set-w
-; and related functions untouchable.  The only two exceptions are
-; extend-32-bit-integer-stack and aset-32-bit-integer-stack, as we check
-; elsewhere with the function check-invariant-risk-state-p.  If new exceptions
-; arise, then we should add them to the value of
-; *boot-strap-invariant-risk-symbols*.
+; and related functions untouchable.  The only exceptions are those in
+; *boot-strap-invariant-risk-symbols*, as is checked by the function
+; check-invariant-risk-state-p.  If new exceptions arise, then we should add
+; them to the value of *boot-strap-invariant-risk-symbols*.
 
   (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
                   *boot-strap-invariant-risk-symbols* wrld))
@@ -1653,6 +1657,13 @@
 ;; RAG - I added the treatment of *non-standard-primitives*
 
 (defun primordial-world (operating-system)
+
+; Warning: Names converted during the boot-strap from :program mode to :logic
+; mode will, we believe, have many properties erased by renew-name.  That is
+; why, for example, we call initialize-invariant-risk at the end of the
+; boot-strap, in end-prehistoric-world.  Consider whether a property should be
+; set there rather than here.
+
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
         (guards (strip-caddrs *primitive-formals-and-guards*))
@@ -1716,9 +1727,8 @@
 
                        (putprop
                         'state 'stobj '(*the-live-state*)
-                        (initialize-invariant-risk
-                         (primordial-world-globals
-                          operating-system))))))))))))))))))))
+                        (primordial-world-globals
+                         operating-system)))))))))))))))))))
       t))))
 
 (defun same-name-twice (l)
@@ -2544,7 +2554,7 @@
 
   (cond ((or (null symbols) (no-augmented-rune-based-on pairs symbols))
          (revappend ans pairs))
-        (t (reverse (revappend-delete-augmented-runes-based-on-symbols
+        (t (reverse (revappend-delete-augmented-runes-based-on-symbols1
                      pairs symbols ans)))))
 
 (defun current-theory-fn (logical-name wrld)
@@ -3034,7 +3044,7 @@
                           (putprop 'return-last-table
                                    'table-alist
                                    *initial-return-last-table*
-                                   wrld))))
+                                   (initialize-invariant-risk wrld)))))
          (wrld2 (update-current-theory (current-theory1 wrld nil nil) wrld1)))
     (add-command-landmark
      :logic
@@ -4747,7 +4757,8 @@
 (defun elide-locals-rec (form strongp)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
-; destructure-expansion, and make-include-books-absolute.
+; destructure-expansion, make-include-books-absolute, and
+; equal-mod-elide-locals.
 
 ; We assume that form is a legal event form and return (mv changed-p new-form),
 ; where new-form results from eliding top-level local events from form, and
@@ -7362,12 +7373,18 @@
                           . &)
             name)
            (('encapsulate nil . ev-lst)
-            (find-first-non-local-name-lst ev-lst wrld primitives state-vars))
+            (find-first-non-local-name-lst ev-lst wrld primitives state-vars
+                                           nil))
            (('mutual-recursion ('defun name . &) . &) name)
-           (('make-event . &) ; no good way to get the name
-            nil)
+           (('make-event ('verify-termination-fn ('quote names)
+                                                 'state))
+            (and names (car names)))
+           (('make-event . &) ; special case: no good way to get the name
+            :make-event)
            (('progn . ev-lst)
-            (find-first-non-local-name-lst ev-lst wrld primitives state-vars))
+            (find-first-non-local-name-lst ev-lst wrld primitives state-vars
+                                           nil))
+           (('verify-guards name . &) name)
 
 ; Keep the following in sync with chk-embedded-event-form; see comment above.
 
@@ -7394,7 +7411,7 @@
     (and (symbolp val)
          val)))
 
-(defun find-first-non-local-name-lst (lst wrld primitives state-vars)
+(defun find-first-non-local-name-lst (lst wrld primitives state-vars ans)
 
 ; Challenge: If lst is a true list of embedded event forms that is
 ; successfully processed with ld-skip-proofsp nil, name one name that
@@ -7407,11 +7424,69 @@
 ; that name is new in a world, we know that this lst has not been
 ; processed before.
 
-  (cond ((atom lst) nil)
-        (t (or (find-first-non-local-name (car lst) wrld primitives state-vars)
-               (find-first-non-local-name-lst (cdr lst) wrld primitives
-                                              state-vars)))))
+  (cond ((atom lst) ans)
+        (t (let ((ans2 (find-first-non-local-name (car lst) wrld primitives
+                                                  state-vars)))
+             (cond ((eq ans2 :make-event)
+                    (find-first-non-local-name-lst (cdr lst) wrld primitives
+                                                   state-vars :make-event))
+                   (ans2)
+                   (t (find-first-non-local-name-lst (cdr lst) wrld primitives
+                                                     state-vars ans)))))))
+)
 
+(defun equal-mod-elide-locals1 (form)
+
+; We assume that form can be translated.
+
+  (cond ((atom form)
+         form)
+        ((eq (car form) 'local)
+         *local-value-triple-elided*)
+        ((member-eq (car form) '(skip-proofs
+                                 with-output
+                                 with-prover-time-limit
+                                 with-prover-step-limit
+                                 record-expansion
+                                 time$))
+         (equal-mod-elide-locals1 (car (last form))))
+        (t form)))
+
+(mutual-recursion
+
+(defun equal-mod-elide-locals (ev1 ev2)
+
+; Warning: Keep this in sync with elide-locals-rec.
+
+; This function checks that (elide-locals-rec ev1 t) agrees with
+; (elide-locals-rec ev2 t), but without doing any consing.
+
+  (let ((ev1 (equal-mod-elide-locals1 ev1))
+        (ev2 (equal-mod-elide-locals1 ev2)))
+    (cond
+     ((equal ev1 ev2) t)
+     ((not (eq (car ev1) (car ev2))) nil)
+     ((eq (car ev1) 'progn)
+      (equal-mod-elide-locals-lst (cdr ev1) (cdr ev2)))
+     ((eq (car ev1) 'progn!)
+      (let ((bindings-p1 (and (consp (cdr ev1))
+                              (eq (cadr ev1) :state-global-bindings)))
+            (bindings-p2 (and (consp (cdr ev2))
+                              (eq (cadr ev2) :state-global-bindings))))
+        (and (eq bindings-p1 bindings-p2)
+             (cond (bindings-p1
+                    (equal-mod-elide-locals-lst (cdddr ev1) (cdddr ev2)))
+                   (t
+                    (equal-mod-elide-locals-lst (cdr ev1) (cdr ev2)))))))
+     ((eq (car ev1) 'encapsulate)
+      (and (equal (cadr ev1) (cadr ev2))
+           (equal-mod-elide-locals-lst (cddr ev1) (cddr ev2))))
+     (t nil))))
+
+(defun equal-mod-elide-locals-lst (lst1 lst2)
+  (cond ((endp lst1) (null lst2))
+        (t (and (equal-mod-elide-locals (car lst1) (car lst2))
+                (equal-mod-elide-locals-lst (cdr lst1) (cdr lst2))))))
 )
 
 (defun corresponding-encap-events (old-evs new-evs ans)
@@ -7429,14 +7504,7 @@
                     (equal (cadr old-ev) new-ev))
                (corresponding-encap-events (cdr old-evs) (cdr new-evs)
                                            :expanded))
-              ((equal (mv-let (changedp x)
-                              (elide-locals-rec old-ev t)
-                              (declare (ignore changedp))
-                              x)
-                      (mv-let (changedp y)
-                              (elide-locals-rec new-ev t)
-                              (declare (ignore changedp))
-                              y))
+              ((equal-mod-elide-locals old-ev new-ev)
                (corresponding-encap-events (cdr old-evs) (cdr new-evs)
                                            :expanded))
               (t nil))))))
@@ -7490,22 +7558,24 @@
 
 (defun redundant-encapsulatep (signatures ev-lst event-form wrld)
 
-; We wish to know if is there an event-tuple in wrld that has event-form as its
-; form.  We do know that event-form is an encapsulate with the given two
-; arguments.  We don't know if event-form will execute without error.  But
-; suppose we could find a name among signatures and ev-lst that is guaranteed
-; to be created if event-form were successful.  Then if that name is new, we
-; know we won't find event-form in wrld and needn't bother looking.  If the
-; name is old and was introduced by a corresponding encapsulate (in the sense
-; that the signatures agree and each form of the new encapsulate either equals
-; the corresponding form of the old encapsulate or else, roughly speaking, does
-; so before expansion of the old form -- see corresponding-encaps), then the
-; event is redundant.  Otherwise, if this correspondence test fails or if we
-; can't even find a name -- e.g., because signatures is nil and all the events
-; in ev-lst are user macros -- then we suffer the search through wrld.  How bad
-; is this?  We expect most encapsulates to have a readily recognized name among
-; their new args and most encapsulates are not redundant, so we think most of
-; the time, we'll find a name and it will be new.
+; We wish to know if is there an event-tuple in wrld that is redundant with
+; event-form (see :doc redundant-encapsulate).  We do know that event-form is
+; an encapsulate with the given two arguments.  We don't know if event-form
+; will execute without error.  But suppose we could find a name among
+; signatures and ev-lst that is guaranteed to be created if event-form were
+; successful.  Then if that name is new, we know we won't find event-form in
+; wrld and needn't bother looking.  If the name is old and was introduced by a
+; corresponding encapsulate (in the sense that the signatures agree and each
+; form of the new encapsulate either suitably agrees the corresponding form of
+; the old encapsulate -- see corresponding-encaps), then the event is
+; redundant.  Otherwise, if this correspondence test fails or if we can't even
+; find a name, then we could suffer the search through wrld.  We have found a
+; rather dramatic performance improvements (26% of the time cut when including
+; community book centaur/sv/tutorial/alu) by doing what we do now, which is to
+; avoid that search when we don't find such a name or any make-event call, even
+; after macroexpansion.  But we expect most encapsulates to have a readily
+; recognized name among their new args and most encapsulates are not redundant,
+; so we think most of the time, we'll find a name and it will be new.
 
 ; If we find that the current encapsulate is redundant, then we return t unless
 ; the earlier corresponding encapsulate is not equal to it, in which case we
@@ -7552,11 +7622,14 @@
                  (if (eq equal? :expanded)
                      old-event-form
                    t))))))))
-   (t (let ((name (find-first-non-local-name-lst ev-lst
-                                                 wrld
-                                                 (primitive-event-macros)
-                                                 (default-state-vars nil))))
-        (and (or (not name)
+   (t (let* ((name0 (find-first-non-local-name-lst ev-lst
+                                                   wrld
+                                                   (primitive-event-macros)
+                                                   (default-state-vars nil)
+                                                   nil))
+             (name (and (not (eq name0 :make-event)) name0)))
+        (and name0
+             (or (not name)
 
 ; A non-local name need not be found.  But if one is found, then redundancy
 ; fails if that name is new.
@@ -17738,15 +17811,68 @@
                   (type (access defstobj-field-template field-template :type)))
              (put-defstobj-invariant-risk
               (cdr field-templates)
-              (cond ((or (eq type t)
-                         (and (consp type)
-                              (eq (car type) 'array)
-                              (eq (cadr type) t)))
+              (cond ((eq type t)
                      wrld)
-                    (t (let ((updater (access defstobj-field-template
-                                              field-template
-                                              :updater-name)))
-                         (putprop updater 'invariant-risk updater wrld)))))))))
+                    (t
+
+; The following example from Jared Davis and Sol Swords shows why even arrays
+; with elements of type t need to be considered for invariant-risk.
+
+;   To start:
+
+;       (defstobj foo
+;         (foo-ch  :type character :initially #\a)
+;         (foo-arr :type (array t (3))))
+
+;   The idea is to cause an invalid write to foo-arr that will
+;   overwrite foo-ch.  To do this, it is helpful to know the
+;   relative addresses of foo-ch and foo-arr.  We can find this
+;   out from raw Lisp, but once we know it, it seems pretty
+;   reliable, so in the final version there's no need to enter
+;   raw Lisp.
+
+;       :q
+;       (let ((ch-addr  (ccl::%address-of (aref *the-live-foo* 0)))
+;             (arr-addr (ccl::%address-of (aref *the-live-foo* 1))))
+;         (list :ch   ch-addr
+;               :arr  arr-addr
+;               :diff (- ch-addr arr-addr)))
+;       (lp)
+
+;   An example result on one invocation on our machine is:
+
+;       (:CH 52914053289693 :ARR 52914053289501 :DIFF 192)
+
+;   When we quit ACL2 and resubmit this, we typically get
+;   different offsets for CH and ARR, but the :DIFF seems to be
+;   consistently 192.  (In principle, it probably could
+;   sometimes be different because it probably depends on how
+;   the memory allocation happens to fall out, but in practice
+;   it seems to be reliable).  If you want to reproduce this and
+;   your machine gets a different result, you may need to adjust
+;   the index that you write to to provoke the problem.
+
+;   Since CCL's (array t ...) probably uses 8-byte elements, we
+;   should write to address (/ 192 8) = 24.  To do that we will
+;   need a program mode function that writes to foo-arri to
+;   avoid ACL2's guards from preventing the out-of-bounds write.
+
+;       (defun attack (n v foo)
+;         (declare (xargs :mode :program :stobjs foo))
+;         (update-foo-arri n v foo))
+
+;   Now we can do something like this:
+
+;       (attack 24 100 foo)
+
+;   After the attack, (foo-ch foo) returns something that Emacs
+;   prints as #\^Z, and (char-code (foo-ch foo)) reports 800,
+;   which is of course not valid for an ACL2 character.
+
+                     (let ((updater (access defstobj-field-template
+                                            field-template
+                                            :updater-name)))
+                       (putprop updater 'invariant-risk updater wrld)))))))))
 
 (defun defstobj-fn (name args state event-form)
 
@@ -21271,6 +21397,7 @@
                        (ubt! ',label)))
                     :ld-verbose nil
                     :ld-prompt nil
+                    :ld-pre-eval-print nil
                     :ld-post-eval-print nil
                     :ld-error-action :error))
                (value :invisible))))
@@ -22094,7 +22221,8 @@
                   (cons #\2 (if enabledp 0 1)))
             (standard-co state) state nil)
        (let ((fmt-string
-              "~ ~ ~#c~[New term~/Conclusion~]: ~Y3t~|~
+              "~@x~|~
+               ~ ~ ~#c~[New term~/Conclusion~]: ~Y3t~|~
                ~ ~ Hypotheses: ~#b~[<none>~/~Y4t~]~|~
                ~#c~[~ ~ Equiv: ~ye~|~/~]~
                ~#s~[~/~ ~ Substitution: ~Yat~|~]~
@@ -22105,7 +22233,8 @@
                and hence will apparently be impossible to relieve.~]~|"))
          (pprogn
           (fms fmt-string
-               (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+               (list (cons #\x "")
+                     (cons #\c (if (eq caller 'show-rewrites) 0 1))
                      (cons #\3 (untrans0 subst-rhs term-id-iff
                                          abbreviations))
                      (cons #\s (if pl-p 1 0))
@@ -22124,13 +22253,29 @@
                (standard-co state) state nil)
           (cond (show-more
                  (pprogn
-                  (cond (pl-p state)
-                        (t (fms0 "  -- IF ~#c~[REWRITE~/APPLY-LINEAR~]: is ~
-                                  called with a third argument of t: --"
-                                 (list (cons #\c (if (eq caller 'show-rewrites)
-                                                     0 1))))))
+                  (cond
+                   (pl-p state)
+                   (t
+                    (fms0 "  -- IF ~#c~[REWRITE~/APPLY-LINEAR~] is called ~
+                           with a third argument of t: --"
+                          (list (cons #\c (if (eq caller 'show-rewrites)
+                                              0 1))))))
                   (fms fmt-string
-                       (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+                       (list (cons #\x
+                                   (let ((extra
+                                          (untranslate-subst-abb
+                                           (alist-difference-eq
+                                            unify-subst-2
+                                            unify-subst)
+                                           abbreviations
+                                           state)))
+                                     (cond
+                                      (extra ; always true?
+                                       (msg
+                                        "~ ~ Additional bindings: ~X0t"
+                                        extra))
+                                      (t ""))))
+                             (cons #\c (if (eq caller 'show-rewrites) 0 1))
                              (cons #\3 (untrans0
                                         (sublis-var unify-subst-2 rhs)
                                         term-id-iff abbreviations))
@@ -27968,3 +28113,109 @@
                                     (maybe-add-event-landmark state))
                                    (t (value nil)))
                              (value result))))))))))))))))))
+
+(defun get-check-invariant-risk (state)
+  (let ((pair (assoc-eq :check-invariant-risk
+                        (table-alist 'acl2-defaults-table (w state))))
+        (cir (f-get-global 'check-invariant-risk state)))
+    (cond (pair (case (cdr pair) ; then take the "minimum" with cir
+                  ((:ERROR :CLEAR) cir)
+                  ((:WARNING) (if (eq cir :ERROR) :WARNING cir))
+                  ((T) (if (eq cir nil) nil t))
+                  (otherwise nil)))
+          (t cir))))
+
+(defmacro set-check-invariant-risk (x &optional table-p)
+
+; In oneify-cltl-code we handle an "invariant-risk" that stobj invariants
+; aren't violated upon ill-guarded calls of stobj updaters.  The idea is to
+; force evaluation to use *1* functions down to those primitives, which always
+; check their guards.  See also the comment in **1*-as-raw*.  Note that this
+; is a separate issue from the lack of atomicity of some defabsstobj exports
+; (which is implemented using *inside-absstobj-update*).
+
+; There may be cases where this use of *1* functions may be slower than one
+; likes.  By setting the invariant-risk mode to nil, one defeats that behavior;
+; see :DOC set-check-invariant-risk.  This could be unsound, but since one
+; needs an active trust tag to set this global, we take the position that
+; setting it is much like redefining prove so that one always gets the "Q.E.D."
+
+; Perhaps we will consider avoiding this use of *1* functions when the only
+; danger of invariant violations is from local stobjs.  Since only :program
+; mode functions are at issue (because a :logic mode function call only slips
+; into raw Lisp when the function has been guard-verified and the call is
+; guard-checked, and because raw-ev-fncall binds **1*-as-raw* to nil for
+; :logic mode functions), it seems plausible that we can provide this
+; optimization for local stobjs.  After all, local stobjs are let-bound rather
+; than global; so it seems that during proofs, any local stobj encountered will
+; either be created and destroyed during a computed hint or else will be
+; modified only by :logic mode functions manipulated by the prover.  (Trusted
+; clause processors might provide an exception, but then trust tags are
+; involved, so it's their responsibility to do the right thing.)
+
+; But we'll leave that for another day, if at all, as it seems risky and
+; error-prone to implement.  In particular, we would likely need to track
+; invariant-risk on a per-stobj basis, and built-ins (see
+; initialize-invariant-risk) might not be associated with stobjs at all.
+
+  (declare (xargs :guard (booleanp table-p)))
+  (cond
+   (table-p
+    `(with-output
+      :off :all :on (observation error)
+      (progn (table acl2-defaults-table :check-invariant-risk ,x)
+             (make-event
+              (pprogn (if (and (not (eq ,x (get-check-invariant-risk state)))
+                               (not (eq ,x :CLEAR)))
+                          (observation 'set-check-invariant-risk
+                                       "No change is being made in the value ~
+                                        computed by ~x0.  This happens when ~
+                                        the value of state global ~
+                                        'check-invariant-risk is less than ~
+                                        the new table value; see :DOC ~
+                                        set-check-invariant-risk."
+                                       '(get-check-invariant-risk state))
+                        state)
+                      (value '(value-triple ,x)))
+              :check-expansion t))))
+   ((and x (member-eq x *check-invariant-risk-values*))
+    `(set-check-invariant-risk-fn ,x state))
+   (t `(cond
+        ((not (member-eq ,x '(t nil :ERROR :WARNING)))
+         (er soft 'check-invariant-risk
+             "Illegal value for ~x0: ~x1"
+             'check-invariant-risk
+             ',x))
+        (t (er-progn
+            (with-ubt!
+             (with-output
+              :off :all
+              (with-output
+               :on (error warning warning!)
+               (progn (defttag :set-check-invariant-risk)
+                      (progn! (set-check-invariant-risk-fn ,x state))))))
+            (value nil)))))))
+
+(defun set-check-invariant-risk-fn (x state)
+  (declare (xargs :guard (member-eq x *check-invariant-risk-values*)))
+  (progn$ (mbt (and (member-eq x *check-invariant-risk-values*) t))
+          (cond ((and (null x)
+                      (f-get-global 'check-invariant-risk state)
+                      (not (ttag (w state))))
+                 (er soft 'set-check-invariant-risk
+                     "There must be an active trust tag to set '~x0 to ~x1."
+                     'check-invariant-risk nil))
+                (t (pprogn
+                    (f-put-global 'check-invariant-risk x state)
+                    (if (not (eq x (get-check-invariant-risk state)))
+                        (observation 'set-check-invariant-risk
+                                     "No change is being made in the value ~
+                                      computed by ~x0, because the new value ~
+                                      of state global 'check-invariant-risk ~
+                                      is greater than the table value; see ~
+                                      :DOC set-check-invariant-risk."
+                                     '(get-check-invariant-risk state))
+                      state)
+                    (value x))))))
+
+

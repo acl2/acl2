@@ -329,9 +329,9 @@
 
 ; For the sake of simplicity in the discussion below, we ignore the possibility
 ; that guard-checking is set to :none or :all and we ignore safe-mode.  Also,
-; we assume that *ignore-invariant-risk* is nil, as should always be the case
-; unless someone is hacking; otherwise, the effect of this variable is
-; defeated.
+; we assume that the value of state global 'check-invariant-risk is non-nil, as
+; should always be the case unless someone is hacking; otherwise, the effect of
+; this variable is defeated.
 
 ; Oneify-cltl-code uses this variable, **1*-as-raw*, to arrange that when a
 ; *1* :logic-mode function that calls mbe is itself called under a *1*
