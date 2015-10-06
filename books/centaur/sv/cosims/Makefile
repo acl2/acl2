@@ -66,12 +66,19 @@ all: cosim-core symlinks
 
 # ------------------------------------------
 #  Test setup.
-
+FAILING_TEST_TARGETS := \
+  for-integer/ok \
+  for-nba/ok \
+  for-nested-if/ok \
+  task/ok \
+  task2/ok
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))
 TESTCERTS := $(patsubst %,%/ok,$(TESTS))
 OUTDATAS_NCV := $(patsubst %,%/outputs.ncv.data,$(TESTS))
 OUTDATAS_VCS := $(patsubst %,%/outputs.vcs.data,$(TESTS))
+PASSING_TESTS := $(filter-out $(FAILING_TEST_TARGETS), $(TESTCERTS))
+OUTDIRS_VCS := $(patsubst %,%/simv.daidir,$(TESTS))
 print_tests :
 	@echo $(TESTS)
 
@@ -105,8 +112,12 @@ ncv : $(OUTDATAS_NCV)
 .PHONY: vcs
 vcs : $(OUTDATAS_VCS)
 
+.PHONY: passing
+passing : $(PASSING_TESTS);
+
 all : $(TESTCERTS) ncv vcs
 
 .PHONY: cleansim
 cleansim :
-	rm -f $(OUTDATAS_NCV) $(OUTDATAS_VCS)
+	rm -f $(OUTDATAS_NCV) $(OUTDATAS_VCS); \
+    rm -rf $(OUTDIRS_VCS)
