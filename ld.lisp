@@ -3278,7 +3278,7 @@
                     (set-w 'retraction pred-wrld state)
                     (er-progn
                      (state-global-let*
-                      ((guard-checking-on nil)) ; agree with include-book
+                      ((guard-checking-on t)) ; agree with include-book
                       (ld-simple cmds state))
                      (value (cons i
                                   (- (absolute-to-relative-command-number
