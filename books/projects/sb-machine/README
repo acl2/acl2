@@ -1,0 +1,19 @@
+; Copyright (C) 2015, Regents of the University of Texas
+; Written by Ben Selfridge
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+We formalize the x86-TSO memory model in ACL2
+(http://www.di.ens.fr/~zappa/readings/cacm10.pdf). In particular, we
+model a machine with multiple processors, a shared memory, and store
+buffers, and include all of the transitions outlined in the
+``operational'' x86-TSO model outlined in this paper.
+
+We then build a toy architecture ``on top of'' this model, implemented
+using the x86-TSO transitions. Each instruction is broken up into
+discrete pieces, where each piece consists of exactly one
+transition. For instance, a MOV instruction from memory to a register
+consists of two steps: ``reading'' the location from memory, and
+``writing'' it to a register.
+
+We have also completed some proofs of correctness for simple
+programs. These are located under proofs/completed.
