@@ -12914,8 +12914,7 @@
                                (value 'include-book))
 
 ; The following process-embedded-events is protected by the revert-world-
-; on-error above.  See the Essay on Guard Checking for a discussion of the
-; binding of guard-checking-on below.
+; on-error above.
 
                               (ttags-allowed1
                                (state-global-let*
@@ -12929,7 +12928,8 @@
                                        full-book-name))
                                  (connected-book-directory directory-name)
                                  (match-free-error nil)
-                                 (guard-checking-on nil)
+                                 (guard-checking-on ; see Essay on Guard Checking
+                                  t)
                                  (in-local-flg
                                   (and (f-get-global 'in-local-flg state)
                                        'local-include-book))
@@ -13536,11 +13536,10 @@
 
 ; Essay on Guard Checking
 
-; We bind the state global variable guard-checking-on to nil in certify-book-fn
-; and in include-book-fn (using state-global-let*), and also in
-; pc-single-step-primitive.  We bind guard-checking-on to t in prove,
-; translate-in-theory-hint, and value-triple.  We do not bind guard-checking-on
-; in defconst-fn.  Here we explain these decisions.
+; We bind the state global variable guard-checking-on to t in certify-book-fn
+; and in include-book-fn (using state-global-let*), as well as in prove and
+; puff-fn1.  We bind it to nil pc-single-step-primitive.  We do not bind
+; guard-checking-on in defconst-fn.  Here we explain these decisions.
 
 ; We prefer to bind guard-checking-on to a predetermined fixed value when
 ; certifying or including books.  Why?  Book certification is a logical act.
@@ -13551,71 +13550,34 @@
 
 ; So the question now is whether to bind guard-checking-on to t or to nil for
 ; book certification and for book inclusion.  (We reject :none and :all because
-; they can be too inefficient.)
+; they can be too inefficient.)  We want it to be the case that if a book is
+; certified, then subsequently it can be included.  In particular, it would be
+; unfortunate if certification is done in an environment with guard checking
+; off, and then later we get a guard violation when including the book with
+; guard checking on.  So we should bind guard-checking-on the same in
+; certify-book as in include-book.
 
-; We want it to be the case that if a book is certified, then subsequently it
-; can be included.  In particular, it would be unfortunate if certification is
-; done in an environment with guard checking off, and then later we get a guard
-; violation when including the book with guard checking on.  So if we bind
-; guard-checking-on to nil in certify-book, then we should also bind it to nil
-; in include-book.
+; We argue now for binding guard-checking-on to t in certify-book-fn (and
+; hence, as argued above, in include-book-fn as well).  Consider this scenario
+; brought to our attention by Eric Smith: one certifies a book with
+; guard-checking-on bound to nil, but then later gets a guard violation when
+; loading that book during a demo using LD (with the default value of t for
+; guard-checking-on).  Horrors!  So we bind guard-checking-on to t in
+; certify-book-fn, to match the default in the loop.
 
-; We argue now for binding guard-checking-on to nil in certify-book-fn (and
-; hence, as argued above, in include-book-fn as well).  Note that we already
-; allow book certification without requiring guard verification, which drives
-; home the position that guards are extra-logical.  Thus, a high-level argument
-; for binding guard-checking-on to nil during certification is that if we bind
-; instead to t, then that position is diluted.  Now we give a more practical
-; argument for binding guard-checking-on to nil during certification.  Suppose
-; someone writes a macro with a guard, where that guard enforces some
-; intention.  Do we want to enforce that guard, and when?  We already have
-; safe-mode to enforce the guard as necessary for Common Lisp.  If a user
-; executes :set-guard-checking nil in the interactive loop, then function
-; guards are not checked, and thus it is reasonable not to check macro guards
-; either.  Now suppose the same user attempts to certify a book that contains a
-; top-level guard-violating macro call.  What a rude surprise it would be if
-; certification fails due to a guard violation during expansion of that macro
-; call, when the interactive evaluation of that same call had just succeeded!
-; (One might argue that it is a sophisticated act to turn off guard checking in
-; the interactive loop, hence a user who does that should be able to handle
-; that rude surprise.  But that argument seems weak; even a beginner could find
-; out how to turn off guard checking after seeing a guard violation.)
-
-; We have argued for turning off guard checking during certify-book.  But a
-; concern remains.  Suppose one user has written a macro with a guard, and now
-; suppose a second user creates a book containing a top-level call of that
-; macro with a guard violation.  Safe-mode will catch any Common Lisp guard
-; violation.  But the macro writer may have attached the guard in order to
-; enforce some intention that is not related to Common Lisp.  In the case of
-; functions, one can ensure one's compliance with existing guards by verifying
-; all guards, for example with (set-verify-guards-eagerness 2) at the top of
-; the file.  A similar "complete guard checking" mechanism could enforce one's
-; compliance with macro guards as well, say, (set-verify-guards-eagerness 3).
-; The same concern applies to defconst, not only for macro expansion but also
-; for function calls, and could be handled in the case of complete guard
-; checking in the same way as for top-level macro expansion, by binding
-; guard-checking-on to t with state-global-let*.  In practice, users may not
-; demand the capability for complete guard checking, so it might not be
-; important to provide this capability.
-
-; Having decided to bind guard-checking-on to nil in certify-book-fn and
-; (therefore) include-book-fn, let us turn to the other cases in which we bind
-; guard-checking-on.
-
-; We discussed defconst briefly above.  We note that raw Lisp evaluation should
-; never take place for the body of a defconst form (outside the boot-strap),
-; because the raw Lisp definition of defconst avoids such evaluation when the
-; name is already bound, which should be the case from prior evaluation of the
-; defconst form in the ACL2 loop.  Value-triple also is not evaluated in raw
-; Lisp, where it is defined to return nil.
+; We note that raw Lisp evaluation should never take place for the body of a
+; defconst form (outside the boot-strap), because the raw Lisp definition of
+; defconst avoids such evaluation when the name is already bound, which should
+; be the case from prior evaluation of the defconst form in the ACL2 loop.
+; Value-triple also is not evaluated in raw Lisp, where it is defined to return
+; nil.
 
 ; We bind guard-checking-on to nil in prove, because proofs can use evaluation
 ; and such evaluation should be done in the logic, without regard to guards.
 
 ; It can be important to check guards during theory operations like
-; union-theory, not only during certify-book but in the interactive loop.  For
-; example, with guard checking off in Version_2.9, one gets a hard Lisp error
-; upon evaluation of the following form.
+; union-theory.  For example, with guard checking off in Version_2.9, one gets
+; a hard Lisp error upon evaluation of the following form.
 
 ; (in-theory (union-theories '((:rewrite no-such-rule))
 ;                            (current-theory 'ground-zero)))
@@ -13624,8 +13586,8 @@
 ; checked guards of system functions regardless of the value of
 ; guard-checking-on; but we have abandoned that aggressive approach, relying
 ; instead on safe-mode.)  Our solution is to bind guard-checking-on to t in
-; translate-in-theory-hint, which calls simple-translate-and-eval and hence
-; causes the guards to be checked.
+; eval-theory-expr, which calls simple-translate-and-eval and hence causes the
+; guards to be checked.
 
 ; Note that guard-checking-on is bound to nil in pc-single-step-primitive.  We
 ; no longer recall why, but we may as well preserve that binding.
@@ -15416,7 +15378,7 @@
                  (defaxioms-okp-cert defaxioms-okp)
                  (skip-proofs-okp-cert skip-proofs-okp)
                  (guard-checking-on ; see Essay on Guard Checking
-                  nil))
+                  t))
                 (er-let* ((env-compile-flg
                            (getenv! "ACL2_COMPILE_FLG" state))
                           (compile-flg
