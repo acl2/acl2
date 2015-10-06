@@ -124,8 +124,9 @@
   (declare (xargs :stobjs state :mode :program))
   (cdr (assoc 'colon-xdoc-support-loaded (table-alist 'xdoc (w state)))))
 
+
 (defmacro colon-xdoc-init ()
-  '(with-output :off (summary event observation)
+  '(with-output :off (summary event observation prove proof-tree)
      (make-event
       (if (not (acl2::colon-xdoc-initialized state))
         `(progn

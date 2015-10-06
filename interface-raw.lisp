@@ -1030,41 +1030,6 @@
           (declare (ignore erp state))
           val))
 
-(defvar *ignore-invariant-risk*
-
-; In oneify-cltl-code we handle an "invariant-risk" that stobj invariants
-; aren't violated upon ill-guarded calls of stobj updaters.  The idea is to
-; force evaluation to use *1* functions down to those primitives, which always
-; check their guards.  See also the comment in **1*-as-raw*.  Note that this
-; is a separate issue from the lack of atomicity of some defabsstobj exports
-; (which is implemented using *inside-absstobj-update*).
-
-; There may be cases where this use of *1* functions may be slower than one
-; likes.  By setting *ignore-invariant-risk* to any non-nil value, one defeats
-; that behavior.  This could be unsound, but since one needs to slip into raw
-; Lisp to set this global, we take the position that setting it is much like
-; redefining prove so that one always gets the "Q.E.D."
-
-; Perhaps we will consider avoiding this use of *1* functions when the only
-; danger of invariant violations is from local stobjs.  Since only :program
-; mode functions are at issue (because a :logic mode function call only slips
-; into raw Lisp when the function has been guard-verified and the call is
-; guard-checked, and because raw-ev-fncall binds **1*-as-raw* to nil for
-; :logic mode functions), it seems plausible that we can provide this
-; optimization for local stobjs.  After all, local stobjs are let-bound rather
-; than global; so it seems that during proofs, any local stobj encountered will
-; either be created and destroyed during a computed hint or else will be
-; modified only by :logic mode functions manipulated by the prover.  (Trusted
-; clause processors might provide an exception, but then trust tags are
-; involved, so it's their responsibility to do the right thing.)
-
-; But we'll leave that for another day, if at all, as it seems risky and
-; error-prone to implement.  In particular, we would likely need to track risk
-; on a per-stobj basis, and built-ins (see initialize-invariant-risk) might not
-; be associated with stobjs at all.
-
-  nil)
-
 (mutual-recursion
 
 (defun-one-output oneify-flet-bindings (alist fns w program-p)
@@ -2238,13 +2203,13 @@
 ; If we are under **1*-as-raw*, then our intention is that code executes just
 ; as it would in raw Lisp (i.e., without forcing execution via *1* function),
 ; except that guards are checked for stobj primitives.  This speial treatment
-; is only required in the invariant-risk case; see **1*-as-raw* and
-; *ignore-invariant-risk*.  Moreover, we want the normal flow in the *1*
+; is only required in the invariant-risk case; see **1*-as-raw* and state
+; global 'check-invariant-risk.  Moreover, we want the normal flow in the *1*
 ; function for stobj primitives, so we don't give this special treatment when
 ; super-stobjs-in is true.  It would be sound to make other exceptions as well,
-; but that would cause unnecessary guard-checking.  Indeed, unnecessary
-; extra guard-checking was done through Version_7.0, which resulted in
-; slowdowns to user code that led us to remove that extra guard-checking.
+; but that would cause unnecessary guard-checking.  Indeed, unnecessary extra
+; guard-checking was done through Version_7.0, which resulted in slowdowns to
+; user code that led us to remove that extra guard-checking.
 
                            `((when (not **1*-as-raw*)
                                ,@early-exit-code-main)))
@@ -2290,9 +2255,54 @@
                        (cond
                         ((and invariant-risk
                               (eq defun-mode :program))
-                         `((cond
-                            (*ignore-invariant-risk* (,fn ,@formals))
-                            (t (let ((**1*-as-raw* t))
+                         (let ((check-invariant-risk-sym
+
+; The serialize code seems to cause errors for a symbol with no package.
+
+                                (gentemp))
+                               (cont-p (gentemp)))
+                           `((let ((,check-invariant-risk-sym
+                                    (get-check-invariant-risk
+                                     *the-live-state*))
+                                   (,cont-p nil))
+                               (cond
+                                ((and
+                                  ,check-invariant-risk-sym
+                                  (not (f-get-global 'boot-strap-flg
+                                                     *the-live-state*)))
+                                 (cond
+                                  ((eq ,check-invariant-risk-sym :ERROR)
+                                   (state-free-global-let*
+                                    ((debugger-enable t))
+                                    (cerror
+                                     "~%     Continue with invariant-risk ~
+                                      mode of T~%     (that is, with state ~
+                                      global 'check-invariant-risk bound to ~
+                                      T)~%     to complete the current call ~
+                                      of ~s.~%     See :DOC invariant-risk."
+                                     "Invariant-risk has been detected for a ~
+                                      call of function ~s~%(as possibly ~
+                                      leading to an ill-guarded call of ~
+                                      ~s);~%see :DOC invariant-risk."
+                                     ',fn ',invariant-risk))
+                                   (setq ,cont-p t))
+                                  ((eq ,check-invariant-risk-sym :WARNING)
+                                   (warning$ ',fn
+                                             "Invariant-risk"
+                                             "Invariant-risk has been ~
+                                              detected for a call of function ~
+                                              ~x0 (as possibly leading to an ~
+                                              ill-guarded call of ~x1); see ~
+                                              :DOC invariant-risk."
+                                             ',fn ',invariant-risk)
+                                   (setq ,cont-p t))
+                                  (t ; 'check-invariant-risk has value t
+                                   t))
+
+; Now that we have perhaps caused a continuable error or a warning for
+; invariant-risk, produce the result if an error didn't abort this computation.
+
+                                 (let ((**1*-as-raw* t))
 
 ; One reason that we bind **1*-as-raw* above and use labels below is to helps
 ; compilers remove tail recursions, since we believe that special variable
@@ -2300,13 +2310,21 @@
 ; of recursion, simply because that is simplest and we expect, or at least,
 ; hope, that there is only trivial impact on performance.)
 
-                                 ,(labels-form-for-*1*
-                                   fn *1*fn formals
-                                   (oneify body nil wrld 'invariant-risk)
-                                   declare-stobj-special
-                                   ignore-vars ignorable-vars
-                                   super-stobjs-in super-stobjs-chk
-                                   guard wrld))))))
+                                   ,(let ((labels-form
+                                          (labels-form-for-*1*
+                                           fn *1*fn formals
+                                           (oneify body nil wrld
+                                                     'invariant-risk)
+                                           declare-stobj-special
+                                           ignore-vars ignorable-vars
+                                           super-stobjs-in super-stobjs-chk
+                                           guard wrld)))
+                                     (if cont-p
+                                         `(state-free-global-let*
+                                           ((check-invariant-risk t))
+                                           ,labels-form)
+                                       labels-form))))
+                                (t (,fn ,@formals)))))))
                         (t `((,fn ,@formals))))))
                      (trace-rec-for-none
                       main-body-before-final-call)
@@ -8367,6 +8385,30 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                       *the-live-state*
                       nil)))
              (f-put-global 'infixp old-infixp *the-live-state*)))))
+       (let ((val (getenv$-raw "ACL2_CHECK_INVARIANT_RISK")))
+         (when (and val (not (equal val "")))
+           (let* ((val1 (string-upcase val))
+                  (val2 (cond
+                         ((equal val1 "NIL") nil)
+                         ((equal val1 "T") t)
+                         ((member-equal val1 '(":ERROR" "ERROR"))
+                          :ERROR)
+                         ((member-equal val1 '(":WARNING" "WARNING"))
+                          :WARNING)
+                         (t (error "Error detected in ~
+                                    initialize-state-globals:~%Illegal value, ~
+                                    ~s, for environment variable ~
+                                    ACL2_CHECK_INVARIANT_RISK.~%See :DOC ~
+                                    invariant-risk."
+                                   val1)))))
+             (ld-fn (put-assoc-eq
+                     'standard-oi
+                     `((set-check-invariant-risk ,val2))
+                     (put-assoc-eq 'ld-pre-eval-print
+                                   t
+                                   (f-get-ld-specials *the-live-state*)))
+                    *the-live-state*
+                    t))))
        (f-put-global 'ld-error-action :continue *the-live-state*)))
      (with-suppression ; package locks, not just warnings; to read 'cl::foo
       (cond ((and *return-from-lp*

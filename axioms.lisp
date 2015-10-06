@@ -12659,6 +12659,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     too-many-ifs-pre-rewrite
 
     set-gc-strategy-fn gc-strategy
+
+    read-file-into-string2
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -13018,6 +13020,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; certify-book-info record.
 
                        nil)
+    (check-invariant-risk . :WARNING)
     (check-sum-weirdness . nil)
     (checkpoint-forced-goals . nil) ; default in :doc
     (checkpoint-processors . ; avoid unbound var error with collect-checkpoints
@@ -15353,6 +15356,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (include-book-dir-alist-entry-p (caar x) (cdar x) os)
                 (include-book-dir-alistp (cdr x) os)))))
 
+(defconst *check-invariant-risk-values*
+
+; In the case of the acl2-defaults-table setting for :check-invariant-risk,
+; :DEFAULT is also a legal value; but it is not included in the value of this
+; constant.
+
+  '(t nil :ERROR :WARNING))
+
+(defun ttag (wrld)
+
+; This function returns nil if there is no active ttag.
+
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld)))))
+  (cdr (assoc-eq :ttag (table-alist 'acl2-defaults-table wrld))))
+
 (table acl2-defaults-table nil nil
 
 ; Warning: If you add or delete a new key, there will probably be a change you
@@ -15476,6 +15496,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq key :memoize-ideal-okp)
          (or (eq val :warn)
              (booleanp val)))
+        ((eq key :check-invariant-risk)
+         (or (eq val :CLEAR)
+             (and (member-eq val *check-invariant-risk-values*)
+                  (or val
+                      (ttag world)
+                      (illegal 'acl2-defaults-table
+                               "An active trust tag is required for setting ~
+                                the :check-invariant-risk key to nil in the ~
+                                acl2-defaults-table."
+                               nil)))))
         (t nil)))
 
 ; (set-state-ok t)
@@ -19274,12 +19304,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ((add-pair key value l)))))
 
 (defthm assoc-add-pair
-  (implies (and (symbolp sym2)
-                (ordered-symbol-alistp alist))
-           (equal (assoc sym1 (add-pair sym2 val alist))
-                  (if (equal sym1 sym2)
-                      (cons sym1 val)
-                    (assoc sym1 alist)))))
+  (equal (assoc sym1 (add-pair sym2 val alist))
+         (if (equal sym1 sym2)
+             (cons sym1 val)
+           (assoc sym1 alist))))
 
 (defthm add-pair-preserves-all-boundp
   (implies (and (eqlable-alistp alist1)
@@ -19912,6 +19940,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     illegal-to-certify-message
     acl2-sources-dir
     including-uncertified-p
+    check-invariant-risk ; set- function ensures proper values
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,
@@ -21683,15 +21712,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro defttag (&rest args)
   (declare (ignore args))
   nil)
-
-(defun ttag (wrld)
-
-; This function returns nil if there is no active ttag.
-
-  (declare (xargs :guard
-                  (and (plist-worldp wrld)
-                       (alistp (table-alist 'acl2-defaults-table wrld)))))
-  (cdr (assoc-eq :ttag (table-alist 'acl2-defaults-table wrld))))
 
 ; We here document some Common Lisp functions.  The primitives are near
 ; the end of this file.
@@ -26615,8 +26635,8 @@ Lisp definition."
     (ccl-initialize-gc-strategy threshold)
     (assert (and (symbolp fn)
                  (fboundp fn)))
-    (funcall fn op)
-    (setq *gc-strategy* op))
+    (setq *gc-strategy* op)
+    (funcall fn))
   #+(and (not ccl) (not acl2-loop-only))
   (cw "; Note: Set-gc-strategy is a no-op in this host Lisp.~|")
   op)

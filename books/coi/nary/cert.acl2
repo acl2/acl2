@@ -36,3 +36,6 @@
 #|===========================================================================|#
 
 ; (ld "Makefile.acl2")
+(ld "nary-defpkg.lsp")
+(ld "coi/util/def-defpkg.lsp" :dir :system)
+(ld "coi/symbol-fns/symbol-fns-defpkg.lsp" :dir :system)

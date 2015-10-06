@@ -736,7 +736,7 @@ clause-processors/SULFA/target.cert: \
 	then \
 	(cd $(@D) ; $(MAKE)) ; \
 	else \
-	echo "*NOTE*: Skipping SULFA subdirectory (no SAT solver installed; see SULFA/README)." ; \
+	echo "*NOTE*: Skipping SULFA subdirectory (need SAT solver installed as per books/clause-processors/SULFA/README)." ; \
 	fi
 
 projects/translators/l3-to-acl2/target.cert: \
@@ -1177,7 +1177,8 @@ smtlink: $(filter workshops/2015/peng-greenstreet/%, $(OK_CERTS))
 .PHONY: workshops \
         workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
-        workshop2009 workshop2011 workshop2013 workshop2014
+        workshop2009 workshop2011 workshop2013 workshop2014 \
+        workshop2015
 
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
@@ -1192,6 +1193,7 @@ workshop2009: $(filter workshops/2009/%, $(OK_CERTS))
 workshop2011: $(filter workshops/2011/%, $(OK_CERTS))
 workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
 workshop2014: $(filter workshops/2014/%, $(OK_CERTS))
+workshop2015: $(filter workshops/2015/%, $(OK_CERTS))
 
 
 # Projects targets:

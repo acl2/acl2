@@ -79,8 +79,13 @@
   (declare (xargs :guard (and (consp binding)
 			      (consp (cdr binding))
 			      (null  (cddr binding)))))
-  `(mv-let ,(car binding) ,(cadr binding)
-	   ,@rst))
+  (if (null (car binding))
+      `(let nil ,@rst)
+    (if (null (cdr (car binding)))
+        `(let ((,(car (car binding)) ,(cadr binding)))
+           ,@rst)
+      `(mv-let ,(car binding) ,(cadr binding)
+               ,@rst))))
 
 ;;
 ;; met* is useful in formulating rewrite rules involving functions
