@@ -28221,28 +28221,43 @@
             (stringp (car (read-file-into-string1 channel state ans bound))))))
 
 (defun read-file-into-string2 (filename state)
+
+; Parallelism wart: avoid potential illegal behavior caused by this function.
+; A simple but expensive solution is probably to add a lock.  But with some
+; thought one might provide for correct parallel evaluations of this function.
+; Perhaps that's already the case!
+
   (declare (xargs :stobjs state :guard (stringp filename)))
   #-acl2-loop-only
   (declare (ignore state))
-
-; The following #-acl2-loop-only code is based on code found at
-; http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was authored by
-; @sabetts, who is apparently Shawn Betts.  The URL above presents five
-; implementations of file slurping and I found the discussion truly excellent.
-; Thank you @sabetts!
-
-; The URL above says ``You can do anything you like with the code.''
-
   #-acl2-loop-only
   (with-open-file
    (stream filename :direction :input :if-does-not-exist nil)
    (and stream
         (let ((len (file-length stream)))
           (and (< len *read-file-into-string-bound*)
-               (let ((seq (make-string len)))
-                 (declare (type string seq))
-                 (read-sequence seq stream)
-                 seq)))))
+               (let ((fwd (file-write-date filename)))
+                 (or (check-against-read-file-alist filename fwd)
+                     (push (cons filename fwd)
+                           *read-file-alist*))
+
+; The following #-acl2-loop-only code, minus the WHEN clause, is based on code
+; found at http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was
+; authored by @sabetts, who is apparently Shawn Betts.  The URL above presents
+; five implementations of file slurping and I found the discussion truly
+; excellent.  Thank you @sabetts!
+
+; The URL above says ``You can do anything you like with the code.''
+
+                 (let ((seq (make-string len)))
+                   (declare (type string seq))
+                   (read-sequence seq stream)
+                   (when (not (eql fwd (file-write-date filename)))
+                     (error "Illegal attempt to call ~s concurrently with ~
+                             some write to that file!~%See :DOC ~
+                             read-file-into-string."
+                            'read-file-into-string))
+                   seq))))))
   #+acl2-loop-only
   (let* ((st (coerce-state-to-object state)))
     (with-local-state
@@ -28254,8 +28269,13 @@
          (open-input-channel filename :character state)
          (cond ((null chan)
                 (mv nil state))
-               (t (read-file-into-string1 chan state nil
-                                          *read-file-into-string-bound*)))))
+               (t (mv-let
+                   (val state)
+                   (read-file-into-string1 chan state nil
+                                           *read-file-into-string-bound*)
+                   (pprogn (ec-call ; guard verification here seems unimportant
+                            (close-input-channel chan state))
+                           (mv val state)))))))
       val))))
 )
 

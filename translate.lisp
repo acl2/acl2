@@ -1796,7 +1796,7 @@
                                                          (cdr var-lst)
                                                          wrld)))))
 
-(defun get-guards2 (edcls targets wrld acc)
+(defun get-guards2 (edcls targets wrld stobjs-acc guards-acc)
 
 ; Targets is a subset of (GUARDS TYPES), where we pick up expressions from
 ; :GUARD and :STOBJS XARGS declarations if GUARDS is in the list and we pick up
@@ -1806,14 +1806,14 @@
 ; edcls contains only valid type declarations, as explained in the comment
 ; below about translate-declaration-to-guard-var-lst.
 
-; We are careful to preserve the order, except that within a given declaration
-; we consider :stobjs as going before :guard.  (An example is (defun load-qs
-; ...) in community book books/defexec/other-apps/qsort/programs.lisp.)  Before
-; Version_3.5, Jared Davis sent us the following example, for which guard
-; verification failed on the guard of the guard, because the :guard conjuncts
-; were unioned into the :type contribution to the guard, leaving a guard of
-; (and (natp n) (= (length x) n) (stringp x)).  It seems reasonable to
-; accumulate the guard conjuncts in the order presented by the user.
+; We are careful to preserve the order, except that we consider :stobjs as
+; going before :guard.  (An example is (defun load-qs ...) in community book
+; books/defexec/other-apps/qsort/programs.lisp.)  Before Version_3.5, Jared
+; Davis sent us the following example, for which guard verification failed on
+; the guard of the guard, because the :guard conjuncts were unioned into the
+; :type contribution to the guard, leaving a guard of (and (natp n) (= (length
+; x) n) (stringp x)).  It seems reasonable to accumulate the guard conjuncts in
+; the order presented by the user.
 
 ; (defun f (x n)
 ;   (declare (xargs :guard (and (stringp x)
@@ -1823,7 +1823,8 @@
 ;            (ignore x n))
 ;   t)
 
-  (cond ((null edcls) (reverse acc))
+  (cond ((null edcls)
+         (revappend stobjs-acc (reverse guards-acc)))
         ((and (eq (caar edcls) 'xargs)
               (member-eq 'guards targets))
 
@@ -1857,10 +1858,10 @@
            (get-guards2 (cdr edcls)
                         targets
                         wrld
-                        (rev-union-equal
-                         guard-conjuncts
-                         (rev-union-equal stobj-conjuncts
-                                          acc)))))
+                        (rev-union-equal stobj-conjuncts
+                                         stobjs-acc)
+                        (rev-union-equal guard-conjuncts
+                                         guards-acc))))
         ((and (eq (caar edcls) 'type)
               (member-eq 'types targets))
          (get-guards2 (cdr edcls)
@@ -1873,15 +1874,16 @@
 ; which leads to a call of chk-dcl-lst to check that the type declarations are
 ; legal.
 
+                      stobjs-acc
                       (rev-union-equal (translate-declaration-to-guard-var-lst
                                         (cadr (car edcls))
                                         (cddr (car edcls))
                                         wrld)
-                                       acc)))
-        (t (get-guards2 (cdr edcls) targets wrld acc))))
+                                       guards-acc)))
+        (t (get-guards2 (cdr edcls) targets wrld stobjs-acc guards-acc))))
 
 (defun get-guards1 (edcls targets wrld)
-  (get-guards2 edcls targets wrld nil))
+  (get-guards2 edcls targets wrld nil nil))
 
 (defun get-guards (lst split-types-lst split-types-p wrld)
 
@@ -1924,7 +1926,8 @@
                               (t '(guards types)))))
                    (conjoin-untranslated-terms
                     (and targets ; optimization
-                         (get-guards2 (fourth (car lst)) targets wrld nil))))
+                         (get-guards2 (fourth (car lst)) targets wrld
+                                      nil nil))))
                  (get-guards (cdr lst) (cdr split-types-lst) split-types-p
                              wrld)))))
 
