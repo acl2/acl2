@@ -6,6 +6,8 @@
 (include-book "../../machine/x86"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
+(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+
 ;; ======================================================================
 
 (defsection initialize-x86-state
@@ -104,7 +106,8 @@ else
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of general-purpose register indices and
   values"
-  :long "<p>Note that the register values are required to be @('i64p') </p>"
+  :long "<p>Note that the register values are required to be @('n64p'), as
+  opposed to @('i64p') (which is what is required for @(see !rgfi).</p>"
 
   :enabled t
   (if (atom alst)
@@ -116,7 +119,7 @@ else
             (rest  (cdr  alst)))
         (and (natp index)
              (< index *64-bit-general-purpose-registers-len*)
-             (signed-byte-p 64 value)
+             (unsigned-byte-p 64 value)
              (rgfi-alistp rest))))))
 
 (define !rgfi-from-alist (rgf-alist x86)
@@ -126,7 +129,7 @@ else
   @('rgf-alist'), which is required to be a @('rgfi-alistp')."
 
   (cond ((endp rgf-alist) x86)
-        (t (let ((x86 (!rgfi (caar rgf-alist) (cdar rgf-alist) x86)))
+        (t (let ((x86 (!rgfi (caar rgf-alist) (n64-to-i64 (cdar rgf-alist)) x86)))
              (!rgfi-from-alist (cdr rgf-alist) x86))))
 
   ///

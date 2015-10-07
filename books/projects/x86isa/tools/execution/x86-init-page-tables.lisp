@@ -5,7 +5,7 @@
 (in-package "X86ISA")
 
 (include-book "x86-init-state"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -36,15 +36,15 @@
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
-        nil
+	nil
       (let ((addr  (caar alst))
-            (qword (cdar alst))
-            (rest  (cdr alst)))
-        (and (integerp addr)
-             (<= 0 addr)
-             (< addr #.*mem-size-in-bytes-7*)
-             (n64p qword)
-             (physical-addr-qword-alistp rest))))))
+	    (qword (cdar alst))
+	    (rest  (cdr alst)))
+	(and (integerp addr)
+	     (<= 0 addr)
+	     (< addr #.*mem-size-in-bytes-7*)
+	     (n64p qword)
+	     (physical-addr-qword-alistp rest))))))
 
 (define load-qwords-into-physical-memory
   ((addr-qword-lst "Required to be a @(see physical-addr-qword-alistp)")
@@ -57,11 +57,11 @@
   :returns (x86 x86p :hyp :guard)
 
   (cond ((endp addr-qword-lst) x86)
-        (t (b* ((addr  (caar addr-qword-lst))
-                (qword (cdar addr-qword-lst))
-                (x86 (wm-low-64 addr qword x86)))
-               (load-qwords-into-physical-memory
-                (cdr addr-qword-lst) x86)))))
+	(t (b* ((addr  (caar addr-qword-lst))
+		(qword (cdar addr-qword-lst))
+		(x86 (wm-low-64 addr qword x86)))
+	       (load-qwords-into-physical-memory
+		(cdr addr-qword-lst) x86)))))
 
 (define physical-addr-qword-alist-listp (list)
   :parents (Setting-up-Page-Tables)
@@ -70,7 +70,7 @@
   (if (atom list)
       (equal list nil)
     (and (physical-addr-qword-alistp (car list))
-         (physical-addr-qword-alist-listp (cdr list)))))
+	 (physical-addr-qword-alist-listp (cdr list)))))
 
 (define load-qwords-into-physical-memory-list
   ((addr-qword-list-list "Required to be @(see physical-addr-qword-alist-listp)")
@@ -84,7 +84,7 @@
   (if (endp addr-qword-list-list)
       x86
     (b* ((x86 (load-qwords-into-physical-memory (car addr-qword-list-list) x86)))
-        (load-qwords-into-physical-memory-list (cdr addr-qword-list-list) x86))))
+	(load-qwords-into-physical-memory-list (cdr addr-qword-list-list) x86))))
 
 ;; ======================================================================
 ;; Page table set up plan (1GB pages, one-to-one map):
@@ -101,17 +101,17 @@
 
 (defthm logand-and-bottom-few-bits-zero
   (implies (and (syntaxp (quotep x))
-                (syntaxp (quotep p))
-                (natp x)
-                (natp y)
-                (natp p)
-                (< 0 p))
-           (equal (logand x (ash y p))
-                  (ash (logand (logtail p x) y) p)))
+		(syntaxp (quotep p))
+		(natp x)
+		(natp y)
+		(natp p)
+		(< 0 p))
+	   (equal (logand x (ash y p))
+		  (ash (logand (logtail p x) y) p)))
   :hints (("Goal" :in-theory (e/d*
-                              (acl2::ihsext-inductions
-                               acl2::ihsext-recursive-redefs)
-                              ()))))
+			      (acl2::ihsext-inductions
+			       acl2::ihsext-recursive-redefs)
+			      ()))))
 
 ;; (defthm logand-ash
 ;;   (implies (and (integerp x)
@@ -132,20 +132,20 @@
   :short "Add a PML4 entry that references a Page-Directory-Pointer
   Table"
   (b* ((64-bit-entry
-        ;; Physical address of 4K-aligned PDPT referenced by this
-        ;; entry
-        (!ia32e-pml4e-slice :pml4e-pdpt pdpt-base-addr 0))
+	;; Physical address of 4K-aligned PDPT referenced by this
+	;; entry
+	(!ia32e-pml4e-slice :pml4e-pdpt pdpt-base-addr 0))
        (64-bit-entry
-        ;; Page present
-        (!ia32e-pml4e-slice :pml4e-p 1 64-bit-entry))
+	;; Page present
+	(!ia32e-pml4e-slice :pml4e-p 1 64-bit-entry))
        (64-bit-entry
-        ;; Writes allowed to the 512 GB region controlled by this
-        ;; entry
-        (!ia32e-pml4e-slice :pml4e-r/w 1 64-bit-entry))
+	;; Writes allowed to the 512 GB region controlled by this
+	;; entry
+	(!ia32e-pml4e-slice :pml4e-r/w 1 64-bit-entry))
        (64-bit-entry
-        ;; User mode accesses allowed in the 512 GB region controlled
-        ;; by this entry
-        (!ia32e-pml4e-slice :pml4e-u/s 1 64-bit-entry)))
+	;; User mode accesses allowed in the 512 GB region controlled
+	;; by this entry
+	(!ia32e-pml4e-slice :pml4e-u/s 1 64-bit-entry)))
 
       64-bit-entry)
 
@@ -160,7 +160,6 @@
 
 (define construct-pml4-table
   ((entry-number   :type (unsigned-byte 10))
-   ;; entry-addr = (ash cr3 12) : [47-39] of LA : 12 zeros
    (entry-addr     :type (unsigned-byte #.*physical-address-size*))
    (pdpt-base-addr :type (unsigned-byte 40))
    acc)
@@ -177,60 +176,60 @@
   :long "<p>A PML4 table comprises 512 64-bit entries.</p>"
 
   (cond ((or (not (integerp entry-number))
-             (< entry-number 0)
-             (not (unsigned-byte-p 40 (1+ pdpt-base-addr)))
-             (not (unsigned-byte-p 10 (1+ entry-number)))
-             (not (unsigned-byte-p 52 (+ 8 entry-addr))))
-         acc)
+	     (< entry-number 0)
+	     (not (unsigned-byte-p 40 (1+ pdpt-base-addr)))
+	     (not (unsigned-byte-p 10 (1+ entry-number)))
+	     (not (unsigned-byte-p 52 (+ 8 entry-addr))))
+	 acc)
 
-        ((< entry-number 512)
-         (construct-pml4-table (+ 1 entry-number)
-                               (+ 8 entry-addr)
-                               (+ 1 pdpt-base-addr)
-                               (acons
-                                entry-addr
-                                (add-pml4-entry pdpt-base-addr)
-                                acc)))
-        (t acc))
+	((< entry-number 512)
+	 (construct-pml4-table (+ 1 entry-number)
+			       (+ 8 entry-addr)
+			       (+ 1 pdpt-base-addr)
+			       (acons
+				entry-addr
+				(add-pml4-entry pdpt-base-addr)
+				acc)))
+	(t acc))
 
   ///
 
   (defthm true-listp-construct-pml4-table
     (implies (true-listp acc)
-             (true-listp (construct-pml4-table entry-number entry-addr pdpt-base-addr acc)))
+	     (true-listp (construct-pml4-table entry-number entry-addr pdpt-base-addr acc)))
     :hints (("Goal" :in-theory (e/d () (force))))
     :rule-classes :type-prescription)
 
   (defthm consp-construct-pml4-table-helper
     (implies (and (unsigned-byte-p 40 (+ 1 pdpt-base-addr))
-                  (unsigned-byte-p 52 (+ 8 entry-addr)))
-             (consp (construct-pml4-table 511 entry-addr pdpt-base-addr acc)))
+		  (unsigned-byte-p 52 (+ 8 entry-addr)))
+	     (consp (construct-pml4-table 511 entry-addr pdpt-base-addr acc)))
     :hints (("Goal" :expand (construct-pml4-table 511 entry-addr pdpt-base-addr acc))))
 
   (defthm consp-construct-pml4-table
     (implies (and (unsigned-byte-p 10 entry-number)
-                  (< entry-number 512)
-                  (unsigned-byte-p 40 (1+ pdpt-base-addr))
-                  (unsigned-byte-p 10 (1+ entry-number))
-                  (unsigned-byte-p 52 (+ 8 entry-addr)))
-             (consp (construct-pml4-table entry-number entry-addr pdpt-base-addr acc)))
+		  (< entry-number 512)
+		  (unsigned-byte-p 40 (1+ pdpt-base-addr))
+		  (unsigned-byte-p 10 (1+ entry-number))
+		  (unsigned-byte-p 52 (+ 8 entry-addr)))
+	     (consp (construct-pml4-table entry-number entry-addr pdpt-base-addr acc)))
     :rule-classes (:type-prescription :rewrite))
 
   (defthm physical-addr-qword-alistp-construct-pml4-table-helper
     (implies (and (natp entry-addr)
-                  (unsigned-byte-p 40 pdpt-base-addr)
-                  (physical-addr-qword-alistp acc))
-             (physical-addr-qword-alistp
-              (construct-pml4-table 511 entry-addr pdpt-base-addr acc)))
+		  (unsigned-byte-p 40 pdpt-base-addr)
+		  (physical-addr-qword-alistp acc))
+	     (physical-addr-qword-alistp
+	      (construct-pml4-table 511 entry-addr pdpt-base-addr acc)))
     :hints
     (("Goal" :expand (construct-pml4-table 511 entry-addr pdpt-base-addr acc))))
 
   (defthm physical-addr-qword-alistp-construct-pml4-table
     (implies (and (unsigned-byte-p 40 pdpt-base-addr)
-                  (unsigned-byte-p 52 entry-addr)
-                  (physical-addr-qword-alistp acc))
-             (physical-addr-qword-alistp
-              (construct-pml4-table entry-number entry-addr pdpt-base-addr acc)))
+		  (unsigned-byte-p 52 entry-addr)
+		  (physical-addr-qword-alistp acc))
+	     (physical-addr-qword-alistp
+	      (construct-pml4-table entry-number entry-addr pdpt-base-addr acc)))
     :hints (("Goal" :in-theory (e/d (unsigned-byte-p) (force))))
     :rule-classes :type-prescription))
 
@@ -241,23 +240,23 @@
   :short "Add a PDP entry that maps a 1GB page"
 
   (b* ((64-bit-entry
-        ;; Physical address of 4K-aligned page directory referenced by
-        ;; this entry
-        (!ia32e-pdpte-1GB-page-slice :pdpte-page page-base-addr 0))
+	;; Physical address of 4K-aligned page directory referenced by
+	;; this entry
+	(!ia32e-pdpte-1GB-page-slice :pdpte-page page-base-addr 0))
        (64-bit-entry
-        ;; Page present
-        (!ia32e-pdpte-1GB-page-slice :pdpte-p 1 64-bit-entry))
+	;; Page present
+	(!ia32e-pdpte-1GB-page-slice :pdpte-p 1 64-bit-entry))
        (64-bit-entry
-        ;; Writes allowed to the 512 GB region controlled by this
-        ;; entry
-        (!ia32e-pdpte-1GB-page-slice :pdpte-r/w 1 64-bit-entry))
+	;; Writes allowed to the 512 GB region controlled by this
+	;; entry
+	(!ia32e-pdpte-1GB-page-slice :pdpte-r/w 1 64-bit-entry))
        (64-bit-entry
-        ;; User mode accesses allowed in the 512 GB region controlled
-        ;; by this entry
-        (!ia32e-pdpte-1GB-page-slice :pdpte-u/s 1 64-bit-entry))
+	;; User mode accesses allowed in the 512 GB region controlled
+	;; by this entry
+	(!ia32e-pdpte-1GB-page-slice :pdpte-u/s 1 64-bit-entry))
        (64-bit-entry
-        ;; Page size = 1: this PDP entry maps a 1 GB page.
-        (!ia32e-pdpte-1GB-page-slice :pdpte-ps 1 64-bit-entry)))
+	;; Page size = 1: this PDP entry maps a 1 GB page.
+	(!ia32e-pdpte-1GB-page-slice :pdpte-ps 1 64-bit-entry)))
 
       64-bit-entry)
 
@@ -287,55 +286,55 @@
   :measure (nfix (- 512 entry-number))
 
   (cond ((or (not (integerp entry-number))
-             (< entry-number 0)
-             (not (unsigned-byte-p 22 (1+ page-base-addr)))
-             (not (unsigned-byte-p 10 (1+ entry-number)))
-             (not (unsigned-byte-p 52 (+ 8 entry-addr))))
-         acc)
-        ((< entry-number 512)
-         (construct-pdp-table (+ 1 entry-number)
-                              (+ 8 entry-addr)
-                              (+ 1 page-base-addr)
-                              (acons entry-addr
-                                     (add-pdp-entry page-base-addr)
-                                     acc)))
-        (t acc))
+	     (< entry-number 0)
+	     (not (unsigned-byte-p 22 (1+ page-base-addr)))
+	     (not (unsigned-byte-p 10 (1+ entry-number)))
+	     (not (unsigned-byte-p 52 (+ 8 entry-addr))))
+	 acc)
+	((< entry-number 512)
+	 (construct-pdp-table (+ 1 entry-number)
+			      (+ 8 entry-addr)
+			      (+ 1 page-base-addr)
+			      (acons entry-addr
+				     (add-pdp-entry page-base-addr)
+				     acc)))
+	(t acc))
 
   ///
 
   (defthm true-listp-construct-pdp-table
     (implies (true-listp acc)
-             (true-listp (construct-pdp-table
-                          entry-number entry-addr page-base-addr acc))))
+	     (true-listp (construct-pdp-table
+			  entry-number entry-addr page-base-addr acc))))
 
   (defthm consp-construct-pdp-table-helper
     (implies (and (unsigned-byte-p 52 (+ 8 entry-addr))
-                  (unsigned-byte-p 22 (+ 1 page-base-addr)))
-             (consp (construct-pdp-table 511 entry-addr page-base-addr acc)))
+		  (unsigned-byte-p 22 (+ 1 page-base-addr)))
+	     (consp (construct-pdp-table 511 entry-addr page-base-addr acc)))
     :hints (("Goal" :expand (construct-pdp-table 511 entry-addr page-base-addr acc))))
 
   (defthm consp-construct-pdp-table
     (implies (and (< entry-number 512)
-                  (unsigned-byte-p 10 entry-number)
-                  (unsigned-byte-p 10 (+ 1 entry-number))
-                  (unsigned-byte-p 52 (+ 8 entry-addr))
-                  (unsigned-byte-p 22 (+ 1 page-base-addr)))
-             (consp (construct-pdp-table entry-number entry-addr page-base-addr acc)))
+		  (unsigned-byte-p 10 entry-number)
+		  (unsigned-byte-p 10 (+ 1 entry-number))
+		  (unsigned-byte-p 52 (+ 8 entry-addr))
+		  (unsigned-byte-p 22 (+ 1 page-base-addr)))
+	     (consp (construct-pdp-table entry-number entry-addr page-base-addr acc)))
     :rule-classes (:type-prescription :rewrite))
 
   (defthm physical-addr-qword-alistp-construct-pdp-table-helper
     (implies(and (natp entry-addr)
-                 (physical-addr-qword-alistp acc)
-                 (unsigned-byte-p 22 page-base-addr))
-            (physical-addr-qword-alistp (construct-pdp-table 511 entry-addr page-base-addr acc)))
+		 (physical-addr-qword-alistp acc)
+		 (unsigned-byte-p 22 page-base-addr))
+	    (physical-addr-qword-alistp (construct-pdp-table 511 entry-addr page-base-addr acc)))
     :hints (("Goal" :expand (construct-pdp-table 511 entry-addr page-base-addr acc))))
 
   (defthm physical-addr-qword-alistp-construct-pdp-table
     (implies (and (natp entry-addr)
-                  (physical-addr-qword-alistp acc)
-                  (unsigned-byte-p 22 page-base-addr))
-             (physical-addr-qword-alistp
-              (construct-pdp-table entry-number entry-addr page-base-addr acc)))
+		  (physical-addr-qword-alistp acc)
+		  (unsigned-byte-p 22 page-base-addr))
+	     (physical-addr-qword-alistp
+	      (construct-pdp-table entry-number entry-addr page-base-addr acc)))
     :rule-classes (:type-prescription :rewrite)))
 
 (define construct-pdp-tables
@@ -357,29 +356,29 @@
   :measure (nfix (- 512 table-number))
 
   (cond ((not (and (natp table-number)
-                   (unsigned-byte-p 22 (* 512 table-number))
-                   (unsigned-byte-p 40 (+ 1 pdpt-base-addr))
-                   (unsigned-byte-p 10 (+ 1 table-number))
-                   (unsigned-byte-p 22 (+ 1 (* 512 table-number)))
-                   (unsigned-byte-p 52 (+ 8 (ash pdpt-base-addr 12)))))
-         acc)
-        ((< table-number 512)
-         (b* ((table (construct-pdp-table 0
-                                          (ash pdpt-base-addr 12)
-                                          (* 512 table-number)
-                                          nil))
-              (acc (cons table acc)))
-             (construct-pdp-tables (+ 1 table-number)
-                                   (+ 1 pdpt-base-addr)
-                                   acc)))
-        (t acc))
+		   (unsigned-byte-p 22 (* 512 table-number))
+		   (unsigned-byte-p 40 (+ 1 pdpt-base-addr))
+		   (unsigned-byte-p 10 (+ 1 table-number))
+		   (unsigned-byte-p 22 (+ 1 (* 512 table-number)))
+		   (unsigned-byte-p 52 (+ 8 (ash pdpt-base-addr 12)))))
+	 acc)
+	((< table-number 512)
+	 (b* ((table (construct-pdp-table 0
+					  (ash pdpt-base-addr 12)
+					  (* 512 table-number)
+					  nil))
+	      (acc (cons table acc)))
+	     (construct-pdp-tables (+ 1 table-number)
+				   (+ 1 pdpt-base-addr)
+				   acc)))
+	(t acc))
   ///
 
   (defthm physical-addr-qword-alist-listp-construct-pdp-tables
     (implies (and (physical-addr-qword-alist-listp acc)
-                  (unsigned-byte-p 40 pdpt-base-addr))
-             (physical-addr-qword-alist-listp
-              (construct-pdp-tables table-number pdpt-base-addr acc)))
+		  (unsigned-byte-p 40 pdpt-base-addr))
+	     (physical-addr-qword-alist-listp
+	      (construct-pdp-tables table-number pdpt-base-addr acc)))
     :rule-classes (:type-prescription :rewrite)))
 
 (define construct-page-tables
@@ -395,29 +394,29 @@
   (let*
       ((pml4-base-address40 (loghead 40 (logtail 12 pml4-base-address))))
     (if
-        ;; We must have enough room for all the tables.
-        ;; (< (+ 4096 (* 512 4096) pml4-base-address)
-        ;;    #.*mem-size-in-bytes*)
-        (and (unsigned-byte-p 40 (1+ (+ 1 pml4-base-address40)))
-             (unsigned-byte-p 40 (1+ pml4-base-address40))
-             (unsigned-byte-p 52 (+ 8 pml4-base-address)))
+	;; We must have enough room for all the tables.
+	;; (< (+ 4096 (* 512 4096) pml4-base-address)
+	;;    #.*mem-size-in-bytes*)
+	(and (unsigned-byte-p 40 (1+ (+ 1 pml4-base-address40)))
+	     (unsigned-byte-p 40 (1+ pml4-base-address40))
+	     (unsigned-byte-p 52 (+ 8 pml4-base-address)))
 
-        (let* ((table (construct-pml4-table 0
-                                            pml4-base-address
-                                            (+ 1 pml4-base-address40)
-                                            nil))
-               (acc (list table)))
-          (construct-pdp-tables 0
-                                (+ 1 pml4-base-address40)
-                                acc))
+	(let* ((table (construct-pml4-table 0
+					    pml4-base-address
+					    (+ 1 pml4-base-address40)
+					    nil))
+	       (acc (list table)))
+	  (construct-pdp-tables 0
+				(+ 1 pml4-base-address40)
+				acc))
       nil))
 
   ///
 
   (defthm physical-addr-qword-alist-listp-construct-page-tables
     (implies (unsigned-byte-p 52 pml4-base-address)
-             (physical-addr-qword-alist-listp
-              (construct-page-tables pml4-base-address)))
+	     (physical-addr-qword-alist-listp
+	      (construct-page-tables pml4-base-address)))
     :rule-classes (:type-prescription :rewrite)))
 
 (defconst *1-gig-page-tables* (construct-page-tables 0))
@@ -434,26 +433,26 @@
    (mv-let
     (result x86)
     (b* ((x86
-          (load-qwords-into-physical-memory-list *1-gig-page-tables* x86))
+	  (load-qwords-into-physical-memory-list *1-gig-page-tables* x86))
 
-         (cr0        (ctri *cr0*       x86))
-         (cr4        (ctri *cr4*       x86))
-         (ia32e-efer (msri *ia32_efer-idx* x86))
+	 (cr0        (ctri *cr0*       x86))
+	 (cr4        (ctri *cr4*       x86))
+	 (ia32e-efer (msri *ia32_efer-idx* x86))
 
-         (cr0        (!cr0-slice       :cr0-pg        1 cr0))
-         (cr4        (!cr4-slice       :cr4-pae       1 cr4))
-         (ia32e-efer (!ia32_efer-slice :ia32_efer-lme 1 ia32e-efer))
+	 (cr0        (!cr0-slice       :cr0-pg        1 cr0))
+	 (cr4        (!cr4-slice       :cr4-pae       1 cr4))
+	 (ia32e-efer (!ia32_efer-slice :ia32_efer-lme 1 ia32e-efer))
 
-         (x86 (!ctri *cr0*           cr0        x86))
-         (x86 (!ctri *cr4*           cr4        x86))
-         (x86 (!msri *ia32_efer-idx* ia32e-efer x86))
-         (r-w-x :r)
-         (cpl 0))
-        (mv-let (flag addr x86)
-                (la-to-pa n r-w-x cpl x86)
-                (mv (and (equal flag nil)
-                         (equal addr n))
-                    x86)))
+	 (x86 (!ctri *cr0*           cr0        x86))
+	 (x86 (!ctri *cr4*           cr4        x86))
+	 (x86 (!msri *ia32_efer-idx* ia32e-efer x86))
+	 (r-w-x :r)
+	 (cpl 0))
+	(mv-let (flag addr x86)
+		(la-to-pa n r-w-x cpl x86)
+		(mv (and (equal flag nil)
+			 (equal addr n))
+		    x86)))
     result)))
 
 (defthm is-la-mapped-to-pa?-thm-1

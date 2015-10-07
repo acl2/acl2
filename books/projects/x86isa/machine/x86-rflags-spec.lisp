@@ -163,7 +163,11 @@ otherwise.</p>"
     :bound 1
     :concl (zf-spec result)
     :gen-type t
-    :gen-linear t))
+    :gen-linear t)
+
+  (defthm zf-spec-thm
+    (implies (not (equal x 0))
+             (equal (zf-spec x) 0))))
 
 ;; ======================================================================
 
