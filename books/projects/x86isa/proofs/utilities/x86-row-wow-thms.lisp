@@ -195,6 +195,24 @@
                   (flgi flg x86)))
   :hints (("Goal" :in-theory (e/d* (flgi) ()))))
 
+(defthm read-x86-file-des-write-user-rflags
+  (equal (read-x86-file-des i (write-user-rflags flags mask x86))
+         (read-x86-file-des i x86))
+  :hints (("Goal" :in-theory (e/d* (read-x86-file-des
+                                    read-x86-file-des-logic
+                                    write-user-rflags
+                                    !flgi-undefined !flgi)
+                                   ()))))
+
+(defthm read-x86-file-contents-write-user-rflags
+  (equal (read-x86-file-contents i (write-user-rflags flags mask x86))
+         (read-x86-file-contents i x86))
+  :hints (("Goal" :in-theory (e/d* (read-x86-file-contents
+                                    read-x86-file-contents-logic
+                                    write-user-rflags
+                                    !flgi-undefined !flgi)
+                                   ()))))
+
 (local (include-book "centaur/gl/gl" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (include-book "centaur/bitops/equal-by-logbitp" :dir :system)

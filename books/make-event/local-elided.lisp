@@ -62,15 +62,13 @@
    (implies (consp x)
             (consp (bar3 x)))))
 
-; not still redundant
-(include-book "misc/eval" :dir :system)
-(must-fail
- (encapsulate
-  ((bar3 (x) t))
-  (local (defun bar3 (x) (foo x)))
-  (defthm bar3-preserves-consp
-    (implies (consp x)
-             (consp (bar3 x))))))
+; Redundant after Version_7.1 (as of mid-September 2015).
+(encapsulate
+ ((bar3 (x) t))
+ (local (defun bar3 (x) (foo x)))
+ (defthm bar3-preserves-consp
+   (implies (consp x)
+            (consp (bar3 x)))))
 
 (make-event '(defun foo-3 (x) x))
 

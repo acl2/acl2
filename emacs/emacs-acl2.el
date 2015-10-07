@@ -807,11 +807,52 @@ beginning of the string that was processed."
 
 ;; Make some functions' indentation behave as for defun.
 (put 'case         'lisp-indent-function 'defun)
+(put 'CASE         'lisp-indent-function 'defun)
 (put 'case!        'lisp-indent-function 'defun)
+(put 'CASE!        'lisp-indent-function 'defun)
 (put 'case-match   'lisp-indent-function 'defun)
+(put 'CASE-MATCH   'lisp-indent-function 'defun)
 (put 'dolist       'lisp-indent-function 'defun)
+(put 'DOLIST       'lisp-indent-function 'defun)
 (put 'er@par       'lisp-indent-function 'defun)
+(put 'ER@PAR       'lisp-indent-function 'defun)
 (put 'warning$@par 'lisp-indent-function 'defun)
+(put 'WARNING$@PAR 'lisp-indent-function 'defun)
+; Jared Davis has contributed the following.  It is tempting to
+; comment out those that aren't part of ACL2, but rather, are defined
+; in books, since for those, a given name might have different
+; reasonable syntax for different books.  However, in practice is
+; seems unlikely that these will cause problems; if that assumption
+; turns out to be wrong, perhaps a new Emacs file should be created
+; for the books, and book-specific forms below should be moved there.
+(put 'B* 'lisp-indent-function 1)
+(put 'b* 'lisp-indent-function 1)
+(put 'ENCAPSULATE       'lisp-indent-function 'defun)
+(put 'encapsulate       'lisp-indent-function 'defun)
+(put 'MV-LET       'lisp-indent-function 'defun)
+(put 'mv-let       'lisp-indent-function 'defun)
+(put 'PATTERN-MATCH       'lisp-indent-function 'defun)
+(put 'pattern-match       'lisp-indent-function 'defun)
+(put 'PATTERN-MATCH-LIST       'lisp-indent-function 'defun)
+(put 'pattern-match-list       'lisp-indent-function 'defun)
+(put 'VERIFY-GUARDS  'lisp-indent-function 'defun)
+(put 'verify-guards  'lisp-indent-function 'defun)
+(put 'WITH-ACL2-CHANNELS-BOUND 'lisp-indent-function 'defun)
+(put 'with-acl2-channels-bound 'lisp-indent-function 'defun)
+(put 'WITH-FAST-ALIST      'lisp-indent-function 'defun)
+(put 'with-fast-alist      'lisp-indent-function 'defun)
+(put 'WITH-FAST-ALISTS      'lisp-indent-function 'defun)
+(put 'with-fast-alists      'lisp-indent-function 'defun)
+(put 'WITH-LOCAL-STOBJ      'lisp-indent-function 'defun)
+(put 'with-local-stobj      'lisp-indent-function 'defun)
+(put 'WITH-OPEN-FILE 'lisp-indent-function 'defun)
+(put 'with-open-file 'lisp-indent-function 'defun)
+(put 'WITH-OUTPUT 'lisp-indent-function 'defun)
+(put 'with-output 'lisp-indent-function 'defun)
+(put 'WITH-OUTPUT-TO 'lisp-indent-function 'defun)
+(put 'with-output-to 'lisp-indent-function 'defun)
+(put 'WITH-STDOUT 'lisp-indent-function 'defun)
+(put 'with-stdout 'lisp-indent-function 'defun)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ACL2 proof-tree support

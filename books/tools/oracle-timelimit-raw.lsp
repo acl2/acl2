@@ -39,9 +39,8 @@
   nil)
 
 (defvar *oracle-timelimit-stack*
-  ;; Holds
-  ;;   - For successful computations: (elapsed-time . total-alloc) pairs
-  ;;   - For timed out computations: NIL
+  ;; Holds frames of the form
+  ;;    (successp elapsed-time total-alloc)
   nil)
 
 (defmacro oracle-timelimit-debug (&rest args)
@@ -257,31 +256,33 @@
 
        (oracle-timelimit-debug " -- End of catch --~%")
 
-       (if (eq ,main-thread-state :finished-on-time)
-           (let ((,end-time    (get-internal-real-time))
-                 (,end-alloc   (heap-bytes-allocated)))
-             ;; Record these times so we can extract them later.
-             (oracle-timelimit-debug "OTL: Start time ~s, end time ~s~%" ,start-time ,end-time)
-             (oracle-timelimit-debug "OTL: Start alloc ~s, end alloc ~s~%" ,start-alloc ,end-alloc)
-             (push (cons (/ (coerce (- ,end-time ,start-time) 'rational)
-                            internal-time-units-per-second)
-                         (- ,end-alloc ,start-alloc))
-                   *oracle-timelimit-stack*)
-             ;; Return the answer from the computation.
-             (values-list ,ans))
+       (let ((,end-time    (get-internal-real-time))
+             (,end-alloc   (heap-bytes-allocated)))
+         (oracle-timelimit-debug "OTL: Start time ~s, end time ~s~%" ,start-time ,end-time)
+         (oracle-timelimit-debug "OTL: Start alloc ~s, end alloc ~s~%" ,start-alloc ,end-alloc)
+         (oracle-timelimit-debug "OTL: Successful ontime finish? ~s~%"
+                                 (eq ,main-thread-state :finished-on-time))
 
-         ;; Else, we ran out of time or there was an error that we suppressed.
-         (progn
-           (oracle-timelimit-debug
-            "OTL: ran out of time.  Exiting with ~s failure values~%" ,num-returns)
-           (push nil *oracle-timelimit-stack*)
-           ;; We don't actually need to produce the failure values.  Just
-           ;; repeat NIL however many times, to get the arity right.
-           (if (eql ,num-returns 1)
-               (progn (oracle-timelimit-debug
-                       "Only 1 return value so just returning NIL.~%")
-                      nil)
-             (values-list (make-list ,num-returns))))))))
+         ;; Record whether we succeeded and how long it took, etc., so that we
+         ;; can extract this information later.
+         (push (list (eq ,main-thread-state :finished-on-time)
+                     (/ (coerce (- ,end-time ,start-time) 'rational)
+                        internal-time-units-per-second)
+                     (- ,end-alloc ,start-alloc))
+               *oracle-timelimit-stack*)
+
+         (cond ((eq ,main-thread-state :finished-on-time)
+                ;; Return the answer from the computation
+                (values-list ,ans))
+               ;; Otherwise, we ran out of time or suppressed an error.  We We
+               ;; don't actually need to produce the failure values, just
+               ;; repeat NIL however many times, to get the arity right.
+               ((eql ,num-returns 1)
+                (oracle-timelimit-debug "Only 1 return value so just returning NIL.~%")
+                nil)
+               (t
+                (oracle-timelimit-debug "Returning ~x0 NIL values.~%" ,num-returns)
+                (values-list (make-list ,num-returns))))))))
 
 
 (defun oracle-timelimit-extract (state)
@@ -295,15 +296,17 @@
 
   (let ((val (pop *oracle-timelimit-stack*)))
 
-    (unless (or (not val)
-                (and (consp val)
-                     (and (rationalp (car val))
-                          (natp (cdr val)))))
+    (unless (and (true-listp val)
+                 (equal (len val) 3)
+                 (booleanp (first val))
+                 (and (rationalp (second val))
+                      (<= 0 (second val)))
+                 (natp (third val)))
       (er hard? 'oracle-timelimit
           "*oracle-timelimit-stack* had corrupt value ~x0.  Jared thinks this ~
            should never happen." val))
 
-    (mv (car val) (cdr val) state)))
+    (mv (first val) (second val) (third val) state)))
 
 
 

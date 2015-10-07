@@ -77,26 +77,26 @@
 
 ; We define the following variable outside acl2-doc-init-vars, so that it is
 ; not smashed by invoking that macro after running acl2-doc-alist-create.
-(defvar *acl2-doc-directory* nil)
+(defv *acl2-doc-directory* nil)
 
 ; The following variables can be set before loading this file, for
 ; example in a user's .emacs file.
-(defvar *acl2-doc-rendered-combined-pathname*
+(defv *acl2-doc-rendered-combined-pathname*
   (concat *acl2-sources-dir*
 	  "books/system/doc/rendered-doc-combined.lsp"))
-(defvar *acl2-doc-rendered-combined-pathname-gzipped*
+(defv *acl2-doc-rendered-combined-pathname-gzipped*
   (concat *acl2-doc-rendered-combined-pathname* ".gz"))
-(defvar *acl2-doc-rendered-pathname*
+(defv *acl2-doc-rendered-pathname*
   (concat *acl2-sources-dir*
 	  "doc.lisp"))
-(defvar *acl2-doc-rendered-combined-url*
+(defv *acl2-doc-rendered-combined-url*
 ; "Bleeding-edge" combined manual.
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz")
 ; Set the following to 'ACL2 to get to the ACL2 User's Manual at
 ; startup, but to 'TOP to get to the ACL2+Books Manual.  Here we set
 ; it to nil, which goes to the ACL2+Books Manual if it exists, and
 ; otherwise offers a choice.
-(defvar *acl2-doc-top-default* nil)
+(defv *acl2-doc-top-default* nil)
 
 (defun acl2-doc-fix-alist (alist)
 
@@ -292,7 +292,7 @@ then restart the ACL2-Doc browser to view that manual."
 	 . 1)))
 
 ; Can be modified by user; set to the desired link color, or nil if none.
-(defvar *acl2-doc-link-color* "#0000FF") ; blue
+(defv *acl2-doc-link-color* "#0000FF") ; blue
 (make-face 'acl2-doc-link-face)
 
 (define-derived-mode acl2-doc-mode

@@ -64,19 +64,19 @@
 (defun check-defxdoc-args (name parents short long)
   (declare (xargs :guard t))
   (or (and (not (symbolp name))
-           "name is not a symbol!~%")
+           "name is not a symbol!")
       (and (not (symbol-listp parents))
-           ":parents are not a symbol list~%")
+           ":parents are not a symbol list")
       (and short (not (stringp short))
-           ":short is not a string (or nil)~%")
+           ":short is not a string (or nil)")
       (and long (not (stringp long))
-           ":long is not a string (or nil)~%")))
+           ":long is not a string (or nil)")))
 
 (defun guard-for-defxdoc (name parents short long)
   (declare (xargs :guard t))
   (let* ((err (check-defxdoc-args name parents short long)))
     (or (not err)
-        (cw err))))
+        (cw "~s0~%" err))))
 
 (defun normalize-bookname (bookname state)
   (let* ((dir-system (acl2::f-get-global 'acl2::system-books-dir state))
@@ -138,7 +138,7 @@
   (let* ((err (check-defxdoc-args name parents short long)))
     (if err
         (er hard? 'defxdoc-raw
-            "Bad defxdoc-raw arguments: ~s0" err)
+            "Bad defxdoc-raw arguments: ~s0~%" err)
       (defxdoc-raw-fn name parents short long))))
 
 (defmacro defxdoc-raw (name &key parents short long)

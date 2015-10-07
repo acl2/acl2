@@ -2876,7 +2876,8 @@ type (this is used by @(see vl-datatype-elem->mod-components)).</p>"
        ((when (or err (not size)))
         (mv (fatal :type :vl-vardecl->svex-fail
                    :msg "~a0: Failed to size datatype ~a1: ~@2"
-                   :args (list x x.type err))
+                   :args (list x x.type
+                               (if err err "exact error unknown")))
             0 nil nil nil modalist))
        ((mv err subwire datamod modalist)
         (vl-datatype->mods x.type modalist))

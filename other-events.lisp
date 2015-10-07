@@ -1419,7 +1419,12 @@
 ; The following should contain all function symbols that might violate an ACL2
 ; invariant.  See check-invariant-risk-state-p.
 
-  '(extend-32-bit-integer-stack
+; We don't include compress1 or compress2 because we believe they don't write
+; out of bounds.
+
+  '(aset1 ; could write past the end of the real array
+    aset2 ; could write past the end of the real array
+    extend-32-bit-integer-stack
     aset-32-bit-integer-stack))
 
 (defun primordial-world-globals (operating-system)
@@ -1641,11 +1646,10 @@
 ; global-table is an ordered-symbol-alistp, but there is no way to get one's
 ; hands directly on the global-table; and state-p1 also specifies that
 ; plist-worldp holds of the logical world, and we ensure that by making set-w
-; and related functions untouchable.  The only two exceptions are
-; extend-32-bit-integer-stack and aset-32-bit-integer-stack, as we check
-; elsewhere with the function check-invariant-risk-state-p.  If new exceptions
-; arise, then we should add them to the value of
-; *boot-strap-invariant-risk-symbols*.
+; and related functions untouchable.  The only exceptions are those in
+; *boot-strap-invariant-risk-symbols*, as is checked by the function
+; check-invariant-risk-state-p.  If new exceptions arise, then we should add
+; them to the value of *boot-strap-invariant-risk-symbols*.
 
   (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
                   *boot-strap-invariant-risk-symbols* wrld))
@@ -1653,6 +1657,13 @@
 ;; RAG - I added the treatment of *non-standard-primitives*
 
 (defun primordial-world (operating-system)
+
+; Warning: Names converted during the boot-strap from :program mode to :logic
+; mode will, we believe, have many properties erased by renew-name.  That is
+; why, for example, we call initialize-invariant-risk at the end of the
+; boot-strap, in end-prehistoric-world.  Consider whether a property should be
+; set there rather than here.
+
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
         (guards (strip-caddrs *primitive-formals-and-guards*))
@@ -1716,9 +1727,8 @@
 
                        (putprop
                         'state 'stobj '(*the-live-state*)
-                        (initialize-invariant-risk
-                         (primordial-world-globals
-                          operating-system))))))))))))))))))))
+                        (primordial-world-globals
+                         operating-system)))))))))))))))))))
       t))))
 
 (defun same-name-twice (l)
@@ -2544,7 +2554,7 @@
 
   (cond ((or (null symbols) (no-augmented-rune-based-on pairs symbols))
          (revappend ans pairs))
-        (t (reverse (revappend-delete-augmented-runes-based-on-symbols
+        (t (reverse (revappend-delete-augmented-runes-based-on-symbols1
                      pairs symbols ans)))))
 
 (defun current-theory-fn (logical-name wrld)
@@ -3034,7 +3044,7 @@
                           (putprop 'return-last-table
                                    'table-alist
                                    *initial-return-last-table*
-                                   wrld))))
+                                   (initialize-invariant-risk wrld)))))
          (wrld2 (update-current-theory (current-theory1 wrld nil nil) wrld1)))
     (add-command-landmark
      :logic
@@ -4747,7 +4757,8 @@
 (defun elide-locals-rec (form strongp)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
-; destructure-expansion, and make-include-books-absolute.
+; destructure-expansion, make-include-books-absolute, and
+; equal-mod-elide-locals.
 
 ; We assume that form is a legal event form and return (mv changed-p new-form),
 ; where new-form results from eliding top-level local events from form, and
@@ -7362,12 +7373,18 @@
                           . &)
             name)
            (('encapsulate nil . ev-lst)
-            (find-first-non-local-name-lst ev-lst wrld primitives state-vars))
+            (find-first-non-local-name-lst ev-lst wrld primitives state-vars
+                                           nil))
            (('mutual-recursion ('defun name . &) . &) name)
-           (('make-event . &) ; no good way to get the name
-            nil)
+           (('make-event ('verify-termination-fn ('quote names)
+                                                 'state))
+            (and names (car names)))
+           (('make-event . &) ; special case: no good way to get the name
+            :make-event)
            (('progn . ev-lst)
-            (find-first-non-local-name-lst ev-lst wrld primitives state-vars))
+            (find-first-non-local-name-lst ev-lst wrld primitives state-vars
+                                           nil))
+           (('verify-guards name . &) name)
 
 ; Keep the following in sync with chk-embedded-event-form; see comment above.
 
@@ -7394,7 +7411,7 @@
     (and (symbolp val)
          val)))
 
-(defun find-first-non-local-name-lst (lst wrld primitives state-vars)
+(defun find-first-non-local-name-lst (lst wrld primitives state-vars ans)
 
 ; Challenge: If lst is a true list of embedded event forms that is
 ; successfully processed with ld-skip-proofsp nil, name one name that
@@ -7407,11 +7424,69 @@
 ; that name is new in a world, we know that this lst has not been
 ; processed before.
 
-  (cond ((atom lst) nil)
-        (t (or (find-first-non-local-name (car lst) wrld primitives state-vars)
-               (find-first-non-local-name-lst (cdr lst) wrld primitives
-                                              state-vars)))))
+  (cond ((atom lst) ans)
+        (t (let ((ans2 (find-first-non-local-name (car lst) wrld primitives
+                                                  state-vars)))
+             (cond ((eq ans2 :make-event)
+                    (find-first-non-local-name-lst (cdr lst) wrld primitives
+                                                   state-vars :make-event))
+                   (ans2)
+                   (t (find-first-non-local-name-lst (cdr lst) wrld primitives
+                                                     state-vars ans)))))))
+)
 
+(defun equal-mod-elide-locals1 (form)
+
+; We assume that form can be translated.
+
+  (cond ((atom form)
+         form)
+        ((eq (car form) 'local)
+         *local-value-triple-elided*)
+        ((member-eq (car form) '(skip-proofs
+                                 with-output
+                                 with-prover-time-limit
+                                 with-prover-step-limit
+                                 record-expansion
+                                 time$))
+         (equal-mod-elide-locals1 (car (last form))))
+        (t form)))
+
+(mutual-recursion
+
+(defun equal-mod-elide-locals (ev1 ev2)
+
+; Warning: Keep this in sync with elide-locals-rec.
+
+; This function checks that (elide-locals-rec ev1 t) agrees with
+; (elide-locals-rec ev2 t), but without doing any consing.
+
+  (let ((ev1 (equal-mod-elide-locals1 ev1))
+        (ev2 (equal-mod-elide-locals1 ev2)))
+    (cond
+     ((equal ev1 ev2) t)
+     ((not (eq (car ev1) (car ev2))) nil)
+     ((eq (car ev1) 'progn)
+      (equal-mod-elide-locals-lst (cdr ev1) (cdr ev2)))
+     ((eq (car ev1) 'progn!)
+      (let ((bindings-p1 (and (consp (cdr ev1))
+                              (eq (cadr ev1) :state-global-bindings)))
+            (bindings-p2 (and (consp (cdr ev2))
+                              (eq (cadr ev2) :state-global-bindings))))
+        (and (eq bindings-p1 bindings-p2)
+             (cond (bindings-p1
+                    (equal-mod-elide-locals-lst (cdddr ev1) (cdddr ev2)))
+                   (t
+                    (equal-mod-elide-locals-lst (cdr ev1) (cdr ev2)))))))
+     ((eq (car ev1) 'encapsulate)
+      (and (equal (cadr ev1) (cadr ev2))
+           (equal-mod-elide-locals-lst (cddr ev1) (cddr ev2))))
+     (t nil))))
+
+(defun equal-mod-elide-locals-lst (lst1 lst2)
+  (cond ((endp lst1) (null lst2))
+        (t (and (equal-mod-elide-locals (car lst1) (car lst2))
+                (equal-mod-elide-locals-lst (cdr lst1) (cdr lst2))))))
 )
 
 (defun corresponding-encap-events (old-evs new-evs ans)
@@ -7429,14 +7504,7 @@
                     (equal (cadr old-ev) new-ev))
                (corresponding-encap-events (cdr old-evs) (cdr new-evs)
                                            :expanded))
-              ((equal (mv-let (changedp x)
-                              (elide-locals-rec old-ev t)
-                              (declare (ignore changedp))
-                              x)
-                      (mv-let (changedp y)
-                              (elide-locals-rec new-ev t)
-                              (declare (ignore changedp))
-                              y))
+              ((equal-mod-elide-locals old-ev new-ev)
                (corresponding-encap-events (cdr old-evs) (cdr new-evs)
                                            :expanded))
               (t nil))))))
@@ -7490,22 +7558,24 @@
 
 (defun redundant-encapsulatep (signatures ev-lst event-form wrld)
 
-; We wish to know if is there an event-tuple in wrld that has event-form as its
-; form.  We do know that event-form is an encapsulate with the given two
-; arguments.  We don't know if event-form will execute without error.  But
-; suppose we could find a name among signatures and ev-lst that is guaranteed
-; to be created if event-form were successful.  Then if that name is new, we
-; know we won't find event-form in wrld and needn't bother looking.  If the
-; name is old and was introduced by a corresponding encapsulate (in the sense
-; that the signatures agree and each form of the new encapsulate either equals
-; the corresponding form of the old encapsulate or else, roughly speaking, does
-; so before expansion of the old form -- see corresponding-encaps), then the
-; event is redundant.  Otherwise, if this correspondence test fails or if we
-; can't even find a name -- e.g., because signatures is nil and all the events
-; in ev-lst are user macros -- then we suffer the search through wrld.  How bad
-; is this?  We expect most encapsulates to have a readily recognized name among
-; their new args and most encapsulates are not redundant, so we think most of
-; the time, we'll find a name and it will be new.
+; We wish to know if is there an event-tuple in wrld that is redundant with
+; event-form (see :doc redundant-encapsulate).  We do know that event-form is
+; an encapsulate with the given two arguments.  We don't know if event-form
+; will execute without error.  But suppose we could find a name among
+; signatures and ev-lst that is guaranteed to be created if event-form were
+; successful.  Then if that name is new, we know we won't find event-form in
+; wrld and needn't bother looking.  If the name is old and was introduced by a
+; corresponding encapsulate (in the sense that the signatures agree and each
+; form of the new encapsulate either suitably agrees the corresponding form of
+; the old encapsulate -- see corresponding-encaps), then the event is
+; redundant.  Otherwise, if this correspondence test fails or if we can't even
+; find a name, then we could suffer the search through wrld.  We have found a
+; rather dramatic performance improvements (26% of the time cut when including
+; community book centaur/sv/tutorial/alu) by doing what we do now, which is to
+; avoid that search when we don't find such a name or any make-event call, even
+; after macroexpansion.  But we expect most encapsulates to have a readily
+; recognized name among their new args and most encapsulates are not redundant,
+; so we think most of the time, we'll find a name and it will be new.
 
 ; If we find that the current encapsulate is redundant, then we return t unless
 ; the earlier corresponding encapsulate is not equal to it, in which case we
@@ -7552,11 +7622,14 @@
                  (if (eq equal? :expanded)
                      old-event-form
                    t))))))))
-   (t (let ((name (find-first-non-local-name-lst ev-lst
-                                                 wrld
-                                                 (primitive-event-macros)
-                                                 (default-state-vars nil))))
-        (and (or (not name)
+   (t (let* ((name0 (find-first-non-local-name-lst ev-lst
+                                                   wrld
+                                                   (primitive-event-macros)
+                                                   (default-state-vars nil)
+                                                   nil))
+             (name (and (not (eq name0 :make-event)) name0)))
+        (and name0
+             (or (not name)
 
 ; A non-local name need not be found.  But if one is found, then redundancy
 ; fails if that name is new.
@@ -12841,8 +12914,7 @@
                                (value 'include-book))
 
 ; The following process-embedded-events is protected by the revert-world-
-; on-error above.  See the Essay on Guard Checking for a discussion of the
-; binding of guard-checking-on below.
+; on-error above.
 
                               (ttags-allowed1
                                (state-global-let*
@@ -12856,7 +12928,8 @@
                                        full-book-name))
                                  (connected-book-directory directory-name)
                                  (match-free-error nil)
-                                 (guard-checking-on nil)
+                                 (guard-checking-on ; see Essay on Guard Checking
+                                  t)
                                  (in-local-flg
                                   (and (f-get-global 'in-local-flg state)
                                        'local-include-book))
@@ -13463,11 +13536,10 @@
 
 ; Essay on Guard Checking
 
-; We bind the state global variable guard-checking-on to nil in certify-book-fn
-; and in include-book-fn (using state-global-let*), and also in
-; pc-single-step-primitive.  We bind guard-checking-on to t in prove,
-; translate-in-theory-hint, and value-triple.  We do not bind guard-checking-on
-; in defconst-fn.  Here we explain these decisions.
+; We bind the state global variable guard-checking-on to t in certify-book-fn
+; and in include-book-fn (using state-global-let*), as well as in prove and
+; puff-fn1.  We bind it to nil pc-single-step-primitive.  We do not bind
+; guard-checking-on in defconst-fn.  Here we explain these decisions.
 
 ; We prefer to bind guard-checking-on to a predetermined fixed value when
 ; certifying or including books.  Why?  Book certification is a logical act.
@@ -13478,71 +13550,34 @@
 
 ; So the question now is whether to bind guard-checking-on to t or to nil for
 ; book certification and for book inclusion.  (We reject :none and :all because
-; they can be too inefficient.)
+; they can be too inefficient.)  We want it to be the case that if a book is
+; certified, then subsequently it can be included.  In particular, it would be
+; unfortunate if certification is done in an environment with guard checking
+; off, and then later we get a guard violation when including the book with
+; guard checking on.  So we should bind guard-checking-on the same in
+; certify-book as in include-book.
 
-; We want it to be the case that if a book is certified, then subsequently it
-; can be included.  In particular, it would be unfortunate if certification is
-; done in an environment with guard checking off, and then later we get a guard
-; violation when including the book with guard checking on.  So if we bind
-; guard-checking-on to nil in certify-book, then we should also bind it to nil
-; in include-book.
+; We argue now for binding guard-checking-on to t in certify-book-fn (and
+; hence, as argued above, in include-book-fn as well).  Consider this scenario
+; brought to our attention by Eric Smith: one certifies a book with
+; guard-checking-on bound to nil, but then later gets a guard violation when
+; loading that book during a demo using LD (with the default value of t for
+; guard-checking-on).  Horrors!  So we bind guard-checking-on to t in
+; certify-book-fn, to match the default in the loop.
 
-; We argue now for binding guard-checking-on to nil in certify-book-fn (and
-; hence, as argued above, in include-book-fn as well).  Note that we already
-; allow book certification without requiring guard verification, which drives
-; home the position that guards are extra-logical.  Thus, a high-level argument
-; for binding guard-checking-on to nil during certification is that if we bind
-; instead to t, then that position is diluted.  Now we give a more practical
-; argument for binding guard-checking-on to nil during certification.  Suppose
-; someone writes a macro with a guard, where that guard enforces some
-; intention.  Do we want to enforce that guard, and when?  We already have
-; safe-mode to enforce the guard as necessary for Common Lisp.  If a user
-; executes :set-guard-checking nil in the interactive loop, then function
-; guards are not checked, and thus it is reasonable not to check macro guards
-; either.  Now suppose the same user attempts to certify a book that contains a
-; top-level guard-violating macro call.  What a rude surprise it would be if
-; certification fails due to a guard violation during expansion of that macro
-; call, when the interactive evaluation of that same call had just succeeded!
-; (One might argue that it is a sophisticated act to turn off guard checking in
-; the interactive loop, hence a user who does that should be able to handle
-; that rude surprise.  But that argument seems weak; even a beginner could find
-; out how to turn off guard checking after seeing a guard violation.)
-
-; We have argued for turning off guard checking during certify-book.  But a
-; concern remains.  Suppose one user has written a macro with a guard, and now
-; suppose a second user creates a book containing a top-level call of that
-; macro with a guard violation.  Safe-mode will catch any Common Lisp guard
-; violation.  But the macro writer may have attached the guard in order to
-; enforce some intention that is not related to Common Lisp.  In the case of
-; functions, one can ensure one's compliance with existing guards by verifying
-; all guards, for example with (set-verify-guards-eagerness 2) at the top of
-; the file.  A similar "complete guard checking" mechanism could enforce one's
-; compliance with macro guards as well, say, (set-verify-guards-eagerness 3).
-; The same concern applies to defconst, not only for macro expansion but also
-; for function calls, and could be handled in the case of complete guard
-; checking in the same way as for top-level macro expansion, by binding
-; guard-checking-on to t with state-global-let*.  In practice, users may not
-; demand the capability for complete guard checking, so it might not be
-; important to provide this capability.
-
-; Having decided to bind guard-checking-on to nil in certify-book-fn and
-; (therefore) include-book-fn, let us turn to the other cases in which we bind
-; guard-checking-on.
-
-; We discussed defconst briefly above.  We note that raw Lisp evaluation should
-; never take place for the body of a defconst form (outside the boot-strap),
-; because the raw Lisp definition of defconst avoids such evaluation when the
-; name is already bound, which should be the case from prior evaluation of the
-; defconst form in the ACL2 loop.  Value-triple also is not evaluated in raw
-; Lisp, where it is defined to return nil.
+; We note that raw Lisp evaluation should never take place for the body of a
+; defconst form (outside the boot-strap), because the raw Lisp definition of
+; defconst avoids such evaluation when the name is already bound, which should
+; be the case from prior evaluation of the defconst form in the ACL2 loop.
+; Value-triple also is not evaluated in raw Lisp, where it is defined to return
+; nil.
 
 ; We bind guard-checking-on to nil in prove, because proofs can use evaluation
 ; and such evaluation should be done in the logic, without regard to guards.
 
 ; It can be important to check guards during theory operations like
-; union-theory, not only during certify-book but in the interactive loop.  For
-; example, with guard checking off in Version_2.9, one gets a hard Lisp error
-; upon evaluation of the following form.
+; union-theory.  For example, with guard checking off in Version_2.9, one gets
+; a hard Lisp error upon evaluation of the following form.
 
 ; (in-theory (union-theories '((:rewrite no-such-rule))
 ;                            (current-theory 'ground-zero)))
@@ -13551,8 +13586,8 @@
 ; checked guards of system functions regardless of the value of
 ; guard-checking-on; but we have abandoned that aggressive approach, relying
 ; instead on safe-mode.)  Our solution is to bind guard-checking-on to t in
-; translate-in-theory-hint, which calls simple-translate-and-eval and hence
-; causes the guards to be checked.
+; eval-theory-expr, which calls simple-translate-and-eval and hence causes the
+; guards to be checked.
 
 ; Note that guard-checking-on is bound to nil in pc-single-step-primitive.  We
 ; no longer recall why, but we may as well preserve that binding.
@@ -15343,7 +15378,7 @@
                  (defaxioms-okp-cert defaxioms-okp)
                  (skip-proofs-okp-cert skip-proofs-okp)
                  (guard-checking-on ; see Essay on Guard Checking
-                  nil))
+                  t))
                 (er-let* ((env-compile-flg
                            (getenv! "ACL2_COMPILE_FLG" state))
                           (compile-flg
@@ -17738,15 +17773,68 @@
                   (type (access defstobj-field-template field-template :type)))
              (put-defstobj-invariant-risk
               (cdr field-templates)
-              (cond ((or (eq type t)
-                         (and (consp type)
-                              (eq (car type) 'array)
-                              (eq (cadr type) t)))
+              (cond ((eq type t)
                      wrld)
-                    (t (let ((updater (access defstobj-field-template
-                                              field-template
-                                              :updater-name)))
-                         (putprop updater 'invariant-risk updater wrld)))))))))
+                    (t
+
+; The following example from Jared Davis and Sol Swords shows why even arrays
+; with elements of type t need to be considered for invariant-risk.
+
+;   To start:
+
+;       (defstobj foo
+;         (foo-ch  :type character :initially #\a)
+;         (foo-arr :type (array t (3))))
+
+;   The idea is to cause an invalid write to foo-arr that will
+;   overwrite foo-ch.  To do this, it is helpful to know the
+;   relative addresses of foo-ch and foo-arr.  We can find this
+;   out from raw Lisp, but once we know it, it seems pretty
+;   reliable, so in the final version there's no need to enter
+;   raw Lisp.
+
+;       :q
+;       (let ((ch-addr  (ccl::%address-of (aref *the-live-foo* 0)))
+;             (arr-addr (ccl::%address-of (aref *the-live-foo* 1))))
+;         (list :ch   ch-addr
+;               :arr  arr-addr
+;               :diff (- ch-addr arr-addr)))
+;       (lp)
+
+;   An example result on one invocation on our machine is:
+
+;       (:CH 52914053289693 :ARR 52914053289501 :DIFF 192)
+
+;   When we quit ACL2 and resubmit this, we typically get
+;   different offsets for CH and ARR, but the :DIFF seems to be
+;   consistently 192.  (In principle, it probably could
+;   sometimes be different because it probably depends on how
+;   the memory allocation happens to fall out, but in practice
+;   it seems to be reliable).  If you want to reproduce this and
+;   your machine gets a different result, you may need to adjust
+;   the index that you write to to provoke the problem.
+
+;   Since CCL's (array t ...) probably uses 8-byte elements, we
+;   should write to address (/ 192 8) = 24.  To do that we will
+;   need a program mode function that writes to foo-arri to
+;   avoid ACL2's guards from preventing the out-of-bounds write.
+
+;       (defun attack (n v foo)
+;         (declare (xargs :mode :program :stobjs foo))
+;         (update-foo-arri n v foo))
+
+;   Now we can do something like this:
+
+;       (attack 24 100 foo)
+
+;   After the attack, (foo-ch foo) returns something that Emacs
+;   prints as #\^Z, and (char-code (foo-ch foo)) reports 800,
+;   which is of course not valid for an ACL2 character.
+
+                     (let ((updater (access defstobj-field-template
+                                            field-template
+                                            :updater-name)))
+                       (putprop updater 'invariant-risk updater wrld)))))))))
 
 (defun defstobj-fn (name args state event-form)
 
@@ -21271,6 +21359,7 @@
                        (ubt! ',label)))
                     :ld-verbose nil
                     :ld-prompt nil
+                    :ld-pre-eval-print nil
                     :ld-post-eval-print nil
                     :ld-error-action :error))
                (value :invisible))))
@@ -22094,7 +22183,8 @@
                   (cons #\2 (if enabledp 0 1)))
             (standard-co state) state nil)
        (let ((fmt-string
-              "~ ~ ~#c~[New term~/Conclusion~]: ~Y3t~|~
+              "~@x~|~
+               ~ ~ ~#c~[New term~/Conclusion~]: ~Y3t~|~
                ~ ~ Hypotheses: ~#b~[<none>~/~Y4t~]~|~
                ~#c~[~ ~ Equiv: ~ye~|~/~]~
                ~#s~[~/~ ~ Substitution: ~Yat~|~]~
@@ -22105,7 +22195,8 @@
                and hence will apparently be impossible to relieve.~]~|"))
          (pprogn
           (fms fmt-string
-               (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+               (list (cons #\x "")
+                     (cons #\c (if (eq caller 'show-rewrites) 0 1))
                      (cons #\3 (untrans0 subst-rhs term-id-iff
                                          abbreviations))
                      (cons #\s (if pl-p 1 0))
@@ -22124,13 +22215,29 @@
                (standard-co state) state nil)
           (cond (show-more
                  (pprogn
-                  (cond (pl-p state)
-                        (t (fms0 "  -- IF ~#c~[REWRITE~/APPLY-LINEAR~]: is ~
-                                  called with a third argument of t: --"
-                                 (list (cons #\c (if (eq caller 'show-rewrites)
-                                                     0 1))))))
+                  (cond
+                   (pl-p state)
+                   (t
+                    (fms0 "  -- IF ~#c~[REWRITE~/APPLY-LINEAR~] is called ~
+                           with a third argument of t: --"
+                          (list (cons #\c (if (eq caller 'show-rewrites)
+                                              0 1))))))
                   (fms fmt-string
-                       (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+                       (list (cons #\x
+                                   (let ((extra
+                                          (untranslate-subst-abb
+                                           (alist-difference-eq
+                                            unify-subst-2
+                                            unify-subst)
+                                           abbreviations
+                                           state)))
+                                     (cond
+                                      (extra ; always true?
+                                       (msg
+                                        "~ ~ Additional bindings: ~X0t"
+                                        extra))
+                                      (t ""))))
+                             (cons #\c (if (eq caller 'show-rewrites) 0 1))
                              (cons #\3 (untrans0
                                         (sublis-var unify-subst-2 rhs)
                                         term-id-iff abbreviations))
@@ -27968,3 +28075,212 @@
                                     (maybe-add-event-landmark state))
                                    (t (value nil)))
                              (value result))))))))))))))))))
+
+(defun get-check-invariant-risk (state)
+  (let ((pair (assoc-eq :check-invariant-risk
+                        (table-alist 'acl2-defaults-table (w state))))
+        (cir (f-get-global 'check-invariant-risk state)))
+    (cond (pair (case (cdr pair) ; then take the "minimum" with cir
+                  ((:ERROR :CLEAR) cir)
+                  ((:WARNING) (if (eq cir :ERROR) :WARNING cir))
+                  ((T) (if (eq cir nil) nil t))
+                  (otherwise nil)))
+          (t cir))))
+
+(defmacro set-check-invariant-risk (x &optional table-p)
+
+; In oneify-cltl-code we handle an "invariant-risk" that stobj invariants
+; aren't violated upon ill-guarded calls of stobj updaters.  The idea is to
+; force evaluation to use *1* functions down to those primitives, which always
+; check their guards.  See also the comment in **1*-as-raw*.  Note that this
+; is a separate issue from the lack of atomicity of some defabsstobj exports
+; (which is implemented using *inside-absstobj-update*).
+
+; There may be cases where this use of *1* functions may be slower than one
+; likes.  By setting the invariant-risk mode to nil, one defeats that behavior;
+; see :DOC set-check-invariant-risk.  This could be unsound, but since one
+; needs an active trust tag to set this global, we take the position that
+; setting it is much like redefining prove so that one always gets the "Q.E.D."
+
+; Perhaps we will consider avoiding this use of *1* functions when the only
+; danger of invariant violations is from local stobjs.  Since only :program
+; mode functions are at issue (because a :logic mode function call only slips
+; into raw Lisp when the function has been guard-verified and the call is
+; guard-checked, and because raw-ev-fncall binds **1*-as-raw* to nil for
+; :logic mode functions), it seems plausible that we can provide this
+; optimization for local stobjs.  After all, local stobjs are let-bound rather
+; than global; so it seems that during proofs, any local stobj encountered will
+; either be created and destroyed during a computed hint or else will be
+; modified only by :logic mode functions manipulated by the prover.  (Trusted
+; clause processors might provide an exception, but then trust tags are
+; involved, so it's their responsibility to do the right thing.)
+
+; But we'll leave that for another day, if at all, as it seems risky and
+; error-prone to implement.  In particular, we would likely need to track
+; invariant-risk on a per-stobj basis, and built-ins (see
+; initialize-invariant-risk) might not be associated with stobjs at all.
+
+  (declare (xargs :guard (booleanp table-p)))
+  (cond
+   (table-p
+    `(with-output
+      :off :all :on (observation error)
+      (progn (table acl2-defaults-table :check-invariant-risk ,x)
+             (make-event
+              (pprogn (if (and (not (eq ,x (get-check-invariant-risk state)))
+                               (not (eq ,x :CLEAR)))
+                          (observation 'set-check-invariant-risk
+                                       "No change is being made in the value ~
+                                        computed by ~x0.  This happens when ~
+                                        the value of state global ~
+                                        'check-invariant-risk is less than ~
+                                        the new table value; see :DOC ~
+                                        set-check-invariant-risk."
+                                       '(get-check-invariant-risk state))
+                        state)
+                      (value '(value-triple ,x)))
+              :check-expansion t))))
+   ((and x (member-eq x *check-invariant-risk-values*))
+    `(set-check-invariant-risk-fn ,x state))
+   (t `(cond
+        ((not (member-eq ,x '(t nil :ERROR :WARNING)))
+         (er soft 'check-invariant-risk
+             "Illegal value for ~x0: ~x1"
+             'check-invariant-risk
+             ',x))
+        (t (er-progn
+            (with-ubt!
+             (with-output
+              :off :all
+              (with-output
+               :on (error warning warning!)
+               (progn (defttag :set-check-invariant-risk)
+                      (progn! (set-check-invariant-risk-fn ,x state))))))
+            (value nil)))))))
+
+(defun set-check-invariant-risk-fn (x state)
+  (declare (xargs :guard (member-eq x *check-invariant-risk-values*)))
+  (progn$ (mbt (and (member-eq x *check-invariant-risk-values*) t))
+          (cond ((and (null x)
+                      (f-get-global 'check-invariant-risk state)
+                      (not (ttag (w state))))
+                 (er soft 'set-check-invariant-risk
+                     "There must be an active trust tag to set '~x0 to ~x1."
+                     'check-invariant-risk nil))
+                (t (pprogn
+                    (f-put-global 'check-invariant-risk x state)
+                    (if (not (eq x (get-check-invariant-risk state)))
+                        (observation 'set-check-invariant-risk
+                                     "No change is being made in the value ~
+                                      computed by ~x0, because the new value ~
+                                      of state global 'check-invariant-risk ~
+                                      is greater than the table value; see ~
+                                      :DOC set-check-invariant-risk."
+                                     '(get-check-invariant-risk state))
+                      state)
+                    (value x))))))
+
+; read-file-into-string (must come after with-local-state is defined)
+
+(defun read-file-into-string1 (channel state ans bound)
+
+; Channel is an open input characater channel.  We read all the characters in
+; the file and return the list of them.
+
+  (declare (xargs :stobjs state
+                  :guard (and (symbolp channel)
+                              (open-input-channel-p channel :character state)
+                              (character-listp ans)
+                              (natp bound))
+                  :measure (acl2-count bound)))
+  (cond ((zp bound) ; file is too large
+         (mv nil state))
+        (t (mv-let
+            (val state)
+            (read-char$ channel state)
+            (cond ((not (characterp val)) ; end of file
+                   (mv (coerce (reverse ans) 'string)
+                       state))
+                  (t (read-file-into-string1 channel state (cons val ans)
+                                             (1- bound))))))))
+
+(defconst *read-file-into-string-bound*
+
+; We rather arbitrarily set this value to the largest 64-bit CCL fixnum.  It is
+; a strict upper bound on the size of a string we are willing to return from
+; read-file-into-string, and it serves as a termination bound for our call of
+; read-file-into-string1 inside read-file-into-string.
+
+  (1- (ash 1 60)))
+
+(encapsulate ()
+
+(local
+ (defthm stringp-read-file-into-string1
+   (implies (car (read-file-into-string1 channel state ans bound))
+            (stringp (car (read-file-into-string1 channel state ans bound))))))
+
+(defun read-file-into-string2 (filename state)
+
+; Parallelism wart: avoid potential illegal behavior caused by this function.
+; A simple but expensive solution is probably to add a lock.  But with some
+; thought one might provide for correct parallel evaluations of this function.
+; Perhaps that's already the case!
+
+  (declare (xargs :stobjs state :guard (stringp filename)))
+  #-acl2-loop-only
+  (declare (ignore state))
+  #-acl2-loop-only
+  (with-open-file
+   (stream filename :direction :input :if-does-not-exist nil)
+   (and stream
+        (let ((len (file-length stream)))
+          (and (< len *read-file-into-string-bound*)
+               (let ((fwd (file-write-date filename)))
+                 (or (check-against-read-file-alist filename fwd)
+                     (push (cons filename fwd)
+                           *read-file-alist*))
+
+; The following #-acl2-loop-only code, minus the WHEN clause, is based on code
+; found at http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was
+; authored by @sabetts, who is apparently Shawn Betts.  The URL above presents
+; five implementations of file slurping and I found the discussion truly
+; excellent.  Thank you @sabetts!
+
+; The URL above says ``You can do anything you like with the code.''
+
+                 (let ((seq (make-string len)))
+                   (declare (type string seq))
+                   (read-sequence seq stream)
+                   (when (not (eql fwd (file-write-date filename)))
+                     (error "Illegal attempt to call ~s concurrently with ~
+                             some write to that file!~%See :DOC ~
+                             read-file-into-string."
+                            'read-file-into-string))
+                   seq))))))
+  #+acl2-loop-only
+  (let* ((st (coerce-state-to-object state)))
+    (with-local-state
+     (mv-let
+      (val state)
+      (let ((state (coerce-object-to-state st)))
+        (mv-let
+         (chan state)
+         (open-input-channel filename :character state)
+         (cond ((null chan)
+                (mv nil state))
+               (t (mv-let
+                   (val state)
+                   (read-file-into-string1 chan state nil
+                                           *read-file-into-string-bound*)
+                   (pprogn (ec-call ; guard verification here seems unimportant
+                            (close-input-channel chan state))
+                           (mv val state)))))))
+      val))))
+)
+
+(defun read-file-into-string (filename state)
+  (declare (xargs :stobjs state :guard (stringp filename)))
+  (and (mbt (stringp filename))
+       (with-guard-checking t
+                            (read-file-into-string2 filename state))))

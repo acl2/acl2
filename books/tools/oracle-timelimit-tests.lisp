@@ -35,17 +35,20 @@
       (+ (fib (- n 1))
          (fib (- n 2))))))
 
+(defun check-time-and-bytes (time bytes)
+  (and (or (and (rationalp time)
+                (<= 0 time))
+           (er hard? 'oracle-timelimit "Bad time: ~x0~%" time))
+       (or (natp bytes)
+           (er hard? 'oracle-timelimit "Bad bytes: ~x0~%" bytes))))
 
-; Test of basic one-valued form that should succeed, inside a function
 (defun test1 (state)
-  (b* (((mv time bytes ans state) (oracle-timelimit 100 (fib 6)))
-       ((unless (and (rationalp time)
-                     (<= 0 time)))
+  (b* ((- (cw "Test of basic one-valued form that should succeed, inside a function~%"))
+       ((mv successp time bytes ans state) (oracle-timelimit 100 (fib 6)))
+       ((unless successp)
         (er hard? 'oracle-timelimit "Failed to execute (fib 6) in 100 seconds?")
         state)
-       ((unless (natp bytes))
-        (er hard? 'oracle-timelimit "Bytes aren't a natural?")
-        state)
+       (- (check-time-and-bytes time bytes))
        ((unless (equal ans (fib 6)))
         (er hard? 'oracle-timelimit "Wrong answer for (fib 6)")
         state))
@@ -57,33 +60,34 @@
 
 
 
-; Test of basic one-valued form that should succeed, inside a make-event
+
 (make-event
- (b* (((mv time bytes ans state) (oracle-timelimit 100 (fib 6)))
-      ((unless (and (rationalp time)
-                    (<= 0 time)))
+ (b* ((- (cw "Test of basic one-valued form that should succeed, inside a make-event~%"))
+      ((mv successp time bytes ans state) (oracle-timelimit 100 (fib 6)))
+      ((unless successp)
        (er soft 'oracle-timelimit "Failed to execute (fib 6) in 100 seconds?"))
-      ((unless (natp bytes))
-       (er soft 'oracle-timelimit "Bytes aren't a natural?"))
+      (- (check-time-and-bytes time bytes))
       ((unless (equal ans (fib 6)))
        (er soft 'oracle-timelimit "Wrong answer for (fib 6)")))
    (value '(value-triple :success))))
 
 
 
-;; Test a basic form that should fail, inside a function
 (defun test2 (state)
- (b* (((mv time bytes ans state) (oracle-timelimit 1/10
-                                                   (sleep 3)
-                                                   :onfail 43))
-      ((when time)
+ (b* ((- (cw "Test a basic form that should fail, inside a function~%"))
+      ((mv successp time bytes ans state) (oracle-timelimit 1/10
+                                                            (sleep 3)
+                                                            :onfail 43))
+      ((when successp)
        (er hard? 'oracle-timelimit "Failed to stop a (sleep 3).")
+       state)
+      (- (check-time-and-bytes time bytes))
+      ((unless (and (<= 1/20 time)
+                    (<= time 1)))
+       (er hard? 'oracle-timelimit "Time to stop a (sleep 3) seems incorrect: ~x0.~%" time)
        state)
       ((unless (equal ans 43))
        (er hard? 'oracle-timelimit "Wrong answer for timeout.")
-       state)
-      ((unless (equal bytes nil))
-       (er hard? 'oracle-timelimit "Wrong BYTES for timeout.")
        state))
    state))
 
@@ -141,20 +145,17 @@ BOZO what is going on here?
 
 
 
-; Test of basic two-valued form that should succeed, inside a function
 (defun test3 (state)
-  (b* (((mv time bytes ans-a ans-b state)
+  (b* ((- (cw "Test of basic two-valued form that should succeed, inside a function~%"))
+       ((mv successp time bytes ans-a ans-b state)
         (oracle-timelimit 100
                           (mv (fib 6) (fib 7))
                           :ret (mv a b)
                           :onfail (mv 17 43)))
-       ((unless (and (rationalp time)
-                     (<= 0 time)))
-        (er hard? 'oracle-timelimit "Failed to execute (fib 6) in 100 seconds?")
+       ((unless successp)
+        (er hard? 'oracle-timelimit "Failed to execute (fib 6) and (fib 7) in 100 seconds?")
         state)
-       ((unless (natp bytes))
-        (er hard? 'oracle-timelimit "Bytes aren't a natural?")
-        state)
+       (- (check-time-and-bytes time bytes))
        ((unless (equal ans-a (fib 6)))
         (er hard? 'oracle-timelimit "Wrong answer for (fib 6)")
         state)
@@ -167,18 +168,16 @@ BOZO what is going on here?
  (let ((state (test3 state)))
    (value '(value-triple :success))))
 
-; Test of basic two-valued form that should succeed, in a make-event
 (make-event
- (b* (((mv time bytes ans-a ans-b state)
+ (b* ((- (cw "Test of basic two-valued form that should succeed, in a make-event~%"))
+      ((mv successp time bytes ans-a ans-b state)
        (oracle-timelimit 100
                          (mv (fib 6) (fib 7))
                          :ret (mv a b)
                          :onfail (mv 17 43)))
-      ((unless (and (rationalp time)
-                    (<= 0 time)))
-       (er soft 'oracle-timelimit "Failed to execute (fib 6) in 100 seconds?"))
-      ((unless (natp bytes))
-       (er soft 'oracle-timelimit "Bytes aren't a natural?"))
+      ((unless successp)
+       (er soft 'oracle-timelimit "Failed to execute (fib 6) and (fib 7) in 100 seconds?"))
+      (- (check-time-and-bytes time bytes))
       ((unless (equal ans-a (fib 6)))
        (er soft 'oracle-timelimit "Wrong answer for (fib 6)"))
       ((unless (equal ans-b (fib 7)))
@@ -186,20 +185,17 @@ BOZO what is going on here?
    (value '(value-triple :success))))
 
 
-
-; Test of basic two-valued form that should timeout, inside a function
 (defun test4 (state)
-  (b* (((mv time bytes ans-a ans-b state)
+  (b* ((- (cw "Test of basic two-valued form that should timeout, inside a function~%"))
+       ((mv successp time bytes ans-a ans-b state)
         (oracle-timelimit 1/10
                           (mv (sleep 3) (fib 7))
                           :ret (mv a b)
                           :onfail (mv 17 43)))
-       ((when time)
+       ((when successp)
         (er hard? 'oracle-timelimit "Slept for 3 seconds in 1/10 of a second?")
         state)
-       ((when bytes)
-        (er hard? 'oracle-timelimit "Bytes aren't NIL?")
-        state)
+       (- (check-time-and-bytes time bytes))
        ((unless (equal ans-a 17))
         (er hard? 'oracle-timelimit "Wrong answer for ans-a.")
         state)
@@ -233,21 +229,20 @@ BOZO what is going on here?
 
 
 
-; Test of a form that should cause an error.  This might not cause an error on
-; all Lisps and may need some conditionals...
+
 (defun test5 (state)
   (declare (xargs :mode :program))
-  (b* (((mv time bytes ans state)
+  (b* ((- (cw "Test of a form that should cause an error.  This might not ~
+               cause an error on all Lisps and may need some conditionals...~%"))
+       ((mv successp time bytes ans state)
         (oracle-timelimit 100
                           (car 3)
                           :onfail 99
                           :suppress-lisp-errors t))
-       ((when time)
-        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+       ((when successp)
+        (er hard? 'oracle-timelimit "Somehow succeeded in executing (car 3)?~%")
         state)
-       ((when bytes)
-        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
-        state)
+       (- (check-time-and-bytes time bytes))
        ((unless (equal ans 99))
         (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
         state))
@@ -259,17 +254,16 @@ BOZO what is going on here?
 
 (defun test6 (state)
   (declare (xargs :mode :program))
-  (b* (((mv time bytes ans state)
+  (b* ((- (cw "Test of a form that should create an insanely big number to cause an error.~%"))
+       ((mv successp time bytes ans state)
         (oracle-timelimit 100
                           (ash 1 (ash 1 10000))
                           :onfail 99
                           :suppress-lisp-errors t))
-       ((when time)
-        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+       ((when successp)
+        (er hard? 'oracle-timelimit "Somehow created enormous number successfully?")
         state)
-       ((when bytes)
-        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
-        state)
+       (- (check-time-and-bytes time bytes))
        ((unless (equal ans 99))
         (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
         state))
@@ -290,17 +284,16 @@ BOZO what is going on here?
 
 (defun test7 (state)
   (declare (xargs :mode :program))
-  (b* (((mv time bytes ans state)
+  (b* ((- (cw "Test of a form that should stack overflow.~%"))
+       ((mv successp time bytes ans state)
         (oracle-timelimit 100
                           (stack-overflow '(3))
                           :onfail 99
                           :suppress-lisp-errors t))
-       ((when time)
-        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+       ((when successp)
+        (er hard? 'oracle-timelimit "Succeeded in infinite computation?")
         state)
-       ((when bytes)
-        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
-        state)
+       (- (check-time-and-bytes time bytes))
        ((unless (equal ans 99))
         (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
         state))
@@ -315,17 +308,16 @@ BOZO what is going on here?
 
 (defun test8 (state)
   (declare (xargs :mode :program))
-  (b* (((mv time bytes ans state)
+  (b* ((- (cw "Test of a form that should cause an ACL2-style ER.~%"))
+       ((mv successp time bytes ans state)
         (oracle-timelimit 100
                           (er hard? 'test8 "causing an acl2-style ER")
                           :onfail 99
                           :suppress-lisp-errors t))
-       ((when time)
-        (er hard? 'oracle-timelimit "Expected no time for simulated error.")
+       ((when successp)
+        (er hard? 'oracle-timelimit "Calling ER didn't cause an error?")
         state)
-       ((when bytes)
-        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
-        state)
+       (- (check-time-and-bytes time bytes))
        ((unless (equal ans 99))
         (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
         state))
@@ -338,17 +330,16 @@ BOZO what is going on here?
 
 (defun test9 (x state)
   (declare (xargs :mode :logic :verify-guards nil))
-  (b* (((mv time bytes ans state)
+  (b* ((- (cw "Test of a form that should cause a guard violation.~%"))
+       ((mv successp time bytes ans state)
         (oracle-timelimit 100
                           (car x) ;; guard violation
                           :onfail 99
                           :suppress-lisp-errors t))
-       ((when time)
-        (er hard? 'oracle-timelimit "Expected no time for simulated error, but got ~x0" time)
+       ((when successp)
+        (er hard? 'oracle-timelimit "Guard didn't get violated?")
         state)
-       ((when bytes)
-        (er hard? 'oracle-timelimit "Expected no bytes for simulated error.")
-        state)
+       (- (check-time-and-bytes time bytes))
        ((unless (equal ans 99))
         (er hard? 'oracle-timelimit "Wrong answer for simulated error.")
         state))
@@ -359,7 +350,6 @@ BOZO what is going on here?
  (let ((state
         (with-guard-checking :all (test9 5 state))))
    (value '(value-triple :success))))
-
 
 
 
@@ -389,17 +379,16 @@ BOZO what is going on here?
 ;;    23.43 seconds realtime, 11.46 seconds runtime, 1,921,923,872 bytes allocated
 
 (defun test10 (state)
-  (b* (((mv time bytes ans state)
+  (b* (((mv successp time bytes ans state)
         (oracle-timelimit 100
                           (slowly-allocate-gobs-of-nonsense 120 nil)
                           ;; Do not use more than 800 MB of memory
                           :maxmem (* 800 1024 1024)))
-       ((when time)
+       ((when successp)
         (er hard? 'oracle-timelimit "Failed to stop insane allocation?")
         state)
-       ((when bytes)
-        (er hard? 'oracle-timelimit "Expected bytes to be nil.")
-        state)
+       (- (check-time-and-bytes time bytes))
+       (- (cw "Stopped with time ~x0, bytes ~x1~%" time bytes))
        ((when ans)
         (er hard? 'oracle-timelimit "Expected answer to be nil.")
         state))

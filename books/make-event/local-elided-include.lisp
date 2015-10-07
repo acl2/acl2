@@ -81,16 +81,21 @@
                           (LOCAL (VALUE-TRIPLE :ELIDED)))
         (DEFTHM BAR3-PRESERVES-CONSP
           (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
+    (9 RECORD-EXPANSION
+       (ENCAPSULATE ((BAR3 (X) T))
+                    (LOCAL (DEFUN BAR3 (X) (FOO X)))
+                    (DEFTHM BAR3-PRESERVES-CONSP
+                      (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
+       (ENCAPSULATE
+        ((BAR3 (X) T))
+        (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+                          (LOCAL (VALUE-TRIPLE :ELIDED)))
+        (DEFTHM BAR3-PRESERVES-CONSP
+          (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
     (10 RECORD-EXPANSION
-        (MUST-FAIL (ENCAPSULATE ((BAR3 (X) T))
-                                (LOCAL (DEFUN BAR3 (X) (FOO X)))
-                                (DEFTHM BAR3-PRESERVES-CONSP
-                                  (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
-        (VALUE-TRIPLE 'T))
-    (11 RECORD-EXPANSION
         (MAKE-EVENT '(DEFUN FOO-3 (X) X))
         (DEFUN FOO-3 (X) X))
-    (13
+    (12
      RECORD-EXPANSION
      (ENCAPSULATE NIL (MY-LOCAL (DEFUN G3 (X) X))
                   (MAKE-EVENT '(MY-LOCAL (DEFUN G3 (X) X)))
@@ -185,16 +190,21 @@
                           (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
         (DEFTHM BAR3-PRESERVES-CONSP
           (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
+    (9 RECORD-EXPANSION
+       (ENCAPSULATE ((BAR3 (X) T))
+                    (LOCAL (DEFUN BAR3 (X) (FOO X)))
+                    (DEFTHM BAR3-PRESERVES-CONSP
+                      (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
+       (ENCAPSULATE
+        ((BAR3 (X) T))
+        (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+                          (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
+        (DEFTHM BAR3-PRESERVES-CONSP
+          (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
     (10 RECORD-EXPANSION
-        (MUST-FAIL (ENCAPSULATE ((BAR3 (X) T))
-                                (LOCAL (DEFUN BAR3 (X) (FOO X)))
-                                (DEFTHM BAR3-PRESERVES-CONSP
-                                  (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
-        (VALUE-TRIPLE 'T))
-    (11 RECORD-EXPANSION
         (MAKE-EVENT '(DEFUN FOO-3 (X) X))
         (DEFUN FOO-3 (X) X))
-    (13
+    (12
      RECORD-EXPANSION
      (ENCAPSULATE NIL (MY-LOCAL (DEFUN G3 (X) X))
                   (MAKE-EVENT '(MY-LOCAL (DEFUN G3 (X) X)))

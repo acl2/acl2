@@ -68,8 +68,9 @@ macro to easily cause unsoundness.</li>
      (oracle-timelimit 1/3 ; Fail if more than 1/3 second is needed
        (fib 35))           ; What to execute
      -->
-     (mv seconds           ; NIL on timeout, or time taken (rational)
-         bytes             ; NIL on timeout, or bytes allocated (natural)
+     (mv successp          ; Did the computation complete in time?
+         seconds           ; Time taken (rational number of seconds)
+         bytes             ; Bytes allocated (natural)
          ans               ; Answer on success, or NIL on timeout
          state)            ; Adjusted with changes to oracle
 })
@@ -83,8 +84,9 @@ macro to easily cause unsoundness.</li>
        :onfail (mv :oops state) ; Alternate values to return on timeout
        )
      -->
-     (mv seconds           ; NIL on timeout, or time taken (rational)
-         bytes             ; NIL on timeout, or bytes allocated (natural)
+     (mv successp          ; Did the computation complete in time?
+         seconds           ; Time taken (rational number of seconds)
+         bytes             ; Bytes allocated (natural)
          ans               ; Answer on success, or :oops on timeout
          state)            ; Adjusted with changes to the oracle
 })
@@ -130,13 +132,17 @@ is going to macroexpand to something like the following:</p>
 @({
     (mv-let retspec
         form
-      (b* (((mv & time state)  (read-acl2-oracle state))
-           ((mv & bytes state) (read-acl2-oracle state))
-           ((unless time)
+      (b* (((mv & successp state) (read-acl2-oracle state))
+           ((mv & time state)     (read-acl2-oracle state))
+           ((mv & bytes state)    (read-acl2-oracle state))
+           ;; Fix time/bytes to sensible values
+           (time     (if (and (rationalp time) (<= 0 time)) time 0))
+           (bytes    (nfix bytes))
+           ((unless successp)
             ;; execution timed out
-            (mv nil nil failspec [state])))
+            (mv nil time bytes failspec [state])))
          ;; Else, execution succeeded
-         (mv time bytes retspec [state])))
+         (mv t time bytes retspec [state])))
 })
 
 <p>You can see here that the @('retspec') is used to explain how to bind the
@@ -151,51 +157,54 @@ error will propagate through the @('oracle-timelimit') call.  However, if you
 set @(':suppress-lisp-errors t'), then any such error will be treated as a
 timeout.  This may have any number of unsound consequences!</p>")
 
-
 (defund oracle-timelimit-extract (state)
   "Has an under-the-hood definition."
   (declare (xargs :stobjs state :guard t))
-  (b* (((mv ?er time state) (read-acl2-oracle state))
-       ((mv ?er bytes state) (read-acl2-oracle state))
-       ((unless time)
+  (b* (((mv ?er successp state) (read-acl2-oracle state))
+       ((mv ?er time state)     (read-acl2-oracle state))
+       ((mv ?er bytes state)    (read-acl2-oracle state))
+       ;; Fix time/bytes to sensible values, for type theorems
+       (time (if (and (rationalp time) (<= 0 time)) time 0))
+       (bytes (nfix bytes))
+       ((unless successp)
         ;; Logical fiction for the timeout case.
-        (mv nil nil state)))
+        (mv nil time bytes state)))
     ;; Logical fiction for the success case.
-    (mv (if (and (rationalp time)
-                 (<= 0 time))
-            time
-          0)
-        (nfix bytes)
-        state)))
+    (mv t time bytes state)))
 
 (local (in-theory (enable oracle-timelimit-extract)))
 
-(defthm type-of-oracle-timelimit-extract.time
-  (or (and (rationalp (mv-nth 0 (oracle-timelimit-extract state)))
-           (<= 0 (mv-nth 0 (oracle-timelimit-extract state))))
-      (not (mv-nth 0 (oracle-timelimit-extract state))))
+(defthm booleanp-of-oracle-timelimit-extract.successp
+  (let ((successp (mv-nth 0 (oracle-timelimit-extract state))))
+    (or (equal successp t)
+        (equal successp nil)))
   :rule-classes :type-prescription)
 
-(defthm rationalp-of-oracle-timelimit-extract.time
-  (iff (rationalp (mv-nth 0 (oracle-timelimit-extract state)))
-       (mv-nth 0 (oracle-timelimit-extract state))))
+(defthm type-of-oracle-timelimit-extract.time
+  (let ((time (mv-nth 1 (oracle-timelimit-extract state))))
+    (and (rationalp time)
+         (<= 0 time)))
+  :rule-classes :type-prescription)
 
 (defthm lower-bound-of-oracle-timelimit-extract.time
-  (<= 0 (mv-nth 0 (oracle-timelimit-extract state)))
+  (let ((time (mv-nth 1 (oracle-timelimit-extract state))))
+    (<= 0 time))
   :rule-classes :linear)
 
 (defthm type-of-oracle-timelimit-extract.bytes
-  (or (natp (mv-nth 1 (oracle-timelimit-extract state)))
-      (not (mv-nth 1 (oracle-timelimit-extract state))))
+  (let ((bytes (mv-nth 2 (oracle-timelimit-extract state))))
+    (natp bytes))
   :rule-classes :type-prescription)
 
 (defthm lower-bound-of-oracle-timelimit-extract.bytes
-  (<= 0 (mv-nth 1 (oracle-timelimit-extract state)))
+  (let ((bytes (mv-nth 2 (oracle-timelimit-extract state))))
+    (<= 0 bytes))
   :rule-classes :linear)
 
 (defthm state-p1-of-oracle-timelimit-extract.state
-  (implies (state-p1 state)
-           (state-p1 (mv-nth 2 (oracle-timelimit-extract state)))))
+  (let ((new-state (mv-nth 3 (oracle-timelimit-extract state))))
+    (implies (state-p1 state)
+             (state-p1 new-state))))
 
 (defttag :oracle-timelimit)
 (include-raw "oracle-timelimit-raw.lsp")
@@ -236,20 +245,20 @@ timeout.  This may have any number of unsound consequences!</p>")
        ((when (eql (len ret-list) 1))
         ;; Single-valued case.
         `(let ((,(car ret-list) (oracle-timelimit-exec (list ,limit 1 ,maxmem ,suppress-lisp-errors) ,form)))
-           (mv-let (time bytes state)
+           (mv-let (successp time bytes state)
              (oracle-timelimit-extract state)
-             (if time
-                 (mv time bytes . ,success-splice)
-               (mv nil nil . ,fail-splice))))))
+             (if successp
+                 (mv t time bytes . ,success-splice)
+               (mv nil time bytes . ,fail-splice))))))
 
     ;; Multiple-valued case.
     `(mv-let ,ret-list
        (oracle-timelimit-exec (list ,limit ,(len ret-list) ,maxmem ,suppress-lisp-errors) ,form)
-       (mv-let (time bytes state)
+       (mv-let (successp time bytes state)
          (oracle-timelimit-extract state)
-         (if time
-             (mv time bytes . ,success-splice)
-           (mv nil nil . ,fail-splice))))))
+         (if successp
+             (mv t time bytes . ,success-splice)
+           (mv nil time bytes . ,fail-splice))))))
 
 (defmacro oracle-timelimit (limit form &key (ret 'ret) (onfail 'nil) (maxmem 'nil) (suppress-lisp-errors 'nil))
   (oracle-timelimit-fn limit form ret onfail maxmem suppress-lisp-errors))

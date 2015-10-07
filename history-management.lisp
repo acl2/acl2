@@ -6221,7 +6221,7 @@
 ; asking for the full command, so we give it to them.
 
            (pprogn
-            (fms "~x0 is built into ACL2, without a defining event.~#1~[  See ~
+            (fms "~x0 is built into ACL2 without a defining event.~#1~[  See ~
                   :DOC ~x0.~/~]~|"
                  (list (cons #\0 logical-name)
                        (cons #\1 (if (assoc-eq logical-name

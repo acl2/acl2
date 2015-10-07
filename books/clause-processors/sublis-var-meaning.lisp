@@ -103,11 +103,25 @@
                 (pseudo-term-listp args))
            (pseudo-termp (cons-term fn args))))
 
+(local ;; because this is gross
+ (defthm pseudo-termp-cons-term-lambda
+   (implies (and (consp fn)
+                 (consp (cdr fn))
+                 (true-listp (cddr fn))
+                 (equal (+ 2 (len (cddr fn))) 3) ;; gross
+                 (eq (car fn) 'lambda)
+                 (symbol-listp (cadr fn))
+                 (pseudo-termp (caddr fn))
+                 (equal (len args) (len (cadr fn)))
+                 (pseudo-term-listp args))
+            (pseudo-termp (cons-term fn args)))))
+
 (defthm pseudo-termp-cons-term1-mv2
   (implies (and (symbolp fn)
                 (not (eq fn 'quote))
-                (pseudo-term-listp args))
-           (pseudo-termp (cons-term1-mv2 fn args (cons fn args)))))
+                (pseudo-term-listp args)
+                (pseudo-termp x))
+           (pseudo-termp (mv-nth 1 (cons-term1-mv2 fn args x)))))
 
 (in-theory (disable cons-term cons-term1-mv2))
 
@@ -164,6 +178,29 @@
                     (cterm-ev-lst x a)))
     :flag list))
 
+(defthm len-of-sublis-var1-lst
+  (equal (len (mv-nth 1 (sublis-var1-lst alist x)))
+         (len x)))
+
+(defthm-term-subst-flg
+  (defthm pseudo-termp-of-sublis-var1
+    (implies (and (pseudo-termp x)
+                  (pseudo-term-listp (strip-cdrs alist)))
+             (pseudo-termp (mv-nth 1 (sublis-var1 alist x))))
+    :hints ('(:expand ((pseudo-termp x)
+                       (sublis-var1 alist x))))
+    :flag term)
+  (defthm pseudo-term-listp-of-sublis-var1-lst
+    (implies (and (pseudo-term-listp x)
+                  (pseudo-term-listp (strip-cdrs alist)))
+             (pseudo-term-listp (mv-nth 1 (sublis-var1-lst alist x))))
+    :flag list))
+
+(defthm pseudo-termp-of-sublis-var
+  (implies (and (pseudo-termp x)
+                (pseudo-term-listp (strip-cdrs alist)))
+           (pseudo-termp (sublis-var alist x)))
+  :hints(("Goal" :in-theory (enable sublis-var))))
 
 (defthm-term-subst-flg
   (defthm sublis-var1-is-term-subst

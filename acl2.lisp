@@ -145,8 +145,29 @@
 (defvar *acl2-optimize-form*
   `(optimize #+cltl2 (compilation-speed 0)
 
-; The user is welcome to modify this proclaim form.  Warning: Keep it in sync
-; with the settings in compile-acl2 under #+sbcl.
+; The user is welcome to modify this proclaim form.  For example, in CCL and
+; SBCL, where the "full" target does essentially nothing other than note in
+; file acl2-status.txt that the system has allegedly been compiled, the
+; following procedure works.
+
+;   # Write :COMPILED to acl2-status.txt.
+;   make full LISP=ccl
+
+;   # Next, edit acl2r.lisp with the desired variant of *acl2-optimize-form*,
+;   # for example as follows.
+;   #   (defparameter cl-user::*acl2-optimize-form*
+;   #     '(OPTIMIZE (COMPILATION-SPEED 0) (DEBUG 0) (SPEED 0) (SPACE 0)
+;   #                (SAFETY 3)))
+;   # 
+
+;   # Now start CCL and evaluate:
+
+;   (load "init.lisp") ; loads acl2r.lisp
+;   (in-package "ACL2")
+;   (save-acl2 (quote (initialize-acl2 (quote include-book)
+;                                      acl2::*acl2-pass-2-files*))
+;              "saved_acl2")
+;   (exit-lisp)
 
 ; The following may allow more tail recursion elimination (from "Lisp
 ; Knowledgebase" at lispworks.com); might consider for Allegro CL too.
@@ -1058,64 +1079,66 @@ ACL2 from scratch.")
   (let ((acl2-compiler-enabled-var
          #+cltl2 'common-lisp-user::*acl2-compiler-enabled*
          #-cltl2 'user::*acl2-compiler-enabled*))
-    `(progn (dolist (pair *initial-global-table*)
-              (f-put-global (car pair) (cdr pair) *the-live-state*))
-            (f-put-global 'acl2-sources-dir (our-pwd) *the-live-state*)
-            (f-put-global 'iprint-ar
-                          (compress1 'iprint-ar
-                                     (f-get-global 'iprint-ar *the-live-state*))
-                          *the-live-state*)
-            (f-put-global 'compiler-enabled
+    `(let ((state *the-live-state*))
+       (dolist (pair *initial-global-table*)
+         (f-put-global (car pair) (cdr pair) state))
+       (f-put-global 'acl2-sources-dir (our-pwd) state)
+       (f-put-global 'iprint-ar
+                     (compress1 'iprint-ar
+                                (f-get-global 'iprint-ar state))
+                     state)
+       (f-put-global 'compiler-enabled
 
 ; Either t, nil, or :books is fine here.  For example, it might be reasonable
 ; to initialize to (not *suppress-compile-build-time*).  But for now we enable
 ; compilation of books for all Lisps.
 
-                          (cond ((boundp ',acl2-compiler-enabled-var)
-                                 (or (member ,acl2-compiler-enabled-var
-                                             '(t nil :books))
-                                     (error "Illegal value for ~
-                                             user::*acl2-compiler-enabled*, ~s"
-                                            ,acl2-compiler-enabled-var))
-                                 ,acl2-compiler-enabled-var)
-                                (t
+                     (cond ((boundp ',acl2-compiler-enabled-var)
+                            (or (member ,acl2-compiler-enabled-var
+                                        '(t nil :books))
+                                (error "Illegal value for ~
+                                        user::*acl2-compiler-enabled*, ~s"
+                                       ,acl2-compiler-enabled-var))
+                            ,acl2-compiler-enabled-var)
+                           (t
 
 ; Warning: Keep the following "compile on the fly" readtime conditional in sync
 ; with the one in acl2-compile-file.
 
-                                 #+(or ccl sbcl)
-                                 :books
-                                 #-(or ccl sbcl)
-                                 t))
-                          *the-live-state*)
-            (f-put-global
-             'host-lisp
-             ,(let () ; such empty binding has avoided errors in  GCL 2.6.7
-                #+gcl :gcl
-                #+ccl :ccl
-                #+sbcl :sbcl
-                #+allegro :allegro
-                #+clisp :clisp
-                #+cmu :cmu
-                #+lispworks :lispworks
-                #-(or gcl ccl sbcl allegro clisp cmu lispworks)
-                (error
-                 "Error detected in initialize-state-globals: ~%~
-                  The underlying host Lisp appears not to support ACL2. ~%~
-                  Contact the ACL2 implementors to request such support."))
-             *the-live-state*)
-            (f-put-global
-             'compiled-file-extension
-             ,*compiled-file-extension*
-             *the-live-state*)
-            #+unix
-            (f-put-global 'tmp-dir "/tmp" *the-live-state*)
-            #+gcl ; for every OS, including Windows (thanks to Camm Maguire)
-            (when (boundp 'si::*tmp-dir*)
-              (f-put-global 'tmp-dir si::*tmp-dir* *the-live-state*))
-            #-acl2-mv-as-values
-            (f-put-global 'raw-arity-alist *initial-raw-arity-alist*
-                          *the-live-state*))))
+                            #+(or ccl sbcl)
+                            :books
+                            #-(or ccl sbcl)
+                            t))
+                     state)
+       (f-put-global
+        'host-lisp
+        ,(let () ; such empty binding has avoided errors in  GCL 2.6.7
+           #+gcl :gcl
+           #+ccl :ccl
+           #+sbcl :sbcl
+           #+allegro :allegro
+           #+clisp :clisp
+           #+cmu :cmu
+           #+lispworks :lispworks
+           #-(or gcl ccl sbcl allegro clisp cmu lispworks)
+           (error
+            "Error detected in initialize-state-globals: ~%The underlying ~
+             host Lisp appears not to support ACL2. ~%Contact the ACL2 ~
+             implementors to request such support."))
+        state)
+       (f-put-global
+        'compiled-file-extension
+        ,*compiled-file-extension*
+        state)
+       #+unix
+       (f-put-global 'tmp-dir "/tmp" state)
+       #+gcl ; for every OS, including Windows (thanks to Camm Maguire)
+       (when (boundp 'si::*tmp-dir*)
+         (f-put-global 'tmp-dir si::*tmp-dir* state))
+       #-acl2-mv-as-values
+       (f-put-global 'raw-arity-alist *initial-raw-arity-alist*
+                     state)
+       nil)))
 
 (defconstant *suppress-compile-build-time*
 
@@ -1989,22 +2012,15 @@ You are using version ~s.~s.~s."
              (not *do-proclaims*)) ; see comment above
     (return-from compile-acl2 nil))
 
+; Juho Snellman points out that SBCL resets the compiler policy on entry to
+; LOAD / COMPILE-FILE, and restores the old value once the file has been loaded
+; / compiled; thus the global proclaim is no longer in effect once COMPILE-ACL2
+; gets called.  So we proclaim here even though for other Lisps besides SBCL it
+; might be redundant with the global proclaim above.
+
   (proclaim-optimize)
 
   (with-warnings-suppressed
-
-   #+sbcl
-   (declaim (optimize (safety 0) (space 0) (speed 3) (debug 0)))
-
-; Here is a natural place to put compiler options.  In fact, we put them above,
-; globally.
-
-; (declaim (optimize (safety 0) (space 0) (speed 3)))
-
-; However, Juho Snellman points out that SBCL resets the compiler policy on
-; entry to LOAD / COMPILE-FILE, and restores the old value once the file has
-; been loaded / compiled; thus the global declaim is no longer in effect once
-; COMPILE-ACL2 gets called.
 
 ; Note on Illegal Instructions:  If ACL2 causes an illegal instruction
 ; trap it is difficult to figure out what is happening.  Here is a
