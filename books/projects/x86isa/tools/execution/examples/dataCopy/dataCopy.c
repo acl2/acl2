@@ -28,7 +28,7 @@ int main () {
   printf("\nSource before data copy:\n");
   printIntArray (src, 5);
 
-  copyData(src, dst, 5);
+  copyData(src, dst, 2);
 
   printf("\nSource after data copy:\n");
   printIntArray (src, 5);

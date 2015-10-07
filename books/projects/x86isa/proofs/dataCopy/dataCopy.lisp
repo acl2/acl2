@@ -213,6 +213,11 @@
         (create-canonical-address-list 8 (+ 8 (xr :rgf *rsp* x86)))
         ;; Destination Addresses
         (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rsi* x86))))
+       ;; We could modify the following pre-condition to say the following:
+       ;; either the source and destination addresses are completely disjoint
+       ;; or they are equal. However, the equality of the source and
+       ;; destination isn't what we are interested in for this program and so I
+       ;; choose to leave that out.
        (disjoint-p
         ;; Source Addresses
         (create-canonical-address-list (+ m k) (+ (- k) (xr :rgf *rdi* x86)))
@@ -1839,6 +1844,10 @@
        (equal (xr :fault 0 x86) nil)
        ;; We are poised to run the copyData sub-routine.
        (equal (xr :rip 0 x86) addr)
+       ;; n is n31p instead of n32p because in the C program, it's datatype is
+       ;; "int" as opposed to "unsigned int". I could have used (signed-byte-p
+       ;; 32 n) here, but I don't want to think about what will happen if
+       ;; negative number of bytes are copied.
        (unsigned-byte-p 31 n)
        (equal (xr :rgf *rdx* x86) n)
        ;; All the stack addresses are canonical.
