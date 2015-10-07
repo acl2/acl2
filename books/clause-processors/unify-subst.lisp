@@ -194,7 +194,40 @@
   (defthm simple-term-vars-lst-of-atom
     (implies (not (consp x))
              (equal (simple-term-vars-lst x) nil))
-    :rule-classes ((:rewrite :backchain-limit-lst 0))))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+  
+  (defthm true-listp-of-symbol-<-merge
+    (implies (and (true-listp x)
+                  (true-listp y))
+             (true-listp (symbol-<-merge x y)))
+    :hints(("Goal" :in-theory (enable symbol-<-merge))))
+
+  (defthm-simple-term-vars-flag
+    (defthm true-listp-of-simple-term-vars
+      (true-listp (simple-term-vars x))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((simple-term-vars x)))))
+      :flag simple-term-vars
+      :rule-classes :type-prescription)
+    (defthm true-listp-of-simple-term-vars-lst
+      (true-listp (simple-term-vars-lst x))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((simple-term-vars-lst x)))))
+      :flag simple-term-vars-lst
+      :rule-classes :type-prescription))
+
+  (defthm-simple-term-vars-flag
+    (defthm simple-term-vars-nonnil
+      (not (member nil (simple-term-vars x)))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((simple-term-vars x)))))
+      :flag simple-term-vars)
+    (defthm simple-term-vars-lst-nonnil
+      (not (member nil (simple-term-vars-lst x)))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((simple-term-vars-lst x)))))
+      :flag simple-term-vars-lst)))
 
 
 (defines substitute-into-term
@@ -382,7 +415,11 @@
                       const)))
     :hints (("goal" :induct t)
             (and stable-under-simplificationp
-                 '(:in-theory (enable unify-ev-constraint-0))))))
+                 '(:in-theory (enable unify-ev-constraint-0)))))
+
+  (defthm unify-const-vars-nonnil
+    (implies (not (assoc nil alist))
+             (not (assoc nil (mv-nth 1 (unify-const pat const alist)))))))
 
 
 
@@ -576,6 +613,27 @@
   (local (in-theory (disable simple-one-way-unify simple-one-way-unify-lst)))
 
   (defthm-simple-one-way-unify-flag
+    (defthm one-way-unify-vars-nonnil
+      (implies (not (assoc nil alist))
+               (mv-let (ok subst)
+                 (simple-one-way-unify pat x alist)
+                 (declare (ignore ok))
+                 (not (assoc nil subst))))
+     :hints ((and stable-under-simplificationp
+                  '(:expand ((:free (x) (simple-one-way-unify pat x alist))
+                             (:free (x) (simple-one-way-unify nil x alist))))))
+     :flag simple-one-way-unify)
+    (defthm one-way-unify-lst-vars-nonnil
+     (implies (not (assoc nil alist))
+               (mv-let (ok subst)
+                 (simple-one-way-unify-lst pat x alist)
+                 (declare (ignore ok))
+                 (not (assoc nil subst))))
+     :hints ('(:expand ((simple-one-way-unify-lst pat x alist))))
+     :flag simple-one-way-unify-lst)
+    :hints (("goal" :induct (simple-one-way-unify-flag flag pat x alist))))
+
+  (defthm-simple-one-way-unify-flag
     (defthm simple-one-way-unify-preserves-eval
       (mv-let (ok subst)
         (simple-one-way-unify pat term alist)
@@ -731,6 +789,26 @@
                   (cons (list-term (cdr lst)) nil)))
     ''nil))
 
+
+(defun filter-out-unify-subst-evals (env-terms
+                                     simple-one-way-unify-call
+                                     ev-alist
+                                     full-env-terms)
+  (if (atom env-terms)
+      nil
+    (let* ((env (car env-terms))
+           (rest (filter-out-unify-subst-evals (cdr env-terms)
+                                               simple-one-way-unify-call
+                                               ev-alist
+                                               full-env-terms)))
+      (case-match env
+        ((!ev-alist ('mv-nth ''1 !simple-one-way-unify-call) a)
+         (if (member-equal a full-env-terms)
+             rest
+           (cons a rest)))
+        (& (cons env rest))))))
+           
+
 ;; The above is only used in a bind-free hyp, as follows:
 (defun simple-one-way-unify-bind-free (rw-term eval-fns mfc state)
   (declare (xargs :mode :program :stobjs state)
@@ -747,7 +825,14 @@
               ;; if terms is (a b c d)
               ;; then (list-term terms) is
               ;; (cons a (cons b (cons c (cons d nil))))
-              `((envs . ,(list-term terms)))))))
+
+              ;; But first remove any env terms that are calls of the
+              ;; alist-eval function on the unify that we're processing.
+              (let ((terms (filter-out-unify-subst-evals terms
+                                                         (third rw-term) ;; the simple-one-way-unify call
+                                                         (third eval-fns) ;; ev-alist
+                                                         terms)))
+              `((envs . ,(list-term terms))))))))
 
 ;;  The following is used in the
 ;; conclusion, expanding into a conjunction of equalities:
