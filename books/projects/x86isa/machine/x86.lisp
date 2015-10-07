@@ -10,7 +10,12 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
-(local (include-book "arithmetic/top-with-meta" :dir :system))
+
+(local (in-theory (e/d ()
+                       (programmer-level-mode-rm08-no-error
+                        (:meta acl2::mv-nth-cons-meta)
+                        rm08-value-when-error
+                        member-equal))))
 
 ;; ======================================================================
 
@@ -2835,13 +2840,16 @@
 
   ///
 
+  (local (in-theory (e/d () (acl2::zp-open not))))
 
   (defthm natp-get-prefixes
     (implies (forced-and (natp prefixes)
                          (canonical-address-p start-rip)
                          (x86p x86))
              (natp (mv-nth 1 (get-prefixes start-rip prefixes cnt x86))))
-    :hints (("Goal" :in-theory (e/d () (force (force)))))
+    :hints (("Goal" :in-theory (e/d ()
+                                    (force (force) unsigned-byte-p
+                                           signed-byte-p))))
     :rule-classes :type-prescription)
 
   (defthm-usb n43p-get-prefixes
@@ -2859,7 +2867,11 @@
                          (canonical-address-p start-rip))
              (x86p (mv-nth 2 (get-prefixes start-rip prefixes cnt x86))))
     :hints (("Goal" :in-theory (e/d ()
-                                    (signed-byte-p force (force))))))
+                                    (unsigned-byte-p
+                                     signed-byte-p
+                                     negative-logand-to-positive-logand-with-integerp-x
+                                     negative-logand-to-positive-logand-with-n43p-x
+                                     force (force))))))
 
   (local (in-theory (e/d  (rm08 rvm08)
                           (force
@@ -2886,8 +2898,9 @@
               5))
     :hints (("Goal"
              :induct (get-prefixes start-rip prefixes cnt x86)
-             :in-theory (e/d (get-prefixes)
+             :in-theory (e/d (rm08-value-when-error)
                              (signed-byte-p
+                              unsigned-byte-p rm08
                               (force) force
                               canonical-address-p
                               not acl2::zp-open))))
@@ -3024,6 +3037,10 @@ x86 interpreter.  It fetches one instruction by looking up the memory
 address indicated by the instruction pointer @('rip'), decodes that
 instruction, and dispatches control to the appropriate instruction
 semantic function.</p>"
+
+  :prepwork
+  ((local (in-theory (e/d* ()
+                           (unsigned-byte-p)))))
 
   (b* ((ctx 'x86-fetch-decode-execute)
        ;; (64-bit-mode (64-bit-modep x86))
@@ -3251,8 +3268,8 @@ semantic function.</p>"
      (equal (x86-fetch-decode-execute x86)
             (opcode-execute start-rip temp-rip3 prefixes rex-byte
                             opcode/escape-byte modr/m sib x86)))
-    :hints (("Goal" :in-theory (e/d (rm08 rvm08)
-                                    (signed-byte-p)))))
+    :hints (("Goal" :in-theory (e/d ()
+                                    (signed-byte-p not)))))
 
   (defthmd ms-fault-and-x86-fetch-decode-and-execute
     (implies (and (x86p x86)

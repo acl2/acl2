@@ -3719,7 +3719,14 @@ memory.</li>
            (mv (and flg0 flg1) val x86)))
       (16 (rm128 addr r-w-x x86))
       (otherwise
-       (mv 'unsupported-nbytes nbytes x86))))
+       (mv 'unsupported-nbytes nbytes x86)))
+
+    ///
+
+    (defthm x86p-of-mv-nth-2-of-rm-size
+      (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
+                    (x86p x86))
+               (x86p (mv-nth 2 (rm-size bytes lin-addr r-w-x x86))))))
 
   (define rim-size
     ((nbytes :type (member 1 2 4 8))
