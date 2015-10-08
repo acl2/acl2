@@ -196,6 +196,50 @@ about it.</p>"
     (unsigned-byte-p 128 (nth-slice128 n x))))
 
 
+(define nth-slice256 ((n natp)
+                      (x integerp))
+  :returns (slice natp :rule-classes :type-prescription)
+  :parents (bitops/extra-defs)
+  :short "Extract the @('n')th 256-bit slice of the integer @('x')."
+  :long "<p>We leave this enabled; we would usually not expect to try to reason
+about it.</p>"
+  :enabled t
+  :inline t
+  (mbe :logic
+       (logand (ash (ifix x) (* (nfix n) -256)) (1- (expt 2 256)))
+       :exec
+       (the (unsigned-byte 256)
+         (logand (ash x (* n -256))
+                 #ux_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF)))
+  ///
+  (defcong nat-equiv equal (nth-slice256 n x) 1)
+  (defcong int-equiv equal (nth-slice256 n x) 2)
+  (defthm unsigned-byte-p-256-of-nth-slice256
+    (unsigned-byte-p 256 (nth-slice256 n x))))
+
+
+(define nth-slice512 ((n natp)
+                      (x integerp))
+  :returns (slice natp :rule-classes :type-prescription)
+  :parents (bitops/extra-defs)
+  :short "Extract the @('n')th 512-bit slice of the integer @('x')."
+  :long "<p>We leave this enabled; we would usually not expect to try to reason
+about it.</p>"
+  :enabled t
+  :inline t
+  (mbe :logic
+       (logand (ash (ifix x) (* (nfix n) -512)) (1- (expt 2 512)))
+       :exec
+       (the (unsigned-byte 512)
+         (logand (ash x (* n -512))
+                 #ux_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFF)))
+  ///
+  (defcong nat-equiv equal (nth-slice512 n x) 1)
+  (defcong int-equiv equal (nth-slice512 n x) 2)
+  (defthm unsigned-byte-p-512-of-nth-slice512
+    (unsigned-byte-p 512 (nth-slice512 n x))))
+
+
 
 (define negate-slice8 ((x :type (unsigned-byte 8)))
   :returns (~x natp :rule-classes :type-prescription)
