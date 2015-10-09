@@ -448,6 +448,12 @@ USEFUL ENVIRONMENT VARIABLES
     CERT_PL_NO_COLOR (default: "")
          Can be set to disable ANSI color coded output.
 
+    CERT_PL_SHOW_HOSTNAME (default: "")
+         Off by default.  Set to 1 to instruct cert.pl to include hostname
+         information in its output.  Potentially useful if you are using a
+         cluster of machines to certify books, but adds some file IO because
+         hostnames are read out of the .cert.out files.
+
     ACL2_BOOKS_DEBUG (default: "")
          Can be set to 1 to enable extra debugging information and to preserve
          temporary files.

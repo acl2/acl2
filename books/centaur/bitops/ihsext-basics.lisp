@@ -2368,7 +2368,17 @@ off looking at the source code.</p>")
     :hints(("Goal" :in-theory (enable expt))))
 
   (add-to-ruleset ihsext-arithmetic '(expt-2-is-ash))
-  (add-to-ruleset ihsext-basic-thms expt-of-ifix))
+  (add-to-ruleset ihsext-basic-thms expt-of-ifix)
+
+  (defthmd ash-is-expt-*-x
+    (implies (natp n)
+             (equal (ash x n)
+                    (* (ifix x) (expt 2 n))))
+    :hints (("goal" :in-theory (enable* ihsext-inductions
+                                        ihsext-recursive-redefs)
+             :induct t)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable expt logcons))))))
 
 
 
