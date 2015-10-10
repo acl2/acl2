@@ -6,4 +6,4 @@ clean:
 	rm -f *.o
 
 run: all
-	./micro-sat.o
+	./micro-sat.o || /bin/true

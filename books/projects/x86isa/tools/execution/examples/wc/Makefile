@@ -8,10 +8,10 @@ wc-input.o:
 	gcc wc-input.c -o wc-input.o 
 
 file-run: wc-file.o
-	./wc-file.o # Takes file name as cmd line arg
+	./wc-file.o || /bin/true # Takes file name as cmd line arg
 
 input-run: wc-input.o
-	./wc-input.o # Takes input from cmd line arg; # serves as the EOF
+	./wc-input.o || /bin/true  # Takes input from cmd line arg; # serves as the EOF
 
 clean:
 	rm -f *~

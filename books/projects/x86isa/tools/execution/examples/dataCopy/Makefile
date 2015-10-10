@@ -7,4 +7,4 @@ clean:
 	rm -f *.o
 
 run: all
-	./dataCopy.o
+	./dataCopy.o || /bin/true
