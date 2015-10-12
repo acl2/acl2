@@ -42,6 +42,8 @@ Reasoning about LLVM code using Codewalker
 Panagiotis Manolios and Mitesh Jain
 Proving Skipping Refinement with ACL2s
 
+See subdirectory jain-manolios/.
+
 ----------
 
 J Strother Moore
