@@ -195,6 +195,8 @@ reading-entry-with-accessed-and-dirty-bits-set-ia32e-la-to-pa-page-table)).
 
 ;; Some helper rules:
 
+(local (in-theory (e/d* () (greater-logbitp-of-unsigned-byte-p))))
+
 (encapsulate
  ()
 

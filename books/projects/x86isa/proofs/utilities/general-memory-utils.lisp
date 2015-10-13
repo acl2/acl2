@@ -87,6 +87,22 @@
 
 ;; -------
 
+(defthm greater-logbitp-of-unsigned-byte-p
+  (implies (and (unsigned-byte-p n x)
+                (natp m)
+                (< n m))
+           (equal (logbitp m x) nil))
+  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
+                                    ihsext-recursive-redefs
+                                    unsigned-byte-p)
+                                   ())))
+  :rule-classes ((:rewrite)
+                 (:rewrite :corollary
+                           (implies (and (< x (expt 2 m))
+                                         (natp x)
+                                         (natp m))
+                                    (equal (logbitp m x) nil)))))
+
 (defthm loghead-of-non-integerp
   (implies (not (integerp x))
            (equal (loghead n x) 0))
