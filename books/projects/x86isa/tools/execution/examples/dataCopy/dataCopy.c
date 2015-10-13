@@ -2,6 +2,7 @@
 // gcc -o dataCopy.o dataCopy.c core.o
 
 #include "stdio.h"
+#include "stdint.h"
 #include "core.h"
 
 void printIntArray (int* x, int n) {
@@ -18,22 +19,31 @@ void printIntArray (int* x, int n) {
 
 int main () {
 
-  int src[5], dst[5];
+  int i;
+  int src[1024], dst[1024], numElems;
+  numElems = 1024;
+  
+  // Source initialization:
+  for (i = 0; i < numElems; i++)
+    src[i] = i;
 
-  src[0] = 1;
-  src[1] = 2;
-  src[2] = 3;
-  src[3] = 4;
-  src[4] = 5;
+  printf("\nStart address of the source: 0x%llx\n", (uint64_t)src);
+  printf("\nEnd address of the source: 0x%llx\n", (uint64_t)(src+numElems-1));
+  printf("\nValue at end address of the source: %llu\n", (uint64_t)*(src+numElems-1));
 
-  printf("\nSource before data copy:\n");
+  printf("\nSome elements of source before data copy:\n");
   printIntArray (src, 5);
 
-  copyData(src, dst, 2);
+  printf("\nNumber of elements to copy: %d\n", numElems);
+  copyData(src, dst, numElems);
 
-  printf("\nSource after data copy:\n");
+  printf("\nStart address of the destination: 0x%llx\n", (uint64_t)dst);
+  printf("\nEnd address of the destination: 0x%llx\n", (uint64_t)(dst+numElems-1));
+  printf("\nValue at end address of the destination: %llu\n", (uint64_t)*(dst+numElems-1));
+
+  printf("\nSome elements of source after data copy:\n");
   printIntArray (src, 5);
-  printf("\nDestination after data copy:\n");
+  printf("\nSome elements of destination after data copy:\n");
   printIntArray (dst, 5);
 
 }

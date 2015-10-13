@@ -367,23 +367,26 @@
             (< (* c x) (* c y)))
    :hints (("goal" :nonlinearp t))))
 
-(defthm assoc-in-boundrw-ev-alist
-  (implies k
-           (equal (assoc k (boundrw-ev-alist x a))
-                  (and (assoc k x)
-                       (cons k (boundrw-ev (cdr (assoc k x)) a))))))
+(local
+ (defthm assoc-in-boundrw-ev-alist
+   (implies k
+            (equal (assoc k (boundrw-ev-alist x a))
+                   (and (assoc k x)
+                        (cons k (boundrw-ev (cdr (assoc k x)) a)))))))
 
-(defthm all-keys-bound-in-boundrw-ev-alist
-  (implies (not (member nil keys))
-           (equal (all-keys-bound keys (boundrw-ev-alist x a))
-                  (all-keys-bound keys x)))
-  :hints(("Goal" :in-theory (enable all-keys-bound))))
+(local
+ (defthm all-keys-bound-in-boundrw-ev-alist
+   (implies (not (member nil keys))
+            (equal (all-keys-bound keys (boundrw-ev-alist x a))
+                   (all-keys-bound keys x)))
+   :hints(("Goal" :in-theory (enable all-keys-bound)))))
 
-(defthm all-keys-bound-when-subsetp
-  (implies (and (subsetp x y)
-                (all-keys-bound y z))
-           (all-keys-bound x z))
-  :hints(("Goal" :in-theory (enable subsetp all-keys-bound))))
+(local
+ (defthm all-keys-bound-when-subsetp
+   (implies (and (subsetp x y)
+                 (all-keys-bound y z))
+            (all-keys-bound x z))
+   :hints(("Goal" :in-theory (enable subsetp all-keys-bound)))))
 
 
 (defthmd boundrw-dummy-rewrite
@@ -411,18 +414,23 @@
         (raise "Bad substitution: NIL bound in unify-subst: ~x0~%" bound)
         (boundrw-apply-bound x direction (cdr bound-list) mfc state))
        ;; Check that the substitution is ok using relieve-hyp.
+       (hyp (if direction
+                ;; rhs is upper bound
+                `(not (< ,bound.rhs ,bound.lhs))
+              ;; rhs is lower bound
+              `(not (< ,bound.lhs ,bound.rhs))))
+       ;; (- (cw "Checking hyp: ~x0 under substitution: ~x1~%" hyp subst))
        (bound-ok
         (mfc-relieve-hyp
-         (if direction
-             ;; rhs is upper bound
-             `(not (< ,bound.rhs ,bound.lhs))
-           ;; rhs is lower bound
-           `(not (< ,bound.lhs ,bound.rhs)))
+         hyp
          subst '(:rewrite boundrw-dummy-rewrite) '(< fake term) 1 mfc state
          :forcep nil))
        ((when bound-ok)
         (cw "~x0: relieve-hyp~%" x)
         (mv t (substitute-into-term bound.rhs subst)))
+       ;; (- (cw "hyp was not relieved: ~x0~%" x))
+       ;; (res (mfc-rw+ hyp subst 't nil mfc state :forcep nil))
+       ;; (- (cw "result of rewriting: ~x0~%" res))
        (new-x (substitute-into-term bound.rhs subst))
        (bound-ok (mfc-ap
                   ;; term to contradict:
@@ -435,7 +443,8 @@
                   :forcep nil))
        ((when bound-ok)
         (cw "~x0: ap~%" x)
-        (mv t new-x)))
+        (mv t new-x))
+       (- (cw "linear failed to solve: ~x0~%" x)))
     (boundrw-apply-bound x direction (cdr bound-list) mfc state))
   ///
   (defret boundrw-apply-bound-correct
@@ -892,29 +901,30 @@
 
 
 
-(defthm hard-nonlinear-problem
-  (implies (and (rationalp a)
-                (rationalp b)
-                (rationalp c)
-                (<= 0 a)
-                (<= 0 b)
-                (<= 1 c)
-                (<= a 10)
-                (<= b 20)
-                (<= c 30))
-           (<= (+ (* a b c)
-                  (* a b)
-                  (* b c)
-                  (* a c))
-               (+ (* 10 20 30)
-                  (* 10 20)
-                  (* 20 30)
-                  (* 10 30))))
-  :hints (;; (and stable-under-simplificationp
-          ;;      '(:nonlinearp t))
-          (rewrite-bounds ((<= a 10)
-                           (<= b 20)
-                           (<= c 30)))))
+(local
+ (defthm hard-nonlinear-problem
+   (implies (and (rationalp a)
+                 (rationalp b)
+                 (rationalp c)
+                 (<= 0 a)
+                 (<= 0 b)
+                 (<= 1 c)
+                 (<= a 10)
+                 (<= b 20)
+                 (<= c 30))
+            (<= (+ (* a b c)
+                   (* a b)
+                   (* b c)
+                   (* a c))
+                (+ (* 10 20 30)
+                   (* 10 20)
+                   (* 20 30)
+                   (* 10 30))))
+   :hints (;; (and stable-under-simplificationp
+           ;;      '(:nonlinearp t))
+           (rewrite-bounds ((<= a 10)
+                            (<= b 20)
+                            (<= c 30))))))
 
 (defxdoc rewrite-bounds
   :short "Substitute upper bounds and lower bounds for subterms in comparisons."

@@ -89,7 +89,7 @@ programmer-level mode.</p>" )
   (implies (and (canonical-address-listp x)
                 (member-p e x))
            (canonical-address-p e))
-  :rule-classes (:type-prescription :forward-chaining))
+  :rule-classes (:forward-chaining))
 
 (defthm create-canonical-address-list-of-0
   (equal (create-canonical-address-list 0 addr) nil))
@@ -183,7 +183,7 @@ programmer-level mode.</p>" )
 (defthm no-duplicates-p-create-canonical-address-list
   (no-duplicates-p (create-canonical-address-list n x)))
 
-(defthm subset-p-two-create-canonical-address-lists
+(defthm subset-p-two-create-canonical-address-lists-general
   (implies (and (canonical-address-p y)
                 (canonical-address-p (+ -1 j y))
                 (<= y x)
@@ -191,6 +191,14 @@ programmer-level mode.</p>" )
            (subset-p (create-canonical-address-list i x)
                      (create-canonical-address-list j y)))
   :hints (("Goal" :in-theory (e/d (subset-p) nil))))
+
+(defthm subset-p-two-create-canonical-address-lists-same-base-address
+  (implies (and (canonical-address-p (+ m x))
+                (natp m)
+                (<= i m))
+           (subset-p (create-canonical-address-list i x)
+                     (create-canonical-address-list m x)))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
 (defthm subset-p-addr-range-of-create-canonical-address-list
   (implies (and (canonical-address-p val2)
@@ -233,6 +241,7 @@ programmer-level mode.</p>" )
                                   ()))))
 
 (defthm canonical-address-p-limits-thm-0
+  ;; addr <= (+ k addr) < (+ i addr)
   ;; i is positive, k is positive, k < i
   (implies (and (canonical-address-p (+ i addr))
                 (canonical-address-p addr)
@@ -242,16 +251,18 @@ programmer-level mode.</p>" )
            (canonical-address-p (+ k addr))))
 
 (defthm canonical-address-p-limits-thm-1
+  ;; (+ -i addr) < (+ -k addr) < addr
   ;; i is negative, k is negative, k > i
-  (implies (and (canonical-address-p (+ i addr))
-                (canonical-address-p addr)
-                (< i k)
+  (implies (and (< k 0)
+                (canonical-address-p (+ i addr))
                 (< i 0)
-                (< k 0)
+                (< i k)
+                (canonical-address-p addr)
                 (integerp k))
            (canonical-address-p (+ k addr))))
 
 (defthm canonical-address-p-limits-thm-2
+  ;; (+ i addr) < (+ k addr) < (+ j addr)
   ;; i < k < j
   (implies (and (canonical-address-p (+ i addr))
                 (canonical-address-p (+ j addr))
@@ -260,6 +271,29 @@ programmer-level mode.</p>" )
                 (integerp addr)
                 (integerp k))
            (canonical-address-p (+ k addr))))
+
+(defthm canonical-address-p-limits-thm-3
+  ;; (+ -i addr) <= addr <= (+ j addr)
+  (implies (and (canonical-address-p (+ j addr))
+                (canonical-address-p (+ (- i) addr))
+                (natp i)
+                (natp j)
+                (integerp addr))
+           (canonical-address-p addr))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
+  :rule-classes (:rewrite :forward-chaining))
+
+(defthm canonical-address-p-limits-thm-4
+  ;; addr <= (+ -j i addr) <= (addr + i)
+  (implies (and (canonical-address-p (+ i addr))
+                (canonical-address-p addr)
+                (< j 0)
+                (<= (- i) j)
+                (natp i)
+                (integerp j))
+           (canonical-address-p (+ j (+ i addr))))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
+  :rule-classes (:rewrite :forward-chaining))
 
 (encapsulate
 

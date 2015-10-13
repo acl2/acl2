@@ -86,7 +86,7 @@
 
     ;; new definitions we want to export
     nth-slice2 nth-slice4 nth-slice8 nth-slice16
-    nth-slice32 nth-slice64 nth-slice128
+    nth-slice32 nth-slice64 nth-slice128 nth-slice256 nth-slice512
     negate-slice8 negate-slice16
     negate-slice32 negate-slice64
     abs-diff
