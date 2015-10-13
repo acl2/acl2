@@ -17,25 +17,25 @@ JSM
                      '()
                      '()
                      (list
-                        '("<init>" () nil
+                        '("<init>()V" () nil
                            (aload_0)
-                           (invokespecial "java.lang.Object" "<init>" 0)
+                           (invokespecial "java.lang.Object" "<init>()V" 0)
                            (return))
-                        '("main" (java.lang.String[]) nil
+                        '("main([Ljava/lang/String;)V" (java.lang.String[]) nil
                            (new "Container")
                            (dup)
-                           (invokespecial "Container" "<init>" 0)
+                           (invokespecial "Container" "<init>()V" 0)
                            (astore_1)
                            (goto LABEL::TAG_0)
                            (LABEL::TAG_0 new "Job")
                            (dup)
-                           (invokespecial "Job" "<init>" 0)
+                           (invokespecial "Job" "<init>()V" 0)
                            (astore_2)
                            (aload_2)
                            (aload_1)
-                           (invokevirtual "Job" "setref" 1)
+                           (invokevirtual "Job" "setref(LContainer;)V" 1)
                            (aload_2)
-                           (invokevirtual "java.lang.Thread" "start" 0)
+                           (invokevirtual "java.lang.Thread" "start()V" 0)
                            (goto LABEL::TAG_0)))
                      '(REF -1))
     (make-class-decl "Container"
@@ -44,9 +44,9 @@ JSM
                      '()
                      '()
                      (list
-                        '("<init>" () nil
+                        '("<init>()V" () nil
                            (aload_0)
-                           (invokespecial "java.lang.Object" "<init>" 0)
+                           (invokespecial "java.lang.Object" "<init>()V" 0)
                            (return)))
                      '(REF -1))
     (make-class-decl "Job"
@@ -55,11 +55,11 @@ JSM
                      '()
                      '()
                      (list
-                        '("<init>" () nil
+                        '("<init>()V" () nil
                            (aload_0)
-                           (invokespecial "java.lang.Thread" "<init>" 0)
+                           (invokespecial "java.lang.Thread" "<init>()V" 0)
                            (return))
-                        '("incr" () nil
+                        '("incr()LJob;" () nil
                            (aload_0)
                            (getfield "Job" "objref")
                            (astore_1)
@@ -83,15 +83,15 @@ JSM
                            (athrow)
                            (LABEL::TAG_0 aload_0)
                            (areturn))
-                        '("setref" (Container) nil
+                        '("setref(LContainer;)V" (Container) nil
                            (aload_0)
                            (aload_1)
                            (putfield "Job" "objref")
                            (return))
-                        '("run" () nil
+                        '("run()V" () nil
                            (goto LABEL::TAG_0)
                            (LABEL::TAG_0 aload_0)
-                           (invokevirtual "Job" "incr" 0)
+                           (invokevirtual "Job" "incr()LJob;" 0)
                            (pop)
                            (goto LABEL::TAG_0)))
                      '(REF -1)))))
@@ -99,18 +99,18 @@ JSM
 (defconst *Apprentice-main*
    '((new "Container")
      (dup)
-     (invokespecial "Container" "<init>" 0)
+     (invokespecial "Container" "<init>()V" 0)
      (astore_1)
      (goto LABEL::TAG_0)
      (LABEL::TAG_0 new "Job")
      (dup)
-     (invokespecial "Job" "<init>" 0)
+     (invokespecial "Job" "<init>()V" 0)
      (astore_2)
      (aload_2)
      (aload_1)
-     (invokevirtual "Job" "setref" 1)
+     (invokevirtual "Job" "setref(LContainer;)V" 1)
      (aload_2)
-     (invokevirtual "java.lang.Thread" "start" 0)
+     (invokevirtual "java.lang.Thread" "start()V" 0)
      (goto LABEL::TAG_0)))
 
 (defun Apprentice-ms ()

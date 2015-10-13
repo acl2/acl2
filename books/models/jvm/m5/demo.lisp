@@ -107,29 +107,29 @@ Below is the output of jvm2acl2 for M5.
      '("ans")
      '()
      (list
-      '("<init>" () nil
+      '("<init>()V" () nil
         (aload_0)
-        (invokespecial "java.lang.Object" "<init>" 0)
+        (invokespecial "java.lang.Object" "<init>()V" 0)
         (return))
-      '("fact" (int) nil
+      '("fact(I)I" (int) nil
         (iload_0)
         (ifle LABEL::TAG_0)
         (iload_0)
         (iload_0)
         (iconst_1)
         (isub)
-        (invokestatic "Demo" "fact" 1)
+        (invokestatic "Demo" "fact(I)I" 1)
         (imul)
         (ireturn)
         (LABEL::TAG_0 iconst_1)
         (ireturn))
-      '("main" (java.lang.String[]) nil
+      '("main([Ljava/lang/String;)V" (java.lang.String[]) nil
         (iconst_4)
         (istore_1)
         (iload_1)
         (iconst_1)
         (iadd)
-        (invokestatic "Demo" "fact" 1)
+        (invokestatic "Demo" "fact(I)I" 1)
         (putstatic "Demo" "ans" nil)
         (return)))
      '(REF -1)))))
@@ -140,7 +140,7 @@ Below is the output of jvm2acl2 for M5.
     (iload_1)
     (iconst_1)
     (iadd)
-    (invokestatic "Demo" "fact" 1)
+    (invokestatic "Demo" "fact(I)I" 1)
     (putstatic "Demo" "ans" nil)
     (return)))
 
@@ -167,7 +167,7 @@ Below is the output of jvm2acl2 for M5.
           (ILOAD_1)
           (ICONST_1)
           (IADD)
-          (INVOKESTATIC "Demo" "fact" 1)
+          (INVOKESTATIC "Demo" "fact(I)I" 1)
           (PUTSTATIC "Demo" "ans" NIL)
           (RETURN))
          UNLOCKED "Demo"))
@@ -198,7 +198,7 @@ Below is the output of jvm2acl2 for M5.
       ("mcount" . 0)
       ("wait-set" . 0))))
  (("java.lang.Object" NIL ("monitor" "mcount" "wait-set")
-   NIL NIL (("<init>" NIL NIL (RETURN)))
+   NIL NIL (("<init>()V" NIL NIL (RETURN)))
    (REF 0))
   ("ARRAY" ("java.lang.Object")
    (("<array>" . *ARRAY*))
@@ -206,52 +206,52 @@ Below is the output of jvm2acl2 for M5.
   ("java.lang.Thread"
    ("java.lang.Object")
    NIL NIL NIL
-   (("run" NIL NIL (RETURN))
-    ("start" NIL NIL NIL)
-    ("stop" NIL NIL NIL)
-    ("<init>" NIL NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+   (("run()V" NIL NIL (RETURN))
+    ("start()V" NIL NIL NIL)
+    ("stop()V" NIL NIL NIL)
+    ("<init>()V" NIL NIL (ALOAD_0)
+     (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
      (RETURN)))
    (REF 2))
   ("java.lang.String"
    ("java.lang.Object")
    ("strcontents")
    NIL NIL
-   (("<init>" NIL NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+   (("<init>()V" NIL NIL (ALOAD_0)
+     (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
      (RETURN)))
    (REF 3))
   ("java.lang.Class" ("java.lang.Object")
    NIL NIL NIL
-   (("<init>" NIL NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+   (("<init>()V" NIL NIL (ALOAD_0)
+     (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
      (RETURN)))
    (REF 4))
   ("Demo" ("java.lang.Object")
    NIL ("ans")
    NIL
-   (("<init>" NIL NIL (ALOAD_0)
-     (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+   (("<init>()V" NIL NIL (ALOAD_0)
+     (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
      (RETURN))
-    ("fact" (INT)
+    ("fact(I)I" (INT)
      NIL (ILOAD_0)
      (IFLE 12)
      (ILOAD_0)
      (ILOAD_0)
      (ICONST_1)
      (ISUB)
-     (INVOKESTATIC "Demo" "fact" 1)
+     (INVOKESTATIC "Demo" "fact(I)I" 1)
      (IMUL)
      (IRETURN)
      (ICONST_1)
      (IRETURN))
-    ("main" (|JAVA.LANG.STRING[]|)
+    ("main([Ljava/lang/String;)V" (|JAVA.LANG.STRING[]|)
      NIL (ICONST_4)
      (ISTORE_1)
      (ILOAD_1)
      (ICONST_1)
      (IADD)
-     (INVOKESTATIC "Demo" "fact" 1)
+     (INVOKESTATIC "Demo" "fact(I)I" 1)
      (PUTSTATIC "Demo" "ans" NIL)
      (RETURN)))
    (REF 5))))
@@ -276,7 +276,7 @@ Below is the output of jvm2acl2 for M5.
                (ILOAD\_1)
                (ICONST\_1)
                (IADD)
-               (INVOKESTATIC "Demo" "fact" 1)
+               (INVOKESTATIC "Demo" "fact(I)I" 1)
                (PUTSTATIC "Demo" "ans" NIL)
                (RETURN))
              'UNLOCKED
@@ -330,7 +330,7 @@ Below is the output of jvm2acl2 for M5.
      ("monitor" "mcount" "wait-set")
      NIL
      NIL
-     (("<init>" NIL NIL (RETURN)))
+     (("<init>()V" NIL NIL (RETURN)))
      (REF 0))
     ("ARRAY"
      ("java.lang.Object")
@@ -344,11 +344,11 @@ Below is the output of jvm2acl2 for M5.
      NIL
      NIL
      NIL
-     (("run" NIL NIL (RETURN))
-      ("start" NIL NIL NIL)
-      ("stop" NIL NIL NIL)
-      ("<init>" NIL NIL (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+     (("run()V" NIL NIL (RETURN))
+      ("start()V" NIL NIL NIL)
+      ("stop()V" NIL NIL NIL)
+      ("<init>()V" NIL NIL (ALOAD\_0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN)))
      (REF 2))
     ("java.lang.String"
@@ -356,9 +356,9 @@ Below is the output of jvm2acl2 for M5.
      ("strcontents")
      NIL
      NIL
-     (("<init>" NIL NIL
+     (("<init>()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN)))
      (REF 3))
     ("java.lang.Class"
@@ -366,9 +366,9 @@ Below is the output of jvm2acl2 for M5.
      NIL
      NIL
      NIL
-     (("<init>" NIL NIL
+     (("<init>()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN)))
      (REF 4))
     ("Demo"
@@ -376,29 +376,29 @@ Below is the output of jvm2acl2 for M5.
      NIL
      ("ans")
      NIL
-     (("<init>" NIL NIL
+     (("<init>()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
        (RETURN))
-      ("fact" (INT) NIL
+      ("fact(I)I" (INT) NIL
        (ILOAD\_0)
        (IFLE 12)
        (ILOAD\_0)
        (ILOAD\_0)
        (ICONST\_1)
        (ISUB)
-       (INVOKESTATIC "Demo" "fact" 1)
+       (INVOKESTATIC "Demo" "fact(I)I" 1)
        (IMUL)
        (IRETURN)
        (ICONST\_1)
        (IRETURN))
-      ("main" (|JAVA.LANG.STRING[]|) NIL
+      ("main([Ljava/lang/String;)V" (|JAVA.LANG.STRING[]|) NIL
        (ICONST\_4)
        (ISTORE\_1)
        (ILOAD\_1)
        (ICONST\_1)
        (IADD)
-       (INVOKESTATIC "Demo" "fact" 1)
+       (INVOKESTATIC "Demo" "fact(I)I" 1)
        (PUTSTATIC "Demo" "ans" NIL)
        (RETURN)))
      (REF 5))))
@@ -488,7 +488,7 @@ Below is the output of jvm2acl2 for M5.
                        (list n)
                        nil
                        '((ILOAD\_0)
-                         (INVOKESTATIC "Demo" "fact" 1)
+                         (INVOKESTATIC "Demo" "fact(I)I" 1)
                          (PUTSTATIC "Demo" "ans" NIL)
                          (RETURN))
                        'UNLOCKED
@@ -512,14 +512,14 @@ T
 ; Proving Fact Correct
 
 (defconst *fact-def*
-  '("fact" (INT) NIL
+  '("fact(I)I" (INT) NIL
     (ILOAD_0)                         ;;;  0
     (IFLE 12)                         ;;;  1
     (ILOAD_0)                         ;;;  4
     (ILOAD_0)                         ;;;  5
     (ICONST_1)                        ;;;  6
     (ISUB)                            ;;;  7
-    (INVOKESTATIC "Demo" "fact" 1)    ;;;  8
+    (INVOKESTATIC "Demo" "fact(I)I" 1)    ;;;  8
     (IMUL)                            ;;; 11
     (IRETURN)                         ;;; 12
     (ICONST_1)                        ;;; 13
@@ -527,10 +527,10 @@ T
 
 (defun poised-to-invoke-fact (th s n)
   (and (equal (status th s) 'SCHEDULED)
-       (equal (next-inst th s) '(invokestatic "Demo" "fact" 1))
+       (equal (next-inst th s) '(invokestatic "Demo" "fact(I)I" 1))
        (equal n (top (stack (top-frame th s))))
        (intp n)
-       (equal (lookup-method "fact" "Demo" (class-table s))
+       (equal (lookup-method "fact(I)I" "Demo" (class-table s))
               *fact-def*)))
 
 (defun induction-hint (th s n)
@@ -649,7 +649,7 @@ T
                                  (iload_3)
                                  (iconst_1)
                                  (iadd)
-                                 (invokestatic "Demo" "fact" 1)
+                                 (invokestatic "Demo" "fact(I)I" 1)
                                  (imul)
                                  (istore_3))
                                'UNLOCKED
@@ -673,7 +673,7 @@ T
                         (iload_3)
                         (iconst_1)
                         (iadd)
-                        (invokestatic "Demo" "fact" 1)
+                        (invokestatic "Demo" "fact(I)I" 1)
                         (imul)
                         (istore_3))
                       'UNLOCKED

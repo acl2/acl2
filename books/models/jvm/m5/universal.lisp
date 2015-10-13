@@ -66,7 +66,7 @@ Sun Jun 30 23:21:06 2002
 
 (defconst *universal-state*
   '(((0 ((0 NIL NIL
-            ((INVOKESTATIC "Universal" "universal" 0)
+            ((INVOKESTATIC "Universal" "universal()V" 0)
              (POP)
              (RETURN))
             JVM::UNLOCKED "Universal"))
@@ -96,7 +96,7 @@ Sun Jun 30 23:21:06 2002
          ("mcount" . 0)
          ("wait-set" . 0))))
     (("java.lang.Object" NIL ("monitor" "mcount" "wait-set")
-      NIL NIL (("<init>" NIL NIL (RETURN)))
+      NIL NIL (("<init>()V" NIL NIL (RETURN)))
       (REF 0))
      ("ARRAY" ("java.lang.Object")
       (("<array>" . *ARRAY*))
@@ -104,40 +104,40 @@ Sun Jun 30 23:21:06 2002
      ("java.lang.Thread"
       ("java.lang.Object")
       NIL NIL NIL
-      (("run" NIL NIL (RETURN))
-       ("start" NIL NIL NIL)
-       ("stop" NIL NIL NIL)
-       ("<init>" NIL NIL (ALOAD_0)
-        (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+      (("run()V" NIL NIL (RETURN))
+       ("start()V" NIL NIL NIL)
+       ("stop()V" NIL NIL NIL)
+       ("<init>()V" NIL NIL (ALOAD_0)
+        (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
         (RETURN)))
       (REF 2))
      ("java.lang.String"
       ("java.lang.Object")
       ("strcontents")
       NIL NIL
-      (("<init>" NIL NIL (ALOAD_0)
-        (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+      (("<init>()V" NIL NIL (ALOAD_0)
+        (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
         (RETURN)))
       (REF 3))
      ("java.lang.Class" ("java.lang.Object")
       NIL NIL NIL
-      (("<init>" NIL NIL (ALOAD_0)
-        (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+      (("<init>()V" NIL NIL (ALOAD_0)
+        (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
         (RETURN)))
       (REF 4))
      ("Universal" ("java.lang.Object")
       NIL NIL NIL
-      (("<init>" NIL NIL (ALOAD_0)
-        (INVOKESPECIAL "java.lang.Object" "<init>" 0)
+      (("<init>()V" NIL NIL (ALOAD_0)
+        (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
         (RETURN))
-       ("universal" NIL NIL
+       ("universal()V" NIL NIL
         (ICONST_0)
         (ICONST_1)
         (IADD)
         (GOTO -2))
-       ("main" (|JAVA.LANG.STRING[]|)
+       ("main([Ljava/lang/String;)V" (|JAVA.LANG.STRING[]|)
         NIL
-        (INVOKESTATIC "Universal" "universal" 0)
+        (INVOKESTATIC "Universal" "universal()V" 0)
         (POP)
         (RETURN)))
       (REF 5)))))
@@ -224,9 +224,9 @@ Sun Jun 30 23:21:06 2002
 
 (defun poised-to-invoke-universal (th s i)
   (and (equal (status th s) 'SCHEDULED)
-       (equal (next-inst th s) '(INVOKESTATIC "Universal" "universal" 0))
-       (equal (lookup-method "universal" "Universal" (class-table s))
-              '("universal" NIL NIL
+       (equal (next-inst th s) '(INVOKESTATIC "Universal" "universal()V" 0))
+       (equal (lookup-method "universal()V" "Universal" (class-table s))
+              '("universal()V" NIL NIL
                 (ICONST_0)
                 (ICONST_1)
                 (IADD)
