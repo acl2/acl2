@@ -66,7 +66,7 @@ Sun Jun 30 23:21:06 2002
 
 (defconst *universal-state*
   '(((0 ((0 NIL NIL
-            ((INVOKESTATIC "Universal" "universal()V" 0)
+            ((INVOKESTATIC "Universal" "universal()I" 0)
              (POP)
              (RETURN))
             JVM::UNLOCKED "Universal"))
@@ -130,14 +130,14 @@ Sun Jun 30 23:21:06 2002
       (("<init>()V" NIL NIL (ALOAD_0)
         (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
         (RETURN))
-       ("universal()V" NIL NIL
+       ("universal()I" NIL NIL
         (ICONST_0)
         (ICONST_1)
         (IADD)
         (GOTO -2))
        ("main([Ljava/lang/String;)V" (|JAVA.LANG.STRING[]|)
         NIL
-        (INVOKESTATIC "Universal" "universal()V" 0)
+        (INVOKESTATIC "Universal" "universal()I" 0)
         (POP)
         (RETURN)))
       (REF 5)))))
@@ -224,9 +224,9 @@ Sun Jun 30 23:21:06 2002
 
 (defun poised-to-invoke-universal (th s i)
   (and (equal (status th s) 'SCHEDULED)
-       (equal (next-inst th s) '(INVOKESTATIC "Universal" "universal()V" 0))
-       (equal (lookup-method "universal()V" "Universal" (class-table s))
-              '("universal()V" NIL NIL
+       (equal (next-inst th s) '(INVOKESTATIC "Universal" "universal()I" 0))
+       (equal (lookup-method "universal()I" "Universal" (class-table s))
+              '("universal()I" NIL NIL
                 (ICONST_0)
                 (ICONST_1)
                 (IADD)
