@@ -177,7 +177,8 @@ same length and their elements must be @(see chareqv) to one another.</p>
 (fty::deffixtype character-list
   :pred character-listp
   :fix make-character-list
-  :equiv charlisteqv)
+  :equiv charlisteqv
+  :topic character-listp)
 
 (define string-list-fix ((x string-listp))
   :returns (x-fix string-listp)
@@ -214,7 +215,8 @@ same length and their elements must be @(see chareqv) to one another.</p>
     :fix string-list-fix
     :equiv string-list-equiv
     :define t
-    :forward t)
+    :forward t
+    :topic string-listp)
 
   (fty::deffixcong string-list-equiv streqv (car x) x)
   (fty::deffixcong string-list-equiv string-list-equiv (cdr x) x)

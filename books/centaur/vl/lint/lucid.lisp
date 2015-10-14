@@ -822,6 +822,11 @@ created when we process their packages, etc.</p>"
 ;;        (progn$ (impossible)
 ;;                st)))))
 
+
+(fty::deflist vl-scopeexprlist
+  :elt-type vl-scopeexpr
+  :parents (vl-scopeexpr))
+
 (defines vl-collect-usertypes
   (define vl-collect-usertypes ((x vl-datatype-p))
     :returns (usertypes vl-scopeexprlist-p)

@@ -204,14 +204,16 @@ defprod), and so on.</p>
 <h4>Basic Example</h4>
 
 <p>You could use the following to define the <color rgb='#900090'>nat</color>
-type with the recognizer @(see natp), the fixing function @(see nfix), and
-equivalence relation @(see nat-equiv).</p>
+type with the recognizer @(see natp), the fixing function @(see nfix), the
+equivalence relation @(see nat-equiv), and @(see natp) as the preferred @(see
+xdoc::xdoc) topic when linking to this type.</p>
 
 @({
   (fty::deffixtype nat
     :pred  natp
     :fix   nfix
-    :equiv nat-equiv)
+    :equiv nat-equiv
+    :topic natp)
 })
 
 <p>For this to be sensible, the recognizer, fixing function, and equivalence
@@ -280,6 +282,7 @@ minor boilerplate theorems.</p>
     :forward     bool               ;; nil
     :hints       ((\"Goal\"...))    ;; nil
     :verbosep    bool               ;; nil
+    :topic       symbol
     )
 })
 
@@ -352,7 +355,26 @@ equivalence relation will compute the @('eql') of the fixes instead of the
 predicate are @(see acl2::non-executable) or especially expensive.  This mainly
 affects, in @('deffixequiv') and @('deffixequiv-mutual'), whether a theorem is
 introduced that normalizes constants by applying the fixing function to
-them.</p>")
+them.</p>
+
+
+<h5>:topic</h5>
+
+<p>Set up a preferred @(see xdoc::xdoc) documentation topic name for this type.
+When other documentation topics want to refer to this type, they should link to
+the preferred @(':topic').  This may be useful when your type is embedded
+within some larger @(see defprod) or similar.</p>
+
+<p>Usually you don't need to provide a @(':topic') explicitly.  The @(':topic')
+will default to the name of the new type name being defined, e.g., @('widget').
+We usually use the type name as the ``main'' topic.  For instance, @('widget')
+would typically be the parent topic for @('widget-p'), @('widget-fix'),
+@('widget-equiv'), and related functions.  This convention is followed
+throughout the @(see deftypes) family of macros.</p>
+
+<p>However, this convention is sometimes inappropriate, especially for built-in
+ACL2 types such as @(see natp) and @(see booleanp).  In these cases, we'd
+prefer to link to existing documentation such as the recognizers.</p>")
 
 
 (defxdoc deffixequiv

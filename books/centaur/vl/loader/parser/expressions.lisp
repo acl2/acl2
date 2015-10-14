@@ -2010,8 +2010,6 @@ identifier, so we convert it into a hidpiece.</p>"
     ;; SystemVerilog pre-increment operators are:
     ;;    inc_or_dec_expression ::= inc_or_dec_operator { attribute_instance } variable_lvalue      ;; pre increments
     ;;                            | variable_lvalue { attribute_instance } inc_or_dec_operator      ;; post increments
-    ;;
-    ;; We don't handle post-increments here, but the pre-increments fit perfectly here.
 
     (seq tokstream
 

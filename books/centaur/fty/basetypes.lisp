@@ -36,7 +36,8 @@
 
 (defconst fty::*defbasetype-keys*
   '(:name
-    :fix))
+    :fix
+    :topic))
 
 ;; This is just deffixtype with defaults for the names and with :define t.  We
 ;; wouldn't need to take the equiv name as an input, but since we're defining
@@ -64,32 +65,35 @@
        (fix (or (std::getarg :fix nil kwd-alist)
                 (intern-in-package-of-symbol
                  (concatenate 'string (symbol-name typename) "-FIX")
-                 pkg))))
-    `(fty::deffixtype ,typename :pred ,pred :fix ,fix :equiv ,equiv :define t)))
+                 pkg)))
+       (topic (std::getarg :topic typename kwd-alist)))
+    `(fty::deffixtype ,typename :pred ,pred :fix ,fix :equiv ,equiv :define t :topic ,topic)))
 
 (defmacro fty::defbasetype (equiv pred &rest keys)
   (fty::defbasetype-fn equiv pred keys))
 
-(fty::defbasetype bit-equiv bitp :fix bfix)
+(fty::defbasetype bit-equiv bitp :fix bfix :topic bitp)
 
-(fty::defbasetype nat-equiv natp :fix nfix)
+(fty::defbasetype nat-equiv natp :fix nfix :topic natp)
 
-(fty::defbasetype int-equiv integerp :fix ifix :name int)
+(fty::defbasetype int-equiv integerp :fix ifix :name int :topic integerp)
 
-(fty::defbasetype rational-equiv rationalp :fix rfix)
+(fty::defbasetype rational-equiv rationalp :fix rfix :topic rationalp)
 
-(fty::defbasetype number-equiv acl2-numberp :fix fix)
+(fty::defbasetype number-equiv acl2-numberp :fix fix :topic acl2-numberp)
 
 (fty::deffixtype true-list
   :pred true-listp
   :fix list-fix
-  :equiv list-equiv)
+  :equiv list-equiv
+  :topic true-listp)
 
 (local (in-theory (enable streqv)))
 (fty::deffixtype string
   :pred stringp
   :fix str-fix
-  :equiv streqv)
+  :equiv streqv
+  :topic stringp)
 
 (defsection true-p
   :parents (fty::basetypes)
@@ -120,7 +124,8 @@
     :pred true-p
     :fix true-fix
     :equiv true-equiv
-    :define t))
+    :define t
+    :topic true-p))
 
 (defsection symbol-fix
   :parents (fty::basetypes symbolp)
@@ -159,7 +164,7 @@ identity function for execution.</p>"
 
   (local (in-theory (enable symbol-fix)))
 
-  (fty::defbasetype symbol-equiv symbolp)
+  (fty::defbasetype symbol-equiv symbolp :topic symbolp)
 
   (defcong symbol-equiv equal (symbol-name x) 1))
 
@@ -191,11 +196,11 @@ identity for positive integers, or returns 1 for any other object."
   :short "@(call pos-equiv) is equality for positive numbers, i.e., equality up
 to @(see pos-fix)."
 
-  (fty::defbasetype pos-equiv posp :fix pos-fix))
+  (fty::defbasetype pos-equiv posp :fix pos-fix :topic posp))
 
 
 (defsection lposfix
-  :parents (fty::basetypes pos-fix)
+  :parents (fty::basetypes posp)
   :short "@(call lposfix) is logically identical to @(call pos-fix), but its
 guard requires that @('x') is a @(see posp) and, in the execution, it's just a
 no-op that returns @('x')."
@@ -231,7 +236,8 @@ about types.</p>"
 (fty::deffixtype any
   :pred any-p
   :fix  identity
-  :equiv equal)
+  :equiv equal
+  :topic any-p)
 
 
 (defsection bool-fix
@@ -257,7 +263,8 @@ non-@('nil') symbol to @('t')."
   (fty::deffixtype bool
     :pred booleanp
     :fix bool-fix
-    :equiv iff)
+    :equiv iff
+    :topic booleanp)
 
   (defcong iff equal (bool-fix x) 1)
 
@@ -319,7 +326,8 @@ non-@('nil') symbol to @('t')."
     :equiv maybe-nat-equiv
     :define t
     :inline t
-    :equal eql))
+    :equal eql
+    :topic maybe-natp))
 
 
 (defthm maybe-posp-when-posp
@@ -377,7 +385,8 @@ non-@('nil') symbol to @('t')."
     :equiv maybe-pos-equiv
     :define t
     :inline t
-    :equal eql))
+    :equal eql
+    :topic maybe-posp))
 
 (defthm maybe-bitp-when-bitp
   ;; BOZO non-local, move to std/defs instead?
@@ -437,7 +446,8 @@ non-@('nil') symbol to @('t')."
     :equiv maybe-bit-equiv
     :define t
     :inline t
-    :equal eql))
+    :equal eql
+    :topic maybe-bitp))
 
 
 (defun fty::make-basetypes-table-rchars (table acc)
