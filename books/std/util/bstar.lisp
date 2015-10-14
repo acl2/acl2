@@ -406,18 +406,33 @@ is the best option we have. See any definition produced by
   :parents (b*)
   :short "List of the available directives usable in @('b*')")
 
+(local (defthm character-listp-of-explode-nonnegative-integer
+         (implies (character-listp acc)
+                  (character-listp (explode-nonnegative-integer n 10 acc)))))
+
+(local (defthm character-listp-of-explode-atom
+         (character-listp (explode-atom x 10))))
+
+(local (defthm character-listp-of-append
+         (implies (and (character-listp x)
+                       (character-listp y))
+                  (character-listp (append x y)))))
+
+(local (defthm character-listp-of-make-character-list
+         (character-listp (make-character-list x))))
+
 (mutual-recursion
  (defun pack-list (args)
    (declare (xargs :measure (acl2-count args)
-                   :guard t
-                   :verify-guards nil))
-   (if (atom args)
-       nil
-     (if (atom (cdr args))
-         (pack-tree (car args))
-       (append (pack-tree (car args))
-               (cons #\Space
-                     (pack-list (cdr args)))))))
+                   :guard t))
+   (cond ((atom args)
+          nil)
+         ((atom (cdr args))
+          (pack-tree (car args)))
+         (t
+          (append (pack-tree (car args))
+                  (cons #\Space
+                        (pack-list (cdr args)))))))
  (defun pack-tree (tree)
    (declare (xargs :measure (acl2-count tree)
                    :guard t))
@@ -432,30 +447,62 @@ is the best option we have. See any definition produced by
              (cons #\Space (pack-list (cdr tree)))
              (list #\))))))
 
+(encapsulate
+  ()
+  (local (defun my-induct (flag x)
+           (if (equal flag 'list)
+               (cond ((atom x) nil)
+                     ((atom (cdr x)) (my-induct 'tree (car x)))
+                     (t (list (my-induct 'tree (car x))
+                              (my-induct 'list (cdr x)))))
+             (if (atom x)
+                 nil
+               (list (my-induct 'tree (car x))
+                     (my-induct 'list (cdr x)))))))
+
+  (local (defthm lemma
+           (if (equal flag 'list)
+               (character-listp (pack-list x))
+             (character-listp (pack-tree x)))
+           :rule-classes nil
+           :hints(("Goal" :induct (my-induct flag x)))))
+
+  (defthm character-listp-of-pack-list
+    (character-listp (pack-list x))
+    :hints(("Goal" :use ((:instance lemma (flag 'list))))))
+
+  (defthm character-listp-of-pack-tree
+    (character-listp (pack-tree x))
+    :hints(("Goal" :use ((:instance lemma (flag 'tree)))))))
+
 (defun pack-term (args)
-  (declare (xargs :guard t
-                  :verify-guards nil))
+  (declare (xargs :guard t))
   (intern (coerce (pack-list args) 'string) "ACL2"))
 
 (defmacro pack (&rest args)
   `(pack-term (list ,@args)))
 
 (defun macro-name-for-patbind (binder)
+  (declare (xargs :guard (symbolp binder)))
   (intern-in-package-of-symbol
    (concatenate 'string "PATBIND-" (symbol-name binder))
    (if (equal (symbol-package-name binder) "COMMON-LISP")
        'acl2::foo
      binder)))
 
-(defconst *patbind-special-syms* '(t nil & -))
+(defconst *patbind-special-syms* '(& -))
 
 (defun int-string (n)
+  (declare (xargs :guard (natp n)))
   (coerce (explode-nonnegative-integer n 10 nil) 'string))
 
 (defun str-num-sym (str n)
+  (declare (xargs :guard (and (stringp str)
+                              (natp n))))
   (intern (concatenate 'string str (int-string n)) "ACL2"))
 
 (defun ignore-var-name (n)
+  (declare (xargs :guard (natp n)))
   (str-num-sym "IGNORE-" n))
 
 
@@ -483,6 +530,7 @@ is the best option we have. See any definition produced by
          (cw "; Not a binder list; first bad entry is ~x0.~%" (car x)))))
 
 (defun decode-varname-for-patbind (pattern)
+  (declare (xargs :guard (symbolp pattern)))
   (let* ((name (symbol-name pattern))
          (len (length name))
          (?p (and (<= 1 len)
@@ -502,33 +550,61 @@ is the best option we have. See any definition produced by
     (mv sym ignorep)))
 
 (defun patbindfn (pattern assign-exprs nested-expr)
+  (declare (xargs :guard t
+                  :guard-debug t))
   (cond ((eq pattern '-)
          ;; A dash means "run this for side effects."  In this case we allow
          ;; multiple terms; these form an implicit progn, in the common-lisp sense.
          `(prog2$ (progn$ . ,assign-exprs)
                   ,nested-expr))
-        ((member pattern *patbind-special-syms*)
-         ;; &, T, NIL mean "don't bother evaluating this."
+        ((eq pattern '&)
+         ;; & means "don't bother evaluating this."
          nested-expr)
         ((atom pattern)
-         ;; A binding to a single variable.  Here we don't allow multiple
-         ;; expressions; we believe it's more readable to use - to run things
-         ;; for side effects, and this might catch some paren errors.
-         (if (cdr assign-exprs)
-             (er hard 'b* "~
-The B* binding of ~x0 to ~x1 isn't allowed because the binding of a variable must be a
-single term." pattern assign-exprs)
-           (mv-let (sym ignorep)
-             (decode-varname-for-patbind pattern)
-             ;; Can we just refuse to bind a variable marked ignored?
-             (if (eq ignorep 'ignore)
-                 nested-expr
-               `(let ((,sym ,(car assign-exprs)))
-                  ,@(and ignorep `((declare (,ignorep ,sym))))
-                  ,nested-expr)))))
+         ;; A binding to a single variable.
+         ;;
+         (cond ((or (not (symbolp pattern))
+                    (keywordp pattern)
+                    (eq pattern t)
+                    (eq pattern nil))
+                ;; This prohibits things like (b* ((5 1)) x), which don't
+                ;; really make any sense.  It also prohibits things like (b*
+                ;; ((t 1)) t), which are scary and nonsensical.
+                (er hard? 'b* "Invalid left-hand side: trying to bind ~x0 to ~x1.~%"
+                    pattern assign-exprs))
+               ((not assign-exprs)
+                ;; This prohibits things like (b* ((x)) x), which historically
+                ;; bound X to NIL but are kind of weird and probably indicate
+                ;; that there is a paren error.
+                (er hard? 'b* "Invalid attempt to bind of ~x0 to nothing." pattern))
+               ((atom assign-exprs)
+                ;; This prohibits things like (b* ((x . 5)) x), which don't
+                ;; make sense and probably indicate that there is a paren
+                ;; error.
+                (er hard? 'b* "Invalid attempt to bind ~x0 to atom ~x1." pattern assign-exprs))
+               ((and (consp assign-exprs)
+                     (cdr assign-exprs))
+                ;; This prohibits things like (b* ((x 1 2)) x).  We don't allow
+                ;; multiple expressions on the rhs of a binding because we
+                ;; think it's more readable to use - to run things for side
+                ;; effects, and this might catch some paren errors.
+                (er hard? 'b* "Too many right-hand side terms: trying to bind ~x0 to ~x1.~%"
+                    pattern assign-exprs))
+               (t
+                (mv-let (sym ignorep)
+                  (decode-varname-for-patbind pattern)
+                  ;; Can we just refuse to bind a variable marked ignored?
+                  (if (eq ignorep 'ignore)
+                      nested-expr
+                    `(let ((,sym ,(car assign-exprs)))
+                       ,@(and ignorep `((declare (,ignorep ,sym))))
+                       ,nested-expr))))))
         ((eq (car pattern) 'quote)
          ;; same idea as &, t, nil
          nested-expr)
+        ((not (symbolp (car pattern)))
+         (er hard? 'b* "~
+The B* binding of ~x0 to ~x1 isn't allowed." pattern assign-exprs))
         (t ;; Binding macro call.
          (let* ((binder (car pattern))
                 (patbind-macro (macro-name-for-patbind binder))
@@ -751,6 +827,7 @@ and @(see cdr)."
 @('cons') may be nested inside other bindings.</p>")
 
 (defun nths-binding-list (args n form)
+  (declare (xargs :guard (natp n)))
   (if (atom args)
       nil
     (cons (list (car args) `(nth ,n ,form))
@@ -1395,35 +1472,88 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
   :body
   (patbind-local-stobjs-fn args forms rest-expr))
 
+
+
+(defun match-b*-fun-args (x)
+  ;; Returns (MV MATCHP NAME ARGS DECLS)
+  (declare (xargs :guard t))
+  ;; args should either be something like:
+  ;;   ((ADD A B))
+  ;;   (INLINE (ADD A B))
+  ;;   (NOTINLINE (ADD A B))
+  (if (atom x)
+      (mv nil nil nil nil)
+    (let ((fn/args-part ;; E.g., (ADD A B)
+           (if (and (or (eq (first x) 'inline)
+                        (eq (first x) 'notinline))
+                    (consp (cdr x))
+                    (not (cddr x)))
+               (second x)
+             (first x))))
+      (if (atom fn/args-part)
+          (mv nil nil nil nil)
+        (let* ((fn    (car fn/args-part))
+               (args  (cdr fn/args-part))
+               (decls (cond ((eq (car x) 'inline)    `((declare (inline ,fn))))
+                            ((eq (car x) 'notinline) `((declare (notinline ,fn))))
+                            (t nil))))
+          (mv t fn args decls))))))
+
 (def-b*-binder fun
   :short "@(see b*) binder to produce @(see flet) forms."
-  :long "<p>Usage:</p>
+  :long "<p>Example:</p>
 
 @({
-    (b* (((fun (foo a b c)) (body-form)))
-      (result-form))
+    (b* (((fun (add a b)) (+ a b)))
+      (add 3 4))
 })
 
-<p>is equivalent to</p>
+<p>More generally,</p>
 
 @({
-    (flet ((foo (a b c) (body-form)))
-      (result-form))
-})"
-  :decls
-  ((declare (xargs :guard
-                   (and
-                    ;; only arg is a symbol-list (foo a b c)
-                    (consp args)
-                    (symbol-listp (car args))
-                    (consp (car args))
-                    (eq (cdr args) nil)
-                    ;; body is implicit progn$?
-                    (true-listp forms)
-                    ))))
+    (b* (((fun (name arg1 ... argn)) body-form))
+      result-form)
+})
+
+<p>expands to</p>
+
+@({
+    (flet ((name (arg1 ... argn) body-form))
+      result-form)
+})
+
+<p>You can also provide an @('inline') or @('notinline') suggestion, e.g.,:</p>
+
+@({
+    (b* (((fun inline (add a b)) (+ a b)))
+      (add 3 4))
+
+    (b* (((fun notinline (add a b)) (+ a b)))
+      (add 3 4))
+})
+
+<p>Either of these results in a suitable @(see declare) form for the function;
+see @(see flet) for more discussion.</p>"
+
   :body
-  `(flet ((,(caar args) ,(cdar args) (progn$ . ,forms)))
-     ,rest-expr))
+  ;; I'm going to do the error checking inline, instead of as part of the
+  ;; guard, so we can provide better error messages.
+  (mv-let (okp fn args decls)
+    (match-b*-fun-args args)
+    (cond ((not okp)
+           (er hard? 'b* "Invalid b* binder FUN binder (see :doc patbind-fun): ~x0~%" args))
+          ((or (not (symbolp fn))
+               (keywordp fn)
+               (eq fn t)
+               (eq fn nil))
+           (er hard? 'b* "Invalid function name ~x0 in b* FUN binder: ~x1~%" fn args))
+          ((not (symbol-listp args))
+           (er hard? 'b* "Invalid formals for b* FUN binder of ~x0: ~x1~%" fn args))
+          (t
+           `(flet ((,fn ,args (progn$ . ,forms)))
+              ,@decls
+              ,rest-expr)))))
+
 
 
 (defun access-b*-bindings (recname var pairs)
