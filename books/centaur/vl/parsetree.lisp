@@ -220,8 +220,8 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
   :layout :tree
   ((name    stringp
             :rule-classes :type-prescription
-            "Name (internal and external) of this interface port, e.g., @('foo')
-             for @('simplebus.master foo').")
+            "Name (internal and external) of this interface port, e.g.,
+             @('foo') for @('simplebus.master foo').")
 
    (ifname  stringp
             :rule-classes :type-prescription
@@ -278,7 +278,6 @@ module mod(a,b,c) ;  <-- ports
   input [3:0] a;     <-- port declarations (not ports)
   input b;
   output c;
-
 endmodule
 })
 
@@ -1890,13 +1889,14 @@ respectively.</p>"
 
 (defenum vl-evatomtype-p
   (:vl-noedge
+   :vl-edge
    :vl-posedge
    :vl-negedge)
   :parents (vl-evatom-p)
   :short "Type of an item in an event control list."
   :long "<p>Any particular atom in the event control list might have a
-@('posedge'), @('negedge'), or have no edge specifier at all, e.g., for plain
-atoms like @('a') and @('b') in @('always @(a or b)').</p>")
+@('posedge'), @('negedge'), @('edge'), or have no edge specifier at all, e.g.,
+for plain atoms like @('a') and @('b') in @('always @(a or b)').</p>")
 
 (defprod vl-evatom
   :short "A single item in an event control list."
@@ -1904,7 +1904,7 @@ atoms like @('a') and @('b') in @('always @(a or b)').</p>")
   :layout :tree
 
   ((type vl-evatomtype-p
-         "Kind of atom, e.g., posedge, negedge, or plain.")
+         "Kind of atom, e.g., posedge, negedge, edge, or plain.")
 
    (expr vl-expr-p
          "Associated expression, e.g., @('foo') for @('posedge foo')."))
@@ -3950,7 +3950,24 @@ are:</p>
          "The left-hand side expression, which per SystemVerilog-2012 Section
           18.5.4 should involve at least one @('rand') variable.")
    (dist vl-distlist-p
-         "The desired ranges of values and probability distribution.")))
+         "The desired ranges of values and probability distribution.  May be
+          @('nil') in case of a plain expression without any @('dist')
+          part."))
+
+  :long "<p>Very confusingly, the @('dist') operator is mentioned in the
+SystemVerilog-2012 precedence table (Table 11-2, Page 221).  This doesn't
+make any sense because per the grammar rules it only occurs within</p>
+
+@({
+     expression_or_dist ::= expression [ 'dist' { dist_list } ]
+})
+
+<p>And these @('expression_or_dist') things definitely do not occur within
+other expressions.  After some investigation, I believe this inclusion in
+the table is simply misleading and that the right way to treat @('dist') is
+as a separate construct rather than as a real operator.  See also the file
+@('vl/parser/tests/distprec.sv') for related notes and experiments.</p>")
+
 
 (defprod vl-cycledelayrange
   :short "Representation of cycle delay ranges in SystemVerilog sequences."
@@ -4053,3 +4070,142 @@ i.e., @('[*...]'), @('[->...]'), or @('[=...]') style repetition."
 <p>Note from Page 357 that @('[*]') is equivalent to @('[0:$]') and @('[+]') is
 equivalent to @('[1:$]'), so we don't bother with separate representations of
 these.</p>")
+
+(defoption vl-maybe-repetition vl-repetition-p)
+
+
+
+(defenum vl-seqbinop-p
+  (:vl-sequence-and
+   :vl-sequence-intersect
+   :vl-sequence-or
+   :vl-sequence-within))
+
+(deftypes sequences
+  :parents (syntax)
+  :short "Representation of SystemVerilog sequence expressions."
+
+  (deftagsum vl-seqexpr
+    :short "Representation of a sequence expression."
+
+    (:vl-seqcore
+     :short "Basic, single expression in a sequence."
+     :base-name vl-seqcore
+     ((guts vl-exprdist-p)))
+
+    (:vl-seqthen
+     :short "Sequential sequence composition, i.e., @('foo ##1 bar') and similar."
+     :base-name vl-seqthen
+     ((delay vl-cycledelayrange-p "The delay or range part between, e.g., @('##1').")
+      (left  vl-seqexpr-p         "Left-hand side sequence to match, e.g., @('foo').")
+      (right vl-seqexpr-p         "Right-hand side sequence to match, e.g., @('bar')."))
+     :long "<p>Note that in SystemVerilog you can write sequences that don't
+            have a starting expression, e.g., you can just write @('##1 foo ##1
+            bar').  In this case we set @('left') to a @(see vl-seqcore)
+            expression which is just the expression @('1'b1'), which always
+            just evaluates to true and has no effect on the rest of the
+            sequence.</p>")
+
+    (:vl-seqrepeat
+     :short "A sequence with repetitions."
+     :base-name vl-seqrepeat
+     ((seq   vl-seqexpr-p     "Sequence being repeated, e.g., @('foo') in @('foo[*2]').")
+      (reps  vl-repetition-p  "Repetitions of this sequence, e.g., @('[*2]') in @('foo[*2]').")))
+
+    (:vl-seqclock
+     :short "A sequence expression predicated by a clocking event."
+     :base-name vl-seqclock
+     ((trigger vl-evatomlist
+               "A @('clocking_event'), e.g., the @('posedge foo') part of a
+                sequence expression like @('@(posedge foo) ready ##1
+                qvalid').")
+      (then    vl-seqexpr-p
+               "The sequence to match when this clocking event occurs, e.g.,
+                the @('ready ##1 qvalid') part of the above sequence.")))
+
+    (:vl-seqbinary
+     :short "A binary sequence operator (@('and'), @('intersect'), etc.)."
+     :base-name vl-seqbinary
+     ((op    vl-seqbinop-p "Operator that joins these sequences together.")
+      (left  vl-seqexpr-p  "Left hand side sequence.")
+      (right vl-seqexpr-p  "Right hand side sequence.")))
+
+    (:vl-seqthroughout
+     :short "A @('throughout') sequence expression."
+     :base-name vl-seqthroughout
+     ((left  vl-exprdist-p "The left hand side expression.")
+      (right vl-seqexpr-p  "The right hand side sequence expression.")))
+
+    (:vl-seqfirstmatch
+     :short "A @('first_match') sequence operator."
+     :base-name vl-seqfirstmatch
+     ((seq vl-seqexpr-p "Sequence whose matches are being filtered."))
+     :long "<p>If you look at the grammar for @('first_match') expressions,
+            there is special syntax for embedding match items without nested
+            parens.  However, that syntax is equivalent to just using the usual
+            @('(foo, x++)') style syntax as in a @(see vl-seqassign), so in our
+            internal representation we only have a sequence expression; the
+            match items, if any, will be found within @('arg').</p>")
+
+    (:vl-seqassign
+     :short "A sequence with sequence match items."
+     :base-name vl-seqassign
+     ((seq   vl-seqexpr-p
+             "Base sequence being extended with match items, e.g., @('foo') in
+              the sequence @('foo, x++').")
+      (items vl-exprlist-p
+             "Sequence match items that are being attached to this sequence,
+              e.g., @('x++') in the sequence @('(foo, x++)')."))
+     :long "<p>These match items can perhaps influence local sequence
+            variables, see SystemVerilog-2012 section 16.10.  In practice these
+            should be assignment expressions, increment/decrement expression,
+            or function calls, but we just represent them as arbitrary
+            expressions.</p>")
+
+    (:vl-seqinst
+     :short "Instance of another sequence."
+     :base-name vl-seqinst
+     ((ref  vl-scopeexpr-p     "Reference to the sequence being instantiated.")
+      (args vl-seqactuallist-p "Arguments to the sequence."))))
+
+  (deftagsum vl-seqactual
+    :short "An actual given as an argument to a sequence instance: may be an
+            event expression or a sequence expression."
+    (:blank
+     ((name    maybe-stringp :rule-classes :type-prescription
+               "An empty sequence actual; may indicate extra commas in the
+                @('sequence_list_of_arguments') list or an explicitly blank
+                named argument such as @('.foo()')")))
+
+    (:event
+     ((name    maybe-stringp :rule-classes :type-prescription
+               "Explicit name for this argument, if provided.  For instance,
+                in @('.foo(bar)'), this is the @('foo') part.  Some actuals
+                may not have a name.")
+      (evatoms vl-evatomlist-p
+               "This isn't quite general enough, but event expressions are also
+                used in @(see vl-eventcontrol)s, so I'd like this to be
+                compatible with that code, reuse its parser, etc.  If we find
+                that this isn't good enough, we should extend the eventcontrol
+                representation too.")))
+    (:sequence
+     ((name    maybe-stringp :rule-classes :type-prescription
+               "Explicit name for this argument, if provided.  For instance,
+                in @('.foo(bar)'), this is the @('foo') part.  Some actuals
+                may not have a name.")
+      (seqexpr vl-seqexpr-p
+               "Expression being used as the actual value."))))
+
+  (fty::deflist vl-seqactuallist
+    :elt-type vl-seqactual)
+
+  )
+
+
+(define vl-seqactual->name ((x vl-seqactual-p))
+  :parents (vl-seqactual)
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (vl-seqactual-case x
+    :blank    x.name
+    :event    x.name
+    :sequence x.name))
