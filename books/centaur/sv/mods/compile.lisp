@@ -928,13 +928,17 @@ should address this again later.</p>"
 
 
 (define svex-compose-assigns/delays ((assigns svex-alist-p)
-                                     (delays svar-map-p))
+                                     (delays svar-map-p)
+                                     &key (rewrite 't))
   :returns (mv (updates svex-alist-p)
                (nextstates svex-alist-p))
   (b* ((updates (cwtime (svex-assigns-compose assigns) :mintime 1))
        (masks (svexlist-mask-alist (svex-alist-vals updates)))
        ((with-fast updates))
        (next-states (cwtime (svex-compose-delays delays updates masks) :mintime 1))
+       (- (clear-memoize-table 'svex-compose))
+       ((unless rewrite)
+        (mv updates next-states))
        (rewritten (svex-alist-rewrite-fixpoint (append updates next-states)
                                                :verbosep t))
        (updates-len (len updates))
@@ -974,7 +978,8 @@ should address this again later.</p>"
                              &key
                              (indexedp 'nil)
                              ((moddb "overwritten") 'moddb)
-                             ((aliases "overwritten") 'aliases))
+                             ((aliases "overwritten") 'aliases)
+                             (rewrite 't))
   :parents (svex-compilation)
   :short "Compile a hierarchical SVEX design into a finite state machine."
   :returns (mv err
@@ -1000,7 +1005,7 @@ should address this again later.</p>"
          ((mv res-assigns res-delays)
           (svex-normalize-assigns assigns aliases))
          ((mv updates nextstates)
-          (svex-compose-assigns/delays res-assigns res-delays)))
+          (svex-compose-assigns/delays res-assigns res-delays :rewrite rewrite)))
       (mv err updates nextstates res-assigns res-delays moddb aliases))
     ///
     (verify-guards svex-design-compile-fn
