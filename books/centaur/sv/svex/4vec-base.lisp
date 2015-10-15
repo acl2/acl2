@@ -488,3 +488,22 @@ fast), if so executes @('2vec-body'), and otherwise executes
                   (<= 0 (4vec->lower x))))
     :rule-classes :forward-chaining)
   (deffixequiv 4vec-index-p))
+
+
+#!GL
+(define g-4vec (&key start size)
+  :short "Create g-bindings for a @(see sv::4vec)"
+  :parents (sv::4vec gl::shape-specs)
+  :long "This is a low-level way to create a custom shape specifier for a @(see
+         sv::4vec that requires @('size') bits.  @('G-4vec') is not yet
+         integrated into @(see gl::auto-bindings)."
+  (b* ((boolean-pos start)
+       (true-start (1+ boolean-pos))
+       (true-end (+ true-start size))
+       (false-car-start (1+ true-end))
+       (false-car-end (+ false-car-start size))
+       (false-cdr-start (1+ false-car-end)))
+  (g-ite `(:g-boolean . ,boolean-pos)
+         (g-int true-start 1 (1+ size))
+             (cons (g-int false-car-start 1 (1+ size))
+                   (g-int false-cdr-start 1 (1+ size))))))
