@@ -418,7 +418,8 @@
                       (outs true-list-listp)
                       (internals true-list-listp)
                       (design design-p)
-                      (simplify))
+                      (simplify)
+                      (pre-simplify))
   :parents (defsvtv)
   :short "Main subroutine of @(see defsvtv), which extracts output formulas from
           the provided design."
@@ -489,7 +490,8 @@
        ;; Compose together the final (gate-level) assignments to get full
        ;; update formulas (in terms of PIs and current states), and compose
        ;; delays with these to get next states.
-       ((mv updates next-states) (svex-compose-assigns/delays overridden-assigns delays))
+       ((mv updates next-states) (svex-compose-assigns/delays overridden-assigns delays
+                                                              :rewrite pre-simplify))
 
        ;; Compute an initial state of all Xes
        (states (svex-alist-keys next-states))
@@ -745,6 +747,7 @@
                     (design-const symbolp)
                     labels
                     simplify
+                    pre-simplify
                     parents short long)
   :guard (modalist-addr-p (design->modalist design))
   :irrelevant-formals-ok t
@@ -764,7 +767,7 @@
                           (t              (progn$ (raise ":long must be a string.")
                                                   ""))))
 
-       (svtv (defsvtv-main name ins overrides outs internals design simplify))
+       (svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify))
        ((unless svtv)
         (raise "failed to generate svtv"))
 
@@ -972,11 +975,12 @@ defined with @(see sv::defsvtv).</p>"
                         parents
                         short
                         long
-                        (simplify 't)) ;; should this be t by default?
+                        (simplify 't)
+                        (pre-simplify 't)) ;; should this be t by default?
   (b* (((unless (xor design mod))
         (er hard? 'defsvtv "DEFSVTV: Must provide either :design or :mod (interchangeable), but not both.~%")))
     `(make-event (defsvtv-fn ',name ,inputs ,overrides ,outputs ,internals
-                   ,(or design mod) ',(or design mod) ,labels ,simplify
+                   ,(or design mod) ',(or design mod) ,labels ,simplify ,pre-simplify
                    ',parents ,short ,long))))
 
 (defxdoc svtv-stimulus-format

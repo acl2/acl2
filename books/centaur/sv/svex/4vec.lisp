@@ -74,7 +74,7 @@
 
 
 (defsection 4vec-operations
-  :parents (functions)
+  :parents (functions 4vec)
   :short "Core operations on @(see 4vec)s."
 
   :long "<p>We now introduce many operations on @(see 4vec)s.  These operations
