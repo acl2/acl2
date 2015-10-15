@@ -1313,7 +1313,7 @@
         (t (cons (car (car signatures))
                  (signature-fns (cdr signatures))))))
 
-(defun make-event-tuple (n d form ev-type namex symbol-class)
+(defun make-event-tuple (n d form ev-type namex symbol-class skipped-proofs-p)
 
 ; An event tuple is always a cons.  Except in the initial case created by
 ; primordial-world-globals, the car is always either a natural (denoting n and
@@ -1330,6 +1330,12 @@
 ;  ev-type - name of the primitive event macro we use, e.g., defun, defthm, defuns
 ;  namex - name or names introduced (0 is none)
 ;  symbol-class - of names (or nil)
+;  skipped-proofs-p - t when the symbol-class is not :program (for simplicity
+;                     of implementation, below) and skipped-proofs-p is t; else
+;                     nil.  Note that skipped-proofs-p will be nil for certain
+;                     events that cannot perform proofs (see install-event) and
+;                     otherwise indicates that proofs were skipped (except by
+;                     the system only, as for include-book).
 
 ; In what we expect is the normal case, where d is 0 and the form is one of our
 ; standard ACL2 event macros, this concrete representation costs one cons.  If
@@ -1361,7 +1367,9 @@
                               (encapsulate (signature-fns (cadr form)))
                               (otherwise (cadr form)))))
             form
-          (cons (cons ev-type
+          (cons (cons (cons ev-type
+                            (and (not (eq symbol-class :program))
+                                 skipped-proofs-p))
                       (cons namex symbol-class))
                 form))))
 
@@ -1383,7 +1391,14 @@
          (if (eq (cadr x) 'mutual-recursion)
              'defuns
            (cadr x)))
-        (t (caadr x))))
+        (t (caaadr x))))
+
+(defun access-event-tuple-skipped-proofs-p (x)
+  (cond ((symbolp (cdr x)) ;eviscerated event
+         nil)
+        ((symbolp (cadr x))
+         nil)
+        (t (cdaadr x))))
 
 (defun access-event-tuple-namex (x)
 
