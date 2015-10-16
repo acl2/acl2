@@ -490,7 +490,8 @@ Adjusted Grammar with Precedence Baked In.
     means the argument to `not` needs to be something smaller than a whole
     property_expr.  On the other hand, we should also be able ot parse `not not
     a` as `not (not a)`, so that means we need to use at least a not_pe on the
-    right-hand side here.  I don't think there are any associativity issues.
+    right-hand side here.  Hrmn.  Actually this is really hard and inadequate,
+    I'll discuss it further below (see "Handling of Not.")
 
        not_pe ::= 'not' not_pe
                 | 'nexttime' not_pe
@@ -765,4 +766,54 @@ Analysis.
     seems much easier to implement than to try to deal with either a sequence
     expression or a property expression in the base case.
 
- 
+
+Handling of Not.
+
+    Consider the rule for NOT.
+
+       not_pe ::= 'not' not_pe
+                | 'nexttime' not_pe
+                | 'nexttime' '[' constant_expression ']' not_pe
+                | 's_nexttime' not_pe
+                | 's_nexttime' '[' constant_expression ']' not_pe
+                | strength_pe
+
+    There are some tricky cases here.  The rule above nicely handles things
+    such as:
+
+       not r1 until r2         --> (not r1) until r2
+       not not r1 until r2     --> (not not r1) until r2
+
+    However, it makes the following expression illegal, because "always r1
+    until r2" is not a valid not_pe.
+
+       not always r1 until r2
+
+    On the other hand, NCVerilog accepts this and appears to parse
+    it as `not (always r1 until r2)`.
+
+    In order to support an `always` here, we would need to accept
+    something like a full-blown property_expr after the 'not' (and
+    presumably analogously for the other operators here).  But if
+    we do that, then we will incorrectly parse
+
+       not r1 until r2  -->  not (r1 until r2)
+
+    because `r1 until r2` is a perfectly valid property_expr.  I don't
+    see a good way around this.  We might be more aggressive in our
+    not_pe implementation and heuristically do something like:
+
+       match 'not'
+       then: if (next token is 'always' | 'eventually' | ...)
+                match property_expr
+             else
+                match not_pe
+
+    In other words, the idea would be to explicitly allow 'not'
+    to explicitly recognize that some other unary operator that
+    has lesser precedence is coming up next, and in that case
+    let us match the other operator instead of just the not.
+
+    OK, this is pretty horrible but at least it seems like it
+    should work OK and be relatively safe...
+

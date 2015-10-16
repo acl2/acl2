@@ -163,6 +163,51 @@ module top ;
   // );
 
 
+  // NOT has higher precedence, so `not r1 until r2` is supposed to be `(not r1) until r2`
+  // OK: it looks like NCV gets that correct.
+
+  // assert property (@(posedge clk)
+  //     not (r1 until r2)
+  // );
+
+  // So what about:  not always r1 until r2
+  //  VCS doesn't understand it at all
+  //  NCV seems to treat this as:
+  //     not always (r1 until r2)
+  //  Instead of:
+  //     (not always r1) until r2
+
+  // assert property (@(posedge clk)   /// 180
+  //     not always r1 until r2
+  // );
+
+  // assert property (@(posedge clk)   /// 184
+  //     (not always r1) until r2
+  // );
+
+  // assert property (@(posedge clk)   // 188
+  //     not (always (r1 until r2))
+  // );
+
+
+
+  assert property (@(posedge clk) // 194
+      not not r1 until r2
+  );
+
+  assert property (@(posedge clk) // 198
+      not (not r1 until r2)
+  );
+
+  assert property (@(posedge clk) // 202
+      (not not r1) until r2
+  );
+
+
+
+
+  
+
 
 
 endmodule
