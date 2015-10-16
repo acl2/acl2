@@ -231,6 +231,7 @@
 (include-book "misc/seq" :dir :system)
 (include-book "misc/seqw" :dir :system)
 (include-book "misc/defpm" :dir :system)
+(include-book "misc/install-not-normalized" :dir :system)
 
 (include-book "make-event/proof-by-arith" :dir :system)
 
