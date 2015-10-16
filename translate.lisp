@@ -1988,6 +1988,18 @@
            (car
             (lookup-world-index 'event index wrld)))))))
 
+(defun get-skipped-proofs-p (name wrld)
+
+; Keep this in sync with get-event.
+
+  (declare (xargs :mode :program))
+  (let ((index (getprop name 'absolute-event-number nil 'current-acl2-world wrld)))
+    (and index
+         (access-event-tuple-skipped-proofs-p
+          (cddr
+           (car
+            (lookup-world-index 'event index wrld)))))))
+
 (mutual-recursion
 
 ; Here we combine what may naturally be thought of as two separate
