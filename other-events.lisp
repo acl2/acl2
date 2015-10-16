@@ -1450,7 +1450,7 @@
   (let ((wrld
          (global-set-lst
           (list*
-           (list 'event-landmark (make-event-tuple -1 0 nil nil 0 nil))
+           (list 'event-landmark (make-event-tuple -1 0 nil nil 0 nil nil))
            (list 'command-landmark (make-command-tuple -1 :logic nil nil nil))
            (list 'known-package-alist *initial-known-package-alist*)
            (list 'well-founded-relation-alist
@@ -1729,7 +1729,8 @@
                         'state 'stobj '(*the-live-state*)
                         (primordial-world-globals
                          operating-system)))))))))))))))))))
-      t))))
+      t
+      nil))))
 
 (defun same-name-twice (l)
   (cond ((null l) nil)
@@ -3056,7 +3057,8 @@
       'exit-boot-strap-mode
       0
       wrld2
-      t))))
+      t
+      nil))))
 
 (defun theory-namep (name wrld)
 
