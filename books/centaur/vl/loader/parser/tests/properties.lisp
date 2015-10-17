@@ -353,7 +353,7 @@
                         (vl-pretty-exprdist x.condition)
                         (vl-pretty-propexpr x.then)
                         (vl-pretty-propexpr x.else)))
-      (:vl-propcase (list :case
+      (:vl-propcase (list* :case
                           (vl-pretty-exprdist x.condition)
                           (vl-pretty-propcaseitemlist x.cases)))))
 
@@ -376,7 +376,7 @@
     (b* (((vl-propcaseitem x)))
       (list :case
             (vl-pretty-exprdistlist x.match)
-            :do
+            :-->
             (vl-pretty-propexpr x.prop))))
 
   (define vl-pretty-propcaseitemlist ((x vl-propcaseitemlist-p))
@@ -390,7 +390,8 @@
 
 
 (defmacro test-prop (&key input expect (successp 't) (extra 'nil))
-  `(assert! (b* ((config *vl-default-loadconfig*)
+  `(assert! (b* ((- (cw "Testing alleged property expression: ~s0~%" ',input))
+                 (config *vl-default-loadconfig*)
                  (tokens (make-test-tokens ,input))
                  (pstate (make-vl-parsestate))
                  ((mv erp val ?tokens (vl-parsestate pstate))
@@ -644,9 +645,9 @@
                     (:dist (id "good") (1 := 2))))
 
 
-;; Interleave s_nexttime and always
-
-;; BOZO these should be working I think.
+;; Interleave s_nexttime and always.  This is actually really subtle and it's
+;; only because of our "handling of not" hack that we should be able to support
+;; writing an always after an s_nexttime.
 
 (test-prop :input "s_nexttime always good"
            :expect (:s_nexttime nil
@@ -660,14 +661,13 @@
            :expect (:always (:range 1 2)
                     (:s_nexttime 3 (id "good"))))
 
-(test-prop :input "always [1:2] (s_nexttime [3:4] good)"
+(test-prop :input "always [1:2] (s_nexttime good)"
            :expect (:always (:range 1 2)
-                    (:s_nexttime (:range 3 4) (id "good"))))
+                    (:s_nexttime nil (id "good"))))
 
-(test-prop :input "(always [1:2] (s_nexttime [3:4] good))"
+(test-prop :input "(always [1:2] (s_nexttime [3] good))"
            :expect (:always (:range 1 2)
-                    (:s_nexttime (:range 3 4) (id "good"))))
-
+                    (:s_nexttime 3 (id "good"))))
 
 
 
@@ -701,6 +701,30 @@
                     (:dist (id "good") (1 := 2))))
 
 
+;; interleave nexttime and always.
+
+(test-prop :input "nexttime always good"
+           :expect (:nexttime nil
+                    (:always (no-range) (id "good"))))
+
+(test-prop :input "nexttime [1] always good"
+           :expect (:nexttime 1
+                    (:always (no-range) (id "good"))))
+
+(test-prop :input "always [1:2] nexttime [3] good"
+           :expect (:always (:range 1 2)
+                    (:nexttime 3 (id "good"))))
+
+(test-prop :input "always [1:2] (nexttime good)"
+           :expect (:always (:range 1 2)
+                    (:nexttime nil (id "good"))))
+
+(test-prop :input "(always [1:2] (nexttime [3] good))"
+           :expect (:always (:range 1 2)
+                    (:nexttime 3 (id "good"))))
+
+
+
 ;; Basic tests for NOT.  Takes no range and no indices.
 
 (test-prop :input "not good dist {1 := 2}"
@@ -726,6 +750,7 @@
 
 (test-prop :input "not (not (not good))"
            :expect (:not (:not (:not (id "good")))))
+
 
 ;; Basic tests for strong.  Takes no range and no indices.
 ;; Unlike NOT, STRONG requires parens!
@@ -1035,8 +1060,190 @@
                     (:not (:always (no-range) (id "bar")))
                     (id "baz")))
 
+(test-prop :input "if (foo) if (bar) baz"
+           :expect (:if (id "foo")
+                        (:if (id "bar") (id "baz") 1)
+                    1))
+
+(test-prop :input "if (foo) if (bar) baz else taco"
+           :expect (:if (id "foo")
+                        (:if (id "bar") (id "baz") (id "taco"))
+                    1))
 
 
+;; basic tests for case
+
+(test-prop :input "case"
+           :successp nil)
+
+(test-prop :input "case foo"
+           :successp nil)
+
+(test-prop :input "case foo endcase"
+           ;; At least one case is required.
+           :successp nil)
+
+(test-prop :input "case foo default 1 endcase"
+           ;; Shouldn't work because the expression needs parens.  I think.
+           :successp nil)
+
+(test-prop :input "case (foo) default 1 endcase"
+           :expect (:case (id "foo")
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) default : 1 ; endcase"
+           :expect (:case (id "foo")
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) default: 1; endcase"
+           :expect (:case (id "foo")
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) default: 1 endcase"
+           :expect (:case (id "foo")
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo dist {3:=1}) default: 1 endcase"
+           :expect (:case (:dist (id "foo") (3 := 1))
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) bar: 0 default: 1 endcase"
+           :expect (:case (id "foo")
+                    (:case ((id "bar")) :--> 0)
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) bar: 0; default: 1 endcase"
+           :expect (:case (id "foo")
+                    (:case ((id "bar")) :--> 0)
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) bar: 0; default 1 endcase"
+           :expect (:case (id "foo")
+                    (:case ((id "bar")) :--> 0)
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) bar, baz: 0 default: 1 endcase"
+           :expect (:case (id "foo")
+                    (:case ((id "bar") (id "baz")) :--> 0)
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) bar, baz: 0 ; default: 1 endcase"
+           :expect (:case (id "foo")
+                    (:case ((id "bar") (id "baz")) :--> 0)
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) bar dist {3:=1}, baz: 0 ; default: 1 endcase"
+           :expect (:case (id "foo")
+                    (:case ((:dist (id "bar") (3 := 1))
+                            (id "baz"))
+                     :--> 0)
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo) bar dist {3:=1}, baz: 0 endcase"
+           :expect (:case (id "foo")
+                    (:case ((:dist (id "bar") (3 := 1))
+                            (id "baz"))
+                     :--> 0)))
+
+(test-prop :input "case (foo) bar: always good; default: 1 endcase"
+           :expect (:case (id "foo")
+                    (:case ((id "bar")) :--> (:always (no-range) (id "good")))
+                    (:case nil :--> 1)))
+
+(test-prop :input "case (foo)
+                     bar: always good;
+                     default: if (smoke) fire
+                   endcase"
+           :expect (:case (id "foo")
+                    (:case ((id "bar")) :--> (:always (no-range) (id "good")))
+                    (:case nil :--> (:if (id "smoke") (id "fire") 1))))
+
+(test-prop :input "case (foo)
+                     bar: case (inner) default 1 endcase
+                     default if (smoke) fire
+                   endcase"
+           :expect (:case (id "foo")
+                    (:case ((id "bar")) :--> (:case (id "inner")
+                                              (:case nil :--> 1)))
+                    (:case nil :--> (:if (id "smoke") (id "fire") 1))))
+
+
+;; basic tests for or
+
+(test-prop :input "or"
+           :successp nil)
+
+(test-prop :input "a or"
+           :successp nil)
+
+(test-prop :input "or b"
+           :successp nil)
+
+(test-prop :input "a or b"
+           :expect (:or (id "a") (id "b")))
+
+(test-prop :input "a or b or c"
+           :expect (:or (:or (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "(a or b) or c"
+           :expect (:or (:or (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "a or (b or c)"
+           :expect (:or (id "a")
+                    (:or (id "b") (id "c"))))
+
+(test-prop :input "(not a)"
+           :expect (:not (id "a")))
+
+(test-prop :input "(not a) or (not b)"
+           :expect (:or (:not (id "a"))
+                        (:not (id "b"))))
+
+(test-prop :input "(not a) or not b"
+           :expect (:or (:not (id "a"))
+                        (:not (id "b"))))
+
+(include-book "../../../mlib/print-warnings")
+(trace-parser vl-parse-property-expr-fn)
+(trace-parser vl-parse-impl-property-expr-fn)
+(trace-parser vl-parse-until-property-expr-fn)
+(trace-parser vl-parse-iff-property-expr-fn)
+(trace-parser vl-parse-or-property-expr-fn)
+(trace-parser vl-parse-and-property-expr-fn)
+(trace-parser vl-parse-not-property-expr-fn)
+(trace-parser vl-parse-strength-property-expr-fn)
+(trace-parser vl-parse-sequence-expr-fn)
+(trace-parser vl-parse-or-sequence-expr-fn)
+(trace-parser vl-parse-and-sequence-expr-fn)
+(trace-parser vl-parse-intersect-sequence-expr-fn)
+(trace-parser vl-parse-within-sequence-expr-fn)
+(trace-parser vl-parse-throughout-sequence-expr-fn)
+(trace-parser vl-parse-delay-sequence-expr-fn)
+(trace-parser vl-parse-delay-sequence-expr-tail-fn)
+(trace-parser vl-parse-firstmatch-sequence-expr-fn)
+(trace-parser vl-parse-repeat-sequence-expr-fn)
+(trace-parser vl-parse-assign-sequence-expr-fn)
+(trace-parser vl-parse-instance-property-expr-fn)
+
+
+
+
+
+(test-prop :input "not a or (not b)"
+           :expect (:or (:not (id "a"))
+                        (:not (id "b"))))
+
+(test-prop :input "not a or not b"
+           :expect (:or (:not (id "a"))
+                        (:not (id "b"))))
+
+
+
+
+
+;; ---------
 
 (test-prop :input "not r1 until r2"
            ;; Tricky and important.  NOT must bind more tightly than UNTIL.
@@ -1055,8 +1262,24 @@
            ;;  NOT > UNTIL > ALWAYS
            ;; NCVerilog accepts this and treats it as:
            ;;  NOT (ALWAYS (UNTIL R1 R2))
-           )
-           :expect (:until
-                    (:not (:not (id "r1")))
-                    (id "r2")))
+           ;; We should now be handling this just like NCVerilog thanks to
+           ;; the godawful hack.
+           :expect (:not
+                    (:always (no-range)
+                     (:until (id "r1") (id "r2")))))
+
+
+
+
+
+
+;; -----
+
+
+
+(test-prop :input "not @(clk) r1 until r2"
+           :expect (:not
+                    (:always (no-range)
+                     (:until (id "r1") (id "r2")))))
+
 

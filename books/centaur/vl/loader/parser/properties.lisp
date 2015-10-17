@@ -919,32 +919,51 @@ expression in the parens without any edge specifier.</li>
   (defparser vl-parse-not-property-expr ()
     :short "Match @('not_pe')."
     :measure (two-nats-measure (vl-tokstream-measure) 140)
-    (cond ((vl-is-token? :vl-kwd-not)
-           ;; not_pe ::= 'not' not_pe
-           (seq tokstream
-                (:= (vl-match))
-                (prop := (vl-parse-not-property-expr))
-                (return (make-vl-propunary :op :vl-prop-not :arg prop))))
-          ((vl-is-some-token? '(:vl-kwd-nexttime :vl-kwd-s_nexttime))
-           ;; not_pe ::= 'nexttime' not_pe
-           ;;          | 'nexttime' '[' constant_expression ']' not_pe
-           ;;          | 's_nexttime' not_pe
-           ;;          | 's_nexttime' '[' constant_expression ']' not_pe
-           (seq tokstream
-                (op := (vl-match))
-                (when (vl-is-token? :vl-lbrack)
+    (let ((lower-precedence-unary-operators
+           ;; Horrible godwaful hack to try to handle things like `not always
+           ;; r1 until r2` parse like they do in NCVerilog.  See "Handling of
+           ;; Not" in notes/properties.txt for additional discussion.
+           '(:vl-atsign
+             :vl-kwd-always
+             :vl-kwd-s_always
+             :vl-kwd-s_eventually
+             :vl-kwd-eventually
+             :vl-kwd-accept_on
+             :vl-kwd-reject_on
+             :vl-kwd-sync_accept_on
+             :vl-kwd-sync_reject_on
+             :vl-kwd-if
+             :vl-kwd-case)))
+      (cond ((vl-is-token? :vl-kwd-not)
+             ;; not_pe ::= 'not' not_pe
+             (seq tokstream
                   (:= (vl-match))
-                  (expr := (vl-parse-expression))
-                  (:= (vl-match-token :vl-rbrack)))
-                (prop := (vl-parse-not-property-expr))
-                (return (make-vl-propnexttime :strongp (case (vl-token->type op)
-                                                         (:vl-kwd-nexttime nil)
-                                                         (:vl-kwd-s_nexttime t))
-                                              :expr expr
-                                              :prop prop))))
+                  (prop := (if (vl-is-some-token? lower-precedence-unary-operators)
+                               (vl-parse-property-expr)
+                             (vl-parse-not-property-expr)))
+                  (return (make-vl-propunary :op :vl-prop-not :arg prop))))
+            ((vl-is-some-token? '(:vl-kwd-nexttime :vl-kwd-s_nexttime))
+             ;; not_pe ::= 'nexttime' not_pe
+             ;;          | 'nexttime' '[' constant_expression ']' not_pe
+             ;;          | 's_nexttime' not_pe
+             ;;          | 's_nexttime' '[' constant_expression ']' not_pe
+             (seq tokstream
+                  (op := (vl-match))
+                  (when (vl-is-token? :vl-lbrack)
+                    (:= (vl-match))
+                    (expr := (vl-parse-expression))
+                    (:= (vl-match-token :vl-rbrack)))
+                  (prop := (if (vl-is-some-token? lower-precedence-unary-operators)
+                               (vl-parse-property-expr)
+                             (vl-parse-not-property-expr)))
+                  (return (make-vl-propnexttime :strongp (case (vl-token->type op)
+                                                           (:vl-kwd-nexttime nil)
+                                                           (:vl-kwd-s_nexttime t))
+                                                :expr expr
+                                                :prop prop))))
           (t
            ;; not_pe ::= strength_pe
-           (vl-parse-strength-property-expr))))
+           (vl-parse-strength-property-expr)))))
 
   (defparser vl-parse-strength-property-expr ()
     :short "Match @('strength_pe')."

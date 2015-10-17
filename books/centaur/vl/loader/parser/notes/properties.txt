@@ -662,7 +662,7 @@ Initial Combined Grammar. (Not quite what we want)
     This might not require all that much damage to the rules above...
 
 
-Butchered Grammar.
+Butchered Grammar. (I thought this looked good, but testing revealed some problems...)
 
     Starting from the glued together combined grammar, we:
 
@@ -766,6 +766,134 @@ Analysis.
     seems much easier to implement than to try to deal with either a sequence
     expression or a property expression in the base case.
 
+    After implementing the above grammar I realized a problem.  Consider the
+    multiple levels of 'and' terms.  That is, we have:
+
+            ((Left Associative))
+            and_pe ::= not_pe { 'and' not_pe }
+
+            ((Left Associative))
+            and_se ::= isect_se { 'and' isect_se }
+
+    This leads to a problem.  Consider that `not b` is a valid not_pe.  So
+    consider an expression like `a and not b`.  When we try to parse this,
+    we end up working our way down to and_se.  At this point, `a` is a
+    perfectly valid isect_se.  But now the `and_se` rule sees an `and`
+    token and tries to go off and match { 'and' isect_se }, which it can't
+    successfully do because `not b` is not a valid isect_se.
+
+    In other words, the problem is that we no longer know, in rules like and_se
+    and or_se, whether or not the AND/OR token we see is actually a sequence
+    level AND/OR instead of a property-level AND/OR.  We could perhaps resolve
+    this by backtracking, but that's really gross because we lose good error
+    reporting and it's just really ugly to have to backtrack here.
+
+    The other option would be to flatten out the grammar and do away with the
+    distinction between and_pe/and_se and or_pe/or_se.  This would be a bit
+    more drastic and would (unfortunately?) further blur the distinction
+    between a sequence_expr and a property_expr.  Well, let's just see what
+    happens if we try it...
+
+       ((Right Associative))
+       property_expr ::= clocking_event property_expr                ;; I think these are minimal precedence
+                       | 'always' property_expr
+                       | 'always' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 's_always' '[' constant_range ']' property_expr
+                       | 's_eventually' property_expr
+                       | 'eventually' '[' constant_range ']' property_expr
+                       | 's_eventually' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 'accept_on' '(' expression_or_dist ')' property_expr
+                       | 'reject_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_accept_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_reject_on' '(' expression_or_dist ')' property_expr
+                       | 'if' '(' expression_or_dist ')' property_expr [ 'else' property_expr ]
+                       | 'case' '(' expression_or_dist ')' property_case_item { property_case_item } 'endcase'
+                       | impl_pe
+
+    Previously we restricted the left hand sides of impl_pe's to be
+    sequence_exprs.  But if we aren't really worrying about sequence_expr
+    anymore, then it's probably reasonable to just turn these into until_pes
+    instead.  (That just makes it a bit more permissive.)  Actually this seems
+    really nice -- it eliminates ugly backtracking and makes this a lot more
+    straightforward.
+
+       ((Right Associative))
+       impl_pe ::= until_pe '|->' impl_pe
+                 | until_pe '|=>' impl_pe
+                 | until_pe '#-#' impl_pe
+                 | until_pe '#=#' impl_pe
+                 | until_pe
+
+       ((Right Associative))
+       until_pe ::= iff_pe { 'until' iff_pe }
+                  | iff_pe { 's_until' iff_pe }
+                  | iff_pe { 'until_with' iff_pe }
+                  | iff_pe { 's_until_with' iff_pe }
+                  | iff_pe { 'implies' iff_pe }
+                  | iff_pe
+
+       ((Right Associative))
+       iff_pe ::= or_pe { 'iff' or_pe }
+
+       ((Left Associative))
+       or_pe ::= and_pe { 'or' and_pe }
+
+       ((Left Associative))
+       and_pe ::= not_pe { 'and' not_pe }
+
+       not_pe ::= 'not' not_pe
+                | 'nexttime' not_pe
+                | 'nexttime' '[' constant_expression ']' not_pe
+                | 's_nexttime' not_pe
+                | 's_nexttime' '[' constant_expression ']' not_pe
+                | strength_pe
+
+    This rule changes a bit to allow full-blown property_exprs.  I also change the
+    final sequence_expr case into a isect_se instead of a sequence_expr, since
+    sequence_expr, or_se, and and_se are going to go away.
+
+       strength_pe ::= 'strong' '(' property_expr ')'
+                     | 'weak' '(' property_expr ')'
+                     | isect_se
+
+    The next chunk just gets removed because we're merging it with the above.  The
+    clocking event stuff is already handled at the top level, so we shouldn't need
+    that.  Meanwhile the or_se/and_se are now replaced with or_pe/and_pe.
+
+      ;;;DROP   sequence_expr  ::= [clocking_event] or_se
+
+      ;;;DROP  ((Left Associative))
+      ;;;DROP  or_se                ::= and_se { 'or' and_se }
+
+      ;;;DROP   ((Left Associative))
+      ;;;DROP   and_se               ::= isect_se { 'and' isect_se }
+
+       ((Left Associative))
+       isect_se             ::= within_se { 'intersect' within_se }
+
+       ((Left Associative))
+       within_se            ::= thout_se { 'within' thout_se }
+
+       ((Right Associative))
+       thout_se ::= expression_or_dist 'throughout' thout_se
+                  | delay_se
+
+       ((Left Associative))
+       delay_se ::= [cycle_range] firstmatch_se { cycle_delay_range firstmatch_se }
+
+    Seems like we may as well change sequence_expr here to property_expr.
+
+       firstmatch_se ::= 'first_match' '(' property_expr {',' sequence_match_item} ')'
+                       | repeat_se
+
+    And then finally repeat_se gets cleaned up a bit because we no longer need to
+    distinguish between sequence_expr and property_expr:
+
+       repeat_se ::= expression_or_dist [boolean_abbrev]
+                   | property_instance [sequence_abbrev]
+                   | '(' property_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+
+
 
 Handling of Not.
 
@@ -815,5 +943,80 @@ Handling of Not.
     let us match the other operator instead of just the not.
 
     OK, this is pretty horrible but at least it seems like it
-    should work OK and be relatively safe...
+    should work OK and be relatively safe.
 
+
+Final (I hope) Grammar.
+
+       ((Right Associative))
+       property_expr ::= clocking_event property_expr
+                       | 'always' property_expr
+                       | 'always' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 's_always' '[' constant_range ']' property_expr
+                       | 's_eventually' property_expr
+                       | 'eventually' '[' constant_range ']' property_expr
+                       | 's_eventually' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 'accept_on' '(' expression_or_dist ')' property_expr
+                       | 'reject_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_accept_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_reject_on' '(' expression_or_dist ')' property_expr
+                       | 'if' '(' expression_or_dist ')' property_expr [ 'else' property_expr ]
+                       | 'case' '(' expression_or_dist ')' property_case_item { property_case_item } 'endcase'
+                       | impl_pe
+
+       ((Right Associative))
+       impl_pe ::= until_pe '|->' impl_pe
+                 | until_pe '|=>' impl_pe
+                 | until_pe '#-#' impl_pe
+                 | until_pe '#=#' impl_pe
+                 | until_pe
+
+       ((Right Associative))
+       until_pe ::= iff_pe { 'until' iff_pe }
+                  | iff_pe { 's_until' iff_pe }
+                  | iff_pe { 'until_with' iff_pe }
+                  | iff_pe { 's_until_with' iff_pe }
+                  | iff_pe { 'implies' iff_pe }
+                  | iff_pe
+
+       ((Right Associative))
+       iff_pe ::= or_pe { 'iff' or_pe }
+
+       ((Left Associative))
+       or_pe ::= and_pe { 'or' and_pe }
+
+       ((Left Associative))
+       and_pe ::= not_pe { 'and' not_pe }
+
+       ((Note: hack to allow property_expr instead of not_pe when we have an
+               explicit 'always', 's_always', etc. at the start, per Handling
+               of Not.))
+       not_pe ::= 'not' not_pe
+                | 'nexttime' not_pe
+                | 'nexttime' '[' constant_expression ']' not_pe
+                | 's_nexttime' not_pe
+                | 's_nexttime' '[' constant_expression ']' not_pe
+                | strength_pe
+
+       strength_pe ::= 'strong' '(' property_expr ')'
+                     | 'weak' '(' property_expr ')'
+                     | isect_se
+       ((Left Associative))
+       isect_se             ::= within_se { 'intersect' within_se }
+
+       ((Left Associative))
+       within_se            ::= thout_se { 'within' thout_se }
+
+       ((Right Associative))
+       thout_se ::= expression_or_dist 'throughout' thout_se
+                  | delay_se
+
+       ((Left Associative))
+       delay_se ::= [cycle_range] firstmatch_se { cycle_delay_range firstmatch_se }
+
+       firstmatch_se ::= 'first_match' '(' property_expr {',' sequence_match_item} ')'
+                       | repeat_se
+
+       repeat_se ::= expression_or_dist [boolean_abbrev]
+                   | property_instance [sequence_abbrev]
+                   | '(' property_expr { ',' sequence_match_item } ')' [sequence_abbrev]
