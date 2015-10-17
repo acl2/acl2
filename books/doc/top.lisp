@@ -186,6 +186,7 @@
 
 (include-book "hacking/all" :dir :system)
 (include-book "hints/consider-hint" :dir :system)
+(include-book "hints/hint-wrapper" :dir :system)
 
 (include-book "ordinals/e0-ordinal" :dir :system)
 
