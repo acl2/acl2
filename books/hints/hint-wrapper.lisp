@@ -118,12 +118,12 @@
  (add-default-hints '((hint-wrapper-hint clause)))
  })
 
- <p>The @(tsee include-book) above defines an identity function of one
- argument, @('hint-wrapper'), and provides this function with the following
- special property.  When ACL2 attempts to prove a theorem with a hypothesis
- that is a call of @('hint-wrapper') on a quoted hint keyword alist &mdash;
- that is, a form @('(quote (:key1 val1 ... :keyn valn))') &mdash; then the
- hints @('(:key1 val1 ... :keyn valn)') will be applied.</p>
+ <p>The @(tsee include-book) above defines a function of one argument,
+ @('hint-wrapper'), that always returns @('t') but has following special
+ property.  When ACL2 attempts to prove a theorem with a hypothesis that is a
+ call of @('hint-wrapper') on a quoted hint keyword alist &mdash; that is, a
+ form @('(quote (:key1 val1 ... :keyn valn))') &mdash; then the hints @('(:key1
+ val1 ... :keyn valn)') will be applied.</p>
 
  <p>The following example illustrates the use of this @('hint-wrapper')
  mechanism.  The form @('(add-default-hints '((hint-wrapper-hint clause)))')
