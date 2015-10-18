@@ -103,7 +103,8 @@ we work in.</dd>
 
 <dd>We use <b>64-bit Linux</b>.  Other unix derivatives like Darwin, FreeBSD,
 etc., might work reasonably well, but Linux is our main platform.  Windows
-probably won't work.  You will need ordinary tools like perl, make, etc.</dd>
+probably won't work, although a Linux VM inside of Windows may be a fine
+option.  You will need ordinary tools like perl, make, etc.</dd>
 
 
 <dt>Clozure Common Lisp Configuration</dt>
@@ -122,16 +123,7 @@ performance.</dd>
 typing <tt>ccl</tt>.</dd>
 
 
-<dt>ACL2(h) Configuration</dt>
-
-<dd>Some of our books require an ACL2 with Hons enabled.  We build ACL2(h) like
-this:</dd>
-
-<dd><pre>
-$ # rebuild ccl using ccl-config.lsp (see above)
-$ cd [...]/acl2/
-$ make LISP=ccl ACL2_HONS=h
-</pre></dd>
+<dt>ACL2 Configuration</dt>
 
 <dd>We configure our <tt>PATH</tt> so that we can run ACL2(h) by
 typing <tt>acl2</tt>.</dd>
@@ -140,11 +132,13 @@ typing <tt>acl2</tt>.</dd>
 <dt>cert.pl Configuration</dt>
 
 <dd>We generally
-use <a href='http://fv.centtech.com/acl2/latest/doc/?topic=ACL2____CERT.PL'>cert.pl</a>
-to certify books.  This script is located in the <tt>acl2/books</tt> directory.</dd>
+use <a href='http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____CERT.PL'>cert.pl</a>
+to certify books.  This script is located in the <tt>acl2/books/build</tt>
+directory.</dd>
 
 <dd>We configure our <tt>PATH</tt> so that we can run cert.pl by typing
-<tt>cert.pl</tt>.</dd>
+<tt>cert.pl</tt>.  Note that other useful scripts like <tt>critpath.pl</tt> are
+also in the <tt>acl2/books/build</tt> directory.</dd>
 
 <dt>(Optional) GTKWave Configuration</dt>
 
@@ -160,7 +154,7 @@ typing <tt>gtkwave</tt>.</dd>
 <dt>(Optional) Sat Solver Configuration</dt>
 
 <dd>We often use various SAT solvers in conjunction with GL.  See
-<a href='http://fv.centtech.com/acl2/latest/doc/?topic=SATLINK____SAT-SOLVER-OPTIONS'>SAT-SOLVER-OPTIONS</a>
+<a href='http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=SATLINK____SAT-SOLVER-OPTIONS'>SAT-SOLVER-OPTIONS</a>
 for details about installing a suitable SAT solvers.</dd>
 
 </dl>
@@ -174,11 +168,11 @@ books.  We prefer to do this via:</p>
 <pre>
 $ # install prerequisites as explained above
 $ cd [...]/acl2/books/
-$ make USE_QUICKLISP=1 -j 4 centaur   # -j 4 for a quad-core processor
+$ make USE_QUICKLISP=1 -j 4 centaur manual   # -j 4 for a quad-core processor
 </pre>
 
-<p>The USE_QUICKLISP=1 instructs <tt>make</tt> to download and install
-<a href='http://fv.centtech.com/acl2/latest/doc/?topic=ACL2____QUICKLISP'>Quicklisp</a>,
+<p>The USE_QUICKLISP=1 instructs <tt>make</tt> to enable support for
+<a href='http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____QUICKLISP'>Quicklisp</a>,
 which is necessary for certain books.</p>
 
 <p>Depending on your hardware this may take ten minutes up to hours.  For
@@ -188,18 +182,18 @@ running FreeBSD, using -j 8.</p>
 
 <h3>Next Steps</h3>
 
-<p>The <tt>make</tt> command above should produce an XDOC manual that covers
-the Centaur books, and also has the regular documentation for ACL2 and other
-Community Books like arithmetic, std, etc.</p>
+<p>The <tt>make</tt> command above should produce the usual ACL2+Books manual
+which covers the Centaur books and also has the regular documentation for ACL2
+and other Community Books like arithmetic, std, etc.</p>
 
 <p>To view the manual, point your web browser
-at <a href="manual/index.html">manual/index.html</a>&mdash;this link will be
-broken until you generate the manual.</p>
+at <a href="../doc/manual/index.html">acl2/books/doc/manual/index.html</a>&mdash;this
+link will be broken until you generate the manual.</p>
 
-<p>(We keep a <a href="http://fv.centtech.com/acl2/latest/doc/">public copy</a>
-of the manual on our web site, but we only update it at each ACL2 release, so
-we recommend using a local copy that matches your specific version of the
-books.)</p>
+<p>(Matt Kaufmann typically maintains a
+ <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/">fairly
+recent version</a> of the manual at the UT web site, so you may usually not
+need to build a local copy yourself.)</p>
 
 <p>If you are specifically interested in hardware verification, there is also a
 preliminary <b>tutorial</b> that walks through the verification of a trivial
@@ -262,8 +256,8 @@ DEALINGS IN THE SOFTWARE.</dd>
 
 <p><b style="color: #009000;">**</b> NOTE: Some Centaur libraries include books
 written by other people and/or companies.  Such software may be licensed under
-other terms, such as the GNU General Public License, or other licenses.  See
-the individual headers on each file for more information.</p>
+other terms, possibly including the GNU General Public License.  See the
+individual headers on each file for more information.</p>
 
 </div>
 </body>
