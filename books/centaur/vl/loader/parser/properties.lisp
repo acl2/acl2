@@ -1204,8 +1204,8 @@ expression in the parens without any edge specifier.</li>
     :measure (two-nats-measure (vl-tokstream-measure) 250)
     :short "Match a single @('sequence_actual_arg')."
     :long "<p>This is used in the special case where we know that we want to
-match exactly one @('property_actual_arg') followed by a right paren, e.g., we
-are matching @('bar') in @('.foo(bar)') or similar.</p>
+match exactly one (perhaps optional) @('property_actual_arg') followed by a
+right paren, e.g., we are matching @('bar') in @('.foo(bar)') or similar.</p>
 
 <p>The basic grammar rule here is:</p>
 
@@ -1234,7 +1234,9 @@ seems fairly reasonable to just use backtracking to try both possibilities and
 see which (if any) leads us to the right place.  If both succeed, e.g., perhaps
 @('bar') is an ordinary expression, we arbitrarily choose to prefer a
 @('property_expr') over an @('event_expression').</p>"
-    (b* ((backup (vl-tokstream-save))
+    (b* (((when (vl-is-token? :vl-rparen))
+          (mv nil (make-vl-propactual-blank :name name) tokstream))
+         (backup (vl-tokstream-save))
          ((mv err prop tokstream)
           (vl-parse-property-expr))
          ((when (and (not err)
@@ -1273,7 +1275,7 @@ That is, we want to match:</p>
          (:= (vl-match-token :vl-dot))
          (name := (vl-match-token :vl-idtoken))
          (:= (vl-match-token :vl-lparen))
-         (first :s= (vl-parse-property-actual-arg (vl-idtoken->name name)))
+         (first :w= (vl-parse-property-actual-arg (vl-idtoken->name name)))
          (:= (vl-match-token :vl-rparen))
          (when (vl-is-token? :vl-comma)
            (:= (vl-match))
@@ -1357,11 +1359,14 @@ experimentation.  This language is so awful...</p>"
                 ;; event expression involving more than one event, so we want
                 ;; to go ahead and make an event actual for it, rather than a
                 ;; property actual.
-                (mv err
-                    (list (make-vl-propactual-event :name nil
-                                                   :evatoms evatoms))
-                    tokstream))
-
+                (seq tokstream
+                     (when (vl-is-token? :vl-comma)
+                       (:= (vl-match))
+                       (rest := (vl-parse-property-list-of-arguments)))
+                     (return
+                      (cons (make-vl-propactual-event :name nil
+                                                      :evatoms evatoms)
+                            rest))))
                ;; Otherwise, and probably far more common, just try to match a
                ;; property expression.
                (tokstream (vl-tokstream-restore backup)))
@@ -1490,7 +1495,7 @@ experimentation.  This language is so awful...</p>"
     ,(vl-progress-claim vl-parse-repeat-sequence-expr)
     ,(vl-progress-claim vl-parse-assign-sequence-expr)
     ,(vl-progress-claim vl-parse-instance-property-expr)
-    ,(vl-progress-claim vl-parse-property-actual-arg :args (name))
+    ,(vl-progress-claim vl-parse-property-actual-arg :args (name) :strongp nil)
     ,(vl-progress-claim vl-parse-1+-named-property-list-of-arguments)
     ,(vl-progress-claim vl-parse-property-list-of-arguments :strongp nil)
     :hints((and acl2::stable-under-simplificationp

@@ -2417,3 +2417,87 @@
                            (:until (id "a") (id "b"))))))
 
 
+;; basic tests of sequence instances
+;; This is always going to be janky because it's totally ambiguous with
+;; function calls.
+
+(test-prop :input "foo(x,y,z)"
+           :expect (:vl-funcall nil "foo"
+                    (id "x")
+                    (id "y")
+                    (id "z")))
+
+(test-prop :input "foo(x and y,y,z)"
+           :expect (:inst "foo"
+                    (:prop nil <- (:and (id "x") (id "y")))
+                    (:prop nil <- (id "y"))
+                    (:prop nil <- (id "z"))))
+
+(test-prop :input "foo(x, y and z)"
+           :expect (:inst "foo"
+                    (:prop nil <- (id "x"))
+                    (:prop nil <- (:and (id "y") (id "z")))))
+
+(test-prop :input "foo(x, .a(y and z))"
+           :expect (:inst "foo"
+                    (:prop nil <- (id "x"))
+                    (:prop "a" <- (:and (id "y") (id "z")))))
+
+(test-prop :input "foo(.a(x), .b(y), .c())"
+           :expect (:inst "foo"
+                    (:prop "a" <- (id "x"))
+                    (:prop "b" <- (id "y"))
+                    (:blank "c")))
+
+(test-prop :input "foo(.a(x), .b(posedge clk or negedge resetb), .c())"
+           :expect (:inst "foo"
+                    (:prop "a" <- (id "x"))
+                    (:event "b" <- ((:vl-posedge (id "clk"))
+                                    (:vl-negedge (id "resetb"))))
+                    (:blank "c")))
+
+(test-prop :input "foo(a, b, , .c(posedge clk or negedge resetb), .d())"
+           :expect (:inst "foo"
+                    (:prop nil <- (id "a"))
+                    (:prop nil <- (id "b"))
+                    (:blank nil)
+                    (:event "c" <- ((:vl-posedge (id "clk"))
+                                    (:vl-negedge (id "resetb"))))
+                    (:blank "d")))
+
+(test-prop :input "foo.bar(a, b, c)"
+           :expect (:vl-funcall nil (:dot "foo" "bar")
+                    (id "a") (id "b") (id "c")))
+
+(test-prop :input "foo.bar(.a(1), .b(2))"
+           :expect (:inst (:dot "foo" "bar")
+                    (:prop "a" <- 1)
+                    (:prop "b" <- 2)))
+
+(test-prop :input "foo.bar(1, .b(2))"
+           :expect (:inst (:dot "foo" "bar")
+                    (:prop nil <- 1)
+                    (:prop "b" <- 2)))
+
+(test-prop :input "foo.bar(.a(posedge foo), .b(2))"
+           :expect (:inst (:dot "foo" "bar")
+                    (:event "a" <- ((:vl-posedge (id "foo"))))
+                    (:prop "b" <- 2)))
+
+(test-prop :input "foo.bar(posedge foo, .b(2))"
+           :expect (:inst (:dot "foo" "bar")
+                    (:event nil <- ((:vl-posedge (id "foo"))))
+                    (:prop "b" <- 2)))
+
+(test-prop :input "foo.bar((posedge foo or posedge bar), .b(2))"
+           :expect (:inst (:dot "foo" "bar")
+                    (:event nil <- ((:vl-posedge (id "foo"))
+                                    (:vl-posedge (id "bar"))))
+                    (:prop "b" <- 2)))
+
+(test-prop :input "foo.bar(posedge foo or posedge bar, .b(2))"
+           ;; I mean, maybe this should work, but is it a property expression
+           ;; or is it an edge expression?  what a mess
+           :successp nil)
+
+
