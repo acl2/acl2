@@ -751,6 +751,30 @@
 (test-prop :input "not (not (not good))"
            :expect (:not (:not (:not (id "good")))))
 
+(test-prop :input "not r1 until r2"
+           ;; Tricky and important.  NOT must bind more tightly than UNTIL.
+           :expect (:until
+                    (:not (id "r1"))
+                    (id "r2")))
+
+(test-prop :input "not not r1 until r2"
+           ;; Tricky and important.  NOT must bind more tightly than UNTIL.
+           :expect (:until
+                    (:not (:not (id "r1")))
+                    (id "r2")))
+
+(test-prop :input "not always r1 until r2"
+           ;; Tricky and very confusing.  Precedence:
+           ;;  NOT > UNTIL > ALWAYS
+           ;; NCVerilog accepts this and treats it as:
+           ;;  NOT (ALWAYS (UNTIL R1 R2))
+           ;; We should now be handling this just like NCVerilog thanks to
+           ;; the godawful hack.
+           :expect (:not
+                    (:always (no-range)
+                     (:until (id "r1") (id "r2")))))
+
+
 
 ;; Basic tests for strong.  Takes no range and no indices.
 ;; Unlike NOT, STRONG requires parens!
@@ -777,9 +801,13 @@
            :expect (:strong (:dist (id "good") (1 := 2))))
 
 (test-prop :input "strong(strong(good))"
-           ;; this must fail because strong can't be nested: it takes
-           ;; a sequence_expr as an argument, not a property_expr.
-           :successp nil)
+           ;; BOZO this really should fail, because strong should not be able
+           ;; to be nested, because it is supposed to take a sequence_expr as
+           ;; an argument, not a property_expr.  But because we treat sequence
+           ;; and property expressions as one construct and don't
+           ;; differentiate, we tolerate this even though the standard says
+           ;; we shouldn't.
+           :expect (:strong (:strong (id "good"))))
 
 
 ;; similar tests for weak
@@ -806,9 +834,8 @@
            :expect (:weak (:dist (id "good") (1 := 2))))
 
 (test-prop :input "weak(weak(good))"
-           ;; this must fail because weak can't be nested: it takes
-           ;; a sequence_expr as an argument, not a property_expr.
-           :successp nil)
+           ;; Like strong(strong(good)) we should fail but don't.
+           :expect (:weak (:weak (id "good"))))
 
 
 ;; basic tests for accept_on.
@@ -1084,7 +1111,7 @@
            :successp nil)
 
 (test-prop :input "case foo default 1 endcase"
-           ;; Shouldn't work because the expression needs parens.  I think.
+           ;; Shouldn't work because the expression needs parens.
            :successp nil)
 
 (test-prop :input "case (foo) default 1 endcase"
@@ -1168,16 +1195,655 @@
                     (:case nil :--> (:if (id "smoke") (id "fire") 1))))
 
 
+;; basic tests for |->
+
+(test-prop :input "|->" :successp nil)
+(test-prop :input "a |->" :successp nil)
+(test-prop :input "|-> b" :successp nil)
+
+(test-prop :input "a |-> b"
+           :expect (:-> (id "a") (id "b")))
+
+(test-prop :input "a |-> b |-> c"
+           ;; Must be right-associative.
+           :expect (:-> (id "a")
+                    (:-> (id "b")
+                     (id "c"))))
+
+;; always, etc. are lower precedence than |->
+(test-prop :input "always a |-> c"
+           :expect (:always (no-range)
+                    (:-> (id "a") (id "c"))))
+
+(test-prop :input "always [3:0] a |-> c"
+           :expect (:always (:range 3 0)
+                    (:-> (id "a") (id "c"))))
+
+(test-prop :input "a and b |-> c"
+           :expect (:-> (:and (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a |-> b and c"
+           :expect (:-> (id "a")
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "a and b |-> c and d"
+           :expect (:-> (:and (id "a") (id "b"))
+                        (:and (id "c") (id "d"))))
+
+(test-prop :input "a or b |-> c"
+           :expect (:-> (:or (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a |-> b or c"
+           :expect (:-> (id "a")
+                    (:or (id "b") (id "c"))))
+
+(test-prop :input "a or b |-> c or d"
+           :expect (:-> (:or (id "a") (id "b"))
+                        (:or (id "c") (id "d"))))
+
+
+(test-prop :input "not a |-> c"
+           ;; Very tricky.
+           ;;
+           ;; We successfully parse this, but it is not valid according
+           ;; to the SystemVerilog grammar.  The left of |-> needs to be
+           ;; a sequence expression instead of a property expression.
+           ;;
+           ;; If you just read the SystemVerilog standard, you could
+           ;; imagine that this should be parsed as
+           ;;    not (a |-> c)
+           ;; because that's a perfectly valid property expression.  So
+           ;; that is scary because it seems like perhaps VL is getting
+           ;; this wrong.
+           ;;
+           ;; However, testing with VCS and NCVerilog suggest that both
+           ;; tools treat `not a |-> c` as an "error, property expression
+           ;; where sequence expression is required".
+           ;;
+           ;; So basically we're handling this just like real commercial
+           ;; tools, and if we ever implement a strong check that you haven't
+           ;; used property expressions where sequence expressions are
+           ;; required, then that check should flag this and we should be
+           ;; doing the right thing.
+           :expect (:-> (:not (id "a"))
+                        (id "c")))
+
+(test-prop :input "a |-> b and c"
+           :expect (:-> (id "a")
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "not a |-> b and c"
+           :expect (:-> (:not (id "a"))
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "a |-> b until c"
+           :expect (:-> (id "a")
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "not a |-> b until c"
+           :expect (:-> (:not (id "a"))
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "if (foo) a |-> b"
+           ;; Tricky, but the if-else is supposed to bind least tightly,
+           ;; so I think the a |-> b should go into the true branch.
+           :expect (:if (id "foo")
+                    (:-> (id "a") (id "b"))
+                    1))
+
+(test-prop :input "if (foo) a else b |-> c"
+           ;; Tricky, but the if-else is supposed to bind least tightly,
+           ;; so I think the a |-> b should go into the false branch,
+           ;; rather than on the outside.
+           :expect (:if (id "foo")
+                    (id "a")
+                    (:-> (id "b") (id "c"))))
+
+
+;; same tests for |=>
+
+(test-prop :input "|=>" :successp nil)
+(test-prop :input "a |=>" :successp nil)
+(test-prop :input "|=> b" :successp nil)
+
+(test-prop :input "a |=> b"
+           :expect (:=> (id "a") (id "b")))
+
+(test-prop :input "a |=> b |=> c"
+           :expect (:=> (id "a")
+                    (:=> (id "b")
+                     (id "c"))))
+
+(test-prop :input "a |=> b |-> c"
+           :expect (:=> (id "a")
+                    (:-> (id "b")
+                     (id "c"))))
+
+(test-prop :input "always a |=> c"
+           :expect (:always (no-range)
+                    (:=> (id "a") (id "c"))))
+
+(test-prop :input "always [3:0] a |=> c"
+           :expect (:always (:range 3 0)
+                    (:=> (id "a") (id "c"))))
+
+(test-prop :input "a and b |=> c"
+           :expect (:=> (:and (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a |=> b and c"
+           :expect (:=> (id "a")
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "a and b |=> c and d"
+           :expect (:=> (:and (id "a") (id "b"))
+                        (:and (id "c") (id "d"))))
+
+(test-prop :input "a or b |=> c"
+           :expect (:=> (:or (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a |=> b or c"
+           :expect (:=> (id "a")
+                    (:or (id "b") (id "c"))))
+
+(test-prop :input "a or b |=> c or d"
+           :expect (:=> (:or (id "a") (id "b"))
+                        (:or (id "c") (id "d"))))
+
+(test-prop :input "not a |=> c"
+           :expect (:=> (:not (id "a"))
+                        (id "c")))
+
+(test-prop :input "a |=> b and c"
+           :expect (:=> (id "a")
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "not a |=> b and c"
+           :expect (:=> (:not (id "a"))
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "a |=> b until c"
+           :expect (:=> (id "a")
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "not a |=> b until c"
+           :expect (:=> (:not (id "a"))
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "if (foo) a |=> b"
+           :expect (:if (id "foo")
+                    (:=> (id "a") (id "b"))
+                    1))
+
+(test-prop :input "if (foo) a else b |=> c"
+           :expect (:if (id "foo")
+                    (id "a")
+                    (:=> (id "b") (id "c"))))
+
+
+;; same tests for #-#
+
+(test-prop :input "#-#" :successp nil)
+(test-prop :input "a #-#" :successp nil)
+(test-prop :input "#-# b" :successp nil)
+
+(test-prop :input "a #-# b"
+           :expect (:#-# (id "a") (id "b")))
+
+(test-prop :input "a #-# b #-# c"
+           :expect (:#-# (id "a")
+                    (:#-# (id "b")
+                     (id "c"))))
+
+(test-prop :input "a #-# b |-> c"
+           :expect (:#-# (id "a")
+                    (:-> (id "b")
+                     (id "c"))))
+
+(test-prop :input "a #-# b |=> c"
+           :expect (:#-# (id "a")
+                    (:=> (id "b")
+                     (id "c"))))
+
+(test-prop :input "a |-> b #-# c"
+           :expect (:-> (id "a")
+                    (:#-# (id "b")
+                     (id "c"))))
+
+(test-prop :input "a |=> b #-# c"
+           :expect (:=> (id "a")
+                    (:#-# (id "b")
+                     (id "c"))))
+
+(test-prop :input "always a #-# c"
+           :expect (:always (no-range)
+                    (:#-# (id "a") (id "c"))))
+
+(test-prop :input "always [3:0] a #-# c"
+           :expect (:always (:range 3 0)
+                    (:#-# (id "a") (id "c"))))
+
+(test-prop :input "a and b #-# c"
+           :expect (:#-# (:and (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a #-# b and c"
+           :expect (:#-# (id "a")
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "a and b #-# c and d"
+           :expect (:#-# (:and (id "a") (id "b"))
+                        (:and (id "c") (id "d"))))
+
+(test-prop :input "a or b #-# c"
+           :expect (:#-# (:or (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a #-# b or c"
+           :expect (:#-# (id "a")
+                    (:or (id "b") (id "c"))))
+
+(test-prop :input "a or b #-# c or d"
+           :expect (:#-# (:or (id "a") (id "b"))
+                        (:or (id "c") (id "d"))))
+
+(test-prop :input "not a #-# c"
+           :expect (:#-# (:not (id "a"))
+                        (id "c")))
+
+(test-prop :input "a #-# b and c"
+           :expect (:#-# (id "a")
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "not a #-# b and c"
+           :expect (:#-# (:not (id "a"))
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "a #-# b until c"
+           :expect (:#-# (id "a")
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "not a #-# b until c"
+           :expect (:#-# (:not (id "a"))
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "if (foo) a #-# b"
+           :expect (:if (id "foo")
+                    (:#-# (id "a") (id "b"))
+                    1))
+
+(test-prop :input "if (foo) a else b #-# c"
+           :expect (:if (id "foo")
+                    (id "a")
+                    (:#-# (id "b") (id "c"))))
+
+
+;; same tests for #=#
+
+(test-prop :input "#=#" :successp nil)
+(test-prop :input "a #=#" :successp nil)
+(test-prop :input "#=# b" :successp nil)
+
+(test-prop :input "a #=# b"
+           :expect (:#=# (id "a") (id "b")))
+
+(test-prop :input "a #=# b #=# c"
+           :expect (:#=# (id "a")
+                    (:#=# (id "b")
+                     (id "c"))))
+
+(test-prop :input "a #=# b |-> c"
+           :expect (:#=# (id "a")
+                    (:-> (id "b")
+                     (id "c"))))
+
+(test-prop :input "a #=# b |=> c"
+           :expect (:#=# (id "a")
+                    (:=> (id "b")
+                     (id "c"))))
+
+(test-prop :input "a #=# b #-# c"
+           :expect (:#=# (id "a")
+                    (:#-# (id "b")
+                     (id "c"))))
+
+(test-prop :input "a |-> b #=# c"
+           :expect (:-> (id "a")
+                    (:#=# (id "b")
+                     (id "c"))))
+
+(test-prop :input "a |=> b #=# c"
+           :expect (:=> (id "a")
+                    (:#=# (id "b")
+                     (id "c"))))
+
+(test-prop :input "a #-# b #=# c"
+           :expect (:#-# (id "a")
+                    (:#=# (id "b")
+                     (id "c"))))
+
+(test-prop :input "always a #=# c"
+           :expect (:always (no-range)
+                    (:#=# (id "a") (id "c"))))
+
+(test-prop :input "always [3:0] a #=# c"
+           :expect (:always (:range 3 0)
+                    (:#=# (id "a") (id "c"))))
+
+(test-prop :input "a and b #=# c"
+           :expect (:#=# (:and (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a #=# b and c"
+           :expect (:#=# (id "a")
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "a and b #=# c and d"
+           :expect (:#=# (:and (id "a") (id "b"))
+                        (:and (id "c") (id "d"))))
+
+(test-prop :input "a or b #=# c"
+           :expect (:#=# (:or (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a #=# b or c"
+           :expect (:#=# (id "a")
+                    (:or (id "b") (id "c"))))
+
+(test-prop :input "a or b #=# c or d"
+           :expect (:#=# (:or (id "a") (id "b"))
+                        (:or (id "c") (id "d"))))
+
+(test-prop :input "not a #=# c"
+           :expect (:#=# (:not (id "a"))
+                        (id "c")))
+
+(test-prop :input "a #=# b and c"
+           :expect (:#=# (id "a")
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "not a #=# b and c"
+           :expect (:#=# (:not (id "a"))
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "a #=# b until c"
+           :expect (:#=# (id "a")
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "not a #=# b until c"
+           :expect (:#=# (:not (id "a"))
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "if (foo) a #=# b"
+           :expect (:if (id "foo")
+                    (:#=# (id "a") (id "b"))
+                    1))
+
+(test-prop :input "if (foo) a else b #=# c"
+           :expect (:if (id "foo")
+                    (id "a")
+                    (:#=# (id "b") (id "c"))))
+
+
+
+;; basic tests for until
+
+(test-prop :input "until" :successp nil)
+(test-prop :input "a until" :successp nil)
+(test-prop :input "until b" :successp nil)
+
+(test-prop :input "a until b"
+           :expect (:until (id "a") (id "b")))
+
+(test-prop :input "a until b until c"
+           ;; Supposed to be right-associative.
+           :expect (:until (id "a")
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "(a until b) until c"
+           :expect (:until (:until (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "a until (b until c)"
+           :expect (:until (id "a")
+                    (:until (id "b") (id "c"))))
+
+(test-prop :input "not a until b"
+           :expect (:until (:not (id "a"))
+                           (id "b")))
+
+(test-prop :input "not a until not b"
+           :expect (:until (:not (id "a"))
+                    (:not (id "b"))))
+
+(test-prop :input "a iff b until c iff d"
+           :expect (:until
+                    (:iff (id "a") (id "b"))
+                    (:iff (id "c") (id "d"))))
+
+(test-prop :input "a until b s_until c implies d"
+           ;; These are supposed to be right and equal precedence, so this
+           ;; should be: a until (b s_until (c implies d))
+           :expect (:until (id "a")
+                    (:s_until (id "b")
+                     (:implies (id "c") (id "d")))))
+
+(test-prop :input "a until b s_until c iff d implies e"
+           :expect (:until (id "a")
+                    (:s_until (id "b")
+                     (:implies
+                      (:iff (id "c") (id "d"))
+                      (id "e")))))
+
+
+;; Same tests for s_until
+
+(test-prop :input "s_until" :successp nil)
+(test-prop :input "a s_until" :successp nil)
+(test-prop :input "s_until b" :successp nil)
+
+(test-prop :input "a s_until b"
+           :expect (:s_until (id "a") (id "b")))
+
+(test-prop :input "a s_until b s_until c"
+           ;; Supposed to be right-associative.
+           :expect (:s_until (id "a")
+                    (:s_until (id "b") (id "c"))))
+
+(test-prop :input "(a s_until b) s_until c"
+           :expect (:s_until (:s_until (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "a s_until (b s_until c)"
+           :expect (:s_until (id "a")
+                    (:s_until (id "b") (id "c"))))
+
+(test-prop :input "not a s_until b"
+           :expect (:s_until (:not (id "a"))
+                           (id "b")))
+
+(test-prop :input "not a s_until not b"
+           :expect (:s_until (:not (id "a"))
+                    (:not (id "b"))))
+
+(test-prop :input "a iff b s_until c iff d"
+           :expect (:s_until
+                    (:iff (id "a") (id "b"))
+                    (:iff (id "c") (id "d"))))
+
+(test-prop :input "a s_until b until c implies d"
+           ;; These are supposed to be right and equal precedence, so this
+           ;; should be: a s_until (b until (c implies d))
+           :expect (:s_until (id "a")
+                    (:until (id "b")
+                     (:implies (id "c") (id "d")))))
+
+(test-prop :input "a s_until b until c iff d implies e"
+           :expect (:s_until (id "a")
+                    (:until (id "b")
+                     (:implies
+                      (:iff (id "c") (id "d"))
+                      (id "e")))))
+
+
+;; Same tests for until_with
+
+(test-prop :input "until_with" :successp nil)
+(test-prop :input "a until_with" :successp nil)
+(test-prop :input "until_with b" :successp nil)
+
+(test-prop :input "a until_with b"
+           :expect (:until_with (id "a") (id "b")))
+
+(test-prop :input "a until_with b until_with c"
+           ;; Supposed to be right-associative.
+           :expect (:until_with (id "a")
+                    (:until_with (id "b") (id "c"))))
+
+(test-prop :input "(a until_with b) until_with c"
+           :expect (:until_with (:until_with (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "a until_with (b until_with c)"
+           :expect (:until_with (id "a")
+                    (:until_with (id "b") (id "c"))))
+
+(test-prop :input "not a until_with b"
+           :expect (:until_with (:not (id "a"))
+                           (id "b")))
+
+(test-prop :input "not a until_with not b"
+           :expect (:until_with (:not (id "a"))
+                    (:not (id "b"))))
+
+(test-prop :input "a iff b until_with c iff d"
+           :expect (:until_with
+                    (:iff (id "a") (id "b"))
+                    (:iff (id "c") (id "d"))))
+
+(test-prop :input "a until_with b until c implies d"
+           ;; These are supposed to be right and equal precedence, so this
+           ;; should be: a until_with (b until (c implies d))
+           :expect (:until_with (id "a")
+                    (:until (id "b")
+                     (:implies (id "c") (id "d")))))
+
+(test-prop :input "a until_with b until c iff d implies e"
+           :expect (:until_with (id "a")
+                    (:until (id "b")
+                     (:implies
+                      (:iff (id "c") (id "d"))
+                      (id "e")))))
+
+
+;; Same tests for s_until_with
+
+(test-prop :input "s_until_with" :successp nil)
+(test-prop :input "a s_until_with" :successp nil)
+(test-prop :input "s_until_with b" :successp nil)
+
+(test-prop :input "a s_until_with b"
+           :expect (:s_until_with (id "a") (id "b")))
+
+(test-prop :input "a s_until_with b s_until_with c"
+           ;; Supposed to be right-associative.
+           :expect (:s_until_with (id "a")
+                    (:s_until_with (id "b") (id "c"))))
+
+(test-prop :input "(a s_until_with b) s_until_with c"
+           :expect (:s_until_with (:s_until_with (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "a s_until_with (b s_until_with c)"
+           :expect (:s_until_with (id "a")
+                    (:s_until_with (id "b") (id "c"))))
+
+(test-prop :input "not a s_until_with b"
+           :expect (:s_until_with (:not (id "a"))
+                           (id "b")))
+
+(test-prop :input "not a s_until_with not b"
+           :expect (:s_until_with (:not (id "a"))
+                    (:not (id "b"))))
+
+(test-prop :input "a iff b s_until_with c iff d"
+           :expect (:s_until_with
+                    (:iff (id "a") (id "b"))
+                    (:iff (id "c") (id "d"))))
+
+(test-prop :input "a s_until_with b until c implies d"
+           ;; These are supposed to be right and equal precedence, so this
+           ;; should be: a s_until_with (b until (c implies d))
+           :expect (:s_until_with (id "a")
+                    (:until (id "b")
+                     (:implies (id "c") (id "d")))))
+
+(test-prop :input "a s_until_with b until c iff d implies e"
+           :expect (:s_until_with (id "a")
+                    (:until (id "b")
+                     (:implies
+                      (:iff (id "c") (id "d"))
+                      (id "e")))))
+
+
+;; Same tests for implies
+
+(test-prop :input "implies" :successp nil)
+(test-prop :input "a implies" :successp nil)
+(test-prop :input "implies b" :successp nil)
+
+(test-prop :input "a implies b"
+           :expect (:implies (id "a") (id "b")))
+
+(test-prop :input "a implies b implies c"
+           ;; Supposed to be right-associative.
+           :expect (:implies (id "a")
+                    (:implies (id "b") (id "c"))))
+
+(test-prop :input "(a implies b) implies c"
+           :expect (:implies (:implies (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "a implies (b implies c)"
+           :expect (:implies (id "a")
+                    (:implies (id "b") (id "c"))))
+
+(test-prop :input "not a implies b"
+           :expect (:implies (:not (id "a"))
+                           (id "b")))
+
+(test-prop :input "not a implies not b"
+           :expect (:implies (:not (id "a"))
+                    (:not (id "b"))))
+
+(test-prop :input "a iff b implies c iff d"
+           :expect (:implies
+                    (:iff (id "a") (id "b"))
+                    (:iff (id "c") (id "d"))))
+
+(test-prop :input "a implies b until c implies d"
+           ;; These are supposed to be right and equal precedence, so this
+           ;; should be: a implies (b until (c implies d))
+           :expect (:implies (id "a")
+                    (:until (id "b")
+                     (:implies (id "c") (id "d")))))
+
+(test-prop :input "a implies b until c iff d implies e"
+           :expect (:implies (id "a")
+                    (:until (id "b")
+                     (:implies
+                      (:iff (id "c") (id "d"))
+                      (id "e")))))
+
+
 ;; basic tests for or
 
-(test-prop :input "or"
-           :successp nil)
-
-(test-prop :input "a or"
-           :successp nil)
-
-(test-prop :input "or b"
-           :successp nil)
+(test-prop :input "or" :successp nil)
+(test-prop :input "a or" :successp nil)
+(test-prop :input "or b" :successp nil)
 
 (test-prop :input "a or b"
            :expect (:or (id "a") (id "b")))
@@ -1202,34 +1868,14 @@
                         (:not (id "b"))))
 
 (test-prop :input "(not a) or not b"
+           ;; This is a very tricky case that failed back when we tried to keep
+           ;; sequence_expr and property_expr separate, because the
+           ;; sequence-level OR thought that it should eat the (not b), but
+           ;; that was a property-level expression.  See notes/properties.txt
+           ;; for more notes about this.  Fortunately we now just have one level
+           ;; of and/or, so this works easily.
            :expect (:or (:not (id "a"))
                         (:not (id "b"))))
-
-(include-book "../../../mlib/print-warnings")
-(trace-parser vl-parse-property-expr-fn)
-(trace-parser vl-parse-impl-property-expr-fn)
-(trace-parser vl-parse-until-property-expr-fn)
-(trace-parser vl-parse-iff-property-expr-fn)
-(trace-parser vl-parse-or-property-expr-fn)
-(trace-parser vl-parse-and-property-expr-fn)
-(trace-parser vl-parse-not-property-expr-fn)
-(trace-parser vl-parse-strength-property-expr-fn)
-(trace-parser vl-parse-sequence-expr-fn)
-(trace-parser vl-parse-or-sequence-expr-fn)
-(trace-parser vl-parse-and-sequence-expr-fn)
-(trace-parser vl-parse-intersect-sequence-expr-fn)
-(trace-parser vl-parse-within-sequence-expr-fn)
-(trace-parser vl-parse-throughout-sequence-expr-fn)
-(trace-parser vl-parse-delay-sequence-expr-fn)
-(trace-parser vl-parse-delay-sequence-expr-tail-fn)
-(trace-parser vl-parse-firstmatch-sequence-expr-fn)
-(trace-parser vl-parse-repeat-sequence-expr-fn)
-(trace-parser vl-parse-assign-sequence-expr-fn)
-(trace-parser vl-parse-instance-property-expr-fn)
-
-
-
-
 
 (test-prop :input "not a or (not b)"
            :expect (:or (:not (id "a"))
@@ -1239,47 +1885,535 @@
            :expect (:or (:not (id "a"))
                         (:not (id "b"))))
 
+(test-prop :input "always a or b"
+           :expect (:always (no-range) (:or (id "a") (id "b"))))
+
+(test-prop :input "always a or not b"
+           :expect (:always (no-range) (:or (id "a") (:not (id "b")))))
+
+
+;; basic tests for and
+
+(test-prop :input "and" :successp nil)
+(test-prop :input "a and" :successp nil)
+(test-prop :input "and b" :successp nil)
+
+(test-prop :input "a and b"
+           :expect (:and (id "a") (id "b")))
+
+(test-prop :input "a and b and c"
+           :expect (:and (:and (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "(a and b) and c"
+           :expect (:and (:and (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "a and (b and c)"
+           :expect (:and (id "a")
+                    (:and (id "b") (id "c"))))
+
+(test-prop :input "(not a) and (not b)"
+           :expect (:and (:not (id "a"))
+                         (:not (id "b"))))
+
+(test-prop :input "(not a) and not b"
+           :expect (:and (:not (id "a"))
+                         (:not (id "b"))))
+
+(test-prop :input "not a and (not b)"
+           :expect (:and (:not (id "a"))
+                         (:not (id "b"))))
+
+(test-prop :input "not a and not b"
+           :expect (:and (:not (id "a"))
+                         (:not (id "b"))))
+
+(test-prop :input "a and b or c"
+           :expect (:or (:and (id "a") (id "b"))
+                        (id "c")))
+
+(test-prop :input "a or b and c"
+           :expect (:or (id "a")
+                        (:and (id "b") (id "c"))))
+
+(test-prop :input "a or not b and c"
+           :expect (:or (id "a")
+                        (:and (:not (id "b")) (id "c"))))
+
+(test-prop :input "not a or not b and c"
+           :expect (:or (:not (id "a"))
+                        (:and (:not (id "b")) (id "c"))))
+
+(test-prop :input "not a or not b and not c"
+           :expect (:or (:not (id "a"))
+                        (:and (:not (id "b")) (:not (id "c")))))
+
+(test-prop :input "not a or not b dist {3 := 5} and not c"
+           :expect (:or (:not (id "a"))
+                        (:and (:not (:dist (id "b") (3 := 5)))
+                         (:not (id "c")))))
+
+(test-prop :input "always a and b"
+           :expect (:always (no-range) (:and (id "a") (id "b"))))
+
+(test-prop :input "always a and not b"
+           :expect (:always (no-range) (:and (id "a") (:not (id "b")))))
+
+(test-prop :input "always a or not always b or not c"
+           :expect (:always (no-range)
+                    (:or (id "a")
+                     (:not (:always (no-range)
+                            (:or (id "b")
+                             (:not (id "c"))))))))
+
+
+;; basic tests for intersect
+;; higher precedence than and/or/not, lower precedence than within/throughout
+
+(test-prop :input "intersect" :successp nil)
+(test-prop :input "a intersect" :successp nil)
+(test-prop :input "intersect b" :successp nil)
+
+(test-prop :input "a intersect b"
+           :expect (:intersect (id "a") (id "b")))
+
+(test-prop :input "a intersect b intersect c"
+           ;; supposed to be left-associative
+           :expect (:intersect (:intersect (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "(a intersect b) intersect c"
+           :expect (:intersect (:intersect (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a intersect (b intersect c)"
+           :expect (:intersect (id "a")
+                    (:intersect (id "b") (id "c"))))
+
+(test-prop :input "a intersect b within c"
+           :expect (:intersect (id "a")
+                    (:within (id "b") (id "c"))))
+
+(test-prop :input "a within b intersect c"
+           :expect (:intersect (:within (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a intersect b and c"
+           :expect (:and (:intersect (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a intersect b and c intersect d"
+           :expect (:and (:intersect (id "a") (id "b"))
+                    (:intersect (id "c") (id "d"))))
+
+(test-prop :input "a intersect b or c"
+           :expect (:or (:intersect (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a intersect b or c intersect d"
+           :expect (:or (:intersect (id "a") (id "b"))
+                        (:intersect (id "c") (id "d"))))
+
+(test-prop :input "always a intersect b"
+           :expect (:always (no-range) (:intersect (id "a") (id "b"))))
+
+(test-prop :input "not a intersect b"
+           :expect (:not (:intersect (id "a") (id "b"))))
+
+(test-prop :input "(not a) intersect (not b)"
+           :expect (:intersect (:not (id "a")) (:not (id "b"))))
+
+(test-prop :input "(not a) intersect not b"
+           ;; BOZO?  This is not permitted because an isect_se is looking for
+           ;; only a within_se afterward.  NCV also produces a parse error here.
+           ;; VCS produces a nicer message explaining the problem.  It's probably
+           ;; OK for this to just be a parse error.
+           :successp nil)
+
+(test-prop :input "not a intersect c and d"
+           :expect (:and (:not (:intersect (id "a") (id "c")))
+                    (id "d")))
+
+(test-prop :input "not a intersect c and not d"
+           :expect (:and (:not (:intersect (id "a") (id "c")))
+                    (:not (id "d"))))
+
+(test-prop :input "always not a intersect c and not d"
+           :expect (:always (no-range)
+                    (:and (:not (:intersect (id "a") (id "c")))
+                     (:not (id "d")))))
 
 
 
+;; basic tests for within
+;; higher precedence than intersect, lower than throughout
 
-;; ---------
+(test-prop :input "within" :successp nil)
+(test-prop :input "a within" :successp nil)
+(test-prop :input "within b" :successp nil)
 
-(test-prop :input "not r1 until r2"
-           ;; Tricky and important.  NOT must bind more tightly than UNTIL.
-           :expect (:until
-                    (:not (id "r1"))
-                    (id "r2")))
+(test-prop :input "a within b"
+           :expect (:within (id "a") (id "b")))
 
-(test-prop :input "not not r1 until r2"
-           ;; Tricky and important.  NOT must bind more tightly than UNTIL.
-           :expect (:until
-                    (:not (:not (id "r1")))
-                    (id "r2")))
+(test-prop :input "a within b within c"
+           ;; supposed to be left-associative
+           :expect (:within (:within (id "a") (id "b"))
+                    (id "c")))
 
-(test-prop :input "not always r1 until r2"
-           ;; Tricky and very confusing.  Precedence:
-           ;;  NOT > UNTIL > ALWAYS
-           ;; NCVerilog accepts this and treats it as:
-           ;;  NOT (ALWAYS (UNTIL R1 R2))
-           ;; We should now be handling this just like NCVerilog thanks to
-           ;; the godawful hack.
-           :expect (:not
-                    (:always (no-range)
-                     (:until (id "r1") (id "r2")))))
+(test-prop :input "(a within b) within c"
+           :expect (:within (:within (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a within (b within c)"
+           :expect (:within (id "a")
+                    (:within (id "b") (id "c"))))
+
+(test-prop :input "a within b throughout c"
+           :expect (:within (id "a")
+                    (:throughout (id "b") (id "c"))))
+
+(test-prop :input "a throughout b within c"
+           :expect (:within (:throughout (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a within b and c"
+           :expect (:and (:within (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a within b and c within d"
+           :expect (:and (:within (id "a") (id "b"))
+                    (:within (id "c") (id "d"))))
+
+(test-prop :input "a within b or c"
+           :expect (:or (:within (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a within b or c within d"
+           :expect (:or (:within (id "a") (id "b"))
+                        (:within (id "c") (id "d"))))
+
+(test-prop :input "always a within b"
+           :expect (:always (no-range) (:within (id "a") (id "b"))))
+
+(test-prop :input "not a within b"
+           :expect (:not (:within (id "a") (id "b"))))
+
+(test-prop :input "(not a) within (not b)"
+           :expect (:within (:not (id "a")) (:not (id "b"))))
+
+(test-prop :input "(not a) within not b"
+           ;; BOZO?  This is not permitted because an isect_se is looking for
+           ;; only a within_se afterward.  NCV also produces a parse error here.
+           ;; VCS produces a nicer message explaining the problem.  It's probably
+           ;; OK for this to just be a parse error.
+           :successp nil)
+
+(test-prop :input "not a within c and d"
+           :expect (:and (:not (:within (id "a") (id "c")))
+                    (id "d")))
+
+(test-prop :input "not a within c and not d"
+           :expect (:and (:not (:within (id "a") (id "c")))
+                    (:not (id "d"))))
+
+(test-prop :input "always not a within c and not d"
+           :expect (:always (no-range)
+                    (:and (:not (:within (id "a") (id "c")))
+                     (:not (id "d")))))
+
+
+;; basic tests for throughout
+;; higher precedence than within, lower than ##, but right associative
+;; and the lhs should be an expression_or_dist, so pretty weird
+
+(test-prop :input "throughout" :successp nil)
+(test-prop :input "a throughout" :successp nil)
+(test-prop :input "throughout b" :successp nil)
+
+(test-prop :input "a throughout b"
+           :expect (:throughout (id "a") (id "b")))
+
+(test-prop :input "a throughout b throughout c"
+           ;; supposed to be right-associative
+           :expect (:throughout (id "a")
+                    (:throughout (id "b") (id "c"))))
+
+(test-prop :input "a throughout b throughout c throughout d"
+           :expect (:throughout (id "a")
+                    (:throughout (id "b")
+                     (:throughout (id "c")
+                      (id "d")))))
+
+(test-prop :input "a throughout c ##1 d"
+           :expect (:throughout (id "a")
+                    (:then (id "c") (:range 1 1) (id "d"))))
+
+(test-prop :input "a throughout c ##[*] d"
+           :expect (:throughout (id "a")
+                    (:then (id "c") (:range 0 (key :vl-$)) (id "d"))))
+
+(test-prop :input "a throughout (b throughout c)"
+           :expect (:throughout (id "a")
+                    (:throughout (id "b") (id "c"))))
+
+(test-prop :input "(a throughout b) throughout c"
+           ;; BOZO?  Both VCS and NCV provide a nice error that says the LHS is
+           ;; invalid for a throughout operator.  We just stop parsing after (a
+           ;; throughout b), which should lead to a parse error when we parse
+           ;; whole property...endproperty style stuff.  This is probably OK.
+           :expect (:throughout (id "a") (id "b"))
+           :extra "throughout c")
+
+(test-prop :input "(not a) throughout (not b)"
+           ;; Similar
+           :expect (:not (id "a"))
+           :extra "throughout (not b)")
+
+(test-prop :input "a ##1 b throughout c"
+           ;; Similar
+           :expect (:then (id "a") (:range 1 1) (id "b"))
+           :extra "throughout c")
+
+(test-prop :input "a + b * c dist {3:=5} throughout b"
+           ;; But an expression_or_dist is ok.
+           :expect (:throughout
+                    (:dist (:vl-binary-plus nil (id "a")
+                            (:vl-binary-times nil (id "b") (id "c")))
+                           (3 := 5))
+                    (id "b")))
+
+(test-prop :input "a throughout b and c"
+           :expect (:and (:throughout (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a throughout b and c throughout d"
+           :expect (:and (:throughout (id "a") (id "b"))
+                    (:throughout (id "c") (id "d"))))
+
+(test-prop :input "a throughout b or c"
+           :expect (:or (:throughout (id "a") (id "b"))
+                    (id "c")))
+
+(test-prop :input "a throughout b or c throughout d"
+           :expect (:or (:throughout (id "a") (id "b"))
+                        (:throughout (id "c") (id "d"))))
+
+(test-prop :input "always a throughout b"
+           :expect (:always (no-range) (:throughout (id "a") (id "b"))))
+
+(test-prop :input "not a throughout b"
+           :expect (:not (:throughout (id "a") (id "b"))))
+
+(test-prop :input "not a throughout c and d"
+           :expect (:and (:not (:throughout (id "a") (id "c")))
+                    (id "d")))
+
+(test-prop :input "not a throughout c and not d"
+           :expect (:and (:not (:throughout (id "a") (id "c")))
+                         (:not (id "d"))))
+
+(test-prop :input "always not a throughout c and not d"
+           :expect (:always (no-range)
+                    (:and (:not (:throughout (id "a") (id "c")))
+                          (:not (id "d")))))
+
+
+;; basic tests for ##
+;; higher precedence than throughout, within, intersect, and/or, etc.
+;; lower precedence than [*...], [=...], etc.  left associative.
+
+(test-prop :input "##1" :successp nil)
+(test-prop :input "a ##1" :successp nil)
+
+(test-prop :input "a ##1 b"
+           :expect (:then (id "a") (:range 1 1) (id "b")))
+
+(test-prop :input "a ##1 b ##2 c"
+           ;; left associative
+           :expect (:then (:then (id "a") (:range 1 1) (id "b"))
+                    (:range 2 2)
+                    (id "c")))
+
+(test-prop :input "(a ##1 b) ##2 c"
+           :expect (:then (:then (id "a") (:range 1 1) (id "b"))
+                    (:range 2 2)
+                    (id "c")))
+
+(test-prop :input "##1 a"
+           ;; special -- can start with implicit 1
+           :expect (:then 1 (:range 1 1) (id "a")))
+
+(test-prop :input "##1 b ##2 c"
+           :expect (:then (:then 1 (:range 1 1) (id "b"))
+                    (:range 2 2)
+                    (id "c")))
+
+(test-prop :input "(##1 b) ##2 c"
+           :expect (:then (:then 1 (:range 1 1) (id "b"))
+                    (:range 2 2)
+                    (id "c")))
+
+(test-prop :input "##1 (b ##2 c)"
+           :expect (:then 1
+                    (:range 1 1)
+                    (:then (id "b") (:range 2 2) (id "c"))))
+
+(test-prop :input "##1 b ##2 c"
+           :expect (:then (:then 1 (:range 1 1) (id "b"))
+                    (:range 2 2)
+                    (id "c")))
+
+(test-prop :input "a ##1 not b"
+           ;; This isn't allowed because not b isn't a sequence expr.
+           :successp nil)
+
+(test-prop :input "a ##1 always b"
+           :successp nil)
+
+(test-prop :input "a ##1 (b and c)"
+           ;; This shouldn't really be allowed but we expect to flag
+           ;; it later (property where sequence expected)
+           :expect (:then (id "a") (:range 1 1) (:and (id "b") (id "c"))))
+
+(test-prop :input "a ##1 b and c"
+           ;; This shouldn't really be allowed but we expect to flag
+           ;; it later (property where sequence expected)
+           :expect (:and (:then (id "a") (:range 1 1) (id "b"))
+                    (id "c")))
+
+
+;; basic tests of repetitions
+
+(test-prop :input "a[*]"
+           :expect (:repeat (id "a")
+                    (:[*] 0 (key :vl-$))))
+
+(test-prop :input "a[*3]"
+           :expect (:repeat (id "a") (:[*] 3)))
+
+(test-prop :input "a[*3:4]"
+           :expect (:repeat (id "a") (:[*] 3 4)))
+
+(test-prop :input "a[=3]"
+           :expect (:repeat (id "a") (:[=] 3)))
+
+(test-prop :input "a[=3:4]"
+           :expect (:repeat (id "a") (:[=] 3 4)))
+
+(test-prop :input "a[->3]"
+           :expect (:repeat (id "a") (:[->] 3)))
+
+(test-prop :input "a[->3:4]"
+           :expect (:repeat (id "a") (:[->] 3 4)))
+
+(test-prop :input "a ##1 b[*]"
+           :expect (:then (id "a") (:range 1 1)
+                    (:repeat (id "b") (:[*] 0 (key :vl-$)))))
+
+(test-prop :input "(a ##1 b)[*]"
+           :expect (:repeat
+                    (:then (id "a") (:range 1 1) (id "b"))
+                    (:[*] 0 (key :vl-$))))
+
+(test-prop :input "(a)[*]"
+           :expect (:repeat (id "a")
+                    (:[*] 0 (key :vl-$))))
+
+(test-prop :input "(a)[* 3:4]"
+           :expect (:repeat (id "a") (:[*] 3 4)))
+
+(test-prop :input "a[* 3:4][* 5:6]"
+           :expect (:repeat (id "a") (:[*] 3 4))
+           :extra "[ * 5 : 6 ]")
+
+(test-prop :input "(a[* 3:4])[* 5:6]"
+           :expect (:repeat (:repeat (id "a") (:[*] 3 4))
+                    (:[*] 5 6)))
+
+(test-prop :input "not a[*]"
+           :expect (:not (:repeat (id "a")
+                          (:[*] 0 (key :vl-$)))))
+
+(test-prop :input "always a and b[*]"
+           :expect (:always (no-range)
+                    (:and (id "a")
+                     (:repeat (id "b") (:[*] 0 (key :vl-$))))))
+
+(test-prop :input "always a ##1 b[*]"
+           :expect (:always (no-range)
+                    (:then (id "a") (:range 1 1)
+                     (:repeat (id "b") (:[*] 0 (key :vl-$))))))
+
+
+;; basic tests for sequence match item assignment stuff
+
+(test-prop :input "(a,b++)"
+           :expect (:assign (id "a")
+                    (:vl-unary-postinc nil (id "b"))))
+
+(test-prop :input "(a,b++,c++)"
+           :expect (:assign (id "a")
+                    (:vl-unary-postinc nil (id "b"))
+                    (:vl-unary-postinc nil (id "c"))))
+
+(test-prop :input "(a,++b,c=3)"
+           :expect (:assign (id "a")
+                    (:vl-unary-preinc nil (id "b"))
+                    (:vl-binary-assign nil (id "c") 3)))
+
+(test-prop :input "(a,++b,c*=3)"
+           :expect (:assign (id "a")
+                    (:vl-unary-preinc nil (id "b"))
+                    (:vl-binary-timesassign nil (id "c") 3)))
+
+(test-prop :input "(always a,++b,c*=3)"
+           :expect (:assign (:always (no-range) (id "a"))
+                    (:vl-unary-preinc nil (id "b"))
+                    (:vl-binary-timesassign nil (id "c") 3)))
+
+(test-prop :input "(always a,++b,c*=3)[*3:4]"
+           :expect (:repeat (:assign (:always (no-range) (id "a"))
+                             (:vl-unary-preinc nil (id "b"))
+                             (:vl-binary-timesassign nil (id "c") 3))
+                    (:[*] 3 4)))
+
+(test-prop :input "(always a,b/=2,foo(c,d))[*3:4]"
+           :expect (:repeat (:assign (:always (no-range) (id "a"))
+                             (:vl-binary-divassign nil (id "b") 2)
+                             (:vl-funcall nil "foo" (id "c") (id "d")))
+                    (:[*] 3 4)))
+
+(test-prop :input "(a, b + c)" ;; not a valid assignment/increment
+           :successp nil)
 
 
 
+;; basic tests of clocking event stuff
 
+(test-prop :input "@(posedge clk) a"
+           :expect (:clock ((:vl-posedge (id "clk")))
+                    (id "a")))
 
+(test-prop :input "@(posedge clk or edge clk2) a"
+           :expect (:clock ((:vl-posedge (id "clk"))
+                            (:vl-edge (id "clk2")))
+                    (id "a")))
 
-;; -----
+(test-prop :input "@(posedge clk or edge clk2) a or b"
+           :expect (:clock ((:vl-posedge (id "clk"))
+                            (:vl-edge (id "clk2")))
+                    (:or (id "a") (id "b"))))
 
+(test-prop :input "@(posedge clk or edge clk2) a until b"
+           :expect (:clock ((:vl-posedge (id "clk"))
+                            (:vl-edge (id "clk2")))
+                    (:until (id "a") (id "b"))))
 
-
-(test-prop :input "not @(clk) r1 until r2"
-           :expect (:not
-                    (:always (no-range)
-                     (:until (id "r1") (id "r2")))))
+(test-prop :input "@(posedge clk or edge clk2) not always a until b"
+           :expect (:clock ((:vl-posedge (id "clk"))
+                            (:vl-edge (id "clk2")))
+                    (:not (:always (no-range)
+                           (:until (id "a") (id "b"))))))
 
 

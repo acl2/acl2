@@ -191,22 +191,102 @@ module top ;
 
 
 
-  assert property (@(posedge clk) // 194
-      not not r1 until r2
+  // assert property (@(posedge clk) // 194
+  //     not not r1 until r2
+  // );
+
+  // assert property (@(posedge clk) // 198
+  //     not (not r1 until r2)
+  // );
+
+  // assert property (@(posedge clk) // 202
+  //     (not not r1) until r2
+  // );
+
+
+  // This is tricky because (not x) |-> y shouldn't even parse.
+  //  - NCV gives an error: expected sequence expression as operand to sequence
+  // operator.
+  //  - VCS parses it but gives an error: property operator in sequence context.
+  // So that's actually good, because it means neither one parses it as
+  //   not (r1 |-> 0)
+  // which would be a perfectly valid way to parse it, I think, but which
+  // would be difficult to implement without excessive backtracking.
+  // assert property (@(posedge clk)
+  //        not r1 |-> 0
+  // );
+
+  // Just to make sure, let's try the other |->-like operators, which also
+  // require sequence expressions.
+
+  // VCS and NCV both reject this as expected.
+  // assert property (@(posedge clk)
+  //        not r1 |=> 0
+  // );
+
+  // NCV rejects this as expected, VCS doesn't seem to even understand #-#
+  // assert property (@(posedge clk)
+  //        not r1 #-# 0
+  // );
+
+  // NCV rejects this as expected, VCS doesn't seem to even understand #-#
+  // assert property (@(posedge clk)
+  //        not r1 #=# 0
+  // );
+
+
+  // Heh, this crashes VCS J-2014.12-SP3-1
+  // Starting vcs inline pass...
+  //    *** glibc detected *** /Server/vcs/J-2014.12-SP3-1/linux/bin/vcs1: malloc(): memory corruption: 0x55569008 ***
+  //    *** glibc detected *** /Server/vcs/J-2014.12-SP3-1/linux/bin/vcs1: malloc(): memory corruption: 0x55569008 ***
+  //
+  // NCVerilog accepts it and it appears to parse as expected (shown below)
+  // assert property (@(posedge clk)
+  //     if (r1) r2 |-> 0
+  // );
+
+  // // Expected parse for the above:
+  // assert property (@(posedge clk)
+  //     if (r1) (r2 |-> 0) else 1
+  // );
+
+  // // Alternate possibility, not expected: not tolerated by NCVerilog,
+  // // so I think we have this right.
+  // assert property (@(posedge clk)
+  //     ((if (r1) r2) |-> 0)
+  // );
+
+  // NCVerilog complains that not r2 is an invalid expression primary
+  // VCS complains that not isn't allowed in a sequence context.
+  // assert property (@(posedge clk)
+  //     r1 intersect not r2
+  // );
+
+  // Same here
+  // assert property (@(posedge clk)
+  //     r1 within not r2
+  // );
+
+  // assert property (@(posedge clk)
+  //     (r1 throughout r2) throughout r2
+  // );
+
+  // assert property  (@(posedge clk)
+  //     r1[*]
+  // );
+
+  // NCV says this is a parse error, VCS crashes with memory corruption
+  // assert property  (@(posedge clk)
+  //     r1[*3:4][*3:4]
+  // );
+
+  // NCV thinks this is OK, VCS crashes with memory corruption
+  assert property  (@(posedge clk)
+      (r1[*3:4])[*3:4]
   );
 
-  assert property (@(posedge clk) // 198
-      not (not r1 until r2)
-  );
-
-  assert property (@(posedge clk) // 202
-      (not not r1) until r2
-  );
 
 
-
-
-  
 
 
 

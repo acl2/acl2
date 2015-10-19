@@ -768,6 +768,16 @@ exists.</p>"
     :otherwise nil))
 
 
+(define vl-plausible-start-of-range-p (&key (tokstream 'tokstream))
+  ;; To support sequences/properties: look for a leading open bracket
+  ;; but do NOT match things like [*...], [=...] and [->...], which
+  ;; are repetitions instead of parts of expressions.
+  :enabled t
+  (and (vl-is-token? :vl-lbrack)
+       (not (vl-lookahead-is-some-token?
+             '(:vl-times :vl-arrow :vl-equalsign)
+             (cdr (vl-tokstream->tokens))))))
+
 (defparsers parse-expressions
   :parents (parser)
   :short "Parser for Verilog and SystemVerilog expressions."
@@ -1589,7 +1599,7 @@ identifier, so we convert it into a hidpiece.</p>"
   (defparser vl-parse-0+-bracketed-expressions ()
     :short "Match @('{ '[' expression ']') }'), return an expression list."
     :measure (two-nats-measure (vl-tokstream-measure) 10)
-    (b* (((unless (vl-is-token? :vl-lbrack))
+    (b* (((unless (vl-plausible-start-of-range-p))
           ;; For termination, this needs to be a ruler.
           (mv nil nil tokstream))
 
@@ -1628,7 +1638,7 @@ identifier, so we convert it into a hidpiece.</p>"
     (seq tokstream
           (hid :s= (vl-parse-hierarchical-identifier recursivep))
           (bexprs :w= (vl-parse-0+-bracketed-expressions))
-          (when (vl-is-token? :vl-lbrack)
+          (when (vl-plausible-start-of-range-p)
             (:= (vl-match))
             (range := (vl-parse-range-expression))
             (:= (vl-match-token :vl-rbrack)))
@@ -2227,7 +2237,7 @@ identifier, so we convert it into a hidpiece.</p>"
   (defparser vl-parse-open-value-range ()
     :measure (two-nats-measure (vl-tokstream-measure) 310)
     (seq tokstream
-         (when (vl-is-token? :vl-lbrack)
+         (when (vl-plausible-start-of-range-p)
            ;; We want [ a : b ] here
            (:= (vl-match))
            (a :w= (vl-parse-expression))
@@ -3197,7 +3207,7 @@ identifier, so we convert it into a hidpiece.</p>"
   :fails gracefully
   :count strong-on-value
   (seq tokstream
-       (unless (vl-is-token? :vl-lbrack)
+       (unless (vl-plausible-start-of-range-p)
          (return nil))
        (first := (vl-parse-range))
        (rest := (vl-parse-0+-ranges))

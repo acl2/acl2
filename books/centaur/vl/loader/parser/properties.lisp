@@ -441,11 +441,10 @@ have</p>
 
   ;; One difference between sequence_match_item and expression is that
   ;; operator_assignment has to be in parens when used in expression, but need
-  ;; not be in parens in a sequence_match_item.  Fortunately our expression
-  ;; parsing code doesn't currently enforce that restriction.  So for now I think
-  ;; the most expedient thing to do is just:
+  ;; not be in parens in a sequence_match_item.  So for now I think the most
+  ;; expedient thing to do is just:
   ;;
-  ;;  1. Try to parse an ordinary expression.
+  ;;  1. Try to parse a mintypmax exprssion.
   ;;  2. Check to see if it was a valid sequence_match_item.
   ;;
   ;; In the future we might want to make this more restrictive and generally
@@ -453,7 +452,7 @@ have</p>
   ;; supports, etc.
 
   (seq tokstream
-       (expr := (vl-parse-expression))
+       (expr := (vl-parse-mintypmax-expression))
        (when (and expr
                   (vl-expr-case expr
                     (:vl-call t)
@@ -670,6 +669,7 @@ expression in the parens without any edge specifier.</li>
                  (otherwise (progn$ (impossible) :vl-prop-thin-implies))))))
 
 
+
 (defparsers parse-property-expr
   :verify-guards nil
   :flag-local nil
@@ -809,33 +809,23 @@ expression in the parens without any edge specifier.</li>
     :short "Match @('impl_pe')."
     :measure (two-nats-measure (vl-tokstream-measure) 190)
     ;; ((Right Associative))
-    ;; impl_pe ::= sequence_expr '|->' impl_pe
-    ;;           | sequence_expr '|=>' impl_pe
-    ;;           | sequence_expr '#-#' impl_pe
-    ;;           | sequence_expr '#=#' impl_pe
+    ;; impl_pe ::= until_pe '|->' impl_pe
+    ;;           | until_pe '|=>' impl_pe
+    ;;           | until_pe '#-#' impl_pe
+    ;;           | until_pe '#=#' impl_pe
     ;;           | until_pe
-    (b* ((backup (vl-tokstream-save))
-         ;; We do this by backtracking because the sequence_expr on the left is
-         ;; so restricted.
-         ((mv err left tokstream)
-          (seq tokstream
-               (left :s= (vl-parse-sequence-expr)) ;; Subtle: we need to use :s= since we're going to recur on the result.
-               (return left)))
-         ((when (and (not err)
-                     (vl-is-some-token? '(:vl-bararrow    ;; |->
-                                          :vl-bareqarrow  ;; |=>
-                                          :vl-pounddash   ;; #-#
-                                          :vl-poundequal  ;; #=#
-                                          ))))
-          ;; Looks like we're good.
-          (seq tokstream
-               (op := (vl-parse-impl-prop-expr-op))
-               (right := (vl-parse-impl-property-expr))
-               (return (make-vl-propbinary :op op :left left :right right))))
-         ;; Else we didn't see one of these operators, so keep looking for
-         ;; property expressions instead of sequence expressions.
-         (tokstream (vl-tokstream-restore backup)))
-      (vl-parse-until-property-expr)))
+    (seq tokstream
+         (left :s= (vl-parse-until-property-expr))
+         (when (vl-is-some-token? '(:vl-bararrow    ;; |->
+                                    :vl-bareqarrow  ;; |=>
+                                    :vl-pounddash   ;; #-#
+                                    :vl-poundequal  ;; #=#
+                                    ))
+           (op := (vl-parse-impl-prop-expr-op))
+           (right := (vl-parse-impl-property-expr))
+           (return (make-vl-propbinary :op op :left left :right right)))
+         ;; Else, just the initial until_pe.
+         (return left)))
 
   (defparser vl-parse-until-property-expr ()
     :short "Match @('until_pe')."
@@ -969,79 +959,20 @@ expression in the parens without any edge specifier.</li>
     :short "Match @('strength_pe')."
     :measure (two-nats-measure (vl-tokstream-measure) 130)
     (cond ((vl-is-some-token? '(:vl-kwd-strong :vl-kwd-weak))
-           ;; strength_pe ::= 'strong' '(' sequence_expr ')'
-           ;;               | 'weak'   '(' sequence_expr ')'
+           ;; strength_pe ::= 'strong' '(' property_expr ')'
+           ;;               | 'weak'   '(' property_expr ')'
            (seq tokstream
                 (op := (vl-match))
                 (:= (vl-match-token :vl-lparen))
-                (seq := (vl-parse-sequence-expr))
+                (seq := (vl-parse-property-expr))
                 (:= (vl-match-token :vl-rparen))
                 (return (make-vl-propunary :op (case (vl-token->type op)
                                                  (:vl-kwd-strong :vl-prop-strong)
                                                  (:vl-kwd-weak   :vl-prop-weak))
                                            :arg seq))))
           (t
-           ;; strength_pe ::= sequence_expr
-           (vl-parse-sequence-expr))))
-
-
-;; ----------- SEQUENCES ----------------
-
-  (defparser vl-parse-sequence-expr ()
-    :short "Match @('sequence_expression  ::= [clocking_event] or_se')."
-    :measure (two-nats-measure (vl-tokstream-measure) 100)
-    (seq tokstream
-         (when (vl-is-token? :vl-atsign)
-           ;; I don't think there's any other case where we can have an @ sign
-           ;; here, so this should definitely be a clocking event.
-           (trigger := (vl-parse-clocking-event))
-           (then    := (vl-parse-or-sequence-expr))
-           (return (make-vl-propclock :trigger trigger :then then)))
-         ;; Else no clocking event, so just parse the or_se.
-         (then := (vl-parse-or-sequence-expr))
-         (return then)))
-
-
-  ;; --- or_se ::= and_se { 'or' and_se } ((Left Associative))
-
-  (defparser vl-parse-or-sequence-expr ()
-    :short "Parse @('or_se ::= and_se { 'or' and_se }'), left associative."
-    :measure (two-nats-measure (vl-tokstream-measure) 95)
-    (seq tokstream
-         (mixed := (vl-parse-or-sequence-expr-aux))
-         (return (vl-left-associate-alternating-propexpr/op-list mixed))))
-
-  (defparser vl-parse-or-sequence-expr-aux ()
-    :short "Parse @('or_se ::= and_se { 'or' and_se }') into a @(see vl-alternating-propexpr/op-list-p)."
-    :measure (two-nats-measure (vl-tokstream-measure) 90)
-    (seq tokstream
-         (first :s= (vl-parse-and-sequence-expr))
-         (unless (vl-is-token? :vl-kwd-or)
-           (return (list first)))
-         (:= (vl-match))
-         (tail := (vl-parse-or-sequence-expr-aux))
-         (return (list* first :vl-prop-or tail))))
-
-
-  ;; --- and_se ::= isect_se { 'and' isect_se } ((Left Associative))
-
-  (defparser vl-parse-and-sequence-expr ()
-    :short "Parse @('and_se ::= isect_se { 'and' isect_se }'), left associative."
-    :measure (two-nats-measure (vl-tokstream-measure) 85)
-    (seq tokstream
-         (mixed := (vl-parse-and-sequence-expr-aux))
-         (return (vl-left-associate-alternating-propexpr/op-list mixed))))
-
-  (defparser vl-parse-and-sequence-expr-aux ()
-    :short "Parse @('and_se ::= isect_se { 'and' isect_se }') into a @(see vl-alternating-propexpr/op-list-p)."
-    :measure (two-nats-measure (vl-tokstream-measure) 80)
-    (seq tokstream
-         (first :s= (vl-parse-intersect-sequence-expr))
-         (unless (vl-is-token? :vl-kwd-and)
-           (return (list first)))
-         (:= (vl-match))
-         (tail := (vl-parse-and-sequence-expr-aux))
-         (return (list* first :vl-prop-and tail))))
+           ;; strength_pe ::= isect_se
+           (vl-parse-intersect-sequence-expr))))
 
 
   ;; --- isect_se ::= within_se { 'intersect' within_se }  ((Left Associative))
@@ -1151,11 +1082,11 @@ expression in the parens without any edge specifier.</li>
     :short "Match @('firstmatch_se')."
     :measure (two-nats-measure (vl-tokstream-measure) 30)
     (cond ((vl-is-token? :vl-kwd-first_match)
-           ;; firstmatch_se ::= 'first_match' '(' sequence_expr {',' sequence_match_item} ')'
+           ;; firstmatch_se ::= 'first_match' '(' property_expr {',' sequence_match_item} ')'
            (seq tokstream
                 (:= (vl-match))
                 (:= (vl-match-token :vl-lparen))
-                (seq :s= (vl-parse-sequence-expr))
+                (seq :s= (vl-parse-property-expr))
                 (items := (vl-parse-sequence-match-item-list))
                 (:= (vl-match-token :vl-rparen))
                 (return
@@ -1179,8 +1110,7 @@ expression in the parens without any edge specifier.</li>
     :measure (two-nats-measure (vl-tokstream-measure) 25)
     ;;   repeat_se ::= expression_or_dist [boolean_abbrev]
     ;;               | property_instance [sequence_abbrev]
-    ;;               | '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
-    ;;               | '(' property_expr ')'
+    ;;               | '(' property_expr { ',' sequence_match_item } ')' [sequence_abbrev]
 
     ;; See the notes in notes/properties.txt about resolving ambiguities.  Any
     ;; of these can start with an open paren except for property_instance but
@@ -1207,30 +1137,16 @@ expression in the parens without any edge specifier.</li>
          ((when err)
           ;; Failed to match expr_or_dist, so we also can't be in the
           ;; property_inst case because its identifier would have been a valid
-          ;; expression.  Remaining possibilities:
-          ;;   repeat_se ::= '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
-          ;;               | '(' property_expr ')'
+          ;; expression.  Remaining possibility:
+          ;;   repeat_se ::= '(' property_expr { ',' sequence_match_item } ')' [sequence_abbrev]
           (b* ((tokstream (vl-tokstream-restore backup))
                ((unless (vl-is-token? :vl-lparen))
                 ;; Doesn't seem sensible.  I think it's better to give the
                 ;; error message right here, rather than where an expression
                 ;; parse failed, because we don't know whether this is supposed
                 ;; to be an expression or not anyway.
-                (vl-parse-error "Expected a valid property/sequence expression."))
-               ;; Dumb backtracking to figure out which it is.
-               ((mv err prop tokstream)
-                (vl-parse-assign-sequence-expr))
-               ((unless err)
-                ;; Seems to be '(' sequence_expr ... ')' [sequence_abbrev];
-                ;; that seems fine.
-                (mv err prop tokstream))
-               ;; Try again.
-               (tokstream (vl-tokstream-restore backup)))
-            (seq tokstream
-                 (:= (vl-match-token :vl-lparen))
-                 (ans := (vl-parse-property-expr))
-                 (:= (vl-match-token :vl-rparen))
-                 (return ans))))
+                (vl-parse-error "Expected a valid property/sequence expression.")))
+            (vl-parse-assign-sequence-expr)))
 
          ;; If we get here, we matched a exprdist successfully and we think
          ;; it's what we really wanted.  Don't backtrack, just try to match the
@@ -1243,11 +1159,11 @@ expression in the parens without any edge specifier.</li>
            (return (make-vl-proprepeat :seq core :reps reps)))))
 
   (defparser vl-parse-assign-sequence-expr ()
-    :short "Matches @(' '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev] ')"
+    :short "Matches @(' '(' property_expr { ',' sequence_match_item } ')' [sequence_abbrev] ')"
     :measure (two-nats-measure (vl-tokstream-measure) 20)
     (seq tokstream
          (:= (vl-match-token :vl-lparen))
-         (seq := (vl-parse-sequence-expr))
+         (seq := (vl-parse-property-expr))
          (items := (vl-parse-sequence-match-item-list))
          (:= (vl-match-token :vl-rparen))
          (when (vl-is-token? :vl-lbrack)
@@ -1489,11 +1405,6 @@ experimentation.  This language is so awful...</p>"
     ,(vl-val-when-error-claim vl-parse-and-property-expr-aux)
     ,(vl-val-when-error-claim vl-parse-not-property-expr)
     ,(vl-val-when-error-claim vl-parse-strength-property-expr)
-    ,(vl-val-when-error-claim vl-parse-sequence-expr)
-    ,(vl-val-when-error-claim vl-parse-or-sequence-expr)
-    ,(vl-val-when-error-claim vl-parse-or-sequence-expr-aux)
-    ,(vl-val-when-error-claim vl-parse-and-sequence-expr)
-    ,(vl-val-when-error-claim vl-parse-and-sequence-expr-aux)
     ,(vl-val-when-error-claim vl-parse-intersect-sequence-expr)
     ,(vl-val-when-error-claim vl-parse-intersect-sequence-expr-aux)
     ,(vl-val-when-error-claim vl-parse-within-sequence-expr)
@@ -1511,7 +1422,7 @@ experimentation.  This language is so awful...</p>"
     :hints((and acl2::stable-under-simplificationp
                 (flag::expand-calls-computed-hint
                  acl2::clause
-                 ',(flag::get-clique-members 'vl-parse-sequence-expr-fn (w state)))))))
+                 ',(flag::get-clique-members 'vl-parse-property-expr-fn (w state)))))))
 
 (make-event
  `(defthm-parse-property-expr-flag vl-parse-property-expr-warning
@@ -1527,11 +1438,6 @@ experimentation.  This language is so awful...</p>"
     ,(vl-warning-claim vl-parse-and-property-expr-aux)
     ,(vl-warning-claim vl-parse-not-property-expr)
     ,(vl-warning-claim vl-parse-strength-property-expr)
-    ,(vl-warning-claim vl-parse-sequence-expr)
-    ,(vl-warning-claim vl-parse-or-sequence-expr)
-    ,(vl-warning-claim vl-parse-or-sequence-expr-aux)
-    ,(vl-warning-claim vl-parse-and-sequence-expr)
-    ,(vl-warning-claim vl-parse-and-sequence-expr-aux)
     ,(vl-warning-claim vl-parse-intersect-sequence-expr)
     ,(vl-warning-claim vl-parse-intersect-sequence-expr-aux)
     ,(vl-warning-claim vl-parse-within-sequence-expr)
@@ -1549,7 +1455,7 @@ experimentation.  This language is so awful...</p>"
     :hints((and acl2::stable-under-simplificationp
                 (flag::expand-calls-computed-hint
                  acl2::clause
-                 ',(flag::get-clique-members 'vl-parse-sequence-expr-fn (w state)))))))
+                 ',(flag::get-clique-members 'vl-parse-property-expr-fn (w state)))))))
 
 (make-event
  `(defthm-parse-property-expr-flag vl-parse-property-expr-progress
@@ -1565,11 +1471,6 @@ experimentation.  This language is so awful...</p>"
     ,(vl-progress-claim vl-parse-and-property-expr-aux)
     ,(vl-progress-claim vl-parse-not-property-expr)
     ,(vl-progress-claim vl-parse-strength-property-expr)
-    ,(vl-progress-claim vl-parse-sequence-expr)
-    ,(vl-progress-claim vl-parse-or-sequence-expr)
-    ,(vl-progress-claim vl-parse-or-sequence-expr-aux)
-    ,(vl-progress-claim vl-parse-and-sequence-expr)
-    ,(vl-progress-claim vl-parse-and-sequence-expr-aux)
     ,(vl-progress-claim vl-parse-intersect-sequence-expr)
     ,(vl-progress-claim vl-parse-intersect-sequence-expr-aux)
     ,(vl-progress-claim vl-parse-within-sequence-expr)
@@ -1595,7 +1496,7 @@ experimentation.  This language is so awful...</p>"
     :hints((and acl2::stable-under-simplificationp
                 (flag::expand-calls-computed-hint
                  acl2::clause
-                 ',(flag::get-clique-members 'vl-parse-sequence-expr-fn (w state)))))))
+                 ',(flag::get-clique-members 'vl-parse-property-expr-fn (w state)))))))
 
 
 (defun vl-propexpr-claim-fn (name args type)
@@ -1629,11 +1530,6 @@ experimentation.  This language is so awful...</p>"
     ,(vl-propexpr-claim vl-parse-and-property-expr-aux :mixed)
     ,(vl-propexpr-claim vl-parse-not-property-expr :propexpr)
     ,(vl-propexpr-claim vl-parse-strength-property-expr :propexpr)
-    ,(vl-propexpr-claim vl-parse-sequence-expr :propexpr)
-    ,(vl-propexpr-claim vl-parse-or-sequence-expr :propexpr)
-    ,(vl-propexpr-claim vl-parse-or-sequence-expr-aux :mixed)
-    ,(vl-propexpr-claim vl-parse-and-sequence-expr :propexpr)
-    ,(vl-propexpr-claim vl-parse-and-sequence-expr-aux :mixed)
     ,(vl-propexpr-claim vl-parse-intersect-sequence-expr :propexpr)
     ,(vl-propexpr-claim vl-parse-intersect-sequence-expr-aux :mixed)
     ,(vl-propexpr-claim vl-parse-within-sequence-expr :propexpr)
@@ -1651,9 +1547,9 @@ experimentation.  This language is so awful...</p>"
     :hints((and acl2::stable-under-simplificationp
                 (flag::expand-calls-computed-hint
                  acl2::clause
-                 ',(flag::get-clique-members 'vl-parse-sequence-expr-fn (w state)))))))
+                 ',(flag::get-clique-members 'vl-parse-property-expr-fn (w state)))))))
 
-(verify-guards vl-parse-sequence-expr-fn
+(verify-guards vl-parse-property-expr-fn
   ;; :guard-debug t
   :hints ((and stable-under-simplificationp
                '(:in-theory (enable vl-type-of-matched-token)))))
