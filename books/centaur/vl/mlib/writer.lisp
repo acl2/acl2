@@ -451,6 +451,9 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-string    "string")
     (:vl-chandle   "chandle")
     (:vl-event     "event")
+    (:vl-untyped   "untyped")
+    (:vl-sequence  "sequence")
+    (:vl-property  "property")
     (otherwise     (or (impossible) ""))))
 
 (define vl-pp-scopename ((x vl-scopename-p) &key (ps 'ps))

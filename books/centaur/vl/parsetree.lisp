@@ -3972,6 +3972,8 @@ as a separate construct rather than as a real operator.  See also the file
   :parents (vl-exprdist)
   :elt-type vl-exprdist)
 
+(defoption vl-maybe-exprdist vl-exprdist-p)
+
 
 (defenum vl-repetitiontype-p
   (:vl-repetition-consecutive
@@ -4302,4 +4304,202 @@ these.</p>")
   (fty::deflist vl-propcaseitemlist
     :elt-type vl-propcaseitem
     :measure (two-nats-measure (acl2-count x) 2)))
+
+(defprod vl-propspec
+  :short "A single property specification."
+  ((evatoms vl-evatomlist-p
+            "The top-level clocking events for this property specification; this
+             can just be @('nil') if there is no clocking event.")
+   (disable vl-maybe-exprdist-p
+            "Top level disable condition, or @('nil') if this property has no
+             @('disable') clause.")
+   (prop    vl-propexpr-p
+            "Main property expression for this property specification.")
+   (loc     vl-location-p)))
+
+(defprod vl-propport
+  :short "Representation of a single @('property') or @('sequence') port."
+  :tag :vl-propport
+  ((name   stringp :rule-classes :type-prescription
+           "Name of this port.")
+   (localp booleanp :rule-classes :type-prescription
+           "True if the @('local') keyword was provided.")
+   (dir    vl-direction-p
+           "The direction for this port.  Note that the ports for a sequence
+            can be either @('input'), @('output'), or @('inout') ports.  The
+            ports for a property are always @('input') ports.")
+   (type   vl-datatype-p
+           "The type declared for this port, if any.  Note that the special
+            keywords @('property'), @('sequence'), and @('untyped') can also be
+            used here; we represent them as ordinary @(see vl-datatype)s, see
+            @(see vl-coretypename).  This type includes any array dimensions
+            associated with the port.")
+   (arg    vl-propactual-p
+           "The default property or sequence actual assigned to this port.  If
+            there is no such assignment, this will just be a blank @(see
+            vl-propactual).")
+   (atts   vl-atts-p
+           "Any <tt>(* foo = bar, baz *)</tt> style attributes.")
+   (loc    vl-location-p)))
+
+(fty::deflist vl-propportlist :elt-type vl-propport)
+
+(defprod vl-property
+  :measure (two-nats-measure (acl2-count x) 1)
+  :tag :vl-property
+  :short "Represents a single @('property')...@('endproperty') declaration."
+  ((name   stringp :rule-classes :type-prescription
+           "E.g., this is @('foo') for @('property foo ... endproperty').")
+   (ports  vl-propportlist-p
+           "The ports for this property declaration.")
+   (decls  vl-vardecllist-p
+           "Variable declarations for this property.")
+   (spec   vl-propspec-p
+           "The main content of the property declaration.  The property spec
+            contains its clocking information, disable condition, and the
+            core property expression.")
+   (loc    vl-location-p)))
+
+(defprod vl-sequence
+  :measure (two-nats-measure (acl2-count x) 1)
+  :tag :vl-sequence
+  :short "Represents a single @('sequence')...@('endsequence') declaration."
+  ((name   stringp :rule-classes :type-prescription
+           "E.g., this is @('foo') for @('sequence foo ... endsequence').")
+   (ports  vl-propportlist-p
+           "The ports for this sequence declaration.")
+   (decls  vl-vardecllist-p
+           "Variable declarations for this sequence.")
+   (expr   vl-propexpr-p
+           "The main content of the sequence declaration.  The expression
+            should be a valid sequence expression.  We represent it as a
+            @(see vl-propexpr), which is overly permissive but sufficient
+            to capture any sequence expression.")
+   (loc    vl-location-p)))
+
+(defenum vl-asserttype-p
+  (:vl-assert
+   :vl-assume
+   :vl-cover
+   :vl-cover-property
+   :vl-cover-sequence
+   :vl-expect
+   :vl-restrict)
+  :parents (vl-assert)
+  :short "Type of assertion, e.g., @('assert'), @('assume'), @('cover'), etc.")
+
+(defenum vl-assertdeferral-p
+  (nil
+   :vl-defer-0
+   :vl-defer-final)
+  :parents (vl-assert)
+  :short "Indicates whether this assertion is deferred."
+  :long "<ul>
+         <li>@('nil') &mdash; this is not a deferred assertion.</li>
+         <li>@(':vl-defer-0') &mdash; this is a @('#0') deferred assertion.</li>
+         <li>@(':vl-defer-final') &mdash; this is a @('final') deferred assertion.</li>
+         </ul>")
+
+(deftagsum vl-assert
+  :short "Representation of a single SystemVerilog assertion."
+
+  (:immediate
+   :short "Representation of a single SystemVerilog immediate assertion."
+   ((name         maybe-stringp :rule-classes :type-prescription
+                  "For instance, @('foo') in @('foo : assert (bar) ...').")
+    (type         vl-asserttype-p
+                  "The type of this assertion, e.g., @('assert'), @('assume'),
+                   etc.")
+    (deferral     vl-assertdeferral-p
+                  "Indicates whether this assertion is a regular, non-deferred
+                   assertion, or a #('#0') or @('final') deferred assertion.")
+    (condition    vl-expr-p
+                  "The condition to assert.  Note that since this is an
+                   immediate assertion, the condition is a simple expression,
+                   not a fancy sequence or property.")
+    (success      vl-stmt-p
+                  "For most assertions, this is the success statement for the
+                   associated action block, or a @(see vl-nullstmt) if there is
+                   no success statement.  Note that @('cover') assertions are
+                   special and don't have an action block, so for a @('cover')
+                   assertion this is just the associated statement, if any.")
+    (failure      vl-stmt-p
+                  "This is the @('else') statement from the action block, or a
+                   @(see vl-nullstmt) if there is no @('else') statement.  For
+                   @('cover') assertions this is always just a @(see
+                   vl-nullstmt) since there is no @('else') action.")
+    (loc          vl-location-p)))
+
+  (:concurrent
+   :short "Representation of a single SystemVerilog concurrent assertion."
+   ((name         maybe-stringp :rule-classes :type-prescription
+                  "For instance, @('foo') in @('foo : assert property (bar)
+                   ...').")
+    (type         vl-asserttype-p
+                  "The type of this assertion, e.g., @('assert'), @('assume'),
+                   etc.")
+    (condition    vl-propspec-p
+                  "The property specification being asserted.")
+    (success      vl-stmt-p
+                  "For most assertions, this is the success statement for the
+                   associated action block, or a @(see vl-nullstmt) if there is
+                   no success statement.  Note that @('cover') assertions are
+                   special and don't have an action block, so for a @('cover')
+                   assertion this is just the associated statement, if any.")
+    (failure      vl-stmt-p
+                  "This is the @('else') statement from the action block, or a
+                   @(see vl-nullstmt) if there is no @('else') statement.  For
+                   @('cover') assertions this is always just a @(see
+                   vl-nullstmt) since there is no @('else') action.")
+    (loc          vl-location-p))))
+
+(fty::deflist vl-assertlist
+  :elt-type vl-assert)
+
+
+
+
+;; (deftypes assertion-item-declarations
+
+;;   :post-pred-events
+;;   ((defthm tag-when-vl-property
+;;      (implies (vl-property-p x)
+;;               (equal (tag x) :vl-property))
+;;      :rule-classes :forward-chaining
+;;      :hints(("Goal"
+;;              :in-theory (enable tag)
+;;              :expand ((vl-property-p x)))))
+;;    (defthm tag-when-vl-sequence
+;;      (implies (vl-sequence-p x)
+;;               (equal (tag x) :vl-sequence))
+;;      :rule-classes :forward-chaining
+;;      :hints(("Goal"
+;;              :in-theory (enable tag)
+;;              :expand ((vl-sequence-p x)))))
+;;    (local (defthm tag-rewrites
+;;             (and (implies (vl-property-p x) (equal (tag x) :vl-property))
+;;                  (implies (vl-sequence-p x) (equal (tag x) :vl-sequence)))))
+;;    (local (in-theory (enable tag-reasoning))))
+
+
+;;   (defflexsum vl-assertionitemdecl
+;;     :measure (two-nats-measure (acl2-count x) 2)
+;;     :short "A @('property'), @('sequence'), or @('let') declaration."
+;;     :long "<p>BOZO add support for @('let') declarations.</p>"
+;;     (:property
+;;      ;; Use (make-vl-assertionitemdecl-property ...)
+;;      :cond (eq (tag x) :vl-property)
+;;      :fields ((prop :type vl-property-p :acc-body x))
+;;      :ctor-body prop)
+;;     (:sequence
+;;      ;; Use (make-vl-assertionitemdecl-sequence ...)
+;;      ;; When we add LET, the :cond will need to change to (eq (tag x) :vl-sequence)
+;;      ;; and the :cond for LET can be T.
+;;      :cond t
+;;      :fields ((seq :type vl-sequence-p :acc-body x))
+;;      :ctor-body seq))
+
+;;   (fty::deflist vl-assertionitemdecllist
+;;     :measure (two-nats-measure (acl2-count x) 0)
+;;     :elt-type vl-assertionitemdecl))
 
