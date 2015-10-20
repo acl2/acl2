@@ -42,27 +42,7 @@
 
 (local (xdoc::set-default-parents parse-asserts))
 
-(defparser vl-parse-property-spec ()
-  :short "Parse @('property_spec')."
-  :long "@({
-               property_spec ::= [clocking_event] [ 'disable' 'iff' '(' expression_or_dist ')' ] property_expr
-         })"
-  :result (vl-propspec-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (loc := (vl-current-loc))
-       (when (vl-is-token? :vl-atsign)
-         (evatoms := (vl-parse-clocking-event)))
-       (when (vl-is-token? :vl-kwd-disable)
-         (:= (vl-match))
-         (:= (vl-match-token :vl-kwd-iff))
-         (:= (vl-match-token :vl-lparen))
-         (exprdist := (vl-parse-expression-or-dist))
-         (:= (vl-match-token :vl-rparen)))
-       (prop := (vl-parse-property-expr))
-       (return (make-vl-propspec :evatoms evatoms :disable exprdist :prop prop :loc loc))))
+
 
 (defparser vl-parse-sequence-formal-type ()
   :short "Parse @('sequence_formal_type')."
@@ -356,10 +336,6 @@
 
 
 
-(defprod vl-actionblock
-  :short "Temporary structure for parsing assertions."
-  ((then vl-stmt-p)
-   (else vl-stmt-p)))
 
 (defparser vl-parse-action-block ()
   :short "Parse @('action_block')"

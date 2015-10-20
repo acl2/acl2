@@ -29,7 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "statements")
+(include-book "expressions")
+(include-book "eventctrl")
 (local (include-book "tools/do-not" :dir :system))
 (local (include-book "../../util/arithmetic"))
 (local (acl2::do-not generalize fertilize))
@@ -1560,3 +1561,24 @@ experimentation.  This language is so awful...</p>"
                '(:in-theory (enable vl-type-of-matched-token)))))
 
 
+(defparser vl-parse-property-spec ()
+  :short "Parse @('property_spec')."
+  :long "@({
+               property_spec ::= [clocking_event] [ 'disable' 'iff' '(' expression_or_dist ')' ] property_expr
+         })"
+  :result (vl-propspec-p val)
+  :resultp-of-nil nil
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       (loc := (vl-current-loc))
+       (when (vl-is-token? :vl-atsign)
+         (evatoms := (vl-parse-clocking-event)))
+       (when (vl-is-token? :vl-kwd-disable)
+         (:= (vl-match))
+         (:= (vl-match-token :vl-kwd-iff))
+         (:= (vl-match-token :vl-lparen))
+         (exprdist := (vl-parse-expression-or-dist))
+         (:= (vl-match-token :vl-rparen)))
+       (prop := (vl-parse-property-expr))
+       (return (make-vl-propspec :evatoms evatoms :disable exprdist :prop prop :loc loc))))

@@ -130,7 +130,9 @@ datatypes use expressions for indexes and so forth.</li>
 
 <li>Various constructs like always/initial blocks and functions and tasks also
 make use of <b>procedural @(see statements)</b> like if/else, case statements,
-and for loops.</li>
+and for loops.  Some notable statements include @(see vl-assertstmt) and @(see
+vl-concassertstmt) for immediate and concurrent SystemVerilog assertions, which
+include an elaborate notion of @(see property-expressions).</li>
 
 </ul>
 
@@ -163,7 +165,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-02-05")
+  "VL Syntax 2015-10-19")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -188,6 +190,563 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
     :equiv vl-syntaxversion-equiv
     :define t
     :forward t))
+
+
+(defenum vl-evatomtype-p
+  (:vl-noedge
+   :vl-edge
+   :vl-posedge
+   :vl-negedge)
+  :parents (vl-evatom-p)
+  :short "Type of an item in an event control list."
+  :long "<p>Any particular atom in the event control list might have a
+@('posedge'), @('negedge'), @('edge'), or have no edge specifier at all, e.g.,
+for plain atoms like @('a') and @('b') in @('always @(a or b)').</p>")
+
+(defprod vl-evatom
+  :short "A single item in an event control list."
+  :tag :vl-evatom
+  :layout :tree
+
+  ((type vl-evatomtype-p
+         "Kind of atom, e.g., posedge, negedge, edge, or plain.")
+
+   (expr vl-expr-p
+         "Associated expression, e.g., @('foo') for @('posedge foo')."))
+
+  :long "<p>Event expressions and controls are described in Section 9.7.</p>
+
+<p>We represent the expressions for an event control (see @(see
+vl-eventcontrol-p)) as a list of @('vl-evatom-p') structures.  Each individual
+evatom is either a plain Verilog expression, or is @('posedge') or @('negedge')
+applied to a Verilog expression.</p>")
+
+(fty::deflist vl-evatomlist
+              :elt-type vl-evatom-p
+              :true-listp nil
+              :elementp-of-nil nil)
+
+
+(defprod vl-eventcontrol
+  :short "Representation of an event controller like @('@(posedge clk)') or
+@('@(a or b)')."
+  :tag :vl-eventcontrol
+  :layout :tree
+
+  ((starp booleanp
+          :rule-classes :type-prescription
+          "True to represent @('@(*)'), or @('nil') for any other kind of
+           event controller.")
+
+   (atoms vl-evatomlist-p
+          "A list of @(see vl-evatom-p)s that describe the various
+           events. Verilog allows two kinds of syntax for these lists, e.g.,
+           one can write @('@(a or b)') or @('@(a, b)').  The meaning is
+           identical in either case, so we just use a list of atoms."))
+
+  :long "<p>Event controls are described in Section 9.7.  We represent each
+event controller as a @('vl-eventcontrol-p') aggregates.</p>")
+
+(defprod vl-delaycontrol
+  :short "Representation of a delay controller like @('#6')."
+  :tag :vl-delaycontrol
+  :layout :tree
+  ((value vl-expr-p "The expression that governs the delay amount."))
+
+  :long "<p>Delay controls are described in Section 9.7.  An example is</p>
+
+@({
+  #10 foo = 1;   <-- The #10 is a delay control
+})")
+
+(defprod vl-repeateventcontrol
+  :short "Representation of @('repeat') constructs in intra-assignment delays."
+  :tag :vl-repeat-eventcontrol
+  :layout :tree
+  ((expr vl-expr-p
+         "The number of times to repeat the control, e.g., @('3') in the below
+          example.")
+
+   (ctrl vl-eventcontrol-p
+         "Says which event to wait for, e.g., @('@(posedge clk)') in the below
+          example."))
+
+  :long "<p>See Section 9.7.7 of the Verilog-2005 standard.  These are used to
+represent special intra-assignment delays, where the assignment should not
+occur until some number of occurrences of an event.  For instance:</p>
+
+@({
+   a = repeat(3) @(posedge clk)   <-- repeat expr ctrl
+         b;                       <-- statement to repeat
+})
+
+<p><b>BOZO</b> Consider consolidating all of these different kinds of
+controls into a single, unified representation.  E.g., you could at
+least extend eventcontrol with a maybe-expr that is its count, and get
+rid of repeateventcontrol.</p>")
+
+(deftranssum vl-delayoreventcontrol
+  :short "BOZO document this."
+  (vl-delaycontrol
+   vl-eventcontrol
+   vl-repeateventcontrol))
+
+(local (defthm vl-delayoreventcontrol-fix-nonnil
+         (vl-delayoreventcontrol-fix x)
+         :hints(("Goal" :in-theory (enable (tau-system))))
+         :rule-classes :type-prescription))
+
+(defoption vl-maybe-delayoreventcontrol vl-delayoreventcontrol-p)
+
+
+
+(defenum vl-distweighttype-p
+  (:vl-weight-each
+   :vl-weight-total)
+  :parents (vl-exprdist)
+  :short "Representation of the @(':=') or @(':/') weight operators."
+  :long "<p>See SystemVerilog-2012 Section 18.5.4, Distribution, and also see
+@(see vl-distitem).</p>
+
+<ul>
+
+<li>@(':vl-weight-each') stands for the @(':=') operator, which assigns the
+same weight to each item in the range.</li>
+
+<li>@(':vl-weight-total') stands for the @(':/') operator, which assigns a
+weight to the range as a whole, i.e., the weight of each value in the range
+will become @('weight/n') where @('n') is the number of items in the
+range.</li>
+
+</ul>
+
+<p>Both operators have the same meaning when applied to a single expression
+instead of a range.</p>")
+
+(defprod vl-distitem
+  :parents (vl-exprdist)
+  :short "Representation of weighted distribution information."
+  :layout :tree
+  :tag :vl-distitem
+
+  ((left  vl-expr-p
+          "The sole or left expression in a dist item.  For instance, @('left')
+           will be @('100') in either @('100 := 1') or @('[100:102] := 1').")
+
+   (right vl-maybe-expr-p
+          "The right expression in a dist item that has a value range, or nil
+           if this dist item just has a single item.  For instance, @('right')
+           would be @('nil') in @('100 := 1'), but would be @('102') in
+           @('[100:102] := 1').")
+
+   (type  vl-distweighttype-p
+          "The weight type, i.e., @(':vl-weight-each') for @(':=')-style dist items,
+           or @(':vl-weight-total') for @(':/')-style dist items.  Note per
+           SystemVerilog-2012 Section 18.5.4, if no weight is specified, the
+           default weight is @(':= 1'), i.e., the default is
+           @(':vl-weight-each').")
+
+   (weight vl-expr-p
+           "The weight, e.g., @('1') in @('100 := 1').  Note per
+            SystemVerilog-2012 Section 18.5.4, if no weight is specified, the
+            default weight is @(':= 1'), so the default weight is @('1')."))
+
+  :long "<p>See SystemVerilog-2012 Section 18.5.4, Distribution.  This is our
+representation of a single @('dist_item').  The associated grammar rules
+are:</p>
+
+@({
+     dist_item ::= value_range [ dist_weight ]
+
+     dist_weight ::= ':=' expression             ;; see vl-distweighttype-p
+                   | ':/' expression
+
+     value_range ::= expression
+                   | [ expression : expression ]
+})")
+
+(fty::deflist vl-distlist
+  :parents (vl-exprdist)
+  :elt-type vl-distitem
+  :elementp-of-nil nil)
+
+(defprod vl-exprdist
+  :short "Representation of @('expr dist { ... }') constructs."
+  :tag :vl-exprdist
+  :layout :tree
+  ((expr vl-expr-p
+         "The left-hand side expression, which per SystemVerilog-2012 Section
+          18.5.4 should involve at least one @('rand') variable.")
+   (dist vl-distlist-p
+         "The desired ranges of values and probability distribution.  May be
+          @('nil') in case of a plain expression without any @('dist')
+          part."))
+
+  :long "<p>Very confusingly, the @('dist') operator is mentioned in the
+SystemVerilog-2012 precedence table (Table 11-2, Page 221).  This doesn't
+make any sense because per the grammar rules it only occurs within</p>
+
+@({
+     expression_or_dist ::= expression [ 'dist' { dist_list } ]
+})
+
+<p>And these @('expression_or_dist') things definitely do not occur within
+other expressions.  After some investigation, I believe this inclusion in
+the table is simply misleading and that the right way to treat @('dist') is
+as a separate construct rather than as a real operator.  See also the file
+@('vl/parser/tests/distprec.sv') for related notes and experiments.</p>")
+
+(fty::deflist vl-exprdistlist
+  :parents (vl-exprdist)
+  :elt-type vl-exprdist)
+
+(defoption vl-maybe-exprdist vl-exprdist-p
+  :parents (vl-exprdist))
+
+
+(defenum vl-repetitiontype-p
+  (:vl-repetition-consecutive
+   :vl-repetition-goto
+   :vl-repetition-nonconsecutive)
+  :parents (vl-proprepeat)
+  :short "Representation of SystemVerilog assertion sequence repetition types,
+i.e., @('[*...]'), @('[->...]'), or @('[=...]') style repetition."
+  :long "<p>See SystemVerilog-2012 Section 16.9.2.</p>
+
+<ul>
+<li>@('[* ...]'), @('[*]'), and @('[+]') is called <b>consecutive</b> repetition</li>
+<li>@('[-> ...]') is called <b>goto</b> repetition</li>
+<li>@('[= ...]') is called <b>nonconsecutive</b> repetition</li>
+</ul>")
+
+(defprod vl-repetition
+  :parents (vl-proprepeat)
+  :short "Representation of a SystemVerilog assertion sequence repetition."
+  :tag :vl-repetition
+  :layout :tree
+
+  ((type vl-repetitiontype-p
+         "Kind of repetition, i.e., consecutive, goto, or nonconsecutive.")
+
+   (left vl-expr-p
+         "Sole or left bound on the repetition.  Examples: @('left') is 3 for
+          any of @('[* 3]'),
+                 @('[* 3:4]'),
+                 @('[-> 3]'),
+                 @('[-> 3:4]'),
+                 @('[= 3]'), or
+                 @('[= 3:4]').
+          In the special cases of @('[*]') and @('[+]'), @('left') should be
+          0 and 1, respectively.")
+
+   (right vl-maybe-expr-p
+          "Right bound on the repetition if applicable.  For instance,
+           @('right') is
+                 @('nil') for any of @('[* 3]'),
+                                     @('[-> 3]'), or
+                                     @('[= 3]').
+           It is @('4') for any of @('[* 3:4]'),
+                                   @('[-> 3:4]'), or
+                                   @('[= 3:4]').
+           It is @('$') for @('[*]') or @('[+]')."))
+
+  :long "<p>See SystemVerilog-2012 Section 16.9.2.</p>
+
+<p>Note from Page 357 that @('[*]') is equivalent to @('[0:$]') and @('[+]') is
+equivalent to @('[1:$]'), so we don't bother with separate representations of
+these.</p>")
+
+
+(defenum vl-property-unaryop-p
+  (:vl-prop-firstmatch       ;;; first_match a
+   :vl-prop-not              ;;; not a
+   :vl-prop-strong           ;;; strong a
+   :vl-prop-weak             ;;; weak a
+   )
+  :parents (vl-propunary)
+  :short "Very basic unary sequence/property operators.")
+
+(defenum vl-property-binaryop-p
+  (:vl-prop-and              ;;; a and b
+   :vl-prop-intersect        ;;; a intersect b
+   :vl-prop-or               ;;; a or b
+   :vl-prop-within           ;;; a within b
+   :vl-prop-iff              ;;; a iff b
+   :vl-prop-until            ;;; a until b
+   :vl-prop-suntil           ;;; a s_until b
+   :vl-prop-untilwith        ;;; a until_with b
+   :vl-prop-suntilwith       ;;; a s_until_with b
+   :vl-prop-word-implies     ;;; a implies b        "plain old implies"
+   :vl-prop-thin-implies     ;;; a |-> b            "overlapped implication"
+   :vl-prop-fat-implies      ;;; a |=> b            "non-overlapped implication"
+   :vl-prop-thin-follows     ;;; a #-# b
+   :vl-prop-fat-follows      ;;; a #=# b
+   )
+  :parents (vl-propbinary)
+  :short "Very basic binary sequence/property operators."
+
+  :long "<p>The only confusing thing here is the different kinds of implies and
+         follows operators.  Here's the mapping:</p>
+
+         <ul>
+         <li>@(':vl-prop-word-implies') is literally the keyword @('implies').</li>
+         <li>@(':vl-prop-thin-implies') is the operator @('|->'), i.e., overlapped implication.</li>
+         <li>@(':vl-prop-fat-implies') is the operator @('|=>'), i.e., non-overlapped implication.</li>
+         <li>@(':vl-prop-thin-follows') is the operator @('#-#').</li>
+         <li>@(':vl-prop-fat-follows') is the operator @('#=#').</li>
+         </ul>")
+
+(defenum vl-property-acceptop-p
+  (:vl-prop-accepton         ;;; accept_on(foo) bar
+   :vl-prop-syncaccepton     ;;; sync_accept_on(foo) bar
+   :vl-prop-rejecton         ;;; reject_on(foo) bar
+   :vl-prop-syncrejecton     ;;; sync_reject_on(foo) bar
+   )
+  :parents (vl-propaccept)
+  :short "The @('accept_on'), @('reject_on'), @('sync_accept_on'), and
+          @('sync_reject_on') operators."
+  :long "<p>These are a bit unusual and take both a condition and a property as
+         their arguments.</p>")
+
+
+(deftypes property-expressions
+  :parents (syntax)
+  :short "Representation of SystemVerilog property and sequence expressions."
+
+  (deftagsum vl-propexpr
+    :measure (two-nats-measure (acl2-count x) 0)
+    :short "Representation of a single property or sequence expression."
+    :long "<p>Note that SystemVerilog distinguishes between properties and
+           sequences.  However, VL internally represents both property and
+           sequence expressions using this same data structure.</p>"
+
+    (:vl-propcore
+     :short "Basic, single expression in a sequence or property (perhaps
+             with some probability distribution stuff.)"
+     :base-name vl-propcore
+     ((guts vl-exprdist-p)))
+
+    (:vl-propinst
+     :short "Instance of a named sequence or property."
+     :base-name vl-propinst
+     ((ref  vl-scopeexpr-p      "Name of the sequence/property to instance.")
+      (args vl-propactuallist-p "Arguments to give it.")))
+
+    (:vl-propthen
+     :short "Sequential sequence composition, i.e., @('foo ##1 bar') and similar."
+     :base-name vl-propthen
+     ((delay vl-range-p
+             "The delay or range part between the two sequences.  Note that
+              SystemVerilog gives a rich syntax here which we always boil down
+              to a range.  In particular, a single expression like @('##1') is
+              represented with the range #('[1:1]').  The SystemVerilog syntax
+              @('##[*]') just means @('##[0:$]') and the syntax @('##[+]') just
+              means @('##[1:$]').  Dollar signs are supposed to mean the end of
+              simulation, or for formal tools are supposed to mean some finite
+              but unbounded range.")
+      (left  vl-propexpr-p  "Left-hand side sequence to match, e.g., @('foo').")
+      (right vl-propexpr-p  "Right-hand side sequence to match, e.g., @('bar')."))
+     :long "<p>Note that in SystemVerilog you can write sequences that don't have
+            a starting expression, e.g., you can just write @('##1 foo ##1 bar').
+            In this case, we set @('left') to the expression @('1'), which always
+            evaluates to true and hence has no effect on the sequence.</p>")
+
+    (:vl-proprepeat
+     :short "A sequence with repetitions."
+     :base-name vl-proprepeat
+     ((seq   vl-propexpr-p    "Sequence being repeated, e.g., @('foo') in
+                               @('foo[*2]').")
+      (reps  vl-repetition-p  "Repetitions of this sequence, e.g., @('[*2]') in
+                               @('foo[*2]').")))
+
+    (:vl-propassign
+     :short "A sequence with sequence match items (updates to its variables)."
+     :base-name vl-propassign
+     ((seq   vl-propexpr-p "Base sequence being extended with match items, e.g.,
+                            @('foo') in the sequence @('foo, x++').")
+      (items vl-exprlist-p "Sequence match items that are being attached to this
+                            sequence, e.g., @('x++') in the sequence @('(foo,
+                            x++)')."))
+     :long "<p>These match items can perhaps influence local sequence
+            variables, see SystemVerilog-2012 section 16.10.  In practice these
+            should be assignment expressions, increment/decrement expression,
+            or function calls.  We just represent them as arbitrary
+            expressions.</p>")
+
+    (:vl-propthroughout
+     :short "A @('throughout') sequence expression."
+     :base-name vl-propthroughout
+     ((left  vl-exprdist-p "The left hand side expression.")
+      (right vl-propexpr-p "The right hand side sequence expression.")))
+
+    (:vl-propclock
+     :short "A sequence or property expression with a clocking event."
+     :base-name vl-propclock
+     ((trigger vl-evatomlist
+               "A @('clocking_event'), e.g., the @('posedge foo') part of a
+                sequence expression like @('@(posedge foo) ready ##1
+                qvalid').")
+      (then    vl-propexpr-p
+               "The sequence to match when this clocking event occurs, e.g.,
+                the @('ready ##1 qvalid') part of the above sequence.")))
+
+    (:vl-propunary
+     :short "A basic unary operator applied to a sequence/property, for
+             instance, like @('first_match(a)'), @('not(b)'), etc."
+     :base-name vl-propunary
+     ((op    vl-property-unaryop-p  "Operator being applied.")
+      (arg   vl-propexpr-p          "Argument to the operator.")))
+
+    (:vl-propbinary
+     :short "A basic binary operator that joins two sequences/properties, like
+             @('a and b'), @('a |-> b'), etc."
+     :base-name vl-propbinary
+     ((op    vl-property-binaryop-p "Operator that joins these sequences together.")
+      (left  vl-propexpr-p          "Left hand side sequence or property operand.")
+      (right vl-propexpr-p          "Right hand side sequence or property operand."))
+     :long "<p>Note that we use this for @('first_match') sequence operators.
+            If you look at the grammar for @('first_match') expressions, there
+            is special syntax for embedding match items without nested parens.
+            However, that syntax is equivalent to just using the usual @('(foo,
+            x++)') style syntax as in a @(see vl-propassign), so in our internal
+            representation we only have a sequence expression; the match items,
+            if any, will be found within @('arg').</p>")
+
+    (:vl-propalways
+     :short "An @('always') or @('s_always') property expression."
+     :base-name vl-propalways
+     ((strongp booleanp :rule-classes :type-prescription
+               "True when this is an @('s_always').")
+      (range   vl-maybe-range-p
+               "The range applied to this always if applicable.  For instance,
+                in @('always [2:3] foo'), the range is @('[2:3]').  A plain
+                @('always') may or may not have a range, but an @('s_always')
+                should always have one.  We don't enforce this in our data
+                structures, but it is enforced by the parser.")
+      (prop    vl-propexpr-p
+               "The property being tested, e.g., @('foo') in @('always foo').")))
+
+    (:vl-propeventually
+     :short "An @('eventually') or @('s_eventually') property expression."
+     :base-name vl-propeventually
+     ((strongp booleanp :rule-classes :type-prescription
+               "True when this is an @('s_eventually').")
+      (range   vl-maybe-range-p
+               "The range applied to this eventually, if applicable.  For
+                instance, in @('eventually [2:3] foo'), the range is @('[2:3]').
+                In the grammar, ranges are optional for @('s_eventually') but
+                are required for ordinary @('eventually') properties.  We don't
+                enforce this in our data structures, but it is enforced by the
+                parser.")
+      (prop vl-propexpr-p
+            "The property being tested, e.g., @('foo') in @('eventually foo').")))
+
+    (:vl-propaccept
+     :short "A (possibly synchronous) @('accept_on') or @('reject_on') property
+             expression."
+     :base-name vl-propaccept
+     ((op         vl-property-acceptop-p
+                  "The kind of operator, e.g., @('accept_on'), @('reject_on'),
+                   etc.")
+      (condition  vl-exprdist-p
+                  "The abort condition for this operation, e.g., @('foo') in
+                   @('accept_on(foo) bar').")
+      (prop       vl-propexpr-p
+                  "The abort property, e.g., @('bar') in @('accept_on(foo)
+                  bar').")))
+
+    (:vl-propnexttime
+     :short "A @('nexttime') or @('s_nexttime') property expression."
+     :base-name vl-propnexttime
+     ((strongp booleanp :rule-classes :type-prescription
+               "True for @('s_nexttime') operators, nil for ordinary @('nexttime').")
+      (expr    vl-maybe-expr-p
+               "For instance, #('3') in case of @('nexttime [3] foo').")
+      (prop    vl-propexpr-p
+               "The property that must hold next time, e.g., @('foo') in
+                @('nexttime [3] foo').")))
+
+    (:vl-propif
+     :short "An @('if')-@('else') property expression."
+     :base-name vl-propif
+     ((condition vl-exprdist-p)
+      (then      vl-propexpr-p)
+      (else      vl-propexpr-p
+                 "In the SystemVerilog grammar the else branch is optional.
+                  But an assertion of the form @('if (foo) bar') is equivalent
+                  to @('if (foo) bar else 1'), so to keep our internal
+                  representation simpler we require that the @('else') branch
+                  is present, and if it is missing our parser just fills in
+                  an explicit @('1') here.")))
+
+    (:vl-propcase
+     :short "A @('case') property expression."
+     :base-name vl-propcase
+     ((condition vl-exprdist-p)
+      (cases     vl-propcaseitemlist-p))))
+
+  (deftagsum vl-propactual
+    :measure (two-nats-measure (acl2-count x) 0)
+    :short "An actual given as an argument to an instance of a named sequence
+            or property.  May be an event expression or a sequence or property
+            expression."
+    (:blank
+     ((name    maybe-stringp :rule-classes :type-prescription
+               "An empty property actual; may indicate an explicitly blank
+                named argument such as @('.foo()'), or may represent an extra
+                commas in the argument list, like @('(foo, , bar)'), in which
+                case there will be no name.")))
+
+    (:event
+     ((name    maybe-stringp :rule-classes :type-prescription
+               "Explicit name for this argument, if provided.  For instance,
+                in @('.foo(bar)'), this is the @('foo') part.  Some actuals
+                may not have a name..")
+      (evatoms vl-evatomlist-p
+               "This isn't quite general enough, but event expressions are also
+                used in @(see vl-eventcontrol)s, so I'd like this to be
+                compatible with that code, reuse its parser, etc.  If we find
+                that this isn't good enough, we should extend the eventcontrol
+                representation too.")))
+    (:prop
+     ((name    maybe-stringp :rule-classes :type-prescription
+               "Explicit name for this argument, if provided.  For instance,
+                in @('.foo(bar)'), this is the @('foo') part.  Some actuals
+                may not have a name.")
+      (prop    vl-propexpr-p
+               "Expression being used as the property or sequence actual
+                value."))))
+
+  (fty::deflist vl-propactuallist
+    :elt-type vl-propactual
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (defprod vl-propcaseitem
+    :short "A single line in a @('case') property expression."
+    :measure (two-nats-measure (acl2-count x) 1)
+    ((match vl-exprdistlist-p
+            "The match expressions before the colon, or @('nil') for the
+             default case item.")
+     (prop  vl-propexpr-p
+            "The property expression for this case.")))
+
+  (fty::deflist vl-propcaseitemlist
+    :elt-type vl-propcaseitem
+    :measure (two-nats-measure (acl2-count x) 2)))
+
+(defprod vl-propspec
+  :parents (property-expressions)
+  :short "A single property specification."
+  ((evatoms vl-evatomlist-p
+            "The top-level clocking events for this property specification; this
+             can just be @('nil') if there is no clocking event.")
+   (disable vl-maybe-exprdist-p
+            "Top level disable condition, or @('nil') if this property has no
+             @('disable') clause.")
+   (prop    vl-propexpr-p
+            "Main property expression for this property specification.")
+   (loc     vl-location-p)))
+
 
 
 (defenum vl-nettypename-p
@@ -1880,118 +2439,6 @@ respectively.</p>"
   (vl-sort-blockitems-aux x nil nil nil))
 
 
-;                              EVENT CONTROLS
-;
-; Delay controls are represented just using tagged expressions.
-;
-; Repeat event controls are represented using simple aggregates.
-;
-
-(defenum vl-evatomtype-p
-  (:vl-noedge
-   :vl-edge
-   :vl-posedge
-   :vl-negedge)
-  :parents (vl-evatom-p)
-  :short "Type of an item in an event control list."
-  :long "<p>Any particular atom in the event control list might have a
-@('posedge'), @('negedge'), @('edge'), or have no edge specifier at all, e.g.,
-for plain atoms like @('a') and @('b') in @('always @(a or b)').</p>")
-
-(defprod vl-evatom
-  :short "A single item in an event control list."
-  :tag :vl-evatom
-  :layout :tree
-
-  ((type vl-evatomtype-p
-         "Kind of atom, e.g., posedge, negedge, edge, or plain.")
-
-   (expr vl-expr-p
-         "Associated expression, e.g., @('foo') for @('posedge foo')."))
-
-  :long "<p>Event expressions and controls are described in Section 9.7.</p>
-
-<p>We represent the expressions for an event control (see @(see
-vl-eventcontrol-p)) as a list of @('vl-evatom-p') structures.  Each individual
-evatom is either a plain Verilog expression, or is @('posedge') or @('negedge')
-applied to a Verilog expression.</p>")
-
-(fty::deflist vl-evatomlist
-              :elt-type vl-evatom-p
-              :true-listp nil
-              :elementp-of-nil nil)
-
-
-(defprod vl-eventcontrol
-  :short "Representation of an event controller like @('@(posedge clk)') or
-@('@(a or b)')."
-  :tag :vl-eventcontrol
-  :layout :tree
-
-  ((starp booleanp
-          :rule-classes :type-prescription
-          "True to represent @('@(*)'), or @('nil') for any other kind of
-           event controller.")
-
-   (atoms vl-evatomlist-p
-          "A list of @(see vl-evatom-p)s that describe the various
-           events. Verilog allows two kinds of syntax for these lists, e.g.,
-           one can write @('@(a or b)') or @('@(a, b)').  The meaning is
-           identical in either case, so we just use a list of atoms."))
-
-  :long "<p>Event controls are described in Section 9.7.  We represent each
-event controller as a @('vl-eventcontrol-p') aggregates.</p>")
-
-(defprod vl-delaycontrol
-  :short "Representation of a delay controller like @('#6')."
-  :tag :vl-delaycontrol
-  :layout :tree
-  ((value vl-expr-p "The expression that governs the delay amount."))
-
-  :long "<p>Delay controls are described in Section 9.7.  An example is</p>
-
-@({
-  #10 foo = 1;   <-- The #10 is a delay control
-})")
-
-(defprod vl-repeateventcontrol
-  :short "Representation of @('repeat') constructs in intra-assignment delays."
-  :tag :vl-repeat-eventcontrol
-  :layout :tree
-  ((expr vl-expr-p
-         "The number of times to repeat the control, e.g., @('3') in the below
-          example.")
-
-   (ctrl vl-eventcontrol-p
-         "Says which event to wait for, e.g., @('@(posedge clk)') in the below
-          example."))
-
-  :long "<p>See Section 9.7.7 of the Verilog-2005 standard.  These are used to
-represent special intra-assignment delays, where the assignment should not
-occur until some number of occurrences of an event.  For instance:</p>
-
-@({
-   a = repeat(3) @(posedge clk)   <-- repeat expr ctrl
-         b;                       <-- statement to repeat
-})
-
-<p><b>BOZO</b> Consider consolidating all of these different kinds of
-controls into a single, unified representation.  E.g., you could at
-least extend eventcontrol with a maybe-expr that is its count, and get
-rid of repeateventcontrol.</p>")
-
-(deftranssum vl-delayoreventcontrol
-  :short "BOZO document this."
-  (vl-delaycontrol
-   vl-eventcontrol
-   vl-repeateventcontrol))
-
-(local (defthm vl-delayoreventcontrol-fix-nonnil
-         (vl-delayoreventcontrol-fix x)
-         :hints(("Goal" :in-theory (enable (tau-system))))
-         :rule-classes :type-prescription))
-
-(defoption vl-maybe-delayoreventcontrol vl-delayoreventcontrol-p)
 
 
 (defenum vl-assign-type-p
@@ -1999,7 +2446,7 @@ rid of repeateventcontrol.</p>")
    :vl-nonblocking
    :vl-assign
    :vl-force)
-  :parents (vl-stmt-p)
+  :parents (vl-assignstmt)
   :short "Type of an assignment statement."
   :long "<p>@(':vl-blocking') and @(':vl-nonblocking') are for
 blocking/nonblocking procedural assignments, e.g., @('foo = bar') and @('foo <=
@@ -2011,14 +2458,14 @@ respectively.</p>")
 
 (defenum vl-deassign-type-p
   (:vl-deassign :vl-release)
-  :parents (vl-stmt-p)
+  :parents (vl-deassignstmt)
   :short "Type of an deassignment statement.")
 
 (defenum vl-casetype-p
   (nil
    :vl-casex
    :vl-casez)
-  :parents (vl-stmt-p)
+  :parents (vl-casestmt)
   :short "Recognizes the possible kinds of case statements."
   :long "<ul>
 
@@ -2033,11 +2480,35 @@ respectively.</p>")
    :vl-unique
    :vl-unique0
    :vl-priority)
-  :parents (vl-stmt-p)
+  :parents (vl-casestmt)
   :short "Case statement violation checking mode."
   :long "<p>For ordinary @('case') statements this will be @('nil').  The other
 values are for SystemVerilog's @('unique'), @('unique0'), and @('priority')
 case statements.</p>")
+
+(defenum vl-asserttype-p
+  (:vl-assert
+   :vl-assume
+   :vl-cover
+   :vl-cover-property
+   :vl-cover-sequence
+   :vl-expect
+   :vl-restrict)
+  :parents (vl-assertstmt)
+  :short "Type of assertion, e.g., @('assert'), @('assume'), @('cover'), etc.")
+
+(defenum vl-assertdeferral-p
+  (nil
+   :vl-defer-0
+   :vl-defer-final)
+  :parents (vl-assertstmt)
+  :short "Indicates whether this assertion is deferred."
+  :long "<ul>
+         <li>@('nil') &mdash; this is not a deferred assertion.</li>
+         <li>@(':vl-defer-0') &mdash; this is a @('#0') deferred assertion.</li>
+         <li>@(':vl-defer-final') &mdash; this is a @('final') deferred assertion.</li>
+         </ul>")
+
 
 (deftypes statements
   :short "Representation of a statement."
@@ -2440,6 +2911,62 @@ block name to each variable name.</p>"
      :short "Representation of return statements."
      ((val vl-maybe-expr-p)
       (atts vl-atts-p)))
+
+    (:vl-assertstmt
+     :base-name vl-assertstmt
+     :layout :tree
+     :short "Representation of an immediate assertion statement."
+     ((name       maybe-stringp :rule-classes :type-prescription
+                  "For instance, @('foo') in @('foo : assert (bar) ...').")
+      (type       vl-asserttype-p
+                  "The type of this assertion, e.g., @('assert'), @('assume'),
+                   etc.")
+      (deferral   vl-assertdeferral-p
+                  "Indicates whether this assertion is a regular, non-deferred
+                   assertion, or a #('#0') or @('final') deferred assertion.")
+      (condition  vl-expr-p
+                  "The condition to assert.  Note that since this is an
+                   immediate assertion, the condition is a simple expression,
+                   not a fancy sequence or property.")
+      (success    vl-stmt-p
+                  "For most assertions, this is the success statement for the
+                   associated action block, or a @(see vl-nullstmt) if there is
+                   no success statement.  Note that @('cover') assertions are
+                   special and don't have an action block, so for a @('cover')
+                   assertion this is just the associated statement, if any.")
+      (failure    vl-stmt-p
+                  "This is the @('else') statement from the action block, or a
+                   @(see vl-nullstmt) if there is no @('else') statement.  For
+                   @('cover') assertions this is always just a @(see
+                   vl-nullstmt) since there is no @('else') action.")
+      (loc        vl-location-p)))
+
+    (:vl-concassertstmt
+     :base-name vl-concassertstmt
+     :layout :tree
+     :short "Representation of a concurrent assertion statement."
+     ((name         maybe-stringp :rule-classes :type-prescription
+                    "For instance, @('foo') in @('foo : assert property (bar)
+                     ...').")
+      (type         vl-asserttype-p
+                    "The type of this assertion, e.g., @('assert'), @('assume'),
+                     etc.")
+      (condition    vl-propspec-p
+                    "The property specification being asserted.")
+      (success      vl-stmt-p
+                    "For most assertions, this is the success statement for the
+                     associated action block, or a @(see vl-nullstmt) if there
+                     is no success statement.  Note that @('cover') assertions
+                     are special and don't have an action block, so for a
+                     @('cover') assertion this is just the associated
+                     statement, if any.")
+      (failure      vl-stmt-p
+                    "This is the @('else') statement from the action block, or
+                     a @(see vl-nullstmt) if there is no @('else') statement.
+                     For @('cover') assertions this is always just a @(see
+                     vl-nullstmt) since there is no @('else') action.")
+      (loc          vl-location-p)))
+
     ))
 
 ;; NOTE: Other statement subtypes are declared in stmt-tools.  This is here
@@ -3871,451 +4398,8 @@ resulting from parsing some Verilog source code."
 
 
 
-
-
 ;; BOZO these will have to move up at some point
 
-(defenum vl-distweighttype-p
-  (:vl-weight-each
-   :vl-weight-total)
-  :short "Representation of the @(':=') or @(':/') weight operators."
-  :long "<p>See SystemVerilog-2012 Section 18.5.4, Distribution, and also see
-@(see vl-distitem).</p>
-
-<ul>
-
-<li>@(':vl-weight-each') stands for the @(':=') operator, which assigns the
-same weight to each item in the range.</li>
-
-<li>@(':vl-weight-total') stands for the @(':/') operator, which assigns a
-weight to the range as a whole, i.e., the weight of each value in the range
-will become @('weight/n') where @('n') is the number of items in the
-range.</li>
-
-</ul>
-
-<p>Both operators have the same meaning when applied to a single expression
-instead of a range.</p>")
-
-(defprod vl-distitem
-  :short "Representation of weighted distribution information."
-  :layout :tree
-  :tag :vl-distitem
-
-  ((left  vl-expr-p
-          "The sole or left expression in a dist item.  For instance, @('left')
-           will be @('100') in either @('100 := 1') or @('[100:102] := 1').")
-
-   (right vl-maybe-expr-p
-          "The right expression in a dist item that has a value range, or nil
-           if this dist item just has a single item.  For instance, @('right')
-           would be @('nil') in @('100 := 1'), but would be @('102') in
-           @('[100:102] := 1').")
-
-   (type  vl-distweighttype-p
-          "The weight type, i.e., @(':vl-weight-each') for @(':=')-style dist items,
-           or @(':vl-weight-total') for @(':/')-style dist items.  Note per
-           SystemVerilog-2012 Section 18.5.4, if no weight is specified, the
-           default weight is @(':= 1'), i.e., the default is
-           @(':vl-weight-each').")
-
-   (weight vl-expr-p
-           "The weight, e.g., @('1') in @('100 := 1').  Note per
-            SystemVerilog-2012 Section 18.5.4, if no weight is specified, the
-            default weight is @(':= 1'), so the default weight is @('1')."))
-
-  :long "<p>See SystemVerilog-2012 Section 18.5.4, Distribution.  This is our
-representation of a single @('dist_item').  The associated grammar rules
-are:</p>
-
-@({
-     dist_item ::= value_range [ dist_weight ]
-
-     dist_weight ::= ':=' expression             ;; see vl-distweighttype-p
-                   | ':/' expression
-
-     value_range ::= expression
-                   | [ expression : expression ]
-})")
-
-(fty::deflist vl-distlist
-  :elt-type vl-distitem
-  :elementp-of-nil nil)
-
-(defprod vl-exprdist
-  :short "Representation of @('expr dist { ... }') constructs."
-  :tag :vl-exprdist
-  :layout :tree
-  ((expr vl-expr-p
-         "The left-hand side expression, which per SystemVerilog-2012 Section
-          18.5.4 should involve at least one @('rand') variable.")
-   (dist vl-distlist-p
-         "The desired ranges of values and probability distribution.  May be
-          @('nil') in case of a plain expression without any @('dist')
-          part."))
-
-  :long "<p>Very confusingly, the @('dist') operator is mentioned in the
-SystemVerilog-2012 precedence table (Table 11-2, Page 221).  This doesn't
-make any sense because per the grammar rules it only occurs within</p>
-
-@({
-     expression_or_dist ::= expression [ 'dist' { dist_list } ]
-})
-
-<p>And these @('expression_or_dist') things definitely do not occur within
-other expressions.  After some investigation, I believe this inclusion in
-the table is simply misleading and that the right way to treat @('dist') is
-as a separate construct rather than as a real operator.  See also the file
-@('vl/parser/tests/distprec.sv') for related notes and experiments.</p>")
-
-(fty::deflist vl-exprdistlist
-  :parents (vl-exprdist)
-  :elt-type vl-exprdist)
-
-(defoption vl-maybe-exprdist vl-exprdist-p)
-
-
-(defenum vl-repetitiontype-p
-  (:vl-repetition-consecutive
-   :vl-repetition-goto
-   :vl-repetition-nonconsecutive)
-  :short "Representation of SystemVerilog assertion sequence repetition types,
-i.e., @('[*...]'), @('[->...]'), or @('[=...]') style repetition."
-  :long "<p>See SystemVerilog-2012 Section 16.9.2.</p>
-
-<ul>
-<li>@('[* ...]'), @('[*]'), and @('[+]') is called <b>consecutive</b> repetition</li>
-<li>@('[-> ...]') is called <b>goto</b> repetition</li>
-<li>@('[= ...]') is called <b>nonconsecutive</b> repetition</li>
-</ul>")
-
-(defprod vl-repetition
-  :short "Representation of a SystemVerilog assertion sequence repetition."
-  :tag :vl-repetition
-  :layout :tree
-
-  ((type vl-repetitiontype-p
-         "Kind of repetition, i.e., consecutive, goto, or nonconsecutive.")
-
-   (left vl-expr-p
-         "Sole or left bound on the repetition.  Examples: @('left') is 3 for
-          any of @('[* 3]'),
-                 @('[* 3:4]'),
-                 @('[-> 3]'),
-                 @('[-> 3:4]'),
-                 @('[= 3]'), or
-                 @('[= 3:4]').
-          In the special cases of @('[*]') and @('[+]'), @('left') should be
-          0 and 1, respectively.")
-
-   (right vl-maybe-expr-p
-          "Right bound on the repetition if applicable.  For instance,
-           @('right') is
-                 @('nil') for any of @('[* 3]'),
-                                     @('[-> 3]'), or
-                                     @('[= 3]').
-           It is @('4') for any of @('[* 3:4]'),
-                                   @('[-> 3:4]'), or
-                                   @('[= 3:4]').
-           It is @('$') for @('[*]') or @('[+]')."))
-
-  :long "<p>See SystemVerilog-2012 Section 16.9.2.</p>
-
-<p>Note from Page 357 that @('[*]') is equivalent to @('[0:$]') and @('[+]') is
-equivalent to @('[1:$]'), so we don't bother with separate representations of
-these.</p>")
-
-(defoption vl-maybe-repetition vl-repetition-p)
-
-
-(defenum vl-property-unaryop-p
-  (:vl-prop-firstmatch       ;;; first_match a
-   :vl-prop-not              ;;; not a
-   :vl-prop-strong           ;;; strong a
-   :vl-prop-weak             ;;; weak a
-   )
-  :parents (property-expressions)
-  :short "Very basic unary sequence/property operators.")
-
-(defenum vl-property-binaryop-p
-  (:vl-prop-and              ;;; a and b
-   :vl-prop-intersect        ;;; a intersect b
-   :vl-prop-or               ;;; a or b
-   :vl-prop-within           ;;; a within b
-   :vl-prop-iff              ;;; a iff b
-   :vl-prop-until            ;;; a until b
-   :vl-prop-suntil           ;;; a s_until b
-   :vl-prop-untilwith        ;;; a until_with b
-   :vl-prop-suntilwith       ;;; a s_until_with b
-   :vl-prop-word-implies     ;;; a implies b        "plain old implies"
-   :vl-prop-thin-implies     ;;; a |-> b            "overlapped implication"
-   :vl-prop-fat-implies      ;;; a |=> b            "non-overlapped implication"
-   :vl-prop-thin-follows     ;;; a #-# b
-   :vl-prop-fat-follows      ;;; a #=# b
-   )
-  :parents (property-expressions)
-  :short "Very basic binary sequence/property operators."
-
-  :long "<p>The only confusing thing here is the different kinds of implies and
-         follows operators.  Here's the mapping:</p>
-
-         <ul>
-         <li>@(':vl-prop-word-implies') is literally the keyword @('implies').</li>
-         <li>@(':vl-prop-thin-implies') is the operator @('|->'), i.e., overlapped implication.</li>
-         <li>@(':vl-prop-fat-implies') is the operator @('|=>'), i.e., non-overlapped implication.</li>
-         <li>@(':vl-prop-thin-follows') is the operator @('#-#').</li>
-         <li>@(':vl-prop-fat-follows') is the operator @('#=#').</li>
-         </ul>")
-
-(defenum vl-property-acceptop-p
-  (:vl-prop-accepton         ;;; accept_on(foo) bar
-   :vl-prop-syncaccepton     ;;; sync_accept_on(foo) bar
-   :vl-prop-rejecton         ;;; reject_on(foo) bar
-   :vl-prop-syncrejecton     ;;; sync_reject_on(foo) bar
-   )
-  :parents (property-expressions)
-  :short "The @('accept_on'), @('reject_on'), @('sync_accept_on'), and
-          @('sync_reject_on') operators."
-  :long "<p>These are a bit unusual and take both a condition and a property as
-         their arguments.</p>")
-
-
-(deftypes property-expressions
-  :parents (syntax)
-  :short "Representation of SystemVerilog property and sequence expressions."
-
-  (deftagsum vl-propexpr
-    :measure (two-nats-measure (acl2-count x) 0)
-    :short "Representation of a single property or sequence expression."
-    :long "<p>Note that SystemVerilog distinguishes between properties and
-           sequences.  However, VL internally represents both property and
-           sequence expressions using this same data structure.</p>"
-
-    (:vl-propcore
-     :short "Basic, single expression in a sequence or property (perhaps
-             with some probability distribution stuff.)"
-     :base-name vl-propcore
-     ((guts vl-exprdist-p)))
-
-    (:vl-propinst
-     :short "Instance of a named sequence or property."
-     :base-name vl-propinst
-     ((ref  vl-scopeexpr-p      "Name of the sequence/property to instance.")
-      (args vl-propactuallist-p "Arguments to give it.")))
-
-    (:vl-propthen
-     :short "Sequential sequence composition, i.e., @('foo ##1 bar') and similar."
-     :base-name vl-propthen
-     ((delay vl-range-p
-             "The delay or range part between the two sequences.  Note that
-              SystemVerilog gives a rich syntax here which we always boil down
-              to a range.  In particular, a single expression like @('##1') is
-              represented with the range #('[1:1]').  The SystemVerilog syntax
-              @('##[*]') just means @('##[0:$]') and the syntax @('##[+]') just
-              means @('##[1:$]').  Dollar signs are supposed to mean the end of
-              simulation, or for formal tools are supposed to mean some finite
-              but unbounded range.")
-      (left  vl-propexpr-p  "Left-hand side sequence to match, e.g., @('foo').")
-      (right vl-propexpr-p  "Right-hand side sequence to match, e.g., @('bar')."))
-     :long "<p>Note that in SystemVerilog you can write sequences that don't have
-            a starting expression, e.g., you can just write @('##1 foo ##1 bar').
-            In this case, we set @('left') to the expression @('1'), which always
-            evaluates to true and hence has no effect on the sequence.</p>")
-
-    (:vl-proprepeat
-     :short "A sequence with repetitions."
-     :base-name vl-proprepeat
-     ((seq   vl-propexpr-p    "Sequence being repeated, e.g., @('foo') in
-                               @('foo[*2]').")
-      (reps  vl-repetition-p  "Repetitions of this sequence, e.g., @('[*2]') in
-                               @('foo[*2]').")))
-
-    (:vl-propassign
-     :short "A sequence with sequence match items (updates to its variables)."
-     :base-name vl-propassign
-     ((seq   vl-propexpr-p "Base sequence being extended with match items, e.g.,
-                            @('foo') in the sequence @('foo, x++').")
-      (items vl-exprlist-p "Sequence match items that are being attached to this
-                            sequence, e.g., @('x++') in the sequence @('(foo,
-                            x++)')."))
-     :long "<p>These match items can perhaps influence local sequence
-            variables, see SystemVerilog-2012 section 16.10.  In practice these
-            should be assignment expressions, increment/decrement expression,
-            or function calls.  We just represent them as arbitrary
-            expressions.</p>")
-
-    (:vl-propthroughout
-     :short "A @('throughout') sequence expression."
-     :base-name vl-propthroughout
-     ((left  vl-exprdist-p "The left hand side expression.")
-      (right vl-propexpr-p "The right hand side sequence expression.")))
-
-    (:vl-propclock
-     :short "A sequence or property expression with a clocking event."
-     :base-name vl-propclock
-     ((trigger vl-evatomlist
-               "A @('clocking_event'), e.g., the @('posedge foo') part of a
-                sequence expression like @('@(posedge foo) ready ##1
-                qvalid').")
-      (then    vl-propexpr-p
-               "The sequence to match when this clocking event occurs, e.g.,
-                the @('ready ##1 qvalid') part of the above sequence.")))
-
-    (:vl-propunary
-     :short "A basic unary operator applied to a sequence/property, for
-             instance, like @('first_match(a)'), @('not(b)'), etc."
-     :base-name vl-propunary
-     ((op    vl-property-unaryop-p  "Operator being applied.")
-      (arg   vl-propexpr-p          "Argument to the operator.")))
-
-    (:vl-propbinary
-     :short "A basic binary operator that joins two sequences/properties, like
-             @('a and b'), @('a |-> b'), etc."
-     :base-name vl-propbinary
-     ((op    vl-property-binaryop-p "Operator that joins these sequences together.")
-      (left  vl-propexpr-p          "Left hand side sequence or property operand.")
-      (right vl-propexpr-p          "Right hand side sequence or property operand."))
-     :long "<p>Note that we use this for @('first_match') sequence operators.
-            If you look at the grammar for @('first_match') expressions, there
-            is special syntax for embedding match items without nested parens.
-            However, that syntax is equivalent to just using the usual @('(foo,
-            x++)') style syntax as in a @(see vl-propassign), so in our internal
-            representation we only have a sequence expression; the match items,
-            if any, will be found within @('arg').</p>")
-
-    (:vl-propalways
-     :short "An @('always') or @('s_always') property expression."
-     :base-name vl-propalways
-     ((strongp booleanp :rule-classes :type-prescription
-               "True when this is an @('s_always').")
-      (range   vl-maybe-range-p
-               "The range applied to this always if applicable.  For instance,
-                in @('always [2:3] foo'), the range is @('[2:3]').  A plain
-                @('always') may or may not have a range, but an @('s_always')
-                should always have one.  We don't enforce this in our data
-                structures, but it is enforced by the parser.")
-      (prop    vl-propexpr-p
-               "The property being tested, e.g., @('foo') in @('always foo').")))
-
-    (:vl-propeventually
-     :short "An @('eventually') or @('s_eventually') property expression."
-     :base-name vl-propeventually
-     ((strongp booleanp :rule-classes :type-prescription
-               "True when this is an @('s_eventually').")
-      (range   vl-maybe-range-p
-               "The range applied to this eventually, if applicable.  For
-                instance, in @('eventually [2:3] foo'), the range is @('[2:3]').
-                In the grammar, ranges are optional for @('s_eventually') but
-                are required for ordinary @('eventually') properties.  We don't
-                enforce this in our data structures, but it is enforced by the
-                parser.")
-      (prop vl-propexpr-p
-            "The property being tested, e.g., @('foo') in @('eventually foo').")))
-
-    (:vl-propaccept
-     :short "A (possibly synchronous) @('accept_on') or @('reject_on') property
-             expression."
-     :base-name vl-propaccept
-     ((op         vl-property-acceptop-p
-                  "The kind of operator, e.g., @('accept_on'), @('reject_on'),
-                   etc.")
-      (condition  vl-exprdist-p
-                  "The abort condition for this operation, e.g., @('foo') in
-                   @('accept_on(foo) bar').")
-      (prop       vl-propexpr-p
-                  "The abort property, e.g., @('bar') in @('accept_on(foo)
-                  bar').")))
-
-    (:vl-propnexttime
-     :short "A @('nexttime') or @('s_nexttime') property expression."
-     :base-name vl-propnexttime
-     ((strongp booleanp :rule-classes :type-prescription
-               "True for @('s_nexttime') operators, nil for ordinary @('nexttime').")
-      (expr    vl-maybe-expr-p
-               "For instance, #('3') in case of @('nexttime [3] foo').")
-      (prop    vl-propexpr-p
-               "The property that must hold next time, e.g., @('foo') in
-                @('nexttime [3] foo').")))
-
-    (:vl-propif
-     :short "An @('if')-@('else') property expression."
-     :base-name vl-propif
-     ((condition vl-exprdist-p)
-      (then      vl-propexpr-p)
-      (else      vl-propexpr-p
-                 "In the SystemVerilog grammar the else branch is optional.
-                  But an assertion of the form @('if (foo) bar') is equivalent
-                  to @('if (foo) bar else 1'), so to keep our internal
-                  representation simpler we require that the @('else') branch
-                  is present, and if it is missing our parser just fills in
-                  an explicit @('1') here.")))
-
-    (:vl-propcase
-     :short "A @('case') property expression."
-     :base-name vl-propcase
-     ((condition vl-exprdist-p)
-      (cases     vl-propcaseitemlist-p))))
-
-  (deftagsum vl-propactual
-    :measure (two-nats-measure (acl2-count x) 0)
-    :short "An actual given as an argument to an instance of a named sequence
-            or property.  May be an event expression or a sequence or property
-            expression."
-    (:blank
-     ((name    maybe-stringp :rule-classes :type-prescription
-               "An empty property actual; may indicate an explicitly blank
-                named argument such as @('.foo()'), or may represent an extra
-                commas in the argument list, like @('(foo, , bar)'), in which
-                case there will be no name.")))
-
-    (:event
-     ((name    maybe-stringp :rule-classes :type-prescription
-               "Explicit name for this argument, if provided.  For instance,
-                in @('.foo(bar)'), this is the @('foo') part.  Some actuals
-                may not have a name..")
-      (evatoms vl-evatomlist-p
-               "This isn't quite general enough, but event expressions are also
-                used in @(see vl-eventcontrol)s, so I'd like this to be
-                compatible with that code, reuse its parser, etc.  If we find
-                that this isn't good enough, we should extend the eventcontrol
-                representation too.")))
-    (:prop
-     ((name    maybe-stringp :rule-classes :type-prescription
-               "Explicit name for this argument, if provided.  For instance,
-                in @('.foo(bar)'), this is the @('foo') part.  Some actuals
-                may not have a name.")
-      (prop    vl-propexpr-p
-               "Expression being used as the property or sequence actual
-                value."))))
-
-  (fty::deflist vl-propactuallist
-    :elt-type vl-propactual
-    :measure (two-nats-measure (acl2-count x) 0))
-
-  (defprod vl-propcaseitem
-    :short "A single line in a @('case') property expression."
-    :measure (two-nats-measure (acl2-count x) 1)
-    ((match vl-exprdistlist-p
-            "The match expressions before the colon, or @('nil') for the
-             default case item.")
-     (prop  vl-propexpr-p
-            "The property expression for this case.")))
-
-  (fty::deflist vl-propcaseitemlist
-    :elt-type vl-propcaseitem
-    :measure (two-nats-measure (acl2-count x) 2)))
-
-(defprod vl-propspec
-  :short "A single property specification."
-  ((evatoms vl-evatomlist-p
-            "The top-level clocking events for this property specification; this
-             can just be @('nil') if there is no clocking event.")
-   (disable vl-maybe-exprdist-p
-            "Top level disable condition, or @('nil') if this property has no
-             @('disable') clause.")
-   (prop    vl-propexpr-p
-            "Main property expression for this property specification.")
-   (loc     vl-location-p)))
 
 (defprod vl-propport
   :short "Representation of a single @('property') or @('sequence') port."
@@ -4377,129 +4461,4 @@ these.</p>")
             to capture any sequence expression.")
    (loc    vl-location-p)))
 
-(defenum vl-asserttype-p
-  (:vl-assert
-   :vl-assume
-   :vl-cover
-   :vl-cover-property
-   :vl-cover-sequence
-   :vl-expect
-   :vl-restrict)
-  :parents (vl-assert)
-  :short "Type of assertion, e.g., @('assert'), @('assume'), @('cover'), etc.")
-
-(defenum vl-assertdeferral-p
-  (nil
-   :vl-defer-0
-   :vl-defer-final)
-  :parents (vl-assert)
-  :short "Indicates whether this assertion is deferred."
-  :long "<ul>
-         <li>@('nil') &mdash; this is not a deferred assertion.</li>
-         <li>@(':vl-defer-0') &mdash; this is a @('#0') deferred assertion.</li>
-         <li>@(':vl-defer-final') &mdash; this is a @('final') deferred assertion.</li>
-         </ul>")
-
-(deftagsum vl-assert
-  :short "Representation of a single SystemVerilog assertion."
-
-  (:immediate
-   :short "Representation of a single SystemVerilog immediate assertion."
-   ((name         maybe-stringp :rule-classes :type-prescription
-                  "For instance, @('foo') in @('foo : assert (bar) ...').")
-    (type         vl-asserttype-p
-                  "The type of this assertion, e.g., @('assert'), @('assume'),
-                   etc.")
-    (deferral     vl-assertdeferral-p
-                  "Indicates whether this assertion is a regular, non-deferred
-                   assertion, or a #('#0') or @('final') deferred assertion.")
-    (condition    vl-expr-p
-                  "The condition to assert.  Note that since this is an
-                   immediate assertion, the condition is a simple expression,
-                   not a fancy sequence or property.")
-    (success      vl-stmt-p
-                  "For most assertions, this is the success statement for the
-                   associated action block, or a @(see vl-nullstmt) if there is
-                   no success statement.  Note that @('cover') assertions are
-                   special and don't have an action block, so for a @('cover')
-                   assertion this is just the associated statement, if any.")
-    (failure      vl-stmt-p
-                  "This is the @('else') statement from the action block, or a
-                   @(see vl-nullstmt) if there is no @('else') statement.  For
-                   @('cover') assertions this is always just a @(see
-                   vl-nullstmt) since there is no @('else') action.")
-    (loc          vl-location-p)))
-
-  (:concurrent
-   :short "Representation of a single SystemVerilog concurrent assertion."
-   ((name         maybe-stringp :rule-classes :type-prescription
-                  "For instance, @('foo') in @('foo : assert property (bar)
-                   ...').")
-    (type         vl-asserttype-p
-                  "The type of this assertion, e.g., @('assert'), @('assume'),
-                   etc.")
-    (condition    vl-propspec-p
-                  "The property specification being asserted.")
-    (success      vl-stmt-p
-                  "For most assertions, this is the success statement for the
-                   associated action block, or a @(see vl-nullstmt) if there is
-                   no success statement.  Note that @('cover') assertions are
-                   special and don't have an action block, so for a @('cover')
-                   assertion this is just the associated statement, if any.")
-    (failure      vl-stmt-p
-                  "This is the @('else') statement from the action block, or a
-                   @(see vl-nullstmt) if there is no @('else') statement.  For
-                   @('cover') assertions this is always just a @(see
-                   vl-nullstmt) since there is no @('else') action.")
-    (loc          vl-location-p))))
-
-(fty::deflist vl-assertlist
-  :elt-type vl-assert)
-
-
-
-
-;; (deftypes assertion-item-declarations
-
-;;   :post-pred-events
-;;   ((defthm tag-when-vl-property
-;;      (implies (vl-property-p x)
-;;               (equal (tag x) :vl-property))
-;;      :rule-classes :forward-chaining
-;;      :hints(("Goal"
-;;              :in-theory (enable tag)
-;;              :expand ((vl-property-p x)))))
-;;    (defthm tag-when-vl-sequence
-;;      (implies (vl-sequence-p x)
-;;               (equal (tag x) :vl-sequence))
-;;      :rule-classes :forward-chaining
-;;      :hints(("Goal"
-;;              :in-theory (enable tag)
-;;              :expand ((vl-sequence-p x)))))
-;;    (local (defthm tag-rewrites
-;;             (and (implies (vl-property-p x) (equal (tag x) :vl-property))
-;;                  (implies (vl-sequence-p x) (equal (tag x) :vl-sequence)))))
-;;    (local (in-theory (enable tag-reasoning))))
-
-
-;;   (defflexsum vl-assertionitemdecl
-;;     :measure (two-nats-measure (acl2-count x) 2)
-;;     :short "A @('property'), @('sequence'), or @('let') declaration."
-;;     :long "<p>BOZO add support for @('let') declarations.</p>"
-;;     (:property
-;;      ;; Use (make-vl-assertionitemdecl-property ...)
-;;      :cond (eq (tag x) :vl-property)
-;;      :fields ((prop :type vl-property-p :acc-body x))
-;;      :ctor-body prop)
-;;     (:sequence
-;;      ;; Use (make-vl-assertionitemdecl-sequence ...)
-;;      ;; When we add LET, the :cond will need to change to (eq (tag x) :vl-sequence)
-;;      ;; and the :cond for LET can be T.
-;;      :cond t
-;;      :fields ((seq :type vl-sequence-p :acc-body x))
-;;      :ctor-body seq))
-
-;;   (fty::deflist vl-assertionitemdecllist
-;;     :measure (two-nats-measure (acl2-count x) 0)
-;;     :elt-type vl-assertionitemdecl))
 

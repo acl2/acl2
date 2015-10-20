@@ -210,7 +210,10 @@
     :vl-blockstmt        x.atts
     :vl-repeatstmt       x.atts
     :vl-timingstmt       x.atts
-    :vl-returnstmt       x.atts))
+    :vl-returnstmt       x.atts
+    ;; bozo should assert statements have atts?
+    :vl-assertstmt       nil
+    :vl-concassertstmt   nil))
 
 
 (define vl-compoundstmt->stmts
@@ -235,6 +238,8 @@ expressions.</p>"
     :vl-blockstmt        x.stmts
     :vl-repeatstmt       (list x.body)
     :vl-timingstmt       (list x.body)
+    :vl-assertstmt       (list x.success x.failure)
+    :vl-concassertstmt   (list x.success x.failure)
     :otherwise           nil)
   ///
   (local (in-theory (enable vl-stmtlist-count
@@ -293,16 +298,18 @@ expressions.</p>"
   :long "<p>Note that this only returns the top-level expressions that are
 directly part of the statement.</p>"
   (vl-stmt-case x
-    :vl-casestmt    (cons x.test (flatten (alist-keys x.caselist)))
-    :vl-ifstmt      (list x.condition)
-    :vl-foreverstmt nil
-    :vl-waitstmt    (list x.condition)
-    :vl-whilestmt   (list x.condition)
-    :vl-forstmt     (list x.test)
-    :vl-repeatstmt  (list x.condition)
-    :vl-blockstmt   nil
-    :vl-timingstmt  nil
-    :otherwise      nil))
+    :vl-casestmt       (cons x.test (flatten (alist-keys x.caselist)))
+    :vl-ifstmt         (list x.condition)
+    :vl-foreverstmt    nil
+    :vl-waitstmt       (list x.condition)
+    :vl-whilestmt      (list x.condition)
+    :vl-forstmt        (list x.test)
+    :vl-repeatstmt     (list x.condition)
+    :vl-blockstmt      nil
+    :vl-timingstmt     nil
+    :vl-assertstmt     (list x.condition)
+    :vl-concassertstmt nil ;; bozo?
+    :otherwise         nil))
 
 
 (define vl-compoundstmt->ctrl
@@ -569,6 +576,17 @@ directly part of the statement.</p>"
       (change-vl-timingstmt x
                             :ctrl ctrl
                             :body (first stmts))
+
+      :vl-assertstmt
+      (change-vl-assertstmt x
+                            :condition (first exprs)
+                            :success (first stmts)
+                            :failure (second stmts))
+
+      :vl-concassertstmt
+      (change-vl-concassertstmt x
+                                :success (first stmts)
+                                :failure (second stmts))
 
       ;; Atomic statements are ruled out by the guard.
       :vl-nullstmt         (progn$ (impossible) x)

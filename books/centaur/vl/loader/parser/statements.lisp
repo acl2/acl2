@@ -32,6 +32,7 @@
 (include-book "eventctrl")
 (include-book "blockitems")
 (include-book "lvalues")
+(include-book "properties")
 (include-book "../../mlib/stmt-tools")
 (local (include-book "../../util/arithmetic"))
 
@@ -48,8 +49,15 @@
                            append)))
 
 
+(defxdoc parse-statements
+  :parents (parser)
+  :short "Functions for parsing Verilog and SystemVerilog procedural statements.")
 
-(define vl-inc-or-dec-expr ((var vl-expr-p) (op (member op '(:vl-plusplus :vl-minusminus))))
+(local (xdoc::set-default-parents parse-statements))
+
+
+(define vl-inc-or-dec-expr ((var vl-expr-p)
+                            (op  (member op '(:vl-plusplus :vl-minusminus))))
   :returns (expr vl-expr-p)
   :guard-debug t
   (make-vl-binary
@@ -64,7 +72,7 @@
                             :origsign :vl-unsigned
                             :wasunsized t))))
 
-(defconst *vl-assignment-operators*
+(defval *vl-assignment-operators*
   '(:vl-equalsign
     :vl-pluseq
     :vl-minuseq
@@ -82,10 +90,10 @@
 (define vl-assign-op-expr ((var vl-expr-p)
                            (op (member op *vl-assignment-operators*))
                            (rhs vl-expr-p))
-  ;; Given an expression like a = b, returns b.
-  ;; Given a %= b, returns a % b.
+  :short "Normalized right-hand side of an assignment operator expression."
+  :long "<p>Given an expression like @('a = b') we return @('b').  Given an
+         expression like @('a %= b') we return @('a % b').</p>"
   :returns (expr vl-expr-p)
-  :guard-debug t
   (if (eq op :vl-equalsign)
       (vl-expr-fix rhs)
     (make-vl-binary
@@ -105,9 +113,9 @@
      :left var
      :right rhs)))
 
-
 (defparser vl-parse-operator-assignment/inc/dec ()
-  ;; Parses e.g "a += 1" and returns (a . (a + 1)).  Also handles a++ and ++a.
+  :short "Parses, e.g., @('a += 1') and returns @('(a . (a + 1))').  Also handles @('a++') and @('++a')."
+  ;; BOZO what gramamr rule does this correspond to?
   :result (and (consp val)
                 (vl-expr-p (car val))
                 (vl-expr-p (cdr val)))
@@ -135,13 +143,21 @@
 
 
 
-; blocking_assignment ::=
-;    lvalue '=' [delay_or_event_control] expression
-;
-; nonblocking_assignment ::=
-;     lvalue '<=' [delay_or_event_control] expression
 
 (defparser vl-parse-blocking-or-nonblocking-assignment (atts)
+  :short "Parse a @('blocking_assignment') or @('nonblocking_assignment')."
+  :long "<p>Verilog-2005 syntax:</p>
+
+         @({
+             blocking_assignment ::=
+               lvalue '=' [delay_or_event_control] expression
+
+             nonblocking_assignment ::=
+               lvalue '<=' [delay_or_event_control] expression
+         })
+
+         <p>BOZO SystemVerilog-2012 extends @('blocking_assignment') in several
+         ways which we do not yet implement.</p>"
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
@@ -159,19 +175,24 @@
                                 :vl-nonblocking)
                               lvalue expr delay atts loc))))
 
-; procedural_continuous_assignments ::=
-;    'assign' assignment
-;  | 'deassign' lvalue
-;  | 'force' assignment
-;  | 'release' lvalue
-;
-; The verilog grammar makes it look worse than this, but with our treatment of
-; assignment and lvalue, that's all there is to it.
-;
-; Curiously named production, given that only one can be returned.
 
 (defparser vl-parse-procedural-continuous-assignments (atts)
-  ;; Returns a vl-assignstmt-p or a vl-deassignstmt-p
+  :short "Parse a @('procedural_continuous_assignment')."
+  ;; Curiously named production, given that only one can be returned.  In
+  ;; SystemVerilog-2012 it gets changed to singular; we should probably rename
+  ;; it as well.
+  :long "<p>For Verilog-2005, the grammar looks worse than this, but with our
+         treatment of assignment and lvalue it's just:</p>
+
+         @({
+              procedural_continuous_assignments ::= 'assign' assignment
+                                                  | 'deassign' lvalue
+                                                  | 'force' assignment
+                                                  | 'release' lvalue
+         })
+
+         <p>SystemVerilog-2012 may extend this but we haven't yet looked at
+         whether or how it is extended.</p>"
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
@@ -194,10 +215,16 @@
                                  lvalue atts))))
 
 
-; task_enable ::=
-;   hierarchical_task_identifier [ '(' expression { ',' expression } ')' ] ';'
 
 (defparser vl-parse-task-enable (atts)
+  :short "Parse a @('task_enable')."
+  :long "<p>Verilog-2005 Syntax:</p>
+         @({
+              task_enable ::=
+                 hierarchical_task_identifier [ '(' expression { ',' expression } ')' ] ';'
+         })
+
+         <p>SystemVerilog-2012: Bozo, I'm not yet sure what this corresponds to.</p>"
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
@@ -233,10 +260,16 @@
                                    :atts atts))))
 
 
-; system_task_enable ::=
-;    system_identifier [ '(' [expression] { ',' [expression] } ')' ] ';'
 
 (defparser vl-parse-system-task-enable (atts)
+  :short "Parse a @('system_task_enable')."
+  :long "<p>Verilog-2005 Syntax:</p>
+        @({
+             system_task_enable ::=
+               system_identifier [ '(' [expression] { ',' [expression] } ')' ] ';'
+        })
+
+        <p>SystemVerilog-2012: bozo what does this correspond to?</p>"
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
@@ -257,10 +290,22 @@
                              :atts atts))))
 
 
-; disable_statement ::=
-;    'disable' hierarchical_identifier ';'
-
 (defparser vl-parse-disable-statement (atts)
+  :short "Parse a @('disable_statement')."
+  :long "<p>Verilog-2005 Syntax:</p>
+         @({
+             disable_statement ::= 'disable' hierarchical_identifier ';'
+         })
+
+         <p>SystemVerilog-2012 extends this to:</p>
+         @({
+             disable_statement ::= 'disable' hierarchical_task_identifier ';'
+             disable_statement ::= 'disable' hierarchical_block_identifier ';'
+             disable_statement ::= 'disable' 'fork' ';'
+         })
+
+         <p>But both of these are just @('hierarchical_identifier'), so really
+         the only extension is @('fork').</p>"
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
@@ -268,74 +313,71 @@
   :count strong
   (seq tokstream
         (:= (vl-match-token :vl-kwd-disable))
+        (when (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                   (vl-is-token? :vl-kwd-fork))
+          (return-raw (vl-parse-error "BOZO not yet implemented: disable fork ;")))
         (id := (vl-parse-hierarchical-identifier nil))
         (:= (vl-match-token :vl-semi))
         (return (vl-disablestmt (make-vl-scopeexpr-end :hid id)
                                 atts))))
 
 
-; event_trigger ::=
-;   '->' hierachial_identifier { '[' expression ']' } ';'
-
 (defparser vl-parse-event-trigger (atts)
+  :short "Parse an @('event_trigger')."
+  :long "<p>Verilog-2005 Syntax:</p>
+        @({
+             event_trigger ::= '->' hierarchical_identifier { '[' expression ']' } ';'
+        })
+
+        <p>SystemVerilog-2012 Syntax:</p>
+        @({
+             event_trigger ::= '->' hierarchical_identifier ';'
+                             | '->>' [delay_or_event_control] hierarchical_identifier ';'
+        })
+
+        <p>Interestingly it seems that SystemVerilog doesn't permit the
+        bracketed expressions after the event trigger.  What did they mean?  I
+        am not sure.  There is virtually no discussion of what these bracketed
+        expressions mean in the Verilog-2005 standard...</p>"
+
   :guard (vl-atts-p atts)
   :result (vl-stmt-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seq tokstream
-        (:= (vl-match-token :vl-arrow))
-        (hid := (vl-parse-hierarchical-identifier nil))
-        (bexprs := (vl-parse-0+-bracketed-expressions))
-        (:= (vl-match-token :vl-semi))
-        (return (vl-eventtriggerstmt
-                 (make-vl-index
-                  :scope (make-vl-scopeexpr-end :hid hid)
-                  :part (make-vl-partselect-none)
-                  :indices bexprs)
-                  atts))))
+  (if (eq (vl-loadconfig->edition config) :verilog-2005)
+      (seq tokstream
+           (:= (vl-match-token :vl-arrow))
+           (hid := (vl-parse-hierarchical-identifier nil))
+           (bexprs := (vl-parse-0+-bracketed-expressions))
+           (:= (vl-match-token :vl-semi))
+           (return (make-vl-eventtriggerstmt :id (make-vl-index :scope (make-vl-scopeexpr-end :hid hid)
+                                                                :part (make-vl-partselect-none)
+                                                                :indices bexprs)
+                                             :atts atts)))
+    ;; SystemVerilog-2012 Version:
+    (seq tokstream
+         (when (vl-is-token? :vl-arrowgt)
+           (return-raw (vl-parse-error "BOZO not yet implemented: '->>' style event trigger")))
+         (:= (vl-match-token :vl-arrow))
+         (hid := (vl-parse-hierarchical-identifier nil))
+         ;; Unlike Verilog-2005, don't parse bracketed expressions here.
+         (:= (vl-match-token :vl-semi))
+         (return (make-vl-eventtriggerstmt :id (make-vl-index :scope (make-vl-scopeexpr-end :hid hid)
+                                                              :part (make-vl-partselect-none))
+                                           :atts atts)))))
 
 
-
-; PARSING CASE STATEMENTS.
-;
-; In Verilog-2005, the syntax of the case statement is essentially:
-;
-;    case_kwd (expr) case_item { case_item } endcase
-;
-; Where case_kwd is either 'case', 'casez', or 'casex', and where case_item is:
-;
-; case_item ::=
-;    | expr { , expr } : stmt/null
-;    | default [ : ] stmt/null
-;
-; Since we allow the null statement as an atomic statement, we can simplify
-; this to:
-;
-;  case_item ::=
-;     expr { , expr } : stmt
-;   | default [ : ] stmt
-;
-; According to Section 9.5 (page 127) the default statement is optional but at
-; most one default statement is permitted.
-;
-; SystemVerilog-2012 extends case statements in a couple of ways.
-;
-;   - All case statements can now begin with (optional) 'unique', 'priority',
-;     or 'priority0' keywords.
-;
-;   - There are new "case matches" and "case inside" statements, i.e.,:
-;
-;        case/casez/casex (...) matches ... endcase
-;        case (...) inside ... endcase
-;
-; The "case matches" and "case inside" forms have different guts, with
-; case_pattern_items or case_inside_items.  So we don't yet support them.
 
 (defparser vl-parse-unique-priority ()
+  :short "Parse a @('unique_priority') into a @(see vl-casecheck-p)."
+  :long "<p>SystemVerilog-2012 only:</p>
+         @({
+              unique_priority ::= 'unique' | 'unique0' | 'priority'
+         })"
   :result (vl-casecheck-p val)
   :resultp-of-nil nil
-  :fails gracefully
+  :fails never
   :count strong-on-value
   (seq tokstream
         (when (eq (vl-loadconfig->edition config) :verilog-2005)
@@ -350,7 +392,15 @@
                   (:vl-kwd-unique   :vl-unique)
                   (:vl-kwd-unique0  :vl-unique0)))))
 
-(defparser vl-parse-case-type ()
+(defparser vl-parse-case-keyword ()
+  :short "Parse a @('case_keyword') into a @(see vl-casetype-p)."
+  :long "<p>The rule from SystemVerilog-2012 is:</p>
+         @({
+              case_keyword ::= 'case' | 'casez' | 'casex'
+         })
+
+         <p>This is also useful in Verilog-2005, but isn't a named rule in the
+         Verilog-2005 grammar.</p>"
   :result (vl-casetype-p val)
   :resultp-of-nil t
   :fails gracefully
@@ -366,11 +416,13 @@
 ; use a NIL expression list to represent default statements.
 
 (define vl-filter-parsed-caseitemlist ((x vl-caselist-p))
-  ;; Given a list of case items, we walk over the list and gather up any items
-  ;; with NIL expressions (i.e., any "default" cases) into one list, and any
-  ;; items with non-default expressions into the other list.
-  :returns (mv (default-stmts vl-stmtlist-p)
-               (normal-cases  vl-caselist-p))
+  :short "Split a list of cases into default and non-default cases."
+  :returns (mv (default-stmts vl-stmtlist-p
+                              "All statements in @('x') whose expressions are @('NIL'),
+                               i.e., all of the @('default') statements.")
+               (normal-cases vl-caselist-p
+                             "All of the cases that are <b>not</b> @('default')
+                              statements."))
   :measure (vl-caselist-count x)
   (b* ((x (vl-caselist-fix x))
        ((when (atom x))
@@ -385,14 +437,15 @@
   (defmvtypes vl-filter-parsed-caseitemlist (true-listp true-listp)))
 
 (define vl-make-case-statement
-  ;; Final work to turn the parsed things into a real case statement.
+  :short "Final work to turn the parsed elements into a real case statement."
   ((check vl-casecheck-p)
    (type  vl-casetype-p)
    (expr  vl-expr-p)
    (items vl-caselist-p)
    (atts  vl-atts-p))
-  ;; This either returns a STMT or NIL for failure.  The only reason it can
-  ;; fail is that more than one "default" statement was provided.
+  :long "<p>This either returns a statement or @('nil') for failure.  The only
+         reason it can fail is that more than one @('default') statement was
+         provided.</p>"
   :returns (stmt? (equal (vl-stmt-p stmt?) (if stmt? t nil)))
   (b* (((mv defaults normal-cases)
         (vl-filter-parsed-caseitemlist items))
@@ -540,6 +593,7 @@
 
 
 (defparser vl-parse-return-statement (atts)
+  :short "Match @('return [expression] ';')."
   :result (vl-stmt-p val)
   :fails gracefully
   :resultp-of-nil nil
@@ -549,8 +603,10 @@
   (seq tokstream
        (:= (vl-match-token :vl-kwd-return))
        (when (vl-is-token? :vl-semi)
+         (:= (vl-match))
          (return (make-vl-returnstmt :atts atts)))
        (val := (vl-parse-expression))
+       (:= (vl-match-token :vl-semi))
        (return (make-vl-returnstmt :val val :atts atts))))
 
 
@@ -600,25 +656,32 @@
                    )))
 
 
+(defprod vl-actionblock
+  :short "Temporary structure for parsing assertion statements."
+  :tag nil
+  :layout :tree
+  ((then vl-stmt-p)
+   (else vl-stmt-p)))
+
 
 
 (defparsers parse-statements
-
-; case_statement ::=
-;    'case' '(' expression ')' case_item { case_item } 'endcase'
-;  | 'casez' '(' expression ')' case_item { case_item } 'endcase'
-;  | 'casex' '(' expression ')' case_item { case_item } 'endcase'
-;
-; case_item ::=
-;    expression { ',' expression } ':' statement_or_null
-;  | 'default' [ ':' ] statement_or_null
-
   :flag-local nil
- (defparser vl-parse-case-item ()
-   ;; Returns a vl-caselist-p
-   :measure (two-nats-measure (vl-tokstream-measure) 0)
-   :verify-guards nil
-   (seq tokstream
+  :measure-debug t
+
+  (defparser vl-parse-case-item ()
+    :short "Parse a @('case_item') into a singleton @(see vl-caselist-p)."
+    :long "<p>Verilog-2005 Syntax:</p>
+
+          @({
+              case_item ::= expression { ',' expression } ':' statement_or_null
+                          | 'default' [ ':' ] statement_or_null
+          })
+
+          <p>SystemVerilog-2012 is the same.</p>"
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
+    :verify-guards nil
+    (seq tokstream
          (when (vl-is-token? :vl-kwd-default)
            (:= (vl-match))
            (when (vl-is-token? :vl-colon)
@@ -630,30 +693,77 @@
          (stmt := (vl-parse-statement-or-null))
          (return (list (cons exprs stmt)))))
 
- (defparser vl-parse-1+-case-items ()
-   :measure (two-nats-measure (vl-tokstream-measure) 1)
-   ;; Returns a vl-caselist-p
-   ;; We keep reading until 'endcase' is encountered
-   (seq tokstream
+  (defparser vl-parse-1+-case-items ()
+    :short "Parse @('case_item { case_item }') into a @(see vl-caselist-p)."
+    :measure (two-nats-measure (vl-tokstream-measure) 1)
+    ;; We keep reading until 'endcase' is encountered.
+    (seq tokstream
          (first :s= (vl-parse-case-item))
          (when (vl-is-token? :vl-kwd-endcase)
            (return first))
          (rest := (vl-parse-1+-case-items))
          (return (append first rest))))
 
- (defparser vl-parse-case-statement (atts)
-   ;; Returns a vl-stmt-p
-   :guard (vl-atts-p atts)
-   :measure (two-nats-measure (vl-tokstream-measure) 0)
-   (seq tokstream
+  (defparser vl-parse-case-statement (atts)
+    :short "Parse @('case_statement') into a @(see vl-stmt-p)."
+    :long "<p>Verilog-2005 Syntax:</p>
+          @({
+              case_statement ::=
+                   'case' '(' expression ')' case_item {case_item} 'endcase'
+                 | 'casez' '(' expression ')' case_item {case_item} 'endcase'
+                 | 'casex' '(' expression ')' case_item {case_item} 'endcase'
+          })
+
+          <p>SystemVerilog-2012 extends this kind of basic case statement with
+          optional @('unique'), @('priority') and @('priority0') keywords:</p>
+
+          @({
+               case_statement ::= [unique_priority]
+                                  case_keyword '(' expression ')' case_item {case_item} 'endcase'
+                                | ...
+
+               case_keyword ::= 'case' | 'casez' | 'casex'
+               unique_priority ::= 'unique' | 'unique0' | 'priority'
+          })
+
+          <p>So the above is the same across Verilog-2005 and
+          SystemVerilog-2012 except for the optional @('unique_priority').</p>
+
+          <p>SystemVerilog also adds new @('case matches') and @('case inside')
+          statements:</p>
+
+          @({
+               case_statement ::= ...
+                                | [unique_priority] case_keyword '(' expression ')'
+                                     'matches' case_pattern_item {case_pattern_item} 'endcase'
+                                | [unique_priority] 'case' '(' expression ')'
+                                     'inside' case_inside_item {case_inside_item} 'endcase'
+          })
+
+          <p>But BOZO we do not yet implement these."
+    :guard (vl-atts-p atts)
+    :measure (two-nats-measure (vl-tokstream-measure) 0)
+    (seq tokstream
          (check := (vl-parse-unique-priority))
-         (type := (vl-parse-case-type))
+         (type := (vl-parse-case-keyword))
          (:= (vl-match-token :vl-lparen))
          (test :s= (vl-parse-expression)) ;; bozo why do we need :s= here??
          (:= (vl-match-token :vl-rparen))
+
+         (when (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                    (vl-is-token? :vl-kwd-matches))
+           (return-raw (vl-parse-error "BOZO not yet implemented: case ... matches ...")))
+
+         (when (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                    (vl-is-token? :vl-kwd-inside))
+           (return-raw (vl-parse-error "BOZO not yet implemented: case ... inside ...")))
+
          (items := (vl-parse-1+-case-items))
          (:= (vl-match-token :vl-kwd-endcase))
          (return-raw
+          ;; Per Verilog-2005, Section 9.5 (page 127) the default statement is
+          ;; optional but at most one default statement is permitted.  This
+          ;; same restriction is kept SystemVerilog, Section 12.5 (Page 270).
           (let ((stmt (vl-make-case-statement check type test items atts)))
             (if (not stmt)
                 (vl-parse-error "Multiple defaults cases in case statement.")
@@ -865,35 +975,74 @@
 
 
 
-; statement ::=                                                      ;;; starts with
-;    {attribute_instance} blocking_assignment ';'                    ;;; variable_lvalue
-;  | {attribute_instance} case_statement                             ;;; 'case', 'casez', 'casex'
-;  | {attribute_instance} conditional_statement                      ;;; 'if'
-;  | {attribute_instance} disable_statement                          ;;; 'disable'
-;  | {attribute_instance} event_trigger                              ;;; '->'
-;  | {attribute_instance} loop_statement                             ;;; 'forever', 'repeat', 'while', 'for'
-;  | {attribute_instance} nonblocking_assignment ';'                 ;;; variable_lvalue
-;  | {attribute_instance} par_block                                  ;;; 'fork'
-;  | {attribute_instance} procedural_continuous_assignments ';'      ;;; 'assign', 'deassign', 'force', 'release'
-;  | {attribute_instance} procedural_timing_control_statement        ;;; '#', '@'
-;  | {attribute_instance} seq_block                                  ;;; 'begin'
-;  | {attribute_instance} system_task_enable                         ;;; sysidtoken
-;  | {attribute_instance} task_enable                                ;;; hierarchical_identifier
-;  | {attribute_instance} wait_statement                             ;;; 'wait'
+; SystemVerilog-2012:
 ;
-; statement_or_null ::=
-;    statement
-;  | {attribute_instance} ';'
+;
+;  statement ::= [block_identifier ':'] {attribute_instance} statement_item
+;  statement_item ::= ... | procedural_assertion_statement
+;
+; procedural_assertion_statement ::= concurrent_assertion_statement
+;                                  | immediate_assertion_statement
+;                                  | checker_instantiation
 
- (defparser vl-parse-statement-aux (atts)
+
+
+ (defparser vl-parse-action-block ()
+   :short "Parse @('action_block')"
+   :long "@({
+               action_block ::= statement_or_null
+                              | [statement] else statement
+         })"
+   :measure (two-nats-measure (vl-tokstream-measure) 180)
+   ;; :result (vl-actionblock-p val)
+   ;; :resultp-of-nil nil
+   ;; :fails gracefully
+   ;; :count strong
+   (seq tokstream
+        (when (vl-is-token? :vl-kwd-else)
+          (:= (vl-match))
+          (else := (vl-parse-statement))
+          (return (make-vl-actionblock :then (make-vl-nullstmt)
+                                       :else else)))
+        (then :s= (vl-parse-statement-or-null))
+        (when (vl-is-token? :vl-kwd-else)
+          (:= (vl-match))
+          (else := (vl-parse-statement)))
+        (return (make-vl-actionblock :then then
+                                     :else (or else (make-vl-nullstmt))))))
+
+
+
+ (defparser vl-parse-statement-2005-aux (atts)
+   :short "Verilog-2005 Only.  Main part of statement parsing."
+   :long "<p>Here's the Verilog-2005 statement rule:</p>
+          @({
+             statement ::=                                                      ;;; starts with
+                {attribute_instance} blocking_assignment ';'                    ;;; <complicated>
+              | {attribute_instance} case_statement                             ;;; 'case', 'casez', 'casex'
+              | {attribute_instance} conditional_statement                      ;;; 'if'
+              | {attribute_instance} disable_statement                          ;;; 'disable'
+              | {attribute_instance} event_trigger                              ;;; '->'
+              | {attribute_instance} loop_statement                             ;;; 'forever', 'repeat', 'while', 'for'
+              | {attribute_instance} nonblocking_assignment ';'                 ;;; <complicated>
+              | {attribute_instance} par_block                                  ;;; 'fork'
+              | {attribute_instance} procedural_continuous_assignments ';'      ;;; 'assign', 'deassign', 'force', 'release'
+              | {attribute_instance} procedural_timing_control_statement        ;;; '#', '@'
+              | {attribute_instance} seq_block                                  ;;; 'begin'
+              | {attribute_instance} system_task_enable                         ;;; sysidtoken
+              | {attribute_instance} task_enable                                ;;; <complicated>
+              | {attribute_instance} wait_statement                             ;;; 'wait'
+          })
+
+          <p>Here we assume we have already parsed the attributes and we are
+          just wanting to parse the main part of the statement.</p>"
    :guard (vl-atts-p atts)
-   :measure (two-nats-measure (vl-tokstream-measure) 1)
+   :measure (two-nats-measure (vl-tokstream-measure) 50)
    (if (not (consp (vl-tokstream->tokens)))
        (vl-parse-error "Unexpected EOF.")
      (case (vl-token->type (car (vl-tokstream->tokens)))
        ;; Blocking assignment handled below.
-       ((:vl-kwd-case :vl-kwd-casez :vl-kwd-casex
-         :vl-kwd-unique :vl-kwd-unique0 :vl-kwd-priority)
+       ((:vl-kwd-case :vl-kwd-casez :vl-kwd-casex)
         (vl-parse-case-statement atts))
        (:vl-kwd-if
         (vl-parse-conditional-statement atts))
@@ -920,11 +1069,6 @@
        ;; Task enable handled below
        (:vl-kwd-wait
         (vl-parse-wait-statement atts))
-       (:vl-kwd-return
-        (seq tokstream
-             (ret := (vl-parse-return-statement atts))
-             (:= (vl-match-token :vl-semi))
-             (return ret)))
        (t
         ;; At this point, we can have either a blocking assignment, nonblocking
         ;; assignment, or task enable.  We will backtrack.  It doesn't matter
@@ -932,6 +1076,170 @@
         ;; is successful when it sees an equal sign after the lvalue, while the
         ;; enable looks for a semicolon after the identifier, so there are no
         ;; inputs for which they both believe they are successful.
+        (b* ((backup (vl-tokstream-save))
+             ((mv erp val tokstream)
+              (seq tokstream
+                   (ret := (vl-parse-blocking-or-nonblocking-assignment atts))
+                   (:= (vl-match-token :vl-semi))
+                   (return ret)))
+             ((unless erp)
+              (mv erp val tokstream))
+             (tokstream (vl-tokstream-restore backup))
+             ((mv erp val tokstream)
+              (seq tokstream
+                   (loc := (vl-current-loc))
+                   ((lvalue . expr) := (vl-parse-operator-assignment/inc/dec))
+                   (:= (vl-match-token :vl-semi))
+                   (return (make-vl-assignstmt :type :vl-blocking
+                                               :lvalue lvalue
+                                               :expr expr
+                                               :loc loc))))
+             ((unless erp)
+              (mv erp val tokstream))
+             (tokstream (vl-tokstream-restore backup)))
+          (vl-parse-task-enable atts))))))
+
+ (defparser vl-parse-statement-2012-aux (atts)
+   :short "SystemVerilog-2012 Only.  Main part of statement parsing."
+   :long "<p>Here's the SystemVerilog-2012 statement rule:</p>
+          @({
+              statement ::= [ block_identifier : ] { attribute_instance } statement_item
+
+                                                                          ;;; starts with:
+              statement_item ::= blocking_assignment ;                    ;;; <complicated>
+                               | nonblocking_assignment ;                 ;;; <complicated>
+                               | procedural_continuous_assignment ;       ;;; 'assign', 'deassign', 'force', 'release'
+                               | case_statement                           ;;; 'case', 'casez', 'casex', 'unique', 'unique0', 'priority'
+                               | conditional_statement                    ;;; 'if', 'unique', 'unique0', 'priority'
+                               | inc_or_dec_expression ;                  ;;; <complicated>
+                               | subroutine_call_statement                ;;; <complicated>
+                               | disable_statement                        ;;; 'disable'
+                               | event_trigger                            ;;; '->', '->>'
+                               | loop_statement                           ;;; 'forever', 'repeat', 'while', 'for', 'do', 'foreach'
+                               | jump_statement                           ;;; 'return', 'break', 'continue'
+                               | par_block                                ;;; 'fork', 'join', 'join_any', 'join_none'
+                               | procedural_timing_control_statement      ;;; '#', '@', '##'
+                               | seq_block                                ;;; 'begin'
+                               | wait_statement                           ;;; 'wait', 'wait_order'
+                               | procedural_assertion_statement           ;;; <complicated>
+                               | clocking_drive ;                         ;;; <complicated>
+                               | randsequence_statement                   ;;; 'randsequence'
+                               | randcase_statement                       ;;; 'randcase'
+                               | expect_property_statement                ;;; 'expect'
+          })
+
+          <p>Here we assume we have already parsed the attributes and we are
+          just wanting to parse the subsequent @('statement_item')."
+
+   :guard (vl-atts-p atts)
+   :measure (two-nats-measure (vl-tokstream-measure) 50)
+   (if (not (consp (vl-tokstream->tokens)))
+       (vl-parse-error "Unexpected EOF.")
+     (case (vl-token->type (car (vl-tokstream->tokens)))
+       ;; -- blocking_assignment handled below.
+       ;; -- nonblocking_assignment handled below.
+
+       ;; -- procedural_continuous_assignment
+       ((:vl-kwd-assign :vl-kwd-deassign :vl-kwd-force :vl-kwd-release)
+        (seq tokstream
+             (ret := (vl-parse-procedural-continuous-assignments atts))
+             (:= (vl-match-token :vl-semi))
+             (return ret)))
+
+       ;; -- case_statement         } tricky because of unique/unique0/priority
+       ;; -- conditional_statement  }
+       ((:vl-kwd-unique :vl-kwd-unique0 :vl-kwd-priority)
+        ;; Can be either a case statement or an IF statement.
+        (if (vl-lookahead-is-token? :vl-kwd-if (cdr (vl-tokstream->tokens)))
+            (vl-parse-conditional-statement atts)
+          (vl-parse-case-statement atts)))
+       ((:vl-kwd-case :vl-kwd-casez :vl-kwd-casex)
+        (vl-parse-case-statement atts))
+       (:vl-kwd-if
+        (vl-parse-conditional-statement atts))
+
+       ;; -- inc_or_dec_expression handled below.
+       ;; -- subroutine_call_statement handled below.
+
+       ;; -- disable_statement
+       (:vl-kwd-disable
+        (vl-parse-disable-statement atts))
+       ;; -- event_trigger
+       ((:vl-arrow :vl-arrowgt)
+        (vl-parse-event-trigger atts))
+
+       ;; -- loop_statement
+       ((:vl-kwd-forever :vl-kwd-repeat :vl-kwd-while :vl-kwd-for)
+        (vl-parse-loop-statement atts))
+       ((:vl-kwd-do :vl-kwd-foreach)
+        (vl-parse-error "BOZO not yet implemented: do and foreach loops."))
+
+       ;; -- jump_statement
+       (:vl-kwd-return
+        (vl-parse-return-statement atts))
+       ((:vl-kwd-break :vl-kwd-continue)
+        (vl-parse-error "BOZO not yet implemented: break and continue statements."))
+
+       ;; -- par_block
+       (:vl-kwd-fork
+        (vl-parse-par-block atts))
+       ((:vl-kwd-join :vl-kwd-join_any :vl-kwd-join_none)
+        (vl-parse-error "BOZO not yet implemented: join, join_any, join_none"))
+
+       ;; -- procedural_timing_control_statement
+       ((:vl-pound :vl-atsign)
+        (vl-parse-procedural-timing-control-statement atts))
+       ((:vl-poundpound)
+        (vl-parse-error "BOZO not yet implemnted: ## delay statements."))
+
+       ;; -- seq_block
+       (:vl-kwd-begin
+        (vl-parse-seq-block atts))
+
+       ;; -- wait_statement
+       (:vl-kwd-wait
+        (vl-parse-wait-statement atts))
+       (:vl-kwd-wait_order
+        (vl-parse-error "BOZO not yet implemented: wait_order statements."))
+
+       ;; -- procedural_assertion_statement handled below.
+       ;; -- clocking_drive handled below.
+
+       ;; -- randsequence_statement
+       (:vl-kwd-randsequence
+        (vl-parse-error "BOZO not yet implemented: randsequence statements."))
+       ;; -- randcase_statement
+       (:vl-kwd-randcase
+        (vl-parse-error "BOZO not yet implemented: randcase statements."))
+       ;; -- expect_property_statement
+       (:vl-kwd-expect
+        (vl-parse-error "BOZO not yet implemented: expect property statements."))
+
+       (:vl-sysidtoken
+        ;; BOZO --- This is probably not right.  It should probably be handled
+        ;; as part of subroutine_call_statement.  But for now, as a crutch, I'm
+        ;; going to just leave it in here.
+        (vl-parse-system-task-enable atts))
+
+       ;; OK: with all that out of the way, the things we haven't handled yet
+       ;; are:
+       ;;  -- blocking_assignment handled below.
+       ;;  -- nonblocking_assignment handled below.
+       ;;  -- inc_or_dec_expression handled below.
+       ;;  -- subroutine_call_statement handled below.
+       ;;  -- procedural_assertion_statement handled below.
+       ;;  -- clocking_drive handled below.
+
+       ;; Previous comment which is now quite possibly bogus:
+       ;;
+       ;;  "At this point, we can have either a blocking assignment,
+       ;;   nonblocking assignment, or task enable.  We will backtrack.  It
+       ;;   doesn't matter which order we try these, because the assignment
+       ;;   will only think it is successful when it sees an equal sign after
+       ;;   the lvalue, while the enable looks for a semicolon after the
+       ;;   identifier, so there are no inputs for which they both believe they
+       ;;   are successful."
+       (t
         (b* ((backup (vl-tokstream-save))
              ((mv erp val tokstream)
               (seq tokstream
@@ -956,18 +1264,33 @@
              (tokstream (vl-tokstream-restore backup)))
           (vl-parse-task-enable atts))))))
 
+ (defparser vl-parse-statement-aux (atts)
+   :short "Wrapper for parsing the rest of a statement after any attributes."
+   :guard (vl-atts-p atts)
+   :measure (two-nats-measure (vl-tokstream-measure) 51)
+   (if (eq (vl-loadconfig->edition config) :verilog-2005)
+       (vl-parse-statement-2005-aux atts)
+     (vl-parse-statement-2012-aux atts)))
+
  (defparser vl-parse-statement ()
-   :measure (two-nats-measure (vl-tokstream-measure) 2)
-   ;; Returns a vl-stmt-p.
+   :short "Top level function for parsing a @('statement') into a @(see
+           vl-stmt)."
+   :measure (two-nats-measure (vl-tokstream-measure) 100)
    (seq tokstream
          (atts :w= (vl-parse-0+-attribute-instances))
          (ret := (vl-parse-statement-aux atts))
          (return ret)))
 
  (defparser vl-parse-statement-or-null ()
-   ;; Returns a vl-stmt-p.  (This is possible because we allow nullstmt as a
-   ;; valid vl-stmt-p.)
-   :measure (two-nats-measure (vl-tokstream-measure) 2)
+   :short "Parse a @('statement_or_null') into a @(see vl-stmt), which is
+           possible since we allow a @(see vl-nullstmt) as a @(see vl-stmt)."
+   :long "<p>This is the same in both Verilog-2005 and SystemVerilog-2012:</p>
+          @({
+               statement_or_null ::=
+                   statement
+                 | {attribute_instance} ';'
+          })"
+   :measure (two-nats-measure (vl-tokstream-measure) 150)
    (seq tokstream
          (atts :w= (vl-parse-0+-attribute-instances))
          (when (vl-is-token? :vl-semi)
@@ -977,7 +1300,7 @@
          (return ret)))
 
  (defparser vl-parse-statements-until-join ()
-   :measure (two-nats-measure (vl-tokstream-measure) 3)
+   :measure (two-nats-measure (vl-tokstream-measure) 110)
    ;; Returns a list of vl-stmt-p's.
    ;; Tries to read until the keyword "join"
    (seq tokstream
@@ -988,7 +1311,7 @@
          (return (cons first rest))))
 
  (defparser vl-parse-statements-until-end ()
-   :measure (two-nats-measure (vl-tokstream-measure) 3)
+   :measure (two-nats-measure (vl-tokstream-measure) 110)
    ;; Returns a list of vl-stmt-p's.
    ;; Tries to read until the keyword "end"
    (seq tokstream
@@ -1007,22 +1330,17 @@
      `(defthm-parse-statements-flag vl-parse-statement-val-when-error
         ,(vl-val-when-error-claim vl-parse-case-item)
         ,(vl-val-when-error-claim vl-parse-1+-case-items)
-        ,(vl-val-when-error-claim vl-parse-case-statement
-                                  :args (atts))
-        ,(vl-val-when-error-claim vl-parse-conditional-statement
-                                  :args (atts))
-        ,(vl-val-when-error-claim vl-parse-loop-statement
-                                  :args (atts))
-        ,(vl-val-when-error-claim vl-parse-par-block
-                                  :args (atts))
-        ,(vl-val-when-error-claim vl-parse-seq-block
-                                  :args (atts))
-        ,(vl-val-when-error-claim vl-parse-procedural-timing-control-statement
-                                  :args (atts))
-        ,(vl-val-when-error-claim vl-parse-wait-statement
-                                  :args (atts))
-        ,(vl-val-when-error-claim vl-parse-statement-aux
-                                  :args (atts))
+        ,(vl-val-when-error-claim vl-parse-case-statement :args (atts))
+        ,(vl-val-when-error-claim vl-parse-conditional-statement :args (atts))
+        ,(vl-val-when-error-claim vl-parse-loop-statement :args (atts))
+        ,(vl-val-when-error-claim vl-parse-par-block :args (atts))
+        ,(vl-val-when-error-claim vl-parse-seq-block :args (atts))
+        ,(vl-val-when-error-claim vl-parse-procedural-timing-control-statement :args (atts))
+        ,(vl-val-when-error-claim vl-parse-wait-statement :args (atts))
+        ,(vl-val-when-error-claim vl-parse-action-block)
+        ,(vl-val-when-error-claim vl-parse-statement-2005-aux :args (atts))
+        ,(vl-val-when-error-claim vl-parse-statement-2012-aux :args (atts))
+        ,(vl-val-when-error-claim vl-parse-statement-aux :args (atts))
         ,(vl-val-when-error-claim vl-parse-statement)
         ,(vl-val-when-error-claim vl-parse-statement-or-null)
         ,(vl-val-when-error-claim vl-parse-statements-until-end)
@@ -1043,22 +1361,17 @@
      `(defthm-parse-statements-flag vl-parse-statement-warning
         ,(vl-warning-claim vl-parse-case-item)
         ,(vl-warning-claim vl-parse-1+-case-items)
-        ,(vl-warning-claim vl-parse-case-statement
-                                  :args (atts))
-        ,(vl-warning-claim vl-parse-conditional-statement
-                                  :args (atts))
-        ,(vl-warning-claim vl-parse-loop-statement
-                                  :args (atts))
-        ,(vl-warning-claim vl-parse-par-block
-                                  :args (atts))
-        ,(vl-warning-claim vl-parse-seq-block
-                                  :args (atts))
-        ,(vl-warning-claim vl-parse-procedural-timing-control-statement
-                                  :args (atts))
-        ,(vl-warning-claim vl-parse-wait-statement
-                                  :args (atts))
-        ,(vl-warning-claim vl-parse-statement-aux
-                                  :args (atts))
+        ,(vl-warning-claim vl-parse-case-statement :args (atts))
+        ,(vl-warning-claim vl-parse-conditional-statement :args (atts))
+        ,(vl-warning-claim vl-parse-loop-statement :args (atts))
+        ,(vl-warning-claim vl-parse-par-block :args (atts))
+        ,(vl-warning-claim vl-parse-seq-block :args (atts))
+        ,(vl-warning-claim vl-parse-procedural-timing-control-statement :args (atts))
+        ,(vl-warning-claim vl-parse-wait-statement :args (atts))
+        ,(vl-warning-claim vl-parse-action-block)
+        ,(vl-warning-claim vl-parse-statement-2005-aux :args (atts))
+        ,(vl-warning-claim vl-parse-statement-2012-aux :args (atts))
+        ,(vl-warning-claim vl-parse-statement-aux :args (atts))
         ,(vl-warning-claim vl-parse-statement)
         ,(vl-warning-claim vl-parse-statement-or-null)
         ,(vl-warning-claim vl-parse-statements-until-end)
@@ -1069,7 +1382,6 @@
                 ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))
                (and stable-under-simplificationp
                     '(:do-not nil)))))))
-
 
 
 (defsection progress
@@ -1087,6 +1399,9 @@
         ,(vl-progress-claim vl-parse-seq-block :args (atts))
         ,(vl-progress-claim vl-parse-procedural-timing-control-statement :args (atts))
         ,(vl-progress-claim vl-parse-wait-statement :args (atts))
+        ,(vl-progress-claim vl-parse-action-block)
+        ,(vl-progress-claim vl-parse-statement-2005-aux :args (atts))
+        ,(vl-progress-claim vl-parse-statement-2012-aux :args (atts))
         ,(vl-progress-claim vl-parse-statement-aux :args (atts))
         ,(vl-progress-claim vl-parse-statement)
         ,(vl-progress-claim vl-parse-statement-or-null)
@@ -1112,58 +1427,6 @@
         :hints((flag::expand-calls-computed-hint
                 acl2::clause
                 ',(flag::get-clique-members 'vl-parse-statement-fn (w state))))))))
-
-
-;; (defsection tokenlist
-
-;;   (with-output
-;;     :off prove :gag-mode :goals
-;;     (make-event
-;;      `(defthm-parse-statements-flag vl-parse-statement-tokenlist
-;;         ,(vl-tokenlist-claim vl-parse-case-item)
-;;         ,(vl-tokenlist-claim vl-parse-1+-case-items)
-;;         ,(vl-tokenlist-claim vl-parse-case-statement :args (atts))
-;;         ,(vl-tokenlist-claim vl-parse-conditional-statement :args (atts))
-;;         ,(vl-tokenlist-claim vl-parse-loop-statement :args (atts))
-;;         ,(vl-tokenlist-claim vl-parse-par-block :args (atts))
-;;         ,(vl-tokenlist-claim vl-parse-seq-block :args (atts))
-;;         ,(vl-tokenlist-claim vl-parse-procedural-timing-control-statement :args (atts))
-;;         ,(vl-tokenlist-claim vl-parse-wait-statement :args (atts))
-;;         ,(vl-tokenlist-claim vl-parse-statement-aux :args (atts))
-;;         ,(vl-tokenlist-claim vl-parse-statement)
-;;         ,(vl-tokenlist-claim vl-parse-statement-or-null)
-;;         ,(vl-tokenlist-claim vl-parse-statements-until-end)
-;;         ,(vl-tokenlist-claim vl-parse-statements-until-join)
-;;         :hints((and acl2::stable-under-simplificationp
-;;                     (flag::expand-calls-computed-hint
-;;                      acl2::clause
-;;                      ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))))))))
-
-
-;; (defsection parsestate
-
-;;   (with-output
-;;     :off prove :gag-mode :goals
-;;     (make-event
-;;      `(defthm-parse-statements-flag vl-parse-statement-parsestate
-;;         ,(vl-parsestate-claim vl-parse-case-item)
-;;         ,(vl-parsestate-claim vl-parse-1+-case-items)
-;;         ,(vl-parsestate-claim vl-parse-case-statement :args (atts))
-;;         ,(vl-parsestate-claim vl-parse-conditional-statement :args (atts))
-;;         ,(vl-parsestate-claim vl-parse-loop-statement :args (atts))
-;;         ,(vl-parsestate-claim vl-parse-par-block :args (atts))
-;;         ,(vl-parsestate-claim vl-parse-seq-block :args (atts))
-;;         ,(vl-parsestate-claim vl-parse-procedural-timing-control-statement :args (atts))
-;;         ,(vl-parsestate-claim vl-parse-wait-statement :args (atts))
-;;         ,(vl-parsestate-claim vl-parse-statement-aux :args (atts))
-;;         ,(vl-parsestate-claim vl-parse-statement)
-;;         ,(vl-parsestate-claim vl-parse-statement-or-null)
-;;         ,(vl-parsestate-claim vl-parse-statements-until-end)
-;;         ,(vl-parsestate-claim vl-parse-statements-until-join)
-;;         :hints((and acl2::stable-under-simplificationp
-;;                     (flag::expand-calls-computed-hint
-;;                      acl2::clause
-;;                      ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))))))))
 
 
 (defsection result
@@ -1219,6 +1482,16 @@
                         (vl-stmt-p val)
                         :args (atts)
                         :extra-hyps ((force (vl-atts-p atts))))
+        ,(vl-stmt-claim vl-parse-action-block
+                        (vl-actionblock-p val))
+        ,(vl-stmt-claim vl-parse-statement-2005-aux
+                        (vl-stmt-p val)
+                        :args (atts)
+                        :extra-hyps ((force (vl-atts-p atts))))
+        ,(vl-stmt-claim vl-parse-statement-2012-aux
+                        (vl-stmt-p val)
+                        :args (atts)
+                        :extra-hyps ((force (vl-atts-p atts))))
         ,(vl-stmt-claim vl-parse-statement-aux
                         (vl-stmt-p val)
                         :args (atts)
@@ -1239,21 +1512,21 @@
                      ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))))))))
 
 
-(local (defthm vl-parse-event-control-value-under-iff
-         ;; BOZO not sure why I suddenly need this
-         (implies (and (not (mv-nth 0 (vl-parse-event-control))))
-                  (mv-nth 1 (vl-parse-event-control)))
-         :hints(("Goal"
-                 :in-theory (disable vl-parse-event-control-result)
-                 :use ((:instance vl-parse-event-control-result))))))
+;; (local (defthm vl-parse-event-control-value-under-iff
+;;          ;; BOZO not sure why I suddenly need this
+;;          (implies (and (not (mv-nth 0 (vl-parse-event-control))))
+;;                   (mv-nth 1 (vl-parse-event-control)))
+;;          :hints(("Goal"
+;;                  :in-theory (disable vl-parse-event-control-result)
+;;                  :use ((:instance vl-parse-event-control-result))))))
 
-(local (defthm vl-parse-delay-control-value-under-iff
-         ;; BOZO not sure why I suddenly need this
-         (implies (and (not (mv-nth 0 (vl-parse-delay-control))))
-                  (mv-nth 1 (vl-parse-delay-control)))
-         :hints(("Goal"
-                 :in-theory (disable vl-parse-delay-control-result)
-                 :use ((:instance vl-parse-delay-control-result))))))
+;; (local (defthm vl-parse-delay-control-value-under-iff
+;;          ;; BOZO not sure why I suddenly need this
+;;          (implies (and (not (mv-nth 0 (vl-parse-delay-control))))
+;;                   (mv-nth 1 (vl-parse-delay-control)))
+;;          :hints(("Goal"
+;;                  :in-theory (disable vl-parse-delay-control-result)
+;;                  :use ((:instance vl-parse-delay-control-result))))))
 
 (with-output
  :off prove

@@ -31,6 +31,8 @@
 (in-package "VL")
 (include-book "base")
 (include-book "../properties")
+(include-book "../../../mlib/writer")
+(include-book "../../../mlib/strip")
 
 (local (defthm vl-distweighttype-p-forward
          (implies (vl-distweighttype-p x)
@@ -389,26 +391,69 @@
 (defparser-top vl-parse-property-expr :resulttype vl-propexpr-p)
 
 
+
+
+
+(define vl-pps-propexpr ((x vl-propexpr-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (with-local-ps (vl-pp-propexpr x)))
+
+(define test-prop-prettyprinter-roundtrip ((x vl-propexpr-p))
+  (b* ((config *vl-default-loadconfig*)
+       (x (vl-propexpr-strip x))
+       (pretty-printed (vl-pps-propexpr x))
+       (- (cw "Pretty-printed: {{{~%    ")
+          (cw-unformatted pretty-printed)
+          (cw "~%~%}}}"))
+       (tokens (make-test-tokens pretty-printed))
+       (pstate (make-vl-parsestate))
+       ((mv errmsg val ?tokens (vl-parsestate pstate))
+        (vl-parse-property-expr-top))
+       (- (cw "Raw ERR is ~x0.~%" errmsg))
+       (- (cw "Raw VAL is ~x0.~%" val))
+       ((when errmsg)
+        (cw "Got an error when parsing back in pretty-printed output!"))
+       (val (vl-propexpr-strip val)))
+    (and (or (equal val x)
+             (cw "Value mismatch when parsing back in pretty-printed output:~%")
+             (cw "  Original X: ~x0~%" x)
+             (cw "  New Value:  ~x0~%" val)
+             (cw "  Pretty-Printed X: ~x0~%" pretty-printed)
+             (cw "  Pretty-Printed Val: ~x0~%" (vl-pps-propexpr val)))
+         (or (not pstate.warnings)
+             (cw "Got warnings when parsing back in pretty-printed output? ~x0~%" pstate.warnings))
+         (or (not tokens)
+             (cw "Tokens remain after parsing back in pretty-printed output? ~x0~%"
+                 tokens)))))
+
+
 (defmacro test-prop (&key input expect (successp 't) (extra 'nil))
-  `(assert! (b* ((- (cw "Testing alleged property expression: ~s0~%" ',input))
+  `(assert! (b* ((- (cw "~% -------- Testing ~s0 ----------- ~%" ',input))
                  (config *vl-default-loadconfig*)
                  (tokens (make-test-tokens ,input))
                  (pstate (make-vl-parsestate))
-                 ((mv erp val ?tokens (vl-parsestate pstate))
+                 ((mv errmsg val ?tokens (vl-parsestate pstate))
                   (vl-parse-property-expr-top))
-                 ((when erp)
-                  (cw "ERP is ~x0.~%" erp)
-                  (not ,successp)))
-              (cw "VAL is ~x0.~%" val)
-              (and ,successp
-                   (vl-propexpr-p val)
-                   (not pstate.warnings)
-                   (or ',extra
-                       (not tokens)
-                       (cw "Extra tokens not expected?"))
-                   (or (equal ',expect (vl-pretty-propexpr val))
-                       (cw "Expected ~x0~%" ',expect)
-                       (cw "Got:     ~x0~%" (vl-pretty-propexpr val)))))))
+                 (- (cw "Raw ERR is ~x0.~%" errmsg))
+                 (- (cw "Raw VAL is ~x0.~%" val))
+                 (parse-test-okp (if errmsg
+                                     (not ,successp)
+                                   (and ,successp
+                                        (vl-propexpr-p val)
+                                        (not pstate.warnings)
+                                        (or ',extra
+                                            (not tokens)
+                                            (cw "Extra tokens not expected?"))
+                                        (or (equal ',expect (vl-pretty-propexpr val))
+                                            (cw "Expected ~x0~%" ',expect)
+                                            (cw "Got:     ~x0~%" (vl-pretty-propexpr val))))))
+                 ((unless parse-test-okp)
+                  (cw "Test failed!~%"))
+                 ((when errmsg)
+                  (cw "Skipping pretty-printing test since this test case is of invalid input.")
+                  :success))
+              (test-prop-prettyprinter-roundtrip val))))
+
 
 (test-prop :input "" :successp nil)
 

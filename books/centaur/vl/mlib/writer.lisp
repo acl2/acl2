@@ -819,6 +819,7 @@ displays.  The module browser's web pages are responsible for defining the
                       (if left-parens (vl-print "(") ps)
                       (vl-pp-expr x.left)
                       (if left-parens (vl-print ")") ps)
+                      (vl-print " ")
                       (vl-print-str (vl-binaryop-string x.op))
                       (if unspecial-atts (vl-pp-atts unspecial-atts) ps)
                       (vl-println? " ")
@@ -1113,11 +1114,6 @@ displays.  The module browser's web pages are responsible for defining the
                  (vl-pp-enumitemlist (cdr x)))))
   ///
   (deffixequiv-mutual vl-pp-expr))
-
-
-
-
-
 
 
 (define vl-pps-expr ((x vl-expr-p))
@@ -2095,15 +2091,25 @@ expression into a string."
        (vl-println? ")")))))
 
 (define vl-pp-evatom ((x vl-evatom-p) &key (ps 'ps))
-  (let ((type (vl-evatom->type x))
-        (expr (vl-evatom->expr x)))
-    (if (eq type :vl-noedge)
-        (vl-pp-expr expr)
-      (vl-ps-seq (vl-ps-span "vl_key"
-                             (if (eq type :vl-posedge)
-                                 (vl-print "posedge ")
-                               (vl-print "negedge ")))
-                 (vl-pp-expr expr)))))
+  (b* (((vl-evatom x)))
+    (case x.type
+      (:vl-noedge  (vl-pp-expr x.expr))
+      (:vl-posedge (vl-ps-seq (vl-ps-span "vl_key" (vl-print "posedge "))
+                              (vl-pp-expr x.expr)))
+      (:vl-negedge (vl-ps-seq (vl-ps-span "vl_key" (vl-print "negedge "))
+                              (vl-pp-expr x.expr)))
+      (:vl-edge    (vl-ps-seq (vl-ps-span "vl_key" (vl-print "edge "))
+                              (vl-pp-expr x.expr)))
+      (otherwise   (progn$ (impossible)
+                           ps))))
+  :prepwork
+  ((local (defthm vl-evatom->type-forward
+            (or (equal (vl-evatom->type x) :vl-noedge)
+                (equal (vl-evatom->type x) :vl-posedge)
+                (equal (vl-evatom->type x) :vl-negedge)
+                (equal (vl-evatom->type x) :vl-edge))
+            :rule-classes ((:forward-chaining :trigger-terms ((vl-evatom->type x))))
+            :hints(("Goal" :cases ((vl-evatomtype-p (vl-evatom->type x)))))))))
 
 (define vl-pp-evatomlist ((x vl-evatomlist-p) &key (ps 'ps))
   (cond ((atom x)
@@ -2178,6 +2184,407 @@ expression into a string."
                (vl-pp-importlist (cdr x)))))
 
 
+(define vl-distweighttype-string ((x vl-distweighttype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (case (vl-distweighttype-fix x)
+    (:vl-weight-each ":=")
+    (:vl-weight-total ":/")
+    (otherwise (progn$ (impossible) ""))))
+
+(define vl-pp-distitem ((x vl-distitem-p) &key (ps 'ps))
+  :guard-hints(("Goal" :in-theory (enable vl-distweighttype-p)))
+  (b* (((vl-distitem x)))
+    (vl-ps-seq (if x.right
+                   (vl-ps-seq (vl-print "[")
+                              (vl-pp-expr x.left)
+                              (vl-print ":")
+                              (vl-pp-expr x.right)
+                              (vl-print "]"))
+                 (vl-pp-expr x.left))
+               (if (and (vl-distweighttype-equiv x.type :vl-weight-each)
+                        (vl-expr-resolved-p x.weight)
+                        (equal (vl-resolved->val x.weight) 1))
+                   ;; foo := 1 can be printed as just foo.
+                   ps
+                 (vl-ps-seq (vl-print " ")
+                            (vl-print-str (vl-distweighttype-string x.type))
+                            (vl-print " ")
+                            (vl-pp-expr x.weight))))))
+
+(define vl-pp-distlist ((x vl-distlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-distitem (car x)))
+        (t
+         (vl-ps-seq (vl-pp-distitem (car x))
+                    (vl-println? ", ")
+                    (vl-pp-distlist (cdr x))))))
+
+(define vl-pp-exprdist ((x vl-exprdist-p) &key (ps 'ps))
+  (b* (((vl-exprdist x)))
+    (vl-ps-seq (vl-pp-expr x.expr)
+               (if (atom x.dist)
+                   ps
+                 (vl-ps-seq (vl-ps-span "vl_key" (vl-print " dist "))
+                            (vl-print "{")
+                            (vl-pp-distlist x.dist)
+                            (vl-print "}"))))))
+
+(define vl-pp-exprdistlist-with-commas ((x vl-exprdistlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-exprdist (car x)))
+        (t
+         (vl-ps-seq (vl-pp-exprdist (car x))
+                    (vl-println? ", ")
+                    (vl-pp-exprdistlist-with-commas (cdr x))))))
+
+(define vl-expr-dollarsign-p ((x vl-expr-p))
+  (vl-expr-case x
+    :vl-special (vl-specialkey-equiv x.key :vl-$)
+    :otherwise nil))
+
+
+(define vl-pp-repetition ((x vl-repetition-p) &key (ps 'ps))
+  (b* (((vl-repetition x)))
+    (case x.type
+      (:vl-repetition-consecutive ;; [* ...]
+       (cond ((and (vl-expr-resolved-p x.left)
+                   (equal (vl-resolved->val x.left) 0)
+                   x.right
+                   (vl-expr-dollarsign-p x.right))
+              ;; [* 0:$] is just longhand for [*]
+              (vl-print "[*]"))
+             ((and (vl-expr-resolved-p x.left)
+                   (equal (vl-resolved->val x.left) 1)
+                   x.right
+                   (vl-expr-dollarsign-p x.right))
+              ;; [* 1:$] is just longhand for [+]
+              (vl-print "[+]"))
+             (t
+              (vl-ps-seq (vl-print "[* ")
+                         (vl-pp-expr x.left)
+                         (if x.right
+                             (vl-ps-seq (vl-print ":")
+                                        (vl-pp-expr x.right))
+                           ps)
+                         (vl-print "]")))))
+      (:vl-repetition-goto
+       (vl-ps-seq (vl-print "[-> ")
+                  (vl-pp-expr x.left)
+                  (if x.right
+                      (vl-ps-seq (vl-print ":")
+                                 (vl-pp-expr x.right))
+                    ps)
+                  (vl-print "]")))
+      (:vl-repetition-nonconsecutive
+       (vl-ps-seq (vl-print "[= ")
+                  (vl-pp-expr x.left)
+                  (if x.right
+                      (vl-ps-seq (vl-print ":")
+                                 (vl-pp-expr x.right))
+                    ps)
+                  (vl-print "]")))
+      (otherwise
+       (progn$ (impossible) ps))))
+  :prepwork
+  ((local (defthm vl-repetition->type-forward
+            (or (equal (vl-repetition->type x) :vl-repetition-consecutive)
+                (equal (vl-repetition->type x) :vl-repetition-goto)
+                (equal (vl-repetition->type x) :vl-repetition-nonconsecutive))
+            :rule-classes ((:forward-chaining :trigger-terms ((vl-repetition->type x))))
+            :hints(("Goal" :cases ((vl-repetitiontype-p (vl-repetition->type x)))))))))
+
+
+(define vl-property-unaryop->string ((x vl-property-unaryop-p))
+  :parents (vl-property-unaryop-p)
+  :guard-hints(("Goal" :in-theory (enable vl-property-unaryop-p)))
+  :returns (ans stringp :rule-classes :type-prescription)
+  (case (vl-property-unaryop-fix x)
+    (:vl-prop-firstmatch "first_match")
+    (:vl-prop-not        "not")
+    (:vl-prop-strong     "strong")
+    (:vl-prop-weak       "weak")
+    (otherwise           (progn$ (impossible) ""))))
+
+(define vl-property-binaryop->string ((x vl-property-binaryop-p))
+  :parents (vl-property-binaryop-p)
+  :guard-hints(("Goal" :in-theory (enable vl-property-binaryop-p)))
+  :returns (ans stringp :rule-classes :type-prescription)
+  (case (vl-property-binaryop-fix x)
+    (:vl-prop-and              "and")
+    (:vl-prop-intersect        "intersect")
+    (:vl-prop-or               "or")
+    (:vl-prop-within           "within")
+    (:vl-prop-iff              "iff")
+    (:vl-prop-until            "until")
+    (:vl-prop-suntil           "s_until")
+    (:vl-prop-untilwith        "until_with")
+    (:vl-prop-suntilwith       "s_until_with")
+    (:vl-prop-word-implies     "implies")
+    (:vl-prop-thin-implies     "|->")
+    (:vl-prop-fat-implies      "|=>")
+    (:vl-prop-thin-follows     "#-#")
+    (:vl-prop-fat-follows      "#=#")
+    (otherwise                 (progn$ (impossible) ""))))
+
+(define vl-property-acceptop->string ((x vl-property-acceptop-p))
+  :parents (vl-property-acceptop-p)
+  :guard-hints(("Goal" :in-theory (enable vl-property-acceptop-p)))
+  :returns (ans stringp :rule-classes :type-prescription)
+  (case (vl-property-acceptop-fix x)
+    (:vl-prop-accepton        "accept_on")
+    (:vl-prop-syncaccepton    "sync_accept_on")
+    (:vl-prop-rejecton        "reject_on")
+    (:vl-prop-syncrejecton    "sync_reject_on")
+    (otherwise                (progn$ (impossible) ""))))
+
+
+(defines vl-pp-propexpr
+
+  (define vl-pp-propexpr ((x vl-propexpr-p) &key (ps 'ps))
+    :measure (vl-propexpr-count x)
+    (vl-propexpr-case x
+
+      (:vl-propcore
+       (vl-pp-exprdist x.guts))
+
+      (:vl-propinst
+       (vl-ps-seq (vl-pp-scopeexpr x.ref)
+                  (vl-print "(")
+                  (vl-pp-propactuallist x.args)
+                  (vl-print ")")))
+
+      (:vl-propthen
+       (b* (((vl-range x.delay))
+            (parens-left-p (vl-propexpr-case x.left
+                             (:vl-proprepeat nil)
+                             (:vl-propcore nil)
+                             (:otherwise t)))
+            (parens-right-p (vl-propexpr-case x.right
+                              (:vl-proprepeat nil)
+                              (:vl-propcore nil)
+                              (:otherwise t))))
+         (vl-ps-seq (if parens-left-p (vl-print "(") ps)
+                    (vl-pp-propexpr x.left)
+                    (if parens-left-p (vl-println? ") ") (vl-println? " "))
+                    (vl-print "##")
+                    (cond ((and (vl-expr-resolved-p x.delay.msb)
+                                (vl-expr-dollarsign-p x.delay.lsb)
+                                (equal (vl-resolved->val x.delay.msb) 0))
+                           (vl-print "[*]"))
+                          ((and (vl-expr-resolved-p x.delay.msb)
+                                (vl-expr-dollarsign-p x.delay.lsb)
+                                (equal (vl-resolved->val x.delay.msb) 1))
+                           (vl-print "[+]"))
+                          ((and (vl-expr-resolved-p x.delay.msb)
+                                (vl-expr-resolved-p x.delay.lsb)
+                                (equal (vl-resolved->val x.delay.msb)
+                                       (vl-resolved->val x.delay.lsb)))
+                           (vl-pp-expr x.delay.msb))
+                          (t
+                           (vl-pp-range x.delay)))
+                    (if parens-right-p (vl-print " (") ps)
+                    (vl-pp-propexpr x.right)
+                    (if parens-right-p (vl-println? ")") (vl-println? "")))))
+
+      (:vl-proprepeat
+       (b* ((parens-p (vl-propexpr-case x.seq
+                        (:vl-propcore nil)
+                        (:otherwise t))))
+         (vl-ps-seq (if parens-p (vl-print "(") ps)
+                    (vl-pp-propexpr x.seq)
+                    (if parens-p (vl-print ")") ps)
+                    (vl-pp-repetition x.reps))))
+
+      (:vl-propassign
+       (vl-ps-seq (vl-print "(")
+                  (vl-pp-propexpr x.seq)
+                  (if (atom x.items)
+                      ps
+                    (vl-ps-seq (vl-println? ", ")
+                               (vl-pp-exprlist x.items)))
+                  (vl-println? ")")))
+
+      (:vl-propthroughout
+       (vl-ps-seq
+        ;; No parens should be needed around LEFT since it's just an exprdist instead
+        ;; of some kind of sequence.
+        (vl-pp-exprdist x.left)
+        (vl-ps-span "vl_key" (vl-print " throughout "))
+        (vl-print "(")
+        (vl-pp-propexpr x.right)
+        (vl-println? ")")))
+
+      (:vl-propclock
+       (vl-ps-seq (vl-print "@(")
+                  (vl-pp-evatomlist x.trigger)
+                  (vl-println? ") ")
+                  (vl-print "(")
+                  (vl-pp-propexpr x.then)
+                  (vl-println? ")")))
+
+      (:vl-propunary
+       (vl-ps-seq (vl-ps-span "vl_key" (vl-print-str (vl-property-unaryop->string x.op)))
+                  (vl-print "(")
+                  (vl-pp-propexpr x.arg)
+                  (vl-println? ")")))
+
+      (:vl-propbinary
+       (vl-ps-seq (vl-print "(")
+                  (vl-pp-propexpr x.left)
+                  (vl-print ") ")
+                  (vl-ps-span "vl_key" (vl-print-str (vl-property-binaryop->string x.op)))
+                  (vl-print " (")
+                  (vl-pp-propexpr x.right)
+                  (vl-println? ")")))
+
+      (:vl-propalways
+       (vl-ps-seq (vl-ps-span "vl_key" (if x.strongp
+                                           (vl-print "s_always ")
+                                         (vl-print "always ")))
+                  (if x.range
+                      (vl-ps-seq (vl-pp-range x.range)
+                                 (vl-print " "))
+                    ps)
+                  (vl-print "(")
+                  (vl-pp-propexpr x.prop)
+                  (vl-println? ")")))
+
+      (:vl-propeventually
+       (vl-ps-seq (vl-ps-span "vl_key" (if x.strongp
+                                           (vl-print "s_eventually ")
+                                         (vl-print "eventually ")))
+                  (if x.range
+                      (vl-ps-seq (vl-pp-range x.range)
+                                 (vl-print " "))
+                    ps)
+                  (vl-print "(")
+                  (vl-pp-propexpr x.prop)
+                  (vl-println? ")")))
+
+      (:vl-propaccept
+       (vl-ps-seq (vl-ps-span "vl_key" (vl-print-str (vl-property-acceptop->string x.op)))
+                  (vl-print "(")
+                  (vl-pp-exprdist x.condition)
+                  (vl-println? ") ")
+                  (vl-print "(")
+                  (vl-pp-propexpr x.prop)
+                  (vl-println? ")")))
+
+      (:vl-propnexttime
+       (vl-ps-seq (vl-ps-span "vl_key" (if x.strongp
+                                           (vl-print "s_nexttime ")
+                                         (vl-print "nexttime ")))
+                  (if x.expr
+                      (vl-ps-seq (vl-print "[")
+                                 (vl-pp-expr x.expr)
+                                 (vl-print "] "))
+                    ps)
+                  (vl-print "(")
+                  (vl-pp-propexpr x.prop)
+                  (vl-println? ")")))
+
+      (:vl-propif
+       (vl-ps-seq (vl-ps-span "vl_key" (vl-print "if "))
+                  (vl-print "(")
+                  (vl-pp-exprdist x.condition)
+                  (vl-println ")")
+                  (vl-indent 6)
+                  (vl-print "(")
+                  (vl-pp-propexpr x.then)
+                  (vl-println ")")
+                  (vl-indent 6)
+                  (vl-ps-span "vl_key" (vl-print " else "))
+                  (vl-print "(")
+                  (vl-pp-propexpr x.else)
+                  (vl-println ")")))
+
+      (:vl-propcase
+       (vl-ps-seq (vl-ps-span "vl_key" (vl-print "case "))
+                  (vl-print "(")
+                  (vl-pp-exprdist x.condition)
+                  (vl-println ")")
+                  (vl-pp-propcaseitemlist x.cases)
+                  (vl-ps-span "vl_key" (vl-println "endcase"))))))
+
+  (define vl-pp-propactual ((x vl-propactual-p) &key (ps 'ps))
+    :measure (vl-propactual-count x)
+    (vl-propactual-case x
+      (:blank (if (not x.name)
+                  ps
+                (vl-ps-seq (vl-print ".")
+                           (vl-print-str (vl-maybe-escape-identifier x.name))
+                           (vl-print "()"))))
+      (:event (if (not x.name)
+                  ;; Scary because it's so ambiguous, but can't really do
+                  ;; anything about it, I think.  Maybe print extra parens?
+                  ;; Yeah that seems good.
+                  (vl-ps-seq (vl-print "(")
+                             (vl-pp-evatomlist x.evatoms)
+                             (vl-print ")"))
+                (vl-ps-seq (vl-print ".")
+                           (vl-print-str (vl-maybe-escape-identifier x.name))
+                           (vl-print "(")
+                           (vl-pp-evatomlist x.evatoms)
+                           (vl-print ")"))))
+      (:prop (if (not x.name)
+                 (vl-ps-seq (vl-print "(")
+                            (vl-pp-propexpr x.prop)
+                            (vl-print ")"))
+               (vl-ps-seq (vl-print ".")
+                          (vl-print-str (vl-maybe-escape-identifier x.name))
+                          (vl-print "(")
+                          (vl-pp-propexpr x.prop)
+                          (vl-print ")"))))))
+
+  (define vl-pp-propactuallist ((x vl-propactuallist-p) &key (ps 'ps))
+    :measure (vl-propactuallist-count x)
+    (cond ((atom x)
+           ps)
+          ((atom (cdr x))
+           (vl-pp-propactual (car x)))
+          (t
+           (vl-ps-seq (vl-pp-propactual (car x))
+                      (vl-println? ", ")
+                      (vl-pp-propactuallist (cdr x))))))
+
+  (define vl-pp-propcaseitem ((x vl-propcaseitem-p) &key (ps 'ps))
+    :measure (vl-propcaseitem-count x)
+    (b* (((vl-propcaseitem x)))
+      (vl-ps-seq
+       (vl-indent 6)
+       (if (atom x.match)
+           (vl-ps-seq (vl-ps-span "vl_key" (vl-print "default")))
+         (vl-pp-exprdistlist-with-commas x.match))
+       (vl-println? ": ")
+       (vl-indent 8)
+       (vl-print "(")
+       (vl-pp-propexpr x.prop)
+       (vl-println ");"))))
+
+  (define vl-pp-propcaseitemlist ((x vl-propcaseitemlist-p) &key (ps 'ps))
+    :measure (vl-propcaseitemlist-count x)
+    (if (atom x)
+        ps
+      (vl-ps-seq (vl-pp-propcaseitem (car x))
+                 (vl-pp-propcaseitemlist (cdr x))))))
+
+(define vl-pp-propspec ((x vl-propspec-p) &key (ps 'ps))
+  (b* (((vl-propspec x)))
+    (vl-ps-seq (if (consp x.evatoms)
+                   (vl-ps-seq (vl-print "@(")
+                              (vl-pp-evatomlist x.evatoms)
+                              (vl-print ") "))
+                 ps)
+               (if x.disable
+                   (vl-ps-seq (vl-ps-span "vl_key" (vl-print "disable iff "))
+                              (vl-pp-exprdist x.disable))
+                 ps)
+               (vl-pp-propexpr x.prop))))
+
 
 ; Statement printing.  I want to do at least something to allow nested
 ; statements to get progressively more indented.  As a very basic way to
@@ -2247,6 +2654,28 @@ expression into a string."
     (:vl-priority "priority")
     (:vl-unique   "unique")
     (:vl-unique0  "unique0")
+    (otherwise    (or (impossible) ""))))
+
+(define vl-asserttype-string ((x vl-asserttype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-asserttype-p)))
+  (case (vl-asserttype-fix x)
+    (:vl-assert         "assert")
+    (:vl-assume         "assume")
+    (:vl-cover          "cover")
+    (:vl-cover-property "cover")
+    (:vl-cover-sequence "cover")
+    (:vl-expect         "expect")
+    (:vl-restrict       "restrict")
+    (otherwise    (or (impossible) ""))))
+
+(define vl-assertdeferral-string ((x vl-assertdeferral-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-assertdeferral-p)))
+  (case (vl-assertdeferral-fix x)
+    ('nil               "")
+    (:vl-defer-0        "#0")
+    (:vl-defer-final    "final")
     (otherwise    (or (impossible) ""))))
 
 (define vl-pp-forloop-assigns ((x vl-stmtlist-p) &key (ps 'ps))
@@ -2491,7 +2920,60 @@ expression into a string."
                  (vl-pp-stmt-indented (vl-pp-stmt x.default))
                  (vl-pp-stmt-autoindent)
                  (vl-ps-span "vl_key" (vl-print "endcase"))
-                 (vl-println ""))))
+                 (vl-println ""))
+
+      :vl-assertstmt
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 ;; bozo atts
+                 ;; bozo block names in general
+                 (vl-ps-span "vl_key"
+                             (vl-print-str (vl-asserttype-string x.type))
+                             (vl-print " ")
+                             (if x.deferral
+                                 (vl-ps-seq (vl-print-str (vl-assertdeferral-string x.deferral))
+                                            (vl-print " "))
+                               ps))
+                 (vl-print "(")
+                 (vl-pp-expr x.condition)
+                 (vl-print ")")
+                 (vl-stmt-case x.success
+                   (:vl-nullstmt ps)
+                   (:otherwise (vl-ps-seq (vl-println "")
+                                          (vl-pp-stmt-indented (vl-pp-stmt x.success)))))
+                 (vl-stmt-case x.failure
+                   (:vl-nullstmt ps)
+                   (:otherwise (vl-ps-seq (vl-println "")
+                                          (vl-pp-stmt-autoindent)
+                                          (vl-ps-span "vl_key" (vl-println " else "))
+                                          (vl-println "")
+                                          (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
+                 (vl-println ";"))
+
+      :vl-concassertstmt
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 ;; bozo atts, name
+                 (vl-ps-span "vl_key"
+                             (vl-print-str (vl-asserttype-string x.type))
+                             (vl-print " ")
+                             (case x.type
+                               (:vl-expect ps) ;; expect has no property/sequence keyword
+                               (:vl-cover-sequence (vl-print " sequence "))
+                               (t                  (vl-print " property "))))
+                 (vl-print "(")
+                 (vl-pp-propspec x.condition)
+                 (vl-print ")")
+                 (vl-stmt-case x.success
+                   (:vl-nullstmt ps)
+                   (:otherwise (vl-ps-seq (vl-println "")
+                                          (vl-pp-stmt-indented (vl-pp-stmt x.success)))))
+                 (vl-stmt-case x.failure
+                   (:vl-nullstmt ps)
+                   (:otherwise (vl-ps-seq (vl-println "")
+                                          (vl-pp-stmt-autoindent)
+                                          (vl-ps-span "vl_key" (vl-println " else "))
+                                          (vl-println "")
+                                          (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
+                 (vl-println ";"))))
 
   (define vl-pp-stmtlist ((x vl-stmtlist-p) &key (ps 'ps))
     :measure (vl-stmtlist-count x)
