@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "properties")
 (include-book "ports")
+(include-book "statements")
 
 (local (include-book "tools/do-not" :dir :system))
 (local (include-book "../../util/arithmetic"))
@@ -336,29 +337,7 @@
 
 
 
-
-(defparser vl-parse-action-block ()
-  :short "Parse @('action_block')"
-  :long "@({
-               action_block ::= statement_or_null
-                              | [statement] else statement
-         })"
-  :result (vl-actionblock-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (when (vl-is-token? :vl-kwd-else)
-         (:= (vl-match))
-         (else := (vl-parse-statement))
-         (return (make-vl-actionblock :then (make-vl-nullstmt)
-                                      :else else)))
-       (then := (vl-parse-statement-or-null))
-       (when (vl-is-token? :vl-kwd-else)
-         (:= (vl-match))
-         (else := (vl-parse-statement)))
-       (return (make-vl-actionblock :then then
-                                    :else (or else (make-vl-nullstmt))))))
+#||
 
 (defparser vl-parse-concurrent-assertion-statement (name)
   ;; The name is the external name from the surrounding block, if present.
@@ -589,6 +568,9 @@
           (vl-parse-error "Expected a deferred assertion (i.e., you're ~
                            missing 'final' or '#0'.)")))
        (return ret)))
+
+
+||#
 
 
 #||

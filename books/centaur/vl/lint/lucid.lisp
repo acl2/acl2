@@ -1312,6 +1312,24 @@ created when we process their packages, etc.</p>"
              (st (vl-maybe-delayoreventcontrol-lucidcheck x.ctrl ss st ctx)))
           st)
 
+        :vl-assertstmt
+        ;; This actually seems pretty easy to support.
+        (b* ((st (vl-rhsexpr-lucidcheck x.condition ss st ctx))
+             (st (vl-stmt-lucidcheck x.success ss st ctx))
+             (st (vl-stmt-lucidcheck x.failure ss st ctx)))
+          st)
+
+        :vl-concassertstmt
+        (b* ((st
+              ;; BOZO we should go through the condition and try to mark wires
+              ;; in the sequence as used, etc.  But we'd basically need to
+              ;; collect up the expressions to do that, and at the moment there
+              ;; are other things to do.
+              st)
+             (st (vl-stmt-lucidcheck x.success ss st ctx))
+             (st (vl-stmt-lucidcheck x.failure ss st ctx)))
+          st)
+
         :vl-deassignstmt
         ;; It isn't really clear what to do here.  In some sense, the
         ;; expression being deassigned ought to sort of be an lvalue.  But it
