@@ -165,7 +165,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-10-19")
+  "VL Syntax 2015-10-20")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -2537,8 +2537,8 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
     :elementp-of-nil nil)
 
   (fty::defalist vl-caselist
-    :key-type vl-exprlist   ;; The match expressions in a case item
-    :val-type vl-stmt       ;; The associated statement
+    :key-type vl-exprlist ;; The match expressions in a case item
+    :val-type vl-stmt     ;; The associated statement
     :true-listp t)
 
   (deftagsum vl-stmt
@@ -2547,11 +2547,12 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :short "Representation of an empty statement."
      :base-name vl-nullstmt
      :layout :tree
-     ((atts vl-atts-p "Any attributes associated with this statement."))
-
+     ((atts vl-atts-p
+            "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
+             this statement."))
      :long "<p>We allow explicit null statements.  This allows us to
-canonicalize @('if') expressions so that any missing branches are turned into
-null statements.</p>")
+            canonicalize @('if') expressions so that any missing branches are
+            turned into null statements.</p>")
 
     (:vl-assignstmt
      :layout :tree
@@ -2578,59 +2579,63 @@ null statements.</p>")
                of assignment.  Further coverage seems to be available in
                Section 9.7.7.")
       (atts   vl-atts-p
-              "Any attributes associated with this statement.")
+              "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with this statement.")
       (loc    vl-location-p
               "Where the statement was found in the source code."))
+
      :long "<p>Assignment statements are covered in Section 9.2.  There are two
-major types of assignment statements.</p>
+            major types of assignment statements.</p>
 
-<h4>Procedural Assignments</h4>
+            <h4>Procedural Assignments</h4>
 
-<p>Procedural assignment statements may only be used to assign to @('reg'),
-@('integer'), @('time'), @('realtime'), and memory data types, and cannot be
-used to assign to ordinary nets such as @('wire')s.  There are two kinds of
-procedural assignments: </p>
+            <p>Procedural assignment statements may only be used to assign to
+            @('reg'), @('integer'), @('time'), @('realtime'), and memory data
+            types, and cannot be used to assign to ordinary nets such as
+            @('wire')s.  There are two kinds of procedural assignments: </p>
 
-@({
-   foo = bar ;     // \"blocking\" -- do the assignment now
-   foo <= bar ;    // \"nonblocking\" -- schedule the assignment to occur
-})
+            @({
+               foo = bar ;     // \"blocking\" -- do the assignment now
+               foo <= bar ;    // \"nonblocking\" -- schedule the assignment to occur
+            })
 
-<p>The difference between these two statements has to do with Verilog's timing
-model and simulation semantics.  In particular, a blocking assignment
-\"executes before the statements that follow it,\" whereas a non-blocking
-assignment only \"schedules\" an assignment to occur and can be thought of as
-executing in parallel with what follows it.</p>
+            <p>The difference between these two statements has to do with
+            Verilog's timing model and simulation semantics.  In particular, a
+            blocking assignment \"executes before the statements that follow
+            it,\" whereas a non-blocking assignment only \"schedules\" an
+            assignment to occur and can be thought of as executing in parallel
+            with what follows it.</p>
 
-<h4>Continuous Procedural Assignments</h4>
+            <h4>Continuous Procedural Assignments</h4>
 
-<p>Continuous procedural assignment statements may apparently be used to assign
-to either nets or variables.  There are two kinds:</p>
+            <p>Continuous procedural assignment statements may apparently be
+            used to assign to either nets or variables.  There are two
+            kinds:</p>
 
-@({
-  assign foo = bar ;  // only for variables
-  force foo = bar ;   // for variables or nets
-})
+            @({
+              assign foo = bar ;  // only for variables
+              force foo = bar ;   // for variables or nets
+            })
 
-<p>We represent all of these kinds of assignment statements uniformly as
-@('vl-assignstmt-p') objects.</p>
+            <p>We represent all of these kinds of assignment statements
+            uniformly as @('vl-assignstmt-p') objects.</p>
 
-<h4>SystemVerilog Extensions</h4>
+            <h4>SystemVerilog Extensions</h4>
 
-<p>SystemVerilog-2012 implements special additional assignment operators such
-as @('a += b').  Per Section 11.4 of SystemVerilog-2012, these operators are
-semantically equivalent to blocking assignment statements except that in the
-case of index expressions such as @('a[i] += b'), the index @('i') is only
-evaluated once.  VL's parser converts assignments such as @('a += b') into
-blocking assignments such as @('a = a + b').  To note that this was a @('+=')
-style assignment, the parser adds a @('VL_FANCY_ASSIGNMENT_OPERATOR') attribute
-to the assignstmt.</p>
+            <p>SystemVerilog-2012 implements special additional assignment
+            operators such as @('a += b').  Per Section 11.4 of
+            SystemVerilog-2012, these operators are semantically equivalent to
+            blocking assignment statements except that in the case of index
+            expressions such as @('a[i] += b'), the index @('i') is only
+            evaluated once.  VL's parser converts assignments such as @('a +=
+            b') into blocking assignments such as @('a = a + b').  To note that
+            this was a @('+=') style assignment, the parser adds a
+            @('VL_FANCY_ASSIGNMENT_OPERATOR') attribute to the assignstmt.</p>
 
-<p>SystemVerilog also adds increment and decrement operators, i.e., @('a++')
-and @('a--').  These operators, per Section 11.4.2 of SystemVerilog-2012, also
-\"behave as blocking assignments.\" We normally convert these operators into
-blocking assignments in the @(see increment-elim) transform.</p>")
-
+            <p>SystemVerilog also adds increment and decrement operators, i.e.,
+            @('a++') and @('a--').  These operators, per Section 11.4.2 of
+            SystemVerilog-2012, also \"behave as blocking assignments.\" We
+            normally convert these operators into blocking assignments in the
+            @(see increment-elim) transform.</p>")
 
     (:vl-deassignstmt
      :short "Representation of a deassign or release statement."
@@ -2638,243 +2643,239 @@ blocking assignments in the @(see increment-elim) transform.</p>")
      :layout :tree
      ((type   vl-deassign-type-p)
       (lvalue vl-expr-p)
-      (atts   vl-atts-p "Any attributes associated with this statement."))
-     :long "<p>Deassign and release statements are described in Section 9.3.1 and
-9.3.2.</p>")
+      (atts   vl-atts-p
+              "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
+               this statement."))
+     :long "<p>Deassign and release statements are described in Section 9.3.1
+            and 9.3.2.</p>")
 
     (:vl-enablestmt
      :short "Representation of an enable statement."
      :base-name vl-enablestmt
      :layout :tree
-     ((id   vl-scopeexpr-p)
-      (args vl-exprlist-p)
-      (atts vl-atts-p "Any attributes associated with this statement."))
+     ((id    vl-scopeexpr-p)
+      (args  vl-exprlist-p)
+      (atts  vl-atts-p
+             "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
+              this statement."))
      :long "<p>Enable statements have an identifier (which should be either a
-hierarchial identifier or a system identifier), which we represent as an
-expression.  They also have a list of arguments, which are expressions.</p>")
+            hierarchial identifier or a system identifier), which we represent
+            as an expression.  They also have a list of arguments, which are
+            expressions.</p>")
 
     (:vl-disablestmt
      :short "Representation of a disable statement."
      :base-name vl-disablestmt
      :layout :tree
-     ((id   vl-scopeexpr-p)
-      (atts vl-atts-p "Any attributes associated with this statement."))
+     ((id    vl-scopeexpr-p)
+      (atts  vl-atts-p
+             "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
+              this statement."))
      :long "<p>Disable statements are simpler and just have a hierarchial
-identifier.  Apparently there are no disable statements for system
-identifiers.</p>")
+            identifier.  Apparently there are no disable statements for system
+            identifiers.</p>")
 
     (:vl-eventtriggerstmt
      :short "Representation of an event trigger."
      :base-name vl-eventtriggerstmt
      :layout :tree
-     ((id   vl-expr-p
-            "Typically a name like @('foo') and @('bar'), but may instead be a
-          hierarchical identifier.")
-      (atts vl-atts-p
-            "Any attributes associated with this statement."))
-
+     ((id    vl-expr-p
+             "Typically a name like @('foo') and @('bar'), but may instead be a
+              hierarchical identifier.")
+      (atts  vl-atts-p
+             "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
+              this statement."))
      :long "<p>Event trigger statements are used to explicitly trigger named
-events.  They are discussed in Section 9.7.3 and looks like this:</p>
+            events.  They are discussed in Section 9.7.3 and looks like
+            this:</p>
 
-@({
- -> foo;
- -> bar[1][2][3];  // I think?
-})
+            @({
+                 -> foo;
+                 -> bar[1][2][3];  // Weirdly permitted in Verilog-2005 but
+                                   // not in SystemVerilog-2012.
+            })
 
-<p><b>BOZO</b> are we handling the syntax correctly?  What about the
-expressions that can follow the trigger?  Maybe they just become part of the
-@('id')?</p>")
+            <p>We put any indexing operations into the @('id') expression.</p>")
 
     (:vl-casestmt
      :base-name vl-casestmt
      :layout :tree
      :short "Representation of case, casez, and casex statements."
+     ((casetype  vl-casetype-p
+        "Basic case statement type: @('case'), @('casez'), or
+                  @('casex').")
+      (check     vl-casecheck-p
+                 "SystemVerilog violation checking specification: @('unique'),
+                  @('unique0'), @('priority'), or none.")
+      (test      vl-expr-p
+                 "The expression being tested.")
+      (caselist  vl-caselist-p
+        "The match expressions and associated statements.")
+      (default   vl-stmt-p
+        "The default statement, if provided.  This is optional in the
+                  Verilog and SystemVerilog syntax.  If it is omitted, our
+                  parser will put a null statement here.")
+      (atts      vl-atts-p
+                 "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                  with this statement."))
      :long "<p>Case statements are discussed in the Verilog-2005 standard,
-Section 9.5 (page 127), and in the SystemVerilog-2012 standard in Section
-12.5 (page 270).</p>
+            Section 9.5 (page 127), and in the SystemVerilog-2012 standard in
+            Section 12.5 (page 270).</p>
 
-<p>We do not yet support some SystemVerilog extensions, in particular:</p>
+            <p>We do not yet support some SystemVerilog extensions, in
+            particular:</p>
 
-<ul>
- <li>@('case ... matches ...')</li>
- <li>@('case ... inside ...')</li>
-</ul>"
-
-     ((casetype vl-casetype-p
-                "Basic case statement type: @('case'), @('casez'), or
-                 @('casex').")
-      (check    vl-casecheck-p
-                "SystemVerilog violation checking specification: @('unique'),
-                 @('unique0'), @('priority'), or none.")
-      (test     vl-expr-p
-                "The expression being tested.")
-      (caselist vl-caselist-p
-                "The match expressions and associated statements.")
-      (default  vl-stmt-p
-                "The default statement, if provided.  This is optional in the
-                 Verilog and SystemVerilog syntax.  If it is omitted, our
-                 parser will put a null statement here.")
-      (atts     vl-atts-p)))
+            <ul>
+            <li>@('case ... matches ...')</li>
+            <li>@('case ... inside ...')</li>
+            </ul>")
 
     (:vl-ifstmt
      :base-name vl-ifstmt
      :layout :tree
      :short "Representation of an if/then/else statement."
-     :long "<h4>General Form:</h4>
-
-@({
-if (<condition>)
-   <truebranch>
-else
-   <falsebranch>
-})"
      ((condition   vl-expr-p)
       (truebranch  vl-stmt-p)
       (falsebranch vl-stmt-p)
-      (atts        vl-atts-p)))
+      (atts        vl-atts-p
+                   "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                    with this statement."))
+     :long "<h4>General Form:</h4>
+
+            @({
+                 if (<condition>)
+                    <truebranch>
+                 else
+                    <falsebranch>
+            })")
 
     (:vl-foreverstmt
      :base-name vl-foreverstmt
      :layout :tree
      :short "Representation of @('forever') statements."
+     ((body  vl-stmt-p)
+      (atts  vl-atts-p
+             "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+              with this statement."))
      :long "<p>General syntax of a forever statement:</p>
 
-@({
-forever <body>;
-})
+            @({
+                 forever <body>;
+            })
 
-<p>See Section 9.6 (page 130).  The forever statement continuously executes
-<i>body</i>.</p>"
-     ((body vl-stmt-p)
-      (atts vl-atts-p)))
-
+            <p>See Section 9.6 (page 130).  The forever statement continuously
+            executes <i>body</i>.</p>")
 
     (:vl-waitstmt
      :base-name vl-waitstmt
      :layout :tree
      :short "Representation of @('wait') statements."
-     :long "<h4>General Form:</h4>
-
-@({
-wait (<condition>)
-   <body>
-})
-
-<p>See Section 9.7.6 (page 136).  The wait statement first evaluates
-<i>condition</i>.  If the result is true, <i>body</i> is executed.  Otherwise,
-this flow of execution blocks until <i>condition</i> becomes 1, at which point
-it resumes and <i>body</i> is executed.  There is no discussion of what happens
-when the <i>condition</i> is X or Z.  I would guess it is treated as 0 like in
-if statements, but who knows.</p>"
      ((condition vl-expr-p)
       (body      vl-stmt-p)
-      (atts      vl-atts-p)))
+      (atts      vl-atts-p
+                 "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                  with this statement."))
+     :long "<h4>General Form:</h4>
 
+            @({
+                 wait (<condition>)
+                   <body>
+            })
+
+            <p>See Section 9.7.6 (page 136).  The wait statement first
+            evaluates <i>condition</i>.  If the result is true, <i>body</i> is
+            executed.  Otherwise, this flow of execution blocks until
+            <i>condition</i> becomes 1, at which point it resumes and
+            <i>body</i> is executed.  There is no discussion of what happens
+            when the <i>condition</i> is X or Z.  I would guess it is treated
+            as 0 like in if statements, but who knows.</p>")
 
     (:vl-repeatstmt
      :base-name vl-repeatstmt
      :layout :tree
      :short "Representation of @('repeat') statements."
-     :long "<h4>General Form:</h4>
-
-@({
-repeat (<condition>)
-   <body>
-})
-
-<p>See Section 9.6 (page 130).  The <i>condition</i> is presumably evaluated to
-a natural number, and then <i>body</i> is executed that many times.  If the
-expression evaluates to @('X') or @('Z'), it is supposed to be treated as zero
-and the statement is not executed at all.  (What a crock!)</p>"
      ((condition vl-expr-p)
       (body      vl-stmt-p)
-      (atts      vl-atts-p)))
+      (atts      vl-atts-p
+                 "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                  with this statement."))
+     :long "<h4>General Form:</h4>
+
+            @({
+                repeat (<condition>)
+                  <body>
+            })
+
+            <p>See Section 9.6 (page 130).  The <i>condition</i> is presumably
+            evaluated to a natural number, and then <i>body</i> is executed
+            that many times.  If the expression evaluates to @('X') or @('Z'),
+            it is supposed to be treated as zero and the statement is not
+            executed at all.  (What a crock!)</p>")
 
     (:vl-whilestmt
      :base-name vl-whilestmt
      :layout :tree
      :short "Representation of @('while') statements."
-     :long "<h4>General Form:</h4>
-
-@({
-while (<condition>)
-   <body>
-})
-
-<p>See Section 9.6 (page 130).  The semantics are like those of while loops in
-C; <i>body</i> is executed until <i>condition</i> becomes false.  If
-<i>condition</i> is false to begin with, then <i>body</i> is not executed at
-all.</p>"
      ((condition vl-expr-p)
       (body      vl-stmt-p)
-      (atts      vl-atts-p)))
+      (atts      vl-atts-p
+                 "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                  with this statement."))
+     :long "<h4>General Form:</h4>
+
+            @({
+                while (<condition>)
+                  <body>
+            })
+
+            <p>See Section 9.6 (page 130).  The semantics are like those of
+            while loops in C; <i>body</i> is executed until <i>condition</i>
+            becomes false.  If <i>condition</i> is false to begin with, then
+            <i>body</i> is not executed at all.</p>")
 
     (:vl-forstmt
      :base-name vl-forstmt
      :layout :tree
      :short "Representation of @('for') statements."
-     :long "<h4>General Form:</h4>
-
-@({
-for( <for_initialization> ; <test> ; <for_step> )
-   <body>
-})
-
-<p>A @('for_initialization') can either be a comma-separated list of variable
-declarations with initial values, or a comma-separated list of assignments (of
-previously declared variables).  A @('for_step') is a comma-separated list of
-variable assignments, increments, or decrements.</p>
-
-<p>See SystemVerilog Section 12.7.1.  The for statement acts like a for-loop in
-C.  First, outside the loop, it executes the @('for_initialization')
-assignments.  Then it evalutes <i>test</i>.  If <i>test</i> evaluates to
-zero (or to X or Z) then the loop exists.  Otherwise, <i>body</i> is executed,
-the @('for_step') is performed, and we loop back to evaluating
-<i>test</i>.</p>
-
-<p>The syntaxp for @('for_initialization') is a little tricky since it can
-either have declarations or assignments to pre-existing variables, but not
-both.  Our representation contains a @(see vl-vardecllist-p) with initial
-values to cover the declaration case and a @(see vl-stmtlist-p) to cover the
-assignment case; one or the other of these will be empty.</p>"
-     ((initdecls vl-vardecllist-p)
+     ((initdecls   vl-vardecllist-p)
       (initassigns vl-stmtlist-p)
       (test        vl-expr-p)
       (stepforms   vl-stmtlist-p)
       (body        vl-stmt-p)
-      (atts        vl-atts-p)))
+      (atts        vl-atts-p
+                   "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                    with this statement."))
+     :long "<h4>General Form:</h4>
+
+            @({
+                 for( <for_initialization> ; <test> ; <for_step> )
+                   <body>
+            })
+
+            <p>A @('for_initialization') can either be a comma-separated list
+            of variable declarations with initial values, or a comma-separated
+            list of assignments (of previously declared variables).  A
+            @('for_step') is a comma-separated list of variable assignments,
+            increments, or decrements.</p>
+
+            <p>See SystemVerilog Section 12.7.1.  The for statement acts like a
+            for-loop in C.  First, outside the loop, it executes the
+            @('for_initialization') assignments.  Then it evalutes <i>test</i>.
+            If <i>test</i> evaluates to zero (or to X or Z) then the loop
+            exists.  Otherwise, <i>body</i> is executed, the @('for_step') is
+            performed, and we loop back to evaluating <i>test</i>.</p>
+
+            <p>The syntaxp for @('for_initialization') is a little tricky since
+            it can either have declarations or assignments to pre-existing
+            variables, but not both.  Our representation contains a @(see
+            vl-vardecllist-p) with initial values to cover the declaration case
+            and a @(see vl-stmtlist-p) to cover the assignment case; one or the
+            other of these will be empty.</p>")
 
     (:vl-blockstmt
      :base-name vl-blockstmt
      :layout :tree
      :short "Representation of begin/end and fork/join blocks."
-     :long "<h4>General Form:</h4>
-
-@({
-begin [ : <name> <declarations> ]
-  <statements>
-end
-
-fork [ :<name> <declarations> ]
-  <statements>
-join
-})
-
-<p>See Section 9.8.  The difference betwen the two kinds of blocks is that in a
-@('begin/end') block, statements are to be executed in order, whereas in a
-@('fork/join') block, statements are executed simultaneously.</p>
-
-<p>Blocks that are named can have local declarations, and can be referenced by
-other statements (e.g., disable statements).  With regards to declarations:
-\"All variables shall be static; that is, a unique location exists for all
-variables, and leaving or entering blocks shall not affect the values stored in
-them.\"</p>
-
-<p>A further remark is that \"Block names give a means of uniquely identifying
-all variables at any simulation time.\" This seems to suggest that one might
-try to flatten all of the declarations in a module by, e.g., prepending the
-block name to each variable name.</p>"
-
      ((sequentialp booleanp :rule-classes :type-prescription)
       (name        maybe-stringp :rule-classes :type-prescription)
       (imports     vl-importlist-p)
@@ -2882,47 +2883,92 @@ block name to each variable name.</p>"
       (vardecls    vl-vardecllist-p)
       (loaditems   vl-blockitemlist-p)
       (stmts       vl-stmtlist-p)
-      (atts        vl-atts-p)))
+      (atts        vl-atts-p
+                   "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                    with this statement."))
+     :long "<h4>General Form:</h4>
+
+            @({
+                 begin [ : <name> <declarations> ]
+                   <statements>
+                 end
+
+                 fork [ : <name> <declarations> ]
+                   <statements>
+                 join
+            })
+
+            <p>See Section 9.8.  The difference betwen the two kinds of blocks
+            is that in a @('begin/end') block, statements are to be executed in
+            order, whereas in a @('fork/join') block, statements are executed
+            simultaneously.</p>
+
+            <p>Blocks that are named can have local declarations, and can be
+            referenced by other statements (e.g., disable statements).  With
+            regards to declarations: \"All variables shall be static; that is,
+            a unique location exists for all variables, and leaving or entering
+            blocks shall not affect the values stored in them.\"</p>
+
+            <p>A further remark is that \"Block names give a means of uniquely
+            identifying all variables at any simulation time.\" This seems to
+            suggest that one might try to flatten all of the declarations in a
+            module by, e.g., prepending the block name to each variable
+            name.</p>
+
+            <p>Note that SystemVerilog adds labels to statements, e.g., you
+            can write</p>
+
+            @({
+                 update_foo: foo = foo + bar;
+            })
+
+            <p>We turn such labels into named begin/end blocks that surround
+            their statement.  Note that it's not legal to label a block both
+            before and after the begin keyword.  See SystemVerilog-2012 Section
+            9.3.5, Statement Labels, on page 178.</p>")
 
     (:vl-timingstmt
      :base-name vl-timingstmt
      :layout :tree
      :short "Representation of timing statements."
+     ((ctrl  vl-delayoreventcontrol-p)
+      (body  vl-stmt-p)
+      (atts  vl-atts-p
+             "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
+              this statement."))
      :long "<h4>General Form:</h4>
 
-@({
-<ctrl> <body>
-})
+            @({
+                <ctrl> <body>
+            })
 
-<h4>Examples:</h4>
+            <h4>Examples:</h4>
 
-@({
-#3 foo = bar;
-@@(posedge clk) foo = bar;
-@@(bar or baz) foo = bar | baz;
-})"
-     ((ctrl vl-delayoreventcontrol-p)
-      (body vl-stmt-p)
-      (atts vl-atts-p)))
+            @({
+                #3 foo = bar;
+                @@(posedge clk) foo = bar;
+                @@(bar or baz) foo = bar | baz;
+            })")
 
     (:vl-returnstmt
      :base-name vl-returnstmt
      :layout :tree
      :short "Representation of return statements."
-     ((val vl-maybe-expr-p)
-      (atts vl-atts-p)))
+     ((val   vl-maybe-expr-p
+             "The value to return, if any.")
+      (atts  vl-atts-p
+             "Any <tt>(* foo, bar = 1*)</tt> style attributes associated with
+              this statement.")))
 
     (:vl-assertstmt
      :base-name vl-assertstmt
      :layout :tree
      :short "Representation of an immediate assertion statement."
-     ((name       maybe-stringp :rule-classes :type-prescription
-                  "For instance, @('foo') in @('foo : assert (bar) ...').")
-      (type       vl-asserttype-p
+     ((type       vl-asserttype-p
                   "The type of this assertion, e.g., @('assert'), @('assume'),
                    etc.")
       (deferral   vl-assertdeferral-p
-                  "Indicates whether this assertion is a regular, non-deferred
+        "Indicates whether this assertion is a regular, non-deferred
                    assertion, or a #('#0') or @('final') deferred assertion.")
       (condition  vl-expr-p
                   "The condition to assert.  Note that since this is an
@@ -2939,33 +2985,38 @@ block name to each variable name.</p>"
                    @(see vl-nullstmt) if there is no @('else') statement.  For
                    @('cover') assertions this is always just a @(see
                    vl-nullstmt) since there is no @('else') action.")
-      (loc        vl-location-p)))
+      (atts       vl-atts-p
+                  "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                   with this statement.")
+      (loc        vl-location-p
+                  "Location of this statement in the source code.")))
 
     (:vl-concassertstmt
      :base-name vl-concassertstmt
      :layout :tree
      :short "Representation of a concurrent assertion statement."
-     ((name         maybe-stringp :rule-classes :type-prescription
-                    "For instance, @('foo') in @('foo : assert property (bar)
-                     ...').")
-      (type         vl-asserttype-p
-                    "The type of this assertion, e.g., @('assert'), @('assume'),
-                     etc.")
-      (condition    vl-propspec-p
-                    "The property specification being asserted.")
-      (success      vl-stmt-p
-                    "For most assertions, this is the success statement for the
-                     associated action block, or a @(see vl-nullstmt) if there
-                     is no success statement.  Note that @('cover') assertions
-                     are special and don't have an action block, so for a
-                     @('cover') assertion this is just the associated
-                     statement, if any.")
-      (failure      vl-stmt-p
-                    "This is the @('else') statement from the action block, or
-                     a @(see vl-nullstmt) if there is no @('else') statement.
-                     For @('cover') assertions this is always just a @(see
-                     vl-nullstmt) since there is no @('else') action.")
-      (loc          vl-location-p)))
+     ((type        vl-asserttype-p
+                   "The type of this assertion, e.g., @('assert'), @('assume'),
+                    etc.")
+      (condition   vl-propspec-p
+                   "The property specification being asserted.")
+      (success     vl-stmt-p
+                   "For most assertions, this is the success statement for the
+                    associated action block, or a @(see vl-nullstmt) if there
+                    is no success statement.  Note that @('cover') assertions
+                    are special and don't have an action block, so for a
+                    @('cover') assertion this is just the associated
+                    statement, if any.")
+      (failure     vl-stmt-p
+                   "This is the @('else') statement from the action block, or
+                    a @(see vl-nullstmt) if there is no @('else') statement.
+                    For @('cover') assertions this is always just a @(see
+                    vl-nullstmt) since there is no @('else') action.")
+      (atts        vl-atts-p
+                   "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                    with this statement.")
+      (loc         vl-location-p
+                   "Location of this statement in the source code.")))
 
     ))
 

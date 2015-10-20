@@ -1102,6 +1102,7 @@
  (defparser vl-parse-statement-2012-aux (atts)
    :short "SystemVerilog-2012 Only.  Main part of statement parsing."
    :long "<p>Here's the SystemVerilog-2012 statement rule:</p>
+
           @({
               statement ::= [ block_identifier : ] { attribute_instance } statement_item
 
@@ -1128,8 +1129,10 @@
                                | expect_property_statement                ;;; 'expect'
           })
 
-          <p>Here we assume we have already parsed the attributes and we are
-          just wanting to parse the subsequent @('statement_item')."
+          <p>Here we assume we have already parsed the block identifier and
+          attributes, and we just want to parse the @('statement_item').  We
+          will need to install the attributes, but the block identifier is
+          handled separately.</p>"
 
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 50)
@@ -1276,10 +1279,56 @@
    :short "Top level function for parsing a @('statement') into a @(see
            vl-stmt)."
    :measure (two-nats-measure (vl-tokstream-measure) 100)
+   :long "<p>This mainly handles SystemVerilog-2012 style statement labels; see
+          Section 9.3.5 (Page 178).  We treat these labels as if they just
+          create named blocks around the statement that they label.  Note that
+          it is illegal to label a named block, i.e., you cannot write:</p>
+
+          @({
+               foo : begin : bar
+          })
+
+          <p>We enforce this by making sure that if we are labeling a
+          @('begin/end') or @('fork/join') block, then it is not already a
+          labeled block.</p>"
    (seq tokstream
-         (atts :w= (vl-parse-0+-attribute-instances))
-         (ret := (vl-parse-statement-aux atts))
-         (return ret)))
+        (when (and (not (eq (vl-loadconfig->edition config) :verilog-2005))
+                   (vl-is-token? :vl-idtoken)
+                   (vl-lookahead-is-token? :vl-colon (cdr (vl-tokstream->tokens))))
+          ;; For SystemVerilog-2012, we can have [ block_identifier ':' ]
+          ;; statement labels.
+          (blockid := (vl-match))
+          (:= (vl-match)))
+        (atts :w= (vl-parse-0+-attribute-instances))
+        (core := (vl-parse-statement-aux atts))
+        (unless blockid
+          (return core))
+        ;; Need to "install" the block ID.
+        (return-raw
+         (b* (((vl-idtoken blockid)))
+           (vl-stmt-case core
+             (:vl-blockstmt
+              ;; We can directly put the name into this block.
+              (if core.name
+                  ;; Illegal per SystemVerilog-2012 Sec 9.3.5, page 195.
+                  (vl-parse-error
+                   (cat "begin/end or fork/join block has both a leading name ("
+                        blockid.name ") and a trailing name (" core.name ")."))
+                ;; All is well, install the name.
+                (mv nil
+                    (change-vl-blockstmt core :name blockid.name)
+                    tokstream)))
+             (:otherwise
+              ;; We are just going to wrap this statement in a new, named block.
+              (mv nil
+                  (make-vl-blockstmt :sequentialp t
+                                     :name blockid.name
+                                     :stmts (list core)
+                                     ;; Seems most sensible to associate any
+                                     ;; attributes with the sub-statement core,
+                                     ;; which should already be the case.
+                                     :atts nil)
+                  tokstream)))))))
 
  (defparser vl-parse-statement-or-null ()
    :short "Parse a @('statement_or_null') into a @(see vl-stmt), which is
@@ -1527,6 +1576,11 @@
 ;;          :hints(("Goal"
 ;;                  :in-theory (disable vl-parse-delay-control-result)
 ;;                  :use ((:instance vl-parse-delay-control-result))))))
+
+(local (defthm crock
+         (implies (vl-lookahead-is-token? token (cdr (vl-tokstream->tokens)))
+                  (consp (vl-tokstream->tokens :tokstream (mv-nth 2 (vl-match)))))
+         :hints(("Goal" :in-theory (enable vl-lookahead-is-token? vl-match)))))
 
 (with-output
  :off prove
