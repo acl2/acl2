@@ -1411,8 +1411,9 @@
         (t t)))
 
 (defun delete-assoc-eq-lst (lst alist)
-  (declare (xargs :guard (or (symbol-listp lst)
-                             (symbol-alistp alist))))
+  (declare (xargs :guard (if (symbol-listp lst)
+                             (alistp alist)
+                           (symbol-alistp alist))))
   (if (consp lst)
       (delete-assoc-eq-lst (cdr lst)
                            (delete-assoc-eq (car lst) alist))
