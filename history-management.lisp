@@ -5828,6 +5828,38 @@
             fullp
             (access-command-tuple-form (cddar cmd-wrld))))
 
+(defmacro extend-pe-table (name form)
+  `(with-output
+     :off error ; avoid extra needless layer of error
+     (table pe-table
+            ',name
+            (cons (cons (getprop ',name 'absolute-event-number
+                                 (list :error
+                                       (concatenate 'string
+                                                    "Event for "
+                                                    ,(symbol-name name)
+                                                    " (package "
+                                                    ,(symbol-package-name name)
+                                                    ") not found."))
+                                 'current-acl2-world world)
+                        ',form)
+                  (cdr (assoc-eq ',name
+                                 (table-alist 'pe-table world)))))))
+
+(defun pe-event-form (event-tuple wrld)
+
+; Note: change cd-some-event-matchp to use this function if the :SEARCH utility
+; described in :doc command-descriptor is to use the pe-table.
+
+  (let* ((ev-form (access-event-tuple-form event-tuple))
+         (ev-n (access-event-tuple-number event-tuple))
+         (pe-entry (cdr (assoc ev-n
+                               (cdr (assoc-eq (cadr ev-form)
+                                              (table-alist 'pe-table
+                                                           wrld)))))))
+    (or pe-entry
+        ev-form)))
+
 (defun make-event-ldd (markp indent fullp ev-tuple ens wrld)
   (make-ldd 'event
             markp
@@ -5841,7 +5873,7 @@
                        (big-m-little-m-event ev-tuple wrld)))
             indent
             fullp
-            (access-event-tuple-form ev-tuple)))
+            (pe-event-form ev-tuple wrld)))
 
 (defun make-ldds-command-sequence (cmd-wrld1 cmd2 ens wrld markp ans)
 
@@ -5947,7 +5979,7 @@
   (let ((cmd-ldd (make-command-ldd nil fullp cmd-wrld ens wrld))
         (wrld1 (scan-to-event (cdr cmd-wrld))))
     (cond
-     ((equal (access-event-tuple-form (cddar wrld1))
+     ((equal (pe-event-form (cddar wrld1) wrld)
              (access-command-tuple-form (cddar cmd-wrld)))
 
 ; If the command form is the same as the event form of the
@@ -6144,7 +6176,7 @@
 
 (defun pe-fn1 (wrld channel ev-wrld cmd-wrld state)
   (cond
-   ((equal (access-event-tuple-form (cddar ev-wrld))
+   ((equal (pe-event-form (cddar ev-wrld) wrld)
            (access-command-tuple-form (cddar cmd-wrld)))
     (print-ldd
      (make-command-ldd nil t cmd-wrld (ens state) wrld)
@@ -6273,11 +6305,10 @@
   (list 'pe-fn logical-name 'state))
 
 (defmacro pe! (logical-name)
-  (declare (ignore logical-name))
-  `(er hard 'pe!
-       "Pe! has been deprecated.  Please use :pe, which now has the ~
-        functionality formerly provided by :pe!; or consider :pcb, :pcb!, or ~
-        :pr!.  See :DOC history."))
+  `(with-output :off (summary event)
+     (make-event (er-progn (table pe-table nil nil :clear)
+                           (pe ,logical-name)
+                           (value '(value-triple :invisible))))))
 
 (defun command-block-names1 (wrld ans symbol-classes)
 
