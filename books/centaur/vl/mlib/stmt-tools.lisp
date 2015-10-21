@@ -211,9 +211,8 @@
     :vl-repeatstmt       x.atts
     :vl-timingstmt       x.atts
     :vl-returnstmt       x.atts
-    ;; bozo should assert statements have atts?
-    :vl-assertstmt       nil
-    :vl-concassertstmt   nil))
+    :vl-assertstmt       x.atts
+    :vl-cassertstmt      x.atts))
 
 
 (define vl-compoundstmt->stmts
@@ -239,7 +238,7 @@ expressions.</p>"
     :vl-repeatstmt       (list x.body)
     :vl-timingstmt       (list x.body)
     :vl-assertstmt       (list x.success x.failure)
-    :vl-concassertstmt   (list x.success x.failure)
+    :vl-cassertstmt      (list x.success x.failure)
     :otherwise           nil)
   ///
   (local (in-theory (enable vl-stmtlist-count
@@ -308,7 +307,7 @@ directly part of the statement.</p>"
     :vl-blockstmt      nil
     :vl-timingstmt     nil
     :vl-assertstmt     (list x.condition)
-    :vl-concassertstmt nil ;; bozo?
+    :vl-cassertstmt    nil ;; bozo?
     :otherwise         nil))
 
 
@@ -583,10 +582,10 @@ directly part of the statement.</p>"
                             :success (first stmts)
                             :failure (second stmts))
 
-      :vl-concassertstmt
-      (change-vl-concassertstmt x
-                                :success (first stmts)
-                                :failure (second stmts))
+      :vl-cassertstmt
+      (change-vl-cassertstmt x
+                             :success (first stmts)
+                             :failure (second stmts))
 
       ;; Atomic statements are ruled out by the guard.
       :vl-nullstmt         (progn$ (impossible) x)

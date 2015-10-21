@@ -2663,8 +2663,6 @@ expression into a string."
     (:vl-assert         "assert")
     (:vl-assume         "assume")
     (:vl-cover          "cover")
-    (:vl-cover-property "cover")
-    (:vl-cover-sequence "cover")
     (:vl-expect         "expect")
     (:vl-restrict       "restrict")
     (otherwise    (or (impossible) ""))))
@@ -2949,16 +2947,21 @@ expression into a string."
                                           (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
                  (vl-println ";"))
 
-      :vl-concassertstmt
+      :vl-cassertstmt
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  ;; bozo atts, name
                  (vl-ps-span "vl_key"
                              (vl-print-str (vl-asserttype-string x.type))
-                             (vl-print " ")
-                             (case x.type
-                               (:vl-expect ps) ;; expect has no property/sequence keyword
-                               (:vl-cover-sequence (vl-print " sequence "))
-                               (t                  (vl-print " property "))))
+                             (cond ((vl-asserttype-equiv x.type :vl-expect)
+                                    ;; expect just uses "expect (...)" instead of "expect property (...)"
+                                    (vl-print " "))
+                                   ((and (vl-asserttype-equiv x.type :vl-cover)
+                                         x.sequencep)
+                                    ;; cover statements can be "cover sequence" statements
+                                    (vl-print " sequence "))
+                                   (t
+                                    ;; everything else has "property" after it, e.g., "assert property"
+                                    (vl-print " property "))))
                  (vl-print "(")
                  (vl-pp-propspec x.condition)
                  (vl-print ")")

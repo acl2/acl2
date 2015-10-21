@@ -131,8 +131,9 @@ datatypes use expressions for indexes and so forth.</li>
 <li>Various constructs like always/initial blocks and functions and tasks also
 make use of <b>procedural @(see statements)</b> like if/else, case statements,
 and for loops.  Some notable statements include @(see vl-assertstmt) and @(see
-vl-concassertstmt) for immediate and concurrent SystemVerilog assertions, which
-include an elaborate notion of @(see property-expressions).</li>
+vl-cassertstmt) for immediate and concurrent SystemVerilog assertions.  Note
+that concurrent assertions also involve an elaborate notion of @(see
+property-expressions).</li>
 
 </ul>
 
@@ -2490,8 +2491,6 @@ case statements.</p>")
   (:vl-assert
    :vl-assume
    :vl-cover
-   :vl-cover-property
-   :vl-cover-sequence
    :vl-expect
    :vl-restrict)
   :parents (vl-assertstmt)
@@ -2991,13 +2990,19 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
       (loc        vl-location-p
                   "Location of this statement in the source code.")))
 
-    (:vl-concassertstmt
-     :base-name vl-concassertstmt
+    (:vl-cassertstmt
+     :base-name vl-cassertstmt
      :layout :tree
      :short "Representation of a concurrent assertion statement."
      ((type        vl-asserttype-p
                    "The type of this assertion, e.g., @('assert'), @('assume'),
                     etc.")
+      (sequencep   booleanp :rule-classes :type-prescription
+                   "This should be @('nil') except for @('cover sequence')
+                    statements, where it is @('t').  Cover statements are
+                    special; most concurrent assertions are just things like
+                    @('assert property ...') or @('assume property ...')  and
+                    don't even have a @('sequence') form.")
       (condition   vl-propspec-p
                    "The property specification being asserted.")
       (success     vl-stmt-p

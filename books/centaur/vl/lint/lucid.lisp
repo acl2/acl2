@@ -1319,7 +1319,7 @@ created when we process their packages, etc.</p>"
              (st (vl-stmt-lucidcheck x.failure ss st ctx)))
           st)
 
-        :vl-concassertstmt
+        :vl-cassertstmt
         (b* ((st
               ;; BOZO we should go through the condition and try to mark wires
               ;; in the sequence as used, etc.  But we'd basically need to
