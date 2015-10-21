@@ -1319,11 +1319,17 @@
        (xvar (or (getarg :xvar xvar kwd-alist)
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
                  (intern-in-package-of-symbol "X" name)))
+       (name-link (xdoc::see name))
        (flexprods-in
-        `((:none :cond (not ,xvar) :ctor-body nil)
-          (:some :cond t
+        `((:none
+           :cond (not ,xvar)
+           :ctor-body nil
+           :short ,(cat "Represents that no " name-link " is available, i.e., Nothing or None."))
+          (:some
+           :cond t
            :fields ((val :type ,basetype :acc-body ,xvar))
-           :ctor-body val)))
+           :ctor-body val
+           :short ,(cat "An available " name-link ", i.e., <i>Just val</i> or <i>Some val</i>."))))
        (prods (parse-flexprods flexprods-in name nil kwd-alist xvar nil these-fixtypes fixtypes))
        (- (flexprods-check-xvar xvar prods))
        ((when (atom prods))
@@ -1472,7 +1478,7 @@
                 (and stable-under-simplificationp
                      '(:in-theory (enable ,base.equiv))))))))
 
-(defun transsum-suminfo->flexprod-def (suminfo xvar base-override our-fixtypes lastp)
+(defun transsum-suminfo->flexprod-def (name suminfo xvar base-override our-fixtypes lastp)
   (b* (((suminfo suminfo))
        ((flexsum sum) suminfo.sum)
        ((when (atom suminfo.tags))
@@ -1485,7 +1491,9 @@
                     kind)))
        (tag-cond (if (consp (cdr suminfo.tags))
                      `(member (tag ,xvar) ',suminfo.tags)
-                   `(eq (tag ,xvar) ',(car suminfo.tags)))))
+                   `(eq (tag ,xvar) ',(car suminfo.tags))))
+       (subtype-name-link (xdoc::see sum.name))
+       (wholetype-name-link (xdoc::see name)))
     (mv base
         `(,kind
           :cond ,(if lastp
@@ -1495,18 +1503,19 @@
                             ,tag-cond)
                      tag-cond))
           :fields ((val :type ,sum.name :acc-body ,xvar))
-          :ctor-body val))))
+          :ctor-body val
+          :short ,(cat "A transparent structure for the "
+                       subtype-name-link
+                       " case of "
+                       wholetype-name-link ".")))))
 
-
-
-
-(defun transsum-flexprods-in (suminfos xvar base-override our-fixtypes)
+(defun transsum-flexprods-in (name suminfos xvar base-override our-fixtypes)
   (b* (((when (atom suminfos)) nil)
        ((mv base prod) (transsum-suminfo->flexprod-def
-                        (car suminfos) xvar base-override our-fixtypes
+                        name (car suminfos) xvar base-override our-fixtypes
                         (atom (cdr suminfos)))))
     (cons prod (transsum-flexprods-in
-                (cdr suminfos) xvar (or base-override base) our-fixtypes))))
+                name (cdr suminfos) xvar (or base-override base) our-fixtypes))))
 
 
 (define suminfo->pred (x)
@@ -1694,7 +1703,7 @@
                  (intern-in-package-of-symbol "X" name)))
        (base-override (getarg :base-case-override nil kwd-alist))
 
-       (flexprods-in (transsum-flexprods-in suminfos xvar base-override these-fixtypes))
+       (flexprods-in (transsum-flexprods-in name suminfos xvar base-override these-fixtypes))
        (prods (parse-flexprods flexprods-in name kind kwd-alist xvar nil these-fixtypes fixtypes))
        (- (flexprods-check-xvar xvar prods))
        ((when (atom prods))
@@ -2617,8 +2626,9 @@
        :parents (,list.name)
        :short ,(cat "@(call " (xdoc::full-escape-symbol list.fix)
                     ") is a usual @(see fty::fty) list fixing function.")
-       :long ,(cat "<p>In the logic, we apply " (xdoc::see list.elt-fix)
-                   " to each member of the list.  In the execution, none of
+       :long ,(cat "<p>In the logic, we apply @(see? "
+                   (xdoc::full-escape-symbol list.elt-fix)
+                   ") to each member of the list.  In the execution, none of
                     that is actually necessary and this is just an inlined
                     identity function.</p>")
        :measure ,list.measure
@@ -2935,7 +2945,7 @@
     (append (with-flextype-bindings (x (car types))
               `((defsection ,x.equiv
                   :parents (,x.name)
-                  :short ,(cat "Basic equivalence relation for " (xdoc::see x.pred) ".")
+                  :short ,(cat "Basic equivalence relation for " (xdoc::see x.name) " structures.")
                   (deffixtype ,x.name
                     :pred ,x.pred
                     :fix ,x.fix
@@ -3962,8 +3972,12 @@
        (acc (html-encode-str name-str acc))
        (acc (b* (((when (eq x.type nil))
                   acc)
+                 (fixtype (find-fixtype x.type (get-fixtypes-alist (w state))))
+                 (target  (if fixtype
+                              (fixtype->topic fixtype)
+                            x.type))
                  (acc (revappend-chars " &mdash; @(see? " acc))
-                 (acc (revappend-chars (xdoc::full-escape-symbol x.type) acc))
+                 (acc (revappend-chars (xdoc::full-escape-symbol target) acc))
                  (acc (revappend-chars ")" acc)))
               acc))
        (acc (revappend-chars "</dt>" acc))
@@ -3994,6 +4008,9 @@
 (defun defprod-main-description (prod base-pkg acc state)
   ;; Returns (mv acc state)
   (b* (((flexprod prod) prod)
+       ((unless (consp prod.fields))
+        (mv (revappend-chars "<p>This is an atomic/empty structure; it has no fields.</p>" acc)
+            state))
        (acc  (revappend-chars "<h5>Fields</h5>" acc))
        (acc  (cons #\Newline acc))
        ((mv acc state)
@@ -4295,23 +4312,31 @@ a @('" name-plain "') structure.  For example:</p>
 @({
     (" case-str " x :" kind1-str ")
 })
+"
+    (if sum.kind
+        (cat "<p>is essentially just a safer alternative to writing:</p>
+              @({
+                  (equal (" kind-fn-str " x) :" kind1-str ")
+              })
 
-<p>is essentially just a safer alternative to writing:</p>
+              <p>Why is using " case-str " safer?  When we directly inspect the
+              kind with @('equal'), there is no static checking being done to
+              ensure that, e.g., @(':" kind1-str "') is a valid kind of "
+              name-link " structure.  That means there is nothing to save you
+              if, later, you change the kind keyword for this type from @(':"
+              kind1-str "') to something else.  It also means you get no help
+              if you just make a typo when writing the @(':" kind1-str "')
+              symbol.  Over the course of developing VL, we found that such
+              issues were very frequent sources of errors!</p>")
+      ;; Otherwise: there is no kind function.  BOZO some day we might try to
+      ;; explain what happens here, but it's probably tricky, we'd have to
+      ;; pretty-print something like (flexprod->cond (car sum.prods)), and
+      ;; that's just messy.  So we'll just say something generic here.
+      (cat "<p>can be used to determine whether @('x') is a @('"
+           kind1-str "') instead of some other kind of " name-plain
+           " structure.</p>"))
 
-@({
-    (equal (" kind-fn-str " x) :" kind1-str ")
-})
-
-<p>Why is using " case-str " safer?  When we directly inspect the kind with
-@('equal'), there is no static checking being done to ensure that, e.g.,
-@(':" kind1-str "') is a valid kind of " name-link " structure.  That means
-there is nothing to save you if, later, you change the kind keyword for this
-type from @(':" kind1-str "') to something else.  It also means you get no
-help if you just make a typo when writing the @(':" kind1-str "') symbol.
-Over the course of developing VL, we found that such issues were very
-frequent sources of errors!</p>
-
-<h3>Long Form</h3>
+    "<h3>Long Form</h3>
 
 <p>In its longer form, @('" case-str "') allows you to split into cases based
 on the kind of structure you are looking at.  A typical example would be:</p>
@@ -4402,16 +4427,36 @@ binder.</p>")))))
                   (str::cat "Option type; @(see? "
                             (xdoc::full-escape-symbol base.name)
                             ") or @('nil').")))
-       (long  (or (cdr (assoc :long kwd-alist))
-                  "<p>This is an option type introduced by @(see fty::defoption).</p>"))
+       (long  (cdr (assoc :long kwd-alist)))
+
+       (acc nil)
+       (acc (revappend-chars
+             "<p>This is an option type introduced by @(see fty::defoption).
+              Note that @('defoption') is just a wrapper for @(see
+              fty::defflexsum), so there are @(':none') and @(':some') member
+              types, a case macro, and so forth.</p>" acc))
+       (acc (revappend-chars "<h5>Member Types</h5>" acc))
+       (acc (revappend-chars "<dl>" acc))
+       ((mv acc state) (deftagsum-summarize-prods x x.prods base-pkg acc state))
+       (acc (revappend-chars "</dl>" acc))
+
+       (acc   (cons #\Newline acc))
+       (acc   (revappend-chars (or long "") acc))
+       (long  (rchars-to-string acc))
+       ((mv prods-doc state)
+        (deftagsum-prods-doc x x.prods (list x.name) base-pkg state))
+       (case-doc (flexsum-case-macro-defxdoc x))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
                      :long ,long))))
     (mv (append main-doc
+                prods-doc
+                case-doc
                 `((xdoc::order-subtopics ,x.name
                                          (,x.pred ,x.fix ,x.equiv ,x.count))))
         state)))
+
 
 (defun deftranssum->defxdoc (x parents kwd-alist base-pkg state)
   ;; Returns (mv events state)
@@ -4425,11 +4470,16 @@ binder.</p>")))))
        (acc   (cons #\Newline acc))
        (acc   (revappend-chars (or long "") acc))
        (long  (rchars-to-string acc))
+       ((mv prods-doc state)
+        (deftagsum-prods-doc x x.prods (list x.name) base-pkg state))
+       (case-doc (flexsum-case-macro-defxdoc x))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
                      :long ,long))))
     (mv (append main-doc
+                case-doc
+                prods-doc
                 `((xdoc::order-subtopics ,x.name
                                          (,x.pred ,x.fix ,x.equiv ,x.count))))
         state)))

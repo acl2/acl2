@@ -249,7 +249,40 @@
                (< (integer-length (mod a (expt 2 n)))
                   (+ 1 n)))
       :hints(("Goal" :in-theory (enable* ihsext-arithmetic)))
-      :rule-classes ((:rewrite) (:linear)))))
+      :rule-classes ((:rewrite) (:linear))))
+
+
+
+    (defthm integer-length-expt-lower-bound
+      (implies (posp n)
+               (<= (expt 2 (+ -1 (integer-length n))) n))
+      :rule-classes :linear
+      :hints(("Goal"
+              :in-theory (enable acl2::integer-length*)
+              :expand ((:free (b) (expt 2 (+ 1 b))))
+              :induct (logcdr-induction-1 n))))
+
+
+    (defthm integer-length-when-less-than-exp
+      (implies (and (natp x)
+                    (< x (expt 2 y))
+                    (natp y))
+               (<= (integer-length x) y))
+      :rule-classes :linear)
+
+    (defthm integer-length-when-greater-than-exp
+      (implies (and (natp x)
+                    (<= (expt 2 y) x)
+                    (integerp y))
+               (< y (integer-length x)))
+      :rule-classes :linear)
+
+
+    (defthmd integer-length-unique
+      (implies (and (posp x) (posp y)
+                    (<= (expt 2 (1- y)) x)
+                    (< x (expt 2 y)))
+               (equal (integer-length x) y))))
 
 
 ;; BOZO maybe prove something like this?

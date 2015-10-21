@@ -51,29 +51,41 @@
                            (tau-system))))
 
 
-
 (defxdoc syntax
   :parents (vl)
   :short "Internal representation of the syntax of Verilog and SystemVerilog."
 
   :long "<h3>Introduction</h3>
 
-<p>A core component of VL is its internal representation of Verilog's
+<p>A core component of @(see VL) is its internal representation of Verilog's
 syntactic structures.  For each kind of Verilog construct (expressions,
 statements, declarations, instances, etc.) we introduce corresponding ``types''
 with their own recognizer, constructor, and accessor functions.</p>
 
 <p>These structures generally correspond fairly closely to parse trees in the
-SystemVerilog grammar.  However, we do sometimes make certain simplifications
-to present a more regular view of the source code.  For instance, whereas in a
-normal Verilog module you might write something like @('wire [3:0] a, b, c;')
-to simultaneously declare several wires, our internal representation treats
-each wire declaration separately, as if you had instead written @('wire [3:0]
-a; wire [3:0] b; wire [3:0] c;').  Many structures also contain various
-additional information that is not purely part of the syntax, e.g., many
-structures include @(see vl-location) annotations to say where they came from,
-expressions include annotations about whether they have explicit parentheses,
-and so forth.</p>
+SystemVerilog grammar, except that:</p>
+
+<ul>
+
+<li>We sometimes make certain <b>simplifications</b> to present a more regular
+view of the source code.  For instance, whereas in a normal Verilog module you
+might write something like @('wire [3:0] a, b, c;') to simultaneously declare
+several wires, our internal representation treats each wire declaration
+separately, as if you had instead written @('wire [3:0] a; wire [3:0] b; wire
+[3:0] c;').</li>
+
+<li>We generally <b>separate</b> the various kinds of parsed elements (e.g.,
+assignments, declarations, etc.) out into distinct lists, whereas in the source
+code these elements may be all mixed together.  This is sometimes slightly
+tricky; see also the @(see loader) and the @(see annotate) transform.</li>
+
+<li>Many structures also contain various <b>additional fields</b> that are not
+purely part of the syntax.  For instance, many structures include @(see
+vl-location) annotations to say where they came from, expressions include
+annotations about whether they have explicit parentheses, and high-level design
+elements like modules have @(see warnings) attached to them.</li>
+
+</ul>
 
 <p>We introduce all of these structures using the @(see fty) library and
 following the fixtype discipline.  This generally means that each type has an
@@ -89,32 +101,36 @@ quick guide to the most major syntactic definitions:</p>
 
 <ul>
 
-<li>@(see vl-design) is our top-level representation of an entire SystemVerilog
-design, including all of the modules, interfaces, packages, programs, etc.,
-typically spread out across many files.  If you start here and then drive down
-into the fields, you'll eventually explore all of the constructs.</li>
+<li>@(see vl-design) is our top-level representation of an <b>entire
+design</b>, including all of the modules, interfaces, packages, programs, etc.,
+typically spread out across many Verilog or SystemVerilog source files.  If you
+start here and then drive down into the fields, you'll eventually explore all
+of our syntactic constructs.</li>
 
-<li>Many kinds of major components can occur in a design, e.g., modules,
-interfaces, packages, programs, configs, user defined primitives, etc.  We
-represent these with, e.g., @(see vl-module), @(see vl-interface), @(see
+<li>Many kinds of major <b>design elements</b> can occur in a design, e.g.,
+modules, interfaces, packages, programs, configs, user defined primitives, etc.
+We represent these with, e.g., @(see vl-module), @(see vl-interface), @(see
 vl-package), @(see vl-program), @(see vl-config), @(see vl-udp), etc.</li>
 
-<li>Modules are the bread and butter of most designs.  Most modules contain
+<li><b>Modules</b> are the mainstay of most designs.  Most modules contain
 things like assignments, gate and module instances, always blocks, initial
-blocks, aliases, and so on.  We represent these using, e.g., @(see vl-assign),
-@(see vl-gateinst), @(see vl-modinst), @(see vl-always), @(see vl-initial),
-@(see vl-alias), etc.</li>
+blocks, aliases, and so on.  We represent these module elements using, e.g.,
+@(see vl-assign), @(see vl-gateinst), @(see vl-modinst), @(see vl-always),
+@(see vl-initial), @(see vl-alias), etc.</li>
 
-<li>Other widely used constructs include declarations of many kinds, e.g.,
-variables, ports, parameters, functions, tasks, types.  See for instance @(see
-vl-vardecl), @(see vl-port) and @(see vl-portdecl), @(see vl-paramdecl), @(see
-vl-fundecl), @(see vl-taskdecl), and @(see vl-typedef).</li>
+<li>Other widely used constructs include <b>declarations</b> of many kinds,
+e.g., variables, ports, parameters, functions, tasks, types.  See for instance
+@(see vl-vardecl), @(see vl-port) and @(see vl-portdecl), @(see vl-paramdecl),
+@(see vl-fundecl), @(see vl-taskdecl), and @(see vl-typedef).</li>
 
-<li>Underpinning all of the above are @(see expressions-and-datatypes), which
-are mutually recursive (some expressions like casts can include types, and many
-datatypes use expressions for indexes and so forth).  Various constructs like
-always/initial blocks and functions and tasks also make use of procedural @(see
-statements) like if/else, case statements, and for loops.</li>
+<li>Underpinning all of the above are <b><see topic='@(url
+expressions-and-datatypes)'>Expressions and Datatypes</see></b>.  These are
+mutually recursive since expressions like casts can include types while many
+datatypes use expressions for indexes and so forth.</li>
+
+<li>Various constructs like always/initial blocks and functions and tasks also
+make use of <b>procedural @(see statements)</b> like if/else, case statements,
+and for loops.</li>
 
 </ul>
 
@@ -136,10 +152,13 @@ also various unfinished areas like support for SystemVerilog assertions.</p>")
 ; ----------------------------------------------------------------------------
 
 (defxdoc vl-syntaxversion
-  :short "Version of VL syntax being used."
-  :long "<p>This is a barbaric mechanism to make sure that we don't try to mix
-together translations produced by incompatible versions of VL.  Each design is
-annotated with a @('version') field that must match exactly this string.</p>")
+  :short "Version of VL @(see syntax) being used."
+
+  :long "<p>Occasionally VL's internal data structures change, e.g., to add new
+fields or adjust the way that some field is represented.  As a barbaric
+mechanism to make sure that we don't try to mix together translations produced
+by incompatible versions of VL, each @(see vl-design) is annotated with a
+@('version') field that must match exactly this string.</p>")
 
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
@@ -171,75 +190,6 @@ annotated with a @('version') field that must match exactly this string.</p>")
     :forward t))
 
 
-
-;; (defprod vl-range
-;;   :short "Representation of ranges on wire declarations, instance array
-;; declarations, and so forth."
-;;   :tag :vl-range
-;;   :layout :tree
-
-;;   ((msb vl-expr-p)
-;;    (lsb vl-expr-p))
-
-;;   :long "<p>Ranges are discussed in Section 7.1.5.</p>
-
-;; <p>Ranges in declarations and array instances look like @('[msb:lsb]'), but do
-;; not confuse them with part-select expressions which have the same syntax.</p>
-
-;; <p>The expressions in the @('msb') and @('lsb') positions are expected to
-;; resolve to constants.  Note that the parser does not try to simplify these
-;; expressions, but some simplification is performed in transformations such as
-;; @(see rangeresolve) and @(see unparameterization).</p>
-
-;; <p>Even after the expressions have become constants, the Verilog-2005 standard
-;; does not require @('msb') to be greater than @('lsb'), and neither index is
-;; required to be zero.  In fact, even negative indicies seem to be permitted,
-;; which is quite amazing and strange.</p>
-
-;; <p>While we do not impose any restrictions in @('vl-range-p') itself, some
-;; transformations expect the indices to be resolved to integers.  However, we now
-;; try to support the use of both ascending and descending ranges.</p>")
-
-;; (defoption vl-maybe-range vl-range-p
-;;   :parents (syntax vl-range-p)
-;;   ///
-;;   (defthm type-when-vl-maybe-range-p
-;;     (implies (vl-maybe-range-p x)
-;;              (or (consp x)
-;;                  (not x)))
-;;     :rule-classes :compound-recognizer))
-
-;; (fty::deflist vl-maybe-range-list
-;;               :elt-type vl-maybe-range-p
-;;               :elementp-of-nil t
-;;               :true-listp nil)
-
-;; (fty::deflist vl-rangelist
-;;               :elt-type vl-range-p
-;;               :elementp-of-nil nil
-;;               :true-listp nil)
-
-;; (fty::deflist vl-rangelist-list
-;;               :elt-type vl-rangelist-p
-;;               :true-listp nil
-;;               :elementp-of-nil t)
-
-
-
-
-
-; -----------------------------------------------------------------------------
-;
-;                        Data Types (SystemVerilog)
-;
-; -----------------------------------------------------------------------------
-
-;; (defenum vl-randomqualifier-p
-;;   (nil
-;;    :vl-rand
-;;    :vl-randc)
-;;   :short "Random qualifiers that can be put on struct or union members.")
-
 (defenum vl-nettypename-p
   (:vl-wire ;; Most common so it goes first.
    :vl-tri
@@ -253,59 +203,13 @@ annotated with a @('version') field that must match exactly this string.</p>")
    :vl-uwire
    :vl-wand
    :vl-wor)
-  :short "Representation of wire types."
-
-  :long "<p>Wires in Verilog can be given certain types.  We
-represent these types using certain keyword symbols, whose names
-correspond to the possible types.</p>")
+  :short "Representation of wire (net) types, i.e., resolution function."
+  :long "<p>Note that Verilog/SystemVerilog <i>net types</i> like @('wire') and
+         @('wor') essentially govern how multiple drivers get resolved, and are
+         entirely distinct from the normal idea of a <i>data type</i>.  See
+         @(see vl-vardecl) for additional discussion.</p>")
 
 (defoption vl-maybe-nettypename vl-nettypename-p)
-
-
-
-
-
-
-
-(defval *vl-plain-old-integer-type*
-  :parents (vl-datatype)
-  (hons-copy (make-vl-coretype :name    :vl-integer
-                               :signedp t   ;; integer type is signed
-                               :pdims    nil ;; Not applicable to integers
-                               )))
-
-(defval *vl-plain-old-real-type*
-  :parents (vl-datatype)
-  (hons-copy (make-vl-coretype :name    :vl-real
-                               :signedp nil ;; Not applicable to reals
-                               :pdims    nil ;; Not applicable to reals
-                               )))
-
-(defval *vl-plain-old-time-type*
-  :parents (vl-datatype)
-  (hons-copy (make-vl-coretype :name    :vl-time
-                               :signedp nil ;; Not applicable to times
-                               :pdims    nil ;; Not applicable to times
-                               )))
-
-(defval *vl-plain-old-realtime-type*
-  :parents (vl-datatype)
-  (hons-copy (make-vl-coretype :name    :vl-realtime
-                               :signedp nil ;; Not applicable to realtimes
-                               :pdims    nil ;; Not applicable to realtimes
-                               )))
-
-(defval *vl-plain-old-wire-type*
-  :parents (vl-datatype)
-  (hons-copy (make-vl-coretype :name    :vl-logic
-                               :signedp nil
-                               :pdims   nil)))
-
-(defval *vl-plain-old-reg-type*
-  :parents (vl-datatype)
-  (hons-copy (make-vl-coretype :name    :vl-reg
-                               :signedp nil
-                               :pdims    nil)))
 
 
 
@@ -314,16 +218,16 @@ correspond to the possible types.</p>")
   :short "Representation of a single interface port."
   :tag :vl-interfaceport
   :layout :tree
-  ((name stringp
-         :rule-classes :type-prescription
-         "Name (internal and external) of this interface port, e.g., @('foo')
-          for @('simplebus.master foo').")
+  ((name    stringp
+            :rule-classes :type-prescription
+            "Name (internal and external) of this interface port, e.g.,
+             @('foo') for @('simplebus.master foo').")
 
-   (ifname stringp
-           :rule-classes :type-prescription
-           "For interface ports like @('simplebus foo') or @('simplebus.master foo'),
-            this is the name of the interface, e.g., @('simplebus').  For
-            non-interface ports it is just @('nil').")
+   (ifname  stringp
+            :rule-classes :type-prescription
+            "For interface ports like @('simplebus foo') or @('simplebus.master foo'),
+             this is the name of the interface, e.g., @('simplebus').  For
+             non-interface ports it is just @('nil').")
 
    (modport maybe-stringp
             :rule-classes :type-prescription
@@ -335,8 +239,9 @@ correspond to the possible types.</p>")
    (udims   vl-packeddimensionlist-p
             "For interface ports only: the unpacked dimensions for this port.")
 
-   (loc  vl-location-p
-         "Where this port came from in the Verilog source code.")))
+   (loc     vl-location-p
+            "Where this port came from in the Verilog source code.")))
+
 
 (defprod vl-regularport
   :parents (vl-port)
@@ -373,7 +278,6 @@ module mod(a,b,c) ;  <-- ports
   input [3:0] a;     <-- port declarations (not ports)
   input b;
   output c;
-
 endmodule
 })
 
@@ -970,33 +874,34 @@ properly preserve them.</p>")
   (nil
    :vl-static
    :vl-automatic)
-  :short "Representation of the lifetime of a variable.")
+  :short "Representation of the lifetime of a variable, function, task, etc.")
 
 (defprod vl-vardecl
   :short "Representation of a single variable or net (e.g., wire) declaration."
   :tag :vl-vardecl
   :layout :tree
 
-  ((name    stringp
-            :rule-classes :type-prescription
-            "Name of the variable being declared.")
+  ((name     stringp
+             :rule-classes :type-prescription
+             "Name of the variable being declared.")
 
-   (type    vl-datatype-p
-            "Kind of net or variable, e.g., wire, logic, reg, integer, real,
-             etc.  Also contains sizing information.")
+   (type     vl-datatype-p
+             "Data type, array dimensions.  See below.")
 
-   (nettype vl-maybe-nettypename-p
-            "If NIL, then this is really a variable, not a net.")
+   (nettype  vl-maybe-nettypename-p
+             "Net type (i.e., resolution function, distinct from datatype) or
+              @('nil') if this a @('reg') or variable instead of a net.  See
+              below.")
 
    (constp   booleanp
              :rule-classes :type-prescription
              "(Variables only).  Indicates whether the @('const') keyword was
-             provided.")
+              provided.")
 
    (varp     booleanp
              :rule-classes :type-prescription
              "(Variables only).  Indicates whether the @('var') keyword was
-             provided.")
+              provided.")
 
    (lifetime vl-lifetime-p
              "(Variables only).  See SystemVerilog-2012 Section 6.21.  There
@@ -1005,171 +910,139 @@ properly preserve them.</p>")
               @('lifetime') field is currently just used to record whether a
               @('static') or @('automatic') keyword was found during parsing.")
 
-   (initval vl-maybe-expr-p
-            "(Variables only).  BOZO.  When present, indicates the initial
-             value for the variable, e.g., if one writes @('integer i = 3;'),
-             then the @('initval') will be the @(see vl-expr-p) for @('3').
-             When wire declarations have initial values, the parser turns them
-             into separate continuous assignment statements, instead.  It
-             should turn these into separate initial blocks, I think.")
+   (initval  vl-maybe-expr-p
+             "(Variables only).  When present, indicates the initial value for
+              the variable, e.g., for @('integer i = 3;') the @('initval') will
+              be the @(see vl-expr-p) for @('3').  Note that when net
+              declarations have initial values, the parser turns them into
+              separate continuous assignment statements, instead.")
 
    (vectoredp  booleanp
                :rule-classes :type-prescription
                "(Nets only) True if the @('vectored') keyword was explicitly
-                provided.")
+                provided.  See SystemVerilog-2012 section 6.9.2.  This flag is
+                rather obscure and appears to have something to do with whether
+                the net will be ``expanded'' for the purposes of the Verilog
+                Programming Language Interface (PLI).  Vectored nets should
+                apparently not be bit- or part-selected from and should not
+                have strengths.  This does not seem particularly relevant to
+                anything and VL generally ignores this flag.")
 
    (scalaredp  booleanp
                :rule-classes :type-prescription
                "(Nets only) True if the @('scalared') keyword was explicitly
-                provided.")
+                provided.  See SystemVerilog-2012 section 6.9.2.  Again this is
+                not well specified and probably irrelevant.  VL generally
+                ignores this.")
 
    (delay      vl-maybe-gatedelay-p
+               ;; BOZO consider making this an explicit vl-gatedelay-p and
+               ;; having the parser zero it when it's not specified.
                "(Nets only) The delay associated with this wire, if any.
-                For instance, @('wire #1 foo').")
+                For instance, @('wire #1 foo') has a delay of 1, and means that
+                it takes 1 time unit for the net to change its value in
+                response to a change on any driver (Verilog-2005, 7.14).  The
+                default delay is zero when no delay is specified, but we
+                represent the delay using a @(see vl-maybe-gatedelay-p), and
+                use @('NIL') when no delay is specified.  Note per
+                Verilog-2005, Section 6.1.3, that when a delays is provided in
+                the combined declaration and assignment statement like @('wire
+                #10 a = 1, b = 2'), then the delay is associated with each
+                assignment and <b>not</b> with the net declaration for @('a');
+                see @(see vl-assign-p) for more information.")
 
    (cstrength  vl-maybe-cstrength-p
                "(Trireg nets only).  The charge strength associated with the
-                net, if any.  For instance, @('trireg medium foo').")
+                net, if any.  For instance, @('trireg medium foo') will have a
+                @('cstrength') of @('medium'); the @('cstrength') will be
+                @('nil') for all non-trireg nets, regs, and variables; it will
+                also be @('nil') for @('trireg') nets that do not explicitly
+                give a charge strength.")
 
-   (atts    vl-atts-p
-            "Any attributes associated with this declaration.")
+   (atts       vl-atts-p
+               "Any attributes associated with this declaration.")
 
-   (loc     vl-location-p
-            "Where the declaration was found in the source code."))
+   (loc        vl-location-p
+               "Where the declaration was found in the source code."))
 
-  :long "<p>Verilog-2005 and SystemVerilog-2012 distinguish between variables
-and nets.  Historically, VL also separated these concepts in its basic
-syntactic representation.  However, we eventually decided that merging together
-the two concepts into a single syntactic representation would be simpler.  So,
-today, @('vl-vardecl-p') objects are used for both @('net') declarations and
-for @('reg')/variable declarations.</p>
+  :long "<p>Verilog-2005 and SystemVerilog-2012 distinguish between nets and
+         variables.  For example:</p>
 
-<p>Net declarations introduce new wires with certain properties (type,
-signedness, size, and so on).  Here are some examples of basic net
-declarations.</p>
+         @({
+              wire signed [4:0] w;     // net
+              supply1 vdd;             // net
+              wand [3:0] a;            // net
 
-@({
-module m (a, b, c) ;
-  wire [4:0] w ;       // <-- plain net declaration
-  wire ab = a & b ;    // <-- net declaration with assignment
-  ...
-endmodule
-})
+              reg [4:0] r;             // variable
+              logic signed [1:0] l;    // variable
+              integer i;               // variable
+              mybus_t b;               // variable
+         })
 
-<p>Net declarations can also arise from using the combined form of port
-declarations.</p>
+         <p>In early versions of VL, we also separated nets from variables in
+         our internal representation of Verilog @(see syntax).  However, we
+         eventually decided that merging together these concepts into a single
+         representation would be simpler.  Today, we use the same
+         @('vl-vardecl') structures to represent:</p>
 
-@({
-module m (a, b, c) ;
-  input wire a;    // <-- net declaration in a port declaration
-  ...
-endmodule
-})
+         <ul>
+         <li>@('net') declarations,</li>
+         <li>@('reg') declarations, and</li>
+         <li>all other variable declarations (e.g., @('logic'),
+         @('mystruct_t'), etc.)</li>
+         </ul>
 
-<p>You can also string together net declarations, e.g., by writing @('wire w1,
-w2;').  In all of these cases, our parser generates a separate
-@('vl-vardecl-p') object for each declared wire.  When an assignment is also
-present, the parser creates a corresponding, separate @(see vl-assign-p) object
-to contain the assignment.  Hence, each @('vl-vardecl-p') really and truly only
-represents a declaration.  Similarly, combined variable declarations such as
-\"integer a, b\" are split apart into multiple, individual declarations.</p>
+         <p>Any of these declarations introduces a named entity that has
+         certain properties.  Some of these properties, like its dimension(s)
+         and whether it is regarded as signed, are captured by the notion of a
+         SystemVerilog <b>variable type</b> or <b>data type</b>.  We represent
+         this information as an ordinary @(see vl-datatype), found in the
+         @('type') field of the @('vl-vardecl').</p>
 
-<h4>Arrays</h4>
+         <p>The main difference between nets and datatypes is that nets can be
+         used with multiple drivers.  To support resolving multiple drivers in
+         different ways, net declarations can include a <b>net type</b> such as
+         @('wire') for plain wires, @('wor') for a wired or, @('supply0') for a
+         <i>ground</i> wire, and similar.  Despite its name, the ``net type''
+         has nothing to do with the ordinary notion of a data type!  (This
+         terminology, unfortunately, comes from the Verilog/SystemVerilog
+         standards; see for instance SystemVerilog-2012 section 6.5).</p>
 
-<p>The @('dims') fields is for arrays.  Normally, you do not encounter these.
-For instance, a wide wire declaration like this is <b>not</b> an array:</p>
+         <p>Here are some examples of basic net declarations.</p>
 
-@({
-  wire [4:0] w;
-})
+         @({
+             module m (a, b, c) ;
+               wire [4:0] w ;       // <-- plain net declaration
+               wire ab = a & b ;    // <-- net declaration with assignment
+               ...
+             endmodule
+         })
 
-<p>Instead, the @('[4:0]') part here is the @('range') of the wire and its
-@('dims') are just @('nil').</p>
+         <p>Net declarations can also arise from using the combined form of
+         port declarations.</p>
 
-<p>In contrast, the @('dims') are a list of ranges, also optional, which follow
-the wire name.  For instance, the arrdims of @('v') below is a singleton list
-with the range @('[4:0]').</p>
+         @({
+             module m (a, b, c) ;
+               input wire a;    // <-- net declaration in a port declaration
+               ...
+             endmodule
+         })
 
-@({
-  wire v [4:0];
-})
+         <p>They can also arise from the more modern ANSI style ports, e.g.,</p>
 
-<p>Be aware that range and dims really are <b>different</b> things; @('w')
-and @('v') are <i>not</i> equivalent except for their names.  In particular,
-@('w') is a single, 5-bit wire, while @('v') is an array of five one-bit
-wires.</p>
+         @({
+             module m (input wire a, ...) ;
+         })
 
-<p>Things are more complicated when a declaration includes both a range and
-dims.  For instance</p>
-
-@({
-wire [4:0] a [10:0];
-})
-
-<p>declares @('a') to be an 11-element array of five-bit wires.  The @('range')
-for @('a') is @('[4:0]'), and the arrdims are a list with one entry, namely the
-range @('[10:0]').</p>
-
-<p>At present, the translator has almost no support for arrdims.  However, the
-parser should handle them just fine.</p>
-
-
-<h4>Vectorness and Signedness</h4>
-
-<p>These are only set to @('t') when the keywords @('vectored') or
-@('scalared') are explicitly provided; i.e., they may both be @('nil').</p>
-
-<p>I do not know what these keywords are supposed to mean; the Verilog-2005
-specification says almost nothing about it, and does not even say what the
-default is.</p>
-
-<p>According to some random guy on the internet, it's supposed to be a syntax
-error to try to bit- or part-select from a vectored net.  Maybe I can find a
-more definitive explanation somewhere.  Hey, in 6.1.3 there are some
-differences mentioned w.r.t. how delays go to scalared and vectored nets.
-4.3.2 has a little bit more.</p>
-
-
-<h4>Delay</h4>
-
-<p>Net delays are described in 7.14, and indicate the time it takes for any
-driver on the net to change its value.  The default delay is zero when no delay
-is specified.  Even so, we represent the delay using a @(see
-vl-maybe-gatedelay-p), and use @('NIL') when no delay is specified.</p>
-
-<p>Note (from 6.1.3) that when delays are provided in the combined declaration
-and assignment statement, e.g., </p>
-
-@({
-  wire #10 a = 1, b = 2;
-})
-
-<p>that the delay is to be associated with each assignment, and NOT with the
-net declaration for @('a').  See @(see vl-assign-p) for more information.</p>
-
-<p><b>BOZO</b> consider making it an explicit @(see vl-gatedelay-p) and setting
-it to zero in the parser when it's not specified.</p>
-
-<p><b>Warning:</b> we have not really paid attention to delays, and our
-transformations probably do not preserve them correctly.</p>
-
-
-<h4>Strengths</h4>
-
-<p>If you look at the grammar for net declarations, you may notice drive
-strengths.  But these are only used when the declaration includes assignments,
-and in such cases the drive strength is a property of the assignments and is
-not a property of the declaration.  Hence, there is no drive strength field
-for net declarations.</p>
-
-<p>The @('cstrength') field is only applicable to @('trireg')-type nets.  It
-will be @('nil') for all other nets, and will also be @('nil') on @('trireg')
-nets that do not explicitly give a charge strength.  Note that
-@('vl-vardecl-p') does not enforce the requirement that only triregs have
-charge strengths, but the parser does.</p>
-
-<p><b>Warning:</b> we have not really paid attention to charge strengths, and
-our transformations may not preserve it correctly.</p>")
+         <p>You can also string together net declarations, e.g., by writing
+         @('wire w1, w2;').  In all of these cases, our @(see parser) generates
+         a separate @('vl-vardecl-p') object for each declared wire.  When an
+         assignment is also present, the parser creates a corresponding,
+         separate @(see vl-assign-p) object to contain the assignment.  Hence,
+         each @('vl-vardecl-p') really and truly only represents a single
+         declaration.  Similarly, combined variable declarations such as
+         \"integer a, b\" are split apart into multiple, individual
+         declarations.</p>")
 
 (fty::deflist vl-vardecllist
               :elt-type vl-vardecl-p
@@ -2016,13 +1889,14 @@ respectively.</p>"
 
 (defenum vl-evatomtype-p
   (:vl-noedge
+   :vl-edge
    :vl-posedge
    :vl-negedge)
   :parents (vl-evatom-p)
   :short "Type of an item in an event control list."
   :long "<p>Any particular atom in the event control list might have a
-@('posedge'), @('negedge'), or have no edge specifier at all, e.g., for plain
-atoms like @('a') and @('b') in @('always @(a or b)').</p>")
+@('posedge'), @('negedge'), @('edge'), or have no edge specifier at all, e.g.,
+for plain atoms like @('a') and @('b') in @('always @(a or b)').</p>")
 
 (defprod vl-evatom
   :short "A single item in an event control list."
@@ -2030,7 +1904,7 @@ atoms like @('a') and @('b') in @('always @(a or b)').</p>")
   :layout :tree
 
   ((type vl-evatomtype-p
-         "Kind of atom, e.g., posedge, negedge, or plain.")
+         "Kind of atom, e.g., posedge, negedge, edge, or plain.")
 
    (expr vl-expr-p
          "Associated expression, e.g., @('foo') for @('posedge foo')."))
@@ -4076,7 +3950,24 @@ are:</p>
          "The left-hand side expression, which per SystemVerilog-2012 Section
           18.5.4 should involve at least one @('rand') variable.")
    (dist vl-distlist-p
-         "The desired ranges of values and probability distribution.")))
+         "The desired ranges of values and probability distribution.  May be
+          @('nil') in case of a plain expression without any @('dist')
+          part."))
+
+  :long "<p>Very confusingly, the @('dist') operator is mentioned in the
+SystemVerilog-2012 precedence table (Table 11-2, Page 221).  This doesn't
+make any sense because per the grammar rules it only occurs within</p>
+
+@({
+     expression_or_dist ::= expression [ 'dist' { dist_list } ]
+})
+
+<p>And these @('expression_or_dist') things definitely do not occur within
+other expressions.  After some investigation, I believe this inclusion in
+the table is simply misleading and that the right way to treat @('dist') is
+as a separate construct rather than as a real operator.  See also the file
+@('vl/parser/tests/distprec.sv') for related notes and experiments.</p>")
+
 
 (defprod vl-cycledelayrange
   :short "Representation of cycle delay ranges in SystemVerilog sequences."
@@ -4179,3 +4070,142 @@ i.e., @('[*...]'), @('[->...]'), or @('[=...]') style repetition."
 <p>Note from Page 357 that @('[*]') is equivalent to @('[0:$]') and @('[+]') is
 equivalent to @('[1:$]'), so we don't bother with separate representations of
 these.</p>")
+
+(defoption vl-maybe-repetition vl-repetition-p)
+
+
+
+(defenum vl-seqbinop-p
+  (:vl-sequence-and
+   :vl-sequence-intersect
+   :vl-sequence-or
+   :vl-sequence-within))
+
+(deftypes sequences
+  :parents (syntax)
+  :short "Representation of SystemVerilog sequence expressions."
+
+  (deftagsum vl-seqexpr
+    :short "Representation of a sequence expression."
+
+    (:vl-seqcore
+     :short "Basic, single expression in a sequence."
+     :base-name vl-seqcore
+     ((guts vl-exprdist-p)))
+
+    (:vl-seqthen
+     :short "Sequential sequence composition, i.e., @('foo ##1 bar') and similar."
+     :base-name vl-seqthen
+     ((delay vl-cycledelayrange-p "The delay or range part between, e.g., @('##1').")
+      (left  vl-seqexpr-p         "Left-hand side sequence to match, e.g., @('foo').")
+      (right vl-seqexpr-p         "Right-hand side sequence to match, e.g., @('bar')."))
+     :long "<p>Note that in SystemVerilog you can write sequences that don't
+            have a starting expression, e.g., you can just write @('##1 foo ##1
+            bar').  In this case we set @('left') to a @(see vl-seqcore)
+            expression which is just the expression @('1'b1'), which always
+            just evaluates to true and has no effect on the rest of the
+            sequence.</p>")
+
+    (:vl-seqrepeat
+     :short "A sequence with repetitions."
+     :base-name vl-seqrepeat
+     ((seq   vl-seqexpr-p     "Sequence being repeated, e.g., @('foo') in @('foo[*2]').")
+      (reps  vl-repetition-p  "Repetitions of this sequence, e.g., @('[*2]') in @('foo[*2]').")))
+
+    (:vl-seqclock
+     :short "A sequence expression predicated by a clocking event."
+     :base-name vl-seqclock
+     ((trigger vl-evatomlist
+               "A @('clocking_event'), e.g., the @('posedge foo') part of a
+                sequence expression like @('@(posedge foo) ready ##1
+                qvalid').")
+      (then    vl-seqexpr-p
+               "The sequence to match when this clocking event occurs, e.g.,
+                the @('ready ##1 qvalid') part of the above sequence.")))
+
+    (:vl-seqbinary
+     :short "A binary sequence operator (@('and'), @('intersect'), etc.)."
+     :base-name vl-seqbinary
+     ((op    vl-seqbinop-p "Operator that joins these sequences together.")
+      (left  vl-seqexpr-p  "Left hand side sequence.")
+      (right vl-seqexpr-p  "Right hand side sequence.")))
+
+    (:vl-seqthroughout
+     :short "A @('throughout') sequence expression."
+     :base-name vl-seqthroughout
+     ((left  vl-exprdist-p "The left hand side expression.")
+      (right vl-seqexpr-p  "The right hand side sequence expression.")))
+
+    (:vl-seqfirstmatch
+     :short "A @('first_match') sequence operator."
+     :base-name vl-seqfirstmatch
+     ((seq vl-seqexpr-p "Sequence whose matches are being filtered."))
+     :long "<p>If you look at the grammar for @('first_match') expressions,
+            there is special syntax for embedding match items without nested
+            parens.  However, that syntax is equivalent to just using the usual
+            @('(foo, x++)') style syntax as in a @(see vl-seqassign), so in our
+            internal representation we only have a sequence expression; the
+            match items, if any, will be found within @('arg').</p>")
+
+    (:vl-seqassign
+     :short "A sequence with sequence match items."
+     :base-name vl-seqassign
+     ((seq   vl-seqexpr-p
+             "Base sequence being extended with match items, e.g., @('foo') in
+              the sequence @('foo, x++').")
+      (items vl-exprlist-p
+             "Sequence match items that are being attached to this sequence,
+              e.g., @('x++') in the sequence @('(foo, x++)')."))
+     :long "<p>These match items can perhaps influence local sequence
+            variables, see SystemVerilog-2012 section 16.10.  In practice these
+            should be assignment expressions, increment/decrement expression,
+            or function calls, but we just represent them as arbitrary
+            expressions.</p>")
+
+    (:vl-seqinst
+     :short "Instance of another sequence."
+     :base-name vl-seqinst
+     ((ref  vl-scopeexpr-p     "Reference to the sequence being instantiated.")
+      (args vl-seqactuallist-p "Arguments to the sequence."))))
+
+  (deftagsum vl-seqactual
+    :short "An actual given as an argument to a sequence instance: may be an
+            event expression or a sequence expression."
+    (:blank
+     ((name    maybe-stringp :rule-classes :type-prescription
+               "An empty sequence actual; may indicate extra commas in the
+                @('sequence_list_of_arguments') list or an explicitly blank
+                named argument such as @('.foo()')")))
+
+    (:event
+     ((name    maybe-stringp :rule-classes :type-prescription
+               "Explicit name for this argument, if provided.  For instance,
+                in @('.foo(bar)'), this is the @('foo') part.  Some actuals
+                may not have a name.")
+      (evatoms vl-evatomlist-p
+               "This isn't quite general enough, but event expressions are also
+                used in @(see vl-eventcontrol)s, so I'd like this to be
+                compatible with that code, reuse its parser, etc.  If we find
+                that this isn't good enough, we should extend the eventcontrol
+                representation too.")))
+    (:sequence
+     ((name    maybe-stringp :rule-classes :type-prescription
+               "Explicit name for this argument, if provided.  For instance,
+                in @('.foo(bar)'), this is the @('foo') part.  Some actuals
+                may not have a name.")
+      (seqexpr vl-seqexpr-p
+               "Expression being used as the actual value."))))
+
+  (fty::deflist vl-seqactuallist
+    :elt-type vl-seqactual)
+
+  )
+
+
+(define vl-seqactual->name ((x vl-seqactual-p))
+  :parents (vl-seqactual)
+  :returns (name maybe-stringp :rule-classes :type-prescription)
+  (vl-seqactual-case x
+    :blank    x.name
+    :event    x.name
+    :sequence x.name))

@@ -2340,6 +2340,8 @@
 ;; figure out what's not needed, etc...
 (in-theory (disable |logtail-1 of mem-table value < mem-array-next-addr|
                     |address < shift(mem-array-next-addr) when page is present|
-                    |address < len(mem-array) when page is present|))
+                    |address < len(mem-array) when page is present|
+                    <-preserved-by-adding-<-*pseudo-page-size-in-bytes*
+                    <-preserved-by-adding-<-*pseudo-page-size-in-bytes*-commuted))
 
 ;; ======================================================================

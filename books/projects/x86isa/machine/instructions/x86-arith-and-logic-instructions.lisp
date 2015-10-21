@@ -11,6 +11,104 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+
+;; ======================================================================
+
+;; Some helper theorems to speed up checkpoints involving (un)signed-byte-p:
+
+(local
+ (defthm member-equal-and-integers
+   (implies (and (<= operation 8)
+                 (<= 0 operation)
+                 (integerp operation))
+            (member-equal operation '(0 2 4 6 8 1 3 5 7)))))
+
+(local
+ (defthm signed-byte-p-49-thm-1
+   (implies (and (signed-byte-p 48 (+ a b))
+                 (signed-byte-p 48 c)
+                 (integerp a)
+                 (integerp b))
+            (signed-byte-p 49 (+ (- c) a b)))))
+
+(local
+ (defthm signed-byte-p-48-thm-1
+   (implies (and (signed-byte-p 48 x)
+                 (< (+ x y) *2^47*)
+                 (natp y))
+            (signed-byte-p 48 (+ x y)))))
+
+(local
+ (defthm signed-byte-p-49-thm-2
+   (implies (and (signed-byte-p 48 (+ a b))
+                 (signed-byte-p 48 c)
+                 (< (+ z a b) *2^47*)
+                 (integerp a)
+                 (integerp b)
+                 (natp z))
+            (signed-byte-p 49 (+ z (- c) a b)))
+   :hints (("Goal" :in-theory (e/d* (signed-byte-p) ())))))
+
+(local
+ (defthm signed-byte-p-48-thm-2
+   (implies (and (signed-byte-p 48 x)
+                 (< (+ z x y) *2^47*)
+                 (natp y)
+                 (natp z))
+            (signed-byte-p 48 (+ z x y)))))
+
+(local
+ (defthm signed-byte-p-49-thm-3
+   (implies (and (signed-byte-p 48 x)
+                 (natp y)
+                 (<= y 4))
+            (signed-byte-p 49 (+ x y)))
+   :hints (("Goal" :in-theory (e/d* (signed-byte-p unsigned-byte-p)
+                                    ())))))
+
+(local
+ (defthm signed-byte-p-48-thm-3
+   (implies (and (not (signed-byte-p 48 (+ x y)))
+                 (signed-byte-p 48 x)
+                 (natp y))
+            (<= *2^47* (+ x y)))))
+
+(local
+ (defthm signed-byte-p-49-thm-4
+   (implies (and (signed-byte-p 48 y)
+                 (signed-byte-p 48 z)
+                 (< (+ x y) *2^47*)
+                 (natp x))
+            (signed-byte-p 49 (+ x y (- z))))
+   :hints (("Goal" :in-theory (e/d* (signed-byte-p unsigned-byte-p)
+                                    ())))))
+
+(local
+ (defthm unsigned-byte-p-32-of-rm08
+   (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
+                 (x86p x86))
+            (unsigned-byte-p 32 (mv-nth 1 (rm08 lin-addr r-w-x x86))))
+   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
+
+(local
+ (defthm unsigned-byte-p-32-of-rm16
+   (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
+                 (x86p x86))
+            (unsigned-byte-p 32 (mv-nth 1 (rm16 lin-addr r-w-x x86))))
+   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
+
+(local
+ (defthm unsigned-byte-p-64-of-rm08
+   (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
+                 (x86p x86))
+            (unsigned-byte-p 64 (mv-nth 1 (rm08 lin-addr r-w-x x86))))
+   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
+
+(local (in-theory (e/d* ()
+                        (member-equal
+                         signed-byte-p
+                         unsigned-byte-p))))
 
 ;; ======================================================================
 ;; INSTRUCTIONS: (one-byte opcode map)
@@ -44,8 +142,10 @@
   84, 85: TEST     p   z s   \(o and c cleared, a undefined\)<br/>"
 
   :operation t
-  :guard-debug t
-  :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86)
+                :hints (("Goal" :in-theory (e/d* ()
+                                                 (unsigned-byte-p
+                                                  signed-byte-p)))))
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'ADD #x00 '(:nil nil)
@@ -196,7 +296,10 @@
   :operation t
   :guard (not (equal operation #.*OP-TEST*))
 
-  :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86)
+                :hints (("Goal" :in-theory (e/d* ()
+                                                 (unsigned-byte-p
+                                                  signed-byte-p)))))
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'ADD #x02 '(:nil nil)
@@ -344,7 +447,18 @@
                                          n64-to-i64)
                                         ())))
 
-  :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86)
+                :hints (("Goal" :in-theory (e/d* ()
+                                                 (force
+                                                  (force)
+                                                  gpr-arith/logic-spec-8
+                                                  gpr-arith/logic-spec-4
+                                                  gpr-arith/logic-spec-2
+                                                  gpr-arith/logic-spec-1
+                                                  rm-size
+                                                  select-operand-size
+                                                  unsigned-byte-p
+                                                  signed-byte-p)))))
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'ADD #x80 '(:reg 0)
@@ -568,7 +682,15 @@
   A8, A9: TEST         p   z s   \(o and c cleared, a undefined\)<br/>"
 
   :operation t
-  :returns (x86 x86p :hyp (x86p x86))
+  :prepwork ((local (in-theory (e/d* () (commutativity-of-+)))))
+  :returns (x86 x86p :hyp (x86p x86)
+                :hints (("Goal" :in-theory (e/d* ()
+                                                 (force (force)
+                                                        gpr-arith/logic-spec-8
+                                                        gpr-arith/logic-spec-4
+                                                        gpr-arith/logic-spec-2
+                                                        gpr-arith/logic-spec-1
+                                                        unsigned-byte-p)))))
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'ADD #x04 '(:nil nil)

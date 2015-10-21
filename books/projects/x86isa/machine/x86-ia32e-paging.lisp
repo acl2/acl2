@@ -1665,7 +1665,7 @@
 
   ;; If lin-addr is not canonical, we should throw a general
   ;; protection exception (#GP(0)).  (Or a stack fault (#SS) as
-  ;; apprpriate?)
+  ;; appropriate?)
 
   (b* ((cr0
         ;; CR0 is still a 32-bit register in 64-bit mode.

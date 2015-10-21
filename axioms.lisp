@@ -12659,6 +12659,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     too-many-ifs-pre-rewrite
 
     set-gc-strategy-fn gc-strategy
+
+    read-file-into-string2
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -16369,6 +16371,70 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           (file-position file1))))
           (go loop)))))
 
+#-acl2-loop-only
+(defvar *read-file-alist*
+
+; This alist associates each filename key with both a file-clock and its
+; file-write-date.  Recall that the keys into the readable-files component of
+; the ACL2 state are of the form (list file-name typ file-clock); see
+; open-input-channel.  In order to preserve our logical story about file IO, we
+; must avoid logically associating such a key with two different character
+; lists.  That could happen if read-file-into-string is called twice on the
+; same filename, say "F", in the case that there is an intervening write not
+; performed by ACL2.  We avoid that problem by associating "F" with its current
+; file-write-date in the global *read-file-alist* just before opening a
+; character input channel to "F".  That global is cleared whenever the
+; file-clock of the state is updated, except when under read-file-into-string
+; (or any with-local-state actually).  Now suppose we later attempt to open a
+; (new) character input channel to "F" when the file-clock of the state is as
+; before.  Then we cause an error if the file-write-date is later than FWD.
+
+; But consider the following situation: when we close an output channel on
+; behalf of read-file-into-string, the file-write-date of "F" is not FWD.  In
+; that case we could simply update the file-write-date associated with "F" in
+; *read-file-alist*, provided this is the first time that read-file-into-string
+; has been called on "F" when the file-clock is FC.  We could record that
+; "first time" information, but instead, we avoid that overhead and simply
+; cause an error in this (presumably) rare case.
+
+; Any time the file-clock of the state is updated outside
+; read-file-into-string, we assign *read-file-alist* to nil (if it is not
+; already nil).
+
+  nil)
+
+#-acl2-loop-only
+(defvar *inside-with-local-state* nil)
+
+#-acl2-loop-only
+(defun increment-*file-clock* ()
+  (incf *file-clock*)
+  (when (not *inside-with-local-state*)
+    (setq *read-file-alist* nil)) ; see *read-file-alist*
+  *file-clock*)
+
+#-acl2-loop-only
+(defun check-against-read-file-alist (filename
+                                      &optional
+                                      (fwd (file-write-date filename)))
+
+; See *read-file-alist* for relevant background.
+
+  (let ((pair (assoc-equal filename *read-file-alist*)))
+    (cond (pair
+           (cond
+            ((null fwd)
+             (error "Unable to determine file-write-date of file ~
+                     ~s.~%Therefore, considering consecutive reads from that ~
+                     file to be illegal;~%see :DOC read-file-into-string."
+                    filename))
+            ((< (cdr pair) fwd)
+             (error "Illegal consecutive reads from file ~s.~%See :DOC ~
+                     read-file-into-string."
+                    filename))
+            (t fwd)))
+          (t nil))))
+
 (skip-proofs
 (defun open-input-channel (file-name typ state-state)
 
@@ -16391,7 +16457,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (return-from
           open-input-channel
           (progn
-            (setq *file-clock* (1+ *file-clock*))
+            (when (eq typ :character)
+              (check-against-read-file-alist file-name))
+            (increment-*file-clock*)
 
 ; We do two different opens here because the default :element-type is
 ; different in CLTL and CLTL2.
@@ -16482,7 +16550,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                            (open-input-channels state-state))
                  state-state))))
             (t (mv nil state-state))))))
-
 )
 
 (defthm nth-update-nth
@@ -16530,7 +16597,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (return-from
           close-input-channel
           (progn
-            (setq *file-clock* (1+ *file-clock*))
+            (increment-*file-clock*)
             (let ((stream (get channel *open-input-channel-key*)))
               (remprop channel *open-input-channel-key*)
               (remprop channel *open-input-channel-type-key*)
@@ -16599,7 +16666,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (return-from
           open-output-channel
           (progn
-            (setq *file-clock* (1+ *file-clock*))
+            (increment-*file-clock*)
             (let* ((os-file-name
                     (and (not (eq file-name :string))
                          (pathname-unix-to-os file-name *the-live-state*)))
@@ -17041,7 +17108,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (return-from
           close-output-channel
           (progn
-            (setq *file-clock* (1+ *file-clock*))
+            (increment-*file-clock*)
             (let ((str (get channel *open-output-channel-key*)))
               (remprop channel *open-output-channel-key*)
               (remprop channel *open-output-channel-type-key*)
@@ -19302,12 +19369,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ((add-pair key value l)))))
 
 (defthm assoc-add-pair
-  (implies (and (symbolp sym2)
-                (ordered-symbol-alistp alist))
-           (equal (assoc sym1 (add-pair sym2 val alist))
-                  (if (equal sym1 sym2)
-                      (cons sym1 val)
-                    (assoc sym1 alist)))))
+  (equal (assoc sym1 (add-pair sym2 val alist))
+         (if (equal sym1 sym2)
+             (cons sym1 val)
+           (assoc sym1 alist))))
 
 (defthm add-pair-preserves-all-boundp
   (implies (and (eqlable-alistp alist1)

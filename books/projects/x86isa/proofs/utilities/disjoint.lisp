@@ -100,15 +100,7 @@
   (defthm disjoint-p-cons
     (equal (disjoint-p a (cons e x))
            (and (disjoint-p a x)
-                (equal (member-p e a) nil)))
-    :rule-classes
-    ((:rewrite)
-     ;; (:forward-chaining
-     ;;  :corollary
-     ;;  (implies (disjoint-p a (cons e x))
-     ;;           (and (disjoint-p a x)
-     ;;                (equal (member-p e a) nil))))
-     ))
+                (equal (member-p e a) nil))))
 
   (defthmd disjoint-p-commutative
     (equal (disjoint-p a b)
@@ -116,14 +108,14 @@
     :rule-classes ((:rewrite :loop-stopper ((a b)))))
 
   (defthm member-p-when-not-disjoint-p
-    ;; Note: e is free.
+    ;; Ugh, free variables.
     (implies (and (member-p e x)
                   (member-p e y))
              (equal (disjoint-p x y) nil))
     :rule-classes :forward-chaining)
 
   (defthm not-member-p-when-disjoint-p
-    ;; Note: x is free.
+    ;; Ugh, free variables.
     (implies (and (disjoint-p x y)
                   (member-p e x))
              (equal (member-p e y) nil))

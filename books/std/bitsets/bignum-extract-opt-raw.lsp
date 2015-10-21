@@ -83,10 +83,15 @@
 ; essentially following Jared's suggestion (github Issue #460), I'm excluding
 ; LispWorks just as SBCL is excluded.
 
-#-(or sbcl lispworks)
+; Added by Matt K., 9/16/2015: CMU CL snapshot-2014-12 (20F Unicode) also
+; causes an error for the call of byte shown just above; actually I found the
+; CMU CL problem with the call (bitsets::test0 1 2251799813685248).  So I'm
+; excluding CMU CL, too.
+
+#-(or sbcl lispworks cmucl)
 (declaim (inline bignum-extract))
 
-#-(or sbcl lispworks)
+#-(or sbcl lispworks cmucl)
 (defun bignum-extract (x slice)
 
   ;; Simple Lisp version for most Lisps.

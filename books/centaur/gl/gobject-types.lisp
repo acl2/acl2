@@ -49,6 +49,9 @@ signed integer.  You might generally prefer higher-level tools like @(see
 auto-bindings).</p>"
 
   (defun g-int (start by n)
+    (declare (xargs :guard (and (acl2-numberp start)
+                                (acl2-numberp by)
+                                (natp n))))
     (g-number (list (numlist start by n)))))
 
 (defconst *g-keywords*

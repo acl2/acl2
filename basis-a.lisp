@@ -6388,7 +6388,8 @@
 ; attempts to use functions like trans-eval in inappropriate contexts.
 
                     ,@(cond ((eq st 'state)
-                             '((*file-clock* *file-clock*)
+                             '((*inside-with-local-state* t)
+                               (*file-clock* *file-clock*)
                                (*t-stack* *t-stack*)
                                (*t-stack-length* *t-stack-length*)
                                (*32-bit-integer-stack* *32-bit-integer-stack*)

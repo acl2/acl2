@@ -1469,7 +1469,8 @@
                (t nil)))
         (t (the-namex-symbol-class1 namex wrld nil))))
 
-(defun add-event-landmark (form ev-type namex wrld boot-strap-flg)
+(defun add-event-landmark (form ev-type namex wrld boot-strap-flg
+                                skipped-proofs-p)
 
 ; We use a let* below and a succession of worlds just to make clear
 ; the order in which we store the various properties.  We update the
@@ -1493,7 +1494,8 @@
                                          form
                                          ev-type
                                          namex
-                                         (the-namex-symbol-class namex wrld2))
+                                         (the-namex-symbol-class namex wrld2)
+                                         skipped-proofs-p)
                        wrld2)))
     wrld3))
 
@@ -4665,11 +4667,14 @@
 ; We set world global 'skip-proofs-seen or 'redef-seen if ld-skip-proofsp or
 ; ld-redefinition-action (respectively) is non-nil and the world global is not
 ; already true.  This information is important for vetting a proposed
-; certification world.  See the Essay on Soundness Threats.
+; certification world.  See the Essay on Soundness Threats.  We also make a
+; note in the event-tuple when skipping proofs (by the user, not merely the
+; system as for include-book), since that information could be useful to those
+; who want to know what remains to be proved.
 
-            (wrld2 (cond
-                    ((and (ld-skip-proofsp state)
-                          (not (member-eq ev-type
+            (skipped-proofs-p
+             (and (ld-skip-proofsp state)
+                  (not (member-eq ev-type
 
 ; Comment on irrelevance of skip-proofs:
 
@@ -4683,23 +4688,23 @@
 ; (defattach f g)) can generate bogus data in world global
 ; 'proved-functional-instances-alist that can be used to prove nil later.
 
-                                          '(include-book
-                                            defchoose
-                                            defconst
-                                            defdoc
-                                            deflabel
-                                            defmacro
-                                            defpkg
-                                            defstobj
-                                            deftheory
-                                            in-arithmetic-theory
-                                            in-theory
-                                            push-untouchable
-                                            regenerate-tau-database
-                                            remove-untouchable
-                                            reset-prehistory
-                                            set-body
-                                            table)))
+                                  '(include-book
+                                    defchoose
+                                    defconst
+                                    defdoc
+                                    deflabel
+                                    defmacro
+                                    defpkg
+                                    defstobj
+                                    deftheory
+                                    in-arithmetic-theory
+                                    in-theory
+                                    push-untouchable
+                                    regenerate-tau-database
+                                    remove-untouchable
+                                    reset-prehistory
+                                    set-body
+                                    table)))
 
 ; We include the following test so that we can distinguish between the
 ; user-specified skipping of proofs and legitimate skipping of proofs by the
@@ -4712,9 +4717,12 @@
 ; skip-proofs-seen is set whenever we are inside a call of skip-proofs.
 
 
-                          (or (f-get-global 'inside-skip-proofs state)
-                              (not (f-get-global 'skip-proofs-by-system
-                                                 state)))
+                  (or (f-get-global 'inside-skip-proofs state)
+                      (not (f-get-global 'skip-proofs-by-system
+                                         state)))))
+
+            (wrld2 (cond
+                    ((and skipped-proofs-p
                           (let ((old (global-val 'skip-proofs-seen wrld)))
                             (or (not old)
 
@@ -4755,7 +4763,8 @@
 
          (let ((wrld6 (add-event-landmark form ev-type namex wrld5
                                           (f-get-global 'boot-strap-flg
-                                                        state))))
+                                                        state)
+                                          skipped-proofs-p)))
            (pprogn
             (f-put-global 'accumulated-ttree ttree state)
             (cond
@@ -6221,7 +6230,7 @@
 ; asking for the full command, so we give it to them.
 
            (pprogn
-            (fms "~x0 is built into ACL2, without a defining event.~#1~[  See ~
+            (fms "~x0 is built into ACL2 without a defining event.~#1~[  See ~
                   :DOC ~x0.~/~]~|"
                  (list (cons #\0 logical-name)
                        (cons #\1 (if (assoc-eq logical-name

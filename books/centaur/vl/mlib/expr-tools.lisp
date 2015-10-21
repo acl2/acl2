@@ -2431,55 +2431,67 @@ otherwise, it is a single-bit wide.</p>"
 (defsection random-range-stuff
 
   (define vl-selwidth ((a natp) (b natp))
+    :short "Returns the width of a range @($[a:b]$), i.e., @($|a-b|+1$)."
     :returns (w posp :rule-classes :type-prescription)
     (+ 1 (abs (- (nfix a) (nfix b)))))
 
   (define vl-range-lsbidx ((x (and (vl-range-p x)
                                    (vl-range-resolved-p x))))
+    :short "Extract the LSB (right) index from a resolved @(see vl-range)."
     :returns (lsb natp :rule-classes :type-prescription)
     (b* (((vl-range x) x))
       (vl-resolved->val x.lsb)))
 
   (define vl-maybe-range-lsbidx ((x (and (vl-maybe-range-p x)
                                          (vl-maybe-range-resolved-p x))))
-    :parents (vl-expr->svex)
-    :short "Extract the LSB (right) index from a maybe-range (assuming it's resolved)."
+    :short "Extract the LSB (right) index from a resolved @(see
+            vl-maybe-range); treats the empty range as @('[0:0]'),
+            i.e., its LSB index is 0."
     :returns (rsh natp :rule-classes :type-prescription)
     (b* (((unless x) 0))
       (vl-range-lsbidx x)))
 
   (define vl-range-msbidx ((x (and (vl-range-p x)
                                    (vl-range-resolved-p x))))
+    :short "Extract the MSB (left) index from a resolved @(see vl-range)."
     :returns (msb natp :rule-classes :type-prescription)
     (b* (((vl-range x) x))
       (vl-resolved->val x.msb)))
 
   (define vl-maybe-range-msbidx ((x (and (vl-maybe-range-p x)
                                          (vl-maybe-range-resolved-p x))))
-    :parents (vl-expr->svex)
-    :short "Extract the MSB (right) index from a maybe-range (assuming it's resolved)."
+    :short "Extract the MSB (left) index from a resolved @(see vl-maybe-range);
+            treats the empty range as @('[0:0]'), i.e., its MSB is 0."
     :returns (rsh natp :rule-classes :type-prescription)
     (b* (((unless x) 0))
       (vl-range-msbidx x)))
 
   (define vl-range-low-idx ((x (and (vl-range-p x)
                                     (vl-range-resolved-p x))))
+    :short "Extract the lesser of the @('msb') and @('lsb') of a resolved @(see
+            vl-range)."
     :returns (lowidx natp :rule-classes :type-prescription)
     (min (vl-range-msbidx x) (vl-range-lsbidx x)))
 
   (define vl-maybe-range-lowidx ((x (and (vl-range-p x)
                                          (vl-range-resolved-p x))))
+    :short "Extract the lesser of the @('msb') and @('lsb') of a resolved @(see
+            vl-maybe-range); treats the empty range as @('[0:0]'), i.e., its
+            low index is 0."
     :returns (lowidx natp :rule-classes :type-prescription)
     (if x (vl-range-msbidx x) 0))
 
   (define vl-range-revp ((x (and (vl-range-p x)
                                  (vl-range-resolved-p x))))
+    :short "Determine if a resolved @(see vl-range) is in ``reverse'' order,
+            i.e., if its @($msb < lsb$)."
     (< (vl-range-msbidx x) (vl-range-lsbidx x)))
 
   (define vl-maybe-range-revp ((x (and (vl-maybe-range-p x)
                                        (vl-maybe-range-resolved-p x))))
-    :parents (vl-expr->svex)
-    :short "Extract the LSB (right) index from a maybe-range (assuming it's resolved)."
+    :short "Determine if a resolved @(see vl-maybe-range) is in ``reverse''
+            order, i.e., if its @($msb < lsb$); treats the empty range as
+            @('[0:0]'), i.e., <i>not</i> in reverse order."
     :returns (revp)
     (and x (vl-range-revp x))))
 

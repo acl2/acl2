@@ -82,26 +82,6 @@
              (vl-warninglist-p (acl2::remove-adjacent-duplicates x)))
     :hints(("Goal" :in-theory (enable acl2::remove-adjacent-duplicates)))))
 
-
-;; this is just a product of msg (string) and args (true-list) but if there are
-;; no args we just use the string.  It's convenient for a bare string to be a
-;; vl-msg.
-(fty::defflexsum vl-msg
-  :short "Format string and args for small messages not constituting a whole warning"
-  :kind nil
-  (:msg :cond t
-   :type-name vl-msg
-   :shape (or (atom x)
-              (cdr x))
-   :fields ((msg :type stringp :acc-body (if (atom x) x (car x))
-                 :rule-classes :type-prescription)
-            (args :type true-listp :acc-body (and (consp x) (cdr x))
-                  :rule-classes :type-prescription))
-   :ctor-body (if args (cons msg args) msg)))
-
-(defmacro vmsg (msg &rest args)
-  `(make-vl-msg :msg ,msg :args (list . ,args)))
-
 (defprojection vl-warninglist->types ((x vl-warninglist-p))
   :returns (types symbol-listp)
   (vl-warning->type x))
@@ -229,6 +209,7 @@ fatal warnings instead of non-fatal warnings.</p>"
     :hints(("Goal" :in-theory (enable string<)))))
 
 (defsection vl-warning-sort
+  :parents (vl-clean-warnings)
   :short "Mergesort warnings using @(see vl-warning-<)"
 
   (ACL2::defsort :comparablep vl-warning-p
@@ -287,7 +268,7 @@ fatal warnings instead of non-fatal warnings.</p>"
     :hints(("Goal" :cases ((consp x))))))
 
 (define vl-clean-warnings
-  :parents (warnings clean-warnings)
+  :parents (clean-warnings)
   :short "Sort and remove duplicates from a list of warnings."
   ((x vl-warninglist-p))
   :returns (ans vl-warninglist-p)
@@ -393,6 +374,27 @@ particular interest.</p>"
               t)
              (t
               (vl-some-warning-of-type-p types (cdr x))))))
+
+
+;; this is just a product of msg (string) and args (true-list) but if there are
+;; no args we just use the string.  It's convenient for a bare string to be a
+;; vl-msg.
+(fty::defflexsum vl-msg
+  :short "Format string and args for small messages not constituting a whole warning"
+  :kind nil
+  (:msg :cond t
+   :type-name vl-msg
+   :shape (or (atom x)
+              (cdr x))
+   :fields ((msg :type stringp :acc-body (if (atom x) x (car x))
+                 :rule-classes :type-prescription)
+            (args :type true-listp :acc-body (and (consp x) (cdr x))
+                  :rule-classes :type-prescription))
+   :ctor-body (if args (cons msg args) msg)))
+
+(defmacro vmsg (msg &rest args)
+  `(make-vl-msg :msg ,msg :args (list . ,args)))
+
 
 (define vl-warning-add-ctx ((x vl-warning-p)
                             (ctx))

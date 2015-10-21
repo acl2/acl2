@@ -9,6 +9,7 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "guard-helpers"))
+(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
 ;; ======================================================================
 ;; INSTRUCTION: (one-byte opcode map)
@@ -177,6 +178,11 @@
        (x86 (!rip jmp-addr x86)))
       x86))
 
+(local
+ (defthm unsigned-byte-p-128-xr-str
+   (implies (x86p x86)
+            (unsigned-byte-p 128 (xr :str i x86)))))
+
 (def-inst x86-far-jmp-Op/En-D
 
   :parents (one-byte-opcodes)
@@ -216,13 +222,25 @@ occurs. The target operand specifies the far address of the call gate
 indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+                               (canonical-address-p temp-rip))
+                :hints (("Goal" :in-theory (e/d* ()
+                                                 (unsigned-byte-p
+                                                  member-equal
+                                                  acl2::logtail-identity
+                                                  not rm-size
+                                                  signed-byte-p
+                                                  select-operand-size)))))
   :implemented
   (add-to-implemented-opcodes-table 'JMP #xFF '(:reg 5)
                                     'x86-far-jmp-Op/En-D)
 
   :prepwork
-  ((local (in-theory (e/d* (far-jump-guard-helpers) ()))))
+  ((local (in-theory (e/d* (far-jump-guard-helpers)
+                           (unsigned-byte-p
+                            member-equal
+                            acl2::logtail-identity
+                            not
+                            signed-byte-p)))))
   :body
 
   (b* ((ctx 'x86-far-jmp-Op/En-M)
@@ -670,7 +688,20 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   :guard-hints (("Goal" :in-theory (e/d (rim08 rim32) ())))
 
   :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+                               (canonical-address-p temp-rip))
+                :hints (("Goal" :in-theory (e/d* ()
+                                                 (unsigned-byte-p
+                                                  member-equal
+                                                  acl2::logtail-identity
+                                                  not rm-size
+                                                  select-operand-size)))))
+  :prepwork
+  ((local (in-theory (e/d* (far-jump-guard-helpers)
+                           (unsigned-byte-p
+                            member-equal
+                            acl2::logtail-identity
+                            not)))))
+
   :implemented
   (progn
     (add-to-implemented-opcodes-table 'LOOP #xE0 '(:nil nil)
