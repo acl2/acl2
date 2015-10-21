@@ -39,6 +39,7 @@
 (include-book "modports")
 (include-book "typedefs")
 (include-book "imports")
+(include-book "asserts")
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../../util/arithmetic"))
 
@@ -369,6 +370,10 @@ rules:</p>
                     (eq type1 :vl-kwd-always_latch)
                     (eq type1 :vl-kwd-always_comb)))
           (vl-parse-always-construct atts))
+
+         ((when (vl-plausible-start-of-assertion-item-p))
+          ;; Darn it, don't have anywhere to put the atts.
+          (vl-parse-assertion-item))
 
          ((when (eq type1 :vl-idtoken))
           ;; It's either a udp/module/interface instance, a variable decl, or a

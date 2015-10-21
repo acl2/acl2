@@ -974,6 +974,13 @@ explicit declarations.</p>")
         (b* (((mv st warnings) (vl-shadowcheck-typedef item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
+       ((when (eq tag :vl-assertion))
+        ;; BOZO figure out what we want to do here.
+        (vl-shadowcheck-aux (cdr x) st warnings))
+
+       ((when (eq tag :vl-cassertion))
+        ;; BOZO figure out what we want to do here.
+        (vl-shadowcheck-aux (cdr x) st warnings))
 
        ;; BOZO implement everything else
        (warnings (fatal :type :vl-unexpected-modelement

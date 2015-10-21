@@ -29,10 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "properties")
-(include-book "ports")
 (include-book "statements")
-
+(include-book "ports")
 (local (include-book "tools/do-not" :dir :system))
 (local (include-book "../../util/arithmetic"))
 (local (acl2::do-not generalize fertilize))
@@ -43,6 +41,64 @@
 
 (local (xdoc::set-default-parents parse-asserts))
 
+
+(define vl-plausible-start-of-assertion-item-p (&key (tokstream 'tokstream))
+  (let ((assertion-keywords '(:vl-kwd-assume :vl-kwd-assert :vl-kwd-cover :vl-kwd-restrict)))
+    (if (vl-is-token? :vl-idtoken)
+        (and (vl-lookahead-is-token? :vl-colon (cdr (vl-tokstream->tokens)))
+             (vl-lookahead-is-some-token? assertion-keywords (cddr (vl-tokstream->tokens))))
+      (vl-is-some-token? assertion-keywords))))
+
+(define vl-parse-assertion-item-looks-concurrent-p (&key (tokstream 'tokstream))
+  (and (consp (vl-tokstream->tokens))
+       (vl-lookahead-is-some-token? '(:vl-kwd-property :vl-kwd-sequence)
+                                    (cdr (vl-tokstream->tokens)))))
+
+(defparser vl-parse-assertion-item ()
+  :short "Parse an @('assertion_item') into a @(see vl-modelement-p)."
+  :long "<p>SystemVerilog-2012 grammar:</p>
+
+         @({
+              assertion_item ::= concurrent_assertion_item
+                               | deferred_immediate_assertion_item
+
+              deferred_immediate_assertion_item ::= [ block_identifier ':' ] deferred_immediate_assertion_statement
+
+              concurrent_assertion_item ::= [ block_identifier ':' ] concurrent_assertion_statement
+                                          | checker_instantiation
+         })"
+  :prepwork ((local (in-theory (enable vl-plausible-start-of-assertion-item-p))))
+  :guard (vl-plausible-start-of-assertion-item-p)
+  :guard-debug t
+  :result (vl-modelementlist-p val)
+  :true-listp t
+  :resultp-of-nil t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+       ;; We don't actually use vl-parse-concurrent-assertion-item since
+       ;; there's so much lookahead going on here.  (But we keep it around
+       ;; because concurrent_assertion_item can occur in other contexts than
+       ;; assertion_item).
+       (when (vl-is-token? :vl-idtoken)
+         (blockid := (vl-match))
+         (:= (vl-match)))
+       ;; We can distinguish between concurrent and immediate assertions by
+       ;; checking whether property/sequence occurs after the assert/assume/.
+       ;; Blah, have to bottle this up into a function because it screws up
+       ;; the progress proof otherwise.
+       (when (vl-parse-assertion-item-looks-concurrent-p)
+         (cassertion := (vl-parse-concurrent-assertion-statement))
+         (return (list (if blockid
+                           (change-vl-cassertion cassertion :name (vl-idtoken->name blockid))
+                         cassertion))))
+       (assertion := (vl-parse-immediate-assertion-statement))
+       (unless (vl-assertion->deferral assertion)
+         (return-raw
+          (vl-parse-error "Top level assertion needs a deferral (i.e., '#0' or 'final').")))
+       (return (list (if blockid
+                         (change-vl-assertion assertion :name (vl-idtoken->name blockid))
+                       assertion)))))
 
 
 (defparser vl-parse-sequence-formal-type ()
@@ -336,317 +392,3 @@
 
 
 
-
-#||
-
-(defparser vl-parse-concurrent-assertion-statement (name)
-  ;; The name is the external name from the surrounding block, if present.
-  ;; For instance, foo in "foo : assert property ..."
-  :short "Parse any @('concurrent_assertion_statement')."
-  :long "@({
-              concurrent_assertion_statement ::= assert_property_statement
-                                               | assume_property_statement
-                                               | cover_property_statement
-                                               | cover_sequence_statement
-                                               | restrict_property_statement
-
-              assert_property_statement ::= 'assert' 'property' '(' property_spec ')' action_block
-              assume_property_statement ::= 'assume' 'property' '(' property_spec ')' action_block
-              cover_property_statement ::= 'cover' 'property' '(' property_spec ')' statement_or_null
-              cover_sequence_statement ::= 'cover' 'sequence' '('
-                                                     [clocking_event]
-                                                     [ 'disable' 'iff' '(' expression_or_dist ')' ]
-                                                     sequence_expr
-                                                 ')'
-                                             statement_or_null
-              restrict_property_statement::= 'restrict' 'property' '(' property_spec ')' ';'
-         })"
-  :result (vl-assert-p val)
-  :resultp-of-nil nil
-  :guard (maybe-stringp name)
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (when (vl-is-some-token? '(:vl-kwd-assert :vl-kwd-assume))
-         ;; assert_property_statement ::= 'assert' 'property' '(' property_spec ')' action_block
-         ;; assume_property_statement ::= 'assume' 'property' '(' property_spec ')' action_block
-         (kwd := (vl-match))
-         (:= (vl-match-token :vl-kwd-property))
-         (:= (vl-match-token :vl-lparen))
-         (spec := (vl-parse-property-spec))
-         (:= (vl-match-token :vl-rparen))
-         (act := (vl-parse-action-block))
-         (return (make-vl-assert-concurrent :name name
-                                            :type (case (vl-token->type kwd)
-                                                    (:vl-kwd-assert :vl-assert)
-                                                    (:vl-kwd-assume :vl-assume)
-                                                    (otherwise (impossible)))
-                                            :condition spec
-                                            :success (vl-actionblock->then act)
-                                            :failure (vl-actionblock->else act)
-                                            :loc (vl-token->loc kwd))))
-       (when (vl-is-token? :vl-kwd-restrict)
-         ;; restrict_property_statement::= 'restrict' 'property' '(' property_spec ')' ';'
-         (kwd := (vl-match))
-         (:= (vl-match-token :vl-kwd-property))
-         (:= (vl-match-token :vl-lparen))
-         (spec := (vl-parse-property-spec))
-         (:= (vl-match-token :vl-rparen))
-         (:= (vl-match-token :vl-semi))
-         (return (make-vl-assert-concurrent :name name
-                                            :type :vl-restrict
-                                            :condition spec
-                                            :success (make-vl-nullstmt)
-                                            :failure (make-vl-nullstmt)
-                                            :loc (vl-token->loc kwd))))
-       ;; cover_property_statement ::= 'cover' 'property' '(' property_spec ')' statement_or_null
-       ;; cover_sequence_statement ::= 'cover' 'sequence' '('
-       ;;                                                   [clocking_event]
-       ;;                                                   [ 'disable' 'iff' '(' expression_or_dist ')' ]
-       ;;                                                   sequence_expr
-       ;;                                                   ')'
-       ;;                                 statement_or_null
-       ;;
-       ;; But note that in the ugly sequence case, the stuff in the parens is
-       ;; just the same as a property_spec except that it has a sequence_expr
-       ;; instead of a property_expr.  There's no difference as far as we're
-       ;; concerned. So this reduces to:
-       ;;
-       ;; cover_property_statement ::= 'cover' 'property' '(' property_spec ')' statement_or_null
-       ;; cover_sequence_statement ::= 'cover' 'sequence' '(' property_spec ')' statement_or_null
-       (kwd  := (vl-match-token :vl-kwd-cover))
-       (kind := (vl-match-some-token '(:vl-kwd-property :vl-kwd-sequence)))
-       (:= (vl-match-token :vl-lparen))
-       (spec := (vl-parse-property-spec))
-       (:= (vl-match-token :vl-rparen))
-       (then := (vl-parse-statement-or-null))
-       (return (make-vl-assert-concurrent :name name
-                                          :type (case (vl-token->type kind)
-                                                  (:vl-kwd-property :vl-cover-property)
-                                                  (:vl-kwd-sequence :vl-cover-sequence))
-                                          :condition spec
-                                          :success then
-                                          :failure (make-vl-nullstmt)
-                                          :loc (vl-token->loc kwd)))))
-
-(defparser vl-parse-concurrent-assertion-item ()
-  :short "Parse a @('concurrent_assertion_item')."
-  :long "@({
-             concurrent_assertion_item ::= [ block_identifier ':' ] concurrent_assertion_statement
-                                         | checker_instantiation
-         })
-
-         <p>We don't yet support checker instantiation.</p>"
-  ;; A checker instantiation looks something like a module instance, but it can
-  ;; have property expressions as arguments.  In the long run we may want to
-  ;; extend our notion of modinst-p to perhaps be a generalized instance of a
-  ;; checker/module/udp/etc.  For now they're just beyond what we can handle.
-  :result (vl-assert-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (when (vl-is-token? :vl-idtoken)
-         (name := (vl-match))
-         (:= (vl-match-token :vl-colon)))
-       (main := (vl-parse-concurrent-assertion-statement (and name (vl-idtoken->name name))))
-       (return main)))
-
-(defparser vl-maybe-parse-assert-deferral ()
-  :short "Parse @('#0') or @('final'), if present."
-  :result (vl-assertdeferral-p val)
-  :resultp-of-nil t
-  :fails gracefully
-  :count strong-on-value
-  (seq tokstream
-       (when (vl-is-token? :vl-final)
-         (:= (vl-match))
-         (return :vl-defer-final))
-       (when (vl-is-token? :vl-pound)
-         (:= (vl-match))
-         (zero := (vl-match-token :vl-inttoken))
-         (return-raw (if (and (eql 0 (vl-inttoken->value zero))
-                              (vl-inttoken->wasunsized zero))
-                         (seq tokstream
-                              (return :vl-defer-0))
-                       (vl-parse-error "Expected #0."))))
-       (return nil)))
-
-
-(defparser vl-parse-immediate-assertion-statement (name)
-  :short "Parse an @('immediate_assertion_statement')."
-  :long "@({
-              immediate_assertion_statement ::= simple_immediate_assertion_statement
-                                              | deferred_immediate_assertion_statement
-
-              simple_immediate_assertion_statement ::= simple_immediate_assert_statement
-                                                     | simple_immediate_assume_statement
-                                                     | simple_immediate_cover_statement
-
-              simple_immediate_assert_statement ::= 'assert' '(' expression ')' action_block
-              simple_immediate_assume_statement ::= 'assume' '(' expression ')' action_block
-              simple_immediate_cover_statement  ::= 'cover' '(' expression ')' statement_or_null
-
-              deferred_immediate_assertion_statement ::= deferred_immediate_assert_statement
-                                                       | deferred_immediate_assume_statement
-                                                       | deferred_immediate_cover_statement
-
-              deferred_immediate_assert_statement ::= 'assert' '#0' '(' expression ')' action_block
-                                                    | 'assert' 'final' '(' expression ')' action_block
-
-              deferred_immediate_assume_statement ::= 'assume' '#0' '(' expression ')' action_block
-                                                    | 'assume' 'final' '(' expression ')' action_block
-
-              deferred_immediate_cover_statement ::= 'cover' '#0' '(' expression ')' statement_or_null
-                                                   | 'cover' 'final' '(' expression ')' statement_or_null
-         })"
-  :guard (maybe-stringp name)
-  :result (vl-assert-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (type := (vl-match-some-token '(:vl-kwd-assert :vl-kwd-assume :vl-kwd-cover)))
-       (deferral := (vl-maybe-parse-assert-deferral))
-       (:= (vl-match-token :vl-lparen))
-       (expr := (vl-parse-expression))
-       (:= (vl-match-token :vl-rparen))
-       (when (or (eq (vl-token->type type) :vl-kwd-assert)
-                 (eq (vl-token->type type) :vl-kwd-assume))
-         (action := (vl-parse-action-block))
-         (return (make-vl-assert-immediate :name name
-                                           :type (case (vl-token->type type)
-                                                   (:vl-kwd-assert :vl-assert)
-                                                   (:vl-kwd-assume :vl-assume)
-                                                   (otherwise (impossible)))
-                                           :deferral deferral
-                                           :condition expr
-                                           :success (vl-actionblock->then action)
-                                           :failure (vl-actionblock->else action)
-                                           :loc (vl-token->loc type))))
-       ;; else it's cover.
-       (stmt := (vl-parse-statement-or-null))
-       (return (make-vl-assert-immediate :name name
-                                         :type :vl-cover
-                                         :deferral deferral
-                                         :condition expr
-                                         :success stmt
-                                         :failure (make-vl-nullstmt)
-                                         :loc (vl-token->loc type))))
-  ///
-  (defthm vl-assert-kind-of-vl-parse-immediate-assertion-statement
-    (b* (((mv err assert ?tokstream) (vl-parse-immediate-assertion-statement name)))
-      (implies (not err)
-               (equal (vl-assert-kind assert) :immediate)))))
-
-(defparser vl-parse-simple-immediate-assertion-statement (name)
-  :short "Parse a @('simple_immediate_assertion_statement')."
-  :guard (maybe-stringp name)
-  :result (vl-assert-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (ret := (vl-parse-immediate-assertion-statement name))
-       (when (vl-assert-immediate->deferral ret)
-         (return-raw
-          (vl-parse-error "Expected a simple immediate assertion (i.e., ~
-                           'final' or '#0' is not allowed.)")))
-       (return ret)))
-
-(defparser vl-parse-deferred-immediate-assertion-statement (name)
-  :short "Parse a @('deferred_immediate_assertion_statement')."
-  :guard (maybe-stringp name)
-  :result (vl-assert-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (seq tokstream
-       (ret := (vl-parse-immediate-assertion-statement name))
-       (unless (vl-assert-immediate->deferral ret)
-         (return-raw
-          (vl-parse-error "Expected a deferred assertion (i.e., you're ~
-                           missing 'final' or '#0'.)")))
-       (return ret)))
-
-
-||#
-
-
-#||
-;; ; Deferred Immediate Assertions
-
-
-
-
-
-
-;; assertion_item ::= concurrent_assertion_item
-;;                  | deferred_immediate_assertion_item
-
-;; deferred_immediate_assertion_item ::= [ block_identifier ':' ] deferred_immediate_assertion_statement
-
-;; crap.  this occurs within statements.  so we're going to need to make this all mutually
-;; recursive as part of the statement representation and parser.  whoooo.
-
-;; procedural_assertion_statement ::= concurrent_assertion_statement
-;;                                  | immediate_assertion_statement
-;;                                  | checker_instantiation            ;; don't support these yet
-
-(defparser vl-parse-procedural-assertion-statement ()
-  :short 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-immediate:
-
-   assert (expression) action_block
-   assume (expression) action_block
-   cover (expression) statement_or_null
-   assert #0/final (expression) action_block
-   assume #0/final (expression) action_block
-   cover #0/final (expression) action_block
-
-concurrent:
-
-   assert property (propspec) action_block
-   assume property (propspec) action_block
-   cover property (propspec) statement_or_null
-   expect (propspec) action_block
-   cover sequence (propspec-ish) statement_or_null
-   restrict property (property_spec);
-
-
-
-concurrent_assertion_statement can probably become a single defprod with a type
-that is either assert, assume, cover, expect, or restrict.
-
-immediate_assertion_statement can be simple or deferred
-
-simple: assert assume cover 
-
-deferred have #0 or final 
-
-So I think we can build that in.
-
-a deferred immediate assertion item can also have a block identifier, which i
-guess can become part of the product.
-
-what about a checker_instantiation?  it looks like it's basically like a module
-instance, but can have property arguments strewn about.  let's ignore these for
-now.
-
-
-||#

@@ -1042,6 +1042,12 @@ it has the same problems with parameters.</p>"
              (newitems (cons x newitems)))
           (mv warnings st implicit newitems)))
 
+       ((when (member tag '(:vl-assertion :vl-cassertion)))
+        ;; BOZO deal with these some day.  Need to do tests to figure
+        ;; out what the intended behavior is, then implement it.  Horrible.
+        (b* ((newitems (cons x newitems)))
+          (mv warnings st implicit newitems)))
+
        ((when (eq tag :vl-import))
         (b* (((vl-import item))
              (package  (vl-scopestack-find-package item.pkg (vl-implicitst->ss st)))
@@ -1074,7 +1080,6 @@ it has the same problems with parameters.</p>"
              (st         (change-vl-implicitst st :decls decls))
              (newitems   (cons x newitems)))
           (mv warnings st implicit newitems)))
-
 
        ((when (member tag '(:vl-modport
                             ;; :vl-typedef
@@ -1374,21 +1379,23 @@ all of its identifiers.</p>"
 
        ((vl-genblob c) (vl-sort-genelements newitems)))
     (change-vl-module x
-                      :portdecls  c.portdecls
-                      :assigns    c.assigns
-                      :aliases    c.aliases
-                      :vardecls   c.vardecls
-                      :paramdecls c.paramdecls
-                      :fundecls   c.fundecls
-                      :taskdecls  c.taskdecls
-                      :modinsts   c.modinsts
-                      :gateinsts  c.gateinsts
-                      :alwayses   c.alwayses
-                      :initials   c.initials
-                      :generates  c.generates
-                      :genvars    c.genvars
-                      :imports    c.imports
-                      :typedefs   c.typedefs
+                      :portdecls   c.portdecls
+                      :assigns     c.assigns
+                      :aliases     c.aliases
+                      :vardecls    c.vardecls
+                      :paramdecls  c.paramdecls
+                      :fundecls    c.fundecls
+                      :taskdecls   c.taskdecls
+                      :modinsts    c.modinsts
+                      :gateinsts   c.gateinsts
+                      :alwayses    c.alwayses
+                      :initials    c.initials
+                      :generates   c.generates
+                      :genvars     c.genvars
+                      :imports     c.imports
+                      :typedefs    c.typedefs
+                      :assertions  c.assertions
+                      :cassertions c.cassertions
 
                       :warnings warnings
                       :parse-temps (and x.parse-temps

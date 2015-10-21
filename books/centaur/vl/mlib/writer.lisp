@@ -781,12 +781,12 @@ displays.  The module browser's web pages are responsible for defining the
                         (vl-ps-seq
                          (if want-parens (vl-print "(") ps)
                          (vl-pp-expr x.arg)
-                         (if atts (vl-pp-atts unspecial-atts) ps)
+                         (if unspecial-atts (vl-pp-atts unspecial-atts) ps)
                          (vl-print-str (vl-unaryop-string x.op))
                          (vl-println? ""))))
                     (vl-ps-seq
                      (vl-print-str (vl-unaryop-string x.op))
-                     (if atts (vl-pp-atts unspecial-atts) ps)
+                     (if unspecial-atts (vl-pp-atts unspecial-atts) ps)
                      (vl-print-str " ")
                      (if want-parens (vl-print "(") ps)
                      (vl-pp-expr x.arg)
@@ -837,7 +837,7 @@ displays.  The module browser's web pages are responsible for defining the
                      (vl-pp-expr x.test)
                      (if test-parens (vl-print ")") ps)
                      (vl-print " ? ")
-                     (if atts (vl-ps-seq (vl-pp-atts unspecial-atts) (vl-print " ")) ps)
+                     (if unspecial-atts (vl-ps-seq (vl-pp-atts unspecial-atts) (vl-print " ")) ps)
                      (vl-println "")
                      (if then-parens (vl-print "(") ps)
                      (vl-pp-expr x.then)
