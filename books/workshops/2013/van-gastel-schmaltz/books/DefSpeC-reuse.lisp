@@ -422,24 +422,31 @@
               next
         ))))
 
+; Matt K.: Added the following verify-termination calls, which are necessary
+; for find-encapsulate; see the comment there about "Modified by Matt K. to
+; use...".
+
+(verify-termination >=-len)
+(verify-termination all->=-len)
+(verify-termination strip-cadrs)
+(verify-termination signature-fns)
+(verify-termination access-event-tuple-type)
+(verify-termination access-event-tuple-namex)
+
 (defun find-encapsulate (wrld)
+
+; Modified by Matt K. 10/15/2015 to use the abstractions
+; access-event-tuple-type and access-event-tuple-namex, whose definitions are
+; about to change and could change again in the future.
+
   (if (endp wrld) nil
     (let*
       ((ev (car wrld)))
       (if (and (eq (car ev) 'EVENT-LANDMARK)
                (eq (cadr ev) 'GLOBAL-VALUE)
-
-; The next three conjuncts (added by Matt K.) avoid a hard Lisp error in at
-; least one host Lisp (ANSI GCL), when this function is called by a :program
-; mode function (hence, without checking this function's guard), when ev
-; corresponds to a DEFLABEL form,
-; (EVENT-LANDMARK GLOBAL-VALUE <n> DEFLABEL ...).
-
-               (consp (cddr ev))
-               (consp (cdddr ev))
-               (consp (car (cdddr ev)))
-               (eq (caar (cdddr ev)) 'ENCAPSULATE))
-        (cadar (cdddr ev))
+               (eq (access-event-tuple-type (cddr ev))
+                   'ENCAPSULATE))
+        (access-event-tuple-namex (cddr ev))
         (find-encapsulate (cdr wrld))
         ))))
 

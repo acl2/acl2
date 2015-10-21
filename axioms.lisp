@@ -16416,7 +16416,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defun check-against-read-file-alist (filename
                                       &optional
-                                      (fwd (file-write-date filename)))
+                                      (fwd (our-ignore-errors
+                                            (file-write-date filename))))
 
 ; See *read-file-alist* for relevant background.
 

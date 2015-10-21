@@ -286,7 +286,7 @@
 ;  namex - name or names introduced (0 is none)
 ;  symbol-class - of names (or nil)
 
-  (or (equal val '(-1 (NIL 0)))   ; bogus tuple by primordial-world-globals
+  (or (equal val '(-1 ((NIL) 0)))   ; bogus tuple by primordial-world-globals
       (and (consp val)
            (or (natp (car val))       ; n = (car val), d = 0
                (and (consp (car val))
@@ -296,7 +296,9 @@
            (if (symbolp (cadr val))    ; ev-type is recoverable from form
                (pseudo-formp (cdr val))  ; (cdr val) here is the event form
                (and (consp (cadr val))
-                    (symbolp (car (cadr val))) ; ev-type
+                    (consp (car (cadr val))) ; (ev-type . skipped-proofs-p)
+                    (symbolp (car (car (cadr val)))) ; ev-type
+                    (booleanp (cdr (car (cadr val)))) ; skipped-proofs-p
                     (consp (cdr (cadr val)))
                     (or (symbolp (cadr (cadr val))) ; name introduced
                         (stringp (cadr (cadr val))) ; name introduced

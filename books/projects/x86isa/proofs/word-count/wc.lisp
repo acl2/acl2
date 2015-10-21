@@ -659,7 +659,7 @@
                                     preconditions-forward-chain-addresses-info
                                     effects-to-gc-programmer-level-mode-projection
                                     effects-to-gc-program-projection
-                                    subset-p-two-create-canonical-address-lists
+                                    subset-p-two-create-canonical-address-lists-general
                                     )
                                    (effects-to-gc-no-call))
            :expand (loop-preconditions addr (x86-run (gc-clk-main-before-call) x86)))))
@@ -5312,22 +5312,6 @@
             (equal (equal (loghead 32 (+ -9 char)) 0) nil))
    :hints (("Goal" :in-theory (e/d* (loghead) ())))))
 
-(defthm greater-logbitp-of-unsigned-byte-p
-  (implies (and (unsigned-byte-p n x)
-                (natp m)
-                (< n m))
-           (equal (logbitp m x) nil))
-  :hints (("Goal" :in-theory (e/d* (ihsext-inductions
-                                    ihsext-recursive-redefs
-                                    unsigned-byte-p)
-                                   ())))
-  :rule-classes ((:rewrite)
-                 (:rewrite :corollary
-                           (implies (and (< x (expt 2 m))
-                                         (natp x)
-                                         (natp m))
-                                    (equal (logbitp m x) nil)))))
-
 (defun-nx whatever-rflags-are-for-other-char-state-out (x86)
   (rflags (x86-run 13 x86)))
 
@@ -8051,7 +8035,7 @@
                     effects-to-gc-programmer-level-mode-projection
                     loop-preconditions-effects-to-gc
                     subset-p
-                    subset-p-two-create-canonical-address-lists)
+                    subset-p-two-create-canonical-address-lists-general)
      (theory 'minimal-theory))
     :use ((:instance memory-analysis-loop
                      (x86 (x86-run (gc-clk-main-before-call) x86))

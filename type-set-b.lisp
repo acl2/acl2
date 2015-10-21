@@ -324,6 +324,7 @@
   '((:d . :definition)
     (:e . :executable-counterpart)
     (:i . :induction)
+    (:r . :rewrite)
     (:t . :type-prescription)))
 
 (defun translate-abbrev-rune (x macro-aliases)
@@ -609,6 +610,8 @@
    deftheory event that attempts to use the above symbol in a deftheory event.")
 
 (defun convert-theory-to-unordered-mapping-pairs1 (lst macro-aliases wrld ans)
+
+; Warning: Keep this in sync with monitorable-runes-from-mapping-pairs.
 
 ; This is the place we give meaning to the "runic interpretation" of a
 ; rule name designator.  Every element of lst is a rule name

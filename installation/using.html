@@ -150,77 +150,16 @@ discussed thoroughly in the ACL2
 documentation</A>.
 
 <P>
-Books should be ``certified'' before they are used.  We do not distribute
-certificates with our books, mainly because certification produces compiled
-code specific to the host.  You should certify the books locally, both as a test of
-your ACL2 image and because books generally need to be certified before they
-can be used.
-
-<P>
-It is easy to re-certify all the community books on a Unix-like system.
-We recommend you do this.  If you have entered ACL2, exit to the
-operating system, e.g., evaluting the form, <code>(quit)</code>, or by
-control-d in many systems.
-
-<P>
-While connected to <I>dir</I><CODE>/acl2-7.1</CODE>, execute
-<PRE>
-make certify-books
-</PRE>
-
-This will generate minimal output to the screen and will probably take an hour
-or two.  Failure is indicated by the presence of <code>CERTIFICATION FAILED</code> in the log.
-
-<P>
-
-To remove the files thus created, invoke:
-<PRE>
-make clean-books
-</PRE>
-
-<P>
-The <CODE>certify-books</CODE> target does not certify
-the <code>workshops/</code> books, which include contributions
-starting with the 1999 ACL2 workshop (described in teh
-book <A HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-books/acs/index.html"><EM>Computer-Aided
-Reasoning: ACL2 Case Studies</EM></A>) and include contributions from
-all subsequent ACL2 workshops.  If you want to certify those books as
-well, then instead (or in addition) use the <code>regression</code>
-target:
-
-<PRE>
-make regression
-</PRE>
-
-Our main installation page contains
-a <A HREF="installation.html#certify-books">discussion of options</A>
-for the above command.
-
-<P>
-By default, certification uses the image
-<I>dir</I><CODE>/acl2-7.1/saved_acl2</CODE>.  You may specify any ACL2
-image, as long as it is either a command on your path or an absolute file
-name, for example as follows.
-
-<PRE>
-make certify-books ACL2=my-acl2
-
-make regression ACL2=/u/smith/projects/acl2/saved_acl2
-</PRE>
-
-<P>
-We apologize to users of other than Unix-like systems (i.e., other
-than Unix, GNU-Linux, and Mac OS X): we do not provide instructions
-for recertifying all the community books on such systems, though
-there are such environments that can be installed on Windows (e.g.,
-Cygwin).  The certification methods provided by the authors of the
-books vary greatly and we codified them in the makefile, which is
-named <code>GNUmakefile</code>, used above.  Some subdirectories
-of the community book (under <CODE>acl2-7.1/books/</CODE>) contain either a
-<CODE>README</CODE> file or a <CODE>certify.lsp</CODE> file.  Users
-who wish to certify one of these books and who cannot figure out (from
-these scant clues) what to type to ACL2 should not hesitate to contact
-the authors.
+Books should be <i>certified</i> before they are used.  We do not
+distribute certificates with our books, mainly because certification
+produces compiled code specific to the host.  You should certify the
+books locally, both as a test of your ACL2 image and because books
+generally need to be certified before they can be used.  Our main
+installation page
+contains <A HREF="installation.html#certify-books">simple
+instructions</A> for how to perform this certification.  For
+additional explanation and further options, see the documentation
+for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v7-1/combined-manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>.
 
 <P>
 Next proceed to the section on <A HREF="#Documentation">Documentation</A>.

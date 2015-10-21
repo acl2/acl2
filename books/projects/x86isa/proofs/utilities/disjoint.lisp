@@ -100,15 +100,7 @@
   (defthm disjoint-p-cons
     (equal (disjoint-p a (cons e x))
            (and (disjoint-p a x)
-                (equal (member-p e a) nil)))
-    :rule-classes
-    ((:rewrite)
-     ;; (:forward-chaining
-     ;;  :corollary
-     ;;  (implies (disjoint-p a (cons e x))
-     ;;           (and (disjoint-p a x)
-     ;;                (equal (member-p e a) nil))))
-     ))
+                (equal (member-p e a) nil))))
 
   (defthmd disjoint-p-commutative
     (equal (disjoint-p a b)

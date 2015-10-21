@@ -472,7 +472,7 @@
 ; may reference function variables in their defining bodies.
 
 (define funvars-of-defchoose ((fun symbolp) (w plist-worldp))
-  (funvars-of-terms (defchoose-body fun w) w))
+  (funvars-of-term (defchoose-body fun w) w))
 
 ; Second-order theorems and their instances
 ; may reference function variables in their formulas.

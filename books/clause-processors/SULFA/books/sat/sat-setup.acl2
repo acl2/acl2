@@ -1,0 +1,9 @@
+(in-package "ACL2")
+(ld "sat-package.acl2")
+; cert-flags: ? t
+(certify-book "sat-setup" ?
+; Work around CMUCL bug; see
+; http://lists.zs64.net/mailman-archive/cmucl-help/2015/000272.html
+              #+cmucl nil
+              #-cmucl t)
+

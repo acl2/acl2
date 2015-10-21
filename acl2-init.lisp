@@ -1163,8 +1163,21 @@ implementations.")
 ; of startup information) is supported for every host Lisp.
 
 ; Note that LD always prints some startup information, regardless of the value
-; of *print-startup-banner*.  To suppress that information, evaluate
-; (set-ld-verbose nil state) in the ACL2 loop.
+; of *print-startup-banner*.  But that information is suppressed with
+; (set-ld-verbose nil state).
+
+; The following form can be put into one's ~/ccl-init.lisp file for CCL or
+; ~/init.lsp file for GCL, and similarly perhaps for some other Lisps, in order
+; to suppress printing at startup.
+
+;   (when (find-package "ACL2")
+;     ;; Suppress as much as possible at startup except for the LD info.
+;     (set (intern "*PRINT-STARTUP-BANNER*" "ACL2")
+;          nil)
+;     ;; Suppress the LD info.
+;     (eval (list (intern "SET-LD-VERBOSE" "ACL2")
+;                 nil
+;                 (intern "*THE-LIVE-STATE*" "ACL2"))))
 
   t)
 

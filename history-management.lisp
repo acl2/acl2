@@ -1469,7 +1469,8 @@
                (t nil)))
         (t (the-namex-symbol-class1 namex wrld nil))))
 
-(defun add-event-landmark (form ev-type namex wrld boot-strap-flg)
+(defun add-event-landmark (form ev-type namex wrld boot-strap-flg
+                                skipped-proofs-p)
 
 ; We use a let* below and a succession of worlds just to make clear
 ; the order in which we store the various properties.  We update the
@@ -1493,7 +1494,8 @@
                                          form
                                          ev-type
                                          namex
-                                         (the-namex-symbol-class namex wrld2))
+                                         (the-namex-symbol-class namex wrld2)
+                                         skipped-proofs-p)
                        wrld2)))
     wrld3))
 
@@ -4665,11 +4667,14 @@
 ; We set world global 'skip-proofs-seen or 'redef-seen if ld-skip-proofsp or
 ; ld-redefinition-action (respectively) is non-nil and the world global is not
 ; already true.  This information is important for vetting a proposed
-; certification world.  See the Essay on Soundness Threats.
+; certification world.  See the Essay on Soundness Threats.  We also make a
+; note in the event-tuple when skipping proofs (by the user, not merely the
+; system as for include-book), since that information could be useful to those
+; who want to know what remains to be proved.
 
-            (wrld2 (cond
-                    ((and (ld-skip-proofsp state)
-                          (not (member-eq ev-type
+            (skipped-proofs-p
+             (and (ld-skip-proofsp state)
+                  (not (member-eq ev-type
 
 ; Comment on irrelevance of skip-proofs:
 
@@ -4683,23 +4688,23 @@
 ; (defattach f g)) can generate bogus data in world global
 ; 'proved-functional-instances-alist that can be used to prove nil later.
 
-                                          '(include-book
-                                            defchoose
-                                            defconst
-                                            defdoc
-                                            deflabel
-                                            defmacro
-                                            defpkg
-                                            defstobj
-                                            deftheory
-                                            in-arithmetic-theory
-                                            in-theory
-                                            push-untouchable
-                                            regenerate-tau-database
-                                            remove-untouchable
-                                            reset-prehistory
-                                            set-body
-                                            table)))
+                                  '(include-book
+                                    defchoose
+                                    defconst
+                                    defdoc
+                                    deflabel
+                                    defmacro
+                                    defpkg
+                                    defstobj
+                                    deftheory
+                                    in-arithmetic-theory
+                                    in-theory
+                                    push-untouchable
+                                    regenerate-tau-database
+                                    remove-untouchable
+                                    reset-prehistory
+                                    set-body
+                                    table)))
 
 ; We include the following test so that we can distinguish between the
 ; user-specified skipping of proofs and legitimate skipping of proofs by the
@@ -4712,9 +4717,12 @@
 ; skip-proofs-seen is set whenever we are inside a call of skip-proofs.
 
 
-                          (or (f-get-global 'inside-skip-proofs state)
-                              (not (f-get-global 'skip-proofs-by-system
-                                                 state)))
+                  (or (f-get-global 'inside-skip-proofs state)
+                      (not (f-get-global 'skip-proofs-by-system
+                                         state)))))
+
+            (wrld2 (cond
+                    ((and skipped-proofs-p
                           (let ((old (global-val 'skip-proofs-seen wrld)))
                             (or (not old)
 
@@ -4755,7 +4763,8 @@
 
          (let ((wrld6 (add-event-landmark form ev-type namex wrld5
                                           (f-get-global 'boot-strap-flg
-                                                        state))))
+                                                        state)
+                                          skipped-proofs-p)))
            (pprogn
             (f-put-global 'accumulated-ttree ttree state)
             (cond
@@ -5819,6 +5828,38 @@
             fullp
             (access-command-tuple-form (cddar cmd-wrld))))
 
+(defmacro extend-pe-table (name form)
+  `(with-output
+     :off error ; avoid extra needless layer of error
+     (table pe-table
+            ',name
+            (cons (cons (getprop ',name 'absolute-event-number
+                                 (list :error
+                                       (concatenate 'string
+                                                    "Event for "
+                                                    ,(symbol-name name)
+                                                    " (package "
+                                                    ,(symbol-package-name name)
+                                                    ") not found."))
+                                 'current-acl2-world world)
+                        ',form)
+                  (cdr (assoc-eq ',name
+                                 (table-alist 'pe-table world)))))))
+
+(defun pe-event-form (event-tuple wrld)
+
+; Note: change cd-some-event-matchp to use this function if the :SEARCH utility
+; described in :doc command-descriptor is to use the pe-table.
+
+  (let* ((ev-form (access-event-tuple-form event-tuple))
+         (ev-n (access-event-tuple-number event-tuple))
+         (pe-entry (cdr (assoc ev-n
+                               (cdr (assoc-eq (cadr ev-form)
+                                              (table-alist 'pe-table
+                                                           wrld)))))))
+    (or pe-entry
+        ev-form)))
+
 (defun make-event-ldd (markp indent fullp ev-tuple ens wrld)
   (make-ldd 'event
             markp
@@ -5832,7 +5873,7 @@
                        (big-m-little-m-event ev-tuple wrld)))
             indent
             fullp
-            (access-event-tuple-form ev-tuple)))
+            (pe-event-form ev-tuple wrld)))
 
 (defun make-ldds-command-sequence (cmd-wrld1 cmd2 ens wrld markp ans)
 
@@ -5938,7 +5979,7 @@
   (let ((cmd-ldd (make-command-ldd nil fullp cmd-wrld ens wrld))
         (wrld1 (scan-to-event (cdr cmd-wrld))))
     (cond
-     ((equal (access-event-tuple-form (cddar wrld1))
+     ((equal (pe-event-form (cddar wrld1) wrld)
              (access-command-tuple-form (cddar cmd-wrld)))
 
 ; If the command form is the same as the event form of the
@@ -6135,7 +6176,7 @@
 
 (defun pe-fn1 (wrld channel ev-wrld cmd-wrld state)
   (cond
-   ((equal (access-event-tuple-form (cddar ev-wrld))
+   ((equal (pe-event-form (cddar ev-wrld) wrld)
            (access-command-tuple-form (cddar cmd-wrld)))
     (print-ldd
      (make-command-ldd nil t cmd-wrld (ens state) wrld)
@@ -6264,11 +6305,10 @@
   (list 'pe-fn logical-name 'state))
 
 (defmacro pe! (logical-name)
-  (declare (ignore logical-name))
-  `(er hard 'pe!
-       "Pe! has been deprecated.  Please use :pe, which now has the ~
-        functionality formerly provided by :pe!; or consider :pcb, :pcb!, or ~
-        :pr!.  See :DOC history."))
+  `(with-output :off (summary event)
+     (make-event (er-progn (table pe-table nil nil :clear)
+                           (pe ,logical-name)
+                           (value '(value-triple :invisible))))))
 
 (defun command-block-names1 (wrld ans symbol-classes)
 

@@ -119,6 +119,69 @@ make-4vec) and @(see make-honsed-4vec).</p>
               :upper x.upper))
 })")
 
+(defxdoc 4vec-examples
+  :parents (4vec)
+  :short "@(see 4vec) examples"
+  :long "
+<p>@(see 4vec) Examples.  Note that some of them are redundant, but they are
+  repeated so that the reader can more easily see the relationships between the
+  bits.</p>
+
+<table>
+<tr><th>Representation</th><th>Meaning (LSB first)</th></tr>
+<tr><td>1</td>      <td>1,0,0,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>0</td>      <td>0,0,0,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>(1 . 0)</td><td>X,0,0,0,0,0,...infinitely many 0s...</td></tr>
+
+<tr><td>0</td>      <td>0,0,0,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>1</td>      <td>1,0,0,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>(0 . 1)</td><td>Z,0,0,0,0,0,...infinitely many 0s...</td></tr>
+
+<tr><td>-1</td>      <td>1,1,1,1,1,1....infinitely many 1s...</td></tr>
+<tr><td>0</td>       <td>0,0,0,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>(-1 . 0)</td><td>X,X,X,X,X,X,...infinitely many Xs...</td></tr>
+
+<tr><td>0</td>       <td>0,0,0,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>-1</td>      <td>1,1,1,1,1,1,...infinitely many 1s...</td></tr>
+<tr><td>(0 . -1)</td><td>X,X,X,X,X,X,...infinitely many Xs...</td></tr>
+
+
+<tr><td>4</td>      <td>0,0,1,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>6</td>      <td>0,1,1,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>(4 . 6)</td><td>0,Z,1,0,0,0,...infinitely many 0s...</td></tr>
+
+<tr><td>4</td>      <td>0,0,1,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>-6</td>     <td>0,1,0,1,1,1,...infinitely many 1s...</td></tr>
+<tr><td>(4. -6)</td><td>0,Z,X,Z,Z,Z,...infinitely many Zs...</td></tr>
+
+<tr><td>-4</td>      <td>0,0,1,1,1,1....infinitely many 1s...</td></tr>
+<tr><td>6</td>       <td>0,1,1,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>(-4 . 6)</td><td>0,Z,1,X,X,X,...infinitely many Xs...</td></tr>
+
+<tr><td>-4</td>       <td>0,0,1,1,1,1....infinitely many 1s...</td></tr>
+<tr><td>-6</td>       <td>1,1,1,1,1,1,...infinitely many 1s...</td></tr>
+<tr><td>(-4 . -6)</td><td>Z,Z,1,1,1,1,...infinitely many 1s...</td></tr>
+
+
+<tr><td>6</td>       <td>0,1,1,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>13</td>      <td>1,0,1,1,0,0,...infinitely many 0s...</td></tr>
+<tr><td>(6 . 13)</td><td>Z,X,1,Z,0,0,...infinitely many 0s...</td></tr>
+
+<tr><td>6</td>       <td>0,1,1,0,0,0,...infinitely many 0s...</td></tr>
+<tr><td>-13</td>     <td>1,1,0,0,1,1,...infinitely many 1s...</td></tr>
+<tr><td>(6. -13)</td><td>Z,1,X,0,Z,Z,...infinitely many Zs...</td></tr>
+
+<tr><td>-6</td>       <td>0,1,0,1,1,1....infinitely many 1s...</td></tr>
+<tr><td>13</td>       <td>1,0,1,1,0,0,...infinitely many 0s...</td></tr>
+<tr><td>(-6 . 13)</td><td>Z,X,Z,1,X,X,...infinitely many Xs...</td></tr>
+
+<tr><td>-6</td>        <td>0,1,0,1,1,1....infinitely many 1s...</td></tr>
+<tr><td>-13</td>       <td>1,1,0,0,1,1,...infinitely many 1s...</td></tr>
+<tr><td>(-6 . -13)</td><td>Z,1,0,X,1,1,...infinitely many 1s...</td></tr>
+
+</table>
+")
+
 (local (xdoc::set-default-parents 4vec))
 
 (define 4vec-p (x)
