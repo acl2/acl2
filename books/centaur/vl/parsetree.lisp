@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-10-20")
+  "VL Syntax 2015-10-21")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -2508,7 +2508,6 @@ case statements.</p>")
          <li>@(':vl-defer-final') &mdash; this is a @('final') deferred assertion.</li>
          </ul>")
 
-
 (deftypes statements
   :short "Representation of a statement."
 
@@ -2531,17 +2530,19 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                               ))))
 
   (fty::deflist vl-stmtlist
+    :measure (two-nats-measure (acl2-count x) 2)
     :elt-type vl-stmt-p
     :true-listp t
     :elementp-of-nil nil)
 
   (fty::defalist vl-caselist
+    :measure (two-nats-measure (acl2-count x) 2)
     :key-type vl-exprlist ;; The match expressions in a case item
     :val-type vl-stmt     ;; The associated statement
     :true-listp t)
 
   (deftagsum vl-stmt
-
+    :measure (two-nats-measure (acl2-count x) 0)
     (:vl-nullstmt
      :short "Representation of an empty statement."
      :base-name vl-nullstmt
@@ -2963,67 +2964,97 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :base-name vl-assertstmt
      :layout :tree
      :short "Representation of an immediate assertion statement."
-     ((type       vl-asserttype-p
-                  "The type of this assertion, e.g., @('assert'), @('assume'),
-                   etc.")
-      (deferral   vl-assertdeferral-p
-        "Indicates whether this assertion is a regular, non-deferred
-                   assertion, or a #('#0') or @('final') deferred assertion.")
-      (condition  vl-expr-p
-                  "The condition to assert.  Note that since this is an
-                   immediate assertion, the condition is a simple expression,
-                   not a fancy sequence or property.")
-      (success    vl-stmt-p
-                  "For most assertions, this is the success statement for the
-                   associated action block, or a @(see vl-nullstmt) if there is
-                   no success statement.  Note that @('cover') assertions are
-                   special and don't have an action block, so for a @('cover')
-                   assertion this is just the associated statement, if any.")
-      (failure    vl-stmt-p
-                  "This is the @('else') statement from the action block, or a
-                   @(see vl-nullstmt) if there is no @('else') statement.  For
-                   @('cover') assertions this is always just a @(see
-                   vl-nullstmt) since there is no @('else') action.")
+     ((assertion vl-assertion-p
+                 "All of the data for the assertion.  We split this out from
+                  the main @(see vl-stmt) structure so that module-level and
+                  statement-level assertions can easily share the same core
+                  representation.")
       (atts       vl-atts-p
                   "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
-                   with this statement.")
-      (loc        vl-location-p
-                  "Location of this statement in the source code.")))
+                   with this statement.")))
 
     (:vl-cassertstmt
      :base-name vl-cassertstmt
      :layout :tree
      :short "Representation of a concurrent assertion statement."
-     ((type        vl-asserttype-p
-                   "The type of this assertion, e.g., @('assert'), @('assume'),
-                    etc.")
-      (sequencep   booleanp :rule-classes :type-prescription
-                   "This should be @('nil') except for @('cover sequence')
-                    statements, where it is @('t').  Cover statements are
-                    special; most concurrent assertions are just things like
-                    @('assert property ...') or @('assume property ...')  and
-                    don't even have a @('sequence') form.")
-      (condition   vl-propspec-p
-                   "The property specification being asserted.")
-      (success     vl-stmt-p
-                   "For most assertions, this is the success statement for the
-                    associated action block, or a @(see vl-nullstmt) if there
-                    is no success statement.  Note that @('cover') assertions
-                    are special and don't have an action block, so for a
-                    @('cover') assertion this is just the associated
-                    statement, if any.")
-      (failure     vl-stmt-p
-                   "This is the @('else') statement from the action block, or
-                    a @(see vl-nullstmt) if there is no @('else') statement.
-                    For @('cover') assertions this is always just a @(see
-                    vl-nullstmt) since there is no @('else') action.")
-      (atts        vl-atts-p
-                   "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
-                    with this statement.")
-      (loc         vl-location-p
-                   "Location of this statement in the source code.")))
+     ((cassertion vl-cassertion-p
+                  "All of the data for the assertion.  We split this out from
+                   the main @(see vl-stmt) structure so that module-level and
+                   statement-level assertions can easily share the same core
+                   representation.)")
+      (atts       vl-atts-p
+                  "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
+                   with this statement."))))
 
-    ))
+  (defprod vl-assertion
+    :short "Representation of an immediate assertion."
+    :layout :tree
+    :tag :vl-assertion
+    :measure (two-nats-measure (acl2-count x) 1)
+    ((name       maybe-stringp :rule-classes :type-prescription
+                 "The label for this assertion, if provided.  Note that in a
+                  statement context, labels like @('foo : assert ...')  mainly
+                  get turned into named @('begin/end') blocks, but we do take
+                  care to also put the name into the assertion object.")
+     (type       vl-asserttype-p
+                 "The type of this assertion, e.g., @('assert'), @('assume'),
+                  etc.")
+     (deferral   vl-assertdeferral-p
+                 "Indicates whether this assertion is a regular, non-deferred
+                  assertion, or a #('#0') or @('final') deferred assertion.")
+     (condition  vl-expr-p
+                 "The condition to assert.  Note that since this is an
+                  immediate assertion, the condition is a simple expression,
+                  not a fancy sequence or property.")
+     (success    vl-stmt-p
+                 "For most assertions, this is the success statement for the
+                  associated action block, or a @(see vl-nullstmt) if there is
+                  no success statement.  Note that @('cover') assertions are
+                  special and don't have an action block, so for a @('cover')
+                  assertion this is just the associated statement, if any.")
+     (failure    vl-stmt-p
+                 "This is the @('else') statement from the action block, or a
+                  @(see vl-nullstmt) if there is no @('else') statement.  For
+                  @('cover') assertions this is always just a @(see
+                  vl-nullstmt) since there is no @('else') action.")
+     (loc        vl-location-p
+                 "Location of this statement in the source code.")))
+
+  (defprod vl-cassertion
+    :short "Representation of a concurrent assertion."
+    :layout :tree
+    :tag :vl-cassertion
+    :measure (two-nats-measure (acl2-count x) 1)
+    ((name        maybe-stringp :rule-classes :type-prescription
+                  "The label for this assertion, if provided.  Note that in a
+                   statement context, labels like @('foo : assert ...')  mainly
+                   get turned into named @('begin/end') blocks, but we do take
+                   care to also put the name into the assertion object.")
+     (type        vl-asserttype-p
+                  "The type of this assertion, e.g., @('assert'), @('assume'),
+                   etc.")
+     (sequencep   booleanp :rule-classes :type-prescription
+                  "This should be @('nil') except for @('cover sequence')
+                   statements, where it is @('t').  Cover statements are
+                   special; most concurrent assertions are just things like
+                   @('assert property ...') or @('assume property ...')  and
+                   don't even have a @('sequence') form.")
+     (condition   vl-propspec-p
+                  "The property specification being asserted.")
+     (success     vl-stmt-p
+                  "For most assertions, this is the success statement for the
+                   associated action block, or a @(see vl-nullstmt) if there
+                   is no success statement.  Note that @('cover') assertions
+                   are special and don't have an action block, so for a
+                   @('cover') assertion this is just the associated
+                   statement, if any.")
+     (failure     vl-stmt-p
+                  "This is the @('else') statement from the action block, or
+                   a @(see vl-nullstmt) if there is no @('else') statement.
+                   For @('cover') assertions this is always just a @(see
+                   vl-nullstmt) since there is no @('else') action.")
+     (loc         vl-location-p
+                  "Location of this statement in the source code."))))
 
 ;; NOTE: Other statement subtypes are declared in stmt-tools.  This is here
 ;; because scopestack needs it.
@@ -3032,11 +3063,16 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
   :enabled t
   (vl-stmt-case x :vl-blockstmt))
 
-
-
 (local (in-theory (disable vl-stmtlist-p-of-cdr-when-vl-stmtlist-p
                            consp-when-member-equal-of-vl-caselist-p
                            vl-stmt-p-when-member-equal-of-vl-stmtlist-p)))
+
+
+(fty::deflist vl-assertionlist
+  :elt-type vl-assertion)
+
+(fty::deflist vl-cassertionlist
+  :elt-type vl-cassertion)
 
 
 ;                       INITIAL AND ALWAYS BLOCKS
@@ -3516,7 +3552,9 @@ be non-sliceable, at least if it's an input.</p>"
       import
       fwdtypedef
       modport
-      genvar))
+      genvar
+      assertion
+      cassertion))
 
   (local (defun typenames-to-tags (x)
            (declare (xargs :mode :program))
@@ -3757,7 +3795,9 @@ initially kept in a big, mixed list.</p>"
      vl-modport
      vl-interfaceport
      vl-regularport
-     vl-genelement))
+     vl-genelement
+     vl-assertion
+     vl-cassertion))
 
   (local (defthm vl-genelement-kind-by-tag-when-vl-ctxelement-p
            (implies (and (vl-ctxelement-p x)
@@ -3799,7 +3839,9 @@ initially kept in a big, mixed list.</p>"
         (:vl-genif   (vl-genif->loc x))
         (:vl-gencase (vl-gencase->loc x))
         (:vl-genblock (vl-genblock->loc x))
-        (:vl-genarray (vl-genarray->loc x))))))
+        (:vl-genarray (vl-genarray->loc x))
+        (:vl-assertion (vl-assertion->loc x))
+        (:vl-cassertion (vl-cassertion->loc x))))))
 
 (defprod vl-context1
   :short "Description of where an expression occurs."
@@ -4014,8 +4056,14 @@ the type information between the variable and port declarations.</p>"
    (genvars    vl-genvarlist-p
                "Genvar declarations.")
 
-   (generates vl-genelementlist-p
-              "Generate blocks including generate regions and for/if/case blocks.")
+   (generates  vl-genelementlist-p
+               "Generate blocks including generate regions and for/if/case blocks.")
+
+   (assertions  vl-assertionlist-p
+                "Immediate (including deferred immediate) assertions.")
+
+   (cassertions vl-cassertionlist-p
+                "Concurrent assertions for the module.")
 
    (atts       vl-atts-p
                "Any attributes associated with this top-level module.")

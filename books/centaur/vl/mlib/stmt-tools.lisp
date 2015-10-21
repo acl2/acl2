@@ -237,13 +237,17 @@ expressions.</p>"
     :vl-blockstmt        x.stmts
     :vl-repeatstmt       (list x.body)
     :vl-timingstmt       (list x.body)
-    :vl-assertstmt       (list x.success x.failure)
-    :vl-cassertstmt      (list x.success x.failure)
+    :vl-assertstmt       (b* (((vl-assertion x.assertion)))
+                           (list x.assertion.success x.assertion.failure))
+    :vl-cassertstmt      (b* (((vl-cassertion x.cassertion)))
+                           (list x.cassertion.success x.cassertion.failure))
     :otherwise           nil)
   ///
   (local (in-theory (enable vl-stmtlist-count
                             vl-caselist-count
-                            vl-stmt-count)))
+                            vl-stmt-count
+                            vl-assertion-count
+                            vl-cassertion-count)))
 
   (local (defthm l0
            (<= (vl-stmtlist-count (alist-vals x))
@@ -306,7 +310,8 @@ directly part of the statement.</p>"
     :vl-repeatstmt     (list x.condition)
     :vl-blockstmt      nil
     :vl-timingstmt     nil
-    :vl-assertstmt     (list x.condition)
+    :vl-assertstmt     (b* (((vl-assertion x.assertion)))
+                         (list x.assertion.condition))
     :vl-cassertstmt    nil ;; bozo?
     :otherwise         nil))
 
@@ -578,14 +583,16 @@ directly part of the statement.</p>"
 
       :vl-assertstmt
       (change-vl-assertstmt x
-                            :condition (first exprs)
-                            :success (first stmts)
-                            :failure (second stmts))
+                            :assertion (change-vl-assertion x.assertion
+                                                            :condition (first exprs)
+                                                            :success (first stmts)
+                                                            :failure (second stmts)))
 
       :vl-cassertstmt
       (change-vl-cassertstmt x
-                             :success (first stmts)
-                             :failure (second stmts))
+                             :cassertion (change-vl-cassertion x.cassertion
+                                                               :success (first stmts)
+                                                               :failure (second stmts)))
 
       ;; Atomic statements are ruled out by the guard.
       :vl-nullstmt         (progn$ (impossible) x)

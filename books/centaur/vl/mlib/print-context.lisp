@@ -192,6 +192,18 @@
        ;; These are simple enough to just print.
        (vl-pp-import x))
 
+      (:vl-assertion
+       (vl-ps-seq (vl-print "Assertion ")
+                  (vl-print-str (or (vl-assertion->name x) ""))
+                  (vl-print " at ")
+                  (vl-print-loc (vl-assertion->loc x))))
+
+      (:vl-cassertion
+       (vl-ps-seq (vl-print "Assertion ")
+                  (vl-print-str (or (vl-cassertion->name x) ""))
+                  (vl-print " at ")
+                  (vl-print-loc (vl-cassertion->loc x))))
+
       ((:vl-genif :vl-genloop :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
        (vl-ps-seq (vl-print "Generate block at ")
                   (vl-print-loc (vl-genelement->loc x))))
@@ -243,6 +255,8 @@ quick summary instead, see @(see vl-pp-ctxelement-summary).</p>"
       (:vl-fwdtypedef    (vl-pp-fwdtypedef x))
       (:vl-modport       (vl-pp-modport x))
       (:vl-import        (vl-pp-import x))
+      (:vl-assertion     (vl-pp-assertion x :include-name t))
+      (:vl-cassertion    (vl-pp-cassertion x :include-name t))
       ((:vl-genif :vl-genloop :vl-gencase :vl-genblock :vl-genarray :vl-genbase)
        (vl-pp-genelement x))
       (otherwise (prog2$ (impossible) ps)))))

@@ -636,6 +636,23 @@
                        (vl-parse-error "Expected #0."))))
        (return nil)))
 
+
+(define vl-maybe-inject-block-name-into-assertion ((name stringp)
+                                                   (stmt vl-stmt-p))
+  :short "Maybe install an outer block name like @('foo : assert ...') into the
+          assertion statement."
+  :long "<p>Either way we still create a @('begin/end') block.</p>"
+  :returns (new-stmt vl-stmt-p)
+  (vl-stmt-case stmt
+    :vl-assertstmt
+    (change-vl-assertstmt stmt
+                          :assertion (change-vl-assertion stmt.assertion :name name))
+    :vl-cassertstmt
+    (change-vl-cassertstmt stmt
+                           :cassertion (change-vl-cassertion stmt.cassertion :name name))
+    :otherwise
+    (vl-stmt-fix stmt)))
+
 (local (in-theory (disable
 
                    (:t acl2-count)
@@ -680,6 +697,8 @@
                    acl2::member-equal-when-all-equalp
                    member-equal-when-member-equal-of-cdr-under-iff
                    )))
+
+
 
 
 (defparsers parse-statements
@@ -1015,14 +1034,13 @@
         (return (make-vl-actionblock :then then
                                      :else (or else (make-vl-nullstmt))))))
 
- (defparser vl-parse-expect-property-statement (atts)
-   :short "Parse a @('expect_property_statement')."
+ (defparser vl-parse-expect-property-statement ()
+   :short "Parse a @('expect_property_statement'), returning a @(see vl-cassertion)."
    :long "<p>SystemVerilog-2012 grammar:</p>
 
           @({
               expect_property_statement ::= 'expect' '(' property_spec ')' action_block
           })"
-   :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 0)
    (seq tokstream
         (kwd := (vl-match-token :vl-kwd-expect))
@@ -1030,16 +1048,15 @@
         (spec := (vl-parse-property-spec))
         (:= (vl-match-token :vl-rparen))
         (act := (vl-parse-action-block))
-        (return (make-vl-cassertstmt :type :vl-expect
-                                     :sequencep nil
-                                     :condition spec
-                                     :success (vl-actionblock->then act)
-                                     :failure (vl-actionblock->else act)
-                                     :atts atts
-                                     :loc (vl-token->loc kwd)))))
+        (return (make-vl-cassertion :type :vl-expect
+                                    :sequencep nil
+                                    :condition spec
+                                    :success (vl-actionblock->then act)
+                                    :failure (vl-actionblock->else act)
+                                    :loc (vl-token->loc kwd)))))
 
- (defparser vl-parse-concurrent-assertion-statement (atts)
-   :short "Parse a @('concurrent_assertion_statement')."
+ (defparser vl-parse-concurrent-assertion-statement ()
+   :short "Parse a @('concurrent_assertion_statement'), returning a @(see vl-cassertion)."
    :long "<p>Almost the SystemVerilog-2012 grammar:</p>
 
           @({
@@ -1061,7 +1078,6 @@
          @('sequence_expr') instead of a @('property_expr'), which we don't
          distinguish between at parse time.  So, the above is what we
          implement.</p>"
-   :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 0)
    (seq tokstream
         ;; assert_property_statement ::= 'assert' 'property' '(' property_spec ')' action_block
@@ -1073,15 +1089,14 @@
           (spec := (vl-parse-property-spec))
           (:= (vl-match-token :vl-rparen))
           (act := (vl-parse-action-block))
-          (return (make-vl-cassertstmt :type (case (vl-token->type kwd)
-                                               (:vl-kwd-assert :vl-assert)
-                                               (:vl-kwd-assume :vl-assume)
-                                               (otherwise (impossible)))
+          (return (make-vl-cassertion :type (case (vl-token->type kwd)
+                                              (:vl-kwd-assert :vl-assert)
+                                              (:vl-kwd-assume :vl-assume)
+                                              (otherwise (impossible)))
                                        :sequencep nil
                                        :condition spec
                                        :success (vl-actionblock->then act)
                                        :failure (vl-actionblock->else act)
-                                       :atts atts
                                        :loc (vl-token->loc kwd))))
         ;; restrict_property_statement::= 'restrict' 'property' '(' property_spec ')' ';'
         (when (vl-is-token? :vl-kwd-restrict)
@@ -1091,13 +1106,12 @@
           (spec := (vl-parse-property-spec))
           (:= (vl-match-token :vl-rparen))
           (:= (vl-match-token :vl-semi))
-          (return (make-vl-cassertstmt :type :vl-restrict
-                                       :sequencep nil
-                                       :condition spec
-                                       :success (make-vl-nullstmt)
-                                       :failure (make-vl-nullstmt)
-                                       :atts atts
-                                       :loc (vl-token->loc kwd))))
+          (return (make-vl-cassertion :type :vl-restrict
+                                      :sequencep nil
+                                      :condition spec
+                                      :success (make-vl-nullstmt)
+                                      :failure (make-vl-nullstmt)
+                                      :loc (vl-token->loc kwd))))
         ;; cover_property_statement ::= 'cover' 'property' '(' property_spec ')' statement_or_null
         ;; cover_sequence_statement ::= 'cover' 'sequence' '(' property_spec ')' statement_or_null
         (kwd  := (vl-match-token :vl-kwd-cover))
@@ -1106,16 +1120,15 @@
         (spec := (vl-parse-property-spec))
         (:= (vl-match-token :vl-rparen))
         (then := (vl-parse-statement-or-null))
-        (return (make-vl-cassertstmt :type :vl-cover
-                                     :sequencep (eq (vl-token->type kind) :vl-kwd-sequence)
-                                     :condition spec
-                                     :success then
-                                     :failure (make-vl-nullstmt)
-                                     :atts atts
-                                     :loc (vl-token->loc kwd)))))
+        (return (make-vl-cassertion :type :vl-cover
+                                    :sequencep (eq (vl-token->type kind) :vl-kwd-sequence)
+                                    :condition spec
+                                    :success then
+                                    :failure (make-vl-nullstmt)
+                                    :loc (vl-token->loc kwd)))))
 
- (defparser vl-parse-immediate-assertion-statement (atts)
-   :short "Parse an @('immediate_assertion_statement')."
+ (defparser vl-parse-immediate-assertion-statement ()
+   :short "Parse an @('immediate_assertion_statement'), returning a @(see vl-assertion)."
    :long "<p>SystemVerilog-2012 grammar:</p>
 
           @({
@@ -1143,7 +1156,6 @@
               deferred_immediate_cover_statement ::= 'cover' '#0' '(' expression ')' statement_or_null
                                                    | 'cover' 'final' '(' expression ')' statement_or_null
           })"
-   :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 0)
    (seq tokstream
         (type := (vl-match-some-token '(:vl-kwd-assert :vl-kwd-assume :vl-kwd-cover)))
@@ -1155,27 +1167,26 @@
         (when (or (eq (vl-token->type type) :vl-kwd-assert)
                   (eq (vl-token->type type) :vl-kwd-assume))
           (action := (vl-parse-action-block))
-          (return (make-vl-assertstmt :type (case (vl-token->type type)
-                                              (:vl-kwd-assert :vl-assert)
-                                              (:vl-kwd-assume :vl-assume)
-                                              (otherwise (impossible)))
-                                      :deferral deferral
-                                      :condition expr
-                                      :success (vl-actionblock->then action)
-                                      :failure (vl-actionblock->else action)
-                                      :atts atts
-                                      :loc (vl-token->loc type))))
+          (return (make-vl-assertion :type (case (vl-token->type type)
+                                             (:vl-kwd-assert :vl-assert)
+                                             (:vl-kwd-assume :vl-assume)
+                                             (otherwise (impossible)))
+                                     :deferral deferral
+                                     :condition expr
+                                     :success (vl-actionblock->then action)
+                                     :failure (vl-actionblock->else action)
+                                     :loc (vl-token->loc type))))
         ;; ;; For cover statements we only need a statement_or_null.
         (stmt := (vl-parse-statement-or-null))
-        (return (make-vl-assertstmt :type :vl-cover
-                                    :deferral deferral
-                                    :condition expr
-                                    :success stmt
-                                    :failure (make-vl-nullstmt)
-                                    :loc (vl-token->loc type)))))
+        (return (make-vl-assertion :type :vl-cover
+                                   :deferral deferral
+                                   :condition expr
+                                   :success stmt
+                                   :failure (make-vl-nullstmt)
+                                   :loc (vl-token->loc type)))))
 
  (defparser vl-parse-procedural-assertion-statement (atts)
-   :short "Parse a @('procedural_assertion_statement')."
+   :short "Parse a @('procedural_assertion_statement'), returning a @(see vl-stmt-p)."
    :long "<p>SystemVerilog-2012 grammar rules.</p>
 
           @({
@@ -1192,16 +1203,25 @@
           ;; Restrict assertions only have concurrent form.  It's nicer to
           ;; check for them explicitly so that the user gets an error about
           ;; expecting a property/sequence keyword.
-          (vl-parse-concurrent-assertion-statement atts))
+          (seq tokstream
+               (cassertion := (vl-parse-concurrent-assertion-statement))
+               (return (make-vl-cassertstmt :cassertion cassertion
+                                            :atts atts))))
          ;; Otherwise:
          ;;  -- Concurrent assertions all have 'property' or 'sequence' after them
          ;;  -- Immediate assertions have '#0', 'final', or '(' after them.
          ;; So just look for property/sequence to decide what it is.
          ((vl-lookahead-is-some-token? '(:vl-kwd-property :vl-kwd-sequence)
                                        (cdr (vl-tokstream->tokens)))
-          (vl-parse-concurrent-assertion-statement atts))
+          (seq tokstream
+               (cassertion := (vl-parse-concurrent-assertion-statement))
+               (return (make-vl-cassertstmt :cassertion cassertion
+                                            :atts atts))))
          (t
-          (vl-parse-immediate-assertion-statement atts))))
+          (seq tokstream
+               (assertion := (vl-parse-immediate-assertion-statement))
+               (return (make-vl-assertstmt :assertion assertion
+                                           :atts atts))))))
 
 
  (defparser vl-parse-statement-2005-aux (atts)
@@ -1410,7 +1430,10 @@
         (vl-parse-error "BOZO not yet implemented: randcase statements."))
        ;; -- expect_property_statement
        (:vl-kwd-expect
-        (vl-parse-expect-property-statement atts))
+        (seq tokstream
+             (cassertion := (vl-parse-expect-property-statement))
+             (return (make-vl-cassertstmt :cassertion cassertion
+                                          :atts atts))))
 
        (:vl-sysidtoken
         ;; BOZO --- This is probably not right.  It should probably be handled
@@ -1519,7 +1542,10 @@
               (mv nil
                   (make-vl-blockstmt :sequentialp t
                                      :name blockid.name
-                                     :stmts (list core)
+                                     ;; In case it's an assertion, it's maybe nice
+                                     ;; to have the block id in the assertion itself
+                                     ;; (for error reporting, for instance)
+                                     :stmts (list (vl-maybe-inject-block-name-into-assertion blockid.name core))
                                      ;; Seems most sensible to associate any
                                      ;; attributes with the sub-statement core,
                                      ;; which should already be the case.
@@ -1584,9 +1610,9 @@
         ,(vl-val-when-error-claim vl-parse-procedural-timing-control-statement :args (atts))
         ,(vl-val-when-error-claim vl-parse-wait-statement :args (atts))
         ,(vl-val-when-error-claim vl-parse-action-block)
-        ,(vl-val-when-error-claim vl-parse-expect-property-statement :args (atts))
-        ,(vl-val-when-error-claim vl-parse-concurrent-assertion-statement :args (atts))
-        ,(vl-val-when-error-claim vl-parse-immediate-assertion-statement :args (atts))
+        ,(vl-val-when-error-claim vl-parse-expect-property-statement)
+        ,(vl-val-when-error-claim vl-parse-concurrent-assertion-statement)
+        ,(vl-val-when-error-claim vl-parse-immediate-assertion-statement)
         ,(vl-val-when-error-claim vl-parse-procedural-assertion-statement :args (atts))
         ,(vl-val-when-error-claim vl-parse-statement-2005-aux :args (atts))
         ,(vl-val-when-error-claim vl-parse-statement-2012-aux :args (atts))
@@ -1614,9 +1640,9 @@
         ,(vl-warning-claim vl-parse-procedural-timing-control-statement :args (atts))
         ,(vl-warning-claim vl-parse-wait-statement :args (atts))
         ,(vl-warning-claim vl-parse-action-block)
-        ,(vl-warning-claim vl-parse-expect-property-statement :args (atts))
-        ,(vl-warning-claim vl-parse-concurrent-assertion-statement :args (atts))
-        ,(vl-warning-claim vl-parse-immediate-assertion-statement :args (atts))
+        ,(vl-warning-claim vl-parse-expect-property-statement)
+        ,(vl-warning-claim vl-parse-concurrent-assertion-statement)
+        ,(vl-warning-claim vl-parse-immediate-assertion-statement)
         ,(vl-warning-claim vl-parse-procedural-assertion-statement :args (atts))
         ,(vl-warning-claim vl-parse-statement-2005-aux :args (atts))
         ,(vl-warning-claim vl-parse-statement-2012-aux :args (atts))
@@ -1644,9 +1670,9 @@
         ,(vl-progress-claim vl-parse-procedural-timing-control-statement :args (atts))
         ,(vl-progress-claim vl-parse-wait-statement :args (atts))
         ,(vl-progress-claim vl-parse-action-block)
-        ,(vl-progress-claim vl-parse-expect-property-statement :args (atts))
-        ,(vl-progress-claim vl-parse-concurrent-assertion-statement :args (atts))
-        ,(vl-progress-claim vl-parse-immediate-assertion-statement :args (atts))
+        ,(vl-progress-claim vl-parse-expect-property-statement)
+        ,(vl-progress-claim vl-parse-concurrent-assertion-statement)
+        ,(vl-progress-claim vl-parse-immediate-assertion-statement)
         ,(vl-progress-claim vl-parse-procedural-assertion-statement :args (atts))
         ,(vl-progress-claim vl-parse-statement-2005-aux :args (atts))
         ,(vl-progress-claim vl-parse-statement-2012-aux :args (atts))
@@ -1736,17 +1762,11 @@
         ,(vl-stmt-claim vl-parse-action-block
                         (vl-actionblock-p val))
         ,(vl-stmt-claim vl-parse-expect-property-statement
-                        (vl-stmt-p val)
-                        :args (atts)
-                        :extra-hyps ((force (vl-atts-p atts))))
+                        (vl-cassertion-p val))
         ,(vl-stmt-claim vl-parse-concurrent-assertion-statement
-                        (vl-stmt-p val)
-                        :args (atts)
-                        :extra-hyps ((force (vl-atts-p atts))))
+                        (vl-cassertion-p val))
         ,(vl-stmt-claim vl-parse-immediate-assertion-statement
-                        (vl-stmt-p val)
-                        :args (atts)
-                        :extra-hyps ((force (vl-atts-p atts))))
+                        (vl-assertion-p val))
         ,(vl-stmt-claim vl-parse-procedural-assertion-statement
                         (vl-stmt-p val)
                         :args (atts)
@@ -1775,32 +1795,10 @@
                         :true-listp t)
         :hints((expand-only-the-flag-function-hint clause state))))))
 
-
-;; (local (defthm vl-parse-event-control-value-under-iff
-;;          ;; BOZO not sure why I suddenly need this
-;;          (implies (and (not (mv-nth 0 (vl-parse-event-control))))
-;;                   (mv-nth 1 (vl-parse-event-control)))
-;;          :hints(("Goal"
-;;                  :in-theory (disable vl-parse-event-control-result)
-;;                  :use ((:instance vl-parse-event-control-result))))))
-
-;; (local (defthm vl-parse-delay-control-value-under-iff
-;;          ;; BOZO not sure why I suddenly need this
-;;          (implies (and (not (mv-nth 0 (vl-parse-delay-control))))
-;;                   (mv-nth 1 (vl-parse-delay-control)))
-;;          :hints(("Goal"
-;;                  :in-theory (disable vl-parse-delay-control-result)
-;;                  :use ((:instance vl-parse-delay-control-result))))))
-
-(local (defthm crock
-         (implies (vl-lookahead-is-token? token (cdr (vl-tokstream->tokens)))
-                  (consp (vl-tokstream->tokens :tokstream (mv-nth 2 (vl-match)))))
-         :hints(("Goal" :in-theory (enable vl-lookahead-is-token? vl-match)))))
-
 (with-output
- :off prove
- :gag-mode :goals
- (verify-guards vl-parse-statement-fn))
+  :off prove
+  :gag-mode :goals
+  (verify-guards vl-parse-statement-fn))
 
 (defparser-top vl-parse-statement)
 

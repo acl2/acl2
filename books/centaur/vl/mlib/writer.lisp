@@ -2702,6 +2702,7 @@ expression into a string."
                       :hints (("goal" :use vl-deassign-type-p-of-vl-deassignstmt->type
                                :in-theory '(vl-deassign-type-p)))
                       :rule-classes ((:forward-chaining :trigger-terms ((vl-deassignstmt->type x)))))))
+
   (define vl-pp-stmt ((x vl-stmt-p) &key (ps 'ps))
     :measure (vl-stmt-count x)
     (vl-stmt-case x
@@ -2922,8 +2923,22 @@ expression into a string."
 
       :vl-assertstmt
       (vl-ps-seq (vl-pp-stmt-autoindent)
-                 ;; bozo atts
-                 ;; bozo block names in general
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-pp-assertion x.assertion :include-name nil))
+
+      :vl-cassertstmt
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 (if x.atts (vl-pp-atts x.atts) ps)
+                 (vl-pp-cassertion x.cassertion :include-name nil))))
+
+  (define vl-pp-assertion ((x vl-assertion-p) &key (include-name booleanp) (ps 'ps))
+    :measure (vl-assertion-count x)
+    (b* (((vl-assertion x)))
+      (vl-ps-seq (vl-pp-stmt-autoindent)
+                 (if (and include-name x.name)
+                     (vl-ps-seq (vl-ps-span "vl_id" (vl-print (vl-maybe-escape-identifier x.name)))
+                                (vl-print " : "))
+                   ps)
                  (vl-ps-span "vl_key"
                              (vl-print-str (vl-asserttype-string x.type))
                              (vl-print " ")
@@ -2945,11 +2960,16 @@ expression into a string."
                                           (vl-ps-span "vl_key" (vl-println " else "))
                                           (vl-println "")
                                           (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
-                 (vl-println ";"))
+                 (vl-println ";"))))
 
-      :vl-cassertstmt
+  (define vl-pp-cassertion ((x vl-cassertion-p) &key (include-name booleanp) (ps 'ps))
+    :measure (vl-cassertion-count x)
+    (b* (((vl-cassertion x)))
       (vl-ps-seq (vl-pp-stmt-autoindent)
-                 ;; bozo atts, name
+                 (if (and include-name x.name)
+                     (vl-ps-seq (vl-ps-span "vl_id" (vl-print (vl-maybe-escape-identifier x.name)))
+                                (vl-print " : "))
+                   ps)
                  (vl-ps-span "vl_key"
                              (vl-print-str (vl-asserttype-string x.type))
                              (cond ((vl-asserttype-equiv x.type :vl-expect)
@@ -2996,21 +3016,23 @@ expression into a string."
                  (vl-println " :")
                  (vl-pp-stmt-indented (vl-pp-stmt stmt))
                  (vl-pp-cases (cdr x)))))
-
   ///
   (local (in-theory (disable vl-pp-stmt
                              vl-pp-stmtlist
                              vl-pp-cases)))
 
   (deffixequiv-mutual vl-pp-stmt
-    :hints(("Goal" :expand ((vl-pp-stmt x)
-                            (vl-pp-stmt (vl-stmt-fix x))
-                            (vl-pp-stmtlist x)
-                            (vl-pp-stmtlist (vl-stmtlist-fix x))
-                            (vl-pp-stmtlist nil)
-                            (vl-pp-cases x)
-                            (vl-pp-cases (vl-caselist-fix x))
-                            (vl-pp-cases nil))))))
+    :hints (("Goal" :expand ((vl-pp-stmt x)
+                             (vl-pp-stmt (vl-stmt-fix x))
+                             (vl-pp-stmtlist x)
+                             (vl-pp-stmtlist (vl-stmtlist-fix x))
+                             (vl-pp-stmtlist nil)
+                             (vl-pp-cases x)
+                             (vl-pp-cases (vl-caselist-fix x))
+                             (vl-pp-cases nil)
+                             (:free (include-name) (vl-pp-assertion x :include-name include-name))
+                             (:free (include-name) (vl-pp-cassertion x :include-name include-name))
+                             )))))
 
 (define vl-alwaystype-string ((x vl-alwaystype-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -3172,6 +3194,46 @@ expression into a string."
 
 
 
+(define vl-pp-genvar ((x vl-genvar-p) &key (ps 'ps))
+  (b* (((vl-genvar x)))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key"
+                           (vl-print "genvar "))
+               (vl-print-wirename x.name)
+               (vl-println ";"))))
+
+
+(define vl-pp-modport-port ((x vl-modport-port-p) &key (ps 'ps))
+  (b* (((vl-modport-port x)))
+    (vl-ps-seq
+     (if x.atts (vl-pp-atts x.atts) ps)
+     (vl-ps-span "vl_key" (vl-print-str (vl-direction-string x.dir)))
+     (vl-print " ")
+     (if x.expr
+         (vl-ps-seq (vl-print ".")
+                    (vl-print-wirename x.name)
+                    (vl-print "(")
+                    (vl-pp-expr x.expr)
+                    (vl-print ")"))
+       (vl-print-wirename x.name))
+     (vl-println " ;"))))
+
+(define vl-pp-modport-portlist ((x vl-modport-portlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-modport-port (car x))
+               (vl-pp-modport-portlist (cdr x)))))
+
+(define vl-pp-modport ((x vl-modport-p) &key (ps 'ps))
+  (b* (((vl-modport x)))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "  modport "))
+               (vl-print-wirename x.name)
+               (vl-print " ( ")
+               (vl-pp-modport-portlist x.ports)
+               (vl-println " );")
+               (vl-println ""))))
+
 
 
 (define vl-pp-modelement ((x vl-modelement-p) &key (ps 'ps))
@@ -3192,7 +3254,11 @@ expression into a string."
       (:VL-TYPEDEF    (VL-pp-TYPEDEF X))
       (:VL-IMPORT     (VL-pp-IMPORT X))
       (:VL-FWDTYPEDEF (VL-pp-FWDTYPEDEF X))
-      (OTHERWISE ps))))
+      (:vl-modport    (vl-pp-modport x))
+      (:vl-genvar     (vl-pp-genvar x))
+      (:vl-assertion  (vl-pp-assertion x :include-name t))
+      (:vl-cassertion (vl-pp-cassertion x :include-name t))
+      (OTHERWISE (progn$ (impossible) ps)))))
 
 (define vl-pp-modelementlist ((x vl-modelementlist-p) &key (ps 'ps))
   (if (atom x)
@@ -3297,9 +3363,17 @@ expression into a string."
                  (vl-pp-genelementlist x.elems)
                  (vl-println "end")))))
 
+(define vl-pp-assertionlist ((x vl-assertionlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-assertion (car x) :include-name t)
+               (vl-pp-assertionlist (cdr x)))))
 
-
-
+(define vl-pp-cassertionlist ((x vl-cassertionlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-cassertion (car x) :include-name t)
+               (vl-pp-cassertionlist (cdr x)))))
 
 (define vl-pp-module
   ((x    vl-module-p     "Module to pretty-print.")
@@ -3334,6 +3408,8 @@ instead of @(see ps).</p>"
                (vl-pp-alwayslist x.alwayses)
                (vl-pp-initiallist x.initials)
                (vl-pp-genelementlist x.generates)
+               (vl-pp-assertionlist x.assertions)
+               (vl-pp-cassertionlist x.cassertions)
                (vl-ps-span "vl_key" (vl-println "endmodule"))
                (vl-println ""))))
 
@@ -3359,7 +3435,9 @@ instead of @(see ps).</p>"
                (vl-pp-gateinstlist x.gateinsts)
                (vl-pp-alwayslist x.alwayses)
                (vl-pp-initiallist x.initials)
-               (vl-ps-span "vl_key" (vl-println "endgenblob"))
+               (vl-pp-assertionlist x.assertions)
+               (vl-pp-cassertionlist x.cassertions)
+            (vl-ps-span "vl_key" (vl-println "endgenblob"))
                (vl-println ""))))
 
 (define vl-pps-module ((x vl-module-p))
@@ -3488,37 +3566,3 @@ module elements and its comments.</p>"
                (vl-pp-programlist (cdr x)))))
 
 
-
-
-
-
-(define vl-pp-modport-port ((x vl-modport-port-p) &key (ps 'ps))
-  (b* (((vl-modport-port x)))
-    (vl-ps-seq
-     (if x.atts (vl-pp-atts x.atts) ps)
-     (vl-ps-span "vl_key" (vl-print-str (vl-direction-string x.dir)))
-     (vl-print " ")
-     (if x.expr
-         (vl-ps-seq (vl-print ".")
-                    (vl-print-wirename x.name)
-                    (vl-print "(")
-                    (vl-pp-expr x.expr)
-                    (vl-print ")"))
-       (vl-print-wirename x.name))
-     (vl-println " ;"))))
-
-(define vl-pp-modport-portlist ((x vl-modport-portlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-modport-port (car x))
-               (vl-pp-modport-portlist (cdr x)))))
-
-(define vl-pp-modport ((x vl-modport-p) &key (ps 'ps))
-  (b* (((vl-modport x)))
-    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
-               (vl-ps-span "vl_key" (vl-print "  modport "))
-               (vl-print-wirename x.name)
-               (vl-print " ( ")
-               (vl-pp-modport-portlist x.ports)
-               (vl-println " );")
-               (vl-println ""))))
