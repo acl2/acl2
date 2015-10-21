@@ -722,6 +722,7 @@ J & George
 (defun stack   (frame) (nth 2 frame))
 (defun program (frame) (nth 3 frame))
 (defun sync-flg (frame) (nth 4 frame))
+; The class in which the current method is defined is the current class (See JLS 2.6).
 (defun cur-class (frame) (nth 5 frame))
 
 ; -----------------------------------------------------------------------------
@@ -2610,22 +2611,26 @@ J & George
     (cons (top stack)
           (bind-formals (- n 1) (pop stack)))))
 
-(defun lookup-method-in-superclasses (name-and-type classes class-table)
+; Retirns a cons pair (class . method) if method is found or nil otherwise
+(defun lookup-class-method-in-superclasses (name-and-type classes class-table)
   (cond ((endp classes) nil)
         (t (let* ((class-name (car classes))
                   (class-decl (bound? class-name class-table))
                   (method (bound? name-and-type (class-decl-methods class-decl))))
              (if method
-                 method
-                (lookup-method-in-superclasses name-and-type (cdr classes)
-                                               class-table))))))
+                 (cons class-name method)
+                (lookup-class-method-in-superclasses name-and-type (cdr classes)
+                                                     class-table))))))
+
+(defun lookup-class-method (name-and-type class-name class-table)
+  (lookup-class-method-in-superclasses name-and-type
+                                       (cons class-name
+                                             (class-decl-superclasses
+                                              (bound? class-name class-table)))
+                                       class-table))
 
 (defun lookup-method (name-and-type class-name class-table)
-  (lookup-method-in-superclasses name-and-type
-                                 (cons class-name
-                                       (class-decl-superclasses
-                                        (bound? class-name class-table)))
-                                 class-table))
+  (cdr (lookup-class-method name-and-type class-name class-table)))
 
 (defun execute-INVOKESPECIAL (inst th s)
   (let* ((method-name-and-type (arg2 inst))
@@ -2633,10 +2638,12 @@ J & George
          (obj-ref (top (popn nformals (stack (top-frame th s)))))
          (instance (deref obj-ref (heap s)))
          (obj-class-name (arg1 inst))
-         (closest-method
-          (lookup-method method-name-and-type
-                         obj-class-name
-                         (class-table s)))
+         (closest-class-method
+          (lookup-class-method method-name-and-type
+                               obj-class-name
+                               (class-table s)))
+         (closest-class (car closest-class-method))
+         (closest-method (cdr closest-class-method))
          (prog (method-program closest-method))
          (s1 (modify th s
                      :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -2645,9 +2652,11 @@ J & George
          (tThread (rrefToThread obj-ref (thread-table s))))
     (cond
      ((method-isNative? closest-method)
-      (cond ((equal method-name-and-type "start()V")
+      (cond ((and (equal closest-class "java.lang.Thread")
+                  (equal method-name-and-type "start()V"))
              (modify tThread s1 :status 'SCHEDULED))
-            ((equal method-name-and-type "stop()V")
+            ((and (equal closest-class "java.lang.Thread")
+                  (equal method-name-and-type "stop()V"))
              (modify tThread s1
                      :status 'UNSCHEDULED))
             (t s)))
@@ -2662,7 +2671,7 @@ J & George
                                 nil
                                 prog
                                 'LOCKED
-                                (arg1 inst))
+                                closest-class)
                     (call-stack th s1))
               :heap (lock-object th obj-ref (heap s))))
      ((method-sync closest-method)
@@ -2677,7 +2686,7 @@ J & George
                                 nil
                                 prog
                                 'UNLOCKED
-                                (arg1 inst))
+                                closest-class)
                     (call-stack th s1)))))))
 
 ; -----------------------------------------------------------------------------
@@ -2689,35 +2698,42 @@ J & George
          (nformals (arg3 inst))
          (obj-ref (class-decl-heapref (bound? class (class-table s))))
          (instance (deref obj-ref (heap s)))
-         (closest-method
-          (lookup-method method-name-and-type
-                         (arg1 inst)
-                         (class-table s)))
+         (closest-class-method
+          (lookup-class-method method-name-and-type
+                               (arg1 inst)
+                               (class-table s)))
+         (closest-class (car closest-class-method))
+         (closest-method (cdr closest-class-method))
          (prog (method-program closest-method))
          (s1 (modify th s
                      :pc (+ (inst-length inst) (pc (top-frame th s)))
                      :stack (popn nformals (stack (top-frame th s))))))
     (cond
      ((method-isNative? closest-method)
-      (cond ((equal method-name-and-type "doubleToRawLongBits(D)J")
+      (cond ((and (equal closest-class "java.lang.Double")
+                  (equal method-name-and-type "doubleToRawLongBits(D)J"))
              (modify th s1
                      :stack (push (long-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((equal method-name-and-type "floatToRawIntBits(F)I")
+            ((and (equal closest-class "java.lang.Float")
+                  (equal method-name-and-type "floatToRawIntBits(F)I"))
              (modify th s1
                      :stack (push (int-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
-            ((equal method-name-and-type "intBitsToFloat(I)F")
+            ((and (equal closest-class "java.lang.Float")
+                  (equal method-name-and-type "intBitsToFloat(I)F"))
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::sp))
                                   (stack (top-frame th s1)))))
-            ((equal method-name-and-type "longBitsToDouble(J)D")
+            ((and (equal closest-class "java.lang.Double")
+                  (equal method-name-and-type "longBitsToDouble(J)D"))
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::dp))
                                   (stack (top-frame th s1)))))
-            ((equal method-name-and-type "sqrt(D)D")
+            ((and (equal closest-class "java.lang.StrictMath")
+                  (equal method-name-and-type "sqrt(D)D"))
              (modify th s1
                      :stack (push (fpsqrt (top (stack (top-frame th s)))
                                            (rtl::dp))
@@ -2734,7 +2750,7 @@ J & George
                                 nil
                                 prog
                                 'S_LOCKED
-                                (arg1 inst))
+                                closest-class)
                     (call-stack th s1))
               :heap (lock-object th obj-ref (heap s))))
      ((method-sync closest-method)
@@ -2749,7 +2765,7 @@ J & George
                                 nil
                                 prog
                                 'UNLOCKED
-                                (arg1 inst))
+                                closest-class)
                     (call-stack th s1)))))))
 
 ; -----------------------------------------------------------------------------
@@ -2761,10 +2777,12 @@ J & George
          (obj-ref (top (popn nformals (stack (top-frame th s)))))
          (instance (deref obj-ref (heap s)))
          (obj-class-name (class-name-of-ref obj-ref (heap s)))
-         (closest-method
-          (lookup-method method-name-and-type
-                         obj-class-name
-                         (class-table s)))
+         (closest-class-method
+          (lookup-class-method method-name-and-type
+                               obj-class-name
+                               (class-table s)))
+         (closest-class (car closest-class-method))
+         (closest-method (cdr closest-class-method))
          (prog (method-program closest-method))
          (s1 (modify th s
                      :pc (+ (inst-length inst) (pc (top-frame th s)))
@@ -2773,9 +2791,11 @@ J & George
          (tThread (rrefToThread obj-ref (thread-table s))))
     (cond
      ((method-isNative? closest-method)
-      (cond ((equal method-name-and-type "start()V")
+      (cond ((and (equal closest-class "java.lang.Thread")
+                  (equal method-name-and-type "start()V"))
              (modify tThread s1 :status 'SCHEDULED))
-            ((equal method-name-and-type "stop()V")
+            ((and (equal closest-class "java.lang.Thread")
+                  (equal method-name-and-type "stop()V"))
              (modify tThread s1
                      :status 'UNSCHEDULED))
             (t s)))
@@ -2790,7 +2810,7 @@ J & George
                                 nil
                                 prog
                                 'LOCKED
-                                (arg1 inst))
+                                closest-class)
                     (call-stack th s1))
               :heap (lock-object th obj-ref (heap s))))
      ((method-sync closest-method)
@@ -2805,7 +2825,7 @@ J & George
                                 nil
                                 prog
                                 'UNLOCKED
-                                (arg1 inst))
+                                closest-class)
                     (call-stack th s1)))))))
 
 ; -----------------------------------------------------------------------------
@@ -3197,7 +3217,9 @@ J & George
 (defun execute-NEW (inst th s)
   (let* ((class-name (arg1 inst))
          (class-table (class-table s))
-         (closest-method (lookup-method "run()V" class-name class-table))
+         (closest-class-method (lookup-class-method "run()V" class-name class-table))
+         (closest-class (car closest-class-method))
+         (closest-method (cdr closest-class-method))
          (prog (method-program closest-method))
          (new-object (build-an-instance
                       (cons class-name
@@ -3220,7 +3242,7 @@ J & George
                               nil
                               prog
                               'UNLOCKED
-                              class-name)
+                              closest-class)
                   nil)
                  'UNSCHEDULED
                  (list 'REF new-address)

@@ -1927,11 +1927,11 @@ Sun Jul 15 14:17:26 2001
                 (integerp th))
            (assoc-equal th (cdar s))))
 
-(defthm lookup-method-incr
+(defthm lookup-class-method-incr
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
-           (equal (lookup-method "incr()LJob;" class ct)
-                  '("incr()LJob;" NIL NIL
+           (equal (lookup-class-method "incr()LJob;" class ct)
+                  '("Job" . ("incr()LJob;" NIL NIL
                     (ALOAD_0)
                     (GETFIELD "Job" "objref")
                     (ASTORE_1)
@@ -1954,20 +1954,20 @@ Sun Jul 15 14:17:26 2001
                     (ALOAD_2)
                     (ATHROW)
                     (ALOAD_0)
-                    (ARETURN)))))
+                    (ARETURN))))))
 
-(defthm lookup-method-run
+(defthm lookup-class-method-run
   (implies (and (equal ct (class-table *a0*))
                 (force (equal class "Job")))
-           (equal (lookup-method "run()V" class ct)
-                  '("run()V" NIL NIL
+           (equal (lookup-class-method "run()V" class ct)
+                  '("Job" . ("run()V" NIL NIL
                     (GOTO 3)
                     (ALOAD_0)
                     (INVOKEVIRTUAL "Job" "incr()LJob;" 0)
                     (POP)
-                    (GOTO -5)))))
+                    (GOTO -5))))))
 
-(in-theory (disable lookup-method))
+(in-theory (disable lookup-class-method))
 
 (defthm good-threads-step-over-monitorenter-lemma1
   (implies
@@ -2061,12 +2061,12 @@ Sun Jul 15 14:17:26 2001
   (equal (bind i v1 (bind i v2 lst))
          (bind i v1 lst)))
 
-(defthm lookup-method-in-good-class-table
+(defthm lookup-class-method-in-good-class-table
   (implies (and (syntaxp (and (quotep class)
                               (quotep method)))
                 (good-class-table ct))
-           (equal (lookup-method class method ct)
-                  (lookup-method class method (class-table *a0*))))
+           (equal (lookup-class-method class method ct)
+                  (lookup-class-method class method (class-table *a0*))))
   :hints (("Goal" :in-theory (enable good-class-table))))
 
 ; (acl2::divert)
