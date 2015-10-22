@@ -3056,8 +3056,8 @@ J & George
 ; (LREM) Instruction
 
 (defun execute-LREM (inst th s)
-  (let* ((val1 (top (pop (stack (top-frame th s)))))
-         (val2 (top (popn 3 (stack (top-frame th s)))))
+  (let* ((val1 (top (popn 3 (stack (top-frame th s)))))
+         (val2 (top (pop (stack (top-frame th s)))))
          (result (- val1 (* (truncate val1 val2) val2))))
       (modify th s
               :pc (+ (inst-length inst) (pc (top-frame th s)))
