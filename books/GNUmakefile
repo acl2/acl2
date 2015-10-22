@@ -457,9 +457,15 @@ quicklisp:
 	@echo "Error: Can't build Quicklisp without USE_QUICKLISP=1."
 	@false
 
+manual:
+	@echo "Error: Can't build the manual without USE_QUICKLISP=1."
+	@false
+
 else
 
 quicklisp: $(QUICKLISP_DIR)/top.cert
+
+manual: doc/top.cert system/doc/acl2-manual.cert
 
 endif # REALLY_USE_QUICKLISP
 
@@ -1351,12 +1357,6 @@ special: $(BOOKS_SPECIAL_OUT)
 	@cat $(ACL2_SPECIAL_POST) >> $(@D)/workxxx.special.$(*F)
 	@($(ACL2) < $(@D)/workxxx.special.$(*F) 2>&1) > $*.special.out
 	@rm -f $(@D)/workxxx.special.$(*F)
-
-##############################
-### Section: Building the XDOC combined manual
-##############################
-
-manual: doc/top.cert system/doc/acl2-manual.cert
 
 
 ##############################
