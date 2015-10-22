@@ -42,6 +42,7 @@
                JVM::BIPUSH
                JVM::CALOAD
                JVM::CASTORE
+               JVM::CHECKCAST
                JVM::D2F
                JVM::D2I
                JVM::D2L
@@ -1064,6 +1065,7 @@ J & George
     (BIPUSH             2)
     (CALOAD             1)
     (CASTORE            1)
+    (CHECKCAST          3)
     (D2F                1)
     (D2I                1)
     (D2L                1)
@@ -1452,6 +1454,14 @@ J & George
                                             (deref arrayref (heap s))
                                             (class-table s))
                             (heap s)))))
+
+; -----------------------------------------------------------------------------
+; (CHECKCAST) Instruction - check whether object is of given type
+; No operation in M5 model.
+
+(defun execute-CHECKCAST (inst th s)
+  (modify th s
+          :pc (+ (inst-length inst) (pc (top-frame th s)))))
 
 ; -----------------------------------------------------------------------------
 ; (D2F) Instruction - convert double to float
@@ -3460,6 +3470,7 @@ J & George
     (BIPUSH         (execute-BIPUSH inst th s))
     (CALOAD         (execute-CALOAD inst th s))
     (CASTORE        (execute-CASTORE inst th s))
+    (CHECKCAST      (execute-CHECKCAST inst th s))
     (D2F            (execute-D2F inst th s))
     (D2I            (execute-D2I inst th s))
     (D2L            (execute-D2L inst th s))
