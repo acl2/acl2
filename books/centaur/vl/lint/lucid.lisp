@@ -1420,7 +1420,7 @@ created when we process their packages, etc.</p>"
          (st (vl-stmt-lucidcheck x.failure ss st ctx)))
       st))
 
-  (define vl-cassertion-lucidcheck ((x   vl-assertion-p)
+  (define vl-cassertion-lucidcheck ((x   vl-cassertion-p)
                                     (ss  vl-scopestack-p)
                                     (st  vl-lucidstate-p)
                                     (ctx vl-context1-p))
