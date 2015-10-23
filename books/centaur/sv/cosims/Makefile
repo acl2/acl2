@@ -67,7 +67,6 @@ all: cosim-core symlinks
 # ------------------------------------------
 #  Test setup.
 FAILING_TEST_TARGETS := \
-  for-integer/ok \
   for-nba/ok \
   task/ok \
   task2/ok
@@ -82,12 +81,14 @@ print_tests :
 	@echo $(TESTS)
 
 %/ok : %/outputs.ncv.data %/outputs.vcs.data cosim-core
+	@echo "Making $*/ok"
 	COSIM_TESTDIR=$* $(STARTJOB) -c "./cosim-core < run.lsp &> $*/cosim.out"
 	@! egrep -i "failed|error" $*/cosim.out > /dev/null
 	@mv $*/cosim.out $*/ok
 	@ls -l $*/ok
 
 %/outputs.ncv.data : %/spec.sv %/inputs.data test.sv
+	@echo "Making $*/outputs.ncv.data"
 	@cd $*; \
 	 if [ -e no_ncv ]; then \
 		touch outputs.ncv.data; \
@@ -97,6 +98,7 @@ print_tests :
 	@ls -l $*/outputs.ncv.data
 
 %/outputs.vcs.data : %/spec.sv %/inputs.data test.sv
+	@echo "Making $*/outputs.vcs.data"
 	@cd $*; \
 	 if [ -e no_vcs ]; then \
 		touch outputs.vcs.data; \
