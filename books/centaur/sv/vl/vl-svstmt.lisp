@@ -772,7 +772,8 @@ because... (BOZO)</p>
                       :cond cond
                       :body (append-without-guard body stepstmts))))))
         :vl-blockstmt
-        (b* (((unless (or x.sequentialp (<= (len x.stmts) 1)))
+        (b* (((unless (or (vl-blocktype-equiv x.blocktype :vl-beginend)
+                          (<= (len x.stmts) 1)))
               (fail (warn :type :vl-stmt->svstmts-fail
                           :msg "We don't support fork/join block statements: ~a0."
                           :args (list x))))

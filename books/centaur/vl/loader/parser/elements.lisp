@@ -561,6 +561,12 @@ the one modelement, it consolidates them into an unnamed @('begin/end') block.</
                  (blkname := (vl-match-token :vl-idtoken)))
                (elts := (vl-parse-genelements-until :vl-kwd-end))
                (:= (vl-match-token :vl-kwd-end))
+               (when blkname
+                 ;; SystemVerilog-2012 extends generate_block with [ ':'
+                 ;; generate_block_identifier ] at the end.  We don't
+                 ;; have to check for SystemVerilog-2012 mode since
+                 ;; that's baked into vl-parse-endblock-name.
+                 (:= (vl-parse-endblock-name (vl-idtoken->name blkname) "begin/end")))
                (return (make-vl-genblock :name (and blkname
                                                     (vl-idtoken->name blkname))
                                          :elems elts

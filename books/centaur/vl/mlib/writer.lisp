@@ -2665,7 +2665,7 @@ expression into a string."
     (:vl-cover          "cover")
     (:vl-expect         "expect")
     (:vl-restrict       "restrict")
-    (otherwise    (or (impossible) ""))))
+    (otherwise          (or (impossible) ""))))
 
 (define vl-assertdeferral-string ((x vl-assertdeferral-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -2674,7 +2674,27 @@ expression into a string."
     ('nil               "")
     (:vl-defer-0        "#0")
     (:vl-defer-final    "final")
-    (otherwise    (or (impossible) ""))))
+    (otherwise          (or (impossible) ""))))
+
+(define vl-blocktype-startstring ((x vl-blocktype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-blocktype-p)))
+  (case (vl-blocktype-fix x)
+    (:vl-beginend     "begin")
+    (:vl-forkjoin     "fork")
+    (:vl-forkjoinany  "fork")
+    (:vl-forkjoinnone "fork")
+    (otherwise        (or (impossible) ""))))
+
+(define vl-blocktype-endstring ((x vl-blocktype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints (("Goal" :in-theory (enable vl-blocktype-p)))
+  (case (vl-blocktype-fix x)
+    (:vl-beginend     "end")
+    (:vl-forkjoin     "join")
+    (:vl-forkjoinany  "join_any")
+    (:vl-forkjoinnone "join_none")
+    (otherwise        (or (impossible) ""))))
 
 (define vl-pp-forloop-assigns ((x vl-stmtlist-p) &key (ps 'ps))
   (b* (((when (atom x)) ps)
@@ -2802,7 +2822,7 @@ expression into a string."
       (vl-ps-seq (vl-pp-stmt-autoindent)
                  (if x.atts (vl-pp-atts x.atts) ps)
                  (vl-ps-span "vl_key"
-                             (vl-print (if x.sequentialp "begin " "fork ")))
+                             (vl-print-str (vl-blocktype-startstring x.blocktype)))
                  (if (not x.name)
                      (vl-println "")
                    (vl-ps-seq
@@ -2821,7 +2841,8 @@ expression into a string."
                    (vl-pp-vardecllist-indented x.vardecls))
                  (vl-pp-stmt-indented (vl-pp-stmtlist x.stmts))
                  (vl-pp-stmt-autoindent)
-                 (vl-ps-span "vl_key" (vl-print-str (if x.sequentialp "end" "join")))
+                 (vl-ps-span "vl_key"
+                             (vl-print-str (vl-blocktype-endstring x.blocktype)))
                  (vl-println ""))
 
       :vl-forstmt

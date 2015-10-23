@@ -2508,6 +2508,15 @@ case statements.</p>")
          <li>@(':vl-defer-final') &mdash; this is a @('final') deferred assertion.</li>
          </ul>")
 
+(defenum vl-blocktype-p
+  (:vl-beginend
+   :vl-forkjoin
+   :vl-forkjoinany
+   :vl-forkjoinnone)
+  :parents (vl-blockstmt)
+  :short "Indicates whether this is a @('begin/end'), @('fork/join'),
+          @('fork/join_any'), or @('fork/join_none') statement.")
+
 (deftypes statements
   :short "Representation of a statement."
 
@@ -2876,8 +2885,12 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
      :base-name vl-blockstmt
      :layout :tree
      :short "Representation of begin/end and fork/join blocks."
-     ((sequentialp booleanp :rule-classes :type-prescription)
-      (name        maybe-stringp :rule-classes :type-prescription)
+     ((blocktype   vl-blocktype-p
+                   "Kind of block statement&mdash;@('begin/end'),
+                    @('fork/join'), etc.")
+      (name        maybe-stringp :rule-classes :type-prescription
+                   "E.g., @('foo') in @('foo : begin ... end') or in
+                    @('begin : foo ... end'), if applicable.")
       (imports     vl-importlist-p)
       (paramdecls  vl-paramdecllist-p)
       (vardecls    vl-vardecllist-p)
@@ -2886,7 +2899,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
       (atts        vl-atts-p
                    "Any <tt>(* foo, bar = 1*)</tt> style attributes associated
                     with this statement."))
-     :long "<h4>General Form:</h4>
+     :long "<h4>General Form (from Verilog-2005)</h4>
 
             @({
                  begin [ : <name> <declarations> ]
@@ -2898,16 +2911,10 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                  join
             })
 
-            <p>See Section 9.8.  The difference betwen the two kinds of blocks
+            <p>See Section 9.8.  The difference between the two kinds of blocks
             is that in a @('begin/end') block, statements are to be executed in
             order, whereas in a @('fork/join') block, statements are executed
             simultaneously.</p>
-
-            <p>Blocks that are named can have local declarations, and can be
-            referenced by other statements (e.g., disable statements).  With
-            regards to declarations: \"All variables shall be static; that is,
-            a unique location exists for all variables, and leaving or entering
-            blocks shall not affect the values stored in them.\"</p>
 
             <p>A further remark is that \"Block names give a means of uniquely
             identifying all variables at any simulation time.\" This seems to
@@ -2915,17 +2922,34 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
             module by, e.g., prepending the block name to each variable
             name.</p>
 
-            <p>Note that SystemVerilog adds labels to statements, e.g., you
-            can write</p>
+            <p>With regards to declarations: \"All variables shall be static;
+            that is, a unique location exists for all variables, and leaving or
+            entering blocks shall not affect the values stored in them.\"</p>
+
+            <h4>SystemVerilog-2012 Extensions</h4>
+
+            <p>In Verilog-2005 only blocks that are named can have local
+            declarations.  SystemVerilog drops this restriction and allows
+            declarations even in unnamed blocks.</p>
+
+            <p>SystemVerilog also allows the label to occur before the
+            @('begin') or @('fork') keyword, and, more generally, allows labels
+            to be added to other kinds of statements.  For instance, you can
+            write:</p>
 
             @({
                  update_foo: foo = foo + bar;
             })
 
-            <p>We turn such labels into named begin/end blocks that surround
-            their statement.  Note that it's not legal to label a block both
-            before and after the begin keyword.  See SystemVerilog-2012 Section
-            9.3.5, Statement Labels, on page 178.</p>")
+            <p>We turn labels like this into named begin/end blocks that
+            surround their statement.</p>
+
+            <p>Note that it's not legal to label a block both before and after
+            the begin keyword.  See SystemVerilog-2012 Section 9.3.5, Statement
+            Labels, on page 178.</p>
+
+            <p>SystemVerilog also adds different kinds of @('join') keywords,
+            which we now represent as part of the block's type.</p>")
 
     (:vl-timingstmt
      :base-name vl-timingstmt

@@ -798,7 +798,7 @@ statements at all.\"</blockquote>
        (when (atom (cdr stmts))
          ;; A single statement.  No need to add a block.
          (return (car stmts)))
-       (return (make-vl-blockstmt :sequentialp t
+       (return (make-vl-blockstmt :blocktype :vl-beginend
                                   :stmts stmts))))
 
 ;; (local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
