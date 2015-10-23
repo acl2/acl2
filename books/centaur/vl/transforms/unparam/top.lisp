@@ -566,11 +566,14 @@ introduced.</p>"
                                                  :gateinsts gateinsts
                                                  :alwayses alwayses
                                                  :initials initials
+                                                 :finals finals
                                                  :typedefs typedefs
                                                  :imports imports
                                                  :fwdtypedefs fwdtypedefs
                                                  :modports modports
                                                  :genvars genvars
+                                                 :properties properties
+                                                 :sequences sequences
                                                  :assertions assertions
                                                  :cassertions cassertions
                                                  :ports ports

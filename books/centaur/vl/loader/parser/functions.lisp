@@ -605,7 +605,8 @@ try to resume parsing after a problematic function."
 
                     ;; Variant 2.
                     (:= (vl-match-token :vl-lparen))
-                    (ports := (vl-parse-taskport-list))
+                    (unless (vl-is-token? :vl-rparen) ;; the task_port_list is optional
+                      (ports := (vl-parse-taskport-list)))
                     (:= (vl-match-token :vl-rparen))
                     (:= (vl-match-token :vl-semi))
                     (blockitems := (vl-parse-0+-block-item-declarations))
@@ -1223,7 +1224,8 @@ vl-parse-function-data-type-and-name).</p>"
        ;; Variant 2.  We need to match:
        ;;    '(' [tf_port_list] ')' ';' { block_item_declaration } { function_statement_or_null } 'endfunction' [ ':' identifier ]
        (:= (vl-match-token :vl-lparen))
-       (portdecls := (vl-parse-tf-port-list))
+       (unless (vl-is-token? :vl-rparen) ;; the tf_port_list is optional
+         (portdecls := (vl-parse-tf-port-list)))
        (:= (vl-match-token :vl-rparen))
        (:= (vl-match-token :vl-semi))
        (decls   := (vl-parse-0+-block-item-declarations))

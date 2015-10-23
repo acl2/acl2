@@ -830,6 +830,15 @@ explicit declarations.</p>")
        ((mv st warnings) (vl-shadowcheck-stmt x.stmt x st warnings)))
     (mv st warnings)))
 
+(define vl-shadowcheck-final ((x        vl-final-p)
+                              (st       vl-shadowcheck-state-p)
+                              (warnings vl-warninglist-p))
+  :returns (mv (st       vl-shadowcheck-state-p)
+               (warnings vl-warninglist-p))
+  (b* (((vl-final x)     (vl-final-fix x))
+       ((mv st warnings) (vl-shadowcheck-stmt x.stmt x st warnings)))
+    (mv st warnings)))
+
 
 (define vl-shadowcheck-portdecllist ((x        vl-portdecllist-p)
                                      (st       vl-shadowcheck-state-p)
@@ -958,6 +967,10 @@ explicit declarations.</p>")
         (b* (((mv st warnings) (vl-shadowcheck-initial item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
+       ((when (eq tag :vl-final))
+        (b* (((mv st warnings) (vl-shadowcheck-final item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
        ((when (eq tag :vl-fundecl))
         (b* (((mv st warnings) (vl-shadowcheck-fundecl item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
@@ -979,6 +992,14 @@ explicit declarations.</p>")
         (vl-shadowcheck-aux (cdr x) st warnings))
 
        ((when (eq tag :vl-cassertion))
+        ;; BOZO figure out what we want to do here.
+        (vl-shadowcheck-aux (cdr x) st warnings))
+
+       ((when (eq tag :vl-property))
+        ;; BOZO figure out what we want to do here.
+        (vl-shadowcheck-aux (cdr x) st warnings))
+
+       ((when (eq tag :vl-sequence))
         ;; BOZO figure out what we want to do here.
         (vl-shadowcheck-aux (cdr x) st warnings))
 

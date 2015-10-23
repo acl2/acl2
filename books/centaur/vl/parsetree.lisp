@@ -116,7 +116,7 @@ vl-package), @(see vl-program), @(see vl-config), @(see vl-udp), etc.</li>
 things like assignments, gate and module instances, always blocks, initial
 blocks, aliases, and so on.  We represent these module elements using, e.g.,
 @(see vl-assign), @(see vl-gateinst), @(see vl-modinst), @(see vl-always),
-@(see vl-initial), @(see vl-alias), etc.</li>
+@(see vl-initial), @(see vl-final), @(see vl-alias), etc.</li>
 
 <li>Other widely used constructs include <b>declarations</b> of many kinds,
 e.g., variables, ports, parameters, functions, tasks, types.  See for instance
@@ -128,12 +128,12 @@ expressions-and-datatypes)'>Expressions and Datatypes</see></b>.  These are
 mutually recursive since expressions like casts can include types while many
 datatypes use expressions for indexes and so forth.</li>
 
-<li>Various constructs like always/initial blocks and functions and tasks also
-make use of <b>procedural @(see statements)</b> like if/else, case statements,
-and for loops.  Some notable statements include @(see vl-assertstmt) and @(see
-vl-cassertstmt) for immediate and concurrent SystemVerilog assertions.  Note
-that concurrent assertions also involve an elaborate notion of @(see
-property-expressions).</li>
+<li>Various constructs like always/initial/final blocks and functions and tasks
+also make use of <b>procedural @(see statements)</b> like if/else, case
+statements, and for loops.  Some notable statements include @(see
+vl-assertstmt) and @(see vl-cassertstmt) for immediate and concurrent
+SystemVerilog assertions.  Note that concurrent assertions also involve an
+elaborate notion of @(see property-expressions).</li>
 
 </ul>
 
@@ -166,7 +166,7 @@ by incompatible versions of VL, each @(see vl-design) is annotated with a
 (defval *vl-current-syntax-version*
   :parents (vl-syntaxversion)
   :short "Current syntax version: @(`*vl-current-syntax-version*`)."
-  "VL Syntax 2015-10-21")
+  "VL Syntax 2015-10-22")
 
 (define vl-syntaxversion-p (x)
   :parents (vl-syntaxversion)
@@ -3075,22 +3075,19 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
   :elt-type vl-cassertion)
 
 
-;                       INITIAL AND ALWAYS BLOCKS
+;                       INITIAL, FINAL, AND ALWAYS BLOCKS
 ;
 ; Initial and always blocks just have a statement and, perhaps, some
 ; attributes.
 
 (defprod vl-initial
-  :short "Representation of an initial statement."
+  :short "Representation of an @('initial') statement."
   :tag :vl-initial
   :layout :tree
-
   ((stmt vl-stmt-p
          "Represents the actual statement, e.g., @('r = 0') below.")
-
    (atts vl-atts-p
          "Any attributes associated with this @('initial') block.")
-
    (loc  vl-location-p
          "Where the initial block was found in the source code."))
 
@@ -3098,15 +3095,37 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
 simulation.  For instance,</p>
 
 @({
-module mymod (a, b, ...) ;
-   reg r, s;
-   initial r = 0;   <-- initial statement
-endmodule
+    module mymod (a, b, ...) ;
+      reg r, s;
+      initial r = 0;   <-- initial statement
+    endmodule
 })
 
 <p><b>BOZO</b> Our plan is to eventually generate @('initial') statements from
 register and variable declarations with initial values, i.e., @('reg r =
 0;').</p>")
+
+
+(defprod vl-final
+  :short "Representation of a @('final') statement."
+  :tag :vl-final
+  :layout :tree
+  ((stmt vl-stmt-p
+         "Represents the actual statement, e.g., @('$display(\"Goodbye\");')
+          below.")
+   (atts vl-atts-p
+         "Any attributes associated with this @('final') statement.")
+   (loc  vl-location-p
+         "Where the final statemetn was found in the source code."))
+
+  :long "<p>SystemVerilog's @('final') statements are run at the end of
+simulation.  For instance,</p>
+
+@({
+    module mymod (a, b, ...) ;
+      final $display(\"Goodbye\");   <-- final statement
+    endmodule
+})")
 
 
 (defenum vl-alwaystype-p
@@ -3123,19 +3142,15 @@ SystemVerilog-2012 adds @('always_comb'), @('always_latch'), and
   :short "Representation of an always statement."
   :tag :vl-always
   :layout :tree
-
   ((type vl-alwaystype-p
          "What kind of @('always') block this is, e.g., @('always'), @('always_comb'),
           @('always_latch'), or @('always_ff').")
-
    (stmt vl-stmt-p
          "The actual statement, e.g., @('@(posedge clk) myreg <= in')
           below. The statement does not have to include a timing control like
           @('@(posedge clk)') or @('@(a or b or c)'), but often does.")
-
    (atts vl-atts-p
          "Any attributes associated with this @('always') block.")
-
    (loc  vl-location-p
          "Where the always block was found in the source code."))
 
@@ -3143,19 +3158,94 @@ SystemVerilog-2012 adds @('always_comb'), @('always_latch'), and
 flops, and to set up other simulation events.  A simple example would be:</p>
 
 @({
-module mymod (a, b, ...) ;
-  always @(posedge clk) myreg <= in;
-endmodule
+    module mymod (a, b, ...) ;
+      always @(posedge clk) myreg <= in;
+    endmodule
 })")
 
 (fty::deflist vl-initiallist
   :elt-type vl-initial-p
   :elementp-of-nil nil)
 
+(fty::deflist vl-finallist
+  :elt-type vl-final-p
+  :elementp-of-nil nil)
+
 (fty::deflist vl-alwayslist
   :elt-type vl-always-p
   :elementp-of-nil nil)
 
+
+
+(defprod vl-propport
+  :short "Representation of a single @('property') or @('sequence') port."
+  :tag :vl-propport
+  ((name   stringp :rule-classes :type-prescription
+           "Name of this port.")
+   (localp booleanp :rule-classes :type-prescription
+           "True if the @('local') keyword was provided.")
+   (dir    vl-direction-p
+           "The direction for this port.  Note that the ports for a sequence
+            can be either @('input'), @('output'), or @('inout') ports.  The
+            ports for a property are always @('input') ports.")
+   (type   vl-datatype-p
+           "The type declared for this port, if any.  Note that the special
+            keywords @('property'), @('sequence'), and @('untyped') can also be
+            used here; we represent them as ordinary @(see vl-datatype)s, see
+            @(see vl-coretypename).  This type includes any array dimensions
+            associated with the port.")
+   (arg    vl-propactual-p
+           "The default property or sequence actual assigned to this port.  If
+            there is no such assignment, this will just be a blank @(see
+            vl-propactual).")
+   (atts   vl-atts-p
+           "Any <tt>(* foo = bar, baz *)</tt> style attributes.")
+   (loc    vl-location-p)))
+
+(fty::deflist vl-propportlist
+  :elt-type vl-propport
+  :elementp-of-nil nil)
+
+(defprod vl-property
+  :measure (two-nats-measure (acl2-count x) 1)
+  :tag :vl-property
+  :short "Represents a single @('property')...@('endproperty') declaration."
+  ((name   stringp :rule-classes :type-prescription
+           "E.g., this is @('foo') for @('property foo ... endproperty').")
+   (ports  vl-propportlist-p
+           "The ports for this property declaration.")
+   (decls  vl-vardecllist-p
+           "Variable declarations for this property.")
+   (spec   vl-propspec-p
+           "The main content of the property declaration.  The property spec
+            contains its clocking information, disable condition, and the
+            core property expression.")
+   (loc    vl-location-p)))
+
+(defprod vl-sequence
+  :measure (two-nats-measure (acl2-count x) 1)
+  :tag :vl-sequence
+  :short "Represents a single @('sequence')...@('endsequence') declaration."
+  ((name   stringp :rule-classes :type-prescription
+           "E.g., this is @('foo') for @('sequence foo ... endsequence').")
+   (ports  vl-propportlist-p
+           "The ports for this sequence declaration.")
+   (decls  vl-vardecllist-p
+           "Variable declarations for this sequence.")
+   (expr   vl-propexpr-p
+           "The main content of the sequence declaration.  The expression
+            should be a valid sequence expression.  We represent it as a
+            @(see vl-propexpr), which is overly permissive but sufficient
+            to capture any sequence expression.")
+   (loc    vl-location-p)))
+
+(fty::deflist vl-propertylist
+  :elt-type vl-property
+  :elementp-of-nil nil)
+
+(fty::deflist vl-sequencelist
+  :elt-type vl-sequence
+  :elementp-of-nil nil)
 
 
 ;; (defenum vl-taskporttype-p
@@ -3548,13 +3638,16 @@ be non-sliceable, at least if it's an input.</p>"
       gateinst
       always
       initial
+      final
       typedef
       import
       fwdtypedef
       modport
       genvar
       assertion
-      cassertion))
+      cassertion
+      property
+      sequence))
 
   (local (defun typenames-to-tags (x)
            (declare (xargs :mode :program))
@@ -3574,9 +3667,12 @@ be non-sliceable, at least if it's an input.</p>"
       (let ((name (symbol-name (car types))))
         (cons (make-tmplsubst
                :strs `(("__TYPE__" ,name . vl-package)
-                       ("__ELTS__" ,(if (member (char name (1- (length name))) '(#\S #\s))
-                                        (str::cat name "ES")
-                                      (str::cat name "S")) . vl-package)))
+                       ("__ELTS__" ,(cond ((member (char name (1- (length name))) '(#\S #\s))
+                                           (str::cat name "ES"))
+                                          ((member (char name (1- (length name))) '(#\Y #\y))
+                                           (str::cat (subseq name 0 (1- (length name))) "IES"))
+                                          (t
+                                           (str::cat name "S"))) . vl-package)))
               (vl-typenames-to-tmplsubsts (cdr types))))))
 
   (defconst *vl-modelement-tmplsubsts*
@@ -3789,6 +3885,7 @@ initially kept in a big, mixed list.</p>"
      vl-gateinst
      vl-always
      vl-initial
+     vl-final
      vl-typedef
      vl-import
      vl-fwdtypedef
@@ -3797,7 +3894,9 @@ initially kept in a big, mixed list.</p>"
      vl-regularport
      vl-genelement
      vl-assertion
-     vl-cassertion))
+     vl-cassertion
+     vl-property
+     vl-sequence))
 
   (local (defthm vl-genelement-kind-by-tag-when-vl-ctxelement-p
            (implies (and (vl-ctxelement-p x)
@@ -3828,6 +3927,7 @@ initially kept in a big, mixed list.</p>"
         (:vl-gateinst (vl-gateinst->loc x))
         (:vl-always (vl-always->loc x))
         (:vl-initial (vl-initial->loc x))
+        (:vl-final (vl-final->loc x))
         (:vl-typedef (vl-typedef->loc x))
         (:vl-import (vl-import->loc x))
         (:vl-fwdtypedef (vl-fwdtypedef->loc x))
@@ -3841,7 +3941,10 @@ initially kept in a big, mixed list.</p>"
         (:vl-genblock (vl-genblock->loc x))
         (:vl-genarray (vl-genarray->loc x))
         (:vl-assertion (vl-assertion->loc x))
-        (:vl-cassertion (vl-cassertion->loc x))))))
+        (:vl-cassertion (vl-cassertion->loc x))
+        (:vl-property (vl-property->loc x))
+        (:vl-sequence (vl-sequence->loc x))
+        ))))
 
 (defprod vl-context1
   :short "Description of where an expression occurs."
@@ -4053,6 +4156,9 @@ the type information between the variable and port declarations.</p>"
    (initials   vl-initiallist-p
                "Initial blocks like @('initial begin ...').")
 
+   (finals     vl-finallist-p
+               "Final statements like @('final begin ...').")
+
    (genvars    vl-genvarlist-p
                "Genvar declarations.")
 
@@ -4064,6 +4170,12 @@ the type information between the variable and port declarations.</p>"
 
    (cassertions vl-cassertionlist-p
                 "Concurrent assertions for the module.")
+
+   (properties  vl-propertylist-p
+                "Property declarations for the module.")
+
+   (sequences   vl-sequencelist-p
+                "Sequence declarations for the module.")
 
    (atts       vl-atts-p
                "Any attributes associated with this top-level module.")
@@ -4502,67 +4614,6 @@ resulting from parsing some Verilog source code."
 
 
 
-;; BOZO these will have to move up at some point
 
-
-(defprod vl-propport
-  :short "Representation of a single @('property') or @('sequence') port."
-  :tag :vl-propport
-  ((name   stringp :rule-classes :type-prescription
-           "Name of this port.")
-   (localp booleanp :rule-classes :type-prescription
-           "True if the @('local') keyword was provided.")
-   (dir    vl-direction-p
-           "The direction for this port.  Note that the ports for a sequence
-            can be either @('input'), @('output'), or @('inout') ports.  The
-            ports for a property are always @('input') ports.")
-   (type   vl-datatype-p
-           "The type declared for this port, if any.  Note that the special
-            keywords @('property'), @('sequence'), and @('untyped') can also be
-            used here; we represent them as ordinary @(see vl-datatype)s, see
-            @(see vl-coretypename).  This type includes any array dimensions
-            associated with the port.")
-   (arg    vl-propactual-p
-           "The default property or sequence actual assigned to this port.  If
-            there is no such assignment, this will just be a blank @(see
-            vl-propactual).")
-   (atts   vl-atts-p
-           "Any <tt>(* foo = bar, baz *)</tt> style attributes.")
-   (loc    vl-location-p)))
-
-(fty::deflist vl-propportlist :elt-type vl-propport)
-
-(defprod vl-property
-  :measure (two-nats-measure (acl2-count x) 1)
-  :tag :vl-property
-  :short "Represents a single @('property')...@('endproperty') declaration."
-  ((name   stringp :rule-classes :type-prescription
-           "E.g., this is @('foo') for @('property foo ... endproperty').")
-   (ports  vl-propportlist-p
-           "The ports for this property declaration.")
-   (decls  vl-vardecllist-p
-           "Variable declarations for this property.")
-   (spec   vl-propspec-p
-           "The main content of the property declaration.  The property spec
-            contains its clocking information, disable condition, and the
-            core property expression.")
-   (loc    vl-location-p)))
-
-(defprod vl-sequence
-  :measure (two-nats-measure (acl2-count x) 1)
-  :tag :vl-sequence
-  :short "Represents a single @('sequence')...@('endsequence') declaration."
-  ((name   stringp :rule-classes :type-prescription
-           "E.g., this is @('foo') for @('sequence foo ... endsequence').")
-   (ports  vl-propportlist-p
-           "The ports for this sequence declaration.")
-   (decls  vl-vardecllist-p
-           "Variable declarations for this sequence.")
-   (expr   vl-propexpr-p
-           "The main content of the sequence declaration.  The expression
-            should be a valid sequence expression.  We represent it as a
-            @(see vl-propexpr), which is overly permissive but sufficient
-            to capture any sequence expression.")
-   (loc    vl-location-p)))
 
 

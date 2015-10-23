@@ -3074,6 +3074,22 @@ expression into a string."
                (vl-pp-initiallist (cdr x)))))
 
 
+(define vl-pp-final ((x vl-final-p) &key (ps 'ps))
+  (b* (((vl-final x) x))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key" (vl-print "final "))
+               (vl-pp-stmt x.stmt)
+               (vl-println ""))))
+
+(define vl-pp-finallist ((x vl-finallist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-final (car x))
+               (vl-println "")
+               (vl-pp-finallist (cdr x)))))
+
+
 (define vl-pp-fundecl ((x vl-fundecl-p) &key (ps 'ps))
   ;; We print these off using "variant 1" style (see parse-functions)
   (b* (((vl-fundecl x) x))
@@ -3235,6 +3251,85 @@ expression into a string."
                (vl-println ""))))
 
 
+(define vl-pp-propport ((x vl-propport-p) &key (ps 'ps))
+  (b* (((vl-propport x))
+       (x.type.udims (vl-datatype->udims x.type)))
+    (vl-ps-seq (if x.atts (vl-pp-atts x.atts) ps)
+               (if (not x.localp)
+                   ps
+                 (vl-ps-span "vl_key"
+                             (vl-print "local ")
+                             (if (vl-direction-equiv x.dir :vl-input)
+                                 ;; the default, don't print it
+                                 ps
+                               (vl-ps-seq (vl-print-str (vl-direction-string x.dir))
+                                          (vl-print " ")))))
+               (vl-pp-datatype x.type)
+               (vl-print " ")
+               (vl-ps-span "vl_id"
+                           (vl-print (vl-maybe-escape-identifier x.name)))
+               (if (not x.type.udims)
+                   ps
+                 (vl-ps-seq (vl-print " ")
+                            (vl-pp-packeddimensionlist x.type.udims)))
+               (vl-propactual-case x.arg
+                 (:blank ps)
+                 (:event
+                  (vl-ps-seq (vl-print " = ")
+                             (vl-pp-propactual
+                              (change-vl-propactual-event x.arg :name nil))))
+                 (:prop
+                  (vl-ps-seq (vl-print " = ")
+                             (vl-pp-propactual
+                              (change-vl-propactual-prop x.arg :name nil))))))))
+
+(define vl-pp-propportlist ((x vl-propportlist-p) &key (ps 'ps))
+  (cond ((atom x)
+         ps)
+        ((atom (cdr x))
+         (vl-pp-propport (car x)))
+        (t (vl-ps-seq (vl-pp-propport (car x))
+                      (vl-print ", ")
+                      (vl-pp-propportlist (cdr x))))))
+
+(define vl-pp-property ((x vl-property-p) &key (ps 'ps))
+  (b* (((vl-property x)))
+    (vl-ps-seq (vl-ps-span "vl_key" (vl-print "  property "))
+               (vl-ps-span "vl_id"
+                           (vl-print (vl-maybe-escape-identifier x.name)))
+               (vl-print " (")
+               (vl-pp-propportlist x.ports)
+               (vl-println ");")
+               (vl-pp-vardecllist x.decls)
+               (vl-pp-propspec x.spec)
+               (vl-println ";")
+               (vl-ps-span "vl_key" (vl-println "  endproperty ")))))
+
+(define vl-pp-propertylist ((x vl-propertylist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-property (car x))
+               (vl-pp-propertylist (cdr x)))))
+
+(define vl-pp-sequence ((x vl-sequence-p) &key (ps 'ps))
+  (b* (((vl-sequence x)))
+    (vl-ps-seq (vl-ps-span "vl_key" (vl-print "  sequence "))
+               (vl-ps-span "vl_id"
+                           (vl-print (vl-maybe-escape-identifier x.name)))
+               (vl-print " (")
+               (vl-pp-propportlist x.ports)
+               (vl-println ");")
+               (vl-pp-vardecllist x.decls)
+               (vl-pp-propexpr x.expr)
+               (vl-println ";")
+               (vl-ps-span "vl_key" (vl-println "  endsequence ")))))
+
+(define vl-pp-sequencelist ((x vl-sequencelist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-sequence (car x))
+               (vl-pp-sequencelist (cdr x)))))
+
 
 (define vl-pp-modelement ((x vl-modelement-p) &key (ps 'ps))
   (let ((x (vl-modelement-fix x)))
@@ -3251,11 +3346,14 @@ expression into a string."
       (:VL-GATEINST   (VL-pp-GATEINST X))
       (:VL-ALWAYS     (VL-pp-ALWAYS X))
       (:VL-INITIAL    (VL-pp-INITIAL X))
+      (:VL-FINAL      (VL-pp-FINAL X))
       (:VL-TYPEDEF    (VL-pp-TYPEDEF X))
       (:VL-IMPORT     (VL-pp-IMPORT X))
       (:VL-FWDTYPEDEF (VL-pp-FWDTYPEDEF X))
       (:vl-modport    (vl-pp-modport x))
       (:vl-genvar     (vl-pp-genvar x))
+      (:vl-property   (vl-pp-property x))
+      (:vl-sequence   (vl-pp-sequence x))
       (:vl-assertion  (vl-pp-assertion x :include-name t))
       (:vl-cassertion (vl-pp-cassertion x :include-name t))
       (OTHERWISE (progn$ (impossible) ps)))))
@@ -3375,6 +3473,8 @@ expression into a string."
     (vl-ps-seq (vl-pp-cassertion (car x) :include-name t)
                (vl-pp-cassertionlist (cdr x)))))
 
+
+
 (define vl-pp-module
   ((x    vl-module-p     "Module to pretty-print.")
    (ss   vl-scopestack-p)
@@ -3407,7 +3507,10 @@ instead of @(see ps).</p>"
                (vl-pp-gateinstlist x.gateinsts)
                (vl-pp-alwayslist x.alwayses)
                (vl-pp-initiallist x.initials)
+               (vl-pp-finallist x.finals)
                (vl-pp-genelementlist x.generates)
+               (vl-pp-propertylist x.properties)
+               (vl-pp-sequencelist x.sequences)
                (vl-pp-assertionlist x.assertions)
                (vl-pp-cassertionlist x.cassertions)
                (vl-ps-span "vl_key" (vl-println "endmodule"))
@@ -3435,6 +3538,9 @@ instead of @(see ps).</p>"
                (vl-pp-gateinstlist x.gateinsts)
                (vl-pp-alwayslist x.alwayses)
                (vl-pp-initiallist x.initials)
+               (vl-pp-finallist x.finals)
+               (vl-pp-propertylist x.properties)
+               (vl-pp-sequencelist x.sequences)
                (vl-pp-assertionlist x.assertions)
                (vl-pp-cassertionlist x.cassertions)
             (vl-ps-span "vl_key" (vl-println "endgenblob"))
