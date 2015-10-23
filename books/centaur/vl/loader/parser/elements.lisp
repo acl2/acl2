@@ -101,6 +101,23 @@
                                        :stmt stmt
                                        :atts atts)))))
 
+(defparser vl-parse-final-construct (atts)
+  ;; SystemVerilog-2012 rules:
+  ;;   final_construct ::= 'final' function_statement
+  ;;   function_statement ::= statement
+  :guard (vl-atts-p atts)
+  :result (vl-finallist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seq tokstream
+        (kwd := (vl-match-token :vl-kwd-final))
+        (stmt := (vl-parse-statement))
+        (return (list (make-vl-final :loc (vl-token->loc kwd)
+                                     :stmt stmt
+                                     :atts atts)))))
+
 (defparser vl-parse-alwaystype ()
   :result (vl-alwaystype-p val)
   :resultp-of-nil nil
@@ -346,6 +363,9 @@ rules:</p>
             (t (vl-parse-error "Invalid module or generate item."))))
 
          ;; SystemVerilog extensions ----
+         ((when (eq type1 :vl-kwd-final))
+          (vl-parse-final-construct atts))
+
          ((when (eq type1 :vl-kwd-typedef))
           (seq tokstream
                 (typedef := (vl-parse-type-declaration atts))
@@ -371,9 +391,31 @@ rules:</p>
                     (eq type1 :vl-kwd-always_comb)))
           (vl-parse-always-construct atts))
 
+
          ((when (vl-plausible-start-of-assertion-item-p))
-          ;; Darn it, don't have anywhere to put the atts.
+          ;; These are for things like actual 'assert property ...' and
+          ;; similar, not for property/sequence declarations.
+          ;; BOZO -- Darn it, don't have anywhere to put the atts.
           (vl-parse-assertion-item))
+
+         ;; assertion_item_declaration ::= property_declaration
+         ;;                              | sequence_declaration
+         ;;                              | let_declaration
+         ((when (eq type1 :vl-kwd-property))
+          ;; BOZO are these supposed to have atts?
+          (seq tokstream
+               (property := (vl-parse-property-declaration))
+               (return (list property))))
+
+         ((when (eq type1 :vl-kwd-sequence))
+          ;; BOZO are these supposed to have atts?
+          (seq tokstream
+               (sequence := (vl-parse-sequence-declaration))
+               (return (list sequence))))
+
+         ((when (eq type1 :vl-kwd-let))
+          (vl-parse-error "BOZO not yet implemented: let declarations"))
+
 
          ((when (eq type1 :vl-idtoken))
           ;; It's either a udp/module/interface instance, a variable decl, or a
@@ -394,6 +436,10 @@ rules:</p>
                (tokstream (vl-tokstream-restore backup))
                (tokstream (vl-tokstream-update-position pos)))
             (mv err nil tokstream))))
+
+
+
+
 
       ;; SystemVerilog -- BOZO haven't thought this through very thoroughly, but it's
       ;; probably a fine starting place.

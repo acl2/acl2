@@ -1009,13 +1009,17 @@ it has the same problems with parameters.</p>"
           (mv warnings st implicit newitems)))
 
        ((when (or (eq tag :vl-initial)
+                  (eq tag :vl-final)
                   (eq tag :vl-always)))
         ;; Statements are tricky because of named blocks, but we've already
         ;; dealt with how to handle them, and they can't introduce any
         ;; implicit wires, so this is easy.
-        (b* ((stmt     (if (eq tag :vl-initial)
-                           (vl-initial->stmt item)
-                         (vl-always->stmt item)))
+        (b* ((stmt     (cond ((eq tag :vl-initial)
+                              (vl-initial->stmt item))
+                             ((eq tag :vl-final)
+                              (vl-final->stmt item))
+                             (t
+                              (vl-always->stmt item))))
              (warnings (vl-stmt-check-undeclared item stmt st warnings))
              (newitems (cons x newitems)))
           (mv warnings st implicit newitems)))
@@ -1042,7 +1046,7 @@ it has the same problems with parameters.</p>"
              (newitems (cons x newitems)))
           (mv warnings st implicit newitems)))
 
-       ((when (member tag '(:vl-assertion :vl-cassertion)))
+       ((when (member tag '(:vl-assertion :vl-cassertion :vl-sequence :vl-property)))
         ;; BOZO deal with these some day.  Need to do tests to figure
         ;; out what the intended behavior is, then implement it.  Horrible.
         (b* ((newitems (cons x newitems)))
