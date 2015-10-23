@@ -121,6 +121,19 @@ module m0 () ;
   wire ashr_warn4 = 2 >>> 2;       // Still want to warn on this, I think
   wire ashr_warn5 = 1 >>> 1;       // Still want to warn on this, I think
 
+  // After discussing it and doing it the other way, we don't want to warn
+  // about a * a.
+  wire times_no1 = a * b;
+  wire times_no2 = a * b & a;
+  wire times_no3 = a * (a & b);
+  wire times_no4 = 1 * 2;
+  wire times_no5 = 2 * 3;
+  wire times_no6 = a * a;
+  wire times_no7 = (a * a) & b;
+  wire times_no8 = (a & b) & (a * a) & d;
+  wire times_no9 = 2 * 2;
+  wire times_no10 = 1 * 1;
+
   wire plus_no1 = a + 1 + 1;
   wire plus_no2 = b + 2 + 2;
   wire plus_no3 = 1 + a + 1;
