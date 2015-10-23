@@ -838,7 +838,7 @@ displays.  The module browser's web pages are responsible for defining the
                      (if test-parens (vl-print ")") ps)
                      (vl-print " ? ")
                      (if unspecial-atts (vl-ps-seq (vl-pp-atts unspecial-atts) (vl-print " ")) ps)
-                     (vl-println "")
+                     (vl-println? "")
                      (if then-parens (vl-print "(") ps)
                      (vl-pp-expr x.then)
                      (if then-parens (vl-print ")") ps)
@@ -2573,15 +2573,23 @@ expression into a string."
                  (vl-pp-propcaseitemlist (cdr x))))))
 
 (define vl-pp-propspec ((x vl-propspec-p) &key (ps 'ps))
-  (b* (((vl-propspec x)))
+  (b* (((vl-propspec x))
+       (col (vl-ps->col)))
     (vl-ps-seq (if (consp x.evatoms)
                    (vl-ps-seq (vl-print "@(")
                               (vl-pp-evatomlist x.evatoms)
-                              (vl-print ") "))
+                              (vl-println ")")
+                              (if x.disable
+                                  (vl-indent col)
+                                ps))
                  ps)
                (if x.disable
                    (vl-ps-seq (vl-ps-span "vl_key" (vl-print "disable iff "))
-                              (vl-pp-exprdist x.disable))
+                              (vl-pp-exprdist x.disable)
+                              (vl-println ""))
+                 ps)
+               (if (or x.evatoms x.disable)
+                   (vl-indent (+ (vl-ps->autowrap-ind) 2))
                  ps)
                (vl-pp-propexpr x.prop))))
 
@@ -2981,7 +2989,8 @@ expression into a string."
                                           (vl-ps-span "vl_key" (vl-println " else "))
                                           (vl-println "")
                                           (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
-                 (vl-println ";"))))
+                 (vl-println ";")
+                 (vl-println ""))))
 
   (define vl-pp-cassertion ((x vl-cassertion-p) &key (include-name booleanp) (ps 'ps))
     :measure (vl-cassertion-count x)
@@ -3017,7 +3026,8 @@ expression into a string."
                                           (vl-ps-span "vl_key" (vl-println " else "))
                                           (vl-println "")
                                           (vl-pp-stmt-indented (vl-pp-stmt x.failure)))))
-                 (vl-println ";"))))
+                 (vl-println ";")
+                 (vl-println ""))))
 
   (define vl-pp-stmtlist ((x vl-stmtlist-p) &key (ps 'ps))
     :measure (vl-stmtlist-count x)
@@ -3521,6 +3531,7 @@ instead of @(see ps).</p>"
                (vl-pp-typedeflist x.typedefs)
                (vl-pp-portdecllist x.portdecls)
                (vl-pp-vardecllist x.vardecls)
+               (vl-println "")
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)
                (vl-pp-assignlist x.assigns)
