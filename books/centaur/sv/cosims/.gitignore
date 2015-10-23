@@ -3,8 +3,11 @@ csrc/
 ok
 simv
 simv.daidir/
+simv.cst/
 test.vcd
 ucli.key
 cosim-core
 cosim-core.lx86cl64
 Makefile-books
+irun.history
+ncvlog_*.err

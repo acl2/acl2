@@ -52,15 +52,18 @@
 
 (defxdoc loader
   :parents (vl)
-  :short "Finds and loads Verilog source files."
+  :short "Finds and loads Verilog or SystemVerilog source files&mdash;generally
+the first step toward using VL to work with a hardware design."
 
-  :long "<p>Most Verilog designs involve many files spread out across multiple
+  :long "<h3>Introduction</h3>
+
+<p>Most Verilog designs involve many files spread out across multiple
 directories.  To really load a high-level module @('top'), we typically need
 to:</p>
 
 <ul>
 
-<li>start by parsing its file, say @('top.v'), then</li>
+<li>start by parsing its file, say @('top.v') or @('top.sv'), then</li>
 
 <li>figure out which supporting descriptions are used within @('top') and </li>
 
@@ -69,34 +72,80 @@ directories.</li>
 
 </ul>
 
-<p>Our top-level function for loading Verilog files, @(see vl-load), implements
-such a scheme.  It has various options (see @(see vl-loadconfig-p)) that allow
-you to specify the search paths and extensions to use when looking for files,
-etc.</p>
+<p>VL's top-level function for loading Verilog files, @(see vl-load),
+implements such a scheme.  It has various options (see @(see vl-loadconfig))
+that allow you to specify the search paths and extensions to use when looking
+for files, etc.  A typical command to load a design might look something like
+this:</p>
 
-
-<h3>VL-Only Comments</h3>
-
-<p>VL supports a special comment syntax:</p>
 @({
-//+VL single-line version
-/*+VL multi-line version */
+     (defconsts (*loadresult* state)
+       (vl::vl-load (vl::make-vl-loadconfig
+                     :start-files (list \"top.v\")
+                     :search-path (list \"/path/to/lib1\"
+                                        \"/path/to/lib2\")
+                     :include-dirs (list \"/path/to/includes1\"
+                                         \"/path/to/includes2\")
+                     :defines (make-vl-initial-defines \"FORMAL\")
+                     :edition :system-verilog-2012)))
 })
 
-<p>Which can be used to hide VL-specific code from other tools, e.g., if you
-need your modules to work with an older Verilog implementation that doesn't
-support Verilog-2005 style attributes, you might write something like:</p>
+<p>The resulting @('*loadresult*') will be a @(see vl-loadresult), which among
+other things will contain the @(see vl-design) that has been loaded.  The next
+step after loading is typically to <b>annotate</b> the design using @(see
+vl-annotate-design), and then to further processing it in whatever way is
+suitable for your particular flow.</p>
+
+<h3>Supported Constructs and Workarounds</h3>
+
+<p>For general background on what VL supports, see @(see
+supported-constructs).</p>
+
+<p>A common problem when working with a Verilog or SystemVerilog design is that
+you want to process the design with many tools, and these tools may not all
+support quite the same constructs.  One common way to work around these issues
+is with @(see preprocessor) directives.  For instance, you might write
+something like:</p>
 
 @({
-//+VL (* my_attribute *)
-assign foo = bar;
+     `ifndef FORMAL
+        ... something VL can't handle ...
+     `else
+        ... replacement for VL ...
+     `endif
 })
 
-<p>There is also a special, more concise syntax for attributes:</p>
+<p>Note that @(see vl-load) does not automatically set up any such @('`define')
+directives by default, but it's easy to give custom @('defines') in your @(see
+vl-loadconfig).</p>
+
+<p>Besides the preprocessor, VL also supports a special comment syntax that can
+be used to hide VL-specific code from other tools:</p>
 
 @({
-//@VL my_attribute
-})")
+    //+VL single-line version
+    /*+VL multi-line version */
+})
+
+<p>For instance, if you need your modules to work with an old Verilog
+implementation that doesn't support Verilog-2005 style attributes, you might
+write something like:</p>
+
+@({
+    //+VL (* my_attribute *)
+    assign foo = bar;
+})
+
+<p>VL will still parse the @('(* my_attribute *)') part since it is in this
+special comment.  VL also provides a special, more concise syntax for
+attributes:</p>
+
+@({
+    //@VL my_attribute
+})
+
+<p>Note that you can also disable these special comments with the @('strictp')
+option on your @(see vl-loadconfig).</p>")
 
 (local (xdoc::set-default-parents loader))
 

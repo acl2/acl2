@@ -47,7 +47,6 @@
 (include-book "../lint/duperhs")
 (include-book "../lint/leftright")
 (include-book "../lint/oddexpr")
-(include-book "../lint/portcheck")
 (include-book "../lint/qmarksize-check")
 (include-book "../lint/selfassigns")
 (include-book "../lint/skip-detect")
@@ -475,7 +474,6 @@ shown.</p>"
        (design (cwtime (vl-design-portcheck design)))
        (design (cwtime (vl-design-argresolve design)))
        (design (cwtime (vl-design-type-disambiguate design)))
-       (design (cwtime (vl-design-origexprs design)))
        (design (cwtime (vl-design-oddexpr-check design)))
 
        ;; this goes away (design (cwtime (vl-design-resolve-indexing design)))

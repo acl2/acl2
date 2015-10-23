@@ -2018,7 +2018,7 @@ instance, or a direct interface instance (not an interface port)."
   ((instname  maybe-stringp
               :rule-classes :type-prescription
               "Either the name of this instance or @('nil') if the instance has
-               no name.  See also the @(see addinstnames) transform.")
+               no name.  See also the @(see addnames) transform.")
 
    (modname   stringp
               :rule-classes :type-prescription
@@ -2128,7 +2128,7 @@ recognized by @(call vl-gatetype-p).</p>")
                                             t
                                           nil)))))
              "The name of this gate instance, or @('nil') if it has no name;
-              see also the @(see addinstnames) transform.")
+              see also the @(see addnames) transform.")
 
    (range    vl-maybe-range-p
              "When present, indicates that this is an array of instances
