@@ -99,7 +99,7 @@ already loaded.</li>
 
 <li>VL has been used to build a web-based ``module browser'' that lets you see
 the source code for our modules with, e.g., hyperlinks for navigating between
-wires and following wires.  This is now integrated into the VL @(see kit);
+wires and following wires.  This is now integrated into the VL @(see kit); see
 @(see server).</li>
 
 <li>(unreleased) We have used VL to implement <i>samev</i>, a sequential

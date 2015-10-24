@@ -36,8 +36,8 @@
 
 (defxdoc stripping-functions
   :parents (mlib)
-  :short "Functions for throwing away attributes, widths, etc., so that
-expressions and module elements can be compared using @(see equal)."
+  :short "Functions for throwing away attributes, widths, locations, etc., so
+that expressions and module elements can be compared using @(see equal)."
 
   :long "<p>In many basic kinds of @(see lint)ing and well-formedness checking,
 it is useful to be able to compare module elements using @('equal').  But
@@ -59,7 +59,8 @@ details.</p>")
 
 (fty::defvisitor-template strip ((x :object))
   :returns (new-x :update)
-  :field-fns ((atts (lambda (x) (declare (ignore x)) nil)))
+  :field-fns ((atts (lambda (x) (declare (ignore x)) nil))
+              (loc  (lambda (x) (declare (ignore x)) *vl-fakeloc*)))
   :prod-fns ((vl-special     (type (lambda (x) (declare (ignore x)) nil)))
              (vl-literal     (type (lambda (x) (declare (ignore x)) nil)))
              (vl-index       (type (lambda (x) (declare (ignore x)) nil)))
@@ -73,7 +74,9 @@ details.</p>")
              (vl-cast        (type (lambda (x) (declare (ignore x)) nil)))
              (vl-inside      (type (lambda (x) (declare (ignore x)) nil)))
              (vl-tagged      (type (lambda (x) (declare (ignore x)) nil)))
-             (vl-pattern     (type (lambda (x) (declare (ignore x)) nil))))
+             (vl-pattern     (type (lambda (x) (declare (ignore x)) nil)))
+             (vl-location    (type (lambda (x) (declare (ignore x)) *vl-fakeloc*)))
+             )
   :fnname-template <type>-strip)
 
 (fty::defvisitors vl-strip
