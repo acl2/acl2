@@ -2,7 +2,7 @@
 
 (include-book "coi/nary/nary-mod" :dir :system)
 
-(include-book "arithmetic-5/top" :dir :system)
+;;(include-book "arithmetic-5/top" :dir :system)
 
 (encapsulate
     (
@@ -57,8 +57,8 @@
                    (EXPT (MOD (EXPT (INV z) 2) (P)) 2))
                 (P)))
           (PRED (MOD (* 3 (EXPT X 2)
-                        (EXPT Y 4)
-                        (EXPT (INV Z) 4))
+                        (EXPT y 4)
+                        (EXPT (expt (INV Z) 2) 2))
                      (P)))))
   :hints (("Goal" :in-theory (enable nary::mod-rules))))
 
