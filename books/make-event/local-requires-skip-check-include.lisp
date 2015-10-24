@@ -25,5 +25,6 @@
                                         :check-expansion
                                         (defun test10 (x) (cons x x)))
                                        ))
-                                     (VALUE-TRIPLE 'T))))))
+                                     (WITH-OUTPUT :OFF :ALL
+                                       (VALUE-TRIPLE 'T)))))))
             (mv erp nil state))))

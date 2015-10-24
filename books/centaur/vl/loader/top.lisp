@@ -45,6 +45,8 @@
 (include-book "../util/gc")
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
+(include-book "oslib/dirname" :dir :system)
+(include-book "oslib/mkdir" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
@@ -76,7 +78,6 @@ etc.</p>
 <h3>VL-Only Comments</h3>
 
 <p>VL supports a special comment syntax:</p>
-
 @({
 //+VL single-line version
 /*+VL multi-line version */
@@ -293,6 +294,27 @@ being kept.</p>"
                    (vl-load-merge-descriptions new old descalist reportcard)))
                (no-duplicatesp (vl-descriptionlist->names merged))))))
 
+(define vl-write-preprocessor-debug-file ((filename     stringp)
+                                          (preprocessed vl-echarlist-p)
+                                          state)
+  :returns (mv (filename maybe-stringp :rule-classes :type-prescription)
+               (state state-p1 :hyp (state-p1 state)))
+  (b* (((mv okp state) (oslib::mkdir "./vl-debug"))
+       ((unless okp)
+        (cw "Error: Can't create ./vl-debug directory.~%")
+        (mv nil state))
+       (nameidx (nfix (and (acl2::boundp-global 'vl-preprocess-debug-file-nameidx state)
+                           (f-get-global 'vl-preprocess-debug-file-nameidx state))))
+       (state   (f-put-global 'vl-preprocess-debug-file-nameidx (+ 1 nameidx) state))
+       ((mv err basename state) (oslib::basename filename))
+       (basename (if err
+                     "basename-error"
+                   basename))
+       (tempname (str::cat "./vl-debug/" (str::natstr nameidx) "-" basename ".vpp"))
+       (- (cw "Saving preprocessed ~s0 as ~s1.~%" filename tempname))
+       (state (with-ps-file tempname
+                (vl-print-str (vl-echarlist->string preprocessed)))))
+    (mv tempname state)))
 
 (define vl-load-file ((filename stringp)
                       (st       vl-loadstate-p)
@@ -377,6 +399,37 @@ descriptions.</li>
                              :args (list filename))))
           (mv (vl-loadstate-set-warnings warnings)
               state)))
+
+       ((mv preprocessed state)
+        (b* (((unless st.config.debugp)
+              (mv preprocessed state))
+             ;; Debugging mode.  Write out the preprocessed file into a
+             ;; temporary file.  Then, read that file back in (to get all
+             ;; line numbers updated) and go from there.
+             ((mv debug-filename state)
+              (time$ (vl-write-preprocessor-debug-file filename preprocessed state)
+                     :msg "; ~s0: write preprocessor debug file: ~st sec, ~sa bytes~%"
+                     :args (list filename)
+                     :mintime st.config.mintime))
+             ((unless debug-filename)
+              ;; Something went wrong, don't read the file back in.
+              (mv preprocessed state))
+             ((mv okp contents state)
+              (time$ (vl-read-file debug-filename)
+                     :msg "; ~s0: re-read preprocessor debug file: ~st sec, ~sa bytes~%"
+                     :args (list filename)
+                     :mintime st.config.mintime))
+             ((unless okp)
+              ;; Well, not a big deal, we can just use the original file.
+              (cw "Error: reading debug-file failed: ~s0~%" debug-filename)
+              (mv preprocessed state))
+             ((unless (equal (vl-echarlist->string preprocessed)
+                             (vl-echarlist->string contents)))
+              (cw "Error: wrong contents in debug-file: ~s0~%" debug-filename)
+              (mv preprocessed state)))
+          ;; Else all seems well, we read the debug-file back in and got the same
+          ;; text, so let's go ahead and use it so that locations will be correct.
+          (mv contents state)))
 
        ((mv successp lexed warnings)
         (time$ (vl-lex preprocessed

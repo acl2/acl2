@@ -162,6 +162,19 @@
 (assert-dupefree)
 
 
+(defprod monsterpair
+  :parents (game)
+  :short "Two monsters, side by side."
+  :tag :monsterpair
+  ((left   monster "Monster on the left.")
+   (right  monster "Monster on the right.")))
+
+(assert-parents monsterpair (game))
+(assert-short monsterpair "Two monsters")
+(assert-long monsterpair "Monster on the left")
+(assert-long monsterpair "Monster on the right")
+
+
 (deflist monsterlist
   :parents (monster)
   :short "A list of monsters."
@@ -462,3 +475,25 @@ is this?</p>")
 (assert-parents monster->arrow (game))
 
 (assert-dupefree)
+
+
+(deftranssum monstermash
+  :parents (game)
+  :short "It caught on in a flash."
+  :long "<p>It was a graveyard smash.</p>"
+  (monster
+   monsterpair))
+
+
+(assert-parents monstermash (game))
+(assert-parents monstermash-p (monstermash))
+(assert-parents monstermash-fix (monstermash))
+(assert-parents monstermash-equiv (monstermash))
+(assert-parents monstermash-case (monstermash))
+(assert-parents monstermash-kind (monstermash))
+
+(assert-dupefree)
+
+
+;; (include-book "xdoc/save" :dir :system)
+;; (xdoc::save "./my-manual")

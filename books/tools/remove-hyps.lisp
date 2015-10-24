@@ -26,6 +26,10 @@
   E)') results in storing a modified version of E, in which @('hyps') has been
   reduced to a minimal set of hypotheses.</p>
 
+ <p>By default, @('remove-hyps') evaluates silently.  To see output from proof
+ attempts, add a non-nil optional argument.  For example, for event @('E'), use
+ @('(remove-hyps E t)').</p>
+
  <p>This tool is available in @('tools/remove-hyps.lisp').</p>")
 
 ; Possible enhancements include:
@@ -110,28 +114,38 @@
 ;; erp val state).  In the typical case, erp is nil; then if val is nil then
 ;; the event failed, and otherwise the event succeeded with val prover steps.
 ;; If erp is not nil, then all bets are off (but this should be rare).
-(defun event-steps (form state)
+(defun event-steps (form verbose-p state)
   (let ((new-form
-         ; The progn will revert the state if one of the events fails, which we
-         ; guarantee with an ill-formed event (the defconst event below).
-         `(progn ; First set a state global variable to nil in case of failure.
-                 (make-event (pprogn (f-put-global 'our-steps nil state)
-                                     (value '(value-triple nil))))
-                 ; Execute the given form.
-                 ,form
-                 ; Record the number of prover steps used in the last event, if
-                 ; it succeeded (otherwise we won't get this far).
-                 (make-event (pprogn (f-put-global 'our-steps
-                                                   (last-prover-steps state)
-                                                   state)
-                                     (value '(value-triple nil))))
-                 ; Cause a failure by using an ill-formed defconst event.
-                 (defconst *bad*) ; Note the missing second argument!
-                 )))
+         ;; The progn will revert the state if one of the events fails, which we
+         ;; guarantee with an ill-formed event (the defconst event below).
+         `(with-output ; turn off output
+            :stack :push
+            :off :all
+            :gag-mode nil
+            (progn ; First set a state global variable to nil in case of failure.
+              (make-event (pprogn (f-put-global 'our-steps nil state)
+                                  (value '(value-triple nil))))
+              ;; Execute the given form.
+              ,(if verbose-p
+                   `(with-output :stack :pop ,form)
+                 form)
+              ;; Record the number of prover steps used in the last event, if
+              ;; it succeeded (otherwise we won't get this far).  Success could
+              ;; involve no prover steps, so we record a number of steps that
+              ;; is at least 1 (perhaps 0 would do, but we play it safe).
+              (make-event (pprogn (f-put-global 'our-steps
+                                                (or (last-prover-steps
+                                                     state)
+                                                    1)
+                                                state)
+                                  (value '(value-triple nil))))
+              ;; Cause a failure by using an ill-formed defconst event.
+              (defconst *bad*) ; Note the missing second argument!
+              ))))
     (er-progn
-     ; Evaluate the new form constructed above.
+; Evaluate the new form constructed above.
      (trans-eval new-form 'event-steps state t)
-     ; Return the value stored in the global variable.
+; Return the value stored in the global variable.
      (value (f-get-global 'our-steps state)))))
 
 
@@ -144,7 +158,7 @@
 ;; "additional" hypotheses that are necessary, ultimately returning the reverse
 ;; of the accumulated list.
 (defun remove-hyps-formula-1 (name rev-init-hyps rest-hyps concl kwd-alist
-                                   steps state)
+                                   steps verbose-p state)
 
   (cond
    ; If there are no more hypotheses to test, then return the reverse of the
@@ -158,7 +172,7 @@
      name
      (cons (car rest-hyps) rev-init-hyps)
      (cdr rest-hyps)
-     concl kwd-alist steps state))
+     concl kwd-alist steps verbose-p state))
    ; Create a new form by appending the necessary hypotheses to the cdr of the
    ; additional hypotheses.  Evaluate the form, limiting the number of steps
    ; based on the heuristic above.  Then recur using the cdr of the additional
@@ -172,7 +186,7 @@
                                   (revappend rev-init-hyps (cdr rest-hyps))
                                   concl kwd-alist))))
         ; Try the new event.
-        (er-let* ((event-steps (event-steps form state)))
+        (er-let* ((event-steps (event-steps form verbose-p state)))
           ; Recur with the cdr of the unknown hypotheses, but...
           (remove-hyps-formula-1
            name
@@ -182,14 +196,14 @@
                   (cons (car rest-hyps) rev-init-hyps))
                  (t rev-init-hyps))
            (cdr rest-hyps)
-           concl kwd-alist steps state))))))
+           concl kwd-alist steps verbose-p state))))))
 
 ;; This function returns an error triple whose value, in the non-error case, is
 ;; a defthm form for the given hyps, concl, and kwd-alist -- except, hypotheses
 ;; may be removed from hyps to provide a form whose proof nevertheless succeeds.
-(defun remove-hyps-formula (form name hyps concl kwd-alist ctx state)
+(defun remove-hyps-formula (form name hyps concl kwd-alist verbose-p ctx state)
   ; Try the original event and obtain the number of steps.
-  (er-let* ((steps (event-steps form state)))
+  (er-let* ((steps (event-steps form verbose-p state)))
     (cond
      ; If the original event failed, then we simply fail.
      ((null steps)
@@ -204,7 +218,7 @@
            ; hypotheses and a full list of additional hypotheses.
            (remove-hyps-formula-1 name nil hyps concl kwd-alist
                                   (remove-hyps-formula-steps steps)
-                                  state)))
+                                  verbose-p state)))
          (value (make-defthm name final-hyps concl kwd-alist)))))))
 
 ;; This function takes the original form and then calls remove-hyps-function to
@@ -213,12 +227,12 @@
 ;; printed to the terminal.  Finally, after the form is printed, the new form
 ;; is submitted silently.  Note that form is essentially (defthm name (implies
 ;; hyps concl) . kwd-alist).
-(defun remove-hyps-fn (form name hyps concl kwd-alist)
+(defun remove-hyps-fn (form name hyps concl kwd-alist verbose-p)
   `(make-event
     ; Obtain a new form with a minimal subset of the hypotheses.
     (er-let* ((new-form
                (remove-hyps-formula ',form ',name ',hyps ',concl ',kwd-alist
-                                    'remove-hyps state)))
+                                    ',verbose-p 'remove-hyps state)))
       ; Test the new form versus the old form.
       (pprogn (cond ((equal new-form ',form)
                      ; If no hypotheses were removed, print this to the terminal.
@@ -239,18 +253,18 @@
 ;; The remove-hyps macro takes a defthm form and attempts to match the case
 ;; based on the number of hypotheses.  Note that an error occurs if the formula
 ;; of the defthm is not an implication.
-(defmacro remove-hyps (defthm-form)
+(defmacro remove-hyps (defthm-form &optional verbose-p)
   (case-match defthm-form
     ; Form with multiple hypotheses bound by "and"
     (('defthm name
        ('implies ('and . hyps) concl)
        . kwd-alist)
-     (remove-hyps-fn defthm-form name hyps concl kwd-alist))
+     (remove-hyps-fn defthm-form name hyps concl kwd-alist verbose-p))
     ; Form with one hypothesis.  Create a list with this hypothesis.
     (('defthm name
        ('implies hyp concl)
        . kwd-alist)
-     (remove-hyps-fn defthm-form name (list hyp) concl kwd-alist))
+     (remove-hyps-fn defthm-form name (list hyp) concl kwd-alist verbose-p))
     ; Unknown form.  Signal error.
     (& `(er soft 'remove-hyps
             "Illegal argument to remove-hyps:~|~%~y0"

@@ -210,7 +210,9 @@
     :vl-blockstmt        x.atts
     :vl-repeatstmt       x.atts
     :vl-timingstmt       x.atts
-    :vl-returnstmt       x.atts))
+    :vl-returnstmt       x.atts
+    :vl-assertstmt       x.atts
+    :vl-cassertstmt      x.atts))
 
 
 (define vl-compoundstmt->stmts
@@ -235,11 +237,17 @@ expressions.</p>"
     :vl-blockstmt        x.stmts
     :vl-repeatstmt       (list x.body)
     :vl-timingstmt       (list x.body)
+    :vl-assertstmt       (b* (((vl-assertion x.assertion)))
+                           (list x.assertion.success x.assertion.failure))
+    :vl-cassertstmt      (b* (((vl-cassertion x.cassertion)))
+                           (list x.cassertion.success x.cassertion.failure))
     :otherwise           nil)
   ///
   (local (in-theory (enable vl-stmtlist-count
                             vl-caselist-count
-                            vl-stmt-count)))
+                            vl-stmt-count
+                            vl-assertion-count
+                            vl-cassertion-count)))
 
   (local (defthm l0
            (<= (vl-stmtlist-count (alist-vals x))
@@ -293,16 +301,19 @@ expressions.</p>"
   :long "<p>Note that this only returns the top-level expressions that are
 directly part of the statement.</p>"
   (vl-stmt-case x
-    :vl-casestmt    (cons x.test (flatten (alist-keys x.caselist)))
-    :vl-ifstmt      (list x.condition)
-    :vl-foreverstmt nil
-    :vl-waitstmt    (list x.condition)
-    :vl-whilestmt   (list x.condition)
-    :vl-forstmt     (list x.test)
-    :vl-repeatstmt  (list x.condition)
-    :vl-blockstmt   nil
-    :vl-timingstmt  nil
-    :otherwise      nil))
+    :vl-casestmt       (cons x.test (flatten (alist-keys x.caselist)))
+    :vl-ifstmt         (list x.condition)
+    :vl-foreverstmt    nil
+    :vl-waitstmt       (list x.condition)
+    :vl-whilestmt      (list x.condition)
+    :vl-forstmt        (list x.test)
+    :vl-repeatstmt     (list x.condition)
+    :vl-blockstmt      nil
+    :vl-timingstmt     nil
+    :vl-assertstmt     (b* (((vl-assertion x.assertion)))
+                         (list x.assertion.condition))
+    :vl-cassertstmt    nil ;; bozo?
+    :otherwise         nil))
 
 
 (define vl-compoundstmt->ctrl
@@ -569,6 +580,19 @@ directly part of the statement.</p>"
       (change-vl-timingstmt x
                             :ctrl ctrl
                             :body (first stmts))
+
+      :vl-assertstmt
+      (change-vl-assertstmt x
+                            :assertion (change-vl-assertion x.assertion
+                                                            :condition (first exprs)
+                                                            :success (first stmts)
+                                                            :failure (second stmts)))
+
+      :vl-cassertstmt
+      (change-vl-cassertstmt x
+                             :cassertion (change-vl-cassertion x.cassertion
+                                                               :success (first stmts)
+                                                               :failure (second stmts)))
 
       ;; Atomic statements are ruled out by the guard.
       :vl-nullstmt         (progn$ (impossible) x)

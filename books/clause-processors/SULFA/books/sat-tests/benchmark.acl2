@@ -1,4 +1,9 @@
 (in-package "ACL2")
 (ld "../sat/sat-package.acl2")
-; cert-flags: ? t :ttags (sat sat-cl #+acl2-par our-waterfall-parallelism-hacks)
-(certify-book "benchmark" ? t :ttags (sat sat-cl #+acl2-par our-waterfall-parallelism-hacks))
+
+; Added by Matt K. to avoid CMUCL going out to lunch.
+#+cmucl
+(set-check-invariant-risk nil)
+
+; cert-flags: ? t :ttags (#+cmucl :set-check-invariant-risk sat sat-cl #+acl2-par our-waterfall-parallelism-hacks)
+(certify-book "benchmark" ? t :ttags (#+cmucl :set-check-invariant-risk sat sat-cl #+acl2-par our-waterfall-parallelism-hacks))

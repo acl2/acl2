@@ -136,6 +136,11 @@
                     constructed for the files we have loaded.  You may wish to
                     turn this off to save some memory.")
 
+   (debugp         booleanp
+                   :rule-classes :type-prescription
+                   "Enable high-level loader debugging features that may be
+                    expensive.")
+
    (flush-tries    posp
                    :rule-classes :type-prescription
                    :default 10000

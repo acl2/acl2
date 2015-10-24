@@ -7,6 +7,7 @@
 // gcc wc-input.c -o wc-input.o
 
 #include <stdio.h>
+#include <stdint.h>
 
 // See pre-defined macros supported by your GCC using:
 // gcc -dM -E - < /dev/null
@@ -21,7 +22,7 @@ static int sysread_num = 0x2000003;
 int gc(void) {
 
   char buf[1];
-  int n;
+  uint64_t n;
 
   // printf("\nAddress where the read contents will be stored: %p\n", buf);
 
@@ -40,7 +41,7 @@ int gc(void) {
                 // as both an input and output register, and as such,
                 // should be constrained by + rather than =.
 
-     : "g"(sysread_num), "g"(buf) // input list
+     : "g"((uint64_t)sysread_num), "g"((uint64_t)buf) // input list
 
      : "cc", "memory", "%rdi", "%rsi", "%rdx");
 

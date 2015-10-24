@@ -135,7 +135,6 @@ memory.</li>
 
   )) ;; End of local encapsulate
 
-;; The following is a no-op for ACL2 distributions.
 (acl2::set-waterfall-parallelism t)
 
 ;; ======================================================================
@@ -682,7 +681,18 @@ memory.</li>
                     (equal l (len bytes)))
                (< (combine-bytes bytes) (expt 2 (ash l 3))))
       :hints (("Goal" :in-theory (e/d* (logapp) ())))
-      :rule-classes :linear))
+      :rule-classes :linear)
+
+    (defthm unsigned-byte-p-of-combine-bytes
+      (implies (and (byte-listp bytes)
+                    (equal n (ash (len bytes) 3)))
+               (unsigned-byte-p n (combine-bytes bytes)))
+      :rule-classes ((:rewrite)
+                     (:linear
+                      :corollary
+                      (implies (and (byte-listp bytes)
+                                    (equal n (ash (len bytes) 3)))
+                               (<= 0 (combine-bytes bytes)))))))
 
   (define byte-ify-general
     ((n   natp)
@@ -704,16 +714,16 @@ memory.</li>
   </ul>"
 
 
-    (if (mbt (and (natp n)
-                  (integerp val)
-                  (byte-listp acc)))
+    (if (mbt (byte-listp acc))
 
-        (if (zp n)
-            (reverse acc)
-          (b* ((acc (cons (loghead 8 val) acc))
-               (val (logtail 8 val)))
-              (byte-ify-general (1- n) val acc)))
+        (b* ((n (mbe :logic (nfix n) :exec n))
+             (val (mbe :logic (ifix val) :exec val)))
 
+            (if (zp n)
+                (reverse acc)
+              (b* ((acc (cons (loghead 8 val) acc))
+                   (val (logtail 8 val)))
+                  (byte-ify-general (1- n) val acc))))
       nil)
 
     ///
@@ -761,7 +771,13 @@ memory.</li>
                (equal (len (nthcdr m (byte-ify-general n val acc)))
                       (- (+ n (len acc)) m)))
       :hints (("Goal" :in-theory (e/d (nfix) ())))
-      :rule-classes :linear))
+      :rule-classes :linear)
+
+    (defthmd byte-ify-opener
+      (implies (and (syntaxp (quotep n))
+                    (posp n))
+               (equal (byte-ify-general n val acc)
+                      (byte-ify-general (1- n) (logtail 8 val) (cons (loghead 8 val) acc))))))
 
   (define byte-ify ((n natp) (val integerp))
     :short "@('byte-ify') takes an integer @('val') and converts it
@@ -776,6 +792,11 @@ memory.</li>
   <li><code>(byte-ify 8 #xAABBCCDDEEFF) = (#xFF #xEE #xDD #xCC #xBB #x0 #x0 #x0)</code></li>
   </ul>"
 
+    ;; This is logically equal to just (byte-ify-general n val nil), but
+    ;; reasoning about logheads and logtails in the common case is
+    ;; easier. Anyway, the theorem byte-ify-and-byte-ify-general establishes a
+    ;; relationship between byte-ify and byte-ify-general, but it's kept
+    ;; disabled.
     (case n
       (0 nil)
       (1 (list (part-select val :low 0  :width 8)))
@@ -813,6 +834,12 @@ memory.</li>
 
     ///
 
+    (defthmd byte-ify-and-byte-ify-general
+      (equal (byte-ify n val)
+             (byte-ify-general n val nil))
+      :hints (("Goal" :in-theory (e/d* (byte-ify-opener
+                                        byte-ify-general)
+                                       ()))))
     (defthm byte-listp-byte-ify
       (byte-listp (byte-ify n val)))
 
@@ -957,8 +984,7 @@ memory.</li>
 
     (defthm len-of-rb-in-programmer-level-mode
       (implies (and (programmer-level-mode x86)
-                    (canonical-address-listp addresses)
-                    (byte-listp acc))
+                    (canonical-address-listp addresses))
                (equal (len (mv-nth 1 (rb addresses r-w-x x86)))
                       (len addresses)))))
 
@@ -1273,9 +1299,9 @@ memory.</li>
       :hints (("Goal" :expand (create-canonical-address-list 1 x))))
 
     (defthm len-of-create-canonical-address-list
-      (implies (and (natp count)
+      (implies (and (canonical-address-p (+ -1 addr count))
                     (canonical-address-p addr)
-                    (canonical-address-p (+ -1 addr count)))
+                    (natp count))
                (equal (len (create-canonical-address-list count addr))
                       count))))
 
@@ -3693,7 +3719,14 @@ memory.</li>
            (mv (and flg0 flg1) val x86)))
       (16 (rm128 addr r-w-x x86))
       (otherwise
-       (mv 'unsupported-nbytes nbytes x86))))
+       (mv 'unsupported-nbytes nbytes x86)))
+
+    ///
+
+    (defthm x86p-of-mv-nth-2-of-rm-size
+      (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
+                    (x86p x86))
+               (x86p (mv-nth 2 (rm-size bytes lin-addr r-w-x x86))))))
 
   (define rim-size
     ((nbytes :type (member 1 2 4 8))

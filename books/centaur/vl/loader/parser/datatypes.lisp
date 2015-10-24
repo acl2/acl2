@@ -121,35 +121,43 @@
   ;; Note (SystemVerilog-2012 page 109): unpacked dimensions like [size] are
   ;; the same as [0:size-1].  We therefore convert them into
   ;; vl-packeddimension-p structures like [0:size-1].
-  :result (vl-packeddimension-p val)
+  :result (vl-range-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
         (:= (vl-match-token :vl-lbrack))
-        (when (vl-is-token? :vl-rbrack)
-          (:= (vl-match))
-          (return (make-vl-packeddimension-unsized)))
+        ;; [Jared] bozo we used to do this, but does this make any sense?
+        ;; The grammar appears to require a range or expression here.
+        ;; (when (vl-is-token? :vl-rbrack)
+        ;;   (:= (vl-match))
+        ;;   (return (make-vl-packeddimension-unsized)))
         (msb := (vl-parse-expression))
         (when (vl-is-token? :vl-colon)
           (:= (vl-match))
           (lsb := (vl-parse-expression)))
         (:= (vl-match-token :vl-rbrack))
-        (return (vl-range->packeddimension
-                 (if lsb
-                     ;; Regular [msb:lsb] range
-                     (make-vl-range :msb msb :lsb lsb)
-                   ;; Single dimension [msb], meaning [0:msb-1]
-                   (make-vl-range
-                    :msb (vl-make-index 0)
-                    :lsb (make-vl-binary
-                          :op :vl-binary-minus
-                          :left msb
-                          :right (vl-make-index 1))))))))
+        (return (if lsb
+                    ;; Regular [msb:lsb] range
+                    (make-vl-range :msb msb :lsb lsb)
+                  ;; Single dimension [msb], meaning [0:msb-1]
+                  (make-vl-range
+                   :msb (vl-make-index 0)
+                   :lsb (make-vl-binary
+                         :op :vl-binary-minus
+                         :left msb
+                         :right (vl-make-index 1))))))
+  ///
+  (defthm vl-packeddimension-p-of-vl-parse-unpacked-dimension
+    ;; Gross, for compatibility with older code
+    (b* (((mv err val ?tokstream) (vl-parse-unpacked-dimension)))
+      (implies (not err)
+               (vl-packeddimension-p val)))
+    :hints(("Goal" :in-theory (enable vl-packeddimension-p)))))
 
 (defparser vl-parse-0+-unpacked-dimensions ()
   ;; Match { unpacked_dimension }
-  :result (vl-packeddimensionlist-p val)
+  :result (vl-rangelist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
@@ -159,7 +167,11 @@
           (return nil))
         (first := (vl-parse-unpacked-dimension))
         (rest  := (vl-parse-0+-unpacked-dimensions))
-        (return (cons first rest))))
+        (return (cons first rest)))
+  ///
+  (defthm vl-packeddimensionlist-p-of-vl-parse-0+-unpacked-dimensions
+    (b* (((mv ?err val ?tokstream) (vl-parse-0+-unpacked-dimensions)))
+      (vl-packeddimensionlist-p val))))
 
 
 (defparser vl-parse-variable-dimension ()
@@ -168,12 +180,19 @@
   ;;                               | associative_dimension
   ;;                               | queue_dimension
   ;;
-  ;; Except that BOZO so far we only implement unpacked_dimension.
+  ;; Except that BOZO so far we only implement unsized_dimension and
+  ;; unpacked_dimension.
   :result (vl-packeddimension-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seq tokstream
+       ;; unsized_dimension ::= '[' ']'
+       (when (and (vl-is-token? :vl-lbrack)
+                  (vl-lookahead-is-token? :vl-rbrack (cdr (vl-tokstream->tokens))))
+         (:= (vl-match))
+         (:= (vl-match))
+         (return (make-vl-packeddimension-unsized)))
        (ans := (vl-parse-unpacked-dimension))
        (return ans)))
 

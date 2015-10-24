@@ -57,65 +57,68 @@
   (deftagsum fa (:fa1 (pu natp)) (:fa2 (pa natp))))
 ||#
 
-#!FTY
-(define get-flextypes (world)
-  "Get the database of defined flextypes."
-  (table-alist 'fty::flextypes-table world))
 
-#!FTY
-(def-primitive-aggregate suminfo
-  (type   ;; the superior flextypes object
-   sum    ;; the single flexsum within type
-   tags   ;; possible tags for products within type
-   ))
+;; BOZO why was this stuff here?
 
-#!FTY
-(define get-flexsum-from-types (name types)
-  (if (atom types)
-      nil
-    (or (and (eq (tag (car types)) :sum)
-             (eq (flexsum->name (car types)) name)
-             (car types))
-        (get-flexsum-from-types name (cdr types)))))
+;; #!FTY
+;; (define get-flextypes (world)
+;;   "Get the database of defined flextypes."
+;;   (table-alist 'fty::flextypes-table world))
+
+;; #!FTY
+;; (def-primitive-aggregate suminfo
+;;   (type   ;; the superior flextypes object
+;;    sum    ;; the single flexsum within type
+;;    tags   ;; possible tags for products within type
+;;    ))
+
+;; #!FTY
+;; (define get-flexsum-from-types (name types)
+;;   (if (atom types)
+;;       nil
+;;     (or (and (eq (tag (car types)) :sum)
+;;              (eq (flexsum->name (car types)) name)
+;;              (car types))
+;;         (get-flexsum-from-types name (cdr types)))))
 
 
 
-#!FTY
-(define get-flexsum-info (name world)
-  :returns (suminfo?)
-  (b* ((table (get-flextypes world))
-       (entry (cdr (assoc name table)))
-       ((unless entry)
-        (raise "~x0 not found in the flextypes table." name))
-       ((unless (fty::flextypes-p entry))
-        (raise "flextypes table entry for ~x0 is malformed???" name))
-       ((fty::flextypes entry) entry)
-       ;; ((unless (equal (len entry.types) 1))
-       ;;  (raise "~x0 doesn't look like a defprod; expected one sum type but found ~x1."
-       ;;         name (len entry.types)))
-       (sum (get-flexsum-from-types name entry.types))
-       ((unless (flexsum-p sum))
-        (raise "~x0 doesn't look like a deftagsum: expected a top-level sum but found ~x1."
-               name sum))
-       ((flexsum sum) sum)
-       ;; ((unless (equal (len sum.prods) 1))
-       ;;  (raise "~x0 doesn't look like a defprod: expected a single product but found ~x1."
-       ;;         name sum.prods))
-       ;; (prod (car sum.prods))
-       ;; ((unless (flexprod-p prod))
-       ;;  (raise "~x0 doesn't look like a defprod: expected a flexprod-p but found ~x1."
-       ;;         name prod))
-       )
-    (make-suminfo :type entry
-                  :sum sum
-                  :tags (flexprods->kinds sum.prods))))
+;; #!FTY
+;; (define get-flexsum-info (name world)
+;;   :returns (suminfo?)
+;;   (b* ((table (get-flextypes world))
+;;        (entry (cdr (assoc name table)))
+;;        ((unless entry)
+;;         (raise "~x0 not found in the flextypes table." name))
+;;        ((unless (fty::flextypes-p entry))
+;;         (raise "flextypes table entry for ~x0 is malformed???" name))
+;;        ((fty::flextypes entry) entry)
+;;        ;; ((unless (equal (len entry.types) 1))
+;;        ;;  (raise "~x0 doesn't look like a defprod; expected one sum type but found ~x1."
+;;        ;;         name (len entry.types)))
+;;        (sum (get-flexsum-from-types name entry.types))
+;;        ((unless (flexsum-p sum))
+;;         (raise "~x0 doesn't look like a deftagsum: expected a top-level sum but found ~x1."
+;;                name sum))
+;;        ((flexsum sum) sum)
+;;        ;; ((unless (equal (len sum.prods) 1))
+;;        ;;  (raise "~x0 doesn't look like a defprod: expected a single product but found ~x1."
+;;        ;;         name sum.prods))
+;;        ;; (prod (car sum.prods))
+;;        ;; ((unless (flexprod-p prod))
+;;        ;;  (raise "~x0 doesn't look like a defprod: expected a flexprod-p but found ~x1."
+;;        ;;         name prod))
+;;        )
+;;     (make-suminfo :type entry
+;;                   :sum sum
+;;                   :tags (flexprods->kinds sum.prods))))
 
-#!FTY
-(define get-flexsum-infos (sumnames world)
-  (if (atom sumnames)
-      nil
-    (cons (get-flexsum-info (car sumnames) world)
-          (get-flexsum-infos (cdr sumnames) world))))
+;; #!FTY
+;; (define get-flexsum-infos (sumnames world)
+;;   (if (atom sumnames)
+;;       nil
+;;     (cons (get-flexsum-info (car sumnames) world)
+;;           (get-flexsum-infos (cdr sumnames) world))))
 
 
 #||

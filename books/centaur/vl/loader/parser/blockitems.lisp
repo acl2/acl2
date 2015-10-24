@@ -139,11 +139,6 @@ out some duplication and indirection:</p>
                              :atts     atts
                              :loc      loc))))
 
-;; (local (defthm vl-packeddimensionlist-p-when-vl-rangelist-p
-;;          (implies (vl-rangelist-p x)
-;;                   (vl-packeddimensionlist-p x))
-;;          :hints(("Goal" :induct (len x)))))
-
 (defprojection vl-ranges->packeddimensions ((x vl-rangelist-p))
   :returns (dims vl-packeddimensionlist-p)
   (vl-range->packeddimension x))

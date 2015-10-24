@@ -514,10 +514,15 @@
      (second int)
      (third symbol)
      (fourth 4uplelist))
+    :tag :four
     :measure (two-nats-measure (acl2-count x) 1))
   (deflist 4uplelist :elt-type 4uple :measure
     (two-nats-measure (acl2-count x) 0)
     :elementp-of-nil nil))
+
+
+
+
 
 
 (include-book "std/util/deflist" :dir :system)
@@ -1145,6 +1150,29 @@
   :layout :tree)
 
 
+(deftranssum nested-transsum-1
+  ;; 4uple is nested inside a deftypes (of the same name)
+  (3ple-d 4uple))
+
+(deftypes outer-name
+  (defprod inner-name
+    :measure (two-nats-measure (acl2-count x) 1)
+    :tag :inner
+    ((fn   integerp)
+     (args inner-namelist)))
+  (deflist inner-namelist
+    :measure (two-nats-measure (acl2-count x) 0)
+    :elt-type inner-name))
+
+
+(deftranssum nested-transsum-2
+  (3ple-d inner-name)
+  ///
+  (local (defthm crock
+           (implies (or (3ple-d-p x)
+                        (inner-name-p x))
+                    (nested-transsum-2-p x)))))
+
 
 ;; BOZO This doesn't work because we'd need to somewhat rearchitect the parsing
 ;; of deftypes forms to accomodate analyzing the other types in the mutual-recursion to find
@@ -1156,3 +1184,5 @@
 ;;     :tag :argle)
 ;;   (deftranssum anyple2
 ;;     (3ple-d 3ple-e 3ple-f argle)))
+
+

@@ -571,7 +571,8 @@ $instrs .= "(acl2::in-package \"ACL2\")\n";
 $instrs .= "#+acl2-hons (profile-fn 'prove)\n";
 $instrs .= "#+acl2-hons (profile-fn 'certify-book-fn)\n";
 $instrs .= "(acl2::lp)\n";
-#    $instrs .= "(set-debugger-enable :bt)\n";
+# We used to comment this out, but maybe it's better to leave this enabled by default?
+$instrs .= "(set-debugger-enable :bt)\n";
 $instrs .= "(acl2::in-package \"ACL2\")\n\n";
 $instrs .= "(set-ld-error-action (quote (:exit 1)) state)\n";
 $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
@@ -674,6 +675,7 @@ write_whole_file($lisptmp, $instrs);
 # }
     $shinsts .= "echo >> '$outfile'\n";
     $shinsts .= "pwd >> '$outfile'\n";
+    $shinsts .= "echo -n 'HOST: ' >> '$outfile'\n";
     $shinsts .= "hostname >> '$outfile'\n";
     $shinsts .= "echo >> '$outfile'\n";
 
@@ -755,6 +757,27 @@ if ($status == 43) {
     }
 }
 
+
+sub extract_hostname_from_outfile
+{
+    my $filename = shift;
+    my $ret = "";
+    open(my $fd, "<", $filename) or die("Can't open $filename: $!\n");
+    while(<$fd>) {
+	my $line = $_;
+	chomp($line);
+	if ($line =~ m/^HOST: (.*)$/)
+	{
+	    $ret = $1;
+	    last;
+	}
+    }
+    close($fd);
+
+    return $ret;
+}
+
+
 if ($success) {
 
     my $black = chr(27) . "[0m";
@@ -786,7 +809,12 @@ if ($success) {
 	unlink($outfile);
     }
 
-    printf("%sBuilt %s (%ds)%s\n", $color, $printgoal, $ELAPSED, $black);
+    my $hostname = "";
+    if ($ENV{"CERT_PL_SHOW_HOSTNAME"}) {
+	$hostname = " " . extract_hostname_from_outfile($outfile);
+    }
+
+    printf("%sBuilt %s (%ds%s)%s\n", $color, $printgoal, $ELAPSED, $hostname, $black);
 
 } else {
     my $taskname = ($STEP eq "acl2x" || $STEP eq "acl2xskip") ? "ACL2X GENERATION" :

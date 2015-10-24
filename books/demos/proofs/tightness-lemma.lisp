@@ -47,8 +47,8 @@
 ; (f) If s1 and s2 are strictly <-increasing I-tuples of length n_f such
 ;     that P(f(s1)), then P(f(s2)).
 
-; (g) s_f and s_g are strictly <-increasing I-tuples of length n_f and
-;     n_g, respectively, such that f(s_f) = g(s_g).
+; (g) s_f and s_g are disjoint strictly <-increasing I-tuples of length
+;     n_f and n_g, respectively, such that f(s_f) = g(s_g).
 
 ; Then P(f(s_f)).
 

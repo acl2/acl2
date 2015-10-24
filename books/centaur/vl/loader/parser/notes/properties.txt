@@ -1,0 +1,1022 @@
+-------------------------------------------------------------------------------
+
+             Notes about Parsing and Representing SystemVerilog
+                       Sequences and Properties
+
+-------------------------------------------------------------------------------
+
+
+
+SEQUENCES
+=========
+
+    Basic grammar rule per the SystemVerilog-2012 standard:
+
+       sequence_expr ::= cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+                       | sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+                       | expression_or_dist [boolean_abbrev]
+                       | sequence_instance [sequence_abbrev]
+                       | '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+                       | sequence_expr 'and' sequence_expr
+                       | sequence_expr 'intersect' sequence_expr
+                       | sequence_expr 'or' sequence_expr
+                       | 'first_match' '(' sequence_expr {',' sequence_match_item} ')'
+                       | expression_or_dist 'throughout' sequence_expr
+                       | sequence_expr 'within' sequence_expr
+                       | clocking_event sequence_expr
+
+    To make any sense of this we need to know the precedences of these operators.
+    The SystemVerilog-2012 standard almost tells us what we need to know in Table
+    16-1, Page 356.
+
+               Operators        Associativity       Precedence
+        --------------------------------------------------------
+          [* ]  [= ]  [-> ]     ---                   highest
+          ##                    Left
+          throughout            Right
+          within                Left
+          intersect             Left
+          and                   Left
+          or                    Left                  lowest
+        --------------------------------------------------------
+
+Initial Analysis.
+
+    This precedence table almost covers everything.  Just running through the rules again:
+
+       (ok) A cycle_delay_range is a ## thing, so these are basically covered:
+
+                       cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+                    | sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+
+       (ok) A boolean_abbrev or sequence_abbrev is a [*], [+], [=], or [->] kind of
+            thing, so these are covered (modulo the omission of [+], but it seems
+            safe to assume that's supposed to be treated like the others.)
+
+                    | expression_or_dist [boolean_abbrev]
+                    | sequence_instance [sequence_abbrev]
+
+       (ok) This rule seems fine because the explicit parens mean there's not
+            really any interaction with any other rules.
+
+                    | '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+
+       (ok) These are explicitly covered in the table:
+
+                    | sequence_expr 'and' sequence_expr
+                    | sequence_expr 'intersect' sequence_expr
+                    | sequence_expr 'or' sequence_expr
+
+       (ok) This one isn't a problem because the explicit parens mean we can't really have
+            any confusion about interactions with other operators.
+
+                    | 'first_match' '(' sequence_expr {',' sequence_match_item} ')'
+
+       (ok) This is covered in the table but is slightly weird/special because of the
+            right associativity.
+
+                    | expression_or_dist 'throughout' sequence_expr
+
+       (ok) This one is covered in the table above.
+
+                    | sequence_expr 'within' sequence_expr
+
+      (bad) This one is not covered in the table and unfortunately commercial
+            simulators do not seem to agree what its precedence should be.
+
+                    | clocking_event sequence_expr
+
+
+Precedence of Clocking Events?
+
+    Experiments with NCVerilog and VCS (see vl/loader/parser/notes/seqprec.sv)
+    suggest that:
+
+      - NCV treats a clocking_event as having lower precedence than OR
+      - VCS does the opposite.
+
+    That's too bad because it means we don't have any real basis for making a
+    decision other than whatever we like better.  Fortunately this is industry
+    instead of academia, so I arbitrarily decree that NCVerilog's behavior
+    seems nicer and that's what Centaur will follow. :)
+
+
+Adjusted Grammar with Precedence Baked In.
+
+    OK, so now to do the usual thing and convert these precedences into a
+    grammar that we can implement in recursive descent style.  The lowest
+    priority rules need to come first, and the very lowest priority rule is
+    going to be a the rule for clocking events.  Here's an updated table with
+    my rule names:
+
+               Operators        Associativity       Precedence         MyName
+        -----------------------------------------------------------------------------------------
+          [* ]  [= ]  [-> ]     ---                   highest        repeat_se
+          ##                    Left                                 delay_se
+          throughout            Right                                thout_se
+          within                Left                                 within_se
+          intersect             Left                                 isect_se
+          and                   Left                                 and_se
+          or                    Left                                 or_se
+          clocking events       ---                   lowest         sequence_expression
+        -----------------------------------------------------------------------------------------
+
+    Working from the top-down:
+
+      sequence_expr  ::= [clocking_event] or_se
+      or_se          ::= and_se { 'or' and_se }               ((Left Associative))
+      and_se         ::= isect_se { 'and' isect_se }          ((Left Associative))
+      isect_se       ::= within_se { 'intersect' within_se }  ((Left Associative))
+      within_se      ::= thout_se { 'within' thout_se }       ((Left Associative))
+
+    Throughout expressions things are a little trickier.  I want to write
+    something like:
+
+      thout_se  ::= delay_se { 'throughout' delay_se } ((Right Associative))
+
+    But that doesn't seem quite right because we're only supposed to have an
+    expression_or_dist on the left hand side.  So maybe a better way to write
+    this is:
+
+       thout_se ::= expression_or_dist 'throughout' thout_se
+                  | delay_se
+
+    This is ambiguous, but it seems straightforward to try to match the
+    'throughout' form first and then backtrack if that wasn't right.  The
+    right-associative style of the rule is a natural fit for recursive descent,
+    so that should work well.
+
+    Moving along to ## operators.  The original grammar rules to consider here
+    are:
+
+       sequence_expr ::=               cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+                       | sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+
+    Supposing that we're going to introduce a firstmatch_se for higher-precedence
+    sequence expressions, I think what we want here is:
+
+       delay_se ::=               cycle_delay_range firstmatch_se { cycle_delay_range firstmatch_se }
+                  | firstmatch_se cycle_delay_range firstmatch_se { cycle_delay_range firstmatch_se }
+
+    But of course we also want a way for higher precedence sequence expressions
+    to be used as delay expressions directly, so I think really our starting
+    point should be:
+
+       delay_se ::=               cycle_delay_range firstmatch_se { cycle_delay_range firstmatch_se }
+                  | firstmatch_se cycle_delay_range firstmatch_se { cycle_delay_range firstmatch_se }
+                  | firstmatch_se
+
+    Obviously the second rule collapses as follows:
+
+       delay_se ::=                 cycle_delay_range firstmatch_se { cycle_delay_range firstmatch_se }
+                  | firstmatch_se { cycle_delay_range firstmatch_se }
+                  | firstmatch_se
+
+    Now just adjusting spacing we have:
+
+       delay_se ::= cycle_delay_range firstmatch_se { cycle_delay_range firstmatch_se }
+                  |                   firstmatch_se { cycle_delay_range firstmatch_se }
+                  |                   firstmatch_se
+
+    Which I think reduces to simply:
+
+       delay_se ::= [cycle_range] firstmatch_se { cycle_delay_range firstmatch_se }  ((Left Associative))
+
+    That gets us down to repeat expressions for the [*], [+], [=], and [->]
+    constructs.  Let's review how much of the original grammar we haven't
+    covered yet:
+
+          DONE        cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+          DONE      | sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }
+          TODO      | expression_or_dist [boolean_abbrev]
+          TODO      | sequence_instance [sequence_abbrev]
+          TODO      | '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+          DONE      | sequence_expr 'and' sequence_expr
+          DONE      | sequence_expr 'intersect' sequence_expr
+          DONE      | sequence_expr 'or' sequence_expr
+          TODO      | 'first_match' '(' sequence_expr {',' sequence_match_item} ')'
+          DONE      | expression_or_dist 'throughout' sequence_expr
+          DONE      | sequence_expr 'within' sequence_expr
+          DONE      | clocking_event sequence_expr
+
+    So just collecting up the TODO part we're left with the following.  I split out
+    first_match only because it's very easy and unambiguous, and leaves the tricky
+    part (repeat_se) to discuss in isolation.
+
+      firstmatch_se ::= 'first_match' '(' sequence_expr {',' sequence_match_item} ')'
+                      | repeat_se
+
+      repeat_se ::= expression_or_dist [boolean_abbrev]
+                  | sequence_instance [sequence_abbrev]
+                  | '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+
+
+Resolving Ambiguities in Repeat_se.
+
+    Looking at repeat_se, we can see that the leading paren in the third case
+    clearly distinguishes it from the sequence_instance case.  However, we
+    still have some ambiguities here.  Note the following supporting
+    productions:
+
+      expression_or_dist ::= expression [ 'dist' '{' dist_list '}' ]
+      sequence_instance ::= ps_or_hierarchical_sequence_identifier [ '(' [sequence_list_of_arguments] ')' ]
+      boolean_abbrevs are things like:  [* ...], [+], [= ...], or [-> ...]
+      sequence_abbrevs are similar but slightly more restrictive: [* ...], [+] are OK, but not [= ...] or [-> ...]
+
+    Ambiguity 1. Any ps_or_hierarchical_sequence_identifier is a valid expression,
+    so if we just see a ps_or_hierarchical_sequence_identifier, with or without
+    arguments, it's not clear whether we're in the sequence_instance or
+    expression_or_dist case.
+
+    We sometimes face similar ambiguities and need to know whether something is a
+    user-defined type, and we track those in the parse state.  But I don't think
+    that's an approach that we can use here, because the SystemVerilog standard
+    (Section 16.8, Page 350) explicitly says: "A named sequence may be instantiated
+    anywhere that a sequence_expr may be written, including prior to its
+    declaration."  So it seems like we can just "know" that we're dealing with a
+    sequence identifier, because even if we are, we may not have seen its
+    declaration yet.
+
+    So how deep is this ambiguity?  A lone identifier might be fine as an
+    expression.  But a sequence instance can optionally have this very subtle
+    sequence_list_of_arguments.  So it seems to me that an ordinary looking
+    function call like foo(1,2,3) could match both expression and
+    sequence_instance.
+
+    Can we resolve this via backtracking?  We might try:
+
+      1. Try to match sequence_instance [sequence_abbrev]
+      2. If unsuccessful, backtrack and match expression_or_dist [boolean_abbrev]
+
+    This won't work.  There are expressions that have tails after the
+    sequence_instance part.  For instance, consider an expression such as `foo
+    + bar`.  Here `foo` is a perfectly valid sequence_instance, so we will
+    succeed in step 1 and think we've matched a whole sequence_expression, but
+    there's more stuff there that we should have consumed.
+
+    So we might try the reverse, i.e.:
+
+      1. Try to match expression_or_dist [boolean_abbrev]
+      2. If unsuccessful, backtrack and match sequence_instance [sequence_abbrev]
+
+    I think this has a similar problem.  In particular, there are some sequence
+    instances such as `foo(1,2,3)` that are valid expressions, but there are
+    also sequence instances that are not, such as `foo(a within b)`.  So if we
+    encounter such a thing, then our expression_or_dist parser would still
+    match part of this: it will tell us that `foo` is a valid expression, but
+    it will have failed to match the sequence_list_of_arguments.
+
+    On the other hand, this seems more salvageable.  Unlike expressions, where
+    a partial match might be followed by many different kinds of tokens, it
+    seems possible to straightforwardly identify when we are in this
+    bad/ambiguous situation.  In particular, the only way that a
+    sequence_instance can be a non-expression is if there is something about
+    its arguments that makes them non-expressions.  And in that case, it seems
+    like:
+
+      - Our expression parser will produce an identifier-ish expression
+        (e.g., foo or pkg::foo or whatever), and
+      - The next token in the input stream will be '(', i.e., the start of the
+        argument list.
+
+    So: is there any way for us to encounter a ( after parsing a valid
+    sequence_expr?  It takes awhile to follow through the grammar, but after
+    tracing through it a bunch, I don't believe this is possible.  So I think
+    the following is a valid heuristic:
+
+       1. Try to match expression_or_dist [boolean_abbrev]
+       2. If you arrive at an open paren, you have done the wrong thing,
+          backtrack and try to match sequence_instance [sequence_abbrev]
+          instead.
+
+    Ambiguity 2.  How can we differentiate between:
+
+         expression_or_dist [boolean_abbrev]
+         '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+
+    Note that a sequence_match_item is basically just a restricted subset of
+    expression.  This seems like a more run of the mill ambiguity that we can
+    probably easily solve with backtracking.  There are expressions like
+    `(foo)` which are also valid sequence expressions, but in that case I think
+    we probably prefer to just treat them as plain expressions.  If we run into
+    something fancier like `(foo, bar)`, it won't be a valid expression anyway,
+    so we can just start with expression_or_dist and backtrack if that fails.
+
+
+
+
+
+
+Properties
+==========
+
+    Original Grammar from the SystemVerilog-2012 standard.
+
+        property_expr ::= sequence_expr
+                        | 'strong' '(' sequence_expr ')'
+                        | 'weak' '(' sequence_expr ')'
+                        | '(' property_expr ')'
+                        | 'not' property_expr
+                        | property_expr 'or' property_expr
+                        | property_expr 'and' property_expr
+                        | sequence_expr '|->' property_expr
+                        | sequence_expr '|=>' property_expr
+                        | 'if' '(' expression_or_dist ')' property_expr [ 'else' property_expr ]
+                        | 'case' '(' expression_or_dist ')' property_case_item { property_case_item } 'endcase'
+                        | sequence_expr '#-#' property_expr
+                        | sequence_expr '#=#' property_expr
+                        | 'nexttime' property_expr
+                        | 'nexttime' '[' constant_expression ']' property_expr
+                        | 's_nexttime' property_expr
+                        | 's_nexttime' '[' constant_expression ']' property_expr
+                        | 'always' property_expr
+                        | 'always' '[' cycle_delay_const_range_expression ']' property_expr
+                        | 's_always' '[' constant_range ']' property_expr
+                        | 's_eventually' property_expr
+                        | 'eventually' '[' constant_range ']' property_expr
+                        | 's_eventually' '[' cycle_delay_const_range_expression ']' property_expr
+                        | property_expr 'until' property_expr
+                        | property_expr 's_until' property_expr
+                        | property_expr 'until_with' property_expr
+                        | property_expr 's_until_with' property_expr
+                        | property_expr 'implies' property_expr
+                        | property_expr 'iff' property_expr
+                        | 'accept_on' '(' expression_or_dist ')' property_expr
+                        | 'reject_on' '(' expression_or_dist ')' property_expr
+                        | 'sync_accept_on' '(' expression_or_dist ')' property_expr
+                        | 'sync_reject_on' '(' expression_or_dist ')' property_expr
+                        | property_instance
+                        | clocking_event property_expr
+
+    Description of precedences from 16.3.  This is pretty confusing because it
+    is mixing these operators in with the sequence operators, and it isn't
+    entirely clear at first whether that makes sense.  We are also told that
+    the normal expression operators (table 11-2) have higher precedence than
+    these sequence and property operators, even though I don't think there's
+    really any confusion about that.
+
+           Sequence Operators      Property Operators                                    Associativity       Precedence
+        ------------------------------------------------------------------------------------------------------------------
+          [* ]  [= ]  [-> ]                                                              ---                  highest
+
+          ##                                                                             Left
+
+          throughout                                                                     Right
+
+          within                                                                         Left
+
+          intersect                                                                      Left
+
+                                    not, nexttime, s_nexttime                            ---
+
+          and                       and                                                  Left
+
+          or                        or                                                   Left
+
+                                    iff                                                  Right
+
+                                    until, s_until, until_with, s_until_with, implies    Right
+
+                                    |->, |=>, #-#, #=#                                   Right
+
+                                    always, s_always, eventually, s_eventually,          Right                lowest
+                                        if-else, case, accept_on, reject_on,
+                                        sync_accept_on, sync_reject_on
+
+        ------------------------------------------------------------------------------------------------------------------
+
+
+Initial Analysis.
+
+    There are several problems with the above that we will have to work out.
+
+    Concern 1.  There's a big overlap between sequence_expr and property_expr and
+    it seems problematic.  Consider cases like `A and B |-> C and D`.  It seems
+    like this should parse as `(A and B) |-> (C and D)` since AND binds more
+    tightly than |->.  Indeed `(A and B)` is a good sequence expression so that
+    seems sensible.  But consider instead something like `A and B and not C`.  In
+    this case the precedence should be `((A and B) and (not C))`, but that means
+    that `A and B` must be a property_expr instead of a sequence_expr.  So how do
+    we know whether to parse `A and B` as a property_expr versus a sequence_expr?
+
+    Maybe this isn't so bad.  It seems pretty reasonable to use backtracking
+    here: if we happen to see a sequence expression followed by |-> or similar,
+    then we can be pretty sure that's what we're supposed to parse.
+
+    Concern 2.  More generally, are sequences and properties fundamentally
+    different?  And should we represent sequence_expr and property_expr as a
+    single, unified data structure, or do we need/want to keep them separate for
+    some reason?  I think we probably want to keep them separate because it seems
+    like, e.g., a sequence AND is somehow different than a property AND: the
+    sequence AND seems like a regular expression matching thing, whereas the
+    property AND is a Boolean combination of properties thing.  I'm not sure if
+    they're entirely compatible or if it matters.
+
+    It probably makes sense to try to initially keep these separate and see if we
+    can make that work.
+
+    Concern 3.  What's the right precedence for clocking events in
+    property_exprs?  Experiments (centaur/vl/parser/notes/seqexpr.sv) seem to
+    suggest that like sequence expressions, NCVerilog treats them as having lower
+    precedence than AND.  VCS disagrees with NCVerilog about this for sequence
+    expressions, but I keep getting parse errors with VCS whenever I try to test
+    property-style things, so I'm not sure it even supports them.  I'm also not
+    quite sure how to satisfactorily test the precedence of clocking events
+    versus always statements, or if it even is possible to confuse it.
+
+    I think for now I'll treat them as having minimal precedence, which is at
+    least consistent with how we're treating sequence_exprs and seems arguably no
+    more wrong than anything else.
+
+
+Adjusted Grammar with Precedence Baked In.
+
+    Let's try to apply these precedence rules to the grammar in the same way as
+    for sequences, to get a top-level property_expr where we start from the
+    lowest precedence things and go downward.  Actually, just starting at the
+    top (lowest precedence), things are already right-recursive and these
+    aren't really binary operators, so here's a first cut:
+
+       ((Right Associative))
+       property_expr ::= clocking_event property_expr                ;; I think these are minimal precedence
+                       | 'always' property_expr
+                       | 'always' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 's_always' '[' constant_range ']' property_expr
+                       | 's_eventually' property_expr
+                       | 'eventually' '[' constant_range ']' property_expr
+                       | 's_eventually' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 'accept_on' '(' expression_or_dist ')' property_expr
+                       | 'reject_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_accept_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_reject_on' '(' expression_or_dist ')' property_expr
+                       | 'if' '(' expression_or_dist ')' property_expr [ 'else' property_expr ]
+                       | 'case' '(' expression_or_dist ')' property_case_item { property_case_item } 'endcase'
+                       | impl_pe
+
+    The next rule can probably be reasonably implemented by backtracking: try
+    to match a sequence_expr and then see if you arrive at one of the operators
+    ('|->', etc.).  If so, you're doing it right and that's what we want to
+    use.  If not, fall back to trying to match until_pe.
+
+       ((Right Associative))
+       impl_pe ::= sequence_expr '|->' impl_pe
+                 | sequence_expr '|=>' impl_pe
+                 | sequence_expr '#-#' impl_pe
+                 | sequence_expr '#=#' impl_pe
+                 | until_pe
+
+    Now we get into the more usual binary operators, so these are very typical.
+
+       ((Right Associative))
+       until_pe ::= iff_pe { 'until' iff_pe }
+                  | iff_pe { 's_until' iff_pe }
+                  | iff_pe { 'until_with' iff_pe }
+                  | iff_pe { 's_until_with' iff_pe }
+                  | iff_pe { 'implies' iff_pe }
+                  | iff_pe
+
+       ((Right Associative))
+       iff_pe ::= or_pe { 'iff' or_pe }
+
+       ((Left Associative))
+       or_pe ::= and_pe { 'or' and_pe }
+
+       ((Left Associative))
+       and_pe ::= not_pe { 'and' not_pe }
+
+    In the next rule, it's tempting to think we can use a whole `property_expr`
+    since these are unary operators.  But consider `not a until b`.  Since not
+    has higher precedence, we want this to parse as `(not a) until b`.  That
+    means the argument to `not` needs to be something smaller than a whole
+    property_expr.  On the other hand, we should also be able ot parse `not not
+    a` as `not (not a)`, so that means we need to use at least a not_pe on the
+    right-hand side here.  Hrmn.  Actually this is really hard and inadequate,
+    I'll discuss it further below (see "Handling of Not.")
+
+       not_pe ::= 'not' not_pe
+                | 'nexttime' not_pe
+                | 'nexttime' '[' constant_expression ']' not_pe
+                | 's_nexttime' not_pe
+                | 's_nexttime' '[' constant_expression ']' not_pe
+                | strength_pe
+
+    The following rule probably isn't really necessary, but I want to keep
+    base_pe simpler because it is going to have certain ambiguities that we
+    need to decide how to resolve.
+
+       strength_pe ::= 'strong' '(' sequence_expr ')'
+                     | 'weak' '(' sequence_expr ')'
+                     | base_pe
+
+       base_pe ::= sequence_expr
+                 | '(' property_expr ')'
+                 | property_instance
+
+
+    So is there any hope at all of being able to parse these base_pe things?
+    We faced some similar ambiguity with the base case of sequence expressions,
+    except now it's amplified.
+
+    There's obviously a big ambiguity insofar as that many sequence_exprs can
+    begin with an open paren, so it's not clear whether we're looking at a
+    sequence_expr or a property_expr if we see a leading open paren.
+
+    Moreover, there's almost no difference between a property_instance and a
+    sequence_instance (which can be a sequence_expr) except that the arguments
+    to a property_instance can be whole property_exprs instead of
+    sequence_exprs.
+
+
+
+Thought Experiment: Combining Properties and Sequences
+======================================================
+
+    The similarity between sequence_instance and property_instance really makes
+    me think that we should use a combined representation instead of trying to
+    keep things separate.
+
+    In particular, consider parsing `foo(.a(b and c))`.  This is both valid as
+    both a sequence_instance and as a property_instance.  So which should it
+    be?  In general, whether `foo` is a property or a sequence isn't something
+    we can know when we encounter this, because both sequences and properties
+    can be instanced before they are declared.
+
+    So, if we really want to keep sequence_instance and property_instance as
+    separate structures, then probably the only thing we can do at parse time
+    is to adopt some arbitrary rule such as: "We first try to parse it as a
+    sequence_instance, and if that doesn't work then we try to parse it as a
+    property_instance."
+
+    That kind of a rule might be reasonable.  But even if we manage to
+    implement it correctly, what kind of structures are we going to get out of
+    our parser?  It might really and truly be that foo is a property instead of
+    a sequence.  But now we have a sequence_inst for `foo(.a(b and c))` instead
+    of a property_inst.  So that probably means we'll need some kind of a fixup
+    pass, after parsing, where we can properly disambiguate these.  And that
+    just seems like a real mess.
+
+    So what if we just say "screw it, let's make all of this a single
+    structure?"  I think the result may actually be fairly sensible...
+
+
+Initial Combined Grammar. (Not quite what we want)
+
+       Here's what happens if we just glue the two grammars above together.
+       This may not be quite what we actually want to implement.
+
+       ((Right Associative))
+       property_expr ::= clocking_event property_expr                ;; I think these are minimal precedence
+                       | 'always' property_expr
+                       | 'always' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 's_always' '[' constant_range ']' property_expr
+                       | 's_eventually' property_expr
+                       | 'eventually' '[' constant_range ']' property_expr
+                       | 's_eventually' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 'accept_on' '(' expression_or_dist ')' property_expr
+                       | 'reject_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_accept_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_reject_on' '(' expression_or_dist ')' property_expr
+                       | 'if' '(' expression_or_dist ')' property_expr [ 'else' property_expr ]
+                       | 'case' '(' expression_or_dist ')' property_case_item { property_case_item } 'endcase'
+                       | impl_pe
+
+       ((Right Associative))                              ;; Implement with Backtracking
+       impl_pe ::= sequence_expr '|->' impl_pe
+                 | sequence_expr '|=>' impl_pe
+                 | sequence_expr '#-#' impl_pe
+                 | sequence_expr '#=#' impl_pe
+                 | until_pe
+
+       ((Right Associative))
+       until_pe ::= iff_pe { 'until' iff_pe }
+                  | iff_pe { 's_until' iff_pe }
+                  | iff_pe { 'until_with' iff_pe }
+                  | iff_pe { 's_until_with' iff_pe }
+                  | iff_pe { 'implies' iff_pe }
+                  | iff_pe
+
+       ((Right Associative))
+       iff_pe ::= or_pe { 'iff' or_pe }
+
+       ((Left Associative))
+       or_pe ::= and_pe { 'or' and_pe }
+
+       ((Left Associative))
+       and_pe ::= not_pe { 'and' not_pe }
+
+       not_pe ::= 'not' not_pe
+                | 'nexttime' not_pe
+                | 'nexttime' '[' constant_expression ']' not_pe
+                | 's_nexttime' not_pe
+                | 's_nexttime' '[' constant_expression ']' not_pe
+                | strength_pe
+
+       strength_pe ::= 'strong' '(' sequence_expr ')'
+                     | 'weak' '(' sequence_expr ')'
+                     | base_pe
+
+       base_pe ::= sequence_expr
+                 | '(' property_expr ')'
+                 | property_instance
+
+       sequence_expr  ::= [clocking_event] or_se
+
+       ((Left Associative))
+       or_se                ::= and_se { 'or' and_se }
+
+       ((Left Associative))
+       and_se               ::= isect_se { 'and' isect_se }
+
+       ((Left Associative))
+       isect_se             ::= within_se { 'intersect' within_se }
+
+       ((Left Associative))
+       within_se            ::= thout_se { 'within' thout_se }
+
+       ((Right Associative))
+       thout_se ::= expression_or_dist 'throughout' thout_se
+                  | delay_se
+
+       ((Left Associative))
+       delay_se ::= [cycle_range] firstmatch_se { cycle_delay_range firstmatch_se }
+
+       firstmatch_se ::= 'first_match' '(' sequence_expr {',' sequence_match_item} ')'
+                       | repeat_se
+
+       repeat_se ::= expression_or_dist [boolean_abbrev]            ;; tricky ambiguities
+                  | sequence_instance [sequence_abbrev]
+                  | '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+
+
+    For a combined grammar and representation, I think the basic idea would be:
+
+       1. Eliminate the distinction between sequence_expr and property_expr,
+          and just allow property_exprs to occur anywhere that a sequence_expr
+          occurs in the original grammar.
+
+       2. Simplify the resulting grammar and get the precedence rules correct.
+
+       3. (Optional, eventually).  Add a post-parsing check that we haven't
+          parsed a "non-sequence" where a sequence expression is required.
+
+    This might not require all that much damage to the rules above...
+
+
+Butchered Grammar. (I thought this looked good, but testing revealed some problems...)
+
+    Starting from the glued together combined grammar, we:
+
+    1. Move base_pe's property_instance to the lowest level of the grammar
+    2. Move base_pe's '(' property_expr ')' case down to the lowest level of the grammar
+    3. The above two steps mean base_pe is no longer necessary but is just an alias for
+       sequence_expr, so get rid of it.
+    4. Remove distinction between sequence_instance and property_instance.
+
+    The result is:
+
+       ((Right Associative))
+       property_expr ::= clocking_event property_expr                ;; I think these are minimal precedence
+                       | 'always' property_expr
+                       | 'always' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 's_always' '[' constant_range ']' property_expr
+                       | 's_eventually' property_expr
+                       | 'eventually' '[' constant_range ']' property_expr
+                       | 's_eventually' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 'accept_on' '(' expression_or_dist ')' property_expr
+                       | 'reject_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_accept_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_reject_on' '(' expression_or_dist ')' property_expr
+                       | 'if' '(' expression_or_dist ')' property_expr [ 'else' property_expr ]
+                       | 'case' '(' expression_or_dist ')' property_case_item { property_case_item } 'endcase'
+                       | impl_pe
+
+       ((Right Associative))                              ;; Implement with Backtracking
+       impl_pe ::= sequence_expr '|->' impl_pe
+                 | sequence_expr '|=>' impl_pe
+                 | sequence_expr '#-#' impl_pe
+                 | sequence_expr '#=#' impl_pe
+                 | until_pe
+
+       ((Right Associative))
+       until_pe ::= iff_pe { 'until' iff_pe }
+                  | iff_pe { 's_until' iff_pe }
+                  | iff_pe { 'until_with' iff_pe }
+                  | iff_pe { 's_until_with' iff_pe }
+                  | iff_pe { 'implies' iff_pe }
+                  | iff_pe
+
+       ((Right Associative))
+       iff_pe ::= or_pe { 'iff' or_pe }
+
+       ((Left Associative))
+       or_pe ::= and_pe { 'or' and_pe }
+
+       ((Left Associative))
+       and_pe ::= not_pe { 'and' not_pe }
+
+       not_pe ::= 'not' not_pe
+                | 'nexttime' not_pe
+                | 'nexttime' '[' constant_expression ']' not_pe
+                | 's_nexttime' not_pe
+                | 's_nexttime' '[' constant_expression ']' not_pe
+                | strength_pe
+
+       strength_pe ::= 'strong' '(' sequence_expr ')'
+                     | 'weak' '(' sequence_expr ')'
+                     | sequence_expr
+
+       sequence_expr  ::= [clocking_event] or_se
+
+       ((Left Associative))
+       or_se                ::= and_se { 'or' and_se }
+
+       ((Left Associative))
+       and_se               ::= isect_se { 'and' isect_se }
+
+       ((Left Associative))
+       isect_se             ::= within_se { 'intersect' within_se }
+
+       ((Left Associative))
+       within_se            ::= thout_se { 'within' thout_se }
+
+       ((Right Associative))
+       thout_se ::= expression_or_dist 'throughout' thout_se
+                  | delay_se
+
+       ((Left Associative))
+       delay_se ::= [cycle_range] firstmatch_se { cycle_delay_range firstmatch_se }
+
+       firstmatch_se ::= 'first_match' '(' sequence_expr {',' sequence_match_item} ')'
+                       | repeat_se
+
+       repeat_se ::= expression_or_dist [boolean_abbrev]
+                   | property_instance [sequence_abbrev]
+                   | '(' sequence_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+                   | '(' property_expr ')'
+
+Analysis.
+
+    The butchered grammar is too permissive in a few places.  It allows
+    property expressions to occur within sequence expressions as long as they
+    are in parentheses.  It also allows property expressions to occur in
+    sequence_instance arguments where they are perhaps not allowed.  But it
+    does not do too much damage to the rest of the grammar; e.g., mostly it
+    will still prohibit things like `strong(not a)`, where a property
+    expression is being used where a sequence expression is required.  This
+    seems much easier to implement than to try to deal with either a sequence
+    expression or a property expression in the base case.
+
+    After implementing the above grammar I realized a problem.  Consider the
+    multiple levels of 'and' terms.  That is, we have:
+
+            ((Left Associative))
+            and_pe ::= not_pe { 'and' not_pe }
+
+            ((Left Associative))
+            and_se ::= isect_se { 'and' isect_se }
+
+    This leads to a problem.  Consider that `not b` is a valid not_pe.  So
+    consider an expression like `a and not b`.  When we try to parse this,
+    we end up working our way down to and_se.  At this point, `a` is a
+    perfectly valid isect_se.  But now the `and_se` rule sees an `and`
+    token and tries to go off and match { 'and' isect_se }, which it can't
+    successfully do because `not b` is not a valid isect_se.
+
+    In other words, the problem is that we no longer know, in rules like and_se
+    and or_se, whether or not the AND/OR token we see is actually a sequence
+    level AND/OR instead of a property-level AND/OR.  We could perhaps resolve
+    this by backtracking, but that's really gross because we lose good error
+    reporting and it's just really ugly to have to backtrack here.
+
+    The other option would be to flatten out the grammar and do away with the
+    distinction between and_pe/and_se and or_pe/or_se.  This would be a bit
+    more drastic and would (unfortunately?) further blur the distinction
+    between a sequence_expr and a property_expr.  Well, let's just see what
+    happens if we try it...
+
+       ((Right Associative))
+       property_expr ::= clocking_event property_expr                ;; I think these are minimal precedence
+                       | 'always' property_expr
+                       | 'always' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 's_always' '[' constant_range ']' property_expr
+                       | 's_eventually' property_expr
+                       | 'eventually' '[' constant_range ']' property_expr
+                       | 's_eventually' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 'accept_on' '(' expression_or_dist ')' property_expr
+                       | 'reject_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_accept_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_reject_on' '(' expression_or_dist ')' property_expr
+                       | 'if' '(' expression_or_dist ')' property_expr [ 'else' property_expr ]
+                       | 'case' '(' expression_or_dist ')' property_case_item { property_case_item } 'endcase'
+                       | impl_pe
+
+    Previously we restricted the left hand sides of impl_pe's to be
+    sequence_exprs.  But if we aren't really worrying about sequence_expr
+    anymore, then it's probably reasonable to just turn these into until_pes
+    instead.  (That just makes it a bit more permissive.)  Actually this seems
+    really nice -- it eliminates ugly backtracking and makes this a lot more
+    straightforward.
+
+       ((Right Associative))
+       impl_pe ::= until_pe '|->' impl_pe
+                 | until_pe '|=>' impl_pe
+                 | until_pe '#-#' impl_pe
+                 | until_pe '#=#' impl_pe
+                 | until_pe
+
+       ((Right Associative))
+       until_pe ::= iff_pe { 'until' iff_pe }
+                  | iff_pe { 's_until' iff_pe }
+                  | iff_pe { 'until_with' iff_pe }
+                  | iff_pe { 's_until_with' iff_pe }
+                  | iff_pe { 'implies' iff_pe }
+                  | iff_pe
+
+       ((Right Associative))
+       iff_pe ::= or_pe { 'iff' or_pe }
+
+       ((Left Associative))
+       or_pe ::= and_pe { 'or' and_pe }
+
+       ((Left Associative))
+       and_pe ::= not_pe { 'and' not_pe }
+
+       not_pe ::= 'not' not_pe
+                | 'nexttime' not_pe
+                | 'nexttime' '[' constant_expression ']' not_pe
+                | 's_nexttime' not_pe
+                | 's_nexttime' '[' constant_expression ']' not_pe
+                | strength_pe
+
+    This rule changes a bit to allow full-blown property_exprs.  I also change the
+    final sequence_expr case into a isect_se instead of a sequence_expr, since
+    sequence_expr, or_se, and and_se are going to go away.
+
+       strength_pe ::= 'strong' '(' property_expr ')'
+                     | 'weak' '(' property_expr ')'
+                     | isect_se
+
+    The next chunk just gets removed because we're merging it with the above.  The
+    clocking event stuff is already handled at the top level, so we shouldn't need
+    that.  Meanwhile the or_se/and_se are now replaced with or_pe/and_pe.
+
+      ;;;DROP   sequence_expr  ::= [clocking_event] or_se
+
+      ;;;DROP  ((Left Associative))
+      ;;;DROP  or_se                ::= and_se { 'or' and_se }
+
+      ;;;DROP   ((Left Associative))
+      ;;;DROP   and_se               ::= isect_se { 'and' isect_se }
+
+       ((Left Associative))
+       isect_se             ::= within_se { 'intersect' within_se }
+
+       ((Left Associative))
+       within_se            ::= thout_se { 'within' thout_se }
+
+       ((Right Associative))
+       thout_se ::= expression_or_dist 'throughout' thout_se
+                  | delay_se
+
+       ((Left Associative))
+       delay_se ::= [cycle_range] firstmatch_se { cycle_delay_range firstmatch_se }
+
+    Seems like we may as well change sequence_expr here to property_expr.
+
+       firstmatch_se ::= 'first_match' '(' property_expr {',' sequence_match_item} ')'
+                       | repeat_se
+
+    And then finally repeat_se gets cleaned up a bit because we no longer need to
+    distinguish between sequence_expr and property_expr:
+
+       repeat_se ::= expression_or_dist [boolean_abbrev]
+                   | property_instance [sequence_abbrev]
+                   | '(' property_expr { ',' sequence_match_item } ')' [sequence_abbrev]
+
+
+
+Handling of Not.
+
+    Consider the rule for NOT.
+
+       not_pe ::= 'not' not_pe
+                | 'nexttime' not_pe
+                | 'nexttime' '[' constant_expression ']' not_pe
+                | 's_nexttime' not_pe
+                | 's_nexttime' '[' constant_expression ']' not_pe
+                | strength_pe
+
+    There are some tricky cases here.  The rule above nicely handles things
+    such as:
+
+       not r1 until r2         --> (not r1) until r2
+       not not r1 until r2     --> (not not r1) until r2
+
+    However, it makes the following expression illegal, because "always r1
+    until r2" is not a valid not_pe.
+
+       not always r1 until r2
+
+    On the other hand, NCVerilog accepts this and appears to parse
+    it as `not (always r1 until r2)`.
+
+    In order to support an `always` here, we would need to accept
+    something like a full-blown property_expr after the 'not' (and
+    presumably analogously for the other operators here).  But if
+    we do that, then we will incorrectly parse
+
+       not r1 until r2  -->  not (r1 until r2)
+
+    because `r1 until r2` is a perfectly valid property_expr.  I don't
+    see a good way around this.  We might be more aggressive in our
+    not_pe implementation and heuristically do something like:
+
+       match 'not'
+       then: if (next token is 'always' | 'eventually' | ...)
+                match property_expr
+             else
+                match not_pe
+
+    In other words, the idea would be to explicitly allow 'not'
+    to explicitly recognize that some other unary operator that
+    has lesser precedence is coming up next, and in that case
+    let us match the other operator instead of just the not.
+
+    OK, this is pretty horrible but at least it seems like it
+    should work OK and be relatively safe.
+
+
+Final (I hope) Grammar.
+
+       ((Right Associative))
+       property_expr ::= clocking_event property_expr
+                       | 'always' property_expr
+                       | 'always' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 's_always' '[' constant_range ']' property_expr
+                       | 's_eventually' property_expr
+                       | 'eventually' '[' constant_range ']' property_expr
+                       | 's_eventually' '[' cycle_delay_const_range_expression ']' property_expr
+                       | 'accept_on' '(' expression_or_dist ')' property_expr
+                       | 'reject_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_accept_on' '(' expression_or_dist ')' property_expr
+                       | 'sync_reject_on' '(' expression_or_dist ')' property_expr
+                       | 'if' '(' expression_or_dist ')' property_expr [ 'else' property_expr ]
+                       | 'case' '(' expression_or_dist ')' property_case_item { property_case_item } 'endcase'
+                       | impl_pe
+
+       ((Right Associative))
+       impl_pe ::= until_pe '|->' impl_pe
+                 | until_pe '|=>' impl_pe
+                 | until_pe '#-#' impl_pe
+                 | until_pe '#=#' impl_pe
+                 | until_pe
+
+       ((Right Associative))
+       until_pe ::= iff_pe { 'until' iff_pe }
+                  | iff_pe { 's_until' iff_pe }
+                  | iff_pe { 'until_with' iff_pe }
+                  | iff_pe { 's_until_with' iff_pe }
+                  | iff_pe { 'implies' iff_pe }
+                  | iff_pe
+
+       ((Right Associative))
+       iff_pe ::= or_pe { 'iff' or_pe }
+
+       ((Left Associative))
+       or_pe ::= and_pe { 'or' and_pe }
+
+       ((Left Associative))
+       and_pe ::= not_pe { 'and' not_pe }
+
+       ((Note: hack to allow property_expr instead of not_pe when we have an
+               explicit 'always', 's_always', etc. at the start, per Handling
+               of Not.))
+       not_pe ::= 'not' not_pe
+                | 'nexttime' not_pe
+                | 'nexttime' '[' constant_expression ']' not_pe
+                | 's_nexttime' not_pe
+                | 's_nexttime' '[' constant_expression ']' not_pe
+                | strength_pe
+
+       strength_pe ::= 'strong' '(' property_expr ')'
+                     | 'weak' '(' property_expr ')'
+                     | isect_se
+       ((Left Associative))
+       isect_se             ::= within_se { 'intersect' within_se }
+
+       ((Left Associative))
+       within_se            ::= thout_se { 'within' thout_se }
+
+       ((Right Associative))
+       thout_se ::= expression_or_dist 'throughout' thout_se
+                  | delay_se
+
+       ((Left Associative))
+       delay_se ::= [cycle_range] firstmatch_se { cycle_delay_range firstmatch_se }
+
+       firstmatch_se ::= 'first_match' '(' property_expr {',' sequence_match_item} ')'
+                       | repeat_se
+
+       repeat_se ::= expression_or_dist [boolean_abbrev]
+                   | property_instance [sequence_abbrev]
+                   | '(' property_expr { ',' sequence_match_item } ')' [sequence_abbrev]

@@ -74,6 +74,12 @@ programmer-level mode.</p>" )
 ;; Lemmas about canonical-address-p, canonical-address-listp, and
 ;; create-canonical-address-list:
 
+(defthm canonical-address-p-to-integerp-thm
+  (implies (canonical-address-p x)
+           (integerp x))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p) ())))
+  :rule-classes :forward-chaining)
+
 (defthm canonical-address-listp-fwd-chain-true-listp
   (implies (canonical-address-listp x)
            (true-listp x))
@@ -83,7 +89,10 @@ programmer-level mode.</p>" )
   (implies (and (canonical-address-listp x)
                 (member-p e x))
            (canonical-address-p e))
-  :rule-classes (:type-prescription :forward-chaining))
+  :rule-classes (:forward-chaining))
+
+(defthm create-canonical-address-list-of-0
+  (equal (create-canonical-address-list 0 addr) nil))
 
 (defthm car-create-canonical-address-list
   (implies (and (canonical-address-p addr)
@@ -164,10 +173,17 @@ programmer-level mode.</p>" )
            (equal (member-p addr (create-canonical-address-list n prog-addr))
                   nil)))
 
+(defthm not-member-p-canonical-address-listp-when-disjoint-p
+  (implies (and (disjoint-p (create-canonical-address-list n prog-addr)
+                            (create-canonical-address-list m addr))
+                (member-p e (create-canonical-address-list m addr)))
+           (equal (member-p e (create-canonical-address-list n prog-addr))
+                  nil)))
+
 (defthm no-duplicates-p-create-canonical-address-list
   (no-duplicates-p (create-canonical-address-list n x)))
 
-(defthm subset-p-two-create-canonical-address-lists
+(defthm subset-p-two-create-canonical-address-lists-general
   (implies (and (canonical-address-p y)
                 (canonical-address-p (+ -1 j y))
                 (<= y x)
@@ -175,6 +191,14 @@ programmer-level mode.</p>" )
            (subset-p (create-canonical-address-list i x)
                      (create-canonical-address-list j y)))
   :hints (("Goal" :in-theory (e/d (subset-p) nil))))
+
+(defthm subset-p-two-create-canonical-address-lists-same-base-address
+  (implies (and (canonical-address-p (+ m x))
+                (natp m)
+                (<= i m))
+           (subset-p (create-canonical-address-list i x)
+                     (create-canonical-address-list m x)))
+  :hints (("Goal" :in-theory (e/d* (subset-p) ()))))
 
 (defthm subset-p-addr-range-of-create-canonical-address-list
   (implies (and (canonical-address-p val2)
@@ -217,33 +241,59 @@ programmer-level mode.</p>" )
                                   ()))))
 
 (defthm canonical-address-p-limits-thm-0
+  ;; addr <= (+ k addr) < (+ i addr)
   ;; i is positive, k is positive, k < i
   (implies (and (canonical-address-p (+ i addr))
                 (canonical-address-p addr)
-                (integerp k)
+                (< k i)
                 (<= 0 k)
-                (< k i))
+                (integerp k))
            (canonical-address-p (+ k addr))))
 
 (defthm canonical-address-p-limits-thm-1
+  ;; (+ -i addr) < (+ -k addr) < addr
   ;; i is negative, k is negative, k > i
-  (implies (and (canonical-address-p (+ i addr))
-                (canonical-address-p addr)
-                (integerp k)
+  (implies (and (< k 0)
+                (canonical-address-p (+ i addr))
                 (< i 0)
-                (< k 0)
-                (< i k))
+                (< i k)
+                (canonical-address-p addr)
+                (integerp k))
            (canonical-address-p (+ k addr))))
 
 (defthm canonical-address-p-limits-thm-2
-  ;; i is negative, j is positive, i < k < j
+  ;; (+ i addr) < (+ k addr) < (+ j addr)
+  ;; i < k < j
   (implies (and (canonical-address-p (+ i addr))
                 (canonical-address-p (+ j addr))
-                (integerp addr)
-                (integerp k)
                 (< i k)
-                (< k j))
+                (< k j)
+                (integerp addr)
+                (integerp k))
            (canonical-address-p (+ k addr))))
+
+(defthm canonical-address-p-limits-thm-3
+  ;; (+ -i addr) <= addr <= (+ j addr)
+  (implies (and (canonical-address-p (+ j addr))
+                (canonical-address-p (+ (- i) addr))
+                (natp i)
+                (natp j)
+                (integerp addr))
+           (canonical-address-p addr))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
+  :rule-classes (:rewrite :forward-chaining))
+
+(defthm canonical-address-p-limits-thm-4
+  ;; addr <= (+ -j i addr) <= (addr + i)
+  (implies (and (canonical-address-p (+ i addr))
+                (canonical-address-p addr)
+                (< j 0)
+                (<= (- i) j)
+                (natp i)
+                (integerp j))
+           (canonical-address-p (+ j (+ i addr))))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p) ())))
+  :rule-classes (:rewrite :forward-chaining))
 
 (encapsulate
 
@@ -320,6 +370,17 @@ programmer-level mode.</p>" )
    :hints (("Goal" :in-theory (e/d (canonical-address-p n64-to-i64) ()))))
 
  )
+
+(defthmd create-canonical-address-list-split
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ k addr))
+                (natp j)
+                (natp k))
+           (equal (create-canonical-address-list (+ k j) addr)
+                  (append (create-canonical-address-list k addr)
+                          (create-canonical-address-list j (+ k addr)))))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p)
+                                   ()))))
 
 ;; ======================================================================
 
@@ -413,8 +474,7 @@ programmer-level mode.</p>" )
    :rule-classes (:forward-chaining :rewrite))
 
  (defthm canonical-address-listp-strip-cars-remove-duplicate-keys-addr-bytes-alistp
-   (implies (and (subset-p addresses
-                           (strip-cars (remove-duplicate-keys addr-lst)))
+   (implies (and (subset-p addresses (strip-cars (remove-duplicate-keys addr-lst)))
                  (addr-byte-alistp addr-lst))
             (canonical-address-listp addresses))
    :hints (("Goal" :in-theory (e/d* (subset-p
@@ -632,6 +692,11 @@ programmer-level mode.</p>" )
 
 ;; Theorems about rb and wb:
 
+(defthm rb-returns-true-listp
+  (implies (x86p x86)
+           (true-listp (mv-nth 1 (rb addresses r-w-x x86))))
+  :rule-classes (:rewrite :type-prescription))
+
 (local
  (defthm rm08-wb-not-member-p
    (implies (and (not (member-p addr (strip-cars addr-lst)))
@@ -794,6 +859,41 @@ programmer-level mode.</p>" )
 ;;            :do-not-induct t
 ;;            :use ((:instance rb-wb-subset)))))
 
+(defthmd rb-rb-subset
+  ;; [Shilpi]: This theorem can be generalized so that the conclusion mentions
+  ;; addr1, where addr1 <= addr.  Also, this is an expensive rule. Keep it
+  ;; disabled generally.
+  (implies (and (equal (mv-nth 1 (rb (create-canonical-address-list i addr) r-w-x x86))
+                       bytes)
+                (canonical-address-p (+ -1 i addr))
+                (canonical-address-p addr)
+                (xr :programmer-level-mode 0 x86)
+                (posp i)
+                (< j i))
+           (equal (mv-nth 1 (rb (create-canonical-address-list j addr) r-w-x x86))
+                  (take j bytes)))
+  :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p) ()))))
+
+(defthm take-and-rb
+  (implies (and (canonical-address-p (+ -1 i addr))
+                (canonical-address-p addr)
+                (xr :programmer-level-mode 0 x86)
+                (< k i))
+           (equal (take k (mv-nth 1 (rb (create-canonical-address-list i addr) r-w-x x86)))
+                  (mv-nth 1 (rb (create-canonical-address-list k addr) r-w-x x86))))
+  :hints (("Goal" :in-theory (e/d* (canonical-address-p signed-byte-p rb) ((:meta acl2::mv-nth-cons-meta))))))
+
+(defthm rb-rb-split-reads
+  (implies (and (canonical-address-p addr)
+                (xr :programmer-level-mode 0 x86)
+                (natp j)
+                (natp k))
+           (equal (mv-nth 1 (rb (create-canonical-address-list (+ k j) addr) r-w-x x86))
+                  (append (mv-nth 1 (rb (create-canonical-address-list k addr) r-w-x x86))
+                          (mv-nth 1 (rb (create-canonical-address-list j (+ k addr)) r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d* (rb canonical-address-p signed-byte-p)
+                                   ((:meta acl2::mv-nth-cons-meta))))))
+
 (defthm program-at-wb-disjoint
   (implies (and (programmer-level-mode x86)
                 (canonical-address-listp addresses)
@@ -835,6 +935,13 @@ programmer-level mode.</p>" )
            (equal (program-at addresses r-w-x (mv-nth 1 (pop-x86-oracle x86)))
                   (program-at addresses r-w-x x86)))
   :hints (("Goal" :in-theory (e/d (program-at pop-x86-oracle pop-x86-oracle-logic)
+                                  (rb)))))
+
+(defthm program-at-write-user-rflags
+  (implies (programmer-level-mode x86)
+           (equal (program-at addresses r-w-x (write-user-rflags flags mask x86))
+                  (program-at addresses r-w-x x86)))
+  :hints (("Goal" :in-theory (e/d (program-at write-user-rflags !flgi-undefined !flgi)
                                   (rb)))))
 
 ;; ======================================================================
@@ -953,14 +1060,6 @@ programmer-level mode.</p>" )
   (implies (x86p x86)
            (equal (mv-nth 1 (rb nil r-w-x x86)) nil)))
 
-(defthm rb-size-of-the-return-bytes
-  (implies (and (canonical-address-listp addresses)
-                (programmer-level-mode x86)
-                (x86p x86))
-           (equal (len (mv-nth 1 (rb addresses r-w-x x86)))
-                  (len addresses)))
-  :hints (("Goal" :in-theory (e/d (rm08) ()))))
-
 ;; The following theorems help in relieving the hypotheses of
 ;; get-prefixes opener lemmas.
 
@@ -984,21 +1083,16 @@ programmer-level mode.</p>" )
 
 (defun find-info-from-program-at-term (thm mfc state)
   (declare (xargs :stobjs (state) :mode :program)
-           (ignorable state))
+           (ignorable thm state))
   (b* ((call (acl2::find-call-lst 'program-at (acl2::mfc-clause mfc)))
        ((when (not call))
-        (cw "~%~p0: Program-At term not encountered.~%" thm)
-        `((n . n)
-          (prog-addr . prog-addr)
-          (bytes . bytes)))
+        ;; (cw "~%~p0: Program-At term not encountered.~%" thm)
+        nil)
        (addresses (cadr call))
        ((when (not (equal (car addresses)
                           'create-canonical-address-list)))
-        (cw "~%~p0: Program-At without Create-Canonical-Address-List ~
-  encountered.~%" thm)
-        `((n . n)
-          (prog-addr . prog-addr)
-          (bytes . bytes)))
+        ;; (cw "~%~p0: Program-At without Create-Canonical-Address-List encountered.~%" thm)
+        nil)
        (n (cadr addresses))
        (prog-addr (caddr addresses))
        (bytes (caddr call)))

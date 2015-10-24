@@ -161,8 +161,8 @@ transformations to easily implement other tools.</p>
 <h3>Starting Points</h3>
 
 <p>If you want to use VL to do formal verification of hardware, you might start
-with the @(see esim-tutorial), which is a hands-on guide that will take you
-through using VL and @(see esim) to verify some simple circuits.</p>
+with the @(see acl2::esim-tutorial), which is a hands-on guide that will take
+you through using VL and @(see esim) to verify some simple circuits.</p>
 
 <p>The first step in using VL in any other capacity on a real project is
 probably to try to get it to parse your design; see the documentation for the

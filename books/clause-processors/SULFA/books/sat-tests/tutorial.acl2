@@ -6,5 +6,9 @@
 
 (ld "../sat/sat-package.acl2")
 
-; cert-flags: ? t :ttags (sat sat-cl sat-tutorial)
-(certify-book "tutorial" ? t :ttags (sat sat-cl sat-tutorial))
+; Added by Matt K. to avoid CMUCL going out to lunch.
+#+cmucl
+(set-check-invariant-risk nil)
+
+; cert-flags: ? t :ttags (#+cmucl :set-check-invariant-risk sat sat-cl sat-tutorial)
+(certify-book "tutorial" ? t :ttags (#+cmucl :set-check-invariant-risk sat sat-cl sat-tutorial))

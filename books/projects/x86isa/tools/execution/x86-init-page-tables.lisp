@@ -87,17 +87,102 @@
         (load-qwords-into-physical-memory-list (cdr addr-qword-list-list) x86))))
 
 ;; ======================================================================
-;; Page table set up plan (1GB pages, one-to-one map):
 
-;; 1 page-map level-4 (PML4) table:           512 entries of 8 bytes
-;;                                            each
+#||
 
-;; 512 page-directory pointer tables (PDPTs): each has 512 entries of
-;;                                            8 bytes each
+Page table set up plan (1GB pages, one-to-one map):
 
-;; Total size: (+ (* 512 8) (* 512 (* 512 8))) = 2,101,248 bytes
-;;                                               (around 2MB)
-;; ======================================================================
+1 page-map level-4 (PML4) table:           512 entries of 8 bytes
+                                           each
+
+512 page-directory pointer tables (PDPTs): each has 512 entries of
+                                           8 bytes each
+
+Total size: (+ (* 512 8) (* 512 (* 512 8))) = 2,101,248 bytes
+                                              (around 2MB)
+
+
+Here's a description of how the function construct-page-tables sets up the PML4
+table and the 512 PDPTs, assuming that the base address of the PML4 is 0, i.e.,
+CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
+
+     ==================================================
+                        PML4 Table
+     --------------------------------------------------
+           PML4E Address        Aligned PDPT Base Address
+
+                0                       1 (Base address of PDPT # 1   = (ash 1 12))
+                8                       2 (Base address of PDPT # 2   = (ash 2 12))
+               16                       3 (Base address of PDPT # 3   = (ash 3 12))
+                .                       .
+                .                       .
+                .                       .
+                .                       .
+             4088                     512 (Base address of PDPT # 512 = (ash 512 12))
+     **************************************************
+
+     ==================================================
+                       PDPT # 1
+     --------------------------------------------------
+           PDPTE Address       Aligned Page Frame Address
+
+ (ash 1 12)  4096                       0
+             4104                       1
+                .                       .
+                .                       .
+                .                       .
+                .                       .
+             8184                       511
+     **************************************************
+
+     ==================================================
+                       PDPT # 2
+     --------------------------------------------------
+           PDPTE Address       Aligned Page Frame Address
+
+ (ash 2 12) 8192                     512
+            8200                     513
+               .                       .
+               .                       .
+               .                       .
+           12280                     1023
+     **************************************************
+
+                          .
+                          .
+                          .
+                          .
+
+     ==================================================
+                     PDPT # 512
+     --------------------------------------------------
+           PDPTE Address       Aligned Page Frame Address
+
+ (ash 512 12) 2097152                    261632 (= (512 * 511))
+              2097160                    261633
+                 .                       .
+                 .                       .
+                 .                       .
+             2101240                     262143 (= ((512 * 512) - 1))
+     **************************************************
+
+ Note that 2101240 is (+ (ash 512 12) (* 511 8)).
+
+ Here's an example of a virtual address translation, given the above page map
+ and CR3[40:12] = 0. Let the virtual address be #x140000000, which is (ash 5
+ 30).
+
+ (a). Index for PML4E = (part-select (ash 5 30) :low 39 :width 9) = 0
+ (b). Corresponding Aligned PDPT Base Address = 1
+ (c). Corresponding PDPT Base Address = (ash <value from Step b> 12) = (ash 1 12) = 4096
+ (d). Index for PDPTE = (part-select (ash 5 30) :low 30 :width 9) = 5
+ (e). Address of the PDPTE = <value from Step c> + <value from Step d>*8 = 4096 + 5*8 = 4136
+ (f). Corresponding Aligned Page Frame Address = 5
+ (g). Offset from the virtual address = (part-select (ash 5 30) :low 0 :width 30) = 0
+ (h). Physical Address = (logior <value from Step g> (ash 5 30)) = (logior 0 (ash 5 30)) = (ash 5 30)
+
+||#
+
 
 (defthm logand-and-bottom-few-bits-zero
   (implies (and (syntaxp (quotep x))
@@ -160,7 +245,6 @@
 
 (define construct-pml4-table
   ((entry-number   :type (unsigned-byte 10))
-   ;; entry-addr = (ash cr3 12) : [47-39] of LA : 12 zeros
    (entry-addr     :type (unsigned-byte #.*physical-address-size*))
    (pdpt-base-addr :type (unsigned-byte 40))
    acc)
