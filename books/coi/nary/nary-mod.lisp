@@ -264,17 +264,77 @@
             (mod (- a) n)))
     :hints (("Goal" :in-theory (disable mod))))
 
-)
+  (defthm integerp---type
+    (implies
+     (integerp x)
+     (integerp (- x)))
+    :rule-classes (:rewrite
+                   :type-prescription
+                   (:forward-chaining :trigger-terms ((unary-- x)))))
+
+  (defthm integerp-+-type
+    (implies
+     (and 
+      (integerp x)
+      (integerp y))
+     (integerp (+ x y)))
+    :rule-classes (:rewrite
+                   :type-prescription
+                   (:forward-chaining :trigger-terms ((binary-+ x y)))))
+
+  (defthm integerp-*-type
+    (implies
+     (and 
+      (integerp x)
+      (integerp y))
+     (integerp (* x y)))
+    :rule-classes (:rewrite
+                   :type-prescription
+                   (:forward-chaining :trigger-terms ((binary-* x y)))))
+
+  (defthm integerp-expt-type
+    (implies
+     (and
+      (integerp x)
+      (integerp y)
+      (<= 0 y))
+     (integerp (expt x y)))
+    :rule-classes (:rewrite
+                   :type-prescription
+                   (:forward-chaining :trigger-terms ((expt x y)))))
+    
+  (defthm integerp-mod-type
+    (implies
+     (and
+      (integerp x)
+      (integerp y))
+     (integerp (mod x y)))
+    :rule-classes (:rewrite
+                   :type-prescription
+                   (:forward-chaining :trigger-terms ((mod x y)))))
+    
+  )
 
 (deftheory mod-rules
-  '(mod-expt-congruence
+  '(;; Congruence rules
+    mod-expt-congruence
     mod-*-congruence
     mod-+-congruence
     mod---congruence
+    ;; Reduction rules
+    mod-n-of-n-reduction
+    mod-n-of-mod-n-reduction
+    ;; Type rules
+    integerp-mod-type
+    integerp---type
+    integerp-+-type
+    integerp-*-type
+    integerp-expt-type
     ))
 
 ;; This book provides rules that could easily break existing proofs.
-;; To minimize the potential impact of this book, I disable the
-;; primary congruence rules.  To use the rules in this book, simply
-;; enable the nary::mod-rules theory. ie: (enable nary::mod-rules)
+;; To minimize the potential impact of this book, I disable most of
+;; the rules it exports.  To use the rules in this book, simply enable
+;; the nary::mod-rules theory. ie: (enable nary::mod-rules) either
+;; locally (as theorem hints) or globally (as a theory event).
 (in-theory (disable mod-rules))
