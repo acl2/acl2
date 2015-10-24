@@ -497,14 +497,14 @@
 ; Here is the (redundant) definition of the program.
 
 (defconst *fact-def*
-  '("fact(I)I" (INT) NIL
+  '("fact:(I)I" (INT) NIL
     (ILOAD_0)                         ;;;  0
     (IFLE 12)                         ;;;  1
     (ILOAD_0)                         ;;;  4
     (ILOAD_0)                         ;;;  5
     (ICONST_1)                        ;;;  6
     (ISUB)                            ;;;  7
-    (INVOKESTATIC "Demo" "fact(I)I" 1) ;;;  8
+    (INVOKESTATIC "Demo" "fact:(I)I" 1) ;;;  8
     (IMUL)                            ;;; 11
     (IRETURN)                         ;;; 12
     (ICONST_1)                        ;;; 13
@@ -598,7 +598,7 @@
    (t
     (let ((n (nth 0 (locals (top-frame th s)))))
       (and (equal (program (top-frame th s)) (cdddr *fact-def*))
-           (equal (lookup-method "fact(I)I" "Demo" (class-table s))
+           (equal (lookup-method "fact:(I)I" "Demo" (class-table s))
                   *fact-def*)
            (equal (sync-flg (top-frame th s)) 'UNLOCKED)
            (intp n0)
@@ -785,7 +785,7 @@
                   (equal (program (top-frame th s0))
                          (cdddr *fact-def*))
                   (equal (sync-flg (top-frame th s0)) 'unlocked)
-                  (equal (lookup-method "fact(I)I" "Demo" (class-table s0))
+                  (equal (lookup-method "fact:(I)I" "Demo" (class-table s0))
                          *fact-def*)
 
                   (< 1 (sdepth (call-stack th s0)))

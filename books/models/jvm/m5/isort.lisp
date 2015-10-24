@@ -201,7 +201,7 @@ Method ListProc()
      ("monitor" "mcount" "wait-set")
      NIL
      NIL
-     (("<init>()V" NIL NIL (RETURN)))
+     (("<init>:()V" NIL NIL (RETURN)))
      (REF 0))
     ("ARRAY"
      ("java.lang.Object")
@@ -215,11 +215,11 @@ Method ListProc()
      NIL
      NIL
      NIL
-     (("run()V" NIL NIL (RETURN))
-      ("start()V" NIL NIL NIL)
-      ("stop()V" NIL NIL NIL)
-      ("<init>()V" NIL NIL (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
+     (("run:()V" NIL NIL (RETURN))
+      ("start:()V" NIL NIL NIL)
+      ("stop:()V" NIL NIL NIL)
+      ("<init>:()V" NIL NIL (ALOAD\_0)
+       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
      (REF 2))
     ("java.lang.String"
@@ -227,9 +227,9 @@ Method ListProc()
      ("strcontents")
      NIL
      NIL
-     (("<init>()V" NIL NIL
+     (("<init>:()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
      (REF 3))
     ("java.lang.Class"
@@ -237,31 +237,31 @@ Method ListProc()
      NIL
      NIL
      NIL
-     (("<init>()V" NIL NIL
+     (("<init>:()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN)))
      (REF 4))
     ("Cons"
      ("java.lang.Object")
-     ("car" "cdr")
+     ("car:I" "cdr:Ljava/lang/Object;")
      nil
      nil
-     (("<init>()V" NIL NIL
+     (("<init>:()V" NIL NIL
        (ALOAD\_0)
-       (INVOKESPECIAL "java.lang.Object" "<init>()V" 0)
+       (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
        (RETURN))
-      ("cons(ILjava/lang/Object;)LCons;" (int java.lang.Object) nil
+      ("cons:(ILjava/lang/Object;)LCons;" (int java.lang.Object) nil
        (NEW "Cons")
        (DUP)
-       (INVOKESPECIAL "Cons" "<init>()V" 0)
+       (INVOKESPECIAL "Cons" "<init>:()V" 0)
        (ASTORE_2)
        (ALOAD_2)
        (ILOAD_0)
-       (PUTFIELD "Cons" "car")
+       (PUTFIELD "Cons" "car:I")
        (ALOAD_2)
        (ALOAD_1)
-       (PUTFIELD "Cons" "cdr")
+       (PUTFIELD "Cons" "cdr:Ljava/lang/Object;")
        (ALOAD_2)
        (ARETURN))))
     ("ListProc"
@@ -269,49 +269,49 @@ Method ListProc()
      nil
      nil
      nil
-     (("<init>()V" nil nil
+     (("<init>:()V" nil nil
        (ALOAD\_0)
-       (INVOKESPECIAL "Cons" "<init>()V" 0)
+       (INVOKESPECIAL "Cons" "<init>:()V" 0)
        (RETURN))
-      ("insert(ILjava/lang/Object;)LCons;" (int java.lang.Object) nil
+      ("insert:(ILjava/lang/Object;)LCons;" (int java.lang.Object) nil
         (aload_1)
         (ifnonnull 9)
         (iload_0)
         (aload_1)
-        (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
+        (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
         (areturn)
         (iload_0)
         (aload_1)
                                   ;;; checkcast "Cons" ommitted
-        (getfield "Cons" "car")
+        (getfield "Cons" "car:I")
         (if_icmpgt 9)
         (iload_0)
         (aload_1)
-        (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
+        (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
         (areturn)
         (aload_1)
                                   ;;; checkcast "Cons" ommitted
-        (getfield "Cons" "car")
+        (getfield "Cons" "car:I")
         (iload_0)
         (aload_1)
                                   ;;; checkcast "Cons" ommitted
-        (getfield "Cons" "cdr")
-        (invokestatic "ListProc" "insert(ILjava/lang/Object;)LCons;" 2)
-        (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
+        (getfield "Cons" "cdr:Ljava/lang/Object;")
+        (invokestatic "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)
+        (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
         (areturn))
-      ("isort(Ljava/lang/Object;)Ljava/Lang/Object;" (java.lang.Object) nil
+      ("isort:(Ljava/lang/Object;)Ljava/Lang/Object;" (java.lang.Object) nil
        (aload_0)
        (ifnonnull 5)
        (aload_0)
        (areturn)
        (aload_0)
                                   ;;; checkcast "Cons" ommitted
-       (getfield "Cons" "car")
+       (getfield "Cons" "car:I")
        (aload_0)
                                   ;;; checkcast "Cons" ommitted
-       (getfield "Cons" "cdr")
-       (invokestatic "ListProc" "isort(Ljava/lang/Object;)Ljava/Lang/Object;" 1)
-       (invokestatic "ListProc" "insert(ILjava/lang/Object;)LCons;" 2)
+       (getfield "Cons" "cdr:Ljava/lang/Object;")
+       (invokestatic "ListProc" "isort:(Ljava/lang/Object;)Ljava/Lang/Object;" 1)
+       (invokestatic "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2)
        (areturn)))))))
 
 ; Now we will name some parts of the state for future use.
@@ -326,13 +326,13 @@ Method ListProc()
   (bound? "ListProc" (class-table *Isort-state*)))
 
 (defconst *cons-def*
-  (lookup-method "cons(ILjava/lang/Object;)LCons;" "Cons" (class-table *Isort-state*)))
+  (lookup-method "cons:(ILjava/lang/Object;)LCons;" "Cons" (class-table *Isort-state*)))
 
 (defconst *insert-def*
-  (lookup-method "insert(ILjava/lang/Object;)LCons;" "ListProc" (class-table *Isort-state*)))
+  (lookup-method "insert:(ILjava/lang/Object;)LCons;" "ListProc" (class-table *Isort-state*)))
 
 (defconst *isort-def*
-  (lookup-method "isort(Ljava/lang/Object;)Ljava/Lang/Object;" "ListProc" (class-table *Isort-state*)))
+  (lookup-method "isort:(Ljava/lang/Object;)Ljava/Lang/Object;" "ListProc" (class-table *Isort-state*)))
 
 (defconst *Isort-heap0*
   (heap *Isort-state*))
@@ -345,16 +345,16 @@ Method ListProc()
 
 (defun hcar (ref heap)
 ; Return the car field of a ref in the heap.
-  (field-value "Cons" "car" (deref ref heap)))
+  (field-value "Cons" "car:I" (deref ref heap)))
 
 (defun hcdr (ref heap)
 ; Return the cdr field of a ref in the heap.
-  (field-value "Cons" "cdr" (deref ref heap)))
+  (field-value "Cons" "cdr:Ljava/lang/Object;" (deref ref heap)))
 
 (defun cons-heap (x y heap)
 ; Construct the heap produced by consing x and y.
   (bind (len heap)
-        (list (list "Cons" (cons "car" x) (cons "cdr" y))
+        (list (list "Cons" (cons "car:I" x) (cons "cdr:Ljava/lang/Object;" y))
               '("java.lang.Object"
                 ("monitor" . 0)
                 ("mcount" . 0)
@@ -474,7 +474,7 @@ Method ListProc()
    ((endp heap) t)
    ((not (bound? "Cons" (cdar heap)))
     (all-refs-smallp (cdr heap)))
-   (t (let ((d (field-value "Cons" "cdr" (cdar heap))))
+   (t (let ((d (field-value "Cons" "cdr:Ljava/lang/Object;" (cdar heap))))
         (and (or (nullrefp d)
                  (and (refp d)
                       (<= 0 (cadr d))
@@ -490,7 +490,7 @@ Method ListProc()
                 (<= max key))
            (equal (all-refs-smallp (bind key val heap))
                   (or (not (bound? "Cons" val))
-                      (let ((d (field-value "Cons" "cdr" val)))
+                      (let ((d (field-value "Cons" "cdr:Ljava/lang/Object;" val)))
                         (or (nullrefp d)
                             (and (refp d)
                                  (<= 0 (cadr d))
@@ -520,7 +520,7 @@ Method ListProc()
 (defun cdr-type-correctnessp (alist heap)
   (cond ((endp alist) t)
         ((bound? "Cons" (cdar alist))
-         (and (ok-refp (field-value "Cons" "cdr" (cdar alist)) heap)
+         (and (ok-refp (field-value "Cons" "cdr:Ljava/lang/Object;" (cdar alist)) heap)
               (cdr-type-correctnessp (cdr alist) heap)))
         (t (cdr-type-correctnessp (cdr alist) heap))))
 
@@ -528,7 +528,7 @@ Method ListProc()
   (implies (cdr-type-correctnessp alist heap)
            (iff (cdr-type-correctnessp (bind key val alist) heap)
                 (if (bound? "Cons" val)
-                    (ok-refp (field-value "Cons" "cdr" val) heap)
+                    (ok-refp (field-value "Cons" "cdr:Ljava/lang/Object;" val) heap)
                   t))))
 
 (defun heap-extensionp (heap1 heap2)
@@ -630,7 +630,7 @@ Method ListProc()
                 (assoc-equal k heap))
            (or (not (bound? "Cons" (cdr (assoc-equal k heap))))
                (let ((d (CDR
-                         (ASSOC-EQUAL "cdr"
+                         (ASSOC-EQUAL "cdr:Ljava/lang/Object;"
                                       (CDR (ASSOC-EQUAL
                                             "Cons"
                                             (cdr (assoc-equal k heap))))))))
@@ -822,10 +822,10 @@ Method ListProc()
                        (bipush 2)
                        (bipush 1)
                        (aload_0)
-                       (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
-                       (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
-                       (invokestatic "Cons" "cons(ILjava/lang/Object;)LCons;" 2)
-                       (invokestatic "ListProc" "isort(Ljava/lang/Object;)Ljava/Lang/Object;" 1)
+                       (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
+                       (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
+                       (invokestatic "Cons" "cons:(ILjava/lang/Object;)LCons;" 2)
+                       (invokestatic "ListProc" "isort:(Ljava/lang/Object;)Ljava/Lang/Object;" 1)
                        (halt))
                      'UNLOCKED
                      "ListProc")
@@ -898,8 +898,8 @@ Method ListProc()
                 (cdr-type-correctnessp alist heap)
                 (assoc-equal k alist))
            (or (not (bound? "Cons" (cdr (assoc-equal k alist))))
-               (nullrefp (field-value "Cons" "cdr" (cdr (assoc-equal k alist))))
-               (bound? "Cons" (deref (field-value "Cons" "cdr" (cdr (assoc-equal k alist))) heap))))
+               (nullrefp (field-value "Cons" "cdr:Ljava/lang/Object;" (cdr (assoc-equal k alist))))
+               (bound? "Cons" (deref (field-value "Cons" "cdr:Ljava/lang/Object;" (cdr (assoc-equal k alist))) heap))))
   :hints (("Goal" :in-theory (enable ok-refp)))
   :rule-classes nil)
 
@@ -924,7 +924,7 @@ Method ListProc()
 
 (defun poised-to-invoke-cons (th s)
   (and (standard-hyps th s)
-       (equal (next-inst th s) '(INVOKESTATIC "Cons" "cons(ILjava/lang/Object;)LCons;" 2))
+       (equal (next-inst th s) '(INVOKESTATIC "Cons" "cons:(ILjava/lang/Object;)LCons;" 2))
 ;      (intp (top (pop (stack (top-frame th s)))))
 ;      (ok-refp (top (stack (top-frame th s))) (heap s))
        ))
@@ -996,7 +996,7 @@ Method ListProc()
   (equal
    (CDR
     (ASSOC-EQUAL
-     "car"
+     "car:I"
      (CDR (ASSOC-EQUAL
            "Cons"
            (CDR (ASSOC-EQUAL (CADR xref)
@@ -1008,7 +1008,7 @@ Method ListProc()
   (equal
    (CDR
     (ASSOC-EQUAL
-     "cdr"
+     "cdr:Ljava/lang/Object;"
      (CDR (ASSOC-EQUAL
            "Cons"
            (CDR (ASSOC-EQUAL (CADR xref)
@@ -1053,7 +1053,7 @@ Method ListProc()
 (defun poised-to-invoke-insert (th s e x heap)
   (and (standard-hyps th s)
        (equal heap (heap s))
-       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "insert(ILjava/lang/Object;)LCons;" 2))
+       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "insert:(ILjava/lang/Object;)LCons;" 2))
        (equal e (top (pop (stack (top-frame th s)))))
        (equal x (top (stack (top-frame th s))))
 ;      (intp e)
@@ -1237,7 +1237,7 @@ Method ListProc()
 (defun poised-to-invoke-isort (th s x heap)
   (and (standard-hyps th s)
        (equal heap (heap s))
-       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "isort(Ljava/lang/Object;)Ljava/Lang/Object;" 1))
+       (equal (next-inst th s) '(INVOKESTATIC "ListProc" "isort:(Ljava/lang/Object;)Ljava/Lang/Object;" 1))
        (equal x (top (stack (top-frame th s))))
        (ok-refp x (heap s))))
 

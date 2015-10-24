@@ -480,17 +480,18 @@ J & George
 (defun class-decl-heapref (dcl)
   (nth 6 dcl))
 
+; Internal fields in base classes do not contain type descriptors in their names"
 (defun base-class-def ()
    (list (make-class-decl "java.lang.Object"
                           nil
-                          '("monitor" "mcount" "wait-set")
+                          '("monitor" "mcount" "wait-set") ; Internal fields
                           '()
                           '()
-                          '(("<init>()V" () nil (RETURN)))
+                          '(("<init>:()V" () nil (RETURN)))
                           '(REF -1))
          (make-class-decl "ARRAY"
                           '("java.lang.Object")
-                          '(("<array>" . *ARRAY*))
+                          '(("<array>" . *ARRAY*)) ; Internal field
                           '()
                           '()
                           '()
@@ -500,25 +501,25 @@ J & George
                           '()
                           '()
                           '()
-                          '(("run()V" () nil
+                          '(("run:()V" () nil
                              (RETURN))
-                            ("start()V" () nil ())
-                            ("stop()V" () nil ())
-                            ("<init>()V" ()
+                            ("start:()V" () nil ())
+                            ("stop:()V" () nil ())
+                            ("<init>:()V" ()
                                       nil
                                       (aload_0)
-                                      (invokespecial "java.lang.Object" "<init>()V" 0)
+                                      (invokespecial "java.lang.Object" "<init>:()V" 0)
                                       (return)))
                           '(REF -1))
          (make-class-decl "java.lang.String"
                           '("java.lang.Object")
-                          '("strcontents")
+                          '("strcontents") ; Internal field
                           '()
                           '()
-                          '(("<init>()V" ()
+                          '(("<init>:()V" ()
                                       nil
                                       (aload_0)
-                                      (invokespecial "java.lang.Object" "<init>()V" 0)
+                                      (invokespecial "java.lang.Object" "<init>:()V" 0)
                                       (return)))
                           '(REF -1))
          (make-class-decl "java.lang.Class"
@@ -526,10 +527,10 @@ J & George
                           '()
                           '()
                           '()
-                          '(("<init>()V" ()
+                          '(("<init>:()V" ()
                                      nil
                                      (aload_0)
-                                     (invokespecial "java.lang.Object" "<init>()V" 0)
+                                     (invokespecial "java.lang.Object" "<init>:()V" 0)
                                      (return)))
                           '(REF -1))))
 
@@ -744,21 +745,21 @@ J & George
 ; Method definitions will be constructed by expressions such as:
 ; (Note:  all of the symbols below are understood to be in the pkg "JVM".)
 
-; ("move(II)I" (dx dy) nil
-;   (load this)
-;   (load this)
-;   (getfield "Point" "x")
-;   (load dx)
+; ("move:(II)I" (dx dy) nil
+;   (iload this)
+;   (iload this)
+;   (getfield "Point" "x:I")
+;   (iload dx)
+;   (iadd)
+;   (putfield "Point" "x:I")    ; this.x = this.x + dx;
+;   (iload :this)
+;   (iload :this)
+;   (getfield "Point" "y:I")
+;   (iload dy)
 ;   (add)
-;   (putfield "Point" "x")    ; this.x = this.x + dx;
-;   (load :this)
-;   (load :this)
-;   (getfield "Point" "y")
-;   (load dy)
-;   (add)
-;   (putfield "Point" "y")    ; this.y = this.y + dy;
+;   (putfield "Point" "y:I")    ; this.y = this.y + dy;
 ;   (push 1)
-;   (xreturn)))               ; return 1;
+;   (ireturn)))               ; return 1;
 
 ; Provided this method is defined in the class "Point" it can be invoked by
 
@@ -867,15 +868,25 @@ J & George
 (defun deref (ref heap)
   (binding (cadr ref) heap))
 
-(defun field-value (class-name field-name instance)
-  (binding field-name
+(defun field-value (class-name field-name-and-type instance)
+  (binding field-name-and-type
            (binding class-name instance)))
 
-(defun build-class-field-bindings (field-names)
-  (if (endp field-names)
+(defun field-initial-value (field-name-and-type)
+  (if (or (search ":L" field-name-and-type)  ; object instance
+          (search ":[" field-name-and-type)) ; array instance
+      '(REF -1)
+    0))
+
+(defun field-long-or-double (field-name-and-type)
+  (or (search ":J" field-name-and-type)
+      (search ":D" field-name-and-type)))
+
+(defun build-class-field-bindings (fields)
+  (if (endp fields)
       nil
-    (cons (cons (car field-names) 0)
-          (build-class-field-bindings (cdr field-names)))))
+    (cons (cons (car fields) (field-initial-value (car fields)))
+          (build-class-field-bindings (cdr fields)))))
 
 (defun build-class-object-field-bindings ()
   '(("monitor" . 0) ("monitor-count" . 0) ("wait-set" . nil)))
@@ -2036,10 +2047,10 @@ J & George
 
 (defun execute-GETFIELD (inst th s)
   (let* ((class-name (arg1 inst))
-         (field-name (arg2 inst))
-         (long-flag  (arg3 inst))
+         (field-name-and-type (arg2 inst))
+         (long-flag  (or (arg3 inst) (field-long-or-double field-name-and-type)))
          (instance (deref (top (stack (top-frame th s))) (heap s)))
-         (field-value (field-value class-name field-name instance)))
+         (field-value (field-value class-name field-name-and-type instance)))
     (modify th s
             :pc (+ (inst-length inst) (pc (top-frame th s)))
             :stack (if long-flag
@@ -2051,20 +2062,20 @@ J & George
 ; -----------------------------------------------------------------------------
 ; (GETSTATIC "class" "field" ?long-flag?) Instruction
 
-(defun static-field-value (class-name field-name s)
+(defun static-field-value (class-name field-name-and-type s)
   (let* ((class-ref (class-decl-heapref
                      (bound? class-name (class-table s))))
          (instance (deref class-ref (heap s))))
-    (field-value "java.lang.Class" field-name instance)))
+    (field-value "java.lang.Class" field-name-and-type instance)))
 
 (defun execute-GETSTATIC (inst th s)
   (let* ((class-name (arg1 inst))
-         (field-name (arg2 inst))
-         (long-flag (arg3 inst))
+         (field-name-and-type (arg2 inst))
+         (long-flag (or (arg3 inst) (field-long-or-double field-name-and-type)))
          (class-ref (class-decl-heapref
                      (bound? class-name (class-table s))))
          (instance (deref class-ref (heap s)))
-         (field-value (field-value "java.lang.Class" field-name instance)))
+         (field-value (field-value "java.lang.Class" field-name-and-type instance)))
         (modify th s
                 :pc (+ (inst-length inst) (pc (top-frame th s)))
                 :stack (if long-flag
@@ -2663,10 +2674,10 @@ J & George
     (cond
      ((method-isNative? closest-method)
       (cond ((and (equal closest-class "java.lang.Thread")
-                  (equal method-name-and-type "start()V"))
+                  (equal method-name-and-type "start:()V"))
              (modify tThread s1 :status 'SCHEDULED))
             ((and (equal closest-class "java.lang.Thread")
-                  (equal method-name-and-type "stop()V"))
+                  (equal method-name-and-type "stop:()V"))
              (modify tThread s1
                      :status 'UNSCHEDULED))
             (t s)))
@@ -2721,29 +2732,29 @@ J & George
     (cond
      ((method-isNative? closest-method)
       (cond ((and (equal closest-class "java.lang.Double")
-                  (equal method-name-and-type "doubleToRawLongBits(D)J"))
+                  (equal method-name-and-type "doubleToRawLongBits:(D)J"))
              (modify th s1
                      :stack (push (long-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
             ((and (equal closest-class "java.lang.Float")
-                  (equal method-name-and-type "floatToRawIntBits(F)I"))
+                  (equal method-name-and-type "floatToRawIntBits:(F)I"))
              (modify th s1
                      :stack (push (int-fix (top (stack (top-frame th s))))
                                   (stack (top-frame th s1)))))
             ((and (equal closest-class "java.lang.Float")
-                  (equal method-name-and-type "intBitsToFloat(I)F"))
+                  (equal method-name-and-type "intBitsToFloat:(I)F"))
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::sp))
                                   (stack (top-frame th s1)))))
             ((and (equal closest-class "java.lang.Double")
-                  (equal method-name-and-type "longBitsToDouble(J)D"))
+                  (equal method-name-and-type "longBitsToDouble:(J)D"))
              (modify th s1
                      :stack (push (bits2fp (top (stack (top-frame th s)))
                                            (rtl::dp))
                                   (stack (top-frame th s1)))))
             ((and (equal closest-class "java.lang.StrictMath")
-                  (equal method-name-and-type "sqrt(D)D"))
+                  (equal method-name-and-type "sqrt:(D)D"))
              (modify th s1
                      :stack (push (fpsqrt (top (stack (top-frame th s)))
                                            (rtl::dp))
@@ -2802,10 +2813,10 @@ J & George
     (cond
      ((method-isNative? closest-method)
       (cond ((and (equal closest-class "java.lang.Thread")
-                  (equal method-name-and-type "start()V"))
+                  (equal method-name-and-type "start:()V"))
              (modify tThread s1 :status 'SCHEDULED))
             ((and (equal closest-class "java.lang.Thread")
-                  (equal method-name-and-type "stop()V"))
+                  (equal method-name-and-type "stop:()V"))
              (modify tThread s1
                      :status 'UNSCHEDULED))
             (t s)))
@@ -2952,9 +2963,9 @@ J & George
 ; -----------------------------------------------------------------------------
 ; (LDC) Instruction
 
-(defun set-instance-field (class-name field-name value instance)
+(defun set-instance-field (class-name field-name-and-type value instance)
   (bind class-name
-        (bind field-name value
+        (bind field-name-and-type value
               (binding class-name instance))
         instance))
 
@@ -3227,7 +3238,7 @@ J & George
 (defun execute-NEW (inst th s)
   (let* ((class-name (arg1 inst))
          (class-table (class-table s))
-         (closest-class-method (lookup-class-method "run()V" class-name class-table))
+         (closest-class-method (lookup-class-method "run:()V" class-name class-table))
          (closest-class (car closest-class-method))
          (closest-method (cdr closest-class-method))
          (prog (method-program closest-method))
@@ -3306,8 +3317,8 @@ J & George
 
 (defun execute-PUTFIELD (inst th s)
   (let* ((class-name (arg1 inst))
-         (field-name (arg2 inst))
-         (long-flag  (arg3 inst))
+         (field-name-and-type (arg2 inst))
+         (long-flag (or (arg3 inst) (field-long-or-double field-name-and-type)))
          (value (if long-flag
                     (top (pop (stack (top-frame th s))))
                     (top (stack (top-frame th s)))))
@@ -3324,7 +3335,7 @@ J & George
                            (pop (pop (stack (top-frame th s)))))
                 :heap (bind address
                             (set-instance-field class-name
-                                                field-name
+                                                field-name-and-type
                                                 value
                                                 instance)
                             (heap s)))))
@@ -3334,8 +3345,8 @@ J & George
 
 (defun execute-PUTSTATIC (inst th s)
   (let* ((class-name (arg1 inst))
-         (field-name (arg2 inst))
-         (long-flag (arg3 inst))
+         (field-name-and-type (arg2 inst))
+         (long-flag (or (arg3 inst) (field-long-or-double field-name-and-type)))
          (class-ref (class-decl-heapref
                      (bound? class-name (class-table s))))
          (value (if long-flag
@@ -3349,7 +3360,7 @@ J & George
                            (pop (stack (top-frame th s))))
                 :heap (bind (cadr class-ref)
                             (set-instance-field "java.lang.Class"
-                                                field-name
+                                                field-name-and-type
                                                 value
                                                 instance)
                             (heap s)))))
