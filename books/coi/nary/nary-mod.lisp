@@ -1,7 +1,7 @@
 (in-package "NARY")
 
-;; This book sets up a reasonable set of nary rules for
-;; modular arithmetic.
+;; This book sets up a reasonable set of nary rules for modular
+;; arithmetic using nary congruences.
 
 (include-book "new")
 
@@ -151,24 +151,34 @@
      
      ))
 
-  (defthm mod-n
+  ;; The "reduction" rules are the rules that actually perform
+  ;; the simplification.
+
+  ;; This rule reduces "n" to 0 in a % n context.
+  (defthm mod-n-of-n-reduction
     (equal (mod n n) 0)
     :hints ((and stable-under-simplificationp
                  '(:cases ((acl2-numberp n))))
             (and stable-under-simplificationp
                  '(:cases ((equal n 0))))))
 
-  (defthm mod-mod
+  ;; This rule reduces (mod x n) to x in a % n context.
+  (defthm mod-n-of-mod-n-reduction
     (implies
      (and
       (integerp x)
       (integerp n))
      (equal (mod (mod x n) n)
-	    (mod x n))))
+	    (mod x n)))
+    :hints (("Goal" :in-theory (disable mod))))
   
   (def::context (mod x n)
     :hyps (and (integerp x) (integerp n))
     :hints (("Goal" :in-theory (disable mod))))
+
+  ;; The congruence rules are the rules that push the mod context into
+  ;; function arguments.  Here we define congruence rules for +,*,-,
+  ;; and expt.
 
   (defthmd mod-+-congruence
     (implies
@@ -263,4 +273,8 @@
     mod---congruence
     ))
 
+;; This book provides rules that could easily break existing proofs.
+;; To minimize the potential impact of this book, I disable the
+;; primary congruence rules.  To use the rules in this book, simply
+;; enable the nary::mod-rules theory. ie: (enable nary::mod-rules)
 (in-theory (disable mod-rules))

@@ -1,6 +1,7 @@
 (in-package "ACL2")
 
-(include-book "nary-mod")
+(include-book "coi/nary/nary-mod" :dir :system)
+
 (include-book "arithmetic-5/top" :dir :system)
 
 (encapsulate
