@@ -215,7 +215,7 @@ Below is the output of jvm2acl2 for M5.
    (REF 2))
   ("java.lang.String"
    ("java.lang.Object")
-   ("strcontents")
+   ("value:[C")
    NIL NIL
    (("<init>:()V" NIL NIL (ALOAD_0)
      (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)
@@ -353,7 +353,7 @@ Below is the output of jvm2acl2 for M5.
      (REF 2))
     ("java.lang.String"
      ("java.lang.Object")
-     ("strcontents")
+     ("value:[C")
      NIL
      NIL
      (("<init>:()V" NIL NIL

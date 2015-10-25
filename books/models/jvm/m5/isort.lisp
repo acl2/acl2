@@ -224,7 +224,7 @@ Method ListProc()
      (REF 2))
     ("java.lang.String"
      ("java.lang.Object")
-     ("strcontents")
+     ("value:[C")
      NIL
      NIL
      (("<init>:()V" NIL NIL

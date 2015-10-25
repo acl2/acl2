@@ -2663,7 +2663,7 @@ Sun Jul 15 14:17:26 2001
        (REF 2))
   ("java.lang.String"
        ("java.lang.Object")
-       ("strcontents")
+       ("value:[C")
        NIL NIL
        (("<init>:()V" NIL NIL (ALOAD_0)
                   (INVOKESPECIAL "java.lang.Object" "<init>:()V" 0)

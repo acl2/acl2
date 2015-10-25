@@ -513,7 +513,7 @@ J & George
                           '(REF -1))
          (make-class-decl "java.lang.String"
                           '("java.lang.Object")
-                          '("strcontents") ; Internal field
+                          '("value:[C")
                           '()
                           '()
                           '(("<init>:()V" ()
@@ -3855,19 +3855,37 @@ J & George
 ; load_class_library: a utility for populating the heap with Class and
 ;                     String objects
 
+(defun string-to-char-array (str i ans)
+  (if (zp i)
+      ans
+    (string-to-char-array str
+                          (1- i)
+                          (cons (char-code (char str (1- i))) ans))))
+
 (defun make-string-obj (class cpentry s idx)
   (let* ((new-object (build-an-instance
                       (cons "java.lang.String"
                             (class-decl-superclasses
                              (bound? "java.lang.String" (class-table s))))
                      (class-table s)))
+         (array-address (len (heap s)))
+         (new-address (1+ array-address))
+         (str (caddr cpentry))
+         (char-array (makearray 'T_CHAR
+                                (length str)
+                                (string-to-char-array str (length str) nil)
+                                (class-table s)))
          (stuffed-obj (set-instance-field "java.lang.String"
-                                          "strcontents"
-                                          (caddr cpentry)
+                                          "value:[C"
+                                          (list 'REF array-address)
                                           new-object))
-         (new-address (len (heap s))))
+         (new-heap (bind new-address
+                         stuffed-obj
+                         (bind array-address
+                               char-array
+                               (heap s)))))
         (modify th s
-                :heap (bind new-address stuffed-obj (heap s))
+                :heap new-heap
                 :class-table (update-ct-string-ref
                               class
                               idx
