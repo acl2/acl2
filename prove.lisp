@@ -3772,67 +3772,72 @@
 (defmacro set-splitter-output (val)
   `(f-put-global 'splitter-output ,val state))
 
-(defun waterfall-msg1
-  (processor cl-id signal clauses new-hist msg ttree pspv state)
+(defun waterfall-msg1 (processor cl-id signal clauses new-hist msg ttree pspv
+                                 state)
   (with-output-lock
-   (pprogn
+   (let ((gag-mode (gag-mode)))
+     (pprogn
 
 ;  (maybe-show-gag-state cl-id pspv state) ; debug
 
-    (cond
+      (cond
 
 ; Suppress printing for :OR splits; see also other comments with this header.
 
-;   ((and (eq signal 'OR-HIT)
-;         (gag-mode))
-;    (fms "~@0~|~%~@1~|"
-;         (list (cons #\0 (or msg ""))
-;               (cons #\1 (or-hit-msg t cl-id ttree)))
-;         (proofs-co state) state nil))
+;      ((and (eq signal 'OR-HIT)
+;            gag-mode)
+;       (fms "~@0~|~%~@1~|"
+;            (list (cons #\0 (or msg ""))
+;                  (cons #\1 (or-hit-msg t cl-id ttree)))
+;            (proofs-co state) state nil))
 
-     ((and msg (gag-mode))
-      (fms "~@0~|" (list (cons #\0 msg)) (proofs-co state) state nil))
-     (t state))
-    (cond
-     ((gag-mode)
-      (print-splitter-rules-summary cl-id clauses ttree (proofs-co state)
-                                    state))
-     (t
-      (case
-        processor
-        (apply-top-hints-clause
+       ((and msg (gag-mode))
+        (fms "~@0~|" (list (cons #\0 msg)) (proofs-co state) state nil))
+       (t state))
+      (cond
+       ((or (gag-mode)
+            (f-get-global 'raw-proof-format state))
+        (print-splitter-rules-summary cl-id clauses ttree (proofs-co state)
+                                      state))
+       (t state))
+      (cond
+       (gag-mode state)
+       (t
+        (case
+          processor
+          (apply-top-hints-clause
 
 ; Note that the args passed to apply-top-hints-clause, and to
 ; simplify-clause-msg1 below, are nonstandard.  This is what allows the
 ; simplify message to detect and report if the just performed simplification
 ; was specious.
 
-         (apply-top-hints-clause-msg1
-          signal cl-id clauses
-          (consp (access history-entry (car new-hist)
-                         :processor))
-          ttree pspv state))
-        (preprocess-clause
-         (preprocess-clause-msg1 signal clauses ttree pspv state))
-        (simplify-clause
-         (simplify-clause-msg1 signal cl-id clauses
-                               (consp (access history-entry (car new-hist)
-                                              :processor))
-                               ttree pspv state))
-        (settled-down-clause
-         (settled-down-clause-msg1 signal clauses ttree pspv state))
-        (eliminate-destructors-clause
-         (eliminate-destructors-clause-msg1 signal clauses ttree
-                                            pspv state))
-        (fertilize-clause
-         (fertilize-clause-msg1 signal clauses ttree pspv state))
-        (generalize-clause
-         (generalize-clause-msg1 signal clauses ttree pspv state))
-        (eliminate-irrelevance-clause
-         (eliminate-irrelevance-clause-msg1 signal clauses ttree
-                                            pspv state))
-        (otherwise
-         (push-clause-msg1 cl-id signal clauses ttree pspv state))))))))
+           (apply-top-hints-clause-msg1
+            signal cl-id clauses
+            (consp (access history-entry (car new-hist)
+                           :processor))
+            ttree pspv state))
+          (preprocess-clause
+           (preprocess-clause-msg1 signal clauses ttree pspv state))
+          (simplify-clause
+           (simplify-clause-msg1 signal cl-id clauses
+                                 (consp (access history-entry (car new-hist)
+                                                :processor))
+                                 ttree pspv state))
+          (settled-down-clause
+           (settled-down-clause-msg1 signal clauses ttree pspv state))
+          (eliminate-destructors-clause
+           (eliminate-destructors-clause-msg1 signal clauses ttree
+                                              pspv state))
+          (fertilize-clause
+           (fertilize-clause-msg1 signal clauses ttree pspv state))
+          (generalize-clause
+           (generalize-clause-msg1 signal clauses ttree pspv state))
+          (eliminate-irrelevance-clause
+           (eliminate-irrelevance-clause-msg1 signal clauses ttree
+                                              pspv state))
+          (otherwise
+           (push-clause-msg1 cl-id signal clauses ttree pspv state)))))))))
 
 (defmacro io?-prove-cw (vars body &rest keyword-args)
 
@@ -9459,11 +9464,13 @@
 ; gag-state under these conditions.  However, this is effectively a no-op,
 ; because the parallel waterfall does not save anything to gag-state anyway.
 
-  (let ((chan (proofs-co state)))
+  (let ((chan (proofs-co state))
+        (acc-ttree (f-get-global 'accumulated-ttree state)))
     (pprogn
-     (io? summary nil state (chan)
-          (newline chan state))
-     (print-rules-and-hint-events-summary state)
+     (io? summary nil state (chan acc-ttree)
+          (pprogn
+           (newline chan state)
+           (print-rules-and-hint-events-summary acc-ttree state)))
      (cond
       #+acl2-par
       ((and (f-get-global 'waterfall-parallelism state)
