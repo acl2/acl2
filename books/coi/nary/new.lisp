@@ -98,8 +98,36 @@
   (declare (xargs :signature ((symbolp) symbolp)))
   (nary-symbol "BOUND-" new-var))
 
+(encapsulate
+    (
+     ((nary-monitor * *) => *)
+     )
+  (local
+   (defun nary-monitor (x y) 
+     (list x y)))
+  )
+
+(defun nary-monitor-off-fn (x y)
+  (declare (type t x y))
+  (declare (ignore x y)) 
+  t)
+
+(defun nary-monitor-on-fn (x y)
+  (declare (type t x y))
+  (if (and (not x) (not y))
+      (not (cw "~%~%"))
+    (not (cw "~p0 rewrote to ~p1~%" x y))))
+
+(defmacro monitor-on ()
+  `(defattach nary-monitor nary-monitor-on-fn))
+
+(defmacro monitor-off ()
+  `(defattach nary-monitor nary-monitor-off-fn))
+
+(monitor-off)
+
 (def::und bind-context-fn (n term)
-  (declare (xargs :signature ((natp wf-binding) true-listp t t)))
+  (declare (xargs :signature ((natp wf-binding) true-listp t t t)))
   (met ((new-var fix-fn old-var moduli) (extract-variables-from-binding term))
     (let* ((unfix-fn     (fix-unfix-name fix-fn))
            (fix-equiv-fn (fix-equiv-name fix-fn))
@@ -112,6 +140,7 @@
             )
           new-var-hit
           `(,fix-equiv-fn ,bound-var ,new-var ,@moduli)
+          `(syntaxp (nary-monitor ,old-var ,new-var))
           ))))
 
 ;; ------------------------------------------------------------------
@@ -122,24 +151,28 @@
     (and (wf-binding (car list))
          (wf-binding-list (cdr list)))))
 
-(def::und bind-context-rec (list n bindings new-vars tests)
-  (declare (xargs :signature ((wf-binding-list natp true-listp true-listp true-listp) 
+(def::und bind-context-rec (list n bindings new-vars tests debugs)
+  (declare (xargs :signature ((wf-binding-list natp true-listp true-listp true-listp true-listp) 
+                              true-listp
                               true-listp
                               true-listp
                               true-listp)))
-  (if (endp list) (mv bindings new-vars tests)
-    (met ((new-bindings new-var-hit test) (bind-context-fn n (car list)))
+  (if (endp list) (mv bindings new-vars tests debugs)
+    (met ((new-bindings new-var-hit test debug) (bind-context-fn n (car list)))
       (let ((bindings (append bindings new-bindings))
             (new-vars (cons new-var-hit new-vars))
-            (tests    (cons test tests)))
-        (bind-context-rec (cdr list) (1+ n) bindings new-vars tests)))))
+            (tests    (cons test tests))
+            (debugs   (cons debug debugs)))
+        (bind-context-rec (cdr list) (1+ n) bindings new-vars tests debugs)))))
 
 (def::und bind-context-list (list)
-  (met ((bindings new-vars tests) (bind-context-rec list 0 nil nil nil))
+  (met ((bindings new-vars tests debugs) (bind-context-rec list 0 nil nil nil nil))
     `(and
       ,@bindings
       (or ,@new-vars)
-      ,@tests)))
+      ,@tests
+      (syntaxp (nary-monitor nil nil))
+      ,@debugs)))
 
 (defmacro bind-context (&rest args)
   (declare (type (satisfies wf-binding-list) args))
@@ -219,6 +252,17 @@
    (good-rewrite-order x y)
    (equal (equiv y x)
           (equov x y))))
+
+(defthm equiv-reduction
+  (implies
+   (in-conclusion-check (equal (fix x n) y))
+   (iff (equal (fix x n) y)
+        (and (fixed-p y n)
+             (equiv x y n)))))
+
+
+(defthm equiv-zed
+  (equiv x x))
 
 (defthm substitute
   (implies
