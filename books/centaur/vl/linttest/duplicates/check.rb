@@ -35,37 +35,47 @@ require_relative '../utils'
 outlaw_bad_warnings()
 outlaw_warning_global("VL-PROGRAMMING-ERROR")
 
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc1")
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc2")
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc3")
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc4")
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc5")
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc6")
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc7")
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc8")
+def dupe(w)
+  match_warning(:top, "VL-WARN-DUPLICATES", w)
+end
 
-# BOZO this isn't working yet, why not?
-# match_warning(:m0, "VL-WARN-TRUNCATION", "trunc9")
+def nodupe(w)
+  outlaw_warning(:top, "VL-WARN-DUPLICATES", w)
+end
 
-# This isn't working, I guess we aren't sizing tasks yet?
-# match_warning(:m0, "VL-WARN-TRUNCATION", "trunc10")
-# match_warning(:m0, "VL-WARN-TRUNCATION", "trunc11")
+dupe("w1_dupe")
+dupe("w2_dupe")
+dupe("w3a_dupe")
+dupe("w3b_dupe")
+dupe("w4a_dupe")
+dupe("w4b_dupe")
+dupe("w4c_dupe")
+dupe("w5_dupe")
+dupe("w6_dupe")
+dupe("w7_dupe")
+dupe("w8_dupe")
+dupe("w9_dupe")
+dupe("w10_dupe")
+dupe("w11_dupe")
 
-# BOZO this isn't working yet, why not?
-# match_warning(:m0, "VL-WARN-TRUNCATION", "truncfun")
-
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc12")
-match_warning(:m0, "VL-WARN-TRUNCATION", "trunc13")
-
-
-
-outlaw_warning(:m1, "VL-WARN-TRUNCATION", "normal1")
-outlaw_warning(:m1, "VL-WARN-TRUNCATION", "normal2")
-outlaw_warning(:m1, "VL-WARN-TRUNCATION", "normal3")
-
-match_warning(:m1, "VL-WARN-TRUNCATION", "trunc1")
-
-
+nodupe("w1_nodupe")
+nodupe("w2_nodupe")
+nodupe("w3a_nodupe")
+nodupe("w3b_nodupe")
+nodupe("w3c_nodupe")
+nodupe("w4a_nodupe")
+nodupe("w4b_nodupe")
+nodupe("w4c_nodupe")
+nodupe("w4d_nodupe")
+nodupe("w4e_nodupe")
+nodupe("w4f_nodupe")
+nodupe("w5_nodupe")
+nodupe("w6_nodupe")
+nodupe("w7_nodupe")
+nodupe("w8_nodupe")
+nodupe("w9_nodupe")
+nodupe("w10_nodupe")
+nodupe("w11_nodupe")
 
 test_passed()
 

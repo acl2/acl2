@@ -47,6 +47,7 @@
 
 
 (defparser vl-parse-1+-alias-rhses (atts lhs loc)
+  ;; Match '=' net_lvalue { '=' net_lvalue }
   :guard (and (vl-atts-p atts)
               (vl-expr-p lhs)
               (vl-location-p loc))
@@ -61,13 +62,13 @@
         (when (vl-is-token? :vl-equalsign)
           (rest := (vl-parse-1+-alias-rhses atts lhs loc)))
         (return (cons (make-vl-alias :lhs lhs
-                                       :rhs rhs1
-                                       :atts atts
-                                       :loc loc)
+                                     :rhs rhs1
+                                     :atts atts
+                                     :loc loc)
                       rest))))
 
-
 (defparser vl-parse-alias (atts)
+  ;; net_alias ::= 'alias' net_lvalue '=' net_lvalue { '=' net_lvalue } ';'
   :guard (vl-atts-p atts)
   :result (vl-aliaslist-p val)
   :true-listp t
@@ -79,10 +80,8 @@
         (:= (vl-match-token :vl-kwd-alias))
         (lhs := (vl-parse-lvalue))
         (aliases := (vl-parse-1+-alias-rhses atts lhs loc))
+        (:= (vl-match-token :vl-semi))
         (return aliases)))
-
-
-
 
 
 
@@ -561,6 +560,12 @@ the one modelement, it consolidates them into an unnamed @('begin/end') block.</
                  (blkname := (vl-match-token :vl-idtoken)))
                (elts := (vl-parse-genelements-until :vl-kwd-end))
                (:= (vl-match-token :vl-kwd-end))
+               (when blkname
+                 ;; SystemVerilog-2012 extends generate_block with [ ':'
+                 ;; generate_block_identifier ] at the end.  We don't
+                 ;; have to check for SystemVerilog-2012 mode since
+                 ;; that's baked into vl-parse-endblock-name.
+                 (:= (vl-parse-endblock-name (vl-idtoken->name blkname) "begin/end")))
                (return (make-vl-genblock :name (and blkname
                                                     (vl-idtoken->name blkname))
                                          :elems elts

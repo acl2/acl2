@@ -29,12 +29,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/port-tools")
-(local (include-book "../util/arithmetic"))
+(include-book "../../mlib/port-tools")
+(local (include-book "../../util/arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
 (defsection portcheck
-  :parents (lint)
+  :parents (annotate)
   :short "Trivial check to make sure that each module's ports satisfy basic
 well-formedness conditions and agree with its port declarations and to issue
 style warnings for tricky ports."

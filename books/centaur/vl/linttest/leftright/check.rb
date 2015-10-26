@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 # VL Verilog Toolkit
 # Copyright (C) 2008-2015 Centaur Technology
 #
@@ -128,6 +130,17 @@ yes(:m0, "ashr_warn2")
 yes(:m0, "ashr_warn3")
 yes(:m0, "ashr_warn4")
 yes(:m0, "ashr_warn5")
+
+no(:m0, "times_no1")
+no(:m0, "times_no2")
+no(:m0, "times_no3")
+no(:m0, "times_no4")
+no(:m0, "times_no5")
+no(:m0, "times_no6")
+no(:m0, "times_no7")
+no(:m0, "times_no8")
+no(:m0, "times_no9")
+no(:m0, "times_no10")
 
 no(:m0, "plus_no1")
 no(:m0, "plus_no2")

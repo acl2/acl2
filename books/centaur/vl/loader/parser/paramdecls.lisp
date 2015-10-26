@@ -256,7 +256,12 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :count strong
   (seq tokstream
         (first := (vl-parse-type-assignment atts localp))
-        (when (vl-is-token? :vl-comma)
+        ;; Tricky.  A list_of_type_assignments can occur in a
+        ;; parameter_port_declaration, and parameter_port_declarations are
+        ;; comma-separated.  So, just seeing a comma here isn't good enough; we
+        ;; need to also look for a subsequent identifier.
+        (when (and (vl-is-token? :vl-comma)
+                   (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens))))
           (:= (vl-match))
           (rest := (vl-parse-list-of-type-assignments atts localp)))
         (return (cons first rest))))

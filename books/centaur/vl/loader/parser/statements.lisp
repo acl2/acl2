@@ -886,83 +886,103 @@
                                   :atts atts))))
 
 
-; par_block ::=
-;
-; In Verilog-2005:
-;
-;   'fork' [ ':' identifier { block_item_declaration } ]
-;      { statement }
-;   'join'
-;
-; SystemVerilog-2012 extends this to:
-;
-;   'fork' [ ':' identifier ]
-;      { block_item_declaration } ]
-;      { statement_or_null }
-;   'join'
 
 
  (defparser vl-parse-par-block (atts)
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 0)
+   :short "Parse a @('par_block') into a @(see vl-blockstmt)."
+   :long "<p>Verilog-2005:</p>
+          @({
+               par_block ::= 'fork' [ ':' identifier { block_item_declaration } ]
+                                 { statement }
+                              'join'
+          })
+
+          <p>SystemVerilog-2012 changes this to allow declarations even on
+          unnamed forks, to allow additional kinds of join keywords, and to
+          allow end-block names.</p>
+
+          @({
+               par_block ::= 'fork' [ ':' identifier ]
+                                 { block_item_declaration }
+                                 { statement_or_null }
+                             join_keyword [ ':' identifier ]
+
+               join_keyword ::= 'join' | 'join_any' | 'join_none'
+          })"
    (seq tokstream
-         (:= (vl-match-token :vl-kwd-fork))
-         (when (vl-is-token? :vl-colon)
-           (:= (vl-match))
-           (id := (vl-match-token :vl-idtoken)))
+        (:= (vl-match-token :vl-kwd-fork))
+        (when (vl-is-token? :vl-colon)
+          (:= (vl-match))
+          (id := (vl-match-token :vl-idtoken)))
 
-         (when (or id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
-           (items := (vl-parse-0+-block-item-declarations)))
+        (when (or id
+                  (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+          ;; SystemVerilog allows declarations even if there is no ID.
+          (items := (vl-parse-0+-block-item-declarations)))
 
-         (stmts := (vl-parse-statements-until-join))
-         (:= (vl-match-token :vl-kwd-join))
-         (when (and id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
-           (:= (vl-parse-endblock-name (vl-idtoken->name id) "fork/join")))
+        (stmts := (vl-parse-statements-until-join))
 
-         (return
-          (b* (((mv vardecls paramdecls imports) (vl-sort-blockitems items)))
-            (make-vl-blockstmt :sequentialp nil
-                               :name (and id (vl-idtoken->name id))
-                               :vardecls vardecls
-                               :paramdecls paramdecls
-                               :imports imports
-                               :loaditems items
-                               :stmts stmts
-                               :atts atts)))))
-
-
-; seq_block ::=
-;
-; In Verilog-2005:
-;
-;    'begin' [ ':' identifier { block_item_declaration } ]
-;       { statement }
-;    'end'
-;
-; SystemVerilog-2012 extends this to:
-;
-;  begin [ : block_identifier ]
-;      { block_item_declaration }
-;      { statement_or_null }
-;  end [ : block_identifier ]
+        (join := (if (eq (vl-loadconfig->edition config) :verilog-2005)
+                     (vl-match-token ':vl-kwd-join)
+                   (vl-match-some-token '(:vl-kwd-join :vl-kwd-join_any :vl-kwd-join_none))))
+        (when id
+          ;; This automatically checks for SystemVerilog mode.
+          (:= (vl-parse-endblock-name (vl-idtoken->name id) "fork/join")))
+        (return
+         (b* (((mv vardecls paramdecls imports) (vl-sort-blockitems items)))
+           (make-vl-blockstmt :blocktype (case (vl-token->type join)
+                                           (:vl-kwd-join      :vl-forkjoin)
+                                           (:vl-kwd-join_any  :vl-forkjoinany)
+                                           (:vl-kwd-join_none :vl-forkjoinnone)
+                                           (otherwise (impossible)))
+                              :name (and id (vl-idtoken->name id))
+                              :vardecls vardecls
+                              :paramdecls paramdecls
+                              :imports imports
+                              :loaditems items
+                              :stmts stmts
+                              :atts atts)))))
 
  (defparser vl-parse-seq-block (atts)
    :guard (vl-atts-p atts)
    :measure (two-nats-measure (vl-tokstream-measure) 0)
+   :short "Parse a @('seq_block') into a @(see vl-blockstmt)."
+   :long "<p>Verilog-2005:</p>
+          @({
+               seq_block ::= 'begin' [ ':' identifier { block_item_declaration } ]
+                                { statement }
+                             'end'
+          })
+
+          <p>SystemVerilog-2012 extends this so that even unnamed blocks can
+          have declarations, and adds end-block names.</p>
+
+          @({
+               seq_block ::= 'begin' [ ':' identifier ]
+                                { block_item_declaration }
+                                { statement_or_null }
+                             'end' [ ':' identifier ]
+          })"
+
    (seq tokstream
          (:= (vl-match-token :vl-kwd-begin))
          (when (vl-is-token? :vl-colon)
            (:= (vl-match))
            (id := (vl-match-token :vl-idtoken)))
-         (when (or id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+         (when (or id
+                   (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+           ;; SystemVerilog allows declarations even if there is no ID.
            (items := (vl-parse-0+-block-item-declarations)))
          (stmts := (vl-parse-statements-until-end))
          (:= (vl-match-token :vl-kwd-end))
-         (when (and id (not (equal (vl-loadconfig->edition config) :verilog-2005)))
+         (when id
+           ;; This automatically checks for SystemVerilog mode.
            (:= (vl-parse-endblock-name (vl-idtoken->name id) "begin/end")))
          (return
           (b* (((mv vardecls paramdecls imports) (vl-sort-blockitems items)))
-            (make-vl-blockstmt :sequentialp t
+            (make-vl-blockstmt :blocktype :vl-beginend
                                :name (and id (vl-idtoken->name id))
                                :vardecls vardecls
                                :paramdecls paramdecls
@@ -1540,7 +1560,7 @@
              (:otherwise
               ;; We are just going to wrap this statement in a new, named block.
               (mv nil
-                  (make-vl-blockstmt :sequentialp t
+                  (make-vl-blockstmt :blocktype :vl-beginend
                                      :name blockid.name
                                      ;; In case it's an assertion, it's maybe nice
                                      ;; to have the block id in the assertion itself
@@ -1573,9 +1593,9 @@
  (defparser vl-parse-statements-until-join ()
    :measure (two-nats-measure (vl-tokstream-measure) 110)
    ;; Returns a list of vl-stmt-p's.
-   ;; Tries to read until the keyword "join"
+   ;; Tries to read until join, join_any, or join_none.
    (seq tokstream
-         (when (vl-is-token? :vl-kwd-join)
+         (when (vl-is-some-token? '(:vl-kwd-join :vl-kwd-join_any :vl-kwd-join_none))
            (return nil))
          (first :s= (vl-parse-statement))
          (rest := (vl-parse-statements-until-join))

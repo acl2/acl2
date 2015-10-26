@@ -1178,7 +1178,7 @@ which could not hold such large values.</p>")
 
        :vl-blockstmt
        (jp-object :tag        (jp-sym kind)
-                  :sequential (jp-bool x.sequentialp)
+                  :blocktype  (jp-sym x.blocktype)
                   :name       (jp-maybe-string x.name)
                   :imports    (vl-jp-importlist x.imports)
                   :paramdecls (vl-jp-paramdecllist x.paramdecls)
