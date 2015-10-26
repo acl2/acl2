@@ -413,6 +413,58 @@
            (intern-in-package-of-symbol (cat (symbol-name name) "-COUNT")
                                         name)))))
 
+;; --- With-flextype-bindings ---
+(defun replace-*-in-symbol-with-str (x str)
+  (b* ((name (symbol-name x))
+       (idx (search "*" name))
+       ((unless idx) x)
+       (newname (cat (subseq name 0 idx) str (subseq name (+ 1 idx) nil))))
+    (intern-in-package-of-symbol newname x)))
+
+(defun replace-*-in-symbols-with-str-rec (x str)
+  (b* (((when (atom x))
+        (if (symbolp x)
+            (let* ((newx (replace-*-in-symbol-with-str x str)))
+              (if (eq newx x)
+                  (mv nil x)
+                (mv t newx)))
+          (mv nil x)))
+       ((mv changed1 car) (replace-*-in-symbols-with-str-rec (car x) str))
+       ((mv changed2 cdr) (replace-*-in-symbols-with-str-rec (cdr x) str))
+       ((unless (or changed1 changed2))
+        (mv nil x)))
+    (mv t (cons car cdr))))
+
+(defun has-vardot-syms (x vardot)
+  (if (atom x)
+      (and (symbolp x)
+           (eql (search vardot (symbol-name x)) 0))
+    (or (has-vardot-syms (car x) vardot)
+        (has-vardot-syms (cdr x) vardot))))
+
+(defun replace-*-in-symbols-with-str (x str)
+  (b* (((mv ?ch newx) (replace-*-in-symbols-with-str-rec x str)))
+    newx))
+
+(defun with-flextype-bindings-fn (binding body default)
+  (b* ((var (if (consp binding) (car binding) binding))
+       (add-binds (has-vardot-syms body (cat (symbol-name var) ".")))
+       (sumbody (replace-*-in-symbols-with-str body "SUM"))
+       (listbody (replace-*-in-symbols-with-str body "LIST"))
+       (alistbody (replace-*-in-symbols-with-str body "ALIST"))
+       (cases
+        `(case (tag ,var)
+           (:sum ,(if add-binds `(b* (((flexsum ,var) ,var)) ,sumbody) sumbody))
+           (:list ,(if add-binds `(b* (((flexlist ,var) ,var)) ,listbody) listbody))
+           (:alist ,(if add-binds `(b* (((flexalist ,var) ,var)) ,alistbody) alistbody))
+           (otherwise ,default))))
+    (if (consp binding)
+        `(let ((,var ,(cadr binding))) ,cases)
+      cases)))
+
+(defmacro with-flextype-bindings (binding body &key default)
+  (with-flextype-bindings-fn binding body default))
+
 
 ;; ------------------------- Flexsum Parsing -----------------------
 
@@ -1389,7 +1441,6 @@
     :post-events
     :enable-rules))
 
-
 (define get-flexsum-from-types (name types)
   (if (atom types)
       nil
@@ -1398,12 +1449,35 @@
              (car types))
         (get-flexsum-from-types name (cdr types)))))
 
+(defun search-deftypes-types (type-name types)
+  (if (atom types)
+      nil
+    (or (with-flextype-bindings (x (car types))
+          (and (eq type-name x.name) x))
+        (search-deftypes-types type-name (cdr types)))))
 
+(defun search-deftypes-table (type-name table)
+  ;; Returns (mv flextypes-obj type-obj) where type-obj describes either a sum,
+  ;; list, or alist type, and flextypes-obj contains the type-obj and any other
+  ;; types created in its mutual-recursion.
+  (if (atom table)
+      (mv nil nil)
+    (let ((type (search-deftypes-types type-name (flextypes->types (cdar table)))))
+      (if type
+          (mv (cdar table) ;; info for whole deftypes form
+              type) ;; info for this type
+        (search-deftypes-table type-name (cdr table))))))
 
 (define get-flexsum-info (name world)
   :returns (suminfo?)
   (b* ((table (get-flextypes world))
-       (entry (cdr (assoc name table)))
+       (entry (or
+               ;; Maybe it's a top-level flexsum?
+               (cdr (assoc name table))
+               ;; Maybe it's nested in some other flexsum?
+               (b* (((mv flextypes-obj &)
+                     (search-deftypes-table name table)))
+                 flextypes-obj)))
        ((unless entry)
         (raise "~x0 not found in the flextypes table." name))
        ((unless (flextypes-p entry))
@@ -1957,57 +2031,6 @@
                     :keyp-of-nil (getarg :keyp-of-nil :unknown kwd-alist)
                     :valp-of-nil (getarg :valp-of-nil :unknown kwd-alist))))
 
-;; --- With-flextype-bindings ---
-(defun replace-*-in-symbol-with-str (x str)
-  (b* ((name (symbol-name x))
-       (idx (search "*" name))
-       ((unless idx) x)
-       (newname (cat (subseq name 0 idx) str (subseq name (+ 1 idx) nil))))
-    (intern-in-package-of-symbol newname x)))
-
-(defun replace-*-in-symbols-with-str-rec (x str)
-  (b* (((when (atom x))
-        (if (symbolp x)
-            (let* ((newx (replace-*-in-symbol-with-str x str)))
-              (if (eq newx x)
-                  (mv nil x)
-                (mv t newx)))
-          (mv nil x)))
-       ((mv changed1 car) (replace-*-in-symbols-with-str-rec (car x) str))
-       ((mv changed2 cdr) (replace-*-in-symbols-with-str-rec (cdr x) str))
-       ((unless (or changed1 changed2))
-        (mv nil x)))
-    (mv t (cons car cdr))))
-
-(defun has-vardot-syms (x vardot)
-  (if (atom x)
-      (and (symbolp x)
-           (eql (search vardot (symbol-name x)) 0))
-    (or (has-vardot-syms (car x) vardot)
-        (has-vardot-syms (cdr x) vardot))))
-
-(defun replace-*-in-symbols-with-str (x str)
-  (b* (((mv ?ch newx) (replace-*-in-symbols-with-str-rec x str)))
-    newx))
-
-(defun with-flextype-bindings-fn (binding body default)
-  (b* ((var (if (consp binding) (car binding) binding))
-       (add-binds (has-vardot-syms body (cat (symbol-name var) ".")))
-       (sumbody (replace-*-in-symbols-with-str body "SUM"))
-       (listbody (replace-*-in-symbols-with-str body "LIST"))
-       (alistbody (replace-*-in-symbols-with-str body "ALIST"))
-       (cases
-        `(case (tag ,var)
-           (:sum ,(if add-binds `(b* (((flexsum ,var) ,var)) ,sumbody) sumbody))
-           (:list ,(if add-binds `(b* (((flexlist ,var) ,var)) ,listbody) listbody))
-           (:alist ,(if add-binds `(b* (((flexalist ,var) ,var)) ,alistbody) alistbody))
-           (otherwise ,default))))
-    (if (consp binding)
-        `(let ((,var ,(cadr binding))) ,cases)
-      cases)))
-
-(defmacro with-flextype-bindings (binding body &key default)
-  (with-flextype-bindings-fn binding body default))
 
 
 ;; ------------------------- Deftypes Parsing -----------------------

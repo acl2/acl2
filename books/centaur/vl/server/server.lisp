@@ -196,6 +196,7 @@ viewing Verilog designs.")
       (:vl-paramdecl  (vl-pp-paramdecl  x))
       (:vl-import     (vl-pp-import     x))
       (:vl-fwdtypedef (vl-pp-fwdtypedef x))
+      (:vl-vardecl    (vl-pp-vardecl    x))
       (otherwise      (vl-pp-typedef    x)))))
 
 (define vl-description-summary ((x vl-description-p))
@@ -361,6 +362,7 @@ declaration, ...)."
       (:vl-import     nil)
       (:vl-fwdtypedef nil)
       (:vl-typedef    nil)
+      (:vl-vardecl    nil)
       (otherwise      (impossible)))))
 
 (define vls-data-origname-reportcard ((data vls-data-p))

@@ -554,12 +554,31 @@ introduced.</p>"
                                                           vl-genelementlist-count)))))
                (local (defthm vl-genblob-count-of-change-all-but-generates
                         (equal (vl-genblob-count
-                                (vl-genblob portdecls assigns aliases
-                                            vardecls paramdecls fundecls taskdecls
-                                            modinsts gateinsts alwayses initials
-                                            typedefs imports fwdtypedefs modports
-                                            genvars
-                                            (vl-genblob->generates x) ports scopetype name))
+                                (make-vl-genblob :generates (vl-genblob->generates x)
+                                                 :portdecls portdecls
+                                                 :assigns assigns
+                                                 :aliases aliases
+                                                 :vardecls vardecls
+                                                 :paramdecls paramdecls
+                                                 :fundecls fundecls
+                                                 :taskdecls taskdecls
+                                                 :modinsts modinsts
+                                                 :gateinsts gateinsts
+                                                 :alwayses alwayses
+                                                 :initials initials
+                                                 :finals finals
+                                                 :typedefs typedefs
+                                                 :imports imports
+                                                 :fwdtypedefs fwdtypedefs
+                                                 :modports modports
+                                                 :genvars genvars
+                                                 :properties properties
+                                                 :sequences sequences
+                                                 :assertions assertions
+                                                 :cassertions cassertions
+                                                 :ports ports
+                                                 :scopetype scopetype
+                                                 :name name))
                                (vl-genblob-count x))
                         :hints (("goal" :expand ((:free (x) (vl-genblob-count x))))))))
     (define vl-genblob-resolve-aux ((x vl-genblob-p)

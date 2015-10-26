@@ -78,4 +78,4 @@ details.</p>")
 
 (fty::defvisitors vl-strip
   :template strip
-  :types (vl-modinstlist vl-gateinstlist vl-assignlist))
+  :types (vl-modinstlist vl-gateinstlist vl-assignlist vl-stmt))

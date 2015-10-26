@@ -2564,19 +2564,18 @@
 
 (defun print-runes-summary (ttree channel state)
 
-; This should be called under (io? summary ...).
+; The caller (or its caller, etc.) is responsible for surrounding this call
+; with a suitable call of io?.
 
   (let ((runes (merge-sort-runes
                 (all-runes-in-ttree ttree nil))))
     (pprogn (put-event-data 'rules runes state)
-            (io? summary nil state
-                 (runes channel)
-                 (mv-let (col state)
-                         (fmt1 "Rules: ~y0~|"
-                               (list (cons #\0 runes))
-                               0 channel state nil)
-                         (declare (ignore col))
-                         state)))))
+            (mv-let (col state)
+                    (fmt1 "Rules: ~y0~|"
+                          (list (cons #\0 runes))
+                          0 channel state nil)
+                    (declare (ignore col))
+                    state))))
 
 (defun use-names-in-ttree (ttree)
   (let* ((objs (tagged-objects :USE ttree))
@@ -2640,6 +2639,9 @@
 ; When cl-id is nil, we are printing for the summary, and clauses is ignored.
 ; Otherwise we are printing during a proof under waterfall-msg1, for gag-mode.
 
+; The caller (or its caller, etc.) is responsible for surrounding this call
+; with a suitable call of io?.
+
   (let ((if-intro (merge-sort-runes
                    (tagged-objects 'splitter-if-intro ttree)))
         (case-split (merge-sort-runes
@@ -2652,16 +2654,14 @@
                   (t (put-event-data 'splitter-rules
                                      (list case-split immed-forced if-intro)
                                      state)))
-            (io? summary nil state
-                 (cl-id clauses channel if-intro case-split immed-forced)
-                 (with-output-lock ; only necessary if cl-id is non-nil
-                  (mv-let
-                   (col state)
-                   (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
-                         (list
-                          (cons #\0 (if cl-id "note" "rules"))
-                          (cons #\1
-                                (if cl-id
+            (with-output-lock ; only necessary if cl-id is non-nil
+             (mv-let
+              (col state)
+              (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
+                    (list
+                     (cons #\0 (if cl-id "note" "rules"))
+                     (cons #\1
+                           (if cl-id
 
 ; Since we are printing during a proof (see comment above) but not already
 ; printing the clause-id, we do so now.  This is redundant if (f-get-global
@@ -2671,37 +2671,41 @@
 ; We leave it to waterfall-msg1 to track print-time, so we avoid calling
 ; waterfall-print-clause-id.
 
-                                    (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
-                                         (tilde-@-clause-id-phrase cl-id)
-                                         (length clauses)
-                                         clauses)
-                                  ""))
-                          (cons #\2 (if cl-id "." ":"))
-                          (cons #\3
-                                (cond
-                                 (case-split (msg "  case-split: ~y0"
-                                                  case-split))
-                                 (t "")))
-                          (cons #\4
-                                (cond
-                                 (immed-forced (msg "  immed-forced: ~y0"
-                                                    immed-forced))
-                                 (t "")))
-                          (cons #\5
-                                (cond
-                                 (if-intro (msg "  if-intro: ~y0"
-                                                if-intro))
-                                 (t ""))))
-                         0 channel state nil)
-                   (declare (ignore col))
-                   (cond (cl-id (newline channel state))
-                         (t state)))))))
+                               (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
+                                    (tilde-@-clause-id-phrase cl-id)
+                                    (length clauses)
+                                    clauses)
+                             ""))
+                     (cons #\2 (if cl-id "." ":"))
+                     (cons #\3
+                           (cond
+                            (case-split (msg "  case-split: ~y0"
+                                             case-split))
+                            (t "")))
+                     (cons #\4
+                           (cond
+                            (immed-forced (msg "  immed-forced: ~y0"
+                                               immed-forced))
+                            (t "")))
+                     (cons #\5
+                           (cond
+                            (if-intro (msg "  if-intro: ~y0"
+                                           if-intro))
+                            (t ""))))
+                    0 channel state nil)
+              (declare (ignore col))
+              (cond ((and cl-id (gag-mode))
+                     (newline channel state))
+                    (t state))))))
           (cl-id state)
           (t (put-event-data 'splitter-rules nil state)))))
 
-(defun print-rules-and-hint-events-summary (state)
+(defun print-rules-and-hint-events-summary (acc-ttree state)
+
+; The caller (or its caller, etc.) is responsible for surrounding this call
+; with a suitable call of io?.
+
   (let ((channel (proofs-co state))
-        (acc-ttree (f-get-global 'accumulated-ttree state))
         (inhibited-summary-types (f-get-global 'inhibited-summary-types
                                                state)))
     (pprogn
@@ -2850,7 +2854,10 @@
                           (fmt-ctx ctx col channel state)
                           (declare (ignore col))
                           (newline channel state)))))))
-          (print-rules-and-hint-events-summary state) ; call of io? is inside
+          (let ((acc-ttree (f-get-global 'accumulated-ttree state)))
+            (io? summary nil state
+                 (acc-ttree)
+                 (print-rules-and-hint-events-summary acc-ttree state)))
           (print-warnings-summary state)
           (print-time-summary state)
           (print-steps-summary steps state)
@@ -5828,6 +5835,38 @@
             fullp
             (access-command-tuple-form (cddar cmd-wrld))))
 
+(defmacro extend-pe-table (name form)
+  `(with-output
+     :off error ; avoid extra needless layer of error
+     (table pe-table
+            ',name
+            (cons (cons (getprop ',name 'absolute-event-number
+                                 (list :error
+                                       (concatenate 'string
+                                                    "Event for "
+                                                    ,(symbol-name name)
+                                                    " (package "
+                                                    ,(symbol-package-name name)
+                                                    ") not found."))
+                                 'current-acl2-world world)
+                        ',form)
+                  (cdr (assoc-eq ',name
+                                 (table-alist 'pe-table world)))))))
+
+(defun pe-event-form (event-tuple wrld)
+
+; Note: change cd-some-event-matchp to use this function if the :SEARCH utility
+; described in :doc command-descriptor is to use the pe-table.
+
+  (let* ((ev-form (access-event-tuple-form event-tuple))
+         (ev-n (access-event-tuple-number event-tuple))
+         (pe-entry (cdr (assoc ev-n
+                               (cdr (assoc-eq (cadr ev-form)
+                                              (table-alist 'pe-table
+                                                           wrld)))))))
+    (or pe-entry
+        ev-form)))
+
 (defun make-event-ldd (markp indent fullp ev-tuple ens wrld)
   (make-ldd 'event
             markp
@@ -5841,7 +5880,7 @@
                        (big-m-little-m-event ev-tuple wrld)))
             indent
             fullp
-            (access-event-tuple-form ev-tuple)))
+            (pe-event-form ev-tuple wrld)))
 
 (defun make-ldds-command-sequence (cmd-wrld1 cmd2 ens wrld markp ans)
 
@@ -5947,7 +5986,7 @@
   (let ((cmd-ldd (make-command-ldd nil fullp cmd-wrld ens wrld))
         (wrld1 (scan-to-event (cdr cmd-wrld))))
     (cond
-     ((equal (access-event-tuple-form (cddar wrld1))
+     ((equal (pe-event-form (cddar wrld1) wrld)
              (access-command-tuple-form (cddar cmd-wrld)))
 
 ; If the command form is the same as the event form of the
@@ -6144,7 +6183,7 @@
 
 (defun pe-fn1 (wrld channel ev-wrld cmd-wrld state)
   (cond
-   ((equal (access-event-tuple-form (cddar ev-wrld))
+   ((equal (pe-event-form (cddar ev-wrld) wrld)
            (access-command-tuple-form (cddar cmd-wrld)))
     (print-ldd
      (make-command-ldd nil t cmd-wrld (ens state) wrld)
@@ -6273,11 +6312,10 @@
   (list 'pe-fn logical-name 'state))
 
 (defmacro pe! (logical-name)
-  (declare (ignore logical-name))
-  `(er hard 'pe!
-       "Pe! has been deprecated.  Please use :pe, which now has the ~
-        functionality formerly provided by :pe!; or consider :pcb, :pcb!, or ~
-        :pr!.  See :DOC history."))
+  `(with-output :off (summary event)
+     (make-event (er-progn (table pe-table nil nil :clear)
+                           (pe ,logical-name)
+                           (value '(value-triple :invisible))))))
 
 (defun command-block-names1 (wrld ans symbol-classes)
 

@@ -391,6 +391,12 @@ and generally makes it easier to write safe expression-processing code.</p>")
    ;; it's convenient to include void here even though it's not part
    ;; of the grammar for data_type
    :vl-void
+   ;; it's convenient to include untyped, sequence, and property here,
+   ;; even though they aren't part of the grammar for data_type, to
+   ;; help simplify the representation of property/sequence ports.
+   :vl-sequence
+   :vl-property
+   :vl-untyped
    )
   :parents (vl-coretype)
   :short "Basic kinds of datatypes."
@@ -409,7 +415,12 @@ and generally makes it easier to write safe expression-processing code.</p>")
               | <non core types>
          })
 
-         <p>We include @('void') here only because it's convenient.</p>")
+         <p>We include certain additional keywords here to represent @('void'),
+         and also for @('property'), @('sequence'), and @('untyped') (which can
+         occur in the property/sequence ports for SystemVerilog assertions).
+         This is mostly a convenience that allows us to unify the
+         representation of types in other places throughout the parse
+         tree.</p>")
 
 
 (defxdoc vl-scopename

@@ -35,7 +35,7 @@
 
 (include-book "eval-check")
 
-(must-fail
+(must-fail!
  (assert!! (equal 3 4)
            (defun assert-test2 (x) x)))
 
@@ -48,7 +48,7 @@
                  '(a b c d e f)))
 
 ; Check failure of assertion when condition is false:
-(must-fail
+(must-fail!
  (assert!! (equal (append '(a b c) '(d e f))
                   '(a b))))
 

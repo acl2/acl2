@@ -93,10 +93,9 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
 ;  | interface_declaration
 ;  | program_declaration
 ;  | package_declaration
-;  | {attribute_instance} package_item         <-- not supported yet
-;  | {attribute_instance} bind_directive       <-- not supported yet
-
-
+;  | {attribute_instance} package_item
+;  | {attribute_instance} bind_directive
+;  | config_declaration
 
 (defparser vl-parse-description ()
   ;; Note: we return a list of descriptions because sometimes a 'single'
@@ -111,32 +110,89 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
         (atts := (vl-parse-0+-attribute-instances))
         (when (atom (vl-tokstream->tokens))
           (return-raw (vl-parse-error "Unexpected EOF.")))
+
         (when (vl-is-token? :vl-kwd-config)
+          ;; In both Verilog and SystemVerilog, config_declaration always
+          ;; starts with 'config'
           (cfg := (vl-parse-config-declaration atts))
           (return (list cfg)))
+
         (when (vl-is-token? :vl-kwd-primitive)
+          ;; After attributes, udp_declaration always starts with 'primitive'
+          ;; in Verilog, or 'primitive' or 'extern primitive' in SystemVerilog.
+          ;; We don't support extern yet.
           (udp := (vl-parse-udp-declaration atts))
           (return (list udp)))
+
         (when (vl-is-some-token? '(:vl-kwd-module :vl-kwd-macromodule))
+          ;; After attributes, modules start with 'module' or 'macromodule' in
+          ;; Verilog.  SystemVerilog adds 'extern module' and extern
+          ;; macromodule', but we don't support that yet.
           (mod := (vl-parse-module-declaration atts))
           (return (list mod)))
+
         (when (eq (vl-loadconfig->edition config) :verilog-2005)
-          ;; Other things aren't supported
+          ;; For Verilog-2005 the above is everything that's allowed.
           (return-raw
            (vl-parse-error "Expected a module, primitive, or config.")))
+
+        (when (vl-is-token? :vl-kwd-extern)
+          (return-raw
+           (vl-parse-error "Not yet implemented: extern")))
+
+        (when (vl-is-token? :vl-kwd-bind)
+          ;; bind_directive always starts with 'bind'
+          (return-raw
+           (vl-parse-error "Bind directives are not implemented.")))
+
+        (when (vl-is-token? :vl-kwd-config)
+          ;; config_directive always starts with 'config'
+          (return-raw
+           (vl-parse-error "Config directives are not implemented.")))
+
         (when (vl-is-token? :vl-kwd-interface)
+          ;; after attribute instances, interface_declaration starts with
+          ;; 'interface', or 'extern interface', but we don't support extern
+          ;; yet.
           (interface := (vl-parse-interface-declaration atts))
           (return (list interface)))
+
         (when (vl-is-token? :vl-kwd-program)
+          ;; after attribute instances, program_declaration starts with
+          ;; 'program' or 'extern program', but we don't support extern yet.
           (program := (vl-parse-program-declaration atts))
           (return (list program)))
+
         (when (vl-is-token? :vl-kwd-package)
+          ;; after attribute instances, package_declaration starts with
+          ;; 'package'.
           (package := (vl-parse-package-declaration atts))
           (return (list package)))
 
-        (when (vl-is-token? :vl-kwd-bind)
-          (return-raw
-           (vl-parse-error "Bind directives are not implemented.")))
+        ;; If we get here, then we must be dealing with a package item.
+        ;; There are tons of package items and we don't support them
+        ;; all yet.
+
+        ;; package_item ::= package_or_generate_item_declaration
+        ;;                | anonymous_program
+        ;;                | package_export_declaration
+        ;;                | timeunits_declaration
+        ;;
+        ;; package_or_generate_item_declaration ::= net_declaration
+        ;;                                        | data_declaration
+        ;;                                        | task_declaration
+        ;;                                        | function_declaration
+        ;;                                        | checker_declaration
+        ;;                                        | dpi_import_export
+        ;;                                        | extern_constraint_declaration
+        ;;                                        | class_declaration
+        ;;                                        | class_constructor_declaration
+        ;;                                        | local_parameter_declaration ';'
+        ;;                                        | parameter_declaration ';'
+        ;;                                        | covergroup_declaration
+        ;;                                        | overload_declaration
+        ;;                                        | assertion_item_declaration
+        ;;                                        | ';'
 
         (when (vl-is-token? :vl-kwd-task)
           (tasks := (vl-parse-task-declaration atts))
@@ -151,20 +207,17 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
           (params := (vl-parse-param-or-localparam-declaration atts '(:vl-kwd-parameter :vl-kwd-localparam)))
           (:= (vl-match-token :vl-semi))
           (return params))
-
-        ;; (when (member-eq (vl-token->type (car tokens)) *vl-netdecltypes-kwds*)
-        ;;   (return-raw
-        ;;    ;; bleh, have to do something here to deal with assignments in the nets?
-        ;;    (vl-parse-error "Top-level net declarations are not implemented.")))
-
         (when (vl-is-token? :vl-kwd-typedef)
           (typedef := (vl-parse-type-declaration atts))
           (return (list typedef)))
-
-        ;; BOZO lots of other things
-
         (return-raw
-         (vl-parse-error "Unsupported top-level construct?"))))
+         (b* ((backup (vl-tokstream-save))
+              ((mv err vardecls tokstream)
+               (vl-parse-main-data-declaration atts))
+              ((unless err)
+               (mv err vardecls tokstream))
+              (tokstream (vl-tokstream-restore backup)))
+           (vl-parse-error "Unsupported top-level construct?")))))
 
 
 ; Verilog-2005:

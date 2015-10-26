@@ -7659,7 +7659,11 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
   (check-built-in-constants)
   (check-out-instantiablep (w *the-live-state*))
   (check-none-ideal (w *the-live-state*) nil)
-  (check-state-globals-initialized))
+  (check-state-globals-initialized)
+  (or (plist-worldp-with-formals (w *the-live-state*))
+      (error "The initial ACL2 world does not satisfy ~
+              plist-worldp-with-formals!"))
+  nil)
 
 (defun set-initial-cbd ()
   (let ((state *the-live-state*))

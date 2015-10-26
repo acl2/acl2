@@ -1312,6 +1312,12 @@ created when we process their packages, etc.</p>"
              (st (vl-maybe-delayoreventcontrol-lucidcheck x.ctrl ss st ctx)))
           st)
 
+        :vl-assertstmt
+        (vl-assertion-lucidcheck x.assertion ss st ctx)
+
+        :vl-cassertstmt
+        (vl-cassertion-lucidcheck x.cassertion ss st ctx)
+
         :vl-deassignstmt
         ;; It isn't really clear what to do here.  In some sense, the
         ;; expression being deassigned ought to sort of be an lvalue.  But it
@@ -1400,6 +1406,33 @@ created when we process their packages, etc.</p>"
              (st (vl-vardecllist-lucidcheck x.vardecls ss st))
              (st (vl-stmtlist-lucidcheck x.stmts ss st ctx)))
           st))))
+
+  (define vl-assertion-lucidcheck ((x   vl-assertion-p)
+                                   (ss  vl-scopestack-p)
+                                   (st  vl-lucidstate-p)
+                                   (ctx vl-context1-p))
+    :returns (new-st vl-lucidstate-p)
+    :measure (vl-assertion-count x)
+    ;; This actually seems pretty easy to support.
+    (b* (((vl-assertion x))
+         (st (vl-rhsexpr-lucidcheck x.condition ss st ctx))
+         (st (vl-stmt-lucidcheck x.success ss st ctx))
+         (st (vl-stmt-lucidcheck x.failure ss st ctx)))
+      st))
+
+  (define vl-cassertion-lucidcheck ((x   vl-cassertion-p)
+                                    (ss  vl-scopestack-p)
+                                    (st  vl-lucidstate-p)
+                                    (ctx vl-context1-p))
+    :returns (new-st vl-lucidstate-p)
+    :measure (vl-cassertion-count x)
+    ;; BOZO we should go through the condition and try to mark wires in the
+    ;; sequence as used, etc.  But we'd basically need to collect up the
+    ;; expressions to do that, and at the moment there are other things to do.
+    (b* (((vl-cassertion x))
+         (st (vl-stmt-lucidcheck x.success ss st ctx))
+         (st (vl-stmt-lucidcheck x.failure ss st ctx)))
+      st))
 
   (define vl-stmtlist-lucidcheck ((x   vl-stmtlist-p)
                                   (ss  vl-scopestack-p)
