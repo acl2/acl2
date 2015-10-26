@@ -135,6 +135,8 @@
            (include-book
             "xdoc/topics" :dir :system)
            (include-book
+            "system/doc/acl2-doc" :dir :system)
+           (include-book
             "xdoc/display" :dir :system)
            (encapsulate ()
             (local (xdoc-quiet)) ;; Suppress warnings when just using :xdoc (or :doc)
