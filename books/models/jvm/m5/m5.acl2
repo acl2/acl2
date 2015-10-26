@@ -29,18 +29,74 @@
                JVM::BIPUSH
                JVM::CALOAD
                JVM::CASTORE
+               JVM::CHECKCAST
+               JVM::D2F
+               JVM::D2I
+               JVM::D2L
+               JVM::DADD
+               JVM::DALOAD
+               JVM::DASTORE
+               JVM::DCMPG
+               JVM::DCMPL
+               JVM::DCONST_0
+               JVM::DCONST_1
+               JVM::DDIV
+               JVM::DLOAD
+               JVM::DLOAD_0
+               JVM::DLOAD_1
+               JVM::DLOAD_2
+               JVM::DLOAD_3
+               JVM::DMUL
+               JVM::DNEG
+               JVM::DREM
+               JVM::DRETURN
+               JVM::DSTORE
+               JVM::DSTORE_0
+               JVM::DSTORE_1
+               JVM::DSTORE_2
+               JVM::DSTORE_3
+               JVM::DSUB
                JVM::DUP
                JVM::DUP_X1
                JVM::DUP_X2
                JVM::DUP2
                JVM::DUP2_X1
                JVM::DUP2_X2
+               JVM::F2D
+               JVM::F2I
+               JVM::F2L
+               JVM::FADD
+               JVM::FALOAD
+               JVM::FASTORE
+               JVM::FCMPG
+               JVM::FCMPL
+               JVM::FCONST_0
+               JVM::FCONST_1
+               JVM::FCONST_2
+               JVM::FDIV
+               JVM::FLOAD
+               JVM::FLOAD_0
+               JVM::FLOAD_1
+               JVM::FLOAD_2
+               JVM::FLOAD_3
+               JVM::FMUL
+               JVM::FNEG
+               JVM::FREM
+               JVM::FRETURN
+               JVM::FSTORE
+               JVM::FSTORE_0
+               JVM::FSTORE_1
+               JVM::FSTORE_2
+               JVM::FSTORE_3
+               JVM::FSUB
                JVM::GETFIELD
                JVM::GETSTATIC
                JVM::GOTO
                JVM::GOTO_W
                JVM::I2B
                JVM::I2C
+               JVM::I2D
+               JVM::I2F
                JVM::I2L
                JVM::I2S
                JVM::IADD
@@ -98,6 +154,8 @@
                JVM::IXOR
                JVM::JSR
                JVM::JSR_W
+               JVM::L2D
+               JVM::L2F
                JVM::L2I
                JVM::LADD
                JVM::LALOAD
