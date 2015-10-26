@@ -29,6 +29,10 @@
 // Original author: Jared Davis <jared@centtech.com>
 
 
+module sub (output o, input a, input b);
+  assign o = a & b;
+endmodule
+
 module top ;
 
   wire a, b;
@@ -39,5 +43,81 @@ module top ;
 
   wire w1_nodupe = a ^ b;
 
+  wire w2_dupe;
+  and (w2_dupe, a, b);
+  and (w2_dupe, a, b);
+
+  wire w2a_nodupe, w2b_nodupe;
+  and a1 (w2a_nodupe, a, b);
+  and a2 (w2b_nodupe, a, b);
+
+  wire w3a_dupe, w3b_dupe;
+  alias w3a_dupe = w3b_dupe;
+  alias w3a_dupe = w3b_dupe;
+
+  wire w3a_nodupe, w3b_nodupe, w3c_nodupe;
+  alias w3a_nodupe = w3b_nodupe;
+  alias w3c_nodupe = w3b_nodupe;
+
+  wire w4a_dupe, w4b_dupe, w4c_dupe;
+  sub s1a_dupe(w4a_dupe, w4b_dupe, w4c_dupe);
+  sub s1b_dupe(w4a_dupe, w4b_dupe, w4c_dupe);
+
+  wire w4a_nodupe, w4b_nodupe, w4c_nodupe, w4d_nodupe, w4e_nodupe, w4f_nodupe;
+  sub s1a_nodupe(w4a_nodupe, w4b_nodupe, w4c_nodupe);
+  sub s1b_nodupe(w4d_nodupe, w4e_nodupe, w4f_nodupe);
+
+  logic w5_dupe, w5_nodupe;
+  initial begin
+    w5_dupe = a & b;
+  end
+  initial begin
+    w5_dupe = a & b;
+  end
+  initial begin
+    w5_nodupe = a & b;
+  end
+
+  logic w6_dupe, w6_nodupe;
+  final w6_dupe = a & b;
+  final w6_dupe = a & b;
+  final w6_nodupe = a & b;
+
+  logic w7_dupe, w7_nodupe, clk;
+  always @(posedge clk) w7_dupe <= a & b;
+  always @(posedge clk) w7_dupe <= a & b;
+  always @(posedge clk) w7_nodupe <= a & b;
+
+  wire w8_dupe, w8_nodupe;
+  assert property (@(posedge clk) always w8_dupe);
+  assert property (@(posedge clk) always w8_dupe);
+  assert property (@(posedge clk) always w8_nodupe);
+
+  wire w9_dupe, w9_nodupe;
+  assert #0 (!a || w9_dupe);
+  assert #0 (!a || w9_dupe);
+  assert #0 (!a || w9_nodupe);
+
+  wire w10_dupe, w10_nodupe;
+  sequence s1;
+    w10_dupe ##1 a;
+  endsequence
+  sequence s1;
+    w10_dupe ##1 a;
+  endsequence
+  sequence s2;
+    w10_nodupe ##1 a;
+  endsequence
+
+  wire w11_dupe, w11_nodupe;
+  property p1;
+    always w11_dupe ##1 a;
+  endproperty
+  property p1;
+    always w11_dupe ##1 a;
+  endproperty
+  property p2;
+    always w11_nodupe ##1 a;
+  endproperty
 
 endmodule

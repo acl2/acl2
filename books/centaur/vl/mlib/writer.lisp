@@ -3438,7 +3438,8 @@ expression into a string."
                    ps)
                  (vl-println "")
                  (vl-pp-genelementlist x.elems)
-                 (vl-println "end"))
+                 (vl-println "end")
+                 (vl-println ""))
       :vl-genarray
       (vl-pp-genarrayblocklist x.blocks x.name)
 

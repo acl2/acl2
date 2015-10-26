@@ -37,7 +37,6 @@
 (include-book "port-resolve")
 (include-book "udp-elim")
 (include-book "portcheck")
-(include-book "addnames")
 (include-book "../../util/cwtime")
 
 (defsection annotate
@@ -70,7 +69,6 @@ first step in any VL-based tool.</p>"
        (design (xf-cwtime (vl-design-udp-elim design)))
        (design (xf-cwtime (vl-design-portcheck design)))
        (design (xf-cwtime (vl-design-argresolve design)))
-       (design (xf-cwtime (vl-design-type-disambiguate design)))
-       (design (xf-cwtime (vl-design-addnames design))))
+       (design (xf-cwtime (vl-design-type-disambiguate design))))
     design))
 

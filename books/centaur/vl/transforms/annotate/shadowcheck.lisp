@@ -987,6 +987,10 @@ explicit declarations.</p>")
         (b* (((mv st warnings) (vl-shadowcheck-typedef item st warnings)))
           (vl-shadowcheck-aux (cdr x) st warnings)))
 
+       ((when (eq tag :vl-alias))
+        (b* (((mv st warnings) (vl-shadowcheck-alias item st warnings)))
+          (vl-shadowcheck-aux (cdr x) st warnings)))
+
        ((when (eq tag :vl-assertion))
         ;; BOZO figure out what we want to do here.
         (vl-shadowcheck-aux (cdr x) st warnings))

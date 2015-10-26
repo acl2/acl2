@@ -38,6 +38,7 @@
 (include-book "centaur/vl/transforms/problem-mods" :dir :system)
 (include-book "centaur/vl/transforms/unparam/top" :dir :system)
 (include-book "centaur/vl/transforms/annotate/top" :dir :system)
+(include-book "centaur/vl/transforms/addnames" :dir :system)
 (include-book "centaur/vl/util/cw-unformatted" :dir :system)
 (include-book "centaur/vl/mlib/print-warnings" :dir :system)
 (include-book "centaur/vl/mlib/remove-bad" :dir :system)
@@ -194,6 +195,11 @@
        ;; occforming.
 
        (x (vl-annotate-design x))
+
+       ;; [Jared] I pulled addnames out of annotate because it interfered with
+       ;; certain linter checks.  (In particular for detecting duplicate things
+       ;; we don't really want to be adding names to unnamed blocks, etc.)
+       (x (xf-cwtime (vl-design-addnames x)))
 
        (x (vl-remove-unnecessary-elements topmods x))
 
