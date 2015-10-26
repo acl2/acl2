@@ -135,32 +135,75 @@ only meant as a heuristic for generating more useful warnings.</p>"
     :returns (vals vl-valuelist-p)
     (vl-expr-case x
       :vl-literal (list x.val)
-      :vl-binary (case x.op
-                   ((:vl-binary-power
-                     :vl-binary-shr
-                     :vl-binary-shl
-                     :vl-binary-ashr
-                     :vl-binary-ashl)
-                    (vl-expr-interesting-size-values x.left))
-                   ((:vl-binary-plus
-                     :vl-binary-minus
-                     :vl-binary-times
-                     :vl-binary-div
-                     :vl-binary-rem
-                     :vl-binary-bitand
-                     :vl-binary-bitor
-                     :vl-binary-xor
-                     :vl-binary-xnor)
-                    (append (vl-expr-interesting-size-values x.left)
-                            (vl-expr-interesting-size-values x.right))))
-      :vl-unary (case x.op
-                  ((:vl-unary-plus
-                    :vl-unary-minus
-                    :vl-unary-bitnot)
-                   (vl-expr-interesting-size-values x.arg)))
-      :vl-concat (vl-exprlist-interesting-size-values x.parts)
-      :vl-multiconcat (vl-exprlist-interesting-size-values x.parts)
-      :otherwise nil))
+      :vl-index   nil
+      :vl-unary
+      (case x.op
+        ((:vl-unary-plus :vl-unary-minus :vl-unary-bitnot)
+         ;; These are "transparent" to sizing, so yes, go inside
+         ;; and get the interesting atoms in the argument.
+         (vl-expr-interesting-size-values x.arg))
+        ((:vl-unary-lognot :vl-unary-bitand :vl-unary-nand
+          :vl-unary-bitor :vl-unary-nor :vl-unary-xor
+          :vl-unary-xnor)
+         ;; These all just generate 1-bit results, so anything
+         ;; inside of them is not interesting to sizing.
+         nil)
+        ((:vl-unary-preinc :vl-unary-predec
+          :vl-unary-postinc :vl-unary-postdec)
+         ;; I think we want to go through these.
+         (vl-expr-interesting-size-values x.arg))
+        (otherwise (impossible)))
+      :vl-binary
+      (case x.op
+        ((:vl-binary-logand :vl-binary-logor
+          :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+          :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+          :vl-binary-wildeq :vl-binary-wildneq
+          :vl-implies :vl-equiv)
+         ;; These always generate one-bit results, so there's no
+         ;; reason to go into their args.
+         nil)
+        ((:vl-binary-plus :vl-binary-minus
+          :vl-binary-times :vl-binary-div :vl-binary-rem
+          :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor
+          )
+         ;; Both arguments affect sizing,
+         (append (vl-expr-interesting-size-values x.left)
+                 (vl-expr-interesting-size-values x.right)))
+        ((:vl-binary-power :vl-binary-shr :vl-binary-shl
+          :vl-binary-ashr :vl-binary-ashl)
+         ;; Only the first argument affects the self-size.
+         (vl-expr-interesting-size-values x.left))
+        ((:vl-binary-assign
+          :vl-binary-plusassign :vl-binary-minusassign
+          :vl-binary-timesassign :vl-binary-divassign :vl-binary-remassign
+          :vl-binary-andassign :vl-binary-orassign :vl-binary-xorassign
+          :vl-binary-shlassign :vl-binary-shrassign
+          :vl-binary-ashlassign :vl-binary-ashrassign)
+         ;; Only the left hand side affects the size.
+         (vl-expr-interesting-size-values x.left))
+        (otherwise (impossible)))
+
+      :vl-qmark
+      ;; Size of the condition is irrelevant.
+      (append (vl-expr-interesting-size-values x.then)
+              (vl-expr-interesting-size-values x.else))
+
+      :vl-concat
+      (vl-exprlist-interesting-size-values x.parts)
+
+      :vl-multiconcat
+      ;; This probably doesn't make a whole lot of sense.
+      (vl-exprlist-interesting-size-values x.parts)
+
+      :vl-mintypmax nil
+      :vl-call      nil
+      :vl-stream    nil
+      :vl-cast      nil ;; bozo?
+      :vl-inside    nil
+      :vl-tagged    nil ;; bozo?
+      :vl-pattern   nil
+      :vl-special   nil))
 
   (define vl-exprlist-interesting-size-values ((x vl-exprlist-p))
     :measure (vl-exprlist-count x)
@@ -168,18 +211,16 @@ only meant as a heuristic for generating more useful warnings.</p>"
     (if (atom x)
         nil
       (append (vl-expr-interesting-size-values (car x))
-              (vl-exprlist-interesting-size-values (Cdr x)))))
+              (vl-exprlist-interesting-size-values (cdr x)))))
   ///
   (defrule true-listp-of-vl-expr-interesting-size-values
     (true-listp (vl-expr-interesting-size-values x))
     :rule-classes :type-prescription)
-
   (defrule true-listp-of-vl-exprlist-interesting-size-values
     (true-listp (vl-exprlist-interesting-size-values x))
     :rule-classes :type-prescription)
-
-  (verify-guards vl-expr-interesting-size-values)
-
+  (verify-guards vl-expr-interesting-size-values
+    :hints(("Goal" :in-theory (enable (:e tau-system) member-equal))))
   (deffixequiv-mutual vl-interesting-size-values))
 
 
