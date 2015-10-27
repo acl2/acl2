@@ -29,6 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
+(include-book "trunc")
 (include-book "../mods/svmods")
 (include-book "../svex/lattice")
 (include-book "../svex/rewrite-base")
@@ -2472,8 +2473,6 @@ the way.</li>
       :otherwise (prog2$ (impossible)
                          (mv "impossible" nil nil)))))
 
-
-
 (defines vl-expr-to-svex
   :ruler-extenders :all
   :verify-guards nil
@@ -2488,8 +2487,7 @@ the way.</li>
                                         acl2::repeat-when-zp
                                         sv::svex-alist-p-when-not-consp
                                         sv::svarlist-addr-p-when-subsetp-equal
-                                        acl2::member-when-atom
-                                        cons-equal)))
+                                        acl2::member-when-atom)))
              (local (defthm consp-by-len-equal-1
                       (implies (equal (len x) 1)
                                (consp x))
@@ -2541,7 +2539,7 @@ vector.</p>"
                                           :args (list x err))
                                    (svex-x) nil nil))
                               ((wmv warnings svex)
-                               (vl-expr-to-svex-datatyped x.expr type conf))
+                               (vl-expr-to-svex-datatyped x.expr nil type conf))
                               ((mv err size) (vl-datatype-size type))
                               ((when (or err (not size)))
                                (mv (warn :type :vl-expr-to-svex-fail
@@ -2800,8 +2798,8 @@ functions can assume all bits of it are good.</p>"
               (mv (fatal :type :vl-expr-to-svex-fail
                          :msg "Failed to find size and signedness of expression ~a0"
                          :args (list (if (and left-size left-type)
-                                             x.right
-                                           x.left)))
+                                         x.right
+                                       x.left)))
                   (svex-x)))
              ;; Size each under the max size
              (arg-size (max left-size right-size))
@@ -2907,7 +2905,7 @@ functions can assume all bits of it are good.</p>"
                                  :msg "Usertypes not resolved in cast ~a0: ~@1"
                                  :args (list x err))
                           (svex-x))))
-                  (vl-expr-to-svex-datatyped x.expr to-type conf))
+                  (vl-expr-to-svex-datatyped x.expr nil to-type conf))
           :size (b* (((unless (vl-expr-resolved-p x.to.size))
                       (mv (fatal :type :vl-expr-to-svex-fail
                                  :msg "Unresolved size cast: ~a0"
@@ -2983,13 +2981,13 @@ functions can assume all bits of it are good.</p>"
           svex
           opinfo.type)))
 
-;; (trace$ #!vl (vl-funcall-to-svex
-;;               :entry (list 'vl-funcall-to-svex
-;;                            (with-local-ps (vl-pp-expr x)))
-;;               :exit (list 'vl-funcall-to-svex
-;;                           (with-local-ps (vl-print-warnings (car values)))
-;;                           (and (caddr values)
-;;                                (with-local-ps (vl-pp-datatype (caddr values)))))))
+  ;; (trace$ #!vl (vl-funcall-to-svex
+  ;;               :entry (list 'vl-funcall-to-svex
+  ;;                            (with-local-ps (vl-pp-expr x)))
+  ;;               :exit (list 'vl-funcall-to-svex
+  ;;                           (with-local-ps (vl-print-warnings (car values)))
+  ;;                           (and (caddr values)
+  ;;                                (with-local-ps (vl-pp-datatype (caddr values)))))))
 
   (define vl-funcall-to-svex ((x vl-expr-p)
                               (conf vl-svexconf-p))
@@ -3055,7 +3053,9 @@ functions can assume all bits of it are good.</p>"
       (clear-memoize-table 'sv::svex-subst-memo)
       (mv (ok) ans rettype)))
 
-  (define vl-expr-to-svex-datatyped ((x vl-expr-p)
+  (define vl-expr-to-svex-datatyped ((x    vl-expr-p)
+                                     (lhs  vl-maybe-expr-p
+                                           "LHS, if applicable, for truncation warnings.")
                                      (type vl-datatype-p)
                                      (conf vl-svexconf-p))
     :guard (vl-datatype-resolved-p type)
@@ -3068,7 +3068,7 @@ functions can assume all bits of it are good.</p>"
          ((vl-svexconf conf))
          (opacity (vl-expr-opacity x))
          (packedp (vl-datatype-packedp type))
-         ((when (and packedp
+         ((when (and packedp 
                      (not (eq opacity :special))
                      (not (vl-expr-case x :vl-pattern))))
           ;; A non-special opacity generally means the expression is
@@ -3082,8 +3082,16 @@ functions can assume all bits of it are good.</p>"
                            :msg "Couldn't size packed datatype ~a0"
                            :args (list (vl-datatype-fix type)))
                     (svex-x)))
-               ((wmv warnings svex &)
-                (vl-expr-to-svex-selfdet x size conf)))
+               ((wmv warnings svex rhs-size) (vl-expr-to-svex-selfdet x size conf))
+               ((unless rhs-size)
+                ;; Some kind of error.
+                (mv warnings svex))
+               (ss (vl-svexconf->ss conf))
+               ((wmv warnings) (vl-maybe-warn-about-implicit-truncation lhs size x rhs-size ss))
+               ((mv & & x-selfsize) (vl-expr-to-svex-selfdet x nil conf))
+               ((wmv warnings) (if x-selfsize
+                                   (vl-maybe-warn-about-implicit-extension size x-selfsize x ss)
+                                 nil)))
             (mv warnings svex))))
 
       (vl-expr-case x
@@ -3108,9 +3116,10 @@ functions can assume all bits of it are good.</p>"
         (b* (((wmv warnings test-svex ?test-size)
               (vl-expr-to-svex-selfdet x.test nil conf))
              ((wmv warnings then-svex)
-              (vl-expr-to-svex-datatyped x.then type conf))
+              ;; BOZO should we really pass the lhs down here?  Maybe?
+              (vl-expr-to-svex-datatyped x.then lhs type conf))
              ((wmv warnings else-svex)
-              (vl-expr-to-svex-datatyped x.else type conf)))
+              (vl-expr-to-svex-datatyped x.else lhs type conf)))
           (mv (ok)
               (sv::svcall sv::? test-svex then-svex else-svex)))
 
@@ -3145,7 +3154,8 @@ functions can assume all bits of it are good.</p>"
                                  :args (list x err))
                           (svex-x)))
                      ((wmv warnings svex)
-                      (vl-expr-to-svex-datatyped x.expr to-type conf))
+                      ;; We're casting to a new type so don't pass the lhs down.
+                      (vl-expr-to-svex-datatyped x.expr nil to-type conf))
                      (err (vl-compare-datatypes type to-type)))
                   (mv (if err
                           (fatal :type :vl-expr-to-svex-fail
@@ -3154,8 +3164,10 @@ functions can assume all bits of it are good.</p>"
                                  :args (list x x.to (vl-datatype-fix type) err))
                         (ok))
                       svex))
-          :const ;; Maybe we just ignore this?
-          (vl-expr-to-svex-datatyped x.expr type conf)
+          :const
+          ;; Maybe we just ignore this?
+          ;; No idea whether we should pass lhs down.  Or anything else.  Sigh.
+          (vl-expr-to-svex-datatyped x.expr lhs type conf)
           :otherwise
           ;; This seems bogus, we have a non-packed type but we're casting to a
           ;; signedness or size.
@@ -3235,12 +3247,12 @@ functions can assume all bits of it are good.</p>"
              (bitstream (if (eq x.dir :right)
                             concat
                           (sv::svcall sv::blkrev
-                                        (svex-int target-size)
-                                        (svex-int slicesize)
-                                        concat))))
-             ;; In SV, we'd now stick the bitstream into a container of the
-             ;; appropriate datatype.  But in svex, everything's just kept as a
-             ;; bitstream, so we're already done.
+                                      (svex-int target-size)
+                                      (svex-int slicesize)
+                                      concat))))
+          ;; In SV, we'd now stick the bitstream into a container of the
+          ;; appropriate datatype.  But in svex, everything's just kept as a
+          ;; bitstream, so we're already done.
           (mv warnings bitstream))
 
         :vl-tagged
@@ -3471,7 +3483,7 @@ functions can assume all bits of it are good.</p>"
          ((wmv warnings first)
           (if first
               (vl-expr-to-svex-datatyped
-               first m1.type conf)
+               first nil m1.type conf)
             (mv (fatal :type :vl-expr-to-svex-fail
                        :msg "No entry for struct member ~s1 in ~
                                   assignment pattern ~a1"
@@ -3552,7 +3564,7 @@ functions can assume all bits of it are good.</p>"
          ((when (atom x)) (mv (ok) nil))
          ((wmv warnings first)
           (vl-expr-to-svex-datatyped
-           (car x) (car types) conf))
+           (car x) nil (car types) conf))
          ((wmv warnings rest)
           (vl-exprlist-to-svex-datatyped
            (cdr x) (cdr types) conf)))
@@ -3612,6 +3624,7 @@ functions can assume all bits of it are good.</p>"
   (deffixequiv-mutual vl-expr-to-svex
     :hints ((acl2::just-expand-mrec-default-hint 'vl-expr-to-svex-selfdet id t world)
             '(:do-not-induct t))))
+
 
 #||
 (include-book
@@ -3744,7 +3757,7 @@ functions can assume all bits of it are good.</p>"
                (res-size maybe-natp :rule-classes :type-prescription))
   (b* ((type (vl-maybe-datatype-fix type)))
     (if type
-        (b* (((mv warnings svex) (vl-expr-to-svex-datatyped x type conf))
+        (b* (((mv warnings svex) (vl-expr-to-svex-datatyped x nil type conf))
              ((mv err size) (vl-datatype-size type))
              ((when (or err (not size)))
               (mv (warn :type :vl-expr-to-svex-fail
