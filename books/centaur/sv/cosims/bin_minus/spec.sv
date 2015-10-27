@@ -26,38 +26,45 @@
 //   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //   DEALINGS IN THE SOFTWARE.
 //
-// Original author: Sol Swords <sswords@centtech.com>
+// Original author: Jared Davis <jared@centtech.com>
 
-module test ();
+module spec (input logic [127:0] in,
+	     output wire [127:0] out);
 
-   localparam nCycles = 1024;
+  wire [8:0] a9;
+  wire [3:0] a4;
+  wire a1;
 
-  reg [127:0] inputs [nCycles-1:0];
-  reg [127:0] outputs [nCycles-1:0];
+  wire [8:0] b9;
+  wire [5:0] b6;
+  wire [1:0] b2;
 
-  reg [127:0] in;
-  reg [127:0] out;
+  wire signed [8:0] c9 = a9;
+  wire signed [3:0] c4 = a4;
+  wire signed 	    c1 = a1;
 
-  reg clk;
+  wire signed [8:0] d9 = b9;
+  wire signed [5:0] d6 = b6;
+  wire signed [1:0] d2 = b2;
 
-   spec specinst (.*);
 
+  wire [8:0]  o1 = a9 - b9;
+  wire [3:0]  o2 = a4 - b6;
+  wire 	      o3 = a1 - b2[0];
+  wire [15:0] o4 = a9 - b6;
+  wire [6:0]  o5 = a9 - b9;
 
-  integer i;
-   initial begin
-     $dumpfile("test.vcd");
-     $dumpvars();
-     clk = 0;
-     $readmemb(`infile, inputs);
-     for (i=0; i<nCycles; i++) begin
-       in = inputs[i];
-       #2;
-       clk = 1;
-       #5;
-       clk = 0;
-       #3;
-       outputs[i] = out;
-     end
-     $writememb(`outfile, outputs);
-   end
-endmodule
+  wire [8:0]  o6 = c9 - d9;
+  wire [3:0]  o7 = c4 - d6;
+  wire 	      o8 = c1 - d2;
+  wire [15:0] o9 = c9 - d6;
+  wire [6:0]  o10 = c9 - d2;
+
+  assign { a9, a4, a1, b9, b6, b2 } = in;
+
+  assign out = {
+    o10, o9, o8, o7, o6,
+    o5, o4, o3, o2, o1
+  };
+
+endmodule // spec

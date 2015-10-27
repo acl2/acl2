@@ -11,3 +11,5 @@ cosim-core.lx86cl64
 Makefile-books
 irun.history
 ncvlog_*.err
+!*.data
+outputs.*.data

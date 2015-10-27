@@ -75,6 +75,7 @@ TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))
 TESTCERTS := $(patsubst %,%/ok,$(TESTS))
 OUTDATAS_NCV := $(patsubst %,%/outputs.ncv.data,$(TESTS))
 OUTDATAS_VCS := $(patsubst %,%/outputs.vcs.data,$(TESTS))
+
 PASSING_TESTS := $(filter-out $(FAILING_TEST_TARGETS), $(TESTCERTS))
 OUTDIRS_VCS := $(patsubst %,%/simv.daidir,$(TESTS))
 print_tests :
@@ -87,23 +88,33 @@ print_tests :
 	@mv $*/cosim.out $*/ok
 	@ls -l $*/ok
 
-%/outputs.ncv.data : %/spec.sv %/inputs.data test.sv
+%/outputs.ncv.data : %/spec.sv twovalued.data fourvalued.data test.sv
 	@echo "Making $*/outputs.ncv.data"
 	@cd $*; \
+         if [ -e twovalued ]; then \
+           infile=../twovalued.data; \
+         else \
+           infile=../fourvalued.data; \
+         fi; \
 	 if [ -e no_ncv ]; then \
 		touch outputs.ncv.data; \
-	 else \
-		ncverilog spec.sv ../test.sv +define+outfile=\"outputs.ncv.data\"; \
+         else \
+		ncverilog spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.ncv.data\"; \
 	 fi
 	@ls -l $*/outputs.ncv.data
 
-%/outputs.vcs.data : %/spec.sv %/inputs.data test.sv
+%/outputs.vcs.data : %/spec.sv twovalued.data fourvalued.data test.sv
 	@echo "Making $*/outputs.vcs.data"
 	@cd $*; \
+         if [ -e twovalued ]; then \
+           infile=../twovalued.data; \
+         else \
+           infile=../fourvalued.data; \
+         fi; \
 	 if [ -e no_vcs ]; then \
 		touch outputs.vcs.data; \
 	 else \
-		 vcs -sverilog spec.sv ../test.sv +define+outfile=\"outputs.vcs.data\" && ./simv; \
+		 vcs -sverilog spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.vcs.data\" && ./simv; \
 	 fi
 	@ls -l $*/outputs.vcs.data
 
@@ -114,11 +125,36 @@ ncv : $(OUTDATAS_NCV)
 vcs : $(OUTDATAS_VCS)
 
 .PHONY: passing
-passing : $(PASSING_TESTS);
+passing : $(PASSING_TESTS)
 
 all : $(TESTCERTS) ncv vcs
 
 .PHONY: cleansim
-cleansim :
-	rm -f $(OUTDATAS_NCV) $(OUTDATAS_VCS); \
-    rm -rf $(OUTDIRS_VCS)
+cleansim:
+	rm -f $(OUTDATAS_NCV) $(OUTDATAS_VCS)
+	rm -rf $(OUTDIRS_VCS)
+	rm -rf */INCA_libs
+	rm -rf */csrc
+	rm -f */simv
+	rm -f */irun.history
+	rm -f */ncverilog.log
+	rm -f */test.vcd
+	rm -f */ucli.key
+	rm -f */ok
+
+.PHONY: clean
+clean: cleansim
+
+# [Jared] hack so you can just write "make always1" or similar, adapted
+# from vl linttests
+
+.PHONY: $(TESTS)
+
+define mkDirTarget
+$(1): $(1)/ok
+endef
+
+$(foreach dir, $(TESTS), $(eval $(call mkDirTarget, $(dir))))
+
+
+
