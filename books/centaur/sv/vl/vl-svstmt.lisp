@@ -554,6 +554,7 @@ because... (BOZO)</p>
 
 
 
+
 (define vl-assignstmt->svstmts ((lhs vl-expr-p)
                                 (rhs vl-expr-p)
                                 (blockingp booleanp)
@@ -578,13 +579,18 @@ because... (BOZO)</p>
                 nil))
            ((vl-operandinfo opinfo))
            ((wmv warnings rhssvex)
-            (vl-expr-to-svex-datatyped rhs opinfo.type conf))
+            (vl-expr-to-svex-datatyped rhs lhs opinfo.type conf))
            ((wmv ok warnings svstmts ?shift)
             (vl-procedural-assign->svstmts lhs rhssvex blockingp conf)))
         (mv ok warnings svstmts))
       :vl-concat
-      (b* (((wmv warnings rhssvex ?rhssize)
-            (vl-expr-to-svex-selfdet rhs nil conf))
+      ;; BOZO we don't currently get truncation warnings for this, maybe think
+      ;; about whether we can fix it.
+      (b* (((mv & & lhssize)
+            ;; BOZO really want to discard warnings?
+            (vl-expr-to-svex-selfdet lhs nil conf))
+           ((wmv warnings rhssvex ?rhssize)
+            (vl-expr-to-svex-selfdet rhs lhssize conf))
            ((wmv ok warnings svstmts ?shift)
             (vl-procedural-assign->svstmts
              lhs rhssvex blockingp conf)))
@@ -1744,3 +1750,49 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
         (vl-alwayslist->svex (cdr x) conf)))
     (mv warnings
         (append-without-guard assigns1 assigns2))))
+
+
+
+
+(define vl-initial-size-warnings ((x vl-initial-p)
+                                  (conf vl-svexconf-p))
+  :short "Generate any sizing warnings for an initial statement."
+  :returns (warnings vl-warninglist-p)
+  (b* (((vl-initial x) (vl-initial-fix x))
+       ;; We don't actually care about the statements, we just want to get
+       ;; things like truncation warnings.  BOZO we might even want to filter
+       ;; out warnings here if there are other kinds of restrictions that the
+       ;; statement compiler is enforcing.
+       ((mv ?ok warnings ?svstmts)
+        (vl-stmt->svstmts x.stmt conf t)))
+    warnings))
+
+(define vl-initiallist-size-warnings ((x vl-initiallist-p)
+                                      (conf vl-svexconf-p))
+  :returns (warnings vl-warninglist-p)
+  (if (atom x)
+      nil
+    (append-without-guard (vl-initial-size-warnings (car x) conf)
+                          (vl-initiallist-size-warnings (cdr x) conf))))
+
+
+(define vl-final-size-warnings ((x vl-final-p)
+                                  (conf vl-svexconf-p))
+  :short "Generate any sizing warnings for an final statement."
+  :returns (warnings vl-warninglist-p)
+  (b* (((vl-final x) (vl-final-fix x))
+       ;; We don't actually care about the statements, we just want to get
+       ;; things like truncation warnings.  BOZO we might even want to filter
+       ;; out warnings here if there are other kinds of restrictions that the
+       ;; statement compiler is enforcing.
+       ((mv ?ok warnings ?svstmts)
+        (vl-stmt->svstmts x.stmt conf t)))
+    warnings))
+
+(define vl-finallist-size-warnings ((x vl-finallist-p)
+                                      (conf vl-svexconf-p))
+  :returns (warnings vl-warninglist-p)
+  (if (atom x)
+      nil
+    (append-without-guard (vl-final-size-warnings (car x) conf)
+                          (vl-finallist-size-warnings (cdr x) conf))))
