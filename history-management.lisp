@@ -2563,19 +2563,16 @@
         (t (filter-atoms flg (cdr lst)))))
 
 (defun print-runes-summary (ttree channel state)
-
-; The caller (or its caller, etc.) is responsible for surrounding this call
-; with a suitable call of io?.
-
-  (let ((runes (merge-sort-runes
-                (all-runes-in-ttree ttree nil))))
+  (let ((runes (merge-sort-runes (all-runes-in-ttree ttree nil))))
     (pprogn (put-event-data 'rules runes state)
-            (mv-let (col state)
-                    (fmt1 "Rules: ~y0~|"
-                          (list (cons #\0 runes))
-                          0 channel state nil)
-                    (declare (ignore col))
-                    state))))
+            (io? summary nil state
+                 (runes channel)
+                 (mv-let (col state)
+                   (fmt1 "Rules: ~y0~|"
+                         (list (cons #\0 runes))
+                         0 channel state nil)
+                   (declare (ignore col))
+                   state)))))
 
 (defun use-names-in-ttree (ttree)
   (let* ((objs (tagged-objects :USE ttree))
@@ -2609,9 +2606,6 @@
     (sort-symbol-listp cl-proc-fns)))
 
 (defun print-hint-events-summary (ttree channel state)
-
-; This should be called under (io? summary ...).
-
   (flet ((make-rune-like-objs (kwd lst)
                               (and lst ; optimization for common case
                                    (pairlis$ (make-list (length lst)
@@ -2627,20 +2621,69 @@
               (cond (lst (io? summary nil state
                               (lst channel)
                               (mv-let (col state)
-                                      (fmt1 "Hint-events: ~y0~|"
-                                            (list (cons #\0 lst))
-                                            0 channel state nil)
-                                      (declare (ignore col))
-                                      state)))
+                                (fmt1 "Hint-events: ~y0~|"
+                                      (list (cons #\0 lst))
+                                      0 channel state nil)
+                                (declare (ignore col))
+                                state)))
                     (t state))))))
+
+(defun print-splitter-rules-summary-1 (cl-id clauses
+                                             case-split immed-forced if-intro
+                                             channel state)
+
+; The caller (or its caller, etc.) must take responsibility for surrounding
+; this call with any necessary io? wrapper.
+
+  (mv-let
+    (col state)
+    (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
+          (list
+           (cons #\0 (if cl-id "note" "rules"))
+           (cons #\1
+                 (if cl-id
+
+; Since we are printing during a proof (see comment above) but not already
+; printing the clause-id, we do so now.  This is redundant if (f-get-global
+; 'print-clause-ids state) is true, but necessary when parallelism is enabled
+; for #+acl2-par, and anyhow, adds a bit of clarity.
+
+; We leave it to waterfall-msg1 to track print-time, so we avoid calling
+; waterfall-print-clause-id.
+
+                     (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
+                          (tilde-@-clause-id-phrase cl-id)
+                          (length clauses)
+                          clauses)
+                   ""))
+           (cons #\2 (if cl-id "." ":"))
+           (cons #\3
+                 (cond
+                  (case-split (msg "  case-split: ~y0"
+                                   case-split))
+                  (t "")))
+           (cons #\4
+                 (cond
+                  (immed-forced (msg "  immed-forced: ~y0"
+                                     immed-forced))
+                  (t "")))
+           (cons #\5
+                 (cond
+                  (if-intro (msg "  if-intro: ~y0"
+                                 if-intro))
+                  (t ""))))
+          0 channel state nil)
+    (declare (ignore col))
+    (cond ((and cl-id (gag-mode))
+           (newline channel state))
+          (t state))))
 
 (defun print-splitter-rules-summary (cl-id clauses ttree channel state)
 
-; When cl-id is nil, we are printing for the summary, and clauses is ignored.
-; Otherwise we are printing during a proof under waterfall-msg1, for gag-mode.
-
-; The caller (or its caller, etc.) is responsible for surrounding this call
-; with a suitable call of io?.
+; When cl-id is nil, we are printing for the summary; so clauses is ignored,
+; and we need here to use a suitable wrapper (io? summary ...).  Otherwise we
+; are printing during a proof under waterfall-msg1, for gag-mode, in which case
+; we are already under a suitable io? wrapper.
 
   (let ((if-intro (merge-sort-runes
                    (tagged-objects 'splitter-if-intro ttree)))
@@ -2654,56 +2697,27 @@
                   (t (put-event-data 'splitter-rules
                                      (list case-split immed-forced if-intro)
                                      state)))
-            (with-output-lock ; only necessary if cl-id is non-nil
-             (mv-let
-              (col state)
-              (fmt1 "Splitter ~s0 (see :DOC splitter)~@1~s2~|~@3~@4~@5"
-                    (list
-                     (cons #\0 (if cl-id "note" "rules"))
-                     (cons #\1
-                           (if cl-id
-
-; Since we are printing during a proof (see comment above) but not already
-; printing the clause-id, we do so now.  This is redundant if (f-get-global
-; 'print-clause-ids state) is true, but necessary when parallelism is enabled
-; for #+acl2-par, and anyhow, adds a bit of clarity.
-
-; We leave it to waterfall-msg1 to track print-time, so we avoid calling
-; waterfall-print-clause-id.
-
-                               (msg " for ~@0 (~x1 subgoal~#2~[~/s~])"
-                                    (tilde-@-clause-id-phrase cl-id)
-                                    (length clauses)
-                                    clauses)
-                             ""))
-                     (cons #\2 (if cl-id "." ":"))
-                     (cons #\3
-                           (cond
-                            (case-split (msg "  case-split: ~y0"
-                                             case-split))
-                            (t "")))
-                     (cons #\4
-                           (cond
-                            (immed-forced (msg "  immed-forced: ~y0"
-                                               immed-forced))
-                            (t "")))
-                     (cons #\5
-                           (cond
-                            (if-intro (msg "  if-intro: ~y0"
-                                           if-intro))
-                            (t ""))))
-                    0 channel state nil)
-              (declare (ignore col))
-              (cond ((and cl-id (gag-mode))
-                     (newline channel state))
-                    (t state))))))
+            (cond
+             (cl-id ; printing during a proof
+              (with-output-lock
+               (print-splitter-rules-summary-1
+                cl-id clauses case-split immed-forced if-intro channel state)))
+             (t ; printing for the summary
+              (io? summary nil state
+                   (cl-id clauses case-split immed-forced if-intro channel)
+                   (print-splitter-rules-summary-1
+                    cl-id clauses case-split immed-forced if-intro channel
+                    state))))))
           (cl-id state)
           (t (put-event-data 'splitter-rules nil state)))))
 
 (defun print-rules-and-hint-events-summary (acc-ttree state)
 
-; The caller (or its caller, etc.) is responsible for surrounding this call
-; with a suitable call of io?.
+; This function is expected not to be called under (io? ...), so subroutines
+; are responsible for adding such wrappers.  With this structure, the
+; subroutines can (and are) also responsible for calling put-event-data outside
+; such (io? ...) wrappers, so that put-event-data is not called again during
+; proof reply (via :pso and related utilities).
 
   (let ((channel (proofs-co state))
         (inhibited-summary-types (f-get-global 'inhibited-summary-types
@@ -2854,10 +2868,9 @@
                           (fmt-ctx ctx col channel state)
                           (declare (ignore col))
                           (newline channel state)))))))
-          (let ((acc-ttree (f-get-global 'accumulated-ttree state)))
-            (io? summary nil state
-                 (acc-ttree)
-                 (print-rules-and-hint-events-summary acc-ttree state)))
+          (print-rules-and-hint-events-summary
+           (f-get-global 'accumulated-ttree state)
+           state)
           (print-warnings-summary state)
           (print-time-summary state)
           (print-steps-summary steps state)

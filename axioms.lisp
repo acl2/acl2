@@ -8473,16 +8473,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           name term
                           &rest rst)
   (declare (xargs :guard t) (ignore term rst))
-  (list 'progn
-        (cons 'defthm (cdr event-form))
-        (list
-         'with-output
-         :off 'summary
-         (list 'in-theory
-               (list 'disable name)))
-        (list 'value-triple
-              (list 'quote (xd-name 'defthmd name))
-              :on-skip-proofs t)))
+  (list 'with-output
+        :stack :push :off '(summary event)
+        (list 'progn
+              (list 'with-output
+                    :stack :pop
+                    (cons 'defthm (cdr event-form)))
+              (list 'in-theory
+                    (list 'disable name))
+              (list 'value-triple
+                    (list 'quote (xd-name 'defthmd name))
+                    :on-skip-proofs t))))
 
 #+(and acl2-loop-only :non-standard-analysis)
 (defmacro defthm-std (&whole event-form

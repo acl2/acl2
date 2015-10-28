@@ -3496,6 +3496,42 @@
          (car l))
         (t (duplicate-key-in-keyword-value-listp (cddr l)))))
 
+(defun formals-pretty-flags-mismatch-msg (formals pretty-flags
+                                                  fn
+                                                  formals-top
+                                                  pretty-flags-top)
+
+; Pretty-flags-top is a true-listp.  We check elsewhere that formals is a
+; true-listp; here we simply ignore its final cdr.  Pretty-flags and formals
+; are corresponding NTHCDRs of pretty-flags-top and formals-top.  The result is
+; a message explaining why formals-top and pretty-flags-top are incompatible in
+; the same signature.
+
+  (declare (xargs :guard (true-listp pretty-flags)))
+  (cond ((or (atom formals)
+             (endp pretty-flags))
+         (cond ((and (atom formals)
+                     (endp pretty-flags))
+                nil)
+               (t
+                (msg "the specified list of :FORMALS, ~x0, is of length ~x1, ~
+                      which does not match the arity of ~x2 specified by ~x3"
+                     formals-top (length formals-top)
+                     (length pretty-flags-top)
+                     (cons fn pretty-flags-top)))))
+        ((and (not (eq (car pretty-flags) '*)) ; stobj argument
+              (not (eq (car pretty-flags) (car formals))))
+         (let ((posn (- (length formals-top) (length formals))))
+           (msg "the specified list of :FORMALS, ~x0, has stobj ~x1 at ~
+                 (zero-based) position ~x2, but the argument specified by ~x3 ~
+                 at that position is a different stobj, ~x4"
+                formals-top (car formals) posn
+                (cons fn pretty-flags-top)
+                (car pretty-flags))))
+        (t (formals-pretty-flags-mismatch-msg
+            (cdr formals) (cdr pretty-flags)
+            fn formals-top pretty-flags-top))))
+
 (defun chk-signature (x ctx wrld state)
 
 ; Warning: If you change the acceptable form of signatures, change the raw lisp
@@ -3630,8 +3666,17 @@
 ; Note:  Stobjs will contain duplicates iff formals does.  Stobjs will
 ; contain STATE iff formals does.
 
-                 (stobjs (collect-non-x '* pretty-flags1)))
-            (mv nil fn formals val stobjs kwd-value-list)))))
+                 (stobjs (collect-non-x '* pretty-flags1))
+                 (msg (and formals-tail
+                           (formals-pretty-flags-mismatch-msg
+                            formals pretty-flags1
+                            fn
+                            formals pretty-flags1))))
+            (cond (msg (mv (msg "The object ~x0 is not a legal signature ~
+                                 because ~@1.  See :DOC signature."
+                                x msg)
+                           nil nil nil nil nil))
+                  (t (mv nil fn formals val stobjs kwd-value-list)))))))
        ((fn formals val . kwd-value-list)
         (cond
          ((not (true-listp formals))
@@ -27483,13 +27528,13 @@
                               (symbolp (car def))
                               (symbol-listp (cadr def)))))
 
-  `(progn (defun ,@def)
-          ,@(and (not (program-declared-p def))
-                 `((with-output
-                    :off summary
-                    (in-theory (disable ,(car def))))))
-          (value-triple ',(xd-name 'defund (car def))
-                        :on-skip-proofs t)))
+  `(with-output
+     :stack :push :off (summary event)
+     (progn (with-output :stack :pop (defun ,@def))
+            ,@(and (not (program-declared-p def))
+                   `((in-theory (disable ,(car def)))))
+            (value-triple ',(xd-name 'defund (car def))
+                          :on-skip-proofs t))))
 
 #-acl2-loop-only
 (defmacro defund (&rest def)
