@@ -195,7 +195,7 @@ reading-entry-with-accessed-and-dirty-bits-set-ia32e-la-to-pa-page-table)).
 
 ;; Some helper rules:
 
-(local (in-theory (e/d* () (greater-logbitp-of-unsigned-byte-p))))
+(local (in-theory (e/d* () (greater-logbitp-of-unsigned-byte-p not))))
 
 (encapsulate
  ()
@@ -868,7 +868,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                   nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-table)
-                  ()))
+                  (not)))
 
 (defrule mv-nth-0-no-error-ia32e-la-to-pa-page-table-with-disjoint-!memi
   (implies (and (ia32e-la-to-pa-page-table-entry-validp
@@ -903,7 +903,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                   nil))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-table)
-                  ()))
+                  (not)))
 
 (defrule mv-nth-1-no-error-ia32e-la-to-pa-page-table
   (implies (ia32e-la-to-pa-page-table-entry-validp
@@ -912,6 +912,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    1
                    (ia32e-la-to-pa-page-table
                     lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86))
+                  ;; Physical address
                   (part-install
                    (part-select lin-addr :low 0 :high 11)
                    (ash (ia32e-pte-4K-page-slice
@@ -922,7 +923,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    :low 0 :high 11)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-table)
-                  ()))
+                  (not)))
 
 (defruled mv-nth-1-no-error-ia32e-la-to-pa-page-table-different-components
   (implies (and (ia32e-la-to-pa-page-table-entry-validp
@@ -938,7 +939,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                    (ia32e-la-to-pa-page-table
                     lin-addr page-table-base-addr u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
   :do-not '(preprocess)
-  :in-theory (e/d () (ia32e-la-to-pa-page-table-entry-validp)))
+  :in-theory (e/d () (ia32e-la-to-pa-page-table-entry-validp not)))
 
 (defrule mv-nth-1-no-error-ia32e-la-to-pa-page-table-with-disjoint-!memi
   (implies (and (ia32e-la-to-pa-page-table-entry-validp
@@ -1016,7 +1017,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                   dirty-x86))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-table)
-                  (not)))
+                  ()))
 
 ;; ......................................................................
 ;; Reading page-table-entry-addr again using rm-low-64:
@@ -1110,9 +1111,9 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                        nxe r-w-x cpl
                        (xw :mem addr val x86)))
             (xw :mem addr val
-                   (mv-nth 2 (ia32e-la-to-pa-page-table
-                              lin-addr page-table-base-addr u-s-acc wp smep
-                              nxe r-w-x cpl x86)))))
+                (mv-nth 2 (ia32e-la-to-pa-page-table
+                           lin-addr page-table-base-addr u-s-acc wp smep
+                           nxe r-w-x cpl x86)))))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-table)
                   (not
@@ -1132,9 +1133,9 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                             (addr-range 8 page-table-entry-addr)))
            (equal
             (xr :mem
-             addr
-             (mv-nth 2 (ia32e-la-to-pa-page-table
-                        lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86)))
+                addr
+                (mv-nth 2 (ia32e-la-to-pa-page-table
+                           lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86)))
             (xr :mem addr x86)))
   :do-not '(preprocess)
   :in-theory (e/d (ia32e-la-to-pa-page-table)
@@ -1592,6 +1593,49 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
 ;; More theorems about validity of page table entries being
 ;; preserved when the translation-governing addresses are disjoint:
 ;; ......................................................................
+
+;; (i-am-here)
+
+(defrule re-read-entry-still-valid-ia32e-la-to-pa-page-table
+  (implies (and (ia32e-la-to-pa-page-table-entry-validp
+                 lin-addr page-table-base-addr u-s-acc-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1 x86)
+                (ia32e-la-to-pa-page-table-entry-validp
+                 lin-addr page-table-base-addr u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86)
+                (physical-address-p page-table-base-addr)
+                (canonical-address-p lin-addr)
+                (equal (loghead 12 page-table-base-addr) 0)
+                (x86p x86))
+           (ia32e-la-to-pa-page-table-entry-validp
+            lin-addr page-table-base-addr u-s-acc-1 wp-1 smep-1 nxe-1 r-w-x-1 cpl-1
+            (mv-nth
+             2
+             (ia32e-la-to-pa-page-table
+              lin-addr page-table-base-addr u-s-acc-2 wp-2 smep-2 nxe-2 r-w-x-2 cpl-2 x86))))
+  :do-not '(preprocess)
+  :in-theory (e/d (page-table-components-equal-rm-low-64-of-table-page-table-entry-addr-via-page-table-4K-pages)
+                  (ia32e-la-to-pa-page-table-entry-validp
+                   mv-nth-2-no-error-ia32e-la-to-pa-page-table
+                   not
+                   unsigned-byte-p
+                   signed-byte-p)))
+
+(defrule disjoint-rm-low-64-mv-nth-2-no-error-ia32e-la-to-pa-page-table
+  (implies (and (ia32e-la-to-pa-page-table-entry-validp
+                 lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86)
+                (equal page-table-entry-addr
+                       (page-table-entry-addr lin-addr page-table-base-addr))
+                (disjoint-p (addr-range 8 addr)
+                            (addr-range 8 page-table-entry-addr))
+                (integerp addr))
+           (equal
+            (rm-low-64
+             addr
+             (mv-nth 2 (ia32e-la-to-pa-page-table
+                        lin-addr page-table-base-addr u-s-acc wp smep nxe r-w-x cpl x86)))
+            (rm-low-64 addr x86)))
+  :do-not '(preprocess)
+  :in-theory (e/d (ia32e-la-to-pa-page-table)
+                  (not)))
 
 (defrule validity-preserved-same-x86-state-disjoint-addresses-wrt-page-table
   (implies (and (ia32e-la-to-pa-page-table-entry-validp
@@ -13658,8 +13702,7 @@ don't have @('MBE')s to facilitate efficient execution.</p>"
                 (x86p x86))
 
            (ia32e-la-to-pa-validp lin-addr-1 r-w-x-1 cpl-1
-                                  (mv-nth 2 (ia32e-la-to-pa
-                                             lin-addr-2 r-w-x-2 cpl-2 x86))))
+                                  (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 cpl-2 x86))))
   :in-theory (e/d
               ()
               (mv-nth-2-no-error-ia32e-la-to-pa-pml4-table

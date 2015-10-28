@@ -654,7 +654,9 @@
                 (wm-low-64 p-entry-addr entry x86)
               x86)))
 
-      ;; Return address of 4KB page frame and the modified x86 state.
+      ;; Return physical address and the modified x86 state.  Note that the
+      ;; base address of the 4K frame would be just (ash
+      ;; (ia32e-pte-4K-page-slice :pte-page entry) 12).
       (mv nil
 
           (mbe

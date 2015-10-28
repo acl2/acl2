@@ -372,7 +372,8 @@
                              imul-spec-32          ;; IMUL
                              gpr-sub-spec-4        ;; SUB
                              jcc/cmovcc/setcc-spec ;; JNE
-                             opcode-execute
+                             top-level-opcode-execute
+                             two-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-from-modr/m-and-sib-bytes
@@ -413,7 +414,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-from-modr/m-and-sib-bytes
@@ -449,7 +450,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-from-modr/m-and-sib-bytes
@@ -492,7 +493,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-from-modr/m-and-sib-bytes
@@ -530,7 +531,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-from-modr/m-and-sib-bytes
@@ -575,7 +576,7 @@
                     x86)))
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d* (instruction-decoding-and-spec-rules
-                             opcode-execute
+                             top-level-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
                              x86-operand-from-modr/m-and-sib-bytes

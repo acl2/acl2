@@ -342,7 +342,7 @@ included.</code>
 
 <h5>Contributors to the x86 ISA Model</h5>
 
-<p>Thanks to Cuong Kim Chau for implementing some floating point
+<p>Thanks to Cuong Kim Chau for implementing the floating point
 instructions and for performing many experiments \(along with Keshav
 Kini\) to figure out an efficient configuration for the concrete
 memory model.</p>

@@ -441,7 +441,8 @@
                         imul-spec-32
                         gpr-sub-spec-4
 
-                        opcode-execute
+                        top-level-opcode-execute
+                        two-byte-opcode-execute
                         !rgfi-size
                         x86-operand-to-reg/mem
                         wr64
@@ -487,7 +488,7 @@
                         imul-spec-32
                         gpr-sub-spec-4
 
-                        opcode-execute
+                        top-level-opcode-execute
                         !rgfi-size
                         x86-operand-to-reg/mem
                         wr64
@@ -538,7 +539,7 @@
              gpr-and-spec-4
              jcc/cmovcc/setcc-spec
 
-             opcode-execute
+             top-level-opcode-execute
              !rgfi-size
              x86-operand-to-reg/mem
              wr64

@@ -93,11 +93,47 @@
 
 ;; ======================================================================
 
+;; Relating top-level memory accessors and updaters with rb in system-level
+;; mode:
 
-;; TO-DO@Shilpi: Relating a linear memory read/write to a physical
-;; memory read/write...
-;; (equal (rm08 lin-addr r-x x86)
-;;        (memi phy-addr x86))
+(defthm rb-and-rm16-in-system-level-mode
+  (implies (and (equal cpl (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86)))
+                (ia32e-la-to-pa-validp lin-addr r-w-x cpl x86)
+                (ia32e-la-to-pa-validp (1+ lin-addr) r-w-x cpl x86)
 
+                ;; See the lemmas:
+                ;; mv-nth-0-no-error-ia32e-la-to-pa and
+                ;; validity-preserved-same-x86-state-disjoint-addresses-top-level-thm
+                ;; to know why we need the following hypothesis.
 
-;; ======================================================================
+                ;; Of course, this is a stupid hypothesis for this theorem
+                ;; because the translation-governing-addresses of lin-addr and
+                ;; (1+ lin-addr) might definitely overlap. I need more work in
+                ;; paging-utils.lisp to prove more general version(s) of
+                ;; validity-preserved-same-x86-state-disjoint-addresses-top-level-thm.
+                (pairwise-disjoint-p
+                 (append (translation-governing-addresses lin-addr x86)
+                         (translation-governing-addresses (+ 1 lin-addr) x86)))
+
+                ;; See the lemma
+                ;; disjoint-memi-read-mv-nth-2-no-error-ia32e-la-to-pa
+                ;; to know why we need the following hypothesis.
+                (pairwise-disjoint-p-aux
+                 (list (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x cpl x86)))
+                 (translation-governing-addresses (+ 1 lin-addr) x86))
+
+                (not (programmer-level-mode x86))
+                (canonical-address-p lin-addr)
+                (canonical-address-p (1+ lin-addr))
+                (x86p x86))
+           (equal (rm16 lin-addr r-w-x x86)
+                  (b* (((mv flg bytes x86)
+                        (rb (create-canonical-address-list 2 lin-addr) r-w-x x86))
+                       (result (combine-bytes bytes)))
+                      (mv flg result x86))))
+  :hints (("Goal" :in-theory (e/d* (rm08 rb rm16 rvm16)
+                                   (mv-nth-1-no-error-ia32e-la-to-pa
+                                    mv-nth-2-no-error-ia32e-la-to-pa
+                                    pairwise-disjoint-p
+                                    translation-governing-addresses
+                                    ia32e-la-to-pa-validp)))))
