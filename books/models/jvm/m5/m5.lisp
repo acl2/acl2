@@ -556,9 +556,10 @@ J & George
 ;  '(LONG n)
 ;       Where n is a 64-bit number, in the range specified by the JVM spec
 ;
-;  '(STRING (REF -1) "Hello, World!")
-;       The 3rd element (a string) is resolved to a heap reference the
-;       first time it is used.  Once it is resolved, its reference is placed
+;  '(STRING (REF -1) 72 101 108 108 111 44 32 87 111 114 108 100 33) ; "Hello, World!"
+;       Elements from 3rd to the end are UTF16 char codes of a String.
+;       They are resolved to a heap reference the first time it is used.
+;       Once it is resolved, its reference is placed
 ;       as the second element (displacing the null ref currently there).
 
 (defun cp-make-double-entry (n)
@@ -573,8 +574,8 @@ J & George
 (defun cp-make-long-entry (n)
   (list 'LONG (long-fix n)))
 
-(defun cp-make-string-entry (str)
-  (list 'STRING '(REF -1) str))
+(defun cp-make-string-entry (chars)
+  (list* 'STRING '(REF -1) chars))
 
 (defun cp-string-resolved? (entry)
   (not (equal (cadr (caddr entry)) -1)))
@@ -584,8 +585,8 @@ J & George
 
 (defun update-ct-string-ref (class idx newval ct)
   (let* ((class-entry (bound? class ct))
-         (oldstrval (caddr (nth idx (retrieve-cp class ct))))
-         (newstrentry (list 'STRING newval oldstrval))
+         (oldstrval (cddr (nth idx (retrieve-cp class ct))))
+         (newstrentry (list* 'STRING newval oldstrval))
          (new-cp (update-nth idx
                               newstrentry
                               (class-decl-cp class-entry)))
@@ -3855,13 +3856,6 @@ J & George
 ; load_class_library: a utility for populating the heap with Class and
 ;                     String objects
 
-(defun string-to-char-array (str i ans)
-  (if (zp i)
-      ans
-    (string-to-char-array str
-                          (1- i)
-                          (cons (char-code (char str (1- i))) ans))))
-
 (defun make-string-obj (class cpentry s idx)
   (let* ((new-object (build-an-instance
                       (cons "java.lang.String"
@@ -3870,10 +3864,10 @@ J & George
                      (class-table s)))
          (array-address (len (heap s)))
          (new-address (1+ array-address))
-         (str (caddr cpentry))
+         (chars (cddr cpentry))
          (char-array (makearray 'T_CHAR
-                                (length str)
-                                (string-to-char-array str (length str) nil)
+                                (len chars)
+                                chars
                                 (class-table s)))
          (stuffed-obj (set-instance-field "java.lang.String"
                                           "value:[C"
