@@ -400,7 +400,7 @@ expression with a @(see vl-context-p) describing its origin.</p>")
                       :fundecls x.fundecls
                       :paramdecls x.paramdecls
                       :typedefs x.typedefs)
-     "top level design" ;; ??
+     "__top__level__design__" ;; ??
      (vl-scopestack-init (vl-design-fix x)))))
 
 

@@ -3538,14 +3538,10 @@ functions can assume all bits of it are good.</p>"
                          :msg "Bad key in assignment pattern ~a0: ~@1"
                          :args (list orig-x err))
                   (svex-x)))
-             ((mv err svex-membs)
+             ((wmv warnings svex-membs)
               (vl-struct-assignpat-keyval-resolve
                x.pairs membs conf orig-x)))
-          (mv (if err
-                  (fatal :type :vl-expr-to-svex-fail
-                         :msg "Bad key/val assignment pattern ~a0: ~@1"
-                         :args (list orig-x err))
-                (ok))
+          (mv warnings
               (svex-concat-list widths svex-membs))))))
 
   (define vl-exprlist-to-svex-datatyped ((x vl-exprlist-p)
