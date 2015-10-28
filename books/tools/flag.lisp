@@ -952,7 +952,10 @@ one such form may affect what you might think of as the proof of another.</p>
                                                               (strip-cars
                                                                alist))))))
           (defthm ,equiv-thm-name
-            (and . ,(equiv-theorem-cases flag-fn-name formals alist world))))))
+            (and . ,(equiv-theorem-cases flag-fn-name formals alist world))
+            :hints(("Goal" :in-theory (union-theories
+                                       '(flag-equiv-lemma)
+                                       (theory 'acl2::minimal-theory))))))))
 
       (progn . ,(flag-table-events alist `(,flag-fn-name
                                            ,alist
