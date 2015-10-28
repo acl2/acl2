@@ -879,6 +879,9 @@ because... (BOZO)</p>
                                           (override vl-expr-p)
                                           (conf vl-svexconf-p
                                                 "for expr"))
+  ;; BOZO this is really subtle/tricky code and we should probably explain what
+  ;; we're trying to do here and what the SystemVerilog rules are at a high
+  ;; level.
   :guard (vl-paramtype-case x :vl-implicitvalueparam)
   :returns (mv (warnings vl-warninglist-p)
                (err (iff (vl-msg-p err) err))
@@ -930,6 +933,8 @@ because... (BOZO)</p>
                            default-car default-cdr not)))
 
 
+(defconst *vl-svstmt-compile-reclimit* 100000)
+
 (define vl-fundecl-to-svex  ((x vl-fundecl-p)
                              (conf vl-svexconf-p
                                  "Svexconf for inside the function decl")
@@ -944,9 +949,12 @@ because... (BOZO)</p>
        ((wmv ok warnings svstmts) (vl-stmt->svstmts x.body conf nil))
        ((unless ok) (mv warnings (svex-x)))
        ((wmv ok warnings svstate)
-        (sv::svstmtlist-compile svstmts (sv::make-svstate) 100000
-                                  nil ;; nb-delayp
-                                  ))
+        (time$ (sv::svstmtlist-compile svstmts (sv::make-svstate) *vl-svstmt-compile-reclimit*
+                                       nil ;; nb-delayp
+                                       )
+               :mintime 1/2
+               :msg "; vl-fundecl-to-svex: compiling ~s0: ~st sec, ~sa bytes"
+               :args (list x.name)))
        ((unless ok) (mv warnings (svex-x)))
        ((sv::svstate svstate))
        (expr (sv::svex-lookup (sv::make-svar :name x.name) svstate.blkst))
@@ -1651,7 +1659,10 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
        ((unless ok) (mv warnings nil))
        ;; Only use the nonblocking-delay strategy for flops, not latches
        ((wmv ok warnings st)
-        (sv::svstmtlist-compile svstmts (sv::make-svstate) 100000 nil))
+        (time$ (sv::svstmtlist-compile svstmts (sv::make-svstate) *vl-svstmt-compile-reclimit* nil)
+               :mintime 1/2
+               :msg "; vl-always->svex: compiling statement at ~s0: ~st sec, ~sa bytes~%"
+               :args (list (vl-location-string x.loc))))
        ((unless ok) (mv warnings nil))
 
        ((sv::svstate st) (sv::svstate-clean st))

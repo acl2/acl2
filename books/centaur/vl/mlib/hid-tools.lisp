@@ -216,6 +216,8 @@ encountered along a HID.")
   :returns (prefix-hid vl-hidexpr-p)
   :measure (vl-hidexpr-count outer)
   :verify-guards nil
+  :short "Given a hid and a suffix, such as @('a.b.c.d') and @('c.d'), return the
+          hid without the suffix, i.e. @('a.b')."
   (vl-hidexpr-case outer
     :end (vl-hidexpr-fix outer) ;; must be the inner one since it's the last
     :dot (if (vl-hidexpr-equiv inner outer)

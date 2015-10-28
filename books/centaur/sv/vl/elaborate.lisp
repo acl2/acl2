@@ -85,7 +85,33 @@
 
 
 
-(local (in-theory (disable cons-equal)))
+(define vl-maybe-svexconf-free (freep (conf vl-svexconf-p))
+  :returns nil
+  ;; Hack to control case splits
+  (if freep
+      (vl-svexconf-free conf)
+    nil))
+
+(define vl-choose-svexconf (condition (true vl-svexconf-p) (false vl-svexconf-p))
+  :returns (choice vl-svexconf-p)
+  ;; Hack to control case splits
+  (if condition
+      (vl-svexconf-fix true)
+    (vl-svexconf-fix false)))
+
+(local (in-theory (disable cons-equal not)))
+
+(include-book "std/lists/len" :dir :system)
+
+(local (in-theory (disable len
+                           true-listp
+                           acl2::list-fix-when-len-zero
+                           acl2::list-fix-when-true-listp
+                           acl2::list-fix-when-not-consp
+                           set::sets-are-true-lists
+                           default-car
+                           default-cdr
+                           acl2::nfix-when-not-natp)))
 
 (fty::defvisitor-multi vl-elaborate
   :defines-args (:ruler-extenders :all ;; :measure-debug t
@@ -264,7 +290,9 @@ expression with @(see vl-expr-to-svex).</p>
                 :typeov (hons-acons
                          localname new-x.rettype orig-conf.typeov))))
       (vl-svexconf-free fnconf)
-      (mv ok warnings new-x conf)))
+      (mv ok warnings new-x conf))
+    ///
+    (in-theory (disable vl-fundecl-elaborate)))
 
 ;; #|
 ;; (trace$ #!vl (vl-function-compile-and-bind-fn
@@ -317,12 +345,12 @@ expression with @(see vl-expr-to-svex).</p>
               conf))
          ((vl-fundecl decl) step.item)
          (same-scope (equal step.ss conf.ss))
-         (fnconf (if same-scope conf (make-vl-svexconf :ss step.ss)))
+         (fnconf (vl-choose-svexconf same-scope conf (make-vl-svexconf :ss step.ss)))
          ((wmv ok warnings ?new-decl fnconf)
           (vl-fundecl-elaborate decl fnconf :reclimit (1- reclimit)))
-         (conf (if same-scope fnconf conf))
+         (conf (vl-choose-svexconf same-scope fnconf conf))
          ((unless ok)
-          (and (not same-scope) (vl-svexconf-free fnconf))
+          (vl-maybe-svexconf-free (not same-scope) fnconf)
           (mv nil warnings conf))
          ((when same-scope) (mv t warnings conf))
          (local-name (make-vl-scopeexpr-end
@@ -340,7 +368,9 @@ expression with @(see vl-expr-to-svex).</p>
                    (change-vl-svexconf conf :fnports (hons-acons fnname (cdr portlook) conf.fnports))
                  conf)))
       (vl-svexconf-free fnconf)
-      (mv t warnings conf)))
+      (mv t warnings conf))
+    ///
+    (in-theory (disable vl-function-compile-and-bind)))
 
 
 
@@ -369,7 +399,9 @@ expression with @(see vl-expr-to-svex).</p>
                      :msg "Couldn't resolve ~a0 to constant (original: ~a1)"
                      :args (list x orig-x))
             warnings)
-          x svex conf)))
+          x svex conf))
+    ///
+    (in-theory (disable vl-expr-resolve-to-constant)))
 
   (define vl-expr-maybe-resolve-to-constant ((x vl-expr-p)
                                              (conf vl-svexconf-p)
@@ -390,7 +422,9 @@ expression with @(see vl-expr-to-svex).</p>
          ((unless ok) (mv nil nil warnings x (svex-x) conf))
          ((mv ok constp warnings x svex)
           (vl-elaborated-expr-consteval x conf :ctxsize ctxsize)))
-      (mv ok constp warnings x svex conf)))
+      (mv ok constp warnings x svex conf))
+    ///
+    (in-theory (disable vl-expr-maybe-resolve-to-constant)))
 
   (define vl-index-resolve-if-constant ((x vl-expr-p)
                                         (conf vl-svexconf-p)
@@ -403,7 +437,9 @@ expression with @(see vl-expr-to-svex).</p>
                  (new-conf vl-svexconf-p))
     (b* (((mv ok ?constantp warnings new-x ?svex new-conf)
           (vl-expr-maybe-resolve-to-constant x conf :reclimit reclimit)))
-      (mv ok warnings new-x new-conf)))
+      (mv ok warnings new-x new-conf))
+    ///
+    (in-theory (disable vl-index-resolve-if-constant)))
 
   (define vl-index-resolve-constant ((x vl-expr-p)
                                      (conf vl-svexconf-p)
@@ -416,7 +452,9 @@ expression with @(see vl-expr-to-svex).</p>
                  (new-conf vl-svexconf-p))
     (b* (((mv ok warnings new-x ?svex new-conf)
           (vl-expr-resolve-to-constant x conf :reclimit reclimit)))
-      (mv ok warnings new-x new-conf)))
+      (mv ok warnings new-x new-conf))
+    ///
+    (in-theory (disable vl-index-resolve-constant)))
 
   (define vl-expr-resolve-to-constant-and-bind-param
     ((name vl-scopeexpr-p)
@@ -443,13 +481,15 @@ expression with @(see vl-expr-to-svex).</p>
          ((when lookup) (mv t warnings nameconf exprconf))
          ((mv ok warnings ?new-x svex exprconf)
           (vl-expr-resolve-to-constant expr exprconf :Reclimit reclimit))
-         (nameconf (if same-scope exprconf nameconf))
+         (nameconf (vl-choose-svexconf same-scope exprconf nameconf))
          ((unless ok) (mv nil warnings nameconf exprconf))
          (nameconf (change-vl-svexconf
                     nameconf
                     :params (hons-acons name svex nameconf.params)))
-         (exprconf (if same-scope nameconf exprconf)))
-      (mv t warnings nameconf exprconf)))
+         (exprconf (vl-choose-svexconf same-scope nameconf exprconf)))
+      (mv t warnings nameconf exprconf))
+    ///
+    (in-theory (disable vl-expr-resolve-to-constant-and-bind-param)))
 
 
 
@@ -485,15 +525,16 @@ expression with @(see vl-expr-to-svex).</p>
          ;; resolve the type and add it to the conf
          ((wmv ok warnings new-type typeconf)
           (vl-datatype-elaborate type typeconf :reclimit reclimit))
-         (nameconf (if same-scope typeconf nameconf))
+         (nameconf (vl-choose-svexconf same-scope typeconf nameconf))
          ((unless ok)
           (mv nil warnings new-type nameconf typeconf))
          (nameconf (change-vl-svexconf
                     nameconf
                     :typeov (hons-acons name new-type (vl-svexconf->typeov nameconf))))
-         (typeconf (if same-scope nameconf typeconf)))
-      (mv t warnings new-type nameconf typeconf)))
-
+         (typeconf (vl-choose-svexconf same-scope nameconf typeconf)))
+      (mv t warnings new-type nameconf typeconf))
+    ///
+    (in-theory (disable vl-datatype-fully-resolve-and-bind)))
 
 
   (define vl-index-expr-resolve-paramref ((x vl-expr-p)
@@ -508,7 +549,11 @@ expression with @(see vl-expr-to-svex).</p>
     :guard (vl-expr-case x :vl-index)
 
     (b* ((warnings nil)
-         ((vl-svexconf conf) (vl-svexconf-fix conf))
+         (conf (vl-svexconf-fix conf))
+         (conf.ss
+          ;; We don't want to actually b* bind conf, because we're going
+          ;; to be rebinding it a lot, but at least conf.ss is fixed.
+          (vl-svexconf->ss conf))
          ((vl-index x) (vl-expr-fix x))
          ((unless (mbt (vl-expr-case x :vl-index)))
           (impossible) ;; need this case for measure
@@ -524,6 +569,7 @@ expression with @(see vl-expr-to-svex).</p>
               warnings
               conf))
 
+         ;; Strip structure/array indexing off the end of the hid.
          (prefix-name (vl-scopeexpr-replace-hid
                        x.scope
                        (vl-hid-prefix-for-subhid (vl-scopeexpr->hid x.scope) tail)))
@@ -547,14 +593,14 @@ expression with @(see vl-expr-to-svex).</p>
           ;; we do want to make sure its type is resolved if it's a vardecl.
           ;; We are now in a different scope, so we can't use our same conf.
           (b* ((same-scope (equal hidstep.ss conf.ss))
-               (typeconf (if same-scope conf (make-vl-svexconf :ss hidstep.ss)))
+               (typeconf (vl-choose-svexconf same-scope conf (make-vl-svexconf :ss hidstep.ss)))
                ((mv ok warnings ?newtype conf typeconf)
                 (vl-datatype-fully-resolve-and-bind
                  prefix-name
                  (vl-vardecl->type hidstep.item)
                  typeconf conf
                  :reclimit (1- reclimit))))
-            (and (not same-scope) (vl-svexconf-free typeconf))
+            (vl-maybe-svexconf-free (not same-scope) typeconf)
             (mv ok warnings conf)))
 
          ((unless (eq (tag hidstep.item) :vl-paramdecl))
@@ -582,7 +628,7 @@ expression with @(see vl-expr-to-svex).</p>
                          :args (list x))
                    conf))
              (same-scope (equal conf.ss hidstep.ss))
-             (declconf (if same-scope conf (make-vl-svexconf :ss hidstep.ss)))
+             (declconf (vl-choose-svexconf same-scope conf (make-vl-svexconf :ss hidstep.ss)))
              ((wmv ok1 warnings ?newtype conf declconf)
               (vl-datatype-fully-resolve-and-bind
                prefix-name
@@ -595,18 +641,28 @@ expression with @(see vl-expr-to-svex).</p>
                declconf
                conf
                :reclimit (1- reclimit))))
-          (and (not same-scope) (vl-svexconf-free declconf))
+          (vl-maybe-svexconf-free (not same-scope) declconf)
           (mv (and ok1 ok2) warnings conf))
 
         :vl-implicitvalueparam
+        ;; Examples:
+        ;;   parameter foo = 5;              // no type info at all
+        ;;   parameter [3:0] foo = 5;        // range info but not a full datatype
+        ;;   parameter signed [3:0] foo = 5; // signedness and width but not a full type
         (b* (((unless decl.type.default)
               (mv nil
                   (fatal :type :vl-resolve-constants-fail
                          :msg "Parameter with no default value: ~a0"
                          :args (list x))
                   conf))
+             ;; Like vardecls, the actual param declaration may be in a
+             ;; different scope than we're currently in.
              (same-scope (equal conf.ss hidstep.ss))
-             (declconf (if same-scope conf (make-vl-svexconf :ss hidstep.ss)))
+             (declconf (vl-choose-svexconf same-scope conf (make-vl-svexconf :ss hidstep.ss)))
+
+             ;; Try to resolve the range of the parameter declaration if
+             ;; applicable.  Note that the range should be resolved relative to
+             ;; the scope where the declaration occurs.
              ((mv ok warnings range declconf)
               (if decl.type.range
                   (b* (((vl-range range) decl.type.range)
@@ -620,22 +676,39 @@ expression with @(see vl-expr-to-svex).</p>
                          range.lsb declconf :reclimit (1- reclimit))))
                     (mv ok warnings (make-vl-range :msb msb :lsb lsb) declconf))
                 (mv t warnings nil declconf)))
-             (conf (if same-scope declconf conf))
+             ;; In case we had a range and we ARE in the same scope, then the
+             ;; above has updated CONF, so we need to rebind it.  (If we were
+             ;; in some other scope, then declconf is essentially a temporary
+             ;; but it's independent of conf.)
+             (conf (vl-choose-svexconf same-scope declconf conf))
              ((unless ok)
-              (and (not same-scope) (vl-svexconf-free declconf))
+              ;; Free declconf only if it is a temporary.
+              (vl-maybe-svexconf-free (not same-scope) declconf)
+              ;; The conf may have been updated, so we need to be sure to do
+              ;; this after having rebound it above.
               (mv nil warnings conf))
              (paramtype (change-vl-implicitvalueparam decl.type :range range))
+
+             ;; Next, try to resolve the actual value for this parameter.
              ((wmv ok warnings ?val svex declconf)
               (vl-expr-resolve-to-constant
-               decl.type.default declconf :reclimit (1- reclimit)))
-             (conf (if same-scope declconf conf))
+               ;; The following is confusingly named, but it's just the value
+               ;; of the parameter.
+               decl.type.default
+               ;; Resolve it relative to 
+               declconf :reclimit (1- reclimit)))
+             ;; As before, rebind CONF in case we're in the same scope, etc.
+             (conf (vl-choose-svexconf same-scope declconf conf))
              ((unless ok)
-              (and (not same-scope) (vl-svexconf-free declconf))
+              (vl-maybe-svexconf-free (not same-scope) declconf)
               (mv nil warnings conf))
+
+             ;; We've resolved the range and value and can now somehow use that
+             ;; to get the final type for this parameter.
              ((wmv warnings err type)
               (vl-implicitvalueparam-final-type paramtype val declconf))
              ((when err)
-              (and (not same-scope) (vl-svexconf-free declconf))
+              (vl-maybe-svexconf-free (not same-scope) declconf)
               (mv nil
                   (fatal :type :vl-resolve-constants-fail
                          :msg "Error resolving parameter type for ~a0: ~@1"
@@ -643,14 +716,16 @@ expression with @(see vl-expr-to-svex).</p>
                   conf))
              (conf (change-vl-svexconf
                     conf
-                    :params (hons-acons prefix-name svex conf.params)
-                    :typeov (hons-acons prefix-name type conf.typeov))))
-          (and (not same-scope) (vl-svexconf-free declconf))
-          (mv t warnings conf)))))
+                    :params (hons-acons prefix-name svex (vl-svexconf->params conf))
+                    :typeov (hons-acons prefix-name type (vl-svexconf->typeov conf)))))
+          (vl-maybe-svexconf-free (not same-scope) declconf)
+          (mv t warnings conf))))
+    ///
+    (in-theory (disable vl-index-expr-resolve-paramref)))
 
 
 #||
-(trace$ #!vl
+ (trace$ #!vl
         (vl-expr-elaborate-fn
          :entry (list 'vl-expr-elaborate
                       (with-local-ps (vl-pp-expr x)))
@@ -687,7 +762,7 @@ expression with @(see vl-expr-to-svex).</p>
              ((wmv ok3 warnings new-partselect conf)
               (vl-partselect-elaborate x.part conf :reclimit reclimit))
              (new-x (change-vl-index x :scope new-scope :indices new-indices :part new-partselect))
-             ((unless (and ok1 ok2 ok3))
+             ((unless (and* ok1 ok2 ok3))
               (mv nil warnings new-x conf))
              ((wmv ok warnings conf)
               (vl-index-expr-resolve-paramref new-x conf :reclimit reclimit)))
@@ -699,7 +774,7 @@ expression with @(see vl-expr-to-svex).</p>
              ((wmv ok2 warnings new-parts conf)
               (vl-exprlist-elaborate x.parts conf :reclimit reclimit))
              (new-x (change-vl-multiconcat x :reps new-reps :parts new-parts)))
-          (mv (and ok1 ok2) warnings new-x conf))
+          (mv (and* ok1 ok2) warnings new-x conf))
 
         :vl-call
         (b* (((wmv ok1 warnings new-args conf)
@@ -711,10 +786,10 @@ expression with @(see vl-expr-to-svex).</p>
              ((wmv ok3 warnings new-fnname conf)
               (vl-scopeexpr-elaborate x.name conf :reclimit reclimit))
              (new-x (change-vl-call x :typearg new-typearg :args new-args :name new-fnname))
-             ((when x.systemp) (mv (and ok1 ok2 ok3) warnings new-x conf))
+             ((when x.systemp) (mv (and* ok1 ok2 ok3) warnings new-x conf))
              ((wmv ok4 warnings conf)
               (vl-function-compile-and-bind new-fnname conf :reclimit reclimit)))
-          (mv (and ok1 ok2 ok3 ok4) warnings new-x conf))
+          (mv (and* ok1 ok2 ok3 ok4) warnings new-x conf))
 
         :vl-cast
         (b* (((wmv ok1 warnings new-casttype conf)
@@ -722,12 +797,14 @@ expression with @(see vl-expr-to-svex).</p>
              ((wmv ok2 warnings new-expr conf)
               (vl-expr-elaborate x.expr conf :reclimit reclimit))
              (new-x (change-vl-cast x :to new-casttype :expr new-expr)))
-          (mv (and ok1 ok2) warnings new-x conf))
+          (mv (and* ok1 ok2) warnings new-x conf))
 
         ;; inside, stream, tagged, pattern
 
         :otherwise
-        (vl-expr-elaborate-aux x conf :reclimit reclimit))))
+        (vl-expr-elaborate-aux x conf :reclimit reclimit)))
+    ///
+    (in-theory (disable vl-expr-elaborate)))
 
   (define vl-indexlist-resolve-constants ((x vl-exprlist-p)
                                           (conf vl-svexconf-p)
@@ -744,7 +821,9 @@ expression with @(see vl-expr-to-svex).</p>
           (vl-indexlist-resolve-constants (cdr x) conf :reclimit reclimit))
          ((wmv ok1 ?constantp warnings first ?svex conf)
           (vl-expr-maybe-resolve-to-constant (car x) conf :reclimit reclimit)))
-      (mv (and ok1 ok2) warnings (cons first rest) conf)))
+      (mv (and* ok1 ok2) warnings (cons first rest) conf))
+    ///
+    (in-theory (disable vl-indexlist-resolve-constants)))
 
 
   (define vl-datatype-elaborate ((x vl-datatype-p)
@@ -766,14 +845,16 @@ expression with @(see vl-expr-to-svex).</p>
             (vl-packeddimensionlist-elaborate x.pdims conf :reclimit reclimit))
            ((wmv ok3 warnings udims conf)
             (vl-packeddimensionlist-elaborate x.udims conf :reclimit reclimit)))
-        (mv (and ok ok2 ok3) warnings
+        (mv (and* ok ok2 ok3) warnings
             (change-vl-usertype
              x
              :res (and ok res)
              :pdims pdims :udims udims)
             conf))
       :otherwise
-      (vl-datatype-elaborate-aux x conf :reclimit reclimit)))
+      (vl-datatype-elaborate-aux x conf :reclimit reclimit))
+    ///
+    (in-theory (disable vl-datatype-elaborate)))
 
   (define vl-usertype-resolve ((x vl-datatype-p)
                                  (conf vl-svexconf-p)
@@ -818,12 +899,12 @@ expression with @(see vl-expr-to-svex).</p>
          ((when (eq (tag ref.item) :vl-typedef))
           (b* (((vl-typedef item) ref.item)
                (same-scope (equal conf.ss ref.ss))
-               (declconf (if same-scope conf (make-vl-svexconf :ss ref.ss)))
+               (declconf (vl-choose-svexconf same-scope conf (make-vl-svexconf :ss ref.ss)))
                ((wmv ok warnings res-type conf declconf)
                 (vl-datatype-fully-resolve-and-bind
                  x.name item.type declconf conf
                  :reclimit (1- reclimit))))
-            (and (not same-scope) (vl-svexconf-free declconf))
+            (vl-maybe-svexconf-free (not same-scope) declconf)
             (mv ok warnings res-type conf)))
          ((when (eq (tag ref.item) :vl-paramdecl))
           (b* (((vl-paramdecl item) ref.item))
@@ -831,12 +912,12 @@ expression with @(see vl-expr-to-svex).</p>
               :vl-typeparam
               (if item.type.default
                   (b* ((same-scope (equal conf.ss ref.ss))
-                       (declconf (if same-scope conf (make-vl-svexconf :ss ref.ss)))
+                       (declconf (vl-choose-svexconf same-scope conf (make-vl-svexconf :ss ref.ss)))
                        ((wmv ok warnings res-type conf ?declconf)
                         (vl-datatype-fully-resolve-and-bind
                          x.name item.type.default declconf conf
                          :reclimit (1- reclimit))))
-                    (and (not same-scope) (vl-svexconf-free declconf))
+                    (vl-maybe-svexconf-free (not same-scope) declconf)
                     (mv ok warnings res-type conf))
                 (mv nil
                     (fatal :type :vl-usertype-resolve-error
@@ -853,7 +934,9 @@ expression with @(see vl-expr-to-svex).</p>
           (fatal :type :vl-usertype-resolve-error
                  :msg "~a0: Didn't find a typedef or parameter reference, instead found ~a1"
                  :args (list x ref.item))
-          x conf))))
+          x conf))
+    ///
+    (in-theory (disable vl-usertype-resolve))))
 
 
 (fty::defvisitors vl-genelement-deps-elaborate
