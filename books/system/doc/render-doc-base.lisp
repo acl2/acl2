@@ -188,14 +188,15 @@
                          t ;; disable autolinking to avoid auto links in text mode
                          state))
        ((mv err tokens) (parse-xml text))
-
-       ((when err)
-        (cw "Error rendering xdoc topic ~x0:~%~%" name)
-        (b* ((state (princ$ err *standard-co* state))
-             (state (newline *standard-co* state))
-             (state (newline *standard-co* state)))
-          (er hard? 'make-topic-text "Failed to process topic ~x0.~%" name)
-          (mv nil state)))
+       ((mv tokens state)
+        (if (not err)
+            (mv tokens state)
+          (b* ((- (cw "Error rendering xdoc topic ~x0:~%~%" name))
+               (state (princ$ err *standard-co* state))
+               (state (newline *standard-co* state))
+               (state (newline *standard-co* state))
+               ((mv & tokens) (parse-xml "Error rendering topic")))
+            (mv tokens state))))
 
        (merged-tokens (reverse (merge-text tokens nil 0 nil)))
        (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
